@@ -1,55 +1,109 @@
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
+import { nextTick } from 'vue'
 
+import type { HubSections } from '@/data/mainNavigation'
 import HeaderMainDesktop from './HeaderMainDesktop.vue'
 
-async function openProducts(path: string, workshopInBuild: boolean) {
+const ALL_SECTIONS: HubSections = { workflows: true, apps: true }
+
+async function openMenu(
+  name: RegExp,
+  {
+    path = '/pricing',
+    workshopInBuild = true,
+    hubSections = ALL_SECTIONS
+  }: {
+    path?: string
+    workshopInBuild?: boolean
+    hubSections?: HubSections
+  } = {}
+) {
   history.replaceState(null, '', path)
-  render(HeaderMainDesktop, { props: { workshopInBuild } })
-  const products = screen.getByRole('button', { name: /^products/i })
-  await userEvent.click(products)
-  return products
+  render(HeaderMainDesktop, { props: { workshopInBuild, hubSections } })
+  const trigger = screen.getByRole('button', { name })
+  await userEvent.click(trigger)
+  const menu = within(await screen.findByTestId('nav-dropdown'))
+  await menu.findAllByRole('link')
+  return { trigger, menu }
 }
 
 describe('HeaderMainDesktop', () => {
-  it('keeps the Hub out of Products without a build opt-in', async () => {
-    await openProducts('/pricing', false)
-    const menu = within(await screen.findByTestId('nav-dropdown'))
-
-    const links = await menu.findAllByRole('link')
-    expect(links.map((link) => link.getAttribute('href'))).not.toEqual(
-      expect.arrayContaining([expect.stringMatching(/^\/hub\//)])
-    )
+  it('has no Hub menu without a build opt-in', () => {
+    render(HeaderMainDesktop)
+    expect(screen.queryByRole('button', { name: /^Hub/ })).toBeNull()
   })
 
-  it('opens every Hub section from Products, with the Hub itself apart', async () => {
-    await openProducts('/pricing', true)
-    const menu = within(await screen.findByTestId('nav-dropdown'))
+  it('opens the Hub as Models, Workflows and Apps with an Explore row', async () => {
+    const { menu } = await openMenu(/^Hub/)
 
-    await menu.findAllByRole('link')
-    expect(menu.queryByRole('link', { name: /explore the hub/i })).toBeNull()
-    expect(screen.getByRole('link', { name: /^Hub/ })).toHaveAttribute(
-      'href',
-      '/hub/'
-    )
-    expect(
-      ['Apps', 'Workflows', 'Models'].map((name) =>
-        menu
-          .getByRole('link', { name: new RegExp(`^${name}$`) })
-          .getAttribute('href')
+    const icons = menu.getAllByTestId('nav-kind-icon')
+    expect(icons.map((icon) => icon.getAttribute('data-kind'))).toEqual([
+      'model',
+      'workflow',
+      'app'
+    ])
+    for (const [index, header] of ['Models', 'Workflows', 'Apps'].entries()) {
+      expect(menu.getByText(header, { exact: true })).toContainElement(
+        icons[index]
       )
-    ).toEqual(['/hub/apps/', '/hub/workflows/', '/hub/models/'])
+    }
+    expect(menu.queryAllByRole('img')).toHaveLength(0)
+    expect(
+      [
+        'Browse models',
+        'All workflows',
+        'Cinematic Studio',
+        'Re-shoot',
+        'All apps'
+      ].map((name) => menu.getByRole('link', { name }).getAttribute('href'))
+    ).toEqual([
+      '/hub/models/',
+      '/hub/workflows/',
+      '/hub/apps/cinematic-studio/',
+      '/hub/apps/reshoot/',
+      '/hub/apps/'
+    ])
+    const docs = menu.getByRole('link', { name: 'API docs' })
+    expect(docs).toHaveAttribute('target', '_blank')
+    expect(
+      menu.getByRole('link', { name: /^Explore the Hub/ })
+    ).toHaveAttribute('href', '/hub/')
   })
+
+  it('hides the Hub columns whose sections are off', async () => {
+    const { menu } = await openMenu(/^Hub/, {
+      hubSections: { workflows: false, apps: false }
+    })
+
+    expect(menu.getByRole('link', { name: 'Browse models' })).toBeTruthy()
+    expect(menu.queryByRole('link', { name: 'All workflows' })).toBeNull()
+    expect(menu.queryByRole('link', { name: 'All apps' })).toBeNull()
+  })
+
+  it.for([true, false])(
+    'keeps the Hub out of Products (workshop in build: %s)',
+    async (workshopInBuild) => {
+      const { menu } = await openMenu(/^products/i, { workshopInBuild })
+
+      const hrefs = menu
+        .getAllByRole('link')
+        .map((link) => link.getAttribute('href'))
+      expect(hrefs).not.toEqual(
+        expect.arrayContaining([expect.stringMatching(/^\/hub\//)])
+      )
+      expect(
+        menu.queryByRole('link', { name: 'Supported Models' }) === null
+      ).toBe(workshopInBuild)
+    }
+  )
 
   it('opens Enterprise as one column with no Resources row', async () => {
-    history.replaceState(null, '', '/pricing')
-    render(HeaderMainDesktop, { props: { workshopInBuild: true } })
-    await userEvent.click(screen.getByRole('button', { name: /^enterprise/i }))
-    const menu = within(await screen.findByTestId('nav-dropdown'))
+    const { menu } = await openMenu(/^enterprise/i)
 
     expect(
-      (await menu.findAllByRole('link')).map((link) => link.textContent.trim())
+      menu.getAllByRole('link').map((link) => link.textContent.trim())
     ).toEqual([
       'Comfy Enterprise',
       'Forward Deployed Creatives',
@@ -61,16 +115,26 @@ describe('HeaderMainDesktop', () => {
 
   it.for([
     { path: '/hub/', hub: true, products: false },
-    { path: '/hub/models/', hub: false, products: true },
+    { path: '/hub/models/', hub: true, products: false },
+    { path: '/hub/workflows/relight/', hub: true, products: false },
+    { path: '/platform/', hub: false, products: true },
     { path: '/pricing', hub: false, products: false }
   ])(
     'marks the Hub or Products active on $path',
     async ({ path, hub, products }) => {
-      const productsButton = await openProducts(path, true)
+      history.replaceState(null, '', path)
+      render(HeaderMainDesktop, {
+        props: { workshopInBuild: true, hubSections: ALL_SECTIONS }
+      })
+      await nextTick()
 
       expect([
-        screen.getByRole('link', { name: /^Hub/ }).hasAttribute('data-active'),
-        productsButton.hasAttribute('data-active')
+        screen
+          .getByRole('button', { name: /^Hub/ })
+          .hasAttribute('data-active'),
+        screen
+          .getByRole('button', { name: /^Products/ })
+          .hasAttribute('data-active')
       ]).toEqual([hub, products])
     }
   )

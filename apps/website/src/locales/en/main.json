@@ -116,7 +116,14 @@
       "priceNoteLabel": "How this price is estimated",
       "incomplete": "Incomplete",
       "notSupported": "Run not yet supported",
-      "missingInputSchema": "We do not know this model's inputs yet, so it cannot be run or called from code. Everything else on this page still works."
+      "missingInputSchema": "We do not know this model's inputs yet, so it cannot be run or called from code. Everything else on this page still works.",
+      "paths": {
+        "label": "Ways to use this model",
+        "run": "Run here",
+        "cloud": "Open in Cloud",
+        "api": "Use via API"
+      },
+      "usedBy": "Workflows that use {name}"
     },
     "title": "Models",
     "task": {
@@ -568,7 +575,6 @@
       "relatedAll": "Browse all",
       "cloneCta": "Run on your machine",
       "templateBy": "Template by {author}",
-      "sections": "Workflow sections",
       "graphAlt": "The nodes of this workflow and the links between them",
       "graphHint": "Read-only · drag to pan",
       "graphLoading": "Loading the graph",
@@ -623,7 +629,27 @@
       "lostContact": "This page lost contact with the run. It may still be running on Cloud and using credits. Reconnect to see its current status.",
       "browserUnavailable": "Running workflows from this page is not available yet.",
       "tryCloud": "Try in Cloud",
-      "explore": "Explore the possibilities"
+      "explore": "Explore the possibilities",
+      "tryIt": "Try it",
+      "tryItHint": "Runs in Comfy Cloud. It opens with an example loaded; change the inputs, then run.",
+      "paths": "Ways to use this workflow",
+      "downloadWorkflow": "Download workflow",
+      "runInCloud": "Run in Cloud",
+      "apiPath": "API",
+      "filesNeeded": "Files it needs",
+      "filesNote": "Only needed to run it on your own machine; Comfy Cloud already has them.",
+      "fileType": {
+        "checkpoint": "Checkpoint",
+        "diffusionModel": "Diffusion model",
+        "lora": "LoRA",
+        "vae": "VAE",
+        "textEncoder": "Text encoder",
+        "clipVision": "CLIP vision",
+        "controlnet": "ControlNet",
+        "upscaler": "Upscaler",
+        "audioEncoder": "Audio encoder",
+        "backgroundRemoval": "Background removal"
+      }
     },
     "catalogue": {
       "apps": "Apps",
@@ -666,7 +692,6 @@
       "searchLabel": "Search the Hub",
       "searchPlaceholder": "Try “upscale”, “image to video” or a model name",
       "tasks": "Tasks",
-      "tasksTitle": "Use cases",
       "popularTitle": "Popular right now",
       "resultsFor": "Results for “{query}”",
       "empty": "Nothing matches yet.",
@@ -676,20 +701,52 @@
       "kindModel": "Model",
       "doors": "Browse by format",
       "doorApps": "Apps",
-      "appsHint": "One job each. No nodes needed.",
+      "appsHint": "Upload, click, done. No nodes.",
       "doorWorkflows": "Workflows",
-      "workflowsHint": "Open one, change any step, make it yours.",
+      "workflowsHint": "Open the node graph and change any step.",
       "modelsTitle": "Models",
-      "modelsHint": "Try them here or call them by API.",
-      "appsCount": "{count} app | {count} apps",
-      "workflowsCount": "{count} workflow | {count} workflows",
-      "modelsCount": "{count} model | {count} models",
+      "modelsHint": "Try one, call it by API or download it.",
       "communityTitle": "From the community",
       "communityHeading": "See what people make with Comfy",
       "communityBody": "Real work from the community, made in ComfyUI.",
       "communityExplore": "Explore the gallery",
       "communityShare": "Share yours",
-      "modelsSeeAll": "See all models"
+      "modelsSeeAll": "See all models",
+      "popularFor": "Popular for {useCase}",
+      "popularBody": "What people are running this week, across models, workflows and apps. Pick a use case to narrow it down.",
+      "modelsIntent": "Explore and compare",
+      "workflowsIntent": "Work with nodes",
+      "appsIntent": "Fastest result",
+      "doorModelPromptLake": "Alpine lake at blue hour",
+      "doorModelPromptRowboat": "Rowboat on a tropical lagoon",
+      "doorModelRun": "Run",
+      "doorModelApi": "API",
+      "doorModelCredits": "{credits} credits",
+      "doorAppControlFocal": "Focal length",
+      "doorAppControlRotation": "Rotation",
+      "doorAppGenerate": "Generate",
+      "doorModelMeta": "{provider} · Image",
+      "doorModelImage": "Image",
+      "doorModelPerImage": "/img",
+      "doorWorkflowImage": "image",
+      "doorWorkflowFile": "bottle.png",
+      "doorWorkflowStep": "Relight",
+      "doorWorkflowLight": "light",
+      "doorWorkflowStrength": "strength",
+      "doorWorkflowSave": "Save Image"
+    },
+    "explorer": {
+      "filter": {
+        "label": "How you use it",
+        "run": "Run here",
+        "api": "API",
+        "download": "Download"
+      },
+      "badge": {
+        "run": "Run",
+        "api": "API",
+        "download": "Download"
+      }
     },
     "build": {
       "title": "Put it in your product.",
@@ -703,6 +760,9 @@
       "getKey": "Get an API key",
       "docs": "Docs",
       "snippetLabel": "Example request to Comfy Router"
+    },
+    "app": {
+      "builtWith": "Built with"
     }
   },
   "auth": {
@@ -2389,7 +2449,6 @@
     "comfyCloud": "Comfy Cloud",
     "comfyEnterprise": "Comfy Enterprise",
     "managedBuilds": "Managed Builds",
-    "comfyHub": "Comfy Workflows",
     "fdct": "Forward Deployed Creatives",
     "gallery": "Gallery",
     "learning": "Learning",
@@ -2424,10 +2483,6 @@
     "mcpServer": "Comfy MCP",
     "supportedModels": "Supported Models",
     "colFeatures": "Features",
-    "colPrograms": "Programs",
-    "colConnect": "Connect",
-    "colMore": "More",
-    "reddit": "Reddit",
     "x": "X",
     "instagram": "Instagram",
     "linkedin": "LinkedIn",
@@ -2437,9 +2492,6 @@
     "featuredProductsAlt": "Gemini Omni 1.1 Flash video: cavemen meet the future",
     "featuredProductsCta": "EXPLORE NOW",
     "featuredProductsCtaAria": "Explore the Gemini Omni 1.1 Flash release",
-    "featuredCommunityTitle": "Product Photography",
-    "featuredCommunityAlt": "Product Photography workflow demo image",
-    "featuredCommunityCtaAria": "Watch the Product Photography demo",
     "featuredCompanyTitle": "Customer story: Black Math",
     "featuredCompanyAlt": "Black Math customer story image",
     "featuredCompanyCtaAria": "Watch the Black Math customer story",
@@ -2470,12 +2522,23 @@
     "upgradeToAddCredits": "Upgrade to add credits",
     "cinematicStudio": "Cinematic Studio",
     "colCreate": "Create",
-    "colCustomize": "Customize",
+    "colAutomate": "Automate",
     "colBuild": "Build",
     "hubApps": "Apps",
+    "hubAppsHint": "One job each, no nodes needed.",
+    "hubAllApps": "All apps",
+    "reshoot": "Re-shoot",
     "hubWorkflows": "Workflows",
+    "hubWorkflowsHint": "Open one, change any step, run it in Cloud or download it.",
+    "hubAllWorkflows": "All workflows",
     "hubModels": "Models",
-    "serverlessApi": "Serverless API",
+    "hubModelsHint": "Run them here, call them by API or download them.",
+    "hubBrowseModels": "Browse models",
+    "hubApiKey": "Get an API key",
+    "hubApiDocs": "API docs",
+    "hubExplore": "Explore the Hub",
+    "hubExploreHint": "Search everything, see what’s popular and new",
+    "comfyApi": "Comfy API",
     "builds": "Builds",
     "comfySdks": "Comfy SDKs",
     "enterprise": "Enterprise",
@@ -2529,7 +2592,8 @@
     "chatgptImage25": "ChatGPT Images 2.5",
     "qwenImage21": "Qwen-Image 2.1",
     "cloudNodes": "Comfy Cloud Nodes",
-    "modelCatalogue": "ComfyUI Models"
+    "modelCatalogue": "ComfyUI Models",
+    "social": "Follow Comfy"
   },
   "privacy": {
     "intro": {

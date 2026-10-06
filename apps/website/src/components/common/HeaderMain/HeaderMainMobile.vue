@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import BreadthumbIcon from '@/components/icons/BreadthumbIcon.vue'
-import { ChevronLeft, ChevronRight } from '@lucide/vue'
+import { ArrowRight, ChevronLeft, ChevronRight } from '@lucide/vue'
 import { computed, onUnmounted, ref, watch } from 'vue'
-import { getMainNavigation } from '@/data/mainNavigation'
+import { NO_HUB_SECTIONS, getMainNavigation } from '@/data/mainNavigation'
+import type { HubSections } from '@/data/mainNavigation'
 import { getRoutes } from '@/config/routes.ts'
 import { lockScroll, unlockScroll } from '@/composables/scrollLock'
 import type { Locale } from '@/i18n/translations.ts'
 import { translationsFor } from '@/i18n/translations.ts'
+import NavKindIcon from './NavKindIcon.vue'
 import NavLinkContent from './NavLinkContent.vue'
 import Sheet from '@/components/ui/sheet/Sheet.vue'
 import SheetContent from '@/components/ui/sheet/SheetContent.vue'
@@ -17,14 +19,19 @@ import SheetTrigger from '@/components/ui/sheet/SheetTrigger.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
-const { locale = 'en', workshopInBuild = false } = defineProps<{
+const {
+  locale = 'en',
+  workshopInBuild = false,
+  hubSections = NO_HUB_SECTIONS
+} = defineProps<{
   locale?: Locale
   workshopInBuild?: boolean
+  hubSections?: HubSections
 }>()
 const { t } = translationsFor(locale)
 const routes = getRoutes(locale)
 const mainNavigation = computed(() =>
-  getMainNavigation(locale, workshopInBuild)
+  getMainNavigation(locale, workshopInBuild, hubSections)
 )
 
 const isOpen = ref(false)
@@ -141,8 +148,14 @@ onUnmounted(() => {
                   class="flex flex-col gap-y-3"
                 >
                   <p
-                    class="text-base font-bold tracking-wider text-primary-warm-gray uppercase"
+                    :class="
+                      cn(
+                        'text-base font-bold tracking-wider text-primary-warm-gray uppercase',
+                        column.kind && 'flex items-center gap-3'
+                      )
+                    "
                   >
+                    <NavKindIcon v-if="column.kind" :kind="column.kind" />
                     {{ column.header }}
                   </p>
                   <p
@@ -163,6 +176,26 @@ onUnmounted(() => {
                     <NavLinkContent :item="link" :locale="locale" />
                   </Button>
                 </div>
+                <a
+                  v-if="activeItem.footerLink"
+                  :href="activeItem.footerLink.href"
+                  class="flex items-center justify-between gap-4 rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4 px-4 py-4 transition-colors outline-none hover:bg-transparency-white-t8 focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
+                >
+                  <span class="flex min-w-0 flex-col">
+                    <span class="text-base font-medium text-primary-warm-white">
+                      {{ activeItem.footerLink.label }}
+                    </span>
+                    <span class="text-sm text-primary-warm-gray">
+                      {{ activeItem.footerLink.description }}
+                    </span>
+                  </span>
+                  <span
+                    class="grid size-10 shrink-0 place-items-center rounded-full bg-primary-comfy-yellow text-primary-comfy-ink"
+                    aria-hidden="true"
+                  >
+                    <ArrowRight class="size-5" />
+                  </span>
+                </a>
               </div>
             </div>
             <div

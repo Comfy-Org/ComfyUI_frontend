@@ -210,6 +210,40 @@ test('opens Re-shoot once its flag is on', async ({ page, context }) => {
   )
 })
 
+test('names the Hub models behind Cinematic Studio and links them', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, { apps: true, workflows: false })
+  await page.goto('/hub/apps/cinematic-studio/')
+
+  await expect(
+    page.getByRole('navigation', { name: 'Breadcrumb' }).getByRole('link')
+  ).toHaveText(['Hub', 'Apps'])
+  const builtWith = page.getByTestId('app-built-with')
+  await builtWith.scrollIntoViewIfNeeded()
+  await expect(
+    builtWith.getByRole('heading', { name: 'Built with' })
+  ).toBeVisible()
+  const first = builtWith.getByTestId('explore-result').first()
+  await expect(first).toHaveAttribute('href', /^\/hub\/models\/[a-z0-9-]+\/$/)
+})
+
+test('names the workflow behind Re-shoot once workflows are open', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, { apps: true, workflows: true, reshoot: true })
+  await page.goto('/hub/apps/reshoot/')
+
+  const builtWith = page.getByTestId('app-built-with')
+  await builtWith.scrollIntoViewIfNeeded()
+  await expect(builtWith.getByTestId('explore-result')).toHaveAttribute(
+    'href',
+    '/hub/workflows/video-from-references/'
+  )
+})
+
 test('sends an old catalogue link for the Apps tab to the hub apps page', async ({
   page,
   context

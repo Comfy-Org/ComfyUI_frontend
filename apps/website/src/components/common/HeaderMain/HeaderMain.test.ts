@@ -54,7 +54,7 @@ describe('HeaderMain workshop gating', () => {
       renderHeader(workshopInBuild)
       await nextTick()
 
-      expect(screen.queryByRole('link', { name: /^Hub\b/i }) !== null).toBe(
+      expect(screen.queryByRole('button', { name: /^Hub\b/i }) !== null).toBe(
         modelsAvailable
       )
     }
@@ -181,14 +181,14 @@ describe('HeaderMain workshop gating', () => {
   it('updates navigation and removes the account controls when access is revoked', async () => {
     flag.value = true
     renderHeader(true)
-    expect(screen.queryByRole('link', { name: /^Hub\b/i })).toBeNull()
+    expect(screen.queryByRole('button', { name: /^Hub\b/i })).toBeNull()
     expect(screen.queryByTestId('header-account')).toBeNull()
 
     visibility.value = true
-    await screen.findByRole('link', { name: /^Hub\b/i })
+    await screen.findByRole('button', { name: /^Hub\b/i })
     visibility.value = false
     await nextTick()
-    expect(screen.queryByRole('link', { name: /^Hub\b/i })).toBeNull()
+    expect(screen.queryByRole('button', { name: /^Hub\b/i })).toBeNull()
     expect(screen.queryByTestId('header-account')).toBeNull()
   })
 })

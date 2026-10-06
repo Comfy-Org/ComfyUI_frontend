@@ -228,7 +228,8 @@ test('the mobile menu closes and reopens after its Hub link navigates', async ({
   await toggle.click()
   const menu = page.getByRole('dialog', { name: 'Menu' })
   await expect(menu).toBeVisible()
-  await menu.getByRole('link', { name: /^Hub/ }).click()
+  await menu.getByRole('button', { name: /^Hub/ }).click()
+  await menu.getByRole('link', { name: /^Explore the Hub/ }).click()
   await expect(page).toHaveURL('/hub/')
   await expect(menu).toBeHidden()
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(
@@ -260,6 +261,38 @@ test('mobile search suggestions show a video model as a still frame', async ({
   await expect(
     sheet.locator('img[src*=".mp4"], img[src*=".webm"], img[src*=".mov"]')
   ).toHaveCount(0)
+})
+
+test('a use case chip under Popular right now narrows that row and All widens it back', async ({
+  page
+}) => {
+  await page.goto('/hub/')
+  const popular = page.getByTestId('explore-results')
+  const chips = popular.getByRole('group', { name: 'Tasks' })
+  await waitForIsland(page, chips)
+  await expect(
+    popular.getByRole('heading', { name: 'Popular right now' })
+  ).toBeVisible()
+
+  await chips.getByRole('button', { name: 'Generate images' }).click()
+
+  await expect(
+    popular.getByRole('heading', { name: 'Popular for generate images' })
+  ).toBeVisible()
+  await expect(
+    chips.getByRole('button', { name: 'Generate images' })
+  ).toHaveAttribute('aria-pressed', 'true')
+  await expect(popular.getByTestId('explore-kind')).not.toHaveCount(0)
+  await expect(
+    popular.locator('[data-testid="explore-kind"][data-kind="app"]')
+  ).toHaveCount(0)
+
+  await chips.getByRole('button', { name: 'All' }).click()
+
+  await expect(
+    popular.getByRole('heading', { name: 'Popular right now' })
+  ).toBeVisible()
+  await expect(page).toHaveURL('/hub/')
 })
 
 test('keeps the Hub visible until a cold section is ready', async ({

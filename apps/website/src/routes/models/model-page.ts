@@ -11,6 +11,7 @@ import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import { describesCapability } from '@/lib/workshop/model-tags'
 import { useCaseLabelKey } from '@/lib/workshop/use-case-label'
+import { workflowsUsingModel } from '@/lib/workshop/model-workflows'
 
 const TAGS_SHOWN = 3
 
@@ -76,6 +77,7 @@ export async function prepareModelPage(
       model.useCases?.length === 1 ? model.useCases[0] : undefined
     ),
     useCaseLabel: useCase ? t(useCaseLabelKey[useCase]) : undefined,
+    workflows: model.routerId ? workflowsUsingModel(model, workshopPages) : [],
     tags,
     ...splitShownTags(tags)
   }

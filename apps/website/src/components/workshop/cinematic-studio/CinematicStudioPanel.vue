@@ -110,7 +110,7 @@ function generate() {
     class="mx-auto max-w-10xl px-4 py-8 sm:px-8 lg:px-14"
     data-testid="cinematic"
   >
-    <AppsBackLink :locale class="mb-5" />
+    <AppsBackLink :current="tc('cinematic.title')" :locale class="mb-5" />
     <div class="mb-3 flex flex-wrap items-center gap-3">
       <h1 class="text-2xl font-semibold text-primary-warm-white lg:text-3xl">
         {{ tc('cinematic.title') }}

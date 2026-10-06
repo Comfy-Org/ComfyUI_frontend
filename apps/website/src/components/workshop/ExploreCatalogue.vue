@@ -17,16 +17,13 @@ import { getRoutes } from '@/config/routes'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import type { CatalogueApp } from '@/lib/workshop/catalogue-apps'
-import { DOOR_ART, TASK_ART } from '@/lib/workshop/explore-art'
+import { doorArt } from '@/lib/workshop/explore-art'
 import { useCaseLabelKey } from '@/lib/workshop/use-case-label'
-import { TASK_CARD } from '@/lib/workshop/card-layout'
-import CardRow from './CardRow.vue'
 import ExploreCommunity from './ExploreCommunity.vue'
 import ExploreDoors from './ExploreDoors.vue'
 import ExploreFinder from './ExploreFinder.vue'
 import ExploreResults from './ExploreResults.vue'
 import ExploreTaskChips from './ExploreTaskChips.vue'
-import ExploreTaskTile from './ExploreTaskTile.vue'
 
 const RESULTS = 12
 
@@ -50,61 +47,12 @@ const useCase = ref<UseCase | 'all'>('all')
 const everything = computed(() =>
   sortWorkshopModels([...workflows, ...models], 'popular')
 )
-const coverOf = (
-  useCase: UseCase,
-  items: readonly WorkshopModel[]
-): WorkshopModel['thumbnail'] => {
-  const art = TASK_ART[useCase]
-  if (art) return { url: art, kind: 'image' }
-  return (
-    items.find((item) => item.thumbnail?.kind === 'image') ??
-    items.find((item) => item.thumbnail)
-  )?.thumbnail
-}
-const kindsOf = (items: readonly WorkshopModel[]) => [
-  ...(items.some((item) => item.workflowId)
-    ? [t('workshop.explore.workflowPill')]
-    : []),
-  ...(items.some((item) => item.routerId)
-    ? [t('workshop.explore.kindModel')]
-    : [])
-]
-const tasks = computed(() =>
-  USE_CASES.flatMap((value) => {
-    const items = everything.value.filter((model) =>
-      useCasesFor(model).includes(value)
-    )
-    return items.length
-      ? [
-          {
-            useCase: value,
-            cover: coverOf(value, items),
-            kinds: kindsOf(items)
-          }
-        ]
-      : []
-  })
+const useCases = computed(() =>
+  USE_CASES.filter((value) =>
+    everything.value.some((model) => useCasesFor(model).includes(value))
+  )
 )
-
-const popular = computed(() => [
-  ...apps.map((app) => app.thumbnail?.url),
-  ...everything.value
-    .slice(0, RESULTS - apps.length)
-    .map((model) => model.thumbnail?.url)
-])
-const doorArt = computed(() => {
-  const shown = new Set([
-    ...popular.value,
-    ...tasks.value.map((task) => task.cover?.url)
-  ])
-  const pick = (list: readonly string[]) =>
-    list.filter((url) => !shown.has(url)).slice(0, 3)
-  return {
-    apps: pick(DOOR_ART.apps),
-    workflows: pick(DOOR_ART.workflows),
-    models: pick(DOOR_ART.models)
-  }
-})
+const art = computed(() => doorArt({ models, workflows, apps }, locale))
 
 const needle = computed(() => query.value.trim().toLowerCase())
 const filtered = computed(() => needle.value !== '' || useCase.value !== 'all')
@@ -127,7 +75,12 @@ const resultsTitle = computed(() => {
     return t('workshop.explore.resultsFor', {
       query: query.value.trim()
     })
-  if (useCase.value !== 'all') return t(useCaseLabelKey[useCase.value])
+  if (useCase.value !== 'all') {
+    const label = t(useCaseLabelKey[useCase.value])
+    return t('workshop.explore.popularFor', {
+      useCase: label.charAt(0).toLocaleLowerCase(locale) + label.slice(1)
+    })
+  }
   return t('workshop.explore.popularTitle')
 })
 const seeAllHref = computed(() =>
@@ -153,51 +106,27 @@ function clear() {
         workflows: workflows.length,
         models: models.length
       }"
-      :art="doorArt"
+      :art
       :locale
     />
 
-    <div class="flex flex-col gap-8">
-      <section
-        v-if="tasks.length"
-        aria-labelledby="explore-tasks"
-        class="flex flex-col gap-5"
-      >
-        <h2
-          id="explore-tasks"
-          class="text-xl font-medium text-primary-warm-white"
-        >
-          {{ t('workshop.explore.tasksTitle') }}
-        </h2>
-        <ExploreTaskChips
-          v-model="useCase"
-          :use-cases="tasks.map((task) => task.useCase)"
-          :locale
-        />
-        <CardRow v-if="!filtered" :locale data-testid="explore-tasks">
-          <li v-for="task in tasks" :key="task.useCase" :class="TASK_CARD">
-            <ExploreTaskTile
-              :use-case="task.useCase"
-              :cover="task.cover"
-              :kinds="task.kinds"
-              :locale
-              @select="useCase = task.useCase"
-            />
-          </li>
-        </CardRow>
-      </section>
-
-      <ExploreResults
-        v-if="filtered || shownApps.length || results.length"
-        class="mt-6"
-        :title="resultsTitle"
-        :apps="shownApps"
-        :results
-        :see-all-href="seeAllHref"
+    <ExploreResults
+      v-if="filtered || shownApps.length || results.length"
+      :title="resultsTitle"
+      :description="needle ? undefined : t('workshop.explore.popularBody')"
+      :apps="shownApps"
+      :results
+      :see-all-href="seeAllHref"
+      :locale
+      @clear="clear"
+    >
+      <ExploreTaskChips
+        v-if="useCases.length"
+        v-model="useCase"
+        :use-cases="useCases"
         :locale
-        @clear="clear"
       />
-    </div>
+    </ExploreResults>
 
     <ExploreCommunity :locale />
   </div>

@@ -17,6 +17,7 @@ import { useVisualViewport } from '@/composables/useVisualViewport'
 import type { UseCase } from '@/config/models-catalogue'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
+import type { ModelAccess } from '@/lib/workshop/explorer/model-access'
 import { filterLabel } from '@/lib/workshop/filter-label'
 import type { FacetSheetGroup } from './FacetSheet.vue'
 
@@ -33,6 +34,7 @@ const WorkshopFilterPanel = defineAsyncComponent(
 const {
   useCaseOptions,
   modelOptions,
+  accessOptions,
   resultCount,
   kind = 'models',
   locale = 'en'
@@ -40,6 +42,8 @@ const {
   useCaseOptions: readonly FacetMenuOption<T>[]
   /** The models the listing runs on, where it stands on more than its own. */
   modelOptions?: readonly FacetMenuOption<string>[]
+  /** How a model can be used: run here, called by API, or downloaded. */
+  accessOptions?: readonly FacetMenuOption<ModelAccess>[]
   /** What the catalogue holds under the current choices, for the way out. */
   resultCount: number
   kind?: 'models' | 'workflows'
@@ -49,6 +53,7 @@ const { t } = translationsFor(locale)
 
 const useCases = defineModel<T[]>('useCases', { required: true })
 const models = defineModel<string[]>('models', { default: () => [] })
+const access = defineModel<ModelAccess[]>('access', { default: () => [] })
 
 const open = ref(false)
 // A dropdown anchored to a crowded toolbar leaves a phone no room, so there
@@ -103,6 +108,16 @@ const groups = computed<FacetSheetGroup[]>(() => [
           selected: models.value
         }
       ]
+    : []),
+  ...(accessOptions?.length
+    ? [
+        {
+          key: 'access',
+          label: t('workshop.explorer.filter.label'),
+          options: accessOptions,
+          selected: access.value
+        }
+      ]
     : [])
 ])
 
@@ -121,6 +136,14 @@ function toggle(facet: string, value: string) {
       : [...models.value, value]
     return
   }
+  if (facet === 'access') {
+    const option = accessOptions?.find((item) => item.value === value)?.value
+    if (!option) return
+    access.value = access.value.includes(option)
+      ? access.value.filter((item) => item !== option)
+      : [...access.value, option]
+    return
+  }
   const useCase = useCaseOptions.find((option) => option.value === value)?.value
   if (!useCase) return
   useCases.value = useCases.value.includes(useCase)
@@ -131,6 +154,7 @@ function toggle(facet: string, value: string) {
 function clearAll() {
   useCases.value = []
   models.value = []
+  access.value = []
 }
 
 defineExpose({ focus: () => trigger.value?.focus() })

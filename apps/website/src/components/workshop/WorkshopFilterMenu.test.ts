@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { defineComponent, h, ref } from 'vue'
 
 import type { UseCase } from '@/config/models-catalogue'
+import type { ModelAccess } from '@/lib/workshop/explorer/model-access'
 import type { FacetMenuOption } from './WorkshopFilterMenu.vue'
 import WorkshopFilterMenu from './WorkshopFilterMenu.vue'
 
@@ -89,5 +90,46 @@ describe('WorkshopFilterMenu', () => {
     await user.click(screen.getByTestId('workshop-filter-clear'))
     expect(useCases.value).toEqual([])
     expect(screen.queryByTestId('workshop-filter-count')).toBeNull()
+  })
+
+  it('adds a how-you-use-it group that toggles and clears with the rest', async () => {
+    const user = userEvent.setup()
+    const access = ref<ModelAccess[]>([])
+    render(
+      defineComponent({
+        setup: () => () =>
+          h(WorkshopFilterMenu<UseCase>, {
+            useCaseOptions,
+            accessOptions: [
+              { value: 'run', label: 'Run here', count: 3 },
+              { value: 'download', label: 'Download', count: 12 }
+            ],
+            resultCount: 12,
+            useCases: [],
+            access: access.value,
+            'onUpdate:access': (value: ModelAccess[]) => {
+              access.value = value
+            }
+          })
+      })
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Filter' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Filter' })
+    await user.click(
+      within(dialog).getByRole('tab', { name: 'How you use it' })
+    )
+    await user.click(screen.getByTestId('filter-access-download'))
+    expect(access.value).toEqual(['download'])
+    expect(screen.getByTestId('workshop-facet-access-count')).toHaveTextContent(
+      '1'
+    )
+
+    await user.click(screen.getByTestId('filter-access-download'))
+    expect(access.value).toEqual([])
+
+    await user.click(screen.getByTestId('filter-access-run'))
+    await user.click(screen.getByTestId('workshop-filter-clear'))
+    expect(access.value).toEqual([])
   })
 })

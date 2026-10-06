@@ -29,6 +29,18 @@ import {
 import type { Locale, TranslationKey } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import { HUB_TOOLBAR_ID } from '@/scripts/hubToolbar'
+import type { ModelAccess } from '@/lib/workshop/explorer/model-access'
+import {
+  accessFilterKey,
+  HOSTED_ACCESS,
+  MODEL_ACCESS,
+  OPEN_WEIGHT_ACCESS,
+  offersAccess
+} from '@/lib/workshop/explorer/model-access'
+import {
+  filterOpenWeightModels,
+  OPEN_WEIGHT_MODELS
+} from '@/lib/workshop/explorer/open-weight-models'
 import { rememberShelfOnClick } from '@/lib/workshop/shelf-memory'
 import { openedUseCases, shelfOf } from '@/lib/workshop/shelf-use-cases'
 import { sectionTitleKeyFor } from '@/lib/workshop/section-title'
@@ -36,6 +48,7 @@ import { useCaseLabelKey } from '@/lib/workshop/use-case-label'
 import type { FacetMenuOption } from './WorkshopFilterMenu.vue'
 import WorkshopFilterMenu from './WorkshopFilterMenu.vue'
 import WorkshopModelCard from './WorkshopModelCard.vue'
+import OpenWeightModelCard from './explorer/OpenWeightModelCard.vue'
 import FeaturedBanner from './FeaturedBanner.vue'
 import { CARD_GRID } from '@/lib/workshop/card-layout'
 import { modelSlides } from '@/lib/workshop/featured-slides'
@@ -56,6 +69,7 @@ const { t } = translationsFor(locale)
 
 const query = ref('')
 const selectedUseCases = ref<UseCase[]>([])
+const selectedAccess = ref<ModelAccess[]>([])
 const legacyModalities = ref<string[]>([])
 const legacyProviders = ref<string[]>([])
 const legacyCapabilities = ref<string[]>([])
@@ -106,24 +120,49 @@ const useCaseOptions = computed<FacetMenuOption[]>(() => {
   }))
 })
 
-const visible = computed(() =>
-  groupModels(
-    sortWorkshopModels(
-      filterWorkshopModels(models, {
+const accessOptions = computed<FacetMenuOption<ModelAccess>[]>(() =>
+  MODEL_ACCESS.map((value) => ({
+    value,
+    label: t(accessFilterKey[value]),
+    count: OPEN_WEIGHT_ACCESS.includes(value)
+      ? OPEN_WEIGHT_MODELS.length
+      : models.length
+  }))
+)
+
+const openWeightVisible = computed(() =>
+  selectedAccess.value.includes('download')
+    ? filterOpenWeightModels(OPEN_WEIGHT_MODELS, {
         query: query.value,
-        useCases: selectedUseCases.value,
-        modalities: legacyModalities.value,
-        providers: legacyProviders.value,
-        capabilities: legacyCapabilities.value
-      }),
-      sort.value
-    )
-  )
+        useCases: selectedUseCases.value
+      })
+    : []
+)
+
+const visible = computed(() =>
+  offersAccess(HOSTED_ACCESS, selectedAccess.value)
+    ? groupModels(
+        sortWorkshopModels(
+          filterWorkshopModels(models, {
+            query: query.value,
+            useCases: selectedUseCases.value,
+            modalities: legacyModalities.value,
+            providers: legacyProviders.value,
+            capabilities: legacyCapabilities.value
+          }),
+          sort.value
+        )
+      )
+    : []
+)
+const resultCount = computed(
+  () => visible.value.length + openWeightVisible.value.length
 )
 const isFiltered = computed(
   () =>
     query.value !== '' ||
     selectedUseCases.value.length > 0 ||
+    selectedAccess.value.length > 0 ||
     legacyModalities.value.length > 0 ||
     legacyProviders.value.length > 0 ||
     legacyCapabilities.value.length > 0
@@ -189,6 +228,7 @@ function leaveSection() {
 function resetFilters() {
   query.value = ''
   selectedUseCases.value = []
+  selectedAccess.value = []
   legacyModalities.value = []
   legacyProviders.value = []
   legacyCapabilities.value = []
@@ -236,7 +276,7 @@ watch(browseAll, (on) => on && resetFilters())
       >
         {{ t(sectionTitleKey) }}
         <span class="text-base font-normal text-primary-warm-gray tabular-nums">
-          {{ visible.length }}
+          {{ resultCount }}
         </span>
       </h2>
 
@@ -259,9 +299,11 @@ watch(browseAll, (on) => on && resetFilters())
 
           <div class="flex items-center gap-2" data-testid="workshop-filters">
             <WorkshopFilterMenu
+              v-model:access="selectedAccess"
               :use-cases="selectedUseCases"
               :use-case-options="useCaseOptions"
-              :result-count="visible.length"
+              :access-options="accessOptions"
+              :result-count
               :locale
               @update:use-cases="applyUseCases"
             />
@@ -302,7 +344,7 @@ watch(browseAll, (on) => on && resetFilters())
       </template>
 
       <template v-else>
-        <div v-if="visible.length">
+        <div v-if="resultCount">
           <h2 id="workshop-models-heading" class="sr-only">
             {{ t('workshop.models.heading') }}
           </h2>
@@ -317,6 +359,9 @@ watch(browseAll, (on) => on && resetFilters())
                 :locale
                 @click="rememberModel(family.latest, $event)"
               />
+            </li>
+            <li v-for="model in openWeightVisible" :key="model.slug">
+              <OpenWeightModelCard :model :locale />
             </li>
           </ul>
         </div>

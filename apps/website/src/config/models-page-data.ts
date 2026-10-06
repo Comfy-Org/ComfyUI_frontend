@@ -24,9 +24,23 @@ const routerDetailSchema = generatedModelSchema
     ...(model.execution ? { form: formForContract(model.execution) } : {})
   }))
 
+const workflowPartsSchema = z.object({
+  runsOn: z.array(z.object({ name: z.string(), href: z.string().optional() })),
+  files: z.array(
+    z.object({
+      name: z.string(),
+      directory: z.string().optional(),
+      href: z.string().optional()
+    })
+  )
+})
+
 const workflowDetailSchema = generatedModelSchema
   .extend(workflowModelSchema.shape)
-  .extend({ workflow: workshopWorkflowDefinitionSchema })
+  .extend({
+    workflow: workshopWorkflowDefinitionSchema,
+    parts: workflowPartsSchema.optional()
+  })
   .refine((model) => model.workflowId === model.workflow.id)
   .transform((model) => ({
     ...model,
@@ -45,6 +59,7 @@ const modelsPageDataSchema = z.object({
   successor: modelSchema.optional(),
   priceEstimate: z.string().optional(),
   useCaseLabel: z.string().optional(),
+  workflows: z.array(workflowModelSchema),
   tags: z.array(tagSchema),
   shownTags: z.array(tagSchema),
   restTags: z.array(tagSchema),

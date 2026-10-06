@@ -27,6 +27,23 @@ it('restores the model form from its per-page execution contract', async () => {
   expect(result).toEqual(preparedPage)
 })
 
+it('keeps the model files a workflow page needs', async () => {
+  const workflowSlug = 'workflows/change-material'
+  const workflowPage = await prepareModelPage(workflowSlug)
+  if (workflowPage.kind !== 'page' || !('parts' in workflowPage.model))
+    throw new Error('Expected a workflow page fixture')
+  fetchData.mockResolvedValue(Response.json(workflowPage))
+
+  const result = await fetchModelsPage(workflowSlug)
+
+  expect(result.model).toHaveProperty('parts', workflowPage.model.parts)
+  expect(workflowPage.model.parts.files).toContainEqual({
+    name: 'qwen_image_vae.safetensors',
+    directory: 'vae',
+    href: '/p/supported-models/qwen-image-vae/'
+  })
+})
+
 it('loads catalogue cards without execution contracts', async () => {
   fetchData.mockResolvedValue(Response.json(workshopModels))
   expect(await fetchModelsCatalogue()).toEqual(workshopModels)

@@ -66,7 +66,7 @@ const { leavingTo, leave, stay } = useCinematicLeaveGuard(
     class="mx-auto mb-12 flex w-full max-w-10xl flex-col gap-4 px-4 pt-6 sm:px-8 lg:mb-20 lg:px-14"
     data-testid="reshoot"
   >
-    <AppsBackLink :locale />
+    <AppsBackLink :current="t('reshoot.title')" :locale />
     <ReshootHeader :locale class="mb-4" />
     <div
       class="grid grid-cols-[minmax(0,1fr)] items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]"

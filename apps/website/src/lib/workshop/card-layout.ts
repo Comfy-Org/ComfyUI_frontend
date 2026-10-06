@@ -9,7 +9,3 @@ export const SHELF_CARD =
 
 export const CARD_GRID =
   'grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
-
-/** Task tiles are smaller than catalogue cards: a row shows five and a half. */
-export const TASK_CARD =
-  'w-48 shrink-0 snap-start sm:w-[calc((100cqw-3*1.25rem)/3.5)] lg:w-[calc((100cqw-4*1.25rem)/4.5)] xl:w-[calc((100cqw-5*1.25rem)/5.5)]'

@@ -1,9 +1,14 @@
 <script setup lang="ts">
+import { ArrowRight } from '@lucide/vue'
 import { computed } from 'vue'
 
+import NavigationMenuLink from '@/components/ui/navigation-menu/NavigationMenuLink.vue'
+
+import { isHrefActive } from '@/composables/useCurrentPath'
 import type {
   NavColumn as NavColumnData,
-  NavFeatured
+  NavFeatured,
+  NavFooterLink
 } from '@/data/mainNavigation'
 import type { Locale } from '@/i18n/translations'
 import NavColumn from './NavColumn.vue'
@@ -12,6 +17,7 @@ import NavFeaturedCard from './NavFeaturedCard.vue'
 const { columns } = defineProps<{
   columns: NavColumnData[]
   featured?: NavFeatured
+  footerLink?: NavFooterLink
   locale: Locale
   currentPath: string
 }>()
@@ -49,6 +55,29 @@ const footer = computed(() =>
           :current-path
         />
       </ul>
+      <NavigationMenuLink
+        v-if="footerLink"
+        as-child
+        :active="isHrefActive(footerLink.href, currentPath)"
+        class="flex-row items-center justify-between gap-4 rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4 px-5 py-4 hover:bg-transparency-white-t8 data-active:bg-transparency-white-t4 data-active:hover:bg-transparency-white-t8"
+      >
+        <a :href="footerLink.href" data-testid="nav-footer-link">
+          <span class="flex min-w-0 flex-col">
+            <span class="text-base font-medium text-primary-warm-white">
+              {{ footerLink.label }}
+            </span>
+            <span class="text-sm text-primary-warm-gray">
+              {{ footerLink.description }}
+            </span>
+          </span>
+          <span
+            class="grid size-10 shrink-0 place-items-center rounded-full bg-primary-comfy-yellow text-primary-comfy-ink"
+            aria-hidden="true"
+          >
+            <ArrowRight class="size-5" />
+          </span>
+        </a>
+      </NavigationMenuLink>
     </li>
   </ul>
 </template>

@@ -501,6 +501,40 @@ test.describe('Models catalog', () => {
     await expect(page.getByTestId('workshop-sections')).toBeVisible()
   })
 
+  test('hosted model cards say they run here and by API', async ({ page }) => {
+    await page.goto('/hub/models/')
+    const badges = page
+      .getByTestId('workshop-model-card')
+      .first()
+      .getByTestId('model-access-badges')
+    await expect(badges).toHaveText(/Run\s*API/)
+  })
+
+  test('the how-you-use-it filter lists open-weight downloads', async ({
+    page
+  }) => {
+    await page.goto('/hub/models/')
+    await expect(page.getByTestId('workshop-sections')).toBeVisible()
+    await page.getByTestId('workshop-filter').click()
+    await page.getByTestId('workshop-facet-access').click()
+    await page.getByTestId('filter-access-download').click()
+
+    const grid = page.getByTestId('workshop-models-grid')
+    await expect(grid.getByTestId('workshop-model-card')).toHaveCount(0)
+    const openWeight = grid.getByTestId('open-weight-model-card')
+    await expect(openWeight.first()).toHaveAttribute(
+      'href',
+      /^\/p\/supported-models\/[a-z0-9-]+\/$/
+    )
+    await expect(
+      openWeight.first().getByTestId('model-access-badges')
+    ).toHaveText('Download')
+
+    await page.getByTestId('filter-access-api').click()
+    await expect(grid.getByTestId('workshop-model-card').first()).toBeVisible()
+    await expect(page.getByTestId('workshop-filter-count')).toHaveText('2')
+  })
+
   test('model tags deep-link into a filtered catalog', async ({ page }) => {
     await page.goto(MODEL_PATH)
     const tag = page
@@ -670,7 +704,7 @@ test.describe('Model playground', () => {
       page.getByRole('slider', { name: 'Safety tolerance', exact: true })
     ).toHaveCount(0)
 
-    await page.getByRole('tab', { name: 'API', exact: true }).click()
+    await page.getByTestId('model-path-api').click()
     await expect(page.getByTestId('snippet')).not.toContainText(
       'safety_tolerance'
     )
@@ -708,7 +742,8 @@ test.describe('Model playground', () => {
       name: 'Main navigation',
       exact: true
     })
-    await nav.getByRole('link', { name: /^Hub/ }).click()
+    await nav.getByRole('button', { name: /^Hub/ }).hover()
+    await nav.getByRole('link', { name: /^Explore the Hub/ }).click()
     await expect(page).toHaveURL('/hub/')
     await page.getByTestId('explore-door-models').click()
     await page.getByTestId('workshop-search').fill('Seedream 4.5 Image Edit')
@@ -736,28 +771,28 @@ test.describe('Model playground', () => {
   test('API tab highlights snippets and mirrors the form values', async ({
     page
   }) => {
+    await page.addInitScript(() => {
+      const observer = new MutationObserver(() => {
+        const code = document.querySelector('[data-testid="highlighted-code"]')
+        if (!code) return
+        observer.disconnect()
+        document.documentElement.dataset.firstSnippetHighlighted = String(
+          code.querySelector('span') !== null
+        )
+      })
+      observer.observe(document, { childList: true, subtree: true })
+    })
     await page.goto(MODEL_PATH)
     await page
       .getByRole('textbox', { name: 'Prompt', exact: true })
       .fill('neon street at night')
-    const firstSnippetRender = page.evaluate(
-      () =>
-        new Promise<boolean>((resolve) => {
-          const observer = new MutationObserver(() => {
-            const code = document.querySelector(
-              '[data-testid="highlighted-code"]'
-            )
-            if (!code) return
-            observer.disconnect()
-            resolve(code.querySelector('span') !== null)
-          })
-          observer.observe(document.body, { childList: true, subtree: true })
-        })
-    )
-    await page.getByRole('tab', { name: 'API', exact: true }).click()
+    await page.getByTestId('model-path-api').click()
     const snippet = page.getByTestId('snippet')
     const highlighted = page.getByTestId('highlighted-code')
-    expect(await firstSnippetRender).toBe(true)
+    await expect(page.locator('html')).toHaveAttribute(
+      'data-first-snippet-highlighted',
+      'true'
+    )
     await expect(snippet).toContainText('neon street at night')
     await expect(snippet).toContainText('bfl/flux-2-max')
     await page.getByTestId('snippet-curl').click()
@@ -774,7 +809,7 @@ test.describe('Model playground', () => {
       page.getByRole('button', { name: /^Replace seedream-4-5-input-/ }).click()
     ])
     await chooser.setFiles('e2e/assets/placeholder-1x1.webp')
-    await page.getByRole('tab', { name: 'API', exact: true }).click()
+    await page.getByTestId('model-path-api').click()
     const snippet = page.getByTestId('snippet')
     await expect(snippet).toContainText(
       'client.assets.from_file("placeholder-1x1.webp")'
@@ -815,7 +850,7 @@ test.describe('Model playground', () => {
     // writes over it.
     await page.getByTestId('example-replace-confirm').click()
 
-    await expect(page.getByTestId('playground-tab')).toBeVisible()
+    await expect(page.getByTestId('playground-section')).toBeVisible()
     await expect(
       page.getByRole('textbox', { name: 'Prompt', exact: true })
     ).not.toHaveValue('')

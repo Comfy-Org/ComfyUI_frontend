@@ -1,42 +1,121 @@
-import type { UseCase } from '@/config/models-catalogue'
+import type { WorkshopModel } from '@/config/models-catalogue'
+import type { Locale, TranslationKey } from '@/i18n/translations'
+import type { CatalogueApp } from '@/lib/workshop/catalogue-apps'
+import { nameWithoutTask, taskLabelFor } from '@/lib/workshop/task-label'
 
-export type HubDoor = 'apps' | 'workflows' | 'models'
+export type HubDoor = 'models' | 'workflows' | 'apps'
 
-/** Clean, text-free stills that front each task on the Hub landing. */
-export const TASK_ART: Partial<Record<UseCase, string>> = {
-  'generate-images':
-    'https://comfy-hub-assets.comfy.org/uploads/84ef630e-8594-4c0f-a163-488b4bac6941.png',
-  'edit-images':
-    'https://media.comfy.org/website/workshop/luma_2/uni-1-max-image-edit/foggy-pier-turned-sunny.png',
-  'generate-videos': '/images/cinematic-studio/bus-stop.jpg',
-  'animate-images':
-    'https://cloud.comfy.org/templates/video_ltx2_3_flf2v-1.webp',
-  'edit-videos':
-    'https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_runway_aleph2_video_edit-1.webp',
-  audio:
-    'https://media.comfy.org/website/workshop/heygen/starfish-tts/harbour-radio-signs-off.png'
+export interface ModelDoorArt {
+  readonly src: string
+  readonly name: string
+  readonly provider?: string
+  readonly usd?: number
+  readonly credits?: number
+  readonly prompt: TranslationKey
 }
 
-/** Candidates for each section card's stack, best first. */
-export const DOOR_ART: Readonly<Record<HubDoor, readonly string[]>> = {
-  apps: [
-    '/images/cinematic-studio/desert.jpg',
-    '/images/cinematic-studio/diner.jpg',
-    '/images/cinematic-studio/motel.jpg',
-    '/images/cinematic-studio/letter.jpg'
-  ],
-  workflows: [
-    'https://cloud.comfy.org/templates/templates-product_scene_relight-1.webp',
-    'https://cloud.comfy.org/templates/flux_fill_outpaint_example-1.webp',
-    'https://cloud.comfy.org/templates/utility_hitpaw_general_image_enhance-1.webp',
-    'https://media.comfy.org/website/workshop/workflows/character-turnaround/pink-silver-character-sheet-thumb.webp',
-    'https://cloud.comfy.org/templates/flux_fill_inpaint_example-1.webp'
-  ],
-  models: [
-    'https://media.comfy.org/website/workshop/vertexai/gemini-3-pro-image/alpine-lake-at-blue-hour.png',
-    'https://media.comfy.org/website/workshop/runway/gen4-image/rowboat-on-a-tropical-lagoon.png',
-    'https://media.comfy.org/website/workshop/recraft/v4-pro-text-to-image/rooftop-fashion-at-golden-hour.png',
-    'https://media.comfy.org/website/workshop/luma/photon-1-image-generation/reading-on-the-train-same-film-look.png',
-    'https://media.comfy.org/website/workshop/krea/krea-2-medium-turbo/character-concept-courier-robot-v3.png'
-  ]
+export interface WorkflowDoorArt {
+  readonly src: string
+}
+
+export interface AppDoorArt {
+  readonly src: string
+  readonly control: TranslationKey
+  readonly value: string
+}
+
+export interface DoorArt {
+  readonly models?: ModelDoorArt
+  readonly workflows?: WorkflowDoorArt
+  readonly apps?: AppDoorArt
+}
+
+/** Each door's candidates, best first, with the copy that matches its image. */
+const MODEL_CANDIDATES = [
+  {
+    slug: 'vertexai--gemini-3-pro-image--generate-images',
+    prompt: 'workshop.explore.doorModelPromptLake'
+  },
+  {
+    slug: 'runway--gen4-image--generate-images',
+    prompt: 'workshop.explore.doorModelPromptRowboat'
+  }
+] as const satisfies readonly { slug: string; prompt: TranslationKey }[]
+
+const WORKFLOW_CANDIDATES = ['workflows/product-in-scene'] as const
+
+const APP_CANDIDATES = [
+  {
+    key: 'apps/cinematic-studio',
+    image: '/images/cinematic-studio/neon-street.jpg',
+    control: 'workshop.explore.doorAppControlFocal',
+    value: '35mm'
+  },
+  {
+    key: 'apps/reshoot',
+    image: '/images/cinematic-studio/train.jpg',
+    control: 'workshop.explore.doorAppControlRotation',
+    value: '35°'
+  }
+] as const satisfies readonly {
+  key: string
+  image: string
+  control: TranslationKey
+  value: string
+}[]
+
+type Thumbnail = WorkshopModel['thumbnail']
+
+const stillOf = (thumbnail: Thumbnail) =>
+  thumbnail?.kind === 'image' ? thumbnail.url : thumbnail?.poster
+
+function firstWithStill<C, T extends { thumbnail?: Thumbnail }>(
+  candidates: readonly C[],
+  find: (candidate: C) => T | undefined
+) {
+  for (const candidate of candidates) {
+    const item = find(candidate)
+    const src = stillOf(item?.thumbnail)
+    if (item && src) return { candidate, item, src }
+  }
+  return undefined
+}
+
+/** Picks one real catalogue item per door to show what that format looks like. */
+export function doorArt(
+  catalogue: {
+    readonly models: readonly WorkshopModel[]
+    readonly workflows: readonly WorkshopModel[]
+    readonly apps: readonly CatalogueApp[]
+  },
+  locale: Locale = 'en'
+): DoorArt {
+  const model = firstWithStill(MODEL_CANDIDATES, ({ slug }) =>
+    catalogue.models.find((item) => item.slug === slug)
+  )
+  const workflow = firstWithStill(WORKFLOW_CANDIDATES, (slug) =>
+    catalogue.workflows.find((item) => item.slug === slug)
+  )
+  const app = APP_CANDIDATES.find(({ key }) =>
+    catalogue.apps.some((item) => item.key === key)
+  )
+  return {
+    ...(model && {
+      models: {
+        src: model.src,
+        name: nameWithoutTask(
+          model.item.name,
+          taskLabelFor(model.item, locale)
+        ),
+        provider: model.item.provider,
+        usd: model.item.priceUsdFrom,
+        credits: model.item.creditsPerRun,
+        prompt: model.candidate.prompt
+      }
+    }),
+    ...(workflow && { workflows: { src: workflow.src } }),
+    ...(app && {
+      apps: { src: app.image, control: app.control, value: app.value }
+    })
+  }
 }

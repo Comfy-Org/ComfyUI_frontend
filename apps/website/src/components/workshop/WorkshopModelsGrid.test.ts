@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import type { WorkshopModel } from '@/config/models-catalogue'
+import { OPEN_WEIGHT_MODELS } from '@/lib/workshop/explorer/open-weight-models'
 import { lastShelf } from '@/lib/workshop/shelf-memory'
 import WorkshopModelsGrid from './WorkshopModelsGrid.vue'
 
@@ -130,8 +131,8 @@ describe('WorkshopModelsGrid', () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
 
-    await user.click(screen.getByRole('button', { name: 'Use cases' }))
-    const dialog = await screen.findByRole('dialog', { name: 'Use cases' })
+    await user.click(screen.getByRole('button', { name: 'Filter' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Filter' })
     await user.click(
       within(dialog).getByRole('button', { name: 'Edit images 1' })
     )
@@ -148,8 +149,8 @@ describe('WorkshopModelsGrid', () => {
     render(WorkshopModelsGrid, { props: { models } })
 
     await user.click(screen.getByRole('button', { name: 'Browse all models' }))
-    await user.click(screen.getByRole('button', { name: 'Use cases' }))
-    const dialog = await screen.findByRole('dialog', { name: 'Use cases' })
+    await user.click(screen.getByRole('button', { name: 'Filter' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Filter' })
     await user.click(
       within(dialog).getByRole('button', { name: 'Edit images 1' })
     )
@@ -175,8 +176,8 @@ describe('WorkshopModelsGrid', () => {
     ).toBeTruthy()
     expect(screen.getByTestId('workshop-filter-count')).toHaveTextContent('1')
 
-    await user.click(screen.getByRole('button', { name: 'Use cases' }))
-    const dialog = await screen.findByRole('dialog', { name: 'Use cases' })
+    await user.click(screen.getByRole('button', { name: 'Filter' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Filter' })
     expect(
       within(dialog).getByRole('button', { name: 'Edit images 1' })
     ).toHaveAttribute('aria-pressed', 'true')
@@ -187,8 +188,8 @@ describe('WorkshopModelsGrid', () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
 
-    await user.click(screen.getByRole('button', { name: 'Use cases' }))
-    const dialog = await screen.findByRole('dialog', { name: 'Use cases' })
+    await user.click(screen.getByRole('button', { name: 'Filter' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Filter' })
     await user.click(
       within(dialog).getByRole('button', { name: 'Edit images 1' })
     )
@@ -207,8 +208,8 @@ describe('WorkshopModelsGrid', () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
 
-    await user.click(screen.getByRole('button', { name: 'Use cases' }))
-    const dialog = await screen.findByRole('dialog', { name: 'Use cases' })
+    await user.click(screen.getByRole('button', { name: 'Filter' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Filter' })
     await user.click(
       within(dialog).getByRole('button', { name: 'Edit images 1' })
     )
@@ -229,8 +230,8 @@ describe('WorkshopModelsGrid', () => {
     render(WorkshopModelsGrid, { props: { models } })
 
     await user.click(screen.getByRole('button', { name: 'Edit images' }))
-    await user.click(screen.getByRole('button', { name: 'Use cases' }))
-    const dialog = await screen.findByRole('dialog', { name: 'Use cases' })
+    await user.click(screen.getByRole('button', { name: 'Filter' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Filter' })
     await user.click(
       within(dialog).getByRole('button', { name: 'Generate videos 1' })
     )
@@ -291,8 +292,8 @@ describe('WorkshopModelsGrid', () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
 
-    await user.click(screen.getByRole('button', { name: 'Use cases' }))
-    const dialog = await screen.findByRole('dialog', { name: 'Use cases' })
+    await user.click(screen.getByRole('button', { name: 'Filter' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Filter' })
     await user.type(
       within(dialog).getByRole('searchbox', { name: 'Search…' }),
       'video'
@@ -426,6 +427,123 @@ describe('WorkshopModelsGrid', () => {
       expect(within(toolbar).getByRole('searchbox')).toBeVisible()
       expect(within(toolbar).getByTestId('workshop-filters')).toBeVisible()
       expect(within(toolbar).getByTestId('workshop-sort')).toBeVisible()
+    })
+  })
+
+  describe('how you use it', () => {
+    async function chooseAccess(...labels: string[]) {
+      const user = userEvent.setup()
+      await user.click(screen.getByRole('button', { name: 'Filter' }))
+      const dialog = await screen.findByRole('dialog', { name: 'Filter' })
+      await user.click(
+        within(dialog).getByRole('tab', { name: 'How you use it' })
+      )
+      for (const label of labels)
+        await user.click(
+          within(dialog).getByRole('button', { name: new RegExp(`^${label} `) })
+        )
+      return { user, dialog }
+    }
+
+    function hostedCards() {
+      return screen.queryAllByTestId('workshop-model-card')
+    }
+
+    function openWeightCards() {
+      return screen.queryAllByTestId('open-weight-model-card')
+    }
+
+    it('offers the three ways to use a model with their counts', async () => {
+      render(WorkshopModelsGrid, { props: { models } })
+      const { dialog } = await chooseAccess()
+
+      for (const name of [
+        `Run here ${models.length}`,
+        `API ${models.length}`,
+        `Download ${OPEN_WEIGHT_MODELS.length}`
+      ])
+        expect(within(dialog).getByRole('button', { name })).toHaveAttribute(
+          'aria-pressed',
+          'false'
+        )
+    })
+
+    it.for([
+      { choice: ['Run here'], hosted: 3, openWeight: 0 },
+      { choice: ['API'], hosted: 3, openWeight: 0 },
+      {
+        choice: ['Download'],
+        hosted: 0,
+        openWeight: OPEN_WEIGHT_MODELS.length
+      },
+      {
+        choice: ['Run here', 'Download'],
+        hosted: 3,
+        openWeight: OPEN_WEIGHT_MODELS.length
+      }
+    ])(
+      'lists $hosted hosted and $openWeight open-weight models for $choice',
+      async ({ choice, hosted, openWeight }) => {
+        render(WorkshopModelsGrid, { props: { models } })
+        await chooseAccess(...choice)
+
+        expect(hostedCards()).toHaveLength(hosted)
+        expect(openWeightCards()).toHaveLength(openWeight)
+        expect(screen.getByTestId('workshop-filter-count')).toHaveTextContent(
+          String(choice.length)
+        )
+      }
+    )
+
+    it('links each open-weight model to its supported-models page', async () => {
+      render(WorkshopModelsGrid, { props: { models } })
+      await chooseAccess('Download')
+
+      const [first] = openWeightCards()
+      expect(first).toHaveAttribute(
+        'href',
+        `/p/supported-models/${OPEN_WEIGHT_MODELS[0].slug}/`
+      )
+      expect(
+        within(first).getByTestId('model-access-badges')
+      ).toHaveTextContent(/^\s*Download\s*$/)
+    })
+
+    it('narrows open-weight models by use case', async () => {
+      render(WorkshopModelsGrid, { props: { models } })
+      const { user, dialog } = await chooseAccess('Download')
+      await user.click(within(dialog).getByRole('tab', { name: /Use cases/ }))
+      await user.click(
+        within(dialog).getByRole('button', { name: 'Edit images 1' })
+      )
+
+      expect(
+        openWeightCards().map((card) => card.getAttribute('href'))
+      ).toEqual(
+        OPEN_WEIGHT_MODELS.filter(
+          (model) => model.useCase === 'edit-images'
+        ).map((model) => `/p/supported-models/${model.slug}/`)
+      )
+    })
+
+    it('narrows open-weight models by the search', async () => {
+      render(WorkshopModelsGrid, { props: { models } })
+      const user = userEvent.setup()
+      await user.type(await search(), 'kontext')
+      await chooseAccess('Download')
+
+      expect(openWeightCards()).toHaveLength(1)
+      expect(openWeightCards()[0]).toHaveTextContent('Flux.1 Kontext Dev')
+    })
+
+    it('lets go of the choice with the rest of the filters', async () => {
+      render(WorkshopModelsGrid, { props: { models } })
+      const { user, dialog } = await chooseAccess('Download')
+      await user.click(within(dialog).getByTestId('workshop-filter-clear'))
+
+      expect(openWeightCards()).toHaveLength(0)
+      expect(screen.queryByTestId('workshop-filter-count')).toBeNull()
+      expect(screen.getByTestId('workshop-sections')).toBeTruthy()
     })
   })
 })

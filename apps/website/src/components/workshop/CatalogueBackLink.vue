@@ -41,14 +41,14 @@ onMounted(() => {
 <template>
   <a
     :href
-    class="-ml-1 inline-flex items-center gap-1 rounded-lg px-1 text-sm font-medium text-primary-warm-gray opacity-60 transition hover:text-primary-comfy-yellow hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
+    class="-ml-1 inline-flex min-w-0 items-center gap-1 rounded-lg px-1 text-sm font-medium text-primary-warm-gray opacity-60 transition hover:text-primary-comfy-yellow hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
     data-testid="model-back"
   >
-    <ChevronLeft class="size-4" aria-hidden="true" />
-    {{
+    <ChevronLeft class="size-4 shrink-0" aria-hidden="true" />
+    <span class="truncate">{{
       category
         ? t('workshop.model.backTo', { category })
         : (fallback ?? t('workshop.model.back'))
-    }}
+    }}</span>
   </a>
 </template>

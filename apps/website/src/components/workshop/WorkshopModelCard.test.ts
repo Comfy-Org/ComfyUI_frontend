@@ -298,4 +298,30 @@ describe('WorkshopModelCard', () => {
     render(WorkshopModelCard, { props: { model } })
     expect(screen.getByTestId('model-card-name').textContent).toBe(shown)
   })
+
+  it.for([
+    { kind: 'a hosted model', model: base, badges: ['Run', 'API'] },
+    {
+      kind: 'a workflow',
+      model: {
+        type: 'CLOUD',
+        workflowId: 'workflows/upscale-a-video',
+        slug: 'workflows/upscale-a-video',
+        name: 'Upscale a video',
+        href: '/models/workflows/upscale-a-video/',
+        workflowCount: 1,
+        capabilities: [],
+        modality: 'video'
+      },
+      badges: []
+    }
+  ] satisfies {
+    kind: string
+    model: WorkshopModel
+    badges: string[]
+  }[])('says how $kind can be used', ({ model, badges }) => {
+    render(WorkshopModelCard, { props: { model } })
+    const shown = screen.queryByTestId('model-access-badges')
+    expect(shown?.textContent.match(/\S+/g) ?? []).toEqual(badges)
+  })
 })

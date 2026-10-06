@@ -24,9 +24,10 @@ test.beforeEach(async ({ context, page }) => {
 async function copySnippetAndGetKey(
   page: Page,
   context: BrowserContext,
-  snippet: Locator
+  snippet: Locator,
+  openApi: Locator
 ) {
-  await page.getByRole('tab', { name: 'API', exact: true }).click()
+  await openApi.click()
   await page.getByRole('tab', { name: 'cURL', exact: true }).click()
   await expect(snippet).toBeVisible()
   await page.getByRole('button', { name: 'Copy snippet' }).click()
@@ -64,7 +65,12 @@ test('the model API tab reports snippet copies and Get API key clicks', async ({
 }) => {
   const captured = await capturePosthogEvents(context)
   await page.goto(MODEL_PATH)
-  await copySnippetAndGetKey(page, context, page.getByTestId('snippet'))
+  await copySnippetAndGetKey(
+    page,
+    context,
+    page.getByTestId('snippet'),
+    page.getByTestId('model-path-api')
+  )
 
   await expectApiActions(captured, {
     model_slug: MODEL_ID,
@@ -72,7 +78,7 @@ test('the model API tab reports snippet copies and Get API key clicks', async ({
   })
 })
 
-test('the workflow API tab reports snippet copies and Get API key clicks', async ({
+test('the workflow API section reports snippet copies and Get API key clicks', async ({
   page,
   context
 }) => {
@@ -85,7 +91,8 @@ test('the workflow API tab reports snippet copies and Get API key clicks', async
   await copySnippetAndGetKey(
     page,
     context,
-    page.getByTestId('workflow-api-snippet')
+    page.getByTestId('workflow-api-snippet'),
+    page.getByTestId('workflow-path-api')
   )
 
   await expectApiActions(captured, {

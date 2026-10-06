@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 
@@ -6,34 +6,60 @@ import HeaderMainMobile from './HeaderMainMobile.vue'
 
 async function openMenu(workshopInBuild: boolean) {
   const user = userEvent.setup()
-  render(HeaderMainMobile, { props: { workshopInBuild } })
+  render(HeaderMainMobile, {
+    props: { workshopInBuild, hubSections: { workflows: true, apps: true } }
+  })
   await user.click(screen.getByRole('button', { name: 'Toggle menu' }))
+  return user
 }
 
 describe('HeaderMainMobile', () => {
   it.for([
-    { build: 'in', workshopInBuild: true, hub: '/hub/' },
-    { build: 'not in', workshopInBuild: false, hub: undefined }
+    {
+      build: 'in',
+      workshopInBuild: true,
+      sections: ['Hub', 'Products', 'Enterprise', 'Company']
+    },
+    {
+      build: 'not in',
+      workshopInBuild: false,
+      sections: ['Products', 'Enterprise', 'Company']
+    }
   ])(
-    'lists the Hub on its own when the workshop is $build the build',
-    async ({ workshopInBuild, hub }) => {
+    'opens $sections as sections when the workshop is $build the build',
+    async ({ workshopInBuild, sections }) => {
       await openMenu(workshopInBuild)
+      const menu = within(screen.getByRole('navigation', { name: 'Menu' }))
 
       expect(
-        screen.queryByRole('link', { name: /^Hub/ })?.getAttribute('href')
-      ).toBe(hub)
+        menu
+          .getAllByRole('button')
+          .map((button) => button.textContent.replace(/NEW$/, '').trim())
+      ).toEqual(sections)
+      expect(menu.getByRole('link', { name: 'Pricing' })).toBeTruthy()
     }
   )
 
-  it('describes each Products column in the drill-down', async () => {
-    await openMenu(true)
-    await userEvent.click(screen.getByRole('button', { name: /^Products/ }))
+  it('drills into the Hub formats and the Explore row', async () => {
+    const user = await openMenu(true)
+    await user.click(screen.getByRole('button', { name: /^Hub/ }))
 
     expect(
-      ['Use a ready-made tool', 'Control the process'].map(
-        (text) => screen.getByText(text).tagName
-      )
-    ).toEqual(['P', 'P'])
+      screen.getByText('Run them here, call them by API or download them.')
+        .tagName
+    ).toBe('P')
+    expect(
+      screen
+        .getAllByTestId('nav-kind-icon')
+        .map((icon) => icon.getAttribute('data-kind'))
+    ).toEqual(['model', 'workflow', 'app'])
+    expect(screen.getByRole('link', { name: 'All workflows' })).toHaveAttribute(
+      'href',
+      '/hub/workflows/'
+    )
+    expect(
+      screen.getByRole('link', { name: /^Explore the Hub/ })
+    ).toHaveAttribute('href', '/hub/')
   })
 
   it('labels a new top-level section with a NEW badge', async () => {

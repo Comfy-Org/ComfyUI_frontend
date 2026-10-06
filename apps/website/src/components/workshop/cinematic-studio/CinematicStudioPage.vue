@@ -5,7 +5,7 @@ import { useMounted } from '@vueuse/core'
 import { computed, onMounted, ref, shallowRef, watch } from 'vue'
 
 import { provideStudioSwitchGuard } from '@/composables/useStudioSwitchGuard'
-import type { AppWorkshopModel } from '@/config/models-catalogue'
+import type { AppWorkshopModel, WorkshopModel } from '@/config/models-catalogue'
 import type { WorkshopAppId } from '@/lib/workshop/apps'
 import { workshopAppHref } from '@/lib/workshop/apps'
 import { getRoutes } from '@/config/routes'
@@ -16,6 +16,7 @@ import {
   useWorkshopAppsEnabled,
   useWorkshopEnabled
 } from '@/scripts/posthog'
+import AppBuiltWith from '@/components/workshop/AppBuiltWith.vue'
 import RunLeaveDialog from '@/components/workshop/RunLeaveDialog.vue'
 import WorkshopGate from '@/components/workshop/WorkshopGate.vue'
 import CinematicAppsHub from './CinematicAppsHub.vue'
@@ -28,11 +29,14 @@ import { isWorkshopModelShown } from '@/scripts/workshop-model-flags'
 const {
   apps,
   models,
+  builtWith = {},
   initialApp = 'studio',
   locale = 'en'
 } = defineProps<{
   apps: readonly AppWorkshopModel[]
   models: readonly CinematicModel[]
+  /** The Hub models and workflows behind each app. */
+  builtWith?: Partial<Record<WorkshopAppId, readonly WorkshopModel[]>>
   initialApp?: WorkshopAppId
   locale?: Locale
 }>()
@@ -60,6 +64,7 @@ const studioEnabled = computed(
     appsEnabled.value &&
     shownApps.value.some((candidate) => candidate.appId === app.value)
 )
+const appParts = computed(() => builtWith[app.value] ?? [])
 const workshopEnabled = useWorkshopEnabled()
 const mounted = useMounted()
 const viewedApps = new Set<WorkshopAppId>()
@@ -172,6 +177,12 @@ function pickApp(id: string) {
       :locale
     />
     <CinematicStudio v-else :models :show-credits="false" :locale />
+    <div
+      v-if="layout !== 'hub' && appParts.length"
+      class="mx-auto mb-16 max-w-10xl px-4 sm:px-8 lg:px-14"
+    >
+      <AppBuiltWith :parts="appParts" :locale />
+    </div>
     <CinematicScenarioMenu
       v-if="reviewing"
       :app

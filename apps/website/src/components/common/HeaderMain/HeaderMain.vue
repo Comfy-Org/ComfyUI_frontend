@@ -22,7 +22,12 @@ import {
   peekWorkshopAccountSource,
   resolveWorkshopAccountSource
 } from '@/config/workshop-account-source.ts'
-import { useWorkshopAuthFlag, useWorkshopEnabled } from '@/scripts/posthog.ts'
+import {
+  useWorkshopAppsEnabled,
+  useWorkshopAuthFlag,
+  useWorkshopEnabled,
+  useWorkshopWorkflowsEnabled
+} from '@/scripts/posthog.ts'
 import GitHubStarBadge from '@/components/common/GitHubStarBadge.vue'
 import HeaderMainDesktop from './HeaderMainDesktop.vue'
 import HeaderMainMobile from './HeaderMainMobile.vue'
@@ -46,6 +51,12 @@ const mounted = useMounted()
 const showWorkshop = computed(
   () => mounted.value && workshopInBuild && workshopEnabled.value
 )
+const workflowsEnabled = useWorkshopWorkflowsEnabled()
+const appsEnabled = useWorkshopAppsEnabled()
+const hubSections = computed(() => ({
+  workflows: workflowsEnabled.value,
+  apps: appsEnabled.value
+}))
 const showAccount = computed(
   () => showWorkshop.value && workshopAuthEnabled.value
 )
@@ -227,6 +238,7 @@ const ctaButtons = computed(() =>
     <HeaderMainDesktop
       :locale
       :workshop-in-build="showWorkshop"
+      :hub-sections
       :class="showWorkshop ? 'hidden xl:block' : 'hidden lg:block'"
     />
     <div
@@ -235,7 +247,11 @@ const ctaButtons = computed(() =>
       :class="showWorkshop ? 'xl:hidden' : 'lg:hidden'"
     >
       <HeaderAccount v-if="showAccount" :locale="locale" />
-      <HeaderMainMobile :locale :workshop-in-build="showWorkshop" />
+      <HeaderMainMobile
+        :locale
+        :workshop-in-build="showWorkshop"
+        :hub-sections
+      />
     </div>
 
     <!-- Desktop CTA buttons -->

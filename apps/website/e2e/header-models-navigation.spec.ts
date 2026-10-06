@@ -34,8 +34,13 @@ for (const viewport of viewports) {
 
     if (viewport.desktopNavigation) {
       await expect(desktopLinks).toBeVisible()
+      const hub = desktopLinks.getByRole('button', { name: /^Hub/ })
+      await waitForIsland(page, hub)
+      await hub.hover()
       await expect(
-        desktopLinks.getByRole('link', { name: /^Hub/ })
+        navigation
+          .getByTestId('nav-dropdown')
+          .getByRole('link', { name: /^Explore the Hub/ })
       ).toHaveAttribute('href', '/hub/')
       await expect(menuButton).toBeHidden()
     } else {
@@ -45,10 +50,10 @@ for (const viewport of viewports) {
       await menuButton.click()
       const menu = page.getByRole('dialog', { name: 'Menu' })
       await expect(menu).toBeVisible()
-      await expect(menu.getByRole('link', { name: /^Hub/ })).toHaveAttribute(
-        'href',
-        '/hub/'
-      )
+      await menu.getByRole('button', { name: /^Hub/ }).click()
+      await expect(
+        menu.getByRole('link', { name: /^Explore the Hub/ })
+      ).toHaveAttribute('href', '/hub/')
     }
 
     await expectNoHorizontalOverflow(page)

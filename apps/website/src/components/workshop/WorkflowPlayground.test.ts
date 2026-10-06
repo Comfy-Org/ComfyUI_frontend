@@ -9,7 +9,7 @@ import {
   onTestFinished,
   vi
 } from 'vitest'
-import { computed, markRaw, readonly, ref, shallowRef } from 'vue'
+import { computed, markRaw, nextTick, readonly, ref, shallowRef } from 'vue'
 
 import { subscribeToWorkshopBuyCredits } from '@/config/workshop-buy-credits'
 import { useWorkshopModelBalance } from '@/config/workshop-model-balance'
@@ -24,6 +24,10 @@ import {
   useWorkshopEnabled,
   useWorkshopWorkflowsEnabled
 } from '@/scripts/posthog'
+import {
+  FakeIntersectionObserver,
+  stubIntersectionObserver
+} from '@/test/fakeIntersectionObserver'
 import WorkflowPlayground from './WorkflowPlayground.vue'
 
 vi.mock(import('@/config/workshop-session-state'))
@@ -71,7 +75,19 @@ function session(role: WorkshopSession['role']): WorkshopSession {
   }
 }
 
+async function reach(testId: string) {
+  await nextTick()
+  const section = screen.getByTestId(testId)
+  for (const observer of FakeIntersectionObserver.instances)
+    if (observer.observed.includes(section)) observer.intersect(true)
+  await nextTick()
+}
+
 describe('WorkflowPlayground analytics', () => {
+  beforeEach(() => {
+    stubIntersectionObserver()
+  })
+
   it('reports page and API visits under Models event names with workflow attribution after access is enabled', async () => {
     const model = workflowDetailsBySlug.get('workflows/remove-background')
     assert(model)
@@ -91,7 +107,8 @@ describe('WorkflowPlayground analytics', () => {
         workflow_id: model.workflowId
       })
     })
-    await userEvent.setup().click(screen.getByRole('tab', { name: 'API' }))
+    await reach('workflow-api')
+    await reach('workflow-api')
     expect(captureWorkshopEvent).toHaveBeenLastCalledWith({
       name: 'api_viewed',
       properties: expect.objectContaining({
@@ -101,49 +118,37 @@ describe('WorkflowPlayground analytics', () => {
     })
     expect(
       vi.mocked(captureWorkshopEvent).mock.calls.map(([event]) => event.name)
-    ).toEqual(['model_viewed', 'tab_switched', 'api_viewed'])
+    ).toEqual(['model_viewed', 'api_viewed'])
   })
-})
 
-describe('WorkflowPlayground tab analytics', () => {
-  it('reports a tab switch with the tab switched to and workflow attribution', async () => {
+  it('reports no API visit before the API section is reached', async () => {
     const model = workflowDetailsBySlug.get('workflows/remove-background')
     assert(model)
     vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(ref(true)))
     vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(readonly(ref(true)))
     render(WorkflowPlayground, { props: { model, scope: 'anonymous' } })
-    const visitor = userEvent.setup()
 
-    await visitor.click(screen.getByRole('tab', { name: 'Details' }))
-    expect(captureWorkshopEvent).toHaveBeenCalledWith({
-      name: 'tab_switched',
-      properties: expect.objectContaining({
-        model_slug: model.slug,
-        page_type: 'workflow',
-        workflow_id: model.workflowId,
-        tab: 'workflow'
-      })
-    })
+    await reach('workflow-inside')
 
-    vi.mocked(captureWorkshopEvent).mockClear()
-    await visitor.click(screen.getByRole('tab', { name: 'Details' }))
-    expect(captureWorkshopEvent).not.toHaveBeenCalled()
+    expect(
+      vi.mocked(captureWorkshopEvent).mock.calls.map(([event]) => event.name)
+    ).toEqual(['model_viewed'])
   })
 
-  it('reports no tab switch while Workflows access is off', async () => {
+  it('reports no API visit while Workflows access is off', async () => {
     const model = workflowDetailsBySlug.get('workflows/remove-background')
     assert(model)
     vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(ref(true)))
     vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(readonly(ref(false)))
     render(WorkflowPlayground, { props: { model, scope: 'anonymous' } })
 
-    await userEvent.setup().click(screen.getByRole('tab', { name: 'Details' }))
+    await reach('workflow-api')
 
     expect(captureWorkshopEvent).not.toHaveBeenCalled()
   })
 })
 
-describe('WorkflowPlayground API tab analytics', () => {
+describe('WorkflowPlayground API analytics', () => {
   it('reports Get API key clicks with workflow attribution', async () => {
     const model = workflowDetailsBySlug.get('workflows/remove-background')
     assert(model)
@@ -151,7 +156,6 @@ describe('WorkflowPlayground API tab analytics', () => {
     vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(readonly(ref(true)))
     render(WorkflowPlayground, { props: { model, scope: 'anonymous' } })
     const visitor = userEvent.setup()
-    await visitor.click(screen.getByRole('tab', { name: 'API' }))
     const getKey = screen.getByRole('link', { name: 'Get API key' })
     getKey.addEventListener('click', (event) => event.preventDefault(), {
       once: true
@@ -177,7 +181,6 @@ describe('WorkflowPlayground API tab analytics', () => {
     vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(readonly(ref(true)))
     render(WorkflowPlayground, { props: { model, scope: 'anonymous' } })
     const visitor = userEvent.setup()
-    await visitor.click(screen.getByRole('tab', { name: 'API' }))
     await visitor.click(screen.getByRole('tab', { name: 'Python' }))
     await visitor.click(screen.getByRole('button', { name: 'Copy snippet' }))
     expect(captureWorkshopEvent).toHaveBeenLastCalledWith({
@@ -202,7 +205,6 @@ describe('WorkflowPlayground API tab analytics', () => {
       props: { model: markRaw(fixture), scope: 'anonymous' }
     })
     const visitor = userEvent.setup()
-    await visitor.click(screen.getByRole('tab', { name: 'API' }))
     await visitor.click(screen.getByRole('button', { name: 'Copy snippet' }))
     const getKey = screen.getByRole('link', { name: 'Get API key' })
     getKey.addEventListener('click', (event) => event.preventDefault(), {
@@ -213,23 +215,84 @@ describe('WorkflowPlayground API tab analytics', () => {
   })
 })
 
-describe('WorkflowPlayground input panel', () => {
-  // The way out of the page lives on Details beside the graph, so the panel
-  // that asks the questions carries the run control and nothing else.
-  it('heads the questions and leaves the ways out to Details', () => {
-    const model = workflowDetailsBySlug.get('workflows/remove-background')
-    assert(model)
+describe('WorkflowPlayground sections', () => {
+  beforeEach(() => {
     vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(ref(true)))
     vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(readonly(ref(true)))
+  })
+
+  it('stacks Try it, Inside the workflow and API as linkable sections, with no tabs', () => {
+    const model = workflowDetailsBySlug.get('workflows/remove-background')
+    assert(model)
+    render(WorkflowPlayground, {
+      props: { model, scope: 'anonymous' }
+    })
+
+    expect(screen.queryByRole('tablist', { name: /sections/i })).toBeNull()
+    expect(
+      screen
+        .getAllByRole('heading', { level: 2 })
+        .map((heading) => heading.textContent.trim())
+    ).toEqual([
+      'Try it',
+      'Inside the workflow',
+      'Call this model from your code'
+    ])
+    expect(screen.getByRole('region', { name: 'Try it' })).toHaveAttribute(
+      'id',
+      'playground'
+    )
+    expect(screen.getByTestId('workflow-inside')).toHaveAttribute(
+      'id',
+      'workflow'
+    )
+    expect(screen.getByTestId('workflow-api')).toHaveAttribute('id', 'api')
+  })
+
+  // The way out of the page lives beside the graph, so the panel that asks
+  // the questions carries the run control and nothing else.
+  it('heads the questions and leaves the ways out to the workflow section', () => {
+    const model = workflowDetailsBySlug.get('workflows/remove-background')
+    assert(model)
     render(WorkflowPlayground, {
       props: { model, scope: 'anonymous', cloudHref: 'https://cloud/?t=1' }
     })
 
-    const panel = screen.getByRole('tabpanel', { name: 'Playground' })
-    expect(panel).toHaveTextContent('Input')
+    const playground = screen.getByRole('region', { name: 'Try it' })
+    expect(playground).toHaveTextContent('Input')
     expect(
-      within(panel).queryByRole('link', { name: 'Try in Cloud' })
+      within(playground).queryByRole('link', { name: 'Try in Cloud' })
     ).toBeNull()
+  })
+
+  it('keeps the examples inside the Try it section', () => {
+    const model = workflowDetailsBySlug.get('workflows/remove-background')
+    assert(model)
+    expect(model.examples.length).toBeGreaterThan(0)
+    render(WorkflowPlayground, { props: { model, scope: 'anonymous' } })
+
+    const playground = screen.getByRole('region', { name: 'Try it' })
+    expect(
+      within(playground).getByRole('heading', { name: 'Try an example' })
+    ).toBeVisible()
+  })
+
+  it('holds the graph back until its section is reached', async () => {
+    stubIntersectionObserver()
+    const model = workflowDetailsBySlug.get('workflows/remove-background')
+    assert(model)
+    render(WorkflowPlayground, {
+      props: { model, scope: 'anonymous' },
+      global: { stubs: { WorkflowPreview: true } }
+    })
+    const preview = () =>
+      within(screen.getByTestId('workflow-inside')).getByText(
+        (_, element) => element?.tagName === 'WORKFLOW-PREVIEW-STUB'
+      )
+
+    expect(preview()).toHaveAttribute('active', 'false')
+    await reach('workflow-inside')
+    expect(preview()).toHaveAttribute('active', 'true')
   })
 })
 
@@ -330,26 +393,4 @@ describe('WorkflowPlayground primary action', () => {
     )
     expect(purchase).not.toHaveBeenCalled()
   })
-})
-
-describe('WorkflowPlayground examples', () => {
-  it.for([{ tab: 'Details' }, { tab: 'API' }])(
-    'keeps the examples to the Playground tab, not $tab',
-    async ({ tab }) => {
-      const model = workflowDetailsBySlug.get('workflows/remove-background')
-      assert(model)
-      expect(model.examples.length).toBeGreaterThan(0)
-      vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(ref(true)))
-      vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(
-        readonly(ref(true))
-      )
-      render(WorkflowPlayground, { props: { model, scope: 'anonymous' } })
-
-      const examples = screen.getByRole('heading', { name: 'Try an example' })
-      expect(examples).toBeVisible()
-
-      await userEvent.setup().click(screen.getByRole('tab', { name: tab }))
-      expect(examples).not.toBeVisible()
-    }
-  )
 })

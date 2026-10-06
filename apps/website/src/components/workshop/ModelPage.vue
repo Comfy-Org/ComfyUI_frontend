@@ -1,16 +1,24 @@
 <script setup lang="ts">
-import { ArrowRight } from '@lucide/vue'
+import { ArrowRight, Cloud, Code, Play } from '@lucide/vue'
+import { useMounted } from '@vueuse/core'
 import { computed } from 'vue'
 
 import { catalogSearch, useCaseFor } from '@/config/models-catalogue'
+import Button from '@/components/ui/button/Button.vue'
 import { getRoutes } from '@/config/routes'
 import type {
   RouterWorkshopModelDetail,
   WorkshopModel
 } from '@/config/models-catalogue'
 import { formForContract } from '@/config/workshop-contract'
+import { WORKSHOP_CLOUD_BASE_URL } from '@/config/workshop-env'
 import { t } from '@/i18n/translations'
+import { useWorkshopWorkflowsEnabled } from '@/scripts/posthog'
+import { SHELF_CARD } from '@/lib/workshop/card-layout'
+import { scrollToSection } from '@/lib/workshop/scroll-to-section'
+import CardRow from './CardRow.vue'
 import CatalogueBackLink from './CatalogueBackLink.vue'
+import HubBreadcrumb from './HubBreadcrumb.vue'
 import ModelPrice from './ModelPrice.vue'
 import ModelDetail from './ModelDetail.vue'
 import ModelStatus from './ModelStatus.vue'
@@ -31,6 +39,7 @@ const { page } = defineProps<{
     successor?: WorkshopModel
     priceEstimate?: string
     useCaseLabel?: string
+    workflows: readonly WorkshopModel[]
     shownTags: readonly ModelTag[]
     restTags: readonly ModelTag[]
     restTagCount: number
@@ -43,6 +52,21 @@ const model = computed(() =>
     : page.model
 )
 const modelUseCase = computed(() => useCaseFor(page.model))
+const crumbs = computed(() => [
+  { label: t('workshop.catalogue.eyebrow'), href: routes.hubExplore },
+  { label: t('workshop.model.breadcrumb'), href: routes.workshop },
+  { label: page.model.name }
+])
+const mounted = useMounted()
+const workflowsEnabled = useWorkshopWorkflowsEnabled()
+const showsWorkflows = computed(
+  () => mounted.value && workflowsEnabled.value && page.workflows.length > 0
+)
+const secondaryPathClass = 'font-bold tracking-wider uppercase'
+function jumpTo(event: MouseEvent, section: 'playground' | 'api') {
+  event.preventDefault()
+  scrollToSection(section)
+}
 const pillClass =
   'inline-flex h-7 items-center rounded-full border border-transparency-white-t20 px-3 text-xs leading-none text-primary-comfy-canvas transition-colors hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow'
 const restTags = computed(() =>
@@ -55,8 +79,16 @@ const restTags = computed(() =>
 
 <template>
   <div class="mx-auto max-w-10xl px-6 py-10 lg:px-8 lg:py-14">
-    <div class="mb-8 sm:px-8 lg:px-10">
+    <div
+      class="mb-8 flex items-center justify-between gap-6 sm:px-8 lg:px-10"
+      data-testid="model-trail"
+    >
       <CatalogueBackLink />
+      <HubBreadcrumb
+        :crumbs="crumbs"
+        class="max-sm:hidden"
+        data-testid="model-breadcrumb"
+      />
     </div>
     <header class="mb-12 sm:mx-8 lg:mx-10" data-testid="model-hero">
       <div
@@ -91,6 +123,56 @@ const restTags = computed(() =>
           >
             {{ page.model.summary }}
           </p>
+          <ul
+            :aria-label="t('workshop.model.paths.label')"
+            class="mt-1 flex flex-wrap gap-2"
+            data-testid="model-paths"
+          >
+            <li>
+              <Button
+                href="#playground"
+                size="sm"
+                data-testid="model-path-run"
+                @click="jumpTo($event, 'playground')"
+              >
+                <template #prepend>
+                  <Play class="size-3.5 fill-current" aria-hidden="true" />
+                </template>
+                {{ t('workshop.model.paths.run') }}
+              </Button>
+            </li>
+            <li>
+              <Button
+                :href="WORKSHOP_CLOUD_BASE_URL"
+                target="_blank"
+                rel="noopener"
+                variant="ghost"
+                size="sm"
+                :class="secondaryPathClass"
+                data-testid="model-path-cloud"
+              >
+                <template #prepend>
+                  <Cloud aria-hidden="true" />
+                </template>
+                {{ t('workshop.model.paths.cloud') }}
+              </Button>
+            </li>
+            <li>
+              <Button
+                href="#api"
+                variant="ghost"
+                size="sm"
+                :class="secondaryPathClass"
+                data-testid="model-path-api"
+                @click="jumpTo($event, 'api')"
+              >
+                <template #prepend>
+                  <Code aria-hidden="true" />
+                </template>
+                {{ t('workshop.model.paths.api') }}
+              </Button>
+            </li>
+          </ul>
         </div>
 
         <div class="flex flex-col gap-4 lg:items-end">
@@ -124,6 +206,31 @@ const restTags = computed(() =>
 
     <div class="sm:px-8 lg:px-10">
       <ModelDetail :model />
+
+      <section
+        v-if="showsWorkflows"
+        aria-labelledby="model-workflows-heading"
+        class="mt-24 border-t border-transparency-white-t8 pt-12"
+        data-testid="model-workflows"
+      >
+        <CardRow>
+          <template #heading>
+            <h2
+              id="model-workflows-heading"
+              class="text-2xl font-bold text-primary-comfy-canvas"
+            >
+              {{ t('workshop.model.usedBy', { name: page.model.name }) }}
+            </h2>
+          </template>
+          <li
+            v-for="workflow in page.workflows"
+            :key="workflow.slug"
+            :class="SHELF_CARD"
+          >
+            <WorkshopModelCard :model="workflow" />
+          </li>
+        </CardRow>
+      </section>
 
       <section
         class="mt-24 border-t border-transparency-white-t8 pt-12"

@@ -1,6 +1,7 @@
 import type { Locator } from '@playwright/test'
 import { expect } from '@playwright/test'
 
+import { externalLinks } from '@/config/routes'
 import { test } from './fixtures/workshopVisibility'
 import { waitForIsland } from './fixtures/islands'
 
@@ -34,8 +35,16 @@ const TOP_LEVEL_LABELS = [
   'Products',
   'Enterprise',
   'Pricing',
-  'Community',
   'Company'
+] as const
+
+const SOCIAL_LINKS = [
+  ['GitHub', externalLinks.github],
+  ['Discord', externalLinks.discord],
+  ['X', externalLinks.x],
+  ['YouTube', externalLinks.youtube],
+  ['LinkedIn', externalLinks.linkedin],
+  ['Instagram', externalLinks.instagram]
 ] as const
 
 const RETIRED_BADGE_PANELS = [
@@ -52,7 +61,7 @@ const RETIRED_BADGE_PANELS = [
     ]
   },
   {
-    section: 'Community',
+    section: 'Company',
     badged: [{ label: 'Events', href: '/events/' }],
     bare: [
       { label: 'Affiliates', href: '/affiliates/' },
@@ -109,32 +118,23 @@ test.describe('Desktop navigation @smoke', () => {
     }
   })
 
-  test('NEW badge shows on Hub, Products and Community only', async ({
-    page
-  }) => {
+  test('NEW badge shows on Hub and Products only', async ({ page }) => {
     await page.setViewportSize({ width: 1600, height: 900 })
     const nav = page.getByRole('navigation', { name: 'Main navigation' })
     const desktopLinks = nav.getByTestId('desktop-nav-links')
 
-    await expect(
-      desktopLinks
-        .getByRole('link', { name: 'Hub' })
-        .getByText('NEW', { exact: true })
-    ).toBeVisible()
-    await expect(
-      desktopLinks.getByRole('button', { name: 'Enterprise' }).getByText('NEW')
-    ).toHaveCount(0)
-    for (const label of ['Products', 'Community']) {
+    for (const label of ['Hub', 'Products']) {
       await expect(
         desktopLinks
           .getByRole('button', { name: label })
           .getByText('NEW', { exact: true })
       ).toBeVisible()
     }
-
-    await expect(
-      desktopLinks.getByRole('button', { name: 'Company' }).getByText('NEW')
-    ).toHaveCount(0)
+    for (const label of ['Enterprise', 'Company']) {
+      await expect(
+        desktopLinks.getByRole('button', { name: label }).getByText('NEW')
+      ).toHaveCount(0)
+    }
     await expect(
       desktopLinks.getByRole('link', { name: 'Pricing' }).getByText('NEW')
     ).toHaveCount(0)
@@ -223,25 +223,50 @@ test.describe('Desktop dropdown @interaction', () => {
     })
   }
 
-  test('Community featured card links to the Product Photography tutorial', async ({
+  test('hovering HUB shows the Models column and the Explore row', async ({
+    page
+  }) => {
+    const nav = page.getByRole('navigation', { name: 'Main navigation' })
+    const hubButton = nav
+      .getByTestId('desktop-nav-links')
+      .getByRole('button', { name: 'Hub' })
+    await waitForIsland(page, hubButton)
+    await hubButton.hover()
+
+    const dropdown = nav.getByTestId('nav-dropdown')
+    await expect(
+      dropdown.getByText('Run them here, call them by API or download them.')
+    ).toBeVisible()
+    await expect(
+      dropdown.getByRole('link', { name: 'Browse models' })
+    ).toHaveAttribute('href', '/hub/models/')
+    await expect(
+      dropdown.getByRole('link', { name: 'API docs' })
+    ).toHaveAttribute('target', '_blank')
+    await expect(
+      dropdown.getByRole('link', { name: /^Explore the Hub/ })
+    ).toHaveAttribute('href', '/hub/')
+  })
+
+  test('COMPANY holds the Community links and no social links', async ({
     page
   }) => {
     const nav = page.getByRole('navigation', { name: 'Main navigation' })
     await nav
       .getByTestId('desktop-nav-links')
-      .getByRole('button', { name: 'Community' })
+      .getByRole('button', { name: 'Company' })
       .hover()
 
-    const card = nav
-      .getByTestId('nav-dropdown')
-      .getByRole('link', { name: 'Watch the Product Photography demo' })
-    await expect(card).toHaveAttribute(
-      'href',
-      '/learning/ads/product-photography/'
-    )
+    const dropdown = nav.getByTestId('nav-dropdown')
+    await expect(dropdown.getByText('Community', { exact: true })).toBeVisible()
     await expect(
-      card.getByRole('img', { name: 'Product Photography workflow demo image' })
-    ).toBeVisible()
+      dropdown.getByRole('link', { name: 'Customer Stories' })
+    ).toHaveAttribute('href', '/customers/')
+    for (const [name] of SOCIAL_LINKS) {
+      await expect(
+        dropdown.getByRole('link', { name, exact: true })
+      ).toHaveCount(0)
+    }
   })
 
   for (const panel of RETIRED_BADGE_PANELS) {
@@ -335,6 +360,7 @@ test.describe('Desktop dropdown @interaction', () => {
 test.describe('Mobile menu @mobile', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/')
+    await waitForIsland(page, page.getByRole('button', { name: 'Toggle menu' }))
   })
 
   test('hamburger button is visible', async ({ page }) => {
@@ -351,46 +377,45 @@ test.describe('Mobile menu @mobile', () => {
     const menu = page.getByRole('dialog')
     await expect(menu).toBeVisible()
 
-    for (const label of [
-      'Hub',
-      'Products',
-      'Enterprise',
-      'Pricing',
-      'Community'
-    ]) {
+    for (const label of TOP_LEVEL_LABELS) {
       await expect(menu.getByText(label, { exact: true }).first()).toBeVisible()
     }
   })
 
-  test('NEW badge shows on Hub, Products and Community only', async ({
-    page
-  }) => {
+  test('NEW badge shows on Hub and Products only', async ({ page }) => {
     await page.getByRole('button', { name: 'Toggle menu' }).click()
 
     const menu = page.getByRole('dialog')
 
-    await expect(
-      menu.getByRole('link', { name: 'Hub' }).getByText('NEW', {
-        exact: true
-      })
-    ).toBeVisible()
-    await expect(
-      menu.getByRole('button', { name: 'Enterprise' }).getByText('NEW')
-    ).toHaveCount(0)
-    for (const label of ['Products', 'Community']) {
+    for (const label of ['Hub', 'Products']) {
       await expect(
         menu.getByRole('button', { name: label }).getByText('NEW', {
           exact: true
         })
       ).toBeVisible()
     }
-
-    await expect(
-      menu.getByRole('button', { name: 'Company' }).getByText('NEW')
-    ).toHaveCount(0)
+    for (const label of ['Enterprise', 'Company']) {
+      await expect(
+        menu.getByRole('button', { name: label }).getByText('NEW')
+      ).toHaveCount(0)
+    }
     await expect(
       menu.getByRole('link', { name: 'Pricing' }).getByText('NEW')
     ).toHaveCount(0)
+  })
+
+  test('Hub drill-down ends with the Explore row', async ({ page }) => {
+    await page.getByRole('button', { name: 'Toggle menu' }).click()
+
+    const menu = page.getByRole('dialog')
+    await menu.getByRole('button', { name: 'Hub' }).click()
+
+    await expect(
+      menu.getByRole('link', { name: 'Browse models' })
+    ).toHaveAttribute('href', '/hub/models/')
+    await expect(
+      menu.getByRole('link', { name: /^Explore the Hub/ })
+    ).toHaveAttribute('href', '/hub/')
   })
 
   for (const panel of RETIRED_BADGE_PANELS) {
@@ -460,6 +485,24 @@ test.describe('Footer @smoke', () => {
       await expect(
         footer.getByRole('heading', { name: heading }).first()
       ).toBeVisible()
+    }
+  })
+
+  test('social links are round icon buttons that open a new tab', async ({
+    page
+  }) => {
+    const social = page
+      .locator('footer')
+      .getByRole('navigation', { name: 'Follow Comfy' })
+    await social.scrollIntoViewIfNeeded()
+
+    for (const [name, href] of SOCIAL_LINKS) {
+      const link = social.getByRole('link', { name, exact: true })
+      await expect(link).toHaveAttribute('href', href)
+      await expect(link).toHaveAttribute('target', '_blank')
+      await expect(link).toHaveText('')
+      const box = await link.boundingBox()
+      expect(box?.width).toBe(box?.height)
     }
   })
 

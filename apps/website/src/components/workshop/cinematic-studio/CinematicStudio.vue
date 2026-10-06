@@ -128,7 +128,11 @@ function generateOn(slug: string) {
     class="mb-12 flex min-h-[calc(100svh-5rem)] flex-col lg:mb-20 lg:min-h-[calc(100svh-7rem)]"
     data-testid="cinematic"
   >
-    <AppsBackLink :locale class="mx-3 mt-4 sm:mx-6" />
+    <AppsBackLink
+      :current="t('cinematic.title')"
+      :locale
+      class="mx-3 mt-4 sm:mx-6"
+    />
     <CinematicStage
       :reel="studio.reel.value"
       :models

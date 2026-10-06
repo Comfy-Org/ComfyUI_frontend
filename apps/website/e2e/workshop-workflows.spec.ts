@@ -115,7 +115,7 @@ test('workflow launch groups lead to the existing shared form', async ({
     .click()
   await page.getByTestId('example-replace-keep').click()
   await expect(prompt).toHaveValue('Use the material from the second image.')
-  await page.getByRole('tab', { name: 'Details', exact: true }).click()
+  await page.getByTestId('workflow-inside').scrollIntoViewIfNeeded()
   await expect(
     page.getByRole('link', { name: 'Try in Cloud' })
   ).toHaveAttribute(
@@ -155,7 +155,7 @@ test('workflow launch groups lead to the existing shared form', async ({
   ).toHaveCount(0)
 })
 
-test('the Details graph waits for its tab, names its subgraphs, and zooms from its controls', async ({
+test('the workflow graph waits for its section, names its subgraphs, and zooms from its controls', async ({
   page,
   context
 }) => {
@@ -166,12 +166,13 @@ test('the Details graph waits for its tab, names its subgraphs, and zooms from i
       graphRequests.push(request.url())
   })
   await page.goto('/hub/workflows/image-to-video/')
-  const details = page.getByRole('tab', { name: 'Details', exact: true })
-  await expect(details).toBeVisible()
+  await expect(
+    page.getByRole('heading', { level: 2, name: 'Try it' })
+  ).toBeVisible()
   await page.waitForLoadState('networkidle')
   expect(graphRequests).toHaveLength(0)
 
-  await details.click()
+  await page.getByTestId('workflow-inside').scrollIntoViewIfNeeded()
   const graph = page.getByTestId('workflow-graph')
   const drawing = graph.getByRole('img', {
     name: 'The nodes of this workflow and the links between them'
@@ -582,7 +583,7 @@ test('@mobile fits every Hub door on a phone without sideways scrolling', async 
   await page.goto('/hub/')
   const doors = page.getByTestId('explore-doors').getByRole('link')
 
-  await expect(doors).toHaveText([/Workflows/, /Models/])
+  await expect(doors).toHaveText([/Models/, /Workflows/])
   const viewport = page.viewportSize()?.width ?? 0
   for (const door of await doors.all()) {
     await door.scrollIntoViewIfNeeded()
@@ -610,23 +611,51 @@ test('the examples below the form read and mark themselves like a model page', a
   await expect(page.getByTestId('workflow-example-chosen')).toHaveCount(1)
 })
 
-test('the examples belong to the playground, not to Details or API', async ({
+test('the workflow page stacks its sections and its path buttons lead to them', async ({
   page,
   context
 }) => {
   await mockWorkflowVisibility(context, true)
   await page.goto('/hub/workflows/change-material/')
 
-  const examples = page.getByRole('heading', { name: 'Try an example' })
-  await expect(examples).toBeVisible()
+  await expect(page.getByRole('tab', { name: 'Details' })).toHaveCount(0)
+  const playground = page.getByRole('region', { name: 'Try it' })
+  await expect(
+    playground.getByRole('heading', { name: 'Try an example' })
+  ).toBeVisible()
+  await expect(page.getByTestId('workflow-path-download')).toHaveAttribute(
+    'href',
+    '/workflow-graphs/change-material.json'
+  )
 
-  for (const tab of ['Details', 'API']) {
-    await page.getByRole('tab', { name: tab, exact: true }).click()
-    await expect(examples).toBeHidden()
-  }
+  await page.getByTestId('workflow-path-api').click()
+  await expect(page).toHaveURL(/#api$/)
+  await expect(page.getByTestId('workflow-api')).toBeInViewport()
+  await page.getByTestId('workflow-path-cloud').click()
+  await expect(page).toHaveURL(/#playground$/)
+  await expect(
+    page.getByRole('heading', { level: 2, name: 'Try it' })
+  ).toBeInViewport()
+})
 
-  await page.getByRole('tab', { name: 'Playground', exact: true }).click()
-  await expect(examples).toBeVisible()
+test('the workflow facts link the model files it needs and its way back', async ({
+  page,
+  context
+}) => {
+  await mockWorkflowVisibility(context, true)
+  await page.goto('/hub/workflows/change-material/')
+
+  const back = page.getByTestId('workflow-back-row')
+  await expect(back.getByTestId('model-back')).toHaveText('Back to workflows')
+  await expect(
+    back.getByRole('navigation', { name: 'Breadcrumb' }).getByRole('link')
+  ).toHaveText(['Hub', 'Workflows'])
+
+  const files = page.getByTestId('workflow-files')
+  await files.scrollIntoViewIfNeeded()
+  await expect(
+    files.getByRole('link', { name: /qwen_image_vae\.safetensors/ })
+  ).toHaveAttribute('href', '/p/supported-models/qwen-image-vae/')
 })
 
 test('a workflow card spends the tag line on its name', async ({

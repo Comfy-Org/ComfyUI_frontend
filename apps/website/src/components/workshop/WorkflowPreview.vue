@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { Box } from '@lucide/vue'
+import { Box, FileBox } from '@lucide/vue'
 import { computed } from 'vue'
+
+import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
 import type { WorkflowWorkshopModelDetail } from '@/config/models-catalogue'
@@ -23,7 +25,7 @@ const {
 } = defineProps<{
   model: WorkflowWorkshopModelDetail
   cloudHref?: string
-  /** Whether this tab is showing; the graph waits until it first is. */
+  /** Whether the section has been reached; the graph waits until it is. */
   active?: boolean
 }>()
 
@@ -48,6 +50,11 @@ function captureWorkflowDownload() {
 }
 
 const template = computed(() => model.workflow.template)
+const GROUP_HEADING =
+  'text-2xs font-bold tracking-wider text-primary-warm-gray uppercase'
+const ROW =
+  'group flex items-center gap-2.5 rounded-lg py-1.5 outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50'
+const LINK_TEXT = 'transition-colors group-hover:text-primary-comfy-yellow'
 // What the workflow makes, hung in the node that hands it back. The samples
 // beneath it are results too, so there is no before to hang at the way in, and
 // a node cannot play a video.
@@ -76,6 +83,32 @@ const produces = computed(() => {
   return label ? `${t(label)}, ${perRun}` : perRun
 })
 
+const runsOn = computed(
+  () =>
+    model.parts?.runsOn ??
+    (template.value?.models ?? []).map((name) => ({ name, href: undefined }))
+)
+const files = computed(() => model.parts?.files ?? [])
+
+const FILE_TYPE: Partial<Record<string, TranslationKey>> = {
+  checkpoints: 'workshop.workflow.fileType.checkpoint',
+  diffusion_models: 'workshop.workflow.fileType.diffusionModel',
+  loras: 'workshop.workflow.fileType.lora',
+  vae: 'workshop.workflow.fileType.vae',
+  text_encoders: 'workshop.workflow.fileType.textEncoder',
+  clip_vision: 'workshop.workflow.fileType.clipVision',
+  controlnet: 'workshop.workflow.fileType.controlnet',
+  upscale_models: 'workshop.workflow.fileType.upscaler',
+  latent_upscale_models: 'workshop.workflow.fileType.upscaler',
+  audio_encoders: 'workshop.workflow.fileType.audioEncoder',
+  background_removal: 'workshop.workflow.fileType.backgroundRemoval'
+}
+
+function fileType(directory: string | undefined) {
+  const key = directory ? FILE_TYPE[directory] : undefined
+  return key ? t(key) : undefined
+}
+
 const facts = computed(() => {
   const rows: { label: TranslationKey; value: string }[] = [
     {
@@ -99,13 +132,10 @@ const facts = computed(() => {
 </script>
 
 <template>
-  <section
-    id="workflow-panel-workflow"
-    role="tabpanel"
-    aria-labelledby="workflow-tab-workflow"
-  >
+  <section aria-labelledby="workflow-inside-heading">
     <SectionHeading
       class="mb-8"
+      title-id="workflow-inside-heading"
       :title="t('workshop.workflow.inside')"
       :subtitle="t('workshop.workflow.previewHint')"
     />
@@ -168,30 +198,78 @@ const facts = computed(() => {
             data-testid="workflow-facts"
           >
             <section
-              v-if="template?.models.length"
+              v-if="runsOn.length"
               class="px-5 py-4"
               data-testid="workflow-runs-on"
             >
-              <h3
-                class="text-2xs font-bold tracking-wider text-primary-warm-gray uppercase"
-              >
+              <h3 :class="GROUP_HEADING">
                 {{ t('workshop.workflow.runsOn') }}
               </h3>
               <ul class="mt-2 flex flex-col gap-1">
-                <li
-                  v-for="name in template.models"
-                  :key="name"
-                  class="flex items-center gap-2.5 py-1.5"
-                >
-                  <Box
-                    class="size-4 shrink-0 text-primary-warm-gray"
-                    aria-hidden="true"
-                  />
-                  <span
-                    class="min-w-0 flex-1 truncate text-base text-primary-comfy-canvas"
+                <li v-for="part in runsOn" :key="part.name">
+                  <component
+                    :is="part.href ? 'a' : 'div'"
+                    :href="part.href"
+                    :class="ROW"
                   >
-                    {{ name }}
-                  </span>
+                    <Box
+                      class="size-4 shrink-0 text-primary-warm-gray"
+                      aria-hidden="true"
+                    />
+                    <span
+                      :class="
+                        cn(
+                          'min-w-0 flex-1 truncate text-base text-primary-comfy-canvas',
+                          part.href && LINK_TEXT
+                        )
+                      "
+                    >
+                      {{ part.name }}
+                    </span>
+                  </component>
+                </li>
+              </ul>
+            </section>
+
+            <section
+              v-if="files.length"
+              class="border-t border-transparency-white-t8 px-5 py-4 first:border-t-0"
+              data-testid="workflow-files"
+            >
+              <h3 :class="GROUP_HEADING">
+                {{ t('workshop.workflow.filesNeeded') }}
+              </h3>
+              <p class="mt-1 text-xs text-primary-warm-gray">
+                {{ t('workshop.workflow.filesNote') }}
+              </p>
+              <ul class="mt-2 flex flex-col gap-1">
+                <li v-for="file in files" :key="file.name">
+                  <component
+                    :is="file.href ? 'a' : 'div'"
+                    :href="file.href"
+                    :class="ROW"
+                  >
+                    <FileBox
+                      class="size-4 shrink-0 text-primary-warm-gray"
+                      aria-hidden="true"
+                    />
+                    <span
+                      :class="
+                        cn(
+                          'min-w-0 flex-1 truncate text-sm text-primary-comfy-canvas',
+                          file.href && LINK_TEXT
+                        )
+                      "
+                    >
+                      {{ file.name }}
+                    </span>
+                    <span
+                      v-if="fileType(file.directory)"
+                      class="shrink-0 text-xs text-primary-warm-gray"
+                    >
+                      {{ fileType(file.directory) }}
+                    </span>
+                  </component>
                 </li>
               </ul>
             </section>

@@ -14,6 +14,10 @@ async function frame(locator: Locator) {
   return box
 }
 
+test.beforeEach(async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+})
+
 async function allowWorkflows(context: BrowserContext) {
   await context.route('**/t.comfy.org/**', (route) =>
     /\/(flags|decide)\//.test(route.request().url())
@@ -35,7 +39,7 @@ test('the model API tab opens with the key action and what it needs beside the c
   page
 }) => {
   await page.goto(MODEL_PATH)
-  await page.getByTestId('tab-api').click()
+  await page.getByTestId('model-path-api').click()
 
   const facts = page.getByTestId('api-facts')
   await expect(facts).toContainText('POST /v2/models/bfl/flux-2-max')
@@ -53,7 +57,7 @@ test('the model API tab copies the endpoint it shows', async ({
 }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write'])
   await page.goto(MODEL_PATH)
-  await page.getByTestId('tab-api').click()
+  await page.getByTestId('model-path-api').click()
 
   const facts = page.getByTestId('api-facts')
   await facts.getByRole('button', { name: 'Copy endpoint' }).click()
@@ -70,7 +74,7 @@ test('@mobile the model API tab puts the key action above the code', async ({
   page
 }) => {
   await page.goto(MODEL_PATH)
-  await page.getByTestId('tab-api').click()
+  await page.getByTestId('model-path-api').click()
 
   const action = await frame(page.getByTestId('api-get-key'))
   const code = await frame(page.getByTestId('snippet'))
@@ -83,7 +87,7 @@ test('the workflow API tab opens with the key action and what it needs beside th
 }) => {
   await allowWorkflows(context)
   await page.goto(WORKFLOW_PATH)
-  await page.getByRole('tab', { name: 'API', exact: true }).click()
+  await page.getByTestId('workflow-path-api').click()
 
   const facts = page.getByTestId('api-facts')
   await expect(facts).toContainText('COMFY_API_KEY')
@@ -100,7 +104,7 @@ test('the workflow API tab opens with the key action and what it needs beside th
   expect(action.x).toBeGreaterThanOrEqual(code.x + code.width)
 })
 
-test('@mobile the workflow example output is as tall as its 16:9 media', async ({
+test('@mobile the workflow example output keeps its compact height and shows the whole picture', async ({
   page,
   context
 }) => {
@@ -109,8 +113,15 @@ test('@mobile the workflow example output is as tall as its 16:9 media', async (
 
   const output = page.getByTestId('playground-output')
   await expect(output).toHaveAttribute('data-state', 'example')
-  const media = await frame(output.getByTestId('output-media'))
-  expect(media.height).toBeCloseTo((media.width * 9) / 16, 0)
+  const picture = output.getByRole('img')
+  await expect(picture).toHaveCSS('object-fit', 'contain')
+  const [media, shown] = await Promise.all([
+    frame(output.getByTestId('output-media')),
+    frame(picture)
+  ])
+  expect(media.height).toBeCloseTo(288, 0)
+  expect(media.width).toBeGreaterThan(media.height)
+  expect(shown).toEqual(media)
 })
 
 test('@mobile opens a source picture full screen with its close button clear of it', async ({
@@ -146,7 +157,7 @@ test('the workflow API tab downloads the API graph as JSON', async ({
 }) => {
   await allowWorkflows(context)
   await page.goto(WORKFLOW_PATH)
-  await page.getByRole('tab', { name: 'API', exact: true }).click()
+  await page.getByTestId('workflow-path-api').click()
 
   const [download] = await Promise.all([
     page.waitForEvent('download'),

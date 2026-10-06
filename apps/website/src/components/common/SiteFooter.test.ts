@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
 import { externalLinks, getRoutes } from '@/config/routes'
@@ -66,4 +66,41 @@ describe('SiteFooter', () => {
       expect(link.getAttribute('href')).toBe('/zh-CN/minimax/license/')
     }
   })
+
+  it.for(['en', 'zh-CN'] as const)(
+    'links each social network as an icon button opening a new tab (%s)',
+    (locale) => {
+      render(SiteFooter, { props: { locale } })
+
+      const social = within(
+        screen.getByRole('navigation', {
+          name: locale === 'en' ? 'Follow Comfy' : '关注 Comfy'
+        })
+      )
+      expect(
+        social.getAllByRole('link').map((link) => ({
+          name: link.getAttribute('aria-label'),
+          href: link.getAttribute('href'),
+          target: link.getAttribute('target'),
+          text: link.textContent.trim()
+        }))
+      ).toEqual(
+        [
+          ['GitHub', externalLinks.github],
+          ['Discord', externalLinks.discord],
+          ['X', externalLinks.x],
+          ['YouTube', externalLinks.youtube],
+          ['LinkedIn', externalLinks.linkedin],
+          ['Instagram', externalLinks.instagram]
+        ].map(([name, href]) => ({ name, href, target: '_blank', text: '' }))
+      )
+      expect(
+        within(
+          screen.getByRole('navigation', {
+            name: locale === 'en' ? 'Resources' : '资源'
+          })
+        ).queryByRole('link', { name: /GitHub|Discord|YouTube/ })
+      ).toBeNull()
+    }
+  )
 })

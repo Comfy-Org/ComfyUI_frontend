@@ -58,6 +58,10 @@ import WorkshopGate from './WorkshopGate.vue'
 import { listWorkshopGenerations } from '@/config/workshop-generation-assets'
 import { WORKSHOP_ASSETS_URL } from '@/config/workshop-env'
 import { workshopHealthLog } from '@/scripts/workshop-health'
+import {
+  setAllIntersecting,
+  stubIntersectionObserver
+} from '@/test/fakeIntersectionObserver'
 
 vi.mock(import('@/config/workshop-session-state'))
 vi.mock(import('@/scripts/posthog'))
@@ -188,8 +192,6 @@ const routerResult = {
 }
 
 async function mountDetail(options?: {
-  clone?: { href: string }
-  details?: () => ReturnType<typeof h>
   model?: WorkshopModelDetail
   locale?: Locale
 }) {
@@ -197,15 +199,10 @@ async function mountDetail(options?: {
     defineComponent({
       setup() {
         return () =>
-          h(
-            ModelDetail,
-            {
-              model: options?.model ?? model,
-              clone: options?.clone,
-              locale: options?.locale
-            },
-            options?.details ? { details: options.details } : undefined
-          )
+          h(ModelDetail, {
+            model: options?.model ?? model,
+            locale: options?.locale
+          })
       }
     })
   )
@@ -558,11 +555,12 @@ describe('ModelDetail', () => {
     expect(runWorkshopRouter).not.toHaveBeenCalled()
     expect(captureWorkshopEvent).not.toHaveBeenCalled()
 
+    const scroll = vi
+      .spyOn(Element.prototype, 'scrollIntoView')
+      .mockImplementation(() => undefined)
+    onTestFinished(() => scroll.mockRestore())
     await user().click(screen.getByRole('button', { name: 'See the API' }))
-    expect(screen.getByRole('tab', { name: 'API' })).toHaveAttribute(
-      'aria-selected',
-      'true'
-    )
+    expect(scroll.mock.contexts).toEqual([screen.getByTestId('api-section')])
   })
 
   it('holds Run neutrally until the flag answers, then shows the note when it is off', async () => {
@@ -628,10 +626,10 @@ describe('ModelDetail', () => {
   })
 
   it('reports API views only while Models is enabled', async () => {
+    stubIntersectionObserver()
     auth.workshopEnabled.value = false
     await mountDetail({ model: runnable })
-    const visitor = user()
-    await visitor.click(screen.getByRole('tab', { name: 'API' }))
+    await setAllIntersecting(true)
     expect(captureWorkshopEvent).not.toHaveBeenCalled()
     auth.workshopEnabled.value = true
     await nextTick()
@@ -642,8 +640,8 @@ describe('ModelDetail', () => {
     vi.mocked(captureWorkshopEvent).mockClear()
     auth.workshopEnabled.value = false
     await nextTick()
-    await visitor.click(screen.getByRole('tab', { name: 'Playground' }))
-    await visitor.click(screen.getByRole('tab', { name: 'API' }))
+    await setAllIntersecting(false)
+    await setAllIntersecting(true)
     expect(captureWorkshopEvent).not.toHaveBeenCalled()
   })
 
@@ -652,7 +650,6 @@ describe('ModelDetail', () => {
       model: { ...runnable, defaults: { prompt: 'A landscape' } }
     })
     const visitor = user()
-    await visitor.click(screen.getByRole('tab', { name: 'API' }))
     await visitor.click(await screen.findByTestId('snippet-curl'))
     await visitor.click(screen.getByRole('button', { name: 'Copy snippet' }))
     const getKey = screen.getByRole('link', { name: 'Get API key' })
@@ -679,7 +676,6 @@ describe('ModelDetail', () => {
       model: { ...runnable, defaults: { prompt: 'A landscape' } }
     })
     const visitor = user()
-    await visitor.click(screen.getByRole('tab', { name: 'API' }))
     await screen.findByRole('button', { name: 'Copy snippet' })
     auth.workshopEnabled.value = false
     await nextTick()
@@ -731,6 +727,7 @@ describe('ModelDetail', () => {
   )
 
   it('tracks the render funnel and actions without sending inputs or output contents', async () => {
+    stubIntersectionObserver()
     auth.session.value = credential
     vi.mocked(runWorkshopRouter).mockResolvedValue(routerResult)
     await mountDetail({ model: runnable })
@@ -746,7 +743,7 @@ describe('ModelDetail', () => {
       once: true
     })
     await visitor.click(download)
-    await visitor.click(screen.getByRole('tab', { name: 'API' }))
+    await setAllIntersecting(true)
 
     const events = vi
       .mocked(captureWorkshopEvent)
@@ -810,11 +807,6 @@ describe('ModelDetail', () => {
 
   it.for([
     {
-      name: 'leaving the Playground',
-      result: routerResult,
-      abandon: () => user().click(screen.getByRole('tab', { name: 'API' }))
-    },
-    {
       name: 'replacing the result with an example',
       result: routerResult,
       abandon: () => user().click(screen.getByTestId('example-card'))
@@ -867,7 +859,8 @@ describe('ModelDetail', () => {
     ])
   })
 
-  it('excludes delivery when a response arrives after leaving the Playground', async () => {
+  it('still measures delivery of a result that lands while the reader is reading the API', async () => {
+    stubIntersectionObserver()
     auth.session.value = credential
     const response = Promise.withResolvers<typeof routerResult>()
     vi.mocked(runWorkshopRouter).mockReturnValue(response.promise)
@@ -876,16 +869,10 @@ describe('ModelDetail', () => {
     })
     await user().click(await screen.findByRole('button', { name: 'Run' }))
     await vi.waitFor(() => expect(runWorkshopRouter).toHaveBeenCalledOnce())
-    await user().click(screen.getByRole('tab', { name: 'API' }))
+    await setAllIntersecting(true)
 
     response.resolve(routerResult)
-    await vi.waitFor(() =>
-      expect(captureWorkshopEvent).toHaveBeenCalledWith({
-        name: 'run_finished',
-        properties: expect.objectContaining({ status: 'succeeded' })
-      })
-    )
-    await vi.advanceTimersByTimeAsync(120_000)
+    await fireEvent.load(await screen.findByRole('img', { name: 'Output' }))
 
     const deliveries = vi
       .mocked(captureWorkshopEvent)
@@ -896,7 +883,7 @@ describe('ModelDetail', () => {
         name: 'delivery_finished',
         properties: expect.objectContaining({
           request_id: routerResult.requestId,
-          status: 'cancelled'
+          status: 'succeeded'
         })
       }
     ])
@@ -2573,8 +2560,6 @@ describe('ModelDetail', () => {
       })
       expect(input.value).toBe(saved)
       await fireEvent.update(input, 'A new draft')
-      await user().click(screen.getByTestId('tab-api'))
-      await user().click(screen.getByTestId('tab-playground'))
       expect(
         screen.getByRole<HTMLTextAreaElement>('textbox', { name: 'Prompt' })
           .value
@@ -2583,21 +2568,40 @@ describe('ModelDetail', () => {
     }
   )
 
-  it('shows a Details tab and the clone button when given workflow details', async () => {
-    auth.session.value = credential
-    await mountDetail({
-      clone: { href: '/x.json' },
-      details: () => h('p', 'About this workflow')
-    })
+  it('stacks the playground, its examples and the API as sections instead of tabs', async () => {
+    await mountDetail({ model: { ...runnable, examples: model.examples } })
     await nextTick()
-    expect(screen.queryByTestId('examples-section')).toBeNull()
-    expect(screen.getByTestId('clone-button').getAttribute('href')).toBe(
-      '/x.json'
+
+    expect(screen.queryByRole('tab', { name: 'Playground' })).toBeNull()
+    expect(screen.queryByRole('tab', { name: 'API' })).toBeNull()
+    const playground = screen.getByRole('region', { name: 'Playground' })
+    const api = screen.getByRole('region', { name: 'API' })
+    expect(playground.id).toBe('playground')
+    expect(api.id).toBe('api')
+    expect(
+      within(playground).getByRole('heading', { name: 'Try an example' })
+    ).toBeTruthy()
+    expect(within(api).getByTestId('api-get-key')).toBeTruthy()
+    expect(
+      playground.compareDocumentPosition(api) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy()
+  })
+
+  it('jumps to the API when the reader takes the result to code', async () => {
+    auth.session.value = credential
+    vi.mocked(runWorkshopRouter).mockResolvedValue(routerResult)
+    const scroll = vi
+      .spyOn(Element.prototype, 'scrollIntoView')
+      .mockImplementation(() => undefined)
+    onTestFinished(() => scroll.mockRestore())
+    await mountDetail({
+      model: { ...runnable, defaults: { prompt: 'A landscape' } }
+    })
+    await user().click(await screen.findByRole('button', { name: 'Run' }))
+    await user().click(
+      await screen.findByRole('button', { name: 'Use these settings in code' })
     )
-    await user().click(screen.getByTestId('tab-details'))
-    expect(screen.getByTestId('details-tab').textContent).toContain(
-      'About this workflow'
-    )
+    expect(scroll.mock.contexts).toEqual([screen.getByTestId('api-section')])
   })
 
   it('draws the model picker rather than nothing when it is the only field', async () => {
@@ -2732,7 +2736,6 @@ describe('ModelDetail', () => {
     auth.session.value = credential
     await mountDetail({ model: runnable })
     await nextTick()
-    await user().click(screen.getByTestId('tab-api'))
     const href = screen.getByTestId('api-get-key').getAttribute('href')
     const params = new URL(href ?? '').searchParams
     expect(params.get('onboarding')).toBe('models')

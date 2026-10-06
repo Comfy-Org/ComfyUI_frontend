@@ -14,12 +14,14 @@ import ExploreResultCard from './ExploreResultCard.vue'
 
 const {
   title,
+  description,
   apps,
   results,
   seeAllHref,
   locale = 'en'
 } = defineProps<{
   title: string
+  description?: string
   apps: readonly CatalogueApp[]
   results: readonly WorkshopModel[]
   seeAllHref?: string
@@ -34,12 +36,20 @@ defineEmits<{ clear: [] }>()
   <section aria-labelledby="explore-results" data-testid="explore-results">
     <CardRow v-if="apps.length || results.length" :locale>
       <template #heading>
-        <h2
-          id="explore-results"
-          class="text-xl font-medium text-primary-warm-white"
-        >
-          {{ title }}
-        </h2>
+        <div class="flex flex-col gap-4">
+          <div class="flex flex-col gap-1">
+            <h2
+              id="explore-results"
+              class="text-xl font-medium text-primary-warm-white"
+            >
+              {{ title }}
+            </h2>
+            <p v-if="description" class="text-sm text-content-secondary">
+              {{ description }}
+            </p>
+          </div>
+          <slot />
+        </div>
       </template>
       <template #actions>
         <ExploreSeeAll
@@ -79,12 +89,20 @@ defineEmits<{ clear: [] }>()
       </li>
     </CardRow>
     <template v-else>
-      <h2
-        id="explore-results"
-        class="mb-5 text-xl font-medium text-primary-warm-white"
-      >
-        {{ title }}
-      </h2>
+      <div class="mb-5 flex flex-col gap-4">
+        <div class="flex flex-col gap-1">
+          <h2
+            id="explore-results"
+            class="text-xl font-medium text-primary-warm-white"
+          >
+            {{ title }}
+          </h2>
+          <p v-if="description" class="text-sm text-content-secondary">
+            {{ description }}
+          </p>
+        </div>
+        <slot />
+      </div>
       <div
         class="flex flex-col items-start gap-3 rounded-3xl bg-hub-surface p-8"
         data-testid="explore-empty"

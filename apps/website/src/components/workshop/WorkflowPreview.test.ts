@@ -1,9 +1,10 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { render, screen, waitFor } from '@testing-library/vue'
+import { render, screen, waitFor, within } from '@testing-library/vue'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { readonly, ref } from 'vue'
 
+import { getWorkshopPageDetail } from '@/config/workshop-page-content'
 import { workflowDetailsBySlug } from '@/config/workshop-workflow-content'
 import {
   captureWorkshopEvent,
@@ -127,6 +128,56 @@ describe('WorkflowPreview', () => {
     expect(screen.queryByText('Author')).toBeNull()
   })
 
+  it('links each model it runs on to its Hub page, where one exists', () => {
+    const seedance = getWorkshopPageDetail('workflows/change-video-background')
+    assert(seedance && 'parts' in seedance && seedance.parts)
+    render(WorkflowPreview, { props: { model: seedance } })
+
+    const runsOn = screen.getByTestId('workflow-runs-on')
+    expect(
+      within(runsOn).getByRole('link', { name: 'Seedance 2.5' })
+    ).toHaveAttribute('href', '/hub/models/seedance-2-5-video-edit/')
+  })
+
+  it('names a model with no Hub page without linking it', () => {
+    const ltx = getWorkshopPageDetail('workflows/animate-reference-sheet')
+    assert(ltx && 'parts' in ltx && ltx.parts)
+    render(WorkflowPreview, { props: { model: ltx } })
+
+    const runsOn = screen.getByTestId('workflow-runs-on')
+    expect(runsOn).toHaveTextContent('LTX-2.3')
+    expect(within(runsOn).queryByRole('link')).toBeNull()
+  })
+
+  it('lists the model files it loads, linking those with a page', () => {
+    const ltx = getWorkshopPageDetail('workflows/remove-object-from-video')
+    assert(ltx && 'parts' in ltx && ltx.parts)
+    render(WorkflowPreview, { props: { model: ltx } })
+
+    const files = screen.getByTestId('workflow-files')
+    expect(files).toHaveTextContent('Files it needs')
+    const encoder = within(files).getByRole('link', {
+      name: /gemma_3_12B_it_fp4_mixed\.safetensors/
+    })
+    expect(encoder).toHaveAttribute(
+      'href',
+      '/p/supported-models/gemma-3-12b-it-fp4-mixed/'
+    )
+    expect(encoder).toHaveTextContent('Text encoder')
+    expect(files).toHaveTextContent('LTX23_video_vae_bf16.safetensors')
+    expect(
+      within(files).queryByRole('link', { name: /LTX23_video_vae_bf16/ })
+    ).toBeNull()
+  })
+
+  it('shows no files group for a workflow that loads none', () => {
+    const seedance = getWorkshopPageDetail('workflows/change-video-background')
+    assert(seedance && 'parts' in seedance)
+    render(WorkflowPreview, { props: { model: seedance } })
+
+    expect(screen.queryByTestId('workflow-files')).toBeNull()
+  })
+
   // The graph is read from the same JSON the page offers for download, so what
   // it draws is what a reader would get if they took it away.
   it('draws the nodes of the template it downloads', async () => {
@@ -141,7 +192,7 @@ describe('WorkflowPreview', () => {
     expect(fetch).toHaveBeenCalledWith(template.downloadUrl)
   })
 
-  it('waits to download the graph until its tab first opens', async () => {
+  it('waits to download the graph until its section is first reached', async () => {
     servingGraph(async () => Response.json(graphJson()))
     const { rerender } = render(WorkflowPreview, {
       props: { model, cloudHref, active: false }

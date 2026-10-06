@@ -11,23 +11,33 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { navigationMenuTriggerStyle } from '@/components/ui/navigation-menu/navigationMenuTriggerStyle'
 
 import { isHrefActive, useCurrentPath } from '@/composables/useCurrentPath'
-import { getMainNavigation } from '@/data/mainNavigation'
-import type { NavItem } from '@/data/mainNavigation'
+import { NO_HUB_SECTIONS, getMainNavigation } from '@/data/mainNavigation'
+import type { HubSections, NavItem } from '@/data/mainNavigation'
 import type { Locale } from '@/i18n/translations'
 import NavDropdownBody from './NavDropdownBody.vue'
 import NewBadge from './NewBadge.vue'
 
-const { locale = 'en', workshopInBuild = false } = defineProps<{
+const {
+  locale = 'en',
+  workshopInBuild = false,
+  hubSections = NO_HUB_SECTIONS
+} = defineProps<{
   locale?: Locale
   workshopInBuild?: boolean
+  hubSections?: HubSections
 }>()
 const mainNavigation = computed(() =>
-  getMainNavigation(locale, workshopInBuild)
+  getMainNavigation(locale, workshopInBuild, hubSections)
 )
 const currentPath = useCurrentPath()
 
 function isNavItemActive(navItem: NavItem, path: string): boolean {
   if (!navItem.columns) return isHrefActive(navItem.href, path)
+  if (
+    navItem.activePathPrefix &&
+    `${path}/`.startsWith(navItem.activePathPrefix)
+  )
+    return true
   const onLeafPage = mainNavigation.value.some(
     (item) => item.href && isHrefActive(item.href, path)
   )
@@ -62,6 +72,7 @@ function isNavItemActive(navItem: NavItem, path: string): boolean {
             <NavDropdownBody
               :columns="navItem.columns"
               :featured="navItem.featured"
+              :footer-link="navItem.footerLink"
               :locale
               :current-path="currentPath"
             />

@@ -36,6 +36,7 @@ const {
   memberWorkspace,
   cancelledMessage,
   policyMessage,
+  compact = false,
   locale = 'en'
 } = defineProps<{
   state: RunState
@@ -54,6 +55,8 @@ const {
   cancelledMessage?: string
   /** Why this page's provider blocks content, when its rule is known. */
   policyMessage?: string
+  /** Keeps the panel about as tall as a short form beside it. */
+  compact?: boolean
   locale?: Locale
 }>()
 const { t } = translationsFor(locale)
@@ -295,7 +298,7 @@ const earlierClass = (active: boolean) =>
     :class="
       cn(
         'flex flex-col overflow-hidden rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4',
-        !shown && 'min-h-96'
+        !shown && (compact ? 'min-h-72 sm:min-h-80 lg:min-h-100' : 'min-h-96')
       )
     "
     data-testid="playground-output"
@@ -457,7 +460,14 @@ const earlierClass = (active: boolean) =>
     <!-- Succeeded, or the example that ships with the model -->
     <template v-else-if="shown">
       <div
-        class="relative aspect-video max-h-[70dvh] w-full flex-1 overflow-hidden bg-black/20"
+        :class="
+          cn(
+            'relative w-full overflow-hidden bg-black/20',
+            compact
+              ? 'h-72 shrink-0 sm:h-80 lg:h-100'
+              : 'aspect-video max-h-[70dvh] flex-1'
+          )
+        "
         data-testid="output-media"
       >
         <div

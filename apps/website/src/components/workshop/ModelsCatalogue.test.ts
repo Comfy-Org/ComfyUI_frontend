@@ -10,7 +10,6 @@ import {
   useWorkshopEnabled,
   useWorkshopFlag
 } from '@/scripts/posthog'
-import { DOOR_ART, TASK_ART } from '@/lib/workshop/explore-art'
 import ModelsCatalogue from './ModelsCatalogue.vue'
 import type { WorkshopModel } from '@/config/models-catalogue'
 
@@ -226,38 +225,44 @@ describe('ModelsCatalogue', () => {
         .queryAllByRole('link')
         .map((link) => link.getAttribute('href'))
 
-    it('offers a task for each use case it holds, naming the formats behind it', async () => {
+    const chips = () =>
+      within(screen.getByTestId('explore-results')).getByRole('group', {
+        name: 'Tasks'
+      })
+
+    it('offers a chip under Popular right now for each use case it holds', async () => {
       renderExplore()
 
-      const tasks = await screen.findAllByTestId('explore-task')
+      const popular = within(await screen.findByTestId('explore-results'))
       expect(
-        tasks.map((task) => [
-          within(task)
-            .getByText(/images|video/i)
-            .textContent.trim(),
-          within(task)
-            .getAllByTestId('explore-task-kind')
-            .map((kind) => kind.textContent.trim())
-        ])
-      ).toEqual([
-        ['Generate images', ['Model']],
-        ['Edit images', ['Workflow']],
-        ['Image to video', ['Workflow', 'Model']]
-      ])
-    })
-
-    it('narrows the results to the task a visitor picks and links to it in the catalogue', async () => {
-      const user = userEvent.setup()
-      renderExplore()
-
-      await user.click((await screen.findAllByTestId('explore-task'))[2])
-
-      expect(screen.queryByTestId('explore-tasks')).toBeNull()
-      expect(
-        screen.getByRole('heading', { name: 'Image to video' })
+        popular.getByRole('heading', { name: 'Popular right now' })
       ).toBeVisible()
       expect(
-        screen.getByRole('button', { name: 'Image to video' })
+        popular.getByText(
+          'What people are running this week, across models, workflows and apps. Pick a use case to narrow it down.'
+        )
+      ).toBeVisible()
+      expect(
+        within(chips())
+          .getAllByRole('button')
+          .map((chip) => chip.textContent.trim())
+      ).toEqual(['All', 'Generate images', 'Edit images', 'Image to video'])
+    })
+
+    it('narrows Popular to the use case a visitor picks and links to it in the catalogue', async () => {
+      const user = userEvent.setup()
+      renderExplore()
+      await screen.findByTestId('explore-results')
+
+      await user.click(
+        within(chips()).getByRole('button', { name: 'Image to video' })
+      )
+
+      expect(
+        screen.getByRole('heading', { name: 'Popular for image to video' })
+      ).toBeVisible()
+      expect(
+        within(chips()).getByRole('button', { name: 'Image to video' })
       ).toHaveAttribute('aria-pressed', 'true')
       expect(resultNames()).toEqual([
         '/hub/models/?useCase=animate-images',
@@ -299,111 +304,72 @@ describe('ModelsCatalogue', () => {
       }
     )
 
-    it('narrows by a task chip and widens back with All', async () => {
+    it('narrows by a chip and widens back with All', async () => {
       const user = userEvent.setup()
       renderExplore()
-      const chips = within(await screen.findByRole('group', { name: 'Tasks' }))
+      await screen.findByTestId('explore-results')
 
-      await user.click(chips.getByRole('button', { name: 'Edit images' }))
+      await user.click(
+        within(chips()).getByRole('button', { name: 'Edit images' })
+      )
 
-      expect(screen.getByRole('heading', { name: 'Edit images' })).toBeVisible()
+      expect(
+        screen.getByRole('heading', { name: 'Popular for edit images' })
+      ).toBeVisible()
       expect(resultNames()).toEqual([
         '/hub/models/?useCase=edit-images',
         '/hub/workflows/relight/'
       ])
 
-      await user.click(chips.getByRole('button', { name: 'All' }))
+      await user.click(within(chips()).getByRole('button', { name: 'All' }))
 
-      expect(screen.getByTestId('explore-tasks')).toBeVisible()
       expect(
         screen.getByRole('heading', { name: 'Popular right now' })
       ).toBeVisible()
-    })
-
-    it.for([
-      {
-        covers: 'an image over a video',
-        image: true,
-        video: true,
-        media: 'IMG'
-      },
-      {
-        covers: 'a video without an image',
-        image: false,
-        video: true,
-        media: 'VIDEO'
-      },
-      {
-        covers: 'nothing when no item has art',
-        image: false,
-        video: false,
-        media: null
-      }
-    ])('covers a task with $covers', async ({ image, video, media }) => {
-      const withThumb = (
-        name: string,
-        thumbnail: WorkshopModel['thumbnail']
-      ): WorkshopModel => ({
-        ...entry(name, 'model', ['3d']),
-        thumbnail
-      })
-      renderExplore([
-        withThumb('plain', undefined),
-        ...(video
-          ? [withThumb('moving', { url: '/clip.mp4', kind: 'video' })]
-          : []),
-        ...(image
-          ? [withThumb('still', { url: '/still.webp', kind: 'image' })]
-          : [])
-      ])
-
-      const tile = await screen.findByTestId('explore-task')
       expect(
-        within(tile).queryByTestId('model-card-media')?.tagName ?? null
-      ).toBe(media)
+        within(chips()).getByRole('button', { name: 'All' })
+      ).toHaveAttribute('aria-pressed', 'true')
     })
 
-    it('fronts a task with its own art rather than a catalogue thumbnail', async () => {
-      renderExplore([
-        {
-          ...entry('painter', 'model', ['generate-images']),
-          thumbnail: { url: '/painter.webp', kind: 'image' }
-        }
-      ])
-
-      const tile = await screen.findByTestId('explore-task')
-      expect(within(tile).getByTestId('model-card-media')).toHaveAttribute(
-        'src',
-        TASK_ART['generate-images']
-      )
-    })
-
-    it('stacks section art the rest of the landing does not already show', async () => {
+    it('fronts each door with real catalogue work', async () => {
       appsFlag.value = true
-      const [shownElsewhere] = DOOR_ART.models
       renderExplore([
-        ...launchModels,
         {
-          ...entry('lake', 'model', ['3d']),
-          thumbnail: { url: shownElsewhere, kind: 'image' }
+          ...entry('nano', 'model', ['generate-images']),
+          slug: 'vertexai--gemini-3-pro-image--generate-images',
+          name: 'Nano Banana Pro',
+          creditsPerRun: 6,
+          thumbnail: { url: '/lake.png', kind: 'image' }
+        },
+        {
+          ...entry('product-in-scene', 'workflow', ['edit-images']),
+          slug: 'workflows/product-in-scene',
+          thumbnail: { url: '/bottle.webp', kind: 'image' }
+        },
+        {
+          type: 'APP',
+          appId: 'studio',
+          slug: 'apps/cinematic-studio',
+          name: 'Cinematic Studio',
+          href: '/hub/apps/cinematic-studio/',
+          workflowCount: 0,
+          capabilities: []
         }
       ])
 
       const doors = await screen.findByTestId('explore-doors')
-      const art = within(doors)
-        .getAllByTestId('explore-door-art')
-        .map((img) => img.getAttribute('src'))
-      const elsewhere = screen
-        .getAllByAltText('')
-        .filter((img) => !doors.contains(img))
-        .map((img) => img.getAttribute('src'))
-      expect(elsewhere).toContain(shownElsewhere)
       expect(
-        within(screen.getByTestId('explore-door-models'))
+        within(doors)
           .getAllByTestId('explore-door-art')
-          .map((img) => img.getAttribute('src'))
-      ).toEqual(DOOR_ART.models.slice(1, 4))
-      expect(art.filter((src) => elsewhere.includes(src))).toEqual([])
+          .map((art) => within(art).getAllByAltText('')[0].getAttribute('src'))
+      ).toEqual([
+        '/lake.png',
+        '/bottle.webp',
+        '/images/cinematic-studio/neon-street.jpg'
+      ])
+      const model = within(screen.getByTestId('explore-door-models'))
+      expect(model.getByText('Nano Banana Pro')).toBeInTheDocument()
+      expect(model.getByText('6 credits')).toBeInTheDocument()
     })
 
     it('says when nothing matches and clears back to everything', async () => {
@@ -416,7 +382,7 @@ describe('ModelsCatalogue', () => {
       await user.click(screen.getByRole('button', { name: 'Clear search' }))
 
       expect(screen.getByTestId('explore-search')).toHaveValue('')
-      expect(screen.getByTestId('explore-tasks')).toBeVisible()
+      expect(chips()).toBeVisible()
       expect(
         screen.getByRole('heading', { name: 'Popular right now' })
       ).toBeVisible()
@@ -427,13 +393,13 @@ describe('ModelsCatalogue', () => {
         apps: true,
         catalogue: 'apps, workflows and models',
         models: launchModels,
-        doors: ['/hub/apps/', '/hub/workflows/', '/hub/models/']
+        doors: ['/hub/models/', '/hub/workflows/', '/hub/apps/']
       },
       {
         apps: false,
         catalogue: 'workflows and models',
         models: launchModels,
-        doors: ['/hub/workflows/', '/hub/models/']
+        doors: ['/hub/models/', '/hub/workflows/']
       },
       {
         apps: false,
@@ -479,7 +445,7 @@ describe('ModelsCatalogue', () => {
       renderExplore([])
 
       await screen.findByTestId('explore-doors')
-      expect(screen.queryByTestId('explore-tasks')).toBeNull()
+      expect(screen.queryByRole('group', { name: 'Tasks' })).toBeNull()
       expect(screen.queryByTestId('explore-results')).toBeNull()
     })
   })

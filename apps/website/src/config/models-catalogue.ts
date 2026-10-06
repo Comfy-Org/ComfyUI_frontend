@@ -3,6 +3,7 @@ import type { WorkshopFormDefinition } from './workshop-form-definition'
 import type { WorkshopContract } from './workshop-contract'
 import type { WorkshopInputDefinition } from './workshop-input-definition'
 import type { WorkshopWorkflowDefinition } from './workshop-workflow-definition'
+import type { WorkflowParts } from '@/lib/workshop/workflow-parts'
 import { OTHER_FORMAT_USE_CASES } from './workshop-sections'
 
 export const MODALITIES = ['image', 'video', 'audio', '3d', 'text'] as const
@@ -197,6 +198,8 @@ export type WorkflowWorkshopModelDetail = WorkshopDetailPresentation &
   WorkflowWorkshopModel & {
     readonly execution?: never
     readonly workflow: WorkshopWorkflowDefinition
+    /** The named models and model files it loads, resolved at build. */
+    readonly parts?: WorkflowParts
   }
 
 export type WorkshopModelDetail =
