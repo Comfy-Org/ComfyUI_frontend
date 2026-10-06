@@ -12,6 +12,9 @@ import type {
   UnifiedAuthRetryFailureReason,
   UnifiedAuthRetryMetadata
 } from '@/platform/telemetry/types'
+import type * as SsoRequired from '@/platform/auth/sso/ssoRequired'
+
+type SsoRequiredModule = typeof SsoRequired
 
 let cachedUnifiedFlags:
   | { readonly unifiedCloudAuthEnabled: boolean }
@@ -110,6 +113,20 @@ interface RetrySignalLifecycle {
   createSignal: () => AbortSignal | undefined
 }
 
+/** Best-effort: the SSO screen never replaces the 403 the caller is owed. */
+async function presentSsoRequired(
+  present: (sso: SsoRequiredModule) => unknown
+): Promise<void> {
+  try {
+    await present(await import('@/platform/auth/sso/ssoRequired'))
+  } catch (error) {
+    reportError(error, {
+      surface: 'auth',
+      errorType: 'failure_presenting_sso_required'
+    })
+  }
+}
+
 /**
  * Issues a `fetch` and, on a `401`, re-mints the unified Cloud JWT once and
  * retries the request exactly once with the fresh token. A persistent `401`
@@ -137,9 +154,9 @@ export async function fetchWithUnifiedRemint(
       : input
   const response = await fetch(input, init)
   if (response.status === 403 && isCloud) {
-    const { presentForResponse } =
-      await import('@/platform/auth/sso/ssoRequired')
-    await presentForResponse(response)
+    await presentSsoRequired(({ presentForResponse }) =>
+      presentForResponse(response)
+    )
   }
   if (!shouldRetryOn401 || response.status !== 401) {
     return response
@@ -195,9 +212,11 @@ function isRetriableUnauthorized(
 
 async function presentSsoRefusal(error: unknown): Promise<void> {
   if (!isCloud || !axios.isAxiosError(error)) return
-  if (error.response?.status !== 403) return
-  const { presentForRefusal } = await import('@/platform/auth/sso/ssoRequired')
-  presentForRefusal(error.response.status, error.response.data)
+  const response = error.response
+  if (response?.status !== 403) return
+  await presentSsoRequired(({ presentForRefusal }) =>
+    presentForRefusal(response.status, response.data)
+  )
 }
 
 /**

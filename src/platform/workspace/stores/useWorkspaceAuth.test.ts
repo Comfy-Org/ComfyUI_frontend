@@ -1064,8 +1064,13 @@ describe('useWorkspaceAuthStore', () => {
     })
 
     it.for([
-      { ssoEnabled: false, toasts: 1, shown: false, reloads: 1 },
-      { ssoEnabled: true, toasts: 0, shown: true, reloads: 0 }
+      {
+        ssoEnabled: false,
+        toasts: ['workspaceAuth.errors.accessDenied'],
+        shown: false,
+        reloads: 1
+      },
+      { ssoEnabled: true, toasts: [], shown: true, reloads: 0 }
     ])(
       'a recovery refused with sso_required tears down; the SSO screen replaces the toast and the reload: $shown (sso_enabled $ssoEnabled)',
       async ({ ssoEnabled, toasts, shown, reloads }) => {
@@ -1098,14 +1103,11 @@ describe('useWorkspaceAuthStore', () => {
 
         expect(token).toBeNull()
         expect(currentWorkspace.value).toBeNull()
-        expect(useToastStore().add).toHaveBeenCalledTimes(toasts)
-        if (toasts) {
-          expect(useToastStore().add).toHaveBeenCalledWith(
-            expect.objectContaining({
-              detail: 'workspaceAuth.errors.accessDenied'
-            })
-          )
-        }
+        expect(
+          vi
+            .mocked(useToastStore().add)
+            .mock.calls.map(([toast]) => toast.detail)
+        ).toEqual(toasts)
         expect(useDialogStore().isDialogOpen(SSO_REQUIRED_DIALOG_KEY)).toBe(
           shown
         )
@@ -3281,8 +3283,13 @@ describe('useWorkspaceAuthStore', () => {
     )
 
     it.for([
-      { ssoEnabled: false, toasts: 1, shown: false, reloads: 1 },
-      { ssoEnabled: true, toasts: 0, shown: true, reloads: 0 }
+      {
+        ssoEnabled: false,
+        toasts: ['workspaceAuth.errors.accessDenied'],
+        shown: false,
+        reloads: 1
+      },
+      { ssoEnabled: true, toasts: [], shown: true, reloads: 0 }
     ])(
       'a refresh refused with sso_required clears the slot; the SSO screen replaces the toast and the reload: $shown (sso_enabled $ssoEnabled)',
       async ({ ssoEnabled, toasts, shown, reloads }) => {
@@ -3325,14 +3332,11 @@ describe('useWorkspaceAuthStore', () => {
             tags: { failure_code: 'SSO_REQUIRED', retry_count: 0 }
           })
         )
-        expect(useToastStore().add).toHaveBeenCalledTimes(toasts)
-        if (toasts) {
-          expect(useToastStore().add).toHaveBeenCalledWith(
-            expect.objectContaining({
-              detail: 'workspaceAuth.errors.accessDenied'
-            })
-          )
-        }
+        expect(
+          vi
+            .mocked(useToastStore().add)
+            .mock.calls.map(([toast]) => toast.detail)
+        ).toEqual(toasts)
         expect(useDialogStore().isDialogOpen(SSO_REQUIRED_DIALOG_KEY)).toBe(
           shown
         )

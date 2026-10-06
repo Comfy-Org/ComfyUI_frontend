@@ -3112,23 +3112,22 @@ describe('a lapsed SSO session signs in again through SSO (sso_enabled)', () => 
         session: { userId: 'user-a' },
         ssoEnabled: true,
         hint: null
-      },
-      {
-        name: 'with the flag off an SSO session leaves nothing',
-        session: SSO_SESSION,
-        ssoEnabled: false,
-        hint: null
       }
     ])('$name', async ({ session, ssoEnabled, hint }) => {
       localStorage.setItem(
         'Comfy.WebSession.SsoHint',
         JSON.stringify({ email: 'earlier@example.com' })
       )
-      if (!ssoEnabled) localStorage.clear()
 
       await loadPage(session, ssoEnabled)
 
       expect(readSsoHint()).toEqual(hint)
+    })
+
+    it('with the flag off an SSO session leaves nothing', async () => {
+      await loadPage(SSO_SESSION, false)
+
+      expect(readSsoHint()).toBeNull()
     })
 
     it('is cleared by a sign-out in this tab', async () => {

@@ -2,7 +2,7 @@ import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuth
 import { stubAccountIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
 import type { AxiosAdapter } from 'axios'
 import axios, { AxiosError } from 'axios'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -692,4 +692,69 @@ describe('an SSO refusal at the cloud request seams', () => {
       expect(await ssoScreenShown()).toBe(shown)
     }
   )
+
+  describe('when presenting the SSO screen fails', () => {
+    const failure = new Error('sso screen unavailable')
+
+    beforeEach(() => {
+      Object.defineProperty(vi.mocked(useFeatureFlags().flags), 'ssoEnabled', {
+        configurable: true,
+        get: () => {
+          throw failure
+        }
+      })
+    })
+
+    afterEach(() => {
+      Object.defineProperty(vi.mocked(useFeatureFlags().flags), 'ssoEnabled', {
+        configurable: true,
+        writable: true,
+        value: false
+      })
+    })
+
+    it('fetch still returns the 403 and reports the failure', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => Response.json(SSO_REFUSAL, { status: 403 }))
+      )
+
+      const response = await fetchWithUnifiedRemint('https://cloud/x', {}, true)
+
+      expect(response.status).toBe(403)
+      expect(reportError).toHaveBeenCalledWith(failure, {
+        surface: 'auth',
+        errorType: 'failure_presenting_sso_required'
+      })
+    })
+
+    it('axios still rejects with the 403 and reports the failure', async () => {
+      const client = axios.create({
+        adapter: async (config) => {
+          throw new AxiosError(
+            'refused',
+            AxiosError.ERR_BAD_REQUEST,
+            config,
+            null,
+            {
+              data: SSO_REFUSAL,
+              status: 403,
+              statusText: '403',
+              headers: {},
+              config
+            }
+          )
+        }
+      })
+      attachUnifiedRemintInterceptor(client)
+
+      await expect(client.get('https://cloud/x')).rejects.toMatchObject({
+        response: { status: 403 }
+      })
+      expect(reportError).toHaveBeenCalledWith(failure, {
+        surface: 'auth',
+        errorType: 'failure_presenting_sso_required'
+      })
+    })
+  })
 })
