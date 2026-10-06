@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { translationsFor } from '@/i18n/translations'
 import { fileSecondsOf } from '@/lib/workshop/cinematic-studio/reshoot-clip'
-import ReshootUpload from './ReshootUpload.vue'
+import ReshootClipRow from './ReshootClipRow.vue'
 
 vi.mock(import('@/lib/workshop/cinematic-studio/reshoot-clip'), () => ({
   clipSecondsOf: vi.fn(),
@@ -17,22 +17,29 @@ const clip = (name = 'clip.mp4', type = 'video/mp4') =>
   new File(['clip'], name, { type })
 
 function setup() {
-  const { emitted } = render(ReshootUpload)
-  const input = screen.getByLabelText(new RegExp(rc('reshoot.clip.upload')))
+  const { emitted } = render(ReshootClipRow, {
+    props: { clip: 'clip.mp4', name: 'Sci-fi pilot', status: 'Ready' }
+  })
+  const input = screen.getByLabelText(rc('reshoot.clip.upload'))
   if (!(input instanceof HTMLInputElement)) throw new Error('No file input')
-  return { input, picked: () => emitted<[File]>().pick }
+  return {
+    input,
+    picked: () => emitted<[File]>().pick
+  }
 }
 
 beforeEach(() => {
   vi.mocked(fileSecondsOf).mockResolvedValue(10)
 })
 
-describe('ReshootUpload', () => {
-  it('names what to upload and how', () => {
+describe('ReshootClipRow', () => {
+  it('names the clip and offers to replace it', () => {
     setup()
 
-    expect(screen.getByText(rc('reshoot.clip.upload'))).toBeInTheDocument()
-    expect(screen.getByText(rc('reshoot.clip.browse'))).toBeInTheDocument()
+    expect(screen.getByText('Sci-fi pilot')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: rc('reshoot.clip.replace') })
+    ).toHaveAttribute('title', rc('reshoot.clip.upload'))
   })
 
   it('hands over a chosen clip and lets the same one be chosen again', async () => {
@@ -48,10 +55,10 @@ describe('ReshootUpload', () => {
   it.for([
     { name: 'a video', file: clip(), taken: true },
     { name: 'an image', file: clip('still.png', 'image/png'), taken: false }
-  ])('takes $name dropped on the zone: $taken', async ({ file, taken }) => {
+  ])('takes $name dropped on the row: $taken', async ({ file, taken }) => {
     const { picked } = setup()
 
-    await fireEvent.drop(screen.getByTestId('reshoot-upload'), {
+    await fireEvent.drop(screen.getByTestId('reshoot-clip'), {
       dataTransfer: { files: [file] }
     })
 

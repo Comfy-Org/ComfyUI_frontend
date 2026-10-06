@@ -2,7 +2,7 @@
 import { translationsFor } from '@/i18n/translations'
 import { Maximize2, Minimize2 } from '@lucide/vue'
 import { useFullscreen } from '@vueuse/core'
-import { computed, ref, useTemplateRef } from 'vue'
+import { computed, ref, useTemplateRef, watch } from 'vue'
 
 import type { DepthState, ReshootTake } from '@/composables/useReshoot'
 import type {
@@ -32,7 +32,6 @@ const {
   takes,
   selected,
   current,
-  cancellable = false,
   geometry,
   pose,
   keepAim = true,
@@ -49,7 +48,6 @@ const {
   takes: readonly ReshootTake[]
   selected: string
   current?: ReshootTake
-  cancellable?: boolean
   geometry?: Geometry
   pose?: Pose
   keepAim?: boolean
@@ -62,7 +60,6 @@ const { t } = translationsFor(locale)
 const emit = defineEmits<{
   aim: [patch: Partial<ReshootCamera>]
   select: [id: string]
-  cancel: []
   reuse: []
   key: []
   clearKeys: []
@@ -80,6 +77,13 @@ const { isFullscreen, toggle: toggleFullscreen } = useFullscreen(frameEl)
 
 const view = ref<ReshootView>('result')
 const sound = ref<ReshootSound>('generated')
+watch(
+  () => current?.id,
+  () => {
+    view.value = 'result'
+    sound.value = 'generated'
+  }
+)
 const finished = computed(() =>
   current?.status === 'done' && current.url ? current : undefined
 )
@@ -97,24 +101,34 @@ const fileName = computed(
 <template>
   <section
     :aria-label="t('reshoot.title')"
-    class="flex min-h-0 w-full flex-1 flex-col items-center gap-3 max-lg:contents"
+    class="flex min-w-0 flex-col max-lg:contents lg:overflow-hidden lg:rounded-2xl lg:border lg:border-transparency-white-t8 lg:bg-transparency-white-t4"
   >
-    <div
-      class="flex w-[min(100%,calc(52svh*16/9))] flex-col gap-3 max-lg:contents"
+    <header
+      class="flex min-h-11 items-center justify-between gap-3 max-lg:order-first max-lg:px-1 lg:border-b lg:border-transparency-white-t8 lg:px-5 lg:py-1"
+      data-testid="reshoot-output-header"
     >
+      <span
+        class="shrink-0 text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase"
+      >
+        {{ t('workshop.output.title') }}
+      </span>
       <ReshootOutputBar
-        v-if="href"
+        v-if="finished && href"
         v-model:view="view"
         v-model:sound="sound"
-        class="max-lg:order-first"
+        :take="finished"
         :href
         :file-name="fileName"
         :locale
         @reuse="emit('reuse')"
       />
+    </header>
+    <div
+      class="flex flex-col items-center gap-3 max-lg:contents lg:min-h-112 lg:justify-center lg:p-6"
+    >
       <div
         ref="frameEl"
-        class="group/frame relative aspect-video w-full rounded-md bg-primary-comfy-ink ring-1 ring-transparency-white-t8 max-lg:sticky max-lg:top-20 max-lg:z-20 max-lg:order-first max-lg:shadow-[0_12px_24px_rgb(0_0_0/0.45)]"
+        class="group/frame relative aspect-video w-full overflow-hidden rounded-md bg-primary-comfy-ink ring-1 ring-transparency-white-t8 max-lg:sticky max-lg:top-20 max-lg:z-20 max-lg:order-first max-lg:shadow-[0_12px_24px_rgb(0_0_0/0.45)]"
         data-testid="reshoot-frame"
       >
         <ReshootTakeView
@@ -123,9 +137,7 @@ const fileName = computed(
           :clip
           :view
           :sound
-          :cancellable
           :locale
-          @cancel="emit('cancel')"
         />
         <ReshootViewport
           v-else
@@ -166,7 +178,7 @@ const fileName = computed(
         @clear="emit('clearKeys')"
       />
       <p
-        class="min-h-4 text-xs text-primary-warm-gray max-lg:order-last"
+        class="min-h-4 w-full text-xs text-primary-warm-gray max-lg:order-last"
         data-testid="reshoot-take-caption"
       >
         <template v-if="current">
@@ -177,13 +189,13 @@ const fileName = computed(
           }}
         </template>
       </p>
-      <ReshootTakes
-        :takes
-        :selected
-        :locale
-        class="-ml-1 self-start max-lg:order-last"
-        @select="emit('select', $event)"
-      />
     </div>
+    <ReshootTakes
+      :takes
+      :selected
+      :locale
+      class="max-lg:order-last max-lg:-ml-1 lg:border-t lg:border-transparency-white-t8 lg:px-4 lg:py-3"
+      @select="emit('select', $event)"
+    />
   </section>
 </template>

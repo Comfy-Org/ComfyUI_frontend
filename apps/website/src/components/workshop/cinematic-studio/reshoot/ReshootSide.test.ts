@@ -27,6 +27,7 @@ describe('ReshootSide', () => {
     camera: DEFAULT_CAMERA,
     keys: [],
     depth: 'ready' as const,
+    step: 'camera' as const,
     gate: 'ready' as const,
     canGenerate: true,
     aspect: RESHOOT_ASPECTS[0],
@@ -59,6 +60,32 @@ describe('ReshootSide', () => {
 
     await vi.waitFor(() => expect(upload.value?.name).toBe(chosen.name))
   })
+
+  it.for([
+    { isExample: true, offered: false },
+    { isExample: false, offered: true }
+  ])(
+    'offers the example back only for a clip of your own: $offered',
+    async ({ isExample, offered }) => {
+      const example = vi.fn()
+      render({
+        setup: () => () =>
+          h(ReshootSide, {
+            ...props,
+            isExample,
+            size: RESHOOT_SIZES[0],
+            onExample: example
+          })
+      })
+      const button = screen.queryByRole('button', {
+        name: rc('reshoot.clip.useExample')
+      })
+
+      expect(button !== null).toBe(offered)
+      if (button) await userEvent.click(button)
+      expect(example).toHaveBeenCalledTimes(offered ? 1 : 0)
+    }
+  )
 
   it('picks the output size from a menu that describes each size', async () => {
     const size = ref<(typeof RESHOOT_SIZES)[number]>(RESHOOT_SIZES[0])

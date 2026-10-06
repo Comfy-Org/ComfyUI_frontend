@@ -72,9 +72,16 @@ describe('Re-shoot on one screen', () => {
   it('reads the example scene on arrival, then aims from the globe', async () => {
     const user = setup()
     expect(await screen.findByTestId('reshoot-action')).toBeDisabled()
-    expect(screen.getByRole('slider', { name: 'Rotation' })).toBeDisabled()
+    expect(screen.queryByRole('slider', { name: 'Rotation' })).toBeNull()
+    expect(screen.getByTestId('reshoot-camera-waiting')).toBeInTheDocument()
+    expect(
+      screen.getByRole('region', { name: rc('reshoot.step.clip') })
+    ).toHaveAttribute('aria-current', 'step')
 
     await readExample()
+    expect(
+      screen.getByRole('region', { name: rc('reshoot.step.camera') })
+    ).toHaveAttribute('aria-current', 'step')
     screen.getByTestId('reshoot-globe').focus()
     await user.keyboard('{ArrowRight}')
 

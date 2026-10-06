@@ -5307,7 +5307,11 @@
       "prompt": "What the new view reveals",
       "format": "Format"
     },
-    "step": "Step {n}",
+    "step": {
+      "clip": "Your clip",
+      "camera": "Aim the camera",
+      "reshoot": "Re-shoot"
+    },
     "step1": {
       "label": "Prepare the clip",
       "hint": "Choose the clip, its framing and what the new view should reveal. Depth is analyzed once; then you aim freely."
@@ -5322,7 +5326,6 @@
     "credit": "Built on Cseti's CrossView-Warp LoRA and node",
     "pick": {
       "lead": "Re-shoot any video from any angle. Move the camera anywhere, no reshoot day needed.",
-      "exampleMeta": "Try it without uploading anything",
       "exampleTitle": "Sci-fi pilot"
     },
     "aim": {
@@ -5366,10 +5369,10 @@
     "clip": {
       "ready": "Scene read",
       "example": "Example",
-      "help": "5–15 seconds, clear subject, no black bars",
       "rejected": "{name} is {seconds} s, so the current clip stays. Pick one between 5 and 15 seconds.",
       "upload": "Upload the video you want to re-shoot",
-      "browse": "Drop a video here or click to browse"
+      "replace": "Replace",
+      "useExample": "Use example"
     },
     "reuse": "Use this angle again",
     "generate": {
