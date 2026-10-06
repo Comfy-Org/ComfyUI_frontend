@@ -38,7 +38,7 @@ const REPRESENTATIVE_VIDEO = {
 }
 
 test(
-  'sends a nested video output by its asset id, not its display name',
+  'renders a dragged nested video from its asset content URL',
   { tag: ['@cloud', '@agent'] },
   async ({ page, workflowSelection, promptHistory }) => {
     // The boot fixture already routed `/api/assets` to an empty list, so these
@@ -123,8 +123,9 @@ test(
     // The dragged output is what the sent message must show. A nested output
     // has no hash, so a ref-based `/view?filename=<display name>&type=input`
     // only resolves when the display name happens to equal the storage name -
-    // the PM-1157/PM-1158 shape. Assert the source identifies the dragged
-    // asset by its own id instead.
+    // the PM-1157/PM-1158 shape. Assert the rendered preview source identifies
+    // the dragged asset by its own id instead; attachment upload identity is
+    // a separate backend-facing contract.
     const src = await video.getAttribute('src')
     expect(
       src,
