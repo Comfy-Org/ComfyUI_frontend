@@ -40,7 +40,7 @@ describe('useFeatureUsageTracker', () => {
     })
   })
 
-  it('persists coalesced failed increments when storage recovers', () => {
+  it('persists repeated failed increments when storage recovers', () => {
     const tracker = useFeatureUsageTracker('repeated-failed-increments')
     const setItem = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
       throw new DOMException('Storage quota exceeded', 'QuotaExceededError')
@@ -55,7 +55,7 @@ describe('useFeatureUsageTracker', () => {
     expect(tracker.useCount.value).toBe(4)
   })
 
-  it('keeps coalesced usage recorded after a deleted generation', () => {
+  it('keeps only usage recorded after a deleted generation', () => {
     vi.setSystemTime(1_000)
     const featureId = 'coalesced-after-deletion'
     const tracker = useFeatureUsageTracker(featureId)
@@ -82,7 +82,7 @@ describe('useFeatureUsageTracker', () => {
     useFeatureUsageTracker('coalesced-deletion-trigger').trackUsage()
 
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
-    expect(stored[featureId]?.useCount).toBe(2)
+    expect(stored[featureId]?.useCount).toBe(1)
   })
 
   it('writes storage once for each successful use', () => {
@@ -114,6 +114,50 @@ describe('useFeatureUsageTracker', () => {
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
     expect(stored[featureId]?.useCount).toBe(2)
     expect(stored.external?.useCount).toBe(1)
+  })
+
+  it('accepts a concurrent write that preserves the tracked increment', () => {
+    const featureId = 'preserved-before-verification'
+    const originalSetItem = localStorage.setItem.bind(localStorage)
+    const setItem = vi
+      .spyOn(localStorage, 'setItem')
+      .mockImplementation((key, value) => {
+        const written = JSON.parse(value)
+        originalSetItem(
+          key,
+          JSON.stringify({
+            ...written,
+            external: { useCount: 1, firstUsed: 1_000, lastUsed: 1_000 }
+          })
+        )
+      })
+    const tracker = useFeatureUsageTracker(featureId)
+    tracker.trackUsage()
+    setItem.mockRestore()
+
+    tracker.trackUsage()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored[featureId]?.useCount).toBe(2)
+    expect(stored.external?.useCount).toBe(1)
+  })
+
+  it('assumes a successful write when verification cannot read storage', () => {
+    const featureId = 'unreadable-verification'
+    const tracker = useFeatureUsageTracker(featureId)
+    const getItem = vi
+      .spyOn(localStorage, 'getItem')
+      .mockReturnValueOnce(null)
+      .mockImplementation(() => {
+        throw new DOMException('Storage access denied', 'SecurityError')
+      })
+
+    tracker.trackUsage()
+    getItem.mockRestore()
+    tracker.trackUsage()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored[featureId]?.useCount).toBe(2)
   })
 
   it('increments count on trackUsage', () => {
@@ -321,6 +365,28 @@ describe('useFeatureUsageTracker', () => {
 
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
     expect(stored).not.toHaveProperty(featureId)
+  })
+
+  it('retires an unreadable reset after later external usage', () => {
+    vi.setSystemTime(1_000)
+    const featureId = 'unreadable-reset-with-later-usage'
+    const tracker = useFeatureUsageTracker(featureId)
+    const getItem = vi.spyOn(localStorage, 'getItem').mockImplementation(() => {
+      throw new DOMException('Storage access denied', 'SecurityError')
+    })
+    tracker.reset()
+    getItem.mockRestore()
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        [featureId]: { useCount: 1, firstUsed: 2_000, lastUsed: 2_000 }
+      })
+    )
+
+    useFeatureUsageTracker('unreadable-reset-later-trigger').trackUsage()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored[featureId]?.useCount).toBe(1)
   })
 
   it('preserves an earlier reset baseline when a repeated reset cannot read', () => {
@@ -1731,6 +1797,51 @@ describe('useFeatureUsageTracker', () => {
     })
   })
 
+  it('retains an unchanged pending baseline with an unreliable clock', () => {
+    vi.setSystemTime(1_000)
+    const featureId = 'unchanged-unreliable-baseline'
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        [featureId]: { useCount: 1, firstUsed: 500_000, lastUsed: 500_000 }
+      })
+    )
+    const tracker = useFeatureUsageTracker(featureId)
+    const setItem = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new DOMException('Storage quota exceeded', 'QuotaExceededError')
+    })
+    tracker.trackUsage()
+    setItem.mockRestore()
+
+    tracker.trackUsage()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored[featureId]?.useCount).toBe(3)
+  })
+
+  it('repairs only the drifted timestamp field', () => {
+    vi.setSystemTime(10_000)
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        'partially-drifted-timestamp': {
+          useCount: 5,
+          firstUsed: 1_000,
+          lastUsed: 500_000
+        }
+      })
+    )
+
+    useFeatureUsageTracker('partially-drifted-timestamp').trackUsage()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored['partially-drifted-timestamp']).toEqual({
+      useCount: 6,
+      firstUsed: 1_000,
+      lastUsed: 10_000
+    })
+  })
+
   it('keeps pending usage self-consistent with a future baseline', () => {
     vi.setSystemTime(1_000)
     const featureId = 'future-pending-baseline'
@@ -1795,9 +1906,15 @@ describe('useFeatureUsageTracker', () => {
 
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
     expect(stored['malformed-json']?.useCount).toBe(1)
-    expect(reportError).toHaveBeenCalledWith(expect.any(SyntaxError), {
-      errorType: 'error_parsing_feature_usage',
-      surface: 'platform'
-    })
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: 'Invalid feature usage JSON',
+        name: 'SyntaxError'
+      }),
+      {
+        errorType: 'error_parsing_feature_usage',
+        surface: 'platform'
+      }
+    )
   })
 })
