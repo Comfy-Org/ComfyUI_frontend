@@ -118,6 +118,26 @@ describe('useFeatureUsageTracker', () => {
     expect(trackUsage).not.toThrow()
   })
 
+  it('preserves intervening usage when tracked after scope disposal', () => {
+    const scope = effectScope()
+    let trackDisposedFeature = () => {}
+
+    scope.run(() => {
+      trackDisposedFeature =
+        useFeatureUsageTracker('disposed-feature').trackUsage
+    })
+    scope.stop()
+
+    const liveFeature = useFeatureUsageTracker('live-feature')
+    liveFeature.trackUsage()
+    trackDisposedFeature()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored['disposed-feature']?.useCount).toBe(1)
+    expect(stored['live-feature']?.useCount).toBe(1)
+    expect(liveFeature.useCount.value).toBe(1)
+  })
+
   it('loads existing data from localStorage', () => {
     localStorage.setItem(
       STORAGE_KEY,
