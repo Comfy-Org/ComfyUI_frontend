@@ -31,6 +31,9 @@ const bridgeState = vi.hoisted(() => {
     subscribe = vi.fn()
     unsubscribe = vi.fn()
     resubscribe = vi.fn()
+    reconnect = vi.fn(() => this.resubscribe())
+    canReseed = vi.fn(() => false)
+    reseed = vi.fn(() => false)
     reconcile = vi.fn()
     destroy = vi.fn()
     sendHumanOps = vi.fn()
@@ -215,7 +218,8 @@ function mountFollower(
   initial: string | null = null,
   initiallyActive = true,
   getGraph: () => MaterializableGraph | null = () => null,
-  events: Parameters<typeof useAgentCrdtFollower>[5] = {}
+  events: Parameters<typeof useAgentCrdtFollower>[5] = {},
+  canvasFor: Parameters<typeof useAgentCrdtFollower>[6] = () => null
 ): {
   unmount: () => void
   workflowId: Ref<string | null>
@@ -235,7 +239,8 @@ function mountFollower(
         () => null,
         isTargetActive,
         getGraph,
-        events
+        events,
+        canvasFor
       )
       exposedStatus = () => status.value as AgentCrdtStatus
       enqueue = enqueueHumanOperations
@@ -243,7 +248,13 @@ function mountFollower(
     }
   })
   const { unmount } = render(host)
-  return { unmount, workflowId, isTargetActive, status: exposedStatus, enqueue }
+  return {
+    unmount,
+    workflowId,
+    isTargetActive,
+    status: exposedStatus,
+    enqueue
+  }
 }
 
 function bridge(): InstanceType<(typeof bridgeState)['FakeBridge']> {
@@ -272,6 +283,46 @@ describe('useAgentCrdtFollower', () => {
     appState.refreshMissingModels.mockClear()
     definitionsState.readSubgraphDefinitionIds.mockClear()
     definitionsState.readSubgraphDefinitions.mockClear()
+  })
+
+  it('answers a stale-schema refusal with the visible canvas once', () => {
+    const visibleCanvas = { nodes: [{ id: 1 }] }
+    const canvasFor = vi.fn(() => visibleCanvas)
+    mountFollower('wf-1', true, () => null, {}, canvasFor)
+    bridge().canReseed.mockReturnValue(true)
+    bridge().reseed.mockReturnValue(true)
+
+    dispatchFrame('doc_subscribed', {
+      workflowId: 'wf-1',
+      ok: false,
+      code: 'stale_schema_reseed_required',
+      expectedSeq: 7
+    })
+
+    expect(canvasFor).toHaveBeenCalledWith('wf-1')
+    expect(bridge().reseed).toHaveBeenCalledWith('wf-1', visibleCanvas)
+  })
+
+  it('answers a stale-schema refusal with a legitimately empty canvas', () => {
+    const emptyCanvas = { nodes: [] }
+    mountFollower(
+      'wf-1',
+      true,
+      () => null,
+      {},
+      () => emptyCanvas
+    )
+    bridge().canReseed.mockReturnValue(true)
+    bridge().reseed.mockReturnValue(true)
+
+    dispatchFrame('doc_subscribed', {
+      workflowId: 'wf-1',
+      ok: false,
+      code: 'stale_schema_reseed_required',
+      expectedSeq: 7
+    })
+
+    expect(bridge().reseed).toHaveBeenCalledWith('wf-1', emptyCanvas)
   })
 
   it('does not construct a follower when the product gate is disabled', () => {
@@ -315,7 +366,9 @@ describe('useAgentCrdtFollower', () => {
 
     const applies = adapterState.applyFrame.mock.calls.length
     first.dispatchEvent(
-      new CustomEvent('doc_update', { detail: { workflowId: 'wf-1', seq: 42 } })
+      new CustomEvent('doc_update', {
+        detail: { workflowId: 'wf-1', seq: 42 }
+      })
     )
     apiState.target.dispatchEvent(new Event('reconnected'))
     vi.advanceTimersByTime(STALE_AFTER_MS * 2)
@@ -755,7 +808,11 @@ describe('useAgentCrdtFollower', () => {
     it('counts gap on the bridge doc_gap signal, which never becomes a doc_update', () => {
       const { unmount, status } = mountFollower('wf-1')
 
-      dispatchFrame('doc_gap', { workflowId: 'wf-1', expected: 3, received: 5 })
+      dispatchFrame('doc_gap', {
+        workflowId: 'wf-1',
+        expected: 3,
+        received: 5
+      })
 
       expect(status().outcomes.gap).toBe(1)
       expect(status().outcomes.received).toBe(0)
@@ -817,7 +874,11 @@ describe('useAgentCrdtFollower', () => {
     it('counts appliedLive for a live update but not for a subscribe catch-up frame', () => {
       const { unmount, status } = mountFollower('wf-1')
 
-      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 4, catchUp: true })
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 4,
+        catchUp: true
+      })
       expect(status().outcomes.applied).toBe(1)
       expect(status().outcomes.appliedLive).toBe(0)
 
@@ -836,7 +897,11 @@ describe('useAgentCrdtFollower', () => {
 
       dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 1 })
       dispatchFrame('doc_update', { workflowId: 'wf-other', seq: 2 })
-      dispatchFrame('doc_gap', { workflowId: 'wf-1', expected: 2, received: 4 })
+      dispatchFrame('doc_gap', {
+        workflowId: 'wf-1',
+        expected: 2,
+        received: 4
+      })
       dispatchFrame('doc_stale', { workflowId: 'wf-1', seq: 1 })
       dispatchFrame('schema_error', { workflowId: 'wf-1', code: 'unreadable' })
       dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 4 })
@@ -1439,7 +1504,11 @@ describe('useAgentCrdtFollower', () => {
     await Promise.resolve()
     expect(clientState.sendOps).toHaveBeenCalledTimes(1)
 
-    dispatchFrame('doc_reset', { workflowId: 'wf-1', seq: 9, actor: 'agent:x' })
+    dispatchFrame('doc_reset', {
+      workflowId: 'wf-1',
+      seq: 9,
+      actor: 'agent:x'
+    })
 
     expect(clientState.sendOps).toHaveBeenCalledTimes(1)
     expect(await settledHumanOpStates()).toEqual([
@@ -1453,7 +1522,11 @@ describe('useAgentCrdtFollower', () => {
     const { enqueue, unmount } = mountWithHumanOps()
 
     enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
-    dispatchFrame('doc_reset', { workflowId: 'wf-1', seq: 9, actor: 'agent:x' })
+    dispatchFrame('doc_reset', {
+      workflowId: 'wf-1',
+      seq: 9,
+      actor: 'agent:x'
+    })
     await Promise.resolve()
 
     expect(clientState.sendOps).not.toHaveBeenCalled()

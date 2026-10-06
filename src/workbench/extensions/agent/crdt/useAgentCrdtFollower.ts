@@ -31,6 +31,7 @@ import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import { readCrdtSnapshot } from './crdtSnapshot'
 import type { DocFrameTransport } from './docFrameClient'
 import { DocFrameClient } from './docFrameClient'
+import { RESEED_CONFLICT, isRetryableReseedCode } from './docFrameCodes'
 import type { MutationsForTarget } from './ecsFollowerAdapter'
 import { EcsFollowerAdapter } from './ecsFollowerAdapter'
 import type { GraphOperation } from './graphOperations'
@@ -335,7 +336,8 @@ export function useAgentCrdtFollower(
    * reconcile without waiting for the next remote frame.
    */
   getGraph: () => MaterializableGraph | null = () => null,
-  events: AgentCrdtFollowerEvents = {}
+  events: AgentCrdtFollowerEvents = {},
+  canvasFor: (workflowId: string) => Record<string, unknown> | null = () => null
 ) {
   const productGate = useAgentPanelStore()
   const follower = shallowRef<ReturnType<typeof startAgentCrdtFollower>>()
@@ -374,7 +376,8 @@ export function useAgentCrdtFollower(
           userId,
           isTargetActive,
           getGraph,
-          events
+          events,
+          canvasFor
         )
       )
     },
@@ -402,7 +405,8 @@ function startAgentCrdtFollower(
   userId: () => string | null,
   isTargetActive: Ref<boolean>,
   getGraph: () => MaterializableGraph | null,
-  events: AgentCrdtFollowerEvents
+  events: AgentCrdtFollowerEvents,
+  canvasFor: (workflowId: string) => Record<string, unknown> | null
 ) {
   const connected = ref(false)
   const updatesApplied = ref(0)
@@ -657,6 +661,57 @@ function startAgentCrdtFollower(
     }, delay)
   }
 
+  const tryReseed = (): boolean => {
+    const target = subscribedWorkflowId.value
+    if (target === null || !bridge.canReseed(target)) return false
+    let canvas: Record<string, unknown> | null
+    try {
+      canvas = canvasFor(target)
+    } catch (error) {
+      reportError(error, {
+        errorType: 'failure_serializing_agent_reseed_canvas',
+        level: 'warning',
+        tags: { feature_area: 'agent', operation: 'sync', outcome: 'recovered' }
+      })
+      return false
+    }
+    if (canvas === null || !bridge.reseed(target, canvas)) return false
+    recordDevEvent('doc_reseed_sent', { workflowId: target })
+    onSubscribeSent(
+      new CustomEvent('doc_subscribe_sent', {
+        detail: { workflowId: target }
+      })
+    )
+    return true
+  }
+
+  const onReseedResult: EventListener = (event) => {
+    if (!(event instanceof CustomEvent)) return
+    const detail = event.detail as {
+      workflowId?: unknown
+      ok?: unknown
+      code?: unknown
+    } | null
+    if (detail?.workflowId !== subscribedWorkflowId.value) return
+    lastFrameType.value = event.type
+    recordDevEvent('doc_reseed_result', detail)
+    const code = typeof detail.code === 'string' ? detail.code : undefined
+    if (detail.ok === true || code === RESEED_CONFLICT) return
+    clearSubscribeAckTimer()
+    if (isRetryableReseedCode(code)) scheduleSubscribeRetry()
+    else {
+      clearStaleProbe()
+      clearSubscribeRetry()
+      subscribeGaveUp = true
+      connected.value = false
+      reportError(new Error('agent document reseed was rejected'), {
+        errorType: 'failure_reseeding_agent_cloud_workflow',
+        level: 'warning',
+        tags: { feature_area: 'agent', operation: 'sync', outcome: 'gave_up' }
+      })
+    }
+  }
+
   const onSubscribed: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
     if (!isTargetActive.value) return
@@ -677,7 +732,7 @@ function startAgentCrdtFollower(
     } else {
       clearSubscribeAckTimer()
       clearStaleProbe()
-      scheduleSubscribeRetry()
+      if (!tryReseed()) scheduleSubscribeRetry()
       // FE #16637 residual: a refusal is the earliest signal the sender can
       // get that its in-flight batch's doc is gone — don't make it wait out
       // the 10 s result-silence window to notice on its own.
@@ -811,7 +866,10 @@ function startAgentCrdtFollower(
     // new doc — otherwise it keeps observing the destroyed one and goes deaf
     // when the socket recovers and updates land in the replacement.
     if (!(event instanceof CustomEvent)) return
-    const detail = event.detail as { workflowId?: unknown } | null
+    const detail = event.detail as {
+      workflowId?: unknown
+      preserveCanvas?: unknown
+    } | null
     const workflowId = detail?.workflowId
     if (
       isTargetActive.value &&
@@ -821,15 +879,17 @@ function startAgentCrdtFollower(
       updatesApplied.value = 0
       confirmedDeletes.clear()
       pendingLiveNodeIds.clear()
-      adapter.clearForReset(workflowId, {
-        source: 'agent-remote',
-        actor: 'agent-lineage',
-        opId: `follower-replaced:${workflowId}`
-      })
-      // Same reasoning as `onDocReset`: the clear is store-only, so the stale
-      // live adapters have to be swept before the replacement doc's frames
-      // start landing.
-      reconcileLiveGraph(workflowId)
+      if (detail?.preserveCanvas !== true) {
+        adapter.clearForReset(workflowId, {
+          source: 'agent-remote',
+          actor: 'agent-lineage',
+          opId: `follower-replaced:${workflowId}`
+        })
+        // Same reasoning as `onDocReset`: the clear is store-only, so the stale
+        // live adapters have to be swept before the replacement doc's frames
+        // start landing.
+        reconcileLiveGraph(workflowId)
+      }
       adapter.bind(workflowId, bridge.follower)
     }
   }
@@ -873,7 +933,7 @@ function startAgentCrdtFollower(
     subscribeGaveUp = false
     clearStaleProbe()
     recordDevEvent('reconnected', null)
-    bridge.resubscribe()
+    bridge.reconnect()
   }
   /**
    * Re-drive subscription intent whenever the socket may have become usable.
@@ -904,6 +964,7 @@ function startAgentCrdtFollower(
   bridge.addEventListener('doc_gap', onGap)
   bridge.addEventListener('doc_stale', onStale)
   bridge.addEventListener('doc_subscribe_sent', onSubscribeSent)
+  bridge.addEventListener('doc_reseed_result', onReseedResult)
   api.addEventListener('reconnected', onReconnected)
   api.addEventListener('status', onSocketActivity)
 
@@ -1091,6 +1152,7 @@ function startAgentCrdtFollower(
       () => bridge.removeEventListener('doc_gap', onGap),
       () => bridge.removeEventListener('doc_stale', onStale),
       () => bridge.removeEventListener('doc_subscribe_sent', onSubscribeSent),
+      () => bridge.removeEventListener('doc_reseed_result', onReseedResult),
       () => sender.detach(),
       () => coalescer.detach(),
       () => adapter.destroy(),

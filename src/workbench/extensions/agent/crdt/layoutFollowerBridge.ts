@@ -3,11 +3,13 @@ import { reportError } from '@/platform/telemetry/reportError'
 import type {
   DocFrameClient,
   DocOp,
+  DocReseedResult,
   DocReset,
   DocSubscribed,
   DocUpdate
 } from './docFrameClient'
 import { wireLog } from './crdtLog'
+import { RESEED_CONFLICT, STALE_SCHEMA_RESEED_REQUIRED } from './docFrameCodes'
 import { FollowerDoc } from './followerDoc'
 import { FollowerSchemaError, assertReadableSchema } from './schemaGuard'
 
@@ -124,6 +126,9 @@ export class LayoutFollowerBridge extends EventTarget {
    * harmless). It never moves {@link lastSeq} backwards.
    */
   private catchUpPending = false
+  private pendingReseedWorkflowId: string | null = null
+  private reseedToken: { workflowId: string; expectedSeq: number } | null = null
+  private reseedBlockedUntilConfirmedWorkflowId: string | null = null
 
   constructor(private readonly client: DocFrameClient) {
     super()
@@ -131,6 +136,7 @@ export class LayoutFollowerBridge extends EventTarget {
     client.addEventListener('doc_reset', this.onDocReset)
     client.addEventListener('doc_subscribed', this.onDocSubscribed)
     client.addEventListener('doc_ops_result', this.forwardFrame)
+    client.addEventListener('doc_reseed_result', this.onDocReseedResult)
   }
 
   /** The semantic doc this bridge currently follows. */
@@ -179,6 +185,11 @@ export class LayoutFollowerBridge extends EventTarget {
    */
   subscribe(workflowId: string): void {
     const lineage = this.lineageWorkflowId
+    if (this.desiredWorkflowId !== workflowId) {
+      this.pendingReseedWorkflowId = null
+      this.reseedBlockedUntilConfirmedWorkflowId = null
+      this.reseedToken = null
+    }
     this.lineageWorkflowId = workflowId
     this.desiredWorkflowId = workflowId
     if (lineage !== null && lineage !== workflowId) {
@@ -208,7 +219,12 @@ export class LayoutFollowerBridge extends EventTarget {
       this.sentWorkflowId = null
       trySend(() => this.client.unsubscribe(sent))
     }
-    if (desired === null || this.sentWorkflowId === desired) return
+    if (
+      desired === null ||
+      this.sentWorkflowId === desired ||
+      this.pendingReseedWorkflowId === desired
+    )
+      return
     if (
       trySend(() => this.client.subscribe(desired, this.follower.stateVector()))
     ) {
@@ -229,9 +245,41 @@ export class LayoutFollowerBridge extends EventTarget {
     this.reconcile()
   }
 
+  reconnect(): void {
+    this.pendingReseedWorkflowId = null
+    this.reseedBlockedUntilConfirmedWorkflowId = null
+    this.reseedToken = null
+    this.resubscribe()
+  }
+
   unsubscribe(): void {
+    this.pendingReseedWorkflowId = null
+    this.reseedToken = null
     this.desiredWorkflowId = null
     this.reconcile()
+  }
+
+  reseed(workflowId: string, workflow: Record<string, unknown>): boolean {
+    const expectedSeq = this.reseedSequenceFor(workflowId)
+    if (expectedSeq === null) return false
+    this.reseedToken = null
+    if (!trySend(() => this.client.reseed(workflowId, expectedSeq, workflow)))
+      return false
+    this.pendingReseedWorkflowId = workflowId
+    return true
+  }
+
+  canReseed(workflowId: string): boolean {
+    return this.reseedSequenceFor(workflowId) !== null
+  }
+
+  private reseedSequenceFor(workflowId: string): number | null {
+    const token = this.reseedToken
+    return token?.workflowId === workflowId &&
+      workflowId === this.desiredWorkflowId &&
+      workflowId !== this.reseedBlockedUntilConfirmedWorkflowId
+      ? token.expectedSeq
+      : null
   }
 
   sendHumanOps(tab: string, ops: DocOp[]): void {
@@ -254,8 +302,14 @@ export class LayoutFollowerBridge extends EventTarget {
       this.client.removeEventListener('doc_reset', this.onDocReset)
       this.client.removeEventListener('doc_subscribed', this.onDocSubscribed)
       this.client.removeEventListener('doc_ops_result', this.forwardFrame)
+      this.client.removeEventListener(
+        'doc_reseed_result',
+        this.onDocReseedResult
+      )
       this.desiredWorkflowId = null
       this.sentWorkflowId = null
+      this.pendingReseedWorkflowId = null
+      this.reseedToken = null
       this.followerDoc.destroy()
     }
   }
@@ -406,11 +460,43 @@ export class LayoutFollowerBridge extends EventTarget {
     if (!(event instanceof CustomEvent)) return
     const subscribed = event.detail as DocSubscribed
     if (subscribed.workflowId !== this.sentWorkflowId) return
+    this.reseedToken =
+      subscribed.workflowId !== this.reseedBlockedUntilConfirmedWorkflowId &&
+      !subscribed.ok &&
+      subscribed.code === STALE_SCHEMA_RESEED_REQUIRED &&
+      subscribed.expectedSeq !== undefined
+        ? {
+            workflowId: subscribed.workflowId,
+            expectedSeq: subscribed.expectedSeq
+          }
+        : null
     if (subscribed.ok) {
+      this.reseedBlockedUntilConfirmedWorkflowId = null
       this.ackSeq = subscribed.seq ?? null
       this.catchUpPending = this.ackSeq !== null
     } else this.sentWorkflowId = null
     this.dispatchEvent(new CustomEvent(event.type, { detail: event.detail }))
+  }
+
+  private readonly onDocReseedResult: EventListener = (event) => {
+    if (!(event instanceof CustomEvent)) return
+    const result = event.detail as DocReseedResult
+    if (result.workflowId !== this.pendingReseedWorkflowId) return
+    this.pendingReseedWorkflowId = null
+    this.dispatchEvent(new CustomEvent(event.type, { detail: result }))
+    if (result.workflowId !== this.desiredWorkflowId) return
+    if (!result.ok) {
+      if (result.code === RESEED_CONFLICT) this.resubscribe()
+      return
+    }
+    this.reseedBlockedUntilConfirmedWorkflowId = result.workflowId
+    this.dropDocForNewLineage()
+    this.resubscribe()
+    this.dispatchEvent(
+      new CustomEvent('follower_replaced', {
+        detail: { workflowId: result.workflowId, preserveCanvas: true }
+      })
+    )
   }
 
   private readonly forwardFrame: EventListener = (event) => {

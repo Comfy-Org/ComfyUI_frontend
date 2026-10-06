@@ -35,6 +35,16 @@ export interface DocSubscribed {
   workflowId: string
   ok: boolean
   seq?: number
+  expectedSeq?: number
+  code?: string
+  message?: string
+}
+
+export interface DocReseedResult {
+  workflowId: string
+  ok: boolean
+  seq?: number
+  outcome?: string
   code?: string
   message?: string
 }
@@ -83,6 +93,7 @@ export type ServerDocFrame =
   | { type: 'doc_subscribed'; data: DocSubscribed }
   | { type: 'doc_ops_result'; data: DocOpsResult }
   | { type: 'doc_reset'; data: DocReset }
+  | { type: 'doc_reseed_result'; data: DocReseedResult }
   | { type: 'awareness'; data: DocAwareness }
 
 export interface DocFrameTransport {
@@ -107,6 +118,7 @@ interface WireData {
   v?: unknown
   workflow_id?: unknown
   seq?: unknown
+  expected_seq?: unknown
   update_b64?: unknown
   actor?: unknown
   op_ids?: unknown
@@ -120,6 +132,7 @@ interface WireData {
   expires_at?: unknown
   index?: unknown
   op_id?: unknown
+  outcome?: unknown
 }
 
 function decodeBase64(value: string): Uint8Array | null {
@@ -312,6 +325,9 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
         workflowId: data.workflow_id,
         ok: data.ok,
         ...(isSequence(data.seq) && { seq: data.seq }),
+        ...(isSequence(data.expected_seq) && {
+          expectedSeq: data.expected_seq
+        }),
         ...(code !== undefined && { code }),
         ...(message !== undefined && { message })
       }
@@ -356,6 +372,23 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
     }
   }
 
+  if (frame.type === 'doc_reseed_result' && typeof data.ok === 'boolean') {
+    const outcome = parseBoundedString(data.outcome, MAX_ERROR_CODE_LENGTH)
+    const code = parseBoundedString(data.code, MAX_ERROR_CODE_LENGTH)
+    const message = parseBoundedString(data.message, MAX_ERROR_MESSAGE_LENGTH)
+    return {
+      type: frame.type,
+      data: {
+        workflowId: data.workflow_id,
+        ok: data.ok,
+        ...(isSequence(data.seq) && { seq: data.seq }),
+        ...(outcome !== undefined && { outcome }),
+        ...(code !== undefined && { code }),
+        ...(message !== undefined && { message })
+      }
+    }
+  }
+
   if (frame.type === 'awareness' && typeof data.actor === 'string') {
     if (!isValidActor(data.actor)) return null
     const state = parseRecord(data.state)
@@ -393,6 +426,7 @@ export class DocFrameClient extends EventTarget {
       'doc_subscribed',
       'doc_ops_result',
       'doc_reset',
+      'doc_reseed_result',
       'awareness'
     ]) {
       const listener: EventListener = (event) => {
@@ -420,8 +454,24 @@ export class DocFrameClient extends EventTarget {
     return this.send('doc_subscribe', {
       v: DOC_PROTOCOL_VERSION,
       workflow_id: workflowId,
-      state_vector_b64: encodeBase64(stateVector)
+      state_vector_b64: encodeBase64(stateVector),
+      supports_reseed: true
     })
+  }
+
+  reseed(
+    workflowId: string,
+    expectedSeq: number,
+    workflow: Record<string, unknown>
+  ): boolean {
+    const data = {
+      v: DOC_PROTOCOL_VERSION,
+      workflow_id: workflowId,
+      expected_seq: expectedSeq,
+      workflow
+    }
+    if (JSON.stringify(data).length > MAX_DOC_UPDATE_B64_LENGTH) return false
+    return this.send('doc_reseed', data)
   }
 
   /** @returns whether the unsubscribe frame actually left the transport. */
