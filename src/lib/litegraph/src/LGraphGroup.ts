@@ -127,18 +127,15 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
     this.color = pale_blue.groupcolor
 
     let reported = false
-    const reportForeignShape = (key: string, value: unknown) => {
+    const reportForeignShape = (key: string) => {
       if (reported) return
       reported = true
       console.warn(
-        `[LGraphGroup] ${key} was assigned a ${typeof value}, not a coordinate array. The group kept its own buffer. This is usually an extension copying a group by enumerating its own keys; the stack below names it.`
+        `[LGraphGroup] ${key} was assigned a non-array value; kept the existing buffer`
       )
     }
 
-    // Assignment copies coordinates into the buffer rather than replacing it,
-    // so a JSON round-trip or a legacy `group._bounding = [...]` cannot leave
-    // behind a plain object that every later geometry read would throw on.
-    const absorbWrites = (
+    const copyAssignmentsIntoBuffer = (
       key: 'bounds' | '_pos' | '_size' | '_bounding',
       arity: number,
       write: (coords: number[]) => void
@@ -148,7 +145,7 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
         get: () => buffer,
         set: (value: ArrayLike<unknown> | null | undefined) => {
           if (!Array.isArray(value) && !ArrayBuffer.isView(value))
-            reportForeignShape(key, value)
+            reportForeignShape(key)
 
           const coords: number[] = []
           for (let index = 0; index < arity; index++) {
@@ -165,12 +162,12 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
 
     const writeRect = (coords: number[]) =>
       this.setBounds(coords[0], coords[1], coords[2], coords[3])
-    absorbWrites('bounds', 4, writeRect)
-    absorbWrites('_bounding', 4, writeRect)
-    absorbWrites('_pos', 2, (coords) => {
+    copyAssignmentsIntoBuffer('bounds', 4, writeRect)
+    copyAssignmentsIntoBuffer('_bounding', 4, writeRect)
+    copyAssignmentsIntoBuffer('_pos', 2, (coords) => {
       this.pos = [coords[0], coords[1]]
     })
-    absorbWrites('_size', 2, (coords) => {
+    copyAssignmentsIntoBuffer('_size', 2, (coords) => {
       this.setBounds(this._pos[0], this._pos[1], coords[0], coords[1])
     })
   }
