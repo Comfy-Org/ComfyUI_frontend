@@ -58,6 +58,29 @@ function incrementUsage(
   }
 }
 
+function dispatchStorageUpdate(
+  oldValue: string | null,
+  usageData: FeatureUsageRecord
+) {
+  window.dispatchEvent(
+    new StorageEvent('storage', {
+      key: STORAGE_KEY,
+      oldValue,
+      newValue: JSON.stringify(usageData),
+      storageArea: localStorage
+    })
+  )
+}
+
+function withoutFeature(
+  usageData: FeatureUsageRecord,
+  featureId: string
+): FeatureUsageRecord {
+  return Object.fromEntries(
+    Object.entries(usageData).filter(([id]) => id !== featureId)
+  )
+}
+
 function persistUsageData(
   featureId: string,
   currentUsageData: FeatureUsageRecord,
@@ -84,14 +107,29 @@ function persistUsageData(
     if (!usageData) return
   }
 
-  window.dispatchEvent(
-    new StorageEvent('storage', {
-      key: STORAGE_KEY,
-      oldValue,
-      newValue: JSON.stringify(usageData),
-      storageArea: localStorage
-    })
-  )
+  dispatchStorageUpdate(oldValue, usageData)
+  return usageData
+}
+
+function resetUsageData(
+  featureId: string,
+  currentUsageData: FeatureUsageRecord
+) {
+  let oldValue: string | null = null
+  let usageData: FeatureUsageRecord
+
+  try {
+    oldValue = localStorage.getItem(STORAGE_KEY)
+    usageData = withoutFeature(
+      { ...parseUsageData(oldValue), ...currentUsageData },
+      featureId
+    )
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(usageData))
+  } catch {
+    usageData = withoutFeature(currentUsageData, featureId)
+  }
+
+  dispatchStorageUpdate(oldValue, usageData)
   return usageData
 }
 
@@ -117,7 +155,10 @@ export function useFeatureUsageTracker(featureId: string) {
   }
 
   function reset() {
-    delete usageData.value[featureId]
+    usageData.value = resetUsageData(
+      featureId,
+      normalizeUsageData(usageData.value)
+    )
   }
 
   return {

@@ -58,6 +58,20 @@ describe('useFeatureUsageTracker', () => {
 
     reset()
     expect(useCount.value).toBe(0)
+    expect(
+      JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    ).not.toHaveProperty('test-feature-5')
+  })
+
+  it('persists reset immediately after tracking', () => {
+    const { trackUsage, reset } = useFeatureUsageTracker('immediate-reset')
+
+    trackUsage()
+    reset()
+
+    expect(
+      JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    ).not.toHaveProperty('immediate-reset')
   })
 
   it('tracks multiple features independently', () => {
