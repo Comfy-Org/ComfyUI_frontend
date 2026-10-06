@@ -13,6 +13,7 @@ type FeatureUsageRecord = Partial<Record<string, FeatureUsage>>
 
 const STORAGE_KEY = 'Comfy.FeatureUsage'
 const resetVersions = new Map<string, number>()
+const pendingResets = new Set<string>()
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -121,6 +122,10 @@ function withoutFeature(
   )
 }
 
+function applyPendingResets(usageData: FeatureUsageRecord): FeatureUsageRecord {
+  return [...pendingResets].reduce(withoutFeature, usageData)
+}
+
 function persistUsageData(
   featureId: string,
   currentUsageData: FeatureUsageRecord,
@@ -132,7 +137,9 @@ function persistUsageData(
   try {
     oldValue = localStorage.getItem(STORAGE_KEY)
     const storedUsageData = parseUsageData(oldValue)
-    const mergedUsageData = mergeUsageData(storedUsageData, currentUsageData)
+    const mergedUsageData = applyPendingResets(
+      mergeUsageData(storedUsageData, currentUsageData)
+    )
     usageData = {
       ...mergedUsageData,
       [featureId]: incrementUsage(mergedUsageData[featureId], now)
@@ -140,6 +147,7 @@ function persistUsageData(
     const newValue = JSON.stringify(usageData)
 
     localStorage.setItem(STORAGE_KEY, newValue)
+    pendingResets.clear()
   } catch (error) {
     reportError(error, {
       errorType: 'error_persisting_feature_usage',
@@ -152,26 +160,23 @@ function persistUsageData(
   return usageData
 }
 
-function resetUsageData(
-  featureId: string,
-  currentUsageData: FeatureUsageRecord
-) {
+function resetUsageData(currentUsageData: FeatureUsageRecord) {
   let oldValue: string | null = null
   let usageData: FeatureUsageRecord
 
   try {
     oldValue = localStorage.getItem(STORAGE_KEY)
-    usageData = withoutFeature(
-      mergeUsageData(parseUsageData(oldValue), currentUsageData),
-      featureId
+    usageData = applyPendingResets(
+      mergeUsageData(parseUsageData(oldValue), currentUsageData)
     )
     localStorage.setItem(STORAGE_KEY, JSON.stringify(usageData))
+    pendingResets.clear()
   } catch (error) {
     reportError(error, {
       errorType: 'error_resetting_feature_usage',
       surface: 'platform'
     })
-    usageData = withoutFeature(currentUsageData, featureId)
+    usageData = applyPendingResets(currentUsageData)
   }
 
   dispatchStorageUpdate(oldValue, usageData)
@@ -209,10 +214,8 @@ export function useFeatureUsageTracker(featureId: string) {
   function reset() {
     observedResetVersion = (resetVersions.get(featureId) ?? 0) + 1
     resetVersions.set(featureId, observedResetVersion)
-    usageData.value = resetUsageData(
-      featureId,
-      normalizeUsageData(usageData.value)
-    )
+    pendingResets.add(featureId)
+    usageData.value = resetUsageData(normalizeUsageData(usageData.value))
   }
 
   return {

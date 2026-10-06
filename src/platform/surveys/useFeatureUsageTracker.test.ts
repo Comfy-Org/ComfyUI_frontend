@@ -78,6 +78,23 @@ describe('useFeatureUsageTracker', () => {
     ).not.toHaveProperty('immediate-reset')
   })
 
+  it('preserves a reset when storage recovers', () => {
+    const tracker = useFeatureUsageTracker('failed-reset')
+    tracker.trackUsage()
+    tracker.trackUsage()
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const setItem = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new DOMException('Storage quota exceeded', 'QuotaExceededError')
+    })
+    tracker.reset()
+    setItem.mockRestore()
+
+    tracker.trackUsage()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored['failed-reset']?.useCount).toBe(1)
+  })
+
   it('tracks multiple features independently', () => {
     const featureA = useFeatureUsageTracker('feature-a')
     const featureB = useFeatureUsageTracker('feature-b')
