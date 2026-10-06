@@ -78,11 +78,6 @@ const topColumns: { title: string; links: FooterLink[] }[] = [
       {
         label: t('nav.supportedModels'),
         href: routes.models
-      },
-      {
-        label: t('nav.docs'),
-        href: externalLinks.docs,
-        external: true
       }
     ]
   },
@@ -92,10 +87,6 @@ const topColumns: { title: string; links: FooterLink[] }[] = [
       {
         label: t('footer.modelCatalogue'),
         href: routes.workshop
-      },
-      {
-        label: t('nav.supportedModels'),
-        href: routes.models
       },
       {
         label: t('footer.minimaxH3'),
@@ -152,10 +143,6 @@ const topColumns: { title: string; links: FooterLink[] }[] = [
       {
         label: t('footer.useCases'),
         href: externalLinks.workflowUseCases
-      },
-      {
-        label: t('nav.launches'),
-        href: routes.launches
       },
       { label: t('nav.fdct'), href: routes.fdct },
       {

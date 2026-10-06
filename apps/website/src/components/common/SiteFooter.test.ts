@@ -92,17 +92,36 @@ describe('SiteFooter', () => {
       ['Comfy Agent', routes.agent],
       ['Comfy CLI', routes.cli],
       ['Launches', routes.launches],
-      ['Supported Models', routes.models],
-      ['Docs', externalLinks.docs]
+      ['Supported Models', routes.models]
     ])
   })
 
-  it('opens the Features Docs link in a new tab', () => {
+  it('keeps Docs in Resources, opening in a new tab', () => {
     render(SiteFooter)
 
     const docs = within(
-      screen.getByRole('navigation', { name: 'Features' })
+      screen.getByRole('navigation', { name: 'Resources' })
     ).getByRole('link', { name: 'Docs' })
+    expect(docs.getAttribute('href')).toBe(externalLinks.docs)
     expect(docs.getAttribute('target')).toBe('_blank')
+  })
+
+  it('lists Launches and Supported Models only in Features', () => {
+    render(SiteFooter)
+
+    for (const column of ['Products', 'Models', 'Resources', 'Company']) {
+      const nav = screen.getByRole('navigation', { name: column })
+      expect(within(nav).queryByRole('link', { name: 'Launches' })).toBeNull()
+      expect(
+        within(nav).queryByRole('link', { name: 'Supported Models' })
+      ).toBeNull()
+    }
+    const features = screen.getByRole('navigation', { name: 'Features' })
+    expect(
+      within(features).getByRole('link', { name: 'Launches' })
+    ).toBeTruthy()
+    expect(
+      within(features).getByRole('link', { name: 'Supported Models' })
+    ).toBeTruthy()
   })
 })
