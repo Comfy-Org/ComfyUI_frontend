@@ -679,6 +679,7 @@ function installIngest(features: Record<string, boolean> = {}) {
     userId: 'user-a',
     csrfToken: 'csrf-1',
     sessionDown: false,
+    sessionMissing: false,
     refusals: [] as string[],
     mintRefusal: undefined as (() => Response) | undefined,
     mintGate: undefined as Promise<void> | undefined,
@@ -747,8 +748,12 @@ function installIngest(features: Record<string, boolean> = {}) {
     )
   }
 
-  const answerSession = (): Response =>
-    ingest.sessionDown
+  const answerSession = (method: string): Response => {
+    if (ingest.sessionMissing) {
+      return jsonResponse({ code: 'no_session', message: 'no_session' }, 401)
+    }
+    if (method === 'POST') return jsonResponse({ success: true })
+    return ingest.sessionDown
       ? jsonResponse({ code: 'unavailable', message: 'down' }, 503)
       : jsonResponse({
           ...sessionBody(ingest.userId, {
@@ -756,10 +761,11 @@ function installIngest(features: Record<string, boolean> = {}) {
           }),
           csrf_token: ingest.csrfToken
         })
+  }
 
   const respond = (request: ApiRequest, body: unknown): Response => {
     const { path, headers } = request
-    if (path === '/api/auth/session') return answerSession()
+    if (path === '/api/auth/session') return answerSession(request.method)
     if (path === '/api/auth/token') return mint(body)
     if (path === '/api/workspaces/current') {
       if (ingest.currentWorkspaceDown) return ingest.currentWorkspaceDown()
@@ -2115,12 +2121,41 @@ describe('a sibling tab under unified_cloud_auth', () => {
     })
     const workspaceAuth = useWorkspaceAuthStore()
 
-    await expect(workspaceAuth.mintAtLogin()).resolves.toBe(true)
+    await vi.waitFor(() =>
+      expect(workspaceAuth.getUnifiedToken()).toBeDefined()
+    )
     publishFromSibling()
 
     expect(firebaseExchanges()).toHaveLength(1)
     expect(workspaceAuth.currentWorkspace?.id).toBe('ws-personal')
     expect(workspaceAuth.getUnifiedToken()).toBe('sibling-jwt')
+  })
+  it('drops the fallback credential once the session signs the tab in, so a sibling token cannot move its Run', async () => {
+    const ingest = installIngest({ unified_cloud_auth: true })
+    ingest.sessionMissing = true
+    await refreshRemoteConfig({ useAuth: false })
+    useAuthStore()
+    const workspaceAuth = useWorkspaceAuthStore()
+    identity.signIn(USER_A)
+    await useSessionCookie().ensureSessionCookie()
+    await expect(workspaceAuth.mintAtLogin()).resolves.toBe(true)
+
+    ingest.sessionMissing = false
+    const webSession = useCloudWebSessionStore()
+    webSession.signedInInteractively(USER_A)
+    await webSession.whenSessionCreated()
+    await workspaceAuth.switchWorkspace('ws-team')
+    publishFromSibling()
+    await postPrompt()
+
+    expect(workspaceAuth.currentWorkspace?.id).toBe('ws-team')
+    expect(ingest.requests.at(-1)).toEqual(
+      sessionRequest('POST', '/api/prompt', {
+        'x-comfy-workspace-id': 'ws-team',
+        ...PROMPT_HEADERS,
+        'x-csrf-token': 'csrf-1'
+      })
+    )
   })
 })
 
