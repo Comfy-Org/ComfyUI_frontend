@@ -50,7 +50,7 @@ const VercelConfigSchema = z.object({
   )
 })
 
-function sitemapPages(): Set<string> {
+function sitemapChunks(): string[] {
   const indexPath = join(DIST, 'sitemap-index.xml')
   if (!existsSync(indexPath))
     throw new Error(
@@ -62,11 +62,12 @@ function sitemapPages(): Set<string> {
     throw new Error(
       `[published-model-pages] sitemap chunks are missing: ${missing.join(', ')}`
     )
-  const locs = chunks.flatMap((name) =>
-    Array.from(
-      readFileSync(join(DIST, name), 'utf-8').matchAll(/<loc>([^<]+)<\/loc>/g),
-      ([, loc]) => loc.trim()
-    )
+  return chunks.map((name) => readFileSync(join(DIST, name), 'utf-8'))
+}
+
+function sitemapPages(): Set<string> {
+  const locs = sitemapChunks().flatMap((xml) =>
+    Array.from(xml.matchAll(/<loc>([^<]+)<\/loc>/g), ([, loc]) => loc.trim())
   )
   const foreign = locs.filter((loc) => !loc.startsWith(`${ORIGIN}/`))
   if (foreign.length > 0)
