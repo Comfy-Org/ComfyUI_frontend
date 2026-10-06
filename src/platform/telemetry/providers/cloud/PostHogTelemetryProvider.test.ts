@@ -26,7 +26,7 @@ const hoisted = vi.hoisted(() => {
   const mockPeopleSet = vi.fn()
   const mockPeopleSetOnce = vi.fn()
   const mockRegister = vi.fn()
-  const mockReset = vi.fn()
+  const mockPosthogReset = vi.fn()
   const executionContext = {
     is_template: true,
     workflow_name: 'image_qwen_image_edit_2509',
@@ -54,7 +54,7 @@ const hoisted = vi.hoisted(() => {
     mockPeopleSet,
     mockPeopleSetOnce,
     mockRegister,
-    mockReset,
+    mockPosthogReset,
     executionContext,
     agentPanelOpen: false,
     refs,
@@ -65,7 +65,7 @@ const hoisted = vi.hoisted(() => {
         identify: mockIdentify,
         register: mockRegister,
         people: { set: mockPeopleSet, set_once: mockPeopleSetOnce },
-        reset: mockReset
+        reset: mockPosthogReset
       }
     }
   }
@@ -1669,14 +1669,14 @@ describe('PostHogTelemetryProvider', () => {
       const callback = vi.mocked(useCurrentUser().onUserLogout).mock.calls[0][0]
       callback()
 
-      expect(hoisted.mockReset).toHaveBeenCalledWith(true)
+      expect(hoisted.mockPosthogReset).toHaveBeenCalledWith(true)
     })
 
     it('does not register the watcher before init resolves', () => {
       createProvider()
 
       expect(useCurrentUser().onUserLogout).not.toHaveBeenCalled()
-      expect(hoisted.mockReset).not.toHaveBeenCalled()
+      expect(hoisted.mockPosthogReset).not.toHaveBeenCalled()
     })
   })
 
