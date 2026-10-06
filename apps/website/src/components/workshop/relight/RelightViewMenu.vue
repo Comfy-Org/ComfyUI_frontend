@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Crosshair, Orbit } from '@lucide/vue'
+import { Crosshair, Lightbulb, Orbit } from '@lucide/vue'
 
 import type { Relight } from '../../../composables/useRelight'
 import type { Locale } from '../../../i18n/translations'
@@ -12,7 +12,7 @@ const { relight, locale = 'en' } = defineProps<{
   locale?: Locale
 }>()
 
-const { comparing, handles, lightMap } = relight
+const { comparing, handles, lightOnly, lightMap } = relight
 </script>
 
 <template>
@@ -27,6 +27,14 @@ const { comparing, handles, lightMap } = relight
     :pressed="handles"
     :disabled="comparing"
     @click="handles = !handles"
+  />
+  <EditorTool
+    :icon="Lightbulb"
+    :label="lc('relight.view.lightOnly', locale)"
+    icon-only
+    :pressed="lightOnly"
+    :disabled="comparing"
+    @click="lightOnly = !lightOnly"
   />
   <EditorTool
     :icon="Orbit"

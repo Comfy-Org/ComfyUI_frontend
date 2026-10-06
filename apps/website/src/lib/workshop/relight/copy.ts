@@ -20,7 +20,7 @@ const copy = {
   'relight.tool.undo': { en: 'Undo', 'zh-CN': '撤销' },
   'relight.tool.redo': { en: 'Redo', 'zh-CN': '重做' },
   'relight.history': { en: 'History', 'zh-CN': '历史记录' },
-  'relight.view.lightmap': { en: 'Show light map', 'zh-CN': '显示光照图' },
+  'relight.view.lightOnly': { en: 'Light only', 'zh-CN': '仅光照' },
   'relight.map': { en: 'Light map', 'zh-CN': '光照图' },
   'relight.map.hide': { en: 'Hide light map', 'zh-CN': '隐藏光照图' },
   'relight.map.collapse': { en: 'Collapse light map', 'zh-CN': '收起光照图' },

@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { useNow } from '@vueuse/core'
-import { computed, ref, watch } from 'vue'
+import type { ComponentPublicInstance } from 'vue'
+import { computed, ref, useTemplateRef, watch } from 'vue'
 
+import { useMapCorner } from '../../../composables/useMapCorner'
 import type { Relight, RelightImage } from '../../../composables/useRelight'
 import type { Locale } from '../../../i18n/translations'
 import { elapsedLabel } from '../../../lib/workshop/elapsed'
@@ -23,7 +25,8 @@ const {
   locale?: Locale
 }>()
 
-const { setup, phase, comparing, lightMap, handles, selected, lit } = relight
+const { setup, phase, comparing, lightMap, lightOnly, handles, selected, lit } =
+  relight
 const touched = ref(false)
 watch(
   () => image.url,
@@ -49,6 +52,15 @@ function aim(id: string, patch: Partial<Light>) {
   relight.updateLight(id, patch, `map:${id}`)
 }
 
+const showHandles = computed(
+  () => handles.value && !comparing.value && phase.value.kind !== 'running'
+)
+const { corner: mapCorner, style: mapStyle } = useMapCorner(
+  useTemplateRef<HTMLElement>('photo'),
+  useTemplateRef<ComponentPublicInstance>('card'),
+  () => (showHandles.value ? setup.value.lights : [])
+)
+
 const now = useNow({ interval: 1000 })
 const elapsed = computed(() =>
   phase.value.kind === 'running'
@@ -66,7 +78,8 @@ const elapsed = computed(() =>
       :scene="setup.scene"
       :selected
       :comparing
-      :handles="handles && !comparing && phase.kind !== 'running'"
+      :light-only="lightOnly && !comparing"
+      :handles="showHandles"
       :locale
       @select="select"
       @begin="relight.checkpoint()"
@@ -84,14 +97,18 @@ const elapsed = computed(() =>
       style="container-type: size"
     >
       <div
+        ref="photo"
         class="relative mx-auto"
         :style="fittedSize(image.width, image.height)"
       >
         <RelightLightMap
+          ref="card"
           :lights="setup.lights"
           :selected
           :locale
-          class="absolute top-2.5 left-2.5"
+          :data-corner="mapCorner"
+          class="absolute ease-out motion-safe:transition-[left,top,translate] motion-safe:duration-300"
+          :style="mapStyle"
           @select="select"
           @change="aim"
           @hide="lightMap = false"
