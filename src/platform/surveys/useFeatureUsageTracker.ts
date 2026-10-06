@@ -153,27 +153,20 @@ function withoutNewlyResetFeatures(
   )
 }
 
-function persistUsageData(
-  featureId: string,
-  currentUsageData: FeatureUsageRecord,
-  now: number
-) {
+function persistUsageData(featureId: string, now: number) {
   let oldValue: string | null = null
   let usageData: FeatureUsageRecord | undefined
 
   try {
     oldValue = localStorage.getItem(STORAGE_KEY)
     const storedUsageData = parseUsageData(oldValue)
-    const mergedUsageData = applyPendingResets(
-      mergeUsageData(storedUsageData, currentUsageData)
-    )
-    const reconciledUsageData = mergeUsageData(
-      mergedUsageData,
+    const mergedUsageData = mergeUsageData(
+      applyPendingResets(storedUsageData),
       pendingUsageData
     )
     usageData = {
-      ...reconciledUsageData,
-      [featureId]: incrementUsage(usageFor(reconciledUsageData, featureId), now)
+      ...mergedUsageData,
+      [featureId]: incrementUsage(usageFor(mergedUsageData, featureId), now)
     }
     const newValue = JSON.stringify(usageData)
 
@@ -199,10 +192,10 @@ function resetUsageData(currentUsageData: FeatureUsageRecord) {
 
   try {
     oldValue = localStorage.getItem(STORAGE_KEY)
-    usageData = applyPendingResets(
-      mergeUsageData(parseUsageData(oldValue), currentUsageData)
+    usageData = mergeUsageData(
+      applyPendingResets(parseUsageData(oldValue)),
+      pendingUsageData
     )
-    usageData = mergeUsageData(usageData, pendingUsageData)
     localStorage.setItem(STORAGE_KEY, JSON.stringify(usageData))
     pendingResets.clear()
     pendingUsageData = {}
@@ -241,7 +234,7 @@ export function useFeatureUsageTracker(featureId: string) {
     const existing = usageFor(currentUsageData, featureId)
     observedResetVersions = new Map(resetVersions)
 
-    usageData.value = persistUsageData(featureId, currentUsageData, now) ?? {
+    usageData.value = persistUsageData(featureId, now) ?? {
       ...currentUsageData,
       [featureId]: incrementUsage(existing, now)
     }

@@ -313,6 +313,13 @@ describe('useFeatureUsageTracker', () => {
     vi.setSystemTime(1_000)
     const tracker = useFeatureUsageTracker('reconciled-feature')
     tracker.trackUsage()
+    vi.setSystemTime(1_500)
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const setItem = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new DOMException('Storage quota exceeded', 'QuotaExceededError')
+    })
+    tracker.trackUsage()
+    setItem.mockRestore()
     localStorage.setItem(
       STORAGE_KEY,
       JSON.stringify({
@@ -392,6 +399,28 @@ describe('useFeatureUsageTracker', () => {
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
     expect(stored).not.toHaveProperty('reset-before-stale-reset')
     expect(stored).not.toHaveProperty('disposed-reset-feature')
+  })
+
+  it('does not resurrect usage removed by another storage context', () => {
+    const scope = effectScope()
+    let trackDisposedFeature = () => {}
+
+    scope.run(() => {
+      useFeatureUsageTracker('externally-reset-feature').trackUsage()
+      const tracker = useFeatureUsageTracker('external-reset-trigger')
+      tracker.trackUsage()
+      trackDisposedFeature = tracker.trackUsage
+    })
+    scope.stop()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    delete stored['externally-reset-feature']
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(stored))
+    trackDisposedFeature()
+
+    const updated = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(updated).not.toHaveProperty('externally-reset-feature')
+    expect(updated['external-reset-trigger']?.useCount).toBe(2)
   })
 
   it('loads existing data from localStorage', () => {
