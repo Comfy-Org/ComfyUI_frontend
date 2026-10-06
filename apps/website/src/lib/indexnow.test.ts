@@ -116,21 +116,39 @@ describe('planSubmission', () => {
   const current = JSON.stringify({ [url('a/')]: 'h1' })
 
   it.for([
-    [404, '', 'IndexNow: 1 added, 0 changed, 0 removed (first run)'],
-    [200, current, 'IndexNow: 0 added, 0 changed, 0 removed']
-  ] as const)('live manifest HTTP %i → %s', ([status, body, summary]) => {
-    expect(planSubmission(current, status, body)).toMatchObject({
-      kind: 'submit',
-      summary
-    })
-  })
+    [
+      404,
+      '',
+      'IndexNow: 1 added, 0 changed, 0 removed (first run)',
+      [{ urlList: [url('a/')] }]
+    ],
+    [200, current, 'IndexNow: 0 added, 0 changed, 0 removed', []]
+  ] as const)(
+    'live manifest HTTP %i → %s',
+    ([status, body, summary, payloads]) => {
+      expect(planSubmission(current, status, body)).toMatchObject({
+        kind: 'submit',
+        summary,
+        payloads
+      })
+    }
+  )
 
-  it('submits a URL whose fingerprint changed', () => {
-    const previous = JSON.stringify({ [url('a/')]: 'h0' })
-    expect(planSubmission(current, 200, previous)).toMatchObject({
+  it('submits added, changed and removed URLs', () => {
+    const previous = JSON.stringify({
+      [url('same/')]: 'h1',
+      [url('edit/')]: 'h2',
+      [url('gone/')]: 'h3'
+    })
+    const build = JSON.stringify({
+      [url('same/')]: 'h1',
+      [url('edit/')]: 'h9',
+      [url('new/')]: 'h4'
+    })
+    expect(planSubmission(build, 200, previous)).toMatchObject({
       kind: 'submit',
-      summary: 'IndexNow: 0 added, 1 changed, 0 removed',
-      payloads: [{ urlList: [url('a/')] }]
+      summary: 'IndexNow: 1 added, 1 changed, 1 removed',
+      payloads: [{ urlList: [url('new/'), url('edit/'), url('gone/')] }]
     })
   })
 
