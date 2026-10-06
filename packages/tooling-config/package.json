@@ -14,7 +14,8 @@
   ],
   "type": "module",
   "exports": {
-    "./fallow": "./fallow.json"
+    "./fallow": "./fallow.json",
+    "./package.json": "./package.json"
   },
   "publishConfig": {
     "access": "public"
