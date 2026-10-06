@@ -35,6 +35,7 @@ type PendingFeatureUsageRecord = Partial<Record<string, PendingUsageDelta[]>>
 const STORAGE_KEY = 'Comfy.FeatureUsage'
 const MAX_USAGE_COUNT = Number.MAX_SAFE_INTEGER - 1
 const MAX_TIMESTAMP = Date.UTC(2100, 0, 1)
+const MAX_CLOCK_SKEW = 5 * 60 * 1_000
 const pendingResets = reactive(new Set<string>())
 const pendingResetUsage = new Map<string, PendingReset>()
 const reportedErrorTypes = new Set<string>()
@@ -130,7 +131,8 @@ function parseUsageData(value: string | null): ParsedUsageData {
 function reconcileDeletedPendingUsage(
   oldUsageData: FeatureUsageRecord,
   currentUsageData: FeatureUsageRecord,
-  invalidFeatureIds: ReadonlySet<string>
+  invalidFeatureIds: ReadonlySet<string>,
+  invalidOldFeatureIds: ReadonlySet<string>
 ) {
   pendingUsageData.value = Object.fromEntries(
     Object.entries(pendingUsageData.value).flatMap(
@@ -139,14 +141,17 @@ function reconcileDeletedPendingUsage(
         const existed = usageFor(oldUsageData, featureId)
         const exists = usageFor(currentUsageData, featureId)
         const retainedDeltas =
-          !existed || exists || invalidFeatureIds.has(featureId)
+          !existed ||
+          exists ||
+          invalidFeatureIds.has(featureId) ||
+          invalidOldFeatureIds.has(featureId)
             ? pendingDeltas
             : pendingDeltas.filter(
                 ({ baseUsage, recordedAt }) =>
                   baseUsage === undefined ||
-                  (baseUsage === null && recordedAt >= existed.lastUsed) ||
-                  (baseUsage !== null &&
-                    isSameOrNewerGeneration(baseUsage, existed))
+                  (baseUsage === null &&
+                    (!isOrderableUsage(existed) ||
+                      recordedAt >= existed.lastUsed))
               )
         return retainedDeltas.length > 0
           ? [[featureId, retainedDeltas] as const]
@@ -171,11 +176,15 @@ function didUsageAdvance(
 }
 
 function isOrderableUsage(usage: FeatureUsage) {
-  return usage.firstUsed < MAX_TIMESTAMP && usage.lastUsed < MAX_TIMESTAMP
+  const latestReasonableTimestamp = Date.now() + MAX_CLOCK_SKEW
+  return (
+    usage.firstUsed <= latestReasonableTimestamp &&
+    usage.lastUsed <= latestReasonableTimestamp
+  )
 }
 
 function isSameOrNewerGeneration(usage: FeatureUsage, baseline: FeatureUsage) {
-  if (!isOrderableUsage(usage) || !isOrderableUsage(baseline)) return true
+  if (!isOrderableUsage(usage) || !isOrderableUsage(baseline)) return false
   return (
     usage.firstUsed <= baseline.firstUsed &&
     usage.useCount >= baseline.useCount &&
@@ -227,34 +236,49 @@ function reconcileStoredUsage(
   reconcilePendingResets(currentUsageData, invalidFeatureIds)
 }
 
+function reconcileAndSetSnapshot(parsedUsageData: ParsedUsageData) {
+  if (parsedUsageData.status === 'invalid') return
+  reconcileStoredUsage(
+    parsedUsageData.usageData,
+    parsedUsageData.invalidFeatureIds
+  )
+  usageSnapshot.value = parsedUsageData.usageData
+}
+
 function reconcileExternalStorage(event: StorageEvent) {
   let storageArea: Storage
   try {
     storageArea = localStorage
-  } catch {
+  } catch (error) {
+    reportStorageError(error, 'error_accessing_feature_usage_event_storage')
     return
   }
   if (event.storageArea !== storageArea) return
   if (event.key !== null && event.key !== STORAGE_KEY) return
 
-  const oldUsage = parseUsageData(event.oldValue)
+  const oldUsage =
+    event.key === null
+      ? {
+          status: 'valid' as const,
+          usageData: usageSnapshot.value,
+          invalidFeatureIds: new Set<string>()
+        }
+      : parseUsageData(event.oldValue)
   try {
     const currentUsage = parseUsageData(localStorage.getItem(STORAGE_KEY))
     if (currentUsage.status !== 'invalid') {
-      usageSnapshot.value = currentUsage.usageData
-      reconcileStoredUsage(
-        currentUsage.usageData,
-        currentUsage.invalidFeatureIds
-      )
-      if (oldUsage.status === 'valid') {
+      if (oldUsage.status !== 'invalid') {
         reconcileDeletedPendingUsage(
           oldUsage.usageData,
           currentUsage.usageData,
-          currentUsage.invalidFeatureIds
+          currentUsage.invalidFeatureIds,
+          oldUsage.invalidFeatureIds
         )
       }
+      reconcileAndSetSnapshot(currentUsage)
     }
-  } catch {
+  } catch (error) {
+    reportStorageError(error, 'error_reconciling_feature_usage_event')
     return
   }
 }
@@ -363,7 +387,8 @@ function incrementPendingDelta(delta: PendingUsageDelta, now: number) {
     ...delta,
     useCountDelta: Math.min(delta.useCountDelta + 1, MAX_USAGE_COUNT),
     firstUsed: Math.min(delta.firstUsed, now),
-    lastUsed: Math.max(delta.lastUsed, now)
+    lastUsed: Math.max(delta.lastUsed, now),
+    recordedAt: now
   }
 }
 
@@ -380,7 +405,7 @@ function recordPendingUsage(
     ? incrementPendingDelta(previousDelta, now)
     : {
         useCountDelta: 1,
-        firstUsed: baseUsage?.firstUsed ?? now,
+        firstUsed: Math.min(baseUsage?.firstUsed ?? now, now),
         lastUsed: now,
         recordedAt: now,
         baseUsage
@@ -397,6 +422,11 @@ function applyPendingResets(usageData: FeatureUsageRecord): FeatureUsageRecord {
   return [...pendingResets].reduce(withoutFeature, usageData)
 }
 
+function writeAndVerifyStorage(value: string) {
+  localStorage.setItem(STORAGE_KEY, value)
+  return localStorage.getItem(STORAGE_KEY) === value
+}
+
 function persistUsageData(featureId: string, now: number) {
   let oldValue: string | null = null
   let usageData = applyPendingUsage(applyPendingResets(usageSnapshot.value))
@@ -409,9 +439,7 @@ function persistUsageData(featureId: string, now: number) {
     const parsedUsageData = parseUsageData(oldValue)
     const currentUsageData =
       parsedUsageData.status === 'invalid' ? {} : parsedUsageData.usageData
-    if (parsedUsageData.status !== 'invalid') {
-      reconcileStoredUsage(currentUsageData, parsedUsageData.invalidFeatureIds)
-    }
+    reconcileAndSetSnapshot(parsedUsageData)
     const resetAdjustedUsageData = applyPendingResets(currentUsageData)
     baseUsage = usageFor(resetAdjustedUsageData, featureId) ?? null
     const mergedUsageData = applyPendingUsage(resetAdjustedUsageData)
@@ -421,12 +449,22 @@ function persistUsageData(featureId: string, now: number) {
     }
     newValue = JSON.stringify(usageData)
 
-    localStorage.setItem(STORAGE_KEY, newValue)
-    storageWritten = true
-    pendingResets.clear()
-    pendingResetUsage.clear()
-    pendingUsageData.value = {}
-    usageSnapshot.value = usageData
+    storageWritten = writeAndVerifyStorage(newValue)
+    if (storageWritten) {
+      pendingResets.clear()
+      pendingResetUsage.clear()
+      pendingUsageData.value = {}
+      usageSnapshot.value = usageData
+    } else {
+      reportStorageError(
+        new DOMException(
+          'Feature usage storage changed before verification',
+          'InvalidStateError'
+        ),
+        'error_verifying_feature_usage'
+      )
+      recordPendingUsage(featureId, now, baseUsage)
+    }
   } catch (error) {
     reportStorageError(error, 'error_persisting_feature_usage')
     recordPendingUsage(featureId, now, baseUsage)
@@ -458,17 +496,24 @@ function resetUsageData(featureId: string) {
         })
       }
     }
-    if (parsedUsageData.status !== 'invalid') {
-      reconcileStoredUsage(currentUsageData, parsedUsageData.invalidFeatureIds)
-    }
+    reconcileAndSetSnapshot(parsedUsageData)
     usageData = applyPendingUsage(applyPendingResets(currentUsageData))
     newValue = JSON.stringify(usageData)
-    localStorage.setItem(STORAGE_KEY, newValue)
-    storageWritten = true
-    pendingResets.clear()
-    pendingResetUsage.clear()
-    pendingUsageData.value = {}
-    usageSnapshot.value = usageData
+    storageWritten = writeAndVerifyStorage(newValue)
+    if (storageWritten) {
+      pendingResets.clear()
+      pendingResetUsage.clear()
+      pendingUsageData.value = {}
+      usageSnapshot.value = usageData
+    } else {
+      reportStorageError(
+        new DOMException(
+          'Feature usage storage changed before verification',
+          'InvalidStateError'
+        ),
+        'error_verifying_feature_usage_reset'
+      )
+    }
   } catch (error) {
     reportStorageError(error, 'error_resetting_feature_usage')
   }
@@ -486,9 +531,7 @@ function resetUsageData(featureId: string) {
 export function useFeatureUsageTracker(featureId: string) {
   try {
     const currentUsage = parseUsageData(localStorage.getItem(STORAGE_KEY))
-    if (currentUsage.status !== 'invalid') {
-      usageSnapshot.value = currentUsage.usageData
-    }
+    reconcileAndSetSnapshot(currentUsage)
   } catch (error) {
     reportStorageError(error, 'error_reading_feature_usage')
   }
