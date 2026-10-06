@@ -7,6 +7,7 @@ import GoogleTagManager from '@/components/common/GoogleTagManager.astro'
 import HeaderMain from '@/components/common/HeaderMain/HeaderMain.vue'
 import AnnouncementBanner from '@/templates/drops/AnnouncementBanner.vue'
 import { bannerConfig, getBannerData } from '@/config/banner'
+import { footerLogoRestingFrameUrl } from '@/config/footer-logo'
 import { getRoutes } from '@/config/routes'
 import {
   headIndexing,
@@ -333,7 +334,7 @@ const structuredData = head.emitStructuredData
     >
       <noscript slot="logo-fallback">
         <img
-          src="https://media.comfy.org/website/homepage/footer-logo-seq/seq-footer_00074.webp"
+          src={footerLogoRestingFrameUrl}
           alt=""
           class="absolute inset-0 size-full"
         />

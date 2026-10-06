@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
+import { footerLogoRestingFrameUrl } from '@/config/footer-logo'
 import { test } from './fixtures/modelsAccount'
 
 /** Same-origin script resources the page has requested so far, by URL. */
@@ -65,6 +66,18 @@ test('the footer loads its animation when it approaches the viewport', async ({
   const frameLoaded = page.waitForResponse(/\/footer-logo-seq\//)
   await page.getByRole('contentinfo').scrollIntoViewIfNeeded()
   expect((await frameLoaded).ok()).toBe(true)
+})
+
+test('the footer shows the resting logo frame without JavaScript', async ({
+  request
+}) => {
+  const html = await (await request.get('/hub/models/')).text()
+  const footer = html.match(/<footer\b[\s\S]*?<\/footer>/)?.[0] ?? ''
+  const fallbacks = Array.from(
+    footer.matchAll(/<noscript>\s*<img src="([^"]+)"/g),
+    ([, src]) => src
+  )
+  expect(fallbacks).toEqual([footerLogoRestingFrameUrl])
 })
 
 test('video cards load on screen and stop playing when scrolled away', async ({

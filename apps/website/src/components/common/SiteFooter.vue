@@ -2,6 +2,10 @@
 import { useMounted } from '@vueuse/core'
 import { ref } from 'vue'
 
+import {
+  footerLogoFrameUrls,
+  footerLogoRestingFrameUrl
+} from '@/config/footer-logo'
 import { externalLinks, getRoutes } from '@/config/routes'
 import { useFrameScrub } from '@/composables/useFrameScrub'
 import { prefersReducedMotion } from '@/composables/useReducedMotion'
@@ -17,15 +21,10 @@ const routes = getRoutes(locale)
 const footerRef = ref<HTMLElement>()
 const canvasRef = ref<HTMLCanvasElement>()
 
-const frameUrls = Array.from({ length: 75 }, (_, i) => {
-  const index = String(i).padStart(5, '0')
-  return `https://media.comfy.org/website/homepage/footer-logo-seq/seq-footer_${index}.webp`
-})
-
 const isMounted = useMounted()
 
 useFrameScrub(canvasRef, {
-  urls: frameUrls,
+  urls: footerLogoFrameUrls,
   scrollTrigger: (canvas) => ({
     trigger: canvas,
     start: 'top bottom',
@@ -278,14 +277,18 @@ const contactColumn: { title: string; links: FooterLink[] } = {
         <slot name="logo-fallback" />
         <img
           v-if="isMounted && prefersReducedMotion()"
-          :src="frameUrls.at(-1)"
+          :src="footerLogoRestingFrameUrl"
           alt=""
           decoding="async"
           crossorigin="anonymous"
           class="absolute inset-0 size-full"
           data-testid="footer-logo-static"
         />
-        <canvas ref="canvasRef" class="absolute inset-0 size-full" />
+        <canvas
+          ref="canvasRef"
+          aria-hidden="true"
+          class="absolute inset-0 size-full"
+        />
       </div>
     </div>
   </footer>
