@@ -7,7 +7,7 @@ import type { FramePose } from './poses'
 import { framePose } from './poses'
 
 const CELL = 256
-const PIXEL_SCALE = 4
+const PIXEL_SCALE = 3
 const GROUND = 0.9
 const HEIGHT = 0.62
 const FEET = 0.16
