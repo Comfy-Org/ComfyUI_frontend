@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/vue'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
 
 import type { WorkshopModel } from '@/config/models-catalogue'
@@ -21,7 +21,22 @@ const base: WorkshopModel = {
   task: 'image-to-image'
 }
 
+const widthProps = ['clientWidth', 'offsetWidth'] as const
+const nativeWidths = widthProps.map(
+  (name) =>
+    [
+      name,
+      Object.getOwnPropertyDescriptor(HTMLElement.prototype, name)
+    ] as const
+)
+
 describe('WorkshopModelCard', () => {
+  afterEach(() => {
+    for (const [name, descriptor] of nativeWidths)
+      if (descriptor)
+        Object.defineProperty(HTMLElement.prototype, name, descriptor)
+  })
+
   it('links the name, provider badge and task to the model page', () => {
     render(WorkshopModelCard, { props: { model: base } })
     const link = screen.getByTestId('workshop-model-card')
@@ -66,23 +81,18 @@ describe('WorkshopModelCard', () => {
       configurable: true,
       get: () => 100
     })
-    try {
-      render(WorkshopModelCard, {
-        props: {
-          model: { ...base, capabilities: ['upscale', 'inpaint', 'controlnet'] }
-        }
-      })
-      await nextTick()
-      await nextTick()
-      expect(screen.getByTestId('tag-overflow')).toBeTruthy()
-      expect(screen.getByRole('link')).toHaveAccessibleName(
-        'Black Forest Labs Flux Image to Image'
-      )
-      expect(screen.queryByRole('button')).toBeNull()
-    } finally {
-      for (const name of ['clientWidth', 'offsetWidth'])
-        Reflect.deleteProperty(HTMLElement.prototype, name)
-    }
+    render(WorkshopModelCard, {
+      props: {
+        model: { ...base, capabilities: ['upscale', 'inpaint', 'controlnet'] }
+      }
+    })
+    await nextTick()
+    await nextTick()
+    expect(screen.getByTestId('tag-overflow')).toBeTruthy()
+    expect(screen.getByRole('link')).toHaveAccessibleName(
+      'Black Forest Labs Flux Image to Image'
+    )
+    expect(screen.queryByRole('button')).toBeNull()
   })
 
   it.for([
