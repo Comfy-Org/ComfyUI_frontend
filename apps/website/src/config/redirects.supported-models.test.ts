@@ -7,7 +7,11 @@ import { localModelAliases, localModelPath, localModels } from './local-models'
 import { models } from './models'
 import { modelsUrlKind } from './models-url-registry'
 import { partnerModelHubSlugs } from './partner-model-redirects'
-import { siteRedirects, toVercelRedirects } from './redirects'
+import {
+  retiredLocalModelPages,
+  siteRedirects,
+  toVercelRedirects
+} from './redirects'
 
 const OLD = '/p/supported-models'
 const VERCEL_SOURCE_LIMIT = 2048
@@ -60,7 +64,11 @@ const expected = new Map<string, string>([
       ...bothSlashForms(`${OLD}/${slug}`).map((path) => [path, page] as const),
       [`${OLD}/${slug}.md`, markdownTwinPath(page)] as const
     ]
-  })
+  }),
+  ...Object.entries(retiredLocalModelPages).flatMap(([slug, page]) => [
+    ...bothSlashForms(`${OLD}/${slug}`).map((path) => [path, page] as const),
+    [`${OLD}/${slug}.md`, markdownTwinPath(page)] as const
+  ])
 ])
 
 const partnerSlugs = models
@@ -124,7 +132,10 @@ describe('/p/supported-models redirects', () => {
 
   it('never send a live file page elsewhere', () => {
     expect(
-      Object.keys(partnerModelHubSlugs).filter((slug) => localSlugs.has(slug))
+      [
+        ...Object.keys(partnerModelHubSlugs),
+        ...Object.keys(retiredLocalModelPages)
+      ].filter((slug) => localSlugs.has(slug))
     ).toEqual([])
   })
 
@@ -149,8 +160,12 @@ describe('/p/supported-models redirects', () => {
     ).toEqual([])
   })
 
-  it('keep every published file page, so a regenerated quantization group cannot drop one', () => {
+  it('keep or redirect every published file page, so a data refresh cannot drop one', () => {
     const built = new Set(localModels.map(({ slug }) => slug))
-    expect(publishedLocalModels.filter((slug) => !built.has(slug))).toEqual([])
+    expect(
+      publishedLocalModels.filter(
+        (slug) => !built.has(slug) && !(slug in retiredLocalModelPages)
+      )
+    ).toEqual([])
   })
 })

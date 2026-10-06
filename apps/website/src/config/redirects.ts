@@ -68,13 +68,16 @@ function slugGroups(slugs: readonly string[]): string[] {
 const supportedModelPath = (slug: string) =>
   `${SUPPORTED_MODELS_PATH}/${slug}` as const
 
+/** A local file slug a data refresh removed → the page that replaces it. */
+export const retiredLocalModelPages: Readonly<Record<string, string>> = {}
+
 const partnerModelPage = (hubSlug: string | null) =>
   hubSlug ? hubModelPath(hubSlug) : `${HUB_MODELS_PATH}/`
 
-const movedModelPages: Readonly<Record<string, string>> = mapValues(
-  partnerModelHubSlugs,
-  partnerModelPage
-)
+const movedModelPages: Readonly<Record<string, string>> = {
+  ...mapValues(partnerModelHubSlugs, partnerModelPage),
+  ...retiredLocalModelPages
+}
 
 function slugGroupRedirects(
   slugs: readonly string[],
