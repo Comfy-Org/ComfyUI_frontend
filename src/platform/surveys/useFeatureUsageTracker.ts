@@ -17,6 +17,13 @@ const pendingResets = new Set<string>()
 const reportedErrorTypes = new Set<string>()
 let pendingUsageData: FeatureUsageRecord = {}
 
+export function resetFeatureUsageTrackerStateForTest() {
+  resetVersions.clear()
+  pendingResets.clear()
+  reportedErrorTypes.clear()
+  pendingUsageData = {}
+}
+
 function reportStorageError(error: unknown, errorType: string) {
   if (reportedErrorTypes.has(errorType)) return
   reportedErrorTypes.add(errorType)

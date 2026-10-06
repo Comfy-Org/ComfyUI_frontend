@@ -1,15 +1,22 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope } from 'vue'
 
 import { reportError } from '@/platform/telemetry/reportError'
 
-import { useFeatureUsageTracker } from './useFeatureUsageTracker'
+import {
+  resetFeatureUsageTrackerStateForTest,
+  useFeatureUsageTracker
+} from './useFeatureUsageTracker'
 
 vi.mock(import('@/platform/telemetry/reportError'))
 
 const STORAGE_KEY = 'Comfy.FeatureUsage'
 
 describe('useFeatureUsageTracker', () => {
+  beforeEach(() => {
+    resetFeatureUsageTrackerStateForTest()
+  })
+
   it('initializes with zero count for new feature', () => {
     const { useCount } = useFeatureUsageTracker('test-feature-1')
 
