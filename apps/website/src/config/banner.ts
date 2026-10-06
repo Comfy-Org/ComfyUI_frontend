@@ -1,11 +1,13 @@
 import type { ButtonVariants } from '@/components/ui/button'
 import type { Locale, TranslationKey } from '@/i18n/translations'
+import type { BannerVisibilityContext } from '@/utils/banner'
 
 import { translationsFor } from '@/i18n/translations'
+import { firstVisibleBanner } from '@/utils/banner'
 import { resolveRel } from '@/utils/cta'
 import { localizeHref } from './routes'
 
-// The banner "CMS": a single typed config resolved through i18n at build time.
+// The banner "CMS": typed configs resolved through i18n at build time.
 // `isActive` is the master on/off switch (supersedes the old SHOW_ANNOUNCEMENT_BANNER).
 // NOTE: on this static site, `startsAt`/`endsAt` are evaluated at BUILD time — the
 // window gates on the last deploy, not the visitor's exact clock.
@@ -71,6 +73,20 @@ export const challengeBannerConfig: BannerConfig = {
     target: true,
     buttonVariant: 'underlineLink'
   }
+}
+
+/**
+ * The banner a page shows: its own banner while that one is visible, otherwise
+ * the sitewide one. Pages without their own banner get the sitewide banner.
+ */
+export function activeBannerFor(
+  pageBanner: BannerConfig | undefined,
+  ctx: BannerVisibilityContext
+): BannerConfig | undefined {
+  return firstVisibleBanner(
+    pageBanner ? [pageBanner, bannerConfig] : [bannerConfig],
+    ctx
+  )
 }
 
 /** Resolve a config's i18n keys into display strings for the given locale. */
