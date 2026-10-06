@@ -11,12 +11,20 @@ interface FeatureUsage {
 
 type FeatureUsageRecord = Partial<Record<string, FeatureUsage>>
 
+interface PendingFeatureUsage {
+  useCountDelta: number
+  firstUsed: number
+  lastUsed: number
+}
+
+type PendingFeatureUsageRecord = Partial<Record<string, PendingFeatureUsage>>
+
 const STORAGE_KEY = 'Comfy.FeatureUsage'
 const MAX_USAGE_COUNT = Number.MAX_SAFE_INTEGER - 1
 const resetVersions = new Map<string, number>()
 const pendingResets = reactive(new Set<string>())
 const reportedErrorTypes = new Set<string>()
-const pendingUsageData = shallowRef<FeatureUsageRecord>({})
+const pendingUsageData = shallowRef<PendingFeatureUsageRecord>({})
 
 export function resetFeatureUsageTrackerStateForTest() {
   if (import.meta.env.MODE !== 'test') return
@@ -48,11 +56,9 @@ function isValidUseCount(value: number | undefined): value is number {
   return value !== undefined && value >= 0 && value <= MAX_USAGE_COUNT
 }
 
-function normalizeTimestamp(value: unknown, now: number) {
+function normalizeTimestamp(value: unknown) {
   const timestamp = safeInteger(value)
-  return timestamp !== undefined && timestamp > 0
-    ? Math.min(timestamp, now)
-    : undefined
+  return timestamp !== undefined && timestamp > 0 ? timestamp : undefined
 }
 
 function normalizeUsageData(value: unknown): FeatureUsageRecord {
@@ -63,9 +69,8 @@ function normalizeUsageData(value: unknown): FeatureUsageRecord {
       if (!isRecord(usage)) return []
 
       const useCount = safeInteger(usage.useCount)
-      const now = Date.now()
-      const firstUsed = normalizeTimestamp(usage.firstUsed, now)
-      const lastUsed = normalizeTimestamp(usage.lastUsed, now)
+      const firstUsed = normalizeTimestamp(usage.firstUsed)
+      const lastUsed = normalizeTimestamp(usage.lastUsed)
       return isValidUseCount(useCount) &&
         firstUsed !== undefined &&
         lastUsed !== undefined
@@ -86,37 +91,11 @@ function parseUsageData(value: string | null): FeatureUsageRecord {
   }
 }
 
-function latestUsage(
-  storedUsage: FeatureUsage | undefined,
-  currentUsage: FeatureUsage | undefined
-) {
-  if (!storedUsage) return currentUsage
-  if (!currentUsage) return storedUsage
-  return {
-    useCount: Math.max(storedUsage.useCount, currentUsage.useCount),
-    firstUsed: Math.min(storedUsage.firstUsed, currentUsage.firstUsed),
-    lastUsed: Math.max(storedUsage.lastUsed, currentUsage.lastUsed)
-  }
-}
-
 function usageFor(
   usageData: FeatureUsageRecord,
   featureId: string
 ): FeatureUsage | undefined {
   return Object.hasOwn(usageData, featureId) ? usageData[featureId] : undefined
-}
-
-function mergeUsageData(...records: FeatureUsageRecord[]): FeatureUsageRecord {
-  const featureIds = new Set(records.flatMap(Object.keys))
-  return Object.fromEntries(
-    [...featureIds].flatMap((featureId) => {
-      const usage = records.reduce<FeatureUsage | undefined>(
-        (latest, record) => latestUsage(latest, usageFor(record, featureId)),
-        undefined
-      )
-      return usage ? [[featureId, usage]] : []
-    })
-  )
 }
 
 function incrementUsage(
@@ -146,13 +125,59 @@ function dispatchStorageUpdate(oldValue: string | null, newValue: string) {
   }
 }
 
-function withoutFeature(
-  usageData: FeatureUsageRecord,
+function withoutFeature<T>(
+  usageData: Partial<Record<string, T>>,
   featureId: string
-): FeatureUsageRecord {
+): Partial<Record<string, T>> {
   return Object.fromEntries(
     Object.entries(usageData).filter(([id]) => id !== featureId)
   )
+}
+
+function applyPendingUsage(usageData: FeatureUsageRecord): FeatureUsageRecord {
+  return Object.entries(pendingUsageData.value).reduce(
+    (mergedUsageData, [featureId, pendingUsage]) => {
+      if (!pendingUsage) return mergedUsageData
+      const storedUsage = usageFor(mergedUsageData, featureId)
+      return {
+        ...mergedUsageData,
+        [featureId]: {
+          useCount: Math.min(
+            (storedUsage?.useCount ?? 0) + pendingUsage.useCountDelta,
+            MAX_USAGE_COUNT
+          ),
+          firstUsed: Math.min(
+            storedUsage?.firstUsed ?? pendingUsage.firstUsed,
+            pendingUsage.firstUsed
+          ),
+          lastUsed: Math.max(
+            storedUsage?.lastUsed ?? pendingUsage.lastUsed,
+            pendingUsage.lastUsed
+          )
+        }
+      }
+    },
+    usageData
+  )
+}
+
+function recordPendingUsage(
+  featureId: string,
+  usage: FeatureUsage,
+  now: number
+) {
+  const pendingUsage = pendingUsageData.value[featureId]
+  pendingUsageData.value = {
+    ...pendingUsageData.value,
+    [featureId]: {
+      useCountDelta: Math.min(
+        (pendingUsage?.useCountDelta ?? 0) + 1,
+        MAX_USAGE_COUNT
+      ),
+      firstUsed: pendingUsage?.firstUsed ?? usage.firstUsed,
+      lastUsed: now
+    }
+  }
 }
 
 function applyPendingResets(usageData: FeatureUsageRecord): FeatureUsageRecord {
@@ -178,24 +203,21 @@ function persistUsageData(
   currentUsageData: FeatureUsageRecord
 ) {
   let oldValue: string | null = null
-  const fallbackUsageData = mergeUsageData(
-    applyPendingResets(currentUsageData),
-    pendingUsageData.value
+  const fallbackUsageData = applyPendingUsage(
+    applyPendingResets(currentUsageData)
   )
   let usageData = {
     ...fallbackUsageData,
     [featureId]: incrementUsage(usageFor(fallbackUsageData, featureId), now)
   }
   let newValue: string | undefined
-  let storageRead = false
+  let storageWritten = false
 
   try {
     oldValue = localStorage.getItem(STORAGE_KEY)
-    storageRead = true
     const storedUsageData = parseUsageData(oldValue)
-    const mergedUsageData = mergeUsageData(
-      applyPendingResets(storedUsageData),
-      pendingUsageData.value
+    const mergedUsageData = applyPendingUsage(
+      applyPendingResets(storedUsageData)
     )
     usageData = {
       ...mergedUsageData,
@@ -204,42 +226,43 @@ function persistUsageData(
     newValue = JSON.stringify(usageData)
 
     localStorage.setItem(STORAGE_KEY, newValue)
+    storageWritten = true
     pendingResets.clear()
     pendingUsageData.value = {}
   } catch (error) {
     reportStorageError(error, 'error_persisting_feature_usage')
-    pendingUsageData.value = mergeUsageData(pendingUsageData.value, {
-      [featureId]: usageFor(usageData, featureId)
-    })
+    const failedUsage = usageFor(usageData, featureId)
+    if (failedUsage) recordPendingUsage(featureId, failedUsage, now)
   }
 
-  if (storageRead) {
+  if (storageWritten) {
     dispatchStorageUpdate(oldValue, newValue ?? JSON.stringify(usageData))
   }
-  return usageData
+  return { storageWritten, usageData }
 }
 
 function resetUsageData(currentUsageData: FeatureUsageRecord) {
   let oldValue: string | null = null
-  let usageData = applyPendingResets(currentUsageData)
+  let usageData = applyPendingUsage(applyPendingResets(currentUsageData))
   let newValue: string | undefined
+  let storageWritten = false
 
   try {
     oldValue = localStorage.getItem(STORAGE_KEY)
-    usageData = mergeUsageData(
-      applyPendingResets(parseUsageData(oldValue)),
-      pendingUsageData.value
-    )
+    usageData = applyPendingUsage(applyPendingResets(parseUsageData(oldValue)))
     newValue = JSON.stringify(usageData)
     localStorage.setItem(STORAGE_KEY, newValue)
+    storageWritten = true
     pendingResets.clear()
     pendingUsageData.value = {}
   } catch (error) {
     reportStorageError(error, 'error_resetting_feature_usage')
   }
 
-  dispatchStorageUpdate(oldValue, newValue ?? JSON.stringify(usageData))
-  return usageData
+  if (storageWritten) {
+    dispatchStorageUpdate(oldValue, newValue ?? JSON.stringify(usageData))
+  }
+  return { storageWritten, usageData }
 }
 
 /**
@@ -252,9 +275,8 @@ export function useFeatureUsageTracker(featureId: string) {
 
   const usage = computed(() =>
     usageFor(
-      mergeUsageData(
-        applyPendingResets(normalizeUsageData(usageData.value)),
-        pendingUsageData.value
+      applyPendingUsage(
+        applyPendingResets(normalizeUsageData(usageData.value))
       ),
       featureId
     )
@@ -270,7 +292,8 @@ export function useFeatureUsageTracker(featureId: string) {
     )
     observedResetVersions = new Map(resetVersions)
 
-    usageData.value = persistUsageData(featureId, now, currentUsageData)
+    const persisted = persistUsageData(featureId, now, currentUsageData)
+    if (persisted.storageWritten) usageData.value = persisted.usageData
   }
 
   function reset() {
@@ -283,7 +306,8 @@ export function useFeatureUsageTracker(featureId: string) {
     observedResetVersions.set(featureId, resetVersion)
     pendingResets.add(featureId)
     pendingUsageData.value = withoutFeature(pendingUsageData.value, featureId)
-    usageData.value = resetUsageData(currentUsageData)
+    const persisted = resetUsageData(currentUsageData)
+    if (persisted.storageWritten) usageData.value = persisted.usageData
   }
 
   return {

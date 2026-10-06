@@ -150,9 +150,29 @@ describe('useFeatureUsageTracker', () => {
     expect(tracker.useCount.value).toBe(0)
   })
 
+  it('preserves pending usage when reset cannot read storage', () => {
+    const pendingFeature = useFeatureUsageTracker('pending-before-reset')
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const setItem = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new DOMException('Storage quota exceeded', 'QuotaExceededError')
+    })
+    pendingFeature.trackUsage()
+    setItem.mockRestore()
+    const getItem = vi.spyOn(localStorage, 'getItem').mockImplementation(() => {
+      throw new DOMException('Storage access denied', 'SecurityError')
+    })
+    useFeatureUsageTracker('blocked-reset-reader').reset()
+    getItem.mockRestore()
+
+    useFeatureUsageTracker('reset-recovery-writer').trackUsage()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored['pending-before-reset']?.useCount).toBe(1)
+    expect(stored['reset-recovery-writer']?.useCount).toBe(1)
+  })
+
   it('preserves stored features when reset persistence fails', () => {
     const tracker = useFeatureUsageTracker('failed-reset-merge')
-    const storedFeature = useFeatureUsageTracker('stored-during-reset')
     localStorage.setItem(
       STORAGE_KEY,
       JSON.stringify({
@@ -170,7 +190,8 @@ describe('useFeatureUsageTracker', () => {
 
     tracker.reset()
 
-    expect(storedFeature.useCount.value).toBe(7)
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored['stored-during-reset']?.useCount).toBe(7)
   })
 
   it('tracks multiple features independently', () => {
@@ -295,14 +316,18 @@ describe('useFeatureUsageTracker', () => {
     const currentTracker = useFeatureUsageTracker('current-read-tracker')
     currentTracker.trackUsage()
     vi.spyOn(console, 'error').mockImplementation(() => {})
-    vi.spyOn(localStorage, 'getItem').mockImplementation(() => {
+    const getItem = vi.spyOn(localStorage, 'getItem').mockImplementation(() => {
       throw new DOMException('Storage access denied', 'SecurityError')
     })
 
     staleTracker.trackUsage()
+    getItem.mockRestore()
 
     expect(currentTracker.useCount.value).toBe(1)
     expect(staleTracker.useCount.value).toBe(1)
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored).toHaveProperty('current-read-tracker')
+    expect(stored).not.toHaveProperty('failed-read-tracker')
   })
 
   it('preserves other in-memory features when storage recovers', () => {
@@ -322,6 +347,41 @@ describe('useFeatureUsageTracker', () => {
     expect(stored['recovering-feature']?.useCount).toBe(2)
     expect(stored['trigger-feature']?.useCount).toBe(1)
     expect(recoveringFeature.useCount.value).toBe(2)
+  })
+
+  it('adds pending increments to ordered external usage', () => {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        'ordered-usage': {
+          useCount: 5,
+          firstUsed: 1_000,
+          lastUsed: 2_000
+        }
+      })
+    )
+    const tracker = useFeatureUsageTracker('ordered-usage')
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const setItem = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new DOMException('Storage quota exceeded', 'QuotaExceededError')
+    })
+    tracker.trackUsage()
+    setItem.mockRestore()
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        'ordered-usage': {
+          useCount: 6,
+          firstUsed: 1_000,
+          lastUsed: 3_000
+        }
+      })
+    )
+
+    tracker.trackUsage()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored['ordered-usage']?.useCount).toBe(8)
   })
 
   it('exposes pending usage and resets to newly mounted trackers', () => {
@@ -431,7 +491,7 @@ describe('useFeatureUsageTracker', () => {
 
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
     expect(stored['reconciled-feature']).toEqual({
-      useCount: 6,
+      useCount: 7,
       firstUsed: 1_000,
       lastUsed: 4_000
     })
@@ -670,7 +730,8 @@ describe('useFeatureUsageTracker', () => {
     expect(stored['maximum-usage']?.useCount).toBe(Number.MAX_SAFE_INTEGER - 1)
   })
 
-  it('clamps future timestamps without discarding usage', () => {
+  it('tolerates future timestamps without discarding usage', () => {
+    vi.setSystemTime(1_700_000_000_000)
     localStorage.setItem(
       STORAGE_KEY,
       JSON.stringify({
@@ -687,8 +748,8 @@ describe('useFeatureUsageTracker', () => {
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
     expect(stored['future-timestamp']).toEqual({
       useCount: 6,
-      firstUsed: Date.now(),
-      lastUsed: Date.now()
+      firstUsed: Number.MAX_SAFE_INTEGER,
+      lastUsed: 1_700_000_000_000
     })
   })
 
