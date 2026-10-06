@@ -91,6 +91,31 @@ function parseUsageData(value: string | null): FeatureUsageRecord {
   }
 }
 
+function reconcileExternalStorage(event: StorageEvent) {
+  let storageArea: Storage
+  try {
+    storageArea = localStorage
+  } catch {
+    return
+  }
+  if (event.storageArea !== storageArea) return
+  if (event.key === null) {
+    pendingResets.clear()
+    pendingUsageData.value = {}
+    return
+  }
+  if (event.key !== STORAGE_KEY) return
+
+  const storedUsageData = parseUsageData(event.newValue)
+  for (const featureId of pendingResets) {
+    if (usageFor(storedUsageData, featureId)) pendingResets.delete(featureId)
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', reconcileExternalStorage)
+}
+
 function usageFor(
   usageData: FeatureUsageRecord,
   featureId: string

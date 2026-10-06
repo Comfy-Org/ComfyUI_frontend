@@ -119,6 +119,59 @@ describe('useFeatureUsageTracker', () => {
     expect(stored['failed-reset']?.useCount).toBe(1)
   })
 
+  it('retires a failed reset after external usage', () => {
+    const tracker = useFeatureUsageTracker('external-usage-after-reset')
+    tracker.trackUsage()
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const setItem = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new DOMException('Storage quota exceeded', 'QuotaExceededError')
+    })
+    tracker.reset()
+    setItem.mockRestore()
+    const externalValue = JSON.stringify({
+      'external-usage-after-reset': {
+        useCount: 2,
+        firstUsed: 1_000,
+        lastUsed: 2_000
+      }
+    })
+    localStorage.setItem(STORAGE_KEY, externalValue)
+    window.dispatchEvent(
+      new StorageEvent('storage', {
+        key: STORAGE_KEY,
+        newValue: externalValue,
+        storageArea: localStorage
+      })
+    )
+
+    useFeatureUsageTracker('external-reset-trigger').trackUsage()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored['external-usage-after-reset']?.useCount).toBe(2)
+  })
+
+  it('discards pending state after external storage clear', () => {
+    const tracker = useFeatureUsageTracker('cleared-pending-usage')
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const setItem = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new DOMException('Storage quota exceeded', 'QuotaExceededError')
+    })
+    tracker.trackUsage()
+    setItem.mockRestore()
+    localStorage.clear()
+    window.dispatchEvent(
+      new StorageEvent('storage', {
+        key: null,
+        storageArea: localStorage
+      })
+    )
+
+    useFeatureUsageTracker('clear-trigger').trackUsage()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored).not.toHaveProperty('cleared-pending-usage')
+  })
+
   it('preserves post-reset usage while storage remains unavailable', () => {
     const tracker = useFeatureUsageTracker('failed-reset-usage')
     tracker.trackUsage()
