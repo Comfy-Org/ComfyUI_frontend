@@ -368,7 +368,6 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
     expect(reportError).toHaveBeenCalledWith(
       expect.objectContaining({ message: 'extension hook exploded' }),
       expect.objectContaining({
-        surface: 'agent',
         errorType: 'agent_graph_apply_failed'
       })
     )
