@@ -2,6 +2,7 @@ import { useToast } from 'primevue/usetoast'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   clearPreservedQuery,
   hydratePreservedQuery,
@@ -13,6 +14,7 @@ import { useDialogService } from '@/services/dialogService'
 import { useAuthStore } from '@/stores/authStore'
 
 import { WorkspaceApiError } from '../api/workspaceApi'
+import { MEMBERSHIP_MANAGED_BY_DIRECTORY } from '../api/workspaceApiError'
 import { useTeamWorkspaceStore } from '../stores/teamWorkspaceStore'
 
 /**
@@ -134,6 +136,20 @@ export function useInviteUrlLoader() {
       error instanceof WorkspaceApiError && error.code !== undefined
         ? error.status
         : undefined
+    if (
+      status === 403 &&
+      error instanceof WorkspaceApiError &&
+      error.code === MEMBERSHIP_MANAGED_BY_DIRECTORY &&
+      useFeatureFlags().flags.ssoEnabled
+    ) {
+      toast.add({
+        severity: 'info',
+        summary: t('workspace.inviteDirectoryManaged'),
+        detail: t('workspace.inviteDirectoryManagedDetail'),
+        closable: true
+      })
+      return
+    }
     try {
       if (status === 404) {
         await dialogService.showInviteLinkInvalidDialog()

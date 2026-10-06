@@ -89,7 +89,9 @@ function useInviteUrlLoader(): ReturnType<typeof createInviteUrlLoader> {
             inviteFailed: 'Failed to Accept Invite',
             inviteSsoUnavailable: 'Ask your admin to add you',
             inviteSsoUnavailableDetail:
-              'SSO accounts cannot accept invite links'
+              'SSO accounts cannot accept invite links',
+            inviteDirectoryManaged: 'Admin manages membership',
+            inviteDirectoryManagedDetail: 'Ask your organization admin'
           },
           g: { unknownError: 'Unknown error' }
         }
@@ -211,6 +213,60 @@ describe('useInviteUrlLoader', () => {
       ).toHaveBeenCalledWith({ inviteToken: 'other-account-token' })
       expect(mockToastAdd).not.toHaveBeenCalled()
     })
+
+    it.for([
+      {
+        name: 'a directory-managed refusal with sso_enabled on',
+        sso: true,
+        code: 'membership_managed_by_directory',
+        directoryMessage: true
+      },
+      {
+        name: 'a directory-managed refusal with sso_enabled off',
+        sso: false,
+        code: 'membership_managed_by_directory',
+        directoryMessage: false
+      },
+      {
+        name: 'another 403 with sso_enabled on',
+        sso: true,
+        code: 'ACCESS_DENIED',
+        directoryMessage: false
+      }
+    ])(
+      'explains directory-managed membership only for $name',
+      async ({ sso, code, directoryMessage }) => {
+        vi.mocked(useFeatureFlags().flags).ssoEnabled = sso
+        mockRouteQuery.value = { invite: 'scim-token' }
+        vi.mocked(useTeamWorkspaceStore().acceptInvite).mockRejectedValue(
+          new WorkspaceApiError('Forbidden', 403, code)
+        )
+
+        const { loadInviteFromUrl } = useInviteUrlLoader()
+        await loadInviteFromUrl()
+
+        expect(
+          vi.mocked(useDialogService().showInviteWrongAccountDialog)
+        ).toHaveBeenCalledTimes(directoryMessage ? 0 : 1)
+        expect(mockToastAdd.mock.calls).toEqual(
+          directoryMessage
+            ? [
+                [
+                  {
+                    severity: 'info',
+                    summary: 'Admin manages membership',
+                    detail: 'Ask your organization admin',
+                    closable: true
+                  }
+                ]
+              ]
+            : []
+        )
+        expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
+          'invite'
+        )
+      }
+    )
 
     it('keeps the toast for a 404 without a parsed API code', async () => {
       mockRouteQuery.value = { invite: 'waf-blocked' }
