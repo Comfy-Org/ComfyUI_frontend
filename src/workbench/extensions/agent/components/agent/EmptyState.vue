@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted } from 'vue'
+import { computed, onMounted, onUnmounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -14,12 +14,12 @@ import type { StarterPromptAssignment } from '../../experiments/starterPromptSet
 const {
   userName,
   assignment = 'control',
-  onRendered = () => undefined,
+  onRendered = (_assignment: StarterPromptAssignment) => undefined,
   onUnmounted: onSurfaceUnmounted = () => undefined
 } = defineProps<{
   userName?: string
   assignment?: StarterPromptAssignment
-  onRendered?: () => void
+  onRendered?: (assignment: StarterPromptAssignment) => void
   onUnmounted?: () => void
 }>()
 const emit = defineEmits<{
@@ -51,7 +51,8 @@ const promptLocale = computed(() => {
     : FALLBACK_LOCALE
 })
 
-onMounted(onRendered)
+onMounted(() => onRendered(effectiveAssignment.value))
+watch(effectiveAssignment, (assignment) => onRendered(assignment))
 onUnmounted(onSurfaceUnmounted)
 
 /**
