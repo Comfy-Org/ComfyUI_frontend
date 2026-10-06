@@ -13,7 +13,16 @@ import {
 const RESIZE_NODE_TITLE = 'Resize Image/Mask'
 const RESIZE_NODE_POSITION = { x: 600, y: 300 }
 const BASE_SOURCE_POSITION = { x: 200, y: 200 }
-const MATCH_SOURCE_POSITION = { x: 200, y: 500 }
+// A "Load Image" node renders the currently-selected input file as a live
+// preview as soon as it's added - no queue run required - which reserves
+// IMAGE_PREVIEW_HEIGHT_RESERVE (232px, see imagePreviewLayout.ts) of extra
+// node height on top of its title and widget rows. That grows the base
+// source node (above) well past the 300px once assumed here, so its
+// bounding box used to swallow the double-click meant to open the node
+// search box for this node, which landed inside it instead of on empty
+// canvas. Placed beside it instead of below it, this position isn't
+// affected by that growth, which only ever adds height, never width.
+const MATCH_SOURCE_POSITION = { x: 950, y: 200 }
 
 test.describe(
   'DynamicCombo revealed input link survives a workflow tab switch (#18388)',
