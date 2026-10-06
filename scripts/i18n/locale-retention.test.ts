@@ -7,6 +7,7 @@ import {
   collectLeaves,
   collectPendingLeaves,
   diffLocaleSources,
+  fingerprintLocale,
   pathKey,
   rebuildLocale,
   serializeLocale
@@ -34,16 +35,15 @@ function simulateGeneration({
   previousReviewNeeded?: string[][]
   policy?: TranslationPipelineConfig['existingCopy']
 }) {
-  const changes = diffLocaleSources(previousEnglish, english)
-  const invalidated = new Set(
-    [...changes.added, ...changes.modified].map(pathKey)
-  )
+  const previousSource = fingerprintLocale(previousEnglish)
+  const changes = diffLocaleSources(previousSource, fingerprintLocale(english))
+  const invalidated = new Set([...changes.added, ...changes.modified])
   const { retained, omitted, reviewNeeded } = partitionLocale({
     sourceLeaves: collectLeaves(english),
-    previousEnglish,
+    previousEnglish: previousSource,
     existing,
-    publishedLocale: published,
-    modifiedKeys: new Set(changes.modified.map(pathKey)),
+    publishedLocale: fingerprintLocale(published),
+    modifiedKeys: new Set(changes.modified),
     policy,
     excludedKeys: new Set(excludedPaths.map(pathKey)),
     previousReviewNeeded
@@ -106,6 +106,15 @@ describe('locale retention', () => {
       existing: { title: '新しい' },
       expected: { title: '新しい' },
       expectedReview: [['title']]
+    },
+    {
+      label: 'locale array edited alongside English is retained and flagged',
+      previousEnglish: { steps: ['Open', 'Save'] },
+      english: { steps: ['Open', 'Export'] },
+      published: { steps: ['開く', '保存'] },
+      existing: { steps: ['開く', '書き出す'] },
+      expected: { steps: ['開く', '書き出す'] },
+      expectedReview: [['steps']]
     },
     {
       label: 'added English key keeps a translation that already exists',

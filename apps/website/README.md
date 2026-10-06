@@ -107,40 +107,51 @@ copy. Both scripts call the shared CLI in `scripts/i18n/update-locales.ts` with
 `pnpm --filter @comfyorg/website locale:check` or
 `pnpm --filter @comfyorg/website locale`.
 
-### Published snapshots
+### Publication baselines
 
-Each generation records what it published in committed files under
-`src/locales/`:
+Each generation records what it published in
+`src/locales/.source-manifest.json` (version 3). For each catalog file it
+holds:
 
-- `.published/en/main.json`: the English catalog as last published.
-- `.published/<locale>/main.json`: each locale catalog as last published.
-- `.source-manifest.json` (version 2): for each catalog file,
-  `files["main.json"].locales["<locale>"].reviewNeeded` and
+- `files["main.json"].source`: a fingerprint for every English leaf as last
+  published.
+- `files["main.json"].locales["<locale>"].fingerprints`: a fingerprint for
+  every value in that locale catalog as last published.
+- `files["main.json"].locales["<locale>"].reviewNeeded` and
   `files["main.json"].knownViolations`, described below.
 
-Generation writes the catalogs, snapshots and manifest in one publication, so
-every commit tree carries its own provenance. The record survives edits made
-after generation and squash merges. When the manifest lists a file or locale
-whose snapshot is missing, both `locale:check` and `pnpm locale` fail; restore
-the snapshot from version control. A snapshot records content, not approval:
-matching it proves only what generation last wrote.
+A fingerprint map is keyed by the JSON key-segment array, so
+`privacy.intro.title` appears as `["privacy","intro","title"]`. Each value is
+the SHA-256 hex digest of `JSON.stringify(value)`. An array counts as one
+value. The digests exist only for comparison. They are not Git object IDs,
+and the commands read no Git history. A matching fingerprint proves only that
+a value equals what generation last wrote, not that a person approved it.
 
-Generation compares the current catalogs with the snapshots:
+Generation writes the catalogs and manifest in one publication, so every
+commit tree carries its own baseline. The record survives edits made after
+generation and squash merges. The manifest stores no copy of the previous
+English or translations; read old wording from version control. If the
+manifest fails validation, both `locale:check` and `pnpm locale` fail; restore
+it from version control.
+
+Generation compares fingerprints of the current catalogs with the recorded
+ones:
 
 - While English is unchanged, existing copy stays, including intentional empty
   strings.
 - A new English key keeps a translation supplied in the same change.
-- When English changes and an eligible translation still matches its snapshot,
-  generation replaces it.
+- When English changes and an eligible translation still matches its recorded
+  fingerprint, generation replaces it.
 - When English changes and the translation was edited, generation keeps the
-  edit and flags it `REVIEW NEEDED`. Snapshots show content, not the order of
-  edits, so they cannot show that the edit was written against the new English.
+  edit and flags it `REVIEW NEEDED`. Fingerprints show content, not the order
+  of edits, so they cannot show that the edit was written against the new
+  English.
 - When English changes under an excluded namespace, generation keeps the
   translation and flags it `REVIEW NEEDED`.
 - Deleting an eligible locale value requests a new translation.
-- Deleting an English key removes its locale values, snapshot entries and
-  review flags. Deleting an English file removes its locale catalogs and
-  snapshots.
+- Deleting an English key removes its locale values, fingerprints and review
+  flags. Deleting an English file removes its locale catalogs and manifest
+  entry.
 
 Excluded values that are missing, or nonempty and equal to the current or
 previous English, are removed so the page uses current English fallback. An
@@ -188,8 +199,8 @@ flagged paths. No command adds entries.
 ### Interrupted generation
 
 Generation publishes through a recovery journal,
-`src/locales/.locale-publication.json`, which lists each catalog, snapshot and
-manifest change with its old and new contents. While the journal exists,
+`src/locales/.locale-publication.json`, which lists each catalog and manifest
+change with its old and new contents. While the journal exists,
 `locale:check` exits with an error. The next `pnpm locale` completes the recorded
 publication before planning new work. If a listed file matches neither its old
 nor its new contents, recovery names the file and writes nothing. The journal

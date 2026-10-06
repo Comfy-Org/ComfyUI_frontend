@@ -58,7 +58,7 @@ pnpm locale
 pnpm locale:check
 ```
 
-Both commands read the committed snapshots under `src/locales/.published/`.
+Both commands read the committed baseline in `src/locales/.source-manifest.json`.
 They do not require git history.
 
 #### Option B: Let CI Handle It (Recommended)
@@ -107,8 +107,8 @@ Our automated translation workflow now runs on release PRs (version-bump-\* bran
 3. **Generates translations**: Uses OpenAI API to translate to all configured languages
 4. **Commits back**: Automatically updates the release PR with complete translations
 
-The pipeline (`scripts/i18n/update-locales.ts`) records the English sources it
-last translated in `src/locales/.published/en/` and its validation baseline in
+The pipeline (`scripts/i18n/update-locales.ts`) records fingerprints of the
+English sources it last translated, and its validation baseline, in
 `src/locales/.source-manifest.json`. On each run it
 retranslates strings whose English text changed, backfills missing keys, prunes
 keys removed from English (deleting whole locale files whose English source
@@ -127,19 +127,29 @@ failures.
 protected-token violations that are not already queued for retranslation
 because the English source changed.
 
-The manifest is version 2. For each entry file, the pipeline commits the English
-it last published as `src/locales/.published/en/<file>`. The manifest's
-`files["<file>"].knownViolations` field lists accepted violations as
-`{ "locale", "path", "code", "token" }`, where `path` is a key-segment array and
-`code` is one of `violationCodes` in `scripts/i18n/protected-tokens.ts`. A
-violation that matches an entry passes, and any other violation fails the
-check. The check prints entries that no longer match as `STALE BASELINE:` lines
-without failing. Each successful file update keeps only the entries its output
-still matches, and no command adds entries. Generation and the check fail when
-the manifest lists a file whose snapshot is missing. This PR migrated the
-version-1 manifests; the pipeline does not read version 1. oxfmt ignores
-`src/locales/**/*.json` because the pipeline is the sole writer of those bytes,
-which keeps each catalog byte-identical to its snapshot.
+The manifest is version 3. For each entry file, `files["<file>"].source` maps
+every English leaf as last published to a fingerprint. Each key is the
+key-segment array as JSON, such as `["g","title"]`, and each value is the
+SHA-256 hex digest of `JSON.stringify(value)`. An array counts as one leaf. The
+pipeline compares these digests with the current English to find added,
+modified and deleted keys; it stores no copy of the previous English. The
+digests are comparison metadata, not Git object IDs, and the pipeline never
+looks them up in Git. A matching digest shows only that a value equals what
+generation last wrote, not that a person reviewed it.
+
+The manifest's `files["<file>"].knownViolations` field lists accepted
+violations as `{ "locale", "path", "code", "token" }`, where `path` is a
+key-segment array and `code` is one of `violationCodes` in
+`scripts/i18n/protected-tokens.ts`. A violation that matches an entry passes,
+and any other violation fails the check. The check prints entries that no
+longer match as `STALE BASELINE:` lines without failing. Each successful file
+update keeps only the entries its output still matches, and no command adds
+entries. Generation and the check fail when the manifest fails validation. This
+PR migrated the version-1 manifests to version 3, computing fingerprints from
+the recorded publication baseline rather than from the current catalogs, so
+edits made after the last generation still count as changes. The pipeline
+reads only version 3. oxfmt ignores `src/locales/**/*.json` because the
+pipeline is the sole writer of those bytes.
 
 ### The website shares this pipeline
 
@@ -153,16 +163,16 @@ language guidance and exclusions in `apps/website/src/config/translation.ts`,
 which derives target locales from its locale registry. Generation does not
 change routes or indexing.
 
-The website also commits each locale catalog as last published, in
-`apps/website/src/locales/.published/<locale>/<file>`, and its manifest records
-`reviewNeeded` key paths per locale. Website generation keeps existing copy
-unless English changed and the translation still matches its snapshot. Every
-retained value whose English changed gets a persistent `REVIEW NEEDED` warning,
-because snapshots cannot show whether a translation was edited before or after
-its English. Excluded namespaces are never machine-translated. See the
+The website manifest also records, per locale,
+`files["<file>"].locales["<locale>"].fingerprints`, the same digest map for
+each locale catalog as last published, and `reviewNeeded` key paths. The app
+records English fingerprints only. Website generation keeps existing copy
+unless English changed and the translation still matches its recorded
+fingerprint. Every retained value whose English changed gets a persistent
+`REVIEW NEEDED` warning, because fingerprints cannot show whether a translation
+was edited before or after its English. Excluded namespaces are never machine-translated. See the
 website's [localization instructions](../../apps/website/README.md#localization)
-for the retention rules, review flags, fallback and validation. A snapshot
-records content and does not certify approval.
+for the retention rules, review flags, fallback and validation.
 
 The website validates strictly: a plural message keeps the English form count
 or collapses to one form, and each form keeps its placeholders and markup.
@@ -172,7 +182,7 @@ validation and its source-change regeneration policy. Both targets distinguish
 literal interpolation such as `{'|'}` and `{'@.'}` from plural separators and
 linked messages. Adding either literal still fails the protected-token audit.
 
-Each target publishes its catalogs, snapshots and manifest through a recovery
+Each target publishes its catalogs and manifest through a recovery
 journal, `.locale-publication.json`, in its locale directory. While a journal
 exists, the check exits with an error, and the next generation completes the
 recorded publication before planning new work. Recovery names any listed file

@@ -17,6 +17,7 @@ import {
   collectLeaves,
   collectPendingLeaves,
   diffLocaleSources,
+  fingerprintLocale,
   parseLocale,
   pathKey,
   rebuildLocale,
@@ -50,7 +51,7 @@ interface SourcePlan {
   filename: string
   source: LocaleObject
   sourceLeaves: Map<string, LocaleLeafEntry>
-  previous: LocaleObject
+  previous: FileSnapshot['source']
   snapshot: FileSnapshot | undefined
   invalidated: Set<string>
   modified: Set<string>
@@ -203,10 +204,7 @@ function loadPlans(
       const snapshot = Object.hasOwn(manifest.files, filename)
         ? manifest.files[filename]
         : undefined
-      const previous = readCatalog(
-        join(outputDir, '.published', 'en', filename),
-        snapshot !== undefined
-      )
+      const previous = snapshot?.source ?? {}
       const sourceLeaves = collectLeaves(source)
       const policy = config.existingCopy
       const excluded = new Set(
@@ -222,11 +220,11 @@ function loadPlans(
           )
           .map(([key]) => key)
       )
-      const changes = diffLocaleSources(previous, source)
+      const changes = diffLocaleSources(previous, fingerprintLocale(source))
       const summary = formatPruneSummary(
         filename,
         changes.deleted.length,
-        collectLeaves(previous).size
+        Object.keys(previous).length
       )
       if (summary) print(summary)
       return {
@@ -235,10 +233,8 @@ function loadPlans(
         sourceLeaves,
         previous,
         snapshot,
-        invalidated: new Set(
-          [...changes.added, ...changes.modified].map(pathKey)
-        ),
-        modified: new Set(changes.modified.map(pathKey)),
+        invalidated: new Set([...changes.added, ...changes.modified]),
+        modified: new Set(changes.modified),
         excluded
       }
     })
@@ -255,18 +251,11 @@ function loadStates(
       const outputFile = join(outputDir, locale.code, plan.filename)
       const existing = readCatalog(outputFile)
       const published = plan.snapshot?.locales[locale.code]
-      const recorded =
-        config.existingCopy.kind === 'preserve'
-          ? readCatalog(
-              join(outputDir, '.published', locale.code, plan.filename),
-              published !== undefined
-            )
-          : {}
       const retention = partitionLocale({
         sourceLeaves: plan.sourceLeaves,
         previousEnglish: plan.previous,
         existing,
-        publishedLocale: recorded,
+        publishedLocale: published?.fingerprints ?? {},
         modifiedKeys: plan.modified,
         policy: config.existingCopy,
         excludedKeys: plan.excluded,
@@ -462,13 +451,9 @@ export async function updateLocales({
   const plans = loadPlans(outputDir, manifest, config, readCatalog)
   const states = loadStates(outputDir, plans, config, readCatalog)
   const filenames = new Set(plans.map(({ filename }) => filename))
-  const snapshotDir = join(outputDir, '.published')
-  const directories = [
-    ...config.outputLocales.map(({ code }) => join(outputDir, code)),
-    ...(existsSync(snapshotDir)
-      ? readdirSync(snapshotDir).map((code) => join(snapshotDir, code))
-      : [])
-  ]
+  const directories = config.outputLocales.map(({ code }) =>
+    join(outputDir, code)
+  )
   const orphans = directories.flatMap((directory) => {
     return existsSync(directory)
       ? readdirSync(directory)
@@ -633,13 +618,12 @@ function publishOutcomes({
   config: TranslationPipelineConfig
 }): number {
   const entryDir = join(outputDir, 'en')
-  const snapshotDir = join(outputDir, '.published')
   const manifestFile = join(outputDir, '.source-manifest.json')
   const failures = outcomes.filter((outcome) => 'failure' in outcome)
   const failedFiles = new Set(failures.map(({ state }) => state.plan.filename))
   const completed = outcomes.filter((outcome) => 'output' in outcome)
   const updates = new Map<string, string | null>()
-  const next: SourceManifest = { version: 2, files: {} }
+  const next: SourceManifest = { version: 3, files: {} }
   for (const plan of plans) {
     if (failedFiles.has(plan.filename)) {
       if (plan.snapshot) next.files[plan.filename] = plan.snapshot
@@ -647,19 +631,19 @@ function publishOutcomes({
     }
     const sourceBytes = serializeLocale(plan.source)
     const snapshot: FileSnapshot = {
+      source: fingerprintLocale(plan.source),
       locales: {},
       knownViolations: []
     }
     updates.set(join(entryDir, plan.filename), sourceBytes)
-    updates.set(join(snapshotDir, 'en', plan.filename), sourceBytes)
     for (const { state, output, known } of completed.filter(
       ({ state }) => state.plan === plan
     )) {
       const bytes = serializeLocale(output)
       updates.set(state.outputFile, bytes)
       if (config.existingCopy.kind === 'preserve') {
-        updates.set(join(snapshotDir, state.locale.code, plan.filename), bytes)
         snapshot.locales[state.locale.code] = {
+          fingerprints: fingerprintLocale(output),
           reviewNeeded: state.reviewNeeded
         }
       }

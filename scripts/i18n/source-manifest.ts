@@ -3,11 +3,22 @@ import { z } from 'zod'
 import type { TokenViolation } from './protected-tokens'
 import { violationCodes } from './protected-tokens'
 
+const fingerprintsSchema = z.record(
+  z.string(),
+  z.string().regex(/^[a-f0-9]{64}$/)
+)
+
 const fileSnapshotSchema = z
   .object({
+    source: fingerprintsSchema,
     locales: z.record(
       z.string(),
-      z.object({ reviewNeeded: z.array(z.array(z.string())) }).strict()
+      z
+        .object({
+          fingerprints: fingerprintsSchema,
+          reviewNeeded: z.array(z.array(z.string()))
+        })
+        .strict()
     ),
     knownViolations: z.array(
       z
@@ -24,7 +35,7 @@ const fileSnapshotSchema = z
 
 const manifestSchema = z
   .object({
-    version: z.literal(2),
+    version: z.literal(3),
     files: z.record(z.string(), fileSnapshotSchema)
   })
   .strict()

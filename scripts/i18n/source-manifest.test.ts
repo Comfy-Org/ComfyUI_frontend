@@ -14,14 +14,28 @@ const missingName = (...path: string[]): TokenViolation => ({
 })
 
 describe('loadManifest', () => {
-  it('parses the provided bytes, keeping duplicate baselines and their locales', () => {
+  const sourceDigest = 'a'.repeat(64)
+  const localeDigest = 'b'.repeat(64)
+  const validFile = {
+    source: { '["title"]': sourceDigest },
+    locales: {
+      ja: { fingerprints: { '["title"]': localeDigest }, reviewNeeded: [] }
+    },
+    knownViolations: []
+  }
+
+  it('parses the provided bytes, keeping fingerprints, duplicate baselines, and their locales', () => {
     const manifest: SourceManifest = {
-      version: 2,
+      version: 3,
       files: {
         'main.json': {
+          source: { '["title"]': sourceDigest, '["tos","body"]': localeDigest },
           locales: {
-            ja: { reviewNeeded: [['tos', 'body']] },
-            'zh-CN': { reviewNeeded: [] }
+            ja: {
+              fingerprints: { '["tos","body"]': sourceDigest },
+              reviewNeeded: [['tos', 'body']]
+            },
+            'zh-CN': { fingerprints: {}, reviewNeeded: [] }
           },
           knownViolations: [
             { ...missingName('title'), locale: 'zh-CN' },
@@ -36,34 +50,76 @@ describe('loadManifest', () => {
     expect(loadManifest(filename, JSON.stringify(manifest))).toEqual(manifest)
   })
 
-  const validFile = { locales: {}, knownViolations: [] }
-
   it.for([
     { label: 'corrupt JSON', content: '{"version":', detail: 'JSON' },
     {
-      label: 'a version 1 manifest',
+      label: 'a version 2 manifest',
       content: JSON.stringify({
-        version: 1,
-        files: { 'main.json': 'a'.repeat(40) }
+        version: 2,
+        files: { 'main.json': validFile }
       }),
       detail: '["version"]'
     },
     {
-      label: 'a recorded source blob',
+      label: 'missing source fingerprints',
       content: JSON.stringify({
-        version: 2,
-        files: { 'main.json': { ...validFile, source: 'a'.repeat(40) } }
+        version: 3,
+        files: { 'main.json': { ...validFile, source: undefined } }
       }),
-      detail: '["files","main.json"]: Unrecognized key(s) in object: \'source\''
+      detail: '["files","main.json","source"]'
+    },
+    {
+      label: 'missing locale fingerprints',
+      content: JSON.stringify({
+        version: 3,
+        files: {
+          'main.json': { ...validFile, locales: { ja: { reviewNeeded: [] } } }
+        }
+      }),
+      detail: '["files","main.json","locales","ja","fingerprints"]'
+    },
+    {
+      label: 'a truncated source fingerprint',
+      content: JSON.stringify({
+        version: 3,
+        files: {
+          'main.json': {
+            ...validFile,
+            source: { '["title"]': 'a'.repeat(40) }
+          }
+        }
+      }),
+      detail: '["files","main.json","source","[\\"title\\"]"]'
+    },
+    {
+      label: 'an uppercase locale fingerprint',
+      content: JSON.stringify({
+        version: 3,
+        files: {
+          'main.json': {
+            ...validFile,
+            locales: {
+              ja: {
+                fingerprints: { '["title"]': 'B'.repeat(64) },
+                reviewNeeded: []
+              }
+            }
+          }
+        }
+      }),
+      detail:
+        '["files","main.json","locales","ja","fingerprints","[\\"title\\"]"]'
     },
     {
       label: 'a recorded locale blob',
       content: JSON.stringify({
-        version: 2,
+        version: 3,
         files: {
           'main.json': {
             ...validFile,
-            locales: { ja: { blob: 'b'.repeat(40), reviewNeeded: [] } }
+            locales: {
+              ja: { fingerprints: {}, blob: 'b'.repeat(40), reviewNeeded: [] }
+            }
           }
         }
       }),
@@ -72,7 +128,7 @@ describe('loadManifest', () => {
     {
       label: 'a baseline without a locale',
       content: JSON.stringify({
-        version: 2,
+        version: 3,
         files: {
           'main.json': { ...validFile, knownViolations: [missingName('title')] }
         }
@@ -82,7 +138,7 @@ describe('loadManifest', () => {
     {
       label: 'an unknown violation code',
       content: JSON.stringify({
-        version: 2,
+        version: 3,
         files: {
           'main.json': {
             ...validFile,

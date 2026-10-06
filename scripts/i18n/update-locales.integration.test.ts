@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import {
   mkdirSync,
   mkdtempSync,
@@ -15,7 +16,7 @@ import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import type { TranslationPipelineConfig } from './config'
 import { translationTargets } from './config'
 import type { LocaleObject } from './locale-tree'
-import { serializeLocale } from './locale-tree'
+import { fingerprintLocale, serializeLocale } from './locale-tree'
 import type { FileSnapshot, SourceManifest } from './source-manifest'
 import type { TranslateBatch, TranslationItem } from './translate'
 import { updateLocales } from './update-locales'
@@ -45,15 +46,38 @@ function createTranslator(
 }
 
 function manifestBytes(files: SourceManifest['files']): string {
-  return `${JSON.stringify({ version: 2, files }, null, 2)}\n`
+  return `${JSON.stringify({ version: 3, files }, null, 2)}\n`
 }
 
-const unflaggedManifest = manifestBytes({
-  'main.json': {
-    locales: { 'zh-CN': { reviewNeeded: [] }, ja: { reviewNeeded: [] } },
-    knownViolations: []
+function digest(value: unknown): string {
+  return createHash('sha256').update(JSON.stringify(value)).digest('hex')
+}
+
+function snapshot({
+  english,
+  locales,
+  reviewNeeded = {},
+  knownViolations = []
+}: {
+  english: LocaleObject
+  locales: Record<string, LocaleObject>
+  reviewNeeded?: Record<string, string[][]>
+  knownViolations?: FileSnapshot['knownViolations']
+}): FileSnapshot {
+  return {
+    source: fingerprintLocale(english),
+    locales: Object.fromEntries(
+      Object.entries(locales).map(([code, catalog]) => [
+        code,
+        {
+          fingerprints: fingerprintLocale(catalog),
+          reviewNeeded: reviewNeeded[code] ?? []
+        }
+      ])
+    ),
+    knownViolations
   }
-})
+}
 
 function createCatalogRepo(target: TranslationPipelineConfig = config) {
   const root = realpathSync(mkdtempSync(join(tmpdir(), 'update-locales-')))
@@ -77,37 +101,8 @@ function createCatalogRepo(target: TranslationPipelineConfig = config) {
     absolute,
     writeText,
     writeCatalog,
-    remove(file: string) {
-      rmSync(absolute(file))
-    },
     readCatalog(file: string): unknown {
       return JSON.parse(readFileSync(absolute(file), 'utf8'))
-    },
-    record({
-      filename = 'main.json',
-      english,
-      locales,
-      reviewNeeded = {},
-      knownViolations = []
-    }: {
-      filename?: string
-      english: LocaleObject
-      locales: Record<string, LocaleObject>
-      reviewNeeded?: Record<string, string[][]>
-      knownViolations?: FileSnapshot['knownViolations']
-    }): FileSnapshot {
-      writeCatalog(`.published/en/${filename}`, english)
-      for (const [code, catalog] of Object.entries(locales))
-        writeCatalog(`.published/${code}/${filename}`, catalog)
-      return {
-        locales: Object.fromEntries(
-          Object.keys(locales).map((code) => [
-            code,
-            { reviewNeeded: reviewNeeded[code] ?? [] }
-          ])
-        ),
-        knownViolations
-      }
     },
     writeManifest(files: SourceManifest['files']) {
       writeText('.source-manifest.json', manifestBytes(files))
@@ -150,7 +145,7 @@ describe('updateLocales generation', () => {
   it('regenerates changed app copy with set-based token validation', async () => {
     const repo = createCatalogRepo(translationTargets.app)
     repo.writeManifest({
-      'main.json': repo.record({
+      'main.json': snapshot({
         english: { title: 'Old {n}' },
         locales: {}
       })
@@ -167,17 +162,13 @@ describe('updateLocales generation', () => {
   it.for([
     { file: 'en/main.json', edit: serializeLocale({ title: 'Newer English' }) },
     { file: 'ja/main.json', edit: serializeLocale({ title: '人が直した' }) },
-    {
-      file: '.published/ja/main.json',
-      edit: serializeLocale({ title: '手で戻した' })
-    },
     { file: '.source-manifest.json', edit: manifestBytes({}) }
   ])(
     'refuses publication when $file changes during translation',
     async ({ file, edit }) => {
       const repo = createCatalogRepo()
       repo.writeManifest({
-        'main.json': repo.record({
+        'main.json': snapshot({
           english: { title: 'Hello' },
           locales: { ja: { title: 'こんにちは' }, 'zh-CN': { title: '你好' } }
         })
@@ -199,7 +190,7 @@ describe('updateLocales generation', () => {
     }
   )
 
-  it('publishes source and locale snapshot files, then reruns without translating or rewriting', async () => {
+  it('publishes catalogs with a fingerprint manifest and no snapshot copies, then reruns without translating or rewriting', async () => {
     const repo = createCatalogRepo()
     repo.writeCatalog('en/main.json', {
       hero: { title: 'Hello {name}', subtitle: 'Build anything' }
@@ -222,11 +213,38 @@ describe('updateLocales generation', () => {
       }
     })
     const tree = repo.readTree()
-    expect(tree).toEqual({
-      '.published/en/main.json': english,
-      '.published/ja/main.json': japanese,
-      '.published/zh-CN/main.json': chinese,
-      '.source-manifest.json': unflaggedManifest,
+    expect({
+      ...tree,
+      '.source-manifest.json': JSON.parse(tree['.source-manifest.json'])
+    }).toEqual({
+      '.source-manifest.json': {
+        version: 3,
+        files: {
+          'main.json': {
+            source: {
+              '["hero","subtitle"]': digest('Build anything'),
+              '["hero","title"]': digest('Hello {name}')
+            },
+            locales: {
+              ja: {
+                fingerprints: {
+                  '["hero","subtitle"]': digest('[ja] Build anything'),
+                  '["hero","title"]': digest('[ja] Hello {name}')
+                },
+                reviewNeeded: []
+              },
+              'zh-CN': {
+                fingerprints: {
+                  '["hero","subtitle"]': digest('[zh-CN] Build anything'),
+                  '["hero","title"]': digest('[zh-CN] Hello {name}')
+                },
+                reviewNeeded: []
+              }
+            },
+            knownViolations: []
+          }
+        }
+      },
       'en/main.json': english,
       'ja/main.json': japanese,
       'zh-CN/main.json': chinese
@@ -259,18 +277,11 @@ describe('updateLocales generation', () => {
     })
   })
 
-  it('keeps paired English and locale edits, including new keys and empty fragments, and flags the changed English', async () => {
+  it('keeps paired English and locale edits made after a generation, including new keys and empty fragments, and flags the changed English', async () => {
     const repo = createCatalogRepo()
-    const previousEnglish = { cta: { label: 'Start' } }
-    repo.writeManifest({
-      'main.json': repo.record({
-        english: previousEnglish,
-        locales: {
-          ja: { cta: { label: '開始' } },
-          'zh-CN': { cta: { label: '开始' } }
-        }
-      })
-    })
+    repo.writeCatalog('en/main.json', { cta: { label: 'Start' } })
+    repo.writeManifest({})
+    await repo.run(false, createTranslator().translate)
     repo.writeCatalog('en/main.json', {
       cta: { label: 'Start now', prefix: 'Read the ', suffix: '' }
     })
@@ -278,7 +289,6 @@ describe('updateLocales generation', () => {
       cta: { label: '今すぐ開始', prefix: '', suffix: 'をお読みください' }
     }
     repo.writeCatalog('ja/main.json', humanJapanese)
-    repo.writeCatalog('zh-CN/main.json', { cta: { label: '开始' } })
     const translator = createTranslator()
 
     expect((await repo.run(false, translator.translate)).status).toBe(0)
@@ -294,7 +304,7 @@ describe('updateLocales generation', () => {
         suffix: ''
       }
     })
-    expect(repo.readManifest().files['main.json'].locales).toEqual({
+    expect(repo.readManifest().files['main.json'].locales).toMatchObject({
       ja: { reviewNeeded: [['cta', 'label']] },
       'zh-CN': { reviewNeeded: [] }
     })
@@ -308,7 +318,7 @@ describe('updateLocales generation', () => {
     async ({ copied }) => {
       const repo = createCatalogRepo()
       repo.writeManifest({
-        'main.json': repo.record({
+        'main.json': snapshot({
           english: { nav: { home: 'Home' }, tos: { title: 'Terms v1' } },
           locales: {
             ja: { nav: { home: 'ホーム' }, tos: { title: copied } },
@@ -360,7 +370,7 @@ describe('updateLocales generation', () => {
       const repo = createCatalogRepo()
       const translation = { [section]: { title: japanese } }
       repo.writeManifest({
-        'main.json': repo.record({
+        'main.json': snapshot({
           english: { [section]: { title: 'Title {name}' } },
           locales: { ja: translation, 'zh-CN': {} }
         })
@@ -382,16 +392,14 @@ describe('updateLocales generation', () => {
     }
   )
 
-  it('keeps every output and snapshot of an entry file with a failed locale while other files publish', async () => {
+  it('keeps every output and the manifest entry of an entry file with a failed locale while other files publish', async () => {
     const repo = createCatalogRepo()
     repo.writeManifest({
-      'a.json': repo.record({
-        filename: 'a.json',
+      'a.json': snapshot({
         english: { alpha: 'Alpha' },
         locales: { ja: { alpha: 'アルファ' }, 'zh-CN': { alpha: '阿尔法' } }
       }),
-      'b.json': repo.record({
-        filename: 'b.json',
+      'b.json': snapshot({
         english: { gamma: 'Gamma' },
         locales: { ja: { gamma: 'ガンマ' }, 'zh-CN': { gamma: '伽马' } }
       })
@@ -419,15 +427,28 @@ describe('updateLocales generation', () => {
     const after = repo.readTree()
     expect(filesOf(after, '/a.json')).toEqual(filesOf(before, '/a.json'))
     expect(repo.readManifest().files['a.json']).toEqual(snapshotA)
-    const japaneseB = serializeLocale({ delta: '[ja] Delta', gamma: 'ガンマ' })
-    expect({
-      'ja/b.json': after['ja/b.json'],
-      '.published/en/b.json': after['.published/en/b.json'],
-      '.published/ja/b.json': after['.published/ja/b.json']
-    }).toEqual({
-      'ja/b.json': japaneseB,
-      '.published/en/b.json': after['en/b.json'],
-      '.published/ja/b.json': japaneseB
+    expect(after['ja/b.json']).toBe(
+      serializeLocale({ delta: '[ja] Delta', gamma: 'ガンマ' })
+    )
+    expect(repo.readManifest().files['b.json']).toEqual({
+      source: { '["delta"]': digest('Delta'), '["gamma"]': digest('Gamma') },
+      locales: {
+        ja: {
+          fingerprints: {
+            '["delta"]': digest('[ja] Delta'),
+            '["gamma"]': digest('ガンマ')
+          },
+          reviewNeeded: []
+        },
+        'zh-CN': {
+          fingerprints: {
+            '["delta"]': digest('[zh-CN] Delta'),
+            '["gamma"]': digest('伽马')
+          },
+          reviewNeeded: []
+        }
+      },
+      knownViolations: []
     })
   })
 })
@@ -458,7 +479,7 @@ describe('review flags', () => {
     async ({ section, previous, retained, resolve }) => {
       const repo = createCatalogRepo()
       repo.writeManifest({
-        'main.json': repo.record({
+        'main.json': snapshot({
           english: { [section]: { title: 'Terms v1' } },
           locales: { ja: { [section]: { title: previous } }, 'zh-CN': {} }
         })
@@ -528,7 +549,7 @@ describe('protected-token baselines', () => {
       ]
       const translation = { [section]: { title: 'こんにちは' } }
       repo.writeManifest({
-        'main.json': repo.record({
+        'main.json': snapshot({
           english: { [section]: { title: 'Hello {name}' } },
           locales: { ja: translation, 'zh-CN': {} },
           knownViolations: baseline
@@ -556,7 +577,7 @@ describe('protected-token baselines', () => {
     const repo = createCatalogRepo()
     const zh = { farewell: '再见', greeting: '你好 {name}' }
     repo.writeManifest({
-      'main.json': repo.record({
+      'main.json': snapshot({
         english,
         locales: { ja: japanese, 'zh-CN': zh },
         knownViolations
@@ -578,7 +599,7 @@ describe('protected-token baselines', () => {
   it('retains the exact per-locale baseline and drops the healed entry', async () => {
     const repo = createCatalogRepo()
     repo.writeManifest({
-      'main.json': repo.record({
+      'main.json': snapshot({
         english,
         locales: { ja: japanese, 'zh-CN': chinese },
         knownViolations
@@ -625,7 +646,7 @@ describe('protected-token baselines', () => {
     async ({ ja, zh, diagnostic }) => {
       const repo = createCatalogRepo()
       repo.writeManifest({
-        'main.json': repo.record({
+        'main.json': snapshot({
           english,
           locales: { ja: japanese, 'zh-CN': chinese },
           knownViolations
@@ -660,7 +681,7 @@ describe('protected-token baselines', () => {
       help: '<strong>询问</strong>我们'
     }
     repo.writeManifest({
-      'main.json': repo.record({
+      'main.json': snapshot({
         english: source,
         locales: { ja, 'zh-CN': zh }
       })
@@ -678,37 +699,50 @@ describe('protected-token baselines', () => {
   })
 })
 
-describe('unavailable published snapshots', () => {
-  it.for(['.published/en/main.json', '.published/ja/main.json'])(
-    'fails check and generation closed when %s is missing',
-    async (snapshot) => {
-      const repo = createCatalogRepo()
-      repo.writeManifest({
-        'main.json': repo.record({
-          english: { greeting: 'Hello {name}' },
-          locales: {
-            ja: { greeting: 'こんにちは {name}' },
-            'zh-CN': { greeting: '你好 {name}' }
-          }
-        })
-      })
-      repo.remove(snapshot)
-      repo.writeCatalog('en/main.json', { greeting: 'Hi {name}' })
-      repo.writeCatalog('ja/main.json', { greeting: 'こんにちは {name}' })
-      repo.writeCatalog('zh-CN/main.json', { greeting: '你好 {name}' })
-      const before = repo.readTree()
-      const translator = createTranslator()
-      const message = `Missing catalog ${repo.absolute(snapshot)}. Restore it from version control.`
-
-      await expect(repo.run(false, translator.translate)).rejects.toThrow(
-        message
-      )
-      await expect(repo.run(true)).rejects.toThrow(message)
-
-      expect(translator.requests).toEqual([])
-      expect(repo.readTree()).toEqual(before)
+describe('missing or malformed fingerprint metadata', () => {
+  const valid = snapshot({
+    english: { greeting: 'Hello {name}' },
+    locales: {
+      ja: { greeting: 'こんにちは {name}' },
+      'zh-CN': { greeting: '你好 {name}' }
     }
-  )
+  })
+
+  it.for([
+    {
+      label: 'source fingerprints are missing',
+      file: { ...valid, source: undefined }
+    },
+    {
+      label: 'locale fingerprints are missing',
+      file: {
+        ...valid,
+        locales: { ...valid.locales, ja: { reviewNeeded: [] } }
+      }
+    },
+    {
+      label: 'a source fingerprint is malformed',
+      file: { ...valid, source: { '["greeting"]': 'not-a-sha256-digest' } }
+    }
+  ])('fails check and generation closed when $label', async ({ file }) => {
+    const repo = createCatalogRepo()
+    repo.writeText(
+      '.source-manifest.json',
+      JSON.stringify({ version: 3, files: { 'main.json': file } })
+    )
+    repo.writeCatalog('en/main.json', { greeting: 'Hi {name}' })
+    repo.writeCatalog('ja/main.json', { greeting: 'こんにちは {name}' })
+    repo.writeCatalog('zh-CN/main.json', { greeting: '你好 {name}' })
+    const before = repo.readTree()
+    const translator = createTranslator()
+    const message = `Cannot load source manifest ${repo.absolute('.source-manifest.json')}`
+
+    await expect(repo.run(false, translator.translate)).rejects.toThrow(message)
+    await expect(repo.run(true)).rejects.toThrow(message)
+
+    expect(translator.requests).toEqual([])
+    expect(repo.readTree()).toEqual(before)
+  })
 })
 
 describe('interrupted publication', () => {
@@ -722,7 +756,7 @@ describe('interrupted publication', () => {
   function createInterruptedPublication() {
     const repo = createCatalogRepo()
     repo.writeManifest({
-      'main.json': repo.record({
+      'main.json': snapshot({
         english: oldEnglish,
         locales: { ja: oldJapanese }
       })
@@ -730,13 +764,10 @@ describe('interrupted publication', () => {
     const oldManifest = repo.readTree()['.source-manifest.json']
     const journal = [
       { path: 'ja/main.json', old: oldJapanese, new: newJapanese },
-      { path: 'zh-CN/main.json', old: oldChinese, new: newChinese },
-      { path: '.published/en/main.json', old: oldEnglish, new: newEnglish },
-      { path: '.published/ja/main.json', old: oldJapanese, new: newJapanese },
-      { path: '.published/zh-CN/main.json', old: null, new: newChinese }
+      { path: 'zh-CN/main.json', old: oldChinese, new: newChinese }
     ].map((entry) => ({
       path: entry.path,
-      old: entry.old && serializeLocale(entry.old),
+      old: serializeLocale(entry.old),
       new: serializeLocale(entry.new)
     }))
     repo.writeText(
@@ -748,15 +779,18 @@ describe('interrupted publication', () => {
           {
             path: '.source-manifest.json',
             old: oldManifest,
-            new: unflaggedManifest
+            new: manifestBytes({
+              'main.json': snapshot({
+                english: newEnglish,
+                locales: { ja: newJapanese, 'zh-CN': newChinese }
+              })
+            })
           }
         ]
       })
     )
     repo.writeCatalog('ja/main.json', newJapanese)
     repo.writeCatalog('zh-CN/main.json', oldChinese)
-    repo.writeCatalog('.published/en/main.json', newEnglish)
-    repo.writeCatalog('.published/ja/main.json', newJapanese)
     repo.writeCatalog('en/main.json', {
       farewell: 'Bye',
       greeting: 'Hello there'
@@ -796,11 +830,39 @@ describe('interrupted publication', () => {
       farewell: '再见',
       greeting: '[zh-CN] Hello there'
     })
-    expect(repo.readTree()).toEqual({
-      '.published/en/main.json': english,
-      '.published/ja/main.json': japanese,
-      '.published/zh-CN/main.json': chinese,
-      '.source-manifest.json': unflaggedManifest,
+    const tree = repo.readTree()
+    expect({
+      ...tree,
+      '.source-manifest.json': JSON.parse(tree['.source-manifest.json'])
+    }).toEqual({
+      '.source-manifest.json': {
+        version: 3,
+        files: {
+          'main.json': {
+            source: {
+              '["farewell"]': digest('Bye'),
+              '["greeting"]': digest('Hello there')
+            },
+            locales: {
+              ja: {
+                fingerprints: {
+                  '["farewell"]': digest('さようなら'),
+                  '["greeting"]': digest('[ja] Hello there')
+                },
+                reviewNeeded: []
+              },
+              'zh-CN': {
+                fingerprints: {
+                  '["farewell"]': digest('再见'),
+                  '["greeting"]': digest('[zh-CN] Hello there')
+                },
+                reviewNeeded: []
+              }
+            },
+            knownViolations: []
+          }
+        }
+      },
       'en/main.json': english,
       'ja/main.json': japanese,
       'zh-CN/main.json': chinese

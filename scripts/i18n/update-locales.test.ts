@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { OutputLocale } from './config'
@@ -6,8 +7,8 @@ import type { LocaleObject } from './locale-tree'
 import {
   collectPendingLeaves,
   diffLocaleSources,
+  fingerprintLocale,
   getLeaf,
-  pathKey,
   rebuildLocale
 } from './locale-tree'
 import type { ViolationCode } from './protected-tokens'
@@ -45,10 +46,11 @@ async function updateLocaleFile(
   existing: LocaleObject,
   translateBatch: TranslateBatch
 ): Promise<{ output: LocaleObject; translatedCount: number }> {
-  const changes = diffLocaleSources(previous, source)
-  const invalidated = new Set(
-    [...changes.added, ...changes.modified].map(pathKey)
+  const changes = diffLocaleSources(
+    fingerprintLocale(previous),
+    fingerprintLocale(source)
   )
+  const invalidated = new Set([...changes.added, ...changes.modified])
   const pendingLeaves = collectPendingLeaves(
     source,
     existing,
@@ -74,16 +76,37 @@ async function updateLocaleFile(
   return { output, translatedCount: plan.items.length }
 }
 
+describe('fingerprintLocale', () => {
+  const sha256 = (json: string) =>
+    createHash('sha256').update(json).digest('hex')
+
+  it('maps each encoded leaf path to the SHA-256 of its JSON value, keeping arrays whole and types distinct', () => {
+    expect(
+      fingerprintLocale({
+        count: 42,
+        hero: { 'a.b': 'Hello', label: '42' },
+        steps: ['Open', ''],
+        empty: {}
+      })
+    ).toEqual({
+      '["count"]': sha256('42'),
+      '["hero","a.b"]': sha256('"Hello"'),
+      '["hero","label"]': sha256('"42"'),
+      '["steps"]': sha256('["Open",""]')
+    })
+  })
+})
+
 describe('diffLocaleSources', () => {
-  it('reports added, modified, and deleted leaf paths', () => {
+  it('reports added, modified, and deleted encoded leaf paths', () => {
     const changes = diffLocaleSources(
-      { changed: 'Old {plan}', deleted: 'Delete me', stable: 'Keep me' },
-      { added: 'New string', changed: 'New {plan}', stable: 'Keep me' }
+      { '["changed"]': '1', '["deleted"]': '2', '["nested","stable"]': '3' },
+      { '["added"]': '4', '["changed"]': '5', '["nested","stable"]': '3' }
     )
     expect(changes).toEqual({
-      added: [['added']],
-      deleted: [['deleted']],
-      modified: [['changed']]
+      added: ['["added"]'],
+      deleted: ['["deleted"]'],
+      modified: ['["changed"]']
     })
   })
 })

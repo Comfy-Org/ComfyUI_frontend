@@ -4,7 +4,7 @@ import type {
   LocaleObject,
   LocaleTrackedLeaf
 } from './locale-tree'
-import { getLeaf, pathKey } from './locale-tree'
+import { fingerprintLeaf, getLeaf, pathKey } from './locale-tree'
 
 function usesEnglishFallback({
   current,
@@ -13,11 +13,13 @@ function usesEnglishFallback({
 }: {
   current: LocaleTrackedLeaf | undefined
   source: LocaleTrackedLeaf
-  previous: LocaleTrackedLeaf | undefined
+  previous: string | undefined
 }): boolean {
   return (
     current === undefined ||
-    (current !== '' && [source, previous].includes(current))
+    (current !== '' &&
+      !Array.isArray(current) &&
+      (current === source || fingerprintLeaf(current) === previous))
   )
 }
 
@@ -32,9 +34,9 @@ export function partitionLocale({
   previousReviewNeeded
 }: {
   sourceLeaves: ReadonlyMap<string, LocaleLeafEntry>
-  previousEnglish: LocaleObject
+  previousEnglish: Readonly<Record<string, string>>
   existing: LocaleObject
-  publishedLocale: LocaleObject
+  publishedLocale: Readonly<Record<string, string>>
   modifiedKeys: ReadonlySet<string>
   policy: TranslationPipelineConfig['existingCopy']
   excludedKeys: ReadonlySet<string>
@@ -57,16 +59,14 @@ export function partitionLocale({
       usesEnglishFallback({
         current,
         source: leaf.value,
-        previous: getLeaf(previousEnglish, leaf.path)
+        previous: previousEnglish[key]
       })
     ) {
       omitted.add(key)
       continue
     }
     if (current === undefined) continue
-    const edited =
-      JSON.stringify(current) !==
-      JSON.stringify(getLeaf(publishedLocale, leaf.path))
+    const edited = fingerprintLeaf(current) !== publishedLocale[key]
     if (!excluded && modifiedKeys.has(key) && !edited) continue
     retained.set(key, current)
     if (modifiedKeys.has(key) || (previousReview.has(key) && !edited))
