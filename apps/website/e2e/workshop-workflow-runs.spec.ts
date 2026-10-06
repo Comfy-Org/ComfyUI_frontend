@@ -211,7 +211,7 @@ test('Cloud upload, refresh, partial delivery and downloads retain one run @mobi
   await expect(page.getByTestId('workflow-run')).toHaveText('Waiting its turn')
   expect(cloud.uploads).toHaveLength(1)
   expect(submissions()).toHaveLength(1)
-  await page.getByRole('tab', { name: 'API', exact: true }).click()
+  await page.getByTestId('workflow-path-api').click()
   const sdkSnippet = page.getByTestId('workflow-api-snippet')
   await expect(sdkSnippet).toContainText('from comfy_sdk import Comfy')
   await expect(sdkSnippet).toContainText(
@@ -233,22 +233,23 @@ test('Cloud upload, refresh, partial delivery and downloads retain one run @mobi
   expect(snippet).toContain('/api/prompt')
   expect(snippet).toContain('X-API-Key:')
   await page.setViewportSize({ width: 320, height: 851 })
-  await page.getByRole('tab', { name: 'Details', exact: true }).click()
+  const inside = page.getByTestId('workflow-inside')
+  await inside.scrollIntoViewIfNeeded()
   await expect(
     page.getByRole('img', { name: /nodes of this workflow/i })
   ).toBeVisible()
-  const panelRight = await page
-    .getByRole('tabpanel', { name: 'Details', exact: true })
-    .evaluate((panel) => panel.getBoundingClientRect().right)
+  const panelRight = await inside.evaluate(
+    (panel) => panel.getBoundingClientRect().right
+  )
   const downloadRight = await page
     .getByRole('link', { name: 'Download workflow JSON' })
     .evaluate((link) => link.getBoundingClientRect().right)
   expect(downloadRight).toBeLessThanOrEqual(panelRight)
-  await page.getByRole('tab', { name: 'API', exact: true }).click()
+  await page.getByTestId('workflow-path-api').click()
   await expect(page.getByTestId('workflow-api-snippet')).toHaveText(
     snippet ?? ''
   )
-  await page.getByRole('tab', { name: 'Playground', exact: true }).click()
+  await page.getByTestId('workflow-path-cloud').click()
   cloud.succeed(true)
   await page.clock.fastForward(2100)
   await expect(page.getByTestId('playground-output')).toHaveAttribute(
@@ -362,8 +363,8 @@ test('a Cloud credit refusal opens Add credits without retrying', async ({
   await expect(page.getByRole('button', { name: 'Run' })).toHaveCount(0)
   await page.getByTestId('buy-credits-cancel').click()
   await expect(dialog).toHaveCount(0)
-  await page.getByRole('tab', { name: 'Details' }).click()
-  await page.getByRole('tab', { name: 'Playground' }).click()
+  await page.getByTestId('workflow-inside').scrollIntoViewIfNeeded()
+  await page.getByTestId('workflow-path-cloud').click()
   await expect(dialog).toHaveCount(0)
   await primary.click()
   await expect(dialog).toBeVisible()
