@@ -31,6 +31,7 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { graphToPrompt } from '@/utils/executionUtil'
 import { isWidgetVisibleOnSurface } from '@/types/widgetVisibility'
+import { renameWidget } from '@/utils/widgetUtil'
 
 function setup(min = 0, max = 3) {
   const graph = new LGraph()
@@ -378,7 +379,7 @@ describe('DynamicGroup widgets', () => {
     ).toBe(true)
     const outerInput = outerHost.inputs[0]
     expect(promotedInputWidget(outerInput)?.label).toBe('LoRA #2 strength')
-    return { widget, innerHost, outerSubgraph, outerInput }
+    return { widget, innerHost, outerHost, outerSubgraph, outerInput }
   }
 
   it.for([
@@ -396,44 +397,71 @@ describe('DynamicGroup widgets', () => {
     }
   )
 
-  it('updates promoted labels across multiple instances of the same subgraph', () => {
-    const { widget, innerHost, outerInput } = setupTwiceDeepPromotion()
-    const rootGraph = innerHost.subgraph.rootGraph
-    const otherOuterSubgraph = createTestSubgraph({ rootGraph })
-    const otherOuterHost = createTestSubgraphNode(otherOuterSubgraph)
-    rootGraph.add(otherOuterHost)
-    const otherInnerHost = createTestSubgraphNode(innerHost.subgraph, {
-      parentGraph: otherOuterSubgraph
-    })
-    otherOuterSubgraph.add(otherInnerHost)
-    const otherInnerPromoted = promotedInputWidget(otherInnerHost.inputs[0])
-    assert.exists(otherInnerPromoted)
-    expect(
-      promoteValueWidgetViaSubgraphInput(
-        otherOuterHost,
-        otherInnerHost,
-        otherInnerPromoted
-      ).ok
-    ).toBe(true)
-    const otherOuterInput = otherOuterHost.inputs[0]
-    expect(promotedInputWidget(otherOuterInput)?.label).toBe('LoRA #2 strength')
+  it.for([
+    {
+      name: 'generated labels',
+      innerLabel: 'LoRA #2 strength',
+      outerLabel: 'LoRA #2 strength',
+      expectedInner: 'LoRA #1 strength',
+      expectedOuter: 'LoRA #1 strength'
+    },
+    {
+      name: 'per-instance custom labels',
+      innerLabel: 'Inner strength',
+      outerLabel: 'Outer strength',
+      expectedInner: 'Inner strength',
+      expectedOuter: 'Outer strength'
+    }
+  ])(
+    'preserves $name across multiple instances when rows are renumbered',
+    ({ innerLabel, outerLabel, expectedInner, expectedOuter }) => {
+      const { widget, innerHost, outerHost, outerInput } =
+        setupTwiceDeepPromotion()
+      const rootGraph = innerHost.subgraph.rootGraph
+      const otherOuterSubgraph = createTestSubgraph({ rootGraph })
+      const otherOuterHost = createTestSubgraphNode(otherOuterSubgraph)
+      rootGraph.add(otherOuterHost)
+      const otherInnerHost = createTestSubgraphNode(innerHost.subgraph, {
+        parentGraph: otherOuterSubgraph
+      })
+      otherOuterSubgraph.add(otherInnerHost)
+      const otherInnerPromoted = promotedInputWidget(otherInnerHost.inputs[0])
+      assert.exists(otherInnerPromoted)
+      expect(
+        promoteValueWidgetViaSubgraphInput(
+          otherOuterHost,
+          otherInnerHost,
+          otherInnerPromoted
+        ).ok
+      ).toBe(true)
+      const otherOuterInput = otherOuterHost.inputs[0]
+      expect(promotedInputWidget(otherOuterInput)?.label).toBe(
+        'LoRA #2 strength'
+      )
+      const innerPromoted = promotedInputWidget(innerHost.inputs[0])
+      const outerPromoted = promotedInputWidget(outerInput)
+      assert.exists(innerPromoted)
+      assert.exists(outerPromoted)
+      renameWidget(innerPromoted, innerHost, innerLabel)
+      renameWidget(outerPromoted, outerHost, outerLabel)
 
-    widget('loras.0').callback?.(undefined)
+      widget('loras.0').callback?.(undefined)
 
-    expect(
-      [
-        innerHost.inputs[0],
-        otherInnerHost.inputs[0],
-        outerInput,
-        otherOuterInput
-      ].map((input) => promotedInputWidget(input)?.label)
-    ).toEqual([
-      'LoRA #1 strength',
-      'LoRA #1 strength',
-      'LoRA #1 strength',
-      'LoRA #1 strength'
-    ])
-  })
+      expect(
+        [
+          innerHost.inputs[0],
+          otherInnerHost.inputs[0],
+          outerInput,
+          otherOuterInput
+        ].map((input) => promotedInputWidget(input)?.label)
+      ).toEqual([
+        expectedInner,
+        'LoRA #1 strength',
+        expectedOuter,
+        'LoRA #1 strength'
+      ])
+    }
+  )
 
   it('removes a field promoted through two boundaries when its row is removed', async () => {
     const { widget, innerHost, outerInput } = setupTwiceDeepPromotion()

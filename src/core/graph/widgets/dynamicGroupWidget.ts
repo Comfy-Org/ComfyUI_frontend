@@ -2,6 +2,7 @@ import { t } from '@/i18n'
 import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { VueOnlyWidget } from '@/lib/litegraph/src/widgets/VueOnlyWidget'
 import {
@@ -123,14 +124,14 @@ export function dynamicGroupWidget(
     }
   }
 
-  function removeRow(index: number) {
+  function removeRow(index: number, hosts = createPromotionHostLookup()) {
     if (!node.widgets) return false
     const prefix = `${inputName}.${index}`
     const removed = node.widgets.filter(
       (widget) => widget.name === prefix || widget.name.startsWith(`${prefix}.`)
     )
     if (!removed.length) return false
-    if (!removeRowInputs(prefix)) return false
+    if (!removeRowInputs(prefix, hosts)) return false
     for (const widget of removed.reverse()) {
       if (node.widgets.includes(widget)) node.removeWidget(widget)
     }
@@ -139,12 +140,12 @@ export function dynamicGroupWidget(
       const row = Number(oldPrefix.slice(inputName.length + 1))
       if (row <= index) continue
       const newPrefix = `${inputName}.${row - 1}`
-      renameRow(oldPrefix, newPrefix)
+      renameRow(oldPrefix, newPrefix, hosts)
     }
     return true
   }
 
-  function removeRowInputs(prefix: string) {
+  function removeRowInputs(prefix: string, hosts: PromotionHostLookup) {
     const previous = captureInputLayout(node)
     const inputs = previous.inputs.filter(
       (input) => !input.name.startsWith(`${prefix}.`)
@@ -173,7 +174,7 @@ export function dynamicGroupWidget(
       if (!inputs.includes(input)) node.onInputRemoved?.(slot, input)
     })
     for (const slot of promotedSlots)
-      disconnectOrphanedPromotion(node.graph, slot)
+      disconnectOrphanedPromotion(node.graph, slot, hosts)
     return true
   }
 
@@ -188,6 +189,7 @@ export function dynamicGroupWidget(
   function renameRowLabels(
     oldIndex: number,
     newIndex: number,
+    hosts: PromotionHostLookup,
     rowLabel?: string
   ) {
     for (const field of Object.keys(fields)) {
@@ -202,11 +204,15 @@ export function dynamicGroupWidget(
       if (!input) continue
       if (input.label === previous) input.label = next
       input.localized_name = next
-      renamePromotedInputLabel(node, slot, previous, next)
+      renamePromotedInputLabel(node, slot, previous, next, hosts)
     }
   }
 
-  function renameRow(oldPrefix: string, newPrefix: string) {
+  function renameRow(
+    oldPrefix: string,
+    newPrefix: string,
+    hosts: PromotionHostLookup
+  ) {
     const rowLabel = rows().find((row) => row.name === oldPrefix)?.label
     for (const widget of node.widgets ?? []) {
       if (widget.name === oldPrefix || widget.name.startsWith(`${oldPrefix}.`))
@@ -220,11 +226,12 @@ export function dynamicGroupWidget(
     renameRowLabels(
       Number(oldPrefix.slice(inputName.length + 1)),
       Number(newPrefix.slice(inputName.length + 1)),
+      hosts,
       rowLabel
     )
   }
 
-  function addRow(index: number) {
+  function addRow(index: number, hosts: PromotionHostLookup) {
     const previousSize: [number, number] = [...node.size]
     const start = node.widgets?.length ?? 0
     const previous = captureInputLayout(node)
@@ -247,7 +254,7 @@ export function dynamicGroupWidget(
         })
       }
     })
-    addRowFields(index)
+    addRowFields(index, hosts)
     const addedInputs = node.inputs.splice(previous.inputs.length)
     const inputs = [
       ...previous.inputs,
@@ -275,18 +282,22 @@ export function dynamicGroupWidget(
     return true
   }
 
-  function updateInputLabel(name: string, label: string) {
+  function updateInputLabel(
+    name: string,
+    label: string,
+    hosts: PromotionHostLookup
+  ) {
     const slot = node.findInputSlot(name)
     if (slot === -1) return
     const input = node.inputs[slot]
     const previous = input.localized_name
     if (!input.label || input.label === previous) input.label = label
     input.localized_name = label
-    if (previous) renamePromotedInputLabel(node, slot, previous, label)
+    if (previous) renamePromotedInputLabel(node, slot, previous, label, hosts)
     return input
   }
 
-  function addRowFields(index: number) {
+  function addRowFields(index: number, hosts: PromotionHostLookup) {
     for (const [fields, isOptional] of [
       [template.required, false],
       [template.optional, true]
@@ -300,7 +311,7 @@ export function dynamicGroupWidget(
             transformInputSpecV1ToV2(spec, { name, isOptional })),
           display_name: fieldLabel(index, field)
         })
-        const input = updateInputLabel(name, fieldLabel(index, field))
+        const input = updateInputLabel(name, fieldLabel(index, field), hosts)
         let auxiliaryIndex = 0
         node.widgets?.slice(fieldStart).forEach((widget) => {
           const options = widget.options
@@ -348,11 +359,12 @@ export function dynamicGroupWidget(
       const requested = Math.max(0, Math.trunc(value))
       validateSavedRowCount(value, requested)
       const count = Math.max(min, requested)
+      const hosts = createPromotionHostLookup()
       for (let index = rows().length - 1; index >= count; index--) {
-        if (!removeRow(index)) break
+        if (!removeRow(index, hosts)) break
       }
       while (rows().length < count) {
-        if (!addRow(rows().length)) break
+        if (!addRow(rows().length, hosts)) break
       }
       publish()
     }
@@ -361,17 +373,31 @@ export function dynamicGroupWidget(
   return { widget: controller }
 }
 
-function promotionHosts(subgraph: Subgraph) {
-  return mapUniqueNodes(subgraph.rootGraph, (node) =>
-    node.isSubgraphNode() && node.subgraph === subgraph ? node : undefined
-  )
+type PromotionHostLookup = (subgraph: Subgraph) => SubgraphNode[]
+
+function createPromotionHostLookup(): PromotionHostLookup {
+  let hosts: Map<Subgraph, SubgraphNode[]> | undefined
+  return (subgraph) => {
+    if (!hosts) {
+      hosts = new Map()
+      for (const host of mapUniqueNodes(subgraph.rootGraph, (node) =>
+        node.isSubgraphNode() ? node : undefined
+      )) {
+        const instances = hosts.get(host.subgraph) ?? []
+        instances.push(host)
+        hosts.set(host.subgraph, instances)
+      }
+    }
+    return hosts.get(subgraph) ?? []
+  }
 }
 
 function renamePromotedInputLabel(
   node: LGraphNode,
   slot: number,
   previous: string,
-  next: string
+  next: string,
+  hosts: PromotionHostLookup
 ) {
   const graph = node.graph
   if (!isSubgraph(graph)) return
@@ -380,20 +406,21 @@ function renamePromotedInputLabel(
   const promoted = graph.inputs[link.origin_slot]
   if (promoted.label !== previous) return
   graph.renameInput(promoted, next)
-  for (const host of promotionHosts(graph))
-    renamePromotedInputLabel(host, link.origin_slot, previous, next)
+  for (const host of hosts(graph))
+    renamePromotedInputLabel(host, link.origin_slot, previous, next, hosts)
 }
 
 function disconnectOrphanedPromotion(
   graph: LGraph | Subgraph | null,
-  slot: number
+  slot: number,
+  hosts: PromotionHostLookup
 ) {
   if (!isSubgraph(graph) || graph.inputs[slot]?.linkIds.length) return
-  for (const host of promotionHosts(graph)) {
+  for (const host of hosts(graph)) {
     const link = host.graph && inputLink(host.graph, host.id, slot)
     if (link?.origin_id !== SUBGRAPH_INPUT_ID) continue
     host.disconnectInput(slot)
-    disconnectOrphanedPromotion(host.graph, link.origin_slot)
+    disconnectOrphanedPromotion(host.graph, link.origin_slot, hosts)
   }
 }
 
