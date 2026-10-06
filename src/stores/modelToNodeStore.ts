@@ -75,6 +75,7 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
   }
 
   function isModelWidget(nodeType: string, widgetName: string): boolean {
+    if (!widgetName) return false
     const key = getRegisteredNodeTypes()[nodeType]
     const pattern = registeredNodeProviders.value[nodeType]?.widgetNamePattern
     return (

@@ -244,6 +244,12 @@ describe('useModelToNodeStore', () => {
     )
   })
 
+  it('does not treat an auto-loading provider as an asset widget', () => {
+    expect(useModelToNodeStore().isModelWidget('FL_ChatterboxVC', '')).toBe(
+      false
+    )
+  })
+
   it('supports repeated model fields registered outside the default mappings', () => {
     const store = useModelToNodeStore()
     store.registerNodeProvider(
