@@ -74,6 +74,7 @@ const sectionOrder = page.sectionOrder ?? DEFAULT_SECTION_ORDER
     crumbs={crumbs}
     updated={t(page.breadcrumbUpdatedKey)}
     label={t('ui.breadcrumb')}
+    stackOnMobile={page.stackBreadcrumbOnMobile}
   />
   <ModelLaunchHeroSection client:load hero={page.hero} locale={locale} />
   {sectionOrder.map((section) => {

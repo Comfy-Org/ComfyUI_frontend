@@ -257,6 +257,9 @@ export interface ModelLaunchPage {
   metaDescriptionKey: TranslationKey
   breadcrumbLabelKey: TranslationKey
   breadcrumbUpdatedKey: TranslationKey
+  // Puts the updated date on its own row under the crumbs below the md
+  // breakpoint instead of beside them.
+  stackBreadcrumbOnMobile?: boolean
   hero: ModelLaunchHero
   showcases?: readonly ModelLaunchShowcase[]
   // Absent on announcement pages, which render hero, run options and reviews

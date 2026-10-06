@@ -138,6 +138,7 @@ export const nanoBananaPage: ModelLaunchPage = {
   metaDescriptionKey: 'nanoBanana.meta.description',
   breadcrumbLabelKey: 'nanoBanana.breadcrumb.model',
   breadcrumbUpdatedKey: 'nanoBanana.breadcrumb.updated',
+  stackBreadcrumbOnMobile: true,
   hero: {
     layout: 'media-first',
     titleKey: 'nanoBanana.hero.title',
