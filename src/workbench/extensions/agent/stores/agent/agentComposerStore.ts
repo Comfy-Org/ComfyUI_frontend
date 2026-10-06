@@ -18,6 +18,7 @@ import type {
   WorkflowReference
 } from '../../types/workflowReference'
 import { insertComposerReference } from '../../utils/composerPrompt'
+import { promptReferenceParts } from '../../utils/promptReferenceParts'
 import type { AgentStarterPromptSource } from '../../utils/starterPrompts'
 
 interface ComposerDraft extends PromptSnapshot {
@@ -66,6 +67,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     )
   )
   const nodeScope = ref<string | null>(null)
+  const skillScope = ref<string | null>(null)
   const promptEpoch = ref(0)
   // Set by the affordance that supplied the text; read once at submission and
   // reset there, so it describes the message being sent rather than the panel.
@@ -122,7 +124,12 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
 
   function applyEditorPrompt(next: ComposerPrompt): void {
     const seen = new Set<string>()
+    let hasSkill = false
     const references = next.references.flatMap((item): ComposerReference[] => {
+      if (item.kind === 'skill') {
+        if (item.scope !== skillScope.value || hasSkill) return []
+        hasSkill = true
+      }
       const key = composerReferenceKey(item)
       if (seen.has(key)) return []
       seen.add(key)
@@ -151,6 +158,21 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     starterPrompt.value = source ?? null
   }
 
+  function snapshotReferences(next: PromptSnapshot): ComposerReference[] {
+    return promptReferenceParts(
+      next.text,
+      next.workflowReferences,
+      next.skillReference
+    ).flatMap((part): ComposerReference[] => {
+      if (part.type === 'text') return []
+      if (part.type === 'workflow')
+        return [{ ...part.reference, kind: 'workflow' }]
+      return [
+        { ...part.reference, kind: 'skill', scope: skillScope.value ?? '' }
+      ]
+    })
+  }
+
   function replacePrompt(next: PromptSnapshot): void {
     promptOrigin.value = 'edited'
     starterPrompt.value = null
@@ -158,11 +180,9 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     updateDraft({
       text: next.text,
       references: [
-        ...next.workflowReferences.map(
-          (item): ComposerReference => ({ ...item, kind: 'workflow' })
-        ),
+        ...snapshotReferences(next),
         ...prompt.value.references
-          .filter((item) => item.kind !== 'workflow')
+          .filter((item) => item.kind !== 'workflow' && item.kind !== 'skill')
           .map((item) => ({
             ...item,
             textOffset: Math.min(item.textOffset, next.text.length)
@@ -184,9 +204,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     restorePrompt({
       text: next.text,
       references: [
-        ...next.workflowReferences.map(
-          (item): ComposerReference => ({ ...item, kind: 'workflow' })
-        ),
+        ...snapshotReferences(next),
         ...next.attachments.map(
           (attachment): ComposerReference => ({
             kind: 'asset',
@@ -290,6 +308,20 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     updateDraft({
       ...result,
       text: resetTextWhenReferencesCleared(result.text, result.references)
+    })
+  }
+
+  function setSkillScope(scope: string | null): void {
+    if (scope === skillScope.value) return
+    skillScope.value = scope
+    if (!prompt.value.references.some((item) => item.kind === 'skill')) return
+    resetPromptHistory()
+    const references = prompt.value.references.filter(
+      (item) => item.kind !== 'skill'
+    )
+    updateDraft({
+      text: resetTextWhenReferencesCleared(draft.value, references),
+      references
     })
   }
 
@@ -415,6 +447,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     prompt,
     nodes,
     nodeScope,
+    skillScope,
     promptEpoch,
     promptOrigin,
     starterPrompt,
@@ -432,6 +465,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     removeWorkflowReference,
     removeReference,
     setNodeScope,
+    setSkillScope,
     setNodes,
     addAttachment,
     updateAttachment,

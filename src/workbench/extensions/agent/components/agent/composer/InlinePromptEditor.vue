@@ -6,7 +6,15 @@ import { closeHistory, history, redo, undo } from '@tiptap/pm/history'
 import { keymap } from '@tiptap/pm/keymap'
 import { EditorState, TextSelection } from '@tiptap/pm/state'
 import { Decoration, DecorationSet, EditorView } from '@tiptap/pm/view'
-import { onBeforeUnmount, onMounted, useTemplateRef, watch } from 'vue'
+import {
+  getCurrentInstance,
+  h,
+  onBeforeUnmount,
+  onMounted,
+  render,
+  useTemplateRef,
+  watch
+} from 'vue'
 import { default as DOMPurify } from 'dompurify'
 import { useI18n } from 'vue-i18n'
 
@@ -31,6 +39,8 @@ import {
 import { selectedNodeKey } from '../../../composables/agent/useCanvasSelection'
 import type { PromptEditor } from '../../../types/promptEditor'
 import type { WorkflowReferenceMetadata } from '../../../types/workflowReference'
+import type { SkillReferenceMetadata } from '../../../types/skillReference'
+import SkillReference from '../SkillReference.vue'
 import {
   inlinePromptSchema,
   promptDocument,
@@ -47,13 +57,15 @@ const {
   expanded = false,
   activeDescendant,
   historyEpoch = 0,
-  editableWorkflowId
+  editableWorkflowId,
+  skillScope = ''
 } = defineProps<{
   label: string
   expanded?: boolean
   activeDescendant?: string
   historyEpoch?: number
   editableWorkflowId?: string
+  skillScope?: string
 }>()
 const model = defineModel<ComposerPrompt>({
   default: () => ({ text: '', references: [] })
@@ -71,6 +83,7 @@ const emit = defineEmits<{
   removeNodeReference: [id: string]
 }>()
 const { t } = useI18n()
+const appContext = getCurrentInstance()?.appContext
 const host = useTemplateRef<HTMLDivElement>('host')
 let view: EditorView | undefined
 const insertions = new Set<{ from: number; to: number }>()
@@ -123,6 +136,7 @@ function referenceClipboardText(node: Node): string {
   const reference = promptNodeReference(node, 0)
   if (!reference) return ''
   const name = composerReferenceName(reference)
+  if (reference.kind === 'skill') return `/${name}`
   if (reference.kind === 'workflow') return `@[Workflow: ${name}]`
   return reference.kind === 'node'
     ? nodeReferenceText(name)
@@ -328,6 +342,23 @@ onMounted(() => {
         referenceClipboardText(node)
       ),
     nodeViews: {
+      skill(node) {
+        const dom = document.createElement('span')
+        const reference = promptNodeReference(node, 0)
+        if (reference?.kind !== 'skill') return { dom }
+        dom.contentEditable = 'false'
+        dom.className =
+          'rounded-sm [&.ProseMirror-selectednode]:ring-2 [&.ProseMirror-selectednode]:ring-base-foreground'
+        const vnode = h(SkillReference, { skill: reference })
+        vnode.appContext = appContext ?? null
+        render(vnode, dom)
+        return {
+          dom,
+          stopEvent: () => true,
+          ignoreMutation: () => true,
+          destroy: () => render(null, dom)
+        }
+      },
       node: (node) => passiveReferenceView(node, 'icon-[comfy--node]'),
       asset: (node) => passiveReferenceView(node, 'icon-[lucide--paperclip]'),
       workflow(node, editor, getPos) {
@@ -510,6 +541,40 @@ function captureInsertion(from?: number, to?: number) {
   }
 }
 
+function selectSkill(
+  reference: SkillReferenceMetadata,
+  from: number,
+  to: number
+): void {
+  if (!view) return
+  const position = promptDocumentPosition(view.state.doc, from)
+  // Text offsets exclude atoms. Preserve the live caret so a following reference
+  // at the query's end offset is not included in the replacement.
+  const end =
+    promptTextOffset(view.state.doc, view.state.selection.to) === to
+      ? view.state.selection.to
+      : promptDocumentPosition(view.state.doc, to)
+  const node = inlinePromptSchema.nodes.skill.create({
+    ...reference,
+    scope: skillScope
+  })
+  const transaction = view.state.tr.replaceWith(position, end, node)
+  const after = position + node.nodeSize
+  if (!transaction.doc.nodeAt(after)?.text?.startsWith(' '))
+    transaction.insertText(' ', after)
+  transaction.setSelection(TextSelection.create(transaction.doc, after + 1))
+  const previous: number[] = []
+  transaction.doc.forEach((item, offset) => {
+    if (item.type === inlinePromptSchema.nodes.skill && offset !== position)
+      previous.push(offset)
+  })
+  // Remove the prior skill in this transaction so one undo restores its identity.
+  for (const offset of previous.reverse())
+    transaction.delete(offset, offset + 1)
+  view.dispatch(transaction.scrollIntoView())
+  view.focus()
+}
+
 defineExpose({
   insertionPoint: () =>
     view
@@ -518,6 +583,7 @@ defineExpose({
   focus: () => view?.focus(),
   selection,
   replaceText,
+  selectSkill,
   captureInsertion
 } satisfies PromptEditor)
 </script>

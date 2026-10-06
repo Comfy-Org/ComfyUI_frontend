@@ -29,6 +29,7 @@ import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { registerEscapeOverride } from '@/platform/keybindings/escapeOverride'
 import type { AgentStopMethod } from '@/platform/telemetry/types'
+import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 
 import InlinePromptEditor from './composer/InlinePromptEditor.vue'
 import { composerPromptForSend } from '../../utils/composerPrompt'
@@ -49,6 +50,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import AttachmentChip from './composer/AttachmentChip.vue'
 import RunModePopover from './composer/RunModePopover.vue'
+import SkillHoverPreview from './SkillHoverPreview.vue'
 
 const {
   streaming = false,
@@ -98,6 +100,7 @@ const emit = defineEmits<{
   workflowTargetRequired: []
 }>()
 const { t } = useI18n()
+const skills = useSkillPacksStore()
 
 const assetDragActive = inject<Readonly<Ref<boolean>>>(
   'agentAssetDragActive',
@@ -145,6 +148,11 @@ const composer = useComposer({
 
 const editorRef =
   useTemplateRef<InstanceType<typeof InlinePromptEditor>>('editorRef')
+watch(
+  () => skills.scope,
+  (scope) => composer.setSkillScope(scope),
+  { immediate: true, flush: 'sync' }
+)
 const { workflowReferences } = composer
 
 const workflowSubmenuOpen = ref(false)
@@ -180,6 +188,8 @@ const {
   editor: () => editorRef.value,
   selectionTags: () => selectionTags,
   workflows: () => eligibleWorkflows.value,
+  skills: () => skills.packs,
+  skillsEnabled: () => skills.enabled,
   nodeReferenceDisabledReason: () => nodeReferenceDisabledReason,
   workflowSelecting: () => workflowSelecting,
   getMentionNodes: () => getMentionNodes(),
@@ -203,6 +213,10 @@ function onWorkflowSubmenuOpenChange(open: boolean): void {
 async function pickWorkflow(workflow: WorkflowReferenceOption): Promise<void> {
   if (await selectWorkflow(workflow)) addMenuOpen.value = false
 }
+
+watch(mentionSection, (section) => {
+  if (section === 'skills') void skills.refreshPacks()
+})
 
 function onEditorSelectionChange(): void {
   const point = editorRef.value?.insertionPoint()
@@ -233,10 +247,21 @@ watch(mentionActive, async () => {
     ?.scrollIntoView?.({ block: 'nearest' })
 })
 
-const placeholderHint = computed(() => {
-  const [text = '', mentionNodes = ''] = t('agent.placeholder').split('\n')
-  return { text, mentionNodes }
-})
+const emptyMentionLabel = computed(() =>
+  mentionSection.value === 'skills'
+    ? t(
+        skills.loading
+          ? 'agent.skillsLoading'
+          : skills.loadFailed
+            ? 'agent.skillsLoadError'
+            : 'agent.noSkillsFound'
+      )
+    : t(
+        mentionSection.value === 'workflows'
+          ? 'agent.noWorkflowsToReference'
+          : 'agent.noNodesToReference'
+      )
+)
 
 function onEnter(event: KeyboardEvent): void {
   if (event.isComposing || event.shiftKey) return
@@ -310,6 +335,7 @@ function handleEscapeOverride(event: KeyboardEvent): boolean {
 
 let unregisterEscapeOverride: (() => void) | undefined
 onMounted(() => {
+  void skills.startFlagGate({ fetch: false })
   unregisterEscapeOverride = registerEscapeOverride(handleEscapeOverride)
 })
 onUnmounted(() => {
@@ -351,15 +377,19 @@ defineExpose({
       ref="mentionListRef"
       data-testid="agent-reference-menu"
       role="menu"
-      :aria-label="t('agent.addToPrompt')"
+      :aria-label="
+        t(mentionSection === 'skills' ? 'agent.skills' : 'agent.addToPrompt')
+      "
       class="absolute inset-x-0 bottom-full z-1100 -mb-8.75 max-h-64 overflow-y-auto rounded-lg border border-border-subtle bg-secondary-background p-1 font-inter shadow-md"
       @mousedown.prevent
     >
       <div
-        v-if="mentionSection === 'root'"
+        v-if="mentionSection === 'root' || mentionSection === 'skills'"
         class="flex h-6 items-center px-1.5 py-1 text-xs/4 text-muted-foreground"
       >
-        {{ t('agent.reference') }}
+        {{
+          t(mentionSection === 'skills' ? 'agent.skills' : 'agent.reference')
+        }}
       </div>
       <AccessibleTooltip
         v-for="(match, index) in mentionMatches"
@@ -380,6 +410,7 @@ defineExpose({
                 : undefined
             "
             role="menuitem"
+            :aria-label="match.kind === 'skill' ? match.label : undefined"
             :data-active="index === mentionActive"
             :class="
               cn(
@@ -403,6 +434,24 @@ defineExpose({
               class="icon-[lucide--chevron-left] size-4 shrink-0"
             />
             <span class="min-w-0 flex-1 truncate">{{ match.label }}</span>
+            <SkillHoverPreview
+              v-if="match.kind === 'skill'"
+              :skill="match.skill"
+            >
+              <button
+                type="button"
+                :aria-label="t('agent.skillInfo', { name: match.skill.name })"
+                :class="
+                  cn(
+                    'flex h-4 w-6 cursor-pointer items-center justify-center rounded-sm text-muted-foreground opacity-0 hover:text-base-foreground focus-visible:opacity-100',
+                    index === mentionActive && 'opacity-100'
+                  )
+                "
+                @click.stop
+              >
+                <span aria-hidden="true" class="icon-[lucide--info] size-3" />
+              </button>
+            </SkillHoverPreview>
             <span
               v-if="
                 match.kind === 'workflow' && match.workflow.id === undefined
@@ -428,11 +477,14 @@ defineExpose({
         role="status"
         class="px-2 py-1 text-xs text-muted-foreground"
       >
-        {{
-          mentionSection === 'workflows'
-            ? t('agent.noWorkflowsToReference')
-            : t('agent.noNodesToReference')
-        }}
+        {{ emptyMentionLabel }}
+        <Button
+          v-if="mentionSection === 'skills' && skills.loadFailed"
+          variant="textonly"
+          size="sm"
+          @click="skills.ensurePacks()"
+          >{{ t('g.retry') }}</Button
+        >
       </div>
     </div>
 
@@ -538,6 +590,7 @@ defineExpose({
               "
               :history-epoch="composer.promptEpoch.value"
               :editable-workflow-id
+              :skill-scope="skills.scope"
               @keydown="onComposerKeydown"
               @update:model-value="composer.applyEditorPrompt"
               @keyup="onComposerKeyup"
@@ -562,34 +615,7 @@ defineExpose({
             "
             class="pointer-events-none z-10 col-start-1 row-start-1 self-start p-3 font-inter text-[14px]/5 font-normal text-muted-foreground"
           >
-            <span>{{ placeholderHint.text }} </span>
-            <AccessibleTooltip
-              :label="nodeReferenceDisabledReason ?? ''"
-              :disabled="!nodeReferenceDisabledReason"
-              :skip-delay-duration="0"
-              disable-hoverable-content
-              :collision-padding="8"
-            >
-              <template #trigger>
-                <Button
-                  type="button"
-                  variant="link"
-                  size="unset"
-                  :aria-disabled="!!nodeReferenceDisabledReason || undefined"
-                  :aria-description="nodeReferenceDisabledReason"
-                  class="pointer-events-auto h-5 shrink-0 gap-1 px-1 align-top text-sm/5 aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
-                  @click="onSelectNodes"
-                >
-                  <span
-                    class="icon-[lucide--mouse-pointer-click] size-3.5 shrink-0"
-                  />
-                  <span
-                    class="underline decoration-dashed underline-offset-2"
-                    >{{ placeholderHint.mentionNodes }}</span
-                  >
-                </Button>
-              </template>
-            </AccessibleTooltip>
+            {{ t('agent.placeholder') }}
           </div>
         </div>
       </div>

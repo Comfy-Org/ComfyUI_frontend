@@ -2,9 +2,11 @@ import type { SelectedNode } from '../composables/agent/useCanvasSelection'
 import { selectedNodeKey } from '../composables/agent/useCanvasSelection'
 import type { ComposerAttachment } from '../composables/agent/useComposer'
 import type { WorkflowReference } from './workflowReference'
+import type { SkillReference } from './skillReference'
 
 export type ComposerReference =
   | (WorkflowReference & { kind: 'workflow' })
+  | (SkillReference & { kind: 'skill'; scope: string })
   | {
       kind: 'node'
       node: SelectedNode
@@ -31,6 +33,8 @@ export function composerReferenceKey(reference: ComposerReference): string {
   switch (reference.kind) {
     case 'workflow':
       return `workflow:${reference.id}`
+    case 'skill':
+      return `skill:${reference.name}`
     case 'node':
       return `node:${JSON.stringify([reference.scope, selectedNodeKey(reference.node)])}`
     case 'asset':
@@ -41,6 +45,8 @@ export function composerReferenceKey(reference: ComposerReference): string {
 export function composerReferenceName(reference: ComposerReference): string {
   switch (reference.kind) {
     case 'workflow':
+      return reference.name
+    case 'skill':
       return reference.name
     case 'node':
       return `${reference.node.title} #${reference.node.id}`

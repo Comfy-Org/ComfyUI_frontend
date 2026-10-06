@@ -3,6 +3,8 @@ import { render } from '@testing-library/vue'
 import { defineComponent, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { api } from '@/scripts/api'
 import { reportError } from '@/platform/telemetry/reportError'
 
 import {
@@ -14,6 +16,8 @@ import { useSkillPacksStore } from '../stores/skillPacksStore'
 import type { SkillPack } from '../types'
 import { useSkillPackForm } from './useSkillPackForm'
 
+vi.mock(import('@/composables/auth/useCurrentUser'))
+vi.mock(import('@/scripts/api'))
 vi.mock(import('../api/skillsApi'), { spy: true })
 
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
@@ -84,6 +88,42 @@ function mountForm(pack?: SkillPack) {
 }
 
 describe('useSkillPackForm', () => {
+  it('ignores a late publish failure from the previous backend without an intervening catalog request', async () => {
+    const store = useSkillPacksStore()
+    store.flagsEnabled = true
+    store.upsertPack(makePack())
+    const oldScope = store.scope
+    const pending = deferred<SkillPack>()
+    vi.mocked(publishSkillPack).mockReturnValueOnce(pending.promise)
+    const { handleSubmit, fieldError } = mountForm(makePack())
+    const request = handleSubmit()
+    vi.mocked(api.apiURL).mockImplementation((route) => `/other${route}`)
+    pending.reject(new SkillPacksApiError('not found', 404))
+    await request
+    expect(store.scope).not.toBe(oldScope)
+    expect(store.enabled).toBe(true)
+    expect(store.packs).toEqual([])
+    expect(fieldError.value).toBeNull()
+  })
+  it('ignores a late publish failure after the account scope changes', async () => {
+    const user = ref({ id: 'user-a' })
+    Object.assign(useCurrentUser(), { resolvedUserInfo: user })
+    const store = useSkillPacksStore()
+    store.flagsEnabled = true
+    const pending = deferred<SkillPack>()
+    vi.mocked(publishSkillPack).mockReturnValueOnce(pending.promise)
+    const { handleSubmit, visible, fieldError } = mountForm(makePack())
+    const request = handleSubmit()
+    user.value = { id: 'user-b' }
+    const newPack = makePack({ name: 'new-workspace-pack' })
+    store.upsertPack(newPack)
+    pending.reject(new SkillPacksApiError('not found', 404))
+    await request
+    expect(store.enabled).toBe(true)
+    expect(store.packs).toEqual([newPack])
+    expect(visible.value).toBe(true)
+    expect(fieldError.value).toBeNull()
+  })
   it('seeds the editor from the pack it was given, with no second fetch', () => {
     const pack = makePack()
     const { form } = mountForm(pack)

@@ -1,4 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { api } from '@/scripts/api'
 
 import { listSkillPacks, SkillPacksApiError } from '../api/skillsApi'
 import type { SkillPack } from '../types'
@@ -17,6 +21,8 @@ vi.mock<unknown>(import('posthog-js'), () => ({
   }
 }))
 
+vi.mock(import('@/composables/auth/useCurrentUser'))
+vi.mock(import('@/scripts/api'))
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mocks.reportError
 }))
@@ -36,7 +42,140 @@ function makePack(overrides: Partial<SkillPack> = {}): SkillPack {
   }
 }
 
+function deferredCatalog() {
+  let resolve: (packs: SkillPack[]) => void = () => {}
+  const promise = new Promise<SkillPack[]>((settle) => {
+    resolve = settle
+  })
+  return { promise, resolve }
+}
+
 describe('skillPacksStore', () => {
+  it('keeps cached packs during refresh and deduplicates concurrent refresh requests', async () => {
+    const store = useSkillPacksStore()
+    store.flagsEnabled = true
+    store.upsertPack(makePack())
+    const deferred = deferredCatalog()
+    vi.mocked(listSkillPacks).mockReturnValueOnce(deferred.promise)
+    const first = store.refreshPacks()
+    const second = store.refreshPacks()
+    expect(store.loading).toBe(true)
+    expect(store.packs).toEqual([makePack()])
+    expect(listSkillPacks).toHaveBeenCalledOnce()
+    const created = makePack({ name: 'created-by-agent' })
+    deferred.resolve([created])
+    await Promise.all([first, second])
+    expect(store.packs).toEqual([created])
+    expect(store.loading).toBe(false)
+  })
+
+  it('retains cached packs after a failed refresh and accepts a later refresh', async () => {
+    const store = useSkillPacksStore()
+    store.flagsEnabled = true
+    store.upsertPack(makePack())
+    vi.mocked(listSkillPacks).mockRejectedValueOnce(
+      new SkillPacksApiError('unavailable', 503)
+    )
+    await store.refreshPacks()
+    expect(store.packs).toEqual([makePack()])
+    expect(store.loadFailed).toBe(true)
+    expect(store.loading).toBe(false)
+    const created = makePack({ name: 'created-by-agent' })
+    vi.mocked(listSkillPacks).mockResolvedValueOnce([created])
+    await store.refreshPacks()
+    expect(store.packs).toEqual([created])
+    expect(store.loadFailed).toBe(false)
+  })
+  it('retries a failed refresh even when a catalog was previously loaded', async () => {
+    vi.mocked(listSkillPacks)
+      .mockResolvedValueOnce([makePack()])
+      .mockRejectedValueOnce(new SkillPacksApiError('unavailable', 503))
+      .mockResolvedValueOnce([makePack({ name: 'updated-pack' })])
+    const store = useSkillPacksStore()
+    store.flagsEnabled = true
+    await store.ensurePacks()
+    await expect(store.fetchPacks()).rejects.toThrow('unavailable')
+    expect(store.loadFailed).toBe(true)
+    await store.ensurePacks()
+    expect(listSkillPacks).toHaveBeenCalledTimes(3)
+    expect(store.loadFailed).toBe(false)
+    expect(store.packs[0].name).toBe('updated-pack')
+  })
+  it('supports lazy composer loading and shares one concurrent catalog request with Settings', async () => {
+    const deferred = deferredCatalog()
+    vi.mocked(listSkillPacks).mockReturnValue(deferred.promise)
+    const store = useSkillPacksStore()
+    await store.startFlagGate({ fetch: false })
+    expect(store.enabled).toBe(true)
+    expect(listSkillPacks).not.toHaveBeenCalled()
+    const composerLoad = store.ensurePacks()
+    const settingsLoad = store.fetchPacks()
+    expect(listSkillPacks).toHaveBeenCalledOnce()
+    expect(store.loading).toBe(true)
+    deferred.resolve([makePack()])
+    await Promise.all([composerLoad, settingsLoad])
+    expect(store.packs).toEqual([makePack()])
+    expect(store.loading).toBe(false)
+  })
+
+  it('clears the catalog on account change and ignores the old response and CRUD updates', async () => {
+    const user = ref({ id: 'user-a' })
+    Object.assign(useCurrentUser(), { resolvedUserInfo: user })
+    const store = useSkillPacksStore()
+    store.packs = [makePack()]
+    store.hasLoaded = true
+    const oldScope = store.scope
+    const deferred = deferredCatalog()
+    vi.mocked(listSkillPacks).mockReturnValue(deferred.promise)
+    const pending = store.fetchPacks()
+    user.value = { id: 'user-b' }
+    expect(store.packs).toEqual([])
+    expect(store.hasLoaded).toBe(false)
+    store.upsertPack(makePack(), oldScope)
+    deferred.resolve([makePack()])
+    await pending
+    expect(store.packs).toEqual([])
+  })
+
+  it('invalidates a workspace catalog before serving cached data', () => {
+    const workspace = useTeamWorkspaceStore()
+    Object.assign(workspace, { workspaceId: 'workspace-a' })
+    const store = useSkillPacksStore()
+    store.upsertPack(makePack())
+    const oldScope = store.scope
+    Object.assign(workspace, { workspaceId: 'workspace-b' })
+    expect(store.scope).not.toBe(oldScope)
+    expect(store.packs).toEqual([])
+    expect(store.hasLoaded).toBe(false)
+  })
+
+  it('discards a response from a previous backend and re-fetches on the next request', async () => {
+    const store = useSkillPacksStore()
+    store.flagsEnabled = true
+    const deferred = deferredCatalog()
+    vi.mocked(listSkillPacks).mockReturnValueOnce(deferred.promise)
+    const pending = store.fetchPacks()
+    vi.mocked(api.apiURL).mockImplementation((route) => `/other${route}`)
+    deferred.resolve([makePack()])
+    await pending
+    expect(store.packs).toEqual([])
+    await store.ensurePacks()
+    expect(listSkillPacks).toHaveBeenCalledTimes(2)
+  })
+
+  it('exposes a retryable catalog error, then shares the successful retry', async () => {
+    vi.mocked(listSkillPacks)
+      .mockRejectedValueOnce(new SkillPacksApiError('unavailable', 503))
+      .mockResolvedValueOnce([makePack()])
+    const store = useSkillPacksStore()
+    store.flagsEnabled = true
+    await store.ensurePacks()
+    expect(store.loadFailed).toBe(true)
+    expect(store.enabled).toBe(true)
+    await store.ensurePacks()
+    expect(store.loadFailed).toBe(false)
+    expect(store.packs).toEqual([makePack()])
+  })
   beforeEach(() => {
     vi.mocked(listSkillPacks).mockResolvedValue([])
     mocks.isFeatureEnabled.mockReturnValue(true)

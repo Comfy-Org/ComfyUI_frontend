@@ -10,6 +10,7 @@ import Composer from '../Composer.vue'
 import { setupInlinePromptEditorDom } from '../composer/inlinePromptEditorTestSetup'
 import UserMessage from './UserMessage.vue'
 
+vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('./ReplyAssetGroup.vue'), () => ({
   default: defineComponent<{ assets: ReplyAsset[] }>({
     setup: () => () => null

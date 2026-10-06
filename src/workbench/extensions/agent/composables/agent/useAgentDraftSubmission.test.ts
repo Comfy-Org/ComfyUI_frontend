@@ -124,6 +124,29 @@ function setup() {
 }
 
 describe('Agent draft submission', () => {
+  it('preserves a selected skill and the whole draft until its transport contract is available', async () => {
+    const { composer, submit, send } = setup()
+    composer.setSkillScope('workspace-a')
+    composer.applyEditorPrompt({
+      ...composer.prompt,
+      references: [
+        ...composer.prompt.references,
+        {
+          kind: 'skill',
+          name: 'portrait',
+          description: 'Use defaults',
+          scope: 'workspace-a',
+          textOffset: composer.draft.length
+        }
+      ]
+    })
+    const prompt = composer.prompt
+    const attachments = [...composer.attachments]
+    await submit()
+    expect(send).not.toHaveBeenCalled()
+    expect(composer.prompt).toEqual(prompt)
+    expect(composer.attachments).toEqual(attachments)
+  })
   it('clears the complete draft before sending its snapshot and preserves subsequent typing on success', async () => {
     const { composer, selection, original, submit, send, pending } = setup()
     send.mockImplementation(() => {

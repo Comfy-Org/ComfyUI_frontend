@@ -1,6 +1,8 @@
 import { DOMParser, DOMSerializer } from '@tiptap/pm/model'
 
 import { agentMessageText } from '../../../utils/agentMessageText'
+import type { ComposerReference } from '../../../types/composerPrompt'
+import { promptReferenceParts } from '../../../utils/promptReferenceParts'
 import {
   inlinePromptSchema,
   promptDocument,
@@ -10,13 +12,20 @@ import {
 export function userMessageClipboard(
   message: Parameters<typeof agentMessageText>[0]
 ) {
-  const { text, workflowReferences = [] } = message
+  const { text, workflowReferences = [], skillReference } = message
   const plainText = agentMessageText(message)
   const prompt = promptDocument({
     text,
-    references: [...workflowReferences]
-      .sort((a, b) => a.textOffset - b.textOffset)
-      .map((reference) => ({ ...reference, kind: 'workflow' }))
+    references: promptReferenceParts(
+      text,
+      workflowReferences,
+      skillReference
+    ).flatMap((part): ComposerReference[] => {
+      if (part.type === 'text') return []
+      return part.type === 'workflow'
+        ? [{ ...part.reference, kind: 'workflow' }]
+        : [{ ...part.reference, kind: 'skill', scope: '' }]
+    })
   })
   const container = document.createElement('span')
   container.style.whiteSpace = 'pre-wrap'
@@ -24,7 +33,9 @@ export function userMessageClipboard(
     DOMSerializer.fromSchema(inlinePromptSchema).serializeFragment(
       prompt.content
     ),
-    plainText.slice(agentMessageText({ text, workflowReferences }).length)
+    plainText.slice(
+      agentMessageText({ text, workflowReferences, skillReference }).length
+    )
   )
   return { text: plainText, html: container.outerHTML }
 }

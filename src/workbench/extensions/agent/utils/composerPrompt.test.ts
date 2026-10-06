@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
+import { useAgentComposerStore } from '../stores/agent/agentComposerStore'
+import { agentMessageText } from './agentMessageText'
 import type { ComposerPrompt } from '../types/composerPrompt'
 import {
   composerPromptForSend,
@@ -7,6 +9,74 @@ import {
 } from './composerPrompt'
 
 describe('composer prompt boundaries', () => {
+  it.for(['skill-first', 'workflow-first'])(
+    'preserves adjacent cross-kind order through render, edit and draft restoration: %s',
+    (order) => {
+      const skill = {
+        kind: 'skill' as const,
+        name: 'portrait',
+        description: 'Use defaults',
+        scope: 'scope',
+        textOffset: 0
+      }
+      const workflow = {
+        kind: 'workflow' as const,
+        id: 'workflow',
+        name: 'Reference',
+        textOffset: 0
+      }
+      const references =
+        order === 'skill-first' ? [skill, workflow] : [workflow, skill]
+      const snapshot = composerPromptForSend({ text: '', references })
+      expect(agentMessageText(snapshot)).toBe(
+        order === 'skill-first'
+          ? '/portrait@[Workflow: Reference]'
+          : '@[Workflow: Reference]/portrait'
+      )
+      const store = useAgentComposerStore()
+      store.setSkillScope('scope')
+      store.replacePrompt(snapshot)
+      expect(store.prompt.references.map((item) => item.kind)).toEqual(
+        references.map((item) => item.kind)
+      )
+      store.replaceDraft({ ...snapshot, attachments: [] })
+      expect(store.prompt.references.map((item) => item.kind)).toEqual(
+        references.map((item) => item.kind)
+      )
+    }
+  )
+  it('retains skill identity and its adjusted position without expanding it to ordinary prompt text', () => {
+    const asset = {
+      kind: 'asset' as const,
+      attachment: { id: 'asset', name: 'image.png', ref: 'image.png' },
+      textOffset: 0
+    }
+    expect(
+      composerPromptForSend({
+        text: ' then render',
+        references: [
+          asset,
+          asset,
+          {
+            kind: 'skill',
+            name: 'portrait',
+            description: 'Use portrait defaults',
+            scope: 'user/workspace',
+            textOffset: 6
+          }
+        ]
+      })
+    ).toEqual({
+      text: '@[Image: image.png]@[Image: image.png] then render',
+      workflowReferences: [],
+      skillReference: {
+        name: 'portrait',
+        description: 'Use portrait defaults',
+        textOffset: 44,
+        workflowIndex: 0
+      }
+    })
+  })
   it('expands node and asset labels while retaining the workflow position', () => {
     const prompt: ComposerPrompt = {
       text: 'Use  with  in .',

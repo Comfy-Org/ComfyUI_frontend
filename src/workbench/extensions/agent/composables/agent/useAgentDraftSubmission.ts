@@ -90,6 +90,7 @@ export function useAgentDraftSubmission(
     const target = options.target()
     if (
       !options.canSubmit() ||
+      composer.prompt.references.some((item) => item.kind === 'skill') ||
       composer.submission?.phase === 'pending' ||
       target === null ||
       (!text.trim() && attachments.length === 0) ||

@@ -16,6 +16,14 @@ export const inlinePromptSchema = new Schema({
   nodes: {
     doc: { content: 'inline*', whitespace: 'pre' },
     text: { group: 'inline' },
+    skill: {
+      group: 'inline',
+      inline: true,
+      atom: true,
+      attrs: { name: {}, description: {}, scope: {} },
+      // Clipboard copies are readable text, never an authorization to load a skill.
+      toDOM: (node) => ['span', {}, `/${node.attrs.name}`]
+    },
     workflow: {
       group: 'inline',
       inline: true,
@@ -81,6 +89,12 @@ export const inlinePromptSchema = new Schema({
 
 function promptReferenceNode(reference: ComposerReference): Node {
   switch (reference.kind) {
+    case 'skill':
+      return inlinePromptSchema.nodes.skill.create({
+        name: reference.name,
+        description: reference.description,
+        scope: reference.scope
+      })
     case 'workflow':
       return inlinePromptSchema.nodes.workflow.create({
         id: reference.id,
@@ -122,6 +136,16 @@ export function promptNodeReference(
   textOffset: number
 ): ComposerReference | undefined {
   const { id, name } = node.attrs
+  if (node.type === inlinePromptSchema.nodes.skill) {
+    const { description, scope } = node.attrs
+    if (
+      typeof name !== 'string' ||
+      typeof description !== 'string' ||
+      typeof scope !== 'string'
+    )
+      return
+    return { kind: 'skill', name, description, scope, textOffset }
+  }
   if (typeof id !== 'string' || typeof name !== 'string') return
   if (node.type.name === 'workflow')
     return {

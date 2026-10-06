@@ -5,6 +5,69 @@ import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 import { useAgentComposerStore } from './agentComposerStore'
 
 describe('composer reference ownership', () => {
+  it('restores a failed skill draft and its asset references only while untouched', () => {
+    const store = useAgentComposerStore()
+    store.setSkillScope('workspace-a')
+    const skill = {
+      kind: 'skill' as const,
+      name: 'portrait',
+      description: 'Use defaults',
+      scope: 'workspace-a',
+      textOffset: 4
+    }
+    const attachment = { id: 'asset', name: 'image.png', ref: 'image.png' }
+    store.restorePrompt({
+      text: 'Use  today',
+      references: [skill, { kind: 'asset', attachment, textOffset: 4 }]
+    })
+    const snapshot = {
+      prompt: store.prompt,
+      attachments: store.attachments,
+      nodes: [],
+      target: createMockLoadedWorkflow({ path: 'workflows/target.json' })
+    }
+    const first = store.startSubmission(snapshot)
+    store.settleSubmission(first, false)
+    const failed = store.takeFailedSubmission()
+    expect(failed).toEqual(snapshot)
+    if (!failed) throw new Error('Expected a recoverable draft')
+    store.restorePrompt(failed.prompt)
+    expect(store.prompt).toEqual(snapshot.prompt)
+    expect(store.attachments).toEqual([attachment])
+
+    const second = store.startSubmission(snapshot)
+    store.setText('New input')
+    store.settleSubmission(second, false)
+    expect(store.takeFailedSubmission()).toBeUndefined()
+    expect(store.draft).toBe('New input')
+  })
+
+  it('invalidates old skill identity and undo history on scope change while preserving other references', () => {
+    const store = useAgentComposerStore()
+    store.setSkillScope('workspace-a')
+    const skill = {
+      kind: 'skill' as const,
+      name: 'portrait',
+      description: 'Use defaults',
+      scope: 'workspace-a',
+      textOffset: 0
+    }
+    const workflow = {
+      kind: 'workflow' as const,
+      id: 'workflow',
+      name: 'Reference',
+      textOffset: 0
+    }
+    store.restorePrompt({ text: 'Keep this', references: [skill, workflow] })
+    const previous = store.prompt
+    const epoch = store.promptEpoch
+    store.setSkillScope('workspace-b')
+    expect(store.prompt).toEqual({ text: 'Keep this', references: [workflow] })
+    expect(store.promptEpoch).toBeGreaterThan(epoch)
+    store.applyEditorPrompt(previous)
+    expect(store.prompt).toEqual({ text: 'Keep this', references: [workflow] })
+  })
+
   it('updates detached uploads without attaching them until an explicit Undo', () => {
     const store = useAgentComposerStore()
     store.addAttachment({

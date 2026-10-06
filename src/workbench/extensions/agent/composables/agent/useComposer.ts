@@ -31,6 +31,8 @@ export function useComposer(options: UseComposerOptions) {
   const canSend = computed(
     () =>
       (draft.value.trim().length > 0 || prompt.value.references.length > 0) &&
+      // The legacy send API cannot transport selection. Never degrade it to text.
+      !prompt.value.references.some((item) => item.kind === 'skill') &&
       !attachments.value.some((item) => item.uploading)
   )
 
@@ -84,6 +86,7 @@ export function useComposer(options: UseComposerOptions) {
     promptEpoch,
     applyEditorPrompt: store.applyEditorPrompt,
     setInsertionPoint: store.setInsertionPoint,
+    setSkillScope: store.setSkillScope,
     removeReference: store.removeReference,
     workflowReferences,
     canSend,

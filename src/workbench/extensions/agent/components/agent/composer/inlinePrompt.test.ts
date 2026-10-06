@@ -17,6 +17,32 @@ import {
 } from './inlinePrompt'
 
 describe('inline prompt', () => {
+  it('round-trips a scoped skill with adjacent workflow and repeated asset references', () => {
+    const draft: ComposerPrompt = {
+      text: '😀 before  after',
+      references: [
+        { kind: 'workflow', id: 'ref', name: 'Reference', textOffset: 10 },
+        {
+          kind: 'skill',
+          name: 'portrait',
+          description: 'Private\nDescription',
+          scope: 'user-a/workspace-a',
+          textOffset: 10
+        },
+        {
+          kind: 'asset',
+          attachment: { id: 'asset', name: 'image.png', ref: 'image.png' },
+          textOffset: 10
+        },
+        {
+          kind: 'asset',
+          attachment: { id: 'asset', name: 'image.png', ref: 'image.png' },
+          textOffset: 10
+        }
+      ]
+    }
+    expect(promptDraft(promptDocument(draft))).toEqual(draft)
+  })
   it('normalizes clipboard workflow IDs while preserving labels and availability', () => {
     const content = document.createElement('div')
     const chip = document.createElement('span')

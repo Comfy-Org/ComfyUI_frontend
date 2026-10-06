@@ -44,13 +44,15 @@ export function useSkillPacks() {
    * Delete 404 means missing pack or disabled gate; re-list to distinguish them.
    */
   async function deleteSkillPack(pack: SkillPack) {
+    const requestScope = store.scope
     operatingPackName.value = pack.name
     try {
       await deleteSkillPackApi(pack.name)
-      store.removePack(pack.name)
+      store.removePack(pack.name, requestScope)
     } catch (error) {
+      if (!store.isCurrentScope(requestScope)) return
       if (error instanceof SkillPacksApiError && error.status === 404) {
-        store.removePack(pack.name)
+        store.removePack(pack.name, requestScope)
         await fetchSkillPacks()
         return
       }

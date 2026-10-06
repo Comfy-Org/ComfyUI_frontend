@@ -11,12 +11,15 @@ import type {
 import { transitionMentionPicker } from './mentionPickerState'
 import type { SelectedNode } from './useCanvasSelection'
 import { selectedNodeKey } from './useCanvasSelection'
+import type { SkillReferenceMetadata } from '../../types/skillReference'
 
 interface MentionPickerOptions {
   draft: () => string
   editor: () => PromptEditor | null
   selectionTags: () => SelectedNode[]
   workflows: () => WorkflowReferenceOption[]
+  skills: () => SkillReferenceMetadata[]
+  skillsEnabled: () => boolean
   nodeReferenceDisabledReason: () => string | undefined
   workflowSelecting: () => boolean
   getMentionNodes: () => SelectedNode[]
@@ -58,6 +61,12 @@ export function useAgentMentionPicker(options: MentionPickerOptions) {
     | { kind: 'back'; id: 'back'; label: string }
     | { kind: 'node'; id: string; label: string; node: SelectedNode }
     | {
+        kind: 'skill'
+        id: string
+        label: string
+        skill: SkillReferenceMetadata
+      }
+    | {
         kind: 'workflow'
         id: string
         label: string
@@ -73,6 +82,17 @@ export function useAgentMentionPicker(options: MentionPickerOptions) {
     query: string
   ): MentionMatch[] {
     const search = query.toLowerCase()
+    if (section === 'skills') {
+      return options
+        .skills()
+        .filter(({ name }) => name.toLowerCase().includes(search))
+        .map((skill) => ({
+          kind: 'skill',
+          id: skill.name,
+          label: skill.name,
+          skill
+        }))
+    }
     if (section === 'root') {
       const sections: MentionMatch[] = [
         { kind: 'section', id: 'nodes', label: t('agent.nodes') },
@@ -129,13 +149,16 @@ export function useAgentMentionPicker(options: MentionPickerOptions) {
   const mentionVisible = computed(
     () =>
       mentionQuery.value !== null &&
-      (mentionQuery.value === '' ||
+      (mentionSection.value === 'skills' ||
+        mentionQuery.value === '' ||
         mentionMatches.value.some(
           (match) => match.kind !== 'back' && !isNodeReferenceDisabled(match)
         ))
   )
-  const mentionHasResults = computed(
-    () => mentionSection.value === 'root' || mentionMatches.value.length > 1
+  const mentionHasResults = computed(() =>
+    mentionSection.value === 'skills'
+      ? mentionMatches.value.length > 0
+      : mentionSection.value === 'root' || mentionMatches.value.length > 1
   )
 
   function duplicatedTitles(nodes: SelectedNode[]): Set<string> {
@@ -173,28 +196,73 @@ export function useAgentMentionPicker(options: MentionPickerOptions) {
   }
 
   function syncMention(): void {
-    const caret = options.editor()?.selection().start ?? 0
+    const selection = options.editor()?.selection()
+    const caret = selection?.start ?? 0
     const text = options.draft()
-    const at = text.lastIndexOf('@', caret - 1)
-    const atValid =
-      at !== -1 && at < caret && (at === 0 || /\s/.test(text[at - 1]))
-    if (!atValid) {
+    const candidate = (['@', '/'] as const)
+      .map((trigger) => ({
+        trigger,
+        start: text.lastIndexOf(trigger, caret - 1)
+      }))
+      .sort((a, b) => b.start - a.start)
+      .find(({ trigger, start }) => {
+        if (
+          start < 0 ||
+          start >= caret ||
+          (start > 0 && !/\s/.test(text[start - 1]))
+        )
+          return false
+        const query = text.slice(start + 1, caret)
+        return (
+          !query.includes('\n') &&
+          (trigger === '@' ||
+            (options.skillsEnabled() && /^[A-Za-z0-9._-]*$/.test(query)))
+        )
+      })
+    if (!candidate || selection?.end !== caret) {
       dispatchMention({ type: 'closed' })
       return
     }
+    const { trigger, start: at } = candidate
     const query = text.slice(at + 1, caret)
-    if (query.includes('\n')) {
-      dispatchMention({ type: 'closed' })
-      return
-    }
-    if (mention.value.status === 'closed') loadMentionNodes()
+    if (
+      trigger === '@' &&
+      (mention.value.status === 'closed' || mention.value.section === 'skills')
+    )
+      loadMentionNodes()
     dispatchMention({
       type: 'queryChanged',
       start: at,
       query,
-      firstMatchIndex: firstMentionMatchIndex(mentionSection.value, query)
+      trigger,
+      firstMatchIndex: firstMentionMatchIndex(
+        trigger === '/'
+          ? 'skills'
+          : mentionSection.value === 'skills'
+            ? 'root'
+            : mentionSection.value,
+        query
+      )
     })
   }
+
+  watch(
+    () => options.skills(),
+    (_next, previous) => {
+      const state = mention.value
+      if (state.status !== 'open' || state.section !== 'skills') return
+      const selected = previous
+        .filter(({ name }) =>
+          name.toLowerCase().includes(state.query.toLowerCase())
+        )
+        .at(state.activeIndex)
+      const index = getMentionMatches('skills', state.query).findIndex(
+        (match) => match.id === selected?.name
+      )
+      dispatchMention({ type: 'highlighted', index: Math.max(0, index) })
+    },
+    { flush: 'sync' }
+  )
 
   function isNodeReferenceDisabled(match: MentionMatch): boolean {
     return (
@@ -225,6 +293,16 @@ export function useAgentMentionPicker(options: MentionPickerOptions) {
     { flush: 'sync' }
   )
 
+  watch(
+    () => options.skillsEnabled(),
+    (enabled) => {
+      if (!enabled && mentionSection.value === 'skills')
+        dispatchMention({ type: 'closed' })
+      else if (enabled) syncMention()
+    },
+    { flush: 'sync' }
+  )
+
   async function pickMention(match: MentionMatch): Promise<void> {
     const state = mention.value
     if (state.status === 'closed' || isMentionDisabled(match)) return
@@ -238,6 +316,17 @@ export function useAgentMentionPicker(options: MentionPickerOptions) {
     }
     if (match.kind === 'back') {
       dispatchMention({ type: 'back' })
+      return
+    }
+    if (match.kind === 'skill') {
+      options
+        .editor()
+        ?.selectSkill(
+          match.skill,
+          state.start,
+          state.start + 1 + state.query.length
+        )
+      dispatchMention({ type: 'closed' })
       return
     }
     if (match.kind === 'workflow') {

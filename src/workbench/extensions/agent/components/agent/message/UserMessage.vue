@@ -19,7 +19,9 @@ import type {
 import type { ReplyAsset } from '../../../utils/replyAssets'
 import { isReplyAssetKind } from '../../../utils/replyAssets'
 import { agentMessageText } from '../../../utils/agentMessageText'
-import { workflowReferenceParts } from '../../../utils/workflowReferenceParts'
+import { promptReferenceParts } from '../../../utils/promptReferenceParts'
+import type { SkillReference as SkillReferenceData } from '../../../types/skillReference'
+import SkillReference from '../SkillReference.vue'
 import ReplyAssetGroup from './ReplyAssetGroup.vue'
 import {
   selectedUserMessageClipboard,
@@ -31,12 +33,14 @@ const {
   attachments = [],
   tags = [],
   workflowReferences = [],
+  skillReference,
   editable = false
 } = defineProps<{
   text: string
   attachments?: UserAttachment[]
   tags?: string[]
   workflowReferences?: WorkflowReference[]
+  skillReference?: SkillReferenceData
   editable?: boolean
 }>()
 const emit = defineEmits<{
@@ -46,10 +50,16 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const promptParts = computed(() =>
-  workflowReferenceParts(text, workflowReferences)
+  promptReferenceParts(text, workflowReferences, skillReference)
 )
 const readableText = computed(() =>
-  agentMessageText({ text, workflowReferences, tags, attachments })
+  agentMessageText({
+    text,
+    workflowReferences,
+    skillReference,
+    tags,
+    attachments
+  })
 )
 const bubble = useTemplateRef<HTMLElement>('bubble')
 const plainClipboard = useClipboard({ copiedDuring: 2000, legacy: true })
@@ -67,6 +77,7 @@ async function copyMessage(): Promise<void> {
     const content = userMessageClipboard({
       text,
       workflowReferences,
+      skillReference,
       tags,
       attachments
     })
@@ -190,7 +201,7 @@ function gridAsset(item: UserAttachment): ReplyAsset | undefined {
       </figure>
     </div>
     <div
-      v-if="text || workflowReferences.length"
+      v-if="text || workflowReferences.length || skillReference"
       ref="bubble"
       data-testid="user-message-bubble"
       class="w-fit max-w-full rounded-lg bg-secondary-background px-2.5 py-1.5 text-sm/5 font-normal wrap-break-word whitespace-pre-wrap text-muted-foreground"
@@ -231,6 +242,10 @@ function gridAsset(item: UserAttachment): ReplyAsset | undefined {
             <span class="icon-[comfy--workflow] size-3 shrink-0" />
           </template>
         </Tag>
+        <SkillReference
+          v-else-if="part.type === 'skill'"
+          :skill="part.reference"
+        />
         <template v-else>{{ part.text }}</template>
       </template>
     </div>
@@ -239,7 +254,7 @@ function gridAsset(item: UserAttachment): ReplyAsset | undefined {
       class="flex text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 touch:opacity-100"
     >
       <AccessibleTooltip
-        v-if="editable && (text || workflowReferences.length)"
+        v-if="editable && (text || workflowReferences.length || skillReference)"
         :label="t('g.edit')"
         :skip-delay-duration="0"
         disable-hoverable-content
@@ -252,7 +267,13 @@ function gridAsset(item: UserAttachment): ReplyAsset | undefined {
             size="icon-sm"
             :aria-label="t('g.edit')"
             class="size-6 rounded-lg"
-            @click="emit('edit', { text, workflowReferences })"
+            @click="
+              emit('edit', {
+                text,
+                workflowReferences,
+                ...(skillReference ? { skillReference } : {})
+              })
+            "
           >
             <span class="icon-[lucide--pencil] size-3" />
           </Button>

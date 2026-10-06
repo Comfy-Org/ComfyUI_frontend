@@ -1,4 +1,4 @@
-export type MentionSection = 'root' | 'nodes' | 'workflows'
+export type MentionSection = 'root' | 'nodes' | 'workflows' | 'skills'
 
 export type MentionPickerState =
   | { status: 'closed' }
@@ -16,8 +16,9 @@ export type MentionPickerEvent =
       start: number
       query: string
       firstMatchIndex: number
+      trigger?: '@' | '/'
     }
-  | { type: 'sectionSelected'; section: Exclude<MentionSection, 'root'> }
+  | { type: 'sectionSelected'; section: 'nodes' | 'workflows' }
   | { type: 'back' }
   | { type: 'nodesUnavailable'; firstMatchIndex: number }
   | {
@@ -34,7 +35,12 @@ export function transitionMentionPicker(
 ): MentionPickerState {
   if (event.type === 'closed') return { status: 'closed' }
   if (event.type === 'queryChanged') {
-    const section = state.status === 'open' ? state.section : 'root'
+    const section =
+      event.trigger === '/'
+        ? 'skills'
+        : state.status === 'open' && state.section !== 'skills'
+          ? state.section
+          : 'root'
     return {
       status: 'open',
       section,

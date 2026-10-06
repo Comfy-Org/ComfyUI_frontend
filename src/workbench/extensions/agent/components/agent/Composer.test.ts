@@ -33,6 +33,7 @@ const tooltipDirectiveStub = {
   }
 }
 
+vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@/platform/telemetry'))
 const fetchApi = vi.mocked(api.fetchApi)
@@ -134,14 +135,6 @@ describe('Composer', () => {
       getMentionNodes: () => [{ id: '7', title: 'KSampler' }]
     }
     const { emitted } = mount(props)
-    const inline = screen.getByRole('button', {
-      name: 'mention nodes'
-    })
-    expect(inline).toHaveAttribute('aria-disabled', 'true')
-    expect(inline).toHaveAccessibleDescription(reason)
-    await userEvent.click(inline)
-    expect(emitted().selectNodes).toBeUndefined()
-
     await userEvent.click(screen.getByRole('button', { name: 'Add to prompt' }))
     const plusNodes = screen.getByRole('menuitem', { name: 'Nodes' })
     expect(plusNodes).toHaveAttribute('aria-disabled', 'true')
@@ -183,23 +176,13 @@ describe('Composer', () => {
     expect(emitted().mentionPick).toBeUndefined()
   })
 
-  it('T-21 / PM-678 / FE-1325 hints at ideas, canvas references, and dragged assets', () => {
+  it('hints at ideas, skills, references and dragged assets', () => {
     mount()
 
     const text = screen.getByText(
-      'Describe ideas, @ to reference workflows, drag in media asset and files, or'
+      'Describe ideas, / use skills, @ add references, drag in assets'
     )
     expect(text).toBeVisible()
-    const addNodes = screen.getByRole('button', {
-      name: 'mention nodes'
-    })
-    expect(addNodes).toBeVisible()
-    expect(addNodes).toContainHTML(
-      '<span class="icon-[lucide--mouse-pointer-click] size-3.5 shrink-0"></span>'
-    )
-    expect(
-      text.compareDocumentPosition(addNodes) & Node.DOCUMENT_POSITION_FOLLOWING
-    ).toBeTruthy()
   })
 
   it('hides the empty-composer hint once typing begins', async () => {
@@ -210,29 +193,29 @@ describe('Composer', () => {
     await userEvent.paste('hello')
 
     expect(useAgentComposerStore().draft).toBe('hello')
-    expect(screen.queryByRole('button', { name: 'mention nodes' })).toBeNull()
+    expect(
+      screen.queryByText(
+        'Describe ideas, / use skills, @ add references, drag in assets'
+      )
+    ).toBeNull()
   })
 
-  it('enters graph selection mode from the empty-composer hint', async () => {
+  it('enters graph selection mode with the keyboard from Add to prompt', async () => {
     const getMentionNodes = vi.fn(() => [])
     const { emitted } = mount({ getMentionNodes })
-    const hintButton = screen.getByRole('button', {
-      name: 'mention nodes'
-    })
-
-    await userEvent.tab()
-    await userEvent.tab()
-    expect(hintButton).toHaveFocus()
+    await userEvent.click(screen.getByRole('button', { name: 'Add to prompt' }))
+    screen.getByRole('menuitem', { name: 'Nodes' }).focus()
     await userEvent.keyboard('{Enter}')
 
     expect(emitted().selectNodes).toHaveLength(1)
     expect(getMentionNodes).not.toHaveBeenCalled()
   })
 
-  it('enters graph selection mode from a click on the empty-composer hint', async () => {
+  it('enters graph selection mode from a click in Add to prompt', async () => {
     const { emitted } = mount({ getMentionNodes: vi.fn(() => []) })
 
-    await userEvent.click(screen.getByRole('button', { name: 'mention nodes' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Add to prompt' }))
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Nodes' }))
 
     expect(emitted().selectNodes).toHaveLength(1)
     expect(screen.getByRole('textbox')).not.toHaveFocus()
@@ -1593,7 +1576,7 @@ describe('Composer', () => {
 
     expect(
       screen.getByText(
-        'Describe ideas, @ to reference workflows, drag in media asset and files, or'
+        'Describe ideas, / use skills, @ add references, drag in assets'
       )
     ).toBeVisible()
   })
