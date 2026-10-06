@@ -546,7 +546,7 @@ test.describe(
       )
       const dragTarget = {
         x: outputCenter.x + 150,
-        y: outputCenter.y - 140
+        y: outputCenter.y - 100
       }
 
       let dropPending = false
