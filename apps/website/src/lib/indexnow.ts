@@ -175,6 +175,7 @@ export function planSubmission(
 
 const REQUEST_TIMEOUT_MS = 30_000
 const ACCEPTED = new Set([200, 202])
+const REJECTION_EXCERPT_CHARS = 200
 
 export interface SendNote {
   level: 'info' | 'warn'
@@ -205,11 +206,19 @@ async function postBatch(
     body: JSON.stringify(payload),
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS)
   })
-  await response.body?.cancel()
   const line = `${label} (${payload.urlList.length} URLs): HTTP ${response.status}`
-  return ACCEPTED.has(response.status)
-    ? { level: 'info', line: `IndexNow ${line}` }
-    : { level: 'warn', line: `IndexNow skipped: ${line}` }
+  if (ACCEPTED.has(response.status)) {
+    await response.body?.cancel()
+    return { level: 'info', line: `IndexNow ${line}` }
+  }
+  const reason = (await response.text())
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, REJECTION_EXCERPT_CHARS)
+  return {
+    level: 'warn',
+    line: `IndexNow rejected: ${line}${reason ? `: ${reason}` : ''}`
+  }
 }
 
 /** Posts batches in order and stops at the first one IndexNow refuses. */

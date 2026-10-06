@@ -265,7 +265,7 @@ describe('sendPayloads', () => {
       [
         {
           level: 'warn',
-          line: 'IndexNow skipped: batch 1/2 (1 URLs): HTTP 429'
+          line: 'IndexNow rejected: batch 1/2 (1 URLs): HTTP 429: {"code":"TooManyRequests"}'
         }
       ]
     ],
