@@ -12,6 +12,7 @@ import {
 import { isCredentialFresh } from './credentialCache.js'
 import { COMFY_CLIENT } from './requestAuth.js'
 import { timedSignal } from './requestTimeout.js'
+import { SSO_REQUIRED_SERVER_CODE } from './ssoRequired.js'
 import type {
   AccountCredential,
   WebSession,
@@ -77,7 +78,8 @@ const STATUS_RULES: Partial<Record<number, StatusRule>> = {
   403: {
     byServerCode: {
       csrf_invalid: 'CSRF_STALE',
-      workspace_access_denied: 'WORKSPACE_ACCESS_DENIED'
+      workspace_access_denied: 'WORKSPACE_ACCESS_DENIED',
+      [SSO_REQUIRED_SERVER_CODE]: 'SSO_REQUIRED'
     },
     fallback: 'SESSION_REQUEST_REFUSED'
   },
