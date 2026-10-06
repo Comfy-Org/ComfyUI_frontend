@@ -1,6 +1,8 @@
 import { useStorage } from '@vueuse/core'
 import { computed } from 'vue'
 
+import { reportError } from '@/platform/telemetry/reportError'
+
 interface FeatureUsage {
   useCount: number
   firstUsed: number
@@ -34,7 +36,17 @@ function normalizeUsageData(value: unknown): FeatureUsageRecord {
 }
 
 function parseUsageData(value: string | null): FeatureUsageRecord {
-  return value ? normalizeUsageData(JSON.parse(value)) : {}
+  if (!value) return {}
+
+  try {
+    return normalizeUsageData(JSON.parse(value))
+  } catch (error) {
+    reportError(error, {
+      errorType: 'error_parsing_feature_usage',
+      surface: 'platform'
+    })
+    return {}
+  }
 }
 
 function latestUsage(
@@ -104,7 +116,11 @@ function persistUsageData(
     const newValue = JSON.stringify(usageData)
 
     localStorage.setItem(STORAGE_KEY, newValue)
-  } catch {
+  } catch (error) {
+    reportError(error, {
+      errorType: 'error_persisting_feature_usage',
+      surface: 'platform'
+    })
     if (!usageData) return
   }
 
@@ -126,7 +142,11 @@ function resetUsageData(
       featureId
     )
     localStorage.setItem(STORAGE_KEY, JSON.stringify(usageData))
-  } catch {
+  } catch (error) {
+    reportError(error, {
+      errorType: 'error_resetting_feature_usage',
+      surface: 'platform'
+    })
     usageData = withoutFeature(currentUsageData, featureId)
   }
 

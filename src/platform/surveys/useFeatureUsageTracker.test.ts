@@ -1,7 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
 import { effectScope } from 'vue'
 
+import { reportError } from '@/platform/telemetry/reportError'
+
 import { useFeatureUsageTracker } from './useFeatureUsageTracker'
+
+vi.mock(import('@/platform/telemetry/reportError'))
 
 const STORAGE_KEY = 'Comfy.FeatureUsage'
 
@@ -133,6 +137,10 @@ describe('useFeatureUsageTracker', () => {
 
     expect(trackUsage).not.toThrow()
     expect(useCount.value).toBe(1)
+    expect(reportError).toHaveBeenCalledWith(expect.any(DOMException), {
+      errorType: 'error_persisting_feature_usage',
+      surface: 'platform'
+    })
   })
 
   it('preserves in-memory increments when storage recovers', () => {
@@ -281,6 +289,19 @@ describe('useFeatureUsageTracker', () => {
       useCount: 6,
       firstUsed: 1000,
       lastUsed: Date.now()
+    })
+  })
+
+  it('repairs malformed JSON storage data', () => {
+    localStorage.setItem(STORAGE_KEY, '{')
+
+    useFeatureUsageTracker('malformed-json').trackUsage()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored['malformed-json']?.useCount).toBe(1)
+    expect(reportError).toHaveBeenCalledWith(expect.any(SyntaxError), {
+      errorType: 'error_parsing_feature_usage',
+      surface: 'platform'
     })
   })
 })
