@@ -31,18 +31,18 @@ received rows as JSON. It does not load models. Connect its output to Preview as
 Text. Enable Modern Node Design (Node 2.0) to edit its dynamic rows; legacy
 canvas shows one Node 2.0-only notice per group instead of editable controls.
 
-This node requires a backend containing the merged
-[DynamicGroup support](https://github.com/Comfy-Org/ComfyUI/pull/16260).
-Older backends do not register it. The browser scenarios in
+This test-only node imports the unstable internal `_DynamicGroup` implementation
+from [ComfyUI #16811](https://github.com/Comfy-Org/ComfyUI/pull/16811).
+Backends without that internal class do not register it. The browser scenarios in
 [`dynamicGroup.spec.ts`](../../browser_tests/tests/vueNodes/widgets/dynamicGroup.spec.ts)
 use real `/object_info`, workflow storage and execution. Run them with
 `pnpm exec playwright test --config=playwright.dynamic-group.config.ts`.
 
 The dedicated `playwright-tests-dynamic-group` CI job records videos and pins
-the backend to merge commit `2d2fa46e18d293ced1b958fe288730e2ef4b322e`.
+the backend to commit `73867fdf33c428f7a4bd7d632c22ca28373d8836`.
 Other E2E jobs use the standard CI image's backend. Once that image includes
-DynamicGroup, remove the dedicated checkout and dependency installation, and
-use the shared server startup action in this job.
+the internal DynamicGroup implementation, remove the dedicated checkout and
+dependency installation, and use the shared server startup action in this job.
 
 ## Migration
 

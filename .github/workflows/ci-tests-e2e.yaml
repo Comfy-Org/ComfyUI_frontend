@@ -412,11 +412,11 @@ jobs:
           name: frontend-dist
           path: dist/
 
-      - name: Check out the merged DynamicGroup backend
+      - name: Check out the internal DynamicGroup backend
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: Comfy-Org/ComfyUI
-          ref: 2d2fa46e18d293ced1b958fe288730e2ef4b322e
+          ref: 73867fdf33c428f7a4bd7d632c22ca28373d8836
           path: .ci-backend
           persist-credentials: false
 
