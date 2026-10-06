@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
-const { label } = defineProps<{ label: string }>()
+const { label, disabled = false } = defineProps<{
+  label: string
+  disabled?: boolean
+}>()
 const on = defineModel<boolean>({ required: true })
 </script>
 
@@ -13,6 +16,7 @@ const on = defineModel<boolean>({ required: true })
       role="switch"
       :aria-checked="on"
       :aria-label="label"
+      :disabled
       :class="
         cn(
           'flex h-5 w-9 shrink-0 items-center rounded-full p-0.5 transition focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none disabled:opacity-40',

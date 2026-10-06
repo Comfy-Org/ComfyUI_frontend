@@ -444,7 +444,7 @@ describe('RelightStudio', () => {
     expect(screen.getByRole('button', { name: /^Warm key\./ })).toBeVisible()
   })
 
-  it('shows the light map over the photo, hidden from the tools, its own button or the Scene section', async () => {
+  it('shows the light map over the photo, hidden from the tools or its own button', async () => {
     const user = await openExample()
     const map = () => screen.queryByRole('group', { name: 'Light map' })
     const tool = within(
@@ -465,24 +465,50 @@ describe('RelightStudio', () => {
 
     await user.click(tool)
     expect(map()).toBeNull()
-    await user.click(within(panel()).getByRole('button', { name: /^Scene/ }))
-    const toggle = within(section('Scene')).getByRole('switch', {
-      name: 'Show light map'
-    })
-    expect(toggle).toHaveAttribute('aria-checked', 'false')
-
-    await user.click(toggle)
+    await user.click(tool)
     expect(map()).toBeVisible()
     await user.click(
       within(map()!).getByRole('button', { name: 'Hide light map' })
     )
     expect(map()).toBeNull()
-    expect(toggle).toHaveAttribute('aria-checked', 'false')
+    expect(tool).toHaveAttribute('aria-pressed', 'false')
 
     await user.click(tool)
     await user.click(screen.getByRole('button', { name: 'Compare' }))
     expect(map()).toBeNull()
     expect(tool).toBeDisabled()
+  })
+
+  it('shows the light only from its tool or the Scene section, apart from the light map', async () => {
+    const user = await openExample()
+    const tool = within(
+      screen.getByRole('toolbar', { name: 'Relight tools' })
+    ).getByRole('button', { name: 'Light only' })
+    await user.click(within(panel()).getByRole('button', { name: /^Scene/ }))
+    const toggle = within(section('Scene')).getByRole('switch', {
+      name: 'Light only'
+    })
+    const shade = () =>
+      within(screen.getByTestId('relight-stage')).getByTestId(
+        'relight-preview-shade'
+      )
+    expect(tool).toHaveAttribute('aria-pressed', 'false')
+    expect(toggle).toHaveAttribute('aria-checked', 'false')
+
+    await user.click(tool)
+    expect(toggle).toHaveAttribute('aria-checked', 'true')
+    expect(shade()).toHaveStyle({ opacity: '0.9' })
+    expect(screen.getByRole('group', { name: 'Light map' })).toBeVisible()
+
+    await user.click(toggle)
+    expect(tool).toHaveAttribute('aria-pressed', 'false')
+    expect(shade()).not.toHaveStyle({ opacity: '0.9' })
+
+    await user.click(tool)
+    await user.click(screen.getByRole('button', { name: 'Compare' }))
+    expect(tool).toBeDisabled()
+    expect(toggle).toBeDisabled()
+    expect(shade()).not.toHaveStyle({ opacity: '0.9' })
   })
 
   it('turns and raises a light from the light map, selecting it', async () => {

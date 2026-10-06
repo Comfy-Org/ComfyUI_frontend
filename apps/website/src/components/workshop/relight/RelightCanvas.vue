@@ -17,11 +17,18 @@ import { createRelightRenderer } from '../../../lib/workshop/relight/renderer'
 import { shadingUniforms } from '../../../lib/workshop/relight/shading'
 import RelightPreview from './RelightPreview.vue'
 
-const { url, lights, masks, scene } = defineProps<{
+const {
+  url,
+  lights,
+  masks,
+  scene,
+  lightOnly = false
+} = defineProps<{
   url: string
   lights: readonly Light[]
   masks: readonly RelightMask[]
   scene: RelightScene
+  lightOnly?: boolean
 }>()
 
 const PREVIEW_EDGE = 2048
@@ -46,7 +53,7 @@ function draw() {
   const height = Math.max(1, Math.round(box.height * density * fit))
   if (element.width !== width) element.width = width
   if (element.height !== height) element.height = height
-  renderer.draw(shadingUniforms(lights, masks, scene))
+  renderer.draw(shadingUniforms(lights, masks, scene), { lightOnly })
 }
 
 function schedule() {
@@ -75,7 +82,7 @@ onMounted(() => {
 })
 
 watch(() => url, load)
-watch(() => [lights, masks, scene], schedule)
+watch(() => [lights, masks, scene, lightOnly], schedule)
 useResizeObserver(canvas, schedule)
 
 onBeforeUnmount(() => {
@@ -93,5 +100,5 @@ onBeforeUnmount(() => {
     data-testid="relight-preview"
     aria-hidden="true"
   />
-  <RelightPreview v-else :lights :scene />
+  <RelightPreview v-else :lights :scene :light-only />
 </template>
