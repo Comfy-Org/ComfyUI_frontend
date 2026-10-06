@@ -103,9 +103,14 @@ function parsePreviousManifest(status: number, body: string): PreviousManifest {
   if (status !== 200)
     return { kind: 'unavailable', reason: `live manifest returned ${status}` }
   const manifest = parseManifest(body)
-  return manifest
-    ? { kind: 'found', manifest }
-    : { kind: 'unavailable', reason: 'live manifest is not a valid manifest' }
+  if (!manifest)
+    return {
+      kind: 'unavailable',
+      reason: 'live manifest is not a valid manifest'
+    }
+  return Object.keys(manifest).length === 0
+    ? { kind: 'unavailable', reason: 'live manifest is empty' }
+    : { kind: 'found', manifest }
 }
 
 export function diffManifests(

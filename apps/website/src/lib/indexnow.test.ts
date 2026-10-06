@@ -141,6 +141,7 @@ describe('planSubmission', () => {
     ['an array live manifest', current, 200, '["https://comfy.org/"]'],
     ['a missing build manifest', '', 404, ''],
     ['an empty build manifest', '{}', 200, current],
+    ['an empty live manifest', current, 200, '{}'],
     ['a live JSON body that is not a manifest', current, 200, '{"error":"x"}']
   ] as const)(
     'skips rather than resubmitting the site on %s',
