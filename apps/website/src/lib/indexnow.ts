@@ -2,6 +2,7 @@ import { escapeRegExp } from 'es-toolkit'
 import { createHash } from 'node:crypto'
 
 import {
+  INDEXNOW_ENDPOINT,
   INDEXNOW_KEY,
   INDEXNOW_KEY_LOCATION,
   INDEXNOW_MAX_URLS_PER_REQUEST,
@@ -169,5 +170,68 @@ export function planSubmission(
     kind: 'submit',
     summary: `IndexNow: ${added.length} added, ${changed.length} changed, ${removed.length} removed${firstRun}`,
     payloads: indexNowPayloads([...added, ...changed, ...removed])
+  }
+}
+
+const REQUEST_TIMEOUT_MS = 30_000
+const ACCEPTED = new Set([200, 202])
+
+export interface SendNote {
+  level: 'info' | 'warn'
+  line: string
+}
+
+interface Sender {
+  fetch: typeof fetch
+  log: (note: SendNote) => void
+}
+
+async function keyFileIsLive(fetchFn: typeof fetch): Promise<boolean> {
+  const response = await fetchFn(INDEXNOW_KEY_LOCATION, {
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS)
+  })
+  const body = await response.text()
+  return response.ok && body.trim() === INDEXNOW_KEY
+}
+
+async function postBatch(
+  fetchFn: typeof fetch,
+  payload: IndexNowPayload,
+  label: string
+): Promise<SendNote> {
+  const response = await fetchFn(INDEXNOW_ENDPOINT, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json; charset=utf-8' },
+    body: JSON.stringify(payload),
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS)
+  })
+  await response.body?.cancel()
+  const line = `${label} (${payload.urlList.length} URLs): HTTP ${response.status}`
+  return ACCEPTED.has(response.status)
+    ? { level: 'info', line: `IndexNow ${line}` }
+    : { level: 'warn', line: `IndexNow skipped: ${line}` }
+}
+
+/** Posts batches in order and stops at the first one IndexNow refuses. */
+export async function sendPayloads(
+  payloads: readonly IndexNowPayload[],
+  { fetch: fetchFn, log }: Sender
+): Promise<void> {
+  if (payloads.length === 0) return
+  if (!(await keyFileIsLive(fetchFn))) {
+    log({
+      level: 'warn',
+      line: `IndexNow skipped: key file ${INDEXNOW_KEY_LOCATION} does not serve the key`
+    })
+    return
+  }
+  for (const [index, payload] of payloads.entries()) {
+    const note = await postBatch(
+      fetchFn,
+      payload,
+      `batch ${index + 1}/${payloads.length}`
+    )
+    log(note)
+    if (note.level === 'warn') return
   }
 }

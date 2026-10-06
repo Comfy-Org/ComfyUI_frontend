@@ -9,15 +9,8 @@
 import { appendFileSync, readFileSync } from 'node:fs'
 import { parseArgs } from 'node:util'
 
-import {
-  INDEXNOW_ENDPOINT,
-  INDEXNOW_KEY,
-  INDEXNOW_KEY_LOCATION
-} from '@/config/indexnow'
-import type { IndexNowPayload } from '@/lib/indexnow'
-import { planSubmission } from '@/lib/indexnow'
-
-const REQUEST_TIMEOUT_MS = 30_000
+import type { IndexNowPayload, SendNote } from '@/lib/indexnow'
+import { planSubmission, sendPayloads } from '@/lib/indexnow'
 
 function report(line: string): void {
   process.stdout.write(`${line}\n`)
@@ -25,9 +18,14 @@ function report(line: string): void {
   if (summary) appendFileSync(summary, `${line}\n`)
 }
 
+function log({ level, line }: SendNote): void {
+  if (level === 'warn')
+    process.stdout.write(`::warning title=IndexNow::${line}\n`)
+  report(line)
+}
+
 function warn(message: string): void {
-  process.stdout.write(`::warning title=IndexNow::${message}\n`)
-  report(`IndexNow skipped: ${message}`)
+  log({ level: 'warn', line: `IndexNow skipped: ${message}` })
 }
 
 function readText(path: string | undefined): string {
@@ -37,47 +35,6 @@ function readText(path: string | undefined): string {
   } catch {
     return ''
   }
-}
-
-async function keyFileIsLive(): Promise<boolean> {
-  const response = await fetch(INDEXNOW_KEY_LOCATION, {
-    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS)
-  })
-  const body = await response.text()
-  return response.ok && body.trim() === INDEXNOW_KEY
-}
-
-const ACCEPTED = new Set([200, 202])
-
-async function postBatch(
-  payload: IndexNowPayload,
-  label: string
-): Promise<boolean> {
-  const response = await fetch(INDEXNOW_ENDPOINT, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json; charset=utf-8' },
-    body: JSON.stringify(payload),
-    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS)
-  })
-  await response.body?.cancel()
-  const accepted = ACCEPTED.has(response.status)
-  const line = `${label} (${payload.urlList.length} URLs): HTTP ${response.status}`
-  if (accepted) report(`IndexNow ${line}`)
-  else warn(line)
-  return accepted
-}
-
-async function postAll(payloads: IndexNowPayload[]): Promise<void> {
-  for (const [index, payload] of payloads.entries()) {
-    if (!(await postBatch(payload, `batch ${index + 1}/${payloads.length}`)))
-      return
-  }
-}
-
-async function send(payloads: IndexNowPayload[]): Promise<void> {
-  if (payloads.length === 0) return
-  if (await keyFileIsLive()) return postAll(payloads)
-  warn(`key file ${INDEXNOW_KEY_LOCATION} does not serve the key`)
 }
 
 function preview(payloads: IndexNowPayload[]): void {
@@ -102,7 +59,7 @@ async function main(): Promise<void> {
   if (plan.kind === 'skip') return warn(plan.reason)
   report(plan.summary)
   if (values['dry-run']) return preview(plan.payloads)
-  await send(plan.payloads)
+  await sendPayloads(plan.payloads, { fetch, log })
 }
 
 try {

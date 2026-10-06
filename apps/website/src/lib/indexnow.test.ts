@@ -11,8 +11,10 @@ import {
   diffManifests,
   indexNowPayloads,
   pageFingerprint,
-  planSubmission
+  planSubmission,
+  sendPayloads
 } from './indexnow'
+import type { SendNote } from './indexnow'
 
 const page = ({
   main = 'Flux 2 Max generates images.',
@@ -228,6 +230,65 @@ describe('indexNowPayloads', () => {
 
   it('sends nothing when nothing changed', () => {
     expect(indexNowPayloads([])).toEqual([])
+  })
+})
+
+describe('sendPayloads', () => {
+  const twoBatches = indexNowPayloads([url('a/'), url('b/')], 1)
+
+  function fakeIndexNow(keyFileBody: string, status: number) {
+    const posted: string[][] = []
+    const fetchFake: typeof fetch = async (input, init) => {
+      if (String(input).endsWith('.txt')) return new Response(keyFileBody)
+      posted.push(JSON.parse(String(init?.body)).urlList)
+      return new Response('{"code":"TooManyRequests"}', { status })
+    }
+    return { fetchFake, posted }
+  }
+
+  it.for([
+    [
+      'sends every batch when IndexNow accepts them',
+      INDEXNOW_KEY,
+      202,
+      [[url('a/')], [url('b/')]],
+      [
+        { level: 'info', line: 'IndexNow batch 1/2 (1 URLs): HTTP 202' },
+        { level: 'info', line: 'IndexNow batch 2/2 (1 URLs): HTTP 202' }
+      ]
+    ],
+    [
+      'stops after the first batch IndexNow refuses',
+      INDEXNOW_KEY,
+      429,
+      [[url('a/')]],
+      [
+        {
+          level: 'warn',
+          line: 'IndexNow skipped: batch 1/2 (1 URLs): HTTP 429'
+        }
+      ]
+    ],
+    [
+      'sends nothing when the key file does not serve the key',
+      'not the key',
+      202,
+      [],
+      [
+        {
+          level: 'warn',
+          line: `IndexNow skipped: key file https://comfy.org/${INDEXNOW_KEY}.txt does not serve the key`
+        }
+      ]
+    ]
+  ] as const)('%s', async ([, keyFileBody, status, sent, notes]) => {
+    const { fetchFake, posted } = fakeIndexNow(keyFileBody, status)
+    const logged: SendNote[] = []
+    await sendPayloads(twoBatches, {
+      fetch: fetchFake,
+      log: (note) => logged.push(note)
+    })
+    expect({ posted, logged }).toEqual({ posted: sent, logged: notes })
   })
 })
 
