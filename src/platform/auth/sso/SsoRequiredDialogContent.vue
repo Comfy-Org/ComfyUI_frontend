@@ -49,7 +49,8 @@ import { useRouter } from 'vue-router'
 import { ssoStartUrl } from '@comfyorg/account-core/sso'
 
 import Button from '@/components/ui/button/Button.vue'
-import { SSO_REQUIRED_DIALOG_KEY } from '@/platform/auth/sso/ssoRequired'
+import { useErrorHandling } from '@/composables/useErrorHandling'
+import { SSO_REQUIRED_DIALOG_KEY } from '@/platform/auth/sso/ssoRequiredDialogKey'
 import { SSO_ENTRY_OPEN_QUERY } from '@/platform/cloud/onboarding/sso/ssoEntryQuery'
 import { useAuthStore } from '@/stores/authStore'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -63,6 +64,7 @@ const { t } = useI18n()
 const router = useRouter()
 const authStore = useAuthStore()
 const dialogStore = useDialogStore()
+const { toastErrorHandler } = useErrorHandling()
 const knownEmail = computed(() => email ?? authStore.userEmail)
 const leaving = ref(false)
 
@@ -85,7 +87,13 @@ function destination(): string {
 async function continueWithSso() {
   leaving.value = true
   const target = destination()
-  if (authStore.currentUser) await authStore.logout()
+  try {
+    if (authStore.currentUser) await authStore.logout()
+  } catch (error) {
+    leaving.value = false
+    toastErrorHandler(error)
+    return
+  }
   window.location.assign(target)
 }
 </script>

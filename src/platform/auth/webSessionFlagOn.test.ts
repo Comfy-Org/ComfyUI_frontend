@@ -40,7 +40,7 @@ import {
 } from '@/platform/auth/session/ssoReentryStorage'
 import { submitSurvey } from '@/platform/cloud/onboarding/auth'
 import { useSessionCookie } from '@/platform/auth/session/useSessionCookie'
-import { SSO_REQUIRED_DIALOG_KEY } from '@/platform/auth/sso/ssoRequired'
+import { SSO_REQUIRED_DIALOG_KEY } from '@/platform/auth/sso/ssoRequiredDialogKey'
 import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
 import {
   WebSessionTokenError,
@@ -3398,7 +3398,7 @@ describe('an SSO account with no Firebase login (sso_enabled)', () => {
 
     it.for([
       { sso: true, status: 'stored' },
-      { sso: false, status: 'failed' }
+      { sso: false, status: 'cancelled' }
     ])(
       'is stored for the session user only with SSO on ($sso)',
       async ({ sso, status }) => {
@@ -3432,7 +3432,7 @@ describe('an SSO account with no Firebase login (sso_enabled)', () => {
       await vi.advanceTimersByTimeAsync(TEN_MINUTES_MS)
       releaseSettings()
 
-      await expect(submission).resolves.toMatchObject({ status: 'failed' })
+      await expect(submission).resolves.toMatchObject({ status: 'cancelled' })
     })
   })
 })

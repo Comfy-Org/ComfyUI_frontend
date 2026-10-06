@@ -156,7 +156,10 @@ export interface LegacyWorkspaceTokenRailDeps {
   hasSignedInUser: () => boolean
   activeWorkspaceId: () => string | null
   switchWorkspace: (workspaceId: string) => Promise<void>
-  endWorkspaceSession: (revokedWorkspaceId?: string) => boolean
+  endWorkspaceSession: (
+    revokedWorkspaceId?: string,
+    refusalCode?: string
+  ) => boolean
   persistWorkspaceIdentity: (workspace: WorkspaceIdentity) => void
   clearSessionStorage: () => void
   surfacePermanentAuthError: (err: WorkspaceAuthError) => void
@@ -501,7 +504,8 @@ export function createLegacyWorkspaceTokenRail({
       invalidSelectionHandled = endWorkspaceSession(
         failedWorkspaceId && isWorkspaceSelectionInvalid(err)
           ? failedWorkspaceId
-          : undefined
+          : undefined,
+        err.code
       )
       if (hadContext) {
         surfacePermanentAuthError(err)
@@ -596,7 +600,8 @@ export function createLegacyWorkspaceTokenRail({
     if (isStaleWorkspaceRequest(capturedRequestId)) return
     console.error('Workspace access revoked or auth invalid:', err)
     endWorkspaceSession(
-      isWorkspaceSelectionInvalid(err) ? workspaceId : undefined
+      isWorkspaceSelectionInvalid(err) ? workspaceId : undefined,
+      err.code
     )
   }
 

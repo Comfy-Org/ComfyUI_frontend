@@ -38,7 +38,11 @@
         />
 
         <template v-if="flags.ssoEnabled">
-          <CloudSsoSignIn v-if="authMode === 'sso'" />
+          <CloudSsoSignIn
+            v-if="authMode === 'sso'"
+            :state="ssoState"
+            @submit="trySso"
+          />
           <Button
             v-else
             type="button"
@@ -105,7 +109,7 @@ const { t } = useI18n()
 const route = useRoute()
 const authActions = useAuthActions()
 const { flags } = useFeatureFlags()
-const { busy: ssoBusy, trySso } = useSsoSignIn()
+const { state: ssoState, busy: ssoBusy, trySso } = useSsoSignIn()
 
 const freeRunsSuffix = computed(() => {
   const offer = remoteConfig.value.free_tier_offer

@@ -160,20 +160,6 @@ export const useAuthStore = defineStore('auth', () => {
     () => sessionUser.value?.email ?? currentUser.value?.email
   )
   const userId = computed(() => sessionUser.value?.id ?? currentUser.value?.uid)
-  /** With SSO on, the session's user when no Firebase user signed this tab in. */
-  const sessionOnlyUser = computed(() =>
-    flags.ssoEnabled && currentUser.value === null
-      ? sessionUser.value
-      : undefined
-  )
-  /** With SSO on, whether the server says the session signed in through SSO. */
-  const signedInWithSso = computed(
-    () =>
-      flags.ssoEnabled &&
-      SSO_SIGN_IN_PROVIDERS.has(sessionUser.value?.signInProvider ?? '')
-  )
-  const sessionOnlyRequests = (): WebSessionRequests | undefined =>
-    sessionOnlyUser.value ? webSessionRequests() : undefined
   /** False only when SSO is on and the session says there is no personal workspace. */
   const hasPersonalWorkspace = computed(
     () =>
@@ -189,6 +175,20 @@ export const useAuthStore = defineStore('auth', () => {
       )
     }
   }
+  /** With SSO on, the session's user when no Firebase user signed this tab in. */
+  const sessionOnlyUser = computed(() =>
+    flags.ssoEnabled && currentUser.value === null
+      ? sessionUser.value
+      : undefined
+  )
+  /** With SSO on, whether the server says the session signed in through SSO. */
+  const signedInWithSso = computed(
+    () =>
+      flags.ssoEnabled &&
+      SSO_SIGN_IN_PROVIDERS.has(sessionUser.value?.signInProvider ?? '')
+  )
+  const sessionOnlyRequests = (): WebSessionRequests | undefined =>
+    sessionOnlyUser.value ? webSessionRequests() : undefined
 
   function getShareAuthMetadata() {
     const shareId = getPreservedQueryParam(
@@ -989,9 +989,9 @@ export const useAuthStore = defineStore('auth', () => {
     // Getters
     isAuthenticated,
     sessionUser,
+    hasPersonalWorkspace,
     sessionOnlyUser,
     signedInWithSso,
-    hasPersonalWorkspace,
     userEmail,
     userId,
 
