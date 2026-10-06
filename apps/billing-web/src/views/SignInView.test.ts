@@ -20,7 +20,7 @@ const h = vi.hoisted(() => ({
   retryMint: vi.fn(),
   retryAvailability: vi.fn(),
   phase: 'signed-out' as 'signed-out' | 'authenticated',
-  onSignedIn: (() => {})
+  onSignedIn: () => {}
 }))
 
 vi.mock(import('@/auth/useSignInController'), async () => {
