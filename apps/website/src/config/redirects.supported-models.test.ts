@@ -21,6 +21,8 @@ function resolve(path: string) {
   for (const { source, destination, permanent } of vercelRedirects) {
     const group = /^(.*):slug\(([^)]+)\)(.*)$/.exec(source)
     if (!group) {
+      if (source.includes(':'))
+        throw new Error(`resolve() cannot match the pattern ${source}`)
       if (source === path) return { destination, permanent }
       continue
     }
@@ -61,6 +63,14 @@ const expected = new Map<string, string>([
     ]
   })
 ])
+
+const partnerSlugs = models
+  .filter((model) => model.directory === 'partner_nodes')
+  .map(({ slug }) => slug)
+
+const localSlugs = new Set(
+  [...localModels, ...localModelAliases].map(({ slug }) => slug)
+)
 
 function landsOnBuiltPage(destination: string): boolean {
   if (destination === '/hub/models.md') return true
@@ -107,13 +117,16 @@ describe('/p/supported-models redirects', () => {
       expect(resolve(path)).toBeUndefined()
   })
 
-  it('send every partner page somewhere, and only partner pages', () => {
-    expect(Object.keys(partnerModelHubSlugs).sort()).toEqual(
-      models
-        .filter((model) => model.directory === 'partner_nodes')
-        .map(({ slug }) => slug)
-        .sort()
-    )
+  it('send every partner page somewhere, and keep the rows of retired ones', () => {
+    expect(
+      partnerSlugs.filter((slug) => !(slug in partnerModelHubSlugs))
+    ).toEqual([])
+  })
+
+  it('never send a live file page elsewhere', () => {
+    expect(
+      Object.keys(partnerModelHubSlugs).filter((slug) => localSlugs.has(slug))
+    ).toEqual([])
   })
 
   it('list every exact row before the file-page patterns', () => {
