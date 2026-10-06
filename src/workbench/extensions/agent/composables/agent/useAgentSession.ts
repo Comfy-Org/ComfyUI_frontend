@@ -362,25 +362,11 @@ function disownsWorkflow(error: unknown): boolean {
   )
 }
 
-/**
- * The turn that holds the thread, when a send was refused because one is
- * already running. `undefined` for anything else, including a 409 from another
- * endpoint: only the message path carries the `TURN_IN_PROGRESS` discriminator.
- *
- * The ids are read but deliberately not required (see `zTurnInProgressError`):
- * recognising the conflict is what lets this client re-read the thread and
- * re-attach, and that re-read is keyed on the thread, not on the turn. The
- * active message id is returned so a caller can tell afterwards whether it
- * adopted the turn the server actually named.
- */
-function parseTurnInProgress(
-  error: unknown
-): { activeMessageId?: string } | undefined {
+function parseTurnInProgress(error: unknown) {
   if (!(error instanceof AgentApiError) || error.status !== 409)
     return undefined
   const parsed = zTurnInProgressError.safeParse(error.body)
-  if (!parsed.success) return undefined
-  return { activeMessageId: parsed.data.active_message_id }
+  return parsed.success ? parsed.data : undefined
 }
 
 export function useAgentSession(deps: AgentSessionDeps) {
@@ -1027,22 +1013,15 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   function stopPendingActiveTurn(): void {
-    if (conversationStore.activeTurnId === null) return
     const pendingStop = consumeStopPendingAck()
     if (pendingStop !== null) void stopTurn(pendingStop.method)
-  }
-
-  function sendFailureNotice(error: unknown, reattached: boolean): string {
-    if (reattached) return i18n.global.t('agent.sendTurnInProgress')
-    const message = error instanceof Error ? error.message : String(error)
-    return `${i18n.global.t('agent.sendFailed')}: ${message}`
   }
 
   function recordSendError(
     error: unknown,
     text: string,
     accepted: boolean,
-    reattached = false
+    reattached: boolean
   ): void {
     const admission = parseAdmissionError(error)
     if (admission?.reason === 'no_funds') {
@@ -1064,10 +1043,13 @@ export function useAgentSession(deps: AgentSessionDeps) {
       )
       return
     }
+    const message = error instanceof Error ? error.message : String(error)
     conversationStore.recordFailedSend(
       nextLocalErrorId(),
       text,
-      sendFailureNotice(error, reattached)
+      reattached
+        ? i18n.global.t('agent.sendTurnInProgress')
+        : `${i18n.global.t('agent.sendFailed')}: ${message}`
     )
     const turnAccepted = accepted || isUnreadableAckFailure(error)
     reportError(error, {
@@ -1116,47 +1098,13 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (rememberedWorkflowId === sent.id) rememberedWorkflowId = null
   }
 
-  /**
-   * FE-1998: re-attaches to the turn a `409 TURN_IN_PROGRESS` just named.
-   *
-   * The server's single-active-turn signal is a `status='streaming'` assistant
-   * row, durable in Postgres, so the thread stays locked until that row goes
-   * terminal — and a client that only reports the refusal leaves the user with
-   * no stop control and no way to tell a working turn from a dead one. Re-reading
-   * the thread is what adopts that row as the active turn, which is what renders
-   * Stop in place of Send; once the turn settles, the composer unlocks on its own.
-   *
-   * `hydrateFromServer` rather than a bare `getMessages` + `hydrate`: it is the
-   * one path that arms the hydration mailbox, so WS frames for the running turn
-   * that land during the GET are replayed instead of dropped. Reusing it also
-   * keeps one re-attach path rather than a second one that drifts.
-   *
-   * Bounded on the same reasoning as `reconcileSnapshotTurn`: `performSend`
-   * awaits this and the composer sits in `sending` until it returns, so an
-   * unbounded await would let a slow workflow restore hold the one control the
-   * user needs. If the bound wins before the transcript lands, the reattachment
-   * is invalidated and the late snapshot is discarded; if it wins after, the
-   * turn is already adopted and only the restore is outstanding.
-   *
-   * Returns whether the turn the server named is now this session's active turn,
-   * which is the single answer both the pending Stop and the caller's notice
-   * read. `hydrateFromServer` installs the snapshot before awaiting the workflow
-   * restore, so its own result says nothing about whether the re-attach
-   * happened.
-   *
-   * A failed re-read reports itself through `handleHistoryLoadError` and still
-   * leaves the original refusal for the caller to record.
-   */
   async function reattachRefusedTurn(
     error: unknown,
     threadAtSend: string,
     generation: number
   ): Promise<boolean> {
     const conflict = parseTurnInProgress(error)
-    if (conflict === undefined) return false
-    // 'new' is the sentinel for a thread the server had not minted yet, and a
-    // thread that does not exist cannot already be busy.
-    if (threadAtSend === 'new') return false
+    if (conflict === undefined || threadAtSend === 'new') return false
     const reattachGeneration = ++refusedTurnReattachGeneration
     const isCurrentReattachment = () =>
       reattachGeneration === refusedTurnReattachGeneration &&
@@ -1171,8 +1119,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const adoptedActiveTurn =
       isCurrentReattachment() &&
       activeTurnId !== null &&
-      (conflict.activeMessageId === undefined ||
-        activeTurnId === conflict.activeMessageId)
+      (conflict.active_message_id === undefined ||
+        activeTurnId === conflict.active_message_id)
     if (reattachGeneration === refusedTurnReattachGeneration)
       refusedTurnReattachGeneration++
     if (adoptedActiveTurn) stopPendingActiveTurn()
@@ -1224,9 +1172,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
       // moved on still has to release, or the dead id survives the reload.
       releaseDisownedWorkflow(sentContext, error)
       if (generation !== loadGeneration) return false
-      // Before recordSendError, not after: the re-read rebuilds `messages` from
-      // the server transcript, which would discard a local failed-send row
-      // appended first.
       const reattached = await reattachRefusedTurn(
         error,
         threadAtSend,

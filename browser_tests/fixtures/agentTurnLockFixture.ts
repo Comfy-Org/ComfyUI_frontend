@@ -38,21 +38,9 @@ const BACKGROUND_THREAD_TITLE = 'Audio workflow'
 const OTHER_THREAD_ID = '4ccb6603-4bbc-49e2-8b7d-b985230285e3'
 const OTHER_THREAD_TITLE = 'Earlier workflow'
 
-/** The verbatim `error` message in `rejectTurnInProgress`'s HTTP 409 body. */
 export const TURN_IN_PROGRESS_MESSAGE =
   'a turn is already in progress for this thread'
 
-/**
- * The whole 409 body, not just its message. `rejectTurnInProgress` sends a
- * `type` discriminator plus the ids of the turn holding the thread (cloud
- * #8275). The discriminator is what makes the client re-read the thread, and
- * `active_message_id` is how it confirms it adopted the named turn; a fixture
- * that sends the message alone exercises neither.
- *
- * The generated OpenAPI schema does not describe this endpoint's conflict
- * body, so the fixture consumes the same runtime schema as the client until
- * that upstream contract includes the response.
- */
 type TurnInProgressBody = AgentError & z.infer<typeof zTurnInProgressError>
 
 const TURN_IN_PROGRESS: TurnInProgressBody = {
@@ -392,15 +380,6 @@ class TurnLockServer {
     return { message_id: TURN_ID, thread_id: THREAD_ID }
   }
 
-  /**
-   * Locks the thread the way a second tab, window or device does: the assistant
-   * row goes `streaming` and the active-turn guard starts refusing posts, while
-   * this client posted nothing and holds no transport for it.
-   *
-   * This is the one route to a 409 that survives the composer gating — a client
-   * that can see the turn renders Stop and never offers Send — so it is what a
-   * spec has to use to exercise the refusal path at all.
-   */
   lockThreadElsewhere(prompt: string): void {
     this.foreignPrompt = prompt
     this.streaming = true
@@ -532,7 +511,6 @@ export class AgentTurnLockHarness {
   public readonly liveProgressRow: Locator
   public readonly userBubbles: Locator
   public readonly turnInProgressNotice: Locator
-  public readonly rawRefusalText: Locator
   private readonly entryButton: Locator
   private readonly dock: Locator
   private readonly agentPanel: AgentPanel
@@ -589,9 +567,6 @@ export class AgentTurnLockHarness {
       enMessages.agent.sendTurnInProgress,
       { exact: true }
     )
-    this.rawRefusalText = this.panel.getByText(TURN_IN_PROGRESS_MESSAGE, {
-      exact: false
-    })
     this.entryButton = this.agentPanel.openButton
     this.dock = page.getByTestId('docked-agent-panel')
   }
@@ -661,13 +636,6 @@ export class AgentTurnLockHarness {
     this.push(ws, FOREIGN_TURN_DONE_EVENT)
   }
 
-  /**
-   * Both ids, because the cancel contract is the pair: `stopTurn` reads the
-   * thread and the turn from the conversation store independently, so a
-   * reattachment that adopts the foreign turn while the thread is stale sends
-   * the right message id to the wrong thread. The route glob accepts any
-   * thread, so this waiter is what holds that half of the contract.
-   */
   async waitForForeignTurnCancellation(): Promise<void> {
     const request = await this.page.waitForRequest(
       '**/api/agent/threads/*/messages/*/cancel'

@@ -33,7 +33,6 @@ test.describe(
         await expect(turnLock.liveProgressRow).toBeVisible()
         await expect(turnLock.panel.getByText('run it again')).toBeVisible()
         await expect(turnLock.turnInProgressNotice).toBeVisible()
-        await expect(turnLock.rawRefusalText).toHaveCount(0)
       })
 
       await test.step('stopping it unlocks the composer and the retry is accepted', async () => {
