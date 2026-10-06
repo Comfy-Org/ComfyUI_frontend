@@ -230,7 +230,7 @@ describe('ModelsCatalogue', () => {
         name: 'Tasks'
       })
 
-    it('offers a chip under Popular right now for each use case it holds', async () => {
+    it('offers a chip under Popular right now for each group of use cases it holds', async () => {
       renderExplore()
 
       const popular = within(await screen.findByTestId('explore-results'))
@@ -238,15 +238,10 @@ describe('ModelsCatalogue', () => {
         popular.getByRole('heading', { name: 'Popular right now' })
       ).toBeVisible()
       expect(
-        popular.getByText(
-          'What people are running this week, across models, workflows and apps. Pick a use case to narrow it down.'
-        )
-      ).toBeVisible()
-      expect(
         within(chips())
           .getAllByRole('button')
           .map((chip) => chip.textContent.trim())
-      ).toEqual(['All', 'Generate images', 'Edit images', 'Image to video'])
+      ).toEqual(['All', 'Image', 'Video', 'Edit'])
     })
 
     it('narrows Popular to the use case a visitor picks and links to it in the catalogue', async () => {
@@ -254,15 +249,13 @@ describe('ModelsCatalogue', () => {
       renderExplore()
       await screen.findByTestId('explore-results')
 
-      await user.click(
-        within(chips()).getByRole('button', { name: 'Image to video' })
-      )
+      await user.click(within(chips()).getByRole('button', { name: 'Video' }))
 
       expect(
-        screen.getByRole('heading', { name: 'Popular for image to video' })
+        screen.getByRole('heading', { name: 'Popular for video' })
       ).toBeVisible()
       expect(
-        within(chips()).getByRole('button', { name: 'Image to video' })
+        within(chips()).getByRole('button', { name: 'Video' })
       ).toHaveAttribute('aria-pressed', 'true')
       expect(resultNames()).toEqual([
         '/hub/models/?useCase=animate-images',
@@ -309,12 +302,10 @@ describe('ModelsCatalogue', () => {
       renderExplore()
       await screen.findByTestId('explore-results')
 
-      await user.click(
-        within(chips()).getByRole('button', { name: 'Edit images' })
-      )
+      await user.click(within(chips()).getByRole('button', { name: 'Edit' }))
 
       expect(
-        screen.getByRole('heading', { name: 'Popular for edit images' })
+        screen.getByRole('heading', { name: 'Popular for edit' })
       ).toBeVisible()
       expect(resultNames()).toEqual([
         '/hub/models/?useCase=edit-images',
@@ -369,7 +360,7 @@ describe('ModelsCatalogue', () => {
       ])
       const model = within(screen.getByTestId('explore-door-models'))
       expect(model.getByText('Nano Banana Pro')).toBeInTheDocument()
-      expect(model.getByText('6 credits')).toBeInTheDocument()
+      expect(model.getByText('Alpine lake at blue hour')).toBeInTheDocument()
     })
 
     it('says when nothing matches and clears back to everything', async () => {
@@ -378,11 +369,20 @@ describe('ModelsCatalogue', () => {
 
       await user.type(await screen.findByTestId('explore-search'), 'zzz')
       expect(screen.getByTestId('explore-empty')).toBeVisible()
+      expect(screen.queryByTestId('explore-doors')).not.toBeInTheDocument()
+      expect(screen.queryByTestId('explore-community')).not.toBeInTheDocument()
+      expect(
+        within(screen.getByTestId('explore-results')).queryByRole('group', {
+          name: 'Tasks'
+        })
+      ).not.toBeInTheDocument()
 
       await user.click(screen.getByRole('button', { name: 'Clear search' }))
 
       expect(screen.getByTestId('explore-search')).toHaveValue('')
       expect(chips()).toBeVisible()
+      expect(screen.getByTestId('explore-doors')).toBeVisible()
+      expect(screen.getByTestId('explore-community')).toBeVisible()
       expect(
         screen.getByRole('heading', { name: 'Popular right now' })
       ).toBeVisible()
@@ -567,7 +567,7 @@ describe('ModelsCatalogue', () => {
     render(ModelsCatalogue, { props: { models: launchModels } })
     await user.click(screen.getByTestId('browse-all-end'))
     expect(
-      screen.getByRole('heading', { level: 2, name: 'All models 1' })
+      screen.getByRole('heading', { level: 2, name: /^All models \d+$/ })
     ).toBeVisible()
     expect(screen.queryByRole('heading', { level: 1 })).toBeNull()
     expect(screen.getByRole('link', { name: /Image model/ })).toBeVisible()

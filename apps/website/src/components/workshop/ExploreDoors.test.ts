@@ -26,29 +26,11 @@ describe('ExploreDoors', () => {
   it.for([
     {
       door: 'models',
-      copy: [
-        'Alpine lake at blue hour',
-        'G',
-        'Nano Banana Pro',
-        'Google · Image',
-        'Run',
-        'API',
-        '$0.03',
-        '/img'
-      ]
+      copy: ['Alpine lake at blue hour', 'Nano Banana Pro', 'Run']
     },
     {
       door: 'workflows',
-      copy: [
-        'Relight',
-        'image',
-        'bottle.png',
-        'light',
-        '45°',
-        'strength',
-        '0.80',
-        'Save Image'
-      ]
+      copy: ['Relight', 'light', '45°', 'strength', '0.80', 'Save Image']
     },
     {
       door: 'apps',
@@ -83,26 +65,6 @@ describe('ExploreDoors', () => {
       )
     )
     for (const text of copy) expect(art.getByText(text)).toBeInTheDocument()
-  })
-
-  it('prices a model in credits when it has no dollar price', () => {
-    render(ExploreDoors, {
-      props: {
-        counts: ALL,
-        art: {
-          models: {
-            src: '/lake.png',
-            name: 'Nano Banana Pro',
-            credits: 6,
-            prompt: 'workshop.explore.doorModelPromptLake'
-          }
-        }
-      }
-    })
-
-    const art = within(screen.getByTestId('explore-door-art'))
-    expect(art.getByText('6 credits')).toBeInTheDocument()
-    expect(art.getByText('Image')).toBeInTheDocument()
   })
 
   it('keeps a door without art to its words', () => {

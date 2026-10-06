@@ -6,6 +6,7 @@ import { externalLinks, getRoutes } from '@/config/routes'
 import { useFrameScrub } from '@/composables/useFrameScrub'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
+import { getSocialLinks } from '@/data/socialLinks'
 import FooterLinkColumn from './FooterLinkColumn.vue'
 import type { FooterLink } from './FooterLinkColumn.vue'
 
@@ -176,38 +177,7 @@ const topColumns: { title: string; links: FooterLink[] }[] = [
   }
 ]
 
-const socialLinks = [
-  {
-    label: t('nav.github'),
-    href: externalLinks.github,
-    icon: "mask-[url('/icons/social/github.svg')]"
-  },
-  {
-    label: t('nav.discord'),
-    href: externalLinks.discord,
-    icon: "mask-[url('/icons/social/discord.svg')]"
-  },
-  {
-    label: t('nav.x'),
-    href: externalLinks.x,
-    icon: "mask-[url('/icons/social/x.svg')]"
-  },
-  {
-    label: t('nav.youtube'),
-    href: externalLinks.youtube,
-    icon: "mask-[url('/icons/social/youtube.svg')]"
-  },
-  {
-    label: t('nav.linkedin'),
-    href: externalLinks.linkedin,
-    icon: "mask-[url('/icons/social/linkedin.svg')]"
-  },
-  {
-    label: t('nav.instagram'),
-    href: externalLinks.instagram,
-    icon: "mask-[url('/icons/social/instagram.svg')]"
-  }
-]
+const socialLinks = getSocialLinks(locale)
 
 const contactColumn: { title: string; links: FooterLink[] } = {
   title: t('footer.contact'),
@@ -237,10 +207,12 @@ const contactColumn: { title: string; links: FooterLink[] } = {
     class="bg-primary-comfy-ink px-6 py-8 text-primary-comfy-canvas lg:px-20"
   >
     <div
-      class="grid gap-12 border-t border-primary-warm-gray pt-16 lg:grid-cols-2 lg:gap-4"
+      class="grid gap-12 border-t border-primary-warm-gray pt-16 lg:grid-cols-[auto_minmax(0,1fr)] lg:gap-12"
     >
       <div class="flex flex-col gap-8">
-        <p class="text-2xl font-medium tracking-wide uppercase lg:text-3xl">
+        <p
+          class="text-2xl font-medium tracking-wide uppercase lg:max-w-80 lg:text-xl"
+        >
           {{ t('footer.tagline') }}
         </p>
         <nav :aria-label="t('footer.social')">
@@ -266,22 +238,15 @@ const contactColumn: { title: string; links: FooterLink[] } = {
 
       <!-- Link columns -->
       <div class="flex flex-col gap-12 lg:row-span-2 lg:justify-between">
-        <div class="flex flex-col gap-12">
-          <div class="grid grid-cols-1 gap-12 lg:grid-cols-4">
-            <FooterLinkColumn
-              v-for="column in topColumns"
-              :key="column.title"
-              :title="column.title"
-              :links="column.links"
-            />
-          </div>
-
-          <div class="grid grid-cols-1 gap-12">
-            <FooterLinkColumn
-              :title="contactColumn.title"
-              :links="contactColumn.links"
-            />
-          </div>
+        <div
+          class="grid grid-cols-1 gap-12 lg:grid-cols-3 lg:gap-8 xl:grid-cols-5 xl:gap-6"
+        >
+          <FooterLinkColumn
+            v-for="column in [...topColumns, contactColumn]"
+            :key="column.title"
+            :title="column.title"
+            :links="column.links"
+          />
         </div>
 
         <!-- Bottom bar -->

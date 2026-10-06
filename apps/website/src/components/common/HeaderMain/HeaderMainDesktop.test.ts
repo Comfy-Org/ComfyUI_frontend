@@ -38,38 +38,47 @@ describe('HeaderMainDesktop', () => {
   it('opens the Hub as Models, Workflows and Apps with an Explore row', async () => {
     const { menu } = await openMenu(/^Hub/)
 
-    const icons = menu.getAllByTestId('nav-kind-icon')
-    expect(icons.map((icon) => icon.getAttribute('data-kind'))).toEqual([
-      'model',
-      'workflow',
-      'app'
-    ])
-    for (const [index, header] of ['Models', 'Workflows', 'Apps'].entries()) {
-      expect(menu.getByText(header, { exact: true })).toContainElement(
-        icons[index]
-      )
+    expect(
+      menu
+        .getAllByTestId('nav-kind-icon')
+        .map((icon) => icon.getAttribute('data-kind'))
+    ).toEqual(['model', 'workflow', 'app'])
+    for (const header of ['Models', 'Workflows', 'Apps']) {
+      expect(menu.getByText(header, { exact: true })).toBeVisible()
     }
     expect(menu.queryAllByRole('img')).toHaveLength(0)
     expect(
       [
-        'Browse models',
+        'Seedream 5.0 Pro',
+        'Kling O3',
+        'All models',
+        'Change material',
+        'Match lighting',
         'All workflows',
         'Cinematic Studio',
         'Re-shoot',
         'All apps'
       ].map((name) => menu.getByRole('link', { name }).getAttribute('href'))
     ).toEqual([
+      '/hub/models/seedream-5-0-pro-text-to-image/',
+      '/hub/models/kling-o3-text-to-video/',
       '/hub/models/',
+      '/hub/workflows/change-material/',
+      '/hub/workflows/match-lighting/',
       '/hub/workflows/',
       '/hub/apps/cinematic-studio/',
       '/hub/apps/reshoot/',
       '/hub/apps/'
     ])
-    const docs = menu.getByRole('link', { name: 'API docs' })
-    expect(docs).toHaveAttribute('target', '_blank')
     expect(
       menu.getByRole('link', { name: /^Explore the Hub/ })
     ).toHaveAttribute('href', '/hub/')
+  })
+
+  it('leaves the API key and docs links to the Models page', async () => {
+    const { menu } = await openMenu(/^Hub/)
+
+    expect(menu.queryByRole('link', { name: /API/ })).toBeNull()
   })
 
   it('hides the Hub columns whose sections are off', async () => {
@@ -77,7 +86,7 @@ describe('HeaderMainDesktop', () => {
       hubSections: { workflows: false, apps: false }
     })
 
-    expect(menu.getByRole('link', { name: 'Browse models' })).toBeTruthy()
+    expect(menu.getByRole('link', { name: 'All models' })).toBeVisible()
     expect(menu.queryByRole('link', { name: 'All workflows' })).toBeNull()
     expect(menu.queryByRole('link', { name: 'All apps' })).toBeNull()
   })
@@ -99,17 +108,58 @@ describe('HeaderMainDesktop', () => {
     }
   )
 
-  it('opens Enterprise as one column with no Resources row', async () => {
+  it('ends Products with the Resources row and shows its card after the columns', async () => {
+    const { menu } = await openMenu(/^products/i)
+
+    const links = menu.getAllByRole('link')
+    expect(links.slice(-4, -1).map((link) => link.textContent.trim())).toEqual([
+      'Docs',
+      'Comfy SDKs',
+      'Launches'
+    ])
+    expect(links.at(-1)).toHaveAttribute('href', '/gemini-omni/')
+    expect(menu.queryByRole('link', { name: 'GitHub' })).toBeNull()
+  })
+
+  it('shows the Company columns, a Follow us row and its card after them', async () => {
+    const { menu } = await openMenu(/^company/i)
+
+    for (const header of ['Company', 'Updates', 'Community', 'Follow us']) {
+      expect(menu.getByText(header, { exact: true })).toBeVisible()
+    }
+    const social = [
+      'GitHub',
+      'Discord',
+      'X',
+      'YouTube',
+      'LinkedIn',
+      'Instagram'
+    ]
+    const links = menu.getAllByRole('link')
+    expect(
+      links
+        .slice(-7, -1)
+        .map((link) => [link.textContent.trim(), link.getAttribute('target')])
+    ).toEqual(social.map((name) => [name, '_blank']))
+    expect(links.at(-1)).toHaveAttribute(
+      'href',
+      '/customers/videos/black-math/'
+    )
+  })
+
+  it('opens Enterprise as one column followed by its card, with no Resources row', async () => {
     const { menu } = await openMenu(/^enterprise/i)
 
-    expect(
-      menu.getAllByRole('link').map((link) => link.textContent.trim())
-    ).toEqual([
+    const links = menu.getAllByRole('link')
+    expect(links.slice(0, -1).map((link) => link.textContent.trim())).toEqual([
       'Comfy Enterprise',
       'Forward Deployed Creatives',
       'Commercial licensing',
       'Contact sales'
     ])
+    expect(links.at(-1)).toHaveAccessibleName(
+      'Learn about commercial licensing'
+    )
     expect(menu.queryByText('Resources')).toBeNull()
   })
 

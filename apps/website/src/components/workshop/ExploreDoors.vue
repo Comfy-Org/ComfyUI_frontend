@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { ArrowRight } from '@lucide/vue'
 import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -30,7 +29,6 @@ interface Door {
   readonly title: TranslationKey
   readonly hint: TranslationKey
   readonly surface: string
-  readonly arrow: string
   readonly pill: string
   readonly artColumn: string
   readonly stage: string
@@ -44,7 +42,6 @@ const DOORS: readonly Door[] = [
     title: 'workshop.explore.modelsTitle',
     hint: 'workshop.explore.modelsHint',
     surface: 'bg-illustration-forest text-primary-warm-white',
-    arrow: 'bg-primary-comfy-yellow text-primary-comfy-ink',
     pill: 'bg-primary-warm-white/15',
     artColumn: 'sm:w-[calc(42%+4rem)]',
     stage: 'sm:left-16'
@@ -56,7 +53,6 @@ const DOORS: readonly Door[] = [
     title: 'workshop.explore.doorWorkflows',
     hint: 'workshop.explore.workflowsHint',
     surface: 'bg-primary-comfy-plum text-primary-warm-white',
-    arrow: 'bg-primary-comfy-yellow text-primary-comfy-ink',
     pill: 'bg-primary-warm-white/15',
     artColumn: 'sm:w-[calc(42%+2rem)]',
     stage: 'sm:left-8'
@@ -67,9 +63,8 @@ const DOORS: readonly Door[] = [
     intent: 'workshop.explore.appsIntent',
     title: 'workshop.explore.doorApps',
     hint: 'workshop.explore.appsHint',
-    surface: 'bg-primary-comfy-yellow text-primary-comfy-ink',
-    arrow: 'bg-primary-comfy-ink text-primary-comfy-yellow',
-    pill: 'bg-primary-comfy-ink/10',
+    surface: 'bg-cobalt-800 text-primary-warm-white',
+    pill: 'bg-primary-warm-white/15',
     artColumn: 'sm:w-[calc(42%+3.5rem)]',
     stage: 'sm:left-14'
   }
@@ -94,17 +89,6 @@ const doors = computed(() =>
           "
           :data-testid="`explore-door-${door.section}`"
         >
-          <span
-            :class="
-              cn(
-                'absolute top-4 right-4 z-20 grid size-8 place-items-center rounded-full group-hover:translate-x-0 group-hover:opacity-100 group-focus-visible:translate-x-0 group-focus-visible:opacity-100 motion-safe:transition motion-safe:duration-300 can-hover:-translate-x-1 can-hover:opacity-0',
-                door.arrow
-              )
-            "
-            aria-hidden="true"
-          >
-            <ArrowRight class="size-4" />
-          </span>
           <span class="flex flex-1 flex-col items-start justify-end p-6 pr-3">
             <span
               :class="

@@ -44,22 +44,36 @@ describe('HeaderMainMobile', () => {
     const user = await openMenu(true)
     await user.click(screen.getByRole('button', { name: /^Hub/ }))
 
-    expect(
-      screen.getByText('Run them here, call them by API or download them.')
-        .tagName
-    ).toBe('P')
+    expect(screen.getByText('Run, call by API or download').tagName).toBe('P')
     expect(
       screen
         .getAllByTestId('nav-kind-icon')
         .map((icon) => icon.getAttribute('data-kind'))
     ).toEqual(['model', 'workflow', 'app'])
-    expect(screen.getByRole('link', { name: 'All workflows' })).toHaveAttribute(
-      'href',
+    expect(
+      ['Seedream 5.0 Pro', 'Change material', 'All workflows'].map((name) =>
+        screen.getByRole('link', { name }).getAttribute('href')
+      )
+    ).toEqual([
+      '/hub/models/seedream-5-0-pro-text-to-image/',
+      '/hub/workflows/change-material/',
       '/hub/workflows/'
-    )
+    ])
     expect(
       screen.getByRole('link', { name: /^Explore the Hub/ })
     ).toHaveAttribute('href', '/hub/')
+  })
+
+  it('ends the Company drill-down with the social links', async () => {
+    const user = await openMenu(false)
+    await user.click(screen.getByRole('button', { name: /^Company/ }))
+
+    for (const name of ['GitHub', 'Discord', 'X', 'Instagram']) {
+      expect(screen.getByRole('link', { name })).toHaveAttribute(
+        'target',
+        '_blank'
+      )
+    }
   })
 
   it('labels a new top-level section with a NEW badge', async () => {

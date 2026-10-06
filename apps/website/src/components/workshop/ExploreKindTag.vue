@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
+
 import type { Locale, TranslationKey } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 
@@ -16,7 +18,12 @@ const labels: Record<Kind, TranslationKey> = {
 
 <template>
   <span
-    class="pointer-events-none absolute top-4 right-4 z-10 rounded-lg bg-black/40 px-2 py-1 text-2xs/none font-medium text-white uppercase backdrop-blur-md"
+    :class="
+      cn(
+        'pointer-events-none absolute top-4 right-4 z-10 rounded-lg px-2 py-1 text-2xs/none font-medium text-white uppercase',
+        kind === 'app' ? 'bg-cobalt-800' : 'bg-black/40 backdrop-blur-md'
+      )
+    "
     data-testid="explore-kind"
     :data-kind="kind"
   >

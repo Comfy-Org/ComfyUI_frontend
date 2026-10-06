@@ -631,11 +631,9 @@ test('the workflow page stacks its sections and its path buttons lead to them', 
   await page.getByTestId('workflow-path-api').click()
   await expect(page).toHaveURL(/#api$/)
   await expect(page.getByTestId('workflow-api')).toBeInViewport()
-  await page.getByTestId('workflow-path-cloud').click()
-  await expect(page).toHaveURL(/#playground$/)
-  await expect(
-    page.getByRole('heading', { level: 2, name: 'Try it' })
-  ).toBeInViewport()
+  const cloud = page.getByTestId('workflow-path-cloud')
+  await expect(cloud).toHaveAttribute('target', '_blank')
+  await expect(cloud).toHaveAttribute('href', /\?template=/)
 })
 
 test('the workflow facts link the model files it needs and its way back', async ({

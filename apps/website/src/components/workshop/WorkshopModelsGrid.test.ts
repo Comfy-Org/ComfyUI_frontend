@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { nextTick } from 'vue'
 
-import type { WorkshopModel } from '@/config/models-catalogue'
+import type { UseCase, WorkshopModel } from '@/config/models-catalogue'
 import { OPEN_WEIGHT_MODELS } from '@/lib/workshop/explorer/open-weight-models'
 import { lastShelf } from '@/lib/workshop/shelf-memory'
 import WorkshopModelsGrid from './WorkshopModelsGrid.vue'
@@ -45,7 +45,17 @@ const models: WorkshopModel[] = [
 ]
 
 function cardNames() {
-  return screen.queryAllByRole('link').map((card) => card.textContent)
+  return screen
+    .queryAllByTestId('workshop-model-card')
+    .map((card) => card.textContent)
+}
+
+function openWeightCards() {
+  return screen.queryAllByTestId('open-weight-model-card')
+}
+
+function openWeightCount(useCase: UseCase) {
+  return OPEN_WEIGHT_MODELS.filter((model) => model.useCase === useCase).length
 }
 
 async function search() {
@@ -98,7 +108,10 @@ describe('WorkshopModelsGrid', () => {
 
     await user.click(screen.getByRole('button', { name: 'Edit images' }))
     expect(
-      screen.getByRole('heading', { level: 2, name: 'Edit images 1' })
+      screen.getByRole('heading', {
+        level: 2,
+        name: `Edit images ${1 + openWeightCount('edit-images')}`
+      })
     ).toBeTruthy()
     expect(cardNames()).toEqual([expect.stringContaining('Flux')])
 
@@ -157,7 +170,10 @@ describe('WorkshopModelsGrid', () => {
     await user.click(within(dialog).getByTestId('workshop-filter-clear'))
 
     expect(
-      screen.getByRole('heading', { level: 2, name: 'All models 3' })
+      screen.getByRole('heading', {
+        level: 2,
+        name: `All models ${3 + OPEN_WEIGHT_MODELS.length}`
+      })
     ).toBeTruthy()
     expect(screen.queryByTestId('workshop-hero')).toBeNull()
     expect(cardNames()).toHaveLength(3)
@@ -449,10 +465,6 @@ describe('WorkshopModelsGrid', () => {
       return screen.queryAllByTestId('workshop-model-card')
     }
 
-    function openWeightCards() {
-      return screen.queryAllByTestId('open-weight-model-card')
-    }
-
     it('offers the three ways to use a model with their counts', async () => {
       render(WorkshopModelsGrid, { props: { models } })
       const { dialog } = await chooseAccess()
@@ -533,7 +545,7 @@ describe('WorkshopModelsGrid', () => {
       await chooseAccess('Download')
 
       expect(openWeightCards()).toHaveLength(1)
-      expect(openWeightCards()[0]).toHaveTextContent('Flux.1 Kontext Dev')
+      expect(openWeightCards()[0]).toHaveTextContent('Flux1 Dev Kontext')
     })
 
     it('lets go of the choice with the rest of the filters', async () => {

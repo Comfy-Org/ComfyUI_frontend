@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Cloud, Code, Download } from '@lucide/vue'
+import { ArrowUpRight, Cloud, Code, Download } from '@lucide/vue'
 import { computed } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -129,15 +129,21 @@ function captureDownload() {
           {{ t('workshop.workflow.downloadWorkflow') }}
         </Button>
         <Button
+          v-if="cloudHref"
           as="a"
-          href="#playground"
+          :href="cloudHref"
+          target="_blank"
+          rel="noopener"
           variant="ghost"
           :class="secondaryPathClass"
           data-testid="workflow-path-cloud"
-          @click="goTo($event, 'playground')"
         >
           <Cloud class="size-4" aria-hidden="true" />
           {{ t('workshop.workflow.runInCloud') }}
+          <ArrowUpRight class="size-3.5 opacity-70" aria-hidden="true" />
+          <span class="sr-only">{{
+            t('workshop.workflow.opensInNewTab')
+          }}</span>
         </Button>
         <Button
           as="a"

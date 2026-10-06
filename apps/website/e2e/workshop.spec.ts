@@ -554,6 +554,35 @@ test.describe('Models catalog', () => {
     await expect(page.getByTestId('workshop-filter-count')).toHaveText('2')
   })
 
+  test('category tabs narrow the models and stay in the address', async ({
+    page
+  }) => {
+    await page.goto('/hub/models/')
+    const tabs = page.getByRole('tablist', { name: 'Model categories' })
+    await expect(tabs.getByRole('tab', { name: 'All' })).toHaveAttribute(
+      'aria-selected',
+      'true'
+    )
+
+    await tabs.getByRole('tab', { name: 'Open weights' }).click()
+    await expect(page).toHaveURL(/[?&]tab=open/)
+    const grid = page.getByTestId('workshop-models-grid')
+    await expect(grid.getByTestId('workshop-model-card')).toHaveCount(0)
+    await expect(
+      grid.getByTestId('open-weight-model-card').first()
+    ).toHaveAttribute('href', /^\/hub\/models\/local\/[a-z0-9-]+\/$/)
+
+    await tabs.getByRole('tab', { name: 'Partner nodes' }).click()
+    await expect(grid.getByTestId('open-weight-model-card')).toHaveCount(0)
+    await expect(grid.getByTestId('workshop-model-card').first()).toBeVisible()
+
+    await page.goto('/hub/models/?tab=video')
+    await expect(page.getByRole('tab', { name: 'Video' })).toHaveAttribute(
+      'aria-selected',
+      'true'
+    )
+  })
+
   test('model tags deep-link into a filtered catalog', async ({ page }) => {
     await page.goto(MODEL_PATH)
     const tag = page

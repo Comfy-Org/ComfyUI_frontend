@@ -43,7 +43,6 @@ import WorkflowRunControls from './WorkflowRunControls.vue'
 import WorkflowPreview from './WorkflowPreview.vue'
 import WorkflowApi from './WorkflowApi.vue'
 import WorkflowExampleCard from './WorkflowExampleCard.vue'
-import SectionHeading from './SectionHeading.vue'
 
 const SECTION_CLASS =
   'mt-16 scroll-mt-28 border-t border-transparency-white-t8 pt-12'
@@ -256,12 +255,9 @@ function start() {
     class="scroll-mt-28"
     aria-labelledby="workflow-playground-heading"
   >
-    <SectionHeading
-      class="mb-8"
-      title-id="workflow-playground-heading"
-      :title="t('workshop.workflow.tryIt')"
-      :subtitle="t('workshop.workflow.tryItHint')"
-    />
+    <h2 id="workflow-playground-heading" class="sr-only">
+      {{ t('workshop.workflow.tryIt') }}
+    </h2>
     <div class="grid gap-8 lg:grid-cols-12">
       <section
         class="flex min-w-0 flex-col rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4 lg:col-span-5"

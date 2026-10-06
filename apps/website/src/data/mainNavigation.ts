@@ -1,12 +1,15 @@
-import { apiKeysLink, externalLinks, getRoutes } from '@/config/routes'
+import { externalLinks, getRoutes } from '@/config/routes'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
+import { getSocialLinks } from './socialLinks'
 
 export type NavColumnItem = {
   label: string
   href: string
   badge?: 'new' | 'beta'
   external?: boolean
+  seeAll?: boolean
+  icon?: string
 }
 
 export type NavColumnKind = 'model' | 'workflow' | 'app'
@@ -82,16 +85,15 @@ export function getMainNavigation(
         kind: 'model',
         description: t('nav.hubModelsHint'),
         items: [
-          { label: t('nav.hubBrowseModels'), href: routes.workshop },
           {
-            label: t('nav.hubApiKey'),
-            href: apiKeysLink({ onboarding: 'router' })
+            label: t('nav.hubSeedream5Pro'),
+            href: `${routes.workshop}seedream-5-0-pro-text-to-image/`
           },
           {
-            label: t('nav.hubApiDocs'),
-            href: externalLinks.docsComfyRouter,
-            external: true
-          }
+            label: t('nav.hubKlingO3'),
+            href: `${routes.workshop}kling-o3-text-to-video/`
+          },
+          { label: t('nav.hubAllModels'), href: routes.workshop, seeAll: true }
         ]
       },
       ...when<NavColumn>(hubSections.workflows, [
@@ -100,7 +102,19 @@ export function getMainNavigation(
           kind: 'workflow',
           description: t('nav.hubWorkflowsHint'),
           items: [
-            { label: t('nav.hubAllWorkflows'), href: routes.hubWorkflows }
+            {
+              label: t('nav.hubChangeMaterial'),
+              href: `${routes.hubWorkflows}change-material/`
+            },
+            {
+              label: t('nav.hubMatchLighting'),
+              href: `${routes.hubWorkflows}match-lighting/`
+            },
+            {
+              label: t('nav.hubAllWorkflows'),
+              href: routes.hubWorkflows,
+              seeAll: true
+            }
           ]
         }
       ]),
@@ -115,7 +129,7 @@ export function getMainNavigation(
               href: routes.cinematicStudio
             },
             { label: t('nav.reshoot'), href: routes.reshoot },
-            { label: t('nav.hubAllApps'), href: routes.hubApps }
+            { label: t('nav.hubAllApps'), href: routes.hubApps, seeAll: true }
           ]
         }
       ])
@@ -204,6 +218,17 @@ export function getMainNavigation(
     },
     {
       label: t('nav.enterprise'),
+      featured: {
+        imageSrc:
+          'https://media.comfy.org/website/gallery/amber-passage_compressed.jpg',
+        imageAlt: t('nav.featuredEnterpriseAlt'),
+        title: t('nav.featuredEnterpriseTitle'),
+        cta: {
+          label: t('nav.featuredEnterpriseCta'),
+          ariaLabel: t('nav.featuredEnterpriseCtaAria'),
+          href: routes.minimaxLicense
+        }
+      },
       columns: [
         {
           header: t('nav.enterprise'),
@@ -241,9 +266,13 @@ export function getMainNavigation(
           items: [
             { label: t('nav.aboutUs'), href: routes.about },
             { label: t('nav.careers'), href: routes.careers },
-            { label: t('nav.contact'), href: routes.contact },
-            // TODO: no /brand page yet
-            // { label: t('nav.brand'), href: '#' },
+            { label: t('nav.contact'), href: routes.contact }
+          ]
+        },
+        {
+          header: t('nav.updates'),
+          items: [
+            { label: t('nav.customerStories'), href: routes.customers },
             {
               label: t('nav.blogs'),
               href: externalLinks.blog,
@@ -255,10 +284,6 @@ export function getMainNavigation(
           header: t('nav.community'),
           items: [
             {
-              label: t('nav.customerStories'),
-              href: routes.customers
-            },
-            {
               label: t('nav.events'),
               href: routes.events,
               badge: 'new'
@@ -266,6 +291,14 @@ export function getMainNavigation(
             { label: t('nav.learning'), href: routes.learning },
             { label: t('nav.affiliates'), href: routes.affiliates }
           ]
+        },
+        {
+          header: t('nav.followUs'),
+          placement: 'footer',
+          items: getSocialLinks(locale).map((link) => ({
+            ...link,
+            external: true
+          }))
         }
       ]
     }

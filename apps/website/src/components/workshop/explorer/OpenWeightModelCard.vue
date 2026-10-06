@@ -26,11 +26,16 @@ const pillClass =
   <a
     :href="openWeightHref(model)"
     class="group flex cursor-pointer flex-col gap-3 overflow-hidden rounded-3xl bg-hub-surface px-2 pt-2 pb-4 transition-colors duration-200 outline-none hover:bg-hub-surface-hover focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
-    :aria-labelledby="`${id}-provider ${id}-name ${id}-task`"
+    :aria-labelledby="
+      [model.provider && `${id}-provider`, `${id}-name`, `${id}-task`]
+        .filter(Boolean)
+        .join(' ')
+    "
     data-testid="open-weight-model-card"
   >
     <div class="relative aspect-4/3 overflow-hidden rounded-2xl bg-hub-surface">
       <WorkshopCardMark
+        v-if="model.provider"
         :id="`${id}-provider`"
         :label="model.provider"
         :logo="getLogoPath(model.provider) ?? getLogoPath(model.name)"

@@ -2,7 +2,6 @@
 import { computed, ref } from 'vue'
 
 import type {
-  UseCase,
   WorkflowWorkshopModel,
   WorkshopModel
 } from '@/config/models-catalogue'
@@ -18,7 +17,8 @@ import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import type { CatalogueApp } from '@/lib/workshop/catalogue-apps'
 import { doorArt } from '@/lib/workshop/explore-art'
-import { useCaseLabelKey } from '@/lib/workshop/use-case-label'
+import type { HomeUseCaseGroup } from '@/lib/workshop/home-use-case-groups'
+import { homeUseCaseGroups } from '@/lib/workshop/home-use-case-groups'
 import ExploreCommunity from './ExploreCommunity.vue'
 import ExploreDoors from './ExploreDoors.vue'
 import ExploreFinder from './ExploreFinder.vue'
@@ -42,22 +42,29 @@ const { t } = translationsFor(locale)
 
 const routes = getRoutes(locale)
 const query = ref('')
-const useCase = ref<UseCase | 'all'>('all')
+const group = ref<HomeUseCaseGroup | 'all'>('all')
 
 const everything = computed(() =>
   sortWorkshopModels([...workflows, ...models], 'popular')
 )
-const useCases = computed(() =>
-  USE_CASES.filter((value) =>
-    everything.value.some((model) => useCasesFor(model).includes(value))
+const groups = computed(() =>
+  homeUseCaseGroups(
+    USE_CASES.filter((value) =>
+      everything.value.some((model) => useCasesFor(model).includes(value))
+    )
   )
+)
+const picked = computed(() =>
+  groups.value.find((entry) => entry.group === group.value)
 )
 const art = computed(() => doorArt({ models, workflows, apps }, locale))
 
 const needle = computed(() => query.value.trim().toLowerCase())
-const filtered = computed(() => needle.value !== '' || useCase.value !== 'all')
+const filtered = computed(
+  () => needle.value !== '' || picked.value !== undefined
+)
 const shownApps = computed(() =>
-  useCase.value === 'all'
+  picked.value === undefined
     ? apps.filter((app) =>
         `${app.name} ${app.task}`.toLowerCase().includes(needle.value)
       )
@@ -66,7 +73,7 @@ const shownApps = computed(() =>
 const results = computed(() =>
   filterWorkshopModels(everything.value, {
     query: query.value,
-    useCase: useCase.value
+    useCases: picked.value?.useCases
   }).slice(0, RESULTS - shownApps.value.length)
 )
 
@@ -75,8 +82,8 @@ const resultsTitle = computed(() => {
     return t('workshop.explore.resultsFor', {
       query: query.value.trim()
     })
-  if (useCase.value !== 'all') {
-    const label = t(useCaseLabelKey[useCase.value])
+  if (picked.value) {
+    const label = t(picked.value.label)
     return t('workshop.explore.popularFor', {
       useCase: label.charAt(0).toLocaleLowerCase(locale) + label.slice(1)
     })
@@ -86,13 +93,16 @@ const resultsTitle = computed(() => {
 const seeAllHref = computed(() =>
   filtered.value
     ? routes.workshop +
-      catalogSearch({ query: query.value.trim(), useCase: useCase.value })
+      catalogSearch({
+        query: query.value.trim(),
+        useCase: picked.value?.useCases[0]
+      })
     : undefined
 )
 
 function clear() {
   query.value = ''
-  useCase.value = 'all'
+  group.value = 'all'
 }
 </script>
 
@@ -101,6 +111,7 @@ function clear() {
     <ExploreFinder v-model="query" :locale />
 
     <ExploreDoors
+      v-if="!needle"
       :counts="{
         apps: apps.length,
         workflows: workflows.length,
@@ -113,7 +124,6 @@ function clear() {
     <ExploreResults
       v-if="filtered || shownApps.length || results.length"
       :title="resultsTitle"
-      :description="needle ? undefined : t('workshop.explore.popularBody')"
       :apps="shownApps"
       :results
       :see-all-href="seeAllHref"
@@ -121,13 +131,13 @@ function clear() {
       @clear="clear"
     >
       <ExploreTaskChips
-        v-if="useCases.length"
-        v-model="useCase"
-        :use-cases="useCases"
+        v-if="!needle && groups.length"
+        v-model="group"
+        :groups
         :locale
       />
     </ExploreResults>
 
-    <ExploreCommunity :locale />
+    <ExploreCommunity v-if="!needle" :locale />
   </div>
 </template>

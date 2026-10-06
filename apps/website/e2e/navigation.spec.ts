@@ -223,7 +223,7 @@ test.describe('Desktop dropdown @interaction', () => {
     })
   }
 
-  test('hovering HUB shows the Models column and the Explore row', async ({
+  test('hovering HUB shows the Models examples and the Explore row', async ({
     page
   }) => {
     const nav = page.getByRole('navigation', { name: 'Main navigation' })
@@ -235,20 +235,45 @@ test.describe('Desktop dropdown @interaction', () => {
 
     const dropdown = nav.getByTestId('nav-dropdown')
     await expect(
-      dropdown.getByText('Run them here, call them by API or download them.')
+      dropdown.getByText('Run, call by API or download')
     ).toBeVisible()
     await expect(
-      dropdown.getByRole('link', { name: 'Browse models' })
-    ).toHaveAttribute('href', '/hub/models/')
+      dropdown.getByRole('link', { name: 'Seedream 5.0 Pro' })
+    ).toHaveAttribute('href', '/hub/models/seedream-5-0-pro-text-to-image/')
     await expect(
-      dropdown.getByRole('link', { name: 'API docs' })
-    ).toHaveAttribute('target', '_blank')
+      dropdown.getByRole('link', { name: 'All models' })
+    ).toHaveAttribute('href', '/hub/models/')
+    await expect(dropdown.getByRole('link', { name: /API/ })).toHaveCount(0)
     await expect(
       dropdown.getByRole('link', { name: /^Explore the Hub/ })
     ).toHaveAttribute('href', '/hub/')
   })
 
-  test('COMPANY holds the Community links and no social links', async ({
+  test('PRODUCTS keeps social links out and shows its card on the right', async ({
+    page
+  }) => {
+    const nav = page.getByRole('navigation', { name: 'Main navigation' })
+    await nav
+      .getByTestId('desktop-nav-links')
+      .getByRole('button', { name: 'Products' })
+      .hover()
+
+    const dropdown = nav.getByTestId('nav-dropdown')
+    for (const [name] of SOCIAL_LINKS) {
+      await expect(
+        dropdown.getByRole('link', { name, exact: true })
+      ).toHaveCount(0)
+    }
+    const column = await dropdown
+      .getByRole('link', { name: 'Comfy Cloud' })
+      .boundingBox()
+    const card = await dropdown
+      .getByRole('link', { name: 'Explore the Gemini Omni 1.1 Flash release' })
+      .boundingBox()
+    expect(card?.x).toBeGreaterThan(column?.x ?? Infinity)
+  })
+
+  test('COMPANY groups Company, Updates and Community above a Follow us row', async ({
     page
   }) => {
     const nav = page.getByRole('navigation', { name: 'Main navigation' })
@@ -258,14 +283,16 @@ test.describe('Desktop dropdown @interaction', () => {
       .hover()
 
     const dropdown = nav.getByTestId('nav-dropdown')
-    await expect(dropdown.getByText('Community', { exact: true })).toBeVisible()
+    for (const header of ['Company', 'Updates', 'Community', 'Follow us']) {
+      await expect(dropdown.getByText(header, { exact: true })).toBeVisible()
+    }
     await expect(
       dropdown.getByRole('link', { name: 'Customer Stories' })
     ).toHaveAttribute('href', '/customers/')
-    for (const [name] of SOCIAL_LINKS) {
-      await expect(
-        dropdown.getByRole('link', { name, exact: true })
-      ).toHaveCount(0)
+    for (const [name, href] of SOCIAL_LINKS) {
+      const link = dropdown.getByRole('link', { name, exact: true })
+      await expect(link).toHaveAttribute('href', href)
+      await expect(link).toHaveAttribute('target', '_blank')
     }
   })
 
@@ -411,11 +438,24 @@ test.describe('Mobile menu @mobile', () => {
     await menu.getByRole('button', { name: 'Hub' }).click()
 
     await expect(
-      menu.getByRole('link', { name: 'Browse models' })
+      menu.getByRole('link', { name: 'All models' })
     ).toHaveAttribute('href', '/hub/models/')
     await expect(
       menu.getByRole('link', { name: /^Explore the Hub/ })
     ).toHaveAttribute('href', '/hub/')
+  })
+
+  test('Company drill-down ends with the social links', async ({ page }) => {
+    await page.getByRole('button', { name: 'Toggle menu' }).click()
+
+    const menu = page.getByRole('dialog')
+    await menu.getByRole('button', { name: /^Company/ }).click()
+
+    for (const [name, href] of SOCIAL_LINKS) {
+      await expect(
+        menu.getByRole('link', { name, exact: true })
+      ).toHaveAttribute('href', href)
+    }
   })
 
   for (const panel of RETIRED_BADGE_PANELS) {
@@ -486,6 +526,28 @@ test.describe('Footer @smoke', () => {
         footer.getByRole('heading', { name: heading }).first()
       ).toBeVisible()
     }
+  })
+
+  test('lays the link columns and the social buttons out in one row each on desktop', async ({
+    page
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    const footer = page.locator('footer')
+    await footer.scrollIntoViewIfNeeded()
+
+    const tops = async (locator: Locator) =>
+      locator.evaluateAll((elements) =>
+        elements.map((element) =>
+          Math.round(element.getBoundingClientRect().top)
+        )
+      )
+    const headings = await tops(footer.getByRole('heading', { level: 3 }))
+    expect(headings).toHaveLength(5)
+    expect(new Set(headings).size).toBe(1)
+    const social = await tops(
+      footer.getByRole('navigation', { name: 'Follow Comfy' }).getByRole('link')
+    )
+    expect(new Set(social).size).toBe(1)
   })
 
   test('social links are round icon buttons that open a new tab', async ({

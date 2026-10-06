@@ -6,7 +6,7 @@ import NavigationMenuLink from '@/components/ui/navigation-menu/NavigationMenuLi
 import { isHrefActive } from '@/composables/useCurrentPath'
 import type { NavColumn } from '@/data/mainNavigation'
 import type { Locale } from '@/i18n/translations'
-import NavKindIcon from './NavKindIcon.vue'
+import NavColumnHeading from './NavColumnHeading.vue'
 import NavLinkContent from './NavLinkContent.vue'
 
 defineProps<{ column: NavColumn; locale: Locale; currentPath: string }>()
@@ -23,25 +23,7 @@ defineProps<{ column: NavColumn; locale: Locale; currentPath: string }>()
       )
     "
   >
-    <div class="pl-2">
-      <p
-        :class="
-          cn(
-            'font-formula text-sm font-medium text-primary-warm-gray',
-            column.kind && 'flex items-center gap-2'
-          )
-        "
-      >
-        <NavKindIcon v-if="column.kind" :kind="column.kind" />
-        {{ column.header }}
-      </p>
-      <p
-        v-if="column.description"
-        class="mt-1 max-w-56 text-xs text-pretty text-primary-warm-gray/70"
-      >
-        {{ column.description }}
-      </p>
-    </div>
+    <NavColumnHeading :column />
     <ul
       :class="
         cn('flex', column.placement === 'footer' ? 'flex-row' : 'flex-col')

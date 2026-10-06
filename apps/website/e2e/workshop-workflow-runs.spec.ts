@@ -249,7 +249,7 @@ test('Cloud upload, refresh, partial delivery and downloads retain one run @mobi
   await expect(page.getByTestId('workflow-api-snippet')).toHaveText(
     snippet ?? ''
   )
-  await page.getByTestId('workflow-path-cloud').click()
+  await page.getByTestId('playground-output').scrollIntoViewIfNeeded()
   cloud.succeed(true)
   await page.clock.fastForward(2100)
   await expect(page.getByTestId('playground-output')).toHaveAttribute(
@@ -364,7 +364,7 @@ test('a Cloud credit refusal opens Add credits without retrying', async ({
   await page.getByTestId('buy-credits-cancel').click()
   await expect(dialog).toHaveCount(0)
   await page.getByTestId('workflow-inside').scrollIntoViewIfNeeded()
-  await page.getByTestId('workflow-path-cloud').click()
+  await primary.scrollIntoViewIfNeeded()
   await expect(dialog).toHaveCount(0)
   await primary.click()
   await expect(dialog).toBeVisible()

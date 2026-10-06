@@ -164,17 +164,27 @@ onUnmounted(() => {
                   >
                     {{ column.description }}
                   </p>
-                  <Button
-                    v-for="link in column.items"
-                    :key="link.label"
-                    :href="link.href"
-                    variant="nav"
-                    as="a"
-                    :target="link.external ? '_blank' : undefined"
-                    :rel="link.external ? 'noopener noreferrer' : undefined"
+                  <div
+                    :class="
+                      cn(
+                        'flex flex-col gap-y-3',
+                        column.placement === 'footer' &&
+                          'flex-row flex-wrap gap-x-6'
+                      )
+                    "
                   >
-                    <NavLinkContent :item="link" :locale="locale" />
-                  </Button>
+                    <Button
+                      v-for="link in column.items"
+                      :key="link.label"
+                      :href="link.href"
+                      variant="nav"
+                      as="a"
+                      :target="link.external ? '_blank' : undefined"
+                      :rel="link.external ? 'noopener noreferrer' : undefined"
+                    >
+                      <NavLinkContent :item="link" :locale="locale" />
+                    </Button>
+                  </div>
                 </div>
                 <a
                   v-if="activeItem.footerLink"

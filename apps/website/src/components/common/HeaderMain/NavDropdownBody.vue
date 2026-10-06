@@ -31,8 +31,7 @@ const footer = computed(() =>
 </script>
 
 <template>
-  <ul class="flex w-max gap-16">
-    <NavFeaturedCard v-if="featured" :featured />
+  <ul class="flex w-max gap-10">
     <li class="flex flex-col gap-8">
       <ul class="flex gap-16">
         <NavColumn
@@ -79,5 +78,6 @@ const footer = computed(() =>
         </a>
       </NavigationMenuLink>
     </li>
+    <NavFeaturedCard v-if="featured" :featured />
   </ul>
 </template>

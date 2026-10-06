@@ -39,7 +39,9 @@ const rows = computed(() => compareRows(models, locale))
       </div>
 
       <div class="overflow-x-auto">
-        <table class="w-full min-w-136 border-collapse text-left text-sm">
+        <table
+          class="w-full min-w-136 table-fixed border-collapse text-left text-sm"
+        >
           <thead>
             <tr>
               <td class="w-36" />

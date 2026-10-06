@@ -882,7 +882,7 @@ function retry() {
       :class="sectionClass"
       data-testid="playground-section"
     >
-      <h2 id="playground-heading" :class="cn(headingClass, 'mb-8')">
+      <h2 id="playground-heading" class="sr-only">
         {{ t('workshop.model.tabs.playground') }}
       </h2>
       <div class="grid gap-8 lg:grid-cols-12">

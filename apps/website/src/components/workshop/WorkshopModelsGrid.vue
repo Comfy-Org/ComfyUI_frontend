@@ -43,6 +43,8 @@ import {
   filterOpenWeightModels,
   OPEN_WEIGHT_MODELS
 } from '@/lib/workshop/explorer/open-weight-models'
+import { hostedInTab } from '@/lib/workshop/explorer/model-tabs'
+import { useModelTab } from '@/lib/workshop/explorer/model-tab-address'
 import { rememberShelfOnClick } from '@/lib/workshop/shelf-memory'
 import { openedUseCases, shelfOf } from '@/lib/workshop/shelf-use-cases'
 import { sectionTitleKeyFor } from '@/lib/workshop/section-title'
@@ -53,6 +55,7 @@ import WorkshopModelsEmpty from '@/components/workshop/WorkshopModelsEmpty.vue'
 import WorkshopModelsResults from '@/components/workshop/WorkshopModelsResults.vue'
 import CompareDialog from '@/components/workshop/explorer/compare/CompareDialog.vue'
 import CompareTray from '@/components/workshop/explorer/compare/CompareTray.vue'
+import ModelTabs from '@/components/workshop/explorer/ModelTabs.vue'
 import FeaturedBanner from './FeaturedBanner.vue'
 import { modelSlides } from '@/lib/workshop/featured-slides'
 import WorkshopSearchField from './WorkshopSearchField.vue'
@@ -77,6 +80,8 @@ const legacyModalities = ref<string[]>([])
 const legacyProviders = ref<string[]>([])
 const legacyCapabilities = ref<string[]>([])
 const sort = ref<SortOrder>('popular')
+const { tab, readAddress: readTab } = useModelTab()
+const TAB_PANEL_ID = 'workshop-model-tab-panel'
 const openedShelf = computed(() => shelfOf(selectedUseCases.value))
 // Willie's browseable listing: rows per use case until the visitor narrows
 // down, then the flat grid takes over.
@@ -90,6 +95,7 @@ function readAddress(search: string) {
   legacyModalities.value = [...initial.modalities]
   legacyProviders.value = [...initial.providers]
   legacyCapabilities.value = [...initial.capabilities]
+  readTab(search)
 }
 
 // A browser can restore this page from its cache with a shelf still open, so
@@ -141,11 +147,21 @@ const accessOptions = computed<FacetMenuOption<ModelAccess>[]>(() =>
   }))
 )
 
+const legacyFiltered = computed(
+  () =>
+    legacyModalities.value.length > 0 ||
+    legacyProviders.value.length > 0 ||
+    legacyCapabilities.value.length > 0
+)
+
 const openWeightVisible = computed(() =>
-  selectedAccess.value.includes('download')
+  offersAccess(OPEN_WEIGHT_ACCESS, selectedAccess.value) &&
+  !legacyFiltered.value
     ? filterOpenWeightModels(OPEN_WEIGHT_MODELS, {
         query: query.value,
-        useCases: selectedUseCases.value
+        useCases: selectedUseCases.value,
+        tab: tab.value,
+        byName: sort.value === 'name'
       })
     : []
 )
@@ -160,7 +176,7 @@ const visible = computed(() =>
             modalities: legacyModalities.value,
             providers: legacyProviders.value,
             capabilities: legacyCapabilities.value
-          }),
+          }).filter((model) => hostedInTab(model, tab.value)),
           sort.value
         )
       )
@@ -174,9 +190,8 @@ const isFiltered = computed(
     query.value !== '' ||
     selectedUseCases.value.length > 0 ||
     selectedAccess.value.length > 0 ||
-    legacyModalities.value.length > 0 ||
-    legacyProviders.value.length > 0 ||
-    legacyCapabilities.value.length > 0
+    tab.value !== 'all' ||
+    legacyFiltered.value
 )
 
 watch(
@@ -240,6 +255,7 @@ function resetFilters() {
   query.value = ''
   selectedUseCases.value = []
   selectedAccess.value = []
+  tab.value = 'all'
   legacyModalities.value = []
   legacyProviders.value = []
   legacyCapabilities.value = []
@@ -324,53 +340,61 @@ watch(browseAll, (on) => on && resetFilters())
         </div>
       </div>
 
-      <FeaturedBanner
-        v-if="browsing && featured.length"
-        :slides="featuredSlides"
-        :locale
-        class="mb-10 short:mb-6"
-      />
+      <ModelTabs v-model="tab" :panel-id="TAB_PANEL_ID" :locale />
 
-      <template v-if="browsing">
-        <WorkshopSections
-          :models
-          :label-key="useCaseLabelKey"
-          :sort
+      <div
+        :id="TAB_PANEL_ID"
+        role="tabpanel"
+        :aria-labelledby="`${TAB_PANEL_ID}-${tab}`"
+      >
+        <FeaturedBanner
+          v-if="browsing && featured.length"
+          :slides="featuredSlides"
           :locale
-          @open="openSection"
+          class="mb-10 short:mb-6"
         />
 
-        <button
-          type="button"
-          class="group mx-auto mt-12 flex w-fit cursor-pointer items-center justify-center gap-2 rounded-2xl border border-transparency-white-t8 px-8 py-4 text-sm font-medium text-primary-comfy-canvas transition-colors outline-none hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 max-sm:w-full"
-          data-testid="browse-all-end"
-          @click="browseAll = true"
-        >
-          {{ t('workshop.sections.browseAll') }}
-          <ChevronRight
-            class="size-4 transition-transform group-hover:translate-x-0.5"
-            aria-hidden="true"
+        <template v-if="browsing">
+          <WorkshopSections
+            :models
+            :label-key="useCaseLabelKey"
+            :sort
+            :locale
+            @open="openSection"
           />
-        </button>
-      </template>
 
-      <template v-else>
-        <WorkshopModelsResults
-          v-if="resultCount"
-          :families="visible"
-          :open-weight="openWeightVisible"
-          :compared="comparedSlugs"
-          :locale
-          @open="rememberModel"
-          @compare="toggleCompare"
-        />
-        <WorkshopModelsEmpty
-          v-else
-          :filtered="isFiltered"
-          :locale
-          @clear="clearFilters"
-        />
-      </template>
+          <button
+            type="button"
+            class="group mx-auto mt-12 flex w-fit cursor-pointer items-center justify-center gap-2 rounded-2xl border border-transparency-white-t8 px-8 py-4 text-sm font-medium text-primary-comfy-canvas transition-colors outline-none hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 max-sm:w-full"
+            data-testid="browse-all-end"
+            @click="browseAll = true"
+          >
+            {{ t('workshop.sections.browseAll') }}
+            <ChevronRight
+              class="size-4 transition-transform group-hover:translate-x-0.5"
+              aria-hidden="true"
+            />
+          </button>
+        </template>
+
+        <template v-else>
+          <WorkshopModelsResults
+            v-if="resultCount"
+            :families="visible"
+            :open-weight="openWeightVisible"
+            :compared="comparedSlugs"
+            :locale
+            @open="rememberModel"
+            @compare="toggleCompare"
+          />
+          <WorkshopModelsEmpty
+            v-else
+            :filtered="isFiltered"
+            :locale
+            @clear="clearFilters"
+          />
+        </template>
+      </div>
     </div>
 
     <CompareTray

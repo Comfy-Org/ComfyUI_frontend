@@ -1,6 +1,9 @@
 import { assert, describe, expect, it } from 'vitest'
 
-import { apiKeysLink, externalLinks, getRoutes } from '@/config/routes'
+import hubAppNames from '@/config/hub-app-names.json' with { type: 'json' }
+import hubWorkflowNames from '@/config/hub-workflow-names.json' with { type: 'json' }
+import { modelPageUrls } from '@/config/model-urls'
+import { externalLinks, getRoutes } from '@/config/routes'
 import { t } from '@/i18n/translations'
 import type { HubSections, NavItem } from './mainNavigation'
 import { getMainNavigation } from './mainNavigation'
@@ -84,7 +87,7 @@ describe('getMainNavigation', () => {
     }
   )
 
-  it('links each Hub column to its format', () => {
+  it('shows two examples and an All link in each Hub column', () => {
     const hub = findItem(getMainNavigation('en', true, ALL_SECTIONS), 'Hub')
     const routes = getRoutes('en')
 
@@ -92,45 +95,72 @@ describe('getMainNavigation', () => {
       hub.columns?.map(({ kind, description, items }) => ({
         kind,
         description,
-        items: items.map(({ label, href, external }) => ({
-          label,
-          href,
-          external
-        }))
+        items: items.map(({ label, href, seeAll }) => ({ label, href, seeAll }))
       }))
     ).toEqual([
       {
         kind: 'model',
-        description: 'Run them here, call them by API or download them.',
+        description: 'Run, call by API or download',
         items: [
-          { label: 'Browse models', href: routes.workshop },
           {
-            label: 'Get an API key',
-            href: apiKeysLink({ onboarding: 'router' })
+            label: 'Seedream 5.0 Pro',
+            href: '/hub/models/seedream-5-0-pro-text-to-image/',
+            seeAll: undefined
           },
           {
-            label: 'API docs',
-            href: externalLinks.docsComfyRouter,
-            external: true
-          }
+            label: 'Kling O3',
+            href: '/hub/models/kling-o3-text-to-video/',
+            seeAll: undefined
+          },
+          { label: 'All models', href: routes.workshop, seeAll: true }
         ]
       },
       {
         kind: 'workflow',
-        description:
-          'Open one, change any step, run it in Cloud or download it.',
-        items: [{ label: 'All workflows', href: routes.hubWorkflows }]
+        description: 'Open one and make it yours',
+        items: [
+          {
+            label: 'Change material',
+            href: '/hub/workflows/change-material/',
+            seeAll: undefined
+          },
+          {
+            label: 'Match lighting',
+            href: '/hub/workflows/match-lighting/',
+            seeAll: undefined
+          },
+          { label: 'All workflows', href: routes.hubWorkflows, seeAll: true }
+        ]
       },
       {
         kind: 'app',
-        description: 'One job each, no nodes needed.',
+        description: 'One job each, no nodes',
         items: [
-          { label: 'Cinematic Studio', href: routes.cinematicStudio },
-          { label: 'Re-shoot', href: routes.reshoot },
-          { label: 'All apps', href: routes.hubApps }
+          {
+            label: 'Cinematic Studio',
+            href: routes.cinematicStudio,
+            seeAll: undefined
+          },
+          { label: 'Re-shoot', href: routes.reshoot, seeAll: undefined },
+          { label: 'All apps', href: routes.hubApps, seeAll: true }
         ]
       }
     ])
+  })
+
+  it('links the Hub examples to pages the site builds', () => {
+    const hub = findItem(getMainNavigation('en', true, ALL_SECTIONS), 'Hub')
+    const built = new Set([
+      ...modelPageUrls.map(({ newSlug }) => `/hub/models/${newSlug}/`),
+      ...hubWorkflowNames.map((name) => `/hub/workflows/${name}/`),
+      ...hubAppNames.map((name) => `/hub/apps/${name}/`)
+    ])
+    const examples = (hub.columns ?? [])
+      .flatMap((column) => column.items)
+      .filter((item) => !item.seeAll)
+
+    expect(examples).toHaveLength(6)
+    for (const { href } of examples) expect(built).toContain(href)
   })
 
   it.for([
@@ -217,46 +247,98 @@ describe('getMainNavigation', () => {
     }
   )
 
-  it('folds Community into Company and keeps social links out of the menus', () => {
+  it('splits Company into Company, Updates and Community with a Follow us row', () => {
     const navigation = getMainNavigation('en', true, ALL_SECTIONS)
     const company = findItem(navigation, 'Company')
 
     expect(
-      company.columns?.map(({ header, items }) => [
+      company.columns?.map(({ header, placement, items }) => [
+        header,
+        placement,
+        items.map(({ label, href, external }) => [label, href, external])
+      ])
+    ).toEqual([
+      [
+        'Company',
+        undefined,
+        [
+          ['About Us', '/about/', undefined],
+          ['Careers', '/careers/', undefined],
+          ['Contact', '/contact/', undefined]
+        ]
+      ],
+      [
+        'Updates',
+        undefined,
+        [
+          ['Customer Stories', '/customers/', undefined],
+          ['Blog', externalLinks.blog, true]
+        ]
+      ],
+      [
+        'Community',
+        undefined,
+        [
+          ['Events', '/events/', undefined],
+          ['Learning', '/learning/', undefined],
+          ['Affiliates', '/affiliates/', undefined]
+        ]
+      ],
+      [
+        'Follow us',
+        'footer',
+        [
+          ['GitHub', externalLinks.github, true],
+          ['Discord', externalLinks.discord, true],
+          ['X', externalLinks.x, true],
+          ['YouTube', externalLinks.youtube, true],
+          ['LinkedIn', externalLinks.linkedin, true],
+          ['Instagram', externalLinks.instagram, true]
+        ]
+      ]
+    ])
+  })
+
+  it('keeps social links in Company only', () => {
+    const navigation = getMainNavigation('en', true, ALL_SECTIONS)
+    const social = [
+      externalLinks.github,
+      externalLinks.discord,
+      externalLinks.x,
+      externalLinks.youtube,
+      externalLinks.linkedin,
+      externalLinks.instagram
+    ]
+
+    for (const item of navigation.filter(({ label }) => label !== 'Company'))
+      expect(hrefsOf(item)).toEqual(expect.not.arrayContaining(social))
+    expect(navigation.flatMap(hrefsOf)).toEqual(
+      expect.not.arrayContaining([
+        externalLinks.reddit,
+        externalLinks.workflows
+      ])
+    )
+  })
+
+  it('opens Enterprise as one column with a Commercial licensing card', () => {
+    const enterprise = findItem(getMainNavigation('en'), 'Enterprise')
+
+    expect(
+      enterprise.columns?.map(({ header, items }) => [
         header,
         items.map(({ label, href }) => [label, href])
       ])
     ).toEqual([
       [
-        'Company',
+        'Enterprise',
         [
-          ['About Us', '/about/'],
-          ['Careers', '/careers/'],
-          ['Contact', '/contact/'],
-          ['Blog', externalLinks.blog]
-        ]
-      ],
-      [
-        'Community',
-        [
-          ['Customer Stories', '/customers/'],
-          ['Events', '/events/'],
-          ['Learning', '/learning/'],
-          ['Affiliates', '/affiliates/']
+          ['Comfy Enterprise', '/enterprise/'],
+          ['Forward Deployed Creatives', '/forward-deployed-creatives/'],
+          ['Commercial licensing', '/minimax/license/'],
+          ['Contact sales', '/contact/']
         ]
       ]
     ])
-    expect(navigation.flatMap(hrefsOf)).toEqual(
-      expect.not.arrayContaining([
-        externalLinks.discord,
-        externalLinks.github,
-        externalLinks.youtube,
-        externalLinks.reddit,
-        externalLinks.x,
-        externalLinks.instagram,
-        externalLinks.workflows
-      ])
-    )
   })
 
   it.for([
@@ -280,6 +362,14 @@ describe('getMainNavigation', () => {
       imageSrc: 'https://media.comfy.org/website/nav/customer-story-card.jpg',
       videoSrc: undefined,
       href: '/customers/videos/black-math/'
+    },
+    {
+      locale: 'en',
+      label: 'Enterprise',
+      imageSrc:
+        'https://media.comfy.org/website/gallery/amber-passage_compressed.jpg',
+      videoSrc: undefined,
+      href: '/minimax/license/'
     }
   ] as const)(
     'links the $label featured card to $href for $locale',

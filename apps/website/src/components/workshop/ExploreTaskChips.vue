@@ -1,55 +1,66 @@
 <script setup lang="ts">
+import { AudioLines, Box, Image, LayoutGrid, Pencil, Video } from '@lucide/vue'
+import type { Component } from 'vue'
+import { computed } from 'vue'
+
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { UseCase } from '@/config/models-catalogue'
-import type { Locale } from '@/i18n/translations'
+import type { Locale, TranslationKey } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
+import type { HomeUseCaseGroup } from '@/lib/workshop/home-use-case-groups'
 import { useCaseLabelKey } from '@/lib/workshop/use-case-label'
 
-const { useCases, locale = 'en' } = defineProps<{
-  useCases: readonly UseCase[]
+const { groups, locale = 'en' } = defineProps<{
+  groups: readonly {
+    readonly group: HomeUseCaseGroup
+    readonly label: TranslationKey
+  }[]
   locale?: Locale
 }>()
 const { t } = translationsFor(locale)
 
-const useCase = defineModel<UseCase | 'all'>({ required: true })
+const selected = defineModel<HomeUseCaseGroup | 'all'>({ required: true })
 
-const chipClass = (active: boolean) =>
-  cn(
-    'h-9 cursor-pointer rounded-full border px-4 text-sm transition-colors outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50',
-    active
-      ? 'border-primary-warm-white bg-primary-warm-white text-primary-comfy-ink'
-      : 'border-transparency-white-t8 text-content-secondary hover:text-content-bright'
-  )
+const icon: Record<HomeUseCaseGroup | 'all', Component> = {
+  all: LayoutGrid,
+  image: Image,
+  video: Video,
+  edit: Pencil,
+  '3d': Box,
+  audio: AudioLines
+}
+
+const chips = computed(() => [
+  { group: 'all' as const, label: useCaseLabelKey.all },
+  ...groups
+])
 </script>
 
 <template>
-  <div
-    class="flex flex-wrap gap-2"
-    role="group"
-    :aria-label="t('workshop.explore.tasks')"
-  >
-    <button
-      type="button"
-      :class="chipClass(useCase === 'all')"
-      :aria-pressed="useCase === 'all'"
-      @click="useCase = 'all'"
+  <div class="-mx-1 overflow-x-auto px-1 py-1">
+    <div
+      class="inline-flex items-center gap-0.5 rounded-full bg-transparency-white-t4 p-1"
+      role="group"
+      :aria-label="t('workshop.explore.tasks')"
     >
-      {{ t(useCaseLabelKey.all) }}
-    </button>
-    <span
-      class="mx-1 h-6 w-px self-center bg-transparency-white-t20"
-      aria-hidden="true"
-    />
-    <button
-      v-for="value in useCases"
-      :key="value"
-      type="button"
-      :class="chipClass(useCase === value)"
-      :aria-pressed="useCase === value"
-      @click="useCase = value"
-    >
-      {{ t(useCaseLabelKey[value]) }}
-    </button>
+      <button
+        v-for="chip in chips"
+        :key="chip.group"
+        type="button"
+        :class="
+          cn(
+            'inline-flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-3 text-[0.8125rem] font-medium whitespace-nowrap transition-colors outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50',
+            selected === chip.group
+              ? 'bg-primary-comfy-yellow text-primary-comfy-ink'
+              : 'text-primary-comfy-canvas hover:bg-transparency-white-t8 hover:text-primary-warm-white'
+          )
+        "
+        :aria-pressed="selected === chip.group"
+        @click="selected = chip.group"
+      >
+        <component :is="icon[chip.group]" class="size-3.5" aria-hidden="true" />
+        {{ t(chip.label) }}
+      </button>
+    </div>
   </div>
 </template>

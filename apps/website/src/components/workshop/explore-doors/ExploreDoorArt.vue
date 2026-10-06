@@ -39,13 +39,13 @@ const src = computed(() => art[section]?.src)
         <img
           :src
           alt=""
-          class="size-full object-cover select-none group-hover:scale-105 motion-safe:transition-transform motion-safe:duration-700"
+          class="size-full object-cover select-none motion-safe:transition-transform motion-safe:duration-700 motion-safe:group-hover:scale-105 motion-safe:group-focus-visible:scale-105"
           loading="lazy"
           decoding="async"
           draggable="false"
         />
         <span
-          class="absolute inset-0 group-hover:bg-black/20 motion-safe:transition-colors motion-safe:duration-500"
+          class="absolute inset-0 group-hover:bg-black/20 group-focus-visible:bg-black/20 motion-safe:transition-colors motion-safe:duration-500"
         />
       </span>
 
