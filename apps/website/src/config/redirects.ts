@@ -23,7 +23,7 @@ import { partnerModelHubSlugs } from './partner-model-redirects'
 interface SiteRedirect {
   /**
    * A path with no trailing slash, literal or with one `:slug(a|b)` group;
-   * both slash forms redirect.
+   * both slash forms redirect, except for a `.md` or `.txt` file.
    */
   readonly source: `/${string}`
   /** An internal destination ends in `/`, the form every page canonicalizes to. */
@@ -54,13 +54,13 @@ const SUPPORTED_MODELS_PATH = '/p/supported-models'
 /** Leaves room under Vercel's 2,048-character limit on a rule's source. */
 const MAX_SLUG_GROUP_LENGTH = 1900
 
-function slugGroups(slugs: readonly string[]): string[] {
-  const groups: string[][] = [[]]
+export function slugGroups(slugs: readonly string[]): string[] {
+  const groups: string[][] = []
   for (const slug of slugs) {
-    const group = groups[groups.length - 1]
-    if ([...group, slug].join('|').length > MAX_SLUG_GROUP_LENGTH)
-      groups.push([slug])
-    else group.push(slug)
+    const group = groups.at(-1)
+    if (group && [...group, slug].join('|').length <= MAX_SLUG_GROUP_LENGTH)
+      group.push(slug)
+    else groups.push([slug])
   }
   return groups.map((group) => group.join('|'))
 }
@@ -232,11 +232,13 @@ const isRetiredAddress = ({ source }: SiteRedirect) =>
 const redirectsSlashForm = (row: SiteRedirect) =>
   row.slashFormIsPageBecause === undefined
 
+const isFileAddress = (source: string) => /\.(md|txt)$/.test(source)
+
 export function toVercelRedirects(
   rows: readonly SiteRedirect[]
 ): VercelRedirect[] {
   return rows.flatMap((row) =>
-    (redirectsSlashForm(row)
+    (redirectsSlashForm(row) && !isFileAddress(row.source)
       ? [row.source, `${row.source}/`]
       : [row.source]
     ).map((source) => ({

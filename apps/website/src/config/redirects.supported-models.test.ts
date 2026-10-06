@@ -10,6 +10,7 @@ import { partnerModelHubSlugs } from './partner-model-redirects'
 import {
   retiredLocalModelPages,
   siteRedirects,
+  slugGroups,
   toVercelRedirects
 } from './redirects'
 
@@ -117,11 +118,17 @@ describe('/p/supported-models redirects', () => {
     'minimax-h3-ref2va-pruned-int8_convrot',
     'not-a-model'
   ])('leave the retired %s a 404', (slug) => {
-    for (const path of [
-      ...bothSlashForms(`${OLD}/${slug}`),
-      `${OLD}/${slug}.md`
-    ])
-      expect(resolve(path)).toBeUndefined()
+    expect(
+      [...bothSlashForms(`${OLD}/${slug}`), `${OLD}/${slug}.md`].map(resolve)
+    ).toEqual([undefined, undefined, undefined])
+  })
+
+  it('emit no slash form for a markdown or llms.txt address', () => {
+    expect(
+      vercelRedirects
+        .map(({ source }) => source)
+        .filter((source) => /\.(md|txt)\/$/.test(source))
+    ).toEqual([])
   })
 
   it('send every partner page somewhere, and keep the rows of retired ones', () => {
@@ -167,5 +174,16 @@ describe('/p/supported-models redirects', () => {
         (slug) => !built.has(slug) && !(slug in retiredLocalModelPages)
       )
     ).toEqual([])
+  })
+})
+
+describe('slugGroups', () => {
+  const long = 'x'.repeat(1901)
+  it.for<[string, string[], string[]]>([
+    ['no slugs', [], []],
+    ['short slugs', ['a', 'b'], ['a|b']],
+    ['an over-long first slug', [long, 'a'], [long, 'a']]
+  ])('emit no empty group for %s', ([, slugs, groups]) => {
+    expect(slugGroups(slugs)).toEqual(groups)
   })
 })
