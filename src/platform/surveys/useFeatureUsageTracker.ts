@@ -15,6 +15,7 @@ interface PendingFeatureUsage {
   useCountDelta: number
   firstUsed: number
   lastUsed: number
+  baseUsage?: FeatureUsage | null
 }
 
 type PendingFeatureUsageRecord = Partial<Record<string, PendingFeatureUsage>>
@@ -104,23 +105,24 @@ function pruneDeletedPendingUsage(
   storedUsageData: FeatureUsageRecord
 ) {
   pendingUsageData.value = Object.fromEntries(
-    Object.entries(pendingUsageData.value).filter(([featureId]) => {
-      const existed = usageFor(oldUsageData, featureId)
-      const exists = usageFor(storedUsageData, featureId)
-      return !existed || exists
-    })
+    Object.entries(pendingUsageData.value).filter(
+      ([featureId, pendingUsage]) => {
+        if (!pendingUsage?.baseUsage) return true
+        const existed = usageFor(oldUsageData, featureId)
+        const exists = usageFor(storedUsageData, featureId)
+        return !existed || exists
+      }
+    )
   )
 }
 
-function reconcilePendingResets(
-  oldUsageData: FeatureUsageRecord,
-  storedUsageData: FeatureUsageRecord
-) {
+function reconcilePendingResets(storedUsageData: FeatureUsageRecord) {
   for (const featureId of pendingResets) {
-    const baseline =
-      usageFor(oldUsageData, featureId) ?? pendingResetUsage.get(featureId)
+    const hasBaseline = pendingResetUsage.has(featureId)
+    const baseline = pendingResetUsage.get(featureId)
     const storedUsage = usageFor(storedUsageData, featureId)
     const usageAdvanced =
+      hasBaseline &&
       storedUsage &&
       (!baseline ||
         storedUsage.useCount > baseline.useCount ||
@@ -140,7 +142,10 @@ function reconcileExternalStorage(event: StorageEvent) {
     return
   }
   if (event.storageArea !== storageArea) return
-  if (event.key === null || event.newValue === null) {
+  if (
+    event.key === null ||
+    (event.key === STORAGE_KEY && event.newValue === null)
+  ) {
     clearPendingState()
     return
   }
@@ -149,7 +154,7 @@ function reconcileExternalStorage(event: StorageEvent) {
   const oldUsageData = parseUsageData(event.oldValue)
   const storedUsageData = parseUsageData(event.newValue)
   pruneDeletedPendingUsage(oldUsageData, storedUsageData)
-  reconcilePendingResets(oldUsageData, storedUsageData)
+  reconcilePendingResets(storedUsageData)
 }
 
 if (typeof window !== 'undefined') {
@@ -163,6 +168,12 @@ function usageFor(
   return Object.hasOwn(usageData, featureId) ? usageData[featureId] : undefined
 }
 
+function pendingUsageFor(featureId: string) {
+  return Object.hasOwn(pendingUsageData.value, featureId)
+    ? pendingUsageData.value[featureId]
+    : undefined
+}
+
 function incrementUsage(
   usage: FeatureUsage | undefined,
   now: number
@@ -170,7 +181,7 @@ function incrementUsage(
   return {
     useCount: Math.min((usage?.useCount ?? 0) + 1, MAX_USAGE_COUNT),
     firstUsed: usage?.firstUsed ?? now,
-    lastUsed: now
+    lastUsed: Math.max(usage?.lastUsed ?? now, now)
   }
 }
 
@@ -229,9 +240,10 @@ function applyPendingUsage(usageData: FeatureUsageRecord): FeatureUsageRecord {
 function recordPendingUsage(
   featureId: string,
   usage: FeatureUsage,
-  now: number
+  now: number,
+  baseUsage: FeatureUsage | null | undefined
 ) {
-  const pendingUsage = pendingUsageData.value[featureId]
+  const pendingUsage = pendingUsageFor(featureId)
   pendingUsageData.value = {
     ...pendingUsageData.value,
     [featureId]: {
@@ -240,7 +252,11 @@ function recordPendingUsage(
         MAX_USAGE_COUNT
       ),
       firstUsed: pendingUsage?.firstUsed ?? usage.firstUsed,
-      lastUsed: Math.max(pendingUsage?.lastUsed ?? now, now)
+      lastUsed: Math.max(pendingUsage?.lastUsed ?? now, now),
+      baseUsage:
+        pendingUsage?.baseUsage !== undefined
+          ? pendingUsage.baseUsage
+          : baseUsage
     }
   }
 }
@@ -275,12 +291,21 @@ function persistUsageData(
     ...fallbackUsageData,
     [featureId]: incrementUsage(usageFor(fallbackUsageData, featureId), now)
   }
-  let newValue: string | undefined
+  let newValue = ''
   let storageWritten = false
+  let baseUsage: FeatureUsage | null | undefined
 
   try {
     oldValue = localStorage.getItem(STORAGE_KEY)
     const storedUsageData = parseUsageData(oldValue)
+    baseUsage = usageFor(storedUsageData, featureId) ?? null
+    pendingUsageData.value = Object.fromEntries(
+      Object.entries(pendingUsageData.value).filter(
+        ([pendingFeatureId, pendingUsage]) =>
+          !pendingUsage?.baseUsage ||
+          usageFor(storedUsageData, pendingFeatureId)
+      )
+    )
     const mergedUsageData = applyPendingUsage(
       applyPendingResets(storedUsageData)
     )
@@ -298,11 +323,13 @@ function persistUsageData(
   } catch (error) {
     reportStorageError(error, 'error_persisting_feature_usage')
     const failedUsage = usageFor(usageData, featureId)
-    if (failedUsage) recordPendingUsage(featureId, failedUsage, now)
+    if (failedUsage) {
+      recordPendingUsage(featureId, failedUsage, now, baseUsage)
+    }
   }
 
   if (storageWritten) {
-    dispatchStorageUpdate(oldValue, newValue ?? JSON.stringify(usageData))
+    dispatchStorageUpdate(oldValue, newValue)
   }
   return { storageWritten, usageData }
 }
