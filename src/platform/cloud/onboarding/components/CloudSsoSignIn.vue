@@ -40,6 +40,7 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
 import Message from '@/components/ui/message/Message.vue'
+import { readSsoHint } from '@/platform/auth/session/ssoReentryStorage'
 import {
   CLOUD_AUTH_FIELD_CLASS,
   CLOUD_AUTH_LABEL_CLASS
@@ -62,6 +63,6 @@ const { t } = useI18n()
 const busy = computed(() => isSsoBusy(state))
 
 const emailInputId = 'cloud-sso-email'
-const email = ref('')
+const email = ref(readSsoHint()?.email ?? '')
 const feedback = computed(() => FEEDBACK[state.phase])
 </script>

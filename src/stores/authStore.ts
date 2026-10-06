@@ -72,6 +72,9 @@ export type BillingPortalTargetTier = NonNullable<
   >['application/json']
 >['target_tier']
 
+/** `AuthStoreError.code` for a `/customers/*` call skipped because the account has no personal workspace. */
+export const NO_PERSONAL_WORKSPACE = 'no_personal_workspace'
+
 export class AuthStoreError extends Error {
   readonly status: number | undefined
   readonly code: string | undefined
@@ -83,6 +86,11 @@ export class AuthStoreError extends Error {
     this.code = code
   }
 }
+
+const SSO_SIGN_IN_PROVIDERS: ReadonlySet<string> = new Set([
+  'saml.workos',
+  'oidc.workos'
+])
 
 async function webSessionRunToken(
   requests: WebSessionRequests
@@ -152,6 +160,35 @@ export const useAuthStore = defineStore('auth', () => {
     () => sessionUser.value?.email ?? currentUser.value?.email
   )
   const userId = computed(() => sessionUser.value?.id ?? currentUser.value?.uid)
+  /** False only when SSO is on and the session says there is no personal workspace. */
+  const hasPersonalWorkspace = computed(
+    () =>
+      !(flags.ssoEnabled && sessionUser.value?.hasPersonalWorkspace === false)
+  )
+
+  const assertHasPersonalWorkspace = (): void => {
+    if (!hasPersonalWorkspace.value) {
+      throw new AuthStoreError(
+        t('toastMessages.noPersonalWorkspace'),
+        undefined,
+        NO_PERSONAL_WORKSPACE
+      )
+    }
+  }
+  /** With SSO on, the session's user when no Firebase user signed this tab in. */
+  const sessionOnlyUser = computed(() =>
+    flags.ssoEnabled && currentUser.value === null
+      ? sessionUser.value
+      : undefined
+  )
+  /** With SSO on, whether the server says the session signed in through SSO. */
+  const signedInWithSso = computed(
+    () =>
+      flags.ssoEnabled &&
+      SSO_SIGN_IN_PROVIDERS.has(sessionUser.value?.signInProvider ?? '')
+  )
+  const sessionOnlyRequests = (): WebSessionRequests | undefined =>
+    sessionOnlyUser.value ? webSessionRequests() : undefined
 
   function getShareAuthMetadata() {
     const shareId = getPreservedQueryParam(
@@ -302,6 +339,10 @@ export const useAuthStore = defineStore('auth', () => {
    *   - null if no authentication method is available
    */
   const getAuthHeader = async (): Promise<AuthHeader | null> => {
+    const sessionOnly = sessionOnlyRequests()
+    if (sessionOnly)
+      return headerFromToken(await webSessionRunToken(sessionOnly))
+
     if (flags.unifiedCloudAuthEnabled) return getUnifiedAuthHeader()
 
     if (webSessionRequests()) return getUserAuthHeader()
@@ -380,6 +421,10 @@ export const useAuthStore = defineStore('auth', () => {
    * it is sent directly instead of minting a token.
    */
   const getWorkspaceAuthHeader = async (): Promise<AuthHeader | null> => {
+    const sessionOnly = sessionOnlyRequests()
+    if (sessionOnly)
+      return headerFromToken(await webSessionRunToken(sessionOnly))
+
     if (flags.unifiedCloudAuthEnabled) {
       if (await awaitUnifiedMint()) return null
       const token = useWorkspaceAuthStore().getUnifiedToken()
@@ -412,6 +457,9 @@ export const useAuthStore = defineStore('auth', () => {
    * Use this for WebSocket connections and backend node auth.
    */
   const getAuthToken = async (): Promise<string | undefined> => {
+    const sessionOnly = sessionOnlyRequests()
+    if (sessionOnly) return webSessionRunToken(sessionOnly)
+
     if (flags.unifiedCloudAuthEnabled) return getUnifiedAuthToken()
 
     const workspaceAuth = useWorkspaceAuthStore()
@@ -494,6 +542,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   const fetchBalance = async (): Promise<GetCustomerBalanceResponse | null> => {
+    if (!hasPersonalWorkspace.value) return null
     isFetchingBalance.value = true
     const requestOwner = currentUserIdentity()
     const requestCredential = currentUserCredentialIdentity()
@@ -554,6 +603,7 @@ export const useAuthStore = defineStore('auth', () => {
     // Pin provisioning to the completed credential: a concurrent auth switch
     // must not let us provision (or roll back) a different account.
     const completedUser = completedCredential?.user
+    if (!completedUser) assertHasPersonalWorkspace()
     const sessionIdentity = completedUser?.uid ?? currentUserIdentity()
     const authHeader = completedUser
       ? headerFromToken(await completedUser.getIdToken())
@@ -634,10 +684,11 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   /** /customers/* fetch that self-heals a never-provisioned account (rule in @comfyorg/account-core). */
-  const fetchWithCustomerRecovery = (
+  const fetchWithCustomerRecovery = async (
     input: string,
     init?: RequestInit
   ): Promise<Response> => {
+    assertHasPersonalWorkspace()
     const requestOwner = currentUserIdentity()
     return fetchHealingMissingCustomer(input, {
       request: () =>
@@ -801,8 +852,15 @@ export const useAuthStore = defineStore('auth', () => {
 
   const logout = async (): Promise<void> =>
     executeAuthAction(async () => {
+      // Local and Desktop keep the key: partner nodes run on it.
+      const dropsStoredApiKey =
+        flags.ssoEnabled && flags.unifiedWebSessionEnabled
       await useCloudWebSessionStore().signOut()
       if (currentUser.value) await firebaseIdentity.signOut()
+      const apiKeyStore = useApiKeyAuthStore()
+      if (dropsStoredApiKey && apiKeyStore.getApiKey() !== null) {
+        await apiKeyStore.clearStoredApiKey()
+      }
     })
 
   const sendPasswordReset = async (email: string): Promise<void> =>
@@ -931,6 +989,9 @@ export const useAuthStore = defineStore('auth', () => {
     // Getters
     isAuthenticated,
     sessionUser,
+    hasPersonalWorkspace,
+    sessionOnlyUser,
+    signedInWithSso,
     userEmail,
     userId,
 

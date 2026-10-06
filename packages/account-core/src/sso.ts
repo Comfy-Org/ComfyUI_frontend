@@ -14,6 +14,8 @@ import {
 import { timedSignal } from './core/requestTimeout.js'
 import { safeInternalPath } from './redirect.js'
 
+export { isSsoRequiredRefusal } from './core/ssoRequired.js'
+
 const SSO_DISCOVER_PATH = '/api/auth/sso/discover'
 const SSO_START_PATH = '/api/auth/sso/start'
 const DEFAULT_DISCOVER_TIMEOUT_MS = 5000

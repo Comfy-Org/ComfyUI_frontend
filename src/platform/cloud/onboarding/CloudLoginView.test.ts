@@ -9,6 +9,7 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { captureOAuthRequestId } from '@/platform/cloud/oauth/oauthState'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import CloudLoginView from '@/platform/cloud/onboarding/CloudLoginView.vue'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
@@ -68,6 +69,11 @@ async function renderLoginView(
         path: '/cloud/signup',
         name: 'cloud-signup',
         component: { template: '<div />' }
+      },
+      {
+        path: '/oauth/consent',
+        name: 'cloud-oauth-consent',
+        component: { template: '<div />' }
       }
     ]
   })
@@ -87,7 +93,10 @@ async function renderLoginView(
 afterEach(() => {
   isEmbeddedWebView.value = false
   remoteConfig.value = {}
+  sessionStorage.clear()
 })
+
+const OAUTH_REQUEST_ID = '550e8400-e29b-41d4-a716-446655440000'
 
 describe('CloudLoginView', () => {
   it('hides the free-runs offer when the server sends none', async () => {
@@ -277,7 +286,7 @@ describe('CloudLoginView SSO', () => {
 
     it('signs in with Firebase without asking ingest about SSO', async () => {
       const fetchMock = discoverReplies({ sso: true })
-      await renderLoginView()
+      await renderLoginView(`/cloud/login?oauth_request_id=${OAUTH_REQUEST_ID}`)
 
       await signInWithPassword('ada@acme.com')
 
@@ -321,6 +330,33 @@ describe('CloudLoginView SSO', () => {
 
       await waitFor(() => expect(assign).toHaveBeenCalledOnce())
       expect(startParams(assign).returnTo).toBe('/workflows?id=7')
+    })
+
+    it('returns to the pending OAuth consent ahead of the previous page', async () => {
+      discoverReplies({ sso: true })
+      await renderLoginView(
+        `/cloud/login?previousFullPath=%2Fworkflows&oauth_request_id=${OAUTH_REQUEST_ID}`
+      )
+
+      await continueWithSso('ada@acme.com')
+
+      await waitFor(() => expect(assign).toHaveBeenCalledOnce())
+      expect(startParams(assign).returnTo).toBe(
+        `/oauth/consent?oauth_request_id=${OAUTH_REQUEST_ID}`
+      )
+    })
+
+    it('still resumes the consent when retrying after an SSO error dropped it from the URL', async () => {
+      discoverReplies({ sso: true })
+      captureOAuthRequestId({ oauth_request_id: OAUTH_REQUEST_ID })
+      await renderLoginView('/cloud/login?sso_error=SSO_IDP_ERROR')
+
+      await continueWithSso('ada@acme.com')
+
+      await waitFor(() => expect(assign).toHaveBeenCalledOnce())
+      expect(startParams(assign).returnTo).toBe(
+        `/oauth/consent?oauth_request_id=${OAUTH_REQUEST_ID}`
+      )
     })
 
     it.for<{ name: string; status: number; body: unknown; message: string }>([
@@ -403,6 +439,18 @@ describe('CloudLoginView SSO', () => {
         )
       }
     )
+
+    it('prefills the email this browser last signed in with through SSO', async () => {
+      localStorage.setItem(
+        'Comfy.WebSession.SsoHint',
+        JSON.stringify({ email: 'ada@acme.com' })
+      )
+      await renderLoginView('/cloud/login?sso=open')
+
+      expect(screen.getByLabelText('auth.sso.emailLabel')).toHaveValue(
+        'ada@acme.com'
+      )
+    })
 
     it('keeps one SSO check in flight across the SSO and password forms', async () => {
       const fetchMock = vi.fn<typeof fetch>(
