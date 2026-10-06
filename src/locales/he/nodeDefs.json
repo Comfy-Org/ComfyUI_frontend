@@ -4078,9 +4078,12 @@
     }
   },
   "CreateCameraInfo": {
-    "description": "בנה camera_info. מצב 'orbit' מכוון עם yaw/pitch/distance סביב המטרה; 'look_at' ממקם את המצלמה במיקום עולמי. הקואורדינטות הן במרחב העולם של הצופה (ימין-יד, Y למעלה).",
+    "description": "בנה camera_info. מצב 'orbit' מכוון באמצעות yaw/pitch/distance סביב היעד; 'look_at' מציב את המצלמה במיקום בעולם. הקואורדינטות הן מרחב העולם של הצופה (ימני, ציר Y כלפי מעלה).",
     "display_name": "יצירת מידע מצלמה",
     "inputs": {
+      "camera_info_state": {
+        "name": "camera_info_state"
+      },
       "camera_type": {
         "name": "סוג מצלמה",
         "tooltip": "היטל בשימוש על ידי Render Splat: פרספקטיבה (קיצור) או אורתוגרפי (מקבילי)."
@@ -4860,7 +4863,7 @@
       },
       "language_code": {
         "name": "קוד שפה",
-        "tooltip": "קוד שפה לפי ISO-639-1 או ISO-639-3 (למשל, 'en', 'es', 'fra'). השאר ריק לזיהוי אוטומטי."
+        "tooltip": "קוד שפה ISO 639-1 (למשל, 'en', 'es', 'ja'). השאר ריק לזיהוי אוטומטי."
       },
       "model": {
         "name": "מודל",
@@ -4930,7 +4933,7 @@
       },
       "language_code": {
         "name": "language_code",
-        "tooltip": "קוד שפה לפי ISO-639-1 או ISO-639-3 (למשל, 'en', 'es', 'fra'). השאר ריק לזיהוי אוטומטי."
+        "tooltip": "קוד שפה ISO 639-1 (למשל, 'en', 'es', 'ja'). השאר ריק לזיהוי אוטומטי."
       },
       "model": {
         "name": "model",
@@ -4938,15 +4941,6 @@
       },
       "model_similarity_boost": {
         "name": "similarity_boost"
-      },
-      "model_speed": {
-        "name": "speed"
-      },
-      "model_style": {
-        "name": "style"
-      },
-      "model_use_speaker_boost": {
-        "name": "use_speaker_boost"
       },
       "output_format": {
         "name": "output_format",
@@ -5834,6 +5828,52 @@
       },
       "width": {
         "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3ImageNode": {
+    "description": "יוצר תמונה באמצעות FLUX 3 מפרומפט, או עורך ומשלב עד 10 תמונות ייחוס. יש להתייחס לתמונות הייחוס בפרומפט כתמונה 1, תמונה 2 וכן הלאה.",
+    "display_name": "תמונת Flux 3",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "יחס רוחב-גובה",
+        "tooltip": "'auto' עוקב אחר תמונת הייחוס הראשונה, או בוחר יחס מהפרומפט."
+      },
+      "bounding_boxes": {
+        "name": "תיבות תוחמות",
+        "tooltip": "תיבות אופציונליות מ-Create Bounding Boxes שממקמות אובייקטים או טקסט בפלט. המיקומים יחסיים לקנבס, לכן יש להזין את יחס רוחב-הגובה של הפלט."
+      },
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "grounding": {
+        "name": "עיגון",
+        "tooltip": "אפשר למודל לחקור את הפרומפט באמצעות חיפוש באינטרנט ובתמונות לפני היצירה."
+      },
+      "images": {
+        "name": "תמונות",
+        "tooltip": "תמונות ייחוס אופציונליות, עד 10 בסך הכול, לפחות 256x256 פיקסלים לכל אחת."
+      },
+      "prompt": {
+        "name": "פרומפט",
+        "tooltip": "מה ליצור או איזו עריכה לבצע. הפרומפט מפורש ומורחב לפני היצירה."
+      },
+      "resolution": {
+        "name": "רזולוציה",
+        "tooltip": "גודל הפלט ביחס רוחב-הגובה שנבחר: 0.75K הוא בערך 0.6 מגה-פיקסל, 1K הוא 1 MP, 1.5K הוא 2.4 MP, 2K הוא 4.2 MP, 4K הוא 16.8 MP."
+      },
+      "safety_tolerance": {
+        "name": "סבילות בטיחות",
+        "tooltip": "סבילות למיתון תוכן; 0 היא המחמירה ביותר."
+      },
+      "seed": {
+        "name": "זרע",
+        "tooltip": "זרע לקביעה אם הצומת צריך לפעול מחדש; FLUX 3 בוחר זרע משלו, לכן התוצאות בפועל אינן דטרמיניסטיות בלי קשר לערך זה."
       }
     },
     "outputs": {
@@ -7434,7 +7474,7 @@
     "inputs": {
       "aspect_ratio": {
         "name": "aspect_ratio",
-        "tooltip": "יחס הגובה-רוחב של הווידאו המופק."
+        "tooltip": "יחס רוחב-הגובה של סרטון הפלט. מתעלמים ממנו כאשר מסופקת תמונת קלט; הסרטון עוקב אחר יחס רוחב-הגובה של התמונה."
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -7453,11 +7493,11 @@
       },
       "prompt": {
         "name": "prompt",
-        "tooltip": "תיאור טקסטואלי של הווידאו הרצוי. אופציונלי עבור grok-imagine-video-1.5 כאשר מסופקת תמונת קלט."
+        "tooltip": "תיאור טקסטואלי של הסרטון הרצוי. אופציונלי עבור המודלים grok-imagine-video-1.5 כאשר מסופקת תמונת קלט."
       },
       "resolution": {
         "name": "resolution",
-        "tooltip": "הרזולוציה של הווידאו המופק. 1080p זמין רק עבור grok-imagine-video-1.5."
+        "tooltip": "רזולוציית סרטון הפלט. 1080p אינו זמין עבור grok-imagine-video."
       },
       "seed": {
         "name": "seed",
@@ -18481,8 +18521,8 @@
   "PrimitiveInt": {
     "display_name": "מספר שלם",
     "inputs": {
-      "fixed": {
-        "name": "שליטה לאחר יצירה"
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
       },
       "value": {
         "name": "value"
@@ -22372,8 +22412,8 @@
   "SeedNode": {
     "display_name": "Seed",
     "inputs": {
-      "fixed": {
-        "name": "שליטה לאחר יצירה"
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
       },
       "seed": {
         "name": "seed"

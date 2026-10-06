@@ -4078,9 +4078,12 @@
     }
   },
   "CreateCameraInfo": {
-    "description": "camera_infoを構築します。モード「orbit」はターゲットの周囲をヨー/ピッチ/距離で回転します。「look_at」はカメラをワールド座標に配置します。座標はビューアのワールド空間（右手系、Yアップ）です。",
+    "description": "camera_info を構築します。モード「orbit」はターゲットを中心に yaw/pitch/distance で照準を合わせます。「look_at」はカメラをワールド座標に配置します。座標はビューアのワールド空間（右手系、Y軸上向き）です。",
     "display_name": "カメラ情報の作成",
     "inputs": {
+      "camera_info_state": {
+        "name": "camera_info_state"
+      },
       "camera_type": {
         "name": "カメラタイプ",
         "tooltip": "Render Splatで使用する投影方法：パースペクティブ（遠近法）またはオーソグラフィック（平行投影）。"
@@ -4860,7 +4863,7 @@
       },
       "language_code": {
         "name": "言語コード",
-        "tooltip": "ISO-639-1 または ISO-639-3 言語コード（例: 'en', 'es', 'fra'）。自動検出の場合は空欄にしてください。"
+        "tooltip": "ISO 639-1 言語コード（例: 'en'、'es'、'ja'）。自動検出するには空欄のままにします。"
       },
       "model": {
         "name": "モデル",
@@ -4930,7 +4933,7 @@
       },
       "language_code": {
         "name": "language_code",
-        "tooltip": "ISO-639-1 または ISO-639-3 言語コード（例: 'en', 'es', 'fra'）。自動検出の場合は空欄にしてください。"
+        "tooltip": "ISO 639-1 言語コード（例: 'en'、'es'、'ja'）。自動検出するには空欄のままにします。"
       },
       "model": {
         "name": "model",
@@ -4938,15 +4941,6 @@
       },
       "model_similarity_boost": {
         "name": "similarity_boost"
-      },
-      "model_speed": {
-        "name": "speed"
-      },
-      "model_style": {
-        "name": "style"
-      },
-      "model_use_speaker_boost": {
-        "name": "use_speaker_boost"
       },
       "output_format": {
         "name": "output_format",
@@ -5834,6 +5828,52 @@
       },
       "width": {
         "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3ImageNode": {
+    "description": "プロンプトから FLUX 3 で画像を生成するか、最大 10 枚の参照画像を編集・結合します。プロンプト内では参照画像を image 1、image 2 のように指定してください。",
+    "display_name": "Flux 3 画像",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "'auto' は最初の参照画像に従うか、プロンプトから比率を選択します。"
+      },
+      "bounding_boxes": {
+        "name": "bounding_boxes",
+        "tooltip": "出力内にオブジェクトやテキストを配置する、Create Bounding Boxes からの任意のボックスです。位置はキャンバスを基準とするため、出力のアスペクト比を指定してください。"
+      },
+      "control_after_generate": {
+        "name": "生成後に制御"
+      },
+      "grounding": {
+        "name": "grounding",
+        "tooltip": "生成前に、モデルがウェブ検索と画像検索でプロンプトを調査できるようにします。"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "任意の参照画像。合計最大 10 枚まで指定でき、各画像は少なくとも 256x256 ピクセル必要です。"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "生成する内容、または行う編集です。プロンプトは生成前に解釈・拡張されます。"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "選択したアスペクト比での出力サイズ: 0.75K は約 0.6 メガピクセル、1K は 1 MP、1.5K は 2.4 MP、2K は 4.2 MP、4K は 16.8 MP です。"
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "モデレーションの許容度です。0 が最も厳格です。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "ノードを再実行するかどうかを決定するシードです。FLUX 3 は独自のシードを選ぶため、この値にかかわらず実際の結果は非決定的です。"
       }
     },
     "outputs": {
@@ -7434,7 +7474,7 @@
     "inputs": {
       "aspect_ratio": {
         "name": "アスペクト比",
-        "tooltip": "出力動画のアスペクト比。"
+        "tooltip": "出力動画のアスペクト比です。入力画像が指定されている場合は無視され、動画は画像のアスペクト比に従います。"
       },
       "control_after_generate": {
         "name": "生成後の制御"
@@ -7453,11 +7493,11 @@
       },
       "prompt": {
         "name": "プロンプト",
-        "tooltip": "目的の動画のテキスト説明。入力画像が指定されている場合、grok-imagine-video-1.5 では省略可能です。"
+        "tooltip": "目的の動画のテキスト説明です。入力画像が指定されている場合、grok-imagine-video-1.5 モデルでは任意です。"
       },
       "resolution": {
         "name": "解像度",
-        "tooltip": "出力動画の解像度。1080pはgrok-imagine-video-1.5でのみ利用できます。"
+        "tooltip": "出力動画の解像度です。grok-imagine-video では 1080p は使用できません。"
       },
       "seed": {
         "name": "シード値",
@@ -18481,7 +18521,7 @@
   "PrimitiveInt": {
     "display_name": "整数",
     "inputs": {
-      "fixed": {
+      "control_after_generate": {
         "name": "生成後に制御"
       },
       "value": {
@@ -22372,7 +22412,7 @@
   "SeedNode": {
     "display_name": "シード",
     "inputs": {
-      "fixed": {
+      "control_after_generate": {
         "name": "生成後に制御"
       },
       "seed": {

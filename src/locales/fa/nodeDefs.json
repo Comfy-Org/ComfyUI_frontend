@@ -4078,9 +4078,12 @@
     }
   },
   "CreateCameraInfo": {
-    "description": "ساخت camera_info. حالت 'orbit' با استفاده از yaw/pitch/distance به دور هدف می‌چرخد؛ حالت 'look_at' دوربین را در موقعیت جهانی قرار می‌دهد. مختصات در فضای جهانی بیننده (راست‌دست، محور Y رو به بالا) هستند.",
+    "description": "یک camera_info بسازید. حالت «orbit» با yaw/pitch/distance پیرامون هدف نشانه‌گیری می‌کند؛ «look_at» دوربین را در موقعیت جهانی قرار می‌دهد. مختصات، فضای جهانیِ نمایشگر هستند (راست‌دست، محور Y رو به بالا).",
     "display_name": "ایجاد اطلاعات دوربین",
     "inputs": {
+      "camera_info_state": {
+        "name": "camera_info_state"
+      },
       "camera_type": {
         "name": "camera_type",
         "tooltip": "پروژکشن مورد استفاده توسط Render Splat: پرسپکتیو (کوتاه‌شدگی) یا اورتوگرافیک (موازی)."
@@ -4860,7 +4863,7 @@
       },
       "language_code": {
         "name": "language_code",
-        "tooltip": "کد زبان بر اساس ISO-639-1 یا ISO-639-3 (مثلاً 'en'، 'es'، 'fra'). برای شناسایی خودکار خالی بگذارید."
+        "tooltip": "کد زبان ISO ۶۳۹-۱ (برای نمونه، «en»، «es»، «ja»). برای تشخیص خودکار، خالی بگذارید."
       },
       "model": {
         "name": "model",
@@ -4930,7 +4933,7 @@
       },
       "language_code": {
         "name": "language_code",
-        "tooltip": "کد زبان ISO-639-1 یا ISO-639-3 (مثلاً 'en'، 'es'، 'fra'). برای تشخیص خودکار خالی بگذارید."
+        "tooltip": "کد زبان ISO ۶۳۹-۱ (برای نمونه، «en»، «es»، «ja»). برای تشخیص خودکار، خالی بگذارید."
       },
       "model": {
         "name": "model",
@@ -4938,15 +4941,6 @@
       },
       "model_similarity_boost": {
         "name": "similarity_boost"
-      },
-      "model_speed": {
-        "name": "speed"
-      },
-      "model_style": {
-        "name": "style"
-      },
-      "model_use_speaker_boost": {
-        "name": "use_speaker_boost"
       },
       "output_format": {
         "name": "output_format",
@@ -5834,6 +5828,52 @@
       },
       "width": {
         "name": "عرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3ImageNode": {
+    "description": "با FLUX 3 از روی یک prompt تصویر تولید می‌کند، یا حداکثر ۱۰ تصویر مرجع را ویرایش و ترکیب می‌کند. در prompt به مراجع با عنوان تصویر ۱، تصویر ۲ و الی آخر اشاره کنید.",
+    "display_name": "Flux 3 Image",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "«auto» از نخستین تصویر مرجع پیروی می‌کند، یا نسبتی را از prompt انتخاب می‌کند."
+      },
+      "bounding_boxes": {
+        "name": "bounding_boxes",
+        "tooltip": "کادرهای اختیاری از «ایجاد کادرهای محدودکننده» که اشیا یا متن را در خروجی جای‌گذاری می‌کنند. موقعیت‌ها نسبت به بوم هستند؛ بنابراین نسبت ابعاد خروجی را به آن بدهید."
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "grounding": {
+        "name": "grounding",
+        "tooltip": "به مدل اجازه می‌دهد پیش از تولید، prompt را با جست‌وجوی وب و تصویر بررسی کند."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "تصاویر مرجع اختیاری؛ در مجموع حداکثر ۱۰ تصویر، که هرکدام دست‌کم ۲۵۶×۲۵۶ پیکسل باشند."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "محتوایی که باید تولید شود، یا ویرایشی که باید انجام شود. prompt پیش از تولید تفسیر و بسط داده می‌شود."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "اندازهٔ خروجی در نسبت ابعاد انتخاب‌شده: ۰٫۷۵K حدود ۰٫۶ مگاپیکسل، ۱K برابر با ۱ MP، ۱٫۵K برابر با ۲٫۴ MP، ۲K برابر با ۴٫۲ MP و ۴K برابر با ۱۶٫۸ MP است."
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "میزان تحمل تعدیل محتوا؛ ۰ سخت‌گیرانه‌ترین مقدار است."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed برای تعیین اینکه node باید دوباره اجرا شود یا نه؛ FLUX 3 seed خودش را انتخاب می‌کند، بنابراین نتایج واقعی صرف‌نظر از این مقدار غیرقطعی هستند."
       }
     },
     "outputs": {
@@ -7434,7 +7474,7 @@
     "inputs": {
       "aspect_ratio": {
         "name": "نسبت ابعاد",
-        "tooltip": "نسبت ابعاد ویدیوی خروجی."
+        "tooltip": "نسبت ابعاد ویدیوی خروجی. هنگامی که تصویر ورودی ارائه شده باشد نادیده گرفته می‌شود؛ ویدیو از نسبت ابعاد تصویر پیروی می‌کند."
       },
       "control_after_generate": {
         "name": "کنترل پس از تولید"
@@ -7453,11 +7493,11 @@
       },
       "prompt": {
         "name": "راهنما",
-        "tooltip": "توضیح متنی ویدیوی موردنظر. هنگامی که یک تصویر ورودی ارائه شده باشد، برای grok-imagine-video-1.5 اختیاری است."
+        "tooltip": "توضیح متنیِ ویدیوی موردنظر. برای مدل‌های grok-imagine-video-1.5، هنگامی که تصویر ورودی ارائه شده باشد، اختیاری است."
       },
       "resolution": {
         "name": "وضوح",
-        "tooltip": "وضوح ویدیوی خروجی. 1080p فقط برای grok-imagine-video-1.5 در دسترس است."
+        "tooltip": "رزولوشن ویدیوی خروجی. ۱۰۸۰p برای grok-imagine-video در دسترس نیست."
       },
       "seed": {
         "name": "بذر",
@@ -18481,7 +18521,7 @@
   "PrimitiveInt": {
     "display_name": "عدد صحیح",
     "inputs": {
-      "fixed": {
+      "control_after_generate": {
         "name": "کنترل پس از تولید"
       },
       "value": {
@@ -22372,7 +22412,7 @@
   "SeedNode": {
     "display_name": "بذر",
     "inputs": {
-      "fixed": {
+      "control_after_generate": {
         "name": "کنترل پس از تولید"
       },
       "seed": {
