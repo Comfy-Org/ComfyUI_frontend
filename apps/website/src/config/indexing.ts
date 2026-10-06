@@ -9,7 +9,14 @@ import { workshopModels } from './workshop-browse-content'
 import { isLegacyWorkshopRoute, isWorkshopRoute } from './workshop-release'
 
 const PAYMENT_STATUSES = ['success', 'failed'] as const
-const PLACEHOLDER_PATHNAMES = ['/case-studies', '/videos', '/demos'] as const
+// `/roadmap` ships as a template with placeholder entries. Drop it from this
+// list in the same change that replaces them with real copy.
+const PLACEHOLDER_PATHNAMES = [
+  '/case-studies',
+  '/videos',
+  '/demos',
+  '/roadmap'
+] as const
 
 const ALL_LOCALE_PREFIXES = LOCALE_CODES.map((locale) => LOCALES[locale].prefix)
 

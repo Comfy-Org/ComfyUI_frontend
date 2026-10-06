@@ -5515,5 +5515,41 @@
     "noWebgl": "This preview needs WebGL2, which this browser does not offer.",
     "play": "Play",
     "pause": "Pause"
+  },
+  "roadmap": {
+    "page": {
+      "title": "Roadmap - What We Are Working On",
+      "description": "What the Comfy team is working on right now, across the engine, Comfy Cloud, the editor, Desktop, the platform, and the community. Grouped by stage of work, no dates."
+    },
+    "eyebrow": "Roadmap",
+    "heading": "What we are working on",
+    "intro": "This is the work in front of us, not the work behind us. It includes bugs and unfinished ideas, and it carries no dates, because the order of the work is the honest part and a date would not be.",
+    "changelog": {
+      "prompt": "Looking for what already shipped?",
+      "linkLabel": "Read the changelog"
+    },
+    "stage": {
+      "exploring": {
+        "name": "Exploring",
+        "description": "Questions we are still asking. Nothing is committed here."
+      },
+      "building": {
+        "name": "Building",
+        "description": "Work someone is actively on, bugs included."
+      },
+      "shipping": {
+        "name": "Shipping",
+        "description": "Done or nearly done, and rolling out now."
+      }
+    },
+    "area": {
+      "engine": "Engine",
+      "cloud": "Comfy Cloud",
+      "frontend": "Editor",
+      "desktop": "Desktop",
+      "platform": "Platform",
+      "community": "Community"
+    },
+    "empty": "Nothing at this stage right now."
   }
 }

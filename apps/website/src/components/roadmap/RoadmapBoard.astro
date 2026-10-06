@@ -1,0 +1,99 @@
+---
+import { getCollection, render } from 'astro:content'
+
+import { ROADMAP_STAGES } from '@/content/roadmap.schema'
+import type { Locale } from '@/i18n/translations'
+
+interface Props {
+  locale?: Locale
+}
+
+const { locale = 'en' } = Astro.props
+const { t } = Astro.locals
+
+const entries = await getCollection('roadmap', (entry) =>
+  entry.id.startsWith(`${locale}/`)
+)
+entries.sort((a, b) => a.data.order - b.data.order)
+
+const columns = await Promise.all(
+  ROADMAP_STAGES.map(async (stage) => ({
+    stage,
+    items: await Promise.all(
+      entries
+        .filter((entry) => entry.data.stage === stage)
+        .map(async (entry) => ({
+          id: entry.id,
+          title: entry.data.title,
+          area: entry.data.area,
+          Content: (await render(entry)).Content
+        }))
+    )
+  }))
+)
+---
+
+<section
+  id="roadmap"
+  class="mx-auto max-w-9xl px-4 pt-8 pb-16 lg:px-20 lg:pt-10 lg:pb-24"
+>
+  <ol class="grid list-none grid-cols-1 gap-10 md:grid-cols-3 md:gap-8">
+    {columns.map(({ stage, items }) => <li class="min-w-0">
+      <div class="border-b border-primary-comfy-canvas/10 pb-4">
+        <h2 class="text-2xl font-light text-primary-comfy-canvas">
+          {t(`roadmap.stage.${stage}.name`)}
+        </h2>
+        <p class="mt-2 text-sm font-light text-primary-comfy-canvas/60">
+          {t(`roadmap.stage.${stage}.description`)}
+        </p>
+      </div>
+
+      {items.length === 0 ? (
+        <p class="mt-6 text-sm font-light text-primary-comfy-canvas/50">
+          {t('roadmap.empty')}
+        </p>
+      ) : (
+        <ol class="mt-6 flex list-none flex-col gap-4">
+          {items.map(({ id, title, area, Content }) => <li
+            class="rounded-lg border border-primary-comfy-canvas/10 p-5"
+          >
+            <span
+              class="text-2xs font-bold tracking-widest text-primary-comfy-yellow uppercase"
+            >
+              {t(`roadmap.area.${area}`)}
+            </span>
+            <h3
+              class="mt-2 text-base font-medium wrap-break-word text-primary-comfy-canvas"
+            >
+              {title}
+            </h3>
+            <div
+              class="roadmap-entry mt-2 text-sm font-light wrap-break-word text-primary-comfy-canvas/70"
+              data-entry={id}
+            >
+              <Content />
+            </div>
+          </li>)}
+        </ol>
+      )}
+    </li>)}
+  </ol>
+</section>
+
+<style>
+  .roadmap-entry :global(p) {
+    margin: 0 0 0.75rem;
+  }
+  .roadmap-entry :global(p:last-child) {
+    margin-bottom: 0;
+  }
+  .roadmap-entry :global(a) {
+    color: var(--color-primary-comfy-yellow);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    transition: opacity 0.15s;
+  }
+  .roadmap-entry :global(a:hover) {
+    opacity: 0.7;
+  }
+</style>
