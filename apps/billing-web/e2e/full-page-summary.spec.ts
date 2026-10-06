@@ -352,3 +352,21 @@ test('744-15697: an account balance the server applied is the last deduction, an
     'Total due today$27.50'
   ])
 })
+
+test('on a tablet both columns keep the desktop width cap, centered on one edge', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  await page.setViewportSize({ width: 768, height: 1024 })
+  cloud.scenario.paymentMethods = []
+  await signIn(CHECKOUT)
+
+  const back = await page.getByRole('button', { name: 'Back' }).boundingBox()
+  const pay = await page
+    .getByRole('button', { name: 'Pay and subscribe' })
+    .boundingBox()
+  expect(pay?.width).toBe(464)
+  expect(back?.x).toBe(152)
+  expect(pay?.x).toBe(152)
+})
