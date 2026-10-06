@@ -1,44 +1,44 @@
 <template>
   <DefineTrigger>
-    <Tooltip :disabled="!tooltipText">
-      <TooltipTrigger as-child>
-        <button
-          ref="wrapperRef"
-          type="button"
-          :data-testid="`subgraph-breadcrumb-item-${item.key}`"
-          :data-active="isActive ? '' : undefined"
-          draggable="false"
-          :class="
-            cn(
-              'p-breadcrumb-item-link flex h-8 cursor-pointer appearance-none items-center overflow-hidden border-none bg-transparent px-2 py-0 text-inherit select-none [font:inherit]',
-              isActive &&
-                'p-breadcrumb-item-link-icon-visible gap-1 text-text-primary',
-              menuOpen && 'p-breadcrumb-item-link-menu-visible'
-            )
-          "
-          @click="handleClick"
-          @keydown="handleKeydown"
-        >
-          <i
-            v-if="hasMissingNodes && isRoot"
-            data-testid="subgraph-breadcrumb-missing-nodes-icon"
-            class="icon-[lucide--triangle-alert] text-warning-background"
-          />
-          <span class="p-breadcrumb-item-label max-w-72 truncate px-2">
-            {{ item.label }}
-          </span>
-          <Badge
-            v-if="item.isBlueprint"
-            data-testid="subgraph-breadcrumb-blueprint-tag"
-            severity="primary"
-          >
-            {{ t('breadcrumbsMenu.blueprint') }}
-          </Badge>
-          <i v-if="isActive" class="pi pi-angle-down text-2xs"></i>
-        </button>
-      </TooltipTrigger>
-      <TooltipContent side="bottom">{{ tooltipText }}</TooltipContent>
-    </Tooltip>
+    <Button
+      variant="textonly"
+      size="unset"
+      :tooltip="tooltipText"
+      tooltip-side="bottom"
+      :data-testid="`subgraph-breadcrumb-item-${item.key}`"
+      :data-active="isActive ? '' : undefined"
+      draggable="false"
+      :class="
+        cn(
+          'p-breadcrumb-item-link flex h-8 cursor-pointer appearance-none items-center justify-start gap-0 overflow-hidden border-none bg-transparent px-2 py-0 text-inherit select-none [font:inherit] hover:bg-transparent',
+          isActive &&
+            'p-breadcrumb-item-link-icon-visible gap-1 text-text-primary',
+          menuOpen && 'p-breadcrumb-item-link-menu-visible'
+        )
+      "
+      @click="handleClick"
+      @keydown="handleKeydown"
+    >
+      <i
+        v-if="hasMissingNodes && isRoot"
+        data-testid="subgraph-breadcrumb-missing-nodes-icon"
+        class="icon-[lucide--triangle-alert] text-warning-background"
+      />
+      <span
+        ref="labelRef"
+        class="p-breadcrumb-item-label max-w-72 truncate px-2"
+      >
+        {{ item.label }}
+      </span>
+      <Badge
+        v-if="item.isBlueprint"
+        data-testid="subgraph-breadcrumb-blueprint-tag"
+        severity="primary"
+      >
+        {{ t('breadcrumbsMenu.blueprint') }}
+      </Badge>
+      <i v-if="isActive" class="pi pi-angle-down text-2xs"></i>
+    </Button>
   </DefineTrigger>
   <Menu
     v-if="isActive"
@@ -71,12 +71,10 @@ import { computed, nextTick, ref, toValue } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Badge from '@/components/ui/badge/Badge.vue'
+import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
 import Menu from '@/components/ui/menu/Menu.vue'
 import type { MenuItemAction } from '@/components/ui/menu/types'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import { useWorkflowActionsMenu } from '@/composables/useWorkflowActionsMenu'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import {
@@ -120,7 +118,7 @@ const workflowService = useWorkflowService()
 const isEditing = ref(false)
 const itemLabel = ref<string>()
 const itemInputRef = ref<InstanceType<typeof Input>>()
-const wrapperRef = ref<HTMLButtonElement>()
+const labelRef = ref<HTMLSpanElement>()
 
 const rename = async (
   newName: string | null | undefined,
@@ -165,7 +163,7 @@ const tooltipText = computed(() => {
 const startRename = async () => {
   // Check if element is hidden (collapsed breadcrumb)
   // When collapsed, root item is hidden via CSS display:none, so use rename command
-  if (isRoot && wrapperRef.value?.offsetParent === null) {
+  if (isRoot && labelRef.value?.offsetParent === null) {
     await useCommandStore().execute('Comfy.RenameWorkflow')
     return
   }
