@@ -2725,8 +2725,8 @@
         "orgNotAttached": "Your organization's Comfy workspace isn't set up yet. Contact your administrator.",
         "orgMismatch": "You signed in to a different organization than the one for this email. Try again with your work account.",
         "suspended": "Your organization has removed your access. Contact your administrator.",
-        "accountDeleted": "This account is scheduled for deletion. If this is a mistake, email support@comfy.org.",
-        "accountConflict": "More than one Comfy account uses this email. Email support@comfy.org for help.",
+        "accountDeleted": "This account is scheduled for deletion. If this is a mistake, email support{'@'}comfy.org.",
+        "accountConflict": "More than one Comfy account uses this email. Email support{'@'}comfy.org for help.",
         "idpError": "Your identity provider didn't complete the sign-in. Try again.",
         "rateLimited": "Too many sign-in attempts. Wait a few minutes and try again.",
         "failed": "We couldn't sign you in with single sign-on. Try again."
@@ -3083,7 +3083,7 @@
     "salesManagedRunBlockedDetail": "This workspace's plan is no longer active. Contact your Comfy account manager to restore access.",
     "teamPlanIncludes": "Your plan includes everything in {plan}, plus:",
     "inactiveTeamTitle": "Inactive team subscription",
-    "inactiveTeamDescription": "Reactivate your team plan to add more members and run workflows",
+    "inactiveTeamDescription": "Reactivate your Team plan to add more members and run workflows",
     "inactiveTeamPlanIncludes": "An active plan features everything in {plan}, plus:",
     "reactivateToUseCredits": "Reactivate your plan to use these credits",
     "salesManagedInactiveCreditsNote": "Spendable once your plan is restored.",
@@ -3193,7 +3193,7 @@
     "teamHeader": "For teams wanting to collaborate. Need more members? {learnMore} about enterprise.",
     "teamHeaderLearnMore": "Learn more",
     "personalHeader": "Personal plans are for individual use only. {action}",
-    "personalHeaderAction": "To add teammates, subscribe to the team plan.",
+    "personalHeaderAction": "To add teammates, subscribe to the Team plan.",
     "scheduledChangeNotice": "Your plan changes to {plan} on {date}.",
     "scheduledForDate": "Scheduled for {date}",
     "everythingInPlus": "Everything in {plan}, plus:",
@@ -3213,7 +3213,7 @@
       "perkProjectAssets": "Project & asset management",
       "cta": "Subscribe to Team Yearly",
       "ctaMonthly": "Subscribe to Team Monthly",
-      "unavailable": "This team plan is not available right now.",
+      "unavailable": "This Team plan is not available right now.",
       "changePlan": "Change plan",
       "currentPlan": "Current plan"
     },
@@ -3416,7 +3416,7 @@
         "dismiss": "Dismiss"
       },
       "ending": {
-        "title": "Your team plan ends on {date}",
+        "title": "Your Team plan ends on {date}",
         "body": "Members keep full access until then. Resume your plan to keep your team's shared credits.",
         "memberBody": "You can run workflows until then.",
         "enterpriseTitle": "Your Enterprise plan ends on {date}",
@@ -3425,7 +3425,7 @@
         "contactSales": "Contact sales"
       },
       "planEnded": {
-        "teamTitle": "Your team plan ended on {date}",
+        "teamTitle": "Your Team plan ended on {date}",
         "teamBody": "Resubscribe to run workflows and get shared credits again.",
         "teamMemberBody": "Ask your workspace owner to resubscribe.",
         "enterpriseTitle": "Your Enterprise plan ended on {date}",
@@ -3503,7 +3503,7 @@
       "upsellBannerReactivate": "To add more teammates, reactivate your plan.",
       "resubscribe": "Resubscribe",
       "upsellBannerEnterpriseEnded": "Contact sales to reactivate your Enterprise plan.",
-      "endedTeamTitle": "Your team plan has ended",
+      "endedTeamTitle": "Your Team plan has ended",
       "endedEnterpriseTitle": "Your Enterprise plan has ended",
       "endedPlanTitle": "Your plan has ended",
       "upsellBannerPlanEnded": "Contact sales to reactivate your plan.",

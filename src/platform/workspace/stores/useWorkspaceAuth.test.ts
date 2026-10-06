@@ -1,7 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { useAuthStore } from '@/stores/authStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { SSO_REQUIRED_DIALOG_KEY } from '@/platform/auth/sso/ssoRequired'
+import { SSO_REQUIRED_DIALOG_KEY } from '@/platform/auth/sso/ssoRequiredDialogKey'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { User } from 'firebase/auth'
@@ -1064,11 +1064,11 @@ describe('useWorkspaceAuthStore', () => {
     })
 
     it.for([
-      { ssoEnabled: false, toasts: 1, shown: false },
-      { ssoEnabled: true, toasts: 0, shown: true }
+      { ssoEnabled: false, toasts: 1, shown: false, reloads: 1 },
+      { ssoEnabled: true, toasts: 0, shown: true, reloads: 0 }
     ])(
-      'a recovery refused with sso_required tears down; the SSO screen replaces the toast: $shown (sso_enabled $ssoEnabled)',
-      async ({ ssoEnabled, toasts, shown }) => {
+      'a recovery refused with sso_required tears down; the SSO screen replaces the toast and the reload: $shown (sso_enabled $ssoEnabled)',
+      async ({ ssoEnabled, toasts, shown, reloads }) => {
         vi.mocked(useFeatureFlags().flags).ssoEnabled = ssoEnabled
         vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
           'firebase-token-xyz'
@@ -1109,6 +1109,7 @@ describe('useWorkspaceAuthStore', () => {
         expect(useDialogStore().isDialogOpen(SSO_REQUIRED_DIALOG_KEY)).toBe(
           shown
         )
+        expect(mockReload).toHaveBeenCalledTimes(reloads)
       }
     )
 
@@ -1740,6 +1741,48 @@ describe('useWorkspaceAuthStore', () => {
 
       consoleErrorSpy.mockRestore()
     })
+
+    it.for([
+      { ssoEnabled: false, shown: false, reloads: 1 },
+      { ssoEnabled: true, shown: true, reloads: 0 }
+    ])(
+      'a refresh refused with sso_required shows the SSO screen instead of reloading: $shown (sso_enabled $ssoEnabled)',
+      async ({ ssoEnabled, shown, reloads }) => {
+        vi.mocked(useFeatureFlags().flags).ssoEnabled = ssoEnabled
+        vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
+          'firebase-token-xyz'
+        )
+        vi.stubGlobal(
+          'fetch',
+          vi
+            .fn()
+            .mockResolvedValueOnce({
+              ok: true,
+              json: () => Promise.resolve(mockTokenResponse)
+            })
+            .mockResolvedValue(
+              Response.json(
+                { code: 'sso_required', message: 'use SSO' },
+                { status: 403 }
+              )
+            )
+        )
+        vi.spyOn(console, 'error').mockImplementation(() => {})
+
+        const store = useWorkspaceAuthStore()
+        const { currentWorkspace } = storeToRefs(store)
+        await store.switchWorkspace('workspace-123')
+
+        await store.refreshToken()
+        await vi.dynamicImportSettled()
+
+        expect(currentWorkspace.value).toBeNull()
+        expect(useDialogStore().isDialogOpen(SSO_REQUIRED_DIALOG_KEY)).toBe(
+          shown
+        )
+        expect(mockReload).toHaveBeenCalledTimes(reloads)
+      }
+    )
 
     it('keeps the old workspace refresh when a newer workspace switch fails', async () => {
       vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
@@ -3238,11 +3281,11 @@ describe('useWorkspaceAuthStore', () => {
     )
 
     it.for([
-      { ssoEnabled: false, toasts: 1, shown: false },
-      { ssoEnabled: true, toasts: 0, shown: true }
+      { ssoEnabled: false, toasts: 1, shown: false, reloads: 1 },
+      { ssoEnabled: true, toasts: 0, shown: true, reloads: 0 }
     ])(
-      'a refresh refused with sso_required clears the slot; the SSO screen replaces the toast: $shown (sso_enabled $ssoEnabled)',
-      async ({ ssoEnabled, toasts, shown }) => {
+      'a refresh refused with sso_required clears the slot; the SSO screen replaces the toast and the reload: $shown (sso_enabled $ssoEnabled)',
+      async ({ ssoEnabled, toasts, shown, reloads }) => {
         vi.mocked(useFeatureFlags().flags).ssoEnabled = ssoEnabled
         vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
           'firebase-token-xyz'
@@ -3293,6 +3336,7 @@ describe('useWorkspaceAuthStore', () => {
         expect(useDialogStore().isDialogOpen(SSO_REQUIRED_DIALOG_KEY)).toBe(
           shown
         )
+        expect(mockReload).toHaveBeenCalledTimes(reloads)
       }
     )
 

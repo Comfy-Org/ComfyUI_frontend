@@ -400,7 +400,8 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     endWorkspaceSession(
       unifiedSelectionInvalid(code)
         ? (currentWorkspace.value?.id ?? undefined)
-        : undefined
+        : undefined,
+      code
     )
   }
 
@@ -643,7 +644,8 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       endWorkspaceSession(
         unifiedSelectionInvalid(result.code)
           ? (currentWorkspace.value?.id ?? undefined)
-          : undefined
+          : undefined,
+        result.code
       )
     } else if (result?.status === 'error') {
       console.warn('Unified reactive re-mint failed:', result.code)
@@ -666,10 +668,22 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     clearUnifiedContext()
   }
 
-  function endWorkspaceSession(revokedWorkspaceId?: string): boolean {
+  function endWorkspaceSession(
+    revokedWorkspaceId?: string,
+    refusalCode?: string
+  ): boolean {
     const hadContext = currentWorkspace.value !== null
     const cancelWorkflowTransition =
       isCloud && hadContext ? prepareWorkflowWorkspaceTransition() : undefined
+    // A reload would take down the SSO-required screen this refusal opens.
+    if (
+      refusalCode === 'SSO_REQUIRED' &&
+      presentSsoRequired({ email: useAuthStore().userEmail ?? undefined })
+    ) {
+      clearWorkspaceContext()
+      cancelWorkflowTransition?.()
+      return false
+    }
     const revokedWorkspaceHandled = revokedWorkspaceId
       ? useTeamWorkspaceStore().forgetRevokedActiveWorkspace(revokedWorkspaceId)
       : false
