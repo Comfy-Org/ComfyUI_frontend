@@ -5,9 +5,14 @@ import {
   previewShade
 } from '../../../lib/workshop/relight/preview'
 
-const { lights, scene } = defineProps<{
+const {
+  lights,
+  scene,
+  lightOnly = false
+} = defineProps<{
   lights: readonly Light[]
   scene: RelightScene
+  lightOnly?: boolean
 }>()
 </script>
 
@@ -19,7 +24,8 @@ const { lights, scene } = defineProps<{
   >
     <div
       class="absolute inset-0 bg-black"
-      :style="{ opacity: previewShade(scene) }"
+      data-testid="relight-preview-shade"
+      :style="{ opacity: lightOnly ? 0.9 : previewShade(scene) }"
     />
     <div
       v-for="glow in previewGlows(lights)"

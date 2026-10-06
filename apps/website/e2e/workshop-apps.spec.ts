@@ -555,6 +555,74 @@ test('turns and raises a Relight light from the light map, and hides the map', a
   await expect(map).toBeVisible()
 })
 
+async function overlap(a: Locator, b: Locator) {
+  const [first, second] = await Promise.all([a.boundingBox(), b.boundingBox()])
+  if (!first || !second) throw new Error('no box')
+  return (
+    first.x < second.x + second.width &&
+    second.x < first.x + first.width &&
+    first.y < second.y + second.height &&
+    second.y < first.y + first.height
+  )
+}
+
+test('moves the Relight light map off the Sunset warm key, and back once the key leaves', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, { apps: true, workflows: false })
+  await page.goto('/hub/apps/relight/')
+  const app = page.getByTestId('relight')
+  await app.getByRole('button', { name: 'Try the example' }).click()
+  const map = app.getByRole('group', { name: 'Light map' })
+  const key = app.getByRole('button', { name: /^Warm key\./ })
+  const stage = app.getByTestId('relight-stage')
+  await expect(map).toHaveAttribute('data-corner', 'top-right')
+  await expect.poll(() => overlap(map, key)).toBe(false)
+
+  const box = await stage.boundingBox()
+  if (!box) throw new Error('no stage')
+  await dragTo(page, key, box.x + box.width / 2, box.y + box.height / 2)
+  await expect(map).toHaveAttribute('data-corner', 'top-left')
+  await expect
+    .poll(async () => (await map.boundingBox())?.x)
+    .toBeCloseTo(box.x + 10, 0)
+  await expect.poll(() => overlap(map, key)).toBe(false)
+})
+
+test('shows only the Relight light, apart from the light map, and not in Compare', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, { apps: true, workflows: false })
+  await page.goto('/hub/apps/relight/')
+  const app = page.getByTestId('relight')
+  await app.getByRole('button', { name: 'Try the example' }).click()
+  const tools = app.getByRole('toolbar', { name: 'Relight tools' })
+  const lightOnly = tools.getByRole('button', { name: 'Light only' })
+  const preview = app
+    .getByTestId('relight-stage')
+    .getByTestId('relight-preview')
+  await expect(lightOnly).toHaveAttribute('aria-pressed', 'false')
+  const photo = await preview.screenshot()
+
+  await lightOnly.click()
+  await expect(lightOnly).toHaveAttribute('aria-pressed', 'true')
+  await expect
+    .poll(async () => (await preview.screenshot()).equals(photo))
+    .toBe(false)
+  await expect(app.getByRole('group', { name: 'Light map' })).toBeVisible()
+
+  await tools.getByRole('button', { name: 'Compare' }).click()
+  await expect(lightOnly).toBeDisabled()
+  await tools.getByRole('button', { name: 'Compare' }).click()
+  await lightOnly.click()
+  await expect(lightOnly).toHaveAttribute('aria-pressed', 'false')
+  await expect
+    .poll(async () => (await preview.screenshot()).equals(photo))
+    .toBe(true)
+})
+
 test('folds the Relight light map to a chip on phones @mobile', async ({
   page,
   context
@@ -570,6 +638,9 @@ test('folds the Relight light map to a chip on phones @mobile', async ({
 
   await chip.click()
   await expect(map.getByRole('slider')).toHaveCount(4)
+  await expect
+    .poll(() => overlap(map, app.getByRole('button', { name: /^Warm key\./ })))
+    .toBe(false)
   await map.getByRole('button', { name: 'Collapse light map' }).click()
   await expect(chip).toBeVisible()
 })
