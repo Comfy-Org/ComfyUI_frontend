@@ -395,6 +395,26 @@ test('the mobile menu closes and reopens after its Hub link navigates', async ({
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
 })
 
+test('mobile search suggestions show a video model as a still frame', async ({
+  page
+}) => {
+  await page.setViewportSize({ width: 390, height: 900 })
+  await page.goto('/hub/models/')
+  const open = page.getByTestId('workshop-search-button')
+  await waitForIsland(page, open)
+  await open.click()
+  await page.getByTestId('workshop-search-sheet-input').fill('seedance')
+  const sheet = page.getByTestId('workshop-search-sheet')
+  await expect(sheet.getByTestId('workshop-search-model')).toHaveCount(4)
+  await expect(
+    sheet.getByTestId('workshop-search-model-video')
+  ).not.toHaveCount(0)
+  for (const image of await sheet
+    .getByTestId('workshop-search-model-image')
+    .all())
+    await expect(image).not.toHaveAttribute('src', /\.(mp4|webm|mov)/)
+})
+
 test('keeps the current listing visible until a cold destination is ready', async ({
   page,
   context
