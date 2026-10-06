@@ -12,7 +12,11 @@ import { useAuthStore } from '@/stores/authStore'
 
 vi.mock(import('firebase/auth'))
 
-async function renderDialog(props: { email?: string; returnTo?: string }) {
+async function renderDialog(props: {
+  email?: string
+  returnTo?: string
+  organizationId?: string
+}) {
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [
@@ -58,8 +62,30 @@ describe('SsoRequiredDialogContent', () => {
     expect(target.pathname).toBe('/api/auth/sso/start')
     expect(target.searchParams.get('email')).toBe('ada@acme.com')
     expect(target.searchParams.get('return_to')).toBe('/cloud/user-check')
+    expect(target.searchParams.has('organization')).toBe(false)
     expect(useAuthStore().logout).not.toHaveBeenCalled()
   })
+
+  it.for<{ name: string; email?: string }>([
+    { name: 'with the email as a hint', email: 'alice@comfy.org' },
+    { name: 'when no email is known' }
+  ])(
+    "starts the named organization's SSO, not the email domain's, $name",
+    async ({ email }) => {
+      await renderDialog({ email, organizationId: 'org_meta', returnTo: '/x' })
+
+      await userEvent.click(
+        screen.getByRole('button', { name: 'auth.sso.continueWithSso' })
+      )
+
+      await waitFor(() => expect(assign).toHaveBeenCalledOnce())
+      const target = assigned(assign)
+      expect(target.pathname).toBe('/api/auth/sso/start')
+      expect(target.searchParams.get('organization')).toBe('org_meta')
+      expect(target.searchParams.get('email')).toBe(email ?? null)
+      expect(target.searchParams.get('return_to')).toBe('/x')
+    }
+  )
 
   it('signs a still signed-in account out and returns to the current page', async () => {
     useAuthStore().currentUser = fromPartial<User>({ email: 'ada@acme.com' })

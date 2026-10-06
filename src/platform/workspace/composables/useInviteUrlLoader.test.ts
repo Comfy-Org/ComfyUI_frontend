@@ -89,7 +89,9 @@ function useInviteUrlLoader(): ReturnType<typeof createInviteUrlLoader> {
             inviteFailed: 'Failed to Accept Invite',
             inviteSsoUnavailable: 'Ask your admin to add you',
             inviteSsoUnavailableDetail:
-              'SSO accounts cannot accept invite links'
+              'SSO accounts cannot accept invite links',
+            inviteDirectoryManaged: 'Admin manages membership',
+            inviteDirectoryManagedDetail: 'Ask your organization admin'
           },
           g: { unknownError: 'Unknown error' }
         }
@@ -210,6 +212,54 @@ describe('useInviteUrlLoader', () => {
         vi.mocked(useDialogService().showInviteWrongAccountDialog)
       ).toHaveBeenCalledWith({ inviteToken: 'other-account-token' })
       expect(mockToastAdd).not.toHaveBeenCalled()
+    })
+
+    const DIRECTORY_TOAST = {
+      severity: 'info',
+      summary: 'Admin manages membership',
+      detail: 'Ask your organization admin',
+      closable: true
+    }
+
+    it.for([
+      {
+        name: 'a directory-managed refusal with sso_enabled on shows the directory message',
+        sso: true,
+        code: 'membership_managed_by_directory',
+        wrongAccountDialogs: 0,
+        toasts: [[DIRECTORY_TOAST]]
+      },
+      {
+        name: 'a directory-managed refusal with sso_enabled off opens the wrong-account dialog',
+        sso: false,
+        code: 'membership_managed_by_directory',
+        wrongAccountDialogs: 1,
+        toasts: []
+      },
+      {
+        name: 'another 403 with sso_enabled on opens the wrong-account dialog',
+        sso: true,
+        code: 'ACCESS_DENIED',
+        wrongAccountDialogs: 1,
+        toasts: []
+      }
+    ])('$name', async ({ sso, code, wrongAccountDialogs, toasts }) => {
+      vi.mocked(useFeatureFlags().flags).ssoEnabled = sso
+      mockRouteQuery.value = { invite: 'scim-token' }
+      vi.mocked(useTeamWorkspaceStore().acceptInvite).mockRejectedValue(
+        new WorkspaceApiError('Forbidden', 403, code)
+      )
+
+      const { loadInviteFromUrl } = useInviteUrlLoader()
+      await loadInviteFromUrl()
+
+      expect(
+        vi.mocked(useDialogService().showInviteWrongAccountDialog)
+      ).toHaveBeenCalledTimes(wrongAccountDialogs)
+      expect(mockToastAdd.mock.calls).toEqual(toasts)
+      expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
+        'invite'
+      )
     })
 
     it('keeps the toast for a 404 without a parsed API code', async () => {
