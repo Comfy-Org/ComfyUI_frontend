@@ -1,8 +1,7 @@
-import type { Event } from '@sentry/vue'
+import type { ErrorEvent, Event } from '@sentry/vue'
 import {
   BrowserClient,
   defaultStackParser,
-  type ErrorEvent,
   init as sentryInit,
   makeFetchTransport
 } from '@sentry/vue'
