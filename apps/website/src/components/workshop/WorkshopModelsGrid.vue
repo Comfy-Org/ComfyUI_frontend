@@ -10,7 +10,6 @@ import {
   watch
 } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
 import { groupModels } from '@/config/model-family'
 
 import type {
@@ -47,10 +46,9 @@ import { sectionTitleKeyFor } from '@/lib/workshop/section-title'
 import { useCaseLabelKey } from '@/lib/workshop/use-case-label'
 import type { FacetMenuOption } from './WorkshopFilterMenu.vue'
 import WorkshopFilterMenu from './WorkshopFilterMenu.vue'
-import WorkshopModelCard from './WorkshopModelCard.vue'
-import OpenWeightModelCard from './explorer/OpenWeightModelCard.vue'
+import WorkshopModelsEmpty from '@/components/workshop/WorkshopModelsEmpty.vue'
+import WorkshopModelsResults from '@/components/workshop/WorkshopModelsResults.vue'
 import FeaturedBanner from './FeaturedBanner.vue'
-import { CARD_GRID } from '@/lib/workshop/card-layout'
 import { modelSlides } from '@/lib/workshop/featured-slides'
 import WorkshopSearchField from './WorkshopSearchField.vue'
 import WorkshopSections from './WorkshopSections.vue'
@@ -344,48 +342,19 @@ watch(browseAll, (on) => on && resetFilters())
       </template>
 
       <template v-else>
-        <div v-if="resultCount">
-          <h2 id="workshop-models-heading" class="sr-only">
-            {{ t('workshop.models.heading') }}
-          </h2>
-          <ul
-            :class="CARD_GRID"
-            aria-labelledby="workshop-models-heading"
-            data-testid="workshop-models-grid"
-          >
-            <li v-for="family in visible" :key="family.key">
-              <WorkshopModelCard
-                :model="family.latest"
-                :locale
-                @click="rememberModel(family.latest, $event)"
-              />
-            </li>
-            <li v-for="model in openWeightVisible" :key="model.slug">
-              <OpenWeightModelCard :model :locale />
-            </li>
-          </ul>
-        </div>
-
-        <div
+        <WorkshopModelsResults
+          v-if="resultCount"
+          :families="visible"
+          :open-weight="openWeightVisible"
+          :locale
+          @open="rememberModel"
+        />
+        <WorkshopModelsEmpty
           v-else
-          class="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-transparency-white-t8 px-6 py-16 text-center"
-          data-testid="workshop-empty"
-        >
-          <p class="text-lg font-semibold text-primary-comfy-canvas">
-            {{ t('workshop.empty.heading') }}
-          </p>
-          <p class="text-sm text-primary-warm-gray">
-            {{ t('workshop.empty.body') }}
-          </p>
-          <Button
-            v-if="isFiltered"
-            variant="outline"
-            size="sm"
-            @click="clearFilters"
-          >
-            {{ t('workshop.empty.clear') }}
-          </Button>
-        </div>
+          :filtered="isFiltered"
+          :locale
+          @clear="clearFilters"
+        />
       </template>
     </div>
   </section>

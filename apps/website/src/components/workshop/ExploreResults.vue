@@ -11,6 +11,7 @@ import CardRow from './CardRow.vue'
 import ExploreKindTag from './ExploreKindTag.vue'
 import ExploreSeeAll from './ExploreSeeAll.vue'
 import ExploreResultCard from './ExploreResultCard.vue'
+import ExploreResultsHeading from '@/components/workshop/ExploreResultsHeading.vue'
 
 const {
   title,
@@ -36,20 +37,9 @@ defineEmits<{ clear: [] }>()
   <section aria-labelledby="explore-results" data-testid="explore-results">
     <CardRow v-if="apps.length || results.length" :locale>
       <template #heading>
-        <div class="flex flex-col gap-4">
-          <div class="flex flex-col gap-1">
-            <h2
-              id="explore-results"
-              class="text-xl font-medium text-primary-warm-white"
-            >
-              {{ title }}
-            </h2>
-            <p v-if="description" class="text-sm text-content-secondary">
-              {{ description }}
-            </p>
-          </div>
+        <ExploreResultsHeading :title :description>
           <slot />
-        </div>
+        </ExploreResultsHeading>
       </template>
       <template #actions>
         <ExploreSeeAll
@@ -89,20 +79,9 @@ defineEmits<{ clear: [] }>()
       </li>
     </CardRow>
     <template v-else>
-      <div class="mb-5 flex flex-col gap-4">
-        <div class="flex flex-col gap-1">
-          <h2
-            id="explore-results"
-            class="text-xl font-medium text-primary-warm-white"
-          >
-            {{ title }}
-          </h2>
-          <p v-if="description" class="text-sm text-content-secondary">
-            {{ description }}
-          </p>
-        </div>
+      <ExploreResultsHeading :title :description class="mb-5">
         <slot />
-      </div>
+      </ExploreResultsHeading>
       <div
         class="flex flex-col items-start gap-3 rounded-3xl bg-hub-surface p-8"
         data-testid="explore-empty"

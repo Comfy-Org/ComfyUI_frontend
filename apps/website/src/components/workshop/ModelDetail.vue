@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ExternalLink, Play } from '@lucide/vue'
+import { ExternalLink } from '@lucide/vue'
 import {
   useElementVisibility,
   useEventListener,
@@ -20,13 +20,10 @@ import {
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import Button from '@/components/ui/button/Button.vue'
-import CopyTextButton from '@/components/ui/copy-text-button/CopyTextButton.vue'
 import { useWorkshopFormDraft } from '@/composables/useWorkshopFormDraft'
 import { useWorkshopDelivery } from '@/composables/useWorkshopDelivery'
 import { sameFormValues } from '@/lib/workshop/form-values'
 import { validateWorkshopMediaInputs } from '@/config/workshop-media-validation'
-import { leaveForSignIn } from '@/config/workshop-return'
 import { useSignInHref } from '@/composables/useSignInHref'
 import { usePersonalWorkspaceSwitch } from '@/composables/usePersonalWorkspaceSwitch'
 import type { WorkshopModelDetail } from '@/config/models-catalogue'
@@ -99,6 +96,8 @@ import ExampleReplaceDialog from './ExampleReplaceDialog.vue'
 import RunLeaveDialog from './RunLeaveDialog.vue'
 import ModelSupport from './ModelSupport.vue'
 import SavedAssetsStrip from './SavedAssetsStrip.vue'
+import RunGateAction from '@/components/workshop/model-detail/RunGateAction.vue'
+import RunRequestMeta from '@/components/workshop/model-detail/RunRequestMeta.vue'
 import { WORKSHOP_LEAVE_RUNNING } from '@/config/workshop-router-queue'
 import { WORKSHOP_ASSETS_URL } from '@/config/workshop-env'
 
@@ -849,6 +848,30 @@ function replaceWithExample() {
 function useInCode() {
   scrollToSection('api')
 }
+const offersNativeJson = computed(
+  () =>
+    !!model.execution &&
+    model.execution.inputs === undefined &&
+    !activeExample.value?.fields
+)
+const showsOutput = computed(
+  () =>
+    (mounted.value && workshopEnabled.value) || runState.value.status !== 'idle'
+)
+const showsRunMeta = computed(
+  () => runState.value.status === 'succeeded' || !!requestId.value
+)
+const policyMessage = computed(() =>
+  refusesRealFaces(model.slug) ? t('workshop.error.policyRealFaces') : undefined
+)
+const memberWorkspace = computed(() =>
+  session.value?.role === 'member' ? session.value.workspace.name : undefined
+)
+
+function retry() {
+  if (gate.value === 'ready') void run()
+  else reset()
+}
 </script>
 
 <template>
@@ -872,11 +895,7 @@ function useInCode() {
           >
             <span>{{ t('workshop.input.title') }}</span>
             <button
-              v-if="
-                model.execution &&
-                model.execution.inputs === undefined &&
-                !activeExample?.fields
-              "
+              v-if="offersNativeJson"
               type="button"
               :aria-pressed="nativeJson"
               :disabled="inputsLocked"
@@ -922,118 +941,21 @@ function useInCode() {
           <div
             class="sticky bottom-0 z-10 mt-auto flex flex-col gap-2 rounded-b-2xl border-t border-transparency-white-t8 bg-page/85 p-3 backdrop-blur-sm"
           >
-            <Button
-              v-if="gate === 'signedOut'"
-              as="a"
-              :href="signInHref"
-              size="lg"
-              class="w-full px-5"
-              data-testid="run-button"
-              data-gate="signedOut"
-              @click="leaveForSignIn($event, signInHref)"
-            >
-              {{ t('workshop.run.signIn') }}
-            </Button>
-            <!-- The MVP rail (DES-1015): buying happens on platform, in a new
-               tab, so this page and its inputs stay alive and the return is a
-               balance re-read. Naming the workspace is what makes topping up
-               the wrong wallet visible before it happens. -->
-            <template v-else-if="gate === 'noCredits'">
-              <p
-                class="mb-2 text-sm font-bold text-content-secondary"
-                data-testid="gate-note"
-              >
-                {{
-                  t('workshop.error.noCreditsCloud', {
-                    workspace: session?.workspace.name ?? ''
-                  })
-                }}
-              </p>
-              <Button
-                size="lg"
-                class="w-full px-5"
-                data-testid="run-button"
-                data-gate="noCredits"
-                @click="requestWorkshopBuyCredits"
-              >
-                {{ t('workshop.run.buyCredits') }}
-              </Button>
-            </template>
-            <template v-else-if="gate === 'memberNoCredits'">
-              <div class="mb-2 flex flex-col gap-1" data-testid="gate-note">
-                <p class="text-sm font-bold text-content-secondary">
-                  {{ t('workshop.error.creditsTitle') }}
-                </p>
-                <p class="text-xs text-content-secondary">
-                  {{
-                    t('workshop.error.memberNoCredits', {
-                      workspace: session?.workspace.name ?? ''
-                    })
-                  }}
-                </p>
-              </div>
-              <Button
-                variant="outline"
-                size="lg"
-                class="w-full px-5"
-                :disabled="personalSwitchPending"
-                data-testid="run-button"
-                data-gate="memberNoCredits"
-                @click="switchToPersonal"
-              >
-                {{
-                  t(
-                    personalSwitchPending
-                      ? 'workshop.run.preparingSession'
-                      : 'workshop.run.switchPersonal'
-                  )
-                }}
-              </Button>
-              <p
-                v-if="personalSwitchError"
-                class="text-xs text-red-400"
-                role="alert"
-              >
-                {{ t('nav.workspaceSwitchError') }}
-              </p>
-            </template>
-            <p
-              v-else-if="gate === 'rollingOut'"
-              class="flex min-h-14 flex-wrap items-center justify-center gap-x-1.5 px-2 text-center text-xs text-content-secondary sm:text-sm"
-              data-testid="run-rollout-note"
-            >
-              {{ t('workshop.run.rollingOut') }}
-              <button
-                type="button"
-                class="cursor-pointer font-bold text-primary-warm-white underline underline-offset-2 hover:text-primary-comfy-yellow"
-                @click="scrollToSection('api')"
-              >
-                {{ t('workshop.run.rollingOutApi') }}
-              </button>
-            </p>
-            <Button
-              v-else-if="gate === 'ready'"
-              size="lg"
-              class="w-full px-5"
-              data-testid="run-button"
-              data-gate="ready"
-              @click="isRunning ? cancelRun() : run()"
-            >
-              <template v-if="!isRunning" #prepend>
-                <Play class="size-5 fill-current" aria-hidden="true" />
-              </template>
-              {{ t(isRunning ? 'workshop.run.cancel' : 'workshop.run.run') }}
-            </Button>
-            <Button
-              v-else
-              size="lg"
-              class="h-auto min-h-14 w-full px-5 py-3 text-center whitespace-normal"
-              disabled
-              data-testid="run-button"
-              :data-gate="gate"
-            >
-              {{ t(blockedRunLabel) }}
-            </Button>
+            <RunGateAction
+              :gate
+              :sign-in-href="signInHref"
+              :workspace-name="session?.workspace.name"
+              :switch-pending="personalSwitchPending"
+              :switch-failed="personalSwitchError"
+              :running="isRunning"
+              :blocked-label="blockedRunLabel"
+              :locale
+              @buy-credits="requestWorkshopBuyCredits"
+              @switch-personal="switchToPersonal"
+              @show-api="scrollToSection('api')"
+              @run="run"
+              @cancel="cancelRun"
+            />
           </div>
         </div>
 
@@ -1041,7 +963,7 @@ function useInCode() {
           class="flex min-w-0 flex-col gap-4 lg:sticky lg:top-26 lg:col-span-7 lg:self-start"
         >
           <PlaygroundOutput
-            v-if="(mounted && workshopEnabled) || runState.status !== 'idle'"
+            v-if="showsOutput"
             v-model:revealed="revealed"
             :state="runState"
             :earlier
@@ -1050,52 +972,22 @@ function useInCode() {
             :modality="model.modality"
             compact
             :locale
-            :policy-message="
-              refusesRealFaces(model.slug)
-                ? t('workshop.error.policyRealFaces')
-                : undefined
-            "
-            :member-workspace="
-              session?.role === 'member' ? session.workspace.name : undefined
-            "
+            :policy-message
+            :member-workspace
             @switch-personal="switchToPersonal"
             @buy-credits="requestWorkshopBuyCredits"
-            @retry="gate === 'ready' ? run() : reset()"
+            @retry="retry"
             @use-in-code="useInCode"
             @download="captureOutputDownload"
             @delivery="delivery.settle"
             @playback-started="delivery.beginPlayback"
           />
-          <div
-            v-if="runState.status === 'succeeded' || requestId"
-            class="flex flex-col gap-1"
-          >
-            <p
-              v-if="showsExpiry"
-              class="text-xs text-primary-warm-gray"
-              data-testid="output-expires"
-            >
-              {{ t('workshop.output.expires') }}
-            </p>
-            <!-- The id is for the rare conversation with support, so it keeps
-            to itself and the copy comes to hand when the reader reaches for
-            it. A screen that cannot hover keeps the button in view. -->
-            <div v-if="requestId" class="group/request flex items-center gap-1">
-              <p
-                class="text-2xs break-all text-primary-warm-gray/70"
-                data-testid="router-request-id"
-              >
-                {{ t('workshop.run.requestId') }} {{ requestId }}
-              </p>
-              <CopyTextButton
-                :value="requestId"
-                :label="t('workshop.run.copyRequestId')"
-                :copied-label="t('workshop.api.copied')"
-                icon-class="size-3.5"
-                class="h-7 min-w-7 rounded-lg px-1.5 transition-opacity can-hover:opacity-0 can-hover:group-focus-within/request:opacity-100 can-hover:group-hover/request:opacity-100"
-              />
-            </div>
-          </div>
+          <RunRequestMeta
+            v-if="showsRunMeta"
+            :shows-expiry="showsExpiry"
+            :request-id="requestId"
+            :locale
+          />
 
           <SavedAssetsStrip
             v-if="savedAssetsFor"

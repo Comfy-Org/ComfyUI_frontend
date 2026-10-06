@@ -18,6 +18,7 @@ import type { UseCase } from '@/config/models-catalogue'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import type { ModelAccess } from '@/lib/workshop/explorer/model-access'
+import { toggleIn, toggleOption } from '@/lib/workshop/facet-toggle'
 import { filterLabel } from '@/lib/workshop/filter-label'
 import type { FacetSheetGroup } from './FacetSheet.vue'
 
@@ -130,25 +131,10 @@ const label = computed(() =>
 )
 
 function toggle(facet: string, value: string) {
-  if (facet === 'model') {
-    models.value = models.value.includes(value)
-      ? models.value.filter((item) => item !== value)
-      : [...models.value, value]
-    return
-  }
-  if (facet === 'access') {
-    const option = accessOptions?.find((item) => item.value === value)?.value
-    if (!option) return
-    access.value = access.value.includes(option)
-      ? access.value.filter((item) => item !== option)
-      : [...access.value, option]
-    return
-  }
-  const useCase = useCaseOptions.find((option) => option.value === value)?.value
-  if (!useCase) return
-  useCases.value = useCases.value.includes(useCase)
-    ? useCases.value.filter((item) => item !== useCase)
-    : [...useCases.value, useCase]
+  if (facet === 'model') models.value = toggleIn(models.value, value)
+  else if (facet === 'access')
+    access.value = toggleOption(accessOptions, access.value, value)
+  else useCases.value = toggleOption(useCaseOptions, useCases.value, value)
 }
 
 function clearAll() {

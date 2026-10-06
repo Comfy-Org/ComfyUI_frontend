@@ -1,27 +1,24 @@
 <script setup lang="ts">
-import {
-  Download,
-  ExternalLink,
-  File as FileIcon,
-  Image as ImageIcon,
-  Loader2,
-  Maximize2,
-  X
-} from '@lucide/vue'
 import { computed, ref, useTemplateRef, watch } from 'vue'
-import { DialogContent, DialogPortal, DialogRoot, DialogTitle } from 'reka-ui'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import Button from '@/components/ui/button/Button.vue'
-import VideoPlayer from '@/components/common/VideoPlayer.vue'
-import OutputTransport from './OutputTransport.vue'
+import OutputActions from '@/components/workshop/playground-output/OutputActions.vue'
+import type { RunStop } from '@/components/workshop/playground-output/OutputEarlierRuns.vue'
+import OutputEarlierRuns from '@/components/workshop/playground-output/OutputEarlierRuns.vue'
+import OutputExpandedDialog from '@/components/workshop/playground-output/OutputExpandedDialog.vue'
+import OutputFailed from '@/components/workshop/playground-output/OutputFailed.vue'
+import OutputFileTabs from '@/components/workshop/playground-output/OutputFileTabs.vue'
+import OutputIdle from '@/components/workshop/playground-output/OutputIdle.vue'
+import OutputRunAgain from '@/components/workshop/playground-output/OutputRunAgain.vue'
+import OutputRunning from '@/components/workshop/playground-output/OutputRunning.vue'
+import OutputStage from '@/components/workshop/playground-output/OutputStage.vue'
+import OutputThumbnails from '@/components/workshop/playground-output/OutputThumbnails.vue'
 import type { Modality } from '@/config/models-catalogue'
 import type { RunOutput, RunRecord, RunState } from '@/config/workshop-run'
 import { formatElapsed, isExpired } from '@/config/workshop-run'
 import { downloadOutput } from '@/config/workshop-output-download'
 import { failureLabelKey } from '@/lib/workshop/failure-label'
-import { outputLabels } from '@/lib/workshop/output-labels'
 import type { Locale, TranslationKey } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 
@@ -79,10 +76,7 @@ const elapsed = computed(() =>
 )
 
 const expanded = ref(false)
-const expandTrigger = useTemplateRef<HTMLButtonElement>('expandTrigger')
-
-const mediaControlClass =
-  'focus-visible:ring-primary-comfy-yellow/50 grid size-8 cursor-pointer place-items-center rounded-lg bg-primary-comfy-ink/70 text-primary-warm-white backdrop-blur-sm transition-colors outline-none hover:text-primary-comfy-yellow focus-visible:ring-2'
+const stage = useTemplateRef<InstanceType<typeof OutputStage>>('stage')
 
 const hasUnreadableFile = computed(
   () =>
@@ -146,7 +140,6 @@ const expired = computed(() =>
     ? isExpired(state, now)
     : now >= shown.value.expiresAt
 )
-const fileLabels = computed(() => outputLabels(files.value))
 
 // Only a result the visitor produced opens full screen; the example is a
 // sample of what the model makes, not their picture to inspect.
@@ -255,14 +248,6 @@ watch(
 
 // Oldest first, so the strip reads in the order the runs happened and the
 // newest result is the last stop, selected by default.
-interface RunStop {
-  readonly record?: RunRecord
-  readonly output: RunOutput
-  readonly nsfw: boolean
-  readonly name: string
-  readonly testId: string
-}
-
 const runStops = computed<RunStop[]>(() =>
   latest.value === undefined
     ? []
@@ -284,13 +269,19 @@ const runStops = computed<RunStop[]>(() =>
       ]
 )
 
-const earlierClass = (active: boolean) =>
-  cn(
-    'flex size-12 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-xl border-2 text-xs text-primary-warm-white transition-opacity',
-    active
-      ? 'border-primary-comfy-yellow'
-      : 'border-transparent opacity-60 hover:opacity-100'
-  )
+const showFileTabs = computed(
+  () => currentAttachments.value.length > 0 && !blurred.value
+)
+const showThumbnails = computed(
+  () => outputs.value.length > 1 && !blurred.value
+)
+const showEarlier = computed(
+  () => earlier.length > 0 && state.status === 'succeeded'
+)
+const emptyHeightClass = computed(() => {
+  if (shown.value) return undefined
+  return compact ? 'min-h-72 sm:min-h-80 lg:min-h-100' : 'min-h-96'
+})
 </script>
 
 <template>
@@ -298,7 +289,7 @@ const earlierClass = (active: boolean) =>
     :class="
       cn(
         'flex flex-col overflow-hidden rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4',
-        !shown && (compact ? 'min-h-72 sm:min-h-80 lg:min-h-100' : 'min-h-96')
+        emptyHeightClass
       )
     "
     data-testid="playground-output"
@@ -309,347 +300,84 @@ const earlierClass = (active: boolean) =>
       class="flex items-center justify-between border-b border-transparency-white-t8 px-5 py-3 text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase"
     >
       <span class="shrink-0">{{ t('workshop.output.title') }}</span>
-      <div
-        v-if="currentAttachments.length && !blurred"
-        role="group"
-        :aria-label="t('workshop.output.files')"
-        class="flex min-w-0 items-center gap-2 overflow-x-auto"
-        data-testid="output-files"
-      >
-        <button
-          v-for="(output, index) in files"
-          :key="output.url"
-          type="button"
-          :aria-pressed="shown === output"
-          :title="output.fileName"
-          :class="cn(earlierClass(shown === output), 'size-auto px-2.5 py-1')"
-          @click="selectedFile = index"
-        >
-          {{ t(fileLabels[index].key)
-          }}{{
-            fileLabels[index].ordinal ? ` ${fileLabels[index].ordinal}` : ''
-          }}
-        </button>
-      </div>
+      <OutputFileTabs
+        v-if="showFileTabs"
+        :files
+        :shown
+        :locale
+        @select="selectedFile = $event"
+      />
     </header>
 
-    <!-- Idle -->
-    <div
-      v-if="state.status === 'idle'"
-      class="flex min-h-80 flex-1 flex-col items-center justify-center gap-3 p-6 text-center"
-    >
-      <span
-        class="grid size-12 place-items-center rounded-2xl border border-dashed border-transparency-white-t20 text-primary-warm-gray"
-        aria-hidden="true"
-      >
-        <ImageIcon class="size-5" />
-      </span>
-      <p class="text-sm text-primary-warm-gray">
-        {{ t('workshop.output.placeholder') }}
-      </p>
-    </div>
-
-    <!-- Running -->
-    <div
+    <OutputIdle v-if="state.status === 'idle'" :locale />
+    <OutputRunning
       v-else-if="state.status === 'running'"
-      class="flex flex-1 flex-col items-center justify-center gap-4 p-6 text-center"
-    >
-      <Loader2
-        v-if="!state.stalled"
-        class="size-8 text-primary-comfy-yellow motion-safe:animate-spin"
-        aria-hidden="true"
-        data-testid="run-spinner"
-      />
-      <p class="flex items-baseline gap-2 text-sm text-primary-warm-white">
-        {{ state.label ?? t('workshop.run.running') }}
-        <span
-          v-if="!state.stalled"
-          class="text-primary-warm-gray tabular-nums"
-          data-testid="run-elapsed"
-        >
-          {{ elapsed }}
-        </span>
-      </p>
-      <p
-        v-if="modality === 'video' && state.label === undefined"
-        class="max-w-xs text-xs text-primary-warm-gray"
-      >
-        {{ t('workshop.run.videoHint') }}
-      </p>
-    </div>
-
-    <!-- Expired -->
-    <div
+      :run="state"
+      :elapsed
+      :modality
+      :locale
+    />
+    <OutputRunAgain
       v-else-if="expired"
-      class="flex flex-1 flex-col items-center justify-center gap-4 p-6 text-center"
+      :message="t('workshop.output.expired')"
+      :hint="t('workshop.output.expiredHint')"
+      :retry-disabled
+      :locale
       data-testid="run-expired"
-    >
-      <p class="text-sm text-primary-comfy-canvas">
-        {{ t('workshop.output.expired') }}
-      </p>
-      <p class="max-w-sm text-xs text-primary-warm-gray">
-        {{ t('workshop.output.expiredHint') }}
-      </p>
-      <Button
-        variant="outline"
-        size="sm"
-        :disabled="retryDisabled"
-        @click="emit('retry')"
-      >
-        {{ t('workshop.output.runAgain') }}
-      </Button>
-    </div>
-
-    <!-- Cancelled -->
-    <div
+      @retry="emit('retry')"
+    />
+    <OutputRunAgain
       v-else-if="state.status === 'cancelled'"
-      class="flex flex-1 flex-col items-center justify-center gap-4 p-6 text-center"
-    >
-      <p class="text-sm text-primary-comfy-canvas">
-        {{ statusMessage }}
-      </p>
-      <Button
-        variant="outline"
-        size="sm"
-        :disabled="retryDisabled"
-        @click="emit('retry')"
-      >
-        {{ t('workshop.output.runAgain') }}
-      </Button>
-    </div>
-
-    <!-- Failed -->
-    <div
+      :message="statusMessage"
+      :retry-disabled
+      :locale
+      @retry="emit('retry')"
+    />
+    <OutputFailed
       v-else-if="state.status === 'failed'"
-      class="flex flex-1 flex-col items-center justify-center gap-4 p-6 text-center"
-      data-testid="run-error"
-      :data-reason="state.reason"
-    >
-      <p class="text-sm text-primary-comfy-red">
-        {{ statusMessage }}
-      </p>
-      <Button
-        v-if="state.reason === 'noCredits' && memberWorkspace !== undefined"
-        variant="outline"
-        size="sm"
-        @click="emit('switchPersonal')"
-      >
-        {{ t('workshop.run.switchPersonal') }}
-      </Button>
-      <Button
-        v-else-if="state.reason === 'noCredits'"
-        variant="outline"
-        size="sm"
-        @click="emit('buyCredits')"
-      >
-        {{ t('nav.buyCredits') }}
-      </Button>
-      <Button
-        v-else-if="
-          !hasUnreadableFile && !['validation', 'policy'].includes(state.reason)
-        "
-        variant="outline"
-        size="sm"
-        :disabled="retryDisabled"
-        @click="emit('retry')"
-      >
-        {{ t('workshop.error.retry') }}
-      </Button>
-    </div>
+      :reason="state.reason"
+      :message="statusMessage"
+      :member-workspace
+      :has-unreadable-file="hasUnreadableFile"
+      :retry-disabled
+      :locale
+      @retry="emit('retry')"
+      @switch-personal="emit('switchPersonal')"
+      @buy-credits="emit('buyCredits')"
+    />
 
     <!-- Succeeded, or the example that ships with the model -->
     <template v-else-if="shown">
-      <div
-        :class="
-          cn(
-            'relative w-full overflow-hidden bg-black/20',
-            compact
-              ? 'h-72 shrink-0 sm:h-80 lg:h-100'
-              : 'aspect-video max-h-[70dvh] flex-1'
-          )
-        "
-        data-testid="output-media"
-      >
-        <div
-          :key="currentUrl"
-          :class="blurred ? 'blur-2xl select-none' : ''"
-          class="size-full animate-soft-in transition-all"
-        >
-          <VideoPlayer
-            v-if="currentUrl && shown.kind === 'video' && !blurred"
-            :src="currentUrl"
-            :locale
-            :aria-label="shown.alt ?? t('workshop.output.title')"
-            class="size-full rounded-none border-0"
-            fit="contain"
-            controls-on-hover
-            autoplay
-            loop
-            no-cors
-            @loaded="emit('delivery', $event, 'succeeded')"
-            @failed="emit('delivery', $event, 'failed')"
-          />
-          <img
-            v-else-if="currentUrl && shown.kind === 'image' && !blurred"
-            :src="currentUrl"
-            :alt="shown.alt ?? t('workshop.output.title')"
-            class="size-full object-contain"
-            fetchpriority="high"
-            @load="emit('delivery', currentUrl, 'succeeded')"
-            @error="emit('delivery', currentUrl, 'failed')"
-          />
-          <pre
-            v-else-if="shown.kind === 'text' && !blurred"
-            class="size-full overflow-y-auto p-5 font-mono text-sm whitespace-pre-wrap text-primary-warm-white"
-            >{{ shown.text }}</pre>
-          <div
-            v-else-if="shown.kind === 'audio'"
-            class="flex size-full items-end justify-center gap-1 p-8"
-            aria-hidden="true"
-          >
-            <span
-              v-for="bar in 32"
-              :key="bar"
-              class="w-1.5 rounded-full bg-primary-comfy-yellow/70"
-              :style="{ height: `${20 + ((bar * 37) % 60)}%` }"
-            />
-          </div>
-          <div
-            v-else
-            class="flex size-full flex-col items-center justify-center gap-3 p-8 text-primary-warm-gray"
-          >
-            <FileIcon class="size-12" aria-hidden="true" />
-            <span>{{ shown.fileName }}</span>
-          </div>
-        </div>
-        <!-- Saying "example" three times over one video says it less, so it
-          is marked once, on the result. -->
-        <span
-          v-if="state.status === 'example'"
-          class="absolute top-3 right-3 z-20 inline-flex h-6 items-center rounded-lg bg-black/40 px-2 text-2xs font-bold tracking-wider text-white uppercase backdrop-blur-md"
-          data-testid="output-example"
-        >
-          {{ t('workshop.output.example') }}
-        </span>
+      <OutputStage
+        ref="stage"
+        :shown
+        :url="currentUrl"
+        :blurred
+        :expandable
+        :example="state.status === 'example'"
+        :compact
+        :locale
+        @delivery="(url, status) => emit('delivery', url, status)"
+        @playback-started="emit('playbackStarted', $event)"
+        @expand="expanded = true"
+        @reveal="revealed = true"
+      />
 
-        <button
-          v-if="currentUrl && !blurred && expandable"
-          ref="expandTrigger"
-          type="button"
-          :aria-label="t('workshop.output.expand')"
-          :class="cn(mediaControlClass, 'absolute right-3 bottom-3')"
-          data-testid="output-expand"
-          @click="expanded = true"
-        >
-          <Maximize2 class="size-4" aria-hidden="true" />
-        </button>
+      <OutputThumbnails
+        v-if="showThumbnails"
+        v-model="selected"
+        :urls="outputs"
+        :kind="shown.kind"
+        :locale
+      />
 
-        <OutputTransport
-          v-if="shown.kind === 'audio' && currentUrl && !blurred"
-          :src="currentUrl"
-          :locale
-          class="absolute inset-x-0 bottom-0"
-          @loaded="emit('delivery', $event, 'succeeded')"
-          @failed="emit('delivery', $event, 'failed')"
-          @playback-started="emit('playbackStarted', $event)"
-          @cancelled="emit('delivery', $event, 'cancelled')"
-        />
-        <button
-          v-if="blurred"
-          type="button"
-          class="absolute inset-0 flex cursor-pointer flex-col items-center justify-center gap-2 text-center"
-          data-testid="output-reveal"
-          @click="revealed = true"
-        >
-          <span class="text-sm text-primary-warm-white">
-            {{ t('workshop.output.nsfw') }}
-          </span>
-          <span
-            class="text-xs font-bold tracking-wider text-primary-comfy-yellow uppercase"
-          >
-            {{ t('workshop.output.reveal') }}
-          </span>
-        </button>
-      </div>
-
-      <div
-        v-if="outputs.length > 1 && !blurred"
-        class="grid grid-cols-4 gap-2 border-t border-transparency-white-t8 p-4 sm:grid-cols-6 lg:grid-cols-9"
-        data-testid="output-thumbnails"
-      >
-        <button
-          v-for="(url, index) in outputs"
-          :key="index"
-          type="button"
-          :aria-label="t('workshop.output.select', { n: index + 1 })"
-          :aria-pressed="index === selected"
-          :data-testid="`output-thumb-${index}`"
-          :class="
-            cn(
-              'aspect-square cursor-pointer overflow-hidden rounded-xl border-2 transition-opacity',
-              index === selected
-                ? 'border-primary-comfy-yellow'
-                : 'border-transparent opacity-60 hover:opacity-100'
-            )
-          "
-          @click="selected = index"
-        >
-          <video
-            v-if="shown?.kind === 'video'"
-            :src="url"
-            class="size-full object-cover"
-            muted
-            playsinline
-            preload="metadata"
-          />
-          <img
-            v-else-if="shown.kind === 'image'"
-            :src="url"
-            alt=""
-            class="size-full object-cover"
-          />
-          <span v-else>{{ index + 1 }}</span>
-        </button>
-      </div>
-
-      <div
-        v-if="earlier.length && state.status === 'succeeded'"
-        role="group"
-        :aria-label="t('workshop.output.earlier')"
-        class="flex items-center gap-2 overflow-x-auto border-t border-transparency-white-t8 px-4 py-3"
-        data-testid="earlier-runs"
-      >
-        <button
-          v-for="stop in runStops"
-          :key="stop.testId"
-          type="button"
-          :aria-pressed="viewing === stop.record"
-          :aria-label="stop.name"
-          :class="earlierClass(viewing === stop.record)"
-          :data-testid="stop.testId"
-          @click="viewing = stop.record"
-        >
-          <video
-            v-if="stop.output.kind === 'video'"
-            :src="stop.output.url"
-            :class="cn('size-full object-cover', stop.nsfw && 'blur-md')"
-            muted
-            playsinline
-            preload="metadata"
-          />
-          <img
-            v-else-if="stop.output.kind === 'image'"
-            :src="stop.output.url"
-            alt=""
-            :class="cn('size-full object-cover', stop.nsfw && 'blur-md')"
-          />
-          <FileIcon
-            v-else
-            class="size-5 text-primary-warm-gray"
-            aria-hidden="true"
-          />
-        </button>
-      </div>
+      <OutputEarlierRuns
+        v-if="showEarlier"
+        :stops="runStops"
+        :viewing
+        :locale
+        @select="viewing = $event"
+      />
 
       <p
         v-if="shown.truncated"
@@ -658,75 +386,25 @@ const earlierClass = (active: boolean) =>
       >
         {{ t('workshop.output.truncated') }}
       </p>
-      <div
+      <OutputActions
         v-if="state.status === 'succeeded'"
-        class="flex flex-col gap-2 border-t border-transparency-white-t8 p-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end"
-      >
-        <p
-          v-if="downloadNeedsLink && !blurred"
-          role="status"
-          class="w-full text-xs text-primary-warm-gray"
-        >
-          {{ t('workshop.output.downloadFallback') }}
-        </p>
-        <Button
-          variant="outline"
-          size="sm"
-          class="w-full sm:w-auto"
-          data-testid="output-use-in-code"
-          @click="emit('useInCode')"
-        >
-          {{ t('workshop.output.useInCode') }}
-        </Button>
-        <Button
-          v-if="currentUrl && !blurred"
-          as="a"
-          :href="shown.download?.url ?? currentUrl"
-          :download="
-            downloadNeedsLink || shown.download ? undefined : shown.fileName
-          "
-          :prepend-icon="downloadNeedsLink ? ExternalLink : Download"
-          target="_blank"
-          rel="noopener"
-          size="sm"
-          class="w-full sm:w-auto"
-          data-testid="output-download"
-          @click="download"
-        >
-          {{ t(downloadLabel) }}
-        </Button>
-      </div>
+        :shown
+        :url="currentUrl"
+        :blurred
+        :needs-link="downloadNeedsLink"
+        :download-label="downloadLabel"
+        :locale
+        @use-in-code="emit('useInCode')"
+        @download="download"
+      />
     </template>
 
-    <DialogRoot v-model:open="expanded">
-      <DialogPortal>
-        <DialogContent
-          v-if="currentUrl"
-          class="fixed inset-0 z-100 flex items-center justify-center bg-primary-comfy-ink/90 p-6 backdrop-blur-sm"
-          :aria-describedby="undefined"
-          data-testid="output-expanded"
-          @click.self="expanded = false"
-          @close-auto-focus.prevent="expandTrigger?.focus()"
-        >
-          <DialogTitle class="sr-only">{{
-            t('workshop.output.title')
-          }}</DialogTitle>
-          <button
-            type="button"
-            :aria-label="t('workshop.output.collapse')"
-            :class="cn(mediaControlClass, 'absolute top-6 right-6')"
-            data-testid="output-collapse"
-            @click="expanded = false"
-          >
-            <X class="size-4" aria-hidden="true" />
-          </button>
-          <img
-            :src="currentUrl"
-            :alt="shown?.alt ?? t('workshop.output.title')"
-            class="max-h-full max-w-full rounded-2xl object-contain"
-          />
-        </DialogContent>
-      </DialogPortal>
-    </DialogRoot>
+    <OutputExpandedDialog
+      v-model:open="expanded"
+      :url="currentUrl"
+      :alt="shown?.alt"
+      :locale
+      @restore-focus="stage?.focusExpand()"
+    />
   </section>
 </template>
