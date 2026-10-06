@@ -11,6 +11,7 @@ beforeAll(async () => {
   root = await mkdtemp(join(tmpdir(), 'dist-html-'))
   await mkdir(join(root, 'zh-CN', 'about'), { recursive: true })
   await writeFile(join(root, 'index.html'), '')
+  await writeFile(join(root, 'searchindex.html'), '')
   await writeFile(join(root, 'zh-CN', 'about', 'index.html'), '')
   await writeFile(join(root, 'zh-CN', 'cli.md'), '')
 })
@@ -23,7 +24,7 @@ describe('htmlFiles and routeOf', () => {
       htmlFiles(root)
         .map((file) => routeOf(root, file))
         .sort()
-    ).toEqual(['/', '/zh-CN/about/'])
+    ).toEqual(['/', '/searchindex.html', '/zh-CN/about/'])
   })
 })
 

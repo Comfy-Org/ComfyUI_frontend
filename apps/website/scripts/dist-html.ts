@@ -13,7 +13,7 @@ export function htmlFiles(dir: string): string[] {
 /** `<root>/zh-CN/about/index.html` -> `/zh-CN/about/` */
 export function routeOf(root: string, file: string): string {
   const rel = relative(root, file).split(sep).join('/')
-  const withoutIndex = rel.replace(/index\.html$/, '')
+  const withoutIndex = rel.replace(/(^|\/)index\.html$/, '$1')
   return `/${withoutIndex}`.replace(/\/{2,}/g, '/')
 }
 
