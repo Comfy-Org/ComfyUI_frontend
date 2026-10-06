@@ -3838,7 +3838,7 @@
     },
     "hero": {
       "title": "Nano Banana 2.1 来了",
-      "description": "Google 最新的 Gemini 图像模型，现已登陆 Comfy。它可以生成和编辑逼真的视觉内容，保持人物面部一致，并以最高 4K 分辨率呈现清晰文字，而费用低于 Nano Banana 2。",
+      "description": "Google 最新的 Gemini 图像模型，也是 Nano Banana 2 的继任者，现已登陆 Comfy。给它一个提示词和参考图像，它就能返回最高 4K 分辨率的图像。它可以在 Nano Banana 2 适用的任何地方使用，并新增思考等级，价格更低。",
       "tagTextToImage": "文生图",
       "tagImageEditing": "图像编辑",
       "tagPartnerNode": "合作伙伴节点",
