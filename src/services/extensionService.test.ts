@@ -74,7 +74,6 @@ describe('extension loading', () => {
       expect(cause.cause).toBe(failures[0].error)
       expect(options).toMatchObject({
         errorType: 'error_loading_extension',
-        surface: 'platform',
         level: 'warning'
       })
       expect(options.tags).toEqual({ failed_extension_count: 2 })
