@@ -71,6 +71,45 @@ describe('the SSO-required screen', () => {
     expect(Boolean(await shownDialog())).toBe(shown)
   })
 
+  it.for<{ name: string; body: unknown; context: object }>([
+    {
+      name: 'the organization a refusal names',
+      body: { ...SSO_REFUSAL, organization_id: 'org_meta' },
+      context: { organizationId: 'org_meta' }
+    },
+    {
+      name: 'no organization when none is named',
+      body: SSO_REFUSAL,
+      context: {}
+    }
+  ])('passes $name to the screen', async ({ body, context }) => {
+    vi.mocked(useFeatureFlags().flags).ssoEnabled = true
+
+    expect(await presentForResponse(Response.json(body, { status: 403 }))).toBe(
+      true
+    )
+    expect((await shownDialog())?.contentProps).toEqual(context)
+  })
+
+  it('drops an earlier organization when a later refusal names none', async () => {
+    vi.mocked(useFeatureFlags().flags).ssoEnabled = true
+    presentForRefusal(403, { ...SSO_REFUSAL, organization_id: 'org_meta' })
+    expect((await shownDialog())?.contentProps).toEqual({
+      organizationId: 'org_meta'
+    })
+
+    presentForRefusal(403, SSO_REFUSAL)
+
+    expect((await shownDialog())?.contentProps.organizationId).toBeUndefined()
+  })
+
+  it('stays hidden with the flag off even when the refusal names an organization', async () => {
+    const body = { ...SSO_REFUSAL, organization_id: 'org_meta' }
+
+    expect(presentForRefusal(403, body)).toBe(false)
+    expect(await shownDialog()).toBeUndefined()
+  })
+
   it('reads a 403 response through a clone, leaving it for the caller', async () => {
     vi.mocked(useFeatureFlags().flags).ssoEnabled = true
     const response = Response.json(SSO_REFUSAL, { status: 403 })

@@ -2738,6 +2738,7 @@
         "notConfigured": "Single sign-on isn't set up for your organization. Contact your administrator.",
         "orgDisabled": "Single sign-on is turned off for your organization. Contact your administrator.",
         "orgNotAttached": "Your organization's Comfy workspace isn't set up yet. Contact your administrator.",
+        "emailDomainNotAllowed": "Your organization's sign-in returned an email outside its domains. Ask your administrator to use your work email in the directory.",
         "orgMismatch": "You signed in to a different organization than the one for this email. Try again with your work account.",
         "suspended": "Your organization has removed your access. Contact your administrator.",
         "accountDeleted": "This account is scheduled for deletion. If this is a mistake, email support{'@'}comfy.org.",

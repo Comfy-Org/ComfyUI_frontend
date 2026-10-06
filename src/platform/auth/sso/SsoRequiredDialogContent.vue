@@ -55,9 +55,10 @@ import { SSO_ENTRY_OPEN_QUERY } from '@/platform/cloud/onboarding/sso/ssoEntryQu
 import { useAuthStore } from '@/stores/authStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
-const { email, returnTo } = defineProps<{
+const { email, returnTo, organizationId } = defineProps<{
   email?: string
   returnTo?: string
+  organizationId?: string
 }>()
 
 const { t } = useI18n()
@@ -73,15 +74,22 @@ function dismiss() {
 }
 
 function destination(): string {
+  const back = {
+    returnTo: returnTo ?? router.currentRoute.value.fullPath,
+    origin: window.location.origin
+  }
+  if (organizationId) {
+    return ssoStartUrl({
+      organizationId,
+      email: knownEmail.value ?? undefined,
+      ...back
+    })
+  }
   if (!knownEmail.value) {
     return router.resolve({ name: 'cloud-login', query: SSO_ENTRY_OPEN_QUERY })
       .href
   }
-  return ssoStartUrl({
-    email: knownEmail.value,
-    returnTo: returnTo ?? router.currentRoute.value.fullPath,
-    origin: window.location.origin
-  })
+  return ssoStartUrl({ email: knownEmail.value, ...back })
 }
 
 async function continueWithSso() {
