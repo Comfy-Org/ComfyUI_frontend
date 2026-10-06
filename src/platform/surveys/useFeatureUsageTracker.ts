@@ -169,7 +169,10 @@ function didUsageAdvance(
 ) {
   if (!storedUsage) return false
   if (baseline === undefined) {
-    return isOrderableUsage(storedUsage) && storedUsage.lastUsed > requestedAt
+    return (
+      isOrderableUsage(storedUsage) &&
+      storedUsage.lastUsed > requestedAt + MAX_CLOCK_SKEW
+    )
   }
   if (baseline === null) return true
   return (

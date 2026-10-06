@@ -436,10 +436,11 @@ describe('useFeatureUsageTracker', () => {
     })
     tracker.reset()
     getItem.mockRestore()
+    vi.setSystemTime(400_000)
     localStorage.setItem(
       STORAGE_KEY,
       JSON.stringify({
-        [featureId]: { useCount: 1, firstUsed: 2_000, lastUsed: 2_000 }
+        [featureId]: { useCount: 1, firstUsed: 302_000, lastUsed: 302_000 }
       })
     )
 
@@ -447,6 +448,28 @@ describe('useFeatureUsageTracker', () => {
 
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
     expect(stored[featureId]?.useCount).toBe(1)
+  })
+
+  it('keeps an unreadable reset through a plausible pre-reset clock skew', () => {
+    vi.setSystemTime(10_000)
+    const featureId = 'unreadable-reset-with-fast-clock'
+    const tracker = useFeatureUsageTracker(featureId)
+    const getItem = vi.spyOn(localStorage, 'getItem').mockImplementation(() => {
+      throw new DOMException('Storage access denied', 'SecurityError')
+    })
+    tracker.reset()
+    getItem.mockRestore()
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        [featureId]: { useCount: 1, firstUsed: 200_000, lastUsed: 200_000 }
+      })
+    )
+
+    useFeatureUsageTracker('fast-clock-reset-trigger').trackUsage()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored).not.toHaveProperty(featureId)
   })
 
   it('preserves an earlier reset baseline when a repeated reset cannot read', () => {
