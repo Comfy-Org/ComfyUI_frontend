@@ -16,6 +16,7 @@ import {
   routerModelSlugAliases,
   workshopModels
 } from '@/config/workshop-browse-content'
+import { localePageFiles } from '@/i18n/localeStaticPaths'
 import { modelsBuildRoutes } from '@/integrations/workshop-release-gate'
 import { PROVIDER_NAMES } from '@/lib/workshop/provider-name'
 import {
@@ -35,6 +36,7 @@ function sitePathPatterns(): string[] {
   const pagesDir = join(websiteRoot, 'src/pages')
   const pages = readdirSync(pagesDir, { recursive: true, encoding: 'utf8' })
     .map((file) => file.replaceAll('\\', '/'))
+    .flatMap(localePageFiles)
     .filter((file) => /\.(astro|ts|mdx?)$/.test(file))
     .filter((file) => !file.split('/').some((part) => part.startsWith('_')))
     .filter((file) => !file.endsWith('.test.ts'))

@@ -6,6 +6,8 @@ import ReasonSection from '@/components/product/local/ReasonSection.vue'
 import EcoSystemSection from '@/components/product/local/EcoSystemSection.vue'
 import ProductCardsSection from '@/components/product/local/ProductCardsSection.vue'
 import FAQSection from '@/components/product/local/FAQSection.vue'
+import { getRoutes } from '@/config/routes'
+import { localeStaticPaths } from '@/i18n/localeStaticPaths'
 import {
   absoluteUrl,
   comfyUiApplicationNode,
@@ -14,44 +16,38 @@ import {
   pageContext
 } from '@/utils/jsonLd'
 
-const { siteUrl } = pageContext(
+export const getStaticPaths = localeStaticPaths
+
+const { t } = Astro.locals
+const { siteUrl, locale } = pageContext(
   Astro.site,
   Astro.url.pathname,
   Astro.currentLocale
 )
+const routes = getRoutes(locale)
 ---
 
 <BaseLayout
-  title="Download Comfy Desktop - Run AI on Your Hardware"
-  description={Astro.locals.t('download.meta.description')}
+  title={t('download.meta.title')}
+  description={t('download.meta.description')}
   mainEntityId={comfyUiSoftwareId(siteUrl)}
   breadcrumbs={[
     {
-      name: Astro.locals.t('breadcrumb.home'),
-      url: absoluteUrl(Astro.site, '/')
+      name: t('breadcrumb.home'),
+      url: absoluteUrl(Astro.site, routes.home)
     },
-    { name: Astro.locals.t('breadcrumb.download') }
+    { name: t('breadcrumb.download') }
   ]}
   extraJsonLd={[
     comfyUiApplicationNode(siteUrl),
     comfyUiSourceCodeNode(siteUrl)
   ]}
-  keywords={[
-    'comfyui app',
-    'comfyui desktop app',
-    'comfyui desktop',
-    'comfy ui application',
-    'comfyui download',
-    'download comfyui',
-    'comfyui windows',
-    'comfyui mac',
-    'comfyui linux'
-  ]}
+  keywords={t('download.meta.keywords').split(', ')}
 >
-  <HeroSection client:load />
-  <ReasonSection />
-  <EcoSystemSection client:visible />
-  <AIModelsSection />
-  <ProductCardsSection />
-  <FAQSection client:visible />
+  <HeroSection locale={locale} client:load />
+  <ReasonSection locale={locale} />
+  <EcoSystemSection locale={locale} client:visible />
+  <AIModelsSection locale={locale} />
+  <ProductCardsSection locale={locale} />
+  <FAQSection locale={locale} client:visible />
 </BaseLayout>

@@ -7,6 +7,8 @@ import ComfyApiPricingSection from '@/components/pricing/ComfyApiPricingSection.
 import MinimaxLicensePricingSection from '@/components/pricing/MinimaxLicensePricingSection.vue'
 import MinimaxLicenseHeroSection from '@/components/common/MinimaxLicenseHeroSection.vue'
 import { pricingOffers } from '@/config/pricing'
+import { getRoutes } from '@/config/routes'
+import { localeStaticPaths } from '@/i18n/localeStaticPaths'
 import {
   DEFAULT_OG_IMAGE,
   absoluteUrl,
@@ -15,27 +17,30 @@ import {
   productNode
 } from '@/utils/jsonLd'
 
+export const getStaticPaths = localeStaticPaths
+
+const { t } = Astro.locals
 const { siteUrl, locale, url } = pageContext(
   Astro.site,
   Astro.url.pathname,
   Astro.currentLocale
 )
+const routes = getRoutes(locale)
 const productId = jsonLdId(url, 'product')
-const description =
-  'Comfy Cloud plans and credits: start free with 5 GPU runs, then pick Standard, Creator, Pro, or Team for monthly credits, hosted models, and longer workflow runtimes.'
+const description = t('pricing.meta.description')
 ---
 
 <BaseLayout
-  title="Pricing - Comfy Cloud"
+  title={t('pricing.meta.title')}
   description={description}
   mainEntityId={productId}
   breadcrumbs={[
     {
-      name: Astro.locals.t('breadcrumb.home'),
-      url: absoluteUrl(Astro.site, '/')
+      name: t('breadcrumb.home'),
+      url: absoluteUrl(Astro.site, routes.home)
     },
-    { name: 'Comfy Cloud', url: absoluteUrl(Astro.site, '/cloud') },
-    { name: Astro.locals.t('breadcrumb.pricing') }
+    { name: 'Comfy Cloud', url: absoluteUrl(Astro.site, routes.cloud) },
+    { name: t('breadcrumb.pricing') }
   ]}
   extraJsonLd={[
     productNode({
@@ -49,10 +54,10 @@ const description =
     })
   ]}
 >
-  <CloudPricingSection client:load />
-  <WhatsIncludedSection />
+  <CloudPricingSection locale={locale} client:load />
+  <WhatsIncludedSection locale={locale} />
   <ComfyApiPricingSection locale={locale} show-learn-more-cta />
-  <MinimaxLicenseHeroSection client:visible />
+  <MinimaxLicenseHeroSection locale={locale} client:visible />
   <MinimaxLicensePricingSection locale={locale} />
   <PricingFaq locale={locale} />
 </BaseLayout>

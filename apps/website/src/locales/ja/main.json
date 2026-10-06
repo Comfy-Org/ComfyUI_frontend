@@ -124,6 +124,13 @@
     "subtitle": "Comfyは、あらゆるモデル、あらゆるパラメータ、あらゆる出力を完全にコントロールしたいビジュアルプロフェッショナルのためのAIクリエーションエンジンです。",
     "title": "ビジュアルAIを自在にコントロール"
   },
+  "home": {
+    "meta": {
+      "keywords": "ComfyUI, ComfyUI アプリ, ComfyUI ウェブ版, ComfyUI デスクトップ, ビジュアル AI, ノードベース AI, 生成 AI ワークフロー",
+      "pageName": "ビジュアルAIを自在にコントロール",
+      "title": "Comfy - ビジュアルAIを自在にコントロール"
+    }
+  },
   "industries": {
     "cta": "ワークフローを探索する"
   },

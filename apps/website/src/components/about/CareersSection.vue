@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Locale } from '@/i18n/translations'
 
+import { getRoutes } from '@/config/routes'
 import { translationsFor } from '@/i18n/translations'
 import BrandButton from '@/components/common/BrandButton.vue'
 import GlassCard from '@/components/common/GlassCard.vue'
@@ -8,6 +9,7 @@ import SectionLabel from '@/components/common/SectionLabel.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const { t } = translationsFor(locale)
+const routes = getRoutes(locale)
 </script>
 
 <template>
@@ -40,7 +42,7 @@ const { t } = translationsFor(locale)
         </div>
         <div>
           <BrandButton
-            :href="locale === 'zh-CN' ? '/zh-CN/careers/' : '/careers/'"
+            :href="routes.careers"
             variant="solid"
             size="lg"
             class="mt-8 self-start"

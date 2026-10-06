@@ -55,11 +55,13 @@ test to make it pass, and never resolve a human reviewer's comment.
 
 ## Where things are
 
-- `src/pages/` holds one `.astro` file per URL. Most marketing pages have a
-  twin under `src/pages/zh-CN/` and a few have one under `src/pages/ja/`, but
-  not all: `affiliates/`, `platform/serverless-animation.astro`, and
-  `workshop/` have none. Match what the nearest sibling page of the same kind
-  does, and say in the pull request whether you added a twin.
+- `src/pages/` holds one `.astro` file per URL. A page under
+  `src/pages/[...locale]/` serves every language from that one file (see the
+  README's Localized pages section). Most other marketing pages have a twin
+  under `src/pages/zh-CN/`, but not all: `affiliates/`,
+  `platform/serverless-animation.astro`, and `workshop/` have none. Match what
+  the nearest sibling page of the same kind does, and say in the pull request
+  whether you added a twin.
 - `src/templates/` holds shared page templates. A model launch page is a data
   file in `src/data/` rendered by `src/templates/model-launch/`; clone the
   nearest existing launch page before building anything new.

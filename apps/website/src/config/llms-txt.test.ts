@@ -14,6 +14,7 @@ import { isExcludedFromSitemap } from './indexing'
 import { getRoutes } from './routes'
 import { websiteRoot } from '@website/paths'
 import { modelsBuildRoutes } from '@/integrations/workshop-release-gate'
+import { localePageFiles } from '@/i18n/localeStaticPaths'
 import { appPagePaths } from './workshop-app-content'
 import { workshopPagePaths } from './workshop-page-content'
 
@@ -78,24 +79,39 @@ function isExcludedPage(page: string): boolean {
  */
 const BUILD_ARTIFACTS = new Set(['/sitemap-index.xml', '/llms-full.txt'])
 
-/** Turn `src/pages/learning/[category]/[slug].astro` into a matcher for `/learning/x/y`. */
-function pageMatchers(root: string): {
+/**
+ * Page files under src/pages, relative to it, with each `[...locale]` page
+ * expanded into the locale files it serves.
+ */
+const pageFiles = readdirSync(pagesDir, {
+  recursive: true,
+  withFileTypes: true
+})
+  .filter(
+    (entry) =>
+      entry.isFile() &&
+      /\.(astro|ts)$/.test(entry.name) &&
+      !entry.name.endsWith('.test.ts') &&
+      !entry.name.startsWith('_')
+  )
+  .map((entry) =>
+    join(entry.parentPath, entry.name)
+      .slice(pagesDir.length + 1)
+      .split(sep)
+      .join('/')
+  )
+  .flatMap(localePageFiles)
+
+/** Turn `learning/[category]/[slug].astro` into a matcher for `/learning/x/y`. */
+function pageMatchers(files: string[]): {
   static: Set<string>
   dynamic: RegExp[]
 } {
   const staticPages = new Set<string>()
   const dynamic: RegExp[] = []
-  const entries = readdirSync(root, { recursive: true, withFileTypes: true })
-  for (const entry of entries) {
-    if (!entry.isFile() || !/\.(astro|ts)$/.test(entry.name)) continue
-    if (entry.name.endsWith('.test.ts') || entry.name.startsWith('_')) continue
-    const relative = join(entry.parentPath, entry.name)
-      .slice(root.length)
-      .split(sep)
-      .join('/')
-      .replace(/\.(astro|ts)$/, '')
-    if (root === pagesDir && relative.startsWith('/zh-CN/')) continue
-    const route = relative.replace(/\/index$/, '') || '/'
+  for (const file of files) {
+    const route =
+      `/${file.replace(/\.(astro|ts)$/, '')}`.replace(/\/index$/, '') || '/'
     if (route.includes('[')) {
       const pattern = route
         .split('/')
@@ -116,14 +132,20 @@ function pageMatchers(root: string): {
 describe('llms.txt', () => {
   const links = parseLlmsTxtLinks(llmsTxt)
   const internalPaths = internalLinks(links).map(({ path }) => path)
-  const { static: staticPages, dynamic } = pageMatchers(pagesDir)
+  const { static: staticPages, dynamic } = pageMatchers(
+    pageFiles.filter((file) => !file.startsWith('zh-CN/'))
+  )
   for (const { pattern } of modelsBuildRoutes(false))
     if (!pattern.includes('[')) staticPages.add(pattern)
   const modelsPages = new Set([
     ...workshopPagePaths.map((slug) => `/models/${slug}`),
     ...appPagePaths().map(({ params }) => `/hub/apps/${params.app}`)
   ])
-  const zhCN = pageMatchers(join(pagesDir, 'zh-CN'))
+  const zhCN = pageMatchers(
+    pageFiles
+      .filter((file) => file.startsWith('zh-CN/'))
+      .map((file) => file.slice('zh-CN/'.length))
+  )
 
   it('follows the llms.txt shape: one H1, a summary blockquote, Optional last', () => {
     const lines = llmsTxt.split('\n')

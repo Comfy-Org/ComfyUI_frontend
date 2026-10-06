@@ -1,0 +1,41 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import HeroSection from '@/components/about/HeroSection.vue'
+import StorySection from '@/components/about/StorySection.vue'
+import OurValuesSection from '@/components/about/OurValuesSection.vue'
+import ValuesSection from '@/components/about/ValuesSection.vue'
+import CareersSection from '@/components/about/CareersSection.vue'
+import { getRoutes } from '@/config/routes'
+import { localeStaticPaths } from '@/i18n/localeStaticPaths'
+import { absoluteUrl, organizationId, pageContext } from '@/utils/jsonLd'
+
+export const getStaticPaths = localeStaticPaths
+
+const { t } = Astro.locals
+const { siteUrl, locale } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale
+)
+const routes = getRoutes(locale)
+---
+
+<BaseLayout
+  title={t('about.meta.title')}
+  description={t('about.meta.description')}
+  pageType="AboutPage"
+  mainEntityId={organizationId(siteUrl)}
+  breadcrumbs={[
+    {
+      name: t('breadcrumb.home'),
+      url: absoluteUrl(Astro.site, routes.home)
+    },
+    { name: t('breadcrumb.about') }
+  ]}
+>
+  <HeroSection locale={locale} client:load />
+  <StorySection locale={locale} />
+  <OurValuesSection locale={locale} />
+  <ValuesSection locale={locale} client:visible />
+  <CareersSection locale={locale} />
+</BaseLayout>
