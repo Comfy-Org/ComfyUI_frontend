@@ -28,6 +28,8 @@ export type DevEventKind =
   | 'doc_ops_result'
   | 'human_ops_settled'
   | 'doc_reset'
+  | 'doc_reseed_sent'
+  | 'doc_reseed_result'
   | 'schema_error'
   | 'reconnected'
   | 'subscribe_retry'
