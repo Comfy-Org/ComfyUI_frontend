@@ -897,6 +897,16 @@ export class ComfyApp {
         detail.display_node || detail.node
       )
       if (!executionId) return
+      // Outputs are keyed by a locator resolved against the visible graph, so
+      // a job finishing in another tab would otherwise write its result onto
+      // the same-numbered node of the tab in front.
+      if (
+        !useExecutionStore().frameBelongsToVisibleWorkflow(
+          detail.prompt_id,
+          detail.workflow_id
+        )
+      )
+        return
 
       nodeOutputStore.setNodeOutputsByExecutionId(executionId, detail.output, {
         merge: detail.merge

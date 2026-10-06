@@ -538,7 +538,14 @@ export const useExecutionStore = defineStore('execution', () => {
     const workflow = jobIdToWorkflow.get(jobId)
     if (workflow) clearWorkflowStatus(workflow)
     if (activeJobId.value) clearInitializationByJobId(activeJobId.value)
-    if (!messageMatchesActiveWorkflow(jobId, e.detail.workflow_id)) return
+    if (!messageMatchesActiveWorkflow(jobId, e.detail.workflow_id)) {
+      // The job is finished either way, so its own records have to be released
+      // or they leak for the lifetime of the session. Only the shared UI state
+      // below belongs to the visible tab. Text previews stay gated: they are
+      // keyed by node, and the visible graph may hold the same node ids.
+      releaseFinishedJobRecords(jobId)
+      return
+    }
     resetExecutionState(jobId)
   }
 
@@ -575,7 +582,14 @@ export const useExecutionStore = defineStore('execution', () => {
         })
       }
     }
-    if (!messageMatchesActiveWorkflow(jobId, e.detail.workflow_id)) return
+    if (!messageMatchesActiveWorkflow(jobId, e.detail.workflow_id)) {
+      // Finished either way, so release this job's own records or they leak for
+      // the session. Only the shared UI state below belongs to the visible tab,
+      // and text previews stay gated because they are keyed by node and the
+      // visible graph may hold the same node ids.
+      releaseFinishedJobRecords(jobId)
+      return
+    }
     resetExecutionState(jobId)
   }
 
@@ -733,6 +747,15 @@ export const useExecutionStore = defineStore('execution', () => {
     return active.activeState?.id ?? active.initialState?.id ?? null
   }
 
+  /**
+   * A workflow id names a workflow, not an open tab, and several open tabs can
+   * carry the same one: `ensureWorkflowId` keeps whatever id the json already
+   * has, so copying a workflow into a new tab duplicates it, and loading one
+   * can leave both a temporary and a persisted entry holding it. So the id is
+   * the weakest signal here, not the strongest, and anything unique per tab has
+   * to be consulted first. QA hit this with three unsaved copies of the default
+   * graph, where every tab rendered every other tab's outputs.
+   */
   function messageMatchesActiveWorkflow(
     jobId: JobId,
     messageWorkflowId: string | undefined
@@ -740,15 +763,20 @@ export const useExecutionStore = defineStore('execution', () => {
     const activeWorkflow = workflowStore.activeWorkflow
     if (!activeWorkflow) return true
 
-    const activeId = activeWorkflowGraphId()
-    if (activeId) {
-      const ownerId = messageWorkflowId || jobIdToWorkflowId.value.get(jobId)
-      if (ownerId) return ownerId === activeId
+    const mappedInstance = jobIdToWorkflowInstanceId.get(jobId)
+    if (mappedInstance && activeWorkflow.instanceId) {
+      return mappedInstance === activeWorkflow.instanceId
     }
 
     const mappedPath = jobIdToSessionWorkflowPath.value.get(jobId)
     if (mappedPath && activeWorkflow.path) {
       return mappedPath === activeWorkflow.path
+    }
+
+    const activeId = activeWorkflowGraphId()
+    if (activeId) {
+      const ownerId = messageWorkflowId || jobIdToWorkflowId.value.get(jobId)
+      if (ownerId) return ownerId === activeId
     }
 
     return true
@@ -1190,6 +1218,17 @@ export const useExecutionStore = defineStore('execution', () => {
   /**
    * Reset execution-related state after a run completes or is stopped.
    */
+  function releaseFinishedJobRecords(jobId: JobId) {
+    if (jobId in queuedJobs.value) delete queuedJobs.value[jobId]
+    if (jobId in nodeProgressStatesByJob.value) {
+      const map = { ...nodeProgressStatesByJob.value }
+      delete map[jobId]
+      nodeProgressStatesByJob.value = map
+    }
+    jobIdToWorkflow.delete(jobId)
+    useJobPreviewStore().clearPreview(jobId)
+  }
+
   function resetExecutionState(jobIdParam?: JobId | null) {
     cancelPendingProgressUpdates()
 
@@ -1223,10 +1262,15 @@ export const useExecutionStore = defineStore('execution', () => {
    *
    * Prefers the workflow-ownership gate and falls back to the legacy
    * active-prompt guard only when ownership is unresolvable: activeJobId can
-   * point at another workflow's job, which would otherwise drop text for the
+   * point at another workflow's job, which would otherwise drop frames for the
    * workflow the user is looking at.
+   *
+   * Exported because node outputs are applied outside this store, in ComfyApp's
+   * own `executed` listener, which resolves the execution id against the
+   * visible graph. Without this gate a finished job writes its output onto the
+   * same-numbered node of whatever tab is in front.
    */
-  function textPreviewBelongsToVisibleWorkflow(
+  function frameBelongsToVisibleWorkflow(
     promptId: string | undefined,
     workflowId: string | undefined
   ): boolean {
@@ -1240,7 +1284,7 @@ export const useExecutionStore = defineStore('execution', () => {
   function handleProgressText(e: CustomEvent<ProgressTextWsMessage>) {
     const { nodeId, text, prompt_id, workflow_id } = e.detail
     if (!text || !nodeId) return
-    if (!textPreviewBelongsToVisibleWorkflow(prompt_id, workflow_id)) return
+    if (!frameBelongsToVisibleWorkflow(prompt_id, workflow_id)) return
 
     const currentId = getNodeIdIfExecuting(nodeId)
     if (!currentId) return
@@ -1455,6 +1499,7 @@ export const useExecutionStore = defineStore('execution', () => {
     ensureSessionWorkflowPath,
     getWorkflowStatus,
     clearWorkflowStatus,
-    rewriteSessionWorkflowPaths
+    rewriteSessionWorkflowPaths,
+    frameBelongsToVisibleWorkflow
   }
 })

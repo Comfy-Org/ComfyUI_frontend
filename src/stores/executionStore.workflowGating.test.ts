@@ -75,12 +75,23 @@ function workflow(id: string, path: string): LoadedComfyWorkflow {
   return fromPartial<LoadedComfyWorkflow>({
     activeState: { id },
     initialState: { id },
-    path
+    path,
+    // Every open tab carries its own instanceId in the running app, and it is
+    // the only identifier that is unique per tab rather than per workflow.
+    instanceId: `instance-${path}`
   })
 }
 
 const workflowA = workflow(WORKFLOW_A_ID, 'workflows/a.json')
 const workflowB = workflow(WORKFLOW_B_ID, 'workflows/b.json')
+
+/**
+ * Copy a workflow, open a new tab and paste it: `ensureWorkflowId` keeps the
+ * id already in the pasted json, so both tabs carry the same workflow id while
+ * being different open workflows. Reported by QA on the core PR thread, with
+ * three unsaved copies of the default graph.
+ */
+const workflowACopy = workflow(WORKFLOW_A_ID, 'workflows/a copy.json')
 
 const RAF_COALESCED = new Set(['progress_state', 'progress'])
 
@@ -983,6 +994,60 @@ describe('executionStore workflow gating', () => {
       const projected = Object.values(store.nodeLocationProgressStates)
       expect(projected).toHaveLength(1)
       expect(projected[0]?.value).toBe(3)
+    })
+  })
+
+  describe('two open workflows that share an id', () => {
+    beforeEach(() => {
+      Object.assign(useWorkflowStore(), {
+        openWorkflows: [workflowA, workflowACopy]
+      })
+    })
+
+    // Node outputs are written by ComfyApp's own `executed` listener, not by
+    // this store, and it resolves the node against the visible graph. The gate
+    // it consults is this predicate.
+    it('rejects a foreign job output frame for the copy', () => {
+      useWorkflowStore().activeWorkflow = workflowA
+      queueJobFrom('job-a', workflowA)
+      queueJobFrom('job-copy', workflowACopy)
+
+      useWorkflowStore().activeWorkflow = workflowACopy
+
+      expect(store.frameBelongsToVisibleWorkflow('job-a', WORKFLOW_A_ID)).toBe(
+        false
+      )
+      expect(
+        store.frameBelongsToVisibleWorkflow('job-copy', WORKFLOW_A_ID)
+      ).toBe(true)
+    })
+
+    it('does not project a foreign job progress onto the copy', () => {
+      useWorkflowStore().activeWorkflow = workflowA
+      queueJobFrom('job-a', workflowA)
+      queueJobFrom('job-copy', workflowACopy)
+
+      useWorkflowStore().activeWorkflow = workflowACopy
+      fire('progress_state', {
+        prompt_id: 'job-a',
+        workflow_id: WORKFLOW_A_ID,
+        nodes: { '1': nodeState('job-a', '1', 'running', 3) }
+      })
+
+      expect(store.nodeProgressStates['1']).toBeUndefined()
+      expect(store.nodeLocationProgressStates).toEqual({})
+    })
+
+    it('still renders the copy own job', () => {
+      useWorkflowStore().activeWorkflow = workflowACopy
+      queueJobFrom('job-copy', workflowACopy)
+      fire('progress_state', {
+        prompt_id: 'job-copy',
+        workflow_id: WORKFLOW_A_ID,
+        nodes: { '1': nodeState('job-copy', '1', 'running', 4) }
+      })
+
+      expect(store.nodeProgressStates['1']?.value).toBe(4)
     })
   })
 })

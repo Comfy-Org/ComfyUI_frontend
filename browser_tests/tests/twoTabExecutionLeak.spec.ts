@@ -27,6 +27,7 @@ const KSAMPLER_NODE = '3'
 const SAVE_IMAGE_NODE = '9'
 const WORKFLOW_A = 'exec_leak_a'
 const WORKFLOW_B = 'exec_leak_b'
+const WORKFLOW_A_COPY = 'pasted_twin'
 
 function imageOutput(filename: string) {
   return { images: [{ filename, subfolder: '', type: 'output' }] }
@@ -281,6 +282,55 @@ test.describe('cross-tab execution leak', { tag: '@ui' }, () => {
 
     simulator.play([...running.nodeRunning(KSAMPLER_NODE, 3, 4)])
     await comfyPage.nextFrame()
+    expect(await canvasNodeRender(comfyPage, KSAMPLER_NODE)).toEqual({
+      progress: null,
+      outlined: false
+    })
+  })
+
+  // QA on the core PR thread: copy a workflow, paste it into a new tab, run
+  // both. `ensureWorkflowId` keeps the id already in the pasted json, so the
+  // two tabs share one workflow id while being different open workflows, and
+  // the node ids are identical too. Outputs landed on the wrong tab.
+  test('a pasted copy sharing the workflow id does not receive the original output', async ({
+    comfyPage,
+    getWebSocket
+  }) => {
+    await comfyPage.workflow.setupWorkflowsDirectory({
+      [`${WORKFLOW_A}.json`]: 'execution/workflow_with_id.json',
+      [`${WORKFLOW_A_COPY}.json`]: 'execution/workflow_with_id_pasted_copy.json'
+    })
+    await comfyPage.workflow.openPersistedWorkflow(WORKFLOW_A)
+    const exec = new ExecutionHelper(comfyPage, await getWebSocket())
+    const simulator = new BackendSimulator(exec)
+    const sharedId = await activeWorkflowId(comfyPage)
+
+    const jobId = await exec.run()
+    await comfyPage.nextFrame()
+    const running = simulator.prompt(jobId, { workflowId: sharedId })
+    simulator.play([running.start()])
+
+    await comfyPage.workflow.openPersistedWorkflow(WORKFLOW_A_COPY)
+    await comfyPage.nextFrame()
+    expect(
+      await activeWorkflowId(comfyPage),
+      'the copy must carry the same id, which is what makes this reachable'
+    ).toBe(sharedId)
+
+    simulator.play([
+      ...running.nodeRunning(KSAMPLER_NODE, 2, 4),
+      running.executed(SAVE_IMAGE_NODE, imageOutput('from-the-original.png')),
+      running.success()
+    ])
+    await comfyPage.nextFrame()
+
+    const leaked = await comfyPage.page.evaluate(() =>
+      JSON.stringify(window.app!.nodeOutputs)
+    )
+    expect(
+      leaked,
+      'the original output must not land on the copy'
+    ).not.toContain('from-the-original.png')
     expect(await canvasNodeRender(comfyPage, KSAMPLER_NODE)).toEqual({
       progress: null,
       outlined: false
