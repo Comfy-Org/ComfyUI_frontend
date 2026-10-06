@@ -212,12 +212,23 @@ function isOrderableUsage(usage: FeatureUsage) {
 
 function isSameOrNewerGeneration(usage: FeatureUsage, baseline: FeatureUsage) {
   if (sameUsage(usage, baseline)) return true
-  if (!isOrderableUsage(usage) || !isOrderableUsage(baseline)) return false
+  const now = Date.now()
+  const repairedUsage = repairUsageForComparison(usage, now)
+  const repairedBaseline = repairUsageForComparison(baseline, now)
   return (
-    usage.firstUsed <= baseline.firstUsed &&
-    usage.useCount >= baseline.useCount &&
-    usage.lastUsed >= baseline.lastUsed
+    repairedUsage.firstUsed <= repairedBaseline.firstUsed &&
+    repairedUsage.useCount >= repairedBaseline.useCount &&
+    repairedUsage.lastUsed >= repairedBaseline.lastUsed
   )
+}
+
+function repairUsageForComparison(usage: FeatureUsage, now: number) {
+  const lastUsed = repairFutureTimestamp(usage.lastUsed, now)
+  return {
+    ...usage,
+    firstUsed: Math.min(repairFutureTimestamp(usage.firstUsed, now), lastUsed),
+    lastUsed
+  }
 }
 
 function isWrittenGeneration(usage: FeatureUsage, expectedUsage: FeatureUsage) {

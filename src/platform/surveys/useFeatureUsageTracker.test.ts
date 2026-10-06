@@ -2302,6 +2302,34 @@ describe('useFeatureUsageTracker', () => {
     expect(stored[featureId]?.useCount).toBe(3)
   })
 
+  it('retains pending usage across a peer timestamp repair', () => {
+    vi.setSystemTime(1_000)
+    const featureId = 'pending-across-peer-repair'
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        [featureId]: { useCount: 1, firstUsed: 500_000, lastUsed: 500_000 }
+      })
+    )
+    const tracker = useFeatureUsageTracker(featureId)
+    const setItem = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new DOMException('Storage quota exceeded', 'QuotaExceededError')
+    })
+    tracker.trackUsage()
+    setItem.mockRestore()
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        [featureId]: { useCount: 1, firstUsed: 1_000, lastUsed: 1_000 }
+      })
+    )
+
+    tracker.trackUsage()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored[featureId]?.useCount).toBe(3)
+  })
+
   it('repairs only the drifted timestamp field', () => {
     vi.setSystemTime(10_000)
     localStorage.setItem(
