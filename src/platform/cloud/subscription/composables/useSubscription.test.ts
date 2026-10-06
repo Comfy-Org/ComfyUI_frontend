@@ -975,6 +975,16 @@ describe('useSubscription', () => {
       expect(useAuthActions().accessBillingPortal).toHaveBeenCalled()
     })
 
+    it('resolves without watching when the portal request already failed and was reported', async () => {
+      vi.mocked(useAuthActions().accessBillingPortal).mockResolvedValueOnce(
+        undefined
+      )
+
+      await expect(
+        useSubscriptionWithScope().manageSubscription()
+      ).resolves.toBeUndefined()
+    })
+
     it('does not start cancellation watching when the billing portal does not open', async () => {
       useCurrentUser().isLoggedIn = computed(() => true)
       vi.mocked(useAuthActions().accessBillingPortal).mockResolvedValueOnce(
@@ -992,7 +1002,9 @@ describe('useSubscription', () => {
       await fetchStatus()
       mockGetBillingStatus.mockClear()
 
-      await manageSubscription()
+      await expect(manageSubscription()).rejects.toThrow(
+        "Couldn't open the billing page"
+      )
       await vi.advanceTimersByTimeAsync(5000)
 
       expect(mockGetBillingStatus).not.toHaveBeenCalled()
