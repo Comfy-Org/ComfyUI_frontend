@@ -66,7 +66,8 @@ export const Default: Story = {}
 
 Export a story when the rendered state is one of:
 
-- a **named design state**: `Loading`, `Empty`, `Error`, `Disabled`, `Invalid`
+- a **named design state** that spans more than one prop or needs fixture
+  data: `Loading`, `Empty`, `Error`, `Invalid` with its message
 - a **data shape** that stresses layout: `LongTitle`, `ManyItems`, `NoThumbnail`
 - an **environment**: mocked store state, feature flag, locale
 - an **interaction**: a `play` function reaches a state props cannot (menu
@@ -74,9 +75,9 @@ Export a story when the rendered state is one of:
 - a **comparison grid**: `AllSizes`, `AllVariants`, when side-by-side review is
   the point
 
-A story that sets one enum or boolean prop and nothing else is a control.
-Replace the exports with `argTypes`, and keep a grid only when side-by-side
-comparison matters:
+A story that sets one prop and nothing else is a control, even when the design
+names that state (`Disabled`). Replace the exports with `argTypes`, and keep a
+grid only when side-by-side comparison matters:
 
 ```diff
  const meta: Meta<typeof Loader> = {
@@ -111,7 +112,8 @@ comparison matters:
 ## Stateful and Slot-Driven Components
 
 `v-model` components need local state. Write the `render` once on `meta`, read
-props through `toRefs(args)`, and let stories vary `args`:
+props through `toRefs(args)`, and let stories and the Controls panel vary
+`args`:
 
 ```typescript
 const meta: Meta<typeof TextInput> = {
@@ -127,7 +129,7 @@ const meta: Meta<typeof TextInput> = {
   })
 }
 
-export const Disabled: Story = { args: { disabled: true } }
+export const Default: Story = {}
 ```
 
 For slot content, add a slot-shaped arg (`default`) with a `text` control and

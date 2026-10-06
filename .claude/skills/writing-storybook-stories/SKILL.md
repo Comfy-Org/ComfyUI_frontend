@@ -21,15 +21,15 @@ description: 'Write or update Storybook stories for Vue components in ComfyUI_fr
 
 `docs/guidance/storybook.md` holds the rule; apply it to each variation from step 4:
 
-| Variation                                                   | Becomes                                        |
-| ----------------------------------------------------------- | ---------------------------------------------- |
-| One enum prop (`size`, `shape`)                             | `meta.args` default plus an `argTypes` control |
-| One boolean prop (`bordered`, `disabled`)                   | `meta.args` default; the control is inferred   |
-| Named design state (`Loading`, `Empty`, `Error`, `Invalid`) | A story                                        |
-| Data shape that stresses layout (`LongTitle`, `ManyItems`)  | A story with a named fixture                   |
-| Store, mock, flag, or locale state                          | A story with `beforeEach` setting the mock     |
-| State reached only by interaction (menu open, form filled)  | A story with `play`                            |
-| Side-by-side comparison of a prop's whole domain            | One grid story (`AllSizes`, `AllVariants`)     |
+| Variation                                                  | Becomes                                        |
+| ---------------------------------------------------------- | ---------------------------------------------- |
+| One enum prop (`size`, `shape`)                            | `meta.args` default plus an `argTypes` control |
+| One boolean prop (`bordered`, `disabled`)                  | `meta.args` default; the control is inferred   |
+| Design state spanning several props (`Loading`, `Invalid`) | A story                                        |
+| Data shape that stresses layout (`LongTitle`, `ManyItems`) | A story with a named fixture                   |
+| Store, mock, flag, or locale state                         | A story with `beforeEach` setting the mock     |
+| State reached only by interaction (menu open, form filled) | A story with `play`                            |
+| Side-by-side comparison of a prop's whole domain           | One grid story (`AllSizes`, `AllVariants`)     |
 
 A file whose exports differ by one prop value each is the pattern to fix, not copy, even when the nearest sibling does it.
 
@@ -85,7 +85,6 @@ const meta: Meta<typeof MyComponent> = {
 }
 
 export const Default: Story = {}
-export const Disabled: Story = { args: { disabled: true } }
 ```
 
 ### Slot-driven content
@@ -160,7 +159,7 @@ export const AllVariants: Story = {
 ## Figma Mapping
 
 - Extract the named states from the design first, then run each through "Controls Versus Scenarios".
-- Named design states (`Disabled`, `Loading`, `Invalid`, `WithPlaceholder`) become stories; a size or color ramp becomes a control plus one `AllSizes` or `AllVariants` grid.
+- Named design states that span several props or need fixture data (`Loading`, `Invalid` with its message, `WithPlaceholder`) become stories; a one-prop state (`Disabled`) and a size or color ramp become controls, plus one `AllSizes` or `AllVariants` grid when side-by-side review matters.
 - Use pseudo-state parameters only if the addon is already configured in this repo.
 - If a Figma state cannot be represented exactly, capture the closest prop-driven version and explain the gap in the story docs.
 
