@@ -157,7 +157,6 @@
 
     <NodeHelpPage v-else :node="currentHelpNode!" @close="closeHelp" />
   </div>
-  <div id="node-library-node-preview-container" />
 </template>
 
 <script setup lang="ts">

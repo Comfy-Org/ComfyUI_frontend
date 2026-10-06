@@ -62,19 +62,25 @@
       </template>
     </TreeExplorerTreeNode>
 
-    <teleport v-if="isHovered" to="#node-library-node-preview-container">
-      <div class="node-lib-node-preview" :style="nodePreviewStyle">
-        <NodePreview :node-def="nodeDef" />
-      </div>
-    </teleport>
+    <div
+      v-if="isHovered"
+      :class="
+        cn(
+          'node-lib-node-preview pointer-events-none fixed z-1001',
+          previewOnLeft && '-translate-x-full'
+        )
+      "
+      :style="previewStyle"
+    >
+      <NodePreview :node-def="nodeDef" />
+    </div>
   </div>
   <ContextMenu ref="menu" :model="menuItems" />
 </template>
 
 <script setup lang="ts">
-import type { CSSProperties } from 'vue'
-import { useEventListener } from '@vueuse/core'
-import { computed, ref } from 'vue'
+import { useElementBounding, useElementHover } from '@vueuse/core'
+import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
@@ -158,37 +164,16 @@ function deleteBlueprint() {
   void subgraphStore.deleteBlueprint(node.data.name)
 }
 
-const nodePreviewStyle = ref<CSSProperties>({
-  position: 'fixed',
-  top: '0px',
-  left: '0px',
-  pointerEvents: 'none',
-  zIndex: 1001
-})
+const PREVIEW_MARGIN = 40
 
-const positionPreview = (row: HTMLElement) => {
-  const targetRect = row.getBoundingClientRect()
-  const margin = 40
-
-  nodePreviewStyle.value.top = `${targetRect.top}px`
-  nodePreviewStyle.value.left =
-    sidebarLocation.value === 'left'
-      ? `${targetRect.right + margin}px`
-      : `${targetRect.left - margin}px`
-  nodePreviewStyle.value.transform =
-    sidebarLocation.value === 'right' ? 'translateX(-100%)' : undefined
-}
-
-const container = ref<HTMLElement | null>(null)
-const row = computed(() =>
-  container.value?.closest<HTMLElement>('.tree-explorer-item')
-)
-const isHovered = ref(false)
-useEventListener(row, 'mouseenter', () => {
-  if (row.value) positionPreview(row.value)
-  isHovered.value = true
-})
-useEventListener(row, 'mouseleave', () => {
-  isHovered.value = false
-})
+const container = useTemplateRef('container')
+const isHovered = useElementHover(container)
+const row = useElementBounding(container)
+const previewOnLeft = computed(() => sidebarLocation.value === 'right')
+const previewStyle = computed(() => ({
+  top: `${row.top.value}px`,
+  left: previewOnLeft.value
+    ? `${row.left.value - PREVIEW_MARGIN}px`
+    : `${row.right.value + PREVIEW_MARGIN}px`
+}))
 </script>

@@ -61,7 +61,6 @@
       </TreeExplorer>
     </template>
   </SidebarTabTemplate>
-  <div id="model-library-model-preview-container" />
 </template>
 
 <script setup lang="ts">
