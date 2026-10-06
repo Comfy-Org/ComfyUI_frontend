@@ -318,986 +318,6 @@
       "permanent": true
     },
     {
-      "source": "/p/supported-models/anthropic-claude",
-      "destination": "/hub/models/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/anthropic-claude/",
-      "destination": "/hub/models/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/anthropic-claude.md",
-      "destination": "/hub/models.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/anthropic-claude.md/",
-      "destination": "/hub/models.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/beeble",
-      "destination": "/hub/models/beeble-switchx-image-edit/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/beeble/",
-      "destination": "/hub/models/beeble-switchx-image-edit/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/beeble.md",
-      "destination": "/hub/models/beeble-switchx-image-edit.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/beeble.md/",
-      "destination": "/hub/models/beeble-switchx-image-edit.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/bria-ai",
-      "destination": "/hub/models/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/bria-ai/",
-      "destination": "/hub/models/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/bria-ai.md",
-      "destination": "/hub/models.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/bria-ai.md/",
-      "destination": "/hub/models.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/elevenlabs",
-      "destination": "/hub/models/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/elevenlabs/",
-      "destination": "/hub/models/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/elevenlabs.md",
-      "destination": "/hub/models.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/elevenlabs.md/",
-      "destination": "/hub/models.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/flux",
-      "destination": "/hub/models/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/flux/",
-      "destination": "/hub/models/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/flux.md",
-      "destination": "/hub/models.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/flux.md/",
-      "destination": "/hub/models.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/flux-2-api",
-      "destination": "/hub/models/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/flux-2-api/",
-      "destination": "/hub/models/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/flux-2-api.md",
-      "destination": "/hub/models.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/flux-2-api.md/",
-      "destination": "/hub/models.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/flux-api",
-      "destination": "/hub/models/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/flux-api/",
-      "destination": "/hub/models/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/flux-api.md",
-      "destination": "/hub/models.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/flux-api.md/",
-      "destination": "/hub/models.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/gemini-image",
-      "destination": "/hub/models/nano-banana-text-to-image/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/gemini-image/",
-      "destination": "/hub/models/nano-banana-text-to-image/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/gemini-image.md",
-      "destination": "/hub/models/nano-banana-text-to-image.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/gemini-image.md/",
-      "destination": "/hub/models/nano-banana-text-to-image.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/grok-image",
-      "destination": "/hub/models/grok-imagine-image-text-to-image/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/grok-image/",
-      "destination": "/hub/models/grok-imagine-image-text-to-image/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/grok-image.md",
-      "destination": "/hub/models/grok-imagine-image-text-to-image.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/grok-image.md/",
-      "destination": "/hub/models/grok-imagine-image-text-to-image.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/grok-imagine",
-      "destination": "/hub/models/grok-imagine-image-text-to-image/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/grok-imagine/",
-      "destination": "/hub/models/grok-imagine-image-text-to-image/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/grok-imagine.md",
-      "destination": "/hub/models/grok-imagine-image-text-to-image.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/grok-imagine.md/",
-      "destination": "/hub/models/grok-imagine-image-text-to-image.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/happyhorse1",
-      "destination": "/hub/models/happyhorse-text-to-video/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/happyhorse1/",
-      "destination": "/hub/models/happyhorse-text-to-video/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/happyhorse1.md",
-      "destination": "/hub/models/happyhorse-text-to-video.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/happyhorse1.md/",
-      "destination": "/hub/models/happyhorse-text-to-video.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/heygen",
-      "destination": "/hub/models/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/heygen/",
-      "destination": "/hub/models/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/heygen.md",
-      "destination": "/hub/models.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/heygen.md/",
-      "destination": "/hub/models.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/hunyuan-3d",
-      "destination": "/hub/models/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/hunyuan-3d/",
-      "destination": "/hub/models/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/hunyuan-3d.md",
-      "destination": "/hub/models.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/hunyuan-3d.md/",
-      "destination": "/hub/models.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/ideogram",
-      "destination": "/hub/models/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/ideogram/",
-      "destination": "/hub/models/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/ideogram.md",
-      "destination": "/hub/models.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/ideogram.md/",
-      "destination": "/hub/models.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/kling-2-6",
-      "destination": "/hub/models/kling-3-0-text-to-video/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/kling-2-6/",
-      "destination": "/hub/models/kling-3-0-text-to-video/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/kling-2-6.md",
-      "destination": "/hub/models/kling-3-0-text-to-video.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/kling-2-6.md/",
-      "destination": "/hub/models/kling-3-0-text-to-video.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/kling-ai",
-      "destination": "/hub/models/kling-3-0-text-to-video/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/kling-ai/",
-      "destination": "/hub/models/kling-3-0-text-to-video/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/kling-ai.md",
-      "destination": "/hub/models/kling-3-0-text-to-video.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/kling-ai.md/",
-      "destination": "/hub/models/kling-3-0-text-to-video.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/kling-o3",
-      "destination": "/hub/models/kling-o3-text-to-video/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/kling-o3/",
-      "destination": "/hub/models/kling-o3-text-to-video/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/kling-o3.md",
-      "destination": "/hub/models/kling-o3-text-to-video.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/kling-o3.md/",
-      "destination": "/hub/models/kling-o3-text-to-video.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/krea-2",
-      "destination": "/hub/models/krea-2-large-text-to-image/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/krea-2/",
-      "destination": "/hub/models/krea-2-large-text-to-image/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/krea-2.md",
-      "destination": "/hub/models/krea-2-large-text-to-image.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/krea-2.md/",
-      "destination": "/hub/models/krea-2-large-text-to-image.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/ltx-2",
-      "destination": "/hub/models/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/ltx-2/",
-      "destination": "/hub/models/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/ltx-2.md",
-      "destination": "/hub/models.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/ltx-2.md/",
-      "destination": "/hub/models.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/luma-dream-machine",
-      "destination": "/hub/models/luma-ray-2-text-to-video/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/luma-dream-machine/",
-      "destination": "/hub/models/luma-ray-2-text-to-video/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/luma-dream-machine.md",
-      "destination": "/hub/models/luma-ray-2-text-to-video.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/luma-dream-machine.md/",
-      "destination": "/hub/models/luma-ray-2-text-to-video.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/magnific-ai",
-      "destination": "/hub/models/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/magnific-ai/",
-      "destination": "/hub/models/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/magnific-ai.md",
-      "destination": "/hub/models.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/magnific-ai.md/",
-      "destination": "/hub/models.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/meshy-7",
-      "destination": "/hub/models/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/meshy-7/",
-      "destination": "/hub/models/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/meshy-7.md",
-      "destination": "/hub/models.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/meshy-7.md/",
-      "destination": "/hub/models.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/meshy-ai",
-      "destination": "/hub/models/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/meshy-ai/",
-      "destination": "/hub/models/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/meshy-ai.md",
-      "destination": "/hub/models.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/meshy-ai.md/",
-      "destination": "/hub/models.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/minimax",
-      "destination": "/hub/models/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/minimax/",
-      "destination": "/hub/models/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/minimax.md",
-      "destination": "/hub/models.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/minimax.md/",
-      "destination": "/hub/models.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/nano-banana",
-      "destination": "/hub/models/nano-banana-text-to-image/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/nano-banana/",
-      "destination": "/hub/models/nano-banana-text-to-image/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/nano-banana.md",
-      "destination": "/hub/models/nano-banana-text-to-image.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/nano-banana.md/",
-      "destination": "/hub/models/nano-banana-text-to-image.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/nano-banana-2",
-      "destination": "/hub/models/nano-banana-2-text-to-image/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/nano-banana-2/",
-      "destination": "/hub/models/nano-banana-2-text-to-image/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/nano-banana-2.md",
-      "destination": "/hub/models/nano-banana-2-text-to-image.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/nano-banana-2.md/",
-      "destination": "/hub/models/nano-banana-2-text-to-image.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/openai-dall-e",
-      "destination": "/hub/models/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/openai-dall-e/",
-      "destination": "/hub/models/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/openai-dall-e.md",
-      "destination": "/hub/models.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/openai-dall-e.md/",
-      "destination": "/hub/models.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/openrouter",
-      "destination": "/hub/models/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/openrouter/",
-      "destination": "/hub/models/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/openrouter.md",
-      "destination": "/hub/models.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/openrouter.md/",
-      "destination": "/hub/models.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/pixverse",
-      "destination": "/hub/models/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/pixverse/",
-      "destination": "/hub/models/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/pixverse.md",
-      "destination": "/hub/models.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/pixverse.md/",
-      "destination": "/hub/models.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/quiver",
-      "destination": "/hub/models/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/quiver/",
-      "destination": "/hub/models/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/quiver.md",
-      "destination": "/hub/models.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/quiver.md/",
-      "destination": "/hub/models.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/qwen-3",
-      "destination": "/hub/models/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/qwen-3/",
-      "destination": "/hub/models/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/qwen-3.md",
-      "destination": "/hub/models.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/qwen-3.md/",
-      "destination": "/hub/models.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/recraft",
-      "destination": "/hub/models/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/recraft/",
-      "destination": "/hub/models/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/recraft.md",
-      "destination": "/hub/models.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/recraft.md/",
-      "destination": "/hub/models.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/rodin-3d",
-      "destination": "/hub/models/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/rodin-3d/",
-      "destination": "/hub/models/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/rodin-3d.md",
-      "destination": "/hub/models.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/rodin-3d.md/",
-      "destination": "/hub/models.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/runway",
-      "destination": "/hub/models/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/runway/",
-      "destination": "/hub/models/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/runway.md",
-      "destination": "/hub/models.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/runway.md/",
-      "destination": "/hub/models.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/seedance-2",
-      "destination": "/hub/models/seedance-2-0-text-to-video/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/seedance-2/",
-      "destination": "/hub/models/seedance-2-0-text-to-video/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/seedance-2.md",
-      "destination": "/hub/models/seedance-2-0-text-to-video.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/seedance-2.md/",
-      "destination": "/hub/models/seedance-2-0-text-to-video.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/seedance-2-0",
-      "destination": "/hub/models/seedance-2-0-text-to-video/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/seedance-2-0/",
-      "destination": "/hub/models/seedance-2-0-text-to-video/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/seedance-2-0.md",
-      "destination": "/hub/models/seedance-2-0-text-to-video.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/seedance-2-0.md/",
-      "destination": "/hub/models/seedance-2-0-text-to-video.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/seedance-bytedance",
-      "destination": "/hub/models/seedance-2-0-text-to-video/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/seedance-bytedance/",
-      "destination": "/hub/models/seedance-2-0-text-to-video/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/seedance-bytedance.md",
-      "destination": "/hub/models/seedance-2-0-text-to-video.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/seedance-bytedance.md/",
-      "destination": "/hub/models/seedance-2-0-text-to-video.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/sonilo",
-      "destination": "/hub/models/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/sonilo/",
-      "destination": "/hub/models/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/sonilo.md",
-      "destination": "/hub/models.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/sonilo.md/",
-      "destination": "/hub/models.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/sync",
-      "destination": "/hub/models/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/sync/",
-      "destination": "/hub/models/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/sync.md",
-      "destination": "/hub/models.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/sync.md/",
-      "destination": "/hub/models.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/topaz-labs",
-      "destination": "/hub/models/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/topaz-labs/",
-      "destination": "/hub/models/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/topaz-labs.md",
-      "destination": "/hub/models.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/topaz-labs.md/",
-      "destination": "/hub/models.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/tripo-3d",
-      "destination": "/hub/models/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/tripo-3d/",
-      "destination": "/hub/models/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/tripo-3d.md",
-      "destination": "/hub/models.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/tripo-3d.md/",
-      "destination": "/hub/models.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/veo-2",
-      "destination": "/hub/models/veo-3-text-to-video/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/veo-2/",
-      "destination": "/hub/models/veo-3-text-to-video/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/veo-2.md",
-      "destination": "/hub/models/veo-3-text-to-video.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/veo-2.md/",
-      "destination": "/hub/models/veo-3-text-to-video.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/veo-3",
-      "destination": "/hub/models/veo-3-text-to-video/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/veo-3/",
-      "destination": "/hub/models/veo-3-text-to-video/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/veo-3.md",
-      "destination": "/hub/models/veo-3-text-to-video.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/veo-3.md/",
-      "destination": "/hub/models/veo-3-text-to-video.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/vidu",
-      "destination": "/hub/models/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/vidu/",
-      "destination": "/hub/models/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/vidu.md",
-      "destination": "/hub/models.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/vidu.md/",
-      "destination": "/hub/models.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/wan-3-0",
-      "destination": "/hub/models/wan-3-0-text-to-video/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/wan-3-0/",
-      "destination": "/hub/models/wan-3-0-text-to-video/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/wan-3-0.md",
-      "destination": "/hub/models/wan-3-0-text-to-video.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/wan-3-0.md/",
-      "destination": "/hub/models/wan-3-0-text-to-video.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/wan-api",
-      "destination": "/hub/models/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/wan-api/",
-      "destination": "/hub/models/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/wan-api.md",
-      "destination": "/hub/models.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/wan-api.md/",
-      "destination": "/hub/models.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/wan2-6",
-      "destination": "/hub/models/wan-2-6-text-to-video/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/wan2-6/",
-      "destination": "/hub/models/wan-2-6-text-to-video/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/wan2-6.md",
-      "destination": "/hub/models/wan-2-6-text-to-video.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/wan2-6.md/",
-      "destination": "/hub/models/wan-2-6-text-to-video.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/wan2-7",
-      "destination": "/hub/models/wan-2-7-text-to-video/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/wan2-7/",
-      "destination": "/hub/models/wan-2-7-text-to-video/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/wan2-7.md",
-      "destination": "/hub/models/wan-2-7-text-to-video.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/wan2-7.md/",
-      "destination": "/hub/models/wan-2-7-text-to-video.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/wavespeed",
-      "destination": "/hub/models/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/wavespeed/",
-      "destination": "/hub/models/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/wavespeed.md",
-      "destination": "/hub/models.md",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/wavespeed.md/",
-      "destination": "/hub/models.md",
-      "permanent": true
-    },
-    {
       "source": "/p/supported-models/t5xxl-fp8-e4m3fn-scaled",
       "destination": "/hub/models/local/t5xxl-fp16/",
       "permanent": true
@@ -1405,6 +425,306 @@
     {
       "source": "/p/supported-models/gemma-3-12b-it-fp8-scaled/",
       "destination": "/hub/models/local/gemma-3-12b-it-fp4-mixed/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(anthropic-claude|bria-ai|elevenlabs|flux|flux-2-api|flux-api|heygen|hunyuan-3d|ideogram|ltx-2|magnific-ai|meshy-7|meshy-ai|minimax|openai-dall-e|openrouter|pixverse|quiver|qwen-3|recraft|rodin-3d|runway|sonilo|sync|topaz-labs|tripo-3d|vidu|wan-api|wavespeed)",
+      "destination": "/hub/models/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(anthropic-claude|bria-ai|elevenlabs|flux|flux-2-api|flux-api|heygen|hunyuan-3d|ideogram|ltx-2|magnific-ai|meshy-7|meshy-ai|minimax|openai-dall-e|openrouter|pixverse|quiver|qwen-3|recraft|rodin-3d|runway|sonilo|sync|topaz-labs|tripo-3d|vidu|wan-api|wavespeed)/",
+      "destination": "/hub/models/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(anthropic-claude|bria-ai|elevenlabs|flux|flux-2-api|flux-api|heygen|hunyuan-3d|ideogram|ltx-2|magnific-ai|meshy-7|meshy-ai|minimax|openai-dall-e|openrouter|pixverse|quiver|qwen-3|recraft|rodin-3d|runway|sonilo|sync|topaz-labs|tripo-3d|vidu|wan-api|wavespeed).md",
+      "destination": "/hub/models.md",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(anthropic-claude|bria-ai|elevenlabs|flux|flux-2-api|flux-api|heygen|hunyuan-3d|ideogram|ltx-2|magnific-ai|meshy-7|meshy-ai|minimax|openai-dall-e|openrouter|pixverse|quiver|qwen-3|recraft|rodin-3d|runway|sonilo|sync|topaz-labs|tripo-3d|vidu|wan-api|wavespeed).md/",
+      "destination": "/hub/models.md",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(beeble)",
+      "destination": "/hub/models/beeble-switchx-image-edit/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(beeble)/",
+      "destination": "/hub/models/beeble-switchx-image-edit/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(beeble).md",
+      "destination": "/hub/models/beeble-switchx-image-edit.md",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(beeble).md/",
+      "destination": "/hub/models/beeble-switchx-image-edit.md",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(gemini-image|nano-banana)",
+      "destination": "/hub/models/nano-banana-text-to-image/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(gemini-image|nano-banana)/",
+      "destination": "/hub/models/nano-banana-text-to-image/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(gemini-image|nano-banana).md",
+      "destination": "/hub/models/nano-banana-text-to-image.md",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(gemini-image|nano-banana).md/",
+      "destination": "/hub/models/nano-banana-text-to-image.md",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(grok-image|grok-imagine)",
+      "destination": "/hub/models/grok-imagine-image-text-to-image/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(grok-image|grok-imagine)/",
+      "destination": "/hub/models/grok-imagine-image-text-to-image/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(grok-image|grok-imagine).md",
+      "destination": "/hub/models/grok-imagine-image-text-to-image.md",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(grok-image|grok-imagine).md/",
+      "destination": "/hub/models/grok-imagine-image-text-to-image.md",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(happyhorse1)",
+      "destination": "/hub/models/happyhorse-text-to-video/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(happyhorse1)/",
+      "destination": "/hub/models/happyhorse-text-to-video/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(happyhorse1).md",
+      "destination": "/hub/models/happyhorse-text-to-video.md",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(happyhorse1).md/",
+      "destination": "/hub/models/happyhorse-text-to-video.md",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(kling-2-6|kling-ai)",
+      "destination": "/hub/models/kling-3-0-text-to-video/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(kling-2-6|kling-ai)/",
+      "destination": "/hub/models/kling-3-0-text-to-video/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(kling-2-6|kling-ai).md",
+      "destination": "/hub/models/kling-3-0-text-to-video.md",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(kling-2-6|kling-ai).md/",
+      "destination": "/hub/models/kling-3-0-text-to-video.md",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(kling-o3)",
+      "destination": "/hub/models/kling-o3-text-to-video/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(kling-o3)/",
+      "destination": "/hub/models/kling-o3-text-to-video/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(kling-o3).md",
+      "destination": "/hub/models/kling-o3-text-to-video.md",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(kling-o3).md/",
+      "destination": "/hub/models/kling-o3-text-to-video.md",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(krea-2)",
+      "destination": "/hub/models/krea-2-large-text-to-image/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(krea-2)/",
+      "destination": "/hub/models/krea-2-large-text-to-image/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(krea-2).md",
+      "destination": "/hub/models/krea-2-large-text-to-image.md",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(krea-2).md/",
+      "destination": "/hub/models/krea-2-large-text-to-image.md",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(luma-dream-machine)",
+      "destination": "/hub/models/luma-ray-2-text-to-video/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(luma-dream-machine)/",
+      "destination": "/hub/models/luma-ray-2-text-to-video/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(luma-dream-machine).md",
+      "destination": "/hub/models/luma-ray-2-text-to-video.md",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(luma-dream-machine).md/",
+      "destination": "/hub/models/luma-ray-2-text-to-video.md",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(nano-banana-2)",
+      "destination": "/hub/models/nano-banana-2-text-to-image/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(nano-banana-2)/",
+      "destination": "/hub/models/nano-banana-2-text-to-image/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(nano-banana-2).md",
+      "destination": "/hub/models/nano-banana-2-text-to-image.md",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(nano-banana-2).md/",
+      "destination": "/hub/models/nano-banana-2-text-to-image.md",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(seedance-2|seedance-2-0|seedance-bytedance)",
+      "destination": "/hub/models/seedance-2-0-text-to-video/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(seedance-2|seedance-2-0|seedance-bytedance)/",
+      "destination": "/hub/models/seedance-2-0-text-to-video/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(seedance-2|seedance-2-0|seedance-bytedance).md",
+      "destination": "/hub/models/seedance-2-0-text-to-video.md",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(seedance-2|seedance-2-0|seedance-bytedance).md/",
+      "destination": "/hub/models/seedance-2-0-text-to-video.md",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(veo-2|veo-3)",
+      "destination": "/hub/models/veo-3-text-to-video/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(veo-2|veo-3)/",
+      "destination": "/hub/models/veo-3-text-to-video/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(veo-2|veo-3).md",
+      "destination": "/hub/models/veo-3-text-to-video.md",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(veo-2|veo-3).md/",
+      "destination": "/hub/models/veo-3-text-to-video.md",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(wan-3-0)",
+      "destination": "/hub/models/wan-3-0-text-to-video/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(wan-3-0)/",
+      "destination": "/hub/models/wan-3-0-text-to-video/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(wan-3-0).md",
+      "destination": "/hub/models/wan-3-0-text-to-video.md",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(wan-3-0).md/",
+      "destination": "/hub/models/wan-3-0-text-to-video.md",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(wan2-6)",
+      "destination": "/hub/models/wan-2-6-text-to-video/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(wan2-6)/",
+      "destination": "/hub/models/wan-2-6-text-to-video/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(wan2-6).md",
+      "destination": "/hub/models/wan-2-6-text-to-video.md",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(wan2-6).md/",
+      "destination": "/hub/models/wan-2-6-text-to-video.md",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(wan2-7)",
+      "destination": "/hub/models/wan-2-7-text-to-video/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(wan2-7)/",
+      "destination": "/hub/models/wan-2-7-text-to-video/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(wan2-7).md",
+      "destination": "/hub/models/wan-2-7-text-to-video.md",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(wan2-7).md/",
+      "destination": "/hub/models/wan-2-7-text-to-video.md",
       "permanent": true
     },
     {

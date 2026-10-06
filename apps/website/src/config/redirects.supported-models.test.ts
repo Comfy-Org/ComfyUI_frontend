@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import publishedLocalModels from './__fixtures__/published-local-models.json' with { type: 'json' }
+import { markdownTwinPath } from '@/lib/markdown-twin-path'
 import { hubModelPath } from './hub-models'
 import { localModelAliases, localModelPath, localModels } from './local-models'
 import { models } from './models'
@@ -38,8 +39,6 @@ function resolve(path: string) {
 
 const bothSlashForms = (path: string) => [path, `${path}/`]
 
-const twinOf = (page: string) => `${page.replace(/\/$/, '')}.md`
-
 const expected = new Map<string, string>([
   ...[OLD, `${OLD}/`].map((path) => [path, '/hub/models/local/'] as const),
   [`${OLD}.md`, '/hub/models/local.md'],
@@ -48,7 +47,7 @@ const expected = new Map<string, string>([
     ...bothSlashForms(`${OLD}/${slug}`).map(
       (path) => [path, localModelPath(slug)] as const
     ),
-    [`${OLD}/${slug}.md`, twinOf(localModelPath(slug))] as const
+    [`${OLD}/${slug}.md`, markdownTwinPath(localModelPath(slug))] as const
   ]),
   ...localModelAliases.flatMap(({ slug, canonicalSlug = '' }) =>
     bothSlashForms(`${OLD}/${slug}`).map(
@@ -59,7 +58,7 @@ const expected = new Map<string, string>([
     const page = hubSlug ? hubModelPath(hubSlug) : '/hub/models/'
     return [
       ...bothSlashForms(`${OLD}/${slug}`).map((path) => [path, page] as const),
-      [`${OLD}/${slug}.md`, twinOf(page)] as const
+      [`${OLD}/${slug}.md`, markdownTwinPath(page)] as const
     ]
   })
 ])

@@ -1,4 +1,5 @@
 import type { RedirectConfig } from 'astro'
+import { groupBy, mapValues } from 'es-toolkit'
 
 import {
   HUB_MODELS_PATH,
@@ -16,6 +17,7 @@ import {
   localModelPath,
   localModels
 } from './local-models'
+import { markdownTwinPath } from '@/lib/markdown-twin-path'
 import { partnerModelHubSlugs } from './partner-model-redirects'
 
 interface SiteRedirect {
@@ -66,7 +68,27 @@ function slugGroups(slugs: readonly string[]): string[] {
 const supportedModelPath = (slug: string) =>
   `${SUPPORTED_MODELS_PATH}/${slug}` as const
 
-// The file pages match by name, so a retired slug and stability-ai stay 404s.
+const partnerModelPage = (hubSlug: string | null) =>
+  hubSlug ? hubModelPath(hubSlug) : `${HUB_MODELS_PATH}/`
+
+const movedModelPages: Readonly<Record<string, string>> = mapValues(
+  partnerModelHubSlugs,
+  partnerModelPage
+)
+
+function slugGroupRedirects(
+  slugs: readonly string[],
+  page: string
+): SiteRedirect[] {
+  return slugGroups(slugs).flatMap((group) => [
+    { source: supportedModelPath(`:slug(${group})`), destination: page },
+    {
+      source: supportedModelPath(`:slug(${group}).md`),
+      destination: markdownTwinPath(page)
+    }
+  ])
+}
+
 const supportedModelRedirects: readonly SiteRedirect[] = [
   { source: SUPPORTED_MODELS_PATH, destination: `${LOCAL_MODELS_PATH}/` },
   {
@@ -77,16 +99,6 @@ const supportedModelRedirects: readonly SiteRedirect[] = [
     source: supportedModelPath('llms.txt'),
     destination: `${LOCAL_MODELS_PATH}/llms.txt`
   },
-  ...Object.entries(partnerModelHubSlugs).flatMap(([slug, hubSlug]) => [
-    {
-      source: supportedModelPath(slug),
-      destination: hubSlug ? hubModelPath(hubSlug) : `${HUB_MODELS_PATH}/`
-    },
-    {
-      source: supportedModelPath(`${slug}.md`),
-      destination: `${HUB_MODELS_PATH}${hubSlug ? `/${hubSlug}` : ''}.md`
-    }
-  ]),
   ...localModelAliases.flatMap(({ slug, canonicalSlug }) =>
     canonicalSlug
       ? [
@@ -97,16 +109,13 @@ const supportedModelRedirects: readonly SiteRedirect[] = [
         ]
       : []
   ),
-  ...slugGroups(localModels.map(({ slug }) => slug)).flatMap((group) => [
-    {
-      source: supportedModelPath(`:slug(${group})`),
-      destination: `${LOCAL_MODELS_PATH}/:slug/`
-    },
-    {
-      source: supportedModelPath(`:slug(${group}).md`),
-      destination: `${LOCAL_MODELS_PATH}/:slug.md`
-    }
-  ])
+  ...Object.entries(
+    groupBy(Object.keys(movedModelPages), (slug) => movedModelPages[slug])
+  ).flatMap(([page, slugs]) => slugGroupRedirects(slugs, page)),
+  ...slugGroupRedirects(
+    localModels.map(({ slug }) => slug),
+    `${LOCAL_MODELS_PATH}/:slug/`
+  )
 ]
 
 // Literal rows only: hub pages fetch /models/<slug>/page.json, so a /models/:path* catch-all would break them.
