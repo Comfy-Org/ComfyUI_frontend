@@ -331,7 +331,6 @@ void test('arms native auto-merge for the exact head with squash', async () => {
   }
   await armMergeAutomation(
     github,
-    { expectedApprover: 'christian-byrne' },
     { node_id: 'PR_1', head: { sha: 'head-sha' } }
   )
   assert.equal(calls.length, 2)
@@ -367,7 +366,6 @@ void test('explicitly enqueues a clean exact head without jumping the queue', as
   }
   await armMergeAutomation(
     github,
-    { expectedApprover: 'christian-byrne' },
     { node_id: 'PR_1', head: { sha: 'head-sha' } }
   )
   assert.equal(calls.length, 2)

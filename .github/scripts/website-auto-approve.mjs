@@ -453,7 +453,7 @@ export async function stopMergeAutomation(github, config, pull, policyReview) {
   }
 }
 
-export async function armMergeAutomation(github, config, pull) {
+export async function armMergeAutomation(github, pull) {
   if (!pull?.node_id) {
     throw new Error(
       'the pull request node id is required to arm merge automation'
@@ -559,7 +559,7 @@ async function validateWebsitePaths(github, config, pull, reviews) {
   return true
 }
 
-async function revalidatePull(github, config, liveHeadSha) {
+async function revalidatePull(github, config) {
   const recheckedPull = await github.request(`/pulls/${config.prNumber}`)
   const recheckedReviews = await github.paginate(
     `/pulls/${config.prNumber}/reviews`
@@ -685,7 +685,7 @@ async function main() {
   const liveHeadSha = pull.head.sha
   if (!(await validateWebsitePaths(github, config, pull, reviews))) return
 
-  const recheckedReviews = await revalidatePull(github, config, liveHeadSha)
+  const recheckedReviews = await revalidatePull(github, config)
   if (!recheckedReviews) return
 
   const approved = await approveCurrentHead(
@@ -697,11 +697,11 @@ async function main() {
   if (!approved) return
 
   const queuePull = await github.request(`/pulls/${config.prNumber}`)
-  await armMergeAutomation(github, config, queuePull)
+  await armMergeAutomation(github, queuePull)
 
   // Recheck once more after arming. A concurrent hold, new commit, or human
   // change request must withdraw both the policy approval and merge intent.
-  await revalidatePull(github, config, liveHeadSha)
+  await revalidatePull(github, config)
 }
 
 if (
