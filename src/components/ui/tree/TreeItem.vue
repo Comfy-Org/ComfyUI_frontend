@@ -20,23 +20,25 @@
         paddingLeft: `calc(var(--tree-item-padding) + ${(level - 1) * 16}px)`
       }"
     >
-      <button
+      <Button
         v-if="hasChildren"
         type="button"
+        variant="muted-textonly"
+        size="icon-sm"
         tabindex="-1"
-        class="flex size-5 shrink-0 items-center justify-center"
+        class="shrink-0"
         :aria-label="isExpanded ? $t('g.collapse') : $t('g.expand')"
         @click.stop="handleToggle"
       >
         <i
           :class="
             cn(
-              'icon-[lucide--chevron-right] size-4 transition-transform',
+              'icon-[lucide--chevron-right] size-4 shrink-0 transition-transform',
               isExpanded && 'rotate-90'
             )
           "
         />
-      </button>
+      </Button>
       <span v-else class="size-5 shrink-0" />
       <div class="contents" @keydown="keepKeysInEditableContent">
         <slot :is-expanded :is-selected />
@@ -51,6 +53,8 @@ import { TreeItem as RekaTreeItem } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
+
+import Button from '@/components/ui/button/Button.vue'
 
 defineOptions({ inheritAttrs: false })
 
