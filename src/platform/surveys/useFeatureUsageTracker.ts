@@ -151,7 +151,11 @@ function withoutNewlyResetFeatures(
   )
 }
 
-function persistUsageData(featureId: string, now: number) {
+function persistUsageData(
+  featureId: string,
+  now: number,
+  currentUsageData: FeatureUsageRecord
+) {
   let oldValue: string | null = null
   let usageData: FeatureUsageRecord | undefined
   let newValue: string | undefined
@@ -174,7 +178,14 @@ function persistUsageData(featureId: string, now: number) {
     pendingUsageData = {}
   } catch (error) {
     reportStorageError(error, 'error_persisting_feature_usage')
-    if (!usageData) return
+    const fallbackUsageData = mergeUsageData(
+      applyPendingResets(currentUsageData),
+      pendingUsageData
+    )
+    usageData ??= {
+      ...fallbackUsageData,
+      [featureId]: incrementUsage(usageFor(fallbackUsageData, featureId), now)
+    }
     pendingUsageData = mergeUsageData(pendingUsageData, {
       [featureId]: usageFor(usageData, featureId)
     })
@@ -228,13 +239,9 @@ export function useFeatureUsageTracker(featureId: string) {
       normalizedUsageData,
       observedResetVersions
     )
-    const existing = usageFor(currentUsageData, featureId)
     observedResetVersions = new Map(resetVersions)
 
-    usageData.value = persistUsageData(featureId, now) ?? {
-      ...currentUsageData,
-      [featureId]: incrementUsage(existing, now)
-    }
+    usageData.value = persistUsageData(featureId, now, currentUsageData)
   }
 
   function reset() {

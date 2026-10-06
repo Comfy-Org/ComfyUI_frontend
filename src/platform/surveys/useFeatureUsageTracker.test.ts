@@ -245,6 +245,27 @@ describe('useFeatureUsageTracker', () => {
     expect(useCount.value).toBe(3)
   })
 
+  it('preserves increments when reading storage is blocked', () => {
+    const tracker = useFeatureUsageTracker('blocked-storage-read')
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const getItem = vi.spyOn(localStorage, 'getItem').mockImplementation(() => {
+      throw new DOMException('Storage access denied', 'SecurityError')
+    })
+    const setItem = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new DOMException('Storage access denied', 'SecurityError')
+    })
+    tracker.trackUsage()
+    tracker.trackUsage()
+    getItem.mockRestore()
+    setItem.mockRestore()
+
+    tracker.trackUsage()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored['blocked-storage-read']?.useCount).toBe(3)
+    expect(tracker.useCount.value).toBe(3)
+  })
+
   it('preserves other in-memory features when storage recovers', () => {
     const recoveringFeature = useFeatureUsageTracker('recovering-feature')
     const triggerFeature = useFeatureUsageTracker('trigger-feature')
