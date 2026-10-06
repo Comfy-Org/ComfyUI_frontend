@@ -16,10 +16,33 @@ function awarenessFrame(state: unknown, expiresAt: unknown = 123) {
 }
 
 describe('awareness frame validation', () => {
-  it('rejects state whose JSON encoding exceeds 8 KiB', () => {
-    expect(
-      parseServerDocFrame(awarenessFrame({ value: 'x'.repeat(8 * 1024) }))
-    ).toBeNull()
+  const withoutState = {
+    type: 'awareness',
+    data: { workflowId: 'wf-1', actor: 'human:user:tab-a', expiresAt: 456 }
+  }
+
+  // A null state folds into "no state" rather than discarding the whole
+  // frame (and with it actor/expires_at). discussion_r3911665011.
+  it.for([
+    { name: 'an absent state', state: undefined, expected: withoutState },
+    { name: 'a null state', state: null, expected: withoutState },
+    { name: 'a string state', state: 'cursor', expected: null },
+    { name: 'an array state', state: ['cursor', 10, 20], expected: null },
+    {
+      name: 'a state over 8 KiB',
+      state: { value: 'x'.repeat(8 * 1024) },
+      expected: null
+    },
+    {
+      name: 'a valid state',
+      state: { selection: 'node-1' },
+      expected: {
+        type: 'awareness',
+        data: { ...withoutState.data, state: { selection: 'node-1' } }
+      }
+    }
+  ])('parses $name', ({ state, expected }) => {
+    expect(parseServerDocFrame(awarenessFrame(state, 456))).toEqual(expected)
   })
 
   it('accepts state whose JSON encoding is exactly 8 KiB', () => {
@@ -30,25 +53,6 @@ describe('awareness frame validation', () => {
     )
     expect(parseServerDocFrame(awarenessFrame(state))).toMatchObject({
       data: { state }
-    })
-  })
-
-  it('rejects array-shaped state', () => {
-    expect(parseServerDocFrame(awarenessFrame(['cursor', 10, 20]))).toBeNull()
-  })
-
-  it('treats a null state as absent rather than rejecting the frame', () => {
-    // The Go server's `State map[string]any` has `omitempty` and never
-    // actually emits `state: null`, but this is defence in depth: null
-    // should fold into "no state", not discard the whole frame (and with
-    // it actor/expires_at). discussion_r3911665011.
-    expect(parseServerDocFrame(awarenessFrame(null, 456))).toEqual({
-      type: 'awareness',
-      data: {
-        workflowId: 'wf-1',
-        actor: 'human:user:tab-a',
-        expiresAt: 456
-      }
     })
   })
 

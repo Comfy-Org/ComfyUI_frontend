@@ -341,17 +341,19 @@ function fitsAwarenessBudget(state: Record<string, unknown>): boolean {
   return stateSize !== null && stateSize <= MAX_AWARENESS_STATE_BYTES
 }
 
+type AwarenessStateResult =
+  | { ok: true; state: Record<string, unknown> | null }
+  | { ok: false }
+
 /**
- * An awareness frame's state: `null` when the frame carries none, `undefined`
- * when what it carries is malformed or over budget.
+ * An awareness frame's state. `ok: false` when what it carries is malformed or
+ * over budget; `state: null` when the frame carries none.
  */
-function parseAwarenessState(
-  value: unknown
-): Record<string, unknown> | null | undefined {
+function parseAwarenessState(value: unknown): AwarenessStateResult {
   const state = parseRecord(value)
-  if (!isAbsent(value) && state === null) return undefined
-  if (state !== null && !fitsAwarenessBudget(state)) return undefined
-  return state
+  if (!isAbsent(value) && state === null) return { ok: false }
+  if (state !== null && !fitsAwarenessBudget(state)) return { ok: false }
+  return { ok: true, state }
 }
 
 const serverFrameParsers: ServerFrameParsers = {
@@ -421,15 +423,15 @@ const serverFrameParsers: ServerFrameParsers = {
       : null,
   awareness: (workflowId, data) => {
     if (typeof data.actor !== 'string' || !isValidActor(data.actor)) return null
-    const state = parseAwarenessState(data.state)
-    if (state === undefined) return null
+    const parsed = parseAwarenessState(data.state)
+    if (!parsed.ok) return null
     if (!isAbsent(data.expires_at) && !isSequence(data.expires_at)) return null
     return {
       type: 'awareness',
       data: {
         workflowId,
         actor: data.actor,
-        ...(state !== null && { state }),
+        ...(parsed.state !== null && { state: parsed.state }),
         ...(isSequence(data.expires_at) && { expiresAt: data.expires_at })
       }
     }
