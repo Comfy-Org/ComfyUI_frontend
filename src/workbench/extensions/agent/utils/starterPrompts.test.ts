@@ -16,6 +16,12 @@ describe('starter prompt identity', () => {
     expect(STARTER_PROMPT_IDS).toHaveLength(
       enMain.agent.suggestedPrompts.local.length
     )
+    expect(STARTER_PROMPT_IDS).toHaveLength(
+      enMain.agent.suggestedPrompts.treatment.cloud.length
+    )
+    expect(STARTER_PROMPT_IDS).toHaveLength(
+      enMain.agent.suggestedPrompts.treatment.local.length
+    )
   })
 
   it('names a slot beyond the table rather than borrowing a neighbour', () => {
