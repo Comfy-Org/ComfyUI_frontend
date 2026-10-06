@@ -63,6 +63,36 @@ describe('resolveMediaSrc', () => {
     )
   })
 
+  it('keeps a fragment after the workspace_id param', () => {
+    expect(resolveMediaSrc('/api/assets/abc/content#t=10')).toBe(
+      '/api/assets/abc/content?workspace_id=ws-1#t=10'
+    )
+  })
+
+  it('names the workspace on an absolute URL on this origin', () => {
+    const { origin } = window.location
+
+    expect(
+      resolveMediaSrc(`${origin}/api/assets/abc/content?disposition=inline#t=2`)
+    ).toBe(
+      `${origin}/api/assets/abc/content?disposition=inline&workspace_id=ws-1#t=2`
+    )
+  })
+
+  it('leaves an absolute same-origin URL as is when the web session is off', () => {
+    release?.()
+    release = undefined
+    const url = `${window.location.origin}/api/assets/abc/content`
+
+    expect(resolveMediaSrc(url)).toBe(url)
+  })
+
+  it('leaves an absolute same-origin non-media URL untouched', () => {
+    const url = `${window.location.origin}/api/queue`
+
+    expect(resolveMediaSrc(url)).toBe(url)
+  })
+
   it.for([
     'https://storage.googleapis.com/bucket/a.mp4?X-Goog-Signature=abc',
     'http://localhost:8188/api/view?filename=a.mp4',
