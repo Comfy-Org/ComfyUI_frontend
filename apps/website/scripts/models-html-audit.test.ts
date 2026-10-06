@@ -141,6 +141,21 @@ describe(auditModelsHub, () => {
       errors: ['ItemList URLs differ from the directory links or their order']
     },
     {
+      name: 'a list on another origin with the same paths',
+      html:
+        graph(collection, breadcrumbs, {
+          ...itemList('/a/'),
+          itemListElement: [
+            {
+              '@type': 'ListItem',
+              position: 1,
+              url: 'https://other.example/a/'
+            }
+          ]
+        }) + directory('/a/'),
+      errors: ['ItemList URLs differ from the directory links or their order']
+    },
+    {
       name: 'an empty directory',
       html: graph(collection, breadcrumbs, itemList('/a/')),
       errors: [

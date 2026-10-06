@@ -66,6 +66,7 @@ export function auditMediaLabels(html: string): string[] {
   return [...images, ...videos]
 }
 
+const SITE_ORIGIN = 'https://comfy.org'
 const JSON_LD_BLOCK =
   /<script[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/g
 
@@ -112,14 +113,13 @@ export function auditModelsHub(
   if (links.length === 0) errors.push('renders no model links in the directory')
   const itemList = ofType('ItemList').at(0)
   if (!itemList) return errors
-  const listed = (itemList.itemListElement ?? []).map(
-    ({ url }) => new URL(url).pathname
-  )
+  const listed = (itemList.itemListElement ?? []).map(({ url }) => url)
+  const expectedUrls = expected.map((href) => new URL(href, SITE_ORIGIN).href)
   if (itemList.numberOfItems !== expected.length)
     errors.push(
       `ItemList numberOfItems ${itemList.numberOfItems} does not match ${expected.length} directory links`
     )
-  if (listed.join() !== expected.join())
+  if (listed.join() !== expectedUrls.join())
     errors.push('ItemList URLs differ from the directory links or their order')
   return errors
 }
