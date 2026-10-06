@@ -261,6 +261,26 @@ describe('useModelToNodeStore', () => {
     expect(store.getRegisteredNodeTypes().MultiVAE).toBe('items.0.file')
   })
 
+  it.for(['g', 'y'])(
+    'keeps repeated widget checks stable with the %s flag',
+    (flags) => {
+      const store = useModelToNodeStore()
+      store.registerNodeProvider(
+        'vae',
+        new ModelNodeProvider(
+          createMockNodeDef('MultiVAE'),
+          'items.0.file',
+          new RegExp(/^items\.\d+\.file$/, flags)
+        )
+      )
+
+      expect(store.isModelWidget('MultiVAE', 'items.1.file')).toBe(true)
+      expect(store.isModelWidget('MultiVAE', 'items.1.file')).toBe(true)
+      expect(store.isModelWidget('MultiVAE', 'items.2.file')).toBe(true)
+      expect(store.isModelWidget('MultiVAE', 'items.2.strength')).toBe(false)
+    }
+  )
+
   it.for(['LoadLoraModel', 'LoadLoraTextEncoder'])(
     'inserts a model browser selection into the first row of %s',
     (nodeType) => {
