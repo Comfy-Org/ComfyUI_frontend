@@ -1123,7 +1123,7 @@
       "a1": "Comfy 是 MiniMax 商业使用许可的唯一官方经销商，涵盖 MiniMax H3 以及 MiniMax 音频与音乐模型，面向在自有硬件上本地运行模型的场景。许可分为专业版和企业版两个级别。通过此表单申请许可，或在 [MiniMax 商业许可页面](https://comfy.org/zh-CN/minimax/license/)了解更多。",
       "a2": "Comfy 专家驻场加入你的团队，在你的环境中构建生产级工作流，用你的风格训练 LoRA，并教会你的团队运行和扩展他们构建的一切。通过此表单告诉我们你在做什么，或[认识前沿驻场创意人才](https://comfy.org/zh-CN/forward-deployed-creatives/)。",
       "a3": "云端或自有环境部署，数据归属权、自带密钥支持、编排能力、来自引擎开发团队的支持，以及 MiniMax 商业许可等附加项。[了解 Comfy 企业版](https://comfy.org/zh-CN/enterprise/)，或通过此表单预约演示。",
-      "a4": "SOC 2 Type II 审计正在进行中。安全文档和实时控制状态可在我们的 [Trust Center](https://app.vanta.com/comfy.org/trust/o6nu46b16iu3e7fhc41hnz) 查看，我们的团队也可以在企业版沟通中详细说明安全要求。",
+      "a4": "SOC 2 Type II 审计已完成，Type II 报告可应要求提供。安全文档和实时控制状态可在我们的 [Trust Center](https://app.vanta.com/comfy.org/trust/o6nu46b16iu3e7fhc41hnz) 查看，我们的团队也可以在企业版沟通中详细说明安全要求。",
       "heading": "常见问题",
       "q1": "如何获取 MiniMax 商业许可？",
       "q2": "什么是前沿驻场创意人才？",
@@ -3051,7 +3051,7 @@
     "customers": {
       "enterprise": {
         "cta": "联系销售",
-        "description": "托管构建：经批准的模型检查点、经审核的节点，以及覆盖整个集群的部署治理。SOC 2 认证进行中。",
+        "description": "托管构建：经批准的模型检查点、经审核的节点，以及覆盖整个集群的部署治理。SOC 2 Type II 审计已完成。",
         "title": "企业"
       },
       "heading": "从一块 GPU 到一整座渲染农场",
@@ -3132,7 +3132,7 @@
         "q": "生成结果会保留多久？"
       },
       "7": {
-        "a": "SOC 2 认证正在进行中。欢迎联系我们了解最新进展与安全文档。",
+        "a": "SOC 2 Type II 审计已完成，报告可应要求提供。欢迎联系我们了解安全文档。",
         "q": "平台通过 SOC 2 认证了吗？"
       },
       "8": {
