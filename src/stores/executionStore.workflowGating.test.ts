@@ -1050,4 +1050,107 @@ describe('executionStore workflow gating', () => {
       expect(store.nodeProgressStates['1']?.value).toBe(4)
     })
   })
+
+  /**
+   * The resolution order is load-bearing and was wrong once: keying on the
+   * graph id first let every tab sharing an id claim every job. These pin the
+   * order itself, so reordering the legs fails here rather than in QA.
+   */
+  describe('ownership resolution precedence', () => {
+    beforeEach(() => {
+      Object.assign(useWorkflowStore(), {
+        openWorkflows: [workflowA, workflowACopy]
+      })
+    })
+
+    it('prefers the tab instance over a matching graph id', () => {
+      useWorkflowStore().activeWorkflow = workflowA
+      queueJobFrom('job-a', workflowA)
+
+      // The copy's graph id is identical, so the id leg would say yes.
+      useWorkflowStore().activeWorkflow = workflowACopy
+      expect(store.frameBelongsToVisibleWorkflow('job-a', WORKFLOW_A_ID)).toBe(
+        false
+      )
+    })
+
+    it('falls back to the session path when no instance is known', () => {
+      useWorkflowStore().activeWorkflow = workflowA
+      // No storeJob, so no instance mapping: register only the path.
+      store.ensureSessionWorkflowPath('job-pathonly', workflowACopy.path)
+
+      expect(
+        store.frameBelongsToVisibleWorkflow('job-pathonly', WORKFLOW_A_ID),
+        'the path says the copy owns it, even though the graph id matches A'
+      ).toBe(false)
+      useWorkflowStore().activeWorkflow = workflowACopy
+      expect(
+        store.frameBelongsToVisibleWorkflow('job-pathonly', WORKFLOW_A_ID)
+      ).toBe(true)
+    })
+
+    it('falls back to the graph id when neither instance nor path is known', () => {
+      useWorkflowStore().activeWorkflow = workflowA
+      store.registerJobWorkflowIdMapping('job-elsewhere', WORKFLOW_B_ID)
+
+      expect(
+        store.frameBelongsToVisibleWorkflow('job-elsewhere', WORKFLOW_B_ID)
+      ).toBe(false)
+      expect(
+        store.frameBelongsToVisibleWorkflow('job-elsewhere', WORKFLOW_A_ID)
+      ).toBe(true)
+    })
+
+    it('stays permissive when ownership cannot be resolved at all', () => {
+      useWorkflowStore().activeWorkflow = workflowA
+
+      // A job from another browser session: no mapping, no frame id. Keeping
+      // this permissive is what preserves single-tab behaviour.
+      expect(
+        store.frameBelongsToVisibleWorkflow('job-unknown', undefined)
+      ).toBe(true)
+    })
+
+    it('keeps a running job with its tab across a rename', () => {
+      useWorkflowStore().activeWorkflow = workflowA
+      queueJobFrom('job-a', workflowA)
+
+      // renameWorkflow mutates the same object and rewrites the mapping by
+      // instanceId, so the run must survive being given a new name mid-flight.
+      store.rewriteSessionWorkflowPaths(
+        workflowA.instanceId,
+        'workflows/renamed.json'
+      )
+      expect(store.jobIdToSessionWorkflowPath.get('job-a')).toBe(
+        'workflows/renamed.json'
+      )
+      expect(store.frameBelongsToVisibleWorkflow('job-a', WORKFLOW_A_ID)).toBe(
+        true
+      )
+    })
+
+    it('does not give a running job to the copy that Save As creates', () => {
+      useWorkflowStore().activeWorkflow = workflowA
+      queueJobFrom('job-a', workflowA)
+
+      // Save As mints a new workflow with its own instanceId and a new graph
+      // id, and switches to it. The original tab keeps the run.
+      const savedAs = workflow(
+        'a-brand-new-graph-id',
+        'workflows/saved as.json'
+      )
+      Object.assign(useWorkflowStore(), {
+        openWorkflows: [workflowA, savedAs]
+      })
+      useWorkflowStore().activeWorkflow = savedAs
+
+      expect(store.frameBelongsToVisibleWorkflow('job-a', WORKFLOW_A_ID)).toBe(
+        false
+      )
+      useWorkflowStore().activeWorkflow = workflowA
+      expect(store.frameBelongsToVisibleWorkflow('job-a', WORKFLOW_A_ID)).toBe(
+        true
+      )
+    })
+  })
 })
