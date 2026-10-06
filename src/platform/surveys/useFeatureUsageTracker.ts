@@ -212,7 +212,7 @@ export function useFeatureUsageTracker(featureId: string) {
   const usageData = useStorage<FeatureUsageRecord>(STORAGE_KEY, {})
   let observedResetVersions = new Map(resetVersions)
 
-  const usage = computed(() => usageData.value[featureId])
+  const usage = computed(() => normalizeUsageData(usageData.value)[featureId])
   const useCount = computed(() => usage.value?.useCount ?? 0)
 
   function trackUsage() {

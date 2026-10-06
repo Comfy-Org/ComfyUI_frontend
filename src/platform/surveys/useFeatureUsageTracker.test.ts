@@ -352,7 +352,9 @@ describe('useFeatureUsageTracker', () => {
   ])('replaces non-record storage data $storedValue', ({ storedValue }) => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(storedValue))
 
-    useFeatureUsageTracker('repaired-feature').trackUsage()
+    const tracker = useFeatureUsageTracker('repaired-feature')
+    expect(tracker.useCount.value).toBe(0)
+    tracker.trackUsage()
 
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
     expect(stored).toEqual({
