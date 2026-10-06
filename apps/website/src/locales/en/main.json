@@ -4102,6 +4102,9 @@
         "cta": "TRY FREE"
       }
     },
+    "faq": {
+      "heading": "Q&A"
+    },
     "runOptions": {
       "heading": "One engine, every way to run it",
       "subtitle": "Build workflows in the browser today. Batch campaigns with the API, or connect image generation to the rest of your creative pipeline.",
