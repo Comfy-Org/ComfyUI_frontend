@@ -1,8 +1,9 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useExtensionStore } from '@/stores/extensionStore'
 
 import ExtensionPanel from './ExtensionPanel.vue'
@@ -83,5 +84,42 @@ describe('ExtensionPanel', () => {
     expect(screen.getByRole('checkbox', { name: 'Alpha' })).toBeChecked()
     expect(screen.getByRole('checkbox', { name: 'Zebra' })).toBeChecked()
     expect(screen.getByRole('checkbox', { name: 'Select all' })).toBeChecked()
+  })
+
+  it('toggles only the selected extensions and offers a reload while they differ', async () => {
+    const user = userEvent.setup()
+    const extensionStore = useExtensionStore()
+    extensionStore.registerExtension({ name: 'Alpha' })
+    extensionStore.registerExtension({ name: 'Zebra' })
+    const setSetting = vi.spyOn(useSettingStore(), 'set').mockResolvedValue()
+    const reload = vi.spyOn(window.location, 'reload').mockReturnValue()
+
+    render(ExtensionPanel, { global: { plugins: [i18n] } })
+    await user.click(screen.getByRole('checkbox', { name: 'Alpha' }))
+    await user.click(screen.getByRole('button', { name: 'More options' }))
+    await user.click(
+      await screen.findByRole('menuitem', { name: 'Disable selected' })
+    )
+
+    expect(screen.getByRole('switch', { name: 'Alpha' })).not.toBeChecked()
+    expect(screen.getByRole('switch', { name: 'Zebra' })).toBeChecked()
+    expect(setSetting).toHaveBeenLastCalledWith('Comfy.Extension.Disabled', [
+      'Alpha'
+    ])
+    await user.click(
+      screen.getByRole('button', { name: 'Reload to apply changes' })
+    )
+    expect(reload).toHaveBeenCalledOnce()
+
+    await user.click(screen.getByRole('button', { name: 'More options' }))
+    await user.click(
+      await screen.findByRole('menuitem', { name: 'Enable selected' })
+    )
+
+    expect(screen.getByRole('switch', { name: 'Alpha' })).toBeChecked()
+    expect(setSetting).toHaveBeenLastCalledWith('Comfy.Extension.Disabled', [])
+    expect(
+      screen.queryByRole('button', { name: 'Reload to apply changes' })
+    ).not.toBeInTheDocument()
   })
 })
