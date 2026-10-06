@@ -18,12 +18,22 @@ import { workshopPagePaths } from './workshop-page-content'
 
 const llmsTxt = readFileSync(join(websiteRoot, 'public', 'llms.txt'), 'utf8')
 const pagesDir = join(websiteRoot, 'src', 'pages')
+/** A `:slug(a|b)` source stands for one literal source per slug. */
+function literalSources(source: string): string[] {
+  const group = /^(.*):slug\(([^)]+)\)(.*)$/.exec(source)
+  if (!group) return [source]
+  const [, before, slugs, after] = group
+  return slugs.split('|').map((slug) => `${before}${slug}${after}`)
+}
+
 const vercelRedirectSources = new Set<string>(
   (
     JSON.parse(readFileSync(join(websiteRoot, 'vercel.json'), 'utf8')) as {
       redirects: { source: string }[]
     }
-  ).redirects.map((redirect) => normalizePath(redirect.source))
+  ).redirects.flatMap((redirect) =>
+    literalSources(redirect.source).map(normalizePath)
+  )
 )
 
 /**
@@ -209,7 +219,7 @@ describe('llms.txt', () => {
     expect(listedButExcluded).toEqual([])
   })
 
-  it('uses only literal redirect sources for stale link checks', () => {
+  it('uses only literal or slug-group redirect sources for stale link checks', () => {
     const patternedSources = [...vercelRedirectSources].filter((source) =>
       /[:*(]/.test(source)
     )
