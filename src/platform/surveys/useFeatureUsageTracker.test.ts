@@ -129,6 +129,29 @@ describe('useFeatureUsageTracker', () => {
     expect(stored.external?.useCount).toBe(1)
   })
 
+  it('rejects an older generation restored before verification', () => {
+    vi.setSystemTime(2_000)
+    const originalSetItem = localStorage.setItem.bind(localStorage)
+    const staleGeneration = JSON.stringify({
+      'restored-before-verification': {
+        useCount: 5,
+        firstUsed: 1_000,
+        lastUsed: 3_000
+      }
+    })
+    vi.spyOn(localStorage, 'setItem').mockImplementation((key, value) => {
+      originalSetItem(key, value)
+      originalSetItem(key, staleGeneration)
+    })
+
+    useFeatureUsageTracker('restored-before-verification').trackUsage()
+
+    expect(reportError).toHaveBeenCalledWith(expect.any(DOMException), {
+      errorType: 'error_verifying_feature_usage',
+      surface: 'platform'
+    })
+  })
+
   it('accepts a concurrent write that preserves the tracked increment', () => {
     const featureId = 'preserved-before-verification'
     const originalSetItem = localStorage.setItem.bind(localStorage)

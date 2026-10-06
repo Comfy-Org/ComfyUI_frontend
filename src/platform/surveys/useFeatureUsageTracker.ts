@@ -198,6 +198,14 @@ function isSameOrNewerGeneration(usage: FeatureUsage, baseline: FeatureUsage) {
   )
 }
 
+function isWrittenGeneration(usage: FeatureUsage, expectedUsage: FeatureUsage) {
+  return (
+    usage.firstUsed === expectedUsage.firstUsed &&
+    usage.useCount >= expectedUsage.useCount &&
+    usage.lastUsed >= expectedUsage.lastUsed
+  )
+}
+
 function reconcilePendingResets(
   storedUsageData: FeatureUsageRecord,
   invalidFeatureIds: ReadonlySet<string> = new Set()
@@ -473,7 +481,7 @@ function writeAndVerifyUsage(
       return (
         expectedUsage !== undefined &&
         storedUsage !== undefined &&
-        isSameOrNewerGeneration(storedUsage, expectedUsage)
+        isWrittenGeneration(storedUsage, expectedUsage)
       )
     }) &&
     [...pendingResets].every(
