@@ -24,7 +24,8 @@ import type {
 } from '@/platform/assets/schemas/assetSchema'
 import {
   getAssetCategories,
-  getAssetFilename
+  getAssetFilename,
+  isModelTypeCovered
 } from '@/platform/assets/utils/assetMetadataUtils'
 import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
@@ -491,12 +492,19 @@ function createAssetService() {
   async function getAssetModels(folder: string): Promise<ModelFile[]> {
     const modelTypeMode = useFeatureFlags().flags.supportsModelTypeTags
     const buckets = await loadModelBuckets()
-    const legacyFolder = folder.split('/')[0]
     const assets =
       buckets.get(folder) ??
-      (!modelTypeMode ? buckets.get(legacyFolder) : undefined) ??
-      []
-    return assets.map((asset) => ({
+      buckets
+        .get(folder.split('/')[0])
+        ?.filter(
+          (asset) =>
+            !(modelTypeMode && isModelTypeCovered(asset)) &&
+            asset.tags.some(
+              (tag) => tag === folder || tag.startsWith(`${folder}/`)
+            )
+        )
+
+    return (assets ?? []).map((asset) => ({
       // `loader_path` is the category-relative path the loader widget expects
       // and the source for the sidebar tree. Backends that predate it (bare-tag
       // mode; today's cloud) fall back to the filename metadata — the same

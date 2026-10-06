@@ -436,7 +436,7 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
     })
     const { user } = await clickTemplateCardAfterRender()
     await user.click(
-      await screen.findByRole('button', { name: 'Download models & open' })
+      await screen.findByRole('button', { name: /^Download models & open/ })
     )
 
     await waitFor(() => {

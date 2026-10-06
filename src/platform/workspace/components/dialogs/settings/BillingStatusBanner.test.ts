@@ -116,7 +116,7 @@ const i18n = createI18n({
       workspacePanel: {
         members: {
           resubscribe: 'Resubscribe',
-          endedTeamTitle: 'Your team plan has ended',
+          endedTeamTitle: 'Your Team plan has ended',
           endedEnterpriseTitle: 'Your Enterprise plan has ended',
           endedPlanTitle: 'Your plan has ended'
         },
@@ -143,7 +143,7 @@ const i18n = createI18n({
             dismiss: 'Dismiss'
           },
           ending: {
-            title: 'Your team plan ends on {date}',
+            title: 'Your Team plan ends on {date}',
             body: "Members keep full access until then. Resume your plan to keep your team's shared credits.",
             memberBody: 'You can run workflows until then.',
             enterpriseTitle: 'Your Enterprise plan ends on {date}',
@@ -153,7 +153,7 @@ const i18n = createI18n({
             contactSales: 'Contact sales'
           },
           planEnded: {
-            teamTitle: 'Your team plan ended on {date}',
+            teamTitle: 'Your Team plan ended on {date}',
             teamBody:
               'Resubscribe to run workflows and get shared credits again.',
             teamMemberBody: 'Ask your workspace owner to resubscribe.',
@@ -526,7 +526,7 @@ describe('BillingStatusBanner', () => {
     renderBanner()
 
     expect(screen.getByRole('status')).toHaveTextContent(
-      'Your team plan ends on'
+      'Your Team plan ends on'
     )
     await userEvent.click(screen.getByRole('button', { name: 'Resume plan' }))
     expect(state.handleResubscribe).toHaveBeenCalledTimes(1)
@@ -583,7 +583,7 @@ describe('BillingStatusBanner', () => {
     renderBanner()
 
     expect(screen.getByRole('status')).toHaveTextContent(
-      'Your team plan ends on'
+      'Your Team plan ends on'
     )
     expect(
       screen.queryByRole('button', { name: 'Resume plan' })
@@ -654,7 +654,7 @@ describe('BillingStatusBanner', () => {
       renderBanner()
 
       expect(screen.getByRole('status')).toHaveTextContent(
-        'Your team plan ended on September 12, 2026'
+        'Your Team plan ended on September 12, 2026'
       )
       await userEvent.click(screen.getByRole('button', { name: 'Resubscribe' }))
       expect(state.showSubscriptionDialog).toHaveBeenCalledWith(
@@ -709,7 +709,7 @@ describe('BillingStatusBanner', () => {
       renderBanner()
 
       expect(screen.getByRole('status')).toHaveTextContent(
-        'Your team plan ended on'
+        'Your Team plan ended on'
       )
     })
   })
