@@ -242,7 +242,7 @@ export function useMaskEditorLoader() {
     if (node.images?.[0]) {
       const img = node.images[0]
       const params = new URLSearchParams({
-        filename: img.filename,
+        filename: img.filename ?? '',
         type: img.type || 'output',
         subfolder: img.subfolder || ''
       })
