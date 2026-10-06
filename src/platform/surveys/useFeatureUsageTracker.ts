@@ -228,7 +228,12 @@ export function useFeatureUsageTracker(featureId: string) {
   let observedResetVersions = new Map(resetVersions)
 
   const usage = computed(() =>
-    usageFor(normalizeUsageData(usageData.value), featureId)
+    usageFor(
+      applyPendingResets(
+        mergeUsageData(normalizeUsageData(usageData.value), pendingUsageData)
+      ),
+      featureId
+    )
   )
   const useCount = computed(() => usage.value?.useCount ?? 0)
 

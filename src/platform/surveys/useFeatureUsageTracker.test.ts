@@ -285,6 +285,27 @@ describe('useFeatureUsageTracker', () => {
     expect(recoveringFeature.useCount.value).toBe(2)
   })
 
+  it('exposes pending usage and resets to newly mounted trackers', () => {
+    const trackedFeature = useFeatureUsageTracker('shared-pending-state')
+    trackedFeature.trackUsage()
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const setItem = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new DOMException('Storage quota exceeded', 'QuotaExceededError')
+    })
+    trackedFeature.trackUsage()
+
+    expect(useFeatureUsageTracker('shared-pending-state').useCount.value).toBe(
+      2
+    )
+
+    trackedFeature.reset()
+
+    expect(useFeatureUsageTracker('shared-pending-state').useCount.value).toBe(
+      0
+    )
+    setItem.mockRestore()
+  })
+
   it('does not replace newer stored usage with stale in-memory usage', () => {
     const scope = effectScope()
     let trackStaleFeature = () => {}
