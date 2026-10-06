@@ -12,6 +12,7 @@ import { routeOf } from '@/utils/hreflangRoutes'
 import type { Alternate } from './hreflang'
 import {
   hreflangAlternates,
+  localeAlternates,
   ogLocale,
   ogLocaleAlternates,
   sitemapAlternates
@@ -114,6 +115,38 @@ describe('hreflangAlternates', () => {
       hreflangAlternates('/agent/', ORIGIN)
     )
   })
+})
+
+describe('localeAlternates', () => {
+  it.for([
+    {
+      pathname: '/cli/',
+      expected: [
+        { locale: 'en', path: '/cli/' },
+        { locale: 'zh-CN', path: '/zh-CN/cli/' }
+      ]
+    },
+    {
+      pathname: '/zh-CN/cli',
+      expected: [
+        { locale: 'en', path: '/cli/' },
+        { locale: 'zh-CN', path: '/zh-CN/cli/' }
+      ]
+    },
+    {
+      pathname: '/ja/',
+      expected: [
+        { locale: 'en', path: '/' },
+        { locale: 'zh-CN', path: '/zh-CN/' },
+        { locale: 'ja', path: '/ja/' }
+      ]
+    }
+  ])(
+    'lists the site-relative page in each published locale ($pathname)',
+    ({ pathname, expected }) => {
+      expect(localeAlternates(pathname)).toEqual(expected)
+    }
+  )
 })
 
 describe('sitemapAlternates', () => {
