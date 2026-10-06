@@ -28,6 +28,7 @@ type ParsedUsageData =
       status: 'valid' | 'partial'
       usageData: FeatureUsageRecord
       invalidFeatureIds: ReadonlySet<string>
+      invalidUsageData: Record<string, unknown>
     }
   | { status: 'invalid' }
 
@@ -106,7 +107,8 @@ function parseUsageData(value: string | null): ParsedUsageData {
     return {
       status: 'valid',
       usageData: {},
-      invalidFeatureIds: new Set()
+      invalidFeatureIds: new Set(),
+      invalidUsageData: {}
     }
   }
 
@@ -122,7 +124,13 @@ function parseUsageData(value: string | null): ParsedUsageData {
     return {
       status: invalidFeatureIds.size === 0 ? 'valid' : 'partial',
       usageData,
-      invalidFeatureIds
+      invalidFeatureIds,
+      invalidUsageData: Object.fromEntries(
+        [...invalidFeatureIds].map((featureId) => [
+          featureId,
+          parsedValue[featureId]
+        ])
+      )
     }
   } catch {
     reportStorageError(
@@ -278,7 +286,8 @@ function reconcileExternalStorage(event: StorageEvent) {
       ? {
           status: 'valid' as const,
           usageData: usageSnapshot.value,
-          invalidFeatureIds: new Set<string>()
+          invalidFeatureIds: new Set<string>(),
+          invalidUsageData: {}
         }
       : parseUsageData(event.oldValue)
   try {
@@ -461,6 +470,14 @@ function applyPendingResets(usageData: FeatureUsageRecord): FeatureUsageRecord {
   return [...pendingResets].reduce(withoutFeature, usageData)
 }
 
+function preserveInvalidUsage(parsedUsageData: ParsedUsageData) {
+  if (parsedUsageData.status === 'invalid') return {}
+  return [...pendingResets].reduce(
+    withoutFeature,
+    parsedUsageData.invalidUsageData
+  )
+}
+
 function writeStorageAndReadBack(value: string) {
   localStorage.setItem(STORAGE_KEY, value)
   try {
@@ -524,7 +541,10 @@ function persistUsageData(featureId: string, now: number) {
       ...mergedUsageData,
       [featureId]: nextUsage
     }
-    newValue = JSON.stringify(usageData)
+    newValue = JSON.stringify({
+      ...preserveInvalidUsage(parsedUsageData),
+      ...usageData
+    })
 
     storageWritten = writeAndVerifyUsage(newValue, usageData)
     if (storageWritten) {
@@ -575,7 +595,10 @@ function resetUsageData(featureId: string) {
     }
     reconcileAndSetSnapshot(parsedUsageData)
     usageData = applyPendingUsage(applyPendingResets(currentUsageData))
-    newValue = JSON.stringify(usageData)
+    newValue = JSON.stringify({
+      ...preserveInvalidUsage(parsedUsageData),
+      ...usageData
+    })
     storageWritten = writeAndVerifyReset(newValue, featureId)
     if (storageWritten) {
       pendingResets.clear()

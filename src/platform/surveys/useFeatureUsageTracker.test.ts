@@ -1434,6 +1434,30 @@ describe('useFeatureUsageTracker', () => {
     expect(stored).not.toHaveProperty(featureId)
   })
 
+  it.for([
+    {
+      operation: 'tracking',
+      update: () => useFeatureUsageTracker('valid-track-trigger').trackUsage()
+    },
+    {
+      operation: 'resetting',
+      update: () => useFeatureUsageTracker('valid-reset-trigger').reset()
+    }
+  ])(
+    'preserves invalid entries while $operation another feature',
+    ({ update }) => {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ invalid: { useCount: 'invalid' } })
+      )
+
+      update()
+
+      const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+      expect(stored.invalid).toEqual({ useCount: 'invalid' })
+    }
+  )
+
   it('reconciles a reset from current storage despite a partial event', () => {
     const featureId = 'reset-through-partial-event'
     localStorage.setItem(
