@@ -3262,6 +3262,20 @@
       "quote3": "ComfyUI is a game changer for our creative pipeline. The node-based workflow gives us the flexibility to experiment rapidly while maintaining full control over every step of the process.",
       "name3": "Alex Chen",
       "role3": "Head of AI at Creative Studios"
+    },
+    "directory": {
+      "searchLabel": "Search customer stories",
+      "searchPlaceholder": "Search by company, title, category, or description…",
+      "formatLabel": "Format",
+      "tab": {
+        "all": "All",
+        "watch": "Watch",
+        "read": "Read"
+      },
+      "sortLabel": "Sort customer stories",
+      "sortLatest": "Latest",
+      "sortOldest": "Oldest",
+      "empty": "No customer stories match those filters yet. Try a broader search."
     }
   },
   "contact": {
