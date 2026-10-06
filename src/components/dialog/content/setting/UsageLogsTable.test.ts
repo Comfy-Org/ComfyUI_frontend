@@ -317,6 +317,45 @@ describe('UsageLogsTable', () => {
         limit: 7
       })
     })
+
+    it.for([
+      {
+        workspaceBilling: false,
+        source: 'getMyEvents',
+        reader: () => vi.mocked(useCustomerEventsService().getMyEvents)
+      },
+      {
+        workspaceBilling: true,
+        source: 'workspaceApi.getBillingEvents',
+        reader: () => vi.mocked(workspaceApi.getBillingEvents)
+      }
+    ])(
+      'requests the 1-based page picked in the paginator from $source',
+      async ({ workspaceBilling, reader: getReader }) => {
+        const user = userEvent.setup()
+        setWorkspaceBilling(workspaceBilling)
+        const reader = getReader()
+        reader.mockImplementation(async (params) =>
+          makeEventsResponse(mockEventsResponse.events, {
+            page: params?.page,
+            total: 20,
+            totalPages: 3
+          })
+        )
+
+        await renderLoaded()
+        await user.click(screen.getByRole('button', { name: 'Page 3' }))
+
+        await waitFor(() =>
+          expect(reader).toHaveBeenLastCalledWith({ page: 3, limit: 7 })
+        )
+        await user.click(screen.getByRole('button', { name: 'Previous Page' }))
+
+        await waitFor(() =>
+          expect(reader).toHaveBeenLastCalledWith({ page: 2, limit: 7 })
+        )
+      }
+    )
   })
 
   describe('billing events source', () => {
