@@ -78,7 +78,6 @@ function isManifest(value: unknown): value is IndexNowManifest {
   return (
     typeof value === 'object' &&
     value !== null &&
-    !Array.isArray(value) &&
     Object.entries(value).every(
       ([url, hash]) => isOnSite(url) && typeof hash === 'string'
     )

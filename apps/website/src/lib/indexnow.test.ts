@@ -106,7 +106,10 @@ describe('diffManifests', () => {
     expect(
       diffManifests(
         { 'https://evil.example/old/': 'h1' },
-        { 'https://www.comfy.org/new/': 'h2' }
+        {
+          'https://www.comfy.org/new/': 'h2',
+          'https://comfy.org.evil.com/a/': 'h3'
+        }
       )
     ).toEqual({ added: [], changed: [], removed: [] })
   })
@@ -153,18 +156,58 @@ describe('planSubmission', () => {
   })
 
   it.for([
-    ['a 5xx live manifest', current, 503, ''],
-    ['a failed fetch', current, 0, ''],
-    ['an HTML live manifest', current, 200, '<html></html>'],
-    ['an array live manifest', current, 200, '["https://comfy.org/"]'],
-    ['a missing build manifest', '', 404, ''],
-    ['an empty build manifest', '{}', 200, current],
-    ['an empty live manifest', current, 200, '{}'],
-    ['a live JSON body that is not a manifest', current, 200, '{"error":"x"}']
+    ['a 5xx live manifest', current, 503, '', 'live manifest returned 503'],
+    ['a failed fetch', current, 0, '', 'live manifest returned 0'],
+    [
+      'an HTML live manifest',
+      current,
+      200,
+      '<html></html>',
+      'live manifest is not a valid manifest'
+    ],
+    [
+      'an array live manifest',
+      current,
+      200,
+      '["https://comfy.org/"]',
+      'live manifest is not a valid manifest'
+    ],
+    [
+      'a live manifest with a non-string hash',
+      current,
+      200,
+      '{"https://comfy.org/a/": 1}',
+      'live manifest is not a valid manifest'
+    ],
+    [
+      'a live JSON body that is not a manifest',
+      current,
+      200,
+      '{"error":"x"}',
+      'live manifest is not a valid manifest'
+    ],
+    ['an empty live manifest', current, 200, '{}', 'live manifest is empty'],
+    [
+      'a missing build manifest',
+      '',
+      404,
+      '',
+      'the build has no valid manifest'
+    ],
+    [
+      'an empty build manifest',
+      '{}',
+      200,
+      current,
+      'the build has no valid manifest'
+    ]
   ] as const)(
     'skips rather than resubmitting the site on %s',
-    ([, currentBody, status, body]) => {
-      expect(planSubmission(currentBody, status, body).kind).toBe('skip')
+    ([, currentBody, status, body, reason]) => {
+      expect(planSubmission(currentBody, status, body)).toEqual({
+        kind: 'skip',
+        reason
+      })
     }
   )
 })
