@@ -4,7 +4,7 @@
     tooltip-side="right"
     :class="
       cn(
-        'side-bar-button h-(--sidebar-item-height) w-(--sidebar-width) shrink-0 cursor-pointer rounded-none border-none p-2',
+        'side-bar-button h-(--sidebar-item-height) w-(--sidebar-width) shrink-0 cursor-pointer rounded-none border-none p-2 text-xs',
         selected && 'side-bar-button-selected'
       )
     "
