@@ -37,6 +37,8 @@ type PendingFeatureUsageRecord = Partial<Record<string, PendingUsageDelta[]>>
 const STORAGE_KEY = 'Comfy.FeatureUsage'
 const MAX_USAGE_COUNT = Number.MAX_SAFE_INTEGER - 1
 const MAX_PENDING_USAGE_DELTAS = 100
+const MAX_PRESERVED_INVALID_ENTRIES = 100
+const MAX_PRESERVED_INVALID_SIZE = 16 * 1_024
 const MAX_TIMESTAMP = Date.UTC(2100, 0, 1)
 const MAX_CLOCK_SKEW = 5 * 60 * 1_000
 const pendingResets = reactive(new Set<string>())
@@ -502,9 +504,23 @@ function applyPendingResets(usageData: FeatureUsageRecord): FeatureUsageRecord {
 
 function preserveInvalidUsage(parsedUsageData: ParsedUsageData) {
   if (parsedUsageData.status === 'invalid') return {}
-  return [...pendingResets].reduce(
+  const resetAdjustedUsageData = [...pendingResets].reduce(
     withoutFeature,
     parsedUsageData.invalidUsageData
+  )
+  return Object.entries(resetAdjustedUsageData).reduce<Record<string, unknown>>(
+    (preservedUsageData, [featureId, usage]) => {
+      if (
+        Object.keys(preservedUsageData).length >= MAX_PRESERVED_INVALID_ENTRIES
+      ) {
+        return preservedUsageData
+      }
+      const nextUsageData = { ...preservedUsageData, [featureId]: usage }
+      return JSON.stringify(nextUsageData).length <= MAX_PRESERVED_INVALID_SIZE
+        ? nextUsageData
+        : preservedUsageData
+    },
+    {}
   )
 }
 

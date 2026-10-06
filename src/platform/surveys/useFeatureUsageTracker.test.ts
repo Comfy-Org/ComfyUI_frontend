@@ -1682,6 +1682,19 @@ describe('useFeatureUsageTracker', () => {
     }
   )
 
+  it('drops invalid entries beyond the preservation size limit', () => {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ oversized: { useCount: 'x'.repeat(20_000) } })
+    )
+
+    useFeatureUsageTracker('oversized-invalid-trigger').trackUsage()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored).not.toHaveProperty('oversized')
+    expect(stored['oversized-invalid-trigger']?.useCount).toBe(1)
+  })
+
   it('reconciles a reset from current storage despite a partial event', () => {
     const featureId = 'reset-through-partial-event'
     localStorage.setItem(
