@@ -635,12 +635,13 @@ test('folds the Relight light map to a chip on phones @mobile', async ({
   const chip = map.getByRole('button', { name: 'Light map' })
   await expect(chip).toHaveAttribute('aria-expanded', 'false')
   await expect(map.getByRole('slider')).toHaveCount(0)
+  await expect(map).toHaveAttribute('data-corner', 'top-right')
+  await expect
+    .poll(() => overlap(chip, app.getByRole('button', { name: /^Warm key\./ })))
+    .toBe(false)
 
   await chip.click()
   await expect(map.getByRole('slider')).toHaveCount(4)
-  await expect
-    .poll(() => overlap(map, app.getByRole('button', { name: /^Warm key\./ })))
-    .toBe(false)
   await map.getByRole('button', { name: 'Collapse light map' }).click()
   await expect(chip).toBeVisible()
 })
