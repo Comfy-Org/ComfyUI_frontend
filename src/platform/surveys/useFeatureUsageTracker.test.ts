@@ -3142,4 +3142,171 @@ describe('useFeatureUsageTracker', () => {
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
     expect(stored[featureId]?.useCount).toBe(1)
   })
+
+  it('keeps absent-baseline usage through an ordinary peer update', () => {
+    vi.setSystemTime(1_000)
+    const featureId = 'absent-baseline-before-peer-update'
+    const tracker = useFeatureUsageTracker(featureId)
+    const setItem = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new DOMException('Storage quota exceeded', 'QuotaExceededError')
+    })
+    tracker.trackUsage()
+    setItem.mockRestore()
+    const oldValue = JSON.stringify({
+      [featureId]: { useCount: 1, firstUsed: 2_000, lastUsed: 2_000 }
+    })
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        [featureId]: { useCount: 1, firstUsed: 2_000, lastUsed: 3_000 }
+      })
+    )
+    window.dispatchEvent(
+      new StorageEvent('storage', {
+        key: STORAGE_KEY,
+        oldValue,
+        storageArea: localStorage
+      })
+    )
+
+    useFeatureUsageTracker('ordinary-peer-update-trigger').trackUsage()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored[featureId]?.useCount).toBe(2)
+  })
+
+  it('retains pending usage across an accurate peer clock repair', () => {
+    vi.setSystemTime(1_000)
+    const featureId = 'pending-across-accurate-peer-repair'
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        [featureId]: { useCount: 1, firstUsed: 500_000, lastUsed: 500_000 }
+      })
+    )
+    const tracker = useFeatureUsageTracker(featureId)
+    const setItem = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new DOMException('Storage quota exceeded', 'QuotaExceededError')
+    })
+    tracker.trackUsage()
+    setItem.mockRestore()
+    vi.setSystemTime(2_000)
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        [featureId]: { useCount: 2, firstUsed: 2_000, lastUsed: 2_000 }
+      })
+    )
+
+    useFeatureUsageTracker('accurate-peer-repair-trigger').trackUsage()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored[featureId]?.useCount).toBe(3)
+  })
+
+  it('anchors a failed verification retry to the observed generation', () => {
+    const featureId = 'generation-replaced-during-verification'
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        [featureId]: { useCount: 1, firstUsed: 1_000, lastUsed: 1_000 }
+      })
+    )
+    const tracker = useFeatureUsageTracker(featureId)
+    const originalSetItem = localStorage.setItem.bind(localStorage)
+    const clobber = vi
+      .spyOn(localStorage, 'setItem')
+      .mockImplementation((key) =>
+        originalSetItem(
+          key,
+          JSON.stringify({
+            [featureId]: { useCount: 9, firstUsed: 5_000, lastUsed: 5_000 }
+          })
+        )
+      )
+    tracker.trackUsage()
+    clobber.mockRestore()
+
+    tracker.trackUsage()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored[featureId]?.useCount).toBe(11)
+  })
+
+  it('refreshes a coalesced canonical baseline at the latest write time', () => {
+    vi.setSystemTime(1_000)
+    const featureId = 'coalesced-changing-repair-epoch'
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        [featureId]: { useCount: 1, firstUsed: 301_001, lastUsed: 301_001 }
+      })
+    )
+    const tracker = useFeatureUsageTracker(featureId)
+    const setItem = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new DOMException('Storage quota exceeded', 'QuotaExceededError')
+    })
+    tracker.trackUsage()
+    vi.setSystemTime(1_001)
+    tracker.trackUsage()
+    setItem.mockRestore()
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        [featureId]: { useCount: 2, firstUsed: 301_001, lastUsed: 301_001 }
+      })
+    )
+
+    useFeatureUsageTracker('changing-repair-epoch-trigger').trackUsage()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored[featureId]?.useCount).toBe(4)
+  })
+
+  it('retires a repeated reset for usage after its refreshed cutoff', () => {
+    vi.setSystemTime(1_000)
+    const featureId = 'peer-usage-after-repeated-reset'
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        [featureId]: { useCount: 1, firstUsed: 1_000, lastUsed: 1_000 }
+      })
+    )
+    const tracker = useFeatureUsageTracker(featureId)
+    const setItem = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new DOMException('Storage quota exceeded', 'QuotaExceededError')
+    })
+    tracker.reset()
+    setItem.mockRestore()
+    vi.setSystemTime(2_000)
+    const getItem = vi.spyOn(localStorage, 'getItem').mockImplementation(() => {
+      throw new DOMException('Storage access denied', 'SecurityError')
+    })
+    tracker.reset()
+    getItem.mockRestore()
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        [featureId]: { useCount: 2, firstUsed: 1_000, lastUsed: 3_000 }
+      })
+    )
+    vi.setSystemTime(3_000)
+
+    useFeatureUsageTracker('post-repeated-reset-trigger').trackUsage()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored[featureId]?.useCount).toBe(2)
+  })
+
+  it('skips an invalid entry that cannot be serialized for preservation', () => {
+    const depth = 20_000
+    const nestedValue = `${'{"nested":'.repeat(depth)}null${'}'.repeat(depth)}`
+    localStorage.setItem(STORAGE_KEY, `{"poisoned":${nestedValue}}`)
+
+    useFeatureUsageTracker('serializable-after-poisoned-entry').trackUsage()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored['serializable-after-poisoned-entry']?.useCount).toBe(1)
+    expect(stored).not.toHaveProperty('poisoned')
+  })
 })

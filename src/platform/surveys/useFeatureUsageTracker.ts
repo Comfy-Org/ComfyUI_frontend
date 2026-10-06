@@ -183,6 +183,7 @@ function reconcileDeletedPendingUsage(
           ({ baseUsage, recordedAt }) => {
             if (!existed || invalidFeatureIds.has(featureId)) return true
             if (baseUsage !== undefined && baseUsage !== null) return !!exists
+            if (exists && existed.firstUsed === exists.firstUsed) return true
             return !isOrderableUsage(existed) || recordedAt >= existed.lastUsed
           }
         )
@@ -209,7 +210,8 @@ function didUsageAdvance(
     baselineRequestedAt !== undefined && baselineRequestedAt < requestedAt
   if (
     baselinePredatesRequest &&
-    !didUnknownUsageAdvance(storedUsage, requestedAt)
+    (!isOrderableUsage(storedUsage) ||
+      storedUsage.lastUsed <= Math.min(requestedAt, Date.now()))
   )
     return false
   if (baseline === null) return true
@@ -263,6 +265,7 @@ function didKnownUsageAdvance(
   const repairedBaseline = repairUsageForComparison(baseline, now)
   if (
     rawBaseline &&
+    storedUsage.firstUsed <= rawBaseline.firstUsed &&
     repairedStoredUsage.useCount > rawBaseline.useCount &&
     orderingDidNotRegress(repairedStoredUsage, repairedBaseline)
   ) {
@@ -295,8 +298,8 @@ function isSameOrNewerGeneration(
   if (
     rawBaseline &&
     !sameUsage(rawBaseline, baseline) &&
+    usage.firstUsed <= rawBaseline.firstUsed &&
     usage.useCount > rawBaseline.useCount &&
-    repairedUsage.firstUsed === repairedBaseline.firstUsed &&
     orderingDidNotRegress(repairedUsage, repairedBaseline)
   ) {
     return true
@@ -569,7 +572,10 @@ function incrementPendingDelta(delta: PendingUsageDelta, now: number) {
     useCountDelta: Math.min(delta.useCountDelta + 1, MAX_USAGE_COUNT),
     firstUsed: Math.min(delta.firstUsed, now),
     lastUsed: Math.max(delta.lastUsed, now),
-    recordedAt: Math.min(delta.recordedAt, now)
+    recordedAt: Math.min(delta.recordedAt, now),
+    baseUsage: delta.rawBaseUsage
+      ? repairUsageForComparison(delta.rawBaseUsage, now)
+      : delta.rawBaseUsage
   }
 }
 
@@ -588,6 +594,8 @@ function boundPendingDeltas(pendingDeltas: PendingUsageDelta[]) {
   const boundedMergeIndex = mergeIndex
   const oldest = pendingDeltas[boundedMergeIndex - 1]
   const secondOldest = pendingDeltas[boundedMergeIndex]
+  const rawBaseUsage = oldest.rawBaseUsage
+  const mergeNow = Math.max(oldest.lastUsed, secondOldest.lastUsed)
   return [
     ...pendingDeltas.slice(0, boundedMergeIndex - 1),
     {
@@ -598,8 +606,10 @@ function boundPendingDeltas(pendingDeltas: PendingUsageDelta[]) {
       firstUsed: Math.min(oldest.firstUsed, secondOldest.firstUsed),
       lastUsed: Math.max(oldest.lastUsed, secondOldest.lastUsed),
       recordedAt: Math.min(oldest.recordedAt, secondOldest.recordedAt),
-      baseUsage: oldest.baseUsage,
-      rawBaseUsage: oldest.rawBaseUsage
+      baseUsage: rawBaseUsage
+        ? repairUsageForComparison(rawBaseUsage, mergeNow)
+        : rawBaseUsage,
+      rawBaseUsage
     },
     ...pendingDeltas.slice(boundedMergeIndex + 1)
   ]
@@ -685,7 +695,12 @@ function preserveInvalidUsage(parsedUsageData: ParsedUsageData) {
   }>(
     (preserved, [featureId, usage]) => {
       if (preserved.count >= MAX_PRESERVED_INVALID_ENTRIES) return preserved
-      const entrySize = JSON.stringify({ [featureId]: usage }).length - 2
+      let entrySize: number
+      try {
+        entrySize = JSON.stringify({ [featureId]: usage }).length - 2
+      } catch {
+        return preserved
+      }
       const nextSize =
         preserved.size + entrySize + (preserved.count > 0 ? 1 : 0)
       if (nextSize > MAX_PRESERVED_INVALID_SIZE) return preserved
@@ -849,7 +864,7 @@ function retryBaseUsageAfterVerification(
 ) {
   if (!verification.usageData) return baseUsage
   if (verification.invalidFeatureIds?.has(featureId)) return baseUsage
-  return usageFor(verification.usageData, featureId) ? baseUsage : null
+  return usageFor(verification.usageData, featureId) ?? null
 }
 
 function persistUsageData(featureId: string, now: number) {
