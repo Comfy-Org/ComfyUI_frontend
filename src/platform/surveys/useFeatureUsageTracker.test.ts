@@ -1939,6 +1939,11 @@ describe('useFeatureUsageTracker', () => {
     { useCount: -1, firstUsed: 1_000, lastUsed: 2_000 },
     { useCount: 1.5, firstUsed: 1_000, lastUsed: 2_000 },
     {
+      useCount: '2.9999999999999999',
+      firstUsed: 1_000,
+      lastUsed: 2_000
+    },
+    {
       useCount: Number.MAX_SAFE_INTEGER,
       firstUsed: 1_000,
       lastUsed: 2_000

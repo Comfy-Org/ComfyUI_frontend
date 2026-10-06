@@ -69,6 +69,7 @@ function safeInteger(value: unknown): number | undefined {
   if (typeof value === 'string' && value.trim() === '') return
 
   const number = Number(value)
+  if (typeof value === 'string' && String(number) !== value.trim()) return
   return Number.isSafeInteger(number) ? number : undefined
 }
 
