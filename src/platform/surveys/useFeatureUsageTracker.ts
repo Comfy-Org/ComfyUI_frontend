@@ -93,30 +93,16 @@ function parseUsageData(value: string | null): FeatureUsageRecord {
   }
 }
 
-function reconcileExternalStorage(event: StorageEvent) {
-  let storageArea: Storage
-  try {
-    storageArea = localStorage
-  } catch {
-    return
-  }
-  if (event.storageArea !== storageArea) return
-  if (event.key === null) {
-    pendingResets.clear()
-    pendingResetUsage.clear()
-    pendingUsageData.value = {}
-    return
-  }
-  if (event.key !== STORAGE_KEY) return
-  if (event.newValue === null) {
-    pendingResets.clear()
-    pendingResetUsage.clear()
-    pendingUsageData.value = {}
-    return
-  }
+function clearPendingState() {
+  pendingResets.clear()
+  pendingResetUsage.clear()
+  pendingUsageData.value = {}
+}
 
-  const oldUsageData = parseUsageData(event.oldValue)
-  const storedUsageData = parseUsageData(event.newValue)
+function pruneDeletedPendingUsage(
+  oldUsageData: FeatureUsageRecord,
+  storedUsageData: FeatureUsageRecord
+) {
   pendingUsageData.value = Object.fromEntries(
     Object.entries(pendingUsageData.value).filter(([featureId]) => {
       const existed = usageFor(oldUsageData, featureId)
@@ -124,6 +110,12 @@ function reconcileExternalStorage(event: StorageEvent) {
       return !existed || exists
     })
   )
+}
+
+function reconcilePendingResets(
+  oldUsageData: FeatureUsageRecord,
+  storedUsageData: FeatureUsageRecord
+) {
   for (const featureId of pendingResets) {
     const baseline =
       usageFor(oldUsageData, featureId) ?? pendingResetUsage.get(featureId)
@@ -138,6 +130,26 @@ function reconcileExternalStorage(event: StorageEvent) {
       pendingResetUsage.delete(featureId)
     }
   }
+}
+
+function reconcileExternalStorage(event: StorageEvent) {
+  let storageArea: Storage
+  try {
+    storageArea = localStorage
+  } catch {
+    return
+  }
+  if (event.storageArea !== storageArea) return
+  if (event.key === null || event.newValue === null) {
+    clearPendingState()
+    return
+  }
+  if (event.key !== STORAGE_KEY) return
+
+  const oldUsageData = parseUsageData(event.oldValue)
+  const storedUsageData = parseUsageData(event.newValue)
+  pruneDeletedPendingUsage(oldUsageData, storedUsageData)
+  reconcilePendingResets(oldUsageData, storedUsageData)
 }
 
 if (typeof window !== 'undefined') {
