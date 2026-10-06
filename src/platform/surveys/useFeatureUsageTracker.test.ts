@@ -181,12 +181,19 @@ describe('useFeatureUsageTracker', () => {
   })
 
   it('does not replace newer stored usage with stale in-memory usage', () => {
-    const staleFeature = useFeatureUsageTracker('stale-feature')
-    const triggerFeature = useFeatureUsageTracker('trigger-feature')
-    staleFeature.trackUsage()
-    triggerFeature.trackUsage()
-    triggerFeature.trackUsage()
-    staleFeature.trackUsage()
+    const scope = effectScope()
+    let trackStaleFeature = () => {}
+
+    scope.run(() => {
+      useFeatureUsageTracker('trigger-feature').trackUsage()
+      const staleFeature = useFeatureUsageTracker('stale-feature')
+      staleFeature.trackUsage()
+      trackStaleFeature = staleFeature.trackUsage
+    })
+    scope.stop()
+
+    useFeatureUsageTracker('trigger-feature').trackUsage()
+    trackStaleFeature()
 
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
     expect(stored['stale-feature']?.useCount).toBe(2)
