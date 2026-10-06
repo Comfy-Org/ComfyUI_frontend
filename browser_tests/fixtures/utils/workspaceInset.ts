@@ -36,6 +36,14 @@ export async function expectDialogBoundsWithDockedPanel(
   const viewport = page.viewportSize()
   if (!viewport) throw new Error('Viewport size not available')
 
+  const originalInset = await page.evaluate(
+    (property) => ({
+      value: document.documentElement.style.getPropertyValue(property),
+      priority: document.documentElement.style.getPropertyPriority(property)
+    }),
+    WORKSPACE_INSET_RIGHT
+  )
+
   await comfyExpect(dialog).toHaveBounds(
     {
       ...withoutPanel,
@@ -61,8 +69,15 @@ export async function expectDialogBoundsWithDockedPanel(
       await comfyExpect(dialog).toHaveBounds(withoutPanel, { numDigits: 1 })
     }
   } finally {
-    await page.evaluate((property) => {
-      document.documentElement.style.removeProperty(property)
-    }, WORKSPACE_INSET_RIGHT)
+    await page.evaluate(
+      ({ property, value, priority }) => {
+        if (value) {
+          document.documentElement.style.setProperty(property, value, priority)
+        } else {
+          document.documentElement.style.removeProperty(property)
+        }
+      },
+      { property: WORKSPACE_INSET_RIGHT, ...originalInset }
+    )
   }
 }
