@@ -193,7 +193,8 @@ function didUsageAdvance(
   }
   if (baseline === null) return true
   return (
-    storedUsage.useCount > baseline.useCount ||
+    (storedUsage.firstUsed >= baseline.firstUsed &&
+      storedUsage.useCount > baseline.useCount) ||
     (isOrderableUsage(storedUsage) &&
       isOrderableUsage(baseline) &&
       (storedUsage.firstUsed > baseline.firstUsed ||

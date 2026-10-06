@@ -441,6 +441,7 @@ describe('useFeatureUsageTracker', () => {
   })
 
   it('retires a failed reset after external usage', () => {
+    vi.setSystemTime(1_000)
     const tracker = useFeatureUsageTracker('external-usage-after-reset')
     tracker.trackUsage()
     vi.spyOn(console, 'error').mockImplementation(() => {})
@@ -496,6 +497,33 @@ describe('useFeatureUsageTracker', () => {
 
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
     expect(stored[featureId]?.useCount).toBe(1)
+  })
+
+  it('keeps a failed reset through an older high-count generation', () => {
+    const featureId = 'older-generation-after-reset'
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        [featureId]: { useCount: 5, firstUsed: 2_000, lastUsed: 3_000 }
+      })
+    )
+    const tracker = useFeatureUsageTracker(featureId)
+    const setItem = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new DOMException('Storage quota exceeded', 'QuotaExceededError')
+    })
+    tracker.reset()
+    setItem.mockRestore()
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        [featureId]: { useCount: 10, firstUsed: 1_000, lastUsed: 3_000 }
+      })
+    )
+
+    useFeatureUsageTracker('older-generation-reset-trigger').trackUsage()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored).not.toHaveProperty(featureId)
   })
 
   it('keeps a failed reset through unrelated external usage', () => {
@@ -630,6 +658,7 @@ describe('useFeatureUsageTracker', () => {
   })
 
   it('preserves an earlier reset baseline when a repeated reset cannot read', () => {
+    vi.setSystemTime(1_000)
     const featureId = 'repeated-reset-baseline'
     const tracker = useFeatureUsageTracker(featureId)
     tracker.trackUsage()
@@ -714,6 +743,7 @@ describe('useFeatureUsageTracker', () => {
   })
 
   it('reconciles external post-reset usage before its storage event', () => {
+    vi.setSystemTime(1_000)
     const featureId = 'usage-before-reset-event'
     const tracker = useFeatureUsageTracker(featureId)
     tracker.trackUsage()
