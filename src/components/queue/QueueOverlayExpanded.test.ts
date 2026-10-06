@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { defineComponent } from 'vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { JobListItem } from '@/composables/queue/useJobList'
 
@@ -83,11 +83,6 @@ const stubs = {
 }
 
 describe('QueueOverlayExpanded', () => {
-  beforeEach(() => {
-    showMenuMock.mockClear()
-    toggleMenuMock.mockClear()
-  })
-
   it('renders JobAssetsList', () => {
     const { container } = render(QueueOverlayExpanded, {
       props: defaultProps,
