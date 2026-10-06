@@ -23,7 +23,9 @@ function splitShownTags<T>(tags: readonly T[]) {
 export function modelOgImage(
   model: Pick<WorkshopModel, 'thumbnail'>
 ): string | undefined {
-  return model.thumbnail?.kind === 'image' ? model.thumbnail.url : undefined
+  return model.thumbnail?.kind === 'image'
+    ? model.thumbnail.url
+    : model.thumbnail?.poster
 }
 
 export async function prepareModelPage(

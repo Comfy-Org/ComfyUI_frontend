@@ -269,6 +269,26 @@ describe('the display overlay against the catalog', () => {
     expect(workshopDisplaySchema.safeParse(model).success).toBe(true)
   })
 
+  it.for([
+    { poster: 'https://cdn.test/poster.jpg', valid: true },
+    { poster: 'https://cdn.test/poster.webp?v=2', valid: true },
+    { poster: 'https://cdn.test/clip.mp4', valid: false },
+    { poster: 'https://cdn.test/poster', valid: false }
+  ])(
+    'accepts a poster only when it is a still ($poster)',
+    ({ poster, valid }) => {
+      const entry = display.find((candidate) => candidate.type !== 'APP')
+      const withPoster = {
+        ...entry,
+        media: {
+          ...entry?.media,
+          thumbnail: { url: 'https://cdn.test/clip.mp4', kind: 'video', poster }
+        }
+      }
+      expect(workshopDisplaySchema.safeParse(withPoster).success).toBe(valid)
+    }
+  )
+
   it('finds every site-relative asset in public/', () => {
     const publicDir = join(websiteRoot, 'public')
     const missing = display.flatMap((entry) =>
