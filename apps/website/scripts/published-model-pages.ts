@@ -9,7 +9,7 @@ interface Redirect {
 interface PublishedModelPagesInput {
   /** The committed list of model pages that have ever been published. */
   readonly published: readonly string[]
-  /** Every page in this build's sitemap: published, indexable, served 200. */
+  /** Every page this build serves, indexed or not; redirect stubs excluded. */
   readonly live: ReadonlySet<string>
   readonly redirects: readonly Redirect[]
   /** Published page → why it may stay a 404. */
@@ -98,7 +98,7 @@ function removalProblem(
   if (!redirect.permanent)
     return `${page} removed: its redirect to ${redirect.destination} is temporary; make it permanent in src/config/redirects.ts`
   if (!live.has(redirect.destination))
-    return `${page} removed: its redirect lands on ${redirect.destination}, which is not a published page`
+    return `${page} removed: its redirect lands on ${redirect.destination}, which this build does not serve`
   return undefined
 }
 
@@ -108,9 +108,18 @@ export function auditPublishedModelPages({
   redirects,
   retiredWithoutRedirect
 }: PublishedModelPagesInput): string[] {
-  const unexplained = Object.entries(retiredWithoutRedirect)
-    .filter(([, reason]) => reason.trim() === '')
-    .map(([page]) => `${page} is retired without a reason`)
+  const listed = new Set(published)
+  const retirementProblems = Object.entries(retiredWithoutRedirect).flatMap(
+    ([page, reason]) => [
+      ...(reason.trim() === '' ? [`${page} is retired without a reason`] : []),
+      ...(listed.has(page)
+        ? []
+        : [`${page} is retired but is not in the published list`]),
+      ...(live.has(page)
+        ? [`${page} is retired but this build still serves it`]
+        : [])
+    ]
+  )
   const compiled = redirects.map((redirect) => ({
     ...redirect,
     pattern: redirectSourcePattern(redirect.source)
@@ -118,7 +127,19 @@ export function auditPublishedModelPages({
   const removed = published
     .filter((page) => !live.has(page) && !(page in retiredWithoutRedirect))
     .flatMap((page) => removalProblem(page, live, compiled) ?? [])
-  return [...unexplained, ...removed]
+  return [...retirementProblems, ...removed]
+}
+
+const REDIRECT_STUB = /<meta http-equiv="refresh"/i
+
+/** The route a built `index.html` serves, or nothing for a redirect stub. */
+export function servedRoute(
+  indexPath: string,
+  html: string
+): string | undefined {
+  if (REDIRECT_STUB.test(html)) return undefined
+  const directory = indexPath.replace(/(^|\/)index\.html$/, '')
+  return directory === '' ? '/' : `/${directory}/`
 }
 
 /** Live model pages missing from the published list. */

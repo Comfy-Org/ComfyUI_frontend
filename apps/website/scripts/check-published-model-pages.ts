@@ -1,11 +1,13 @@
 /**
  * Fails when a published model page leaves the build without a permanent
- * redirect to a live page. Reads the built sitemap, so run it after a build.
- * `--record` adds new model pages to the published list; it never drops one.
+ * redirect to a served page. Reads the built `dist/`, so run it after a build.
+ * The sitemap says which model pages are published; the HTML says which pages
+ * are served. `--record` adds new model pages to the published list; it never
+ * drops one.
  */
 import { execFileSync } from 'node:child_process'
-import { existsSync, readFileSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { join, sep } from 'node:path'
 import { z } from 'zod'
 
 import { websiteRoot } from '@website/paths'
@@ -17,6 +19,7 @@ import {
   droppedModelPages,
   isModelPagePath,
   recordModelPages,
+  servedRoute,
   unrecordedModelPages
 } from './published-model-pages'
 
@@ -54,14 +57,37 @@ function sitemapPages(): Set<string> {
       `[published-model-pages] ${indexPath} is missing; build first`
     )
   const chunks = sitemapChunkNames(readFileSync(indexPath, 'utf-8'))
-  const xml = chunks
-    .map((name) => readFileSync(join(DIST, name), 'utf-8'))
-    .join('')
-  return new Set(
-    Array.from(xml.matchAll(/<loc>([^<]+)<\/loc>/g), ([, loc]) =>
-      routeOfHref(loc.trim(), ORIGIN)
+  const missing = chunks.filter((name) => !existsSync(join(DIST, name)))
+  if (missing.length > 0)
+    throw new Error(
+      `[published-model-pages] sitemap chunks are missing: ${missing.join(', ')}`
+    )
+  const locs = chunks.flatMap((name) =>
+    Array.from(
+      readFileSync(join(DIST, name), 'utf-8').matchAll(/<loc>([^<]+)<\/loc>/g),
+      ([, loc]) => loc.trim()
     )
   )
+  const foreign = locs.filter((loc) => !loc.startsWith(`${ORIGIN}/`))
+  if (foreign.length > 0)
+    throw new Error(
+      `[published-model-pages] sitemap has URLs outside ${ORIGIN}: ${foreign.slice(0, 3).join(', ')}`
+    )
+  if (locs.length === 0)
+    throw new Error(`[published-model-pages] the sitemap lists no pages`)
+  return new Set(locs.map((loc) => routeOfHref(loc, ORIGIN)))
+}
+
+function servedPages(): Set<string> {
+  const pages = readdirSync(DIST, { recursive: true, encoding: 'utf-8' })
+    .map((path) => path.split(sep).join('/'))
+    .filter((path) => path === 'index.html' || path.endsWith('/index.html'))
+    .flatMap(
+      (path) => servedRoute(path, readFileSync(join(DIST, path), 'utf-8')) ?? []
+    )
+  if (pages.length === 0)
+    throw new Error(`[published-model-pages] ${DIST} serves no pages`)
+  return new Set(pages)
 }
 
 function git(args: string[]): string | undefined {
@@ -97,8 +123,8 @@ function basePublished(): string[] {
   return json === undefined ? [] : PublishedListSchema.parse(JSON.parse(json))
 }
 
-const live = sitemapPages()
-const liveModelPages = [...live].filter((page) =>
+const live = servedPages()
+const liveModelPages = [...sitemapPages()].filter((page) =>
   isModelPagePath(
     page,
     MODEL_PAGE_ROOTS,
@@ -110,9 +136,6 @@ const recorded = PublishedListSchema.parse(
 )
 const record = process.argv.includes('--record')
 const published = record ? recordModelPages(recorded, liveModelPages) : recorded
-
-if (record)
-  writeFileSync(PUBLISHED_PATH, `${JSON.stringify(published, null, 2)}\n`)
 
 const { redirects } = VercelConfigSchema.parse(
   JSON.parse(readFileSync(join(websiteRoot, 'vercel.json'), 'utf-8'))
@@ -142,6 +165,8 @@ if (errors.length > 0) {
   for (const error of errors) console.error(`  ${error}`)
   process.exit(1)
 }
+if (record)
+  writeFileSync(PUBLISHED_PATH, `${JSON.stringify(published, null, 2)}\n`)
 console.warn(
-  `[published-model-pages] ${published.length} published model pages are live or redirect permanently to a live page.`
+  `[published-model-pages] ${new Set(published).size} published model pages are served, redirect permanently to a served page, or are retired on purpose.`
 )

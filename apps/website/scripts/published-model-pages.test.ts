@@ -5,6 +5,7 @@ import {
   droppedModelPages,
   isModelPagePath,
   recordModelPages,
+  servedRoute,
   unrecordedModelPages
 } from './published-model-pages'
 
@@ -65,7 +66,7 @@ describe('auditPublishedModelPages', () => {
       live: [hub],
       redirects: [redirectFrom(localFlux, flux), redirectFrom(flux, hub)],
       errors: [
-        `${localFlux} removed: its redirect lands on ${flux}, which is not a published page`
+        `${localFlux} removed: its redirect lands on ${flux}, which this build does not serve`
       ]
     }
   ])('reports $name', ({ live, redirects, errors }) => {
@@ -95,6 +96,50 @@ describe('auditPublishedModelPages', () => {
       ).toEqual(errors)
     }
   )
+})
+
+describe('auditPublishedModelPages retirements', () => {
+  it.for([
+    {
+      name: 'a page that was never published',
+      retired: '/hub/models/never-here/',
+      errors: [
+        '/hub/models/never-here/ is retired but is not in the published list'
+      ]
+    },
+    {
+      name: 'a page this build still serves',
+      retired: flux,
+      errors: [`${flux} is retired but this build still serves it`]
+    }
+  ])('rejects the retirement of $name', ({ retired, errors }) => {
+    expect(
+      auditPublishedModelPages({
+        published: [flux],
+        live: new Set([flux]),
+        redirects: [],
+        retiredWithoutRedirect: { [retired]: 'no relevant target, stays 404' }
+      })
+    ).toEqual(errors)
+  })
+})
+
+describe('servedRoute', () => {
+  it.for([
+    { path: 'index.html', html: '<h1>Comfy</h1>', route: '/' },
+    {
+      path: 'hub/models/flux-pro/index.html',
+      html: '<h1>Flux</h1>',
+      route: '/hub/models/flux-pro/'
+    },
+    {
+      path: 'career/index.html',
+      html: '<title>Redirecting to: /careers/</title><meta http-equiv="refresh" content="0;url=/careers/">',
+      route: undefined
+    }
+  ])('reads $path as $route', ({ path, html, route }) => {
+    expect(servedRoute(path, html)).toBe(route)
+  })
 })
 
 describe('auditPublishedModelPages with redirect source patterns', () => {
@@ -134,7 +179,7 @@ describe('auditPublishedModelPages with redirect source patterns', () => {
       destination: '/hub/models/local/:slug/',
       live: ['/hub/models/local/sdxl/'],
       errors: [
-        `${supportedPage} removed: its redirect lands on ${localPage}, which is not a published page`
+        `${supportedPage} removed: its redirect lands on ${localPage}, which this build does not serve`
       ]
     },
     {
