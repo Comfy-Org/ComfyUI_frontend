@@ -279,9 +279,20 @@ export class ExecutionHelper {
     this.emit('execution_start', { prompt_id: jobId, timestamp: Date.now() })
   }
 
-  /** Send `executing` WS event to signal which node is currently running. */
+  /**
+   * Send `executing` WS event to signal which node is currently running.
+   *
+   * Shape matches the server: a node-start frame carries `display_node`
+   * (execution.py), the terminal `node: null` frame does not (main.py). The
+   * app reads `display_node || node`, so omitting it would silently exercise
+   * the fallback instead of the normal path.
+   */
   executing(jobId: string, nodeId: string | null): void {
-    this.emit('executing', { prompt_id: jobId, node: nodeId })
+    this.emit('executing', {
+      prompt_id: jobId,
+      node: nodeId,
+      ...(nodeId !== null && { display_node: nodeId })
+    })
   }
 
   /** Send `executed` WS event with node output. */
