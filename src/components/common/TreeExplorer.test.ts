@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
+import type { PropType } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import TreeExplorer from '@/components/common/TreeExplorer.vue'
@@ -23,8 +24,11 @@ const root: TreeExplorerNode = {
 
 const Harness = defineComponent({
   components: { TreeExplorer },
+  props: {
+    root: { type: Object as PropType<TreeExplorerNode>, required: true }
+  },
   setup() {
-    return { expandedKeys: ref<Record<string, boolean>>({}), root }
+    return { expandedKeys: ref<Record<string, boolean>>({}) }
   },
   template: `
     <TreeExplorer
@@ -35,34 +39,9 @@ const Harness = defineComponent({
   `
 })
 
-const handleFolderClick = vi.fn()
-const rootWithClickHandler: TreeExplorerNode = {
-  ...root,
-  children: root.children?.map((node) => ({
-    ...node,
-    handleClick: handleFolderClick
-  }))
-}
-
-const HarnessWithClickHandler = defineComponent({
-  components: { TreeExplorer },
-  setup() {
-    return {
-      expandedKeys: ref<Record<string, boolean>>({}),
-      root: rootWithClickHandler
-    }
-  },
-  template: `
-    <TreeExplorer
-      v-model:expanded-keys="expandedKeys"
-      :root="root"
-      aria-label="Files"
-    />
-  `
-})
-
-const renderHarness = (component: typeof Harness) =>
-  render(component, {
+const renderHarness = (treeRoot: TreeExplorerNode) =>
+  render(Harness, {
+    props: { root: treeRoot },
     global: {
       plugins: [
         createI18n({
@@ -77,7 +56,7 @@ const renderHarness = (component: typeof Harness) =>
 describe('TreeExplorer', () => {
   it('toggles a folder by clicking its row', async () => {
     const user = userEvent.setup()
-    renderHarness(Harness)
+    renderHarness(root)
 
     expect(
       screen.queryByRole('treeitem', { name: 'Leaf' })
@@ -100,7 +79,14 @@ describe('TreeExplorer', () => {
 
   it('lets a folder click handler own expansion', async () => {
     const user = userEvent.setup()
-    renderHarness(HarnessWithClickHandler)
+    const handleFolderClick = vi.fn()
+    renderHarness({
+      ...root,
+      children: root.children?.map((node) => ({
+        ...node,
+        handleClick: handleFolderClick
+      }))
+    })
 
     await user.click(screen.getByRole('treeitem', { name: /Folder/ }))
 
