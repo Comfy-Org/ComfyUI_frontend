@@ -165,6 +165,28 @@ describe('agentWorkflowTabBindingStore', () => {
     expect(bindings.workflowIdFor(DEFAULT_PATH)).toBeUndefined()
   })
 
+  it('does not let an empty document id claim a restored draft binding', async () => {
+    seedBindings({
+      'wf-abandoned': {
+        tabPath: DEFAULT_PATH,
+        graphId: '',
+        confirmedAt: Date.now()
+      }
+    })
+    const workflows = useWorkflowStore()
+    const bindings = useAgentWorkflowTabBindingStore()
+    const impostor = workflows.createTemporary('Unsaved Workflow.json', {
+      ...blankGraph,
+      id: ''
+    })
+    workflows.openWorkflowsInBackground({ right: [impostor.path] })
+    await nextTick()
+
+    expect(bindings.tabPathFor('wf-abandoned')).toBeUndefined()
+    expect(bindings.workflowIdFor(DEFAULT_PATH)).toBeUndefined()
+    expect(bindings.matchesWorkflow('wf-abandoned', impostor)).toBe(false)
+  })
+
   it('adopts two restored drafts that share a base name independently', async () => {
     seedBindings({
       'wf-first': {
@@ -327,6 +349,27 @@ describe('agentWorkflowTabBindingStore', () => {
     const workflows = useWorkflowStore()
     const saved = new ComfyWorkflow({ path, modified: 1, size: 1 })
     saved.originalContent = '{not json'
+    workflows.attachWorkflow(saved, 0)
+
+    const bindings = useAgentWorkflowTabBindingStore()
+    await nextTick()
+
+    expect(bindings.tabPathFor('wf-saved')).toBe(path)
+    expect(bindings.matchesWorkflow('wf-saved', saved)).toBe(true)
+  })
+
+  it('treats an empty id in saved content as missing identity', async () => {
+    const path = 'workflows/saved.json'
+    seedBindings({
+      'wf-saved': {
+        tabPath: path,
+        graphId: DRAFT_GRAPH_ID,
+        confirmedAt: Date.now()
+      }
+    })
+    const workflows = useWorkflowStore()
+    const saved = new ComfyWorkflow({ path, modified: 1, size: 1 })
+    saved.originalContent = JSON.stringify({ ...blankGraph, id: '' })
     workflows.attachWorkflow(saved, 0)
 
     const bindings = useAgentWorkflowTabBindingStore()
