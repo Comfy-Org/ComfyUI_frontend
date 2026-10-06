@@ -170,6 +170,24 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
     copyAssignmentsIntoBuffer('_size', 2, (coords) => {
       this.setBounds(this._pos[0], this._pos[1], coords[0], coords[1])
     })
+
+    const keepCollection = (
+      key: '_nodes' | '_children',
+      accepts: (value: unknown) => boolean
+    ) => {
+      let current = this[key]
+      Object.defineProperty(this, key, {
+        get: () => current,
+        set: (value: unknown) => {
+          if (accepts(value)) current = value as typeof current
+        },
+        enumerable: true,
+        configurable: true
+      })
+    }
+
+    keepCollection('_nodes', Array.isArray)
+    keepCollection('_children', (value) => value instanceof Set)
   }
 
   /** @inheritdoc {@link IColorable.setColorOption} */

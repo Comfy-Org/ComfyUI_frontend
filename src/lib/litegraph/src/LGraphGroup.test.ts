@@ -486,6 +486,45 @@ describe('geometry an extension cannot clobber', () => {
     })
   })
 
+  test('a JSON round-trip written back keeps tracking and moving its children', () => {
+    const graph = new LGraph()
+    const group = new LGraphGroup('group', toGroupId(819))
+    group.pos = [100, 100]
+    group.size = [300, 200]
+    graph.add(group)
+    const node = new LGraphNode('inside')
+    node.pos = [150, 150]
+    node.size = [20, 20]
+    graph.add(node)
+    node.updateArea()
+
+    const copy: Record<string, unknown> = JSON.parse(JSON.stringify(group))
+    delete copy.graph
+    Object.assign(group, copy)
+    group.recomputeInsideNodes()
+    group.move(10, 20)
+
+    expect(group.children.has(node)).toBe(true)
+    expect(group.nodes).toEqual([node])
+    expect([...group.pos]).toEqual([110, 120])
+    expect([...node.pos]).toEqual([160, 170])
+  })
+
+  test('a non-collection written over _children or _nodes is ignored', () => {
+    const graph = new LGraph()
+    const group = new LGraphGroup('group', toGroupId(820))
+    graph.add(group)
+    const children = group.children
+    const nodes = group.nodes
+
+    expect(() =>
+      Object.assign(group, { _children: [], _nodes: {} })
+    ).not.toThrow()
+
+    expect(group.children).toBe(children)
+    expect(group.nodes).toBe(nodes)
+  })
+
   test.for([
     ['bounds', [1, 2, 300, 400], [1, 2, 300, 400]],
     ['_bounding', [1, 2, 300, 400], [1, 2, 300, 400]],
@@ -530,7 +569,14 @@ describe('geometry an extension cannot clobber', () => {
     }
   )
 
-  test.for(['bounds', '_pos', '_size', '_bounding'] as const)(
+  test.for([
+    'bounds',
+    '_pos',
+    '_size',
+    '_bounding',
+    '_nodes',
+    '_children'
+  ] as const)(
     '%s keeps the descriptor shape the ecosystem already sees',
     (property, { expect }) => {
       const group = new LGraphGroup('group', toGroupId(813))
