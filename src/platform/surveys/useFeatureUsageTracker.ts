@@ -19,6 +19,7 @@ const reportedErrorTypes = new Set<string>()
 const pendingUsageData = shallowRef<FeatureUsageRecord>({})
 
 export function resetFeatureUsageTrackerStateForTest() {
+  if (import.meta.env.MODE !== 'test') return
   resetVersions.clear()
   pendingResets.clear()
   reportedErrorTypes.clear()
