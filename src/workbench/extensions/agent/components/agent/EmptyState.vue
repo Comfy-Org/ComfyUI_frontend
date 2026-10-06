@@ -42,6 +42,9 @@ const selectedPromptKey = computed(() => {
 const prompts = computed(() => {
   return tm(selectedPromptKey.value) as string[]
 })
+const effectiveAssignment = computed<StarterPromptAssignment>(() =>
+  selectedPromptKey.value === promptKey ? 'control' : assignment
+)
 const promptLocale = computed(() => {
   return te(`${selectedPromptKey.value}.0`, locale.value)
     ? locale.value
@@ -64,7 +67,7 @@ function onPromptClick(prompt: string, index: number): void {
       index,
       prompts.value.length,
       promptLocale.value,
-      assignment
+      effectiveAssignment.value
     )
   )
 }

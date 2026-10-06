@@ -63,4 +63,27 @@ describe('useStarterPromptSet', () => {
 
     expect(assignment.value).toBe('control')
   })
+
+  it('re-exposes when a remounted surface resolves a new assignment', async () => {
+    remoteConfig.value = { [STARTER_PROMPT_SET_FLAG]: 'control' }
+    authenticatedRemoteConfigState.value = 'authenticated'
+    const { assignment, expose, invalidateSurface } = useStarterPromptSet()
+
+    expose()
+    expect(assignment.value).toBe('control')
+    expect(
+      useTelemetry()?.trackAgentStarterPromptExposure
+    ).toHaveBeenCalledTimes(1)
+
+    invalidateSurface()
+    remoteConfig.value = { [STARTER_PROMPT_SET_FLAG]: 'test' }
+    expose()
+
+    await vi.waitFor(() => expect(assignment.value).toBe('test'))
+    expect(
+      useTelemetry()?.trackAgentStarterPromptExposure
+    ).toHaveBeenLastCalledWith({
+      [`$feature/${STARTER_PROMPT_SET_FLAG}`]: 'test'
+    })
+  })
 })
