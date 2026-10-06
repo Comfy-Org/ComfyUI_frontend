@@ -179,6 +179,40 @@ describe('CanvasPointer lifecycle callbacks', () => {
     expect(finallyCallback).toHaveBeenCalledOnce()
   })
 
+  it('cancels an active drag when the element loses pointer capture', () => {
+    const element = document.createElement('canvas')
+    const pointer = new CanvasPointer(element)
+    const onDragEnd = vi.fn()
+    const finallyCallback = vi.fn()
+
+    pointer.down(pointerEvent('pointerdown', 10, 20))
+    pointer.onDragEnd = onDragEnd
+    pointer.finally = finallyCallback
+    pointer.move(pointerEvent('pointermove', 30, 40))
+    element.dispatchEvent(
+      new PointerEvent('lostpointercapture', { pointerId: 1 })
+    )
+
+    expect(pointer.dragStarted).toBe(false)
+    expect(pointer.eDown).toBeUndefined()
+    expect(onDragEnd).not.toHaveBeenCalled()
+    expect(finallyCallback).toHaveBeenCalledOnce()
+  })
+
+  it('ignores lost capture for a different pointer', () => {
+    const element = document.createElement('canvas')
+    const pointer = new CanvasPointer(element)
+    const finallyCallback = vi.fn()
+
+    pointer.down(pointerEvent('pointerdown', 10, 20))
+    pointer.finally = finallyCallback
+    element.dispatchEvent(
+      new PointerEvent('lostpointercapture', { pointerId: 2 })
+    )
+
+    expect(finallyCallback).not.toHaveBeenCalled()
+  })
+
   it('treats callback-less double clicks as normal clicks', () => {
     const pointer = new CanvasPointer(document.createElement('canvas'))
     const onClick = vi.fn()

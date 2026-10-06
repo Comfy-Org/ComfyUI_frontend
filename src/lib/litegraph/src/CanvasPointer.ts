@@ -163,6 +163,13 @@ export class CanvasPointer {
 
   private _finally?: () => unknown
 
+  private captureElement?: Element
+
+  private readonly onLostPointerCapture = (e: Event) => {
+    if (e instanceof PointerEvent && e.pointerId === this.pointerId)
+      this.reset()
+  }
+
   constructor(element: Element) {
     this.element = element
   }
@@ -175,7 +182,12 @@ export class CanvasPointer {
     this.reset()
     this.eDown = e
     this.pointerId = e.pointerId
-    this.element.setPointerCapture(e.pointerId)
+    this.captureElement = this.element
+    this.captureElement.addEventListener(
+      'lostpointercapture',
+      this.onLostPointerCapture
+    )
+    this.captureElement.setPointerCapture(e.pointerId)
     this.dispatch(
       { type: 'down', position: positionOf(e), timeStamp: e.timeStamp },
       e
@@ -443,6 +455,11 @@ export class CanvasPointer {
    * state is cleared.
    */
   reset(): void {
+    this.captureElement?.removeEventListener(
+      'lostpointercapture',
+      this.onLostPointerCapture
+    )
+    this.captureElement = undefined
     if (this.eDown) this.dispatch({ type: 'cancel' }, this.eDown)
 
     // The setter executes the callback before clearing it
