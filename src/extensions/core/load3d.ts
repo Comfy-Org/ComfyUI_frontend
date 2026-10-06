@@ -1,5 +1,6 @@
 import { nextTick } from 'vue'
 
+import { assert } from '@/base/assert'
 import Load3D from '@/components/load3d/Load3D.vue'
 import Load3DViewerContent from '@/components/load3d/Load3dViewerContent.vue'
 import { LOAD3D_VIEWER_DIALOG_PROPS } from '@/components/load3d/load3dViewerDialog'
@@ -305,7 +306,12 @@ useExtensionService().registerExtension({
     ])
     return {
       LOAD_3D(node) {
-        const inputName = VIEWPORT_STATE_NODES.has(node.constructor.comfyClass)
+        const { comfyClass } = node.constructor
+        assert(
+          comfyClass,
+          'LOAD_3D widget created on a node without comfyClass'
+        )
+        const inputName = VIEWPORT_STATE_NODES.has(comfyClass)
           ? 'viewport_state'
           : 'image'
         const hasModelFileWidget = node.widgets?.some(
