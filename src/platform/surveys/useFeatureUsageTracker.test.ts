@@ -98,6 +98,23 @@ describe('useFeatureUsageTracker', () => {
     expect(stored[featureId]?.useCount).toBe(203)
   })
 
+  it('bounds the number of features with pending usage', () => {
+    const setItem = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new DOMException('Storage quota exceeded', 'QuotaExceededError')
+    })
+    Array.from({ length: 101 }, (_, index) =>
+      useFeatureUsageTracker(`pending-feature-${index}`).trackUsage()
+    )
+    setItem.mockRestore()
+
+    useFeatureUsageTracker('pending-feature-recovery').trackUsage()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored).not.toHaveProperty('pending-feature-0')
+    expect(stored['pending-feature-1']?.useCount).toBe(1)
+    expect(stored['pending-feature-100']?.useCount).toBe(1)
+  })
+
   it('discards compacted pending usage from a deleted generation', () => {
     const featureId = 'bounded-deleted-increments'
     const tracker = useFeatureUsageTracker(featureId)
@@ -567,6 +584,35 @@ describe('useFeatureUsageTracker', () => {
 
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
     expect(stored).not.toHaveProperty(featureId)
+  })
+
+  it('retires a repaired future-dated reset baseline after peer usage', () => {
+    vi.setSystemTime(1_000)
+    const featureId = 'future-reset-baseline'
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        [featureId]: { useCount: 5, firstUsed: 500_000, lastUsed: 500_000 }
+      })
+    )
+    const tracker = useFeatureUsageTracker(featureId)
+    const setItem = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new DOMException('Storage quota exceeded', 'QuotaExceededError')
+    })
+    tracker.reset()
+    setItem.mockRestore()
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        [featureId]: { useCount: 6, firstUsed: 2_000, lastUsed: 2_000 }
+      })
+    )
+    vi.setSystemTime(2_000)
+
+    useFeatureUsageTracker('future-reset-baseline-trigger').trackUsage()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored[featureId]?.useCount).toBe(6)
   })
 
   it('drops pending usage when an older generation is restored', () => {
@@ -1914,7 +1960,7 @@ describe('useFeatureUsageTracker', () => {
     expect(stored['oversized-invalid-trigger']?.useCount).toBe(1)
   })
 
-  it('bounds valid entries carried through a write', () => {
+  it('preserves all valid entries carried through a write', () => {
     localStorage.setItem(
       STORAGE_KEY,
       JSON.stringify(
@@ -1930,7 +1976,8 @@ describe('useFeatureUsageTracker', () => {
     useFeatureUsageTracker('bounded-valid-trigger').trackUsage()
 
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
-    expect(Object.keys(stored)).toHaveLength(100)
+    expect(Object.keys(stored)).toHaveLength(151)
+    expect(stored['existing-149']?.useCount).toBe(1)
     expect(stored['bounded-valid-trigger']?.useCount).toBe(1)
   })
 
@@ -2432,6 +2479,7 @@ describe('useFeatureUsageTracker', () => {
     })
     tracker.trackUsage()
     setItem.mockRestore()
+    vi.setSystemTime(1_001)
 
     tracker.trackUsage()
 
@@ -2466,6 +2514,32 @@ describe('useFeatureUsageTracker', () => {
 
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
     expect(stored[featureId]?.useCount).toBe(3)
+  })
+
+  it('keeps a plausible stored generation while applying pending usage', () => {
+    vi.setSystemTime(2_000)
+    const featureId = 'plausible-generation-with-pending-usage'
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        [featureId]: { useCount: 1, firstUsed: 3_000, lastUsed: 3_000 }
+      })
+    )
+    const tracker = useFeatureUsageTracker(featureId)
+    const setItem = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new DOMException('Storage quota exceeded', 'QuotaExceededError')
+    })
+    tracker.trackUsage()
+    setItem.mockRestore()
+
+    tracker.trackUsage()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored[featureId]).toEqual({
+      useCount: 3,
+      firstUsed: 3_000,
+      lastUsed: 3_000
+    })
   })
 
   it('repairs only the drifted timestamp field', () => {

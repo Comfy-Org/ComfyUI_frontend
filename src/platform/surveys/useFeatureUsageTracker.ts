@@ -44,8 +44,7 @@ type PendingFeatureUsageRecord = Partial<Record<string, PendingUsageDelta[]>>
 const STORAGE_KEY = 'Comfy.FeatureUsage'
 const MAX_USAGE_COUNT = Number.MAX_SAFE_INTEGER - 1
 const MAX_PENDING_USAGE_DELTAS = 100
-const MAX_PRESERVED_USAGE_ENTRIES = 100
-const MAX_PRESERVED_USAGE_SIZE = 16 * 1_024
+const MAX_PENDING_FEATURES = 100
 const MAX_PRESERVED_INVALID_ENTRIES = 100
 const MAX_PRESERVED_INVALID_SIZE = 16 * 1_024
 const MAX_TIMESTAMP = Date.UTC(2100, 0, 1)
@@ -232,11 +231,14 @@ function isOrderableUsage(usage: FeatureUsage) {
   )
 }
 
-function isSameOrNewerGeneration(usage: FeatureUsage, baseline: FeatureUsage) {
+function isSameOrNewerGeneration(
+  usage: FeatureUsage,
+  baseline: FeatureUsage,
+  comparisonTime: number
+) {
   if (sameUsage(usage, baseline)) return true
-  const now = Date.now()
-  const repairedUsage = repairUsageForComparison(usage, now)
-  const repairedBaseline = repairUsageForComparison(baseline, now)
+  const repairedUsage = repairUsageForComparison(usage, comparisonTime)
+  const repairedBaseline = repairUsageForComparison(baseline, comparisonTime)
   return (
     repairedUsage.firstUsed === repairedBaseline.firstUsed &&
     repairedUsage.useCount >= repairedBaseline.useCount &&
@@ -298,14 +300,16 @@ function reconcileStoredUsage(
       ([featureId, pendingDeltas]) => {
         if (!pendingDeltas) return []
         const storedUsage = usageFor(currentUsageData, featureId)
-        const retainedDeltas = pendingDeltas.filter(({ baseUsage }) => {
-          if (baseUsage === undefined || baseUsage === null) return true
-          if (invalidFeatureIds.has(featureId)) return true
-          return (
-            storedUsage !== undefined &&
-            isSameOrNewerGeneration(storedUsage, baseUsage)
-          )
-        })
+        const retainedDeltas = pendingDeltas.filter(
+          ({ baseUsage, recordedAt }) => {
+            if (baseUsage === undefined || baseUsage === null) return true
+            if (invalidFeatureIds.has(featureId)) return true
+            return (
+              storedUsage !== undefined &&
+              isSameOrNewerGeneration(storedUsage, baseUsage, recordedAt)
+            )
+          }
+        )
         return retainedDeltas.length > 0
           ? [[featureId, retainedDeltas] as const]
           : []
@@ -429,20 +433,30 @@ function applyPendingUsage(usageData: FeatureUsageRecord): FeatureUsageRecord {
       ([featureId, pendingDeltas]) => {
         if (!pendingDeltas) return []
         const mergedUsage = pendingDeltas.reduce(
-          (currentUsage, pendingDelta) => ({
-            useCount: Math.min(
-              (currentUsage?.useCount ?? 0) + pendingDelta.useCountDelta,
-              MAX_USAGE_COUNT
-            ),
-            firstUsed: Math.min(
-              currentUsage?.firstUsed ?? pendingDelta.firstUsed,
-              pendingDelta.firstUsed
-            ),
-            lastUsed: Math.max(
-              currentUsage?.lastUsed ?? pendingDelta.lastUsed,
-              pendingDelta.lastUsed
-            )
-          }),
+          (currentUsage, pendingDelta) => {
+            const repairedLastUsed = currentUsage
+              ? repairFutureTimestamp(
+                  currentUsage.lastUsed,
+                  pendingDelta.lastUsed
+                )
+              : pendingDelta.lastUsed
+            return {
+              useCount: Math.min(
+                (currentUsage?.useCount ?? 0) + pendingDelta.useCountDelta,
+                MAX_USAGE_COUNT
+              ),
+              firstUsed: currentUsage
+                ? Math.min(
+                    repairFutureTimestamp(
+                      currentUsage.firstUsed,
+                      pendingDelta.lastUsed
+                    ),
+                    repairedLastUsed
+                  )
+                : pendingDelta.firstUsed,
+              lastUsed: Math.max(repairedLastUsed, pendingDelta.lastUsed)
+            }
+          },
           usageFor(usageData, featureId)
         )
         return [[featureId, mergedUsage] as const]
@@ -533,41 +547,18 @@ function recordPendingUsage(
   const nextDeltas = baseMatches
     ? [...pendingDeltas.slice(0, -1), nextDelta]
     : [...pendingDeltas, nextDelta]
-  pendingUsageData.value = {
+  const nextPendingUsageData = {
     ...pendingUsageData.value,
     [featureId]: boundPendingDeltas(nextDeltas)
   }
-}
-
-function boundUsageData(
-  usageData: FeatureUsageRecord,
-  priorityFeatureIds: Iterable<string>
-) {
-  const priorityIds = new Set(priorityFeatureIds)
-  const entries = Object.entries(usageData)
-  const orderedEntries = [
-    ...entries.filter(([featureId]) => priorityIds.has(featureId)),
-    ...entries.filter(([featureId]) => !priorityIds.has(featureId))
-  ]
-  return orderedEntries.reduce<{
-    usageData: FeatureUsageRecord
-    count: number
-    size: number
-  }>(
-    (preserved, [featureId, usage]) => {
-      if (preserved.count >= MAX_PRESERVED_USAGE_ENTRIES) return preserved
-      const entrySize = JSON.stringify({ [featureId]: usage }).length - 2
-      const nextSize =
-        preserved.size + entrySize + (preserved.count > 0 ? 1 : 0)
-      if (nextSize > MAX_PRESERVED_USAGE_SIZE) return preserved
-      return {
-        usageData: { ...preserved.usageData, [featureId]: usage },
-        count: preserved.count + 1,
-        size: nextSize
-      }
-    },
-    { usageData: {}, count: 0, size: 2 }
-  ).usageData
+  const excessFeatureIds = Object.keys(nextPendingUsageData).slice(
+    0,
+    -MAX_PENDING_FEATURES
+  )
+  pendingUsageData.value = excessFeatureIds.reduce(
+    withoutFeature,
+    nextPendingUsageData
+  )
 }
 
 function applyPendingResets(usageData: FeatureUsageRecord): FeatureUsageRecord {
@@ -617,10 +608,14 @@ function writeAndVerifyUsage(
 ) {
   const readBack = writeStorageAndReadBack(value)
   if (readBack === undefined) {
+    const writtenUsageIds = Object.keys(pendingUsageData.value).filter(
+      (pendingFeatureId) => Object.hasOwn(expectedUsageData, pendingFeatureId)
+    )
     return {
-      allPendingWritten: true,
+      allPendingWritten:
+        writtenUsageIds.length === Object.keys(pendingUsageData.value).length,
       trackedUsageWritten: true,
-      writtenUsageIds: Object.keys(pendingUsageData.value),
+      writtenUsageIds,
       confirmedResetIds: [...pendingResets],
       usageData: expectedUsageData
     }
@@ -671,9 +666,13 @@ function writeAndVerifyReset(
 ) {
   const readBack = writeStorageAndReadBack(value)
   if (readBack === undefined) {
+    const writtenUsageIds = Object.keys(pendingUsageData.value).filter(
+      (pendingFeatureId) => Object.hasOwn(expectedUsageData, pendingFeatureId)
+    )
     return {
-      allPendingWritten: true,
-      writtenUsageIds: Object.keys(pendingUsageData.value),
+      allPendingWritten:
+        writtenUsageIds.length === Object.keys(pendingUsageData.value).length,
+      writtenUsageIds,
       confirmedResetIds: [...pendingResets],
       usageData: expectedUsageData
     }
@@ -747,10 +746,7 @@ function persistUsageData(featureId: string, now: number) {
     baseUsage = usageFor(resetAdjustedUsageData, featureId) ?? null
     const mergedUsageData = applyPendingUsage(resetAdjustedUsageData)
     const nextUsage = incrementUsage(usageFor(mergedUsageData, featureId), now)
-    const usageData = boundUsageData(
-      { ...mergedUsageData, [featureId]: nextUsage },
-      [featureId, ...Object.keys(pendingUsageData.value)]
-    )
+    const usageData = { ...mergedUsageData, [featureId]: nextUsage }
     newValue = JSON.stringify({
       ...preserveInvalidUsage(parsedUsageData),
       ...usageData
@@ -796,17 +792,17 @@ function resetUsageData(featureId: string) {
     const pendingReset = pendingResetUsage.get(featureId)
     if (pendingReset && parsedUsageData.status !== 'invalid') {
       if (!parsedUsageData.invalidFeatureIds.has(featureId)) {
+        const baseline = usageFor(currentUsageData, featureId)
         pendingResetUsage.set(featureId, {
           ...pendingReset,
-          baseline: usageFor(currentUsageData, featureId) ?? null
+          baseline: baseline
+            ? repairUsageForComparison(baseline, pendingReset.requestedAt)
+            : null
         })
       }
     }
     reconcileAndSetSnapshot(parsedUsageData)
-    const usageData = boundUsageData(
-      applyPendingUsage(applyPendingResets(currentUsageData)),
-      Object.keys(pendingUsageData.value)
-    )
+    const usageData = applyPendingUsage(applyPendingResets(currentUsageData))
     newValue = JSON.stringify({
       ...preserveInvalidUsage(parsedUsageData),
       ...usageData
@@ -860,8 +856,9 @@ export function useFeatureUsageTracker(featureId: string) {
   }
 
   function reset() {
-    pendingResets.add(featureId)
     const previousReset = pendingResetUsage.get(featureId)
+    pendingResets.delete(featureId)
+    pendingResets.add(featureId)
     pendingResetUsage.set(featureId, {
       ...previousReset,
       requestedAt: Math.max(
@@ -869,6 +866,12 @@ export function useFeatureUsageTracker(featureId: string) {
         Math.max(1, Math.min(Date.now(), MAX_TIMESTAMP))
       )
     })
+    while (pendingResets.size > MAX_PENDING_FEATURES) {
+      const oldestFeatureId = pendingResets.values().next().value
+      if (oldestFeatureId === undefined) break
+      pendingResets.delete(oldestFeatureId)
+      pendingResetUsage.delete(oldestFeatureId)
+    }
     pendingUsageData.value = withoutFeature(pendingUsageData.value, featureId)
     resetUsageData(featureId)
   }
