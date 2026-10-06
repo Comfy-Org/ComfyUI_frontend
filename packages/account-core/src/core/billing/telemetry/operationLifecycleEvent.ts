@@ -4,6 +4,7 @@ import {
 } from '../../../telemetry.js'
 import type { BillingOperationTelemetryEvent } from '../operationLifecycle.js'
 import type { BillingTelemetryEvent } from './billingTelemetryEvent.js'
+import type { PaymentIntentSource } from './vocabulary.js'
 
 /**
  * The lifecycle's event onto the poller's `billing.operation.*` stages, so
@@ -11,7 +12,8 @@ import type { BillingTelemetryEvent } from './billingTelemetryEvent.js'
  * `resumed`. Friction inside the operation maps onto `billing.checkout.*`.
  */
 export function toBillingTelemetryEvent(
-  event: BillingOperationTelemetryEvent
+  event: BillingOperationTelemetryEvent,
+  paymentIntentSource?: PaymentIntentSource
 ): BillingTelemetryEvent {
   const friction = {
     operation: 'checkout',
@@ -22,6 +24,24 @@ export function toBillingTelemetryEvent(
     presentation: event.presentation,
     resumed: event.resumed
   } as const
+  if (
+    event.name === BILLING_CHECKOUT_FRICTION_TELEMETRY_EVENT.redirectStarted ||
+    event.name === BILLING_CHECKOUT_FRICTION_TELEMETRY_EVENT.returned
+  ) {
+    return {
+      ...friction,
+      stage:
+        event.name === BILLING_CHECKOUT_FRICTION_TELEMETRY_EVENT.returned
+          ? 'returned'
+          : 'redirect_started',
+      destination: event.destination,
+      step: event.step,
+      navigation: event.navigation,
+      ...(event.method_kind === undefined
+        ? {}
+        : { method_kind: event.method_kind })
+    }
+  }
   const shared = {
     operation: 'operation',
     billing_client: 'sdk',
@@ -29,9 +49,12 @@ export function toBillingTelemetryEvent(
     billing_op_id: event.billing_op_id,
     presentation: event.presentation,
     resumed: event.resumed,
-    ...(event.duration_ms === undefined
+    ...(paymentIntentSource === undefined
       ? {}
-      : { duration_ms: event.duration_ms })
+      : { payment_intent_source: paymentIntentSource }),
+    ...('duration_ms' in event && event.duration_ms !== undefined
+      ? { duration_ms: event.duration_ms }
+      : {})
   } as const
 
   switch (event.name) {

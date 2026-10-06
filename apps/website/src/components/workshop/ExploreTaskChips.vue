@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { UseCase } from '../../config/models-catalogue'
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
-import { useCaseLabelKey } from '../../lib/workshop/use-case-label'
+import type { UseCase } from '@/config/models-catalogue'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import { useCaseLabelKey } from '@/lib/workshop/use-case-label'
 
 const { useCases, locale = 'en' } = defineProps<{
   useCases: readonly UseCase[]

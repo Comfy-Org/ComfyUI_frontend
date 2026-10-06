@@ -9,17 +9,17 @@ import {
 } from 'reka-ui'
 import { computed } from 'vue'
 
-import type { ButtonVariants } from '../ui/button'
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
-import type { CalendarEvent } from '../../utils/calendar'
+import type { ButtonVariants } from '@/components/ui/button'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import type { CalendarEvent } from '@/utils/calendar'
 import {
   toGoogleCalendarUrl,
   toIcsDataUri,
   toOutlookCalendarUrl
-} from '../../utils/calendar'
-import { resolveRel } from '../../utils/cta'
-import Button from '../ui/button/Button.vue'
+} from '@/utils/calendar'
+import { resolveRel } from '@/utils/cta'
+import Button from '@/components/ui/button/Button.vue'
 
 const {
   event,

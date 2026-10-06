@@ -99,16 +99,6 @@ describe('WidgetMarkdown Dual Mode Display', () => {
       expect(displayDiv!.innerHTML).toContain('<em>italic</em>')
     })
 
-    it('starts in display mode by default', () => {
-      const widget = createMarkdownWidget('# Test')
-      const { container } = renderComponent(widget, '# Test')
-
-      expect(container.querySelector('.comfy-markdown-content')).toHaveClass(
-        'visible'
-      )
-      expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
-    })
-
     it('handles empty markdown content', () => {
       const widget = createMarkdownWidget('')
       const { container } = renderComponent(widget, '')

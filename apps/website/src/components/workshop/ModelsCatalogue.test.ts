@@ -9,12 +9,12 @@ import {
   useWorkshopAppsEnabled,
   useWorkshopEnabled,
   useWorkshopFlag
-} from '../../scripts/posthog'
-import { DOOR_ART, TASK_ART } from '../../lib/workshop/explore-art'
+} from '@/scripts/posthog'
+import { DOOR_ART, TASK_ART } from '@/lib/workshop/explore-art'
 import ModelsCatalogue from './ModelsCatalogue.vue'
-import type { WorkshopModel } from '../../config/models-catalogue'
+import type { WorkshopModel } from '@/config/models-catalogue'
 
-vi.mock(import('../../scripts/posthog'))
+vi.mock(import('@/scripts/posthog'))
 
 let enabled: Ref<boolean>
 let reshootFlag: Ref<boolean>

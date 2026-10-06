@@ -5,15 +5,22 @@ import ExploreResultCard from './ExploreResultCard.vue'
 
 describe('ExploreResultCard', () => {
   it.for([
-    { art: 'an app still', image: '/still.jpg', images: ['/still.jpg'] },
-    { art: 'nothing', image: undefined, images: [] }
-  ])('reads as a name and one line with $art', ({ image, images }) => {
+    {
+      art: 'an app still',
+      model: {
+        name: 'Relight',
+        thumbnail: { url: '/still.jpg', kind: 'image' }
+      },
+      images: ['/still.jpg']
+    },
+    { art: 'nothing', model: undefined, images: [] }
+  ] as const)('reads as a name and one line with $art', ({ model, images }) => {
     render(ExploreResultCard, {
       props: {
         href: '/hub/apps/x/',
         name: 'Relight',
         detail: 'Light a photo again',
-        image
+        model
       }
     })
 

@@ -1,13 +1,12 @@
 <script setup lang="ts">
-import type { WorkshopModel } from '../../config/models-catalogue'
+import type { WorkshopModel } from '@/config/models-catalogue'
 import WorkshopCardMedia from './WorkshopCardMedia.vue'
 
-const { href, name, detail, image, model } = defineProps<{
+const { href, name, detail, model } = defineProps<{
   href?: string
   name: string
   detail: string
-  image?: string
-  model?: WorkshopModel
+  model?: Pick<WorkshopModel, 'name' | 'thumbnail'>
 }>()
 </script>
 
@@ -19,15 +18,6 @@ const { href, name, detail, image, model } = defineProps<{
   >
     <span class="relative block aspect-4/3 overflow-hidden rounded-2xl">
       <WorkshopCardMedia v-if="model" :model />
-      <img
-        v-else-if="image"
-        :src="image"
-        alt=""
-        class="size-full object-cover transition-transform duration-300 select-none group-hover:scale-105"
-        loading="lazy"
-        decoding="async"
-        draggable="false"
-      />
       <span v-else class="block size-full bg-hub-surface-hover" />
     </span>
     <span class="flex min-w-0 flex-col gap-1 px-3">

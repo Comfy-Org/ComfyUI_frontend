@@ -57,6 +57,7 @@ import { resolveStripePublishableKey } from '@/platform/workspace/billing/stripe
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
+import { getCheckoutJourneyPaymentIntentSource } from '@/platform/workspace/utils/checkoutJourney'
 import { useDialogStore } from '@/stores/dialogStore'
 
 import { projectBillingCapabilities } from './billingCapabilitiesView'
@@ -263,7 +264,12 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     if (started && !event.resumed && callerStarted.has(event.operation_type)) {
       return
     }
-    useTelemetry()?.trackBillingEvent(toBillingTelemetryEvent(event))
+    useTelemetry()?.trackBillingEvent(
+      toBillingTelemetryEvent(
+        event,
+        getCheckoutJourneyPaymentIntentSource(event.billing_op_id)
+      )
+    )
   }
 
   // Sound because the lifecycle runs one command per kind at a time and
@@ -367,7 +373,10 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     const offered = offeredActions.get(state.id) ?? new Set<string>()
     if (offered.has(actionUrl)) return
     offeredActions.set(state.id, offered.add(actionUrl))
-    if (window.open(actionUrl, '_blank')) return
+    if (window.open(actionUrl, '_blank')) {
+      sdk.lifecycle.reportHostedStepOpened(state.id, 'new_tab')
+      return
+    }
     toastStore.add({
       severity: 'warn',
       summary: t('g.warning'),
@@ -452,14 +461,16 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
   // The backend gate on these routes is independent of the client flag, so a
   // 404 means the rail is on too early. One answer settles it for the tab:
   // every later action goes straight to the legacy call.
-  let subscriptionRouteAvailable = true
+  const subscriptionRouteAvailable = shallowRef(true)
 
   async function onSubscriptionRoute<T>(
     run: () => Promise<SubscriptionRailOutcome<T>>
   ): Promise<SubscriptionRailOutcome<T>> {
-    if (!subscriptionRouteAvailable) return { status: 'unavailable' }
+    if (!subscriptionRouteAvailable.value) return { status: 'unavailable' }
     const outcome = await run()
-    if (outcome.status === 'unavailable') subscriptionRouteAvailable = false
+    if (outcome.status === 'unavailable') {
+      subscriptionRouteAvailable.value = false
+    }
     return outcome
   }
 
@@ -653,6 +664,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     hasPendingOperations,
     isSettingUp,
     subscriptionActionOperation,
+    subscriptionRouteAvailable,
     getOperation,
     recoverPendingOperation,
     createTopup,

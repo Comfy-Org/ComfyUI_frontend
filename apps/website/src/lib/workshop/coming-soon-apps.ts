@@ -1,4 +1,4 @@
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '@/i18n/translations'
 import type { CatalogueApp } from './catalogue-apps'
 import { ac } from './catalogue-apps'
 
@@ -26,10 +26,10 @@ const UPCOMING = [
 
 /** Apps still being built, listed without a page of their own yet. */
 export function upcomingApps(locale: Locale): readonly CatalogueApp[] {
-  return UPCOMING.map(([key, copy, image]) => ({
+  return UPCOMING.map(([key, copy, url]) => ({
     key,
     name: ac(`${copy}Name`, locale),
     task: ac(`${copy}Task`, locale),
-    image
+    thumbnail: { url, kind: 'image' }
   }))
 }

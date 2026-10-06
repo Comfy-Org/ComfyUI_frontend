@@ -5,11 +5,11 @@ import { readonly, ref, createSSRApp, h, nextTick } from 'vue'
 import type { Ref } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 
-import { workshopModels } from '../../config/workshop-browse-content'
-import { workshopPages } from '../../config/workshop-page-content'
+import { workshopModels } from '@/config/workshop-browse-content'
+import { workshopPages } from '@/config/workshop-page-content'
 import './ModelPage.vue'
 import './ModelsCatalogue.vue'
-import { prepareModelPage } from '../../routes/models/model-page'
+import { prepareModelPage } from '@/routes/models/model-page'
 import {
   useWorkshopAppsEnabled,
   captureWorkshopEvent,
@@ -17,12 +17,12 @@ import {
   useWorkshopEnabledSettled,
   useWorkshopWorkflowsEnabled,
   useWorkshopAuthFlag
-} from '../../scripts/posthog'
+} from '@/scripts/posthog'
 import { FORWARD_GRACE_MS, forwardLegacySection } from './forwardLegacySection'
-import type { HubSection } from '../../lib/workshop/hub-section'
+import type { HubSection } from '@/lib/workshop/hub-section'
 import ModelsPage from './ModelsPage.vue'
 
-vi.mock(import('../../scripts/posthog'))
+vi.mock(import('@/scripts/posthog'))
 
 let enabled: Ref<boolean>
 let settled: Ref<boolean>

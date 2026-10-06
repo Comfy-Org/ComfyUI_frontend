@@ -1,4 +1,4 @@
-import type { UseCase } from '../../config/models-catalogue'
+import type { UseCase } from '@/config/models-catalogue'
 
 export type HubDoor = 'apps' | 'workflows' | 'models'
 

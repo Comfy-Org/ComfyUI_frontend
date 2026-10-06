@@ -1,4 +1,8 @@
-import { tryOnScopeDispose, useIntervalFn } from '@vueuse/core'
+import {
+  tryOnScopeDispose,
+  useEventListener,
+  useIntervalFn
+} from '@vueuse/core'
 import { computed, shallowReadonly, shallowRef, watch } from 'vue'
 
 import {
@@ -14,12 +18,14 @@ import type {
   CancelOperationResult,
   CapabilitiesSnapshot,
   SubscribeInput,
+  SubscriptionCommandFailure,
   SubscriptionCommandResult,
   SubscriptionPreview
 } from '@comfyorg/account-core/billing'
 import {
   OPERATION_POLL_TIMING,
-  matchesServerCode
+  matchesServerCode,
+  unwrapServerCode
 } from '@comfyorg/account-core/billing'
 import type { BillingEntry } from '@comfyorg/billing-contract'
 
@@ -27,14 +33,17 @@ import type {
   CheckoutPage,
   CheckoutPageEvent,
   PaymentTab,
-  SavedArrival
+  SavedArrival,
+  ServerRefusal
 } from '@/checkout/checkoutPage'
 import {
   RESOLVING,
   UNREADABLE_LINK,
+  abandonedChallengeOf,
   awaitingServer,
   cancelTarget,
   challengeToReopen,
+  isCancelAsked,
   isCanceling,
   isParked,
   needsConsent,
@@ -42,6 +51,8 @@ import {
   reduceCheckoutPage,
   settledPlanSource
 } from '@/checkout/checkoutPage'
+import { methodKindOf } from '@/checkout/checkoutJourney'
+import { endingOf } from '@/checkout/endingScreen'
 import { pricingTableUrl } from '@/checkout/cloudLinks'
 import { createOperationChannel } from '@/checkout/operationChannel'
 import { promoEntryLive, promoRejectionOf } from '@/checkout/promoEntry'
@@ -63,6 +74,7 @@ import { useCheckoutJourney } from '@/composables/useCheckoutJourney'
 import { useCheckoutPromo } from '@/composables/useCheckoutPromo'
 import { awaitBillingWebStripeKey } from '@/config/stripeKey'
 import { useBillingEntry } from '@/entry/billingEntry'
+import type { BillingEntryState } from '@/entry/billingEntry'
 import { useBillingWebSession } from '@/session/billingWebSession'
 import { createDeferredStripeChallengePort } from '@/session/stripeChallengePort'
 import {
@@ -103,11 +115,37 @@ type PlannedEntry = BillingEntry & { plan: string }
 /** What the quote answers for a plan slug the catalog does not have. */
 const UNKNOWN_PLAN_SERVER_CODE = 'INVALID_PLAN'
 
+const RATE_LIMITED = 429
+
 /** The status the server answered a failed read with, when it answered. */
 function withHttpStatus(failure: object) {
   return 'httpStatus' in failure && typeof failure.httpStatus === 'number'
     ? { httpStatus: failure.httpStatus }
     : {}
+}
+
+/**
+ * A quote the server refused in its own words: a 4xx carrying its code. A
+ * 5xx, a rate limit, or a request that never reached it is a quote it could
+ * not give, which Try again can still get.
+ */
+function refusalOf(
+  failure: SubscriptionCommandFailure
+): ServerRefusal | undefined {
+  if (!('serverCode' in failure) || failure.serverCode === undefined)
+    return undefined
+  const { httpStatus, serverMessage } = failure
+  if (
+    httpStatus === undefined ||
+    httpStatus < 400 ||
+    httpStatus >= 500 ||
+    httpStatus === RATE_LIMITED
+  )
+    return undefined
+  return {
+    code: unwrapServerCode(failure.serverCode),
+    ...(serverMessage === undefined ? {} : { message: serverMessage })
+  }
 }
 
 /** A capability read that ends the page before any quote: unreadable, or refused. */
@@ -160,6 +198,13 @@ function railOf(
   } as const
 }
 
+/** A link that names no plan has nothing to quote, so it is as unreadable as a malformed one. */
+function arrivalPage({ entry, error }: BillingEntryState): CheckoutPage {
+  return error.value === undefined && entry.value?.plan !== undefined
+    ? RESOLVING
+    : UNREADABLE_LINK
+}
+
 /**
  * The full-page checkout's effects around one `CheckoutPage` state: the
  * reconciliation with whatever operation the workspace is already waiting
@@ -191,11 +236,8 @@ export function useFullPageCheckout() {
   const journey = useCheckoutJourney('full_page')
   journey.enter()
 
-  /** A link that names no plan has nothing to quote, so it is as unreadable as a malformed one. */
   const page = shallowRef<CheckoutPage>(
-    unreadableLink.value === undefined && entry.value?.plan !== undefined
-      ? RESOLVING
-      : UNREADABLE_LINK
+    arrivalPage({ entry, error: unreadableLink })
   )
 
   /** Busy from the Pay click until the attempt resolves, whatever the lifecycle's promise does. */
@@ -211,11 +253,19 @@ export function useFullPageCheckout() {
    * reopens only a challenge that stays on this page (below), and anything
    * else waits for Complete verification.
    */
+  let handedToHostedStep = false
   const checkout = useCheckout({
-    openUrl: (url) => window.location.assign(url),
+    openUrl: (url) => {
+      handedToHostedStep = true
+      window.location.assign(url)
+    },
     navigationMode: 'redirect',
     challengePort,
-    autoContinue: () => submitting.value
+    autoContinue: () => submitting.value,
+    methodKind: () =>
+      page.value.kind === 'capture' && page.value.attempt.kind === 'sent'
+        ? methodKindOf(page.value.attempt.redirectMethod)
+        : undefined
   })
   const attempts = createSubscriptionCheckoutTelemetry({ ui: 'full_page' })
 
@@ -363,11 +413,7 @@ export function useFullPageCheckout() {
     if (expiredPromo !== undefined) promo.expire()
     const stopped = capabilityStop(allowed)
     if (stopped !== undefined) return withScheduledChange(stopped)
-    if (quoted.status === 'error')
-      return 'serverCode' in quoted &&
-        matchesServerCode(quoted, UNKNOWN_PLAN_SERVER_CODE)
-        ? { type: 'planUnavailable', reason: 'retired' }
-        : { type: 'unavailable', code: quoted.code, ...withHttpStatus(quoted) }
+    if (quoted.status === 'error') return quoteFailureEvent(quoted, arrival)
     const unquotable = quotedStop(quoted.value, arrival)
     if (unquotable !== undefined) return unquotable
     const facts = {
@@ -379,6 +425,43 @@ export function useFullPageCheckout() {
       ...railOf(quoted.value, arrivalOf(methods), stripeKey),
       ...facts
     }
+  }
+
+  /**
+   * A quote the server would not give: a slug its catalog lacks, a team
+   * plan its catalog lists but the link names without a stop, a refusal in
+   * its own words, or a read that failed.
+   */
+  async function quoteFailureEvent(
+    failure: SubscriptionCommandFailure,
+    arrival: PlannedEntry
+  ): Promise<CheckoutPageEvent> {
+    if (
+      'serverCode' in failure &&
+      matchesServerCode(failure, UNKNOWN_PLAN_SERVER_CODE)
+    )
+      return { type: 'planUnavailable', reason: 'retired' }
+    const server = refusalOf(failure)
+    if (server === undefined)
+      return {
+        type: 'unavailable',
+        code: failure.code,
+        ...withHttpStatus(failure)
+      }
+    if (await namesTeamWithoutStop(arrival))
+      return { type: 'planUnavailable', reason: 'team_stop_missing' }
+    return { type: 'notAllowed', server }
+  }
+
+  async function namesTeamWithoutStop(arrival: PlannedEntry) {
+    if (arrival.teamCreditStopId !== undefined) return false
+    const catalog = await plans.read()
+    return (
+      catalog.status === 'ok' &&
+      catalog.value.data.plans.some(
+        (plan) => plan.slug === arrival.plan && plan.tier === 'TEAM'
+      )
+    )
   }
 
   /** Capture never renders before reconciliation has answered (rule 3). */
@@ -433,7 +516,8 @@ export function useFullPageCheckout() {
    * once per challenge, as long as Stripe runs it inside this page: a reload
    * mid-challenge picks it back up, and a customer back from a provider's
    * site is never sent straight back to it. A challenge replaced while Stripe
-   * answers opens nothing: the page no longer shows it.
+   * answers opens nothing: the page no longer shows it. Nor does one the
+   * customer asked to cancel meanwhile: Stripe cannot close its window again.
    */
   watch(
     () => challengeToReopen(page.value),
@@ -444,7 +528,8 @@ export function useFullPageCheckout() {
         .leavesPage(clientSecret)
         .catch(() => true)
       if (challengeToReopen(page.value) !== clientSecret) return
-      if (!leavesPage) checkout.continueVerification()
+      if (!leavesPage && !isCancelAsked(page.value))
+        checkout.continueVerification()
       reopening.value = false
     }
   )
@@ -583,6 +668,49 @@ export function useFullPageCheckout() {
 
   const { returnLink, openedByScript, close } = useCheckoutExit(page)
 
+  watch(
+    () => {
+      const kind = endingOf(page.value)?.kind
+      return kind === 'scheduled' ? 'success' : kind
+    },
+    (kind) => {
+      if (kind === undefined) {
+        journey.resumed()
+        return
+      }
+      const current = page.value
+      journey.ended(
+        kind,
+        current.kind === 'terminal' ? current.attribution : undefined
+      )
+    },
+    { immediate: true }
+  )
+
+  /**
+   * A page handed to a method's own site by the challenge of the operation
+   * its Pay issued has not been abandoned.
+   */
+  function leftForPayment() {
+    const current = page.value
+    if (current.kind !== 'capture' || current.attempt.kind !== 'sent')
+      return false
+    const { redirectMethod, operation } = current.attempt
+    const challenge = operation?.challenge?.status
+    return (
+      redirectMethod !== undefined &&
+      operation?.presentation === 'embedded' &&
+      (challenge === 'required' || challenge === 'in_progress')
+    )
+  }
+
+  /** A hosted handoff covers only the page exit it caused, not one after coming Back. */
+  useEventListener(window, 'pagehide', () => {
+    const handedOff = handedToHostedStep
+    handedToHostedStep = false
+    if (!handedOff && !leftForPayment()) journey.abandoned('page_exit')
+  })
+
   /**
    * The live catalog, on the Team tab when the link asked for a team plan:
    * one the quote named without its stop, or a link that carries a stop.
@@ -691,6 +819,7 @@ export function useFullPageCheckout() {
 
   let payGeneration = 0
   let canceling: Promise<void> | undefined
+  let releasing: Promise<unknown> | undefined
 
   /**
    * One cancel per challenge: a click while one is unanswered sends nothing.
@@ -716,23 +845,43 @@ export function useFullPageCheckout() {
       })
     )
 
-  async function askToCancel(operationId: string) {
+  /** Asks again while the server is still settling the cancel and `waiting` holds. */
+  async function askUntilSettled(operationId: string, waiting: () => boolean) {
     let answer = await askOnce(operationId)
-    for (let asked = 1; asksAgain(answer, asked); asked++) {
+    for (let asked = 1; asksAgain(answer, asked) && waiting(); asked++) {
       await new Promise((resolve) => setTimeout(resolve, CANCEL_REASK_MS))
-      if (disposed) return
+      if (disposed) return answer
       answer = await askOnce(operationId)
     }
+    return answer
+  }
+
+  const asksAgain = (answer: CancelOperationResult, asked: number) =>
+    !disposed && answer.status === 'cancel_requested' && asked < CANCEL_ASKS
+
+  async function askToCancel(operationId: string) {
+    const answer = await askUntilSettled(operationId, () =>
+      isCanceling(page.value)
+    )
     if (disposed) return
     if (answer.status === 'canceled' || isCanceling(page.value))
       settleCancel(operationId, answer)
   }
 
-  const asksAgain = (answer: CancelOperationResult, asked: number) =>
-    !disposed &&
-    answer.status === 'cancel_requested' &&
-    isCanceling(page.value) &&
-    asked < CANCEL_ASKS
+  /**
+   * Closing Stripe's window is how the customer cancels a challenge it
+   * covers, so the page asks the server to drop that payment; the card it
+   * already earned, Payment not completed, stays. A refusal changes nothing:
+   * the next Pay resubmits the payment, as it always did. That Pay waits for
+   * the answer, so a late cancel never drops it.
+   */
+  watch(
+    () => abandonedChallengeOf(checkout.operation.value),
+    (operationId) => {
+      if (operationId !== undefined)
+        releasing = askUntilSettled(operationId, () => true)
+    }
+  )
 
   function settleCancel(operationId: string, answer: CancelOperationResult) {
     if (answer.status === 'canceled') {
@@ -773,8 +922,10 @@ export function useFullPageCheckout() {
     const press = journey.submitted()
     dispatch({
       type: 'paySubmitted',
+      quote: quoted,
       ...(redirectMethod === undefined ? {} : { redirectMethod })
     })
+    await releasing
     let result: SubscriptionCommandResult
     try {
       result = await attempts.run(checkoutAttemptOf(quoted, arrival), () =>
@@ -797,9 +948,12 @@ export function useFullPageCheckout() {
     viewPlansLink,
     openedByScript,
     close,
+    abandon: journey.abandoned,
     retryLoad,
     onPaymentPhase,
-    savedMethods: saved.methods,
+    savedMethods: computed(() =>
+      saved.failure.value === undefined ? saved.methods.value : undefined
+    ),
     reconcile,
     retryElement: () => dispatch({ type: 'elementRetried' }),
     retrySaved: () => void retrySaved(),

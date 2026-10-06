@@ -1,9 +1,9 @@
-import { getRoutes } from '../config/routes'
+import { getRoutes } from '@/config/routes'
 import {
   loadAppCatalogue,
   loadExploreCatalogue,
   loadWorkflowCatalogue
-} from '../lib/workshop/catalogue-components'
+} from '@/lib/workshop/catalogue-components'
 
 import { HUB_TOOLBAR_ID } from './hubToolbar'
 

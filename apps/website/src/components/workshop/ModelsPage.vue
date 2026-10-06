@@ -11,18 +11,18 @@ import {
 } from 'vue'
 import type { FunctionalComponent } from 'vue'
 
-import { isWorkflowSlug } from '../../config/models-catalogue'
-import { fetchModelsCatalogue } from '../../config/models-catalogue-data'
-import { useWorkshopSession } from '../../config/workshop-session-state'
-import { translationsFor } from '../../i18n/translations'
+import { isWorkflowSlug } from '@/config/models-catalogue'
+import { fetchModelsCatalogue } from '@/config/models-catalogue-data'
+import { useWorkshopSession } from '@/config/workshop-session-state'
+import { translationsFor } from '@/i18n/translations'
 import {
   useWorkshopAppsEnabled,
   useWorkshopEnabled,
   useWorkshopEnabledSettled,
   useWorkshopWorkflowsEnabled
-} from '../../scripts/posthog'
+} from '@/scripts/posthog'
 
-import type { HubSection } from '../../lib/workshop/hub-section'
+import type { HubSection } from '@/lib/workshop/hub-section'
 import HubEyebrow from './HubEyebrow.vue'
 import WorkshopGate from './WorkshopGate.vue'
 import WorkshopLoading from './WorkshopLoading.vue'
@@ -97,7 +97,7 @@ watch(
     if (!id || !uid || !workspaceId) return
     try {
       const { workflowStorage } =
-        await import('../../config/workshop-workflow-storage')
+        await import('@/config/workshop-workflow-storage')
       if (current)
         savedWorkflow.value = Boolean(
           workflowStorage(
@@ -165,8 +165,7 @@ function createContent() {
           ? import('./WorkflowPage.vue')
           : import('./ModelPage.vue')
         void preload.catch(() => undefined)
-        const { fetchModelsPage } =
-          await import('../../config/models-page-data')
+        const { fetchModelsPage } = await import('@/config/models-page-data')
         const { model, ...page } = await fetchModelsPage(slug)
         if (model.routerId === undefined) {
           const { default: WorkflowPage } = await import('./WorkflowPage.vue')

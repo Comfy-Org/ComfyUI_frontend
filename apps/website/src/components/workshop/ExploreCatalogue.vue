@@ -5,21 +5,21 @@ import type {
   UseCase,
   WorkflowWorkshopModel,
   WorkshopModel
-} from '../../config/models-catalogue'
+} from '@/config/models-catalogue'
 import {
   USE_CASES,
   catalogSearch,
   filterWorkshopModels,
   sortWorkshopModels,
   useCasesFor
-} from '../../config/models-catalogue'
-import { getRoutes } from '../../config/routes'
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
-import type { CatalogueApp } from '../../lib/workshop/catalogue-apps'
-import { DOOR_ART, TASK_ART } from '../../lib/workshop/explore-art'
-import { useCaseLabelKey } from '../../lib/workshop/use-case-label'
-import { TASK_CARD } from '../../lib/workshop/card-layout'
+} from '@/config/models-catalogue'
+import { getRoutes } from '@/config/routes'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import type { CatalogueApp } from '@/lib/workshop/catalogue-apps'
+import { DOOR_ART, TASK_ART } from '@/lib/workshop/explore-art'
+import { useCaseLabelKey } from '@/lib/workshop/use-case-label'
+import { TASK_CARD } from '@/lib/workshop/card-layout'
 import CardRow from './CardRow.vue'
 import ExploreCommunity from './ExploreCommunity.vue'
 import ExploreDoors from './ExploreDoors.vue'
@@ -87,7 +87,7 @@ const tasks = computed(() =>
 )
 
 const popular = computed(() => [
-  ...apps.map((app) => app.image),
+  ...apps.map((app) => app.thumbnail?.url),
   ...everything.value
     .slice(0, RESULTS - apps.length)
     .map((model) => model.thumbnail?.url)

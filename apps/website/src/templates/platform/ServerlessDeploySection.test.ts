@@ -2,10 +2,10 @@ import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 
-import { t } from '../../i18n/translations'
+import { t } from '@/i18n/translations'
 import ServerlessDeploySection from './ServerlessDeploySection.vue'
 
-vi.mock(import('../../composables/useReducedMotion'), () => ({
+vi.mock(import('@/composables/useReducedMotion'), () => ({
   prefersReducedMotion: () => true
 }))
 

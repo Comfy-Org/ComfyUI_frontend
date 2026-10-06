@@ -6,7 +6,7 @@
  * every way out leads back there. A hosted continuation redirects this tab
  * and comes back on `/v1/result`.
  */
-import { useTimeoutFn } from '@vueuse/core'
+import { useEventListener, useTimeoutFn } from '@vueuse/core'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -39,9 +39,11 @@ import {
   buildReturnUrl
 } from '@comfyorg/billing-contract'
 
+import { quoteFailureEndingOf } from '@/checkout/checkoutJourney'
 import type { PaymentChoice } from '@/checkout/checkoutRequest'
 import {
   buildSubscribeRequest,
+  paysOnOwnSite,
   teamCheckoutPlan,
   tierCheckoutPlan
 } from '@/checkout/checkoutRequest'
@@ -97,8 +99,15 @@ const { lifecycle, status } = useBillingClient<'lifecycle' | 'status'>(
   undefined
 )
 
+/** A page handed to a hosted step or a method's own site has not been abandoned. */
+let handedToHostedStep = false
+let payingOnOwnSite = false
+
 const checkout = useCheckout({
-  openUrl: (url) => window.location.assign(url),
+  openUrl: (url) => {
+    handedToHostedStep = true
+    window.location.assign(url)
+  },
   navigationMode: 'redirect',
   // Deferred: reads the key at challenge time, not this setup's snapshot.
   challengePort: createDeferredStripeChallengePort(awaitBillingWebStripeKey)
@@ -133,6 +142,8 @@ async function quotePlan(
   if (call === latestQuoteCall) {
     if (promotionCode === undefined) journey.quoted(result)
     else journey.promoQuoted(result, promotionCode)
+    if (failure.value && !preview.value)
+      journey.ended(quoteFailureEndingOf(failure.value), undefined)
   }
   return result
 }
@@ -416,6 +427,7 @@ watch(
     if (!settled || submitting || id === announcedSuccess.value) return
     announcedSuccess.value = id
     const result = checkout.result.value
+    journey.ended('success', result?.status === 'ok' ? 'started' : 'followed')
     const tookPayment =
       result?.status !== 'ok' || result.value.issuedStatus !== 'subscribed'
     if (tookPayment) showSuccessToast()
@@ -509,11 +521,12 @@ function selectedRailOf(choice: PaymentChoice) {
   return choice.savedPaymentMethodId !== undefined ? 'saved' : 'on_file'
 }
 
-function reportMethodSelected(choice: PaymentChoice) {
-  const savedType = methods.value?.find(
-    ({ id }) => id === choice.savedPaymentMethodId
-  )?.type
-  journey.methodSelected(selectedRailOf(choice), choice.methodType ?? savedType)
+/** The chosen method's type: the form names a new one, and a saved one is read from the loaded methods. */
+function methodTypeOf(choice: PaymentChoice): string | undefined {
+  return (
+    choice.methodType ??
+    methods.value?.find(({ id }) => id === choice.savedPaymentMethodId)?.type
+  )
 }
 
 async function pay(choice: PaymentChoice) {
@@ -521,8 +534,10 @@ async function pay(choice: PaymentChoice) {
   const slug = planSlug.value
   if (slug === undefined || !quoted || loading.value) return
   submitFailure.value = undefined
-  reportMethodSelected(choice)
+  const methodType = methodTypeOf(choice)
+  journey.methodSelected(selectedRailOf(choice), methodType)
   const press = journey.submitted()
+  payingOnOwnSite = paysOnOwnSite(methodType)
   let result: SubscriptionCommandResult
   try {
     result = await attempts.run(checkoutAttemptOf(quoted, entry.value), () =>
@@ -539,6 +554,7 @@ async function pay(choice: PaymentChoice) {
       )
     )
   } finally {
+    payingOnOwnSite = false
     journey.submitSettled(press)
   }
   if (result.status === 'ok') return
@@ -572,8 +588,13 @@ function leaveForHost(control: WebReturnControl) {
   const href = returnLink.value
   if (href === undefined) return
   reportReturnClicked(control)
+  if (control !== 'success_close') journey.abandoned(control)
   returnToHost(href)
 }
+
+useEventListener(window, 'pagehide', () => {
+  if (!handedToHostedStep && !payingOnOwnSite) journey.abandoned('page_exit')
+})
 </script>
 
 <template>

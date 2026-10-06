@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { UseCase, WorkshopModel } from '../../config/models-catalogue'
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
-import { useCaseLabelKey } from '../../lib/workshop/use-case-label'
+import type { UseCase, WorkshopModel } from '@/config/models-catalogue'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import { useCaseLabelKey } from '@/lib/workshop/use-case-label'
 
 const {
   useCase,

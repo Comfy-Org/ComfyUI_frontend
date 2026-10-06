@@ -515,7 +515,7 @@ test.describe('Models catalog', () => {
       .getByTestId('workshop-model-card')
     await expect(cards.first()).toBeVisible()
     for (const card of await cards.all())
-      await expect(card).toHaveAccessibleName(/premium/i)
+      await expect(card.getByTestId('tag-row')).toContainText(/premium/i)
   })
 
   test('the hero medium deep-links into the catalog', async ({ page }) => {

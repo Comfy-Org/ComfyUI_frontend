@@ -7,27 +7,27 @@ import type {
   AppWorkshopModel,
   WorkflowWorkshopModel,
   WorkshopModel
-} from '../../config/models-catalogue'
-import type { Locale, TranslationKey } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
+} from '@/config/models-catalogue'
+import type { Locale, TranslationKey } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import BuildApiBand from './BuildApiBand.vue'
 import WorkshopModelsGrid from './WorkshopModelsGrid.vue'
-import type { HubSection } from '../../lib/workshop/hub-section'
-import type { WorkshopPageType } from '../../scripts/workshop-analytics'
+import type { HubSection } from '@/lib/workshop/hub-section'
+import type { WorkshopPageType } from '@/scripts/workshop-analytics'
 import {
   captureWorkshopEvent,
   useWorkshopAppsEnabled,
   useWorkshopEnabled
-} from '../../scripts/posthog'
-import type { CatalogueApp } from '../../lib/workshop/catalogue-apps'
-import { ac } from '../../lib/workshop/catalogue-apps'
-import { upcomingApps } from '../../lib/workshop/coming-soon-apps'
+} from '@/scripts/posthog'
+import type { CatalogueApp } from '@/lib/workshop/catalogue-apps'
+import { ac } from '@/lib/workshop/catalogue-apps'
+import { upcomingApps } from '@/lib/workshop/coming-soon-apps'
 import {
   loadAppCatalogue,
   loadExploreCatalogue,
   loadWorkflowCatalogue
-} from '../../lib/workshop/catalogue-components'
-import { isWorkshopModelShown } from '../../scripts/workshop-model-flags'
+} from '@/lib/workshop/catalogue-components'
+import { isWorkshopModelShown } from '@/scripts/workshop-model-flags'
 
 const WorkflowCatalogue = defineAsyncComponent(loadWorkflowCatalogue)
 const AppCatalogue = defineAsyncComponent(loadAppCatalogue)
@@ -78,7 +78,7 @@ const appCards = computed<readonly CatalogueApp[]>(() =>
     name: app.name,
     task: ac(app.appId === 'studio' ? 'studioTask' : 'reshootTask', locale),
     href: app.href,
-    image: app.thumbnail?.url ?? app.thumbnailUrl
+    thumbnail: app.thumbnail
   }))
 )
 

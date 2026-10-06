@@ -240,6 +240,7 @@ describe('the embedded checkout journey beside the attempt and the SDK stream', 
       { name: 'billing.operation.started', billingOpId: 'op_1' },
       { name: 'billing.checkout.operation_linked', billingOpId: 'op_1' },
       { name: 'billing.operation.succeeded', billingOpId: 'op_1' },
+      { name: 'billing.checkout.ended', billingOpId: 'op_1' },
       { name: 'billing.subscription_checkout.succeeded', billingOpId: 'op_1' }
     ])
   })

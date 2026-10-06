@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { WorkshopModel } from '../../config/models-catalogue'
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
-import { SHELF_CARD } from '../../lib/workshop/card-layout'
-import type { CatalogueApp } from '../../lib/workshop/catalogue-apps'
-import { nameWithoutTask, taskLabelFor } from '../../lib/workshop/task-label'
+import type { WorkshopModel } from '@/config/models-catalogue'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import { SHELF_CARD } from '@/lib/workshop/card-layout'
+import type { CatalogueApp } from '@/lib/workshop/catalogue-apps'
+import { nameWithoutTask, taskLabelFor } from '@/lib/workshop/task-label'
 import CardRow from './CardRow.vue'
 import ExploreKindTag from './ExploreKindTag.vue'
 import ExploreSeeAll from './ExploreSeeAll.vue'
@@ -57,7 +57,7 @@ defineEmits<{ clear: [] }>()
           :href="app.href"
           :name="app.name"
           :detail="app.task"
-          :image="app.image"
+          :model="app"
         />
         <ExploreKindTag kind="app" :locale />
       </li>

@@ -12,18 +12,18 @@ const app = {
 
 describe('AppFeatured', () => {
   it.for([
-    { image: '/images/studio.jpg', shown: 1 },
-    { image: undefined, shown: 0 }
-  ])(
-    'shows the artwork only when the app has one: $image',
-    ({ image, shown }) => {
-      render(AppFeatured, { props: { app: { ...app, image } } })
+    { thumbnail: { url: '/images/studio.jpg', kind: 'image' }, shown: 1 },
+    { thumbnail: undefined, shown: 0 }
+  ] as const)(
+    'shows the artwork only when the app has one: $thumbnail',
+    ({ thumbnail, shown }) => {
+      render(AppFeatured, { props: { app: { ...app, thumbnail } } })
 
       expect(screen.getByRole('link')).toHaveAttribute(
         'href',
         '/hub/apps/studio/'
       )
-      expect(screen.queryAllByTestId('app-featured-image')).toHaveLength(shown)
+      expect(screen.queryAllByTestId('model-card-media')).toHaveLength(shown)
     }
   )
 })

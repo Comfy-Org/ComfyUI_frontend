@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import type { GalleryItem } from '../../data/gallery'
+import type { GalleryItem } from '@/data/gallery'
 import ExploreCommunity from './ExploreCommunity.vue'
 
 const post = (overrides: Partial<GalleryItem>): GalleryItem => ({

@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { externalLinks, getRoutes } from '../../config/routes'
-import type { GalleryItem } from '../../data/gallery'
-import { visibleGalleryItems } from '../../data/gallery'
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
-import GalleryItemAttribution from '../gallery/GalleryItemAttribution.vue'
+import { externalLinks, getRoutes } from '@/config/routes'
+import type { GalleryItem } from '@/data/gallery'
+import { visibleGalleryItems } from '@/data/gallery'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import GalleryItemAttribution from '@/components/gallery/GalleryItemAttribution.vue'
 
 const POSTS = 16
 

@@ -4,10 +4,10 @@ import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { getRoutes } from '../../config/routes'
-import type { Locale, TranslationKey } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
-import type { HubDoor } from '../../lib/workshop/explore-art'
+import { getRoutes } from '@/config/routes'
+import type { Locale, TranslationKey } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import type { HubDoor } from '@/lib/workshop/explore-art'
 
 const {
   counts,

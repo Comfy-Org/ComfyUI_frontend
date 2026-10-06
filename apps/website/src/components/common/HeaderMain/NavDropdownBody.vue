@@ -4,8 +4,8 @@ import { computed } from 'vue'
 import type {
   NavColumn as NavColumnData,
   NavFeatured
-} from '../../../data/mainNavigation'
-import type { Locale } from '../../../i18n/translations'
+} from '@/data/mainNavigation'
+import type { Locale } from '@/i18n/translations'
 import NavColumn from './NavColumn.vue'
 import NavFeaturedCard from './NavFeaturedCard.vue'
 
