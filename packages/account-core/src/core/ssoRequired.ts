@@ -1,5 +1,4 @@
 import { zErrorResponse } from '@comfyorg/ingest-types/zod'
-import { z } from 'zod'
 
 /**
  * ingest's 403 `code` for an account or workspace an SSO organization holds,
@@ -15,15 +14,11 @@ export function isSsoRequiredRefusal(status: number, body: unknown): boolean {
   )
 }
 
-const zSsoRequiredOrganization = z.object({
-  organization_id: z.string().min(1)
-})
-
 /**
  * The organization whose SSO the refusal asks for, when ingest names one. A
  * workspace accepts only its own organization's sign-in, so this outranks the
  * organization the email's domain would discover.
  */
 export function ssoRequiredOrganizationId(body: unknown): string | undefined {
-  return zSsoRequiredOrganization.safeParse(body).data?.organization_id
+  return zErrorResponse.safeParse(body).data?.organization_id || undefined
 }
