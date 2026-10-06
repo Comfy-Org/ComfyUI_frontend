@@ -1708,7 +1708,8 @@
     "exportingAssets": "Exportando recursos",
     "noExportsInQueue": "No hay exportaciones de {filter} en la cola",
     "preparingExport": "Preparando exportación...",
-    "retryDownload": "Reintentar descarga"
+    "retryDownload": "Reintentar descarga",
+    "unsupportedDownloadUrl": "URL de descarga de exportación no compatible"
   },
   "feedback": {
     "title": "Compartir comentarios"
@@ -3617,7 +3618,8 @@
     "importingModels": "Importando modelos",
     "noImportsInQueue": "No hay {filter} en la cola",
     "pending": "Pendiente",
-    "progressCount": "{completed} de {total}"
+    "progressCount": "{completed} de {total}",
+    "taskUnavailable": "La tarea de descarga ya no está disponible."
   },
   "queue": {
     "completedIn": "Finalizado en {duration}",

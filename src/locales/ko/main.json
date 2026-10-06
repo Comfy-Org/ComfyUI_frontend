@@ -1708,7 +1708,8 @@
     "exportingAssets": "에셋 내보내는 중",
     "noExportsInQueue": "대기 중인 {filter} 내보내기 없음",
     "preparingExport": "내보내기 준비 중...",
-    "retryDownload": "다운로드 재시도"
+    "retryDownload": "다운로드 재시도",
+    "unsupportedDownloadUrl": "지원되지 않는 내보내기 다운로드 URL"
   },
   "feedback": {
     "title": "피드백 공유"
@@ -3617,7 +3618,8 @@
     "importingModels": "모델 가져오는 중",
     "noImportsInQueue": "대기 중인 {filter} 없음",
     "pending": "대기 중",
-    "progressCount": "{completed} / {total}"
+    "progressCount": "{completed} / {total}",
+    "taskUnavailable": "다운로드 작업을 더 이상 사용할 수 없습니다."
   },
   "queue": {
     "completedIn": "{duration} 내에 완료됨",

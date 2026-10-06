@@ -1708,7 +1708,8 @@
     "exportingAssets": "Экспорт ассетов",
     "noExportsInQueue": "Нет {filter} экспортов в очереди",
     "preparingExport": "Подготовка к экспорту...",
-    "retryDownload": "Повторить загрузку"
+    "retryDownload": "Повторить загрузку",
+    "unsupportedDownloadUrl": "Неподдерживаемый URL скачивания экспорта"
   },
   "feedback": {
     "title": "Оставить отзыв"
@@ -3617,7 +3618,8 @@
     "importingModels": "Импорт моделей",
     "noImportsInQueue": "Нет {filter} в очереди",
     "pending": "В ожидании",
-    "progressCount": "{completed} из {total}"
+    "progressCount": "{completed} из {total}",
+    "taskUnavailable": "Задача скачивания больше недоступна."
   },
   "queue": {
     "completedIn": "Завершено за {duration}",

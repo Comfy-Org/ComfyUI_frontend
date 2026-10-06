@@ -1708,7 +1708,8 @@
     "exportingAssets": "正在匯出資產",
     "noExportsInQueue": "佇列中沒有 {filter} 匯出",
     "preparingExport": "正在準備匯出...",
-    "retryDownload": "重試下載"
+    "retryDownload": "重試下載",
+    "unsupportedDownloadUrl": "不支援的匯出下載 URL"
   },
   "feedback": {
     "title": "分享回饋"
@@ -3617,7 +3618,8 @@
     "importingModels": "正在匯入模型",
     "noImportsInQueue": "佇列中沒有 {filter}",
     "pending": "處理中",
-    "progressCount": "{completed} / {total}"
+    "progressCount": "{completed} / {total}",
+    "taskUnavailable": "下載任務已無法使用。"
   },
   "queue": {
     "completedIn": "於 {duration} 完成",
