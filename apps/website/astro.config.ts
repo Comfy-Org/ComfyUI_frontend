@@ -6,6 +6,7 @@ import tailwindcss from '@tailwindcss/vite'
 import { isExcludedFromSitemap, isIndexableBuild } from './src/config/indexing'
 import { DEFAULT_LOCALE, LOCALE_CODES } from './src/config/locales'
 import { astroRedirects } from './src/config/redirects'
+import { indexNowManifest } from './src/integrations/indexnow-manifest'
 import { markdownTwins } from './src/integrations/markdown-twins'
 import { workshopReleaseGate } from './src/integrations/workshop-release-gate'
 import { sitemapAlternates } from './src/lib/hreflang'
@@ -36,6 +37,7 @@ export default defineConfig({
           : item
     }),
     markdownTwins(),
+    indexNowManifest(),
     workshopReleaseGate()
   ],
   vite: {

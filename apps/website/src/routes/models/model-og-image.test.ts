@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { appModels } from '@/config/workshop-app-content'
 import { workshopPages } from '@/config/workshop-page-content'
 import { modelOgImage } from './model-page'
 
@@ -13,11 +14,17 @@ describe('modelOgImage', () => {
       expected: 'https://cdn.test/a.webp'
     },
     { kind: 'video', url: 'https://cdn.test/a.mp4', expected: undefined },
+    {
+      kind: 'video',
+      url: 'https://cdn.test/a.mp4',
+      poster: 'https://cdn.test/a.jpg',
+      expected: 'https://cdn.test/a.jpg'
+    },
     { kind: 'audio', url: 'https://cdn.test/a.mp3', expected: undefined }
   ] as const)(
-    'uses a $kind thumbnail only when it is an image',
-    ({ kind, url, expected }) => {
-      expect(modelOgImage({ thumbnail: { kind, url } })).toBe(expected)
+    'uses a $kind thumbnail only through an image ($expected)',
+    ({ expected, ...thumbnail }) => {
+      expect(modelOgImage({ thumbnail })).toBe(expected)
     }
   )
 
@@ -25,8 +32,8 @@ describe('modelOgImage', () => {
     expect(modelOgImage({})).toBeUndefined()
   })
 
-  it('never returns a video for any model page', () => {
-    const videoPages = workshopPages
+  it('never returns a video for any model or app page', () => {
+    const videoPages = [...workshopPages, ...appModels]
       .filter((model) => VIDEO_EXTENSION.test(modelOgImage(model) ?? ''))
       .map((model) => model.slug)
     expect(videoPages).toEqual([])

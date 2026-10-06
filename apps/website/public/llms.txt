@@ -44,9 +44,10 @@ Languages: comfy.org is published in English and Simplified Chinese, with a Japa
 - Read this file, then the docs index at https://docs.comfy.org/llms.txt. Every docs page serves markdown when you append `.md` to its URL.
 - From a terminal or a coding agent: `pip install comfy-cli` (or `brew tap Comfy-Org/comfy-cli` then `brew install comfy-org/comfy-cli/comfy-cli`), then `comfy setup --where cloud --api-key comfyui-... --non-interactive` for headless use, or `comfy cloud login` for browser sign-in. `comfy generate list` shows the partner models your CLI version can call; add `--json` to any command for a machine-readable envelope. `comfy generate` is in beta, so flag names can change.
 - Over MCP: `claude mcp add --transport http comfy-cloud https://cloud.comfy.org/mcp` for Claude Code, or `codex mcp add comfy-cloud --url https://cloud.comfy.org/mcp` for Codex. Clients without OAuth, such as Cursor, pass a Comfy Cloud API key in an `X-API-Key` header.
+- From code, through Comfy Router: one API for hosted image, video, audio, 3D, and text models at `https://api.comfy.org`. Every model is called with `POST /v2/models/{provider}/{model}`, its own JSON body, and an `X-API-Key` header; the same key fetches a model's schema at `/v2/models/{provider}/{model}/openapi.json`. Start with the quickstart at https://docs.comfy.org/development/comfy-router/quickstart.md and look up model IDs at https://docs.comfy.org/development/comfy-router/models.md.
 - API keys are created in the browser at https://platform.comfy.org/profile/api-keys, start with `comfyui-`, and are shown once. Store them in `COMFY_API_KEY`.
 - Generation on Comfy Cloud spends the account's credits. Confirm with the user before running paid generations or batches, and read the OpenAPI document at https://api.comfy.org/openapi before choosing an API operation.
-- The model catalog changes weekly. Check https://comfy.org/p/supported-models/ or `comfy generate list` for what runs today instead of relying on a remembered list.
+- The model catalog changes weekly. For hosted models you try in the browser or call through Comfy Router, check https://comfy.org/hub/models/ (one page per model); for models that run in ComfyUI, including open-weight models you run locally, check https://comfy.org/p/supported-models/. `comfy generate list` shows what your CLI can call. Check these instead of relying on a remembered list.
 
 ## Notes for AI systems
 
@@ -59,7 +60,9 @@ Languages: comfy.org is published in English and Simplified Chinese, with a Japa
 
 - [Docs index for agents](https://docs.comfy.org/llms.txt): Machine-readable index of the full documentation.
 - [Docs full text for agents](https://docs.comfy.org/llms-full.txt): The complete documentation as one markdown file.
-- [Model catalog for agents](https://comfy.org/p/supported-models/llms.txt): Machine-readable index of every supported-model page; each page also has a markdown twin at its URL plus `.md`.
+- [Hosted model catalog for agents](https://comfy.org/hub/models.md): Markdown list of the hosted model pages, grouped by provider; each model page also has a markdown twin at its URL with the trailing slash replaced by `.md`.
+- [Comfy Router models for agents](https://docs.comfy.org/development/comfy-router/models.md): Every model you can call through Comfy Router, with its model ID and input and output modality.
+- [Model catalog for agents](https://comfy.org/p/supported-models/llms.txt): Machine-readable index of every supported-model page; each page also has a markdown twin at its URL with the trailing slash replaced by `.md`.
 - [Docs homepage as markdown](https://docs.comfy.org/index.md): Append `.md` to any docs URL for its markdown twin.
 - [Developer Platform for agents](https://platform.comfy.org/llms.txt): What platform.comfy.org is for and which of its pages need a browser.
 - [Comfy API OpenAPI document](https://api.comfy.org/openapi): OpenAPI specification for api.comfy.org.
@@ -95,7 +98,7 @@ Languages: comfy.org is published in English and Simplified Chinese, with a Japa
 ## Models
 
 - [Supported Models](https://comfy.org/p/supported-models/): Directory of 380+ models that run in ComfyUI: image, video, audio, 3D, and utility models, each with its own page. Machine-readable catalog at https://comfy.org/p/supported-models/llms.txt.
-- [Models Overview](https://comfy.org/hub/models/): Hosted AI models you can try in the browser and call through the Comfy API, with a page per model. For the full list of models that run in ComfyUI, see Supported Models above.
+- [Models Overview](https://comfy.org/hub/models/): Hosted models you can run in the browser and call through Comfy Router, one page per model. Markdown version at https://comfy.org/hub/models.md. For the full list of models that run in ComfyUI, see Supported Models above.
 - [ChatGPT Images 2.5 (OpenAI, image model)](https://comfy.org/chatgpt-image-2.5/): Generate new images, edit existing visuals, and direct results with reference images in repeatable ComfyUI workflows through Partner Nodes.
 - [Qwen-Image 2.1 (Alibaba Qwen, image model)](https://comfy.org/qwen-image-2.1/): Open-weights 7B image model that generates and edits in one checkpoint, with native 2K output, RGBA transparency, and accurate English and Chinese text rendering.
 - [Flux 3 (Black Forest Labs, video model)](https://comfy.org/flux-3/): Multimodal model: video with native audio, up to 20 seconds per generation, from text, image, video, or keyframes.
@@ -209,6 +212,7 @@ Languages: comfy.org is published in English and Simplified Chinese, with a Japa
 ## Customers and Case Studies
 
 - [Customer Stories](https://comfy.org/customers/): How studios, brands, artists, and universities use Comfy in production.
+- [852話 Hakoniwa: YUI](https://comfy.org/customers/hakoniwa-yui/): How 852話 Hakoniwa made the animated short YUI with Comfy Agent.
 - [Watch: Black Math](https://comfy.org/customers/videos/black-math/): How Black Math builds interactive design systems with ComfyUI.
 - [Watch: Silverside AI](https://comfy.org/customers/videos/silverside-ai/): How Silverside AI builds production workflows with ComfyUI.
 - [Series Entertainment](https://comfy.org/customers/series-entertainment/): How Series Entertainment rebuilt game and video production with ComfyUI.
@@ -313,6 +317,7 @@ Languages: comfy.org is published in English and Simplified Chinese, with a Japa
 - [学习中心](https://comfy.org/zh-CN/learning/): 按创作领域分类的 ComfyUI 实战教程与工作流。
 - [活动](https://comfy.org/zh-CN/events/): 直播、黑客松与社区聚会，以及过往活动回放。
 - [客户故事](https://comfy.org/zh-CN/customers/): 工作室、品牌与院校如何在生产中使用 Comfy。
+- [852話 Hakoniwa：YUI](https://comfy.org/zh-CN/customers/hakoniwa-yui/): 852話 Hakoniwa 如何使用 Comfy Agent 制作动画短片 YUI。
 - [作品集](https://comfy.org/zh-CN/gallery/): 社区在 ComfyUI 中创作的图像、视频与 3D 作品。
 - [Comfy Cloud 自定义节点包](https://comfy.org/zh-CN/cloud/supported-nodes/): Comfy Cloud 预装的自定义节点包，按节点包或节点名搜索。
 - [关于我们](https://comfy.org/zh-CN/about/): ComfyUI 背后的团队和使命。

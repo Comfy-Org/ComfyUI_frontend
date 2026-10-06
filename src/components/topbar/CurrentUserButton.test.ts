@@ -43,6 +43,7 @@ const CurrentUserPopoverWorkspaceStub = defineComponent({
     return () =>
       h('div', [
         h('span', 'Workspace Popover Content'),
+        h('button', 'Account action'),
         props.accountActionsOnly ? h('span', 'Account Actions Only') : ''
       ])
   }
