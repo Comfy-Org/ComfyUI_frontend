@@ -510,6 +510,15 @@ async function settled(locator: Locator) {
   )
 }
 
+async function steadyShot(locator: Locator) {
+  let previous = await locator.screenshot()
+  for (;;) {
+    const next = await locator.screenshot()
+    if (next.equals(previous)) return next
+    previous = next
+  }
+}
+
 async function dragTo(page: Page, from: Locator, x: number, y: number) {
   const dot = await from.boundingBox()
   if (!dot) throw new Error('no dot')
@@ -619,7 +628,12 @@ test('shows only the Relight light, apart from the light map, and not in Compare
     .getByTestId('relight-stage')
     .getByTestId('relight-preview')
   await expect(lightOnly).toHaveAttribute('aria-pressed', 'false')
-  const photo = await preview.screenshot()
+  await expect(app.getByRole('group', { name: 'Light map' })).toHaveAttribute(
+    'data-corner',
+    'top-right'
+  )
+  await settled(app.getByRole('group', { name: 'Light map' }))
+  const photo = await steadyShot(preview)
 
   await lightOnly.click()
   await expect(lightOnly).toHaveAttribute('aria-pressed', 'true')
