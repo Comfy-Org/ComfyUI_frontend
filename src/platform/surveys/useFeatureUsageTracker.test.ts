@@ -841,6 +841,34 @@ describe('useFeatureUsageTracker', () => {
     expect(stored['reset-recovery-writer']?.useCount).toBe(1)
   })
 
+  it('retains pending usage dropped before reset verification', () => {
+    const pendingTracker = useFeatureUsageTracker(
+      'pending-before-reset-clobber'
+    )
+    const failedSetItem = vi
+      .spyOn(localStorage, 'setItem')
+      .mockImplementation(() => {
+        throw new DOMException('Storage quota exceeded', 'QuotaExceededError')
+      })
+    pendingTracker.trackUsage()
+    failedSetItem.mockRestore()
+    const originalSetItem = localStorage.setItem.bind(localStorage)
+    const clobber = vi
+      .spyOn(localStorage, 'setItem')
+      .mockImplementation((key, value) => {
+        const written = JSON.parse(value)
+        delete written['pending-before-reset-clobber']
+        originalSetItem(key, JSON.stringify(written))
+      })
+
+    useFeatureUsageTracker('reset-clobber-trigger').reset()
+    clobber.mockRestore()
+    pendingTracker.trackUsage()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored['pending-before-reset-clobber']?.useCount).toBe(2)
+  })
+
   it('preserves stored features when reset persistence fails', () => {
     const tracker = useFeatureUsageTracker('failed-reset-merge')
     localStorage.setItem(
