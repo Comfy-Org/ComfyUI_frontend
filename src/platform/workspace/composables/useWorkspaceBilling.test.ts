@@ -97,6 +97,7 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
 
 const mockRail = vi.hoisted(() => ({
   enabled: false,
+  subscriptionRouteAvailable: true,
   openPaymentPortal: vi.fn(),
   cancelSubscription: vi.fn()
 }))
