@@ -59,9 +59,21 @@ export function useStarterPromptSet() {
     }
   }
 
-  const expose = () => {
+  const expose = (renderedAssignment?: StarterPromptAssignment) => {
     surfaceRendered = true
-    if (isAuthenticatedConfigLoaded.value) assign()
+    if (!isAuthenticatedConfigLoaded.value) return
+    assign()
+    if (
+      renderedAssignment !== undefined &&
+      renderedAssignment !== assigned.value
+    )
+      return
+    if (!qaOverride.value && exposedAssignment.value !== assigned.value) {
+      exposedAssignment.value = assigned.value
+      useTelemetry()?.trackAgentStarterPromptExposure({
+        [`$feature/${STARTER_PROMPT_SET_FLAG}`]: assigned.value
+      })
+    }
   }
 
   const invalidateSurface = () => {
@@ -72,7 +84,7 @@ export function useStarterPromptSet() {
   if (isAuthenticatedConfigLoaded.value) {
     assign()
   } else {
-    const stop = watch(
+    watch(
       [
         isAuthenticatedConfigLoaded,
         remoteConfigRevision,
@@ -81,7 +93,6 @@ export function useStarterPromptSet() {
       ([authenticated]) => {
         if (!authenticated) return
         assign()
-        stop()
       }
     )
   }

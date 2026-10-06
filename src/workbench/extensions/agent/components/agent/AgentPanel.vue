@@ -81,7 +81,7 @@ const {
   answeringAskIds = new Set<string>(),
   freeUsePlacement = 'control',
   starterPromptAssignment = 'control',
-  onStarterPromptRendered = () => undefined,
+  onStarterPromptRendered = (_assignment: StarterPromptAssignment) => undefined,
   onStarterPromptUnmounted = () => undefined
 } = defineProps<{
   entries: ConversationEntry[]
@@ -124,7 +124,7 @@ const {
   answeringAskIds?: ReadonlySet<string>
   freeUsePlacement?: FreeUseVariant
   starterPromptAssignment?: StarterPromptAssignment
-  onStarterPromptRendered?: () => void
+  onStarterPromptRendered?: (assignment: StarterPromptAssignment) => void
   onStarterPromptUnmounted?: () => void
 }>()
 const emit = defineEmits<{
