@@ -9,7 +9,7 @@ import {
   severityForAuthError
 } from '@comfyorg/account-core/firebaseAuthError'
 import type { AuthErrorClassification } from '@comfyorg/account-core/firebaseAuthError'
-import { until } from '@vueuse/core'
+import { until, useEventListener } from '@vueuse/core'
 import type { UserCredential } from 'firebase/auth'
 import { computed, onBeforeUnmount, onMounted, readonly, ref, watch } from 'vue'
 
@@ -26,6 +26,7 @@ import type {
 } from '@/config/auth-sign-in-state'
 import {
   authSignInTransition,
+  isAttemptInFlight,
   signInErrorMessage
 } from '@/config/auth-sign-in-state'
 import { addToast } from '@/config/auth-toast-state'
@@ -35,6 +36,7 @@ import {
 } from '@/config/workshop-return'
 import type { WorkshopSessionUser } from '@/config/workshop-session-state'
 import { useWorkshopSession } from '@/config/workshop-session-state'
+import { ssoStartUrlFor } from '@/config/workshop-sso'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import {
@@ -199,11 +201,10 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
     onSwitchMode(next)
   }
 
-  const busy = computed(
-    () => state.value.step === 'pending' || state.value.step === 'minting'
-  )
+  const busy = computed(() => isAttemptInFlight(state.value))
 
   const progressKey = computed(() => {
+    if (state.value.step === 'redirecting') return 'auth.signIn.ssoRedirecting'
     if (state.value.step === 'pending' && state.value.provider !== 'email')
       return 'auth.signIn.pending'
     return mode === 'signUp' ? 'auth.signUp.creating' : 'auth.signIn.signingIn'
@@ -242,9 +243,10 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
 
   async function completeSignIn(
     provider: AuthSignInProvider,
-    authenticate: (firebase: WorkshopFirebase) => Promise<UserCredential>
+    authenticate: (firebase: WorkshopFirebase) => Promise<UserCredential>,
+    ssoStartUrl?: () => Promise<string | undefined>
   ) {
-    if (state.value.step === 'pending' || state.value.step === 'minting') return
+    if (busy.value) return
     dispatch({ type: 'signInStarted', provider })
     const live = liveWhile(signIn.capture())
     let firebase: WorkshopFirebase | undefined
@@ -274,6 +276,16 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
       toastSignInFailure({ kind: 'unknown' })
     }
     try {
+      const ssoStart = await ssoStartUrl?.()
+      if (!live()) {
+        await abandon()
+        return
+      }
+      if (ssoStart) {
+        dispatch({ type: 'ssoRedirected' })
+        window.location.assign(ssoStart)
+        return
+      }
       // Wait out a prior rollback before authenticating, or its global sign-out
       // could clear this credential; bounded so a never-settling sign-out can't
       // pin the controls (on expiry, recover with a message and keep guarding).
@@ -402,17 +414,20 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
     password: string
     turnstileToken?: string
   }) {
-    return completeSignIn('email', (firebase) =>
-      mode === 'signUp'
-        ? firebase.signUpWorkshopWithEmail(
-            credentials.email,
-            credentials.password,
-            credentials.turnstileToken
-          )
-        : firebase.signInWorkshopWithEmail(
-            credentials.email,
-            credentials.password
-          )
+    return completeSignIn(
+      'email',
+      (firebase) =>
+        mode === 'signUp'
+          ? firebase.signUpWorkshopWithEmail(
+              credentials.email,
+              credentials.password,
+              credentials.turnstileToken
+            )
+          : firebase.signInWorkshopWithEmail(
+              credentials.email,
+              credentials.password
+            ),
+      () => ssoStartUrlFor(credentials.email)
     )
   }
 
@@ -452,6 +467,12 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
     if (active && enabled.value) dispatch({ type: 'mintSucceeded' })
   })
   onBeforeUnmount(stopSessionWatch)
+
+  // Back from Cloud's SSO start restores this page from the back-forward
+  // cache still showing the redirect in flight.
+  useEventListener('pageshow', (event) => {
+    if (event.persisted && state.value.step === 'redirecting') abandonAttempt()
+  })
 
   let initTimer: ReturnType<typeof setTimeout> | undefined
   onBeforeUnmount(() => clearTimeout(initTimer))

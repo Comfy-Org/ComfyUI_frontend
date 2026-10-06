@@ -484,6 +484,18 @@ Firebase header and never swaps. On the session path:
   sign-in on comfy.org does not create the shared session. Sign-in and
   sign-out on comfy.org are still Firebase's.
 
+**Enterprise SSO (`sso_enabled`).** Email sign-in and sign-up on `/login`
+and `/signup` read Cloud's global `sso_enabled` from the anonymous
+`GET /api/features` once per page load, on the first email submit
+(`src/config/workshop-sso.ts`). Only a literal `true` turns it on, and a
+failed read is off. When it is on, the submit first calls
+`POST ${cloud}/api/auth/sso/discover`. An SSO domain leaves for
+`${cloud}/api/auth/sso/start` in a full-page navigation and lands on Cloud's
+`/cloud/user-check`; it does not come back to comfy.org. Any other answer, or
+a discover failure, continues with Firebase. Ingest shows its own
+confirmation page first, because a navigation from comfy.org is same-site,
+not same-origin.
+
 **Not wired yet: Run on the session (F3b).** Model pages, workflows and the
 cinematic studio start the Firebase lifecycle whatever the flag says. A Run
 sends the `/api/auth/token` JWT to the Router as `Authorization: Bearer` with
