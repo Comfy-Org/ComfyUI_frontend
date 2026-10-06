@@ -60,9 +60,9 @@ Languages: comfy.org is published in English and Simplified Chinese, with a Japa
 
 - [Docs index for agents](https://docs.comfy.org/llms.txt): Machine-readable index of the full documentation.
 - [Docs full text for agents](https://docs.comfy.org/llms-full.txt): The complete documentation as one markdown file.
-- [Hosted model catalog for agents](https://comfy.org/hub/models.md): Markdown list of the hosted model pages, grouped by provider; each model page also has a markdown twin at its URL plus `.md`.
+- [Hosted model catalog for agents](https://comfy.org/hub/models.md): Markdown list of the hosted model pages, grouped by provider; each model page also has a markdown twin at its URL with the trailing slash replaced by `.md`.
 - [Comfy Router models for agents](https://docs.comfy.org/development/comfy-router/models.md): Every model you can call through Comfy Router, with its model ID and input and output modality.
-- [Model catalog for agents](https://comfy.org/p/supported-models/llms.txt): Machine-readable index of every supported-model page; each page also has a markdown twin at its URL plus `.md`.
+- [Model catalog for agents](https://comfy.org/p/supported-models/llms.txt): Machine-readable index of every supported-model page; each page also has a markdown twin at its URL with the trailing slash replaced by `.md`.
 - [Docs homepage as markdown](https://docs.comfy.org/index.md): Append `.md` to any docs URL for its markdown twin.
 - [Developer Platform for agents](https://platform.comfy.org/llms.txt): What platform.comfy.org is for and which of its pages need a browser.
 - [Comfy API OpenAPI document](https://api.comfy.org/openapi): OpenAPI specification for api.comfy.org.
