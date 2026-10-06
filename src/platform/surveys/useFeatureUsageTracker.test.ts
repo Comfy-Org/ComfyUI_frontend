@@ -61,12 +61,12 @@ describe('useFeatureUsageTracker', () => {
     const setItem = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
       throw new DOMException('Storage quota exceeded', 'QuotaExceededError')
     })
-    Array.from({ length: 101 }, () => tracker.trackUsage())
+    Array.from({ length: 1_001 }, () => tracker.trackUsage())
     setItem.mockRestore()
 
     tracker.trackUsage()
 
-    expect(tracker.useCount.value).toBe(102)
+    expect(tracker.useCount.value).toBe(1_001)
   })
 
   it('fails closed when bounding distinct storage baselines', () => {
@@ -77,7 +77,7 @@ describe('useFeatureUsageTracker', () => {
       throw new DOMException('Storage quota exceeded', 'QuotaExceededError')
     })
 
-    Array.from({ length: 101 }, (_, index) => {
+    Array.from({ length: 1_001 }, (_, index) => {
       originalSetItem(
         STORAGE_KEY,
         JSON.stringify({
@@ -92,10 +92,10 @@ describe('useFeatureUsageTracker', () => {
     })
     setItem.mockRestore()
 
-    expect(getPendingUsageDeltaCountForTest(featureId)).toBe(100)
+    expect(getPendingUsageDeltaCountForTest(featureId)).toBe(1_000)
     tracker.trackUsage()
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
-    expect(stored[featureId]?.useCount).toBe(202)
+    expect(stored[featureId]?.useCount).toBe(2_002)
   })
 
   it('bounds the number of features with pending usage', () => {
@@ -2505,7 +2505,6 @@ describe('useFeatureUsageTracker', () => {
     { useCount: 1, firstUsed: 1.5, lastUsed: 2_000 },
     { useCount: 1, firstUsed: -1, lastUsed: 2_000 },
     { useCount: 1, firstUsed: 0, lastUsed: 2_000 },
-    { useCount: 1, firstUsed: 2_000, lastUsed: 1_000 },
     { useCount: 1, firstUsed: 1_000, lastUsed: '' },
     { useCount: 1, firstUsed: 1_000, lastUsed: Number.MAX_SAFE_INTEGER + 1 }
   ])('rejects invalid stored usage $useCount', (storedUsage) => {
@@ -2520,6 +2519,28 @@ describe('useFeatureUsageTracker', () => {
     expect(stored['invalid-usage']).toEqual({
       useCount: 1,
       firstUsed: Date.now(),
+      lastUsed: Date.now()
+    })
+  })
+
+  it('repairs an inverted legacy timestamp pair', () => {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        'inverted-legacy-usage': {
+          useCount: 5,
+          firstUsed: 2_000,
+          lastUsed: 1_000
+        }
+      })
+    )
+
+    useFeatureUsageTracker('inverted-legacy-usage').trackUsage()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored['inverted-legacy-usage']).toEqual({
+      useCount: 6,
+      firstUsed: 1_000,
       lastUsed: Date.now()
     })
   })
@@ -2749,7 +2770,11 @@ describe('useFeatureUsageTracker', () => {
     useFeatureUsageTracker('backward-pending-repair-trigger').trackUsage()
 
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
-    expect(stored[featureId]?.useCount).toBe(3)
+    expect(stored[featureId]).toEqual({
+      useCount: 3,
+      firstUsed: 100_000,
+      lastUsed: 100_000
+    })
   })
 
   it('repairs only the drifted timestamp field', () => {
