@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { DraftIndexV2, DraftPayloadV2 } from './draftTypes'
 import {
-  clearAllWorkspaceStorage,
   clearAllWorkflowStorage,
   clearWorkflowRestoreState,
   deleteOrphanPayloads,
@@ -341,7 +340,7 @@ describe('storageIO', () => {
     it('blocks workflow writes during logout cleanup', async () => {
       const isolatedStorageIO = await import('./storageIO')
 
-      isolatedStorageIO.signOutWorkflowStorage()
+      isolatedStorageIO.beginWorkflowLogoutTransition()
 
       expect(isolatedStorageIO.isStorageAvailable()).toBe(false)
       expect(
@@ -388,8 +387,9 @@ describe('storageIO', () => {
     })
   })
 
-  describe('clearAllWorkspaceStorage', () => {
-    it('clears scoped and legacy Agent persistence on account logout', () => {
+  describe('beginWorkflowLogoutTransition', () => {
+    it('clears scoped and legacy Agent persistence on account logout', async () => {
+      const isolatedStorageIO = await import('./storageIO')
       localStorage.setItem('Comfy.Agent.ThreadId:personal', 'thread-a')
       localStorage.setItem('Comfy.Agent.WorkflowTabBindings:ws-1', '{}')
       localStorage.setItem('Comfy.Agent.ChatTitles:ws-1', '{}')
@@ -401,7 +401,7 @@ describe('storageIO', () => {
       localStorage.setItem('Comfy.Agent.DeletedThreads', '[]')
       localStorage.setItem('unrelated', 'keep')
 
-      clearAllWorkspaceStorage()
+      isolatedStorageIO.beginWorkflowLogoutTransition()
 
       expect(
         [...Array(localStorage.length)].map((_, index) =>
@@ -424,14 +424,14 @@ describe('storageIO', () => {
         .spyOn(console, 'warn')
         .mockImplementation(() => {})
       const unregisterFailedFlush =
-        isolatedStorageIO.registerWorkflowPersistenceOwner({
+        isolatedStorageIO.registerWorkflowPersistence({
           flush: () => {
             throw flushError
           },
           cancel: () => {}
         })
       const unregisterSuccessfulFlush =
-        isolatedStorageIO.registerWorkflowPersistenceOwner({
+        isolatedStorageIO.registerWorkflowPersistence({
           flush: successfulFlush,
           cancel: () => {}
         })
@@ -497,7 +497,7 @@ describe('storageIO', () => {
       isolatedStorageIO.completeWorkflowLogoutTransition()
       expect(isolatedStorageIO.isStorageAvailable()).toBe(false)
 
-      isolatedStorageIO.signOutWorkflowStorage()
+      isolatedStorageIO.beginWorkflowLogoutTransition()
       isolatedStorageIO.completeWorkflowLogoutTransition()
 
       expect(isolatedStorageIO.isStorageAvailable()).toBe(true)
@@ -507,13 +507,13 @@ describe('storageIO', () => {
       const isolatedStorageIO = await import('./storageIO')
 
       isolatedStorageIO.markStorageUnavailable()
-      isolatedStorageIO.signOutWorkflowStorage()
+      isolatedStorageIO.beginWorkflowLogoutTransition()
       isolatedStorageIO.completeWorkflowLogoutTransition()
 
       expect(isolatedStorageIO.isStorageAvailable()).toBe(false)
     })
 
-    it('broadcasts sign-out intent only after freeing storage, so a full quota cannot block it', async () => {
+    it('broadcasts sign-out intent only after freeing workflow storage, so a quota full of drafts cannot block it', async () => {
       const isolatedStorageIO = await import('./storageIO')
       localStorage.setItem('Comfy.Workflow.Draft.v2:personal:draft-1', '{}')
       const writeToStorage = localStorage.setItem.bind(localStorage)
@@ -526,9 +526,40 @@ describe('storageIO', () => {
           writeToStorage(key, value)
         })
 
-      isolatedStorageIO.signOutWorkflowStorage()
+      isolatedStorageIO.beginWorkflowLogoutTransition()
 
       expect(setItemSpy).toHaveReturned()
+    })
+
+    it("acts on another window's sign-out intent until the last persistence registration leaves", async () => {
+      const isolatedStorageIO = await import('./storageIO')
+      const dispatchSignOutIntent = () =>
+        window.dispatchEvent(
+          new StorageEvent('storage', {
+            key: 'Comfy.Workflow.SignOutIntent',
+            newValue: 'intent',
+            storageArea: localStorage
+          })
+        )
+      const unregisterFirst = isolatedStorageIO.registerWorkflowPersistence({
+        flush: vi.fn(),
+        cancel: vi.fn()
+      })
+      const remaining = { flush: vi.fn(), cancel: vi.fn() }
+      const unregisterRemaining =
+        isolatedStorageIO.registerWorkflowPersistence(remaining)
+
+      unregisterFirst()
+      dispatchSignOutIntent()
+
+      expect(remaining.cancel).toHaveBeenCalledOnce()
+      expect(isolatedStorageIO.isStorageAvailable()).toBe(false)
+
+      isolatedStorageIO.completeWorkflowLogoutTransition()
+      unregisterRemaining()
+      dispatchSignOutIntent()
+
+      expect(isolatedStorageIO.isStorageAvailable()).toBe(true)
     })
 
     it('does not let a duplicate transition cancel the owner transition', async () => {

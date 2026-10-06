@@ -20,7 +20,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import type { AuthFlowAction } from '@/platform/telemetry/types'
 import { PaymentPopupBlockedError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import { signOutWorkflowStorage } from '@/platform/workflow/persistence/base/storageIO'
+import { beginWorkflowLogoutTransition } from '@/platform/workflow/persistence/base/storageIO'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { usePendingTopup } from '@/composables/billing/usePendingTopup'
@@ -140,7 +140,7 @@ export const useAuthActions = () => {
       if (beforeSignOut && !(await beforeSignOut())) return
 
       await authStore.logout()
-      if (isCloud) signOutWorkflowStorage()
+      if (isCloud) beginWorkflowLogoutTransition()
 
       toastStore.add({
         severity: 'success',

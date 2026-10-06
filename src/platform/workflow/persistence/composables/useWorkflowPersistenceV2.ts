@@ -32,7 +32,7 @@ import { PERSIST_DEBOUNCE_MS } from '../base/draftTypes'
 import type { StartupOutcome } from '../base/draftTypes'
 import {
   completeWorkflowLogoutTransition,
-  registerWorkflowPersistenceOwner
+  registerWorkflowPersistence
 } from '../base/storageIO'
 import { useWorkflowDraftStoreV2 } from '../stores/workflowDraftStoreV2'
 import { useWorkflowTabState } from './useWorkflowTabState'
@@ -139,12 +139,12 @@ export function useWorkflowPersistenceV2() {
 
   // `resolvedUserInfo` reports the auth state this window observes, not an
   // action this window took, and Firebase's browserLocalPersistence syncs that
-  // state between windows over `storage` events: a second window that merely
-  // boots rewrites the shared `firebase:authUser:*` record, and this window
-  // sees its user drop to null without anyone having signed out. Explicit
-  // sign-out sites clear shared storage and broadcast intent; this composable
-  // fences on that intent, never on an observed null user.
-  const unregisterPersistenceOwner = registerWorkflowPersistenceOwner({
+  // state between windows over `storage` events: when another window rewrites
+  // the shared `firebase:authUser:*` record, this window can see its user drop
+  // to null without anyone having signed out. Explicit
+  // sign-out sites clear shared storage and broadcast intent; registering here
+  // fences and clears on that intent, never on an observed null user.
+  const unregisterPersistence = registerWorkflowPersistence({
     flush: flushPendingPersistence,
     cancel() {
       stopPendingWorkspaceReadinessWatcher()
@@ -313,7 +313,7 @@ export function useWorkflowPersistenceV2() {
   tryOnScopeDispose(() => {
     api.removeEventListener('graphChanged', debouncedPersist)
     window.removeEventListener('pagehide', flushPendingPersistence)
-    unregisterPersistenceOwner()
+    unregisterPersistence()
     debouncedPersist.cancel()
     stopPendingWorkspaceReadinessWatcher()
   })
