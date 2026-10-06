@@ -12,6 +12,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
+import type { TranslationPipelineConfig } from './config'
 import { translationTargets } from './config'
 import type { LocaleObject } from './locale-tree'
 import { serializeLocale } from './locale-tree'
@@ -54,10 +55,10 @@ const unflaggedManifest = manifestBytes({
   }
 })
 
-function createCatalogRepo() {
+function createCatalogRepo(target: TranslationPipelineConfig = config) {
   const root = realpathSync(mkdtempSync(join(tmpdir(), 'update-locales-')))
   onTestFinished(() => rmSync(root, { recursive: true, force: true }))
-  const catalogs = join(root, config.output)
+  const catalogs = join(root, target.output)
 
   function absolute(file: string): string {
     return join(catalogs, file)
@@ -131,7 +132,7 @@ function createCatalogRepo() {
       try {
         const status = await updateLocales({
           repoRoot: root,
-          config,
+          config: target,
           check,
           translateBatch
         })
@@ -146,6 +147,23 @@ function createCatalogRepo() {
 type CatalogRepo = ReturnType<typeof createCatalogRepo>
 
 describe('updateLocales generation', () => {
+  it('regenerates changed app copy with set-based token validation', async () => {
+    const repo = createCatalogRepo(translationTargets.app)
+    repo.writeManifest({
+      'main.json': repo.record({
+        english: { title: 'Old {n}' },
+        locales: {}
+      })
+    })
+    repo.writeCatalog('en/main.json', { title: '<b>{n}</b> and {n}' })
+    repo.writeCatalog('zh/main.json', { title: '人工 {n}' })
+
+    await repo.run(false, async () => ({ '1': '生成 {n}' }))
+
+    expect(repo.readCatalog('zh/main.json')).toEqual({ title: '生成 {n}' })
+    expect(repo.readManifest().files['main.json'].locales).toEqual({})
+  })
+
   it.for([
     { file: 'en/main.json', edit: serializeLocale({ title: 'Newer English' }) },
     { file: 'ja/main.json', edit: serializeLocale({ title: '人が直した' }) },

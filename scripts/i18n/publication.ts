@@ -146,6 +146,13 @@ function completeJournal(outputDir: string, journal: Journal): void {
   rmSync(journalPath(outputDir))
 }
 
+function pendingPublicationError(outputDir: string, cause?: unknown): Error {
+  return new Error(
+    `Locale publication already pending in ${outputDir}. Run generation to recover it before publishing again.`,
+    { cause }
+  )
+}
+
 function createJournal(outputDir: string, journal: Journal): void {
   const file = journalPath(outputDir)
   const temp = `${file}.${process.pid}.${randomUUID()}.tmp`
@@ -157,10 +164,7 @@ function createJournal(outputDir: string, journal: Journal): void {
     linkSync(temp, file)
   } catch (error) {
     if (error instanceof Error && 'code' in error && error.code === 'EEXIST')
-      throw new Error(
-        `Locale publication already pending in ${outputDir}. Run generation to recover it before publishing again.`,
-        { cause: error }
-      )
+      throw pendingPublicationError(outputDir, error)
     throw error
   } finally {
     rmSync(temp, { force: true })
@@ -192,10 +196,7 @@ export function publishCatalogs(
   inputs: ReadonlyMap<string, string | null>
 ): number {
   const root = path.resolve(outputDir)
-  if (hasPendingPublication(root))
-    throw new Error(
-      `Locale publication already pending in ${root}. Run generation to recover it before publishing again.`
-    )
+  if (hasPendingPublication(root)) throw pendingPublicationError(root)
   for (const [file, original] of inputs) {
     if (!matches(readOptional(file), original))
       throw new Error(
@@ -218,7 +219,7 @@ export function publishCatalogs(
     })
   }
   if (entries.length === 0) return 0
-  const journal = journalSchema.parse({ version: 1, files: entries })
+  const journal: Journal = { version: 1, files: entries }
   mkdirSync(root, { recursive: true })
   createJournal(root, journal)
   completeJournal(root, journal)

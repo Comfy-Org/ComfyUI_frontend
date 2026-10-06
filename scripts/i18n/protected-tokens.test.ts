@@ -257,6 +257,15 @@ describe('non-strict protected-token audit', () => {
   ])('$name', ({ source, target, expected }) => {
     expect(audit(source, target, { strict: false })).toEqual(expected)
   })
+
+  it.for(["{'|'}", "{'@.'}"])(
+    'reports added literal %s without misclassifying it as message syntax',
+    (literal) => {
+      expect(audit('Text', `Text ${literal}`, { strict: false })).toEqual([
+        { code: 'added-token', token: literal }
+      ])
+    }
+  )
 })
 
 describe('auditLocaleTokens', () => {

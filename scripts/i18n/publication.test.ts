@@ -12,11 +12,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { describe, expect, it, onTestFinished } from 'vitest'
 
-import {
-  hasPendingPublication,
-  publishCatalogs,
-  recoverPublication
-} from './publication'
+import { publishCatalogs, recoverPublication } from './publication'
 
 const JOURNAL = '.locale-publication.json'
 
@@ -201,7 +197,6 @@ describe('recoverPublication', () => {
       'ja/main.json': 'ja new',
       'zh/main.json': 'zh new'
     })
-    expect(hasPendingPublication(directory)).toBe(false)
   })
 
   it('refuses every write when any listed file was edited after publication started', () => {

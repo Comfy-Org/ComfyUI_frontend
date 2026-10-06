@@ -168,7 +168,9 @@ The website validates strictly: a plural message keeps the English form count
 or collapses to one form, and each form keeps its placeholders and markup.
 Generated copy keeps link URLs exactly; authored copy may add the target-locale
 prefix to an internal link. The app keeps its existing set-based token
-validation and its source-change regeneration policy.
+validation and its source-change regeneration policy. Both targets distinguish
+literal interpolation such as `{'|'}` and `{'@.'}` from plural separators and
+linked messages. Adding either literal still fails the protected-token audit.
 
 Each target publishes its catalogs, snapshots and manifest through a recovery
 journal, `.locale-publication.json`, in its locale directory. While a journal

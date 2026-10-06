@@ -60,6 +60,7 @@ interface SourcePlan {
 interface LocaleFileState extends ReturnType<typeof partitionLocale> {
   locale: OutputLocale
   plan: SourcePlan
+  label: string
   outputFile: string
   existing: LocaleObject
   pendingLeaves: LocaleLeafEntry[]
@@ -79,7 +80,7 @@ interface TranslationPlan {
 export function buildTranslationItems(
   filename: string,
   pendingLeaves: readonly LocaleLeafEntry[],
-  strict = false
+  { strict = false }: { strict?: boolean } = {}
 ): TranslationPlan {
   const items: TranslationItem[] = []
   const refs = new Map<string, ItemRef>()
@@ -293,6 +294,7 @@ function loadStates(
       return {
         locale,
         plan,
+        label: `${locale.code}/${plan.filename}`,
         outputFile,
         existing,
         ...retention,
@@ -348,6 +350,13 @@ function auditState(
   return { ...audit, known: [...audit.known, ...deferred] }
 }
 
+function reportReviews({ label, reviewNeeded }: LocaleFileState): void {
+  for (const path of reviewNeeded)
+    print(
+      `REVIEW NEEDED: ${label}: ${path.join('.')}: English changed; edit the translation or accept its reviewNeeded entry after generation.`
+    )
+}
+
 function reportCheck(
   states: readonly LocaleFileState[],
   config: TranslationPipelineConfig
@@ -358,7 +367,7 @@ function reportCheck(
   let reviews = 0
   let stale = 0
   for (const state of states) {
-    const label = `${state.locale.code}/${state.plan.filename}`
+    const { label } = state
     pending += state.pendingLeaves.length
     stray += state.strayPaths.length
     reviews += state.reviewNeeded.length
@@ -373,10 +382,7 @@ function reportCheck(
       print(
         `${label}: ${state.strayPaths.length} keys will be pruned or use English fallback`
       )
-    for (const path of state.reviewNeeded)
-      print(
-        `REVIEW NEEDED: ${label}: ${path.join('.')}: English changed; edit the translation or accept its reviewNeeded entry after generation.`
-      )
+    reportReviews(state)
     const audit = auditState(state, state.existing, config, 'check')
     violations += audit.unexpected.length
     stale += audit.stale.length
@@ -480,8 +486,7 @@ export async function updateLocales({
   for (const orphan of orphans) readInput(orphan)
   const preflight = states.flatMap((state) =>
     auditState(state, state.existing, config, 'preflight').unexpected.map(
-      (error) =>
-        `${state.locale.code}/${state.plan.filename}: ${formatTokenViolation(error)}`
+      (error) => `${state.label}: ${formatTokenViolation(error)}`
     )
   )
   if (preflight.length)
@@ -493,7 +498,7 @@ export async function updateLocales({
     translation: buildTranslationItems(
       state.plan.filename,
       state.pendingLeaves,
-      config.strictProtectedTokens
+      { strict: config.strictProtectedTokens }
     )
   }))
   const pending = tasks.reduce(
@@ -623,10 +628,7 @@ export async function updateLocales({
           locale: state.locale.code
         }))
       )
-      for (const path of state.reviewNeeded)
-        print(
-          `REVIEW NEEDED: ${state.locale.code}/${plan.filename}: ${path.join('.')}`
-        )
+      reportReviews(state)
     }
     next.files[plan.filename] = snapshot
   }
@@ -635,7 +637,7 @@ export async function updateLocales({
   const written = publishCatalogs(outputDir, updates, inputs)
   if (failures.length)
     throw new Error(
-      `Translation failed for ${failures.length} locale files:\n${failures.map(({ state, failure }) => `${state.locale.code}/${state.plan.filename}: ${failure}`).join('\n')}\nAll locale results for ${[...failedFiles].join(', ')} were discarded together. Other entry files were written and recorded in the manifest.`
+      `Translation failed for ${failures.length} locale files:\n${failures.map(({ state, failure }) => `${state.label}: ${failure}`).join('\n')}\nAll locale results for ${[...failedFiles].join(', ')} were discarded together. Other entry files were written and recorded in the manifest.`
     )
   print(
     `Translated ${pending} strings; updated ${written} files across ${config.outputLocales.length} locales.`
