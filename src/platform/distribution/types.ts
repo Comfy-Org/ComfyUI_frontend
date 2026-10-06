@@ -20,3 +20,8 @@ export const isCloud = DISTRIBUTION === 'cloud'
  * Nightly builds may show experimental features and surveys.
  */
 export const isNightly = __IS_NIGHTLY__
+
+/**
+ * Whether `/object_info` can be used without runtime schema validation.
+ */
+export const isTrustedObjectInfo = DISTRIBUTION === 'cloud'

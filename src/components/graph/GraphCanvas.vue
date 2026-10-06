@@ -212,6 +212,7 @@ import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
+import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useAppMode } from '@/composables/useAppMode'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { forEachNode } from '@/utils/graphTraversalUtil'
@@ -606,6 +607,8 @@ onMounted(async () => {
   void releaseStore.initialize()
 
   emit('ready')
+
+  void useSubgraphStore().fetchSubgraphs()
 
   // The tour draws into an overlay that only mounts once `ready` has flushed.
   await nextTick()

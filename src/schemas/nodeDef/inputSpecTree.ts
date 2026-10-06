@@ -1,5 +1,6 @@
-import type { ZodError } from 'zod'
+import type { ZodError, z } from 'zod'
 
+import { isTrustedObjectInfo } from '@/platform/distribution/types'
 import { reportError } from '@/platform/telemetry/reportError'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
@@ -67,6 +68,24 @@ function warnSpecDrift(
 }
 
 /**
+ * `value` read through `schema`, or undefined when it does not match. Skips
+ * validation when `/object_info` is trusted; it dominates node registration.
+ */
+function parseSpec<T>(
+  schema: z.ZodType<T, z.ZodTypeDef, unknown>,
+  value: unknown,
+  spec: InputSpecV2,
+  optionIndex?: number
+): T | undefined {
+  if (isTrustedObjectInfo) return value as T
+
+  const parsed = schema.safeParse(value)
+  if (parsed.success) return parsed.data
+  warnSpecDrift(spec, parsed.error, optionIndex)
+  return undefined
+}
+
+/**
  * Split a possibly comma-composite slot type into its parts.
  *
  * Accepts `unknown` on purpose: node defs are never validated on the way in
@@ -86,42 +105,27 @@ export function splitSlotTypes(type: unknown): string[] {
 function parseDynamicComboOptions(
   spec: InputSpecV2
 ): { key: string; inputs: ComfyInputsSpec }[] {
-  const parsed = zDynamicComboSpecV2.safeParse(spec)
-  if (!parsed.success) {
-    warnSpecDrift(spec, parsed.error)
-    return []
-  }
+  const parsed = parseSpec(zDynamicComboSpecV2, spec, spec)
+  if (!parsed) return []
 
-  return parsed.data.options.flatMap((option, index) => {
-    const parsedOption = zDynamicComboOption.safeParse(option)
-    if (!parsedOption.success) {
-      warnSpecDrift(spec, parsedOption.error, index)
-      return []
-    }
-    return [parsedOption.data]
+  return parsed.options.flatMap((option, index) => {
+    const parsedOption = parseSpec(zDynamicComboOption, option, spec, index)
+    return parsedOption ? [parsedOption] : []
   })
 }
 
 const dynamicControls = {
   COMFY_DYNAMICGROUP_V3: {
     nestedInputs: (spec) => {
-      const parsed = zDynamicGroupInputSpec.safeParse([spec.type, spec])
-      if (!parsed.success) {
-        warnSpecDrift(spec, parsed.error)
-        return []
-      }
-      return [parsed.data[1].template]
+      const parsed = parseSpec(zDynamicGroupInputSpec, [spec.type, spec], spec)
+      return parsed ? [parsed[1].template] : []
     },
     ownTypes: none
   },
   COMFY_AUTOGROW_V3: {
     nestedInputs: (spec) => {
-      const parsed = zAutogrowOptions.safeParse(spec)
-      if (!parsed.success) {
-        warnSpecDrift(spec, parsed.error)
-        return []
-      }
-      return [parsed.data.template.input]
+      const parsed = parseSpec(zAutogrowOptions, spec, spec)
+      return parsed ? [parsed.template.input] : []
     },
     ownTypes: none
   },
@@ -133,12 +137,8 @@ const dynamicControls = {
   COMFY_MATCHTYPE_V3: {
     nestedInputs: none,
     ownTypes: (spec) => {
-      const parsed = zMatchTypeOptions.safeParse(spec)
-      if (!parsed.success) {
-        warnSpecDrift(spec, parsed.error)
-        return []
-      }
-      return splitSlotTypes(parsed.data.template.allowed_types)
+      const parsed = parseSpec(zMatchTypeOptions, spec, spec)
+      return parsed ? splitSlotTypes(parsed.template.allowed_types) : []
     }
   }
 } satisfies Record<DynamicControlType, DynamicControl>
@@ -241,14 +241,11 @@ export function matchTypeTemplate(
 ): { templateId: string; allowedTypes: string[] } | undefined {
   if (spec.type !== 'COMFY_MATCHTYPE_V3') return undefined
 
-  const parsed = zMatchTypeOptions.safeParse(spec)
-  if (!parsed.success) {
-    warnSpecDrift(spec, parsed.error)
-    return undefined
-  }
+  const parsed = parseSpec(zMatchTypeOptions, spec, spec)
+  if (!parsed) return undefined
 
   return {
-    templateId: parsed.data.template.template_id,
-    allowedTypes: splitSlotTypes(parsed.data.template.allowed_types)
+    templateId: parsed.template.template_id,
+    allowedTypes: splitSlotTypes(parsed.template.allowed_types)
   }
 }

@@ -111,7 +111,6 @@ import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
 import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
 
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
-import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -998,8 +997,6 @@ export class ComfyApp {
     this.canvasElRef.value = canvasEl
 
     await useWorkspaceStore().workflow.syncWorkflows()
-    //Doesn't need to block. Blueprints will load async
-    void useSubgraphStore().fetchSubgraphs()
     await bootstrapTracer.settle('bootstrap/extensions-load', () =>
       useExtensionService().loadExtensions()
     )
