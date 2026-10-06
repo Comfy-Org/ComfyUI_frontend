@@ -572,12 +572,23 @@ function output(key: string, value: string) {
   }
 }
 
-// Retried like the read calls: a 502 from one sweep would otherwise fail the
-// run and page #frontend-releases for something the next sweep fixes by
-// itself, which is how the alert channel this job posts to gets muted.
+// Retried, because a 502 from one sweep would otherwise fail the run and page
+// #frontend-releases for something the next sweep fixes by itself — the muting
+// risk this workflow's own comments warn about.
+//
+// Fewer attempts than the read path, though: a read fails transiently (GraphQL
+// 502/503), while these fail permanently far more often — 422 for a reviewer
+// who is not a collaborator, 403 for an assignee without access. Backoff is
+// 2000ms * attempt and `Atomics.wait` blocks, so a third attempt would stall
+// the sweep six seconds per PR to re-confirm a certainty.
+const MUTATION_ATTEMPTS = 2
+
 function ghPost(path: string, field: string): boolean {
   try {
-    ghWithRetry(['api', '--method', 'POST', path, '-f', field, '--silent'])
+    ghWithRetry(
+      ['api', '--method', 'POST', path, '-f', field, '--silent'],
+      MUTATION_ATTEMPTS
+    )
     return true
   } catch {
     return false
@@ -603,14 +614,10 @@ export function assigneeAccepted(response: unknown, login: string): boolean {
 function ghAssign(path: string, login: string): boolean {
   try {
     const response: unknown = JSON.parse(
-      ghWithRetry([
-        'api',
-        '--method',
-        'POST',
-        path,
-        '-f',
-        `assignees[]=${login}`
-      ])
+      ghWithRetry(
+        ['api', '--method', 'POST', path, '-f', `assignees[]=${login}`],
+        MUTATION_ATTEMPTS
+      )
     )
     return assigneeAccepted(response, login)
   } catch {

@@ -287,7 +287,10 @@ describe('runAssignment', () => {
   // The caller path for a failed assignment. assigneeAccepted is covered above,
   // but nothing proved runAssignment acts on a false result -- and if it stops,
   // a PR silently stays unowned while the run reports success.
-  function run(issueAfterPost: { assignees: { login: string }[] }) {
+  function run(
+    issueAfterPost: { assignees: { login: string }[] },
+    reviewRequestFails = false
+  ) {
     const dir = mkdtempSync(join(tmpdir(), 'release-sheriff-'))
     const file = join(dir, 'github-output')
     const priorFile = process.env.GITHUB_OUTPUT
@@ -307,6 +310,7 @@ describe('runAssignment', () => {
       if (argv.some((arg) => arg.endsWith('/assignees'))) {
         return JSON.stringify(issueAfterPost)
       }
+      if (reviewRequestFails) throw new Error('gh: 422 Unprocessable Entity')
       return ''
     })
 
@@ -336,6 +340,26 @@ describe('runAssignment', () => {
     // One heredoc record: a second would misparse the first's terminator.
     expect(degraded.match(/^degraded<<__EOF__$/gm)).toHaveLength(1)
   })
+
+  // The other half of the same guarantee: a backport that is assigned but has
+  // nobody asked to review it never reaches the approval backport-auto-merge
+  // waits for, so a rejected request has to fail the run too.
+  it(
+    'fails the run when GitHub rejects the review request',
+    { timeout: 20_000 },
+    () => {
+      const { exitCode, degraded } = run(
+        { assignees: [{ login: 'thedatalife' }] },
+        true
+      )
+
+      expect(exitCode).toBe(1)
+      expect(degraded).toContain(
+        '#42 has no confirmed review request for `thedatalife`'
+      )
+      expect(degraded).not.toContain('is not confirmed assigned')
+    }
+  )
 
   it('stays green when GitHub echoes the assignee back', () => {
     const { exitCode, degraded } = run({
