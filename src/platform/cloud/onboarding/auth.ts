@@ -123,6 +123,7 @@ async function readStoredSurvey(signal?: AbortSignal): Promise<StoredSurvey> {
     const data: unknown = await response.json()
     return classifyStoredSurvey(data)
   } catch (error) {
+    if (signal?.aborted && error === signal.reason) return 'unknown'
     reportError(error, {
       surface: 'platform',
       errorType: 'network_error',
@@ -141,6 +142,7 @@ export type SurveySubmissionResult =
   | { status: 'stored' }
   | { status: 'preserved' }
   | { status: 'failed'; cause: unknown }
+  | { status: 'cancelled' }
 
 export async function submitSurvey(
   survey: Record<string, unknown>,
@@ -155,7 +157,8 @@ export async function submitSurvey(
     const replaying = isSurveyReplayRequested(ownerId)
     if (replaying) {
       const stored = await readStoredSurvey(identityChanged.signal)
-      if (stored === 'unknown' || identityChanged.signal.aborted) {
+      if (identityChanged.signal.aborted) return { status: 'cancelled' }
+      if (stored === 'unknown') {
         return {
           status: 'failed',
           cause:
@@ -186,9 +189,7 @@ export async function submitSurvey(
       body: JSON.stringify({ [ONBOARDING_SURVEY_KEY]: survey })
     })
 
-    if (identityChanged.signal.aborted) {
-      return { status: 'failed', cause: identityChanged.signal.reason }
-    }
+    if (identityChanged.signal.aborted) return { status: 'cancelled' }
     if (!response.ok) {
       const error = new Error(`Failed to submit survey: ${response.statusText}`)
       captureApiError(
@@ -217,6 +218,11 @@ export async function submitSurvey(
 
     return { status: 'stored' }
   } catch (error) {
+    if (
+      identityChanged.signal.aborted &&
+      error === identityChanged.signal.reason
+    )
+      return { status: 'cancelled' }
     captureApiError(
       toError(error),
       '/settings',

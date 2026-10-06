@@ -1185,6 +1185,20 @@
       "browseAll": "浏览全部客户故事",
       "readWrittenStory": "阅读文字版故事",
       "transcript": "文字记录"
+    },
+    "directory": {
+      "searchLabel": "搜索客户故事",
+      "searchPlaceholder": "按公司、标题、类别或描述搜索…",
+      "formatLabel": "形式",
+      "tab": {
+        "all": "全部",
+        "watch": "观看",
+        "read": "阅读"
+      },
+      "sortLabel": "客户故事排序",
+      "sortLatest": "最新",
+      "sortOldest": "最早",
+      "empty": "没有符合筛选条件的客户故事。请尝试放宽搜索条件。"
     }
   },
   "demos": {

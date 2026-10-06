@@ -8,6 +8,7 @@ import {
   requestOnboardingReplay
 } from '@/platform/onboarding/onboardingReplay'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
+import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 
 import {
@@ -20,6 +21,7 @@ type IdentityListener = (user: User | null) => void
 const identityListeners = vi.hoisted(() => new Set<IdentityListener>())
 
 vi.mock(import('@/scripts/api'))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: true
@@ -298,7 +300,7 @@ describe('onboarding replay', () => {
     }
     resolveRead?.(mockResponse({ ok: false, status: 404 }))
 
-    await expect(submission).resolves.toMatchObject({ status: 'failed' })
+    await expect(submission).resolves.toEqual({ status: 'cancelled' })
     expect(fetchApi).toHaveBeenCalledOnce()
   })
 
@@ -323,5 +325,103 @@ describe('onboarding replay', () => {
     await expect(submitSurvey({ q1: 'a' })).resolves.toMatchObject({
       status: 'failed'
     })
+  })
+})
+
+describe('aborted requests', () => {
+  function changeAccount() {
+    for (const listener of identityListeners) {
+      listener(fromPartial<User>({ uid: 'account-b' }))
+    }
+  }
+
+  function rejectOnAbort(init?: RequestInit) {
+    return new Promise<Response>((_, reject) => {
+      init?.signal?.addEventListener('abort', () => reject(init.signal?.reason))
+    })
+  }
+
+  test('an account change during the survey write is cancelled, not reported', async () => {
+    fetchApi.mockImplementationOnce(async (_route, init) => rejectOnAbort(init))
+
+    const submission = submitSurvey({ q1: 'a' })
+    await vi.waitFor(() => expect(fetchApi).toHaveBeenCalledOnce())
+    changeAccount()
+
+    await expect(submission).resolves.toEqual({ status: 'cancelled' })
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  test('an account change during the replay read is cancelled, not reported', async () => {
+    fetchApi.mockImplementationOnce(async (_route, init) => rejectOnAbort(init))
+    requestOnboardingReplay(OWNER_ID)
+
+    const submission = submitSurvey({ q1: 'a' })
+    await vi.waitFor(() => expect(fetchApi).toHaveBeenCalledOnce())
+    changeAccount()
+
+    await expect(submission).resolves.toEqual({ status: 'cancelled' })
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  test('a non-abort failure after an account change is still reported', async () => {
+    let rejectWrite: ((error: Error) => void) | undefined
+    fetchApi.mockImplementationOnce(
+      () =>
+        new Promise<Response>((_, reject) => {
+          rejectWrite = reject
+        })
+    )
+
+    const submission = submitSurvey({ q1: 'a' })
+    await vi.waitFor(() => expect(fetchApi).toHaveBeenCalledOnce())
+    changeAccount()
+    rejectWrite?.(new TypeError('Network request failed'))
+
+    await expect(submission).resolves.toMatchObject({ status: 'failed' })
+    expect(reportError).toHaveBeenCalledOnce()
+  })
+
+  test('a parse failure after an account change is still reported', async () => {
+    let resolveRead: ((response: Response) => void) | undefined
+    fetchApi.mockImplementationOnce(
+      () =>
+        new Promise<Response>((resolve) => {
+          resolveRead = resolve
+        })
+    )
+    requestOnboardingReplay(OWNER_ID)
+
+    const submission = submitSurvey({ q1: 'a' })
+    await vi.waitFor(() => expect(fetchApi).toHaveBeenCalledOnce())
+    changeAccount()
+    const response = mockResponse({ ok: true, status: 200 })
+    vi.spyOn(response, 'json').mockRejectedValue(
+      new SyntaxError('Invalid JSON')
+    )
+    resolveRead?.(response)
+
+    await expect(submission).resolves.toEqual({ status: 'cancelled' })
+    expect(reportError).toHaveBeenCalledOnce()
+  })
+
+  test('an AbortError that is not the identity abort is still reported', async () => {
+    fetchApi.mockRejectedValueOnce(new DOMException('aborted', 'AbortError'))
+
+    await expect(submitSurvey({ q1: 'a' })).resolves.toMatchObject({
+      status: 'failed'
+    })
+    expect(reportError).toHaveBeenCalledOnce()
+  })
+
+  test('other network failures are still reported', async () => {
+    fetchApi.mockRejectedValueOnce(new TypeError('Network request failed'))
+    await submitSurvey({ q1: 'a' })
+
+    fetchApi.mockRejectedValueOnce(new TypeError('Network request failed'))
+    requestOnboardingReplay(OWNER_ID)
+    await submitSurvey({ q1: 'a' })
+
+    expect(reportError).toHaveBeenCalledTimes(2)
   })
 })
