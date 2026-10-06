@@ -126,6 +126,19 @@ function applyPendingResets(usageData: FeatureUsageRecord): FeatureUsageRecord {
   return [...pendingResets].reduce(withoutFeature, usageData)
 }
 
+function withoutNewlyResetFeatures(
+  usageData: FeatureUsageRecord,
+  observedResetVersions: ReadonlyMap<string, number>
+): FeatureUsageRecord {
+  return Object.fromEntries(
+    Object.entries(usageData).filter(
+      ([featureId]) =>
+        (resetVersions.get(featureId) ?? 0) <=
+        (observedResetVersions.get(featureId) ?? 0)
+    )
+  )
+}
+
 function persistUsageData(
   featureId: string,
   currentUsageData: FeatureUsageRecord,
@@ -189,21 +202,20 @@ function resetUsageData(currentUsageData: FeatureUsageRecord) {
  */
 export function useFeatureUsageTracker(featureId: string) {
   const usageData = useStorage<FeatureUsageRecord>(STORAGE_KEY, {})
-  let observedResetVersion = resetVersions.get(featureId) ?? 0
+  let observedResetVersions = new Map(resetVersions)
 
   const usage = computed(() => usageData.value[featureId])
   const useCount = computed(() => usage.value?.useCount ?? 0)
 
   function trackUsage() {
     const now = Date.now()
-    const resetVersion = resetVersions.get(featureId) ?? 0
     const normalizedUsageData = normalizeUsageData(usageData.value)
-    const currentUsageData =
-      resetVersion === observedResetVersion
-        ? normalizedUsageData
-        : withoutFeature(normalizedUsageData, featureId)
+    const currentUsageData = withoutNewlyResetFeatures(
+      normalizedUsageData,
+      observedResetVersions
+    )
     const existing = currentUsageData[featureId]
-    observedResetVersion = resetVersion
+    observedResetVersions = new Map(resetVersions)
 
     usageData.value = persistUsageData(featureId, currentUsageData, now) ?? {
       ...currentUsageData,
@@ -212,8 +224,9 @@ export function useFeatureUsageTracker(featureId: string) {
   }
 
   function reset() {
-    observedResetVersion = (resetVersions.get(featureId) ?? 0) + 1
-    resetVersions.set(featureId, observedResetVersion)
+    const resetVersion = (resetVersions.get(featureId) ?? 0) + 1
+    resetVersions.set(featureId, resetVersion)
+    observedResetVersions.set(featureId, resetVersion)
     pendingResets.add(featureId)
     usageData.value = resetUsageData(normalizeUsageData(usageData.value))
   }

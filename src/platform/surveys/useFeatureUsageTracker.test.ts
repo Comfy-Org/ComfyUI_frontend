@@ -301,6 +301,26 @@ describe('useFeatureUsageTracker', () => {
     expect(stored['reset-feature']?.useCount).toBe(1)
   })
 
+  it('does not resurrect another feature reset after tracker disposal', () => {
+    const scope = effectScope()
+    let trackDisposedFeature = () => {}
+
+    scope.run(() => {
+      useFeatureUsageTracker('reset-other-feature').trackUsage()
+      const tracker = useFeatureUsageTracker('disposed-other-feature')
+      tracker.trackUsage()
+      trackDisposedFeature = tracker.trackUsage
+    })
+    scope.stop()
+
+    useFeatureUsageTracker('reset-other-feature').reset()
+    trackDisposedFeature()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored).not.toHaveProperty('reset-other-feature')
+    expect(stored['disposed-other-feature']?.useCount).toBe(2)
+  })
+
   it('loads existing data from localStorage', () => {
     localStorage.setItem(
       STORAGE_KEY,
