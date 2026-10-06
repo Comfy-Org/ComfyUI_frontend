@@ -95,6 +95,17 @@ describe('useFeatureUsageTracker', () => {
     expect(stored['failed-reset']?.useCount).toBe(1)
   })
 
+  it('does not interrupt reset when storage access is blocked', () => {
+    const tracker = useFeatureUsageTracker('blocked-reset')
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.spyOn(window, 'localStorage', 'get').mockImplementation(() => {
+      throw new DOMException('Storage access denied', 'SecurityError')
+    })
+
+    expect(tracker.reset).not.toThrow()
+    expect(tracker.useCount.value).toBe(0)
+  })
+
   it('tracks multiple features independently', () => {
     const featureA = useFeatureUsageTracker('feature-a')
     const featureB = useFeatureUsageTracker('feature-b')

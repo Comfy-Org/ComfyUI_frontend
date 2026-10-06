@@ -103,14 +103,22 @@ function dispatchStorageUpdate(
   oldValue: string | null,
   usageData: FeatureUsageRecord
 ) {
-  window.dispatchEvent(
-    new StorageEvent('storage', {
-      key: STORAGE_KEY,
-      oldValue,
-      newValue: JSON.stringify(usageData),
-      storageArea: localStorage
+  try {
+    const storageArea = localStorage
+    window.dispatchEvent(
+      new StorageEvent('storage', {
+        key: STORAGE_KEY,
+        oldValue,
+        newValue: JSON.stringify(usageData),
+        storageArea
+      })
+    )
+  } catch (error) {
+    reportError(error, {
+      errorType: 'error_dispatching_feature_usage',
+      surface: 'platform'
     })
-  )
+  }
 }
 
 function withoutFeature(
