@@ -16,7 +16,9 @@ import CloudLoginView from '@/platform/cloud/onboarding/CloudLoginView.vue'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import type { useSessionCookie } from '@/platform/auth/session/useSessionCookie'
 import { presentSsoRequired } from '@/platform/auth/sso/ssoRequired'
+import { SSO_REQUIRED_DIALOG_KEY } from '@/platform/auth/sso/ssoRequiredDialogKey'
 import { useAuthStore } from '@/stores/authStore'
+import { useDialogStore } from '@/stores/dialogStore'
 
 vi.mock(import('@/composables/auth/useAuthActions'))
 vi.mock(import('@/composables/useFeatureFlags'))
@@ -545,6 +547,9 @@ describe('CloudLoginView Firebase sign-in refused for SSO', () => {
       vi.mocked(presentSsoRequired).mock.results[0].value,
       'shown before the sign-out drops the remote config that carries sso_enabled'
     ).toBe(true)
+    await waitFor(() =>
+      expect(useDialogStore().isDialogOpen(SSO_REQUIRED_DIALOG_KEY)).toBe(true)
+    )
     expect(useAuthStore().logout).toHaveBeenCalledOnce()
     expect(redirectAfterAuth).not.toHaveBeenCalled()
   })
