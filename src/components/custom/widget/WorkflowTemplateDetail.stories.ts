@@ -98,7 +98,8 @@ export const OpenNow: Story = {
         '6.77 GB'
       )
     ],
-    modelSetupState: 'none'
+    // Reachable only as an unmet requirement nothing can start automatically.
+    modelSetup: undefined
   },
   render: withPreview
 }
@@ -119,7 +120,7 @@ export const Resolving: Story = {
         { ...unsizedVae, status: installed }
       ])
     ],
-    modelSetupState: 'resolving'
+    modelSetup: { state: 'resolving' }
   },
   render: withPreview
 }
@@ -143,7 +144,8 @@ export const DownloadableRow: Story = {
         '6.77 GB'
       )
     ],
-    modelSetupState: 'downloadable'
+    // The checkpoint alone, so this differs from the group's 6.77 GB.
+    modelSetup: { state: 'startable', remainingSize: '6.46 GB' }
   },
   render: withPreview
 }
