@@ -208,7 +208,9 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
         expect(postedMessages).toHaveLength(0)
         await expect
           .poll(() => telemetryPayloads.join('\n'))
-          .toContain('agent_starter_prompt_exposure')
+          // PostHog batches the exposure request in the cloud browser build;
+          // allow one flush interval before treating the event as missing.
+          .toContain('agent_starter_prompt_exposure', { timeout: 15_000 })
 
         await panel.getByRole('button', { name: 'Send' }).click()
         await expect.poll(() => postedMessages.length).toBe(1)
