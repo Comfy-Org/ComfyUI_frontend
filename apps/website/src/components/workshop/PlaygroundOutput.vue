@@ -484,6 +484,7 @@ const earlierClass = (active: boolean) =>
             :src="currentUrl"
             :alt="shown.alt ?? t('workshop.output.title')"
             class="size-full object-contain"
+            fetchpriority="high"
             @load="emit('delivery', currentUrl, 'succeeded')"
             @error="emit('delivery', currentUrl, 'failed')"
           />

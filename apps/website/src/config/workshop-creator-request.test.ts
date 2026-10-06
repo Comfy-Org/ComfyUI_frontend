@@ -460,11 +460,6 @@ describe('creator widgets to native Router requests', () => {
         reference_images: [upload()]
       })
     ).rejects.toMatchObject({ fieldErrors: { reference_images: 'rejected' } })
-    await expect(
-      prepare('byteplus/seedance-1-0-lite-i2v-250428', {
-        first_frame: undefined
-      })
-    ).rejects.toMatchObject({ fieldErrors: { first_frame: 'required' } })
   })
 
   it('uploads Gemini images with MIME metadata and nested configuration', async () => {

@@ -384,6 +384,8 @@ test('765-15713: a prorated upgrade reads Paid today and why, without itemizing 
     cost_today_cents: 3250,
     credits_today_cents: 3250,
     credits_next_period_cents: 10_000,
+    credits_today: 6858,
+    credits_next_period: 21_100,
     renewal_amount_cents: 10_000,
     current_plan: {
       ...preview.new_plan,
