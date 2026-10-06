@@ -58,21 +58,21 @@ export class SidebarTab {
 }
 
 export class NodeLibrarySidebarTab extends SidebarTab {
+  public readonly bookmarkTree: Locator
+  public readonly newFolderButton: Locator
   public readonly nodeLibrarySearchBoxInput: Locator
   public readonly nodeLibraryTree: Locator
-  public readonly bookmarkTree: Locator
   public readonly nodePreview: Locator
   public readonly tabContainer: Locator
-  public readonly newFolderButton: Locator
 
   constructor(public override readonly page: Page) {
     super(page, 'node-library')
+    this.tabContainer = page.locator('.sidebar-content-container')
+    this.bookmarkTree = page.getByTestId(TestIds.sidebar.nodeLibraryBookmarks)
+    this.newFolderButton = this.tabContainer.locator('.new-folder-button')
     this.nodeLibrarySearchBoxInput = page.getByPlaceholder('Search Nodes...')
     this.nodeLibraryTree = page.getByTestId(TestIds.sidebar.nodeLibrary)
-    this.bookmarkTree = page.getByTestId(TestIds.sidebar.nodeLibraryBookmarks)
     this.nodePreview = page.locator('.node-lib-node-preview')
-    this.tabContainer = page.locator('.sidebar-content-container')
-    this.newFolderButton = this.tabContainer.locator('.new-folder-button')
   }
 
   override async open() {
@@ -183,10 +183,10 @@ export class NodeLibrarySidebarTabV2 extends SidebarTab {
 }
 
 export class WorkflowsSidebarTab extends SidebarTab {
-  public readonly root: Locator
   public readonly activeWorkflowLabel: Locator
-  public readonly searchInput: Locator
   public readonly refreshButton: Locator
+  public readonly root: Locator
+  public readonly searchInput: Locator
 
   constructor(public override readonly page: Page) {
     super(page, 'workflows')
@@ -195,10 +195,10 @@ export class WorkflowsSidebarTab extends SidebarTab {
       .locator('.comfyui-workflows-open')
       .getByRole('treeitem', { selected: true })
       .locator('.node-label')
-    this.searchInput = this.root.getByRole('combobox').first()
     this.refreshButton = this.root.getByTestId(
       TestIds.sidebar.workflowsRefreshButton
     )
+    this.searchInput = this.root.getByRole('combobox').first()
   }
 
   async getOpenedWorkflowNames() {
@@ -261,29 +261,29 @@ export class WorkflowsSidebarTab extends SidebarTab {
 }
 
 export class ModelLibrarySidebarTab extends SidebarTab {
-  public readonly searchInput: Locator
-  public readonly modelTree: Locator
-  public readonly refreshButton: Locator
-  public readonly loadAllFoldersButton: Locator
   public readonly folderNodes: Locator
   public readonly leafNodes: Locator
+  public readonly loadAllFoldersButton: Locator
   public readonly modelPreview: Locator
+  public readonly modelTree: Locator
+  public readonly refreshButton: Locator
+  public readonly searchInput: Locator
 
   constructor(public override readonly page: Page) {
     super(page, 'model-library')
-    this.searchInput = page.getByPlaceholder('Search Models...')
     this.modelTree = page.locator('.model-lib-tree-explorer')
-    this.refreshButton = page.getByRole('button', { name: 'Refresh' })
-    this.loadAllFoldersButton = page.getByRole('button', {
-      name: 'Load All Folders'
-    })
     this.folderNodes = this.modelTree
       .getByRole('treeitem')
       .and(this.modelTree.locator('[data-tree-node-type="folder"]'))
     this.leafNodes = this.modelTree
       .getByRole('treeitem')
       .and(this.modelTree.locator('[data-tree-node-type="node"]'))
+    this.loadAllFoldersButton = page.getByRole('button', {
+      name: 'Load All Folders'
+    })
     this.modelPreview = page.locator('.model-lib-model-preview')
+    this.refreshButton = page.getByRole('button', { name: 'Refresh' })
+    this.searchInput = page.getByPlaceholder('Search Models...')
   }
 
   override async open() {

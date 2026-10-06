@@ -17,14 +17,14 @@ import { useChart } from './useChart'
 import type { SupportedChartType } from './useChart'
 
 const {
-  type,
   data,
   label,
+  type,
   class: className
 } = defineProps<{
-  type: SupportedChartType
   data: ChartData
   label: string
+  type: SupportedChartType
   class?: HTMLAttributes['class']
 }>()
 

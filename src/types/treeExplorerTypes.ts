@@ -7,10 +7,10 @@ import type { MenuItem } from '@/components/ui/menu/types'
 export interface TreeNode<T = unknown> {
   key: string
   label: string
-  leaf?: boolean
-  icon?: string
-  data?: T
   children?: this[]
+  data?: T
+  icon?: string
+  leaf?: boolean
 }
 
 export interface NodeLibrarySection<T = unknown> {
@@ -20,68 +20,68 @@ export interface NodeLibrarySection<T = unknown> {
 }
 
 export interface TreeExplorerNode<T = unknown> extends TreeNode<T> {
-  /**
-   * Function to override what icon to use for the node.
-   * Return undefined to fallback to {@link icon} property.
-   */
-  getIcon?: (this: TreeExplorerNode<T>) => string | undefined
-  getIconColor?: (this: TreeExplorerNode<T>) => string | undefined
+  /** Extra context menu items */
+  contextMenuItems?:
+    | MenuItem[]
+    | ((targetNode: RenderedTreeExplorerNode<T>) => MenuItem[])
+  /** Whether the node is draggable */
+  draggable?: boolean
+  /** Whether the node is droppable */
+  droppable?: boolean
   /**
    * Function to override what text to use for the leaf-count badge on a folder node.
    * Return undefined to fallback to default badge text, which is the subtree's leaf count.
    * Return empty string to hide the badge.
    */
   getBadgeText?: (this: TreeExplorerNode<T>) => string | undefined
-  /** Function to handle renaming the node */
-  handleRename?: (
-    this: TreeExplorerNode<T>,
-    newName: string
-  ) => void | Promise<void>
-  /** Function to handle deleting the node */
-  handleDelete?: (this: TreeExplorerNode<T>) => void | Promise<void>
+  /**
+   * Function to override what icon to use for the node.
+   * Return undefined to fallback to {@link icon} property.
+   */
+  getIcon?: (this: TreeExplorerNode<T>) => string | undefined
+  getIconColor?: (this: TreeExplorerNode<T>) => string | undefined
   /** Function to handle adding a folder */
   handleAddFolder?: (
     this: TreeExplorerNode<T>,
     folderName: string
-  ) => void | Promise<void>
-  /** Whether the node is draggable */
-  draggable?: boolean
-  /** Function to render a drag preview */
-  renderDragPreview?: (
-    this: TreeExplorerNode<T>,
-    container: HTMLElement
-  ) => void | (() => void)
-  /** Whether the node is droppable */
-  droppable?: boolean
-  /** Function to handle dropping a node */
-  handleDrop?: (
-    this: TreeExplorerNode<T>,
-    data: TreeExplorerDragAndDropData<T>
   ) => void | Promise<void>
   /** Function to handle clicking a node */
   handleClick?: (
     this: TreeExplorerNode<T>,
     event: MouseEvent
   ) => void | Promise<void>
+  /** Function to handle deleting the node */
+  handleDelete?: (this: TreeExplorerNode<T>) => void | Promise<void>
+  /** Function to handle dropping a node */
+  handleDrop?: (
+    this: TreeExplorerNode<T>,
+    data: TreeExplorerDragAndDropData<T>
+  ) => void | Promise<void>
   /** Function to handle errors */
   handleError?: (this: TreeExplorerNode<T>, error: unknown) => void
-  /** Extra context menu items */
-  contextMenuItems?:
-    | MenuItem[]
-    | ((targetNode: RenderedTreeExplorerNode<T>) => MenuItem[])
+  /** Function to handle renaming the node */
+  handleRename?: (
+    this: TreeExplorerNode<T>,
+    newName: string
+  ) => void | Promise<void>
+  /** Function to render a drag preview */
+  renderDragPreview?: (
+    this: TreeExplorerNode<T>,
+    container: HTMLElement
+  ) => void | (() => void)
 }
 
 export interface RenderedTreeExplorerNode<
   T = unknown
 > extends TreeExplorerNode<T> {
-  children?: this[]
   icon: string
-  iconColor?: string
-  type: 'folder' | 'node'
   /** Total number of leaves in the subtree */
   totalLeaves: number
+  type: 'folder' | 'node'
   /** Text to display on the leaf-count badge. Empty string means no badge. */
   badgeText?: string
+  children?: this[]
+  iconColor?: string
   /** Whether the node label is currently being edited */
   isEditingLabel?: boolean
 }

@@ -23,7 +23,7 @@ import type { HTMLAttributes } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { class: className, ...restProps } = defineProps<
-  Omit<TreeRootProps<T>, 'modelValue' | 'defaultValue' | 'expanded'> & {
+  Omit<TreeRootProps<T>, 'defaultValue' | 'expanded' | 'modelValue'> & {
     class?: HTMLAttributes['class']
   }
 >()

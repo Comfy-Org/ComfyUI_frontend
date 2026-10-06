@@ -11,9 +11,9 @@ interface ModelItem {
 }
 
 interface TreeStoryArgs {
-  items: ModelItem[]
   defaultExpanded: string[]
   disabled: boolean
+  items: ModelItem[]
 }
 
 const modelFolders: ModelItem[] = [

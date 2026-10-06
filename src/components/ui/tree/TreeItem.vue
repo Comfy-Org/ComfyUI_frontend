@@ -58,13 +58,13 @@ import Button from '@/components/ui/button/Button.vue'
 defineOptions({ inheritAttrs: false })
 
 const {
-  hasChildren = false,
   class: className,
+  hasChildren = false,
   ...restProps
 } = defineProps<
   Omit<TreeItemProps<T>, 'as' | 'asChild'> & {
-    hasChildren?: boolean
     class?: HTMLAttributes['class']
+    hasChildren?: boolean
   }
 >()
 

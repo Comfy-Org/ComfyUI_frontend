@@ -70,7 +70,7 @@ describe('Chart', () => {
     expect(getChart('Typed chart')?.config).toMatchObject({ type: 'bar' })
   })
 
-  it.for<{ edit: string; apply: (values: number[]) => void }>([
+  it.for<{ apply: (values: number[]) => void; edit: string }>([
     { edit: 'index assignment', apply: (values) => (values[0] = 5) },
     { edit: 'push', apply: (values) => values.push(3) }
   ])('redraws when the data is edited in place by $edit', async ({ apply }) => {

@@ -49,10 +49,10 @@ import type {
 } from '@/types/treeExplorerTypes'
 
 const { fillNodeInfo, sortOrder = 'original' } = defineProps<{
-  sections: NodeLibrarySection<ComfyNodeDefImpl>[]
   fillNodeInfo: (
     node: TreeNode<ComfyNodeDefImpl>
   ) => RenderedTreeExplorerNode<ComfyNodeDefImpl>
+  sections: NodeLibrarySection<ComfyNodeDefImpl>[]
   sortOrder?: string
 }>()
 

@@ -6,18 +6,18 @@ import { BaseDialog } from '@e2e/fixtures/components/BaseDialog'
 import { comfyExpect as expect } from '@e2e/fixtures/utils/customMatchers'
 
 export class SettingDialog extends BaseDialog {
-  public readonly searchBox: Locator
   public readonly categories: Locator
   public readonly contentArea: Locator
+  public readonly searchBox: Locator
 
   constructor(
     page: Page,
     public readonly comfyPage: ComfyPage
   ) {
     super(page, TestIds.dialogs.settings)
-    this.searchBox = this.root.getByPlaceholder(/Search/)
     this.categories = this.root.locator('nav').getByRole('button')
     this.contentArea = this.root.getByRole('main')
+    this.searchBox = this.root.getByPlaceholder(/Search/)
   }
 
   async open() {

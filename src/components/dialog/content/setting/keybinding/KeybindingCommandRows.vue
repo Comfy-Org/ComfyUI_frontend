@@ -159,9 +159,9 @@ import KeyComboDisplay from './KeyComboDisplay.vue'
 
 const { command, expanded, selected } = defineProps<{
   command: Pick<ComfyCommandImpl, 'id' | 'source'> & {
+    isModified: boolean
     keybindings: KeybindingImpl[]
     label: string
-    isModified: boolean
   }
   expanded: boolean
   selected: boolean
@@ -170,13 +170,13 @@ const { command, expanded, selected } = defineProps<{
 const rowId = `keybinding-row-${command.id}`
 
 const emit = defineEmits<{
-  rowClick: []
-  rowDblclick: []
-  rowContextmenu: [event: MouseEvent]
-  edit: [binding: KeybindingImpl]
   add: []
-  reset: []
+  edit: [binding: KeybindingImpl]
   remove: []
   removeSingle: [index: number]
+  reset: []
+  rowClick: []
+  rowContextmenu: [event: MouseEvent]
+  rowDblclick: []
 }>()
 </script>
