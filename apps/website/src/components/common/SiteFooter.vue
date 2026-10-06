@@ -275,13 +275,7 @@ const contactColumn: { title: string; links: FooterLink[] } = {
 
       <!-- Logo -->
       <div class="pointer-events-none relative size-52 lg:mt-28">
-        <noscript>
-          <img
-            src="https://media.comfy.org/website/homepage/footer-logo-seq/seq-footer_00074.webp"
-            alt=""
-            class="absolute inset-0 size-full"
-          />
-        </noscript>
+        <slot name="logo-fallback" />
         <img
           v-if="isMounted && prefersReducedMotion()"
           :src="frameUrls.at(-1)"
