@@ -55,6 +55,19 @@ describe('useFeatureUsageTracker', () => {
     expect(tracker.useCount.value).toBe(4)
   })
 
+  it('preserves usage after bounding prolonged persistence failures', () => {
+    const tracker = useFeatureUsageTracker('bounded-failed-increments')
+    const setItem = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new DOMException('Storage quota exceeded', 'QuotaExceededError')
+    })
+    Array.from({ length: 101 }, () => tracker.trackUsage())
+    setItem.mockRestore()
+
+    tracker.trackUsage()
+
+    expect(tracker.useCount.value).toBe(102)
+  })
+
   it('keeps only usage recorded after a deleted generation', () => {
     vi.setSystemTime(1_000)
     const featureId = 'coalesced-after-deletion'

@@ -35,6 +35,7 @@ type PendingFeatureUsageRecord = Partial<Record<string, PendingUsageDelta[]>>
 
 const STORAGE_KEY = 'Comfy.FeatureUsage'
 const MAX_USAGE_COUNT = Number.MAX_SAFE_INTEGER - 1
+const MAX_PENDING_USAGE_DELTAS = 100
 const MAX_TIMESTAMP = Date.UTC(2100, 0, 1)
 const MAX_CLOCK_SKEW = 5 * 60 * 1_000
 const pendingResets = reactive(new Set<string>())
@@ -401,6 +402,23 @@ function incrementPendingDelta(delta: PendingUsageDelta, now: number) {
   }
 }
 
+function boundPendingDeltas(pendingDeltas: PendingUsageDelta[]) {
+  if (pendingDeltas.length <= MAX_PENDING_USAGE_DELTAS) return pendingDeltas
+  const [oldest, secondOldest, ...remainingDeltas] = pendingDeltas
+  return [
+    {
+      useCountDelta: Math.min(
+        oldest.useCountDelta + secondOldest.useCountDelta,
+        MAX_USAGE_COUNT
+      ),
+      firstUsed: Math.min(oldest.firstUsed, secondOldest.firstUsed),
+      lastUsed: Math.max(oldest.lastUsed, secondOldest.lastUsed),
+      recordedAt: Math.max(oldest.recordedAt, secondOldest.recordedAt)
+    },
+    ...remainingDeltas
+  ]
+}
+
 function recordPendingUsage(
   featureId: string,
   now: number,
@@ -419,11 +437,12 @@ function recordPendingUsage(
         recordedAt: now,
         baseUsage
       }
+  const nextDeltas = baseMatches
+    ? [...pendingDeltas.slice(0, -1), nextDelta]
+    : [...pendingDeltas, nextDelta]
   pendingUsageData.value = {
     ...pendingUsageData.value,
-    [featureId]: baseMatches
-      ? [...pendingDeltas.slice(0, -1), nextDelta]
-      : [...pendingDeltas, nextDelta]
+    [featureId]: boundPendingDeltas(nextDeltas)
   }
 }
 
