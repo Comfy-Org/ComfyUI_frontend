@@ -180,6 +180,19 @@ describe('useFeatureUsageTracker', () => {
     expect(recoveringFeature.useCount.value).toBe(2)
   })
 
+  it('does not replace newer stored usage with stale in-memory usage', () => {
+    const staleFeature = useFeatureUsageTracker('stale-feature')
+    const triggerFeature = useFeatureUsageTracker('trigger-feature')
+    staleFeature.trackUsage()
+    triggerFeature.trackUsage()
+    triggerFeature.trackUsage()
+    staleFeature.trackUsage()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored['stale-feature']?.useCount).toBe(2)
+    expect(stored['trigger-feature']?.useCount).toBe(2)
+  })
+
   it('preserves intervening usage when tracked after scope disposal', () => {
     const scope = effectScope()
     let trackDisposedFeature = () => {}

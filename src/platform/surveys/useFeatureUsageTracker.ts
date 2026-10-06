@@ -62,6 +62,19 @@ function latestUsage(
   }
 }
 
+function mergeUsageData(...records: FeatureUsageRecord[]): FeatureUsageRecord {
+  const featureIds = new Set(records.flatMap(Object.keys))
+  return Object.fromEntries(
+    [...featureIds].flatMap((featureId) => {
+      const usage = records.reduce<FeatureUsage | undefined>(
+        (latest, record) => latestUsage(latest, record[featureId]),
+        undefined
+      )
+      return usage ? [[featureId, usage]] : []
+    })
+  )
+}
+
 function incrementUsage(
   usage: FeatureUsage | undefined,
   now: number
@@ -107,13 +120,10 @@ function persistUsageData(
   try {
     oldValue = localStorage.getItem(STORAGE_KEY)
     const storedUsageData = parseUsageData(oldValue)
+    const mergedUsageData = mergeUsageData(storedUsageData, currentUsageData)
     usageData = {
-      ...storedUsageData,
-      ...currentUsageData,
-      [featureId]: incrementUsage(
-        latestUsage(storedUsageData[featureId], currentUsageData[featureId]),
-        now
-      )
+      ...mergedUsageData,
+      [featureId]: incrementUsage(mergedUsageData[featureId], now)
     }
     const newValue = JSON.stringify(usageData)
 
@@ -140,7 +150,7 @@ function resetUsageData(
   try {
     oldValue = localStorage.getItem(STORAGE_KEY)
     usageData = withoutFeature(
-      { ...parseUsageData(oldValue), ...currentUsageData },
+      mergeUsageData(parseUsageData(oldValue), currentUsageData),
       featureId
     )
     localStorage.setItem(STORAGE_KEY, JSON.stringify(usageData))
