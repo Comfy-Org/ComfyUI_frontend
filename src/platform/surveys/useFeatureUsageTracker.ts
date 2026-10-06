@@ -12,6 +12,7 @@ interface FeatureUsage {
 type FeatureUsageRecord = Partial<Record<string, FeatureUsage>>
 
 const STORAGE_KEY = 'Comfy.FeatureUsage'
+const MAX_USAGE_COUNT = Number.MAX_SAFE_INTEGER - 1
 const resetVersions = new Map<string, number>()
 const pendingResets = new Set<string>()
 const reportedErrorTypes = new Set<string>()
@@ -34,12 +35,12 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
-function nonNegativeSafeInteger(value: unknown): number | undefined {
+function safeInteger(value: unknown): number | undefined {
   if (typeof value !== 'number' && typeof value !== 'string') return
   if (typeof value === 'string' && value.trim() === '') return
 
   const number = Number(value)
-  return Number.isSafeInteger(number) && number >= 0 ? number : undefined
+  return Number.isSafeInteger(number) ? number : undefined
 }
 
 function normalizeUsageData(value: unknown): FeatureUsageRecord {
@@ -49,12 +50,19 @@ function normalizeUsageData(value: unknown): FeatureUsageRecord {
     Object.entries(value).flatMap(([featureId, usage]) => {
       if (!isRecord(usage)) return []
 
-      const useCount = nonNegativeSafeInteger(usage.useCount)
-      const firstUsed = nonNegativeSafeInteger(usage.firstUsed)
-      const lastUsed = nonNegativeSafeInteger(usage.lastUsed)
+      const useCount = safeInteger(usage.useCount)
+      const firstUsed = safeInteger(usage.firstUsed)
+      const lastUsed = safeInteger(usage.lastUsed)
+      const now = Date.now()
       return useCount !== undefined &&
+        useCount >= 0 &&
+        useCount <= MAX_USAGE_COUNT &&
         firstUsed !== undefined &&
-        lastUsed !== undefined
+        firstUsed > 0 &&
+        firstUsed <= now &&
+        lastUsed !== undefined &&
+        lastUsed > 0 &&
+        lastUsed <= now
         ? [[featureId, { useCount, firstUsed, lastUsed }]]
         : []
     })
@@ -110,7 +118,7 @@ function incrementUsage(
   now: number
 ): FeatureUsage {
   return {
-    useCount: (usage?.useCount ?? 0) + 1,
+    useCount: Math.min((usage?.useCount ?? 0) + 1, MAX_USAGE_COUNT),
     firstUsed: usage?.firstUsed ?? now,
     lastUsed: now
   }
