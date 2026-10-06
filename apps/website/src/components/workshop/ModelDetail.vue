@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { ExternalLink } from '@lucide/vue'
 import {
   useElementVisibility,
   useEventListener,
@@ -95,8 +94,10 @@ import PlaygroundForm from './PlaygroundForm.vue'
 import PlaygroundOutput from './PlaygroundOutput.vue'
 import ExampleReplaceDialog from './ExampleReplaceDialog.vue'
 import RunLeaveDialog from './RunLeaveDialog.vue'
-import ModelSupport from './ModelSupport.vue'
 import SavedAssetsStrip from './SavedAssetsStrip.vue'
+import ModelSamples from '@/components/workshop/model-detail/ModelSamples.vue'
+import ModelApiHeading from '@/components/workshop/model-detail/ModelApiHeading.vue'
+import PlaygroundInputHeader from '@/components/workshop/model-detail/PlaygroundInputHeader.vue'
 import RunGateAction from '@/components/workshop/model-detail/RunGateAction.vue'
 import RunRequestMeta from '@/components/workshop/model-detail/RunRequestMeta.vue'
 import { WORKSHOP_LEAVE_RUNNING } from '@/config/workshop-router-queue'
@@ -111,13 +112,15 @@ const { t } = translationsFor(locale)
 const modelAnalytics = workshopModelAnalytics(model)
 const frameRatio = frameRatioRule(model.slug)
 const sectionClass = 'scroll-mt-24 lg:scroll-mt-32'
-const headingClass =
-  'text-sm font-bold tracking-wider text-primary-warm-white uppercase'
 
 const initialPageState = initialWorkshopPageState(model)
 const examples = initialPageState.examples
 const runsHere = pagePaths(model).run
-const samples = examples.map((example) => ({ ...example, sampleOnly: true }))
+const apiSectionClass = cn(
+  sectionClass,
+  (runsHere || examples.length > 0) &&
+    'mt-16 border-t border-transparency-white-t8 pt-12'
+)
 const firstExample = initialPageState.firstExample
 const activeExample = ref<PlaygroundExample | undefined>(
   initialPageState.activeExample
@@ -894,21 +897,12 @@ function retry() {
           class="flex min-w-0 flex-col rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4 lg:col-span-5"
           data-testid="playground-input"
         >
-          <header
-            class="flex items-center justify-between border-b border-transparency-white-t8 px-5 py-3 text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase"
-          >
-            <span>{{ t('workshop.input.title') }}</span>
-            <button
-              v-if="offersNativeJson"
-              type="button"
-              :aria-pressed="nativeJson"
-              :disabled="inputsLocked"
-              class="cursor-pointer rounded-sm px-2 py-1 hover:bg-transparency-white-t8 disabled:cursor-not-allowed"
-              @click="nativeJson = !nativeJson"
-            >
-              {{ t('workshop.form.nativeJson') }}
-            </button>
-          </header>
+          <PlaygroundInputHeader
+            v-model:native-json="nativeJson"
+            :offers-native-json
+            :disabled="inputsLocked"
+            :locale
+          />
 
           <!-- Loading an example rewrites every field at once, so the form
           settles in instead of snapping. -->
@@ -916,12 +910,6 @@ function retry() {
             :key="activeExampleId"
             class="flex animate-soft-in flex-col gap-6 p-5"
           >
-            <ModelSupport
-              v-if="model.incompleteReason"
-              :reason="model.incompleteReason"
-              variant="notice"
-              :locale
-            />
             <PlaygroundForm
               v-model="values"
               :schema
@@ -1016,60 +1004,28 @@ function retry() {
       </div>
     </section>
 
-    <section
+    <ModelSamples
       v-else-if="examples.length"
-      id="samples"
-      :class="cn(sectionClass, 'flex flex-col gap-6')"
-      data-testid="samples-section"
-    >
-      <PlaygroundOutput
-        v-model:revealed="revealed"
-        :state="runState"
-        :now
-        :modality="model.modality"
-        :locale
-        class="lg:w-7/12"
-        @download="captureOutputDownload"
-      />
-      <ExamplesTab
-        v-if="samples.length > 1"
-        :examples="samples"
-        :gallery-label="model.name"
-        :active-id="activeExampleId"
-        :locale
-        @open="openExample"
-      />
-    </section>
+      v-model:revealed="revealed"
+      :class="sectionClass"
+      :state="runState"
+      :now
+      :examples
+      :model
+      :active-id="activeExampleId"
+      :locale
+      @open="openExample"
+      @download="captureOutputDownload"
+    />
 
     <section
       id="api"
       ref="apiSection"
       aria-labelledby="api-heading"
-      :class="
-        cn(
-          sectionClass,
-          (runsHere || examples.length) &&
-            'mt-16 border-t border-transparency-white-t8 pt-12'
-        )
-      "
+      :class="apiSectionClass"
       data-testid="api-section"
     >
-      <div class="mb-8 flex items-baseline justify-between gap-4">
-        <h2 id="api-heading" :class="headingClass">
-          {{ t('workshop.model.tabs.api') }}
-        </h2>
-        <a
-          v-if="docsHref"
-          :href="docsHref"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="inline-flex shrink-0 items-center gap-1.5 text-sm leading-none font-bold tracking-wider whitespace-nowrap text-primary-warm-white uppercase transition-colors hover:text-primary-comfy-yellow"
-          data-testid="model-docs-link"
-        >
-          {{ t('workshop.hub.docs') }}
-          <ExternalLink class="size-4" aria-hidden="true" />
-        </a>
-      </div>
+      <ModelApiHeading :docs-href :locale />
       <ApiTab
         :contract="model.execution"
         :values
