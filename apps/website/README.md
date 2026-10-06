@@ -273,12 +273,17 @@ refresh preserves the last confirmed answer for the same identity; a new
 identity never inherits a grant. Disabling it restores the public site:
 
 - The header and homepage retain their existing navigation and model links.
-- `/models` shows the existing Models marketing page.
-- Model render pages show the public marketing content until enabled.
+- `/hub/models/` shows the Models marketing page in place of the catalogue.
+  The old `/models` address redirects there.
+- Router model pages at `/hub/models/<slug>/` render their public content.
+  Workflow pages show the marketing content until enabled.
 - Catalogue and playground markup is absent from public HTML; their components
   and page data load after enablement. Homepage islands still serialize public
-  model and provider summaries. `/models` remains indexable with its marketing content.
-- Render pages stay out of sitemaps and markdown exports. `/models/showcase`
+  model and provider summaries. `/hub/models/` remains indexable with its
+  marketing content.
+- Router model pages are indexable and listed in the sitemap and markdown
+  exports (`launchedModelPages`). Workflow pages stay out until
+  `launchedWorkflowPages` is on. `/models/showcase`
   is the unlisted public copy of the marketing page: noindex and out of the
   sitemap.
 - Once enabled, a neutral loading frame replaces the public content while a
@@ -296,7 +301,7 @@ sign in through the website never join that cohort.
 The website identifies signed-in people with their Firebase UID, matching
 Cloud's PostHog identity. For a verified `comfy.org` or `drip.art` email it
 also sets `comfy_staff: true`; every other account sends nothing beyond the
-UID. Give staff `/login/?returnTo=%2Fmodels%2F` so they can sign in before
+UID. Give staff `/login/?returnTo=%2Fhub%2Fmodels%2F` so they can sign in before
 their Models flag is evaluated. Anyone who signed in before `comfy_staff`
 existed must sign out and back in once. Authentication is available before
 PostHog answers, including when flags are missing or unavailable; no separate
@@ -531,6 +536,22 @@ Promote to Production on a preview deployment: it would serve
 `noindex, nofollow` on comfy.org. The `deploy-production` job fails if its
 build has a robots meta on `/`, and `CI: Website Build` fails if a
 non-production build doesn't.
+
+### IndexNow
+
+Every build writes `indexnow-manifest.json`: each sitemap URL mapped to a hash
+of its markdown twin, so header, footer and asset-hash changes don't count, and
+noindex pages are left out. The `deploy-production` job saves the live manifest
+before it deploys, then `pnpm indexnow:submit` sends the added, changed
+and removed URLs to IndexNow (Bing, Yandex, Naver, Seznam, Yep). Google does not
+use IndexNow. The step only warns on failure and never fails the deploy;
+previews never run it. The key lives in `src/config/indexnow.ts` and its file in
+`public/`. To see the payload without sending it:
+
+```bash
+pnpm indexnow:submit --current dist/indexnow-manifest.json \
+  --previous prev.json --previous-status 404 --dry-run
+```
 
 ## HubSpot forms
 
