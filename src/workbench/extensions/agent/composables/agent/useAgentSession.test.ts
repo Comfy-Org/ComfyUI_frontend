@@ -4592,11 +4592,7 @@ describe('useAgentSession (v1 composition root)', () => {
       await vi.advanceTimersByTimeAsync(31_000)
 
       expect(approvalParts(session)).toHaveLength(0)
-      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
-        surface: 'agent',
-        errorType: 'agent_ask_answer_superseded'
-      })
-      expect(session.notices.value).toHaveLength(1)
+      expect(reportError).not.toHaveBeenCalled()
     } finally {
       vi.useRealTimers()
     }
@@ -4647,31 +4643,21 @@ describe('useAgentSession (v1 composition root)', () => {
   })
 
   it('(g39) a 202 cannot silently confirm which answer won for a recovered card', async () => {
-    vi.useFakeTimers()
-    try {
-      const rest = parkedOnApprovalRest()
-      const { source, status } = fakeEvents()
-      localStorage.setItem(StorageKeys.agentThread('personal'), 'th-1')
-      const session = useAgentSession({ rest, events: source })
-      session.start()
-      status(true)
-      await vi.advanceTimersByTimeAsync(0)
+    const { source, emit, status } = fakeEvents()
+    const session = useAgentSession({ rest: fakeRest(), events: source })
+    session.start()
+    status(true)
+    await session.sendMessage('go')
+    emit(runApproval('msg-1'))
+    status(false)
 
-      await session.answerAsk('turn-1:call-1', 'run')
+    await session.answerAsk('turn-1:call-1', 'run')
 
-      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
-        surface: 'agent',
-        errorType: 'agent_ask_answer_unconfirmed'
-      })
-      expect(session.notices.value).toEqual([
-        {
-          level: 'error',
-          text: 'Could not confirm your answer reached the agent. It may still have been applied — reload the page to see where things stand.'
-        }
-      ])
-    } finally {
-      vi.useRealTimers()
-    }
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      surface: 'agent',
+      errorType: 'agent_ask_answer_unconfirmed'
+    })
+    expect(session.notices.value).toHaveLength(1)
   })
 
   it('(g38) a remount does not restore an ask the prior session retired', async () => {
@@ -4840,6 +4826,40 @@ describe('useAgentSession (v1 composition root)', () => {
           tags: expect.objectContaining({ recovery_cause: 'reconnect' })
         })
       )
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('(g40) recovery replaces a stale approval with the row current ask', async () => {
+    vi.useFakeTimers()
+    try {
+      const currentAskId = 'turn-1:call-2'
+      const rest = fakeRest({
+        getMessages: vi.fn(
+          async (): Promise<AgentMessages> => [
+            historyRow(1, 'user', 'msg-1', 'go'),
+            {
+              ...parkedRow(),
+              pending_ask: { ...PARKED_ASK, ask_id: currentAskId }
+            }
+          ]
+        )
+      })
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start({ restore: false })
+      status(true)
+      await session.sendMessage('go')
+      emit(runApproval('msg-1'))
+
+      status(false)
+      status(true)
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(approvalParts(session).map((part) => part.askId)).toEqual([
+        currentAskId
+      ])
     } finally {
       vi.useRealTimers()
     }

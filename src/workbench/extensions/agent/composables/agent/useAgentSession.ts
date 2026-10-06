@@ -828,18 +828,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (turnId !== null) snapshotTurns.add(turnId)
   }
 
-  function markRecoveredTranscriptAsks(
-    history: AgentMessages,
-    threadId: string
-  ): void {
-    for (const row of history)
-      if (
-        row.status === 'streaming' &&
-        row.pending_ask?.kind === 'run_approval'
-      )
-        conversationStore.markAskRecovered(row.pending_ask.ask_id, threadId)
-  }
-
   async function hydrateFromServer(
     threadId: string,
     isCurrent: () => boolean = () => true,
@@ -849,7 +837,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     try {
       const history = await rest.getMessages(threadId)
       if (conversationStore.threadId !== threadId || !isCurrent()) return false
-      markRecoveredTranscriptAsks(history, threadId)
       conversationStore.hydrate(history)
       rememberSnapshotTurn(conversationStore.activeTurnId)
       reconcileLiveTurns('hydrate')
@@ -1531,10 +1518,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
         error instanceof AgentApiError &&
         TERMINAL_ANSWER_STATUSES.has(error.status)
       ) {
-        // A 409 is the ordinary double-click, and the ask really is resolved,
-        // so it needs neither telemetry nor a notice. The rest mean this
-        // client could never have answered, which the user has to be told
-        // about or the card simply vanishes as though it had worked.
+        // A 409 is a quiet double-click unless this client restored the ask
+        // after losing its resolution channel. The rest mean this client
+        // could never have answered, which the user has to be told.
         if (error.status !== 409) {
           reportError(error, {
             surface: 'agent',
@@ -1879,6 +1865,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   function onStatus(live: boolean): void {
     if (!live) {
       connection = 'dropped'
+      conversationStore.markLiveApprovalsRecovered()
       return
     }
     const reconnected = connection === 'dropped'
@@ -1949,9 +1936,18 @@ export function useAgentSession(deps: AgentSessionDeps) {
       if (outcome.kind === 'thread-missing' && consecutiveThreadMissing < 2)
         continue
       if (settleFinishedTurn(turn, outcome)) return
-      if (outcome.kind === 'streaming')
-        restoreMissingApproval(turn, outcome.pendingAsk, cause)
+      reconcileStreamingApproval(turn, outcome, cause)
     }
+  }
+
+  function reconcileStreamingApproval(
+    turn: LiveTurn,
+    outcome: TurnOutcome,
+    cause: RecoveryCause
+  ): void {
+    if (outcome.kind !== 'streaming') return
+    conversationStore.reconcileApprovalParts(turn, outcome.pendingAsk?.ask_id)
+    restoreMissingApproval(turn, outcome.pendingAsk, cause)
   }
 
   /**
@@ -2003,7 +1999,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     askId: string,
     cause: RecoveryCause
   ): void {
-    if (cause !== 'reconnect') {
+    const lostFrame = cause === 'reconnect' || connection === 'dropped'
+    if (!lostFrame) {
       sendRestoredApprovalReport(turn, askId, cause, 'warning')
       return
     }
@@ -2012,7 +2009,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       threadId: turn.threadId,
       timer: setTimeout(() => {
         lateAskReports.delete(key)
-        sendRestoredApprovalReport(turn, askId, cause, 'error')
+        sendRestoredApprovalReport(turn, askId, 'reconnect', 'error')
       }, LATE_ASK_FRAME_GRACE_MS)
     })
   }
@@ -2188,6 +2185,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   function forgetDeletedThread(turn: LiveTurn): void {
     skillTurnUsage.delete(recoveryKey(turn))
     clearLateAskReports(turn.threadId)
+    conversationStore.forgetRecoveredAsks(turn.threadId)
     if (conversationStore.threadId !== turn.threadId) {
       conversationStore.settleTurn(turn, undefined)
       return

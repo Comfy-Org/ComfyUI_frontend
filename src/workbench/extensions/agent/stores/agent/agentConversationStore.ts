@@ -67,6 +67,7 @@ interface ActiveTurnSlot {
  * cannot leave the card disabled for the rest of the session.
  */
 const ASK_RESOLUTION_GRACE_MS = 15_000
+const MAX_RECOVERED_ASK_THREADS = 128
 
 function isLoadSkillPart(part: AssistantMessage['parts'][number]): boolean {
   return part.type === 'tool' && part.name === 'load_skill'
@@ -433,7 +434,9 @@ export const useAgentConversationStore = defineStore(
       for (const entry of backgroundTurns.values())
         if (entry.threadId === key) entry.transport.dropAskPart(askId)
       retiredAsksFor(key).add(askId)
-      recoveredAskIds.get(key)?.delete(askId)
+      const recovered = recoveredAskIds.get(key)
+      recovered?.delete(askId)
+      if (recovered?.size === 0) recoveredAskIds.delete(key)
       clearAskResolutionWatchdog(askId)
       submittedAskSelections.delete(askId)
       setAskAnswering(askId, false)
@@ -472,10 +475,32 @@ export const useAgentConversationStore = defineStore(
       const recovered = recoveredAskIds.get(key) ?? new Set<string>()
       recovered.add(askId)
       recoveredAskIds.set(key, recovered)
+      if (recoveredAskIds.size > MAX_RECOVERED_ASK_THREADS) {
+        const oldest = recoveredAskIds.keys().next().value
+        if (oldest !== undefined) recoveredAskIds.delete(oldest)
+      }
     }
 
     function isAskRecovered(askId: string, owner?: string): boolean {
       return recoveredAskIds.get(threadKey(owner))?.has(askId) ?? false
+    }
+
+    function forgetRecoveredAsks(owner: string): void {
+      recoveredAskIds.delete(threadKey(owner))
+    }
+
+    function markLiveApprovalsRecovered(): void {
+      const mark = (message: AssistantMessage, owner: string) => {
+        for (const part of message.parts)
+          if (part.type === 'runApproval') markAskRecovered(part.askId, owner)
+      }
+      const current = threadKey()
+      for (const message of messages.value) mark(message, current)
+      const slot = activeSlot.value
+      if (slot !== null && slot.threadId !== null)
+        mark(slot.message, slot.threadId)
+      for (const entry of backgroundTurns.values())
+        mark(entry.message, entry.threadId)
     }
     /**
      * PM-1658: which way this client answered each ask. The server takes a
@@ -1073,6 +1098,20 @@ export const useAgentConversationStore = defineStore(
       return entry.message
     }
 
+    function reconcileApprovalParts(
+      turn: LiveTurn,
+      pendingAskId?: string
+    ): void {
+      const message = liveTurnMessage(turn)
+      if (message === null) return
+      const stale = message.parts.flatMap((part) =>
+        part.type === 'runApproval' && part.askId !== pendingAskId
+          ? [part.askId]
+          : []
+      )
+      for (const askId of stale) retireAsk(askId, turn.threadId)
+    }
+
     /**
      * Whether this turn is already showing `askId`. Turn recovery asks before
      * re-delivering an ask off a persisted row: the card a hydrate drew is on
@@ -1161,6 +1200,7 @@ export const useAgentConversationStore = defineStore(
       if (recovered !== undefined)
         for (const askId of recovered)
           if (!named.has(askId)) recovered.delete(askId)
+      if (recovered?.size === 0) recoveredAskIds.delete(threadKey())
       for (const askId of retired) if (!named.has(askId)) retired.delete(askId)
       for (const message of transcript.messages)
         message.parts = message.parts.filter(
@@ -1357,6 +1397,9 @@ export const useAgentConversationStore = defineStore(
       isAskRetired,
       markAskRecovered,
       isAskRecovered,
+      forgetRecoveredAsks,
+      markLiveApprovalsRecovered,
+      reconcileApprovalParts,
       startTurn,
       ingest,
       setCanvasSyncGate,
