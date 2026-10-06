@@ -3,6 +3,9 @@
   "version": "0.0.1",
   "private": true,
   "type": "module",
+  "exports": {
+    "./translation-config": "./src/config/translation.ts"
+  },
   "scripts": {
     "dev": "astro dev",
     "dev:no-toolbar": "cross-env NO_TOOLBAR=1 astro dev",
@@ -11,6 +14,8 @@
     "build:e2e": "cross-env WEBSITE_INDEXABLE=1 astro build",
     "format": "oxfmt --ignore-path .gitignore --write && prettier --write \"src/**/*.astro\"",
     "format:check": "oxfmt --ignore-path .gitignore --check && prettier --check \"src/**/*.astro\"",
+    "locale": "tsx ../../scripts/i18n/update-locales.ts --target website",
+    "locale:check": "tsx ../../scripts/i18n/update-locales.ts --target website --check",
     "preview": "astro preview",
     "typecheck": "astro check && tsx ../../scripts/vue-tsc-native.ts --noEmit -p tsconfig.json",
     "test:unit": "vitest run",
@@ -42,8 +47,11 @@
     "validate:jsonld": "tsx ./scripts/validate-jsonld.ts",
     "check:hreflang": "tsx ./scripts/check-hreflang.ts",
     "check:models-html": "tsx ./scripts/check-models-html.ts",
+    "check:published-model-pages": "tsx ./scripts/check-published-model-pages.ts",
+    "record:published-model-pages": "tsx ./scripts/check-published-model-pages.ts --record",
     "list:models-pages": "tsx ./scripts/list-models-pages.ts",
     "validate:llms-txt-links": "tsx ./scripts/validate-llms-txt-links.ts",
+    "validate:markdown-alternates": "tsx ./scripts/validate-markdown-alternates.ts",
     "indexnow:submit": "tsx ./scripts/indexnow-submit.ts",
     "check:link-slashes": "tsx ./scripts/check-internal-link-slashes.ts",
     "workshop:generate": "tsx ./scripts/generate-workshop-models.ts",
