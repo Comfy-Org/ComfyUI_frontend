@@ -19,18 +19,25 @@ interface SsoStartOptions {
   readonly fetchImpl: typeof fetch
 }
 
+interface SsoStartResolver {
+  (email: string): Promise<string | undefined>
+  /** Starts the flag read early so a sign-in submit doesn't wait on it. */
+  readonly warm: () => void
+}
+
 export function createSsoStartResolver({
   cloudBaseUrl,
   fetchImpl
-}: SsoStartOptions): (email: string) => Promise<string | undefined> {
+}: SsoStartOptions): SsoStartResolver {
   let enabled: Promise<boolean> | undefined
-
-  return async (email) => {
-    enabled ??= readAnonymousFeatureFlag(
+  const readEnabled = () =>
+    (enabled ??= readAnonymousFeatureFlag(
       { cloudBaseUrl, fetchImpl },
       'sso_enabled'
-    )
-    if (!(await enabled)) return undefined
+    ))
+
+  const resolve = async (email: string) => {
+    if (!(await readEnabled())) return undefined
     const discovery = await discoverSso(email, {
       fetchImpl,
       baseUrl: cloudBaseUrl
@@ -43,6 +50,7 @@ export function createSsoStartResolver({
         })
       : undefined
   }
+  return Object.assign(resolve, { warm: () => void readEnabled() })
 }
 
 /** Cloud's SSO start URL for this email, or undefined to sign in with Firebase. */
@@ -50,3 +58,5 @@ export const ssoStartUrlFor = createSsoStartResolver({
   cloudBaseUrl: WORKSHOP_CLOUD_BASE_URL,
   fetchImpl: (...args) => globalThis.fetch(...args)
 })
+
+export const warmSsoStartFlag = ssoStartUrlFor.warm

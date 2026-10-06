@@ -32,7 +32,7 @@ import {
   signUpWorkshopWithEmail
 } from '@/config/workshop-firebase'
 import { useWorkshopSession } from '@/config/workshop-session-state'
-import { ssoStartUrlFor } from '@/config/workshop-sso'
+import { ssoStartUrlFor, warmSsoStartFlag } from '@/config/workshop-sso'
 import { t } from '@/i18n/translations'
 import {
   captureAuthCompleted,
@@ -1924,6 +1924,18 @@ describe('AuthSignIn enterprise SSO', () => {
     signIn: signInWorkshopWithEmail,
     signUp: signUpWorkshopWithEmail
   } as const
+
+  it.for(['signIn', 'signUp'] as const)(
+    'starts the SSO flag read when the %s panel opens, before any submit',
+    (mode) => {
+      vi.mocked(warmSsoStartFlag).mockClear()
+
+      render(AuthSignIn, { props: { mode } })
+
+      expect(warmSsoStartFlag).toHaveBeenCalledOnce()
+      expect(ssoStartUrlFor).not.toHaveBeenCalled()
+    }
+  )
 
   it.for(['signIn', 'signUp'] as const)(
     "sends an SSO email on %s to Cloud's SSO start instead of Firebase",

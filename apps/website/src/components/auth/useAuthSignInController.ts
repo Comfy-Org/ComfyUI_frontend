@@ -36,7 +36,7 @@ import {
 } from '@/config/workshop-return'
 import type { WorkshopSessionUser } from '@/config/workshop-session-state'
 import { useWorkshopSession } from '@/config/workshop-session-state'
-import { ssoStartUrlFor } from '@/config/workshop-sso'
+import { ssoStartUrlFor, warmSsoStartFlag } from '@/config/workshop-sso'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import {
@@ -480,6 +480,7 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
   onMounted(() => {
     isSecureContext.value = currentSecureContext() ?? true
     inAppBrowser.value = isEmbeddedWebView()
+    warmSsoStartFlag()
     // Cloud reports the open when its sign-up page renders; here that is the
     // moment the flag lets the page show.
     if (mode === 'signUp')

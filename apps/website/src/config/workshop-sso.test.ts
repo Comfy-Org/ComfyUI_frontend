@@ -102,4 +102,17 @@ describe('createSsoStartResolver', () => {
       DISCOVER_URL
     ])
   })
+
+  it('answers a submit from the flag read warmed at page load, without a second read', async () => {
+    const features = Promise.withResolvers<Response>()
+    const fetchImpl = cloud({ features: () => features.promise })
+    const resolve = createSsoStartResolver({ cloudBaseUrl: CLOUD, fetchImpl })
+
+    resolve.warm()
+    expect(requestedUrls(fetchImpl)).toEqual([FEATURES_URL])
+    features.resolve(json({ sso_enabled: false }))
+
+    await expect(resolve('ada@acme.com')).resolves.toBeUndefined()
+    expect(requestedUrls(fetchImpl)).toEqual([FEATURES_URL])
+  })
 })
