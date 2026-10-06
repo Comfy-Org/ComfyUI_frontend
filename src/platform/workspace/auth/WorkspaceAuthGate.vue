@@ -198,7 +198,7 @@ async function initialize(): Promise<void> {
     if (needsUnifiedToken) {
       const authenticated = await workspaceAuthStore.mintAtLogin()
       if (generation !== initializationGeneration) return
-      if (!authenticated) {
+      if (!authenticated && (await requiresUnifiedToken())) {
         throw new Error('Failed to initialize unified cloud auth')
       }
     }
@@ -206,7 +206,11 @@ async function initialize(): Promise<void> {
     await initializeWorkspaceMode()
     if (generation !== initializationGeneration) return
     void billingCapabilities.initialize(controller.signal)
-    if (needsUnifiedToken && !workspaceAuthStore.getUnifiedToken()) {
+    if (
+      needsUnifiedToken &&
+      !workspaceAuthStore.getUnifiedToken() &&
+      (await requiresUnifiedToken())
+    ) {
       throw new Error('Unified cloud auth was cleared during workspace setup')
     }
 
