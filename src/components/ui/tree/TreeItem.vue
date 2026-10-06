@@ -38,7 +38,9 @@
         />
       </button>
       <span v-else class="size-5 shrink-0" />
-      <slot :is-expanded :is-selected />
+      <div class="contents" @keydown="keepKeysInEditableContent">
+        <slot :is-expanded :is-selected />
+      </div>
     </div>
   </RekaTreeItem>
 </template>
@@ -65,6 +67,16 @@ const {
 }>()
 
 const emit = defineEmits<{ select: [event: TreeItemSelectEvent<T>] }>()
+
+function keepKeysInEditableContent(event: KeyboardEvent) {
+  const { target } = event
+  if (
+    target instanceof HTMLElement &&
+    (target.isContentEditable || target.matches('input, textarea'))
+  ) {
+    event.stopPropagation()
+  }
+}
 
 function preventPointerToggle(event: TreeItemToggleEvent<T>) {
   if (event.detail.originalEvent instanceof PointerEvent) {

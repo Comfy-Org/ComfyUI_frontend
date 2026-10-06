@@ -92,6 +92,62 @@ describe('Tree', () => {
     expect(folder).toHaveAttribute('aria-expanded', 'false')
   })
 
+  it('leaves keys typed into row content to that content', async () => {
+    const user = userEvent.setup()
+    render(
+      defineComponent({
+        components: { Tree, TreeItem },
+        setup: () => ({
+          expanded: ref<string[]>([]),
+          items: [...items, { key: 'beta', label: 'Beta' }]
+        }),
+        template: `
+          <Tree
+            v-model:expanded="expanded"
+            :items="items"
+            :get-key="(item) => item.key"
+            :get-children="(item) => item.children"
+          >
+            <template #default="{ items: flattenedItems }">
+              <TreeItem
+                v-for="item in flattenedItems"
+                :key="item._id"
+                :value="item.value"
+                :level="item.level"
+                :has-children="item.hasChildren"
+              >
+                {{ item.value.label }}
+                <input :aria-label="'Rename ' + item.value.label" />
+              </TreeItem>
+            </template>
+          </Tree>
+        `
+      }),
+      {
+        global: {
+          plugins: [
+            createI18n({
+              legacy: false,
+              locale: 'en',
+              messages: { en: { g: { expand: 'Expand' } } }
+            })
+          ]
+        }
+      }
+    )
+    const input = screen.getByRole('textbox', { name: 'Rename Folder' })
+
+    await user.click(input)
+    await user.keyboard('Bea{ArrowLeft}{ArrowRight}t')
+
+    expect(input).toHaveFocus()
+    expect(input).toHaveValue('Beat')
+    expect(screen.getByRole('treeitem', { name: /Folder/ })).toHaveAttribute(
+      'aria-expanded',
+      'false'
+    )
+  })
+
   it('supports arrow-key expansion and navigation', async () => {
     const user = userEvent.setup()
     renderTree()
