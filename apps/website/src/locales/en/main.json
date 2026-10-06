@@ -5495,5 +5495,75 @@
     "noWebgl": "This preview needs WebGL2, which this browser does not offer.",
     "play": "Play",
     "pause": "Pause"
+  },
+  "vfx": {
+    "meta": {
+      "title": "Comfy for VFX | Workflows for your production pipeline",
+      "description": "Explore VFX examples and ready-to-use ComfyUI workflows for sky replacement, cleanplate, de-aging, mattes and frame adjustments."
+    },
+    "hero": {
+      "heading": "Build your VFX pipeline\nwith Comfy.",
+      "subtitle": "From cleanplates to sky replacement, turn complex shot work into workflows your team can inspect, adapt, and use again.",
+      "explore": "Explore VFX workflows",
+      "contact": "Talk to our team"
+    },
+    "examples": {
+      "heading": "See what you can make.",
+      "eyebrow": "VFX in practice",
+      "sky": "Replace the sky. Keep the shot.",
+      "skyDescription": "Watch Doug Hogan build a sky-replacement workflow in ComfyUI, then explore the steps and adapt the workflow to your footage.",
+      "clean": "Start with a clean plate.",
+      "cleanDescription": "Explore a cleanplate workflow and see how ComfyUI fits into shot cleanup. Follow the walkthrough before bringing it into your own pipeline."
+    },
+    "workflows": {
+      "heading": "Ready-to-use VFX workflows",
+      "description": "Choose a task, watch the breakdown, and open the linked workflow. Each example comes from our published VFX series.",
+      "tag": "Watch + open workflow"
+    },
+    "why": {
+      "heading": "Your pipeline.\nYour control.",
+      "subtitle": "Build around the way your team works.",
+      "1": {
+        "title": "Inspect every step",
+        "description": "Connect models and processing steps in a node-based workflow. See how a result is made, then change the parts your shot needs."
+      },
+      "2": {
+        "title": "Reuse what works",
+        "description": "Save a workflow and adapt it to the next shot. Give artists and technical directors a shared starting point for repeatable work."
+      },
+      "3": {
+        "title": "Choose how you run",
+        "description": "Work locally or in Comfy Cloud. For studio deployment requirements, talk to our team about managed builds."
+      }
+    },
+    "proof": {
+      "heading": "See how creative teams build with Comfy",
+      "title": "Inside Black Math’s creative systems",
+      "description": "Artists and technical directors at Black Math explain how they build extendable creative systems while keeping art direction with the team."
+    },
+    "contact": {
+      "heading": "Bring Comfy into your studio’s pipeline.",
+      "button": "Talk to our team",
+      "models": "Explore models in the Hub"
+    },
+    "faq": {
+      "heading": "VFX questions, answered.",
+      "1": {
+        "q": "Can I use these workflows with my own footage?",
+        "a": "Yes. Start with the linked walkthrough, open its workflow, and replace the example inputs with your own. Review the models and settings before using the output in production."
+      },
+      "2": {
+        "q": "Where can I open the workflows?",
+        "a": "Each card opens a tutorial with its workflow link. Some workflows open in Comfy Cloud; others have a dedicated workflow page. The tutorial shows the destination before you open it."
+      },
+      "3": {
+        "q": "Can my team run Comfy locally?",
+        "a": "Yes. ComfyUI is open source and can run locally. Hardware requirements depend on the models and workflow you choose. Comfy Cloud is another option for running workflows."
+      },
+      "4": {
+        "q": "How do we discuss a studio deployment?",
+        "a": "Use “Talk to our team” to share your studio’s requirements. Our team can discuss managed builds and how Comfy fits into your pipeline."
+      }
+    }
   }
 }

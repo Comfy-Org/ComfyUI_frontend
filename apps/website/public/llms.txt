@@ -159,6 +159,7 @@ Languages: comfy.org is published in English and Simplified Chinese, with a Japa
 
 ## Learning
 
+- [Comfy for VFX](https://comfy.org/vfx/): VFX examples, reusable workflows, and studio deployment guidance.
 - [Learning Hub](https://comfy.org/learning/): Hands-on ComfyUI tutorials and workflows, organized by discipline.
 
 ### ComfyUI Basics
