@@ -522,7 +522,6 @@ function writeAndVerifyReset(value: string, featureId: string) {
 
 function persistUsageData(featureId: string, now: number) {
   let oldValue: string | null = null
-  let usageData = applyPendingUsage(applyPendingResets(usageSnapshot.value))
   let newValue = ''
   let storageWritten = false
   let baseUsage: FeatureUsage | null | undefined
@@ -537,7 +536,7 @@ function persistUsageData(featureId: string, now: number) {
     baseUsage = usageFor(resetAdjustedUsageData, featureId) ?? null
     const mergedUsageData = applyPendingUsage(resetAdjustedUsageData)
     const nextUsage = incrementUsage(usageFor(mergedUsageData, featureId), now)
-    usageData = {
+    const usageData = {
       ...mergedUsageData,
       [featureId]: nextUsage
     }
@@ -570,12 +569,10 @@ function persistUsageData(featureId: string, now: number) {
   if (storageWritten) {
     dispatchStorageUpdate(oldValue, newValue)
   }
-  return { storageWritten, usageData }
 }
 
 function resetUsageData(featureId: string) {
   let oldValue: string | null = null
-  let usageData: FeatureUsageRecord = {}
   let newValue = ''
   let storageWritten = false
 
@@ -594,7 +591,7 @@ function resetUsageData(featureId: string) {
       }
     }
     reconcileAndSetSnapshot(parsedUsageData)
-    usageData = applyPendingUsage(applyPendingResets(currentUsageData))
+    const usageData = applyPendingUsage(applyPendingResets(currentUsageData))
     newValue = JSON.stringify({
       ...preserveInvalidUsage(parsedUsageData),
       ...usageData
@@ -621,7 +618,6 @@ function resetUsageData(featureId: string) {
   if (storageWritten) {
     dispatchStorageUpdate(oldValue, newValue)
   }
-  return { storageWritten, usageData }
 }
 
 /**
