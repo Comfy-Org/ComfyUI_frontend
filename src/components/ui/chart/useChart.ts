@@ -1,4 +1,4 @@
-import type { ChartData, ChartOptions, ChartType } from 'chart.js'
+import type { ChartData, ChartOptions } from 'chart.js'
 import {
   BarController,
   BarElement,
@@ -13,9 +13,11 @@ import {
   PointElement,
   Tooltip
 } from 'chart.js'
-import { onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
+import { onBeforeUnmount, onMounted, shallowRef, toRaw, watch } from 'vue'
 
 import type { Ref } from 'vue'
+
+export type SupportedChartType = 'bar' | 'line'
 
 Chart.register(
   BarController,
@@ -37,7 +39,7 @@ function getCssVar(name: string): string {
     .trim()
 }
 
-function getDefaultOptions(type: ChartType): ChartOptions {
+function getDefaultOptions(type: SupportedChartType): ChartOptions {
   const foreground = getCssVar('--color-base-foreground') || '#ffffff'
   const muted = getCssVar('--color-muted-foreground') || '#8a8a8a'
 
@@ -126,10 +128,9 @@ function getDefaultOptions(type: ChartType): ChartOptions {
 }
 
 export function useChart(
-  canvasRef: Ref<HTMLCanvasElement | null>,
-  type: Ref<ChartType>,
-  data: Ref<ChartData>,
-  options?: Ref<ChartOptions | undefined>
+  canvasRef: Readonly<Ref<HTMLCanvasElement | null>>,
+  type: Readonly<Ref<SupportedChartType>>,
+  data: Readonly<Ref<ChartData>>
 ) {
   const chartInstance = shallowRef<Chart | null>(null)
 
@@ -137,62 +138,29 @@ export function useChart(
     if (!canvasRef.value) return
 
     chartInstance.value?.destroy()
-
-    const defaults = getDefaultOptions(type.value)
-    const merged = options?.value
-      ? deepMerge(defaults, options.value)
-      : defaults
-
     chartInstance.value = new Chart(canvasRef.value, {
       type: type.value,
-      data: data.value,
-      options: merged
+      data: toRaw(data.value),
+      options: getDefaultOptions(type.value)
     })
   }
 
   onMounted(createChart)
 
-  watch([type, data, options ?? ref(undefined)], () => {
-    if (chartInstance.value) {
-      chartInstance.value.data = data.value
-      chartInstance.value.options = options?.value
-        ? deepMerge(getDefaultOptions(type.value), options.value)
-        : getDefaultOptions(type.value)
+  watch(type, createChart)
+
+  watch(
+    data,
+    () => {
+      if (!chartInstance.value) return
+      chartInstance.value.data = toRaw(data.value)
       chartInstance.value.update()
-    }
-  })
+    },
+    { deep: true }
+  )
 
   onBeforeUnmount(() => {
     chartInstance.value?.destroy()
     chartInstance.value = null
   })
-
-  return { chartInstance }
-}
-
-function deepMerge<T extends Record<string, unknown>>(
-  target: T,
-  source: Record<string, unknown>
-): T {
-  const result = { ...target } as Record<string, unknown>
-  for (const key of Object.keys(source)) {
-    const srcVal = source[key]
-    const tgtVal = result[key]
-    if (
-      srcVal &&
-      typeof srcVal === 'object' &&
-      !Array.isArray(srcVal) &&
-      tgtVal &&
-      typeof tgtVal === 'object' &&
-      !Array.isArray(tgtVal)
-    ) {
-      result[key] = deepMerge(
-        tgtVal as Record<string, unknown>,
-        srcVal as Record<string, unknown>
-      )
-    } else {
-      result[key] = srcVal
-    }
-  }
-  return result as T
 }

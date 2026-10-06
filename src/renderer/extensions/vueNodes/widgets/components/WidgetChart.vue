@@ -3,7 +3,7 @@
     class="max-h-192"
     :type="chartType"
     :data="chartData"
-    :aria-label="`${widget.name || $t('g.chart')} - ${chartType} ${$t('g.chartLowercase')}`"
+    :label="`${widget.name || $t('g.chart')} - ${chartType} ${$t('g.chartLowercase')}`"
   />
 </template>
 

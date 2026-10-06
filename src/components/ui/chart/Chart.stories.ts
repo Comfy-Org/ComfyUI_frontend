@@ -10,7 +10,7 @@ const meta: Meta<typeof Chart> = {
   decorators: [
     (story) => ({
       components: { story },
-      template: '<div class="w-[413px]"><story /></div>'
+      template: '<div class="w-104"><story /></div>'
     })
   ]
 }
@@ -18,10 +18,29 @@ const meta: Meta<typeof Chart> = {
 export default meta
 type Story = StoryObj<typeof meta>
 
+export const Default: Story = {
+  args: {
+    type: 'line',
+    label: 'Default chart',
+    data: {
+      labels: ['A', 'B', 'C', 'D'],
+      datasets: [{ label: 'Series 1', data: [10, 45, 25, 80] }]
+    }
+  }
+}
+
+export const Empty: Story = {
+  args: {
+    type: 'line',
+    label: 'Empty chart',
+    data: { labels: [], datasets: [] }
+  }
+}
+
 export const Line: Story = {
   args: {
     type: 'line',
-    ariaLabel: 'Line chart example',
+    label: 'Line chart example',
     data: {
       labels: ['A', 'B', 'C', 'D'],
       datasets: [
@@ -42,7 +61,7 @@ export const Line: Story = {
 export const MultipleLines: Story = {
   args: {
     type: 'line',
-    ariaLabel: 'Line chart with multiple lines',
+    label: 'Line chart with multiple lines',
     data: {
       labels: ['A', 'B', 'C', 'D'],
       datasets: [
@@ -57,7 +76,7 @@ export const MultipleLines: Story = {
 export const Bar: Story = {
   args: {
     type: 'bar',
-    ariaLabel: 'Bar chart with multiple datasets',
+    label: 'Bar chart with multiple datasets',
     data: {
       labels: ['A', 'B', 'C', 'D'],
       datasets: [

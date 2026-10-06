@@ -1,38 +1,38 @@
 <template>
   <div :class="cn('rounded-lg bg-secondary-background p-6', className)">
-    <canvas ref="canvasRef" :aria-label role="img" />
+    <div class="relative">
+      <canvas ref="canvasRef" :aria-label="label" role="img" />
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import type { ChartData, ChartOptions, ChartType } from 'chart.js'
-import { ref, toRef } from 'vue'
+import type { ChartData } from 'chart.js'
+import { toRef, useTemplateRef } from 'vue'
 import type { HTMLAttributes } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
 import { useChart } from './useChart'
+import type { SupportedChartType } from './useChart'
 
 const {
   type,
   data,
-  options,
-  ariaLabel,
+  label,
   class: className
 } = defineProps<{
-  type: ChartType
+  type: SupportedChartType
   data: ChartData
-  options?: ChartOptions
-  ariaLabel?: string
+  label: string
   class?: HTMLAttributes['class']
 }>()
 
-const canvasRef = ref<HTMLCanvasElement | null>(null)
+const canvasRef = useTemplateRef<HTMLCanvasElement>('canvasRef')
 
 useChart(
   canvasRef,
   toRef(() => type),
-  toRef(() => data),
-  toRef(() => options)
+  toRef(() => data)
 )
 </script>

@@ -76,7 +76,6 @@
         "src/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader.ts",
         "src/platform/workflow/templates/composables/useTemplateUrlLoader.test.ts",
         "src/platform/workflow/templates/composables/useTemplateUrlLoader.ts",
-        "src/platform/workspace/billing/sdk/billingSdkTelemetryOwnership.test.ts",
         "src/platform/workspace/components/CurrentUserPopoverWorkspace.test.ts",
         "src/platform/workspace/components/CurrentUserPopoverWorkspace.vue",
         "src/platform/workspace/components/InviteMembersForm.test.ts",
