@@ -226,9 +226,9 @@ execution bindings remain presentation preferences, not an execution allowlist.
 
 ## Data and regeneration
 
-`src/data/workshop-router-openapi.snapshot.json` contains all 241
+`src/data/workshop-router-openapi.snapshot.json` contains all 242
 documents under cloud `services/comfy-api/docs/router-schemas/` at commit
-`4f27a2d3821c158b701db52a1962edf049c17c4e`; it is not proof of deployment.
+`53f37ce69794e75faf8f32f43a5c82dbd443108f`; it is not proof of deployment.
 Every referenced component and output content type is retained.
 
 Refresh from a clean cloud checkout (uncommitted router-schemas edits, or a
@@ -254,9 +254,9 @@ Snapshot input is `[{id, document}]`. The second command reads the packed
 snapshot and optional `src/data/workshop-router-bindings.json` presentation
 overrides. It writes:
 
-- `src/content/workshop-router-contracts.json`: 225 contracts, one per line.
-- `src/content/workshop-router-index.json`: all 241 lightweight browse identities
-  and explicit missing-input markers (243 lines).
+- `src/content/workshop-router-contracts.json`: 226 contracts, one per line.
+- `src/content/workshop-router-index.json`: all 242 lightweight browse identities
+  and explicit missing-input markers (244 lines).
 
 Bindings are optional, not an enablement registry. The first nine retain
 verified media-upload/status selectors and Advanced choices there.
