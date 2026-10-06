@@ -1,4 +1,6 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen, waitFor } from '@testing-library/vue'
+import type { User, UserCredential } from 'firebase/auth'
 import userEvent from '@testing-library/user-event'
 import type { Mock } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -13,16 +15,33 @@ import { captureOAuthRequestId } from '@/platform/cloud/oauth/oauthState'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import CloudLoginView from '@/platform/cloud/onboarding/CloudLoginView.vue'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import type { useSessionCookie } from '@/platform/auth/session/useSessionCookie'
+import { presentSsoRequired } from '@/platform/auth/sso/ssoRequired'
+import { SSO_REQUIRED_DIALOG_KEY } from '@/platform/auth/sso/ssoRequiredDialogKey'
+import { useAuthStore } from '@/stores/authStore'
+import { useDialogStore } from '@/stores/dialogStore'
 
 vi.mock(import('@/composables/auth/useAuthActions'))
 vi.mock(import('@/composables/useFeatureFlags'))
+vi.mock(import('firebase/auth'))
 
+const redirectAfterAuth = vi.hoisted(() => vi.fn(async () => undefined))
 vi.mock(
   import('@/platform/cloud/onboarding/composables/usePostAuthRedirect'),
   () => ({
-    usePostAuthRedirect: () => ({ onAuthSuccess: vi.fn() })
+    usePostAuthRedirect: () => ({ onAuthSuccess: redirectAfterAuth })
   })
 )
+
+const sessionRequiresSso = vi.hoisted(() =>
+  vi.fn<() => Promise<boolean>>(async () => false)
+)
+vi.mock(import('@/platform/auth/session/useSessionCookie'), () => ({
+  useSessionCookie: () =>
+    fromPartial<ReturnType<typeof useSessionCookie>>({ sessionRequiresSso })
+}))
+
+vi.mock(import('@/platform/auth/sso/ssoRequired'), { spy: true })
 
 const isEmbeddedWebView = vi.hoisted(() => ({ value: false }))
 vi.mock(import('@comfyorg/account-core/webviewDetection'), () => ({
@@ -495,5 +514,103 @@ describe('CloudLoginView SSO', () => {
 
       expect(screen.getByText(message)).toBeInTheDocument()
     })
+
+    it('opens on the SSO entry when sent back to it with ?sso=open', async () => {
+      await renderLoginView('/cloud/login?sso=open')
+
+      expect(screen.getByLabelText('auth.sso.emailLabel')).toBeInTheDocument()
+    })
+  })
+})
+
+describe('CloudLoginView Firebase sign-in refused for SSO', () => {
+  beforeEach(() => {
+    const authStore = useAuthStore()
+    authStore.currentUser = fromPartial<User>({ email: 'ada@acme.com' })
+    vi.spyOn(authStore, 'logout').mockResolvedValue()
+  })
+
+  async function signInWithFirebase() {
+    vi.mocked(useAuthActions().signInWithEmail).mockResolvedValueOnce(
+      fromPartial<UserCredential>({})
+    )
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => Response.json({ sso: false }))
+    )
+    const user = userEvent.setup()
+    await user.click(
+      screen.getByRole('button', { name: 'auth.login.useEmailInstead' })
+    )
+    await user.type(
+      screen.getByLabelText('Password form email'),
+      'ada@acme.com'
+    )
+    await user.click(
+      screen.getByRole('button', { name: 'Log in with password' })
+    )
+  }
+
+  it('with the flag off, redirects as today without asking about the session', async () => {
+    sessionRequiresSso.mockResolvedValue(true)
+    await renderLoginView()
+
+    await signInWithFirebase()
+
+    await waitFor(() => expect(redirectAfterAuth).toHaveBeenCalledOnce())
+    expect(sessionRequiresSso).not.toHaveBeenCalled()
+    expect(presentSsoRequired).not.toHaveBeenCalled()
+    expect(useAuthStore().logout).not.toHaveBeenCalled()
+  })
+
+  it.for([
+    {
+      name: 'signs the account out and shows the SSO screen',
+      url: '/cloud/login',
+      returnTo: '/cloud/user-check'
+    },
+    {
+      name: 'returns SSO to the page the visitor came from',
+      url: '/cloud/login?previousFullPath=%2Fworkflows%3Fid%3D7',
+      returnTo: '/workflows?id=7'
+    }
+  ])('with the flag on, $name', async ({ url, returnTo }) => {
+    const flags = vi.mocked(useFeatureFlags().flags)
+    flags.ssoEnabled = true
+    sessionRequiresSso.mockResolvedValue(true)
+    await renderLoginView(url)
+    vi.mocked(useAuthStore().logout).mockImplementation(async () => {
+      flags.ssoEnabled = false
+    })
+
+    await signInWithFirebase()
+
+    await waitFor(() =>
+      expect(presentSsoRequired).toHaveBeenCalledWith({
+        email: 'ada@acme.com',
+        returnTo
+      })
+    )
+    expect(
+      vi.mocked(presentSsoRequired).mock.results[0].value,
+      'shown before the sign-out drops the remote config that carries sso_enabled'
+    ).toBe(true)
+    await waitFor(() =>
+      expect(useDialogStore().isDialogOpen(SSO_REQUIRED_DIALOG_KEY)).toBe(true)
+    )
+    expect(useAuthStore().logout).toHaveBeenCalledOnce()
+    expect(redirectAfterAuth).not.toHaveBeenCalled()
+  })
+
+  it('with the flag on, redirects a session ingest accepts', async () => {
+    vi.mocked(useFeatureFlags().flags).ssoEnabled = true
+    sessionRequiresSso.mockResolvedValue(false)
+    await renderLoginView()
+
+    await signInWithFirebase()
+
+    await waitFor(() => expect(redirectAfterAuth).toHaveBeenCalledOnce())
+    expect(presentSsoRequired).not.toHaveBeenCalled()
+    expect(useAuthStore().logout).not.toHaveBeenCalled()
   })
 })

@@ -18,7 +18,7 @@ import {
 } from '@/platform/cloud/onboarding/sso/ssoSignInState'
 import { getSafePreviousFullPath } from '@/platform/cloud/onboarding/utils/previousFullPath'
 
-const SSO_DEFAULT_RETURN_TO = '/cloud/user-check'
+export const SSO_DEFAULT_RETURN_TO = '/cloud/user-check'
 
 /** SSO sign-in for the cloud auth pages, where ingest is same-origin. */
 export function useSsoSignIn() {

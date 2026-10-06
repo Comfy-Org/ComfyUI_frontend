@@ -5,9 +5,14 @@ import { useRoute } from 'vue-router'
 import { isEmbeddedWebView } from '@comfyorg/account-core/webviewDetection'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useSessionCookie } from '@/platform/auth/session/useSessionCookie'
 import { useSocialSignIn } from '@/platform/auth/social/useSocialSignIn'
+import { presentSsoRequired } from '@/platform/auth/sso/ssoRequired'
+import { SSO_DEFAULT_RETURN_TO } from '@/platform/cloud/onboarding/composables/useSsoSignIn'
 import { usePostAuthRedirect } from '@/platform/cloud/onboarding/composables/usePostAuthRedirect'
 import { SSO_ENTRY_OPEN_QUERY } from '@/platform/cloud/onboarding/sso/ssoEntryQuery'
+import { getSafePreviousFullPath } from '@/platform/cloud/onboarding/utils/previousFullPath'
+import { useAuthStore } from '@/stores/authStore'
 
 type AuthMode = 'social' | 'email' | 'sso'
 
@@ -30,11 +35,28 @@ export function useCloudAuthPage(options: {
       : 'social'
   )
 
-  const { onAuthSuccess } = usePostAuthRedirect({
+  const { onAuthSuccess: redirectAfterAuth } = usePostAuthRedirect({
     authError,
     successSummary: options.successSummary,
     defaultRedirect: options.defaultRedirect
   })
+
+  /**
+   * Firebase accepts an account an SSO organization holds; ingest refuses its
+   * session. That account is signed out again and sent to SSO.
+   */
+  async function onAuthSuccess() {
+    if (flags.ssoEnabled && (await useSessionCookie().sessionRequiresSso())) {
+      const authStore = useAuthStore()
+      presentSsoRequired({
+        email: authStore.userEmail ?? undefined,
+        returnTo: getSafePreviousFullPath(route.query) ?? SSO_DEFAULT_RETURN_TO
+      })
+      await authStore.logout()
+      return
+    }
+    await redirectAfterAuth()
+  }
 
   const social = useSocialSignIn({
     isNewUser: () => options.isNewUser,
