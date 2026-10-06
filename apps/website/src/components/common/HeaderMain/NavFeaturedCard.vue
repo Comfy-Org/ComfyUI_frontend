@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
+
 import ButtonPill from '@/components/ui/button-pill/ButtonPill.vue'
 
 import { prefersReducedMotion } from '@/composables/useReducedMotion'
@@ -20,15 +22,26 @@ function pauseBeforeAutoplayLimit({ currentTarget }: Event) {
 </script>
 
 <template>
-  <li class="shrink-0">
+  <li :class="cn('shrink-0', featured.compact && 'w-64')">
     <a
       :href="featured.cta.href"
       :aria-label="featured.cta.ariaLabel"
-      class="group/pill-trigger relative block"
+      :class="
+        cn(
+          'group/pill-trigger relative',
+          featured.compact ? 'flex items-start gap-4' : 'block'
+        )
+      "
+      data-testid="nav-featured-card"
     >
       <video
         v-if="featured.videoSrc"
-        class="aspect-4/3 w-62 max-w-none rounded-xl object-cover"
+        :class="
+          cn(
+            'max-w-none shrink-0 rounded-xl object-cover',
+            featured.compact ? 'size-24' : 'aspect-4/3 w-62'
+          )
+        "
         :src="featured.videoSrc"
         :poster="featured.imageSrc"
         :aria-label="featured.imageAlt"
@@ -41,7 +54,12 @@ function pauseBeforeAutoplayLimit({ currentTarget }: Event) {
       />
       <img
         v-else
-        class="aspect-4/3 w-62 max-w-none rounded-xl object-cover"
+        :class="
+          cn(
+            'max-w-none shrink-0 rounded-xl object-cover',
+            featured.compact ? 'size-24' : 'aspect-4/3 w-62'
+          )
+        "
         :src="featured.imageSrc"
         :alt="featured.imageAlt ?? ''"
         width="744"
@@ -49,14 +67,22 @@ function pauseBeforeAutoplayLimit({ currentTarget }: Event) {
         loading="lazy"
         decoding="async"
       />
-      <p class="mt-4 font-extrabold uppercase">
-        {{ featured.title }}
-      </p>
-      <div class="mt-1">
-        <ButtonPill as="span" icon-position="left" variant="ghost">
-          {{ featured.cta.label }}
-        </ButtonPill>
-      </div>
+      <span :class="cn('flex min-w-0 flex-col', !featured.compact && 'mt-4')">
+        <span
+          v-if="featured.eyebrow"
+          class="text-xs font-medium tracking-wide text-primary-warm-gray uppercase"
+        >
+          {{ featured.eyebrow }}
+        </span>
+        <span class="font-extrabold uppercase">
+          {{ featured.title }}
+        </span>
+        <span class="mt-1">
+          <ButtonPill as="span" icon-position="left" variant="ghost">
+            {{ featured.cta.label }}
+          </ButtonPill>
+        </span>
+      </span>
     </a>
   </li>
 </template>

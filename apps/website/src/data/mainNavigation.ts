@@ -24,6 +24,8 @@ export type NavFeatured = {
   imageSrc: string
   videoSrc?: string
   imageAlt?: string
+  eyebrow?: string
+  compact?: boolean
   title: string
   cta: {
     label: string
@@ -251,6 +253,8 @@ export function getMainNavigation(
       featured: {
         imageSrc: 'https://media.comfy.org/website/nav/customer-story-card.jpg',
         imageAlt: t('nav.featuredCompanyAlt'),
+        eyebrow: t('nav.featuredCompanyEyebrow'),
+        compact: true,
         title: t('nav.featuredCompanyTitle'),
         cta: {
           label: t('cta.watchNow'),
