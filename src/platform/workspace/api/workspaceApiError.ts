@@ -20,7 +20,7 @@ export class WorkspaceApiError extends Error {
 /** Ingest's 403 code for an account left with no workspace. */
 export const NO_WORKSPACE_ACCESS = 'no_workspace_access'
 
-/** Ingest's 403 code for an invite into a workspace its directory (SCIM) staffs. */
+/** `AcceptWorkspaceInviteErrors` 403 code, named in the spec prose only. */
 export const MEMBERSHIP_MANAGED_BY_DIRECTORY = 'membership_managed_by_directory'
 
 /** The account can enter no workspace: ingest refused with `no_workspace_access`, or listed none. */
