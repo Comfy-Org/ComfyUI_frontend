@@ -9034,9 +9034,9 @@ export function remapClipboardSubgraphNodeIds(
   })
 
   function nextUniqueNodeId() {
-    let nextId = Number(mintNodeId(rootGraph.state))
+    let nextId = Number(mintNodeId(rootGraph.state, 'sequential', usedNodeIds))
     while (usedNodeIds.has(nextId)) {
-      nextId = Number(mintNodeId(rootGraph.state))
+      nextId = Number(mintNodeId(rootGraph.state, 'sequential', usedNodeIds))
     }
     usedNodeIds.add(nextId)
     return nextId
