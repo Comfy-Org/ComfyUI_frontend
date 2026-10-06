@@ -3,12 +3,12 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { useElementVisibility } from '@vueuse/core'
 import { computed, ref, useId, useTemplateRef } from 'vue'
 
-import { useAutoAdvance } from '../../composables/useAutoAdvance'
+import { useAutoAdvance } from '@/composables/useAutoAdvance'
 
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
-import { externalLinks } from '../../config/routes'
-import BrandButton from '../common/BrandButton.vue'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import { externalLinks } from '@/config/routes'
+import BrandButton from '@/components/common/BrandButton.vue'
 import BlobMedia from './BlobMedia.vue'
 
 const {

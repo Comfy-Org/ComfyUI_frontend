@@ -22,20 +22,23 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-function renderTabs({ disabled = false } = {}) {
+function renderTabs({
+  disabled = false,
+  variant = 'default'
+}: { disabled?: boolean; variant?: 'default' | 'panel' | 'flush' } = {}) {
   function render(args: { activationMode?: 'automatic' | 'manual' }) {
     return {
       components: { Tabs, TabsList, TabsTrigger, TabsContent },
       setup() {
         const value = ref('parameters')
-        return { args, value, disabled }
+        return { args, value, disabled, variant }
       },
       template: `
         <Tabs v-model="value" :activation-mode="args.activationMode" class="w-80">
-          <TabsList>
-            <TabsTrigger value="parameters">Parameters</TabsTrigger>
-            <TabsTrigger value="info" :disabled="disabled">Info</TabsTrigger>
-            <TabsTrigger value="settings">Settings</TabsTrigger>
+          <TabsList :variant>
+            <TabsTrigger value="parameters" :variant>Parameters</TabsTrigger>
+            <TabsTrigger value="info" :variant :disabled="disabled">Info</TabsTrigger>
+            <TabsTrigger value="settings" :variant>Settings</TabsTrigger>
           </TabsList>
           <TabsContent value="parameters" class="text-sm text-muted-foreground">
             Adjust the node parameters.
@@ -65,4 +68,12 @@ export const ManualActivation: Story = {
 
 export const Disabled: Story = {
   render: renderTabs({ disabled: true })
+}
+
+export const Panel: Story = {
+  render: renderTabs({ variant: 'panel' })
+}
+
+export const Flush: Story = {
+  render: renderTabs({ variant: 'flush' })
 }

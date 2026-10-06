@@ -4,9 +4,9 @@ import { Check } from '@lucide/vue'
 import { useCssVar, useElementVisibility } from '@vueuse/core'
 import { computed, onUnmounted, ref, useTemplateRef, watchEffect } from 'vue'
 
-import { prefersReducedMotion } from '../../composables/useReducedMotion'
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
+import { prefersReducedMotion } from '@/composables/useReducedMotion'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import { mcpDemoPrompts, thumbUrls, visibleWindow } from './mcpDemoPrompts'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()

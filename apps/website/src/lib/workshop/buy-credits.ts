@@ -5,12 +5,9 @@ import { zErrorResponse } from '@comfyorg/ingest-types/zod'
 import {
   WORKSHOP_CLOUD_BASE_URL,
   WORKSHOP_CREDITS_URL
-} from '../../config/workshop-env'
-import type { Locale } from '../../i18n/translations'
-import {
-  combineAbortSignals,
-  createTimeoutSignal
-} from '../../utils/abortSignal'
+} from '@/config/workshop-env'
+import type { Locale } from '@/i18n/translations'
+import { combineAbortSignals, createTimeoutSignal } from '@/utils/abortSignal'
 import { topUpReturnUrl } from './topup-return'
 
 export class TopUpCheckoutError extends Error {
