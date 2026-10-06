@@ -179,6 +179,72 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await expect(panel.getByText('Resize image node')).toBeVisible()
   })
 
+  test.describe('starter prompt experiment', () => {
+    test.describe('treatment', () => {
+      test.use({ starterPromptSet: 'test' })
+
+      test('renders the treatment set and keeps it through insertion', async ({
+        agentPanel,
+        postedMessages,
+        page
+      }) => {
+        const telemetryPayloads: string[] = []
+        page.on('request', (request) => {
+          if (request.url().includes('/e/'))
+            telemetryPayloads.push(request.postData() ?? '')
+        })
+        await agentPanel.open()
+        await agentPanel.selectWorkflow()
+        const panel = agentPanel.root
+        const treatmentPrompt = 'Create a polished image from an idea'
+
+        await expect(
+          panel.getByRole('button', { name: treatmentPrompt })
+        ).toBeVisible()
+        await panel.getByRole('button', { name: treatmentPrompt }).click()
+        await expect(
+          panel.getByRole('textbox', { name: /^Describe ideas/ })
+        ).toHaveText(treatmentPrompt)
+        expect(postedMessages).toHaveLength(0)
+        await expect
+          .poll(() => telemetryPayloads.join('\n'))
+          .toContain('agent_starter_prompt_exposure')
+
+        await panel.getByRole('button', { name: 'Send' }).click()
+        await expect.poll(() => postedMessages.length).toBe(1)
+        await expect
+          .poll(() => telemetryPayloads.join('\n'))
+          .toContain('agent_message_sent')
+        expect(telemetryPayloads.join('\n')).toContain(
+          '$feature/agent-starter-prompt-set'
+        )
+      })
+    })
+
+    test.describe('fallback', () => {
+      test.use({ starterPromptSet: 'inactive-or-unknown' })
+
+      test('fails closed to the unchanged control set', async ({
+        agentPanel
+      }) => {
+        await agentPanel.open()
+        await agentPanel.selectWorkflow()
+        const panel = agentPanel.root
+
+        await expect(
+          panel.getByRole('button', {
+            name: enMessages.agent.suggestedPrompts.cloud[0]
+          })
+        ).toBeVisible()
+        await expect(
+          panel.getByRole('button', {
+            name: 'Create a polished image from an idea'
+          })
+        ).toHaveCount(0)
+      })
+    })
+  })
+
   test('shows an admission paywall without losing the rejected prompt', async ({
     agentPanel,
     comfyPage

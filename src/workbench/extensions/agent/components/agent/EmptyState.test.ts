@@ -67,10 +67,29 @@ describe('EmptyState', () => {
           promptIndex: 4,
           promptCount: 5,
           promptTextHash: '2f8b1ba4',
-          locale: 'en'
+          locale: 'en',
+          assignment: 'control'
         }
       ]
     ])
+  })
+
+  it('renders the explicit treatment set when assigned to test', () => {
+    render(EmptyState, {
+      props: { assignment: 'test' },
+      global: { plugins: [i18n] }
+    })
+
+    expect(
+      screen.getByRole('button', {
+        name: 'Build a workflow with my installed models'
+      })
+    ).toBeVisible()
+    expect(
+      screen.queryByRole('button', {
+        name: 'Generate a realistic portrait of an astronaut'
+      })
+    ).toBeNull()
   })
 
   it.for([

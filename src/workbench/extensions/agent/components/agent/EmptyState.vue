@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -9,8 +9,17 @@ import { isCloud } from '@/platform/distribution/types'
 
 import type { AgentStarterPromptAttribution } from '../../utils/starterPrompts'
 import { starterPromptAttribution } from '../../utils/starterPrompts'
+import type { StarterPromptAssignment } from '../../experiments/starterPromptSet'
 
-const { userName } = defineProps<{ userName?: string }>()
+const {
+  userName,
+  assignment = 'control',
+  onRendered = () => undefined
+} = defineProps<{
+  userName?: string
+  assignment?: StarterPromptAssignment
+  onRendered?: () => void
+}>()
 const emit = defineEmits<{
   insert: [text: string, prompt: AgentStarterPromptAttribution]
 }>()
@@ -20,10 +29,20 @@ const { t, te, tm, locale } = useI18n()
 const promptKey = isCloud
   ? 'agent.suggestedPrompts.cloud'
   : 'agent.suggestedPrompts.local'
-const prompts = computed(() => tm(promptKey) as string[])
-const promptLocale = computed(() =>
-  te(`${promptKey}.0`, locale.value) ? locale.value : FALLBACK_LOCALE
-)
+const treatmentPromptKey = isCloud
+  ? 'agent.suggestedPrompts.treatment.cloud'
+  : 'agent.suggestedPrompts.treatment.local'
+const prompts = computed(() => {
+  if (assignment !== 'test' || !te(`${treatmentPromptKey}.0`, locale.value))
+    return tm(promptKey) as string[]
+  return tm(treatmentPromptKey) as string[]
+})
+const promptLocale = computed(() => {
+  const key = assignment === 'test' ? treatmentPromptKey : promptKey
+  return te(`${key}.0`, locale.value) ? locale.value : FALLBACK_LOCALE
+})
+
+onMounted(onRendered)
 
 /**
  * One emit per click, carrying the slot's stable id rather than its text. Fires
@@ -37,7 +56,8 @@ function onPromptClick(prompt: string, index: number): void {
       prompt,
       index,
       prompts.value.length,
-      promptLocale.value
+      promptLocale.value,
+      assignment
     )
   )
 }

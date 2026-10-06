@@ -174,7 +174,8 @@ describe('useComposer', () => {
       prompt_text_hash: 'deadbeef',
       locale: 'zh',
       click_id: expect.any(String),
-      draft_was_empty: true
+      draft_was_empty: true,
+      '$feature/agent-starter-prompt-set': 'control'
     })
     // The id on the event is the id the send will be attributed with.
     const [[event]] = telemetry.trackAgentStarterPromptClicked.mock.calls

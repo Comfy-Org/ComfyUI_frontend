@@ -5642,7 +5642,23 @@
         "Explain the selected nodes",
         "Help me install the missing nodes for this workflow",
         "Fix the errors in this workflow"
-      ]
+      ],
+      "treatment": {
+        "cloud": [
+          "Create a polished image from an idea",
+          "Make a short video from this image",
+          "Find the best workflow for this task",
+          "Explain how these nodes work together",
+          "Improve the quality of this workflow"
+        ],
+        "local": [
+          "Build a workflow with my installed models",
+          "Diagnose and fix this workflow",
+          "Improve the output quality of this workflow",
+          "Explain how these nodes work together",
+          "Find the missing nodes for this workflow"
+        ]
+      }
     },
     "attach": "Attach a file",
     "attachFiles": "Upload images or files",
