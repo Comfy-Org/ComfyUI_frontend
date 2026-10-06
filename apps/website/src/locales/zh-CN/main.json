@@ -5130,6 +5130,24 @@
         "run": "运行",
         "api": "API",
         "download": "下载"
+      },
+      "compare": {
+        "label": "对比",
+        "toggle": "对比 {name}",
+        "full": "最多可对比 3 个模型",
+        "trayLabel": "待对比的模型",
+        "remove": "从对比中移除 {name}",
+        "open": "对比 {count} 个模型 | 对比 {count} 个模型",
+        "pickMore": "再选 {count} 个即可对比",
+        "canAdd": "还可以再加 {count} 个",
+        "clear": "清除",
+        "close": "关闭",
+        "title": "{count} 个模型并排对比",
+        "provider": "提供方",
+        "task": "用途",
+        "access": "使用方式",
+        "page": "模型页面",
+        "openModel": "打开"
       }
     },
     "build": {

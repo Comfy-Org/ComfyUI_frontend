@@ -546,4 +546,123 @@ describe('WorkshopModelsGrid', () => {
       expect(screen.getByTestId('workshop-sections')).toBeTruthy()
     })
   })
+
+  describe('compare', () => {
+    const fourth: WorkshopModel = {
+      slug: 'seedream',
+      name: 'Seedream',
+      workflowCount: 0,
+      href: '/models/seedream/',
+      routerId: 'bytedance/seedream',
+      capabilities: [],
+      provider: 'ByteDance',
+      priceUsdFrom: 0.03
+    }
+
+    async function browseAll() {
+      const user = userEvent.setup()
+      render(WorkshopModelsGrid, { props: { models: [...models, fourth] } })
+      await user.click(screen.getByTestId('browse-all-end'))
+      return user
+    }
+
+    function toggle(name: string) {
+      return screen.getByRole('checkbox', { name: `Compare ${name}` })
+    }
+
+    function revealedChips() {
+      return screen
+        .getAllByTestId('compare-toggle')
+        .filter((chip) => chip.dataset.revealed === 'true')
+    }
+
+    function compareButton() {
+      return within(screen.getByTestId('compare-tray')).getByTestId(
+        'compare-open'
+      )
+    }
+
+    it('collects up to three models in the tray', async () => {
+      const user = await browseAll()
+      expect(screen.queryByTestId('compare-tray')).toBeNull()
+
+      expect(revealedChips()).toEqual([])
+
+      await user.click(toggle('Kling AI'))
+      expect(compareButton()).toBeDisabled()
+      expect(compareButton()).toHaveTextContent('Compare 1 model')
+      expect(screen.getByTestId('compare-hint')).toHaveTextContent(
+        'Pick 1 more to compare'
+      )
+      expect(revealedChips()).toHaveLength(4)
+
+      await user.click(toggle('Flux'))
+      expect(compareButton()).toBeEnabled()
+      expect(compareButton()).toHaveTextContent('Compare 2 models')
+      expect(screen.getByTestId('compare-hint')).toHaveTextContent(
+        'You can add 1 more'
+      )
+
+      await user.click(toggle('Mystery'))
+      expect(screen.queryByTestId('compare-hint')).toBeNull()
+      expect(toggle('Seedream')).toBeDisabled()
+      expect(toggle('Flux')).toBeChecked()
+
+      await user.click(
+        screen.getByRole('button', { name: 'Remove Flux from compare' })
+      )
+      expect(toggle('Flux')).not.toBeChecked()
+      expect(toggle('Seedream')).toBeEnabled()
+
+      await user.click(screen.getByTestId('compare-clear'))
+      expect(screen.queryByTestId('compare-tray')).toBeNull()
+      expect(revealedChips()).toEqual([])
+      expect(toggle('Kling AI')).not.toBeChecked()
+    })
+
+    it('sets the chosen models side by side and marks the address', async () => {
+      const user = await browseAll()
+      await user.click(toggle('Kling AI'))
+      await user.click(toggle('Seedream'))
+      await user.click(compareButton())
+
+      const dialog = await screen.findByRole('dialog', {
+        name: '2 models side by side'
+      })
+      expect(location.hash).toBe('#compare')
+      expect(
+        within(dialog)
+          .getAllByRole('columnheader')
+          .map((cell) => cell.textContent.trim())
+      ).toEqual(['Kling AI', 'Seedream'])
+      expect(
+        within(dialog).getByRole('row', { name: /^Provider/ })
+      ).toHaveTextContent('ProviderKlingByteDance')
+      expect(within(dialog).queryByRole('row', { name: /price/i })).toBeNull()
+      expect(
+        within(dialog)
+          .getAllByTestId('compare-model-link')
+          .map((link) => link.getAttribute('href'))
+      ).toEqual(['/models/kling-ai/', '/models/seedream/'])
+
+      await user.keyboard('{Escape}')
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+      expect(location.hash).toBe('')
+    })
+
+    it('opens from #compare only once two models are chosen', async () => {
+      const user = await browseAll()
+      await user.click(toggle('Kling AI'))
+      location.hash = '#compare'
+      await nextTick()
+      window.dispatchEvent(new HashChangeEvent('hashchange'))
+      expect(screen.queryByRole('dialog')).toBeNull()
+
+      await user.click(toggle('Flux'))
+      window.dispatchEvent(new HashChangeEvent('hashchange'))
+      expect(
+        await screen.findByRole('dialog', { name: '2 models side by side' })
+      ).toBeTruthy()
+    })
+  })
 })

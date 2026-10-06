@@ -510,6 +510,25 @@ test.describe('Models catalog', () => {
     await expect(badges).toHaveText(/Run\s*API/)
   })
 
+  test('compares two hosted models side by side', async ({ page }) => {
+    await page.goto('/hub/models/')
+    await page.getByTestId('browse-all-end').click()
+    const toggles = page.getByRole('checkbox', { name: /^Compare / })
+    await toggles.nth(0).check()
+    await toggles.nth(1).check()
+
+    const tray = page.getByTestId('compare-tray')
+    await tray.getByTestId('compare-open').click()
+    const dialog = page.getByRole('dialog', { name: '2 models side by side' })
+    await expect(dialog).toBeVisible()
+    await expect(page).toHaveURL(/#compare$/)
+    await expect(dialog.getByTestId('compare-model-link')).toHaveCount(2)
+
+    await page.keyboard.press('Escape')
+    await expect(dialog).toBeHidden()
+    await expect(page).not.toHaveURL(/#compare$/)
+  })
+
   test('the how-you-use-it filter lists open-weight downloads', async ({
     page
   }) => {

@@ -10,6 +10,8 @@ import {
   watch
 } from 'vue'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
 import { groupModels } from '@/config/model-family'
 
 import type {
@@ -36,6 +38,7 @@ import {
   OPEN_WEIGHT_ACCESS,
   offersAccess
 } from '@/lib/workshop/explorer/model-access'
+import { useCompareSelection } from '@/lib/workshop/explorer/compare-selection'
 import {
   filterOpenWeightModels,
   OPEN_WEIGHT_MODELS
@@ -48,6 +51,8 @@ import type { FacetMenuOption } from './WorkshopFilterMenu.vue'
 import WorkshopFilterMenu from './WorkshopFilterMenu.vue'
 import WorkshopModelsEmpty from '@/components/workshop/WorkshopModelsEmpty.vue'
 import WorkshopModelsResults from '@/components/workshop/WorkshopModelsResults.vue'
+import CompareDialog from '@/components/workshop/explorer/compare/CompareDialog.vue'
+import CompareTray from '@/components/workshop/explorer/compare/CompareTray.vue'
 import FeaturedBanner from './FeaturedBanner.vue'
 import { modelSlides } from '@/lib/workshop/featured-slides'
 import WorkshopSearchField from './WorkshopSearchField.vue'
@@ -104,6 +109,14 @@ onMounted(() => {
   })
 })
 onBeforeUnmount(() => window.removeEventListener('pageshow', onPageShow))
+
+const {
+  slugs: comparedSlugs,
+  chosen: comparedModels,
+  open: compareOpen,
+  toggle: toggleCompare,
+  clear: clearCompare
+} = useCompareSelection(() => models)
 
 const toolbar = useTemplateRef<HTMLElement>('toolbar')
 const heading = useTemplateRef<HTMLElement>('heading')
@@ -253,7 +266,7 @@ watch(browseAll, (on) => on && resetFilters())
 </script>
 
 <template>
-  <section class="gap-10">
+  <section :class="cn('gap-10', comparedModels.length && 'pb-24')">
     <div class="min-w-0">
       <button
         v-if="inSection"
@@ -346,8 +359,10 @@ watch(browseAll, (on) => on && resetFilters())
           v-if="resultCount"
           :families="visible"
           :open-weight="openWeightVisible"
+          :compared="comparedSlugs"
           :locale
           @open="rememberModel"
+          @compare="toggleCompare"
         />
         <WorkshopModelsEmpty
           v-else
@@ -357,5 +372,19 @@ watch(browseAll, (on) => on && resetFilters())
         />
       </template>
     </div>
+
+    <CompareTray
+      v-if="comparedModels.length"
+      :models="comparedModels"
+      :locale
+      @remove="toggleCompare"
+      @clear="clearCompare"
+      @compare="compareOpen = true"
+    />
+    <CompareDialog
+      v-model:open="compareOpen"
+      :models="comparedModels"
+      :locale
+    />
   </section>
 </template>

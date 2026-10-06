@@ -321,7 +321,10 @@ describe('WorkshopModelCard', () => {
     badges: string[]
   }[])('says how $kind can be used', ({ model, badges }) => {
     render(WorkshopModelCard, { props: { model } })
-    const shown = screen.queryByTestId('model-access-badges')
-    expect(shown?.textContent.match(/\S+/g) ?? []).toEqual(badges)
+    expect(
+      screen
+        .queryAllByTestId('model-access-badge')
+        .map((badge) => badge.textContent.trim())
+    ).toEqual(badges)
   })
 })

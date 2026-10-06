@@ -746,6 +746,24 @@
         "run": "Run",
         "api": "API",
         "download": "Download"
+      },
+      "compare": {
+        "label": "Compare",
+        "toggle": "Compare {name}",
+        "full": "You can compare up to 3 models",
+        "trayLabel": "Models to compare",
+        "remove": "Remove {name} from compare",
+        "open": "Compare {count} model | Compare {count} models",
+        "pickMore": "Pick {count} more to compare",
+        "canAdd": "You can add {count} more",
+        "clear": "Clear",
+        "close": "Close",
+        "title": "{count} models side by side",
+        "provider": "Provider",
+        "task": "What it does",
+        "access": "How you use it",
+        "page": "Model page",
+        "openModel": "Open"
       }
     },
     "build": {
