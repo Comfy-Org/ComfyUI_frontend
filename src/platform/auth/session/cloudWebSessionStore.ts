@@ -25,7 +25,10 @@ import {
   createSessionTokenMint,
   SessionTokenError
 } from '@comfyorg/account-core/sessionTokenMint'
-import { revokeAllWebSessions } from '@comfyorg/account-core/webSession'
+import {
+  readWebSession,
+  revokeAllWebSessions
+} from '@comfyorg/account-core/webSession'
 import { createWebSessionIdentity } from '@comfyorg/account-core/webSessionIdentity'
 import { webSessionTelemetryHooks } from '@comfyorg/account-core/telemetry'
 import {
@@ -153,6 +156,11 @@ function sessionOptions(): WebSessionOptions {
     apiBaseUrl: api.apiURL(''),
     fetchImpl: (input, init) => fetch(input, init)
   }
+}
+
+/** One read of the session cookie that leaves the page load undecided. */
+export async function readsSignedInWebSession(): Promise<boolean> {
+  return (await readWebSession(sessionOptions())).status === 'ok'
 }
 
 function createCloudIdentity(
