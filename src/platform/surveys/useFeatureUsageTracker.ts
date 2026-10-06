@@ -177,11 +177,20 @@ function persistUsageData(
   currentUsageData: FeatureUsageRecord
 ) {
   let oldValue: string | null = null
-  let usageData: FeatureUsageRecord | undefined
+  const fallbackUsageData = mergeUsageData(
+    applyPendingResets(currentUsageData),
+    pendingUsageData.value
+  )
+  let usageData = {
+    ...fallbackUsageData,
+    [featureId]: incrementUsage(usageFor(fallbackUsageData, featureId), now)
+  }
   let newValue: string | undefined
+  let storageRead = false
 
   try {
     oldValue = localStorage.getItem(STORAGE_KEY)
+    storageRead = true
     const storedUsageData = parseUsageData(oldValue)
     const mergedUsageData = mergeUsageData(
       applyPendingResets(storedUsageData),
@@ -198,20 +207,14 @@ function persistUsageData(
     pendingUsageData.value = {}
   } catch (error) {
     reportStorageError(error, 'error_persisting_feature_usage')
-    const fallbackUsageData = mergeUsageData(
-      applyPendingResets(currentUsageData),
-      pendingUsageData.value
-    )
-    usageData ??= {
-      ...fallbackUsageData,
-      [featureId]: incrementUsage(usageFor(fallbackUsageData, featureId), now)
-    }
     pendingUsageData.value = mergeUsageData(pendingUsageData.value, {
       [featureId]: usageFor(usageData, featureId)
     })
   }
 
-  dispatchStorageUpdate(oldValue, newValue ?? JSON.stringify(usageData))
+  if (storageRead) {
+    dispatchStorageUpdate(oldValue, newValue ?? JSON.stringify(usageData))
+  }
   return usageData
 }
 

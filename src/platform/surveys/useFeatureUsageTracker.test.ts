@@ -290,6 +290,21 @@ describe('useFeatureUsageTracker', () => {
     expect(observing.useCount.value).toBe(1)
   })
 
+  it('does not broadcast a fabricated snapshot after a failed read', () => {
+    const staleTracker = useFeatureUsageTracker('failed-read-tracker')
+    const currentTracker = useFeatureUsageTracker('current-read-tracker')
+    currentTracker.trackUsage()
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.spyOn(localStorage, 'getItem').mockImplementation(() => {
+      throw new DOMException('Storage access denied', 'SecurityError')
+    })
+
+    staleTracker.trackUsage()
+
+    expect(currentTracker.useCount.value).toBe(1)
+    expect(staleTracker.useCount.value).toBe(1)
+  })
+
   it('preserves other in-memory features when storage recovers', () => {
     const recoveringFeature = useFeatureUsageTracker('recovering-feature')
     const triggerFeature = useFeatureUsageTracker('trigger-feature')
