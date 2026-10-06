@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import { Chart } from 'chart.js'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, reactive } from 'vue'
+import { nextTick, reactive, toRaw } from 'vue'
 
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 
@@ -35,6 +35,25 @@ describe('Chart', () => {
 
     expect(dataset?.borderColor).toEqual(expect.any(String))
     expect(dataset?.backgroundColor).toEqual(expect.any(String))
+  })
+
+  it('keeps Chart.js writes out of the caller data', async () => {
+    const data = reactive({
+      labels: ['a', 'b'],
+      datasets: [{ label: 'x', data: [1, 2] }]
+    })
+    render(ChartComponent, {
+      props: { type: 'line', label: 'Caller chart', data }
+    })
+    expect(toRaw(data.datasets[0])).toEqual({ label: 'x', data: [1, 2] })
+
+    data.datasets[0].data.push(3)
+    await nextTick()
+
+    expect(getChart('Caller chart')?.data.datasets[0].borderColor).toEqual(
+      expect.any(String)
+    )
+    expect(toRaw(data.datasets[0])).toEqual({ label: 'x', data: [1, 2, 3] })
   })
 
   it('recreates the chart when the type changes', async () => {

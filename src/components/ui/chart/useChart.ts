@@ -134,13 +134,24 @@ export function useChart(
 ) {
   const chartInstance = shallowRef<Chart | null>(null)
 
+  function copyData(): ChartData {
+    const { datasets, ...rest } = toRaw(data.value)
+    return {
+      ...rest,
+      datasets: datasets.map((dataset) => ({
+        ...dataset,
+        data: [...dataset.data]
+      }))
+    }
+  }
+
   function createChart() {
     if (!canvasRef.value) return
 
     chartInstance.value?.destroy()
     chartInstance.value = new Chart(canvasRef.value, {
       type: type.value,
-      data: toRaw(data.value),
+      data: copyData(),
       options: getDefaultOptions(type.value)
     })
   }
@@ -153,7 +164,7 @@ export function useChart(
     data,
     () => {
       if (!chartInstance.value) return
-      chartInstance.value.data = toRaw(data.value)
+      chartInstance.value.data = copyData()
       chartInstance.value.update()
     },
     { deep: true }
