@@ -14,6 +14,7 @@ type FeatureUsageRecord = Partial<Record<string, FeatureUsage>>
 const STORAGE_KEY = 'Comfy.FeatureUsage'
 const resetVersions = new Map<string, number>()
 const pendingResets = new Set<string>()
+let pendingUsageData: FeatureUsageRecord = {}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -166,20 +167,26 @@ function persistUsageData(
     const mergedUsageData = applyPendingResets(
       mergeUsageData(storedUsageData, currentUsageData)
     )
+    const reconciledUsageData = mergeUsageData(
+      mergedUsageData,
+      pendingUsageData
+    )
     usageData = {
-      ...mergedUsageData,
-      [featureId]: incrementUsage(usageFor(mergedUsageData, featureId), now)
+      ...reconciledUsageData,
+      [featureId]: incrementUsage(usageFor(reconciledUsageData, featureId), now)
     }
     const newValue = JSON.stringify(usageData)
 
     localStorage.setItem(STORAGE_KEY, newValue)
     pendingResets.clear()
+    pendingUsageData = {}
   } catch (error) {
     reportError(error, {
       errorType: 'error_persisting_feature_usage',
       surface: 'platform'
     })
     if (!usageData) return
+    pendingUsageData = mergeUsageData(pendingUsageData, usageData)
   }
 
   dispatchStorageUpdate(oldValue, usageData)
@@ -195,8 +202,10 @@ function resetUsageData(currentUsageData: FeatureUsageRecord) {
     usageData = applyPendingResets(
       mergeUsageData(parseUsageData(oldValue), currentUsageData)
     )
+    usageData = mergeUsageData(usageData, pendingUsageData)
     localStorage.setItem(STORAGE_KEY, JSON.stringify(usageData))
     pendingResets.clear()
+    pendingUsageData = {}
   } catch (error) {
     reportError(error, {
       errorType: 'error_resetting_feature_usage',
@@ -247,6 +256,7 @@ export function useFeatureUsageTracker(featureId: string) {
     resetVersions.set(featureId, resetVersion)
     observedResetVersions.set(featureId, resetVersion)
     pendingResets.add(featureId)
+    pendingUsageData = withoutFeature(pendingUsageData, featureId)
     usageData.value = resetUsageData(currentUsageData)
   }
 
