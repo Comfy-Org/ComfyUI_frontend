@@ -28,6 +28,7 @@ export const NOINDEX_ROUTES = [
   '/privacy-policy',
   '/terms-of-service',
   '/platform/serverless-animation',
+  '/vfx',
   ...PLACEHOLDER_PATHNAMES
 ] as const
 

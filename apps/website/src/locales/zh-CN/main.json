@@ -1684,6 +1684,108 @@
       "title": "你将获得什么"
     }
   },
+  "vfx": {
+    "meta": {
+      "title": "面向 VFX 团队的 ComfyUI {'|'} Comfy",
+      "description": "在真实的 VFX 制作流程中掌控 AI。净板、天空替换、减龄、重打光与合成辅助、放大与修复，均以可检查、可复现的 ComfyUI 节点图完成，并可在你自己的基础设施上运行。"
+    },
+    "hero": {
+      "eyebrow": "VFX",
+      "title": "在真实的 VFX 流程中\n掌控 AI。",
+      "subtitle": "ComfyUI 将 AI 模型变成团队可检查、可版本管理、可重复运行的节点图。镜头工作可在你自己的基础设施或云端运行，每一个参数都由你掌控。",
+      "cta": "申请演示",
+      "videoLabel": "ComfyUI 净板演练视频"
+    },
+    "tasks": {
+      "eyebrow": "VFX 任务",
+      "heading": "你的团队每天都在做的镜头工作。",
+      "description": "把每项任务搭建成 ComfyUI 节点图，下一个镜头直接再运行一次。",
+      "watchCta": "观看教程",
+      "cleanplate": {
+        "title": "净板与物体移除",
+        "description": "移除镜头中不需要的物体，并重建其背后的底板。"
+      },
+      "sky": {
+        "title": "天空替换",
+        "description": "用可以打开、调整并重复运行的节点图替换镜头中的天空。"
+      },
+      "deaging": {
+        "title": "减龄与面部处理",
+        "description": "在整段表演中处理面部，每一步都在节点图中清晰可见。"
+      },
+      "compositing": {
+        "title": "重打光与合成辅助",
+        "description": "调整底板的光照，并制作为合成团队提供支持的遮罩与实用工具。"
+      },
+      "upscaling": {
+        "title": "放大与修复",
+        "description": "在同一张节点图中提升分辨率，并清理素材与静帧。"
+      },
+      "custom": {
+        "title": "你的镜头，你的流程",
+        "description": "带来团队尚未解决的任务。Comfy 工程师将梳理如何在 ComfyUI 中实现。",
+        "cta": "联系 COMFY"
+      }
+    },
+    "why": {
+      "heading": "为什么工作室选择 Comfy。",
+      "control": {
+        "title": "可控与可复现",
+        "description": "工作流是保存为单个 JSON 文件的节点图。每一步都清晰可见，解决过一次的镜头可以再次运行。"
+      },
+      "open": {
+        "title": "开源且可扩展",
+        "description": "ComfyUI 是开源的，社区节点超过 60,000 个。你还可以添加自定义节点，满足流程所需的工具。"
+      },
+      "infrastructure": {
+        "title": "你的基础设施或云端",
+        "description": "可在本地、你掌控的基础设施或 Comfy Cloud 上运行 Comfy Workflows。本地部署时，工作流和输出都留在运行它们的地方。"
+      },
+      "api": {
+        "title": "API 集成",
+        "description": "通过 Comfy API 将任意工作流部署为接口，并从你自己的应用和流程中调用。"
+      },
+      "footnote": "Comfy 不会使用客户数据进行训练，SOC 2 Type II 审计已完成。",
+      "trustCenterCta": "查看 TRUST CENTER"
+    },
+    "workflows": {
+      "title": "开箱即用的 VFX 工作流",
+      "skyReplacement": {
+        "description": "用可以打开并运行的工作流替换镜头中的天空。"
+      },
+      "frameAdjustments": {
+        "description": "用可以打开并运行的工作流处理镜头中的画面帧。"
+      },
+      "tutorials": {
+        "label": "VFX 教程",
+        "text": "净板、天空替换、减龄、遮罩与帧调整的分步演练。",
+        "cta": "观看全部教程"
+      },
+      "library": {
+        "label": "Comfy Workflows",
+        "text": "浏览更多来自 Comfy 社区的开箱即用工作流。",
+        "cta": "浏览工作流"
+      }
+    },
+    "faq": {
+      "title": "VFX 团队常见问题。",
+      "q1": "ComfyUI 可以在我们自己的基础设施上运行吗？",
+      "a1": "可以。ComfyUI 是开源的，可在本地运行，Comfy Workflows 也可以在你掌控的基础设施上运行。你还可以在 Comfy Cloud 上运行，或通过 Comfy API 调用。本地部署时，工作流和输出都留在运行它们的地方。",
+      "q2": "它适合我们的制作流程吗？",
+      "a2": "ComfyUI 工作流是保存为 JSON 文件的节点图，因此可以做版本管理，并在一个又一个镜头中重复使用。Comfy API 可以把任意工作流暴露为接口，供你自己的工具调用；自定义节点则能在流程需要的地方扩展 ComfyUI。告诉我们你的流程，Comfy 工程师会梳理它如何衔接。",
+      "q3": "我们该如何开始？",
+      "a3": "申请演示，并告诉我们你想解决的任务，例如净板或天空替换。Comfy 工程师将梳理你的部署方式、制作流程，以及通向第一个工作流的合适路径。",
+      "q4": "我们可以将模型用于商业用途吗？",
+      "a4": "在 Comfy Cloud 上，所有模型均已获得商用授权。在本地，授权因供应商而异，可按需获取商用条款。",
+      "q5": "Comfy 如何支持安全审查？",
+      "a5": "提供 SSO 和 DPA。Comfy 不会使用客户数据进行训练，SOC 2 Type II 审计已完成。请在 [Comfy Trust Center]({trustCenter}) 查看当前的安全控制措施。"
+    },
+    "closing": {
+      "title": "带来一个团队尚未解决的镜头。",
+      "subtitle": "告诉我们任务、制作流程，以及工作需要在哪里运行。Comfy 工程师将梳理部署方式，以及通向可用 ComfyUI 工作流的合适路径。",
+      "cta": "申请演示"
+    }
+  },
   "featuredWorkflows": {
     "label": "精选 · 官方推荐",
     "next": "下一个精选工作流",
