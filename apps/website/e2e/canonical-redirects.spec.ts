@@ -35,12 +35,13 @@ test.describe('canonical redirects', () => {
     ).toContain(
       'rel="canonical" href="https://comfy.org/hub/models/local/t5xxl-fp16/"'
     )
-    for (const path of [
-      'p/supported-models',
-      'p/supported-models/t5xxl-fp16',
-      'p/supported-models/t5xxl-fp8-e4m3fn-scaled'
-    ])
-      expect(existsSync(`dist/${path}/index.html`)).toBe(false)
+    expect(
+      [
+        'p/supported-models',
+        'p/supported-models/t5xxl-fp16',
+        'p/supported-models/t5xxl-fp8-e4m3fn-scaled'
+      ].filter((path) => existsSync(`dist/${path}/index.html`))
+    ).toEqual([])
   })
 
   test('builds each model page at /hub/models and no page at its old address', () => {

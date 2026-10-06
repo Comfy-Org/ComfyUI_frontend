@@ -24,13 +24,14 @@ describe('buildModelLlmsLinks', () => {
 
   it('encodes the prompt into both agent URLs', () => {
     const links = buildModelLlmsLinks('kling-ai', 'Kling AI', undefined)
-    for (const url of [links.claudeUrl, links.chatgptUrl]) {
-      const q = new URL(url).searchParams.get('q')
-      expect(q).toContain('https://comfy.org/hub/models/local/kling-ai.md')
-      expect(q).toContain('Kling AI')
-      expect(q).toContain('pip install comfy-sdk')
-      expect(q).toContain('npm i @comfyorg/sdk')
-    }
+    const [claudeQ, chatgptQ] = [links.claudeUrl, links.chatgptUrl].map((url) =>
+      new URL(url).searchParams.get('q')
+    )
+    expect(chatgptQ).toBe(claudeQ)
+    expect(claudeQ).toContain('https://comfy.org/hub/models/local/kling-ai.md')
+    expect(claudeQ).toContain('Kling AI')
+    expect(claudeQ).toContain('pip install comfy-sdk')
+    expect(claudeQ).toContain('npm i @comfyorg/sdk')
     expect(links.claudeUrl.startsWith('https://claude.ai/new?q=')).toBe(true)
     expect(links.chatgptUrl.startsWith('https://chatgpt.com/?q=')).toBe(true)
     expect(links.claudeUrl).not.toContain(' ')

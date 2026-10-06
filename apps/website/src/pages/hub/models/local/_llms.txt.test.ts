@@ -13,20 +13,24 @@ describe('llms.txt catalog', () => {
     const res = render(new URL('https://example.org'))
     expect(res.headers.get('Content-Type')).toContain('text/plain')
     const body = await res.text()
-    for (const model of localModels) {
-      expect(body).toContain(
-        `[${model.displayName}](https://example.org/hub/models/local/${model.slug}.md)`
-      )
-    }
+    expect(
+      localModels
+        .map(
+          (model) =>
+            `[${model.displayName}](https://example.org/hub/models/local/${model.slug}.md)`
+        )
+        .filter((link) => !body.includes(link))
+    ).toEqual([])
   })
 
   it('excludes alias entries and partner pages, which redirect elsewhere', async () => {
     const body = await render().text()
-    for (const model of models.filter(
-      (m) => m.canonicalSlug || m.directory === 'partner_nodes'
-    )) {
-      expect(body).not.toContain(`/hub/models/local/${model.slug}.md`)
-    }
+    expect(
+      models
+        .filter((m) => m.canonicalSlug || m.directory === 'partner_nodes')
+        .map((model) => `/hub/models/local/${model.slug}.md`)
+        .filter((link) => body.includes(link))
+    ).toEqual([])
   })
 
   it('lists launch pages as HTML pages, never as markdown twins', async () => {
@@ -37,10 +41,10 @@ describe('llms.txt catalog', () => {
       .split('\n')
       .filter((line) => line.startsWith('- '))
     expect(launchLines.length).toBeGreaterThan(0)
-    for (const line of launchLines) {
-      expect(line).toContain('launch page')
-      expect(line).not.toContain('.md')
-    }
+    expect(launchLines.filter((line) => !line.includes('launch page'))).toEqual(
+      []
+    )
+    expect(launchLines.filter((line) => line.includes('.md'))).toEqual([])
     expect(body).toContain('without twins')
   })
 
