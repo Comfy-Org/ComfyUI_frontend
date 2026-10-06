@@ -21,27 +21,52 @@ describe('awareness frame validation', () => {
     data: { workflowId: 'wf-1', actor: 'human:user:tab-a', expiresAt: 456 }
   }
 
-  // A null state folds into "no state" rather than discarding the whole
+  // Each wire state lands in one of three outcomes: absent keeps the frame
+  // without a state, invalid rejects the frame, and a valid record passes
+  // through. A null state counts as absent rather than discarding the whole
   // frame (and with it actor/expires_at). discussion_r3911665011.
+  const rejected = null
   it.for([
-    { name: 'an absent state', state: undefined, expected: withoutState },
-    { name: 'a null state', state: null, expected: withoutState },
-    { name: 'a string state', state: 'cursor', expected: null },
-    { name: 'an array state', state: ['cursor', 10, 20], expected: null },
+    {
+      name: 'an absent state',
+      kind: 'absent',
+      state: undefined,
+      expected: withoutState
+    },
+    {
+      name: 'a null state',
+      kind: 'absent',
+      state: null,
+      expected: withoutState
+    },
+    {
+      name: 'a string state',
+      kind: 'invalid',
+      state: 'cursor',
+      expected: rejected
+    },
+    {
+      name: 'an array state',
+      kind: 'invalid',
+      state: ['cursor', 10, 20],
+      expected: rejected
+    },
     {
       name: 'a state over 8 KiB',
+      kind: 'invalid',
       state: { value: 'x'.repeat(8 * 1024) },
-      expected: null
+      expected: rejected
     },
     {
       name: 'a valid state',
+      kind: 'state',
       state: { selection: 'node-1' },
       expected: {
         type: 'awareness',
         data: { ...withoutState.data, state: { selection: 'node-1' } }
       }
     }
-  ])('parses $name', ({ state, expected }) => {
+  ])('parses $name as $kind', ({ state, expected }) => {
     expect(parseServerDocFrame(awarenessFrame(state, 456))).toEqual(expected)
   })
 
