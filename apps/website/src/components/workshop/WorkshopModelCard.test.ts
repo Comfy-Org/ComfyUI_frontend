@@ -95,6 +95,13 @@ describe('WorkshopModelCard', () => {
     expect(screen.queryByRole('button')).toBeNull()
   })
 
+  it('names a hub card with its kind badge after the provider', () => {
+    render(WorkshopModelCard, { props: { model: base, providerBadge: true } })
+    expect(screen.getByRole('link')).toHaveAccessibleName(
+      'Black Forest Labs Models Flux Image to Image'
+    )
+  })
+
   it.for([
     { locale: 'en', label: 'Incomplete' },
     { locale: 'zh-CN', label: '尚未完善' }
