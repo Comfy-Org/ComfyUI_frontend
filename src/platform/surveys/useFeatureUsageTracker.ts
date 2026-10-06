@@ -35,36 +35,41 @@ function incrementUsage(
 
 function persistUsageData(
   featureId: string,
-  currentUsage: FeatureUsage | undefined,
+  currentUsageData: FeatureUsageRecord,
   now: number
 ) {
+  let oldValue: string | null = null
+  let usageData: FeatureUsageRecord | undefined
+
   try {
-    const oldValue = localStorage.getItem(STORAGE_KEY)
+    oldValue = localStorage.getItem(STORAGE_KEY)
     const storedUsageData = oldValue
       ? (JSON.parse(oldValue) as FeatureUsageRecord)
       : {}
-    const usageData = {
+    usageData = {
       ...storedUsageData,
+      ...currentUsageData,
       [featureId]: incrementUsage(
-        latestUsage(storedUsageData[featureId], currentUsage),
+        latestUsage(storedUsageData[featureId], currentUsageData[featureId]),
         now
       )
     }
     const newValue = JSON.stringify(usageData)
 
     localStorage.setItem(STORAGE_KEY, newValue)
-    window.dispatchEvent(
-      new StorageEvent('storage', {
-        key: STORAGE_KEY,
-        oldValue,
-        newValue,
-        storageArea: localStorage
-      })
-    )
-    return usageData
   } catch {
-    return
+    if (!usageData) return
   }
+
+  window.dispatchEvent(
+    new StorageEvent('storage', {
+      key: STORAGE_KEY,
+      oldValue,
+      newValue: JSON.stringify(usageData),
+      storageArea: localStorage
+    })
+  )
+  return usageData
 }
 
 /**
@@ -79,10 +84,11 @@ export function useFeatureUsageTracker(featureId: string) {
 
   function trackUsage() {
     const now = Date.now()
-    const existing = usageData.value[featureId]
+    const currentUsageData = usageData.value
+    const existing = currentUsageData[featureId]
 
-    usageData.value = persistUsageData(featureId, existing, now) ?? {
-      ...usageData.value,
+    usageData.value = persistUsageData(featureId, currentUsageData, now) ?? {
+      ...currentUsageData,
       [featureId]: incrementUsage(existing, now)
     }
   }
