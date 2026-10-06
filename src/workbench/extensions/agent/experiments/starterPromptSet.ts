@@ -21,6 +21,20 @@ function isAssignment(
   return STARTER_PROMPT_ASSIGNMENTS.some((assignment) => assignment === value)
 }
 
+function resolveAssignment(): {
+  assignment: StarterPromptAssignment
+  hasQaOverride: boolean
+} {
+  const override =
+    getSessionOverride<string>(STARTER_PROMPT_SET_FLAG) ??
+    getDevOverride<string>(STARTER_PROMPT_SET_FLAG)
+  const candidate = override ?? remoteConfig.value[STARTER_PROMPT_SET_FLAG]
+  return {
+    assignment: isAssignment(candidate) ? candidate : 'control',
+    hasQaOverride: override !== undefined
+  }
+}
+
 /**
  * Resolves the server's PostHog assignment once per panel instance. Unknown,
  * missing, inactive, and not-yet-loaded values intentionally stay control.
@@ -36,18 +50,9 @@ export function useStarterPromptSet() {
   let surfaceRendered = false
 
   const assign = () => {
-    const override =
-      getSessionOverride<string>(STARTER_PROMPT_SET_FLAG) ??
-      getDevOverride<string>(STARTER_PROMPT_SET_FLAG)
-    qaOverride.value = override !== undefined
-    assigned.value = isAssignment(
-      override ?? remoteConfig.value[STARTER_PROMPT_SET_FLAG]
-    )
-      ? ((override ??
-          remoteConfig.value[
-            STARTER_PROMPT_SET_FLAG
-          ]) as StarterPromptAssignment)
-      : 'control'
+    const resolved = resolveAssignment()
+    qaOverride.value = resolved.hasQaOverride
+    assigned.value = resolved.assignment
     if (
       surfaceRendered &&
       (renderedSurfaceAssignment.value === undefined ||
