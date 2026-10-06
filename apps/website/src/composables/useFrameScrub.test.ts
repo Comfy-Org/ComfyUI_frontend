@@ -82,15 +82,7 @@ describe('useFrameScrub', () => {
     renderScrub()
     await nextTick()
 
-    const [observer] = observers.instances
-    const [target] = observer.observed
-    observer.callback(
-      [false, true].map(
-        (isIntersecting) =>
-          ({ target, isIntersecting, time: 0 }) as IntersectionObserverEntry
-      ),
-      observer as unknown as IntersectionObserver
-    )
+    observers.instances[0].deliver([false, true])
 
     await waitFor(() => expect(drawImage).toHaveBeenCalled())
   })

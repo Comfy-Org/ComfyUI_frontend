@@ -24,10 +24,17 @@ export class FakeIntersectionObserver {
   disconnect() {}
 
   intersect(isIntersecting: boolean) {
+    this.deliver([isIntersecting])
+  }
+
+  /** Delivers one batch with an entry per state for each observed target. */
+  deliver(states: boolean[]) {
     this.callback(
-      this.observed.map(
-        (target) =>
-          ({ target, isIntersecting, time: 0 }) as IntersectionObserverEntry
+      this.observed.flatMap((target) =>
+        states.map(
+          (isIntersecting) =>
+            ({ target, isIntersecting, time: 0 }) as IntersectionObserverEntry
+        )
       ),
       this as unknown as IntersectionObserver
     )
