@@ -37,8 +37,10 @@ allowlisted authors, or after an allowlisted operator applies
 `apps/website/**`. It runs
 from the protected default branch on `pull_request_target`, never executes PR code,
 rejects other base branches and fork pull requests, rechecks the live head, and verifies that
-`WEBSITE_APPROVAL_TOKEN` belongs to `webreviewer-bot` before approving. The bot is a member of
-`comfy_website_devs`, so its review satisfies the website path reviewer rule.
+`WEBSITE_APPROVAL_TOKEN` belongs to `christian-byrne` before approving. Christian is a member of
+`comfy_website_devs`, so the review satisfies the website path reviewer rule. The workflow cannot
+approve Christian's own pull requests; use another allowlisted author or the fresh-label route on
+a pull request from a different author.
 
 Approval-label eligibility is provenance-checked against the issue event
 timeline; the latest matching label event must be from an allowlisted operator
@@ -51,12 +53,11 @@ submitted after policy approval blocks merge immediately through GitHub's review
 trusted PR event reevaluates and withdraws the policy approval. The review body identifies the
 verdict as policy-only; it must not be interpreted as a diff review.
 
-The Stage 1 author allowlist contains `bertfy` plus `christian-byrne` as the explicitly labeled
-synthetic contributor; the latter must be removed when the canary ends. Expand or retain either
-allowlist only by reviewing a change to `WEBSITE_AUTO_APPROVE_AUTHORS` or
+The Stage 1 author allowlist contains `bertfy`. Expand or retain either allowlist only by reviewing
+a change to `WEBSITE_AUTO_APPROVE_AUTHORS` or
 `WEBSITE_AUTO_APPROVE_LABELERS` in the workflow. A repository administrator
 must configure a `website-approval` environment whose deployment branch restriction allows only the
-protected default branch, then provide the bot's classic PAT as that environment's
+protected default branch, then provide Christian's token as that environment's
 `WEBSITE_APPROVAL_TOKEN` secret. Missing or mismatched credentials fail closed.
 
 ## Website production identity and validation rollback

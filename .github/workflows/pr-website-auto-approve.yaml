@@ -51,10 +51,10 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           WEBSITE_APPROVAL_BASE_REF: ${{ github.event.repository.default_branch }}
           WEBSITE_APPROVAL_TOKEN: ${{ secrets.WEBSITE_APPROVAL_TOKEN }}
-          WEBSITE_APPROVER_LOGIN: webreviewer-bot
+          WEBSITE_APPROVER_LOGIN: christian-byrne
           # This is intentionally checked in: changing who can receive an
           # automatic approval must itself pass normal repository review.
-          WEBSITE_AUTO_APPROVE_AUTHORS: '["bertfy", "christian-byrne"]'
+          WEBSITE_AUTO_APPROVE_AUTHORS: '["bertfy"]'
           # The label is a second route for a non-allowlisted author. The script
           # verifies its latest event came from one of these operators.
           WEBSITE_AUTO_APPROVE_LABELERS: '["christian-byrne", "DrJKL", "benjcooley"]'
