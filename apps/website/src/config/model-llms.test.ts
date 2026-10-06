@@ -9,16 +9,16 @@ describe('buildModelLlmsLinks', () => {
       'Flux 2 Klein 4b',
       new URL('https://example.org')
     )
-    expect(links.mdPath).toBe('/p/supported-models/flux-2-klein-4b.md')
+    expect(links.mdPath).toBe('/hub/models/local/flux-2-klein-4b.md')
     expect(links.canonicalMdUrl).toBe(
-      'https://example.org/p/supported-models/flux-2-klein-4b.md'
+      'https://example.org/hub/models/local/flux-2-klein-4b.md'
     )
   })
 
   it('falls back to comfy.org when no site is configured', () => {
     const links = buildModelLlmsLinks('kling-ai', 'Kling AI', undefined)
     expect(links.canonicalMdUrl).toBe(
-      'https://comfy.org/p/supported-models/kling-ai.md'
+      'https://comfy.org/hub/models/local/kling-ai.md'
     )
   })
 
@@ -26,7 +26,7 @@ describe('buildModelLlmsLinks', () => {
     const links = buildModelLlmsLinks('kling-ai', 'Kling AI', undefined)
     for (const url of [links.claudeUrl, links.chatgptUrl]) {
       const q = new URL(url).searchParams.get('q')
-      expect(q).toContain('https://comfy.org/p/supported-models/kling-ai.md')
+      expect(q).toContain('https://comfy.org/hub/models/local/kling-ai.md')
       expect(q).toContain('Kling AI')
       expect(q).toContain('pip install comfy-sdk')
       expect(q).toContain('npm i @comfyorg/sdk')

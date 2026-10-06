@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { localModels } from '@/config/local-models'
 import { models } from '@/config/models'
 import { GET } from './llms.txt'
 
@@ -8,21 +9,23 @@ function render(site?: URL) {
 }
 
 describe('llms.txt catalog', () => {
-  it('serves plain text with a markdown-twin link per registry model', async () => {
+  it('serves plain text with a markdown-twin link per model file', async () => {
     const res = render(new URL('https://example.org'))
     expect(res.headers.get('Content-Type')).toContain('text/plain')
     const body = await res.text()
-    for (const model of models.filter((m) => !m.canonicalSlug).slice(0, 5)) {
+    for (const model of localModels) {
       expect(body).toContain(
-        `[${model.displayName}](https://example.org/p/supported-models/${model.slug}.md)`
+        `[${model.displayName}](https://example.org/hub/models/local/${model.slug}.md)`
       )
     }
   })
 
-  it('excludes 301 alias entries', async () => {
+  it('excludes alias entries and partner pages, which redirect elsewhere', async () => {
     const body = await render().text()
-    for (const alias of models.filter((m) => m.canonicalSlug)) {
-      expect(body).not.toContain(`/p/supported-models/${alias.slug}.md`)
+    for (const model of models.filter(
+      (m) => m.canonicalSlug || m.directory === 'partner_nodes'
+    )) {
+      expect(body).not.toContain(`/hub/models/local/${model.slug}.md`)
     }
   })
 
@@ -43,6 +46,6 @@ describe('llms.txt catalog', () => {
 
   it('falls back to comfy.org when no site is configured', async () => {
     const body = await render().text()
-    expect(body).toContain('https://comfy.org/p/supported-models/')
+    expect(body).toContain('https://comfy.org/hub/models/local/')
   })
 })
