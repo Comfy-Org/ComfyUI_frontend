@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url'
 
 import { INDEXNOW_MANIFEST_FILE } from '@/config/indexnow'
 import { readBuiltPage } from '@/integrations/markdown-twins'
+import { markdownTwinPath } from '@/lib/markdown-twin-path'
 import { pageFingerprint } from '@/lib/indexnow'
 import type { IndexNowManifest } from '@/lib/indexnow'
 import { sitemapChunkNames } from '@/utils/hreflangAudit'
@@ -19,13 +20,32 @@ async function sitemapUrls(root: string): Promise<string[]> {
   )
 }
 
+async function readOptional(path: string): Promise<string | undefined> {
+  try {
+    return await readFile(path, 'utf8')
+  } catch {
+    return undefined
+  }
+}
+
+/**
+ * `astroOutputs` are the files Astro rendered. A twin among them came from a
+ * page endpoint, not from the HTML, so only other twins stand in for the HTML.
+ */
 export async function buildIndexNowManifest(
-  root: string
+  root: string,
+  astroOutputs: ReadonlySet<string> = new Set()
 ): Promise<IndexNowManifest> {
   const manifest: IndexNowManifest = {}
   for (const url of await sitemapUrls(root)) {
-    const html = await readBuiltPage(root, decodeURI(new URL(url).pathname))
-    const fingerprint = html && pageFingerprint(html, url)
+    const pathname = decodeURI(new URL(url).pathname)
+    const html = await readBuiltPage(root, pathname)
+    if (!html) continue
+    const twinFile = join(root, markdownTwinPath(pathname))
+    const twin = astroOutputs.has(twinFile)
+      ? undefined
+      : await readOptional(twinFile)
+    const fingerprint = pageFingerprint(html, url, twin)
     if (fingerprint) manifest[url] = fingerprint
   }
   return manifest
@@ -36,9 +56,12 @@ export function indexNowManifest(): AstroIntegration {
   return {
     name: 'comfy:indexnow-manifest',
     hooks: {
-      'astro:build:done': async ({ dir, logger }) => {
+      'astro:build:done': async ({ dir, assets, logger }) => {
         const root = fileURLToPath(dir)
-        const manifest = await buildIndexNowManifest(root)
+        const astroOutputs = new Set(
+          [...assets.values()].flat().map((file) => fileURLToPath(file))
+        )
+        const manifest = await buildIndexNowManifest(root, astroOutputs)
         await writeFile(
           join(root, INDEXNOW_MANIFEST_FILE),
           `${JSON.stringify(manifest, null, 2)}\n`,

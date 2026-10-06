@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest'
 
 import { INDEXNOW_KEY } from '@/config/indexnow'
 import { buildIndexNowManifest } from '@/integrations/indexnow-manifest'
+import { writeMarkdownTwins } from '@/integrations/markdown-twins'
 import { websiteRoot } from '@website/paths'
 import {
   diffManifests,
@@ -325,7 +326,7 @@ describe('sendPayloads', () => {
 })
 
 describe('buildIndexNowManifest', () => {
-  it('fingerprints sitemap pages only, and leaves out noindex pages', async () => {
+  async function site(pages: Record<string, string>) {
     const root = await mkdtemp(join(tmpdir(), 'indexnow-'))
     const write = async (path: string, body: string) => {
       await mkdir(dirname(join(root, path)), { recursive: true })
@@ -337,15 +338,41 @@ describe('buildIndexNowManifest', () => {
     )
     await write(
       'sitemap-0.xml',
-      ['', 'hidden/', 'missing/']
+      [...Object.keys(pages), 'missing/']
         .map((path) => `<url><loc>${url(path)}</loc></url>`)
         .join('')
     )
-    await write('index.html', page())
-    await write('hidden/index.html', page({ head: NOINDEX }))
+    for (const [path, html] of Object.entries(pages))
+      await write(join(path, 'index.html'), html)
+    return { root, write }
+  }
+
+  it('fingerprints sitemap pages only, and leaves out noindex pages', async () => {
+    const { root, write } = await site({
+      '': page(),
+      'hidden/': page({ head: NOINDEX })
+    })
     await write('unlisted/index.html', page())
 
     expect(Object.keys(await buildIndexNowManifest(root))).toEqual([url('')])
+  })
+
+  it('reads the twin markdown-twins wrote, and parses the HTML behind an endpoint twin', async () => {
+    const { root, write } = await site({
+      'cli/': page(),
+      'endpoint/': page({ main: 'Endpoint page' })
+    })
+    const fromHtml = await buildIndexNowManifest(root)
+    await writeMarkdownTwins(root, ['cli/'])
+    await write('endpoint.md', '# Hand-written endpoint twin')
+    const astroOutputs = new Set([join(root, 'endpoint.md')])
+
+    expect(await buildIndexNowManifest(root, astroOutputs)).toEqual(fromHtml)
+
+    await write('cli.md', '# Edited twin')
+    expect(await buildIndexNowManifest(root, astroOutputs)).not.toEqual(
+      fromHtml
+    )
   })
 })
 

@@ -90,12 +90,17 @@ function fingerprintInput(twin: string, url: string): string {
 /**
  * Fingerprints the page's markdown twin (title, description, canonical and
  * `<main>`), so header, footer and hashed asset names never count as a change.
- * A noindex page has no fingerprint: it must never be submitted.
+ * A noindex page has no fingerprint: it must never be submitted. Pass `twin`
+ * when markdown-twins already rendered it from this HTML, to skip a re-parse.
  */
-export function pageFingerprint(html: string, url: string): string | null {
+export function pageFingerprint(
+  html: string,
+  url: string,
+  twin?: string
+): string | null {
   if (isNoindex(html)) return null
-  const twin = fingerprintInput(renderTwin(htmlToTwin(html, url)), url)
-  return createHash('sha256').update(twin).digest('hex')
+  const input = fingerprintInput(twin ?? renderTwin(htmlToTwin(html, url)), url)
+  return createHash('sha256').update(input).digest('hex')
 }
 
 function isManifest(value: unknown): value is IndexNowManifest {
