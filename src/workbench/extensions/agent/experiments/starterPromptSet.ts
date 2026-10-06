@@ -60,9 +60,16 @@ export function useStarterPromptSet() {
   }
 
   const expose = (renderedAssignment?: StarterPromptAssignment) => {
-    surfaceRendered = true
-    if (!isAuthenticatedConfigLoaded.value) return
+    // Resolve the assignment before marking the surface rendered. Otherwise a
+    // localized control surface can emit a test exposure before its rendered
+    // assignment mismatch is checked below.
+    if (!isAuthenticatedConfigLoaded.value) {
+      surfaceRendered = true
+      return
+    }
+    surfaceRendered = false
     assign()
+    surfaceRendered = true
     if (
       renderedAssignment !== undefined &&
       renderedAssignment !== assigned.value

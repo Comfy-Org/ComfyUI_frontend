@@ -64,6 +64,18 @@ describe('useStarterPromptSet', () => {
     expect(assignment.value).toBe('control')
   })
 
+  it('does not expose an assignment that differs from the rendered surface', () => {
+    remoteConfig.value = { [STARTER_PROMPT_SET_FLAG]: 'test' }
+    authenticatedRemoteConfigState.value = 'authenticated'
+    const { expose } = useStarterPromptSet()
+
+    expose('control')
+
+    expect(
+      useTelemetry()?.trackAgentStarterPromptExposure
+    ).not.toHaveBeenCalled()
+  })
+
   it('re-exposes when a remounted surface resolves a new assignment', async () => {
     remoteConfig.value = { [STARTER_PROMPT_SET_FLAG]: 'control' }
     authenticatedRemoteConfigState.value = 'authenticated'
