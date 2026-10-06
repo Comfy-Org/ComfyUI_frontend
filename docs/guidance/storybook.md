@@ -52,9 +52,11 @@ export const Default: Story = {}
 ```
 
 - Put defaults in `meta.args`; a story lists only what differs from them.
-- Give every enum and boolean prop an `argTypes` control. Reviewers walk the
-  prop space from the Controls panel; the URL (`&args=size:lg`) links any
-  combination without a dedicated export.
+- Give every enum prop an `argTypes` control with its `options`; docgen
+  cannot read them from the union type. Boolean, string, and number controls
+  are inferred from the component's props. Reviewers walk the prop space from
+  the Controls panel; the URL (`&args=size:lg`) links any combination without
+  a dedicated export.
 - Wire emits as `on<Event>` args with `fn()` from `storybook/test` so the
   Actions panel logs them.
 - Match the nearest sibling's `title` pattern; see the
@@ -66,7 +68,7 @@ Export a story when the rendered state is one of:
 
 - a **named design state**: `Loading`, `Empty`, `Error`, `Disabled`, `Invalid`
 - a **data shape** that stresses layout: `LongTitle`, `ManyItems`, `NoThumbnail`
-- an **environment**: mocked store state, feature flag, locale, theme
+- an **environment**: mocked store state, feature flag, locale
 - an **interaction**: a `play` function reaches a state props cannot (menu
   open, form filled, drag in progress)
 - a **comparison grid**: `AllSizes`, `AllVariants`, when side-by-side review is
@@ -165,6 +167,6 @@ DISTRIBUTION=cloud pnpm storybook  # Cloud-only components
 pnpm build-storybook               # Production build
 ```
 
-Chromatic snapshots every story. It runs on `version-bump-*` branches and on
-manual dispatch, so each extra export is a recurring snapshot cost; the
-per-PR workflow only builds and deploys a preview.
+Chromatic snapshots changed stories (`onlyChanged: true`). It runs on
+`version-bump-*` branches and on manual dispatch, so each extra export is a
+recurring snapshot cost; the per-PR workflow only builds and deploys a preview.

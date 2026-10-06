@@ -23,7 +23,8 @@ description: 'Write or update Storybook stories for Vue components in ComfyUI_fr
 
 | Variation                                                   | Becomes                                        |
 | ----------------------------------------------------------- | ---------------------------------------------- |
-| One enum or boolean prop (`size`, `bordered`, `shape`)      | `meta.args` default plus an `argTypes` control |
+| One enum prop (`size`, `shape`)                             | `meta.args` default plus an `argTypes` control |
+| One boolean prop (`bordered`, `disabled`)                   | `meta.args` default; the control is inferred   |
 | Named design state (`Loading`, `Empty`, `Error`, `Invalid`) | A story                                        |
 | Data shape that stresses layout (`LongTitle`, `ManyItems`)  | A story with a named fixture                   |
 | Store, mock, flag, or locale state                          | A story with `beforeEach` setting the mock     |
@@ -176,7 +177,7 @@ export const AllVariants: Story = {
 - [ ] Read the component source and any supporting types or composables
 - [ ] Match the nearest local title pattern and story style
 - [ ] Include a baseline story; name it `Default` only when that matches nearby conventions
-- [ ] Every enum and boolean prop has a `meta.args` default and an `argTypes` control
+- [ ] Every enum and boolean prop has a `meta.args` default; every enum prop has an `argTypes` control with `options`
 - [ ] Every export is a scenario from the "Controls Versus Scenarios" table, not a single prop value
 - [ ] Add `tags: ['autodocs']`
 - [ ] Keep the story co-located with the component
