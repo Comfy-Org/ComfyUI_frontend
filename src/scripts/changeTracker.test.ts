@@ -1336,6 +1336,100 @@ describe('ChangeTracker', () => {
   })
 
   describe('undo and redo', () => {
+    beforeEach(() => {
+      vi.mocked(app.loadGraphData).mockImplementation(async (state) => {
+        mockCanvasState(await requireValidWorkflow(state))
+        return true
+      })
+    })
+
+    it('keeps Redo after Undo normalizes an interior node size', async () => {
+      const initial = await createSubgraphState()
+      const changed = structuredClone(initial)
+      getSubgraphDefinition(changed).nodes[0].widgets_values = [2]
+      const normalized = structuredClone(initial)
+      getSubgraphDefinition(normalized).nodes[0].size = [100, 178]
+      const tracker = createTracker(changed)
+      tracker.undoQueue.push(initial)
+      vi.mocked(app.loadGraphData).mockImplementationOnce(async () => {
+        mockCanvasState(normalized)
+        return true
+      })
+
+      await tracker.undo()
+      tracker.captureCanvasState()
+
+      expect(tracker.undoQueue).toEqual([])
+      expect(tracker.redoQueue).toEqual([changed])
+      expect(tracker.activeState).toEqual(normalized)
+      await tracker.redo()
+      expect(tracker.activeState).toEqual(changed)
+      expect(tracker.undoQueue).toEqual([normalized])
+      expect(tracker.redoQueue).toEqual([])
+    })
+
+    it('clears Redo for an intentional resize after normalized Undo', async () => {
+      const initial = createState(1)
+      const changed = structuredClone(initial)
+      changed.nodes[0].widgets_values = [2]
+      const normalized = structuredClone(initial)
+      normalized.nodes[0].size = [100, 178]
+      const tracker = createTracker(changed)
+      tracker.undoQueue.push(initial)
+      vi.mocked(app.loadGraphData).mockImplementationOnce(async () => {
+        mockCanvasState(normalized)
+        return true
+      })
+      await tracker.undo()
+      const resized = structuredClone(normalized)
+      resized.nodes[0].size = [350, 220]
+      mockCanvasState(resized)
+
+      tracker.captureCanvasState()
+
+      expect(tracker.redoQueue).toEqual([])
+      expect(tracker.undoQueue).toEqual([normalized])
+      expect(tracker.activeState).toEqual(resized)
+      await tracker.undo()
+      expect(tracker.activeState).toEqual(normalized)
+      await tracker.redo()
+      expect(tracker.activeState).toEqual(resized)
+    })
+
+    it('does not capture another workflow if it becomes active during Undo', async () => {
+      const initial = createState(1)
+      const tracker = createTracker(createState(2))
+      tracker.undoQueue.push(initial)
+      const otherState = createState(3)
+      vi.mocked(app.loadGraphData).mockImplementationOnce(async () => {
+        createTracker(otherState)
+        mockCanvasState(otherState)
+        return true
+      })
+
+      await tracker.undo()
+
+      expect(tracker.activeState).toEqual(initial)
+      expect(
+        useWorkflowStore().activeWorkflow?.changeTracker.activeState
+      ).toEqual(otherState)
+    })
+
+    it('does not capture a partially loaded graph when Undo restoration fails', async () => {
+      const initial = createState(1)
+      const tracker = createTracker(createState(2))
+      tracker.undoQueue.push(initial)
+      vi.mocked(app.loadGraphData).mockImplementationOnce(async () => {
+        mockCanvasState(createState(3))
+        return false
+      })
+
+      await tracker.undo()
+
+      expect(tracker.activeState).toEqual(initial)
+      expect(tracker._restoringState).toBe(false)
+    })
+
     it('dispatches autoQueueGraphChanged for a data change in both directions', async () => {
       const initial = createState(1)
       const changed = structuredClone(initial)

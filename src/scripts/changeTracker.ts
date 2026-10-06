@@ -475,11 +475,20 @@ export class ChangeTracker {
       target.push(previousState)
       this._restoringState = true
       try {
-        await app.loadGraphData(prevState, false, false, this.workflow, {
-          checkForRerouteMigration: false,
-          silentAssetErrors: true
-        })
-        this.activeState = prevState
+        const loaded = await app.loadGraphData(
+          prevState,
+          false,
+          false,
+          this.workflow,
+          {
+            checkForRerouteMigration: false,
+            silentAssetErrors: true
+          }
+        )
+        this.activeState =
+          loaded && isActiveTracker(this)
+            ? (clone(app.rootGraph.serialize()) as ComfyWorkflowJSON)
+            : prevState
         this.updateModified(previousState)
       } finally {
         this._restoringState = false
