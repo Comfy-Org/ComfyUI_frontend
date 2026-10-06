@@ -8,6 +8,7 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import CloudLoginView from '@/platform/cloud/onboarding/CloudLoginView.vue'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
@@ -53,7 +54,10 @@ const SignInFormStub = defineComponent({
 async function renderLoginView(
   url = '/cloud/login',
   messages: {
-    auth?: { login?: Partial<typeof FREE_RUN_MESSAGES.auth.login> }
+    auth?: {
+      login?: Partial<typeof FREE_RUN_MESSAGES.auth.login>
+      sso?: { errors?: Partial<typeof enMessages.auth.sso.errors> }
+    }
   } = {}
 ) {
   const router = createRouter({
@@ -411,6 +415,39 @@ describe('CloudLoginView SSO', () => {
         'ada@acme.com'
       )
     })
+
+    it('keeps one SSO check in flight across the SSO and password forms', async () => {
+      const fetchMock = vi.fn<typeof fetch>(
+        (_input, init) =>
+          new Promise((_resolve, reject) =>
+            init?.signal?.addEventListener('abort', () =>
+              reject(init.signal?.reason)
+            )
+          )
+      )
+      vi.stubGlobal('fetch', fetchMock)
+      await renderLoginView()
+
+      await continueWithSso('ada@acme.com')
+      await signInWithPassword('ada@acme.com')
+
+      expect(discoverCalls(fetchMock)).toHaveLength(1)
+      expect(useAuthActions().signInWithEmail).not.toHaveBeenCalled()
+    })
+
+    it.for([
+      ['SSO_ACCOUNT_DELETED', 'accountDeleted'],
+      ['SSO_ACCOUNT_CONFLICT', 'accountConflict']
+    ] as const)(
+      'names the support address for ?sso_error=%s',
+      async ([code, key]) => {
+        await renderLoginView(`/cloud/login?sso_error=${code}`, {
+          auth: { sso: { errors: { [key]: enMessages.auth.sso.errors[key] } } }
+        })
+
+        expect(screen.getByText(/support@comfy\.org/)).toBeInTheDocument()
+      }
+    )
 
     it.for([
       ['SSO_ORG_DISABLED', 'auth.sso.errors.orgDisabled'],

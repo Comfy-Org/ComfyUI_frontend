@@ -1,10 +1,15 @@
 import { ref } from 'vue'
 import type { RouteLocationRaw } from 'vue-router'
+import { useRoute } from 'vue-router'
 
 import { isEmbeddedWebView } from '@comfyorg/account-core/webviewDetection'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSocialSignIn } from '@/platform/auth/social/useSocialSignIn'
 import { usePostAuthRedirect } from '@/platform/cloud/onboarding/composables/usePostAuthRedirect'
+import { SSO_ENTRY_OPEN_QUERY } from '@/platform/cloud/onboarding/sso/ssoEntryQuery'
+
+type AuthMode = 'social' | 'email' | 'sso'
 
 /**
  * State shared by CloudLoginView and CloudSignupView. Sign-up passes
@@ -16,8 +21,14 @@ export function useCloudAuthPage(options: {
   successSummary: string
   defaultRedirect: () => RouteLocationRaw
 }) {
+  const route = useRoute()
+  const { flags } = useFeatureFlags()
   const authError = ref('')
-  const authMode = ref<'social' | 'email' | 'sso'>('social')
+  const authMode = ref<AuthMode>(
+    flags.ssoEnabled && route.query.sso === SSO_ENTRY_OPEN_QUERY.sso
+      ? 'sso'
+      : 'social'
+  )
 
   const { onAuthSuccess } = usePostAuthRedirect({
     authError,

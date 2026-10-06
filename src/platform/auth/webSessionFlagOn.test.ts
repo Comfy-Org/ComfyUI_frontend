@@ -206,7 +206,10 @@ function jsonResponse(body: unknown, status = 200): Response {
   })
 }
 
-function sessionBody(userId: string, provider = 'google.com') {
+function sessionBody(
+  userId: string,
+  { provider = 'google.com' }: { provider?: string } = {}
+) {
   return {
     user: {
       id: userId,
@@ -256,7 +259,9 @@ function installServer(
       return jsonResponse({ code: 'unavailable', message: 'down' }, 503)
     }
     if (typeof session === 'object')
-      return jsonResponse(sessionBody(session.userId, session.provider))
+      return jsonResponse(
+        sessionBody(session.userId, { provider: session.provider })
+      )
     const code = session === 'revoked' ? 'session_revoked' : 'no_session'
     return jsonResponse({ code, message: code }, 401)
   }
