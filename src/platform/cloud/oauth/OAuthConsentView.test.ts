@@ -102,7 +102,7 @@ const renderConsent = (overrides: Partial<OAuthConsentChallenge> = {}) =>
 
 describe('OAuthConsentView', () => {
   beforeEach(() => {
-    mockSubmitOAuthConsentDecision.mockReset().mockResolvedValue(undefined)
+    mockSubmitOAuthConsentDecision.mockResolvedValue(undefined)
   })
 
   it('loads the consent named in the URL on the session cookie alone, as an SSO callback lands', async () => {

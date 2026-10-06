@@ -3459,7 +3459,7 @@
       "q3": "What does Comfy Enterprise include?",
       "a3": "Cloud or in-house deployment with data ownership, bring-your-own-key support, orchestration, support from the team that builds the engine, and add-ons like MiniMax commercial licensing. [See Comfy Enterprise](https://comfy.org/enterprise/), or request a demo through this form.",
       "q4": "Is Comfy SOC 2 compliant?",
-      "a4": "A SOC 2 Type II audit is in progress. Security documentation and real-time control status are available in our [Trust Center](https://app.vanta.com/comfy.org/trust/o6nu46b16iu3e7fhc41hnz), and our team can walk through security requirements as part of an Enterprise conversation."
+      "a4": "Our SOC 2 Type II audit is complete, and the Type II report is available on request. Security documentation and real-time control status are available in our [Trust Center](https://app.vanta.com/comfy.org/trust/o6nu46b16iu3e7fhc41hnz), and our team can walk through security requirements as part of an Enterprise conversation."
     }
   },
   "hubspotForm": {
@@ -4622,6 +4622,11 @@
       "getStarted": "Get Started",
       "readDocs": "Read the docs"
     },
+    "challengeBanner": {
+      "label": "OPEN CALL CHALLENGE",
+      "line": "Build on the platform for a chance to win $10k. Ends Oct 19, 9am PT.",
+      "cta": "Read the post"
+    },
     "serverless": {
       "codeHeading": "Call your endpoint",
       "codeSubtitle": "The SDK is the front door; plain HTTP works too."
@@ -4811,7 +4816,7 @@
       },
       "enterprise": {
         "title": "Enterprise",
-        "description": "Managed Builds: approved checkpoints, vetted nodes, and deployment governance across the fleet. SOC 2 underway.",
+        "description": "Managed Builds: approved checkpoints, vetted nodes, and deployment governance across the fleet. SOC 2 Type II audit complete.",
         "cta": "Contact sales"
       }
     },
@@ -4859,7 +4864,7 @@
       },
       "7": {
         "q": "Is the platform SOC 2 certified?",
-        "a": "SOC 2 is underway. Contact us for current status and security documentation."
+        "a": "Our SOC 2 Type II audit is complete, and the report is available on request. Contact us for security documentation."
       },
       "8": {
         "q": "Does it autoscale? What about cold starts?",

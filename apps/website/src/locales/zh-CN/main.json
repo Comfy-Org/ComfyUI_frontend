@@ -97,90 +97,8 @@
     }
   },
   "affiliate-terms": {
-    "1-program-overview": {
-      "block": {
-        "0": "The <a href=\"https://comfy.org\" class=\"text-white underline\">Comfy.org</a> Affiliate Program (\"<strong>Program</strong>\") allows approved participants (\"<strong>Affiliates</strong>\") to earn commissions by referring new paying customers to Comfy Cloud. By participating in this program, you agree to these terms."
-      },
-      "label": "PROGRAM",
-      "title": "1. Program Overview"
-    },
-    "10-governing-law": {
-      "block": {
-        "0": "These terms shall be governed by and construed in accordance with the laws of the State of Delaware, without regard to conflict of law principles. All disputes arising under this Agreement shall be resolved exclusively in the state or federal courts in the State of Delaware."
-      },
-      "label": "GOVERNING LAW",
-      "title": "10. Governing Law"
-    },
-    "11-miscellaneous": {
-      "block": {
-        "0": "<strong>(a) Entire Agreement.</strong> These terms constitutes the sole and entire agreement (including the attached schedules and exhibits) of the Parties with respect to the subject matter of these terms, and supersedes all prior and contemporaneous understandings, agreements, representations, and warranties, both written and oral, with respect to the subject matter. <strong>(b) Relationship of Parties.</strong> Each party is an independent contractor with regard to these terms. Nothing contained in These terms shall be construed as creating any agency, partnership, joint venture, or other form of joint enterprise, employment, or fiduciary relationship between the Parties. Neither party, by virtue of these terms, will have any right, power, or authority to act or create an obligation, express or implied, on behalf of the other party. <strong>(c) Assignment.</strong> Neither party shall assign any of its rights or delegate any of its obligations hereunder without the prior written consent of the other party, which consent shall not be unreasonably withheld, conditioned or delayed. <strong>(d) Severability.</strong> If any term or provision of these terms is invalid, illegal, or unenforceable in any jurisdiction, such invalidity, illegality, or unenforceability shall not affect any other term or provision of these terms or invalidate or render unenforceable such term or provision in any other jurisdiction. Upon a determination that any term or provision is invalid, illegal or unenforceable, the Parties hereto shall negotiate in good faith to modify these terms to effect the original intent of the Parties as closely as possible in order that the transactions contemplated hereby be consummated as originally contemplated to the greatest extent possible. <strong>(e) Waiver.</strong> No waiver by either party of any of the provisions hereof shall be effective unless explicitly set forth in writing and signed by the party so waiving. <strong>(f) Notice.</strong> Each party shall deliver all notices, requests, consents, claims, demands, waivers, and other communications under these terms in writing to the email utilized for the primary contact for the other party. <strong>(g) Cumulative Remedies.</strong> All rights and remedies provided in these terms are cumulative and not exclusive, and the exercise by a party of any right or remedy does not preclude the exercise of any other rights or remedies that may now or subsequently be available at Law, in equity, by statute, in any other agreement between the Parties or otherwise. <strong>(h) No Third-Party Beneficiaries.</strong> These terms benefits solely the Parties to these terms and their respective permitted successors and assigns and nothing in these terms, express or implied, confers on any other person or entity any legal or equitable right, benefit, or remedy of any nature whatsoever under or by reason of these terms."
-      },
-      "label": "MISCELLANEOUS",
-      "title": "11. Miscellaneous"
-    },
-    "2-eligible-products": {
-      "block": {
-        "0": "Commissions are earned on Comfy Cloud paid subscription plans only. The following are excluded from commission eligibility: free tier signups (unless they later convert to paid), one-time credit purchases, enterprise contracts negotiated directly with Comfy sales, and API-only usage billed outside of standard subscription plans."
-      },
-      "label": "PRODUCTS",
-      "title": "2. Eligible Products"
-    },
-    "3-commission-structure": {
-      "block": {
-        "0": "Commission rate: 30% recurring on the net subscription amount received by Comfy.org\nCommission duration: 3 months from the referred customer’s first paid subscription\nCookie/attribution window: 60 days from the referral click\nMinimum payout threshold: $100\nPayout schedule: Monthly, within the first 10 business days of each month after the receipt of applicable payment by Comfy from its referred customer\nPayout method: Via the affiliate tracking platform (Stripe Express or PayPal)\nCommission cessation: To the extent a referred customer’s subscription is canceled, in whole or in part, the affiliate shall correspondingly cease to receive commission payments, even within the 3-month commission window. Refunded or charged-back transactions are not eligible for commission, and any commission previously paid for such transactions will be deducted from future payouts (see Section 4)."
-      },
-      "label": "COMMISSION",
-      "title": "3. Commission Structure"
-    },
-    "4-attribution-rules": {
-      "block": {
-        "0": "Commissions are attributed on a last-click basis within the 60-day cookie window\nIf a referred customer cancels and re-subscribes within 60 days, the original affiliate retains attribution\nIf a referred customer upgrades their plan, commission is calculated on the upgraded amount\nIf a referred customer downgrades their plan, commission adjusts to the new plan amount\nRefunded transactions are not eligible for commission\nAny commission paid on refunded transactions will be deducted from future payouts to you"
-      },
-      "label": "ATTRIBUTION",
-      "title": "4. Attribution Rules"
-    },
-    "5-prohibited-activities": {
-      "block": {
-        "0": "Affiliates must NOT:",
-        "1": "<strong>Self-refer</strong>: Use your own affiliate link to purchase or receive discounts on your own account\n<strong>Bid on branded keywords</strong>: Run paid search campaigns (Google Ads, Bing Ads, etc.) targeting \"ComfyUI,\" \"Comfy.org,\" \"Comfy Cloud,\" or any misspellings or variations thereof\n<strong>Misrepresent</strong>: Impersonate Comfy.org, claim to be an employee, or create assets that could be confused with official Comfy.org materials\n<strong>Spam</strong>: Send unsolicited bulk emails, messages, or engage in any form of spam promotion\n<strong>Cookie stuff</strong>: Use hidden iframes, pop-unders, or any technical means to set cookies without genuine user intent\n<strong>Incentivize clicks</strong>: Offer monetary rewards, points, or other incentives solely for clicking your affiliate link (content recommendations are fine)\n<strong>Use misleading claims</strong>: Make false or exaggerated claims about Comfy.org products, pricing, or features\n<strong>Promote on prohibited content</strong>: Place affiliate links on sites containing illegal content, hate speech, or adult content\n<strong>Contrary to laws</strong>: Place affiliate links in any market that is prohibited as a region under the laws of the United States of America."
-      },
-      "label": "PROHIBITED",
-      "title": "5. Prohibited Activities"
-    },
-    "6-content-guidelines": {
-      "block": {
-        "0": "Affiliates must clearly disclose the affiliate relationship in accordance with FTC guidelines (US) and equivalent regulations in their jurisdiction\nRecommended disclosure: \"This page contains affiliate links. I may earn a commission if you sign up through my link.\"\nAffiliates may use Comfy.org logos and brand assets only as provided in the official affiliate asset kit, and may not modify them\nComfy.org retains all rights, including in any of its intellectual property apart from the limited use rights granted herein"
-      },
-      "label": "CONTENT & IP",
-      "title": "6. Content Guidelines and Intellectual Property Rights"
-    },
-    "7-termination": {
-      "block": {
-        "0": "Either party may terminate the affiliate relationship at any time with 14 days’ prior written notice\nComfy.org reserves the right to immediately terminate and withhold commissions if an affiliate violates any of the prohibited activities listed above\nUpon termination, any unpaid commissions above the minimum threshold will be paid in the next regular payout cycle\nCommissions on referred customers will cease at the time of termination, even if within the 3-month commission window"
-      },
-      "label": "TERMINATION",
-      "title": "7. Termination"
-    },
-    "8-program-modifications": {
-      "block": {
-        "0": "Comfy.org reserves the right to modify these terms, commission rates, or program structure with 30 days notice to active affiliates\nContinued participation after notice constitutes acceptance of modified terms"
-      },
-      "label": "MODIFICATIONS",
-      "title": "8. Program Modifications"
-    },
-    "9-indemnification": {
-      "block": {
-        "0": "You will indemnify Comfy.org from any third party claim arising out of your breach of these terms.\nComfy.org’s liability to any affiliate shall not (i) exceed the total commissions paid to that affiliate in the preceding 12 months, and (ii) include any indirect, consequential, punitive or any other type of special damages.\nComfy.org is not responsible for tracking failures caused by user browser settings, ad blockers, or VPNs, though we employ server-side tracking to minimize these issues"
-      },
-      "label": "LIABILITY",
-      "title": "9. Indemnification and Limitation of Liability"
-    },
-    "effective-date": "May 16, 2026",
     "page": {
-      "description": "Comfy.org Affiliate Program Terms and Conditions.",
       "effectiveDateLabel": "生效日期",
-      "heading": "Affiliate Terms",
-      "title": "Affiliate Terms - Comfy",
       "tocLabel": "本页内容"
     }
   },
@@ -1123,7 +1041,7 @@
       "a1": "Comfy 是 MiniMax 商业使用许可的唯一官方经销商，涵盖 MiniMax H3 以及 MiniMax 音频与音乐模型，面向在自有硬件上本地运行模型的场景。许可分为专业版和企业版两个级别。通过此表单申请许可，或在 [MiniMax 商业许可页面](https://comfy.org/zh-CN/minimax/license/)了解更多。",
       "a2": "Comfy 专家驻场加入你的团队，在你的环境中构建生产级工作流，用你的风格训练 LoRA，并教会你的团队运行和扩展他们构建的一切。通过此表单告诉我们你在做什么，或[认识前沿驻场创意人才](https://comfy.org/zh-CN/forward-deployed-creatives/)。",
       "a3": "云端或自有环境部署，数据归属权、自带密钥支持、编排能力、来自引擎开发团队的支持，以及 MiniMax 商业许可等附加项。[了解 Comfy 企业版](https://comfy.org/zh-CN/enterprise/)，或通过此表单预约演示。",
-      "a4": "SOC 2 Type II 审计正在进行中。安全文档和实时控制状态可在我们的 [Trust Center](https://app.vanta.com/comfy.org/trust/o6nu46b16iu3e7fhc41hnz) 查看，我们的团队也可以在企业版沟通中详细说明安全要求。",
+      "a4": "SOC 2 Type II 审计已完成，Type II 报告可应要求提供。安全文档和实时控制状态可在我们的 [Trust Center](https://app.vanta.com/comfy.org/trust/o6nu46b16iu3e7fhc41hnz) 查看，我们的团队也可以在企业版沟通中详细说明安全要求。",
       "heading": "常见问题",
       "q1": "如何获取 MiniMax 商业许可？",
       "q2": "什么是前沿驻场创意人才？",
@@ -1252,97 +1170,6 @@
       "description": "探索 ComfyUI 内置的工作流模板，快速开始常见的 AI 生成任务。",
       "title": "浏览工作流模板",
       "transcript": "<ol><li><strong>打开模板浏览器</strong> — 点击 ComfyUI 侧栏中的模板图标。</li><li><strong>浏览分类</strong> — 模板按任务分类：图像生成、视频、放大等。</li><li><strong>预览模板</strong> — 将鼠标悬停在模板上查看预览。</li><li><strong>加载并自定义</strong> — 点击加载模板，然后修改参数。</li></ol>"
-    }
-  },
-  "desktop_privacy": {
-    "changes": {
-      "block": {
-        "0": "We will revise this Privacy Policy when our processing changes materially. The Effective date at the top of this policy reflects the date of the most recent revision."
-      },
-      "label": "CHANGES",
-      "title": "Changes"
-    },
-    "children": {
-      "block": {
-        "0": "Comfy Desktop is not intended for, and we do not knowingly collect personal data from, individuals under 13 years of age."
-      },
-      "label": "CHILDREN",
-      "title": "Children"
-    },
-    "contact": {
-      "block": {
-        "0": "For any privacy enquiry, contact <a href=\"mailto:support{'@'}comfy.org\" class=\"text-white underline\">support{'@'}comfy.org</a>."
-      },
-      "label": "CONTACT",
-      "title": "Contact"
-    },
-    "controller": {
-      "block": {
-        "0": "Comfy Organization Inc (\"Comfy Org\", \"we\", \"us\") is the data controller for personal data processed in connection with your use of Comfy Desktop. We are established in San Francisco, USA. For privacy enquiries: <a href=\"mailto:support{'@'}comfy.org\" class=\"text-white underline\">support{'@'}comfy.org</a>."
-      },
-      "label": "CONTROLLER",
-      "title": "Controller"
-    },
-    "data": {
-      "block": {
-        "0": "If you have enabled telemetry, either on the first-run consent screen or at Settings → Telemetry, we process the following categories of data:",
-        "1": "Device identifier. A pseudonymous identifier generated locally on first run. Before you sign in to Comfy Cloud it is not linked to your name, email address, or hardware. When you sign in, it is associated with your Comfy account.\nTechnical metadata. Application version, operating system, and processor architecture.\nProduct usage events. Feature interactions, navigation between views, installation and update milestones, and approximate timing.\nCustom node identifiers. Public package names of custom nodes you install through Manager (for example, \"comfyui-impact-pack\"). The local installation path is not transmitted.\nCrash and error diagnostics. Stack traces, error messages, and short stdout/stderr fragments captured at the moment of failure.",
-        "2": "Before crash or error diagnostic data is transmitted, we apply automated redaction to home-directory paths and to well-known credential patterns (Bearer tokens, OpenAI <code>sk-*</code> and Hugging Face <code>hf_*</code> keys, basic-auth URLs, and <code>KEY=</code> / <code>SECRET=</code> environment assignments).",
-        "3": "We do not process:",
-        "4": "Workflow content (the graph, the nodes you connect, their parameters)\nPrompts you write\nGenerated images, video, or audio\nModel weights, or the local filenames under which you save them\nNetwork activity outside the application",
-        "5": "Your workflow files, your models, the outputs you generate, the list of installations you create, and your local settings remain on your device. They are not transmitted to Comfy Org, and they are not accessible to us."
-      },
-      "label": "DATA WE PROCESS",
-      "title": "Personal data we process"
-    },
-    "intro": {
-      "block": {
-        "0": "Effective 3 June 2026. Applies to the Comfy Desktop application.",
-        "1": "This Privacy Policy describes the personal data we process when you use Comfy Desktop, the purposes and lawful bases for that processing, the recipients of the data, and the rights available to you. The same policy is shown in the application on first run and is available at any time from Settings → About → Privacy Policy."
-      },
-      "label": "OVERVIEW"
-    },
-    "processors": {
-      "block": {
-        "0": "We engage the following processors under Data Processing Agreements:",
-        "1": "PostHog (product usage analytics)\nDatadog (crash and error diagnostics)\nToDesktop (application distribution and software updates)\nComfy Org analytics warehouse (long-term aggregate analytics, operated by Comfy Org)"
-      },
-      "label": "RECIPIENTS",
-      "title": "Recipients"
-    },
-    "purposes": {
-      "block": {
-        "0": "We process personal data on the following lawful bases under GDPR and UK GDPR:",
-        "1": "Product usage analytics: consent under Article 6(1)(a).\nCrash and error diagnostics: consent under Article 6(1)(a).\nDelivery of software updates and integrity verification: legitimate interests under Article 6(1)(f).\nAuthentication when you sign in to Comfy Cloud: performance of a contract under Article 6(1)(b).",
-        "2": "Consent for analytics and crash diagnostics is opt-in, and you may withdraw it at any time at Settings → Telemetry. Withdrawal does not affect the lawfulness of processing carried out before withdrawal. To object to processing on the basis of legitimate interests, contact <a href=\"mailto:support{'@'}comfy.org\" class=\"text-white underline\">support{'@'}comfy.org</a>.",
-        "3": "We do not carry out automated decision-making, including profiling, that produces legal or similarly significant effects. We do not sell personal data, and we do not share personal data for cross-context behavioural advertising."
-      },
-      "label": "PURPOSES",
-      "title": "Purposes and lawful bases"
-    },
-    "retention": {
-      "block": {
-        "0": "Product usage analytics: up to 24 months from the event, then aggregated or deleted.\nCrash and error diagnostics: 15 days at full fidelity, then sampled or aggregated.\nAggregate analytics: up to 36 months in aggregated form.\nUpdate-server logs: 90 days.\nLocal device identifier: stored on your device only, and removed when you uninstall the application."
-      },
-      "label": "RETENTION",
-      "title": "Retention"
-    },
-    "rights": {
-      "block": {
-        "0": "If you are in the EU, UK, or EEA, you have the following rights under GDPR and UK GDPR: access, rectification, erasure, restriction of processing, objection, portability, and withdrawal of consent.",
-        "1": "If you are a California resident, you have rights under CCPA and CPRA: to know what we collect, to delete, to correct, and to limit use of sensitive personal information. We do not sell personal information, and we do not share it for cross-context behavioural advertising.",
-        "2": "You also have the right to lodge a complaint with your supervisory authority, such as the UK Information Commissioner's Office, your EU member-state data protection authority, or the California Privacy Protection Agency.",
-        "3": "To exercise any of these rights, contact <a href=\"mailto:support{'@'}comfy.org\" class=\"text-white underline\">support{'@'}comfy.org</a>. If you have signed in to Comfy Cloud, your account verifies your identity. If you have not signed in, please tell us your approximate install date, platform, and application version, and we will attempt to match these against our records. We aim to respond within 30 days."
-      },
-      "label": "YOUR RIGHTS",
-      "title": "Your rights"
-    },
-    "transfers": {
-      "block": {
-        "0": "Comfy Organization Inc is established in the United States. Personal data of users in the EU, UK, EEA, or other jurisdictions outside the United States may be transferred to the United States and to other locations where our processors operate. Where required, we rely on the European Commission Standard Contractual Clauses (and the UK International Data Transfer Addendum where applicable) as the transfer mechanism under Chapter V GDPR."
-      },
-      "label": "TRANSFERS",
-      "title": "International transfers"
     }
   },
   "download": {
@@ -1559,146 +1386,6 @@
       },
       "heading": "围绕共享用量打造的\n团队方案。",
       "subtitle": "为团队共享点数池，统一结算，并根据每个人的角色提供合适的 Comfy 使用方式。"
-    }
-  },
-  "enterprise-msa": {
-    "1-definitions": {
-      "block": {
-        "0": "<strong>“Affiliates”</strong> means any entity that directly or indirectly controls, is controlled by, or is under common control with a party, where “control” means the ownership of more than fifty percent (50%) of the voting securities or other voting interests of such entity.",
-        "1": "<strong>“Applicable Laws”</strong> means all federal and state laws, treaties, rules, regulations, regulatory and supervisory guidance, directives, policies, orders or determinations of a regulatory authority applicable to the activities and obligations contemplated under this Agreement.",
-        "2": "<strong>“Comfy API”</strong> means the application programming interface and related developer tools made available by Comfy that allows Customer to access and execute visual AI workflows programmatically as production endpoints from within Customer’s own applications or systems.",
-        "3": "<strong>“Comfy Branding”</strong> means the names, logos, and associated trademarks owned or in progress of being owned by Comfy.",
-        "4": "<strong>“Comfy Cloud”</strong> means the cloud-based hosting environment made available by Comfy that allows Customer to access and run visual AI workflows remotely through Comfy’s infrastructure, without requiring local installation or hardware.",
-        "5": "<strong>“Comfy Enterprise”</strong> means the enterprise-grade product tier made available by Comfy that provides organizations with dedicated infrastructure, enhanced security, administrative controls, and related support services for deploying and managing visual AI workflows at scale.",
-        "6": "<strong>“Comfy OSS”</strong> means the open-source software, source code, libraries, tools, and related components made available by Comfy under one or more open source licenses, including the software repositories published by Comfy at <a href=\"https://github.com/Comfy-Org\" class=\"text-white underline\">https://github.com/Comfy-Org</a>, as updated, modified, or supplemented from time to time. For the avoidance of doubt, Comfy OSS does not include any proprietary software, infrastructure, or functionality made available by Comfy under this Agreement or in connection with any commercial product or offering.",
-        "7": "<strong>“Comfy Products”</strong> means Comfy Cloud, Comfy API, Comfy Enterprise and other products, software, features, tools, and functionality made available by Comfy to Customer under this Agreement, excluding any Comfy OSS.",
-        "8": "<strong>“Customer Data”</strong> means electronic data and information submitted or generated by Customer in connection with its use of the Comfy Products, including all Inputs and Outputs.",
-        "9": "<strong>“Open Source License”</strong> means the open source license(s) under which Comfy makes Comfy OSS available, as identified in the applicable source code repository.",
-        "10": "<strong>“Operational Metadata”</strong> means usage and diagnostic information generated by the Comfy Products and collected by Comfy to support, maintain, and optimize the performance and security of the Comfy Products, including information regarding software versions, system configuration, uptime, error logs, health metrics, and feature usage. Operational Metadata does not include Customer Data or Confidential Information.",
-        "11": "<strong>“Order Form”</strong> means the online sign-up flow, order form or other ordering document entered into or otherwise agreed by Customer that references this Agreement. The initial Order Form is attached as Exhibit A.",
-        "12": "<strong>“User”</strong> means Customer’s or Customer’s Affiliates’ employees and contractors who are authorized by Customer to access and use the Comfy Products on Customer’s or Customer’s Affiliates’ behalf according to the terms of this Agreement."
-      },
-      "label": "DEFINITIONS",
-      "title": "1. Definitions"
-    },
-    "10-indemnification": {
-      "block": {
-        "0": "<strong>Indemnity by Comfy.</strong> Comfy will defend Customer against any claim, demand, suit, or proceeding (“Claim”) made or brought against Customer by a third party alleging that the Comfy Products as provided by Comfy infringes or misappropriates a U.S. patent, copyright or trade secret and will indemnify Customer for any damages finally awarded against Customer (or any settlement approved by Comfy) in connection with any such Claim; provided that (a) Customer will promptly notify Comfy of such Claim, (b) Comfy will have the sole and exclusive authority to defend and/or settle any such Claim (provided that Comfy may not settle any Claim without Customer’s prior written consent, which will not be unreasonably withheld, unless it unconditionally releases Customer of all related liability) and (c) Customer reasonably cooperates with Comfy in connection therewith. If the use of the Comfy Products by Customer has become, or in Comfy’s opinion is likely to become, the subject of any claim of infringement, Comfy may at its option and expense (i) procure for Customer the right to continue using and receiving the Comfy Products as set forth hereunder; (ii) replace or modify the Comfy Products to make it non-infringing (with comparable functionality); or (iii) if the options in clauses (i) or (ii) are not reasonably practicable, terminate the applicable Order Form and provide a pro rata refund of any prepaid subscription fees corresponding to the terminated portion of the applicable subscription term. Comfy will have no liability or obligation with respect to any Claim to the extent such Claim is caused by (A) prompts, inputs, or other instructions or materials submitted by Customer or its Users; (B) Customer’s use of any outputs, generated content, or models in a manner not authorized under this Agreement; (C) modification of any generated outputs by or on behalf of Customer; (D) Customer Data, including any third-party intellectual property, likenesses, or other proprietary material incorporated therein; or (E) Customer’s failure to obtain rights, consents, or clearances required for the submission or use of any content through the Comfy Products (clauses (A) through (E), “Excluded Claims”). This Section states Comfy’s sole and exclusive liability and obligation, and Customer’s exclusive remedy, for any claim of any nature related to infringement or misappropriation of intellectual property.",
-        "1": "<strong>Indemnification by Customer.</strong> Customer will defend Comfy against any Claim made or brought against Comfy by a third party to the extent arising out of Customer’s breach of Section 3 or the Excluded Claims, and Customer will indemnify Comfy for any damages finally awarded against Comfy (or any settlement approved by Customer) in connection with any such Claim; provided that (a) Comfy will promptly notify Customer of such Claim, (b) Customer will have the sole and exclusive authority to defend and/or settle any such Claim (provided that Customer may not settle any Claim without Comfy’s prior written consent, which will not be unreasonably withheld, unless it unconditionally releases Comfy of all liability) and (c) Comfy reasonably cooperates with Customer in connection therewith."
-      },
-      "label": "INDEMNITY",
-      "title": "10. Indemnification"
-    },
-    "11-miscellaneous": {
-      "block": {
-        "0": "<strong>Governing Law.</strong> This Agreement will be governed by the laws of the State of California, exclusive of its rules governing choice of law and conflict of laws. The parties agree to the exclusive jurisdiction and venue of the state and federal courts located in San Francisco, CA and each party irrevocably submits to such jurisdiction and venue and waives any objection based on inconvenient forum. This Agreement will not be governed by the United Nations Convention on Contracts for the International Sale of Goods.",
-        "1": "<strong>Export Compliance.</strong> Customer will comply with the export laws and regulations of the United States, the European Union and other applicable jurisdictions in using the Comfy Products.",
-        "2": "<strong>Publicity.</strong> Customer agrees that Comfy may refer to Customer’s name, logo, and trademarks in Comfy’s marketing materials and website; however, Comfy will not use Customer’s name or trademarks in any other publicity (e.g., press releases, customer references and case studies) without Customer’s prior written consent (which may be by email) not to be unreasonably withheld, conditioned, or delayed.",
-        "3": "<strong>Third-Party Infrastructure.</strong> Customer acknowledges that the Comfy Products relies on third-party infrastructure, hardware, and services, including cloud computing providers and GPU infrastructure providers (collectively, “Third-Party Infrastructure”), and that the availability, performance, and security of the Comfy Products may be affected by the operation, maintenance, or failure of such Third-Party Infrastructure. Comfy will use commercially reasonable efforts to maintain Comfy Products availability but makes no representation or warranty regarding the performance or availability of any Third-Party Infrastructure, and Comfy shall have no liability to Customer for any interruption, degradation, loss of data, or other harm arising out of or related to any failure, outage, or limitation of Third-Party Infrastructure, whether or not within Comfy’s control.",
-        "4": "<strong>Assignment; Delegation.</strong> Neither party hereto may assign or otherwise transfer this Agreement, in whole or in part, without the other party’s prior written consent, except that Comfy may assign this Agreement without consent to a successor to all or substantially all of its assets or business related to this Agreement. Any attempted assignment, delegation, or transfer by either party in violation hereof will be null and void. Subject to the foregoing, this Agreement will be binding on the parties and their successors and assigns.",
-        "5": "<strong>Amendment; Waiver.</strong> No amendment or modification to this Agreement, nor any waiver of any rights hereunder, will be effective unless assented to in writing by both parties. Any such waiver will be only to the specific provision and under the specific circumstances for which it was given and will not apply with respect to any repeated or continued violation of the same provision or any other provision. Failure or delay by either party to enforce any provision of this Agreement will not be deemed a waiver of future enforcement of that or any other provision.",
-        "6": "<strong>Relationship.</strong> Nothing contained herein will in any way constitute any association, partnership, agency, employment or joint venture between the parties hereto, or be construed to evidence the intention of the parties to establish any such relationship. Neither party will have the authority to obligate or bind the other in any manner, and nothing herein contained will give rise to, or is intended to give rise to any rights of any kind in favor of any third parties.",
-        "7": "<strong>Unenforceability.</strong> If a court of competent jurisdiction determines that any provision of this Agreement is invalid, illegal, or otherwise unenforceable, such provision will be enforced as nearly as possible in accordance with the stated intention of the parties, while the remainder of this Agreement will remain in full force and effect and bind the parties according to its terms.",
-        "8": "<strong>Notices.</strong> Any notice required or permitted to be given hereunder will be given in writing by personal delivery, certified mail, return receipt requested, or by overnight delivery. Notices to the parties must be sent to the respective address set forth in the signature blocks below, or such other address designated pursuant to this Section.",
-        "9": "<strong>Force Majeure.</strong> Neither party will be deemed in breach hereunder for any cessation, interruption or delay in the performance of its obligations due to causes beyond its reasonable control, including earthquake, flood, or other natural disaster, act of God, labor controversy, civil disturbance, terrorism, war (whether or not officially declared), cyber attacks (e.g., denial of service attacks), or the inability to obtain sufficient supplies, transportation, or other essential commodity or service required in the conduct of its business, or any change in or the adoption of any law, regulation, judgment or decree for which the party could not reasonably prepare mitigation in advance.",
-        "10": "<strong>Entire Agreement.</strong> This Agreement comprises the entire agreement between Customer and Comfy with respect to its subject matter, and supersedes all prior and contemporaneous proposals, statements, sales materials or presentations and agreements (oral and written). No oral or written information or advice given by Comfy, its agents or employees will create a warranty or in any way increase the scope of the warranties in this Agreement."
-      },
-      "label": "MISCELLANEOUS",
-      "title": "11. Miscellaneous"
-    },
-    "12-exhibit-a": {
-      "block": {
-        "0": "The initial Order Form is attached as <strong>Exhibit A</strong> to the executed copy of this Agreement. Each Order Form is subject to the terms and conditions of this Agreement, and by executing an Order Form, Customer agrees to be bound by the terms and conditions of this Agreement.",
-        "1": "This document reproduces the current template of the Enterprise Customer Agreement for reference only. The executed Agreement between Comfy and Customer, together with any signed Order Forms, governs the relationship between the parties. To request an executable copy, please contact <a href=\"mailto:sales{'@'}comfy.org\" class=\"text-white underline\">sales{'@'}comfy.org</a>."
-      },
-      "label": "EXHIBIT A",
-      "title": "Exhibit A. Order Form"
-    },
-    "2-comfy-products": {
-      "block": {
-        "0": "<strong>Right to Access and Use Comfy Products.</strong> Subject to Customer’s compliance with all of the terms and conditions of this Agreement, Comfy grants Customer and Customer’s Users a non-exclusive, non-sublicensable, non-transferable right during the term of this Agreement to access and use the Comfy Products as set forth in the applicable Order Form for Customer’s internal business purposes.",
-        "1": "<strong>Customer Data.</strong> As between Comfy and Customer, Customer retains all right, title, and interest in and to any data, images, videos, prompts, models, workflows, nodes, parameters, or other materials submitted or uploaded by Customer to the Comfy Products (“Input”), as well as any images, videos, designs, or other visual content generated through Customer’s use of the Comfy Products as a result of processing Customer’s Input (“Output”). Customer acknowledges that due to the nature of artificial intelligence, Comfy may generate the same or similar Output for other customers, and Customer shall have no right, title, or interest in or to Output generated for any other customer.",
-        "2": "<strong>No AI Training.</strong> Comfy will not use Input or Output to train generative AI or diffusion models. Comfy may, however, collect and use limited metadata derived from Customer’s use of the Comfy Products, such as prompt classifications, workflow structures, and node configurations, to improve the performance, functionality, and user experience of the Comfy Products.",
-        "3": "<strong>Comfy OSS.</strong> Customer may use Comfy OSS under the terms of the applicable Open Source License(s) governing each respective component, as identified in the corresponding source code repository, rather than under this Agreement. Nothing in this Agreement shall be construed to limit, supersede, or modify any rights or obligations arising under an applicable Open Source License. If Customer chooses to use the Comfy Products in conjunction with Comfy OSS, this Agreement applies solely to Customer’s use of the Comfy Products and not to the Comfy OSS itself.",
-        "4": "<strong>Partner Nodes.</strong> Certain features of the Comfy Products allow Customer to access third-party AI model providers (“Partner Nodes”) through Comfy. When Customer uses a Partner Node, Comfy proxies Customer’s request to the applicable third-party provider, transmitting the information necessary to fulfill Customer’s request, including prompts, images, models, and parameters. Comfy does not transmit Customer’s identity or account information to third-party providers in connection with Partner Node requests. Customer’s use of Partner Nodes is subject to the terms and policies of the applicable third-party provider, and Comfy is not responsible for the data practices of such providers. Usage of Partner Nodes is metered and billed through Comfy.",
-        "5": "<strong>Modification of Comfy Products.</strong> Comfy may, at any time and in its sole discretion, modify, update, enhance, restrict, suspend, or discontinue the Comfy Products, in whole or in part, including by changing or removing features, functionality, endpoints, specifications, documentation, access methods, usage limits, or availability. Comfy has no obligation to maintain or support any particular version of the Comfy Products or to ensure backward compatibility. Any such modifications may be made with or without notice and may result in interruptions to or degradation of the Comfy Products. Comfy shall have no liability arising out of or related to any modification, suspension, or discontinuation of the Comfy Products, and Customer acknowledges that its use of the Comfy Products is at its own risk and that it should not rely on the continued availability of any aspect of the Comfy Products.",
-        "6": "<strong>Data Retention and Deletion.</strong> Comfy retains Customer Data for as long as Customer’s account remains active or as otherwise necessary to provide the Comfy Products, comply with applicable legal obligations, resolve disputes, and enforce this Agreement. Specific retention periods for different categories of Customer Data are set forth in Comfy’s retention documentation, available at <a href=\"https://docs.comfy.org/support/data-retention\" class=\"text-white underline\">docs.comfy.org/support/data-retention</a>, as updated from time to time. Customer may request deletion of Customer’s account and associated Customer Data by contacting Comfy at <a href=\"mailto:legal{'@'}comfy.org\" class=\"text-white underline\">legal{'@'}comfy.org</a>. Upon receipt of a verified deletion request, Comfy will use commercially reasonable efforts to delete or de-identify Customer’s personal information from its primary systems within a reasonable time. Customer acknowledges that: (i) deletion may not propagate immediately to all backup systems, third-party analytics providers, or observability systems, which retain data subject to their own retention policies; (ii) certain Customer Data may be retained as required by applicable law or for legitimate business purposes such as billing records; and (iii) aggregated or de-identified data derived from Customer’s use of the Comfy Products may be retained indefinitely."
-      },
-      "label": "PRODUCTS",
-      "title": "2. Comfy Products"
-    },
-    "3-customer-responsibilities": {
-      "block": {
-        "0": "<strong>Registration.</strong> To access and use the Comfy Products, Customer may be required to register one or more accounts by providing Comfy with the information specified in the applicable registration form, including Customer’s email address. Customer shall ensure that all registration information provided to Comfy is complete and accurate, and shall promptly update such information as necessary to keep it current. Customer shall be liable for all activities conducted through its account, including any unauthorized access or use resulting from Customer’s failure to implement reasonable access controls or to limit access to its systems and devices.",
-        "1": "<strong>General Technology Restrictions.</strong> Customer agrees that it will not, directly or indirectly: (i) sublicense the Comfy Products for use by a third party; (ii) reverse engineer or attempt to extract the source code or underlying methodology from the Comfy Products or any related software, except to the extent that this restriction is expressly prohibited by Applicable Laws; (iii) use or facilitate the use of the Comfy Products for any activities that are prohibited by Applicable Laws or otherwise; (iv) bypass or circumvent measures employed to prevent or limit access to the Comfy Products; (v) use the Comfy Products to create a product or service competitive with Comfy’s products or services; (vi) create derivative works of or otherwise create, attempt to create or derive, or knowingly assist any third party to create or derive, the source code underlying the Comfy Products; or (vii) otherwise use or interact with the Comfy Products for any purpose not expressly permitted under this Agreement.",
-        "2": "<strong>Acceptable Use; Prohibited Customer Data.</strong> Customer is solely responsible for ensuring that all Input submitted to the Comfy Products complies with all Applicable Laws, and Customer agrees that it will not, and will not permit any third party to submit to Comfy or the Comfy Products or otherwise use the Comfy Products to create: (i) any data, designs, or other materials subject to U.S. export control laws and regulations; (ii) any viruses, malware, ransomware, Trojan horses, worms, spyware, or other malicious or harmful code or content that could damage, disrupt, interfere with, or compromise the Comfy Products, Comfy’s systems or infrastructure, or the data or systems of any other user or third party; (iii) any Customer Data that depicts, promotes, or facilitates illegal activity, including without limitation child sexual abuse material, non-consensual intimate imagery, or content that incites violence or hatred against any individual or group; (iv) any Customer Data that infringes or misappropriates the intellectual property rights, privacy rights, or publicity rights of any third party, including without limitation by submitting models, images, or other materials without the right to do so; (v) any content or information that is intentionally deceptive or misleading, including without limitation synthetic media designed to impersonate a real individual without their consent; or (vi) any Customer Data that could reasonably be expected to cause harm to any individual or group."
-      },
-      "label": "CUSTOMER",
-      "title": "3. Customer Responsibilities"
-    },
-    "4-payment": {
-      "block": {
-        "0": "<strong>Fees.</strong> Customer will pay Comfy the fees set forth in the applicable Order Form. Customer shall pay those amounts due and not disputed in good faith within seven (7) days of the date of receipt of the applicable invoice, unless a specific date for payment is set forth in such Order Form, in which case payment will be due on the date specified. Except as otherwise specified herein or in any applicable Order Form, (a) fees are quoted and payable in United States dollars and (b) payment obligations are non-cancelable and non-pro-ratable for partial months, and fees paid are non-refundable. Comfy reserves the right to change its fees upon each renewal term. Customer is responsible for all usage under Customer’s account, including usage by Customer’s Users and under Customer’s credentials and API keys.",
-        "1": "<strong>Prepaid Credits.</strong> Customer may prepay for usage credits (“Credits”) which may be applied toward usage of the Comfy Products at the rates set forth on Comfy’s pricing page. Except for documented billing errors or similar service issues attributed to Comfy, all purchases of Credits are final and non-refundable, and Comfy will not issue refunds or credits for any unused, partially used, or remaining Credits under any circumstances, including upon termination or expiration of Customer’s account. Comfy reserves the right to modify the pricing or Credit redemption rates applicable to future Credit purchases upon reasonable notice, but any Credits purchased prior to such modification will be honored at the rates in effect at the time of purchase.",
-        "2": "<strong>Taxes.</strong> Fees are exclusive of all taxes, duties, levies, and similar governmental assessments (including sales, use, VAT/GST, and withholding taxes), and Customer is responsible for all such amounts other than taxes based on Comfy’s net income; if withholding is required by law, Customer will gross up payments so Comfy receives the invoiced amount, unless prohibited by law.",
-        "3": "<strong>Late Payments; Suspension.</strong> Overdue undisputed amounts may accrue interest at the lesser of 1.5% per month or the maximum rate permitted by law, plus reasonable collection costs. Comfy may suspend or limit access to the Comfy Products (including throttling, disabling API keys, or downgrading to the Free Tier) for non-payment of undisputed amounts after providing commercially reasonable notice and an opportunity to cure, unless Comfy reasonably determines immediate suspension is necessary to protect the Comfy Products or comply with Applicable Laws."
-      },
-      "label": "PAYMENT",
-      "title": "4. Payment"
-    },
-    "5-term-termination": {
-      "block": {
-        "0": "<strong>Term.</strong> The term of this Agreement will commence on the Effective Date and continue until terminated as set forth below (“Term”). The initial term of each Order Form will begin on the Subscription Start Date of such Order Form and will continue for the subscription term set forth therein. Except as set forth in such Order Form, the Order Form will renew for successive renewal terms equal to the length of the Initial Subscription Term.",
-        "1": "<strong>Termination of Agreement.</strong> Each party may terminate this Agreement upon written notice to the other party if there are no Order Forms then in effect. Each party may also terminate this Agreement or the applicable Order Form upon written notice in the event (a) the other party commits any material breach of this Agreement or the applicable Order Form and fails to remedy such breach within thirty (30) days after written notice of such breach or (b) subject to applicable law, upon the other party’s liquidation, commencement of dissolution proceedings or assignment of substantially all its assets for the benefit of creditors, or if the other party becomes the subject of bankruptcy or similar proceeding that is not dismissed within sixty (60) days.",
-        "2": "<strong>Deletion of Customer Data Upon Termination.</strong> Upon expiration or termination of this Agreement, Comfy will delete Customer Data from its primary production systems within sixty (60) days. Notwithstanding the foregoing, Customer Data may persist in routine backup systems beyond such period solely to the extent necessary under Comfy’s standard backup retention schedule, provided that such data is not actively accessed or used by Comfy and remains subject to the confidentiality obligations of this Agreement.",
-        "3": "<strong>Survival.</strong> Termination or expiration will not affect any rights or obligations, including the payment of amounts due, which have accrued under this Agreement up to the date of termination or expiration. Upon termination or expiration of this Agreement, the provisions that are intended by their nature to survive termination will survive and continue in full force and effect in accordance with their terms, including confidentiality obligations, proprietary rights, indemnification, limitations of liability, and disclaimers."
-      },
-      "label": "TERM",
-      "title": "5. Term; Termination"
-    },
-    "6-confidentiality": {
-      "block": {
-        "0": "<strong>Definition of Confidential Information.</strong> “Confidential Information” means all non-public information disclosed by a party (“Disclosing Party”) to the other party (“Receiving Party”), whether oral or written, that is designated as confidential or that reasonably should be understood to be confidential given the nature of the information and circumstances of disclosure. Confidential Information of Customer includes Customer Data; Confidential Information of Comfy includes the Comfy Products; and each party’s Confidential Information includes the terms of this Agreement and any Order Forms (including pricing), as well as business, financial, marketing, technical, and product information. Confidential Information excludes information that the Receiving Party can demonstrate: (i) is or becomes publicly available without breach; (ii) was known prior to disclosure without breach; (iii) is received from a third party without breach; or (iv) was independently developed without use of or reference to the Disclosing Party’s Confidential Information.",
-        "1": "<strong>Protection of Confidential Information.</strong> The Receiving Party will: (a) protect Confidential Information using at least reasonable care; (b) use it solely to perform under this Agreement; and (c) limit access to its and its Affiliates’ employees and contractors with a need to know and confidentiality obligations at least as protective as those herein. Neither party may disclose the terms of this Agreement or any Order Form except to its Affiliates, legal counsel, or accountants, and remains responsible for their compliance. Upon written request, the Receiving Party will promptly return or destroy Confidential Information, except for information retained in routine backups or as required by law or internal retention policies.",
-        "2": "<strong>Compelled Disclosure.</strong> The Receiving Party may disclose Confidential Information if legally required, provided it gives prior notice (where permitted) and reasonable assistance, at the Disclosing Party’s expense, to seek protective treatment. Any disclosure will be limited to what is legally required, and the Receiving Party will request confidential treatment. These obligations survive while Confidential Information remains in the Receiving Party’s possession.",
-        "3": "<strong>Data Security.</strong> Comfy will implement and maintain commercially reasonable administrative, technical, and physical safeguards designed to protect Customer Data against unauthorized access, disclosure, alteration, or destruction. These measures will be no less protective than those Comfy uses to protect its own confidential information of a similar nature. In the event Comfy becomes aware of a confirmed security breach that results in unauthorized access to or disclosure of Customer Data, Comfy will notify Customer without undue delay and will provide reasonable cooperation to assist Customer in investigating and mitigating the effects of such breach. Customer acknowledges that no security measures are perfect or impenetrable, and Comfy does not guarantee that Customer Data will be free from unauthorized access or disclosure."
-      },
-      "label": "CONFIDENTIALITY",
-      "title": "6. Confidentiality"
-    },
-    "7-proprietary-rights": {
-      "block": {
-        "0": "<strong>Reservation of Rights.</strong> Comfy and its licensors retain all right, title, and interest, including all intellectual property and proprietary rights, in and to the Comfy Products, Comfy Branding, and all software, code, algorithms, protocols, interfaces, tools, documentation, data structures, and other technology underlying or embodied in, or used to provide, the Comfy Products (collectively, “Comfy Materials”). Except for the limited rights expressly granted to Customer under this Agreement, no rights or licenses are granted, whether by implication, estoppel, or otherwise. Comfy expressly reserves all rights in and to the Comfy Materials not expressly granted hereunder.",
-        "1": "<strong>Feedback.</strong> Customer may from time to time provide feedback (including suggestions, comments for enhancements, functionality or usability, etc.) (“Feedback”) to Comfy regarding Customer’s experience using, and needs and integration requirements for, the Comfy Products. Comfy shall have full discretion to determine whether or not to proceed with the development of any requested enhancements, new features or functionality, and Customer hereby grants Comfy the full, unencumbered, royalty-free right to incorporate and otherwise fully exploit Feedback in connection with Comfy’s products and services.",
-        "2": "<strong>Operational Metadata.</strong> Customer agrees that Comfy may collect and use Operational Metadata to operate, maintain, improve, and support the Comfy Products, including for diagnostics, analytics, system performance, and reporting purposes. Comfy will only disclose Operational Metadata externally if such data is (a) aggregated or anonymized with data across other customers, and (b) does not disclose the identity of Customer or any Customer Confidential Information."
-      },
-      "label": "IP",
-      "title": "7. Proprietary Rights"
-    },
-    "8-warranties-disclaimer": {
-      "block": {
-        "0": "<strong>Comfy.</strong> Comfy warrants that it will, consistent with prevailing industry standards, provide the Comfy Products in a professional and workmanlike manner and the Comfy Products will conform in all material respects with the Documentation. For material breach of the foregoing express warranty, Customer’s exclusive remedy shall be the re-performance of the deficient Comfy Products or, if Comfy cannot re-perform such deficient Comfy Products as warranted within thirty (30) days after receipt of written notice of the warranty breach, Customer shall be entitled to terminate the applicable Order Form and recover a pro-rata portion of the prepaid subscription fees corresponding to the terminated portion of the applicable subscription term.",
-        "1": "<strong>Customer.</strong> Customer represents and warrants that it owns or has obtained all necessary rights, licenses, and permissions to submit Customer Data to the Comfy Products, and that Customer Data does not include any content that Customer is legally prohibited from sharing or processing through the Comfy Products.",
-        "2": "<strong>Disclaimer.</strong> EXCEPT AS SET FORTH HEREIN, THE COMFY PRODUCTS AND OUTPUT ARE PROVIDED “AS IS” WITHOUT ANY WARRANTY OF ANY KIND. COMFY DISCLAIMS ANY AND ALL WARRANTIES, REPRESENTATIONS, AND CONDITIONS RELATING TO THE COMFY PRODUCTS (INCLUDING ANY OUTPUT), WHETHER EXPRESS, IMPLIED, INCLUDING, BUT NOT LIMITED TO, ANY REPRESENTATION, WARRANTY, OR CONDITION OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE OR NON-INFRINGEMENT. CUSTOMER AGREES AND ACKNOWLEDGES THAT CUSTOMER’S USE OF ANY OUTPUT PROVIDED BY THE COMFY PRODUCTS IS AT CUSTOMER’S OWN RISK. Customer is solely responsible for (a) verifying the Output is appropriate for Customer’s use case, and (b) any decisions, actions, or omissions taken in reliance on the OUTPUT. IN NO EVENT WILL COMFY BE LIABLE FOR ANY DAMAGES OR LOSSES ARISING FROM OR RELATED TO CUSTOMER’S USE OF OR RELIANCE ON THE OUTPUT, INCLUDING ANY DECISIONS MADE OR ACTIONS TAKEN BASED ON THE OUTPUT."
-      },
-      "label": "WARRANTIES",
-      "title": "8. Warranties; Disclaimer"
-    },
-    "9-limitation-of-liability": {
-      "block": {
-        "0": "UNDER NO LEGAL THEORY, WHETHER IN TORT, CONTRACT, OR OTHERWISE, WILL EITHER PARTY BE LIABLE TO THE OTHER UNDER THIS AGREEMENT FOR (A) ANY INDIRECT, SPECIAL, INCIDENTAL, CONSEQUENTIAL OR PUNITIVE DAMAGES OF ANY CHARACTER, INCLUDING DAMAGES FOR LOSS OF GOODWILL, LOST PROFITS, LOST SALES OR BUSINESS, WORK STOPPAGE, COMPUTER FAILURE OR MALFUNCTION, LOST CONTENT OR DATA, EVEN IF A REPRESENTATIVE OF SUCH PARTY HAS BEEN ADVISED, KNEW OR SHOULD HAVE KNOWN OF THE POSSIBILITY OF SUCH DAMAGES, OR (B) EXCLUDING CUSTOMER’S PAYMENT OBLIGATIONS, ANY AGGREGATE DAMAGES, COSTS, OR LIABILITIES IN EXCESS OF THE AMOUNTS PAID BY CUSTOMER UNDER THE APPLICABLE ORDER FORM DURING THE TWELVE (12) MONTHS PRECEDING THE CLAIM."
-      },
-      "label": "LIABILITY",
-      "title": "9. Limitation of Liability"
-    },
-    "effective-date": "May 22, 2026",
-    "page": {
-      "description": "Comfy Enterprise Customer Agreement — the master services agreement that governs Comfy Enterprise deployments of Comfy Cloud, Comfy API, and related products.",
-      "effectiveDateLabel": "Effective Date",
-      "heading": "Enterprise Customer Agreement",
-      "parties": "This Enterprise Customer Agreement (the “Agreement”) is entered into by and between Comfy Organization, Inc., a Delaware corporation (“Comfy”), and the entity identified on the applicable Order Form (“Customer”), and is effective as of the date set forth on the applicable Order Form (the “Effective Date”).",
-      "title": "Enterprise MSA - Comfy",
-      "tocLabel": "On this page"
     }
   },
   "events": {
@@ -2649,14 +2336,6 @@
       "description": "通过 Comfy 获取 MiniMax 商业许可。Comfy 是 MiniMax 商业使用许可的唯一官方经销商，涵盖 MiniMax H3 及音频与音乐模型。产出的完整商业权利归你，包含 LoRA 训练。",
       "title": "Comfy 上的 MiniMax 商业许可"
     },
-    "professionalRequest": {
-      "intro": "Tell us about your team and we'll get your license set up. Professional is a fixed-price monthly license covering up to 10 users —",
-      "introCta": "see what it includes",
-      "meta": {
-        "description": "Request a MiniMax Professional commercial license through Comfy, the official reseller of MiniMax commercial-use licenses. Fixed monthly price, up to 10 licensed users."
-      },
-      "title": "Request MiniMax Professional License"
-    },
     "reviews": {
       "heading": "400 万+ Comfy 创作者这样说",
       "highlightCta": "认识团队",
@@ -3065,6 +2744,11 @@
       "4": "环境维护占用了构建工作流的时间。",
       "heading": "一次构建，在任何地方运行同一个 Comfy。"
     },
+    "challengeBanner": {
+      "cta": "阅读文章",
+      "label": "公开征集挑战赛",
+      "line": "基于平台构建，有机会赢取 1 万美元。太平洋时间 10 月 19 日上午 9 点截止。"
+    },
     "closing": {
       "heading": "在开发者平台上将规模与控制力最大化",
       "headingAfterBadge": "将你的 ComfyUI 工作流部署为生产级 API。数千个模型，尽在一个平台。",
@@ -3073,7 +2757,7 @@
     "customers": {
       "enterprise": {
         "cta": "联系销售",
-        "description": "托管构建：经批准的模型检查点、经审核的节点，以及覆盖整个集群的部署治理。SOC 2 认证进行中。",
+        "description": "托管构建：经批准的模型检查点、经审核的节点，以及覆盖整个集群的部署治理。SOC 2 Type II 审计已完成。",
         "title": "企业"
       },
       "heading": "从一块 GPU 到一整座渲染农场",
@@ -3154,7 +2838,7 @@
         "q": "生成结果会保留多久？"
       },
       "7": {
-        "a": "SOC 2 认证正在进行中。欢迎联系我们了解最新进展与安全文档。",
+        "a": "SOC 2 Type II 审计已完成，报告可应要求提供。欢迎联系我们了解安全文档。",
         "q": "平台通过 SOC 2 认证了吗？"
       },
       "8": {
@@ -3682,9 +3366,7 @@
     "ccpa": {
       "block": {
         "0": "根据加利福尼亚消费者隐私法（CCPA）和加利福尼亚隐私保护局（CPPA）的规定，加利福尼亚州居民有权了解我们收集的个人信息、请求删除其数据以及选择退出出售其个人信息。我们不会出售个人信息。如需提出请求，请通过 <a href=\"mailto:support{'@'}comfy.org\" class=\"text-white underline\">support{'@'}comfy.org</a> 与我们联系。"
-      },
-      "label": "CCPA",
-      "title": "CCPA / CPPA"
+      }
     },
     "changes": {
       "block": {
@@ -3713,8 +3395,7 @@
     },
     "contact": {
       "block": {
-        "0": "如果您对本隐私政策或我们的数据处理方式有任何疑问或顾虑，请通过以下方式联系我们：",
-        "1": "<a href=\"mailto:support{'@'}comfy.org\" class=\"text-white underline\">support{'@'}comfy.org</a>"
+        "0": "如果您对本隐私政策或我们的数据处理方式有任何疑问或顾虑，请通过以下方式联系我们："
       },
       "label": "联系",
       "title": "联系我们"
@@ -3723,14 +3404,12 @@
       "block": {
         "0": "某些浏览器包含\"请勿追踪\"（DNT）功能，向网站发出您不希望被追踪的信号。目前尚无关于公司应如何回应 DNT 信号的统一标准。目前，我们不会回应 DNT 信号。"
       },
-      "label": "DNT",
       "title": "请勿追踪（Do Not Track）"
     },
     "gdpr": {
       "block": {
         "0": "如果您位于欧洲经济区（EEA），《通用数据保护条例》（GDPR）赋予您有关个人数据的某些权利，包括访问权、更正权、删除权、限制处理权、数据可携带权以及反对处理权。我们处理的法律依据包括同意、合同履行和合法利益。如需行使您的 GDPR 权利，请通过 <a href=\"mailto:support{'@'}comfy.org\" class=\"text-white underline\">support{'@'}comfy.org</a> 与我们联系。"
       },
-      "label": "GDPR",
       "title": "GDPR — 欧洲经济区"
     },
     "information-we-collect": {
@@ -3801,7 +3480,6 @@
       "block": {
         "0": "如果您位于英国，英国《通用数据保护条例》（UK GDPR）为您提供与欧盟 GDPR 类似的权利，包括访问、更正、删除和传输数据的权利。如需行使您在英国 GDPR 下的权利，请通过 <a href=\"mailto:support{'@'}comfy.org\" class=\"text-white underline\">support{'@'}comfy.org</a> 与我们联系。"
       },
-      "label": "UK GDPR",
       "title": "英国 GDPR"
     },
     "us-state-privacy": {
@@ -4018,286 +3696,6 @@
   },
   "toastMessages": {
     "unauthorizedDomain": "您的域名 {domain} 未被授权使用此服务。请联系 {email} 将您的域名添加到白名单。"
-  },
-  "tos": {
-    "comfy-products": {
-      "block": {
-        "0": {
-          "heading": "Right to Access and Use Comfy Products."
-        },
-        "1": "Subject to your compliance with all of the terms and conditions of this Agreement, Comfy grants you and your Users a non-exclusive, non-sublicensable, non-transferable right during the term of this Agreement to access and use the Comfy Products as set forth in the applicable Order Form for your internal business purposes.",
-        "2": {
-          "heading": "Customer Data."
-        },
-        "3": "As between Comfy and Customer, Customer retains all right, title, and interest in and to any data, images, videos, prompts, models, workflows, nodes, parameters, or other materials submitted or uploaded by Customer to the Comfy Products (“Input”), as well as any images, videos, designs, or other visual content generated through Customer’s use of the Comfy Products as a result of processing Customer’s Input (“Output”). Customer acknowledges that due to the nature of artificial intelligence, Comfy may generate the same or similar Output for other customers, and Customer shall have no right, title, or interest in or to Output generated for any other customer.",
-        "4": {
-          "heading": "No AI Training."
-        },
-        "5": "Comfy will not use Input or Output to train generative AI or diffusion models. Comfy may, however, collect and use limited metadata derived from Customer’s use of the Comfy Products, such as prompt classifications, workflow structures, and node configurations, to improve the performance, functionality, and user experience of the Comfy Products.",
-        "6": {
-          "heading": "Comfy OSS."
-        },
-        "7": "You may use Comfy OSS under the terms of the applicable Open Source License(s) governing each respective component, as identified in the corresponding source code repository, rather than under these Terms. Nothing in these Terms shall be construed to limit, supersede, or modify any rights or obligations arising under an applicable Open Source License. If you choose to use the Comfy Products in conjunction with Comfy OSS, these Terms apply solely to your use of the Comfy Products and not to the Comfy OSS itself.",
-        "8": {
-          "heading": "Partner Nodes."
-        },
-        "9": "Certain features of the Comfy Products allow you to access third-party AI model providers (“Partner Nodes”) through Comfy. When you use a Partner Node, Comfy proxies your request to the applicable third-party provider, transmitting the information necessary to fulfill your request, including prompts, images, models, and parameters. Comfy does not transmit your identity or account information to third-party providers in connection with Partner Node requests. Your use of Partner Nodes is subject to the terms and policies of the applicable third-party provider, and Comfy is not responsible for the data practices of such providers. Usage of Partner Nodes is metered and billed through Comfy.",
-        "10": {
-          "heading": "Modification of Comfy Products."
-        },
-        "11": "Comfy may, at any time and in its sole discretion, modify, update, enhance, restrict, suspend, or discontinue the Comfy Products, in whole or in part, including by changing or removing features, functionality, endpoints, specifications, documentation, access methods, usage limits, or availability. Comfy has no obligation to maintain or support any particular version of the Comfy Products or to ensure backward compatibility. Any such modifications may be made with or without notice and may result in interruptions to or degradation of the Comfy Products. Comfy shall have no liability arising out of or related to any modification, suspension, or discontinuation of the Comfy Products, and Customer acknowledges that its use of the Comfy Products is at its own risk and that it should not rely on the continued availability of any aspect of the Comfy Products.",
-        "12": {
-          "heading": "Data Retention and Deletion."
-        },
-        "13": "Comfy retains Customer Data for as long as your account remains active or as otherwise necessary to provide the Comfy Products, comply with applicable legal obligations, resolve disputes, and enforce this Agreement. Specific retention periods for different categories of Customer Data are set forth in Comfy’s retention documentation, available at <a href=\"https://docs.comfy.org/support/data-retention\" class=\"text-white underline\">docs.comfy.org/support/data-retention</a>, as updated from time to time. You may request deletion of your account and associated Customer Data by contacting Comfy at <a href=\"mailto:legal{'@'}comfy.org\" class=\"text-white underline\">legal{'@'}comfy.org</a>. Upon receipt of a verified deletion request, Comfy will use commercially reasonable efforts to delete or de-identify your personal information from its primary systems within a reasonable time. You acknowledge that: (i) deletion may not propagate immediately to all backup systems, third-party analytics providers, or observability systems, which retain data subject to their own retention policies; (ii) certain Customer Data may be retained as required by applicable law or for legitimate business purposes such as billing records; and (iii) aggregated or de-identified data derived from your use of the Comfy Products may be retained indefinitely."
-      },
-      "label": "COMFY PRODUCTS",
-      "title": "2. Comfy Products"
-    },
-    "confidentiality": {
-      "block": {
-        "0": {
-          "heading": "Definition of Confidential Information."
-        },
-        "1": "“Confidential Information” means all non-public information disclosed by a party (“Disclosing Party”) to the other party (“Receiving Party”), whether oral or written, that is designated as confidential or that reasonably should be understood to be confidential given the nature of the information and circumstances of disclosure. Confidential Information of Customer includes Customer Data; Confidential Information of Comfy includes the Comfy Products; and each party’s Confidential Information includes the terms of this Agreement and any Order Forms (including pricing), as well as business, financial, marketing, technical, and product information. Confidential Information excludes information that the Receiving Party can demonstrate: (i) is or becomes publicly available without breach; (ii) was known prior to disclosure without breach; (iii) is received from a third party without breach; or (iv) was independently developed without use of or reference to the Disclosing Party’s Confidential Information.",
-        "2": {
-          "heading": "Protection of Confidential Information."
-        },
-        "3": "The Receiving Party will: (a) protect Confidential Information using at least reasonable care; (b) use it solely to perform under this Agreement; and (c) limit access to its and its Affiliates’ employees and contractors with a need to know and confidentiality obligations at least as protective as those herein. Neither party may disclose the terms of this Agreement or any Order Form except to its Affiliates, legal counsel, or accountants, and remains responsible for their compliance. Upon written request, the Receiving Party will promptly return or destroy Confidential Information, except for information retained in routine backups or as required by law or internal retention policies.",
-        "4": {
-          "heading": "Compelled Disclosure."
-        },
-        "5": "The Receiving Party may disclose Confidential Information if legally required, provided it gives prior notice (where permitted) and reasonable assistance, at the Disclosing Party’s expense, to seek protective treatment. Any disclosure will be limited to what is legally required, and the Receiving Party will request confidential treatment. These obligations survive while Confidential Information remains in the Receiving Party’s possession.",
-        "6": {
-          "heading": "Data Security."
-        },
-        "7": "Comfy will implement and maintain commercially reasonable administrative, technical, and physical safeguards designed to protect Customer Data against unauthorized access, disclosure, alteration, or destruction. These measures will be no less protective than those Comfy uses to protect its own confidential information of a similar nature. In the event Comfy becomes aware of a confirmed security breach that results in unauthorized access to or disclosure of Customer Data, Comfy will notify Customer without undue delay and will provide reasonable cooperation to assist Customer in investigating and mitigating the effects of such breach. Customer acknowledges that no security measures are perfect or impenetrable, and Comfy does not guarantee that Customer Data will be free from unauthorized access or disclosure."
-      },
-      "label": "CONFIDENTIALITY",
-      "title": "6. Confidentiality"
-    },
-    "contact": {
-      "block": {
-        "0": "If you have any questions regarding this Agreement or the Comfy Products, please contact us at: <a href=\"mailto:legal{'@'}comfy.org\" class=\"text-white underline\">legal{'@'}comfy.org</a>."
-      },
-      "label": "CONTACT",
-      "title": "13. Contact Us"
-    },
-    "customer-responsibilities": {
-      "block": {
-        "0": {
-          "heading": "Registration."
-        },
-        "1": "In order to access and use the Comfy Products, you may be required to register an account by providing us with your email and other information requested in our registration form. You agree to provide us with complete and accurate registration information. You may not attempt to impersonate another person in registration. If you are registering on behalf of an organization, you warrant that you are authorized to agree to this Agreement on their behalf. You agree to be responsible for the security of your account. You accept that you are solely responsible for all activities that take place through your account, and that failure to limit access to your devices or systems may permit unauthorized use by third parties.",
-        "2": {
-          "heading": "General Technology Restrictions."
-        },
-        "3": "You agree that you will not, directly or indirectly: (i) sublicense the Comfy Products for use by a third party; (ii) reverse engineer or attempt to extract the source code or underlying methodology from the Comfy Products or any related software, except to the extent that this restriction is expressly prohibited by Applicable Laws; (iii) use or facilitate the use of the Comfy Products for any activities that are prohibited by Applicable Laws or otherwise; (iv) bypass or circumvent measures employed to prevent or limit access to the Comfy Products; (v) use the Comfy Products to create a product or service competitive with Comfy’s products or services; (vi) create derivative works of or otherwise create, attempt to create or derive, or knowingly assist any third party to create or derive, the source code underlying the Comfy Products; or (vii) otherwise use or interact with the Comfy Products for any purpose not expressly permitted under this Agreement.",
-        "4": {
-          "heading": "Acceptable Use; Prohibited Customer Data."
-        },
-        "5": "Customer is solely responsible for ensuring that all Input submitted to the Comfy Products complies with all Applicable Laws, and Customer agrees that it will not, and will not permit any third party to submit to Comfy or the Comfy Products or otherwise use the Comfy Products to create: (i) any data, designs, or other materials subject to U.S. export control laws and regulations; (ii) any viruses, malware, ransomware, Trojan horses, worms, spyware, or other malicious or harmful code or content that could damage, disrupt, interfere with, or compromise the Comfy Products, Comfy’s systems or infrastructure, or the data or systems of any other user or third party; (iii) any Customer Data that depicts, promotes, or facilitates illegal activity, including without limitation child sexual abuse material, non-consensual intimate imagery, or content that incites violence or hatred against any individual or group; (iv) any Customer Data that infringes or misappropriates the intellectual property rights, privacy rights, or publicity rights of any third party, including without limitation by submitting models, images, or other materials without the right to do so; (v) any content or information that is intentionally deceptive or misleading, including without limitation synthetic media designed to impersonate a real individual without their consent; or (vi) any Customer Data that could reasonably be expected to cause harm to any individual or group."
-      },
-      "label": "RESPONSIBILITIES",
-      "title": "3. Customer Responsibilities"
-    },
-    "definitions": {
-      "block": {
-        "0": "“Affiliates” means any entity that directly or indirectly controls, is controlled by, or is under common control with a party, where “control” means the ownership of more than fifty percent (50%) of the voting securities or other voting interests of such entity.",
-        "1": "“Applicable Laws” means all federal and state laws, treaties, rules, regulations, regulatory and supervisory guidance, directives, policies, orders or determinations of a regulatory authority applicable to the activities and obligations contemplated under this Agreement.",
-        "2": "“Comfy API” means the application programming interface and related developer tools made available by Comfy that allow you to access and execute visual AI workflows programmatically as production endpoints from within your own applications or systems.",
-        "3": "“Comfy Branding” means the names, logos, and associated trademarks owned or in progress of being owned by Comfy.",
-        "4": "“Comfy Cloud” means the cloud-based hosting environment made available by Comfy that allows you to access and run visual AI workflows remotely through Comfy’s infrastructure, without requiring local installation or hardware.",
-        "5": "“Comfy Enterprise” means the enterprise-grade product tier made available by Comfy that provides organizations with dedicated infrastructure, enhanced security, administrative controls, and related support services for deploying and managing visual AI workflows at scale.",
-        "6": "“Comfy OSS” means the open-source software, source code, libraries, tools, and related components made available by Comfy under one or more open source licenses, including the software repositories published by Comfy at <a href=\"https://github.com/Comfy-Org\" class=\"text-white underline\">https://github.com/Comfy-Org</a>, as updated, modified, or supplemented from time to time. For the avoidance of doubt, Comfy OSS does not include any proprietary software, infrastructure, or functionality made available by Comfy under these Terms of Service or in connection with any commercial product or offering.",
-        "7": "“Comfy Products” means Comfy Cloud, Comfy API, Comfy Enterprise and other products, software, features, tools, and functionality made available by Comfy to you under these Terms of Service, excluding any Comfy OSS.",
-        "8": "“Customer Data” means electronic data and information submitted or generated by Customer in connection with its use of the Comfy Products, including all Inputs and Outputs.",
-        "9": "“Open Source License” means the open source license(s) under which Comfy makes Comfy OSS available, as identified in the applicable source code repository.",
-        "10": "“Operational Metadata” means usage and diagnostic information generated by the Comfy Products and collected by Comfy to support, maintain, and optimize the performance and security of the Comfy Products, including information regarding software versions, system configuration, uptime, error logs, health metrics, and feature usage. Operational Metadata does not include Customer Data or Confidential Information.",
-        "11": "“Order Form” means the online sign-up flow, order form or other ordering document entered into or otherwise agreed by Customer that references this Agreement.",
-        "12": "“User” means Customer’s or Customer’s Affiliates’ employees and contractors who are authorized by Customer to access and use the Comfy Products on Customer’s or Customer’s Affiliates’ behalf according to the terms of this Agreement."
-      },
-      "label": "DEFINITIONS",
-      "title": "1. Definitions"
-    },
-    "disclaimer": {
-      "block": {
-        "0": "THE Comfy Products AND OUTPUT ARE PROVIDED “AS IS” WITHOUT ANY WARRANTY OF ANY KIND. Comfy DISCLAIMS ANY AND ALL WARRANTIES, REPRESENTATIONS, AND CONDITIONS RELATING TO THE Comfy Products (INCLUDING ANY OUTPUT), WHETHER EXPRESS, IMPLIED, INCLUDING, BUT NOT LIMITED TO, ANY REPRESENTATION, WARRANTY, OR CONDITION OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE OR NON-INFRINGEMENT. YOU AGREE AND ACKNOWLEDGE THAT YOUR USE OF ANY OUTPUT PROVIDED BY THE Comfy Products IS AT YOUR OWN RISK.",
-        "1": "Customer is solely responsible for (a) verifying the Output is appropriate for Customer’s use case, and (b) any decisions, actions, or omissions taken in reliance on the OUTPUT. in no event will Comfy be liable for any damages or losses arising from or related to Customer’s use of or reliance on the OUTPUT, including any decisions made or actions taken based on the OUTPUT."
-      },
-      "label": "DISCLAIMER",
-      "title": "8. Disclaimer"
-    },
-    "dispute-resolution": {
-      "block": {
-        "0": {
-          "heading": "Governing Law."
-        },
-        "1": "This Agreement and any dispute, claim, or controversy arising out of or relating to this Agreement, the Comfy Products, or the parties’ relationship (each, a “Dispute”), shall be governed by and construed in accordance with the laws of the State of California, without regard to conflict of laws principles that would result in the application of the laws of any other jurisdiction.",
-        "2": {
-          "heading": "Binding Arbitration; JAMS."
-        },
-        "3": "Except as expressly set forth in Section 11(c) (Exceptions; Injunctive Relief), any Dispute shall be finally resolved by binding arbitration administered by JAMS in accordance with the JAMS Comprehensive Arbitration Rules and Procedures (or, if applicable, the JAMS Streamlined Arbitration Rules and Procedures), as in effect at the time the arbitration is commenced. The arbitration shall be seated in San Francisco, California, and conducted in English before one (1) arbitrator. Judgment on the award rendered by the arbitrator may be entered in any court of competent jurisdiction.",
-        "4": {
-          "heading": "Exceptions; Injunctive Relief."
-        },
-        "5": "Notwithstanding anything to the contrary, either party may seek temporary, preliminary, or permanent injunctive relief (or other equitable relief) in any court of competent jurisdiction located in San Francisco, CA to prevent or enjoin actual or threatened misuse, infringement, or misappropriation of its intellectual property rights, confidential information, or proprietary rights, without the necessity of posting bond or proving actual damages to the extent permitted by Applicable Law. In addition, either party may bring an individual claim in small claims court in San Francisco, CA, if the claim qualifies.",
-        "6": {
-          "heading": "Class Action Waiver."
-        },
-        "7": "To the fullest extent permitted by Applicable Law, the parties agree that any Dispute will be brought and resolved on an individual basis only, and not as a plaintiff or class member in any purported class, collective, consolidated, coordinated, or representative action or proceeding. The arbitrator may not consolidate claims or preside over any form of representative or class proceeding.",
-        "8": {
-          "heading": "Waiver of Jury Trial."
-        },
-        "9": "To the fullest extent permitted by Applicable Law, each party hereby knowingly and irrevocably waives any right to a trial by jury in any action, proceeding, or counterclaim arising out of or relating to this Agreement or the Comfy Products.",
-        "10": {
-          "heading": "Exclusive Forum for Court Proceedings."
-        },
-        "11": "To the extent any Dispute is not subject to arbitration under this Agreement, the parties agree to the exclusive jurisdiction and venue of the state and federal courts located in San Francisco, CA and each party irrevocably submits to such jurisdiction and venue and waives any objection based on inconvenient forum.",
-        "12": {
-          "heading": "Confidentiality."
-        },
-        "13": "The arbitration, including the existence of the arbitration, all materials submitted, and all testimony and awards, shall be confidential and may not be disclosed except as necessary to conduct the arbitration, to enforce an award, or as required by Applicable Law.",
-        "14": {
-          "heading": "Time Limit."
-        },
-        "15": "To the fullest extent permitted by Applicable Law, any Dispute must be brought by you within one (1) year after the claim or cause of action first arose, or it is permanently barred."
-      },
-      "label": "DISPUTE RESOLUTION",
-      "title": "11. Governing Law and Dispute Resolution"
-    },
-    "effectiveDate": "May 13, 2026",
-    "effectiveDateLabel": "Effective Date",
-    "indemnification": {
-      "block": {
-        "0": "You agree to defend, indemnify, and hold harmless Comfy Organization, Inc. and its officers, directors, employees, contractors, and agents from and against any and all third-party claims, demands, actions, suits, or proceedings, and any resulting losses, damages, liabilities, costs, and expenses (including reasonable attorneys’ fees) to the extent resulting from your Customer Data or your breach of this Agreement. You must not settle any claim without Comfy’s prior written consent if the settlement would require Comfy to (a) admit fault, (b) pay any damages or other amounts, or (c) take or refrain from taking any action. Comfy may participate in a claim through counsel of its own choosing at its own expense, and you and Comfy will reasonably cooperate on the defense of any such claim."
-      },
-      "label": "INDEMNIFICATION",
-      "title": "10. Indemnification"
-    },
-    "intro": {
-      "block": {
-        "0": "These Comfy Terms of Service (the “Agreement”) are made available by Comfy Organization, Inc., a Delaware corporation (“Comfy”) and set forth your rights and obligations when accessing the Comfy Products (as defined below).",
-        "1": "The Agreement is entered into by and between Comfy and the entity or person accessing the Comfy Products (“Customer” or “you”). If you are accessing or using the Comfy Products on behalf of your company, you represent that you are authorized to enter into the Agreement on behalf of your company.",
-        "2": "PLEASE REVIEW THESE TERMS OF SERVICE CAREFULLY. ONCE ACCEPTED, THE TERMS AND CONDITIONS OF THE AGREEMENT WILL BECOME A BINDING LEGAL COMMITMENT BETWEEN YOU AND COMFY. IF YOU DO NOT AGREE TO BE BOUND BY THESE TERMS OF SERVICE, YOU SHOULD NOT ACCEPT THESE TERMS OF SERVICE AND MAY NOT USE THE PLATFORM."
-      },
-      "label": "INTRO"
-    },
-    "liability": {
-      "block": {
-        "0": "WHEN PERMITTED BY LAW, COMFY, AND COMFY’S SUPPLIERS AND DISTRIBUTORS, WILL NOT BE RESPONSIBLE FOR LOST PROFITS, REVENUES, OR DATA; FINANCIAL LOSSES; OR INDIRECT, SPECIAL, CONSEQUENTIAL, EXEMPLARY, OR PUNITIVE DAMAGES. TO THE EXTENT PERMITTED BY LAW, THE TOTAL LIABILITY OF Comfy, AND ITS SUPPLIERS AND DISTRIBUTORS, FOR ANY CLAIM UNDER THIS AGREEMENT, INCLUDING FOR ANY IMPLIED WARRANTIES, IS LIMITED TO THE GREATER OF (A) ONE THOUSAND DOLLARS ($1,000); AND (B) THE AMOUNTS PAID OR PAYABLE BY CUSTOMER IN THE SIX (6) MONTHS PRECEDING THE DATE OF THE CLAIM. IN ALL CASES, Comfy, AND ITS SUPPLIERS AND DISTRIBUTORS, WILL NOT BE LIABLE FOR ANY EXPENSE, LOSS, OR DAMAGE THAT IS NOT REASONABLY FORESEEABLE."
-      },
-      "label": "LIABILITY",
-      "title": "9. Limitation of Liability"
-    },
-    "miscellaneous": {
-      "block": {
-        "0": {
-          "heading": "Export Compliance."
-        },
-        "1": "You will comply with the export laws and regulations of the United States, the European Union and other applicable jurisdictions in providing and using the Comfy Products.",
-        "2": {
-          "heading": "Publicity."
-        },
-        "3": "You agree that Comfy may refer to your name, logo, and trademarks in Comfy’s marketing materials and website; however, Comfy will not use your name or trademarks in any other publicity (e.g., press releases, customer references and case studies) without your prior written consent (which may be by email) not to be unreasonably withheld, conditioned, or delayed.",
-        "4": {
-          "heading": "Third-Party Infrastructure."
-        },
-        "5": "Customer acknowledges that the Comfy Products relies on third-party infrastructure, hardware, and services, including cloud computing providers and GPU infrastructure providers (collectively, “Third-Party Infrastructure”), and that the availability, performance, and security of the Comfy Products may be affected by the operation, maintenance, or failure of such Third-Party Infrastructure. Comfy will use commercially reasonable efforts to maintain Comfy Products availability but makes no representation or warranty regarding the performance or availability of any Third-Party Infrastructure, and Comfy shall have no liability to Customer for any interruption, degradation, loss of data, or other harm arising out of or related to any failure, outage, or limitation of Third-Party Infrastructure, whether or not within Comfy’s control.",
-        "6": {
-          "heading": "Assignment; Delegation."
-        },
-        "7": "Neither party hereto may assign or otherwise transfer this Agreement, in whole or in part, without the other party’s prior written consent, except that Comfy may assign this Agreement without consent to a successor to all or substantially all of its assets or business related to this Agreement. Any attempted assignment, delegation, or transfer by either party in violation hereof will be null and void. Subject to the foregoing, this Agreement will be binding on the parties and their successors and assigns.",
-        "8": {
-          "heading": "Amendment; Waiver."
-        },
-        "9": "Comfy reserves the right in its sole discretion and at any time and for any reason to modify this Agreement. Any modifications to this Agreement shall become effective upon the date of posting. Your continued use of, or access to, the Comfy Products after an update goes into effect will constitute acceptance of the update. If you do not agree with an update, you may stop using the Comfy Products or terminate this Agreement. No waiver by either party of any breach or default hereunder shall be deemed to be a waiver of any preceding or subsequent breach or default. Any such waiver will apply only to the specific provision and under the specific circumstances for which it was given, and will not apply with respect to any repeated or continued violation of the same provision or any other provision. Failure or delay by either party to enforce any provision of this Agreement will not be deemed a waiver of future enforcement of that or any other provision.",
-        "10": {
-          "heading": "Relationship."
-        },
-        "11": "Nothing contained herein will in any way constitute any association, partnership, agency, employment or joint venture between the parties hereto, or be construed to evidence the intention of the parties to establish any such relationship. Neither party will have the authority to obligate or bind the other in any manner, and nothing herein contained will give rise to, or is intended to give rise to any rights of any kind in favor of any third parties.",
-        "12": {
-          "heading": "Unenforceability."
-        },
-        "13": "If a court of competent jurisdiction determines that any provision of this Agreement is invalid, illegal, or otherwise unenforceable, such provision will be enforced as nearly as possible in accordance with the stated intention of the parties, while the remainder of this Agreement will remain in full force and effect and bind the parties according to its terms.",
-        "14": {
-          "heading": "Notices."
-        },
-        "15": "Any notice required or permitted to be given hereunder will be given in writing by personal delivery, certified mail, return receipt requested, or by overnight delivery. Notices to you may be sent to the email address provided by you when you created your account with Comfy. Notices to Comfy must be sent to the following: 201 Spear Street, Ste 17, San Francisco, CA 94105.",
-        "16": {
-          "heading": "Entire Agreement."
-        },
-        "17": "This Agreement comprises the entire agreement between you and Comfy with respect to its subject matter, and supersedes all prior and contemporaneous proposals, statements, sales materials or presentations and agreements (oral and written). No oral or written information or advice given by Comfy, its agents or employees will create a warranty or in any way increase the scope of the warranties in this Agreement."
-      },
-      "label": "MISCELLANEOUS",
-      "title": "12. Miscellaneous"
-    },
-    "payment": {
-      "block": {
-        "0": {
-          "heading": "Plans; Fees; Free Tier."
-        },
-        "1": "Your use of the Comfy Products is subject to the plan selected via the applicable ordering page, online sign-up flow, or order form (“Plan”). Comfy may offer a free or freemium tier (“Free Tier”) and one or more paid tiers; the applicable Plan may include usage caps, feature restrictions, throttling, overage charges, or upgrade requirements, each as described in the pricing page or applicable Order Form. If a Free Tier user provides a valid payment method in connection with their account (including for identity verification, future upgrade purposes, or any other reason), such user expressly authorizes Comfy to charge that payment method for any usage that exceeds the applicable Free Tier limits, including overages resulting from intentional use, usage by authorized users or third parties under the account, or technical factors. Comfy will use reasonable efforts to notify users when they approach or exceed Free Tier limits, but such notice is not a condition of Comfy’s right to charge for overages. You are responsible for all usage under your account, including usage by your Users and under your credentials and API keys. Comfy may modify, suspend, or discontinue any Plan (including the Free Tier) consistent with this Agreement and the Order Forms.",
-        "2": {
-          "heading": "Self-Serve Credit Card Billing."
-        },
-        "3": "For self-serve Plans, Customer will provide a valid payment method (e.g., credit card) and authorizes Comfy (and its payment processor) to charge all fees and taxes when due. Unless the Order Forms state otherwise, subscription components (if any) will be billed in advance on a recurring basis and usage-based components (including any overages) will be billed in arrears for the applicable billing period (and may be charged as usage accrues). This billing authorization applies regardless of whether the Customer is on a paid Plan or a Free Tier at the time the overage is incurred. Paid self-serve Plans automatically renew for successive billing periods until cancelled through the console or as otherwise described in the Order Forms; if a charge fails, Comfy may retry the charge and Customer must promptly update its payment method. The same retry rights apply to any failed overage charges incurred by Free Tier users.",
-        "4": {
-          "heading": "Invoiced Billing."
-        },
-        "5": "If Comfy approves invoiced billing for Customer, Comfy will invoice Customer in accordance with the applicable Order Form, and Customer will pay all undisputed amounts within thirty (30) days of the invoice date. Any purchase Order Forms are for administrative convenience only and will not modify this Agreement. Customer will notify Comfy in writing of any good-faith dispute regarding an invoice within thirty (30) days of the invoice date and will timely pay all undisputed amounts while the parties work to resolve the dispute.",
-        "6": {
-          "heading": "Prepaid Credits."
-        },
-        "7": "Customer may prepay for usage credits (“Credits”) which may be applied toward usage of the Comfy Products at the rates set forth on Comfy’s pricing page. Except for documented billing errors or similar service issues attributed to Comfy, all purchases of Credits are final and non-refundable, and Comfy will not issue refunds or credits for any unused, partially used, or remaining Credits under any circumstances, including upon termination or expiration of Customer’s account. Comfy reserves the right to modify the pricing or Credit redemption rates applicable to future Credit purchases upon reasonable notice, but any Credits purchased prior to such modification will be honored at the rates in effect at the time of purchase.",
-        "8": {
-          "heading": "Taxes; Price Changes; No Refunds."
-        },
-        "9": "Fees are exclusive of all taxes, duties, levies, and similar governmental assessments (including sales, use, VAT/GST, and withholding taxes), and Customer is responsible for all such amounts other than taxes based on Comfy’s net income; if withholding is required by law, Customer will gross up payments so Comfy receives the invoiced amount, unless prohibited by law. Comfy may change fees or introduce new fees upon prior notice (including by posting to the pricing page or in-product notice), effective as of the next billing period or as otherwise stated in the notice. Except as required by law or expressly stated in the Order Forms, all fees are non-cancellable and non-refundable.",
-        "10": {
-          "heading": "Late Payments; Suspension."
-        },
-        "11": "Overdue undisputed amounts may accrue interest at the lesser of 1.5% per month or the maximum rate permitted by law, plus reasonable collection costs. Comfy may suspend or limit access to the Comfy Products (including throttling, disabling API keys, or downgrading to the Free Tier) for non-payment of undisputed amounts after providing commercially reasonable notice and an opportunity to cure, unless Comfy reasonably determines immediate suspension is necessary to protect the Comfy Products or comply with Applicable Laws."
-      },
-      "label": "PAYMENT",
-      "title": "4. Payment"
-    },
-    "proprietary-rights": {
-      "block": {
-        "0": {
-          "heading": "Reservation of Rights."
-        },
-        "1": "Comfy and its licensors retain all right, title, and interest, including all intellectual property and proprietary rights, in and to the Comfy Products, Comfy Branding, and all software, code, algorithms, protocols, interfaces, tools, documentation, data structures, and other technology underlying or embodied in, or used to provide, the Comfy Products (collectively, “Comfy Materials”). Except for the limited rights expressly granted to Customer under this Agreement, no rights or licenses are granted, whether by implication, estoppel, or otherwise. Comfy expressly reserves all rights in and to the Comfy Materials not expressly granted hereunder.",
-        "2": {
-          "heading": "Feedback."
-        },
-        "3": "You may from time to time provide feedback (including suggestions, comments for enhancements, functionality or usability, etc.) (“Feedback”) to Comfy regarding your experience using, and needs and integration requirements for, the Comfy Products. Comfy shall have full discretion to determine whether or not to proceed with the development of any requested enhancements, new features or functionality, and you hereby grant Comfy the full, unencumbered, royalty-free right to incorporate and otherwise fully exploit Feedback in connection with Comfy’s products and services.",
-        "4": {
-          "heading": "Operational Metadata."
-        },
-        "5": "Customer agrees that Comfy may collect and use Operational Metadata to operate, maintain, improve, and support the Comfy Products, including for diagnostics, analytics, system performance, and reporting purposes. Comfy will only disclose Operational Metadata externally if such data is (a) aggregated or anonymized with data across other customers, and (b) does not disclose the identity of Customer or any Customer Confidential Information."
-      },
-      "label": "PROPRIETARY RIGHTS",
-      "title": "7. Proprietary Rights"
-    },
-    "term-termination": {
-      "block": {
-        "0": {
-          "heading": "Termination of Agreement."
-        },
-        "1": "You may stop using the Comfy Products at any time with or without notice. This Agreement will remain in effect until terminated in accordance with this Section. Either party may terminate this Agreement for convenience upon written notice to the other; provided, however, that to the extent the parties have entered into one or more executed Order Forms with a stated term, such Order Form will remain in effect for its stated term unless earlier terminated in accordance with its terms or this Agreement, and termination of this Agreement will not, by itself, terminate any then-effective Order Form.",
-        "2": {
-          "heading": "Effect of Termination."
-        },
-        "3": "Upon any termination or expiration of an Order Form (or this Agreement, if no Order Form is then in effect), Customer will promptly cease all use of the Comfy Products under the terminated arrangement and, if applicable, any continued use must be pursuant to a then-effective Order Form or other written authorization from Comfy. Comfy may suspend or terminate Customer’s access to the Comfy Products, or discontinue the Comfy Products or any portion or feature thereof, at any time; provided that Comfy will not terminate an unexpired Order Form for convenience unless the applicable Order Form expressly permits it, and any suspension or termination may be implemented immediately if Comfy reasonably determines that Customer’s use poses a security risk, violates this Agreement, or materially degrades the Comfy Products. Except as expressly set forth in an Order Form, Comfy will have no liability or other obligation to Customer arising out of or relating to any termination, suspension, or discontinuance under this Section.",
-        "4": {
-          "heading": "Survival."
-        },
-        "5": "Termination or expiration will not affect any rights or obligations, including the payment of amounts due, which have accrued under this Agreement up to the date of termination or expiration. Upon termination or expiration of this Agreement, the provisions that are intended by their nature to survive termination will survive and continue in full force and effect in accordance with their terms, including confidentiality obligations, proprietary rights, indemnification, limitations of liability, and disclaimers."
-      },
-      "label": "TERM; TERMINATION",
-      "title": "5. Term; Termination"
-    }
   },
   "ui": {
     "breadcrumb": "面包屑导航",
