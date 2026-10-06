@@ -2121,7 +2121,9 @@ describe('a sibling tab under unified_cloud_auth', () => {
     })
     const workspaceAuth = useWorkspaceAuthStore()
 
-    await expect(workspaceAuth.mintAtLogin()).resolves.toBe(true)
+    await vi.waitFor(() =>
+      expect(workspaceAuth.getUnifiedToken()).toBeDefined()
+    )
     publishFromSibling()
 
     expect(firebaseExchanges()).toHaveLength(1)
