@@ -232,11 +232,15 @@ export function useFeatureUsageTracker(featureId: string) {
   }
 
   function reset() {
+    const currentUsageData = withoutNewlyResetFeatures(
+      normalizeUsageData(usageData.value),
+      observedResetVersions
+    )
     const resetVersion = (resetVersions.get(featureId) ?? 0) + 1
     resetVersions.set(featureId, resetVersion)
     observedResetVersions.set(featureId, resetVersion)
     pendingResets.add(featureId)
-    usageData.value = resetUsageData(normalizeUsageData(usageData.value))
+    usageData.value = resetUsageData(currentUsageData)
   }
 
   return {
