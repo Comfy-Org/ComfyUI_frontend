@@ -212,7 +212,7 @@ function persistUsageData(
 
 function resetUsageData(currentUsageData: FeatureUsageRecord) {
   let oldValue: string | null = null
-  let usageData: FeatureUsageRecord | undefined
+  let usageData = applyPendingResets(currentUsageData)
   let newValue: string | undefined
 
   try {
@@ -227,7 +227,6 @@ function resetUsageData(currentUsageData: FeatureUsageRecord) {
     pendingUsageData = {}
   } catch (error) {
     reportStorageError(error, 'error_resetting_feature_usage')
-    usageData ??= applyPendingResets(currentUsageData)
   }
 
   dispatchStorageUpdate(oldValue, newValue ?? JSON.stringify(usageData))
