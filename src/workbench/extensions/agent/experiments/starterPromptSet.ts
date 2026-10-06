@@ -87,7 +87,7 @@ export function useStarterPromptSet() {
       !isAuthenticatedConfigLoaded.value &&
       renderedAssignment === undefined
     ) {
-      renderedSurfaceAssignment.value = renderedAssignment ?? assigned.value
+      renderedSurfaceAssignment.value = assigned.value
       surfaceRendered = true
       return
     }
