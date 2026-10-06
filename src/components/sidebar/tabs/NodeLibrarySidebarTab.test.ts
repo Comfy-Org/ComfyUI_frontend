@@ -9,6 +9,7 @@ import { useLitegraphService } from '@/services/litegraphService'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { NodeSearchService } from '@/services/nodeSearchService'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { useNodeHelpStore } from '@/stores/workspace/nodeHelpStore'
 import type { TreeExplorerNode, TreeNode } from '@/types/treeExplorerTypes'
 
 import NodeLibrarySidebarTab from './NodeLibrarySidebarTab.vue'
@@ -106,6 +107,14 @@ vi.mock<unknown>(import('@/components/searchbox/NodeSearchFilter.vue'), () => ({
   }
 }))
 
+vi.mock<unknown>(import('@/components/common/ImperativePopover.vue'), () => ({
+  default: {
+    name: 'Popover',
+    template: '<div><slot /></div>',
+    methods: { toggle: vi.fn(), hide: vi.fn() }
+  }
+}))
+
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -153,6 +162,15 @@ describe('NodeLibrarySidebarTab', () => {
 
     await leaf?.handleClick?.(new MouseEvent('click'))
     expect(useLitegraphService().addNodeOnGraph).toHaveBeenCalledWith(mockNode)
+  })
+
+  it('closes node help when the panel unmounts', () => {
+    const { unmount } = renderComponent()
+    useNodeHelpStore().openHelp(mockNode)
+
+    unmount()
+
+    expect(useNodeHelpStore().isHelpOpen).toBe(false)
   })
 
   it('adds and removes filters', async () => {

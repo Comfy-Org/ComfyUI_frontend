@@ -660,7 +660,7 @@ describe('Workshop analytics transport', () => {
       const { initPostHog, captureWorkshopEvent } = await import('./posthog')
       const { workshopFailureAnalytics } = await import('./workshop-analytics')
       const { WorkshopRouterError } =
-        await import('../config/workshop-router-errors')
+        await import('@/config/workshop-router-errors')
       const cause = new DOMException('Private filename.png', 'NotReadableError')
       const properties = {
         ...tags,
@@ -963,6 +963,27 @@ describe('shared auth telemetry events', () => {
     expect(hoisted.mockCapture).toHaveBeenCalledWith(
       SESSION_TELEMETRY_EVENT.refreshFailed,
       { outcome: 'retry_scheduled' }
+    )
+  })
+
+  it.for([
+    {
+      name: SESSION_TELEMETRY_EVENT.bootstrap,
+      properties: { outcome: 'signed_in', origin: 'https://www.comfy.org' }
+    },
+    {
+      name: SESSION_TELEMETRY_EVENT.signedOutRemotely,
+      properties: { origin: 'https://www.comfy.org' }
+    }
+  ] as const)('reports the web session event $name as is', async (event) => {
+    const { initPostHog, captureWebSessionEvent } = await import('./posthog')
+    initPostHog()
+
+    captureWebSessionEvent(event)
+
+    expect(hoisted.mockCapture).toHaveBeenCalledWith(
+      event.name,
+      event.properties
     )
   })
 

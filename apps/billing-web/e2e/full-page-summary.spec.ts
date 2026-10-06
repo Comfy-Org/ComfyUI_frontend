@@ -52,7 +52,26 @@ test('a new subscription reads its charge, allowance and renewal from the quote'
   ])
 })
 
-test('a tier upgrade reads the prorated charge and a dated credits delta', async ({
+test('a quote without credit counts leaves the credits line out instead of converting the cents', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  const {
+    credits_today: _today,
+    credits_next_period: _nextPeriod,
+    ...uncounted
+  } = cloud.scenario.preview
+  cloud.scenario.preview = uncounted
+  await signIn(CHECKOUT)
+
+  await expectSummary(page, ['Subscribe to Pro Plan · Personal', '$50 USD'])
+  await expect(
+    page.getByRole('region', { name: 'Order summary' })
+  ).not.toContainText('credits')
+})
+
+test('a tier upgrade itemizes the remaining time and the unused-time credit, with a dated credits delta', async ({
   page,
   cloud,
   signIn
@@ -64,8 +83,12 @@ test('a tier upgrade reads the prorated charge and a dated credits delta', async
     proration_at: '2026-07-10T09:30:00.000Z',
     amount_due_cents: 3250,
     cost_today_cents: 3250,
+    proration_remaining_cents: 4500,
+    proration_unused_cents: 1250,
     credits_today_cents: 3250,
     credits_next_period_cents: 10_000,
+    credits_today: 6858,
+    credits_next_period: 21_100,
     renewal_amount_cents: 10_000,
     renewal_at: RENEWAL_AT,
     current_plan: {
@@ -81,9 +104,9 @@ test('a tier upgrade reads the prorated charge and a dated credits delta', async
     'Upgrade to Pro Plan · Personal',
     '$32.50 USD',
     '6,858 credits added today (expire July 28)',
-    'Pro Plan - Prorated$32.50',
-    'Remaining time for Pro plan, less unused time from Creator plan',
+    'Remaining time on Pro Plan$45.00',
     'Credits refill to 21,100 each month',
+    'Unused time on Creator Plan−$12.50',
     'Total due today$32.50',
     'Existing credits are kept',
     'Renews at $100.00 on July 28, 2026'
@@ -155,7 +178,9 @@ test('a held discount and an entered code read as rows, with no Subtotal the quo
 }) => {
   cloud.scenario.preview = {
     ...cloud.scenario.preview,
+    cost_today_cents: 2000,
     amount_due_cents: 2000,
+    subtotal_cents: 5000,
     promotion_code: 'COMFY50',
     discounts: [
       { kind: 'plan', code: 'annual_plan_discount_20', amount_off_cents: 999 },
@@ -183,7 +208,7 @@ test('a held discount and an entered code read as rows, with no Subtotal the quo
 
 const YEARLY_CHECKOUT = entryPath('checkout', { plan: 'creator_yearly' })
 
-test('a monthly to yearly switch reads its renewal date and struck-through list price from the quote', async ({
+test('a monthly to yearly switch reads its renewal date and struck-through monthly list price from the quote', async ({
   page,
   cloud,
   signIn
@@ -195,12 +220,12 @@ test('a monthly to yearly switch reads its renewal date and struck-through list 
     'Switch to Creator Yearly · Personal',
     '$268.80 USD',
     'Creator Yearly$268.80',
-    '$268.80 $336 /yr, billed yearly',
+    '$22.40 $28 /mo × 12 months, billed yearly',
     'Renews at $268.80 on September 30, 2027',
     "This month's credits stay valid until October 30, 2026"
   ])
   const summary = page.getByRole('region', { name: 'Order summary' })
-  await expect(summary.locator('s')).toHaveText('$336')
+  await expect(summary.locator('s')).toHaveText('$28')
   await expect(summary).not.toContainText('Subtotal')
 })
 
@@ -212,6 +237,7 @@ test('a promo code on a yearly switch is bounded to the first year', async ({
   switchToYearly(cloud.scenario)
   cloud.scenario.preview = {
     ...cloud.scenario.preview,
+    cost_today_cents: 21_504,
     amount_due_cents: 21_504,
     promotion_code: 'COMFY20',
     discounts: [
@@ -219,20 +245,22 @@ test('a promo code on a yearly switch is bounded to the first year', async ({
         kind: 'promotion',
         code: 'COMFY20',
         amount_off_cents: 5376,
-        duration: 'once'
+        duration: 'once',
+        term: 'first_year'
       }
     ]
   }
   await signIn(YEARLY_CHECKOUT)
 
   await expectSummary(page, [
+    'Creator Yearly$268.80',
     'Promo code−$53.76',
     'First year',
     'Total due today$215.04'
   ])
 })
 
-test('744-15697: an account balance the server applied is the last deduction, and keeps the prorated row it explains', async ({
+test('744-15697: an account balance the server applied is the last deduction, and keeps the prorated rows it explains', async ({
   page,
   cloud,
   signIn
@@ -243,10 +271,15 @@ test('744-15697: an account balance the server applied is the last deduction, an
     transition_type: 'upgrade',
     proration_at: '2026-07-10T09:30:00.000Z',
     amount_due_cents: 2750,
-    cost_today_cents: 3250,
+    cost_today_cents: 2750,
+    subtotal_cents: 3250,
+    proration_remaining_cents: 4500,
+    proration_unused_cents: 1250,
     balance_applied_cents: 500,
     credits_today_cents: 3250,
     credits_next_period_cents: 10_000,
+    credits_today: 6858,
+    credits_next_period: 21_100,
     renewal_amount_cents: 10_000,
     renewal_at: RENEWAL_AT,
     current_plan: {
@@ -259,7 +292,8 @@ test('744-15697: an account balance the server applied is the last deduction, an
   await signIn(CHECKOUT)
 
   await expectSummary(page, [
-    'Pro Plan - Prorated$32.50',
+    'Remaining time on Pro Plan$45.00',
+    'Unused time on Creator Plan−$12.50',
     'Account balance−$5.00',
     'Credit already on your account',
     'Total due today$27.50'

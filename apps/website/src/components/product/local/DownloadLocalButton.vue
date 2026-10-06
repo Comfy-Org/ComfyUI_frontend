@@ -7,11 +7,11 @@ import {
   installers,
   platformIcons,
   useDownloadUrl
-} from '../../../composables/useDownloadUrl'
-import type { Locale } from '../../../i18n/translations'
-import { t } from '../../../i18n/translations'
-import { captureDownloadClick } from '../../../scripts/posthog'
-import BrandButton from '../../common/BrandButton.vue'
+} from '@/composables/useDownloadUrl'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import { captureDownloadClick } from '@/scripts/posthog'
+import BrandButton from '@/components/common/BrandButton.vue'
 import InstallerMenu from './InstallerMenu.vue'
 
 const {
@@ -23,6 +23,7 @@ const {
   class?: HTMLAttributes['class']
   showInstallerMenu?: boolean
 }>()
+const { t } = translationsFor(locale)
 
 const { installer, showFallback } = useDownloadUrl()
 
@@ -66,11 +67,11 @@ function hasInstallerMenu(index: number) {
           class="inline-block size-5 shrink-0"
         />
         <span class="text-left">
-          {{ t('download.hero.downloadLocal', locale) }}
+          {{ t('download.hero.downloadLocal') }}
           <span
             class="block text-xs font-normal tracking-normal whitespace-normal"
           >
-            {{ t(btn.label, locale) }}
+            {{ t(btn.label) }}
           </span>
         </span>
       </span>

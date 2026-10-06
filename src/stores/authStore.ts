@@ -18,7 +18,10 @@ import { t } from '@/i18n'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
 import type { WebSessionRequests } from '@/platform/auth/session/webSessionFetch'
-import { webSessionRequests } from '@/platform/auth/session/webSessionFetch'
+import {
+  webSessionRequests,
+  webSessionResourceHeader
+} from '@/platform/auth/session/webSessionFetch'
 import { fetchWithUnifiedRemint } from '@/platform/auth/unified/remintRetry'
 import { DISTRIBUTION, isCloud } from '@/platform/distribution/types'
 import { clearOnboardingReplay } from '@/platform/onboarding/onboardingReplay'
@@ -71,11 +74,13 @@ export type BillingPortalTargetTier = NonNullable<
 
 export class AuthStoreError extends Error {
   readonly status: number | undefined
+  readonly code: string | undefined
 
-  constructor(message: string, status?: number) {
+  constructor(message: string, status?: number, code?: string) {
     super(message)
     this.name = 'AuthStoreError'
     this.status = status
+    this.code = code
   }
 }
 
@@ -184,9 +189,11 @@ export const useAuthStore = defineStore('auth', () => {
     isInitialized.value = true
     if (user === null) {
       lastTokenUserId.value = null
-    } else if (isCloud) {
+    } else if (isCloud && !flags.unifiedWebSessionEnabled) {
       // Mint the single Cloud JWT at login (flag-guarded inside the store; a
-      // no-op when unified_cloud_auth is off).
+      // no-op when unified_cloud_auth is off). With the web session on, this
+      // runs before the router decides the session, so WorkspaceAuthGate
+      // mints instead, and only for a tab the session did not sign in.
       void mintUnifiedToken(user.uid)
     }
 
@@ -340,6 +347,10 @@ export const useAuthStore = defineStore('auth', () => {
       ? useApiKeyAuthStore().getAuthHeader()
       : await getFirebaseAuthHeader()
 
+  const getCustomerAuthHeader = async (): Promise<Readonly<
+    Record<string, string>
+  > | null> => (await webSessionResourceHeader()) ?? (await getUserAuthHeader())
+
   const currentUserIdentity = (): string | null =>
     sessionUser.value?.id ??
     currentUser.value?.uid ??
@@ -370,6 +381,7 @@ export const useAuthStore = defineStore('auth', () => {
    */
   const getWorkspaceAuthHeader = async (): Promise<AuthHeader | null> => {
     if (flags.unifiedCloudAuthEnabled) {
+      if (await awaitUnifiedMint()) return null
       const token = useWorkspaceAuthStore().getUnifiedToken()
       return token ? { Authorization: `Bearer ${token}` } : null
     }
@@ -489,7 +501,7 @@ export const useAuthStore = defineStore('auth', () => {
       currentUserIdentity() === requestOwner &&
       currentUserCredentialIdentity() === requestCredential
     try {
-      const authHeader = await getUserAuthHeader()
+      const authHeader = await getCustomerAuthHeader()
       if (!authHeader) {
         throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
       }
@@ -545,7 +557,7 @@ export const useAuthStore = defineStore('auth', () => {
     const sessionIdentity = completedUser?.uid ?? currentUserIdentity()
     const authHeader = completedUser
       ? headerFromToken(await completedUser.getIdToken())
-      : await getUserAuthHeader()
+      : await getCustomerAuthHeader()
     if (!authHeader) {
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
@@ -808,7 +820,7 @@ export const useAuthStore = defineStore('auth', () => {
     requestBodyContent: CreditPurchasePayload
   ): Promise<CreditPurchaseResponse> => {
     const requestOwner = currentUserIdentity()
-    const authHeader = await getUserAuthHeader()
+    const authHeader = await getCustomerAuthHeader()
     if (!authHeader) {
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
@@ -836,13 +848,14 @@ export const useAuthStore = defineStore('auth', () => {
     )
 
     if (!response.ok) {
-      const { message } = await parseErrorResponse(response)
+      const { message, code } = await parseErrorResponse(response)
       assertIdentityUnchanged(requestOwner)
       throw new AuthStoreError(
         t('toastMessages.failedToInitiateCreditPurchase', {
           error: message
         }),
-        response.status
+        response.status,
+        code
       )
     }
 
@@ -857,10 +870,16 @@ export const useAuthStore = defineStore('auth', () => {
     executeAuthAction(() => addCredits(requestBodyContent))
 
   const accessBillingPortal = async (
-    targetTier?: BillingPortalTargetTier
+    targetTier?: BillingPortalTargetTier,
+    options?: { cancelSubscription?: boolean }
   ): Promise<AccessBillingPortalResponse> => {
+    if (targetTier && options?.cancelSubscription) {
+      throw new AuthStoreError(
+        'cancelSubscription cannot be combined with a target tier'
+      )
+    }
     const requestOwner = currentUserIdentity()
-    const authHeader = await getUserAuthHeader()
+    const authHeader = await getCustomerAuthHeader()
     if (!authHeader) {
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
@@ -875,17 +894,22 @@ export const useAuthStore = defineStore('auth', () => {
         },
         ...(targetTier && {
           body: JSON.stringify({ target_tier: targetTier })
+        }),
+        ...(options?.cancelSubscription === true && {
+          body: JSON.stringify({ cancel_subscription: true })
         })
       }
     )
 
     if (!response.ok) {
-      const { message } = await parseErrorResponse(response)
+      const { message, code } = await parseErrorResponse(response)
       assertIdentityUnchanged(requestOwner)
       throw new AuthStoreError(
         t('toastMessages.failedToAccessBillingPortal', {
           error: message
-        })
+        }),
+        response.status,
+        code
       )
     }
 
