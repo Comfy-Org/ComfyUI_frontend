@@ -68,6 +68,7 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
     await expect(container).toBeVisible()
     await expect(canvas).toBeVisible()
     await expect(viewport).toBeVisible()
+    await expect.poll(() => comfyPage.canvasOps.getMinimapRightInset()).toBe(8)
 
     await expect(container).toHaveCSS('position', 'relative')
 

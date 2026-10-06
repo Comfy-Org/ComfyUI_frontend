@@ -20,7 +20,7 @@
       </div>
     </Message>
     <div class="mb-3 flex gap-2">
-      <ToggleGroup v-model="filterType" type="single">
+      <ToggleGroup v-model="filterType" type="single" :allow-empty="false">
         <ToggleGroupItem
           v-for="option in filterTypes"
           :key="option.value"
@@ -83,13 +83,14 @@
 <script setup lang="ts">
 import { FilterMatchMode } from '@primevue/core/api'
 import Column from 'primevue/column'
-import ContextMenu from 'primevue/contextmenu'
 import DataTable from 'primevue/datatable'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
 import Badge from '@/components/ui/badge/Badge.vue'
+import Button from '@/components/ui/button/Button.vue'
+import ContextMenu from '@/components/ui/menu/ContextMenu.vue'
+import type { MenuItem } from '@/components/ui/menu/types'
 import Message from '@/components/ui/message/Message.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Switch from '@/components/ui/switch/Switch.vue'
@@ -206,7 +207,7 @@ const applyChanges = () => {
 }
 
 const menu = ref<InstanceType<typeof ContextMenu>>()
-const contextMenuItems = computed(() => [
+const contextMenuItems = computed<MenuItem[]>(() => [
   {
     label: t('g.enableSelected'),
     icon: 'pi pi-check',

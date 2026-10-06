@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -21,6 +22,28 @@ const { status, rowName } = defineProps<{
 }>()
 const emit = defineEmits<{ download: [] }>()
 const { t } = useI18n()
+
+/**
+ * The control unmounts on request, dropping focus to the body. Hand it to what
+ * replaces it, but only when the user acted here.
+ */
+const statusRegion = ref<HTMLElement | null>(null)
+const restoreFocus = ref(false)
+
+function requestDownload() {
+  restoreFocus.value = true
+  emit('download')
+}
+
+watch(
+  () => status.downloadState?.status,
+  async () => {
+    if (!restoreFocus.value) return
+    restoreFocus.value = false
+    await nextTick()
+    statusRegion.value?.focus()
+  }
+)
 
 type DownloadingState = Extract<
   TemplateModelDownloadState,
@@ -79,8 +102,8 @@ function namedLabel(key: string): string {
     :title="status.label"
     variant="textonly"
     size="unset"
-    class="size-6 shrink-0 rounded-sm p-1"
-    @click="emit('download')"
+    class="col-start-3 row-start-1 size-8 shrink-0 rounded-md p-1.5"
+    @click="requestDownload()"
   >
     <i aria-hidden="true" class="icon-[tabler--download] size-4" />
   </Button>
@@ -89,14 +112,28 @@ function namedLabel(key: string): string {
       status.downloadState.status === 'queued' ||
       status.downloadState.status === 'starting'
     "
+    ref="statusRegion"
     role="status"
-    class="shrink-0 text-xs text-muted-foreground"
+    tabindex="-1"
+    class="col-[2/-1] row-start-2 flex min-w-0 items-center gap-3 text-xs text-muted-foreground focus-visible:outline-none"
   >
-    {{ getPassiveDownloadLabel(status.downloadState) }}
+    <span
+      aria-hidden="true"
+      class="h-1 min-w-0 flex-1 overflow-hidden rounded-full bg-secondary-background"
+    >
+      <span
+        class="indeterminate-stripe indeterminate-stripe--drifting block h-full w-full rounded-full text-primary-background"
+      />
+    </span>
+    <span class="shrink-0">
+      {{ getPassiveDownloadLabel(status.downloadState) }}
+    </span>
   </span>
   <span
     v-else-if="status.downloadState.status === 'downloading'"
-    class="flex shrink-0 items-center gap-2"
+    ref="statusRegion"
+    tabindex="-1"
+    class="col-[2/-1] row-start-2 flex min-w-0 items-center gap-3 focus-visible:outline-none"
   >
     <span
       role="progressbar"
@@ -111,16 +148,18 @@ function namedLabel(key: string): string {
       aria-valuemax="100"
       :aria-valuenow="getProgressPercent(status.downloadState)"
       :aria-valuetext="getProgressText(status.downloadState)"
-      class="block h-1 w-24 overflow-hidden rounded-full bg-secondary-background"
+      class="block h-1 min-w-0 flex-1 overflow-hidden rounded-full bg-secondary-background"
     >
       <span
         :class="
           cn(
-            'block h-full rounded-full bg-primary-background',
-            status.downloadState.fraction === null && 'w-1/3',
+            'block h-full rounded-full',
+            status.downloadState.fraction === null
+              ? 'indeterminate-stripe w-full text-primary-background'
+              : 'bg-primary-background',
             status.downloadState.fraction === null &&
               status.downloadState.activity === 'active' &&
-              'animate-pulse'
+              'indeterminate-stripe--drifting'
           )
         "
         :style="
@@ -132,7 +171,7 @@ function namedLabel(key: string): string {
         "
       />
     </span>
-    <span class="text-xs text-muted-foreground">
+    <span class="shrink-0 text-xs text-muted-foreground">
       {{ getProgressText(status.downloadState) }}
     </span>
   </span>
@@ -142,6 +181,7 @@ function namedLabel(key: string): string {
     :aria-label="t('templateWorkflows.detail.downloaded')"
     variant="compact"
     severity="success"
+    class="col-start-3 row-start-1"
   >
     {{ t('templateWorkflows.detail.downloaded') }}
   </Badge>
@@ -149,6 +189,43 @@ function namedLabel(key: string): string {
     v-else
     :state="status.downloadState"
     :row-name="rowName"
-    @retry="emit('download')"
+    @retry="requestDownload()"
   />
 </template>
+
+<style scoped>
+/* Tiled, so one tile of travel loops seamlessly. */
+@keyframes template-download-stripe-drift {
+  to {
+    background-position: 0.75rem 0;
+  }
+}
+
+.indeterminate-stripe {
+  background-image: repeating-linear-gradient(
+    135deg,
+    currentColor 0 25%,
+    transparent 25% 50%
+  );
+  background-size: 0.75rem 0.75rem;
+}
+
+.indeterminate-stripe--drifting {
+  animation: template-download-stripe-drift 0.7s linear infinite;
+}
+
+/*
+ * Switched off by hand, as `agent-shimmer-outline` does: the global rule only
+ * collapses duration, which accelerates an infinite animation rather than
+ * stopping it. The stripe still reads as indeterminate while held still.
+ */
+.disable-animations .indeterminate-stripe--drifting {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .indeterminate-stripe--drifting {
+    animation: none;
+  }
+}
+</style>

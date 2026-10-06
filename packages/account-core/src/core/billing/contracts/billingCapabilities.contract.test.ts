@@ -45,13 +45,15 @@ function capabilitiesBody(
 
 // Compile-time pins: a regen that moves these fails the package typecheck.
 
-// The five fields the reader composes its own schema from.
+// The five fields the reader composes its own schema from, plus two it leaves out.
 expectTypeOf<keyof CapabilitiesResponse>().toEqualTypeOf<
   | 'capabilities'
+  | 'denied_reasons'
   | 'expires_at'
   | 'resolved_for'
   | 'revision'
   | 'rollout_defaults_applied'
+  | 'subscription_state_authoritative'
 >()
 expectTypeOf<Capabilities>().toEqualTypeOf<{
   can_cancel: boolean
@@ -103,13 +105,18 @@ describe('billing capabilities contract', () => {
     expect(zBillingCapabilitiesResponse.safeParse(unsafe).success).toBe(false)
   })
 
-  it('omits denied reasons, which the reader therefore decodes off the raw body', () => {
-    const parsed = zBillingCapabilitiesResponse.safeParse({
-      ...capabilitiesBody(),
+  it('rejects an unrecognised denied reason, which the reader therefore decodes leniently off the raw body', () => {
+    const known = capabilitiesBody({
       denied_reasons: { can_subscribe_self_serve: 'not_workspace_owner' }
     })
+    const unknown = {
+      ...capabilitiesBody(),
+      denied_reasons: { can_subscribe_self_serve: 'something_new' }
+    }
 
-    expect(parsed).toMatchObject({ success: true })
-    expect(parsed.success && 'denied_reasons' in parsed.data).toBe(false)
+    expect(zBillingCapabilitiesResponse.safeParse(known)).toMatchObject({
+      success: true
+    })
+    expect(zBillingCapabilitiesResponse.safeParse(unknown).success).toBe(false)
   })
 })

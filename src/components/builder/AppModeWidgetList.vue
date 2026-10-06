@@ -6,8 +6,8 @@ import WidgetDescription from '@/components/builder/WidgetDescription.vue'
 import { useAppModeWidgetResizing } from '@/components/builder/useAppModeWidgetResizing'
 import { getLoaderDropIndicator } from '@/components/builder/useLoaderDropIndicator'
 import { useResolvedSelectedInputs } from '@/components/builder/useResolvedSelectedInputs'
-import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Menu from '@/components/ui/menu/Menu.vue'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
@@ -194,9 +194,9 @@ defineExpose({ handleDragDrop })
         {{ action.node.title }}
       </span>
       <div v-else class="flex-1" />
-      <Popover
+      <Menu
         :class="cn('shrink-0', builderMode && 'pointer-events-auto')"
-        :entries="[
+        :items="[
           {
             label: t('g.rename'),
             // fallow-ignore-next-line css-token-drift
@@ -210,7 +210,7 @@ defineExpose({ handleDragDrop })
           }
         ]"
       >
-        <template #button>
+        <template #trigger>
           <Button
             variant="textonly"
             size="icon"
@@ -220,7 +220,7 @@ defineExpose({ handleDragDrop })
             <i class="icon-[lucide--ellipsis]" />
           </Button>
         </template>
-      </Popover>
+      </Menu>
     </div>
     <div
       v-if="description || builderMode"

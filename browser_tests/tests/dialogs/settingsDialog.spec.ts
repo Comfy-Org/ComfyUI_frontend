@@ -7,6 +7,23 @@ import { TestIds } from '@e2e/fixtures/selectors'
 
 const MOCK_COMFYUI_VERSION = '9.99.0-e2e-test'
 
+test.describe('Settings dialog - extension actions', { tag: '@ui' }, () => {
+  test.use({ viewport: { width: 1920, height: 1080 } })
+
+  test('opens the menu at the pointer inside the translated dialog', async ({
+    comfyPage
+  }) => {
+    const dialog = comfyPage.settingDialog
+    const menu = comfyPage.contextMenu
+    await dialog.open()
+    const pointer = await dialog.openExtensionActions()
+
+    await expect.poll(() => menu.distanceFrom(pointer)).toBeLessThan(16)
+    await menu.clickMenuItemExact('Enable Selected')
+    await expect(dialog.root).toBeVisible()
+  })
+})
+
 test.describe('Settings dialog', { tag: '@ui' }, () => {
   test('About panel renders mocked version from server', async ({
     comfyPage

@@ -378,11 +378,11 @@
           "subscribe": "Subscribe to {plan}",
           "upgrade": "Upgrade to {plan}",
           "switch": "Switch to {plan}",
-          "change": "Change to {plan}",
           "topUp": "Add credits"
         },
         "scoped": "{action} · {workspace}",
         "planWithCadence": "{tier} {cadence}",
+        "planAtRate": "{tier} {rate}",
         "cadence": {
           "monthly": "Monthly",
           "yearly": "Yearly"
@@ -403,6 +403,7 @@
         "item": {
           "prorated": "{plan} - Prorated",
           "remainingTime": "Remaining time for {plan} plan, less unused time from {current} plan",
+          "remainingTimeBetween": "Remaining time for {plan}, less unused time from {current}",
           "remainingTimeOn": "Remaining time on {plan}",
           "unusedTimeOn": "Unused time on {plan}",
           "billedMonthly": "{amount} /mo, billed monthly",

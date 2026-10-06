@@ -449,7 +449,6 @@ import type {
   TierKey,
   TierPricing
 } from '@/platform/cloud/subscription/constants/tierPricing'
-import { useBillingPlans } from '@/platform/cloud/subscription/composables/useBillingPlans'
 import {
   getStopDiscountedMonthlyUsd,
   mapApiTeamCreditStops
@@ -629,6 +628,7 @@ const {
   isTeamPlan,
   subscription,
   subscriptionStatus,
+  teamCreditStops,
   currentTeamCreditStop
 } = useBillingContext()
 
@@ -649,8 +649,6 @@ watch(
   },
   { immediate: true }
 )
-
-const { teamCreditStops } = useBillingPlans()
 
 const isCancelled = computed(() => subscription.value?.isCancelled ?? false)
 const scheduledPlanChange = useScheduledPlanChange()

@@ -65,8 +65,7 @@ test.describe(
 )
 
 test('@vue-nodes In App Mode, widget width updates with panel size', async ({
-  comfyPage,
-  comfyMouse
+  comfyPage
 }) => {
   let legacyNodeId = toNodeId(10)
 
@@ -116,18 +115,14 @@ test('@vue-nodes In App Mode, widget width updates with panel size', async ({
     const initialRenderedWidth = await getRenderedWidth()
     const initialWidgetWidth = await getWidgetWidth()
 
-    const gutter = comfyPage.page
-      .getByRole('separator')
-      .and(comfyPage.page.locator('.p-splitter-gutter'))
-
-    await expect(gutter).toBeVisible()
-    await comfyMouse.dragElementBy(gutter, { x: -200 })
+    await expect(comfyPage.appMode.rightPanelResizeHandle).toBeVisible()
+    await comfyPage.appMode.resizeRightPanelBy(-200)
     await expect.poll(getRenderedWidth).toBeGreaterThan(initialRenderedWidth)
     await expect.poll(getWidgetWidth).toBeGreaterThan(initialWidgetWidth)
     const intermediateRenderedWidth = await getRenderedWidth()
     const intermediateWidgetWidth = await getWidgetWidth()
 
-    await comfyMouse.dragElementBy(gutter, { x: 100 })
+    await comfyPage.appMode.resizeRightPanelBy(100)
     await expect.poll(getRenderedWidth).toBeLessThan(intermediateRenderedWidth)
     await expect.poll(getWidgetWidth).toBeLessThan(intermediateWidgetWidth)
   })

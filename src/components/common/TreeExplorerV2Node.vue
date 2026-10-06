@@ -14,6 +14,7 @@
       draggable="true"
       @click.stop="handleClick($event, handleToggle, handleSelect)"
       @contextmenu="handleContextMenu"
+      @pointerdown="handleContextMenu"
       @mouseenter="handleMouseEnter"
       @mouseleave="handleMouseLeave"
       @dragstart="handleDragStart"
@@ -66,6 +67,7 @@
       :style="rowStyle"
       @click.stop="handleClick($event, handleToggle, handleSelect)"
       @contextmenu="clearContextMenuNode"
+      @pointerdown="clearContextMenuNode"
     >
       <i
         v-if="item.hasChildren"

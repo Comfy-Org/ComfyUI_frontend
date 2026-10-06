@@ -95,7 +95,7 @@ const markerOffset = computed(
           :summary="t(app.summary)"
           :badge="t(app.badge)"
           :meta="app.meta && t(app.meta)"
-          :image="app.image"
+          :thumbnail="app.thumbnail"
           :href="app.href"
         />
       </ul>

@@ -118,6 +118,14 @@ export class ImpactTelemetryProvider implements TelemetryProvider {
       }
     }
 
+    const { sessionOnlyUser } = stores.authStore
+    if (sessionOnlyUser) {
+      return {
+        customerId: sessionOnlyUser.id,
+        customerEmail: sessionOnlyUser.email
+      }
+    }
+
     if (stores.apiKeyAuthStore.isAuthenticated) {
       return {
         customerId:

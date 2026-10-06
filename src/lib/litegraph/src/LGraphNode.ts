@@ -191,18 +191,30 @@ function legacyValue<T>(value: T): T | undefined {
   return value
 }
 
+function cloneWidgetValueTwice(
+  value: TWidgetValue
+): [TWidgetValue, TWidgetValue] {
+  if (value == null || typeof value !== 'object') {
+    const primitive = value ?? null
+    return [primitive, primitive]
+  }
+  const json = JSON.stringify(value)
+  return [JSON.parse(json), JSON.parse(json)]
+}
+
 function serialiseWidgetValues(widgets: IBaseWidget[]) {
   const positional: TWidgetValue[] = []
   const named: Record<string, TWidgetValue> = {}
   for (const widget of widgets) {
     if (widget.serialize === false) continue
-    const value = widget.value
-    const serialisedValue =
-      value != null && typeof value === 'object'
-        ? JSON.parse(JSON.stringify(value))
-        : (value ?? null)
-    positional.push(serialisedValue)
-    named[widget.name] = serialisedValue
+    const [positionalValue, namedValue] = cloneWidgetValueTwice(widget.value)
+    positional.push(positionalValue)
+    Object.defineProperty(named, widget.name, {
+      value: namedValue,
+      writable: true,
+      enumerable: true,
+      configurable: true
+    })
   }
   return { widgets_values: positional, widgets_values_named: named }
 }

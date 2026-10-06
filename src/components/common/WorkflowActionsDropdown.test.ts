@@ -24,6 +24,7 @@ beforeEach(() => {
 })
 
 const spies = vi.hoisted(() => ({
+  action: vi.fn(),
   markAsSeen: vi.fn()
 }))
 
@@ -31,7 +32,18 @@ vi.mock(import('@/platform/telemetry'))
 
 vi.mock<unknown>(import('@/composables/useWorkflowActionsMenu'), async () => {
   const { ref } = await import('vue')
-  return { useWorkflowActionsMenu: () => ({ menuItems: ref([]) }) }
+  return {
+    useWorkflowActionsMenu: () => ({
+      menuItems: ref([
+        {
+          id: 'test-action',
+          label: 'Test action',
+          badge: 'NEW',
+          command: spies.action
+        }
+      ])
+    })
+  }
 })
 
 vi.mock<unknown>(import('@/composables/useNewMenuItemIndicator'), async () => {
@@ -68,12 +80,7 @@ function renderDropdown() {
     props: { source: 'test' },
     global: {
       plugins: [i18n],
-      directives: { tooltip: {} },
-      stubs: {
-        DropdownMenuPortal: { template: '<div><slot /></div>' },
-        DropdownMenuContent: { template: '<div role="menu"><slot /></div>' },
-        WorkflowActionsList: true
-      }
+      directives: { tooltip: {} }
     }
   })
   return { ...result, user }
@@ -175,6 +182,16 @@ describe('WorkflowActionsDropdown', () => {
       button_id: 'test',
       element_group: 'workflow_actions'
     })
+  })
+
+  it('renders and executes shared menu items under the real menu root', async () => {
+    const { user } = renderDropdown()
+
+    await user.click(screen.getByRole('button', { name: /workflow actions/ }))
+    expect(screen.getByText('NEW')).toBeInTheDocument()
+    await user.click(screen.getByRole('menuitem', { name: 'Test action' }))
+
+    expect(spies.action).toHaveBeenCalledOnce()
   })
 
   it('closes the menu when the open trigger is clicked again', async () => {

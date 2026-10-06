@@ -22,26 +22,21 @@
           :content-style="keybindingOverlayContentStyle"
           @presets-changed="refreshPresetList"
         />
-        <DropdownMenu
-          :entries="menuEntries"
+        <Menu
+          :items="menuEntries"
           :style="keybindingOverlayContentStyle"
-          icon="icon-[lucide--ellipsis]"
-          item-class="text-sm gap-2"
-          button-size="unset"
-          button-class="size-10"
           to="#keybinding-panel-actions"
           align="end"
         >
-          <template #button>
+          <template #trigger>
             <Button
-              size="unset"
-              class="size-10"
+              size="icon-lg"
               data-testid="keybinding-preset-menu"
-            >
-              <i class="icon-[lucide--ellipsis]" />
-            </Button>
+              icon="icon-[lucide--ellipsis]"
+              :aria-label="$t('g.more')"
+            />
           </template>
-        </DropdownMenu>
+        </Menu>
       </div>
     </Teleport>
 
@@ -288,7 +283,7 @@
 </template>
 
 <script setup lang="ts">
-import type { MenuItem } from 'primevue/menuitem'
+import type { MenuItem } from '@/components/ui/menu/types'
 import { FilterMatchMode } from '@primevue/core/api'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
@@ -304,7 +299,7 @@ import {
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import DropdownMenu from '@/components/common/DropdownMenu.vue'
+import Menu from '@/components/ui/menu/Menu.vue'
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
 import Button from '@/components/ui/button/Button.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'

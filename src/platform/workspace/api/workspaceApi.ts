@@ -61,7 +61,11 @@ import { useAuthStore } from '@/stores/authStore'
 import type { UserId } from '@/types/authTypes'
 
 import { createWebSessionAdapter } from './webSessionAdapter'
-import { WorkspaceApiError } from './workspaceApiError'
+import {
+  NO_WORKSPACE_ACCESS,
+  NoWorkspaceAccessError,
+  WorkspaceApiError
+} from './workspaceApiError'
 import { workspaceApiUrl } from './workspaceApiUrl'
 
 export type WorkspaceType = 'personal' | 'team'
@@ -179,6 +183,9 @@ function handleAxiosError(err: unknown): never {
       err.response?.data,
       err.message
     )
+    if (status === 403 && code === NO_WORKSPACE_ACCESS) {
+      throw new NoWorkspaceAccessError(message, status)
+    }
     // Callers compare `code` against server-defined values, so the parser's
     // "no code reported" sentinel must stay out of that contract.
     throw new WorkspaceApiError(

@@ -107,6 +107,13 @@ expectTypeOf<PreviewResponse['amount_due_cents']>().toEqualTypeOf<
 expectTypeOf<PreviewResponse['renewal_amount_cents']>().toEqualTypeOf<
   bigint | undefined
 >()
+// The whole credit counts a host shows instead of converting the rounded cents.
+expectTypeOf<PreviewResponse['credits_today']>().toEqualTypeOf<
+  bigint | undefined
+>()
+expectTypeOf<PreviewResponse['credits_next_period']>().toEqualTypeOf<
+  bigint | undefined
+>()
 // The reactivation confirmation the subscribe command is asked to resend.
 expectTypeOf<
   PreviewResponse['requires_reactivation_confirmation']

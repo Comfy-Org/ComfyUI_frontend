@@ -1,8 +1,7 @@
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { Slots } from 'vue'
-import { computed, h, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import MembersPanelContent from './MembersPanelContent.vue'
@@ -177,11 +176,6 @@ vi.mock<unknown>(
     })
   })
 )
-
-vi.mock<unknown>(import('@/components/button/MoreButton.vue'), () => ({
-  default: (_: unknown, { slots }: { slots: Slots }) =>
-    h('div', slots.default?.({ close: () => {} }))
-}))
 
 const i18n = createI18n({
   legacy: false,
@@ -467,7 +461,10 @@ describe('MembersPanelContent', () => {
       mockFilteredPendingInvites.value = [createInvite({ id: 'inv-42' })]
       renderComponent()
       await userEvent.click(
-        screen.getByRole('button', {
+        screen.getByRole('button', { name: 'g.moreOptions' })
+      )
+      await userEvent.click(
+        screen.getByRole('menuitem', {
           name: 'workspacePanel.members.actions.cancelInvite'
         })
       )
@@ -481,7 +478,10 @@ describe('MembersPanelContent', () => {
       mockFilteredPendingInvites.value = [createInvite({ id: 'inv-42' })]
       renderComponent()
       await userEvent.click(
-        screen.getByRole('button', {
+        screen.getByRole('button', { name: 'g.moreOptions' })
+      )
+      await userEvent.click(
+        screen.getByRole('menuitem', {
           name: 'workspacePanel.members.actions.resendInvite'
         })
       )

@@ -221,6 +221,15 @@ const onNodePackChange = async () => {
   fetchedVersions.value = nodePack.id
     ? ((await registryService.getPackVersions(nodePack.id)) ?? [])
     : []
+  const installedVersion = nodePack.id
+    ? managerStore.getInstalledPackVersion(nodePack.id)
+    : undefined
+  if (
+    selectedVersion.value === installedVersion &&
+    installedVersion === latestActiveVersion.value?.version
+  ) {
+    selectedVersion.value = SelectedVersionValues.LATEST
+  }
   isLoadingVersions.value = false
 }
 

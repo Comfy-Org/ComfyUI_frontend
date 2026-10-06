@@ -10,6 +10,7 @@ import {
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useDialogService } from '@/services/dialogService'
+import { useAuthStore } from '@/stores/authStore'
 
 import { WorkspaceApiError } from '../api/workspaceApi'
 import { useTeamWorkspaceStore } from '../stores/teamWorkspaceStore'
@@ -31,6 +32,7 @@ export function useInviteUrlLoader() {
   const toast = useToast()
   const dialogService = useDialogService()
   const workspaceStore = useTeamWorkspaceStore()
+  const authStore = useAuthStore()
   const INVITE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.INVITE
 
   /**
@@ -76,6 +78,18 @@ export function useInviteUrlLoader() {
     const query = await ensureInviteQueryFromIntent()
     const inviteParam = query.invite
     if (!inviteParam || typeof inviteParam !== 'string') {
+      return
+    }
+
+    if (authStore.signedInWithSso && authStore.currentUser === null) {
+      toast.add({
+        severity: 'info',
+        summary: t('workspace.inviteSsoUnavailable'),
+        detail: t('workspace.inviteSsoUnavailableDetail'),
+        closable: true
+      })
+      cleanupUrlParams()
+      clearPreservedQuery(INVITE_NAMESPACE)
       return
     }
 

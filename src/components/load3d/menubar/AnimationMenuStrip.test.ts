@@ -88,6 +88,9 @@ describe('AnimationMenuStrip', () => {
     })
 
     await user.click(screen.getByRole('button', { name: 'Playback speed' }))
+    expect(
+      screen.getByRole('button', { name: '1x', pressed: true })
+    ).toHaveClass('bg-secondary-background-selected')
     await user.click(screen.getByRole('button', { name: '0.5x' }))
 
     expect(onUpdateSpeed).toHaveBeenCalledWith(0.5)
@@ -101,6 +104,9 @@ describe('AnimationMenuStrip', () => {
     })
 
     await user.click(screen.getByRole('button', { name: 'Animation clip' }))
+    expect(
+      screen.getByRole('button', { name: 'idle', pressed: true })
+    ).toHaveClass('bg-secondary-background-selected')
     await user.click(screen.getByRole('button', { name: 'walk' }))
 
     expect(onUpdateClip).toHaveBeenCalledWith(1)

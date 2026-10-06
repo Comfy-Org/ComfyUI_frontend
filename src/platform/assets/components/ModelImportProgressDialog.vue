@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { whenever } from '@vueuse/core'
-import Popover from 'primevue/popover'
+import Popover from '@/components/common/ImperativePopover.vue'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -132,17 +132,8 @@ async function cancelDownload(taskId: TaskId) {
           </Button>
           <Popover
             ref="filterPopoverRef"
-            :dismissable="true"
-            :close-on-escape="true"
-            unstyled
-            :base-z-index="9999"
-            :pt="{
-              root: { class: 'absolute z-50' },
-              content: {
-                class:
-                  'bg-transparent border-none p-0 pt-2 rounded-lg shadow-lg'
-              }
-            }"
+            align="end"
+            content-class="border-none bg-transparent p-0 pt-2"
           >
             <div
               class="flex min-w-30 flex-col items-stretch rounded-lg border border-interface-stroke bg-interface-panel-surface px-2 py-3"

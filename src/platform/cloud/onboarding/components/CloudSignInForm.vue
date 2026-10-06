@@ -54,7 +54,7 @@
       variant="brand-solid"
       size="brand"
       class="mt-2 w-full"
-      :loading="loading"
+      :loading="loading || busy"
       :disabled="!meta.valid"
     >
       {{ t('auth.login.loginButton') }}
@@ -88,8 +88,9 @@ const loading = computed(() => authStore.loading)
 
 const { t } = useI18n()
 
-defineProps<{
+const { busy = false } = defineProps<{
   authError?: string
+  busy?: boolean
 }>()
 
 const emit = defineEmits<{

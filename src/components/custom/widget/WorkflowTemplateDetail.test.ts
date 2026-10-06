@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/vue'
+import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { defineComponent } from 'vue'
 import { describe, expect, it } from 'vitest'
@@ -7,7 +7,7 @@ import { createI18n } from 'vue-i18n'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type {
   TemplateDetailGroup,
-  TemplateModelSetupState
+  TemplateModelSetup
 } from '@/platform/workflow/templates/types/templateDetail'
 
 import WorkflowTemplateDetail from './WorkflowTemplateDetail.vue'
@@ -45,17 +45,15 @@ function renderDetail({
   cloudUrl,
   isPartnerNode = false,
   openPending = false,
-  modelSetupState = 'none'
+  modelSetup
 }: {
   renderedGroups?: readonly TemplateDetailGroup[]
   cloudUrl?: string
   isPartnerNode?: boolean
   openPending?: boolean
-  modelSetupState?: TemplateModelSetupState
+  modelSetup?: TemplateModelSetup
 } = {}) {
-  const modelSetupProps = {
-    modelSetupState
-  }
+  const modelSetupProps = { modelSetup }
 
   return render(WorkflowTemplateDetail, {
     props: {
@@ -150,9 +148,20 @@ describe('WorkflowTemplateDetail', () => {
     expect(screen.getByRole('button', { name: 'Open now' })).toBeDisabled()
   })
 
+  it('marks Open now unavailable while opening without dropping its focus', async () => {
+    const result = renderDetail({ modelSetup: { state: 'startable' } })
+
+    const openNow = screen.getByRole('button', { name: 'Open now' })
+    openNow.focus()
+    await result.rerender({ openPending: true })
+
+    expect(openNow).toHaveAttribute('aria-disabled', 'true')
+    expect(openNow).toHaveFocus()
+  })
+
   it('keeps Open now available while offering Download models & open', async () => {
     const user = userEvent.setup()
-    const result = renderDetail({ modelSetupState: 'downloadable' })
+    const result = renderDetail({ modelSetup: { state: 'startable' } })
 
     await user.click(screen.getByRole('button', { name: 'Open now' }))
     await user.click(
@@ -167,7 +176,7 @@ describe('WorkflowTemplateDetail', () => {
   })
 
   it('does not block Open now while model metadata is pending', () => {
-    renderDetail({ modelSetupState: 'resolving' })
+    renderDetail({ modelSetup: { state: 'resolving' } })
 
     expect(screen.getByRole('button', { name: 'Open now' })).toBeEnabled()
     expect(
@@ -355,9 +364,9 @@ describe('WorkflowTemplateDetail', () => {
     ] as const
     renderDetail({ renderedGroups })
 
-    for (const label of ['Queued', 'Starting']) {
-      expect(screen.getByText(label)).toHaveAttribute('role', 'status')
-    }
+    expect(
+      screen.getAllByRole('status').map((region) => region.textContent.trim())
+    ).toEqual(['Queued', 'Starting'])
     expect(
       screen.queryByRole('button', { name: /^(Download|Retry)/ })
     ).not.toBeInTheDocument()
@@ -491,5 +500,158 @@ describe('WorkflowTemplateDetail', () => {
     expect(
       screen.getByRole('status', { name: 'Downloaded' })
     ).toHaveTextContent('Downloaded')
+  })
+  it('states the cost on the bulk action when every startable row declares one', () => {
+    renderDetail({
+      modelSetup: { state: 'startable', remainingSize: '6.46 GB' }
+    })
+
+    expect(
+      screen.getByRole('button', { name: 'Download models & open (6.46 GB)' })
+    ).toBeInTheDocument()
+  })
+
+  it('drops the cost rather than stating a partial one', () => {
+    renderDetail({ modelSetup: { state: 'startable' } })
+
+    expect(
+      screen.getByRole('button', { name: 'Download models & open' })
+    ).toBeInTheDocument()
+  })
+
+  it('offers the bulk action disabled while availability is still resolving', () => {
+    renderDetail({ modelSetup: { state: 'resolving' } })
+
+    expect(
+      screen.getByRole('button', { name: 'Download models & open' })
+    ).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Open now' })).toBeEnabled()
+  })
+
+  it('offers only Open now once every requirement is met', () => {
+    renderDetail({ modelSetup: undefined })
+
+    expect(
+      screen.queryByRole('button', { name: /Download models & open/ })
+    ).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Open now' })).toBeInTheDocument()
+  })
+  it.for([
+    ['error', true],
+    ['cancelled', false]
+  ] as const)(
+    'explains a %s download to the control that can act on it',
+    ([reason, explained]) => {
+      renderDetail({
+        renderedGroups: [
+          {
+            id: 'models',
+            label: 'Models',
+            rows: [
+              {
+                id: 'failed-model',
+                name: 'failed.safetensors',
+                description: 'Checkpoint',
+                status: {
+                  kind: 'downloadable',
+                  label: 'Download model',
+                  downloadState: { status: 'failed', attempt: 1, reason }
+                }
+              }
+            ]
+          }
+        ]
+      })
+
+      const retry = screen.getByRole('button', {
+        name: 'Retry download for failed.safetensors'
+      })
+      // Only Retry can be focused, so it carries the description.
+      expect(retry).toHaveAccessibleDescription(
+        explained
+          ? "The download couldn't be completed. Use Retry to try again."
+          : ''
+      )
+    }
+  )
+  it('keeps focus in the row when a download request replaces its button', async () => {
+    const downloadable = {
+      id: 'm1',
+      name: 'model.safetensors',
+      description: 'Checkpoint',
+      status: { kind: 'downloadable', label: 'Download model' }
+    } as const
+    const { rerender } = renderDetail({
+      renderedGroups: [{ id: 'models', label: 'Models', rows: [downloadable] }]
+    })
+
+    const trigger = screen.getByRole('button', {
+      name: 'Download model.safetensors'
+    })
+    trigger.focus()
+    await userEvent.click(trigger)
+
+    // The button unmounts as the row starts.
+    await rerender({
+      groups: [
+        {
+          id: 'models',
+          label: 'Models',
+          rows: [
+            {
+              ...downloadable,
+              status: {
+                kind: 'downloadable',
+                label: 'Download model',
+                downloadState: { status: 'queued', attempt: 1 }
+              }
+            }
+          ]
+        }
+      ]
+    })
+
+    // The queued row takes the focus the vanished button was holding.
+    await waitFor(() => expect(screen.getByRole('status')).toHaveFocus())
+  })
+  it('keeps focus in the row when Retry replaces its own button', async () => {
+    const failed = {
+      id: 'm1',
+      name: 'model.safetensors',
+      description: 'Checkpoint',
+      status: {
+        kind: 'downloadable',
+        label: 'Download model',
+        downloadState: { status: 'failed', attempt: 1, reason: 'error' }
+      }
+    } as const
+    const { rerender } = renderDetail({
+      renderedGroups: [{ id: 'models', label: 'Models', rows: [failed] }]
+    })
+
+    const retry = screen.getByRole('button', { name: /^Retry/ })
+    retry.focus()
+    await userEvent.click(retry)
+
+    await rerender({
+      groups: [
+        {
+          id: 'models',
+          label: 'Models',
+          rows: [
+            {
+              ...failed,
+              status: {
+                kind: 'downloadable',
+                label: 'Download model',
+                downloadState: { status: 'queued', attempt: 2 }
+              }
+            }
+          ]
+        }
+      ]
+    })
+
+    await waitFor(() => expect(screen.getByRole('status')).toHaveFocus())
   })
 })
