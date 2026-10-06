@@ -18,6 +18,14 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
+function finiteNumber(value: unknown): number | undefined {
+  if (typeof value !== 'number' && typeof value !== 'string') return
+  if (typeof value === 'string' && value.trim() === '') return
+
+  const number = Number(value)
+  return Number.isFinite(number) ? number : undefined
+}
+
 function normalizeUsageData(value: unknown): FeatureUsageRecord {
   if (!isRecord(value)) return {}
 
@@ -25,10 +33,14 @@ function normalizeUsageData(value: unknown): FeatureUsageRecord {
     Object.entries(value).flatMap(([featureId, usage]) => {
       if (!isRecord(usage)) return []
 
-      const useCount = Number(usage.useCount)
-      const firstUsed = Number(usage.firstUsed)
-      const lastUsed = Number(usage.lastUsed)
-      return [useCount, firstUsed, lastUsed].every(Number.isFinite)
+      const useCount = finiteNumber(usage.useCount)
+      const firstUsed = finiteNumber(usage.firstUsed)
+      const lastUsed = finiteNumber(usage.lastUsed)
+      return useCount !== undefined &&
+        Number.isInteger(useCount) &&
+        useCount >= 0 &&
+        firstUsed !== undefined &&
+        lastUsed !== undefined
         ? [[featureId, { useCount, firstUsed, lastUsed }]]
         : []
     })

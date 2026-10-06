@@ -338,6 +338,29 @@ describe('useFeatureUsageTracker', () => {
     })
   })
 
+  it.for([
+    { useCount: null, firstUsed: 1_000, lastUsed: 2_000 },
+    { useCount: '', firstUsed: 1_000, lastUsed: 2_000 },
+    { useCount: -1, firstUsed: 1_000, lastUsed: 2_000 },
+    { useCount: 1.5, firstUsed: 1_000, lastUsed: 2_000 },
+    { useCount: 1, firstUsed: null, lastUsed: 2_000 },
+    { useCount: 1, firstUsed: 1_000, lastUsed: '' }
+  ])('rejects invalid stored usage $useCount', (storedUsage) => {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ 'invalid-usage': storedUsage })
+    )
+
+    useFeatureUsageTracker('invalid-usage').trackUsage()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored['invalid-usage']).toEqual({
+      useCount: 1,
+      firstUsed: Date.now(),
+      lastUsed: Date.now()
+    })
+  })
+
   it('repairs malformed JSON storage data', () => {
     localStorage.setItem(STORAGE_KEY, '{')
 
