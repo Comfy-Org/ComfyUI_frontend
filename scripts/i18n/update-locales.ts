@@ -391,7 +391,9 @@ function reportCheck(
     for (const error of audit.stale)
       print(`STALE BASELINE: ${label}: ${formatTokenViolation(error)}`)
   }
-  if (!pending && !stray && !violations && !reviews && !stale)
+  if (
+    [pending, stray, violations, reviews, stale].every((count) => count === 0)
+  )
     print('All locales are up to date with the English sources.')
   else
     print(
@@ -428,7 +430,6 @@ export async function updateLocales({
   translateBatch?: TranslateBatch
 }): Promise<number> {
   const outputDir = resolve(repoRoot, config.output)
-  const entryDir = join(outputDir, 'en')
   const manifestFile = join(outputDir, '.source-manifest.json')
   if (check && hasPendingPublication(outputDir))
     throw new Error(
@@ -484,6 +485,35 @@ export async function updateLocales({
   }
 
   for (const orphan of orphans) readInput(orphan)
+  const { outcomes, pending } = await translateStates(
+    states,
+    config,
+    translateBatch
+  )
+  const written = publishOutcomes({
+    outputDir,
+    plans,
+    outcomes,
+    orphans,
+    inputs,
+    config
+  })
+  print(
+    `Translated ${pending} strings; updated ${written} files across ${config.outputLocales.length} locales.`
+  )
+  print(`Source provenance: ${relative(repoRoot, manifestFile)}`)
+  return 0
+}
+
+type TranslationOutcome =
+  | { state: LocaleFileState; output: LocaleObject; known: TokenViolation[] }
+  | { state: LocaleFileState; failure: string }
+
+async function translateStates(
+  states: readonly LocaleFileState[],
+  config: TranslationPipelineConfig,
+  translateBatch?: TranslateBatch
+): Promise<{ outcomes: TranslationOutcome[]; pending: number }> {
   const preflight = states.flatMap((state) =>
     auditState(state, state.existing, config, 'preflight').unexpected.map(
       (error) => `${state.label}: ${formatTokenViolation(error)}`
@@ -545,17 +575,7 @@ export async function updateLocales({
   const outcomes = await mapWithConcurrency(
     tasks,
     config.localeFileConcurrency,
-    async ({
-      state,
-      translation
-    }): Promise<
-      | {
-          state: LocaleFileState
-          output: LocaleObject
-          known: TokenViolation[]
-        }
-      | { state: LocaleFileState; failure: string }
-    > => {
+    async ({ state, translation }): Promise<TranslationOutcome> => {
       try {
         const translated = translation.items.length
           ? await translateLocaleItems(
@@ -594,6 +614,27 @@ export async function updateLocales({
   )
   if (counter.requestCount())
     print(formatUsageSummary(usages, counter.requestCount()))
+  return { outcomes, pending }
+}
+
+function publishOutcomes({
+  outputDir,
+  plans,
+  outcomes,
+  orphans,
+  inputs,
+  config
+}: {
+  outputDir: string
+  plans: readonly SourcePlan[]
+  outcomes: readonly TranslationOutcome[]
+  orphans: readonly string[]
+  inputs: ReadonlyMap<string, string | null>
+  config: TranslationPipelineConfig
+}): number {
+  const entryDir = join(outputDir, 'en')
+  const snapshotDir = join(outputDir, '.published')
+  const manifestFile = join(outputDir, '.source-manifest.json')
   const failures = outcomes.filter((outcome) => 'failure' in outcome)
   const failedFiles = new Set(failures.map(({ state }) => state.plan.filename))
   const completed = outcomes.filter((outcome) => 'output' in outcome)
@@ -611,9 +652,9 @@ export async function updateLocales({
     }
     updates.set(join(entryDir, plan.filename), sourceBytes)
     updates.set(join(snapshotDir, 'en', plan.filename), sourceBytes)
-    for (const outcome of completed) {
-      if (outcome.state.plan !== plan || !('output' in outcome)) continue
-      const { state, output, known } = outcome
+    for (const { state, output, known } of completed.filter(
+      ({ state }) => state.plan === plan
+    )) {
       const bytes = serializeLocale(output)
       updates.set(state.outputFile, bytes)
       if (config.existingCopy.kind === 'preserve') {
@@ -639,11 +680,7 @@ export async function updateLocales({
     throw new Error(
       `Translation failed for ${failures.length} locale files:\n${failures.map(({ state, failure }) => `${state.label}: ${failure}`).join('\n')}\nAll locale results for ${[...failedFiles].join(', ')} were discarded together. Other entry files were written and recorded in the manifest.`
     )
-  print(
-    `Translated ${pending} strings; updated ${written} files across ${config.outputLocales.length} locales.`
-  )
-  print(`Source provenance: ${relative(repoRoot, manifestFile)}`)
-  return 0
+  return written
 }
 
 if (isMainModule(import.meta.url)) {

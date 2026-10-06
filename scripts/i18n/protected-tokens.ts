@@ -158,6 +158,20 @@ function formTokens(
   return [...literalTokens, ...htmlTokens]
 }
 
+function countFormTokens(
+  tokens: readonly ProtectedToken[]
+): Map<string, TokenCount> {
+  const counts = new Map<string, TokenCount>()
+  for (const token of tokens) {
+    const entry = counts.get(token.identity)
+    counts.set(token.identity, {
+      token: entry?.token ?? token,
+      count: (entry?.count ?? 0) + 1
+    })
+  }
+  return counts
+}
+
 function countTokens(
   forms: readonly string[],
   strict: boolean,
@@ -165,14 +179,7 @@ function countTokens(
 ): Map<string, TokenCount> {
   const counts = new Map<string, TokenCount>()
   for (const form of forms) {
-    const formCounts = new Map<string, TokenCount>()
-    for (const token of formTokens(form, strict, localeCode)) {
-      const entry = formCounts.get(token.identity)
-      formCounts.set(token.identity, {
-        token: entry?.token ?? token,
-        count: (entry?.count ?? 0) + 1
-      })
-    }
+    const formCounts = countFormTokens(formTokens(form, strict, localeCode))
     for (const [identity, entry] of formCounts) {
       const required = strict ? entry.count : 1
       const existing = counts.get(identity)
@@ -291,6 +298,21 @@ function changesPluralFormCount(source: string, target: string): boolean {
   )
 }
 
+function addedMessageSyntax(
+  source: string,
+  target: string
+): { code: ViolationCode; token: string }[] {
+  return [
+    ...(pluralForms(target).length > 1 && pluralForms(source).length === 1
+      ? [{ code: 'added-plural-separator' as const, token: '|' }]
+      : []),
+    ...(linkedMessagePattern.test(withoutLiterals(target)) &&
+    !linkedMessagePattern.test(withoutLiterals(source))
+      ? [{ code: 'added-linked-message' as const, token: '@' }]
+      : [])
+  ]
+}
+
 function stringViolations(
   source: string,
   target: string,
@@ -314,15 +336,11 @@ function stringViolations(
     ...(source.trim().length > 0 && target.trim().length === 0
       ? [violation('empty-translation')]
       : []),
-    ...(pluralForms(target).length > 1 && pluralForms(source).length === 1
-      ? [violation('added-plural-separator', '|')]
-      : []),
+    ...addedMessageSyntax(source, target).map(({ code, token }) =>
+      violation(code, token)
+    ),
     ...(strict && changesPluralFormCount(source, target)
       ? [violation('plural-form-count-changed', '|')]
-      : []),
-    ...(linkedMessagePattern.test(withoutLiterals(target)) &&
-    !linkedMessagePattern.test(withoutLiterals(source))
-      ? [violation('added-linked-message', '@')]
       : []),
     ...malformed.map((token) => violation('malformed-markup', token))
   ]
@@ -355,29 +373,25 @@ function leafViolations(
     : [{ path, code: 'leaf-value-changed', token: '' }]
 }
 
+const violationDescriptions: Record<ViolationCode, string> = {
+  'missing-token': 'missing',
+  'added-token': 'added',
+  'empty-translation': 'empty translation',
+  'added-plural-separator': 'added plural separator |',
+  'plural-form-count-changed':
+    'plural forms must collapse to one or keep the source count',
+  'added-linked-message': 'added linked message @',
+  'malformed-markup': 'malformed HTML nesting at',
+  'leaf-type-changed': 'leaf type changed',
+  'array-length-changed': 'array length changed',
+  'leaf-value-changed': 'leaf value changed'
+}
+
 function describeViolation({ code, token }: TokenViolation): string {
-  switch (code) {
-    case 'missing-token':
-      return `missing ${token}`
-    case 'added-token':
-      return `added ${token}`
-    case 'empty-translation':
-      return 'empty translation'
-    case 'added-plural-separator':
-      return 'added plural separator |'
-    case 'plural-form-count-changed':
-      return 'plural forms must collapse to one or keep the source count'
-    case 'added-linked-message':
-      return 'added linked message @'
-    case 'malformed-markup':
-      return `malformed HTML nesting at ${token}`
-    case 'leaf-type-changed':
-      return 'leaf type changed'
-    case 'array-length-changed':
-      return 'array length changed'
-    case 'leaf-value-changed':
-      return 'leaf value changed'
-  }
+  const description = violationDescriptions[code]
+  return ['missing-token', 'added-token', 'malformed-markup'].includes(code)
+    ? `${description} ${token}`
+    : description
 }
 
 export function formatTokenViolation(violation: TokenViolation): string {

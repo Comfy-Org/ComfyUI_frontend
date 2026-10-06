@@ -6,6 +6,21 @@ import type {
 } from './locale-tree'
 import { getLeaf, pathKey } from './locale-tree'
 
+function usesEnglishFallback({
+  current,
+  source,
+  previous
+}: {
+  current: LocaleTrackedLeaf | undefined
+  source: LocaleTrackedLeaf
+  previous: LocaleTrackedLeaf | undefined
+}): boolean {
+  return (
+    current === undefined ||
+    (current !== '' && [source, previous].includes(current))
+  )
+}
+
 export function partitionLocale({
   sourceLeaves,
   previousEnglish,
@@ -37,26 +52,24 @@ export function partitionLocale({
   for (const [key, leaf] of sourceLeaves) {
     const excluded = excludedKeys.has(key)
     const current = getLeaf(existing, leaf.path)
+    if (
+      excluded &&
+      usesEnglishFallback({
+        current,
+        source: leaf.value,
+        previous: getLeaf(previousEnglish, leaf.path)
+      })
+    ) {
+      omitted.add(key)
+      continue
+    }
+    if (current === undefined) continue
     const edited =
       JSON.stringify(current) !==
       JSON.stringify(getLeaf(publishedLocale, leaf.path))
-    if (excluded) {
-      const previous = getLeaf(previousEnglish, leaf.path)
-      if (
-        current === undefined ||
-        (current !== '' && (current === leaf.value || current === previous))
-      ) {
-        omitted.add(key)
-        continue
-      }
-      retained.set(key, current)
-    } else if (current !== undefined && (!modifiedKeys.has(key) || edited)) {
-      retained.set(key, current)
-    }
-    if (
-      retained.has(key) &&
-      (modifiedKeys.has(key) || (previousReview.has(key) && !edited))
-    )
+    if (!excluded && modifiedKeys.has(key) && !edited) continue
+    retained.set(key, current)
+    if (modifiedKeys.has(key) || (previousReview.has(key) && !edited))
       reviewNeeded.push(leaf.path)
   }
   return { omitted, retained, reviewNeeded }
