@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '@/i18n/translations'
 import type { ModelLaunchHighlight } from './types'
 
 import ModelLaunchHighlightCard from './ModelLaunchHighlightCard.vue'

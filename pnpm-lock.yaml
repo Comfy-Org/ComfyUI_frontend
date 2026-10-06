@@ -162,9 +162,6 @@ catalogs:
     '@types/three':
       specifier: ^0.184.1
       version: 0.184.1
-    '@typescript-eslint/utils':
-      specifier: ^8.69.0
-      version: 8.69.0
     '@vee-validate/zod':
       specifier: ^4.15.1
       version: 4.15.1
@@ -548,6 +545,9 @@ importers:
       '@comfyorg/object-info-parser':
         specifier: workspace:*
         version: link:packages/object-info-parser
+      '@comfyorg/quad-wireframe-three':
+        specifier: ^0.1.0
+        version: 0.1.0(three@0.184.0)
       '@comfyorg/registry-types':
         specifier: workspace:*
         version: link:packages/registry-types
@@ -795,9 +795,6 @@ importers:
       '@types/three':
         specifier: 'catalog:'
         version: 0.184.1
-      '@typescript-eslint/utils':
-        specifier: 'catalog:'
-        version: 8.69.0(eslint@10.10.0(jiti@2.7.0))(typescript@6.0.3)
       '@vitejs/plugin-vue':
         specifier: 'catalog:'
         version: 6.0.8(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))(vue@3.5.42(typescript@6.0.3))
@@ -1174,6 +1171,9 @@ importers:
       vue:
         specifier: 'catalog:'
         version: 3.5.42(typescript@6.0.3)
+      vue-i18n:
+        specifier: 'catalog:'
+        version: 11.4.10(vue@3.5.42(typescript@6.0.3))
       zod:
         specifier: 'catalog:'
         version: 3.25.76
@@ -2042,6 +2042,12 @@ packages:
     peerDependenciesMeta:
       '@types/three':
         optional: true
+
+  '@comfyorg/quad-wireframe-three@0.1.0':
+    resolution: {integrity: sha512-RJ0FrWZ/Dpg+3qgQHWVSVN1h1qPYSILY0phYESstX2bh/Vd32LmFSRl02i0iyJ2rAEI31w1KFJAYKJXzHoiBgA==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      three: '>=0.160.0'
 
   '@comfyorg/sdk@0.2.0':
     resolution: {integrity: sha512-x2a9mat9+s6xOACYFnlsAri7ovNaFD2VjwKohsNWJ65RodnLU5Rviq2fd7feQyfQS2C6XKZRjXj81AfypHonTQ==}
@@ -10698,6 +10704,11 @@ snapshots:
       three: 0.184.0
     optionalDependencies:
       '@types/three': 0.184.1
+
+  '@comfyorg/quad-wireframe-three@0.1.0(three@0.184.0)':
+    dependencies:
+      fflate: 0.8.3
+      three: 0.184.0
 
   '@comfyorg/sdk@0.2.0':
     dependencies:

@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '@/i18n/translations'
 import { computed } from 'vue'
 
-import { t } from '../../i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 
 const {
   locale = 'en',
@@ -17,13 +17,14 @@ const {
   yearlyTotal?: string
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const billingNote = computed(() => {
   if (billingPeriod === 'yearly' && yearlyTotal) {
-    return t('pricing.period.billedYearly', locale, { total: yearlyTotal })
+    return t('pricing.period.billedYearly', { total: yearlyTotal })
   }
   if (billingPeriod === 'monthly') {
-    return t('pricing.period.billedMonthly', locale)
+    return t('pricing.period.billedMonthly')
   }
   return undefined
 })

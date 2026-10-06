@@ -136,6 +136,7 @@ export type Settings = {
   'Comfy.Canvas.MouseWheelScroll': string
   'Comfy.VueNodes.Enabled': boolean
   'Comfy.AppBuilder.VueNodeSwitchDismissed': boolean
+  'Comfy.PartnerNodesEducation.Dismissed': boolean
   'Comfy.ModelLibrary.UseAssetBrowser': boolean
   'Comfy.Queue.QPOV2': boolean
   'Comfy.Queue.ShowRunProgressBar': boolean

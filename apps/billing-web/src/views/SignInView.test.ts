@@ -8,6 +8,7 @@ import type { SignInState } from '@/auth/signInState'
 import { recordBillingEntry } from '@/entry/billingEntry'
 import { createBillingI18n } from '@/i18n'
 import { createBillingRouter } from '@/router'
+import { trackedBillingEvents } from '@/test/trackedBillingEvents'
 import SignInView from '@/views/SignInView.vue'
 
 const h = vi.hoisted(() => ({
@@ -174,6 +175,7 @@ describe('SignInView', () => {
 
   it.for([
     ['ACCESS_DENIED', "This account can't manage billing for that workspace."],
+    ['SSO_REQUIRED', "This account can't manage billing for that workspace."],
     [
       'WORKSPACE_NOT_FOUND',
       "This account can't access that workspace. Reopen billing from the app while signed in with the right account."
@@ -245,7 +247,7 @@ describe('SignInView', () => {
     ).toBeInTheDocument()
   })
 
-  it.for(['ACCESS_DENIED', 'WORKSPACE_NOT_FOUND'] as const)(
+  it.for(['ACCESS_DENIED', 'SSO_REQUIRED', 'WORKSPACE_NOT_FOUND'] as const)(
     'offers a way back to the app instead of a retry for %s',
     async (code) => {
       h.initialState = {
@@ -267,6 +269,33 @@ describe('SignInView', () => {
       ).not.toBeInTheDocument()
     }
   )
+
+  it('reports a click on the way back to the app', async () => {
+    h.initialState = {
+      step: 'signedIn',
+      origin: 'interactive',
+      mintFailed: true
+    }
+    h.sessionFailureCode = 'ACCESS_DENIED'
+    const sent = trackedBillingEvents()
+    document.addEventListener('click', (event) => event.preventDefault(), {
+      once: true
+    })
+    await renderSignIn(REFUSED_ENTRY)
+
+    await userEvent.click(
+      screen.getByRole('link', { name: 'Return to ComfyUI' })
+    )
+
+    expect(sent()).toStrictEqual([
+      {
+        operation: 'web_return',
+        stage: 'clicked',
+        outcome: 'pending',
+        control: 'host_link'
+      }
+    ])
+  })
 
   it.for([
     { code: 'NOT_AUTHENTICATED', path: REFUSED_ENTRY },

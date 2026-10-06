@@ -2,7 +2,20 @@ import type { PostHog } from 'posthog-js'
 import { watch } from 'vue'
 import type { WatchSource } from 'vue'
 
+import type {
+  BillingTelemetryEvent,
+  BillingTelemetryEventName,
+  CheckoutJourneyTelemetryEvent,
+  CheckoutJourneyTelemetryEventName
+} from '@comfyorg/account-core/billing'
+import {
+  getBillingTelemetryEventName,
+  getBillingWebTelemetryEventPayload,
+  getCheckoutJourneyTelemetryEventName,
+  getCheckoutJourneyTelemetryEventPayload
+} from '@comfyorg/account-core/billing'
 import type { CloudTelemetryConfig } from '@comfyorg/account-core/firebase'
+import type { WebSessionTelemetryEvent } from '@comfyorg/account-core/telemetry'
 import {
   createPostHogBeforeSend,
   createPostHogUrlQueryScrub
@@ -13,10 +26,7 @@ import {
 } from '@comfyorg/shared-frontend-utils/telemetry'
 
 import type { BillingWebSessionPhase } from '@/router'
-import { addRumAction } from '@/telemetry/rum'
-
-type BillingEventName = `billing.${string}.${string}`
-type BillingEventPayload = Readonly<Record<string, unknown>>
+import { addRumAction, clearRumUser, setRumUser } from '@/telemetry/rum'
 
 export type SessionIdentity =
   | { readonly kind: 'signed_in'; readonly userId: string }
@@ -30,12 +40,27 @@ interface StartPostHogOptions {
 
 type PostHogClient = Pick<
   PostHog,
-  'capture' | 'identify' | 'reset' | 'get_distinct_id' | 'get_property'
+  | 'capture'
+  | 'identify'
+  | 'reset'
+  | 'get_distinct_id'
+  | 'get_property'
+  | 'onFeatureFlags'
 >
 
 interface BillingEvent {
-  readonly name: BillingEventName
+  readonly name:
+    | BillingTelemetryEventName
+    | CheckoutJourneyTelemetryEventName
+    | WebSessionTelemetryEvent['name']
   readonly properties: Readonly<Record<string, unknown>>
+  /** Sent while the page goes away, after PostHog has drained its queue on `pagehide`. */
+  readonly onPageExit?: true
+}
+
+interface IdentitySink {
+  readonly signIn: (userId: string) => void
+  readonly signOut: () => void
 }
 
 type PostHogSink =
@@ -46,8 +71,6 @@ type PostHogSink =
       readonly client: PostHogClient
       readonly disabledEvents: ReadonlySet<string>
     }
-
-const BILLING_SURFACE = 'billing_web'
 
 /** Query parameters PostHog masks wherever it stores a URL, its cross-subdomain cookie included. */
 const MASKED_URL_PARAMS = [
@@ -60,6 +83,9 @@ const MASKED_URL_PARAMS = [
 
 /** Bounds what waits on a PostHog load that never finishes. */
 const MAX_WAITING_EVENTS = 50
+
+/** Bounds how long events wait for the flags when `/flags` is slow or blocked. */
+const FLAG_LOAD_WAIT_MS = 3000
 
 /** Telemetry observes the billing flow; a failing sink must never break it. */
 function attempt(send: () => void): void {
@@ -88,26 +114,42 @@ function identifyUser(client: PostHogClient, userId: string): void {
   client.identify(userId)
 }
 
-/** Only a sign-out of the user identified here resets, so a visitor never signed in here keeps the Cloud identity. */
+/** Only a sign-out of the user set here signs out, so a visitor never signed in here keeps the identity another page set. */
 function syncIdentity(
-  client: PostHogClient,
+  sink: IdentitySink,
   identity: WatchSource<SessionIdentity>
 ): void {
-  let identifiedHere = false
+  let setHere = false
   watch(
     identity,
     (next) =>
       attempt(() => {
         if (next.kind === 'signed_in') {
-          identifyUser(client, next.userId)
-          identifiedHere = true
-        } else if (next.kind === 'signed_out' && identifiedHere) {
-          client.reset(true)
-          identifiedHere = false
+          sink.signIn(next.userId)
+          setHere = true
+        } else if (next.kind === 'signed_out' && setHere) {
+          sink.signOut()
+          setHere = false
         }
       }),
     { immediate: true }
   )
+}
+
+const RUM_USER: IdentitySink = { signIn: setRumUser, signOut: clearRumUser }
+
+/**
+ * PostHog stamps `$feature/<flag>` only once this origin has loaded the flags,
+ * so events sent before that miss the rollout cohort.
+ */
+function whenFlagsLoaded(client: PostHogClient): Promise<void> {
+  return new Promise((resolve) => {
+    const timer = setTimeout(resolve, FLAG_LOAD_WAIT_MS)
+    client.onFeatureFlags(() => {
+      clearTimeout(timer)
+      resolve()
+    })
+  })
 }
 
 async function loadPostHog(
@@ -141,8 +183,12 @@ export function createBillingWebTelemetry() {
           posthog.waiting.push(event)
         return
       case 'ready':
-        if (!posthog.disabledEvents.has(event.name))
-          posthog.client.capture(event.name, event.properties)
+        if (posthog.disabledEvents.has(event.name)) return
+        if (event.onPageExit)
+          posthog.client.capture(event.name, event.properties, {
+            transport: 'sendBeacon'
+          })
+        else posthog.client.capture(event.name, event.properties)
     }
   }
 
@@ -156,6 +202,7 @@ export function createBillingWebTelemetry() {
     try {
       const resolved = await config
       const client = await loadPostHog(resolved)
+      if (client) await whenFlagsLoaded(client)
       posthog = client
         ? {
             status: 'ready',
@@ -163,30 +210,70 @@ export function createBillingWebTelemetry() {
             disabledEvents: new Set(resolved.telemetryDisabledEvents)
           }
         : { status: 'off' }
-      if (client) syncIdentity(client, identity)
+      if (client)
+        syncIdentity(
+          {
+            signIn: (userId) => identifyUser(client, userId),
+            signOut: () => client.reset(true)
+          },
+          identity
+        )
     } catch {
       posthog = { status: 'off' }
     }
     for (const event of waiting) attempt(() => capture(event))
   }
 
-  /**
-   * One `billing.<operation>.<stage>` event to RUM and PostHog, stamped with
-   * this surface. The payload is the cloud contract's allowlisted payload.
-   */
-  function trackBillingEvent(
-    name: BillingEventName,
-    payload: BillingEventPayload
-  ): void {
-    const event: BillingEvent = {
-      name,
-      properties: { ...payload, billing_surface: BILLING_SURFACE }
-    }
-    attempt(() => addRumAction(name, event.properties))
-    attempt(() => capture(event))
+  function send(event: BillingEvent): void {
+    attempt(() => addRumAction(event.name, event.properties))
+    capture(event)
   }
 
-  return { startPostHog, trackBillingEvent }
+  /**
+   * One typed billing event to RUM and PostHog: the contract's allowlisted
+   * payload, stamped with this surface.
+   */
+  function trackBillingEvent(event: BillingTelemetryEvent): void {
+    attempt(() =>
+      send({
+        name: getBillingTelemetryEventName(event),
+        properties: getBillingWebTelemetryEventPayload(event)
+      })
+    )
+  }
+
+  /** One phase of the checkout journey, in the same stamped shape. */
+  function trackCheckoutJourneyEvent(event: CheckoutJourneyTelemetryEvent) {
+    attempt(() =>
+      send({
+        name: getCheckoutJourneyTelemetryEventName(event),
+        properties: {
+          ...getCheckoutJourneyTelemetryEventPayload(event),
+          billing_surface: 'billing_web'
+        },
+        ...(event.phase === 'abandoned' && { onPageExit: true })
+      })
+    )
+  }
+
+  function trackWebSessionEvent(event: WebSessionTelemetryEvent): void {
+    attempt(() =>
+      send({ name: event.name, properties: { ...event.properties } })
+    )
+  }
+
+  /** The RUM user is the opaque id of the signed-in user, nothing else. */
+  function startRumUser(identity: WatchSource<SessionIdentity>): void {
+    syncIdentity(RUM_USER, identity)
+  }
+
+  return {
+    startPostHog,
+    startRumUser,
+    trackBillingEvent,
+    trackCheckoutJourneyEvent,
+    trackWebSessionEvent
+  }
 }
 
 export const billingWebTelemetry = createBillingWebTelemetry()

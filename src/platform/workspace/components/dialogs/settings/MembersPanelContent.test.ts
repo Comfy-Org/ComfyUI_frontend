@@ -1,8 +1,7 @@
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { Slots } from 'vue'
-import { computed, h, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import MembersPanelContent from './MembersPanelContent.vue'
@@ -177,11 +176,6 @@ vi.mock<unknown>(
     })
   })
 )
-
-vi.mock<unknown>(import('@/components/button/MoreButton.vue'), () => ({
-  default: (_: unknown, { slots }: { slots: Slots }) =>
-    h('div', slots.default?.({ close: () => {} }))
-}))
 
 const i18n = createI18n({
   legacy: false,
@@ -467,7 +461,10 @@ describe('MembersPanelContent', () => {
       mockFilteredPendingInvites.value = [createInvite({ id: 'inv-42' })]
       renderComponent()
       await userEvent.click(
-        screen.getByRole('button', {
+        screen.getByRole('button', { name: 'g.moreOptions' })
+      )
+      await userEvent.click(
+        screen.getByRole('menuitem', {
           name: 'workspacePanel.members.actions.cancelInvite'
         })
       )
@@ -481,7 +478,10 @@ describe('MembersPanelContent', () => {
       mockFilteredPendingInvites.value = [createInvite({ id: 'inv-42' })]
       renderComponent()
       await userEvent.click(
-        screen.getByRole('button', {
+        screen.getByRole('button', { name: 'g.moreOptions' })
+      )
+      await userEvent.click(
+        screen.getByRole('menuitem', {
           name: 'workspacePanel.members.actions.resendInvite'
         })
       )
@@ -588,7 +588,7 @@ describe('MembersPanelContent', () => {
       renderComponent()
 
       await userEvent.click(
-        screen.getByRole('button', {
+        within(screen.getByRole('status')).getByRole('button', {
           name: /workspacePanel\.members\.resubscribe/
         })
       )
@@ -611,7 +611,7 @@ describe('MembersPanelContent', () => {
       // The action lands on the enterprise page, never the team-plan
       // request form the footer's Contact us uses.
       await userEvent.click(
-        screen.getByRole('button', {
+        within(screen.getByRole('status')).getByRole('button', {
           name: /workspacePanel\.members\.contactSales/
         })
       )
@@ -634,6 +634,65 @@ describe('MembersPanelContent', () => {
       ).toBeNull()
       expect(
         screen.queryByText('workspacePanel.members.upsellBannerReactivate')
+      ).toBeNull()
+    })
+  })
+
+  describe('ended plan footer (DES-1200)', () => {
+    // The ended banner carries the same action, so pick the footer's copy.
+    function footerButton(name: RegExp) {
+      const banner = screen.getByRole('status')
+      const button = screen
+        .getAllByRole('button', { name })
+        .find((candidate) => !banner.contains(candidate))
+      if (!button) throw new Error(`No footer button matching ${name}`)
+      return button
+    }
+
+    it('lets an owner resubscribe an ended Team plan from the footer', async () => {
+      mockHasTeamPlan.value = true
+      mockIsPlanEnded.value = true
+      renderComponent()
+
+      expect(
+        screen.getByText('workspacePanel.members.planEndedFooter')
+      ).toBeTruthy()
+      expect(
+        screen.queryByText('workspacePanel.members.needMoreMembers')
+      ).toBeNull()
+      await userEvent.click(
+        footerButton(/workspacePanel\.members\.resubscribe/)
+      )
+      expect(mockShowTeamPlans).toHaveBeenCalled()
+    })
+
+    it('routes an ended sales-managed plan to sales', async () => {
+      const openSpy = vi.spyOn(window, 'open').mockReturnValue(null)
+      mockIsPlanEnded.value = true
+      mockIsSalesManagedPlan.value = true
+      renderComponent()
+
+      // The action lands on the enterprise page, never the team-plan
+      // request form the footer's Contact us uses.
+      await userEvent.click(
+        footerButton(/workspacePanel\.members\.contactSales/)
+      )
+      expect(openSpy).toHaveBeenCalledWith(
+        'https://comfy.org/cloud/enterprise/',
+        '_blank',
+        'noopener,noreferrer'
+      )
+      openSpy.mockRestore()
+    })
+
+    it('keeps the regular footer while a cancellation is merely scheduled', () => {
+      // Cancel-scheduled maps to isPlanEnded false; the mapping itself is
+      // pinned in useMembersPanel.test.ts ('keeps a cancel-scheduled plan
+      // with live access un-ended') — this asserts the render consequence.
+      mockIsPlanEnded.value = false
+      renderComponent()
+      expect(
+        screen.queryByText('workspacePanel.members.planEndedFooter')
       ).toBeNull()
     })
   })

@@ -14,6 +14,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { reportError } from '@/platform/telemetry/reportError'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useCanvasScheduler } from '@/renderer/core/canvas/useCanvasScheduler'
 import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
 import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -32,6 +33,7 @@ export const useSubgraphNavigationStore = defineStore(
   () => {
     const workflowStore = useWorkflowStore()
     const canvasStore = useCanvasStore()
+    const canvasScheduler = useCanvasScheduler()
     const router = useRouter()
     const routeHash = useRouteHash()
 
@@ -135,6 +137,9 @@ export const useSubgraphNavigationStore = defineStore(
       const canvas = canvasStore.canvas
       if (!canvas) return
 
+      if (getActiveGraphId() === graphId)
+        canvasScheduler.cancel('subgraph-navigation-fit')
+
       const expectedKey = buildCacheKey(graphId)
       const viewport = viewportCache.get(expectedKey)
       if (viewport) {
@@ -143,10 +148,13 @@ export const useSubgraphNavigationStore = defineStore(
       }
 
       // First visit — fit to content so subgraph nodes are visible
-      requestAnimationFrame(() => {
-        if (getActiveGraphId() !== graphId) return
-        if (!canvas.graph?.nodes.length) return
-        useLitegraphService().fitView()
+      canvasScheduler.schedule({
+        key: 'subgraph-navigation-fit',
+        isCurrent: () => getActiveGraphId() === graphId,
+        run: () => {
+          if (!canvas.graph?.nodes.length) return
+          useLitegraphService().fitView()
+        }
       })
     }
 

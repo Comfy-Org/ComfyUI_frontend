@@ -1,4 +1,4 @@
-import type { ModelLaunchPage } from '../templates/model-launch/types'
+import type { ModelLaunchPage } from '@/templates/model-launch/types'
 
 const nanoBananaLinks = {
   cloud:

@@ -1,17 +1,16 @@
 ---
-import BaseLayout from '../layouts/BaseLayout.astro'
-import BrandBackground from '../templates/brand/BrandBackground.vue'
-import ProductCardsSection from '../components/common/ProductCardsSection.vue'
-import SocialProofBarSection from '../components/common/SocialProofBarSection.vue'
-import ClosingCtaSection from '../templates/platform/ClosingCtaSection.vue'
-import HeroSection from '../templates/platform/HeroSection.vue'
-import ProductsSection from '../templates/platform/ProductsSection.vue'
-import { t } from '../i18n/translations'
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import BrandBackground from '@/templates/brand/BrandBackground.vue'
+import ProductCardsSection from '@/components/common/ProductCardsSection.vue'
+import SocialProofBarSection from '@/components/common/SocialProofBarSection.vue'
+import ClosingCtaSection from '@/templates/platform/ClosingCtaSection.vue'
+import HeroSection from '@/templates/platform/HeroSection.vue'
+import ProductsSection from '@/templates/platform/ProductsSection.vue'
 ---
 
 <BaseLayout
-  title={t('platform.meta.title', 'en')}
-  description={t('platform.meta.description', 'en')}
+  title={Astro.locals.t('platform.meta.title')}
+  description={Astro.locals.t('platform.meta.description')}
 >
   <div class="relative isolate">
     <BrandBackground client:idle />
@@ -21,7 +20,7 @@ import { t } from '../i18n/translations'
   <SocialProofBarSection />
   <ClosingCtaSection
     locale="en"
-    heading-after-badge={t('platform.closing.headingAfterBadge', 'en')}
+    heading-after-badge={Astro.locals.t('platform.closing.headingAfterBadge')}
     client:visible
   />
   <ProductCardsSection locale="en" label-key="products.labelProducts" />

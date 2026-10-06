@@ -3,6 +3,7 @@ import { config as dotenvConfig } from 'dotenv'
 import MCR from 'monocart-coverage-reports'
 
 import { COVERAGE_OUTPUT_DIR } from '@e2e/coverageConfig'
+import { DEPLOY_ACTION_SEEN_SETTINGS } from '@e2e/fixtures/constants/workflowActions'
 import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
 import {
   ENTRY_PATHS,
@@ -43,6 +44,7 @@ import { ComfyNodeSearchBox } from '@e2e/fixtures/components/ComfyNodeSearchBox'
 import { ComfyNodeSearchBoxV2 } from '@e2e/fixtures/components/ComfyNodeSearchBoxV2'
 import { ConfirmDialog } from '@e2e/fixtures/components/ConfirmDialog'
 import { ContextMenu } from '@e2e/fixtures/components/ContextMenu'
+import { CurrentUserPopover } from '@e2e/fixtures/components/CurrentUserPopover'
 import { MediaLightbox } from '@e2e/fixtures/components/MediaLightbox'
 import { QueuePanel } from '@e2e/fixtures/components/QueuePanel'
 import { SettingDialog } from '@e2e/fixtures/components/SettingDialog'
@@ -83,6 +85,7 @@ class ComfyPropertiesPanel {
   readonly searchBox: Locator
   readonly titleEditor: TitleEditor
   readonly toggleButton: Locator
+  readonly closeButton: Locator
 
   constructor(readonly page: Page) {
     this.root = page.getByTestId(TestIds.propertiesPanel.root)
@@ -90,6 +93,9 @@ class ComfyPropertiesPanel {
     this.searchBox = this.root.getByPlaceholder(/^Search/)
     this.titleEditor = new TitleEditor(this.root)
     this.toggleButton = page.getByRole('button', {
+      name: 'Toggle properties panel'
+    })
+    this.closeButton = this.root.getByRole('button', {
       name: 'Toggle properties panel'
     })
   }
@@ -211,6 +217,7 @@ export class ComfyPage {
   public readonly clipboard: ClipboardHelper
   public readonly workflow: WorkflowHelper
   public readonly contextMenu: ContextMenu
+  public readonly currentUserPopover: CurrentUserPopover
   public readonly toast: ToastHelper
   public readonly dragDrop: DragDropHelper
   public readonly featureFlags: FeatureFlagHelper
@@ -268,6 +275,7 @@ export class ComfyPage {
     this.clipboard = new ClipboardHelper(this.keyboard, page)
     this.workflow = new WorkflowHelper(this)
     this.contextMenu = new ContextMenu(page)
+    this.currentUserPopover = new CurrentUserPopover(page)
     this.toast = new ToastHelper(page)
     this.visibleToasts = this.toast.visibleToasts
     this.dragDrop = new DragDropHelper(page)
@@ -335,6 +343,7 @@ export class ComfyPage {
           'Comfy.EnableTooltips': false,
           'Comfy.TutorialCompleted': true,
           [TOUR_SEEN_SETTING]: [...ENTRY_PATHS],
+          ...DEPLOY_ACTION_SEEN_SETTINGS,
           'Comfy.Queue.MaxHistoryItems': 64,
           'Comfy.SnapToGrid.GridSize': testComfySnapToGridGridSize,
           'Comfy.VersionCompatibility.DisableWarnings': true,

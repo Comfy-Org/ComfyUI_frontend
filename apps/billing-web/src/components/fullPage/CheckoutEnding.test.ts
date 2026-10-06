@@ -8,6 +8,7 @@ import { endingOf } from '@/checkout/endingScreen'
 import type { EndingPlan } from '@/components/fullPage/EndingPlanCard.vue'
 import CheckoutEnding from '@/components/fullPage/CheckoutEnding.vue'
 import { createBillingI18n } from '@/i18n'
+import { trackedBillingEvents } from '@/test/trackedBillingEvents'
 
 const PLAN: EndingPlan = { name: 'Pro', price: '$50.00', period: 'USD / mo' }
 
@@ -236,6 +237,44 @@ describe('CheckoutEnding', () => {
       expect(screen.queryByTestId('checkout-ending-plan') !== null).toBe(
         ending.kind === 'success'
       )
+    }
+  )
+
+  it.for([
+    {
+      name: 'a downgrade',
+      plan: { tier: 'STANDARD', duration: 'MONTHLY' },
+      kept: { tier: 'PRO', duration: 'MONTHLY' },
+      body: "Your plan for Acme Team changes to Standard on November 4, 2026. You'll keep Pro until then."
+    },
+    {
+      name: 'a yearly plan going monthly',
+      plan: { tier: 'PRO', duration: 'MONTHLY' },
+      kept: { tier: 'PRO', duration: 'ANNUAL' },
+      body: "Your plan for Acme Team changes to Pro on November 4, 2026. You'll keep Pro Yearly until then."
+    }
+  ] as const)(
+    '$name scheduled for later names the plan that starts, its date, and the plan kept until then',
+    ({ plan, kept, body }) => {
+      renderEnding({
+        kind: 'scheduled',
+        change: { plan, effectiveAt: '2026-11-04T00:00:00.000Z' },
+        kept
+      })
+
+      expect(
+        screen.getByRole('heading', { name: 'Your plan change is scheduled' })
+      ).toBeInTheDocument()
+      expect(screen.getByText(body)).toBeInTheDocument()
+      expect(screen.getByTestId('checkout-ending-plan')).toHaveTextContent(
+        'Pro$50.00 USD / mo'
+      )
+      expect(screen.queryByText(/credits added/)).not.toBeInTheDocument()
+      expect(screen.queryByTestId('checkout-ending-code')).toBeNull()
+      expect(screen.getByRole('button', { name: 'Close' })).toBeInTheDocument()
+      expect(
+        screen.getByText('You can close this tab now.')
+      ).toBeInTheDocument()
     }
   )
 
@@ -573,5 +612,67 @@ describe('CheckoutEnding', () => {
     expect(
       await screen.findByRole('button', { name: 'Copied' })
     ).toBeInTheDocument()
+  })
+})
+
+describe('CheckoutEnding, leaving for the product', () => {
+  it.for<{ name: string; ending: EndingScreen }>([
+    { name: 'a finished checkout', ending: { kind: 'success' } },
+    {
+      name: 'a payment that went through earlier',
+      ending: { kind: 'completed', code: 'op_seen' }
+    },
+    {
+      name: 'a payment already completed',
+      ending: { kind: 'already_completed', code: 'op_old' }
+    }
+  ])('reports Close on $name as a success close', async ({ ending }) => {
+    const sent = trackedBillingEvents()
+    const { emitted } = renderEnding(ending)
+
+    await userEvent.click(screen.getByRole('button', { name: 'Close' }))
+
+    expect(emitted('close')).toHaveLength(1)
+    expect(sent()).toStrictEqual([
+      {
+        operation: 'web_return',
+        stage: 'clicked',
+        outcome: 'pending',
+        control: 'success_close'
+      }
+    ])
+  })
+
+  it.for<{ action: Action; ending: EndingScreen }>([
+    {
+      action: 'Try again',
+      ending: { kind: 'load_failed', cause: 'quote', code: 'REQUEST_FAILED' }
+    },
+    {
+      action: 'View plans',
+      ending: { kind: 'plan_unavailable', code: 'PLAN_NOT_FOUND' }
+    },
+    {
+      action: 'Add credits',
+      ending: { kind: 'link_invalid', code: 'CHECKOUT_LINK_INVALID' }
+    }
+  ])('reports nothing for $action, which is not a way back', async (row) => {
+    const sent = trackedBillingEvents()
+    renderEnding(row.ending)
+
+    await userEvent.click(screen.getByRole('button', { name: row.action }))
+
+    expect(sent()).toStrictEqual([])
+  })
+
+  it('closes itself after the countdown without reporting a click', async () => {
+    vi.useFakeTimers()
+    const sent = trackedBillingEvents()
+    const { emitted } = renderEnding({ kind: 'success' }, true)
+
+    await vi.advanceTimersByTimeAsync(5000)
+
+    expect(emitted('close')).toHaveLength(1)
+    expect(sent()).toStrictEqual([])
   })
 })

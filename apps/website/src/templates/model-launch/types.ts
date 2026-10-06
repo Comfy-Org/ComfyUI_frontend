@@ -1,8 +1,8 @@
 import type { AnchorHTMLAttributes } from 'vue'
 
-import type { getRoutes } from '../../config/routes'
-import type { BillingCycle } from '../../data/pricingPlans'
-import type { LocalizedText, TranslationKey } from '../../i18n/translations'
+import type { getRoutes } from '@/config/routes'
+import type { BillingCycle } from '@/data/pricingPlans'
+import type { LocalizedText, TranslationKey } from '@/i18n/translations'
 
 // Shape of a model-launch landing page (comfy.org/minimax was the first one).
 // To add the next launch page: export one of these from `src/data/<model>.ts`,

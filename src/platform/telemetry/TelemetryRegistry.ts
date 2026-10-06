@@ -1,4 +1,9 @@
 import type {
+  BillingTelemetryEvent,
+  CheckoutJourneyTelemetryEvent
+} from '@comfyorg/account-core/billing'
+import type { WebSessionTelemetryEvent } from '@comfyorg/account-core/telemetry'
+import type {
   AddCreditsClickMetadata,
   AgentAttachButtonClickedMetadata,
   AgentConsentNotOfferedMetadata,
@@ -9,6 +14,8 @@ import type {
   AgentPaywallShownMetadata,
   AgentEntryButtonClickedMetadata,
   AgentErrorMetadata,
+  AgentFreeUseExposureMetadata,
+  AgentFreeUseNoticeMetadata,
   AgentMessageSentMetadata,
   AgentMessageFeedbackMetadata,
   AgentNodeTaggedMetadata,
@@ -27,9 +34,7 @@ import type {
   AuthErrorMetadata,
   AuthMetadata,
   BeginCheckoutMetadata,
-  BillingTelemetryEvent,
   BootstrapCompleteMetadata,
-  CheckoutJourneyTelemetryEvent,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
   ExecutionErrorMetadata,
@@ -127,6 +132,11 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackUnifiedAuthRefresh(metadata: UnifiedAuthRefreshMetadata): void {
     this.dispatch((provider) => provider.trackUnifiedAuthRefresh?.(metadata))
+  }
+
+  // fallow-ignore-next-line unused-class-member
+  trackWebSessionEvent(event: WebSessionTelemetryEvent): void {
+    this.dispatch((provider) => provider.trackWebSessionEvent?.(event))
   }
 
   trackImageLoadFailed(metadata: ImageLoadFailureMetadata): void {
@@ -428,6 +438,16 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) =>
       provider.trackAgentStarterPromptClicked?.(metadata)
     )
+  }
+
+  // fallow-ignore-next-line unused-class-member
+  trackAgentFreeUseNotice(metadata: AgentFreeUseNoticeMetadata): void {
+    this.dispatch((provider) => provider.trackAgentFreeUseNotice?.(metadata))
+  }
+
+  // fallow-ignore-next-line unused-class-member
+  trackAgentFreeUseExposure(metadata: AgentFreeUseExposureMetadata): void {
+    this.dispatch((provider) => provider.trackAgentFreeUseExposure?.(metadata))
   }
 
   trackAgentNodeTagged(metadata: AgentNodeTaggedMetadata): void {

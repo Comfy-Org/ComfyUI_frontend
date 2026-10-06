@@ -176,7 +176,7 @@ const TURN_RECOVERY_DELAYS_MS = [0, 1000, 2000, 4000, 8000, 16000]
 const TURN_RECOVERY_DEADLINE_MS = 60_000
 
 type TurnOutcome =
-  | { kind: 'terminal'; parts: AssistantMessage['parts'] }
+  | { kind: 'terminal'; parts: AssistantMessage['parts'] | undefined }
   | { kind: 'thread-missing' }
   | { kind: 'streaming' }
   | { kind: 'error'; message: string }
@@ -207,6 +207,23 @@ function mergeAdjacentTextParts(
     merged.push(part)
   }
   return merged
+}
+
+function terminalRecoveryParts(
+  rows: AgentMessages
+): AssistantMessage['parts'] | undefined {
+  const parts = mergeAdjacentTextParts(
+    normalizeAgentTranscript(rows).messages[0]?.parts ?? []
+  )
+  if (parts.length > 0) return parts
+  if (rows.every((row) => row.status !== 'error')) return undefined
+  return [
+    {
+      type: 'notice',
+      level: 'error',
+      text: i18n.global.t('agent.recoveredTurnFailed')
+    }
+  ]
 }
 
 /**
@@ -806,7 +823,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     attachments?: SentAttachment[],
     tags?: SentTag[],
     workflowReferences?: WorkflowReference[],
-    selectionWorkflowId?: () => string | undefined
+    selectionWorkflowId?: () => string | undefined,
+    clientMessageId?: string
   ): Promise<AgentTurnAccepted> {
     const input = buildPostInput(
       threadId,
@@ -816,7 +834,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
       attachments,
       tags,
       workflowReferences,
-      selectionWorkflowId
+      selectionWorkflowId,
+      clientMessageId
     )
     if (wfContext?.id === undefined) return rest.postMessage(threadId, input)
     return rest.postMessage(threadId, { ...input, workflowId: wfContext.id })
@@ -830,7 +849,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     attachments?: SentAttachment[],
     tags?: SentTag[],
     workflowReferences?: WorkflowReference[],
-    selectionWorkflowId?: () => string | undefined
+    selectionWorkflowId?: () => string | undefined,
+    clientMessageId?: string
   ): PostMessageInput {
     const draft = workflow?.draft?.(origin)
     const unboundTarget = isUnboundTarget(wfContext, boundWorkflowId.value)
@@ -847,6 +867,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
       ),
       selection: selectedNodes(tags, selectedWorkflowId),
       attachments: attachments?.map((attachment) => attachment.ref),
+      // Carried through untouched so the server can echo it onto
+      // agent_turn_started: it is the same id this send reports on its own
+      // app:agent_message_sent event, and the only value that can appear on both
+      // sides of the message -> turn step.
+      clientMessageId,
       ...buildTargetFields(threadId, wfContext, draft, unboundTarget)
     }
   }
@@ -1056,7 +1081,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     attachments?: SentAttachment[],
     tags?: SentTag[],
     workflowReferences?: WorkflowReference[],
-    selectionWorkflowId?: () => string | undefined
+    selectionWorkflowId?: () => string | undefined,
+    clientMessageId?: string
   ): Promise<boolean> {
     const generation = loadGeneration
     const threadAtSend = conversationStore.threadId ?? 'new'
@@ -1082,7 +1108,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
         attachments,
         tags,
         workflowReferences,
-        selectionWorkflowId
+        selectionWorkflowId,
+        clientMessageId
       )
       accepted = true
       if (generation !== loadGeneration) return false
@@ -1112,7 +1139,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     attachments?: SentAttachment[],
     tags?: SentTag[],
     workflowReferences?: WorkflowReference[],
-    selectionWorkflowId?: () => string | undefined
+    selectionWorkflowId?: () => string | undefined,
+    clientMessageId?: string
   ): Promise<boolean> {
     if (sending.value) {
       conversationStore.recordFailedSend(
@@ -1132,7 +1160,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
         attachments,
         tags,
         workflowReferences,
-        selectionWorkflowId
+        selectionWorkflowId,
+        clientMessageId
       )
     } finally {
       sending.value = false
@@ -1652,7 +1681,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         })
     } finally {
       clearTimeout(deadline)
-      recoveringTurns.delete(key)
+      if (recoveringTurns.get(key) === recovery) recoveringTurns.delete(key)
     }
   }
 
@@ -1737,10 +1766,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
         .sort((a, b) => a.seq - b.seq)
       if (rows.some((row) => !isTerminalTurnStatus(row.status)))
         return { kind: 'streaming' }
-      const parts = mergeAdjacentTextParts(
-        normalizeAgentTranscript(rows).messages[0]?.parts ?? []
-      )
-      return { kind: 'terminal', parts }
+      return {
+        kind: 'terminal',
+        parts: terminalRecoveryParts(rows)
+      }
     } catch (error) {
       if (signal.aborted) throw error
       return turnOutcomeFromError(error)

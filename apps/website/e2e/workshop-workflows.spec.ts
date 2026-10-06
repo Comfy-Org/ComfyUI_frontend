@@ -559,15 +559,38 @@ test('@mobile keeps the catalogue tabs in place from one hub page to the next', 
   const models = page.getByTestId('catalogue-tab-models')
   const workflows = page.getByTestId('catalogue-tab-workflows')
   await expect(workflows).toBeVisible()
+  // Stuck under the header is where a reader meets the tabs on a phone, and
+  // the position a tab has to hold is the one it is clicked in.
+  await page.evaluate(() => window.scrollBy(0, 1200))
+  await expect
+    .poll(async () => (await workflows.boundingBox())?.y)
+    .toBeLessThan(200)
   const before = await workflows.boundingBox()
 
-  await workflows.click()
+  // A reader taps the tab where they can see it. Playwright scrolls a target
+  // into view first, and on a toolbar still settling it sometimes scrolls a
+  // pinned one — which is the state under test. Only that scrolling is turned
+  // off: every other check it makes before tapping, the hit test included,
+  // still runs, and a tab out of the viewport now fails rather than being
+  // fetched into it.
+  //
+  // The tabs sit in the same place on both pages and mark themselves current
+  // as soon as they render, so neither tells the page apart from the one it
+  // replaced. The address does, and the place they come to rest is reached
+  // after it — a measurement taken before either is of the page being left.
+  await workflows.click({ scroll: 'none' })
+  await expect(page).toHaveURL('/hub/workflows/')
   await expect(workflows).toHaveAttribute('aria-current', 'page')
-  expect((await workflows.boundingBox())?.y).toBeCloseTo(before?.y ?? 0, 0)
+  await expect
+    .poll(async () => (await workflows.boundingBox())?.y)
+    .toBeCloseTo(before?.y ?? 0, 0)
 
-  await models.click()
+  await models.click({ scroll: 'none' })
+  await expect(page).toHaveURL('/hub/models/')
   await expect(models).toHaveAttribute('aria-current', 'page')
-  expect((await models.boundingBox())?.y).toBeCloseTo(before?.y ?? 0, 0)
+  await expect
+    .poll(async () => (await models.boundingBox())?.y)
+    .toBeCloseTo(before?.y ?? 0, 0)
 })
 
 test('@mobile stretches the catalogue tabs across the toolbar on a phone', async ({
@@ -624,7 +647,7 @@ test('the examples belong to the playground, not to Details or API', async ({
   await expect(examples).toBeVisible()
 })
 
-test('a hovered workflow card spends its tag line only on a name that is cut off', async ({
+test('a workflow card spends the tag line on its name', async ({
   page,
   context
 }) => {
@@ -635,43 +658,57 @@ test('a hovered workflow card spends its tag line only on a name that is cut off
     '[data-testid="workshop-model-card"][data-kind="workflow"]'
   )
   await expect(cards.first()).toBeVisible()
-  // Only a name the single line already cuts off can show the hover doing
-  // anything, so the test picks one the catalogue is clipping — and one it is
-  // not, which must keep its tag.
-  const [clipped, whole] = await cards.evaluateAll((all) => {
-    const clips = (card: Element) => {
-      const name = card.querySelector('[data-testid="model-card-name"]')
-      return !!name && name.scrollHeight > name.clientHeight
-    }
-    return [all.findIndex(clips), all.findIndex((card) => !clips(card))]
-  })
-  expect(clipped, 'no workflow name is long enough to clip').toBeGreaterThan(-1)
-  expect(whole, 'every workflow name clips').toBeGreaterThan(-1)
-
-  const fits = cards.nth(whole)
-  await fits.hover()
-  await expect(fits.getByTestId('model-card-task')).toBeVisible()
-
-  const card = cards.nth(clipped)
-  const name = card.getByTestId('model-card-name')
-  const linesOfName = () =>
-    name.evaluate((element) =>
+  const names = cards.getByTestId('model-card-name')
+  // Clipping is what the two rows are there to prevent, and the text the card
+  // carries cannot see it: a clamped name still reads whole out of the DOM.
+  const clipped = await names.evaluateAll(
+    (all) => all.filter((name) => name.scrollHeight > name.clientHeight).length
+  )
+  expect(clipped).toBe(0)
+  // The rows are reserved whether the name fills them or not, so the cards
+  // line up across the grid.
+  const rows = await names.evaluateAll((all) =>
+    all.map((name) =>
       Math.round(
-        element.clientHeight /
-          Number.parseFloat(getComputedStyle(element).lineHeight)
+        name.clientHeight / Number.parseFloat(getComputedStyle(name).lineHeight)
       )
     )
-
-  await expect(card.getByTestId('model-card-task')).toBeVisible()
-  expect(await linesOfName()).toBe(1)
-  const resting = await card.boundingBox()
-
-  await card.hover()
-
-  await expect(card.getByTestId('model-card-task')).toBeHidden()
-  await expect(async () => expect(await linesOfName()).toBe(2)).toPass()
-  expect((await card.boundingBox())?.height).toBeCloseTo(
-    resting?.height ?? 0,
-    0
   )
+  expect([...new Set(rows)]).toEqual([2])
+
+  // The heading above the row already names the kind, so the card does not
+  // repeat it under a name that needed the room.
+  await expect(cards.getByTestId('model-card-task')).toHaveCount(0)
+
+  // Searching takes the headings away, and with them the only other place the
+  // kind is written, so there every card carries its tag again.
+  await page.goto('/hub/workflows/?q=video')
+  await expect(cards.first()).toBeVisible()
+  const found = await cards.count()
+  expect(found).toBeGreaterThan(0)
+  await expect(cards.getByTestId('model-card-task')).toHaveCount(found)
+})
+
+test('every workflow card carries its whole name, not a shortened one', async ({
+  page,
+  context
+}) => {
+  await mockWorkflowVisibility(context, true)
+  await page.goto('/hub/workflows/')
+
+  const cards = page.locator(
+    '[data-testid="workshop-model-card"][data-kind="workflow"]'
+  )
+  await expect(cards.first()).toBeVisible()
+  // The card drops a trailing task from a product name. A workflow is named
+  // with a sentence, so the name it shows must be the name it has.
+  const names = cards.getByTestId('model-card-name')
+  const shown = await names.allTextContents()
+  const whole = await Promise.all(
+    (await names.all()).map((name) => name.getAttribute('title'))
+  )
+  const shortened = shown.flatMap((text, index) =>
+    text.trim() === whole[index] ? [] : [`${whole[index]} -> ${text.trim()}`]
+  )
+  expect(shortened).toEqual([])
 })

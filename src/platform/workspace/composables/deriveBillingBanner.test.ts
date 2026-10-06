@@ -9,6 +9,8 @@ const funded: BillingBannerInputs = {
   isTeamPlan: true,
   isEnterprise: false,
   isKnownPersonalTier: false,
+  hasRenewalInvoice: false,
+  isInvoiceRecoverableTier: false,
   isLoaded: true,
   canAccessSubscriptionFeatures: true,
   billingStatus: 'paid',
@@ -16,6 +18,8 @@ const funded: BillingBannerInputs = {
   isCancelled: false,
   endDate: null,
   canManage: true,
+  isPlanEnded: false,
+  planEndedDismissed: false,
   outOfCreditsDismissed: false,
   planChangeDismissed: false,
   hasScheduledChange: false
@@ -46,7 +50,18 @@ describe('deriveBillingBanner', () => {
 
   it('keeps team billing-control notices out of personal plans', () => {
     expect(derive({ isTeamPlan: false, hasFunds: false })).toBeNull()
-    expect(derive({ ...paused, isTeamPlan: false })).toBeNull()
+  })
+
+  it('shows paused to personal workspaces on a known tier', () => {
+    expect(
+      derive({ ...paused, isTeamPlan: false, isKnownPersonalTier: true })
+    ).toBe('paused')
+  })
+
+  it('denies paused to an unrecognized tier', () => {
+    expect(
+      derive({ ...paused, isTeamPlan: false, isKnownPersonalTier: false })
+    ).toBeNull()
   })
 
   it('shows payment failed to personal workspace owners', () => {
@@ -62,9 +77,23 @@ describe('deriveBillingBanner', () => {
       derive({
         ...paymentFailed,
         isTeamPlan: false,
-        isKnownPersonalTier: false
+        isKnownPersonalTier: false,
+        hasRenewalInvoice: true,
+        isInvoiceRecoverableTier: false
       })
     ).toBeNull()
+  })
+
+  it('offers payment recovery to a FREE or tierless owner with an invoice', () => {
+    expect(
+      derive({
+        ...paymentFailed,
+        isTeamPlan: false,
+        isKnownPersonalTier: false,
+        hasRenewalInvoice: true,
+        isInvoiceRecoverableTier: true
+      })
+    ).toBe('paymentFailed')
   })
 
   it('hides existing notices when billing control is rolled back', () => {
@@ -151,6 +180,37 @@ describe('deriveBillingBanner', () => {
         canManage: false
       })
     ).toBe('ending')
+  })
+
+  describe('plan ended', () => {
+    const ended: Partial<BillingBannerInputs> = {
+      isPlanEnded: true,
+      canAccessSubscriptionFeatures: false,
+      billingStatus: 'inactive'
+    }
+
+    it('shows for team and Enterprise, owners and members alike', () => {
+      expect(derive(ended)).toBe('planEnded')
+      expect(derive({ ...ended, canManage: false })).toBe('planEnded')
+      expect(derive({ ...ended, isTeamPlan: false, isEnterprise: true })).toBe(
+        'planEnded'
+      )
+    })
+
+    it('ships without the billing control flag', () => {
+      expect(derive({ ...ended, billingControlEnabled: false })).toBe(
+        'planEnded'
+      )
+    })
+
+    it('ranks below payment recovery and above out of credits', () => {
+      expect(derive({ ...ended, ...paused })).toBe('paused')
+      expect(derive({ ...ended, hasFunds: false })).toBe('planEnded')
+    })
+
+    it('stays hidden once dismissed', () => {
+      expect(derive({ ...ended, planEndedDismissed: true })).toBeNull()
+    })
   })
 
   it('shows no banner for an inactive subscription (that is a run-lock modal)', () => {

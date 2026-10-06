@@ -1,5 +1,5 @@
 import type { RumEvent } from '@datadog/browser-rum'
-// eslint-disable-next-line no-restricted-imports -- billing web's telemetry layer owns the RUM sink that reportBillingWebError() and billing events go through
+// oxlint-disable-next-line no-restricted-imports -- billing web's telemetry layer owns the RUM sink that reportBillingWebError() and billing events go through
 import { datadogRum } from '@datadog/browser-rum'
 
 import type { DeployEnv } from '@comfyorg/shared-frontend-utils/telemetry'
@@ -137,6 +137,14 @@ export function billingWebRumBeforeSend(event: ScrubbableRumEvent): boolean {
 
 export function addRumAction(name: string, context: object): void {
   if (datadogRum.getInitConfiguration()) datadogRum.addAction(name, context)
+}
+
+export function setRumUser(id: string): void {
+  if (datadogRum.getInitConfiguration()) datadogRum.setUser({ id })
+}
+
+export function clearRumUser(): void {
+  if (datadogRum.getInitConfiguration()) datadogRum.clearUser()
 }
 
 /** Never throws: a failing reporter must not become a second failure in the billing flow. */

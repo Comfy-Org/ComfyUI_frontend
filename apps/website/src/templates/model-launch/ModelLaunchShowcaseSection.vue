@@ -3,15 +3,16 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { useElementHover, useElementSize, useToggle } from '@vueuse/core'
 import { computed, useTemplateRef } from 'vue'
 
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '@/i18n/translations'
 import type { ModelLaunchShowcase } from './types'
 
-import { t } from '../../i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 
 const { locale = 'en', showcase } = defineProps<{
   showcase: ModelLaunchShowcase
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const MARQUEE_GAP_PX = 24
 const TRACK_SPEED_PX_PER_SECOND = 190
@@ -40,14 +41,14 @@ const loopDuration = computed(
       <h2
         class="text-3xl font-light tracking-tight text-primary-comfy-canvas lg:text-5xl/tight"
       >
-        {{ t(showcase.headingKey, locale) }}
+        {{ t(showcase.headingKey) }}
       </h2>
       <p
         v-if="showcase.descriptionKey || showcase.cta"
         class="mt-6 text-base/relaxed font-light text-primary-comfy-canvas lg:text-lg/relaxed"
       >
         <template v-if="showcase.descriptionKey">{{
-          t(showcase.descriptionKey, locale)
+          t(showcase.descriptionKey)
         }}</template>
         <a
           v-if="showcase.cta"
@@ -55,7 +56,7 @@ const loopDuration = computed(
           :target="showcase.cta.target"
           rel="noopener"
           class="ms-1 whitespace-nowrap text-primary-comfy-yellow transition-opacity hover:opacity-70"
-          >{{ t(showcase.cta.labelKey, locale) }}</a
+          >{{ t(showcase.cta.labelKey) }}</a
         >
       </p>
     </div>

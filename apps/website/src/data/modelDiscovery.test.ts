@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-vi.mock(import('../config/workshop-browse-content'), () => ({
+vi.mock(import('@/config/workshop-browse-content'), () => ({
   workshopModels: [
     { provider: 'Kling', thumbnailUrl: '/first.webp' },
     { provider: 'Kling', thumbnailUrl: '/second.webp' },
@@ -31,7 +31,7 @@ const workflow = (rank: number, thumbnailUrl?: string) => ({
   ...(thumbnailUrl ? { thumbnailUrl } : {})
 })
 
-vi.mock(import('../config/workshop-workflow-content'), () => ({
+vi.mock(import('@/config/workshop-workflow-content'), () => ({
   workflowModels: [
     ...Array.from({ length: ILLUSTRATED }, (_, index) =>
       workflow(ILLUSTRATED - index, `/w${ILLUSTRATED - index}.webp`)

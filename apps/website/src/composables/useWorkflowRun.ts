@@ -1,29 +1,29 @@
 import { computed, onMounted, onScopeDispose, shallowRef } from 'vue'
 import { useEventListener } from '@vueuse/core'
 
-import type { WorkflowWorkshopModelDetail } from '../config/models-catalogue'
-import type { FormValues } from '../config/workshop-playground'
-import { validateForm } from '../config/workshop-playground'
-import { initialWorkshopPageState } from '../config/workshop-page-state'
-import { useWorkshopSession } from '../config/workshop-session-state'
-import { markWorkshopCreditsDirty } from '../config/workshop-credits'
+import type { WorkflowWorkshopModelDetail } from '@/config/models-catalogue'
+import type { FormValues } from '@/config/workshop-playground'
+import { validateForm } from '@/config/workshop-playground'
+import { initialWorkshopPageState } from '@/config/workshop-page-state'
+import { useWorkshopSession } from '@/config/workshop-session-state'
+import { markWorkshopCreditsDirty } from '@/config/workshop-credits'
 import {
   createWorkflowApi,
   WorkshopWorkflowError
-} from '../config/workshop-workflow-api'
-import { createWorkflowController } from '../config/workshop-workflow-controller'
-import type { WorkflowState } from '../config/workshop-workflow-state'
-import { workflowSettled } from '../config/workshop-workflow-response'
-import { workflowStorage } from '../config/workshop-workflow-storage'
-import { workshopIdempotencyKey } from '../config/workshop-snippets'
-import { captureWorkshopEvent } from '../scripts/posthog'
-import type { WorkshopRunAnalytics } from '../scripts/workshop-analytics'
+} from '@/config/workshop-workflow-api'
+import { createWorkflowController } from '@/config/workshop-workflow-controller'
+import type { WorkflowState } from '@/config/workshop-workflow-state'
+import { workflowSettled } from '@/config/workshop-workflow-response'
+import { workflowStorage } from '@/config/workshop-workflow-storage'
+import { workshopIdempotencyKey } from '@/config/workshop-snippets'
+import { captureWorkshopEvent } from '@/scripts/posthog'
+import type { WorkshopRunAnalytics } from '@/scripts/workshop-analytics'
 import {
   workshopExecutionFailureAnalytics,
   workshopFieldErrorCodes,
   workshopModelAnalytics,
   workshopWorkflowFailureAnalytics
-} from '../scripts/workshop-analytics'
+} from '@/scripts/workshop-analytics'
 
 export function useWorkflowRun(
   model: WorkflowWorkshopModelDetail,

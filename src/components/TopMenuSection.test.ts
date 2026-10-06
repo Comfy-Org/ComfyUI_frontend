@@ -1,10 +1,10 @@
-/* eslint-disable testing-library/no-container */
-/* eslint-disable testing-library/no-node-access */
+/* oxlint-disable testing-library/no-container */
+/* oxlint-disable testing-library/no-node-access */
 import { getActivePinia } from 'pinia'
 import type { Pinia } from 'pinia'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import type { MenuItem } from 'primevue/menuitem'
+import type { MenuItem } from '@/components/ui/menu/types'
 import {
   assert,
   beforeEach,

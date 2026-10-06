@@ -137,22 +137,20 @@
                     )
                   }}
                 </Button>
-                <DropdownMenu
+                <Menu
                   v-if="showInactiveTeamSubscription && menuEntries.length > 0"
-                  :entries="menuEntries"
+                  :items="menuEntries"
                 >
-                  <template #button>
+                  <template #trigger>
                     <Button
                       v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
                       variant="secondary"
                       size="icon-lg"
-                      class="rounded-lg bg-interface-menu-component-surface-selected text-text-primary"
+                      icon="icon-[lucide--ellipsis]"
                       :aria-label="$t('g.moreOptions')"
-                    >
-                      <i class="pi pi-ellipsis-h" />
-                    </Button>
+                    />
                   </template>
-                </DropdownMenu>
+                </Menu>
               </div>
             </template>
 
@@ -174,7 +172,10 @@
                 <h3 class="m-0 text-base font-bold text-text-primary">
                   {{ $t('subscription.tiers.free.name') }}
                 </h3>
-                <div class="flex items-baseline gap-1 font-inter">
+                <div
+                  v-if="!isPriceCycleUnknown"
+                  class="flex items-baseline gap-1 font-inter"
+                >
                   <span class="text-2xl font-semibold">{{ displayPrice }}</span>
                   <span class="text-base">{{ priceUnitLabel }}</span>
                 </div>
@@ -197,22 +198,17 @@
                 >
                   {{ $t('subscription.subscribe') }}
                 </Button>
-                <DropdownMenu
-                  v-if="menuEntries.length > 0"
-                  :entries="menuEntries"
-                >
-                  <template #button>
+                <Menu v-if="menuEntries.length > 0" :items="menuEntries">
+                  <template #trigger>
                     <Button
                       v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
                       variant="secondary"
                       size="icon-lg"
-                      class="rounded-lg bg-interface-menu-component-surface-selected text-text-primary"
+                      icon="icon-[lucide--ellipsis]"
                       :aria-label="$t('g.moreOptions')"
-                    >
-                      <i class="pi pi-ellipsis-h" />
-                    </Button>
+                    />
                   </template>
-                </DropdownMenu>
+                </Menu>
               </div>
             </template>
 
@@ -231,7 +227,7 @@
                   />
                 </div>
                 <div
-                  v-if="!isNonCatalogPlan"
+                  v-if="!isNonCatalogPlan && !isPriceCycleUnknown"
                   class="flex items-baseline gap-1 font-inter"
                 >
                   <span class="text-2xl font-semibold">{{ displayPrice }}</span>
@@ -303,22 +299,17 @@
                       : $t('subscription.changePlan')
                   }}
                 </Button>
-                <DropdownMenu
-                  v-if="menuEntries.length > 0"
-                  :entries="menuEntries"
-                >
-                  <template #button>
+                <Menu v-if="menuEntries.length > 0" :items="menuEntries">
+                  <template #trigger>
                     <Button
                       v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
                       variant="secondary"
                       size="icon-lg"
-                      class="rounded-lg bg-interface-menu-component-surface-selected text-text-primary"
+                      icon="icon-[lucide--ellipsis]"
                       :aria-label="$t('g.moreOptions')"
-                    >
-                      <i class="pi pi-ellipsis-h" />
-                    </Button>
+                    />
                   </template>
-                </DropdownMenu>
+                </Menu>
               </div>
             </template>
           </div>
@@ -417,7 +408,7 @@ import { useI18n } from 'vue-i18n'
 
 import CreditsTile from '@/platform/cloud/subscription/components/CreditsTile.vue'
 import SubscriptionFooterLinks from '@/platform/cloud/subscription/components/SubscriptionFooterLinks.vue'
-import DropdownMenu from '@/components/common/DropdownMenu.vue'
+import Menu from '@/components/ui/menu/Menu.vue'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
@@ -484,7 +475,8 @@ const {
 const { showPricingTable } = useSubscriptionDialog()
 
 const { isResubscribing, handleResubscribe } = useResubscribe()
-const { displayPrice, priceUnitLabel } = useWorkspacePlanPricing()
+const { displayPrice, priceUnitLabel, isPriceCycleUnknown } =
+  useWorkspacePlanPricing()
 const { menuEntries } = useWorkspaceMenuItems()
 
 const isSubscriptionEnded = computed(() => {

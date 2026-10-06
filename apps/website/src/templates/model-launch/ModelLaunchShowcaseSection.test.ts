@@ -5,7 +5,7 @@ import { nextTick } from 'vue'
 
 import type { ModelLaunchShowcase } from './types'
 
-import { t } from '../../i18n/translations'
+import { t } from '@/i18n/translations'
 import ModelLaunchShowcaseSection from './ModelLaunchShowcaseSection.vue'
 
 const showcase: ModelLaunchShowcase = {
@@ -44,7 +44,7 @@ describe('ModelLaunchShowcaseSection', () => {
       })
 
       expect(
-        screen.queryByText(t('chatgptImage25.hero.description', 'en')) !== null
+        screen.queryByText(t('chatgptImage25.hero.description')) !== null
       ).toBe(shown)
     }
   )
@@ -67,7 +67,7 @@ describe('ModelLaunchShowcaseSection', () => {
     const link = screen.getByRole('link', { name: 'TRY FREE' })
     expect(link.getAttribute('href')).toBe('https://cloud.comfy.org/')
     expect(
-      screen.getByText(t('nanoBanana.showcase.photography.description', 'en'), {
+      screen.getByText(t('nanoBanana.showcase.photography.description'), {
         exact: false
       })
     ).toBeTruthy()

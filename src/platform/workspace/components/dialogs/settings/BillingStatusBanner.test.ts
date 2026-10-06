@@ -27,6 +27,7 @@ const state = vi.hoisted(() => ({
   canAccessSubscriptionFeatures: true,
   isTeamPlan: true,
   billingStatus: 'paid' as string | null,
+  subscriptionStatus: 'active' as string | null,
   subscription: {
     hasFunds: true,
     isCancelled: false,
@@ -41,7 +42,8 @@ const state = vi.hoisted(() => ({
   canReactivatePlan: true,
   shouldUseWorkspaceBilling: true,
   manageSubscription: vi.fn(),
-  handleResubscribe: vi.fn()
+  handleResubscribe: vi.fn(),
+  showSubscriptionDialog: vi.fn()
 }))
 
 vi.mock<unknown>(import('@/composables/billing/useBillingRouting'), () => ({
@@ -61,6 +63,7 @@ vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
     ),
     isTeamPlan: computed(() => state.isTeamPlan),
     billingStatus: computed(() => state.billingStatus as BillingStatus | null),
+    subscriptionStatus: computed(() => state.subscriptionStatus),
     subscription: computed(() => state.subscription),
     plans: computed(() => [
       { slug: 'pro-annual', tier: 'PRO', duration: 'ANNUAL' }
@@ -98,16 +101,33 @@ vi.mock(import('@/platform/workspace/composables/useResubscribe'), () => ({
 
 vi.mock(import('@/services/dialogService'))
 
+vi.mock<unknown>(
+  import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
+  () => ({
+    useSubscriptionDialog: () => ({ show: state.showSubscriptionDialog })
+  })
+)
+
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
   messages: {
     en: {
       workspacePanel: {
+        members: {
+          resubscribe: 'Resubscribe',
+          endedTeamTitle: 'Your Team plan has ended',
+          endedEnterpriseTitle: 'Your Enterprise plan has ended',
+          endedPlanTitle: 'Your plan has ended'
+        },
         billingStatus: {
           paused: {
             title: 'Subscription paused',
             body: "This workspace's subscription is paused. Update payment to resume.",
+            personalBody:
+              'Your subscription is paused. Update your payment method to resume.',
+            personalPaymentFailedBody:
+              "Your payment didn't go through. Update your payment method to resume.",
             memberBody:
               "Ask your workspace owner to restore the workspace's subscription."
           },
@@ -123,7 +143,7 @@ const i18n = createI18n({
             dismiss: 'Dismiss'
           },
           ending: {
-            title: 'Your team plan ends on {date}',
+            title: 'Your Team plan ends on {date}',
             body: "Members keep full access until then. Resume your plan to keep your team's shared credits.",
             memberBody: 'You can run workflows until then.',
             enterpriseTitle: 'Your Enterprise plan ends on {date}',
@@ -131,6 +151,17 @@ const i18n = createI18n({
               'Members keep full access until then. Reach out to our sales team to extend.',
             reactivate: 'Resume plan',
             contactSales: 'Contact sales'
+          },
+          planEnded: {
+            teamTitle: 'Your Team plan ended on {date}',
+            teamBody:
+              'Resubscribe to run workflows and get shared credits again.',
+            teamMemberBody: 'Ask your workspace owner to resubscribe.',
+            enterpriseTitle: 'Your Enterprise plan ended on {date}',
+            enterpriseBody: 'Contact sales to start a new Enterprise plan.',
+            planTitle: 'Your plan ended on {date}',
+            salesBody: 'Contact sales to start a new plan.',
+            salesMemberBody: 'Ask your workspace owner to contact sales.'
           },
           planChange: {
             title: 'Your plan changes to {plan} on {date}.',
@@ -202,6 +233,7 @@ describe('BillingStatusBanner', () => {
     state.canAccessSubscriptionFeatures = true
     state.isTeamPlan = true
     state.billingStatus = 'paid'
+    state.subscriptionStatus = 'active'
     state.subscription = {
       hasFunds: true,
       isCancelled: false,
@@ -348,6 +380,16 @@ describe('BillingStatusBanner', () => {
       ).toBeInTheDocument()
     })
 
+    it('offers Pay invoice on a paused workspace', () => {
+      pausedState()
+      state.renewalInvoice = invoice
+      renderBanner()
+
+      expect(
+        screen.getByRole('button', { name: 'Pay invoice' })
+      ).toBeInTheDocument()
+    })
+
     it('omits Pay invoice when there is no renewal invoice', () => {
       paymentFailedState()
       renderBanner()
@@ -415,6 +457,28 @@ describe('BillingStatusBanner', () => {
     renderBanner()
 
     expect(screen.getByRole('status')).toHaveTextContent('Subscription paused')
+    expect(screen.getByRole('status')).toHaveTextContent(
+      "Your payment didn't go through. Update your payment method to resume."
+    )
+    expect(screen.getByRole('status')).not.toHaveTextContent('workspace')
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Update payment' })
+    )
+    expect(state.manageSubscription).toHaveBeenCalledTimes(1)
+  })
+
+  it('shows the paused banner to personal workspace owners', async () => {
+    pausedState()
+    state.isTeamPlan = false
+    state.workspaceType = 'personal'
+    state.subscription = { ...state.subscription!, tier: 'PRO' }
+    renderBanner()
+
+    expect(screen.getByRole('status')).toHaveTextContent('Subscription paused')
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Your subscription is paused. Update your payment method to resume.'
+    )
+    expect(screen.getByRole('status')).not.toHaveTextContent('workspace')
     await userEvent.click(
       screen.getByRole('button', { name: 'Update payment' })
     )
@@ -462,7 +526,7 @@ describe('BillingStatusBanner', () => {
     renderBanner()
 
     expect(screen.getByRole('status')).toHaveTextContent(
-      'Your team plan ends on'
+      'Your Team plan ends on'
     )
     await userEvent.click(screen.getByRole('button', { name: 'Resume plan' }))
     expect(state.handleResubscribe).toHaveBeenCalledTimes(1)
@@ -519,7 +583,7 @@ describe('BillingStatusBanner', () => {
     renderBanner()
 
     expect(screen.getByRole('status')).toHaveTextContent(
-      'Your team plan ends on'
+      'Your Team plan ends on'
     )
     expect(
       screen.queryByRole('button', { name: 'Resume plan' })
@@ -569,6 +633,85 @@ describe('BillingStatusBanner', () => {
     renderBanner()
 
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+
+  describe('plan ended', () => {
+    function endedPlan(tier: SubscriptionInfo['tier'] = 'PRO') {
+      state.subscriptionStatus = 'ended'
+      state.billingStatus = 'inactive'
+      state.canAccessSubscriptionFeatures = false
+      state.subscription = {
+        hasFunds: false,
+        isCancelled: true,
+        endDate: '2026-09-12T12:00:00Z',
+        scheduledChange: null,
+        tier
+      }
+    }
+
+    it('lets a team owner resubscribe through the pricing table', async () => {
+      endedPlan()
+      renderBanner()
+
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'Your Team plan ended on September 12, 2026'
+      )
+      await userEvent.click(screen.getByRole('button', { name: 'Resubscribe' }))
+      expect(state.showSubscriptionDialog).toHaveBeenCalledWith(
+        expect.objectContaining({ planMode: 'team' })
+      )
+    })
+
+    it('points a team member to the owner', () => {
+      endedPlan()
+      state.canManageSubscription = false
+      renderBanner()
+
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'Ask your workspace owner to resubscribe.'
+      )
+      expect(
+        screen.queryByRole('button', { name: 'Resubscribe' })
+      ).not.toBeInTheDocument()
+    })
+
+    it('sends an Enterprise owner to sales', async () => {
+      endedPlan('ENTERPRISE')
+      state.isTeamPlan = false
+      const open = vi.spyOn(window, 'open').mockReturnValue(null)
+      renderBanner()
+
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'Your Enterprise plan ended on September 12, 2026'
+      )
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Contact sales' })
+      )
+      expect(open).toHaveBeenCalledWith(
+        'https://comfy.org/cloud/enterprise/',
+        '_blank',
+        'noopener,noreferrer'
+      )
+      open.mockRestore()
+    })
+
+    it('dismisses for the session', async () => {
+      endedPlan()
+      renderBanner()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Dismiss' }))
+      expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    })
+
+    it('shows even when billing control is rolled back', () => {
+      endedPlan()
+      vi.mocked(useFeatureFlags().flags).billingControlEnabled = false
+      renderBanner()
+
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'Your Team plan ended on'
+      )
+    })
   })
 
   describe('enterprise ending notice', () => {

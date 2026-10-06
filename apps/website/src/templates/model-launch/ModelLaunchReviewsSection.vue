@@ -1,18 +1,19 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '@/i18n/translations'
 import type { ModelLaunchReviews } from './types'
 
-import ScrollCarousel from '../../components/ui/scroll-carousel/ScrollCarousel.vue'
-import { creatorReviews } from '../../data/creatorReviews'
-import { t } from '../../i18n/translations'
+import ScrollCarousel from '@/components/ui/scroll-carousel/ScrollCarousel.vue'
+import { creatorReviews } from '@/data/creatorReviews'
+import { translationsFor } from '@/i18n/translations'
 import ModelLaunchHighlightCard from './ModelLaunchHighlightCard.vue'
 
 const { locale = 'en', reviews } = defineProps<{
   reviews: ModelLaunchReviews
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const quotes = creatorReviews.map((review) => ({
   id: review.id,
@@ -38,7 +39,7 @@ const quotes = creatorReviews.map((review) => ({
         )
       "
     >
-      {{ t(reviews.headingKey, locale) }}
+      {{ t(reviews.headingKey) }}
     </h2>
 
     <ScrollCarousel

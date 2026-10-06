@@ -163,7 +163,7 @@
 <script setup lang="ts">
 import { useLocalStorage } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import Popover from 'primevue/popover'
+import Popover from '@/components/common/ImperativePopover.vue'
 import type { Ref } from 'vue'
 import {
   computed,
@@ -171,6 +171,7 @@ import {
   h,
   nextTick,
   onMounted,
+  onUnmounted,
   ref,
   render
 } from 'vue'
@@ -244,6 +245,8 @@ const searchQuery = ref<string>('')
 
 const { currentHelpNode, isHelpOpen } = storeToRefs(nodeHelpStore)
 const { openHelp, closeHelp } = nodeHelpStore
+
+onUnmounted(closeHelp)
 
 const groupingOptions = computed(() =>
   nodeOrganizationService.getGroupingStrategies().map((strategy) => ({

@@ -1,12 +1,16 @@
 import type { Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
+import type { ComfyMouse } from '@e2e/fixtures/ComfyMouse'
 import type { WorkspaceStore } from '@e2e/types/globals'
 import { TestIds } from '@e2e/fixtures/selectors'
 
 export class SidebarTab {
   public readonly tabButton: Locator
   public readonly selectedTabButton: Locator
+  public readonly panelHeader: Locator
+  public readonly closeButton: Locator
+  public readonly panel: Locator
 
   constructor(
     public readonly page: Page,
@@ -16,6 +20,10 @@ export class SidebarTab {
     this.selectedTabButton = this.tabButton.and(
       page.locator('.side-bar-button-selected')
     )
+    const sidebarContent = page.locator('.sidebar-content-container')
+    this.panel = page.getByRole('complementary')
+    this.panelHeader = sidebarContent.locator('.comfy-vue-side-bar-header')
+    this.closeButton = sidebarContent.getByTestId(TestIds.sidebar.closeButton)
   }
 
   async open() {
@@ -26,6 +34,26 @@ export class SidebarTab {
   }
   async close() {
     await this.tabButton.click()
+  }
+
+  async resize(comfyMouse: ComfyMouse, deltaX: number, startOffset = 0) {
+    const resizeHandle = this.page.locator(
+      '.side-bar-panel + [role="separator"], [role="separator"]:has(+ .side-bar-panel)'
+    )
+    await expect(resizeHandle).toBeVisible()
+    const box = await resizeHandle.boundingBox()
+    if (!box) throw new Error('Sidebar resize handle has no bounding box')
+    const from = {
+      x: box.x + box.width / 2 + startOffset,
+      y: box.y + box.height / 2
+    }
+    await comfyMouse.dragAndDrop(
+      from,
+      { x: from.x + deltaX, y: from.y },
+      {
+        steps: 10
+      }
+    )
   }
 }
 
@@ -89,6 +117,8 @@ export class NodeLibrarySidebarTabV2 extends SidebarTab {
   public readonly essentialsTab: Locator
   public readonly sortButton: Locator
   public readonly nodePreview: Locator
+  public readonly nodePreviewInputs: Locator
+  public readonly nodePreviewBody: Locator
 
   constructor(public override readonly page: Page) {
     super(page, 'node-library')
@@ -98,6 +128,12 @@ export class NodeLibrarySidebarTabV2 extends SidebarTab {
     this.essentialsTab = this.getTab('Essentials')
     this.sortButton = this.sidebarContent.getByRole('button', { name: 'Sort' })
     this.nodePreview = page.getByTestId(TestIds.sidebar.nodePreviewCard)
+    this.nodePreviewInputs = this.nodePreview.getByTestId(
+      TestIds.sidebar.nodePreviewInputs
+    )
+    this.nodePreviewBody = this.nodePreview.getByTestId(
+      TestIds.sidebar.nodePreviewBody
+    )
   }
 
   getTab(name: string) {
@@ -111,7 +147,11 @@ export class NodeLibrarySidebarTabV2 extends SidebarTab {
   }
 
   getNode(nodeName: string) {
-    return this.sidebarContent.getByRole('treeitem', { name: nodeName }).first()
+    return this.getNodes(nodeName).first()
+  }
+
+  getNodes(nodeName: string) {
+    return this.sidebarContent.getByRole('treeitem', { name: nodeName })
   }
 
   async expandFolder(folderName: string) {
@@ -182,7 +222,7 @@ export class WorkflowsSidebarTab extends SidebarTab {
   async renameWorkflow(locator: Locator, newName: string) {
     await locator.click({ button: 'right' })
     await this.page
-      .locator('.p-contextmenu-item-content', { hasText: 'Rename' })
+      .getByRole('menuitem', { name: 'Rename', exact: true })
       .click()
     await this.page.keyboard.type(newName)
     await this.page.keyboard.press('Enter')
@@ -200,7 +240,7 @@ export class WorkflowsSidebarTab extends SidebarTab {
   async insertWorkflow(locator: Locator) {
     await locator.click({ button: 'right' })
     await this.page
-      .locator('.p-contextmenu-item-content', { hasText: 'Insert' })
+      .getByRole('menuitem', { name: 'Insert', exact: true })
       .click()
   }
 }
@@ -337,9 +377,6 @@ export class AssetsSidebarTab extends SidebarTab {
   // --- Folder view ---
   public readonly backToAssetsButton: Locator
 
-  // --- Panel chrome ---
-  public readonly panelHeader: Locator
-
   // --- Loading ---
   public readonly skeletonLoaders: Locator
 
@@ -398,7 +435,6 @@ export class AssetsSidebarTab extends SidebarTab {
     this.backToAssetsButton = page.getByRole('button', {
       name: 'Back to all assets'
     })
-    this.panelHeader = page.locator('.comfy-vue-side-bar-header')
     this.skeletonLoaders = page.locator(
       '.sidebar-content-container .animate-pulse'
     )
@@ -435,7 +471,7 @@ export class AssetsSidebarTab extends SidebarTab {
   }
 
   contextMenuItem(label: string) {
-    return this.page.locator('.p-contextmenu').getByText(label)
+    return this.page.getByRole('menu').getByRole('menuitem', { name: label })
   }
 
   override async open({ waitForAssets = true } = {}) {
@@ -566,7 +602,7 @@ export class AssetsSidebarTab extends SidebarTab {
     const card = this.getAssetCardByName(name)
     await card.click({ button: 'right' })
     await this.page
-      .locator('.p-contextmenu')
+      .getByRole('menu')
       .waitFor({ state: 'visible', timeout: 3000 })
   }
 
