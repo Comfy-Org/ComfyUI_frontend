@@ -4,7 +4,8 @@ Date: 2026-10-06
 
 ## Status
 
-Proposed
+Rejected — proposed and withdrawn the same day, once the contents of the two
+catalogues were counted. Retained so the proposal is not made again.
 
 ## Context
 
@@ -12,124 +13,90 @@ Two model catalogues are live at once, and both present themselves as the
 catalogue of models.
 
 `/hub/models/` holds 148 Router model pages. Its title is "ComfyUI Models: Run
-AI Image, Video & Audio Models", its h1 is "ComfyUI models", and its description
-promises "Browse 148 AI models in ComfyUI … Try any model in your browser, then
-call it from your code". Each detail page carries Playground, API and Details
-tabs.
+AI Image, Video & Audio Models" and its description promises "Browse 148 AI
+models in ComfyUI … Try any model in your browser, then call it from your code".
+Each detail page carries Playground, API and Details tabs.
 
-`/p/supported-models/` holds 334 published open-weight file pages out of 411
-canonical entries. Its h1 is "Supported Models" and its description is "Run the
-world's leading AI models in ComfyUI". Each detail page carries a Hugging Face
-download button, the folder the file belongs in, and a docs link.
+`/p/supported-models/` holds 394 entries, of which 334 are published file pages.
+Its h1 is "Supported Models" and its description is "Run the world's leading AI
+models in ComfyUI" — which is also, word for word, a section heading inside
+`/hub/models/`.
 
-The overlap is already visible in the copy: "Run the world's leading AI models"
-is simultaneously a section heading inside `/hub/models/` and the entire meta
-description of `/p/supported-models/`.
+Two open changes widen the overlap rather than resolve it. #19786 gives the
+supported-models index a Trending row, a Latest row, browse-by-task and
+browse-by-family, and an h1 of "Every model. One graph."; seven of the nine
+distinct models in those showcase rows are Router models whose detail pages live
+under `/hub/models/`. #20291 moves the section to `/hub/models/local/` under a
+new registry kind `local`, keeping its own index, `all/` page and `llms.txt`.
 
-Two open changes widen it rather than resolve it:
-
-- #19786 restores the supported-models index and gives it a Trending row, a
-  Latest row, browse-by-task and browse-by-family, and changes its h1 to "Every
-  model. One graph." Seven of the nine distinct models in those two showcase rows
-  are Router models whose detail pages live under `/hub/models/`, not on this
-  page. Cards in the rows are visually identical but lead to two different page
-  templates, and a reader cannot tell which before clicking.
-- #20291 moves the section to `/hub/models/local/` under a new registry kind
-  `local`, keeping its own index, its own `all/` page and its own `llms.txt`.
-  URLs converge; the two indexes remain, one nested inside the other.
-
-The Hub's URL registry (`apps/website/src/config/models-url-registry.ts`) has
-kinds `hub`, `section`, `model`, `workflow` and `app`. Its sections — models,
-workflows, apps — separate **what a thing is**. A `local` section separates
-**how a thing runs**. Those are different axes, and placing both in one URL
-hierarchy is what produces the duplication: one model concept appears in two
-indexes according to its execution target.
-
-[WORKSHOP-CATALOG-0037](WORKSHOP-CATALOG-0037-shared-pages-and-authored-execution-catalogs.md)
-(Accepted) already declares the target per page — a page "declares its MODEL,
-CLOUD or SERVERLESS target and stable target ID" — and requires discovery to use
-"the same resolved set for discovery, direct routes and page data". The data that
-distinguishes these pages is therefore already authored. Only the browse surface
-treats them as two products.
+The overlap is real and measurable. The proposal below read it as one catalogue
+split by execution target, and that reading was wrong.
 
 ## Decision
 
-One catalogue indexes every model. Execution target is a filter within it, never
-a separate index.
+**Rejected: do not index Router models and local model files together, and do
+not add an execution-target filter to do it.** The nested `local` section in
+#20291 is the correct shape.
 
-- `/hub/models/` is the single entrance to models: one grid, one search, one
-  showcase.
-- Execution target — runs on your own machine, versus runs in the cloud or
-  through the Router API — is a filter control in that grid, derived from the
-  target each page already declares. It is not a distinct route with its own
-  index, `all/` page or `llms.txt`.
-- A card states its execution target before the click. The card already carries
-  a kind badge separating model from workflow from app; target is the second
-  fact it must carry, because the two lead to different page templates and
-  different promises.
-- Detail pages stay two templates. A Router model page offers a Playground and
-  an API tab; an open-weight file page offers a download, a folder and a docs
-  link. WORKSHOP-CATALOG-0037 already permits layouts to differ where the design
-  calls for it while form controls and the render boundary stay shared.
-- Showcase rows belong to the single index and name the slice they show. A row
-  ranked by measured Cloud usage can only ever contain cloud-executed models;
-  inside one catalogue with a visible target filter that is a legible slice
-  rather than an unstated contradiction.
-- The catalogue is named Hub, and Models is a section inside it, as workflows
-  and apps already are. The open "Models or Hub" naming question follows from
-  this structure instead of from preference.
+The two sets are not one catalogue split by where a model runs. Counted from
+`apps/website/src/config/generated-models.json`, the 394 supported-models
+entries are:
 
-Old addresses keep working. The redirect set in #20291 is still required; its
-destination becomes the single index with the target filter applied, rather than
-a nested index.
+|                                     | Count |
+| ----------------------------------- | ----: |
+| Files with a Hugging Face link      |   345 |
+| Partner (API) integrations, no file |    49 |
+
+and the 345 are not runnable models. They are the parts of a local install,
+filed by the directory each belongs in: 132 diffusion models, 69 LoRAs, 50 text
+encoders, 32 checkpoints, 25 VAEs, 8 model patches, 6 clip vision, 6 ControlNets,
+4 latent upscalers, 3 audio encoders, then detection, background removal, frame
+interpolation and optical flow. A LoRA, a VAE or a text encoder cannot have a
+Hub page, because it is not something a visitor calls — it is something they
+install. Several of those categories are not generative models at all.
+
+One grid holding both would place a VAE file beside Kling O3, which compares
+what does not compare. DES-1054 settled this axis on 18 September — one search,
+one sort, two tabs, no filter menu — and explicitly superseded a "what it needs
+(runs here / needs ComfyUI / needs custom nodes)" facet. This ADR revived that
+facet without knowing it had been considered and dropped.
+
+The duplication also has a documented origin rather than a product intent.
+`MODELS_INTEGRATION_PLAN.md` (10 September) required that the pre-existing
+public `/models` marketing page stay unchanged while the Workshop models work
+sat behind `WORKSHOP_IN_BUILD`, because "deleting all `/models` output would
+delete a pre-existing public route". The two catalogues are the cost of gating
+the new one, paid deliberately.
 
 ## Consequences
 
-Good:
+Two narrower findings survive the rejection, and neither needs this ADR:
 
-- One page answers "which models can I use", for readers and for answer engines.
-  Two pages currently compete for that question with near-identical descriptions.
-- The card tells the truth before the click, which removes the present defect
-  where identical cards lead to two page templates.
-- The Trending-versus-open-weights contradiction in #19786 dissolves, because
-  the row is explicitly a slice of one catalogue.
-- The naming decision stops being a matter of taste.
-- No new data is required: the target is already declared per page.
-
-Costs:
-
-- #20291 has to change shape before it merges, or be followed by a change that
-  folds its nested index into the parent. Its redirect table, slug groups and
-  published-pages fixtures survive either way; the index, `all/` page and
-  `llms.txt` it adds under `local/` do not.
-- #19786's showcase rows need to declare their filter, which is design work that
-  has not been requested yet.
-- One grid over 148 Router pages plus 334 file pages is a larger first paint and
-  a harder filter-state problem than two smaller grids. The full directory
-  already pages at 24 entries at a time and the default filter reduces the
-  starting set, but the LCP ordering in #20200 should be re-measured against the
-  merged index rather than assumed to hold.
-- The two indexes currently earn traffic separately; #20291 reports roughly 45k
-  clicks per 90 days across the supported-models file pages. Collapsing to one
-  index concentrates index-level traffic on a single URL. Detail pages keep
-  their own addresses and the redirects preserve their link equity, so the risk
-  sits on the index pages, and it should be measured after the change.
+- **The real overlap is the 49-entry partner tail, where the Hub is the smaller
+  set.** `partnerModelHubSlugs` maps 20 of the 49 onto 14 distinct Hub pages and
+  leaves 29 with no Hub equivalent — Claude, ElevenLabs, DALL·E, Runway,
+  Ideogram, Recraft, Topaz, Tripo 3D, Vidu, MiniMax, FLUX API, LTX-2, Meshy,
+  Qwen-3, OpenRouter among them. #20291 sends those 29 to `/hub/models/`, which
+  retires 29 provider pages into a generic index. That is a content decision for
+  the design owner, not a redirect detail.
+- **The page is mislabelled, not duplicated.** Its own description — "open-weight
+  components and partner integrations" — is accurate; #19786's new h1, "Every
+  model. One graph.", overclaims on a page that is 88% install components. It
+  also explains the Trending row: usage is measured in Cloud, and the 345 local
+  files run on the visitor's own machine, so they generate no usage signal and
+  can never appear there. CodeRabbit's merge-risk note on #20291 reaches the
+  same mislabelling from the other end.
 
 ## Alternatives considered
 
-**Keep two indexes, nested, as #20291 proposes.** The smallest change, it
-preserves both branches as written, and it matches how the Hub already separates
-workflows from apps. Rejected because the Hub's sections separate what a thing
-is, not how it runs. A `local` section mixes the two axes, and the duplication a
-reader meets is not removed — it moves one level deeper.
+**One index, execution target as a filter** — this ADR's original proposal.
+Rejected for the reasons above: 88% of one set is not a model in the other set's
+sense, and the axis was already settled and the facet already dropped.
 
-**Keep two indexes, unnested, and differentiate the copy.** Cheapest of all:
-leave the addresses alone and rewrite each title and description to claim only
-its own half. Rejected because #19786 moves the other way — it adds Hub-shaped
-browse patterns and a title claiming every model — and because two indexes still
-split one question across two answers.
+**Keep two indexes, nested, as #20291 implements.** Accepted in practice. It
+matches how the Hub already separates workflows from apps, and the separation is
+by what a thing is after all: a callable model versus a file you install.
 
-**Merge the detail pages as well, into one template that switches on target.**
-Rejected: a Playground and a file download are different enough that a single
-template would carry two mutually exclusive halves, and WORKSHOP-CATALOG-0037
-already allows these layouts to differ.
+**Merge the detail pages into one template that switches on target.** Rejected
+for the same reason, more strongly: a Playground and a file download share
+almost nothing.
