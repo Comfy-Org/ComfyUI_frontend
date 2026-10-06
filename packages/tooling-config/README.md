@@ -18,9 +18,15 @@ Add `extends` to the repository's existing `.fallowrc.jsonc`:
 
 ```json
 {
-  "extends": "npm:@comfyorg/tooling-config/fallow"
+  "extends": "npm:@comfyorg/tooling-config/fallow",
+  "ignoreDependencies": ["@comfyorg/tooling-config"]
 }
 ```
+
+Fallow 3.24.1 does not credit the package dependency when loading an npm subpath.
+Add only `@comfyorg/tooling-config` to the local `ignoreDependencies` array to
+avoid that false unused-dependency warning. Knip consumers need the same narrow
+exception because Knip does not follow Fallow's `npm:` references.
 
 Each repository owns its `.fallowrc.jsonc`. Keep repository-specific entry
 points, framework roles, exclusions, rule overrides, and export exceptions there.
@@ -58,6 +64,7 @@ an i18n entry point and a path-specific exception without changing shared policy
 ```json
 {
   "extends": "npm:@comfyorg/tooling-config/fallow",
+  "ignoreDependencies": ["@comfyorg/tooling-config"],
   "entry": ["i18n/i18n.config.ts"],
   "ignorePatterns": [".nuxt/**", ".output/**"],
   "overrides": [
