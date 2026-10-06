@@ -65,3 +65,61 @@ export function auditMediaLabels(html: string): string[] {
   })
   return [...images, ...videos]
 }
+
+const JSON_LD_BLOCK =
+  /<script[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/g
+
+interface JsonLdNode {
+  '@type'?: string
+  numberOfItems?: number
+  itemListElement?: { url: string }[]
+}
+
+function jsonLdNodes(html: string): JsonLdNode[] {
+  return [...html.matchAll(JSON_LD_BLOCK)].flatMap(([, json]) => {
+    const parsed = JSON.parse(json)
+    return parsed['@graph'] ?? [parsed]
+  })
+}
+
+function directoryHrefs(html: string): string[] {
+  const directory =
+    html.split('data-testid="models-directory"')[1]?.split('</section>')[0] ??
+    ''
+  return [...directory.matchAll(/<a\b[^>]*\shref="([^"]*)"/g)].map(
+    ([, href]) => href
+  )
+}
+
+export function auditModelsHub(
+  html: string,
+  isListed: (href: string) => boolean
+): string[] {
+  const nodes = jsonLdNodes(html)
+  const ofType = (type: string) =>
+    nodes.filter((node) => node['@type'] === type)
+  const links = directoryHrefs(html)
+  const expected = links.filter(isListed)
+  const expectedCounts = {
+    CollectionPage: 1,
+    BreadcrumbList: 1,
+    ItemList: expected.length > 0 ? 1 : 0
+  }
+  const errors = Object.entries(expectedCounts).flatMap(([type, count]) => {
+    const found = ofType(type).length
+    return found === count ? [] : [`expected ${count} ${type}, found ${found}`]
+  })
+  if (links.length === 0) errors.push('renders no model links in the directory')
+  const itemList = ofType('ItemList').at(0)
+  if (!itemList) return errors
+  const listed = (itemList.itemListElement ?? []).map(
+    ({ url }) => new URL(url).pathname
+  )
+  if (itemList.numberOfItems !== expected.length)
+    errors.push(
+      `ItemList numberOfItems ${itemList.numberOfItems} does not match ${expected.length} directory links`
+    )
+  if (listed.join() !== expected.join())
+    errors.push('ItemList URLs differ from the directory links or their order')
+  return errors
+}

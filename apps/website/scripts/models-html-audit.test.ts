@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { auditMediaLabels, auditModelPage } from './models-html-audit'
+import {
+  auditMediaLabels,
+  auditModelPage,
+  auditModelsHub
+} from './models-html-audit'
 
 const showcase = '<h1>Grok Imagine in <span>ComfyUI</span></h1>'
 const related = (cards: string) =>
@@ -82,5 +86,81 @@ describe(auditMediaLabels, () => {
     }
   ])('$name', ({ html, errors }) => {
     expect(auditMediaLabels(html)).toEqual(errors)
+  })
+})
+
+describe(auditModelsHub, () => {
+  const graph = (...nodes: object[]) =>
+    `<script type="application/ld+json">${JSON.stringify({ '@context': 'https://schema.org', '@graph': nodes })}</script>`
+  const itemList = (...paths: string[]) => ({
+    '@type': 'ItemList',
+    numberOfItems: paths.length,
+    itemListElement: paths.map((path, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      url: `https://comfy.org${path}`
+    }))
+  })
+  const directory = (...paths: string[]) =>
+    `<section data-testid="models-directory"><ul>${paths.map((path) => `<li><a href="${path}" class="link">Model</a></li>`).join('')}</ul></section><footer><a href="/about/">About</a></footer>`
+  const collection = { '@type': 'CollectionPage' }
+  const breadcrumbs = { '@type': 'BreadcrumbList' }
+  const everyLink = () => true
+
+  it.for([
+    {
+      name: 'a collection listing every directory link in order',
+      html:
+        graph(collection, breadcrumbs, itemList('/a/', '/b/')) +
+        directory('/a/', '/b/'),
+      errors: []
+    },
+    {
+      name: 'a page that lost its collection markup',
+      html: graph({ '@type': 'WebPage' }, breadcrumbs) + directory('/a/'),
+      errors: [
+        'expected 1 CollectionPage, found 0',
+        'expected 1 ItemList, found 0'
+      ]
+    },
+    {
+      name: 'a list that counts fewer models than the directory links',
+      html:
+        graph(collection, breadcrumbs, itemList('/a/')) +
+        directory('/a/', '/b/'),
+      errors: [
+        'ItemList numberOfItems 1 does not match 2 directory links',
+        'ItemList URLs differ from the directory links or their order'
+      ]
+    },
+    {
+      name: 'a list in a different order from the directory',
+      html:
+        graph(collection, breadcrumbs, itemList('/b/', '/a/')) +
+        directory('/a/', '/b/'),
+      errors: ['ItemList URLs differ from the directory links or their order']
+    },
+    {
+      name: 'an empty directory',
+      html: graph(collection, breadcrumbs, itemList('/a/')),
+      errors: [
+        'expected 0 ItemList, found 1',
+        'renders no model links in the directory',
+        'ItemList numberOfItems 1 does not match 0 directory links',
+        'ItemList URLs differ from the directory links or their order'
+      ]
+    }
+  ])('$name', ({ html, errors }) => {
+    expect(auditModelsHub(html, everyLink)).toEqual(errors)
+  })
+
+  it('expects only the directory links the launch keeps', () => {
+    expect(
+      auditModelsHub(
+        graph(collection, breadcrumbs, itemList('/a/')) +
+          directory('/a/', '/b/'),
+        (href) => href === '/a/'
+      )
+    ).toEqual([])
   })
 })
