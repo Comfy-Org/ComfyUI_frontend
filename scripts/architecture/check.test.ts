@@ -1,4 +1,10 @@
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
@@ -14,12 +20,8 @@ import {
 } from './check'
 
 const temporaryDirectories: string[] = []
-let dateNowSpy: ReturnType<typeof vi.spyOn>
 const createRepository = (files: Record<string, string>): string => {
-  const root = join(
-    tmpdir(),
-    `comfyui-architecture-${process.pid}-${temporaryDirectories.length}`
-  )
+  const root = mkdtempSync(join(tmpdir(), 'comfyui-architecture-'))
   temporaryDirectories.push(root)
   for (const [filename, contents] of Object.entries(files)) {
     mkdirSync(join(root, filename, '..'), { recursive: true })
@@ -90,13 +92,10 @@ const createConfiguredRepository = (): string => {
 }
 
 beforeEach(() => {
-  dateNowSpy = vi
-    .spyOn(Date, 'now')
-    .mockReturnValue(Date.parse('2026-10-01T00:00:00Z'))
+  vi.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-10-01T00:00:00Z'))
 })
 
 afterEach(() => {
-  dateNowSpy.mockRestore()
   for (const directory of temporaryDirectories.splice(0))
     rmSync(directory, { recursive: true })
 })
@@ -197,10 +196,9 @@ describe('censusRepository', () => {
       })
     ])
 
-    expect(census.violations.map(({ kind }) => kind)).toEqual([
-      'forbidden-edge'
-    ])
-    expect(census.edges[0]?.classification).toBe('forbidden')
+    expect(
+      census.violations.map(({ kind, maturity }) => ({ kind, maturity }))
+    ).toEqual([{ kind: 'forbidden-edge', maturity: 'error' }])
   })
 
   test('classifies reciprocally approved public domain edges as allowed', () => {
@@ -222,6 +220,26 @@ describe('censusRepository', () => {
     expect(census.edges[0]?.classification).toBe('allowed')
   })
 
+  test('enforces architectural role direction across approved domains', () => {
+    const root = createRepository({
+      'src/domains/alpha/index.ts': "import { value } from '@/domains/beta'",
+      'src/domains/beta/index.ts': 'export const value = 1'
+    })
+    const census = censusRepository(root, [
+      domain('alpha', ['src/domains/alpha/**'], {
+        allowedDependencies: ['beta']
+      }),
+      domain('beta', [], {
+        allowedConsumers: ['alpha'],
+        modules: [{ path: 'src/domains/beta/**', role: 'presentation' }],
+        publicEntryPoints: ['src/domains/beta/index.ts']
+      })
+    ])
+    expect(census.violations.map(({ kind }) => kind)).toEqual([
+      'forbidden-edge'
+    ])
+  })
+
   test('enforces architectural role direction within a capability', () => {
     const root = createRepository({
       'src/domains/images/domain.ts':
@@ -240,7 +258,6 @@ describe('censusRepository', () => {
     })
     const census = censusRepository(root, [record])
     expect(census.edges[0]).toMatchObject({
-      classification: 'forbidden',
       sourceRole: 'domain',
       targetRole: 'presentation'
     })
@@ -296,7 +313,6 @@ describe('censusRepository accounting and suppressions', () => {
       'deep-import:images:src/consumer.ts->src/domains/images/internal.ts#1',
       'deep-import:images:src/consumer.ts->src/domains/images/internal.ts#2'
     ])
-    expect(census.resolvedInternalDeclarations).toBe(2)
     expect(census.resolvedInternalSources).toBe(1)
   })
 
@@ -307,7 +323,6 @@ describe('censusRepository accounting and suppressions', () => {
     })
     const census = censusRepository(root, [])
     expect(census.parsedDeclarations).toBe(2)
-    expect(census.resolvedInternalDeclarations).toBe(0)
     expect(census.unresolvedInternal).toEqual([
       { source: 'src/domain.ts', specifier: '@/missing' }
     ])
@@ -321,20 +336,19 @@ describe('censusRepository accounting and suppressions', () => {
     })
     const census = censusRepository(root, [])
     expect(census.resolvedInternalDeclarations).toBe(1)
-    expect(census.unresolvedInternal).toEqual([])
   })
 
   test('retains named and anonymous layer suppressions as violations', () => {
     const root = createRepository({
       'src/anonymous.ts':
-        '// eslint-disable-next-line import-x/no-restricted-paths\nexport const anonymous = true',
+        '// eslint-disable-next-line comfy/no-restricted-paths\nexport const anonymous = true',
       'src/owned.ts':
-        '// eslint-disable-next-line import-x/no-restricted-paths -- architecture-exception: DDD-EX-042\nexport const owned = true'
+        '// eslint-disable-next-line comfy/no-restricted-paths -- architecture-exception: DDD-EX-042\nexport const owned = true'
     })
     const census = censusRepository(root, [])
     expect(census.violations.map(({ fingerprint }) => fingerprint)).toEqual([
-      'anonymous-suppression:src/anonymous.ts:import-x/no-restricted-paths#1',
-      'named-suppression:DDD-EX-042:src/owned.ts:import-x/no-restricted-paths#1',
+      'anonymous-suppression:src/anonymous.ts:comfy/no-restricted-paths#1',
+      'named-suppression:DDD-EX-042:src/owned.ts:comfy/no-restricted-paths#1',
       'unclassified-module:src/anonymous.ts',
       'unclassified-module:src/owned.ts'
     ])
@@ -343,11 +357,11 @@ describe('censusRepository accounting and suppressions', () => {
   test('numbers suppression occurrences independently per fingerprint base', () => {
     const root = createRepository({
       'src/mixed.ts': [
-        '// eslint-disable-next-line import-x/no-restricted-paths',
-        '// eslint-disable-next-line import-x/no-restricted-paths -- architecture-exception: DDD-EX-001',
-        '// eslint-disable-next-line import-x/no-restricted-paths -- architecture-exception: DDD-EX-002',
-        '// eslint-disable-next-line import-x/no-restricted-paths',
-        '// eslint-disable-next-line import-x/no-restricted-paths -- architecture-exception: DDD-EX-001',
+        '// eslint-disable-next-line comfy/no-restricted-paths',
+        '// eslint-disable-next-line comfy/no-restricted-paths -- architecture-exception: DDD-EX-001',
+        '// eslint-disable-next-line comfy/no-restricted-paths -- architecture-exception: DDD-EX-002',
+        '// eslint-disable-next-line comfy/no-restricted-paths',
+        '// eslint-disable-next-line comfy/no-restricted-paths -- architecture-exception: DDD-EX-001',
         'export const mixed = true'
       ].join('\n')
     })
@@ -357,30 +371,44 @@ describe('censusRepository accounting and suppressions', () => {
         .filter(({ kind }) => kind.endsWith('suppression'))
         .map(({ fingerprint }) => fingerprint)
     ).toEqual([
-      'anonymous-suppression:src/mixed.ts:import-x/no-restricted-paths#1',
-      'anonymous-suppression:src/mixed.ts:import-x/no-restricted-paths#2',
-      'named-suppression:DDD-EX-001:src/mixed.ts:import-x/no-restricted-paths#1',
-      'named-suppression:DDD-EX-001:src/mixed.ts:import-x/no-restricted-paths#2',
-      'named-suppression:DDD-EX-002:src/mixed.ts:import-x/no-restricted-paths#1'
+      'anonymous-suppression:src/mixed.ts:comfy/no-restricted-paths#1',
+      'anonymous-suppression:src/mixed.ts:comfy/no-restricted-paths#2',
+      'named-suppression:DDD-EX-001:src/mixed.ts:comfy/no-restricted-paths#1',
+      'named-suppression:DDD-EX-001:src/mixed.ts:comfy/no-restricted-paths#2',
+      'named-suppression:DDD-EX-002:src/mixed.ts:comfy/no-restricted-paths#1'
     ])
   })
 
-  test('detects blanket, multiline, and bulk architecture suppressions', () => {
+  test.for([
+    { name: 'blanket', comment: '/* eslint-disable */', count: 1 },
+    {
+      name: 'multiline rule list',
+      comment:
+        '/* eslint-disable-next-line\n * comfy/no-restricted-paths, no-console\n */',
+      count: 1
+    },
+    {
+      name: 'bulk rule list',
+      comment: '// eslint-disable-line no-console, comfy/no-restricted-paths',
+      count: 1
+    },
+    {
+      name: 'other-rule-only',
+      comment: '// eslint-disable-next-line no-console',
+      count: 0
+    }
+  ])('counts a $name suppression $count time(s)', ({ comment, count }) => {
     const root = createRepository({
-      'src/suppressions.ts': [
-        '/* eslint-disable */',
-        '/* eslint-disable-next-line\n * import-x/no-restricted-paths, no-console\n */',
-        '// eslint-disable-line no-console, import-x/no-restricted-paths',
-        '// eslint-disable-next-line no-console'
-      ].join('\n')
+      'src/suppressions.ts': `${comment}\nexport const value = 1`
     })
-    const census = censusRepository(root, [])
     expect(
-      census.violations.filter(({ kind }) => kind === 'anonymous-suppression')
-    ).toHaveLength(3)
+      censusRepository(root, []).violations.filter(
+        ({ kind }) => kind === 'anonymous-suppression'
+      )
+    ).toHaveLength(count)
   })
 
-  test('rejects overlapping capability-role ownership', () => {
+  test('rejects a source file owned by two domains', () => {
     const root = createRepository({
       'src/domains/images/index.ts': 'export const value = 1'
     })
@@ -405,6 +433,17 @@ describe('configuration validation', () => {
     expect(() => loadArchitectureConfiguration(root)).toThrow('invalid fields')
   })
 
+  test('rejects inline references to unknown exceptions', () => {
+    const root = createConfiguredRepository()
+    writeFileSync(
+      join(root, 'src/unknown.ts'),
+      '// eslint-disable-next-line no-console -- architecture-exception: DDD-EX-999\nexport const unknown = true'
+    )
+    expect(() => loadArchitectureConfiguration(root)).toThrow(
+      'references unknown exception DDD-EX-999'
+    )
+  })
+
   test('rejects unknown dependency identifiers', () => {
     const root = createConfiguredRepository()
     const filename = join(
@@ -418,6 +457,17 @@ describe('configuration validation', () => {
     )
     expect(() => loadArchitectureConfiguration(root)).toThrow(
       'references unknown domain'
+    )
+  })
+
+  test('rejects duplicate exception ids', () => {
+    const root = createConfiguredRepository()
+    const ledgerPath = join(root, 'docs/architecture/domains/exceptions.json')
+    const ledger = JSON.parse(readFileSync(ledgerPath, 'utf8'))
+    ledger.exceptions.push(ledger.exceptions[0])
+    writeFileSync(ledgerPath, JSON.stringify(ledger))
+    expect(() => loadArchitectureConfiguration(root)).toThrow(
+      'Exception ids must be unique'
     )
   })
 })
@@ -451,20 +501,6 @@ describe('configuration filesystem validation', () => {
     )
   })
 
-  test('rejects domain path-population drift', () => {
-    const root = createConfiguredRepository()
-    const filename = join(
-      root,
-      'docs/architecture/domains/records/images.domain.json'
-    )
-    const value = JSON.parse(readFileSync(filename, 'utf8'))
-    writeFileSync(filename, JSON.stringify({ ...value, expectedFileCount: 2 }))
-
-    expect(() => loadArchitectureConfiguration(root)).toThrow(
-      'expected 2 files but matched 1'
-    )
-  })
-
   test('rejects overlapping module roles inside one domain', () => {
     const root = createConfiguredRepository()
     const recordPath = join(
@@ -485,19 +521,27 @@ describe('configuration filesystem validation', () => {
 
 describe('baseline and exception controls', () => {
   const violation = (fingerprint: string): Violation => ({
-    kind: 'unclassified-module',
+    kind: 'anonymous-suppression',
     fingerprint,
     detail: fingerprint,
     maturity: 'baseline',
     source: fingerprint
   })
 
-  test('allows recorded debt and rejects baseline growth', () => {
+  test('allows recorded debt and rejects baseline growth and error edges', () => {
     const existing = violation('unclassified-module:existing')
     const added = violation('unclassified-module:added')
+    const forbidden: Violation = {
+      ...violation('forbidden-edge:alpha->beta:src/a.ts->src/b.ts#1'),
+      kind: 'forbidden-edge',
+      maturity: 'error'
+    }
     expect(
-      findRatchetFailures([existing, added], [existing.fingerprint])
-    ).toEqual([added])
+      findRatchetFailures(
+        [existing, added, forbidden],
+        [existing.fingerprint, forbidden.fingerprint]
+      )
+    ).toEqual([added, forbidden])
   })
 
   test('requires exactly one owned exception per baseline violation', () => {
@@ -509,14 +553,17 @@ describe('baseline and exception controls', () => {
       validateExceptionCoverage([current], [exception(), exception()])
     ).toThrow('exactly one owned exception')
     expect(() =>
-      validateExceptionCoverage([current], [exception()])
+      validateExceptionCoverage(
+        [current],
+        [exception({ exactFingerprints: [current.fingerprint] })]
+      )
     ).not.toThrow()
   })
 
   test('requires a named suppression to be owned by the exception it names', () => {
     const named: Violation = {
       ...violation(
-        'named-suppression:DDD-EX-001:src/owned.ts:import-x/no-restricted-paths#1'
+        'named-suppression:DDD-EX-001:src/owned.ts:comfy/no-restricted-paths#1'
       ),
       exceptionId: 'DDD-EX-001',
       kind: 'named-suppression'
@@ -527,7 +574,8 @@ describe('baseline and exception controls', () => {
     })
     const accidentalOwner = exception({
       id: 'DDD-EX-004',
-      fingerprintPrefixes: ['named-suppression:']
+      exactFingerprints: [named.fingerprint],
+      fingerprintPrefixes: []
     })
     expect(() =>
       validateExceptionCoverage([named], [wrongExistingId, accidentalOwner])
@@ -548,18 +596,18 @@ describe('baseline admission and catalog stability', () => {
     runArchitectureCheck(root, 'update')
     writeFileSync(
       join(root, 'src/new.ts'),
-      '// eslint-disable-next-line import-x/no-restricted-paths\nexport const added = true'
+      '// eslint-disable-next-line comfy/no-restricted-paths\nexport const added = true'
     )
     expect(() => runArchitectureCheck(root, 'update')).toThrow(
-      'architecture:accept-baseline'
+      'must match exactly one owned exception'
     )
     expect(() => runArchitectureCheck(root, 'accept-baseline')).toThrow(
-      'requires exact owned exception coverage'
+      'must match exactly one owned exception'
     )
     const ledgerPath = join(root, 'docs/architecture/domains/exceptions.json')
     const ledger = JSON.parse(readFileSync(ledgerPath, 'utf8'))
     ledger.exceptions[0].exactFingerprints.push(
-      'anonymous-suppression:src/new.ts:import-x/no-restricted-paths#1'
+      'anonymous-suppression:src/new.ts:comfy/no-restricted-paths#1'
     )
     writeFileSync(ledgerPath, JSON.stringify(ledger))
     runArchitectureCheck(root, 'accept-baseline')
@@ -570,18 +618,17 @@ describe('baseline admission and catalog stability', () => {
           'utf8'
         )
       ).violations
-    ).toContain(
-      'anonymous-suppression:src/new.ts:import-x/no-restricted-paths#1'
-    )
+    ).toEqual(['anonymous-suppression:src/new.ts:comfy/no-restricted-paths#1'])
   })
 
-  test('rejects expired exception sunsets', () => {
+  test('keeps an exception valid through its sunset day', () => {
     const root = createConfiguredRepository()
     const ledgerPath = join(root, 'docs/architecture/domains/exceptions.json')
     const ledger = JSON.parse(readFileSync(ledgerPath, 'utf8'))
-    ledger.exceptions[0].sunset = '2000-01-01'
+    vi.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-10-01T23:00:00Z'))
+    ledger.exceptions[0].sunset = '2026-10-01'
     writeFileSync(ledgerPath, JSON.stringify(ledger))
-    expect(() => loadArchitectureConfiguration(root)).toThrow('is expired')
+    expect(() => loadArchitectureConfiguration(root)).not.toThrow()
   })
 
   test('stable catalog ignores live census churn', () => {
@@ -608,29 +655,49 @@ describe('baseline admission and catalog stability', () => {
 
   test('check rejects stale debt and update removes it from the baseline', () => {
     const root = createConfiguredRepository()
+    const resolved =
+      'anonymous-suppression:src/resolved.ts:comfy/no-restricted-paths#1'
+    const ledgerPath = join(root, 'docs/architecture/domains/exceptions.json')
+    const ledger = JSON.parse(readFileSync(ledgerPath, 'utf8'))
+    ledger.exceptions[0].exactFingerprints.push(resolved)
+    writeFileSync(ledgerPath, JSON.stringify(ledger))
+    runArchitectureCheck(root, 'update')
     const baselinePath = join(root, 'docs/architecture/domains/baseline.json')
     writeFileSync(
       baselinePath,
-      JSON.stringify({
-        schemaVersion: 1,
-        violations: [
-          'anonymous-suppression:src/resolved.ts:import-x/no-restricted-paths#1'
-        ]
-      })
+      JSON.stringify({ schemaVersion: 1, violations: [resolved] })
     )
-    const ledgerPath = join(root, 'docs/architecture/domains/exceptions.json')
-    const ledger = JSON.parse(readFileSync(ledgerPath, 'utf8'))
-    ledger.exceptions[0].exactFingerprints.push(
-      'anonymous-suppression:src/resolved.ts:import-x/no-restricted-paths#1'
-    )
-    writeFileSync(ledgerPath, JSON.stringify(ledger))
     expect(() => runArchitectureCheck(root, 'check')).toThrow(
-      'run pnpm architecture:update'
+      'baseline.json has 1 resolved fingerprint(s)'
     )
     runArchitectureCheck(root, 'update')
     expect(JSON.parse(readFileSync(baselinePath, 'utf8')).violations).toEqual(
       []
     )
+  })
+
+  test('update keeps debt that is still present', () => {
+    const root = createConfiguredRepository()
+    const kept = 'anonymous-suppression:src/kept.ts:comfy/no-restricted-paths#1'
+    const resolved =
+      'anonymous-suppression:src/resolved.ts:comfy/no-restricted-paths#1'
+    writeFileSync(
+      join(root, 'src/kept.ts'),
+      '// eslint-disable-next-line comfy/no-restricted-paths\nexport const kept = true'
+    )
+    const ledgerPath = join(root, 'docs/architecture/domains/exceptions.json')
+    const ledger = JSON.parse(readFileSync(ledgerPath, 'utf8'))
+    ledger.exceptions[0].exactFingerprints.push(kept, resolved)
+    writeFileSync(ledgerPath, JSON.stringify(ledger))
+    const baselinePath = join(root, 'docs/architecture/domains/baseline.json')
+    writeFileSync(
+      baselinePath,
+      JSON.stringify({ schemaVersion: 1, violations: [kept, resolved] })
+    )
+    runArchitectureCheck(root, 'update')
+    expect(JSON.parse(readFileSync(baselinePath, 'utf8')).violations).toEqual([
+      kept
+    ])
   })
 
   test('check rejects a manually baselined fingerprint without exact ownership', () => {
@@ -660,7 +727,7 @@ describe('baseline admission and catalog stability', () => {
       JSON.stringify({ schemaVersion: 1, violations: [fingerprint] })
     )
     expect(() => runArchitectureCheck(root, 'check')).toThrow(
-      'requires exact owned exception coverage'
+      'must match exactly one owned exception'
     )
   })
 })

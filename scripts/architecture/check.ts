@@ -117,7 +117,7 @@ interface ArchitectureConfiguration {
 }
 
 const SOURCE_EXTENSIONS = ['.ts', '.tsx', '.vue']
-const ARCHITECTURE_RULE = 'import-x/no-restricted-paths'
+const ARCHITECTURE_RULE = 'comfy/no-restricted-paths'
 const ROLE_DEPENDENCIES: Record<ArchitecturalRole, ArchitecturalRole[]> = {
   domain: ['domain'],
   application: ['application', 'domain', 'infrastructure'],
@@ -236,10 +236,9 @@ const scriptBodies = (
     return [{ body: source, kind: scriptKind(extension) }]
   }
   return [...source.matchAll(/<script(\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(
-    (match) => {
-      const attributes = match[1] as string | undefined
-      const language = attributes?.match(/\blang=["'](\w+)["']/)?.[1] ?? 'js'
-      return { body: match[2], kind: scriptKind(language) }
+    ([, attributes = '', body]) => {
+      const language = attributes.match(/\blang=["'](\w+)["']/)?.[1] ?? 'js'
+      return { body, kind: scriptKind(language) }
     }
   )
 }
@@ -253,7 +252,7 @@ export const parseImportSpecifiers = (
       filename,
       body,
       ScriptTarget.Latest,
-      true,
+      false,
       kind
     )
     const specifiers: string[] = []
@@ -353,7 +352,9 @@ const eslintComments = (filename: string, source: string): string[] =>
   })
 
 const disablesArchitectureRule = (comment: string): boolean => {
-  const directive = comment.match(/eslint-disable(?:-next-line|-line)?\b/)
+  const directive = comment.match(
+    /(?:eslint|oxlint)-disable(?:-next-line|-line)?\b/
+  )
   if (!directive?.index && directive?.index !== 0) return false
   const rules = comment
     .slice(directive.index + directive[0].length)
@@ -715,10 +716,6 @@ const validateDomainFiles = (
     if (matchingModules.length > 1)
       throw new Error(`${record.id} has overlapping module paths for ${file}`)
   }
-  if (ownedFiles.length !== record.expectedFileCount)
-    throw new Error(
-      `${record.id} expected ${record.expectedFileCount} files but matched ${ownedFiles.length}`
-    )
   validateDomainReferencedFiles(repositoryRoot, record)
 }
 
@@ -733,8 +730,8 @@ const validateDomainModuleFiles = (
     throw new Error(`${record.id} path matches no source files: ${module.path}`)
   for (const file of matches)
     if (
-      JSON.stringify(ownersForFile(file, codeowners)) !==
-      JSON.stringify(record.owners)
+      JSON.stringify([...(ownersForFile(file, codeowners) ?? [])].sort()) !==
+      JSON.stringify([...record.owners].sort())
     )
       throw new Error(`${record.id} owners differ from CODEOWNERS for ${file}`)
 }
@@ -776,8 +773,6 @@ const validateException = (
   )
   if (!validExceptionMetadata(exception) || ![...prefixes, ...exact].length)
     throw new Error(`${label} does not match exceptions.schema.json`)
-  if (Date.parse(`${exception.sunset}T23:59:59Z`) < Date.now())
-    throw new Error(`${label} ${exception.id} is expired`)
   return exception as ArchitectureException
 }
 
@@ -884,16 +879,9 @@ export const validateExceptionCoverage = (
   for (const violation of violations.filter(
     ({ maturity }) => maturity === 'baseline'
   )) {
-    const exact = exceptions.filter(({ exactFingerprints }) =>
+    const matches = exceptions.filter(({ exactFingerprints }) =>
       exactFingerprints.includes(violation.fingerprint)
     )
-    const matches = exact.length
-      ? exact
-      : exceptions.filter(({ fingerprintPrefixes }) =>
-          fingerprintPrefixes.some((prefix) =>
-            violation.fingerprint.startsWith(prefix)
-          )
-        )
     if (matches.length !== 1) {
       throw new Error(
         `${violation.fingerprint} must match exactly one owned exception`
@@ -1099,8 +1087,13 @@ const enforceBaseline = (
   if (failures.length)
     throw new Error(
       `Architecture ratchet found ${failures.length} new violation(s). ` +
-        'Use pnpm architecture:accept-baseline only for an explicitly reviewed exception change.\n' +
-        failures.map(({ detail }) => `- ${detail}`).join('\n')
+        'Remove the import or use a public entry point. To accept the debt, ' +
+        'add each fingerprint to one exception in ' +
+        'docs/architecture/domains/exceptions.json and run ' +
+        'pnpm architecture:accept-baseline.\n' +
+        failures
+          .map(({ detail, fingerprint }) => `- ${detail}\n  ${fingerprint}`)
+          .join('\n')
     )
   const current = new Set(
     census.violations

@@ -2,9 +2,9 @@
 
 This directory makes architectural ownership and dependency boundaries
 discoverable to tools, agents, and reviewers. Domain records declare owned
-paths, public entry points, CODEOWNERS, forbidden domain edges, and enforcement
-maturity. The generated catalog summarizes the declarations and current import
-census without moving product code.
+paths, public entry points, CODEOWNERS, allowed domain dependencies and
+consumers, and enforcement maturity. The generated catalog copies the records
+and the exception ledger; `architecture:report` prints the live import census.
 
 ## Commands
 
@@ -12,7 +12,7 @@ census without moving product code.
 pnpm architecture:check
 pnpm architecture:update
 pnpm architecture:report
-pnpm architecture:accept-baseline # only with explicit exception approval
+pnpm architecture:accept-baseline
 pnpm test:unit scripts/architecture/check.test.ts
 ```
 
@@ -21,15 +21,16 @@ files. Every resolved internal declaration is classified as allowed, forbidden,
 or legacy. `architecture:report` prints live denominators, declaration counts,
 distinct importer counts, and the classified edges without changing committed
 files. It also reports unresolved internal-looking relative and `@/` specifiers;
-packages remain excluded from internal-edge totals. The first wave does not yet
-model `vi.mock`, `import.meta.glob`, or arbitrary `tsconfig` path aliases.
+packages remain excluded from internal-edge totals. The census does not model
+`vi.mock`, `import.meta.glob`, or `tsconfig` path aliases other than `@/`.
 The check fails when:
 
 - an external caller newly imports an enrolled domain's internal file;
 - a dependency is not permitted by both the producer's allowed consumers and
   the consumer's allowed dependencies;
-- an architecture import-rule suppression lacks an `architecture-exception:`
-  identifier;
+- a new `comfy/no-restricted-paths` suppression (`oxlint-disable` or
+  `eslint-disable`) appears whose fingerprint is not in `baseline.json`, with
+  or without an `architecture-exception:` identifier;
 - any declaration-occurrence baseline fingerprint grows; or
 - generated catalog files drift from the stable records and exception ledger.
 
@@ -43,14 +44,16 @@ declared yet; existing consumers are debt, not accidental public contracts.
 Promotion is incremental: introduce and test an entry point, migrate a finite
 consumer cohort, remove its fingerprints, then promote the rule to `error`.
 
-Unclassified `src` modules are inventory-only during Wave 1 because total
-classification is not yet complete. Promote that signal to a no-new/error gate
-only after every legacy module has an accepted capability and role; until then,
-ordinary additions and renames outside enrolled pilots do not edit the shared
-exception ledger. Imports between enrolled and unclassified code remain
-`legacy`, and role direction is enforced only when both endpoints are enrolled.
-The census covers `src/**/*.{ts,tsx,vue}`; `browser_tests`, workspace packages,
-and other roots are outside this first-wave census.
+Files outside the enrolled pilots are reported as `unclassified-module`
+inventory and never fail the check. That changes only after every `src` module
+is assigned a capability and role. Adding or renaming an unclassified file
+does not touch the exception ledger unless the file imports an enrolled
+domain's internal module. Renaming one of the existing deep-import callers
+changes its fingerprint and needs a new `exactFingerprints` entry and
+`pnpm architecture:accept-baseline`. Imports between enrolled and unclassified
+code are `legacy`, and role direction is checked only when both files are
+enrolled. The census covers `src/**/*.{ts,tsx,vue}`; `browser_tests`,
+workspace packages, and other roots are not scanned.
 
 Do not edit `catalog.json`, `catalog.md`, or `baseline.json` by hand.
 `architecture:update` refuses baseline additions. The explicit acceptance
@@ -65,9 +68,13 @@ When recorded debt is removed, `architecture:check` requires an update and
 `architecture:update` deletes only the resolved fingerprints. This prevents a
 later reintroduction from inheriting stale baseline permission.
 
-Roles are enforced as dependency direction, not merely catalog metadata.
-`domain` targets only `domain`; `application` and `infrastructure` may target
-each other and `domain`; `presentation` may target presentation, application,
-and domain; and `integration` is the composition role that may target all
-roles. The remaining legacy and unclassified totals in `architecture:report`
-are explicit migration debt, not a claim that the program exit gate is met.
+Roles are enforced as dependency direction, not merely catalog metadata. Each
+role may import from the roles listed:
+
+- `domain`: `domain`
+- `application` and `infrastructure`: `application`, `infrastructure`, `domain`
+- `presentation`: `presentation`, `application`, `domain`
+- `integration`: every role
+
+The legacy and unclassified totals in `architecture:report` are migration debt
+that this PR does not pay down.

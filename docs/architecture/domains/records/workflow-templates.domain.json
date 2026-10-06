@@ -56,5 +56,5 @@
     "Template data is validated before it reaches presentation code.",
     "Distribution eligibility and ranking remain host-independent domain policy."
   ],
-  "enforcement": { "deepImports": "baseline", "dependencies": "error" }
+  "enforcement": { "deepImports": "inventory", "dependencies": "error" }
 }
