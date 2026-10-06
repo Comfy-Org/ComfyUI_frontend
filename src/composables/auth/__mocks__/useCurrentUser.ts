@@ -1,11 +1,19 @@
 import { whenever } from '@vueuse/core'
 import { onTestFinished, vi } from 'vitest'
-import { computed, watch } from 'vue'
+import { computed, shallowReactive, watch } from 'vue'
+import type { WatchHandle } from 'vue'
 
 import { provideCurrentUser } from '@/platform/auth/currentUserAccess'
 import type { useCurrentUser as realUseCurrentUser } from '@/composables/auth/useCurrentUser'
 
 type CurrentUser = ReturnType<typeof realUseCurrentUser>
+
+const resolvedUserWatchers = new Set<WatchHandle>()
+
+function trackResolvedUserWatcher(handle: WatchHandle): WatchHandle {
+  resolvedUserWatchers.add(handle)
+  return handle
+}
 
 function createWatchHandle(): ReturnType<CurrentUser['onTokenRefreshed']> {
   const stop = vi.fn()
@@ -28,25 +36,31 @@ const defaults: CurrentUser = {
   handleSignOut: vi.fn(async () => {}),
   handleSignIn: vi.fn(async () => {}),
   onUserResolved: vi.fn((callback) =>
-    whenever(() => currentUser.resolvedUserInfo.value, callback, {
-      immediate: true
-    })
+    trackResolvedUserWatcher(
+      whenever(() => currentUser.resolvedUserInfo.value, callback, {
+        immediate: true
+      })
+    )
   ),
   onTokenRefreshed: vi.fn(createWatchHandle),
   onUserLogout: vi.fn((callback) => {
-    watch(
-      () => currentUser.resolvedUserInfo.value,
-      (user, previousUser) => {
-        if (previousUser && !user) callback()
-      }
+    trackResolvedUserWatcher(
+      watch(
+        () => currentUser.resolvedUserInfo.value,
+        (user, previousUser) => {
+          if (previousUser && !user) callback()
+        }
+      )
     )
   })
 }
 
-const currentUser = { ...defaults }
+const currentUser = shallowReactive({ ...defaults })
 
 export const useCurrentUser = vi.fn(() => {
   onTestFinished(() => {
+    for (const stop of resolvedUserWatchers) stop()
+    resolvedUserWatchers.clear()
     Object.assign(currentUser, defaults)
   })
   return currentUser

@@ -33,30 +33,28 @@ let workflowStorageState: WorkflowStorageState = {
 }
 const WORKFLOW_SIGN_OUT_INTENT_KEY = 'Comfy.Workflow.SignOutIntent'
 
-interface WorkflowPersistenceOwner {
+interface PendingWorkflowPersistence {
   flush: () => void
   cancel: () => void
 }
 
-const workflowPersistenceOwners = new Set<WorkflowPersistenceOwner>()
+const pendingWorkflowPersistence = new Set<PendingWorkflowPersistence>()
 
-export function registerWorkflowPersistenceOwner(
-  owner: WorkflowPersistenceOwner
+export function registerWorkflowPersistence(
+  pending: PendingWorkflowPersistence
 ): () => void {
-  if (workflowPersistenceOwners.size === 0) {
-    window.addEventListener('storage', handleSignOutIntent)
-  }
-  workflowPersistenceOwners.add(owner)
+  pendingWorkflowPersistence.add(pending)
+  window.addEventListener('storage', handleSignOutIntent)
   return () => {
-    workflowPersistenceOwners.delete(owner)
-    if (workflowPersistenceOwners.size === 0) {
+    pendingWorkflowPersistence.delete(pending)
+    if (pendingWorkflowPersistence.size === 0) {
       window.removeEventListener('storage', handleSignOutIntent)
     }
   }
 }
 
 function flushPendingWorkflowPersistence(): void {
-  for (const { flush } of workflowPersistenceOwners) {
+  for (const { flush } of pendingWorkflowPersistence) {
     try {
       flush()
     } catch (error) {
@@ -66,7 +64,7 @@ function flushPendingWorkflowPersistence(): void {
 }
 
 function cancelPendingWorkflowPersistence(): void {
-  for (const { cancel } of workflowPersistenceOwners) {
+  for (const { cancel } of pendingWorkflowPersistence) {
     try {
       cancel()
     } catch (error) {
@@ -575,23 +573,21 @@ function enterWorkflowLogoutTransition(): void {
         ? workflowStorageState.resumeAvailability
         : workflowStorageState.availability
   }
+  clearAllWorkspaceStorage()
 }
 
 function handleSignOutIntent(event: StorageEvent): void {
   if (
-    event.storageArea !== localStorage ||
-    event.key !== WORKFLOW_SIGN_OUT_INTENT_KEY ||
-    event.newValue === null
-  )
-    return
-
-  enterWorkflowLogoutTransition()
-  clearAllWorkspaceStorage()
+    event.storageArea === localStorage &&
+    event.key === WORKFLOW_SIGN_OUT_INTENT_KEY &&
+    event.newValue !== null
+  ) {
+    enterWorkflowLogoutTransition()
+  }
 }
 
-export function signOutWorkflowStorage(): void {
+export function beginWorkflowLogoutTransition(): void {
   enterWorkflowLogoutTransition()
-  clearAllWorkspaceStorage()
   try {
     localStorage.setItem(WORKFLOW_SIGN_OUT_INTENT_KEY, crypto.randomUUID())
     localStorage.removeItem(WORKFLOW_SIGN_OUT_INTENT_KEY)
@@ -627,7 +623,7 @@ export function clearAllWorkflowStorage(): void {
   removeStorageKeys(sessionStorage, sessionRestoreKeys, sessionRestorePrefixes)
 }
 
-export function clearAllWorkspaceStorage(): void {
+function clearAllWorkspaceStorage(): void {
   clearAllWorkflowStorage()
   clearLegacyAgentStorage()
   removeStorageKeys(

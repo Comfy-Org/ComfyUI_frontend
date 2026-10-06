@@ -965,7 +965,7 @@ describe('useWorkflowPersistenceV2', () => {
     const payloadKey = StorageKeys.draftPayload(workflow.path, 'personal')
     expect(localStorage.getItem(payloadKey)).toBeNull()
 
-    storageIO.signOutWorkflowStorage()
+    storageIO.beginWorkflowLogoutTransition()
 
     Object.assign(useTeamWorkspaceStore(), {
       initState: 'ready',
@@ -989,7 +989,7 @@ describe('useWorkflowPersistenceV2', () => {
 
     const onUserResolved = vi.mocked(useCurrentUser().onUserResolved).mock
       .calls[0][0]
-    storageIO.signOutWorkflowStorage()
+    storageIO.beginWorkflowLogoutTransition()
 
     expect(localStorage).toHaveLength(0)
     expect(sessionStorage).toHaveLength(0)
@@ -1031,9 +1031,9 @@ describe('useWorkflowPersistenceV2', () => {
 
     const onUserResolved = vi.mocked(useCurrentUser().onUserResolved).mock
       .calls[0][0]
-    storageIO.signOutWorkflowStorage()
+    storageIO.beginWorkflowLogoutTransition()
     onUserResolved({ id: 'user-b' })
-    storageIO.signOutWorkflowStorage()
+    storageIO.beginWorkflowLogoutTransition()
     onUserResolved({ id: 'user-c' })
 
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-c' })
@@ -1053,7 +1053,7 @@ describe('useWorkflowPersistenceV2', () => {
 
     const onUserResolved = vi.mocked(useCurrentUser().onUserResolved).mock
       .calls[0][0]
-    storageIO.signOutWorkflowStorage()
+    storageIO.beginWorkflowLogoutTransition()
     onUserResolved({ id: 'user-a' })
 
     expect(completeTransitionSpy).not.toHaveBeenCalled()
@@ -1083,7 +1083,7 @@ describe('useWorkflowPersistenceV2', () => {
 
     const onUserResolved = vi.mocked(useCurrentUser().onUserResolved).mock
       .calls[0][0]
-    storageIO.signOutWorkflowStorage()
+    storageIO.beginWorkflowLogoutTransition()
     onUserResolved({ id: 'user-b' })
     await vi.runAllTimersAsync()
 
