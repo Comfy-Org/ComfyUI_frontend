@@ -93,6 +93,9 @@ describe('useFeatureUsageTracker', () => {
     setItem.mockRestore()
 
     expect(getPendingUsageDeltaCountForTest(featureId)).toBe(100)
+    tracker.trackUsage()
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored[featureId]?.useCount).toBe(203)
   })
 
   it('discards compacted pending usage from a deleted generation', () => {

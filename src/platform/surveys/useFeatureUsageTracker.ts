@@ -453,6 +453,7 @@ function boundPendingDeltas(pendingDeltas: PendingUsageDelta[]) {
     )
   })
   const boundedMergeIndex = mergeIndex < 1 ? 1 : mergeIndex
+  const baselinesMatch = mergeIndex >= 1
   const oldest = pendingDeltas[boundedMergeIndex - 1]
   const secondOldest = pendingDeltas[boundedMergeIndex]
   return [
@@ -464,8 +465,10 @@ function boundPendingDeltas(pendingDeltas: PendingUsageDelta[]) {
       ),
       firstUsed: Math.min(oldest.firstUsed, secondOldest.firstUsed),
       lastUsed: Math.max(oldest.lastUsed, secondOldest.lastUsed),
-      recordedAt: Math.min(oldest.recordedAt, secondOldest.recordedAt),
-      baseUsage: oldest.baseUsage
+      recordedAt: baselinesMatch
+        ? Math.min(oldest.recordedAt, secondOldest.recordedAt)
+        : secondOldest.recordedAt,
+      baseUsage: baselinesMatch ? oldest.baseUsage : secondOldest.baseUsage
     },
     ...pendingDeltas.slice(boundedMergeIndex + 1)
   ]
