@@ -50,7 +50,7 @@ function mount() {
   vi.spyOn(skills, 'startFlagGate').mockResolvedValue()
   render(Composer, {
     props: { hasWorkflowTarget: true },
-    global: { plugins: [i18n], directives: { tooltip: () => {} } }
+    global: { plugins: [i18n] }
   })
   return useAgentComposerStore()
 }

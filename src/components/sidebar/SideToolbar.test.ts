@@ -53,7 +53,6 @@ function renderToolbar(props: SideToolbarProps = {}) {
     props,
     global: {
       plugins: [i18n],
-      directives: { tooltip: {} },
       stubs: {
         ComfyMenuButton: { template: '<div />' },
         SidebarTemplatesButton: { template: '<div />' },

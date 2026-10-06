@@ -46,7 +46,7 @@ function setup() {
       })
   })
   const view = render(Host, {
-    global: { plugins: [i18n], directives: { tooltip: () => {} } }
+    global: { plugins: [i18n] }
   })
   return { ...view, store, send, editor: screen.getByRole('textbox') }
 }

@@ -209,8 +209,7 @@ function renderComponent() {
           name: 'WorkspaceMenuButton',
           template: '<button aria-label="workspace-menu-stub" />'
         }
-      },
-      directives: { tooltip: () => {} }
+      }
     }
   })
 }
