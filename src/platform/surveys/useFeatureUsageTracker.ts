@@ -16,6 +16,7 @@ interface PendingUsageDelta {
   lastUsed: number
   recordedAt: number
   baseUsage?: FeatureUsage | null
+  rawBaseUsage?: FeatureUsage | null
 }
 
 interface PendingReset {
@@ -50,6 +51,7 @@ const MAX_PRESERVED_INVALID_ENTRIES = 100
 const MAX_PRESERVED_INVALID_SIZE = 16 * 1_024
 const MAX_TIMESTAMP = Date.UTC(2100, 0, 1)
 const MAX_CLOCK_SKEW = 5 * 60 * 1_000
+const VERIFICATION_READ_FAILED = Symbol('verification-read-failed')
 const pendingResets = reactive(new Set<string>())
 const pendingResetUsage = new Map<string, PendingReset>()
 const reportedErrorTypes = new Set<string>()
@@ -193,13 +195,14 @@ function reconcileDeletedPendingUsage(
 function didUsageAdvance(
   baseline: FeatureUsage | null | undefined,
   storedUsage: FeatureUsage | undefined,
-  requestedAt: number
+  requestedAt: number,
+  rawBaseline?: FeatureUsage | null
 ) {
   if (!storedUsage) return false
   if (baseline === undefined)
     return didUnknownUsageAdvance(storedUsage, requestedAt)
   if (baseline === null) return true
-  return didKnownUsageAdvance(storedUsage, baseline, requestedAt)
+  return didKnownUsageAdvance(storedUsage, baseline, rawBaseline)
 }
 
 function didUnknownUsageAdvance(
@@ -216,18 +219,23 @@ function didUnknownUsageAdvance(
 function didKnownUsageAdvance(
   storedUsage: FeatureUsage,
   baseline: FeatureUsage,
-  requestedAt: number
+  rawBaseline?: FeatureUsage | null
 ) {
-  const repairedStoredUsage = repairUsageForComparison(storedUsage, requestedAt)
-  const repairedBaseline = repairUsageForComparison(baseline, requestedAt)
-  const orderingDidNotRegress =
-    repairedStoredUsage.firstUsed >= repairedBaseline.firstUsed &&
-    repairedStoredUsage.lastUsed >= repairedBaseline.lastUsed
-  const countAdvanced = repairedStoredUsage.useCount > repairedBaseline.useCount
-  const timestampsAdvanced =
-    repairedStoredUsage.firstUsed > repairedBaseline.firstUsed ||
-    repairedStoredUsage.lastUsed > repairedBaseline.lastUsed
-  return orderingDidNotRegress && (countAdvanced || timestampsAdvanced)
+  const now = Math.max(1, Math.min(Date.now(), MAX_TIMESTAMP))
+  const repairedStoredUsage = repairUsageForComparison(storedUsage, now)
+  return [baseline, rawBaseline].some((candidate) => {
+    if (!candidate) return false
+    const repairedBaseline = repairUsageForComparison(candidate, now)
+    const orderingDidNotRegress =
+      repairedStoredUsage.firstUsed >= repairedBaseline.firstUsed &&
+      repairedStoredUsage.lastUsed >= repairedBaseline.lastUsed
+    const countAdvanced =
+      repairedStoredUsage.useCount > repairedBaseline.useCount
+    const timestampsAdvanced =
+      repairedStoredUsage.firstUsed > repairedBaseline.firstUsed ||
+      repairedStoredUsage.lastUsed > repairedBaseline.lastUsed
+    return orderingDidNotRegress && (countAdvanced || timestampsAdvanced)
+  })
 }
 
 function isOrderableUsage(usage: FeatureUsage) {
@@ -241,16 +249,20 @@ function isOrderableUsage(usage: FeatureUsage) {
 function isSameOrNewerGeneration(
   usage: FeatureUsage,
   baseline: FeatureUsage,
-  comparisonTime: number
+  rawBaseline?: FeatureUsage | null
 ) {
   if (sameUsage(usage, baseline)) return true
-  const repairedUsage = repairUsageForComparison(usage, comparisonTime)
-  const repairedBaseline = repairUsageForComparison(baseline, comparisonTime)
-  return (
-    repairedUsage.firstUsed === repairedBaseline.firstUsed &&
-    repairedUsage.useCount >= repairedBaseline.useCount &&
-    repairedUsage.lastUsed >= repairedBaseline.lastUsed
-  )
+  const now = Math.max(1, Math.min(Date.now(), MAX_TIMESTAMP))
+  const repairedUsage = repairUsageForComparison(usage, now)
+  return [baseline, rawBaseline].some((candidate) => {
+    if (!candidate) return false
+    const repairedBaseline = repairUsageForComparison(candidate, now)
+    return (
+      repairedUsage.firstUsed === repairedBaseline.firstUsed &&
+      repairedUsage.useCount >= repairedBaseline.useCount &&
+      repairedUsage.lastUsed >= repairedBaseline.lastUsed
+    )
+  })
 }
 
 function repairUsageForComparison(usage: FeatureUsage, now: number) {
@@ -291,11 +303,11 @@ function reconcilePendingResets(
     const { baseline, rawBaseline, requestedAt } = pendingReset
     const storedUsage = usageFor(storedUsageData, featureId)
     const resetFinished = baseline !== undefined && !storedUsage
-    const unchangedBaseline = sameUsage(storedUsage, rawBaseline)
+    const unchangedBaseline = sameUsage(storedUsage, rawBaseline ?? baseline)
     if (
       resetFinished ||
       (!unchangedBaseline &&
-        didUsageAdvance(baseline, storedUsage, requestedAt))
+        didUsageAdvance(baseline, storedUsage, requestedAt, rawBaseline))
     ) {
       pendingResets.delete(featureId)
       pendingResetUsage.delete(featureId)
@@ -313,12 +325,12 @@ function reconcileStoredUsage(
         if (!pendingDeltas) return []
         const storedUsage = usageFor(currentUsageData, featureId)
         const retainedDeltas = pendingDeltas.filter(
-          ({ baseUsage, recordedAt }) => {
+          ({ baseUsage, rawBaseUsage }) => {
             if (baseUsage === undefined || baseUsage === null) return true
             if (invalidFeatureIds.has(featureId)) return true
             return (
               storedUsage !== undefined &&
-              isSameOrNewerGeneration(storedUsage, baseUsage, recordedAt)
+              isSameOrNewerGeneration(storedUsage, baseUsage, rawBaseUsage)
             )
           }
         )
@@ -518,8 +530,8 @@ function boundPendingDeltas(pendingDeltas: PendingUsageDelta[]) {
         sameUsage(previousDelta.baseUsage, delta.baseUsage))
     )
   })
-  const boundedMergeIndex = mergeIndex < 1 ? 1 : mergeIndex
-  const baselinesMatch = mergeIndex >= 1
+  if (mergeIndex < 1) return pendingDeltas.slice(1)
+  const boundedMergeIndex = mergeIndex
   const oldest = pendingDeltas[boundedMergeIndex - 1]
   const secondOldest = pendingDeltas[boundedMergeIndex]
   return [
@@ -531,10 +543,9 @@ function boundPendingDeltas(pendingDeltas: PendingUsageDelta[]) {
       ),
       firstUsed: Math.min(oldest.firstUsed, secondOldest.firstUsed),
       lastUsed: Math.max(oldest.lastUsed, secondOldest.lastUsed),
-      recordedAt: baselinesMatch
-        ? Math.min(oldest.recordedAt, secondOldest.recordedAt)
-        : secondOldest.recordedAt,
-      baseUsage: baselinesMatch ? oldest.baseUsage : secondOldest.baseUsage
+      recordedAt: Math.min(oldest.recordedAt, secondOldest.recordedAt),
+      baseUsage: oldest.baseUsage,
+      rawBaseUsage: oldest.rawBaseUsage
     },
     ...pendingDeltas.slice(boundedMergeIndex + 1)
   ]
@@ -579,7 +590,8 @@ function recordPendingUsage(
         firstUsed: Math.min(baseUsage?.firstUsed ?? now, now),
         lastUsed: now,
         recordedAt: now,
-        baseUsage: canonicalBaseUsage
+        baseUsage: canonicalBaseUsage,
+        rawBaseUsage: baseUsage
       }
   const nextDeltas = baseMatches
     ? [...pendingDeltas.slice(0, -1), nextDelta]
@@ -624,6 +636,7 @@ function writeStorageAndReadBack(value: string) {
     return localStorage.getItem(STORAGE_KEY)
   } catch (error) {
     reportStorageError(error, 'error_reading_feature_usage_verification')
+    return VERIFICATION_READ_FAILED
   }
 }
 
@@ -633,7 +646,7 @@ function writeAndVerifyUsage(
   expectedUsageData: FeatureUsageRecord
 ) {
   const readBack = writeStorageAndReadBack(value)
-  if (readBack === undefined) {
+  if (readBack === VERIFICATION_READ_FAILED) {
     return {
       allPendingWritten: true,
       trackedUsageWritten: true,
@@ -687,7 +700,7 @@ function writeAndVerifyReset(
   expectedUsageData: FeatureUsageRecord
 ) {
   const readBack = writeStorageAndReadBack(value)
-  if (readBack === undefined) {
+  if (readBack === VERIFICATION_READ_FAILED) {
     return {
       allPendingWritten: true,
       writtenUsageIds: Object.keys(pendingUsageData.value),
@@ -890,7 +903,6 @@ export function useFeatureUsageTracker(featureId: string) {
 
   function reset() {
     const previousReset = pendingResetUsage.get(featureId)
-    pendingResets.delete(featureId)
     pendingResets.add(featureId)
     pendingResetUsage.set(featureId, {
       ...previousReset,

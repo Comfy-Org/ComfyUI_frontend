@@ -69,7 +69,7 @@ describe('useFeatureUsageTracker', () => {
     expect(tracker.useCount.value).toBe(102)
   })
 
-  it('bounds pending usage with distinct storage baselines', () => {
+  it('fails closed when bounding distinct storage baselines', () => {
     const featureId = 'bounded-distinct-baselines'
     const tracker = useFeatureUsageTracker(featureId)
     const originalSetItem = localStorage.setItem.bind(localStorage)
@@ -95,7 +95,7 @@ describe('useFeatureUsageTracker', () => {
     expect(getPendingUsageDeltaCountForTest(featureId)).toBe(100)
     tracker.trackUsage()
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
-    expect(stored[featureId]?.useCount).toBe(203)
+    expect(stored[featureId]?.useCount).toBe(202)
   })
 
   it('bounds the number of features with pending usage', () => {
@@ -657,6 +657,64 @@ describe('useFeatureUsageTracker', () => {
 
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
     expect(stored).not.toHaveProperty(featureId)
+  })
+
+  it('retires a reset for a generation recreated after the skew window', () => {
+    vi.setSystemTime(1_000)
+    const featureId = 'reset-before-late-recreation'
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        [featureId]: { useCount: 1, firstUsed: 1_000, lastUsed: 1_000 }
+      })
+    )
+    const tracker = useFeatureUsageTracker(featureId)
+    const setItem = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new DOMException('Storage quota exceeded', 'QuotaExceededError')
+    })
+    tracker.reset()
+    setItem.mockRestore()
+    vi.setSystemTime(400_000)
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        [featureId]: { useCount: 1, firstUsed: 400_000, lastUsed: 400_000 }
+      })
+    )
+
+    useFeatureUsageTracker('late-recreation-trigger').trackUsage()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored[featureId]?.useCount).toBe(1)
+  })
+
+  it('retires a reset after a peer repair on a backward clock', () => {
+    vi.setSystemTime(500_000)
+    const featureId = 'reset-before-backward-repair'
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        [featureId]: { useCount: 1, firstUsed: 500_000, lastUsed: 500_000 }
+      })
+    )
+    const tracker = useFeatureUsageTracker(featureId)
+    const setItem = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new DOMException('Storage quota exceeded', 'QuotaExceededError')
+    })
+    tracker.reset()
+    setItem.mockRestore()
+    vi.setSystemTime(100_000)
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        [featureId]: { useCount: 2, firstUsed: 100_000, lastUsed: 100_000 }
+      })
+    )
+
+    useFeatureUsageTracker('backward-reset-repair-trigger').trackUsage()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored[featureId]?.useCount).toBe(2)
   })
 
   it('keeps every pending reset when storage remains unavailable', () => {
@@ -2634,6 +2692,64 @@ describe('useFeatureUsageTracker', () => {
       firstUsed: 400_000,
       lastUsed: 400_000
     })
+  })
+
+  it('drops pending usage after a missed deletion and late recreation', () => {
+    vi.setSystemTime(1_000)
+    const featureId = 'pending-before-late-recreation'
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        [featureId]: { useCount: 1, firstUsed: 1_000, lastUsed: 1_000 }
+      })
+    )
+    const tracker = useFeatureUsageTracker(featureId)
+    const setItem = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new DOMException('Storage quota exceeded', 'QuotaExceededError')
+    })
+    tracker.trackUsage()
+    setItem.mockRestore()
+    vi.setSystemTime(400_000)
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        [featureId]: { useCount: 1, firstUsed: 400_000, lastUsed: 400_000 }
+      })
+    )
+
+    useFeatureUsageTracker('late-pending-recreation-trigger').trackUsage()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored[featureId]?.useCount).toBe(1)
+  })
+
+  it('retains pending usage after a peer repair on a backward clock', () => {
+    vi.setSystemTime(500_000)
+    const featureId = 'pending-before-backward-repair'
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        [featureId]: { useCount: 1, firstUsed: 500_000, lastUsed: 500_000 }
+      })
+    )
+    const tracker = useFeatureUsageTracker(featureId)
+    const setItem = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new DOMException('Storage quota exceeded', 'QuotaExceededError')
+    })
+    tracker.trackUsage()
+    setItem.mockRestore()
+    vi.setSystemTime(100_000)
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        [featureId]: { useCount: 2, firstUsed: 100_000, lastUsed: 100_000 }
+      })
+    )
+
+    useFeatureUsageTracker('backward-pending-repair-trigger').trackUsage()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored[featureId]?.useCount).toBe(3)
   })
 
   it('repairs only the drifted timestamp field', () => {
