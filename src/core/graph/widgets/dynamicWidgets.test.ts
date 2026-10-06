@@ -1149,6 +1149,31 @@ function reloadWhileConfiguring(graph: LGraph, nodeId: NodeId): LGraphNode {
   return reloadedNode
 }
 
+/**
+ * Samples once per generation across `generations` successive reloads,
+ * threading each reloaded graph into the next. Owns the reload lifecycle so a
+ * caller comparing a trajectory keeps a straight-line body.
+ */
+function sampleAcrossReloads<T>(
+  graph: LGraph,
+  nodeId: NodeId,
+  generations: number,
+  sample: (node: LGraphNode, graph: LGraph) => T
+): T[] {
+  const samples: T[] = []
+  let currentGraph = graph
+  let currentNode = currentGraph.getNodeById(nodeId)
+  assert.ok(currentNode, 'sampled node')
+  for (let generation = 0; generation < generations; generation++) {
+    samples.push(sample(currentNode, currentGraph))
+    currentNode = reloadWhileConfiguring(currentGraph, currentNode.id)
+    const reloadedGraph = currentNode.graph
+    assert.ok(reloadedGraph, 'reloaded graph')
+    currentGraph = reloadedGraph
+  }
+  return samples
+}
+
 function hasFreeSlot(node: LGraphNode, prefix: string): boolean {
   return node.inputs.some(
     (input, slot) => input.name.startsWith(prefix) && !node.getInputLink(slot)
@@ -1256,7 +1281,7 @@ describe('Nested autogrow links across a workflow reload (PN-1520, FE-2443)', ()
       SEEDANCE_NODE_TYPE,
       seedanceNodeDef(0)
     )
-    let graph = new LGraph()
+    const graph = new LGraph()
     const node = LiteGraph.createNode(SEEDANCE_NODE_TYPE)
     assert.ok(node, 'seedance node')
     graph.add(node)
@@ -1266,32 +1291,31 @@ describe('Nested autogrow links across a workflow reload (PN-1520, FE-2443)', ()
     // Sizing a group from the slots its links ended up on compounds: a link
     // filed onto the sibling group drags that group one ordinal longer every
     // reload, without bound.
-    const imageSlots: number[] = []
-    const linkCounts: number[] = []
-    let current: LGraphNode = node
-    for (let generation = 0; generation < 5; generation++) {
-      imageSlots.push(
-        current.inputs.filter((input) =>
+    const trajectory = sampleAcrossReloads(
+      graph,
+      node.id,
+      5,
+      (current, currentGraph) => ({
+        imageSlots: current.inputs.filter((input) =>
           input.name.startsWith('model.reference_images.')
-        ).length
-      )
-      linkCounts.push(graph.links.size)
-      current = reloadWhileConfiguring(graph, current.id)
-      const nextGraph = current.graph
-      assert.ok(nextGraph, 'reloaded graph')
-      graph = nextGraph
-    }
+        ).length,
+        links: currentGraph.links.size
+      })
+    )
 
-    // Asserted together so the slot bound cannot be met by destroying a link
-    // instead. The drop to 2 is the residual documented on this group's
-    // follow-up: links are sized for here but still placed by slot index, so
-    // one eventually lands where no name claims it. Closing that makes this
-    // read [3, 3, 3, 3, 3] and this expectation should be updated, not the
-    // behaviour re-broken to match it.
-    expect({ imageSlots, linkCounts }).toEqual({
-      imageSlots: [2, 2, 3, 2, 2],
-      linkCounts: [3, 3, 3, 2, 2]
-    })
+    // Slots and links asserted together so the slot bound cannot be met by
+    // destroying a link instead. The drop to 2 links is the residual on this
+    // group's follow-up: links are sized for here but still placed by slot
+    // index, so one eventually lands where no name claims it. Closing that
+    // holds links at 3 throughout, and this expectation should be updated
+    // rather than the behaviour re-broken to match it.
+    expect(trajectory).toEqual([
+      { imageSlots: 2, links: 3 },
+      { imageSlots: 2, links: 3 },
+      { imageSlots: 3, links: 3 },
+      { imageSlots: 2, links: 2 },
+      { imageSlots: 2, links: 2 }
+    ])
   })
 
   test('keeps both groups when a saved non-default option is restored', async () => {
