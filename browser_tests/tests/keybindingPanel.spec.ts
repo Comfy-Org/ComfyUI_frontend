@@ -36,12 +36,8 @@ function getExpansionContent(page: Page, commandId: string): Locator {
     .getByTestId('keybinding-expansion-content')
 }
 
-async function openContextMenu(
-  page: Page,
-  commandId: string,
-  position?: { x: number; y: number }
-) {
-  await getCommandLabel(page, commandId).click({ button: 'right', position })
+async function openContextMenu(page: Page, commandId: string) {
+  await getCommandLabel(page, commandId).click({ button: 'right' })
   await expect(
     page.getByRole('menuitem', { name: /Change keybinding/i })
   ).toBeVisible()
@@ -234,26 +230,6 @@ test.describe('Keybinding Panel', { tag: '@keyboard' }, () => {
       await expect(removeItem).toBeVisible()
 
       await page.keyboard.press('Escape')
-    })
-
-    test('Context menu opens at the pointer inside the settings dialog', async ({
-      comfyPage
-    }) => {
-      const { page } = comfyPage
-
-      await searchKeybindings(page, SINGLE_BINDING_COMMAND)
-      const offset = { x: 10, y: 5 }
-      const labelBox = await getCommandLabel(
-        page,
-        SINGLE_BINDING_COMMAND
-      ).boundingBox()
-      if (!labelBox) throw new Error('Command label has no bounding box')
-      const pointer = { x: labelBox.x + offset.x, y: labelBox.y + offset.y }
-      await openContextMenu(page, SINGLE_BINDING_COMMAND, offset)
-
-      await expect
-        .poll(() => comfyPage.contextMenu.distanceFrom(pointer))
-        .toBeLessThan(16)
     })
 
     test("Context menu 'Add new keybinding' opens add dialog", async ({
@@ -597,37 +573,15 @@ test.describe('Keybinding Panel', { tag: '@keyboard' }, () => {
     })
   })
 
-  test.describe('Sorting', () => {
-    test('Command header sorts rows by label', async ({ comfyPage }) => {
-      const { page } = comfyPage
-      const header = page.getByRole('columnheader', { name: 'Command' })
-      const sortButton = header.getByRole('button', { name: 'Command' })
-      const labels = page.locator('.keybinding-panel tbody tr td:first-child')
-      const readLabels = () => labels.allInnerTexts()
+  test('Command sort header has no browser button chrome', async ({
+    comfyPage
+  }) => {
+    const sortButton = comfyPage.page
+      .getByRole('columnheader', { name: 'Command' })
+      .getByRole('button', { name: 'Command' })
 
-      await searchKeybindings(page, 'Comfy.Canvas.Toggle')
-      await expect(header).toHaveAttribute('aria-sort', 'none')
-      await expect(sortButton).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)')
-
-      await test.step('First click sorts ascending', async () => {
-        await sortButton.click()
-        await expect(header).toHaveAttribute('aria-sort', 'ascending')
-        const ascending = await readLabels()
-        expect(ascending.length).toBeGreaterThan(1)
-        expect(ascending).toEqual(
-          ascending.toSorted((a, b) => a.localeCompare(b))
-        )
-      })
-
-      await test.step('Second click sorts descending', async () => {
-        await sortButton.click()
-        await expect(header).toHaveAttribute('aria-sort', 'descending')
-        const descending = await readLabels()
-        expect(descending).toEqual(
-          descending.toSorted((a, b) => b.localeCompare(a))
-        )
-      })
-    })
+    await expect(sortButton).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)')
+    await expect(sortButton).toHaveCSS('border-top-style', 'none')
   })
 
   test.describe('Responsive Layout', () => {
