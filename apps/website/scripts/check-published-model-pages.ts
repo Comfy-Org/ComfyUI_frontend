@@ -3,6 +3,7 @@
  * redirect to a live page. Reads the built sitemap, so run it after a build.
  * `--record` adds new model pages to the published list; it never drops one.
  */
+import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { z } from 'zod'
@@ -13,6 +14,7 @@ import { modelsUrlRoots } from '@/config/models-url-registry'
 import { routeOfHref, sitemapChunkNames } from '@/utils/hreflangAudit'
 import {
   auditPublishedModelPages,
+  droppedModelPages,
   isModelPagePath,
   recordModelPages,
   unrecordedModelPages
@@ -27,10 +29,13 @@ const PUBLISHED_PATH = join(
   'published-model-pages.json'
 )
 const MODEL_PAGE_ROOTS = [...modelsUrlRoots, '/p/supported-models']
+const BASE_REF = `origin/${process.env.GITHUB_BASE_REF || 'main'}`
 const RECORD_COMMAND =
   'pnpm --filter @comfyorg/website record:published-model-pages'
 
 const RETIRED_WITHOUT_REDIRECT: Record<string, string> = {}
+
+const PublishedListSchema = z.array(z.string())
 
 const VercelConfigSchema = z.object({
   redirects: z.array(
@@ -59,6 +64,39 @@ function sitemapPages(): Set<string> {
   )
 }
 
+function git(args: string[]): string | undefined {
+  try {
+    return execFileSync('git', args, {
+      cwd: websiteRoot,
+      encoding: 'utf-8',
+      stdio: ['ignore', 'pipe', 'ignore']
+    })
+  } catch {
+    return undefined
+  }
+}
+
+function basePublished(): string[] {
+  if (
+    git(['rev-parse', '--verify', '--quiet', `${BASE_REF}^{commit}`]) ===
+    undefined
+  ) {
+    if (process.env.GITHUB_BASE_REF)
+      throw new Error(
+        `[published-model-pages] ${BASE_REF} is not fetched; fetch the base branch first`
+      )
+    console.warn(
+      `[published-model-pages] ${BASE_REF} is missing; skipped the dropped-page check`
+    )
+    return []
+  }
+  const json = git([
+    'show',
+    `${BASE_REF}:./src/config/published-model-pages.json`
+  ])
+  return json === undefined ? [] : PublishedListSchema.parse(JSON.parse(json))
+}
+
 const live = sitemapPages()
 const liveModelPages = [...live].filter((page) =>
   isModelPagePath(
@@ -67,9 +105,9 @@ const liveModelPages = [...live].filter((page) =>
     LOCALE_CODES.map((code) => LOCALES[code].prefix)
   )
 )
-const recorded = z
-  .array(z.string())
-  .parse(JSON.parse(readFileSync(PUBLISHED_PATH, 'utf-8')))
+const recorded = PublishedListSchema.parse(
+  JSON.parse(readFileSync(PUBLISHED_PATH, 'utf-8'))
+)
 const record = process.argv.includes('--record')
 const published = record ? recordModelPages(recorded, liveModelPages) : recorded
 
@@ -86,6 +124,14 @@ const errors = [
     redirects,
     retiredWithoutRedirect: RETIRED_WITHOUT_REDIRECT
   }),
+  ...droppedModelPages(
+    basePublished(),
+    published,
+    RETIRED_WITHOUT_REDIRECT
+  ).map(
+    (page) =>
+      `${page} was dropped from the published list: restore it, or add it to RETIRED_WITHOUT_REDIRECT with a reason`
+  ),
   ...unrecordedModelPages(published, liveModelPages).map(
     (page) => `${page} is new: run \`${RECORD_COMMAND}\` after a build`
   )

@@ -1,3 +1,5 @@
+import { escapeRegExp } from 'es-toolkit'
+
 interface Redirect {
   readonly source: string
   readonly destination: string
@@ -29,12 +31,68 @@ export function isModelPagePath(
   return roots.some((root) => path === root || path.startsWith(`${root}/`))
 }
 
+const SOURCE_PARAM = /(:\w+(?:\([^()]*\))?)/
+const LITERAL_ALTERNATIVE = /^[\w.~-]+$/
+const UNSUPPORTED_SOURCE_SYNTAX = /[(){}?*+]/
+
+function unsupportedSource(source: string): Error {
+  return new Error(`Unsupported redirect source syntax: ${source}`)
+}
+
+function paramPattern(token: string, source: string): string {
+  if (!token.includes('(')) return `(?<${token.slice(1)}>[^/]+)`
+  const [name, alternatives] = token.slice(1, -1).split('(')
+  const literals = alternatives.split('|')
+  if (!literals.every((literal) => LITERAL_ALTERNATIVE.test(literal)))
+    throw unsupportedSource(source)
+  return `(?<${name}>${literals.map(escapeRegExp).join('|')})`
+}
+
+/**
+ * A Vercel redirect source as an exact, slash-sensitive matcher: literal text
+ * plus `:name` (one segment) and `:name(a|b)` (literal alternatives) params.
+ * Any other path-to-regexp syntax throws rather than silently matching nothing.
+ */
+function redirectSourcePattern(source: string): RegExp {
+  const pattern = source
+    .split(SOURCE_PARAM)
+    .map((part, index) => {
+      if (index % 2 === 1) return paramPattern(part, source)
+      if (UNSUPPORTED_SOURCE_SYNTAX.test(part)) throw unsupportedSource(source)
+      return escapeRegExp(part)
+    })
+    .join('')
+  return new RegExp(`^${pattern}$`)
+}
+
+interface CompiledRedirect extends Redirect {
+  readonly pattern: RegExp
+}
+
+function resolveRedirect(
+  page: string,
+  redirects: readonly CompiledRedirect[]
+): Redirect | undefined {
+  for (const redirect of redirects) {
+    const match = redirect.pattern.exec(page)
+    if (match)
+      return {
+        ...redirect,
+        destination: redirect.destination.replace(
+          /:(\w+)/g,
+          (param, name: string) => match.groups?.[name] ?? param
+        )
+      }
+  }
+  return undefined
+}
+
 function removalProblem(
   page: string,
   live: ReadonlySet<string>,
-  redirects: readonly Redirect[]
+  redirects: readonly CompiledRedirect[]
 ): string | undefined {
-  const redirect = redirects.find(({ source }) => source === page)
+  const redirect = resolveRedirect(page, redirects)
   if (!redirect)
     return `${page} removed: add a permanent redirect in src/config/redirects.ts or restore the page`
   if (!redirect.permanent)
@@ -53,9 +111,13 @@ export function auditPublishedModelPages({
   const unexplained = Object.entries(retiredWithoutRedirect)
     .filter(([, reason]) => reason.trim() === '')
     .map(([page]) => `${page} is retired without a reason`)
+  const compiled = redirects.map((redirect) => ({
+    ...redirect,
+    pattern: redirectSourcePattern(redirect.source)
+  }))
   const removed = published
     .filter((page) => !live.has(page) && !(page in retiredWithoutRedirect))
-    .flatMap((page) => removalProblem(page, live, redirects) ?? [])
+    .flatMap((page) => removalProblem(page, live, compiled) ?? [])
   return [...unexplained, ...removed]
 }
 
@@ -74,4 +136,16 @@ export function recordModelPages(
   liveModelPages: readonly string[]
 ): string[] {
   return [...new Set([...published, ...liveModelPages])].sort()
+}
+
+/** Pages the base branch's list had that this list dropped without retiring them. */
+export function droppedModelPages(
+  basePublished: readonly string[],
+  published: readonly string[],
+  retiredWithoutRedirect: Readonly<Record<string, string>>
+): string[] {
+  const kept = new Set(published)
+  return basePublished
+    .filter((page) => !kept.has(page) && !(page in retiredWithoutRedirect))
+    .sort()
 }

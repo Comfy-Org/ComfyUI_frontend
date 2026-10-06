@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   auditPublishedModelPages,
+  droppedModelPages,
   isModelPagePath,
   recordModelPages,
   unrecordedModelPages
@@ -96,6 +97,91 @@ describe('auditPublishedModelPages', () => {
   )
 })
 
+describe('auditPublishedModelPages with redirect source patterns', () => {
+  const supportedPage = '/p/supported-models/flux-dev/'
+  const localPage = '/hub/models/local/flux-dev/'
+  const missing = `${supportedPage} removed: add a permanent redirect in src/config/redirects.ts or restore the page`
+
+  it.for([
+    {
+      name: 'a grouped source that lists the slug',
+      page: supportedPage,
+      source: '/p/supported-models/:slug(sdxl|flux-dev)/',
+      destination: '/hub/models/local/:slug/',
+      live: [localPage],
+      errors: []
+    },
+    {
+      name: 'a grouped source that does not list the slug',
+      page: supportedPage,
+      source: '/p/supported-models/:slug(sdxl|wan)/',
+      destination: '/hub/models/local/:slug/',
+      live: [localPage],
+      errors: [missing]
+    },
+    {
+      name: 'a grouped source that only covers the bare path',
+      page: supportedPage,
+      source: '/p/supported-models/:slug(flux-dev)',
+      destination: '/hub/models/local/:slug/',
+      live: [localPage],
+      errors: [missing]
+    },
+    {
+      name: 'a param destination that is not a published page',
+      page: supportedPage,
+      source: '/p/supported-models/:slug(sdxl|flux-dev)/',
+      destination: '/hub/models/local/:slug/',
+      live: ['/hub/models/local/sdxl/'],
+      errors: [
+        `${supportedPage} removed: its redirect lands on ${localPage}, which is not a published page`
+      ]
+    },
+    {
+      name: 'a bare param, which matches one segment only',
+      page: supportedPage,
+      source: '/p/:slug/',
+      destination: '/hub/models/local/:slug/',
+      live: [localPage],
+      errors: [missing]
+    },
+    {
+      name: 'a locale param',
+      page: '/zh-CN/models/',
+      source: '/:locale/models/',
+      destination: '/:locale/hub/models/',
+      live: ['/zh-CN/hub/models/'],
+      errors: []
+    }
+  ])('reports $name', ({ page, source, destination, live, errors }) => {
+    expect(
+      auditPublishedModelPages({
+        published: [page],
+        live: new Set(live),
+        redirects: [redirectFrom(source, destination)],
+        retiredWithoutRedirect: {}
+      })
+    ).toEqual(errors)
+  })
+
+  it.for([
+    '/p/supported-models/:path*',
+    '/p/supported-models/(.*)',
+    '/p/supported-models/:slug([a-z]+)/',
+    '/p/:slug?/',
+    '/p/supported-models/:slug()/'
+  ])('rejects the unsupported source %s', (source) => {
+    expect(() =>
+      auditPublishedModelPages({
+        published: [supportedPage],
+        live: new Set([supportedPage]),
+        redirects: [redirectFrom(source, hub)],
+        retiredWithoutRedirect: {}
+      })
+    ).toThrow(`Unsupported redirect source syntax: ${source}`)
+  })
+})
+
 describe('isModelPagePath', () => {
   const roots = ['/hub/models', '/p/supported-models']
   const locales = ['', '/zh-CN']
@@ -123,5 +209,37 @@ describe('recording model pages', () => {
       flux,
       localFlux
     ])
+  })
+})
+
+describe('droppedModelPages', () => {
+  it.for<{
+    name: string
+    published: string[]
+    retired: Record<string, string>
+    dropped: string[]
+  }>([
+    {
+      name: 'nothing dropped',
+      published: [flux, localFlux],
+      retired: {},
+      dropped: []
+    },
+    {
+      name: 'a dropped page',
+      published: [flux],
+      retired: {},
+      dropped: [localFlux]
+    },
+    {
+      name: 'a dropped page that is retired',
+      published: [flux],
+      retired: { [localFlux]: 'no relevant target, stays 404' },
+      dropped: []
+    }
+  ])('reports $name', ({ published, retired, dropped }) => {
+    expect(droppedModelPages([flux, localFlux], published, retired)).toEqual(
+      dropped
+    )
   })
 })

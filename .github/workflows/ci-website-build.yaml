@@ -63,7 +63,11 @@ jobs:
         run: pnpm --filter @comfyorg/website check:models-html
 
       - name: Check no published model page was removed without a redirect
-        run: pnpm --filter @comfyorg/website check:published-model-pages
+        run: |
+          if [ -n "$GITHUB_BASE_REF" ]; then
+            git fetch --no-tags --depth=1 origin "+refs/heads/$GITHUB_BASE_REF:refs/remotes/origin/$GITHUB_BASE_REF"
+          fi
+          pnpm --filter @comfyorg/website check:published-model-pages
 
       - name: Verify the release build excludes Workshop and is noindex
         env:
