@@ -646,7 +646,6 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(await session.sendMessage('and now add a save node')).toBe(false)
 
     await vi.waitFor(() => expect(session.isStreaming.value).toBe(true))
-    // The turn the server named, not the one this client had started.
     expect(conversation.activeTurnId).toBe('msg-2')
     expect(session.entries.value.at(-1)).toMatchObject({
       role: 'assistant',
@@ -733,9 +732,40 @@ describe('useAgentSession (v1 composition root)', () => {
     }
   })
 
-  // The discriminator is load-bearing: a 409 from any other endpoint, or one
-  // whose body this client cannot read, must stay an ordinary send failure
-  // rather than trigger a re-read of a thread that is not actually busy.
+  it('records no failed send when the re-read finds the refused thread deleted', async () => {
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-1' })
+      .mockRejectedValue(
+        new AgentApiError('turn in progress', 409, {
+          error: 'turn in progress',
+          type: 'TURN_IN_PROGRESS',
+          active_message_id: 'msg-2'
+        })
+      )
+    const getMessages = vi.fn(async (): Promise<AgentMessages> => {
+      throw new AgentApiError('thread not found', 404, {
+        error: 'thread not found'
+      })
+    })
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage, getMessages }),
+      events: source
+    })
+    session.start()
+    await session.sendMessage('first')
+    emit(done('msg-1'))
+
+    await session.sendMessage('refused')
+
+    expect(
+      session.entries.value.filter((entry) => entry.role === 'user')
+    ).not.toContainEqual(expect.objectContaining({ text: 'refused' }))
+  })
+
   it('leaves an undiscriminated 409 on an existing thread as a plain failure', async () => {
     const postMessage = vi
       .fn<
