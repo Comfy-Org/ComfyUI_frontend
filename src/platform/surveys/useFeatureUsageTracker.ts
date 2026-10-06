@@ -175,7 +175,9 @@ function persistUsageData(featureId: string, now: number) {
   } catch (error) {
     reportStorageError(error, 'error_persisting_feature_usage')
     if (!usageData) return
-    pendingUsageData = mergeUsageData(pendingUsageData, usageData)
+    pendingUsageData = mergeUsageData(pendingUsageData, {
+      [featureId]: usageFor(usageData, featureId)
+    })
   }
 
   dispatchStorageUpdate(oldValue, newValue ?? JSON.stringify(usageData))
