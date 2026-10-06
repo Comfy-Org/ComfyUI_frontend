@@ -144,7 +144,6 @@
     "loglevel": "^1.9.2",
     "marked": "^15.0.11",
     "mediabunny": "catalog:",
-    "minisearch": "catalog:",
     "mixpanel-browser": "catalog:",
     "pinia": "catalog:",
     "posthog-js": "catalog:",
