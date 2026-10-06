@@ -39,6 +39,8 @@ import {
 } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
 import { useSubscriptionCancellationWatcher } from './useSubscriptionCancellationWatcher'
 
+class BillingPortalTabBlockedError extends Error {}
+
 type CloudSubscriptionCheckoutResponse = NonNullable<
   operations['createCloudSubscriptionCheckout']['responses']['201']['content']['application/json']
 >
@@ -297,9 +299,12 @@ function useSubscriptionInternal() {
 
   const manageSubscription = async () => {
     const didOpenPortal = await accessBillingPortal()
-    if (!didOpenPortal) {
-      return
+    if (didOpenPortal === false) {
+      throw new BillingPortalTabBlockedError(
+        t('subscription.billingTabBlocked')
+      )
     }
+    if (!didOpenPortal) return
 
     startCancellationWatcher()
   }

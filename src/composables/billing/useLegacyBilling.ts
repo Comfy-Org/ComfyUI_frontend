@@ -188,7 +188,11 @@ export function useLegacyBilling(): BillingState & BillingActions {
   }
 
   async function manageSubscription(): Promise<void> {
-    await legacyManageSubscription()
+    try {
+      await legacyManageSubscription()
+    } catch (error) {
+      authActions.reportError(error)
+    }
   }
 
   async function cancelSubscription(): Promise<void> {

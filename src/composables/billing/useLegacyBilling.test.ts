@@ -1,11 +1,14 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import { useAuthActions } from '@/composables/auth/useAuthActions'
+
 import { useLegacyBilling } from './useLegacyBilling'
 
 vi.mock(import('firebase/auth'))
 
 const mockSubscribe = vi.fn()
 const mockSubscribeDirect = vi.fn()
+const mockManageSubscription = vi.fn()
 
 vi.mock<unknown>(
   import('@/platform/cloud/subscription/composables/useSubscription'),
@@ -17,7 +20,7 @@ vi.mock<unknown>(
       subscriptionStatus: { value: null },
       isCancelled: { value: false },
       fetchStatus: vi.fn(),
-      manageSubscription: vi.fn(),
+      manageSubscription: mockManageSubscription,
       subscribe: mockSubscribe,
       subscribeDirect: mockSubscribeDirect,
       showSubscriptionDialog: vi.fn()
@@ -68,6 +71,27 @@ describe('useLegacyBilling', () => {
 
       expect(mockSubscribe).toHaveBeenCalledOnce()
       expect(mockSubscribeDirect).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('when the billing portal tab is blocked', () => {
+    const blocked = new Error('subscription.billingTabBlocked')
+
+    it('rejects cancel so the dialog does not report success', async () => {
+      mockManageSubscription.mockRejectedValueOnce(blocked)
+
+      await expect(useLegacyBilling().cancelSubscription()).rejects.toBe(
+        blocked
+      )
+    })
+
+    it('reports manage subscription instead of rejecting', async () => {
+      mockManageSubscription.mockRejectedValueOnce(blocked)
+
+      await expect(
+        useLegacyBilling().manageSubscription()
+      ).resolves.toBeUndefined()
+      expect(useAuthActions().reportError).toHaveBeenCalledWith(blocked)
     })
   })
 })
