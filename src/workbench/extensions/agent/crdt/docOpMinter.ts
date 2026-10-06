@@ -13,6 +13,7 @@
  */
 import type {
   NodeId as WireNodeId,
+  PromotedHostWrite,
   WorkflowNode
 } from '@comfyorg/comfy-multi-player'
 
@@ -178,6 +179,39 @@ function isValueWidgetWrite(
   return isValueWidget(widget, stored)
 }
 
+/**
+ * The positional payload a write to a PROMOTED widget needs (schema Amendment
+ * A15). A subgraph instance's `type` is a definition UUID, so the pinned
+ * catalog never describes it and the document stores its promoted values as
+ * one opaque positional array (schema §1.2) that no name can address: a named
+ * `set_widget` against such a node is rejected outright (`opaque_widgets`),
+ * which bounced every edit to a promoted widget while the agent held the
+ * document (PM-1995). `value_index` is the widget's position among the node's
+ * widget-backed inputs — the order `SubgraphNode.serialize` writes
+ * `widgets_values` in, and the order the follower reads them back in.
+ */
+function promotedHostWrite(
+  node: LGraphNode | null,
+  event: IntentOf<'set_widget'>
+): PromotedHostWrite | null {
+  if (!node?.isSubgraphNode()) return null
+  const hostInputs = node.inputs.flatMap((input) =>
+    input.widgetId ? [{ name: input.name, widgetId: input.widgetId }] : []
+  )
+  const valueIndex = hostInputs.findIndex((input) => input.name === event.name)
+  if (valueIndex === -1) return null
+  const widgetValueStore = useWidgetValueStore()
+  return {
+    value_index: valueIndex,
+    instance_path: [String(event.nodeId)],
+    host_widgets_values: hostInputs.map((input, index) =>
+      index === valueIndex
+        ? event.value
+        : widgetValueStore.getWidget(input.widgetId)?.value
+    )
+  }
+}
+
 function routedWidgetOperation(
   graph: LGraph,
   rootGraphId: string,
@@ -192,7 +226,10 @@ function routedWidgetOperation(
     old: event.previous
   } as const
   const owningGraphId = node?.graph?.id ?? event.graphId
-  if (owningGraphId === rootGraphId) return operation
+  if (owningGraphId === rootGraphId) {
+    const promoted = promotedHostWrite(node, event)
+    return promoted ? { ...operation, promoted } : operation
+  }
   const subgraphNodePath = findSubgraphNodePathById(graph, owningGraphId)
   if (subgraphNodePath === null || subgraphNodePath.length === 0) {
     console.error(

@@ -88,11 +88,23 @@ class TestNote extends LGraphNode {
   }
 }
 
+/** A widget-backed input, so a subgraph can promote it onto its instance. */
+class TestPrompt extends LGraphNode {
+  constructor() {
+    super('Test Prompt')
+    const input = this.addInput('text', 'STRING')
+    input.widget = { name: 'text' }
+    this.addWidget('text', 'text', 'an interior default', () => {})
+    this.serialize_widgets = true
+  }
+}
+
 const CATALOG: WidgetCatalog = {
   types: {
     TestSource: { widget_order: ['steps'] },
     TestSink: { widget_order: [] },
-    TestAutogrowSink: { widget_order: [] }
+    TestAutogrowSink: { widget_order: [] },
+    TestPrompt: { widget_order: ['text'] }
   }
 }
 
@@ -106,12 +118,16 @@ const zDocInputs = z.array(
   z.object({ name: z.string(), link: z.number().nullable() })
 )
 
-function applyMinted(doc: ReturnType<typeof mint>, ops: GraphOperation[]) {
+function applyOutcomes(doc: ReturnType<typeof mint>, ops: GraphOperation[]) {
   return applyOps(
     doc,
     mintWireOps(ops, { actor: 'human:user:tab', baseVersion: 1 }),
     CATALOG
-  ).outcomes.map((outcome) => outcome.outcome)
+  ).outcomes
+}
+
+function applyMinted(doc: ReturnType<typeof mint>, ops: GraphOperation[]) {
+  return applyOutcomes(doc, ops).map((outcome) => outcome.outcome)
 }
 
 function docInputs(doc: ReturnType<typeof mint>, nodeId: unknown) {
@@ -143,6 +159,7 @@ beforeEach(() => {
   LiteGraph.registerNodeType('TestSink', TestSink)
   LiteGraph.registerNodeType('TestAutogrowSink', TestAutogrowSink)
   LiteGraph.registerNodeType('TestNote', TestNote)
+  LiteGraph.registerNodeType('TestPrompt', TestPrompt)
 })
 
 describe('attachDocOpMinter', () => {
@@ -663,6 +680,70 @@ describe('attachDocOpMinter', () => {
         inner_widget: 'steps'
       }
     ])
+  })
+
+  it('PM-1995: mints a promoted host write the doc host accepts', async () => {
+    const subgraph = createTestSubgraph({
+      rootGraph: graph,
+      inputs: [
+        { name: 'prefix', type: 'STRING' },
+        { name: 'text', type: 'STRING' }
+      ]
+    })
+    graph.subgraphs.set(subgraph.id, subgraph)
+    const host = createTestSubgraphNode(subgraph)
+    withGraphIntentSource('load', () => {
+      graph.add(host)
+      for (const [index, name] of ['prefix', 'text'].entries()) {
+        const interior = LiteGraph.createNode('TestPrompt')
+        assert.exists(interior)
+        subgraph.add(interior)
+        subgraph.inputNode.slots[index].connect(interior.inputs[0], interior)
+        interior.widgets![0].name = name
+      }
+    })
+    const doc = mintDocFrom(graph)
+
+    host.widgets[1].value = 'a prompt pasted while the agent panel is open'
+    await afterFlush()
+
+    expect(minted).toEqual([
+      {
+        op: 'set_widget',
+        node_id: host.id,
+        widget: 'text',
+        value: 'a prompt pasted while the agent panel is open',
+        old: 'an interior default',
+        promoted: {
+          value_index: 1,
+          instance_path: [String(host.id)],
+          host_widgets_values: [
+            'an interior default',
+            'a prompt pasted while the agent panel is open'
+          ]
+        }
+      }
+    ])
+    const [write] = minted
+    assert(write.op === 'set_widget' && write.path == null)
+    const { promoted: _dropped, ...named } = write
+    expect(applyOutcomes(doc, [named])).toEqual([
+      expect.objectContaining({
+        outcome: 'rejected',
+        reason: expect.objectContaining({ code: 'opaque_widgets' })
+      })
+    ])
+
+    expect(applyMinted(doc, minted)).toEqual(['applied'])
+    expect(
+      project(doc, CATALOG).nodes.find(
+        (node) => String(node.id) === String(host.id)
+      )?.widgets_values
+    ).toEqual([
+      'an interior default',
+      'a prompt pasted while the agent panel is open'
+    ])
+    doc.destroy()
   })
 
   it('does not let an ephemeral widget write roll a hand edit back with it', async () => {
