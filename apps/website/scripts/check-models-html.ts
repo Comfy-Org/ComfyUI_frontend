@@ -12,24 +12,24 @@ import {
 
 const DIST = join(process.cwd(), 'dist')
 
-function examplesOf(slug: string) {
+function detailOf(slug: string) {
   const detail = getRouterWorkshopModelDetail(slug)
   if (!detail) throw new Error(`Missing model record: ${slug}`)
-  return detail.examples
+  return detail
 }
 
-const pagedModels = workshopModels.flatMap(({ href, name, slug, routerId }) =>
-  href === undefined ? [] : [{ href, name, slug, routerId }]
+const pagedModels = workshopModels.flatMap(({ href, slug }) =>
+  href === undefined ? [] : [{ href, detail: detailOf(slug) }]
 )
 
-const errors = pagedModels.flatMap((model) => {
-  const html = readFileSync(join(DIST, model.href, 'index.html'), 'utf-8')
+const errors = pagedModels.flatMap(({ href, detail }) => {
+  const html = readFileSync(join(DIST, href, 'index.html'), 'utf-8')
   return [
-    ...auditModelPage(html, model.name),
-    ...auditModelDefinition(html, model.routerId),
+    ...auditModelPage(html, detail.name),
+    ...auditModelDefinition(html, detail),
     ...auditMediaLabels(html),
-    ...auditExampleGallery(html, examplesOf(model.slug).length)
-  ].map((error) => `${model.href}: ${error}`)
+    ...auditExampleGallery(html, detail.examples.length)
+  ].map((error) => `${href}: ${error}`)
 })
 
 if (errors.length > 0) {

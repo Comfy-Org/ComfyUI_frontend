@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
+import type { RouterWorkshopModel } from '@/config/models-catalogue'
+
 import {
   auditMediaLabels,
   auditModelDefinition,
@@ -56,52 +58,80 @@ describe(auditModelPage, () => {
 })
 
 describe(auditModelDefinition, () => {
+  const model: RouterWorkshopModel = {
+    slug: 'bfl--flux-pro-fill--edit-images',
+    name: 'FLUX Pro Fill',
+    provider: 'Black Forest Labs',
+    task: 'image-to-image',
+    modality: 'image',
+    workflowCount: 0,
+    capabilities: [],
+    routerId: 'bfl/flux-pro-fill'
+  }
+  const sentence =
+    'FLUX Pro Fill is an image-to-image model from Black Forest Labs. You can call it through the Comfy Router API as bfl/flux-pro-fill.'
   const definition = (text: string) =>
     `<p class="text-sm" data-testid="model-definition">\n  ${text}\n</p>`
   const facts = (rows: string) =>
     `<dl class="grid" data-testid="model-facts"><!--[-->${rows}<!--]--></dl>`
-  const routerRow =
-    '<dt class="a">Router model ID</dt><dd class="b">bfl/flux-2-max</dd>'
+  const routerRow = (routerId: string) =>
+    `<dt class="a">Router model ID</dt><dd class="b">${routerId}</dd>`
+  const wrongDefinition = (found: string) =>
+    `expected the definition ${JSON.stringify(sentence)}, found ${JSON.stringify(found)}`
+  const missingRouterRow =
+    'expected a "Router model ID" row reading bfl/flux-pro-fill'
 
   it.for([
     {
       name: 'the sentence and the Router id row',
       html:
-        definition(
-          'FLUX 2 Max is a model. You can call it through the Comfy Router API as bfl/flux-2-max.'
-        ) + facts(`<dt>Provider</dt><dd>BFL</dd>${routerRow}`),
+        definition(sentence) +
+        facts(`<dt>Provider</dt><dd>BFL</dd>${routerRow(model.routerId)}`),
       errors: []
+    },
+    {
+      name: 'only the Router clause',
+      html:
+        definition(
+          'You can call it through the Comfy Router API as bfl/flux-pro-fill.'
+        ) + facts(routerRow(model.routerId)),
+      errors: [
+        wrongDefinition(
+          'You can call it through the Comfy Router API as bfl/flux-pro-fill.'
+        )
+      ]
+    },
+    {
+      name: 'a tampered first sentence',
+      html:
+        definition(sentence.replace('an image', 'a image')) +
+        facts(routerRow(model.routerId)),
+      errors: [wrongDefinition(sentence.replace('an image', 'a image'))]
     },
     {
       name: 'an empty sentence and no facts',
       html: definition('') + facts(''),
-      errors: [
-        'expected a definition containing " as bfl/flux-2-max."',
-        'expected a "Router model ID" row reading bfl/flux-2-max'
-      ]
+      errors: [wrongDefinition(''), missingRouterRow]
     },
     {
       name: 'the sentence only inside a template',
-      html: `<template>${definition('… as bfl/flux-2-max.')}${facts(routerRow)}</template>`,
-      errors: [
-        'expected a definition containing " as bfl/flux-2-max."',
-        'expected a "Router model ID" row reading bfl/flux-2-max'
-      ]
+      html: `<template>${definition(sentence)}${facts(routerRow(model.routerId))}</template>`,
+      errors: [wrongDefinition(''), missingRouterRow]
     },
     {
       name: "another model's Router id",
       html:
-        definition('X is a model. … as bfl/flux-2-pro.') +
-        facts(
-          '<dt>Router model ID</dt><dd class="font-mono">bfl/flux-2-pro</dd>'
-        ),
+        definition(sentence.replace('bfl/flux-pro-fill', 'bfl/flux-2-pro')) +
+        facts(routerRow('bfl/flux-2-pro')),
       errors: [
-        'expected a definition containing " as bfl/flux-2-max."',
-        'expected a "Router model ID" row reading bfl/flux-2-max'
+        wrongDefinition(
+          sentence.replace('bfl/flux-pro-fill', 'bfl/flux-2-pro')
+        ),
+        missingRouterRow
       ]
     }
   ])('$name', ({ html, errors }) => {
-    expect(auditModelDefinition(html, 'bfl/flux-2-max')).toEqual(errors)
+    expect(auditModelDefinition(html, model)).toEqual(errors)
   })
 })
 

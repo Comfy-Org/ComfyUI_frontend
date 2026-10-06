@@ -1,3 +1,6 @@
+import type { RouterWorkshopModel } from '@/config/models-catalogue'
+import { modelDefinition } from '@/lib/workshop/model-definition'
+
 const ENTITIES: Record<string, string> = {
   '&amp;': '&',
   '&lt;': '<',
@@ -45,12 +48,19 @@ function innerOf(html: string, tag: string, testId: string) {
   ).exec(html)?.[1]
 }
 
-export function auditModelDefinition(html: string, routerId: string): string[] {
+export function auditModelDefinition(
+  html: string,
+  model: RouterWorkshopModel
+): string[] {
+  const { routerId } = model
   const live = withoutHiddenMarkup(html)
   const errors: string[] = []
   const definition = textOf(innerOf(live, 'p', 'model-definition') ?? '')
-  if (!definition.includes(` as ${routerId}.`))
-    errors.push(`expected a definition containing " as ${routerId}."`)
+  const expected = modelDefinition(model)
+  if (definition !== expected)
+    errors.push(
+      `expected the definition ${JSON.stringify(expected)}, found ${JSON.stringify(definition)}`
+    )
   const facts = innerOf(live, 'dl', 'model-facts') ?? ''
   const routerRow =
     /<dt\b[^>]*>\s*Router model ID\s*<\/dt>\s*<dd\b[^>]*>([\s\S]*?)<\/dd>/.exec(
