@@ -2,6 +2,7 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetContext } from '@/platform/assets/schemas/mediaAssetSchema'
+import { getAssetUrl } from '@/platform/assets/utils/assetUrlUtil'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { api } from '@/scripts/api'
 import type { TaskItemImpl } from '@/stores/queueStore'
@@ -72,7 +73,7 @@ const byIsTemp = (a: AssetItem, b: AssetItem): number =>
 
 function flatAssetToResultItem(asset: AssetItem): AugmentedResultItem {
   const metadata = getOutputAssetMetadata(asset.user_metadata)
-  const url = asset.preview_url ?? ''
+  const url = asset.preview_url ?? getAssetUrl(asset)
   return {
     assetId: asset.id,
     display_name: asset.display_name ?? undefined,
@@ -120,7 +121,6 @@ export function unflattenOutputAssets(
         ) ?? ordered.at(-1)!
     return {
       ...representative,
-      id: job_id,
       created_at: ordered.at(-1)!.created_at,
       user_metadata: {
         jobId: job_id,

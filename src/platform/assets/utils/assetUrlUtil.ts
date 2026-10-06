@@ -3,9 +3,11 @@
  */
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
 import { getOutputAssetMetadata } from '../schemas/assetMetadataSchema'
 import type { AssetItem } from '../schemas/assetSchema'
+import { getAssetStoredFilename } from './assetMetadataUtils'
 import { getAssetType } from './assetTypeUtil'
 
 /**
@@ -27,7 +29,7 @@ export function getAssetUrl(
   const assetType = getAssetType(asset, defaultType)
   const subfolder = getAssetSubfolder(asset)
   const params = new URLSearchParams()
-  params.set('filename', asset.name)
+  params.set('filename', getAssetStoredFilename(asset))
   params.set('type', assetType)
   if (subfolder) {
     params.set('subfolder', subfolder)
@@ -51,7 +53,9 @@ export function getAssetSubfolder(asset: AssetItem): string {
   if (previewSubfolder) return previewSubfolder
 
   const { subfolder } = asset.user_metadata ?? {}
-  return typeof subfolder === 'string' ? subfolder : ''
+  if (typeof subfolder === 'string') return subfolder
+
+  return asset.file_path?.split('/').slice(1, -1).join('/') ?? ''
 }
 
 /**
@@ -82,7 +86,7 @@ export function getAssetFileUrl(
   asset: AssetItem,
   options?: { disposition?: 'inline' | 'attachment' }
 ): string {
-  if (useFeatureFlags().flags.assetsEnabled) {
+  if (useFeatureFlags().flags.assetsEnabled && !isCloud) {
     const query = options?.disposition
       ? `?disposition=${options.disposition}`
       : ''
