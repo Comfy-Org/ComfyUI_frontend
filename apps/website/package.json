@@ -42,6 +42,8 @@
     "validate:jsonld": "tsx ./scripts/validate-jsonld.ts",
     "check:hreflang": "tsx ./scripts/check-hreflang.ts",
     "check:models-html": "tsx ./scripts/check-models-html.ts",
+    "check:published-model-pages": "tsx ./scripts/check-published-model-pages.ts",
+    "record:published-model-pages": "tsx ./scripts/check-published-model-pages.ts --record",
     "list:models-pages": "tsx ./scripts/list-models-pages.ts",
     "validate:llms-txt-links": "tsx ./scripts/validate-llms-txt-links.ts",
     "validate:markdown-alternates": "tsx ./scripts/validate-markdown-alternates.ts",
