@@ -4459,6 +4459,11 @@
       "getStarted": "Get Started",
       "readDocs": "Read the docs"
     },
+    "challengeBanner": {
+      "label": "OPEN CALL CHALLENGE",
+      "line": "Build on the platform for a chance to win $10k. Ends Oct 19, 9am PT.",
+      "cta": "Read the post"
+    },
     "serverless": {
       "codeHeading": "Call your endpoint",
       "codeSubtitle": "The SDK is the front door; plain HTTP works too."
