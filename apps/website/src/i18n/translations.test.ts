@@ -79,16 +79,27 @@ describe('site translations', () => {
     )
   })
 
-  it('falls back from Japanese to English', () => {
+  it('binds authored and generated Japanese copy', () => {
     const { t } = translationsFor('ja')
     expect(t('hero.title')).toBe('ビジュアルAIを自在にコントロール')
-    expect(t('tags.partnerNodes')).toBe('Partner Nodes')
+    expect(t('tags.partnerNodes')).toBe('パートナーノード')
   })
+
+  it.for([
+    ['minimaxLicense.hero.title', 'MiniMax\nCommercial License'],
+    ['gallery.heroTitleAfter', ''],
+    ['models.list.heroTitleAfter', '']
+  ] as const)(
+    'renders excluded copy and empty fragments for %s',
+    ([key, text]) => {
+      expect(translationsFor('ja').t(key)).toBe(text)
+    }
+  )
 
   it.for([
     ['en', '42 models'],
     ['zh-CN', '42 个模型'],
-    ['ja', '42 models']
+    ['ja', '42件のモデル']
   ] as const)('renders the model directory count in %s', ([locale, text]) => {
     expect(
       translationsFor(locale).t('workshop.catalogue.directoryCount', {
@@ -100,7 +111,9 @@ describe('site translations', () => {
   it.for([
     { locale: 'en', count: 1, expected: '1 node' },
     { locale: 'en', count: 2, expected: '2 nodes' },
-    { locale: 'zh-CN', count: 2, expected: '2 个节点' }
+    { locale: 'zh-CN', count: 2, expected: '2 个节点' },
+    { locale: 'ja', count: 1, expected: '1 ノード' },
+    { locale: 'ja', count: 2, expected: '2 ノード' }
   ] as const)(
     'renders $locale plural copy for $count',
     ({ locale, count, expected }) => {
@@ -113,21 +126,24 @@ describe('site translations', () => {
 })
 
 describe.for(catalogs)('$file catalog', ({ english, messages }) => {
-  it('includes Chinese copy for every eligible English message', () => {
-    const chinese = messages['zh-CN'] ?? {}
-    const chineseKeys = new Set(leafMessages(chinese).map(([key]) => key))
-    const missing = leafMessages(english)
-      .map(([key]) => key)
-      .filter(
-        (key) =>
-          !chineseKeys.has(key) &&
-          !translationExclusions.some(
-            (prefix) => key === prefix || key.startsWith(`${prefix}.`)
-          )
-      )
+  it.for(['zh-CN', 'ja'] as const)(
+    'includes %s copy for every eligible English message',
+    (locale) => {
+      const localized = messages[locale] ?? {}
+      const localizedKeys = new Set(leafMessages(localized).map(([key]) => key))
+      const missing = leafMessages(english)
+        .map(([key]) => key)
+        .filter(
+          (key) =>
+            !localizedKeys.has(key) &&
+            !translationExclusions.some(
+              (prefix) => key === prefix || key.startsWith(`${prefix}.`)
+            )
+        )
 
-    expect(missing).toEqual([])
-  })
+      expect(missing).toEqual([])
+    }
+  )
 
   it.for(LOCALE_CODES)('renders every %s message', (locale: Locale) => {
     const i18n = createI18n({

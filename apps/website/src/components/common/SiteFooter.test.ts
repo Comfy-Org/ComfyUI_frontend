@@ -8,7 +8,7 @@ describe('SiteFooter', () => {
   it.for([
     ['en', 'ComfyUI Models'],
     ['zh-CN', 'ComfyUI 模型'],
-    ['ja', 'ComfyUI Models']
+    ['ja', 'ComfyUI モデル']
   ] as const)(
     'links the one model catalogue from every locale (%s)',
     ([locale, name]) => {
