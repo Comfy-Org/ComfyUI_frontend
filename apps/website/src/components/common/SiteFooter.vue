@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import { useMounted } from '@vueuse/core'
 import { ref } from 'vue'
 
 import { externalLinks, getRoutes } from '@/config/routes'
 import { useFrameScrub } from '@/composables/useFrameScrub'
+import { prefersReducedMotion } from '@/composables/useReducedMotion'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import FooterLinkColumn from './FooterLinkColumn.vue'
@@ -20,7 +22,9 @@ const frameUrls = Array.from({ length: 75 }, (_, i) => {
   return `https://media.comfy.org/website/homepage/footer-logo-seq/seq-footer_${index}.webp`
 })
 
-const { isPlaying } = useFrameScrub(canvasRef, {
+const isMounted = useMounted()
+
+useFrameScrub(canvasRef, {
   urls: frameUrls,
   scrollTrigger: (canvas) => ({
     trigger: canvas,
@@ -271,14 +275,21 @@ const contactColumn: { title: string; links: FooterLink[] } = {
 
       <!-- Logo -->
       <div class="pointer-events-none relative size-52 lg:mt-28">
+        <noscript>
+          <img
+            src="https://media.comfy.org/website/homepage/footer-logo-seq/seq-footer_00074.webp"
+            alt=""
+            class="absolute inset-0 size-full"
+          />
+        </noscript>
         <img
-          v-show="!isPlaying"
+          v-if="isMounted && prefersReducedMotion()"
           :src="frameUrls.at(-1)"
           alt=""
-          loading="lazy"
           decoding="async"
           crossorigin="anonymous"
           class="absolute inset-0 size-full"
+          data-testid="footer-logo-static"
         />
         <canvas ref="canvasRef" class="absolute inset-0 size-full" />
       </div>

@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/vue'
+import { render, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, ref } from 'vue'
 
@@ -18,26 +18,22 @@ vi.mock(import('./useReducedMotion'), () => ({
 
 let decoder: FakeImageDecoder
 let urls: string[]
+let drawImage: ReturnType<typeof vi.fn>
 
 function renderScrub() {
   render(
     defineComponent({
       setup() {
         const canvas = ref<HTMLCanvasElement>()
-        const { isPlaying } = useFrameScrub(canvas, {
+        useFrameScrub(canvas, {
           urls,
           scrollTrigger: (trigger) => ({ trigger })
         })
-        return () => [
-          h('canvas', { ref: canvas }),
-          h('p', { 'data-testid': 'playing' }, String(isPlaying.value))
-        ]
+        return () => h('canvas', { ref: canvas })
       }
     })
   )
 }
-
-const playing = () => screen.getByTestId('playing').textContent
 
 describe('useFrameScrub', () => {
   beforeEach(() => {
@@ -47,9 +43,10 @@ describe('useFrameScrub', () => {
     urls = ['a.webp', 'b.webp', 'c.webp'].map((url) =>
       decoder.frame(url, 10, 10)
     )
+    drawImage = vi.fn()
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
       clearRect: vi.fn(),
-      drawImage: vi.fn()
+      drawImage
     } as unknown as CanvasRenderingContext2D)
   })
 
@@ -58,10 +55,10 @@ describe('useFrameScrub', () => {
 
     await setAllIntersecting(false)
     expect(decoder.decoded).toEqual([])
-    expect(playing()).toBe('false')
+    expect(drawImage).not.toHaveBeenCalled()
 
     await setAllIntersecting(true)
-    await waitFor(() => expect(playing()).toBe('true'))
+    await waitFor(() => expect(drawImage).toHaveBeenCalled())
     expect(decoder.decoded).toEqual(urls)
   })
 
@@ -72,6 +69,6 @@ describe('useFrameScrub', () => {
     await setAllIntersecting(true)
 
     expect(decoder.decoded).toEqual([])
-    expect(playing()).toBe('false')
+    expect(drawImage).not.toHaveBeenCalled()
   })
 })

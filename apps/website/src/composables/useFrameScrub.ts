@@ -1,6 +1,6 @@
 import { useIntersectionObserver } from '@vueuse/core'
 import type { Ref } from 'vue'
-import { onUnmounted, ref } from 'vue'
+import { onUnmounted } from 'vue'
 
 import { gsap } from '@/scripts/gsapSetup'
 import { prefersReducedMotion } from './useReducedMotion'
@@ -29,7 +29,6 @@ export function useFrameScrub(
   canvasRef: Ref<HTMLCanvasElement | undefined>,
   options: FrameScrubOptions
 ) {
-  const isPlaying = ref(false)
   let ctx: gsap.Context | undefined
 
   async function play(canvas: HTMLCanvasElement) {
@@ -51,7 +50,6 @@ export function useFrameScrub(
     }
 
     drawFrame(0)
-    isPlaying.value = true
 
     const proxy = { frame: 0 }
     ctx = gsap.context(() => {
@@ -81,6 +79,4 @@ export function useFrameScrub(
   onUnmounted(() => {
     ctx?.revert()
   })
-
-  return { isPlaying }
 }

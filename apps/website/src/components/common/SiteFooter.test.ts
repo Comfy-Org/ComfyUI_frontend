@@ -1,10 +1,35 @@
 import { render, screen } from '@testing-library/vue'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import { externalLinks, getRoutes } from '@/config/routes'
 import SiteFooter from './SiteFooter.vue'
 
+const motion = vi.hoisted(() => ({ reduced: false }))
+
+vi.mock(import('@/composables/useReducedMotion'), () => ({
+  prefersReducedMotion: () => motion.reduced
+}))
+
 describe('SiteFooter', () => {
+  beforeEach(() => {
+    motion.reduced = false
+  })
+
+  it.for([
+    [true, 1],
+    [false, 0]
+  ] as const)(
+    'shows the static logo once mounted only for reduced motion (%s)',
+    async ([reduced, count]) => {
+      motion.reduced = reduced
+      render(SiteFooter)
+      await nextTick()
+
+      expect(screen.queryAllByTestId('footer-logo-static')).toHaveLength(count)
+    }
+  )
+
   it.for([
     ['en', 'ComfyUI Models'],
     ['zh-CN', 'ComfyUI 模型'],
