@@ -592,26 +592,45 @@ function writeAndVerifyReset(
   expectedUsageData: FeatureUsageRecord
 ) {
   const readBack = writeStorageAndReadBack(value)
-  if (readBack === undefined) return true
+  if (readBack === undefined) {
+    return {
+      allPendingWritten: true,
+      writtenUsageIds: Object.keys(pendingUsageData.value),
+      confirmedResetIds: [...pendingResets],
+      usageData: expectedUsageData
+    }
+  }
   const parsedReadBack = parseUsageData(readBack)
   const writtenUsageIds = new Set(Object.keys(pendingUsageData.value))
-  return (
-    parsedReadBack.status !== 'invalid' &&
-    Object.keys(pendingUsageData.value).every((featureId) => {
-      const expectedUsage = usageFor(expectedUsageData, featureId)
-      const storedUsage = usageFor(parsedReadBack.usageData, featureId)
-      return (
-        expectedUsage !== undefined &&
-        storedUsage !== undefined &&
-        isWrittenGeneration(storedUsage, expectedUsage)
-      )
-    }) &&
-    [...pendingResets].every(
-      (featureId) =>
-        writtenUsageIds.has(featureId) ||
-        isFeatureAbsent(parsedReadBack, featureId)
+  if (parsedReadBack.status === 'invalid') {
+    return {
+      allPendingWritten: false,
+      writtenUsageIds: [],
+      confirmedResetIds: []
+    }
+  }
+  const confirmedUsageIds = [...writtenUsageIds].filter((featureId) => {
+    const expectedUsage = usageFor(expectedUsageData, featureId)
+    const storedUsage = usageFor(parsedReadBack.usageData, featureId)
+    return (
+      expectedUsage !== undefined &&
+      storedUsage !== undefined &&
+      isWrittenGeneration(storedUsage, expectedUsage)
     )
+  })
+  const confirmedResetIds = [...pendingResets].filter(
+    (featureId) =>
+      writtenUsageIds.has(featureId) ||
+      isFeatureAbsent(parsedReadBack, featureId)
   )
+  return {
+    allPendingWritten:
+      confirmedUsageIds.length === writtenUsageIds.size &&
+      confirmedResetIds.length === pendingResets.size,
+    writtenUsageIds: confirmedUsageIds,
+    confirmedResetIds,
+    usageData: parsedReadBack.usageData
+  }
 }
 
 function persistUsageData(featureId: string, now: number) {
@@ -708,13 +727,25 @@ function resetUsageData(featureId: string) {
       ...preserveInvalidUsage(parsedUsageData),
       ...usageData
     })
-    storageWritten = writeAndVerifyReset(newValue, usageData)
+    const verification = writeAndVerifyReset(newValue, usageData)
+    storageWritten = verification.allPendingWritten
     if (storageWritten) {
       pendingResets.clear()
       pendingResetUsage.clear()
       pendingUsageData.value = {}
       usageSnapshot.value = usageData
     } else {
+      pendingUsageData.value = verification.writtenUsageIds.reduce(
+        withoutFeature,
+        pendingUsageData.value
+      )
+      for (const resetFeatureId of verification.confirmedResetIds) {
+        pendingResets.delete(resetFeatureId)
+        pendingResetUsage.delete(resetFeatureId)
+      }
+      if (verification.usageData) {
+        usageSnapshot.value = verification.usageData
+      }
       reportStorageError(
         new DOMException(
           'Feature usage storage changed before verification',
