@@ -1,20 +1,20 @@
-import catalogJson from '../content/workshop-models.json'
-import displayJson from '../content/workshop-display.json'
-import indexJson from '../content/workshop-router-index.json'
-import aliasesJson from '../content/workshop-router-aliases.json'
-import displayNames from '../data/workshop-router-display-names.json'
-import useCaseOverrides from '../data/workshop-use-case-overrides.json'
-import { workshopDisplayEntriesSchema } from '../content/workshop-display.schema'
-import { workshopModelSchema } from '../content/workshop-models.schema'
-import type { WorkshopModelEntry } from '../content/workshop-models.schema'
+import catalogJson from '@/content/workshop-models.json'
+import displayJson from '@/content/workshop-display.json'
+import indexJson from '@/content/workshop-router-index.json'
+import aliasesJson from '@/content/workshop-router-aliases.json'
+import displayNames from '@/data/workshop-router-display-names.json'
+import useCaseOverrides from '@/data/workshop-use-case-overrides.json'
+import { workshopDisplayEntriesSchema } from '@/content/workshop-display.schema'
+import { workshopModelSchema } from '@/content/workshop-models.schema'
+import type { WorkshopModelEntry } from '@/content/workshop-models.schema'
 import type { Modality, UseCase, RouterWorkshopModel } from './models-catalogue'
 import { USE_CASES } from './models-catalogue'
 import { workshopRouterIndexSchema } from './workshop-router-index'
 import { workshopRouterAliasesSchema } from './workshop-router-identity'
 import { labelSharedThumbnails } from './workshop-thumbnail-labels'
 import { workshopContentInputs } from './workshop-content-inputs'
-import { modelSummary } from '../lib/workshop/model-summary'
-import { providerName } from '../lib/workshop/provider-name'
+import { modelSummary } from '@/lib/workshop/model-summary'
+import { providerName } from '@/lib/workshop/provider-name'
 import { modelOrderRank } from './workshop-model-order'
 import { hubModelHref } from './hub-models'
 import {
@@ -177,7 +177,11 @@ const browseModels: readonly RouterWorkshopModel[] = contentSources.map(
       ...(thumbnail
         ? {
             thumbnailUrl: thumbnail.url,
-            thumbnail: { url: thumbnail.url, kind: thumbnail.kind }
+            thumbnail: {
+              url: thumbnail.url,
+              kind: thumbnail.kind,
+              ...(thumbnail.poster ? { poster: thumbnail.poster } : {})
+            }
           }
         : {}),
       ...(entry.description

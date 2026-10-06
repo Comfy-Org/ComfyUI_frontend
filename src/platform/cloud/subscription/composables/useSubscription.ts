@@ -585,11 +585,14 @@ function useSubscriptionInternal() {
       shouldWatchCancellation: isSubscriptionEnabled
     })
 
-  const openBillingPortal = async (target: BillingPortalTarget) => {
+  const openBillingPortal = async (
+    target: BillingPortalTarget,
+    options?: { cancelSubscription?: boolean }
+  ) => {
     const portal = createBillingPortalReporter(telemetry, target)
     let opened: boolean
     try {
-      opened = await accessBillingPortalDirect()
+      opened = await accessBillingPortalDirect(undefined, options)
     } catch (error) {
       portal.failed(error, 'legacy')
       throw error
@@ -599,8 +602,10 @@ function useSubscriptionInternal() {
     return opened
   }
 
-  const manageSubscription = async () => {
-    if (!(await openBillingPortal('manage_subscription'))) {
+  const manageSubscription = async (options?: {
+    cancelSubscription?: boolean
+  }) => {
+    if (!(await openBillingPortal('manage_subscription', options))) {
       throw new PaymentPopupBlockedError(t('subscription.billingTabBlocked'))
     }
     startCancellationWatcher()
@@ -857,6 +862,13 @@ function useSubscriptionInternal() {
     if (scope === observedStatusScope) return
     observedStatusScope = scope
     statusScopeGeneration += 1
+    // The invoice link is a bearer payment URL: never carry it across scopes.
+    if (subscriptionStatus.value?.renewal_invoice) {
+      subscriptionStatus.value = {
+        ...subscriptionStatus.value,
+        renewal_invoice: undefined
+      }
+    }
   }
 
   watch(

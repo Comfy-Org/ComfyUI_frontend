@@ -3,15 +3,15 @@ import { Box } from '@lucide/vue'
 import { computed } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
-import type { WorkflowWorkshopModelDetail } from '../../config/models-catalogue'
-import type { TranslationKey } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
+import type { WorkflowWorkshopModelDetail } from '@/config/models-catalogue'
+import type { TranslationKey } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import {
   captureWorkshopEvent,
   useWorkshopEnabled,
   useWorkshopWorkflowsEnabled
-} from '../../scripts/posthog'
-import { workshopModelAnalytics } from '../../scripts/workshop-analytics'
+} from '@/scripts/posthog'
+import { workshopModelAnalytics } from '@/scripts/workshop-analytics'
 import SectionHeading from './SectionHeading.vue'
 import WorkflowGraph from './WorkflowGraph.vue'
 

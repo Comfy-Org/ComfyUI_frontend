@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { testFirebaseUser } from './__fixtures__/workshopSessionFakes'
 import { WORKSHOP_CLOUD_BASE_URL } from './workshop-env'
 
-vi.mock(import('../scripts/posthog'))
+vi.mock(import('@/scripts/posthog'))
 vi.mock(import('./workshop-firebase'))
 
 const SESSION = `${WORKSHOP_CLOUD_BASE_URL}/api/auth/session`
@@ -71,7 +71,7 @@ async function loadModules(firebaseUid: string | undefined) {
     return () => {}
   })
   const { workshopIdentity } = await import('./workshop-account')
-  const { captureWebSessionEvent } = await import('../scripts/posthog')
+  const { captureWebSessionEvent } = await import('@/scripts/posthog')
   await import('@comfyorg/account-core/requestAuth')
   return {
     signOutWorkshop: vi.mocked(firebase.signOutWorkshop),

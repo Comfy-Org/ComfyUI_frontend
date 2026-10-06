@@ -98,7 +98,13 @@ export function useLegacyBilling(): BillingState & BillingActions {
 
   const hasFunds = computed(() => (authStore.balance?.amount_micros ?? 0) > 0)
   const subscription = computed<SubscriptionInfo | null>(() => {
-    if (!legacyCanAccessSubscriptionFeatures.value && !subscriptionTier.value) {
+    // A past-due legacy status has no tier and is inactive, yet must still
+    // reach the payment-recovery banner.
+    if (
+      !legacyCanAccessSubscriptionFeatures.value &&
+      !subscriptionTier.value &&
+      !legacySubscriptionStatus.value?.renewal_invoice
+    ) {
       return null
     }
 
@@ -226,7 +232,9 @@ export function useLegacyBilling(): BillingState & BillingActions {
   }
 
   async function cancelSubscription(): Promise<void> {
-    await rejectFailures(() => legacyManageSubscription())
+    await rejectFailures(() =>
+      legacyManageSubscription({ cancelSubscription: true })
+    )
   }
 
   async function resubscribe(options?: {
@@ -287,7 +295,9 @@ export function useLegacyBilling(): BillingState & BillingActions {
     subscriptionStatus,
     tier,
     renewalDate,
-    renewalInvoice: computed(() => null),
+    renewalInvoice: computed(
+      () => legacySubscriptionStatus.value?.renewal_invoice ?? null
+    ),
 
     // Actions
     initialize,
