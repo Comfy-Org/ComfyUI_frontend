@@ -4,12 +4,12 @@ import type {
 } from '@/config/models-catalogue'
 import { workflowsUsingModel } from './model-workflows'
 
-export interface WorkflowModelLink {
+interface WorkflowModelLink {
   readonly name: string
   readonly href?: string
 }
 
-export interface WorkflowFile {
+interface WorkflowFile {
   readonly name: string
   readonly directory?: string
   readonly href?: string

@@ -5,7 +5,7 @@ import { nameWithoutTask, taskLabelFor } from '@/lib/workshop/task-label'
 
 export type HubDoor = 'models' | 'workflows' | 'apps'
 
-export interface ModelDoorArt {
+interface ModelDoorArt {
   readonly src: string
   readonly name: string
   readonly provider?: string
@@ -14,11 +14,11 @@ export interface ModelDoorArt {
   readonly prompt: TranslationKey
 }
 
-export interface WorkflowDoorArt {
+interface WorkflowDoorArt {
   readonly src: string
 }
 
-export interface AppDoorArt {
+interface AppDoorArt {
   readonly src: string
   readonly control: TranslationKey
   readonly value: string
