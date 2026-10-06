@@ -142,6 +142,11 @@ async function requiresUnifiedToken(): Promise<boolean> {
   )
 }
 
+/** A session sign-in mid-setup lifts the need for the token that went missing. */
+async function missingUnifiedToken(hasToken: boolean): Promise<boolean> {
+  return !hasToken && (await requiresUnifiedToken())
+}
+
 async function initialize(): Promise<void> {
   if (!isCloud) {
     void initializeWorkspacesInBackground()
@@ -198,7 +203,7 @@ async function initialize(): Promise<void> {
     if (needsUnifiedToken) {
       const authenticated = await workspaceAuthStore.mintAtLogin()
       if (generation !== initializationGeneration) return
-      if (!authenticated && (await requiresUnifiedToken())) {
+      if (await missingUnifiedToken(authenticated)) {
         throw new Error('Failed to initialize unified cloud auth')
       }
     }
@@ -206,11 +211,8 @@ async function initialize(): Promise<void> {
     await initializeWorkspaceMode()
     if (generation !== initializationGeneration) return
     void billingCapabilities.initialize(controller.signal)
-    if (
-      needsUnifiedToken &&
-      !workspaceAuthStore.getUnifiedToken() &&
-      (await requiresUnifiedToken())
-    ) {
+    const hasUnifiedToken = Boolean(workspaceAuthStore.getUnifiedToken())
+    if (needsUnifiedToken && (await missingUnifiedToken(hasUnifiedToken))) {
       throw new Error('Unified cloud auth was cleared during workspace setup')
     }
 
