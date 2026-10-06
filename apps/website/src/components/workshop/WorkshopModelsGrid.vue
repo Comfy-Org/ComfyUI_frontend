@@ -13,6 +13,7 @@ import {
 } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
+import { normalizeRoute } from '@/config/locales'
 import { groupModels } from '@/config/model-family'
 import { getRoutes } from '@/config/routes'
 
@@ -89,7 +90,11 @@ function readAddress(search: string) {
 // Opening or leaving a section is a step Back should undo; anything else,
 // typing above all, replaces the entry so the back stack stays short.
 function writeAddress() {
-  if (!addressWritable || location.pathname !== getRoutes(locale).workshop)
+  if (
+    !addressWritable ||
+    normalizeRoute(location.pathname) !==
+      normalizeRoute(getRoutes(locale).workshop)
+  )
     return
   const shelf = openedShelf.value
   const search = withCatalogSearch(location.search, {
@@ -120,8 +125,10 @@ function stepAddress() {
     pushNextAddress = false
   })
 }
-// A write still pending when a navigation starts would land on the next entry.
-useEventListener(document, 'astro:before-preparation', () => {
+// Back and Forward have already moved the address, so a pending search write
+// would land on the entry they reached. A link has not moved it yet.
+useEventListener(document, 'astro:before-preparation', (event) => {
+  if (event.navigationType !== 'traverse') writeAddress()
   navigationsStarted++
 })
 const writeTypedAddress = useDebounceFn((scheduledAt: number) => {
@@ -193,7 +200,7 @@ const visible = computed(() =>
 )
 const isFiltered = computed(
   () =>
-    query.value !== '' ||
+    query.value.trim() !== '' ||
     selectedUseCases.value.length > 0 ||
     legacyModalities.value.length > 0 ||
     legacyProviders.value.length > 0 ||

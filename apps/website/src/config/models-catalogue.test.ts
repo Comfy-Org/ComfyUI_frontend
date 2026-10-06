@@ -515,6 +515,12 @@ describe('catalog deep links', () => {
     })
   })
 
+  it('names a use case once when both fields carry it', () => {
+    expect(
+      catalogSearch({ useCase: 'text', useCases: ['text', 'audio'] })
+    ).toBe('?useCase=text&useCase=audio')
+  })
+
   it('drops values it does not know', () => {
     expect(
       parseCatalogSearch('?useCase=nonsense&sort=cheapest&view=grid')

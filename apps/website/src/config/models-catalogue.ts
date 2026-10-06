@@ -458,10 +458,10 @@ const CATALOG_PARAMS = [
 function catalogValues(filter: CatalogLocation) {
   return {
     q: [filter.query],
-    useCase: [
+    useCase: new Set([
       filter.useCase === 'all' ? undefined : filter.useCase,
       ...(filter.useCases ?? [])
-    ],
+    ]),
     sort: [filter.sort === 'popular' ? undefined : filter.sort],
     view: [filter.browseAll ? 'all' : undefined],
     modality: filter.modalities ?? [],

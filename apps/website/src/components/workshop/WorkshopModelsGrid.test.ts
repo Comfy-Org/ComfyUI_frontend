@@ -47,6 +47,12 @@ function cardNames() {
   return screen.queryAllByRole('link').map((card) => card.textContent)
 }
 
+function navigationStart(navigationType: 'push' | 'traverse') {
+  return Object.assign(new Event('astro:before-preparation'), {
+    navigationType
+  })
+}
+
 async function search() {
   const field = screen.getByRole('searchbox', {
     name: 'Search models, providers, and categories'
@@ -309,7 +315,7 @@ describe('WorkshopModelsGrid', () => {
   it('sorts by recommendation by default and by name on request', async () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
-    await user.type(await search(), ' ')
+    await user.click(screen.getByTestId('browse-all-end'))
     expect(cardNames()[0]).toContain('Kling AI')
 
     await user.click(screen.getByRole('button', { name: 'Sort' }))
@@ -420,17 +426,51 @@ describe('WorkshopModelsGrid', () => {
       await waitFor(() => expect(location.search).toBe('?q=forest'))
     })
 
-    it('drops a pending search write once a navigation starts', async () => {
+    it('writes a pending search to the entry a link leaves', async () => {
+      const user = userEvent.setup()
+      history.replaceState(null, '', '/hub/models/')
+      render(WorkshopModelsGrid, { props: { models } })
+
+      await user.type(await search(), 'forest')
+      document.dispatchEvent(navigationStart('push'))
+      expect(location.search).toBe('?q=forest')
+      history.pushState({ index: 1 }, '', '/hub/models/')
+      await vi.advanceTimersByTimeAsync(300)
+
+      expect(location.search).toBe('')
+    })
+
+    it('keeps a pending search off the entry Back reaches', async () => {
       const user = userEvent.setup()
       history.replaceState(null, '', '/hub/models/')
       render(WorkshopModelsGrid, { props: { models } })
 
       await user.type(await search(), 'forest')
       history.pushState({ index: 1 }, '', '/hub/models/')
-      document.dispatchEvent(new Event('astro:before-preparation'))
+      document.dispatchEvent(navigationStart('traverse'))
       await vi.advanceTimersByTimeAsync(300)
 
       expect(location.search).toBe('')
+    })
+
+    it('follows the filters on the address without a trailing slash', async () => {
+      const user = userEvent.setup()
+      history.replaceState(null, '', '/hub/models')
+      render(WorkshopModelsGrid, { props: { models } })
+
+      await user.click(screen.getByRole('button', { name: 'Edit images' }))
+
+      expect(location.search).toBe('?useCase=edit-images')
+    })
+
+    it('keeps the rows for a search of only spaces', async () => {
+      const user = userEvent.setup()
+      history.replaceState(null, '', '/hub/models/')
+      render(WorkshopModelsGrid, { props: { models } })
+
+      await user.type(await search(), '   ')
+
+      expect(screen.getByTestId('workshop-sections')).toBeTruthy()
     })
 
     it.for([
