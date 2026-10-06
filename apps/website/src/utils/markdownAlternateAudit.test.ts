@@ -87,6 +87,56 @@ describe('auditMarkdownAlternates', () => {
     ])
   })
 
+  it.for([
+    {
+      name: 'a preload link',
+      head: '<link rel="preload" type="text/markdown" href="/missing.md">'
+    },
+    {
+      name: 'a link inside a comment',
+      head: '<!-- <link rel="alternate" type="text/markdown" href="/missing.md"> -->'
+    },
+    {
+      name: 'a link inside a script',
+      head: '<script>"<link rel=alternate type=text/markdown href=/missing.md>"</script>'
+    }
+  ])('does not count $name as an advertisement', ({ head }) => {
+    const report = auditMarkdownAlternates(
+      [{ route: '/cli/', html: `<html><head>${head}</head></html>` }],
+      () => undefined,
+      ORIGIN
+    )
+    expect(report).toEqual({ advertised: 0, canonicalChecked: 0, problems: [] })
+  })
+
+  it('reads the real link after a commented-out one', () => {
+    const report = auditMarkdownAlternates(
+      [
+        pageWithLink(
+          '/cli/',
+          '<!-- <link rel="alternate" type="text/markdown" href="/cli.md"> -->' +
+            '<link rel="alternate" type="text/markdown" href="/missing.md">'
+        )
+      ],
+      (path) => (path === '/cli.md' ? twin(`${ORIGIN}/cli/`) : undefined),
+      ORIGIN
+    )
+    expect(report.problems).toEqual([
+      '/cli/: advertises /missing.md, which was not built'
+    ])
+  })
+
+  it('reports a twin href on another origin', () => {
+    const report = auditMarkdownAlternates(
+      [page('/cli/', 'https://other.example/cli.md')],
+      () => twin(`${ORIGIN}/cli/`),
+      ORIGIN
+    )
+    expect(report.problems).toEqual([
+      `/cli/: advertises https://other.example/cli.md, which is not on ${ORIGIN}`
+    ])
+  })
+
   it('reports a markdown link whose href cannot be read', () => {
     const report = auditMarkdownAlternates(
       [pageWithLink('/cli/', '<link rel="alternate" type="text/markdown">')],

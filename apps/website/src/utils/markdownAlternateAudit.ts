@@ -4,6 +4,8 @@
  * canonical, so agents never follow our link into a 404 and search engines
  * never treat the copy as a second page.
  */
+import { parse } from 'parse5'
+import type { DefaultTreeAdapterTypes } from 'parse5'
 
 export interface BuiltPage {
   /** `/cli/`, `/zh-CN/about/`, `/` */
@@ -26,32 +28,32 @@ export interface MarkdownAlternateReport {
  */
 const MIN_ADVERTISED_SHARE = 0.8
 
-const LINK = /<link\b[^>]*>/gi
-const ATTRIBUTE = /([^\s"'<>/=]+)(?:\s*=\s*("[^"]*"|'[^']*'|[^\s"'=<>`]+))?/g
-const QUOTED = /^(["'])([\s\S]*)\1$/
 const FRONT_MATTER = /^---\n([\s\S]*?)\n---(?:\n|$)/
 const CANONICAL_FIELD = /^canonical:\s*(\S+)\s*$/m
 
 type Attributes = Map<string, string>
 
-function linkAttributes(tag: string): Attributes {
-  const attributes: Attributes = new Map()
-  for (const [, name, value = ''] of tag
-    .slice('<link'.length)
-    .matchAll(ATTRIBUTE))
-    attributes.set(name.toLowerCase(), value.replace(QUOTED, '$2'))
-  return attributes
+function linkElements(node: DefaultTreeAdapterTypes.ParentNode): Attributes[] {
+  return node.childNodes.flatMap((child) => {
+    if (!('tagName' in child)) return []
+    const nested = linkElements(child)
+    if (child.tagName !== 'link') return nested
+    const attributes = new Map(
+      child.attrs.map(({ name, value }) => [name, value])
+    )
+    return [attributes, ...nested]
+  })
+}
+
+function hasRel(link: Attributes, rel: string): boolean {
+  return (link.get('rel') ?? '').toLowerCase().split(/\s+/).includes(rel)
 }
 
 function isMarkdownAlternate(link: Attributes): boolean {
-  return link.get('type')?.trim().toLowerCase() === 'text/markdown'
-}
-
-function isCanonical(link: Attributes): boolean {
-  return (link.get('rel') ?? '')
-    .toLowerCase()
-    .split(/\s+/)
-    .includes('canonical')
+  return (
+    hasRel(link, 'alternate') &&
+    link.get('type')?.trim().toLowerCase() === 'text/markdown'
+  )
 }
 
 function twinCanonical(markdown: string): string | undefined {
@@ -59,11 +61,18 @@ function twinCanonical(markdown: string): string | undefined {
   return front === undefined ? undefined : CANONICAL_FIELD.exec(front)?.[1]
 }
 
-function decodedPathname(href: string, base: string): string | undefined {
+function twinPath(
+  href: string,
+  base: string,
+  origin: string
+): { path: string } | { problem: string } {
   try {
-    return decodeURI(new URL(href, base).pathname)
+    const url = new URL(href, base)
+    if (url.origin !== origin)
+      return { problem: `advertises ${href}, which is not on ${origin}` }
+    return { path: decodeURI(url.pathname) }
   } catch {
-    return undefined
+    return { problem: `advertises ${href}, which is not a valid URL` }
   }
 }
 
@@ -72,7 +81,7 @@ function pageProblem(
   readTwin: (path: string) => string | undefined,
   origin: string
 ): { advertises: boolean; canonicalChecked?: boolean; problem?: string } {
-  const links = [...html.matchAll(LINK)].map(([tag]) => linkAttributes(tag))
+  const links = linkElements(parse(html))
   const alternate = links.find(isMarkdownAlternate)
   if (alternate === undefined) return { advertises: false }
   const href = alternate.get('href')
@@ -82,13 +91,10 @@ function pageProblem(
       problem: `${route}: has a text/markdown link with no readable href`
     }
   }
-  const path = decodedPathname(href, `${origin}${route}`)
-  if (path === undefined) {
-    return {
-      advertises: true,
-      problem: `${route}: advertises ${href}, which is not a valid URL`
-    }
-  }
+  const resolved = twinPath(href, `${origin}${route}`, origin)
+  if ('problem' in resolved)
+    return { advertises: true, problem: `${route}: ${resolved.problem}` }
+  const { path } = resolved
   const twin = readTwin(path)
   if (twin === undefined) {
     return {
@@ -103,7 +109,7 @@ function pageProblem(
       problem: `${route}: ${path} has no canonical in its front matter`
     }
   }
-  const expected = links.find(isCanonical)?.get('href')
+  const expected = links.find((link) => hasRel(link, 'canonical'))?.get('href')
   if (expected === undefined) return { advertises: true }
   return {
     advertises: true,
