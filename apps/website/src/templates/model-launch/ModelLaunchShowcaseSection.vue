@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
 import { useElementHover, useElementSize, useToggle } from '@vueuse/core'
 import { computed, useTemplateRef } from 'vue'
 
@@ -17,9 +16,38 @@ const { t } = translationsFor(locale)
 const MARQUEE_GAP_PX = 24
 const TRACK_SPEED_PX_PER_SECOND = 190
 
+type ShowcaseCard = ModelLaunchShowcase['cards'][number]
+
+const hasSubhead = Boolean(showcase.descriptionKey || showcase.cta)
+const cardAlt = (card: ShowcaseCard) => card.alt[locale] || card.alt.en
+
+// The strip renders twice so the marquee can loop seamlessly. The second copy
+// is decorative: hidden below lg and for reduced motion, and invisible to
+// assistive tech.
+const strips = [
+  {
+    id: 'strip',
+    class: 'flex shrink-0 gap-6 lg:motion-safe:animate-marquee',
+    ariaHidden: undefined,
+    inert: false,
+    altFor: cardAlt
+  },
+  {
+    id: 'loop',
+    class:
+      'hidden shrink-0 gap-6 lg:motion-safe:flex lg:motion-safe:animate-marquee',
+    ariaHidden: 'true',
+    inert: true,
+    altFor: () => ''
+  }
+] as const
+
 const stripRef = useTemplateRef<HTMLElement>('stripRef')
 const isHovered = useElementHover(stripRef)
 const [isPinnedStill, togglePinnedStill] = useToggle(false)
+const marqueePlayState = computed(() =>
+  isHovered.value && !isPinnedStill.value ? 'running' : 'paused'
+)
 
 // Every strip travels at the same speed, so a strip with more cards takes
 // proportionally longer to complete one loop.
@@ -44,7 +72,7 @@ const loopDuration = computed(
         {{ t(showcase.headingKey) }}
       </h2>
       <p
-        v-if="showcase.descriptionKey || showcase.cta"
+        v-if="hasSubhead"
         class="mt-6 text-base/relaxed font-light text-primary-comfy-canvas lg:text-lg/relaxed"
       >
         <template v-if="showcase.descriptionKey">{{
@@ -68,20 +96,16 @@ const loopDuration = computed(
       @click="togglePinnedStill()"
     >
       <ul
-        v-for="copy in 2"
-        :key="copy"
-        :class="
-          cn(
-            'flex shrink-0 gap-6 lg:motion-safe:animate-marquee',
-            copy === 2 && 'hidden lg:motion-safe:flex'
-          )
-        "
+        v-for="strip in strips"
+        :key="strip.id"
+        :class="strip.class"
         :style="{
           '--marquee-gap': '1.5rem',
           animationDuration: loopDuration,
-          animationPlayState: isHovered && !isPinnedStill ? 'running' : 'paused'
+          animationPlayState: marqueePlayState
         }"
-        :aria-hidden="copy === 2 ? 'true' : undefined"
+        :aria-hidden="strip.ariaHidden"
+        :inert="strip.inert"
       >
         <li
           v-for="card in showcase.cards"
@@ -90,7 +114,7 @@ const loopDuration = computed(
         >
           <img
             :src="card.src"
-            :alt="copy === 2 ? '' : card.alt[locale] || card.alt.en"
+            :alt="strip.altFor(card)"
             class="size-full object-cover"
             loading="lazy"
             decoding="async"
