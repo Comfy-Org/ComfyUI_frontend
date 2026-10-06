@@ -1533,6 +1533,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       // effect. On a spend authorization that is the wrong way to be wrong, so
       // retire the card and say the outcome is unknown rather than show a raw
       // transport string next to a card that is about to vanish.
+      deliveredAsks.add(askId)
       conversationStore.retireAsk(askId, currentThreadId)
       pushError(i18n.global.t('agent.runApproval.answerUncertain'))
       return false

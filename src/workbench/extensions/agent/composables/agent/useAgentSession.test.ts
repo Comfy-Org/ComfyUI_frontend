@@ -4582,6 +4582,50 @@ describe('useAgentSession (v1 composition root)', () => {
     }
   })
 
+  it('(g37) an uncertain hydrated answer keeps a stale poll from restoring its card', async () => {
+    vi.useFakeTimers()
+    try {
+      let resolveStalePoll: ((history: AgentMessages) => void) | undefined
+      const rest = fakeRest({
+        getMessages: vi
+          .fn<AgentRestClient['getMessages']>()
+          .mockResolvedValueOnce([
+            historyRow(1, 'user', 'msg-1', 'go'),
+            parkedRow()
+          ])
+          .mockImplementationOnce(
+            () =>
+              new Promise<AgentMessages>((resolve) => {
+                resolveStalePoll = resolve
+              })
+          ),
+        answerAsk: vi
+          .fn<AgentRestClient['answerAsk']>()
+          .mockRejectedValue(new AgentApiError('backend blip', 500, undefined))
+      })
+      const { source, status } = fakeEvents()
+      localStorage.setItem(StorageKeys.agentThread('personal'), 'th-1')
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      status(true)
+      await vi.advanceTimersByTimeAsync(0)
+      expect(approvalParts(session)).toHaveLength(1)
+      await vi.waitFor(() => expect(rest.getMessages).toHaveBeenCalledTimes(2))
+
+      const answered = session.answerAsk('turn-1:call-1', 'run')
+      await vi.advanceTimersByTimeAsync(5_000)
+      await answered
+      expect(approvalParts(session)).toHaveLength(0)
+
+      resolveStalePoll?.([historyRow(1, 'user', 'msg-1', 'go'), parkedRow()])
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(approvalParts(session)).toHaveLength(0)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   // The same lag `(g33)` describes, read from the other side: the server
   // clears `pending_ask` behind the answer, so a row it has already closed can
   // still be carrying a spent one. A later row keeps the turn open, so
