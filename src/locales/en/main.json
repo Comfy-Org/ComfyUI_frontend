@@ -3056,6 +3056,8 @@
       "tryAgain": "Try again",
       "unconfirmedTitle": "Your discount isn't confirmed yet",
       "unconfirmedBody": "Your discount may still be applying. Check again in a moment before you make another billing change.",
+      "failed": "We couldn't apply this offer, and your plan hasn't changed. You can still cancel.",
+      "unconfirmed": "We're still confirming your discount. Check again in a moment, or contact support if this doesn't clear up.",
       "checkAgain": "Check again",
       "pendingToast": "Your discount is still being confirmed. Check your plan before making another billing change."
     },

@@ -248,6 +248,7 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackSurvey?.(stage, responses))
   }
 
+  // fallow-ignore-next-line unused-class-member
   trackInAppSurvey(stage: InAppSurveyStage, event: InAppSurveyEvent): void {
     this.dispatch((provider) => provider.trackInAppSurvey?.(stage, event))
   }
