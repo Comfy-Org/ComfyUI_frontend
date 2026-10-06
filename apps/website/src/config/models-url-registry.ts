@@ -27,8 +27,7 @@ const navigableKinds: ReadonlySet<string> = new Set<PageKind>([
   'section',
   'model',
   'workflow',
-  'app',
-  'local'
+  'app'
 ])
 
 export type ModelsUrlEntry =
