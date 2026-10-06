@@ -28,8 +28,8 @@ describe('challengeBannerConfig', () => {
   })
 
   it.for([
-    { now: '2026-10-19T23:59:00-07:00', visible: true },
-    { now: '2026-10-20T00:01:00-07:00', visible: false }
+    { now: '2026-10-19T08:59:00-07:00', visible: true },
+    { now: '2026-10-19T09:01:00-07:00', visible: false }
   ])('has visibility $visible at $now', ({ now, visible }) => {
     expect(
       evaluateBannerVisibility(challengeBannerConfig, {
@@ -52,19 +52,19 @@ describe('activeBannerFor', () => {
     {
       name: 'a page banner wins over the sitewide banner while it runs',
       page: challengeBannerConfig,
-      now: '2026-10-19T23:59:00-07:00',
+      now: '2026-10-19T08:59:00-07:00',
       expected: challengeBannerConfig
     },
     {
       name: 'a page banner falls back to the sitewide banner once it ends',
       page: challengeBannerConfig,
-      now: '2026-10-20T00:01:00-07:00',
+      now: '2026-10-19T09:01:00-07:00',
       expected: bannerConfig
     },
     {
       name: 'a page without its own banner shows the sitewide banner',
       page: undefined,
-      now: '2026-10-19T23:59:00-07:00',
+      now: '2026-10-19T08:59:00-07:00',
       expected: bannerConfig
     }
   ])('$name', ({ page, now, expected }) => {
