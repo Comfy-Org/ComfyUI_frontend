@@ -1,17 +1,21 @@
 {
-  "name": "@comfyorg/fallow-config",
+  "name": "@comfyorg/tooling-config",
   "version": "0.0.1",
-  "description": "Shared Comfy Fallow audit policy",
+  "description": "Shared Comfy tooling configuration",
   "license": "GPL-3.0-only",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Comfy-Org/ComfyUI_frontend.git",
-    "directory": "packages/fallow-config"
+    "directory": "packages/tooling-config"
   },
   "files": [
+    "fallow",
     "fallow.json"
   ],
-  "main": "./fallow.json",
+  "type": "module",
+  "exports": {
+    "./fallow": "./fallow.json"
+  },
   "publishConfig": {
     "access": "public"
   },

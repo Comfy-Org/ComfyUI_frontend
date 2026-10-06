@@ -13,7 +13,7 @@ on:
             account-ui,
             billing-contract,
             ingest-types,
-            fallow-config
+            tooling-config
           ]
       version_type:
         description: 'Version increment type'
@@ -67,7 +67,7 @@ jobs:
             account-ui) NPM_NAME='@comfyorg/account-ui'; ALPHA_GATED=true ;;
             billing-contract) NPM_NAME='@comfyorg/billing-contract'; ALPHA_GATED=true ;;
             ingest-types) NPM_NAME='@comfyorg/ingest-types'; ALPHA_GATED=false ;;
-            fallow-config) NPM_NAME='@comfyorg/fallow-config'; ALPHA_GATED=false ;;
+            tooling-config) NPM_NAME='@comfyorg/tooling-config'; ALPHA_GATED=false ;;
             *)
               echo "::error title=Unknown package::'$PACKAGE' is not a releasable package" >&2
               exit 1

@@ -1,6 +1,6 @@
 {
   "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/v3.24.1/schema.json",
-  "extends": "npm:@comfyorg/fallow-config",
+  "extends": "npm:@comfyorg/tooling-config/fallow",
 
   // Staged adoption: the residual dead-code, complexity, and duplication findings
   // are inherited legacy (litegraph extension-API members, store members, intra-lib

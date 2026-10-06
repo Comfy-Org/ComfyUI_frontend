@@ -1,6 +1,12 @@
 import { execFileSync, spawnSync } from 'node:child_process'
 import type { SpawnSyncReturns } from 'node:child_process'
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import {
+  mkdirSync,
+  mkdtempSync,
+  realpathSync,
+  rmSync,
+  writeFileSync
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -34,6 +40,7 @@ afterAll(() => rmSync(packedDirectory, { recursive: true, force: true }))
 
 const test = baseTest.extend<{
   consumer: {
+    directory: string
     write: (path: string, contents: string) => void
     configure: (local?: Record<string, unknown>) => void
     commit: () => string
@@ -41,7 +48,9 @@ const test = baseTest.extend<{
   }
 }>({
   consumer: async ({ task }, use) => {
-    const directory = mkdtempSync(join(tmpdir(), `fallow-consumer-${task.id}-`))
+    const directory = realpathSync(
+      mkdtempSync(join(tmpdir(), `fallow-consumer-${task.id}-`))
+    )
     function write(path: string, contents: string) {
       const target = join(directory, path)
       mkdirSync(dirname(target), { recursive: true })
@@ -51,7 +60,7 @@ const test = baseTest.extend<{
       write(
         '.fallowrc.json',
         JSON.stringify({
-          extends: 'npm:@comfyorg/fallow-config',
+          extends: 'npm:@comfyorg/tooling-config/fallow',
           entry: ['src/main.ts'],
           ...local
         })
@@ -89,11 +98,26 @@ const test = baseTest.extend<{
       run(directory, 'git', ['init', '-q'])
       run(directory, 'git', ['config', 'user.name', 'Fixture'])
       run(directory, 'git', ['config', 'user.email', 'fixture@example.invalid'])
-      await use({ write, configure, commit, audit })
+      await use({ directory, write, configure, commit, audit })
     } finally {
       rmSync(directory, { recursive: true, force: true })
     }
   }
+})
+
+test('resolves the Fallow subpath through Node package exports', ({
+  consumer
+}) => {
+  const path = run(consumer.directory, 'node', [
+    '-p',
+    'require.resolve("@comfyorg/tooling-config/fallow")'
+  ])
+  expect(path).toBe(
+    join(
+      consumer.directory,
+      'node_modules/@comfyorg/tooling-config/fallow.json'
+    )
+  )
 })
 
 test.for([
@@ -137,7 +161,7 @@ test('retains local support roots and blocks runtime development dependencies', 
       name: 'consumer',
       private: true,
       devDependencies: {
-        '@comfyorg/fallow-config': '0.0.1',
+        '@comfyorg/tooling-config': '0.0.1',
         'build-only': '1.0.0'
       }
     })
@@ -235,3 +259,55 @@ test.for([
     })
   }
 )
+
+test('supports Nuxt convention roots with repository-specific rules', ({
+  consumer
+}) => {
+  consumer.write(
+    'package.json',
+    JSON.stringify({
+      name: 'nuxt-consumer',
+      private: true,
+      dependencies: { nuxt: '^3.17.4' },
+      devDependencies: {
+        '@comfyorg/tooling-config': '0.0.1',
+        'build-only': '1.0.0'
+      }
+    })
+  )
+  consumer.configure({
+    entry: ['i18n/i18n.config.ts'],
+    ignorePatterns: ['.nuxt/**', '.output/**'],
+    overrides: [
+      {
+        files: ['services/legacy/**'],
+        rules: { 'unused-exports': 'warn' }
+      }
+    ]
+  })
+  consumer.write('nuxt.config.ts', 'export default { ssr: false }\n')
+  consumer.write('i18n/i18n.config.ts', 'export default { legacy: false }\n')
+  const base = consumer.commit()
+  consumer.write(
+    'pages/index.vue',
+    '<script setup lang="ts">\nimport { live } from "../services/legacy/lib"\n</script>\n<template>{{ live }}</template>\n'
+  )
+  consumer.write(
+    'services/legacy/lib.ts',
+    'export const live = 1\nexport const unused = 2\n'
+  )
+  consumer.write(
+    'composables/useGreeting.ts',
+    'export function useGreeting() { return "hello" }\n'
+  )
+  consumer.write('.nuxt/generated.ts', 'export const generated = 1\n')
+  const local = consumer.audit(base)
+  expect(local).toMatchObject({ status: 0 })
+  consumer.write(
+    'services/legacy/lib.ts',
+    'import { build } from "build-only"\nexport const live = build()\nexport const unused = 2\n'
+  )
+  const runtime = consumer.audit(base)
+  expect(runtime).toMatchObject({ status: 1 })
+  expect(JSON.parse(runtime.stdout)).toMatchObject({ verdict: 'fail' })
+})
