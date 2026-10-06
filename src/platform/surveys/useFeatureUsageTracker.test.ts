@@ -1636,6 +1636,28 @@ describe('useFeatureUsageTracker', () => {
     expect(stored).not.toHaveProperty(featureId)
   })
 
+  it('does not verify a reset against a concurrent invalid entry', () => {
+    const featureId = 'invalid-before-reset-verification'
+    const tracker = useFeatureUsageTracker(featureId)
+    tracker.trackUsage()
+    const originalSetItem = localStorage.setItem.bind(localStorage)
+    const setItem = vi
+      .spyOn(localStorage, 'setItem')
+      .mockImplementation((key) => {
+        originalSetItem(
+          key,
+          JSON.stringify({ [featureId]: { useCount: 'invalid' } })
+        )
+      })
+
+    tracker.reset()
+    setItem.mockRestore()
+    useFeatureUsageTracker('invalid-reset-verification-trigger').trackUsage()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored).not.toHaveProperty(featureId)
+  })
+
   it.for([
     {
       operation: 'tracking',

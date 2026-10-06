@@ -225,6 +225,16 @@ function isWrittenGeneration(usage: FeatureUsage, expectedUsage: FeatureUsage) {
   )
 }
 
+function isFeatureAbsent(
+  parsedUsageData: Exclude<ParsedUsageData, { status: 'invalid' }>,
+  featureId: string
+) {
+  return (
+    !parsedUsageData.invalidFeatureIds.has(featureId) &&
+    usageFor(parsedUsageData.usageData, featureId) === undefined
+  )
+}
+
 function reconcilePendingResets(
   storedUsageData: FeatureUsageRecord,
   invalidFeatureIds: ReadonlySet<string> = new Set()
@@ -549,7 +559,7 @@ function writeAndVerifyUsage(
       [...pendingResets].every(
         (resetFeatureId) =>
           writtenUsageIds.has(resetFeatureId) ||
-          usageFor(parsedReadBack.usageData, resetFeatureId) === undefined
+          isFeatureAbsent(parsedReadBack, resetFeatureId)
       ),
     trackedUsageWritten: usageWasWritten(featureId),
     writtenUsageIds: confirmedUsageIds,
@@ -579,7 +589,7 @@ function writeAndVerifyReset(
     [...pendingResets].every(
       (featureId) =>
         writtenUsageIds.has(featureId) ||
-        usageFor(parsedReadBack.usageData, featureId) === undefined
+        isFeatureAbsent(parsedReadBack, featureId)
     )
   )
 }
