@@ -64,6 +64,29 @@ function withoutLiveStats(twin: string, url: string): string {
     : twin
 }
 
+const PACK_INDEX_PATH = /\/cloud\/supported-nodes\/$/
+
+/**
+ * The pack index lists packs by live download rank, so a rank swap would read
+ * as a change. Each `### ` pack section is put in name order instead.
+ */
+function packsInNameOrder(twin: string): string {
+  const runs: string[][] = []
+  for (const block of twin.split(/\n(?=#{1,3} )/).map((b) => b.trimEnd())) {
+    const run = runs.at(-1)
+    if (block.startsWith('### ') && run?.[0].startsWith('### ')) run.push(block)
+    else runs.push([block])
+  }
+  return runs.flatMap((run) => run.toSorted()).join('\n')
+}
+
+function fingerprintInput(twin: string, url: string): string {
+  const stable = withoutLiveStats(twin, url)
+  return PACK_INDEX_PATH.test(new URL(url).pathname)
+    ? packsInNameOrder(stable)
+    : stable
+}
+
 /**
  * Fingerprints the page's markdown twin (title, description, canonical and
  * `<main>`), so header, footer and hashed asset names never count as a change.
@@ -71,7 +94,7 @@ function withoutLiveStats(twin: string, url: string): string {
  */
 export function pageFingerprint(html: string, url: string): string | null {
   if (isNoindex(html)) return null
-  const twin = withoutLiveStats(renderTwin(htmlToTwin(html, url)), url)
+  const twin = fingerprintInput(renderTwin(htmlToTwin(html, url)), url)
   return createHash('sha256').update(twin).digest('hex')
 }
 

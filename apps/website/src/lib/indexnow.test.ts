@@ -81,6 +81,38 @@ describe('pageFingerprint', () => {
     })
   })
 
+  describe('on the custom-node pack index', () => {
+    const indexUrl = url('zh-CN/cloud/supported-nodes/')
+    const index = (...names: string[]) =>
+      page({
+        main: names
+          .map(
+            (name) =>
+              `<h3><a href="/cloud/supported-nodes/${name}/">${name}</a></h3><p>${name} nodes</p>`
+          )
+          .join('')
+      })
+
+    it('ignores packs changing download rank', () => {
+      expect(pageFingerprint(index('beta', 'alpha'), indexUrl)).toBe(
+        pageFingerprint(index('alpha', 'beta'), indexUrl)
+      )
+    })
+
+    it('changes when a pack is added', () => {
+      expect(
+        pageFingerprint(index('alpha', 'beta', 'gamma'), indexUrl)
+      ).not.toBe(pageFingerprint(index('alpha', 'beta'), indexUrl))
+    })
+
+    it('keeps the order on a pack page', () => {
+      const packUrl = url('cloud/supported-nodes/alpha/')
+      expect(pageFingerprint(index('beta', 'alpha'), packUrl)).not.toBe(
+        pageFingerprint(index('alpha', 'beta'), packUrl)
+      )
+    })
+  })
+
   it('gives a noindex page no fingerprint, so it is never submitted', () => {
     expect(pageFingerprint(page({ head: NOINDEX }), url('a/'))).toBeNull()
   })
