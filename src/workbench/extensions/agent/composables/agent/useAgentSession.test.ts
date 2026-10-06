@@ -4592,7 +4592,11 @@ describe('useAgentSession (v1 composition root)', () => {
       await vi.advanceTimersByTimeAsync(31_000)
 
       expect(approvalParts(session)).toHaveLength(0)
-      expect(reportError).not.toHaveBeenCalled()
+      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+        surface: 'agent',
+        errorType: 'agent_ask_answer_superseded'
+      })
+      expect(session.notices.value).toHaveLength(1)
     } finally {
       vi.useRealTimers()
     }
@@ -4637,6 +4641,34 @@ describe('useAgentSession (v1 composition root)', () => {
       await vi.advanceTimersByTimeAsync(0)
 
       expect(approvalParts(session)).toHaveLength(0)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('(g39) a 202 cannot silently confirm which answer won for a recovered card', async () => {
+    vi.useFakeTimers()
+    try {
+      const rest = parkedOnApprovalRest()
+      const { source, status } = fakeEvents()
+      localStorage.setItem(StorageKeys.agentThread('personal'), 'th-1')
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      status(true)
+      await vi.advanceTimersByTimeAsync(0)
+
+      await session.answerAsk('turn-1:call-1', 'run')
+
+      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+        surface: 'agent',
+        errorType: 'agent_ask_answer_unconfirmed'
+      })
+      expect(session.notices.value).toEqual([
+        {
+          level: 'error',
+          text: 'Could not confirm your answer reached the agent. It may still have been applied — reload the page to see where things stand.'
+        }
+      ])
     } finally {
       vi.useRealTimers()
     }

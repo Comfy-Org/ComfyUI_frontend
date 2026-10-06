@@ -433,6 +433,7 @@ export const useAgentConversationStore = defineStore(
       for (const entry of backgroundTurns.values())
         if (entry.threadId === key) entry.transport.dropAskPart(askId)
       retiredAsksFor(key).add(askId)
+      recoveredAskIds.get(key)?.delete(askId)
       clearAskResolutionWatchdog(askId)
       submittedAskSelections.delete(askId)
       setAskAnswering(askId, false)
@@ -451,6 +452,7 @@ export const useAgentConversationStore = defineStore(
      * nothing here rests on an ask id being unique across threads.
      */
     const resolvedAskIds = new Map<string, Set<string>>()
+    const recoveredAskIds = new Map<string, Set<string>>()
 
     const threadKey = (owner?: string) => owner ?? threadId.value ?? ''
 
@@ -463,6 +465,17 @@ export const useAgentConversationStore = defineStore(
 
     function isAskRetired(askId: string, owner?: string): boolean {
       return resolvedAskIds.get(threadKey(owner))?.has(askId) ?? false
+    }
+
+    function markAskRecovered(askId: string, owner?: string): void {
+      const key = threadKey(owner)
+      const recovered = recoveredAskIds.get(key) ?? new Set<string>()
+      recovered.add(askId)
+      recoveredAskIds.set(key, recovered)
+    }
+
+    function isAskRecovered(askId: string, owner?: string): boolean {
+      return recoveredAskIds.get(threadKey(owner))?.has(askId) ?? false
     }
     /**
      * PM-1658: which way this client answered each ask. The server takes a
@@ -1050,7 +1063,12 @@ export const useAgentConversationStore = defineStore(
       )
         return slot.message
       const entry = backgroundTurns.get(turn.messageId)
-      if (!entry || entry.messageId !== turn.messageId || entry.settled)
+      if (
+        !entry ||
+        entry.threadId !== turn.threadId ||
+        entry.messageId !== turn.messageId ||
+        entry.settled
+      )
         return null
       return entry.message
     }
@@ -1132,7 +1150,6 @@ export const useAgentConversationStore = defineStore(
       transcript: ReturnType<typeof normalizeAgentTranscript>
     ): void {
       const retired = retiredAsksFor()
-      if (retired.size === 0) return
       const named = new Set(
         transcript.messages.flatMap((message) =>
           message.parts.flatMap((part) =>
@@ -1140,6 +1157,10 @@ export const useAgentConversationStore = defineStore(
           )
         )
       )
+      const recovered = recoveredAskIds.get(threadKey())
+      if (recovered !== undefined)
+        for (const askId of recovered)
+          if (!named.has(askId)) recovered.delete(askId)
       for (const askId of retired) if (!named.has(askId)) retired.delete(askId)
       for (const message of transcript.messages)
         message.parts = message.parts.filter(
@@ -1334,6 +1355,8 @@ export const useAgentConversationStore = defineStore(
       commitAsk,
       retireAsk,
       isAskRetired,
+      markAskRecovered,
+      isAskRecovered,
       startTurn,
       ingest,
       setCanvasSyncGate,

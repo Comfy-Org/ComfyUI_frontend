@@ -523,7 +523,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
    * an `ask_id` carries its `message_id`, so it is never reused.
    */
   const deliveredAsks = new Set<string>()
-  const restoredAsks = new Set<string>()
   const lateAskReports = new Map<
     string,
     { threadId: string; timer: ReturnType<typeof setTimeout> }
@@ -534,13 +533,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (deliveredAsks.size <= MAX_DELIVERED_ASKS) return
     const oldest = deliveredAsks.values().next().value
     if (oldest !== undefined) deliveredAsks.delete(oldest)
-  }
-
-  function recordRestoredAsk(askId: string): void {
-    restoredAsks.add(askId)
-    if (restoredAsks.size <= MAX_DELIVERED_ASKS) return
-    const oldest = restoredAsks.values().next().value
-    if (oldest !== undefined) restoredAsks.delete(oldest)
   }
 
   function lateAskReportKey(threadId: string, askId: string): string {
@@ -836,6 +828,18 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (turnId !== null) snapshotTurns.add(turnId)
   }
 
+  function markRecoveredTranscriptAsks(
+    history: AgentMessages,
+    threadId: string
+  ): void {
+    for (const row of history)
+      if (
+        row.status === 'streaming' &&
+        row.pending_ask?.kind === 'run_approval'
+      )
+        conversationStore.markAskRecovered(row.pending_ask.ask_id, threadId)
+  }
+
   async function hydrateFromServer(
     threadId: string,
     isCurrent: () => boolean = () => true,
@@ -845,6 +849,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     try {
       const history = await rest.getMessages(threadId)
       if (conversationStore.threadId !== threadId || !isCurrent()) return false
+      markRecoveredTranscriptAsks(history, threadId)
       conversationStore.hydrate(history)
       rememberSnapshotTurn(conversationStore.activeTurnId)
       reconcileLiveTurns('hydrate')
@@ -1511,7 +1516,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     conversationStore.setAskAnswering(askId, true)
     try {
       await sendAnswer(currentThreadId, askId, selection)
-      restoredAsks.delete(askId)
+      reportAcceptedRecoveredAnswer(askId, currentThreadId)
       recordDeliveredAsk(askId)
       conversationStore.commitAsk(askId, currentThreadId)
       return true
@@ -1542,13 +1547,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
             { retryable: isRetryableRequestFailure(error, false) }
           )
           pushError(i18n.global.t('agent.runApproval.answerFailed'))
-        } else if (restoredAsks.delete(askId)) {
-          reportError(new Error('restored run approval was already answered'), {
-            surface: 'agent',
-            errorType: 'agent_ask_answer_superseded'
-          })
-          pushError(i18n.global.t('agent.runApproval.answerSuperseded'))
-        }
+        } else reportRejectedRecoveredAnswer(askId, currentThreadId)
         // The card is retired for good here, by resolution (409) or because
         // this client could never answer it. Either way a later recovery poll
         // must not draw it again.
@@ -1576,6 +1575,30 @@ export function useAgentSession(deps: AgentSessionDeps) {
       pushError(i18n.global.t('agent.runApproval.answerUncertain'))
       return false
     }
+  }
+
+  function reportAcceptedRecoveredAnswer(
+    askId: string,
+    threadId: string
+  ): void {
+    if (!conversationStore.isAskRecovered(askId, threadId)) return
+    reportError(new Error('accepted restored approval cannot be verified'), {
+      surface: 'agent',
+      errorType: 'agent_ask_answer_unconfirmed'
+    })
+    pushError(i18n.global.t('agent.runApproval.answerUncertain'))
+  }
+
+  function reportRejectedRecoveredAnswer(
+    askId: string,
+    threadId: string
+  ): void {
+    if (!conversationStore.isAskRecovered(askId, threadId)) return
+    reportError(new Error('restored run approval was already answered'), {
+      surface: 'agent',
+      errorType: 'agent_ask_answer_superseded'
+    })
+    pushError(i18n.global.t('agent.runApproval.answerSuperseded'))
   }
 
   /**
@@ -1637,8 +1660,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     source?: Exclude<AgentSessionThreadStartSource, 'first_open'>
   ): void {
     readyThreadId.value = null
-    const departingThreadId = conversationStore.threadId
-    if (departingThreadId !== null) clearLateAskReports(departingThreadId)
     loadGeneration++
     promptEditState.value = { phase: 'idle' }
     conversationStore.stashActiveTurn()
@@ -1662,8 +1683,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     isNavigationCurrent: () => boolean = () => true
   ): Promise<boolean> {
     readyThreadId.value = null
-    const departingThreadId = conversationStore.threadId
-    if (departingThreadId !== null) clearLateAskReports(departingThreadId)
     const generation = ++loadGeneration
     promptEditState.value = { phase: 'idle' }
     const isCurrent = () =>
@@ -1820,7 +1839,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     observeLiveDelivery(event)
     if (event.type === 'agent_ask_resolved') {
       reportSupersededAnswer(event.data.ask_id, event.data.selected)
-      restoredAsks.delete(event.data.ask_id)
       // Not just un-busying it: `ingest` below routes this frame through the
       // owning turn's transport, and the turn is gone in exactly the case that
       // matters, so on its own it would re-enable a card it cannot remove.
@@ -1968,7 +1986,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     })
     if (!conversationStore.isApprovalShown(turn, pendingAsk.ask_id)) return
     recordDeliveredAsk(pendingAsk.ask_id)
-    recordRestoredAsk(pendingAsk.ask_id)
+    conversationStore.markAskRecovered(pendingAsk.ask_id, turn.threadId)
     reportRestoredApproval(turn, pendingAsk.ask_id, cause)
   }
 
@@ -2025,7 +2043,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
     if (
       deliveredAsks.has(askId) &&
-      !conversationStore.isApprovalShown(turn, askId)
+      (!conversationStore.isApprovalShown(turn, askId) ||
+        conversationStore.submittedAskSelection(askId) !== undefined)
     ) {
       withdrawLateAskReport(event.data.thread_id, askId)
       return
