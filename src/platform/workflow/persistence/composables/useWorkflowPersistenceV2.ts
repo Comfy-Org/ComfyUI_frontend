@@ -32,9 +32,7 @@ import { PERSIST_DEBOUNCE_MS } from '../base/draftTypes'
 import type { StartupOutcome } from '../base/draftTypes'
 import {
   completeWorkflowLogoutTransition,
-  registerWorkflowLogoutIntentListener,
-  registerWorkflowPersistenceCancel,
-  registerWorkflowPersistenceFlush
+  registerWorkflowPersistenceOwner
 } from '../base/storageIO'
 import { useWorkflowDraftStoreV2 } from '../stores/workflowDraftStoreV2'
 import { useWorkflowTabState } from './useWorkflowTabState'
@@ -137,9 +135,6 @@ export function useWorkflowPersistenceV2() {
     debouncedPersist.flush()
   }
 
-  const unregisterPersistenceFlush = registerWorkflowPersistenceFlush(
-    flushPendingPersistence
-  )
   window.addEventListener('pagehide', flushPendingPersistence)
 
   // `resolvedUserInfo` reports the auth state this window observes, not an
@@ -149,11 +144,13 @@ export function useWorkflowPersistenceV2() {
   // sees its user drop to null without anyone having signed out. Explicit
   // sign-out sites clear shared storage and broadcast intent; this composable
   // fences on that intent, never on an observed null user.
-  const unregisterPersistenceCancel = registerWorkflowPersistenceCancel(() => {
-    stopPendingWorkspaceReadinessWatcher()
-    debouncedPersist.cancel()
+  const unregisterPersistenceOwner = registerWorkflowPersistenceOwner({
+    flush: flushPendingPersistence,
+    cancel() {
+      stopPendingWorkspaceReadinessWatcher()
+      debouncedPersist.cancel()
+    }
   })
-  const unregisterLogoutIntentListener = registerWorkflowLogoutIntentListener()
 
   onUserResolved(() => {
     if (!isCloud) return
@@ -316,9 +313,7 @@ export function useWorkflowPersistenceV2() {
   tryOnScopeDispose(() => {
     api.removeEventListener('graphChanged', debouncedPersist)
     window.removeEventListener('pagehide', flushPendingPersistence)
-    unregisterPersistenceFlush()
-    unregisterPersistenceCancel()
-    unregisterLogoutIntentListener()
+    unregisterPersistenceOwner()
     debouncedPersist.cancel()
     stopPendingWorkspaceReadinessWatcher()
   })

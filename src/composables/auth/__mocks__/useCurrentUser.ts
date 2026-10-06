@@ -1,16 +1,17 @@
+import { whenever } from '@vueuse/core'
 import { onTestFinished, vi } from 'vitest'
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 
 import type { useCurrentUser as realUseCurrentUser } from '../useCurrentUser'
 
-function createWatchHandle(): ReturnType<
-  ReturnType<typeof realUseCurrentUser>['onUserResolved']
-> {
+type CurrentUser = ReturnType<typeof realUseCurrentUser>
+
+function createWatchHandle(): ReturnType<CurrentUser['onTokenRefreshed']> {
   const stop = vi.fn()
   return Object.assign(stop, { stop, pause: vi.fn(), resume: vi.fn() })
 }
 
-const defaults: ReturnType<typeof realUseCurrentUser> = {
+const defaults: CurrentUser = {
   loading: false,
   isAuthInitialized: computed(() => true),
   isLoggedIn: computed(() => false),
@@ -25,9 +26,20 @@ const defaults: ReturnType<typeof realUseCurrentUser> = {
   resolvedUserInfo: computed(() => null),
   handleSignOut: vi.fn(async () => {}),
   handleSignIn: vi.fn(async () => {}),
-  onUserResolved: vi.fn(createWatchHandle),
+  onUserResolved: vi.fn((callback) =>
+    whenever(() => currentUser.resolvedUserInfo.value, callback, {
+      immediate: true
+    })
+  ),
   onTokenRefreshed: vi.fn(createWatchHandle),
-  onUserLogout: vi.fn()
+  onUserLogout: vi.fn((callback) => {
+    watch(
+      () => currentUser.resolvedUserInfo.value,
+      (user, previousUser) => {
+        if (previousUser && !user) callback()
+      }
+    )
+  })
 }
 
 const currentUser = { ...defaults }

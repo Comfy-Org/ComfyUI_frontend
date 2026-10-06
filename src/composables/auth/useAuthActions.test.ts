@@ -17,6 +17,7 @@ import type { ErrorRecoveryStrategy } from '@/composables/useErrorHandling'
 import { st, t } from '@/i18n'
 import enLocale from '@/locales/en/main.json'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import { signOutWorkflowStorage } from '@/platform/workflow/persistence/base/storageIO'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
@@ -35,8 +36,6 @@ const mockToastErrorHandler = vi.hoisted(() => vi.fn())
 
 const mockStartPendingTopup = vi.hoisted(() => vi.fn())
 const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
-const mockClearAllWorkspaceStorage = vi.hoisted(() => vi.fn())
-const mockPrepareWorkflowLogoutTransition = vi.hoisted(() => vi.fn())
 
 const authErrorMessages: Record<string, string> = enLocale.auth.errors
 
@@ -71,8 +70,7 @@ vi.mock<unknown>(import('@/composables/billing/usePendingTopup'), () => ({
 }))
 
 vi.mock(import('@/platform/workflow/persistence/base/storageIO'), () => ({
-  clearAllWorkspaceStorage: mockClearAllWorkspaceStorage,
-  prepareWorkflowLogoutTransition: mockPrepareWorkflowLogoutTransition
+  signOutWorkflowStorage: vi.fn()
 }))
 
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
@@ -91,12 +89,21 @@ beforeEach(() => {
   useErrorHandling().wrapWithErrorHandlingAsync =
     <TArgs extends unknown[], TReturn>(
       action: (...args: TArgs) => Promise<TReturn> | TReturn,
-      errorHandler?: (error: unknown) => void
+      errorHandler?: (error: unknown) => void,
+      _finallyHandler?: () => void,
+      recoveryStrategies?: ErrorRecoveryStrategy<TArgs, TReturn>[]
     ) =>
     async (...args: TArgs) => {
       try {
         return await action(...args)
       } catch (error) {
+        const strategy = recoveryStrategies?.find((candidate) =>
+          candidate.shouldHandle(error)
+        )
+        if (strategy) {
+          await strategy.recover(error, action, args)
+          return undefined
+        }
         ;(errorHandler ?? mockToastErrorHandler)(error)
         return undefined
       }
@@ -193,7 +200,7 @@ describe('useAuthActions.logout', () => {
     expect(useDialogService().confirm).not.toHaveBeenCalled()
     expect(useWorkflowService().saveWorkflow).not.toHaveBeenCalled()
     expect(mockAuthStore.logout).toHaveBeenCalledTimes(1)
-    expect(mockClearAllWorkspaceStorage).not.toHaveBeenCalled()
+    expect(signOutWorkflowStorage).not.toHaveBeenCalled()
   })
 
   it('logs out without prompting when no workflows are modified', async () => {
@@ -214,18 +221,14 @@ describe('useAuthActions.logout', () => {
 
     await logout()
 
-    expect(mockPrepareWorkflowLogoutTransition).toHaveBeenCalledOnce()
-    expect(mockClearAllWorkspaceStorage).toHaveBeenCalledExactlyOnceWith()
+    expect(signOutWorkflowStorage).toHaveBeenCalledExactlyOnceWith()
     expect(
       vi.mocked(mockAuthStore.logout).mock.invocationCallOrder[0]
     ).toBeLessThan(
-      mockPrepareWorkflowLogoutTransition.mock.invocationCallOrder[0]
+      vi.mocked(signOutWorkflowStorage).mock.invocationCallOrder[0]
     )
     expect(
-      mockPrepareWorkflowLogoutTransition.mock.invocationCallOrder[0]
-    ).toBeLessThan(mockClearAllWorkspaceStorage.mock.invocationCallOrder[0])
-    expect(
-      mockClearAllWorkspaceStorage.mock.invocationCallOrder[0]
+      vi.mocked(signOutWorkflowStorage).mock.invocationCallOrder[0]
     ).toBeLessThan(navigationSpy.mock.invocationCallOrder[0])
   })
 
@@ -237,8 +240,7 @@ describe('useAuthActions.logout', () => {
 
     await logout()
 
-    expect(mockPrepareWorkflowLogoutTransition).not.toHaveBeenCalled()
-    expect(mockClearAllWorkspaceStorage).not.toHaveBeenCalled()
+    expect(signOutWorkflowStorage).not.toHaveBeenCalled()
   })
 
   it('cancels sign-out when the dialog is dismissed (null)', async () => {
@@ -370,7 +372,7 @@ describe('useAuthActions.logout', () => {
     await logout({ beforeSignOut: async () => false })
 
     expect(mockAuthStore.logout).not.toHaveBeenCalled()
-    expect(mockClearAllWorkspaceStorage).not.toHaveBeenCalled()
+    expect(signOutWorkflowStorage).not.toHaveBeenCalled()
     expect(mockToastStore.add).not.toHaveBeenCalled()
   })
 
@@ -668,52 +670,9 @@ describe('useAuthActions.sendPasswordReset', () => {
   })
 })
 
-/**
- * Reauthentication is not a sign-out, and the two must not share cleanup.
- *
- * `createReauthenticationRecovery` drops the Firebase credential so the user
- * can re-prove the same identity, in the same page session, with the same
- * canvas open; the dialog comes back and the password update retries. Running
- * the sign-out pair here would call `clearAllWorkspaceStorage()`, which removes
- * draft indexes, draft payloads, tab pointers and agent keys by prefix for
- * *every* workspace — so a password change would delete every draft in the
- * browser. That is the data loss this PR exists to stop, and before it the
- * deleted `onUserLogout` observer did exactly that on this path, because
- * `authStore.logout()` drops `resolvedUserInfo` to null like any other
- * credential change.
- *
- * Signing in as a *different* identity from that dialog is covered elsewhere
- * and is not this path's concern: `workspaceAuthStore.endWorkspaceSession`
- * runs `prepareWorkflowWorkspaceTransition()` on the identity change.
- */
 describe('useAuthActions.updatePassword reauthentication', () => {
   beforeEach(() => {
     mockDistributionState.isCloud = true
-    // The file-wide stub above drops `wrapWithErrorHandlingAsync`'s fourth
-    // argument, so the recovery strategy is unreachable through it and this
-    // path would silently not run. Restore just that dispatch - the subject
-    // here is `createReauthenticationRecovery.recover`, not the wrapper.
-    useErrorHandling().wrapWithErrorHandlingAsync =
-      <TArgs extends unknown[], TReturn>(
-        action: (...args: TArgs) => Promise<TReturn> | TReturn,
-        errorHandler?: (error: unknown) => void,
-        _finallyHandler?: () => void,
-        recoveryStrategies?: ErrorRecoveryStrategy<TArgs, TReturn>[]
-      ) =>
-      async (...args: TArgs) => {
-        try {
-          return await action(...args)
-        } catch (error) {
-          for (const strategy of recoveryStrategies ?? []) {
-            if (strategy.shouldHandle(error)) {
-              await strategy.recover(error, action, args)
-              return undefined
-            }
-          }
-          ;(errorHandler ?? mockToastErrorHandler)(error)
-          return undefined
-        }
-      }
   })
 
   const credentialTooOld = () =>
@@ -739,12 +698,8 @@ describe('useAuthActions.updatePassword reauthentication', () => {
       'the operation must retry after the user re-proves the same identity'
     ).toHaveBeenCalledTimes(2)
     expect(
-      mockClearAllWorkspaceStorage,
+      signOutWorkflowStorage,
       'a password reauthentication must not delete the drafts of the user who is still here'
-    ).not.toHaveBeenCalled()
-    expect(
-      mockPrepareWorkflowLogoutTransition,
-      'fencing writes here blocks persistence for a session that never left'
     ).not.toHaveBeenCalled()
   })
 
@@ -759,7 +714,6 @@ describe('useAuthActions.updatePassword reauthentication', () => {
 
     expect(mockAuthStore.logout).not.toHaveBeenCalled()
     expect(useDialogService().showSignInDialog).not.toHaveBeenCalled()
-    expect(mockClearAllWorkspaceStorage).not.toHaveBeenCalled()
-    expect(mockPrepareWorkflowLogoutTransition).not.toHaveBeenCalled()
+    expect(signOutWorkflowStorage).not.toHaveBeenCalled()
   })
 })

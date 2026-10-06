@@ -1,9 +1,8 @@
 import { useCommandStore } from '@/stores/commandStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { whenever } from '@vueuse/core'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, createApp, defineComponent, nextTick, ref, watch } from 'vue'
+import { computed, createApp, defineComponent, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
@@ -199,44 +198,6 @@ describe('useWorkflowPersistenceV2', () => {
     }
     storageIO.resetStorageAvailable()
   })
-
-  /**
-   * What `useAuthActions.logout` runs synchronously on a cloud sign-out,
-   * before it navigates. The persistence composable deliberately does not
-   * mirror this off the observed auth state — another window's Firebase
-   * persistence write makes this window observe a user drop it never caused —
-   * so the fence-and-clear tests drive the command site directly.
-   */
-  function signOutCleanup(): void {
-    storageIO.prepareWorkflowLogoutTransition()
-    storageIO.clearAllWorkspaceStorage()
-  }
-
-  /**
-   * Replaces the bare auth mocks with the observed user as a value the test can
-   * move, and reproduces `useCurrentUser`'s real watch semantics over it.
-   *
-   * Reaching for `onUserLogout.mock.calls` instead cannot express the
-   * foreign-window case at all: the composable no longer registers that
-   * callback, so the calls array is empty and a loop over it is a silent no-op.
-   * Driving the value means the assertions below run the wiring that actually
-   * exists — and would run a logout observer too, if one were ever wired back.
-   */
-  function installObservedAuthState(initialUser: AuthUserInfo | null) {
-    const observedUser = ref<AuthUserInfo | null>(initialUser)
-    Object.assign(vi.mocked(useCurrentUser)(), {
-      resolvedUserInfo: computed(() => observedUser.value),
-      onUserResolved: vi.fn((callback: (user: AuthUserInfo) => void) =>
-        whenever(observedUser, callback, { immediate: true })
-      ),
-      onUserLogout: vi.fn((callback: () => void) => {
-        watch(observedUser, (user, previousUser) => {
-          if (previousUser && !user) callback()
-        })
-      })
-    })
-    return observedUser
-  }
 
   function mountWorkflowPersistence(): WorkflowPersistence {
     let persistence: WorkflowPersistence | undefined
@@ -831,7 +792,8 @@ describe('useWorkflowPersistenceV2', () => {
       WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE,
       JSON.stringify({ id: 'personal', type: 'personal' })
     )
-    const observedUser = installObservedAuthState({ id: 'user-a' })
+    const observedUser = ref<AuthUserInfo | null>({ id: 'user-a' })
+    useCurrentUser().resolvedUserInfo = computed(() => observedUser.value)
     const workflowStore = useWorkflowStore()
     const workflow = await workflowStore
       .createTemporary('ForeignWindow.json')
@@ -846,15 +808,9 @@ describe('useWorkflowPersistenceV2', () => {
     const payloadKey = StorageKeys.draftPayload(workflow.path, 'personal')
     expect(localStorage.getItem(payloadKey)).not.toBeNull()
 
-    // Firebase's browserLocalPersistence syncs auth state between windows over
-    // `storage` events, so a second window booting drops this window's observed
-    // user to null without any sign-out here. That must not be read as a logout.
     observedUser.value = null
     await nextTick()
 
-    // The workspace pointer is gone (authStore clears it on any auth change),
-    // which is exactly the state the old wiring turned into a wipe and a
-    // permanent write fence.
     sessionStorage.removeItem(WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE)
 
     expect(localStorage.getItem(payloadKey)).not.toBeNull()
@@ -891,12 +847,6 @@ describe('useWorkflowPersistenceV2', () => {
     const payloadKey = StorageKeys.draftPayload(workflow.path, 'personal')
     expect(localStorage.getItem(payloadKey)).not.toBeNull()
 
-    // The companion to the observed-user-drop case above, at the other seam.
-    // A second window booting rewrites the shared `firebase:authUser:*` record
-    // and then Firebase clears it, and both reach this window as real `storage`
-    // events. Only the sign-out intent key may fence and clear; a foreign
-    // auth-record write is the reported bug, not a sign-out, so the listener
-    // has to stay narrow enough to tell them apart.
     const foreignAuthRecordKey = 'firebase:authUser:test-api-key:[DEFAULT]'
     window.dispatchEvent(
       new StorageEvent('storage', {
@@ -981,24 +931,20 @@ describe('useWorkflowPersistenceV2', () => {
       WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE,
       JSON.stringify({ id: 'personal', type: 'personal' })
     )
-    installObservedAuthState({ id: 'user-a' })
+    useCurrentUser().resolvedUserInfo = computed(() => ({ id: 'user-a' }))
     const workflowStore = useWorkflowStore()
     const workflow = await workflowStore.createTemporary('SignOut.json').load()
     workflowStore.activeWorkflow = workflow
     mountWorkflowPersistence()
 
-    // A write sitting on the debounce, and — because workspace init has not
-    // concluded — a readiness watcher whose whole job is to release the fence.
     mocks.state.currentGraph = { marker: 'queued-before-sign-out' }
     mocks.state.graphChangedHandler?.()
 
     const payloadKey = StorageKeys.draftPayload(workflow.path, 'personal')
     expect(localStorage.getItem(payloadKey)).toBeNull()
 
-    signOutCleanup()
+    storageIO.signOutWorkflowStorage()
 
-    // Init concluding after the sign-out must not release the fence: the
-    // watcher that would release it belongs to the session that just left.
     Object.assign(useTeamWorkspaceStore(), {
       initState: 'ready',
       activeWorkspaceId: 'personal'
@@ -1006,11 +952,11 @@ describe('useWorkflowPersistenceV2', () => {
     await nextTick()
     expect(storageIO.isStorageAvailable()).toBe(false)
 
-    // `useAuthActions.logout` navigates to /cloud/login, which fires `pagehide`.
     window.dispatchEvent(new Event('pagehide'))
     await vi.runAllTimersAsync()
 
     expect(localStorage.getItem(payloadKey)).toBeNull()
+    expect(mockToastAdd).not.toHaveBeenCalled()
   })
 
   it('resumes workflow writes once workspace readiness is confirmed after authentication recovers', async () => {
@@ -1021,7 +967,7 @@ describe('useWorkflowPersistenceV2', () => {
 
     const onUserResolved = vi.mocked(useCurrentUser().onUserResolved).mock
       .calls[0][0]
-    signOutCleanup()
+    storageIO.signOutWorkflowStorage()
 
     expect(localStorage).toHaveLength(0)
     expect(sessionStorage).toHaveLength(0)
@@ -1063,9 +1009,9 @@ describe('useWorkflowPersistenceV2', () => {
 
     const onUserResolved = vi.mocked(useCurrentUser().onUserResolved).mock
       .calls[0][0]
-    signOutCleanup()
+    storageIO.signOutWorkflowStorage()
     onUserResolved({ id: 'user-b' })
-    signOutCleanup()
+    storageIO.signOutWorkflowStorage()
     onUserResolved({ id: 'user-c' })
 
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-c' })
@@ -1085,7 +1031,7 @@ describe('useWorkflowPersistenceV2', () => {
 
     const onUserResolved = vi.mocked(useCurrentUser().onUserResolved).mock
       .calls[0][0]
-    signOutCleanup()
+    storageIO.signOutWorkflowStorage()
     onUserResolved({ id: 'user-a' })
 
     expect(completeTransitionSpy).not.toHaveBeenCalled()
@@ -1115,7 +1061,7 @@ describe('useWorkflowPersistenceV2', () => {
 
     const onUserResolved = vi.mocked(useCurrentUser().onUserResolved).mock
       .calls[0][0]
-    signOutCleanup()
+    storageIO.signOutWorkflowStorage()
     onUserResolved({ id: 'user-b' })
     await vi.runAllTimersAsync()
 

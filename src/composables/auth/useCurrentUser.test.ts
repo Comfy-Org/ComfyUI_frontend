@@ -17,9 +17,6 @@ vi.mock(import('@/composables/useFeatureFlags'))
 
 const distributionMocks = vi.hoisted(() => ({ isCloud: false }))
 
-// Full mock rather than a spread of the original: `isCloud` is a build-time
-// constant, so there is nothing to spy on, and the module's whole surface is
-// four derived booleans.
 vi.mock(import('@/platform/distribution/types'), () => ({
   get DISTRIBUTION() {
     return distributionMocks.isCloud ? 'cloud' : 'localhost'
@@ -47,11 +44,7 @@ describe('useCurrentUser', () => {
   })
 
   afterEach(() => {
-    // `workflowStorageState` is module-level, so a test that fences it has to
-    // release it or every later test reads an unavailable store.
     storageIO.resetStorageAvailable()
-    localStorage.clear()
-    sessionStorage.clear()
   })
 
   it('treats a key-only session as an API-key login', () => {
@@ -222,8 +215,6 @@ describe('useCurrentUser', () => {
 
       await handleSignOut()
 
-      // `Comfy.User.SignOut` is the only other caller of the fence-and-clear
-      // pair, and this rail does not execute it.
       expect(vi.mocked(useCommandStore().execute)).not.toHaveBeenCalledWith(
         'Comfy.User.SignOut'
       )
@@ -256,8 +247,6 @@ describe('useCurrentUser', () => {
       expect(vi.mocked(useCommandStore().execute)).toHaveBeenCalledWith(
         'Comfy.User.SignOut'
       )
-      // The command owns the cleanup on this rail; doing it here as well would
-      // fence the store a second time behind a release that already fired.
       expect(localStorage.getItem(draftIndexKey)).toBe('{}')
       expect(storageIO.isStorageAvailable()).toBe(true)
     })
