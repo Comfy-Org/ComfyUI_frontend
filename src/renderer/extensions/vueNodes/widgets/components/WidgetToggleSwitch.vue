@@ -35,7 +35,7 @@
         v-model="modelValue"
         :disabled="Boolean(widget.options?.disabled)"
         :readonly="Boolean(widget.options?.read_only)"
-        :aria-label="widget.name"
+        :aria-label="widget.label || widget.name"
       />
     </div>
   </WidgetLayoutField>
