@@ -177,7 +177,11 @@ const browseModels: readonly RouterWorkshopModel[] = contentSources.map(
       ...(thumbnail
         ? {
             thumbnailUrl: thumbnail.url,
-            thumbnail: { url: thumbnail.url, kind: thumbnail.kind }
+            thumbnail: {
+              url: thumbnail.url,
+              kind: thumbnail.kind,
+              ...(thumbnail.poster ? { poster: thumbnail.poster } : {})
+            }
           }
         : {}),
       ...(entry.description
