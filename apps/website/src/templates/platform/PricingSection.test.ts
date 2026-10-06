@@ -19,6 +19,49 @@ const renderedStorageRates = rateCard.storage.filter(
 )
 
 describe('PricingSection', () => {
+  it.for([
+    {
+      locale: 'en',
+      hourlyPrice: '$4.54/hr',
+      hourlyCredits: '957.94/hr',
+      hourlyCreditsLabel: '957.94 credits/hr',
+      storagePrice: '$0.20/GB/mo',
+      storageCredits: '42.20/GB/mo',
+      storageCreditsLabel: '42.20 credits/GB/mo',
+      vramLabel: '96 GB VRAM'
+    },
+    {
+      locale: 'zh-CN',
+      hourlyPrice: '$4.54/小时',
+      hourlyCredits: '957.94/小时',
+      hourlyCreditsLabel: '957.94 积分/小时',
+      storagePrice: '$0.20/GB/月',
+      storageCredits: '42.20/GB/月',
+      storageCreditsLabel: '42.20 积分/GB/月',
+      vramLabel: '96 GB 显存'
+    },
+    {
+      locale: 'ja',
+      hourlyPrice: '$4.54/hr',
+      hourlyCredits: '957.94/hr',
+      hourlyCreditsLabel: '957.94 credits/hr',
+      storagePrice: '$0.20/GB/mo',
+      storageCredits: '42.20/GB/mo',
+      storageCreditsLabel: '42.20 credits/GB/mo',
+      vramLabel: '96 GB VRAM'
+    }
+  ] as const)('renders complete $locale rate units in both layouts', (row) => {
+    render(PricingSection, { props: { locale: row.locale } })
+
+    expect(screen.getAllByText(row.hourlyPrice)).toHaveLength(2)
+    expect(screen.getByRole('cell', { name: row.hourlyCredits })).toBeVisible()
+    expect(screen.getByText(row.hourlyCreditsLabel)).toBeVisible()
+    expect(screen.getAllByText(row.storagePrice)).toHaveLength(2)
+    expect(screen.getByRole('cell', { name: row.storageCredits })).toBeVisible()
+    expect(screen.getByText(row.storageCreditsLabel)).toBeVisible()
+    expect(screen.getByText(row.vramLabel)).toBeVisible()
+  })
+
   it('lists every GPU and storage rate', () => {
     render(PricingSection, { props: { locale: 'en' } })
 

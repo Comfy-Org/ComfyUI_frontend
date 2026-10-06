@@ -36,16 +36,23 @@ const { t } = translationsFor(locale)
 const gpuRates = rateCard.gpus.map((rate) => ({
   gpu: rate.label,
   vram: `${rate.vramGb} GB`,
-  price: formatUsdPerHour(rate.pricePerHourUsd),
-  credits: formatCreditsPerHour(rate.creditsPerHour)
+  price: formatUsdPerHour(rate.pricePerHourUsd, locale),
+  credits: formatCreditsPerHour(rate.creditsPerHour, locale),
+  vramLabel: t('platform.pricing.vramLabel', { amount: rate.vramGb }),
+  creditsLabel: t('platform.pricing.hourlyCreditsLabel', {
+    amount: rate.creditsPerHour.toFixed(2)
+  })
 }))
 
 const storageRates = groupStorageRatesForDisplay(rateCard.storage)
   .filter((rate) => rate.key !== 'containerDisk')
   .map((rate) => ({
     key: rate.key,
-    price: formatUsdPerGbMonth(rate.pricePerGbMonthUsd),
-    credits: formatCreditsPerGbMonth(rate.creditsPerGbMonth),
+    price: formatUsdPerGbMonth(rate.pricePerGbMonthUsd, locale),
+    credits: formatCreditsPerGbMonth(rate.creditsPerGbMonth, locale),
+    creditsLabel: t('platform.pricing.storageCreditsLabel', {
+      amount: rate.creditsPerGbMonth.toFixed(2)
+    }),
     title: t('platform.pricing.storage.title')
   }))
 
@@ -58,17 +65,6 @@ const rootId = bare ? undefined : 'pricing'
 const rootClass = bare
   ? 'mx-auto max-w-9xl'
   : 'mx-auto max-w-9xl scroll-mt-24 px-6 py-10 lg:scroll-mt-36 lg:py-14'
-
-const mobileGpuRows = gpuRates.map((rate) => ({
-  ...rate,
-  vramLabel: `${rate.vram} VRAM`,
-  creditsLabel: rate.credits.replace('/hr', ' credits/hr')
-}))
-
-const mobileStorageRows = storageRates.map((rate) => ({
-  ...rate,
-  creditsLabel: `${rate.credits.replace('/GB/mo', '')} credits`
-}))
 </script>
 
 <template>
@@ -94,7 +90,7 @@ const mobileStorageRows = storageRates.map((rate) => ({
         </p>
         <ul class="mt-5 space-y-5">
           <li
-            v-for="rate in mobileGpuRows"
+            v-for="rate in gpuRates"
             :key="rate.gpu"
             class="flex items-start justify-between gap-4"
           >
@@ -131,7 +127,7 @@ const mobileStorageRows = storageRates.map((rate) => ({
         </p>
         <ul class="mt-5 space-y-5">
           <li
-            v-for="rate in mobileStorageRows"
+            v-for="rate in storageRates"
             :key="rate.key"
             class="flex items-start justify-between gap-4"
           >

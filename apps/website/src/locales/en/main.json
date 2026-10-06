@@ -4660,6 +4660,13 @@
       "vramColumn": "VRAM",
       "priceColumn": "Price",
       "creditsColumn": "Comfy Credits",
+      "hourlyPrice": "${amount}/hr",
+      "hourlyCredits": "{amount}/hr",
+      "hourlyCreditsLabel": "{amount} credits/hr",
+      "storagePrice": "${amount}/GB/mo",
+      "storageCredits": "{amount}/GB/mo",
+      "storageCreditsLabel": "{amount} credits/GB/mo",
+      "vramLabel": "{amount} GB VRAM",
       "storageColumn": "Storage",
       "storage": {
         "title": "Network Storage"

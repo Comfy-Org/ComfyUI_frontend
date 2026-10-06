@@ -1,3 +1,5 @@
+import type { Locale } from '@/config/locales'
+import { t } from '@/i18n/translations'
 import type { RateCard, StorageRate } from '@/types/rate-card'
 import { zRateCard } from '@/types/rate-card/zod.gen'
 
@@ -17,20 +19,45 @@ export function getStorageRate(storageType: string): StorageRate {
   return rate
 }
 
-export function formatUsdPerHour(usd: number): string {
-  return `$${usd.toFixed(2)}/hr`
+export function formatUsdPerHour(usd: number, locale: Locale = 'en'): string {
+  return t(
+    'platform.pricing.hourlyPrice',
+    { amount: usd.toFixed(2) },
+    { locale }
+  )
 }
 
-export function formatCreditsPerHour(credits: number): string {
-  return `${credits.toFixed(2)}/hr`
+export function formatCreditsPerHour(
+  credits: number,
+  locale: Locale = 'en'
+): string {
+  return t(
+    'platform.pricing.hourlyCredits',
+    { amount: credits.toFixed(2) },
+    { locale }
+  )
 }
 
-export function formatUsdPerGbMonth(usd: number): string {
-  return `$${usd.toFixed(2)}/GB/mo`
+export function formatUsdPerGbMonth(
+  usd: number,
+  locale: Locale = 'en'
+): string {
+  return t(
+    'platform.pricing.storagePrice',
+    { amount: usd.toFixed(2) },
+    { locale }
+  )
 }
 
-export function formatCreditsPerGbMonth(credits: number): string {
-  return `${credits.toFixed(2)}/GB/mo`
+export function formatCreditsPerGbMonth(
+  credits: number,
+  locale: Locale = 'en'
+): string {
+  return t(
+    'platform.pricing.storageCredits',
+    { amount: credits.toFixed(2) },
+    { locale }
+  )
 }
 
 const STORAGE_EXAMPLE_GB = 20

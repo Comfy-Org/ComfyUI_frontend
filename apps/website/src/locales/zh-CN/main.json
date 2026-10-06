@@ -3244,6 +3244,13 @@
     "pricing": {
       "billedPerSecond": "按 GPU 秒计费",
       "creditsColumn": "Comfy 积分",
+      "hourlyPrice": "${amount}/小时",
+      "hourlyCredits": "{amount}/小时",
+      "hourlyCreditsLabel": "{amount} 积分/小时",
+      "storagePrice": "${amount}/GB/月",
+      "storageCredits": "{amount}/GB/月",
+      "storageCreditsLabel": "{amount} 积分/GB/月",
+      "vramLabel": "{amount} GB 显存",
       "gpuColumn": "GPU",
       "heading": "定价",
       "idleNote": "存储持续计费；GPU 只在工作节点运行时计费。绝不为闲置算力付费。",
