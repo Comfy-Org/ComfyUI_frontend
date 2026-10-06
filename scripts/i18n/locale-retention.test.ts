@@ -7,7 +7,6 @@ import {
   collectLeaves,
   collectPendingLeaves,
   diffLocaleSources,
-  fingerprintLocale,
   pathKey,
   rebuildLocale,
   serializeLocale
@@ -22,36 +21,31 @@ function simulateGeneration({
   previousEnglish,
   english,
   existing,
-  published = existing,
   excludedPaths = [],
-  previousReviewNeeded = [],
   policy = preserve
 }: {
   previousEnglish: LocaleObject
   english: LocaleObject
   existing: LocaleObject
-  published?: LocaleObject
   excludedPaths?: string[][]
-  previousReviewNeeded?: string[][]
   policy?: TranslationPipelineConfig['existingCopy']
-}) {
-  const previousSource = fingerprintLocale(previousEnglish)
-  const changes = diffLocaleSources(previousSource, fingerprintLocale(english))
-  const invalidated = new Set([...changes.added, ...changes.modified])
-  const { retained, omitted, reviewNeeded } = partitionLocale({
+}): LocaleObject {
+  const changes = diffLocaleSources(previousEnglish, english)
+  const invalidated = new Set(
+    [...changes.added, ...changes.modified].map(pathKey)
+  )
+  const { retained, omitted } = partitionLocale({
     sourceLeaves: collectLeaves(english),
-    previousEnglish: previousSource,
+    previousEnglish,
     existing,
-    publishedLocale: fingerprintLocale(published),
-    modifiedKeys: new Set(changes.modified),
+    modifiedKeys: new Set(changes.modified.map(pathKey)),
     policy,
-    excludedKeys: new Set(excludedPaths.map(pathKey)),
-    previousReviewNeeded
+    excludedKeys: new Set(excludedPaths.map(pathKey))
   })
   const regenerated = collectPendingLeaves(english, existing, invalidated)
     .filter(({ path }) => !retained.has(pathKey(path)))
     .filter(({ path }) => !omitted.has(pathKey(path)))
-  const output = rebuildLocale(
+  return rebuildLocale(
     english,
     existing,
     invalidated,
@@ -63,7 +57,6 @@ function simulateGeneration({
     ]),
     omitted
   )
-  return { output, reviewNeeded }
 }
 
 describe('locale retention', () => {
@@ -71,14 +64,12 @@ describe('locale retention', () => {
     Parameters<typeof simulateGeneration>[0] & {
       label: string
       expected: LocaleObject
-      expectedReview?: string[][]
     }
   >([
     {
       label: 'unchanged copy is retained',
       previousEnglish: { title: 'Hello' },
       english: { title: 'Hello' },
-      published: { title: 'こんにちは' },
       existing: { title: 'こんにちは' },
       expected: { title: 'こんにちは' }
     },
@@ -86,7 +77,6 @@ describe('locale retention', () => {
       label: 'intentional empty translation is retained',
       previousEnglish: { title: 'Hello' },
       english: { title: 'Hello' },
-      published: { title: '' },
       existing: { title: '' },
       expected: { title: '' }
     },
@@ -94,33 +84,13 @@ describe('locale retention', () => {
       label: 'nonempty locale fragment for empty English is retained',
       previousEnglish: { suffix: '' },
       english: { suffix: '' },
-      published: { suffix: 'さん' },
       existing: { suffix: 'さん' },
       expected: { suffix: 'さん' }
-    },
-    {
-      label: 'locale edited alongside English is retained and flagged',
-      previousEnglish: { title: 'Old' },
-      english: { title: 'New' },
-      published: { title: '古い' },
-      existing: { title: '新しい' },
-      expected: { title: '新しい' },
-      expectedReview: [['title']]
-    },
-    {
-      label: 'locale array edited alongside English is retained and flagged',
-      previousEnglish: { steps: ['Open', 'Save'] },
-      english: { steps: ['Open', 'Export'] },
-      published: { steps: ['開く', '保存'] },
-      existing: { steps: ['開く', '書き出す'] },
-      expected: { steps: ['開く', '書き出す'] },
-      expectedReview: [['steps']]
     },
     {
       label: 'added English key keeps a translation that already exists',
       previousEnglish: {},
       english: { title: 'Hello' },
-      published: {},
       existing: { title: 'こんにちは' },
       expected: { title: 'こんにちは' }
     },
@@ -128,41 +98,33 @@ describe('locale retention', () => {
       label: 'unchanged locale under changed English is regenerated',
       previousEnglish: { title: 'Old' },
       english: { title: 'New' },
-      published: { title: '古い' },
       existing: { title: '古い' },
       expected: { title: 'MT(New)' }
+    },
+    {
+      label: 'locale edited alongside English is regenerated',
+      previousEnglish: { title: 'Old' },
+      english: { title: 'New' },
+      existing: { title: '新しい' },
+      expected: { title: 'MT(New)' }
     }
-  ])(
-    '$label',
-    ({
-      previousEnglish,
-      english,
-      published,
-      existing,
-      expected,
-      expectedReview = []
-    }) => {
-      expect(
-        simulateGeneration({ previousEnglish, english, published, existing })
-      ).toEqual({ output: expected, reviewNeeded: expectedReview })
-    }
-  )
+  ])('$label', ({ expected, ...input }) => {
+    expect(simulateGeneration(input)).toEqual(expected)
+  })
 
   it('regenerates changed English copy when policy is regenerate', () => {
     expect(
       simulateGeneration({
         previousEnglish: { title: 'Old', kept: 'Kept' },
         english: { title: 'New', kept: 'Kept' },
-        published: { title: '古い', kept: '保持' },
         existing: { title: '人が直した', kept: '保持' },
         policy: { kind: 'regenerate' }
-      }).output
+      })
     ).toEqual({ kept: '保持', title: 'MT(New)' })
   })
 
   describe('excluded copy', () => {
     const excludedPaths = [['tos', 'body']]
-    const translated = { tos: { body: '旧規約' } }
     const changedEnglish = {
       previousEnglish: { tos: { body: 'Old terms' } },
       english: { tos: { body: 'New terms' } },
@@ -177,100 +139,29 @@ describe('locale retention', () => {
         existing: { tos: { body: 'Old terms' } }
       }
     ])('omits $label copy for runtime fallback', ({ existing }) => {
-      expect(simulateGeneration({ ...changedEnglish, existing })).toEqual({
-        output: {},
-        reviewNeeded: []
-      })
+      expect(simulateGeneration({ ...changedEnglish, existing })).toEqual({})
     })
 
-    it('flags retained translation for review after English changes', () => {
-      expect(
-        simulateGeneration({ ...changedEnglish, existing: translated })
-      ).toEqual({ output: translated, reviewNeeded: [['tos', 'body']] })
+    it.for<{ label: string; existing: LocaleObject }>([
+      { label: 'a translation', existing: { tos: { body: '旧規約' } } },
+      {
+        label: 'an intentional empty translation',
+        existing: { tos: { body: '' } }
+      }
+    ])('keeps $label after English changes', ({ existing }) => {
+      expect(simulateGeneration({ ...changedEnglish, existing })).toEqual(
+        existing
+      )
     })
 
-    it('keeps an intentional empty translation even when previous English was empty', () => {
+    it('prunes the translation when its English source is deleted', () => {
       expect(
         simulateGeneration({
-          previousEnglish: { tos: { body: '' } },
-          english: { tos: { body: 'New terms' } },
-          existing: { tos: { body: '' } },
-          excludedPaths
-        })
-      ).toEqual({
-        output: { tos: { body: '' } },
-        reviewNeeded: [['tos', 'body']]
-      })
-    })
-  })
-
-  describe('outstanding review flags', () => {
-    const translated = { tos: { body: '旧規約' } }
-    const flaggedPublication = {
-      previousEnglish: { tos: { body: 'New terms' } },
-      english: { tos: { body: 'New terms' } },
-      published: translated,
-      previousReviewNeeded: [['tos', 'body']]
-    }
-
-    it.for<{
-      label: string
-      excludedPaths: string[][]
-      existing: LocaleObject
-      previousReviewNeeded: string[][]
-      expectedReview: string[][]
-    }>([
-      {
-        label: 'keeps the flag on excluded copy without edits',
-        excludedPaths: [['tos', 'body']],
-        existing: translated,
-        previousReviewNeeded: [['tos', 'body']],
-        expectedReview: [['tos', 'body']]
-      },
-      {
-        label: 'keeps the flag after the exclusion is removed',
-        excludedPaths: [],
-        existing: translated,
-        previousReviewNeeded: [['tos', 'body']],
-        expectedReview: [['tos', 'body']]
-      },
-      {
-        label: 'clears the flag when the translation is edited',
-        excludedPaths: [['tos', 'body']],
-        existing: { tos: { body: '新規約' } },
-        previousReviewNeeded: [['tos', 'body']],
-        expectedReview: []
-      },
-      {
-        label: 'clears the flag when the reviewNeeded entry is deleted',
-        excludedPaths: [],
-        existing: translated,
-        previousReviewNeeded: [],
-        expectedReview: []
-      }
-    ])(
-      '$label',
-      ({ excludedPaths, existing, previousReviewNeeded, expectedReview }) => {
-        expect(
-          simulateGeneration({
-            ...flaggedPublication,
-            excludedPaths,
-            existing,
-            previousReviewNeeded
-          })
-        ).toEqual({ output: existing, reviewNeeded: expectedReview })
-      }
-    )
-
-    it('prunes flagged copy when its English source is deleted', () => {
-      expect(
-        simulateGeneration({
-          ...flaggedPublication,
+          ...changedEnglish,
           english: {},
-          existing: translated,
-          excludedPaths: [['tos', 'body']]
+          existing: { tos: { body: '旧規約' } }
         })
-      ).toEqual({ output: {}, reviewNeeded: [] })
+      ).toEqual({})
     })
   })
 
@@ -284,11 +175,7 @@ describe('locale retention', () => {
     )
 
     expect(serializeLocale(output)).toBe(
-      serializeLocale({
-        a: { y: 'ワイ', z: 'ゼット' },
-        b: 'ビー',
-        empty: {}
-      })
+      '{\n  "a": {\n    "y": "ワイ",\n    "z": "ゼット"\n  },\n  "b": "ビー",\n  "empty": {}\n}\n'
     )
   })
 })

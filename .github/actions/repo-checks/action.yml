@@ -2,7 +2,8 @@ name: 'Repository consistency checks'
 description: >
   Runs knip, the locale integrity check and the ADR index check. Shared by
   ci-lint-format.yaml (PR) and ci-lint-format-queue.yaml (merge queue). The
-  caller is responsible for checking out the repository and frontend setup.
+  caller is responsible for a blobless full-history checkout (locale:check
+  fetches source blobs from git history) and frontend setup.
 
 runs:
   using: composite

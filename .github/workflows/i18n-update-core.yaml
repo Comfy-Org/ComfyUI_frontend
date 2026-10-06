@@ -29,6 +29,8 @@ jobs:
           # Keep generation and the eventual push on the same branch commit.
           # A moved remote then fails normally instead of merging stale output.
           ref: ${{ github.head_ref || github.ref_name }}
+          # Blobless full history: the locale pipeline lazily fetches the
+          # English source blobs recorded in src/locales/.source-manifest.json
           fetch-depth: 0
           filter: blob:none
 

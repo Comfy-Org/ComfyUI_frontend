@@ -58,8 +58,9 @@ pnpm locale
 pnpm locale:check
 ```
 
-Both commands read the committed baseline in `src/locales/.source-manifest.json`.
-They do not require git history.
+Both commands need a clone with full history (a blobless partial clone works):
+the source manifest records git blob hashes of past English sources, and the
+pipeline reads them back with `git cat-file`.
 
 #### Option B: Let CI Handle It (Recommended)
 
@@ -107,9 +108,8 @@ Our automated translation workflow now runs on release PRs (version-bump-\* bran
 3. **Generates translations**: Uses OpenAI API to translate to all configured languages
 4. **Commits back**: Automatically updates the release PR with complete translations
 
-The pipeline (`scripts/i18n/update-locales.ts`) records fingerprints of the
-English sources it last translated, and its validation baseline, in
-`src/locales/.source-manifest.json`. On each run it
+The pipeline (`scripts/i18n/update-locales.ts`) records the English sources it
+last translated in `src/locales/.source-manifest.json`. On each run it
 retranslates strings whose English text changed, backfills missing keys, prunes
 keys removed from English (deleting whole locale files whose English source
 file was removed), and validates that interpolation placeholders and protected
@@ -125,70 +125,18 @@ Source-manifest, translation, and protected-token integrity failures remain hard
 failures.
 `pnpm locale:check` runs offline in CI: it reports pending work and fails on
 protected-token violations that are not already queued for retranslation
-because the English source changed.
+because the English source changed. The manifest's `knownViolations` field
+baselines violations that predate the pipeline; a successful locale run heals
+and drops them, and any corruption introduced beyond the baseline fails the
+check immediately. oxfmt ignores `src/locales/**/*.json` — the pipeline is the
+sole writer of those bytes, which keeps the manifest's recorded blob hashes
+valid.
 
-The manifest is version 3. For each entry file, `files["<file>"].source` maps
-every English leaf as last published to a fingerprint. Each key is the
-key-segment array as JSON, such as `["g","title"]`, and each value is the
-SHA-256 hex digest of `JSON.stringify(value)`. An array counts as one leaf. The
-pipeline compares these digests with the current English to find added,
-modified and deleted keys; it stores no copy of the previous English. The
-digests are comparison metadata, not Git object IDs, and the pipeline never
-looks them up in Git. A matching digest shows only that a value equals what
-generation last wrote, not that a person reviewed it.
-
-The manifest's `files["<file>"].knownViolations` field lists accepted
-violations as `{ "locale", "path", "code", "token" }`, where `path` is a
-key-segment array and `code` is one of `violationCodes` in
-`scripts/i18n/protected-tokens.ts`. A violation that matches an entry passes,
-and any other violation fails the check. The check prints entries that no
-longer match as `STALE BASELINE:` lines without failing. Each successful file
-update keeps only the entries its output still matches, and no command adds
-entries. Generation and the check fail when the manifest fails validation. This
-PR migrated the version-1 manifests to version 3, computing fingerprints from
-the recorded publication baseline rather than from the current catalogs, so
-edits made after the last generation still count as changes. The pipeline
-reads only version 3. oxfmt ignores `src/locales/**/*.json` because the
-pipeline is the sole writer of those bytes.
-
-### The website shares this pipeline
-
-`apps/website` keeps its catalogs in the same nested per-locale JSON layout
-and vue-i18n message syntax under `apps/website/src/locales/`, and the same
-script translates them. Inside `apps/website`, `pnpm locale` and
-`pnpm locale:check` call the shared CLI with `--target website`. From the
-repository root, use `pnpm --filter @comfyorg/website locale` or
-`pnpm --filter @comfyorg/website locale:check`. The website owns its glossary,
-language guidance and exclusions in `apps/website/src/config/translation.ts`,
-which derives target locales from its locale registry. Generation does not
-change routes or indexing.
-
-The website manifest also records, per locale,
-`files["<file>"].locales["<locale>"].fingerprints`, the same digest map for
-each locale catalog as last published, and `reviewNeeded` key paths. The app
-records English fingerprints only. Website generation keeps existing copy
-unless English changed and the translation still matches its recorded
-fingerprint. Every retained value whose English changed gets a persistent
-`REVIEW NEEDED` warning, because fingerprints cannot show whether a translation
-was edited before or after its English. Excluded namespaces are never machine-translated. See the
-website's [localization instructions](../../apps/website/README.md#localization)
-for the retention rules, review flags, fallback and validation.
-
-The website validates strictly: a plural message keeps the English form count
-or collapses to one form, and each form keeps its placeholders and markup.
-Generated copy keeps link URLs exactly; authored copy may add the target-locale
-prefix to an internal link. The app keeps its existing set-based token
-validation and its source-change regeneration policy. Both targets distinguish
-literal interpolation such as `{'|'}` and `{'@.'}` from plural separators and
-linked messages. Adding either literal still fails the protected-token audit.
-
-Each target publishes its catalogs and manifest through a recovery
-journal, `.locale-publication.json`, in its locale directory. While a journal
-exists, the check exits with an error, and the next generation completes the
-recorded publication before planning new work. Recovery names any listed file
-edited since publication began and writes nothing. The journal holds all
-recovery data; leftover temporary files hold none. Do not commit the journal or
-temporary files.
+The same pipeline also translates the website catalogs in
+`apps/website/src/locales/`, with its own manifest and `--target website`
+configuration. The website keeps existing translations whose English did not
+change and never generates its excluded legal namespaces. See the website's
+[localization instructions](../../apps/website/README.md#generating-translations).
 
 ### Manual Translation Updates
 

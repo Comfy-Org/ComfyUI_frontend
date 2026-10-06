@@ -1,7 +1,7 @@
 import type { LocaleObject, LocaleValue } from './locale-tree'
 import { collectLeaves } from './locale-tree'
 
-export const violationCodes = [
+const violationCodes = [
   'missing-token',
   'added-token',
   'empty-translation',

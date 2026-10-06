@@ -107,106 +107,37 @@ copy. Both scripts call the shared CLI in `scripts/i18n/update-locales.ts` with
 `pnpm --filter @comfyorg/website locale:check` or
 `pnpm --filter @comfyorg/website locale`.
 
-### Publication baselines
+The website uses the app's pipeline and manifest format, described in
+[`src/locales/CONTRIBUTING.md`](../../src/locales/CONTRIBUTING.md#what-happens-in-ci).
+`src/locales/.source-manifest.json` maps each English file to the Git blob ID
+of the English last generated. Its `knownViolations` field lists accepted
+protected-token violations as JSON-encoded key paths, such as
+`["cloud","reason","1","title"]`. Use a clone with full history: if the recorded
+blob is missing, `locale:check` warns and skips change detection, and
+`pnpm locale` fails. When translation of an entry file fails,
+its English, locale catalogs and manifest entry keep their previous contents.
 
-Each generation records what it published in
-`src/locales/.source-manifest.json` (version 3). For each catalog file it
-holds:
+Commit the generated English catalog, locale catalogs and manifest together. If
+you edit any of them after generation, run `pnpm locale` again before
+committing.
 
-- `files["main.json"].source`: a fingerprint for every English leaf as last
-  published.
-- `files["main.json"].locales["<locale>"].fingerprints`: a fingerprint for
-  every value in that locale catalog as last published.
-- `files["main.json"].locales["<locale>"].reviewNeeded` and
-  `files["main.json"].knownViolations`, described below.
+The website differs from the app in these ways:
 
-A fingerprint map is keyed by the JSON key-segment array, so
-`privacy.intro.title` appears as `["privacy","intro","title"]`. Each value is
-the SHA-256 hex digest of `JSON.stringify(value)`. An array counts as one
-value. The digests exist only for comparison. They are not Git object IDs,
-and the commands read no Git history. A matching fingerprint proves only that
-a value equals what generation last wrote, not that a person approved it.
-
-Generation writes the catalogs and manifest in one publication, so every
-commit tree carries its own baseline. The record survives edits made after
-generation and squash merges. The manifest stores no copy of the previous
-English or translations; read old wording from version control. If the
-manifest fails validation, both `locale:check` and `pnpm locale` fail; restore
-it from version control.
-
-Generation compares fingerprints of the current catalogs with the recorded
-ones:
-
-- While English is unchanged, existing copy stays, including intentional empty
-  strings.
-- A new English key keeps a translation supplied in the same change.
-- When English changes and an eligible translation still matches its recorded
-  fingerprint, generation replaces it.
-- When English changes and the translation was edited, generation keeps the
-  edit and flags it `REVIEW NEEDED`. Fingerprints show content, not the order
-  of edits, so they cannot show that the edit was written against the new
-  English.
-- When English changes under an excluded namespace, generation keeps the
-  translation and flags it `REVIEW NEEDED`.
-- Deleting an eligible locale value requests a new translation.
-- Deleting an English key removes its locale values, fingerprints and review
-  flags. Deleting an English file removes its locale catalogs and manifest
-  entry.
-
-Excluded values that are missing, or nonempty and equal to the current or
-previous English, are removed so the page uses current English fallback. An
-intentional empty string stays.
-
-### Review flags
-
-`reviewNeeded` lists key-segment arrays: `privacy.intro.block.0` appears as
-`["privacy","intro","block","0"]`. Both commands print each flag starting with
-`REVIEW NEEDED: <locale>/main.json: <dotted path>`. Flags are warnings and never
-fail CI. A flag persists across runs, including after its namespace leaves the
-exclusion list. To accept the wording after generation, either edit the locale
-value or delete that exact entry from `reviewNeeded`.
-
-Flagged copy in an eligible namespace is still audited against current English;
-a violation fails the check. Flagged copy in an excluded namespace skips the
-token audit, and its `knownViolations` entries carry forward unchanged until a
-person clears the flag. Invalid retained copy fails preflight before any paid
-request; fix or delete that value first.
-
-### Validation and baselines
-
-Website validation is strict. A translated plural message keeps the English
-form count or collapses to one form. With the same count, each form must keep
-the placeholders and markup of the matching English form. A collapsed form must
-keep every token at the highest count any English form uses. Markup must be
-balanced; tag order may change.
-
-Generated copy must keep every link URL exactly as written in English, and the
-validator rejects any change. Authored copy may prefix an internal `href` with
-the exact target locale, such as `/zh-CN/pricing/`. The validator does not check
-that the prefixed route exists, so review those links against the available
-routes.
-
-`files["main.json"].knownViolations` lists accepted violations as
-`{ "locale", "path", "code", "token" }`, where `path` is a key-segment array and
-`code` is one of `violationCodes` in `scripts/i18n/protected-tokens.ts`. A
-violation that matches an entry passes; any other violation fails. Entries
-that no longer match a violation are printed as
-`STALE BASELINE: <locale>/main.json: <dotted path>: <description>` and counted
-in the summary without failing. Each successful generation rewrites the list
-with the entries its output still matches, plus deferred entries under excluded
-flagged paths. No command adds entries.
-
-### Interrupted generation
-
-Generation publishes through a recovery journal,
-`src/locales/.locale-publication.json`, which lists each catalog and manifest
-change with its old and new contents. While the journal exists,
-`locale:check` exits with an error. The next `pnpm locale` completes the recorded
-publication before planning new work. If a listed file matches neither its old
-nor its new contents, recovery names the file and writes nothing. The journal
-holds all recovery data. Leftover `*.publication.tmp` and
-`.locale-publication.json.*.tmp` files hold none and can be deleted. Do not
-commit the journal or temporary files.
+- Existing copy stays while its English is unchanged, including intentional
+  empty strings. A new English key keeps a translation supplied in the same
+  change. When English is modified, generation replaces the matching eligible
+  translations, including locale edits made in the same change. The app
+  regenerates every added or modified key.
+- Excluded namespaces are never generated. An excluded value that is missing,
+  or nonempty and equal to the current or previous English, is removed so the
+  page falls back to current English. Other excluded translations stay when
+  English changes; legal review of them is a human task.
+- Validation is strict. A translated plural message keeps the English form
+  count or collapses to one form. Matching forms keep their placeholders and
+  markup; a collapsed form keeps every token at its highest English count.
+  Generated copy keeps every link URL exactly.
+  Authored copy may prefix an internal `href` with the target locale, such as
+  `/zh-CN/pricing/`; the validator does not check that the route exists.
 
 ## Ashby careers integration
 

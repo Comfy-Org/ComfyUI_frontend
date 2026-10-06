@@ -1,5 +1,14 @@
-import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
-import { join, relative, resolve } from 'node:path'
+import { execFileSync } from 'node:child_process'
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  statSync,
+  writeFileSync
+} from 'node:fs'
+import { dirname, join, relative, resolve } from 'node:path'
 import { parseArgs } from 'node:util'
 
 import type { ResponseUsage } from 'openai/resources/responses/responses'
@@ -17,7 +26,6 @@ import {
   collectLeaves,
   collectPendingLeaves,
   diffLocaleSources,
-  fingerprintLocale,
   parseLocale,
   pathKey,
   rebuildLocale,
@@ -29,14 +37,8 @@ import {
   leafTokensDiffer,
   protectedTokens
 } from './protected-tokens'
-import type { TokenViolation } from './protected-tokens'
-import {
-  hasPendingPublication,
-  publishCatalogs,
-  recoverPublication
-} from './publication'
-import type { FileSnapshot, SourceManifest } from './source-manifest'
-import { loadManifest, splitViolations } from './source-manifest'
+import type { SourceManifest } from './source-manifest'
+import { loadManifest } from './source-manifest'
 import type { TranslateBatch, TranslationItem } from './translate'
 import {
   chunkItems,
@@ -51,8 +53,9 @@ interface SourcePlan {
   filename: string
   source: LocaleObject
   sourceLeaves: Map<string, LocaleLeafEntry>
-  previous: FileSnapshot['source']
-  snapshot: FileSnapshot | undefined
+  previous: LocaleObject
+  degraded: boolean
+  knownViolationKeys: ReadonlySet<string>
   invalidated: Set<string>
   modified: Set<string>
   excluded: Set<string>
@@ -186,10 +189,30 @@ function print(line: string): void {
   process.stdout.write(`${line}\n`)
 }
 
+function readManifestSource(
+  repoRoot: string,
+  filename: string,
+  hash: string
+): LocaleObject | undefined {
+  let content: string
+  try {
+    content = execFileSync('git', ['cat-file', 'blob', hash], {
+      cwd: repoRoot,
+      encoding: 'utf8',
+      maxBuffer: 64 * 1024 * 1024
+    })
+  } catch {
+    return undefined
+  }
+  return parseLocale(content, `${filename}@${hash}`)
+}
+
 function loadPlans(
+  repoRoot: string,
   outputDir: string,
   manifest: SourceManifest,
   config: TranslationPipelineConfig,
+  check: boolean,
   readCatalog: (file: string, required?: boolean) => LocaleObject
 ): SourcePlan[] {
   const entryDir = join(outputDir, 'en')
@@ -201,10 +224,20 @@ function loadPlans(
     .sort()
     .map((filename) => {
       const source = readCatalog(join(entryDir, filename), true)
-      const snapshot = Object.hasOwn(manifest.files, filename)
+      const hash = Object.hasOwn(manifest.files, filename)
         ? manifest.files[filename]
         : undefined
-      const previous = snapshot?.source ?? {}
+      const recorded = hash ? readManifestSource(repoRoot, filename, hash) : {}
+      if (recorded === undefined) {
+        if (!check)
+          throw new Error(
+            `Cannot read the recorded English source for ${filename} (${hash}). Run from a clone with full history (fetch-depth: 0 with filter: blob:none).`
+          )
+        print(
+          `WARNING: ${filename}: the recorded English source (${hash}) is unavailable in this clone; changed-string detection is skipped for this check.`
+        )
+      }
+      const previous = recorded ?? source
       const sourceLeaves = collectLeaves(source)
       const policy = config.existingCopy
       const excluded = new Set(
@@ -220,11 +253,11 @@ function loadPlans(
           )
           .map(([key]) => key)
       )
-      const changes = diffLocaleSources(previous, fingerprintLocale(source))
+      const changes = diffLocaleSources(previous, source)
       const summary = formatPruneSummary(
         filename,
         changes.deleted.length,
-        Object.keys(previous).length
+        collectLeaves(previous).size
       )
       if (summary) print(summary)
       return {
@@ -232,9 +265,12 @@ function loadPlans(
         source,
         sourceLeaves,
         previous,
-        snapshot,
-        invalidated: new Set([...changes.added, ...changes.modified]),
-        modified: new Set(changes.modified),
+        degraded: recorded === undefined,
+        knownViolationKeys: new Set(manifest.knownViolations?.[filename] ?? []),
+        invalidated: new Set(
+          [...changes.added, ...changes.modified].map(pathKey)
+        ),
+        modified: new Set(changes.modified.map(pathKey)),
         excluded
       }
     })
@@ -250,16 +286,13 @@ function loadStates(
     plans.map((plan) => {
       const outputFile = join(outputDir, locale.code, plan.filename)
       const existing = readCatalog(outputFile)
-      const published = plan.snapshot?.locales[locale.code]
       const retention = partitionLocale({
         sourceLeaves: plan.sourceLeaves,
         previousEnglish: plan.previous,
         existing,
-        publishedLocale: published?.fingerprints ?? {},
         modifiedKeys: plan.modified,
         policy: config.existingCopy,
-        excludedKeys: plan.excluded,
-        previousReviewNeeded: published?.reviewNeeded ?? []
+        excludedKeys: plan.excluded
       })
       const pendingLeaves = collectPendingLeaves(
         plan.source,
@@ -300,18 +333,14 @@ function auditState(
   config: TranslationPipelineConfig,
   phase: 'check' | 'preflight' | 'output'
 ) {
-  const deferredReviews = state.reviewNeeded
-    .map(pathKey)
-    .filter((key) => state.plan.excluded.has(key))
-  const replaced =
-    phase === 'check' && config.existingCopy.kind === 'regenerate'
-      ? state.plan.invalidated
-      : [...state.plan.sourceLeaves.keys()].filter(
-          (key) => !state.retained.has(key) && !state.omitted.has(key)
-        )
+  const replaced = [...state.plan.invalidated].filter(
+    (key) => !state.retained.has(key)
+  )
+  if (phase === 'preflight')
+    replaced.push(...state.pendingLeaves.map(({ path }) => pathKey(path)))
   const skipped = new Set([
     ...state.omitted,
-    ...deferredReviews,
+    ...state.plan.excluded,
     ...[...state.retained]
       .filter(([, value]) => value === '')
       .map(([key]) => key),
@@ -321,29 +350,16 @@ function auditState(
     strict: config.strictProtectedTokens,
     localeCode: state.locale.code
   })
-  const baseline =
-    state.plan.snapshot?.knownViolations.filter(
-      ({ locale }) => locale === state.locale.code
-    ) ?? []
-  const deferredKeys = new Set([
-    ...deferredReviews,
-    ...(phase === 'output' ? [] : replaced)
-  ])
-  const deferred = baseline.filter(({ path }) =>
-    path.some((_, index) => deferredKeys.has(pathKey(path.slice(0, index + 1))))
-  )
-  const audit = splitViolations(
-    actual,
-    baseline.filter((entry) => !deferred.includes(entry))
-  )
-  return { ...audit, known: [...audit.known, ...deferred] }
-}
-
-function reportReviews({ label, reviewNeeded }: LocaleFileState): void {
-  for (const path of reviewNeeded)
-    print(
-      `REVIEW NEEDED: ${label}: ${path.join('.')}: English changed; edit the translation or accept its reviewNeeded entry after generation.`
-    )
+  const known = new Set<string>()
+  const unexpected: typeof actual = []
+  for (const violation of actual) {
+    const key = violation.path
+      .map((_, index) => pathKey(violation.path.slice(0, index + 1)))
+      .find((path) => state.plan.knownViolationKeys.has(path))
+    if (key) known.add(key)
+    else unexpected.push(violation)
+  }
+  return { known: [...known], unexpected }
 }
 
 function reportCheck(
@@ -353,13 +369,10 @@ function reportCheck(
   let pending = 0
   let stray = 0
   let violations = 0
-  let reviews = 0
-  let stale = 0
   for (const state of states) {
     const { label } = state
     pending += state.pendingLeaves.length
     stray += state.strayPaths.length
-    reviews += state.reviewNeeded.length
     if (state.pendingLeaves.length)
       print(
         `${label}: ${state.pendingLeaves.length} strings need translation (${state.pendingLeaves
@@ -371,22 +384,17 @@ function reportCheck(
       print(
         `${label}: ${state.strayPaths.length} keys will be pruned or use English fallback`
       )
-    reportReviews(state)
+    if (state.plan.degraded) continue
     const audit = auditState(state, state.existing, config, 'check')
     violations += audit.unexpected.length
-    stale += audit.stale.length
     for (const error of audit.unexpected)
       print(`${label}: ${formatTokenViolation(error)}`)
-    for (const error of audit.stale)
-      print(`STALE BASELINE: ${label}: ${formatTokenViolation(error)}`)
   }
-  if (
-    [pending, stray, violations, reviews, stale].every((count) => count === 0)
-  )
+  if ([pending, stray, violations].every((count) => count === 0))
     print('All locales are up to date with the English sources.')
   else
     print(
-      `Pending: ${pending} translations, ${stray} prunable keys, ${violations} protected-token violations, ${reviews} reviews needed, ${stale} stale baseline entries.`
+      `Pending: ${pending} translations, ${stray} prunable keys, ${violations} protected-token violations.`
     )
   return violations ? 1 : 0
 }
@@ -420,11 +428,6 @@ export async function updateLocales({
 }): Promise<number> {
   const outputDir = resolve(repoRoot, config.output)
   const manifestFile = join(outputDir, '.source-manifest.json')
-  if (check && hasPendingPublication(outputDir))
-    throw new Error(
-      `Incomplete locale publication in ${outputDir}. Run generation to recover it before checking.`
-    )
-  if (!check) recoverPublication(outputDir)
   const inputs = new Map<string, string | null>()
   function readInput(file: string): string | null {
     const contents = existsSync(file) ? readFileSync(file, 'utf8') : null
@@ -448,7 +451,14 @@ export async function updateLocales({
       `Missing source manifest ${manifestFile}. Restore it from version control.`
     )
   const manifest = loadManifest(manifestFile, manifestBytes)
-  const plans = loadPlans(outputDir, manifest, config, readCatalog)
+  const plans = loadPlans(
+    repoRoot,
+    outputDir,
+    manifest,
+    config,
+    check,
+    readCatalog
+  )
   const states = loadStates(outputDir, plans, config, readCatalog)
   const filenames = new Set(plans.map(({ filename }) => filename))
   const directories = config.outputLocales.map(({ code }) =>
@@ -476,12 +486,13 @@ export async function updateLocales({
     translateBatch
   )
   const written = publishOutcomes({
+    repoRoot,
     outputDir,
+    manifest,
     plans,
     outcomes,
     orphans,
-    inputs,
-    config
+    inputs
   })
   print(
     `Translated ${pending} strings; updated ${written} files across ${config.outputLocales.length} locales.`
@@ -491,7 +502,7 @@ export async function updateLocales({
 }
 
 type TranslationOutcome =
-  | { state: LocaleFileState; output: LocaleObject; known: TokenViolation[] }
+  | { state: LocaleFileState; output: LocaleObject; known: string[] }
   | { state: LocaleFileState; failure: string }
 
 async function translateStates(
@@ -603,19 +614,21 @@ async function translateStates(
 }
 
 function publishOutcomes({
+  repoRoot,
   outputDir,
+  manifest,
   plans,
   outcomes,
   orphans,
-  inputs,
-  config
+  inputs
 }: {
+  repoRoot: string
   outputDir: string
+  manifest: SourceManifest
   plans: readonly SourcePlan[]
   outcomes: readonly TranslationOutcome[]
   orphans: readonly string[]
   inputs: ReadonlyMap<string, string | null>
-  config: TranslationPipelineConfig
 }): number {
   const entryDir = join(outputDir, 'en')
   const manifestFile = join(outputDir, '.source-manifest.json')
@@ -623,47 +636,74 @@ function publishOutcomes({
   const failedFiles = new Set(failures.map(({ state }) => state.plan.filename))
   const completed = outcomes.filter((outcome) => 'output' in outcome)
   const updates = new Map<string, string | null>()
-  const next: SourceManifest = { version: 3, files: {} }
-  for (const plan of plans) {
-    if (failedFiles.has(plan.filename)) {
-      if (plan.snapshot) next.files[plan.filename] = plan.snapshot
-      continue
-    }
+  const next: SourceManifest = {
+    files: Object.fromEntries(
+      Object.entries(manifest.files).filter(([name]) => failedFiles.has(name))
+    ),
+    version: 1
+  }
+  const knownViolations = Object.fromEntries(
+    Object.entries(manifest.knownViolations ?? {}).filter(([name]) =>
+      failedFiles.has(name)
+    )
+  )
+  for (const plan of plans.filter(
+    ({ filename }) => !failedFiles.has(filename)
+  )) {
     const sourceBytes = serializeLocale(plan.source)
-    const snapshot: FileSnapshot = {
-      source: fingerprintLocale(plan.source),
-      locales: {},
-      knownViolations: []
-    }
+    next.files[plan.filename] = execFileSync(
+      'git',
+      ['hash-object', '-w', '--stdin'],
+      {
+        cwd: repoRoot,
+        input: sourceBytes,
+        encoding: 'utf8'
+      }
+    ).trim()
     updates.set(join(entryDir, plan.filename), sourceBytes)
+    const remaining = new Set<string>()
     for (const { state, output, known } of completed.filter(
       ({ state }) => state.plan === plan
     )) {
       const bytes = serializeLocale(output)
       updates.set(state.outputFile, bytes)
-      if (config.existingCopy.kind === 'preserve') {
-        snapshot.locales[state.locale.code] = {
-          fingerprints: fingerprintLocale(output),
-          reviewNeeded: state.reviewNeeded
-        }
-      }
-      snapshot.knownViolations.push(
-        ...known.map((violation) => ({
-          ...violation,
-          locale: state.locale.code
-        }))
-      )
-      reportReviews(state)
+      for (const key of known) remaining.add(key)
     }
-    next.files[plan.filename] = snapshot
+    if (remaining.size) knownViolations[plan.filename] = [...remaining].sort()
   }
   for (const orphan of orphans) updates.set(orphan, null)
+  if (Object.keys(knownViolations).length)
+    next.knownViolations = knownViolations
   updates.set(manifestFile, `${JSON.stringify(next, null, 2)}\n`)
-  const written = publishCatalogs(outputDir, updates, inputs)
+  const written = writeCatalogUpdates(updates, inputs)
   if (failures.length)
     throw new Error(
       `Translation failed for ${failures.length} locale files:\n${failures.map(({ state, failure }) => `${state.label}: ${failure}`).join('\n')}\nAll locale results for ${[...failedFiles].join(', ')} were discarded together. Other entry files were written and recorded in the manifest.`
     )
+  return written
+}
+
+function writeCatalogUpdates(
+  updates: ReadonlyMap<string, string | null>,
+  inputs: ReadonlyMap<string, string | null>
+): number {
+  for (const [file, original] of inputs) {
+    const current = existsSync(file) ? readFileSync(file, 'utf8') : null
+    if (current !== original)
+      throw new Error(
+        `${file} changed during translation. No files were written; rerun against the edited catalogs.`
+      )
+  }
+  let written = 0
+  for (const [file, contents] of updates) {
+    if (contents === inputs.get(file)) continue
+    if (contents === null) rmSync(file)
+    else {
+      mkdirSync(dirname(file), { recursive: true })
+      writeFileSync(file, contents)
+      written++
+    }
+  }
   return written
 }
 

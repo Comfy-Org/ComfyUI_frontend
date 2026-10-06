@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 
 export type LocaleLeaf = boolean | number | string | null
@@ -10,9 +9,9 @@ export interface LocaleObject {
 }
 
 export interface LocaleChanges {
-  added: string[]
-  deleted: string[]
-  modified: string[]
+  added: string[][]
+  deleted: string[][]
+  modified: string[][]
 }
 
 export interface LocaleLeafEntry {
@@ -99,37 +98,35 @@ export function getLeaf(
     : undefined
 }
 
-export function fingerprintLeaf(value: LocaleTrackedLeaf): string {
-  return createHash('sha256').update(JSON.stringify(value)).digest('hex')
-}
-
-export function fingerprintLocale(
-  locale: LocaleObject
-): Record<string, string> {
-  return Object.fromEntries(
-    [...collectLeaves(locale)].map(([key, leaf]) => [
-      key,
-      fingerprintLeaf(leaf.value)
-    ])
-  )
-}
-
 export function diffLocaleSources(
-  previous: Readonly<Record<string, string>>,
-  current: Readonly<Record<string, string>>
+  previous: LocaleObject,
+  current: LocaleObject
 ): LocaleChanges {
-  const added: string[] = []
-  const modified: string[] = []
-  for (const [key, hash] of Object.entries(current)) {
-    if (!Object.hasOwn(previous, key)) added.push(key)
-    else if (previous[key] !== hash) modified.push(key)
+  const previousLeaves = collectLeaves(previous)
+  const currentLeaves = collectLeaves(current)
+  const added: string[][] = []
+  const deleted: string[][] = []
+  const modified: string[][] = []
+
+  for (const [key, leaf] of currentLeaves) {
+    const previousLeaf = previousLeaves.get(key)
+    if (!previousLeaf) added.push(leaf.path)
+    else if (
+      JSON.stringify(previousLeaf.value) !== JSON.stringify(leaf.value)
+    ) {
+      modified.push(leaf.path)
+    }
   }
+  for (const [key, leaf] of previousLeaves) {
+    if (!currentLeaves.has(key)) deleted.push(leaf.path)
+  }
+
+  const byPath = (left: string[], right: string[]) =>
+    pathKey(left).localeCompare(pathKey(right))
   return {
-    added: added.sort(),
-    deleted: Object.keys(previous)
-      .filter((key) => !Object.hasOwn(current, key))
-      .sort(),
-    modified: modified.sort()
+    added: added.sort(byPath),
+    deleted: deleted.sort(byPath),
+    modified: modified.sort(byPath)
   }
 }
 
