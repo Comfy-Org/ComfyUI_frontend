@@ -468,7 +468,7 @@ describe('group layout in layoutStore', () => {
 })
 
 describe('geometry an extension cannot clobber', () => {
-  test('a JSON round-trip written back onto a detached group keeps it usable', () => {
+  test('a JSON round-trip written back onto a detached group keeps its geometry working', () => {
     const graph = new LGraph()
     const group = new LGraphGroup('group', toGroupId(810))
     group.pos = [100, 100]
@@ -505,30 +505,26 @@ describe('geometry an extension cannot clobber', () => {
     }
   )
 
-  test('a non-numeric assignment leaves the geometry untouched', () => {
-    const graph = new LGraph()
-    const group = new LGraphGroup('group', toGroupId(812))
-    graph.add(group)
-
-    Object.assign(group, { bounds: null, _bounding: 'nonsense', _pos: {} })
-
-    expect([...group.boundingRect]).toEqual([10, 10, 140, 80])
-  })
-
   test.for([
-    ['a null coordinate', [1, null, 300, 400]],
-    ['a symbol coordinate', [1, 2, Symbol('w'), 400]],
-    ['numeric strings', ['1', '2', '300', '400']],
-    ['a boolean coordinate', [true, 2, 300, 400]],
-    ['too few coordinates', [1, 2]]
+    ['null', 'bounds', null],
+    ['a string', '_bounding', 'nonsense'],
+    ['an empty object', '_pos', {}],
+    ['a null coordinate', '_bounding', [1, null, 300, 400]],
+    ['a symbol coordinate', '_bounding', [1, 2, Symbol('w'), 400]],
+    ['numeric strings', '_bounding', ['1', '2', '300', '400']],
+    ['a boolean coordinate', '_bounding', [true, 2, 300, 400]],
+    ['a NaN coordinate', '_size', [NaN, 400]],
+    ['an infinite coordinate', 'bounds', [1, 2, Infinity, 400]],
+    ['too few coordinates', '_bounding', [1, 2]]
   ] as const)(
-    'an array holding %s is rejected whole',
-    ([, assigned], { expect }) => {
+    'assigning %s to %s leaves the geometry untouched',
+    ([, property, assigned], { expect }) => {
+      vi.spyOn(console, 'warn').mockImplementation(() => {})
       const graph = new LGraph()
-      const group = new LGraphGroup('group', toGroupId(818))
+      const group = new LGraphGroup('group', toGroupId(812))
       graph.add(group)
 
-      expect(() => Object.assign(group, { _bounding: assigned })).not.toThrow()
+      expect(() => Object.assign(group, { [property]: assigned })).not.toThrow()
 
       expect([...group.boundingRect]).toEqual([10, 10, 140, 80])
     }
@@ -558,7 +554,6 @@ describe('geometry an extension cannot clobber', () => {
 
     expect(warn).toHaveBeenCalledTimes(1)
     expect(warn.mock.calls[0][0]).toContain('bounds')
-    warn.mockRestore()
   })
 
   test('geometry still reads through a reactive proxy', () => {

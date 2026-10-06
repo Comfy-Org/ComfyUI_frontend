@@ -131,7 +131,7 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
       if (reported) return
       reported = true
       console.warn(
-        `[LGraphGroup] ${key} was assigned a ${typeof value}, not a coordinate array. The group kept its own buffer. This is usually an extension copying a group by enumerating its own keys; the stack below names it.`
+        `[LGraphGroup] ${key} was assigned a non-array value (${value === null ? 'null' : typeof value}). The group kept its own buffer. This is usually an extension copying a group by enumerating its own keys; the stack below names it.`
       )
     }
 
