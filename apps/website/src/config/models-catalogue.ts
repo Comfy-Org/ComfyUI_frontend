@@ -422,32 +422,89 @@ function matchesCapabilities(
   )
 }
 
-type CatalogLocation = Pick<WorkshopFilter, 'query' | 'useCase'>
+type CatalogShelf = UseCase | 'other'
 
-interface ParsedCatalogLocation extends CatalogLocation {
+interface CatalogLocation {
+  readonly query?: string
+  readonly useCase?: CatalogShelf | 'all'
+  readonly useCases?: readonly CatalogShelf[]
+  readonly sort?: SortOrder
+  readonly browseAll?: boolean
+  readonly modalities?: readonly string[]
+  readonly providers?: readonly string[]
+  readonly capabilities?: readonly string[]
+}
+
+interface ParsedCatalogLocation {
+  readonly query: string
+  readonly useCases: readonly CatalogShelf[]
+  readonly sort: SortOrder
+  readonly browseAll: boolean
   readonly modalities: readonly string[]
   readonly providers: readonly string[]
   readonly capabilities: readonly string[]
 }
 
-// Deep links into the catalog: `?useCase=edit-images&q=upscale`.
-export function catalogSearch(filter: CatalogLocation): string {
+const CATALOG_PARAMS = [
+  'q',
+  'useCase',
+  'sort',
+  'view',
+  'modality',
+  'provider',
+  'capability'
+] as const
+
+function catalogParams(filter: CatalogLocation): URLSearchParams {
   const params = new URLSearchParams()
   if (filter.query) params.set('q', filter.query)
-  if (filter.useCase && filter.useCase !== 'all')
-    params.set('useCase', filter.useCase)
+  const shelves = [
+    ...(filter.useCase && filter.useCase !== 'all' ? [filter.useCase] : []),
+    ...(filter.useCases ?? [])
+  ]
+  for (const shelf of shelves) params.append('useCase', shelf)
+  if (filter.sort && filter.sort !== 'popular') params.set('sort', filter.sort)
+  if (filter.browseAll) params.set('view', 'all')
+  for (const value of filter.modalities ?? []) params.append('modality', value)
+  for (const value of filter.providers ?? []) params.append('provider', value)
+  for (const value of filter.capabilities ?? [])
+    params.append('capability', value)
+  return params
+}
+
+function toSearch(params: URLSearchParams): string {
   const search = params.toString()
   return search ? `?${search}` : ''
 }
 
+function isCatalogShelf(value: string): value is CatalogShelf {
+  return value === 'other' || USE_CASES.some((useCase) => useCase === value)
+}
+
+// Deep links into the catalog: `?useCase=edit-images&q=upscale&sort=priceAsc`.
+export function catalogSearch(filter: CatalogLocation): string {
+  return toSearch(catalogParams(filter))
+}
+
+/** Swaps the catalog's own params in `search`, leaving any others alone. */
+export function withCatalogSearch(
+  search: string,
+  filter: CatalogLocation
+): string {
+  const params = new URLSearchParams(search)
+  for (const name of CATALOG_PARAMS) params.delete(name)
+  for (const [name, value] of catalogParams(filter)) params.append(name, value)
+  return toSearch(params)
+}
+
 export function parseCatalogSearch(search: string): ParsedCatalogLocation {
   const params = new URLSearchParams(search)
-  const useCase = params.get('useCase')
+  const sort = params.get('sort')
   return {
     query: params.get('q') ?? '',
-    useCase:
-      USE_CASES.find((value) => value === useCase) ??
-      (useCase === 'other' ? 'other' : 'all'),
+    useCases: params.getAll('useCase').filter(isCatalogShelf),
+    sort: SORT_ORDERS.find((value) => value === sort) ?? 'popular',
+    browseAll: params.get('view') === 'all',
     modalities: params.getAll('modality').filter(Boolean),
     providers: params.getAll('provider').filter(Boolean),
     capabilities: params.getAll('capability').filter(Boolean)

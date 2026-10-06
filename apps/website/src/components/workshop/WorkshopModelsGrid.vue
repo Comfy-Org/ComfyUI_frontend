@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ChevronLeft, ChevronRight } from '@lucide/vue'
 import { cn } from '@comfyorg/tailwind-utils'
+import { useDebounceFn } from '@vueuse/core'
 import {
   computed,
   nextTick,
@@ -13,6 +14,7 @@ import {
 
 import Button from '@/components/ui/button/Button.vue'
 import { groupModels } from '@/config/model-family'
+import { getRoutes } from '@/config/routes'
 
 import type {
   SortOrder,
@@ -25,7 +27,8 @@ import {
   countByUseCase,
   filterWorkshopModels,
   sortOrdersFor,
-  sortWorkshopModels
+  sortWorkshopModels,
+  withCatalogSearch
 } from '@/config/models-catalogue'
 import type { Locale, TranslationKey } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
@@ -66,33 +69,93 @@ const openedShelf = computed(() => shelfOf(selectedUseCases.value))
 // down, then the flat grid takes over.
 const browseAll = defineModel<boolean>('browseAll', { default: false })
 let scrollReady = false
+let addressWritable = false
+let pushNextAddress = false
 
 function readAddress(search: string) {
-  const initial = parseCatalogSearch(search)
-  query.value = initial.query ?? ''
-  selectedUseCases.value = openedUseCases(initial.useCase ?? 'all')
-  legacyModalities.value = [...initial.modalities]
-  legacyProviders.value = [...initial.providers]
-  legacyCapabilities.value = [...initial.capabilities]
+  const address = parseCatalogSearch(search)
+  query.value = address.query
+  selectedUseCases.value = [
+    ...new Set(address.useCases.flatMap(openedUseCases))
+  ]
+  sort.value = sortOrders.includes(address.sort) ? address.sort : 'popular'
+  browseAll.value = address.browseAll
+  legacyModalities.value = [...address.modalities]
+  legacyProviders.value = [...address.providers]
+  legacyCapabilities.value = [...address.capabilities]
 }
+
+// Opening or leaving a section is a step Back should undo; anything else,
+// typing above all, replaces the entry so the back stack stays short.
+function writeAddress() {
+  if (!addressWritable || location.pathname !== getRoutes(locale).workshop)
+    return
+  const shelf = openedShelf.value
+  const search = withCatalogSearch(location.search, {
+    query: query.value.trim(),
+    useCases: shelf === 'all' ? selectedUseCases.value : [shelf],
+    sort: sort.value,
+    browseAll: browseAll.value,
+    modalities: legacyModalities.value,
+    providers: legacyProviders.value,
+    capabilities: legacyCapabilities.value
+  })
+  const push = pushNextAddress
+  pushNextAddress = false
+  if (search === location.search) return
+  const url = `${location.pathname}${search}${location.hash}`
+  if (!push) {
+    history.replaceState(history.state, '', url)
+    return
+  }
+  // Shaped like the router's own entries, so it restores this one on Back.
+  const index = Number(history.state?.index ?? 0) + 1
+  history.pushState({ index, scrollX: 0, scrollY: 0 }, '', url)
+}
+
+function stepAddress() {
+  pushNextAddress = true
+  void nextTick(() => {
+    pushNextAddress = false
+  })
+}
+const writeTypedAddress = useDebounceFn(writeAddress, 300)
+watch(query, () => {
+  if (addressWritable) void writeTypedAddress()
+})
+watch(
+  [
+    selectedUseCases,
+    sort,
+    browseAll,
+    legacyModalities,
+    legacyProviders,
+    legacyCapabilities
+  ],
+  writeAddress
+)
 
 // A browser can restore this page from its cache with a shelf still open, so
 // coming back from a model would land on that shelf rather than on the
 // catalogue the address names. The address is the truth on every show.
 function onPageShow(event: PageTransitionEvent) {
   if (!event.persisted) return
-  browseAll.value = false
   readAddress(location.search)
 }
 
 onMounted(() => {
   readAddress(initialSearch ?? location.search)
   window.addEventListener('pageshow', onPageShow)
+  // Mounting mid-navigation, the address may still be the previous page's.
   void nextTick(() => {
     scrollReady = true
+    addressWritable = true
   })
 })
-onBeforeUnmount(() => window.removeEventListener('pageshow', onPageShow))
+onBeforeUnmount(() => {
+  addressWritable = false
+  window.removeEventListener('pageshow', onPageShow)
+})
 
 const toolbar = useTemplateRef<HTMLElement>('toolbar')
 const heading = useTemplateRef<HTMLElement>('heading')
@@ -185,10 +248,12 @@ const featuredSlides = computed(() => modelSlides(featured.value, locale))
 
 function openSection(value: UseCase | 'other') {
   selectedUseCases.value = openedUseCases(value)
+  stepAddress()
 }
 
 function leaveSection() {
   clearFilters()
+  stepAddress()
 }
 
 function resetFilters() {
@@ -203,6 +268,12 @@ function applyUseCases(values: UseCase[]) {
   selectedUseCases.value = values
 }
 
+function openBrowseAll() {
+  resetFilters()
+  browseAll.value = true
+  stepAddress()
+}
+
 function clearFilters() {
   browseAll.value = false
   resetFilters()
@@ -215,8 +286,6 @@ function rememberModel(
 ) {
   if (model.href) rememberShelfOnClick(shelf, model.href, event)
 }
-
-watch(browseAll, (on) => on && resetFilters())
 </script>
 
 <template>
@@ -297,7 +366,7 @@ watch(browseAll, (on) => on && resetFilters())
           type="button"
           class="group mx-auto mt-12 flex w-fit cursor-pointer items-center justify-center gap-2 rounded-2xl border border-transparency-white-t8 px-8 py-4 text-sm font-medium text-primary-comfy-canvas transition-colors outline-none hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 max-sm:w-full"
           data-testid="browse-all-end"
-          @click="browseAll = true"
+          @click="openBrowseAll"
         >
           {{ t('workshop.sections.browseAll') }}
           <ChevronRight

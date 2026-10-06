@@ -372,6 +372,74 @@ describe('WorkshopModelsGrid', () => {
     expect(cardNames()).toHaveLength(3)
   })
 
+  describe('the address', () => {
+    it('follows the filter and sort without adding history entries', async () => {
+      const user = userEvent.setup()
+      history.replaceState(null, '', '/hub/models/?utm_source=share')
+      const entries = history.length
+      render(WorkshopModelsGrid, { props: { models } })
+
+      await user.click(screen.getByRole('button', { name: 'Use cases' }))
+      const dialog = await screen.findByRole('dialog', { name: 'Use cases' })
+      await user.click(
+        within(dialog).getByRole('button', { name: 'Generate videos 1' })
+      )
+      await user.click(screen.getByRole('button', { name: 'Sort' }))
+      await user.click(
+        await screen.findByRole('menuitemradio', { name: 'Price: low to high' })
+      )
+
+      expect(location.search).toBe(
+        '?utm_source=share&useCase=generate-videos&sort=priceAsc'
+      )
+      expect(history.length).toBe(entries)
+    })
+
+    it('lets Back undo opening and leaving a section', async () => {
+      const user = userEvent.setup()
+      history.replaceState(null, '', '/hub/models/')
+      const entries = history.length
+      render(WorkshopModelsGrid, { props: { models } })
+
+      await user.click(screen.getByRole('button', { name: 'Edit images' }))
+      expect(location.search).toBe('?useCase=edit-images')
+      await user.click(screen.getByTestId('section-back'))
+      expect(location.search).toBe('')
+      await user.click(screen.getByTestId('browse-all-end'))
+      expect(location.search).toBe('?view=all')
+      expect(history.length).toBe(entries + 3)
+    })
+
+    it('follows the search once typing pauses', async () => {
+      const user = userEvent.setup()
+      history.replaceState(null, '', '/hub/models/')
+      render(WorkshopModelsGrid, { props: { models } })
+
+      await user.type(await search(), 'forest')
+
+      await waitFor(() => expect(location.search).toBe('?q=forest'))
+    })
+
+    it.for([
+      ['?useCase=generate-videos&sort=name', /^Generate videos/, ['Kling AI']],
+      ['?q=forest&view=all', /^All models/, ['Flux']]
+    ] as const)(
+      'reopens %s as it was left',
+      async ([address, heading, names]) => {
+        history.replaceState(null, '', `/hub/models/${address}`)
+        render(WorkshopModelsGrid, { props: { models } })
+
+        expect(
+          await screen.findByRole('heading', { level: 2, name: heading })
+        ).toBeTruthy()
+        expect(cardNames()).toEqual(
+          names.map((name) => expect.stringContaining(name))
+        )
+        expect(location.search).toBe(address)
+      }
+    )
+  })
+
   describe('browsing rows', () => {
     it('leaves the rows for the whole catalogue and back', async () => {
       const user = userEvent.setup()

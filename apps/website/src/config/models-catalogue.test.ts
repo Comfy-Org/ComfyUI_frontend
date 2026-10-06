@@ -20,6 +20,7 @@ import {
   catalogSearch,
   filterWorkshopModels,
   parseCatalogSearch,
+  withCatalogSearch,
   isRouterModel,
   sortOrdersFor,
   sortWorkshopModels,
@@ -494,33 +495,40 @@ describe('decodeGeneratedModels', () => {
 })
 
 describe('catalog deep links', () => {
-  it('round-trips a filter through the query string', () => {
-    const search = catalogSearch({
-      useCase: 'edit-images',
-      query: 'upscale'
-    })
-    expect(parseCatalogSearch(search)).toEqual({
-      query: 'upscale',
-      useCase: 'edit-images',
-      modalities: [],
-      providers: [],
-      capabilities: []
+  it.for([
+    '?q=upscale&useCase=edit-images',
+    '?useCase=generate-videos&sort=priceAsc',
+    '?useCase=text&useCase=audio',
+    '?useCase=other&sort=name',
+    '?q=kling&view=all',
+    '?modality=video&provider=Kling&capability=Upscale'
+  ])('round-trips %s through the query string', (search) => {
+    expect(catalogSearch(parseCatalogSearch(search))).toBe(search)
+  })
+
+  it('leaves the default sort and view out of the address', () => {
+    expect(catalogSearch({ useCase: 'all', sort: 'popular' })).toBe('')
+    expect(parseCatalogSearch('')).toMatchObject({
+      sort: 'popular',
+      browseAll: false,
+      useCases: []
     })
   })
 
-  it('keeps retired facets working for existing links', () => {
+  it('drops values it does not know', () => {
     expect(
-      parseCatalogSearch(
-        '?useCase=nonsense&provider=Kling&capability=Upscale&modality=video'
-      )
-    ).toEqual({
-      query: '',
-      useCase: 'all',
-      modalities: ['video'],
-      providers: ['Kling'],
-      capabilities: ['Upscale']
-    })
-    expect(catalogSearch({ useCase: 'all' })).toBe('')
+      parseCatalogSearch('?useCase=nonsense&sort=cheapest&view=grid')
+    ).toMatchObject({ useCases: [], sort: 'popular', browseAll: false })
+  })
+
+  it('swaps its own params and keeps the rest', () => {
+    expect(
+      withCatalogSearch('?utm_source=x&q=old&useCase=text', {
+        query: 'new',
+        sort: 'priceDesc'
+      })
+    ).toBe('?utm_source=x&q=new&sort=priceDesc')
+    expect(withCatalogSearch('?q=old', {})).toBe('')
   })
 })
 
