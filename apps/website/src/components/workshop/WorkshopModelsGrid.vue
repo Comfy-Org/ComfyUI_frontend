@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ChevronLeft, ChevronRight } from '@lucide/vue'
 import { cn } from '@comfyorg/tailwind-utils'
-import { useDebounceFn } from '@vueuse/core'
+import { useDebounceFn, useEventListener } from '@vueuse/core'
 import {
   computed,
   nextTick,
@@ -71,6 +71,7 @@ const browseAll = defineModel<boolean>('browseAll', { default: false })
 let scrollReady = false
 let addressWritable = false
 let pushNextAddress = false
+let navigationsStarted = 0
 
 function readAddress(search: string) {
   const address = parseCatalogSearch(search)
@@ -119,9 +120,15 @@ function stepAddress() {
     pushNextAddress = false
   })
 }
-const writeTypedAddress = useDebounceFn(writeAddress, 300)
+// A write still pending when a navigation starts would land on the next entry.
+useEventListener(document, 'astro:before-preparation', () => {
+  navigationsStarted++
+})
+const writeTypedAddress = useDebounceFn((scheduledAt: number) => {
+  if (scheduledAt === navigationsStarted) writeAddress()
+}, 300)
 watch(query, () => {
-  if (addressWritable) void writeTypedAddress()
+  if (addressWritable) void writeTypedAddress(navigationsStarted)
 })
 watch(
   [

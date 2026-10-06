@@ -420,6 +420,19 @@ describe('WorkshopModelsGrid', () => {
       await waitFor(() => expect(location.search).toBe('?q=forest'))
     })
 
+    it('drops a pending search write once a navigation starts', async () => {
+      const user = userEvent.setup()
+      history.replaceState(null, '', '/hub/models/')
+      render(WorkshopModelsGrid, { props: { models } })
+
+      await user.type(await search(), 'forest')
+      history.pushState({ index: 1 }, '', '/hub/models/')
+      document.dispatchEvent(new Event('astro:before-preparation'))
+      await vi.advanceTimersByTimeAsync(300)
+
+      expect(location.search).toBe('')
+    })
+
     it.for([
       ['?useCase=generate-videos&sort=name', /^Generate videos/, ['Kling AI']],
       ['?q=forest&view=all', /^All models/, ['Flux']]
