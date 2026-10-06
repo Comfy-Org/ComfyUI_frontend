@@ -129,6 +129,8 @@ describe('independent video workflow', () => {
         'playwright',
         'test',
         '--project=cloud',
+        '--grep-invert',
+        '@no-video',
         '--shard=2/3',
         '--timeout=180000',
         '--retries=0',
