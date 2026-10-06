@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import ButtonPill from '@/components/ui/button-pill/ButtonPill.vue'
 
-import { prefersReducedMotion } from '../../../composables/useReducedMotion'
-import type { NavFeatured } from '../../../data/mainNavigation'
+import { prefersReducedMotion } from '@/composables/useReducedMotion'
+import type { NavFeatured } from '@/data/mainNavigation'
 
 defineProps<{ featured: NavFeatured }>()
 

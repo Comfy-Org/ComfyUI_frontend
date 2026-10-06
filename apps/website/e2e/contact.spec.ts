@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test'
 
-import { t } from '../src/i18n/translations'
+import { t } from '@/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
 
 const HUBSPOT_SCRIPT_SRC =

@@ -3,9 +3,9 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import type { AnchorHTMLAttributes, HTMLAttributes } from 'vue'
 
-import { resolveRel } from '../../utils/cta'
-import SectionHeader from '../common/SectionHeader.vue'
-import Button from '../ui/button/Button.vue'
+import { resolveRel } from '@/utils/cta'
+import SectionHeader from '@/components/common/SectionHeader.vue'
+import Button from '@/components/ui/button/Button.vue'
 
 type Cta = {
   label: string

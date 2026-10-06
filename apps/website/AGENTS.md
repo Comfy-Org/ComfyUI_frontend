@@ -42,7 +42,7 @@ file wins. These root rules do not apply here:
   `http://localhost:4321`, not `pnpm dev` on 5173. The root
   `/verify-visually` command points at the wrong server for this site.
 - The checks are `pnpm exec eslint apps/website`, `pnpm typecheck:website`,
-  `pnpm format:astro:check`, `pnpm knip`, and, from this folder,
+  `pnpm --filter @comfyorg/website format:check`, `pnpm knip`, and, from this folder,
   `pnpm test:unit` and `pnpm test:e2e` (which needs `pnpm build` first). Root
   `pnpm typecheck` does not cover this folder.
 - The root guide's Figma design standards and entity architecture rules govern
@@ -74,6 +74,11 @@ test to make it pass, and never resolve a human reviewer's comment.
 - `e2e/` holds browser tests; read `e2e/README.md` before writing one. Import
   `test` from `./fixtures/blockExternalMedia`. `e2e/visual-responsive.spec.ts`
   holds the screenshot baselines.
+- Import anything under `src/` as `@/…` and other app files (`scripts/`,
+  `acceptance/`, `paths.ts`) as `@website/…`; only `./` imports stay
+  relative. Build filesystem paths with `join(websiteRoot, …)` or
+  `join(repoRoot, …)` from `@website/paths`, never with `../`. Lint rejects
+  both kinds of `../`.
 - `public/` holds images. Large video and hero media live on
   `media.comfy.org`; this repository holds no way to upload there, so a missing
   media file is a request for the designer to pass to an engineer.

@@ -702,26 +702,50 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('a follower_replaced with no preceding doc_reset (a deliberate workflow switch) still rebinds and clears applied state', () => {
-    const { unmount, status } = mountFollower('wf-1')
+  it('a workflow switch follower_replaced rebinds the replacement follower and clears applied state', async () => {
+    const { unmount, status, workflowId } = mountFollower('wf-1')
     expect(projectionState.bind).toHaveBeenCalledTimes(1)
 
     bridge().follower.updatesApplied = 3
     dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 44 })
     expect(status().updatesApplied).toBe(3)
 
-    // No doc_reset precedes this: unlike the reset-then-replace flow above,
-    // there is no armed replacement for this workflow to reuse. The switch
-    // must still rebind and clear applied state on its own.
-    dispatchFrame('follower_replaced', { workflowId: 'wf-1' })
+    // A workflow switch binds the new workflow before subscribe replaces the
+    // follower. The ensuing follower_replaced must rebind to that replacement
+    // and clear applied state without arming a lineage replacement.
+    const replacementFollower = {
+      updatesApplied: 7,
+      doc: { getMap: () => ({ toJSON: () => ({}) }) }
+    }
+    const initialFollower = bridge().follower
+    bridge().subscribe.mockImplementationOnce((nextWorkflowId: string) => {
+      bridge().follower = replacementFollower
+      dispatchFrame('follower_replaced', { workflowId: nextWorkflowId })
+      bridge().subscribedWorkflowId = nextWorkflowId
+    })
+    workflowId.value = 'wf-2'
+    await nextTick()
+    expect(projectionState.unbind).toHaveBeenCalledExactlyOnceWith('wf-1')
+    expect(projectionState.bind.mock.calls[1]?.[0]).toBe('wf-2')
+    expect(projectionState.bind.mock.calls[1]?.[1]).toBe(initialFollower)
+    expect(
+      projectionState.unbind.mock.invocationCallOrder.at(-1)!
+    ).toBeLessThan(projectionState.bind.mock.invocationCallOrder[1])
+    expect(projectionState.bind.mock.invocationCallOrder[1]).toBeLessThan(
+      bridge().subscribe.mock.invocationCallOrder.at(-1)!
+    )
 
     expect(status().updatesApplied).toBe(0)
-    expect(projectionState.discardPending).toHaveBeenLastCalledWith('wf-1')
-    expect(projectionState.bind).toHaveBeenCalledTimes(2)
-    expect(projectionState.bind).toHaveBeenLastCalledWith(
-      'wf-1',
-      bridge().follower
+    expect(projectionState.discardPending).toHaveBeenCalledExactlyOnceWith(
+      'wf-2'
     )
+    expect(projectionState.bind).toHaveBeenCalledTimes(3)
+    expect(projectionState.bind.mock.lastCall?.[0]).toBe('wf-2')
+    expect(projectionState.bind.mock.lastCall?.[1]).toBe(replacementFollower)
+    expect(
+      projectionState.discardPending.mock.invocationCallOrder.at(-1)!
+    ).toBeLessThan(projectionState.bind.mock.invocationCallOrder.at(-1)!)
+    expect(projectionState.replaceOnNextFrame).not.toHaveBeenCalled()
     unmount()
   })
 
@@ -1231,6 +1255,58 @@ describe('useAgentCrdtFollower', () => {
         workflowId: 'wf-1',
         actor: undefined,
         nodeIds: [toNodeId(3)]
+      })
+      unmount()
+    })
+
+    it('PM-1874: does not attribute a prior turn’s late-materializing node to a later unrelated turn', () => {
+      // Turn A adds node 99, which does not resolve via graph.getNodeById
+      // while turn A is live, so it stays in the pending set. Turn B starts
+      // and adds its own 3 nodes. Node 99 only becomes resolvable once turn
+      // B's own frame lands (a plausible race: a deferred render, or node 99
+      // sharing a tick with turn B's materialization). The toast for turn B
+      // must report exactly its own 3 nodes, not node 99 plus 3 — node 99
+      // belongs to turn A and should have been flushed when turn A ended.
+      const onMaterialized = vi.fn()
+      const liveNodeIds = new Set<NodeId>()
+      const graph = fromPartial<LGraph>({
+        getNodeById: (id: NodeId) => (liveNodeIds.has(id) ? {} : null)
+      })
+      const { unmount } = mountFollower('wf-1', true, () => graph, {
+        onMaterialized
+      })
+
+      projectionState.applyFrame.mockReturnValueOnce(
+        projectionState.applied([], { added: ['99'], removed: [] })
+      )
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 1,
+        actor: 'agent:thread:turnA',
+        catchUp: false
+      })
+      expect(onMaterialized).not.toHaveBeenCalled()
+
+      // Node 99 becomes resolvable late — at the same moment turn B's own
+      // nodes do, which is exactly the race that lets a stale id ride along.
+      liveNodeIds.add(toNodeId(99))
+      liveNodeIds.add(toNodeId(1))
+      liveNodeIds.add(toNodeId(2))
+      liveNodeIds.add(toNodeId(3))
+      projectionState.applyFrame.mockReturnValueOnce(
+        projectionState.applied([], { added: ['1', '2', '3'], removed: [] })
+      )
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 2,
+        actor: 'agent:thread:turnB',
+        catchUp: false
+      })
+
+      expect(onMaterialized).toHaveBeenCalledExactlyOnceWith({
+        workflowId: 'wf-1',
+        actor: 'agent:thread:turnB',
+        nodeIds: [toNodeId(1), toNodeId(2), toNodeId(3)]
       })
       unmount()
     })

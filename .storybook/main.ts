@@ -4,7 +4,17 @@ import { FileSystemIconLoader } from 'unplugin-icons/loaders'
 import IconsResolver from 'unplugin-icons/resolver'
 import Icons from 'unplugin-icons/vite'
 import Components from 'unplugin-vue-components/vite'
-import type { InlineConfig } from 'vite'
+import type { Alias, AliasOptions, InlineConfig } from 'vite'
+
+function withoutAppSrcAlias(alias: AliasOptions = []): Alias[] {
+  const entries = Array.isArray(alias)
+    ? alias
+    : Object.entries(alias).map(([find, replacement]) => ({
+        find,
+        replacement
+      }))
+  return entries.filter(({ find }) => find !== '@')
+}
 
 const config: StorybookConfig = {
   stories: [
@@ -43,6 +53,11 @@ const config: StorybookConfig = {
         )
     }
 
+    config.resolve = {
+      ...config.resolve,
+      alias: withoutAppSrcAlias(config.resolve?.alias)
+    }
+
     return mergeConfig(config, {
       plugins: [
         // Keep public asset URLs intact so staticDirs can serve them directly.
@@ -76,6 +91,7 @@ const config: StorybookConfig = {
         allowedHosts: true
       },
       resolve: {
+        tsconfigPaths: true,
         alias: [
           {
             find: '@comfyorg/website',
@@ -149,10 +165,6 @@ const config: StorybookConfig = {
             replacement:
               process.cwd() +
               '/packages/shared-frontend-utils/src/networkUtil.ts'
-          },
-          {
-            find: '@',
-            replacement: process.cwd() + '/src'
           }
         ]
       },

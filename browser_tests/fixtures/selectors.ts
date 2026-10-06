@@ -8,7 +8,8 @@ export const TestIds = {
     loadingOverlay: 'app-loading-overlay'
   },
   agent: {
-    conversationScroll: 'agent-conversation-scroll'
+    conversationScroll: 'agent-conversation-scroll',
+    activityTrace: 'agent-activity-trace'
   },
   sidebar: {
     toolbar: 'side-toolbar',
@@ -278,6 +279,7 @@ export const TestIds = {
   },
   templates: {
     content: 'template-workflows-content',
+    detail: 'template-workflow-detail',
     workflowCard: (id: string) => `template-workflow-${id}`
   },
   user: {

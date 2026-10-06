@@ -3,11 +3,11 @@ import { render, screen } from '@testing-library/vue'
 import { assert, describe, expect, it, vi } from 'vitest'
 import { h, markRaw } from 'vue'
 
-import { WORKSHOP_CLOUD_BASE_URL } from '../../config/workshop-env'
-import { OBJECT_URL_LIFETIME_MS } from '../../config/workshop-output-download'
-import { initialWorkshopPageState } from '../../config/workshop-page-state'
-import { workflowDetailsBySlug } from '../../config/workshop-workflow-content'
-import { workflowSnippetRequest } from '../../config/workshop-workflow-snippet'
+import { WORKSHOP_CLOUD_BASE_URL } from '@/config/workshop-env'
+import { OBJECT_URL_LIFETIME_MS } from '@/config/workshop-output-download'
+import { initialWorkshopPageState } from '@/config/workshop-page-state'
+import { workflowDetailsBySlug } from '@/config/workshop-workflow-content'
+import { workflowSnippetRequest } from '@/config/workshop-workflow-snippet'
 import WorkflowApi from './WorkflowApi.vue'
 
 const fixture = workflowDetailsBySlug.get('workflows/animate-reference-sheet')
