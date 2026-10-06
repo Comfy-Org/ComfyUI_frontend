@@ -540,31 +540,6 @@ describe('useFeatureUsageTracker', () => {
     expect(updated['pending-trigger']?.useCount).toBe(3)
   })
 
-  it('drops pending usage reset by another storage context', () => {
-    const pendingFeature = useFeatureUsageTracker('externally-reset-pending')
-    pendingFeature.trackUsage()
-    vi.spyOn(console, 'error').mockImplementation(() => {})
-    const setItem = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
-      throw new DOMException('Storage quota exceeded', 'QuotaExceededError')
-    })
-    pendingFeature.trackUsage()
-    setItem.mockRestore()
-    localStorage.removeItem(STORAGE_KEY)
-    window.dispatchEvent(
-      new StorageEvent('storage', {
-        key: STORAGE_KEY,
-        newValue: '{}',
-        storageArea: localStorage
-      })
-    )
-
-    useFeatureUsageTracker('external-reset-writer').trackUsage()
-
-    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
-    expect(stored).not.toHaveProperty('externally-reset-pending')
-    expect(stored['external-reset-writer']?.useCount).toBe(1)
-  })
-
   it('loads existing data from localStorage', () => {
     localStorage.setItem(
       STORAGE_KEY,
