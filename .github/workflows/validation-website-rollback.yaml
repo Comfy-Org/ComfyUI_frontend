@@ -45,6 +45,7 @@ jobs:
         run: vercel pull --yes --environment=production
 
       - name: Verify the captured deployment
+        id: verify-target
         env:
           EXPECTED_SHA: ${{ inputs.expected_sha }}
           TARGET_DEPLOYMENT: ${{ inputs.deployment_id }}
@@ -73,6 +74,7 @@ jobs:
             echo "::error::Deployment $TARGET_DEPLOYMENT serves $ACTUAL_SHA, expected $EXPECTED_SHA"
             exit 1
           fi
+          echo "actual-sha=$ACTUAL_SHA" >> "$GITHUB_OUTPUT"
           {
             echo "**Validated rollback target:** $TARGET_DEPLOYMENT"
             echo "**Validated rollback SHA:** $ACTUAL_SHA"
@@ -90,6 +92,7 @@ jobs:
             --scope="$VERCEL_SCOPE"
 
       - name: Verify rollback at the canonical hostname
+        id: verify-canonical
         if: inputs.perform_rollback
         env:
           EXPECTED_SHA: ${{ inputs.expected_sha }}
@@ -106,6 +109,8 @@ jobs:
               jq -r '.deploymentId // empty') || true
             if [[ "$ACTUAL_SHA" == "$EXPECTED_SHA" && "$ALIAS_DEPLOYMENT_ID" == "$TARGET_DEPLOYMENT" ]]; then
               curl -fsS -o /dev/null https://comfy.org/
+              echo "actual-sha=$ACTUAL_SHA" >> "$GITHUB_OUTPUT"
+              echo "deployment-id=$ALIAS_DEPLOYMENT_ID" >> "$GITHUB_OUTPUT"
               exit 0
             fi
             sleep 10
@@ -124,6 +129,7 @@ jobs:
             --scope="$VERCEL_SCOPE"
 
       - name: Verify post-rollback promotion state
+        id: verify-promotion
         if: inputs.perform_rollback
         env:
           EXPECTED_SHA: ${{ inputs.expected_sha }}
@@ -139,8 +145,47 @@ jobs:
             jq -er '.deploymentId')
           test "$ACTUAL_SHA" = "$EXPECTED_SHA"
           test "$ALIAS_DEPLOYMENT_ID" = "$TARGET_DEPLOYMENT"
+          echo "actual-sha=$ACTUAL_SHA" >> "$GITHUB_OUTPUT"
+          echo "deployment-id=$ALIAS_DEPLOYMENT_ID" >> "$GITHUB_OUTPUT"
           {
             echo "**Rollback target:** ${{ inputs.deployment_id }}"
             echo "**Verified canonical SHA:** $ACTUAL_SHA"
             echo "**Verified canonical deployment:** $ALIAS_DEPLOYMENT_ID"
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Retain rollback evidence
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          PERFORM_ROLLBACK: ${{ inputs.perform_rollback }}
+          POST_PROMOTION_DEPLOYMENT_ID: ${{ steps.verify-promotion.outputs.deployment-id }}
+          POST_PROMOTION_SHA: ${{ steps.verify-promotion.outputs.actual-sha }}
+          ROLLBACK_DEPLOYMENT_ID: ${{ steps.verify-canonical.outputs.deployment-id }}
+          ROLLBACK_SHA: ${{ steps.verify-canonical.outputs.actual-sha }}
+          TARGET_DEPLOYMENT: ${{ inputs.deployment_id }}
+          TARGET_VERIFIED_SHA: ${{ steps.verify-target.outputs.actual-sha }}
+        run: |
+          mkdir -p temp/website-rollback-result
+          jq -n \
+            --arg targetDeploymentId "$TARGET_DEPLOYMENT" \
+            --arg expectedSha "$EXPECTED_SHA" \
+            --arg targetVerifiedSha "$TARGET_VERIFIED_SHA" \
+            --arg rollbackCanonicalSha "$ROLLBACK_SHA" \
+            --arg rollbackCanonicalDeploymentId "$ROLLBACK_DEPLOYMENT_ID" \
+            --arg postPromotionCanonicalSha "$POST_PROMOTION_SHA" \
+            --arg postPromotionCanonicalDeploymentId "$POST_PROMOTION_DEPLOYMENT_ID" \
+            --arg runId "$GITHUB_RUN_ID" \
+            --arg runAttempt "$GITHUB_RUN_ATTEMPT" \
+            --arg workflowSha "$GITHUB_SHA" \
+            --arg actor "$GITHUB_ACTOR" \
+            --arg verifiedAt "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --argjson performRollback "$PERFORM_ROLLBACK" \
+            '{targetDeploymentId: $targetDeploymentId, expectedSha: $expectedSha, targetVerifiedSha: $targetVerifiedSha, performRollback: $performRollback, rollbackCanonicalSha: $rollbackCanonicalSha, rollbackCanonicalDeploymentId: $rollbackCanonicalDeploymentId, postPromotionCanonicalSha: $postPromotionCanonicalSha, postPromotionCanonicalDeploymentId: $postPromotionCanonicalDeploymentId, runId: $runId, runAttempt: $runAttempt, workflowSha: $workflowSha, actor: $actor, verifiedAt: $verifiedAt}' \
+            > temp/website-rollback-result/result.json
+
+      - name: Upload rollback evidence
+        uses: actions/upload-artifact@v6
+        with:
+          name: website-rollback-result
+          path: temp/website-rollback-result/result.json
+          retention-days: 7
+          if-no-files-found: error
