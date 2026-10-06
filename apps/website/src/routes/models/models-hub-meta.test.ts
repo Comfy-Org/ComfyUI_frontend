@@ -53,20 +53,25 @@ describe('modelsHubMeta', () => {
     )
   })
 
-  it.for(['en', 'zh-CN'] as const)(
-    'never promises browser runs in the %s catalogue description',
-    (locale) => {
-      const { t } = translationsFor(locale)
-      for (const key of [
-        'models.hub.meta.description',
-        'models.hub.meta.descriptionWithoutNames'
-      ]) {
-        for (const count of [1, 2]) {
-          expect(
-            t(key, { count, names: 'Veo' }, { plural: count })
-          ).not.toMatch(/browser|浏览器/i)
-        }
-      }
+  it.for([
+    ['en', 'models.hub.meta.description', 1],
+    ['en', 'models.hub.meta.description', 2],
+    ['en', 'models.hub.meta.descriptionWithoutNames', 1],
+    ['en', 'models.hub.meta.descriptionWithoutNames', 2],
+    ['zh-CN', 'models.hub.meta.description', 1],
+    ['zh-CN', 'models.hub.meta.description', 2],
+    ['zh-CN', 'models.hub.meta.descriptionWithoutNames', 1],
+    ['zh-CN', 'models.hub.meta.descriptionWithoutNames', 2]
+  ] as const)(
+    'never promises browser runs in the %s %s for %i model(s)',
+    ([locale, key, count]) => {
+      expect(
+        translationsFor(locale).t(
+          key,
+          { count, names: 'Veo' },
+          { plural: count }
+        )
+      ).not.toMatch(/browser|浏览器/i)
     }
   )
 })

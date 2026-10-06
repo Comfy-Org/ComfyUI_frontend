@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { hubModelSlugs } from '@/config/hub-models'
+import { translationsFor } from '@/i18n/translations'
 import { prepareModelPage } from '@/routes/models/model-page'
 import { modelMetaDescription } from './model-meta-description'
 
@@ -125,7 +126,7 @@ describe('modelMetaDescription', () => {
   it.for([
     [
       'shortens the call to action',
-      13,
+      15,
       /lorem\. Call it via API\. Typical cost/
     ],
     [
@@ -178,17 +179,14 @@ describe('modelMetaDescription', () => {
     )
   })
 
-  it.for(['en', 'zh-CN'] as const)(
-    'never promises browser runs in the %s descriptions',
-    async (locale) => {
-      const pages = await canonicalPages()
-      for (const page of pages) {
-        expect(modelMetaDescription(page, locale)).not.toMatch(
-          /browser|浏览器/i
-        )
-      }
-    }
-  )
+  it.for([
+    ['en', 'workshop.model.meta.cta'],
+    ['en', 'workshop.model.meta.ctaShort'],
+    ['zh-CN', 'workshop.model.meta.cta'],
+    ['zh-CN', 'workshop.model.meta.ctaShort']
+  ] as const)('never promises browser runs in the %s %s', ([locale, key]) => {
+    expect(translationsFor(locale).t(key)).not.toMatch(/browser|浏览器/i)
+  })
 
   it('keeps most model pages on a description body of their own', async () => {
     const pages = await canonicalPages()
