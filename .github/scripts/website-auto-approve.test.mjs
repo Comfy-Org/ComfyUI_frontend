@@ -329,10 +329,10 @@ void test('arms native auto-merge for the exact head with squash', async () => {
       return { enablePullRequestAutoMerge: { clientMutationId: null } }
     }
   }
-  await armMergeAutomation(
-    github,
-    { node_id: 'PR_1', head: { sha: 'head-sha' } }
-  )
+  await armMergeAutomation(github, {
+    node_id: 'PR_1',
+    head: { sha: 'head-sha' }
+  })
   assert.equal(calls.length, 2)
   assert.match(calls[1].query, /enablePullRequestAutoMerge/)
   assert.match(calls[1].query, /mergeMethod: SQUASH/)
@@ -364,10 +364,10 @@ void test('explicitly enqueues a clean exact head without jumping the queue', as
       return { enqueuePullRequest: { clientMutationId: null } }
     }
   }
-  await armMergeAutomation(
-    github,
-    { node_id: 'PR_1', head: { sha: 'head-sha' } }
-  )
+  await armMergeAutomation(github, {
+    node_id: 'PR_1',
+    head: { sha: 'head-sha' }
+  })
   assert.equal(calls.length, 2)
   assert.match(calls[1].query, /enqueuePullRequest/)
   assert.match(calls[1].query, /jump: false/)
