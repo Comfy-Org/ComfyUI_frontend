@@ -1,11 +1,9 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import {
-  DropdownMenuContent,
   DropdownMenuItemIndicator,
   DropdownMenuPortal,
   DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
   DropdownMenuRoot,
   DropdownMenuTrigger
 } from 'reka-ui'
@@ -14,6 +12,8 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
+import MenuContent from '@/components/ui/menu/MenuContent.vue'
+import MenuRadioItem from '@/components/ui/menu/MenuRadioItem.vue'
 import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 
@@ -163,12 +163,13 @@ function onSearchKeydown(event: KeyboardEvent): void {
         </template>
       </AccessibleTooltip>
       <DropdownMenuPortal>
-        <DropdownMenuContent
+        <MenuContent
           side="top"
           align="start"
           :side-offset="8"
           :reference="composerReference"
-          class="agent-scope z-1100 box-border w-(--reka-dropdown-menu-trigger-width) overflow-hidden rounded-lg border border-border-subtle bg-secondary-background p-1 font-inter shadow-lg"
+          width="trigger"
+          class="agent-scope"
         >
           <Input
             ref="searchInput"
@@ -197,13 +198,12 @@ function onSearchKeydown(event: KeyboardEvent): void {
               >
                 {{ section.label }}
               </div>
-              <DropdownMenuRadioItem
+              <MenuRadioItem
                 v-for="tab in section.tabs"
                 :key="tab.path"
                 :value="tab.path"
                 :disabled="disabled || selectingTabPath !== null"
                 :aria-busy="selectingTabPath === tab.path || undefined"
-                class="box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal text-base-foreground outline-none data-highlighted:bg-secondary-background-hover"
                 @select.prevent
               >
                 <span
@@ -255,10 +255,10 @@ function onSearchKeydown(event: KeyboardEvent): void {
                     />
                   </DropdownMenuItemIndicator>
                 </span>
-              </DropdownMenuRadioItem>
+              </MenuRadioItem>
             </div>
           </DropdownMenuRadioGroup>
-        </DropdownMenuContent>
+        </MenuContent>
       </DropdownMenuPortal>
     </DropdownMenuRoot>
   </div>

@@ -355,6 +355,12 @@ describe('createSessionTokenMint', () => {
     },
     {
       status: 403,
+      body: { code: 'sso_required', message: 'x' },
+      code: 'SSO_REQUIRED',
+      retryable: false
+    },
+    {
+      status: 403,
       body: { code: 'origin_not_allowed', message: 'x' },
       code: 'SESSION_REQUEST_REFUSED',
       retryable: false

@@ -16,3 +16,14 @@ export class WorkspaceApiError extends Error {
     this.name = 'WorkspaceApiError'
   }
 }
+
+/** Ingest's 403 code for an account left with no workspace. */
+export const NO_WORKSPACE_ACCESS = 'no_workspace_access'
+
+/** The account can enter no workspace: ingest refused with `no_workspace_access`, or listed none. */
+export class NoWorkspaceAccessError extends WorkspaceApiError {
+  constructor(message: string, status?: number) {
+    super(message, status, NO_WORKSPACE_ACCESS)
+    this.name = 'NoWorkspaceAccessError'
+  }
+}

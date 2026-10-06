@@ -143,6 +143,28 @@ describe('useLegacyBilling', () => {
   })
 
   describe('cancelSubscription', () => {
+    it('asks the portal to open on the cancel confirmation', async () => {
+      vi.mocked(useSubscription().manageSubscription).mockResolvedValue(
+        undefined
+      )
+
+      await useLegacyBilling().cancelSubscription()
+
+      expect(useSubscription().manageSubscription).toHaveBeenCalledWith({
+        cancelSubscription: true
+      })
+    })
+
+    it('leaves manageSubscription without the cancel option', async () => {
+      vi.mocked(useSubscription().manageSubscription).mockResolvedValue(
+        undefined
+      )
+
+      await useLegacyBilling().manageSubscription()
+
+      expect(useSubscription().manageSubscription).toHaveBeenCalledWith()
+    })
+
     it('rejects a failed billing portal request without reporting it', async () => {
       const failure = new Error('portal down')
       vi.mocked(useSubscription().manageSubscription).mockRejectedValue(failure)

@@ -1859,7 +1859,9 @@ export class ComfyApp {
     // whose token mint failed must still fail closed rather than fall back to
     // a stored key and charge the key's workspace.
     const isApiKeySessionExecution =
-      !useAuthStore().currentUser && useApiKeyAuthStore().isAuthenticated
+      !useAuthStore().currentUser &&
+      !useAuthStore().sessionOnlyUser &&
+      useApiKeyAuthStore().isAuthenticated
     if (
       executionWorkspaceId &&
       !comfyOrgAuthToken &&

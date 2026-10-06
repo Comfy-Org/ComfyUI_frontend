@@ -461,14 +461,16 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
   // The backend gate on these routes is independent of the client flag, so a
   // 404 means the rail is on too early. One answer settles it for the tab:
   // every later action goes straight to the legacy call.
-  let subscriptionRouteAvailable = true
+  const subscriptionRouteAvailable = shallowRef(true)
 
   async function onSubscriptionRoute<T>(
     run: () => Promise<SubscriptionRailOutcome<T>>
   ): Promise<SubscriptionRailOutcome<T>> {
-    if (!subscriptionRouteAvailable) return { status: 'unavailable' }
+    if (!subscriptionRouteAvailable.value) return { status: 'unavailable' }
     const outcome = await run()
-    if (outcome.status === 'unavailable') subscriptionRouteAvailable = false
+    if (outcome.status === 'unavailable') {
+      subscriptionRouteAvailable.value = false
+    }
     return outcome
   }
 
@@ -662,6 +664,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     hasPendingOperations,
     isSettingUp,
     subscriptionActionOperation,
+    subscriptionRouteAvailable,
     getOperation,
     recoverPendingOperation,
     createTopup,

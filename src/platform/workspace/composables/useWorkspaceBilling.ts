@@ -9,6 +9,7 @@ import {
 
 import type {
   BillingClient,
+  BillingTelemetryFailure,
   PreviewSubscribeInput
 } from '@comfyorg/account-core/billing'
 
@@ -637,46 +638,60 @@ export function useWorkspaceBilling(): WorkspaceBilling {
   ): Promise<void> {
     assertCancellationScopeCurrent(isScopeCurrent)
     const attemptStartedAt = Date.now()
-    const trackCancelSucceeded = () =>
+    const rail = useSubscriptionRail()
+    const trackCancelStarted = (billingClient: BillingClient) =>
+      telemetry?.trackBillingEvent({
+        operation: 'operation',
+        stage: 'started',
+        outcome: 'pending',
+        operation_type: 'cancel',
+        billing_client: billingClient
+      })
+    const trackCancelSucceeded = (billingClient: BillingClient) =>
       telemetry?.trackBillingEvent({
         operation: 'operation',
         stage: 'succeeded',
         outcome: 'success',
         operation_type: 'cancel',
+        billing_client: billingClient,
         duration_ms: Date.now() - attemptStartedAt
       })
-    const trackCancelFailed = (err: unknown) =>
+    const trackCancelFailed = (
+      failureCategory: BillingTelemetryFailure['failure_category'],
+      billingClient: BillingClient
+    ) =>
       telemetry?.trackBillingEvent({
         operation: 'operation',
         stage: 'failed',
         outcome: 'failure',
         operation_type: 'cancel',
-        failure_category: categorizeBillingApiError(err),
+        billing_client: billingClient,
+        failure_category: failureCategory,
         duration_ms: Date.now() - attemptStartedAt
       })
 
-    telemetry?.trackBillingEvent({
-      operation: 'operation',
-      stage: 'started',
-      outcome: 'pending',
-      operation_type: 'cancel'
-    })
-
-    const rail = useSubscriptionRail()
-    if (rail) {
+    // A rail that already learned its routes are missing goes straight to the
+    // legacy call, so it never starts an SDK attempt.
+    if (rail?.subscriptionRouteAvailable) {
+      trackCancelStarted('sdk')
       const settled = await onSubscriptionRail(() =>
         rail.cancelSubscription()
       ).catch((err: unknown) => {
-        if (!(err instanceof SettledOperationError)) trackCancelFailed(err)
+        if (!(err instanceof SettledOperationError)) {
+          trackCancelFailed(categorizeBillingApiError(err), 'sdk')
+        }
         throw err
       })
       if (settled !== DECLINED) {
-        if (!settled.operationObserved) trackCancelSucceeded()
+        if (!settled.operationObserved) trackCancelSucceeded('sdk')
         return
       }
+      // The backend refused the SDK request; the legacy call is its own attempt.
+      trackCancelFailed('api_rejected', 'sdk')
     }
 
     assertCancellationScopeCurrent(isScopeCurrent)
+    trackCancelStarted('legacy')
 
     isLoading.value = true
     error.value = null
@@ -702,10 +717,12 @@ export function useWorkspaceBilling(): WorkspaceBilling {
         // fetchStatus records its own read failure; the cancellation still
         // holds, so the operation is not in error.
         error.value = null
-        trackCancelSucceeded()
+        trackCancelSucceeded('legacy')
         return
       }
-      if (billingOpId === undefined) trackCancelFailed(err)
+      if (billingOpId === undefined) {
+        trackCancelFailed(categorizeBillingApiError(err), 'legacy')
+      }
       error.value =
         err instanceof Error ? err.message : 'Failed to cancel subscription'
       throw err

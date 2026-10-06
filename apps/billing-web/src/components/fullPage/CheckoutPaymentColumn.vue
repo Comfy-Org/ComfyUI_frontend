@@ -134,10 +134,10 @@ const copy = computed<StripePaymentCopy>(() => ({
 
 <template>
   <section
-    class="flex lg:w-1/2"
+    class="flex justify-center lg:w-1/2 lg:justify-start"
     :data-testid="page.kind === 'waiting' ? 'checkout-waiting' : undefined"
   >
-    <div class="flex w-full flex-col px-6 py-12 lg:max-w-lg lg:px-16">
+    <div class="flex w-full max-w-lg flex-col px-6 py-12 lg:px-16">
       <div v-if="!view" class="flex flex-col gap-6">
         <div class="flex flex-col gap-3">
           <h3 :class="SECTION_LABEL">{{ t('checkout.paymentMethod') }}</h3>

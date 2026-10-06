@@ -19,6 +19,7 @@ const prefix = locale === 'zh-CN' ? '/zh-CN' : ''
   >
     <div class="m-2 aspect-video overflow-hidden rounded-2xl">
       <div
+        data-testid="customer-story-cover"
         class="size-full rounded-2xl bg-white/5 bg-cover bg-center"
         :style="{ backgroundImage: `url(${story.cover})` }"
       />

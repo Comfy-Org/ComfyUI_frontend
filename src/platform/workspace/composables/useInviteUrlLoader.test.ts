@@ -1,8 +1,13 @@
+import { fakeWebSessionUser } from '@comfyorg/account-core/testing'
+import type { User } from 'firebase/auth'
+
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useDialogService } from '@/services/dialogService'
+import { useAuthStore } from '@/stores/authStore'
 
 import { WorkspaceApiError } from '../api/workspaceApi'
 import { useTeamWorkspaceStore } from '../stores/teamWorkspaceStore'
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp, defineComponent } from 'vue'
 import type { App } from 'vue'
@@ -47,6 +52,8 @@ vi.mock<unknown>(import('vue-router'), () => ({
 }))
 
 vi.mock(import('@/services/dialogService'))
+vi.mock(import('@/composables/useFeatureFlags'))
+vi.mock(import('firebase/auth'))
 
 const mockToastAdd = vi.hoisted(() => vi.fn())
 vi.mock<unknown>(
@@ -79,7 +86,10 @@ function useInviteUrlLoader(): ReturnType<typeof createInviteUrlLoader> {
           workspace: {
             inviteAccepted: 'Invite Accepted',
             addedToWorkspace: 'You have been added to {workspaceName}',
-            inviteFailed: 'Failed to Accept Invite'
+            inviteFailed: 'Failed to Accept Invite',
+            inviteSsoUnavailable: 'Ask your admin to add you',
+            inviteSsoUnavailableDetail:
+              'SSO accounts cannot accept invite links'
           },
           g: { unknownError: 'Unknown error' }
         }
@@ -342,5 +352,79 @@ describe('useInviteUrlLoader', () => {
 
       expect(useTeamWorkspaceStore().acceptInvite).not.toHaveBeenCalled()
     })
+
+    it.for([
+      {
+        name: 'an SSO session',
+        sso: true,
+        provider: 'saml.workos',
+        firebase: false,
+        accepts: false
+      },
+      {
+        name: 'an OIDC SSO session',
+        sso: true,
+        provider: 'oidc.workos',
+        firebase: false,
+        accepts: false
+      },
+      {
+        name: 'an SSO session beside its Firebase login',
+        sso: true,
+        provider: 'saml.workos',
+        firebase: true,
+        accepts: true
+      },
+      {
+        name: 'a Google session',
+        sso: true,
+        provider: 'google.com',
+        firebase: false,
+        accepts: true
+      },
+      {
+        name: 'an SSO session with sso_enabled off',
+        sso: false,
+        provider: 'saml.workos',
+        firebase: false,
+        accepts: true
+      }
+    ])(
+      'accepts the invite for $name only when it has a Firebase login to accept with',
+      async ({ sso, provider, firebase, accepts }) => {
+        vi.mocked(useFeatureFlags().flags).ssoEnabled = sso
+        const authStore = useAuthStore()
+        authStore.currentUser = firebase
+          ? fromPartial<User>({ uid: 'session-user' })
+          : null
+        Object.assign(authStore, {
+          sessionUser: fakeWebSessionUser({
+            id: 'session-user',
+            signInProvider: provider
+          })
+        })
+        mockRouteQuery.value = { invite: 'valid-token' }
+        vi.mocked(useTeamWorkspaceStore().acceptInvite).mockResolvedValue({
+          workspaceId: 'ws-123',
+          workspaceName: 'Test Workspace'
+        })
+
+        const { loadInviteFromUrl } = useInviteUrlLoader()
+        await loadInviteFromUrl()
+
+        expect(
+          vi.mocked(useTeamWorkspaceStore().acceptInvite).mock.calls.length
+        ).toBe(accepts ? 1 : 0)
+        expect(
+          mockToastAdd.mock.calls.some(
+            ([toast]) => toast.summary === 'Ask your admin to add you'
+          )
+        ).toBe(!accepts)
+        expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
+        expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
+          'invite'
+        )
+      }
+    )
   })
 })

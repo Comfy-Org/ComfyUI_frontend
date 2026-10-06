@@ -126,6 +126,20 @@ export function createTestCanvasElement({
   element.width = width
   element.height = height
   element.getContext = vi.fn().mockReturnValue(ctx)
+  Object.defineProperties(element, {
+    offsetWidth: {
+      configurable: true,
+      get: () =>
+        cssSize?.[0] ??
+        (Number.parseFloat(element.style.width) || element.width)
+    },
+    offsetHeight: {
+      configurable: true,
+      get: () =>
+        cssSize?.[1] ??
+        (Number.parseFloat(element.style.height) || element.height)
+    }
+  })
   if (cssSize) {
     vi.spyOn(element, 'getBoundingClientRect').mockReturnValue(
       new DOMRect(0, 0, ...cssSize)
@@ -133,6 +147,12 @@ export function createTestCanvasElement({
   }
   if (visible !== undefined) setCanvasVisible(element, visible)
   return element
+}
+
+export function setIntrinsicCanvasLayout(element: HTMLCanvasElement): void {
+  vi.spyOn(element, 'getBoundingClientRect').mockImplementation(
+    () => new DOMRect(0, 0, element.offsetWidth, element.offsetHeight)
+  )
 }
 
 /** happy-dom has no layout, so report the offset geometry a rendered or hidden canvas has. */

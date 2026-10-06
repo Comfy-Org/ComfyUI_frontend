@@ -167,6 +167,26 @@ test('145-4584 → 342-4767: Pay walks Phase A, locked with nothing charged, int
   expect(subscribeRequests(cloud)).toHaveLength(1)
 })
 
+test('on a phone, Phase A hides the back arrow without moving the logo', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  cloud.scenario.paymentMethods = []
+  scriptOperation(cloud)
+  await holdChallenge(page)
+  await signIn(CHECKOUT)
+  const logo = page.getByRole('img', { name: 'Comfy' })
+  const before = await logo.boundingBox()
+
+  await payButton(page).click()
+
+  await expect(footnote(page)).toHaveText(PHASE_A)
+  await expect(backArrow(page)).toBeHidden()
+  expect(await logo.boundingBox()).toEqual(before)
+})
+
 test('a card Pay shows only the spinner while the server is still confirming it, never Phase B before the challenge', async ({
   page,
   cloud,

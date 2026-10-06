@@ -26,23 +26,23 @@ const emit = defineEmits<{ 'download-model': [rowId: string] }>()
         {{ group.total }}
       </span>
     </div>
-    <ul class="m-0 list-none p-0">
+    <ul role="list" class="m-0 list-none p-0">
       <li
         v-for="row in group.rows"
         :key="row.id"
         :class="
           cn(
-            'flex min-h-14 items-center gap-3 rounded-md p-2',
+            'grid min-h-14 grid-cols-[2.5rem_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 rounded-md p-2',
             row.status?.kind === 'installed' && 'opacity-60'
           )
         "
       >
         <span
-          class="flex size-10 shrink-0 items-center justify-center rounded-md bg-secondary-background text-muted-foreground"
+          class="col-start-1 row-start-1 flex size-10 shrink-0 items-center justify-center rounded-md bg-secondary-background text-muted-foreground"
         >
-          <i aria-hidden="true" class="icon-[lucide--box] size-4" />
+          <i aria-hidden="true" class="icon-[comfy--ai-model] size-4" />
         </span>
-        <span class="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span class="col-start-2 row-start-1 flex min-w-0 flex-col gap-0.5">
           <span class="truncate text-sm" :title="row.name">{{ row.name }}</span>
           <span
             class="truncate text-xs text-muted-foreground"

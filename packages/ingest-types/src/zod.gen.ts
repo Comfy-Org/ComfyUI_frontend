@@ -819,6 +819,11 @@ export const zSavedPaymentMethod = z.object({
   type: z.string()
 })
 
+export const zSsoDiscoverResponse = z.object({
+  organization_name: z.string().optional(),
+  sso: z.boolean()
+})
+
 /**
  * Response after signing out of all devices
  */
@@ -1133,6 +1138,15 @@ export const zPreviewSubscribeResponse = z.object({
     .max(BigInt('9223372036854775807'), {
       message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
     }),
+  credits_next_period: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
   credits_next_period_cents: z.coerce
     .bigint()
     .min(BigInt('-9223372036854775808'), {
@@ -1141,6 +1155,15 @@ export const zPreviewSubscribeResponse = z.object({
     .max(BigInt('9223372036854775807'), {
       message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
     }),
+  credits_today: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
   credits_today_cents: z.coerce
     .bigint()
     .min(BigInt('-9223372036854775808'), {
@@ -2125,7 +2148,7 @@ export const zHistoryManageRequest = z.object({
 })
 
 /**
- * History entry with full prompt data
+ * History entry with full prompt data. The workflow graph (extra_data.extra_pnginfo) is omitted from records persisted after it stopped being stored; older records may still contain it.
  */
 export const zHistoryDetailEntry = z.object({
   meta: z.record(z.unknown()).optional(),
@@ -2828,6 +2851,42 @@ export const zBillingCapabilityRolloutDefaults = z.object({
 })
 
 /**
+ * Why a capability resolved false, keyed by the capability. The value
+ * names the policy branch that decided, not customer-facing wording: the
+ * client owns the message.
+ *
+ * The invariant runs one way only. **Presence implies refusal**: a key is
+ * present only alongside `capabilities.<key> == false`, reconciled before
+ * the response is built, so a reason never accompanies a granted
+ * capability. **Absence implies nothing** -- it means no recognised
+ * explanation, not that the capability was granted. Consult
+ * `capabilities`, which stays authoritative for what the client may offer.
+ *
+ * A key is absent for a refused capability whenever this service is
+ * talking to a billing-api that predates the field, and whenever it drops
+ * a reason it does not recognise rather than forwarding a value outside
+ * the enum below. Both are supported states, so a client must never infer
+ * a capability's value from a missing reason -- only from `capabilities`.
+ *
+ * This endpoint omits the entire `denied_reasons` object when no recognised
+ * reason survives. The billing-api endpoint may emit `{}` for the same
+ * logical state, so object presence must not be used to detect support.
+ *
+ */
+export const zBillingCapabilityDenials = z.object({
+  can_subscribe_self_serve: z
+    .enum([
+      'not_a_member',
+      'not_workspace_owner',
+      'tier_not_self_serve',
+      'subscription_not_started',
+      'subscription_change_in_progress',
+      'subscription_status_unrecognized'
+    ])
+    .optional()
+})
+
+/**
  * Conservative UI guidance. These values do not authorize billing writes;
  * each write endpoint independently enforces its permission policy.
  *
@@ -2848,6 +2907,7 @@ export const zBillingCapabilities = z.object({
  */
 export const zBillingCapabilitiesResponse = z.object({
   capabilities: zBillingCapabilities,
+  denied_reasons: zBillingCapabilityDenials.optional(),
   expires_at: z.string().datetime(),
   resolved_for: zBillingCapabilityScope,
   revision: z.coerce
@@ -2856,7 +2916,8 @@ export const zBillingCapabilitiesResponse = z.object({
       message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
     })
     .lte(BigInt(9007199254740991)),
-  rollout_defaults_applied: zBillingCapabilityRolloutDefaults
+  rollout_defaults_applied: zBillingCapabilityRolloutDefaults,
+  subscription_state_authoritative: z.boolean().optional()
 })
 
 /**
@@ -3110,6 +3171,15 @@ export const zAgentError = z.object({
 export const zAgentDraftSnapshot = z.object({
   content: z.record(z.unknown()),
   version: z.number().int()
+})
+
+/**
+ * A stop whose cancellation request did not land, or could not be confirmed as landed, on the durable engine. The turn is unaffected and still streaming, so the same request may be retried; cancellation is idempotent per turn. Distinct from the 500, which means the failure was one the service could not classify and a retry may never work.
+ */
+export const zAgentCancelUnconfirmed = z.object({
+  code: z.enum(['cancel_not_requested', 'cancel_outcome_unknown']),
+  error: z.string(),
+  retryable: z.boolean()
 })
 
 /**
@@ -3682,6 +3752,15 @@ export const zCreateSessionResponse2 = zCreateSessionResponse
  */
 export const zRevokeAllSessionsResponse2 = zRevokeAllSessionsResponse
 
+export const zDiscoverSsoBody = z.object({
+  email: z.string().max(320)
+})
+
+/**
+ * Whether the email's domain belongs to an SSO organization
+ */
+export const zDiscoverSsoResponse = zSsoDiscoverResponse
+
 export const zExchangeTokenBody = zExchangeTokenRequest
 
 /**
@@ -3893,6 +3972,7 @@ export const zGetFeaturesResponse = z.object({
     ])
     .default('control'),
   billing_web_url: z.string().optional(),
+  can_run_partner_nodes: z.boolean().optional(),
   free_tier_balance: z
     .object({
       allowance: z.number().int(),

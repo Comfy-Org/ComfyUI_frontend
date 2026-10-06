@@ -232,7 +232,9 @@ export function useLegacyBilling(): BillingState & BillingActions {
   }
 
   async function cancelSubscription(): Promise<void> {
-    await rejectFailures(() => legacyManageSubscription())
+    await rejectFailures(() =>
+      legacyManageSubscription({ cancelSubscription: true })
+    )
   }
 
   async function resubscribe(options?: {

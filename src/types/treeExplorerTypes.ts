@@ -1,8 +1,9 @@
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import type { NodeCategoryId } from '@/types/nodeOrganizationTypes'
-import type { MenuItem } from 'primevue/menuitem'
 import type { TreeNode as PrimeVueTreeNode } from 'primevue/treenode'
 import type { InjectionKey, ModelRef, Ref } from 'vue'
+
+import type { MenuItem } from '@/components/ui/menu/types'
 
 export interface TreeNode extends PrimeVueTreeNode {
   label: string

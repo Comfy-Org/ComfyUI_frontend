@@ -2,6 +2,7 @@ import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 
 import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
+import { TestIds } from '@e2e/fixtures/selectors'
 import type { Position } from '@e2e/fixtures/types'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
 import type { Point } from '@/lib/litegraph/src/litegraph'
@@ -28,6 +29,16 @@ export class CanvasHelper {
     }
     await this.page.mouse.move(10, 10)
     await nextFrame(this.page)
+  }
+
+  async getMinimapRightInset(): Promise<number> {
+    const canvasRight = await this.canvas.evaluate(
+      (el) => el.getBoundingClientRect().right
+    )
+    const minimapRight = await this.page
+      .getByTestId(TestIds.canvas.minimapContainer)
+      .evaluate((el) => el.getBoundingClientRect().right)
+    return canvasRight - minimapRight
   }
 
   async getNodesOutsideViewportCount(): Promise<number> {

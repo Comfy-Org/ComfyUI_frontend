@@ -32,6 +32,7 @@ import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import { readCrdtSnapshot } from './crdtSnapshot'
 import type { DocFrameTransport } from './docFrameClient'
 import { DocFrameClient } from './docFrameClient'
+import { RESEED_CONFLICT, isRetryableReseedCode } from './docFrameCodes'
 import type { GraphOperation } from './graphOperations'
 import type { ClassifiedDocUpdate } from './layoutFollowerBridge'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
@@ -190,6 +191,12 @@ function notifyAgentMaterialization(
   )
 }
 
+function hasNodes(
+  canvas: Record<string, unknown> | null
+): canvas is Record<string, unknown> {
+  return Array.isArray(canvas?.nodes) && canvas.nodes.length > 0
+}
+
 export interface AgentCrdtStatus {
   enabled: boolean
   connected: boolean
@@ -292,7 +299,8 @@ export function useAgentCrdtFollower(
    * Where document frames travel: the agent's one socket on every backend
    * (see agentDocFrameTransport). Its opens drive resubscription.
    */
-  baseTransport: DocFrameTransport
+  baseTransport: DocFrameTransport,
+  canvasFor: (workflowId: string) => Record<string, unknown> | null = () => null
 ) {
   const productGate = useAgentPanelStore()
   const follower = shallowRef<ReturnType<typeof startAgentCrdtFollower>>()
@@ -333,7 +341,8 @@ export function useAgentCrdtFollower(
           getGraph,
           events,
           applierDeps,
-          baseTransport
+          baseTransport,
+          canvasFor
         )
       )
     },
@@ -364,7 +373,8 @@ function startAgentCrdtFollower(
   getGraph: () => LGraph | null,
   events: AgentCrdtFollowerEvents,
   applierDeps: AgentCrdtApplierDeps,
-  baseTransport: DocFrameTransport
+  baseTransport: DocFrameTransport,
+  canvasFor: (workflowId: string) => Record<string, unknown> | null
 ) {
   const connected = ref(false)
   const terminal = ref<AgentCrdtTerminalState>(null)
@@ -507,6 +517,59 @@ function startAgentCrdtFollower(
     }
   }
 
+  function tryReseed(): boolean {
+    const target = subscribedWorkflowId.value
+    if (target === null || !bridge.canReseed(target)) return false
+    const canvas = canvasFor(target)
+    if (!hasNodes(canvas) || !bridge.reseed(target, canvas)) return false
+    recordDevEvent('doc_reseed_sent', { workflowId: target })
+    lifecycle.onSubscribeSent(target)
+    return true
+  }
+  const onReseedResult: EventListener = (event) => {
+    if (!(event instanceof CustomEvent)) return
+    const detail = event.detail as {
+      workflowId?: unknown
+      ok?: unknown
+      code?: unknown
+    } | null
+    if (!isCurrentWorkflow(detail?.workflowId)) return
+    lastFrameType.value = event.type
+    recordDevEvent('doc_reseed_result', detail)
+    const code = typeof detail.code === 'string' ? detail.code : undefined
+    if (detail.ok === true || code === RESEED_CONFLICT) return
+    if (isRetryableReseedCode(code)) lifecycle.onSubscribeRefused(code)
+    else lifecycle.stopProbing()
+    // A failed reseed with no retry left is a refusal nothing will answer:
+    // the panel must seed the draft again rather than wait on this document.
+    if (lifecycle.refusalIsFinal()) terminal.value = 'refused'
+  }
+
+  function handleRejectedSubscription(
+    detail: {
+      workflowId?: unknown
+      ok?: unknown
+      code?: unknown
+      message?: unknown
+    } | null
+  ) {
+    const reseeding = tryReseed()
+    const refusal = reseeding
+      ? { shouldNotify: false }
+      : handleSubscribeRefusal(detail, lifecycle)
+    // Only the refusal nothing will retry is terminal: while a retry or a
+    // reseed is in flight the subscribe machinery still owns the outcome, and
+    // the panel must keep withholding the draft seed exactly as on a reconnect.
+    if (!reseeding && lifecycle.refusalIsFinal()) terminal.value = 'refused'
+    // FE #16637 residual: a refusal is the earliest signal the sender can
+    // get that its in-flight batch's doc is gone — don't make it wait out
+    // the 10 s result-silence window to notice on its own.
+    releaseHeldOps()
+    sender.abortIfUnbound()
+    if (refusal.shouldNotify)
+      events.onSyncError?.(refusal.message, refusal.code)
+  }
+
   const onSubscribed: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
     if (!isTargetActive.value) return
@@ -524,18 +587,7 @@ function startAgentCrdtFollower(
       lifecycle.onSubscribeConfirmed()
       resumeHeldOpsIfSubscribed()
     } else {
-      const refusal = handleSubscribeRefusal(detail, lifecycle)
-      // Only the refusal nothing will retry is terminal: while a retry is
-      // scheduled the subscribe machinery still owns the outcome, and the
-      // panel must keep withholding the draft seed exactly as on a reconnect.
-      if (lifecycle.refusalIsFinal()) terminal.value = 'refused'
-      // FE #16637 residual: a refusal is the earliest signal the sender can
-      // get that its in-flight batch's doc is gone — don't make it wait out
-      // the 10 s result-silence window to notice on its own.
-      releaseHeldOps()
-      sender.abortIfUnbound()
-      if (refusal.shouldNotify)
-        events.onSyncError?.(refusal.message, refusal.code)
+      handleRejectedSubscription(detail)
     }
   }
   const onUpdate: EventListener = (event) => {
@@ -668,7 +720,7 @@ function startAgentCrdtFollower(
     terminal.value = null
     lifecycle.onReconnected()
     recordDevEvent('reconnected', null)
-    bridge.resubscribe()
+    bridge.reconnect()
   }
 
   bridge.addEventListener('doc_subscribed', onSubscribed)
@@ -687,6 +739,7 @@ function startAgentCrdtFollower(
   // resubscribe is one redundant frame the server answers as a resync. It is
   // also the only repair for a subscribe dropped while the socket was still
   // connecting (`send` returned false).
+  bridge.addEventListener('doc_reseed_result', onReseedResult)
   const stopTransportConnected = baseTransport.onConnected?.(handleReconnected)
 
   // FE-1902 (poc-3): distinguish the mount-time null (in-memory doc id died
@@ -833,6 +886,7 @@ function startAgentCrdtFollower(
       () => bridge.removeEventListener('doc_gap', onGap),
       () => bridge.removeEventListener('doc_stale', onStale),
       () => bridge.removeEventListener('doc_subscribe_sent', onSubscribeSent),
+      () => bridge.removeEventListener('doc_reseed_result', onReseedResult),
       () => sender.detach(),
       () => rejectedOpNotifier.cancel(),
       () => coalescer.detach(),

@@ -1,11 +1,36 @@
-import type { TaskResponse } from '@/platform/tasks/services/taskService'
+import { mergeTests } from '@playwright/test'
 
+import type { TaskResponse } from '@/platform/tasks/services/taskService'
 import {
-  comfyPageFixture as test,
+  comfyPageFixture,
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
+import { modelImportProgressFixture } from '@e2e/fixtures/modelImportProgressFixture'
+
+const test = mergeTests(comfyPageFixture, modelImportProgressFixture)
 
 test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
+  test('filters failed imports through the popover above the expanded toast', async ({
+    modelImportProgress
+  }) => {
+    await modelImportProgress.expand()
+    await expect(
+      modelImportProgress.job('completed-model.safetensors')
+    ).toBeVisible()
+    await expect(
+      modelImportProgress.job('failed-model.safetensors')
+    ).toBeVisible()
+
+    await modelImportProgress.filterBy('Failed')
+
+    await expect(
+      modelImportProgress.job('completed-model.safetensors')
+    ).toBeHidden()
+    await expect(
+      modelImportProgress.job('failed-model.safetensors')
+    ).toBeVisible()
+  })
+
   test('recovers from a premature failed status once the backend silently retries and completes it (PM-1302)', async ({
     comfyPage
   }) => {

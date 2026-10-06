@@ -58,11 +58,7 @@ const {
 </script>
 
 <template>
-  <section
-    v-if="formVisible"
-    class="flex w-full flex-col"
-    :aria-busy="state.step === 'pending' || state.step === 'minting'"
-  >
+  <section v-if="formVisible" class="flex w-full flex-col" :aria-busy="busy">
     <h1
       class="mt-8 mb-0 text-2xl/snug font-light tracking-tighter text-primary-comfy-canvas sm:text-3xl/snug lg:text-4xl/snug xl:text-5xl/snug 2xl:text-6xl/snug"
     >
@@ -179,7 +175,7 @@ const {
           ref="emailForm"
           :mode="mode"
           :locale="locale"
-          :loading="state.step === 'pending' || state.step === 'minting'"
+          :loading="busy"
           @forgot-password="goTo('/forgot-password/', $event)"
           @submit="submitEmail"
         />

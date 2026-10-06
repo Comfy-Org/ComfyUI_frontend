@@ -284,6 +284,13 @@ export class AgentCrdtDocLifecycle {
     return !this.confirmedSinceLastSend && this.subscribeRetryTimer === null
   }
 
+  stopProbing(): void {
+    this.clearAckTimer()
+    this.clearSubscribeRetry()
+    this.clearStaleProbe()
+    this.gaveUp = true
+  }
+
   onSubscribeSent(workflowId: string): void {
     this.clearAckTimer()
     this.confirmedSinceLastSend = false

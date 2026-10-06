@@ -1,11 +1,20 @@
 import { render } from '@testing-library/vue'
 import { getActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import ComfyActionbar from '@/components/actionbar/ComfyActionbar.vue'
 import { i18n } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
+
+vi.mock(import('@/components/actionbar/ComfyRunButton'), async () => {
+  const { defineComponent } = await import('vue')
+  return {
+    default: defineComponent({
+      template: '<button type="button">Run</button>'
+    })
+  }
+})
 
 const renderActionbar = (showRunProgressBar: boolean) => {
   const dockedProgressContainer = document.createElement('div')
@@ -27,14 +36,6 @@ const renderActionbar = (showRunProgressBar: boolean) => {
     global: {
       plugins: [pinia, i18n],
       stubs: {
-        ContextMenu: {
-          name: 'ContextMenu',
-          template: '<div />'
-        },
-        ComfyRunButton: {
-          name: 'ComfyRunButton',
-          template: '<button type="button">Run</button>'
-        },
         QueueInlineProgress: true
       },
       directives: {

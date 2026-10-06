@@ -37,13 +37,13 @@
   <ContextMenu ref="menu" :model="menuItems" />
 </template>
 <script setup lang="ts" generic="T">
-import ContextMenu from 'primevue/contextmenu'
-import type { MenuItem, MenuItemCommandEvent } from 'primevue/menuitem'
 import Tree from 'primevue/tree'
 import { computed, provide, ref, shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
+import ContextMenu from '@/components/ui/menu/ContextMenu.vue'
+import type { MenuItem, MenuItemCommandEvent } from '@/components/ui/menu/types'
 import { useTreeFolderOperations } from '@/composables/tree/useTreeFolderOperations'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import {
@@ -181,6 +181,7 @@ const deleteCommand = async (node: RenderedTreeExplorerNode<T>) => {
   await node.handleDelete?.()
   emit('nodeDelete', node)
 }
+
 const menuItems = computed<MenuItem[]>(() => {
   const node = menuTargetNode.value
   return [
@@ -203,18 +204,17 @@ const menuItems = computed<MenuItem[]>(() => {
           await deleteCommand(node)
         }
       },
-      visible: node?.handleDelete !== undefined,
-      isAsync: true // The delete command can be async
+      visible: node?.handleDelete !== undefined
     },
     ...extraMenuItems.value
-  ].map((menuItem: MenuItem) => ({
-    ...menuItem,
-    command: menuItem.command
-      ? wrapCommandWithErrorHandler(menuItem.command, {
-          isAsync: menuItem.isAsync ?? false
-        })
-      : undefined
-  }))
+  ].map((menuItem: MenuItem) =>
+    menuItem.command
+      ? {
+          ...menuItem,
+          command: wrapCommandWithErrorHandler(menuItem.command)
+        }
+      : menuItem
+  )
 })
 
 const handleContextMenu = (
@@ -229,16 +229,10 @@ const handleContextMenu = (
 }
 
 const wrapCommandWithErrorHandler = (
-  command: (event: MenuItemCommandEvent) => void,
-  { isAsync = false }: { isAsync: boolean }
+  command: (event: MenuItemCommandEvent) => unknown
 ) => {
   const node = menuTargetNode.value
-  return isAsync
-    ? errorHandling.wrapWithErrorHandlingAsync(
-        command as (event: MenuItemCommandEvent) => Promise<void>,
-        node?.handleError
-      )
-    : errorHandling.wrapWithErrorHandling(command, node?.handleError)
+  return errorHandling.wrapWithErrorHandlingAsync(command, node?.handleError)
 }
 
 defineExpose({
@@ -280,7 +274,7 @@ defineExpose({
   left: 0;
   right: 0;
   bottom: 0;
-  border: 1px solid var(--p-content-color);
+  border: 1px solid var(--base-foreground);
   pointer-events: none;
 }
 </style>

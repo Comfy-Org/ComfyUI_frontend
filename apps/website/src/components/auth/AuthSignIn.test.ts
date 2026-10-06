@@ -32,6 +32,7 @@ import {
   signUpWorkshopWithEmail
 } from '@/config/workshop-firebase'
 import { useWorkshopSession } from '@/config/workshop-session-state'
+import { ssoStartUrlFor, warmSsoStartFlag } from '@/config/workshop-sso'
 import { t } from '@/i18n/translations'
 import {
   captureAuthCompleted,
@@ -51,6 +52,7 @@ const handles = vi.hoisted(() => ({
 vi.mock(import('@/scripts/posthog'))
 vi.mock(import('@/config/workshop-firebase'))
 vi.mock(import('@/config/workshop-session-state'))
+vi.mock(import('@/config/workshop-sso'))
 
 const authFlag = ref(true)
 const authUser = ref<User | null>(null)
@@ -122,6 +124,7 @@ beforeEach(() => {
   session.value = undefined
   settled.value = true
   vi.mocked(useWorkshopSession().ensureFresh).mockResolvedValue(okSession)
+  vi.mocked(ssoStartUrlFor).mockReset().mockResolvedValue(undefined)
   handles.turnstileReset.mockReset()
   turnstileApi.render.mockImplementation(
     (_container: string | HTMLElement, options: TurnstileRenderOptions) => {
@@ -1895,5 +1898,87 @@ describe('AuthSignIn insecure context', () => {
         Object.defineProperty(window, 'isSecureContext', descriptor)
       else delete (window as { isSecureContext?: boolean }).isSecureContext
     }
+  })
+})
+
+describe('AuthSignIn enterprise SSO', () => {
+  const SSO_START =
+    'https://cloud.example/api/auth/sso/start?email=ada%40acme.com&return_to=%2Fcloud%2Fuser-check'
+
+  const submitEmail = async (mode: 'signIn' | 'signUp') => {
+    render(AuthSignIn, { props: { mode } })
+    const user = userEvent.setup()
+    await openEmailForm(user)
+    await user.type(screen.getByLabelText('Email'), 'ada@acme.com')
+    await user.type(screen.getByLabelText('Password'), 'Password1!')
+    if (mode === 'signUp')
+      await user.type(screen.getByLabelText('Confirm Password'), 'Password1!')
+    await user.click(
+      screen.getByRole('button', {
+        name: mode === 'signUp' ? /^sign up$/i : /^sign in$/i
+      })
+    )
+  }
+
+  const firebaseEmail = {
+    signIn: signInWorkshopWithEmail,
+    signUp: signUpWorkshopWithEmail
+  } as const
+
+  it.for(['signIn', 'signUp'] as const)(
+    'starts the SSO flag read when the %s panel opens, before any submit',
+    (mode) => {
+      vi.mocked(warmSsoStartFlag).mockClear()
+
+      render(AuthSignIn, { props: { mode } })
+
+      expect(warmSsoStartFlag).toHaveBeenCalledOnce()
+      expect(ssoStartUrlFor).not.toHaveBeenCalled()
+    }
+  )
+
+  it.for(['signIn', 'signUp'] as const)(
+    "sends an SSO email on %s to Cloud's SSO start instead of Firebase",
+    async (mode) => {
+      vi.mocked(ssoStartUrlFor).mockResolvedValue(SSO_START)
+
+      await submitEmail(mode)
+
+      await waitFor(() => expect(assign).toHaveBeenCalledWith(SSO_START))
+      expect(ssoStartUrlFor).toHaveBeenCalledWith('ada@acme.com')
+      expect(vi.mocked(firebaseEmail[mode])).not.toHaveBeenCalled()
+      expect(
+        screen.getByText("Continuing to your organization's sign-in…")
+      ).toBeTruthy()
+    }
+  )
+
+  it.for(['signIn', 'signUp'] as const)(
+    'signs in with Firebase on %s when the email has no SSO start',
+    async (mode) => {
+      vi.mocked(firebaseEmail[mode]).mockReturnValue(new Promise(() => {}))
+
+      await submitEmail(mode)
+
+      await waitFor(() =>
+        expect(vi.mocked(firebaseEmail[mode])).toHaveBeenCalledOnce()
+      )
+      expect(ssoStartUrlFor).toHaveBeenCalledWith('ada@acme.com')
+      expect(assign).not.toHaveBeenCalled()
+    }
+  )
+
+  it('gives back live controls when the visitor returns from Cloud through the back-forward cache', async () => {
+    vi.mocked(ssoStartUrlFor).mockResolvedValue(SSO_START)
+    await submitEmail('signIn')
+    await waitFor(() => expect(assign).toHaveBeenCalledOnce())
+    const submit = screen.getByRole('button', { name: /^sign in$/i })
+    expect(submit.hasAttribute('disabled')).toBe(true)
+
+    const restored = new Event('pageshow')
+    Object.defineProperty(restored, 'persisted', { value: true })
+    window.dispatchEvent(restored)
+
+    await waitFor(() => expect(submit.hasAttribute('disabled')).toBe(false))
   })
 })

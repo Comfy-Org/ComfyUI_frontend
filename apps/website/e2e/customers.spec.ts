@@ -1,8 +1,9 @@
 import { expect } from '@playwright/test'
 
 import { customerVideoStories } from '@/data/customerVideos'
-import { t } from '@/i18n/translations'
+import { t, translationsFor } from '@/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
+import { waitForIsland } from './fixtures/islands'
 
 test.describe('Customers @smoke', () => {
   test.beforeEach(async ({ page }) => {
@@ -142,5 +143,103 @@ test.describe('Customers @smoke', () => {
     const graph = JSON.parse(blocks[0])['@graph'] as Record<string, unknown>[]
     expect(graph.map((node) => node['@type'])).toContain('CollectionPage')
     expect(blocks[0]).toContain('/zh-CN/customers')
+  })
+})
+
+test.describe('Customer directory', () => {
+  const en = translationsFor('en').t
+
+  for (const width of [320, 390, 1440]) {
+    test(`keeps the directory controls inside a ${width}px viewport`, async ({
+      page
+    }) => {
+      await page.setViewportSize({ width, height: 900 })
+      await page.goto('/customers/')
+      const controls = [
+        page.getByRole('searchbox', {
+          name: en('customers.directory.searchLabel')
+        }),
+        page.getByRole('group', {
+          name: en('customers.directory.formatLabel')
+        }),
+        page.getByRole('combobox', {
+          name: en('customers.directory.sortLabel')
+        })
+      ]
+
+      const bounds = await Promise.all(
+        controls.map((control) =>
+          control.evaluate((element) => {
+            const { left, right } = element.getBoundingClientRect()
+            return { left, right }
+          })
+        )
+      )
+
+      expect(
+        bounds.filter(({ left, right }) => left < 0 || right > width)
+      ).toEqual([])
+    })
+  }
+
+  test('filters, switches format, and sorts the rendered cards', async ({
+    page
+  }) => {
+    await page.goto('/customers/')
+    const search = page.getByRole('searchbox', {
+      name: en('customers.directory.searchLabel')
+    })
+    await waitForIsland(page, search)
+    const headings = page.getByRole('main').getByRole('heading', { level: 3 })
+    const emptyState = page.getByText(en('customers.directory.empty'), {
+      exact: true
+    })
+
+    await test.step('Watch shows only the videos and Oldest reverses them', async () => {
+      await page
+        .getByRole('button', {
+          name: en('customers.directory.tab.watch'),
+          exact: true
+        })
+        .click()
+      await expect(headings).toHaveCount(customerVideoStories.length)
+      const latestFirst = await headings.allTextContents()
+
+      await page
+        .getByRole('combobox', { name: en('customers.directory.sortLabel') })
+        .selectOption('oldest')
+
+      await expect(headings).toHaveText([...latestFirst].reverse())
+    })
+
+    await test.step('search with no match shows the empty state', async () => {
+      await search.fill('no customer story matches this')
+      await expect(emptyState).toBeVisible()
+    })
+
+    await test.step('clearing the search restores the cards', async () => {
+      await search.clear()
+      await expect(emptyState).toHaveCount(0)
+      await expect(headings).toHaveCount(customerVideoStories.length)
+    })
+  })
+
+  test('labels the controls from the zh-CN locale', async ({ page }) => {
+    const zh = translationsFor('zh-CN').t
+    await page.goto('/zh-CN/customers/')
+    const search = page.getByRole('searchbox', {
+      name: zh('customers.directory.searchLabel')
+    })
+    await waitForIsland(page, search)
+    const readTab = page
+      .getByRole('group', { name: zh('customers.directory.formatLabel') })
+      .getByRole('button', { name: zh('customers.directory.tab.read') })
+
+    await readTab.click()
+
+    await expect(readTab).toHaveAttribute('aria-pressed', 'true')
+    await expect(
+      page.getByRole('combobox', { name: zh('customers.directory.sortLabel') })
+    ).toHaveValue('latest')
   })
 })

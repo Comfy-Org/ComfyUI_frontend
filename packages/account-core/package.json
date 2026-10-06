@@ -40,6 +40,7 @@
     "./firebaseAuthError": "./src/firebaseAuthError.ts",
     "./provisioning": "./src/provisioning.ts",
     "./redirect": "./src/redirect.ts",
+    "./sso": "./src/sso.ts",
     "./workspaceLink": "./src/workspaceLink.ts",
     "./telemetry": "./src/telemetry.ts",
     "./webviewDetection": "./src/webviewDetection.ts",
@@ -118,6 +119,10 @@
       "./redirect": {
         "types": "./dist/redirect.d.ts",
         "import": "./dist/redirect.js"
+      },
+      "./sso": {
+        "types": "./dist/sso.d.ts",
+        "import": "./dist/sso.js"
       },
       "./workspaceLink": {
         "types": "./dist/workspaceLink.d.ts",

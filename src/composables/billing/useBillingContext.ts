@@ -22,6 +22,7 @@ import type {
   BalanceInfo,
   BillingActions,
   BillingContext,
+  CancelRail,
   BillingState,
   SubscriptionInfo
 } from './types'
@@ -389,7 +390,9 @@ function useBillingContextInternal(): BillingContext {
 
   async function cancelSubscription(isScopeCurrent?: () => boolean) {
     await waitForRoutingInSameWorkspace()
-    return activeContext.value.cancelSubscription(isScopeCurrent)
+    const rail: CancelRail = type.value === 'workspace' ? 'workspace' : 'legacy'
+    await activeContext.value.cancelSubscription(isScopeCurrent)
+    return rail
   }
 
   async function resubscribe(

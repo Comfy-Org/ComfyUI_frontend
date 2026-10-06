@@ -336,3 +336,33 @@ test('discount rows follow the server order, the entered code first when it come
     page.getByRole('button', { name: 'Remove LAUNCH20' })
   ).toBeVisible()
 })
+
+test.describe('below desktop width', () => {
+  test.use({ viewport: { width: 390, height: 844 } })
+
+  test('the promo controls grow to a finger-sized hit area', async ({
+    page,
+    cloud,
+    signIn
+  }) => {
+    quoteCodes(cloud)
+    await signIn(CHECKOUT)
+    await expect(page.getByText(EYEBROW)).toBeVisible()
+
+    const heightOf = async (name: string) =>
+      (await page.getByRole('button', { name }).boundingBox())?.height
+    expect(await heightOf('Add promo code')).toBe(40)
+
+    await page.getByRole('button', { name: 'Add promo code' }).click()
+    expect((await promoField(page).boundingBox())?.height).toBe(40)
+    expect(await heightOf('Apply')).toBe(40)
+    expect(await heightOf('Close promo code')).toBe(40)
+
+    await promoField(page).fill('launch20')
+    await page.getByRole('button', { name: 'Apply' }).click()
+    await expect(
+      page.getByRole('button', { name: 'Remove LAUNCH20' })
+    ).toBeVisible()
+    expect(await heightOf('Remove LAUNCH20')).toBe(32)
+  })
+})
