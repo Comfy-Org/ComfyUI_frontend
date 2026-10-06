@@ -301,13 +301,27 @@ async function expectTabs(page: Page) {
   await expect(page.getByTestId('catalogue-tabs')).toBeVisible()
 }
 
+async function backThroughCategory(page: Page) {
+  await page.goBack()
+  await expect(page).toHaveURL('/hub/models/')
+  await expect(page.getByTestId('workshop-sections')).toBeVisible()
+  await page.goBack()
+}
+
+async function forwardThroughCategory(page: Page) {
+  await page.goForward()
+  await expect(page).toHaveURL('/hub/models/')
+  await page.goForward()
+}
+
 for (const {
   section,
   destination,
   query,
   filter,
   reachTabs,
-  leftCategoryAt
+  backToFiltered,
+  forwardToDestination
 } of [
   {
     section: 'models',
@@ -317,7 +331,8 @@ for (const {
     filter: 'useCase=generate-images',
     reachTabs: leaveCategory,
     // Leaving the category is its own step back.
-    leftCategoryAt: '/hub/models/'
+    backToFiltered: backThroughCategory,
+    forwardToDestination: forwardThroughCategory
   },
   {
     section: 'workflows',
@@ -326,7 +341,8 @@ for (const {
     // A workflow category filter opens no category, so the tabs stay.
     filter: 'category=product',
     reachTabs: expectTabs,
-    leftCategoryAt: undefined
+    backToFiltered: (page: Page) => page.goBack(),
+    forwardToDestination: (page: Page) => page.goForward()
   }
 ]) {
   test(`the active ${section} tab resets its URL filters, including history`, async ({
@@ -377,20 +393,11 @@ for (const {
     await expect(page).toHaveURL(`/hub/${destination}/`)
     await expect(search).toHaveValue('')
     await expect(count).toHaveCount(0)
-    await page.goBack()
-    if (leftCategoryAt) {
-      await expect(page).toHaveURL(leftCategoryAt)
-      await expect(page.getByTestId('workshop-sections')).toBeVisible()
-      await page.goBack()
-    }
+    await backToFiltered(page)
     await expect(page).toHaveURL(filtered)
     await expect(search).toHaveValue(query)
     await expect(count).toHaveText('1')
-    await page.goForward()
-    if (leftCategoryAt) {
-      await expect(page).toHaveURL(leftCategoryAt)
-      await page.goForward()
-    }
+    await forwardToDestination(page)
     await expect(page).toHaveURL(`/hub/${destination}/`)
     await expect(search).toHaveValue('')
     await expect(count).toHaveCount(0)
