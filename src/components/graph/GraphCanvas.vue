@@ -15,7 +15,7 @@
     <template #side-toolbar>
       <SideToolbar v-if="showUI && !isBuilderMode && !linearMode" />
     </template>
-    <template v-if="showUI" #side-bar-panel>
+    <template v-if="betaMenuEnabled" #side-bar-panel>
       <div
         :inert="agentNodeSelectionStore.isActive"
         class="sidebar-content-container size-full overflow-x-hidden overflow-y-auto transition-opacity duration-200 ease-in-out"
@@ -27,10 +27,10 @@
     <template v-if="showUI && !isBuilderMode" #topmenu>
       <TopMenuSection />
     </template>
-    <template v-if="showUI" #bottom-panel>
+    <template v-if="betaMenuEnabled" #bottom-panel>
       <BottomPanel />
     </template>
-    <template v-if="showUI" #right-side-panel>
+    <template v-if="betaMenuEnabled" #right-side-panel>
       <AppBuilder v-if="isBuilderMode" />
       <NodePropertiesPanel v-else />
     </template>

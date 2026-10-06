@@ -175,6 +175,7 @@ describe('SignInView', () => {
 
   it.for([
     ['ACCESS_DENIED', "This account can't manage billing for that workspace."],
+    ['SSO_REQUIRED', "This account can't manage billing for that workspace."],
     [
       'WORKSPACE_NOT_FOUND',
       "This account can't access that workspace. Reopen billing from the app while signed in with the right account."
@@ -246,7 +247,7 @@ describe('SignInView', () => {
     ).toBeInTheDocument()
   })
 
-  it.for(['ACCESS_DENIED', 'WORKSPACE_NOT_FOUND'] as const)(
+  it.for(['ACCESS_DENIED', 'SSO_REQUIRED', 'WORKSPACE_NOT_FOUND'] as const)(
     'offers a way back to the app instead of a retry for %s',
     async (code) => {
       h.initialState = {
