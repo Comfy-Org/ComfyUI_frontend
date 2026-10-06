@@ -543,7 +543,7 @@ test.describe('Models catalog', () => {
     const openWeight = grid.getByTestId('open-weight-model-card')
     await expect(openWeight.first()).toHaveAttribute(
       'href',
-      /^\/p\/supported-models\/[a-z0-9-]+\/$/
+      /^\/hub\/models\/local\/[a-z0-9-]+\/$/
     )
     await expect(
       openWeight.first().getByTestId('model-access-badges')

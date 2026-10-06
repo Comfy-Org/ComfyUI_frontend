@@ -133,7 +133,8 @@ export async function writeFullText(
         !path.startsWith('/zh-CN/') &&
         path !== '/404.md' &&
         path !== '/p/supported-models.md' &&
-        !path.startsWith('/p/supported-models/')
+        !path.startsWith('/p/supported-models/') &&
+        !path.startsWith('/hub/models/local/')
     )
     .sort((a, b) =>
       a === '/index.md' ? -1 : b === '/index.md' ? 1 : a.localeCompare(b)

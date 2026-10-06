@@ -1,9 +1,11 @@
-import { getRoutes } from '@/config/routes'
+import { WORKSHOP_INCLUDED } from 'astro:env/client'
+
+import { modelFileHref } from '@/lib/workshop/model-file-href'
 import type { UseCase } from '@/config/models-catalogue'
 
 /**
  * Stand-in for the model explorer's open-weight listing until it ships. Each
- * entry points at a supported-models page that is already published.
+ * entry points at a model file page that is already published.
  */
 export interface OpenWeightModel {
   readonly slug: string
@@ -104,7 +106,7 @@ export const OPEN_WEIGHT_MODELS: readonly OpenWeightModel[] = [
 ]
 
 export function openWeightHref(model: Pick<OpenWeightModel, 'slug'>): string {
-  return `${getRoutes().models}${model.slug}/`
+  return modelFileHref(model.slug, WORKSHOP_INCLUDED)
 }
 
 export function filterOpenWeightModels(

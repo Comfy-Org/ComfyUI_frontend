@@ -10,10 +10,19 @@ import {
   hubWorkflowHref,
   hubWorkflowSlugs
 } from './hub-models'
+import { models as supportedModels } from './models'
+import { modelFileHref } from '@/lib/workshop/model-file-href'
 
 const MODELS_BASE_PATH = '/models'
 
-type PageKind = 'hub' | 'section' | 'model' | 'workflow' | 'app' | 'reserved'
+type PageKind =
+  | 'hub'
+  | 'section'
+  | 'model'
+  | 'workflow'
+  | 'app'
+  | 'file'
+  | 'reserved'
 
 const navigableKinds: ReadonlySet<string> = new Set<PageKind>([
   'hub',
@@ -45,6 +54,8 @@ interface ModelsUrlSources {
   readonly apps: readonly string[]
   /** Old alias under `/models` → the slug under `/hub/models` it serves. */
   readonly aliases: ReadonlyMap<string, string>
+  /** Model file page slugs, served under `/hub/models/local`. */
+  readonly files?: readonly string[]
 }
 
 const withoutTrailingSlash = (pathname: string) => pathname.replace(/\/$/, '')
@@ -53,7 +64,8 @@ export function modelsUrlEntries({
   models,
   workflows,
   apps,
-  aliases
+  aliases,
+  files = []
 }: ModelsUrlSources): ModelsUrlEntry[] {
   const at = (slug: string) => `${MODELS_BASE_PATH}/${slug}`
   const atHub = (slug: string) => `${HUB_MODELS_PATH}/${slug}`
@@ -89,6 +101,10 @@ export function modelsUrlEntries({
       destination: hubWorkflowHref(slug)
     })),
     ...apps.map((slug) => ({ path: hubAppHref(slug), kind: 'app' as const })),
+    ...files.map((slug) => ({
+      path: modelFileHref(slug, true),
+      kind: 'file' as const
+    })),
     ...apps.map((slug) => ({
       path: at(slug),
       kind: 'alias' as const,
@@ -149,12 +165,18 @@ export function buildModelsUrlRegistry(
   return { roots: normalizedRoots, entries: registry }
 }
 
+/** Every model file page: one per supported model that is not an alias. */
+export const modelFileSlugs: readonly string[] = supportedModels.flatMap(
+  ({ slug, canonicalSlug }) => (canonicalSlug ? [] : [slug])
+)
+
 const modelsUrlRegistry = buildModelsUrlRegistry(
   modelsUrlEntries({
     models: hubModelSlugs,
     workflows: hubWorkflowSlugs,
     apps: hubAppSlugs,
-    aliases: hubModelAliases
+    aliases: hubModelAliases,
+    files: modelFileSlugs
   }),
   [MODELS_BASE_PATH, HUB_PATH]
 )

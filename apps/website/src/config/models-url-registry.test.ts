@@ -22,7 +22,8 @@ const sources = {
   models: new Map([['acme--image--generate-images', 'acme-image']]),
   workflows: ['workflows/relight'],
   apps: ['apps/studio'],
-  aliases: new Map([['acme--image', 'acme-image']])
+  aliases: new Map([['acme--image', 'acme-image']]),
+  files: ['ae']
 }
 
 describe('models URL registry', () => {
@@ -44,7 +45,9 @@ describe('models URL registry', () => {
     ['/models/showcase/', 'reserved'],
     ['/models/catalogue.json', 'reserved'],
     ['/models/workflows/relight/page.json', 'reserved'],
-    ['/models/local/', undefined]
+    ['/models/local/', undefined],
+    ['/hub/models/local/ae/', 'file'],
+    ['/hub/models/local/', undefined]
   ])('registers %s as %s', ([path, kind]) => {
     const registry = buildModelsUrlRegistry(modelsUrlEntries(sources), roots)
     expect(modelsUrlKind(path, registry)).toBe(kind)

@@ -6,7 +6,11 @@ import { launchedModelPages, launchedWorkflowPages } from './model-page-launch'
 import { models } from './models'
 import { modelsUrlKind, modelsUrlPaths } from './models-url-registry'
 import { workshopModels } from './workshop-browse-content'
-import { isLegacyWorkshopRoute, isWorkshopRoute } from './workshop-release'
+import {
+  isLegacyWorkshopRoute,
+  isWorkshopInBuild,
+  isWorkshopRoute
+} from './workshop-release'
 
 const PAYMENT_STATUSES = ['success', 'failed'] as const
 const PLACEHOLDER_PATHNAMES = ['/case-studies', '/videos', '/demos'] as const
@@ -105,10 +109,12 @@ const routerIdByModelPage = routerIdsByModelPage(
 export function isIndexableModelPage(
   pathname: string,
   launched: ModelPageLaunch = launchedModelPages,
-  workflowsLaunched: boolean = launchedWorkflowPages
+  workflowsLaunched: boolean = launchedWorkflowPages,
+  workshopInBuild: boolean = isWorkshopInBuild()
 ): boolean {
   const kind = modelsUrlKind(pathname)
   if (kind === 'workflow') return workflowsLaunched
+  if (kind === 'file') return workshopInBuild
   if (kind !== 'model') return false
   const routerId = routerIdByModelPage.get(normalizePathname(pathname))
   return (
@@ -116,17 +122,30 @@ export function isIndexableModelPage(
   )
 }
 
+const SUPPORTED_MODEL_FILE_PATHNAMES = new Set(
+  models
+    .filter((model) => model.canonicalSlug === undefined)
+    .map((model) => `/p/supported-models/${model.slug}`)
+)
+
 export function isExcludedFromSitemap(
   page: string,
   launched: ModelPageLaunch = launchedModelPages,
-  workflowsLaunched: boolean = launchedWorkflowPages
+  workflowsLaunched: boolean = launchedWorkflowPages,
+  workshopInBuild: boolean = isWorkshopInBuild()
 ): boolean {
   const pathname = normalizePathname(new URL(page).pathname)
   return (
     isNoindexPathname(pathname) ||
     isLegacyWorkshopRoute(pathname) ||
     MODEL_REDIRECT_PATHNAMES.has(pathname) ||
+    (workshopInBuild && SUPPORTED_MODEL_FILE_PATHNAMES.has(pathname)) ||
     (isWorkshopRoute(pathname) &&
-      !isIndexableModelPage(pathname, launched, workflowsLaunched))
+      !isIndexableModelPage(
+        pathname,
+        launched,
+        workflowsLaunched,
+        workshopInBuild
+      ))
   )
 }

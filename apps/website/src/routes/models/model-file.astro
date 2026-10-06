@@ -1,0 +1,22 @@
+---
+import type { GetStaticPaths } from 'astro'
+import SupportedModelPage from '@/templates/supported-model/SupportedModelPage.astro'
+import { getModelBySlug } from '@/config/models'
+import { modelFileSlugs } from '@/config/models-url-registry'
+import { hubWorkflowsUsingFile } from '@/config/workshop-page-content'
+import { isWorkshopInBuild } from '@/config/workshop-release'
+import { modelFileHref } from '@/lib/workshop/model-file-href'
+
+export const getStaticPaths: GetStaticPaths = () =>
+  modelFileSlugs.map((slug) => ({ params: { slug } }))
+
+const slug = Astro.params.slug ?? ''
+const model = getModelBySlug(slug)
+if (!model) throw new Error(`No supported model ${slug}`)
+---
+
+<SupportedModelPage
+  model={model}
+  canonicalPath={isWorkshopInBuild() ? undefined : modelFileHref(slug, false)}
+  hub={{ usedBy: hubWorkflowsUsingFile(slug) }}
+/>

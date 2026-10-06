@@ -133,6 +133,7 @@ describe('Workshop release output', () => {
       '/hub',
       '/hub/models',
       '/hub/models/[slug]',
+      '/hub/models/local/[slug]',
       '/hub/workflows',
       '/hub/apps',
       '/hub/workflows/[slug]',

@@ -4397,6 +4397,9 @@
     }
   },
   "workshop": {
+    "file": {
+      "usedBy": "使用它的工作流"
+    },
     "api": {
       "body": "使用试用区的输入调用 Comfy Router。运行前请设置 COMFY_API_KEY，并检查本地文件路径。",
       "copied": "已复制",
@@ -5015,7 +5018,6 @@
       "tryCloud": "在 Cloud 中体验",
       "explore": "探索更多可能",
       "tryIt": "试用",
-      "tryItHint": "在 Comfy Cloud 上运行。页面打开时已载入示例；修改输入后即可运行。",
       "paths": "使用此工作流的方式",
       "downloadWorkflow": "下载工作流",
       "runInCloud": "在 Cloud 中运行",

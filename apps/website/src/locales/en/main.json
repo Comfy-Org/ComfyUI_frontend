@@ -13,6 +13,9 @@
     }
   },
   "workshop": {
+    "file": {
+      "usedBy": "Workflows that use it"
+    },
     "meta": {
       "title": "Browse Models - Comfy",
       "description": "Browse and run the latest AI image, video and audio models on Comfy."
@@ -631,7 +634,6 @@
       "tryCloud": "Try in Cloud",
       "explore": "Explore the possibilities",
       "tryIt": "Try it",
-      "tryItHint": "Runs in Comfy Cloud. It opens with an example loaded; change the inputs, then run.",
       "paths": "Ways to use this workflow",
       "downloadWorkflow": "Download workflow",
       "runInCloud": "Run in Cloud",

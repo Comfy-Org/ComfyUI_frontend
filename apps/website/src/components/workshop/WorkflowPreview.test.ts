@@ -161,7 +161,7 @@ describe('WorkflowPreview', () => {
     })
     expect(encoder).toHaveAttribute(
       'href',
-      '/p/supported-models/gemma-3-12b-it-fp4-mixed/'
+      '/hub/models/local/gemma-3-12b-it-fp4-mixed/'
     )
     expect(encoder).toHaveTextContent('Text encoder')
     expect(files).toHaveTextContent('LTX23_video_vae_bf16.safetensors')

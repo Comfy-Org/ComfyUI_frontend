@@ -112,16 +112,23 @@ describe('writeFullText', () => {
       join(root, 'p', 'supported-models', 'flux.md'),
       twin('Flux in ComfyUI', 'Model.', '# Flux in ComfyUI')
     )
+    await mkdir(join(root, 'hub', 'models', 'local'), { recursive: true })
+    await writeFile(
+      join(root, 'hub', 'models', 'local', 'ae.md'),
+      twin('ae in ComfyUI', 'Model file.', '# ae in ComfyUI')
+    )
 
     await writeFullText(root, [
       ...twins,
       '/p/supported-models.md',
-      '/p/supported-models/flux.md'
+      '/p/supported-models/flux.md',
+      '/hub/models/local/ae.md'
     ])
 
     const full = await readFile(join(root, 'llms-full.txt'), 'utf8')
     expect(full).not.toContain('Flux in ComfyUI')
     expect(full).not.toContain('# Supported Models')
+    expect(full).not.toContain('ae in ComfyUI')
   })
 })
 

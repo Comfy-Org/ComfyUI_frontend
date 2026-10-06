@@ -495,14 +495,14 @@ describe('WorkshopModelsGrid', () => {
       }
     )
 
-    it('links each open-weight model to its supported-models page', async () => {
+    it('links each open-weight model to its model file page', async () => {
       render(WorkshopModelsGrid, { props: { models } })
       await chooseAccess('Download')
 
       const [first] = openWeightCards()
       expect(first).toHaveAttribute(
         'href',
-        `/p/supported-models/${OPEN_WEIGHT_MODELS[0].slug}/`
+        `/hub/models/local/${OPEN_WEIGHT_MODELS[0].slug}/`
       )
       expect(
         within(first).getByTestId('model-access-badges')
@@ -522,7 +522,7 @@ describe('WorkshopModelsGrid', () => {
       ).toEqual(
         OPEN_WEIGHT_MODELS.filter(
           (model) => model.useCase === 'edit-images'
-        ).map((model) => `/p/supported-models/${model.slug}/`)
+        ).map((model) => `/hub/models/local/${model.slug}/`)
       )
     })
 

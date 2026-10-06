@@ -655,7 +655,7 @@ test('the workflow facts link the model files it needs and its way back', async 
   await files.scrollIntoViewIfNeeded()
   await expect(
     files.getByRole('link', { name: /qwen_image_vae\.safetensors/ })
-  ).toHaveAttribute('href', '/p/supported-models/qwen-image-vae/')
+  ).toHaveAttribute('href', '/hub/models/local/qwen-image-vae/')
 })
 
 test('a workflow card spends the tag line on its name', async ({
