@@ -1,0 +1,47 @@
+---
+import SocialProofBarSection from '@/components/common/SocialProofBarSection.vue'
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import { absoluteUrl } from '@/utils/jsonLd'
+import ClosingCtaSection from '@/templates/vfx/ClosingCtaSection.vue'
+import FAQSection from '@/templates/vfx/FAQSection.vue'
+import HeroSection from '@/templates/vfx/HeroSection.vue'
+import TasksSection from '@/templates/vfx/TasksSection.vue'
+import WhySection from '@/templates/vfx/WhySection.vue'
+import WorkflowsSection from '@/templates/vfx/WorkflowsSection.vue'
+
+// Paid landing page for VFX teams: noindex, and absent from the sitemap, the
+// navigation, and the footer. Built from existing blocks and the `vfx` copy.
+const locale = 'zh-CN'
+---
+
+<BaseLayout
+  title={Astro.locals.t('vfx.meta.title')}
+  description={Astro.locals.t('vfx.meta.description')}
+  pageType="WebPage"
+  noindex
+  breadcrumbs={[
+    {
+      name: Astro.locals.t('breadcrumb.home'),
+      url: absoluteUrl(Astro.site, '/zh-CN')
+    },
+    { name: Astro.locals.t('vfx.hero.eyebrow') }
+  ]}
+>
+  <div data-vfx-cta>
+    <HeroSection client:load locale={locale} />
+  </div>
+  <TasksSection locale={locale} />
+  <WhySection locale={locale} />
+  <WorkflowsSection locale={locale} />
+  <SocialProofBarSection />
+  <FAQSection client:visible locale={locale} />
+  <div data-vfx-cta>
+    <ClosingCtaSection locale={locale} />
+  </div>
+</BaseLayout>
+
+<script>
+  import { trackVfxCtaClicks } from '@/templates/vfx/trackCtaClicks'
+
+  trackVfxCtaClicks()
+</script>

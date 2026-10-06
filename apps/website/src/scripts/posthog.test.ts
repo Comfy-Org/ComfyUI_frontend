@@ -756,6 +756,31 @@ describe('captureDownloadClick', () => {
   })
 })
 
+describe('captureVfxLandingCtaClicked', () => {
+  beforeEach(() => {
+    vi.resetModules()
+  })
+
+  it('captures the VFX landing CTA event without properties', async () => {
+    const { initPostHog, captureVfxLandingCtaClicked } =
+      await import('./posthog')
+    initPostHog()
+    captureVfxLandingCtaClicked()
+
+    expect(hoisted.mockCapture).toHaveBeenCalledWith(
+      'website:vfx_landing_cta_clicked',
+      undefined
+    )
+  })
+
+  it('does not capture before PostHog is initialized', async () => {
+    const { captureVfxLandingCtaClicked } = await import('./posthog')
+    captureVfxLandingCtaClicked()
+
+    expect(hoisted.mockCapture).not.toHaveBeenCalled()
+  })
+})
+
 describe('captureCliConnectionTabClick', () => {
   beforeEach(() => {
     vi.resetModules()

@@ -4447,6 +4447,108 @@
       "title": "Build your custom workflows with Comfy experts."
     }
   },
+  "vfx": {
+    "meta": {
+      "title": "ComfyUI for VFX teams {'|'} Comfy",
+      "description": "Control AI inside a real VFX pipeline. Cleanplates, sky replacement, de-aging, relighting support, and restoration in ComfyUI graphs your team can inspect, repeat, and run on your own infrastructure."
+    },
+    "hero": {
+      "eyebrow": "VFX",
+      "title": "Control AI inside\na real VFX pipeline.",
+      "subtitle": "ComfyUI turns AI models into node graphs your team can inspect, version, and repeat. Run shot work on your own infrastructure or in the cloud, and keep every parameter in your hands.",
+      "cta": "REQUEST DEMO",
+      "videoLabel": "ComfyUI cleanplate walkthrough"
+    },
+    "tasks": {
+      "eyebrow": "VFX TASKS",
+      "heading": "The shot work your team already does.",
+      "description": "Build each task as a ComfyUI graph, then run it again on the next shot.",
+      "watchCta": "WATCH THE TUTORIAL",
+      "cleanplate": {
+        "title": "Cleanplates and object removal",
+        "description": "Remove unwanted objects from a shot and rebuild the plate behind them."
+      },
+      "sky": {
+        "title": "Sky replacement",
+        "description": "Swap the sky in a shot with a graph you can open, adjust, and rerun."
+      },
+      "deaging": {
+        "title": "De-aging and face work",
+        "description": "Work on faces across a full performance, with every step visible in the graph."
+      },
+      "compositing": {
+        "title": "Relighting and compositing support",
+        "description": "Adjust lighting on a plate, and build the mattes and utilities that feed your compositing team."
+      },
+      "upscaling": {
+        "title": "Upscaling and restoration",
+        "description": "Raise resolution and clean up footage and stills inside the same graph."
+      },
+      "custom": {
+        "title": "Your shot, your pipeline",
+        "description": "Bring a task your team has not solved yet. Comfy engineers will map how to approach it in ComfyUI.",
+        "cta": "TALK TO COMFY"
+      }
+    },
+    "why": {
+      "heading": "Why studios build on Comfy.",
+      "control": {
+        "title": "Control and repeatability",
+        "description": "A workflow is a node graph saved as one JSON file. Every step is visible, so a shot you solved once can be run again."
+      },
+      "open": {
+        "title": "Open source and extensible",
+        "description": "ComfyUI is open source, with a community of 60,000+ nodes. Add custom nodes for the tools your pipeline needs."
+      },
+      "infrastructure": {
+        "title": "Your infrastructure or the cloud",
+        "description": "Run Comfy Workflows locally, on infrastructure you control, or on Comfy Cloud. For local deployments, workflows and outputs stay where they run."
+      },
+      "api": {
+        "title": "API integration",
+        "description": "Deploy any workflow as an endpoint with the Comfy API and call it from your own apps and pipelines."
+      },
+      "footnote": "Comfy does not train on customer data, and our SOC 2 Type II audit is complete.",
+      "trustCenterCta": "VIEW TRUST CENTER"
+    },
+    "workflows": {
+      "title": "VFX workflows, ready to run",
+      "skyReplacement": {
+        "description": "Replace the sky in a shot with a workflow you can open and run."
+      },
+      "frameAdjustments": {
+        "description": "Work on the frames of a shot with a workflow you can open and run."
+      },
+      "tutorials": {
+        "label": "VFX tutorials",
+        "text": "Step-by-step walkthroughs for cleanplates, sky replacement, de-aging, mattes, and frame adjustments.",
+        "cta": "WATCH THE TUTORIALS"
+      },
+      "library": {
+        "label": "Comfy Workflows",
+        "text": "Browse more ready-to-use workflows from the Comfy community.",
+        "cta": "BROWSE WORKFLOWS"
+      }
+    },
+    "faq": {
+      "title": "Questions from VFX teams.",
+      "q1": "Can ComfyUI run on our own infrastructure?",
+      "a1": "Yes. ComfyUI is open source and runs locally, and Comfy Workflows can run on infrastructure you control. You can also run on Comfy Cloud or through the Comfy API. For local deployments, workflows and outputs stay where they run.",
+      "q2": "Does it fit our pipeline?",
+      "a2": "A ComfyUI workflow is a node graph saved as a JSON file, so it can be versioned and repeated shot after shot. The Comfy API exposes any workflow as an endpoint your own tools can call, and custom nodes extend ComfyUI where your pipeline needs it. Tell us about your pipeline and Comfy engineers will map how it fits.",
+      "q3": "How do we get started?",
+      "a3": "Request a demo and tell us the task you want to solve, such as a cleanplate or a sky replacement. Comfy engineers will map your deployment, your pipeline, and the right path to your first workflow.",
+      "q4": "Can we use models commercially?",
+      "a4": "On Comfy Cloud, every model is licensed for commercial use. On local, licenses vary by provider and commercial terms are available on request.",
+      "q5": "How does Comfy support security review?",
+      "a5": "SSO and a DPA are available. Comfy does not train on customer data, and our SOC 2 Type II audit is complete. Review current controls in the [Comfy Trust Center]({trustCenter})."
+    },
+    "closing": {
+      "title": "Bring one shot your team has not solved yet.",
+      "subtitle": "Tell us the task, the pipeline, and where the work has to run. Comfy engineers will map the deployment and the right path to a working ComfyUI workflow.",
+      "cta": "REQUEST DEMO"
+    }
+  },
   "platform": {
     "meta": {
       "title": "Developer Platform",
