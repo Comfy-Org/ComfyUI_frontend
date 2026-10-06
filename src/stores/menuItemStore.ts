@@ -1,19 +1,24 @@
 import { whenever } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import type { MenuItem } from 'primevue/menuitem'
 import { ref } from 'vue'
 
+import type { MenuItem, MenuItemAction } from '@/components/ui/menu/types'
 import { CORE_MENU_COMMANDS } from '@/constants/coreMenuCommands'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { ComfyExtension } from '@/types/comfy'
 
 import { useCommandStore } from './commandStore'
 
+export interface CommandMenuItem extends MenuItemAction {
+  commandId: string
+}
+
+export type AppMenuItem = MenuItem | CommandMenuItem
+
 export const useMenuItemStore = defineStore('menuItem', () => {
   const canvasStore = useCanvasStore()
   const commandStore = useCommandStore()
-  const menuItems = ref<MenuItem[]>([])
-  const menuItemHasActiveStateChildren = ref<Record<string, boolean>>({})
+  const menuItems = ref<AppMenuItem[]>([])
   const hasSeenLinear = ref(false)
 
   whenever(
@@ -22,15 +27,18 @@ export const useMenuItemStore = defineStore('menuItem', () => {
     { immediate: true, once: true }
   )
 
-  const registerMenuGroup = (path: string[], items: MenuItem[]) => {
+  const registerMenuGroup = (path: string[], items: AppMenuItem[]) => {
     let currentLevel = menuItems.value
 
     // Traverse the path, creating nodes if necessary
     for (let i = 0; i < path.length; i++) {
       const segment = path[i]
-      let found = currentLevel.find((item) => item.label === segment)
+      const foundIndex = currentLevel.findIndex(
+        (item) => item.label === segment
+      )
+      let found = currentLevel[foundIndex]
 
-      if (!found) {
+      if (foundIndex === -1) {
         // Create a new node if it doesn't exist
         found = {
           label: segment,
@@ -40,9 +48,10 @@ export const useMenuItemStore = defineStore('menuItem', () => {
         currentLevel.push(found)
       }
 
-      // Ensure the found item has an 'items' array
       if (!found.items) {
-        found.items = []
+        const { checked, command, radioGroup, separator, ...metadata } = found
+        found = { ...metadata, items: [] }
+        currentLevel[foundIndex] = found
       }
 
       // Move to the next level
@@ -56,29 +65,29 @@ export const useMenuItemStore = defineStore('menuItem', () => {
     }
     // Add the new items to the last level
     currentLevel.push(...items)
-
-    // Store if any of the children have active state as we will hide the icon if they do
-    const parentPath = path.join('.')
-    if (!menuItemHasActiveStateChildren.value[parentPath]) {
-      menuItemHasActiveStateChildren.value[parentPath] = items.some(
-        (item) => item.comfyCommand?.active
-      )
-    }
   }
-  function commandIdToMenuItem(commandId: string, path?: string[]): MenuItem {
+  function commandIdToMenuItem(commandId: string): CommandMenuItem {
     const command = commandStore.getCommand(commandId)
     return {
       command: () => commandStore.execute(command.id),
       label: command.menubarLabel,
-      icon: command.icon,
+      icon: command.id === 'Comfy.NewBlankWorkflow' ? undefined : command.icon,
       tooltip: command.tooltip,
-      comfyCommand: command,
-      parentPath: path?.join('.')
+      commandId: command.id,
+      checked: command.active,
+      shortcut: () => command.keybinding?.combo.toString(),
+      pressAndHoldInterval:
+        command.id === 'Comfy.Canvas.ZoomIn' ||
+        command.id === 'Comfy.Canvas.ZoomOut'
+          ? 50
+          : undefined,
+      trailingIcon:
+        command.id === 'Comfy.NewBlankWorkflow' ? command.icon : undefined
     }
   }
 
   const registerCommands = (path: string[], commandIds: string[]) => {
-    const items = commandIds.map((id) => commandIdToMenuItem(id, path))
+    const items = commandIds.map(commandIdToMenuItem)
     registerMenuGroup(path, items)
   }
 
@@ -112,7 +121,6 @@ export const useMenuItemStore = defineStore('menuItem', () => {
     registerCommands,
     loadExtensionMenuCommands,
     registerCoreMenuCommands,
-    menuItemHasActiveStateChildren,
     hasSeenLinear,
     commandIdToMenuItem
   }
