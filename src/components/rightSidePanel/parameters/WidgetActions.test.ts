@@ -96,7 +96,8 @@ describe('WidgetActions', () => {
   async function renderWidgetActions(
     widget: IBaseWidget,
     node: LGraphNode,
-    extraProps: Record<string, unknown> = {}
+    extraProps: Record<string, unknown> = {},
+    { openMenu = true }: { openMenu?: boolean } = {}
   ) {
     const user = userEvent.setup()
     const onResetToDefault = vi.fn()
@@ -112,8 +113,13 @@ describe('WidgetActions', () => {
         plugins: [i18n]
       }
     })
-    await user.click(screen.getByTestId('widget-actions-menu-button'))
-    await screen.findByRole('menu')
+    // The standalone "Hide input" button sits outside the dropdown and gets
+    // aria-hidden while the (modal) dropdown is open, so callers that only
+    // need that button skip opening the menu.
+    if (openMenu) {
+      await user.click(screen.getByTestId('widget-actions-menu-button'))
+      await screen.findByRole('menu')
+    }
     return { user, onResetToDefault }
   }
 
@@ -334,7 +340,12 @@ describe('WidgetActions', () => {
     const { host, interiorNode, interiorWidget, promotedWidget } =
       setupLinkedPromotedWidget()
 
-    const { user } = renderWidgetActions(promotedWidget, host, { host })
+    const { user } = await renderWidgetActions(
+      promotedWidget,
+      host,
+      { host },
+      { openMenu: false }
+    )
 
     await user.click(screen.getByRole('button', { name: /Hide input/ }))
 
@@ -390,9 +401,12 @@ describe('WidgetActions', () => {
     const { outerHost, innerHost, outerPromotedWidget } =
       setupNestedLinkedPromotedWidget()
 
-    const { user } = renderWidgetActions(outerPromotedWidget, outerHost, {
-      host: outerHost
-    })
+    const { user } = await renderWidgetActions(
+      outerPromotedWidget,
+      outerHost,
+      { host: outerHost },
+      { openMenu: false }
+    )
 
     await user.click(screen.getByRole('button', { name: /Hide input/ }))
 
@@ -409,7 +423,7 @@ describe('WidgetActions', () => {
     expect(promotedInputWidgets(innerHost)).toHaveLength(1)
   })
 
-  it('does not offer "Hide input" without a host', () => {
+  it('does not offer "Hide input" without a host', async () => {
     const widget = createMockWidget()
     const node = fromAny<LGraphNode, unknown>({
       id: 1,
@@ -422,19 +436,19 @@ describe('WidgetActions', () => {
           : undefined
     })
 
-    renderWidgetActions(widget, node)
+    await renderWidgetActions(widget, node, {}, { openMenu: false })
 
     expect(
       screen.queryByRole('button', { name: /Hide input/ })
     ).not.toBeInTheDocument()
   })
 
-  it('does not offer "Hide input" when the widget is not linked', () => {
+  it('does not offer "Hide input" when the widget is not linked', async () => {
     const widget = createMockWidget()
     const node = createMockNode()
     const host = fromAny<SubgraphNode, unknown>({ id: 2 })
 
-    renderWidgetActions(widget, node, { host })
+    await renderWidgetActions(widget, node, { host }, { openMenu: false })
 
     expect(
       screen.queryByRole('button', { name: /Hide input/ })

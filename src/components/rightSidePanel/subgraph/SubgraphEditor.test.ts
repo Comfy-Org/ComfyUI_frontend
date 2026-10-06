@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-import { markRaw, nextTick } from 'vue'
+import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import {
@@ -296,7 +296,7 @@ describe('SubgraphEditor', () => {
     const sourceWidget = sourceNode.addWidget('text', 'first', '', () => {})
     sourceInput.widget = { name: sourceWidget.name }
     promoteValueWidgetViaSubgraphInput(host, sourceNode, sourceWidget)
-    useCanvasStore().selectedItems = [markRaw(host)]
+    setCanvasSelection([host])
 
     render(SubgraphEditor, {
       container: document.body.appendChild(document.createElement('div')),
