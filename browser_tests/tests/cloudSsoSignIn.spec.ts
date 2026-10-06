@@ -4,7 +4,6 @@ import type { Page, Request } from '@playwright/test'
 import type { ErrorResponse, SsoDiscoverResponse } from '@comfyorg/ingest-types'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import type { operations } from '@/types/comfyRegistryTypes'
 
 import {
@@ -23,7 +22,6 @@ import {
   mockCloudBoot,
   preselectCloudUser
 } from '@e2e/fixtures/utils/cloudBootMocks'
-import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 const APP_ROOT = new RegExp(
@@ -38,9 +36,8 @@ function isPath(request: Request, pathname: string) {
 }
 
 /**
- * The cloud login page's SSO entry, with `sso_enabled` patched into the
- * backend's own `/api/features` answer and ingest's SSO endpoints mocked at
- * the network layer. Ingest's `/api/auth/sso/start` answers with a redirect
+ * The cloud login page's SSO entry, with `sso_enabled` served as the remote
+ * config and ingest's SSO endpoints mocked at the network layer. Ingest's `/api/auth/sso/start` answers with a redirect
  * to WorkOS; here it is fulfilled in place so the navigation is observed and
  * never followed.
  */
@@ -68,13 +65,7 @@ const test = comfyPageFixture.extend<{
   page: async ({ page, ssoEnabled, discoverRequests, ssoStarts }, use) => {
     void discoverRequests
     void ssoStarts
-    await mockCloudBoot(page, { features: {} })
-    await page.route('**/api/features', async (route) => {
-      const backendFeatures: RemoteConfig = await (await route.fetch()).json()
-      await route.fulfill(
-        jsonRoute({ ...backendFeatures, sso_enabled: ssoEnabled })
-      )
-    })
+    await mockCloudBoot(page, { features: { sso_enabled: ssoEnabled } })
     await preselectCloudUser(page)
     await page.route('**/customers', (route) => {
       if (route.request().method() !== 'POST') return route.fallback()
@@ -87,7 +78,6 @@ const test = comfyPageFixture.extend<{
       route.fulfill({ status: 200, contentType: 'text/html', body: '' })
     )
     await use(page)
-    await page.unrouteAll({ behavior: 'wait' })
   },
   cloudAuth: async ({ page }, use) => {
     await use(new CloudAuthHelper(page))
