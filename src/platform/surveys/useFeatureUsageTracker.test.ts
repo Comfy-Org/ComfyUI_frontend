@@ -106,6 +106,29 @@ describe('useFeatureUsageTracker', () => {
     expect(tracker.useCount.value).toBe(0)
   })
 
+  it('preserves stored features when reset persistence fails', () => {
+    const tracker = useFeatureUsageTracker('failed-reset-merge')
+    const storedFeature = useFeatureUsageTracker('stored-during-reset')
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        'stored-during-reset': {
+          useCount: 7,
+          firstUsed: 1_000,
+          lastUsed: 2_000
+        }
+      })
+    )
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new DOMException('Storage quota exceeded', 'QuotaExceededError')
+    })
+
+    tracker.reset()
+
+    expect(storedFeature.useCount.value).toBe(7)
+  })
+
   it('tracks multiple features independently', () => {
     const featureA = useFeatureUsageTracker('feature-a')
     const featureB = useFeatureUsageTracker('feature-b')

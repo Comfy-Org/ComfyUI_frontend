@@ -183,7 +183,7 @@ function persistUsageData(
 
 function resetUsageData(currentUsageData: FeatureUsageRecord) {
   let oldValue: string | null = null
-  let usageData: FeatureUsageRecord
+  let usageData: FeatureUsageRecord | undefined
 
   try {
     oldValue = localStorage.getItem(STORAGE_KEY)
@@ -197,7 +197,7 @@ function resetUsageData(currentUsageData: FeatureUsageRecord) {
       errorType: 'error_resetting_feature_usage',
       surface: 'platform'
     })
-    usageData = applyPendingResets(currentUsageData)
+    usageData ??= applyPendingResets(currentUsageData)
   }
 
   dispatchStorageUpdate(oldValue, usageData)
