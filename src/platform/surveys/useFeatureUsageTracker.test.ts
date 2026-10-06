@@ -500,6 +500,37 @@ describe('useFeatureUsageTracker', () => {
     expect(stored[featureId]?.useCount).toBe(2)
   })
 
+  it('refreshes the cutoff when a repeated reset cannot read storage', () => {
+    vi.setSystemTime(1_000)
+    const featureId = 'repeated-unreadable-reset-cutoff'
+    const tracker = useFeatureUsageTracker(featureId)
+    const getItem = vi.spyOn(localStorage, 'getItem').mockImplementation(() => {
+      throw new DOMException('Storage access denied', 'SecurityError')
+    })
+    tracker.reset()
+    getItem.mockRestore()
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        [featureId]: { useCount: 1, firstUsed: 400_000, lastUsed: 400_000 }
+      })
+    )
+    vi.setSystemTime(500_000)
+    const repeatedGetItem = vi
+      .spyOn(localStorage, 'getItem')
+      .mockImplementation(() => {
+        throw new DOMException('Storage access denied', 'SecurityError')
+      })
+    tracker.reset()
+    repeatedGetItem.mockRestore()
+    vi.setSystemTime(600_000)
+
+    useFeatureUsageTracker('repeated-reset-cutoff-trigger').trackUsage()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored).not.toHaveProperty(featureId)
+  })
+
   it('reconciles external post-reset usage before its storage event', () => {
     const featureId = 'usage-before-reset-event'
     const tracker = useFeatureUsageTracker(featureId)

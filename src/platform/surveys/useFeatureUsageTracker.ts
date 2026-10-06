@@ -628,9 +628,10 @@ export function useFeatureUsageTracker(featureId: string) {
 
   function reset() {
     pendingResets.add(featureId)
-    if (!pendingResetUsage.has(featureId)) {
-      pendingResetUsage.set(featureId, { requestedAt: Date.now() })
-    }
+    pendingResetUsage.set(featureId, {
+      ...pendingResetUsage.get(featureId),
+      requestedAt: Date.now()
+    })
     pendingUsageData.value = withoutFeature(pendingUsageData.value, featureId)
     resetUsageData(featureId)
   }
