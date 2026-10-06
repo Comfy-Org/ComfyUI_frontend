@@ -144,7 +144,7 @@ defineExpose({
           v-if="offerDownloadAndOpen"
           variant="outline"
           size="lg"
-          :aria-busy="openPending"
+          :aria-disabled="openPending"
           @click="emit('open-template')"
         >
           {{ t('templateWorkflows.detail.openNow') }}

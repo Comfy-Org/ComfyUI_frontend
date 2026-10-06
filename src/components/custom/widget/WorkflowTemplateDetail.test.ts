@@ -148,6 +148,17 @@ describe('WorkflowTemplateDetail', () => {
     expect(screen.getByRole('button', { name: 'Open now' })).toBeDisabled()
   })
 
+  it('marks Open now unavailable while opening without dropping its focus', async () => {
+    const result = renderDetail({ modelSetup: { state: 'startable' } })
+
+    const openNow = screen.getByRole('button', { name: 'Open now' })
+    openNow.focus()
+    await result.rerender({ openPending: true })
+
+    expect(openNow).toHaveAttribute('aria-disabled', 'true')
+    expect(openNow).toHaveFocus()
+  })
+
   it('keeps Open now available while offering Download models & open', async () => {
     const user = userEvent.setup()
     const result = renderDetail({ modelSetup: { state: 'startable' } })
