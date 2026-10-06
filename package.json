@@ -167,8 +167,8 @@
     "zod-validation-error": "catalog:"
   },
   "devDependencies": {
+    "@comfyorg/code-quality": "workspace:*",
     "@comfyorg/ingest-types": "workspace:*",
-    "@comfyorg/tooling-config": "workspace:*",
     "@comfyorg/website": "workspace:*",
     "@eslint/js": "catalog:",
     "@intlify/eslint-plugin-vue-i18n": "catalog:",

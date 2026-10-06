@@ -1,12 +1,12 @@
 {
-  "name": "@comfyorg/tooling-config",
+  "name": "@comfyorg/code-quality",
   "version": "0.0.1",
-  "description": "Shared Comfy tooling configuration",
+  "description": "Shared Comfy code quality configuration",
   "license": "GPL-3.0-only",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Comfy-Org/ComfyUI_frontend.git",
-    "directory": "packages/tooling-config"
+    "directory": "packages/code-quality"
   },
   "files": [
     "fallow",

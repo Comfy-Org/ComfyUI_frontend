@@ -24,7 +24,7 @@ const config: KnipConfig = {
       ],
       ignore: ['scripts/registry-census/detection-proof/**'],
       // Fallow loads this preset through its native npm: config resolver.
-      ignoreDependencies: ['@comfyorg/tooling-config']
+      ignoreDependencies: ['@comfyorg/code-quality']
     },
     'packages/account-core': {
       project: ['src/**/*.{js,ts}']

@@ -13,7 +13,7 @@ on:
             account-ui,
             billing-contract,
             ingest-types,
-            tooling-config
+            code-quality
           ]
       version:
         description: 'Version to publish (e.g., 1.0.0-alpha.1)'
@@ -81,7 +81,7 @@ jobs:
             account-ui) NPM_NAME='@comfyorg/account-ui' ;;
             billing-contract) NPM_NAME='@comfyorg/billing-contract' ;;
             ingest-types) NPM_NAME='@comfyorg/ingest-types' ;;
-            tooling-config) NPM_NAME='@comfyorg/tooling-config' ;;
+            code-quality) NPM_NAME='@comfyorg/code-quality' ;;
             *)
               echo "::error title=Unknown package::'$PACKAGE' is not a releasable package" >&2
               exit 1
@@ -194,8 +194,8 @@ jobs:
         run: pnpm --filter @comfyorg/account-core run smoke:pack
 
       - name: Test the packed Fallow preset
-        if: inputs.package == 'tooling-config'
-        run: pnpm --filter @comfyorg/tooling-config test
+        if: inputs.package == 'code-quality'
+        run: pnpm --filter @comfyorg/code-quality test
 
       - name: Check if version already on npm
         id: check_npm

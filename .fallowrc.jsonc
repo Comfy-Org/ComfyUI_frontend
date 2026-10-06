@@ -1,6 +1,6 @@
 {
   "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/v3.24.1/schema.json",
-  "extends": "npm:@comfyorg/tooling-config/fallow",
+  "extends": "npm:@comfyorg/code-quality/fallow",
 
   // Staged adoption: the residual dead-code, complexity, and duplication findings
   // are inherited legacy (litegraph extension-API members, store members, intra-lib
@@ -60,7 +60,7 @@
 
   "ignoreDependencies": [
     // Fallow 3.24.1 does not credit npm: extends as a dependency use.
-    "@comfyorg/tooling-config",
+    "@comfyorg/code-quality",
     // Icon sets loaded at build time, never via a JS import: unplugin-icons
     // for `i-prefix:name` components, design-system's Tailwind plugins for
     // `icon-[prefix--name]` classes. Only lucide has a dedicated package.

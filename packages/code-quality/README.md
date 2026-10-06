@@ -1,7 +1,7 @@
-# @comfyorg/tooling-config
+# @comfyorg/code-quality
 
 Shared tooling policy for Comfy repositories. The Fallow preset is exposed at
-`@comfyorg/tooling-config/fallow`; future tools can have their own subpaths.
+`@comfyorg/code-quality/fallow`; future tools can have their own subpaths.
 The preset contains no code. Fallow 3.24.1 resolves npm subpaths as literal files,
 so the extensionless `fallow` file uses TOML to extend `fallow.json`. The package
 export points to the same JSON policy for consumers that use Node resolution.
@@ -11,20 +11,20 @@ export points to the same JSON policy for consumers that use Node resolution.
 Install the preset and the tested CLI version:
 
 ```sh
-npm install --save-dev --save-exact @comfyorg/tooling-config@0.0.1 fallow@3.24.1
+npm install --save-dev --save-exact @comfyorg/code-quality@0.0.1 fallow@3.24.1
 ```
 
 Add `extends` to the repository's existing `.fallowrc.jsonc`:
 
 ```json
 {
-  "extends": "npm:@comfyorg/tooling-config/fallow",
-  "ignoreDependencies": ["@comfyorg/tooling-config"]
+  "extends": "npm:@comfyorg/code-quality/fallow",
+  "ignoreDependencies": ["@comfyorg/code-quality"]
 }
 ```
 
 Fallow 3.24.1 does not credit the package dependency when loading an npm subpath.
-Add only `@comfyorg/tooling-config` to the local `ignoreDependencies` array to
+Add only `@comfyorg/code-quality` to the local `ignoreDependencies` array to
 avoid that false unused-dependency warning. Knip consumers need the same narrow
 exception because Knip does not follow Fallow's `npm:` references.
 
@@ -51,11 +51,11 @@ and [rule severity](https://fallow.tools/docs/configuration/rules/).
 
 ## Development and release
 
-Run `pnpm --filter @comfyorg/tooling-config test` to pack the package, install it
+Run `pnpm --filter @comfyorg/code-quality test` to pack the package, install it
 into clean npm consumers offline, and exercise the installed preset with the
 pinned Fallow CLI.
 
 Publish through the repository's **Publish Package** workflow after merge to
-`main`, selecting `tooling-config`, version `0.0.1`, and dist-tag `latest`.
+`main`, selecting `code-quality`, version `0.0.1`, and dist-tag `latest`.
 The first release needs that manual dispatch; subsequent version bumps use the
 existing **Version Bump Package** and release-label merge workflow.

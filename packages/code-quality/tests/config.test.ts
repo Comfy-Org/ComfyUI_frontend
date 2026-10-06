@@ -51,7 +51,7 @@ const test = baseTest.extend<{
       write(
         '.fallowrc.json',
         JSON.stringify({
-          extends: 'npm:@comfyorg/tooling-config/fallow',
+          extends: 'npm:@comfyorg/code-quality/fallow',
           entry: ['src/main.ts'],
           ...local
         })
@@ -137,7 +137,7 @@ test('retains local support roots and blocks runtime development dependencies', 
       name: 'consumer',
       private: true,
       devDependencies: {
-        '@comfyorg/tooling-config': '0.0.1',
+        '@comfyorg/code-quality': '0.0.1',
         'build-only': '1.0.0'
       }
     })
