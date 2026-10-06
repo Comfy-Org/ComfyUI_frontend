@@ -40,12 +40,25 @@ describe('TreeExplorerTreeNode', () => {
       }
     })
 
-    const treeNode = screen.getByTestId('tree-node-1')
-    expect(treeNode).toBeInTheDocument()
-    expect(treeNode).toHaveClass('tree-folder')
-    expect(treeNode).not.toHaveClass('tree-leaf')
+    expect(screen.getByTestId('tree-node-1')).toBeInTheDocument()
     expect(screen.getByText('Test Node')).toBeInTheDocument()
-    expect(screen.getByText('3')).toBeInTheDocument()
+    expect(screen.getByTestId('tree-leaf-count')).toHaveTextContent('3')
+  })
+
+  it('shows no leaf count on a leaf', () => {
+    render(TreeExplorerTreeNode, {
+      props: { node: { ...mockNode, leaf: true, type: 'node' } },
+      global: {
+        components: { EditableText, Badge },
+        plugins: [getActivePinia()!, i18n],
+        provide: {
+          [InjectKeyHandleEditLabelFunction]: mockHandleEditLabel
+        }
+      }
+    })
+
+    expect(screen.getByText('Test Node')).toBeInTheDocument()
+    expect(screen.queryByTestId('tree-leaf-count')).not.toBeInTheDocument()
   })
 
   it('makes node label editable when isEditingLabel is true', () => {

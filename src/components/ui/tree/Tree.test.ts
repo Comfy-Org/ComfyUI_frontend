@@ -7,7 +7,7 @@ import { createI18n } from 'vue-i18n'
 import Tree from './Tree.vue'
 import TreeItem from './TreeItem.vue'
 
-interface Item extends Record<string, unknown> {
+interface Item {
   key: string
   label: string
   children?: Item[]
@@ -35,7 +35,7 @@ const Harness = defineComponent({
       :get-children="(item) => item.children"
       aria-label="Files"
     >
-      <template #default="{ items: flattenedItems }">
+      <template #default="{ flattenedItems }">
         <TreeItem
           v-for="item in flattenedItems"
           :key="item._id"
@@ -68,23 +68,25 @@ describe('Tree', () => {
   it('toggles a parent from its chevron without selecting it', async () => {
     const user = userEvent.setup()
     renderTree()
-    const folder = screen.getByRole('treeitem', { name: /Folder/ })
+    const folder = screen.getByRole('treeitem', { name: 'Folder' })
 
-    await user.click(within(folder).getByRole('button', { name: 'Expand' }))
+    await user.click(within(folder).getByLabelText('Expand'))
 
     expect(folder).toHaveAttribute('aria-expanded', 'true')
     expect(folder).toHaveAttribute('aria-selected', 'false')
-    expect(within(folder).getByRole('button', { name: 'Collapse' })).toBe(
-      within(folder).getByRole('button')
+    expect(within(folder).getByLabelText('Collapse')).toBe(
+      within(folder).getByRole('button', { hidden: true })
     )
     const leaf = screen.getByRole('treeitem', { name: 'Leaf' })
-    expect(within(leaf).queryByRole('button')).not.toBeInTheDocument()
+    expect(
+      within(leaf).queryByRole('button', { hidden: true })
+    ).not.toBeInTheDocument()
   })
 
   it('selects a row on click without toggling it', async () => {
     const user = userEvent.setup()
     renderTree()
-    const folder = screen.getByRole('treeitem', { name: /Folder/ })
+    const folder = screen.getByRole('treeitem', { name: 'Folder' })
 
     await user.click(folder)
 
@@ -108,7 +110,7 @@ describe('Tree', () => {
             :get-key="(item) => item.key"
             :get-children="(item) => item.children"
           >
-            <template #default="{ items: flattenedItems }">
+            <template #default="{ flattenedItems }">
               <TreeItem
                 v-for="item in flattenedItems"
                 :key="item._id"
@@ -142,7 +144,7 @@ describe('Tree', () => {
 
     expect(input).toHaveFocus()
     expect(input).toHaveValue('Beat')
-    expect(screen.getByRole('treeitem', { name: /Folder/ })).toHaveAttribute(
+    expect(screen.getByRole('treeitem', { name: /^Folder/ })).toHaveAttribute(
       'aria-expanded',
       'false'
     )
@@ -152,7 +154,7 @@ describe('Tree', () => {
     const user = userEvent.setup()
     renderTree()
 
-    const folder = screen.getByRole('treeitem', { name: /Folder/ })
+    const folder = screen.getByRole('treeitem', { name: 'Folder' })
     folder.focus()
     await user.keyboard('{ArrowRight}')
 

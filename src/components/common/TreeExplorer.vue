@@ -5,7 +5,7 @@
     v-model:selected="selectedNode"
     :class="
       cn(
-        'tree-explorer bg-transparent px-2 py-0 [--tree-item-padding:var(--comfy-tree-explorer-item-padding)]',
+        'tree-explorer px-2 [--tree-item-padding:var(--comfy-tree-explorer-item-padding)]',
         className
       )
     "
@@ -13,26 +13,25 @@
     :get-key="(node) => node.key"
     :get-children="(node) => (node.leaf ? undefined : (node.children ?? []))"
   >
-    <template #default="{ items }">
+    <template #default="{ flattenedItems }">
       <UiTreeItem
-        v-for="item in items"
+        v-for="item in flattenedItems"
         :key="item._id"
         class="tree-explorer-item"
         :value="item.value"
         :level="item.level"
         :has-children="item.hasChildren"
-        :data-tree-key="item.value.key"
-        :data-parent-key="item.parentItem?.key"
         :data-parent-label="item.parentItem?.label"
         :data-tree-node-type="item.value.type"
         @select="preventUnboundSelection"
-        @click="onNodeContentClick($event, item.value, item.hasChildren)"
+        @click="onNodeContentClick($event, item.value)"
         @contextmenu="handleContextMenu($event, item.value)"
       >
         <i
           :class="
             cn(item.value.icon, 'tree-explorer-node-icon size-4 shrink-0')
           "
+          :style="{ color: item.value.iconColor }"
         />
         <div class="flex min-w-0 flex-1 items-center">
           <slot
@@ -127,7 +126,6 @@ const expandedNodeKeys = computed({
 })
 const selectedNode = computed({
   get: () => {
-    if (!storeSelectionKeys) return undefined
     const key = Object.keys(selectionKeys.value ?? {}).find(
       (key) => selectionKeys.value?.[key]
     )
@@ -136,9 +134,7 @@ const selectedNode = computed({
       : undefined
   },
   set: (node: RenderedTreeExplorerNode<T> | undefined) => {
-    if (storeSelectionKeys) {
-      selectionKeys.value = node ? { [node.key]: true } : {}
-    }
+    selectionKeys.value = node ? { [node.key]: true } : {}
   }
 })
 const getTreeNodeIcon = (node: TreeExplorerNode<T>) => {
@@ -167,6 +163,7 @@ const fillNodeInfo = (
   return {
     ...node,
     icon: getTreeNodeIcon(node),
+    iconColor: node.getIconColor?.(),
     children,
     type: node.leaf ? 'node' : 'folder',
     totalLeaves,
@@ -176,17 +173,9 @@ const fillNodeInfo = (
 }
 const onNodeContentClick = async (
   e: MouseEvent,
-  node: RenderedTreeExplorerNode<T>,
-  hasChildren: boolean
+  node: RenderedTreeExplorerNode<T>
 ) => {
-  if (node.handleClick) {
-    await node.handleClick(e)
-  } else if (hasChildren) {
-    expandedKeys.value = {
-      ...expandedKeys.value,
-      [node.key]: !expandedKeys.value[node.key]
-    }
-  }
+  await node.handleClick?.(e)
   emit('nodeClick', node, e)
 }
 const menu = ref<InstanceType<typeof ContextMenu> | null>(null)

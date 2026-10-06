@@ -20,14 +20,12 @@ export interface NodeLibrarySection<T = unknown> {
 }
 
 export interface TreeExplorerNode<T = unknown> extends TreeNode<T> {
-  data?: T
-  children?: this[]
-  icon?: string
   /**
    * Function to override what icon to use for the node.
    * Return undefined to fallback to {@link icon} property.
    */
   getIcon?: (this: TreeExplorerNode<T>) => string | undefined
+  getIconColor?: (this: TreeExplorerNode<T>) => string | undefined
   /**
    * Function to override what text to use for the leaf-count badge on a folder node.
    * Return undefined to fallback to default badge text, which is the subtree's leaf count.
@@ -78,6 +76,7 @@ export interface RenderedTreeExplorerNode<
 > extends TreeExplorerNode<T> {
   children?: this[]
   icon: string
+  iconColor?: string
   type: 'folder' | 'node'
   /** Total number of leaves in the subtree */
   totalLeaves: number

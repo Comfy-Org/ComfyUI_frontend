@@ -95,7 +95,7 @@ test.describe('Model library sidebar - asset mode', () => {
     // Only checkpoints is expanded; loras stays collapsed so its leaves are
     // unrendered. A visible lora leaf could then only mean it leaked into
     // the checkpoints bucket.
-    await tab.getFolderRowByLabel('checkpoints').click()
+    await tab.getFolderByLabel('checkpoints').click()
     await expect(tab.getLeafByLabel('v1-5-pruned-emaonly')).toBeVisible()
     await expect(tab.getLeafByLabel('detail_enhancer_v1.2')).toHaveCount(0)
   })
@@ -103,10 +103,10 @@ test.describe('Model library sidebar - asset mode', () => {
   test('Never renders the model_type: tag literal', async ({ comfyPage }) => {
     const tab = comfyPage.menu.modelLibraryTab
 
-    await tab.getFolderRowByLabel('loras').click()
+    await tab.getFolderByLabel('loras').click()
     await expect(tab.getLeafByLabel('detail_enhancer_v1.2')).toBeVisible()
-    await tab.getFolderRowByLabel('checkpoints').click()
-    await tab.getFolderRowByLabel('SDXL').click()
+    await tab.getFolderByLabel('checkpoints').click()
+    await tab.getFolderByLabel('SDXL').click()
     await expect(tab.getLeafByLabel('sd_xl_base_1.0')).toBeVisible()
 
     await expect(tab.modelTree.getByText(/model_type:/)).toHaveCount(0)
@@ -119,7 +119,7 @@ test.describe('Model library sidebar - asset mode', () => {
 
     // The sibling's visibility proves the checkpoints bucket rendered, so
     // the orphan's absence is a real skip rather than a pending load.
-    await tab.getFolderRowByLabel('checkpoints').click()
+    await tab.getFolderByLabel('checkpoints').click()
     await expect(tab.getLeafByLabel('v1-5-pruned-emaonly')).toBeVisible()
     await expect(tab.getLeafByLabel('orphaned_checkpoint')).toHaveCount(0)
   })
@@ -134,9 +134,9 @@ test.describe('Model library sidebar - asset mode', () => {
 
     // Models render from the eager walk on expansion, with loader_path
     // subdirectories as nested folders.
-    await tab.getFolderRowByLabel('checkpoints').click()
+    await tab.getFolderByLabel('checkpoints').click()
     await expect(tab.getLeafByLabel('v1-5-pruned-emaonly')).toBeVisible()
-    await tab.getFolderRowByLabel('SDXL').click()
+    await tab.getFolderByLabel('SDXL').click()
     await expect(tab.getLeafByLabel('sd_xl_base_1.0')).toBeVisible()
   })
 
@@ -147,14 +147,14 @@ test.describe('Model library sidebar - asset mode', () => {
 
     // checkpoints registers ['.safetensors', '.gguf'], so the .gguf model
     // shows even though the legacy fixed list would have hidden it.
-    await tab.getFolderRowByLabel('checkpoints').click()
+    await tab.getFolderByLabel('checkpoints').click()
     // .gguf keeps its extension intentionally: only .safetensors is stripped by
     // the display-name formatter, so this is the correct label to assert.
     await expect(tab.getLeafByLabel('flux_quantized.gguf')).toBeVisible()
 
     // loras is registered match-all (empty allowlist); the FE substitutes
     // the default model-extension list, hiding non-model noise.
-    await tab.getFolderRowByLabel('loras').click()
+    await tab.getFolderByLabel('loras').click()
     await expect(tab.getLeafByLabel('detail_enhancer_v1.2')).toBeVisible()
     await expect(tab.getLeafByLabel('README')).toHaveCount(0)
   })
@@ -184,7 +184,7 @@ test.describe('Model library sidebar - asset mode', () => {
   }) => {
     const tab = comfyPage.menu.modelLibraryTab
 
-    await tab.getFolderRowByLabel('checkpoints').click()
+    await tab.getFolderByLabel('checkpoints').click()
     await expect(tab.getLeafByLabel('v1-5-pruned-emaonly')).toBeVisible()
     await expect(tab.getLeafByLabel('freshly_scanned')).toHaveCount(0)
 
@@ -235,8 +235,8 @@ test.describe('Model library sidebar - asset mode', () => {
     await comfyPage.nodeOps.clearGraph()
     const tab = comfyPage.menu.modelLibraryTab
 
-    await tab.getFolderRowByLabel('checkpoints').click()
-    await tab.getFolderRowByLabel('SDXL').click()
+    await tab.getFolderByLabel('checkpoints').click()
+    await tab.getFolderByLabel('SDXL').click()
     await tab.getLeafByLabel('sd_xl_base_1.0').click()
 
     // The visible ghost preview marks arming as complete, so a zero node
@@ -280,7 +280,7 @@ test.describe('Model library sidebar - asset mode enabled after the tab opens', 
     await comfyPage.featureFlags.setServerFlagsPersistent({ assets: false })
     const tab = comfyPage.menu.modelLibraryTab
     await tab.open()
-    await expect(tab.getFolderRowByLabel('checkpoints')).toBeVisible()
+    await expect(tab.getFolderByLabel('checkpoints')).toBeVisible()
 
     await comfyPage.featureFlags.setServerFlagsPersistent({
       supports_model_type_tags: true,
@@ -318,7 +318,7 @@ test.describe('Model library sidebar - asset mode when the walk fails', () => {
 
     // Registered folders still list from the folder endpoint; only their
     // contents are missing, so the tree shows folders but no model leaves.
-    await expect(tab.getFolderRowByLabel('checkpoints')).toBeVisible()
+    await expect(tab.getFolderByLabel('checkpoints')).toBeVisible()
     await expect(tab.leafNodes).toHaveCount(0)
 
     // Expanding a folder re-attempts the failing load; awaiting that
@@ -330,7 +330,7 @@ test.describe('Model library sidebar - asset mode when the walk fails', () => {
         response.url().includes('/api/assets') &&
         response.request().method() === 'GET'
     )
-    await tab.getFolderRowByLabel('checkpoints').click()
+    await tab.getFolderByLabel('checkpoints').click()
     expect((await retriedWalk).status()).toBe(500)
     await expect(tab.leafNodes).toHaveCount(0)
   })
@@ -418,7 +418,7 @@ test.describe('Model library sidebar - asset mode with a legacy bare tag', () =>
     await comfyPage.menu.modelLibraryTab.open()
     const tab = comfyPage.menu.modelLibraryTab
 
-    await tab.getFolderRowByLabel('checkpoints').click()
+    await tab.getFolderByLabel('checkpoints').click()
     await expect(tab.getLeafByLabel('v1-5-pruned-emaonly')).toBeVisible()
     await expect(tab.getLeafByLabel('legacy_tagged_checkpoint')).toBeVisible()
   })
@@ -462,16 +462,19 @@ test.describe('Model library sidebar - asset mode with a mid-retag twin tag', ()
   }) => {
     const tab = comfyPage.menu.modelLibraryTab
 
-    await tab.getFolderRowByLabel('checkpoints').click()
+    await tab.getFolderByLabel('checkpoints').click()
     await expect(tab.getLeavesByText('mid_retag_checkpoint')).toHaveCount(1)
 
     // loras carries a real model_type:loras asset so the folder itself
     // renders (asset mode hides folders that load with zero models) —
     // otherwise an absent 'loras' row would be ambiguous between "correctly
     // empty" and "never loaded".
-    await tab.getFolderRowByLabel('loras').click()
+    await tab.getFolderByLabel('loras').click()
     await expect(tab.getLeafByLabel('detail_enhancer_v1.2')).toBeVisible()
 
+    await expect(
+      tab.getLeavesInFolder('detail_enhancer_v1.2', 'loras')
+    ).toHaveCount(1)
     await expect(
       tab.getLeavesInFolder('mid_retag_checkpoint', 'loras')
     ).toHaveCount(0)
@@ -510,7 +513,7 @@ test.describe('Model library sidebar - asset mode on bare-tag backends', () => {
     await comfyPage.menu.modelLibraryTab.open()
     const tab = comfyPage.menu.modelLibraryTab
 
-    await tab.getFolderRowByLabel('checkpoints').click()
+    await tab.getFolderByLabel('checkpoints').click()
     await expect(tab.getLeafByLabel('sd_xl_base_1.0')).toBeVisible()
   })
 
@@ -528,7 +531,7 @@ test.describe('Model library sidebar - asset mode on bare-tag backends', () => {
     await comfyPage.menu.modelLibraryTab.open()
     const tab = comfyPage.menu.modelLibraryTab
 
-    await tab.getFolderRowByLabel('checkpoints').click()
+    await tab.getFolderByLabel('checkpoints').click()
     await expect(tab.getLeafByLabel('sd_xl_base_1.0')).toBeVisible()
   })
 })

@@ -81,8 +81,8 @@ import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
-import type { ComfyModelDef, ModelFolder } from '@/stores/modelStore'
-import { ResourceState, useModelStore } from '@/stores/modelStore'
+import type { ComfyModelDef } from '@/stores/modelStore'
+import { ModelFolder, ResourceState, useModelStore } from '@/stores/modelStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import type { TreeExplorerNode, TreeNode } from '@/types/treeExplorerTypes'
 import { isDesktop } from '@/platform/distribution/types'
@@ -142,7 +142,7 @@ const handleSearch = async (query: string) => {
 type ModelOrFolder = ComfyModelDef | ModelFolder
 
 function isModelFolder(value: ModelOrFolder): value is ModelFolder {
-  return 'getModelsFunc' in value
+  return value instanceof ModelFolder
 }
 
 const root = computed<TreeNode<ModelOrFolder>>(() => {
@@ -164,7 +164,7 @@ const root = computed<TreeNode<ModelOrFolder>>(() => {
 const autoExpandedSearchKeys = new Set<string>()
 
 function expandNewSearchFolders(node: TreeNode<ModelOrFolder>) {
-  if (node.leaf || typeof node.key !== 'string') return
+  if (node.leaf) return
   if (!autoExpandedSearchKeys.has(node.key)) {
     autoExpandedSearchKeys.add(node.key)
     expandedKeys.value[node.key] = true

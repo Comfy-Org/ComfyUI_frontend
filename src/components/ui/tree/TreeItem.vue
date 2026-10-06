@@ -1,11 +1,9 @@
 <template>
   <RekaTreeItem
     v-slot="{ isExpanded, isSelected, handleToggle }"
-    :value
-    :level
+    v-bind="forwarded"
     as-child
-    @toggle="preventPointerToggle"
-    @select="emit('select', $event)"
+    @toggle="preventClickToggle"
   >
     <div
       v-bind="$attrs"
@@ -26,6 +24,7 @@
         variant="muted-textonly"
         size="icon-sm"
         tabindex="-1"
+        aria-hidden="true"
         class="shrink-0"
         :aria-label="isExpanded ? $t('g.collapse') : $t('g.expand')"
         @click.stop="handleToggle"
@@ -41,15 +40,15 @@
       </Button>
       <span v-else class="size-5 shrink-0" />
       <div class="contents" @keydown="keepKeysInEditableContent">
-        <slot :is-expanded :is-selected />
+        <slot />
       </div>
     </div>
   </RekaTreeItem>
 </template>
 
 <script setup lang="ts" generic="T extends object">
-import type { TreeItemSelectEvent, TreeItemToggleEvent } from 'reka-ui'
-import { TreeItem as RekaTreeItem } from 'reka-ui'
+import type { TreeItemEmits, TreeItemProps, TreeItemToggleEvent } from 'reka-ui'
+import { TreeItem as RekaTreeItem, useForwardPropsEmits } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -59,18 +58,19 @@ import Button from '@/components/ui/button/Button.vue'
 defineOptions({ inheritAttrs: false })
 
 const {
-  value,
-  level,
   hasChildren = false,
-  class: className
-} = defineProps<{
-  value: T
-  level: number
-  hasChildren?: boolean
-  class?: HTMLAttributes['class']
-}>()
+  class: className,
+  ...restProps
+} = defineProps<
+  Omit<TreeItemProps<T>, 'as' | 'asChild'> & {
+    hasChildren?: boolean
+    class?: HTMLAttributes['class']
+  }
+>()
 
-const emit = defineEmits<{ select: [event: TreeItemSelectEvent<T>] }>()
+const emits = defineEmits<TreeItemEmits<T>>()
+
+const forwarded = useForwardPropsEmits(restProps, emits)
 
 function keepKeysInEditableContent(event: KeyboardEvent) {
   const { target } = event
@@ -82,8 +82,8 @@ function keepKeysInEditableContent(event: KeyboardEvent) {
   }
 }
 
-function preventPointerToggle(event: TreeItemToggleEvent<T>) {
-  if (event.detail.originalEvent instanceof PointerEvent) {
+function preventClickToggle(event: TreeItemToggleEvent<T>) {
+  if (!(event.detail.originalEvent instanceof KeyboardEvent)) {
     event.preventDefault()
   }
 }

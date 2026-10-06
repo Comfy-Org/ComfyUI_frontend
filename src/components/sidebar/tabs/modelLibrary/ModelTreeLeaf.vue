@@ -24,7 +24,8 @@
 
 <script setup lang="ts">
 import type { CSSProperties } from 'vue'
-import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
+import { useEventListener } from '@vueuse/core'
+import { computed, nextTick, onMounted, ref } from 'vue'
 
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -78,7 +79,9 @@ const handleModelHover = async () => {
 }
 
 const container = ref<HTMLElement | undefined>()
-const modelContentElement = ref<HTMLElement | undefined>()
+const modelContentElement = computed(() =>
+  container.value?.closest<HTMLElement>('.tree-explorer-item')
+)
 const isHovered = ref(false)
 
 const showPreview = computed(() => {
@@ -103,16 +106,9 @@ const handleMouseEnter = async () => {
 const handleMouseLeave = () => {
   isHovered.value = false
 }
+useEventListener(modelContentElement, 'mouseenter', handleMouseEnter)
+useEventListener(modelContentElement, 'mouseleave', handleMouseLeave)
 onMounted(async () => {
-  modelContentElement.value =
-    container.value?.closest('.tree-explorer-item') ?? undefined
-  modelContentElement.value?.addEventListener('mouseenter', handleMouseEnter)
-  modelContentElement.value?.addEventListener('mouseleave', handleMouseLeave)
   await modelDef.value.load()
-})
-
-onUnmounted(() => {
-  modelContentElement.value?.removeEventListener('mouseenter', handleMouseEnter)
-  modelContentElement.value?.removeEventListener('mouseleave', handleMouseLeave)
 })
 </script>

@@ -27,8 +27,6 @@ export const TestIds = {
     tabButton: (tabId: string) => `${tabId}-tab-button`
   },
   tree: {
-    folder: 'tree-folder',
-    leaf: 'tree-leaf',
     leafCount: 'tree-leaf-count',
     node: 'tree-node'
   },

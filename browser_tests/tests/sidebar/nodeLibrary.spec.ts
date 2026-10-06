@@ -224,7 +224,7 @@ test.describe('Node library sidebar', () => {
     await tab.getFolder('sampling').click()
     await expect(tab.getNode('KSampler (Advanced)')).toHaveCount(2)
     await tab
-      .getNodeInFolder('KSampler (Advanced)', 'sampling')
+      .getNodeInParentFolder('KSampler (Advanced)', 'sampling')
       .locator('.bookmark-button')
       .click()
     await expectBookmarks(comfyPage, [])
@@ -256,6 +256,10 @@ test.describe('Node library sidebar', () => {
         color: '#007bff'
       }
     })
+    await expect(tab.getFolderIcon('foo')).toHaveCSS(
+      'color',
+      'rgb(0, 123, 255)'
+    )
   })
 
   // If color is left as default, it should not be saved

@@ -91,6 +91,13 @@ export class NodeLibrarySidebarTab extends SidebarTab {
     )
   }
 
+  getFolderIcon(folderName: string) {
+    return this.page
+      .getByRole('treeitem')
+      .filter({ has: this.getFolder(folderName) })
+      .locator('.tree-explorer-node-icon')
+  }
+
   getNode(nodeName: string) {
     return this.page.locator(
       `[data-testid="node-tree-leaf"][data-node-name="${nodeName}"]`
@@ -109,7 +116,7 @@ export class NodeLibrarySidebarTab extends SidebarTab {
     return this.bookmarkTree.locator(this.nodeSelector(nodeName))
   }
 
-  getNodeInFolder(nodeName: string, folderName: string) {
+  getNodeInParentFolder(nodeName: string, folderName: string) {
     return this.nodeLibraryTree
       .getByRole('treeitem')
       .and(this.nodeLibraryTree.locator(`[data-parent-label="${folderName}"]`))
@@ -184,9 +191,10 @@ export class WorkflowsSidebarTab extends SidebarTab {
   constructor(public override readonly page: Page) {
     super(page, 'workflows')
     this.root = page.getByTestId(TestIds.sidebar.workflows)
-    this.activeWorkflowLabel = this.root.locator(
-      '.comfyui-workflows-open .tree-explorer-item[data-selected] .node-label'
-    )
+    this.activeWorkflowLabel = this.root
+      .locator('.comfyui-workflows-open')
+      .getByRole('treeitem', { selected: true })
+      .locator('.node-label')
     this.searchInput = this.root.getByRole('combobox').first()
     this.refreshButton = this.root.getByTestId(
       TestIds.sidebar.workflowsRefreshButton
@@ -295,10 +303,6 @@ export class ModelLibrarySidebarTab extends SidebarTab {
       .getByRole('treeitem', { name: label })
       .and(this.modelTree.locator('[data-tree-node-type="node"]'))
       .first()
-  }
-
-  getFolderRowByLabel(label: string) {
-    return this.getFolderByLabel(label)
   }
 
   getFolderLeafCount(label: string) {

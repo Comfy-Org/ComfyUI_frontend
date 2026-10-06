@@ -66,8 +66,7 @@
                 <template #before-label="{ node: treeNode }">
                   <span
                     v-if="
-                      (treeNode.data as ComfyWorkflow)?.isModified ||
-                      !(treeNode.data as ComfyWorkflow)?.isPersisted
+                      treeNode.data?.isModified || !treeNode.data?.isPersisted
                     "
                     >*</span
                   >
@@ -80,9 +79,7 @@
                     "
                     size="icon-sm"
                     :aria-label="$t('g.close')"
-                    @click.stop="
-                      handleCloseWorkflow(treeNode.data as ComfyWorkflow)
-                    "
+                    @click.stop="handleCloseWorkflow(treeNode.data)"
                   >
                     <i class="icon-[lucide--x] size-3" />
                   </Button>
@@ -219,7 +216,7 @@ const filteredWorkflows = computed(() => {
 })
 useSearchQueryTracking('apps', searchQuery, filteredWorkflows)
 const filteredRoot = computed<TreeNode<ComfyWorkflow>>(() => {
-  return buildWorkflowTree(filteredWorkflows.value as ComfyWorkflow[])
+  return buildWorkflowTree(filteredWorkflows.value)
 })
 const handleSearch = async (query: string) => {
   if (query.length === 0) {

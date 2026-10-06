@@ -108,9 +108,7 @@ const categoryTree = computed<CategoryNode[]>(() => {
   const stripRootPrefix = (key: string) => key.replace(/^root\//, '')
 
   function mapNode(node: TreeNode<ComfyNodeDefImpl>): CategoryNode {
-    const children = node.children
-      ?.filter((child): child is TreeNode<ComfyNodeDefImpl> => !child.leaf)
-      .map(mapNode)
+    const children = node.children?.filter((child) => !child.leaf).map(mapNode)
     return {
       key: stripRootPrefix(node.key),
       label: node.label,
@@ -118,9 +116,7 @@ const categoryTree = computed<CategoryNode[]>(() => {
     }
   }
 
-  const nodes = (tree.children ?? [])
-    .filter((node): node is TreeNode<ComfyNodeDefImpl> => !node.leaf)
-    .map(mapNode)
+  const nodes = (tree.children ?? []).filter((node) => !node.leaf).map(mapNode)
 
   if (rootLabel && nodes.length > 1) {
     const key = rootKey ?? rootLabel.toLowerCase()

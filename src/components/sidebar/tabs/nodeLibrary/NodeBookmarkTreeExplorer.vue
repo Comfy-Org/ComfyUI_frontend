@@ -131,6 +131,12 @@ const extraMenuItems = (
   }
 ]
 
+function getCustomization(node: TreeNode<ComfyNodeDefImpl>) {
+  return node.data
+    ? nodeBookmarkStore.bookmarksCustomization[node.data.nodePath]
+    : undefined
+}
+
 const renderedBookmarkedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(
   () => {
     const fillNodeInfo = (
@@ -155,12 +161,13 @@ const renderedBookmarkedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(
           if (this.leaf) {
             return 'pi pi-circle-fill'
           }
-          const customization = node.data
-            ? nodeBookmarkStore.bookmarksCustomization[node.data.nodePath]
-            : undefined
+          const customization = getCustomization(node)
           return customization?.icon
             ? 'pi ' + customization.icon
             : 'pi pi-bookmark-fill'
+        },
+        getIconColor() {
+          return this.leaf ? undefined : getCustomization(node)?.color
         },
         children: sortedChildren,
         draggable: node.leaf,
