@@ -4,7 +4,6 @@ import { LoaderCircle } from '@lucide/vue'
 import { computed } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
-import InfoTooltip from '@/components/ui/tooltip/InfoTooltip.vue'
 import type { DepthState } from '@/composables/useReshoot'
 import type { StudioGate } from '@/lib/workshop/cinematic-studio/gate'
 import type {
@@ -14,11 +13,12 @@ import type {
   ReshootSize
 } from '@/lib/workshop/cinematic-studio/reshoot'
 import type { Locale } from '@/i18n/translations'
-import CinematicGenerateAction from '@/components/workshop/cinematic-studio/CinematicGenerateAction.vue'
+import ReshootAdvanced from './ReshootAdvanced.vue'
 import ReshootAimRig from './ReshootAimRig.vue'
 import ReshootDisclosure from './ReshootDisclosure.vue'
 import ReshootFormat from './ReshootFormat.vue'
 import ReshootMoveControls from './ReshootMoveControls.vue'
+import ReshootRunAction from './ReshootRunAction.vue'
 import ReshootClipRow from './ReshootClipRow.vue'
 import ReshootStep from './ReshootStep.vue'
 import type { ReshootStepId } from './steps'
@@ -80,17 +80,6 @@ const upload = defineModel<File | undefined>('upload')
 const aspect = defineModel<ReshootAspect>('aspect', { required: true })
 const size = defineModel<ReshootSize>('size', { required: true })
 const seed = defineModel<number | undefined>('seed')
-/** Empty is random; a number, whole and not negative, is a fixed seed. */
-const seedText = computed({
-  get: () => (seed.value === undefined ? '' : String(seed.value)),
-  // a number field's v-model already hands over a number, or '' when empty
-  set: (entry: string | number) => {
-    const value = typeof entry === 'number' ? entry : Number.parseFloat(entry)
-    seed.value = Number.isFinite(value)
-      ? Math.max(0, Math.floor(value))
-      : undefined
-  }
-})
 const keepAim = defineModel<boolean>('keepAim', { required: true })
 const frame = defineModel<number>('frame', { required: true })
 const prompt = defineModel<string>('prompt', { required: true })
@@ -212,109 +201,19 @@ const waiting = computed(
       :state="stepState('reshoot', step)"
     >
       <ReshootFormat v-model:aspect="aspect" v-model:size="size" :locale />
-      <ReshootDisclosure :label="t('reshoot.advanced.label')">
-        <div class="flex flex-col gap-3">
-          <div class="flex flex-col gap-1.5">
-            <div class="flex items-center gap-1.5">
-              <label
-                for="reshoot-prompt"
-                class="text-xs font-semibold text-primary-comfy-canvas"
-              >
-                {{ t('reshoot.section.prompt') }}
-                <span class="font-normal text-primary-warm-gray">
-                  · {{ t('reshoot.optional') }}
-                </span>
-              </label>
-              <InfoTooltip
-                :text="t('reshoot.promptHelp')"
-                :label="t('reshoot.promptHelp')"
-              />
-            </div>
-            <textarea
-              id="reshoot-prompt"
-              v-model="prompt"
-              rows="2"
-              :placeholder="t('reshoot.prompt.placeholder')"
-              aria-describedby="reshoot-prompt-dialogue"
-              class="field-sizing-content max-h-40 min-h-16 resize-none rounded-xl bg-transparency-white-t4 px-3.5 py-2.5 text-sm/relaxed text-primary-warm-white outline-none placeholder:text-primary-warm-gray focus-visible:ring-1 focus-visible:ring-primary-comfy-yellow/60"
-            />
-            <p
-              id="reshoot-prompt-dialogue"
-              class="text-xs/relaxed text-primary-warm-gray"
-            >
-              {{ t('reshoot.prompt.dialogue') }}
-            </p>
-          </div>
-          <div class="flex items-center justify-between gap-3 text-xs">
-            <div class="flex items-center gap-1.5">
-              <label
-                for="reshoot-seed"
-                class="font-semibold text-primary-comfy-canvas"
-              >
-                {{ t('reshoot.seed.label') }}
-              </label>
-              <InfoTooltip
-                :text="t('reshoot.seed.help')"
-                :label="t('reshoot.seed.help')"
-              />
-            </div>
-            <input
-              id="reshoot-seed"
-              v-model.lazy="seedText"
-              type="number"
-              min="0"
-              step="1"
-              :placeholder="t('reshoot.seed.random')"
-              class="h-9 w-28 rounded-xl bg-transparency-white-t4 px-3 font-mono text-sm text-primary-warm-white tabular-nums outline-none placeholder:font-sans placeholder:text-primary-warm-gray focus-visible:ring-1 focus-visible:ring-primary-comfy-yellow/60"
-            />
-          </div>
-        </div>
-      </ReshootDisclosure>
+      <ReshootAdvanced v-model:prompt="prompt" v-model:seed="seed" :locale />
     </ReshootStep>
 
-    <footer
-      class="mt-auto flex flex-col gap-2.5 rounded-b-2xl border-t border-transparency-white-t8 p-3 text-center"
-    >
-      <p
-        v-if="priceNote"
-        class="text-xs text-primary-comfy-canvas"
-        data-testid="reshoot-price"
-      >
-        {{ priceNote }}
-      </p>
-      <CinematicGenerateAction
-        v-if="gate !== 'ready'"
-        :gate
-        :workspace-name
-        :rendering="false"
-        :can-generate="false"
-        wide
-        :locale
-      />
-      <Button
-        v-else-if="rendering"
-        variant="outline"
-        class="w-full rounded-full px-5"
-        data-testid="reshoot-cancel"
-        @click="emit('cancel')"
-      >
-        {{ t('reshoot.cancel') }}
-      </Button>
-      <Button
-        v-else
-        class="w-full rounded-full px-5"
-        :disabled="!canGenerate"
-        data-testid="reshoot-action"
-        @click="emit('generate')"
-      >
-        {{ t('reshoot.generate.label') }}
-      </Button>
-      <p
-        v-if="gate === 'ready' && !rendering"
-        class="text-xs text-primary-warm-gray"
-      >
-        {{ t(ready ? 'reshoot.generate.note' : 'reshoot.generate.wait') }}
-      </p>
-    </footer>
+    <ReshootRunAction
+      :gate
+      :ready
+      :rendering
+      :can-generate="canGenerate"
+      :price-note="priceNote"
+      :workspace-name="workspaceName"
+      :locale
+      @generate="emit('generate')"
+      @cancel="emit('cancel')"
+    />
   </aside>
 </template>
