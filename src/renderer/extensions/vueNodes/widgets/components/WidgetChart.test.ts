@@ -1,16 +1,17 @@
 import { render, screen } from '@testing-library/vue'
-import { Chart } from 'chart.js'
 import type { ChartData } from 'chart.js'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, nextTick, ref } from 'vue'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import { getChartByName } from '@/components/ui/chart/__tests__/chartTestUtils'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
+import { stubCanvasGetContext } from '@/utils/__tests__/canvasTestUtils'
 
 import type { ChartWidgetOptions } from './WidgetChart.types'
 import WidgetChart from './WidgetChart.vue'
 import { createMockWidget } from './widgetTestUtils'
+
+type ChartValue = Partial<ChartData> | null
 
 const i18n = createI18n({
   legacy: false,
@@ -20,43 +21,27 @@ const i18n = createI18n({
 
 function makeWidget(
   options: Partial<ChartWidgetOptions> = {}
-): SimplifiedWidget<ChartData, ChartWidgetOptions> {
-  return createMockWidget<ChartData>({
+): SimplifiedWidget<ChartValue, ChartWidgetOptions> {
+  return createMockWidget<ChartValue>({
     value: { labels: [], datasets: [] },
     name: 'test_chart',
     type: 'chart',
-    options: options
+    options
   })
 }
 
 function renderChart(
-  widget: SimplifiedWidget<ChartData, ChartWidgetOptions>,
-  modelValue: ChartData | null
+  widget: SimplifiedWidget<ChartValue, ChartWidgetOptions>,
+  modelValue: ChartValue
 ) {
-  const value = ref<ChartData | null>(modelValue)
-  const Harness = defineComponent({
-    components: { WidgetChart },
-    setup: () => ({ widget, value }),
-    template: '<WidgetChart :widget="widget" v-model="value" />'
+  return render(WidgetChart, {
+    props: { widget, modelValue },
+    global: { plugins: [i18n] }
   })
-  render(Harness, { global: { plugins: [i18n] } })
-  return { value }
-}
-
-function getChart(name: string) {
-  const canvas = screen.getByRole('img', { name })
-  assert(canvas instanceof HTMLCanvasElement)
-  return Chart.getChart(canvas)
 }
 
 describe('WidgetChart', () => {
-  beforeEach(() => {
-    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(
-      function (this: HTMLCanvasElement, _contextId: string) {
-        return createMockCanvasRenderingContext2D({ canvas: this })
-      } as HTMLCanvasElement['getContext']
-    )
-  })
+  beforeEach(stubCanvasGetContext)
 
   it.for<{ options: Partial<ChartWidgetOptions>; type: string }>([
     { options: {}, type: 'line' },
@@ -64,7 +49,7 @@ describe('WidgetChart', () => {
   ])('renders a $type chart for options $options', ({ options, type }) => {
     renderChart(makeWidget(options), { labels: [], datasets: [] })
 
-    expect(getChart(`test_chart - ${type} chart`)?.config).toMatchObject({
+    expect(getChartByName(`test_chart - ${type} chart`)?.config).toMatchObject({
       type
     })
   })
@@ -85,38 +70,56 @@ describe('WidgetChart', () => {
       datasets: [{ label: 'x', data: [1, 2] }]
     })
 
-    const chartData = getChart('test_chart - line chart')?.data
+    const chartData = getChartByName('test_chart - line chart')?.data
     expect(chartData?.labels).toEqual(['a', 'b'])
     expect(chartData?.datasets[0].label).toBe('x')
   })
 
-  it('falls back to empty labels and datasets when the value becomes null', async () => {
-    const { value } = renderChart(makeWidget(), {
-      labels: ['a'],
-      datasets: [{ label: 'x', data: [1] }]
+  it.for<{ value: ChartValue; shape: string }>([
+    { shape: 'null', value: null },
+    { shape: 'an empty object', value: {} }
+  ])(
+    'falls back to empty labels and datasets when the value becomes $shape',
+    async ({ value }) => {
+      const { rerender } = renderChart(makeWidget(), {
+        labels: ['a'],
+        datasets: [{ label: 'x', data: [1] }]
+      })
+
+      await rerender({ modelValue: value })
+
+      const chartData = getChartByName('test_chart - line chart')?.data
+      expect(chartData?.labels).toEqual([])
+      expect(chartData?.datasets).toEqual([])
+    }
+  )
+
+  it('renders the data that arrives after an empty object', async () => {
+    const { rerender } = renderChart(makeWidget(), {})
+
+    await rerender({
+      modelValue: { labels: ['b'], datasets: [{ label: 'y', data: [2] }] }
     })
 
-    value.value = null
-    await nextTick()
-
-    const chartData = getChart('test_chart - line chart')?.data
-    expect(chartData?.labels).toEqual([])
-    expect(chartData?.datasets).toEqual([])
+    const chartData = getChartByName('test_chart - line chart')?.data
+    expect(chartData?.labels).toEqual(['b'])
+    expect(chartData?.datasets[0].label).toBe('y')
   })
 
   it('updates the chart when the model value changes', async () => {
-    const { value } = renderChart(makeWidget(), {
+    const { rerender } = renderChart(makeWidget(), {
       labels: ['a'],
       datasets: [{ label: 'x', data: [1] }]
     })
 
-    value.value = {
-      labels: ['b', 'c'],
-      datasets: [{ label: 'y', data: [2, 3] }]
-    }
-    await nextTick()
+    await rerender({
+      modelValue: {
+        labels: ['b', 'c'],
+        datasets: [{ label: 'y', data: [2, 3] }]
+      }
+    })
 
-    const chartData = getChart('test_chart - line chart')?.data
+    const chartData = getChartByName('test_chart - line chart')?.data
     expect(chartData?.labels).toEqual(['b', 'c'])
     expect(chartData?.datasets[0].label).toBe('y')
   })

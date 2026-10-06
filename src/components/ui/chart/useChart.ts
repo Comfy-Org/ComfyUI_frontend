@@ -13,7 +13,7 @@ import {
   PointElement,
   Tooltip
 } from 'chart.js'
-import { onBeforeUnmount, onMounted, shallowRef, toRaw, watch } from 'vue'
+import { onBeforeUnmount, onMounted, toRaw, watch } from 'vue'
 
 import type { Ref } from 'vue'
 
@@ -46,6 +46,7 @@ function getDefaultOptions(type: SupportedChartType): ChartOptions {
   return {
     responsive: true,
     maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
     plugins: {
       legend: {
         align: 'start',
@@ -132,15 +133,16 @@ export function useChart(
   type: Readonly<Ref<SupportedChartType>>,
   data: Readonly<Ref<ChartData>>
 ) {
-  const chartInstance = shallowRef<Chart | null>(null)
+  let chart: Chart | undefined
 
   function copyData(): ChartData {
-    const { datasets, ...rest } = toRaw(data.value)
+    const { datasets, labels, ...rest } = toRaw(data.value)
     return {
       ...rest,
+      labels: labels && [...labels],
       datasets: datasets.map((dataset) => ({
         ...dataset,
-        data: [...dataset.data]
+        data: Array.isArray(dataset.data) ? [...dataset.data] : dataset.data
       }))
     }
   }
@@ -148,8 +150,8 @@ export function useChart(
   function createChart() {
     if (!canvasRef.value) return
 
-    chartInstance.value?.destroy()
-    chartInstance.value = new Chart(canvasRef.value, {
+    chart?.destroy()
+    chart = new Chart(canvasRef.value, {
       type: type.value,
       data: copyData(),
       options: getDefaultOptions(type.value)
@@ -163,15 +165,15 @@ export function useChart(
   watch(
     data,
     () => {
-      if (!chartInstance.value) return
-      chartInstance.value.data = copyData()
-      chartInstance.value.update()
+      if (!chart) return
+      chart.data = copyData()
+      chart.update()
     },
     { deep: true }
   )
 
   onBeforeUnmount(() => {
-    chartInstance.value?.destroy()
-    chartInstance.value = null
+    chart?.destroy()
+    chart = undefined
   })
 }

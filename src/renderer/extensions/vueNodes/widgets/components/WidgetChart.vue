@@ -16,13 +16,17 @@ import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import type { ChartWidgetOptions } from './WidgetChart.types'
 
-const value = defineModel<ChartData>({ required: true })
+const value = defineModel<Partial<ChartData> | null>({ required: true })
 
 const { widget } = defineProps<{
-  widget: SimplifiedWidget<ChartData, ChartWidgetOptions>
+  widget: SimplifiedWidget<Partial<ChartData> | null, ChartWidgetOptions>
 }>()
 
 const chartType = computed(() => widget.options?.type ?? 'line')
 
-const chartData = computed(() => value.value || { labels: [], datasets: [] })
+const chartData = computed<ChartData>(() => ({
+  ...value.value,
+  labels: value.value?.labels ?? [],
+  datasets: value.value?.datasets ?? []
+}))
 </script>
