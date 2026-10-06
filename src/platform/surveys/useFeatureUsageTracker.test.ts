@@ -2305,6 +2305,22 @@ describe('useFeatureUsageTracker', () => {
     expect(reportError).not.toHaveBeenCalled()
   })
 
+  it('keeps writes stable when the clock is at the epoch', () => {
+    vi.setSystemTime(0)
+    const tracker = useFeatureUsageTracker('epoch-clock')
+
+    tracker.trackUsage()
+    tracker.trackUsage()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored['epoch-clock']).toEqual({
+      useCount: 2,
+      firstUsed: 1,
+      lastUsed: 1
+    })
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
   it('repairs malformed JSON storage data', () => {
     localStorage.setItem(STORAGE_KEY, '{')
 

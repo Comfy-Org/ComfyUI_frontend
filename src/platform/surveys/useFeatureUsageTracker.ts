@@ -729,7 +729,7 @@ export function useFeatureUsageTracker(featureId: string) {
   const useCount = computed(() => usage.value?.useCount ?? 0)
 
   function trackUsage() {
-    const now = Math.min(Date.now(), MAX_TIMESTAMP)
+    const now = Math.max(1, Math.min(Date.now(), MAX_TIMESTAMP))
     persistUsageData(featureId, now)
   }
 
