@@ -59,8 +59,7 @@ export function getAssetSubfolder(asset: AssetItem): string {
 }
 
 /**
- * Id of the assets-API asset holding this item's own file. A card grouped per
- * job carries the job id as its `id` and keeps its own asset id in metadata.
+ * Id of the assets-API asset holding this item's own file.
  */
 export function getAssetContentId(
   asset: Pick<AssetItem, 'id' | 'user_metadata'>

@@ -2,7 +2,10 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetContext } from '@/platform/assets/schemas/mediaAssetSchema'
-import { getAssetUrl } from '@/platform/assets/utils/assetUrlUtil'
+import {
+  getAssetSubfolder,
+  getAssetUrl
+} from '@/platform/assets/utils/assetUrlUtil'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { api } from '@/scripts/api'
 import type { TaskItemImpl } from '@/stores/queueStore'
@@ -89,8 +92,7 @@ function flatAssetToResultItem(asset: AssetItem): AugmentedResultItem {
 }
 
 /**
- * Group flat per-file output assets into one asset per job, mirroring the
- * grouped shape produced from the history API: the group id is the job id and
+ * Group flat per-file output assets into one asset per job.
  * user_metadata carries outputCount/allOutputs. Assets without output job
  * metadata pass through ungrouped.
  */
@@ -124,7 +126,7 @@ export function unflattenOutputAssets(
       created_at: ordered.at(-1)!.created_at,
       user_metadata: {
         jobId: job_id,
-        subfolder: '',
+        subfolder: getAssetSubfolder(representative),
         ...representative.user_metadata,
         assetId: representative.id,
         outputCount: ordered.length,
