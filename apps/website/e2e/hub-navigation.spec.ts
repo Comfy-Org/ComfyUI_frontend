@@ -301,14 +301,23 @@ async function expectTabs(page: Page) {
   await expect(page.getByTestId('catalogue-tabs')).toBeVisible()
 }
 
-for (const { section, destination, query, filter, reachTabs } of [
+for (const {
+  section,
+  destination,
+  query,
+  filter,
+  reachTabs,
+  leftCategoryAt
+} of [
   {
     section: 'models',
     destination: 'workflows',
     query: 'kling',
     // A use case is a category on models, so the tabs are not on the page.
     filter: 'useCase=generate-images',
-    reachTabs: leaveCategory
+    reachTabs: leaveCategory,
+    // Leaving the category is its own step back.
+    leftCategoryAt: '/hub/models/'
   },
   {
     section: 'workflows',
@@ -316,7 +325,8 @@ for (const { section, destination, query, filter, reachTabs } of [
     query: 'material',
     // A workflow category filter opens no category, so the tabs stay.
     filter: 'category=product',
-    reachTabs: expectTabs
+    reachTabs: expectTabs,
+    leftCategoryAt: undefined
   }
 ]) {
   test(`the active ${section} tab resets its URL filters, including history`, async ({
@@ -329,9 +339,17 @@ for (const { section, destination, query, filter, reachTabs } of [
     await expect(search).toHaveValue(query)
     await expect(count).toHaveText('1')
     await reachTabs(page)
-    // On models the back link already cleared the filters; what the tab click
-    // still has to do is reset the address.
+    // On models the back link already reset the filters and the address, so
+    // the URL alone cannot tell when the tab's own navigation has finished.
+    await page.evaluate(() =>
+      document.addEventListener(
+        'astro:page-load',
+        () => (document.documentElement.dataset.tabSettled = ''),
+        { once: true }
+      )
+    )
     await page.getByTestId(`catalogue-tab-${section}`).click()
+    await expect(page.locator('html')).toHaveAttribute('data-tab-settled')
     await expect(page).toHaveURL(`/hub/${section}/`)
     await expect(search).toHaveValue('')
     await expect(count).toHaveCount(0)
@@ -360,10 +378,19 @@ for (const { section, destination, query, filter, reachTabs } of [
     await expect(search).toHaveValue('')
     await expect(count).toHaveCount(0)
     await page.goBack()
+    if (leftCategoryAt) {
+      await expect(page).toHaveURL(leftCategoryAt)
+      await expect(page.getByTestId('workshop-sections')).toBeVisible()
+      await page.goBack()
+    }
     await expect(page).toHaveURL(filtered)
     await expect(search).toHaveValue(query)
     await expect(count).toHaveText('1')
     await page.goForward()
+    if (leftCategoryAt) {
+      await expect(page).toHaveURL(leftCategoryAt)
+      await page.goForward()
+    }
     await expect(page).toHaveURL(`/hub/${destination}/`)
     await expect(search).toHaveValue('')
     await expect(count).toHaveCount(0)

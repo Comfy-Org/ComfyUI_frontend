@@ -529,6 +529,70 @@ test.describe('Models catalog', () => {
     ).toBeVisible()
   })
 
+  test('the address keeps a search, category and sort to share', async ({
+    page,
+    context
+  }) => {
+    const shared = '/hub/models/?q=kling&useCase=generate-videos&sort=name'
+    const cards = (on: typeof page) =>
+      on
+        .getByTestId('workshop-models-grid')
+        .getByTestId('workshop-model-card')
+        .evaluateAll((links) => links.map((link) => link.getAttribute('href')))
+    await page.goto('/hub/models/')
+    await page.getByTestId('section-generate-videos-open').click()
+    const entries = await page.evaluate(() => history.length)
+    await page.getByTestId('workshop-search').pressSequentially('kling')
+    await page.getByTestId('workshop-sort').click()
+    await page.getByTestId('sort-name').click()
+    await expect(page).toHaveURL(shared)
+    expect(await page.evaluate(() => history.length)).toBe(entries)
+    const results = await cards(page)
+    expect(results.length).toBeGreaterThan(0)
+
+    await page.reload()
+    await expect(page.getByTestId('workshop-search')).toHaveValue('kling')
+    await expect(page.getByTestId('workshop-sort')).toContainText('Name A to Z')
+    await expect.poll(() => cards(page)).toEqual(results)
+
+    const opened = await context.newPage()
+    await opened.goto(shared)
+    await expect(
+      opened.getByRole('heading', { level: 2, name: /Generate videos/ })
+    ).toBeVisible()
+    await expect.poll(() => cards(opened)).toEqual(results)
+    await expect(opened.locator('link[rel="canonical"]')).toHaveAttribute(
+      'href',
+      /\/hub\/models\/$/
+    )
+  })
+
+  test('Back and Forward walk through opened categories', async ({ page }) => {
+    await page.goto('/hub/models/')
+    const heading = page.getByRole('heading', {
+      level: 2,
+      name: /Generate videos/
+    })
+    await page.getByTestId('section-generate-videos-open').click()
+    await expect(page).toHaveURL('/hub/models/?useCase=generate-videos')
+    await page
+      .getByTestId('workshop-models-grid')
+      .getByTestId('workshop-model-card')
+      .first()
+      .click()
+    await expect(page.getByTestId('model-back')).toBeVisible()
+
+    await page.goBack()
+    await expect(page).toHaveURL('/hub/models/?useCase=generate-videos')
+    await expect(heading).toBeVisible()
+    await page.goBack()
+    await expect(page).toHaveURL('/hub/models/')
+    await expect(page.getByTestId('workshop-sections')).toBeVisible()
+    await page.goForward()
+    await expect(heading).toBeVisible()
+    await expect(page.getByTestId('workshop-sections')).toHaveCount(0)
+  })
+
   test('homepage model releases use the published canonical URL', async ({
     page
   }) => {
