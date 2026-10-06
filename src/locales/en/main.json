@@ -2553,6 +2553,7 @@
     "legacyMaskEditorDeprecated": "The legacy mask editor is deprecated and will be removed soon.",
     "userNotAuthenticated": "User not authenticated",
     "failedToFetchBalance": "Failed to fetch balance: {error}",
+    "noPersonalWorkspace": "This account has no personal billing. Manage billing from your team workspace.",
     "failedToCreateCustomer": "Failed to create customer: {error}",
     "failedToInitiateCreditPurchase": "Failed to initiate credit purchase: {error}",
     "failedToAccessBillingPortal": "Failed to access billing portal: {error}",
@@ -2703,6 +2704,35 @@
       "backToSocialLogin": "Sign up with Google or Github instead",
       "backToGithubLogin": "Sign up with Github instead"
     },
+    "sso": {
+      "continueWithSso": "Continue with SSO",
+      "required": {
+        "title": "Your organization requires single sign-on",
+        "body": "This account signs in with your organization's single sign-on. Continue with SSO to sign in.",
+        "bodyWithEmail": "{email} signs in with your organization's single sign-on. Continue with SSO to sign in.",
+        "dismiss": "Not now"
+      },
+      "emailLabel": "Work email",
+      "emailPlaceholder": "Enter your work email",
+      "submit": "Continue",
+      "notSso": "This email doesn't use single sign-on. Use one of the sign-in options above.",
+      "invalidEmail": "Enter a valid email address.",
+      "unavailable": "We couldn't check single sign-on right now. Try again in a moment, or use one of the sign-in options above.",
+      "errors": {
+        "unavailable": "Single sign-on is unavailable right now. Try again in a moment.",
+        "expired": "Your sign-in expired or was started in another browser. Start again.",
+        "notConfigured": "Single sign-on isn't set up for your organization. Contact your administrator.",
+        "orgDisabled": "Single sign-on is turned off for your organization. Contact your administrator.",
+        "orgNotAttached": "Your organization's Comfy workspace isn't set up yet. Contact your administrator.",
+        "orgMismatch": "You signed in to a different organization than the one for this email. Try again with your work account.",
+        "suspended": "Your organization has removed your access. Contact your administrator.",
+        "accountDeleted": "This account is scheduled for deletion. If this is a mistake, email support{'@'}comfy.org.",
+        "accountConflict": "More than one Comfy account uses this email. Email support{'@'}comfy.org for help.",
+        "idpError": "Your identity provider didn't complete the sign-in. Try again.",
+        "rateLimited": "Too many sign-in attempts. Wait a few minutes and try again.",
+        "failed": "We couldn't sign you in with single sign-on. Try again."
+      }
+    },
     "signup": {
       "title": "Create an account",
       "alreadyHaveAccount": "Already have an account?",
@@ -2729,7 +2759,8 @@
         "identityChanged": "Your session changed. Reload to continue.",
         "unavailable": "We couldn't reach your account. Try again in a moment.",
         "workspaceDenied": "You don't have access to this workspace. Contact support if this keeps happening.",
-        "refused": "Your request was refused. Reload the page and try again."
+        "refused": "Your request was refused. Reload the page and try again.",
+        "ssoRequired": "Your organization requires single sign-on. Continue with SSO to sign in."
       },
       "reconnecting": {
         "title": "Reconnecting to your account",
@@ -2798,7 +2829,9 @@
     "expiredSummary": "Desktop sign-in failed",
     "expiredDetail": "The sign-in request expired or was already used. Start signing in again from the ComfyUI desktop app.",
     "failedSummary": "Desktop sign-in failed",
-    "failedDetail": "Something went wrong completing the desktop sign-in. Start signing in again from the ComfyUI desktop app."
+    "failedDetail": "Something went wrong completing the desktop sign-in. Start signing in again from the ComfyUI desktop app.",
+    "ssoUnavailableSummary": "Desktop sign-in isn't available for SSO accounts yet",
+    "ssoUnavailableDetail": "Your account signs in through your organization's SSO, which the ComfyUI desktop app can't use yet. Ask your admin for another way to sign in to the desktop app."
   },
   "validation": {
     "invalidEmail": "Invalid email address",
@@ -5104,6 +5137,8 @@
     "inviteAccepted": "Invite Accepted",
     "addedToWorkspace": "You have been added to:",
     "inviteFailed": "Failed to Accept Invite",
+    "inviteSsoUnavailable": "Ask your admin to add you",
+    "inviteSsoUnavailableDetail": "Invite links can't be accepted from an SSO account yet. Ask a workspace admin to add you to the workspace directly.",
     "viewWorkspace": "View workspace",
     "switchFailed": "Failed to switch workspace. Please try again.",
     "deepLinkStayed": "Couldn't open that workspace. You're still in {workspaceName}."
@@ -5113,12 +5148,17 @@
     "initializationFailedDetail": "Check your connection and try again.",
     "initializationFailedSignOutDetail": "Sign out and log in again to continue.",
     "retry": "Try again",
+    "noWorkspaceAccess": {
+      "title": "You don't have access to any workspace",
+      "detail": "Ask your admin to add you to a workspace, then sign in again."
+    },
     "errors": {
       "notAuthenticated": "You must be logged in to access workspaces",
       "invalidFirebaseToken": "Authentication failed. Please try logging in again.",
       "accessDenied": "You do not have access to this workspace",
       "workspaceNotFound": "Workspace not found",
-      "tokenExchangeFailed": "Failed to authenticate with workspace: {error}"
+      "tokenExchangeFailed": "Failed to authenticate with workspace: {error}",
+      "ssoRequired": "Your organization requires single sign-on. Continue with SSO to sign in."
     }
   },
   "nightly": {
