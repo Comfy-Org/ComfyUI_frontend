@@ -11,10 +11,11 @@ How to tell a caller that a function failed.
 > **Treat expected failure as data, validate before mutation, and throw only
 > for a genuine invariant violation with a guaranteed handler.**
 
-A thrown exception is a non-local jump. The throw site has no reference to
-the catch site, the signature does not mention the throw, and any state
-mutated before the throw stays mutated. Those three properties make `throw`
-the wrong tool for every failure a caller could handle.
+A thrown exception is a non-local jump: the throw site cannot see which
+handler, if any, will catch it; the signature does not say it can throw; and
+every frame between throw and catch exits mid-function, without finishing or
+undoing its work. Those three properties make `throw` the wrong tool for
+every failure a caller could handle.
 
 This document is the guidance half of
 [ADR-TELEMETRY-DIAGNOSTICS-0019](../adr/TELEMETRY-DIAGNOSTICS-0019-recoverable-event-diagnostics.md)
@@ -41,22 +42,33 @@ the failure arm's fields minimal: a `reason` the caller can branch on, and the
 `cause` when a boundary will report it.
 
 ```ts
-// ✗ the return type is SizedOp; the failure mode is not in it
-export function measureWireOp(op: Op): SizedOp {
-  const json = JSON.stringify(op) // a user toJSON can throw here
-  if (!isDocOp(JSON.parse(json))) throw new TypeError('not a wire object')
-  return { op, wire, bytes }
+// ✗ the return type promises a Workflow; neither failure is in it
+function parseDraft(raw: string): Workflow {
+  const parsed: unknown = JSON.parse(raw) // throws on malformed JSON
+  if (!isWorkflow(parsed)) throw new TypeError('not a workflow')
+  return parsed
 }
 
-// ✓ both arms are in the type; the caller must handle both
-export type WireMeasurement =
-  | { readonly admitted: true; readonly sized: SizedOp }
-  | { readonly admitted: false; readonly op: Op; readonly cause: unknown }
+// ✓ both failures are in the type; the caller must handle them
+type JsonParse = { ok: true; value: unknown } | { ok: false; cause: unknown }
 
-export function measureWireOp(op: Op): WireMeasurement {
-  const serialized = stringifyOp(op) // the only try/catch is inside stringifyOp
-  if ('cause' in serialized) return { admitted: false, op, cause: serialized.cause }
-  …
+function parseJson(raw: string): JsonParse {
+  try {
+    return { ok: true, value: JSON.parse(raw) }
+  } catch (cause) {
+    return { ok: false, cause }
+  }
+}
+
+type DraftParse =
+  | { ok: true; workflow: Workflow }
+  | { ok: false; reason: 'malformed' | 'invalid'; cause?: unknown }
+
+function parseDraft(raw: string): DraftParse {
+  const json = parseJson(raw)
+  if (!json.ok) return { ok: false, reason: 'malformed', cause: json.cause }
+  if (!isWorkflow(json.value)) return { ok: false, reason: 'invalid' }
+  return { ok: true, workflow: json.value }
 }
 ```
 
@@ -71,20 +83,9 @@ Some calls can throw and you cannot change them: `JSON.parse`, `JSON.stringify`
 over user data, `fetch`, `localStorage`, DOM APIs, `Response.json()`, third
 party libraries, and anything an extension or custom node supplies (`toJSON`,
 callbacks, widget serializers). Wrap exactly that call in `try/catch` and turn
-the result into a value before it leaves the function. When the call returns
-a promise, `await` it inside the `try`; a rejection from an un-awaited
-promise skips the `catch`.
-
-```ts
-function stringifyOp(op: Op): { json: string } | { cause: unknown } {
-  try {
-    const json: unknown = JSON.stringify(op)
-    return typeof json === 'string' ? { json } : { cause: new TypeError('…') }
-  } catch (cause) {
-    return { cause }
-  }
-}
-```
+the result into a value before it leaves the function, as `parseJson` does
+above. When the call returns a promise, `await` it inside the `try`; a
+rejection from an un-awaited promise skips the `catch`.
 
 Once the failure is a value, pass it up with ordinary returns. A `try/catch`
 two or three frames above the risky call, around your own code, is the tell
@@ -94,8 +95,10 @@ that the author used an exception as a return channel.
 
 Check inputs, dependencies, permissions, and resources first. Then change
 state. A function that adds a node, then fails the node-type check, then
-throws leaves the graph mutated. Nothing rolls it back, and the next
-change-tracker capture records the half-applied state as a checkpoint.
+throws leaves the graph mutated, and nothing rolls it back. If the throw skips
+the change tracker's `afterChange`, the transaction never closes and undo
+history stops recording; otherwise a later capture can record the
+half-applied state as a checkpoint.
 
 - Preflight the whole operation (every node in a paste, every file in an
   upload, every member in a downgrade) before applying any part of it. If it
@@ -137,6 +140,8 @@ layer that owns the decision:
 
 - Services and stores call `reportError(cause, { errorType, surface })` with a
   stable slug (naming rules in `src/AGENTS.md`), then return the failure value.
+  Add bounded `context` (never secrets) and an `outcome` tag such as
+  `degraded` or `gave_up` when recovery differs from a plain refusal.
   Never `captureException` or `datadogRum.addError` directly.
 - UI commands and components turn a returned failure into a toast or dialog
   whose `vue-i18n` message tells the user what to do next.
