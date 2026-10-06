@@ -12,9 +12,9 @@ import {
   sessionAgentGrant,
   sessionAgentGrantValidUntil
 } from '@/platform/remoteConfig/remoteConfig'
+import { ServerFeatureFlag } from '@/platform/remoteConfig/serverFeatureFlag'
 import { useTelemetry } from '@/platform/telemetry'
 import { api } from '@/scripts/api'
-import { ServerFeatureFlag } from '@/platform/remoteConfig/serverFeatureFlag'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 

@@ -13,7 +13,6 @@ import {
   startFeatureFlagTelemetry,
   useFeatureFlags
 } from '@/composables/useFeatureFlags'
-import { ServerFeatureFlag } from '@/platform/remoteConfig/serverFeatureFlag'
 import * as distributionTypes from '@/platform/distribution/types'
 import {
   authenticatedRemoteConfigState,
@@ -25,6 +24,7 @@ import {
   sessionAgentGrant,
   sessionAgentGrantValidUntil
 } from '@/platform/remoteConfig/remoteConfig'
+import { ServerFeatureFlag } from '@/platform/remoteConfig/serverFeatureFlag'
 import { useTelemetry } from '@/platform/telemetry'
 import { api } from '@/scripts/api'
 import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
