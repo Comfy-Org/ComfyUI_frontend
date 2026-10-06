@@ -74,14 +74,12 @@ export const drops: readonly Drop[] = [
     id: 'comfy-router',
     launchDate: '2026-09-10',
     category: DEVELOPER,
-    // Reuses the product video already live on /platform/router/
-    // (RouterVideoSection) — the page's own hero is an interactive code
-    // demo with no static asset to borrow.
+    // Reuses the capability image already live on /platform/router/
+    // (RouterCapabilitiesSection) — the page's own hero is an interactive
+    // code demo with no static asset to borrow.
     media: {
-      type: 'video',
-      src: 'https://media.comfy.org/website/router/router-animatic-v019.mp4',
-      poster:
-        'https://media.comfy.org/website/router/router-animatic-v019-poster.webp',
+      type: 'image',
+      src: 'https://media.comfy.org/website/router/integrate-once-v2.webp',
       alt: { en: 'Comfy Router', 'zh-CN': 'Comfy Router' }
     },
     title: { en: 'Comfy Router', 'zh-CN': 'Comfy Router' },
@@ -218,10 +216,14 @@ export const drops: readonly Drop[] = [
     id: 'agent',
     launchDate: '2026-09-29',
     category: PLATFORM,
-    media: imageFor('Drops_2x2card_Agent.jpg', {
-      en: 'Comfy Agent',
-      'zh-CN': 'Comfy Agent'
-    }),
+    // Reuses the capability image already live on /agent (AgentPage.astro)
+    // — the page's own hero is a composed multi-asset canvas animation
+    // with no single static asset to borrow.
+    media: {
+      type: 'image',
+      src: 'https://media.comfy.org/website/comfy-agent/multiplayer.png',
+      alt: { en: 'Comfy Agent', 'zh-CN': 'Comfy Agent' }
+    },
     title: { en: 'Comfy Agent', 'zh-CN': 'Comfy Agent' },
     description: {
       en: 'The first agent for craft. Describe what you want inside ComfyUI — it plans, builds, and runs workflows beside you.',
