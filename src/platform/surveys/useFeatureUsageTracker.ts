@@ -58,7 +58,7 @@ export function resetFeatureUsageTrackerStateForTest() {
 
 export function getPendingUsageDeltaCountForTest(featureId: string) {
   if (import.meta.env.MODE !== 'test') return 0
-  return pendingUsageData.value[featureId]?.length ?? 0
+  return pendingUsageFor(featureId)?.length ?? 0
 }
 
 function reportStorageError(error: unknown, errorType: string) {

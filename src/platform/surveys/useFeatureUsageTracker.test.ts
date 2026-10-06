@@ -2170,6 +2170,7 @@ describe('useFeatureUsageTracker', () => {
       firstUsed: 1_000,
       lastUsed: Date.now()
     })
+    expect(getPendingUsageDeltaCountForTest('propertyIsEnumerable')).toBe(0)
   })
 
   it.for([
