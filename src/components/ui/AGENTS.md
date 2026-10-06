@@ -6,7 +6,7 @@
 pnpm dlx shadcn-vue@latest add <component-name> --yes
 ```
 
-After adding, create `ComponentName.stories.ts` with Default, Disabled, and variant stories.
+After adding, create `ComponentName.stories.ts` with a `Default` story, controls for every enum or boolean prop, and one story per design state (for example `Disabled`); see `docs/guidance/storybook.md`.
 
 ## Reka UI Wrapper Components
 
