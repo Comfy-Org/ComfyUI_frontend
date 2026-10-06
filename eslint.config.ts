@@ -27,6 +27,7 @@ import vueParser from 'vue-eslint-parser'
 import path from 'node:path'
 
 import {
+  i18nCatalogFiles,
   tailwindScriptFiles,
   tailwindScriptIgnores,
   templateFiles
@@ -267,6 +268,19 @@ const tailwindConfigs = defineConfig([
 
 export default defineConfig([
   ...sharedIgnores,
+  {
+    name: 'comfy/catalog-message-syntax',
+    files: i18nCatalogFiles,
+    extends: pluginI18n.configs['flat/base'],
+    settings: {
+      'vue-i18n': {
+        localeDir: i18nCatalogFiles,
+        cwd: import.meta.dirname,
+        messageSyntaxVersion: '^11.0.0'
+      }
+    },
+    rules: { '@intlify/vue-i18n/valid-message-syntax': 'error' }
+  },
   {
     files: tailwindScriptFiles,
     ignores: [...tailwindScriptIgnores, ...templateFiles],

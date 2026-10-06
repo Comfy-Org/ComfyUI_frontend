@@ -472,7 +472,7 @@
       "auth/user-disabled": "חשבון זה הושבת. אנא פנה לתמיכה.",
       "auth/weak-password": "הסיסמה חלשה מדי. אנא השתמש בסיסמה חזקה יותר בת 6 תווים לפחות.",
       "generic": "משהו השתבש במהלך ההתחברות שלך. אנא נסה שוב.",
-      "signupBlocked": "לא הצלחנו ליצור את החשבון שלך כרגע. נסה שוב מאוחר יותר. אם הבעיה נמשכת, שלח מייל ל-support@comfy.org."
+      "signupBlocked": "לא הצלחנו ליצור את החשבון שלך כרגע. נסה שוב מאוחר יותר. אם הבעיה נמשכת, שלח מייל ל-support{'@'}comfy.org."
     },
     "hidePassword": "הסתרת סיסמה",
     "login": {
@@ -928,7 +928,7 @@
     "uploadWorkflowButton": "העלאת תהליך העבודה שלי",
     "usernameError": "3–42 תווים אלפאנומריים קטנים ומקפים, חייב להתחיל ולהסתיים באות או מספר",
     "usernameLabel": "שם המשתמש שלך (חובה)",
-    "usernamePlaceholder": "@"
+    "usernamePlaceholder": "{'@'}"
   },
   "comfyHubPublish": {
     "additionalInfo": "מידע נוסף",

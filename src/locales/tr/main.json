@@ -472,7 +472,7 @@
       "auth/user-disabled": "Bu hesap devre dışı bırakıldı. Lütfen destek ekibiyle iletişime geçin.",
       "auth/weak-password": "Parola çok zayıf. Lütfen en az 6 karakterden oluşan daha güçlü bir parola kullanın.",
       "generic": "Oturum açarken bir hata oluştu. Lütfen tekrar deneyin.",
-      "signupBlocked": "Şu anda hesabınızı oluşturamıyoruz. Lütfen daha sonra tekrar deneyin. Sorun devam ederse support@comfy.org adresine e-posta gönderin."
+      "signupBlocked": "Şu anda hesabınızı oluşturamıyoruz. Lütfen daha sonra tekrar deneyin. Sorun devam ederse support{'@'}comfy.org adresine e-posta gönderin."
     },
     "hidePassword": "Parolayı gizle",
     "login": {
@@ -928,7 +928,7 @@
     "uploadWorkflowButton": "Çalışma akışımı yükle",
     "usernameError": "3–42 küçük harfli alfanümerik karakter ve tire, bir harf veya rakam ile başlamalı ve bitmelidir",
     "usernameLabel": "Kullanıcı adınız (gerekli)",
-    "usernamePlaceholder": "@"
+    "usernamePlaceholder": "{'@'}"
   },
   "comfyHubPublish": {
     "additionalInfo": "Ek bilgi",

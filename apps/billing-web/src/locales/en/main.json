@@ -41,7 +41,7 @@
       "auth/popup-blocked": "Your browser blocked the sign-in window. Please allow pop-ups for this site and try again.",
       "auth/account-exists-with-different-credential": "We couldn't sign you in with this method. Try another sign-in option, or reset your password to continue.",
       "generic": "Something went wrong while signing you in. Please try again.",
-      "signupBlocked": "We couldn't create your account right now. Please try again later. If this keeps happening, email support@comfy.org."
+      "signupBlocked": "We couldn't create your account right now. Please try again later. If this keeps happening, email support{'@'}comfy.org."
     }
   },
   "validation": {

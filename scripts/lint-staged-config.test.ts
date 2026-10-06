@@ -95,6 +95,24 @@ describe('lint-staged config', () => {
     expect(commands.some((command) => command.includes('eslint '))).toBe(false)
   })
 
+  it('lints staged catalogs without sending JSON to oxlint', async () => {
+    const lintStaged = await freshConfig()
+
+    const commands = [
+      lintStaged([
+        'src/locales/ja/main.json',
+        'apps/website/src/locales/zh-CN/main.json',
+        'src/locales/ja/nodeDefs.json',
+        'src/locales/.source-manifest.json'
+      ])
+    ].flat()
+
+    expect(commands).toContain(
+      `${stagedEslint} "src/locales/ja/main.json" "apps/website/src/locales/zh-CN/main.json"`
+    )
+    expect(commands.some((command) => command.includes('oxlint '))).toBe(false)
+  })
+
   it('keeps per-file commands scoped to their own chunk', async () => {
     const lintStaged = await freshConfig()
 

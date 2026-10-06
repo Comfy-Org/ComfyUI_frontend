@@ -18,14 +18,13 @@ import type {
 } from '@/auth/signInState'
 import { signInTransition } from '@/auth/signInState'
 import en from '@/locales/en/main.json' with { type: 'json' }
+import { createBillingI18n } from '@/i18n'
 import { resolveBillingWebIdentity } from '@/config/firebase'
 import { boundWorkspaceId } from '@/entry/workspaceBinding'
 import {
   billingWebSessionClient,
   useBillingWebSession
 } from '@/session/billingWebSession'
-
-const AUTH_ERROR_COPY: AuthErrorCopy = en.auth.errors
 
 export type SessionEstablishment =
   | { readonly status: 'ok' }
@@ -68,7 +67,8 @@ export function sessionClientPort(): SignInPort {
 
 export function useSignInController(
   onSignedIn: () => void,
-  port: SignInPort = sessionClientPort()
+  port: SignInPort = sessionClientPort(),
+  translate: (key: string) => string = createBillingI18n().global.t
 ) {
   const { user } = port
   const state = ref<SignInState>({ step: 'idle' })
@@ -97,7 +97,16 @@ export function useSignInController(
   })
   const errorMessage = computed(() =>
     state.value.step === 'error'
-      ? authErrorMessage(state.value.classification, AUTH_ERROR_COPY)
+      ? authErrorMessage(state.value.classification, {
+          ...Object.fromEntries(
+            Object.keys(en.auth.errors).map((key) => [
+              key,
+              translate(`auth.errors.${key}`)
+            ])
+          ),
+          generic: translate('auth.errors.generic'),
+          signupBlocked: translate('auth.errors.signupBlocked')
+        } satisfies AuthErrorCopy)
       : ''
   )
 

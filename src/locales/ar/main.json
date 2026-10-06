@@ -472,7 +472,7 @@
       "auth/user-disabled": "تم تعطيل هذا الحساب. يرجى الاتصال بالدعم.",
       "auth/weak-password": "كلمة المرور ضعيفة جداً. يرجى استخدام كلمة مرور أقوى تحتوي على 6 أحرف على الأقل.",
       "generic": "حدث خطأ أثناء تسجيل الدخول. يرجى المحاولة مرة أخرى.",
-      "signupBlocked": "تعذر إنشاء حسابك الآن. يرجى المحاولة لاحقًا. إذا استمرت المشكلة، راسل support@comfy.org."
+      "signupBlocked": "تعذر إنشاء حسابك الآن. يرجى المحاولة لاحقًا. إذا استمرت المشكلة، راسل support{'@'}comfy.org."
     },
     "hidePassword": "إخفاء كلمة المرور",
     "login": {
@@ -928,7 +928,7 @@
     "uploadWorkflowButton": "رفع سير عملي",
     "usernameError": "٣–٤٢ حرفًا صغيرًا أو رقمًا أو شرطة، ويجب أن يبدأ وينتهي بحرف أو رقم",
     "usernameLabel": "اسم المستخدم (إجباري)",
-    "usernamePlaceholder": "@"
+    "usernamePlaceholder": "{'@'}"
   },
   "comfyHubPublish": {
     "additionalInfo": "معلومات إضافية",

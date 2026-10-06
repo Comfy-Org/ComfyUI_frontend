@@ -9,6 +9,15 @@
 
 ## Technical Process (Confirmed Working)
 
+### Message Syntax
+
+App UI catalogs, website catalogs, and package catalogs use Vue I18n message
+syntax. Write literal `@`, `|`, `{`, and `}` as `{'@'}`, `{'|'}`, `{'{'}`, and
+`{'}'}`. Keep named placeholders such as `{count}` intact. `pnpm lint:unstaged`
+checks changed catalogs with Intlify's syntax validator, and commits and CI run
+the same rule. Raw app `nodeDefs.json` text and publication metadata are outside
+this check.
+
 ### Prerequisites
 
 - Node.js installed

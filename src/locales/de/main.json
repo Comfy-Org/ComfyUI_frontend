@@ -472,7 +472,7 @@
       "auth/user-disabled": "Dieses Konto wurde deaktiviert. Bitte kontaktieren Sie den Support.",
       "auth/weak-password": "Das Passwort ist zu schwach. Bitte verwenden Sie ein stärkeres Passwort mit mindestens 6 Zeichen.",
       "generic": "Bei der Anmeldung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.",
-      "signupBlocked": "Ihr Konto konnte derzeit nicht erstellt werden. Bitte versuchen Sie es später erneut. Wenn dies weiterhin passiert, schreiben Sie an support@comfy.org."
+      "signupBlocked": "Ihr Konto konnte derzeit nicht erstellt werden. Bitte versuchen Sie es später erneut. Wenn dies weiterhin passiert, schreiben Sie an support{'@'}comfy.org."
     },
     "hidePassword": "Passwort ausblenden",
     "login": {
@@ -928,7 +928,7 @@
     "uploadWorkflowButton": "Meinen Workflow hochladen",
     "usernameError": "3–42 alphanumerische Kleinbuchstaben und Bindestriche; muss mit einem Buchstaben oder einer Zahl beginnen und enden",
     "usernameLabel": "Ihr Benutzername (erforderlich)",
-    "usernamePlaceholder": "@"
+    "usernamePlaceholder": "{'@'}"
   },
   "comfyHubPublish": {
     "additionalInfo": "Zusätzliche Informationen",

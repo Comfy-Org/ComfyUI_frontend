@@ -46,7 +46,7 @@ export default function lintStaged(stagedFiles: string[]) {
       formattableFiles,
       'pnpm exec oxfmt --write --no-error-on-unmatched-pattern'
     ),
-    ...lintCommands(codeFiles, styleFiles, astroFiles),
+    ...lintCommands(codeFiles, styleFiles, relativePaths.filter(isEslintFile)),
     ...commandsWithFiles(
       astroFiles.map((fileName) => fileName.slice('apps/website/'.length)),
       'pnpm --dir apps/website exec prettier --write'
@@ -58,7 +58,7 @@ export default function lintStaged(stagedFiles: string[]) {
 function lintCommands(
   codeFiles: string[],
   styleFiles: string[],
-  astroFiles: string[]
+  eslintFiles: string[]
 ) {
   return [
     ...commandsWithFiles(
@@ -70,7 +70,7 @@ function lintCommands(
       'pnpm exec oxlint --type-aware --no-error-on-unmatched-pattern --fix'
     ),
     ...commandsWithFiles(
-      [...codeFiles, ...astroFiles].filter(isEslintFile),
+      eslintFiles,
       `pnpm exec eslint --cache --concurrency auto --fix --no-warn-ignored ${skipCanonicalClasses}`
     )
   ]

@@ -472,7 +472,7 @@
       "auth/user-disabled": "このアカウントは無効化されています。サポートまでご連絡ください。",
       "auth/weak-password": "パスワードが弱すぎます。6文字以上のより強力なパスワードを使用してください。",
       "generic": "サインイン中に問題が発生しました。もう一度お試しください。",
-      "signupBlocked": "現在アカウントを作成できません。しばらくしてから再度お試しください。繰り返し発生する場合は support@comfy.org までご連絡ください。"
+      "signupBlocked": "現在アカウントを作成できません。しばらくしてから再度お試しください。繰り返し発生する場合は support{'@'}comfy.org までご連絡ください。"
     },
     "hidePassword": "パスワードを非表示",
     "login": {
@@ -928,7 +928,7 @@
     "uploadWorkflowButton": "ワークフローをアップロード",
     "usernameError": "3～42文字の半角英数字とハイフン、小文字で始まり終わる必要があります",
     "usernameLabel": "ユーザー名（必須）",
-    "usernamePlaceholder": "@"
+    "usernamePlaceholder": "{'@'}"
   },
   "comfyHubPublish": {
     "additionalInfo": "追加情報",

@@ -472,7 +472,7 @@
       "auth/user-disabled": "Esta conta foi desativada. Por favor, entre em contato com o suporte.",
       "auth/weak-password": "A senha é muito fraca. Use uma senha mais forte com pelo menos 6 caracteres.",
       "generic": "Algo deu errado ao fazer login. Por favor, tente novamente.",
-      "signupBlocked": "Não foi possível criar sua conta agora. Por favor, tente novamente mais tarde. Se o problema persistir, envie um e-mail para support@comfy.org."
+      "signupBlocked": "Não foi possível criar sua conta agora. Por favor, tente novamente mais tarde. Se o problema persistir, envie um e-mail para support{'@'}comfy.org."
     },
     "hidePassword": "Ocultar senha",
     "login": {
@@ -928,7 +928,7 @@
     "uploadWorkflowButton": "Enviar meu fluxo de trabalho",
     "usernameError": "3–42 caracteres alfanuméricos minúsculos e hífens, deve começar e terminar com uma letra ou número",
     "usernameLabel": "Seu nome de usuário (obrigatório)",
-    "usernamePlaceholder": "@"
+    "usernamePlaceholder": "{'@'}"
   },
   "comfyHubPublish": {
     "additionalInfo": "Informações adicionais",

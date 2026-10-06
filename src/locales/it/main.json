@@ -472,7 +472,7 @@
       "auth/user-disabled": "Questo account è stato disabilitato. Contatta il supporto.",
       "auth/weak-password": "La password è troppo debole. Usa una password più sicura di almeno 6 caratteri.",
       "generic": "Si è verificato un errore durante l'accesso. Per favore riprova.",
-      "signupBlocked": "Non siamo riusciti a creare il tuo account in questo momento. Per favore riprova più tardi. Se il problema persiste, scrivi a support@comfy.org."
+      "signupBlocked": "Non siamo riusciti a creare il tuo account in questo momento. Per favore riprova più tardi. Se il problema persiste, scrivi a support{'@'}comfy.org."
     },
     "hidePassword": "Nascondi password",
     "login": {
@@ -928,7 +928,7 @@
     "uploadWorkflowButton": "Carica il mio workflow",
     "usernameError": "3–42 caratteri minuscoli alfanumerici e trattini, deve iniziare e finire con una lettera o un numero",
     "usernameLabel": "Il tuo username (obbligatorio)",
-    "usernamePlaceholder": "@"
+    "usernamePlaceholder": "{'@'}"
   },
   "comfyHubPublish": {
     "additionalInfo": "Informazioni aggiuntive",

@@ -34,9 +34,13 @@ const {
   submitEmail,
   retryMint,
   retryAvailability
-} = useSignInController(() => {
-  void router.replace(safeReturnTo(route.query.returnTo))
-}, billingWebSignInPort())
+} = useSignInController(
+  () => {
+    void router.replace(safeReturnTo(route.query.returnTo))
+  },
+  billingWebSignInPort(),
+  t
+)
 
 const showEmailForm = ref(false)
 const emailForm = ref<InstanceType<typeof SignInEmailForm>>()

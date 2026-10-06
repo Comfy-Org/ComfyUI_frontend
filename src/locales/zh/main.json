@@ -472,7 +472,7 @@
       "auth/user-disabled": "此账户已被禁用。请联系客服。",
       "auth/weak-password": "密码强度太弱。请使用至少6个字符的更强密码。",
       "generic": "登录时出现问题，请重试。",
-      "signupBlocked": "我们目前无法创建您的账户。请稍后再试。如果问题持续，请发送邮件至 support@comfy.org。"
+      "signupBlocked": "我们目前无法创建您的账户。请稍后再试。如果问题持续，请发送邮件至 support{'@'}comfy.org。"
     },
     "hidePassword": "隐藏密码",
     "login": {
@@ -928,7 +928,7 @@
     "uploadWorkflowButton": "上传我的工作流",
     "usernameError": "用户名需为 3–42 个小写字母、数字或连字符，且必须以字母或数字开头和结尾",
     "usernameLabel": "你的用户名（必填）",
-    "usernamePlaceholder": "@"
+    "usernamePlaceholder": "{'@'}"
   },
   "comfyHubPublish": {
     "additionalInfo": "附加信息",

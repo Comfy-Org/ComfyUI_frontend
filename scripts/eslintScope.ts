@@ -8,11 +8,18 @@ export const templateFiles = ['**/*.vue', '**/*.astro', '**/*.astro/*.{js,ts}']
 export const tailwindScriptFiles = ['{src,apps,packages}/**/*.ts']
 export const tailwindScriptIgnores = ['**/*.test.ts', '**/*.d.ts']
 
+export const i18nCatalogFiles = [
+  'src/locales/*/{main,commands,settings}.json',
+  'apps/*/src/locales/*/*.json',
+  'packages/*/src/locales/*/*.json'
+]
+
 const matchesAny = (fileName: string, patterns: string[]) =>
   patterns.some((pattern) => path.matchesGlob(fileName, pattern))
 
 export function isEslintFile(fileName: string): boolean {
   return (
+    matchesAny(fileName, i18nCatalogFiles) ||
     matchesAny(fileName, templateFiles) ||
     (matchesAny(fileName, tailwindScriptFiles) &&
       !matchesAny(fileName, tailwindScriptIgnores))
