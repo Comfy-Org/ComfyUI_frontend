@@ -22,6 +22,17 @@ function latestUsage(
     : currentUsage
 }
 
+function incrementUsage(
+  usage: FeatureUsage | undefined,
+  now: number
+): FeatureUsage {
+  return {
+    useCount: (usage?.useCount ?? 0) + 1,
+    firstUsed: usage?.firstUsed ?? now,
+    lastUsed: now
+  }
+}
+
 function persistUsageData(
   featureId: string,
   currentUsage: FeatureUsage | undefined,
@@ -32,16 +43,14 @@ function persistUsageData(
     const storedUsageData = oldValue
       ? (JSON.parse(oldValue) as FeatureUsageRecord)
       : {}
-    const storedUsage = storedUsageData[featureId]
-    const existing = latestUsage(storedUsage, currentUsage)
-    const usage = {
-      useCount: (existing?.useCount ?? 0) + 1,
-      firstUsed: existing?.firstUsed ?? now,
-      lastUsed: now
+    const usageData = {
+      ...storedUsageData,
+      [featureId]: incrementUsage(
+        latestUsage(storedUsageData[featureId], currentUsage),
+        now
+      )
     }
-    const usageData = { ...storedUsageData, [featureId]: usage }
     const newValue = JSON.stringify(usageData)
-    if (oldValue === newValue) return usageData
 
     localStorage.setItem(STORAGE_KEY, newValue)
     window.dispatchEvent(
@@ -63,9 +72,7 @@ function persistUsageData(
  * Persists to localStorage.
  */
 export function useFeatureUsageTracker(featureId: string) {
-  const usageData = useStorage<FeatureUsageRecord>(STORAGE_KEY, {}, undefined, {
-    flush: 'sync'
-  })
+  const usageData = useStorage<FeatureUsageRecord>(STORAGE_KEY, {})
 
   const usage = computed(() => usageData.value[featureId])
   const useCount = computed(() => usage.value?.useCount ?? 0)
@@ -74,14 +81,9 @@ export function useFeatureUsageTracker(featureId: string) {
     const now = Date.now()
     const existing = usageData.value[featureId]
 
-    const nextUsage = {
-      useCount: (existing?.useCount ?? 0) + 1,
-      firstUsed: existing?.firstUsed ?? now,
-      lastUsed: now
-    }
     usageData.value = persistUsageData(featureId, existing, now) ?? {
       ...usageData.value,
-      [featureId]: nextUsage
+      [featureId]: incrementUsage(existing, now)
     }
   }
 
