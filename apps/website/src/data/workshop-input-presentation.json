@@ -1819,6 +1819,12 @@
       "options": {
         "hidden": true
       },
+      "aspect_ratio": {
+        "hidden": true
+      },
+      "duration": {
+        "hidden": true
+      },
       "settings": {
         "label": "Video settings",
         "help": "Set resolution, aspect ratio, and duration for the generated clip.",
@@ -2215,6 +2221,12 @@
       },
       "moderation": {
         "fixed": "auto"
+      },
+      "image": {
+        "hidden": true
+      },
+      "mask": {
+        "hidden": true
       }
     },
     "openai/gpt-image-1.5": {
@@ -2230,6 +2242,12 @@
       },
       "moderation": {
         "fixed": "auto"
+      },
+      "image": {
+        "hidden": true
+      },
+      "mask": {
+        "hidden": true
       }
     },
     "openai/gpt-image-2": {

@@ -266,6 +266,44 @@ describe('curated model inputs', () => {
     expect(controls).toEqual([])
   })
 
+  it.for([
+    'openai--gpt-image-1--edit-images',
+    'openai--gpt-image-1.5--edit-images'
+  ])('renders no free-text image or mask field on %s', async (pageId) => {
+    const model = getRouterWorkshopModelDetail(pageId)
+    if (!model) throw new Error(`Missing ${pageId} page`)
+    const names = initialWorkshopPageState(model).schema.map(
+      (field) => field.name
+    )
+    expect(names).toContain('prompt')
+    expect(names).not.toContain('image')
+    expect(names).not.toContain('mask')
+    const render = await prepareModelRouterRender(model)
+    expect(render.body).not.toHaveProperty('image')
+    expect(render.body).not.toHaveProperty('mask')
+  })
+
+  it('gives Kling 3.0 Turbo one aspect-ratio and one duration control, sent nested under settings', async () => {
+    const model = getRouterWorkshopModelDetail(
+      'kling--kling-3.0-turbo-text-to-video--generate-videos'
+    )
+    if (!model) throw new Error('Missing Kling 3.0 Turbo page')
+    const names = initialWorkshopPageState(model).schema.map(
+      (field) => field.name
+    )
+    expect(names.filter((name) => name.endsWith('aspect_ratio'))).toEqual([
+      'setting_aspect_ratio'
+    ])
+    expect(names.filter((name) => name.endsWith('duration'))).toEqual([
+      'setting_duration'
+    ])
+    const render = await prepareModelRouterRender(model)
+    expect(render.body).not.toHaveProperty('aspect_ratio')
+    expect(render.body).not.toHaveProperty('duration')
+    expect(render.body).toHaveProperty('settings.aspect_ratio')
+    expect(render.body).toHaveProperty('settings.duration')
+  })
+
   it('applies every model-specific widget to an authored Router schema', () => {
     for (const [id, rules] of Object.entries(rawPresentation.models)) {
       const snapshot = sources.get(id)
