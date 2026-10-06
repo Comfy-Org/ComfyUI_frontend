@@ -1,7 +1,8 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
 
-import { collectGraphIds } from '@/utils/jsonLd'
+import { NON_DEFAULT_LOCALE_PREFIXES } from '@/config/locales'
+import { collectGraphIds, isIdReference } from '@/utils/jsonLd'
 
 import { isDirectExecution } from './script-entry-point'
 
@@ -16,6 +17,9 @@ const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/
 const VIDEO_FILE = /\.(mp4|webm|mov)(\?|#|$)/i
 const PLACEHOLDER = /^(undefined|null|NaN)$/
 const DECIMAL = /^\d+(\.\d+)?$/
+const MODEL_PAGE = new RegExp(
+  `^(?:${NON_DEFAULT_LOCALE_PREFIXES.join('|')})?/(?:hub/)?models/(?!local/)[^/]+/`
+)
 const WEB_PAGE_TYPES = [
   'WebPage',
   'AboutPage',
@@ -66,6 +70,15 @@ function isAbsoluteHttpUrl(value: unknown): boolean {
   return typeof value === 'string' && /^https?:\/\/[^/]/.test(value)
 }
 
+function show(value: unknown): string {
+  return value === undefined ? 'undefined' : JSON.stringify(value)
+}
+
+function locatorOf(node: JsonLdRecord): string {
+  const id = node['@id']
+  return typeof id === 'string' ? id : typesOf(node).join('/') || '(untyped)'
+}
+
 function missing(node: JsonLdRecord, fields: string[]): string[] {
   const type = typesOf(node).join('/')
   return fields
@@ -76,14 +89,15 @@ function missing(node: JsonLdRecord, fields: string[]): string[] {
 function resolve(value: unknown, page: PageContext): JsonLdRecord | undefined {
   if (!isRecord(value)) return undefined
   const id = value['@id']
-  if (typeof id === 'string' && Object.keys(value).length === 1) {
-    return page.nodesById.get(id)
+  if (isIdReference(value) && typeof id === 'string') {
+    return page.nodesById.get(id) ?? value
   }
   return value
 }
 
-function isModelPage(pagePath: string): boolean {
-  return /^\/(hub\/)?models\/[^/]+\//.test(pagePath)
+function isConcretePrice(price: unknown): boolean {
+  if (typeof price === 'number') return Number.isFinite(price) && price >= 0
+  return typeof price === 'string' && DECIMAL.test(price.trim())
 }
 
 const honesty: Rule = (node) => {
@@ -100,12 +114,20 @@ const honesty: Rule = (node) => {
 
 const offer: Rule = (node, page) => {
   if (!typesOf(node).includes('Offer')) return []
-  const priceText = String(node.price ?? '').trim()
-  if (!DECIMAL.test(priceText) || isBlank(node.priceCurrency)) {
-    return ['Offer missing priceCurrency or a concrete price']
+  const specification = asList(node.priceSpecification).find(isRecord)
+  const price = node.price ?? specification?.price
+  const currency = node.priceCurrency ?? specification?.priceCurrency
+  if (
+    !isConcretePrice(price) ||
+    typeof currency !== 'string' ||
+    isBlank(currency)
+  ) {
+    return [
+      `Offer missing priceCurrency or a concrete price: price ${show(price)}, priceCurrency ${show(currency)}`
+    ]
   }
-  if (isModelPage(page.pagePath) && Number(priceText) === 0) {
-    return [`model page Offer has a zero price ${String(node.price)}`]
+  if (MODEL_PAGE.test(page.pagePath) && Number(price) === 0) {
+    return [`model page Offer has a zero price ${show(price)}`]
   }
   return []
 }
@@ -113,10 +135,13 @@ const offer: Rule = (node, page) => {
 const product: Rule = (node, page) => {
   if (!typesOf(node).includes('Product')) return []
   const problems = missing(node, ['name', 'image', 'offers'])
+  if (isBlank(node.brand)) return problems
   const brand = resolve(node.brand, page)
   const brandTypes = brand ? typesOf(brand) : []
   if (!brandTypes.some((type) => type === 'Brand' || type === 'Organization')) {
-    problems.push('Product brand is not a Brand or Organization')
+    problems.push(
+      `Product brand ${show(node.brand)} is not a Brand or Organization`
+    )
   }
   return problems
 }
@@ -127,7 +152,7 @@ const video: Rule = (node) => {
   const { uploadDate } = node
   if (!isBlank(uploadDate) && !FULL_DATE_TIME.test(String(uploadDate))) {
     problems.push(
-      `VideoObject uploadDate ${String(uploadDate)} lacks a time and offset`
+      `VideoObject uploadDate ${show(uploadDate)} lacks a time and offset`
     )
   }
   return problems
@@ -135,12 +160,13 @@ const video: Rule = (node) => {
 
 const event: Rule = (node) => {
   if (!typesOf(node).includes('Event')) return []
-  const startDate = String(node.startDate ?? '')
-  return DATE_ONLY.test(startDate) || FULL_DATE_TIME.test(startDate)
+  const { startDate } = node
+  const isIsoDate =
+    typeof startDate === 'string' &&
+    (DATE_ONLY.test(startDate) || FULL_DATE_TIME.test(startDate))
+  return isIsoDate
     ? []
-    : [
-        `Event startDate ${startDate || '(missing)'} is not ISO 8601 with offset`
-      ]
+    : [`Event startDate ${show(startDate)} is not ISO 8601 with offset`]
 }
 
 const imagesAreImages: Rule = (node) => {
@@ -155,25 +181,41 @@ const imagesAreImages: Rule = (node) => {
     .map((url) => `video file used as an image: ${url}`)
 }
 
+function crumbUrl(item: unknown): unknown {
+  return isRecord(item) ? item['@id'] : item
+}
+
+function crumbName(crumb: JsonLdRecord): unknown {
+  return crumb.name ?? (isRecord(crumb.item) ? crumb.item.name : undefined)
+}
+
 const breadcrumb: Rule = (node) => {
   if (!typesOf(node).includes('BreadcrumbList')) return []
   const items = asList(node.itemListElement)
-  return items.flatMap((item, index) => {
-    if (!isRecord(item)) {
-      return [`BreadcrumbList item ${index + 1} is not a ListItem`]
-    }
-    const problems: string[] = []
-    if (item.position !== index + 1) {
-      problems.push(
-        `BreadcrumbList item ${index + 1} has position ${String(item.position)}`
-      )
-    }
-    const isLast = index === items.length - 1
-    if (!isLast && !isAbsoluteHttpUrl(item.item)) {
-      problems.push(`BreadcrumbList item ${index + 1} has no absolute item URL`)
-    }
-    return problems
-  })
+  const malformed = items.flatMap((item, index) =>
+    isRecord(item)
+      ? []
+      : [`BreadcrumbList entry ${index + 1} is not a ListItem`]
+  )
+  const crumbs = items
+    .filter(isRecord)
+    .toSorted((a, b) => Number(a.position) - Number(b.position))
+  return [
+    ...malformed,
+    ...crumbs.flatMap((crumb, index) => {
+      const label = `BreadcrumbList item ${index + 1}`
+      const problems: string[] = []
+      if (crumb.position !== index + 1) {
+        problems.push(`${label} has position ${show(crumb.position)}`)
+      }
+      if (isBlank(crumbName(crumb))) problems.push(`${label} has no name`)
+      const isLast = index === crumbs.length - 1
+      if (!isLast && !isAbsoluteHttpUrl(crumbUrl(crumb.item))) {
+        problems.push(`${label} has no absolute item URL`)
+      }
+      return problems
+    })
+  ]
 }
 
 const itemList: Rule = (node) => {
@@ -183,9 +225,7 @@ const itemList: Rule = (node) => {
   const count = asList(node.itemListElement).length
   return node.numberOfItems === count
     ? []
-    : [
-        `ItemList numberOfItems ${String(node.numberOfItems)} but ${count} listed`
-      ]
+    : [`ItemList numberOfItems ${show(node.numberOfItems)} but ${count} listed`]
 }
 
 const webPage: Rule = (node, page) => {
@@ -200,7 +240,7 @@ const webPage: Rule = (node, page) => {
     problems.push(`WebPage @id ${id} does not match canonical`)
   }
   if (node.url !== page.canonical) {
-    problems.push(`WebPage url ${String(node.url)} does not match canonical`)
+    problems.push(`WebPage url ${show(node.url)} does not match canonical`)
   }
   return problems
 }
@@ -266,7 +306,7 @@ export function validateHtml(html: string, pagePath: string): Violation[] {
     referencedIds.push(...references)
     eachNode(block, (node) => {
       const id = node['@id']
-      if (typeof id !== 'string' || Object.keys(node).length === 1) return
+      if (typeof id !== 'string' || isIdReference(node)) return
       if (nodesById.has(id)) {
         violations.push({
           rule: 'duplicateIds',
@@ -286,7 +326,7 @@ export function validateHtml(html: string, pagePath: string): Violation[] {
     eachNode(block, (node) => {
       for (const [rule, check] of Object.entries(RULES)) {
         for (const message of check(node, page)) {
-          violations.push({ rule, message })
+          violations.push({ rule, message: `${locatorOf(node)}: ${message}` })
         }
       }
     })
@@ -313,15 +353,14 @@ function pagePathOf(distDir: string, file: string): string {
   return `/${rel.replace(/index\.html$/, '')}`
 }
 
-function main(): void {
-  const distDir = join(process.cwd(), 'dist')
+export function main(distDir: string): number {
   const files = htmlFiles(distDir)
 
   if (files.length === 0) {
     console.error(
       `JSON-LD validation found no HTML in ${distDir} — build first.`
     )
-    process.exit(1)
+    return 1
   }
 
   const failures = files.flatMap((file) => {
@@ -335,12 +374,15 @@ function main(): void {
     for (const { pagePath, rule, message } of failures) {
       console.error(`  ${pagePath} [${rule}]: ${message}`)
     }
-    process.exit(1)
+    return 1
   }
 
   process.stdout.write(
     `JSON-LD validation passed across ${files.length} page(s).\n`
   )
+  return 0
 }
 
-if (isDirectExecution(process.argv[1], import.meta.filename)) main()
+if (isDirectExecution(process.argv[1], import.meta.filename)) {
+  process.exitCode = main(join(process.cwd(), 'dist'))
+}
