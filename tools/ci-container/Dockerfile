@@ -1,6 +1,6 @@
 # Stage 1: Build Python dependencies with uv (Python 3.12 pinned)
 FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS builder
-ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy UV_PYTHON_DOWNLOADS=0
+ENV UV_LINK_MODE=copy UV_PYTHON_DOWNLOADS=0
 
 ARG COMFYUI_VERSION=v0.30.0
 
@@ -15,6 +15,11 @@ RUN uv venv $VIRTUAL_ENV
 RUN uv pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu && \
     uv pip install -r /ComfyUI/requirements.txt && \
     uv pip install wait-for-it
+
+RUN rm -rf /ComfyUI/.git && \
+    rm /opt/venv/lib/python3.12/site-packages/comfy_kitchen/backends/cuda/_C.abi3.so \
+       /opt/venv/lib/python3.12/site-packages/comfy_kitchen/backends/hip/_C.abi3.so && \
+    find /opt/venv -name '*.pyc' -delete
 
 # Stage 2: Final image with Playwright
 FROM mcr.microsoft.com/playwright:v1.63.0-noble
@@ -36,8 +41,8 @@ RUN curl -fsSL https://fnm.vercel.app/install | bash -s -- --install-dir /usr/lo
  && chmod -R a+w /opt/fnm
 
 # Copy venv and ComfyUI from builder
-COPY --from=builder /opt/venv /opt/venv
-COPY --from=builder /ComfyUI /ComfyUI
+COPY --from=builder --chown=pwuser:pwuser /opt/venv /opt/venv
+COPY --from=builder --chown=pwuser:pwuser /ComfyUI /ComfyUI
 
 # Fix venv Python symlinks to point to system Python (builder used /usr/local/bin/python)
 RUN ln -sf /usr/bin/python3 /opt/venv/bin/python && \
@@ -49,10 +54,10 @@ ENV PATH="/opt/venv/bin:$PATH"
 ENV VIRTUAL_ENV="/opt/venv"
 
 # Create devtools directory (for mounting/copying at runtime)
-RUN mkdir -p /ComfyUI/custom_nodes/ComfyUI_devtools
+RUN install -d -o pwuser -g pwuser /ComfyUI/custom_nodes/ComfyUI_devtools
 
 # Set ownership for pwuser (from Playwright base image)
-RUN mkdir -p /app && chown -R pwuser:pwuser /ComfyUI /opt/venv /app
+RUN install -d -o pwuser -g pwuser /app
 
 USER pwuser
 WORKDIR /app

@@ -42,6 +42,62 @@ curl --fail --silent --show-error \
   http://127.0.0.1:8188/api/devtools/fake_model.safetensors -o /tmp/fake_model.safetensors
 cmp tools/devtools/fake_model.safetensors /tmp/fake_model.safetensors
 
+python3 - <<'PY'
+import json
+from importlib.resources import files
+from pathlib import Path
+from urllib.request import urlopen
+
+import comfy_kitchen
+import torch
+from comfyui_workflow_templates_core import iter_assets
+
+assert torch.version.cuda is None and torch.version.hip is None
+values = torch.tensor([[-3.0, 0.5, 2.0]])
+quantized, scale = comfy_kitchen.quantize_int8_tensorwise(values, scale=0.5)
+torch.testing.assert_close(quantized, torch.tensor([[-6, 1, 4]], dtype=torch.int8))
+torch.testing.assert_close(comfy_kitchen.dequantize_int8_simple(quantized, scale), values)
+print('CPU kitchen quantization and dequantization passed')
+
+with urlopen('http://127.0.0.1:8188/object_info', timeout=30) as response:
+    nodes = json.load(response)
+assert {'KSampler', 'SaveImage', 'EmptyImage'} <= nodes.keys()
+
+assets = {}
+for filename, path in iter_assets():
+    assets.setdefault(Path(path).parent, (f'/templates/{filename}', Path(path)))
+docs = files('comfyui_embedded_docs') / 'docs/KSampler/en.md'
+for route, path in [*assets.values(), ('/docs/KSampler/en.md', docs)]:
+    with urlopen(f'http://127.0.0.1:8188{route}', timeout=30) as response:
+        assert response.read() == path.read_bytes(), route
+    print(f'Asset bytes matched: {route}')
+PY
+
+python3 /ComfyUI/main.py --cpu --port 8189 >/tmp/default-frontend.log 2>&1 &
+trap 'cat /tmp/comfyui.log /tmp/default-frontend.log >&2' ERR
+wait-for-it --service 127.0.0.1:8189 -t 120
+curl --fail --silent --show-error http://127.0.0.1:8189/ -o /tmp/default-frontend.html
+cmp /opt/venv/lib/python3.12/site-packages/comfyui_frontend_package/static/index.html \
+  /tmp/default-frontend.html
+
+node --input-type=module <<'JS'
+import assert from 'node:assert/strict'
+import { firefox, webkit } from '@playwright/test'
+
+for (const browserType of [firefox, webkit]) {
+  const browser = await browserType.launch()
+  try {
+    const page = await browser.newPage()
+    const response = await page.goto('http://127.0.0.1:8188/')
+    assert.equal(response.status(), 200)
+    assert.equal(await page.title(), 'ComfyUI')
+    console.log(`${browserType.name()} served frontend successfully`)
+  } finally {
+    await browser.close()
+  }
+}
+JS
+
 node node_modules/@playwright/test/cli.js test \
   browser_tests/tests/infrastructure/setupApiUrl.spec.ts \
   --project chromium --workers 1 --retries 0 --reporter line --output /tmp/test-results
