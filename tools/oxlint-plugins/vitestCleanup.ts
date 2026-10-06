@@ -460,11 +460,44 @@ function isMockInstanceCleanup(statement: Node): boolean {
   )
 }
 
-function leadsHookBody(ancestors: readonly Node[], boundaryIndex: number) {
+function continuesReceiverChain(parent: Node, child: Node): boolean {
+  return (
+    parent.type === 'ChainExpression' ||
+    (parent.type === 'CallExpression' &&
+      (parent as CallExpression).callee === child) ||
+    (parent.type === 'MemberExpression' &&
+      (parent as MemberExpression).object === child)
+  )
+}
+
+function headsExpression(
+  ancestors: readonly Node[],
+  rootIndex: number,
+  node: CallExpression
+): boolean {
+  return ancestors
+    .slice(rootIndex + 1)
+    .every((parent, offset, chain) =>
+      continuesReceiverChain(parent, chain.at(offset + 1) ?? node)
+    )
+}
+
+function leadsHookBody(
+  ancestors: readonly Node[],
+  boundaryIndex: number,
+  node: CallExpression
+) {
   const body = ancestors.at(boundaryIndex + 1)
-  if (body?.type !== 'BlockStatement') return true
+  if (body?.type !== 'BlockStatement') {
+    return headsExpression(ancestors, boundaryIndex, node)
+  }
   const statement = ancestors.at(boundaryIndex + 2)
-  if (statement?.type !== 'ExpressionStatement') return false
+  if (
+    statement?.type !== 'ExpressionStatement' ||
+    !headsExpression(ancestors, boundaryIndex + 2, node)
+  ) {
+    return false
+  }
   const statements = (body as BlockStatement).body
   return statements
     .slice(0, statements.indexOf(statement))
@@ -514,7 +547,7 @@ function precedesBeforeEachSetup(
   const ancestors = context.sourceCode.getAncestors(node)
   const boundaryIndex = enclosingExecutionBoundaryIndex(ancestors)
   return (
-    leadsHookBody(ancestors, boundaryIndex) &&
+    leadsHookBody(ancestors, boundaryIndex, node) &&
     runsFirstAmongBeforeEachHooks(
       context,
       ancestors.slice(0, boundaryIndex - 1)

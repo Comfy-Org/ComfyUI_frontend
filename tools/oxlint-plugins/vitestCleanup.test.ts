@@ -315,6 +315,14 @@ describe('later hook in the same suite', () => {
   beforeEach(() => mock.mockClear())
   beforeEach(() => render())
 })
+describe('setup in the same expression', () => {
+  beforeEach(() => {
+    render() && mock.mockClear()
+  })
+})
+describe('concise setup in the same expression', () => {
+  beforeEach(() => render() && mock.mockClear())
+})
 it('allows per-mock cleanup in tests', () => {
   mock.mockClear()
   mock.mockReset()
