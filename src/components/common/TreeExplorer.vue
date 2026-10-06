@@ -13,14 +13,14 @@
     :get-key="(node) => node.key"
     :get-children="(node) => (node.leaf ? undefined : (node.children ?? []))"
   >
-    <template #default="{ flattenedItems }">
+    <template #default="{ flattenItems }">
       <UiTreeItem
-        v-for="item in flattenedItems"
+        v-for="item in flattenItems"
         :key="item._id"
         class="tree-explorer-item"
         :value="item.value"
         :level="item.level"
-        :has-children="item.hasChildren"
+        :aria-label="item.value.label"
         :data-parent-label="item.parentItem?.label"
         :data-tree-node-type="item.value.type"
         @select="preventUnboundSelection"
@@ -105,7 +105,7 @@ const {
   addFolderCommand
 } = useTreeFolderOperations<T>(
   /* expandNode */ (node: TreeExplorerNode<T>) => {
-    expandedKeys.value[node.key] = true
+    expandedKeys.value = { ...expandedKeys.value, [node.key]: true }
   }
 )
 

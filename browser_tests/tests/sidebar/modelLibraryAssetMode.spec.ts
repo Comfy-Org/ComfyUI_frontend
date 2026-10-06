@@ -463,7 +463,7 @@ test.describe('Model library sidebar - asset mode with a mid-retag twin tag', ()
     const tab = comfyPage.menu.modelLibraryTab
 
     await tab.getFolderByLabel('checkpoints').click()
-    await expect(tab.getLeavesByText('mid_retag_checkpoint')).toHaveCount(1)
+    await expect(tab.getLeavesByLabel('mid_retag_checkpoint')).toHaveCount(1)
 
     // loras carries a real model_type:loras asset so the folder itself
     // renders (asset mode hides folders that load with zero models) —

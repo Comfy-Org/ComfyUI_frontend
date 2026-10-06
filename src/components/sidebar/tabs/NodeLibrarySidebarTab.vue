@@ -22,7 +22,7 @@
           :aria-label="$t('sideToolbar.nodeLibraryTab.groupBy')"
           @click="groupingPopover?.toggle($event)"
         >
-          <i :class="[selectedGroupingIcon, 'size-4']" />
+          <i :class="cn(selectedGroupingIcon, 'size-4')" />
         </Button>
         <Button
           v-tooltip.bottom="$t('sideToolbar.nodeLibraryTab.sortMode')"
@@ -31,7 +31,7 @@
           :aria-label="$t('sideToolbar.nodeLibraryTab.sortMode')"
           @click="sortingPopover?.toggle($event)"
         >
-          <i :class="[selectedSortingIcon, 'size-4']" />
+          <i :class="cn(selectedSortingIcon, 'size-4')" />
         </Button>
         <Button
           v-tooltip.bottom="$t('sideToolbar.nodeLibraryTab.resetView')"
@@ -62,7 +62,7 @@
               class="justify-start"
               @click="selectGrouping(option.id)"
             >
-              <i :class="[option.icon, 'size-4']" />
+              <i :class="cn(option.icon, 'size-4')" />
               {{ $t(option.label) }}
             </Button>
           </div>
@@ -78,7 +78,7 @@
               class="justify-start"
               @click="selectSorting(option.id)"
             >
-              <i :class="[option.icon, 'size-4']" />
+              <i :class="cn(option.icon, 'size-4')" />
               {{ $t(option.label) }}
             </Button>
           </div>
@@ -208,6 +208,7 @@ import type {
 } from '@/types/nodeOrganizationTypes'
 import type { TreeExplorerNode, TreeNode } from '@/types/treeExplorerTypes'
 import type { FuseFilterWithValue } from '@/utils/fuseUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import NodeBookmarkTreeExplorer from './nodeLibrary/NodeBookmarkTreeExplorer.vue'
 

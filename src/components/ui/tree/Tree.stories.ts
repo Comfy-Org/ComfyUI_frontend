@@ -12,7 +12,6 @@ interface ModelItem {
 
 interface TreeStoryArgs {
   defaultExpanded: string[]
-  disabled: boolean
   items: ModelItem[]
 }
 
@@ -53,11 +52,7 @@ const meta: Meta<TreeStoryArgs> = {
   tags: ['autodocs'],
   args: {
     items: modelFolders,
-    defaultExpanded: [],
-    disabled: false
-  },
-  argTypes: {
-    disabled: { control: 'boolean' }
+    defaultExpanded: []
   },
   render: (args) => ({
     components: { Tree, TreeItem },
@@ -73,17 +68,15 @@ const meta: Meta<TreeStoryArgs> = {
         :items="args.items"
         :get-key="(item) => item.key"
         :get-children="(item) => item.children"
-        :disabled="args.disabled"
         aria-label="Models"
         class="w-72"
       >
-        <template #default="{ flattenedItems }">
+        <template #default="{ flattenItems }">
           <TreeItem
-            v-for="item in flattenedItems"
+            v-for="item in flattenItems"
             :key="item._id"
             :value="item.value"
             :level="item.level"
-            :has-children="item.hasChildren"
           >
             <i
               :class="
@@ -107,8 +100,4 @@ export const Default: Story = {}
 
 export const Nested: Story = {
   args: { defaultExpanded: ['checkpoints', 'checkpoints/sdxl', 'loras'] }
-}
-
-export const Disabled: Story = {
-  args: { disabled: true }
 }

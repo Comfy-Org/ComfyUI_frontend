@@ -11,7 +11,7 @@
       )
     "
   >
-    <slot :flattened-items="flattenItems" />
+    <slot :flatten-items="flattenItems" />
   </TreeRoot>
 </template>
 
@@ -23,7 +23,17 @@ import type { HTMLAttributes } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { class: className, ...restProps } = defineProps<
-  Omit<TreeRootProps<T>, 'defaultValue' | 'expanded' | 'modelValue'> & {
+  Omit<
+    TreeRootProps<T>,
+    | 'bubbleSelect'
+    | 'defaultExpanded'
+    | 'defaultValue'
+    | 'disabled'
+    | 'expanded'
+    | 'modelValue'
+    | 'multiple'
+    | 'propagateSelect'
+  > & {
     class?: HTMLAttributes['class']
   }
 >()

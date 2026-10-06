@@ -23,6 +23,6 @@ const { node } = defineProps<{
 const expandedKeys = inject(InjectKeyExpandedKeys)
 const handleItemDrop = (node: RenderedTreeExplorerNode<ComfyNodeDefImpl>) => {
   if (!expandedKeys) return
-  expandedKeys.value[node.key] = true
+  expandedKeys.value = { ...expandedKeys.value, [node.key]: true }
 }
 </script>

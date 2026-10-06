@@ -80,7 +80,6 @@ export interface RenderedTreeExplorerNode<
   type: 'folder' | 'node'
   /** Text to display on the leaf-count badge. Empty string means no badge. */
   badgeText?: string
-  children?: this[]
   iconColor?: string
   /** Whether the node label is currently being edited */
   isEditingLabel?: boolean

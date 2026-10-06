@@ -77,16 +77,18 @@ test.describe('Model library sidebar - folders', () => {
     const tab = comfyPage.menu.modelLibraryTab
     await tab.open()
 
-    // Click the folder to expand it
-    await tab.getFolderByLabel('checkpoints').click()
+    await test.step('Expand the folder', async () => {
+      await tab.getFolderByLabel('checkpoints').click()
 
-    // Models should appear as leaf nodes
-    await expect(tab.getLeafByLabel('sd_xl_base_1.0')).toBeVisible()
-    await expect(tab.getLeafByLabel('dreamshaper_8')).toBeVisible()
-    await expect(tab.getLeafByLabel('realisticVision_v51')).toBeVisible()
+      await expect(tab.getLeafByLabel('sd_xl_base_1.0')).toBeVisible()
+      await expect(tab.getLeafByLabel('dreamshaper_8')).toBeVisible()
+      await expect(tab.getLeafByLabel('realisticVision_v51')).toBeVisible()
+    })
 
-    await tab.getLeafByLabel('sd_xl_base_1.0').hover()
-    await expect(tab.modelPreview).toBeVisible()
+    await test.step('Hover a model to preview it', async () => {
+      await tab.getLeafByLabel('sd_xl_base_1.0').hover()
+      await expect(tab.modelPreview).toBeVisible()
+    })
   })
 
   test('Expanding a different folder shows its models', async ({

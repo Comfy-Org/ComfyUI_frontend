@@ -1,16 +1,16 @@
 <template>
   <TreeExplorer
     ref="treeExplorerRef"
+    v-model:expanded-keys="expandedKeys"
     class="node-lib-bookmark-tree-explorer"
     data-testid="node-library-bookmark-tree"
     :root="renderedBookmarkedRoot"
-    :expanded-keys="expandedKeys"
   >
     <template #folder="{ node }">
       <NodeTreeFolder :node="node" />
     </template>
     <template #node="{ node }">
-      <NodeTreeLeaf :node="node" :open-node-help="props.openNodeHelp" />
+      <NodeTreeLeaf :node="node" :open-node-help="openNodeHelp" />
     </template>
   </TreeExplorer>
 
@@ -53,7 +53,7 @@ import type {
 
 const instance = getCurrentInstance()!
 const appContext = instance.appContext
-const props = defineProps<{
+const { filteredNodeDefs, openNodeHelp } = defineProps<{
   filteredNodeDefs: ComfyNodeDefImpl[]
   openNodeHelp: (nodeDef: ComfyNodeDefImpl) => void
 }>()
@@ -70,7 +70,7 @@ const bookmarkedRoot = computed<TreeNode<ComfyNodeDefImpl>>(() => {
       if (!node.data) return null
       const nodeData = node.data
       // Check if the node's display_name is in the filteredNodeDefs list
-      return props.filteredNodeDefs.some((def) => def.name === nodeData.name)
+      return filteredNodeDefs.some((def) => def.name === nodeData.name)
         ? node
         : null
     }
@@ -89,7 +89,7 @@ const bookmarkedRoot = computed<TreeNode<ComfyNodeDefImpl>>(() => {
     return null // Remove empty folders
   }
 
-  return props.filteredNodeDefs.length
+  return filteredNodeDefs.length
     ? filterTree(nodeBookmarkStore.bookmarkedRoot) || {
         key: 'root',
         label: 'Root',
@@ -98,7 +98,7 @@ const bookmarkedRoot = computed<TreeNode<ComfyNodeDefImpl>>(() => {
     : nodeBookmarkStore.bookmarkedRoot
 })
 watch(
-  () => props.filteredNodeDefs,
+  () => filteredNodeDefs,
   async (newValue) => {
     if (newValue.length) {
       await nextTick()
@@ -187,13 +187,13 @@ const renderedBookmarkedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(
         },
         droppable: !node.leaf,
         async handleDrop(data: TreeExplorerDragAndDropData<ComfyNodeDefImpl>) {
+          const folderNodeDef = node.data
           const nodeDefToAdd = data.data.data
-          if (!nodeDefToAdd) return
+          if (!folderNodeDef || !nodeDefToAdd) return
           // Remove bookmark if the source is the top level bookmarked node.
           if (nodeBookmarkStore.isBookmarked(nodeDefToAdd)) {
             await nodeBookmarkStore.toggleBookmark(nodeDefToAdd)
           }
-          const folderNodeDef = node.data as ComfyNodeDefImpl
           const nodePath = folderNodeDef.category + '/' + nodeDefToAdd.name
           await nodeBookmarkStore.addBookmark(nodePath)
         },

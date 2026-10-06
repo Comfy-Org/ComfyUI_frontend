@@ -86,22 +86,18 @@ export class NodeLibrarySidebarTab extends SidebarTab {
   }
 
   getFolder(folderName: string) {
-    return this.page.locator(
-      `[data-testid="node-tree-folder"][data-folder-name="${folderName}"]`
-    )
+    return this.page.locator(this.folderSelector(folderName))
   }
 
   getFolderIcon(folderName: string) {
-    return this.page
+    return this.bookmarkTree
       .getByRole('treeitem')
       .filter({ has: this.getFolder(folderName) })
       .locator('.tree-explorer-node-icon')
   }
 
   getNode(nodeName: string) {
-    return this.page.locator(
-      `[data-testid="node-tree-leaf"][data-node-name="${nodeName}"]`
-    )
+    return this.page.locator(this.nodeSelector(nodeName))
   }
 
   nodeSelector(nodeName: string): string {
@@ -120,7 +116,7 @@ export class NodeLibrarySidebarTab extends SidebarTab {
     return this.nodeLibraryTree
       .getByRole('treeitem')
       .and(this.nodeLibraryTree.locator(`[data-parent-label="${folderName}"]`))
-      .locator(`[data-testid="node-tree-leaf"][data-node-name="${nodeName}"]`)
+      .locator(this.nodeSelector(nodeName))
   }
 }
 
@@ -291,31 +287,29 @@ export class ModelLibrarySidebarTab extends SidebarTab {
     await this.modelTree.waitFor({ state: 'visible' })
   }
 
-  getFolderByLabel(label: string) {
-    return this.modelTree
-      .getByRole('treeitem', { name: label })
-      .and(this.modelTree.locator('[data-tree-node-type="folder"]'))
+  getFolderByLabel(folderName: string) {
+    return this.folderNodes
+      .and(this.modelTree.getByRole('treeitem', { name: folderName }))
       .first()
   }
 
-  getLeafByLabel(label: string) {
-    return this.modelTree
-      .getByRole('treeitem', { name: label })
-      .and(this.modelTree.locator('[data-tree-node-type="node"]'))
-      .first()
+  getFolderLeafCount(folderName: string) {
+    return this.getFolderByLabel(folderName).getByTestId(TestIds.tree.leafCount)
   }
 
-  getFolderLeafCount(label: string) {
-    return this.getFolderByLabel(label).getByTestId(TestIds.tree.leafCount)
+  getLeafByLabel(leafName: string) {
+    return this.getLeavesByLabel(leafName).first()
   }
 
-  getLeavesByText(text: string) {
-    return this.leafNodes.filter({ hasText: text })
+  getLeavesByLabel(leafName: string) {
+    return this.leafNodes.and(
+      this.modelTree.getByRole('treeitem', { name: leafName })
+    )
   }
 
-  getLeavesInFolder(text: string, folderLabel: string) {
-    return this.getLeavesByText(text).and(
-      this.modelTree.locator(`[data-parent-label="${folderLabel}"]`)
+  getLeavesInFolder(leafName: string, folderName: string) {
+    return this.getLeavesByLabel(leafName).and(
+      this.modelTree.locator(`[data-parent-label="${folderName}"]`)
     )
   }
 }

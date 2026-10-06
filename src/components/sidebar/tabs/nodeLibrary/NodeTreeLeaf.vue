@@ -73,8 +73,8 @@
 
 <script setup lang="ts">
 import type { CSSProperties } from 'vue'
-import { useEventListener } from '@vueuse/core'
-import { computed, nextTick, ref } from 'vue'
+import { useElementHover } from '@vueuse/core'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
@@ -94,13 +94,13 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 const { t } = useI18n()
 
-const props = defineProps<{
+const { node, openNodeHelp } = defineProps<{
   node: RenderedTreeExplorerNode<ComfyNodeDefImpl>
   openNodeHelp: (nodeDef: ComfyNodeDefImpl) => void
 }>()
 
 // Note: node.data should be present for leaf nodes.
-const nodeDef = computed(() => props.node.data!)
+const nodeDef = computed(() => node.data!)
 const nodeBookmarkStore = useNodeBookmarkStore()
 const isBookmarked = computed(() =>
   nodeBookmarkStore.isBookmarked(nodeDef.value)
@@ -119,14 +119,14 @@ const onHelpClick = () => {
     button_id: 'node_library_help_button',
     element_group: 'node_library'
   })
-  props.openNodeHelp(nodeDef.value)
+  openNodeHelp(nodeDef.value)
 }
 const editBlueprint = async () => {
-  if (!props.node.data) {
+  if (!node.data) {
     console.error('Failed to edit subgraph blueprint lacking backing node data')
     return
   }
-  await useSubgraphStore().editBlueprint(props.node.data.name)
+  await useSubgraphStore().editBlueprint(node.data.name)
 }
 const menu = ref<InstanceType<typeof ContextMenu> | null>(null)
 const subgraphStore = useSubgraphStore()
@@ -154,8 +154,8 @@ function handleContextMenu(event: Event) {
   menu.value?.show(event)
 }
 function deleteBlueprint() {
-  if (!props.node.data) return
-  void subgraphStore.deleteBlueprint(props.node.data.name)
+  if (!node.data) return
+  void subgraphStore.deleteBlueprint(node.data.name)
 }
 
 const nodePreviewStyle = ref<CSSProperties>({
@@ -166,7 +166,7 @@ const nodePreviewStyle = ref<CSSProperties>({
   zIndex: 1001
 })
 
-const handleNodeHover = async () => {
+const handleNodeHover = () => {
   const hoverTarget = nodeContentElement.value
   if (!hoverTarget) return
 
@@ -186,15 +186,10 @@ const container = ref<HTMLElement | null>(null)
 const nodeContentElement = computed(() =>
   container.value?.closest<HTMLElement>('.tree-explorer-item')
 )
-const isHovered = ref(false)
-const handleMouseEnter = async () => {
-  isHovered.value = true
+const isHovered = useElementHover(nodeContentElement)
+watch(isHovered, async (hovered) => {
+  if (!hovered) return
   await nextTick()
-  await handleNodeHover()
-}
-const handleMouseLeave = () => {
-  isHovered.value = false
-}
-useEventListener(nodeContentElement, 'mouseenter', handleMouseEnter)
-useEventListener(nodeContentElement, 'mouseleave', handleMouseLeave)
+  handleNodeHover()
+})
 </script>

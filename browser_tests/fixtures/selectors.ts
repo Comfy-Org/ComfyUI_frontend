@@ -27,8 +27,7 @@ export const TestIds = {
     tabButton: (tabId: string) => `${tabId}-tab-button`
   },
   tree: {
-    leafCount: 'tree-leaf-count',
-    node: 'tree-node'
+    leafCount: 'tree-leaf-count'
   },
   canvas: {
     main: 'graph-canvas',

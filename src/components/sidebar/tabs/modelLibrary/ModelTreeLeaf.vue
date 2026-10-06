@@ -24,8 +24,8 @@
 
 <script setup lang="ts">
 import type { CSSProperties } from 'vue'
-import { useEventListener } from '@vueuse/core'
-import { computed, nextTick, onMounted, ref } from 'vue'
+import { useElementHover } from '@vueuse/core'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -35,12 +35,12 @@ import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 
 import ModelPreview from './ModelPreview.vue'
 
-const props = defineProps<{
+const { node } = defineProps<{
   node: RenderedTreeExplorerNode<ComfyModelDef>
 }>()
 
 // Note: The leaf node should always have a model definition on node.data.
-const modelDef = computed<ComfyModelDef>(() => props.node.data!)
+const modelDef = computed<ComfyModelDef>(() => node.data!)
 
 const modelPreviewUrl = computed(() => getModelPreviewUrl(modelDef.value))
 
@@ -82,7 +82,7 @@ const container = ref<HTMLElement | undefined>()
 const modelContentElement = computed(() =>
   container.value?.closest<HTMLElement>('.tree-explorer-item')
 )
-const isHovered = ref(false)
+const isHovered = useElementHover(modelContentElement)
 
 const showPreview = computed(() => {
   return (
@@ -98,16 +98,11 @@ const showPreview = computed(() => {
   )
 })
 
-const handleMouseEnter = async () => {
-  isHovered.value = true
+watch(isHovered, async (hovered) => {
+  if (!hovered) return
   await nextTick()
   await handleModelHover()
-}
-const handleMouseLeave = () => {
-  isHovered.value = false
-}
-useEventListener(modelContentElement, 'mouseenter', handleMouseEnter)
-useEventListener(modelContentElement, 'mouseleave', handleMouseLeave)
+})
 onMounted(async () => {
   await modelDef.value.load()
 })

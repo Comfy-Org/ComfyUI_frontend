@@ -31,7 +31,7 @@
       </Badge>
     </div>
     <div
-      class="node-actions flex gap-1 motion-safe:opacity-0 motion-safe:group-hover/tree-node:opacity-100 touch:opacity-100"
+      class="node-actions flex gap-1 motion-safe:opacity-0 motion-safe:group-focus-within/tree-node:opacity-100 motion-safe:group-hover/tree-node:opacity-100 touch:opacity-100"
     >
       <slot name="actions" :node="node" />
     </div>

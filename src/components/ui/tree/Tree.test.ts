@@ -1,8 +1,8 @@
-import { render, screen, within } from '@testing-library/vue'
+import { fireEvent, render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import type { TreeItemToggleEvent } from 'reka-ui'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
-import { createI18n } from 'vue-i18n'
 
 import Tree from './Tree.vue'
 import TreeItem from './TreeItem.vue'
@@ -18,11 +18,19 @@ const items: Item[] = [
     key: 'folder',
     label: 'Folder',
     children: [{ key: 'leaf', label: 'Leaf' }]
-  }
+  },
+  { key: 'beta', label: 'Beta' }
 ]
 
 const Harness = defineComponent({
   components: { Tree, TreeItem },
+  props: {
+    toggleListener: {
+      type: Function,
+      default: () => {}
+    },
+    withInput: Boolean
+  },
   setup() {
     return { expanded: ref<string[]>([]), items, selected: ref<Item>() }
   },
@@ -35,33 +43,30 @@ const Harness = defineComponent({
       :get-children="(item) => item.children"
       aria-label="Files"
     >
-      <template #default="{ flattenedItems }">
+      <template #default="{ flattenItems }">
         <TreeItem
-          v-for="item in flattenedItems"
+          v-for="item in flattenItems"
           :key="item._id"
           :value="item.value"
           :level="item.level"
-          :has-children="item.hasChildren"
+          :aria-label="item.value.label"
+          @toggle="toggleListener"
         >
           {{ item.value.label }}
+          <input v-if="withInput" :aria-label="'Rename ' + item.value.label" />
         </TreeItem>
       </template>
     </Tree>
   `
 })
 
-function renderTree() {
-  return render(Harness, {
-    global: {
-      plugins: [
-        createI18n({
-          legacy: false,
-          locale: 'en',
-          messages: { en: { g: { collapse: 'Collapse', expand: 'Expand' } } }
-        })
-      ]
-    }
-  })
+function renderTree(
+  props: {
+    toggleListener?: (event: TreeItemToggleEvent<Item>) => void
+    withInput?: boolean
+  } = {}
+) {
+  return render(Harness, { props })
 }
 
 describe('Tree', () => {
@@ -70,84 +75,78 @@ describe('Tree', () => {
     renderTree()
     const folder = screen.getByRole('treeitem', { name: 'Folder' })
 
-    await user.click(within(folder).getByLabelText('Expand'))
+    await user.click(within(folder).getByRole('button', { hidden: true }))
 
     expect(folder).toHaveAttribute('aria-expanded', 'true')
     expect(folder).toHaveAttribute('aria-selected', 'false')
-    expect(within(folder).getByLabelText('Collapse')).toBe(
-      within(folder).getByRole('button', { hidden: true })
-    )
     const leaf = screen.getByRole('treeitem', { name: 'Leaf' })
     expect(
       within(leaf).queryByRole('button', { hidden: true })
     ).not.toBeInTheDocument()
   })
 
-  it('selects a row on click without toggling it', async () => {
-    const user = userEvent.setup()
+  it.for([
+    ['a pointer click', (row: HTMLElement) => userEvent.setup().click(row)],
+    [
+      'a plain mouse click',
+      (row: HTMLElement) =>
+        fireEvent(row, new MouseEvent('click', { bubbles: true }))
+    ]
+  ] as const)('selects a row on %s without toggling it', async ([, click]) => {
     renderTree()
     const folder = screen.getByRole('treeitem', { name: 'Folder' })
 
-    await user.click(folder)
+    await click(folder)
 
     expect(folder).toHaveAttribute('aria-selected', 'true')
     expect(folder).toHaveAttribute('aria-expanded', 'false')
   })
 
+  it('cancels a click toggle before a consumer toggle listener runs', async () => {
+    const user = userEvent.setup()
+    const preventedStates: boolean[] = []
+    renderTree({
+      toggleListener: (event) => preventedStates.push(event.defaultPrevented)
+    })
+
+    await user.click(screen.getByRole('treeitem', { name: 'Folder' }))
+
+    expect(preventedStates).toEqual([true])
+  })
+
   it('leaves keys typed into row content to that content', async () => {
     const user = userEvent.setup()
-    render(
-      defineComponent({
-        components: { Tree, TreeItem },
-        setup: () => ({
-          expanded: ref<string[]>([]),
-          items: [...items, { key: 'beta', label: 'Beta' }]
-        }),
-        template: `
-          <Tree
-            v-model:expanded="expanded"
-            :items="items"
-            :get-key="(item) => item.key"
-            :get-children="(item) => item.children"
-          >
-            <template #default="{ flattenedItems }">
-              <TreeItem
-                v-for="item in flattenedItems"
-                :key="item._id"
-                :value="item.value"
-                :level="item.level"
-                :has-children="item.hasChildren"
-              >
-                {{ item.value.label }}
-                <input :aria-label="'Rename ' + item.value.label" />
-              </TreeItem>
-            </template>
-          </Tree>
-        `
-      }),
-      {
-        global: {
-          plugins: [
-            createI18n({
-              legacy: false,
-              locale: 'en',
-              messages: { en: { g: { expand: 'Expand' } } }
-            })
-          ]
-        }
-      }
-    )
+    renderTree({ withInput: true })
     const input = screen.getByRole('textbox', { name: 'Rename Folder' })
 
     await user.click(input)
-    await user.keyboard('Bea{ArrowLeft}{ArrowRight}t')
+    await user.keyboard(
+      'Bea{ArrowLeft}{ArrowRight}{Control>}{ArrowRight}{/Control}t'
+    )
 
     expect(input).toHaveFocus()
     expect(input).toHaveValue('Beat')
-    expect(screen.getByRole('treeitem', { name: /^Folder/ })).toHaveAttribute(
+    expect(screen.getByRole('treeitem', { name: 'Folder' })).toHaveAttribute(
       'aria-expanded',
       'false'
     )
+  })
+
+  it('lets shortcuts typed into row content reach the window', async () => {
+    const user = userEvent.setup()
+    const windowKeydown = vi.fn()
+    window.addEventListener('keydown', windowKeydown)
+    onTestFinished(() => window.removeEventListener('keydown', windowKeydown))
+    renderTree({ withInput: true })
+    const input = screen.getByRole('textbox', { name: 'Rename Folder' })
+
+    await user.click(input)
+    await user.keyboard('{Control>}s{/Control}')
+
+    expect(windowKeydown).toHaveBeenCalledWith(
+      expect.objectContaining({ ctrlKey: true, key: 's' })
+    )
+    expect(input).toHaveFocus()
   })
 
   it('supports arrow-key expansion and navigation', async () => {

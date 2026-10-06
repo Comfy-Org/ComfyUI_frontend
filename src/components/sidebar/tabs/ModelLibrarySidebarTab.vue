@@ -141,10 +141,6 @@ const handleSearch = async (query: string) => {
 
 type ModelOrFolder = ComfyModelDef | ModelFolder
 
-function isModelFolder(value: ModelOrFolder): value is ModelFolder {
-  return value instanceof ModelFolder
-}
-
 const root = computed<TreeNode<ModelOrFolder>>(() => {
   const allNodes: ModelOrFolder[] = activeSearchQuery.value
     ? searchResults.value.models
@@ -185,8 +181,8 @@ const renderedRoot = computed<TreeExplorerNode<ComfyModelDef>>(() => {
     node: TreeNode<ModelOrFolder>
   ): TreeExplorerNode<ComfyModelDef> => {
     const children = node.children?.map(fillNodeInfo)
-    const folder = node.data && isModelFolder(node.data) ? node.data : null
-    const model = node.data && !isModelFolder(node.data) ? node.data : null
+    const folder = node.data instanceof ModelFolder ? node.data : undefined
+    const model = node.data instanceof ModelFolder ? undefined : node.data
 
     return {
       key: node.key,
@@ -196,7 +192,7 @@ const renderedRoot = computed<TreeExplorerNode<ComfyModelDef>>(() => {
           : model.simplified_file_name
         : node.label,
       leaf: node.leaf,
-      data: model ?? undefined,
+      data: model,
       getIcon() {
         if (model) {
           return model.image ? 'pi pi-image' : 'pi pi-file'
