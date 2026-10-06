@@ -211,6 +211,25 @@ describe('useFeatureUsageTracker', () => {
     expect(liveFeature.useCount.value).toBe(3)
   })
 
+  it('restarts from one when a disposed tracker runs after reset', () => {
+    const scope = effectScope()
+    let trackDisposedFeature = () => {}
+
+    scope.run(() => {
+      const tracker = useFeatureUsageTracker('reset-feature')
+      tracker.trackUsage()
+      tracker.trackUsage()
+      trackDisposedFeature = tracker.trackUsage
+    })
+    scope.stop()
+
+    useFeatureUsageTracker('reset-feature').reset()
+    trackDisposedFeature()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored['reset-feature']?.useCount).toBe(1)
+  })
+
   it('loads existing data from localStorage', () => {
     localStorage.setItem(
       STORAGE_KEY,

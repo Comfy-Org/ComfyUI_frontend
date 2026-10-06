@@ -10,6 +10,7 @@ interface FeatureUsage {
 type FeatureUsageRecord = Partial<Record<string, FeatureUsage>>
 
 const STORAGE_KEY = 'Comfy.FeatureUsage'
+const resetVersions = new Map<string, number>()
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -139,14 +140,21 @@ function resetUsageData(
  */
 export function useFeatureUsageTracker(featureId: string) {
   const usageData = useStorage<FeatureUsageRecord>(STORAGE_KEY, {})
+  let observedResetVersion = resetVersions.get(featureId) ?? 0
 
   const usage = computed(() => usageData.value[featureId])
   const useCount = computed(() => usage.value?.useCount ?? 0)
 
   function trackUsage() {
     const now = Date.now()
-    const currentUsageData = normalizeUsageData(usageData.value)
+    const resetVersion = resetVersions.get(featureId) ?? 0
+    const normalizedUsageData = normalizeUsageData(usageData.value)
+    const currentUsageData =
+      resetVersion === observedResetVersion
+        ? normalizedUsageData
+        : withoutFeature(normalizedUsageData, featureId)
     const existing = currentUsageData[featureId]
+    observedResetVersion = resetVersion
 
     usageData.value = persistUsageData(featureId, currentUsageData, now) ?? {
       ...currentUsageData,
@@ -155,6 +163,8 @@ export function useFeatureUsageTracker(featureId: string) {
   }
 
   function reset() {
+    observedResetVersion = (resetVersions.get(featureId) ?? 0) + 1
+    resetVersions.set(featureId, observedResetVersion)
     usageData.value = resetUsageData(
       featureId,
       normalizeUsageData(usageData.value)
