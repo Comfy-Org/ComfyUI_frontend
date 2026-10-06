@@ -261,6 +261,45 @@ describe('useFeatureUsageTracker', () => {
     expect(stored['clobber-trigger']?.useCount).toBe(1)
   })
 
+  it('drains a confirmed reset during partial usage verification', () => {
+    const resetFeatureId = 'confirmed-reset-before-partial-write'
+    const resetTracker = useFeatureUsageTracker(resetFeatureId)
+    const getItem = vi.spyOn(localStorage, 'getItem').mockImplementation(() => {
+      throw new DOMException('Storage access denied', 'SecurityError')
+    })
+    resetTracker.reset()
+    getItem.mockRestore()
+    const droppedTracker = useFeatureUsageTracker('dropped-beside-reset')
+    const failedSetItem = vi
+      .spyOn(localStorage, 'setItem')
+      .mockImplementation(() => {
+        throw new DOMException('Storage quota exceeded', 'QuotaExceededError')
+      })
+    droppedTracker.trackUsage()
+    failedSetItem.mockRestore()
+    const originalSetItem = localStorage.setItem.bind(localStorage)
+    const clobber = vi
+      .spyOn(localStorage, 'setItem')
+      .mockImplementation((key, value) => {
+        const written = JSON.parse(value)
+        delete written['dropped-beside-reset']
+        originalSetItem(key, JSON.stringify(written))
+      })
+    useFeatureUsageTracker('partial-reset-trigger').trackUsage()
+    clobber.mockRestore()
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        [resetFeatureId]: { useCount: 1, firstUsed: 1_000, lastUsed: 1_000 }
+      })
+    )
+
+    useFeatureUsageTracker('partial-reset-recovery').trackUsage()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored[resetFeatureId]?.useCount).toBe(1)
+  })
+
   it('drains each pending feature confirmed before partial verification', () => {
     const retainedTracker = useFeatureUsageTracker('retained-pending-write')
     const droppedTracker = useFeatureUsageTracker('dropped-pending-write')
