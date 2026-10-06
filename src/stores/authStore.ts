@@ -72,6 +72,9 @@ export type BillingPortalTargetTier = NonNullable<
   >['application/json']
 >['target_tier']
 
+/** `AuthStoreError.code` for a `/customers/*` call skipped because the account has no personal workspace. */
+export const NO_PERSONAL_WORKSPACE = 'no_personal_workspace'
+
 export class AuthStoreError extends Error {
   readonly status: number | undefined
   readonly code: string | undefined
@@ -157,6 +160,21 @@ export const useAuthStore = defineStore('auth', () => {
     () => sessionUser.value?.email ?? currentUser.value?.email
   )
   const userId = computed(() => sessionUser.value?.id ?? currentUser.value?.uid)
+  /** False only when SSO is on and the session says there is no personal workspace. */
+  const hasPersonalWorkspace = computed(
+    () =>
+      !(flags.ssoEnabled && sessionUser.value?.hasPersonalWorkspace === false)
+  )
+
+  const assertHasPersonalWorkspace = (): void => {
+    if (!hasPersonalWorkspace.value) {
+      throw new AuthStoreError(
+        t('toastMessages.noPersonalWorkspace'),
+        undefined,
+        NO_PERSONAL_WORKSPACE
+      )
+    }
+  }
   /** With SSO on, the session's user when no Firebase user signed this tab in. */
   const sessionOnlyUser = computed(() =>
     flags.ssoEnabled && currentUser.value === null
@@ -524,6 +542,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   const fetchBalance = async (): Promise<GetCustomerBalanceResponse | null> => {
+    if (!hasPersonalWorkspace.value) return null
     isFetchingBalance.value = true
     const requestOwner = currentUserIdentity()
     const requestCredential = currentUserCredentialIdentity()
@@ -584,6 +603,7 @@ export const useAuthStore = defineStore('auth', () => {
     // Pin provisioning to the completed credential: a concurrent auth switch
     // must not let us provision (or roll back) a different account.
     const completedUser = completedCredential?.user
+    if (!completedUser) assertHasPersonalWorkspace()
     const sessionIdentity = completedUser?.uid ?? currentUserIdentity()
     const authHeader = completedUser
       ? headerFromToken(await completedUser.getIdToken())
@@ -664,10 +684,11 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   /** /customers/* fetch that self-heals a never-provisioned account (rule in @comfyorg/account-core). */
-  const fetchWithCustomerRecovery = (
+  const fetchWithCustomerRecovery = async (
     input: string,
     init?: RequestInit
   ): Promise<Response> => {
+    assertHasPersonalWorkspace()
     const requestOwner = currentUserIdentity()
     return fetchHealingMissingCustomer(input, {
       request: () =>
@@ -968,6 +989,7 @@ export const useAuthStore = defineStore('auth', () => {
     // Getters
     isAuthenticated,
     sessionUser,
+    hasPersonalWorkspace,
     sessionOnlyUser,
     signedInWithSso,
     userEmail,

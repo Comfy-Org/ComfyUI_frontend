@@ -48,6 +48,7 @@ import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import { NoWorkspaceAccessError } from '@/platform/workspace/api/workspaceApiError'
 import {
   getGlobalSetting,
   setGlobalSetting
@@ -62,8 +63,9 @@ import { api } from '@/scripts/api'
 import type { ComfyApp } from '@/scripts/app'
 import type { useExtensionService } from '@/services/extensionService'
 import { createDisposablePinia } from '@/testing/pinia'
+import { useCustomerEventsService } from '@/services/customerEventsService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
-import { useAuthStore } from '@/stores/authStore'
+import { NO_PERSONAL_WORKSPACE, useAuthStore } from '@/stores/authStore'
 import type { ComfyExtension } from '@/types/comfy'
 import {
   resultItemUrl,
@@ -208,14 +210,20 @@ function jsonResponse(body: unknown, status = 200): Response {
 
 function sessionBody(
   userId: string,
-  { provider = 'google.com' }: { provider?: string } = {}
+  {
+    provider = 'google.com',
+    hasPersonalWorkspace
+  }: { provider?: string; hasPersonalWorkspace?: boolean } = {}
 ) {
   return {
     user: {
       id: userId,
       email: `${userId}@example.com`,
       email_verified: true,
-      sign_in_provider: provider
+      sign_in_provider: provider,
+      ...(hasPersonalWorkspace !== undefined && {
+        has_personal_workspace: hasPersonalWorkspace
+      })
     },
     csrf_token: `csrf-${userId}`,
     expires_at: new Date(Date.now() + 86_400_000).toISOString(),
@@ -662,7 +670,8 @@ function installIngest(features: Record<string, boolean> = {}) {
     currentWorkspaceDown: undefined as (() => Response) | undefined,
     billingUnauthorized: 0,
     customerMissing: false,
-    capabilitiesDown: false
+    capabilitiesDown: false,
+    hasPersonalWorkspace: undefined as boolean | undefined
   }
 
   const mint = (body: unknown): Response => {
@@ -716,7 +725,9 @@ function installIngest(features: Record<string, boolean> = {}) {
     ingest.sessionDown
       ? jsonResponse({ code: 'unavailable', message: 'down' }, 503)
       : jsonResponse({
-          ...sessionBody(ingest.userId),
+          ...sessionBody(ingest.userId, {
+            hasPersonalWorkspace: ingest.hasPersonalWorkspace
+          }),
           csrf_token: ingest.csrfToken
         })
 
@@ -1057,6 +1068,15 @@ describe('workspace API and global settings on the shared web session', () => {
       code: 'plan_required',
       message: 'plan_required'
     })
+  })
+
+  it('maps a 403 no_workspace_access on the session to NoWorkspaceAccessError', async () => {
+    const ingest = await bootOnSession()
+    ingest.refusals.push('no_workspace_access')
+
+    await expect(workspaceApi.getBillingStatus()).rejects.toBeInstanceOf(
+      NoWorkspaceAccessError
+    )
   })
 
   it('returns no workspace auth header and sends nothing', async () => {
@@ -2026,8 +2046,12 @@ describe('a sibling tab under unified_cloud_auth', () => {
 })
 
 describe('billing on a tab that arrived by session', () => {
-  const bootSessionOnly = async () => {
-    const ingest = installIngest()
+  const bootSessionOnly = async (
+    features: Record<string, boolean> = {},
+    hasPersonalWorkspace?: boolean
+  ) => {
+    const ingest = installIngest(features)
+    ingest.hasPersonalWorkspace = hasPersonalWorkspace
     await refreshRemoteConfig({ useAuth: false })
     const authStore = useAuthStore()
     await useSessionCookie().ensureSessionCookie()
@@ -2099,6 +2123,79 @@ describe('billing on a tab that arrived by session', () => {
       expect(authorizationsOf(ingest)).toEqual([SESSION_MINT, ...sent])
     }
   )
+
+  it.for([
+    { sso: false, reported: false, sendsCustomers: true },
+    { sso: true, reported: undefined, sendsCustomers: true },
+    { sso: true, reported: true, sendsCustomers: true },
+    { sso: true, reported: false, sendsCustomers: false }
+  ])(
+    'sso_enabled $sso with has_personal_workspace $reported: balance reaches /customers is $sendsCustomers',
+    async ({ sso, reported, sendsCustomers }) => {
+      const { ingest, authStore } = await bootSessionOnly(
+        { sso_enabled: sso },
+        reported
+      )
+
+      await authStore.fetchBalance()
+
+      expect(
+        ingest.requests.some(({ path }) => path.startsWith('/customers'))
+      ).toBe(sendsCustomers)
+    }
+  )
+
+  it.for([
+    {
+      name: 'top-up',
+      call: (authStore: ReturnType<typeof useAuthStore>) =>
+        authStore.initiateCreditPurchase({
+          amount_micros: 5_000_000,
+          currency: 'usd'
+        })
+    },
+    {
+      name: 'billing portal',
+      call: (authStore: ReturnType<typeof useAuthStore>) =>
+        authStore.accessBillingPortal()
+    },
+    {
+      name: 'subscription checkout',
+      call: (authStore: ReturnType<typeof useAuthStore>) =>
+        authStore.fetchWithCustomerRecovery(
+          '/customers/cloud-subscription-checkout',
+          { method: 'POST' }
+        )
+    }
+  ])(
+    'the $name call is refused before /customers without a personal workspace',
+    async ({ call }) => {
+      const { ingest, authStore } = await bootSessionOnly(
+        { sso_enabled: true },
+        false
+      )
+
+      await expect(call(authStore)).rejects.toMatchObject({
+        code: NO_PERSONAL_WORKSPACE
+      })
+      expect(
+        ingest.requests.filter(({ path }) => path.startsWith('/customers'))
+      ).toEqual([])
+    }
+  )
+
+  it('loads no customer events without a personal workspace', async () => {
+    const { ingest } = await bootSessionOnly({ sso_enabled: true }, false)
+    const events = useCustomerEventsService()
+
+    await expect(events.getMyEvents()).resolves.toBeNull()
+    expect(events.error.value).toBe(
+      'This account has no personal billing. Manage billing from your team workspace.'
+    )
+    expect(
+      ingest.requests.filter(({ path }) => path.startsWith('/customers'))
+    ).toEqual([])
+  })
 
   it('provisions a missing customer on the session token and retries once', async () => {
     const { ingest, authStore } = await bootSessionOnly()
