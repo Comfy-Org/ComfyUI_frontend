@@ -1,7 +1,6 @@
 import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import { footerLogoRestingFrameUrl } from '@/config/footer-logo'
 import { test } from './fixtures/modelsAccount'
 
 /** Same-origin script resources the page has requested so far, by URL. */
@@ -68,16 +67,18 @@ test('the footer loads its animation when it approaches the viewport', async ({
   expect((await frameLoaded).ok()).toBe(true)
 })
 
-test('the footer shows the resting logo frame without JavaScript', async ({
-  request
-}) => {
-  const html = await (await request.get('/hub/models/')).text()
-  const footer = html.match(/<footer\b[\s\S]*?<\/footer>/)?.[0] ?? ''
-  const fallbacks = Array.from(
-    footer.matchAll(/<noscript>\s*<img src="([^"]+)"/g),
-    ([, src]) => src
-  )
-  expect(fallbacks).toEqual([footerLogoRestingFrameUrl])
+test.describe('without JavaScript', () => {
+  test.use({ javaScriptEnabled: false })
+
+  test('the footer shows the resting logo frame', async ({ page }) => {
+    await page.goto('/hub/models/')
+    const logo = page.getByTestId('footer-logo-fallback')
+    await expect(logo).toBeVisible()
+    await expect(logo).toHaveAttribute(
+      'src',
+      'https://media.comfy.org/website/homepage/footer-logo-seq/seq-footer_00074.webp'
+    )
+  })
 })
 
 test('video cards load on screen and stop playing when scrolled away', async ({
