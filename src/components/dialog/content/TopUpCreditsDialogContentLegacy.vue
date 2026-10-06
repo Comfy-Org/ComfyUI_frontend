@@ -110,7 +110,7 @@
       <i class="icon-[lucide--coins] size-4" />
       {{
         $t('credits.topUp.minRequired', {
-          credits: formatNumber(usdToCredits(MIN_AMOUNT))
+          credits: n(usdToCredits(MIN_AMOUNT))
         })
       }}
     </p>
@@ -121,7 +121,7 @@
       <i class="icon-[lucide--coins] size-4" />
       {{
         $t('credits.topUp.maxAllowed', {
-          credits: formatNumber(usdToCredits(MAX_AMOUNT))
+          credits: n(usdToCredits(MAX_AMOUNT))
         })
       }}
       <span>{{ $t('credits.topUp.needMore') }}</span>
@@ -188,7 +188,7 @@ const { isInsufficientCredits = false, source } = defineProps<{
   source?: PaymentIntentSource
 }>()
 
-const { t } = useI18n()
+const { n, t } = useI18n()
 const authActions = useAuthActions()
 const dialogStore = useDialogStore()
 const settingsDialog = useSettingsDialog()
@@ -224,11 +224,6 @@ const isValidAmount = computed(
 
 const isBelowMin = computed(() => payAmount.value < MIN_AMOUNT)
 const showCeilingWarning = computed(() => payAmount.value >= MAX_AMOUNT)
-
-// Utility functions
-function formatNumber(num: number): string {
-  return num.toLocaleString('en-US')
-}
 
 // Step amount functions
 function getStepAmount(currentAmount: number): number {

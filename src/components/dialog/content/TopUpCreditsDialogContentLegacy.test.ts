@@ -12,6 +12,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import { useDialogStore } from '@/stores/dialogStore'
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import TopUpCreditsDialogContentLegacy from './TopUpCreditsDialogContentLegacy.vue'
 
@@ -103,6 +104,28 @@ describe('TopUpCreditsDialogContentLegacy', () => {
       checkout_url: 'https://checkout.stripe.test'
     })
     vi.spyOn(window, 'open').mockImplementation(() => window)
+  })
+
+  it('uses the selected locale for the entered amount and credit ceiling', async () => {
+    const i18n = createI18n({
+      legacy: false,
+      locale: 'fr',
+      fallbackLocale: 'en',
+      missingWarn: false,
+      fallbackWarn: false,
+      messages: { en: enMessages }
+    })
+    render(TopUpCreditsDialogContentLegacy, {
+      global: { plugins: [i18n] }
+    })
+    const user = userEvent.setup()
+    const payInput = screen.getByRole('spinbutton', { name: 'Amount (USD)' })
+
+    await user.clear(payInput)
+    await user.type(payInput, '10\u202f000{Enter}')
+
+    expect(payInput).toHaveValue('10\u202f000')
+    expect(screen.getByText('10 000 credits maximum.')).toBeInTheDocument()
   })
 
   it.for([

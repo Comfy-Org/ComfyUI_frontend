@@ -2,11 +2,13 @@
 import type { NumberFieldRootProps } from 'reka-ui'
 import { NumberFieldRoot, useForwardProps } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   class: className,
+  locale,
   stepSnapping = false,
   disableWheelChange = true,
   ...restProps
@@ -17,6 +19,7 @@ const emits = defineEmits<{
 }>()
 
 const forwarded = useForwardProps(restProps)
+const { locale: appLocale } = useI18n()
 
 function updateModelValue(value: number | undefined) {
   if (value === undefined || value === restProps.modelValue) return
@@ -28,6 +31,7 @@ function updateModelValue(value: number | undefined) {
   <NumberFieldRoot
     v-slot="slotProps"
     v-bind="forwarded"
+    :locale="locale ?? appLocale"
     data-slot="number-field"
     :step-snapping="stepSnapping"
     :disable-wheel-change="disableWheelChange"

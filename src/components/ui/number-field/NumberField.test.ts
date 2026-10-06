@@ -11,13 +11,19 @@ import NumberFieldDecrement from './NumberFieldDecrement.vue'
 import NumberFieldIncrement from './NumberFieldIncrement.vue'
 import NumberFieldInput from './NumberFieldInput.vue'
 
-const i18n = createI18n({
-  legacy: false,
-  locale: 'en',
-  messages: { en: enMessages }
-})
-
-function renderNumberField(rootAttrs: string, initialValue: number | null) {
+function renderNumberField(
+  rootAttrs: string,
+  initialValue: number | null,
+  locale = 'en'
+) {
+  const i18n = createI18n({
+    legacy: false,
+    locale,
+    fallbackLocale: 'en',
+    missingWarn: false,
+    fallbackWarn: false,
+    messages: { en: enMessages, fr: {}, it: {} }
+  })
   const value = ref(initialValue)
   const updates: unknown[] = []
   const Harness = defineComponent({
@@ -43,10 +49,49 @@ function renderNumberField(rootAttrs: string, initialValue: number | null) {
     `
   })
   render(Harness, { global: { plugins: [i18n] } })
-  return { value, updates, input: screen.getByRole('spinbutton') }
+  return { value, updates, i18n, input: screen.getByRole('spinbutton') }
 }
 
 describe('NumberField', () => {
+  it.for([
+    { locale: 'en', formatted: '12,345.6' },
+    { locale: 'it', formatted: '12.345,6' },
+    { locale: 'fr', formatted: '12\u202f345,6' }
+  ])(
+    'formats the value in the selected $locale locale',
+    ({ locale, formatted }) => {
+      const { input } = renderNumberField('', 12345.6, locale)
+
+      expect(input).toHaveValue(formatted)
+    }
+  )
+
+  it('commits a grouped decimal in the selected locale as its numeric value', async () => {
+    const user = userEvent.setup()
+    const { input, updates } = renderNumberField('', 0, 'fr')
+
+    await user.clear(input)
+    await user.type(input, '1\u202f234,5{Enter}')
+
+    expect(updates).toEqual([1234.5])
+    expect(input).toHaveValue('1\u202f234,5')
+  })
+
+  it('reformats on a language change without changing the numeric value', async () => {
+    const { input, updates, i18n } = renderNumberField('', 1234.5)
+
+    i18n.global.locale.value = 'fr'
+
+    await waitFor(() => expect(input).toHaveValue('1\u202f234,5'))
+    expect(updates).toEqual([])
+  })
+
+  it('honors an explicit field locale over the selected app locale', () => {
+    const { input } = renderNumberField('locale="en-US"', 1234.5, 'fr')
+
+    expect(input).toHaveValue('1,234.5')
+  })
+
   it('does not emit when the input is cleared and restores the value', async () => {
     const user = userEvent.setup()
     const { updates, input } = renderNumberField(':min="1"', 5)

@@ -51,7 +51,7 @@
           class="flex items-center gap-2 py-2 text-2xl font-semibold text-base-foreground tabular-nums"
         >
           <i class="icon-[lucide--coins] size-5 text-gold-500" />
-          {{ formatNumber(creditsModel) }}
+          {{ n(creditsModel) }}
         </span>
         <div
           class="flex items-center justify-between border-t border-border-default pt-4"
@@ -186,7 +186,7 @@
       <i class="icon-[lucide--coins] size-4" />
       {{
         $t('credits.topUp.minRequired', {
-          credits: formatNumber(usdToCredits(MIN_AMOUNT))
+          credits: n(usdToCredits(MIN_AMOUNT))
         })
       }}
     </p>
@@ -197,7 +197,7 @@
       <i class="icon-[lucide--coins] size-4" />
       {{
         $t('credits.topUp.maxAllowed', {
-          credits: formatNumber(usdToCredits(MAX_AMOUNT))
+          credits: n(usdToCredits(MAX_AMOUNT))
         })
       }}
       <span>{{ $t('credits.topUp.needMore') }}</span>
@@ -511,11 +511,6 @@ watch(
     }
   }
 )
-
-// Utility functions
-function formatNumber(num: number): string {
-  return num.toLocaleString('en-US')
-}
 
 // Step amount functions
 function getStepAmount(currentAmount: number): number {

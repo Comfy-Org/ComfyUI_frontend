@@ -109,12 +109,6 @@ vi.mock(import('@/base/credits/comfyCredits'), () => ({
   usdToCredits: (usd: number) => usd
 }))
 
-const i18n = createI18n({
-  legacy: false,
-  locale: 'en',
-  messages: { en: enMessages }
-})
-
 function topupResponse(
   status: CreateTopupResponse['status']
 ): CreateTopupResponse {
@@ -129,8 +123,17 @@ function topupResponse(
 function renderDialog(
   props: Partial<
     InstanceType<typeof TopUpCreditsDialogContentWorkspace>['$props']
-  > = {}
+  > = {},
+  locale = 'en'
 ) {
+  const i18n = createI18n({
+    legacy: false,
+    locale,
+    fallbackLocale: 'en',
+    missingWarn: false,
+    fallbackWarn: false,
+    messages: { en: enMessages }
+  })
   mockBillingContext()
   return render(TopUpCreditsDialogContentWorkspace, {
     props,
@@ -625,6 +628,24 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       stage: 'intent',
       outcome: 'pending'
     })
+  })
+
+  it('uses the selected locale for the entered amount, credit ceiling and confirmation', async () => {
+    renderDialog({}, 'fr')
+    const user = userEvent.setup()
+    const payInput = screen.getByRole('spinbutton', { name: 'Amount (USD)' })
+
+    await user.clear(payInput)
+    await user.type(payInput, '10\u202f000{Enter}')
+
+    expect(payInput).toHaveValue('10\u202f000')
+    expect(screen.getByText('10 000 credits maximum.')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Add credits' }))
+    expect(screen.getByText('10 000')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Pay 10\u202f000,00\u00a0$US' })
+    ).toBeEnabled()
+    expect(mockBillingContext().topup).not.toHaveBeenCalled()
   })
 
   it('shows the saved-card note when a payment method is on file', async () => {
