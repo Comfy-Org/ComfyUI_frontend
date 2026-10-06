@@ -190,7 +190,22 @@ describe('validateHtml', () => {
       rule: 'idRefs',
       bad: { ...video, isPartOf: { '@id': `${site}/#missing` } }
     },
-    { rule: 'duplicateIds', bad: { ...webPage, name: 'Again' } }
+    { rule: 'duplicateIds', bad: { ...webPage, name: 'Again' } },
+    { rule: 'knownTypes', bad: { '@type': 'Frobnicator', banana: 'yes' } },
+    { rule: 'knownTypes', bad: { ...product, '@type': 'Prodcut' } },
+    {
+      rule: 'knownTypes',
+      bad: {
+        '@type': 'CollectionPaige',
+        '@id': `${site}/other/#webpage`,
+        url: `${site}/other/`
+      }
+    },
+    {
+      rule: 'knownTypes',
+      bad: { ...product, '@type': ['Product', 'Prodcut'] }
+    },
+    { rule: 'knownTypes', bad: { '@type': 'Prodcut', '@id': product['@id'] } }
   ])('flags $rule', ({ rule, bad }) => {
     expect(rulesHit([bad])).toContain(rule)
   })
@@ -370,6 +385,47 @@ describe('validateHtml', () => {
     expect(validateHtml(markup, '/').map(({ rule }) => rule)).toEqual([
       'webPage',
       'webPage'
+    ])
+  })
+
+  it('names the unknown type and how to allow it', () => {
+    expect(messages([{ '@type': 'Prodcut', name: 'Comfy Cloud' }])).toEqual([
+      'Prodcut: unknown @type "Prodcut": add it to KNOWN_TYPES if intended'
+    ])
+  })
+
+  function contextRules(context: unknown): string[] {
+    const block = { '@context': context, '@graph': [org, webPage] }
+    return validateHtml(
+      `<link rel="canonical" href="${canonical}"><script type="application/ld+json">${JSON.stringify(block)}</script>`,
+      '/example/'
+    ).map(({ rule }) => rule)
+  }
+
+  it.for([
+    { context: undefined, rules: ['context'] },
+    { context: 'http://example.com/', rules: ['context'] },
+    { context: 'https://schema.org.evil.com', rules: ['context'] },
+    { context: { '@vocab': 'https://schema.org/' }, rules: ['context'] },
+    { context: 'https://schema.org', rules: [] },
+    { context: 'http://schema.org', rules: [] },
+    { context: 'https://schema.org/', rules: [] },
+    { context: 'http://schema.org/', rules: [] }
+  ])('checks a top-level @context of $context', ({ context, rules }) => {
+    expect(contextRules(context)).toEqual(rules)
+  })
+
+  it('checks the @context of each node in a top-level array', () => {
+    const blocks = [
+      { '@context': 'https://schema.org', ...org },
+      { ...webPage }
+    ]
+    const markup = `<link rel="canonical" href="${canonical}"><script type="application/ld+json">${JSON.stringify(blocks)}</script>`
+    expect(validateHtml(markup, '/example/')).toEqual([
+      {
+        rule: 'context',
+        message: '@context undefined is not https://schema.org'
+      }
     ])
   })
 

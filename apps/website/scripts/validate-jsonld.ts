@@ -21,7 +21,13 @@ const DECIMAL = /^\d+(\.\d+)?$/
 const MODEL_PAGE = new RegExp(
   `^(?:${NON_DEFAULT_LOCALE_PREFIXES.join('|')})?/(?:hub/)?models/(?!local/)[^/]+/`
 )
-const REFERENCE_RULES = new Set(['honesty', 'idsOnSite', 'noPlaceholders'])
+const SCHEMA_ORG_CONTEXT = /^https?:\/\/schema\.org\/?$/
+const REFERENCE_RULES = new Set([
+  'honesty',
+  'idsOnSite',
+  'noPlaceholders',
+  'knownTypes'
+])
 const WEB_PAGE_TYPES = [
   'WebPage',
   'AboutPage',
@@ -29,6 +35,32 @@ const WEB_PAGE_TYPES = [
   'CollectionPage',
   'ProfilePage'
 ]
+const KNOWN_TYPES = new Set([
+  ...WEB_PAGE_TYPES,
+  'Answer',
+  'Article',
+  'Brand',
+  'BreadcrumbList',
+  'ContactPoint',
+  'Event',
+  'FAQPage',
+  'ImageObject',
+  'ItemList',
+  'LearningResource',
+  'ListItem',
+  'Offer',
+  'Organization',
+  'Person',
+  'Place',
+  'Product',
+  'Question',
+  'SoftwareApplication',
+  'SoftwareSourceCode',
+  'UnitPriceSpecification',
+  'VideoObject',
+  'VirtualLocation',
+  'WebSite'
+])
 
 type JsonLdRecord = Record<string, unknown>
 
@@ -299,7 +331,15 @@ const noPlaceholders: Rule = (node) =>
     .filter(([, value]) => asList(value).some(isPlaceholder))
     .map(([key, value]) => `${key} is ${JSON.stringify(value)}`)
 
+const knownTypes: Rule = (node) =>
+  asList(node['@type'])
+    .filter((type) => typeof type !== 'string' || !KNOWN_TYPES.has(type))
+    .map(
+      (type) => `unknown @type ${show(type)}: add it to KNOWN_TYPES if intended`
+    )
+
 const RULES: Record<string, Rule> = {
+  knownTypes,
   honesty,
   offer,
   product,
@@ -338,6 +378,16 @@ export function validateHtml(html: string, pagePath: string): Violation[] {
   const referencedIds: string[] = []
   const stubsById = new Map<string, JsonLdRecord>()
   const definitionsById = new Map<string, JsonLdRecord>()
+  for (const topLevel of blocks.flat()) {
+    const context = isRecord(topLevel) ? topLevel['@context'] : undefined
+    if (typeof context !== 'string' || !SCHEMA_ORG_CONTEXT.test(context)) {
+      violations.push({
+        rule: 'context',
+        message: `@context ${show(context)} is not https://schema.org`
+      })
+    }
+  }
+
   for (const block of blocks) {
     const { defined, references } = collectGraphIds(block)
     defined.forEach((id) => definedIds.add(id))
