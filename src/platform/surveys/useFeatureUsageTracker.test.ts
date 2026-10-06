@@ -141,6 +141,25 @@ describe('useFeatureUsageTracker', () => {
     expect(liveFeature.useCount.value).toBe(1)
   })
 
+  it('increments the latest count when the same feature changed after disposal', () => {
+    const scope = effectScope()
+    let trackDisposedFeature = () => {}
+
+    scope.run(() => {
+      trackDisposedFeature = useFeatureUsageTracker('shared-feature').trackUsage
+    })
+    scope.stop()
+
+    const liveFeature = useFeatureUsageTracker('shared-feature')
+    liveFeature.trackUsage()
+    liveFeature.trackUsage()
+    trackDisposedFeature()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored['shared-feature']?.useCount).toBe(3)
+    expect(liveFeature.useCount.value).toBe(3)
+  })
+
   it('loads existing data from localStorage', () => {
     localStorage.setItem(
       STORAGE_KEY,

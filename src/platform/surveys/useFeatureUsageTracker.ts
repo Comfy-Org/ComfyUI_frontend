@@ -11,12 +11,22 @@ type FeatureUsageRecord = Partial<Record<string, FeatureUsage>>
 
 const STORAGE_KEY = 'Comfy.FeatureUsage'
 
-function persistUsageData(featureId: string, usage: FeatureUsage) {
+function persistUsageData(
+  featureId: string,
+  currentUsage: FeatureUsage | undefined,
+  now: number
+) {
   try {
     const oldValue = localStorage.getItem(STORAGE_KEY)
     const storedUsageData = oldValue
       ? (JSON.parse(oldValue) as FeatureUsageRecord)
       : {}
+    const existing = storedUsageData[featureId] ?? currentUsage
+    const usage = {
+      useCount: (existing?.useCount ?? 0) + 1,
+      firstUsed: existing?.firstUsed ?? now,
+      lastUsed: now
+    }
     const usageData = { ...storedUsageData, [featureId]: usage }
     const newValue = JSON.stringify(usageData)
     if (oldValue === newValue) return usageData
@@ -57,7 +67,7 @@ export function useFeatureUsageTracker(featureId: string) {
       firstUsed: existing?.firstUsed ?? now,
       lastUsed: now
     }
-    usageData.value = persistUsageData(featureId, nextUsage) ?? {
+    usageData.value = persistUsageData(featureId, existing, now) ?? {
       ...usageData.value,
       [featureId]: nextUsage
     }
