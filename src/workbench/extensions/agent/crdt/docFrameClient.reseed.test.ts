@@ -95,10 +95,45 @@ describe('stale-schema reseed wire protocol', () => {
     ])
   })
 
-  it.for<[string, Record<string, unknown>]>([
-    ['success', { ok: true, seq: 8 }],
-    ['conflict', { ok: false, code: 'conflict' }]
-  ])('drops the old lineage and resubscribes after %s', ([, answer]) => {
+  it('accepts an empty canvas and rejects an oversized one', () => {
+    const empty = refusedBridge()
+    expect(empty.bridge.reseed('wf-1', { nodes: [] })).toBe(true)
+
+    const oversized = refusedBridge()
+    expect(
+      oversized.bridge.reseed('wf-1', { value: 'x'.repeat((8 << 20) + 1) })
+    ).toBe(false)
+    expect(oversized.transport.frames('doc_reseed')).toHaveLength(0)
+  })
+
+  it('replaces the old lineage without emitting a destructive reset after success', () => {
+    const { transport, bridge } = refusedBridge()
+    const resets = vi.fn()
+    const replacements = vi.fn()
+    bridge.addEventListener('doc_reset', resets)
+    bridge.addEventListener('follower_replaced', replacements)
+    bridge.reseed('wf-1', canvas)
+    const oldFollower = bridge.follower
+
+    bridge.reconcile()
+    expect(transport.frames('doc_subscribe')).toHaveLength(1)
+
+    transport.receive('doc_reseed_result', {
+      v: 1,
+      workflow_id: 'wf-1',
+      ok: true,
+      seq: 8
+    })
+
+    expect(bridge.follower).not.toBe(oldFollower)
+    expect(resets).not.toHaveBeenCalled()
+    expect(replacements).toHaveBeenCalledOnce()
+    expect(transport.frames('doc_subscribe').at(-1)).toEqual(
+      expect.objectContaining({ state_vector_b64: 'AA==' })
+    )
+  })
+
+  it('keeps the old lineage and requests a fresh refusal after conflict', () => {
     const { transport, bridge } = refusedBridge()
     bridge.reseed('wf-1', canvas)
     const oldFollower = bridge.follower
@@ -106,19 +141,35 @@ describe('stale-schema reseed wire protocol', () => {
     transport.receive('doc_reseed_result', {
       v: 1,
       workflow_id: 'wf-1',
-      ...answer
+      ok: false,
+      code: 'conflict'
     })
 
-    expect(bridge.follower).not.toBe(oldFollower)
-    expect(transport.frames('doc_subscribe').at(-1)).toEqual(
-      expect.objectContaining({ state_vector_b64: 'AA==' })
-    )
+    expect(bridge.follower).toBe(oldFollower)
+    expect(transport.frames('doc_subscribe')).toHaveLength(2)
   })
 
   it('ignores a late result after retargeting', () => {
     const { transport, bridge } = refusedBridge()
     bridge.reseed('wf-1', canvas)
     bridge.subscribe('wf-2')
+    const follower = bridge.follower
+
+    transport.receive('doc_reseed_result', {
+      v: 1,
+      workflow_id: 'wf-1',
+      ok: true,
+      seq: 8
+    })
+
+    expect(bridge.follower).toBe(follower)
+  })
+
+  it('ignores an abandoned result after retargeting away and back', () => {
+    const { transport, bridge } = refusedBridge()
+    bridge.reseed('wf-1', canvas)
+    bridge.subscribe('wf-2')
+    bridge.subscribe('wf-1')
     const follower = bridge.follower
 
     transport.receive('doc_reseed_result', {

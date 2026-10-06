@@ -303,6 +303,28 @@ describe('useAgentCrdtFollower', () => {
     expect(bridge().reseed).toHaveBeenCalledWith('wf-1', visibleCanvas)
   })
 
+  it('answers a stale-schema refusal with a legitimately empty canvas', () => {
+    const emptyCanvas = { nodes: [] }
+    mountFollower(
+      'wf-1',
+      true,
+      () => null,
+      {},
+      () => emptyCanvas
+    )
+    bridge().canReseed.mockReturnValue(true)
+    bridge().reseed.mockReturnValue(true)
+
+    dispatchFrame('doc_subscribed', {
+      workflowId: 'wf-1',
+      ok: false,
+      code: 'stale_schema_reseed_required',
+      expectedSeq: 7
+    })
+
+    expect(bridge().reseed).toHaveBeenCalledWith('wf-1', emptyCanvas)
+  })
+
   it('does not construct a follower when the product gate is disabled', () => {
     useAgentPanelStore().enabled = false
     const { status, unmount } = mountFollower('wf-1')

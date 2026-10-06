@@ -186,6 +186,7 @@ export class LayoutFollowerBridge extends EventTarget {
   subscribe(workflowId: string): void {
     const lineage = this.lineageWorkflowId
     if (this.desiredWorkflowId !== workflowId) {
+      this.pendingReseedWorkflowId = null
       this.reseedBlockedUntilConfirmedWorkflowId = null
       this.reseedToken = null
     }
@@ -218,7 +219,12 @@ export class LayoutFollowerBridge extends EventTarget {
       this.sentWorkflowId = null
       trySend(() => this.client.unsubscribe(sent))
     }
-    if (desired === null || this.sentWorkflowId === desired) return
+    if (
+      desired === null ||
+      this.sentWorkflowId === desired ||
+      this.pendingReseedWorkflowId === desired
+    )
+      return
     if (
       trySend(() => this.client.subscribe(desired, this.follower.stateVector()))
     ) {
@@ -240,12 +246,15 @@ export class LayoutFollowerBridge extends EventTarget {
   }
 
   reconnect(): void {
+    this.pendingReseedWorkflowId = null
     this.reseedBlockedUntilConfirmedWorkflowId = null
     this.reseedToken = null
     this.resubscribe()
   }
 
   unsubscribe(): void {
+    this.pendingReseedWorkflowId = null
+    this.reseedToken = null
     this.desiredWorkflowId = null
     this.reconcile()
   }
@@ -299,6 +308,8 @@ export class LayoutFollowerBridge extends EventTarget {
       )
       this.desiredWorkflowId = null
       this.sentWorkflowId = null
+      this.pendingReseedWorkflowId = null
+      this.reseedToken = null
       this.followerDoc.destroy()
     }
   }
@@ -474,17 +485,18 @@ export class LayoutFollowerBridge extends EventTarget {
     this.pendingReseedWorkflowId = null
     this.dispatchEvent(new CustomEvent(event.type, { detail: result }))
     if (result.workflowId !== this.desiredWorkflowId) return
-    if (!result.ok && result.code !== RESEED_CONFLICT) return
-    this.reseedBlockedUntilConfirmedWorkflowId = result.workflowId
-    const reset: DocReset = {
-      workflowId: result.workflowId,
-      seq: result.seq ?? 0,
-      actor: 'system:client-seed'
+    if (!result.ok) {
+      if (result.code === RESEED_CONFLICT) this.resubscribe()
+      return
     }
-    this.dispatchEvent(new CustomEvent('doc_reset', { detail: reset }))
+    this.reseedBlockedUntilConfirmedWorkflowId = result.workflowId
     this.dropDocForNewLineage()
     this.resubscribe()
-    this.dispatchEvent(new CustomEvent('follower_replaced', { detail: reset }))
+    this.dispatchEvent(
+      new CustomEvent('follower_replaced', {
+        detail: { workflowId: result.workflowId, preserveCanvas: true }
+      })
+    )
   }
 
   private readonly forwardFrame: EventListener = (event) => {

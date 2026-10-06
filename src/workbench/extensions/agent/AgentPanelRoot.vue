@@ -784,8 +784,9 @@ function targetWorkflowDraft(origin?: TurnOrigin): DraftSnapshot | undefined {
 }
 
 function canvasForWorkflow(workflowId: string): Record<string, unknown> | null {
+  if (workflowDetached.value) return null
   const target = boundOrOpenWorkflowFor(workflowId)
-  return target ? serializedCanvas(target) : null
+  return target?.activeState ?? null
 }
 
 const selectedTargetTab = computed<ActiveTab | null>(() => {

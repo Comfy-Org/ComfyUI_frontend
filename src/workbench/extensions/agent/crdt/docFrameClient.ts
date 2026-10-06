@@ -464,12 +464,14 @@ export class DocFrameClient extends EventTarget {
     expectedSeq: number,
     workflow: Record<string, unknown>
   ): boolean {
-    return this.send('doc_reseed', {
+    const data = {
       v: DOC_PROTOCOL_VERSION,
       workflow_id: workflowId,
       expected_seq: expectedSeq,
       workflow
-    })
+    }
+    if (JSON.stringify(data).length > MAX_DOC_UPDATE_B64_LENGTH) return false
+    return this.send('doc_reseed', data)
   }
 
   /** @returns whether the unsubscribe frame actually left the transport. */

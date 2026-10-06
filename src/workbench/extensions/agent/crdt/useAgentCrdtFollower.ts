@@ -284,12 +284,6 @@ export interface AgentCrdtStatus {
   outcomes: AgentCrdtOutcomeCounters
 }
 
-function hasNodes(
-  canvas: Record<string, unknown> | null
-): canvas is Record<string, unknown> {
-  return Array.isArray(canvas?.nodes) && canvas.nodes.length > 0
-}
-
 export interface AgentCrdtFollowerEvents {
   onMaterialized?: (event: {
     workflowId: string
@@ -670,8 +664,18 @@ function startAgentCrdtFollower(
   const tryReseed = (): boolean => {
     const target = subscribedWorkflowId.value
     if (target === null || !bridge.canReseed(target)) return false
-    const canvas = canvasFor(target)
-    if (!hasNodes(canvas) || !bridge.reseed(target, canvas)) return false
+    let canvas: Record<string, unknown> | null
+    try {
+      canvas = canvasFor(target)
+    } catch (error) {
+      reportError(error, {
+        errorType: 'failure_serializing_agent_reseed_canvas',
+        level: 'warning',
+        tags: { feature_area: 'agent', operation: 'sync', outcome: 'recovered' }
+      })
+      return false
+    }
+    if (canvas === null || !bridge.reseed(target, canvas)) return false
     recordDevEvent('doc_reseed_sent', { workflowId: target })
     onSubscribeSent(
       new CustomEvent('doc_subscribe_sent', {
@@ -699,6 +703,12 @@ function startAgentCrdtFollower(
       clearStaleProbe()
       clearSubscribeRetry()
       subscribeGaveUp = true
+      connected.value = false
+      reportError(new Error('agent document reseed was rejected'), {
+        errorType: 'failure_reseeding_agent_cloud_workflow',
+        level: 'warning',
+        tags: { feature_area: 'agent', operation: 'sync', outcome: 'gave_up' }
+      })
     }
   }
 
@@ -856,7 +866,10 @@ function startAgentCrdtFollower(
     // new doc — otherwise it keeps observing the destroyed one and goes deaf
     // when the socket recovers and updates land in the replacement.
     if (!(event instanceof CustomEvent)) return
-    const detail = event.detail as { workflowId?: unknown } | null
+    const detail = event.detail as {
+      workflowId?: unknown
+      preserveCanvas?: unknown
+    } | null
     const workflowId = detail?.workflowId
     if (
       isTargetActive.value &&
@@ -866,15 +879,17 @@ function startAgentCrdtFollower(
       updatesApplied.value = 0
       confirmedDeletes.clear()
       pendingLiveNodeIds.clear()
-      adapter.clearForReset(workflowId, {
-        source: 'agent-remote',
-        actor: 'agent-lineage',
-        opId: `follower-replaced:${workflowId}`
-      })
-      // Same reasoning as `onDocReset`: the clear is store-only, so the stale
-      // live adapters have to be swept before the replacement doc's frames
-      // start landing.
-      reconcileLiveGraph(workflowId)
+      if (detail?.preserveCanvas !== true) {
+        adapter.clearForReset(workflowId, {
+          source: 'agent-remote',
+          actor: 'agent-lineage',
+          opId: `follower-replaced:${workflowId}`
+        })
+        // Same reasoning as `onDocReset`: the clear is store-only, so the stale
+        // live adapters have to be swept before the replacement doc's frames
+        // start landing.
+        reconcileLiveGraph(workflowId)
+      }
       adapter.bind(workflowId, bridge.follower)
     }
   }
