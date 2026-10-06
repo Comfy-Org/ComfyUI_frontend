@@ -177,9 +177,10 @@ function didUsageAdvance(
 ) {
   if (!storedUsage) return false
   if (baseline === undefined) {
+    const effectiveRequestedAt = Math.min(requestedAt, Date.now())
     return (
       isOrderableUsage(storedUsage) &&
-      storedUsage.lastUsed > requestedAt + MAX_CLOCK_SKEW
+      storedUsage.lastUsed > effectiveRequestedAt + MAX_CLOCK_SKEW
     )
   }
   if (baseline === null) return true
@@ -699,9 +700,10 @@ export function useFeatureUsageTracker(featureId: string) {
 
   function reset() {
     pendingResets.add(featureId)
+    const previousReset = pendingResetUsage.get(featureId)
     pendingResetUsage.set(featureId, {
-      ...pendingResetUsage.get(featureId),
-      requestedAt: Date.now()
+      ...previousReset,
+      requestedAt: Math.max(previousReset?.requestedAt ?? 0, Date.now())
     })
     pendingUsageData.value = withoutFeature(pendingUsageData.value, featureId)
     resetUsageData(featureId)

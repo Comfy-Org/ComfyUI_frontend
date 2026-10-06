@@ -563,6 +563,31 @@ describe('useFeatureUsageTracker', () => {
     expect(stored).not.toHaveProperty(featureId)
   })
 
+  it('does not lower a repeated reset cutoff after a backward clock step', () => {
+    vi.setSystemTime(500_000)
+    const featureId = 'backward-clock-reset-cutoff'
+    const tracker = useFeatureUsageTracker(featureId)
+    const getItem = vi.spyOn(localStorage, 'getItem').mockImplementation(() => {
+      throw new DOMException('Storage access denied', 'SecurityError')
+    })
+    tracker.reset()
+    vi.setSystemTime(100_000)
+    tracker.reset()
+    getItem.mockRestore()
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        [featureId]: { useCount: 1, firstUsed: 600_000, lastUsed: 600_000 }
+      })
+    )
+    vi.setSystemTime(1_000_000)
+
+    useFeatureUsageTracker('backward-reset-cutoff-trigger').trackUsage()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored).not.toHaveProperty(featureId)
+  })
+
   it('reconciles external post-reset usage before its storage event', () => {
     const featureId = 'usage-before-reset-event'
     const tracker = useFeatureUsageTracker(featureId)
