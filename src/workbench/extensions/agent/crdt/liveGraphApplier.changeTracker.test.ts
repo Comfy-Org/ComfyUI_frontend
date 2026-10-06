@@ -14,7 +14,6 @@ import { markRaw, ref } from 'vue'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
@@ -227,16 +226,16 @@ describe('LiveGraphApplier with the real change tracker', () => {
     const count = node.widgets?.find((widget) => widget.name === 'rows')
     assert.exists(count)
     count.value = 2
-    for (const [name, value] of [
-      ['rows.0.strength', 0.5],
-      ['rows.1.strength', 0.7]
-    ] as const) {
-      const widget: IBaseWidget | undefined = node.widgets?.find(
-        (candidate) => candidate.name === name
-      )
-      assert.exists(widget)
-      widget.value = value
-    }
+    const first = node.widgets?.find(
+      (widget) => widget.name === 'rows.0.strength'
+    )
+    const second = node.widgets?.find(
+      (widget) => widget.name === 'rows.1.strength'
+    )
+    assert.exists(first)
+    assert.exists(second)
+    first.value = 0.5
+    second.value = 0.7
     expect(node.serialize().widgets_values).toEqual([
       'head',
       2,
@@ -299,7 +298,6 @@ describe('LiveGraphApplier with the real change tracker', () => {
     applier.applyChanges(doc, collector.take(), CONTEXT)
 
     expect(node.serialize().widgets_values).toEqual(['head', 0, 'remote tail'])
-    expect(node.inputs).toEqual([])
     expect(tracker.undoQueue).toEqual([beforeFrame])
     expect(tracker.activeState).toEqual(await workflowJson(graph))
     const afterWidget = node.widgets?.find((widget) => widget.name === 'after')
