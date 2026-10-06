@@ -39,17 +39,8 @@ const emit = defineEmits<{ generate: []; cancel: [] }>()
     >
       {{ priceNote }}
     </p>
-    <CinematicGenerateAction
-      v-if="gate !== 'ready'"
-      :gate
-      :workspace-name
-      :rendering="false"
-      :can-generate="false"
-      wide
-      :locale
-    />
     <Button
-      v-else-if="rendering"
+      v-if="rendering"
       variant="outline"
       class="w-full rounded-full px-5"
       data-testid="reshoot-cancel"
@@ -57,6 +48,15 @@ const emit = defineEmits<{ generate: []; cancel: [] }>()
     >
       {{ t('reshoot.cancel') }}
     </Button>
+    <CinematicGenerateAction
+      v-else-if="gate !== 'ready'"
+      :gate
+      :workspace-name
+      :rendering="false"
+      :can-generate="false"
+      wide
+      :locale
+    />
     <Button
       v-else
       class="w-full rounded-full px-5"

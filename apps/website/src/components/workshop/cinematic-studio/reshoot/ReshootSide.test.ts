@@ -61,31 +61,37 @@ describe('ReshootSide', () => {
     await vi.waitFor(() => expect(upload.value?.name).toBe(chosen.name))
   })
 
-  it.for([
-    { isExample: true, offered: false },
-    { isExample: false, offered: true }
-  ])(
-    'offers the example back only for a clip of your own: $offered',
-    async ({ isExample, offered }) => {
-      const example = vi.fn()
-      render({
-        setup: () => () =>
-          h(ReshootSide, {
-            ...props,
-            isExample,
-            size: RESHOOT_SIZES[0],
-            onExample: example
-          })
-      })
-      const button = screen.queryByRole('button', {
-        name: rc('reshoot.clip.useExample')
-      })
+  function renderWithExample(isExample: boolean) {
+    const example = vi.fn()
+    render({
+      setup: () => () =>
+        h(ReshootSide, {
+          ...props,
+          isExample,
+          size: RESHOOT_SIZES[0],
+          onExample: example
+        })
+    })
+    return example
+  }
 
-      expect(button !== null).toBe(offered)
-      if (button) await userEvent.click(button)
-      expect(example).toHaveBeenCalledTimes(offered ? 1 : 0)
-    }
-  )
+  it('offers no way back to the example while the example is loaded', () => {
+    renderWithExample(true)
+
+    expect(
+      screen.queryByRole('button', { name: rc('reshoot.clip.useExample') })
+    ).toBeNull()
+  })
+
+  it('goes back to the example from a clip of your own', async () => {
+    const example = renderWithExample(false)
+
+    await userEvent.click(
+      screen.getByRole('button', { name: rc('reshoot.clip.useExample') })
+    )
+
+    expect(example).toHaveBeenCalledOnce()
+  })
 
   it('picks the output size from a menu that describes each size', async () => {
     const size = ref<(typeof RESHOOT_SIZES)[number]>(RESHOOT_SIZES[0])
