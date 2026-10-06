@@ -3841,8 +3841,7 @@
       "description": "Google 最新的 Gemini 图像模型，现已登陆 Comfy。给它一个提示词和参考图，它就能返回最高 4K 分辨率的图像。它可以在 Nano Banana 2 适用的任何地方使用，并新增思考等级，价格更低。",
       "tagTextToImage": "文生图",
       "tagImageEditing": "图像编辑",
-      "tagPartnerNode": "合作伙伴节点",
-      "primaryCta": "查看教程"
+      "tagPartnerNode": "合作伙伴节点"
     },
     "showcase": {
       "photography": {

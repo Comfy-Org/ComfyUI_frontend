@@ -72,7 +72,7 @@ const loopDuration = computed(
         :key="copy"
         :class="
           cn(
-            'flex shrink-0 gap-6 lg:animate-marquee',
+            'flex shrink-0 gap-6 lg:motion-safe:animate-marquee',
             copy === 2 && 'hidden lg:motion-safe:flex'
           )
         "

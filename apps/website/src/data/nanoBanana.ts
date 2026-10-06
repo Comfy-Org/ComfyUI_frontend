@@ -2,9 +2,7 @@ import type { ModelLaunchPage } from '@/templates/model-launch/types'
 
 const nanoBananaLinks = {
   cloud:
-    'https://cloud.comfy.org/?utm_source=comfy.org&utm_medium=referral&utm_campaign=nano-banana',
-  workflows:
-    'https://docs.comfy.org/tutorials/partner-nodes/google/nano-banana-2'
+    'https://cloud.comfy.org/?utm_source=comfy.org&utm_medium=referral&utm_campaign=nano-banana'
 } as const
 
 const mediaBase = 'https://media.comfy.org/website/nano-banana'
@@ -150,12 +148,7 @@ export const nanoBananaPage: ModelLaunchPage = {
       'nanoBanana.hero.tagTextToImage',
       'nanoBanana.hero.tagImageEditing',
       'nanoBanana.hero.tagPartnerNode'
-    ],
-    primaryCta: {
-      labelKey: 'nanoBanana.hero.primaryCta',
-      href: nanoBananaLinks.workflows,
-      target: '_blank'
-    }
+    ]
   },
   showcases: [
     {
