@@ -3397,7 +3397,7 @@ describe('an SSO account with no Firebase login (sso_enabled)', () => {
 
     it.for([
       { sso: true, status: 'stored' },
-      { sso: false, status: 'cancelled' }
+      { sso: false, status: 'failed' }
     ])(
       'is stored for the session user only with SSO on ($sso)',
       async ({ sso, status }) => {
@@ -3431,7 +3431,7 @@ describe('an SSO account with no Firebase login (sso_enabled)', () => {
       await vi.advanceTimersByTimeAsync(TEN_MINUTES_MS)
       releaseSettings()
 
-      await expect(submission).resolves.toMatchObject({ status: 'cancelled' })
+      await expect(submission).resolves.toMatchObject({ status: 'failed' })
     })
   })
 })
