@@ -283,6 +283,64 @@ describe('strict protected-token audit', () => {
 describe('non-strict protected-token audit', () => {
   it.for([
     {
+      name: 'accepts positional and literal interpolation placeholders',
+      source: "Ask {'@'}{username} or check {0}",
+      target: "Demandez à {'@'}{username} ou consultez {0}",
+      expected: []
+    },
+    {
+      name: 'reports dropped positional and literal interpolation placeholders',
+      source: "Ask {'@'}{username} or check {0}",
+      target: 'Demandez à @username ou consultez 0',
+      expected: [
+        { code: 'missing-token', token: "{'@'}" },
+        { code: 'missing-token', token: '{0}' },
+        { code: 'missing-token', token: '{username}' }
+      ]
+    },
+    {
+      name: 'reports corrupted media placeholders and algebraic literals',
+      source: 'Use <Picture 10> on the 17k+5 grid',
+      target: 'Use <Localized 10> on the 17000+5 grid',
+      expected: [
+        { code: 'missing-token', token: '17k+5' },
+        { code: 'missing-token', token: '<Picture 10>' }
+      ]
+    },
+    {
+      name: 'reports a placeholder added to unchanged copy',
+      source: 'Failed',
+      target: '失败 ({count})',
+      expected: [{ code: 'added-token', token: '{count}' }]
+    },
+    {
+      name: 'accepts locale quote styles around quoted literals',
+      source: "Set 'match' or 'max' to scale",
+      target: 'Réglez «match» ou „max“ pour l’échelle',
+      expected: []
+    },
+    {
+      name: 'reports an introduced plural separator',
+      source: 'Send',
+      target: 'Enviar | Cancelar',
+      expected: [{ code: 'added-plural-separator', token: '|' }]
+    },
+    {
+      name: 'reports an introduced linked message',
+      source: 'Send',
+      target: 'Enviar @:g.cancel',
+      expected: [{ code: 'added-linked-message', token: '@' }]
+    },
+    {
+      name: 'reports a placeholder renamed across plural forms',
+      source: 'No items | {count} item | {count} items',
+      target: 'None | {total} many',
+      expected: [
+        { code: 'missing-token', token: '{count}' },
+        { code: 'added-token', token: '{total}' }
+      ]
+    },
+    {
       name: 'ignores repeated tokens and markup',
       source: '<b>{n}</b> and {n}',
       target: '{n}',

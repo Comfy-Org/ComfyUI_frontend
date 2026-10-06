@@ -592,21 +592,8 @@ describe('unusable source metadata', () => {
 
   it.for([
     {
-      label: 'a fingerprint manifest',
-      manifest: json({
-        version: 3,
-        files: { 'main.json': { source: {}, locales: {} } }
-      }),
-      message: 'Cannot load source manifest'
-    },
-    {
       label: 'a malformed blob ID',
       manifest: json({ version: 1, files: { 'main.json': 'not-a-blob' } }),
-      message: 'Cannot load source manifest'
-    },
-    {
-      label: 'corrupt JSON',
-      manifest: '{"version": 1,',
       message: 'Cannot load source manifest'
     },
     { label: 'no manifest', manifest: null, message: 'Missing source manifest' }

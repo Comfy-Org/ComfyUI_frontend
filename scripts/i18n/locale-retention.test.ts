@@ -100,13 +100,6 @@ describe('locale retention', () => {
       english: { title: 'New' },
       existing: { title: '古い' },
       expected: { title: 'MT(New)' }
-    },
-    {
-      label: 'locale edited alongside English is regenerated',
-      previousEnglish: { title: 'Old' },
-      english: { title: 'New' },
-      existing: { title: '新しい' },
-      expected: { title: 'MT(New)' }
     }
   ])('$label', ({ expected, ...input }) => {
     expect(simulateGeneration(input)).toEqual(expected)

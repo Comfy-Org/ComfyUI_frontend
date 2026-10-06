@@ -1,7 +1,7 @@
 import type { LocaleObject, LocaleValue } from './locale-tree'
 import { collectLeaves } from './locale-tree'
 
-export type ViolationCode = keyof typeof violationDescriptions
+type ViolationCode = keyof typeof violationDescriptions
 
 export interface TokenViolation {
   path: string[]
