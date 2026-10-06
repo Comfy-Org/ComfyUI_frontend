@@ -30,7 +30,7 @@ function isAssignment(
  */
 export function useStarterPromptSet() {
   const assigned = ref<StarterPromptAssignment>('control')
-  const exposed = ref(false)
+  const exposedAssignment = ref<StarterPromptAssignment>()
   const qaOverride = ref(false)
   let surfaceRendered = false
 
@@ -47,8 +47,12 @@ export function useStarterPromptSet() {
             STARTER_PROMPT_SET_FLAG
           ]) as StarterPromptAssignment)
       : 'control'
-    if (surfaceRendered && !qaOverride.value && !exposed.value) {
-      exposed.value = true
+    if (
+      surfaceRendered &&
+      !qaOverride.value &&
+      exposedAssignment.value !== assigned.value
+    ) {
+      exposedAssignment.value = assigned.value
       useTelemetry()?.trackAgentStarterPromptExposure({
         [`$feature/${STARTER_PROMPT_SET_FLAG}`]: assigned.value
       })
@@ -62,6 +66,7 @@ export function useStarterPromptSet() {
 
   const invalidateSurface = () => {
     surfaceRendered = false
+    exposedAssignment.value = undefined
   }
 
   if (isAuthenticatedConfigLoaded.value) {
