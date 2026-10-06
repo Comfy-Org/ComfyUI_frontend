@@ -6,61 +6,87 @@
     <div v-else-if="error" class="p-4">
       <Message severity="error">{{ error }}</Message>
     </div>
-    <Table v-else class="rounded-lg border border-border-default">
-      <TableHeader>
-        <TableRow>
-          <TableHead>{{ $t('credits.eventType') }}</TableHead>
-          <TableHead>{{ $t('credits.details') }}</TableHead>
-          <TableHead>{{ $t('credits.time') }}</TableHead>
-          <TableHead>{{ $t('credits.additionalInfo') }}</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        <TableRow
-          v-for="(event, index) in events"
-          :key="event.event_id ?? index"
-        >
-          <TableCell>
-            <Badge
-              variant="badge"
-              :severity="
-                customerEventService.getEventSeverity(event.event_type ?? '')
-              "
-            >
-              {{ customerEventService.formatEventType(event.event_type ?? '') }}
-            </Badge>
-          </TableCell>
-          <TableCell>
-            <UsageLogEventDetails :event />
-          </TableCell>
-          <TableCell>
-            {{ customerEventService.formatDate(event.createdAt ?? '') }}
-          </TableCell>
-          <TableCell>
-            <Button
-              v-if="customerEventService.hasAdditionalInfo(event)"
-              v-tooltip.top="{
-                escape: false,
-                value: tooltipContentMap.get(event.event_id ?? '') || ''
-              }"
-              variant="textonly"
-              size="icon-sm"
-              :aria-label="$t('credits.additionalInfo')"
-            >
-              <i class="pi pi-info-circle" />
-            </Button>
-          </TableCell>
-        </TableRow>
-      </TableBody>
-    </Table>
-    <Pagination
-      v-if="!loading && !error && pagination.totalPages > 1"
-      :page="pagination.page"
-      :total="pagination.total"
-      :items-per-page="pagination.limit"
-      class="mt-3"
-      @update:page="onPageChange"
-    />
+    <template v-else>
+      <Table class="rounded-lg border border-border-default">
+        <TableHeader>
+          <TableRow>
+            <TableHead>{{ $t('credits.eventType') }}</TableHead>
+            <TableHead>{{ $t('credits.details') }}</TableHead>
+            <TableHead>{{ $t('credits.time') }}</TableHead>
+            <TableHead>{{ $t('credits.additionalInfo') }}</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          <TableRow
+            v-for="(event, index) in events"
+            :key="event.event_id ?? index"
+          >
+            <TableCell>
+              <Badge
+                variant="badge"
+                :severity="
+                  customerEventService.getEventSeverity(event.event_type ?? '')
+                "
+              >
+                {{
+                  customerEventService.formatEventType(event.event_type ?? '')
+                }}
+              </Badge>
+            </TableCell>
+            <TableCell>
+              <div
+                v-if="event.event_type === EventType.CREDIT_ADDED"
+                class="font-semibold text-success-background"
+              >
+                {{ $t('credits.added') }} ${{
+                  customerEventService.formatAmount(eventAmount(event))
+                }}
+              </div>
+              <div v-else-if="event.event_type === EventType.ACCOUNT_CREATED">
+                {{ $t('credits.accountInitialized') }}
+              </div>
+              <div
+                v-else-if="event.event_type === EventType.API_USAGE_COMPLETED"
+                class="flex flex-col gap-1"
+              >
+                <div class="font-semibold">
+                  {{ event.params?.api_name || $t('credits.api') }}
+                </div>
+                <div class="text-sm text-muted-foreground">
+                  {{ $t('credits.model') }}: {{ event.params?.model || '-' }}
+                </div>
+              </div>
+            </TableCell>
+            <TableCell>
+              {{ customerEventService.formatDate(event.createdAt ?? '') }}
+            </TableCell>
+            <TableCell>
+              <Button
+                v-if="customerEventService.hasAdditionalInfo(event)"
+                v-tooltip.top="{
+                  escape: false,
+                  value: tooltipContentMap.get(event.event_id ?? '') || ''
+                }"
+                variant="textonly"
+                size="icon-sm"
+                :aria-label="$t('credits.additionalInfo')"
+              >
+                <i class="pi pi-info-circle" />
+              </Button>
+            </TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
+      <Pagination
+        v-if="pagination.total > pagination.limit"
+        :page="pagination.page"
+        :total="pagination.total"
+        :items-per-page="pagination.limit"
+        with-edge-buttons
+        class="mt-3"
+        @update:page="onPageChange"
+      />
+    </template>
   </div>
 </template>
 
@@ -87,9 +113,10 @@ import { useBillingReadRail } from '@/platform/workspace/composables/useBillingR
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { usePendingTopup } from '@/composables/billing/usePendingTopup'
 import type { AuditLog } from '@/services/customerEventsService'
-import { useCustomerEventsService } from '@/services/customerEventsService'
-
-import UsageLogEventDetails from './UsageLogEventDetails.vue'
+import {
+  EventType,
+  useCustomerEventsService
+} from '@/services/customerEventsService'
 
 const { t } = useI18n()
 
@@ -104,9 +131,13 @@ const { shouldUseWorkspaceBilling } = useBillingRouting()
 const pagination = ref({
   page: 1,
   limit: 7,
-  total: 0,
-  totalPages: 0
+  total: 0
 })
+
+function eventAmount(event: AuditLog) {
+  const amount = event.params?.amount
+  return typeof amount === 'number' ? amount : undefined
+}
 
 const tooltipContentMap = computed(() => {
   const map = new Map<string, string>()
@@ -188,10 +219,6 @@ const loadEvents = async () => {
       if (response.total != null) {
         pagination.value.total = response.total
       }
-
-      if (response.totalPages != null) {
-        pagination.value.totalPages = response.totalPages
-      }
     } else {
       const legacyError = shouldUseWorkspaceBilling.value
         ? null
@@ -221,7 +248,7 @@ const onPageChange = (page: number) => {
  */
 const dropRenderedEvents = () => {
   events.value = []
-  pagination.value = { ...pagination.value, page: 1, total: 0, totalPages: 0 }
+  pagination.value = { ...pagination.value, page: 1, total: 0 }
 }
 
 const refresh = async () => {

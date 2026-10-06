@@ -1,42 +1,26 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-import { createI18n } from 'vue-i18n'
 
+import { testI18n } from '@/components/searchbox/v2/__test__/testUtils'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useExtensionStore } from '@/stores/extensionStore'
 
 import ExtensionPanel from './ExtensionPanel.vue'
 
-const i18n = createI18n({
-  legacy: false,
-  locale: 'en',
-  messages: {
-    en: {
-      g: {
-        all: 'All',
-        core: 'Core',
-        custom: 'Custom',
-        disableAll: 'Disable all',
-        disableSelected: 'Disable selected',
-        disableThirdParty: 'Disable third-party extensions',
-        enableAll: 'Enable all',
-        enableSelected: 'Enable selected',
-        extensionName: 'Extension name',
-        extensions: 'Extensions',
-        moreOptions: 'More options',
-        reloadToApplyChanges: 'Reload to apply changes',
-        searchPlaceholder: 'Search {subject}...',
-        selectAll: 'Select all'
-      }
-    }
-  }
-})
+function registerExtensions(...names: string[]) {
+  const extensionStore = useExtensionStore()
+  for (const name of names) extensionStore.registerExtension({ name })
+}
+
+function renderPanel() {
+  return render(ExtensionPanel, { global: { plugins: [testI18n] } })
+}
 
 describe('ExtensionPanel', () => {
   it('preserves the selected filter when clicked again', async () => {
     const user = userEvent.setup()
-    render(ExtensionPanel, { global: { plugins: [i18n] } })
+    renderPanel()
 
     const coreFilter = screen.getByRole('button', { name: 'Core' })
     await user.click(coreFilter)
@@ -45,60 +29,90 @@ describe('ExtensionPanel', () => {
     expect(coreFilter).toHaveAttribute('aria-pressed', 'true')
   })
 
-  it('sorts by extension name and exposes the order through aria-sort', async () => {
+  it('keeps registration order until the name column is sorted', async () => {
     const user = userEvent.setup()
-    const extensionStore = useExtensionStore()
-    extensionStore.registerExtension({ name: 'Zebra' })
-    extensionStore.registerExtension({ name: 'Alpha' })
+    registerExtensions('Zebra', 'Alpha')
+    renderPanel()
 
-    render(ExtensionPanel, { global: { plugins: [i18n] } })
-
-    const header = screen.getByRole('columnheader', { name: 'Extension name' })
     const names = () =>
       screen
-        .getAllByRole('checkbox', { name: /^(Alpha|Zebra)$/ })
-        .map((checkbox) => checkbox.getAttribute('aria-label'))
+        .getAllByRole('switch', { name: /^(Alpha|Zebra)$/ })
+        .map((toggle) => toggle.getAttribute('aria-label'))
 
-    expect(header).toHaveAttribute('aria-sort', 'ascending')
+    expect(
+      screen.getByRole('columnheader', { name: 'Extension Name' })
+    ).toHaveAttribute('aria-sort', 'none')
+    expect(names()).toEqual(['Zebra', 'Alpha'])
+
+    await user.click(screen.getByRole('button', { name: 'Extension Name' }))
     expect(names()).toEqual(['Alpha', 'Zebra'])
 
-    await user.click(screen.getByRole('button', { name: 'Extension name' }))
-
-    expect(header).toHaveAttribute('aria-sort', 'descending')
+    await user.click(screen.getByRole('button', { name: 'Extension Name' }))
     expect(names()).toEqual(['Zebra', 'Alpha'])
   })
 
-  it('keeps individual and filtered bulk selections', async () => {
+  it('shows select all as mixed while only some visible rows are selected', async () => {
     const user = userEvent.setup()
-    const extensionStore = useExtensionStore()
-    extensionStore.registerExtension({ name: 'Alpha' })
-    extensionStore.registerExtension({ name: 'Zebra' })
+    registerExtensions('Alpha', 'Zebra')
+    renderPanel()
 
-    render(ExtensionPanel, { global: { plugins: [i18n] } })
+    await user.click(screen.getByRole('checkbox', { name: 'Select Alpha' }))
 
-    await user.click(screen.getByRole('checkbox', { name: 'Alpha' }))
-    await user.type(screen.getByRole('combobox'), 'Zebra')
-    await user.click(screen.getByRole('checkbox', { name: 'Select all' }))
-    await user.clear(screen.getByRole('combobox'))
+    expect(
+      screen.getByRole('checkbox', { name: 'Select All' })
+    ).toBePartiallyChecked()
+  })
 
-    expect(screen.getByRole('checkbox', { name: 'Alpha' })).toBeChecked()
-    expect(screen.getByRole('checkbox', { name: 'Zebra' })).toBeChecked()
-    expect(screen.getByRole('checkbox', { name: 'Select all' })).toBeChecked()
+  it('replaces the selection with the visible rows on select all and clears it on unselect', async () => {
+    const user = userEvent.setup()
+    registerExtensions('Alpha', 'Zebra')
+    const setSetting = vi.spyOn(useSettingStore(), 'set').mockResolvedValue()
+    renderPanel()
+    const search = screen.getByRole('combobox')
+    const selectAll = () => screen.getByRole('checkbox', { name: 'Select All' })
+
+    await user.click(screen.getByRole('checkbox', { name: 'Select Alpha' }))
+    await user.type(search, 'Zebra')
+    await user.click(selectAll())
+    await user.clear(search)
+
+    expect(
+      screen.getByRole('checkbox', { name: 'Select Alpha' })
+    ).not.toBeChecked()
+    expect(screen.getByRole('checkbox', { name: 'Select Zebra' })).toBeChecked()
+
+    await user.click(screen.getByRole('button', { name: 'More Options' }))
+    await user.click(
+      await screen.findByRole('menuitem', { name: 'Disable Selected' })
+    )
+    expect(setSetting).toHaveBeenLastCalledWith('Comfy.Extension.Disabled', [
+      'Zebra'
+    ])
+
+    await user.click(screen.getByRole('checkbox', { name: 'Select Alpha' }))
+    await user.type(search, 'Zebra')
+    await user.click(selectAll())
+    await user.clear(search)
+
+    expect(
+      screen.getByRole('checkbox', { name: 'Select Alpha' })
+    ).not.toBeChecked()
+    expect(
+      screen.getByRole('checkbox', { name: 'Select Zebra' })
+    ).not.toBeChecked()
   })
 
   it('toggles only the selected extensions and offers a reload while they differ', async () => {
     const user = userEvent.setup()
-    const extensionStore = useExtensionStore()
-    extensionStore.registerExtension({ name: 'Alpha' })
-    extensionStore.registerExtension({ name: 'Zebra' })
+    registerExtensions('Alpha', 'Zebra')
     const setSetting = vi.spyOn(useSettingStore(), 'set').mockResolvedValue()
     const reload = vi.spyOn(window.location, 'reload').mockReturnValue()
 
-    render(ExtensionPanel, { global: { plugins: [i18n] } })
-    await user.click(screen.getByRole('checkbox', { name: 'Alpha' }))
-    await user.click(screen.getByRole('button', { name: 'More options' }))
+    renderPanel()
+    await user.click(screen.getByRole('checkbox', { name: 'Select Alpha' }))
+    await user.click(screen.getByRole('button', { name: 'More Options' }))
     await user.click(
-      await screen.findByRole('menuitem', { name: 'Disable selected' })
+      await screen.findByRole('menuitem', { name: 'Disable Selected' })
     )
 
     expect(screen.getByRole('switch', { name: 'Alpha' })).not.toBeChecked()
@@ -111,9 +125,9 @@ describe('ExtensionPanel', () => {
     )
     expect(reload).toHaveBeenCalledOnce()
 
-    await user.click(screen.getByRole('button', { name: 'More options' }))
+    await user.click(screen.getByRole('button', { name: 'More Options' }))
     await user.click(
-      await screen.findByRole('menuitem', { name: 'Enable selected' })
+      await screen.findByRole('menuitem', { name: 'Enable Selected' })
     )
 
     expect(screen.getByRole('switch', { name: 'Alpha' })).toBeChecked()

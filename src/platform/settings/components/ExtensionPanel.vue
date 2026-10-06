@@ -35,7 +35,7 @@
         <TableRow>
           <TableHead class="w-12">
             <Checkbox
-              :model-value="allVisibleSelected"
+              :model-value="selectAllState"
               :aria-label="$t('g.selectAll')"
               @update:model-value="toggleAllVisible"
             />
@@ -61,9 +61,9 @@
           <TableCell>
             <Checkbox
               :model-value="selectedExtensionNames.has(extension.name)"
-              :aria-label="extension.name"
+              :aria-label="$t('g.selectItem', { name: extension.name })"
               @update:model-value="
-                (selected) => setExtensionSelected(extension, selected)
+                (selected) => setExtensionSelected(extension.name, selected)
               "
             />
           </TableCell>
@@ -115,7 +115,6 @@ import type { TableSortDirection } from '@/components/ui/table/tableUtils'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useExtensionStore } from '@/stores/extensionStore'
-import type { ComfyExtension } from '@/types/comfy'
 
 const { t } = useI18n()
 
@@ -128,9 +127,9 @@ const filterTypes = computed(() =>
   }))
 )
 const filterType = ref<FilterTypeKey>('all')
-const selectedExtensions = ref<ComfyExtension[]>([])
+const selectedExtensionNames = ref(new Set<string>())
 const searchQuery = ref('')
-const nameSortDirection = ref<TableSortDirection | null>('ascending')
+const nameSortDirection = ref<TableSortDirection | null>(null)
 
 const extensionStore = useExtensionStore()
 const settingStore = useSettingStore()
@@ -157,54 +156,38 @@ const visibleExtensions = computed(() => {
   const filtered = filterByQuery(
     filteredExtensions.value,
     searchQuery.value,
+    (extension) => [extension.name]
+  )
+  return sortByText(
+    filtered,
+    nameSortDirection.value,
     (extension) => extension.name
   )
-  return nameSortDirection.value
-    ? sortByText(
-        filtered,
-        nameSortDirection.value,
-        (extension) => extension.name
-      )
-    : filtered
 })
 
-const selectedExtensionNames = computed(
-  () => new Set(selectedExtensions.value.map((extension) => extension.name))
-)
+const selectAllState = computed<CheckboxCheckedState>(() => {
+  const selectedCount = visibleExtensions.value.filter((extension) =>
+    selectedExtensionNames.value.has(extension.name)
+  ).length
+  if (selectedCount === 0) return false
+  return selectedCount === visibleExtensions.value.length
+    ? true
+    : 'indeterminate'
+})
 
-const allVisibleSelected = computed(
-  () =>
-    visibleExtensions.value.length > 0 &&
-    visibleExtensions.value.every((extension) =>
-      selectedExtensionNames.value.has(extension.name)
-    )
-)
-
-function setExtensionSelected(
-  extension: ComfyExtension,
-  selected: CheckboxCheckedState
-) {
-  selectedExtensions.value =
-    selected === true
-      ? [...selectedExtensions.value, extension]
-      : selectedExtensions.value.filter((item) => item.name !== extension.name)
+function setExtensionSelected(name: string, selected: CheckboxCheckedState) {
+  const names = new Set(selectedExtensionNames.value)
+  if (selected === true) names.add(name)
+  else names.delete(name)
+  selectedExtensionNames.value = names
 }
 
 function toggleAllVisible(selected: CheckboxCheckedState) {
-  const visibleNames = new Set(
-    visibleExtensions.value.map((extension) => extension.name)
-  )
-  selectedExtensions.value =
+  selectedExtensionNames.value = new Set(
     selected === true
-      ? [
-          ...selectedExtensions.value.filter(
-            (extension) => !visibleNames.has(extension.name)
-          ),
-          ...visibleExtensions.value
-        ]
-      : selectedExtensions.value.filter(
-          (extension) => !visibleNames.has(extension.name)
-        )
+      ? visibleExtensions.value.map((extension) => extension.name)
+      : []
+  )
 }
 
 onMounted(() => {
@@ -282,9 +265,9 @@ const contextMenuItems = computed<MenuItem[]>(() => [
     label: t('g.enableSelected'),
     icon: 'pi pi-check',
     command: async () => {
-      selectedExtensions.value.forEach((ext) => {
-        if (!extensionStore.isExtensionReadOnly(ext.name)) {
-          editingEnabledExtensions.value[ext.name] = true
+      selectedExtensionNames.value.forEach((name) => {
+        if (!extensionStore.isExtensionReadOnly(name)) {
+          editingEnabledExtensions.value[name] = true
         }
       })
       await updateExtensionStatus()
@@ -294,9 +277,9 @@ const contextMenuItems = computed<MenuItem[]>(() => [
     label: t('g.disableSelected'),
     icon: 'pi pi-times',
     command: async () => {
-      selectedExtensions.value.forEach((ext) => {
-        if (!extensionStore.isExtensionReadOnly(ext.name)) {
-          editingEnabledExtensions.value[ext.name] = false
+      selectedExtensionNames.value.forEach((name) => {
+        if (!extensionStore.isExtensionReadOnly(name)) {
+          editingEnabledExtensions.value[name] = false
         }
       })
       await updateExtensionStatus()

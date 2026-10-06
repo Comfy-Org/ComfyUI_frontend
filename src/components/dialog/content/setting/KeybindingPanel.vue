@@ -42,36 +42,36 @@
           </TableSortHead>
           <TableHead class="w-3/10">{{ $t('g.keybinding') }}</TableHead>
           <TableHead class="w-4/25">{{ $t('g.source') }}</TableHead>
-          <TableHead class="w-36" />
+          <TableHead class="w-36">
+            <span class="sr-only">{{ $t('g.actions') }}</span>
+          </TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         <KeybindingCommandRows
-          v-for="commandData in visibleCommands"
-          :key="commandData.id"
-          :command="commandData"
-          :expanded="expandedCommandIds.has(commandData.id)"
-          :selected="selectedCommandData?.id === commandData.id"
-          @row-click="activateRow(commandData)"
-          @row-dblclick="handleRowDblClick(commandData)"
-          @row-contextmenu="handleRowContextMenu($event, commandData)"
-          @row-keydown="handleRowKeydown($event, commandData)"
-          @edit="editKeybinding(commandData, $event)"
-          @add="addKeybinding(commandData)"
-          @reset="resetKeybinding(commandData)"
-          @remove="handleRemoveKeybindingFromMenu(commandData)"
-          @remove-single="removeSingleKeybinding(commandData, $event)"
+          v-for="command in visibleCommands"
+          :key="command.id"
+          :command="command"
+          :expanded="expandedCommandIds.has(command.id)"
+          :selected="selectedCommandId === command.id"
+          @row-click="activateRow(command)"
+          @row-dblclick="handleRowDblClick(command)"
+          @row-contextmenu="handleRowContextMenu($event, command)"
+          @edit="editKeybinding(command, $event)"
+          @add="addKeybinding(command)"
+          @reset="resetKeybinding(command)"
+          @remove="handleRemoveKeybindingFromMenu(command)"
+          @remove-single="removeSingleKeybinding(command, $event)"
         />
       </TableBody>
     </Table>
     <Pagination
       v-if="filteredCommands.length > commandsPerPageOptions[0]"
-      :page="currentPage"
+      v-model:page="currentPage"
+      v-model:items-per-page="commandsPerPage"
       :total="filteredCommands.length"
-      :items-per-page="commandsPerPage"
       :items-per-page-options="commandsPerPageOptions"
-      @update:page="currentPage = $event"
-      @update:items-per-page="setCommandsPerPage"
+      with-edge-buttons
     />
     <ContextMenu ref="rowMenu" :model="rowMenuItems" />
 
@@ -88,6 +88,7 @@
 </template>
 
 <script setup lang="ts">
+import type { ComponentProps } from 'vue-component-type-helpers'
 import { computed, onMounted, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -118,8 +119,9 @@ import { useDialogStore } from '@/stores/dialogStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
 import KeybindingCommandRows from './keybinding/KeybindingCommandRows.vue'
-import type { KeybindingCommand } from './keybinding/keybindingCommandTypes'
 import KeybindingPresetToolbar from './keybinding/KeybindingPresetToolbar.vue'
+
+type KeybindingCommand = ComponentProps<typeof KeybindingCommandRows>['command']
 
 const searchQuery = ref('')
 
@@ -232,25 +234,22 @@ const filteredCommands = computed(() => {
   const filtered = filterByQuery(
     commandsData.value,
     searchQuery.value,
-    (command) => `${command.id} ${command.label}`
+    (command) => [command.id, command.label]
   )
-  return commandSortDirection.value
-    ? sortByText(
-        filtered,
-        commandSortDirection.value,
-        (command) => command.label
-      )
-    : filtered
+  return sortByText(
+    filtered,
+    commandSortDirection.value,
+    (command) => command.label
+  )
 })
 const visibleCommands = computed(() => {
   const start = (currentPage.value - 1) * commandsPerPage.value
   return filteredCommands.value.slice(start, start + commandsPerPage.value)
 })
 
-function setCommandsPerPage(value: number) {
-  commandsPerPage.value = value
+watch([commandSortDirection, commandsPerPage], () => {
   currentPage.value = 1
-}
+})
 
 const expandedCommandIds = ref<Set<string>>(new Set())
 
@@ -267,7 +266,7 @@ watch(searchQuery, () => {
   expandedCommandIds.value.clear()
 })
 
-const selectedCommandData = ref<KeybindingCommand | null>(null)
+const selectedCommandId = ref<string | null>(null)
 const editKeybindingDialog = useEditKeybindingDialog()
 
 const rowMenu = useTemplateRef('rowMenu')
@@ -304,81 +303,64 @@ const rowMenuItems = computed<MenuItem[]>(() => {
   ]
 })
 
-function editKeybinding(
-  commandData: KeybindingCommand,
-  binding: KeybindingImpl
-) {
+function editKeybinding(command: KeybindingCommand, binding: KeybindingImpl) {
   editKeybindingDialog.show({
-    commandId: commandData.id,
-    commandLabel: commandData.label,
+    commandId: command.id,
+    commandLabel: command.label,
     currentCombo: binding.combo,
     mode: 'edit',
     existingBinding: binding
   })
 }
 
-function addKeybinding(commandData: KeybindingCommand) {
+function addKeybinding(command: KeybindingCommand) {
   editKeybindingDialog.show({
-    commandId: commandData.id,
-    commandLabel: commandData.label,
+    commandId: command.id,
+    commandLabel: command.label,
     currentCombo: null,
     mode: 'add'
   })
 }
 
-function activateRow(commandData: KeybindingCommand) {
-  selectedCommandData.value = commandData
+function activateRow(command: KeybindingCommand) {
+  selectedCommandId.value = command.id
   if (
-    commandData.keybindings.length >= 2 ||
-    expandedCommandIds.value.has(commandData.id)
+    command.keybindings.length >= 2 ||
+    expandedCommandIds.value.has(command.id)
   ) {
-    toggleExpanded(commandData.id)
+    toggleExpanded(command.id)
   }
 }
 
-function handleRowKeydown(
-  event: KeyboardEvent,
-  commandData: KeybindingCommand
-) {
-  if (event.target !== event.currentTarget) return
-  if (event.key === 'Enter' || event.key === ' ') {
-    event.preventDefault()
-    activateRow(commandData)
+function handleRowDblClick(command: KeybindingCommand) {
+  if (command.keybindings.length === 0) {
+    addKeybinding(command)
+  } else if (command.keybindings.length === 1) {
+    editKeybinding(command, command.keybindings[0])
   }
 }
 
-function handleRowDblClick(commandData: KeybindingCommand) {
-  if (commandData.keybindings.length === 0) {
-    addKeybinding(commandData)
-  } else if (commandData.keybindings.length === 1) {
-    editKeybinding(commandData, commandData.keybindings[0])
-  }
-}
-
-function handleRowContextMenu(
-  event: MouseEvent,
-  commandData: KeybindingCommand
-) {
-  selectedCommandData.value = commandData
-  contextMenuTarget.value = commandData
+function handleRowContextMenu(event: MouseEvent, command: KeybindingCommand) {
+  selectedCommandId.value = command.id
+  contextMenuTarget.value = command
   rowMenu.value?.show(event)
 }
 
 async function removeSingleKeybinding(
-  commandData: KeybindingCommand,
+  command: KeybindingCommand,
   index: number
 ) {
-  const binding = commandData.keybindings[index]
+  const binding = command.keybindings[index]
   if (binding) {
     keybindingStore.unsetKeybinding(binding)
-    if (commandData.keybindings.length <= 2) {
-      expandedCommandIds.value.delete(commandData.id)
+    if (command.keybindings.length <= 2) {
+      expandedCommandIds.value.delete(command.id)
     }
     await keybindingService.persistUserKeybindings()
   }
 }
 
-function handleRemoveAllKeybindings(commandData: KeybindingCommand) {
+function handleRemoveAllKeybindings(command: KeybindingCommand) {
   const dialog = showConfirmDialog({
     headerProps: { title: t('g.removeAllKeybindingsTitle') },
     props: { promptText: t('g.removeAllKeybindingsMessage') },
@@ -387,7 +369,7 @@ function handleRemoveAllKeybindings(commandData: KeybindingCommand) {
       confirmVariant: 'destructive',
       onCancel: () => dialogStore.closeDialog(dialog),
       onConfirm: async () => {
-        keybindingStore.removeAllKeybindingsForCommand(commandData.id)
+        keybindingStore.removeAllKeybindingsForCommand(command.id)
         await keybindingService.persistUserKeybindings()
         dialogStore.closeDialog(dialog)
       }
@@ -395,29 +377,29 @@ function handleRemoveAllKeybindings(commandData: KeybindingCommand) {
   })
 }
 
-function handleRemoveKeybindingFromMenu(commandData: KeybindingCommand) {
-  if (commandData.keybindings.length >= 2) {
-    handleRemoveAllKeybindings(commandData)
+function handleRemoveKeybindingFromMenu(command: KeybindingCommand) {
+  if (command.keybindings.length >= 2) {
+    handleRemoveAllKeybindings(command)
   } else {
-    removeSingleKeybinding(commandData, 0)
+    removeSingleKeybinding(command, 0)
   }
 }
 
-function changeKeybinding(commandData: KeybindingCommand) {
-  if (commandData.keybindings.length === 1) {
-    editKeybinding(commandData, commandData.keybindings[0])
+function changeKeybinding(command: KeybindingCommand) {
+  if (command.keybindings.length === 1) {
+    editKeybinding(command, command.keybindings[0])
   } else {
-    expandedCommandIds.value.add(commandData.id)
+    expandedCommandIds.value.add(command.id)
   }
 }
 
-async function resetKeybinding(commandData: KeybindingCommand) {
-  if (keybindingStore.resetKeybindingForCommand(commandData.id)) {
-    expandedCommandIds.value.delete(commandData.id)
+async function resetKeybinding(command: KeybindingCommand) {
+  if (keybindingStore.resetKeybindingForCommand(command.id)) {
+    expandedCommandIds.value.delete(command.id)
     await keybindingService.persistUserKeybindings()
   } else {
     console.warn(
-      `No changes made when resetting keybinding for command: ${commandData.id}`
+      `No changes made when resetting keybinding for command: ${command.id}`
     )
   }
 }

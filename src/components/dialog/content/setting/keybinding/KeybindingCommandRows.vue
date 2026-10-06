@@ -2,21 +2,31 @@
   <TableRow
     tabindex="0"
     :data-state="selected ? 'selected' : undefined"
+    :aria-expanded="command.keybindings.length >= 2 ? expanded : undefined"
     @click="emit('rowClick')"
     @dblclick="emit('rowDblclick')"
     @contextmenu="emit('rowContextmenu', $event)"
-    @keydown="emit('rowKeydown', $event)"
+    @keydown.enter.self.prevent="emit('rowClick')"
+    @keydown.space.self.prevent="emit('rowClick')"
   >
     <TableCell class="p-1">
       <div
-        class="flex min-w-0 items-center gap-1 truncate"
-        :class="command.keybindings.length < 2 && 'pl-5'"
+        :class="
+          cn(
+            'flex min-w-0 items-center gap-1 truncate',
+            command.keybindings.length < 2 && 'pl-5'
+          )
+        "
         :title="command.id"
       >
         <i
           v-if="command.keybindings.length >= 2"
-          class="icon-[lucide--chevron-right] size-4 shrink-0 text-muted-foreground transition-transform"
-          :class="expanded && 'rotate-90'"
+          :class="
+            cn(
+              'icon-[lucide--chevron-right] size-4 shrink-0 text-muted-foreground transition-transform',
+              expanded && 'rotate-90'
+            )
+          "
         />
         <i
           v-if="
@@ -132,18 +142,23 @@
 </template>
 
 <script setup lang="ts">
-import type { KeybindingImpl } from '@/platform/keybindings/keybinding'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
 import TableCell from '@/components/ui/table/TableCell.vue'
 import TableRow from '@/components/ui/table/TableRow.vue'
+import type { KeybindingImpl } from '@/platform/keybindings/keybinding'
+import type { ComfyCommandImpl } from '@/stores/commandStore'
 
 import KeybindingList from './KeybindingList.vue'
-import type { KeybindingCommand } from './keybindingCommandTypes'
 import KeyComboDisplay from './KeyComboDisplay.vue'
 
 const { command, expanded, selected } = defineProps<{
-  command: KeybindingCommand
+  command: Pick<ComfyCommandImpl, 'id' | 'source'> & {
+    keybindings: KeybindingImpl[]
+    label: string
+    isModified: boolean
+  }
   expanded: boolean
   selected: boolean
 }>()
@@ -152,7 +167,6 @@ const emit = defineEmits<{
   rowClick: []
   rowDblclick: []
   rowContextmenu: [event: MouseEvent]
-  rowKeydown: [event: KeyboardEvent]
   edit: [binding: KeybindingImpl]
   add: []
   reset: []

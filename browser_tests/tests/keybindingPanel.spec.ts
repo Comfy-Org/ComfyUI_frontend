@@ -20,6 +20,10 @@ function getKeybindingSearchInput(page: Page): Locator {
   return page.getByPlaceholder('Search Keybindings...')
 }
 
+function getCommandLabel(page: Page, commandId: string): Locator {
+  return page.locator(`.keybinding-panel [title="${commandId}"]`)
+}
+
 function getCommandRow(page: Page, commandId: string): Locator {
   return page
     .locator('.keybinding-panel tr')
@@ -32,9 +36,12 @@ function getExpansionContent(page: Page, commandId: string): Locator {
     .getByTestId('keybinding-expansion-content')
 }
 
-async function openContextMenu(page: Page, commandId: string) {
-  const row = getCommandRow(page, commandId)
-  await row.locator(`[title="${commandId}"]`).click({ button: 'right' })
+async function openContextMenu(
+  page: Page,
+  commandId: string,
+  position?: { x: number; y: number }
+) {
+  await getCommandLabel(page, commandId).click({ button: 'right', position })
   await expect(
     page.getByRole('menuitem', { name: /Change keybinding/i })
   ).toBeVisible()
@@ -105,21 +112,28 @@ test.describe('Keybinding Panel', { tag: '@keyboard' }, () => {
 
       await searchKeybindings(page, MULTI_BINDING_COMMAND)
       const row = getCommandRow(page, MULTI_BINDING_COMMAND)
-      await row.focus()
-      await row.press('Enter')
-      await expect(
-        getExpansionContent(page, MULTI_BINDING_COMMAND)
-      ).toBeVisible()
 
-      await row.press('Space')
-      await expect(
-        getExpansionContent(page, MULTI_BINDING_COMMAND)
-      ).toBeHidden()
+      await test.step('Enter expands the focused row', async () => {
+        await row.focus()
+        await row.press('Enter')
+        await expect(
+          getExpansionContent(page, MULTI_BINDING_COMMAND)
+        ).toBeVisible()
+      })
 
-      await row.press('Shift+F10')
-      await expect(
-        page.getByRole('menuitem', { name: /Change keybinding/i })
-      ).toBeVisible()
+      await test.step('Space collapses it', async () => {
+        await row.press('Space')
+        await expect(
+          getExpansionContent(page, MULTI_BINDING_COMMAND)
+        ).toBeHidden()
+      })
+
+      await test.step('Shift+F10 opens the row menu', async () => {
+        await row.press('Shift+F10')
+        await expect(
+          comfyPage.contextMenu.menuItem('Change keybinding')
+        ).toBeVisible()
+      })
     })
 
     test('Click on row with 2+ keybindings toggles expansion', async ({
@@ -228,13 +242,14 @@ test.describe('Keybinding Panel', { tag: '@keyboard' }, () => {
       const { page } = comfyPage
 
       await searchKeybindings(page, SINGLE_BINDING_COMMAND)
-      const label = getCommandRow(page, SINGLE_BINDING_COMMAND).locator(
-        `[title="${SINGLE_BINDING_COMMAND}"]`
-      )
-      const labelBox = await label.boundingBox()
+      const offset = { x: 10, y: 5 }
+      const labelBox = await getCommandLabel(
+        page,
+        SINGLE_BINDING_COMMAND
+      ).boundingBox()
       if (!labelBox) throw new Error('Command label has no bounding box')
-      const pointer = { x: labelBox.x + 10, y: labelBox.y + 5 }
-      await label.click({ button: 'right', position: { x: 10, y: 5 } })
+      const pointer = { x: labelBox.x + offset.x, y: labelBox.y + offset.y }
+      await openContextMenu(page, SINGLE_BINDING_COMMAND, offset)
 
       await expect
         .poll(() => comfyPage.contextMenu.distanceFrom(pointer))

@@ -1,11 +1,10 @@
 <template>
   <PaginationRoot
-    :page="page"
+    v-model:page="page"
     :total="total"
     :items-per-page="itemsPerPage"
     :sibling-count="1"
     show-edges
-    @update:page="(p: number) => emit('update:page', p)"
   >
     <div class="flex flex-wrap items-center justify-center gap-2">
       <div
@@ -37,7 +36,7 @@
           </SelectContent>
         </Select>
       </div>
-      <PaginationFirst as-child>
+      <PaginationFirst v-if="withEdgeButtons" as-child>
         <Button
           variant="muted-textonly"
           size="icon"
@@ -47,7 +46,12 @@
         </Button>
       </PaginationFirst>
       <PaginationPrev as-child>
-        <Button variant="muted-textonly" size="md" class="text-sm">
+        <Button
+          variant="muted-textonly"
+          size="md"
+          class="text-sm"
+          :aria-label="$t('g.previous')"
+        >
           <i class="icon-[lucide--chevron-left] size-4" />
           {{ $t('g.previous') }}
         </Button>
@@ -62,6 +66,7 @@
             <Button
               :variant="item.value === page ? 'secondary' : 'muted-textonly'"
               size="icon"
+              :aria-label="$t('g.pageNumber', { page: item.value })"
             >
               {{ item.value }}
             </Button>
@@ -72,12 +77,17 @@
         </template>
       </PaginationList>
       <PaginationNext as-child>
-        <Button variant="muted-textonly" size="md" class="text-sm">
+        <Button
+          variant="muted-textonly"
+          size="md"
+          class="text-sm"
+          :aria-label="$t('g.next')"
+        >
           {{ $t('g.next') }}
           <i class="icon-[lucide--chevron-right] size-4" />
         </Button>
       </PaginationNext>
-      <PaginationLast as-child>
+      <PaginationLast v-if="withEdgeButtons" as-child>
         <Button
           variant="muted-textonly"
           size="icon"
@@ -111,24 +121,20 @@ import SelectTrigger from '@/components/ui/select/SelectTrigger.vue'
 import SelectValue from '@/components/ui/select/SelectValue.vue'
 
 const {
-  page = 1,
   total,
-  itemsPerPage = 10,
-  itemsPerPageOptions
+  itemsPerPageOptions,
+  withEdgeButtons = false
 } = defineProps<{
-  page?: number
   total: number
-  itemsPerPage?: number
   itemsPerPageOptions?: number[]
+  withEdgeButtons?: boolean
 }>()
 
-const emit = defineEmits<{
-  'update:page': [page: number]
-  'update:itemsPerPage': [itemsPerPage: number]
-}>()
+const page = defineModel<number>('page', { default: 1 })
+const itemsPerPage = defineModel<number>('itemsPerPage', { default: 10 })
 
 function updateItemsPerPage(value: AcceptableValue) {
-  if (typeof value === 'number') emit('update:itemsPerPage', value)
+  if (typeof value === 'number') itemsPerPage.value = value
 }
 
 const ellipsisClass =

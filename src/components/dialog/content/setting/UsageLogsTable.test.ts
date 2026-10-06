@@ -3,11 +3,11 @@ import PrimeVue from 'primevue/config'
 import Tooltip from 'primevue/tooltip'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
-import { createI18n } from 'vue-i18n'
 
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 
+import { testI18n } from '@/components/searchbox/v2/__test__/testUtils'
 import {
   EventType,
   useCustomerEventsService
@@ -56,27 +56,6 @@ vi.mock(import('@/platform/workspace/composables/useBillingReadRail'), () => ({
     return rail
   }
 }))
-
-const i18n = createI18n({
-  legacy: false,
-  locale: 'en',
-  messages: {
-    en: {
-      credits: {
-        eventType: 'Event Type',
-        details: 'Details',
-        time: 'Time',
-        additionalInfo: 'Additional Info',
-        added: 'Added',
-        accountInitialized: 'Account initialized',
-        model: 'Model',
-        loadEventsError: 'Failed to load activity. Please try again.',
-        loadEventsUnknownError:
-          'Something went wrong while loading activity. Please refresh and try again.'
-      }
-    }
-  }
-})
 
 async function flushMicrotasks() {
   await new Promise((resolve) => setTimeout(resolve, 0))
@@ -145,7 +124,7 @@ describe('UsageLogsTable', () => {
   function renderComponent() {
     return render(UsageLogsTable, {
       global: {
-        plugins: [PrimeVue, i18n, getActivePinia()!],
+        plugins: [PrimeVue, testI18n, getActivePinia()!],
         directives: { tooltip: Tooltip }
       }
     })
@@ -226,11 +205,14 @@ describe('UsageLogsTable', () => {
       })
     })
 
-    it('shows data table after loading completes', async () => {
+    it('shows data table without a paginator when one page holds every event', async () => {
       await renderLoaded()
 
       expect(
         screen.queryByText('Failed to load events')
+      ).not.toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'Next' })
       ).not.toBeInTheDocument()
     })
   })
@@ -318,30 +300,47 @@ describe('UsageLogsTable', () => {
       })
     })
 
+    const pagedResponse = (page?: number) =>
+      makeEventsResponse(mockEventsResponse.events, { page, total: 20 })
+
     it.for([
       {
         workspaceBilling: false,
+        rail: false,
         source: 'getMyEvents',
-        reader: () => vi.mocked(useCustomerEventsService().getMyEvents)
+        mockReader: () =>
+          vi
+            .mocked(useCustomerEventsService().getMyEvents)
+            .mockImplementation(async (params) => pagedResponse(params?.page))
       },
       {
         workspaceBilling: true,
+        rail: false,
         source: 'workspaceApi.getBillingEvents',
-        reader: () => vi.mocked(workspaceApi.getBillingEvents)
+        mockReader: () =>
+          vi
+            .mocked(workspaceApi.getBillingEvents)
+            .mockImplementation(async (params) => pagedResponse(params?.page))
+      },
+      {
+        workspaceBilling: true,
+        rail: true,
+        source: 'the SDK reader rail',
+        mockReader: () =>
+          mockBillingReadRail.readEvents.mockImplementation(
+            async (params: { page: number }) => ({
+              status: 'ok',
+              value: pagedResponse(params.page)
+            })
+          )
       }
     ])(
       'requests the 1-based page picked in the paginator from $source',
-      async ({ workspaceBilling, reader: getReader }) => {
+      async ({ workspaceBilling, rail, mockReader }) => {
         const user = userEvent.setup()
         setWorkspaceBilling(workspaceBilling)
-        const reader = getReader()
-        reader.mockImplementation(async (params) =>
-          makeEventsResponse(mockEventsResponse.events, {
-            page: params?.page,
-            total: 20,
-            totalPages: 3
-          })
-        )
+        mockBillingReadRail.enabled = rail
+        const reader = mockReader()
 
         await renderLoaded()
         await user.click(screen.getByRole('button', { name: 'Page 3' }))
@@ -349,7 +348,7 @@ describe('UsageLogsTable', () => {
         await waitFor(() =>
           expect(reader).toHaveBeenLastCalledWith({ page: 3, limit: 7 })
         )
-        await user.click(screen.getByRole('button', { name: 'Previous Page' }))
+        await user.click(screen.getByRole('button', { name: 'Previous' }))
 
         await waitFor(() =>
           expect(reader).toHaveBeenLastCalledWith({ page: 2, limit: 7 })
@@ -527,7 +526,7 @@ describe('UsageLogsTable', () => {
           createdAt: '2024-03-01T10:00:00Z'
         }
       ],
-      { total: 20, totalPages: 3 }
+      { total: 20 }
     )
 
     const readers = {
@@ -573,21 +572,6 @@ describe('UsageLogsTable', () => {
       expect(screen.getByText(/rail-model/)).toBeInTheDocument()
     })
 
-    it('asks the reader for the page the paginator moved to', async () => {
-      const user = userEvent.setup()
-      onTheRail()
-
-      await renderLoaded()
-      await user.click(screen.getByRole('button', { name: 'Next Page' }))
-
-      await waitFor(() => {
-        expect(mockBillingReadRail.readEvents).toHaveBeenCalledWith({
-          page: 2,
-          limit: 7
-        })
-      })
-    })
-
     it('publishes nothing and reports nothing when the read is superseded', async () => {
       onTheRail({ status: 'error', code: 'SUPERSEDED' })
 
@@ -619,7 +603,7 @@ describe('UsageLogsTable', () => {
         status: 'error',
         code: 'SUPERSEDED'
       })
-      await user.click(screen.getByRole('button', { name: 'Next Page' }))
+      await user.click(screen.getByRole('button', { name: 'Next' }))
 
       await waitFor(() => {
         expect(screen.queryByText('RailAPI')).not.toBeInTheDocument()
