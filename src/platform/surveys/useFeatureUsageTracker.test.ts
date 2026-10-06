@@ -109,13 +109,16 @@ describe('useFeatureUsageTracker', () => {
   })
 
   it('does not interrupt callers when storage is unavailable', () => {
-    const { trackUsage } = useFeatureUsageTracker('unavailable-storage')
+    const { trackUsage, useCount } = useFeatureUsageTracker(
+      'unavailable-storage'
+    )
     vi.spyOn(console, 'error').mockImplementation(() => {})
     vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
       throw new DOMException('Storage quota exceeded', 'QuotaExceededError')
     })
 
     expect(trackUsage).not.toThrow()
+    expect(useCount.value).toBe(1)
   })
 
   it('preserves intervening usage when tracked after scope disposal', () => {
