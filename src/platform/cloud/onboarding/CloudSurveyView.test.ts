@@ -166,7 +166,8 @@ describe('CloudSurveyView', () => {
 
     expect(router.currentRoute.value.name).toBe('survey')
     expect(mocks.reportError).not.toHaveBeenCalled()
-    expect(useToastStore().add).not.toHaveBeenCalled()
+    expect(useToast().error).not.toHaveBeenCalled()
+    expect(useToast().toasts).toEqual([])
     expect(screen.getByRole('button', { name: 'Submit survey' })).toBeEnabled()
   })
 

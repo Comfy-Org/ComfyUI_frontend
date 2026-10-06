@@ -105,7 +105,9 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
     async (files: File[]) => {
       if (files.length === 0) return
       if (files.some(isExtensionlessVideo)) {
-        toastStore.addAlert(t('g.videoFilenameExtensionRequired'))
+        toastStore.warning('Alert', {
+          description: t('g.videoFilenameExtensionRequired')
+        })
         return
       }
 

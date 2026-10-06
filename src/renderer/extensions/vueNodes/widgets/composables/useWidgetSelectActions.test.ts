@@ -98,9 +98,9 @@ describe('useWidgetSelectActions', () => {
 
       expect(api.fetchApi).not.toHaveBeenCalled()
       expect(modelValue.value).toBe('existing.mp4')
-      expect(useToastStore().addAlert).toHaveBeenCalledWith(
-        enMessages.g.videoFilenameExtensionRequired
-      )
+      expect(useToast().warning).toHaveBeenCalledWith('Alert', {
+        description: enMessages.g.videoFilenameExtensionRequired
+      })
     })
 
     it('uploads file and updates modelValue', async () => {
