@@ -9,7 +9,7 @@ function normalizeSearchText(text: string) {
 }
 
 export function filterByQuery<T>(
-  items: T[],
+  items: readonly T[],
   query: string,
   getSearchFields: (item: T) => string[]
 ): T[] {
@@ -22,11 +22,11 @@ export function filterByQuery<T>(
 }
 
 export function sortByText<T>(
-  items: T[],
+  items: readonly T[],
   direction: TableSortDirection | null,
   getText: (item: T) => string
 ): T[] {
-  if (!direction) return items
+  if (!direction) return [...items]
   return [...items].sort((a, b) => {
     const result = collator.compare(getText(a), getText(b))
     return direction === 'ascending' ? result : -result

@@ -11,7 +11,7 @@
       )
     "
   >
-    <slot :flatten-items="flattenItems" />
+    <slot :flatten-items />
   </TreeRoot>
 </template>
 

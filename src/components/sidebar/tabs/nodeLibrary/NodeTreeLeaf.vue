@@ -73,8 +73,8 @@
 
 <script setup lang="ts">
 import type { CSSProperties } from 'vue'
-import { useElementHover } from '@vueuse/core'
-import { computed, nextTick, ref, watch } from 'vue'
+import { useEventListener } from '@vueuse/core'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
@@ -166,11 +166,8 @@ const nodePreviewStyle = ref<CSSProperties>({
   zIndex: 1001
 })
 
-const handleNodeHover = () => {
-  const hoverTarget = nodeContentElement.value
-  if (!hoverTarget) return
-
-  const targetRect = hoverTarget.getBoundingClientRect()
+const positionPreview = (row: HTMLElement) => {
+  const targetRect = row.getBoundingClientRect()
   const margin = 40
 
   nodePreviewStyle.value.top = `${targetRect.top}px`
@@ -183,13 +180,15 @@ const handleNodeHover = () => {
 }
 
 const container = ref<HTMLElement | null>(null)
-const nodeContentElement = computed(() =>
+const row = computed(() =>
   container.value?.closest<HTMLElement>('.tree-explorer-item')
 )
-const isHovered = useElementHover(nodeContentElement)
-watch(isHovered, async (hovered) => {
-  if (!hovered) return
-  await nextTick()
-  handleNodeHover()
+const isHovered = ref(false)
+useEventListener(row, 'mouseenter', () => {
+  if (row.value) positionPreview(row.value)
+  isHovered.value = true
+})
+useEventListener(row, 'mouseleave', () => {
+  isHovered.value = false
 })
 </script>

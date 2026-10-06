@@ -6,7 +6,7 @@ const rows = [
   { id: 'open', label: 'Open workflow' },
   { id: 'save', label: 'Save workflow' },
   { id: 'close', label: 'Close workflow' }
-]
+] as const
 
 describe('table state utilities', () => {
   it.for([

@@ -1,8 +1,8 @@
 <template>
   <PaginationRoot
     v-model:page="page"
-    :total="total"
-    :items-per-page="itemsPerPage"
+    :total
+    :items-per-page
     :sibling-count="1"
     show-edges
   >

@@ -1,6 +1,6 @@
 <template>
   <div ref="container" class="model-lib-node-container size-full">
-    <TreeExplorerTreeNode :node="node" />
+    <TreeExplorerTreeNode :node />
 
     <teleport v-if="showPreview" to="#model-library-model-preview-container">
       <div class="model-lib-model-preview" :style="modelPreviewStyle">
@@ -12,8 +12,8 @@
 
 <script setup lang="ts">
 import type { CSSProperties } from 'vue'
-import { useElementHover } from '@vueuse/core'
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { useEventListener } from '@vueuse/core'
+import { computed, nextTick, onMounted, ref } from 'vue'
 
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -41,11 +41,8 @@ const sidebarLocation = computed<'left' | 'right'>(() =>
   settingStore.get('Comfy.Sidebar.Location')
 )
 
-const handleModelHover = async () => {
-  const hoverTarget = modelContentElement.value
-  if (!hoverTarget) return
-
-  const targetRect = hoverTarget.getBoundingClientRect()
+const positionPreview = (row: HTMLElement) => {
+  const targetRect = row.getBoundingClientRect()
 
   const previewHeight = previewRef.value?.$el.offsetHeight || 0
   const availableSpaceBelow = window.innerHeight - targetRect.bottom
@@ -59,15 +56,22 @@ const handleModelHover = async () => {
   } else {
     modelPreviewStyle.value.left = `${targetRect.left - 400}px`
   }
-
-  await modelDef.value.load()
 }
 
 const container = ref<HTMLElement | undefined>()
-const modelContentElement = computed(() =>
+const row = computed(() =>
   container.value?.closest<HTMLElement>('.tree-explorer-item')
 )
-const isHovered = useElementHover(modelContentElement)
+const isHovered = ref(false)
+useEventListener(row, 'mouseenter', async () => {
+  isHovered.value = true
+  await nextTick()
+  if (row.value) positionPreview(row.value)
+  await modelDef.value.load()
+})
+useEventListener(row, 'mouseleave', () => {
+  isHovered.value = false
+})
 
 const showPreview = computed(() => {
   return (
@@ -83,11 +87,6 @@ const showPreview = computed(() => {
   )
 })
 
-watch(isHovered, async (hovered) => {
-  if (!hovered) return
-  await nextTick()
-  await handleModelHover()
-})
 onMounted(async () => {
   await modelDef.value.load()
 })
