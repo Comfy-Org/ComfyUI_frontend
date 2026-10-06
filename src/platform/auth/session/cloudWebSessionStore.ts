@@ -38,6 +38,7 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
+import { presentSsoRequired } from '@/platform/auth/sso/ssoRequired'
 import {
   clearInteractiveSignIn,
   markInteractiveSignIn,
@@ -98,10 +99,14 @@ const TOKEN_FAILURE_COPY: Readonly<
   SESSION_UNAVAILABLE: 'auth.webSession.token.unavailable',
   CSRF_STALE: 'auth.webSession.token.refused',
   WORKSPACE_ACCESS_DENIED: 'auth.webSession.token.workspaceDenied',
-  SESSION_REQUEST_REFUSED: 'auth.webSession.token.refused'
+  SESSION_REQUEST_REFUSED: 'auth.webSession.token.refused',
+  SSO_REQUIRED: 'auth.webSession.token.refused'
 }
 
 export function webSessionFailureMessage(code: WebSessionErrorCode): string {
+  if (code === 'SSO_REQUIRED' && useFeatureFlags().flags.ssoEnabled) {
+    return t('auth.webSession.token.ssoRequired')
+  }
   return t(TOKEN_FAILURE_COPY[code])
 }
 
@@ -187,7 +192,8 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
   let decided = false
   let identity: WebSessionIdentity | null = null
   let ready: Promise<void> = Promise.resolve()
-  let creating: Promise<void> = Promise.resolve()
+  let creating: Promise<WebSessionErrorCode | undefined> =
+    Promise.resolve(undefined)
   let decidedForRequests: Promise<void> = Promise.resolve()
   let reconnectTimer: ReturnType<typeof setTimeout> | undefined
   let pendingSignIn: InteractiveSignIn | null = null
@@ -230,20 +236,22 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
     identity?.dispose()
   })
 
+  /** Resolves the refusal's code when the session was not created. */
   async function createSession(
     session: WebSessionIdentity,
     getProof: () => Promise<string>
-  ): Promise<void> {
+  ): Promise<WebSessionErrorCode | undefined> {
     const result = await session.signedIn(getProof).catch(() => null)
     if (result?.status === 'ok') {
       clearInteractiveSignIn()
-      return
+      return undefined
     }
     reportError(new Error('Web session creation failed'), {
       surface: 'auth',
       errorType: 'session_cookie_creation_failure',
       level: 'warning'
     })
+    return result?.code
   }
 
   async function bootAfter(
@@ -256,7 +264,8 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
       signIn ??
       (reloaded ? { uid: user.uid, getProof: () => user.getIdToken() } : null)
     if (interactive && interactive.uid === user?.uid) {
-      await createSession(session, interactive.getProof)
+      creating = createSession(session, interactive.getProof)
+      await creating
     }
     session.boot()
   }
@@ -312,6 +321,9 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
               level: 'warning',
               tags: { code: failure.code, http_status: failure.httpStatus }
             })
+          }
+          if (failure.code === 'SSO_REQUIRED') {
+            presentSsoRequired({ email: session.user.email })
           }
           throw new WebSessionTokenError(
             error,
@@ -449,7 +461,9 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
       authorize,
       refresh: refreshFor,
       workspaceDenied: (workspaceId) =>
-        useWorkspaceAuthStore().dropDeniedWorkspace(workspaceId)
+        useWorkspaceAuthStore().dropDeniedWorkspace(workspaceId),
+      ssoRequired: ({ session }) =>
+        presentSsoRequired({ email: session.user.email })
     })
   }
 

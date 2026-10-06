@@ -2705,6 +2705,12 @@
     },
     "sso": {
       "continueWithSso": "Continue with SSO",
+      "required": {
+        "title": "Your organization requires single sign-on",
+        "body": "This account signs in with your organization's single sign-on. Continue with SSO to sign in.",
+        "bodyWithEmail": "{email} signs in with your organization's single sign-on. Continue with SSO to sign in.",
+        "dismiss": "Not now"
+      },
       "emailLabel": "Work email",
       "emailPlaceholder": "Enter your work email",
       "submit": "Continue",
@@ -2752,7 +2758,8 @@
         "identityChanged": "Your session changed. Reload to continue.",
         "unavailable": "We couldn't reach your account. Try again in a moment.",
         "workspaceDenied": "You don't have access to this workspace. Contact support if this keeps happening.",
-        "refused": "Your request was refused. Reload the page and try again."
+        "refused": "Your request was refused. Reload the page and try again.",
+        "ssoRequired": "Your organization requires single sign-on. Continue with SSO to sign in."
       },
       "reconnecting": {
         "title": "Reconnecting to your account",
@@ -5141,7 +5148,8 @@
       "invalidFirebaseToken": "Authentication failed. Please try logging in again.",
       "accessDenied": "You do not have access to this workspace",
       "workspaceNotFound": "Workspace not found",
-      "tokenExchangeFailed": "Failed to authenticate with workspace: {error}"
+      "tokenExchangeFailed": "Failed to authenticate with workspace: {error}",
+      "ssoRequired": "Your organization requires single sign-on. Continue with SSO to sign in."
     }
   },
   "nightly": {
