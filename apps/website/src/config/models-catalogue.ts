@@ -1,3 +1,9 @@
+import type { SearchableTemplate } from '@comfyorg/shared-frontend-utils/templateSearch'
+import {
+  createTemplateSearchIndex,
+  searchTemplates
+} from '@comfyorg/shared-frontend-utils/templateSearch'
+
 import type { Model } from './models'
 import type { WorkshopFormDefinition } from './workshop-form-definition'
 import type { WorkshopContract } from './workshop-contract'
@@ -465,7 +471,9 @@ export function filterWorkshopModels(
     capabilities = []
   }: WorkshopFilter
 ): WorkshopModel[] {
-  const needle = query.trim().toLowerCase()
+  const matched = query.trim()
+    ? new Set(searchTemplates(searchIndexFor(list), query))
+    : undefined
   return list.filter(
     (model) =>
       matchesUseCase(useCase, model) &&
@@ -473,26 +481,44 @@ export function filterWorkshopModels(
       matchesModalities(modalities, model) &&
       matchesFacet(providers, model.provider) &&
       matchesCapabilities(capabilities, model) &&
-      (needle === '' || searchText(model).includes(needle))
+      (matched === undefined || matched.has(model.slug))
   )
 }
 
-// Name, provider, use case ("generate videos"), capabilities ("upscale"),
-// category and task ("image to video") are all searchable.
-function searchText(model: WorkshopModel): string {
-  return [
-    model.name,
-    model.provider ?? '',
-    ...(model.type === 'CLOUD' || model.type === 'SERVERLESS'
-      ? [model.category ?? '', model.author ?? '', ...(model.models ?? [])]
-      : []),
-    ...useCasesFor(model).map((value) => value.replaceAll('-', ' ')),
-    ...model.capabilities,
-    modalityOf(model),
-    model.task?.replaceAll('-', ' ') ?? ''
-  ]
-    .join(' ')
-    .toLowerCase()
+// The templates modal's search, so a query matches the same way in the app.
+function searchable(model: WorkshopModel): SearchableTemplate {
+  const workflow = model.type === 'CLOUD' || model.type === 'SERVERLESS'
+  return {
+    name: model.slug,
+    title: model.name,
+    description: model.summary,
+    models: [
+      ...(workflow ? (model.models ?? []) : []),
+      ...(model.provider ? [model.provider] : []),
+      ...(workflow && model.author ? [model.author] : [])
+    ],
+    tags: [
+      ...useCasesFor(model),
+      ...model.capabilities,
+      modalityOf(model),
+      ...(model.task ? [model.task] : []),
+      ...(workflow && model.category ? [model.category] : [])
+    ]
+  }
+}
+
+// Lists are reactive snapshots, so one index serves every keystroke.
+const searchIndexes = new WeakMap<
+  readonly WorkshopModel[],
+  ReturnType<typeof createTemplateSearchIndex>
+>()
+
+function searchIndexFor(list: readonly WorkshopModel[]) {
+  const cached = searchIndexes.get(list)
+  if (cached) return cached
+  const index = createTemplateSearchIndex(list.map(searchable))
+  searchIndexes.set(list, index)
+  return index
 }
 
 const SORT_ORDERS = ['popular', 'name', 'priceAsc', 'priceDesc'] as const

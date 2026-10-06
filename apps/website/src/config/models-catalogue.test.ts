@@ -173,6 +173,79 @@ describe('filterWorkshopModels', () => {
   })
 })
 
+describe('filterWorkshopModels search', () => {
+  const catalogue: WorkshopModel[] = [
+    {
+      slug: 'veo',
+      name: 'Veo 3',
+      workflowCount: 1,
+      href: '/veo',
+      routerId: 'google/veo',
+      capabilities: [],
+      provider: 'Google',
+      modality: 'video',
+      task: 'text-to-video'
+    },
+    {
+      slug: 'kling-i2v',
+      name: 'Kling Image to Video',
+      workflowCount: 1,
+      href: '/kling',
+      routerId: 'kling/i2v',
+      capabilities: [],
+      provider: 'Kling',
+      modality: 'video',
+      task: 'image-to-video'
+    },
+    {
+      slug: 'fill',
+      name: 'Fill',
+      workflowCount: 1,
+      href: '/fill',
+      routerId: 'bfl/fill',
+      capabilities: ['Inpainting'],
+      provider: 'Black Forest Labs',
+      modality: 'image'
+    },
+    {
+      slug: 'dance',
+      name: 'Dance Loop',
+      workflowCount: 1,
+      href: '/hub/workflows/dance/',
+      type: 'CLOUD',
+      workflowId: 'wf-dance',
+      models: ['Wan 2.2'],
+      author: 'Comfy Org',
+      category: 'animation',
+      capabilities: []
+    }
+  ]
+
+  it.for([
+    { query: 'i2v', slugs: ['kling-i2v'] },
+    { query: 'video kling', slugs: ['kling-i2v'] },
+    { query: 'kling video', slugs: ['kling-i2v'] },
+    { query: 'veo3', slugs: ['veo'] },
+    { query: 'inpainitng', slugs: ['fill'] },
+    { query: 'wan2.2', slugs: ['dance'] },
+    { query: 'comfy org', slugs: ['dance'] },
+    { query: 'animation', slugs: ['dance'] },
+    { query: 'zzzz qqqq', slugs: [] }
+  ])('"$query" matches $slugs', ({ query, slugs }) => {
+    expect(
+      filterWorkshopModels(catalogue, { query }).map((model) => model.slug)
+    ).toEqual(slugs)
+  })
+
+  it('keeps the order of the list it is given', () => {
+    expect(
+      filterWorkshopModels([...catalogue].reverse(), { query: 'video' }).map(
+        (model) => model.slug
+      )
+    ).toEqual(['kling-i2v', 'veo'])
+  })
+})
+
 describe('filterWorkshopModels facets', () => {
   it('filters by provider and by capability', () => {
     expect(
