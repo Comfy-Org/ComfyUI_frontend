@@ -1,7 +1,6 @@
 import { externalLinks, getRoutes } from '@/config/routes'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
-import { getSocialLinks } from './socialLinks'
 
 export type NavColumnItem = {
   label: string
@@ -9,7 +8,6 @@ export type NavColumnItem = {
   badge?: 'new' | 'beta'
   external?: boolean
   seeAll?: boolean
-  icon?: string
 }
 
 export type NavColumnKind = 'model' | 'workflow' | 'app'
@@ -291,14 +289,6 @@ export function getMainNavigation(
             { label: t('nav.learning'), href: routes.learning },
             { label: t('nav.affiliates'), href: routes.affiliates }
           ]
-        },
-        {
-          header: t('nav.followUs'),
-          placement: 'footer',
-          items: getSocialLinks(locale).map((link) => ({
-            ...link,
-            external: true
-          }))
         }
       ]
     }

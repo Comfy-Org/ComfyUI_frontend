@@ -11,6 +11,7 @@ import type {
   WorkshopModel
 } from '@/config/models-catalogue'
 import { formForContract } from '@/config/workshop-contract'
+import { pagePaths } from '@/lib/workshop/page-paths'
 import { WORKSHOP_CLOUD_BASE_URL } from '@/config/workshop-env'
 import { t } from '@/i18n/translations'
 import { useWorkshopWorkflowsEnabled } from '@/scripts/posthog'
@@ -51,6 +52,7 @@ const model = computed(() =>
     ? { ...page.model, form: formForContract(page.model.execution) }
     : page.model
 )
+const paths = computed(() => pagePaths(page.model))
 const modelUseCase = computed(() => useCaseFor(page.model))
 const crumbs = computed(() => [
   { label: t('workshop.catalogue.eyebrow'), href: routes.hubExplore },
@@ -128,7 +130,7 @@ const restTags = computed(() =>
             class="mt-1 flex flex-wrap gap-2"
             data-testid="model-paths"
           >
-            <li>
+            <li v-if="paths.run">
               <Button
                 href="#playground"
                 size="sm"
@@ -157,7 +159,7 @@ const restTags = computed(() =>
                 {{ t('workshop.model.paths.cloud') }}
               </Button>
             </li>
-            <li>
+            <li v-if="paths.api">
               <Button
                 href="#api"
                 variant="ghost"

@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { nextTick } from 'vue'
 
-import type { UseCase, WorkshopModel } from '@/config/models-catalogue'
+import type { WorkshopModel } from '@/config/models-catalogue'
 import { OPEN_WEIGHT_MODELS } from '@/lib/workshop/explorer/open-weight-models'
 import { lastShelf } from '@/lib/workshop/shelf-memory'
 import WorkshopModelsGrid from './WorkshopModelsGrid.vue'
@@ -52,10 +52,6 @@ function cardNames() {
 
 function openWeightCards() {
   return screen.queryAllByTestId('open-weight-model-card')
-}
-
-function openWeightCount(useCase: UseCase) {
-  return OPEN_WEIGHT_MODELS.filter((model) => model.useCase === useCase).length
 }
 
 async function search() {
@@ -110,10 +106,11 @@ describe('WorkshopModelsGrid', () => {
     expect(
       screen.getByRole('heading', {
         level: 2,
-        name: `Edit images ${1 + openWeightCount('edit-images')}`
+        name: 'Edit images 1'
       })
     ).toBeTruthy()
     expect(cardNames()).toEqual([expect.stringContaining('Flux')])
+    expect(openWeightCards()).toEqual([])
 
     await user.click(screen.getByRole('button', { name: /Back to/ }))
     await user.click(screen.getByRole('button', { name: 'Generate videos' }))
@@ -172,11 +169,24 @@ describe('WorkshopModelsGrid', () => {
     expect(
       screen.getByRole('heading', {
         level: 2,
-        name: `All models ${3 + OPEN_WEIGHT_MODELS.length}`
+        name: 'All models 3'
       })
     ).toBeTruthy()
     expect(screen.queryByTestId('workshop-hero')).toBeNull()
     expect(cardNames()).toHaveLength(3)
+    expect(openWeightCards()).toEqual([])
+  })
+
+  it('finds open-weight models under All once the visitor searches', async () => {
+    const user = userEvent.setup()
+    render(WorkshopModelsGrid, { props: { models } })
+    await user.click(screen.getByRole('button', { name: 'Browse all models' }))
+    expect(openWeightCards()).toEqual([])
+
+    await user.type(await search(), 'kontext')
+    expect(openWeightCards().map((card) => card.textContent)).toEqual([
+      expect.stringContaining('Flux1 Dev Kontext')
+    ])
   })
 
   // A shelf and the filter are the same choice: opening "Edit images" has to
@@ -466,7 +476,20 @@ describe('WorkshopModelsGrid', () => {
     }
 
     it('offers the three ways to use a model with their counts', async () => {
-      render(WorkshopModelsGrid, { props: { models } })
+      render(WorkshopModelsGrid, {
+        props: {
+          models: [
+            ...models,
+            {
+              ...models[0],
+              slug: 'unwired',
+              name: 'Unwired',
+              href: '/models/unwired/',
+              incompleteReason: 'missing-input-schema'
+            }
+          ]
+        }
+      })
       const { dialog } = await chooseAccess()
 
       for (const name of [

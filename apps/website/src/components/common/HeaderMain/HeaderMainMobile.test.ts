@@ -64,16 +64,13 @@ describe('HeaderMainMobile', () => {
     ).toHaveAttribute('href', '/hub/')
   })
 
-  it('ends the Company drill-down with the social links', async () => {
+  it('ends the Company drill-down without the social links', async () => {
     const user = await openMenu(false)
     await user.click(screen.getByRole('button', { name: /^Company/ }))
 
-    for (const name of ['GitHub', 'Discord', 'X', 'Instagram']) {
-      expect(screen.getByRole('link', { name })).toHaveAttribute(
-        'target',
-        '_blank'
-      )
-    }
+    expect(screen.getByRole('link', { name: 'Affiliates' })).toBeTruthy()
+    for (const name of ['GitHub', 'Discord', 'X', 'Instagram'])
+      expect(screen.queryByRole('link', { name })).toBeNull()
   })
 
   it('labels a new top-level section with a NEW badge', async () => {

@@ -121,27 +121,16 @@ describe('HeaderMainDesktop', () => {
     expect(menu.queryByRole('link', { name: 'GitHub' })).toBeNull()
   })
 
-  it('shows the Company columns, a Follow us row and its card after them', async () => {
+  it('shows the Company columns and its card after them, with no social links', async () => {
     const { menu } = await openMenu(/^company/i)
 
-    for (const header of ['Company', 'Updates', 'Community', 'Follow us']) {
+    for (const header of ['Company', 'Updates', 'Community']) {
       expect(menu.getByText(header, { exact: true })).toBeVisible()
     }
-    const social = [
-      'GitHub',
-      'Discord',
-      'X',
-      'YouTube',
-      'LinkedIn',
-      'Instagram'
-    ]
-    const links = menu.getAllByRole('link')
-    expect(
-      links
-        .slice(-7, -1)
-        .map((link) => [link.textContent.trim(), link.getAttribute('target')])
-    ).toEqual(social.map((name) => [name, '_blank']))
-    expect(links.at(-1)).toHaveAttribute(
+    expect(menu.queryByText('Follow us')).toBeNull()
+    for (const name of ['GitHub', 'Discord', 'X', 'Instagram'])
+      expect(menu.queryByRole('link', { name })).toBeNull()
+    expect(menu.getAllByRole('link').at(-1)).toHaveAttribute(
       'href',
       '/customers/videos/black-math/'
     )

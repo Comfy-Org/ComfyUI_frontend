@@ -4,11 +4,13 @@ import type { TranslationKey } from '@/i18n/translations'
 export const MODEL_ACCESS = ['run', 'api', 'download'] as const
 export type ModelAccess = (typeof MODEL_ACCESS)[number]
 
-export const HOSTED_ACCESS: readonly ModelAccess[] = ['run', 'api']
+const HOSTED_ACCESS: readonly ModelAccess[] = ['run', 'api']
 export const OPEN_WEIGHT_ACCESS: readonly ModelAccess[] = ['download']
 
 export function accessFor(model: WorkshopModel): readonly ModelAccess[] {
-  return model.routerId === undefined ? [] : HOSTED_ACCESS
+  return model.routerId === undefined || model.incompleteReason
+    ? []
+    : HOSTED_ACCESS
 }
 
 export function offersAccess(

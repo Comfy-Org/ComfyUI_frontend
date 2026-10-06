@@ -247,7 +247,7 @@ describe('getMainNavigation', () => {
     }
   )
 
-  it('splits Company into Company, Updates and Community with a Follow us row', () => {
+  it('splits Company into Company, Updates and Community', () => {
     const navigation = getMainNavigation('en', true, ALL_SECTIONS)
     const company = findItem(navigation, 'Company')
 
@@ -283,23 +283,11 @@ describe('getMainNavigation', () => {
           ['Learning', '/learning/', undefined],
           ['Affiliates', '/affiliates/', undefined]
         ]
-      ],
-      [
-        'Follow us',
-        'footer',
-        [
-          ['GitHub', externalLinks.github, true],
-          ['Discord', externalLinks.discord, true],
-          ['X', externalLinks.x, true],
-          ['YouTube', externalLinks.youtube, true],
-          ['LinkedIn', externalLinks.linkedin, true],
-          ['Instagram', externalLinks.instagram, true]
-        ]
       ]
     ])
   })
 
-  it('keeps social links in Company only', () => {
+  it('leaves the social links to the footer', () => {
     const navigation = getMainNavigation('en', true, ALL_SECTIONS)
     const social = [
       externalLinks.github,
@@ -310,7 +298,7 @@ describe('getMainNavigation', () => {
       externalLinks.instagram
     ]
 
-    for (const item of navigation.filter(({ label }) => label !== 'Company'))
+    for (const item of navigation)
       expect(hrefsOf(item)).toEqual(expect.not.arrayContaining(social))
     expect(navigation.flatMap(hrefsOf)).toEqual(
       expect.not.arrayContaining([

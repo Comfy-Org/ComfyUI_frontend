@@ -79,9 +79,9 @@ describe('category tabs over the real catalogue', () => {
     expect(openWeightSlugs('partner')).toEqual([])
   })
 
-  it('lists everything under All', () => {
+  it('lists every hosted model under All and no open weights', () => {
     expect(hostedSlugs('all')).toHaveLength(hosted.length)
-    expect(openWeightSlugs('all')).toHaveLength(OPEN_WEIGHT_MODELS.length)
+    expect(openWeightSlugs('all')).toEqual([])
   })
 })
 

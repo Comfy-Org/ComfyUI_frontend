@@ -41,18 +41,22 @@ export function filterOpenWeightModels(
     query = '',
     useCases = [],
     tab = 'all',
+    downloads = false,
     byName = false
   }: {
     query?: string
     useCases?: readonly UseCase[]
     tab?: ModelTab
+    /** The visitor asked for what they can download. */
+    downloads?: boolean
     byName?: boolean
   }
 ): OpenWeightModel[] {
   const needle = query.trim().toLowerCase()
+  const askedUnderAll = tab === 'all' && (needle !== '' || downloads)
   const matches = list.filter(
     (model) =>
-      openWeightInTab(model, tab) &&
+      (askedUnderAll || openWeightInTab(model, tab)) &&
       (useCases.length === 0 || useCases.includes(model.useCase)) &&
       (needle === '' ||
         [model.name, model.provider ?? '', model.useCase.replaceAll('-', ' ')]

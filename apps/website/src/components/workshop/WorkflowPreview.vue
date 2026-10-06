@@ -18,12 +18,14 @@ const { t } = translationsFor('en')
 const {
   model,
   cloudHref,
-  active = true
+  active = true,
+  withActions = true
 } = defineProps<{
   model: WorkflowWorkshopModelDetail
   cloudHref?: string
   /** Whether the section has been reached; the graph waits until it is. */
   active?: boolean
+  withActions?: boolean
 }>()
 
 const enabled = useWorkshopEnabled()
@@ -94,7 +96,11 @@ const samples = computed(() =>
 
       <div class="lg:col-span-4">
         <div class="flex flex-col gap-4 lg:sticky lg:top-24">
-          <div class="flex flex-col gap-3" data-testid="workflow-actions">
+          <div
+            v-if="withActions"
+            class="flex flex-col gap-3"
+            data-testid="workflow-actions"
+          >
             <Button
               v-if="cloudHref"
               as="a"

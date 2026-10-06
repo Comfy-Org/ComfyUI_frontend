@@ -1,7 +1,7 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen, within } from '@testing-library/vue'
 import { assert, describe, expect, it, onTestFinished, vi } from 'vitest'
-import { readonly, ref } from 'vue'
+import { defineComponent, h, readonly, ref } from 'vue'
 
 import { workflowDetailsBySlug } from '@/config/workshop-workflow-content'
 import {
@@ -19,10 +19,16 @@ assert(model, 'the catalogue no longer carries the fixture workflow')
 const template = model.workflow.template
 assert(template, 'the fixture workflow no longer carries a template')
 
+const PlaygroundStub = defineComponent({
+  render: () => h('div', { 'data-testid': 'workflow-playground' })
+})
+
 const mount = (selected = model) =>
   render(WorkflowPage, {
     props: { model: selected },
-    global: { stubs: { WorkflowPlayground: true } }
+    global: {
+      stubs: { WorkflowPlayground: PlaygroundStub, WorkflowGraph: true }
+    }
   })
 
 describe('WorkflowPage header', () => {
@@ -56,7 +62,7 @@ describe('WorkflowPage header', () => {
     )
   })
 
-  it('offers the download, Comfy Cloud and the API as its three paths', () => {
+  it('leads with Run here, then Comfy Cloud, the download and the API', () => {
     mount()
 
     const paths = screen.getByRole('navigation', {
@@ -67,19 +73,66 @@ describe('WorkflowPage header', () => {
         .getAllByRole('link')
         .map((link) => [link.textContent.trim(), link.getAttribute('href')])
     ).toEqual([
-      ['Download workflow', template.downloadUrl],
+      ['Run here', '#playground'],
       [
-        'Run in Cloud (opens in a new tab)',
+        'Try in Comfy Cloud (opens in a new tab)',
         expect.stringContaining(`?template=${template.id}`)
       ],
+      ['Download workflow', template.downloadUrl],
       ['API', '#api']
     ])
+    expect(
+      within(paths).getByRole('link', { name: 'Run here' })
+    ).toHaveAttribute('data-variant', 'default')
     expect(
       within(paths).getByRole('link', { name: 'Download workflow' })
     ).toHaveAttribute('download')
     expect(
-      within(paths).getByRole('link', { name: /Run in Cloud/ })
+      within(paths).getByRole('link', { name: /Try in Comfy Cloud/ })
     ).toHaveAttribute('target', '_blank')
+  })
+
+  it.for([
+    { kind: 'needs a server of its own', change: { type: 'SERVERLESS' } },
+    {
+      kind: 'has no graph prepared for Cloud',
+      change: { workflow: { ...model.workflow, cloud: undefined } }
+    },
+    {
+      kind: 'is incomplete',
+      change: { incompleteReason: 'missing-input-schema' }
+    }
+  ] as const)(
+    'offers no run and no API for a workflow that $kind',
+    ({ change }) => {
+      mount({ ...model, ...change })
+
+      const paths = screen.getByRole('navigation', {
+        name: 'Ways to use this workflow'
+      })
+      expect(
+        within(paths)
+          .getAllByRole('link')
+          .map((link) => link.textContent.trim())
+      ).toEqual([
+        'Try in Comfy Cloud (opens in a new tab)',
+        'Download workflow'
+      ])
+      expect(
+        within(paths).getByRole('link', { name: /Try in Comfy Cloud/ })
+      ).toHaveAttribute('data-variant', 'default')
+      expect(screen.queryByTestId('workflow-playground')).toBeNull()
+      expect(screen.getByTestId('workflow-inside')).toBeTruthy()
+      expect(screen.queryByTestId('workflow-actions')).toBeNull()
+      expect(screen.getAllByRole('link', { name: /Download/ })).toHaveLength(1)
+    }
+  )
+
+  it('puts the playground on a workflow that runs here', () => {
+    mount()
+
+    expect(screen.getByTestId('workflow-playground')).toBeTruthy()
+    expect(screen.queryByTestId('workflow-inside')).toBeNull()
   })
 
   it('scrolls to the section a path names', async () => {

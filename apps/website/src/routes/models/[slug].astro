@@ -14,6 +14,7 @@ import { workshopPagePaths } from '@/config/workshop-page-content'
 import { modelDeveloper } from '@/config/model-vendors'
 import { modelMetaDescription } from '@/lib/workshop/model-meta-description'
 import { modelTitle } from '@/lib/workshop/model-title'
+import { pagePaths } from '@/lib/workshop/page-paths'
 import { pageContext } from '@/utils/jsonLd'
 import { modelPageJsonLd } from '@/utils/modelJsonLd'
 import { modelOgImage, prepareModelPage } from './model-page'
@@ -54,7 +55,7 @@ const ogImage = modelOgImage(model)
 
 <BaseLayout
   title={modelTitle(model)}
-  description={modelMetaDescription(page)}
+  description={modelMetaDescription({ ...page, paths: pagePaths(model) })}
   ogImage={ogImage}
   ogImageAlt={ogImage && `${model.name} example output`}
   canonicalPath={model.href}

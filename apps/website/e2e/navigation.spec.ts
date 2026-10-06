@@ -273,7 +273,7 @@ test.describe('Desktop dropdown @interaction', () => {
     expect(card?.x).toBeGreaterThan(column?.x ?? Infinity)
   })
 
-  test('COMPANY groups Company, Updates and Community above a Follow us row', async ({
+  test('COMPANY groups Company, Updates and Community with no social links', async ({
     page
   }) => {
     const nav = page.getByRole('navigation', { name: 'Main navigation' })
@@ -283,16 +283,19 @@ test.describe('Desktop dropdown @interaction', () => {
       .hover()
 
     const dropdown = nav.getByTestId('nav-dropdown')
-    for (const header of ['Company', 'Updates', 'Community', 'Follow us']) {
+    for (const header of ['Company', 'Updates', 'Community']) {
       await expect(dropdown.getByText(header, { exact: true })).toBeVisible()
     }
+    await expect(dropdown.getByText('Follow us', { exact: true })).toHaveCount(
+      0
+    )
     await expect(
       dropdown.getByRole('link', { name: 'Customer Stories' })
     ).toHaveAttribute('href', '/customers/')
-    for (const [name, href] of SOCIAL_LINKS) {
-      const link = dropdown.getByRole('link', { name, exact: true })
-      await expect(link).toHaveAttribute('href', href)
-      await expect(link).toHaveAttribute('target', '_blank')
+    for (const [name] of SOCIAL_LINKS) {
+      await expect(
+        dropdown.getByRole('link', { name, exact: true })
+      ).toHaveCount(0)
     }
   })
 
@@ -445,16 +448,17 @@ test.describe('Mobile menu @mobile', () => {
     ).toHaveAttribute('href', '/hub/')
   })
 
-  test('Company drill-down ends with the social links', async ({ page }) => {
+  test('Company drill-down leaves the social links to the footer', async ({
+    page
+  }) => {
     await page.getByRole('button', { name: 'Toggle menu' }).click()
 
     const menu = page.getByRole('dialog')
     await menu.getByRole('button', { name: /^Company/ }).click()
 
-    for (const [name, href] of SOCIAL_LINKS) {
-      await expect(
-        menu.getByRole('link', { name, exact: true })
-      ).toHaveAttribute('href', href)
+    await expect(menu.getByRole('link', { name: 'Affiliates' })).toBeVisible()
+    for (const [name] of SOCIAL_LINKS) {
+      await expect(menu.getByRole('link', { name, exact: true })).toHaveCount(0)
     }
   })
 

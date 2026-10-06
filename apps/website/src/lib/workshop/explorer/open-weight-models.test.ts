@@ -72,21 +72,40 @@ describe('filterOpenWeightModels', () => {
 
   it('keeps every match of a use case', () => {
     const editing = filterOpenWeightModels(OPEN_WEIGHT_MODELS, {
-      useCases: ['edit-images']
+      useCases: ['edit-images'],
+      downloads: true
     })
     expect(editing.map((model) => model.slug)).toContain(kontext)
     expect(editing.every((model) => model.useCase === 'edit-images')).toBe(true)
   })
 
   it('orders by name on request and by use otherwise', () => {
-    const byName = filterOpenWeightModels(OPEN_WEIGHT_MODELS, { byName: true })
+    const byName = filterOpenWeightModels(OPEN_WEIGHT_MODELS, {
+      downloads: true,
+      byName: true
+    })
     expect(byName.map((model) => model.name)).toEqual(
       OPEN_WEIGHT_MODELS.map((model) => model.name).toSorted((a, b) =>
         a.localeCompare(b)
       )
     )
-    expect(filterOpenWeightModels(OPEN_WEIGHT_MODELS, {})).toEqual(
-      OPEN_WEIGHT_MODELS
-    )
+    expect(
+      filterOpenWeightModels(OPEN_WEIGHT_MODELS, { downloads: true })
+    ).toEqual(OPEN_WEIGHT_MODELS)
   })
+
+  it.for([
+    { filter: {}, count: 0 },
+    { filter: { useCases: ['edit-images'] as const }, count: 0 },
+    { filter: { query: 'kontext' }, count: 1 },
+    { filter: { downloads: true }, count: OPEN_WEIGHT_MODELS.length },
+    { filter: { tab: 'open' as const }, count: OPEN_WEIGHT_MODELS.length }
+  ])(
+    'lists $count under All for $filter until searched or asked for',
+    ({ filter, count }) => {
+      expect(filterOpenWeightModels(OPEN_WEIGHT_MODELS, filter)).toHaveLength(
+        count
+      )
+    }
+  )
 })

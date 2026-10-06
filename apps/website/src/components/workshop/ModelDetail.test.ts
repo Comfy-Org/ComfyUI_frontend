@@ -165,6 +165,11 @@ const runnable: WorkshopModelDetail = {
   examples: []
 }
 
+const playable: WorkshopModelDetail = {
+  ...model,
+  execution: runnable.execution
+}
+
 const unkeepable: WorkshopModelDetail = {
   ...runnable,
   routerId: 'byteplus/seedream-4-0-250828',
@@ -212,7 +217,7 @@ async function mountDetail(options?: {
 
 async function signedInDetail() {
   auth.session.value = credential
-  await mountDetail()
+  await mountDetail({ model: playable })
 }
 
 const user = () =>
@@ -1291,34 +1296,58 @@ describe('ModelDetail', () => {
   })
 
   it.for([
-    {
-      signedIn: false,
-      reason: 'missing-input-schema',
-      explanation: /cannot be run or called from code/
-    },
-    {
-      signedIn: true,
-      reason: 'missing-input-schema',
-      explanation: /cannot be run or called from code/
-    }
+    { kind: 'has no input schema', incompleteReason: 'missing-input-schema' },
+    { kind: 'has no execution contract', incompleteReason: undefined }
   ] as const)(
-    'explains $reason with signedIn=$signedIn without offering a paid run',
-    async ({ signedIn, reason, explanation }) => {
-      if (signedIn) auth.session.value = credential
-      await mountDetail({ model: { ...model, incompleteReason: reason } })
-      expect(screen.getByText('Incomplete')).toBeTruthy()
-      expect(screen.getByText(explanation)).toBeTruthy()
+    'shows a model that $kind as its samples, with no playground to run',
+    async ({ incompleteReason }) => {
+      auth.session.value = credential
+      credits.balance.value = { status: 'ok', credits: 0 }
+      await mountDetail({ model: { ...model, incompleteReason } })
+
+      expect(screen.queryByTestId('playground-section')).toBeNull()
+      expect(screen.queryByTestId('run-button')).toBeNull()
       expect(screen.queryByRole('link', { name: 'Sign in to run' })).toBeNull()
-      const button = screen.getByRole('button', {
-        name: 'Run not yet supported'
-      })
-      expect(button.matches(':disabled')).toBe(true)
-      await user().click(button)
-      expect(runWorkshopRouter).not.toHaveBeenCalled()
-      expect(vi.mocked(useWorkshopSession().ensureFresh)).not.toHaveBeenCalled()
+      expect(screen.queryByRole('button', { name: 'Add credits' })).toBeNull()
       expect(screen.queryByRole('button', { name: 'Native JSON' })).toBeNull()
+      expect(
+        within(screen.getByTestId('samples-section'))
+          .getByTestId('playground-output')
+          .getAttribute('data-state')
+      ).toBe('example')
+      expect(screen.getByTestId('api-get-key')).toBeTruthy()
+      expect(runWorkshopRouter).not.toHaveBeenCalled()
     }
   )
+
+  it('lets the reader look through the samples of a model that cannot run here', async () => {
+    const second = {
+      ...model.examples[0],
+      name: 'portrait',
+      title: 'Portrait',
+      thumbnailUrl: 'https://example.com/portrait.webp'
+    }
+    await mountDetail({
+      model: { ...model, examples: [model.examples[0], second] }
+    })
+
+    const cards = screen.getAllByTestId('example-card')
+    expect(cards.map((card) => card.getAttribute('aria-label'))).toEqual([
+      'Start and end frame: View sample',
+      'Portrait: View sample'
+    ])
+    await user().click(cards[1])
+    expect(cards[1].getAttribute('aria-current')).toBe('true')
+    expect(screen.queryByTestId('example-replace-dialog')).toBeNull()
+  })
+
+  it('leaves out the samples section when a model that cannot run here has none', async () => {
+    await mountDetail({ model: { ...model, examples: [] } })
+
+    expect(screen.queryByTestId('playground-section')).toBeNull()
+    expect(screen.queryByTestId('samples-section')).toBeNull()
+    expect(screen.getByTestId('api-section')).toBeTruthy()
+  })
 
   it('runs the real Router adapter with edited Advanced values and a fresh workspace session', async () => {
     auth.session.value = credential
@@ -1540,7 +1569,7 @@ describe('ModelDetail', () => {
   it('does not suggest buying credits to enable an unavailable model', async () => {
     auth.session.value = credential
     credits.balance.value = { status: 'ok', credits: 0 }
-    await mountDetail()
+    await mountDetail({ model: playable })
     expect(screen.getByTestId('run-button').hasAttribute('disabled')).toBe(true)
     expect(screen.queryByRole('button', { name: 'Add credits' })).toBeNull()
   })
@@ -2255,7 +2284,7 @@ describe('ModelDetail', () => {
       if (disabled === 'run')
         vi.stubEnv('PUBLIC_WORKSHOP_ROUTER_RUN', undefined)
       if (disabled === 'auth') auth.enabled.value = false
-      await mountDetail({ model: disabled === 'model' ? model : runnable })
+      await mountDetail({ model: disabled === 'model' ? playable : runnable })
       await nextTick()
       expect(screen.queryByRole('link', { name: 'Sign in to run' })).toBeNull()
       expect(
@@ -2457,7 +2486,7 @@ describe('ModelDetail', () => {
 
   it('asks in the reader locale before it overwrites', async () => {
     auth.session.value = credential
-    await mountDetail({ locale: 'zh-CN' })
+    await mountDetail({ model: playable, locale: 'zh-CN' })
     await nextTick()
     const prompt = screen.getByTestId('field-prompt')
     await user().clear(prompt)
@@ -2481,7 +2510,7 @@ describe('ModelDetail', () => {
       JSON.stringify({ prompt: 'what I wrote before signing in' })
     )
     auth.session.value = credential
-    await mountDetail()
+    await mountDetail({ model: playable })
     await nextTick()
     expect(screen.getByTestId<HTMLTextAreaElement>('field-prompt').value).toBe(
       'what I wrote before signing in'
@@ -2614,7 +2643,7 @@ describe('ModelDetail', () => {
     } as const
     auth.session.value = credential
     await mountDetail({
-      model: { ...model, fields: [picker], defaults: {}, examples: [] }
+      model: { ...playable, fields: [picker], defaults: {}, examples: [] }
     })
     await nextTick()
 
@@ -2664,7 +2693,7 @@ describe('ModelDetail', () => {
     auth.session.value = credential
     await mountDetail({
       model: {
-        ...model,
+        ...playable,
         modality: 'audio',
         examples: [
           {

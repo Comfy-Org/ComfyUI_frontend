@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowUpRight, Cloud, Code, Download } from '@lucide/vue'
+import { ArrowUpRight, Cloud, Code, Download, Play } from '@lucide/vue'
 import { computed } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -8,6 +8,7 @@ import { useCaseFor } from '@/config/models-catalogue'
 import { getRoutes } from '@/config/routes'
 import { WORKSHOP_CLOUD_BASE_URL } from '@/config/workshop-env'
 import { useWorkshopSession } from '@/config/workshop-session-state'
+import { pagePaths } from '@/lib/workshop/page-paths'
 import { scrollToSection } from '@/lib/workshop/scroll-to-section'
 import { useCaseLabelKey } from '@/lib/workshop/use-case-label'
 import { t } from '@/i18n/translations'
@@ -20,6 +21,7 @@ import { workshopModelAnalytics } from '@/scripts/workshop-analytics'
 import CatalogueBackLink from './CatalogueBackLink.vue'
 import HubBreadcrumb from './HubBreadcrumb.vue'
 import WorkflowPlayground from './WorkflowPlayground.vue'
+import WorkflowPreview from './WorkflowPreview.vue'
 
 const { model } = defineProps<{ model: WorkflowWorkshopModelDetail }>()
 const emit = defineEmits<{ recovery: [active: boolean] }>()
@@ -30,6 +32,7 @@ const scope = computed(() =>
     : 'anonymous'
 )
 const routes = getRoutes()
+const paths = pagePaths(model)
 
 // The one thing the eyebrow can lead somewhere: the shelf this workflow sits
 // on. It was a word before, and a word is not a way back.
@@ -60,6 +63,8 @@ const template = model.workflow.template
 const cloudHref = template
   ? `${WORKSHOP_CLOUD_BASE_URL}/?template=${encodeURIComponent(template.id)}`
   : undefined
+
+const primary = paths.run ? 'run' : cloudHref ? 'cloud' : 'download'
 
 const enabled = useWorkshopEnabled()
 const workflowsEnabled = useWorkshopWorkflowsEnabled()
@@ -117,16 +122,16 @@ function captureDownload() {
         data-testid="workflow-paths"
       >
         <Button
-          v-if="template?.downloadUrl"
+          v-if="paths.run"
           as="a"
-          :href="template.downloadUrl"
-          download
+          href="#playground"
+          variant="default"
           class="px-5"
-          data-testid="workflow-path-download"
-          @click="captureDownload"
+          data-testid="workflow-path-run"
+          @click="goTo($event, 'playground')"
         >
-          <Download class="size-4" aria-hidden="true" />
-          {{ t('workshop.workflow.downloadWorkflow') }}
+          <Play class="size-3.5 fill-current" aria-hidden="true" />
+          {{ t('workshop.workflow.runHere') }}
         </Button>
         <Button
           v-if="cloudHref"
@@ -134,8 +139,8 @@ function captureDownload() {
           :href="cloudHref"
           target="_blank"
           rel="noopener"
-          variant="ghost"
-          :class="secondaryPathClass"
+          :variant="primary === 'cloud' ? 'default' : 'ghost'"
+          :class="primary === 'cloud' ? 'px-5' : secondaryPathClass"
           data-testid="workflow-path-cloud"
         >
           <Cloud class="size-4" aria-hidden="true" />
@@ -146,6 +151,20 @@ function captureDownload() {
           }}</span>
         </Button>
         <Button
+          v-if="template?.downloadUrl"
+          as="a"
+          :href="template.downloadUrl"
+          download
+          :variant="primary === 'download' ? 'default' : 'ghost'"
+          :class="primary === 'download' ? 'px-5' : secondaryPathClass"
+          data-testid="workflow-path-download"
+          @click="captureDownload"
+        >
+          <Download class="size-4" aria-hidden="true" />
+          {{ t('workshop.workflow.downloadWorkflow') }}
+        </Button>
+        <Button
+          v-if="paths.api"
           as="a"
           href="#api"
           variant="ghost"
@@ -160,11 +179,20 @@ function captureDownload() {
     </header>
 
     <WorkflowPlayground
+      v-if="paths.run"
       :key="scope"
       :model="model"
       :scope="scope"
       :cloud-href="cloudHref"
       @recovery="emit('recovery', $event)"
     />
+    <div
+      v-else
+      id="workflow"
+      class="scroll-mt-28"
+      data-testid="workflow-inside"
+    >
+      <WorkflowPreview :model :with-actions="false" />
+    </div>
   </div>
 </template>

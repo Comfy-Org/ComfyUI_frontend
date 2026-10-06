@@ -62,6 +62,7 @@ import { retainRunHistory } from '@/config/workshop-run-history'
 import { reportWorkshopRun } from '@/config/workshop-run-state'
 import { modelDocsHref } from '@/lib/workshop/model-docs'
 import { linkLeavingPage } from '@/lib/workshop/leaving-link'
+import { pagePaths } from '@/lib/workshop/page-paths'
 import { routerSavesAssets } from '@/lib/workshop/asset-saving'
 import { scrollToSection } from '@/lib/workshop/scroll-to-section'
 import type { WorkshopSession } from '@/config/workshop-session-state'
@@ -115,6 +116,8 @@ const headingClass =
 
 const initialPageState = initialWorkshopPageState(model)
 const examples = initialPageState.examples
+const runsHere = pagePaths(model).run
+const samples = examples.map((example) => ({ ...example, sampleOnly: true }))
 const firstExample = initialPageState.firstExample
 const activeExample = ref<PlaygroundExample | undefined>(
   initialPageState.activeExample
@@ -877,6 +880,7 @@ function retry() {
 <template>
   <div class="flex flex-col" data-testid="model-detail">
     <section
+      v-if="runsHere"
       id="playground"
       aria-labelledby="playground-heading"
       :class="sectionClass"
@@ -1013,11 +1017,40 @@ function retry() {
     </section>
 
     <section
+      v-else-if="examples.length"
+      id="samples"
+      :class="cn(sectionClass, 'flex flex-col gap-6')"
+      data-testid="samples-section"
+    >
+      <PlaygroundOutput
+        v-model:revealed="revealed"
+        :state="runState"
+        :now
+        :modality="model.modality"
+        :locale
+        class="lg:w-7/12"
+        @download="captureOutputDownload"
+      />
+      <ExamplesTab
+        v-if="samples.length > 1"
+        :examples="samples"
+        :gallery-label="model.name"
+        :active-id="activeExampleId"
+        :locale
+        @open="openExample"
+      />
+    </section>
+
+    <section
       id="api"
       ref="apiSection"
       aria-labelledby="api-heading"
       :class="
-        cn(sectionClass, 'mt-16 border-t border-transparency-white-t8 pt-12')
+        cn(
+          sectionClass,
+          (runsHere || examples.length) &&
+            'mt-16 border-t border-transparency-white-t8 pt-12'
+        )
       "
       data-testid="api-section"
     >

@@ -34,7 +34,8 @@ const model: WorkshopModelDetail = {
     }
   ],
   defaults: {},
-  examples: []
+  examples: [],
+  execution: workshopContract('bfl/flux-2-pro')
 }
 
 describe('ModelDetail on the server', () => {
@@ -54,14 +55,10 @@ describe('ModelDetail on the server', () => {
 
   it('renders the same run area whatever the flag says, so a cached flag cannot break hydration', async () => {
     vi.stubEnv('PUBLIC_WORKSHOP_ROUTER_RUN', '1')
-    const runnable = {
-      ...model,
-      execution: workshopContract('bfl/flux-2-pro')
-    }
     const render = async (enabled: boolean) => {
       vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(ref(enabled)))
       return renderToString(
-        createSSRApp({ render: () => h(ModelDetail, { model: runnable }) })
+        createSSRApp({ render: () => h(ModelDetail, { model }) })
       )
     }
 

@@ -2901,7 +2901,6 @@
     "comfyLocal": "Comfy 桌面版",
     "community": "社区",
     "updates": "动态",
-    "followUs": "关注我们",
     "company": "公司",
     "contact": "联系我们",
     "copied": "已复制",
@@ -4623,7 +4622,7 @@
     "hero": {
       "eyebrow": "模型",
       "heading": "ComfyUI 模型",
-      "subtitle": "接下来你想创造什么？用你自己的创意试用最新的 AI 模型，就在浏览器中。"
+      "subtitle": "发现最新的 AI 模型。其中许多可以直接在这里运行，也可以通过 API 调用或下载。"
     },
     "hub": {
       "categories": "分类",
@@ -4683,7 +4682,7 @@
       "label": "按输出浏览"
     },
     "meta": {
-      "description": "在 Comfy 上浏览并运行最新的 AI 图像、视频和音频模型。",
+      "description": "在 Comfy 上浏览最新的 AI 图像、视频和音频模型：在这里运行、通过 API 调用或下载。",
       "title": "浏览模型 - Comfy"
     },
     "model": {
@@ -4711,6 +4710,7 @@
         "leadNoSummary": "{who}。",
         "cta": "在浏览器中运行，或通过 API 调用。",
         "ctaShort": "可在浏览器或 API 中运行。",
+        "ctaApi": "可通过 API 调用。",
         "price": "默认设置下约 {credits} 积分。",
         "priceNoUnit": "默认设置下约 {credits} 积分。",
         "title": "{name} API 与 Playground - Comfy",
@@ -5028,7 +5028,8 @@
       "tryIt": "试用",
       "paths": "使用此工作流的方式",
       "downloadWorkflow": "下载工作流",
-      "runInCloud": "在 Cloud 中运行",
+      "runInCloud": "在 Comfy Cloud 中试用",
+      "runHere": "在此运行",
       "apiPath": "API",
       "filesNeeded": "所需文件",
       "filesNote": "仅在你自己的电脑上运行时需要；Comfy Cloud 已经准备好了这些文件。",

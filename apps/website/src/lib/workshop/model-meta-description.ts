@@ -1,6 +1,7 @@
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import { words } from './model-summary'
+import type { PagePaths } from './page-paths'
 import { splitPriceLabel } from './price-label'
 
 const META_DESCRIPTION_TARGET = 160
@@ -43,6 +44,7 @@ export function modelMetaDescription(
   page: {
     model: { name: string; provider?: string; summary?: string }
     priceEstimate?: string
+    paths: PagePaths
   },
   locale: Locale = 'en'
 ) {
@@ -60,8 +62,13 @@ export function modelMetaDescription(
   const compose = (...parts: (string | undefined)[]) =>
     parts.filter(Boolean).join(locale === 'en' ? ' ' : '')
   const price = priceClause(page.priceEstimate, locale)
-  const cta = t('workshop.model.meta.cta')
-  const ctaShort = t('workshop.model.meta.ctaShort')
+  const { run, api } = page.paths
+  const cta = run
+    ? t('workshop.model.meta.cta')
+    : api
+      ? t('workshop.model.meta.ctaApi')
+      : undefined
+  const ctaShort = run ? t('workshop.model.meta.ctaShort') : cta
 
   const fitting =
     [

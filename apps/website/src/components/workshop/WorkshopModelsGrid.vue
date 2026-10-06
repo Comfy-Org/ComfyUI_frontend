@@ -33,7 +33,7 @@ import { HUB_TOOLBAR_ID } from '@/scripts/hubToolbar'
 import type { ModelAccess } from '@/lib/workshop/explorer/model-access'
 import {
   accessFilterKey,
-  HOSTED_ACCESS,
+  accessFor,
   MODEL_ACCESS,
   OPEN_WEIGHT_ACCESS,
   offersAccess
@@ -143,7 +143,7 @@ const accessOptions = computed<FacetMenuOption<ModelAccess>[]>(() =>
     label: t(accessFilterKey[value]),
     count: OPEN_WEIGHT_ACCESS.includes(value)
       ? OPEN_WEIGHT_MODELS.length
-      : models.length
+      : models.filter((model) => accessFor(model).includes(value)).length
   }))
 )
 
@@ -161,26 +161,29 @@ const openWeightVisible = computed(() =>
         query: query.value,
         useCases: selectedUseCases.value,
         tab: tab.value,
+        downloads: selectedAccess.value.includes('download'),
         byName: sort.value === 'name'
       })
     : []
 )
 
 const visible = computed(() =>
-  offersAccess(HOSTED_ACCESS, selectedAccess.value)
-    ? groupModels(
-        sortWorkshopModels(
-          filterWorkshopModels(models, {
-            query: query.value,
-            useCases: selectedUseCases.value,
-            modalities: legacyModalities.value,
-            providers: legacyProviders.value,
-            capabilities: legacyCapabilities.value
-          }).filter((model) => hostedInTab(model, tab.value)),
-          sort.value
-        )
-      )
-    : []
+  groupModels(
+    sortWorkshopModels(
+      filterWorkshopModels(models, {
+        query: query.value,
+        useCases: selectedUseCases.value,
+        modalities: legacyModalities.value,
+        providers: legacyProviders.value,
+        capabilities: legacyCapabilities.value
+      }).filter(
+        (model) =>
+          hostedInTab(model, tab.value) &&
+          offersAccess(accessFor(model), selectedAccess.value)
+      ),
+      sort.value
+    )
+  )
 )
 const resultCount = computed(
   () => visible.value.length + openWeightVisible.value.length

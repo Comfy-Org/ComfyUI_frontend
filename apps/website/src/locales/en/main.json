@@ -18,12 +18,12 @@
     },
     "meta": {
       "title": "Browse Models - Comfy",
-      "description": "Browse and run the latest AI image, video and audio models on Comfy."
+      "description": "Browse the latest AI image, video and audio models on Comfy: run them here, call them by API or download them."
     },
     "hero": {
       "eyebrow": "Models",
       "heading": "ComfyUI models",
-      "subtitle": "What will you make next? Try the latest AI models with your own ideas, right in your browser."
+      "subtitle": "Find the latest AI models. Run many of them right here, call them by API or download them."
     },
     "search": {
       "label": "Search models, providers, and categories",
@@ -94,6 +94,7 @@
         "leadNoSummary": "{who}.",
         "cta": "Run it in your browser or call it via API.",
         "ctaShort": "Run it in your browser or via API.",
+        "ctaApi": "Call it via API.",
         "price": "Typical cost: {credits} credits per {unit}.",
         "priceNoUnit": "Typical cost: {credits} credits.",
         "title": "{name} API & Playground - Comfy",
@@ -636,7 +637,8 @@
       "tryIt": "Try it",
       "paths": "Ways to use this workflow",
       "downloadWorkflow": "Download workflow",
-      "runInCloud": "Run in Cloud",
+      "runInCloud": "Try in Comfy Cloud",
+      "runHere": "Run here",
       "apiPath": "API",
       "filesNeeded": "Files it needs",
       "filesNote": "Only needed to run it on your own machine; Comfy Cloud already has them.",
@@ -2475,7 +2477,6 @@
     "pricing": "Pricing",
     "community": "Community",
     "updates": "Updates",
-    "followUs": "Follow us",
     "resources": "Resources",
     "company": "Company",
     "comfyLocal": "Comfy Desktop",

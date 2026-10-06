@@ -99,7 +99,7 @@ describe('ModelsCatalogue', () => {
       locale: 'en',
       tab: 'models',
       subtitle:
-        'Try the latest AI models with your own ideas, right in your browser.'
+        'Run many of them right here, call them by API or download them.'
     },
     {
       locale: 'en',
@@ -116,7 +116,7 @@ describe('ModelsCatalogue', () => {
     {
       locale: 'zh-CN',
       tab: 'models',
-      subtitle: '用你自己的创意试用最新的 AI 模型，就在浏览器中。'
+      subtitle: '其中许多可以直接在这里运行，也可以通过 API 调用或下载。'
     },
     {
       locale: 'zh-CN',

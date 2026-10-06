@@ -302,6 +302,11 @@ describe('WorkshopModelCard', () => {
   it.for([
     { kind: 'a hosted model', model: base, badges: ['Run', 'API'] },
     {
+      kind: 'a hosted model that cannot run here',
+      model: { ...base, incompleteReason: 'missing-input-schema' },
+      badges: []
+    },
+    {
       kind: 'a workflow',
       model: {
         type: 'CLOUD',

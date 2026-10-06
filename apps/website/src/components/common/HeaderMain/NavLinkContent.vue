@@ -7,7 +7,7 @@ import type { Locale } from '@/i18n/translations'
 import NewBadge from './NewBadge.vue'
 
 defineProps<{
-  item: Pick<NavColumnItem, 'label' | 'badge' | 'external' | 'seeAll' | 'icon'>
+  item: Pick<NavColumnItem, 'label' | 'badge' | 'external' | 'seeAll'>
   locale: Locale
 }>()
 </script>
@@ -21,11 +21,6 @@ defineProps<{
       )
     "
   >
-    <span
-      v-if="item.icon"
-      :class="cn('size-4 icon-mask', item.icon)"
-      aria-hidden="true"
-    />
     <span class="inline-block">{{ item.label }}</span>
     <NewBadge
       v-if="item.badge"
@@ -34,7 +29,7 @@ defineProps<{
       :label="item.badge"
     />
     <ArrowUpRight
-      v-if="item.external && !item.icon"
+      v-if="item.external"
       class="size-4 text-primary-comfy-yellow"
     />
     <ChevronRight v-if="item.seeAll" class="size-4" aria-hidden="true" />

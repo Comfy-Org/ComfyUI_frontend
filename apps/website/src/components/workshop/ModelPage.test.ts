@@ -94,6 +94,29 @@ describe('ModelPage', () => {
     ])
   })
 
+  it('offers only the paths a model that cannot run here really has', () => {
+    render(ModelPage, {
+      props: {
+        page: {
+          ...usedPage,
+          model: {
+            ...usedPage.model,
+            execution: undefined,
+            incompleteReason: 'missing-input-schema'
+          }
+        }
+      }
+    })
+
+    const paths = screen.getByRole('list', { name: 'Ways to use this model' })
+    expect(
+      within(paths)
+        .getAllByRole('link')
+        .map((link) => link.textContent.trim())
+    ).toEqual(['Open in Cloud'])
+    expect(screen.queryByTestId('playground-section')).toBeNull()
+  })
+
   it('lists the real workflows that use the model, behind the workflows flag', async () => {
     render(ModelPage, { props: { page: usedPage } })
 

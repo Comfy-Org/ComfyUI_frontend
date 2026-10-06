@@ -17,6 +17,11 @@ describe('accessFor', () => {
   it.for([
     { kind: 'a hosted model', model: hosted, access: ['run', 'api'] },
     {
+      kind: 'a hosted model without an input schema',
+      model: { ...hosted, incompleteReason: 'missing-input-schema' },
+      access: []
+    },
+    {
       kind: 'a workflow',
       model: {
         slug: 'workflows/relight',

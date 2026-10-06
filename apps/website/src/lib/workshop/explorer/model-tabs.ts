@@ -86,15 +86,18 @@ export function hostedInTab(model: WorkshopModel, tab: ModelTab): boolean {
   }
 }
 
-/** Whether an open-weight model belongs under a category tab. */
+/**
+ * Whether an open-weight model belongs under a category tab. All is for what
+ * runs here or by API, so a download waits to be searched or asked for.
+ */
 export function openWeightInTab(
   model: OpenWeightModel,
   tab: ModelTab
 ): boolean {
   switch (tab) {
-    case 'all':
     case 'open':
       return true
+    case 'all':
     case 'partner':
     case 'llm':
       return false

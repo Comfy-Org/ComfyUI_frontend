@@ -623,6 +623,10 @@ test('the workflow page stacks its sections and its path buttons lead to them', 
   await expect(
     playground.getByRole('heading', { name: 'Try an example' })
   ).toBeVisible()
+  await expect(page.getByTestId('workflow-path-run')).toHaveAttribute(
+    'href',
+    '#playground'
+  )
   await expect(page.getByTestId('workflow-path-download')).toHaveAttribute(
     'href',
     '/workflow-graphs/change-material.json'
