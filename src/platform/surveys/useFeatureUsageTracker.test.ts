@@ -2161,6 +2161,22 @@ describe('useFeatureUsageTracker', () => {
     expect(stored).not.toHaveProperty(featureId)
   })
 
+  it('keeps writes stable when the clock exceeds the timestamp limit', () => {
+    vi.setSystemTime(Date.UTC(2101, 0, 1))
+    const tracker = useFeatureUsageTracker('post-limit-clock')
+
+    tracker.trackUsage()
+    tracker.trackUsage()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored['post-limit-clock']).toEqual({
+      useCount: 2,
+      firstUsed: Date.UTC(2100, 0, 1),
+      lastUsed: Date.UTC(2100, 0, 1)
+    })
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
   it('repairs malformed JSON storage data', () => {
     localStorage.setItem(STORAGE_KEY, '{')
 
