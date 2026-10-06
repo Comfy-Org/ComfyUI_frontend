@@ -54,6 +54,11 @@ export function resetFeatureUsageTrackerStateForTest() {
   usageSnapshot.value = {}
 }
 
+export function getPendingUsageDeltaCountForTest(featureId: string) {
+  if (import.meta.env.MODE !== 'test') return 0
+  return pendingUsageData.value[featureId]?.length ?? 0
+}
+
 function reportStorageError(error: unknown, errorType: string) {
   if (reportedErrorTypes.has(errorType)) return
   reportedErrorTypes.add(errorType)
@@ -434,11 +439,11 @@ function boundPendingDeltas(pendingDeltas: PendingUsageDelta[]) {
         sameUsage(previousDelta.baseUsage, delta.baseUsage))
     )
   })
-  if (mergeIndex < 1) return pendingDeltas
-  const oldest = pendingDeltas[mergeIndex - 1]
-  const secondOldest = pendingDeltas[mergeIndex]
+  const boundedMergeIndex = mergeIndex < 1 ? 1 : mergeIndex
+  const oldest = pendingDeltas[boundedMergeIndex - 1]
+  const secondOldest = pendingDeltas[boundedMergeIndex]
   return [
-    ...pendingDeltas.slice(0, mergeIndex - 1),
+    ...pendingDeltas.slice(0, boundedMergeIndex - 1),
     {
       useCountDelta: Math.min(
         oldest.useCountDelta + secondOldest.useCountDelta,
@@ -449,7 +454,7 @@ function boundPendingDeltas(pendingDeltas: PendingUsageDelta[]) {
       recordedAt: Math.min(oldest.recordedAt, secondOldest.recordedAt),
       baseUsage: oldest.baseUsage
     },
-    ...pendingDeltas.slice(mergeIndex + 1)
+    ...pendingDeltas.slice(boundedMergeIndex + 1)
   ]
 }
 

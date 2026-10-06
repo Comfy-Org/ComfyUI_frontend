@@ -4,6 +4,7 @@ import { effectScope } from 'vue'
 import { reportError } from '@/platform/telemetry/reportError'
 
 import {
+  getPendingUsageDeltaCountForTest,
   resetFeatureUsageTrackerStateForTest,
   useFeatureUsageTracker
 } from './useFeatureUsageTracker'
@@ -66,6 +67,32 @@ describe('useFeatureUsageTracker', () => {
     tracker.trackUsage()
 
     expect(tracker.useCount.value).toBe(102)
+  })
+
+  it('bounds pending usage with distinct storage baselines', () => {
+    const featureId = 'bounded-distinct-baselines'
+    const tracker = useFeatureUsageTracker(featureId)
+    const originalSetItem = localStorage.setItem.bind(localStorage)
+    const setItem = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new DOMException('Storage quota exceeded', 'QuotaExceededError')
+    })
+
+    Array.from({ length: 101 }, (_, index) => {
+      originalSetItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          [featureId]: {
+            useCount: index + 1,
+            firstUsed: 1,
+            lastUsed: index + 1
+          }
+        })
+      )
+      tracker.trackUsage()
+    })
+    setItem.mockRestore()
+
+    expect(getPendingUsageDeltaCountForTest(featureId)).toBe(100)
   })
 
   it('discards compacted pending usage from a deleted generation', () => {
