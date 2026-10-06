@@ -1,8 +1,9 @@
 <template>
   <TableHead :class="className" :aria-sort="direction ?? 'none'">
-    <button
-      type="button"
-      class="flex items-center gap-1 rounded-sm outline-none hover:text-base-foreground focus-visible:ring-1 focus-visible:ring-border-default"
+    <Button
+      variant="link"
+      size="unset"
+      class="gap-1 font-normal"
       @click="toggle"
     >
       <slot />
@@ -18,7 +19,7 @@
         "
         aria-hidden="true"
       />
-    </button>
+    </Button>
   </TableHead>
 </template>
 
@@ -26,6 +27,8 @@
 import type { HTMLAttributes } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
+
+import Button from '@/components/ui/button/Button.vue'
 
 import TableHead from './TableHead.vue'
 import type { TableSortDirection } from './tableUtils'

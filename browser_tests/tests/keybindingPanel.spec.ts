@@ -597,6 +597,39 @@ test.describe('Keybinding Panel', { tag: '@keyboard' }, () => {
     })
   })
 
+  test.describe('Sorting', () => {
+    test('Command header sorts rows by label', async ({ comfyPage }) => {
+      const { page } = comfyPage
+      const header = page.getByRole('columnheader', { name: 'Command' })
+      const sortButton = header.getByRole('button', { name: 'Command' })
+      const labels = page.locator('.keybinding-panel tbody tr td:first-child')
+      const readLabels = () => labels.allInnerTexts()
+
+      await searchKeybindings(page, 'Comfy.Canvas.Toggle')
+      await expect(header).toHaveAttribute('aria-sort', 'none')
+      await expect(sortButton).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)')
+
+      await test.step('First click sorts ascending', async () => {
+        await sortButton.click()
+        await expect(header).toHaveAttribute('aria-sort', 'ascending')
+        const ascending = await readLabels()
+        expect(ascending.length).toBeGreaterThan(1)
+        expect(ascending).toEqual(
+          ascending.toSorted((a, b) => a.localeCompare(b))
+        )
+      })
+
+      await test.step('Second click sorts descending', async () => {
+        await sortButton.click()
+        await expect(header).toHaveAttribute('aria-sort', 'descending')
+        const descending = await readLabels()
+        expect(descending).toEqual(
+          descending.toSorted((a, b) => b.localeCompare(a))
+        )
+      })
+    })
+  })
+
   test.describe('Responsive Layout', () => {
     test('Action buttons stay on screen without horizontal scroll at narrow widths', async ({
       comfyPage
