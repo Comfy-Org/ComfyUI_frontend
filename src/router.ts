@@ -6,12 +6,23 @@ import {
   createWebHashHistory,
   createWebHistory
 } from 'vue-router'
-import type { RouteLocationNormalized } from 'vue-router'
+import type {
+  LocationQueryRaw,
+  NavigationGuardNext,
+  RouteLocationNormalized
+} from 'vue-router'
+
+import { readSsoError, ssoStartUrl } from '@comfyorg/account-core/sso'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { CloudSignIn } from '@/platform/auth/session/cloudIdentityBoot'
 import { cloudSignIn } from '@/platform/auth/session/cloudIdentityBoot'
 import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
+import {
+  hasRecentSsoReentry,
+  markSsoReentry,
+  readSsoHint
+} from '@/platform/auth/session/ssoReentryStorage'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useDialogService } from '@/services/dialogService'
@@ -20,6 +31,8 @@ import { useUserStore } from '@/stores/userStore'
 import LayoutDefault from '@/views/layouts/LayoutDefault.vue'
 
 import { captureOAuthRequestId } from '@/platform/cloud/oauth/oauthState'
+import { SSO_ENTRY_OPEN_QUERY } from '@/platform/cloud/onboarding/sso/ssoEntryQuery'
+import { decideSsoReentry } from '@/platform/cloud/onboarding/sso/ssoReentry'
 import {
   hasPendingDesktopLoginCode,
   installDesktopLoginRedemption
@@ -157,6 +170,41 @@ if (isCloud) {
       void router.replace({ path, query, hash, force: true })
     })
   }
+  /** A lapsed SSO session goes back through its identity provider, once per tab per window. */
+  function sendToSignIn(
+    to: RouteLocationNormalized,
+    query: LocationQueryRaw,
+    next: NavigationGuardNext
+  ): void {
+    const ssoError = flags.ssoEnabled
+      ? readSsoError(to.query.sso_error)
+      : undefined
+    const reentry = decideSsoReentry({
+      ssoEnabled: flags.ssoEnabled,
+      sessionEnd: useCloudWebSessionStore().sessionEnd(),
+      hint: readSsoHint(),
+      attempt: ssoError ? 'failed' : hasRecentSsoReentry() ? 'recent' : 'none'
+    })
+    if (reentry.kind === 'sso-redirect' && markSsoReentry()) {
+      window.location.assign(
+        ssoStartUrl({
+          email: reentry.email,
+          returnTo: to.fullPath,
+          origin: window.location.origin
+        })
+      )
+      return next(false)
+    }
+    next({
+      name: 'cloud-login',
+      query: {
+        ...query,
+        ...(reentry.kind !== 'login' && SSO_ENTRY_OPEN_QUERY),
+        ...(ssoError && { sso_error: ssoError })
+      }
+    })
+  }
+
   // Global authentication guard
   router.beforeEach(async (to, _from, next) => {
     rerouteWhenSignedOutElsewhere()
@@ -216,10 +264,7 @@ if (isCloud) {
 
     // Check if route requires authentication
     if (to.meta.requiresAuth && !isLoggedIn) {
-      return next({
-        name: 'cloud-login',
-        query
-      })
+      return sendToSignIn(to, query, next)
     }
 
     // Handle other protected routes
@@ -231,11 +276,7 @@ if (isCloud) {
         return loginSuccess ? next() : next(false)
       }
 
-      // For web, redirect to login
-      return next({
-        name: 'cloud-login',
-        query
-      })
+      return sendToSignIn(to, query, next)
     }
 
     // User is logged in - check if they need onboarding (when enabled)

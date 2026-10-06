@@ -440,6 +440,18 @@ describe('CloudLoginView SSO', () => {
       }
     )
 
+    it('prefills the email this browser last signed in with through SSO', async () => {
+      localStorage.setItem(
+        'Comfy.WebSession.SsoHint',
+        JSON.stringify({ email: 'ada@acme.com' })
+      )
+      await renderLoginView('/cloud/login?sso=open')
+
+      expect(screen.getByLabelText('auth.sso.emailLabel')).toHaveValue(
+        'ada@acme.com'
+      )
+    })
+
     it('keeps one SSO check in flight across the SSO and password forms', async () => {
       const fetchMock = vi.fn<typeof fetch>(
         (_input, init) =>
