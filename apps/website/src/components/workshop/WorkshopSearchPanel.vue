@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, reactive } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -8,7 +8,11 @@ import {
   filterWorkshopModels,
   sortWorkshopModels
 } from '@/config/models-catalogue'
-import { isVideoUrl, videoPosterUrl } from '@/config/workshop-playground'
+import {
+  isAudioUrl,
+  isVideoUrl,
+  videoPosterUrl
+} from '@/config/workshop-playground'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 
@@ -43,10 +47,18 @@ const suggestions = computed(() =>
     : []
 )
 
+const failedThumbnails = reactive(new Set<string>())
+
+function kindOfUrl(url: string) {
+  if (isVideoUrl(url)) return 'video'
+  if (isAudioUrl(url)) return 'audio'
+  return 'image'
+}
+
 function thumbnailOf(model: WorkshopModel) {
-  const url = model.thumbnailUrl
-  if (!url) return undefined
-  const kind = model.thumbnail?.kind ?? (isVideoUrl(url) ? 'video' : 'image')
+  const url = model.thumbnail?.url ?? model.thumbnailUrl
+  if (!url || failedThumbnails.has(url)) return undefined
+  const kind = model.thumbnail?.kind ?? kindOfUrl(url)
   return kind === 'audio' ? undefined : { url, kind }
 }
 
@@ -104,14 +116,17 @@ function sourceOf(model: WorkshopModel): string | undefined {
           muted
           playsinline
           preload="metadata"
+          @error="failedThumbnails.add(thumbnail.url)"
         />
         <img
           v-else-if="thumbnail"
           :src="thumbnail.url"
           alt=""
           class="size-10 shrink-0 rounded-lg object-cover"
+          data-testid="workshop-search-model-image"
           loading="lazy"
           decoding="async"
+          @error="failedThumbnails.add(thumbnail.url)"
         />
         <span
           v-else

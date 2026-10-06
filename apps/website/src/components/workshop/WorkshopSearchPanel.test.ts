@@ -1,9 +1,11 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
+import { fireEvent, render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
 import type { WorkshopModel } from '@/config/models-catalogue'
 import WorkshopSearchPanel from './WorkshopSearchPanel.vue'
+
+type ThumbnailFields = Pick<WorkshopModel, 'thumbnail' | 'thumbnailUrl'>
 
 const models: WorkshopModel[] = [
   {
@@ -59,50 +61,80 @@ describe('WorkshopSearchPanel', () => {
     ).toBeTruthy()
   })
 
-  it.for([
+  const clip = 'https://comfy-hub-assets.comfy.org/uploads/3f2a9c'
+  const still = 'https://media.comfy.org/still.webp'
+
+  it.for<[string, ThumbnailFields, string]>([
     [
       'a declared video',
-      'https://comfy-hub-assets.comfy.org/uploads/3f2a9c',
-      'video'
+      { thumbnailUrl: clip, thumbnail: { url: clip, kind: 'video' } },
+      clip
     ],
     [
       'a .mp4 URL with no declared kind',
-      'https://media.comfy.org/clip.mp4',
-      undefined
+      { thumbnailUrl: 'https://media.comfy.org/clip.mp4' },
+      'https://media.comfy.org/clip.mp4'
+    ],
+    [
+      'a declared video with no thumbnailUrl',
+      { thumbnail: { url: clip, kind: 'video' } },
+      clip
+    ],
+    [
+      'a declared video whose thumbnailUrl names another file',
+      { thumbnailUrl: still, thumbnail: { url: clip, kind: 'video' } },
+      clip
     ]
-  ] as const)(
-    'shows %s as a still frame, not a broken image',
-    ([, clip, kind]) => {
-      const videoModel: WorkshopModel = {
-        ...models[1],
-        thumbnailUrl: clip,
-        ...(kind ? { thumbnail: { url: clip, kind } } : {})
-      }
-      render(WorkshopSearchPanel, {
-        props: { models: [videoModel], query: 'alpha' }
-      })
-      expect(
-        screen.getByTestId('workshop-search-model-video').getAttribute('src')
-      ).toBe(`${clip}#t=0.1`)
-    }
-  )
-
-  it('shows the initial instead of a broken image for an audio thumbnail', () => {
-    const sound = 'https://media.comfy.org/sound.mp3'
+  ])('shows %s as a still frame, not a broken image', ([, fields, src]) => {
     render(WorkshopSearchPanel, {
-      props: {
-        models: [
-          {
-            ...models[1],
-            thumbnailUrl: sound,
-            thumbnail: { url: sound, kind: 'audio' }
-          }
-        ],
-        query: 'alpha'
+      props: { models: [{ ...models[1], ...fields }], query: 'alpha' }
+    })
+    expect(
+      screen.getByTestId('workshop-search-model-video').getAttribute('src')
+    ).toBe(`${src}#t=0.1`)
+  })
+
+  it.for<[string, ThumbnailFields]>([
+    [
+      'a declared audio thumbnail',
+      {
+        thumbnailUrl: 'https://media.comfy.org/sound',
+        thumbnail: { url: 'https://media.comfy.org/sound', kind: 'audio' }
       }
+    ],
+    [
+      'an .mp3 URL with no declared kind',
+      { thumbnailUrl: 'https://media.comfy.org/sound.mp3' }
+    ]
+  ])('shows the initial instead of a broken image for %s', ([, fields]) => {
+    render(WorkshopSearchPanel, {
+      props: { models: [{ ...models[1], ...fields }], query: 'alpha' }
     })
     expect(screen.getByText('A')).toBeTruthy()
   })
+
+  it.for<[string, ThumbnailFields, () => HTMLElement]>([
+    [
+      'video',
+      { thumbnail: { url: clip, kind: 'video' } },
+      () => screen.getByTestId('workshop-search-model-video')
+    ],
+    [
+      'image',
+      { thumbnailUrl: still },
+      () => screen.getByTestId('workshop-search-model-image')
+    ]
+  ])(
+    'shows the initial when the %s thumbnail fails to load',
+    async ([, fields, media]) => {
+      render(WorkshopSearchPanel, {
+        props: { models: [{ ...models[1], ...fields }], query: 'alpha' }
+      })
+      expect(screen.queryByText('A')).toBeNull()
+      await fireEvent.error(media())
+      expect(screen.getByText('A')).toBeTruthy()
+    }
+  )
 
   it('shows an empty state for a query without matches', () => {
     render(WorkshopSearchPanel, {
