@@ -94,7 +94,17 @@ export class ComfyNodeSearchBoxV2 {
 
   async addNode(query: string, options: { position?: Position } = {}) {
     const position = options.position ?? { x: 200, y: 200 }
-    await this.openByDoubleClickCanvas(position)
+    // An unrelated startup dialog (e.g. the first-run template browser) can
+    // race the double-click and swallow it, leaving this search dialog's own
+    // combobox never shown - a bare `this.input.fill()` would then hang for
+    // the whole test timeout. Escape clears any such dialog before each
+    // attempt, and the retry re-issues the double-click once the coast is
+    // confirmed clear.
+    await expect(async () => {
+      await this.comfyPage.page.keyboard.press('Escape')
+      await this.openByDoubleClickCanvas(position)
+      await this.input.waitFor({ state: 'visible', timeout: 2000 })
+    }).toPass({ timeout: 15_000 })
     await this.input.fill(query)
     await expect(this.results.first()).toContainText(query)
     await this.comfyPage.page.keyboard.press('Enter')
