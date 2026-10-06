@@ -49,6 +49,8 @@
     "imageGallery": "image gallery",
     "galleryImage": "Gallery image",
     "galleryThumbnail": "Gallery thumbnail",
+    "galleryImagePosition": "Gallery image {index} of {total}",
+    "galleryThumbnailPosition": "Gallery thumbnail {index} of {total}",
     "previousImage": "Previous image",
     "nextImage": "Next image",
     "switchToGridView": "Switch to grid view",
