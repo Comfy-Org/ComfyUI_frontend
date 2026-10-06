@@ -1,6 +1,6 @@
-import { useIntersectionObserver } from '@vueuse/core'
+import { useIntersectionObserver, whenever } from '@vueuse/core'
 import type { Ref } from 'vue'
-import { onUnmounted } from 'vue'
+import { onUnmounted, ref } from 'vue'
 
 import { gsap } from '@/scripts/gsapSetup'
 import { prefersReducedMotion } from './useReducedMotion'
@@ -30,13 +30,14 @@ export function useFrameScrub(
   options: FrameScrubOptions
 ) {
   let ctx: gsap.Context | undefined
+  let disposed = false
 
   async function play(canvas: HTMLCanvasElement) {
     const draw = canvas.getContext('2d')
     if (!draw) return
 
     const frames = await loadFrames(options.urls)
-    if (!frames.length) return
+    if (disposed || !frames.length) return
 
     const { naturalWidth: w, naturalHeight: h } = frames[0]
     canvas.width = w
@@ -64,19 +65,29 @@ export function useFrameScrub(
     })
   }
 
+  const isNear = ref(false)
   const { stop } = useIntersectionObserver(
     canvasRef,
-    ([entry]) => {
-      const canvas = canvasRef.value
-      if (!entry.isIntersecting || !canvas) return
+    (entries) => {
+      if (!entries.some((entry) => entry.isIntersecting)) return
+      isNear.value = true
       stop()
-      if (prefersReducedMotion()) return
-      void play(canvas)
     },
     { rootMargin: '100% 0px' }
   )
 
+  whenever(
+    () => isNear.value && !prefersReducedMotion() && canvasRef.value,
+    (canvas) => {
+      play(canvas).catch((error: unknown) => {
+        console.warn('Frame scrub failed to load', error)
+      })
+    },
+    { once: true }
+  )
+
   onUnmounted(() => {
+    disposed = true
     ctx?.revert()
   })
 }

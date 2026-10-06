@@ -9,6 +9,8 @@ export interface FakeImageDecoder {
   readonly decoded: readonly string[]
   /** Declares a source's dimensions and returns it, for use as a frame url. */
   frame(src: string, width: number, height: number): string
+  /** Declares a source whose decode fires `onerror`, and returns it. */
+  broken(src: string): string
   /** Sources whose held decode has not been settled yet. */
   readonly pending: readonly string[]
   /** Stops decodes completing on their own, so `settle` can order them. */
@@ -24,17 +26,23 @@ export interface FakeImageDecoder {
  */
 export function stubImageDecoder(): FakeImageDecoder {
   const sizes = new Map<string, { width: number; height: number }>()
+  const broken = new Set<string>()
   const decoded: string[] = []
   const held: { src: string; load: () => void }[] = []
   let holding = false
 
   class StubImage {
     onload: (() => void) | null = null
+    onerror: (() => void) | null = null
     naturalWidth = 0
     naturalHeight = 0
     private source = ''
     set src(value: string) {
       this.source = value
+      if (broken.has(value)) {
+        queueMicrotask(() => this.onerror?.())
+        return
+      }
       const size = sizes.get(value)
       if (!size) return
       this.naturalWidth = size.width
@@ -60,6 +68,10 @@ export function stubImageDecoder(): FakeImageDecoder {
     },
     frame(src, width, height) {
       sizes.set(src, { width, height })
+      return src
+    },
+    broken(src) {
+      broken.add(src)
       return src
     },
     hold() {
