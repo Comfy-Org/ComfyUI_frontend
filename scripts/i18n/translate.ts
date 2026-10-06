@@ -17,6 +17,11 @@ export interface TranslationItem {
   retryNote?: string
 }
 
+type PromptConfig = Pick<
+  TranslationPipelineConfig,
+  'translationContext' | 'glossary' | 'strictProtectedTokens'
+>
+
 export type TranslateBatch = (
   locale: OutputLocale,
   items: TranslationItem[]
@@ -161,17 +166,28 @@ export function chunkItems(
 
 export function buildSystemPrompt(
   locale: OutputLocale,
-  translationContext: string,
-  glossary: string
+  { translationContext, glossary, strictProtectedTokens }: PromptConfig
 ): string {
+  const structureRules = strictProtectedTokens
+    ? `Keep the number and order of | separated plural forms, or collapse them
+to one form when ${locale.name} does not distinguish them.
+Keep each placeholder's and tag's occurrence count in every kept form.
+A collapsed form keeps each placeholder's maximum occurrence count within
+one source form, not the sum across mutually exclusive forms.
+Keep markup tags balanced around the same text. You may reorder whole
+balanced spans to suit ${locale.name} word order.
+Keep URLs and attribute values unchanged. Do not invent localized routes.`
+    : 'Retain the number and order of | separated plural forms.'
   return `Translate each source from English into ${locale.name} for
 ${translationContext}. Return each translation under its item's id.
 
 Use context to resolve meaning. Preserve the source's meaning,
 tone, and level of detail. Keep code identifiers unchanged.
 Reproduce every preserve substring byte for byte. Never translate,
-transliterate, or renumber it. Keep interpolation placeholders unchanged.
-Retain the number and order of | separated plural forms.
+transliterate, or renumber it.
+Write interpolation placeholders such as {name} exactly as in the source;
+move them wherever ${locale.name} word order needs them.
+${structureRules}
 
 ${glossary}
 ${locale.guidance ? `\n${locale.name} guidelines:\n${locale.guidance}\n` : ''}`
@@ -266,12 +282,10 @@ function parseTranslationOutput(
     : { status: 'retry', reason: parsed.error.message }
 }
 
-interface OpenAiTranslatorOptions {
+interface OpenAiTranslatorOptions extends PromptConfig {
   apiKey: string
   model: string
   reasoningEffort: TranslationPipelineConfig['reasoningEffort']
-  translationContext: string
-  glossary: string
   maxTruncationSplitDepth: number
   fetchFn?: typeof fetch
   onUsage?: (usage: ResponseUsage | undefined) => void
@@ -298,11 +312,7 @@ export function createOpenAiTranslator(
       reasoning: { effort: options.reasoningEffort },
       store: false,
       text: { format: zodTextFormat(schema, 'translations') },
-      instructions: buildSystemPrompt(
-        locale,
-        options.translationContext,
-        options.glossary
-      ),
+      instructions: buildSystemPrompt(locale, options),
       input: JSON.stringify({ items })
     })
     let body: unknown
@@ -416,12 +426,9 @@ export async function translateLocaleItems(
           ? ['no translation returned']
           : value.trim().length === 0
             ? ['empty translation']
-            : tokenErrors(
-                item.source,
-                value,
-                true,
-                config.strictProtectedTokens
-              )
+            : tokenErrors(item.source, value, {
+                strict: config.strictProtectedTokens
+              })
       if (value !== undefined && errors.length === 0) {
         results.set(item.id, value)
       } else {

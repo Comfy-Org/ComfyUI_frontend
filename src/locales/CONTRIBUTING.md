@@ -58,9 +58,8 @@ pnpm locale
 pnpm locale:check
 ```
 
-Both commands need a clone with full history (a blobless partial clone works):
-the source manifest records git blob hashes of past English sources, and the
-pipeline reads them back with `git cat-file`.
+Both commands read the committed snapshots under `src/locales/.published/`.
+They do not require git history.
 
 #### Option B: Let CI Handle It (Recommended)
 
@@ -109,7 +108,8 @@ Our automated translation workflow now runs on release PRs (version-bump-\* bran
 4. **Commits back**: Automatically updates the release PR with complete translations
 
 The pipeline (`scripts/i18n/update-locales.ts`) records the English sources it
-last translated in `src/locales/.source-manifest.json`. On each run it
+last translated in `src/locales/.published/en/` and its validation baseline in
+`src/locales/.source-manifest.json`. On each run it
 retranslates strings whose English text changed, backfills missing keys, prunes
 keys removed from English (deleting whole locale files whose English source
 file was removed), and validates that interpolation placeholders and protected
@@ -125,29 +125,58 @@ Source-manifest, translation, and protected-token integrity failures remain hard
 failures.
 `pnpm locale:check` runs offline in CI: it reports pending work and fails on
 protected-token violations that are not already queued for retranslation
-because the English source changed. The manifest's `knownViolations` field
-baselines exact, locale-prefixed errors that predate the pipeline; a successful
-locale run heals and drops them, and any error beyond the baseline fails the
-check immediately. oxfmt ignores `src/locales/**/*.json` — the pipeline is the
-sole writer of those bytes, which keeps the manifest's recorded blob hashes
-valid.
+because the English source changed.
+
+The manifest is version 2. For each entry file, the pipeline commits the English
+it last published as `src/locales/.published/en/<file>`. The manifest's
+`files["<file>"].knownViolations` field lists accepted violations as
+`{ "locale", "path", "code", "token" }`, where `path` is a key-segment array and
+`code` is one of `violationCodes` in `scripts/i18n/protected-tokens.ts`. A
+violation that matches an entry passes, and any other violation fails the
+check. The check prints entries that no longer match as `STALE BASELINE:` lines
+without failing. Each successful file update keeps only the entries its output
+still matches, and no command adds entries. Generation and the check fail when
+the manifest lists a file whose snapshot is missing. This PR migrated the
+version-1 manifests; the pipeline does not read version 1. oxfmt ignores
+`src/locales/**/*.json` because the pipeline is the sole writer of those bytes,
+which keeps each catalog byte-identical to its snapshot.
 
 ### The website shares this pipeline
 
 `apps/website` keeps its catalogs in the same nested per-locale JSON layout
 and vue-i18n message syntax under `apps/website/src/locales/`, and the same
-script translates them:
-`pnpm locale:website` / `pnpm locale:website:check` at the repository root
-(or `pnpm locale` / `pnpm locale:check` inside `apps/website`). The website's
-locales, glossary and output directory are the `website` entry of
-`translationTargets` in `scripts/i18n/config.ts`; the `i18n: Update Website`
-workflow will run it on demand. The website preserves reviewed copy while its
-English source is unchanged and retranslates it when that source changes,
-with legal exclusions; see `apps/website/README.md`. It also validates strictly:
-HTML tags and repeated tokens must survive in count and order, and baseline
-entries that reviewed copy still carries (such as a link localized to
-`/zh-CN/…`) persist across runs instead of healing. The app target keeps its
-existing source-change and regeneration policy.
+script translates them. Inside `apps/website`, `pnpm locale` and
+`pnpm locale:check` call the shared CLI with `--target website`. From the
+repository root, use `pnpm --filter @comfyorg/website locale` or
+`pnpm --filter @comfyorg/website locale:check`. The website owns its glossary,
+language guidance and exclusions in `apps/website/src/config/translation.ts`,
+which derives target locales from its locale registry. Generation does not
+change routes or indexing.
+
+The website also commits each locale catalog as last published, in
+`apps/website/src/locales/.published/<locale>/<file>`, and its manifest records
+`reviewNeeded` key paths per locale. Website generation keeps existing copy
+unless English changed and the translation still matches its snapshot. Every
+retained value whose English changed gets a persistent `REVIEW NEEDED` warning,
+because snapshots cannot show whether a translation was edited before or after
+its English. Excluded namespaces are never machine-translated. See the
+website's [localization instructions](../../apps/website/README.md#localization)
+for the retention rules, review flags, fallback and validation. A snapshot
+records content and does not certify approval.
+
+The website validates strictly: a plural message keeps the English form count
+or collapses to one form, and each form keeps its placeholders and markup.
+Generated copy keeps link URLs exactly; authored copy may add the target-locale
+prefix to an internal link. The app keeps its existing set-based token
+validation and its source-change regeneration policy.
+
+Each target publishes its catalogs, snapshots and manifest through a recovery
+journal, `.locale-publication.json`, in its locale directory. While a journal
+exists, the check exits with an error, and the next generation completes the
+recorded publication before planning new work. Recovery names any listed file
+edited since publication began and writes nothing. The journal holds all
+recovery data; leftover temporary files hold none. Do not commit the journal or
+temporary files.
 
 ### Manual Translation Updates
 

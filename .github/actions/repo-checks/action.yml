@@ -2,8 +2,7 @@ name: 'Repository consistency checks'
 description: >
   Runs knip, the locale integrity check and the ADR index check. Shared by
   ci-lint-format.yaml (PR) and ci-lint-format-queue.yaml (merge queue). The
-  caller is responsible for a blobless full-history checkout (locale:check
-  fetches source blobs from git history) and frontend setup.
+  caller is responsible for checking out the repository and frontend setup.
 
 runs:
   using: composite
@@ -14,9 +13,11 @@ runs:
 
     - name: Verify locale integrity
       shell: bash
-      run: |
-        pnpm locale:check
-        pnpm locale:website:check
+      run: pnpm locale:check
+
+    - name: Verify website locale integrity
+      shell: bash
+      run: pnpm --filter @comfyorg/website locale:check
 
     - name: Verify ADR naming and index
       shell: bash

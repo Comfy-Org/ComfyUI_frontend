@@ -54,53 +54,148 @@ API. Astro middleware binds `Astro.locals.t` to the request locale. In Vue and
 TypeScript, bind once with `translationsFor(locale).t`; each locale has its own
 composer because the site renders locales concurrently. Missing messages fall
 back to English. The catalog test compiles every message and checks that each
-English message has Chinese copy.
+eligible English message has Chinese copy.
 
 `main.json` is the catalog for each locale. Keep feature copy grouped under a
 nested feature key.
 
 Add new English copy to the English catalog; translated copy lives in the
-matching file under each locale. Every English message requires a Chinese
-entry; the catalog tests check completeness without using English fallback.
+matching file under each locale. Every eligible English message requires a
+Chinese entry. Excluded namespaces use English fallback when no translation
+exists. The catalog tests enforce this distinction.
 Catalog files use two-space JSON indentation and a final newline. Legal and
 content pages render their sections in the order they appear in the catalog, so
 keep `en/main.json` in document order and never sort its keys.
 
-### English-only copy
+### Excluded and English-only copy
 
-Affiliate terms, Terms of Service (`tos`), and the Enterprise MSA are
-legal-reviewed English documents on English-only routes.
-Do not translate or publish localized versions until legal approves them;
-an unreviewed translation can diverge from the governing English text.
-Their Chinese catalog entries intentionally repeat English, except the two
-translated affiliate page labels. The MiniMax professional license intake
-embeds an English-only HubSpot form and also intentionally repeats English.
-Desktop privacy (`desktop_privacy`) also intentionally repeats the governing
-English copy in its Chinese catalog. This is a catalog exemption: the
-`/zh-CN/privacy/desktop` route exists and renders those English entries.
-All these ranges must remain exempt from automatic translation until an
-approved translation is available. The page headers and
-`LOCALE_INVARIANT_ROUTE_KEYS` document the English-only route policies;
-desktop privacy retains its localized route.
+`src/config/translation.ts` owns the website's language guidance, glossary and
+generation exclusions, and derives target locales from the locale registry in
+`src/config/locales.ts`. Generation never machine-translates these excluded
+namespaces: `tos`, `enterprise-msa`, `privacy`, `desktop_privacy`,
+`affiliate-terms` and `minimaxLicense`.
 
-Use `pnpm locale:check` inside this package for an offline preflight, or
+Exclusion controls translation only. Route availability is a separate policy,
+recorded in the page headers and `LOCALE_INVARIANT_ROUTE_KEYS`:
+
+- Affiliate terms, Terms of Service (`tos`) and the Enterprise MSA are
+  legal-reviewed English documents on English-only routes. Their untranslated
+  Chinese entries are absent, so fallback renders the current English. The two
+  translated affiliate page labels remain.
+- Desktop privacy (`desktop_privacy`) keeps its `/zh-CN/privacy/desktop` route,
+  which renders the governing English document through fallback.
+- The Privacy Policy (`privacy`) keeps its translated `/zh-CN/privacy-policy`
+  route. Generation never refreshes that Chinese copy; people maintain it.
+- The whole `minimaxLicense` namespace is excluded. This covers the entire
+  localized `/zh-CN/minimax/license` page, including its marketing copy, not
+  only the professional-request intake that embeds an English-only HubSpot
+  form. New copy on that page renders English until someone translates it.
+
+Do not translate or publish localized legal documents until legal approves
+them; an unreviewed translation can diverge from the governing English text.
+
+The reverse also holds: eligible namespaces are translated even when their page
+has no localized route. Japanese catalogs therefore contain copy for pages that
+have no `/ja/` route yet. Generation never enables routes or indexing.
+
+### Generating translations
+
+Inside this package, run `pnpm locale:check` for an offline preflight, or
 `pnpm locale` with `OPENAI_API_KEY` to translate eligible missing or changed
-copy. The equivalent repository-root commands are `pnpm locale:website:check`
-and `pnpm locale:website`.
+copy. Both scripts call the shared CLI in `scripts/i18n/update-locales.ts` with
+`--target website`. From the repository root, run
+`pnpm --filter @comfyorg/website locale:check` or
+`pnpm --filter @comfyorg/website locale`.
 
-The shared pipeline records English source blobs in `.source-manifest.json`
-and generated-value hashes in `.machine-translations.json`. Existing values
-without a matching machine hash are reviewed copy, including intentional
-empty strings. Eligible reviewed copy is preserved while its English source
-is unchanged and retranslated when that source changes. Editing a generated
-value makes it reviewed; to approve an unchanged generated value, remove its
-entry from `.machine-translations.json`. Source-key deletion removes either ownership
-kind. Review catalog and metadata changes together.
+### Published snapshots
 
-Legal namespaces and opted-out pages are excluded from generation. Reviewed
-translations there remain intact; missing or machine-owned excluded values
-fall back to English. New generation does not activate routes or indexing.
-The app target keeps its existing policy.
+Each generation records what it published in committed files under
+`src/locales/`:
+
+- `.published/en/main.json`: the English catalog as last published.
+- `.published/<locale>/main.json`: each locale catalog as last published.
+- `.source-manifest.json` (version 2): for each catalog file,
+  `files["main.json"].locales["<locale>"].reviewNeeded` and
+  `files["main.json"].knownViolations`, described below.
+
+Generation writes the catalogs, snapshots and manifest in one publication, so
+every commit tree carries its own provenance. The record survives edits made
+after generation and squash merges. When the manifest lists a file or locale
+whose snapshot is missing, both `locale:check` and `pnpm locale` fail; restore
+the snapshot from version control. A snapshot records content, not approval:
+matching it proves only what generation last wrote.
+
+Generation compares the current catalogs with the snapshots:
+
+- While English is unchanged, existing copy stays, including intentional empty
+  strings.
+- A new English key keeps a translation supplied in the same change.
+- When English changes and an eligible translation still matches its snapshot,
+  generation replaces it.
+- When English changes and the translation was edited, generation keeps the
+  edit and flags it `REVIEW NEEDED`. Snapshots show content, not the order of
+  edits, so they cannot show that the edit was written against the new English.
+- When English changes under an excluded namespace, generation keeps the
+  translation and flags it `REVIEW NEEDED`.
+- Deleting an eligible locale value requests a new translation.
+- Deleting an English key removes its locale values, snapshot entries and
+  review flags. Deleting an English file removes its locale catalogs and
+  snapshots.
+
+Excluded values that are missing, or nonempty and equal to the current or
+previous English, are removed so the page uses current English fallback. An
+intentional empty string stays.
+
+### Review flags
+
+`reviewNeeded` lists key-segment arrays: `privacy.intro.block.0` appears as
+`["privacy","intro","block","0"]`. Both commands print each flag starting with
+`REVIEW NEEDED: <locale>/main.json: <dotted path>`. Flags are warnings and never
+fail CI. A flag persists across runs, including after its namespace leaves the
+exclusion list. To accept the wording after generation, either edit the locale
+value or delete that exact entry from `reviewNeeded`.
+
+Flagged copy in an eligible namespace is still audited against current English;
+a violation fails the check. Flagged copy in an excluded namespace skips the
+token audit, and its `knownViolations` entries carry forward unchanged until a
+person clears the flag. Invalid retained copy fails preflight before any paid
+request; fix or delete that value first.
+
+### Validation and baselines
+
+Website validation is strict. A translated plural message keeps the English
+form count or collapses to one form. With the same count, each form must keep
+the placeholders and markup of the matching English form. A collapsed form must
+keep every token at the highest count any English form uses. Markup must be
+balanced; tag order may change.
+
+Generated copy must keep every link URL exactly as written in English, and the
+validator rejects any change. Authored copy may prefix an internal `href` with
+the exact target locale, such as `/zh-CN/pricing/`. The validator does not check
+that the prefixed route exists, so review those links against the available
+routes.
+
+`files["main.json"].knownViolations` lists accepted violations as
+`{ "locale", "path", "code", "token" }`, where `path` is a key-segment array and
+`code` is one of `violationCodes` in `scripts/i18n/protected-tokens.ts`. A
+violation that matches an entry passes; any other violation fails. Entries
+that no longer match a violation are printed as
+`STALE BASELINE: <locale>/main.json: <dotted path>: <description>` and counted
+in the summary without failing. Each successful generation rewrites the list
+with the entries its output still matches, plus deferred entries under excluded
+flagged paths. No command adds entries.
+
+### Interrupted generation
+
+Generation publishes through a recovery journal,
+`src/locales/.locale-publication.json`, which lists each catalog, snapshot and
+manifest change with its old and new contents. While the journal exists,
+`locale:check` exits with an error. The next `pnpm locale` completes the recorded
+publication before planning new work. If a listed file matches neither its old
+nor its new contents, recovery names the file and writes nothing. The journal
+holds all recovery data. Leftover `*.publication.tmp` and
+`.locale-publication.json.*.tmp` files hold none and can be deleted. Do not
+commit the journal or temporary files.
 
 ## Ashby careers integration
 

@@ -167,8 +167,6 @@ jobs:
       - name: Checkout PR
         uses: actions/checkout@v7
         with:
-          # Blobless full history: pnpm locale:check fetches the English
-          # source blobs recorded in src/locales/.source-manifest.json
           fetch-depth: 0
           filter: blob:none
 

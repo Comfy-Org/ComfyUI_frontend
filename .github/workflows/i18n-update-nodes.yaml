@@ -16,8 +16,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
         with:
-          # Blobless full history: the locale pipeline lazily fetches the
-          # English source blobs recorded in src/locales/.source-manifest.json
           fetch-depth: 0
           filter: blob:none
       # Setup playwright environment
