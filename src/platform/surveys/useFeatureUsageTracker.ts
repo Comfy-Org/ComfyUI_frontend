@@ -43,6 +43,17 @@ function safeInteger(value: unknown): number | undefined {
   return Number.isSafeInteger(number) ? number : undefined
 }
 
+function isValidUseCount(value: number | undefined): value is number {
+  return value !== undefined && value >= 0 && value <= MAX_USAGE_COUNT
+}
+
+function isValidTimestamp(
+  value: number | undefined,
+  now: number
+): value is number {
+  return value !== undefined && value > 0 && value <= now
+}
+
 function normalizeUsageData(value: unknown): FeatureUsageRecord {
   if (!isRecord(value)) return {}
 
@@ -54,15 +65,9 @@ function normalizeUsageData(value: unknown): FeatureUsageRecord {
       const firstUsed = safeInteger(usage.firstUsed)
       const lastUsed = safeInteger(usage.lastUsed)
       const now = Date.now()
-      return useCount !== undefined &&
-        useCount >= 0 &&
-        useCount <= MAX_USAGE_COUNT &&
-        firstUsed !== undefined &&
-        firstUsed > 0 &&
-        firstUsed <= now &&
-        lastUsed !== undefined &&
-        lastUsed > 0 &&
-        lastUsed <= now
+      return isValidUseCount(useCount) &&
+        isValidTimestamp(firstUsed, now) &&
+        isValidTimestamp(lastUsed, now)
         ? [[featureId, { useCount, firstUsed, lastUsed }]]
         : []
     })
