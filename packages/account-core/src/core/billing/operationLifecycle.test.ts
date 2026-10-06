@@ -1523,7 +1523,9 @@ describe('createBillingOperationLifecycle', () => {
         'no_hosted_url'
       )
 
-      await vi.advanceTimersByTimeAsync(OPERATION_POLL_TIMING.parkedMs)
+      await vi.advanceTimersByTimeAsync(
+        OPERATION_POLL_TIMING.initialMs * OPERATION_POLL_TIMING.multiplier
+      )
       expect(calls).toHaveLength(2)
       expect(lifecycle.switchPresentation('op-1', 'hosted')).toBe('switched')
       expect(lifecycle.get('op-1')).toMatchObject({

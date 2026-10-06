@@ -155,7 +155,6 @@ describe('attachDocOpMinter', () => {
   let docInputNames: DocOpMinterDeps['docInputNames']
 
   beforeEach(() => {
-    vi.mocked(reportError).mockClear()
     graph = new LGraph()
     rootGraphId = toRootGraphId(graph.id)
     minted = []

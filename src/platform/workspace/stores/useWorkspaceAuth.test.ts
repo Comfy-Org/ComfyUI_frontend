@@ -8,9 +8,14 @@ import type { User } from 'firebase/auth'
 
 import { storeToRefs } from 'pinia'
 import { nextTick } from 'vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
+import type {
+  WebSessionRequestScope,
+  WebSessionRequests
+} from '@/platform/auth/session/webSessionFetch'
+import { provideWebSessionRequests } from '@/platform/auth/session/webSessionFetch'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
@@ -3183,6 +3188,51 @@ describe('useWorkspaceAuthStore', () => {
         mockFetch,
         'no /auth/token exchange may fire for a disabled feature'
       ).not.toHaveBeenCalled()
+      expect(unifiedToken.value).toBeNull()
+    })
+
+    it('refuses a mint that parked on the identity before the session signed the tab in', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(personalTokenResponse)
+      })
+      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
+        'firebase-token-xyz'
+      )
+      const heldPort = replayIdentityPort(() => null)
+      vi.spyOn(firebaseIdentity, 'onUserChanged').mockImplementation(
+        heldPort.register
+      )
+      const signedInScope: WebSessionRequestScope = {
+        session: {
+          user: { id: 'user-1', email: 'a@example.com', emailVerified: true },
+          csrfToken: 'csrf-1',
+          expiresAt: Date.now() + 60 * 60_000,
+          absoluteExpiresAt: Date.now() + 24 * 60 * 60_000
+        },
+        epoch: 1
+      }
+      let signedIn = false
+      onTestFinished(
+        provideWebSessionRequests(
+          fromPartial<WebSessionRequests>({
+            scope: async () => (signedIn ? signedInScope : undefined)
+          })
+        )
+      )
+
+      const store = useWorkspaceAuthStore()
+      const { unifiedToken } = storeToRefs(store)
+      Object.assign(useAuthStore(), { currentUser: { uid: 'user-1' } })
+      const parked = store.mintAtLogin()
+
+      signedIn = true
+      await nextTick()
+      heldPort.emit(portUser({ uid: 'user-1' }))
+
+      await expect(parked).resolves.toBe(false)
+      expect(mockFetch).not.toHaveBeenCalled()
       expect(unifiedToken.value).toBeNull()
     })
 

@@ -423,7 +423,9 @@ describe('PlaygroundOutput', () => {
       'Example'
     )
     expect(screen.queryByTestId('output-download')).toBeNull()
-    expect(screen.getByRole('img').getAttribute('src')).toContain('example')
+    const example = screen.getByRole('img')
+    expect(example.getAttribute('src')).toContain('example')
+    expect(example).toHaveAttribute('fetchpriority', 'high')
   })
 
   it('names the expanded image by the alt its output carries', async () => {

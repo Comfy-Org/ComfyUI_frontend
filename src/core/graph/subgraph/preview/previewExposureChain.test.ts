@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { PreviewExposure } from '@/core/schemas/previewExposureSchema'
 import { toNodeId } from '@/types/nodeId'
@@ -48,10 +48,6 @@ describe(resolvePreviewExposureChain, () => {
 
   beforeEach(() => {
     warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
-  })
-
-  afterEach(() => {
-    warnSpy.mockRestore()
   })
 
   it('returns undefined when the named exposure is not on the starting host', () => {

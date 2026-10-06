@@ -101,7 +101,6 @@ describe('onboardingTourStore', () => {
     appendedTargets.forEach((el) => el.remove())
     appendedTargets.length = 0
     setViewport({ width: 1024, height: 768 })
-    trackOnboardingTour.mockClear()
   })
 
   /** Register one laid-out element for a coach id, so its step resolves at once. */

@@ -68,7 +68,7 @@ async function builtPagePath(
   return undefined
 }
 
-async function readBuiltPage(
+export async function readBuiltPage(
   root: string,
   pathname: string
 ): Promise<string | undefined> {

@@ -1,13 +1,14 @@
 import { computed, onScopeDispose, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { isCloud } from '@/platform/distribution/types'
+import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useSurveyFeatureTracking } from '@/platform/surveys/useSurveyFeatureTracking'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { TemplateInput } from '@/platform/workflow/templates/schemas/templateSchema'
+import { syncCompletedTemplateInputsWithCurrentGraph } from '@/platform/workflow/templates/composables/useTemplateInputDownloadGraphSync'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import { usePartnerNodesEducationStore } from '@/platform/workflow/templates/stores/partnerNodesEducationStore'
 import type {
@@ -15,6 +16,10 @@ import type {
   TemplateInfo,
   WorkflowTemplates
 } from '@/platform/workflow/templates/types/template'
+import {
+  resolveTemplateInputAssets,
+  startMissingTemplateInputDownloads
+} from '@/platform/workflow/templates/utils/templateInputAssets'
 import type {
   ComfyWorkflowJSON,
   LegacyLoadableWorkflow
@@ -162,6 +167,25 @@ export function useTemplateWorkflows() {
     return template?.sourceModule
   }
 
+  function startTemplateInputDownloads(id: string, sourceModule: string) {
+    if (!isDesktop || sourceModule !== 'default') return
+
+    void resolveTemplateInputAssets(id, () => window.__comfyDesktop2).then(
+      (assets) => {
+        startMissingTemplateInputDownloads(id, assets, {
+          getBridge: () => window.__comfyDesktop2,
+          reportError: (error) => {
+            reportError(error, {
+              surface: 'graph',
+              errorType: 'workflow_template_input_download_failed',
+              level: 'warning'
+            })
+          }
+        })
+      }
+    )
+  }
+
   function releasePreparedLoad(controller: AbortController) {
     workflowTemplatesStore.finishTemplateLoad(controller)
     if (ownedLoadController === controller) ownedLoadController = undefined
@@ -278,6 +302,7 @@ export function useTemplateWorkflows() {
       if (loadedWorkflow === undefined) return 'not-started'
 
       updateTemplateEducation(template?.isPartnerNode, loadedWorkflow)
+      await syncCompletedTemplateInputsWithCurrentGraph()
       if (sourceModule === 'default') trackFeatureUsed()
       return 'loaded'
     } catch (error) {
@@ -359,6 +384,7 @@ export function useTemplateWorkflows() {
       })
 
       dialogStore.closeDialog()
+      startTemplateInputDownloads(id, sourceModule)
       return await loadTemplateGraph(data, workflowName, sourceModule)
     } catch (error) {
       if (!controller.signal.aborted) reportTemplateError(error)

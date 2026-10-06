@@ -222,7 +222,6 @@ const statusReadPaths = [
 global.fetch = vi.fn()
 
 beforeEach(() => {
-  vi.mocked(webSessionResourceHeader).mockReset()
   vi.mocked(webSessionResourceHeader).mockResolvedValue(undefined)
   useErrorHandling().wrapWithErrorHandlingAsync =
     (action, errorHandler) =>
@@ -2777,10 +2776,6 @@ describe('useSubscription', () => {
         window.dispatchEvent(new Event('blur'))
         window.dispatchEvent(new Event('focus'))
       }
-
-      beforeEach(() => {
-        mockTelemetry.trackBillingEvent.mockClear()
-      })
 
       it.for<{ action: PortalAction; target: string }>([
         { action: 'manageSubscription', target: 'manage_subscription' },

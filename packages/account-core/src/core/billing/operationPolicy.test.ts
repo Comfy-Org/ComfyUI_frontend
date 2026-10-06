@@ -69,12 +69,13 @@ describe('nextPollDelayMs', () => {
       parked: false
     },
     {
-      name: 'a failed challenge awaiting a retry',
+      name: 'a failed challenge the server has not settled',
       state: embedded({
         authenticationState: 'failed_retryable',
+        customerActionSeen: true,
         challenge: { ...CHALLENGE, status: 'failed' }
       }),
-      parked: true
+      parked: false
     },
     {
       name: 'a hosted operation blocked before its page exists',

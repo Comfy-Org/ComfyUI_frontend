@@ -97,11 +97,15 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { ENTERPRISE_URL } from '@/platform/cloud/subscription/constants/tierPricing'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { useBillingBanner } from '@/platform/workspace/composables/useBillingBanner'
-import type { BillingBannerKind } from '@/platform/workspace/composables/useBillingBanner'
+import type {
+  BillingBannerAudience,
+  BillingBannerKind
+} from '@/platform/workspace/composables/useBillingBanner'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { usePlanEnded } from '@/platform/workspace/composables/usePlanEnded'
 import { useResubscribe } from '@/platform/workspace/composables/useResubscribe'
 import { useScheduledPlanChange } from '@/platform/workspace/composables/useScheduledPlanChange'
+import { useWorkspaceTierLabel } from '@/platform/workspace/composables/useWorkspaceTierLabel'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useDialogService } from '@/services/dialogService'
 
@@ -112,12 +116,17 @@ type BannerAction =
   | 'contactSales'
   | 'updatePayment'
 
+const { section } = defineProps<{
+  section?: 'planCredits' | 'members' | 'allowlist'
+}>()
+
 const { t, d } = useI18n()
 const { renewalDate, renewalInvoice, subscription, manageSubscription } =
   useBillingContext()
 const { permissions, canReactivatePlan, workspaceType } = useWorkspaceUI()
 const { canTopUp } = useBillingCapabilities()
-const { kind, dismiss } = useBillingBanner()
+const { kind, audience, dismiss } = useBillingBanner()
+const { formatTierName } = useWorkspaceTierLabel()
 const { isResubscribing, handleResubscribe } = useResubscribe()
 const {
   scheduledChange,
@@ -142,6 +151,7 @@ function longDate(raw: string | null | undefined): string {
 }
 const cycleResetDate = computed(() => longDate(renewalDate.value))
 const planEndDate = computed(() => longDate(subscription.value?.endDate))
+const planName = computed(() => formatTierName(subscription.value?.tier, false))
 
 interface BannerView {
   muted: boolean
@@ -154,6 +164,39 @@ interface BannerView {
 
 const bs = 'workspacePanel.billingStatus'
 
+const audienceCopy = {
+  team: {
+    outOfCreditsBody: `${bs}.outOfCredits.body`,
+    outOfCreditsBodyNoDate: `${bs}.outOfCredits.bodyNoDate`,
+    endingTitle: `${bs}.ending.title`,
+    endingBody: `${bs}.ending.body`
+  },
+  personal: {
+    outOfCreditsBody: `${bs}.outOfCredits.personalBody`,
+    outOfCreditsBodyNoDate: `${bs}.outOfCredits.personalBodyNoDate`,
+    endingTitle: `${bs}.ending.personalTitle`,
+    endingBody: `${bs}.ending.personalBody`
+  }
+} satisfies Record<BillingBannerAudience, Record<string, string>>
+
+const copy = computed(() => audienceCopy[audience.value ?? 'team'])
+
+const PLAN_LIFECYCLE_KINDS: ReadonlySet<BillingBannerKind> = new Set([
+  'planEnded',
+  'ending',
+  'planChange'
+])
+
+// A personal workspace's Members tab carries its own upgrade pitch, so the
+// plan lifecycle notices stay on the Plan & Credits tab.
+const isHiddenOnSection = computed(
+  () =>
+    section === 'members' &&
+    workspaceType.value === 'personal' &&
+    kind.value !== null &&
+    PLAN_LIFECYCLE_KINDS.has(kind.value)
+)
+
 // Only an https payment page is opened; anything else hides the action.
 function safeInvoiceUrl(value: string | undefined): string | undefined {
   if (!value) return undefined
@@ -164,19 +207,10 @@ function safeInvoiceUrl(value: string | undefined): string | undefined {
   }
 }
 
-function pausedOwnerBody(): string {
-  if (workspaceType.value !== 'personal') return t(`${bs}.paused.body`)
-  return t(
-    kind.value === 'paymentFailed'
-      ? `${bs}.paused.personalPaymentFailedBody`
-      : `${bs}.paused.personalBody`
-  )
-}
-
 const pausedView = (): BannerView => ({
   muted: !canManage.value,
   title: t(`${bs}.paused.title`),
-  body: canManage.value ? pausedOwnerBody() : t(`${bs}.paused.memberBody`),
+  body: canManage.value ? t(`${bs}.paused.body`) : t(`${bs}.paused.memberBody`),
   action: canManage.value ? 'updatePayment' : null,
   dismissible: false,
   payInvoiceUrl: safeInvoiceUrl(renewalInvoice.value?.hosted_invoice_url)
@@ -190,6 +224,17 @@ function planEndedCopy(): {
   memberBody: string
 } {
   const date = planEndDate.value
+  if (audience.value === 'personal') {
+    const plan = planName.value
+    const body = t(`${bs}.planEnded.personalBody`)
+    return {
+      title: date
+        ? t(`${bs}.planEnded.personalTitle`, { plan, date })
+        : t(`${bs}.planEnded.personalTitleNoDate`, { plan }),
+      ownerBody: body,
+      memberBody: body
+    }
+  }
   if (!isSalesManagedPlan.value) {
     return {
       title: date
@@ -215,7 +260,10 @@ function planEndedCopy(): {
 
 const planEndedView = (): BannerView => {
   const copy = planEndedCopy()
-  const ownerAction = isSalesManagedPlan.value ? 'contactSales' : 'resubscribe'
+  const ownerAction =
+    audience.value !== 'personal' && isSalesManagedPlan.value
+      ? 'contactSales'
+      : 'resubscribe'
   return {
     muted: true,
     title: copy.title,
@@ -225,10 +273,8 @@ const planEndedView = (): BannerView => {
   }
 }
 
-const outOfCreditsBody = (key: 'body' | 'memberBody'): string =>
-  cycleResetDate.value
-    ? t(`${bs}.outOfCredits.${key}`, { date: cycleResetDate.value })
-    : t(`${bs}.outOfCredits.${key}NoDate`)
+const outOfCreditsBody = (key: string, noDateKey: string): string =>
+  cycleResetDate.value ? t(key, { date: cycleResetDate.value }) : t(noDateKey)
 
 // An owner who cannot top up only reaches this once the plan has ended, which
 // the plan ended notice covers, so that case shows nothing.
@@ -237,7 +283,10 @@ const outOfCreditsView = (): BannerView | null => {
     return {
       muted: false,
       title: t(`${bs}.outOfCredits.title`),
-      body: outOfCreditsBody('memberBody'),
+      body: outOfCreditsBody(
+        `${bs}.outOfCredits.memberBody`,
+        `${bs}.outOfCredits.memberBodyNoDate`
+      ),
       action: null,
       dismissible: true
     }
@@ -246,7 +295,10 @@ const outOfCreditsView = (): BannerView | null => {
   return {
     muted: false,
     title: t(`${bs}.outOfCredits.title`),
-    body: outOfCreditsBody('body'),
+    body: outOfCreditsBody(
+      copy.value.outOfCreditsBody,
+      copy.value.outOfCreditsBodyNoDate
+    ),
     action: 'addCredits',
     dismissible: true
   }
@@ -265,16 +317,21 @@ const enterpriseEndingView = (): BannerView => ({
   dismissible: false
 })
 
-const teamEndingView = (): BannerView => ({
+const selfServeEndingView = (): BannerView => ({
   muted: true,
-  title: t(`${bs}.ending.title`, { date: planEndDate.value }),
-  body: canManage.value ? t(`${bs}.ending.body`) : t(`${bs}.ending.memberBody`),
+  title: t(copy.value.endingTitle, {
+    plan: planName.value,
+    date: planEndDate.value
+  }),
+  body: canManage.value
+    ? t(copy.value.endingBody)
+    : t(`${bs}.ending.memberBody`),
   action: canManage.value && canReactivatePlan.value ? 'reactivate' : null,
   dismissible: false
 })
 
 const endingView = (): BannerView =>
-  isEnterprisePlan.value ? enterpriseEndingView() : teamEndingView()
+  isEnterprisePlan.value ? enterpriseEndingView() : selfServeEndingView()
 
 const planChangeView = (): BannerView | null =>
   canShowScheduledChange.value
@@ -301,7 +358,7 @@ const bannerViews: Record<BillingBannerKind, () => BannerView | null> = {
 }
 
 const banner = computed<BannerView | null>(() =>
-  kind.value ? bannerViews[kind.value]() : null
+  kind.value && !isHiddenOnSection.value ? bannerViews[kind.value]() : null
 )
 
 function handleAddCredits() {
@@ -309,7 +366,7 @@ function handleAddCredits() {
 }
 function handleResubscribePlan() {
   subscriptionDialog.show({
-    planMode: 'team',
+    planMode: audience.value === 'personal' ? 'personal' : 'team',
     reason: 'settings_billing_panel'
   })
 }

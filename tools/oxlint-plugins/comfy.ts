@@ -26,7 +26,8 @@ import type {
   noPrimeVueImports as NoPrimeVueImports,
   noStaticallyDisabledTest as NoStaticallyDisabledTest,
   noUnitTestFilesInBrowserTests as NoUnitTestFilesInBrowserTests,
-  noUnsafeErrorAssertion as NoUnsafeErrorAssertion
+  noUnsafeErrorAssertion as NoUnsafeErrorAssertion,
+  noVitestMockMethodNames as NoVitestMockMethodNames
 } from './restrictedSyntax'
 import type {
   noImportActual as NoImportActual,
@@ -77,7 +78,8 @@ const {
   noPrimeVueImports,
   noStaticallyDisabledTest,
   noUnitTestFilesInBrowserTests,
-  noUnsafeErrorAssertion
+  noUnsafeErrorAssertion,
+  noVitestMockMethodNames
 } = requireFrom('./restrictedSyntax.ts') as {
   noDeprecatedApiSchema: typeof NoDeprecatedApiSchema
   noDirectSelectionWrite: typeof NoDirectSelectionWrite
@@ -92,6 +94,7 @@ const {
   noStaticallyDisabledTest: typeof NoStaticallyDisabledTest
   noUnitTestFilesInBrowserTests: typeof NoUnitTestFilesInBrowserTests
   noUnsafeErrorAssertion: typeof NoUnsafeErrorAssertion
+  noVitestMockMethodNames: typeof NoVitestMockMethodNames
 }
 const {
   noImportActual,
@@ -139,6 +142,7 @@ export default {
     'no-unit-test-files-in-browser-tests': noUnitTestFilesInBrowserTests,
     'no-unsafe-error-assertion': noUnsafeErrorAssertion,
     'no-useless-path-segments': noUselessPathSegments,
+    'no-vitest-mock-method-names': noVitestMockMethodNames,
     'prefer-initial-settings': preferInitialSettings,
     'use-global-pinia': useGlobalPinia
   }

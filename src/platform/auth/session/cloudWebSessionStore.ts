@@ -223,6 +223,15 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
     }
   )
 
+  // A unified credential from a token-rail fallback would adopt a sibling's
+  // token and overwrite the workspace this tab's session requests carry.
+  watch(
+    () => signedInUser.value?.id,
+    (userId) => {
+      if (userId) useWorkspaceAuthStore().clearUnifiedContext()
+    }
+  )
+
   const reconnecting = shallowRef(false)
   const readsFailing = computed(
     () => 'failures' in state.value && state.value.failures > 0

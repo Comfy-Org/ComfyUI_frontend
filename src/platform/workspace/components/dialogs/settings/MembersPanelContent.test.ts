@@ -328,6 +328,38 @@ describe('MembersPanelContent', () => {
       renderComponent()
       expect(screen.queryByRole('textbox')).toBeNull()
     })
+
+    it.for([
+      { name: 'active', isPlanEnded: false, isSalesManagedPlan: false },
+      {
+        name: 'ended self-serve',
+        isPlanEnded: true,
+        isSalesManagedPlan: false
+      },
+      {
+        name: 'ended sales-managed',
+        isPlanEnded: true,
+        isSalesManagedPlan: true
+      }
+    ])(
+      'pitches the Team plan whatever the plan state ($name)',
+      async ({ isPlanEnded, isSalesManagedPlan }) => {
+        mockIsPlanEnded.value = isPlanEnded
+        mockIsSalesManagedPlan.value = isSalesManagedPlan
+        renderComponent()
+
+        expect(
+          screen.getByText('workspacePanel.members.upsellBanner')
+        ).toBeTruthy()
+        expect(screen.queryByText(/workspacePanel\.members\.ended/)).toBeNull()
+        await userEvent.click(
+          screen.getByRole('button', {
+            name: /workspacePanel\.members\.upgradeToTeam/
+          })
+        )
+        expect(mockShowTeamPlans).toHaveBeenCalled()
+      }
+    )
   })
 
   describe('pending invite counts', () => {

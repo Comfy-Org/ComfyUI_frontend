@@ -104,8 +104,6 @@ const turnAccepted = {
 }
 
 beforeEach(() => {
-  vi.mocked(api.fetchApi).mockReset()
-  vi.mocked(reportError).mockReset()
   auth.header = null
 })
 

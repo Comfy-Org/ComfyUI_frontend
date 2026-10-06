@@ -9,10 +9,6 @@ vi.mock<unknown>(import('@stripe/stripe-js/pure'), () => ({
 import { createDeferredStripeChallengePort } from '@/session/stripeChallengePort'
 
 describe('createDeferredStripeChallengePort', () => {
-  beforeEach(() => {
-    h.loadStripe.mockReset()
-  })
-
   it('reports the challenge unavailable when no key is present at call time', async () => {
     const port = createDeferredStripeChallengePort(() => undefined)
 
@@ -106,10 +102,6 @@ describe('createDeferredStripeChallengePort', () => {
 })
 
 describe('leavesPage', () => {
-  beforeEach(() => {
-    h.loadStripe.mockReset()
-  })
-
   it.for<{ name: string; retrieved: unknown; leaves: boolean }>([
     {
       name: 'a challenge Stripe runs in the page',

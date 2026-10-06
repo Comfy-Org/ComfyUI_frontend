@@ -1242,6 +1242,12 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       case 'payment_method_customer_decline':
       case 'payment_intent_payment_attempt_expired':
         return t('billingOperation.authenticationFailedDetail')
+      case 'subscribe_method_not_chargeable_off_session':
+        // `recovery` is withheld from operations that never charge a card.
+        if (recovery) {
+          return t('billingOperation.methodNotChargeableOffSessionDetail')
+        }
+        break
       case 'processing_error':
       case 'issuer_not_available':
       case 'try_again_later':

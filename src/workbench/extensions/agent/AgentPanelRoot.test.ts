@@ -11568,7 +11568,6 @@ describe('AgentPanelRoot agent socket identity (#17469)', () => {
   })
 
   afterEach(() => {
-    vi.mocked(reportError).mockReset()
     useAgentPanelStore().enabled = false
     Object.assign(appMock, { isGraphReady: undefined })
   })

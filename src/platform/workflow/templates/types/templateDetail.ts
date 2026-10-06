@@ -22,8 +22,13 @@ type TemplateDetailRowStatus =
 
 export interface TemplateDetailRow {
   id: string
+  kind?: 'model' | 'input'
   name: string
   description: string
+  preview?: {
+    src: string
+    mediaType: 'image' | 'video' | 'audio'
+  }
   status?: TemplateDetailRowStatus
 }
 

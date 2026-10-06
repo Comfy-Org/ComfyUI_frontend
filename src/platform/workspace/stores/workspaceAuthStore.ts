@@ -583,9 +583,13 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       return false
     }
     const authUser = await unifiedUser()
-    // Re-check after the wait: a rollback that flips the flag off while a mint
+    // Re-check after the wait: a rollback or a session sign-in while a mint
     // is parked on unifiedUser() must not let the resumed mint commit a token.
-    if (!unifiedRailEnabled() || !authUser) {
+    if (
+      !unifiedRailEnabled() ||
+      !authUser ||
+      (webSessionRequests() !== undefined && (await signedInOnWebSession()))
+    ) {
       return false
     }
     const target = currentUnifiedTarget() ?? personalWorkspaceTarget()
@@ -726,6 +730,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     getUnifiedSessionClient,
     getUnifiedMintWorkspaceId,
     clearWorkspaceContext,
+    clearUnifiedContext,
     dropDeniedWorkspace
   }
 })

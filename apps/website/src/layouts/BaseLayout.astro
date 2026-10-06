@@ -6,7 +6,8 @@ import SiteFooter from '@/components/common/SiteFooter.vue'
 import GoogleTagManager from '@/components/common/GoogleTagManager.astro'
 import HeaderMain from '@/components/common/HeaderMain/HeaderMain.vue'
 import AnnouncementBanner from '@/templates/drops/AnnouncementBanner.vue'
-import { bannerConfig, getBannerData } from '@/config/banner'
+import type { BannerConfig } from '@/config/banner'
+import { activeBannerFor, bannerConfig, getBannerData } from '@/config/banner'
 import { getRoutes } from '@/config/routes'
 import {
   headIndexing,
@@ -24,8 +25,7 @@ import { isHrefActive } from '@/composables/useCurrentPath'
 import {
   BANNER_DISMISS_ATTR,
   BANNER_STORAGE_KEY,
-  createBannerVersion,
-  evaluateBannerVisibility
+  createBannerVersion
 } from '@/utils/banner'
 import { fetchGitHubStars, formatStarCount } from '@/utils/github'
 import {
@@ -56,6 +56,7 @@ interface Props {
   extraJsonLd?: (JsonLdNode | null | undefined)[]
   minimal?: boolean
   hideAnnouncementBanner?: boolean
+  banner?: BannerConfig
   /** PP Formula faces this page renders above the fold beyond the site-wide set. */
   preloadFonts?: readonly PPFormulaFace[]
 }
@@ -75,6 +76,7 @@ const {
   extraJsonLd,
   minimal = false,
   hideAnnouncementBanner = false,
+  banner,
   preloadFonts = []
 } = Astro.props
 
@@ -104,14 +106,15 @@ const githubStars = rawStars ? formatStarCount(rawStars) : ''
 // Announcement banner — build-time visibility gate + content-hash version key.
 // A promo never advertises the page you are already on, so the banner is
 // suppressed when its CTA points at the current path.
-const bannerData = getBannerData(bannerConfig, locale)
+const activeBanner = activeBannerFor(banner, {
+  currentLocale: locale,
+  currentSection: 'sitewide',
+  now: new Date()
+})
+const bannerData = getBannerData(activeBanner ?? bannerConfig, locale)
 const bannerVisible =
   !hideAnnouncementBanner &&
-  evaluateBannerVisibility(bannerConfig, {
-    currentLocale: locale,
-    currentSection: 'sitewide',
-    now: new Date()
-  }) &&
+  activeBanner !== undefined &&
   !isHrefActive(bannerData.link?.href ?? '', Astro.url.pathname)
 const bannerVersion = createBannerVersion(bannerData, locale)
 

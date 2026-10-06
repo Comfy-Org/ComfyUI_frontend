@@ -1,5 +1,5 @@
 import { until } from '@vueuse/core'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
@@ -71,10 +71,6 @@ describe('useErrorReport', () => {
     store.systemStats = null
     store.isLoading = false
     warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
-  })
-
-  afterEach(() => {
-    warnSpy.mockRestore()
   })
 
   it('returns early without enrichment when the card has no runtime errors', async () => {

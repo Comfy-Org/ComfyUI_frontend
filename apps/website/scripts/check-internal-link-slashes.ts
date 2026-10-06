@@ -3,22 +3,16 @@
  * slash, or through the www host. Both reach the page only via a second
  * address, which splits its signals until a crawler settles on the canonical.
  */
-import { existsSync, readdirSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
 
 import { aliasHostHrefs, slashlessPageHrefs } from '@/utils/internalLinkSlashes'
 
+import { htmlFiles } from './dist-html'
+
 const DIST = join(process.cwd(), 'dist')
 const ORIGINS = ['https://comfy.org']
 const ALIAS_ORIGINS = ['https://www.comfy.org']
-
-function htmlFiles(dir: string): string[] {
-  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
-    const full = join(dir, entry.name)
-    if (entry.isDirectory()) return htmlFiles(full)
-    return entry.name.endsWith('.html') ? [full] : []
-  })
-}
 
 if (!existsSync(DIST)) {
   console.error(`[link-slashes] ${DIST} does not exist; build first.`)

@@ -5,6 +5,9 @@ import { modelDocsHref } from './model-docs'
 
 const DOCS = 'https://docs.comfy.org/development/comfy-router/models'
 
+// Router providers the docs page has no section for yet.
+const UNDOCUMENTED = new Set(['runware'])
+
 describe('modelDocsHref', () => {
   it('links a model through its Router id or its display name', () => {
     expect(
@@ -42,16 +45,19 @@ describe('modelDocsHref', () => {
       routerIndex.map((entry) => entry.id.split('/')[0] ?? '')
     )
     const unmapped = [...prefixes].filter(
-      (prefix) => !modelDocsHref({ routerId: `${prefix}/x` })
+      (prefix) =>
+        !UNDOCUMENTED.has(prefix) && !modelDocsHref({ routerId: `${prefix}/x` })
     )
     expect(unmapped).toEqual([])
+    for (const prefix of UNDOCUMENTED) {
+      expect(prefixes).toContain(prefix)
+      expect(modelDocsHref({ routerId: `${prefix}/x` })).toBeUndefined()
+    }
   })
 
   it('offers no link for a provider the docs do not cover', () => {
     expect(modelDocsHref({ provider: 'Magnific' })).toBeUndefined()
-    expect(
-      modelDocsHref({ provider: 'Sync Labs', routerId: 'synclabs/lipsync' })
-    ).toBeUndefined()
+    expect(modelDocsHref({ routerId: 'runware/x' })).toBeUndefined()
     expect(modelDocsHref({ provider: 'constructor' })).toBeUndefined()
     expect(modelDocsHref({})).toBeUndefined()
   })

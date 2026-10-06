@@ -1536,6 +1536,57 @@ describe('billingOperationStore', () => {
       expect(store.getOperation('op-1')?.errorMessage).toBe(detail)
     })
 
+    it('names a saved method that cannot be charged without the customer', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'failed',
+        error_message: 'subscribe_method_not_chargeable_off_session',
+        recovery_action: 'replace_payment_method',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-1', 'subscription')
+
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(store.getOperation('op-1')).toMatchObject({
+        status: 'failed',
+        errorMessage: 'billingOperation.methodNotChargeableOffSessionDetail'
+      })
+      expect(useToastStore().add).toHaveBeenCalledWith({
+        severity: 'error',
+        summary: 'billingOperation.subscriptionFailed',
+        detail: 'billingOperation.methodNotChargeableOffSessionDetail',
+        life: 7000
+      })
+    })
+
+    it('does not name a payment method for a downgrade to personal', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'failed',
+        error_message: 'subscribe_method_not_chargeable_off_session',
+        recovery_action: 'replace_payment_method',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-1', 'subscription', {
+        downgradeToPersonal: {
+          memberRemovalCount: 1,
+          memberRemovalFailures: 0,
+          startedAt: 0
+        }
+      })
+
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(store.getOperation('op-1')?.errorMessage).not.toBe(
+        'billingOperation.methodNotChargeableOffSessionDetail'
+      )
+    })
+
     // Neither operation presents a card, so no recovery action can describe one.
     it.for([
       { name: 'a cancellation', type: 'cancel' as const, metadata: undefined },

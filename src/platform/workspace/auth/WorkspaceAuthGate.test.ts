@@ -419,6 +419,16 @@ describe('WorkspaceAuthGate', () => {
   })
 
   describe('cloud builds - Firebase user signed in on the web session', () => {
+    const signedInScope: WebSessionRequestScope = {
+      session: {
+        user: { id: 'user-a', email: 'a@example.com', emailVerified: true },
+        csrfToken: 'csrf-1',
+        expiresAt: Date.now() + 60 * 60_000,
+        absoluteExpiresAt: Date.now() + 24 * 60 * 60_000
+      },
+      epoch: 1
+    }
+    let sessionScope: WebSessionRequestScope | undefined
     let releaseRequests = () => {}
 
     beforeEach(() => {
@@ -428,10 +438,9 @@ describe('WorkspaceAuthGate', () => {
       vi.mocked(useWorkspaceAuthStore().getUnifiedToken).mockReturnValue(
         undefined
       )
+      sessionScope = signedInScope
       releaseRequests = provideWebSessionRequests(
-        fromPartial<WebSessionRequests>({
-          scope: async () => fromPartial<WebSessionRequestScope>({})
-        })
+        fromPartial<WebSessionRequests>({ scope: async () => sessionScope })
       )
     })
 
@@ -439,11 +448,47 @@ describe('WorkspaceAuthGate', () => {
 
     it('initializes the workspace without minting a unified token', async () => {
       mountComponent()
-      await flushPromises()
 
+      expect(await screen.findByTestId('slot-content')).toBeInTheDocument()
       expect(useWorkspaceAuthStore().mintAtLogin).not.toHaveBeenCalled()
       expect(useTeamWorkspaceStore().initialize).toHaveBeenCalled()
-      expect(screen.getByTestId('slot-content')).toBeInTheDocument()
+    })
+
+    it('renders the app when the session signs the tab in while the login mint is refused', async () => {
+      sessionScope = undefined
+      vi.mocked(useWorkspaceAuthStore().mintAtLogin).mockImplementation(
+        async () => {
+          sessionScope = signedInScope
+          return false
+        }
+      )
+
+      mountComponent()
+
+      expect(await screen.findByTestId('slot-content')).toBeInTheDocument()
+      expect(useTeamWorkspaceStore().initialize).toHaveBeenCalled()
+    })
+
+    it('renders the app when the session signs the tab in during workspace setup', async () => {
+      sessionScope = undefined
+      vi.mocked(useWorkspaceAuthStore().mintAtLogin).mockResolvedValue(true)
+      vi.mocked(useWorkspaceAuthStore().getUnifiedToken).mockReturnValue(
+        'cloud-jwt'
+      )
+      vi.mocked(useTeamWorkspaceStore().initialize).mockImplementation(
+        async () => {
+          sessionScope = signedInScope
+          vi.mocked(useWorkspaceAuthStore().getUnifiedToken).mockReturnValue(
+            undefined
+          )
+          Object.assign(useTeamWorkspaceStore(), { initState: 'ready' })
+        }
+      )
+
+      mountComponent()
+
+      expect(await screen.findByTestId('slot-content')).toBeInTheDocument()
+      expect(useWorkspaceAuthStore().mintAtLogin).toHaveBeenCalledOnce()
     })
 
     it('mints nothing when unmounted while the session lookup is pending', async () => {
@@ -454,12 +499,21 @@ describe('WorkspaceAuthGate', () => {
           settleScope = resolve
         }
       )
+      let lookupStarted = () => {}
+      const lookupStarting = new Promise<void>((resolve) => {
+        lookupStarted = resolve
+      })
       releaseRequests = provideWebSessionRequests(
-        fromPartial<WebSessionRequests>({ scope: () => pendingScope })
+        fromPartial<WebSessionRequests>({
+          scope: () => {
+            lookupStarted()
+            return pendingScope
+          }
+        })
       )
 
       const { unmount } = mountComponent()
-      await flushPromises()
+      await lookupStarting
       unmount()
       settleScope(undefined)
       await flushPromises()

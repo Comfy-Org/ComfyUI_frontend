@@ -22,6 +22,7 @@ import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useAppModeStore } from '@/stores/appModeStore'
+import { useTemplateInputDownloadStore } from '@/stores/templateInputDownloadStore'
 import { cn } from '@comfyorg/tailwind-utils'
 import { HideLayoutFieldKey, WidgetHeightKey } from '@/types/widgetTypes'
 import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
@@ -44,6 +45,7 @@ const { mobile = false, builderMode = false } = defineProps<{
 const { t } = useI18n()
 const executionErrorStore = useExecutionErrorStore()
 const appModeStore = useAppModeStore()
+const templateInputDownloadStore = useTemplateInputDownloadStore()
 const widgetValueStore = useWidgetValueStore()
 const linkStore = useLinkStore()
 const maskEditor = useMaskEditor()
@@ -119,7 +121,8 @@ function getDropIndicator(node: LGraphNode, id: WidgetId) {
     mobile,
     label: t,
     onMaskEdit: maskEditor.openMaskEditor,
-    widgetValueStore
+    widgetValueStore,
+    previewRevision: templateInputDownloadStore.previewRevision
   })
 }
 
