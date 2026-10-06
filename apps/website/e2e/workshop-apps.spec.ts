@@ -138,8 +138,10 @@ for (const { reducedMotion, paused } of [
 
     const artwork = page
       .getByTestId('app-shelf')
+      .getByRole('link')
       .getByTestId('model-card-media')
     await expect(artwork).toHaveCount(2)
+    await artwork.first().scrollIntoViewIfNeeded()
     await expect(artwork.nth(0)).toHaveAttribute(
       'src',
       `${APP_MEDIA}/cinematic-studio/thumbnail-480.mp4`
@@ -166,8 +168,12 @@ test('decodes a frame of each hub app card video while it plays', async ({
   await mockFlags(context, { apps: true, workflows: false })
   await page.goto('/hub/apps/')
 
-  const artwork = page.getByTestId('app-shelf').getByTestId('model-card-media')
+  const artwork = page
+    .getByTestId('app-shelf')
+    .getByRole('link')
+    .getByTestId('model-card-media')
   await expect(artwork).toHaveCount(2)
+  await artwork.first().scrollIntoViewIfNeeded()
   await expect
     .poll(() =>
       artwork.evaluateAll((videos: HTMLVideoElement[]) =>
