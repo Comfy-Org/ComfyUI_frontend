@@ -217,6 +217,7 @@ watch(
               :attachments="entry.attachments"
               :tags="entry.tags"
               :workflow-references="entry.workflowReferences"
+              :skill-reference="entry.skillReference"
               :editable="entry.id === editableTurnId"
               @edit="emit('editPrompt', $event)"
               @open-reference-workflow="

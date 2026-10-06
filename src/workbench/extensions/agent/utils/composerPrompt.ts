@@ -9,6 +9,8 @@ import {
 } from '../types/composerPrompt'
 import type { PromptSnapshot } from '../types/workflowReference'
 import { assetReferenceText, nodeReferenceText } from './agentMessageText'
+import { promptReferenceParts } from './promptReferenceParts'
+import { serializeSkillReference } from './skillReferenceText'
 
 export function insertComposerReference(
   prompt: ComposerPrompt,
@@ -93,4 +95,23 @@ export function sameComposerReferenceOrder(
         composerReferenceKey(b.references[index])
     )
   )
+}
+
+export function composerPromptForSubmission(
+  prompt: ComposerPrompt
+): Pick<PromptSnapshot, 'text' | 'workflowReferences'> {
+  const snapshot = composerPromptForSend(prompt)
+  let text = ''
+  const workflowReferences: PromptSnapshot['workflowReferences'] = []
+  for (const part of promptReferenceParts(
+    snapshot.text,
+    snapshot.workflowReferences,
+    snapshot.skillReference
+  )) {
+    if (part.type === 'text') text += part.text
+    else if (part.type === 'skill')
+      text += serializeSkillReference(part.reference)
+    else workflowReferences.push({ ...part.reference, textOffset: text.length })
+  }
+  return { text, workflowReferences }
 }

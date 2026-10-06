@@ -30,6 +30,9 @@ import { toTurnId, zAgentWsEvent } from '../../schemas/agentApiSchema'
 import type { AgentChatEvent } from '../../services/agent/agentEventTransport'
 import type { AssistantMessage } from '../../services/agent/agentMessageParts'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
+import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
+import type { PromptSnapshot } from '../../types/workflowReference'
+import { composerPromptForSubmission } from '../../utils/composerPrompt'
 
 import ConversationView from './ConversationView.vue'
 
@@ -108,6 +111,72 @@ describe('ConversationView', () => {
     intersectionCallbacks.length = 0
     resizeCallbacks.length = 0
   })
+
+  it.for(['live', 'history'])(
+    'renders and edits the skill from a %s message alongside a workflow reference',
+    async (source) => {
+      const store = useAgentConversationStore()
+      const marker =
+        '[Use the saved skill /portrait](skill://portrait?description=Use%20defaults)'
+      if (source === 'live') {
+        store.recordUser(T, `${marker} render it`, undefined, undefined, [
+          { id: 'wf', name: 'Reference', textOffset: marker.length }
+        ])
+        store.startTurn(T)
+      } else {
+        store.hydrate([
+          {
+            id: 'row',
+            thread_id: 'thread',
+            seq: 1,
+            turn_id: T,
+            status: 'complete',
+            role: 'user',
+            content: {
+              text: `${marker}[Reference](workflow://wf) render it`,
+              workflow_references: [{ workflow_id: 'wf', name: 'Reference' }]
+            }
+          }
+        ])
+      }
+      const view = render(ConversationView, {
+        props: { entries: store.entries, editableTurnId: T },
+        global: { plugins: [i18n] }
+      })
+      expect(screen.getByTestId('skill-reference')).toHaveTextContent(
+        '/portrait'
+      )
+      await userEvent.hover(screen.getByTestId('skill-reference'))
+      expect(
+        await screen.findByRole('tooltip', { name: '/portrait' })
+      ).toHaveTextContent('Use defaults')
+      await userEvent.unhover(screen.getByTestId('skill-reference'))
+      expect(screen.getByTestId('workflow-reference-chip')).toHaveTextContent(
+        'Reference'
+      )
+      await userEvent.click(screen.getByRole('button', { name: 'Edit' }))
+      const snapshot: PromptSnapshot = {
+        text: ' render it',
+        workflowReferences: [{ id: 'wf', name: 'Reference', textOffset: 0 }],
+        skillReference: {
+          name: 'portrait',
+          description: 'Use defaults',
+          textOffset: 0,
+          workflowIndex: 0
+        }
+      }
+      expect(view.emitted().editPrompt).toEqual([[snapshot]])
+      const composer = useAgentComposerStore()
+      composer.setSkillScope('current-user/workspace')
+      composer.replacePrompt(snapshot)
+      expect(composerPromptForSubmission(composer.prompt)).toEqual({
+        text: `${marker} render it`,
+        workflowReferences: [
+          { id: 'wf', name: 'Reference', textOffset: marker.length }
+        ]
+      })
+    }
+  )
 
   it('wire-driven v1 turn renders user pill, spinner, reasoning-free text, work summary', async () => {
     const { store } = mountHarness()

@@ -127,7 +127,7 @@ describe('Composer skill selection', () => {
   })
 
   it('inserts a skill immediately before existing workflow and asset references', async () => {
-    const { composer } = mount()
+    const { composer, emitted } = mount()
     const attachment = { id: 'asset', name: 'image.png', ref: 'image.png' }
     composer.addAttachment(attachment)
     composer.restorePrompt({
@@ -146,6 +146,16 @@ describe('Composer skill selection', () => {
     ])
     expect(screen.getByTestId('asset-reference-chip')).toBeVisible()
     expect(screen.getByTestId('workflow-reference-chip')).toBeVisible()
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    const marker =
+      '[Use the saved skill /portrait](skill://portrait?description=Compose%20a%20portrait%0AKeep%20the%20subject%20recognizable)'
+    expect(emitted().send).toEqual([
+      [
+        `${marker} @[Image: image.png]`,
+        [attachment],
+        [{ id: 'workflow', name: 'Reference', textOffset: marker.length + 1 }]
+      ]
+    ])
   })
   it('uses the approved placeholder', () => {
     mount()
@@ -346,13 +356,37 @@ describe('Composer skill selection', () => {
     expect(screen.queryByRole('menu')).toBeNull()
   })
 
-  it('keeps a selected skill and text intact until a real submission contract is wired', async () => {
+  it('allows sending a selected skill as an explicit named-skill request', async () => {
     const { emitted, composer } = mount()
     await type('/por')
-    await userEvent.keyboard('{Enter}Render it{Enter}')
-    expect(emitted().send).toBeUndefined()
+    await userEvent.keyboard('{Enter}')
+    expect(screen.getByRole('button', { name: 'Send' })).toBeEnabled()
+    await userEvent.keyboard('Render it{Enter}')
+    expect(emitted().send).toEqual([
+      [
+        '[Use the saved skill /portrait](skill://portrait?description=Compose%20a%20portrait%0AKeep%20the%20subject%20recognizable) Render it',
+        []
+      ]
+    ])
     expect(composer.draft).toContain('Render it')
     expect(screen.getByTestId('skill-reference')).toHaveTextContent('/portrait')
-    expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled()
   })
+
+  it.for(['deleted', 'unavailable'])(
+    'preserves the requested name when the selected catalog entry becomes %s',
+    async (state) => {
+      const { emitted, skills } = mount()
+      await type('/por')
+      await userEvent.keyboard('{Enter}')
+      if (state === 'deleted') skills.removePack('portrait')
+      else skills.markUnavailable()
+      await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+      expect(emitted().send).toEqual([
+        [
+          '[Use the saved skill /portrait](skill://portrait?description=Compose%20a%20portrait%0AKeep%20the%20subject%20recognizable)',
+          []
+        ]
+      ])
+    }
+  )
 })

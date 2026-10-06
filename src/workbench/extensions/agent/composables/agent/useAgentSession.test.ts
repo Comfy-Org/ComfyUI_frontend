@@ -3968,6 +3968,36 @@ describe('useAgentSession (v1 composition root)', () => {
     })
   })
 
+  it.for(['accepted', 'failed'])(
+    'uses existing message content for skill invocation and retains its display when the send is %s',
+    async (outcome) => {
+      const rest = fakeRest()
+      if (outcome === 'failed')
+        vi.mocked(rest.postMessage).mockRejectedValue(new Error('Unavailable'))
+      const session = useAgentSession({ rest, events: fakeEvents().source })
+      session.start()
+      const content =
+        '[Use the saved skill /portrait](skill://portrait?description=Use%20defaults) render it'
+      expect(await session.sendMessage(content)).toBe(outcome === 'accepted')
+      expect(vi.mocked(rest.postMessage).mock.calls[0][1]).toEqual({
+        content,
+        workflowReferences: [],
+        selection: undefined,
+        attachments: undefined
+      })
+      expect(useAgentConversationStore().entries[0]).toMatchObject({
+        role: 'user',
+        text: ' render it',
+        skillReference: {
+          name: 'portrait',
+          description: 'Use defaults',
+          textOffset: 0,
+          workflowIndex: 0
+        }
+      })
+    }
+  )
+
   it('(h3) sends workflow references separately and keeps them in the local turn', async () => {
     const rest = fakeRest()
     const session = useAgentSession({ rest, events: fakeEvents().source })

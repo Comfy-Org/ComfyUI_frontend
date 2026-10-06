@@ -32,7 +32,7 @@ import type { AgentStopMethod } from '@/platform/telemetry/types'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 
 import InlinePromptEditor from './composer/InlinePromptEditor.vue'
-import { composerPromptForSend } from '../../utils/composerPrompt'
+import { composerPromptForSubmission } from '../../utils/composerPrompt'
 import type { AgentStarterPromptAttribution } from '../../utils/starterPrompts'
 import { useAgentMentionPicker } from '../../composables/agent/useAgentMentionPicker'
 import { useWorkflowReferencePicker } from '../../composables/agent/useWorkflowReferencePicker'
@@ -121,7 +121,7 @@ const composer = useComposer({
     }
     if (workflowReferences.value.length > 0) {
       const { text: draft, workflowReferences: references } =
-        composerPromptForSend(composer.prompt.value)
+        composerPromptForSubmission(composer.prompt.value)
       const offsets = references.map((reference) => reference.textOffset)
       const start = Math.min(
         draft.length - draft.trimStart().length,

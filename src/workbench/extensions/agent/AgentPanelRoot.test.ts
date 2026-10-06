@@ -10482,11 +10482,11 @@ describe('AgentPanelRoot workflow binding', () => {
     setupNodeSelectionCanvas()
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     useAgentPanelStore().isOpen = true
-    const action = screen.getByRole('button', {
-      name: 'mention nodes'
-    })
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('@')
+    const action = screen.getByRole('menuitem', { name: 'Nodes' })
     expect(action).not.toHaveAttribute('aria-disabled', 'true')
-    await openMentionPicker()
+    await userEvent.click(action)
     await userEvent.click(await screen.findByText('KSampler'))
 
     workflowStore.activeWorkflow = addTab('workflows/other.json')

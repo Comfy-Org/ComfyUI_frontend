@@ -12,8 +12,9 @@ Slash selection needs a stable identity through editing, Undo and remount, while
 ordinary slash text and pasted content must remain ordinary text. Skills also
 coexist with workflow, node and asset references. The saved user skill
 catalog already belongs to Settings; a second catalog would diverge after CRUD
-or an account change. The current message endpoint has no explicit selected
-skill contract and cannot guarantee that selection reaches `load_skill`.
+or an account change. The existing message endpoint supports named-skill requests
+through ordinary content. Backend turn context advertises saved names and
+descriptions; `list_skills` and `load_skill` resolve the requested skill.
 
 ## Decision
 
@@ -34,15 +35,21 @@ because Agent-created skills can bypass frontend CRUD notifications. Filtering
 does not refresh. Catalog replacement preserves the highlighted skill by name
 when present, otherwise highlights the first remaining match.
 
-Selected-skill submission stays blocked until an explicit backend contract is
-approved and implemented. Component support for structured restored messages
-does not establish a production history transport. No speculative fields are
-added to generated API types.
+Serialize the selected name as an explicit “Use the saved skill /name” Markdown
+link in ordinary message content. Its `skill://` destination carries only the
+canonical name and encoded display description. This is a frontend persistence
+format, not a new backend field or tool protocol. Restore it into display
+metadata in live and persisted user messages, preserving workflow ordering.
+Plain `/name` text and clipboard content do not create selected identity.
+An unavailable catalog does not erase the requested name or block Send; the
+backend owns runtime resolution. Failed sends restore the untouched semantic
+draft through the existing submission owner.
 
 ## Alternatives considered
 
-- Parse `/name` on send or paste: conflates typed text with explicit selection
-  and leaves runtime consumption dependent on model behavior.
+- Parse `/name` on send or paste: conflates typed text with explicit selection.
+- Require a new selected-skill API and enforced preload: provides a stronger
+  guarantee, but is outside this feature's approved message-based behavior.
 - Store a second catalog in the composer: duplicates Settings authority and
   requires another invalidation and CRUD synchronization mechanism.
 - Render a chip: conflicts with the intended inline presentation. Atomic
@@ -54,5 +61,7 @@ added to generated API types.
 
 Selection identity survives editor history and remains distinct from readable
 text. Shared catalog loading needs generation and scope guards, and snapshots
-need cross-kind ordering metadata. This frontend slice is a preview boundary;
-selected sending and production restored history require backend integration.
+need cross-kind ordering metadata. Named-skill invocation remains model-mediated:
+selection expresses the user's request, without guaranteeing a `load_skill`
+call. The message-content format also restores inline presentation when editing
+history without sending instruction bodies or modifying generated API types.

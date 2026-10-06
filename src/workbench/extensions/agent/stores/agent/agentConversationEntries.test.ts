@@ -15,6 +15,32 @@ const T1 = 't1' as TurnId
 const T2 = 't2' as TurnId
 
 describe('agentConversationStore entries (user + assistant interleave)', () => {
+  it('retains a selected skill while a turn is stashed and resumed without a persisted user row', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.recordUser(
+      T1,
+      '[Use the saved skill /portrait](skill://portrait?description=Defaults) render it'
+    )
+    store.startTurn(T1)
+    store.stashActiveTurn()
+    store.hydrate([])
+    store.resumeBackgroundTurn()
+    expect(store.entries[0]).toMatchObject({
+      role: 'user',
+      text: ' render it',
+      skillReference: {
+        name: 'portrait',
+        description: 'Defaults',
+        textOffset: 0
+      }
+    })
+    store.reset()
+    store.recordUser(T1, '/portrait plain text')
+    store.startTurn(T1)
+    expect(store.entries[0]).toMatchObject({ text: '/portrait plain text' })
+    expect(store.entries[0]).not.toHaveProperty('skillReference')
+  })
   it('pairs each recorded user prompt before its assistant turn, in order', () => {
     const store = useAgentConversationStore()
     store.recordUser(T1, 'first prompt')
