@@ -88,6 +88,7 @@ export function useRelight(locale: Locale = 'en') {
   const tray = ref<RelightTray>()
   const comparing = ref(false)
   const lightMap = ref(true)
+  const lightOnly = ref(false)
   const handles = ref(true)
   const selected = ref<string>()
   let lastEdit: string | undefined
@@ -124,6 +125,7 @@ export function useRelight(locale: Locale = 'en') {
     lastEdit = undefined
     selected.value = setup.value.lights[0]?.id
     comparing.value = false
+    lightOnly.value = false
   }
 
   function releaseOwnUrl() {
@@ -347,6 +349,7 @@ export function useRelight(locale: Locale = 'en') {
     tray,
     comparing,
     lightMap,
+    lightOnly,
     handles,
     selected,
     full,

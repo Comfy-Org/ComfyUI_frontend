@@ -11,7 +11,7 @@ const { relight, locale = 'en' } = defineProps<{
   locale?: Locale
 }>()
 
-const { setup, lightMap } = relight
+const { setup, lightOnly, comparing } = relight
 </script>
 
 <template>
@@ -46,7 +46,8 @@ const { setup, lightMap } = relight
     "
   />
   <EditorSwitch
-    v-model="lightMap"
-    :label="lc('relight.view.lightmap', locale)"
+    v-model="lightOnly"
+    :label="lc('relight.view.lightOnly', locale)"
+    :disabled="comparing"
   />
 </template>
