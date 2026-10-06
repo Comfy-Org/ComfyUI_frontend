@@ -204,6 +204,11 @@ test.describe(
 
         const panel = await ensurePropertiesPanel(comfyPage)
 
+        const hideInputButtons = panel.getByTestId(
+          TestIds.subgraphEditor.widgetActionsHideInputButton
+        )
+        await expect(hideInputButtons.first()).toBeVisible()
+
         const moreButtons = panel.getByTestId(
           TestIds.subgraphEditor.widgetActionsMenuButton
         )
@@ -213,13 +218,11 @@ test.describe(
         const menu = comfyPage.page.getByRole('menu')
         await expect(menu).toBeVisible()
         await expect(menu.getByText('Rename')).toBeVisible()
-
-        const hideInput = menu.getByText('Hide input')
-        await expect(hideInput).toBeVisible()
+        await menu.press('Escape')
 
         const widgetCountBeforeHide = await moreButtons.count()
 
-        await hideInput.click()
+        await hideInputButtons.first().click()
 
         await expect
           .poll(() => moreButtons.count())
@@ -237,13 +240,18 @@ test.describe(
         await outer[0].click('title')
 
         const panel = await ensurePropertiesPanel(comfyPage)
+
+        await expect(
+          panel.getByTestId(TestIds.subgraphEditor.widgetActionsHideInputButton)
+        ).toHaveCount(0)
+
         const moreButtons = panel.getByTestId(
           TestIds.subgraphEditor.widgetActionsMenuButton
         )
         await expect(moreButtons.first()).toBeVisible()
         await moreButtons.first().click()
 
-        const menu = comfyPage.page.getByTestId(TestIds.menu.moreMenuContent)
+        const menu = comfyPage.page.getByRole('menu')
         await expect(menu).toBeVisible()
         await expect(menu.getByText('Hide input')).toHaveCount(0)
         await expect(menu.getByText('Show input')).toHaveCount(0)

@@ -157,6 +157,7 @@ export const TestIds = {
     nodeName: 'subgraph-widget-node-name',
     shownSection: 'subgraph-editor-shown-section',
     toggle: 'subgraph-editor-toggle',
+    widgetActionsHideInputButton: 'widget-actions-hide-input-button',
     widgetActionsMenuButton: 'widget-actions-menu-button',
     widgetItem: 'subgraph-widget-item',
     widgetLabel: 'subgraph-widget-label',
