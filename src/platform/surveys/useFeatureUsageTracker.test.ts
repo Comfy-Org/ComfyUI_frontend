@@ -209,4 +209,45 @@ describe('useFeatureUsageTracker', () => {
 
     expect(useCount.value).toBe(5)
   })
+
+  it.for([
+    { storedValue: null },
+    { storedValue: 'invalid' },
+    { storedValue: [1, 2] }
+  ])('replaces non-record storage data $storedValue', ({ storedValue }) => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(storedValue))
+
+    useFeatureUsageTracker('repaired-feature').trackUsage()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored).toEqual({
+      'repaired-feature': {
+        useCount: 1,
+        firstUsed: Date.now(),
+        lastUsed: Date.now()
+      }
+    })
+  })
+
+  it('normalizes numeric storage fields before incrementing', () => {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        'numeric-strings': {
+          useCount: '5',
+          firstUsed: '1000',
+          lastUsed: '2000'
+        }
+      })
+    )
+
+    useFeatureUsageTracker('numeric-strings').trackUsage()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored['numeric-strings']).toEqual({
+      useCount: 6,
+      firstUsed: 1000,
+      lastUsed: Date.now()
+    })
+  })
 })

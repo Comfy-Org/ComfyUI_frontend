@@ -11,6 +11,31 @@ type FeatureUsageRecord = Partial<Record<string, FeatureUsage>>
 
 const STORAGE_KEY = 'Comfy.FeatureUsage'
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function normalizeUsageData(value: unknown): FeatureUsageRecord {
+  if (!isRecord(value)) return {}
+
+  return Object.fromEntries(
+    Object.entries(value).flatMap(([featureId, usage]) => {
+      if (!isRecord(usage)) return []
+
+      const useCount = Number(usage.useCount)
+      const firstUsed = Number(usage.firstUsed)
+      const lastUsed = Number(usage.lastUsed)
+      return [useCount, firstUsed, lastUsed].every(Number.isFinite)
+        ? [[featureId, { useCount, firstUsed, lastUsed }]]
+        : []
+    })
+  )
+}
+
+function parseUsageData(value: string | null): FeatureUsageRecord {
+  return value ? normalizeUsageData(JSON.parse(value)) : {}
+}
+
 function latestUsage(
   storedUsage: FeatureUsage | undefined,
   currentUsage: FeatureUsage | undefined
@@ -43,9 +68,7 @@ function persistUsageData(
 
   try {
     oldValue = localStorage.getItem(STORAGE_KEY)
-    const storedUsageData = oldValue
-      ? (JSON.parse(oldValue) as FeatureUsageRecord)
-      : {}
+    const storedUsageData = parseUsageData(oldValue)
     usageData = {
       ...storedUsageData,
       ...currentUsageData,
@@ -84,7 +107,7 @@ export function useFeatureUsageTracker(featureId: string) {
 
   function trackUsage() {
     const now = Date.now()
-    const currentUsageData = usageData.value
+    const currentUsageData = normalizeUsageData(usageData.value)
     const existing = currentUsageData[featureId]
 
     usageData.value = persistUsageData(featureId, currentUsageData, now) ?? {
