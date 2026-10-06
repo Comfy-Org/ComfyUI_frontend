@@ -6,7 +6,7 @@
 pnpm dlx shadcn-vue@latest add <component-name> --yes
 ```
 
-After adding, create `ComponentName.stories.ts` with a `Default` story, an `argTypes` control for every enum prop, and a story only for a design state that spans more than one prop (`Disabled` is a control, not a story); see `docs/guidance/storybook.md`.
+After adding, create `ComponentName.stories.ts` with a `Default` story, an `argTypes` control for every enum prop, and a story per scenario listed under "One Story Per Scenario" in `docs/guidance/storybook.md` (a state that sets one prop, such as `Disabled`, is a control, not a story).
 
 ## Reka UI Wrapper Components
 
