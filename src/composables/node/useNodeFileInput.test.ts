@@ -136,6 +136,24 @@ describe('useNodeFileInput', () => {
     expect(onSelect).not.toHaveBeenCalled()
   })
 
+  it('reports files rejected by the filter', () => {
+    const fileInput = document.createElement('input')
+    vi.spyOn(document, 'createElement').mockReturnValue(fileInput)
+    const onReject = vi.fn()
+    const file = createFile('extensionless', 'video/mp4')
+
+    useNodeFileInput(createNode(), {
+      onSelect: vi.fn(),
+      fileFilter: () => false,
+      onReject
+    })
+
+    setInputFiles(fileInput, [file])
+    fileInput.onchange?.(new Event('change'))
+
+    expect(onReject).toHaveBeenCalledWith([file])
+  })
+
   it('openFileSelection clicks the generated input', () => {
     const fileInput = document.createElement('input')
     const clickSpy = vi.spyOn(fileInput, 'click')

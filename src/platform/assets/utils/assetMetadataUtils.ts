@@ -183,6 +183,10 @@ function getModelTypeTagValues(asset: AssetItem): string[] {
     .filter((tag) => tag.length > 0)
 }
 
+export function isModelTypeCovered(asset: AssetItem): boolean {
+  return getModelTypeTagValues(asset).length > 0
+}
+
 /**
  * The asset's primary `model_type:` membership: the lexicographically-first of
  * its stripped `model_type:` values, or `undefined` for an uncovered asset.
