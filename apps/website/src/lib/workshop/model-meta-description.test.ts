@@ -33,7 +33,7 @@ describe('modelMetaDescription', () => {
         priceEstimate: '2.11 credits/Run'
       },
       expected:
-        'SeedVR2 Image Upscaler by WaveSpeed: Upscales an image to 2K/4K/8K. Run it in your browser or call it via API. Typical cost: 2.11 credits per run.'
+        'SeedVR2 Image Upscaler by WaveSpeed: Upscales an image to 2K/4K/8K. Call it through the Comfy Router API. Typical cost: 2.11 credits per run.'
     },
     {
       name: 'names the company even when the name carries its brand',
@@ -45,12 +45,12 @@ describe('modelMetaDescription', () => {
         }
       },
       expected:
-        'FLUX 2 Max Text-to-Image by Black Forest Labs: Generates an image from text. Run it in your browser or call it via API.'
+        'FLUX 2 Max Text-to-Image by Black Forest Labs: Generates an image from text. Call it through the Comfy Router API.'
     },
     {
       name: 'does not repeat a provider the name already contains',
       page: { model: { name: 'Kling Omni', provider: 'Kling' } },
-      expected: 'Kling Omni. Run it in your browser or call it via API.'
+      expected: 'Kling Omni. Call it through the Comfy Router API.'
     },
     {
       name: 'names a provider with no Latin letters',
@@ -58,12 +58,12 @@ describe('modelMetaDescription', () => {
         model: { name: 'Seed 3', provider: '字节跳动', summary: 'Draws.' }
       },
       expected:
-        'Seed 3 by 字节跳动: Draws. Run it in your browser or call it via API.'
+        'Seed 3 by 字节跳动: Draws. Call it through the Comfy Router API.'
     },
     {
       name: 'treats a blank summary as missing',
       page: { model: { name: 'Kling Omni', provider: 'Kling', summary: '  ' } },
-      expected: 'Kling Omni. Run it in your browser or call it via API.'
+      expected: 'Kling Omni. Call it through the Comfy Router API.'
     },
     {
       name: 'omits the provider and price when neither is known',
@@ -71,13 +71,13 @@ describe('modelMetaDescription', () => {
         model: { name: 'Remove an object', summary: 'Erase what you mark.' }
       },
       expected:
-        'Remove an object: Erase what you mark. Run it in your browser or call it via API.'
+        'Remove an object: Erase what you mark. Call it through the Comfy Router API.'
     },
     {
       name: 'ends an unpunctuated summary with a period',
       page: { model: { name: 'Remove an object', summary: 'Erase it' } },
       expected:
-        'Remove an object: Erase it. Run it in your browser or call it via API.'
+        'Remove an object: Erase it. Call it through the Comfy Router API.'
     },
     {
       name: 'strips markdown code spans from the summary',
@@ -89,7 +89,7 @@ describe('modelMetaDescription', () => {
         }
       },
       expected:
-        'Meshy Texture: Pass meshy_task_id plus image_style. Run it in your browser or call it via API.'
+        'Meshy Texture: Pass meshy_task_id plus image_style. Call it through the Comfy Router API.'
     },
     {
       name: 'leaves the unit out when the price label has none',
@@ -98,7 +98,7 @@ describe('modelMetaDescription', () => {
         priceEstimate: '12 credits'
       },
       expected:
-        'Recraft V4: Draws. Run it in your browser or call it via API. Typical cost: 12 credits.'
+        'Recraft V4: Draws. Call it through the Comfy Router API. Typical cost: 12 credits.'
     },
     {
       name: 'omits a price range',
@@ -106,7 +106,7 @@ describe('modelMetaDescription', () => {
         model: { name: 'Recraft V4', provider: 'Recraft', summary: 'Draws.' },
         priceEstimate: '~21.1-65.4 credits/Run'
       },
-      expected: 'Recraft V4: Draws. Run it in your browser or call it via API.'
+      expected: 'Recraft V4: Draws. Call it through the Comfy Router API.'
     },
     {
       name: 'writes the Chinese price without English words',
@@ -116,7 +116,7 @@ describe('modelMetaDescription', () => {
         priceEstimate: '~9.5 credits/Image'
       },
       expected:
-        'Recraft V4：绘图。在浏览器中运行，或通过 API 调用。默认设置下约 ~9.5 积分。'
+        'Recraft V4：绘图。可通过 Comfy Router API 调用。默认设置下约 ~9.5 积分。'
     }
   ])('$name', ({ page, expected, locale }) => {
     expect(modelMetaDescription(page, locale)).toBe(expected)
@@ -126,7 +126,7 @@ describe('modelMetaDescription', () => {
     [
       'shortens the call to action',
       13,
-      /lorem\. Run it in your browser or via API\. Typical cost/
+      /lorem\. Call it via API\. Typical cost/
     ],
     [
       'drops the call to action',
@@ -177,6 +177,18 @@ describe('modelMetaDescription', () => {
       singleFigurePages.length * PRICED_SHARE
     )
   })
+
+  it.for(['en', 'zh-CN'] as const)(
+    'never promises browser runs in the %s descriptions',
+    async (locale) => {
+      const pages = await canonicalPages()
+      for (const page of pages) {
+        expect(modelMetaDescription(page, locale)).not.toMatch(
+          /browser|浏览器/i
+        )
+      }
+    }
+  )
 
   it('keeps most model pages on a description body of their own', async () => {
     const pages = await canonicalPages()
