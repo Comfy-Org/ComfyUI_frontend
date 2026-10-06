@@ -81,7 +81,8 @@ const {
   answeringAskIds = new Set<string>(),
   freeUsePlacement = 'control',
   starterPromptAssignment = 'control',
-  onStarterPromptRendered = () => undefined
+  onStarterPromptRendered = () => undefined,
+  onStarterPromptUnmounted = () => undefined
 } = defineProps<{
   entries: ConversationEntry[]
   userName?: string
@@ -124,6 +125,7 @@ const {
   freeUsePlacement?: FreeUseVariant
   starterPromptAssignment?: StarterPromptAssignment
   onStarterPromptRendered?: () => void
+  onStarterPromptUnmounted?: () => void
 }>()
 const emit = defineEmits<{
   send: [
@@ -455,6 +457,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           :user-name
           :assignment="starterPromptAssignment"
           :on-rendered="onStarterPromptRendered"
+          :on-unmounted="onStarterPromptUnmounted"
           @insert="
             (text, prompt) => {
               composerRef?.insert(text, prompt)
