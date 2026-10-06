@@ -140,9 +140,6 @@ function createWrapper({
             '<div data-testid="context-menu" :data-model="JSON.stringify(model)" />'
         },
         ...stubs
-      },
-      directives: {
-        tooltip: () => {}
       }
     }
   }

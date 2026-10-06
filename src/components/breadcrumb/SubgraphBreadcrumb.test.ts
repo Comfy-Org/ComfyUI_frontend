@@ -30,7 +30,6 @@ function renderBreadcrumb() {
         i18n,
         createRouter({ history: createMemoryHistory(), routes: [] })
       ],
-      directives: { tooltip: {} },
       stubs: {
         WorkflowActionsDropdown: { template: '<div data-testid="wad" />' },
         Breadcrumb: true,

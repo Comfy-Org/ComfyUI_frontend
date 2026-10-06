@@ -505,8 +505,7 @@ describe('useComfyManagerStore', () => {
       registry
     )
     const global = {
-      plugins: [createI18n({ legacy: false, locale: 'en', messages: { en } })],
-      directives: { tooltip: {} }
+      plugins: [createI18n({ legacy: false, locale: 'en', messages: { en } })]
     }
     render(PackUpdateButton, {
       props: { nodePacks: [{ id: 'pack-a' }, { id: 'pack-b' }] },

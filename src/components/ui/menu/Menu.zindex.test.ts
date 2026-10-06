@@ -19,7 +19,7 @@ function renderMenu(items: MenuItem[] = [{ label: 'Item A' }]) {
   return render(Menu, {
     props: { items },
     slots: { trigger: '<button>Open</button>' },
-    global: { plugins: [i18n], directives: { tooltip: {} } }
+    global: { plugins: [i18n] }
   })
 }
 

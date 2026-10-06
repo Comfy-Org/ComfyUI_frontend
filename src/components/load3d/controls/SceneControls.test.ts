@@ -82,8 +82,7 @@ function renderComponent(opts: RenderOpts = {}) {
       onUpdateBackgroundImage: opts.onUpdateBackgroundImage
     },
     global: {
-      plugins: [i18n],
-      directives: { tooltip: () => {} }
+      plugins: [i18n]
     }
   })
 

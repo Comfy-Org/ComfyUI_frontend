@@ -33,7 +33,6 @@ function mount(freeUsePlacement: FreeUseVariant) {
     },
     global: {
       plugins: [i18n],
-      directives: { tooltip: {} },
       stubs: { WorkflowSelectorChip: true }
     }
   })

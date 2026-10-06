@@ -115,7 +115,6 @@ function renderGrid(processedWidgets: WidgetGridItem[], syncLayout = true) {
           messages: { en: { g: { inputTooltip: 'Input: {name}' } } }
         })
       ],
-      directives: { tooltip: {} },
       stubs: { AppInput: AppInputStub }
     }
   })
@@ -301,7 +300,6 @@ describe('WidgetGrid', () => {
       render(Host, {
         global: {
           plugins: [testI18n],
-          directives: { tooltip: {} },
           stubs: { AppInput: AppInputStub, InputSlot: InputSlotStub }
         }
       })

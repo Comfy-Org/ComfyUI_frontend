@@ -32,8 +32,7 @@ async function openMenu({ vueNodesEnabled = false } = {}) {
 
   render(ComfyMenuButton, {
     global: {
-      plugins: [i18n],
-      directives: { tooltip: () => {} }
+      plugins: [i18n]
     }
   })
 

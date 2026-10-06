@@ -304,7 +304,6 @@ function renderDialog() {
   return render(WorkflowTemplateSelectorDialog, {
     props: { onClose: mocks.onClose },
     global: {
-      directives: { tooltip: {} },
       plugins: [i18n],
       stubs: {
         LeftSidePanel: {

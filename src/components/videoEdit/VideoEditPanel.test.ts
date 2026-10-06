@@ -80,7 +80,6 @@ function renderPanel(props: Partial<PanelProps> = {}) {
     } as PanelProps,
     global: {
       plugins: [i18n],
-      directives: { tooltip: {} },
       stubs: {
         VideoFilmstripTrim: stub('stub-filmstrip'),
         VideoCropOverlay: stub('stub-crop-overlay'),

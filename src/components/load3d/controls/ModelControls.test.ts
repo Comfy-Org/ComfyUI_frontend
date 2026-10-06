@@ -62,8 +62,7 @@ function renderComponent(opts: RenderOpts = {}) {
       hasSkeleton: opts.hasSkeleton ?? false
     },
     global: {
-      plugins: [i18n],
-      directives: { tooltip: () => {} }
+      plugins: [i18n]
     }
   })
 

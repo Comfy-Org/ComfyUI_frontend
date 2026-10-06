@@ -239,7 +239,6 @@ function renderComponent({ stubFooter = true } = {}) {
   return render(SubscriptionPanelContentWorkspace, {
     global: {
       plugins: [getActivePinia()!, i18n],
-      directives: { tooltip: {} },
       stubs: {
         CreditsTile: CreditsTileStub,
         ...(stubFooter

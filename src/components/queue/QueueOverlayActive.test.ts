@@ -27,11 +27,6 @@ const i18n = createI18n({
   }
 })
 
-const tooltipDirectiveStub = {
-  mounted: vi.fn(),
-  updated: vi.fn()
-}
-
 const defaultProps = {
   totalProgressStyle: { transform: 'scaleX(0.65)' },
   currentNodeProgressStyle: { transform: 'scaleX(0.4)' },
@@ -47,10 +42,7 @@ const renderComponent = (props: Record<string, unknown> = {}) =>
   render(QueueOverlayActive, {
     props: { ...defaultProps, ...props },
     global: {
-      plugins: [i18n],
-      directives: {
-        tooltip: tooltipDirectiveStub
-      }
+      plugins: [i18n]
     }
   })
 

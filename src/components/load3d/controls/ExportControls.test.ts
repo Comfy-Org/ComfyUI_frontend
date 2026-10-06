@@ -20,8 +20,7 @@ function renderComponent(
   const utils = render(ExportControls, {
     props: { onExportModel, sourceFormat },
     global: {
-      plugins: [i18n],
-      directives: { tooltip: () => {} }
+      plugins: [i18n]
     }
   })
   return { ...utils, user: userEvent.setup() }

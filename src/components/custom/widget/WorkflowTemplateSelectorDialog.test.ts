@@ -43,7 +43,6 @@ function renderPicker() {
     {
       global: {
         plugins: [pinia, i18n],
-        directives: { tooltip: {} },
         stubs: { ProgressSpinner: true }
       }
     }

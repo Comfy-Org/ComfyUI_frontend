@@ -25,7 +25,7 @@ type Props = {
 function renderControl(props: Props = {}) {
   const result = render(RecordMenuControl, {
     props,
-    global: { plugins: [i18n], directives: { tooltip: () => {} } }
+    global: { plugins: [i18n] }
   })
   return { ...result, user: userEvent.setup() }
 }

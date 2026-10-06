@@ -53,7 +53,6 @@ function renderPanel() {
 
   return render(KeybindingPanel, {
     global: {
-      directives: { tooltip: () => {} },
       plugins: [testI18n],
       stubs: {
         Menu: true,

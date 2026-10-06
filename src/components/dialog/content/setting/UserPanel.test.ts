@@ -56,7 +56,7 @@ async function renderPanel() {
   })
   await router.push('/?tab=assets')
   render(UserPanel, {
-    global: { plugins: [i18n, router], directives: { tooltip: {} } }
+    global: { plugins: [i18n, router] }
   })
 }
 

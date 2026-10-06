@@ -27,7 +27,7 @@ function renderGroup(
 ) {
   const result = render(ModelMenuGroup, {
     props: { config: makeConfig(), ...props },
-    global: { plugins: [i18n], directives: { tooltip: () => {} } }
+    global: { plugins: [i18n] }
   })
   return { ...result, user: userEvent.setup() }
 }

@@ -96,8 +96,7 @@ function renderCard(
       plugins: [i18n],
       stubs: {
         MediaTitle: true
-      },
-      directives: { tooltip: {} }
+      }
     }
   })
 }

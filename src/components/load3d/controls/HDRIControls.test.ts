@@ -54,8 +54,7 @@ function renderComponent(opts: RenderOpts = {}) {
       onUpdateHdriFile: opts.onUpdateHdriFile
     },
     global: {
-      plugins: [i18n],
-      directives: { tooltip: () => {} }
+      plugins: [i18n]
     }
   })
 
