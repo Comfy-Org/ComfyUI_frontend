@@ -91,6 +91,18 @@ describe('the SSO-required screen', () => {
     expect((await shownDialog())?.contentProps).toEqual(context)
   })
 
+  it('drops an earlier organization when a later refusal names none', async () => {
+    vi.mocked(useFeatureFlags().flags).ssoEnabled = true
+    presentForRefusal(403, { ...SSO_REFUSAL, organization_id: 'org_meta' })
+    expect((await shownDialog())?.contentProps).toEqual({
+      organizationId: 'org_meta'
+    })
+
+    presentForRefusal(403, SSO_REFUSAL)
+
+    expect((await shownDialog())?.contentProps.organizationId).toBeUndefined()
+  })
+
   it('stays hidden with the flag off even when the refusal names an organization', async () => {
     const body = { ...SSO_REFUSAL, organization_id: 'org_meta' }
 

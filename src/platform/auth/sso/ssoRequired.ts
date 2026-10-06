@@ -25,12 +25,18 @@ export interface SsoRequiredContext {
  * Shows the one SSO-required screen. False while `sso_enabled` is off, so the
  * caller keeps the handling it has today. Several refusals can land at once;
  * a later caller only adds what it knows, so a request seam without context
- * never erases the email the sign-in page passed.
+ * never erases the email the sign-in page passed. A refusal always answers the
+ * organization, so one that names none clears an earlier one.
  */
 export function presentSsoRequired(context: SsoRequiredContext = {}): boolean {
   if (!useFeatureFlags().flags.ssoEnabled) return false
   const dialogStore = useDialogStore()
-  const known = omitBy(context, (value) => value === undefined)
+  const known = {
+    ...omitBy(context, (value) => value === undefined),
+    ...('organizationId' in context && {
+      organizationId: context.organizationId
+    })
+  }
   void import('@/platform/auth/sso/SsoRequiredDialogContent.vue')
     .then(({ default: component }) => {
       if (dialogStore.isDialogOpen(SSO_REQUIRED_DIALOG_KEY)) {
