@@ -532,7 +532,7 @@ test.describe('Footer @smoke', () => {
     }
   })
 
-  test('lays the link columns and the social buttons out in one row each on desktop', async ({
+  test('lays the five link columns and the social buttons out in one row each on desktop, with Contact below', async ({
     page
   }) => {
     await page.setViewportSize({ width: 1440, height: 900 })
@@ -545,9 +545,12 @@ test.describe('Footer @smoke', () => {
           Math.round(element.getBoundingClientRect().top)
         )
       )
-    const headings = await tops(footer.getByRole('heading', { level: 3 }))
-    expect(headings).toHaveLength(5)
-    expect(new Set(headings).size).toBe(1)
+    const [contact, ...columns] = (
+      await tops(footer.getByRole('heading', { level: 3 }))
+    ).reverse()
+    expect(columns).toHaveLength(5)
+    expect(new Set(columns).size).toBe(1)
+    expect(contact).toBeGreaterThan(columns[0])
     const social = await tops(
       footer.getByRole('navigation', { name: 'Follow Comfy' }).getByRole('link')
     )
