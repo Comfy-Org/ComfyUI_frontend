@@ -26,12 +26,17 @@ const taskInputKey: Record<TaskInput, TranslationKey> = {
   audio: 'workshop.task.audio'
 }
 
+export function knownTaskParts({ task }: Pick<WorkshopModel, 'task'>) {
+  const parts = task ? splitTask(task) : undefined
+  return parts && parts.output !== 'other' ? parts : undefined
+}
+
 // "Image to Video" where the schema says what goes in and what comes out, and
 // the plain modality where it only says what comes out.
 export function taskLabelFor(model: WorkshopModel, locale: Locale): string {
   const { t } = translationsFor(locale)
-  const task = model.task ? splitTask(model.task) : undefined
-  return task && task.output !== 'other'
+  const task = knownTaskParts(model)
+  return task
     ? t('workshop.task.label', {
         input: t(taskInputKey[task.input]),
         output: t(modalityLabelKey[task.output])

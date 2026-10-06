@@ -1,8 +1,8 @@
 import type { RouterWorkshopModel } from '@/config/models-catalogue'
-import { splitTask } from '@/config/models-catalogue'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
-import { taskLabelFor } from './task-label'
+import { nameCarriesProvider } from './model-meta-description'
+import { knownTaskParts, taskLabelFor } from './task-label'
 
 interface ModelFact {
   term: string
@@ -26,16 +26,45 @@ function taskInName(name: string) {
   return { input: input.toLowerCase(), output: NAMED_OUTPUT[named] ?? named }
 }
 
-function knownTask({ name, task }: RouterWorkshopModel) {
-  const parts = task ? splitTask(task) : undefined
-  if (!parts || parts.output === 'other') return undefined
-  const named = taskInName(name)
-  if (!named) return task
+function taskAgreeingWithName(model: RouterWorkshopModel) {
+  const parts = knownTaskParts(model)
+  if (!parts) return undefined
+  const task = `${parts.input}-to-${parts.output}`
+  const named = taskInName(model.name)
+  if (!named) return { task, inName: false }
   const inputAgrees =
     named.input === 'reference'
       ? parts.input !== 'text'
       : named.input === parts.input
-  return inputAgrees && named.output === parts.output ? task : undefined
+  return inputAgrees && named.output === parts.output
+    ? { task, inName: true }
+    : undefined
+}
+
+function whatItIs(model: RouterWorkshopModel, locale: Locale) {
+  const { t } = translationsFor(locale)
+  const known = taskAgreeingWithName(model)
+  if (!known) return undefined
+  const { name, provider } = model
+  const newProvider =
+    provider && !nameCarriesProvider(name, provider) ? provider : undefined
+  if (known.inName)
+    return newProvider
+      ? t('workshop.model.definition.madeBy', { name, provider: newProvider })
+      : undefined
+  const kind = t(
+    /^[aeiou]/i.test(known.task)
+      ? 'workshop.model.definition.kindAn'
+      : 'workshop.model.definition.kindA',
+    { task: known.task, label: taskLabelFor(model, locale) }
+  )
+  return newProvider
+    ? t('workshop.model.definition.whatFrom', {
+        name,
+        kind,
+        provider: newProvider
+      })
+    : t('workshop.model.definition.what', { name, kind })
 }
 
 export function modelDefinition(
@@ -43,31 +72,17 @@ export function modelDefinition(
   locale: Locale = 'en'
 ): string {
   const { t } = translationsFor(locale)
-  const task = knownTask(model)
-  const kind = task
-    ? t(
-        /^[aeiou]/i.test(task)
-          ? 'workshop.model.definition.kindAn'
-          : 'workshop.model.definition.kindA',
-        { task, label: taskLabelFor(model, locale) }
-      )
-    : t('workshop.model.definition.kind')
-  const what = model.provider
-    ? t('workshop.model.definition.whatFrom', {
-        name: model.name,
-        kind,
-        provider: model.provider
-      })
-    : t('workshop.model.definition.what', { name: model.name, kind })
   const router = t('workshop.model.definition.router', {
     routerId: model.routerId
   })
-  return t('workshop.model.definition.sentence', { what, router })
+  const what = whatItIs(model, locale)
+  return what
+    ? t('workshop.model.definition.sentence', { what, router })
+    : router
 }
 
 export function modelFacts(
   model: RouterWorkshopModel,
-  priceEstimate: string | undefined,
   locale: Locale = 'en'
 ): ModelFact[] {
   const { t } = translationsFor(locale)
@@ -78,14 +93,13 @@ export function modelFacts(
     },
     {
       term: t('workshop.model.facts.task'),
-      value: knownTask(model) ? taskLabelFor(model, locale) : ''
+      value: taskAgreeingWithName(model) ? taskLabelFor(model, locale) : ''
     },
     {
       term: t('workshop.model.facts.routerId'),
       value: model.routerId,
       mono: true
-    },
-    { term: t('workshop.model.facts.price'), value: priceEstimate ?? '' }
+    }
   ]
   return facts.filter((fact) => fact.value !== '')
 }

@@ -7,7 +7,7 @@ const META_DESCRIPTION_TARGET = 160
 const META_DESCRIPTION_MAX = 170
 const SINGLE_CREDIT_FIGURE = /^(~?\d+(?:\.\d+)?) credits$/
 
-function nameCarriesProvider(name: string, provider: string) {
+export function nameCarriesProvider(name: string, provider: string) {
   const providerWords = words(provider)
   if (providerWords.length === 0) return name.includes(provider)
   const nameWords = new Set(words(name))

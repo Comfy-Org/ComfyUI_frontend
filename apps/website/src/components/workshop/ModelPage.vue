@@ -46,7 +46,7 @@ const model = computed(() =>
 )
 const modelUseCase = computed(() => useCaseFor(page.model))
 const definition = computed(() => modelDefinition(page.model))
-const facts = computed(() => modelFacts(page.model, page.priceEstimate))
+const facts = computed(() => modelFacts(page.model))
 const pillClass =
   'inline-flex h-7 items-center rounded-full border border-transparency-white-t20 px-3 text-xs leading-none text-primary-comfy-canvas transition-colors hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow'
 const restTags = computed(() =>
@@ -102,7 +102,7 @@ const restTags = computed(() =>
             {{ page.model.summary }}
           </p>
           <dl
-            class="m-0 grid grid-cols-[8rem_minmax(0,1fr)] gap-x-3 gap-y-1 text-sm/relaxed"
+            class="m-0 grid grid-cols-[8rem_minmax(0,1fr)] items-baseline gap-x-3 gap-y-1 text-sm/relaxed"
             data-testid="model-facts"
           >
             <template v-for="fact in facts" :key="fact.term">

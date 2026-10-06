@@ -98,19 +98,18 @@
         "titleApi": "{name} API - Comfy"
       },
       "definition": {
-        "kind": "a model",
         "kindA": "a {task} model",
         "kindAn": "an {task} model",
         "what": "{name} is {kind}.",
         "whatFrom": "{name} is {kind} from {provider}.",
+        "madeBy": "{name} is made by {provider}.",
         "router": "You can call it through the Comfy Router API as {routerId}.",
         "sentence": "{what} {router}"
       },
       "facts": {
         "provider": "Provider",
         "task": "Task",
-        "routerId": "Router model ID",
-        "price": "Estimated price"
+        "routerId": "Router model ID"
       },
       "tabs": {
         "playground": "Playground",
