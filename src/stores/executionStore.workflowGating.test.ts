@@ -917,7 +917,10 @@ describe('executionStore workflow gating', () => {
       useWorkflowStore().activeWorkflow = workflowA
       queueJobFrom('job-a', workflowA)
 
-      for (const [i, step] of [3, 5, 7, 9].entries()) {
+      // Unrolled on purpose: each cycle depends on the state the previous one
+      // left, and the first arrival in B was clean while later ones were not,
+      // so the cycle number is part of what is being asserted.
+      const cycle = async (step: number) => {
         fire('progress_state', {
           prompt_id: 'job-a',
           workflow_id: WORKFLOW_A_ID,
@@ -925,15 +928,27 @@ describe('executionStore workflow gating', () => {
         })
         useWorkflowStore().activeWorkflow = workflowB
         await nextTick()
-        expect(
-          store.nodeProgressStates['1'],
-          `switch ${i + 1} to B must not inherit A`
-        ).toBeUndefined()
-
+        const inB = store.nodeProgressStates['1']
         useWorkflowStore().activeWorkflow = workflowA
         await nextTick()
-        expect(store.nodeProgressStates['1']?.value).toBe(step)
+        return { inB, inA: store.nodeProgressStates['1']?.value }
       }
+
+      const first = await cycle(3)
+      expect(first.inB, 'first arrival in B').toBeUndefined()
+      expect(first.inA).toBe(3)
+
+      const second = await cycle(5)
+      expect(second.inB, 'second arrival in B').toBeUndefined()
+      expect(second.inA).toBe(5)
+
+      const third = await cycle(7)
+      expect(third.inB, 'third arrival in B').toBeUndefined()
+      expect(third.inA).toBe(7)
+
+      const fourth = await cycle(9)
+      expect(fourth.inB, 'fourth arrival in B').toBeUndefined()
+      expect(fourth.inA).toBe(9)
     })
 
     it('stays clean while the active workflow is queued behind the running one', async () => {

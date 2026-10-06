@@ -183,10 +183,9 @@ test.describe('cross-tab execution leak', { tag: '@ui' }, () => {
     // Both workflows own a KSampler numbered 3, which is what makes this
     // reachable: node progress is keyed by a locator resolved against the
     // graph that happens to be in front, so A's entry lands on B's node.
-    expect(await canvasNodeRender(comfyPage, KSAMPLER_NODE)).toEqual({
-      progress: 0.25,
-      outlined: true
-    })
+    await expect
+      .poll(() => canvasNodeRender(comfyPage, KSAMPLER_NODE))
+      .toEqual({ progress: 0.25, outlined: true })
 
     await comfyPage.workflow.openPersistedWorkflow(WORKFLOW_B)
     await comfyPage.nextFrame()
@@ -209,10 +208,9 @@ test.describe('cross-tab execution leak', { tag: '@ui' }, () => {
 
     // Returning to A shows where its run actually got to, not where it was
     // when the user left.
-    expect(await canvasNodeRender(comfyPage, KSAMPLER_NODE)).toEqual({
-      progress: 0.75,
-      outlined: true
-    })
+    await expect
+      .poll(() => canvasNodeRender(comfyPage, KSAMPLER_NODE))
+      .toEqual({ progress: 0.75, outlined: true })
   })
 
   test('stays clean across repeated switches during one run', async ({
@@ -238,10 +236,9 @@ test.describe('cross-tab execution leak', { tag: '@ui' }, () => {
       await comfyPage.nextFrame()
       simulator.play([...running.nodeRunning(KSAMPLER_NODE, step, 10)])
       await comfyPage.nextFrame()
-      expect(await canvasNodeRender(comfyPage, KSAMPLER_NODE)).toEqual({
-        progress: step / 10,
-        outlined: true
-      })
+      await expect
+        .poll(() => canvasNodeRender(comfyPage, KSAMPLER_NODE))
+        .toEqual({ progress: step / 10, outlined: true })
 
       await comfyPage.workflow.switchToTab(WORKFLOW_B)
       await comfyPage.nextFrame()

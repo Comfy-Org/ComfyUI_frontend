@@ -716,23 +716,6 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   /**
-   * Determines whether a WebSocket execution message belongs to the
-   * currently active workflow tab. Used to gate writes to the global
-   * "current execution" mirror so a job initiated from another open
-   * workflow cannot leak its progress into the active one.
-   *
-   * Resolution order:
-   *  1. `workflow_id` carried on the WS message (when backend supports it).
-   *  2. {@link jobIdToWorkflowId} mapping populated when the job was queued
-   *     from this tab.
-   *  3. {@link jobIdToSessionWorkflowPath} mapping (path-based fallback).
-   *
-   * When the workflow cannot be resolved at all (e.g. job queued in a
-   * different browser session), the message is treated as belonging to
-   * the active workflow to preserve current behaviour for the existing
-   * single-tab common case.
-   */
-  /**
    * Graph id of the active workflow, or null when it has none.
    *
    * `LoadedComfyWorkflow` types both states as present, but the running store
@@ -748,6 +731,19 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   /**
+   * Determines whether a WebSocket execution message belongs to the currently
+   * active workflow tab, so a job started in another open workflow cannot leak
+   * its progress into the one on screen.
+   *
+   * Resolution order, strongest first:
+   *  1. {@link jobIdToWorkflowInstanceId}, the id of the open tab that queued it.
+   *  2. {@link jobIdToSessionWorkflowPath}, unique per open workflow.
+   *  3. the graph id, from the message or {@link jobIdToWorkflowId}.
+   *
+   * When ownership cannot be resolved at all, for instance a job queued in a
+   * different browser session, the message is treated as belonging to the
+   * active workflow, which preserves single-tab behaviour.
+   *
    * A workflow id names a workflow, not an open tab, and several open tabs can
    * carry the same one: `ensureWorkflowId` keeps whatever id the json already
    * has, so copying a workflow into a new tab duplicates it, and loading one
@@ -1064,6 +1060,18 @@ export const useExecutionStore = defineStore('execution', () => {
       nodeProgressStatesByJob.value = map
     }
 
+    // Before the queuedJobs entry goes: clearTextPreviewsForJob reads the job's
+    // node list out of it and returns early if it is already gone, so clearing
+    // after the delete removed nothing and left the progress_text widget on the
+    // node, which is the thing this eviction path exists to fix.
+    clearTextPreviewsForJob(jobId)
+
+    // A dropped terminal frame left the workflow marked running forever, since
+    // handleExecutionStart set that and nothing else resets it.
+    const evictedWorkflow = jobIdToWorkflow.get(jobId)
+    if (evictedWorkflow) clearWorkflowStatus(evictedWorkflow)
+    jobIdToWorkflow.delete(jobId)
+
     if (jobId in queuedJobs.value) {
       const next = { ...queuedJobs.value }
       delete next[jobId]
@@ -1072,7 +1080,6 @@ export const useExecutionStore = defineStore('execution', () => {
 
     useJobPreviewStore().clearPreview(jobId)
     clearInitializationByJobId(jobId)
-    clearTextPreviewsForJob(jobId)
 
     const isActive = activeJobId.value === jobId
     // Only clear the shared mirror when it still belongs to the evicted job,
@@ -1106,18 +1113,19 @@ export const useExecutionStore = defineStore('execution', () => {
     const activeWorkflow = workflowStore.activeWorkflow
     if (!activeWorkflow) return
 
-    const activeId = activeWorkflowGraphId()
-    const activePath = activeWorkflow.path
-
+    // Ownership has exactly one definition, and it is not the graph id: several
+    // open tabs can carry the same one. Matching here on the graph id is the bug
+    // this feature already shipped once, so defer to the same resolver the
+    // handlers use, and require ownership to be resolvable rather than adopting
+    // a job we cannot place.
     const jobIds = Object.keys(nodeProgressStatesByJob.value)
     let matchedJobId: JobId | null = null
     for (let i = jobIds.length - 1; i >= 0; i--) {
       const jobId = jobIds[i]
-      const idMatch =
-        activeId !== null && jobIdToWorkflowId.value.get(jobId) === activeId
-      const pathMatch =
-        jobIdToSessionWorkflowPath.value.get(jobId) === activePath
-      if (idMatch || pathMatch) {
+      if (
+        canResolveWorkflowOwnership(jobId, undefined) &&
+        messageMatchesActiveWorkflow(jobId, undefined)
+      ) {
         matchedJobId = jobId
         break
       }

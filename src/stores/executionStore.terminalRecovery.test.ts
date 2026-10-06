@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { NodeProgressState } from '@/platform/remote/comfyui/execution/types'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
 
 /**
@@ -16,9 +17,12 @@ import { useExecutionStore } from '@/stores/executionStore'
  * reports the job in history while the frontend still holds progress for it.
  */
 
-const { mockShowTextPreview } = await vi.hoisted(async () => ({
-  mockShowTextPreview: vi.fn()
-}))
+const { mockShowTextPreview, mockRemoveTextPreview } = await vi.hoisted(
+  async () => ({
+    mockShowTextPreview: vi.fn(),
+    mockRemoveTextPreview: vi.fn()
+  })
+)
 
 vi.mock(import('@/composables/useAppMode'))
 vi.mock(import('@/platform/telemetry'))
@@ -27,7 +31,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 vi.mock<unknown>(import('@/composables/node/useNodeProgressText'), () => ({
   useNodeProgressText: () => ({
     showTextPreview: mockShowTextPreview,
-    removeTextPreview: vi.fn()
+    removeTextPreview: mockRemoveTextPreview
   })
 }))
 
@@ -43,7 +47,8 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
       apiEventHandlers.delete(event)
     }),
     clientId: 'test-client',
-    apiURL: vi.fn((path: string) => `/api${path}`)
+    apiURL: vi.fn((path: string) => `/api${path}`),
+    lastExecutingMessage: null
   }
 }))
 
@@ -72,6 +77,21 @@ function workflow(id: string, path: string): LoadedComfyWorkflow {
 
 const workflowA = workflow(WORKFLOW_A_ID, 'workflows/a.json')
 const workflowB = workflow(WORKFLOW_B_ID, 'workflows/b.json')
+
+/**
+ * `executing` is dispatched with a bare node id for extension compatibility, so
+ * the store reads the ids off the raw message api recorded. Mirror that rather
+ * than passing an object as the detail, which would pass for the wrong reason.
+ */
+function fireExecuting(
+  node: string | null,
+  ids: { prompt_id: string; workflow_id?: string }
+) {
+  api.lastExecutingMessage = { node, ...ids }
+  const handler = apiEventHandlers.get('executing')
+  if (!handler) throw new Error('executing handler not bound')
+  handler(new CustomEvent('executing', { detail: node }))
+}
 
 function fire(event: string, detail: Record<string, unknown>) {
   const handler = apiEventHandlers.get(event)
@@ -116,12 +136,7 @@ describe('executionStore terminal-job recovery', () => {
       workflow_id: WORKFLOW_A_ID,
       timestamp: 1
     })
-    fire('executing', {
-      prompt_id: jobId,
-      workflow_id: WORKFLOW_A_ID,
-      node: '1',
-      display_node: '1'
-    })
+    fireExecuting('1', { prompt_id: jobId, workflow_id: WORKFLOW_A_ID })
     fire('progress_state', {
       prompt_id: jobId,
       workflow_id: WORKFLOW_A_ID,
@@ -228,5 +243,56 @@ describe('executionStore terminal-job recovery', () => {
     store.reconcileTerminalJobs(new Set(), new Set([jobId]))
 
     expect(store.nodeProgressStates['1']).toBeUndefined()
+  })
+  /** As above, but queued through storeJob, which is what associates the job
+   * with its workflow. The status and text-preview paths both read that. */
+  function stuckQueuedJob(jobId = 'job-queued') {
+    store.registerJobWorkflowIdMapping(jobId, WORKFLOW_A_ID)
+    store.storeJob({
+      nodes: ['1'],
+      id: jobId,
+      promptOutput: { '1': { inputs: {}, class_type: 'TestNode' } },
+      workflow: workflowA,
+      mode: 'graph'
+    })
+    fire('execution_start', {
+      prompt_id: jobId,
+      workflow_id: WORKFLOW_A_ID,
+      timestamp: 1
+    })
+    fire('progress_state', {
+      prompt_id: jobId,
+      workflow_id: WORKFLOW_A_ID,
+      nodes: { '1': runningNode(jobId, '1') }
+    })
+    return jobId
+  }
+
+  it('releases the workflow status when a terminal frame was dropped', () => {
+    const jobId = stuckQueuedJob()
+    expect(store.getWorkflowStatus(workflowA)).toBe('running')
+
+    store.reconcileTerminalJobs(new Set(), new Set([jobId]))
+
+    // handleExecutionStart set this and nothing else resets it, so without the
+    // release the tab keeps claiming it is running for the rest of the session.
+    expect(store.getWorkflowStatus(workflowA)).toBeUndefined()
+  })
+
+  it('removes the text preview before the job record it reads is deleted', async () => {
+    mockRemoveTextPreview.mockClear()
+    vi.mocked(useWorkflowStore().executionIdToCurrentId).mockReturnValue('1')
+    const { useCanvasStore } =
+      await import('@/renderer/core/canvas/canvasStore')
+    useCanvasStore().canvas = fromPartial({
+      graph: { getNodeById: () => fromPartial({}) }
+    })
+    const jobId = stuckQueuedJob()
+
+    store.reconcileTerminalJobs(new Set(), new Set([jobId]))
+
+    // clearTextPreviewsForJob reads the job's node list out of queuedJobs and
+    // returns early once it is gone, so order is the whole point here.
+    expect(mockRemoveTextPreview).toHaveBeenCalled()
   })
 })
