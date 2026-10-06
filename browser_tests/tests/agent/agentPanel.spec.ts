@@ -190,7 +190,10 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
       }) => {
         const telemetryPayloads: string[] = []
         page.on('request', (request) => {
-          if (request.url().includes('/e/'))
+          if (
+            request.url().includes('/e/') ||
+            request.url().includes('/batch/')
+          )
             telemetryPayloads.push(request.postData() ?? '')
         })
         await agentPanel.open()
