@@ -209,17 +209,19 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
           panel.getByRole('textbox', { name: /^Describe ideas/ })
         ).toHaveText(treatmentPrompt)
         expect(postedMessages).toHaveLength(0)
-        await expect
-          .poll(() => telemetryPayloads.join('\n'), { timeout: 15_000 })
-          // PostHog batches the exposure request in the cloud browser build;
-          // allow one flush interval before treating the event as missing.
-          .toContain('agent_starter_prompt_exposure')
 
         await panel.getByRole('button', { name: 'Send' }).click()
         await expect.poll(() => postedMessages.length).toBe(1)
         await expect
           .poll(() => telemetryPayloads.join('\n'))
           .toContain('agent_message_sent')
+        // PostHog may retain the render-time exposure in its batch until a
+        // later capture flushes it. The UI assertion above proves the
+        // treatment was rendered before input; this verifies the exposure is
+        // eventually delivered with the matching assignment.
+        await expect
+          .poll(() => telemetryPayloads.join('\n'), { timeout: 15_000 })
+          .toContain('agent_starter_prompt_exposure')
         const messageSent = telemetryPayloads.find((payload) =>
           payload.includes('agent_message_sent')
         )
