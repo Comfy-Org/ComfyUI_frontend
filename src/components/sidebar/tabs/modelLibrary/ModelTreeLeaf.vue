@@ -7,7 +7,7 @@
       class="model-lib-model-preview pointer-events-none fixed z-1001"
       :style="previewStyle"
     >
-      <ModelPreview :model-def="modelDef" />
+      <ModelPreview :model-def />
     </div>
   </div>
 </template>

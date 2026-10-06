@@ -72,7 +72,7 @@
       "
       :style="previewStyle"
     >
-      <NodePreview :node-def="nodeDef" />
+      <NodePreview :node-def />
     </div>
   </div>
   <ContextMenu ref="menu" :model="menuItems" />
