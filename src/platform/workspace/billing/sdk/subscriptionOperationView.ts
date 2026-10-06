@@ -8,6 +8,7 @@
  * leave the customer on the path that still works.
  */
 import type {
+  BillingTelemetryFailure,
   PaymentPortalResult,
   PreviewSubscribeInput,
   PreviewSubscribeResult,
@@ -16,6 +17,7 @@ import type {
   SubscriptionCommandOutcome,
   SubscriptionCommandResult
 } from '@comfyorg/account-core/billing'
+import { failureCategoryFor } from '@comfyorg/account-core/billing'
 
 import { t } from '@/i18n'
 import type {
@@ -50,9 +52,10 @@ export class SettledOperationError extends WorkspaceApiError {
   constructor(
     message: string,
     phase: string,
-    readonly billingOpId: string | undefined
+    readonly billingOpId: string | undefined,
+    failureCategory?: BillingTelemetryFailure['failure_category']
   ) {
-    super(message, undefined, phase)
+    super(message, undefined, phase, failureCategory)
     this.name = 'SettledOperationError'
   }
 }
@@ -170,7 +173,8 @@ function projectUnsuccessfulSettle(
         ? declineDetail(operation.declineReason)
         : t('billingOperation.subscriptionFailedDetail'),
       phase,
-      operation?.id
+      operation?.id,
+      operation && failureCategoryFor(operation)
     )
   }
 }

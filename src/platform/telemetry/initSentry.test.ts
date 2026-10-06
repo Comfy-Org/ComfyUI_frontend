@@ -38,7 +38,7 @@ function eventFrom(filename: string) {
 }
 
 beforeEach(() => {
-  vi.mocked(sentryInit).mockReset().mockReturnValue(undefined)
+  vi.mocked(sentryInit).mockReturnValue(undefined)
 })
 
 it.for([true, false])(

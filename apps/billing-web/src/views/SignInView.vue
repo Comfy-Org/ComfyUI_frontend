@@ -35,6 +35,7 @@ const {
   retryMint,
   retryAvailability
 } = useSignInController(() => {
+  if (route.name !== 'sign-in') return
   void router.replace(safeReturnTo(route.query.returnTo))
 }, billingWebSignInPort())
 
