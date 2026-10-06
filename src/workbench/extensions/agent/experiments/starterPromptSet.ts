@@ -83,7 +83,10 @@ export function useStarterPromptSet() {
     // Resolve the assignment before marking the surface rendered. Otherwise a
     // localized control surface can emit a test exposure before its rendered
     // assignment mismatch is checked below.
-    if (!isAuthenticatedConfigLoaded.value) {
+    if (
+      !isAuthenticatedConfigLoaded.value &&
+      renderedAssignment === undefined
+    ) {
       renderedSurfaceAssignment.value = renderedAssignment ?? assigned.value
       surfaceRendered = true
       return
