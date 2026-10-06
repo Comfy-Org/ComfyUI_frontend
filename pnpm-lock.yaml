@@ -25,8 +25,8 @@ catalogs:
       specifier: 0.3.6
       version: 0.3.6
     '@comfyorg/comfyui-desktop-bridge-types':
-      specifier: 0.2.0
-      version: 0.2.0
+      specifier: 0.3.0
+      version: 0.3.0
     '@comfyorg/comfyui-electron-types':
       specifier: 0.6.2
       version: 0.6.2
@@ -517,7 +517,7 @@ importers:
         version: 0.3.6
       '@comfyorg/comfyui-desktop-bridge-types':
         specifier: 'catalog:'
-        version: 0.2.0
+        version: 0.3.0
       '@comfyorg/comfyui-electron-types':
         specifier: 'catalog:'
         version: 0.6.2
@@ -2000,8 +2000,8 @@ packages:
   '@comfyorg/comfy-multi-player@0.3.6':
     resolution: {integrity: sha512-6mC4E43YH+58gV4I+tmUR4pIYxqUeiY8ShS1WjjDEYxsBKGbzU1rRNGZHKgrzP3cOKGzK/JSP663/SIN50kfeQ==}
 
-  '@comfyorg/comfyui-desktop-bridge-types@0.2.0':
-    resolution: {integrity: sha512-V5Wj5KXDzTDm5GJAa0xBISjmndNIY5P79pRHQbLkkqJxgp/GPb/QGvcI+xG4ogol0ODJ4j/UBnUmkzpSafw8Aw==}
+  '@comfyorg/comfyui-desktop-bridge-types@0.3.0':
+    resolution: {integrity: sha512-pdYsrp3rwya5R3cumqPcZYhyoAReO5qBwxeqCQbo0NvRxxQPcrV/NNl4wDn0mmmUuBhlswWjXsrD36YNxv8xMg==}
 
   '@comfyorg/comfyui-electron-types@0.6.2':
     resolution: {integrity: sha512-r3By5Wbizq8jagUrhtcym79HYUTinsvoBnYkFFWbUmrURBWIaC0HduFVkRkI1PNdI76piW+JSOJJnw00YCVXeg==}
@@ -10656,7 +10656,7 @@ snapshots:
     dependencies:
       yjs: 13.6.32
 
-  '@comfyorg/comfyui-desktop-bridge-types@0.2.0': {}
+  '@comfyorg/comfyui-desktop-bridge-types@0.3.0': {}
 
   '@comfyorg/comfyui-electron-types@0.6.2': {}
 
