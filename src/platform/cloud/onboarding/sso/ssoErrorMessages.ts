@@ -4,6 +4,7 @@ export const SSO_ERROR_MESSAGE_KEY: Readonly<Record<SsoErrorCode, string>> = {
   SSO_UNAVAILABLE: 'auth.sso.errors.unavailable',
   SSO_LINK_CHECK_FAILED: 'auth.sso.errors.unavailable',
   SSO_CONFIRM_EXPIRED: 'auth.sso.errors.expired',
+  SSO_EMAIL_DOMAIN_NOT_ALLOWED: 'auth.sso.errors.emailDomainNotAllowed',
   SSO_INVALID_STATE: 'auth.sso.errors.expired',
   SSO_NOT_CONFIGURED: 'auth.sso.errors.notConfigured',
   SSO_ORG_DISABLED: 'auth.sso.errors.orgDisabled',
