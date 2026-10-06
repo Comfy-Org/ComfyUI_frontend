@@ -2413,7 +2413,8 @@ describe('AgentPanelRoot attach flow', () => {
       client_message_id: 'client-message-1',
       input_method: 'typed',
       starter_prompt_id: null,
-      starter_prompt_click_id: null
+      starter_prompt_click_id: null,
+      '$feature/agent-starter-prompt-set': 'control'
     })
 
     expect(screen.getByAltText('cat.png')).toBeInTheDocument()
@@ -4828,7 +4829,8 @@ describe('AgentPanelRoot workflow binding', () => {
             client_message_id: 'client-message-1',
             input_method: 'typed',
             starter_prompt_id: null,
-            starter_prompt_click_id: null
+            starter_prompt_click_id: null,
+            '$feature/agent-starter-prompt-set': 'control'
           }
         ]
       ])
@@ -4927,7 +4929,8 @@ describe('AgentPanelRoot workflow binding', () => {
           prompt_text_hash: expect.stringMatching(/^[0-9a-f]{8}$/),
           locale: 'en',
           click_id: 'client-message-1',
-          draft_was_empty: true
+          draft_was_empty: true,
+          '$feature/agent-starter-prompt-set': 'control'
         }
       ]
     ])
@@ -4942,7 +4945,8 @@ describe('AgentPanelRoot workflow binding', () => {
             client_message_id: 'client-message-2',
             input_method: 'suggestion',
             starter_prompt_id: 'slot_2',
-            starter_prompt_click_id: 'client-message-1'
+            starter_prompt_click_id: 'client-message-1',
+            '$feature/agent-starter-prompt-set': 'control'
           }
         ]
       ]
@@ -4988,7 +4992,8 @@ describe('AgentPanelRoot workflow binding', () => {
             client_message_id: 'client-message-1',
             input_method: 'typed',
             starter_prompt_id: null,
-            starter_prompt_click_id: null
+            starter_prompt_click_id: null,
+            '$feature/agent-starter-prompt-set': 'control'
           }
         ]
       ]
@@ -5023,7 +5028,8 @@ describe('AgentPanelRoot workflow binding', () => {
             client_message_id: 'client-message-1',
             input_method: 'typed',
             starter_prompt_id: null,
-            starter_prompt_click_id: null
+            starter_prompt_click_id: null,
+            '$feature/agent-starter-prompt-set': 'control'
           }
         ]
       ]
@@ -10224,7 +10230,8 @@ describe('AgentPanelRoot workflow binding', () => {
       client_message_id: 'client-message-1',
       input_method: 'typed',
       starter_prompt_id: null,
-      starter_prompt_click_id: null
+      starter_prompt_click_id: null,
+      '$feature/agent-starter-prompt-set': 'control'
     })
     expect(screen.getByText('VAEDecode #7')).toBeInTheDocument()
     expect(screen.queryByText(/KSampler/)).not.toBeInTheDocument()
