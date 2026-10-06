@@ -58,10 +58,6 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - id: changes
         uses: ./.github/actions/changes-filter
-        with:
-          # e2e-status is emitted whatever the verdict, so a candidate with no
-          # e2e-relevant changes can skip the suites without stalling the queue.
-          evaluate-candidate: 'true'
 
   setup:
     needs: changes

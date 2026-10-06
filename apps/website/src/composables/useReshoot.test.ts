@@ -2,37 +2,36 @@ import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, nextTick, ref } from 'vue'
 
-import { refreshWorkshopCredits } from '../config/workshop-credits'
-import { useWorkshopSession } from '../config/workshop-session-state'
-import { RESHOOT_APP_SLUG } from '../lib/workshop/cinematic-studio/analytics'
-import { clipSecondsOf } from '../lib/workshop/cinematic-studio/reshoot-clip'
-import { readGeometry } from '../lib/workshop/cinematic-studio/reshoot-engine/cvgeo'
+import { refreshWorkshopCredits } from '@/config/workshop-credits'
+import { useWorkshopSession } from '@/config/workshop-session-state'
+import { RESHOOT_APP_SLUG } from '@/lib/workshop/cinematic-studio/analytics'
+import { clipSecondsOf } from '@/lib/workshop/cinematic-studio/reshoot-clip'
+import { readGeometry } from '@/lib/workshop/cinematic-studio/reshoot-engine/cvgeo'
 import {
   FREE_QUOTE,
   RESHOOT_CREDENTIAL,
   fakeGeometry,
   fakeTransport,
   signIn
-} from '../lib/workshop/cinematic-studio/reshoot-engine/__fixtures__/reshootFakes'
-import type { ReshootTransport } from '../lib/workshop/cinematic-studio/reshoot-engine/transport'
-import { ReshootError } from '../lib/workshop/cinematic-studio/reshoot-engine/transport'
-import { reshootTransport } from '../lib/workshop/cinematic-studio/reshoot-engine/transport-config'
-import { captureWorkshopEvent } from '../scripts/posthog'
+} from '@/lib/workshop/cinematic-studio/reshoot-engine/__fixtures__/reshootFakes'
+import type { ReshootTransport } from '@/lib/workshop/cinematic-studio/reshoot-engine/transport'
+import { ReshootError } from '@/lib/workshop/cinematic-studio/reshoot-engine/transport'
+import { reshootTransport } from '@/lib/workshop/cinematic-studio/reshoot-engine/transport-config'
+import { captureWorkshopEvent } from '@/scripts/posthog'
 import { useReshoot } from './useReshoot'
 
-vi.mock(import('../config/workshop-session-state'))
-vi.mock(import('../config/workshop-credits'))
-vi.mock(import('../scripts/posthog'))
+vi.mock(import('@/config/workshop-session-state'))
+vi.mock(import('@/config/workshop-credits'))
+vi.mock(import('@/scripts/posthog'))
 vi.mock(
-  import('../lib/workshop/cinematic-studio/reshoot-engine/transport-config'),
+  import('@/lib/workshop/cinematic-studio/reshoot-engine/transport-config'),
   () => ({ reshootTransport: vi.fn() })
 )
-vi.mock(
-  import('../lib/workshop/cinematic-studio/reshoot-engine/cvgeo'),
-  () => ({ readGeometry: vi.fn() })
-)
+vi.mock(import('@/lib/workshop/cinematic-studio/reshoot-engine/cvgeo'), () => ({
+  readGeometry: vi.fn()
+}))
 // jsdom never loads video metadata; each test says how long its clip is.
-vi.mock(import('../lib/workshop/cinematic-studio/reshoot-clip'), () => ({
+vi.mock(import('@/lib/workshop/cinematic-studio/reshoot-clip'), () => ({
   clipSecondsOf: vi.fn(),
   fileSecondsOf: vi.fn()
 }))

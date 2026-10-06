@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { MODEL_DEVELOPERS, modelDeveloper } from '../config/model-vendors'
+import { MODEL_DEVELOPERS, modelDeveloper } from '@/config/model-vendors'
 import {
   getWorkshopPageDetail,
   workshopPagePaths
-} from '../config/workshop-page-content'
+} from '@/config/workshop-page-content'
 import type { JsonLdNode } from './jsonLd'
 import { modelPageJsonLd } from './modelJsonLd'
 

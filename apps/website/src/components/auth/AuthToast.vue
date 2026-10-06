@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { removeToast, useAuthToasts } from '../../config/auth-toast-state'
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
+import { removeToast, useAuthToasts } from '@/config/auth-toast-state'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import AuthToastMessage from './AuthToastMessage.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()

@@ -1,29 +1,29 @@
 <script setup lang="ts">
-import { translationsFor } from '../../../i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import { WORKSHOP_DEPLOY_ENV } from 'astro:env/client'
 import { useMounted } from '@vueuse/core'
 import { computed, onMounted, ref, shallowRef, watch } from 'vue'
 
-import { provideStudioSwitchGuard } from '../../../composables/useStudioSwitchGuard'
-import type { AppWorkshopModel } from '../../../config/models-catalogue'
-import type { WorkshopAppId } from '../../../lib/workshop/apps'
-import { workshopAppHref } from '../../../lib/workshop/apps'
-import { getRoutes } from '../../../config/routes'
-import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
-import type { Locale } from '../../../i18n/translations'
+import { provideStudioSwitchGuard } from '@/composables/useStudioSwitchGuard'
+import type { AppWorkshopModel } from '@/config/models-catalogue'
+import type { WorkshopAppId } from '@/lib/workshop/apps'
+import { workshopAppHref } from '@/lib/workshop/apps'
+import { getRoutes } from '@/config/routes'
+import type { CinematicModel } from '@/lib/workshop/cinematic-studio/models'
+import type { Locale } from '@/i18n/translations'
 import {
   captureWorkshopEvent,
   useWorkshopAppsEnabled,
   useWorkshopEnabled
-} from '../../../scripts/posthog'
-import RunLeaveDialog from '../RunLeaveDialog.vue'
-import WorkshopGate from '../WorkshopGate.vue'
+} from '@/scripts/posthog'
+import RunLeaveDialog from '@/components/workshop/RunLeaveDialog.vue'
+import WorkshopGate from '@/components/workshop/WorkshopGate.vue'
 import CinematicAppsHub from './CinematicAppsHub.vue'
 import CinematicScenarioMenu from './CinematicScenarioMenu.vue'
 import CinematicStudio from './CinematicStudio.vue'
 import CinematicStudioPanel from './CinematicStudioPanel.vue'
 import ReshootStudio from './reshoot/ReshootStudio.vue'
-import { isWorkshopModelShown } from '../../../scripts/workshop-model-flags'
+import { isWorkshopModelShown } from '@/scripts/workshop-model-flags'
 
 const {
   apps,
