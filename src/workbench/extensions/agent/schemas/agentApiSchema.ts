@@ -21,13 +21,22 @@ import { z } from 'zod'
 
 import { isNodeLocatorId } from '@/types/nodeIdentification'
 
-export { zAgentAdmissionError, zAgentAnswerAccepted, zAgentCancelAccepted }
+export { zAgentAdmissionError, zAgentCancelAccepted }
 export type {
   AgentAnswerAccepted,
   AgentCancelAccepted,
   AgentRunModePreference,
   AgentThreadSummary
 }
+
+/**
+ * The 202 from the answer route. A backend that predates the committed-answer
+ * body sends only `status`, so `selected` is optional here.
+ */
+export const zAgentAnswerReceipt = zAgentAnswerAccepted.partial({
+  selected: true
+})
+export type AgentAnswerReceipt = z.infer<typeof zAgentAnswerReceipt>
 
 const zTurnId = z.string().brand<'TurnId'>()
 export type TurnId = z.infer<typeof zTurnId>
