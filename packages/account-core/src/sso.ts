@@ -130,7 +130,7 @@ export function ssoStartUrl(
     url.searchParams.set('email', options.email.trim())
   }
   if (options.organizationId !== undefined) {
-    url.searchParams.set('organization_id', options.organizationId)
+    url.searchParams.set('organization', options.organizationId)
   }
   url.searchParams.set(
     'return_to',
@@ -147,6 +147,7 @@ const SSO_ERROR_CODES = [
   'SSO_ACCOUNT_CONFLICT',
   'SSO_ACCOUNT_DELETED',
   'SSO_CONFIRM_EXPIRED',
+  'SSO_EMAIL_DOMAIN_NOT_ALLOWED',
   'SSO_EXCHANGE_FAILED',
   'SSO_IDP_ERROR',
   'SSO_INVALID_STATE',

@@ -62,7 +62,7 @@ describe('SsoRequiredDialogContent', () => {
     expect(target.pathname).toBe('/api/auth/sso/start')
     expect(target.searchParams.get('email')).toBe('ada@acme.com')
     expect(target.searchParams.get('return_to')).toBe('/cloud/user-check')
-    expect(target.searchParams.has('organization_id')).toBe(false)
+    expect(target.searchParams.has('organization')).toBe(false)
     expect(useAuthStore().logout).not.toHaveBeenCalled()
   })
 
@@ -81,7 +81,7 @@ describe('SsoRequiredDialogContent', () => {
       await waitFor(() => expect(assign).toHaveBeenCalledOnce())
       const target = assigned(assign)
       expect(target.pathname).toBe('/api/auth/sso/start')
-      expect(target.searchParams.get('organization_id')).toBe('org_meta')
+      expect(target.searchParams.get('organization')).toBe('org_meta')
       expect(target.searchParams.get('email')).toBe(email ?? null)
       expect(target.searchParams.get('return_to')).toBe('/x')
     }

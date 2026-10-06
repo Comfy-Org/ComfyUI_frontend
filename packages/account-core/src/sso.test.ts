@@ -178,13 +178,13 @@ describe('ssoStartUrl', () => {
       email: 'alice@comfy.org',
       expected: {
         email: 'alice@comfy.org',
-        organization_id: 'org_meta',
+        organization: 'org_meta',
         return_to: '/x'
       }
     },
     {
       name: 'without an email',
-      expected: { organization_id: 'org_meta', return_to: '/x' }
+      expected: { organization: 'org_meta', return_to: '/x' }
     }
   ])('targets a named organization $name', ({ email, expected }) => {
     const url = new URL(
