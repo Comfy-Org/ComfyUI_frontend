@@ -76,6 +76,25 @@ describe('SsoRequiredDialogContent', () => {
     )
   })
 
+  it('lets the person retry when signing the account out fails', async () => {
+    useAuthStore().currentUser = fromPartial<User>({ email: 'ada@acme.com' })
+    vi.mocked(useAuthStore().logout)
+      .mockRejectedValueOnce(new Error('network'))
+      .mockResolvedValueOnce()
+    await renderDialog({})
+    const continueButton = screen.getByRole('button', {
+      name: 'auth.sso.continueWithSso'
+    })
+
+    await userEvent.click(continueButton)
+    await waitFor(() => expect(continueButton).toBeEnabled())
+    expect(assign).not.toHaveBeenCalled()
+
+    await userEvent.click(continueButton)
+    await waitFor(() => expect(assign).toHaveBeenCalledOnce())
+    expect(useAuthStore().logout).toHaveBeenCalledTimes(2)
+  })
+
   it('opens the login page on its SSO entry when no email is known', async () => {
     await renderDialog({})
 

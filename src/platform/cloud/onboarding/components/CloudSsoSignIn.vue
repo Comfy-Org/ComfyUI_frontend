@@ -1,5 +1,9 @@
 <template>
-  <form class="flex flex-col gap-4" novalidate @submit.prevent="trySso(email)">
+  <form
+    class="flex flex-col gap-4"
+    novalidate
+    @submit.prevent="emit('submit', email)"
+  >
     <label :for="emailInputId" :class="CLOUD_AUTH_LABEL_CLASS">
       {{ t('auth.sso.emailLabel') }}
     </label>
@@ -37,12 +41,12 @@ import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
 import Message from '@/components/ui/message/Message.vue'
 import { readSsoHint } from '@/platform/auth/session/ssoReentryStorage'
-import { useSsoSignIn } from '@/platform/cloud/onboarding/composables/useSsoSignIn'
 import {
   CLOUD_AUTH_FIELD_CLASS,
   CLOUD_AUTH_LABEL_CLASS
 } from '@/platform/cloud/onboarding/constants/authClasses'
 import type { SsoSignInState } from '@/platform/cloud/onboarding/sso/ssoSignInState'
+import { isSsoBusy } from '@/platform/cloud/onboarding/sso/ssoSignInState'
 
 const FEEDBACK: Partial<
   Record<SsoSignInState['phase'], { key: string; severity: 'info' | 'error' }>
@@ -52,10 +56,13 @@ const FEEDBACK: Partial<
   unavailable: { key: 'auth.sso.unavailable', severity: 'error' }
 }
 
+const { state } = defineProps<{ state: SsoSignInState }>()
+const emit = defineEmits<{ submit: [email: string] }>()
+
 const { t } = useI18n()
-const { state, busy, trySso } = useSsoSignIn()
+const busy = computed(() => isSsoBusy(state))
 
 const emailInputId = 'cloud-sso-email'
 const email = ref(readSsoHint()?.email ?? '')
-const feedback = computed(() => FEEDBACK[state.value.phase])
+const feedback = computed(() => FEEDBACK[state.phase])
 </script>
