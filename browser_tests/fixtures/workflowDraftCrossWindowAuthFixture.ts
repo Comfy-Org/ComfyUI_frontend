@@ -17,7 +17,7 @@ const BOOT_SETTINGS = {
   'Comfy.Workflow.Persist': true
 }
 
-class WorkflowDraftForeignWindowSignInHelper {
+class WorkflowDraftCrossWindowAuthHelper {
   public readonly logoutButton: Locator
 
   constructor(private readonly page: Page) {
@@ -150,11 +150,11 @@ class WorkflowDraftForeignWindowSignInHelper {
   }
 }
 
-export const workflowDraftForeignWindowSignInFixture = cloudAppFixture.extend<{
-  workflowDraft: WorkflowDraftForeignWindowSignInHelper
+export const workflowDraftCrossWindowAuthFixture = cloudAppFixture.extend<{
+  workflowDraft: WorkflowDraftCrossWindowAuthHelper
 }>({
   workflowDraft: async ({ page }, use) => {
-    const workflowDraft = new WorkflowDraftForeignWindowSignInHelper(page)
+    const workflowDraft = new WorkflowDraftCrossWindowAuthHelper(page)
     await workflowDraft.boot()
     await use(workflowDraft)
   }

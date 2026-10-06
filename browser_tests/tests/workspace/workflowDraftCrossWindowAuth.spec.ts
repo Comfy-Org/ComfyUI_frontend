@@ -1,7 +1,7 @@
 import {
   expect,
-  workflowDraftForeignWindowSignInFixture as test
-} from '@e2e/fixtures/workflowDraftForeignWindowSignInFixture'
+  workflowDraftCrossWindowAuthFixture as test
+} from '@e2e/fixtures/workflowDraftCrossWindowAuthFixture'
 
 test.describe('workflow drafts across windows', { tag: '@cloud' }, () => {
   test('a second window signing in neither wipes drafts nor stops persistence', async ({
