@@ -1,5 +1,5 @@
 const MEDIA_ROUTE =
-  /^(?:\/api)?\/(?:view|viewvideo|vhs\/viewvideo|vhs\/viewaudio|assets\/[^/?#]+\/content)(?:\?|$)/
+  /^(?:\/api)?\/(?:view|viewvideo|vhs\/viewvideo|vhs\/viewaudio|assets\/[^/?#]+\/content)(?:[?#]|$)/
 
 /** True when the route is one a media element loads without headers. */
 export function isMediaRoute(route: string): boolean {
@@ -15,7 +15,10 @@ export function scopeMediaRoute(
   workspaceId: string | undefined
 ): string {
   if (!workspaceId || !isMediaRoute(route)) return route
-  if (/[?&]workspace_id=/.test(route)) return route
-  const separator = route.includes('?') ? '&' : '?'
-  return `${route}${separator}workspace_id=${encodeURIComponent(workspaceId)}`
+  const hashStart = route.indexOf('#')
+  const path = hashStart === -1 ? route : route.slice(0, hashStart)
+  const fragment = hashStart === -1 ? '' : route.slice(hashStart)
+  if (/[?&]workspace_id=/.test(path)) return route
+  const separator = path.includes('?') ? '&' : '?'
+  return `${path}${separator}workspace_id=${encodeURIComponent(workspaceId)}${fragment}`
 }

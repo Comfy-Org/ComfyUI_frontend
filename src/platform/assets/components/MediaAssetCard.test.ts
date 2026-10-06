@@ -301,6 +301,29 @@ describe('MediaAssetCard', () => {
     }
   )
 
+  it('names the web-session workspace on an image preview served by the assets API', async () => {
+    const release = provideWebSessionRequests(
+      fromPartial<WebSessionRequests>({ workspaceId: () => 'ws-1' })
+    )
+    try {
+      renderCard({
+        loading: false,
+        asset: {
+          ...asset,
+          name: 'a.png',
+          thumbnail_url: '/api/assets/img-id/content'
+        }
+      })
+
+      expect(await screen.findByRole('img', { name: 'a.png' })).toHaveAttribute(
+        'src',
+        '/api/assets/img-id/content?workspace_id=ws-1'
+      )
+    } finally {
+      release()
+    }
+  })
+
   it('names the web-session workspace on a video preview served by the assets API', async () => {
     const release = provideWebSessionRequests(
       fromPartial<WebSessionRequests>({ workspaceId: () => 'ws-1' })

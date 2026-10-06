@@ -141,7 +141,7 @@ function isVideoAsset(asset: AssetItem): boolean {
 function getAssetPreviewUrl(asset: AssetItem): string {
   const mediaType = getAssetMediaType(asset)
   if (mediaType === 'video') return resolveMediaSrc(asset.preview_url)
-  if (mediaType === 'image') return asset.preview_url || ''
+  if (mediaType === 'image') return resolveMediaSrc(asset.preview_url)
   return ''
 }
 

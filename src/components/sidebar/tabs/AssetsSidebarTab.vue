@@ -214,7 +214,8 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { getAssetDisplayName } from '@/platform/assets/utils/assetMetadataUtils'
 import {
   getAssetFileUrl,
-  getAssetSubfolder
+  getAssetSubfolder,
+  resolveMediaSrc
 } from '@/platform/assets/utils/assetUrlUtil'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import { isCloud } from '@/platform/distribution/types'
@@ -463,7 +464,7 @@ const galleryItems = computed<AugmentedResultItem[]>(() => {
       type: 'output',
       nodeId: '0',
       mediaType: mediaType === 'image' ? 'images' : mediaType,
-      url: asset.preview_url || ''
+      url: resolveMediaSrc(asset.preview_url)
     }
   })
 })
