@@ -101,6 +101,8 @@ describe('findRedirectedLinks', () => {
   })
 })
 
+const groupedSource = '/p/supported-models/:slug(4x-ultrasharp|flux1-dev-fp8)'
+
 describe('redirectSourcePattern', () => {
   it.for([
     ['/cloud/enterprise', '/cloud/enterprise', true],
@@ -114,9 +116,50 @@ describe('redirectSourcePattern', () => {
     ['/models/:path*', '/models-v2', false],
     ['/models/:path+', '/models', false],
     ['/models/:path+', '/models/a/b', true],
-    ['/hub/models.md', '/hub/modelsxmd', false]
+    ['/hub/models.md', '/hub/modelsxmd', false],
+    [`${groupedSource}.md`, '/p/supported-models/flux1-dev-fp8.md', true],
+    [`${groupedSource}.md/`, '/p/supported-models/4x-ultrasharp.md', true],
+    [`${groupedSource}.md`, '/p/supported-models/flux1-dev-fp8', false],
+    [groupedSource, '/p/supported-models/flux1-dev-fp8-extra', false],
+    [groupedSource, '/p/supported-models/xflux1-dev-fp8', false],
+    [groupedSource, '/p/supported-models/flux1-dev-fp8/a', false]
   ] as const)('%s matches %s: %s', ([source, path, matches]) => {
     expect(redirectSourcePattern(source).test(path)).toBe(matches)
+  })
+
+  it.for([
+    '/posts/:id(\\d+)',
+    '/payment/(.*)',
+    '/p/:slug(a|b)?',
+    '/p/:slug(a|(b))'
+  ])('rejects unsupported source syntax %s', (source) => {
+    expect(() => redirectSourcePattern(source)).toThrow(/Unsupported/)
+  })
+})
+
+describe('findRedirectedLinks with constrained slug sources', () => {
+  const link = (path: string) => ({
+    title: 'FLUX.1 Dev fp8',
+    url: `https://comfy.org${path}`,
+    description: ''
+  })
+
+  it.for([
+    [groupedSource, '/p/supported-models/flux1-dev-fp8/', true],
+    [groupedSource, '/p/supported-models/flux1-dev-fp8', true],
+    [groupedSource, '/p/supported-models/flux1-dev-fp8.md', true],
+    [`${groupedSource}/`, '/p/supported-models/flux1-dev-fp8/', true],
+    [`${groupedSource}/`, '/p/supported-models/4x-ultrasharp', true],
+    [`${groupedSource}.md`, '/p/supported-models/flux1-dev-fp8.md', true],
+    [groupedSource, '/p/supported-models/flux-1-dev/', false],
+    [`${groupedSource}/`, '/p/supported-models/flux-1-dev', false],
+    [`${groupedSource}.md`, '/p/supported-models/flux-1-dev.md', false],
+    ['/p/supported-models/:slug', '/p/supported-models/flux-1-dev.md', true],
+    ['/cloud/enterprise', '/cloud/enterprise/', true]
+  ] as const)('source %s flags %s: %s', ([source, path, flagged]) => {
+    expect(findRedirectedLinks([link(path)], [source])).toEqual(
+      flagged ? [link(path)] : []
+    )
   })
 })
 

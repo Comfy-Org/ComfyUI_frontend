@@ -41,15 +41,39 @@ export function internalLinks(
     .map(({ link, url }) => ({ path: normalizePath(url.pathname), link }))
 }
 
+const SOURCE_PARAM = /(\/:\w+\*|:\w+\+|:\w+\([^()]*\)|:\w+)/
+const LITERAL_ALTERNATIVE = /^[\w.~-]+$/
+const UNSUPPORTED_SOURCE_SYNTAX = /[()?*+]/
+
+function escapeRegExp(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+function constrainedParamPattern(param: string): string {
+  const alternatives = param.slice(param.indexOf('(') + 1, -1).split('|')
+  if (
+    !alternatives.every((alternative) => LITERAL_ALTERNATIVE.test(alternative))
+  )
+    throw new Error(`Unsupported redirect source constraint: ${param}`)
+  return `(?:${alternatives.map(escapeRegExp).join('|')})`
+}
+
 /**
- * A Vercel redirect source as a matcher for a normalized pathname: literal
- * sources plus the `:slug`, `:path+` and `/:path*` params Vercel accepts.
+ * A Vercel redirect source as a case-sensitive matcher for a normalized
+ * pathname: literal sources plus the `:slug`, `:slug(a|b)`, `:path+` and
+ * `/:path*` params Vercel accepts. Other path-to-regexp syntax throws rather
+ * than silently matching nothing.
  */
 export function redirectSourcePattern(source: string): RegExp {
   const pattern = normalizePath(source)
-    .split(/(\/:\w+\*|:\w+\+|:\w+)/)
+    .split(SOURCE_PARAM)
     .map((part, index) => {
-      if (index % 2 === 0) return part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      if (index % 2 === 0) {
+        if (UNSUPPORTED_SOURCE_SYNTAX.test(part))
+          throw new Error(`Unsupported redirect source syntax: ${source}`)
+        return escapeRegExp(part)
+      }
+      if (part.endsWith(')')) return constrainedParamPattern(part)
       if (part.endsWith('*')) return '(?:/.*)?'
       if (part.endsWith('+')) return '.+'
       return '[^/]+'
