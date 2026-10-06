@@ -91,10 +91,27 @@ test.describe('Load3D agent updates', { tag: '@cloud' }, () => {
           (viewport.height - dialogBox.height) / 2,
           1
         )
-        expect(dialogBox.x + dialogBox.width).toBeGreaterThan(panelBox.x)
+        expect(dialogBox.x).toBeGreaterThanOrEqual(0)
+        expect(dialogBox.x + dialogBox.width).toBeLessThanOrEqual(
+          viewport.width + 1
+        )
         expect(dialogBox.y + dialogBox.height).toBeLessThanOrEqual(
           viewport.height + 1
         )
+        expect(panelBox.x).toBeGreaterThan(dialogBox.x)
+        expect(panelBox.x + panelBox.width).toBeCloseTo(viewport.width, 1)
+        expect(dialogBox.x + dialogBox.width).toBeGreaterThan(panelBox.x)
+
+        const point = {
+          x: (panelBox.x + dialogBox.x + dialogBox.width) / 2,
+          y: dialogBox.y + dialogBox.height / 2
+        }
+        const dialogIsTopmost = await viewer.dialog.evaluate(
+          (element, point) =>
+            element.contains(document.elementFromPoint(point.x, point.y)),
+          point
+        )
+        expect(dialogIsTopmost).toBe(true)
       }).toPass({ timeout: 5000 })
     })
 
