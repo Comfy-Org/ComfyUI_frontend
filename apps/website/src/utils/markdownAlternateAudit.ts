@@ -24,7 +24,7 @@ export interface MarkdownAlternateReport {
  * when any large family (149 /hub/models, 158 zh-CN, 383 supported-models)
  * loses its link.
  */
-export const MIN_ADVERTISED_SHARE = 0.8
+const MIN_ADVERTISED_SHARE = 0.8
 
 const LINK = /<link\b[^>]*>/gi
 const ATTRIBUTE = /([^\s"'<>/=]+)(?:\s*=\s*("[^"]*"|'[^']*'|[^\s"'=<>`]+))?/g
