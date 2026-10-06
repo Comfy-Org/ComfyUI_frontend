@@ -408,7 +408,7 @@
         :cloud-url="activeDetailCloudUrl"
         :is-partner-node="activeDetail.template.openSource === false"
         :open-pending="openPending"
-        :model-setup-state="activeDetailModelSetupState"
+        :model-setup="activeDetailModelSetup"
         @open-template="onOpenTemplate"
         @download-models-and-open="onDownloadModelsAndOpen"
         @download-model="onDownloadModel"
@@ -489,7 +489,7 @@ import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates
 import type {
   TemplateDetailGroup,
   TemplateDetailRow,
-  TemplateModelSetupState
+  TemplateModelSetup
 } from '@/platform/workflow/templates/types/templateDetail'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import {
@@ -501,7 +501,12 @@ import { resolveTemplateModelMetadata } from '@/platform/workflow/templates/util
 import { extractTemplateModelRequirementDetails } from '@/platform/workflow/templates/utils/templateModelRequirements'
 import type { TemplateModelRequirementDetail } from '@/platform/workflow/templates/utils/templateModelRequirements'
 import type { ResolvedTemplateModelAvailability } from '@/platform/workflow/templates/utils/templateModelAvailability'
-import { deriveTemplateModelSetup } from '@/platform/workflow/templates/utils/templateModelSetup'
+import {
+  deriveTemplateModelSetup,
+  isModelDownloadCandidate,
+  isModelRowComplete,
+  remainingModelDownloadTotal
+} from '@/platform/workflow/templates/utils/templateModelSetup'
 import type {
   TemplateModelSetupResult,
   TemplateModelSetupRow
@@ -1090,25 +1095,47 @@ const activeDetailGroups = computed<readonly TemplateDetailGroup[]>(() => {
     : []
 })
 
-function isModelDownloadCandidate(
-  row: TemplateModelSetupRow,
-  rowDownloads: TemplateModelRowDownloads
-): boolean {
-  if (row.status !== 'downloadable') return false
-
-  const state = rowDownloads.stateFor(row.model)
-  return state.status === 'idle' || state.status === 'failed'
-}
-
-const activeDetailModelSetupState = computed<TemplateModelSetupState>(() => {
+/** The rows this click would start. */
+const activeDetailModelDownloadCandidates = computed<
+  readonly TemplateModelSetupRow[]
+>(() => {
   const setup = activeDetail.value?.modelSetup
-  if (!setup) return 'none'
-  if (setup.pending) return 'resolving'
-  return setup.result.rows.some((row) =>
-    isModelDownloadCandidate(row, setup.rowDownloads)
+  if (!setup || setup.pending) return []
+  return setup.result.rows.filter((row) =>
+    isModelDownloadCandidate(row, setup.rowDownloads.stateFor)
   )
-    ? 'downloadable'
-    : 'none'
+})
+
+const activeDetailModelDownloadsAvailable = computed(
+  () => activeDetailModelDownloadCandidates.value.length > 0
+)
+
+/** Withheld unless every candidate declares a size: a partial total reads as complete. */
+const activeDetailModelRequirementsMet = computed(() => {
+  const setup = activeDetail.value?.modelSetup
+  return Boolean(
+    setup &&
+    setup.result.rows.every((row) =>
+      isModelRowComplete(row, setup.rowDownloads.stateFor)
+    )
+  )
+})
+
+const activeDetailModelSetup = computed<TemplateModelSetup | undefined>(() => {
+  const setup = activeDetail.value?.modelSetup
+  if (!setup) return undefined
+  if (setup.pending) return { state: 'resolving' }
+  if (activeDetailModelRequirementsMet.value) return undefined
+  if (!activeDetailModelDownloadsAvailable.value) return undefined
+
+  const total = remainingModelDownloadTotal(
+    setup.result.rows,
+    setup.rowDownloads.stateFor
+  )
+  return {
+    state: 'startable',
+    remainingSize: total.isComplete ? formatSize(total.bytes) : undefined
+  }
 })
 
 function applyTemplateModelMetadata(
@@ -1292,10 +1319,8 @@ async function onDownloadModelsAndOpen() {
   const setup = activeDetail.value?.modelSetup
   if (!setup || setup.pending || openPending.value) return
 
-  for (const row of setup.result.rows) {
-    if (isModelDownloadCandidate(row, setup.rowDownloads)) {
-      setup.rowDownloads.request(row.model)
-    }
+  for (const row of activeDetailModelDownloadCandidates.value) {
+    setup.rowDownloads.request(row.model)
   }
 
   await onOpenTemplate()

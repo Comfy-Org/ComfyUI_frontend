@@ -84,6 +84,8 @@ export interface SubscriptionRail {
    * state off this, so on this rail it has to come from the lifecycle.
    */
   readonly subscriptionActionOperation: BillingOperationRecordView | undefined
+  /** False once this tab's backend answered that the routes are not deployed. */
+  readonly subscriptionRouteAvailable: boolean
   /** One operation by id, unscoped: the caller compares the workspace itself. */
   getOperation: (opId: string) => BillingOperationRecordView | undefined
   /** `callerStarted`: the caller reported `started`, so the rail reports only the terminal. */

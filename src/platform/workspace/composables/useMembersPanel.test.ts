@@ -753,7 +753,7 @@ describe('useMembersPanel', () => {
   })
 
   describe('memberMenuItems', () => {
-    it('builds a Change role submenu with the current role checked', async () => {
+    it('builds a Change role radio group with the current role selected', async () => {
       const panel = await setup()
       const items = panel.memberMenuItems(createMember({ role: 'member' }))
 
@@ -763,35 +763,32 @@ describe('useMembersPanel', () => {
         'workspacePanel.members.actions.removeMember'
       ])
 
-      const roleItems = items[0].items ?? []
-      expect(roleItems.map((i) => i.label)).toEqual([
+      const roleGroup = items[0].radioGroup
+      expect(roleGroup?.options.map((i) => i.label)).toEqual([
         'workspaceSwitcher.roleOwner',
         'workspaceSwitcher.roleMember'
       ])
-      expect(roleItems.map((i) => i.checked)).toEqual([false, true])
+      expect(roleGroup?.value).toBe('member')
     })
 
     it('omits Set credit limit for owner rows', async () => {
       const panel = await setup()
       const items = panel.memberMenuItems(createMember({ role: 'owner' }))
-      const roleItems = items[0].items ?? []
+      const roleGroup = items[0].radioGroup
 
       expect(items.map((item) => item.label)).toEqual([
         'workspacePanel.members.actions.changeRole',
         'workspacePanel.members.actions.removeMember'
       ])
-      expect(roleItems.map((i) => i.checked)).toEqual([true, false])
+      expect(roleGroup?.value).toBe('owner')
     })
 
     it('routes submenu selection to the change-role dialog', async () => {
       const panel = await setup()
       const member = createMember({ id: 'mem-9', role: 'member' })
-      const ownerItem = (panel.memberMenuItems(member)[0].items ?? [])[0]
+      const ownerItem = panel.memberMenuItems(member)[0].radioGroup?.options[0]
 
-      ownerItem.command?.({
-        originalEvent: new Event('click'),
-        item: ownerItem
-      })
+      ownerItem?.command()
 
       expect(
         useDialogService().showChangeMemberRoleDialog
