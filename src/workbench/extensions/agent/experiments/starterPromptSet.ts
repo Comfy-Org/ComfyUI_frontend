@@ -31,6 +31,7 @@ function isAssignment(
 export function useStarterPromptSet() {
   const assigned = ref<StarterPromptAssignment>('control')
   const exposedAssignment = ref<StarterPromptAssignment>()
+  const renderedSurfaceAssignment = ref<StarterPromptAssignment>()
   const qaOverride = ref(false)
   let surfaceRendered = false
 
@@ -49,6 +50,8 @@ export function useStarterPromptSet() {
       : 'control'
     if (
       surfaceRendered &&
+      (renderedSurfaceAssignment.value === undefined ||
+        renderedSurfaceAssignment.value === assigned.value) &&
       !qaOverride.value &&
       exposedAssignment.value !== assigned.value
     ) {
@@ -64,17 +67,15 @@ export function useStarterPromptSet() {
     // localized control surface can emit a test exposure before its rendered
     // assignment mismatch is checked below.
     if (!isAuthenticatedConfigLoaded.value) {
+      renderedSurfaceAssignment.value = renderedAssignment ?? assigned.value
       surfaceRendered = true
       return
     }
     surfaceRendered = false
     assign()
     surfaceRendered = true
-    if (
-      renderedAssignment !== undefined &&
-      renderedAssignment !== assigned.value
-    )
-      return
+    renderedSurfaceAssignment.value = renderedAssignment ?? assigned.value
+    if (renderedSurfaceAssignment.value !== assigned.value) return
     if (!qaOverride.value && exposedAssignment.value !== assigned.value) {
       exposedAssignment.value = assigned.value
       useTelemetry()?.trackAgentStarterPromptExposure({
@@ -86,6 +87,7 @@ export function useStarterPromptSet() {
   const invalidateSurface = () => {
     surfaceRendered = false
     exposedAssignment.value = undefined
+    renderedSurfaceAssignment.value = undefined
   }
 
   if (isAuthenticatedConfigLoaded.value) {
