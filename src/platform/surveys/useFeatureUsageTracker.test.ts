@@ -303,6 +303,49 @@ describe('useFeatureUsageTracker', () => {
     expect(stored[resetFeatureId]?.useCount).toBe(1)
   })
 
+  it('retains a reset when restored usage fails partial verification', () => {
+    vi.setSystemTime(2_000)
+    const featureId = 'restored-before-partial-verification'
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        [featureId]: { useCount: 5, firstUsed: 1_000, lastUsed: 1_000 }
+      })
+    )
+    const tracker = useFeatureUsageTracker(featureId)
+    const failedSetItem = vi
+      .spyOn(localStorage, 'setItem')
+      .mockImplementation(() => {
+        throw new DOMException('Storage quota exceeded', 'QuotaExceededError')
+      })
+    tracker.reset()
+    tracker.trackUsage()
+    failedSetItem.mockRestore()
+    const originalSetItem = localStorage.setItem.bind(localStorage)
+    const restoreOldGeneration = vi
+      .spyOn(localStorage, 'setItem')
+      .mockImplementation((key, value) => {
+        const written = JSON.parse(value)
+        written[featureId] = {
+          useCount: 5,
+          firstUsed: 1_000,
+          lastUsed: 1_000
+        }
+        originalSetItem(key, JSON.stringify(written))
+      })
+
+    useFeatureUsageTracker('partial-restore-trigger').trackUsage()
+    restoreOldGeneration.mockRestore()
+    useFeatureUsageTracker('partial-restore-recovery').trackUsage()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored[featureId]).toEqual({
+      useCount: 1,
+      firstUsed: 2_000,
+      lastUsed: 2_000
+    })
+  })
+
   it('drains each pending feature confirmed before partial verification', () => {
     const retainedTracker = useFeatureUsageTracker('retained-pending-write')
     const droppedTracker = useFeatureUsageTracker('dropped-pending-write')
@@ -516,7 +559,7 @@ describe('useFeatureUsageTracker', () => {
     localStorage.setItem(
       STORAGE_KEY,
       JSON.stringify({
-        [featureId]: { useCount: 10, firstUsed: 1_000, lastUsed: 3_000 }
+        [featureId]: { useCount: 10, firstUsed: 1_000, lastUsed: 4_000 }
       })
     )
 
@@ -524,6 +567,36 @@ describe('useFeatureUsageTracker', () => {
 
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
     expect(stored).not.toHaveProperty(featureId)
+  })
+
+  it('drops pending usage when an older generation is restored', () => {
+    vi.setSystemTime(6_000)
+    const featureId = 'pending-after-restored-generation'
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        [featureId]: { useCount: 1, firstUsed: 5_000, lastUsed: 5_000 }
+      })
+    )
+    const tracker = useFeatureUsageTracker(featureId)
+    const failedSetItem = vi
+      .spyOn(localStorage, 'setItem')
+      .mockImplementation(() => {
+        throw new DOMException('Storage quota exceeded', 'QuotaExceededError')
+      })
+    tracker.trackUsage()
+    failedSetItem.mockRestore()
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        [featureId]: { useCount: 10, firstUsed: 1_000, lastUsed: 6_000 }
+      })
+    )
+
+    useFeatureUsageTracker('restored-generation-trigger').trackUsage()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored[featureId]?.useCount).toBe(10)
   })
 
   it('keeps a failed reset through unrelated external usage', () => {
@@ -1080,6 +1153,49 @@ describe('useFeatureUsageTracker', () => {
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
     expect(stored['retained-pending-reset-write']?.useCount).toBe(1)
     expect(stored['dropped-pending-reset-write']?.useCount).toBe(1)
+  })
+
+  it('retains a reset when restored usage fails reset verification', () => {
+    vi.setSystemTime(2_000)
+    const featureId = 'restored-before-reset-verification'
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        [featureId]: { useCount: 5, firstUsed: 1_000, lastUsed: 1_000 }
+      })
+    )
+    const tracker = useFeatureUsageTracker(featureId)
+    const failedSetItem = vi
+      .spyOn(localStorage, 'setItem')
+      .mockImplementation(() => {
+        throw new DOMException('Storage quota exceeded', 'QuotaExceededError')
+      })
+    tracker.reset()
+    tracker.trackUsage()
+    failedSetItem.mockRestore()
+    const originalSetItem = localStorage.setItem.bind(localStorage)
+    const restoreOldGeneration = vi
+      .spyOn(localStorage, 'setItem')
+      .mockImplementation((key, value) => {
+        const written = JSON.parse(value)
+        written[featureId] = {
+          useCount: 5,
+          firstUsed: 1_000,
+          lastUsed: 1_000
+        }
+        originalSetItem(key, JSON.stringify(written))
+      })
+
+    useFeatureUsageTracker('reset-restore-trigger').reset()
+    restoreOldGeneration.mockRestore()
+    useFeatureUsageTracker('reset-restore-recovery').trackUsage()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored[featureId]).toEqual({
+      useCount: 1,
+      firstUsed: 2_000,
+      lastUsed: 2_000
+    })
   })
 
   it('drains post-reset usage through an unrelated reset', () => {
@@ -1798,6 +1914,26 @@ describe('useFeatureUsageTracker', () => {
     expect(stored['oversized-invalid-trigger']?.useCount).toBe(1)
   })
 
+  it('bounds valid entries carried through a write', () => {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify(
+        Object.fromEntries(
+          Array.from({ length: 150 }, (_, index) => [
+            `existing-${index}`,
+            { useCount: 1, firstUsed: 1_000, lastUsed: 1_000 }
+          ])
+        )
+      )
+    )
+
+    useFeatureUsageTracker('bounded-valid-trigger').trackUsage()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(Object.keys(stored)).toHaveLength(100)
+    expect(stored['bounded-valid-trigger']?.useCount).toBe(1)
+  })
+
   it('reconciles a reset from current storage despite a partial event', () => {
     const featureId = 'reset-through-partial-event'
     localStorage.setItem(
@@ -2324,6 +2460,7 @@ describe('useFeatureUsageTracker', () => {
         [featureId]: { useCount: 1, firstUsed: 1_000, lastUsed: 1_000 }
       })
     )
+    vi.setSystemTime(301_001)
 
     tracker.trackUsage()
 
