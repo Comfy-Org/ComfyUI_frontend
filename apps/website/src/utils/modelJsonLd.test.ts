@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
+import type { ModelPageLaunch } from '@/config/model-page-launch'
 import { MODEL_DEVELOPERS, modelDeveloper } from '@/config/model-vendors'
 import { modelsUrlKind, modelsUrlPaths } from '@/config/models-url-registry'
 import { workshopModels } from '@/config/workshop-browse-content'
@@ -10,6 +11,17 @@ import {
 import type { JsonLdNode } from './jsonLd'
 import { modelPageJsonLd, modelsHubJsonLd } from './modelJsonLd'
 import { modelsByProvider } from '@/routes/models/models-directory'
+
+const launch = vi.hoisted(
+  (): {
+    launchedModelPages: ModelPageLaunch
+    launchedWorkflowPages: boolean
+  } => ({
+    launchedModelPages: 'all',
+    launchedWorkflowPages: false
+  })
+)
+vi.mock(import('@/config/model-page-launch'), () => launch)
 
 const siteUrl = 'https://comfy.org'
 const url = 'https://comfy.org/hub/models/example/'
@@ -153,16 +165,13 @@ describe('modelsHubJsonLd', () => {
 
   function listedUrls(
     models: Parameters<typeof modelsHubJsonLd>[0]['models'],
-    launch: Pick<
-      Parameters<typeof modelsHubJsonLd>[0],
-      'launched' | 'workflowsLaunched'
-    > = { launched: 'all', workflowsLaunched: false }
+    launched: ModelPageLaunch = 'all'
   ) {
     return modelsHubJsonLd({
       models,
       url: hubUrl,
       siteUrl,
-      ...launch
+      launched
     }).extraJsonLd.flatMap(({ itemListElement }) =>
       Array.isArray(itemListElement)
         ? itemListElement.map((element: { url: string }) => element.url)
@@ -204,19 +213,20 @@ describe('modelsHubJsonLd', () => {
     )
   })
 
-  it('leaves out links that are not model pages, even with workflows launched', () => {
+  it('leaves out a launched workflow page and links that are not model pages', () => {
     const [listedModel] = directoryModels
     expect(workflowPath).toBeDefined()
+    launch.launchedWorkflowPages = true
+    onTestFinished(() => {
+      launch.launchedWorkflowPages = false
+    })
     expect(
-      listedUrls(
-        [
-          { name: 'No page' },
-          { name: 'Workflow', href: workflowPath },
-          { name: 'Unknown', href: '/hub/models/not-a-model/' },
-          listedModel
-        ],
-        { launched: 'all', workflowsLaunched: true }
-      )
+      listedUrls([
+        { name: 'No page' },
+        { name: 'Workflow', href: workflowPath },
+        { name: 'Unknown', href: '/hub/models/not-a-model/' },
+        listedModel
+      ])
     ).toEqual([`${siteUrl}${listedModel.href}`])
   })
 
@@ -226,9 +236,9 @@ describe('modelsHubJsonLd', () => {
       .filter(({ routerId }) => routerId !== kept.routerId)
       .slice(0, 1)
     expect(dropped).toHaveLength(1)
-    expect(
-      listedUrls([kept, ...dropped], { launched: new Set([kept.routerId]) })
-    ).toEqual([`${siteUrl}${kept.href}`])
+    expect(listedUrls([kept, ...dropped], new Set([kept.routerId]))).toEqual([
+      `${siteUrl}${kept.href}`
+    ])
   })
 
   it('resolves a link without a trailing slash to the canonical page URL', () => {

@@ -1,8 +1,5 @@
 import { isIndexableModelPage } from '@/config/indexing'
-import {
-  launchedModelPages,
-  launchedWorkflowPages
-} from '@/config/model-page-launch'
+import { launchedModelPages } from '@/config/model-page-launch'
 import type { ModelPageLaunch } from '@/config/model-page-launch'
 import type { ModelDeveloper } from '@/config/model-vendors'
 import { modelsUrlKind } from '@/config/models-url-registry'
@@ -111,15 +108,13 @@ interface ModelsHubJsonLdInput {
   url: string
   siteUrl: string
   launched?: ModelPageLaunch
-  workflowsLaunched?: boolean
 }
 
 export function modelsHubJsonLd({
   models,
   url,
   siteUrl,
-  launched = launchedModelPages,
-  workflowsLaunched = launchedWorkflowPages
+  launched = launchedModelPages
 }: ModelsHubJsonLdInput): {
   pageType: 'CollectionPage'
   mainEntityId?: string
@@ -130,7 +125,7 @@ export function modelsHubJsonLd({
   const listed = models.flatMap(({ name, href }) =>
     href !== undefined &&
     modelsUrlKind(href) === 'model' &&
-    isIndexableModelPage(href, launched, workflowsLaunched)
+    isIndexableModelPage(href, launched)
       ? [{ name, url: absoluteUrl(site, href) }]
       : []
   )
