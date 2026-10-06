@@ -178,6 +178,11 @@ describe('runAssignment', () => {
     process.env.GITHUB_OUTPUT = file
     process.exitCode = 0
 
+    // ghWithRetry backs off through a blocking Atomics.wait before its last
+    // attempt. Mocking the CLI does not avoid that sleep, so the retry path
+    // costs real wall time unless the wait itself is stubbed.
+    const sleep = vi.spyOn(Atomics, 'wait').mockReturnValue('timed-out')
+
     const candidate = pr({ number: 42, labels: [{ name: 'backport' }] })
     let listed = false
     vi.mocked(execFileSync).mockImplementation((_file, args) => {
@@ -206,6 +211,7 @@ describe('runAssignment', () => {
       if (priorFile === undefined) delete process.env.GITHUB_OUTPUT
       else process.env.GITHUB_OUTPUT = priorFile
       process.exitCode = priorCode
+      sleep.mockRestore()
       vi.mocked(execFileSync).mockReset()
       rmSync(dir, { recursive: true, force: true })
     }
@@ -224,22 +230,18 @@ describe('runAssignment', () => {
   // The other half of the same guarantee: a backport that is assigned but has
   // nobody asked to review it never reaches the approval backport-auto-merge
   // waits for, so a rejected request has to fail the run too.
-  it(
-    'fails the run when GitHub rejects the review request',
-    { timeout: 20_000 },
-    () => {
-      const { exitCode, degraded } = run(
-        { assignees: [{ login: 'thedatalife' }] },
-        true
-      )
+  it('fails the run when GitHub rejects the review request', () => {
+    const { exitCode, degraded } = run(
+      { assignees: [{ login: 'thedatalife' }] },
+      true
+    )
 
-      expect(exitCode).toBe(1)
-      expect(degraded).toContain(
-        '#42 has no confirmed review request for `thedatalife`'
-      )
-      expect(degraded).not.toContain('is not confirmed assigned')
-    }
-  )
+    expect(exitCode).toBe(1)
+    expect(degraded).toContain(
+      '#42 has no confirmed review request for `thedatalife`'
+    )
+    expect(degraded).not.toContain('is not confirmed assigned')
+  })
 
   it('stays green when GitHub echoes the assignee back', () => {
     const { exitCode, degraded } = run({
