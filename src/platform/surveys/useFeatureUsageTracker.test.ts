@@ -121,6 +121,26 @@ describe('useFeatureUsageTracker', () => {
     expect(useCount.value).toBe(1)
   })
 
+  it('preserves in-memory increments when storage recovers', () => {
+    const { trackUsage, useCount } =
+      useFeatureUsageTracker('recovering-storage')
+
+    trackUsage()
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const setItem = vi
+      .spyOn(Storage.prototype, 'setItem')
+      .mockImplementation(() => {
+        throw new DOMException('Storage quota exceeded', 'QuotaExceededError')
+      })
+    trackUsage()
+    setItem.mockRestore()
+    trackUsage()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored['recovering-storage']?.useCount).toBe(3)
+    expect(useCount.value).toBe(3)
+  })
+
   it('preserves intervening usage when tracked after scope disposal', () => {
     const scope = effectScope()
     let trackDisposedFeature = () => {}
