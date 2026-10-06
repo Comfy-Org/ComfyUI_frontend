@@ -68,10 +68,6 @@ vi.mock(import('@/services/litegraphService'))
 
 const mockCanvas = app.canvas
 
-/**
- * The mocked `app.graph` stands in for a graph whose node list the store only
- * reads the length of, so expose that one seam instead of casting at each use.
- */
 const mockGraphNodes = app.graph as {
   nodes: unknown[]
   _nodes: unknown[]

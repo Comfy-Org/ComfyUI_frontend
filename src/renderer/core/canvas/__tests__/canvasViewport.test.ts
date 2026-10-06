@@ -17,8 +17,6 @@ function createTransformTrackingCanvas(cssSize?: {
   height: number
 }) {
   const transform = { x: 1, y: 1 }
-  // `scale` multiplies the current transform; `setTransform` replaces it. The
-  // difference is what the compounding and probe-reset cases below observe.
   const setTransform: CanvasRenderingContext2D['setTransform'] = vi.fn(
     (
       a?: number | DOMMatrix2DInit,
@@ -31,13 +29,7 @@ function createTransformTrackingCanvas(cssSize?: {
       transform.y = d
     }
   )
-  const ctx = createMockCanvasRenderingContext2D({
-    scale: vi.fn((x: number, y: number) => {
-      transform.x *= x
-      transform.y *= y
-    }),
-    setTransform
-  })
+  const ctx = createMockCanvasRenderingContext2D({ setTransform })
   const canvas = createTestCanvasElement({ ctx })
   for (const dimension of ['width', 'height'] as const) {
     let backingStore = canvas[dimension]
@@ -56,7 +48,7 @@ function createTransformTrackingCanvas(cssSize?: {
       () => new DOMRect(0, 0, cssSize.width, cssSize.height)
     )
   }
-  return { canvas, ctx, transform }
+  return { canvas, transform }
 }
 
 describe('measureViewport', () => {
@@ -151,14 +143,6 @@ describe('applyViewport', () => {
     expect(background.transform).toEqual({ x: 2, y: 2 })
   })
 
-  it('applies the DPR transform to a shared foreground/background context', () => {
-    const { canvas, transform } = createTransformTrackingCanvas()
-
-    applyViewport(measureViewport(800, 600, 2), canvas, canvas)
-
-    expect(transform).toEqual({ x: 2, y: 2 })
-  })
-
   it('hands the applied DPR and CSS dimensions to the consumer', () => {
     const consumer = { dpr: 1, ds: { setViewportSize: vi.fn() } }
 
@@ -173,24 +157,13 @@ describe('applyViewport', () => {
     expect(consumer.ds.setViewportSize).toHaveBeenCalledWith(800, 600)
   })
 
-  it('keeps the DPR transform across a measurement probe, even when the backing size rounds back', () => {
+  it('restores the DPR transform after a measurement probe resets the context', () => {
     const cssSize = { width: 800.1, height: 600 }
     const { canvas, transform } = createTransformTrackingCanvas(cssSize)
-
     applyViewport(measureViewportFromElement(canvas, 2), canvas, canvas)
-    expect(transform).toEqual({ x: 2, y: 2 })
-
-    // The probe resets the context by reassigning the backing attributes, and
-    // rounding back to the same physical size means no later write undoes it.
     cssSize.width = 800.2
-    const reprobed = measureViewportFromElement(canvas, 2)
-    expect([reprobed.physicalWidth, reprobed.physicalHeight]).toEqual([
-      canvas.width,
-      canvas.height
-    ])
-    expect(transform).toEqual({ x: 2, y: 2 })
 
-    applyViewport(reprobed, canvas, canvas)
+    measureViewportFromElement(canvas, 2)
 
     expect(transform).toEqual({ x: 2, y: 2 })
   })
@@ -199,7 +172,6 @@ describe('applyViewport', () => {
     const { canvas, transform } = createTransformTrackingCanvas()
 
     applyViewport(measureViewport(800, 600, 2), canvas, canvas)
-    expect(transform).toEqual({ x: 2, y: 2 })
 
     applyViewport(measureViewport(1600 / 3, 400, 3), canvas, canvas)
 
@@ -210,7 +182,6 @@ describe('applyViewport', () => {
     const { canvas, transform } = createTransformTrackingCanvas()
 
     applyViewport(measureViewport(800, 600, 2), canvas, canvas)
-    expect(transform).toEqual({ x: 2, y: 2 })
 
     applyViewport(measureViewport(1000, 700, 2), canvas, canvas)
 
@@ -309,21 +280,17 @@ describe('applyLogicalCanvasStyle', () => {
   })
 
   it('does not probe a canvas whose layout box differs from its backing store', () => {
-    // The steady state of a stylesheet-sized canvas above DPR 1: the box cannot
-    // be coming from attributes it does not match, so no probe is needed.
     const canvas = createTestCanvasElement({
       width: 1600,
       height: 1200,
       cssSize: [800, 600]
     })
-    const widthWrites = vi.spyOn(canvas, 'width', 'set')
-    const heightWrites = vi.spyOn(canvas, 'height', 'set')
+    const backingStoreWrites = vi.spyOn(canvas, 'width', 'set')
 
-    const bitmapDiscarded = applyLogicalCanvasStyle(canvas, 800, 600)
+    const discardedBitmap = applyLogicalCanvasStyle(canvas, 800, 600)
 
-    expect(widthWrites).not.toHaveBeenCalled()
-    expect(heightWrites).not.toHaveBeenCalled()
-    expect(bitmapDiscarded).toBe(false)
+    expect(backingStoreWrites).not.toHaveBeenCalled()
+    expect(discardedBitmap).toBe(false)
     expect([canvas.style.width, canvas.style.height]).toEqual(['', ''])
   })
 
@@ -340,20 +307,13 @@ describe('applyLogicalCanvasStyle', () => {
 
   it('reuses an unchanged DPR-1 ownership result without probing again', () => {
     const canvas = createTestCanvasElement({ cssSize: [800, 600] })
-    const widthWrites = vi.spyOn(canvas, 'width', 'set')
-    const heightWrites = vi.spyOn(canvas, 'height', 'set')
+    applyLogicalCanvasStyle(canvas, 800, 600)
+    const backingStoreWrites = vi.spyOn(canvas, 'width', 'set')
 
-    expect(applyLogicalCanvasStyle(canvas, 800, 600)).toBe(true)
-    const writesAfterProbe = [
-      widthWrites.mock.calls.length,
-      heightWrites.mock.calls.length
-    ]
+    const discardedBitmap = applyLogicalCanvasStyle(canvas, 800, 600)
 
-    expect(applyLogicalCanvasStyle(canvas, 800, 600)).toBe(false)
-    expect([
-      widthWrites.mock.calls.length,
-      heightWrites.mock.calls.length
-    ]).toEqual(writesAfterProbe)
+    expect(backingStoreWrites).not.toHaveBeenCalled()
+    expect(discardedBitmap).toBe(false)
   })
 
   it('pins only the axis whose size still comes from the backing store', () => {

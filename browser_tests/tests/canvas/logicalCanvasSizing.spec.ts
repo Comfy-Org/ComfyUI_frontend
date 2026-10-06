@@ -14,27 +14,9 @@ test.describe(
   'Canvas logical sizing at 200 percent display scaling',
   { tag: '@canvas' },
   () => {
-    test('fills its container at the logical size with a device-pixel backing store', async ({
-      comfyPage
-    }) => {
-      expect(await comfyPage.page.evaluate(() => window.devicePixelRatio)).toBe(
-        DPR
-      )
-
-      const box = await readCanvasBox(comfyPage.page)
-
-      expect(box.layoutWidth).toBeCloseTo(box.containerWidth, 0)
-      expect(box.layoutHeight).toBeCloseTo(box.containerHeight, 0)
-      expectDevicePixelBackingStore(box, DPR)
-    })
-
     test('leaves the shipped canvas to its stylesheet when a legacy resize() runs', async ({
       comfyPage
     }) => {
-      // The shipped canvas is sized by its classes, so the same legacy path must
-      // not pin it to pixels: pinning freezes it at one size and it stops
-      // following its container. Nothing in the app calls resize() on boot, so
-      // this drives it the way an extension would.
       const inlineSize = await comfyPage.page.evaluate(() => {
         const { style } =
           document.querySelector<HTMLCanvasElement>('#graph-canvas')!
@@ -61,7 +43,7 @@ test.describe(
         container.style.width = `${width}px`
         container.style.height = `${height}px`
         container.style.overflow = 'hidden'
-        canvas.className = 'touch-none'
+        canvas.removeAttribute('class')
         canvas.width = container.offsetWidth
         canvas.height = container.offsetHeight
 

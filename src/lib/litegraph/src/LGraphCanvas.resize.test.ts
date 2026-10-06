@@ -91,22 +91,6 @@ describe('LGraphCanvas.resize', () => {
     ])
   })
 
-  it('releases its explicit-size pin when returning to parent sizing', () => {
-    const { canvas, parentSize } = createParentSizedCanvas()
-    canvas.resize(640, 480)
-    parentSize.width = 1000
-    parentSize.height = 700
-
-    canvas.resize()
-
-    expect([
-      canvas.canvas.style.width,
-      canvas.canvas.style.height,
-      canvas.canvas.width,
-      canvas.canvas.height
-    ]).toEqual(['1000px', '700px', 2000, 1400])
-  })
-
   it('keeps ownership of an explicit pin across a repeated size', () => {
     const { canvas } = createParentSizedCanvas()
     setIntrinsicCanvasLayout(canvas.canvas)
@@ -141,9 +125,6 @@ describe('LGraphCanvas.resize', () => {
   it('repaints when the sizing probe discarded the bitmap but nothing resized', () => {
     vi.stubGlobal('devicePixelRatio', 1)
     const { canvas } = createParentSizedCanvas()
-    // A stylesheet-sized canvas at DPR 1, so its backing store already matches
-    // its layout box: the ambiguous case that has to be probed, with no size
-    // change afterwards to force a redraw on its own.
     vi.spyOn(canvas.canvas, 'getBoundingClientRect').mockReturnValue(
       new DOMRect(0, 0, 800, 600)
     )
