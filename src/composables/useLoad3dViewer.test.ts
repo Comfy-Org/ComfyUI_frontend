@@ -772,8 +772,7 @@ describe('useLoad3dViewer', () => {
 
   describe('standalone thumbnail persistence', () => {
     beforeEach(() => {
-      isAssetPreviewSupported.mockReset().mockReturnValue(false)
-      persistThumbnail.mockReset()
+      isAssetPreviewSupported.mockReturnValue(false)
       vi.stubGlobal(
         'fetch',
         vi.fn().mockResolvedValue({ blob: () => Promise.resolve(new Blob()) })

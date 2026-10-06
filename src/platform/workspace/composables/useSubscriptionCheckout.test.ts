@@ -565,13 +565,9 @@ describe('useSubscriptionCheckout', () => {
   }
 
   beforeEach(() => {
-    mockSubscribe.mockReset()
-    mockPreviewSubscribe.mockReset()
-    mockFetchPlans.mockReset()
-    mockFetchStatus.mockReset().mockResolvedValue(undefined)
+    mockFetchStatus.mockResolvedValue(undefined)
     vi.mocked(useBillingOperationStore().startOperation).mockReset()
-    mockListSavedPaymentMethods.mockReset()
-    mockOpenHostedBillingTab.mockReset().mockReturnValue(false)
+    mockOpenHostedBillingTab.mockReturnValue(false)
     railState.rail = null
     Object.assign(useBillingOperationStore(), {
       subscriptionActionOperation: undefined

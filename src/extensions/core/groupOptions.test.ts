@@ -73,7 +73,6 @@ const BASE_GROUP_ITEMS: (string | null)[] = [
 ]
 
 beforeEach(() => {
-  graphChange.mockClear()
   vi.mocked(useSettingStore().get).mockReturnValue(10)
 })
 

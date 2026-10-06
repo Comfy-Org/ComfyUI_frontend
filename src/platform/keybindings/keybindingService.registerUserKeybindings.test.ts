@@ -1,5 +1,5 @@
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
@@ -13,10 +13,6 @@ describe('keybindingService - registerUserKeybindings', () => {
     useSettingStore().settingValues['Comfy.Keybinding.NewBindings'] = []
     useSettingStore().settingValues['Comfy.Keybinding.UnsetBindings'] = []
     warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
-  })
-
-  afterEach(() => {
-    warnSpy.mockRestore()
   })
 
   it('does not warn when unset binding targets a command that no longer exists', () => {

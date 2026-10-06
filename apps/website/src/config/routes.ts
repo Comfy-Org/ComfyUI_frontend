@@ -263,7 +263,7 @@ export const externalLinks = {
 
 /**
  * The platform creates a key on arrival and shows this product's onboarding.
- * `model` is the website's model page id (`/models/<slug>`), not the Router id.
+ * `model` is the website's model page id (`/hub/models/<slug>/`), not the Router id.
  */
 type ApiKeysOnboarding =
   | { onboarding: 'router' | 'comfy_api' }

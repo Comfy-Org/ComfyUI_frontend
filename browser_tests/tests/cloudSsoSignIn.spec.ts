@@ -87,6 +87,7 @@ const test = comfyPageFixture.extend<{
       route.fulfill({ status: 200, contentType: 'text/html', body: '' })
     )
     await use(page)
+    await page.unrouteAll({ behavior: 'wait' })
   },
   cloudAuth: async ({ page }, use) => {
     await use(new CloudAuthHelper(page))
@@ -140,7 +141,11 @@ test.describe('Cloud login SSO entry', { tag: ['@cloud', '@ui'] }, () => {
       await answerDiscover(page, 200, SSO_DISCOVERED)
       await cloudAuth.mockLiveEmailSignIn()
 
+      const features = page.waitForResponse((response) =>
+        isPath(response.request(), '/api/features')
+      )
       await openLogin(page)
+      await features
       await expect(
         page.getByRole('button', { name: SSO_COPY.continueWithSso })
       ).toHaveCount(0)

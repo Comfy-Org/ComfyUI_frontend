@@ -370,7 +370,7 @@ function initialPendingState(
   }
 }
 
-function failureCategoryFor(
+export function failureCategoryFor(
   state: Exclude<BillingOperationState, PendingBillingOperation>
 ): BillingOperationFailureCategory | undefined {
   switch (state.phase) {

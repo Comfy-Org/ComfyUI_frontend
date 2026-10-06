@@ -1,6 +1,6 @@
 vi.mock(import('firebase/auth'))
 vi.mock(import('@/services/dialogService'))
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { useDialogService } from '@/services/dialogService'
 import { useAuthStore } from '@/stores/authStore'
@@ -112,10 +112,6 @@ describe('agentSocketToken', () => {
 })
 
 describe('ensureSignedIn', () => {
-  beforeEach(() => {
-    vi.mocked(useDialogService().showSignInDialog).mockReset()
-  })
-
   it('lets a signed-in user send without asking', async () => {
     userHeader({ Authorization: 'Bearer id-token' })
 

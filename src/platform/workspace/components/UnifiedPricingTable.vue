@@ -8,7 +8,7 @@
           v-for="option in planScopeOptions"
           :key="option.value"
           :value="option.value"
-          class="h-8 rounded-b-none bg-base-background px-4 text-base-foreground opacity-50 hover:opacity-100 data-[state=on]:opacity-100"
+          class="h-8 rounded-b-none bg-base-background px-4 text-base-foreground opacity-50 hover:bg-base-background hover:opacity-100 data-[state=on]:bg-base-background data-[state=on]:opacity-100"
         >
           {{ option.label }}
         </ToggleGroupItem>

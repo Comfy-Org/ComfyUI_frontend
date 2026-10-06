@@ -72,7 +72,7 @@ async function assertLandingPage(
   await expect(featuredStoryLink).toBeVisible()
   await expect(featuredStoryLink).toHaveAttribute(
     'href',
-    'https://blog.comfy.org/p/comfy-agent-the-first-agent-for-craft'
+    'https://comfy.org/customers/hakoniwa-yui/'
   )
   await expect(featuredStoryLink).toHaveAttribute('target', '_blank')
   await expect(featuredStoryLink).toHaveAttribute('rel', /\bnoopener\b/)

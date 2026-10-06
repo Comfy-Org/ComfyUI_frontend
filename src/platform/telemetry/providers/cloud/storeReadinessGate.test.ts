@@ -119,7 +119,6 @@ describe('telemetry providers wait for Pinia before touching stores', () => {
   afterEach(() => {
     markStoresReady()
     hoisted.customerIoRegistration.rejection = null
-    hoisted.reportError.mockClear()
     delete (window as { __CONFIG__?: unknown }).__CONFIG__
   })
 

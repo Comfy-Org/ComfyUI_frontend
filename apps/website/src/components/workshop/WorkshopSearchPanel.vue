@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, reactive } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -8,6 +8,11 @@ import {
   filterWorkshopModels,
   sortWorkshopModels
 } from '@/config/models-catalogue'
+import {
+  isAudioUrl,
+  isVideoUrl,
+  videoPosterUrl
+} from '@/config/workshop-playground'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 
@@ -40,6 +45,25 @@ const suggestions = computed(() =>
   query.trim()
     ? sortWorkshopModels(matching.value, 'name').slice(0, SUGGESTIONS)
     : []
+)
+
+const failedThumbnails = reactive(new Set<string>())
+
+function kindOfUrl(url: string) {
+  if (isVideoUrl(url)) return 'video'
+  if (isAudioUrl(url)) return 'audio'
+  return 'image'
+}
+
+function thumbnailOf(model: WorkshopModel) {
+  const url = model.thumbnail?.url ?? model.thumbnailUrl
+  if (!url || failedThumbnails.has(url)) return undefined
+  const kind = model.thumbnail?.kind ?? kindOfUrl(url)
+  return kind === 'audio' ? undefined : { url, kind }
+}
+
+const rows = computed(() =>
+  suggestions.value.map((model) => ({ model, thumbnail: thumbnailOf(model) }))
 )
 
 function sourceOf(model: WorkshopModel): string | undefined {
@@ -75,7 +99,7 @@ function sourceOf(model: WorkshopModel): string | undefined {
         <span class="tabular-nums opacity-60">({{ matching.length }})</span>
       </p>
       <button
-        v-for="model in suggestions"
+        v-for="{ model, thumbnail } in rows"
         :key="model.slug"
         type="button"
         class="flex cursor-pointer items-center gap-3 rounded-xl p-2 text-left outline-none hover:bg-transparency-white-t4 focus-visible:bg-transparency-white-t4"
@@ -83,13 +107,26 @@ function sourceOf(model: WorkshopModel): string | undefined {
         @mousedown.prevent
         @click="emit('pick', model)"
       >
+        <video
+          v-if="thumbnail?.kind === 'video'"
+          :src="videoPosterUrl(thumbnail.url)"
+          class="size-10 shrink-0 rounded-lg object-cover"
+          aria-hidden="true"
+          data-testid="workshop-search-model-video"
+          muted
+          playsinline
+          preload="metadata"
+          @error="failedThumbnails.add(thumbnail.url)"
+        />
         <img
-          v-if="model.thumbnailUrl"
-          :src="model.thumbnailUrl"
+          v-else-if="thumbnail"
+          :src="thumbnail.url"
           alt=""
           class="size-10 shrink-0 rounded-lg object-cover"
+          data-testid="workshop-search-model-image"
           loading="lazy"
           decoding="async"
+          @error="failedThumbnails.add(thumbnail.url)"
         />
         <span
           v-else

@@ -178,7 +178,9 @@ describe('FeaturedBanner', () => {
     await setAllIntersecting(true)
 
     expect(screen.queryByTestId('featured-video')).toBeNull()
-    expect(screen.getByAltText('').getAttribute('src')).toBe('/still.webp')
+    const still = screen.getByAltText('')
+    expect(still).toHaveAttribute('src', '/still.webp')
+    expect(still).toHaveAttribute('fetchpriority', 'high')
   })
 
   it('advances to the next slide on the autoplay cadence', async () => {

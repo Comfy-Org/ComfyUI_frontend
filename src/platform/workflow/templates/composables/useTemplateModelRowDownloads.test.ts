@@ -131,7 +131,7 @@ describe('useTemplateModelRowDownloads', () => {
       },
       subscribeLegacyProgress: () => {
         order.push('legacy-subscribe')
-        return () => undefined
+        throw new Error('Legacy progress is unavailable')
       }
     })
     downloads.request(request)

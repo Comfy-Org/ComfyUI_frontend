@@ -1,6 +1,7 @@
 import type { SubscriptionCommandResult } from '@comfyorg/account-core/billing'
 import { describe, expect, it } from 'vitest'
 
+import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 
 import {
@@ -97,6 +98,40 @@ describe('projectSubscriptionResult', () => {
         code: phase,
         billingOpId: 'op-1'
       })
+    }
+  )
+
+  it.for([
+    {
+      phase: 'failed',
+      operation: failedOperation('subscription'),
+      category: 'provider_decline'
+    },
+    {
+      phase: 'failed',
+      operation: failedOperation('cancel'),
+      category: 'api_rejected'
+    },
+    {
+      phase: 'timed_out',
+      operation: settledOperation('timed_out', 'subscription'),
+      category: 'poll_timeout'
+    },
+    {
+      phase: 'reconciliation_needed',
+      operation: settledOperation('reconciliation_needed', 'subscription'),
+      category: 'reconciliation_needed'
+    }
+  ] as const)(
+    'categorizes a $phase $operation.kind settle as $category, as the lifecycle reported it',
+    ({ phase, operation, category }) => {
+      const outcome = projectSubscriptionResult({
+        status: 'ok',
+        value: { phase, operation }
+      })
+
+      const error = outcome.status === 'error' ? outcome.error : undefined
+      expect(categorizeBillingApiError(error)).toBe(category)
     }
   )
 
