@@ -20,6 +20,11 @@ import type {
   WidgetCallbackOptions
 } from '@/lib/litegraph/src/types/widgets'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
+import {
+  zAutogrowOptions,
+  zDynamicComboInputSpec
+} from '@/schemas/nodeDefSchema'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import { app } from '@/scripts/app'
@@ -196,6 +201,8 @@ export function migrateWidgetsValues<TWidgetValue>(
   widgets: IBaseWidget[],
   widgetsValues: TWidgetValue[]
 ): TWidgetValue[] {
+  if (Object.values(inputDefs).some(containsDynamicGroup)) return widgetsValues
+
   const widgetNames = new Set(widgets.map((w) => w.name))
   const originalWidgetsInputs = Object.values(inputDefs).filter(
     (input) => widgetNames.has(input.name) || input.forceInput
@@ -241,6 +248,25 @@ export function migrateWidgetsValues<TWidgetValue>(
   return filter(
     alignedWidgetValues,
     (_, index) => !widgetIndexHasForceInput[index]
+  )
+}
+
+function containsDynamicGroup(input: InputSpec): boolean {
+  if (input.type === 'COMFY_DYNAMICGROUP_V3') return true
+
+  const autogrow =
+    input.type === 'COMFY_AUTOGROW_V3'
+      ? zAutogrowOptions.safeParse(input).data
+      : undefined
+  const combo = zDynamicComboInputSpec.safeParse([input.type, input]).data
+  const nestedInputs = autogrow
+    ? [autogrow.template.input]
+    : (combo?.[1].options.map((option) => option.inputs) ?? [])
+  return nestedInputs.some((inputs) =>
+    Object.entries({ ...inputs.required, ...inputs.optional }).some(
+      ([name, spec]) =>
+        containsDynamicGroup(transformInputSpecV1ToV2(spec, { name }))
+    )
   )
 }
 
