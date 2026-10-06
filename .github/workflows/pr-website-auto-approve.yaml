@@ -38,7 +38,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Checkout trusted base automation
-        uses: actions/checkout@v6.1.0
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           ref: refs/heads/${{ github.event.repository.default_branch }}
           persist-credentials: false
