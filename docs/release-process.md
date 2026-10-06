@@ -61,7 +61,27 @@ later ship as v1.40.2). Same commits, no divergence — the branch just prevents
 
 ## Release Sheriff Assignment
 
-`pr-assign-release-sheriff.yaml` assigns the on-call release sheriff to any
+The sheriff is a **fixed role**, declared in `.github/release-sheriff.json`:
+
+```json
+{ "sheriff": "thedatalife", "backupReviewer": "christian-byrne" }
+```
+
+It is deliberately not the Datadog on-call person. On-call pages for incidents
+and hands over weekly; the sheriff shepherds releases through QA. Reading the
+release owner off the paging rota is what coupled the two roles. Changing
+sheriff is a PR to that file.
+
+`backupReviewer` must name someone other than the sheriff, and
+`parseSheriffConfig` fails the run if it does not — see below for why. Because
+the unit suite runs on any change under `.github/`, a malformed or
+self-naming edit fails CI on the PR that writes it.
+
+While the file is absent the job falls back to the Datadog lookup described
+below. That fall-back is transitional and is removed along with the Datadog
+path itself.
+
+`pr-assign-release-sheriff.yaml` assigns the release sheriff to any
 open PR that has no assignee and is either:
 
 - a backport (label `backport`, or a `[backport ...]` title);
@@ -72,12 +92,21 @@ open PR that has no assignee and is either:
 It also requests their review, since backport merges are gated on an approval.
 Existing assignees and review requests are never overwritten.
 
+Both halves are **verified, not assumed**. GitHub drops an assignee who lacks
+push access and still answers `201`, and rejects a review request for a
+non-collaborator with `422`, so the job reads the assignee list back and checks
+the review request succeeded. Either failure marks the run degraded and exits
+non-zero rather than reporting a PR as owned when it is not — an unassigned
+backport with no requested reviewer never reaches the approval
+`backport-auto-merge.yaml` waits for.
+
 When the sheriff wrote the PR themselves, the review is requested from the
-**next person in the rotation** instead — GitHub rejects a self-review request,
-so previously those PRs were assigned to their own author with nobody asked to
-review, and then waited on an approval that had never been requested. The order
-comes from the Datadog layer's member list, so it needs no separate config. If
-nobody in the rotation can stand in, the run says so rather than staying quiet.
+**standby** instead — GitHub rejects a self-review request, so previously those
+PRs were assigned to their own author with nobody asked to review, and then
+waited on an approval that had never been requested. The standby is
+`backupReviewer` from the config; on the Datadog fall-back it is the next
+person in the rotation. If no standby can stand in, the run says so rather than
+staying quiet.
 
 Automation-authored PRs are included because nobody feels addressed by what a
 robot opens: they accumulated unassigned for weeks. Note these are matched by
@@ -247,11 +276,19 @@ object of `scripts/release-sheriff/release-sheriff.ts`. Note `datadogSite` is
 Requires repo secrets `DATADOG_API_KEY` and `DATADOG_APP_KEY` (scope:
 `on_call_read`) plus `RELEASE_SHERIFF_DIRECTORY`.
 
+These secrets and everything in this section apply to the **Datadog fall-back
+only**, which runs when `.github/release-sheriff.json` is absent.
+
 If the on-call user cannot be mapped — a missing directory entry, a directory
 secret that is absent or not valid JSON, missing Datadog credentials, an
 unreachable Datadog — the job still assigns `fallbackGithubLogin` so PRs are
 never left unowned, but **exits non-zero** so the degradation is visible. A
-green run means a real sheriff was resolved from Datadog.
+green run on this path means a real sheriff was resolved from Datadog.
+
+A malformed `.github/release-sheriff.json` behaves differently and
+deliberately: the run exits non-zero and assigns **nothing**. There is no
+sensible person to guess at, and the declaration is one reviewed file that CI
+parses on every PR touching it, so a bad one should not reach `main` at all.
 
 Directory coverage is checked for the **whole rotation**, not just whoever is on
 call, and a member without an entry fails the run. Someone added to the layer
