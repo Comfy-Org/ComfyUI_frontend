@@ -455,20 +455,25 @@ const CATALOG_PARAMS = [
   'capability'
 ] as const
 
+function catalogValues(filter: CatalogLocation) {
+  return {
+    q: [filter.query],
+    useCase: [
+      filter.useCase === 'all' ? undefined : filter.useCase,
+      ...(filter.useCases ?? [])
+    ],
+    sort: [filter.sort === 'popular' ? undefined : filter.sort],
+    view: [filter.browseAll ? 'all' : undefined],
+    modality: filter.modalities ?? [],
+    provider: filter.providers ?? [],
+    capability: filter.capabilities ?? []
+  } satisfies Record<(typeof CATALOG_PARAMS)[number], unknown>
+}
+
 function catalogParams(filter: CatalogLocation): URLSearchParams {
   const params = new URLSearchParams()
-  if (filter.query) params.set('q', filter.query)
-  const shelves = [
-    ...(filter.useCase && filter.useCase !== 'all' ? [filter.useCase] : []),
-    ...(filter.useCases ?? [])
-  ]
-  for (const shelf of shelves) params.append('useCase', shelf)
-  if (filter.sort && filter.sort !== 'popular') params.set('sort', filter.sort)
-  if (filter.browseAll) params.set('view', 'all')
-  for (const value of filter.modalities ?? []) params.append('modality', value)
-  for (const value of filter.providers ?? []) params.append('provider', value)
-  for (const value of filter.capabilities ?? [])
-    params.append('capability', value)
+  for (const [name, values] of Object.entries(catalogValues(filter)))
+    for (const value of values) if (value) params.append(name, value)
   return params
 }
 
