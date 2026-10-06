@@ -208,7 +208,7 @@ const breadcrumbs: Crumb[] = hub
   </section>
 
   {hub && hub.usedBy.length > 0 && (
-    <ModelFileUsedBy workflows={hub.usedBy} client:visible />
+    <ModelFileUsedBy workflows={hub.usedBy} client:idle />
   )}
 
   <FAQSplit01

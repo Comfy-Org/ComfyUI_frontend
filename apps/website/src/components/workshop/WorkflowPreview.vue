@@ -66,7 +66,7 @@ const samples = computed(() =>
       :subtitle="t('workshop.workflow.previewHint')"
     />
 
-    <div class="grid gap-10 lg:grid-cols-12">
+    <div class="grid grid-cols-1 gap-10 lg:grid-cols-12">
       <div class="lg:col-span-8">
         <WorkflowGraph
           v-if="template?.downloadUrl"
