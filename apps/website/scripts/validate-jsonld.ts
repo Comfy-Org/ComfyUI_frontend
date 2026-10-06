@@ -2,7 +2,7 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
 
 import { NON_DEFAULT_LOCALE_PREFIXES } from '@/config/locales'
-import { collectGraphIds, isIdReference } from '@/utils/jsonLd'
+import { collectGraphIds } from '@/utils/jsonLd'
 
 import { isDirectExecution } from './script-entry-point'
 
@@ -11,15 +11,17 @@ const JSON_LD_BLOCK =
   /<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi
 const CANONICAL =
   /<link\b(?=[^>]*\brel=["']canonical["'])[^>]*\bhref=["']([^"']+)["']/i
-const FULL_DATE_TIME =
-  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?([+-]\d{2}:\d{2}|Z)$/
-const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/
+const ISO_DATE =
+  /^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2})(?::(\d{2})(?:\.\d+)?)?(?:Z|[+-](\d{2}):(\d{2})))?$/
+const MONTH_DAYS = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+const MAX_OFFSET_MINUTES = 14 * 60
 const VIDEO_FILE = /\.(mp4|webm|mov)(\?|#|$)/i
-const PLACEHOLDER = /^(undefined|null|NaN)$/
+const PLACEHOLDER = /^(undefined|null|NaN|\[object Object\])$/
 const DECIMAL = /^\d+(\.\d+)?$/
 const MODEL_PAGE = new RegExp(
   `^(?:${NON_DEFAULT_LOCALE_PREFIXES.join('|')})?/(?:hub/)?models/(?!local/)[^/]+/`
 )
+const REFERENCE_RULES = new Set(['honesty', 'idsOnSite', 'noPlaceholders'])
 const WEB_PAGE_TYPES = [
   'WebPage',
   'AboutPage',
@@ -86,6 +88,21 @@ function missing(node: JsonLdRecord, fields: string[]): string[] {
     .map((field) => `${type} missing ${field}`)
 }
 
+function isIdReference(node: JsonLdRecord): boolean {
+  return (
+    typeof node['@id'] === 'string' &&
+    Object.keys(node).every((key) => key === '@id' || key === '@type')
+  )
+}
+
+function isOnSite(id: string): boolean {
+  return id.startsWith(`${SITE_ORIGIN}/`)
+}
+
+function pointsElsewhere(node: JsonLdRecord, page: PageContext): boolean {
+  return isIdReference(node) && page.nodesById.get(String(node['@id'])) !== node
+}
+
 function resolve(value: unknown, page: PageContext): JsonLdRecord | undefined {
   if (!isRecord(value)) return undefined
   const id = value['@id']
@@ -93,6 +110,28 @@ function resolve(value: unknown, page: PageContext): JsonLdRecord | undefined {
     return page.nodesById.get(id) ?? value
   }
   return value
+}
+
+function isLeapYear(year: number): boolean {
+  return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0
+}
+
+function isoDate(value: unknown): { hasTime: boolean } | undefined {
+  const match = typeof value === 'string' ? ISO_DATE.exec(value) : null
+  if (!match) return undefined
+  const [year, month, day, hour, minute, second, offsetHour, offsetMinute] =
+    match.slice(1).map((part: string | undefined) => Number(part ?? 0))
+  if (month < 1 || month > 12) return undefined
+  const monthDays = month === 2 && isLeapYear(year) ? 29 : MONTH_DAYS[month - 1]
+  const isReal =
+    day >= 1 &&
+    day <= monthDays &&
+    hour <= 23 &&
+    minute <= 59 &&
+    second <= 59 &&
+    offsetMinute <= 59 &&
+    offsetHour * 60 + offsetMinute <= MAX_OFFSET_MINUTES
+  return isReal ? { hasTime: match[0].includes('T') } : undefined
 }
 
 function isConcretePrice(price: unknown): boolean {
@@ -150,9 +189,9 @@ const video: Rule = (node) => {
   if (!typesOf(node).includes('VideoObject')) return []
   const problems = missing(node, ['name', 'thumbnailUrl', 'uploadDate'])
   const { uploadDate } = node
-  if (!isBlank(uploadDate) && !FULL_DATE_TIME.test(String(uploadDate))) {
+  if (!isBlank(uploadDate) && !isoDate(uploadDate)?.hasTime) {
     problems.push(
-      `VideoObject uploadDate ${show(uploadDate)} lacks a time and offset`
+      `VideoObject uploadDate ${show(uploadDate)} is not a real date-time with offset`
     )
   }
   return problems
@@ -161,12 +200,9 @@ const video: Rule = (node) => {
 const event: Rule = (node) => {
   if (!typesOf(node).includes('Event')) return []
   const { startDate } = node
-  const isIsoDate =
-    typeof startDate === 'string' &&
-    (DATE_ONLY.test(startDate) || FULL_DATE_TIME.test(startDate))
-  return isIsoDate
+  return isoDate(startDate)
     ? []
-    : [`Event startDate ${show(startDate)} is not ISO 8601 with offset`]
+    : [`Event startDate ${show(startDate)} is not a real ISO 8601 date`]
 }
 
 const imagesAreImages: Rule = (node) => {
@@ -248,9 +284,10 @@ const webPage: Rule = (node, page) => {
 const idsOnSite: Rule = (node) => {
   const id = node['@id']
   if (typeof id !== 'string') return []
-  return id.startsWith(`${SITE_ORIGIN}/`)
-    ? []
-    : [`@id ${id} is not an absolute ${SITE_ORIGIN} URL`]
+  if (id.includes('#') && !isOnSite(id)) {
+    return [`fragment @id ${id} is not on ${SITE_ORIGIN}`]
+  }
+  return isAbsoluteHttpUrl(id) ? [] : [`@id ${id} is not an absolute URL`]
 }
 
 const isPlaceholder = (value: unknown): boolean =>
@@ -299,32 +336,39 @@ export function validateHtml(html: string, pagePath: string): Violation[] {
 
   const definedIds = new Set<string>()
   const referencedIds: string[] = []
-  const nodesById = new Map<string, JsonLdRecord>()
+  const stubsById = new Map<string, JsonLdRecord>()
+  const definitionsById = new Map<string, JsonLdRecord>()
   for (const block of blocks) {
     const { defined, references } = collectGraphIds(block)
     defined.forEach((id) => definedIds.add(id))
     referencedIds.push(...references)
     eachNode(block, (node) => {
       const id = node['@id']
-      if (typeof id !== 'string' || isIdReference(node)) return
-      if (nodesById.has(id)) {
+      if (typeof id !== 'string') return
+      if (isIdReference(node)) {
+        if ('@type' in node && !stubsById.has(id)) stubsById.set(id, node)
+        return
+      }
+      if (definitionsById.has(id)) {
         violations.push({
           rule: 'duplicateIds',
           message: `@id ${id} defined twice`
         })
       }
-      nodesById.set(id, node)
+      definitionsById.set(id, node)
     })
   }
 
   const page: PageContext = {
     pagePath,
     canonical: html.match(CANONICAL)?.[1],
-    nodesById
+    nodesById: new Map([...stubsById, ...definitionsById])
   }
   for (const block of blocks) {
     eachNode(block, (node) => {
+      const isReference = pointsElsewhere(node, page)
       for (const [rule, check] of Object.entries(RULES)) {
+        if (isReference && !REFERENCE_RULES.has(rule)) continue
         for (const message of check(node, page)) {
           violations.push({ rule, message: `${locatorOf(node)}: ${message}` })
         }
@@ -333,7 +377,7 @@ export function validateHtml(html: string, pagePath: string): Violation[] {
   }
 
   for (const id of referencedIds) {
-    if (!definedIds.has(id)) {
+    if (!definedIds.has(id) && isOnSite(id)) {
       violations.push({ rule: 'idRefs', message: `unresolved @id: ${id}` })
     }
   }
@@ -363,12 +407,23 @@ export function main(distDir: string): number {
     return 1
   }
 
-  const failures = files.flatMap((file) => {
-    const pagePath = pagePathOf(distDir, file)
-    return validateHtml(readFileSync(file, 'utf8'), pagePath).map(
-      (violation) => ({ pagePath, ...violation })
+  const pages = files.map((file) => ({
+    pagePath: pagePathOf(distDir, file),
+    html: readFileSync(file, 'utf8')
+  }))
+  if (!pages.some(({ html }) => CANONICAL.test(html))) {
+    console.error(
+      `JSON-LD validation found no canonical link in ${distDir}, so the WebPage check cannot run. Build with build:e2e.`
     )
-  })
+    return 1
+  }
+
+  const failures = pages.flatMap(({ pagePath, html }) =>
+    validateHtml(html, pagePath).map((violation) => ({
+      pagePath,
+      ...violation
+    }))
+  )
   if (failures.length > 0) {
     console.error(`JSON-LD validation failed (${failures.length} issue(s)):`)
     for (const { pagePath, rule, message } of failures) {
@@ -377,8 +432,11 @@ export function main(distDir: string): number {
     return 1
   }
 
+  const withJsonLd = pages.filter(({ html }) =>
+    html.includes('application/ld+json')
+  ).length
   process.stdout.write(
-    `JSON-LD validation passed across ${files.length} page(s).\n`
+    `JSON-LD validation passed across ${pages.length} page(s), ${withJsonLd} with JSON-LD.\n`
   )
   return 0
 }

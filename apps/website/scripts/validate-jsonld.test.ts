@@ -89,6 +89,13 @@ describe('validateHtml', () => {
     { rule: 'offer', bad: offer('Infinity') },
     { rule: 'offer', bad: offer('1e3') },
     { rule: 'offer', bad: offer('20', 0) },
+    {
+      rule: 'offer',
+      bad: {
+        '@type': 'Offer',
+        priceSpecification: { '@type': 'UnitPriceSpecification' }
+      }
+    },
     { rule: 'product', bad: { ...product, name: undefined } },
     { rule: 'product', bad: { ...product, name: ' ' } },
     { rule: 'product', bad: { ...product, image: undefined } },
@@ -98,11 +105,27 @@ describe('validateHtml', () => {
     { rule: 'video', bad: { ...video, uploadDate: '2026-07-16' } },
     { rule: 'video', bad: { ...video, uploadDate: undefined } },
     { rule: 'video', bad: { ...video, thumbnailUrl: undefined } },
+    ...[
+      '2026-02-30T12:00:00.000Z',
+      '2026-02-29T12:00:00Z',
+      '2026-04-31T12:00:00Z',
+      '2026-13-01T12:00:00Z',
+      '2026-03-15T24:00:00Z',
+      '2026-03-15T23:60:00Z',
+      '2026-03-15T23:59:60Z',
+      '2026-03-15T12:00:00+15:00',
+      '2026-03-15T12:00:00+05:60'
+    ].map((uploadDate) => ({ rule: 'video', bad: { ...video, uploadDate } })),
     {
       rule: 'event',
       bad: { '@type': 'Event', name: 'Meetup', startDate: '2026-10-07T10:00' }
     },
     { rule: 'event', bad: { '@type': 'Event', name: 'Meetup' } },
+    {
+      rule: 'event',
+      bad: { '@type': 'Event', name: 'Meetup', startDate: '2026-02-30' }
+    },
+    { rule: 'event', bad: { '@type': 'Event', '@id': `${canonical}#event` } },
     { rule: 'imagesAreImages', bad: { ...product, image: `${site}/a.mp4` } },
     { rule: 'imagesAreImages', bad: { ...product, image: `${site}/a.MP4` } },
     {
@@ -141,6 +164,14 @@ describe('validateHtml', () => {
         itemListElement: [{ '@type': 'ListItem', position: 1, url: canonical }]
       }
     },
+    {
+      rule: 'itemList',
+      bad: {
+        '@type': 'ItemList',
+        numberOfItems: '1',
+        itemListElement: [{ '@type': 'ListItem', position: 1, url: canonical }]
+      }
+    },
     { rule: 'idsOnSite', bad: { ...video, '@id': '/example/#video' } },
     {
       rule: 'idsOnSite',
@@ -152,15 +183,12 @@ describe('validateHtml', () => {
     { rule: 'noPlaceholders', bad: { ...video, description: ' ' } },
     { rule: 'noPlaceholders', bad: { ...video, sameAs: ['undefined'] } },
     {
-      rule: 'idRefs',
-      bad: { ...video, isPartOf: { '@id': `${site}/#missing` } }
+      rule: 'noPlaceholders',
+      bad: { ...video, description: '[object Object]' }
     },
     {
       rule: 'idRefs',
-      bad: {
-        ...video,
-        isPartOf: { '@id': `${site}/#missing`, '@type': 'WebSite' }
-      }
+      bad: { ...video, isPartOf: { '@id': `${site}/#missing` } }
     },
     { rule: 'duplicateIds', bad: { ...webPage, name: 'Again' } }
   ])('flags $rule', ({ rule, bad }) => {
@@ -183,6 +211,16 @@ describe('validateHtml', () => {
           name: 'Launch',
           startDate: '2026-10-07T17:00:00.000Z'
         },
+        { '@type': 'Event', name: 'Leap', startDate: '2024-02-29T12:00:00Z' },
+        {
+          '@type': 'Event',
+          name: 'Late',
+          startDate: '2026-03-01T00:30:00+02:00'
+        },
+        { '@type': 'Event', name: 'Close', startDate: '2026-03-15T23:59:59Z' },
+        { '@type': 'Product', '@id': product['@id'] },
+        { '@type': 'VideoObject', '@id': video['@id'] },
+        { '@type': 'WebPage', '@id': webPage['@id'] },
         { '@type': 'ImageObject', url: `${site}/a.webp` },
         crumbs([home, page]),
         {
@@ -208,6 +246,26 @@ describe('validateHtml', () => {
           '@id': `${site}/#website`,
           publisher: { '@id': org['@id'], '@type': 'Organization' }
         }
+      ])
+    ).toEqual([])
+  })
+
+  it('treats a lone {@id, @type} node as a minimal definition', () => {
+    const brandId = `${site}/#brand`
+    expect(
+      rulesHit([
+        { '@type': 'Organization', '@id': brandId },
+        { ...product, brand: { '@id': brandId } }
+      ])
+    ).toEqual([])
+  })
+
+  it('accepts an external entity @id', () => {
+    const wikidata = 'https://www.wikidata.org/wiki/Q116391114'
+    expect(
+      rulesHit([
+        { '@type': 'Organization', '@id': wikidata, name: 'Comfy' },
+        { ...video, sameAs: { '@id': 'https://www.wikidata.org/entity/Q42' } }
       ])
     ).toEqual([])
   })
@@ -271,6 +329,12 @@ describe('validateHtml', () => {
     expect(rulesHit([offer('0.00')], pagePath)).toEqual(rules)
   })
 
+  it('leaves a positive price on a model page alone', () => {
+    expect(rulesHit([offer('0.01')], '/hub/models/luma-photon-flash/')).toEqual(
+      []
+    )
+  })
+
   it('names the node and shows values as JSON in each message', () => {
     expect(
       messages([
@@ -331,6 +395,11 @@ describe('main', () => {
     { name: 'an empty dist', pages: {}, status: 1 },
     { name: 'a valid page', pages: { a: html([org, webPage]) }, status: 0 },
     {
+      name: 'pages with no canonical',
+      pages: { a: html([org, webPage], null) },
+      status: 1
+    },
+    {
       name: 'an invalid page',
       pages: { a: html([org, webPage, { ...video, name: 'null' }]) },
       status: 1
@@ -340,6 +409,20 @@ describe('main', () => {
     vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
     const directory = await siteWith(pages)
     expect(main(join(directory, 'dist'))).toBe(status)
+  })
+
+  it('counts the pages that carry JSON-LD', async () => {
+    const write = vi
+      .spyOn(process.stdout, 'write')
+      .mockImplementation(() => true)
+    const directory = await siteWith({
+      a: html([org, webPage]),
+      b: '<link rel="canonical" href="https://comfy.org/b/">'
+    })
+    expect(main(join(directory, 'dist'))).toBe(0)
+    expect(write).toHaveBeenCalledWith(
+      'JSON-LD validation passed across 2 page(s), 1 with JSON-LD.\n'
+    )
   })
 
   it('returns 1 when dist does not exist', async () => {

@@ -515,14 +515,6 @@ export function buildPageGraph(
   )
 }
 
-export function isIdReference(record: Record<string, unknown>): boolean {
-  const keys = Object.keys(record)
-  return (
-    typeof record['@id'] === 'string' &&
-    keys.every((key) => key === '@id' || key === '@type')
-  )
-}
-
 export function collectGraphIds(value: unknown): {
   defined: Set<string>
   references: string[]
@@ -538,7 +530,7 @@ export function collectGraphIds(value: unknown): {
       const record = node as Record<string, unknown>
       const id = record['@id']
       if (typeof id === 'string') {
-        if (isIdReference(record)) references.push(id)
+        if (Object.keys(record).length === 1) references.push(id)
         else defined.add(id)
       }
       Object.values(record).forEach(walk)
