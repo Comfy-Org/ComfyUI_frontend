@@ -11,9 +11,7 @@
     "
     :items="renderedRoot.children ?? []"
     :get-key="(node) => node.key"
-    :get-children="
-      (node) => (node.children?.length ? node.children : undefined)
-    "
+    :get-children="(node) => (node.leaf ? undefined : (node.children ?? []))"
   >
     <template #default="{ items }">
       <UiTreeItem

@@ -95,4 +95,19 @@ describe('TreeExplorer', () => {
       screen.queryByRole('treeitem', { name: 'Leaf' })
     ).not.toBeInTheDocument()
   })
+
+  it('keeps a folder without loaded children expandable from the keyboard', async () => {
+    const user = userEvent.setup()
+    renderHarness({
+      ...root,
+      children: [{ key: 'unloaded', label: 'Unloaded', leaf: false }]
+    })
+    const folder = screen.getByRole('treeitem', { name: /Unloaded/ })
+
+    expect(folder).toHaveAttribute('aria-expanded', 'false')
+    folder.focus()
+    await user.keyboard('{ArrowRight}')
+
+    expect(folder).toHaveAttribute('aria-expanded', 'true')
+  })
 })
