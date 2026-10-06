@@ -1,3 +1,4 @@
+import type { WorkshopModel } from '@/config/models-catalogue'
 import type { Locale, LocalizedText } from '@/i18n/translations'
 
 /**
@@ -26,5 +27,5 @@ export interface CatalogueApp {
   readonly name: string
   readonly task: string
   readonly href: string
-  readonly image?: string
+  readonly thumbnail?: WorkshopModel['thumbnail']
 }
