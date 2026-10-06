@@ -1,5 +1,6 @@
 import { useEventListener } from '@vueuse/core'
 import { computed, onScopeDispose, readonly, ref } from 'vue'
+import type { RouteLocationNormalizedLoaded, Router } from 'vue-router'
 import { useRoute, useRouter } from 'vue-router'
 
 import { discoverSso, ssoStartUrl } from '@comfyorg/account-core/sso'
@@ -18,7 +19,28 @@ import {
 } from '@/platform/cloud/onboarding/sso/ssoSignInState'
 import { getSafePreviousFullPath } from '@/platform/cloud/onboarding/utils/previousFullPath'
 
-export const SSO_DEFAULT_RETURN_TO = '/cloud/user-check'
+const SSO_DEFAULT_RETURN_TO = '/cloud/user-check'
+
+/**
+ * Where SSO lands the person. A pending OAuth consent outranks
+ * previousFullPath, as it does after a Firebase sign-in. The callback sets the
+ * session cookie that the consent challenge is authenticated by, so it can land
+ * on the consent page directly.
+ */
+export function resolveSsoReturnTo(
+  route: RouteLocationNormalizedLoaded,
+  router: Router
+): string {
+  const oauthRequestId =
+    captureOAuthRequestId(route.query) ?? getOAuthRequestId()
+  if (oauthRequestId) {
+    return router.resolve({
+      name: 'cloud-oauth-consent',
+      query: { oauth_request_id: oauthRequestId }
+    }).href
+  }
+  return getSafePreviousFullPath(route.query) ?? SSO_DEFAULT_RETURN_TO
+}
 
 /** SSO sign-in for the cloud auth pages, where ingest is same-origin. */
 export function useSsoSignIn() {
@@ -40,23 +62,6 @@ export function useSsoSignIn() {
   })
 
   /**
-   * A pending OAuth consent outranks previousFullPath, as it does after a
-   * Firebase sign-in. The callback sets the session cookie that the consent
-   * challenge is authenticated by, so it can land on the consent page directly.
-   */
-  function returnTo(): string {
-    const oauthRequestId =
-      captureOAuthRequestId(route.query) ?? getOAuthRequestId()
-    if (oauthRequestId) {
-      return router.resolve({
-        name: 'cloud-oauth-consent',
-        query: { oauth_request_id: oauthRequestId }
-      }).href
-    }
-    return getSafePreviousFullPath(route.query) ?? SSO_DEFAULT_RETURN_TO
-  }
-
-  /**
    * Sends an SSO email to its identity provider. True when SSO owns the
    * sign-in from here (a redirect, or a check already in flight); false means
    * the caller carries on with its own sign-in.
@@ -74,7 +79,7 @@ export function useSsoSignIn() {
     window.location.assign(
       ssoStartUrl({
         email,
-        returnTo: returnTo(),
+        returnTo: resolveSsoReturnTo(route, router),
         origin: window.location.origin
       })
     )

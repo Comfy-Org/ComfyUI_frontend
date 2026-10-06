@@ -3527,22 +3527,35 @@ describe('an SSO session with no Firebase login reaching Firebase-only paths', (
     }
   )
 
+  const signInWithFirebase = async () => {
+    await useAuthStore().login('user-a@example.com', 'password')
+  }
+  const signInWithSessionOnly = async () => {
+    identity.resolve(null)
+  }
+
   it.for([
-    { sso: true, login: 'session', keyKept: false },
-    { sso: true, login: 'firebase', keyKept: false },
-    { sso: false, login: 'firebase', keyKept: true }
+    {
+      sso: true,
+      login: 'session',
+      signIn: signInWithSessionOnly,
+      keyKept: false
+    },
+    {
+      sso: true,
+      login: 'firebase',
+      signIn: signInWithFirebase,
+      keyKept: false
+    },
+    { sso: false, login: 'firebase', signIn: signInWithFirebase, keyKept: true }
   ])(
     'a stored API key outlives a $login sign-out only with SSO off (sso_enabled $sso)',
-    async ({ sso, login, keyKept }) => {
+    async ({ sso, signIn, keyKept }) => {
       installServer({ userId: 'user-a' }, { sso_enabled: sso })
       await refreshRemoteConfig({ useAuth: false })
       localStorage.setItem('comfy_api_key', STORED_API_KEY)
       const authStore = useAuthStore()
-      if (login === 'firebase') {
-        await authStore.login('user-a@example.com', 'password')
-      } else {
-        identity.resolve(null)
-      }
+      await signIn()
       await bootCloudIdentity()
       expect(authStore.isAuthenticated).toBe(true)
 

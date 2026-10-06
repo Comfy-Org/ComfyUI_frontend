@@ -486,7 +486,8 @@ Firebase header and never swaps. On the session path:
 
 **Enterprise SSO (`sso_enabled`).** Email sign-in and sign-up on `/login`
 and `/signup` read Cloud's global `sso_enabled` from the anonymous
-`GET /api/features` once per page load, on the first email submit
+`GET /api/features` once per page load: the read starts when the sign-in
+panel mounts and the first email submit reuses its answer
 (`src/config/workshop-sso.ts`). Only a literal `true` turns it on, and a
 failed read is off. When it is on, the submit first calls
 `POST ${cloud}/api/auth/sso/discover`. An SSO domain leaves for

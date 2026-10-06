@@ -573,6 +573,11 @@ describe('CloudLoginView Firebase sign-in refused for SSO', () => {
       name: 'returns SSO to the page the visitor came from',
       url: '/cloud/login?previousFullPath=%2Fworkflows%3Fid%3D7',
       returnTo: '/workflows?id=7'
+    },
+    {
+      name: 'returns SSO to a pending OAuth consent before the previous page',
+      url: `/cloud/login?previousFullPath=%2Fworkflows&oauth_request_id=${OAUTH_REQUEST_ID}`,
+      returnTo: `/oauth/consent?oauth_request_id=${OAUTH_REQUEST_ID}`
     }
   ])('with the flag on, $name', async ({ url, returnTo }) => {
     const flags = vi.mocked(useFeatureFlags().flags)

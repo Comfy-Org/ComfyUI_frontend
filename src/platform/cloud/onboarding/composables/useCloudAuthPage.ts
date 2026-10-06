@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 import type { RouteLocationRaw } from 'vue-router'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 import { isEmbeddedWebView } from '@comfyorg/account-core/webviewDetection'
 
@@ -8,10 +8,9 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSessionCookie } from '@/platform/auth/session/useSessionCookie'
 import { useSocialSignIn } from '@/platform/auth/social/useSocialSignIn'
 import { presentSsoRequired } from '@/platform/auth/sso/ssoRequired'
-import { SSO_DEFAULT_RETURN_TO } from '@/platform/cloud/onboarding/composables/useSsoSignIn'
+import { resolveSsoReturnTo } from '@/platform/cloud/onboarding/composables/useSsoSignIn'
 import { usePostAuthRedirect } from '@/platform/cloud/onboarding/composables/usePostAuthRedirect'
 import { SSO_ENTRY_OPEN_QUERY } from '@/platform/cloud/onboarding/sso/ssoEntryQuery'
-import { getSafePreviousFullPath } from '@/platform/cloud/onboarding/utils/previousFullPath'
 import { useAuthStore } from '@/stores/authStore'
 
 type AuthMode = 'social' | 'email' | 'sso'
@@ -27,6 +26,7 @@ export function useCloudAuthPage(options: {
   defaultRedirect: () => RouteLocationRaw
 }) {
   const route = useRoute()
+  const router = useRouter()
   const { flags } = useFeatureFlags()
   const authError = ref('')
   const authMode = ref<AuthMode>(
@@ -50,7 +50,7 @@ export function useCloudAuthPage(options: {
       const authStore = useAuthStore()
       presentSsoRequired({
         email: authStore.userEmail ?? undefined,
-        returnTo: getSafePreviousFullPath(route.query) ?? SSO_DEFAULT_RETURN_TO
+        returnTo: resolveSsoReturnTo(route, router)
       })
       await authStore.logout()
       return
