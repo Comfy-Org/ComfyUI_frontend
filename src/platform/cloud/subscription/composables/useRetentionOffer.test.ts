@@ -125,16 +125,32 @@ describe('useRetentionOffer', () => {
     expect(workspaceApi.acceptRetentionOffer).toHaveBeenCalledOnce()
   })
 
-  it('does not retry an offer the server refused', async () => {
+  it('tries a refused offer again with the same session', async () => {
     vi.mocked(workspaceApi.acceptRetentionOffer).mockRejectedValueOnce(
       new WorkspaceApiError('refused', 409)
     )
+    settlesAs('succeeded')
+    const { phase, accept } = useRetentionOffer('session-1', 'workspace-1')
+
+    await accept()
+    expect(phase.value).toBe('failed')
+    await accept()
+
+    expect(phase.value).toBe('applied')
+    expect(workspaceApi.acceptRetentionOffer).toHaveBeenNthCalledWith(
+      2,
+      'session-1'
+    )
+  })
+
+  it('does not redeem again once the discount is applied', async () => {
+    settlesAs('succeeded')
     const { phase, accept } = useRetentionOffer('session-1', 'workspace-1')
 
     await accept()
     await accept()
 
-    expect(phase.value).toBe('failed')
+    expect(phase.value).toBe('applied')
     expect(workspaceApi.acceptRetentionOffer).toHaveBeenCalledOnce()
   })
 })

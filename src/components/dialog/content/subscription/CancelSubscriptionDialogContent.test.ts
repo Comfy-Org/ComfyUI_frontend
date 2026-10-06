@@ -183,12 +183,10 @@ describe('CancelSubscriptionDialogContent', () => {
 
       const { unmount } = renderComponent()
       await userEvent.click(
-        screen.getByRole('button', { name: /^cancel subscription$/i })
+        screen.getByRole('button', { name: /^cancel my plan$/i })
       )
 
-      await waitFor(() =>
-        expect(useDialogStore().closeDialog).toHaveBeenCalled()
-      )
+      await screen.findByRole('heading', { name: 'Your plan is cancelled' })
       unmount()
       expect(
         useTelemetry()?.trackSubscriptionCancellation
@@ -207,7 +205,7 @@ describe('CancelSubscriptionDialogContent', () => {
       const view = renderComponent({ isScopeCurrent: () => false })
 
       await userEvent.click(
-        screen.getByRole('button', { name: /^cancel subscription$/i })
+        screen.getByRole('button', { name: /^cancel my plan$/i })
       )
 
       expect(useBillingContext().cancelSubscription).not.toHaveBeenCalled()
@@ -232,7 +230,7 @@ describe('CancelSubscriptionDialogContent', () => {
 
       renderComponent()
       await userEvent.click(
-        screen.getByRole('button', { name: /^cancel subscription$/i })
+        screen.getByRole('button', { name: /^cancel my plan$/i })
       )
 
       await waitFor(() =>
@@ -257,7 +255,7 @@ describe('CancelSubscriptionDialogContent', () => {
 
       renderComponent()
       await userEvent.click(
-        screen.getByRole('button', { name: /^cancel subscription$/i })
+        screen.getByRole('button', { name: /^cancel my plan$/i })
       )
 
       await waitFor(() =>
@@ -275,7 +273,7 @@ describe('CancelSubscriptionDialogContent', () => {
 
       const { unmount } = renderComponent()
       await userEvent.click(
-        screen.getByRole('button', { name: /keep subscription/i })
+        screen.getByRole('button', { name: /keep my plan/i })
       )
 
       expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
@@ -328,13 +326,9 @@ describe('CancelSubscriptionDialogContent', () => {
       current_tier: 'standard'
     }
     const confirm = () =>
-      userEvent.click(
-        screen.getByRole('button', { name: /^cancel subscription$/i })
-      )
+      userEvent.click(screen.getByRole('button', { name: /^cancel my plan$/i }))
     const keep = () =>
-      userEvent.click(
-        screen.getByRole('button', { name: /keep subscription/i })
-      )
+      userEvent.click(screen.getByRole('button', { name: /keep my plan/i }))
     const cancelFailsOn = (workspaceRail: boolean) => () => {
       mockShouldUseWorkspaceBilling.value = workspaceRail
       vi.mocked(useBillingContext().cancelSubscription).mockRejectedValue({
@@ -440,7 +434,7 @@ describe('CancelSubscriptionDialogContent', () => {
 
       renderComponent()
       await userEvent.click(
-        screen.getByRole('button', { name: /^cancel subscription$/i })
+        screen.getByRole('button', { name: /^cancel my plan$/i })
       )
 
       await waitFor(() =>
@@ -454,8 +448,8 @@ describe('CancelSubscriptionDialogContent', () => {
       expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
     })
 
-    it('closes the dialog and shows a success toast when cancellation succeeds', async () => {
-      setSubscription(null)
+    it('shows the cancelled plan until the owner is done when cancellation succeeds', async () => {
+      setSubscription(subscription({ endDate: '2026-11-12T12:00:00.000Z' }))
       mockShouldUseWorkspaceBilling.value = true
       vi.mocked(useBillingContext().cancelSubscription).mockResolvedValueOnce(
         'workspace'
@@ -463,18 +457,26 @@ describe('CancelSubscriptionDialogContent', () => {
 
       renderComponent()
       await userEvent.click(
-        screen.getByRole('button', { name: /^cancel subscription$/i })
+        screen.getByRole('button', { name: /^cancel my plan$/i })
       )
 
-      await waitFor(() =>
-        expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
-          key: 'cancel-subscription'
-        })
-      )
+      expect(
+        await screen.findByRole('heading', { name: 'Your plan is cancelled' })
+      ).toBeInTheDocument()
+      expect(
+        screen.getByText(
+          "Your Standard plan stays active until November 12, 2026, and you won't be charged again. You can resubscribe anytime."
+        )
+      ).toBeInTheDocument()
       expect(useBillingContext().fetchStatus).toHaveBeenCalled()
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'success' })
-      )
+      expect(mockToastAdd).not.toHaveBeenCalled()
+      expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Done' }))
+
+      expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
+        key: 'cancel-subscription'
+      })
     })
 
     it('does not cancel after the workspace role loses permission', async () => {
@@ -487,7 +489,7 @@ describe('CancelSubscriptionDialogContent', () => {
       renderComponent()
       canCancel.value = false
       await userEvent.click(
-        screen.getByRole('button', { name: /^cancel subscription$/i })
+        screen.getByRole('button', { name: /^cancel my plan$/i })
       )
 
       expect(useBillingContext().cancelSubscription).not.toHaveBeenCalled()
@@ -510,7 +512,7 @@ describe('CancelSubscriptionDialogContent', () => {
 
       renderComponent()
       await userEvent.click(
-        screen.getByRole('button', { name: /^cancel subscription$/i })
+        screen.getByRole('button', { name: /^cancel my plan$/i })
       )
 
       await waitFor(() =>
@@ -526,7 +528,7 @@ describe('CancelSubscriptionDialogContent', () => {
 
       renderComponent()
       await userEvent.click(
-        screen.getByRole('button', { name: /^cancel subscription$/i })
+        screen.getByRole('button', { name: /^cancel my plan$/i })
       )
 
       expect(useBillingContext().cancelSubscription).not.toHaveBeenCalled()
@@ -547,17 +549,10 @@ describe('CancelSubscriptionDialogContent', () => {
 
       const { unmount } = renderComponent()
       await userEvent.click(
-        screen.getByRole('button', { name: /^cancel subscription$/i })
+        screen.getByRole('button', { name: /^cancel my plan$/i })
       )
 
-      await waitFor(() =>
-        expect(mockToastAdd).toHaveBeenCalledWith(
-          expect.objectContaining({ severity: 'success' })
-        )
-      )
-      expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
-        key: 'cancel-subscription'
-      })
+      await screen.findByRole('heading', { name: 'Your plan is cancelled' })
       expect(
         vi
           .mocked(useTelemetry()?.trackSubscriptionCancellation)
@@ -573,9 +568,7 @@ describe('CancelSubscriptionDialogContent', () => {
 
   describe('legacy rail portal cancel', () => {
     const confirm = () =>
-      userEvent.click(
-        screen.getByRole('button', { name: /^cancel subscription$/i })
-      )
+      userEvent.click(screen.getByRole('button', { name: /^cancel my plan$/i }))
     const confirmedCalls = () =>
       vi
         .mocked(useTelemetry()!.trackSubscriptionCancellation)
@@ -594,14 +587,14 @@ describe('CancelSubscriptionDialogContent', () => {
         await screen.findByText(/Finish cancelling on the Stripe page/i)
       ).toBeInTheDocument()
       expect(
-        screen.queryByRole('button', { name: /^cancel subscription$/i })
+        screen.queryByRole('button', { name: /^cancel my plan$/i })
       ).not.toBeInTheDocument()
       expect(mockToastAdd).not.toHaveBeenCalled()
       expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
       expect(confirmedCalls()).toHaveLength(0)
     })
 
-    it('shows success and tracks confirmed only once the cancel is observed', async () => {
+    it('shows the cancelled plan and tracks confirmed only once the cancel is observed', async () => {
       const isCancelled = ref(false)
       useBillingContext().subscription = computed(() =>
         subscription({ isCancelled: isCancelled.value })
@@ -616,17 +609,11 @@ describe('CancelSubscriptionDialogContent', () => {
 
       isCancelled.value = true
 
-      await waitFor(() =>
-        expect(mockToastAdd).toHaveBeenCalledWith(
-          expect.objectContaining({
-            severity: 'success',
-            summary: 'Subscription cancelled successfully'
-          })
-        )
-      )
-      expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
-        key: 'cancel-subscription'
-      })
+      expect(
+        await screen.findByRole('heading', { name: 'Your plan is cancelled' })
+      ).toBeInTheDocument()
+      expect(mockToastAdd).not.toHaveBeenCalled()
+      expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
       expect(confirmedCalls()).toHaveLength(1)
       unmount()
       expect(
@@ -695,16 +682,9 @@ describe('CancelSubscriptionDialogContent', () => {
       await nextTick()
       resolvePortal()
 
-      await waitFor(() =>
-        expect(mockToastAdd).toHaveBeenCalledWith(
-          expect.objectContaining({ severity: 'success' })
-        )
-      )
+      await screen.findByRole('heading', { name: 'Your plan is cancelled' })
       expect(confirmedCalls()).toHaveLength(1)
-      expect(mockToastAdd).toHaveBeenCalledTimes(1)
-      expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
-        key: 'cancel-subscription'
-      })
+      expect(mockToastAdd).not.toHaveBeenCalled()
     })
 
     it('does not report success when a pre-existing cancel loads after a null status at confirm', async () => {
@@ -747,7 +727,9 @@ describe('CancelSubscriptionDialogContent', () => {
       await nextTick()
 
       expect(confirmedCalls()).toHaveLength(1)
-      expect(mockToastAdd).toHaveBeenCalledTimes(1)
+      expect(
+        screen.getByRole('heading', { name: 'Your plan is cancelled' })
+      ).toBeInTheDocument()
     })
 
     it('refreshes status on window focus while awaiting Stripe', async () => {
@@ -828,9 +810,7 @@ describe('CancelSubscriptionDialogContent', () => {
 
   describe('legacy rail portal cancel while the call is pending', () => {
     const confirm = () =>
-      userEvent.click(
-        screen.getByRole('button', { name: /^cancel subscription$/i })
-      )
+      userEvent.click(screen.getByRole('button', { name: /^cancel my plan$/i }))
 
     function pendingPortal() {
       let resolvePortal!: () => void
@@ -935,7 +915,9 @@ describe('CancelSubscriptionDialogContent', () => {
       setSubscription(subscription())
       renderComponent()
 
-      expect(screen.getByText(/end of billing period/)).toBeInTheDocument()
+      expect(
+        screen.getAllByText(/the end of your billing period/)
+      ).toHaveLength(2)
       expect(screen.queryByText(/Invalid Date/)).not.toBeInTheDocument()
     })
 
@@ -943,7 +925,9 @@ describe('CancelSubscriptionDialogContent', () => {
       setSubscription(subscription({ endDate: 'not-a-real-date' }))
       renderComponent({ cancelAt: 'also-not-a-date' })
 
-      expect(screen.getByText(/end of billing period/)).toBeInTheDocument()
+      expect(
+        screen.getAllByText(/the end of your billing period/)
+      ).toHaveLength(2)
       expect(screen.queryByText(/Invalid Date/)).not.toBeInTheDocument()
     })
   })
@@ -956,7 +940,7 @@ describe('CancelSubscriptionDialogContent', () => {
         renderComponent({ cancelAt: '2026-04-18T10:04:55.6513Z' })
       })
 
-      expect(screen.getByText(/April 18, 2026/)).toBeInTheDocument()
+      expect(screen.getAllByText(/April 18, 2026/)).toHaveLength(2)
       expect(screen.queryByText(/Invalid Date/)).not.toBeInTheDocument()
     })
 
@@ -967,7 +951,7 @@ describe('CancelSubscriptionDialogContent', () => {
         renderComponent({ cancelAt: '2026-04-18T10:04:55.6Z' })
       })
 
-      expect(screen.getByText(/April 18, 2026/)).toBeInTheDocument()
+      expect(screen.getAllByText(/April 18, 2026/)).toHaveLength(2)
       expect(screen.queryByText(/Invalid Date/)).not.toBeInTheDocument()
     })
 
@@ -982,7 +966,7 @@ describe('CancelSubscriptionDialogContent', () => {
         renderComponent()
       })
 
-      expect(screen.getByText(/April 18, 2026/)).toBeInTheDocument()
+      expect(screen.getAllByText(/April 18, 2026/)).toHaveLength(2)
       expect(screen.queryByText(/Invalid Date/)).not.toBeInTheDocument()
     })
 
@@ -997,8 +981,44 @@ describe('CancelSubscriptionDialogContent', () => {
         renderComponent({ cancelAt: '2026-04-18T10:04:55.6513Z' })
       })
 
-      expect(screen.getByText(/April 18, 2026/)).toBeInTheDocument()
+      expect(screen.getAllByText(/April 18, 2026/)).toHaveLength(2)
       expect(screen.queryByText(/January 1, 2030/)).not.toBeInTheDocument()
+    })
+  })
+
+  describe('confirmation', () => {
+    it('lists what the plan loses at the end of the billing period', () => {
+      setSubscription(
+        subscription({
+          duration: 'MONTHLY',
+          endDate: '2026-11-12T12:00:00.000Z'
+        })
+      )
+
+      renderComponent()
+
+      expect(
+        screen.getByRole('heading', { name: 'Cancel your plan?' })
+      ).toBeInTheDocument()
+      expect(
+        screen.getByText("After November 12, 2026, you'll lose access to:")
+      ).toBeInTheDocument()
+      expect(
+        screen.getAllByRole('listitem').map((item) => item.textContent)
+      ).toEqual([
+        expect.stringContaining('Cloud GPUs'),
+        expect.stringContaining('Every model, one balance'),
+        expect.stringContaining('Custom nodes, ready'),
+        expect.stringContaining('4,200 monthly credits')
+      ])
+    })
+
+    it('names no credit amount when the plan grant is unknown', () => {
+      setSubscription(subscription({ duration: null }))
+
+      renderComponent()
+
+      expect(screen.getByText('Monthly credits')).toBeInTheDocument()
     })
   })
 })

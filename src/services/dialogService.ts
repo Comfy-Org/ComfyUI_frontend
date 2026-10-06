@@ -36,8 +36,7 @@ import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/co
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
 import type { DowngradeToPersonalResult } from '@/platform/workspace/composables/useDowngradeToPersonal'
-import type { RetentionOfferDialogOptions } from '@/platform/cloud/subscription/launchCancellationFlow'
-import type { RetentionOfferOutcome } from '@/platform/cloud/subscription/utils/retentionOffer'
+import type { CancellationFlowDialogOptions } from '@/platform/cloud/subscription/launchCancellationFlow'
 
 // Lazy loaders for dialogs - components are loaded on first use
 const lazyApiNodesSignInContent = () =>
@@ -891,30 +890,21 @@ export const useDialogService = () => {
     })
   }
 
-  async function showRetentionOfferDialog(
-    options: RetentionOfferDialogOptions
-  ): Promise<RetentionOfferOutcome> {
+  async function showCancellationFlowDialog(
+    options: CancellationFlowDialogOptions
+  ) {
     const { default: component } =
-      await import('@/platform/cloud/subscription/components/RetentionOfferDialogContent.vue')
-    const key = 'retention-offer'
-    return new Promise((resolve) => {
-      dialogStore.showDialog({
-        key,
-        component,
-        props: {
-          ...options,
-          onDecide: (outcome: RetentionOfferOutcome) => {
-            resolve(outcome)
-            dialogStore.closeDialog({ key })
-          }
-        },
-        dialogComponentProps: {
-          ...workspaceDialogProps,
-          closable: false,
-          dismissableMask: false,
-          onRemoved: () => resolve('dismissed')
-        }
-      })
+      await import('@/platform/cloud/subscription/components/CancellationFlowDialogContent.vue')
+    if (!options.isScopeCurrent()) return false
+    return dialogStore.showDialog({
+      key: 'cancel-subscription',
+      component,
+      props: { ...options },
+      dialogComponentProps: {
+        ...workspaceDialogProps,
+        closable: false,
+        dismissableMask: false
+      }
     })
   }
 
@@ -925,18 +915,7 @@ export const useDialogService = () => {
     return cancellationFlow.launchCancellationFlow({
       cancelAt,
       launchWorkspaceId,
-      showRetentionOffer: showRetentionOfferDialog,
-      showFallback: ({
-        flowAlreadyOpened = false,
-        flowAlreadyConfirmed = false,
-        isScopeCurrent = () => true
-      } = {}) =>
-        showCancelSubscriptionDialog(
-          cancelAt,
-          flowAlreadyOpened,
-          isScopeCurrent,
-          flowAlreadyConfirmed
-        )
+      showFlow: showCancellationFlowDialog
     })
   }
 

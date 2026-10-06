@@ -1,13 +1,10 @@
 import type { RetentionFlowResponse } from '@comfyorg/ingest-types'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
-import type { BillingType, SubscriptionInfo } from '@/composables/billing/types'
+import type { BillingType } from '@/composables/billing/types'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import type { RetentionOfferOutcome } from '@/platform/cloud/subscription/utils/retentionOffer'
-import { useTelemetry } from '@/platform/telemetry'
-import { TelemetryRegistry } from '@/platform/telemetry/TelemetryRegistry'
-import { DatadogRumTelemetryProvider } from '@/platform/telemetry/providers/cloud/DatadogRumTelemetryProvider'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { BillingRail } from '@/platform/workspace/api/workspaceApi'
@@ -15,36 +12,23 @@ import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApiError'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
-import type { RetentionOfferDialogOptions } from './launchCancellationFlow'
+import type { CancellationFlowDialogOptions } from './launchCancellationFlow'
 import { launchCancellationFlow } from './launchCancellationFlow'
 
 const mocks = vi.hoisted(
   (): {
     billingType: { value: BillingType }
-    tier: { value: SubscriptionInfo['tier'] }
-    subscription: {
-      value: Pick<SubscriptionInfo, 'duration' | 'endDate'> | null
-    }
     activeWorkspaceId: string | null
     billingRail: BillingRail | null
   } => ({
     billingType: { value: 'workspace' },
-    tier: { value: 'PRO' },
-    subscription: { value: null },
     activeWorkspaceId: 'workspace-1',
     billingRail: 'stripe'
   })
 )
 
-const mockRumAddAction = vi.hoisted(() => vi.fn())
-vi.mock<unknown>(import('@datadog/browser-rum'), () => ({
-  datadogRum: { addAction: mockRumAddAction }
-}))
-
-vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/composables/billing/useBillingContext'))
 vi.mock(import('@/i18n'))
-vi.mock(import('@/platform/telemetry'))
 vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock(import('@/platform/workspace/api/workspaceApi'))
 
@@ -70,36 +54,22 @@ function retentionFlow(
   }
 }
 
-function offersRetention() {
-  vi.mocked(workspaceApi.prepareRetentionFlow).mockResolvedValue(
-    retentionFlow({ experiment_variant: offer.id, offer })
-  )
-}
-
-function decides(outcome: RetentionOfferOutcome) {
-  return vi.fn(async (_options: RetentionOfferDialogOptions) => outcome)
+function captureFlow() {
+  const shown: CancellationFlowDialogOptions[] = []
+  const showFlow = vi.fn((options: CancellationFlowDialogOptions) => {
+    shown.push(options)
+  })
+  return { shown, showFlow }
 }
 
 beforeEach(() => {
   const billing = useBillingContext()
   vi.mocked(useBillingContext).mockReturnValue(billing)
   billing.type = computed(() => mocks.billingType.value)
-  billing.tier = computed(() => mocks.tier.value)
-  billing.subscription = computed(() =>
-    mocks.subscription.value
-      ? {
-          isActive: true,
-          tier: mocks.tier.value,
-          planSlug: null,
-          scheduledChange: null,
-          renewalDate: null,
-          isCancelled: false,
-          hasFunds: true,
-          agentHasFunds: true,
-          ...mocks.subscription.value
-        }
-      : null
-  )
+  mocks.billingType.value = 'workspace'
+  mocks.activeWorkspaceId = 'workspace-1'
+  mocks.billingRail = 'stripe'
+  remoteConfig.value = { cancellation_survey_id: 'survey-1' }
 
   vi.spyOn(
     useTeamWorkspaceStore(),
@@ -113,17 +83,11 @@ beforeEach(() => {
   ).mockImplementation(() => mocks.billingRail)
 })
 
-describe('launchCancellationFlow', () => {
-  beforeEach(() => {
-    mocks.billingType.value = 'workspace'
-    mocks.subscription.value = {
-      duration: 'ANNUAL',
-      endDate: '2026-08-01T00:00:00Z'
-    }
-    mocks.activeWorkspaceId = 'workspace-1'
-    mocks.billingRail = 'stripe'
-  })
+afterEach(() => {
+  remoteConfig.value = {}
+})
 
+describe('launchCancellationFlow', () => {
   it.for([
     { name: 'legacy billing', billingType: 'legacy', billingRail: 'stripe' },
     {
@@ -132,86 +96,60 @@ describe('launchCancellationFlow', () => {
       billingRail: 'metronome'
     }
   ] as const)(
-    'uses the standard dialog for $name',
+    'opens the flow without a retention session for $name',
     async ({ billingType, billingRail }) => {
       mocks.billingType.value = billingType
       mocks.billingRail = billingRail
-      const showFallback = vi.fn()
-      const showRetentionOffer = decides('dismissed')
+      const { shown, showFlow } = captureFlow()
 
-      await launchCancellationFlow({ showFallback, showRetentionOffer })
+      await launchCancellationFlow({ cancelAt: '2026-11-12', showFlow })
 
-      expect(showFallback).toHaveBeenCalledOnce()
       expect(workspaceApi.prepareRetentionFlow).not.toHaveBeenCalled()
-      expect(showRetentionOffer).not.toHaveBeenCalled()
+      expect(shown).toEqual([
+        {
+          cancelAt: '2026-11-12',
+          surveyId: 'survey-1',
+          flow: null,
+          workspaceId: 'workspace-1',
+          isScopeCurrent: expect.any(Function)
+        }
+      ])
     }
   )
 
   it('keeps legacy cancellation available while workspace state initializes', async () => {
     mocks.billingType.value = 'legacy'
     mocks.activeWorkspaceId = null
-    const openDialog = vi.fn()
-    let scopeCurrent: (() => boolean) | undefined
+    const { shown, showFlow } = captureFlow()
 
-    await launchCancellationFlow({
-      showFallback: vi.fn(async ({ isScopeCurrent } = {}) => {
-        scopeCurrent = isScopeCurrent
-        await Promise.resolve()
-        mocks.activeWorkspaceId = 'workspace-1'
-        if (isScopeCurrent?.()) openDialog()
-        return true
-      }),
-      showRetentionOffer: decides('dismissed')
-    })
+    await launchCancellationFlow({ showFlow })
 
-    expect(openDialog).toHaveBeenCalledOnce()
-    expect(scopeCurrent?.()).toBe(true)
     mocks.activeWorkspaceId = 'workspace-2'
-    expect(scopeCurrent?.()).toBe(true)
+    expect(shown[0].workspaceId).toBeNull()
+    expect(shown[0].isScopeCurrent()).toBe(true)
   })
 
-  it('keeps the standard Metronome dialog bound to its launch workspace', async () => {
-    mocks.billingRail = 'metronome'
-    const openDialog = vi.fn()
+  it('binds the flow to its launch workspace', async () => {
+    const { shown, showFlow } = captureFlow()
 
-    await launchCancellationFlow({
-      showFallback: vi.fn(async ({ isScopeCurrent } = {}) => {
-        mocks.activeWorkspaceId = 'workspace-2'
-        if (isScopeCurrent?.()) openDialog()
-        return true
-      }),
-      showRetentionOffer: decides('dismissed')
-    })
+    await launchCancellationFlow({ showFlow })
 
-    expect(openDialog).not.toHaveBeenCalled()
+    expect(shown[0].isScopeCurrent()).toBe(true)
+    mocks.activeWorkspaceId = 'workspace-2'
+    expect(shown[0].isScopeCurrent()).toBe(false)
   })
 
   it.for([
-    { workspaceStillCurrent: true, level: 'error', toast: true },
-    { workspaceStillCurrent: false, level: 'warning', toast: false }
-  ])(
-    'contains a standard dialog that fails to open (workspace current: $workspaceStillCurrent)',
-    async ({ workspaceStillCurrent, level, toast }) => {
-      mocks.billingType.value = 'legacy'
-      const fallbackError = new Error('dialog chunk unavailable')
+    { name: 'is not configured', config: {} },
+    { name: 'is blank', config: { cancellation_survey_id: '' } }
+  ])('skips the survey when its ID $name', async ({ config }) => {
+    remoteConfig.value = config
+    const { shown, showFlow } = captureFlow()
 
-      await expect(
-        launchCancellationFlow({
-          showFallback: vi.fn(async () => {
-            if (!workspaceStillCurrent) mocks.activeWorkspaceId = 'workspace-2'
-            throw fallbackError
-          }),
-          showRetentionOffer: decides('dismissed')
-        })
-      ).resolves.toBeUndefined()
+    await launchCancellationFlow({ showFlow })
 
-      expect(reportError).toHaveBeenCalledWith(
-        fallbackError,
-        expect.objectContaining({ level })
-      )
-      expect(vi.mocked(useToastStore().add).mock.calls.length > 0).toBe(toast)
-    }
-  )
+    expect(shown[0].surveyId).toBeUndefined()
+  })
 
   it.for([
     {
@@ -234,33 +172,37 @@ describe('launchCancellationFlow', () => {
       error: new Error('Network Error'),
       reported: true
     }
-  ])('opens the standard dialog when $name', async ({ error, reported }) => {
-    vi.mocked(workspaceApi.prepareRetentionFlow).mockRejectedValue(error)
-    const showFallback = vi.fn()
-    const showRetentionOffer = decides('dismissed')
+  ])(
+    'opens the flow without an offer when $name',
+    async ({ error, reported }) => {
+      vi.mocked(workspaceApi.prepareRetentionFlow).mockRejectedValue(error)
+      const { shown, showFlow } = captureFlow()
 
-    await launchCancellationFlow({ showFallback, showRetentionOffer })
+      await launchCancellationFlow({ showFlow })
 
-    expect(showFallback).toHaveBeenCalledOnce()
-    expect(showRetentionOffer).not.toHaveBeenCalled()
-    expect(workspaceApi.recordRetentionFlowEvent).not.toHaveBeenCalled()
-    expect(vi.mocked(reportError).mock.calls.length > 0).toBe(reported)
-  })
+      expect(shown[0].flow).toBeNull()
+      expect(workspaceApi.recordRetentionFlowEvent).not.toHaveBeenCalled()
+      expect(vi.mocked(reportError).mock.calls.length > 0).toBe(reported)
+    }
+  )
 
   it.for([
+    {
+      name: 'an offer arm',
+      flow: retentionFlow({ experiment_variant: offer.id, offer })
+    },
     {
       name: 'the control arm',
       flow: retentionFlow({ experiment_variant: 'control' })
     },
     { name: 'a session outside the experiment', flow: retentionFlow() }
   ])(
-    'records participation and opens the standard dialog for $name',
+    'records participation and hands over the session for $name',
     async ({ flow }) => {
       vi.mocked(workspaceApi.prepareRetentionFlow).mockResolvedValue(flow)
-      const showFallback = vi.fn()
-      const showRetentionOffer = decides('dismissed')
+      const { shown, showFlow } = captureFlow()
 
-      await launchCancellationFlow({ showFallback, showRetentionOffer })
+      await launchCancellationFlow({ showFlow })
 
       expect(
         workspaceApi.recordRetentionFlowEvent
@@ -268,33 +210,9 @@ describe('launchCancellationFlow', () => {
         session_id: flow.session_id,
         event: 'flow_opened'
       })
-      expect(showFallback).toHaveBeenCalledExactlyOnceWith(
-        expect.not.objectContaining({ flowAlreadyOpened: true })
-      )
-      expect(showRetentionOffer).not.toHaveBeenCalled()
+      expect(shown[0].flow).toEqual(flow)
     }
   )
-
-  it('shows the offer bound to its session and launch workspace', async () => {
-    offersRetention()
-    const showRetentionOffer = decides('retained')
-
-    await launchCancellationFlow({ showFallback: vi.fn(), showRetentionOffer })
-
-    expect(showRetentionOffer).toHaveBeenCalledExactlyOnceWith({
-      offer,
-      subscription: retentionFlow().subscription,
-      sessionId: retentionFlow().session_id,
-      workspaceId: 'workspace-1',
-      isScopeCurrent: expect.any(Function)
-    })
-    expect(
-      workspaceApi.recordRetentionFlowEvent
-    ).toHaveBeenCalledExactlyOnceWith({
-      session_id: retentionFlow().session_id,
-      event: 'flow_opened'
-    })
-  })
 
   it('stops when the active workspace changes during preparation', async () => {
     vi.mocked(workspaceApi.prepareRetentionFlow).mockImplementation(
@@ -303,117 +221,39 @@ describe('launchCancellationFlow', () => {
         return retentionFlow({ experiment_variant: offer.id, offer })
       }
     )
-    const showFallback = vi.fn()
-    const showRetentionOffer = decides('dismissed')
+    const { showFlow } = captureFlow()
 
-    await launchCancellationFlow({ showFallback, showRetentionOffer })
+    await launchCancellationFlow({ showFlow })
 
-    expect(showFallback).not.toHaveBeenCalled()
-    expect(showRetentionOffer).not.toHaveBeenCalled()
+    expect(showFlow).not.toHaveBeenCalled()
+    expect(workspaceApi.recordRetentionFlowEvent).not.toHaveBeenCalled()
   })
 
-  it('continues to the standard dialog without reopening the flow', async () => {
-    offersRetention()
-    const showFallback = vi.fn()
+  it.for([
+    { workspaceStillCurrent: true, level: 'error', toast: true },
+    { workspaceStillCurrent: false, level: 'warning', toast: false }
+  ])(
+    'contains a flow that fails to open (workspace current: $workspaceStillCurrent)',
+    async ({ workspaceStillCurrent, level, toast }) => {
+      const error = new Error('dialog chunk unavailable')
 
-    await launchCancellationFlow({
-      showFallback,
-      showRetentionOffer: decides('continueToCancel')
-    })
+      await expect(
+        launchCancellationFlow({
+          showFlow: vi.fn(async () => {
+            if (!workspaceStillCurrent) mocks.activeWorkspaceId = 'workspace-2'
+            throw error
+          })
+        })
+      ).resolves.toBeUndefined()
 
-    expect(showFallback).toHaveBeenCalledExactlyOnceWith(
-      expect.objectContaining({ flowAlreadyOpened: true })
-    )
-  })
-
-  it('falls back to the standard dialog when the offer cannot open', async () => {
-    offersRetention()
-    const error = new Error('chunk unavailable')
-    const showFallback = vi.fn()
-
-    await launchCancellationFlow({
-      showFallback,
-      showRetentionOffer: vi.fn().mockRejectedValue(error)
-    })
-
-    expect(reportError).toHaveBeenCalledWith(
-      error,
-      expect.objectContaining({ errorType: 'retention_offer_dialog_failed' })
-    )
-    expect(showFallback).toHaveBeenCalledExactlyOnceWith(
-      expect.objectContaining({ flowAlreadyOpened: true })
-    )
-  })
-
-  it('warns that a discount still being confirmed may land', async () => {
-    offersRetention()
-    const showFallback = vi.fn()
-
-    await launchCancellationFlow({
-      showFallback,
-      showRetentionOffer: decides('pending')
-    })
-
-    expect(showFallback).not.toHaveBeenCalled()
-    expect(useToastStore().add).toHaveBeenCalledExactlyOnceWith(
-      expect.objectContaining({
-        severity: 'warn',
-        summary: 'subscription.retentionOffer.pendingToast'
-      })
-    )
-  })
-
-  describe('cancel flow billing events', () => {
-    const intent = {
-      operation: 'cancel',
-      stage: 'intent',
-      outcome: 'pending',
-      current_tier: 'pro',
-      cycle: 'yearly'
+      expect(reportError).toHaveBeenCalledWith(
+        error,
+        expect.objectContaining({
+          errorType: 'cloud_cancellation_flow_failed',
+          level
+        })
+      )
+      expect(vi.mocked(useToastStore().add).mock.calls.length > 0).toBe(toast)
     }
-    const abandoned = { ...intent, stage: 'abandoned' }
-
-    function reportedCancelEvents() {
-      return vi
-        .mocked(useTelemetry()!.trackBillingEvent)
-        .mock.calls.filter(([event]) => event.operation === 'cancel')
-        .map(([event]) => event)
-    }
-
-    it.for<{ outcome: RetentionOfferOutcome; reported: object[] }>([
-      { outcome: 'dismissed', reported: [intent, abandoned] },
-      { outcome: 'retained', reported: [intent] },
-      { outcome: 'pending', reported: [intent] },
-      { outcome: 'continueToCancel', reported: [intent] }
-    ])('reports a $outcome offer as its cancel events', async (row) => {
-      offersRetention()
-
-      await launchCancellationFlow({
-        showFallback: vi.fn(),
-        showRetentionOffer: decides(row.outcome)
-      })
-
-      expect(reportedCancelEvents()).toEqual(row.reported)
-    })
-
-    it('reaches Datadog as billing actions', async () => {
-      const registry = new TelemetryRegistry()
-      registry.registerProvider(new DatadogRumTelemetryProvider())
-      vi.mocked(useTelemetry).mockReturnValue(registry)
-      offersRetention()
-
-      await launchCancellationFlow({
-        showFallback: vi.fn(),
-        showRetentionOffer: decides('dismissed')
-      })
-
-      expect(mockRumAddAction.mock.calls).toEqual([
-        ['billing.cancel.intent', { ...intent, billing_surface: 'cloud_app' }],
-        [
-          'billing.cancel.abandoned',
-          { ...abandoned, billing_surface: 'cloud_app' }
-        ]
-      ])
-    })
-  })
+  )
 })

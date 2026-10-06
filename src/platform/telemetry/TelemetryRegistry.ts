@@ -44,6 +44,8 @@ import type {
   HelpCenterOpenedMetadata,
   HelpResourceClickedMetadata,
   ImageLoadFailureMetadata,
+  InAppSurveyEvent,
+  InAppSurveyStage,
   LinkDedupDropMetadata,
   NamedValuesShadowDiffMismatchMetadata,
   NamedValuesShadowDiffSummaryMetadata,
@@ -244,6 +246,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     responses?: SurveyResponses
   ): void {
     this.dispatch((provider) => provider.trackSurvey?.(stage, responses))
+  }
+
+  trackInAppSurvey(stage: InAppSurveyStage, event: InAppSurveyEvent): void {
+    this.dispatch((provider) => provider.trackInAppSurvey?.(stage, event))
   }
 
   trackOnboardingTour(

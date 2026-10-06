@@ -108,6 +108,7 @@ export type RemoteConfig = Partial<GetFeaturesResponses[200]> & {
   onboarding_tour_enabled?: boolean
   /** Full hosted (external) survey URL embedded in the Nodes Manager modal on Cloud. */
   manager_survey_url?: string
+  cancellation_survey_id?: string
   linear_toggle_enabled?: boolean
   'agent-in-app-experience'?: boolean
   'agent-free-use-message-placement'?: string
