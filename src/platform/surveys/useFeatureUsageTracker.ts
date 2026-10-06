@@ -22,6 +22,7 @@ interface PendingUsageDelta {
 interface PendingReset {
   baseline?: FeatureUsage | null
   rawBaseline?: FeatureUsage | null
+  baselineRequestedAt?: number
   requestedAt: number
 }
 
@@ -178,14 +179,13 @@ function reconcileDeletedPendingUsage(
         if (!pendingDeltas) return []
         const existed = usageFor(oldUsageData, featureId)
         const exists = usageFor(currentUsageData, featureId)
-        const retainedDeltas =
-          !existed || exists || invalidFeatureIds.has(featureId)
-            ? pendingDeltas
-            : pendingDeltas.filter(
-                ({ baseUsage, recordedAt }) =>
-                  (baseUsage === undefined || baseUsage === null) &&
-                  (!isOrderableUsage(existed) || recordedAt >= existed.lastUsed)
-              )
+        const retainedDeltas = pendingDeltas.filter(
+          ({ baseUsage, recordedAt }) => {
+            if (!existed || invalidFeatureIds.has(featureId)) return true
+            if (baseUsage !== undefined && baseUsage !== null) return !!exists
+            return !isOrderableUsage(existed) || recordedAt >= existed.lastUsed
+          }
+        )
         return retainedDeltas.length > 0
           ? [[featureId, retainedDeltas] as const]
           : []
@@ -199,11 +199,19 @@ function didUsageAdvance(
   baseline: FeatureUsage | null | undefined,
   storedUsage: FeatureUsage | undefined,
   requestedAt: number,
-  rawBaseline?: FeatureUsage | null
+  rawBaseline?: FeatureUsage | null,
+  baselineRequestedAt?: number
 ) {
   if (!storedUsage) return false
   if (baseline === undefined)
     return didUnknownUsageAdvance(storedUsage, requestedAt)
+  const baselinePredatesRequest =
+    baselineRequestedAt !== undefined && baselineRequestedAt < requestedAt
+  if (
+    baselinePredatesRequest &&
+    !didUnknownUsageAdvance(storedUsage, requestedAt)
+  )
+    return false
   if (baseline === null) return true
   return didKnownUsageAdvance(storedUsage, baseline, rawBaseline)
 }
@@ -255,7 +263,7 @@ function didKnownUsageAdvance(
   const repairedBaseline = repairUsageForComparison(baseline, now)
   if (
     rawBaseline &&
-    repairedStoredUsage.useCount >= rawBaseline.useCount &&
+    repairedStoredUsage.useCount > rawBaseline.useCount &&
     orderingDidNotRegress(repairedStoredUsage, repairedBaseline)
   ) {
     return true
@@ -288,6 +296,7 @@ function isSameOrNewerGeneration(
     rawBaseline &&
     !sameUsage(rawBaseline, baseline) &&
     usage.useCount > rawBaseline.useCount &&
+    repairedUsage.firstUsed === repairedBaseline.firstUsed &&
     orderingDidNotRegress(repairedUsage, repairedBaseline)
   ) {
     return true
@@ -330,14 +339,21 @@ function reconcilePendingResets(
     if (invalidFeatureIds.has(featureId)) continue
     const pendingReset = pendingResetUsage.get(featureId)
     if (!pendingReset) continue
-    const { baseline, rawBaseline, requestedAt } = pendingReset
+    const { baseline, rawBaseline, baselineRequestedAt, requestedAt } =
+      pendingReset
     const storedUsage = usageFor(storedUsageData, featureId)
-    const resetFinished = baseline !== undefined && !storedUsage
+    const resetFinished = !storedUsage
     const unchangedBaseline = sameUsage(storedUsage, rawBaseline ?? baseline)
     if (
       resetFinished ||
       (!unchangedBaseline &&
-        didUsageAdvance(baseline, storedUsage, requestedAt, rawBaseline))
+        didUsageAdvance(
+          baseline,
+          storedUsage,
+          requestedAt,
+          rawBaseline,
+          baselineRequestedAt
+        ))
     ) {
       pendingResets.delete(featureId)
       pendingResetUsage.delete(featureId)
@@ -563,7 +579,8 @@ function boundPendingDeltas(pendingDeltas: PendingUsageDelta[]) {
     const previousDelta = pendingDeltas[index - 1]
     return (
       index > 0 &&
-      sameUsage(previousDelta.baseUsage, delta.baseUsage) &&
+      previousDelta.rawBaseUsage !== undefined &&
+      delta.rawBaseUsage !== undefined &&
       sameUsage(previousDelta.rawBaseUsage, delta.rawBaseUsage)
     )
   })
@@ -586,6 +603,31 @@ function boundPendingDeltas(pendingDeltas: PendingUsageDelta[]) {
     },
     ...pendingDeltas.slice(boundedMergeIndex + 1)
   ]
+}
+
+function pendingBaselineMatches(
+  pendingDelta: PendingUsageDelta,
+  baseUsage: FeatureUsage | null | undefined
+) {
+  return (
+    pendingDelta.rawBaseUsage !== undefined &&
+    baseUsage !== undefined &&
+    sameUsage(pendingDelta.rawBaseUsage, baseUsage)
+  )
+}
+
+function createPendingUsageDelta(
+  now: number,
+  baseUsage: FeatureUsage | null | undefined
+): PendingUsageDelta {
+  return {
+    useCountDelta: 1,
+    firstUsed: Math.min(baseUsage?.firstUsed ?? now, now),
+    lastUsed: now,
+    recordedAt: now,
+    baseUsage: baseUsage ? repairUsageForComparison(baseUsage, now) : baseUsage,
+    rawBaseUsage: baseUsage
+  }
 }
 
 function setPendingUsage(
@@ -612,25 +654,14 @@ function recordPendingUsage(
   now: number,
   baseUsage: FeatureUsage | null | undefined
 ) {
-  const canonicalBaseUsage = baseUsage
-    ? repairUsageForComparison(baseUsage, now)
-    : baseUsage
   const pendingDeltas = pendingUsageFor(featureId) ?? []
   const previousDelta = pendingDeltas.at(-1)
   const baseMatches =
     previousDelta !== undefined &&
-    sameUsage(previousDelta.baseUsage, canonicalBaseUsage) &&
-    sameUsage(previousDelta.rawBaseUsage, baseUsage)
-  const nextDelta: PendingUsageDelta = baseMatches
+    pendingBaselineMatches(previousDelta, baseUsage)
+  const nextDelta = baseMatches
     ? incrementPendingDelta(previousDelta, now)
-    : {
-        useCountDelta: 1,
-        firstUsed: Math.min(baseUsage?.firstUsed ?? now, now),
-        lastUsed: now,
-        recordedAt: now,
-        baseUsage: canonicalBaseUsage,
-        rawBaseUsage: baseUsage
-      }
+    : createPendingUsageDelta(now, baseUsage)
   const nextDeltas = baseMatches
     ? [...pendingDeltas.slice(0, -1), nextDelta]
     : [...pendingDeltas, nextDelta]
@@ -811,6 +842,16 @@ function applyPartialVerification(verification: PendingWriteVerification) {
   }
 }
 
+function retryBaseUsageAfterVerification(
+  verification: PendingWriteVerification,
+  featureId: string,
+  baseUsage: FeatureUsage | null | undefined
+) {
+  if (!verification.usageData) return baseUsage
+  if (verification.invalidFeatureIds?.has(featureId)) return baseUsage
+  return usageFor(verification.usageData, featureId) ? baseUsage : null
+}
+
 function persistUsageData(featureId: string, now: number) {
   let oldValue: string | null = null
   let newValue = ''
@@ -847,7 +888,11 @@ function persistUsageData(featureId: string, now: number) {
         'error_verifying_feature_usage'
       )
       if (!verification.trackedUsageWritten) {
-        recordPendingUsage(featureId, now, baseUsage)
+        recordPendingUsage(
+          featureId,
+          now,
+          retryBaseUsageAfterVerification(verification, featureId, baseUsage)
+        )
       }
     }
   } catch (error) {
@@ -873,6 +918,7 @@ function capturePendingResetBaseline(
   pendingResetUsage.set(featureId, {
     ...pendingReset,
     rawBaseline: baseline ?? null,
+    baselineRequestedAt: pendingReset.requestedAt,
     baseline: baseline
       ? repairUsageForComparison(baseline, pendingReset.requestedAt)
       : null
