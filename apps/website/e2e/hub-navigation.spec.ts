@@ -409,10 +409,9 @@ test('mobile search suggestions show a video model as a still frame', async ({
   await expect(
     sheet.getByTestId('workshop-search-model-video')
   ).not.toHaveCount(0)
-  for (const image of await sheet
-    .getByTestId('workshop-search-model-image')
-    .all())
-    await expect(image).not.toHaveAttribute('src', /\.(mp4|webm|mov)/)
+  await expect(
+    sheet.locator('img[src*=".mp4"], img[src*=".webm"], img[src*=".mov"]')
+  ).toHaveCount(0)
 })
 
 test('keeps the current listing visible until a cold destination is ready', async ({
