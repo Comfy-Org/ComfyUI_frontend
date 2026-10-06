@@ -436,8 +436,16 @@ describe('useFeatureUsageTracker', () => {
     { useCount: '', firstUsed: 1_000, lastUsed: 2_000 },
     { useCount: -1, firstUsed: 1_000, lastUsed: 2_000 },
     { useCount: 1.5, firstUsed: 1_000, lastUsed: 2_000 },
+    {
+      useCount: Number.MAX_SAFE_INTEGER + 1,
+      firstUsed: 1_000,
+      lastUsed: 2_000
+    },
     { useCount: 1, firstUsed: null, lastUsed: 2_000 },
-    { useCount: 1, firstUsed: 1_000, lastUsed: '' }
+    { useCount: 1, firstUsed: 1.5, lastUsed: 2_000 },
+    { useCount: 1, firstUsed: -1, lastUsed: 2_000 },
+    { useCount: 1, firstUsed: 1_000, lastUsed: '' },
+    { useCount: 1, firstUsed: 1_000, lastUsed: Number.MAX_SAFE_INTEGER + 1 }
   ])('rejects invalid stored usage $useCount', (storedUsage) => {
     localStorage.setItem(
       STORAGE_KEY,
