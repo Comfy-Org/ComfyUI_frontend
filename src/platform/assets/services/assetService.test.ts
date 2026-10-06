@@ -134,21 +134,21 @@ describe(assetService.shouldUseWidgetAssetPicker, () => {
     ).toBe(true)
   })
 
+  it.for([
+    ['LoadLoraModel', 'loras.0.lora_name'],
+    ['LoadLoraModel', 'loras.1.lora_name'],
+    ['LoadLoraModel', 'loras.19.lora_name'],
+    ['LoadLoraTextEncoder', 'loras.0.lora_name'],
+    ['LoadLoraTextEncoder', 'loras.1.lora_name'],
+    ['LoadLoraTextEncoder', 'loras.19.lora_name']
+  ])('uses the asset picker for %s / %s on cloud', ([nodeType, name]) => {
+    mockDistributionState.isCloud = true
+    expect(assetService.shouldUseWidgetAssetPicker(nodeType, name)).toBe(true)
+  })
+
   it.for(['LoadLoraModel', 'LoadLoraTextEncoder'])(
-    'uses the asset picker for filename fields in every row of %s',
+    'keeps the combo widget for %s outside cloud',
     (nodeType) => {
-      mockDistributionState.isCloud = true
-
-      for (const name of [
-        'loras.0.lora_name',
-        'loras.1.lora_name',
-        'loras.19.lora_name'
-      ]) {
-        expect(assetService.shouldUseWidgetAssetPicker(nodeType, name)).toBe(
-          true
-        )
-      }
-
       mockDistributionState.isCloud = false
       expect(
         assetService.shouldUseWidgetAssetPicker(nodeType, 'loras.1.lora_name')

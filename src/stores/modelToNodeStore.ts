@@ -4,26 +4,19 @@ import { computed, ref } from 'vue'
 import { MODEL_NODE_MAPPINGS } from '@/platform/assets/mappings/modelNodeMappings'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { matchesWidgetName } from '@/utils/widgetBinding'
 
 /** Helper class that defines how to construct a node from a model. */
 export class ModelNodeProvider {
   /** The node definition to use for this model. */
   public nodeDef: ComfyNodeDefImpl
 
-  /** The node input key for where to insert the model name. */
-  public key: string
+  /** The input name or pattern used to select the model widget. */
+  public key: string | RegExp
 
-  /** Additional widget names that use the same model category. */
-  public widgetNamePattern?: RegExp
-
-  constructor(
-    nodeDef: ComfyNodeDefImpl,
-    key: string,
-    widgetNamePattern?: RegExp
-  ) {
+  constructor(nodeDef: ComfyNodeDefImpl, key: string | RegExp) {
     this.nodeDef = nodeDef
     this.key = key
-    this.widgetNamePattern = widgetNamePattern
   }
 }
 
@@ -33,23 +26,14 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
   const nodeDefStore = useNodeDefStore()
   const haveDefaultsLoaded = ref(false)
 
-  const registeredNodeProviders = computed<Record<string, ModelNodeProvider>>(
-    () => {
-      return Object.fromEntries(
-        Object.values(modelToNodeMap.value)
-          .filter((providers) => providers !== undefined)
-          .flat()
-          .map((provider) => [provider.nodeDef.name, provider])
-      )
-    }
-  )
-
-  const registeredNodeTypes = computed<Record<string, string>>(() =>
+  const registeredNodeTypes = computed<
+    Partial<Record<string, string | RegExp>>
+  >(() =>
     Object.fromEntries(
-      Object.entries(registeredNodeProviders.value).map(([name, provider]) => [
-        name,
-        provider.key
-      ])
+      Object.values(modelToNodeMap.value)
+        .filter((providers) => providers !== undefined)
+        .flat()
+        .map((provider) => [provider.nodeDef.name, provider.key])
     )
   )
 
@@ -69,19 +53,14 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
   })
 
   /** Get set of all registered node types for efficient lookup */
-  function getRegisteredNodeTypes(): Record<string, string> {
+  function getRegisteredNodeTypes(): Partial<Record<string, string | RegExp>> {
     registerDefaults()
     return registeredNodeTypes.value
   }
 
   function isModelWidget(nodeType: string, widgetName: string): boolean {
-    if (!widgetName) return false
     const key = getRegisteredNodeTypes()[nodeType]
-    const pattern = registeredNodeProviders.value[nodeType]?.widgetNamePattern
-    return (
-      key === widgetName ||
-      (pattern !== undefined && widgetName.search(pattern) !== -1)
-    )
+    return key !== undefined && matchesWidgetName(widgetName, key)
   }
 
   /**
@@ -153,7 +132,9 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
    */
   function registerNodeProvider(
     modelType: string,
-    nodeProvider: ModelNodeProvider | { nodeDef: undefined; key: string }
+    nodeProvider:
+      | ModelNodeProvider
+      | { nodeDef: undefined; key: string | RegExp }
   ) {
     registerDefaults()
     if (!nodeProvider.nodeDef) return
@@ -169,16 +150,11 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
   function quickRegister(
     modelType: string,
     nodeClass: string,
-    key: string,
-    widgetNamePattern?: RegExp
+    key: string | RegExp
   ) {
     registerNodeProvider(
       modelType,
-      new ModelNodeProvider(
-        nodeDefStore.nodeDefsByName[nodeClass],
-        key,
-        widgetNamePattern
-      )
+      new ModelNodeProvider(nodeDefStore.nodeDefsByName[nodeClass], key)
     )
   }
 
@@ -191,13 +167,8 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
     }
     haveDefaultsLoaded.value = true
 
-    for (const [
-      modelType,
-      nodeClass,
-      key,
-      widgetNamePattern
-    ] of MODEL_NODE_MAPPINGS) {
-      quickRegister(modelType, nodeClass, key, widgetNamePattern)
+    for (const [modelType, nodeClass, key] of MODEL_NODE_MAPPINGS) {
+      quickRegister(modelType, nodeClass, key)
     }
   }
 

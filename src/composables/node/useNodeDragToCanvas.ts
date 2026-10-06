@@ -8,14 +8,15 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLitegraphService } from '@/services/litegraphService'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { matchesWidgetName } from '@/utils/widgetBinding'
+import type { WidgetValueBinding } from '@/utils/widgetBinding'
 
 type DragMode = 'click' | 'native'
-type WidgetValues = Record<string, string>
 type Position = { x: number; y: number }
 
 interface StartDragOptions {
   mode?: DragMode
-  widgetValues?: WidgetValues
+  widgetValues?: readonly WidgetValueBinding[]
   source?: NodeAddSource
 }
 
@@ -23,7 +24,7 @@ const isDragging = ref(false)
 const draggedNode = shallowRef<ComfyNodeDefImpl | null>(null)
 const dragMode = ref<DragMode>('click')
 const lastNativeDragPosition = shallowRef<Position>()
-const pendingWidgetValues = shallowRef<WidgetValues>()
+const pendingWidgetValues = shallowRef<readonly WidgetValueBinding[]>()
 const pendingSource = ref<NodeAddSource>('sidebar_drag')
 let listenersSetup = false
 
@@ -36,11 +37,16 @@ function trackNativeDragPosition(e: DragEvent) {
   lastNativeDragPosition.value = { x: e.clientX, y: e.clientY }
 }
 
-function applyWidgetValues(node: LGraphNode, values: WidgetValues) {
-  for (const [name, value] of Object.entries(values)) {
-    const widget = node.widgets?.find((w) => w.name === name)
+function applyWidgetValues(
+  node: LGraphNode,
+  values: readonly WidgetValueBinding[]
+) {
+  for (const { selector, value } of values) {
+    const widget = node.widgets?.find((w) =>
+      matchesWidgetName(w.name, selector)
+    )
     if (!widget) {
-      console.error(`Widget ${name} not found on node ${node.type}`)
+      console.error(`Widget ${selector} not found on node ${node.type}`)
       useToastStore().add({
         severity: 'warn',
         summary: t('g.warning'),

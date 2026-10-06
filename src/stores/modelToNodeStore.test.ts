@@ -254,17 +254,20 @@ describe('useModelToNodeStore', () => {
     const store = useModelToNodeStore()
     store.registerNodeProvider(
       'vae',
-      new ModelNodeProvider(
-        createMockNodeDef('MultiVAE'),
-        'items.0.file',
-        /^items\.\d+\.file$/
-      )
+      new ModelNodeProvider(createMockNodeDef('MultiVAE'), /^items\.\d+\.file$/)
     )
 
     expect(store.isModelWidget('MultiVAE', 'items.3.file')).toBe(true)
     expect(store.isModelWidget('MultiVAE', 'items.3.strength')).toBe(false)
     expect(store.getCategoryForNodeType('MultiVAE')).toBe('vae')
-    expect(store.getRegisteredNodeTypes().MultiVAE).toBe('items.0.file')
+  })
+
+  it('matches string selectors literally, including regex characters', () => {
+    const store = useModelToNodeStore()
+    store.quickRegister('vae', 'VAELoader', 'items.*.file')
+
+    expect(store.isModelWidget('VAELoader', 'items.*.file')).toBe(true)
+    expect(store.isModelWidget('VAELoader', 'items.3.file')).toBe(false)
   })
 
   it.for(['g', 'y'])(
@@ -275,7 +278,6 @@ describe('useModelToNodeStore', () => {
         'vae',
         new ModelNodeProvider(
           createMockNodeDef('MultiVAE'),
-          'items.0.file',
           new RegExp(/^items\.\d+\.file$/, flags)
         )
       )
@@ -284,19 +286,6 @@ describe('useModelToNodeStore', () => {
       expect(store.isModelWidget('MultiVAE', 'items.1.file')).toBe(true)
       expect(store.isModelWidget('MultiVAE', 'items.2.file')).toBe(true)
       expect(store.isModelWidget('MultiVAE', 'items.2.strength')).toBe(false)
-    }
-  )
-
-  it.for(['LoadLoraModel', 'LoadLoraTextEncoder'])(
-    'inserts a model browser selection into the first row of %s',
-    (nodeType) => {
-      const provider = useModelToNodeStore()
-        .getAllNodeProviders('loras')
-        .find(({ nodeDef }) => nodeDef.name === nodeType)
-      expect(provider?.key).toBe('loras.0.lora_name')
-      expect(useModelToNodeStore().getCategoryForNodeType(nodeType)).toBe(
-        'loras'
-      )
     }
   )
 
