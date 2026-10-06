@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { h, ref } from 'vue'
 
 import {
@@ -11,6 +11,11 @@ import {
 } from '@/lib/workshop/cinematic-studio/reshoot'
 import { translationsFor } from '@/i18n/translations'
 import ReshootSide from './ReshootSide.vue'
+
+vi.mock(import('@/lib/workshop/cinematic-studio/reshoot-clip'), () => ({
+  clipSecondsOf: vi.fn(),
+  fileSecondsOf: vi.fn(async () => 10)
+}))
 
 const { t: rc } = translationsFor('en')
 
@@ -31,6 +36,29 @@ describe('ReshootSide', () => {
     motion: RESHOOT_MOTIONS[0],
     prompt: ''
   }
+
+  it('replaces the clip with a video chosen in its upload zone', async () => {
+    const upload = ref<File>()
+    render({
+      setup: () => () =>
+        h(ReshootSide, {
+          ...props,
+          size: RESHOOT_SIZES[0],
+          upload: upload.value,
+          'onUpdate:upload': (next: File | undefined) => {
+            upload.value = next
+          }
+        })
+    })
+    const chosen = new File(['clip'], 'mine.mp4', { type: 'video/mp4' })
+
+    await userEvent.upload(
+      screen.getByLabelText(new RegExp(rc('reshoot.clip.upload'))),
+      chosen
+    )
+
+    await vi.waitFor(() => expect(upload.value?.name).toBe(chosen.name))
+  })
 
   it('picks the output size from a menu that describes each size', async () => {
     const size = ref<(typeof RESHOOT_SIZES)[number]>(RESHOOT_SIZES[0])

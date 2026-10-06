@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { translationsFor } from '@/i18n/translations'
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import InfoTooltip from '@/components/ui/tooltip/InfoTooltip.vue'
@@ -12,14 +12,13 @@ import type {
   ReshootCamera,
   ReshootSize
 } from '@/lib/workshop/cinematic-studio/reshoot'
-import { clipFits } from '@/lib/workshop/cinematic-studio/reshoot'
-import { fileSecondsOf } from '@/lib/workshop/cinematic-studio/reshoot-clip'
 import type { Locale } from '@/i18n/translations'
 import CinematicGenerateAction from '@/components/workshop/cinematic-studio/CinematicGenerateAction.vue'
 import ReshootAimRig from './ReshootAimRig.vue'
 import ReshootDisclosure from './ReshootDisclosure.vue'
 import ReshootFormat from './ReshootFormat.vue'
 import ReshootMoveControls from './ReshootMoveControls.vue'
+import ReshootUpload from './ReshootUpload.vue'
 
 const {
   clip,
@@ -94,28 +93,6 @@ const framesText = computed(() =>
         seconds: (frames / 24).toFixed(1)
       })
 )
-
-// A replacement is checked before it takes the current clip's place, as on
-// the first pick: one outside 5 to 15 seconds is turned away and the clip
-// already in use stays.
-const rejected = ref<string>()
-async function choose(event: Event) {
-  const input = event.target
-  if (!(input instanceof HTMLInputElement)) return
-  const file = input.files?.[0]
-  input.value = ''
-  if (!file) return
-  const seconds = await fileSecondsOf(file)
-  if (Number.isFinite(seconds) && !clipFits(seconds)) {
-    rejected.value = t('reshoot.clip.rejected', {
-      name: file.name,
-      seconds: seconds.toFixed(1)
-    })
-    return
-  }
-  rejected.value = undefined
-  upload.value = file
-}
 </script>
 
 <template>
@@ -151,26 +128,8 @@ async function choose(event: Event) {
             }}
           </span>
         </span>
-        <label
-          class="flex h-7 shrink-0 cursor-pointer items-center rounded-full bg-transparency-white-t8 px-3 text-[11px] text-primary-comfy-canvas focus-within:ring-2 focus-within:ring-primary-comfy-yellow/50 hover:text-primary-warm-white"
-        >
-          {{ t('reshoot.clip.change') }}
-          <input
-            type="file"
-            accept="video/*"
-            class="sr-only"
-            @change="choose"
-          />
-        </label>
       </div>
-      <p
-        v-if="rejected"
-        role="alert"
-        data-testid="reshoot-clip-rejected"
-        class="-mt-2 px-1 text-[11px]/relaxed text-primary-warm-white"
-      >
-        {{ rejected }}
-      </p>
+      <ReshootUpload :locale @pick="upload = $event" />
       <ReshootAimRig
         v-model:keep-aim="keepAim"
         :clip

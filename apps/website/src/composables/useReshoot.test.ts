@@ -5,6 +5,7 @@ import { computed, defineComponent, nextTick, ref } from 'vue'
 import { refreshWorkshopCredits } from '@/config/workshop-credits'
 import { useWorkshopSession } from '@/config/workshop-session-state'
 import { RESHOOT_APP_SLUG } from '@/lib/workshop/cinematic-studio/analytics'
+import { RESHOOT_EXAMPLE } from '@/lib/workshop/cinematic-studio/reshoot'
 import { clipSecondsOf } from '@/lib/workshop/cinematic-studio/reshoot-clip'
 import { readGeometry } from '@/lib/workshop/cinematic-studio/reshoot-engine/cvgeo'
 import {
@@ -52,8 +53,7 @@ function start() {
   return reshoot
 }
 
-async function readScene(reshoot: ReturnType<typeof useReshoot>) {
-  reshoot.pick()
+async function readScene() {
   await vi.advanceTimersByTimeAsync(2_500)
 }
 
@@ -78,9 +78,33 @@ describe('useReshoot', () => {
     await reshoot.generate()
     expect(reshoot.takes.value).toHaveLength(before)
 
-    await readScene(reshoot)
+    await readScene()
     void reshoot.generate()
     expect(reshoot.takes.value).toHaveLength(before + 1)
+  })
+
+  it('opens on the example clip with its result take shown while the scene is read', async () => {
+    const reshoot = start()
+    await readScene()
+
+    expect(reshoot.isExample.value).toBe(true)
+    expect(reshoot.depth.value).toBe('ready')
+    expect(reshoot.current.value?.url).toBe(RESHOOT_EXAMPLE.result)
+  })
+
+  it('aims a new upload, and shows the example result again on the way back', async () => {
+    const reshoot = start()
+    await readScene()
+
+    reshoot.upload.value = new File(['clip'], 'mine.mp4', {
+      type: 'video/mp4'
+    })
+    expect(reshoot.selected.value).toBe('aim')
+    expect(reshoot.depth.value).toBe('analyzing')
+
+    reshoot.showExample()
+    expect(reshoot.isExample.value).toBe(true)
+    expect(reshoot.current.value?.url).toBe(RESHOOT_EXAMPLE.result)
   })
 
   it('reads the scene, then generates a take from the aimed camera', async () => {
@@ -88,7 +112,7 @@ describe('useReshoot', () => {
     await vi.advanceTimersByTimeAsync(0)
     expect(reshoot.priceNote.value).toBe('Free · 3 of 5 left this week')
 
-    await readScene(reshoot)
+    await readScene()
     expect(reshoot.depth.value).toBe('ready')
     expect(reshoot.frames.value).toBe(97)
     expect(transport.upload).toHaveBeenCalledWith(
@@ -113,7 +137,7 @@ describe('useReshoot', () => {
 
   it('reuses a scene it already read instead of analyzing again', async () => {
     const reshoot = start()
-    await readScene(reshoot)
+    await readScene()
     reshoot.size.value = '768p'
     await vi.advanceTimersByTimeAsync(2_500)
     reshoot.size.value = '480p'
@@ -131,7 +155,7 @@ describe('useReshoot', () => {
   it('keeps Generate off while the price could not be fetched', async () => {
     vi.mocked(transport.quote).mockRejectedValue(new Error('network down'))
     const reshoot = start()
-    await readScene(reshoot)
+    await readScene()
 
     expect(reshoot.depth.value).toBe('ready')
     expect(reshoot.priceNote.value).toBe(
@@ -146,7 +170,7 @@ describe('useReshoot', () => {
     await vi.advanceTimersByTimeAsync(0)
     expect(reshoot.canGenerate.value).toBe(false)
 
-    await readScene(reshoot)
+    await readScene()
     expect(reshoot.priceNote.value).toBe('Free · 3 of 5 left this week')
     expect(reshoot.canGenerate.value).toBe(true)
   })
@@ -174,7 +198,7 @@ describe('useReshoot', () => {
   it('lets the unmetered dev transport generate with no quote', async () => {
     vi.mocked(transport.quote).mockResolvedValue(undefined)
     const reshoot = start()
-    await readScene(reshoot)
+    await readScene()
 
     expect(reshoot.priceNote.value).toBeUndefined()
     expect(reshoot.canGenerate.value).toBe(true)
@@ -182,7 +206,7 @@ describe('useReshoot', () => {
 
   it('keeps only the most recent scenes it read', async () => {
     const reshoot = start()
-    await readScene(reshoot)
+    await readScene()
     for (const aspect of [
       '16:9',
       '9:16',
@@ -232,19 +256,18 @@ describe('useReshoot', () => {
     vi.stubGlobal('fetch', fetchMock)
     const reshoot = start()
 
-    reshoot.pick()
     await vi.advanceTimersByTimeAsync(0)
     expect(reshoot.depth.value).toBe('failed')
     expect(transport.upload).not.toHaveBeenCalled()
 
-    reshoot.pick()
+    void reshoot.analyze()
     await vi.advanceTimersByTimeAsync(0)
     expect(fetchMock).toHaveBeenCalledTimes(2)
   })
 
   it('downloads outputs only once their job has succeeded', async () => {
     const reshoot = start()
-    await readScene(reshoot)
+    await readScene()
     void reshoot.generate()
     await vi.advanceTimersByTimeAsync(2_500)
 
@@ -272,7 +295,6 @@ describe('useReshoot', () => {
       new ReshootError('deployment_not_ready')
     )
     const reshoot = start()
-    reshoot.pick()
     await vi.advanceTimersByTimeAsync(1)
 
     expect(reshoot.stage.value).toBe('starting')
@@ -283,7 +305,6 @@ describe('useReshoot', () => {
   it('asks a signed-out visitor to sign in before reading the scene', async () => {
     useWorkshopSession().session = computed(() => undefined)
     const reshoot = start()
-    reshoot.pick()
     await vi.advanceTimersByTimeAsync(2_500)
 
     expect(transport.upload).not.toHaveBeenCalled()
@@ -296,7 +317,6 @@ describe('useReshoot', () => {
   it('is unavailable when this Cloud has no Re-shoot app', async () => {
     vi.mocked(reshootTransport).mockReturnValue(undefined)
     const reshoot = start()
-    reshoot.pick()
     await vi.advanceTimersByTimeAsync(2_500)
 
     expect(reshoot.gate.value).toBe('unavailable')
@@ -340,7 +360,7 @@ describe('useReshoot', () => {
   ])('explains a refused take: $name', async ({ error, role, note, gate }) => {
     if (role) signIn({ ...RESHOOT_CREDENTIAL, role })
     const reshoot = start()
-    await readScene(reshoot)
+    await readScene()
     vi.mocked(transport.submit).mockRejectedValueOnce(error)
     if (error.code === 'insufficient_credits')
       vi.mocked(transport.quote).mockResolvedValue({
@@ -358,7 +378,7 @@ describe('useReshoot', () => {
 
   it('runs again after a take the app could not serve', async () => {
     const reshoot = start()
-    await readScene(reshoot)
+    await readScene()
     vi.mocked(transport.submit).mockRejectedValueOnce(
       new ReshootError('app_unavailable')
     )
@@ -391,7 +411,7 @@ function sentSeed() {
 describe('useReshoot: the camera move', () => {
   it('shoots a keyed move from its first key, with every key sent', async () => {
     const reshoot = start()
-    await readScene(reshoot)
+    await readScene()
     reshoot.aim({ azimuth: 10 })
     reshoot.frame.value = 0
     reshoot.toggleKey()
@@ -424,7 +444,7 @@ describe('useReshoot: the camera move', () => {
 
   it('only tries a pose between keys, until Key writes it', async () => {
     const reshoot = start()
-    await readScene(reshoot)
+    await readScene()
     reshoot.frame.value = 0
     reshoot.toggleKey()
     reshoot.frame.value = 40
@@ -456,7 +476,7 @@ describe('useReshoot: the camera move', () => {
 
   it('takes a key away with the same button', async () => {
     const reshoot = start()
-    await readScene(reshoot)
+    await readScene()
     reshoot.frame.value = 5
     reshoot.toggleKey()
     expect(reshoot.onKey.value).toBe(true)
@@ -467,7 +487,7 @@ describe('useReshoot: the camera move', () => {
 
   it('shoots a single key as a held camera, not a move', async () => {
     const reshoot = start()
-    await readScene(reshoot)
+    await readScene()
     reshoot.frame.value = 0
     reshoot.aim({ azimuth: 15 })
     reshoot.toggleKey()
@@ -490,7 +510,7 @@ describe('useReshoot: seeds and clips', () => {
       .mockReturnValueOnce(0.25)
       .mockReturnValueOnce(0.75)
     const reshoot = start()
-    await readScene(reshoot)
+    await readScene()
 
     void reshoot.generate()
     await vi.advanceTimersByTimeAsync(2_500)
@@ -514,7 +534,7 @@ describe('useReshoot: seeds and clips', () => {
     await vi.advanceTimersByTimeAsync(0)
     vi.mocked(clipSecondsOf).mockResolvedValue(30)
 
-    reshoot.pick(chosen())
+    reshoot.upload.value = chosen()
     await vi.advanceTimersByTimeAsync(2_500)
 
     expect(reshoot.clipError.value).toBe(
@@ -531,7 +551,7 @@ describe('useReshoot: seeds and clips', () => {
     await vi.advanceTimersByTimeAsync(0)
     vi.mocked(clipSecondsOf).mockResolvedValue(Number.NaN)
 
-    reshoot.pick(chosen())
+    reshoot.upload.value = chosen()
     await vi.advanceTimersByTimeAsync(2_500)
 
     expect(reshoot.clipError.value).toBeUndefined()
@@ -542,7 +562,7 @@ describe('useReshoot: seeds and clips', () => {
     // e2e serves external media as a tiny stand-in: 0.1 s must not block it.
     vi.mocked(clipSecondsOf).mockResolvedValue(0.1)
     const reshoot = start()
-    await readScene(reshoot)
+    await readScene()
 
     expect(reshoot.clipError.value).toBeUndefined()
     expect(reshoot.depth.value).toBe('ready')
@@ -556,7 +576,7 @@ describe('useReshoot: seeds and clips', () => {
     expect(reshoot.frames.value).toBe(226)
     expect(reshoot.clipError.value).toBeUndefined()
 
-    await readScene(reshoot)
+    await readScene()
     expect(reshoot.frames.value).toBe(97)
   })
 })
@@ -572,7 +592,7 @@ describe('useReshoot: analytics', () => {
 
   it('reports a successful take as a started and finished run', async () => {
     const reshoot = start()
-    await readScene(reshoot)
+    await readScene()
 
     void reshoot.generate()
     expect(captureWorkshopEvent).toHaveBeenLastCalledWith({
@@ -593,7 +613,7 @@ describe('useReshoot: analytics', () => {
 
   it('reports a refused take as a failed run', async () => {
     const reshoot = start()
-    await readScene(reshoot)
+    await readScene()
     vi.mocked(transport.submit).mockRejectedValueOnce(
       new ReshootError('insufficient_credits')
     )
@@ -618,7 +638,7 @@ describe('useReshoot: analytics', () => {
 
   it('reports a cancelled take as a cancelled run', async () => {
     const reshoot = start()
-    await readScene(reshoot)
+    await readScene()
 
     void reshoot.generate()
     await vi.advanceTimersByTimeAsync(0)

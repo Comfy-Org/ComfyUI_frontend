@@ -2,6 +2,8 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { translationsFor } from '@/i18n/translations'
+import { RESHOOT_EXAMPLE } from '@/lib/workshop/cinematic-studio/reshoot'
 import { readGeometry } from '@/lib/workshop/cinematic-studio/reshoot-engine/cvgeo'
 import {
   fakeGeometry,
@@ -21,6 +23,12 @@ vi.mock(
 vi.mock(import('@/lib/workshop/cinematic-studio/reshoot-engine/cvgeo'), () => ({
   readGeometry: vi.fn()
 }))
+vi.mock(import('@/lib/workshop/cinematic-studio/reshoot-clip'), () => ({
+  clipSecondsOf: vi.fn(async () => Number.NaN),
+  fileSecondsOf: vi.fn(async () => 10)
+}))
+
+const { t: rc } = translationsFor('en')
 
 function setup() {
   render(ReshootStudio)
@@ -39,33 +47,66 @@ beforeEach(() => {
 })
 
 describe('Re-shoot on one screen', () => {
-  async function pickExample(user: ReturnType<typeof setup>) {
-    await user.click(screen.getByRole('button', { name: /Sci-fi pilot/ }))
+  async function readExample() {
     await vi.advanceTimersByTimeAsync(3000)
   }
 
-  it('reads the scene as soon as a clip is picked, then aims from the globe', async () => {
+  function chooseClip(user: ReturnType<typeof setup>, name = 'mine.mp4') {
+    return user.upload(
+      screen.getByLabelText(new RegExp(rc('reshoot.clip.upload'))),
+      new File(['clip'], name, { type: 'video/mp4' })
+    )
+  }
+
+  it('lands in the editor on the example clip with its result take shown', async () => {
+    setup()
+
+    expect(
+      screen.getByRole('button', { name: rc('reshoot.take.example') })
+    ).toHaveAttribute('aria-current', 'true')
+    expect(
+      screen.getByRole('link', { name: rc('reshoot.download') })
+    ).toHaveAttribute('href', RESHOOT_EXAMPLE.result)
+  })
+
+  it('reads the example scene on arrival, then aims from the globe', async () => {
     const user = setup()
-    expect(screen.queryByTestId('reshoot-action')).toBeNull()
-    expect(screen.getByTestId('reshoot-empty')).toBeInTheDocument()
-
-    await user.click(screen.getByRole('button', { name: /Sci-fi pilot/ }))
-
-    expect(screen.getByRole('status')).toHaveTextContent('Estimating depth')
-    expect(screen.getByTestId('reshoot-action')).toBeDisabled()
+    expect(await screen.findByTestId('reshoot-action')).toBeDisabled()
     expect(screen.getByRole('slider', { name: 'Rotation' })).toBeDisabled()
 
-    await vi.advanceTimersByTimeAsync(3000)
+    await readExample()
     screen.getByTestId('reshoot-globe').focus()
     await user.keyboard('{ArrowRight}')
 
     expect(screen.getByRole('slider', { name: 'Rotation' })).toHaveValue('-25')
+    expect(
+      screen.getByRole('button', { name: 'Aim', current: true })
+    ).toBeInTheDocument()
     expect(screen.getByTestId('reshoot-action')).toBeEnabled()
   })
 
-  it('shows what the next take costs above Generate', async () => {
+  it('replaces the clip from the upload zone in the side panel', async () => {
+    const transport = fakeTransport()
+    vi.mocked(reshootTransport).mockReturnValue(transport)
     const user = setup()
-    await pickExample(user)
+    await readExample()
+
+    await chooseClip(user)
+    await readExample()
+
+    expect(screen.getByText('mine.mp4')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Aim', current: true })
+    ).toBeInTheDocument()
+    expect(transport.upload).toHaveBeenLastCalledWith(
+      expect.objectContaining({ name: 'mine.mp4' }),
+      expect.any(AbortSignal)
+    )
+  })
+
+  it('shows what the next take costs above Generate', async () => {
+    setup()
+    await readExample()
 
     expect(screen.getByTestId('reshoot-price')).toHaveTextContent(
       'Free · 3 of 5 left this week'
@@ -74,11 +115,9 @@ describe('Re-shoot on one screen', () => {
 
   it('lets only the latest scene reading finish', async () => {
     const user = setup()
-    const example = () => screen.getByRole('button', { name: /Sci-fi pilot/ })
 
-    await user.click(example())
     await vi.advanceTimersByTimeAsync(1000)
-    await user.click(example())
+    await chooseClip(user)
     await vi.advanceTimersByTimeAsync(1500)
     expect(screen.getByTestId('reshoot-action')).toBeDisabled()
 
@@ -93,7 +132,7 @@ describe('Re-shoot on one screen', () => {
     'leaves vertical touch drags from $start to the page scroll unless it is the handle: tilts $tilts',
     async ({ start, tilts }) => {
       const user = setup()
-      await pickExample(user)
+      await readExample()
       const globe = screen.getByTestId('reshoot-globe')
       const target = screen.getByTestId(
         start === 'the globe' ? 'reshoot-globe' : 'reshoot-globe-handle'
@@ -119,7 +158,7 @@ describe('Re-shoot on one screen', () => {
 
   it('lines up a take next to the picture and cancels it there', async () => {
     const user = setup()
-    await pickExample(user)
+    await readExample()
 
     await user.click(screen.getByTestId('reshoot-action'))
 
@@ -132,7 +171,7 @@ describe('Re-shoot on one screen', () => {
 
   it('asks before the page is left while a take renders', async () => {
     const user = setup()
-    await pickExample(user)
+    await readExample()
     const leave = () => {
       const event = new Event('beforeunload', { cancelable: true })
       window.dispatchEvent(event)
@@ -149,7 +188,7 @@ describe('Re-shoot on one screen', () => {
 
   it("aims again from a finished take's angle", async () => {
     const user = setup()
-    await pickExample(user)
+    await readExample()
     await user.click(screen.getByTestId('reshoot-action'))
     await vi.advanceTimersByTimeAsync(6500)
     screen.getByTestId('reshoot-globe').focus()

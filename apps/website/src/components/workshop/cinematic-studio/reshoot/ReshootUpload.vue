@@ -15,13 +15,18 @@ const { t } = translationsFor(locale)
 const emit = defineEmits<{ pick: [file: File] }>()
 
 const over = ref(false)
-const tooLong = ref<number>()
+const rejected = ref<string>()
 
 async function accept(file: File) {
   const seconds = await fileSecondsOf(file)
-  tooLong.value =
-    Number.isFinite(seconds) && !clipFits(seconds) ? seconds : undefined
-  if (tooLong.value === undefined) emit('pick', file)
+  rejected.value =
+    Number.isFinite(seconds) && !clipFits(seconds)
+      ? t('reshoot.clip.rejected', {
+          name: file.name,
+          seconds: seconds.toFixed(1)
+        })
+      : undefined
+  if (rejected.value === undefined) emit('pick', file)
 }
 
 function choose(event: Event) {
@@ -40,47 +45,38 @@ function drop(event: DragEvent) {
 </script>
 
 <template>
-  <aside
-    :aria-label="t('reshoot.clip.yours')"
-    class="flex flex-col gap-3.5 rounded-2xl bg-primary-comfy-ink-light p-4"
-    data-testid="reshoot-pick"
-  >
-    <h2
-      class="text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase"
-    >
-      {{ t('reshoot.clip.yours') }}
-    </h2>
+  <div class="flex flex-col gap-2">
     <label
       :class="
         cn(
-          'group/drop flex w-full cursor-pointer flex-col items-center gap-2.5 rounded-2xl border-[1.5px] border-dashed border-transparency-white-t20 bg-transparency-white-t4 px-6 py-7 text-center transition-colors focus-within:border-primary-comfy-yellow hover:border-primary-warm-white/40',
+          'flex w-full cursor-pointer flex-col items-center gap-1.5 rounded-2xl border-[1.5px] border-dashed border-transparency-white-t20 bg-transparency-white-t4 px-4 py-5 text-center transition-colors focus-within:border-primary-comfy-yellow hover:border-primary-warm-white/40',
           over && 'border-primary-comfy-yellow bg-transparency-white-t8'
         )
       "
+      data-testid="reshoot-upload"
       @dragover.prevent="over = true"
       @dragleave="over = false"
       @drop.prevent="drop"
     >
-      <Upload class="size-7 text-primary-comfy-canvas" aria-hidden="true" />
-      <span class="text-base font-semibold text-primary-warm-white">
-        {{ t('reshoot.pick.drop') }}
+      <Upload class="size-6 text-primary-comfy-canvas" aria-hidden="true" />
+      <span class="text-sm font-semibold text-primary-warm-white">
+        {{ t('reshoot.clip.upload') }}
       </span>
-      <span class="text-xs/relaxed text-balance text-primary-warm-gray">
+      <span class="text-xs text-primary-warm-gray">
+        {{ t('reshoot.clip.browse') }}
+      </span>
+      <span class="text-[11px]/relaxed text-balance text-primary-warm-gray">
         {{ t('reshoot.clip.help') }}
-      </span>
-      <span
-        class="mt-2 rounded-full px-5 py-2.5 text-sm font-semibold text-primary-warm-white ring-1 ring-transparency-white-t20 transition-colors ring-inset group-hover/drop:bg-transparency-white-t8"
-      >
-        {{ t('reshoot.pick.upload') }}
       </span>
       <input type="file" accept="video/*" class="sr-only" @change="choose" />
     </label>
     <p
-      v-if="tooLong !== undefined"
+      v-if="rejected"
       role="alert"
-      class="text-sm text-destructive-light"
+      data-testid="reshoot-clip-rejected"
+      class="px-1 text-[11px]/relaxed text-primary-warm-white"
     >
-      {{ t('reshoot.clip.length', { seconds: tooLong.toFixed(1) }) }}
+      {{ rejected }}
     </p>
-  </aside>
+  </div>
 </template>

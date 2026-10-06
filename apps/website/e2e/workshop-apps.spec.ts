@@ -59,7 +59,7 @@ async function openReadReshootScene(
   await expect(page).toHaveURL('/')
 
   await page.goto('/hub/apps/reshoot/')
-  await page.getByText('Sci-fi pilot').first().click()
+  await page.getByRole('button', { name: 'Aim', exact: true }).click()
   await expect(page.getByTestId('reshoot-drag-hint')).toBeVisible()
   expect(proxy).toEqual(
     expect.arrayContaining([
@@ -199,6 +199,10 @@ test('opens Re-shoot once its flag is on', async ({ page, context }) => {
   await mockFlags(context, { apps: true, workflows: false, reshoot: true })
   await page.goto('/hub/apps/reshoot/')
   await expect(page.getByTestId('reshoot')).toBeVisible()
+  await expect(
+    page.getByRole('button', { name: 'Example result', exact: true })
+  ).toHaveAttribute('aria-current', 'true')
+  await expect(page.getByTestId('reshoot-upload')).toBeVisible()
   await expect(page.getByText('Cinematic Studio is not open yet')).toHaveCount(
     0
   )
@@ -337,7 +341,6 @@ test('keeps the Re-shoot camera help behind info buttons', async ({
 }) => {
   await mockFlags(context, { apps: true, workflows: false })
   await page.goto('/hub/apps/reshoot/')
-  await page.getByText('Sci-fi pilot').first().click()
 
   const help = 'Distance is approximate; angles give the most control.'
   await expect(page.getByText(help)).toBeHidden()

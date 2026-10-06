@@ -4715,8 +4715,6 @@
     "credit": "基于 Cseti 的 CrossView-Warp LoRA 与节点",
     "pick": {
       "lead": "从任意角度重拍任意视频。机位随心移动，无需补拍。",
-      "drop": "将视频拖到这里",
-      "upload": "上传视频",
       "exampleMeta": "无需上传即可试用",
       "exampleTitle": "科幻飞行员"
     },
@@ -4759,14 +4757,12 @@
       "placeholder": "例如：她身后是一面石墙，左边有更多麦田"
     },
     "clip": {
-      "length": "该片段长 {seconds} 秒，请使用 5 到 15 秒的片段。",
-      "change": "更换",
       "ready": "场景已读取",
-      "yours": "你的片段",
       "example": "示例",
-      "replace": "选择其他片段",
       "help": "5–15 秒，主体清晰，无黑边",
-      "rejected": "{name} 长 {seconds} 秒，当前片段保持不变。请选择 5 到 15 秒的片段。"
+      "rejected": "{name} 长 {seconds} 秒，当前片段保持不变。请选择 5 到 15 秒的片段。",
+      "upload": "上传你想重拍的视频",
+      "browse": "将视频拖到这里，或点击浏览"
     },
     "reuse": "再次使用此机位",
     "generate": {
@@ -4813,10 +4809,6 @@
     "speed": {
       "480p": "更快",
       "768p": "更清晰"
-    },
-    "empty": {
-      "title": "新机位的画面将在这里播放",
-      "hint": "先选一段 5 到 15 秒的片段，或挑一个示例。"
     },
     "optional": "可选",
     "aspect": {
