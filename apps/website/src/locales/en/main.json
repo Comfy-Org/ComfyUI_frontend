@@ -3471,8 +3471,8 @@
     "hub": {
       "meta": {
         "title": "ComfyUI Models: Run AI Image, Video & Audio Models - Comfy",
-        "description": "Browse {count} AI model in ComfyUI, including {names}. Try it in your browser, then call it from your code. | Browse {count} AI models in ComfyUI, including {names}. Try any model in your browser, then call it from your code.",
-        "descriptionWithoutNames": "Browse {count} AI model in ComfyUI. Try it in your browser, then call it from your code. | Browse {count} AI models in ComfyUI. Try any model in your browser, then call it from your code."
+        "description": "Browse {count} AI model in ComfyUI, including {names}. Call it through the Comfy Router API. | Browse {count} AI models in ComfyUI, including {names}. Call any model through the Comfy Router API.",
+        "descriptionWithoutNames": "Browse {count} AI model in ComfyUI. Call it through the Comfy Router API. | Browse {count} AI models in ComfyUI. Call any model through the Comfy Router API."
       }
     }
   },

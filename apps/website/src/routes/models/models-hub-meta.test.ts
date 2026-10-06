@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { translationsFor } from '@/i18n/translations'
 import { modelsHubMeta } from './models-hub-meta'
 
 describe('modelsHubMeta', () => {
@@ -41,14 +42,31 @@ describe('modelsHubMeta', () => {
       { name: 'Wan 2.7' }
     ])
     expect(description).toBe(
-      'Browse 2 AI models in ComfyUI. Try any model in your browser, then call it from your code.'
+      'Browse 2 AI models in ComfyUI. Call any model through the Comfy Router API.'
     )
   })
 
   it('uses the singular for a one-model catalogue', () => {
     const { description } = modelsHubMeta([{ name: 'Veo 3 Text-to-Video' }])
     expect(description).toBe(
-      'Browse 1 AI model in ComfyUI, including Veo. Try it in your browser, then call it from your code.'
+      'Browse 1 AI model in ComfyUI, including Veo. Call it through the Comfy Router API.'
     )
   })
+
+  it.for(['en', 'zh-CN'] as const)(
+    'never promises browser runs in the %s catalogue description',
+    (locale) => {
+      const { t } = translationsFor(locale)
+      for (const key of [
+        'models.hub.meta.description',
+        'models.hub.meta.descriptionWithoutNames'
+      ]) {
+        for (const count of [1, 2]) {
+          expect(
+            t(key, { count, names: 'Veo' }, { plural: count })
+          ).not.toMatch(/browser|浏览器/i)
+        }
+      }
+    }
+  )
 })

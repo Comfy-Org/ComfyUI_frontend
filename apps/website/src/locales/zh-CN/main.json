@@ -2872,8 +2872,8 @@
     "hub": {
       "meta": {
         "title": "ComfyUI 模型：运行 AI 图像、视频和音频模型 - Comfy",
-        "description": "在 ComfyUI 中浏览 {count} 个 AI 模型，包括 {names}。在浏览器中试用任意模型，然后在你的代码中调用它。",
-        "descriptionWithoutNames": "在 ComfyUI 中浏览 {count} 个 AI 模型。在浏览器中试用任意模型，然后在你的代码中调用它。"
+        "description": "在 ComfyUI 中浏览 {count} 个 AI 模型，包括 {names}。可通过 Comfy Router API 调用任意模型。",
+        "descriptionWithoutNames": "在 ComfyUI 中浏览 {count} 个 AI 模型。可通过 Comfy Router API 调用任意模型。"
       }
     }
   },
