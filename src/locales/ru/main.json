@@ -665,6 +665,46 @@
     "switchToOutputs": "Перейти к выводам",
     "viewApp": "Просмотреть приложение"
   },
+  "cameraAngle": {
+    "cameraView": "Камера",
+    "cameraViewTooltip": "Перемещать камеру вокруг объекта",
+    "faces": {
+      "back": "СЗАДИ",
+      "bottom": "СНИЗУ",
+      "left": "СЛЕВА",
+      "right": "СПРАВА",
+      "top": "СВЕРХУ"
+    },
+    "hidePreview": "Скрыть предпросмотр кадра",
+    "horizontal": {
+      "back": "Сзади",
+      "backLeft": "Сзади слева",
+      "backRight": "Сзади справа",
+      "front": "Спереди",
+      "frontLeft": "Спереди слева",
+      "frontRight": "Спереди справа",
+      "left": "Слева",
+      "right": "Справа"
+    },
+    "horizontalLabel": "Горизонтальный угол",
+    "objectView": "Объект",
+    "objectViewTooltip": "Смотреть через камеру и поворачивать объект",
+    "preview": "Предпросмотр",
+    "showPreview": "Показать предпросмотр кадра",
+    "vertical": {
+      "elevated": "Сверху",
+      "eyeLevel": "На уровне глаз",
+      "highAngle": "Верхний ракурс",
+      "lowAngle": "Нижний ракурс"
+    },
+    "verticalLabel": "Вертикальный угол",
+    "zoom": {
+      "closeUp": "Крупный план",
+      "medium": "Средний план",
+      "wide": "Общий план"
+    },
+    "zoomLabel": "Крупность плана"
+  },
   "clipboard": {
     "errorMessage": "Не удалось скопировать в буфер обмена",
     "errorNotSupported": "API буфера обмена не поддерживается в вашем браузере",
@@ -1737,7 +1777,8 @@
     "exportingAssets": "Экспорт ассетов",
     "noExportsInQueue": "Нет {filter} экспортов в очереди",
     "preparingExport": "Подготовка к экспорту...",
-    "retryDownload": "Повторить загрузку"
+    "retryDownload": "Повторить загрузку",
+    "unsupportedDownloadUrl": "Неподдерживаемый URL для скачивания экспорта"
   },
   "feedback": {
     "title": "Оставить отзыв"
@@ -3658,7 +3699,8 @@
     "importingModels": "Импорт моделей",
     "noImportsInQueue": "Нет {filter} в очереди",
     "pending": "В ожидании",
-    "progressCount": "{completed} из {total}"
+    "progressCount": "{completed} из {total}",
+    "taskUnavailable": "Задача скачивания больше недоступна."
   },
   "queue": {
     "completedIn": "Завершено за {duration}",
@@ -4937,6 +4979,7 @@
     "failedToFetchBalance": "Не удалось получить баланс: {error}",
     "failedToFetchLogs": "Не удалось получить серверные логи",
     "failedToFetchSubscription": "Не удалось получить статус подписки: {error}",
+    "failedToInitializeCameraAngleViewer": "Не удалось инициализировать средство просмотра угла камеры. Попробуйте перезагрузить страницу.",
     "failedToInitializeCameraInfoViewer": "Не удалось инициализировать просмотрщик сведений о камере. Попробуйте перезагрузить страницу.",
     "failedToInitializeLoad3dViewer": "Не удалось инициализировать 3D просмотрщик",
     "failedToInitiateCreditPurchase": "Не удалось начать покупку кредитов: {error}",

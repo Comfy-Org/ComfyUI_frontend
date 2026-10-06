@@ -665,6 +665,46 @@
     "switchToOutputs": "رفتن به خروجی‌ها",
     "viewApp": "مشاهده اپلیکیشن"
   },
+  "cameraAngle": {
+    "cameraView": "دوربین",
+    "cameraViewTooltip": "دوربین را به اطراف سوژه حرکت دهید",
+    "faces": {
+      "back": "پشت",
+      "bottom": "پایین",
+      "left": "چپ",
+      "right": "راست",
+      "top": "بالا"
+    },
+    "hidePreview": "پنهان کردن پیش‌نمایش نما",
+    "horizontal": {
+      "back": "پشت",
+      "backLeft": "پشت چپ",
+      "backRight": "پشت راست",
+      "front": "روبرو",
+      "frontLeft": "جلو چپ",
+      "frontRight": "جلو راست",
+      "left": "سمت چپ",
+      "right": "سمت راست"
+    },
+    "horizontalLabel": "زاویه افقی",
+    "objectView": "سوژه",
+    "objectViewTooltip": "از طریق دوربین نگاه کنید و سوژه را بچرخانید",
+    "preview": "پیش‌نمایش",
+    "showPreview": "نمایش پیش‌نمایش نما",
+    "vertical": {
+      "elevated": "مرتفع",
+      "eyeLevel": "هم‌سطح چشم",
+      "highAngle": "زاویه بالا",
+      "lowAngle": "زاویه پایین"
+    },
+    "verticalLabel": "زاویه عمودی",
+    "zoom": {
+      "closeUp": "نمای نزدیک",
+      "medium": "نمای متوسط",
+      "wide": "نمای باز"
+    },
+    "zoomLabel": "اندازه نما"
+  },
   "clipboard": {
     "errorMessage": "کپی به کلیپ‌بورد ناموفق بود",
     "errorNotSupported": "Clipboard API در مرورگر شما پشتیبانی نمی‌شود",
@@ -1737,7 +1777,8 @@
     "exportingAssets": "در حال خروجی گرفتن دارایی‌ها",
     "noExportsInQueue": "هیچ خروجی {filter} در صف نیست",
     "preparingExport": "در حال آماده‌سازی خروجی...",
-    "retryDownload": "تلاش مجدد برای دانلود"
+    "retryDownload": "تلاش مجدد برای دانلود",
+    "unsupportedDownloadUrl": "نشانی اینترنتی دانلود خروجی پشتیبانی نمی‌شود"
   },
   "feedback": {
     "title": "ارسال بازخورد"
@@ -3658,7 +3699,8 @@
     "importingModels": "در حال وارد کردن مدل‌ها",
     "noImportsInQueue": "هیچ {filter} در صف نیست",
     "pending": "در انتظار",
-    "progressCount": "{completed} از {total}"
+    "progressCount": "{completed} از {total}",
+    "taskUnavailable": "وظیفه دانلود دیگر در دسترس نیست."
   },
   "queue": {
     "completedIn": "پایان یافته در {duration}",
@@ -4937,6 +4979,7 @@
     "failedToFetchBalance": "دریافت موجودی انجام نشد: {error}",
     "failedToFetchLogs": "دریافت گزارش‌های سرور انجام نشد",
     "failedToFetchSubscription": "دریافت وضعیت اشتراک انجام نشد: {error}",
+    "failedToInitializeCameraAngleViewer": "راه‌اندازی نمایشگر زاویه دوربین ناموفق بود. صفحه را دوباره بارگذاری کنید.",
     "failedToInitializeCameraInfoViewer": "راه‌اندازی نمایشگر اطلاعات دوربین ناموفق بود. صفحه را دوباره بارگذاری کنید.",
     "failedToInitializeLoad3dViewer": "راه‌اندازی نمایشگر سه‌بعدی انجام نشد",
     "failedToInitiateCreditPurchase": "آغاز خرید اعتبار انجام نشد: {error}",

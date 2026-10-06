@@ -665,6 +665,46 @@
     "switchToOutputs": "출력으로 전환",
     "viewApp": "앱 보기"
   },
+  "cameraAngle": {
+    "cameraView": "카메라",
+    "cameraViewTooltip": "피사체 주변으로 카메라 이동",
+    "faces": {
+      "back": "뒤",
+      "bottom": "아래",
+      "left": "왼쪽",
+      "right": "오른쪽",
+      "top": "위"
+    },
+    "hidePreview": "샷 미리보기 숨기기",
+    "horizontal": {
+      "back": "뒤",
+      "backLeft": "왼쪽 뒤",
+      "backRight": "오른쪽 뒤",
+      "front": "정면",
+      "frontLeft": "왼쪽 앞",
+      "frontRight": "오른쪽 앞",
+      "left": "왼쪽",
+      "right": "오른쪽"
+    },
+    "horizontalLabel": "수평 각도",
+    "objectView": "오브젝트",
+    "objectViewTooltip": "카메라를 통해 보며 피사체 회전",
+    "preview": "미리보기",
+    "showPreview": "샷 미리보기 표시",
+    "vertical": {
+      "elevated": "높은 위치",
+      "eyeLevel": "눈높이",
+      "highAngle": "하이 앵글",
+      "lowAngle": "로우 앵글"
+    },
+    "verticalLabel": "수직 각도",
+    "zoom": {
+      "closeUp": "클로즈업",
+      "medium": "미디엄 샷",
+      "wide": "와이드 샷"
+    },
+    "zoomLabel": "샷 크기"
+  },
   "clipboard": {
     "errorMessage": "클립보드에 복사하지 못했습니다",
     "errorNotSupported": "브라우저가 클립보드 API를 지원하지 않습니다.",
@@ -1737,7 +1777,8 @@
     "exportingAssets": "에셋 내보내는 중",
     "noExportsInQueue": "대기 중인 {filter} 내보내기 없음",
     "preparingExport": "내보내기 준비 중...",
-    "retryDownload": "다운로드 재시도"
+    "retryDownload": "다운로드 재시도",
+    "unsupportedDownloadUrl": "지원되지 않는 내보내기 다운로드 URL"
   },
   "feedback": {
     "title": "피드백 공유"
@@ -3658,7 +3699,8 @@
     "importingModels": "모델 가져오는 중",
     "noImportsInQueue": "대기 중인 {filter} 없음",
     "pending": "대기 중",
-    "progressCount": "{completed} / {total}"
+    "progressCount": "{completed} / {total}",
+    "taskUnavailable": "다운로드 작업을 더 이상 사용할 수 없습니다."
   },
   "queue": {
     "completedIn": "{duration} 내에 완료됨",
@@ -4937,6 +4979,7 @@
     "failedToFetchBalance": "잔액을 가져오지 못했습니다: {error}",
     "failedToFetchLogs": "서버 로그를 가져오는 데 실패했습니다",
     "failedToFetchSubscription": "구독 상태를 가져오지 못함: {error}",
+    "failedToInitializeCameraAngleViewer": "카메라 앵글 뷰어를 초기화하지 못했습니다. 페이지를 새로고침해 보세요.",
     "failedToInitializeCameraInfoViewer": "카메라 정보 뷰어를 초기화하지 못했습니다. 페이지를 새로고침해 보세요.",
     "failedToInitializeLoad3dViewer": "3D 뷰어 초기화 실패",
     "failedToInitiateCreditPurchase": "크레딧 구매를 시작하지 못했습니다: {error}",

@@ -665,6 +665,46 @@
     "switchToOutputs": "Cambiar a Salidas",
     "viewApp": "Ver aplicación"
   },
+  "cameraAngle": {
+    "cameraView": "Cámara",
+    "cameraViewTooltip": "Mueve la cámara alrededor del sujeto",
+    "faces": {
+      "back": "PARTE TRASERA",
+      "bottom": "PARTE INFERIOR",
+      "left": "IZQUIERDA",
+      "right": "DERECHA",
+      "top": "PARTE SUPERIOR"
+    },
+    "hidePreview": "Ocultar vista previa del plano",
+    "horizontal": {
+      "back": "Trasera",
+      "backLeft": "Trasero izquierdo",
+      "backRight": "Trasero derecho",
+      "front": "Frontal",
+      "frontLeft": "Frontal izquierdo",
+      "frontRight": "Frontal derecho",
+      "left": "Lado izquierdo",
+      "right": "Lado derecho"
+    },
+    "horizontalLabel": "Ángulo horizontal",
+    "objectView": "Objeto",
+    "objectViewTooltip": "Mira a través de la cámara y gira el sujeto",
+    "preview": "Vista previa",
+    "showPreview": "Mostrar vista previa del plano",
+    "vertical": {
+      "elevated": "Elevado",
+      "eyeLevel": "A la altura de los ojos",
+      "highAngle": "Picado",
+      "lowAngle": "Contrapicado"
+    },
+    "verticalLabel": "Ángulo vertical",
+    "zoom": {
+      "closeUp": "Primer plano",
+      "medium": "Plano medio",
+      "wide": "Plano general"
+    },
+    "zoomLabel": "Tamaño de plano"
+  },
   "clipboard": {
     "errorMessage": "Error al copiar al portapapeles",
     "errorNotSupported": "API del portapapeles no soportada en su navegador",
@@ -1737,7 +1777,8 @@
     "exportingAssets": "Exportando recursos",
     "noExportsInQueue": "No hay exportaciones de {filter} en la cola",
     "preparingExport": "Preparando exportación...",
-    "retryDownload": "Reintentar descarga"
+    "retryDownload": "Reintentar descarga",
+    "unsupportedDownloadUrl": "URL de descarga de exportación no compatible"
   },
   "feedback": {
     "title": "Compartir comentarios"
@@ -3658,7 +3699,8 @@
     "importingModels": "Importando modelos",
     "noImportsInQueue": "No hay {filter} en la cola",
     "pending": "Pendiente",
-    "progressCount": "{completed} de {total}"
+    "progressCount": "{completed} de {total}",
+    "taskUnavailable": "La tarea de descarga ya no está disponible."
   },
   "queue": {
     "completedIn": "Finalizado en {duration}",
@@ -4937,6 +4979,7 @@
     "failedToFetchBalance": "No se pudo obtener el saldo: {error}",
     "failedToFetchLogs": "Error al obtener los registros del servidor",
     "failedToFetchSubscription": "Error al obtener el estado de suscripción: {error}",
+    "failedToInitializeCameraAngleViewer": "No se pudo inicializar el visor de ángulo de cámara. Intenta recargar la página.",
     "failedToInitializeCameraInfoViewer": "No se pudo inicializar el visor de información de la cámara. Intenta recargar la página.",
     "failedToInitializeLoad3dViewer": "Error al inicializar el visor 3D",
     "failedToInitiateCreditPurchase": "No se pudo iniciar la compra de créditos: {error}",

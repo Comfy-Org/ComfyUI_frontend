@@ -665,6 +665,46 @@
     "switchToOutputs": "切換到輸出",
     "viewApp": "查看應用程式"
   },
+  "cameraAngle": {
+    "cameraView": "相機",
+    "cameraViewTooltip": "環繞主體移動相機",
+    "faces": {
+      "back": "背面",
+      "bottom": "下方",
+      "left": "左側",
+      "right": "右側",
+      "top": "上方"
+    },
+    "hidePreview": "隱藏鏡頭預覽",
+    "horizontal": {
+      "back": "背面",
+      "backLeft": "左後方",
+      "backRight": "右後方",
+      "front": "正面",
+      "frontLeft": "左前方",
+      "frontRight": "右前方",
+      "left": "左側",
+      "right": "右側"
+    },
+    "horizontalLabel": "水平角度",
+    "objectView": "物件",
+    "objectViewTooltip": "透過相機觀看並旋轉主體",
+    "preview": "預覽",
+    "showPreview": "顯示鏡頭預覽",
+    "vertical": {
+      "elevated": "稍高角度",
+      "eyeLevel": "平視",
+      "highAngle": "高角度",
+      "lowAngle": "低角度"
+    },
+    "verticalLabel": "垂直角度",
+    "zoom": {
+      "closeUp": "特寫",
+      "medium": "中景",
+      "wide": "廣角鏡頭"
+    },
+    "zoomLabel": "鏡頭景別"
+  },
   "clipboard": {
     "errorMessage": "複製到剪貼簿失敗",
     "errorNotSupported": "您的瀏覽器不支援剪貼簿 API",
@@ -1737,7 +1777,8 @@
     "exportingAssets": "正在匯出資產",
     "noExportsInQueue": "佇列中沒有 {filter} 匯出",
     "preparingExport": "正在準備匯出...",
-    "retryDownload": "重試下載"
+    "retryDownload": "重試下載",
+    "unsupportedDownloadUrl": "不支援的匯出下載 URL"
   },
   "feedback": {
     "title": "分享回饋"
@@ -3658,7 +3699,8 @@
     "importingModels": "正在匯入模型",
     "noImportsInQueue": "佇列中沒有 {filter}",
     "pending": "處理中",
-    "progressCount": "{completed} / {total}"
+    "progressCount": "{completed} / {total}",
+    "taskUnavailable": "下載工作已無法使用。"
   },
   "queue": {
     "completedIn": "於 {duration} 完成",
@@ -4937,6 +4979,7 @@
     "failedToFetchBalance": "取得餘額失敗：{error}",
     "failedToFetchLogs": "無法取得伺服器日誌",
     "failedToFetchSubscription": "無法取得訂閱狀態：{error}",
+    "failedToInitializeCameraAngleViewer": "無法初始化相機角度檢視器。請嘗試重新載入頁面。",
     "failedToInitializeCameraInfoViewer": "無法初始化相機資訊檢視器。請嘗試重新載入頁面。",
     "failedToInitializeLoad3dViewer": "無法初始化 3D 檢視器",
     "failedToInitiateCreditPurchase": "啟動點數購買失敗：{error}",
