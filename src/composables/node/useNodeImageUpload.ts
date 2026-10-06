@@ -83,6 +83,7 @@ interface ImageUploadOptions {
   folder?: ResultItemType
   onUploadStart?: (files: File[]) => void
   onUploadError?: () => void
+  onReject?: (files: File[]) => boolean
 }
 
 /**
@@ -139,6 +140,7 @@ export const useNodeImageUpload = (
   // Handle drag & drop
   useNodeDragAndDrop(node, {
     fileFilter,
+    onReject: options.onReject,
     onDrop: handleUploadBatch,
     onResultItemDrop: (item) => onUploadComplete([item])
   })
@@ -146,6 +148,7 @@ export const useNodeImageUpload = (
   // Handle paste
   useNodePaste(node, {
     fileFilter,
+    onReject: options.onReject,
     allow_batch,
     onPaste: handleUploadBatch
   })
@@ -153,6 +156,7 @@ export const useNodeImageUpload = (
   // Handle file input
   const { openFileSelection } = useNodeFileInput(node, {
     fileFilter,
+    onReject: options.onReject,
     allow_batch,
     accept,
     onSelect: handleUploadBatch

@@ -82,7 +82,6 @@ describe('useCustomerEventsService', () => {
   }
 
   beforeEach(() => {
-    vi.mocked(webSessionResourceHeader).mockReset()
     vi.mocked(webSessionResourceHeader).mockResolvedValue(undefined)
     vi.mocked(useAuthStore().getUserAuthHeader).mockResolvedValue(
       mockAuthHeaders
