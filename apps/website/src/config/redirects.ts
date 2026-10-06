@@ -44,6 +44,7 @@ const modelAliasRedirects = models.flatMap(({ slug, canonicalSlug }) =>
 )
 
 // Permanent since comfy-router#46: prod serves /hub/models, /hub/workflows and /hub/apps from this site.
+// A 308 is cached by clients and cannot be retracted: confirm a new destination serves 200 first.
 // Literal rows only: hub pages fetch /models/<slug>/page.json, so a /models/:path* catch-all would break them.
 const hubModelRedirects: readonly SiteRedirect[] = [
   { source: '/models', destination: `${HUB_MODELS_PATH}/` },

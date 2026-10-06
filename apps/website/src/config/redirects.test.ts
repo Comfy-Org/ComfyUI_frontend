@@ -270,6 +270,7 @@ describe('old Models addresses', () => {
     [`${path}/`, destination]
   ])
 
+  // Errors inside model-urls.ts move both sides; the models-url-registry.ts guards catch those.
   it('each redirect once, permanently, to the page in the frozen URL tables', () => {
     const served = (path: string) =>
       vercelRedirects
