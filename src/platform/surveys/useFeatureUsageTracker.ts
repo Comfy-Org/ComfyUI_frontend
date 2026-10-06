@@ -551,6 +551,7 @@ function writeAndVerifyReset(
   const readBack = writeStorageAndReadBack(value)
   if (readBack === undefined) return true
   const parsedReadBack = parseUsageData(readBack)
+  const writtenUsageIds = new Set(Object.keys(pendingUsageData.value))
   return (
     parsedReadBack.status !== 'invalid' &&
     Object.keys(pendingUsageData.value).every((featureId) => {
@@ -563,7 +564,9 @@ function writeAndVerifyReset(
       )
     }) &&
     [...pendingResets].every(
-      (featureId) => usageFor(parsedReadBack.usageData, featureId) === undefined
+      (featureId) =>
+        writtenUsageIds.has(featureId) ||
+        usageFor(parsedReadBack.usageData, featureId) === undefined
     )
   )
 }

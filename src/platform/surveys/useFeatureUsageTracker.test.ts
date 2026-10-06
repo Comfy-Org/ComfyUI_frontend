@@ -896,6 +896,24 @@ describe('useFeatureUsageTracker', () => {
     expect(stored['pending-before-reset-clobber']?.useCount).toBe(2)
   })
 
+  it('drains post-reset usage through an unrelated reset', () => {
+    const featureId = 'post-reset-usage-before-other-reset'
+    const tracker = useFeatureUsageTracker(featureId)
+    tracker.trackUsage()
+    const setItem = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new DOMException('Storage quota exceeded', 'QuotaExceededError')
+    })
+    tracker.reset()
+    tracker.trackUsage()
+    tracker.trackUsage()
+    setItem.mockRestore()
+
+    useFeatureUsageTracker('unrelated-reset-after-usage').reset()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored[featureId]?.useCount).toBe(2)
+  })
+
   it('preserves stored features when reset persistence fails', () => {
     const tracker = useFeatureUsageTracker('failed-reset-merge')
     localStorage.setItem(
