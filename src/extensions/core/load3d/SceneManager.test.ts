@@ -92,6 +92,8 @@ function makeView(
     width,
     height,
     beginRender: vi.fn(),
+    bindOutput: vi.fn(),
+    resolveOutput: vi.fn(),
     blit: vi.fn(),
     setSize: vi.fn()
   } as unknown as RendererView
@@ -787,6 +789,34 @@ describe('SceneManager.captureScene', () => {
     expect(camera.top).toBe(5)
     expect(camera.bottom).toBe(-5)
   })
+
+  it.for([
+    { activeSplats: 0, highPrecision: false },
+    { activeSplats: 1000, highPrecision: true }
+  ])(
+    'resolves every pass before reading pixels, through a temporary half-float target only for splat scenes (%o)',
+    async ({ activeSplats, highPrecision }) => {
+      const { manager, view, renderer } = makeSceneManager()
+      const spark = manager.scene.children.find(
+        (child) => child instanceof SparkRenderer
+      )
+      Object.assign(spark!, { activeSplats })
+      const dispose = vi.spyOn(THREE.WebGLRenderTarget.prototype, 'dispose')
+
+      await manager.captureScene(800, 600)
+
+      const targets = vi.mocked(view.bindOutput).mock.calls.map(([t]) => t)
+      expect(targets).toHaveLength(3)
+      expect(new Set(targets).size).toBe(1)
+      expect(targets[0] instanceof THREE.WebGLRenderTarget).toBe(highPrecision)
+      const resolves = vi.mocked(view.resolveOutput).mock.invocationCallOrder
+      const reads = vi.mocked(renderer.domElement.toDataURL).mock
+        .invocationCallOrder
+      expect(resolves).toHaveLength(3)
+      resolves.forEach((order, i) => expect(order).toBeLessThan(reads[i]))
+      expect(dispose).toHaveBeenCalledTimes(highPrecision ? 1 : 0)
+    }
+  )
 
   it('disposes each temporary MeshNormalMaterial after the normal pass', async () => {
     const { manager } = makeSceneManager()

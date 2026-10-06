@@ -4,6 +4,7 @@ import * as THREE from 'three'
 import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 
 import type { RendererView } from '@/renderer/three/RendererView'
+import { createHighPrecisionTarget } from '@/renderer/three/highPrecisionOutput'
 
 import Load3dUtils from './Load3dUtils'
 import { QuadWireframeOverlay } from './quadWireframe/QuadWireframeManager'
@@ -39,6 +40,10 @@ export class SceneManager implements SceneManagerInterface {
     while ((spark.sorting || spark.sortDirty) && performance.now() < deadline) {
       await delay(SPLAT_SORT_POLL_MS)
     }
+  }
+
+  hasSplats(): boolean {
+    return this.sparkRenderer.activeSplats > 0
   }
 
   backgroundScene!: THREE.Scene
@@ -414,6 +419,15 @@ export class SceneManager implements SceneManagerInterface {
     const tempMaterials: THREE.MeshNormalMaterial[] = []
     const hiddenOverlays: THREE.Object3D[] = []
     const gridVisible = this.gridHelper.visible
+    const captureTarget = this.hasSplats()
+      ? createHighPrecisionTarget(width, height)
+      : null
+    const capturePass = (draw: () => void): string => {
+      this.view.bindOutput(captureTarget, width, height)
+      draw()
+      this.view.resolveOutput()
+      return this.renderer.domElement.toDataURL('image/png')
+    }
 
     try {
       // Capture at exactly the requested pixel dimensions, independent of
@@ -451,15 +465,17 @@ export class SceneManager implements SceneManagerInterface {
         )
       }
 
-      this.renderer.clear()
-      this.renderBackground()
-      this.renderer.render(this.scene, activeCamera)
-      const sceneData = this.renderer.domElement.toDataURL('image/png')
+      const sceneData = capturePass(() => {
+        this.renderer.clear()
+        this.renderBackground()
+        this.renderer.render(this.scene, activeCamera)
+      })
 
       this.renderer.setClearColor(0x000000, 0)
-      this.renderer.clear()
-      this.renderer.render(this.scene, activeCamera)
-      const maskData = this.renderer.domElement.toDataURL('image/png')
+      const maskData = capturePass(() => {
+        this.renderer.clear()
+        this.renderer.render(this.scene, activeCamera)
+      })
 
       this.scene.traverse((child) => {
         if (child instanceof THREE.Mesh) {
@@ -481,15 +497,17 @@ export class SceneManager implements SceneManagerInterface {
       this.gridHelper.visible = false
 
       this.renderer.setClearColor(0x000000, 1)
-      this.renderer.clear()
-      this.renderer.render(this.scene, activeCamera)
-      const normalData = this.renderer.domElement.toDataURL('image/png')
+      const normalData = capturePass(() => {
+        this.renderer.clear()
+        this.renderer.render(this.scene, activeCamera)
+      })
 
       this.renderer.setClearColor(0xffffff, 1)
       this.renderer.clear()
 
       return { scene: sceneData, mask: maskData, normal: normalData }
     } finally {
+      captureTarget?.dispose()
       this.scene.traverse((child) => {
         if (child instanceof THREE.Mesh) {
           const originalMaterial = originalMaterials.get(child)
