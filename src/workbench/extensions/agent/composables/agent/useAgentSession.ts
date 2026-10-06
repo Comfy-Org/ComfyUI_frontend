@@ -523,7 +523,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
    * an `ask_id` carries its `message_id`, so it is never reused.
    */
   const deliveredAsks = new Set<string>()
-  const lateAskReports = new Map<string, ReturnType<typeof setTimeout>>()
+  const restoredAsks = new Set<string>()
+  const lateAskReports = new Map<
+    string,
+    { threadId: string; timer: ReturnType<typeof setTimeout> }
+  >()
 
   function recordDeliveredAsk(askId: string): void {
     deliveredAsks.add(askId)
@@ -532,9 +536,23 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (oldest !== undefined) deliveredAsks.delete(oldest)
   }
 
-  function clearLateAskReports(): void {
-    for (const scheduled of lateAskReports.values()) clearTimeout(scheduled)
-    lateAskReports.clear()
+  function recordRestoredAsk(askId: string): void {
+    restoredAsks.add(askId)
+    if (restoredAsks.size <= MAX_DELIVERED_ASKS) return
+    const oldest = restoredAsks.values().next().value
+    if (oldest !== undefined) restoredAsks.delete(oldest)
+  }
+
+  function lateAskReportKey(threadId: string, askId: string): string {
+    return `${threadId}\u0000${askId}`
+  }
+
+  function clearLateAskReports(threadId?: string): void {
+    for (const [key, scheduled] of lateAskReports) {
+      if (threadId !== undefined && scheduled.threadId !== threadId) continue
+      clearTimeout(scheduled.timer)
+      lateAskReports.delete(key)
+    }
   }
 
   function pushError(text: string): void {
@@ -1493,6 +1511,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     conversationStore.setAskAnswering(askId, true)
     try {
       await sendAnswer(currentThreadId, askId, selection)
+      restoredAsks.delete(askId)
       recordDeliveredAsk(askId)
       conversationStore.commitAsk(askId, currentThreadId)
       return true
@@ -1523,6 +1542,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
             { retryable: isRetryableRequestFailure(error, false) }
           )
           pushError(i18n.global.t('agent.runApproval.answerFailed'))
+        } else if (restoredAsks.delete(askId)) {
+          reportError(new Error('restored run approval was already answered'), {
+            surface: 'agent',
+            errorType: 'agent_ask_answer_superseded'
+          })
+          pushError(i18n.global.t('agent.runApproval.answerSuperseded'))
         }
         // The card is retired for good here, by resolution (409) or because
         // this client could never answer it. Either way a later recovery poll
@@ -1612,7 +1637,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     source?: Exclude<AgentSessionThreadStartSource, 'first_open'>
   ): void {
     readyThreadId.value = null
-    clearLateAskReports()
+    const departingThreadId = conversationStore.threadId
+    if (departingThreadId !== null) clearLateAskReports(departingThreadId)
     loadGeneration++
     promptEditState.value = { phase: 'idle' }
     conversationStore.stashActiveTurn()
@@ -1636,7 +1662,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     isNavigationCurrent: () => boolean = () => true
   ): Promise<boolean> {
     readyThreadId.value = null
-    clearLateAskReports()
+    const departingThreadId = conversationStore.threadId
+    if (departingThreadId !== null) clearLateAskReports(departingThreadId)
     const generation = ++loadGeneration
     promptEditState.value = { phase: 'idle' }
     const isCurrent = () =>
@@ -1793,6 +1820,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     observeLiveDelivery(event)
     if (event.type === 'agent_ask_resolved') {
       reportSupersededAnswer(event.data.ask_id, event.data.selected)
+      restoredAsks.delete(event.data.ask_id)
       // Not just un-busying it: `ingest` below routes this frame through the
       // owning turn's transport, and the turn is gone in exactly the case that
       // matters, so on its own it would re-enable a card it cannot remove.
@@ -1940,6 +1968,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     })
     if (!conversationStore.isApprovalShown(turn, pendingAsk.ask_id)) return
     recordDeliveredAsk(pendingAsk.ask_id)
+    recordRestoredAsk(pendingAsk.ask_id)
     reportRestoredApproval(turn, pendingAsk.ask_id, cause)
   }
 
@@ -1960,13 +1989,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
       sendRestoredApprovalReport(turn, askId, cause, 'warning')
       return
     }
-    lateAskReports.set(
-      askId,
-      setTimeout(() => {
-        lateAskReports.delete(askId)
+    const key = lateAskReportKey(turn.threadId, askId)
+    lateAskReports.set(key, {
+      threadId: turn.threadId,
+      timer: setTimeout(() => {
+        lateAskReports.delete(key)
         sendRestoredApprovalReport(turn, askId, cause, 'error')
       }, LATE_ASK_FRAME_GRACE_MS)
-    )
+    })
   }
 
   /**
@@ -1985,27 +2015,33 @@ export function useAgentSession(deps: AgentSessionDeps) {
     event: Extract<AgentWsEvent, { type: 'agent_ask' }>
   ): void {
     const askId = event.data.ask_id
-    if (
-      deliveredAsks.has(askId) ||
-      conversationStore.isAskRetired(askId, event.data.thread_id)
-    ) {
-      withdrawLateAskReport(askId)
+    if (conversationStore.isAskRetired(askId, event.data.thread_id)) {
+      withdrawLateAskReport(event.data.thread_id, askId)
       return
     }
     const turn = {
       threadId: event.data.thread_id,
       messageId: toTurnId(event.data.message_id)
     }
+    if (
+      deliveredAsks.has(askId) &&
+      !conversationStore.isApprovalShown(turn, askId)
+    ) {
+      withdrawLateAskReport(event.data.thread_id, askId)
+      return
+    }
     conversationStore.ingest(event)
+    withdrawLateAskReport(event.data.thread_id, askId)
     if (conversationStore.isApprovalShown(turn, askId))
       recordDeliveredAsk(askId)
   }
 
-  function withdrawLateAskReport(askId: string): void {
-    const scheduled = lateAskReports.get(askId)
+  function withdrawLateAskReport(threadId: string, askId: string): void {
+    const key = lateAskReportKey(threadId, askId)
+    const scheduled = lateAskReports.get(key)
     if (scheduled === undefined) return
-    clearTimeout(scheduled)
-    lateAskReports.delete(askId)
+    clearTimeout(scheduled.timer)
+    lateAskReports.delete(key)
   }
 
   function sendRestoredApprovalReport(
@@ -2132,7 +2168,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   function forgetDeletedThread(turn: LiveTurn): void {
     skillTurnUsage.delete(recoveryKey(turn))
-    clearLateAskReports()
+    clearLateAskReports(turn.threadId)
     if (conversationStore.threadId !== turn.threadId) {
       conversationStore.settleTurn(turn, undefined)
       return

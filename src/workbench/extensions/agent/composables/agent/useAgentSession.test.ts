@@ -3866,6 +3866,7 @@ describe('useAgentSession (v1 composition root)', () => {
     await session.stopTurn()
     emit(runApproval('msg-1'))
 
+    expect(approvalParts(session)).toHaveLength(1)
     expect(session.isStreaming.value).toBe(true)
     expect(session.editableTurnId.value).toBeNull()
   })
@@ -4736,7 +4737,12 @@ describe('useAgentSession (v1 composition root)', () => {
             return [historyRow(1, 'user', 'msg-1', 'go'), unparkedRow()]
           }
           return [historyRow(1, 'user', 'msg-1', 'go'), parkedRow()]
-        })
+        }),
+        answerAsk: vi
+          .fn<AgentRestClient['answerAsk']>()
+          .mockRejectedValue(
+            new AgentApiError('already answered', 409, undefined)
+          )
       })
       const { source, status } = fakeEvents()
       localStorage.setItem(StorageKeys.agentThread('personal'), 'th-1')
@@ -4753,6 +4759,13 @@ describe('useAgentSession (v1 composition root)', () => {
       await vi.advanceTimersByTimeAsync(31_000)
 
       expect(approvalParts(session)).toHaveLength(1)
+      await session.answerAsk('turn-1:call-1', 'run')
+      expect(session.notices.value).toEqual([
+        {
+          level: 'error',
+          text: 'This request was already answered somewhere else, so that answer was used instead of yours.'
+        }
+      ])
     } finally {
       vi.useRealTimers()
     }

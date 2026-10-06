@@ -100,21 +100,36 @@ test.describe(
     // restored again.
     test('does not redraw an approval the socket already delivered', async ({
       turnLock,
-      getWebSocket
+      getWebSocket,
+      page
     }) => {
       turnLock.parkOnApproval()
       turnLock.push(await getWebSocket(), RUN_APPROVAL_EVENT)
       await expect(turnLock.approvalCard).toBeVisible()
-      const pollsBefore = turnLock.transcriptFetches()
+      let recoveryResponses = 0
+      const secondRecoveryResponse = page.waitForResponse((response) => {
+        const request = response.request()
+        if (
+          request.method() !== 'GET' ||
+          !new URL(response.url()).pathname.endsWith('/messages')
+        )
+          return false
+        return ++recoveryResponses === 2
+      })
 
       await turnLock.dropSocket()
 
       // toHaveCount returns as soon as it passes, so the count alone would
-      // assert nothing before recovery has even polled. Wait for two polls to
-      // have actually served the parked row, then hold the panel to one card.
-      await expect
-        .poll(() => turnLock.transcriptFetches(), { timeout: 30_000 })
-        .toBeGreaterThanOrEqual(pollsBefore + 2)
+      // assert nothing before recovery has even polled. Wait until the browser
+      // receives two recovery responses, then let the app apply the second
+      // one before holding the panel to one card.
+      await secondRecoveryResponse
+      await page.evaluate(
+        () =>
+          new Promise<void>((resolve) =>
+            requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+          )
+      )
       await expect(turnLock.approvalCard).toHaveCount(1)
       await expect(turnLock.runApprovalButton).toHaveCount(1)
     })

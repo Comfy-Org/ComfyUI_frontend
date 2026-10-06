@@ -462,7 +462,7 @@ export const useAgentConversationStore = defineStore(
     }
 
     function isAskRetired(askId: string, owner?: string): boolean {
-      return retiredAsksFor(owner).has(askId)
+      return resolvedAskIds.get(threadKey(owner))?.has(askId) ?? false
     }
     /**
      * PM-1658: which way this client answered each ask. The server takes a
