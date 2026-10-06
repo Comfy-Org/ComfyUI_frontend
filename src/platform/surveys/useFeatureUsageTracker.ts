@@ -1,4 +1,4 @@
-import { useStorage } from '@vueuse/core'
+import { useEventListener, useStorage } from '@vueuse/core'
 import { computed, reactive, shallowRef } from 'vue'
 
 import { reportError } from '@/platform/telemetry/reportError'
@@ -245,6 +245,16 @@ function resetUsageData(currentUsageData: FeatureUsageRecord) {
 export function useFeatureUsageTracker(featureId: string) {
   const usageData = useStorage<FeatureUsageRecord>(STORAGE_KEY, {})
   let observedResetVersions = new Map(resetVersions)
+
+  useEventListener(window, 'storage', (event) => {
+    if (event.key !== STORAGE_KEY) return
+    const storedUsageData = parseUsageData(event.newValue)
+    pendingUsageData.value = Object.fromEntries(
+      Object.entries(pendingUsageData.value).filter(([pendingFeatureId]) =>
+        usageFor(storedUsageData, pendingFeatureId)
+      )
+    )
+  })
 
   const usage = computed(() =>
     usageFor(
