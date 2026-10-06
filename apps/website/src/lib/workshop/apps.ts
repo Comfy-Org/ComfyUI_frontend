@@ -1,6 +1,6 @@
-import type { AppWorkshopModel } from '../../config/models-catalogue'
-import { externalLinks, getRoutes } from '../../config/routes'
-import type { Locale } from '../../i18n/translations'
+import type { AppWorkshopModel } from '@/config/models-catalogue'
+import { externalLinks, getRoutes } from '@/config/routes'
+import type { Locale } from '@/i18n/translations'
 import type { CinematicCopyKey } from './cinematic-studio/copy'
 
 export type WorkshopAppId = AppWorkshopModel['appId']
@@ -21,7 +21,7 @@ export interface WorkshopAppCard {
   readonly summary: CinematicCopyKey
   readonly badge: CinematicCopyKey
   readonly meta?: CinematicCopyKey
-  readonly image?: string
+  readonly thumbnail?: AppWorkshopModel['thumbnail']
   readonly href?: string
 }
 
@@ -56,7 +56,7 @@ export function workshopApps(
   return models.map((app) => ({
     key: app.appId,
     ...appCopy[app.appId],
-    image: app.thumbnail?.url ?? app.thumbnailUrl,
+    thumbnail: app.thumbnail,
     href: workshopAppHref(app.appId, locale)
   }))
 }

@@ -43,7 +43,6 @@ import { useI18n } from 'vue-i18n'
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
-import { useTelemetry } from '@/platform/telemetry'
 import type {
   BillingAuthenticationState,
   PreviewSubscribeResponse,
@@ -51,10 +50,8 @@ import type {
 } from '@/platform/workspace/api/workspaceApi'
 import { resolveStripePublishableKey } from '@/platform/workspace/billing/stripePublishableKey'
 import { useCheckoutCopy } from '@/platform/workspace/composables/useCheckoutCopy'
-import {
-  getActiveCheckoutJourney,
-  toCheckoutJourneyContext
-} from '@/platform/workspace/utils/checkoutJourney'
+import { getActiveCheckoutJourney } from '@/platform/workspace/utils/checkoutJourney'
+import { trackCheckoutJourneyPhase } from '@/platform/workspace/utils/checkoutJourneyTelemetry'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
 interface Props {
@@ -111,7 +108,6 @@ const selectedSavedMethodId = defineModel<string | null>(
 
 const { locale } = useI18n()
 const { copy, checkoutPlan } = useCheckoutCopy()
-const telemetry = useTelemetry()
 const colorPaletteStore = useColorPaletteStore()
 
 const publishableKey = resolveStripePublishableKey() ?? ''
@@ -123,9 +119,6 @@ function emitPaymentJourneyPhase(phase: StripePaymentPhase): void {
   // the active journey is still the one this checkout started.
   const journey = getActiveCheckoutJourney()
   if (!journey) return
-  telemetry?.trackCheckoutJourneyEvent({
-    ...toCheckoutJourneyContext(journey),
-    ...phase
-  })
+  trackCheckoutJourneyPhase(journey, phase)
 }
 </script>

@@ -19,7 +19,8 @@ import type {
   TeamCreditStopSummary
 } from '@/platform/workspace/api/workspaceApi'
 
-export type BillingType = 'legacy' | 'workspace'
+/** `unknown` until the active workspace has loaded; no billing call may be made yet. */
+export type BillingType = 'legacy' | 'workspace' | 'unknown'
 
 export interface SubscriptionInfo {
   isActive: boolean
@@ -127,12 +128,17 @@ export interface BillingState {
   subscriptionStatus: ComputedRef<BillingSubscriptionStatus | null>
   tier: ComputedRef<SubscriptionTier | null>
   renewalDate: ComputedRef<string | null>
-  /** Open renewal invoice to pay; owners on the stripe rail while payment_failed or paused. */
+  /** Open renewal invoice to pay; owners while payment_failed or paused. */
   renewalInvoice: ComputedRef<RenewalInvoice | null>
 }
 
-export interface BillingContext extends BillingState, BillingActions {
+/** The rail a cancel actually ran on, fixed when the call was dispatched. */
+export type CancelRail = Exclude<BillingType, 'unknown'>
+
+export interface BillingContext
+  extends BillingState, Omit<BillingActions, 'cancelSubscription'> {
   type: ComputedRef<BillingType>
+  cancelSubscription: (isScopeCurrent?: () => boolean) => Promise<CancelRail>
   reconcileSubscriptionSuccess: () => Promise<void>
   /** Reads the checkout rail's status; true once its pending operation is adopted. */
   readCheckoutOperation: () => Promise<boolean>

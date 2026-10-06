@@ -24,15 +24,64 @@ latest check and last successful generation.
 
 ## Formatting
 
-Run `pnpm format:astro` from the repository root to format Astro files, or
-`pnpm format:astro:check` to check them. Both are included in the root format
-commands and shared CI checks. Pre-commit formats staged Astro files after
-ESLint fixes.
+Run `pnpm --filter @comfyorg/website format` from the repository root to format
+the website, or `pnpm --filter @comfyorg/website format:check` to check it. CI
+runs every workspace's format check with
+`pnpm -r --include-workspace-root format:check`. Pre-commit formats staged
+Astro files after ESLint fixes.
 
 Astro files use Prettier with the official Astro plugin; other formats continue
 to use Oxfmt. The website's `.prettierrc.json` matches the repository's style
 and preserves whitespace around inline HTML elements. The Astro editor
 extension also reads this configuration.
+
+## Localization
+
+The site ships English, Simplified Chinese (`zh-CN`) and Japanese (`ja`).
+Catalogs live in `src/locales/<locale>/*.json` in the same nested JSON layout
+and [vue-i18n message syntax](https://vue-i18n.intlify.dev/guide/essentials/syntax)
+as the application's `src/locales/` at the repository root:
+
+- Named placeholders: `"Show {n} models"`, filled with
+  `t('workshop.search.show', { n }, { locale })`.
+- Plural forms separated by `|`: `"{count} node | {count} nodes"`, picked with
+  `t('cloudNodesLaunch.models.nodeCount', { count }, { locale, plural: count })`.
+- The characters `{`, `}`, `@` and `|` are message syntax, so literal ones are
+  written as `{'{'}`, `{'}'}`, `{'@'}` and `{'|'}`.
+
+`src/i18n/translations.ts` configures vue-i18n and exports its public translation
+API. Astro middleware binds `Astro.locals.t` to the request locale. In Vue and
+TypeScript, bind once with `translationsFor(locale).t`; each locale has its own
+composer because the site renders locales concurrently. Missing messages fall
+back to English. The catalog test compiles every message and checks that each
+English message has Chinese copy.
+
+`main.json` is the catalog for each locale. Keep feature copy grouped under a
+nested feature key.
+
+Add new English copy to the English catalog; translated copy lives in the
+matching file under each locale. Every English message requires a Chinese
+entry; the catalog tests check completeness without using English fallback.
+Catalog files use two-space JSON indentation and a final newline. Legal and
+content pages render their sections in the order they appear in the catalog, so
+keep `en/main.json` in document order and never sort its keys.
+
+### English-only copy
+
+Affiliate terms, Terms of Service (`tos`), and the Enterprise MSA are
+legal-reviewed English documents on English-only routes.
+Do not translate or publish localized versions until legal approves them;
+an unreviewed translation can diverge from the governing English text.
+Their Chinese catalog entries intentionally repeat English, except the two
+translated affiliate page labels. The MiniMax professional license intake
+embeds an English-only HubSpot form and also intentionally repeats English.
+Desktop privacy (`desktop_privacy`) also intentionally repeats the governing
+English copy in its Chinese catalog. This is a catalog exemption: the
+`/zh-CN/privacy/desktop` route exists and renders those English entries.
+All these ranges must remain exempt from automatic translation until an
+approved translation is available. The page headers and
+`LOCALE_INVARIANT_ROUTE_KEYS` document the English-only route policies;
+desktop privacy retains its localized route.
 
 ## Ashby careers integration
 
@@ -224,12 +273,17 @@ refresh preserves the last confirmed answer for the same identity; a new
 identity never inherits a grant. Disabling it restores the public site:
 
 - The header and homepage retain their existing navigation and model links.
-- `/models` shows the existing Models marketing page.
-- Model render pages show the public marketing content until enabled.
+- `/hub/models/` shows the Models marketing page in place of the catalogue.
+  The old `/models` address redirects there.
+- Router model pages at `/hub/models/<slug>/` render their public content.
+  Workflow pages show the marketing content until enabled.
 - Catalogue and playground markup is absent from public HTML; their components
   and page data load after enablement. Homepage islands still serialize public
-  model and provider summaries. `/models` remains indexable with its marketing content.
-- Render pages stay out of sitemaps and markdown exports. `/models/showcase`
+  model and provider summaries. `/hub/models/` remains indexable with its
+  marketing content.
+- Router model pages are indexable and listed in the sitemap and markdown
+  exports (`launchedModelPages`). Workflow pages stay out until
+  `launchedWorkflowPages` is on. `/models/showcase`
   is the unlisted public copy of the marketing page: noindex and out of the
   sitemap.
 - Once enabled, a neutral loading frame replaces the public content while a
@@ -247,7 +301,7 @@ sign in through the website never join that cohort.
 The website identifies signed-in people with their Firebase UID, matching
 Cloud's PostHog identity. For a verified `comfy.org` or `drip.art` email it
 also sets `comfy_staff: true`; every other account sends nothing beyond the
-UID. Give staff `/login/?returnTo=%2Fmodels%2F` so they can sign in before
+UID. Give staff `/login/?returnTo=%2Fhub%2Fmodels%2F` so they can sign in before
 their Models flag is evaluated. Anyone who signed in before `comfy_staff`
 existed must sign out and back in once. Authentication is available before
 PostHog answers, including when flags are missing or unavailable; no separate
@@ -435,6 +489,19 @@ Firebase header and never swaps. On the session path:
   sign-in on comfy.org does not create the shared session. Sign-in and
   sign-out on comfy.org are still Firebase's.
 
+**Enterprise SSO (`sso_enabled`).** Email sign-in and sign-up on `/login`
+and `/signup` read Cloud's global `sso_enabled` from the anonymous
+`GET /api/features` once per page load: the read starts when the sign-in
+panel mounts and the first email submit reuses its answer
+(`src/config/workshop-sso.ts`). Only a literal `true` turns it on, and a
+failed read is off. When it is on, the submit first calls
+`POST ${cloud}/api/auth/sso/discover`. An SSO domain leaves for
+`${cloud}/api/auth/sso/start` in a full-page navigation and lands on Cloud's
+`/cloud/user-check`; it does not come back to comfy.org. Any other answer, or
+a discover failure, continues with Firebase. Ingest shows its own
+confirmation page first, because a navigation from comfy.org is same-site,
+not same-origin.
+
 **Not wired yet: Run on the session (F3b).** Model pages, workflows and the
 cinematic studio start the Firebase lifecycle whatever the flag says. A Run
 sends the `/api/auth/token` JWT to the Router as `Authorization: Bearer` with
@@ -469,6 +536,22 @@ Promote to Production on a preview deployment: it would serve
 `noindex, nofollow` on comfy.org. The `deploy-production` job fails if its
 build has a robots meta on `/`, and `CI: Website Build` fails if a
 non-production build doesn't.
+
+### IndexNow
+
+Every build writes `indexnow-manifest.json`: each sitemap URL mapped to a hash
+of its markdown twin, so header, footer and asset-hash changes don't count, and
+noindex pages are left out. The `deploy-production` job saves the live manifest
+before it deploys, then `pnpm indexnow:submit` sends the added, changed
+and removed URLs to IndexNow (Bing, Yandex, Naver, Seznam, Yep). Google does not
+use IndexNow. The step only warns on failure and never fails the deploy;
+previews never run it. The key lives in `src/config/indexnow.ts` and its file in
+`public/`. To see the payload without sending it:
+
+```bash
+pnpm indexnow:submit --current dist/indexnow-manifest.json \
+  --previous prev.json --previous-status 404 --dry-run
+```
 
 ## HubSpot forms
 
@@ -508,6 +591,7 @@ the hosted script once, and renders the documented embed container.
 - `pnpm build:e2e` — indexable build to `dist/`, the one e2e and screenshots run against
 - `pnpm typecheck` — `astro check`
 - `pnpm test:unit` — Vitest unit tests
+- `pnpm check:router-provider-drift` — compare Router coverage with published sources (requires network access)
 - `pnpm test:e2e` — Playwright E2E tests (requires `pnpm build:e2e` first)
 - `pnpm ashby:refresh-snapshot` — refresh the committed careers snapshot
 - `pnpm cloud-nodes:refresh-snapshot` — refresh the committed cloud nodes snapshot

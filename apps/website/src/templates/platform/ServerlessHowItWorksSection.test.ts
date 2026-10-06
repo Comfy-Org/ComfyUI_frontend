@@ -3,11 +3,11 @@ import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import { t } from '../../i18n/translations'
+import { t } from '@/i18n/translations'
 import {
   setAllIntersecting,
   stubIntersectionObserver
-} from '../../test/fakeIntersectionObserver'
+} from '@/test/fakeIntersectionObserver'
 import ServerlessHowItWorksSection from './ServerlessHowItWorksSection.vue'
 
 describe('ServerlessHowItWorksSection', () => {
@@ -25,7 +25,7 @@ describe('ServerlessHowItWorksSection', () => {
 
     expect(
       screen.getByRole('heading', {
-        name: t('platform.serverlessDeploy.heading', 'en')
+        name: t('platform.serverlessDeploy.heading', {}, { locale: 'en' })
       })
     ).toBeTruthy()
     expect(screen.getByRole('list')).toBeTruthy()
@@ -36,7 +36,9 @@ describe('ServerlessHowItWorksSection', () => {
     expect(screen.queryByText('3')).toBeNull()
     for (const step of [1, 2, 3] as const) {
       expect(
-        screen.getByText(t(`platform.howItWorks.${step}.title`, 'en'))
+        screen.getByText(
+          t(`platform.howItWorks.${step}.title`, {}, { locale: 'en' })
+        )
       ).toBeTruthy()
     }
   })
@@ -45,7 +47,9 @@ describe('ServerlessHowItWorksSection', () => {
     render(ServerlessHowItWorksSection, { props: { locale: 'zh-CN' } })
 
     expect(
-      screen.getByText(t('platform.howItWorks.1.title', 'zh-CN'))
+      screen.getByText(
+        t('platform.howItWorks.1.title', {}, { locale: 'zh-CN' })
+      )
     ).toBeTruthy()
   })
 

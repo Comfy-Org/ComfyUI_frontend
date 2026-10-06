@@ -1,8 +1,8 @@
 // Image URLs are placeholders at media.comfy.org/website/drops/<id>.png —
 // asset uploads and native zh-CN review are pending follow-ups (see
 // apps/website/.scratch/drops-page/PRD.md).
-import { externalLinks } from '../config/routes'
-import type { LocalizedText } from '../i18n/translations'
+import { externalLinks } from '@/config/routes'
+import type { LocalizedText } from '@/i18n/translations'
 
 type DropMedia =
   | { type: 'image'; src: string; alt: LocalizedText }
@@ -10,12 +10,26 @@ type DropMedia =
 
 export type Drop = {
   id: string
+  /** Manual override; most entries should rely on `launchDate` instead. */
   badge?: LocalizedText
+  /** ISO date ('YYYY-MM-DD') the entry's product or page actually shipped. */
+  launchDate: string
   category: LocalizedText
   media: DropMedia
   title: LocalizedText
   description: LocalizedText
   cta: { label: LocalizedText; href: LocalizedText }
+}
+
+export const NEW_BADGE: LocalizedText = { en: 'NEW', 'zh-CN': '新' }
+const NEW_BADGE_WINDOW_DAYS = 14
+
+export function isRecentLaunch(launchDate: string, now = new Date()): boolean {
+  const daysSince =
+    (Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) -
+      Date.parse(launchDate)) /
+    (24 * 60 * 60 * 1000)
+  return daysSince >= 0 && daysSince <= NEW_BADGE_WINDOW_DAYS
 }
 
 const EXPLORE: LocalizedText = { en: 'EXPLORE', 'zh-CN': '探索' }
@@ -27,7 +41,6 @@ const MODELS_AND_NODES: LocalizedText = {
   en: 'Models & Nodes',
   'zh-CN': '模型与节点'
 }
-const NEW_BADGE: LocalizedText = { en: 'NEW', 'zh-CN': '新' }
 
 function imageFor(fileName: string, alt: LocalizedText): DropMedia {
   return {
@@ -54,8 +67,65 @@ function videoFor(
 
 export const drops: readonly Drop[] = [
   {
+    id: 'comfy-router',
+    launchDate: '2026-09-10',
+    category: DEVELOPER,
+    media: imageFor('Drops_2x2card_Router.jpg', {
+      en: 'Comfy Router',
+      'zh-CN': 'Comfy Router'
+    }),
+    title: { en: 'Comfy Router', 'zh-CN': 'Comfy Router' },
+    description: {
+      en: 'Use thousands of the latest models in one API. Call Seedance, Minimax H3, Nano Banana, and GPT-Image.',
+      'zh-CN':
+        '在一个 API 中使用数千个最新模型。调用 Seedance、Minimax H3、Nano Banana 和 GPT-Image。'
+    },
+    cta: {
+      label: EXPLORE,
+      href: { en: '/platform/router/', 'zh-CN': '/zh-CN/platform/router/' }
+    }
+  },
+  {
+    id: 'events',
+    launchDate: '2026-09-12',
+    category: COMMUNITY,
+    media: imageFor('Drops_2x2card_Events.jpg', {
+      en: 'Comfy Events',
+      'zh-CN': 'Comfy 活动'
+    }),
+    title: { en: 'Events', 'zh-CN': '活动' },
+    description: {
+      en: 'Livestreams, hackathons, and meetups — find ComfyUI events around the world, or host your own.',
+      'zh-CN':
+        '直播、黑客松与社区聚会 — 发现世界各地的 ComfyUI 活动，或主办你自己的活动。'
+    },
+    cta: {
+      label: EXPLORE,
+      href: { en: '/events/', 'zh-CN': '/zh-CN/events/' }
+    }
+  },
+  {
+    id: 'comfy-cli',
+    launchDate: '2026-08-28',
+    category: DEVELOPER,
+    media: imageFor('Drops_2x2card_CLI.jpg', {
+      en: 'Comfy CLI',
+      'zh-CN': 'Comfy CLI'
+    }),
+    title: { en: 'Comfy CLI', 'zh-CN': 'Comfy CLI' },
+    description: {
+      en: 'Drive ComfyUI from your terminal or any coding agent — generate images, video, audio, and 3D without leaving the shell.',
+      'zh-CN':
+        '在终端或任意编程智能体中驱动 ComfyUI — 无需离开命令行即可生成图像、视频、音频和 3D 内容。'
+    },
+    cta: {
+      label: EXPLORE,
+      href: { en: '/cli/', 'zh-CN': '/zh-CN/cli/' }
+    }
+  },
+  {
     id: 'comfy-cloud-nodes',
-    badge: NEW_BADGE,
+    launchDate: '2026-09-06',
     category: MODELS_AND_NODES,
     media: imageFor('Drops_2x2card_CloudNodes.jpg', {
       en: 'Comfy Cloud Nodes',
@@ -74,7 +144,7 @@ export const drops: readonly Drop[] = [
   },
   {
     id: 'desktop-client',
-    badge: NEW_BADGE,
+    launchDate: '2026-06-26',
     category: PLATFORM,
     media: imageFor('Drops_2x2card_Desktop.jpg', {
       en: 'New Desktop Client',
@@ -92,7 +162,7 @@ export const drops: readonly Drop[] = [
   },
   {
     id: 'comfy-mcp',
-    badge: NEW_BADGE,
+    launchDate: '2026-06-26',
     category: CLOUD,
     media: imageFor('Drops_2x2card_MCP.jpg', {
       en: 'Comfy MCP',
@@ -110,7 +180,7 @@ export const drops: readonly Drop[] = [
   },
   {
     id: 'app-mode',
-    badge: NEW_BADGE,
+    launchDate: '2026-06-26',
     category: PLATFORM,
     media: videoFor('Drops_2x2card_APP.mp4', {
       en: 'App Mode',
@@ -132,24 +202,29 @@ export const drops: readonly Drop[] = [
   },
   {
     id: 'comfy-api',
-    badge: NEW_BADGE,
+    launchDate: '2026-09-30',
     category: DEVELOPER,
     media: imageFor('Drops_2x2card_API.jpg', {
       en: 'Comfy API',
       'zh-CN': 'Comfy API'
     }),
-    title: { en: 'Developer Platform', 'zh-CN': '开发者平台' },
+    title: { en: 'Comfy API', 'zh-CN': 'Comfy API' },
     description: {
-      en: 'Turn any workflow into a production endpoint. Automate generation and scale to thousands of outputs.',
-      'zh-CN': '将任意工作流变成生产端点。自动化生成并扩展到数千个输出。'
+      en: 'Deploy your ComfyUI workflow as a production API. It scales effortlessly with your team or project’s needs.',
+      'zh-CN':
+        '将你的 ComfyUI 工作流部署为生产级 API，随团队或项目的需求轻松扩展。'
     },
     cta: {
       label: EXPLORE,
-      href: { en: '/platform/', 'zh-CN': '/zh-CN/platform/' }
+      href: {
+        en: '/platform/comfy-api/',
+        'zh-CN': '/zh-CN/platform/comfy-api/'
+      }
     }
   },
   {
     id: 'community-workflows',
+    launchDate: '2026-06-26',
     category: COMMUNITY,
     media: imageFor('Drops_3x3card_Comm Workflows.jpg', {
       en: 'Community Workflows',
@@ -170,6 +245,7 @@ export const drops: readonly Drop[] = [
   },
   {
     id: 'supported-models',
+    launchDate: '2026-06-26',
     category: MODELS_AND_NODES,
     media: imageFor('Drops_Supported models.jpg', {
       en: 'Supported Models',
@@ -188,6 +264,7 @@ export const drops: readonly Drop[] = [
   },
   {
     id: 'supported-nodes',
+    launchDate: '2026-06-26',
     category: MODELS_AND_NODES,
     media: videoFor('Drops_3x3card_supported nodes.mp4', {
       en: 'Supported Nodes',
@@ -209,6 +286,7 @@ export const drops: readonly Drop[] = [
   },
   {
     id: 'comfy-enterprise',
+    launchDate: '2026-06-26',
     category: CLOUD,
     media: imageFor('Drops_3x3card_enterprise.png', {
       en: 'Comfy Enterprise',
@@ -226,6 +304,7 @@ export const drops: readonly Drop[] = [
   },
   {
     id: 'learning-hub',
+    launchDate: '2026-06-26',
     category: COMMUNITY,
     media: imageFor('Drops_3x3_Learninghub.jpg', {
       en: 'Learning Hub',
@@ -243,7 +322,7 @@ export const drops: readonly Drop[] = [
   },
   {
     id: 'share-comfy',
-    badge: NEW_BADGE,
+    launchDate: '2026-06-26',
     category: COMMUNITY,
     media: videoFor('Drops_3x3card_Affilliate.mp4', {
       en: 'Comfy Affiliate',

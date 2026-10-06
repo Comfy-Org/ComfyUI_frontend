@@ -1,15 +1,21 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import type { WebSession } from '@comfyorg/account-core/webSession'
+import type {
+  WebSessionRequestScope,
+  WebSessionRequests
+} from '@/platform/auth/session/webSessionFetch'
+import { provideWebSessionRequests } from '@/platform/auth/session/webSessionFetch'
 import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
+import { NoWorkspaceAccessError } from '@/platform/workspace/api/workspaceApiError'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import { useAuthActions } from '@/composables/auth/useAuthActions'
@@ -412,6 +418,57 @@ describe('WorkspaceAuthGate', () => {
     })
   })
 
+  describe('cloud builds - Firebase user signed in on the web session', () => {
+    let releaseRequests = () => {}
+
+    beforeEach(() => {
+      Object.assign(useAuthStore(), { isInitialized: true })
+      Object.assign(useAuthStore(), { currentUser: { uid: 'user-a' } })
+      vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
+      vi.mocked(useWorkspaceAuthStore().getUnifiedToken).mockReturnValue(
+        undefined
+      )
+      releaseRequests = provideWebSessionRequests(
+        fromPartial<WebSessionRequests>({
+          scope: async () => fromPartial<WebSessionRequestScope>({})
+        })
+      )
+    })
+
+    afterEach(() => releaseRequests())
+
+    it('initializes the workspace without minting a unified token', async () => {
+      mountComponent()
+      await flushPromises()
+
+      expect(useWorkspaceAuthStore().mintAtLogin).not.toHaveBeenCalled()
+      expect(useTeamWorkspaceStore().initialize).toHaveBeenCalled()
+      expect(screen.getByTestId('slot-content')).toBeInTheDocument()
+    })
+
+    it('mints nothing when unmounted while the session lookup is pending', async () => {
+      releaseRequests()
+      let settleScope = (_scope: WebSessionRequestScope | undefined) => {}
+      const pendingScope = new Promise<WebSessionRequestScope | undefined>(
+        (resolve) => {
+          settleScope = resolve
+        }
+      )
+      releaseRequests = provideWebSessionRequests(
+        fromPartial<WebSessionRequests>({ scope: () => pendingScope })
+      )
+
+      const { unmount } = mountComponent()
+      await flushPromises()
+      unmount()
+      settleScope(undefined)
+      await flushPromises()
+
+      expect(useWorkspaceAuthStore().mintAtLogin).not.toHaveBeenCalled()
+      expect(useTeamWorkspaceStore().initialize).not.toHaveBeenCalled()
+    })
+  })
+
   describe('error handling', () => {
     beforeEach(() => {
       Object.assign(useAuthStore(), { isInitialized: true })
@@ -520,20 +577,76 @@ describe('WorkspaceAuthGate', () => {
       ).toBeInTheDocument()
     })
 
-    it('requires sign out when no workspace is available', async () => {
+    it.for([
+      {
+        name: 'sso off, empty list',
+        sso: false,
+        error: new NoWorkspaceAccessError('No workspaces available'),
+        heading: "Couldn't load your workspace",
+        retry: false
+      },
+      {
+        name: 'sso off, 403 no_workspace_access',
+        sso: false,
+        error: new NoWorkspaceAccessError('No workspace left', 403),
+        heading: "Couldn't load your workspace",
+        retry: true
+      },
+      {
+        name: 'sso on, empty list',
+        sso: true,
+        error: new NoWorkspaceAccessError('No workspaces available'),
+        heading: "You don't have access to any workspace",
+        retry: false
+      },
+      {
+        name: 'sso on, 403 no_workspace_access',
+        sso: true,
+        error: new NoWorkspaceAccessError('No workspace left', 403),
+        heading: "You don't have access to any workspace",
+        retry: false
+      },
+      {
+        name: 'sso on, any other failure',
+        sso: true,
+        error: new Error('Workspace init failed'),
+        heading: "Couldn't load your workspace",
+        retry: true
+      }
+    ])(
+      '$name: shows "$heading" with sign-out',
+      async ({ sso, error, heading, retry }) => {
+        vi.mocked(useFeatureFlags().flags).ssoEnabled = sso
+        vi.mocked(useTeamWorkspaceStore().initialize).mockRejectedValue(error)
+
+        mountComponent()
+        await flushPromises()
+
+        expect(
+          screen.getByRole('heading', { name: heading })
+        ).toBeInTheDocument()
+        expect(
+          screen.queryByRole('button', { name: 'Try again' }) !== null
+        ).toBe(retry)
+        expect(
+          screen.getByRole('button', { name: 'Log Out' })
+        ).toBeInTheDocument()
+        expect(screen.queryByTestId('slot-content')).not.toBeInTheDocument()
+      }
+    )
+
+    it('signs out from the no-workspace screen', async () => {
+      const user = userEvent.setup()
+      vi.mocked(useFeatureFlags().flags).ssoEnabled = true
       vi.mocked(useTeamWorkspaceStore().initialize).mockRejectedValue(
-        new Error('No workspaces available')
+        new NoWorkspaceAccessError('No workspaces available')
       )
 
       mountComponent()
       await flushPromises()
+      await user.click(screen.getByRole('button', { name: 'Log Out' }))
 
-      expect(
-        screen.queryByRole('button', { name: 'Try again' })
-      ).not.toBeInTheDocument()
-      expect(
-        screen.getByRole('button', { name: 'Log Out' })
-      ).toBeInTheDocument()
+      expect(useAuthActions().logout).toHaveBeenCalledOnce()
     })
 
     it('shows a recoverable error when workspace setup clears unified auth', async () => {

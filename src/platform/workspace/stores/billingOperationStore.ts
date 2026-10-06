@@ -43,7 +43,8 @@ import { useBillingCapabilities } from '@/platform/workspace/composables/useBill
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
   clearCheckoutJourney,
-  getActiveCheckoutJourney
+  getActiveCheckoutJourney,
+  getCheckoutJourneyPaymentIntentSource
 } from '@/platform/workspace/utils/checkoutJourney'
 import { useDialogStore } from '@/stores/dialogStore'
 
@@ -344,7 +345,9 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       tier: metadata?.tier,
       cycle: metadata?.cycle,
       checkoutType: metadata?.checkoutType,
-      paymentIntentSource: metadata?.paymentIntentSource,
+      paymentIntentSource:
+        metadata?.paymentIntentSource ??
+        getCheckoutJourneyPaymentIntentSource(opId),
       autoHandleRequiresAction: metadata?.autoHandleRequiresAction ?? false,
       phase: null,
       downgradeToPersonal: metadata?.downgradeToPersonal,

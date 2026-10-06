@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { testFirebaseUser } from './__fixtures__/workshopSessionFakes'
 import { WORKSHOP_CLOUD_BASE_URL } from './workshop-env'
 
-vi.mock(import('../scripts/posthog'))
+vi.mock(import('@/scripts/posthog'))
 vi.mock(import('./workshop-firebase'))
 
 const SESSION = `${WORKSHOP_CLOUD_BASE_URL}/api/auth/session`
@@ -56,6 +56,13 @@ function stubCloud(...sessionAnswers: Answer[]) {
   return sessionRequests
 }
 
+function bootstrapEvent(outcome: string) {
+  return {
+    name: 'session_bootstrap',
+    properties: { outcome, origin: window.location.origin }
+  }
+}
+
 async function loadModules(firebaseUid: string | undefined) {
   const firebase = await import('./workshop-firebase')
   const firebaseSubscribe = vi.mocked(firebase.workshopIdentity.onUserChanged)
@@ -64,9 +71,11 @@ async function loadModules(firebaseUid: string | undefined) {
     return () => {}
   })
   const { workshopIdentity } = await import('./workshop-account')
+  const { captureWebSessionEvent } = await import('@/scripts/posthog')
   await import('@comfyorg/account-core/requestAuth')
   return {
     signOutWorkshop: vi.mocked(firebase.signOutWorkshop),
+    captureWebSessionEvent: vi.mocked(captureWebSessionEvent),
     firebaseSubscribe,
     loadFirebase: () => workshopIdentity.activate(),
     ...(await import('./workshop-web-session-identity')),
@@ -95,6 +104,9 @@ describe('resolveWorkshopAccountSource with the flag on', () => {
       await vi.waitFor(() =>
         expect(modules.signOutWorkshop).toHaveBeenCalledTimes(signOuts)
       )
+      expect(modules.captureWebSessionEvent).toHaveBeenCalledExactlyOnceWith(
+        bootstrapEvent('signed_in')
+      )
     }
   )
 
@@ -109,8 +121,11 @@ describe('resolveWorkshopAccountSource with the flag on', () => {
 
   it('does not restore without a loaded Firebase login, and falls back to it', async () => {
     const sessionRequests = stubCloud(NO_SESSION)
-    const { resolveWorkshopAccountSource, ACCOUNT_SOURCE_CAP_MS } =
-      await loadModules('uid-1')
+    const {
+      resolveWorkshopAccountSource,
+      ACCOUNT_SOURCE_CAP_MS,
+      captureWebSessionEvent
+    } = await loadModules('uid-1')
     vi.useFakeTimers({ shouldAdvanceTime: false })
 
     const source = resolveWorkshopAccountSource()
@@ -121,6 +136,9 @@ describe('resolveWorkshopAccountSource with the flag on', () => {
       'the signed-out answer decides, not the cap'
     ).toBe('firebase')
     expect(sessionRequests.map(({ method }) => method)).toEqual(['GET'])
+    expect(captureWebSessionEvent).toHaveBeenCalledExactlyOnceWith(
+      bootstrapEvent('signed_out')
+    )
   })
 
   it('restores the session from a loaded Firebase login', async () => {
@@ -129,8 +147,11 @@ describe('resolveWorkshopAccountSource with the flag on', () => {
       { status: 200, body: { success: true } },
       liveSession('uid-1')
     )
-    const { resolveWorkshopAccountSource, loadFirebase } =
-      await loadModules('uid-1')
+    const {
+      resolveWorkshopAccountSource,
+      loadFirebase,
+      captureWebSessionEvent
+    } = await loadModules('uid-1')
     await loadFirebase()
 
     expect(await resolveWorkshopAccountSource()).toBe('session')
@@ -142,5 +163,8 @@ describe('resolveWorkshopAccountSource with the flag on', () => {
     expect(sessionRequests[1].headers).toEqual({
       Authorization: 'Bearer id-token'
     })
+    expect(captureWebSessionEvent).toHaveBeenCalledExactlyOnceWith(
+      bootstrapEvent('restored')
+    )
   })
 })
