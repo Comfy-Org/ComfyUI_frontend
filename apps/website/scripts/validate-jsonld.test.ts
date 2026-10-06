@@ -216,7 +216,14 @@ describe('validateHtml', () => {
     { shape: 'a string item URL', list: [home, page] },
     {
       shape: 'a Thing item with an @id',
-      list: [{ ...home, item: { '@id': `${site}/`, name: 'Home' } }, page]
+      list: [
+        {
+          '@type': 'ListItem',
+          position: 1,
+          item: { '@id': `${site}/`, name: 'Home' }
+        },
+        page
+      ]
     },
     { shape: 'items out of array order', list: [page, home] }
   ])('accepts a breadcrumb with $shape', ({ list }) => {
