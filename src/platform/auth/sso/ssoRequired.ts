@@ -1,6 +1,9 @@
 import { omitBy } from 'es-toolkit'
 
-import { isSsoRequiredRefusal } from '@comfyorg/account-core/sso'
+import {
+  isSsoRequiredRefusal,
+  ssoRequiredOrganizationId
+} from '@comfyorg/account-core/sso'
 
 import { SELF_STYLED_PANEL_CONTENT_CLASS } from '@/components/ui/dialog/dialog.variants'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -14,6 +17,8 @@ export interface SsoRequiredContext {
   readonly email?: string
   /** Where SSO sends the person back; the current page when absent. */
   readonly returnTo?: string
+  /** The organization the refusal names; its SSO, not the email's. */
+  readonly organizationId?: string
 }
 
 /**
@@ -61,7 +66,10 @@ export function presentSsoRequired(context: SsoRequiredContext = {}): boolean {
 }
 
 export function presentForRefusal(status: number, body: unknown): boolean {
-  return isSsoRequiredRefusal(status, body) && presentSsoRequired()
+  return (
+    isSsoRequiredRefusal(status, body) &&
+    presentSsoRequired({ organizationId: ssoRequiredOrganizationId(body) })
+  )
 }
 
 /** Reads a clone, and only of a 403 while `sso_enabled` is on. */
