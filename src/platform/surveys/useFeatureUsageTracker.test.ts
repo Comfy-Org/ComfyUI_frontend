@@ -16,6 +16,23 @@ describe('useFeatureUsageTracker', () => {
     expect(useCount.value).toBe(0)
   })
 
+  it('reports repeated persistence failures once', () => {
+    const { trackUsage } = useFeatureUsageTracker('reported-storage-error')
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new DOMException('Storage quota exceeded', 'QuotaExceededError')
+    })
+
+    trackUsage()
+    trackUsage()
+
+    expect(reportError).toHaveBeenCalledOnce()
+    expect(reportError).toHaveBeenCalledWith(expect.any(DOMException), {
+      errorType: 'error_persisting_feature_usage',
+      surface: 'platform'
+    })
+  })
+
   it('increments count on trackUsage', () => {
     const { useCount, trackUsage } = useFeatureUsageTracker('test-feature-2')
 
@@ -206,11 +223,8 @@ describe('useFeatureUsageTracker', () => {
     })
 
     expect(trackUsage).not.toThrow()
-    expect(useCount.value).toBe(1)
-    expect(reportError).toHaveBeenCalledWith(expect.any(DOMException), {
-      errorType: 'error_persisting_feature_usage',
-      surface: 'platform'
-    })
+    expect(trackUsage).not.toThrow()
+    expect(useCount.value).toBe(2)
   })
 
   it('preserves in-memory increments when storage recovers', () => {

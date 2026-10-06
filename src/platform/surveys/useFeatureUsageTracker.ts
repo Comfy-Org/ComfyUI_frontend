@@ -14,7 +14,14 @@ type FeatureUsageRecord = Partial<Record<string, FeatureUsage>>
 const STORAGE_KEY = 'Comfy.FeatureUsage'
 const resetVersions = new Map<string, number>()
 const pendingResets = new Set<string>()
+const reportedErrorTypes = new Set<string>()
 let pendingUsageData: FeatureUsageRecord = {}
+
+function reportStorageError(error: unknown, errorType: string) {
+  if (reportedErrorTypes.has(errorType)) return
+  reportedErrorTypes.add(errorType)
+  reportError(error, { errorType, surface: 'platform' })
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -53,10 +60,7 @@ function parseUsageData(value: string | null): FeatureUsageRecord {
   try {
     return normalizeUsageData(JSON.parse(value))
   } catch (error) {
-    reportError(error, {
-      errorType: 'error_parsing_feature_usage',
-      surface: 'platform'
-    })
+    reportStorageError(error, 'error_parsing_feature_usage')
     return {}
   }
 }
@@ -117,10 +121,7 @@ function dispatchStorageUpdate(oldValue: string | null, newValue: string) {
       })
     )
   } catch (error) {
-    reportError(error, {
-      errorType: 'error_dispatching_feature_usage',
-      surface: 'platform'
-    })
+    reportStorageError(error, 'error_dispatching_feature_usage')
   }
 }
 
@@ -172,10 +173,7 @@ function persistUsageData(featureId: string, now: number) {
     pendingResets.clear()
     pendingUsageData = {}
   } catch (error) {
-    reportError(error, {
-      errorType: 'error_persisting_feature_usage',
-      surface: 'platform'
-    })
+    reportStorageError(error, 'error_persisting_feature_usage')
     if (!usageData) return
     pendingUsageData = mergeUsageData(pendingUsageData, usageData)
   }
@@ -200,10 +198,7 @@ function resetUsageData(currentUsageData: FeatureUsageRecord) {
     pendingResets.clear()
     pendingUsageData = {}
   } catch (error) {
-    reportError(error, {
-      errorType: 'error_resetting_feature_usage',
-      surface: 'platform'
-    })
+    reportStorageError(error, 'error_resetting_feature_usage')
     usageData ??= applyPendingResets(currentUsageData)
   }
 
