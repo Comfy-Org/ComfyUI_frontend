@@ -219,6 +219,32 @@ describe('useFeatureUsageTracker', () => {
     expect(liveFeature.useCount.value).toBe(3)
   })
 
+  it('preserves the earliest first use when reconciling usage', () => {
+    vi.setSystemTime(1_000)
+    const tracker = useFeatureUsageTracker('reconciled-feature')
+    tracker.trackUsage()
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        'reconciled-feature': {
+          useCount: 5,
+          firstUsed: 2_000,
+          lastUsed: 3_000
+        }
+      })
+    )
+    vi.setSystemTime(4_000)
+
+    tracker.trackUsage()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored['reconciled-feature']).toEqual({
+      useCount: 6,
+      firstUsed: 1_000,
+      lastUsed: 4_000
+    })
+  })
+
   it('restarts from one when a disposed tracker runs after reset', () => {
     const scope = effectScope()
     let trackDisposedFeature = () => {}

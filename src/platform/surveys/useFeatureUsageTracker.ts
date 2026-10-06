@@ -55,9 +55,11 @@ function latestUsage(
 ) {
   if (!storedUsage) return currentUsage
   if (!currentUsage) return storedUsage
-  return storedUsage.useCount >= currentUsage.useCount
-    ? storedUsage
-    : currentUsage
+  return {
+    useCount: Math.max(storedUsage.useCount, currentUsage.useCount),
+    firstUsed: Math.min(storedUsage.firstUsed, currentUsage.firstUsed),
+    lastUsed: Math.max(storedUsage.lastUsed, currentUsage.lastUsed)
+  }
 }
 
 function incrementUsage(
