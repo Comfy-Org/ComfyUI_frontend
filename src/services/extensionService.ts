@@ -14,7 +14,7 @@ import { useWidgetStore } from '@/stores/widgetStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import type { ComfyExtension } from '@/types/comfy'
 import type { AuthUserInfo } from '@/types/authTypes'
-import { getErrorMessage } from '@/utils/errorUtil'
+import { toError } from '@/utils/errorUtil'
 import { app } from '@/scripts/app'
 import type { ComfyApp } from '@/scripts/app'
 
@@ -31,7 +31,7 @@ export function shouldLoadExtension(
   return !isCloudBuild || !INLINED_CLOUD_EXTENSIONS.has(extension)
 }
 
-const MAX_NAMED_FAILED_EXTENSIONS = 10
+const MAX_EXTENSION_PATH_LENGTH = 512
 
 export interface ExtensionLoadFailure {
   ext: string
@@ -61,34 +61,33 @@ async function importCustomExtension(
 }
 
 /**
- * The paths go in the message because `reportError` writes its console line
- * from the error, not from `options.tags`. The count is tagged; backend paths
- * are unbounded and belong in context instead of an indexed facet.
+ * The count is tagged; backend paths are unbounded and belong in context
+ * instead of the message or an indexed facet.
  */
 export function reportExtensionLoadFailures(
   failures: ExtensionLoadFailure[]
 ): void {
   if (failures.length === 0) return
 
-  const named = failures.slice(0, MAX_NAMED_FAILED_EXTENSIONS)
-  const elided = failures.length - named.length
-  const paths = named.map(({ ext }) => ext).join(', ')
   const noun = failures.length === 1 ? 'extension' : 'extensions'
+  const errors = failures.map(({ error }) => {
+    try {
+      return toError(error)
+    } catch {
+      return new Error('Unknown extension load failure')
+    }
+  })
 
   reportError(
-    new Error(
-      `Error loading ${failures.length} ${noun}: ${paths}` +
-        (elided > 0 ? ` (+${elided} more)` : ''),
-      { cause: failures[0].error }
-    ),
+    new AggregateError(errors, `Error loading ${failures.length} ${noun}`),
     {
       errorType: 'error_loading_extension',
       level: 'warning',
       tags: { failed_extension_count: failures.length },
       context: {
-        failures: named.map(({ ext, error }) => ({
-          ext,
-          message: getErrorMessage(error)
+        failures: failures.map(({ ext }, index) => ({
+          ext: ext.slice(0, MAX_EXTENSION_PATH_LENGTH),
+          message: errors[index].message
         }))
       }
     }

@@ -60,18 +60,16 @@ describe('extension loading', () => {
       expect(reportError).not.toHaveBeenCalled()
     })
 
-    it('reports a whole load as one typed error naming the failing packs', () => {
+    it('reports a whole load as one typed aggregate error', () => {
       const failures = [failureFor(BROKEN), failureFor('/extensions/b/b.js')]
 
       reportExtensionLoadFailures(failures)
 
       expect(reportError).toHaveBeenCalledOnce()
       const [cause, options] = vi.mocked(reportError).mock.calls[0]
-      assert(cause instanceof Error)
-      expect(cause.message).toBe(
-        'Error loading 2 extensions: /extensions/comfyui-broken/main.js, /extensions/b/b.js'
-      )
-      expect(cause.cause).toBe(failures[0].error)
+      assert(cause instanceof AggregateError)
+      expect(cause.message).toBe('Error loading 2 extensions')
+      expect(cause.errors).toEqual(failures.map(({ error }) => error))
       expect(options).toMatchObject({
         errorType: 'error_loading_extension',
         level: 'warning'
@@ -86,7 +84,7 @@ describe('extension loading', () => {
       ])
     })
 
-    it('elides the tail once past the naming cap', () => {
+    it('keeps every failure in context', () => {
       const failures = Array.from({ length: 13 }, (_, i) =>
         failureFor(`/extensions/pack-${i}/main.js`)
       )
@@ -94,12 +92,46 @@ describe('extension loading', () => {
       reportExtensionLoadFailures(failures)
 
       const [cause, options] = vi.mocked(reportError).mock.calls[0]
-      assert(cause instanceof Error)
-      expect(cause.message).toContain('Error loading 13 extensions')
-      expect(cause.message).toContain('(+3 more)')
-      expect(cause.message).not.toContain('pack-10')
+      assert(cause instanceof AggregateError)
+      expect(cause.message).toBe('Error loading 13 extensions')
+      expect(cause.errors).toHaveLength(13)
       expect(options.tags).toMatchObject({ failed_extension_count: 13 })
-      expect(options.context?.failures).toHaveLength(10)
+      expect(options.context?.failures).toHaveLength(13)
+    })
+
+    it('normalizes non-Error and hostile thrown values safely', () => {
+      const hostile = new Proxy(
+        {},
+        {
+          get() {
+            throw new Error('unreadable')
+          },
+          ownKeys() {
+            throw new Error('unreadable')
+          }
+        }
+      )
+
+      expect(() =>
+        reportExtensionLoadFailures([
+          { ext: '/extensions/number.js', error: 42 },
+          { ext: '/extensions/hostile.js', error: hostile }
+        ])
+      ).not.toThrow()
+
+      const [cause, options] = vi.mocked(reportError).mock.calls[0]
+      assert(cause instanceof AggregateError)
+      expect(cause.errors.map((error) => error.message)).toEqual([
+        '42',
+        'Unknown extension load failure'
+      ])
+      expect(options.context?.failures).toEqual([
+        { ext: '/extensions/number.js', message: '42' },
+        {
+          ext: '/extensions/hostile.js',
+          message: 'Unknown extension load failure'
+        }
+      ])
     })
 
     it('does not pair its own console line with the report', () => {
@@ -122,9 +154,7 @@ describe('extension loading', () => {
       expect(reportError).toHaveBeenCalledOnce()
       const [cause, options] = vi.mocked(reportError).mock.calls[0]
       assert(cause instanceof Error)
-      expect(cause.message).toBe(
-        'Error loading 2 extensions: /extensions/pack-a/main.js, /extensions/pack-b/main.js'
-      )
+      expect(cause.message).toBe('Error loading 2 extensions')
       expect(options.tags).toEqual({ failed_extension_count: 2 })
       expect(console.error).not.toHaveBeenCalled()
     })
@@ -147,9 +177,7 @@ describe('extension loading', () => {
 
       const [cause] = vi.mocked(reportError).mock.calls[0]
       assert(cause instanceof Error)
-      expect(cause.message).toBe(
-        'Error loading 1 extension: /extensions/pack-a/main.js'
-      )
+      expect(cause.message).toBe('Error loading 1 extension')
     })
 
     it('times the core and custom imports as separate subphases', async () => {
