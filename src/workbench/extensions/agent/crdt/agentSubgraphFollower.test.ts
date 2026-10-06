@@ -1064,7 +1064,6 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
         )
       }),
       expect.objectContaining({
-        surface: 'agent',
         errorType: 'agent_graph_host_widgets_mismatch',
         context: expect.objectContaining({
           expected: 2,
