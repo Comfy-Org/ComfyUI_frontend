@@ -12,19 +12,23 @@ type FeatureUsageRecord = Partial<Record<string, FeatureUsage>>
 const STORAGE_KEY = 'Comfy.FeatureUsage'
 
 function persistUsageData(usageData: FeatureUsageRecord) {
-  const oldValue = localStorage.getItem(STORAGE_KEY)
-  const newValue = JSON.stringify(usageData)
-  if (oldValue === newValue) return
+  try {
+    const oldValue = localStorage.getItem(STORAGE_KEY)
+    const newValue = JSON.stringify(usageData)
+    if (oldValue === newValue) return
 
-  localStorage.setItem(STORAGE_KEY, newValue)
-  window.dispatchEvent(
-    new StorageEvent('storage', {
-      key: STORAGE_KEY,
-      oldValue,
-      newValue,
-      storageArea: localStorage
-    })
-  )
+    localStorage.setItem(STORAGE_KEY, newValue)
+    window.dispatchEvent(
+      new StorageEvent('storage', {
+        key: STORAGE_KEY,
+        oldValue,
+        newValue,
+        storageArea: localStorage
+      })
+    )
+  } catch {
+    return
+  }
 }
 
 /**

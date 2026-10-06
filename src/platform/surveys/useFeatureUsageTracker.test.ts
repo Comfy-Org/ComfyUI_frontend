@@ -108,6 +108,16 @@ describe('useFeatureUsageTracker', () => {
     expect(stored['late-feature']?.useCount).toBe(1)
   })
 
+  it('does not interrupt callers when storage is unavailable', () => {
+    const { trackUsage } = useFeatureUsageTracker('unavailable-storage')
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new DOMException('Storage quota exceeded', 'QuotaExceededError')
+    })
+
+    expect(trackUsage).not.toThrow()
+  })
+
   it('loads existing data from localStorage', () => {
     localStorage.setItem(
       STORAGE_KEY,
