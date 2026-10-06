@@ -103,14 +103,14 @@
         "kindAn": "an {task} model",
         "what": "{name} is {kind}.",
         "whatFrom": "{name} is {kind} from {provider}.",
-        "router": "On Comfy you can run it in your browser or call it through the Comfy Router API as {routerId}.",
+        "router": "You can call it through the Comfy Router API as {routerId}.",
         "sentence": "{what} {router}"
       },
       "facts": {
         "provider": "Provider",
         "task": "Task",
         "routerId": "Router model ID",
-        "price": "Price"
+        "price": "Estimated price"
       },
       "tabs": {
         "playground": "Playground",

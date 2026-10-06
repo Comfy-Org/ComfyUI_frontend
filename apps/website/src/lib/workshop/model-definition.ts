@@ -10,9 +10,32 @@ interface ModelFact {
   mono?: boolean
 }
 
-function knownTask(task: string | undefined) {
+const NAMED_OUTPUT: Record<string, string> = {
+  speech: 'audio',
+  dialogue: 'audio',
+  vector: 'image'
+}
+
+function taskInName(name: string) {
+  const edit = /\b(image|video) edit\b/i.exec(name)?.[1].toLowerCase()
+  if (edit) return { input: edit, output: edit }
+  const [, input, output] =
+    /\b(text|image|video|audio|reference)-to-(\w+)/i.exec(name) ?? []
+  if (!input || !output) return undefined
+  const named = output.toLowerCase()
+  return { input: input.toLowerCase(), output: NAMED_OUTPUT[named] ?? named }
+}
+
+function knownTask({ name, task }: RouterWorkshopModel) {
   const parts = task ? splitTask(task) : undefined
-  return parts && parts.output !== 'other' ? task : undefined
+  if (!parts || parts.output === 'other') return undefined
+  const named = taskInName(name)
+  if (!named) return task
+  const inputAgrees =
+    named.input === 'reference'
+      ? parts.input !== 'text'
+      : named.input === parts.input
+  return inputAgrees && named.output === parts.output ? task : undefined
 }
 
 export function modelDefinition(
@@ -20,7 +43,7 @@ export function modelDefinition(
   locale: Locale = 'en'
 ): string {
   const { t } = translationsFor(locale)
-  const task = knownTask(model.task)
+  const task = knownTask(model)
   const kind = task
     ? t(
         /^[aeiou]/i.test(task)
@@ -55,7 +78,7 @@ export function modelFacts(
     },
     {
       term: t('workshop.model.facts.task'),
-      value: knownTask(model.task) ? taskLabelFor(model, locale) : ''
+      value: knownTask(model) ? taskLabelFor(model, locale) : ''
     },
     {
       term: t('workshop.model.facts.routerId'),

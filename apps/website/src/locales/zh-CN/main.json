@@ -4677,19 +4677,19 @@
         "titleApi": "{name} API - Comfy"
       },
       "definition": {
-        "kind": "AI 模型",
+        "kind": " AI 模型",
         "kindA": "{label}模型",
         "kindAn": "{label}模型",
         "what": "{name} 是一款{kind}。",
         "whatFrom": "{name} 是 {provider} 推出的{kind}。",
-        "router": "在 Comfy 上，你可以在浏览器中运行它，或通过 Comfy Router API 以 {routerId} 调用。",
+        "router": "你可以通过 Comfy Router API 以 {routerId} 调用它。",
         "sentence": "{what}{router}"
       },
       "facts": {
         "provider": "提供方",
         "task": "任务",
         "routerId": "Router 模型 ID",
-        "price": "价格"
+        "price": "预估价格"
       },
       "missingInputSchema": "Comfy Router 已列出此模型，但其输入架构尚未提供。你可以查看已有信息；添加架构后将启用运行和 API 代码示例。",
       "nodePriceDefaults": "根据公布的费率或节点默认设置估算。实际费用随设置和用量变化。",
