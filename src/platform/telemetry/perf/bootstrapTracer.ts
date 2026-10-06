@@ -158,7 +158,9 @@ export class BootstrapTracer {
    * every other measure in the app and can be cleared by anyone.
    */
   summary(): BootstrapPhaseTiming[] {
-    return [...this._timings].sort((a, b) => a.startMs - b.startMs)
+    return [...this._timings].sort(
+      (a, b) => a.startMs - b.startMs || b.durationMs - a.durationMs
+    )
   }
 
   /**
