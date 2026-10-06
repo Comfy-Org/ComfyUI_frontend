@@ -63,7 +63,7 @@ const thumbnailLabel = computed(() =>
 
 const id = useId()
 const showsTask = computed(() => !workflow.value || !underHeading)
-// The tags stay readable inside the link but out of its name.
+// The tags stay visible inside the link but out of its name.
 const labelledBy = computed(() =>
   [
     `${id}-provider`,

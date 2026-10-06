@@ -44,7 +44,7 @@ describe('TagRow', () => {
     expect(overflow.getAttribute('aria-label')).toMatch(/controlnet/i)
   })
 
-  it('keeps the hidden-tag count out of the tab order inside a card link', async () => {
+  it('keeps the hidden-tag count out of the tab order and lets a click reach the card link', async () => {
     stubWidths(120, 100)
     render(TagRow, {
       props: { tags: ['upscale', 'inpaint', 'controlnet'], linkTags: false }
@@ -52,7 +52,16 @@ describe('TagRow', () => {
     await nextTick()
     await nextTick()
 
-    expect(screen.getByTestId('tag-overflow').textContent).toMatch(/\+\d/)
+    const overflow = screen.getByTestId('tag-overflow')
+    expect(overflow.textContent).toMatch(/\+\d/)
+    expect(overflow.tagName).toBe('SPAN')
+    expect(overflow).not.toHaveAttribute('tabindex')
+    expect(overflow).not.toHaveAttribute('role')
     expect(screen.queryByRole('button')).toBeNull()
+    expect(
+      overflow.dispatchEvent(
+        new MouseEvent('click', { bubbles: true, cancelable: true })
+      )
+    ).toBe(true)
   })
 })

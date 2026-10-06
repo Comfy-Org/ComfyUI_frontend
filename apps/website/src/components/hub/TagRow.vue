@@ -102,7 +102,7 @@ const pillClass =
           "
           :class="cn(pillClass, 'cursor-default tabular-nums')"
           data-testid="tag-overflow"
-          @click.prevent.stop
+          @click.stop
         >
           +{{ hiddenTags.length }}
         </HoverCardTrigger>
