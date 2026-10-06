@@ -23,6 +23,13 @@ interface PendingReset {
   requestedAt: number
 }
 
+interface PendingWriteVerification {
+  allPendingWritten: boolean
+  writtenUsageIds: string[]
+  confirmedResetIds: string[]
+  usageData?: FeatureUsageRecord
+}
+
 type ParsedUsageData =
   | {
       status: 'valid' | 'partial'
@@ -184,22 +191,35 @@ function didUsageAdvance(
   requestedAt: number
 ) {
   if (!storedUsage) return false
-  if (baseline === undefined) {
-    const effectiveRequestedAt = Math.min(requestedAt, Date.now())
-    return (
-      isOrderableUsage(storedUsage) &&
-      storedUsage.lastUsed > effectiveRequestedAt + MAX_CLOCK_SKEW
-    )
-  }
+  if (baseline === undefined)
+    return didUnknownUsageAdvance(storedUsage, requestedAt)
   if (baseline === null) return true
+  return didKnownUsageAdvance(storedUsage, baseline)
+}
+
+function didUnknownUsageAdvance(
+  storedUsage: FeatureUsage,
+  requestedAt: number
+) {
+  const effectiveRequestedAt = Math.min(requestedAt, Date.now())
   return (
-    (storedUsage.firstUsed >= baseline.firstUsed &&
-      storedUsage.useCount > baseline.useCount) ||
-    (isOrderableUsage(storedUsage) &&
-      isOrderableUsage(baseline) &&
-      (storedUsage.firstUsed > baseline.firstUsed ||
-        storedUsage.lastUsed > baseline.lastUsed))
+    isOrderableUsage(storedUsage) &&
+    storedUsage.lastUsed > effectiveRequestedAt + MAX_CLOCK_SKEW
   )
+}
+
+function didKnownUsageAdvance(
+  storedUsage: FeatureUsage,
+  baseline: FeatureUsage
+) {
+  const generationDidNotRegress = storedUsage.firstUsed >= baseline.firstUsed
+  const countAdvanced = storedUsage.useCount > baseline.useCount
+  const timestampsAdvanced =
+    isOrderableUsage(storedUsage) &&
+    isOrderableUsage(baseline) &&
+    (storedUsage.firstUsed > baseline.firstUsed ||
+      storedUsage.lastUsed > baseline.lastUsed)
+  return (generationDidNotRegress && countAdvanced) || timestampsAdvanced
 }
 
 function isOrderableUsage(usage: FeatureUsage) {
@@ -653,6 +673,29 @@ function writeAndVerifyReset(
   }
 }
 
+function clearPendingState(usageData: FeatureUsageRecord) {
+  pendingResets.clear()
+  pendingResetUsage.clear()
+  pendingUsageData.value = {}
+  usageSnapshot.value = usageData
+}
+
+function applyPartialVerification(verification: PendingWriteVerification) {
+  pendingUsageData.value = verification.writtenUsageIds.reduce(
+    withoutFeature,
+    pendingUsageData.value
+  )
+  const retiredResetIds = new Set([
+    ...verification.writtenUsageIds,
+    ...verification.confirmedResetIds
+  ])
+  for (const featureId of retiredResetIds) {
+    pendingResets.delete(featureId)
+    pendingResetUsage.delete(featureId)
+  }
+  if (verification.usageData) usageSnapshot.value = verification.usageData
+}
+
 function persistUsageData(featureId: string, now: number) {
   let oldValue: string | null = null
   let newValue = ''
@@ -681,26 +724,9 @@ function persistUsageData(featureId: string, now: number) {
     const verification = writeAndVerifyUsage(newValue, featureId, usageData)
     storageWritten = verification.allPendingWritten
     if (storageWritten) {
-      pendingResets.clear()
-      pendingResetUsage.clear()
-      pendingUsageData.value = {}
-      usageSnapshot.value = usageData
+      clearPendingState(usageData)
     } else {
-      pendingUsageData.value = verification.writtenUsageIds.reduce(
-        withoutFeature,
-        pendingUsageData.value
-      )
-      for (const writtenFeatureId of verification.writtenUsageIds) {
-        pendingResets.delete(writtenFeatureId)
-        pendingResetUsage.delete(writtenFeatureId)
-      }
-      for (const resetFeatureId of verification.confirmedResetIds) {
-        pendingResets.delete(resetFeatureId)
-        pendingResetUsage.delete(resetFeatureId)
-      }
-      if (verification.usageData) {
-        usageSnapshot.value = verification.usageData
-      }
+      applyPartialVerification(verification)
       reportStorageError(
         new DOMException(
           'Feature usage storage changed before verification',
@@ -750,22 +776,9 @@ function resetUsageData(featureId: string) {
     const verification = writeAndVerifyReset(newValue, usageData)
     storageWritten = verification.allPendingWritten
     if (storageWritten) {
-      pendingResets.clear()
-      pendingResetUsage.clear()
-      pendingUsageData.value = {}
-      usageSnapshot.value = usageData
+      clearPendingState(usageData)
     } else {
-      pendingUsageData.value = verification.writtenUsageIds.reduce(
-        withoutFeature,
-        pendingUsageData.value
-      )
-      for (const resetFeatureId of verification.confirmedResetIds) {
-        pendingResets.delete(resetFeatureId)
-        pendingResetUsage.delete(resetFeatureId)
-      }
-      if (verification.usageData) {
-        usageSnapshot.value = verification.usageData
-      }
+      applyPartialVerification(verification)
       reportStorageError(
         new DOMException(
           'Feature usage storage changed before verification',
