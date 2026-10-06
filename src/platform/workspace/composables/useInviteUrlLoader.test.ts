@@ -214,59 +214,53 @@ describe('useInviteUrlLoader', () => {
       expect(mockToastAdd).not.toHaveBeenCalled()
     })
 
+    const DIRECTORY_TOAST = {
+      severity: 'info',
+      summary: 'Admin manages membership',
+      detail: 'Ask your organization admin',
+      closable: true
+    }
+
     it.for([
       {
-        name: 'a directory-managed refusal with sso_enabled on',
+        name: 'a directory-managed refusal with sso_enabled on shows the directory message',
         sso: true,
         code: 'membership_managed_by_directory',
-        directoryMessage: true
+        wrongAccountDialogs: 0,
+        toasts: [[DIRECTORY_TOAST]]
       },
       {
-        name: 'a directory-managed refusal with sso_enabled off',
+        name: 'a directory-managed refusal with sso_enabled off opens the wrong-account dialog',
         sso: false,
         code: 'membership_managed_by_directory',
-        directoryMessage: false
+        wrongAccountDialogs: 1,
+        toasts: []
       },
       {
-        name: 'another 403 with sso_enabled on',
+        name: 'another 403 with sso_enabled on opens the wrong-account dialog',
         sso: true,
         code: 'ACCESS_DENIED',
-        directoryMessage: false
+        wrongAccountDialogs: 1,
+        toasts: []
       }
-    ])(
-      'explains directory-managed membership only for $name',
-      async ({ sso, code, directoryMessage }) => {
-        vi.mocked(useFeatureFlags().flags).ssoEnabled = sso
-        mockRouteQuery.value = { invite: 'scim-token' }
-        vi.mocked(useTeamWorkspaceStore().acceptInvite).mockRejectedValue(
-          new WorkspaceApiError('Forbidden', 403, code)
-        )
+    ])('$name', async ({ sso, code, wrongAccountDialogs, toasts }) => {
+      vi.mocked(useFeatureFlags().flags).ssoEnabled = sso
+      mockRouteQuery.value = { invite: 'scim-token' }
+      vi.mocked(useTeamWorkspaceStore().acceptInvite).mockRejectedValue(
+        new WorkspaceApiError('Forbidden', 403, code)
+      )
 
-        const { loadInviteFromUrl } = useInviteUrlLoader()
-        await loadInviteFromUrl()
+      const { loadInviteFromUrl } = useInviteUrlLoader()
+      await loadInviteFromUrl()
 
-        expect(
-          vi.mocked(useDialogService().showInviteWrongAccountDialog)
-        ).toHaveBeenCalledTimes(directoryMessage ? 0 : 1)
-        expect(mockToastAdd.mock.calls).toEqual(
-          directoryMessage
-            ? [
-                [
-                  {
-                    severity: 'info',
-                    summary: 'Admin manages membership',
-                    detail: 'Ask your organization admin',
-                    closable: true
-                  }
-                ]
-              ]
-            : []
-        )
-        expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
-          'invite'
-        )
-      }
-    )
+      expect(
+        vi.mocked(useDialogService().showInviteWrongAccountDialog)
+      ).toHaveBeenCalledTimes(wrongAccountDialogs)
+      expect(mockToastAdd.mock.calls).toEqual(toasts)
+      expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
+        'invite'
+      )
+    })
 
     it('keeps the toast for a 404 without a parsed API code', async () => {
       mockRouteQuery.value = { invite: 'waf-blocked' }
