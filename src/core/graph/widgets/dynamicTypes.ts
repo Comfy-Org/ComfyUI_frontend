@@ -1,5 +1,9 @@
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
-import { zAutogrowOptions, zMatchTypeOptions } from '@/schemas/nodeDefSchema'
+import {
+  zAutogrowOptions,
+  zDynamicGroupInputSpec,
+  zMatchTypeOptions
+} from '@/schemas/nodeDefSchema'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 
@@ -7,6 +11,16 @@ const dynamicTypeResolvers: Record<
   string,
   (inputSpec: InputSpecV2) => string[]
 > = {
+  COMFY_DYNAMICGROUP_V3: (input) => {
+    const template = zDynamicGroupInputSpec.safeParse([input.type, input])
+      .data?.[1].template
+    return Object.entries({
+      ...template?.required,
+      ...template?.optional
+    }).flatMap(([name, spec]) =>
+      resolveInputType(transformInputSpecV1ToV2(spec, { name }))
+    )
+  },
   COMFY_AUTOGROW_V3: resolveAutogrowType,
   COMFY_MATCHTYPE_V3: (input) =>
     zMatchTypeOptions

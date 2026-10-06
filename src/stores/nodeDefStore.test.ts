@@ -9,7 +9,11 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
+import {
+  ComfyNodeDefImpl,
+  useNodeDefStore,
+  useNodeFrequencyStore
+} from '@/stores/nodeDefStore'
 import type { NodeDefFilter } from '@/stores/nodeDefStore'
 
 describe('useNodeDefStore', () => {
@@ -35,6 +39,28 @@ describe('useNodeDefStore', () => {
     deprecated: false,
     experimental: false,
     ...overrides
+  })
+
+  it('finds widget types inside a DynamicGroup template', () => {
+    const nodeDef = new ComfyNodeDefImpl(
+      createMockNodeDef({
+        input: {
+          required: {
+            loras: [
+              'COMFY_DYNAMICGROUP_V3',
+              {
+                template: {
+                  required: { name: ['COMBO', { options: ['A', 'B'] }] },
+                  optional: { strength: ['FLOAT', { default: 1 }] }
+                }
+              }
+            ]
+          }
+        }
+      })
+    )
+
+    expect(nodeDef.inputTypes).toEqual(['COMBO', 'FLOAT'])
   })
 
   describe('filter registry', () => {

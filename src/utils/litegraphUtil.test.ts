@@ -6,6 +6,7 @@ import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
@@ -384,5 +385,38 @@ describe('migrateWidgetsValues', () => {
     const widgets = [makeWidget('steps')]
 
     expect(migrateWidgetsValues(inputDefs, widgets, [1, 20])).toEqual([20])
+  })
+
+  it('preserves values when an unselected DynamicCombo option contains a group', () => {
+    const selector = transformInputSpecV1ToV2(
+      [
+        'COMFY_DYNAMICCOMBO_V3',
+        {
+          options: [
+            { key: 'none', inputs: {} },
+            {
+              key: 'group',
+              inputs: {
+                required: {
+                  rows: [
+                    'COMFY_DYNAMICGROUP_V3',
+                    { template: { required: { strength: ['FLOAT', {}] } } }
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      ],
+      { name: 'selector' }
+    )
+
+    expect(
+      migrateWidgetsValues(
+        { ...inputDefs, selector },
+        [makeWidget('steps')],
+        [1, 20]
+      )
+    ).toEqual([1, 20])
   })
 })

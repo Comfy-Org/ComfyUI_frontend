@@ -155,6 +155,17 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
       : undefined
   }
 
+  function getRestoredWidgetValueCount(
+    graphId: UUID,
+    nodeId: NodeId
+  ): number | undefined {
+    const restoration = graphWidgetRestorations.get(graphId)?.get(nodeId)
+    if (!restoration) return
+    return restoration.restoreNamed && restoration.named
+      ? Object.keys(restoration.named).length
+      : restoration.positional.length
+  }
+
   function clearNodeWidgetRestoration(graphId: UUID, nodeId: NodeId): void {
     clearNodeScoped(graphWidgetRestorations, graphId, nodeId)
   }
@@ -507,6 +518,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     setNodeWidgetRestoration,
     clearNodeWidgetRestoration,
     getRestoredWidgetValue,
+    getRestoredWidgetValueCount,
     getWidget,
     getWidgetRenderState,
     getWidgetVisibility,
