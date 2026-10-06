@@ -87,19 +87,35 @@ describe('SpriteSheetStudio', () => {
 
     expect(screen.getByRole('link', { name: 'Download' })).toHaveAttribute(
       'download',
-      'fox-explorer-toon-jump-sheet.png'
+      'explorer-toon-jump-sheet.png'
     )
     expect(screen.getByRole('img', { name: /8 frames of Jump in Toon/ })).toBe(
       screen.getByTestId('sprite-sheet-result')
     )
     expect(renderSpriteSheet).toHaveBeenCalledWith(
-      '/images/apps/sprite-sheet/example.png',
+      '/images/apps/sprite-sheet/explorer.webp',
       expect.objectContaining({
         description: 'dancing',
         style: 'toon',
         motion: 'jump'
       })
     )
+  })
+
+  it('shows and downloads the example’s prepared walk as it is', async () => {
+    const user = await openExample()
+
+    await generate(user)
+
+    expect(screen.getByTestId('sprite-sheet-result')).toHaveAttribute(
+      'src',
+      '/images/apps/sprite-sheet/explorer-walk-pixel.webp'
+    )
+    expect(screen.getByRole('link', { name: 'Download' })).toHaveAttribute(
+      'download',
+      'explorer-pixel-walk-sheet.webp'
+    )
+    expect(renderSpriteSheet).not.toHaveBeenCalled()
   })
 
   it('keeps the seed a direct row of the panel, with no frame count to pick', async () => {

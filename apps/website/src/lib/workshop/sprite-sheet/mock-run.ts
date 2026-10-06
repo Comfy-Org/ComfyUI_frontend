@@ -4,6 +4,7 @@ import type {
   SpriteSheetRequest,
   SpriteSheetResult
 } from './contract'
+import type { SpriteStyle } from './options'
 import { SPRITE_GRID } from './options'
 import { renderSpriteSheet } from './render-sheet'
 
@@ -18,20 +19,40 @@ const QUEUE_MS = 400
 const STEP_MS = 200
 const STEPS = 10
 
+const EXAMPLE = '/images/apps/sprite-sheet/explorer.webp'
+
 export const SPRITE_EXAMPLE = {
-  url: '/images/apps/sprite-sheet/example.png',
-  name: 'fox-explorer.png',
+  url: EXAMPLE,
+  name: 'explorer.webp',
   width: 512,
   height: 640
 } as const
 
-const renderInBrowser: SpriteSheetRender = (request) =>
-  renderSpriteSheet(request.image, request)
+const EXAMPLE_WALKS: Record<SpriteStyle, string> = {
+  pixel: '/images/apps/sprite-sheet/explorer-walk-pixel.webp',
+  toon: '/images/apps/sprite-sheet/explorer-walk-toon.webp',
+  '3d': '/images/apps/sprite-sheet/explorer-walk-3d.webp'
+}
+
+/** The worked example's prepared walk in the request's style, if it is one. */
+function preparedSheet(request: SpriteSheetRequest) {
+  return request.image === EXAMPLE && request.motion === 'walk'
+    ? EXAMPLE_WALKS[request.style]
+    : undefined
+}
+
+const renderInBrowser: SpriteSheetRender = (request) => {
+  const prepared = preparedSheet(request)
+  return prepared
+    ? Promise.resolve(prepared)
+    : renderSpriteSheet(request.image, request)
+}
 
 /**
  * Stands in for the Sprite sheet backend until it exists: queues, counts
  * up to 100%, then answers with frames drawn in the browser from the
- * character (`render`), posed for the motion and redrawn in the style. The
+ * character (`render`), posed for the motion and redrawn in the style, or,
+ * for the worked example's walk, its prepared sheet in that style. The
  * free-text animation is sent but not drawn. Where nothing can be drawn it
  * answers with the character itself as a one-frame sheet. Replace this
  * with the real job call; the page only needs the same request, progress

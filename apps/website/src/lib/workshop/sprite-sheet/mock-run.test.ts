@@ -3,7 +3,8 @@ import { describe, expect, it, vi } from 'vitest'
 import type { SpriteSheetProgress } from './contract'
 import { spriteSheetRequest } from './contract'
 import type { SpriteSheetRender } from './mock-run'
-import { runSpriteSheet } from './mock-run'
+import { SPRITE_EXAMPLE, runSpriteSheet } from './mock-run'
+import type { SpriteMotion, SpriteStyle } from './options'
 
 vi.mock(import('./render-sheet'), () => ({
   renderSpriteSheet: vi.fn(() => Promise.resolve(undefined)),
@@ -40,6 +41,49 @@ describe('runSpriteSheet', () => {
 
     await expect(run).resolves.toEqual({ ...expected, seed: 42 })
   })
+
+  it.for<{
+    image: string
+    style: SpriteStyle
+    motion: SpriteMotion
+    url: string
+  }>([
+    {
+      image: SPRITE_EXAMPLE.url,
+      style: 'pixel',
+      motion: 'walk',
+      url: '/images/apps/sprite-sheet/explorer-walk-pixel.webp'
+    },
+    {
+      image: SPRITE_EXAMPLE.url,
+      style: '3d',
+      motion: 'walk',
+      url: '/images/apps/sprite-sheet/explorer-walk-3d.webp'
+    },
+    {
+      image: SPRITE_EXAMPLE.url,
+      style: 'toon',
+      motion: 'jump',
+      url: SPRITE_EXAMPLE.url
+    },
+    { image: '/upload.png', style: 'toon', motion: 'walk', url: '/upload.png' }
+  ])(
+    'answers $image as $style $motion with $url',
+    async ({ image, style, motion, url }) => {
+      vi.useFakeTimers()
+      const exampleRequest = spriteSheetRequest(image, {
+        description: '',
+        style,
+        motion,
+        seed: 1
+      })
+
+      const run = runSpriteSheet(exampleRequest, new AbortController().signal)
+      await vi.runAllTimersAsync()
+
+      await expect(run).resolves.toMatchObject({ url })
+    }
+  )
 
   it('reports the queue, then the run counting up', async () => {
     vi.useFakeTimers()

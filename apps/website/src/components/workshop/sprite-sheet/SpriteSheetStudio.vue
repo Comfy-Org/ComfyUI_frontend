@@ -30,10 +30,11 @@ const sprite = useSpriteSheet()
 const { image, phase, setup } = sprite
 const panel = computed(() => layout !== 'e')
 const wide = useMediaQuery('(min-width: 1024px)')
-const download = useResultDownload(phase, () => {
+const download = useResultDownload(phase, ({ result }) => {
   const { style, motion } = setup.value
   const base = (image.value?.name ?? 'sprite').replace(/\.\w+$/, '')
-  return `${base}-${style}-${motion}-sheet.png`
+  const type = result.url.endsWith('.webp') ? 'webp' : 'png'
+  return `${base}-${style}-${motion}-sheet.${type}`
 })
 reportStudioBusy(() => phase.value.kind === 'running')
 

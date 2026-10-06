@@ -38,7 +38,7 @@ afterEach(() => {
 describe('useSpriteSheet', () => {
   it('opens the example as a Pixel walk with no animation text, nothing to undo', () => {
     const sprite = start()
-    expect(sprite.image.value?.name).toBe('fox-explorer.png')
+    expect(sprite.image.value?.name).toBe('explorer.webp')
     expect(sprite.setup.value).toEqual({
       description: '',
       style: 'pixel',
@@ -96,6 +96,7 @@ describe('useSpriteSheet', () => {
 
   it('tries again on the next seed, which undo can take back', async () => {
     const sprite = start()
+    sprite.change({ motion: 'idle' })
     await finish(sprite.generate())
 
     sprite.again()
@@ -103,7 +104,7 @@ describe('useSpriteSheet', () => {
 
     expect(sprite.setup.value.seed).toBe(1235)
     expect(renderSpriteSheet).toHaveBeenLastCalledWith(
-      '/images/apps/sprite-sheet/example.png',
+      '/images/apps/sprite-sheet/explorer.webp',
       expect.objectContaining({ seed: 1235 })
     )
     sprite.edit()
@@ -113,6 +114,7 @@ describe('useSpriteSheet', () => {
 
   it('goes back to editing and releases the sheet', async () => {
     const sprite = start()
+    sprite.change({ motion: 'jump' })
     await finish(sprite.generate())
 
     sprite.edit()

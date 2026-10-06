@@ -108,8 +108,8 @@ const copy = {
   'sprite.again': { en: 'Try again', 'zh-CN': '再试一次' },
   'sprite.close': { en: 'Close', 'zh-CN': '关闭' },
   'sprite.alt.example': {
-    en: 'A cartoon fox explorer in a blue tunic and teal scarf',
-    'zh-CN': '一只穿蓝色上衣、围青色围巾的卡通狐狸探险家'
+    en: 'A young explorer in a mustard jacket and teal scarf, with a backpack',
+    'zh-CN': '一位穿芥末黄外套、围青色围巾、背着背包的小探险家'
   },
   'sprite.alt.sheet': {
     en: 'The sprite sheet, {n} frames of {motion} in {style}',

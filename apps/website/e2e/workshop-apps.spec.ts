@@ -686,7 +686,7 @@ test('makes a sprite sheet of the example from the floating panel', async ({
   const panel = app.getByRole('complementary', {
     name: 'Sprite sheet settings'
   })
-  await expect(panel).toContainText('fox-explorer.png')
+  await expect(panel).toContainText('explorer.webp')
 
   await panel.getByRole('textbox', { name: 'Animation' }).fill('dancing')
   await panel.getByTestId('sprite-picker-style').click()
@@ -714,7 +714,7 @@ test('makes a sprite sheet of the example from the floating panel', async ({
   await expect(app.getByRole('status')).toContainText('Drawing the frames')
   await expect(app.getByRole('link', { name: 'Download' })).toHaveAttribute(
     'download',
-    'fox-explorer-toon-jump-sheet.png'
+    'explorer-toon-jump-sheet.png'
   )
   await expectDownloadBesideGitHub(app)
   await expect(app.getByTestId('sprite-sheet-result')).toBeVisible()
