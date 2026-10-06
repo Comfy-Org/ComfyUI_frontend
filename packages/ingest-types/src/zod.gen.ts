@@ -819,6 +819,11 @@ export const zSavedPaymentMethod = z.object({
   type: z.string()
 })
 
+export const zSsoDiscoverResponse = z.object({
+  organization_name: z.string().optional(),
+  sso: z.boolean()
+})
+
 /**
  * Response after signing out of all devices
  */
@@ -3746,6 +3751,15 @@ export const zCreateSessionResponse2 = zCreateSessionResponse
  * Every session ended
  */
 export const zRevokeAllSessionsResponse2 = zRevokeAllSessionsResponse
+
+export const zDiscoverSsoBody = z.object({
+  email: z.string().max(320)
+})
+
+/**
+ * Whether the email's domain belongs to an SSO organization
+ */
+export const zDiscoverSsoResponse = zSsoDiscoverResponse
 
 export const zExchangeTokenBody = zExchangeTokenRequest
 
