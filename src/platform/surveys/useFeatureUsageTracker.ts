@@ -105,17 +105,14 @@ function incrementUsage(
   }
 }
 
-function dispatchStorageUpdate(
-  oldValue: string | null,
-  usageData: FeatureUsageRecord
-) {
+function dispatchStorageUpdate(oldValue: string | null, newValue: string) {
   try {
     const storageArea = localStorage
     window.dispatchEvent(
       new StorageEvent('storage', {
         key: STORAGE_KEY,
         oldValue,
-        newValue: JSON.stringify(usageData),
+        newValue,
         storageArea
       })
     )
@@ -156,6 +153,7 @@ function withoutNewlyResetFeatures(
 function persistUsageData(featureId: string, now: number) {
   let oldValue: string | null = null
   let usageData: FeatureUsageRecord | undefined
+  let newValue: string | undefined
 
   try {
     oldValue = localStorage.getItem(STORAGE_KEY)
@@ -168,7 +166,7 @@ function persistUsageData(featureId: string, now: number) {
       ...mergedUsageData,
       [featureId]: incrementUsage(usageFor(mergedUsageData, featureId), now)
     }
-    const newValue = JSON.stringify(usageData)
+    newValue = JSON.stringify(usageData)
 
     localStorage.setItem(STORAGE_KEY, newValue)
     pendingResets.clear()
@@ -182,13 +180,14 @@ function persistUsageData(featureId: string, now: number) {
     pendingUsageData = mergeUsageData(pendingUsageData, usageData)
   }
 
-  dispatchStorageUpdate(oldValue, usageData)
+  dispatchStorageUpdate(oldValue, newValue ?? JSON.stringify(usageData))
   return usageData
 }
 
 function resetUsageData(currentUsageData: FeatureUsageRecord) {
   let oldValue: string | null = null
   let usageData: FeatureUsageRecord | undefined
+  let newValue: string | undefined
 
   try {
     oldValue = localStorage.getItem(STORAGE_KEY)
@@ -196,7 +195,8 @@ function resetUsageData(currentUsageData: FeatureUsageRecord) {
       applyPendingResets(parseUsageData(oldValue)),
       pendingUsageData
     )
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(usageData))
+    newValue = JSON.stringify(usageData)
+    localStorage.setItem(STORAGE_KEY, newValue)
     pendingResets.clear()
     pendingUsageData = {}
   } catch (error) {
@@ -207,7 +207,7 @@ function resetUsageData(currentUsageData: FeatureUsageRecord) {
     usageData ??= applyPendingResets(currentUsageData)
   }
 
-  dispatchStorageUpdate(oldValue, usageData)
+  dispatchStorageUpdate(oldValue, newValue ?? JSON.stringify(usageData))
   return usageData
 }
 
