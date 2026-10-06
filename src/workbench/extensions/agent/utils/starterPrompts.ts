@@ -27,12 +27,14 @@ export interface AgentStarterPromptAttribution {
   promptCount: number
   promptTextHash: string
   locale: string
+  assignment?: 'control' | 'test'
 }
 
 /** What the composer holds until the draft is submitted, or replaced. */
 export interface AgentStarterPromptSource {
   id: AgentStarterPromptId
   clickId: string
+  assignment?: 'control' | 'test'
 }
 
 export function starterPromptIdAt(index: number): AgentStarterPromptId {
@@ -43,13 +45,15 @@ export function starterPromptAttribution(
   text: string,
   index: number,
   count: number,
-  locale: string
+  locale: string,
+  assignment: 'control' | 'test' = 'control'
 ): AgentStarterPromptAttribution {
   return {
     promptId: starterPromptIdAt(index),
     promptIndex: index,
     promptCount: count,
     promptTextHash: hashPath(text),
-    locale
+    locale,
+    assignment
   }
 }

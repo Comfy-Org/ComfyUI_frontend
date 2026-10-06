@@ -14,6 +14,7 @@ import type {
   AgentStopMethod
 } from '@/platform/telemetry/types'
 import type { FreeUseVariant } from '../../experiments/freeUsePlacement'
+import type { StarterPromptAssignment } from '../../experiments/starterPromptSet'
 
 import type { ActiveTab } from '../../types/activeTab'
 import type {
@@ -78,7 +79,9 @@ const {
   selectHistory = async () => false,
   editableTurnId = null,
   answeringAskIds = new Set<string>(),
-  freeUsePlacement = 'control'
+  freeUsePlacement = 'control',
+  starterPromptAssignment = 'control',
+  onStarterPromptRendered = () => undefined
 } = defineProps<{
   entries: ConversationEntry[]
   userName?: string
@@ -119,6 +122,8 @@ const {
   editableTurnId?: TurnId | null
   answeringAskIds?: ReadonlySet<string>
   freeUsePlacement?: FreeUseVariant
+  starterPromptAssignment?: StarterPromptAssignment
+  onStarterPromptRendered?: () => void
 }>()
 const emit = defineEmits<{
   send: [
@@ -448,6 +453,8 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
         <EmptyState
           v-if="!entries.length"
           :user-name
+          :assignment="starterPromptAssignment"
+          :on-rendered="onStarterPromptRendered"
           @insert="
             (text, prompt) => {
               composerRef?.insert(text, prompt)

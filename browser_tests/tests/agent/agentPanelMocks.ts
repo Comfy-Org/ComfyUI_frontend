@@ -269,6 +269,7 @@ async function mockAgentBoot(
     agentConsentWrites,
     agentAutoShownReadProbe,
     agentFlagEnabled,
+    starterPromptSet,
     agentPanelInitiallyOpen,
     agentOnboardingCompleted,
     agentRetryAfter,
@@ -355,6 +356,9 @@ async function mockAgentBoot(
   await mockCloudBootRoutes(page, {
     features: {
       ...agentFeatures(agentFlagEnabled),
+      ...(starterPromptSet !== undefined && {
+        'agent-starter-prompt-set': starterPromptSet
+      }),
       ...(agentConsentWebSession && { unified_web_session: true }),
       ...initialFeatureFlags
     },
@@ -579,6 +583,7 @@ type AgentFixtures = {
   agentConsentWebSession: boolean
   agentConsentWrites: boolean[]
   agentFlagEnabled: boolean
+  starterPromptSet: string | undefined
   agentPanel: AgentPanel
   agentPanelInitiallyOpen: boolean
   agentOnboardingCompleted: boolean
@@ -609,6 +614,7 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
     await use([])
   },
   agentFlagEnabled: [true, { option: true }],
+  starterPromptSet: [undefined, { option: true }],
   agentPanel: async ({ comfyPage }, use) => {
     await use(new AgentPanel(comfyPage.page))
   },
@@ -626,6 +632,7 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
       agentConsentWebSession,
       agentConsentWrites,
       agentFlagEnabled,
+      starterPromptSet,
       agentPanelInitiallyOpen,
       agentOnboardingCompleted,
       agentRetryAfter,
@@ -649,6 +656,7 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
       agentConsentWebSession,
       agentConsentWrites,
       agentFlagEnabled,
+      starterPromptSet,
       agentPanelInitiallyOpen,
       agentOnboardingCompleted,
       agentRetryAfter,

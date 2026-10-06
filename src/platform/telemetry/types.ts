@@ -932,6 +932,14 @@ export interface AgentStarterPromptClickedMetadata extends Record<
    * something else — do not read those as a clean per-prompt outcome.
    */
   draft_was_empty: boolean
+  /** The resolved PostHog assignment; control is the fail-closed value. */
+  '$feature/agent-starter-prompt-set'?: 'control' | 'test'
+}
+export interface AgentStarterPromptExposureMetadata extends Record<
+  string,
+  unknown
+> {
+  '$feature/agent-starter-prompt-set': 'control' | 'test'
 }
 export interface AgentMessageSentMetadata extends Record<string, unknown> {
   attachment_count: number
@@ -968,6 +976,8 @@ export interface AgentMessageSentMetadata extends Record<string, unknown> {
   starter_prompt_id: AgentStarterPromptId | null
   /** `click_id` of the `app:agent_starter_prompt_clicked` this send came from, `null` when typed. */
   starter_prompt_click_id: string | null
+  /** Assignment copied from the rendered starter prompt, when applicable. */
+  '$feature/agent-starter-prompt-set'?: 'control' | 'test'
 }
 export interface AgentNodeTaggedMetadata extends Record<string, unknown> {
   source: 'mention_picker'
@@ -1440,6 +1450,9 @@ export interface TelemetryProvider {
   trackAgentStarterPromptClicked?(
     metadata: AgentStarterPromptClickedMetadata
   ): void
+  trackAgentStarterPromptExposure?(
+    metadata: AgentStarterPromptExposureMetadata
+  ): void
   trackAgentFreeUseNotice?(metadata: AgentFreeUseNoticeMetadata): void
   trackAgentFreeUseExposure?(metadata: AgentFreeUseExposureMetadata): void
   trackAgentNodeTagged?(metadata: AgentNodeTaggedMetadata): void
@@ -1615,6 +1628,7 @@ export const TelemetryEvents = {
   AGENT_ONBOARDING_STEP: 'app:agent_onboarding_step',
   AGENT_MESSAGE_SENT: 'app:agent_message_sent',
   AGENT_STARTER_PROMPT_CLICKED: 'app:agent_starter_prompt_clicked',
+  AGENT_STARTER_PROMPT_EXPOSURE: 'app:agent_starter_prompt_exposure',
   AGENT_FREE_USE_NOTICE: 'app:agent_free_use_notice',
   AGENT_FREE_USE_EXPOSURE: 'app:agent_free_use_exposure',
   AGENT_NODE_TAGGED: 'app:agent_node_tagged',
