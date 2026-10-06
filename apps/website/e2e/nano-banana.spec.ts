@@ -7,10 +7,10 @@ test.describe('Nano Banana launch page placeholder', () => {
     await page.goto('/nano-banana')
 
     await expect(
-      page.getByRole('heading', { level: 1, name: 'Nano Banana is now ripe' })
+      page.getByRole('heading', { level: 1, name: 'Nano Banana 2.1 is here' })
     ).toBeVisible()
     await expect(
-      page.getByRole('link', { name: 'RUN NANO BANANA' })
+      page.getByRole('link', { name: 'READ THE GUIDE' })
     ).toBeVisible()
   })
 
@@ -18,7 +18,7 @@ test.describe('Nano Banana launch page placeholder', () => {
     await page.goto('/zh-CN/nano-banana')
 
     await expect(
-      page.getByRole('heading', { level: 1, name: 'Nano Banana 熟了' })
+      page.getByRole('heading', { level: 1, name: 'Nano Banana 2.1 来了' })
     ).toBeVisible()
   })
 })

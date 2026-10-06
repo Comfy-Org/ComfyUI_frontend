@@ -7856,18 +7856,13 @@ Enterprise`
     'zh-CN': '更新于 2026 年 10 月'
   },
   'nanoBanana.hero.title': {
-    en: 'Nano Banana\nis now ripe',
-    'zh-CN': 'Nano Banana 熟了'
+    en: 'Nano Banana 2.1 is here',
+    'zh-CN': 'Nano Banana 2.1 来了'
   },
   'nanoBanana.hero.description': {
-    en: 'Placeholder copy. Turn a plain language brief into a finished image, or revise an existing visual without rebuilding it from scratch. Nano Banana brings generation, reference guided creation, and precise editing into ComfyUI workflows through Partner Nodes.',
+    en: "Google's latest Gemini image model, now in Comfy. It generates and edits realistic visuals, consistent faces, and clear text at up to 4K, for less than Nano Banana 2.",
     'zh-CN':
-      '占位文案。用自然语言简报生成完整图像，或在无需从头制作的情况下修改现有视觉内容。Nano Banana 通过合作伙伴节点，将图像生成、参考图引导创作与精确编辑带入 ComfyUI 工作流。'
-  },
-  'nanoBanana.hero.descriptionMobile': {
-    en: 'Placeholder copy. Turn a plain language brief into a finished image, or revise an existing visual without starting over. Nano Banana runs in ComfyUI through Partner Nodes.',
-    'zh-CN':
-      '占位文案。用自然语言简报生成完整图像，或无需从头修改现有视觉内容。Nano Banana 通过合作伙伴节点在 ComfyUI 中运行。'
+      'Google 最新的 Gemini 图像模型，现已登陆 Comfy。它可以生成和编辑逼真的视觉内容，保持人物面部一致，并以最高 4K 分辨率呈现清晰文字，而费用低于 Nano Banana 2。'
   },
   'nanoBanana.hero.tagTextToImage': {
     en: 'Text to Image',
@@ -7882,16 +7877,8 @@ Enterprise`
     'zh-CN': '合作伙伴节点'
   },
   'nanoBanana.hero.primaryCta': {
-    en: 'RUN NANO BANANA',
-    'zh-CN': '运行 Nano Banana'
-  },
-  'nanoBanana.hero.secondaryCta': {
     en: 'READ THE GUIDE',
     'zh-CN': '查看教程'
-  },
-  'nanoBanana.showcase.cta': {
-    en: 'TRY NOW',
-    'zh-CN': '立即试用'
   },
   'nanoBanana.showcase.photography.heading': {
     en: 'Shot like it happened.',
@@ -7929,7 +7916,6 @@ Enterprise`
     en: 'TRY FREE',
     'zh-CN': '免费试用'
   },
-  'nanoBanana.faq.heading': { en: 'Q&A', 'zh-CN': '问答' },
   'nanoBanana.runOptions.heading': {
     en: 'One engine, every way to run it',
     'zh-CN': '同一引擎，多种运行方式'
