@@ -73,12 +73,19 @@ function latestUsage(
   }
 }
 
+function usageFor(
+  usageData: FeatureUsageRecord,
+  featureId: string
+): FeatureUsage | undefined {
+  return Object.hasOwn(usageData, featureId) ? usageData[featureId] : undefined
+}
+
 function mergeUsageData(...records: FeatureUsageRecord[]): FeatureUsageRecord {
   const featureIds = new Set(records.flatMap(Object.keys))
   return Object.fromEntries(
     [...featureIds].flatMap((featureId) => {
       const usage = records.reduce<FeatureUsage | undefined>(
-        (latest, record) => latestUsage(latest, record[featureId]),
+        (latest, record) => latestUsage(latest, usageFor(record, featureId)),
         undefined
       )
       return usage ? [[featureId, usage]] : []
@@ -161,7 +168,7 @@ function persistUsageData(
     )
     usageData = {
       ...mergedUsageData,
-      [featureId]: incrementUsage(mergedUsageData[featureId], now)
+      [featureId]: incrementUsage(usageFor(mergedUsageData, featureId), now)
     }
     const newValue = JSON.stringify(usageData)
 
@@ -210,7 +217,9 @@ export function useFeatureUsageTracker(featureId: string) {
   const usageData = useStorage<FeatureUsageRecord>(STORAGE_KEY, {})
   let observedResetVersions = new Map(resetVersions)
 
-  const usage = computed(() => normalizeUsageData(usageData.value)[featureId])
+  const usage = computed(() =>
+    usageFor(normalizeUsageData(usageData.value), featureId)
+  )
   const useCount = computed(() => usage.value?.useCount ?? 0)
 
   function trackUsage() {
@@ -220,7 +229,7 @@ export function useFeatureUsageTracker(featureId: string) {
       normalizedUsageData,
       observedResetVersions
     )
-    const existing = currentUsageData[featureId]
+    const existing = usageFor(currentUsageData, featureId)
     observedResetVersions = new Map(resetVersions)
 
     usageData.value = persistUsageData(featureId, currentUsageData, now) ?? {

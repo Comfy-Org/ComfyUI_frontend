@@ -431,6 +431,25 @@ describe('useFeatureUsageTracker', () => {
     })
   })
 
+  it('tracks feature IDs that match object prototype properties', () => {
+    const tracker = useFeatureUsageTracker('toString')
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        toString: { useCount: 5, firstUsed: 1_000, lastUsed: 2_000 }
+      })
+    )
+
+    tracker.trackUsage()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored.toString).toEqual({
+      useCount: 6,
+      firstUsed: 1_000,
+      lastUsed: Date.now()
+    })
+  })
+
   it.for([
     { useCount: null, firstUsed: 1_000, lastUsed: 2_000 },
     { useCount: '', firstUsed: 1_000, lastUsed: 2_000 },
