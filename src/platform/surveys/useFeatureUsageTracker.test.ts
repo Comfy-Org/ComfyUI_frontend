@@ -115,6 +115,27 @@ describe('useFeatureUsageTracker', () => {
     expect(stored['pending-feature-100']?.useCount).toBe(1)
   })
 
+  it('evicts the least recently used pending feature', () => {
+    const setItem = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new DOMException('Storage quota exceeded', 'QuotaExceededError')
+    })
+    const refreshedTracker = useFeatureUsageTracker('refreshed-pending-feature')
+    refreshedTracker.trackUsage()
+    Array.from({ length: 99 }, (_, index) =>
+      useFeatureUsageTracker(`older-pending-feature-${index}`).trackUsage()
+    )
+    refreshedTracker.trackUsage()
+    useFeatureUsageTracker('newest-pending-feature').trackUsage()
+    setItem.mockRestore()
+
+    useFeatureUsageTracker('pending-recency-recovery').trackUsage()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored['refreshed-pending-feature']?.useCount).toBe(2)
+    expect(stored).not.toHaveProperty('older-pending-feature-0')
+    expect(stored['newest-pending-feature']?.useCount).toBe(1)
+  })
+
   it('discards compacted pending usage from a deleted generation', () => {
     const featureId = 'bounded-deleted-increments'
     const tracker = useFeatureUsageTracker(featureId)
@@ -613,6 +634,52 @@ describe('useFeatureUsageTracker', () => {
 
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
     expect(stored[featureId]?.useCount).toBe(6)
+  })
+
+  it('keeps a reset pending when its raw future baseline is unchanged', () => {
+    vi.setSystemTime(1_000)
+    const featureId = 'unchanged-future-reset-baseline'
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        [featureId]: { useCount: 5, firstUsed: 500_000, lastUsed: 500_000 }
+      })
+    )
+    const tracker = useFeatureUsageTracker(featureId)
+    const setItem = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new DOMException('Storage quota exceeded', 'QuotaExceededError')
+    })
+    tracker.reset()
+    setItem.mockRestore()
+    vi.setSystemTime(200_000)
+
+    useFeatureUsageTracker('unchanged-future-reset-trigger').trackUsage()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored).not.toHaveProperty(featureId)
+  })
+
+  it('keeps every pending reset when storage remains unavailable', () => {
+    const resetUsage = Object.fromEntries(
+      Array.from({ length: 101 }, (_, index) => [
+        `pending-reset-${index}`,
+        { useCount: 1, firstUsed: 1_000, lastUsed: 1_000 }
+      ])
+    )
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(resetUsage))
+    const setItem = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new DOMException('Storage quota exceeded', 'QuotaExceededError')
+    })
+    Array.from({ length: 101 }, (_, index) =>
+      useFeatureUsageTracker(`pending-reset-${index}`).reset()
+    )
+    setItem.mockRestore()
+
+    useFeatureUsageTracker('pending-reset-recovery').trackUsage()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored).not.toHaveProperty('pending-reset-0')
+    expect(stored).not.toHaveProperty('pending-reset-100')
   })
 
   it('drops pending usage when an older generation is restored', () => {
@@ -2539,6 +2606,33 @@ describe('useFeatureUsageTracker', () => {
       useCount: 3,
       firstUsed: 3_000,
       lastUsed: 3_000
+    })
+  })
+
+  it('preserves a peer generation newer than a stale pending delta', () => {
+    vi.setSystemTime(1_000)
+    const featureId = 'peer-newer-than-pending-delta'
+    const tracker = useFeatureUsageTracker(featureId)
+    const setItem = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new DOMException('Storage quota exceeded', 'QuotaExceededError')
+    })
+    tracker.trackUsage()
+    setItem.mockRestore()
+    vi.setSystemTime(400_000)
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        [featureId]: { useCount: 1, firstUsed: 400_000, lastUsed: 400_000 }
+      })
+    )
+
+    useFeatureUsageTracker('newer-peer-trigger').trackUsage()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored[featureId]).toEqual({
+      useCount: 2,
+      firstUsed: 400_000,
+      lastUsed: 400_000
     })
   })
 
