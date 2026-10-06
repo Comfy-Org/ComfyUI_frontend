@@ -84,6 +84,11 @@ export class AuthStoreError extends Error {
   }
 }
 
+const SSO_SIGN_IN_PROVIDERS: ReadonlySet<string> = new Set([
+  'saml.workos',
+  'oidc.workos'
+])
+
 async function webSessionRunToken(
   requests: WebSessionRequests
 ): Promise<string | undefined> {
@@ -158,6 +163,14 @@ export const useAuthStore = defineStore('auth', () => {
       ? sessionUser.value
       : undefined
   )
+  /** With SSO on, whether the server says the session signed in through SSO. */
+  const signedInWithSso = computed(
+    () =>
+      flags.ssoEnabled &&
+      SSO_SIGN_IN_PROVIDERS.has(sessionUser.value?.signInProvider ?? '')
+  )
+  const sessionOnlyRequests = (): WebSessionRequests | undefined =>
+    sessionOnlyUser.value ? webSessionRequests() : undefined
 
   function getShareAuthMetadata() {
     const shareId = getPreservedQueryParam(
@@ -308,6 +321,10 @@ export const useAuthStore = defineStore('auth', () => {
    *   - null if no authentication method is available
    */
   const getAuthHeader = async (): Promise<AuthHeader | null> => {
+    const sessionOnly = sessionOnlyRequests()
+    if (sessionOnly)
+      return headerFromToken(await webSessionRunToken(sessionOnly))
+
     if (flags.unifiedCloudAuthEnabled) return getUnifiedAuthHeader()
 
     if (webSessionRequests()) return getUserAuthHeader()
@@ -386,6 +403,10 @@ export const useAuthStore = defineStore('auth', () => {
    * it is sent directly instead of minting a token.
    */
   const getWorkspaceAuthHeader = async (): Promise<AuthHeader | null> => {
+    const sessionOnly = sessionOnlyRequests()
+    if (sessionOnly)
+      return headerFromToken(await webSessionRunToken(sessionOnly))
+
     if (flags.unifiedCloudAuthEnabled) {
       if (await awaitUnifiedMint()) return null
       const token = useWorkspaceAuthStore().getUnifiedToken()
@@ -418,6 +439,9 @@ export const useAuthStore = defineStore('auth', () => {
    * Use this for WebSocket connections and backend node auth.
    */
   const getAuthToken = async (): Promise<string | undefined> => {
+    const sessionOnly = sessionOnlyRequests()
+    if (sessionOnly) return webSessionRunToken(sessionOnly)
+
     if (flags.unifiedCloudAuthEnabled) return getUnifiedAuthToken()
 
     const workspaceAuth = useWorkspaceAuthStore()
@@ -807,8 +831,15 @@ export const useAuthStore = defineStore('auth', () => {
 
   const logout = async (): Promise<void> =>
     executeAuthAction(async () => {
+      // Local and Desktop keep the key: partner nodes run on it.
+      const dropsStoredApiKey =
+        flags.ssoEnabled && flags.unifiedWebSessionEnabled
       await useCloudWebSessionStore().signOut()
       if (currentUser.value) await firebaseIdentity.signOut()
+      const apiKeyStore = useApiKeyAuthStore()
+      if (dropsStoredApiKey && apiKeyStore.getApiKey() !== null) {
+        await apiKeyStore.clearStoredApiKey()
+      }
     })
 
   const sendPasswordReset = async (email: string): Promise<void> =>
@@ -938,6 +969,7 @@ export const useAuthStore = defineStore('auth', () => {
     isAuthenticated,
     sessionUser,
     sessionOnlyUser,
+    signedInWithSso,
     userEmail,
     userId,
 
