@@ -68,6 +68,36 @@ describe('useFeatureUsageTracker', () => {
     expect(tracker.useCount.value).toBe(102)
   })
 
+  it('discards compacted pending usage from a deleted generation', () => {
+    const featureId = 'bounded-deleted-increments'
+    const tracker = useFeatureUsageTracker(featureId)
+    const setItem = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new DOMException('Storage quota exceeded', 'QuotaExceededError')
+    })
+    Array.from({ length: 101 }, (_, index) => {
+      vi.setSystemTime(index + 1)
+      tracker.trackUsage()
+    })
+    setItem.mockRestore()
+    const deletedValue = JSON.stringify({
+      [featureId]: { useCount: 51, firstUsed: 1, lastUsed: 51 }
+    })
+    localStorage.removeItem(STORAGE_KEY)
+    window.dispatchEvent(
+      new StorageEvent('storage', {
+        key: STORAGE_KEY,
+        oldValue: deletedValue,
+        newValue: null,
+        storageArea: localStorage
+      })
+    )
+    vi.setSystemTime(102)
+
+    tracker.trackUsage()
+
+    expect(tracker.useCount.value).toBe(52)
+  })
+
   it('keeps only usage recorded after a deleted generation', () => {
     vi.setSystemTime(1_000)
     const featureId = 'coalesced-after-deletion'

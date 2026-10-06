@@ -424,8 +424,19 @@ function incrementPendingDelta(delta: PendingUsageDelta, now: number) {
 
 function boundPendingDeltas(pendingDeltas: PendingUsageDelta[]) {
   if (pendingDeltas.length <= MAX_PENDING_USAGE_DELTAS) return pendingDeltas
-  const [oldest, secondOldest, ...remainingDeltas] = pendingDeltas
+  const mergeIndex = pendingDeltas.findIndex((delta, index) => {
+    const previousDelta = pendingDeltas[index - 1]
+    return (
+      index > 0 &&
+      (previousDelta.baseUsage === delta.baseUsage ||
+        sameUsage(previousDelta.baseUsage, delta.baseUsage))
+    )
+  })
+  if (mergeIndex < 1) return pendingDeltas
+  const oldest = pendingDeltas[mergeIndex - 1]
+  const secondOldest = pendingDeltas[mergeIndex]
   return [
+    ...pendingDeltas.slice(0, mergeIndex - 1),
     {
       useCountDelta: Math.min(
         oldest.useCountDelta + secondOldest.useCountDelta,
@@ -433,9 +444,10 @@ function boundPendingDeltas(pendingDeltas: PendingUsageDelta[]) {
       ),
       firstUsed: Math.min(oldest.firstUsed, secondOldest.firstUsed),
       lastUsed: Math.max(oldest.lastUsed, secondOldest.lastUsed),
-      recordedAt: Math.max(oldest.recordedAt, secondOldest.recordedAt)
+      recordedAt: Math.min(oldest.recordedAt, secondOldest.recordedAt),
+      baseUsage: oldest.baseUsage
     },
-    ...remainingDeltas
+    ...pendingDeltas.slice(mergeIndex + 1)
   ]
 }
 
