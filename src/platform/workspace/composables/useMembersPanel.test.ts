@@ -1119,7 +1119,7 @@ describe('useMembersPanel', () => {
     })
 
     // The ended treatment is team-scoped: a lapsed personal subscription is
-    // the upgrade banner's state, not "Your team plan has ended".
+    // the upgrade banner's state, not "Your Team plan has ended".
     it('keeps a lapsed personal plan out of the team-ended treatment', async () => {
       mockIsTeamPlan.value = false
       mockMaxSeats.value = 1
