@@ -511,6 +511,12 @@ test('zooms the Relight photo from the control, ctrl+wheel and the keys, and sti
     .toBeCloseTo(fitted.width, 0)
 })
 
+async function settled(locator: Locator) {
+  await locator.evaluate((element) =>
+    Promise.all(element.getAnimations().map((animation) => animation.finished))
+  )
+}
+
 async function dragTo(page: Page, from: Locator, x: number, y: number) {
   const dot = await from.boundingBox()
   if (!dot) throw new Error('no dot')
@@ -529,7 +535,8 @@ test('turns and raises a Relight light from the light map, and hides the map', a
   const app = page.getByTestId('relight')
   await app.getByRole('button', { name: 'Try the example' }).click()
   const map = app.getByRole('group', { name: 'Light map' })
-  await expect(map).toBeVisible()
+  await expect(map).toHaveAttribute('data-corner', 'top-right')
+  await settled(map)
   const top = map.getByRole('slider', { name: 'Warm key, top view' })
   const side = map.getByRole('slider', { name: 'Warm key, side view' })
 
