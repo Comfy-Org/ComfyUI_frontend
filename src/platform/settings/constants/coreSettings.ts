@@ -790,10 +790,7 @@ export const CORE_SETTINGS: SettingParams[] = [
   },
   {
     id: 'Comfy.Pointer.ClickBufferTime',
-    category: ['LiteGraph', 'Pointer', 'ClickBufferTime'],
     name: 'Pointer click drift delay (deprecated)',
-    tooltip:
-      'No longer used. A press becomes a drag only when the pointer moves further than the click drift distance.',
     type: 'hidden',
     deprecated: true,
     defaultValue: 32,

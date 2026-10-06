@@ -115,9 +115,9 @@ the interpretation of a gesture, and both renderers feed it.
      and any drop target.
    - `pressed` + `cancel` → `idle`. Preserves the previous-click record and
      emits no command.
-   - `dragging` + `cancel` → `idle`. Emits `cancelDrag`, which the
-     interpreter uses to release the drag, restore canvas flags, and release
-     pointer capture. This transition clears the previous-click record.
+   - `dragging` + `cancel` → `idle`. Preserves the previous-click record and
+     emits no command. During migration, `CanvasPointer.reset()` runs `finally`
+     and releases pointer capture.
    - Any other pair returns the state unchanged with no commands.
 
 2. **Commands are the only output.** The reducer returns plain, serializable
@@ -175,7 +175,9 @@ the interpretation of a gesture, and both renderers feed it.
   promoting move and invokes `onDrag` for movement inside the threshold.
   Legacy `onDrag` consumers such as number-widget drag adjustment depend on
   that in-threshold movement, so the `CanvasPointer` adapter forwards
-  `movePress` to `onDrag` while the Vue adapter ignores it. Characterization
+  `movePress` to `onDrag` while the Vue adapter ignores it. A number-widget
+  press that moves within the drift threshold can therefore adjust the value
+  and then open its prompt on release. Characterization
   tests cover every current `onDrag` assignment and record the callback count.
 - The adapter that accepts `down` owns the gesture until `up` or `cancel`.
   Renderer, mode, and feature-flag changes take effect only after the gesture

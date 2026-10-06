@@ -339,10 +339,6 @@
     "name": "Show version updates",
     "tooltip": "Show updates for new models, and major new features."
   },
-  "Comfy_Pointer_ClickBufferTime": {
-    "name": "Pointer click drift delay (deprecated)",
-    "tooltip": "No longer used. A press becomes a drag only when the pointer moves further than the click drift distance."
-  },
   "Comfy_Pointer_ClickDrift": {
     "name": "Pointer click drift (maximum distance)",
     "tooltip": "If the pointer moves more than this distance while holding a button down, it is considered dragging (rather than clicking).\n\nHelps prevent objects from being unintentionally nudged if the pointer is moved whilst clicking."
