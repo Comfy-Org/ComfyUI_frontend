@@ -1842,6 +1842,29 @@ describe('useFeatureUsageTracker', () => {
     })
   })
 
+  it('keeps independently repaired timestamps ordered', () => {
+    vi.setSystemTime(10_000)
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        'inverted-after-repair': {
+          useCount: 5,
+          firstUsed: 200_000,
+          lastUsed: 500_000
+        }
+      })
+    )
+
+    useFeatureUsageTracker('inverted-after-repair').trackUsage()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored['inverted-after-repair']).toEqual({
+      useCount: 6,
+      firstUsed: 10_000,
+      lastUsed: 10_000
+    })
+  })
+
   it('keeps pending usage self-consistent with a future baseline', () => {
     vi.setSystemTime(1_000)
     const featureId = 'future-pending-baseline'

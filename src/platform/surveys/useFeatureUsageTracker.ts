@@ -312,17 +312,14 @@ function incrementUsage(
   usage: FeatureUsage | undefined,
   now: number
 ): FeatureUsage {
-  const repairedUsage = usage
-    ? {
-        ...usage,
-        firstUsed: repairFutureTimestamp(usage.firstUsed, now),
-        lastUsed: repairFutureTimestamp(usage.lastUsed, now)
-      }
-    : undefined
+  if (!usage) {
+    return { useCount: 1, firstUsed: now, lastUsed: now }
+  }
+  const lastUsed = repairFutureTimestamp(usage.lastUsed, now)
   return {
-    useCount: Math.min((repairedUsage?.useCount ?? 0) + 1, MAX_USAGE_COUNT),
-    firstUsed: repairedUsage?.firstUsed ?? now,
-    lastUsed: Math.max(repairedUsage?.lastUsed ?? now, now)
+    useCount: Math.min(usage.useCount + 1, MAX_USAGE_COUNT),
+    firstUsed: Math.min(repairFutureTimestamp(usage.firstUsed, now), lastUsed),
+    lastUsed: Math.max(lastUsed, now)
   }
 }
 
