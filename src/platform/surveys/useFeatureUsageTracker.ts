@@ -194,7 +194,8 @@ function didUsageAdvance(
     storedUsage.useCount > baseline.useCount ||
     (isOrderableUsage(storedUsage) &&
       isOrderableUsage(baseline) &&
-      storedUsage.lastUsed > baseline.lastUsed)
+      (storedUsage.firstUsed > baseline.firstUsed ||
+        storedUsage.lastUsed > baseline.lastUsed))
   )
 }
 

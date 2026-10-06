@@ -429,6 +429,33 @@ describe('useFeatureUsageTracker', () => {
     expect(stored['external-usage-after-reset']?.useCount).toBe(2)
   })
 
+  it('retires a failed reset for a recreated same-timestamp generation', () => {
+    const featureId = 'same-timestamp-generation-after-reset'
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        [featureId]: { useCount: 5, firstUsed: 1_000, lastUsed: 2_000 }
+      })
+    )
+    const tracker = useFeatureUsageTracker(featureId)
+    const setItem = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new DOMException('Storage quota exceeded', 'QuotaExceededError')
+    })
+    tracker.reset()
+    setItem.mockRestore()
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        [featureId]: { useCount: 1, firstUsed: 2_000, lastUsed: 2_000 }
+      })
+    )
+
+    useFeatureUsageTracker('same-timestamp-reset-trigger').trackUsage()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored[featureId]?.useCount).toBe(1)
+  })
+
   it('keeps a failed reset through unrelated external usage', () => {
     const tracker = useFeatureUsageTracker('reset-before-unrelated-usage')
     tracker.trackUsage()
