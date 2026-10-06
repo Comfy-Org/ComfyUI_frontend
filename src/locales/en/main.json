@@ -3034,10 +3034,20 @@
       "keepSubscription": "Keep subscription",
       "confirmCancel": "Cancel subscription",
       "failed": "Failed to cancel subscription",
-      "workspaceChanged": "Your active workspace changed. Switch back and try again.",
-      "offerUnavailable": "This option isn't available. Please choose another option.",
-      "discountApplied": "Your discount has been applied, so this subscription wasn't canceled. Close this window to see your updated plan.",
-      "discountRefreshFailed": "Your discount was applied. Refresh the page to see your updated plan."
+      "workspaceChanged": "Your active workspace changed. Switch back and try again."
+    },
+    "retentionOffer": {
+      "title": "Before you cancel",
+      "headline": "Stay for {percent}% off",
+      "body": "Keep your plan for {discounted} a month instead of {regular} for the next month, starting with your renewal on {date}. | Keep your plan for {discounted} a month instead of {regular} for the next {months} months, starting with your renewal on {date}.",
+      "accept": "Keep my plan",
+      "continueToCancel": "Continue to cancel",
+      "applying": "Applying your discount…",
+      "applied": "Your discount is applied. You'll get {percent}% off for the next month. | Your discount is applied. You'll get {percent}% off for the next {months} months.",
+      "failed": "We couldn't apply this offer, and your plan hasn't changed. You can still cancel.",
+      "unconfirmed": "We're still confirming your discount. Check again in a moment, or contact support if this doesn't clear up.",
+      "checkAgain": "Check again",
+      "pendingToast": "Your discount is still being confirmed. Check your plan before making another billing change."
     },
     "downgrade": {
       "title": "Change to {plan} plan?",

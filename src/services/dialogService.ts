@@ -36,6 +36,8 @@ import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/co
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
 import type { DowngradeToPersonalResult } from '@/platform/workspace/composables/useDowngradeToPersonal'
+import type { RetentionOfferDialogOptions } from '@/platform/cloud/subscription/launchCancellationFlow'
+import type { RetentionOfferOutcome } from '@/platform/cloud/subscription/utils/retentionOffer'
 
 // Lazy loaders for dialogs - components are loaded on first use
 const lazyApiNodesSignInContent = () =>
@@ -889,6 +891,33 @@ export const useDialogService = () => {
     })
   }
 
+  async function showRetentionOfferDialog(
+    options: RetentionOfferDialogOptions
+  ): Promise<RetentionOfferOutcome> {
+    const { default: component } =
+      await import('@/platform/cloud/subscription/components/RetentionOfferDialogContent.vue')
+    const key = 'retention-offer'
+    return new Promise((resolve) => {
+      dialogStore.showDialog({
+        key,
+        component,
+        props: {
+          ...options,
+          onDecide: (outcome: RetentionOfferOutcome) => {
+            resolve(outcome)
+            dialogStore.closeDialog({ key })
+          }
+        },
+        dialogComponentProps: {
+          ...workspaceDialogProps,
+          closable: false,
+          dismissableMask: false,
+          onRemoved: () => resolve('dismissed')
+        }
+      })
+    })
+  }
+
   async function showCancelSubscriptionFlow(cancelAt?: string) {
     const launchWorkspaceId = useTeamWorkspaceStore().activeWorkspaceId
     const cancellationFlow =
@@ -896,6 +925,7 @@ export const useDialogService = () => {
     return cancellationFlow.launchCancellationFlow({
       cancelAt,
       launchWorkspaceId,
+      showRetentionOffer: showRetentionOfferDialog,
       showFallback: ({
         flowAlreadyOpened = false,
         flowAlreadyConfirmed = false,

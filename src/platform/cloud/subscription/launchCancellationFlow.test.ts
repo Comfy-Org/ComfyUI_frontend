@@ -1,22 +1,22 @@
-import { useToastStore } from '@/platform/updates/common/toastStore'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import type { RetentionFlowResponse } from '@comfyorg/ingest-types'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { Mock } from 'vitest'
 import { computed } from 'vue'
 
+import type { BillingType, SubscriptionInfo } from '@/composables/billing/types'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import type { RetentionOfferOutcome } from '@/platform/cloud/subscription/utils/retentionOffer'
 import { useTelemetry } from '@/platform/telemetry'
 import { TelemetryRegistry } from '@/platform/telemetry/TelemetryRegistry'
 import { DatadogRumTelemetryProvider } from '@/platform/telemetry/providers/cloud/DatadogRumTelemetryProvider'
 import { reportError } from '@/platform/telemetry/reportError'
-
-import type { BillingType, SubscriptionInfo } from '@/composables/billing/types'
-import type {
-  ChurnkeySession,
-  ChurnkeyShowOptions
-} from '@/platform/cloud/churnkey/churnkeyClient'
-import type { ChurnkeySessionOutcome } from '@/platform/cloud/churnkey/types'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { BillingRail } from '@/platform/workspace/api/workspaceApi'
+import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApiError'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+
+import type { RetentionOfferDialogOptions } from './launchCancellationFlow'
+import { launchCancellationFlow } from './launchCancellationFlow'
 
 const mocks = vi.hoisted(
   (): {
@@ -27,14 +27,12 @@ const mocks = vi.hoisted(
     }
     activeWorkspaceId: string | null
     billingRail: BillingRail | null
-    prepare: Mock<() => Promise<ChurnkeySession | null>>
   } => ({
     billingType: { value: 'workspace' },
     tier: { value: 'PRO' },
     subscription: { value: null },
     activeWorkspaceId: 'workspace-1',
-    billingRail: 'stripe',
-    prepare: vi.fn()
+    billingRail: 'stripe'
   })
 )
 
@@ -44,24 +42,42 @@ vi.mock<unknown>(import('@datadog/browser-rum'), () => ({
 }))
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
-
 vi.mock(import('@/composables/billing/useBillingContext'))
-
 vi.mock(import('@/i18n'))
-
-vi.mock(import('@/platform/cloud/churnkey/churnkeyClient'), () => ({
-  prepareChurnkey: mocks.prepare
-}))
-
 vi.mock(import('@/platform/telemetry'))
 vi.mock(import('@/platform/telemetry/reportError'))
+vi.mock(import('@/platform/workspace/api/workspaceApi'))
 
-import { launchCancellationFlow } from './launchCancellationFlow'
+const offer = {
+  id: 'save_30_next_3_v1',
+  percent_off: 30,
+  duration_in_months: 3
+}
 
-function session(
-  show: (options: ChurnkeyShowOptions) => Promise<ChurnkeySessionOutcome>
-): ChurnkeySession {
-  return { show }
+function retentionFlow(
+  overrides: Partial<RetentionFlowResponse> = {}
+): RetentionFlowResponse {
+  return {
+    session_id: '00000000-0000-4000-8000-000000000001',
+    expires_at: 2_000_000_000,
+    subscription: {
+      currency: 'usd',
+      unit_amount: 2000,
+      quantity: 1,
+      period_end: 2_000_000_000
+    },
+    ...overrides
+  }
+}
+
+function offersRetention() {
+  vi.mocked(workspaceApi.prepareRetentionFlow).mockResolvedValue(
+    retentionFlow({ experiment_variant: offer.id, offer })
+  )
+}
+
+function decides(outcome: RetentionOfferOutcome) {
+  return vi.fn(async (_options: RetentionOfferDialogOptions) => outcome)
 }
 
 beforeEach(() => {
@@ -89,16 +105,12 @@ beforeEach(() => {
     useTeamWorkspaceStore(),
     'activeWorkspaceId',
     'get'
-  ).mockImplementation(() => {
-    return mocks.activeWorkspaceId
-  })
+  ).mockImplementation(() => mocks.activeWorkspaceId)
   vi.spyOn(
     useTeamWorkspaceStore(),
     'activeWorkspaceBillingRail',
     'get'
-  ).mockImplementation(() => {
-    return mocks.billingRail
-  })
+  ).mockImplementation(() => mocks.billingRail)
 })
 
 describe('launchCancellationFlow', () => {
@@ -112,72 +124,28 @@ describe('launchCancellationFlow', () => {
     mocks.billingRail = 'stripe'
   })
 
-  it('refreshes billing after a discount without canceling or recording abandonment', async () => {
-    mocks.prepare.mockResolvedValue(
-      session(async () => ({ type: 'discount-applied' }))
-    )
-    const showFallback = vi.fn()
+  it.for([
+    { name: 'legacy billing', billingType: 'legacy', billingRail: 'stripe' },
+    {
+      name: 'Metronome billing',
+      billingType: 'workspace',
+      billingRail: 'metronome'
+    }
+  ] as const)(
+    'uses the standard dialog for $name',
+    async ({ billingType, billingRail }) => {
+      mocks.billingType.value = billingType
+      mocks.billingRail = billingRail
+      const showFallback = vi.fn()
+      const showRetentionOffer = decides('dismissed')
 
-    await launchCancellationFlow({ showFallback })
+      await launchCancellationFlow({ showFallback, showRetentionOffer })
 
-    expect(useBillingContext().fetchStatus).toHaveBeenCalledOnce()
-    expect(useBillingContext().cancelSubscription).not.toHaveBeenCalled()
-    expect(showFallback).not.toHaveBeenCalled()
-    expect(
-      useTelemetry()?.trackSubscriptionCancellation
-    ).toHaveBeenCalledExactlyOnceWith(
-      'flow_opened',
-      expect.objectContaining({ source: 'cancel_plan_menu' })
-    )
-  })
-
-  it('tells the user without reopening cancellation when billing refresh fails after a discount', async () => {
-    const error = new Error('refresh offline')
-    vi.mocked(useBillingContext().fetchStatus).mockRejectedValue(error)
-    mocks.prepare.mockResolvedValue(
-      session(async () => ({ type: 'discount-applied' }))
-    )
-    const showFallback = vi.fn()
-
-    await launchCancellationFlow({ showFallback })
-
-    expect(showFallback).not.toHaveBeenCalled()
-    expect(reportError).toHaveBeenCalledWith(error, {
-      surface: 'billing',
-      errorType: 'error_refreshing_billing_after_churnkey_discount'
-    })
-    expect(useToastStore().add).toHaveBeenCalledExactlyOnceWith(
-      expect.objectContaining({
-        severity: 'warn',
-        summary: 'subscription.cancelDialog.discountRefreshFailed'
-      })
-    )
-  })
-
-  it('does not refresh a different workspace after a discount', async () => {
-    mocks.prepare.mockResolvedValue(
-      session(async () => {
-        mocks.activeWorkspaceId = 'workspace-2'
-        return { type: 'discount-applied' }
-      })
-    )
-    const showFallback = vi.fn()
-
-    await launchCancellationFlow({ showFallback })
-
-    expect(useBillingContext().fetchStatus).not.toHaveBeenCalled()
-    expect(showFallback).not.toHaveBeenCalled()
-  })
-
-  it('uses the native dialog for legacy billing', async () => {
-    mocks.billingType.value = 'legacy'
-    const showFallback = vi.fn()
-
-    await launchCancellationFlow({ showFallback })
-
-    expect(showFallback).toHaveBeenCalledOnce()
-    expect(mocks.prepare).not.toHaveBeenCalled()
-  })
+      expect(showFallback).toHaveBeenCalledOnce()
+      expect(workspaceApi.prepareRetentionFlow).not.toHaveBeenCalled()
+      expect(showRetentionOffer).not.toHaveBeenCalled()
+    }
+  )
 
   it('keeps legacy cancellation available while workspace state initializes', async () => {
     mocks.billingType.value = 'legacy'
@@ -192,7 +160,8 @@ describe('launchCancellationFlow', () => {
         mocks.activeWorkspaceId = 'workspace-1'
         if (isScopeCurrent?.()) openDialog()
         return true
-      })
+      }),
+      showRetentionOffer: decides('dismissed')
     })
 
     expect(openDialog).toHaveBeenCalledOnce()
@@ -201,33 +170,7 @@ describe('launchCancellationFlow', () => {
     expect(scopeCurrent?.()).toBe(true)
   })
 
-  it('contains a failed native dialog for legacy billing', async () => {
-    mocks.billingType.value = 'legacy'
-    const fallbackError = new Error('dialog chunk unavailable')
-
-    await expect(
-      launchCancellationFlow({
-        showFallback: vi.fn().mockRejectedValue(fallbackError)
-      })
-    ).resolves.toBeUndefined()
-
-    expect(reportError).toHaveBeenCalledWith(
-      fallbackError,
-      expect.objectContaining({ level: 'error' })
-    )
-  })
-
-  it('uses the native dialog for Metronome billing', async () => {
-    mocks.billingRail = 'metronome'
-    const showFallback = vi.fn()
-
-    await launchCancellationFlow({ showFallback })
-
-    expect(showFallback).toHaveBeenCalledOnce()
-    expect(mocks.prepare).not.toHaveBeenCalled()
-  })
-
-  it('keeps the native Metronome dialog bound to its launch workspace', async () => {
+  it('keeps the standard Metronome dialog bound to its launch workspace', async () => {
     mocks.billingRail = 'metronome'
     const openDialog = vi.fn()
 
@@ -236,425 +179,188 @@ describe('launchCancellationFlow', () => {
         mocks.activeWorkspaceId = 'workspace-2'
         if (isScopeCurrent?.()) openDialog()
         return true
-      })
-    })
-
-    expect(openDialog).not.toHaveBeenCalled()
-    expect(mocks.prepare).not.toHaveBeenCalled()
-  })
-
-  it('uses the native dialog without telemetry when no session is available', async () => {
-    mocks.prepare.mockResolvedValue(null)
-    const showFallback = vi.fn()
-
-    await launchCancellationFlow({ showFallback })
-
-    expect(showFallback).toHaveBeenCalledOnce()
-    expect(useTelemetry()?.trackSubscriptionCancellation).not.toHaveBeenCalled()
-  })
-
-  it('cancels workspace billing through the existing API callback', async () => {
-    mocks.prepare.mockResolvedValue(
-      session(async (options) => {
-        await options.handleCancel('Too expensive')
-        return { type: 'closed' }
-      })
-    )
-    const showFallback = vi.fn()
-
-    await launchCancellationFlow({
-      cancelAt: '2026-08-02T00:00:00Z',
-      showFallback
-    })
-
-    expect(useBillingContext().cancelSubscription).toHaveBeenCalledOnce()
-    expect(
-      useTelemetry()?.trackSubscriptionCancellation
-    ).toHaveBeenNthCalledWith(1, 'flow_opened', {
-      source: 'cancel_plan_menu',
-      current_tier: 'pro',
-      cycle: 'yearly',
-      end_date: '2026-08-02T00:00:00Z'
-    })
-    expect(
-      useTelemetry()?.trackSubscriptionCancellation
-    ).toHaveBeenNthCalledWith(
-      2,
-      'confirmed',
-      expect.objectContaining({
-        cycle: 'yearly',
-        end_date: '2026-08-02T00:00:00Z'
-      })
-    )
-    expect(showFallback).not.toHaveBeenCalled()
-  })
-
-  it('tracks an abandoned flow when the user closes the embed', async () => {
-    mocks.prepare.mockResolvedValue(
-      session(async () => ({ type: 'abandoned' }))
-    )
-
-    await launchCancellationFlow({ showFallback: vi.fn() })
-
-    expect(
-      useTelemetry()?.trackSubscriptionCancellation
-    ).toHaveBeenLastCalledWith(
-      'abandoned',
-      expect.objectContaining({
-        cycle: 'yearly',
-        end_date: '2026-08-01T00:00:00Z'
-      })
-    )
-    expect(useBillingContext().cancelSubscription).not.toHaveBeenCalled()
-  })
-
-  it('falls back when preparation or the provider fails', async () => {
-    const preparationError = new Error('blocked by browser')
-    mocks.prepare.mockRejectedValueOnce(preparationError)
-    const preparationFallback = vi.fn(() => true)
-
-    await launchCancellationFlow({ showFallback: preparationFallback })
-
-    expect(preparationFallback).toHaveBeenCalledWith(
-      expect.objectContaining({ isScopeCurrent: expect.any(Function) })
-    )
-    expect(useTelemetry()?.trackSubscriptionCancellation).not.toHaveBeenCalled()
-    expect(reportError).toHaveBeenCalledWith(preparationError, {
-      surface: 'billing',
-      errorType: 'cloud_cancellation_vendor_fallback',
-      tags: {
-        failure_kind: 'degraded',
-        feature_area: 'billing',
-        operation: 'load',
-        outcome: 'recovered',
-        workspace_still_current: true
-      },
-      level: 'warning'
-    })
-
-    mocks.prepare.mockResolvedValueOnce(
-      session(async () => {
-        throw new Error('provider unavailable')
-      })
-    )
-    const runtimeFallback = vi.fn()
-
-    await launchCancellationFlow({ showFallback: runtimeFallback })
-
-    expect(runtimeFallback).toHaveBeenCalledWith(
-      expect.objectContaining({
-        flowAlreadyOpened: true,
-        isScopeCurrent: expect.any(Function)
-      })
-    )
-    expect(
-      useTelemetry()?.trackSubscriptionCancellation
-    ).toHaveBeenLastCalledWith(
-      'failed',
-      expect.objectContaining({
-        cycle: 'yearly',
-        end_date: '2026-08-01T00:00:00Z',
-        error_message: 'provider unavailable'
-      })
-    )
-    expect(useToastStore().add).not.toHaveBeenCalled()
-  })
-
-  it('keeps an unconfigured Churnkey environment silent', async () => {
-    mocks.prepare.mockResolvedValueOnce(null)
-    const showFallback = vi.fn()
-
-    await launchCancellationFlow({ showFallback })
-
-    expect(showFallback).toHaveBeenCalledOnce()
-    expect(reportError).not.toHaveBeenCalled()
-  })
-
-  it('reports and contains a failed fallback in an unconfigured environment', async () => {
-    mocks.prepare.mockResolvedValueOnce(null)
-    const fallbackError = new Error('dialog chunk unavailable')
-
-    await expect(
-      launchCancellationFlow({
-        showFallback: vi.fn().mockRejectedValue(fallbackError)
-      })
-    ).resolves.toBeUndefined()
-
-    expect(reportError).toHaveBeenCalledWith(
-      fallbackError,
-      expect.objectContaining({
-        tags: expect.objectContaining({
-          outcome: 'failed',
-          vendor_preparation_failed: false
-        }),
-        level: 'error'
-      })
-    )
-  })
-
-  it('records an abort when the workspace changes while fallback loads', async () => {
-    const preparationError = new Error('blocked by browser')
-    mocks.prepare.mockRejectedValueOnce(preparationError)
-
-    await launchCancellationFlow({
-      showFallback: vi.fn(async () => {
-        mocks.activeWorkspaceId = 'workspace-2'
-        return false
-      })
-    })
-
-    expect(reportError).toHaveBeenCalledWith(
-      preparationError,
-      expect.objectContaining({
-        tags: expect.objectContaining({
-          outcome: 'aborted',
-          workspace_still_current: false
-        })
-      })
-    )
-  })
-
-  it('records an abort when a scoped fallback declines to open', async () => {
-    const preparationError = new Error('blocked by browser')
-    mocks.prepare.mockRejectedValueOnce(preparationError)
-
-    await launchCancellationFlow({
-      showFallback: vi.fn(async () => {
-        mocks.activeWorkspaceId = 'workspace-2'
-        return false
-      })
-    })
-
-    expect(reportError).toHaveBeenLastCalledWith(
-      preparationError,
-      expect.objectContaining({
-        tags: expect.objectContaining({
-          outcome: 'aborted',
-          workspace_still_current: false
-        })
-      })
-    )
-  })
-
-  it('lets a lazy fallback skip opening after the workspace changes', async () => {
-    mocks.prepare.mockResolvedValueOnce(null)
-    const openDialog = vi.fn()
-
-    await launchCancellationFlow({
-      showFallback: vi.fn(async ({ isScopeCurrent } = {}) => {
-        await Promise.resolve()
-        mocks.activeWorkspaceId = 'workspace-2'
-        if (isScopeCurrent?.()) openDialog()
-        return false
-      })
+      }),
+      showRetentionOffer: decides('dismissed')
     })
 
     expect(openDialog).not.toHaveBeenCalled()
   })
 
-  it('classifies a fallback failure after a workspace switch as aborted', async () => {
-    mocks.prepare.mockResolvedValueOnce(null)
-    const fallbackError = new Error('dialog chunk unavailable')
+  it.for([
+    { workspaceStillCurrent: true, level: 'error', toast: true },
+    { workspaceStillCurrent: false, level: 'warning', toast: false }
+  ])(
+    'contains a standard dialog that fails to open (workspace current: $workspaceStillCurrent)',
+    async ({ workspaceStillCurrent, level, toast }) => {
+      mocks.billingType.value = 'legacy'
+      const fallbackError = new Error('dialog chunk unavailable')
 
-    await launchCancellationFlow({
-      showFallback: vi.fn(async () => {
-        mocks.activeWorkspaceId = 'workspace-2'
-        throw fallbackError
-      })
-    })
-
-    expect(reportError).toHaveBeenCalledWith(
-      fallbackError,
-      expect.objectContaining({
-        tags: expect.objectContaining({
-          failure_kind: 'degraded',
-          outcome: 'aborted',
-          workspace_still_current: false
-        }),
-        level: 'warning'
-      })
-    )
-  })
-
-  it('records an aborted fallback when the workspace changes during preparation', async () => {
-    const preparationError = new Error('blocked by browser')
-    mocks.prepare.mockImplementationOnce(async () => {
-      mocks.activeWorkspaceId = 'workspace-2'
-      throw preparationError
-    })
-    const showFallback = vi.fn()
-
-    await launchCancellationFlow({ showFallback })
-
-    expect(showFallback).not.toHaveBeenCalled()
-    expect(reportError).toHaveBeenCalledWith(
-      preparationError,
-      expect.objectContaining({
-        tags: expect.objectContaining({
-          outcome: 'aborted',
-          workspace_still_current: false
+      await expect(
+        launchCancellationFlow({
+          showFallback: vi.fn(async () => {
+            if (!workspaceStillCurrent) mocks.activeWorkspaceId = 'workspace-2'
+            throw fallbackError
+          }),
+          showRetentionOffer: decides('dismissed')
         })
-      })
-    )
-  })
+      ).resolves.toBeUndefined()
 
-  it('reports a failed fallback instead of claiming recovery', async () => {
-    mocks.prepare.mockRejectedValueOnce(new Error('blocked by browser'))
-    const fallbackError = new Error('dialog chunk unavailable')
+      expect(reportError).toHaveBeenCalledWith(
+        fallbackError,
+        expect.objectContaining({ level })
+      )
+      expect(vi.mocked(useToastStore().add).mock.calls.length > 0).toBe(toast)
+    }
+  )
 
-    await launchCancellationFlow({
-      showFallback: vi.fn().mockRejectedValue(fallbackError)
-    })
-
-    expect(reportError).toHaveBeenLastCalledWith(
-      expect.objectContaining({
-        message: 'dialog chunk unavailable',
-        stack: fallbackError.stack,
-        cause: expect.objectContaining({ message: 'blocked by browser' })
-      }),
-      {
-        surface: 'billing',
-        errorType: 'cloud_cancellation_vendor_fallback',
-        tags: {
-          failure_kind: 'caught_unexpected',
-          feature_area: 'billing',
-          operation: 'load',
-          outcome: 'failed',
-          vendor_stage: 'preparation',
-          vendor_preparation_failed: true,
-          workspace_still_current: true
-        },
-        level: 'error'
-      }
-    )
-  })
-
-  it('keeps the provider failure as the cause when its fallback also fails', async () => {
-    const providerError = new Error('provider unavailable')
-    const fallbackError = new Error('dialog chunk unavailable')
-    mocks.prepare.mockResolvedValueOnce(
-      session(async () => {
-        throw providerError
-      })
-    )
-
-    await launchCancellationFlow({
-      showFallback: vi.fn().mockRejectedValue(fallbackError)
-    })
-
-    expect(reportError).toHaveBeenLastCalledWith(
-      expect.objectContaining({
-        message: 'dialog chunk unavailable',
-        stack: fallbackError.stack,
-        cause: providerError
-      }),
-      expect.objectContaining({
-        tags: expect.objectContaining({ vendor_preparation_failed: false }),
-        level: 'error'
-      })
-    )
-  })
-
-  it('contains a frozen fallback error while preserving both failures', async () => {
-    const providerError = new Error('provider unavailable')
-    const fallbackCause = new Error('chunk network failure')
-    const fallbackError = Object.freeze(
-      new Error('dialog chunk unavailable', { cause: fallbackCause })
-    )
-    mocks.prepare.mockResolvedValueOnce(
-      session(async () => {
-        throw providerError
-      })
-    )
-
-    await expect(
-      launchCancellationFlow({
-        showFallback: vi.fn().mockRejectedValue(fallbackError)
-      })
-    ).resolves.toBeUndefined()
-
-    expect(reportError).toHaveBeenLastCalledWith(
-      expect.objectContaining({
-        stack: fallbackError.stack,
-        cause: providerError
-      }),
-      expect.anything()
-    )
-  })
-
-  it('falls back and records a failed cancel callback', async () => {
-    vi.mocked(useBillingContext().cancelSubscription).mockRejectedValue(
-      new Error('API down')
-    )
-    mocks.prepare.mockResolvedValue(
-      session(async (options) => {
-        await options.handleCancel('Too expensive')
-        return { type: 'abandoned' }
-      })
-    )
+  it.for([
+    {
+      name: 'offers are switched off',
+      error: new WorkspaceApiError('off', 503),
+      reported: false
+    },
+    {
+      name: 'the plan is ineligible',
+      error: new WorkspaceApiError('no', 422),
+      reported: false
+    },
+    {
+      name: 'billing-api fails',
+      error: new WorkspaceApiError('boom', 500),
+      reported: true
+    },
+    {
+      name: 'the request is lost',
+      error: new Error('Network Error'),
+      reported: true
+    }
+  ])('opens the standard dialog when $name', async ({ error, reported }) => {
+    vi.mocked(workspaceApi.prepareRetentionFlow).mockRejectedValue(error)
     const showFallback = vi.fn()
+    const showRetentionOffer = decides('dismissed')
 
-    await launchCancellationFlow({ showFallback })
+    await launchCancellationFlow({ showFallback, showRetentionOffer })
 
-    expect(useTelemetry()?.trackSubscriptionCancellation).toHaveBeenCalledWith(
-      'confirmed',
-      expect.anything()
-    )
-    expect(useTelemetry()?.trackSubscriptionCancellation).toHaveBeenCalledWith(
-      'failed',
-      expect.objectContaining({ error_message: 'API down' })
-    )
-    expect(showFallback).toHaveBeenCalledWith(
-      expect.objectContaining({
-        flowAlreadyOpened: true,
-        isScopeCurrent: expect.any(Function)
+    expect(showFallback).toHaveBeenCalledOnce()
+    expect(showRetentionOffer).not.toHaveBeenCalled()
+    expect(workspaceApi.recordRetentionFlowEvent).not.toHaveBeenCalled()
+    expect(vi.mocked(reportError).mock.calls.length > 0).toBe(reported)
+  })
+
+  it.for([
+    {
+      name: 'the control arm',
+      flow: retentionFlow({ experiment_variant: 'control' })
+    },
+    { name: 'a session outside the experiment', flow: retentionFlow() }
+  ])(
+    'records participation and opens the standard dialog for $name',
+    async ({ flow }) => {
+      vi.mocked(workspaceApi.prepareRetentionFlow).mockResolvedValue(flow)
+      const showFallback = vi.fn()
+      const showRetentionOffer = decides('dismissed')
+
+      await launchCancellationFlow({ showFallback, showRetentionOffer })
+
+      expect(
+        workspaceApi.recordRetentionFlowEvent
+      ).toHaveBeenCalledExactlyOnceWith({
+        session_id: flow.session_id,
+        event: 'flow_opened'
       })
-    )
+      expect(showFallback).toHaveBeenCalledExactlyOnceWith(
+        expect.not.objectContaining({ flowAlreadyOpened: true })
+      )
+      expect(showRetentionOffer).not.toHaveBeenCalled()
+    }
+  )
+
+  it('shows the offer bound to its session and launch workspace', async () => {
+    offersRetention()
+    const showRetentionOffer = decides('retained')
+
+    await launchCancellationFlow({ showFallback: vi.fn(), showRetentionOffer })
+
+    expect(showRetentionOffer).toHaveBeenCalledExactlyOnceWith({
+      offer,
+      subscription: retentionFlow().subscription,
+      sessionId: retentionFlow().session_id,
+      workspaceId: 'workspace-1',
+      isScopeCurrent: expect.any(Function)
+    })
+    expect(
+      workspaceApi.recordRetentionFlowEvent
+    ).toHaveBeenCalledExactlyOnceWith({
+      session_id: retentionFlow().session_id,
+      event: 'flow_opened'
+    })
   })
 
   it('stops when the active workspace changes during preparation', async () => {
-    let finishPreparation: ((value: ChurnkeySession) => void) | undefined
-    const show = vi.fn().mockResolvedValue({ type: 'abandoned' })
-    mocks.prepare.mockReturnValue(
-      new Promise((resolve) => {
-        finishPreparation = resolve
-      })
+    vi.mocked(workspaceApi.prepareRetentionFlow).mockImplementation(
+      async () => {
+        mocks.activeWorkspaceId = 'workspace-2'
+        return retentionFlow({ experiment_variant: offer.id, offer })
+      }
     )
     const showFallback = vi.fn()
+    const showRetentionOffer = decides('dismissed')
 
-    const flow = launchCancellationFlow({ showFallback })
-    await vi.waitFor(() => expect(finishPreparation).toBeTypeOf('function'))
-    mocks.activeWorkspaceId = 'workspace-2'
-    finishPreparation?.(session(show))
-    await flow
+    await launchCancellationFlow({ showFallback, showRetentionOffer })
 
-    expect(show).not.toHaveBeenCalled()
     expect(showFallback).not.toHaveBeenCalled()
+    expect(showRetentionOffer).not.toHaveBeenCalled()
   })
 
-  it('does not cancel after the active workspace changes', async () => {
-    let cancellationError: unknown
-    mocks.prepare.mockResolvedValue(
-      session(async (options) => {
-        mocks.activeWorkspaceId = 'workspace-2'
-        try {
-          await options.handleCancel()
-        } catch (error) {
-          cancellationError = error
-          throw error
-        }
-        return { type: 'closed' }
-      })
-    )
+  it('continues to the standard dialog without reopening the flow', async () => {
+    offersRetention()
     const showFallback = vi.fn()
 
-    await launchCancellationFlow({ showFallback })
-
-    expect(useBillingContext().cancelSubscription).not.toHaveBeenCalled()
-    expect(showFallback).not.toHaveBeenCalled()
-    expect(cancellationError).toMatchObject({
-      message: 'subscription.cancelDialog.workspaceChanged'
+    await launchCancellationFlow({
+      showFallback,
+      showRetentionOffer: decides('continueToCancel')
     })
+
+    expect(showFallback).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ flowAlreadyOpened: true })
+    )
+  })
+
+  it('falls back to the standard dialog when the offer cannot open', async () => {
+    offersRetention()
+    const error = new Error('chunk unavailable')
+    const showFallback = vi.fn()
+
+    await launchCancellationFlow({
+      showFallback,
+      showRetentionOffer: vi.fn().mockRejectedValue(error)
+    })
+
+    expect(reportError).toHaveBeenCalledWith(
+      error,
+      expect.objectContaining({ errorType: 'retention_offer_dialog_failed' })
+    )
+    expect(showFallback).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ flowAlreadyOpened: true })
+    )
+  })
+
+  it('warns that a discount still being confirmed may land', async () => {
+    offersRetention()
+    const showFallback = vi.fn()
+
+    await launchCancellationFlow({
+      showFallback,
+      showRetentionOffer: decides('pending')
+    })
+
+    expect(showFallback).not.toHaveBeenCalled()
+    expect(useToastStore().add).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        severity: 'warn',
+        summary: 'subscription.retentionOffer.pendingToast'
+      })
+    )
   })
 
   describe('cancel flow billing events', () => {
@@ -665,15 +371,7 @@ describe('launchCancellationFlow', () => {
       current_tier: 'pro',
       cycle: 'yearly'
     }
-
-    const renderingFailure = {
-      operation: 'cancel',
-      stage: 'failed',
-      outcome: 'failure',
-      failure_category: 'rendering',
-      current_tier: 'pro',
-      cycle: 'yearly'
-    }
+    const abandoned = { ...intent, stage: 'abandoned' }
 
     function reportedCancelEvents() {
       return vi
@@ -682,154 +380,38 @@ describe('launchCancellationFlow', () => {
         .map(([event]) => event)
     }
 
-    it.for<{
-      name: string
-      show: (options: ChurnkeyShowOptions) => Promise<ChurnkeySessionOutcome>
-      showFallback: () => Promise<boolean>
-      reported: object[]
-    }>([
-      {
-        name: 'the customer leaves without cancelling',
-        show: async () => ({ type: 'abandoned' }) as const,
-        showFallback: async () => true,
-        reported: [
-          intent,
-          {
-            operation: 'cancel',
-            stage: 'abandoned',
-            outcome: 'pending',
-            current_tier: 'pro',
-            cycle: 'yearly'
-          }
-        ]
-      },
-      {
-        name: 'a discount keeps the plan',
-        show: async () => ({ type: 'discount-applied' }) as const,
-        showFallback: async () => true,
-        reported: [intent]
-      },
-      {
-        name: 'the customer confirms and leaves the cancel to its operation',
-        show: async (options: ChurnkeyShowOptions) => {
-          await options.handleCancel('Too expensive')
-          return { type: 'closed' } as const
-        },
-        showFallback: async () => true,
-        reported: [intent]
-      },
-      {
-        name: 'the customer confirms, the cancel fails and the native dialog takes over',
-        show: async (options: ChurnkeyShowOptions) => {
-          vi.mocked(useBillingContext().cancelSubscription).mockRejectedValue(
-            new Error('API down')
-          )
-          await options.handleCancel('Too expensive')
-          return { type: 'abandoned' } as const
-        },
-        showFallback: async () => true,
-        reported: [intent]
-      },
-      {
-        name: 'the provider fails and the native dialog takes over',
-        show: async () => {
-          throw new Error('provider unavailable')
-        },
-        showFallback: async () => true,
-        reported: [intent]
-      },
-      {
-        name: 'the provider fails and the native dialog cannot open',
-        show: async () => {
-          throw new Error('provider unavailable')
-        },
-        showFallback: async () => {
-          throw new Error('chunk unavailable')
-        },
-        reported: [intent, renderingFailure]
-      },
-      {
-        name: 'the customer confirms, the provider then fails and the native dialog cannot open',
-        show: async (options: ChurnkeyShowOptions) => {
-          await options.handleCancel('Too expensive')
-          throw new Error('provider unavailable')
-        },
-        showFallback: async () => {
-          throw new Error('chunk unavailable')
-        },
-        reported: [intent, renderingFailure]
-      },
-      {
-        name: 'the customer confirms, the cancel fails and the native dialog cannot open',
-        show: async (options: ChurnkeyShowOptions) => {
-          vi.mocked(useBillingContext().cancelSubscription).mockRejectedValue(
-            new Error('API down')
-          )
-          await options.handleCancel('Too expensive')
-          return { type: 'closed' } as const
-        },
-        showFallback: async () => {
-          throw new Error('chunk unavailable')
-        },
-        reported: [intent, renderingFailure]
-      }
-    ])('reports $name as its cancel events', async (row) => {
-      mocks.prepare.mockResolvedValue(session(row.show))
+    it.for<{ outcome: RetentionOfferOutcome; reported: object[] }>([
+      { outcome: 'dismissed', reported: [intent, abandoned] },
+      { outcome: 'retained', reported: [intent] },
+      { outcome: 'pending', reported: [intent] },
+      { outcome: 'continueToCancel', reported: [intent] }
+    ])('reports a $outcome offer as its cancel events', async (row) => {
+      offersRetention()
 
-      await launchCancellationFlow({ showFallback: row.showFallback })
+      await launchCancellationFlow({
+        showFallback: vi.fn(),
+        showRetentionOffer: decides(row.outcome)
+      })
 
       expect(reportedCancelEvents()).toEqual(row.reported)
-    })
-
-    it.for([
-      {
-        name: 'a customer who confirmed before the provider failed',
-        show: async (options: ChurnkeyShowOptions) => {
-          await options.handleCancel('Too expensive')
-          throw new Error('provider unavailable')
-        },
-        handed: { flowAlreadyOpened: true, flowAlreadyConfirmed: true }
-      },
-      {
-        name: 'a customer who never confirmed before the provider failed',
-        show: async () => {
-          throw new Error('provider unavailable')
-        },
-        handed: { flowAlreadyOpened: true, flowAlreadyConfirmed: false }
-      }
-    ])('hands the native dialog the state of $name', async (row) => {
-      mocks.prepare.mockResolvedValue(session(row.show))
-      const showFallback = vi.fn()
-
-      await launchCancellationFlow({ showFallback })
-
-      expect(showFallback).toHaveBeenCalledExactlyOnceWith(
-        expect.objectContaining(row.handed)
-      )
     })
 
     it('reaches Datadog as billing actions', async () => {
       const registry = new TelemetryRegistry()
       registry.registerProvider(new DatadogRumTelemetryProvider())
       vi.mocked(useTelemetry).mockReturnValue(registry)
-      mocks.prepare.mockResolvedValue(
-        session(async () => ({ type: 'abandoned' }))
-      )
+      offersRetention()
 
-      await launchCancellationFlow({ showFallback: vi.fn() })
+      await launchCancellationFlow({
+        showFallback: vi.fn(),
+        showRetentionOffer: decides('dismissed')
+      })
 
       expect(mockRumAddAction.mock.calls).toEqual([
         ['billing.cancel.intent', { ...intent, billing_surface: 'cloud_app' }],
         [
           'billing.cancel.abandoned',
-          {
-            operation: 'cancel',
-            stage: 'abandoned',
-            outcome: 'pending',
-            current_tier: 'pro',
-            cycle: 'yearly',
-            billing_surface: 'cloud_app'
-          }
+          { ...abandoned, billing_surface: 'cloud_app' }
         ]
       ])
     })
