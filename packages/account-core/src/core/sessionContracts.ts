@@ -157,6 +157,8 @@ export interface WebSessionUser {
   readonly name?: string
   readonly emailVerified: boolean
   readonly signInProvider?: string
+  /** Absent when the server does not report it; read absence as true. */
+  readonly hasPersonalWorkspace?: boolean
 }
 
 export interface WebSession {

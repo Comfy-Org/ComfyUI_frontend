@@ -362,6 +362,27 @@ describe('web session requests', () => {
     })
   })
 
+  it.for([
+    { reported: true, expected: true },
+    { reported: false, expected: false },
+    { reported: undefined, expected: undefined }
+  ])(
+    'reads has_personal_workspace $reported as $expected',
+    async ({ reported, expected }) => {
+      const endpoint = fakeEndpoint({
+        kind: 'live',
+        user: fakeWebSessionUser({ hasPersonalWorkspace: reported })
+      })
+
+      const result = await readWebSession(optionsFor(endpoint.fetch))
+
+      expect(result.status === 'ok' && result.session.user).toHaveProperty(
+        'hasPersonalWorkspace',
+        expected
+      )
+    }
+  )
+
   it('reports IDENTITY_CHANGED when the session belongs to another user', async () => {
     const endpoint = fakeEndpoint({
       kind: 'live',

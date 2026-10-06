@@ -25,7 +25,10 @@ import {
   createSessionTokenMint,
   SessionTokenError
 } from '@comfyorg/account-core/sessionTokenMint'
-import { revokeAllWebSessions } from '@comfyorg/account-core/webSession'
+import {
+  readWebSession,
+  revokeAllWebSessions
+} from '@comfyorg/account-core/webSession'
 import { createWebSessionIdentity } from '@comfyorg/account-core/webSessionIdentity'
 import { webSessionTelemetryHooks } from '@comfyorg/account-core/telemetry'
 import {
@@ -44,6 +47,10 @@ import {
   markInteractiveSignIn,
   takeInteractiveSignIn
 } from '@/platform/auth/session/interactiveSignInMarker'
+import {
+  forgetSsoHint,
+  rememberSignedInSession
+} from '@/platform/auth/session/ssoReentryStorage'
 import type { WebSessionRequestScope } from '@/platform/auth/session/webSessionFetch'
 import {
   fetchOnWebSession,
@@ -63,6 +70,13 @@ interface InteractiveSignIn {
 }
 
 type Phase = WebSessionIdentityState['phase']
+
+/** Why this tab holds no session; `lapsed` is the server's, not a person's, doing. */
+export type WebSessionEnd =
+  | 'lapsed'
+  | 'signed_out_here'
+  | 'revoked'
+  | 'restore_failed'
 
 const BOOTING_PHASES: ReadonlySet<Phase> = new Set([
   'idle',
@@ -144,6 +158,11 @@ function sessionOptions(): WebSessionOptions {
   }
 }
 
+/** One read of the session cookie that leaves the page load undecided. */
+export async function readsSignedInWebSession(): Promise<boolean> {
+  return (await readWebSession(sessionOptions())).status === 'ok'
+}
+
 function createCloudIdentity(
   onAccountChanged: (change: WebSessionAccountChange) => void
 ): WebSessionIdentity {
@@ -188,6 +207,7 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
   let pendingSignIn: InteractiveSignIn | null = null
   let releaseRequests = () => {}
   let signingOut = false
+  let signedOutHere = false
   const signedOutElsewhere = createEventHook()
   const state = shallowRef<WebSessionIdentityState>({ phase: 'idle' })
   const signedInUser = computed(() =>
@@ -272,6 +292,7 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
     identity = session
     session.subscribe((next) => {
       state.value = next
+      followSsoHint(next)
     })
     const mint = createSessionTokenMint({
       ...sessionOptions(),
@@ -326,6 +347,24 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
     return true
   }
 
+  function followSsoHint(next: WebSessionIdentityState): void {
+    if (next.phase === 'signed_in') {
+      signedOutHere = false
+      if (useFeatureFlags().flags.ssoEnabled) {
+        rememberSignedInSession(next.session.user)
+      }
+    } else if (next.phase === 'signed_out' && next.outcome === 'revoked') {
+      forgetSsoHint()
+    }
+  }
+
+  function sessionEnd(): WebSessionEnd | undefined {
+    const current = identity?.getState()
+    if (current?.phase !== 'signed_out') return undefined
+    if (signedOutHere) return 'signed_out_here'
+    return current.outcome === 'signed_out' ? 'lapsed' : current.outcome
+  }
+
   /** Only after an interactive sign-in; a token refresh never calls this. */
   function signedInInteractively(user: User): void {
     const getProof = () => user.getIdToken()
@@ -337,6 +376,8 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
   async function signOut(): Promise<void> {
     pendingSignIn = null
     clearInteractiveSignIn()
+    forgetSsoHint()
+    signedOutHere = true
     signingOut = true
     const result = await identity?.signOut().finally(() => {
       signingOut = false
@@ -447,6 +488,7 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
     signedInUser,
     reconnecting,
     isActive: () => identity !== null,
+    sessionEnd,
     whenReady: () => ready,
     whenSessionCreated: () => creating,
     whenDecided,
