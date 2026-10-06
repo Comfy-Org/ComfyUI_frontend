@@ -4,11 +4,12 @@
     tooltip-side="right"
     :class="
       cn(
-        'side-bar-button cursor-pointer border-none',
+        'side-bar-button h-(--sidebar-item-height) w-(--sidebar-width) shrink-0 cursor-pointer rounded-none border-none p-2',
         selected && 'side-bar-button-selected'
       )
     "
     variant="muted-textonly"
+    size="unset"
     :aria-label="computedTooltip"
     @click="emit('click', $event)"
   >
@@ -41,7 +42,7 @@
            button content box, which is too narrow for one-line labels -->
       <span
         v-if="label && !isSmall"
-        class="side-bar-button-label line-clamp-2 w-max max-w-[calc(var(--sidebar-width)-var(--sidebar-padding))] text-center text-2xs wrap-break-word whitespace-normal"
+        class="side-bar-button-label line-clamp-2 w-max max-w-[calc(var(--sidebar-width)-var(--sidebar-padding))] text-center text-2xs leading-none wrap-break-word whitespace-normal"
         >{{ st(label, label) }}</span
       >
     </div>
@@ -108,32 +109,5 @@ const computedTooltip = computed(() => {
 
 .side-bar-button-selected .side-bar-button-icon {
   font-size: var(--sidebar-icon-size) !important;
-}
-</style>
-
-<style scoped>
-.side-bar-button {
-  width: var(--sidebar-width);
-  height: var(--sidebar-item-height);
-  border-radius: 0;
-  flex-shrink: 0;
-}
-
-.side-tool-bar-end .side-bar-button {
-  height: var(--sidebar-width);
-}
-
-.side-bar-button-label {
-  line-height: 1;
-}
-
-.comfyui-body-left .side-bar-button.side-bar-button-selected,
-.comfyui-body-left .side-bar-button.side-bar-button-selected:hover {
-  border-left: 4px solid var(--p-button-text-primary-color);
-}
-
-.comfyui-body-right .side-bar-button.side-bar-button-selected,
-.comfyui-body-right .side-bar-button.side-bar-button-selected:hover {
-  border-right: 4px solid var(--p-button-text-primary-color);
 }
 </style>

@@ -46,8 +46,9 @@ only for a delay a setting controls, such as the node tooltip delay.
 
 ## Rules
 
-- **A Button with a tooltip has a fragment root.** `v-show`, other directives
-  and `$el` on that `Button` do not reach the `<button>`. Use `v-if`. If you
+- **A Button with a tooltip has a fragment root.** `v-show`, other directives,
+  `$el` and the parent's `<style scoped>` rules do not reach the `<button>`.
+  Use `v-if`, and style the button with classes. If you
   need the element through a template ref, compose
   `<Tooltip><TooltipTrigger as-child><Button ref="…">` without the `tooltip`
   prop.
