@@ -12,8 +12,8 @@ on:
             account-core,
             account-ui,
             billing-contract,
-            ingest-types,
-            code-quality
+            code-quality,
+            ingest-types
           ]
       version:
         description: 'Version to publish (e.g., 1.0.0-alpha.1)'
@@ -80,8 +80,8 @@ jobs:
             account-core) NPM_NAME='@comfyorg/account-core' ;;
             account-ui) NPM_NAME='@comfyorg/account-ui' ;;
             billing-contract) NPM_NAME='@comfyorg/billing-contract' ;;
-            ingest-types) NPM_NAME='@comfyorg/ingest-types' ;;
             code-quality) NPM_NAME='@comfyorg/code-quality' ;;
+            ingest-types) NPM_NAME='@comfyorg/ingest-types' ;;
             *)
               echo "::error title=Unknown package::'$PACKAGE' is not a releasable package" >&2
               exit 1

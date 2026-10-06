@@ -7,8 +7,8 @@ on:
       - 'packages/account-core/**'
       - 'packages/account-ui/**'
       - 'packages/billing-contract/**'
-      - 'packages/ingest-types/**'
       - 'packages/code-quality/**'
+      - 'packages/ingest-types/**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
