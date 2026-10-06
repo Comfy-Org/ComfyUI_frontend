@@ -523,20 +523,25 @@ function preserveInvalidUsage(parsedUsageData: ParsedUsageData) {
     withoutFeature,
     parsedUsageData.invalidUsageData
   )
-  return Object.entries(resetAdjustedUsageData).reduce<Record<string, unknown>>(
-    (preservedUsageData, [featureId, usage]) => {
-      if (
-        Object.keys(preservedUsageData).length >= MAX_PRESERVED_INVALID_ENTRIES
-      ) {
-        return preservedUsageData
+  return Object.entries(resetAdjustedUsageData).reduce<{
+    usageData: Record<string, unknown>
+    count: number
+    size: number
+  }>(
+    (preserved, [featureId, usage]) => {
+      if (preserved.count >= MAX_PRESERVED_INVALID_ENTRIES) return preserved
+      const entrySize = JSON.stringify({ [featureId]: usage }).length - 2
+      const nextSize =
+        preserved.size + entrySize + (preserved.count > 0 ? 1 : 0)
+      if (nextSize > MAX_PRESERVED_INVALID_SIZE) return preserved
+      return {
+        usageData: { ...preserved.usageData, [featureId]: usage },
+        count: preserved.count + 1,
+        size: nextSize
       }
-      const nextUsageData = { ...preservedUsageData, [featureId]: usage }
-      return JSON.stringify(nextUsageData).length <= MAX_PRESERVED_INVALID_SIZE
-        ? nextUsageData
-        : preservedUsageData
     },
-    {}
-  )
+    { usageData: {}, count: 0, size: 2 }
+  ).usageData
 }
 
 function writeStorageAndReadBack(value: string) {
