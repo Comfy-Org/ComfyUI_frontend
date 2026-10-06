@@ -4075,7 +4075,7 @@
     },
     "hero": {
       "title": "Nano Banana 2.1 is here",
-      "description": "Google's newest Gemini image model and the successor to Nano Banana 2, now in Comfy. Give it a prompt and reference images, and it returns an image at up to 4K. It works anywhere Nano Banana 2 does, with a new thinking level and a lower price.",
+      "description": "Google's newest Gemini image model, now in Comfy. Give it a prompt and references, and it returns an image at up to 4K. It works anywhere Nano Banana 2 does, with a new thinking level and a lower price.",
       "tagTextToImage": "Text to Image",
       "tagImageEditing": "Image Editing",
       "tagPartnerNode": "Partner Node",
