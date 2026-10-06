@@ -1,14 +1,22 @@
+import { deburr } from 'es-toolkit'
+
 export type TableSortDirection = 'ascending' | 'descending'
+
+const collator = new Intl.Collator(undefined, { numeric: true })
+
+function normalizeSearchText(text: string) {
+  return deburr(text).toLocaleLowerCase()
+}
 
 export function filterByQuery<T>(
   items: T[],
   query: string,
   getSearchFields: (item: T) => string[]
 ): T[] {
-  const normalizedQuery = query.trim().toLocaleLowerCase()
+  const normalizedQuery = normalizeSearchText(query.trim())
   return items.filter((item) =>
     getSearchFields(item).some((field) =>
-      field.toLocaleLowerCase().includes(normalizedQuery)
+      normalizeSearchText(field).includes(normalizedQuery)
     )
   )
 }
@@ -20,7 +28,7 @@ export function sortByText<T>(
 ): T[] {
   if (!direction) return items
   return [...items].sort((a, b) => {
-    const result = getText(a).localeCompare(getText(b))
+    const result = collator.compare(getText(a), getText(b))
     return direction === 'ascending' ? result : -result
   })
 }

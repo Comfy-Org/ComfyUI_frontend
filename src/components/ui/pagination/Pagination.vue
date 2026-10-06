@@ -36,15 +36,6 @@
           </SelectContent>
         </Select>
       </div>
-      <PaginationFirst v-if="withEdgeButtons" as-child>
-        <Button
-          variant="muted-textonly"
-          size="icon"
-          :aria-label="$t('g.firstPage')"
-        >
-          <i class="icon-[lucide--chevrons-left] size-4" />
-        </Button>
-      </PaginationFirst>
       <PaginationPrev as-child>
         <Button
           variant="muted-textonly"
@@ -87,15 +78,6 @@
           <i class="icon-[lucide--chevron-right] size-4" />
         </Button>
       </PaginationNext>
-      <PaginationLast v-if="withEdgeButtons" as-child>
-        <Button
-          variant="muted-textonly"
-          size="icon"
-          :aria-label="$t('g.lastPage')"
-        >
-          <i class="icon-[lucide--chevrons-right] size-4" />
-        </Button>
-      </PaginationLast>
     </div>
   </PaginationRoot>
 </template>
@@ -104,8 +86,6 @@
 import type { AcceptableValue } from 'reka-ui'
 import {
   PaginationEllipsis,
-  PaginationFirst,
-  PaginationLast,
   PaginationList,
   PaginationListItem,
   PaginationNext,
@@ -120,21 +100,18 @@ import SelectItem from '@/components/ui/select/SelectItem.vue'
 import SelectTrigger from '@/components/ui/select/SelectTrigger.vue'
 import SelectValue from '@/components/ui/select/SelectValue.vue'
 
-const {
-  total,
-  itemsPerPageOptions,
-  withEdgeButtons = false
-} = defineProps<{
+const { total, itemsPerPageOptions } = defineProps<{
   total: number
   itemsPerPageOptions?: number[]
-  withEdgeButtons?: boolean
 }>()
 
 const page = defineModel<number>('page', { default: 1 })
 const itemsPerPage = defineModel<number>('itemsPerPage', { default: 10 })
 
 function updateItemsPerPage(value: AcceptableValue) {
-  if (typeof value === 'number') itemsPerPage.value = value
+  if (typeof value !== 'number') return
+  itemsPerPage.value = value
+  page.value = 1
 }
 
 const ellipsisClass =

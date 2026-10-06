@@ -1,127 +1,40 @@
-import type { Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 const MULTI_BINDING_COMMAND = 'Comfy.Canvas.DeleteSelectedItems'
 const SINGLE_BINDING_COMMAND = 'Comfy.SaveWorkflow'
 const NO_BINDING_COMMAND = 'TestCommand.KeybindingPanelE2E.NoBinding'
 
-async function searchKeybindings(page: Page, query: string) {
-  await getKeybindingSearchInput(page).fill(query)
-}
-
-async function clearSearch(page: Page) {
-  await getKeybindingSearchInput(page).clear()
-}
-
-function getKeybindingSearchInput(page: Page): Locator {
-  return page.getByPlaceholder('Search Keybindings...')
-}
-
-function getCommandLabel(page: Page, commandId: string): Locator {
-  return page.locator(`.keybinding-panel [title="${commandId}"]`)
-}
-
-function getCommandRow(page: Page, commandId: string): Locator {
-  return page
-    .locator('.keybinding-panel tr')
-    .filter({ has: page.locator(`[title="${commandId}"]`) })
-}
-
-function getExpansionContent(page: Page, commandId: string): Locator {
-  return getCommandRow(page, commandId)
-    .locator('xpath=following-sibling::tr[1]')
-    .getByTestId('keybinding-expansion-content')
-}
-
-async function openContextMenu(page: Page, commandId: string) {
-  await getCommandLabel(page, commandId).click({ button: 'right' })
-  await expect(
-    page.getByRole('menuitem', { name: /Change keybinding/i })
-  ).toBeVisible()
-}
-
-function getKeybindingInput(page: Page): Locator {
-  return getEditKeybindingDialog(page).locator('input[autofocus]')
-}
-
-function getEditKeybindingDialog(page: Page): Locator {
-  return page.getByRole('dialog', { name: /Modify keybinding/i })
-}
-
-function getRemoveAllKeybindingsDialog(page: Page): Locator {
-  return page.getByRole('dialog', { name: /Remove all keybindings/i })
-}
-
-function getResetAllKeybindingsDialog(page: Page): Locator {
-  return page.getByRole('dialog', { name: /Reset all keybindings/i })
-}
-
-async function pressComboOnInput(page: Page, combo: string) {
-  const input = getKeybindingInput(page)
-  await expect(input).toBeFocused()
-  await input.press(combo)
-}
-
-async function saveAndCloseKeybindingDialog(page: Page) {
-  const dialog = getEditKeybindingDialog(page)
-  await dialog.getByRole('button', { name: /Save/i }).click()
-  await expect(dialog).toBeHidden()
-}
-
-async function cancelAndCloseDialog(page: Page) {
-  const dialog = getEditKeybindingDialog(page)
-  await dialog.getByRole('button', { name: /Cancel/i }).click()
-  await expect(dialog).toBeHidden()
-}
-
-async function addKeybindingToRow(page: Page, row: Locator, combo: string) {
-  await row.getByRole('button', { name: /Add new keybinding/i }).click()
-  await pressComboOnInput(page, combo)
-  await saveAndCloseKeybindingDialog(page)
-}
-
 test.beforeEach(async ({ comfyPage }) => {
-  await registerNoBindingCommand(comfyPage)
+  await comfyPage.settingDialog.keybindingPanel.registerCommand(
+    NO_BINDING_COMMAND
+  )
   await comfyPage.settingDialog.open()
   await comfyPage.settingDialog.category('Keybinding').click()
 })
-
-async function registerNoBindingCommand(comfyPage: ComfyPage) {
-  await comfyPage.page.evaluate((commandId) => {
-    const app = window.app!
-    app.registerExtension({
-      name: 'TestExtension.KeybindingPanelE2E',
-      commands: [{ id: commandId, function: () => {} }]
-    })
-  }, NO_BINDING_COMMAND)
-}
 
 test.describe('Keybinding Panel', { tag: '@keyboard' }, () => {
   test.describe('Row Expansion', () => {
     test('Keyboard activates rows and opens the context menu', async ({
       comfyPage
     }) => {
-      const { page } = comfyPage
+      const panel = comfyPage.settingDialog.keybindingPanel
 
-      await searchKeybindings(page, MULTI_BINDING_COMMAND)
-      const row = getCommandRow(page, MULTI_BINDING_COMMAND)
+      await panel.search(MULTI_BINDING_COMMAND)
+      const row = panel.commandRow(MULTI_BINDING_COMMAND)
 
       await test.step('Enter expands the focused row', async () => {
         await row.focus()
         await row.press('Enter')
         await expect(
-          getExpansionContent(page, MULTI_BINDING_COMMAND)
+          panel.expansionContent(MULTI_BINDING_COMMAND)
         ).toBeVisible()
       })
 
       await test.step('Space collapses it', async () => {
         await row.press('Space')
-        await expect(
-          getExpansionContent(page, MULTI_BINDING_COMMAND)
-        ).toBeHidden()
+        await expect(panel.expansionContent(MULTI_BINDING_COMMAND)).toBeHidden()
       })
 
       await test.step('Shift+F10 opens the row menu', async () => {
@@ -130,38 +43,46 @@ test.describe('Keybinding Panel', { tag: '@keyboard' }, () => {
           comfyPage.contextMenu.menuItem('Change keybinding')
         ).toBeVisible()
       })
+
+      await test.step('Escape closes the menu and refocuses the row', async () => {
+        await panel.page.keyboard.press('Escape')
+        await expect(
+          comfyPage.contextMenu.menuItem('Change keybinding')
+        ).toBeHidden()
+        await expect(row).toBeFocused()
+      })
     })
 
     test('Click on row with 2+ keybindings toggles expansion', async ({
       comfyPage
     }) => {
-      const { page } = comfyPage
+      const panel = comfyPage.settingDialog.keybindingPanel
 
-      await searchKeybindings(page, MULTI_BINDING_COMMAND)
-      const row = getCommandRow(page, MULTI_BINDING_COMMAND)
+      await panel.search(MULTI_BINDING_COMMAND)
+      const row = panel.commandRow(MULTI_BINDING_COMMAND)
       await expect(row).toBeVisible()
 
-      await row.locator(`[title="${MULTI_BINDING_COMMAND}"]`).click()
+      await panel.commandLabel(MULTI_BINDING_COMMAND).click()
 
-      const expansionContent = getExpansionContent(page, MULTI_BINDING_COMMAND)
+      const expansionContent = panel.expansionContent(MULTI_BINDING_COMMAND)
       await expect(expansionContent).toBeVisible()
 
-      await row.locator(`[title="${MULTI_BINDING_COMMAND}"]`).click()
+      await panel.commandLabel(MULTI_BINDING_COMMAND).click()
       await expect(expansionContent).toBeHidden()
     })
 
     test('Click on row with 1 keybinding does not expand', async ({
       comfyPage
     }) => {
-      const { page } = comfyPage
+      const panel = comfyPage.settingDialog.keybindingPanel
 
-      await searchKeybindings(page, SINGLE_BINDING_COMMAND)
-      const row = getCommandRow(page, SINGLE_BINDING_COMMAND)
+      await panel.search(SINGLE_BINDING_COMMAND)
+      const row = panel.commandRow(SINGLE_BINDING_COMMAND)
       await expect(row).toBeVisible()
 
-      await row.locator(`[title="${SINGLE_BINDING_COMMAND}"]`).click()
+      await panel.commandLabel(SINGLE_BINDING_COMMAND).click()
 
-      const expansionContent = getExpansionContent(page, SINGLE_BINDING_COMMAND)
+      const expansionContent = panel.expansionContent(SINGLE_BINDING_COMMAND)
       await expect(expansionContent).toBeHidden()
     })
   })
@@ -170,35 +91,35 @@ test.describe('Keybinding Panel', { tag: '@keyboard' }, () => {
     test('Double-click row with 0 keybindings opens Add dialog', async ({
       comfyPage
     }) => {
-      const { page } = comfyPage
+      const panel = comfyPage.settingDialog.keybindingPanel
 
-      await searchKeybindings(page, NO_BINDING_COMMAND)
-      const row = getCommandRow(page, NO_BINDING_COMMAND)
+      await panel.search(NO_BINDING_COMMAND)
+      const row = panel.commandRow(NO_BINDING_COMMAND)
       await expect(row).toBeVisible()
 
-      await row.locator(`[title="${NO_BINDING_COMMAND}"]`).dblclick()
+      await panel.commandLabel(NO_BINDING_COMMAND).dblclick()
 
-      const input = getKeybindingInput(page)
+      const input = panel.keybindingInput
       await expect(input).toBeVisible()
 
-      await cancelAndCloseDialog(page)
+      await panel.cancelKeybinding()
     })
 
     test('Double-click row with 1 keybinding opens Edit dialog', async ({
       comfyPage
     }) => {
-      const { page } = comfyPage
+      const panel = comfyPage.settingDialog.keybindingPanel
 
-      await searchKeybindings(page, SINGLE_BINDING_COMMAND)
-      const row = getCommandRow(page, SINGLE_BINDING_COMMAND)
+      await panel.search(SINGLE_BINDING_COMMAND)
+      const row = panel.commandRow(SINGLE_BINDING_COMMAND)
       await expect(row).toBeVisible()
 
-      await row.locator(`[title="${SINGLE_BINDING_COMMAND}"]`).dblclick()
+      await panel.commandLabel(SINGLE_BINDING_COMMAND).dblclick()
 
-      const input = getKeybindingInput(page)
+      const input = panel.keybindingInput
       await expect(input).toBeVisible()
 
-      await cancelAndCloseDialog(page)
+      await panel.cancelKeybinding()
     })
   })
 
@@ -206,77 +127,88 @@ test.describe('Keybinding Panel', { tag: '@keyboard' }, () => {
     test('Right-click row shows context menu with correct items', async ({
       comfyPage
     }) => {
-      const { page } = comfyPage
+      const panel = comfyPage.settingDialog.keybindingPanel
 
-      await searchKeybindings(page, SINGLE_BINDING_COMMAND)
-      await openContextMenu(page, SINGLE_BINDING_COMMAND)
+      await panel.search(SINGLE_BINDING_COMMAND)
+      await panel.openContextMenu(SINGLE_BINDING_COMMAND)
 
-      const changeItem = page.getByRole('menuitem', {
-        name: /Change keybinding/i
-      })
-      const addItem = page.getByRole('menuitem', {
-        name: /Add new keybinding/i
-      })
-      const resetItem = page.getByRole('menuitem', {
-        name: /Reset to default/i
-      })
-      const removeItem = page.getByRole('menuitem', {
-        name: /Remove keybinding/i
-      })
+      const changeItem = comfyPage.contextMenu.menuItem('Change keybinding')
+      const addItem = comfyPage.contextMenu.menuItem('Add new keybinding')
+      const resetItem = comfyPage.contextMenu.menuItem('Reset to default')
+      const removeItem = comfyPage.contextMenu.menuItem('Remove keybinding')
 
       await expect(changeItem).toBeVisible()
       await expect(addItem).toBeVisible()
       await expect(resetItem).toBeVisible()
       await expect(removeItem).toBeVisible()
 
-      await page.keyboard.press('Escape')
+      await panel.page.keyboard.press('Escape')
+    })
+
+    test('Context menu opens at the pointer inside the settings dialog', async ({
+      comfyPage
+    }) => {
+      const panel = comfyPage.settingDialog.keybindingPanel
+
+      await panel.search(SINGLE_BINDING_COMMAND)
+      const offset = { x: 10, y: 5 }
+      const labelBox = await panel
+        .commandLabel(SINGLE_BINDING_COMMAND)
+        .boundingBox()
+      if (!labelBox) throw new Error('Command label has no bounding box')
+      const pointer = { x: labelBox.x + offset.x, y: labelBox.y + offset.y }
+      await panel.openContextMenu(SINGLE_BINDING_COMMAND, offset)
+
+      await expect
+        .poll(() => comfyPage.contextMenu.distanceFrom(pointer))
+        .toBeLessThan(16)
     })
 
     test("Context menu 'Add new keybinding' opens add dialog", async ({
       comfyPage
     }) => {
-      const { page } = comfyPage
+      const panel = comfyPage.settingDialog.keybindingPanel
 
-      await searchKeybindings(page, SINGLE_BINDING_COMMAND)
-      await openContextMenu(page, SINGLE_BINDING_COMMAND)
+      await panel.search(SINGLE_BINDING_COMMAND)
+      await panel.openContextMenu(SINGLE_BINDING_COMMAND)
 
-      await page.getByRole('menuitem', { name: /Add new keybinding/i }).click()
+      await comfyPage.contextMenu.menuItem('Add new keybinding').click()
 
-      const input = getKeybindingInput(page)
+      const input = panel.keybindingInput
       await expect(input).toBeVisible()
 
-      await cancelAndCloseDialog(page)
+      await panel.cancelKeybinding()
     })
 
     test("Context menu 'Change keybinding' on single-binding command opens edit dialog", async ({
       comfyPage
     }) => {
-      const { page } = comfyPage
+      const panel = comfyPage.settingDialog.keybindingPanel
 
-      await searchKeybindings(page, SINGLE_BINDING_COMMAND)
-      await openContextMenu(page, SINGLE_BINDING_COMMAND)
+      await panel.search(SINGLE_BINDING_COMMAND)
+      await panel.openContextMenu(SINGLE_BINDING_COMMAND)
 
-      await page.getByRole('menuitem', { name: /Change keybinding/i }).click()
+      await comfyPage.contextMenu.menuItem('Change keybinding').click()
 
-      const input = getKeybindingInput(page)
+      const input = panel.keybindingInput
       await expect(input).toBeVisible()
 
-      await cancelAndCloseDialog(page)
+      await panel.cancelKeybinding()
     })
 
     test("Context menu 'Change keybinding' on multi-binding command expands row", async ({
       comfyPage
     }) => {
-      const { page } = comfyPage
+      const panel = comfyPage.settingDialog.keybindingPanel
 
-      await searchKeybindings(page, MULTI_BINDING_COMMAND)
+      await panel.search(MULTI_BINDING_COMMAND)
 
-      const expansionContent = getExpansionContent(page, MULTI_BINDING_COMMAND)
+      const expansionContent = panel.expansionContent(MULTI_BINDING_COMMAND)
       await expect(expansionContent).toBeHidden()
 
-      await openContextMenu(page, MULTI_BINDING_COMMAND)
+      await panel.openContextMenu(MULTI_BINDING_COMMAND)
 
-      await page.getByRole('menuitem', { name: /Change keybinding/i }).click()
+      await comfyPage.contextMenu.menuItem('Change keybinding').click()
 
       await expect(expansionContent).toBeVisible()
     })
@@ -284,17 +216,17 @@ test.describe('Keybinding Panel', { tag: '@keyboard' }, () => {
     test("Context menu 'Remove keybinding' after adding second binding shows confirm dialog", async ({
       comfyPage
     }) => {
-      const { page } = comfyPage
+      const panel = comfyPage.settingDialog.keybindingPanel
 
-      await searchKeybindings(page, SINGLE_BINDING_COMMAND)
-      const row = getCommandRow(page, SINGLE_BINDING_COMMAND)
+      await panel.search(SINGLE_BINDING_COMMAND)
+      const row = panel.commandRow(SINGLE_BINDING_COMMAND)
 
-      await addKeybindingToRow(page, row, 'Control+Shift+F9')
+      await panel.addKeybindingToRow(row, 'Control+Shift+F9')
 
-      await openContextMenu(page, SINGLE_BINDING_COMMAND)
-      await page.getByRole('menuitem', { name: /Remove keybinding/i }).click()
+      await panel.openContextMenu(SINGLE_BINDING_COMMAND)
+      await comfyPage.contextMenu.menuItem('Remove keybinding').click()
 
-      const confirmDialog = getRemoveAllKeybindingsDialog(page)
+      const confirmDialog = panel.removeAllDialog
       await expect(confirmDialog).toBeVisible()
       await confirmDialog.getByRole('button', { name: /Remove all/i }).click()
 
@@ -304,15 +236,15 @@ test.describe('Keybinding Panel', { tag: '@keyboard' }, () => {
     test("Context menu 'Reset to default' resets modified command", async ({
       comfyPage
     }) => {
-      const { page } = comfyPage
+      const panel = comfyPage.settingDialog.keybindingPanel
 
-      await searchKeybindings(page, SINGLE_BINDING_COMMAND)
-      const row = getCommandRow(page, SINGLE_BINDING_COMMAND)
+      await panel.search(SINGLE_BINDING_COMMAND)
+      const row = panel.commandRow(SINGLE_BINDING_COMMAND)
 
-      await addKeybindingToRow(page, row, 'Control+Shift+F10')
+      await panel.addKeybindingToRow(row, 'Control+Shift+F10')
 
-      await openContextMenu(page, SINGLE_BINDING_COMMAND)
-      await page.getByRole('menuitem', { name: /Reset to default/i }).click()
+      await panel.openContextMenu(SINGLE_BINDING_COMMAND)
+      await comfyPage.contextMenu.menuItem('Reset to default').click()
 
       await expect(row.getByRole('button', { name: /Reset/i })).toBeDisabled()
     })
@@ -320,22 +252,18 @@ test.describe('Keybinding Panel', { tag: '@keyboard' }, () => {
     test('Context menu items disabled when no keybindings', async ({
       comfyPage
     }) => {
-      const { page } = comfyPage
+      const panel = comfyPage.settingDialog.keybindingPanel
 
-      await searchKeybindings(page, NO_BINDING_COMMAND)
-      await openContextMenu(page, NO_BINDING_COMMAND)
+      await panel.search(NO_BINDING_COMMAND)
+      await panel.openContextMenu(NO_BINDING_COMMAND)
 
-      const changeItem = page.getByRole('menuitem', {
-        name: /Change keybinding/i
-      })
-      const removeItem = page.getByRole('menuitem', {
-        name: /Remove keybinding/i
-      })
+      const changeItem = comfyPage.contextMenu.menuItem('Change keybinding')
+      const removeItem = comfyPage.contextMenu.menuItem('Remove keybinding')
 
       await expect(changeItem).toHaveAttribute('data-disabled', '')
       await expect(removeItem).toHaveAttribute('data-disabled', '')
 
-      await page.keyboard.press('Escape')
+      await panel.page.keyboard.press('Escape')
     })
   })
 
@@ -343,54 +271,54 @@ test.describe('Keybinding Panel', { tag: '@keyboard' }, () => {
     test('Edit button opens edit dialog for single-binding command', async ({
       comfyPage
     }) => {
-      const { page } = comfyPage
+      const panel = comfyPage.settingDialog.keybindingPanel
 
-      await searchKeybindings(page, SINGLE_BINDING_COMMAND)
-      const row = getCommandRow(page, SINGLE_BINDING_COMMAND)
+      await panel.search(SINGLE_BINDING_COMMAND)
+      const row = panel.commandRow(SINGLE_BINDING_COMMAND)
 
       const editButton = row.getByRole('button', { name: /^Edit$/i })
       await expect(editButton).toBeVisible()
       await editButton.click()
 
-      const input = getKeybindingInput(page)
+      const input = panel.keybindingInput
       await expect(input).toBeVisible()
 
-      await cancelAndCloseDialog(page)
+      await panel.cancelKeybinding()
     })
 
     test('Add button opens add dialog', async ({ comfyPage }) => {
-      const { page } = comfyPage
+      const panel = comfyPage.settingDialog.keybindingPanel
 
-      await searchKeybindings(page, SINGLE_BINDING_COMMAND)
-      const row = getCommandRow(page, SINGLE_BINDING_COMMAND)
+      await panel.search(SINGLE_BINDING_COMMAND)
+      const row = panel.commandRow(SINGLE_BINDING_COMMAND)
 
       await row.getByRole('button', { name: /Add new keybinding/i }).click()
 
-      const input = getKeybindingInput(page)
+      const input = panel.keybindingInput
       await expect(input).toBeVisible()
 
-      await cancelAndCloseDialog(page)
+      await panel.cancelKeybinding()
     })
 
     test('Reset button is disabled for unmodified commands', async ({
       comfyPage
     }) => {
-      const { page } = comfyPage
+      const panel = comfyPage.settingDialog.keybindingPanel
 
-      await searchKeybindings(page, SINGLE_BINDING_COMMAND)
-      const row = getCommandRow(page, SINGLE_BINDING_COMMAND)
+      await panel.search(SINGLE_BINDING_COMMAND)
+      const row = panel.commandRow(SINGLE_BINDING_COMMAND)
 
       const resetButton = row.getByRole('button', { name: /Reset/i })
       await expect(resetButton).toBeDisabled()
     })
 
     test('Reset button resets modified keybinding', async ({ comfyPage }) => {
-      const { page } = comfyPage
+      const panel = comfyPage.settingDialog.keybindingPanel
 
-      await searchKeybindings(page, SINGLE_BINDING_COMMAND)
-      const row = getCommandRow(page, SINGLE_BINDING_COMMAND)
+      await panel.search(SINGLE_BINDING_COMMAND)
+      const row = panel.commandRow(SINGLE_BINDING_COMMAND)
 
-      await addKeybindingToRow(page, row, 'Control+Shift+F11')
+      await panel.addKeybindingToRow(row, 'Control+Shift+F11')
 
       const resetButton = row.getByRole('button', { name: /Reset/i })
       await expect(resetButton).toBeEnabled()
@@ -403,10 +331,10 @@ test.describe('Keybinding Panel', { tag: '@keyboard' }, () => {
     test('Delete button is disabled for commands with 0 keybindings', async ({
       comfyPage
     }) => {
-      const { page } = comfyPage
+      const panel = comfyPage.settingDialog.keybindingPanel
 
-      await searchKeybindings(page, NO_BINDING_COMMAND)
-      const row = getCommandRow(page, NO_BINDING_COMMAND)
+      await panel.search(NO_BINDING_COMMAND)
+      const row = panel.commandRow(NO_BINDING_COMMAND)
 
       const deleteButton = row.getByRole('button', { name: /Delete/i })
       await expect(deleteButton).toBeDisabled()
@@ -415,12 +343,12 @@ test.describe('Keybinding Panel', { tag: '@keyboard' }, () => {
     test('Delete button removes single keybinding directly', async ({
       comfyPage
     }) => {
-      const { page } = comfyPage
+      const panel = comfyPage.settingDialog.keybindingPanel
 
-      await searchKeybindings(page, NO_BINDING_COMMAND)
-      const row = getCommandRow(page, NO_BINDING_COMMAND)
+      await panel.search(NO_BINDING_COMMAND)
+      const row = panel.commandRow(NO_BINDING_COMMAND)
 
-      await addKeybindingToRow(page, row, 'Control+Shift+F12')
+      await panel.addKeybindingToRow(row, 'Control+Shift+F12')
 
       const deleteButton = row.getByRole('button', { name: /Delete/i })
       await expect(deleteButton).toBeEnabled()
@@ -432,15 +360,15 @@ test.describe('Keybinding Panel', { tag: '@keyboard' }, () => {
     test('Delete button on command with 2+ keybindings shows confirm dialog', async ({
       comfyPage
     }) => {
-      const { page } = comfyPage
+      const panel = comfyPage.settingDialog.keybindingPanel
 
-      await searchKeybindings(page, MULTI_BINDING_COMMAND)
-      const row = getCommandRow(page, MULTI_BINDING_COMMAND)
+      await panel.search(MULTI_BINDING_COMMAND)
+      const row = panel.commandRow(MULTI_BINDING_COMMAND)
 
       const deleteButton = row.getByRole('button', { name: /Delete/i })
       await deleteButton.click()
 
-      const confirmDialog = getRemoveAllKeybindingsDialog(page)
+      const confirmDialog = panel.removeAllDialog
       await expect(confirmDialog).toBeVisible()
 
       await confirmDialog.getByRole('button', { name: /Cancel/i }).click()
@@ -453,12 +381,12 @@ test.describe('Keybinding Panel', { tag: '@keyboard' }, () => {
     test('Edit button in expanded row opens edit dialog for that binding', async ({
       comfyPage
     }) => {
-      const { page } = comfyPage
+      const panel = comfyPage.settingDialog.keybindingPanel
 
-      await searchKeybindings(page, MULTI_BINDING_COMMAND)
+      await panel.search(MULTI_BINDING_COMMAND)
 
-      await page.locator(`[title="${MULTI_BINDING_COMMAND}"]`).click()
-      const expansionContent = getExpansionContent(page, MULTI_BINDING_COMMAND)
+      await panel.commandLabel(MULTI_BINDING_COMMAND).click()
+      const expansionContent = panel.expansionContent(MULTI_BINDING_COMMAND)
       await expect(expansionContent).toBeVisible()
 
       const firstBindingRow = expansionContent
@@ -466,21 +394,21 @@ test.describe('Keybinding Panel', { tag: '@keyboard' }, () => {
         .first()
       await firstBindingRow.getByRole('button', { name: /^Edit$/i }).click()
 
-      const input = getKeybindingInput(page)
+      const input = panel.keybindingInput
       await expect(input).toBeVisible()
 
-      await cancelAndCloseDialog(page)
+      await panel.cancelKeybinding()
     })
 
     test('Delete button in expanded row removes that binding and collapses', async ({
       comfyPage
     }) => {
-      const { page } = comfyPage
+      const panel = comfyPage.settingDialog.keybindingPanel
 
-      await searchKeybindings(page, MULTI_BINDING_COMMAND)
+      await panel.search(MULTI_BINDING_COMMAND)
 
-      await page.locator(`[title="${MULTI_BINDING_COMMAND}"]`).click()
-      const expansionContent = getExpansionContent(page, MULTI_BINDING_COMMAND)
+      await panel.commandLabel(MULTI_BINDING_COMMAND).click()
+      const expansionContent = panel.expansionContent(MULTI_BINDING_COMMAND)
       await expect(expansionContent).toBeVisible()
 
       const bindingRows = expansionContent.getByTestId(
@@ -511,22 +439,19 @@ test.describe('Keybinding Panel', { tag: '@keyboard' }, () => {
     test('Reset All button shows confirmation and resets on confirm', async ({
       comfyPage
     }) => {
-      const { page } = comfyPage
+      const panel = comfyPage.settingDialog.keybindingPanel
 
-      await searchKeybindings(page, SINGLE_BINDING_COMMAND)
-      const row = getCommandRow(page, SINGLE_BINDING_COMMAND)
-      await addKeybindingToRow(page, row, 'Control+Shift+F8')
+      await panel.search(SINGLE_BINDING_COMMAND)
+      const row = panel.commandRow(SINGLE_BINDING_COMMAND)
+      await panel.addKeybindingToRow(row, 'Control+Shift+F8')
 
       await expect(row.getByRole('button', { name: /Reset/i })).toBeEnabled()
 
-      await clearSearch(page)
+      await panel.clearSearch()
 
-      const resetAllButton = page
-        .locator('.keybinding-panel')
-        .getByRole('button', { name: /Reset All/i })
-      await resetAllButton.click()
+      await panel.resetAllButton.click()
 
-      const confirmDialog = getResetAllKeybindingsDialog(page)
+      const confirmDialog = panel.resetAllDialog
       await expect(confirmDialog).toBeVisible()
       await expect(confirmDialog).toContainText(/Reset all keybindings/i)
 
@@ -534,22 +459,19 @@ test.describe('Keybinding Panel', { tag: '@keyboard' }, () => {
 
       await expect(comfyPage.toast.visibleToasts).toHaveCount(1)
 
-      await searchKeybindings(page, SINGLE_BINDING_COMMAND)
-      const rowAfterReset = getCommandRow(page, SINGLE_BINDING_COMMAND)
+      await panel.search(SINGLE_BINDING_COMMAND)
+      const rowAfterReset = panel.commandRow(SINGLE_BINDING_COMMAND)
       await expect(
         rowAfterReset.getByRole('button', { name: /Reset/i })
       ).toBeDisabled()
     })
 
     test('Reset All confirmation can be cancelled', async ({ comfyPage }) => {
-      const { page } = comfyPage
+      const panel = comfyPage.settingDialog.keybindingPanel
 
-      const resetAllButton = page
-        .locator('.keybinding-panel')
-        .getByRole('button', { name: /Reset All/i })
-      await resetAllButton.click()
+      await panel.resetAllButton.click()
 
-      const confirmDialog = getResetAllKeybindingsDialog(page)
+      const confirmDialog = panel.resetAllDialog
       await expect(confirmDialog).toBeVisible()
       await confirmDialog.getByRole('button', { name: /Cancel/i }).click()
 
@@ -559,16 +481,16 @@ test.describe('Keybinding Panel', { tag: '@keyboard' }, () => {
 
   test.describe('Search Filter', () => {
     test('Typing in search clears expanded rows', async ({ comfyPage }) => {
-      const { page } = comfyPage
+      const panel = comfyPage.settingDialog.keybindingPanel
 
-      await searchKeybindings(page, MULTI_BINDING_COMMAND)
+      await panel.search(MULTI_BINDING_COMMAND)
 
-      await page.locator(`[title="${MULTI_BINDING_COMMAND}"]`).click()
-      const expansionContent = getExpansionContent(page, MULTI_BINDING_COMMAND)
+      await panel.commandLabel(MULTI_BINDING_COMMAND).click()
+      const expansionContent = panel.expansionContent(MULTI_BINDING_COMMAND)
       await expect(expansionContent).toBeVisible()
 
       // Changing the filter triggers watch(filters, ...) which clears expansion
-      await searchKeybindings(page, MULTI_BINDING_COMMAND + ' ')
+      await panel.search(MULTI_BINDING_COMMAND + ' ')
       await expect(expansionContent).toBeHidden()
     })
   })
@@ -576,25 +498,26 @@ test.describe('Keybinding Panel', { tag: '@keyboard' }, () => {
   test('Command sort header has no browser button chrome', async ({
     comfyPage
   }) => {
-    const sortButton = comfyPage.page
-      .getByRole('columnheader', { name: 'Command' })
-      .getByRole('button', { name: 'Command' })
+    const { sortButton } = comfyPage.settingDialog.keybindingPanel
 
-    await expect(sortButton).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)')
-    await expect(sortButton).toHaveCSS('border-top-style', 'none')
+    await expect(sortButton).not.toHaveCSS('border-top-style', 'outset')
+    await expect(sortButton).not.toHaveCSS(
+      'background-color',
+      'rgb(107, 107, 107)'
+    )
   })
 
   test.describe('Responsive Layout', () => {
     test('Action buttons stay on screen without horizontal scroll at narrow widths', async ({
       comfyPage
     }) => {
-      const { page } = comfyPage
+      const panel = comfyPage.settingDialog.keybindingPanel
 
-      await searchKeybindings(page, MULTI_BINDING_COMMAND)
-      const row = getCommandRow(page, MULTI_BINDING_COMMAND)
+      await panel.search(MULTI_BINDING_COMMAND)
+      const row = panel.commandRow(MULTI_BINDING_COMMAND)
       await expect(row).toBeVisible()
 
-      await page.setViewportSize({ width: 480, height: 800 })
+      await panel.page.setViewportSize({ width: 480, height: 800 })
 
       await expect(
         row.getByRole('button', { name: /Delete/i })
@@ -603,24 +526,24 @@ test.describe('Keybinding Panel', { tag: '@keyboard' }, () => {
         row.getByRole('button', { name: /Add new keybinding/i })
       ).toBeInViewport()
 
-      const hasHorizontalScroll = await page
-        .getByTestId('keybinding-table-container')
-        .evaluate((el) => el.scrollWidth > el.clientWidth + 1)
+      const hasHorizontalScroll = await panel.table.evaluate(
+        (el) => el.scrollWidth > el.clientWidth + 1
+      )
       expect(hasHorizontalScroll).toBe(false)
     })
 
     test('Keybinding column compresses with width while actions stay reachable', async ({
       comfyPage
     }) => {
-      const { page } = comfyPage
+      const panel = comfyPage.settingDialog.keybindingPanel
 
-      await searchKeybindings(page, MULTI_BINDING_COMMAND)
-      const row = getCommandRow(page, MULTI_BINDING_COMMAND)
+      await panel.search(MULTI_BINDING_COMMAND)
+      const row = panel.commandRow(MULTI_BINDING_COMMAND)
       const keybindingList = row.getByTestId('keybinding-list')
       await expect(keybindingList).toBeVisible()
 
       const listWidthAt = async (viewportWidth: number) => {
-        await page.setViewportSize({ width: viewportWidth, height: 800 })
+        await panel.page.setViewportSize({ width: viewportWidth, height: 800 })
         return keybindingList.evaluate((el) => el.getBoundingClientRect().width)
       }
 

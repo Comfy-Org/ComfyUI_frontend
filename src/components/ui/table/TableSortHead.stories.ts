@@ -63,6 +63,6 @@ function renderTable(initialDirection: TableSortDirection | null) {
   })
 }
 
-export const Unsorted: Story = { render: renderTable(null) }
+export const Default: Story = { render: renderTable(null) }
 export const Ascending: Story = { render: renderTable('ascending') }
 export const Descending: Story = { render: renderTable('descending') }

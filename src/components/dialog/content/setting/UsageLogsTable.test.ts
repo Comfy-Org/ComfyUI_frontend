@@ -7,7 +7,7 @@ import { computed, nextTick, ref } from 'vue'
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 
-import { testI18n } from '@/components/searchbox/v2/__test__/testUtils'
+import { testI18n } from '@/utils/__tests__/testI18n'
 import {
   EventType,
   useCustomerEventsService
@@ -17,6 +17,7 @@ import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { useTelemetry } from '@/platform/telemetry'
 import type { BillingEventsResponse } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import type { BillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import UsageLogsTable from './UsageLogsTable.vue'
@@ -47,7 +48,7 @@ const mockBillingReadRail = vi.hoisted(() => ({
   readPlans: vi.fn(),
   readCapabilities: vi.fn(),
   readPaymentMethods: vi.fn(),
-  readEvents: vi.fn()
+  readEvents: vi.fn<BillingReadRail['readEvents']>()
 }))
 vi.mock(import('@/platform/workspace/composables/useBillingReadRail'), () => ({
   useBillingReadRail: () => {
@@ -206,11 +207,12 @@ describe('UsageLogsTable', () => {
     })
 
     it('shows data table without a paginator when one page holds every event', async () => {
+      vi.mocked(useCustomerEventsService().getMyEvents).mockResolvedValue(
+        makeEventsResponse(mockEventsResponse.events, { total: 7 })
+      )
+
       await renderLoaded()
 
-      expect(
-        screen.queryByText('Failed to load events')
-      ).not.toBeInTheDocument()
       expect(
         screen.queryByRole('button', { name: 'Next' })
       ).not.toBeInTheDocument()
@@ -225,12 +227,28 @@ describe('UsageLogsTable', () => {
       expect(useCustomerEventsService().getEventSeverity).toHaveBeenCalled()
     })
 
-    it('renders credit added details with formatted amount', async () => {
-      await renderLoaded()
+    it.for([1000, '1000'])(
+      'renders credit added details with the formatted amount %j',
+      async (amount) => {
+        vi.mocked(useCustomerEventsService().getMyEvents).mockResolvedValue(
+          makeEventsResponse([
+            {
+              event_id: 'event-1',
+              event_type: EventType.CREDIT_ADDED,
+              params: { amount },
+              createdAt: '2024-01-01T10:00:00Z'
+            }
+          ])
+        )
 
-      expect(screen.getByText(/Added \$/)).toBeInTheDocument()
-      expect(useCustomerEventsService().formatAmount).toHaveBeenCalled()
-    })
+        await renderLoaded()
+
+        expect(screen.getByText(/Added \$/)).toBeInTheDocument()
+        expect(useCustomerEventsService().formatAmount).toHaveBeenCalledWith(
+          1000
+        )
+      }
+    )
 
     it('renders API usage details with api name and model', async () => {
       await renderLoaded()
@@ -327,12 +345,10 @@ describe('UsageLogsTable', () => {
         rail: true,
         source: 'the SDK reader rail',
         mockReader: () =>
-          mockBillingReadRail.readEvents.mockImplementation(
-            async (params: { page: number }) => ({
-              status: 'ok',
-              value: pagedResponse(params.page)
-            })
-          )
+          mockBillingReadRail.readEvents.mockImplementation(async (params) => ({
+            status: 'ok',
+            value: pagedResponse(params?.page)
+          }))
       }
     ])(
       'requests the 1-based page picked in the paginator from $source',
@@ -536,7 +552,10 @@ describe('UsageLogsTable', () => {
     }
 
     function onTheRail(
-      result: unknown = { status: 'ok', value: railResponse }
+      result: Awaited<ReturnType<BillingReadRail['readEvents']>> = {
+        status: 'ok',
+        value: railResponse
+      }
     ) {
       setWorkspaceBilling(true)
       mockBillingReadRail.enabled = true

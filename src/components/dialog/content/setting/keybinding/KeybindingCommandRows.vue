@@ -1,27 +1,27 @@
 <template>
-  <RovingFocusItem as-child :tab-stop-id="rowId">
+  <RovingFocusItem as-child :tab-stop-id="command.rowId">
     <TableRow
-      :id="rowId"
+      :id="command.rowId"
       :data-state="selected ? 'selected' : undefined"
-      :aria-expanded="command.keybindings.length >= 2 ? expanded : undefined"
-      @click="emit('rowClick')"
+      :aria-expanded="command.expandable ? expanded : undefined"
+      @click="emit('activate')"
       @dblclick="emit('rowDblclick')"
       @contextmenu="emit('rowContextmenu', $event)"
-      @keydown.enter.self.prevent="emit('rowClick')"
-      @keydown.space.self.prevent="emit('rowClick')"
+      @keydown.enter.self.prevent="emit('activate')"
+      @keydown.space.self.prevent="emit('activate')"
     >
       <TableCell class="p-1">
         <div
           :class="
             cn(
               'flex min-w-0 items-center gap-1 truncate',
-              command.keybindings.length < 2 && 'pl-5'
+              !command.expandable && 'pl-5'
             )
           "
           :title="command.id"
         >
           <i
-            v-if="command.keybindings.length >= 2"
+            v-if="command.expandable"
             :class="
               cn(
                 'icon-[lucide--chevron-right] size-4 shrink-0 text-muted-foreground transition-transform',
@@ -159,23 +159,23 @@ import KeyComboDisplay from './KeyComboDisplay.vue'
 
 const { command, expanded, selected } = defineProps<{
   command: Pick<ComfyCommandImpl, 'id' | 'source'> & {
+    expandable: boolean
     isModified: boolean
     keybindings: KeybindingImpl[]
     label: string
+    rowId: string
   }
   expanded: boolean
   selected: boolean
 }>()
 
-const rowId = `keybinding-row-${command.id}`
-
 const emit = defineEmits<{
+  activate: []
   add: []
   edit: [binding: KeybindingImpl]
   remove: []
   removeSingle: [index: number]
   reset: []
-  rowClick: []
   rowContextmenu: [event: MouseEvent]
   rowDblclick: []
 }>()

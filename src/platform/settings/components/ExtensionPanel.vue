@@ -44,15 +44,17 @@
             {{ $t('g.extensionName') }}
           </TableSortHead>
           <TableHead class="w-20 text-right">
-            <Button
-              size="icon"
-              variant="muted-textonly"
-              :aria-label="$t('g.moreOptions')"
-              @click="menu?.show($event)"
-            >
-              <i class="icon-[lucide--ellipsis]" />
-            </Button>
-            <ContextMenu ref="menu" :model="contextMenuItems" />
+            <Menu :items="extensionActions" align="end">
+              <template #trigger>
+                <Button
+                  size="icon"
+                  variant="muted-textonly"
+                  :aria-label="$t('g.moreOptions')"
+                >
+                  <i class="icon-[lucide--ellipsis]" />
+                </Button>
+              </template>
+            </Menu>
           </TableHead>
         </TableRow>
       </TableHeader>
@@ -71,10 +73,11 @@
             )
           "
         >
-          <TableCell @click.stop>
+          <TableCell>
             <Checkbox
               :model-value="selectedExtensionNames.has(extension.name)"
               :aria-label="$t('g.selectItem', { name: extension.name })"
+              @click.stop
               @update:model-value="
                 (selected) => setExtensionSelected(extension.name, selected)
               "
@@ -87,11 +90,12 @@
             </Badge>
             <Badge v-else severity="info">{{ $t('g.custom') }}</Badge>
           </TableCell>
-          <TableCell class="text-right" @click.stop>
+          <TableCell class="text-right">
             <Switch
               :model-value="editingEnabledExtensions[extension.name]"
               :disabled="extensionStore.isExtensionReadOnly(extension.name)"
               :aria-label="extension.name"
+              @click.stop
               @update:model-value="
                 (enabled) => setExtensionEnabled(extension.name, enabled)
               "
@@ -111,7 +115,7 @@ import { useI18n } from 'vue-i18n'
 import Badge from '@/components/ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Checkbox from '@/components/ui/checkbox/Checkbox.vue'
-import ContextMenu from '@/components/ui/menu/ContextMenu.vue'
+import Menu from '@/components/ui/menu/Menu.vue'
 import type { MenuItem } from '@/components/ui/menu/types'
 import Message from '@/components/ui/message/Message.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
@@ -272,8 +276,7 @@ const applyChanges = () => {
   window.location.reload()
 }
 
-const menu = ref<InstanceType<typeof ContextMenu>>()
-const contextMenuItems = computed<MenuItem[]>(() => [
+const extensionActions = computed<MenuItem[]>(() => [
   {
     label: t('g.enableSelected'),
     icon: 'pi pi-check',

@@ -82,7 +82,6 @@
         :page="pagination.page"
         :total="pagination.total"
         :items-per-page="pagination.limit"
-        with-edge-buttons
         class="mt-3"
         @update:page="onPageChange"
       />
@@ -136,7 +135,8 @@ const pagination = ref({
 
 function eventAmount(event: AuditLog) {
   const amount = event.params?.amount
-  return typeof amount === 'number' ? amount : undefined
+  const value = typeof amount === 'string' ? Number(amount) : amount
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined
 }
 
 const tooltipContentMap = computed(() => {

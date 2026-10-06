@@ -9,8 +9,7 @@ const meta = {
   tags: ['autodocs'],
   args: { total: 240 },
   argTypes: {
-    total: { control: 'number' },
-    withEdgeButtons: { control: 'boolean' }
+    total: { control: 'number' }
   },
   render: (args) => ({
     components: { Pagination },
@@ -27,12 +26,4 @@ export const Default: Story = {}
 
 export const WithPageSize: Story = {
   args: { itemsPerPageOptions: [25, 50, 100] }
-}
-
-export const WithEdgeButtons: Story = {
-  args: { withEdgeButtons: true }
-}
-
-export const WithPageSizeAndEdgeButtons: Story = {
-  args: { itemsPerPageOptions: [25, 50, 100], withEdgeButtons: true }
 }

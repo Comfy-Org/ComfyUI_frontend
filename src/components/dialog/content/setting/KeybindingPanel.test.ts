@@ -1,9 +1,16 @@
-import { render, screen, waitFor, within } from '@testing-library/vue'
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within
+} from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import type { UserEvent } from '@testing-library/user-event'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { nextTick } from 'vue'
 
-import { testI18n } from '@/components/searchbox/v2/__test__/testUtils'
+import { testI18n } from '@/utils/__tests__/testI18n'
 import { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useCommandStore } from '@/stores/commandStore'
@@ -88,27 +95,26 @@ describe('KeybindingPanel', () => {
     registerCommand('command-multi', 'Multiple bindings', ['A', 'B'])
     registerCommand('command-single', 'Single binding', ['S'])
     renderPanel()
-    const multiRow = () =>
-      screen.getByRole('row', { name: /Multiple bindings.*Keybindings:.* -$/ })
 
     expect(
       screen.getByRole('row', { name: /Single binding/ })
     ).not.toHaveAttribute('aria-expanded')
-    expect(multiRow()).toHaveAttribute('aria-expanded', 'false')
+    const multiRow = screen.getByRole('row', { expanded: false })
+    expect(multiRow).toHaveAccessibleName(/^Multiple bindings/)
 
     await waitForSearchAutofocus()
-    multiRow().focus()
+    multiRow.focus()
     await user.keyboard('{Enter}')
 
     await waitFor(() =>
-      expect(multiRow()).toHaveAttribute('data-state', 'selected')
+      expect(multiRow).toHaveAttribute('data-state', 'selected')
     )
-    expect(multiRow()).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByRole('row', { expanded: true })).toBe(multiRow)
     expect(screen.getByTestId('keybinding-expansion-content')).toBeVisible()
 
-    expect(multiRow()).toHaveFocus()
+    expect(multiRow).toHaveFocus()
     await user.keyboard(' ')
-    expect(multiRow()).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.getByRole('row', { expanded: false })).toBe(multiRow)
     expect(
       screen.queryByTestId('keybinding-expansion-content')
     ).not.toBeInTheDocument()
@@ -140,29 +146,32 @@ describe('KeybindingPanel', () => {
     expect(alphaRow).toHaveFocus()
   })
 
-  it('changes page size, navigates to the last page, and resets on search', async () => {
+  it('keeps a row tabbable after tabbing out and hiding the last focused row', async () => {
     const user = userEvent.setup()
-    registerCommands(105)
-    const { container } = renderPanel()
+    registerCommand('command-alpha', 'Alpha')
+    registerCommand('command-bravo', 'Bravo')
+    renderPanel()
+    await waitForSearchAutofocus()
+    const sortButton = screen.getByRole('button', { name: 'Command' })
+    const bravoRow = screen.getByRole('row', { name: /^Bravo/ })
 
-    await user.click(screen.getByRole('combobox', { name: 'Items per page' }))
-    await user.click(await screen.findByRole('option', { name: '25' }))
-
-    await waitFor(() =>
-      expect(getVisibleCommandIds(container)).toHaveLength(25)
-    )
-    await user.click(screen.getByRole('button', { name: 'Last page' }))
-
-    await waitFor(() => expect(getVisibleCommandIds(container)).toHaveLength(5))
-    expect(screen.getByTitle('command-100')).toBeVisible()
-
+    bravoRow.focus()
+    bravoRow.addEventListener('keydown', (event) => event.preventDefault(), {
+      once: true
+    })
+    await user.tab({ shift: true })
+    await nextTick()
+    sortButton.focus()
     await user.type(
       screen.getByPlaceholderText('Search Keybindings...'),
-      'command-000'
+      'Alpha'
     )
+    expect(bravoRow).not.toBeInTheDocument()
 
-    expect(await screen.findByTitle('command-000')).toBeVisible()
-    expect(screen.queryByTitle('command-100')).not.toBeInTheDocument()
+    sortButton.focus()
+    await user.tab()
+
+    expect(screen.getByRole('row', { name: /^Alpha/ })).toHaveFocus()
   })
 
   it.for([
@@ -181,6 +190,15 @@ describe('KeybindingPanel', () => {
         await user.click(await screen.findByRole('option', { name: '100' }))
       },
       expectedRows: 100
+    },
+    {
+      change: 'searching',
+      act: (user: UserEvent) =>
+        user.type(
+          screen.getByPlaceholderText('Search Keybindings...'),
+          'command-00'
+        ),
+      expectedRows: 10
     }
   ])(
     'returns from the last page to the first after $change',
@@ -188,7 +206,7 @@ describe('KeybindingPanel', () => {
       const user = userEvent.setup()
       registerCommands(105)
       const { container } = renderPanel()
-      await user.click(screen.getByRole('button', { name: 'Last page' }))
+      await user.click(screen.getByRole('button', { name: 'Page 3' }))
       await waitFor(() =>
         expect(getVisibleCommandIds(container)).toHaveLength(5)
       )
@@ -254,16 +272,27 @@ describe('KeybindingPanel', () => {
     expect(editKeybinding).not.toHaveBeenCalledWith(
       expect.objectContaining({ mode: 'edit' })
     )
-
-    editKeybinding.mockClear()
-    within(row).getByRole('button', { name: 'Add new keybinding' }).focus()
-    await user.keyboard('{Enter}')
-    expect(editKeybinding).toHaveBeenCalledOnce()
-    expect(editKeybinding).toHaveBeenCalledWith(
-      expect.objectContaining({ commandId: 'command-single', mode: 'add' })
-    )
-    expect(row).not.toHaveAttribute('data-state', 'selected')
   })
+
+  it.for(['{Enter}', ' '])(
+    'runs a focused row action button once on %j without activating the row',
+    async (key) => {
+      const user = userEvent.setup()
+      registerCommand('command-single', 'Single binding', ['S'])
+      renderPanel()
+      await waitForSearchAutofocus()
+      const row = screen.getByRole('row', { name: /Single binding/ })
+
+      within(row).getByRole('button', { name: 'Add new keybinding' }).focus()
+      await user.keyboard(key)
+
+      expect(editKeybinding).toHaveBeenCalledOnce()
+      expect(editKeybinding).toHaveBeenCalledWith(
+        expect.objectContaining({ commandId: 'command-single', mode: 'add' })
+      )
+      expect(row).not.toHaveAttribute('data-state', 'selected')
+    }
+  )
 
   it('opens a row context menu whose command fires once', async () => {
     const user = userEvent.setup()
@@ -286,5 +315,20 @@ describe('KeybindingPanel', () => {
     await waitFor(() =>
       expect(screen.queryByRole('menu')).not.toBeInTheDocument()
     )
+  })
+
+  it('returns focus to the row when its keyboard-opened menu closes with Escape', async () => {
+    const user = userEvent.setup()
+    registerCommand('command-plain', 'Plain command')
+    renderPanel()
+    await waitForSearchAutofocus()
+    const row = screen.getByRole('row', { name: /Plain command/ })
+
+    row.focus()
+    await fireEvent.contextMenu(row)
+    await waitFor(() => expect(screen.getByRole('menu')).toHaveFocus())
+    await user.keyboard('{Escape}')
+
+    await waitFor(() => expect(row).toHaveFocus())
   })
 })

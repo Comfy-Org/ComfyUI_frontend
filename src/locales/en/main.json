@@ -185,8 +185,6 @@
     "back": "Back",
     "previous": "Previous",
     "next": "Next",
-    "firstPage": "First page",
-    "lastPage": "Last page",
     "pageNumber": "Page {page}",
     "itemsPerPage": "Items per page",
     "actions": "Actions",

@@ -1,8 +1,8 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
-import { testI18n } from '@/components/searchbox/v2/__test__/testUtils'
+import { testI18n } from '@/utils/__tests__/testI18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useExtensionStore } from '@/stores/extensionStore'
 
@@ -63,14 +63,23 @@ describe('ExtensionPanel', () => {
     ).toBePartiallyChecked()
   })
 
-  it('toggles selection from anywhere on the row except its enable switch', async () => {
+  it('toggles selection from anywhere on the row, including cell padding, except its enable switch', async () => {
     const user = userEvent.setup()
     registerExtensions('Alpha')
     vi.spyOn(useSettingStore(), 'set').mockResolvedValue()
     renderPanel()
     const checkbox = screen.getByRole('checkbox', { name: 'Select Alpha' })
+    const [checkboxCell, nameCell, switchCell] = within(
+      screen.getByRole('row', { name: /Alpha Custom/ })
+    ).getAllByRole('cell')
 
-    await user.click(screen.getByRole('cell', { name: 'Alpha Custom' }))
+    await user.click(nameCell)
+    expect(checkbox).toBeChecked()
+
+    await user.click(checkboxCell)
+    expect(checkbox).not.toBeChecked()
+
+    await user.click(switchCell)
     expect(checkbox).toBeChecked()
 
     await user.click(checkbox)
@@ -126,8 +135,10 @@ describe('ExtensionPanel', () => {
     const reload = vi.spyOn(window.location, 'reload').mockReturnValue()
 
     renderPanel()
+    const moreOptions = screen.getByRole('button', { name: 'More Options' })
+    expect(moreOptions).toHaveAttribute('aria-haspopup', 'menu')
     await user.click(screen.getByRole('checkbox', { name: 'Select Alpha' }))
-    await user.click(screen.getByRole('button', { name: 'More Options' }))
+    await user.click(moreOptions)
     await user.click(
       await screen.findByRole('menuitem', { name: 'Disable Selected' })
     )

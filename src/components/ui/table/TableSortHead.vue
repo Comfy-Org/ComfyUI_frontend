@@ -1,11 +1,6 @@
 <template>
   <TableHead :class="className" :aria-sort="direction ?? 'none'">
-    <Button
-      variant="link"
-      size="unset"
-      class="gap-1 font-normal"
-      @click="toggle"
-    >
+    <Button variant="link" size="link" @click="toggle">
       <slot />
       <i
         v-if="direction"

@@ -47,7 +47,11 @@
           </TableHead>
         </TableRow>
       </TableHeader>
-      <RovingFocusGroup as-child orientation="vertical">
+      <RovingFocusGroup
+        v-model:current-tab-stop-id="currentRowTabStopId"
+        as-child
+        orientation="vertical"
+      >
         <TableBody>
           <KeybindingCommandRows
             v-for="command in visibleCommands"
@@ -55,7 +59,7 @@
             :command="command"
             :expanded="expandedCommandIds.has(command.id)"
             :selected="selectedCommandId === command.id"
-            @row-click="activateRow(command)"
+            @activate="activateRow(command)"
             @row-dblclick="handleRowDblClick(command)"
             @row-contextmenu="handleRowContextMenu($event, command)"
             @edit="editKeybinding(command, $event)"
@@ -73,9 +77,8 @@
       v-model:items-per-page="commandsPerPage"
       :total="filteredCommands.length"
       :items-per-page-options="commandsPerPageOptions"
-      with-edge-buttons
     />
-    <ContextMenu ref="rowMenu" :model="rowMenuItems" />
+    <ContextMenu ref="rowMenu" :model="rowMenuItems" @hide="restoreRowFocus" />
 
     <Button
       v-tooltip="$t('g.resetAllKeybindingsTooltip')"
@@ -217,16 +220,21 @@ const menuEntries = computed<MenuItem[]>(() => [
 
 // Keybinding table logic
 const commandsData = computed<KeybindingCommand[]>(() => {
-  return Object.values(commandStore.commands).map((command) => ({
-    id: command.id,
-    label: t(
-      `commands.${normalizeI18nKey(command.id)}.label`,
-      command.label ?? command.id
-    ),
-    keybindings: keybindingStore.getKeybindingsByCommandId(command.id),
-    source: command.source,
-    isModified: keybindingStore.isCommandKeybindingModified(command.id)
-  }))
+  return Object.values(commandStore.commands).map((command) => {
+    const keybindings = keybindingStore.getKeybindingsByCommandId(command.id)
+    return {
+      expandable: keybindings.length >= 2,
+      id: command.id,
+      isModified: keybindingStore.isCommandKeybindingModified(command.id),
+      keybindings,
+      label: t(
+        `commands.${normalizeI18nKey(command.id)}.label`,
+        command.label ?? command.id
+      ),
+      rowId: `keybinding-row-${command.id}`,
+      source: command.source
+    }
+  })
 })
 
 const commandSortDirection = ref<TableSortDirection | null>(null)
@@ -250,8 +258,20 @@ const visibleCommands = computed(() => {
   return filteredCommands.value.slice(start, start + commandsPerPage.value)
 })
 
-watch([commandSortDirection, commandsPerPage], () => {
+watch(commandSortDirection, () => {
   currentPage.value = 1
+})
+
+const focusedRowTabStopId = ref<string | null>(null)
+const currentRowTabStopId = computed({
+  get: () => {
+    const rowIds = visibleCommands.value.map((command) => command.rowId)
+    const focused = focusedRowTabStopId.value
+    return focused && rowIds.includes(focused) ? focused : (rowIds[0] ?? null)
+  },
+  set: (rowId: string | null) => {
+    focusedRowTabStopId.value = rowId
+  }
 })
 
 const expandedCommandIds = ref<Set<string>>(new Set())
@@ -274,6 +294,7 @@ const editKeybindingDialog = useEditKeybindingDialog()
 
 const rowMenu = useTemplateRef('rowMenu')
 const contextMenuTarget = ref<KeybindingCommand | null>(null)
+let rowMenuOrigin: HTMLElement | null = null
 const rowMenuItems = computed<MenuItem[]>(() => {
   const target = contextMenuTarget.value
   if (!target) return []
@@ -327,10 +348,7 @@ function addKeybinding(command: KeybindingCommand) {
 
 function activateRow(command: KeybindingCommand) {
   selectedCommandId.value = command.id
-  if (
-    command.keybindings.length >= 2 ||
-    expandedCommandIds.value.has(command.id)
-  ) {
+  if (command.expandable || expandedCommandIds.value.has(command.id)) {
     toggleExpanded(command.id)
   }
 }
@@ -346,7 +364,17 @@ function handleRowDblClick(command: KeybindingCommand) {
 function handleRowContextMenu(event: MouseEvent, command: KeybindingCommand) {
   selectedCommandId.value = command.id
   contextMenuTarget.value = command
+  rowMenuOrigin =
+    event.currentTarget instanceof HTMLElement ? event.currentTarget : null
   rowMenu.value?.show(event)
+}
+
+function restoreRowFocus() {
+  const focused = document.activeElement
+  if (focused === document.body || focused?.closest('[role="menu"]')) {
+    rowMenuOrigin?.focus()
+  }
+  rowMenuOrigin = null
 }
 
 async function removeSingleKeybinding(
@@ -381,7 +409,7 @@ function handleRemoveAllKeybindings(command: KeybindingCommand) {
 }
 
 function handleRemoveKeybindingFromMenu(command: KeybindingCommand) {
-  if (command.keybindings.length >= 2) {
+  if (command.expandable) {
     handleRemoveAllKeybindings(command)
   } else {
     removeSingleKeybinding(command, 0)
