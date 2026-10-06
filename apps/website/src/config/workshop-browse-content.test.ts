@@ -146,6 +146,14 @@ function normaliseSummary(summary: string): string {
 }
 
 describe('model summaries', () => {
+  it('gives every model page a summary', () => {
+    const missing = workshopModels
+      .filter(({ summary }) => !summary?.trim())
+      .map(({ slug }) => slug)
+
+    expect(missing).toEqual([])
+  })
+
   it('ships no summary shared by two pages', () => {
     const slugsBySummary = new Map<string, string[]>()
     for (const { slug, summary } of workshopModels) {
