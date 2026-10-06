@@ -4,8 +4,8 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { computed, ref } from 'vue'
 import type { AnchorHTMLAttributes, HTMLAttributes } from 'vue'
 
-import BrandButton from '../common/BrandButton.vue'
-import CheckIcon from '../icons/CheckIcon.vue'
+import BrandButton from '@/components/common/BrandButton.vue'
+import CheckIcon from '@/components/icons/CheckIcon.vue'
 
 type Cta = {
   label: string

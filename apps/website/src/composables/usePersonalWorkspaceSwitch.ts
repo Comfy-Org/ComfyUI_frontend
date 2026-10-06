@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 
-import { refreshWorkshopCredits } from '../config/workshop-credits'
-import { useWorkshopSession } from '../config/workshop-session-state'
+import { refreshWorkshopCredits } from '@/config/workshop-credits'
+import { useWorkshopSession } from '@/config/workshop-session-state'
 
 /**
  * Moves a workspace member whose team is out of credits onto their personal

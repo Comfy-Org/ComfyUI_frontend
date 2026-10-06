@@ -408,7 +408,10 @@
         :cloud-url="activeDetailCloudUrl"
         :is-partner-node="activeDetail.template.openSource === false"
         :open-pending="openPending"
+        :model-setup="activeDetailModelSetup"
         @open-template="onOpenTemplate"
+        @download-models-and-open="onDownloadModelsAndOpen"
+        @download-model="onDownloadModel"
       >
         <template #preview>
           <TemplatePreview
@@ -466,11 +469,16 @@ import type { TemplateSortMode } from '@/composables/useTemplateFiltering'
 import { getComfyCloudBaseUrl } from '@/config/comfyApi'
 import { formatCategoryLabel } from '@/platform/assets/utils/categoryLabel'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
-import { isModelDownloadable } from '@/platform/missingModel/missingModelDownload'
+import { loadFolderPathsOnce } from '@/platform/missingModel/folderPathCache'
+import {
+  isModelDownloadable,
+  modelDownloadNeedsFolderPaths
+} from '@/platform/missingModel/missingModelDownload'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { getModelFileKey } from '@/platform/workflow/core/utils/modelRequirements'
 import { useTemplateModelAvailability } from '@/platform/workflow/templates/composables/useTemplateModelAvailability'
+import { useTemplateModelRowDownloads } from '@/platform/workflow/templates/composables/useTemplateModelRowDownloads'
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import type { PreparedWorkflowTemplate } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import type {
@@ -478,7 +486,11 @@ import type {
   TemplateTypeFilter
 } from '@/platform/workflow/templates/types/template'
 import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
-import type { TemplateDetailGroup } from '@/platform/workflow/templates/types/templateDetail'
+import type {
+  TemplateDetailGroup,
+  TemplateDetailRow,
+  TemplateModelSetup
+} from '@/platform/workflow/templates/types/templateDetail'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import {
   filterTemplatesByType,
@@ -489,7 +501,12 @@ import { resolveTemplateModelMetadata } from '@/platform/workflow/templates/util
 import { extractTemplateModelRequirementDetails } from '@/platform/workflow/templates/utils/templateModelRequirements'
 import type { TemplateModelRequirementDetail } from '@/platform/workflow/templates/utils/templateModelRequirements'
 import type { ResolvedTemplateModelAvailability } from '@/platform/workflow/templates/utils/templateModelAvailability'
-import { deriveTemplateModelSetup } from '@/platform/workflow/templates/utils/templateModelSetup'
+import {
+  deriveTemplateModelSetup,
+  isModelDownloadCandidate,
+  isModelRowComplete,
+  remainingModelDownloadTotal
+} from '@/platform/workflow/templates/utils/templateModelSetup'
 import type {
   TemplateModelSetupResult,
   TemplateModelSetupRow
@@ -517,6 +534,7 @@ onMounted(() => {
 
 // Wrap onClose to track session end
 const onClose = () => {
+  activeDetail.value?.modelSetup.rowDownloads.dispose()
   invalidateDetailWork()
   const timeSpentSeconds = Math.floor(
     (Date.now() - sessionStartTime.value) / 1000
@@ -753,8 +771,12 @@ const hasActiveFilters = computed(
 const mobileFiltersOpen = ref(false)
 const hoveredTemplate = ref<string | null>(null)
 const cardRefs = ref<HTMLElement[]>([])
+type TemplateModelRowDownloads = ReturnType<typeof useTemplateModelRowDownloads>
+
 type ActiveTemplateModelSetup = {
   result: TemplateModelSetupResult
+  pending: boolean
+  rowDownloads: TemplateModelRowDownloads
 }
 
 const modalLayout = ref<InstanceType<typeof BaseModalLayout> | null>(null)
@@ -949,6 +971,7 @@ watch(
     selectedRunsOn
   ],
   () => {
+    activeDetail.value?.modelSetup.rowDownloads.dispose()
     invalidateDetailWork()
     activeDetail.value = null
     resetPagination()
@@ -989,8 +1012,67 @@ function getModelDetailDescription(row: TemplateModelSetupRow): string {
   return parts.filter(Boolean).join(' · ')
 }
 
+function toModelDetailRow(
+  row: TemplateModelSetupRow,
+  rowDownloads: TemplateModelRowDownloads
+): TemplateDetailRow {
+  const detailRow: TemplateDetailRow = {
+    id: `model:${getModelFileKey(row.model)}`,
+    name: row.model.name,
+    description: getModelDetailDescription(row)
+  }
+
+  switch (row.status) {
+    case 'installed':
+      return {
+        ...detailRow,
+        status: {
+          kind: 'installed',
+          label: t('templateWorkflows.detail.installed')
+        }
+      }
+    case 'downloadable':
+      return {
+        ...detailRow,
+        status: {
+          kind: 'downloadable',
+          label: t('templateWorkflows.detail.downloadModel'),
+          downloadState: rowDownloads.stateFor(row.model)
+        }
+      }
+    case 'manual':
+      return {
+        ...detailRow,
+        status: {
+          kind: 'manual',
+          label: t('templateWorkflows.detail.getItManually'),
+          href: row.href
+        }
+      }
+    case 'unavailable':
+      return {
+        ...detailRow,
+        status: {
+          kind: 'unavailable',
+          label: t('templateWorkflows.detail.unavailable')
+        }
+      }
+    case 'unknown':
+      return {
+        ...detailRow,
+        status: {
+          kind: 'unknown',
+          label: t('templateWorkflows.detail.unknown')
+        }
+      }
+    default:
+      return row satisfies never
+  }
+}
+
 function buildTemplateDetailGroups(
-  setup: TemplateModelSetupResult
+  setup: TemplateModelSetupResult,
+  rowDownloads: TemplateModelRowDownloads
 ): readonly TemplateDetailGroup[] {
   if (setup.rows.length === 0) return []
 
@@ -1001,18 +1083,59 @@ function buildTemplateDetailGroups(
       ...(setup.declarationTotal.isComplete && {
         total: formatSize(setup.declarationTotal.bytes)
       }),
-      rows: setup.rows.map((row) => ({
-        id: `model:${getModelFileKey(row.model)}`,
-        name: row.model.name,
-        description: getModelDetailDescription(row)
-      }))
+      rows: setup.rows.map((row) => toModelDetailRow(row, rowDownloads))
     }
   ]
 }
 
 const activeDetailGroups = computed<readonly TemplateDetailGroup[]>(() => {
-  const setup = activeDetail.value?.modelSetup.result
-  return setup ? buildTemplateDetailGroups(setup) : []
+  const setup = activeDetail.value?.modelSetup
+  return setup
+    ? buildTemplateDetailGroups(setup.result, setup.rowDownloads)
+    : []
+})
+
+/** The rows this click would start. */
+const activeDetailModelDownloadCandidates = computed<
+  readonly TemplateModelSetupRow[]
+>(() => {
+  const setup = activeDetail.value?.modelSetup
+  if (!setup || setup.pending) return []
+  return setup.result.rows.filter((row) =>
+    isModelDownloadCandidate(row, setup.rowDownloads.stateFor)
+  )
+})
+
+const activeDetailModelDownloadsAvailable = computed(
+  () => activeDetailModelDownloadCandidates.value.length > 0
+)
+
+/** Withheld unless every candidate declares a size: a partial total reads as complete. */
+const activeDetailModelRequirementsMet = computed(() => {
+  const setup = activeDetail.value?.modelSetup
+  return Boolean(
+    setup &&
+    setup.result.rows.every((row) =>
+      isModelRowComplete(row, setup.rowDownloads.stateFor)
+    )
+  )
+})
+
+const activeDetailModelSetup = computed<TemplateModelSetup | undefined>(() => {
+  const setup = activeDetail.value?.modelSetup
+  if (!setup) return undefined
+  if (setup.pending) return { state: 'resolving' }
+  if (activeDetailModelRequirementsMet.value) return undefined
+  if (!activeDetailModelDownloadsAvailable.value) return undefined
+
+  const total = remainingModelDownloadTotal(
+    setup.result.rows,
+    setup.rowDownloads.stateFor
+  )
+  return {
+    state: 'startable',
+    remainingSize: total.isComplete ? formatSize(total.bytes) : undefined
+  }
 })
 
 function applyTemplateModelMetadata(
@@ -1031,6 +1154,7 @@ function applyTemplateModelMetadata(
     metadata,
     { isDownloadable: isModelDownloadable }
   )
+  setup.pending = false
 }
 
 function handleTemplateModelMetadataError(
@@ -1039,6 +1163,8 @@ function handleTemplateModelMetadataError(
   controller: AbortController
 ) {
   if (controller.signal.aborted || generation !== detailGeneration) return
+  const setup = activeDetail.value?.modelSetup
+  if (setup) setup.pending = false
   reportError(error, {
     surface: 'graph',
     errorType: 'workflow_template_model_metadata_failed',
@@ -1097,12 +1223,19 @@ async function showModelSetupIfNeeded(
   )
   if (requirements.length === 0) return false
 
-  const availability = await resolveModelAvailability(
-    requirements.map(({ model }) => model)
-  )
+  // Only the Electron path needs real directories, and resolving them here
+  // rather than mid-dispatch keeps a download from depending on a lookup that
+  // can finish after this view is gone.
+  const [availability, folderPaths] = await Promise.all([
+    resolveModelAvailability(requirements.map(({ model }) => model)),
+    modelDownloadNeedsFolderPaths()
+      ? loadFolderPathsOnce().catch(() => ({}))
+      : Promise.resolve({})
+  ])
   if (generation !== detailGeneration) return true
   if (!availability.some(({ status }) => status === 'missing')) return false
 
+  const rowDownloads = useTemplateModelRowDownloads({ folderPaths })
   activeDetail.value = {
     template,
     prepared: markRaw(prepared),
@@ -1112,7 +1245,9 @@ async function showModelSetupIfNeeded(
         availability,
         { status: 'aborted' },
         { isDownloadable: isModelDownloadable }
-      )
+      ),
+      pending: true,
+      rowDownloads
     }
   }
   const controller = new AbortController()
@@ -1160,6 +1295,7 @@ const onLoadWorkflow = async (template: TemplateInfo, event: MouseEvent) => {
 async function onBackToTemplates() {
   if (openPending.value) return
 
+  activeDetail.value?.modelSetup.rowDownloads.dispose()
   invalidateDetailWork()
   activeDetail.value = null
   await nextTick()
@@ -1167,9 +1303,33 @@ async function onBackToTemplates() {
   detailOrigin?.focus()
 }
 
+function onDownloadModel(rowId: string) {
+  const setup = activeDetail.value?.modelSetup
+  if (!setup) return
+
+  const row = setup.result.rows.find(
+    (candidate) =>
+      candidate.status === 'downloadable' &&
+      `model:${getModelFileKey(candidate.model)}` === rowId
+  )
+  if (row?.status === 'downloadable') setup.rowDownloads.request(row.model)
+}
+
+async function onDownloadModelsAndOpen() {
+  const setup = activeDetail.value?.modelSetup
+  if (!setup || setup.pending || openPending.value) return
+
+  for (const row of activeDetailModelDownloadCandidates.value) {
+    setup.rowDownloads.request(row.model)
+  }
+
+  await onOpenTemplate()
+}
+
 function onSelectNavItem(value: string | null) {
   if (openPending.value) return
 
+  activeDetail.value?.modelSetup.rowDownloads.dispose()
   invalidateDetailWork()
   activeDetail.value = null
   selectedNavItem.value = value
@@ -1249,6 +1409,7 @@ const { isLoading } = useAsyncState(
 )
 
 onBeforeUnmount(() => {
+  activeDetail.value?.modelSetup.rowDownloads.dispose()
   invalidateDetailWork()
   detailOrigin = null
   cardRefs.value = [] // Release DOM refs

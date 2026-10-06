@@ -179,9 +179,6 @@ export const TestIds = {
     convertSubgraph: 'convert-to-subgraph-button',
     bypass: 'bypass-button'
   },
-  menu: {
-    moreMenuContent: 'more-menu-content'
-  },
   helpCenter: {
     button: 'help-center-button',
     popup: 'help-center-popup',
@@ -279,6 +276,7 @@ export const TestIds = {
   },
   templates: {
     content: 'template-workflows-content',
+    detail: 'template-workflow-detail',
     workflowCard: (id: string) => `template-workflow-${id}`
   },
   user: {
@@ -291,9 +289,7 @@ export const TestIds = {
     progressOverlay: 'queue-progress-overlay',
     progressNodeFill: 'queue-progress-node-fill',
     overlayToggle: 'queue-overlay-toggle',
-    dockedJobHistoryAction: 'docked-job-history-action',
     jobDetailsPopover: 'queue-job-details-popover',
-    clearHistoryAction: 'clear-history-action',
     jobAssetsList: 'job-assets-list',
     notificationBanner: 'queue-notification-banner'
   },

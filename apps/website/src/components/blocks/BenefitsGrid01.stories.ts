@@ -126,7 +126,7 @@ export const TwoColumnsUnnumbered: Story = {
       }
     ],
     footnote:
-      'DPA and enterprise agreement available. US processing on Google Cloud. 99.5% workflow-execution uptime SLA. SOC 2 Type II audit in progress.',
+      'DPA and enterprise agreement available. US processing on Google Cloud. 99.5% workflow-execution uptime SLA. SOC 2 Type II audit complete; report available on request.',
     primaryCta: { label: 'VIEW TRUST CENTER', href: '#' },
     secondaryCta: { label: 'REQUEST DEMO', href: '#' }
   }

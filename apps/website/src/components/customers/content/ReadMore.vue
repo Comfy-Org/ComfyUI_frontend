@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import type { Locale } from '../../../i18n/translations'
-import { translationsFor } from '../../../i18n/translations'
-import Button from '../../ui/button/Button.vue'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import Button from '@/components/ui/button/Button.vue'
 
 const { href, locale = 'en' } = defineProps<{
   href: string

@@ -1,10 +1,10 @@
 import { expect } from '@playwright/test'
 
-import { getRoutes } from '../src/config/routes'
-import { creatorReviews } from '../src/data/creatorReviews'
-import { seedancePage } from '../src/data/seedance'
-import { t } from '../src/i18n/translations'
-import type { ModelLaunchCta } from '../src/templates/model-launch/types'
+import { getRoutes } from '@/config/routes'
+import { creatorReviews } from '@/data/creatorReviews'
+import { seedancePage } from '@/data/seedance'
+import { t } from '@/i18n/translations'
+import type { ModelLaunchCta } from '@/templates/model-launch/types'
 import { test } from './fixtures/blockExternalMedia'
 import { waitForIsland } from './fixtures/islands'
 

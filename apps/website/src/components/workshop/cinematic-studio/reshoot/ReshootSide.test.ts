@@ -8,8 +8,8 @@ import {
   RESHOOT_ASPECTS,
   RESHOOT_MOTIONS,
   RESHOOT_SIZES
-} from '../../../../lib/workshop/cinematic-studio/reshoot'
-import { translationsFor } from '../../../../i18n/translations'
+} from '@/lib/workshop/cinematic-studio/reshoot'
+import { translationsFor } from '@/i18n/translations'
 import ReshootSide from './ReshootSide.vue'
 
 const { t: rc } = translationsFor('en')
