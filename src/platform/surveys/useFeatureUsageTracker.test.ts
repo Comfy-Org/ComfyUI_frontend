@@ -620,7 +620,6 @@ describe('useFeatureUsageTracker', () => {
     { useCount: 1, firstUsed: -1, lastUsed: 2_000 },
     { useCount: 1, firstUsed: 0, lastUsed: 2_000 },
     { useCount: 1, firstUsed: 1_000, lastUsed: '' },
-    { useCount: 1, firstUsed: 1_000, lastUsed: Number.MAX_SAFE_INTEGER },
     { useCount: 1, firstUsed: 1_000, lastUsed: Number.MAX_SAFE_INTEGER + 1 }
   ])('rejects invalid stored usage $useCount', (storedUsage) => {
     localStorage.setItem(
@@ -654,6 +653,28 @@ describe('useFeatureUsageTracker', () => {
 
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
     expect(stored['maximum-usage']?.useCount).toBe(Number.MAX_SAFE_INTEGER - 1)
+  })
+
+  it('clamps future timestamps without discarding usage', () => {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        'future-timestamp': {
+          useCount: 5,
+          firstUsed: Number.MAX_SAFE_INTEGER,
+          lastUsed: Number.MAX_SAFE_INTEGER
+        }
+      })
+    )
+
+    useFeatureUsageTracker('future-timestamp').trackUsage()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored['future-timestamp']).toEqual({
+      useCount: 6,
+      firstUsed: Date.now(),
+      lastUsed: Date.now()
+    })
   })
 
   it('repairs malformed JSON storage data', () => {

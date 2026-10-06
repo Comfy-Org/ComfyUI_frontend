@@ -47,11 +47,11 @@ function isValidUseCount(value: number | undefined): value is number {
   return value !== undefined && value >= 0 && value <= MAX_USAGE_COUNT
 }
 
-function isValidTimestamp(
-  value: number | undefined,
-  now: number
-): value is number {
-  return value !== undefined && value > 0 && value <= now
+function normalizeTimestamp(value: unknown, now: number) {
+  const timestamp = safeInteger(value)
+  return timestamp !== undefined && timestamp > 0
+    ? Math.min(timestamp, now)
+    : undefined
 }
 
 function normalizeUsageData(value: unknown): FeatureUsageRecord {
@@ -62,12 +62,12 @@ function normalizeUsageData(value: unknown): FeatureUsageRecord {
       if (!isRecord(usage)) return []
 
       const useCount = safeInteger(usage.useCount)
-      const firstUsed = safeInteger(usage.firstUsed)
-      const lastUsed = safeInteger(usage.lastUsed)
       const now = Date.now()
+      const firstUsed = normalizeTimestamp(usage.firstUsed, now)
+      const lastUsed = normalizeTimestamp(usage.lastUsed, now)
       return isValidUseCount(useCount) &&
-        isValidTimestamp(firstUsed, now) &&
-        isValidTimestamp(lastUsed, now)
+        firstUsed !== undefined &&
+        lastUsed !== undefined
         ? [[featureId, { useCount, firstUsed, lastUsed }]]
         : []
     })
