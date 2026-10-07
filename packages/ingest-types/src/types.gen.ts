@@ -9764,6 +9764,10 @@ export type GetFeaturesResponses = {
       | 'above-input'
       | 'inside-input'
     /**
+     * Authenticated assignment for the Agent starter-prompt experiment. Current Cloud responses include it and default to control when the caller is unauthenticated, evaluation is unavailable, or no treatment is assigned. It remains optional in the client contract so older environments and partial feature fixtures fail closed. Reading this field does not constitute experiment exposure; the frontend emits the custom exposure event only after rendering the starter prompt surface.
+     */
+    'agent-starter-prompt-set'?: 'control' | 'test'
+    /**
      * Origin of the billing-web deployment paired with this Cloud environment (e.g. https://billing.comfy.org). Absent when BILLING_WEB_URL is not configured on the server, so a client can tell "not configured" from "configured as empty".
      */
     billing_web_url?: string
