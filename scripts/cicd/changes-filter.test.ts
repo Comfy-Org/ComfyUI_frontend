@@ -186,12 +186,12 @@ it.for([
     expected: true
   },
   {
-    name: 'website plus root pull request',
+    name: 'website plus docs pull request',
     relevant: {
-      relevant: 'true',
-      unit: 'true',
-      e2e: 'true',
-      source: 'true',
+      relevant: 'false',
+      unit: 'false',
+      e2e: 'false',
+      source: 'false',
       outside_website: 'true'
     },
     filter: { app_website: 'true', deps: 'false' },
