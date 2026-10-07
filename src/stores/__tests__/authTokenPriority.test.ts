@@ -402,7 +402,7 @@ describe('auth token priority chain', () => {
       ).toHaveBeenCalledOnce()
       expect(
         vi.mocked(useTeamWorkspaceStore().resetForIdentityChange)
-      ).toHaveBeenCalledOnce()
+      ).not.toHaveBeenCalled()
       expect(
         vi.mocked(useWorkspaceAuthStore().mintAtLogin)
       ).toHaveBeenCalledOnce()

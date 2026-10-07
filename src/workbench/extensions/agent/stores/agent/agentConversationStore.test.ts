@@ -1008,6 +1008,59 @@ describe('useAgentConversationStore', () => {
     ])
   })
 
+  it('preserves retired asks across remounts but clears them at an owner boundary', () => {
+    vi.useFakeTimers()
+    try {
+      const store = useAgentConversationStore()
+      const transcript = [
+        historyRow(1, 'user', 'turn-1', 'Run it', 'user-message-1'),
+        zAgentMessages.parse([
+          {
+            id: 'assistant-message-1',
+            thread_id: 'th',
+            seq: 2,
+            role: 'assistant',
+            status: 'streaming',
+            turn_id: 'turn-1',
+            pending_ask: {
+              message_id: 'assistant-message-1',
+              ask_id: 'turn-1:call-1',
+              kind: 'run_approval',
+              context: { workflow_id: 'workflow-1' },
+              prompt: 'Run workflow?',
+              options: [{ id: 'run', label: 'Run' }],
+              min_selections: 1,
+              max_selections: 1,
+              allow_other: false
+            }
+          }
+        ])[0]
+      ]
+      const hasCard = () =>
+        store.messages.some((message) =>
+          message.parts.some(
+            (part) => (part as { type: string }).type === 'runApproval'
+          )
+        )
+
+      store.setThreadId('th')
+      store.hydrate(transcript)
+      store.retireAsk('turn-1:call-1', 'th')
+      store.reset()
+      store.setThreadId('th')
+      store.hydrate(transcript)
+      expect(hasCard()).toBe(false)
+
+      store.resetForStorageOwnerTransition()
+      store.setThreadId('th')
+      store.hydrate(transcript)
+
+      expect(hasCard()).toBe(true)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('recordFailedSend renders [user, assistant(notice)] and leaves the turn idle', () => {
     const store = useAgentConversationStore()
     store.recordFailedSend('local-error-1' as TurnId, 'boom', 'send failed')

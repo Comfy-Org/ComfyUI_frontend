@@ -1,11 +1,14 @@
-import { expect } from '@playwright/test'
+import { expect, mergeTests } from '@playwright/test'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
+import { unsafeStorageScope } from '@/platform/workflow/persistence/testUtils/storageScope'
 import type { WorkspaceTokenResponse } from '@/platform/workspace/stores/workspaceAuthStore'
 
 import type { Page } from '@playwright/test'
 
-import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { ComfyPage, comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { AssetsSidebarTab } from '@e2e/fixtures/components/SidebarTab'
 import {
   CLOUD_REMOTE_CONFIG,
@@ -14,9 +17,12 @@ import {
 } from '@e2e/fixtures/data/cloudWorkspace'
 import { AssetsHelper } from '@e2e/fixtures/helpers/AssetsHelper'
 import { CloudWorkspaceMockHelper } from '@e2e/fixtures/helpers/CloudWorkspaceMockHelper'
+import { identityPersistenceFixture } from '@e2e/fixtures/identityPersistenceFixture'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { member } from '@e2e/fixtures/utils/workspaceMocks'
+
+const test = mergeTests(comfyPageFixture, identityPersistenceFixture)
 
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL ?? 'http://localhost:8188'
 
@@ -39,6 +45,21 @@ const ACCOUNT_B = {
 } as const
 
 type MockAccount = typeof ACCOUNT_A | typeof ACCOUNT_B
+
+const IDENTITY_SENTINELS = {
+  a: {
+    draft: 'account-a-draft-sentinel',
+    transcript: 'account A transcript sentinel',
+    thread: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+    binding: 'account-a-binding-sentinel'
+  },
+  b: {
+    draft: 'account-b-draft-sentinel',
+    transcript: 'account B transcript sentinel',
+    thread: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+    binding: 'account-b-binding-sentinel'
+  }
+} as const
 
 interface FirebasePasswordSignInResponse {
   kind: 'identitytoolkit#VerifyPasswordResponse'
@@ -123,9 +144,32 @@ function firebaseLookupResponse(account: MockAccount): FirebaseLookupResponse {
 
 test.describe('Cloud account switch', { tag: '@cloud' }, () => {
   test('keeps workspace bearer and session cookie on the switched account', async ({
-    page
+    page,
+    request,
+    identityPersistence
   }) => {
     test.setTimeout(60_000)
+    const comfyPage = new ComfyPage(page, request)
+    const agentPanel = new AgentPanel(page)
+    const accountAIdentity = {
+      userId: ACCOUNT_A.uid,
+      workspaceId: TEAM_WORKSPACE.id,
+      threadId: IDENTITY_SENTINELS.a.thread,
+      transcript: IDENTITY_SENTINELS.a.transcript,
+      bindingId: IDENTITY_SENTINELS.a.binding,
+      tabPath: `workflows/${IDENTITY_SENTINELS.a.draft}.json`,
+      draftName: IDENTITY_SENTINELS.a.draft
+    }
+    const accountBIdentity = {
+      userId: ACCOUNT_B.uid,
+      workspaceId: TEAM_WORKSPACE.id,
+      threadId: IDENTITY_SENTINELS.b.thread,
+      transcript: IDENTITY_SENTINELS.b.transcript,
+      bindingId: IDENTITY_SENTINELS.b.binding,
+      tabPath: `workflows/${IDENTITY_SENTINELS.b.draft}.json`,
+      draftName: IDENTITY_SENTINELS.b.draft
+    }
+    const identityStates = [accountAIdentity, accountBIdentity]
 
     await new CloudWorkspaceMockHelper(page).setup([
       ...DEFAULT_TEAM_MEMBERS,
@@ -145,6 +189,7 @@ test.describe('Cloud account switch', { tag: '@cloud' }, () => {
 
     const features = {
       ...CLOUD_REMOTE_CONFIG,
+      'agent-in-app-experience': true,
       onboarding_survey_enabled: false,
       unified_cloud_auth: false
     } satisfies RemoteConfig
@@ -293,6 +338,9 @@ test.describe('Cloud account switch', { tag: '@cloud' }, () => {
       })
     })
 
+    await identityPersistence.mockAgentApi(identityStates)
+    await identityPersistence.seedAtStartup(identityStates)
+
     await test.step('Establish account A credentials', async () => {
       await page.goto(APP_URL, { waitUntil: 'domcontentloaded' })
       await expect
@@ -301,6 +349,26 @@ test.describe('Cloud account switch', { tag: '@cloud' }, () => {
       await expect
         .poll(() => sessionOwners, { timeout: 15_000 })
         .toContain(ACCOUNT_A.id)
+      await expect(
+        page.getByRole('tab', {
+          name: IDENTITY_SENTINELS.a.draft,
+          exact: true
+        })
+      ).toBeVisible()
+      await expect(
+        page.getByRole('tab', {
+          name: IDENTITY_SENTINELS.b.draft,
+          exact: true
+        })
+      ).toHaveCount(0)
+      await agentPanel.open()
+      await expect(agentPanel.userMessages).toHaveText([
+        IDENTITY_SENTINELS.a.transcript
+      ])
+      await expect(
+        agentPanel.root.getByText(IDENTITY_SENTINELS.b.transcript)
+      ).toHaveCount(0)
+      await agentPanel.close()
     })
 
     await test.step('Switch to account B', async () => {
@@ -352,6 +420,51 @@ test.describe('Cloud account switch', { tag: '@cloud' }, () => {
       expect(credentialEvents.indexOf(`session:${ACCOUNT_B.id}`)).toBeLessThan(
         credentialEvents.indexOf(`workspace:${ACCOUNT_B.id}`)
       )
+      await comfyPage.waitForAppReady()
+      await expect(
+        page.getByRole('tab', {
+          name: IDENTITY_SENTINELS.b.draft,
+          exact: true
+        })
+      ).toBeVisible()
+      await expect
+        .poll(() =>
+          page.evaluate(() => window.app!.graph.extra.identitySentinel)
+        )
+        .toBe(IDENTITY_SENTINELS.b.draft)
+      await expect(
+        page.getByRole('tab', {
+          name: IDENTITY_SENTINELS.a.draft,
+          exact: true
+        })
+      ).toHaveCount(0)
+      await agentPanel.open()
+      await expect(agentPanel.userMessages).toHaveText([
+        IDENTITY_SENTINELS.b.transcript
+      ])
+      await expect(
+        agentPanel.root.getByText(IDENTITY_SENTINELS.a.transcript)
+      ).toHaveCount(0)
+      await agentPanel.close()
+
+      const bindings = await page.evaluate(
+        ({ accountAKey, accountBKey }) => ({
+          a: localStorage.getItem(accountAKey),
+          b: localStorage.getItem(accountBKey)
+        }),
+        {
+          accountAKey: StorageKeys.agentWorkflowTabBindings(
+            unsafeStorageScope(`${ACCOUNT_A.uid}:${TEAM_WORKSPACE.id}`)
+          ),
+          accountBKey: StorageKeys.agentWorkflowTabBindings(
+            unsafeStorageScope(`${ACCOUNT_B.uid}:${TEAM_WORKSPACE.id}`)
+          )
+        }
+      )
+      expect(bindings.a).toContain(IDENTITY_SENTINELS.a.binding)
+      expect(bindings.a).not.toContain(IDENTITY_SENTINELS.b.binding)
+      expect(bindings.b).toContain(IDENTITY_SENTINELS.b.binding)
+      expect(bindings.b).not.toContain(IDENTITY_SENTINELS.a.binding)
     })
 
     await test.step('Load an asset with account B credentials', async () => {
@@ -419,6 +532,88 @@ async function expectSignedOut(page: Page, message: string): Promise<void> {
 // Two pages in one context share Firebase's persistence, so a sign-out in
 // one tab must reach the other through the SDK and the app's reaction to it.
 test.describe('Cloud cross-tab sign-out', { tag: '@cloud' }, () => {
+  test('logout clears only the departing identity persistence scope', async ({
+    page,
+    identityPersistence
+  }) => {
+    test.setTimeout(90_000)
+    const identityStates = [
+      {
+        userId: ACCOUNT_A.uid,
+        workspaceId: TEAM_WORKSPACE.id,
+        threadId: IDENTITY_SENTINELS.a.thread,
+        transcript: IDENTITY_SENTINELS.a.transcript,
+        bindingId: IDENTITY_SENTINELS.a.binding,
+        tabPath: `workflows/${IDENTITY_SENTINELS.a.draft}.json`,
+        draftName: IDENTITY_SENTINELS.a.draft
+      },
+      {
+        userId: ACCOUNT_B.uid,
+        workspaceId: TEAM_WORKSPACE.id,
+        threadId: IDENTITY_SENTINELS.b.thread,
+        transcript: IDENTITY_SENTINELS.b.transcript,
+        bindingId: IDENTITY_SENTINELS.b.binding,
+        tabPath: `workflows/${IDENTITY_SENTINELS.b.draft}.json`,
+        draftName: IDENTITY_SENTINELS.b.draft
+      }
+    ]
+    await identityPersistence.mockAgentApi(identityStates)
+    await identityPersistence.seedAtStartup(identityStates)
+    await bootSignedIn(page)
+
+    await expect(
+      page.getByRole('tab', {
+        name: IDENTITY_SENTINELS.a.draft,
+        exact: true
+      })
+    ).toBeVisible()
+    await expect(
+      page.getByRole('tab', {
+        name: IDENTITY_SENTINELS.b.draft,
+        exact: true
+      })
+    ).toHaveCount(0)
+    await clickLogout(page)
+    await expectSignedOut(page, 'logout must complete before cleanup is read')
+
+    const accountAScope = unsafeStorageScope(
+      `${ACCOUNT_A.uid}:${TEAM_WORKSPACE.id}`
+    )
+    const accountBScope = unsafeStorageScope(
+      `${ACCOUNT_B.uid}:${TEAM_WORKSPACE.id}`
+    )
+    const storage = await page.evaluate(
+      ({ accountAKeys, accountBKeys }) => ({
+        a: {
+          draft: localStorage.getItem(accountAKeys.draft),
+          thread: localStorage.getItem(accountAKeys.thread),
+          binding: localStorage.getItem(accountAKeys.binding)
+        },
+        b: {
+          draft: localStorage.getItem(accountBKeys.draft),
+          thread: localStorage.getItem(accountBKeys.thread),
+          binding: localStorage.getItem(accountBKeys.binding)
+        }
+      }),
+      {
+        accountAKeys: {
+          draft: StorageKeys.draftIndex(accountAScope),
+          thread: StorageKeys.agentThread(accountAScope),
+          binding: StorageKeys.agentWorkflowTabBindings(accountAScope)
+        },
+        accountBKeys: {
+          draft: StorageKeys.draftIndex(accountBScope),
+          thread: StorageKeys.agentThread(accountBScope),
+          binding: StorageKeys.agentWorkflowTabBindings(accountBScope)
+        }
+      }
+    )
+    expect(storage.a).toEqual({ draft: null, thread: null, binding: null })
+    expect(storage.b.draft).toContain(IDENTITY_SENTINELS.b.draft)
+    expect(storage.b.thread).toBe(IDENTITY_SENTINELS.b.thread)
+    expect(storage.b.binding).toContain(IDENTITY_SENTINELS.b.binding)
+  })
+
   test('signing out in one tab signs out its sibling', async ({ browser }) => {
     test.setTimeout(150_000)
     const context = await browser.newContext()

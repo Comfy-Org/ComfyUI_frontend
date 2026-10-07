@@ -6,6 +6,7 @@ import type {
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
+import { unsafeStorageScope } from '@/platform/workflow/persistence/testUtils/storageScope'
 
 import {
   agentTest as test,
@@ -106,7 +107,10 @@ test.describe(
       // app restores its last chat (useAgentSession.start()).
       await page.addInitScript(
         ({ key, threadId }) => localStorage.setItem(key, threadId),
-        { key: StorageKeys.agentThread(WORKSPACE_ID), threadId: THREAD_ID }
+        {
+          key: StorageKeys.agentThread(unsafeStorageScope(WORKSPACE_ID)),
+          threadId: THREAD_ID
+        }
       )
 
       await bootAgentApp(page, agentFlagEnabled)

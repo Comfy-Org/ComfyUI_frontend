@@ -58,6 +58,9 @@
     "eslint-plugin-storybook",
     "eslint-plugin-testing-library",
     "postcss-html",
+    // Resolved and executed by scripts/vue-tsc-native.ts through
+    // createRequire(). Fallow does not credit that support-entry-point edge.
+    "typescript-native-bridge",
     // Executed by models-snippets.test.ts inside the generated Node examples.
     "mime-types"
   ],

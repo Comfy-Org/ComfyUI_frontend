@@ -1,15 +1,15 @@
-import { useLocalStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { toRaw, watch } from 'vue'
 
 import { areWorkflowIdsEquivalent } from '@/platform/workflow/core/utils/workflowId'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { clearLegacyAgentStorage } from '@/platform/workflow/persistence/base/storageIO'
 import {
-  getWorkspaceId,
-  StorageKeys
-} from '@/platform/workflow/persistence/base/storageKeys'
+  clearLegacyAgentStorage,
+  getStorageIdentity
+} from '@/platform/workflow/persistence/base/storageIO'
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
+import { useScopedLocalStorage } from '@/platform/workflow/persistence/composables/useScopedLocalStorage'
 
 const BINDING_TTL_MS = 30 * 24 * 60 * 60 * 1000
 
@@ -74,8 +74,8 @@ export const useAgentWorkflowTabBindingStore = defineStore(
   'agentWorkflowTabBinding',
   () => {
     clearLegacyAgentStorage()
-    const tabByWorkflow = useLocalStorage<PersistedBindings>(
-      StorageKeys.agentWorkflowTabBindings(getWorkspaceId()),
+    const tabByWorkflow = useScopedLocalStorage<PersistedBindings>(
+      StorageKeys.agentWorkflowTabBindings,
       {}
     )
     tabByWorkflow.value = liveBindings(tabByWorkflow.value, Date.now())
@@ -83,6 +83,15 @@ export const useAgentWorkflowTabBindingStore = defineStore(
     const workflows = useWorkflowStore()
     const boundInstances = new Map<string, ComfyWorkflow>()
     const refusedInstances = new Map<string, ComfyWorkflow>()
+
+    watch(
+      getStorageIdentity,
+      () => {
+        boundInstances.clear()
+        refusedInstances.clear()
+      },
+      { flush: 'sync' }
+    )
 
     function recordFor(workflowId: string): PersistedBinding | undefined {
       return Object.hasOwn(tabByWorkflow.value, workflowId)
@@ -224,6 +233,8 @@ export const useAgentWorkflowTabBindingStore = defineStore(
 
     return {
       bind,
+      // Called by useAgentWorkflowResolver when a persisted binding is stale.
+      // fallow-ignore-next-line unused-store-member
       unbind,
       unbindWorkflow,
       matchesWorkflow,

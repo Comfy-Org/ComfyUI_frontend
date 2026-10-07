@@ -56,6 +56,7 @@ interface WorkflowStore {
     left?: string[]
     right?: string[]
   }) => void
+  resetForIdentityChange: () => void
   isOpen: (workflow: ComfyWorkflow) => boolean
   isBusy: boolean
   closeWorkflow: (workflow: ComfyWorkflow) => Promise<void>
@@ -168,6 +169,19 @@ export const useWorkflowStore = defineStore('workflow', () => {
   }
   const isOpen = (workflow: ComfyWorkflow) =>
     openWorkflowPathSet.value.has(workflow.path)
+
+  const resetForIdentityChange = () => {
+    const retainedWorkflows = workflows.value.filter(
+      (workflow) => !workflow.isTemporary
+    )
+    activeWorkflow.value = null
+    openWorkflowPaths.value = []
+    tabActivationHistory.value = []
+    for (const workflow of retainedWorkflows) workflow.unload()
+    workflowLookup.value = Object.fromEntries(
+      retainedWorkflows.map((workflow) => [workflow.path, workflow])
+    )
+  }
 
   /**
    * Add paths to the list of open workflow paths without loading the files
@@ -742,6 +756,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     getMostRecentWorkflow,
     openWorkflow,
     openWorkflowsInBackground,
+    resetForIdentityChange,
     isOpen,
     isBusy,
     closeWorkflow,

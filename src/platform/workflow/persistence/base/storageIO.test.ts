@@ -1,9 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { DraftIndexV2, DraftPayloadV2 } from './draftTypes'
+import { StorageKeys } from './storageKeys'
+import { unsafeStorageScope } from '@/platform/workflow/persistence/testUtils/storageScope'
 import {
-  clearAllWorkspaceStorage,
   clearAllWorkflowStorage,
+  clearWorkflowStorageForScope,
   clearWorkflowRestoreState,
   deleteOrphanPayloads,
   deletePayload,
@@ -21,12 +23,13 @@ import {
 } from './storageIO'
 
 describe('storageIO', () => {
+  const scope = unsafeStorageScope
   beforeEach(() => {
     vi.resetModules()
   })
 
   describe('index operations', () => {
-    const workspaceId = 'test-workspace'
+    const workspaceId = scope('test-workspace')
 
     it('reads and writes index', () => {
       const index: DraftIndexV2 = {
@@ -73,7 +76,7 @@ describe('storageIO', () => {
   })
 
   describe('payload operations', () => {
-    const workspaceId = 'test-workspace'
+    const workspaceId = scope('test-workspace')
     const draftKey = 'abc12345'
 
     it('reads and writes payload', () => {
@@ -125,7 +128,7 @@ describe('storageIO', () => {
       localStorage.setItem('Comfy.Workflow.Draft.v2:ws-2:ghi', '{"data":""}')
       localStorage.setItem('unrelated-key', 'value')
 
-      const keys = getPayloadKeys('ws-1')
+      const keys = getPayloadKeys(scope('ws-1'))
       expect(keys).toHaveLength(2)
       expect(keys).toContain('abc')
       expect(keys).toContain('def')
@@ -145,10 +148,10 @@ describe('storageIO', () => {
       )
 
       const indexKeys = new Set(['keep'])
-      const deleted = deleteOrphanPayloads('ws-1', indexKeys)
+      const deleted = deleteOrphanPayloads(scope('ws-1'), indexKeys)
 
       expect(deleted).toBe(2)
-      expect(getPayloadKeys('ws-1')).toEqual(['keep'])
+      expect(getPayloadKeys(scope('ws-1'))).toEqual(['keep'])
     })
   })
 
@@ -156,37 +159,40 @@ describe('storageIO', () => {
     const clientId = 'client-abc'
 
     it('reads and writes active path pointer', () => {
-      const pointer = { workspaceId: 'ws-1', path: 'workflows/test.json' }
+      const pointer = {
+        workspaceId: scope('ws-1'),
+        path: 'workflows/test.json'
+      }
       writeActivePath(clientId, pointer)
 
-      const read = readActivePath(clientId)
+      const read = readActivePath(clientId, pointer.workspaceId)
       expect(read).toEqual(pointer)
     })
 
     it('returns null for missing active path', () => {
-      expect(readActivePath('missing')).toBeNull()
+      expect(readActivePath('missing', scope('ws-1'))).toBeNull()
     })
 
     it('reads and writes open paths pointer', () => {
       const pointer = {
-        workspaceId: 'ws-1',
+        workspaceId: scope('ws-1'),
         paths: ['workflows/a.json', 'workflows/b.json'],
         activeIndex: 1
       }
       writeOpenPaths(clientId, pointer)
 
-      const read = readOpenPaths(clientId)
+      const read = readOpenPaths(clientId, pointer.workspaceId)
       expect(read).toEqual(pointer)
     })
 
     it('returns null for missing open paths', () => {
-      expect(readOpenPaths('missing')).toBeNull()
+      expect(readOpenPaths('missing', scope('ws-1'))).toBeNull()
     })
 
     it('falls back to workspace search when clientId does not match and migrates', () => {
       const oldClientId = 'old-client'
       const newClientId = 'new-client'
-      const workspaceId = 'ws-123'
+      const workspaceId = scope('ws-123')
 
       // Store pointer with old clientId
       const pointer = {
@@ -213,19 +219,19 @@ describe('storageIO', () => {
 
       // Store pointer for workspace-A
       writeOpenPaths(oldClientId, {
-        workspaceId: 'workspace-A',
+        workspaceId: scope('workspace-A'),
         paths: ['workflows/a.json'],
         activeIndex: 0
       })
 
       // Read with new clientId looking for workspace-B - should not find
-      const read = readOpenPaths(newClientId, 'workspace-B')
+      const read = readOpenPaths(newClientId, scope('workspace-B'))
       expect(read).toBeNull()
     })
 
     it('prefers exact clientId match over fallback search', () => {
       const clientId = 'my-client'
-      const workspaceId = 'ws-123'
+      const workspaceId = scope('ws-123')
 
       // Store pointer with different clientId for same workspace
       writeOpenPaths('other-client', {
@@ -252,20 +258,20 @@ describe('storageIO', () => {
 
       // Store pointer for workspace-A under this clientId
       writeActivePath(clientId, {
-        workspaceId: 'ws-A',
+        workspaceId: scope('ws-A'),
         path: 'workflows/stale.json'
       })
 
       // Store pointer for workspace-B under a different clientId
       writeActivePath('old-client', {
-        workspaceId: 'ws-B',
+        workspaceId: scope('ws-B'),
         path: 'workflows/correct.json'
       })
 
       // Reading with workspace-B should skip the stale ws-A pointer and find the fallback
-      const result = readActivePath(clientId, 'ws-B')
+      const result = readActivePath(clientId, scope('ws-B'))
       expect(result).toEqual({
-        workspaceId: 'ws-B',
+        workspaceId: scope('ws-B'),
         path: 'workflows/correct.json'
       })
 
@@ -274,6 +280,19 @@ describe('storageIO', () => {
         `Comfy.Workflow.ActivePath:${clientId}`
       )
       expect(JSON.parse(raw!).workspaceId).toBe('ws-B')
+    })
+
+    it('rejects an untrusted scope embedded in a local fallback pointer', () => {
+      const targetScope = scope('ws-B')
+      localStorage.setItem(
+        StorageKeys.lastActivePath(targetScope),
+        JSON.stringify({
+          workspaceId: 'forged-scope',
+          path: 'workflows/forged.json'
+        })
+      )
+
+      expect(readActivePath(clientId, targetScope)).toBeNull()
     })
   })
 
@@ -346,7 +365,7 @@ describe('storageIO', () => {
 
       expect(isolatedStorageIO.isStorageAvailable()).toBe(false)
       expect(
-        isolatedStorageIO.writeIndex('ws-1', {
+        isolatedStorageIO.writeIndex(scope('ws-1'), {
           v: 2,
           updatedAt: 1,
           order: [],
@@ -354,17 +373,17 @@ describe('storageIO', () => {
         })
       ).toBe(false)
       expect(
-        isolatedStorageIO.writePayload('ws-1', 'draft-1', {
+        isolatedStorageIO.writePayload(scope('ws-1'), 'draft-1', {
           data: '{}',
           updatedAt: 1
         })
       ).toBe(false)
       isolatedStorageIO.writeActivePath('client-1', {
-        workspaceId: 'ws-1',
+        workspaceId: scope('ws-1'),
         path: 'workflows/a.json'
       })
       isolatedStorageIO.writeOpenPaths('client-1', {
-        workspaceId: 'ws-1',
+        workspaceId: scope('ws-1'),
         paths: ['workflows/a.json'],
         activeIndex: 0
       })
@@ -386,29 +405,6 @@ describe('storageIO', () => {
       expect(
         sessionStorage.getItem('Comfy.Workflow.ActivePath:client-1')
       ).toBeNull()
-    })
-  })
-
-  describe('clearAllWorkspaceStorage', () => {
-    it('clears scoped and legacy Agent persistence on account logout', () => {
-      localStorage.setItem('Comfy.Agent.ThreadId:personal', 'thread-a')
-      localStorage.setItem('Comfy.Agent.WorkflowTabBindings:ws-1', '{}')
-      localStorage.setItem('Comfy.Agent.ChatTitles:ws-1', '{}')
-      localStorage.setItem('Comfy.Agent.DeletedThreads:ws-1', '[]')
-      localStorage.setItem('Comfy.Agent.ThreadId', 'legacy-thread')
-      localStorage.setItem('Comfy.Agent.WorkflowTabBindings', '{}')
-      localStorage.setItem('Comfy.Agent.WorkflowTabBindings.v2', '{}')
-      localStorage.setItem('Comfy.Agent.ChatTitles', '{}')
-      localStorage.setItem('Comfy.Agent.DeletedThreads', '[]')
-      localStorage.setItem('unrelated', 'keep')
-
-      clearAllWorkspaceStorage()
-
-      expect(
-        [...Array(localStorage.length)].map((_, index) =>
-          localStorage.key(index)
-        )
-      ).toEqual(['unrelated'])
     })
   })
 
@@ -452,7 +448,7 @@ describe('storageIO', () => {
       const cancelTransition =
         isolatedStorageIO.prepareWorkflowWorkspaceTransition()
       expect(
-        isolatedStorageIO.writePayload('ws-1', 'blocked', {
+        isolatedStorageIO.writePayload(scope('ws-1'), 'blocked', {
           data: '{}',
           updatedAt: 1
         })
@@ -461,7 +457,7 @@ describe('storageIO', () => {
       cancelTransition()
 
       expect(
-        isolatedStorageIO.writePayload('ws-1', 'resumed', {
+        isolatedStorageIO.writePayload(scope('ws-1'), 'resumed', {
           data: '{}',
           updatedAt: 2
         })
@@ -478,7 +474,7 @@ describe('storageIO', () => {
 
       expect(isolatedStorageIO.isStorageAvailable()).toBe(false)
       expect(
-        isolatedStorageIO.writePayload('ws-1', 'draft', {
+        isolatedStorageIO.writePayload(scope('ws-1'), 'draft', {
           data: '{}',
           updatedAt: 1
         })
@@ -524,15 +520,17 @@ describe('storageIO', () => {
     it('keeps reads available while a workspace transition blocks writes', async () => {
       const isolatedStorageIO = await import('./storageIO')
 
-      isolatedStorageIO.writePayload('ws-1', 'draft', {
+      isolatedStorageIO.writePayload(scope('ws-1'), 'draft', {
         data: '{}',
         updatedAt: 1
       })
       const cancelTransition =
         isolatedStorageIO.prepareWorkflowWorkspaceTransition()
 
-      expect(isolatedStorageIO.readPayload('ws-1', 'draft')).not.toBeNull()
-      expect(isolatedStorageIO.getPayloadKeys('ws-1')).toContain('draft')
+      expect(
+        isolatedStorageIO.readPayload(scope('ws-1'), 'draft')
+      ).not.toBeNull()
+      expect(isolatedStorageIO.getPayloadKeys(scope('ws-1'))).toContain('draft')
       cancelTransition()
     })
   })
@@ -575,6 +573,88 @@ describe('storageIO', () => {
         '{}'
       )
       expect(localStorage.getItem('Comfy.Workflow.Drafts:ws-1')).toBe('{}')
+    })
+  })
+
+  describe('clearWorkflowStorageForScope', () => {
+    it('removes only the departing identity scope, including agent state', () => {
+      const departing = scope('user-a:workspace-1')
+      const retained = scope('user-b:workspace-1')
+      const keysFor = (storageScope: ReturnType<typeof scope>) => [
+        StorageKeys.draftIndex(storageScope),
+        `${StorageKeys.prefixes.draftPayload}${storageScope}:draft`,
+        StorageKeys.lastActivePath(storageScope),
+        StorageKeys.lastOpenPaths(storageScope),
+        StorageKeys.agentThread(storageScope),
+        StorageKeys.agentWorkflowTabBindings(storageScope),
+        StorageKeys.agentChatTitles(storageScope),
+        StorageKeys.agentDeletedThreads(storageScope)
+      ]
+      for (const key of [...keysFor(departing), ...keysFor(retained)]) {
+        localStorage.setItem(key, '{}')
+      }
+      sessionStorage.setItem(StorageKeys.activePath('client-1'), '{}')
+
+      clearWorkflowStorageForScope(departing)
+
+      for (const key of keysFor(departing)) {
+        expect(localStorage.getItem(key)).toBeNull()
+      }
+      for (const key of keysFor(retained)) {
+        expect(localStorage.getItem(key)).toBe('{}')
+      }
+      expect(
+        sessionStorage.getItem(StorageKeys.activePath('client-1'))
+      ).toBeNull()
+    })
+
+    it('removes pre-identity Cloud V2 state on logout', () => {
+      const legacyKeys = [
+        'Comfy.Workflow.DraftIndex.v2:personal',
+        'Comfy.Workflow.Draft.v2:personal:abc',
+        'Comfy.Workflow.LastActivePath:personal',
+        'Comfy.Workflow.LastOpenPaths:personal',
+        'Comfy.Agent.ThreadId:personal',
+        'Comfy.Agent.WorkflowTabBindings:personal',
+        'Comfy.Agent.ChatTitles:personal',
+        'Comfy.Agent.DeletedThreads:personal'
+      ]
+      localStorage.setItem(legacyKeys[0], '{}')
+      localStorage.setItem(legacyKeys[1], '{}')
+      localStorage.setItem(legacyKeys[2], '{}')
+      localStorage.setItem(legacyKeys[3], '{}')
+      localStorage.setItem(legacyKeys[4], '{}')
+      localStorage.setItem(legacyKeys[5], '{}')
+      localStorage.setItem(legacyKeys[6], '{}')
+      localStorage.setItem(legacyKeys[7], '{}')
+      const retainedKey = 'Comfy.Workflow.Draft.v2:user-b:workspace-1:def'
+      localStorage.setItem(retainedKey, '{}')
+
+      clearWorkflowStorageForScope(scope('user-a:workspace-1'))
+
+      expect(legacyKeys.map((key) => localStorage.getItem(key))).toEqual(
+        legacyKeys.map(() => null)
+      )
+      expect(localStorage.getItem(retainedKey)).toBe('{}')
+    })
+
+    it('preserves unowned legacy draft data while dropping restore pointers', () => {
+      const departing = scope('user-a:workspace-1')
+      localStorage.setItem('Comfy.Workflow.Drafts', '{"legacy":true}')
+      localStorage.setItem('Comfy.Workflow.DraftOrder', '["legacy"]')
+      localStorage.setItem('Comfy.OpenWorkflowsPaths', '["legacy"]')
+      localStorage.setItem('Comfy.ActiveWorkflowIndex', '0')
+
+      clearWorkflowStorageForScope(departing)
+
+      expect(localStorage.getItem('Comfy.Workflow.Drafts')).toBe(
+        '{"legacy":true}'
+      )
+      expect(localStorage.getItem('Comfy.Workflow.DraftOrder')).toBe(
+        '["legacy"]'
+      )
+      expect(localStorage.getItem('Comfy.OpenWorkflowsPaths')).toBeNull()
+      expect(localStorage.getItem('Comfy.ActiveWorkflowIndex')).toBeNull()
     })
   })
 })

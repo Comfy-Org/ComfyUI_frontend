@@ -49,6 +49,7 @@ const mocks = vi.hoisted(() => ({
   handleStartupOutcome: vi.fn(),
   handleUrlWorkflow: vi.fn(),
   initializeWorkflow: vi.fn(),
+  restoreWorkflowTabsState: vi.fn(),
   loadTemplateFromUrlIfPresent: vi.fn(),
   loadSharedWorkflowFromUrlIfPresent: vi.fn(),
   runUrlActionLoaders: vi.fn(),
@@ -72,7 +73,7 @@ vi.mock(
   () => ({
     useWorkflowPersistenceV2: () => ({
       initializeWorkflow: mocks.initializeWorkflow,
-      restoreWorkflowTabsState: vi.fn(),
+      restoreWorkflowTabsState: mocks.restoreWorkflowTabsState,
       loadTemplateFromUrlIfPresent: mocks.loadTemplateFromUrlIfPresent,
       loadSharedWorkflowFromUrlIfPresent:
         mocks.loadSharedWorkflowFromUrlIfPresent
@@ -196,6 +197,22 @@ describe('GraphCanvas first-run tour wiring', () => {
     await mountGraphCanvas()
 
     expect(mocks.handleStartupOutcome).toHaveBeenCalledWith('url-intent')
+  })
+
+  it('does not restore stale tabs when initialization preserves fresh work', async () => {
+    mocks.initializeWorkflow.mockResolvedValue('fresh')
+
+    await mountGraphCanvas()
+
+    expect(mocks.restoreWorkflowTabsState).not.toHaveBeenCalled()
+  })
+
+  it('restores tabs only when initialization found restorable state', async () => {
+    mocks.initializeWorkflow.mockResolvedValue('restored')
+
+    await mountGraphCanvas()
+
+    expect(mocks.restoreWorkflowTabsState).toHaveBeenCalledOnce()
   })
 
   it('settles the startup outcome before running the URL action loaders', async () => {
