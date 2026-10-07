@@ -4,8 +4,8 @@
       v-if="isPositioned && ringStyle"
       aria-hidden="true"
       data-testid="first-run-nudge-ring"
-      class="pointer-events-none fixed z-1000 rounded-xl outline-2 outline-coach-ring"
-      :style="{ ...ringStyle }"
+      class="pointer-events-none fixed z-1000 rounded-lg outline-2 -outline-offset-2 outline-coach-ring"
+      :style="ringStyle"
     />
     <div
       ref="cardRef"
@@ -14,7 +14,7 @@
       data-testid="first-run-nudge"
       :class="
         cn(
-          'fixed z-1000 w-80 animate-in duration-500 fade-in-0',
+          'fixed z-1000 w-80 animate-in animation-duration-500 fade-in-0',
           !isPositioned && 'invisible'
         )
       "
@@ -86,20 +86,16 @@ import { cn } from '@comfyorg/tailwind-utils'
 import {
   breakpointsTailwind,
   useBreakpoints,
+  onClickOutside,
   useEventListener,
-  useTimeoutFn,
-  useWindowSize
+  useTimeoutFn
 } from '@vueuse/core'
 import { computed, ref, useId, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
-import {
-  SPOTLIGHT_PAD,
-  clampSpotlight,
-  cursorEdgeClass
-} from '@/platform/onboarding/coachmarkLayout'
+import { cursorEdgeClass } from '@/platform/onboarding/coachmarkLayout'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import { FIRST_RUN_COACH_IDS } from '@/platform/onboarding/onboardingTours'
 import type { SpotlightStep } from '@/platform/onboarding/onboardingTours'
@@ -149,16 +145,16 @@ const {
   isPositioned,
   placement
 } = useCoachmarkTarget(nudgeStep, cardRef)
-const { width: windowWidth, height: windowHeight } = useWindowSize()
-
-const ringStyle = computed(
-  () =>
-    targetRect.value &&
-    clampSpotlight(targetRect.value, SPOTLIGHT_PAD, {
-      width: windowWidth.value,
-      height: windowHeight.value
-    })
-)
+const ringStyle = computed(() => {
+  const rect = targetRect.value
+  if (!rect) return null
+  return {
+    left: `${rect.left}px`,
+    top: `${rect.top}px`,
+    width: `${rect.width}px`,
+    height: `${rect.height}px`
+  }
+})
 
 // Only a tour walked to the end made a first result to congratulate; every
 // other ending still gets a nudge, pointing at the templates instead.
@@ -184,6 +180,8 @@ const { start: scheduleAppearance, stop: cancelAppearance } = useTimeoutFn(
   APPEAR_DELAY_MS,
   { immediate: false }
 )
+
+onClickOutside(cardRef, dismissNudge)
 
 useEventListener(document, 'keydown', (event: KeyboardEvent) => {
   if (onScreen.value && event.key === 'Escape') dismissNudge()

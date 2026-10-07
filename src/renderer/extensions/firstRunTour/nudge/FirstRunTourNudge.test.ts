@@ -366,6 +366,43 @@ describe('FirstRunTourNudge', () => {
     expect(nudge()).toBeNull()
   })
 
+  it.for([
+    {
+      gesture: 'clicks outside it',
+      act: (user: ReturnType<typeof userEvent.setup>) =>
+        user.click(document.body)
+    },
+    {
+      gesture: 'presses Escape',
+      act: (user: ReturnType<typeof userEvent.setup>) =>
+        user.keyboard('{Escape}')
+    }
+  ])('stays gone once the user $gesture', async ({ act }) => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    mocks.nudgeArmed.value = true
+    renderNudge()
+    await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS)
+
+    await act(user)
+
+    expect(mocks.dismissNudge).toHaveBeenCalled()
+    expect(nudge()).toBeNull()
+  })
+
+  it('stays open while the user reads it', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    mocks.nudgeArmed.value = true
+    renderNudge()
+    await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS)
+
+    await user.click(screen.getByText(nudgeCopy.ran.body))
+
+    expect(
+      nudge(),
+      'a click inside the card is not a request to close it'
+    ).not.toBeNull()
+  })
+
   it('stays gone once the user waves it away', async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     mocks.nudgeArmed.value = true
