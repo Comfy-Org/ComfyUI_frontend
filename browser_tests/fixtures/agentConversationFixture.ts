@@ -31,7 +31,8 @@ import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import type {
   ClientDocFrame,
-  HumanOpsHost
+  HumanOpsHost,
+  InitialDocSubscribe
 } from '@e2e/fixtures/agentFollowerHostSocket'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
@@ -229,7 +230,8 @@ export class AgentConversationHarness {
     readonly replayTiming: ReplayTiming,
     caseId: string,
     private readonly extraNodeDefs: Record<string, ComfyNodeDef> = {},
-    humanOpsHost: HumanOpsHost = 'hold'
+    humanOpsHost: HumanOpsHost = 'hold',
+    initialDocSubscribe: InitialDocSubscribe = 'healthy'
   ) {
     const { workflow } = conversation
     this.host = new HostDoc(workflow.id, workflow.seed, workflow.catalog)
@@ -238,7 +240,8 @@ export class AgentConversationHarness {
       workflow.id,
       this.host,
       SOCKET_SID,
-      humanOpsHost
+      humanOpsHost,
+      initialDocSubscribe
     )
     this.seenIds = new Set(workflow.seed.nodes.map((node) => String(node.id)))
     const expectations = RECORDED_EXPECTATIONS[caseId]
@@ -1179,6 +1182,7 @@ interface ConversationFixtures {
   // Node definitions this case needs beyond the recorded core subset.
   extraNodeDefs: Record<string, ComfyNodeDef>
   humanOpsHost: HumanOpsHost
+  initialDocSubscribe: InitialDocSubscribe
   agentConversation: AgentConversationHarness
 }
 
@@ -1190,6 +1194,7 @@ export const agentConversationTest = agentTest.extend<ConversationFixtures>({
   replayTiming: [defaultReplayTiming(), { option: true }],
   extraNodeDefs: [{}, { option: true }],
   humanOpsHost: ['hold', { option: true }],
+  initialDocSubscribe: ['healthy', { option: true }],
   viewport: VIEWPORT,
   video: {
     mode:
@@ -1205,7 +1210,8 @@ export const agentConversationTest = agentTest.extend<ConversationFixtures>({
       conversationCase,
       replayTiming,
       extraNodeDefs,
-      humanOpsHost
+      humanOpsHost,
+      initialDocSubscribe
     },
     use,
     testInfo
@@ -1223,7 +1229,8 @@ export const agentConversationTest = agentTest.extend<ConversationFixtures>({
       replayTiming,
       conversationCase,
       extraNodeDefs,
-      humanOpsHost
+      humanOpsHost,
+      initialDocSubscribe
     )
     await harness.boot(agentFlagEnabled, vueNodes)
     await use(harness)

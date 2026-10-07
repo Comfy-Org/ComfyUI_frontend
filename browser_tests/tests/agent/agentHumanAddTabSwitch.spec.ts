@@ -192,5 +192,58 @@ test.describe(
         )
       })
     })
+
+    // Regression source: https://github.com/Comfy-Org/ComfyUI_frontend/pull/20416#discussion_r4207214057
+    test.describe('stale-schema recovery', () => {
+      test.use({ initialDocSubscribe: 'stale-schema' })
+
+      test('keeps a post-reseed edit after switching away before confirmation', async ({
+        agentConversation
+      }, testInfo) => {
+        test.setTimeout(90_000)
+
+        await agentConversation.sendPrompt()
+        await agentConversation.replayResponse()
+        await agentConversation.waitForTurnComplete()
+        await expect
+          .poll(
+            () =>
+              agentConversation
+                .clientDocFrames()
+                .filter(({ type }) => type === 'doc_reseed').length
+          )
+          .toBe(1)
+
+        const nodeId = await agentConversation.addNodeOfType(
+          'KSampler',
+          ADD_POSITION
+        )
+        await expect(
+          agentConversation.vueNodes.getNodeLocator(nodeId)
+        ).toBeVisible()
+
+        const tabs = agentConversation.topbar.tabs
+        await agentConversation.topbar.newWorkflowButton.click()
+        await expect(tabs).toHaveCount(2)
+        const subscribes = agentConversation.subscribeCount()
+        await agentConversation.topbar.getTab(0).click()
+        await expect
+          .poll(() => agentConversation.subscribeCount())
+          .toBe(subscribes + 1)
+        const outcomes = await agentConversation.waitForHumanOps(1)
+
+        expectApplied(outcomes, 1)
+        expect(agentConversation.hostNodeIds()).toContain(nodeId)
+        await expect(
+          agentConversation.vueNodes.getNodeLocator(nodeId)
+        ).toBeVisible()
+        const after = await agentConversation.attachEvidence(
+          testInfo,
+          'post-reseed-tab-return'
+        )
+        expect(after.activeState).toContain(nodeId)
+        expect(after.live).toContain(nodeId)
+      })
+    })
   }
 )

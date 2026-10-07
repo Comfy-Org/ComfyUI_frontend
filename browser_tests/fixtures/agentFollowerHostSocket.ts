@@ -20,6 +20,7 @@ const SUBSCRIBE_TIMEOUT = 15_000
  * `hold` records it and never answers, so the batch stays in flight.
  */
 export type HumanOpsHost = 'apply' | 'hold'
+export type InitialDocSubscribe = 'healthy' | 'stale-schema'
 
 /** One `doc_*` frame the page sent, as the test attaches it. */
 export interface ClientDocFrame {
@@ -87,7 +88,8 @@ export class AgentFollowerHostSocket {
     private readonly workflowId: string,
     private readonly host: HostDoc,
     private readonly socketSid: string,
-    private readonly humanOpsHost: HumanOpsHost = 'hold'
+    private readonly humanOpsHost: HumanOpsHost = 'hold',
+    private readonly initialDocSubscribe: InitialDocSubscribe = 'healthy'
   ) {}
 
   async install(): Promise<void> {
@@ -170,6 +172,12 @@ export class AgentFollowerHostSocket {
   }
 
   private answerSubscribe(stateVector: string): void {
+    if (this.initialDocSubscribe === 'stale-schema' && this.subscribes === 0) {
+      this.send(this.host.staleSchemaReseedRequired())
+      this.subscribes += 1
+      this.resolveSubscribed?.()
+      return
+    }
     if (this.refuseReason) {
       this.send(this.host.subscribeRefused(this.refuseReason))
       this.subscribes += 1

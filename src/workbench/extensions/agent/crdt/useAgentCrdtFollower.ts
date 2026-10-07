@@ -1130,11 +1130,14 @@ function startAgentCrdtFollower(
       // (`previous` is undefined there), so a plain mount or retarget keeps its
       // existing "reconcile on frame or on graph readiness" behaviour.
       const justActivated = active && previous?.[1] === false
+      const workflowChanged = previous === undefined || next !== previous[0]
       clearSubscribeAckTimer()
       clearSubscribeRetry()
       subscribeGaveUp = false
-      reseedAttempts = 0
-      pendingReseed = null
+      if (workflowChanged) {
+        reseedAttempts = 0
+        pendingReseed = null
+      }
       clearStaleProbe()
       connected.value = false
       knownDocNodeIds = new Set()

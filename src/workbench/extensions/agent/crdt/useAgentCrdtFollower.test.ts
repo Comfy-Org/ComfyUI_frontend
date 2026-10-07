@@ -431,6 +431,46 @@ describe('useAgentCrdtFollower', () => {
     expect(clientState.sendOps).not.toHaveBeenCalled()
   })
 
+  it('replays post-snapshot edits after the same workflow tab is reactivated', async () => {
+    const { enqueue, isTargetActive } = mountFollower(
+      'wf-1',
+      true,
+      () => null,
+      {},
+      () => ({ nodes: [] })
+    )
+    bridge().canReseed.mockReturnValue(true)
+    bridge().reseed.mockReturnValue('sent')
+
+    dispatchFrame('doc_subscribed', {
+      workflowId: 'wf-1',
+      ok: false,
+      code: 'stale_schema_reseed_required',
+      expectedSeq: 7
+    })
+    enqueue([
+      { op: 'delete_node', node_id: 'while-inactive', removed_links: [] }
+    ])
+    isTargetActive.value = false
+    await nextTick()
+    isTargetActive.value = true
+    await nextTick()
+    dispatchFrame('doc_subscribed', { workflowId: 'wf-1', ok: true })
+    await Promise.resolve()
+
+    expect(clientState.sendOps).toHaveBeenCalledOnce()
+    expect(clientState.sendOps).toHaveBeenCalledWith(
+      'wf-1',
+      expect.any(String),
+      [
+        expect.objectContaining({
+          op: 'delete_node',
+          node_id: 'while-inactive'
+        })
+      ]
+    )
+  })
+
   it('retries when a refusal arrives before the canvas binding settles', () => {
     vi.useFakeTimers()
     mountFollower('wf-1')
