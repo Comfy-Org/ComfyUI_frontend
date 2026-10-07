@@ -101,8 +101,7 @@ describe('useSubgraphStore', () => {
     store = useSubgraphStore()
   })
 
-  it('should allow publishing of a subgraph', async () => {
-    //mock canvas to provide a minimal subgraphNode
+  function selectSubgraphNodeToPublish() {
     const subgraph = createTestSubgraph()
     const subgraphNode = createTestSubgraphNode(subgraph)
     const graph = subgraphNode.graph!
@@ -130,11 +129,27 @@ describe('useSubgraphStore', () => {
           size: 2
         })
     } as Response)
-    await mockFetch({ 'testname.json': mockGraph })
-    //Dialogue service already mocked
-    await store.publishSubgraph()
-    expect(api.storeUserData).toHaveBeenCalled()
-  })
+  }
+
+  it.for([
+    { confirmed: true, storeCalls: 1 },
+    { confirmed: false, storeCalls: 0 }
+  ])(
+    'should publish over an existing blueprint only when overwrite is confirmed (confirmed: $confirmed)',
+    async ({ confirmed, storeCalls }) => {
+      selectSubgraphNodeToPublish()
+      vi.mocked(useDialogService().confirm).mockResolvedValue(confirmed)
+      await mockFetch({ 'testname.json': mockGraph })
+      await store.publishSubgraph()
+      expect(useDialogService().confirm).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'overwriteBlueprint',
+          itemList: ['testname']
+        })
+      )
+      expect(api.storeUserData).toHaveBeenCalledTimes(storeCalls)
+    }
+  )
   it('should display published nodes in the node library', async () => {
     await mockFetch({ 'test.json': mockGraph })
     expect(userBlueprintNames()).toEqual(['SubgraphBlueprint.test'])
