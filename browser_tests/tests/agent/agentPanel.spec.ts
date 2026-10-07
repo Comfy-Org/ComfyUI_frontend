@@ -4,6 +4,7 @@ import type { WebSocketRoute } from '@playwright/test'
 import { expect, mergeTests } from '@playwright/test'
 
 import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
+import { hostTelemetryFixture } from '@e2e/fixtures/hostTelemetryFixture'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -26,7 +27,7 @@ import {
   agentTest
 } from '@e2e/tests/agent/agentPanelMocks'
 
-const test = mergeTests(agentTest, webSocketFixture)
+const test = mergeTests(agentTest, webSocketFixture, hostTelemetryFixture)
 
 function pushEvent(ws: WebSocketRoute, event: AgentWsEvent): void {
   ws.send(JSON.stringify(event))
@@ -181,21 +182,16 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
 
   test.describe('starter prompt experiment', () => {
     test.describe('treatment', () => {
-      test.use({ starterPromptSet: 'test' })
+      test.use({
+        initialFeatureFlags: { enable_telemetry: true },
+        starterPromptSet: 'test'
+      })
 
       test('renders the treatment set and keeps it through insertion', async ({
         agentPanel,
-        postedMessages,
-        page
+        hostTelemetry,
+        postedMessages
       }) => {
-        const telemetryPayloads: string[] = []
-        page.on('request', (request) => {
-          if (
-            request.url().includes('/e/') ||
-            request.url().includes('/batch/')
-          )
-            telemetryPayloads.push(request.postData() ?? '')
-        })
         await agentPanel.open()
         await agentPanel.selectWorkflow()
         const panel = agentPanel.root
@@ -213,21 +209,25 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
         await panel.getByRole('button', { name: 'Send' }).click()
         await expect.poll(() => postedMessages.length).toBe(1)
         await expect
-          .poll(() => telemetryPayloads.join('\n'))
-          .toContain('agent_message_sent')
-        // PostHog may retain the render-time exposure in its batch until a
-        // later capture flushes it. The UI assertion above proves the
-        // treatment was rendered before input; this verifies the exposure is
-        // eventually delivered with the matching assignment.
+          .poll(() =>
+            hostTelemetry.find(
+              ({ event }) => event === 'app:agent_starter_prompt_exposure'
+            )
+          )
+          .toEqual({
+            event: 'app:agent_starter_prompt_exposure',
+            properties: {
+              '$feature/agent-starter-prompt-set': 'test'
+            }
+          })
         await expect
-          .poll(() => telemetryPayloads.join('\n'), { timeout: 15_000 })
-          .toContain('agent_starter_prompt_exposure')
-        const messageSent = telemetryPayloads.find((payload) =>
-          payload.includes('agent_message_sent')
-        )
-        expect(messageSent).toContain(
-          '"$feature/agent-starter-prompt-set":"test"'
-        )
+          .poll(
+            () =>
+              hostTelemetry.find(
+                ({ event }) => event === 'app:agent_message_sent'
+              )?.properties['$feature/agent-starter-prompt-set']
+          )
+          .toBe('test')
       })
     })
 
