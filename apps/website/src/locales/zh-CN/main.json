@@ -4933,6 +4933,12 @@
       "desktop": "Desktop",
       "platform": "平台",
       "community": "社区"
-    }
+    },
+    "stageDescription": {
+      "exploring": "我们仍在思考的问题，尚未决定要做",
+      "building": "已经有人在做的工作，包括修 bug",
+      "shipping": "已完成或接近完成，正在逐步放量"
+    },
+    "legendLabel": "各阶段的含义"
   }
 }

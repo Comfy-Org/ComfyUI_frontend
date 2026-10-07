@@ -1,7 +1,7 @@
 ---
 import { getCollection, render } from 'astro:content'
 
-import { ROADMAP_AREA_ORDER } from '@/content/roadmap.schema'
+import { ROADMAP_AREA_ORDER, ROADMAP_STAGES } from '@/content/roadmap.schema'
 import type { Locale } from '@/i18n/translations'
 
 interface Props {
@@ -43,6 +43,22 @@ const chip =
   id="roadmap"
   class="mx-auto max-w-9xl px-4 pt-8 pb-16 lg:px-20 lg:pt-10 lg:pb-24"
 >
+  <dl
+    class="mb-12 flex flex-wrap items-baseline gap-x-8 gap-y-2 border-b border-primary-comfy-canvas/10 pb-8 lg:mb-16"
+    aria-label={t('roadmap.legendLabel')}
+  >
+    {ROADMAP_STAGES.map((stage) => <div class="flex items-baseline gap-2">
+      <dt
+        class="text-2xs font-bold tracking-widest text-primary-comfy-yellow uppercase"
+      >
+        {t(`roadmap.stage.${stage}`)}
+      </dt>
+      <dd class="text-xs font-light text-primary-comfy-canvas/50">
+        {t(`roadmap.stageDescription.${stage}`)}
+      </dd>
+    </div>)}
+  </dl>
+
   <div class="flex flex-col gap-12 lg:gap-16">
     {populated.map(({ area, items }) => <div
       class="flex flex-col gap-6 md:flex-row md:gap-16"

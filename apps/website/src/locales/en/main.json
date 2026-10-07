@@ -5540,6 +5540,12 @@
       "desktop": "Desktop",
       "platform": "Platform",
       "community": "Community"
-    }
+    },
+    "stageDescription": {
+      "exploring": "questions we are still asking, nothing committed yet",
+      "building": "work someone is actively on, bugs included",
+      "shipping": "done or nearly done, and rolling out now"
+    },
+    "legendLabel": "What the stages mean"
   }
 }
