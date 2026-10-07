@@ -22,6 +22,7 @@ import {
   useWorkshopWorkflowsEnabled
 } from '@/scripts/posthog'
 
+import { loadModelsCatalogue } from '@/lib/workshop/catalogue-components'
 import type { HubSection } from '@/lib/workshop/hub-section'
 import HubEyebrow from './HubEyebrow.vue'
 import WorkshopGate from './WorkshopGate.vue'
@@ -68,10 +69,14 @@ const gateAllows = computed(() => {
   if (isWorkflow.value || section === 'workflows') return workflowsEnabled.value
   return section === 'apps' ? appsEnabled.value : undefined
 })
+const isPublic = (shown: HubSection) =>
+  shown === 'models' || shown === 'explore'
 const catalogueView = computed(() => {
-  const isPublic = section === 'models' || section === 'explore'
-  if (!mounted.value || (!isPublic && !settled.value)) return 'loading'
-  return isPublic || (enabled.value && gateAllows.value) ? 'granted' : 'denied'
+  const isPublicSection = isPublic(section)
+  if (!mounted.value || (!isPublicSection && !settled.value)) return 'loading'
+  return isPublicSection || (enabled.value && gateAllows.value)
+    ? 'granted'
+    : 'denied'
 })
 // Inside a category the category's own title carries the page, so the hub's
 // eyebrow and heading give up their space to it. They stay in the document
@@ -117,8 +122,15 @@ watch(
 let legacyForward: AbortController | undefined
 onScopeDispose(() => legacyForward?.abort())
 
+const loadCatalogue = () =>
+  Promise.all([loadModelsCatalogue(), fetchModelsCatalogue()])
+const startsEarly = !slug && isPublic(section) && !import.meta.env.SSR
+const openingHref = startsEarly ? location.href : undefined
+let earlyCatalogue = startsEarly ? loadCatalogue() : undefined
+void earlyCatalogue?.catch(() => undefined)
+
 async function forwardLegacyLink(): Promise<void> {
-  const href = location.href
+  const href = openingHref ?? location.href
   if (section !== 'models' || !new URL(href).searchParams.has('type')) return
   legacyForward?.abort()
   legacyForward = new AbortController()
@@ -182,10 +194,8 @@ function createContent() {
         return () => h(ModelPage, { page: { ...page, model } })
       }
       const forwarding = forwardLegacyLink()
-      const catalogue = Promise.all([
-        import('./ModelsCatalogue.vue'),
-        fetchModelsCatalogue()
-      ])
+      const catalogue = earlyCatalogue ?? loadCatalogue()
+      earlyCatalogue = undefined
       void catalogue.catch(() => undefined)
       await forwarding
       const [{ default: ModelsCatalogue }, models] = await catalogue

@@ -37,6 +37,9 @@ const jsonLd = modelsHubJsonLd({
 >
   <script>
     import '@/scripts/hubNavigation'
+    import { loadModelsCatalogue } from '@/lib/workshop/catalogue-components'
+
+    void loadModelsCatalogue().catch(() => undefined)
   </script>
   <ModelsPage
     section="models"
