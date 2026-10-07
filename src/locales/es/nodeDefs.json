@@ -18707,7 +18707,7 @@
   },
   "QuiverImageToSVGNode": {
     "description": "Vectoriza una imagen ráster a SVG usando Quiver AI.",
-    "display_name": "Quiver Imagen a SVG",
+    "display_name": "Quiver Imagen a SVG (heredado)",
     "inputs": {
       "auto_crop": {
         "name": "recorte_automático",
@@ -18751,9 +18751,54 @@
       }
     }
   },
+  "QuiverImageToSVGNodeV2": {
+    "description": "Vectoriza una imagen ráster en SVG mediante Quiver AI.",
+    "display_name": "Quiver Imagen a SVG",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Modelo que se utilizará para la vectorización SVG."
+      },
+      "model_auto_crop": {
+        "name": "auto_crop"
+      },
+      "model_height": {
+        "name": "height"
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_target_size": {
+        "name": "target_size"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "model_width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "QuiverTextToSVGNode": {
     "description": "Genera un SVG a partir de un prompt de texto usando Quiver AI.",
-    "display_name": "Quiver Texto a SVG",
+    "display_name": "Quiver Texto a SVG (heredado)",
     "inputs": {
       "control_after_generate": {
         "name": "control después de generar"
@@ -18790,6 +18835,51 @@
       "seed": {
         "name": "semilla",
         "tooltip": "Semilla para determinar si el nodo debe ejecutarse de nuevo; los resultados reales son no deterministas independientemente de la semilla."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QuiverTextToSVGNodeV2": {
+    "description": "Genera un SVG a partir de un prompt de texto mediante Quiver AI.",
+    "display_name": "Quiver Texto a SVG",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Modelo que se utilizará para la generación de SVG."
+      },
+      "model_height": {
+        "name": "height"
+      },
+      "model_instructions": {
+        "name": "instructions"
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "model_width": {
+        "name": "width"
       }
     },
     "outputs": {
@@ -27588,6 +27678,79 @@
         "tooltip": "Una descripción textual para la generación de video, con una longitud máxima de 2000 caracteres."
       },
       "seed": {
+        "name": "semilla"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu4ImageToVideoNode": {
+    "description": "Genera un vídeo a partir de un fotograma inicial y un prompt opcional. La salida conserva la relación de aspecto de la imagen de entrada.",
+    "display_name": "Generación de imagen a vídeo Vidu Q4",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Fotograma inicial del vídeo generado. La relación de aspecto debe estar entre 1:5 y 5:1."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Modelo que se utilizará para la generación de vídeo."
+      },
+      "model_audio": {
+        "name": "audio"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolución"
+      },
+      "model_seed": {
+        "name": "semilla"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu4ReferenceVideoNode": {
+    "description": "Genera un vídeo a partir de imágenes de referencia, audio de referencia opcional y una indicación.",
+    "display_name": "Generación de vídeo a partir de referencias con Vidu Q4",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo que se utilizará para la generación de vídeo."
+      },
+      "model_aspect_ratio": {
+        "name": "relación_de_aspecto"
+      },
+      "model_audio": {
+        "name": "audio"
+      },
+      "model_duration": {
+        "name": "duración"
+      },
+      "model_prompt": {
+        "name": "indicación"
+      },
+      "model_resolution": {
+        "name": "resolución"
+      },
+      "model_seed": {
         "name": "semilla"
       }
     },

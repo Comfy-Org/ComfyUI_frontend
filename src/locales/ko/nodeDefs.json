@@ -18707,7 +18707,7 @@
   },
   "QuiverImageToSVGNode": {
     "description": "Quiver AI를 사용하여 래스터 이미지를 SVG로 벡터화합니다.",
-    "display_name": "Quiver 이미지 → SVG",
+    "display_name": "Quiver 이미지를 SVG로 (레거시)",
     "inputs": {
       "auto_crop": {
         "name": "auto_crop",
@@ -18751,9 +18751,54 @@
       }
     }
   },
+  "QuiverImageToSVGNodeV2": {
+    "description": "Quiver AI를 사용하여 래스터 이미지를 SVG로 벡터화합니다.",
+    "display_name": "Quiver 이미지를 SVG로",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "SVG 벡터화에 사용할 모델입니다."
+      },
+      "model_auto_crop": {
+        "name": "auto_crop"
+      },
+      "model_height": {
+        "name": "높이"
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "시드"
+      },
+      "model_target_size": {
+        "name": "target_size"
+      },
+      "model_temperature": {
+        "name": "온도"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "model_width": {
+        "name": "너비"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "QuiverTextToSVGNode": {
     "description": "Quiver AI를 사용하여 텍스트 프롬프트로부터 SVG를 생성합니다.",
-    "display_name": "Quiver 텍스트 → SVG",
+    "display_name": "Quiver 텍스트를 SVG로 (레거시)",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -18790,6 +18835,51 @@
       "seed": {
         "name": "seed",
         "tooltip": "노드가 다시 실행되어야 하는지 결정하는 시드입니다. 실제 결과는 시드와 관계없이 비결정적입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QuiverTextToSVGNodeV2": {
+    "description": "Quiver AI를 사용하여 텍스트 프롬프트로부터 SVG를 생성합니다.",
+    "display_name": "Quiver 텍스트를 SVG로",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "SVG 생성에 사용할 모델입니다."
+      },
+      "model_height": {
+        "name": "높이"
+      },
+      "model_instructions": {
+        "name": "지침"
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "시드"
+      },
+      "model_temperature": {
+        "name": "온도"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "model_width": {
+        "name": "너비"
       }
     },
     "outputs": {
@@ -27589,6 +27679,79 @@
       },
       "seed": {
         "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu4ImageToVideoNode": {
+    "description": "시작 프레임과 선택적 프롬프트를 바탕으로 비디오를 생성합니다. 출력은 입력 이미지의 종횡비를 유지합니다.",
+    "display_name": "Vidu Q4 이미지-비디오 생성",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "image": {
+        "name": "이미지",
+        "tooltip": "생성된 비디오의 시작 프레임입니다. 종횡비는 1:5에서 5:1 사이여야 합니다."
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "비디오 생성에 사용할 모델입니다."
+      },
+      "model_audio": {
+        "name": "오디오"
+      },
+      "model_duration": {
+        "name": "길이"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "model_seed": {
+        "name": "시드"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu4ReferenceVideoNode": {
+    "description": "참조 이미지, 선택 사항인 참조 오디오 및 프롬프트로 비디오를 생성합니다.",
+    "display_name": "Vidu Q4 참조 이미지-비디오 생성",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "비디오 생성에 사용할 모델입니다."
+      },
+      "model_aspect_ratio": {
+        "name": "종횡비"
+      },
+      "model_audio": {
+        "name": "오디오"
+      },
+      "model_duration": {
+        "name": "길이"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "model_seed": {
+        "name": "시드"
       }
     },
     "outputs": {

@@ -18707,7 +18707,7 @@
   },
   "QuiverImageToSVGNode": {
     "description": "Векторизация растрового изображения в SVG с помощью Quiver AI.",
-    "display_name": "Quiver Image to SVG",
+    "display_name": "Quiver: изображение в SVG (устаревшее)",
     "inputs": {
       "auto_crop": {
         "name": "auto_crop",
@@ -18751,9 +18751,54 @@
       }
     }
   },
+  "QuiverImageToSVGNodeV2": {
+    "description": "Векторизирует растровое изображение в SVG с помощью Quiver AI.",
+    "display_name": "Quiver: изображение в SVG",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Модель для векторизации SVG."
+      },
+      "model_auto_crop": {
+        "name": "автообрезка"
+      },
+      "model_height": {
+        "name": "высота"
+      },
+      "model_presence_penalty": {
+        "name": "штраф за присутствие"
+      },
+      "model_reasoning_effort": {
+        "name": "усилия рассуждения"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_target_size": {
+        "name": "целевой размер"
+      },
+      "model_temperature": {
+        "name": "температура"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "model_width": {
+        "name": "ширина"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "QuiverTextToSVGNode": {
     "description": "Генерация SVG по текстовому запросу с помощью Quiver AI.",
-    "display_name": "Quiver Text to SVG",
+    "display_name": "Quiver: текст в SVG (устаревшее)",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -18790,6 +18835,51 @@
       "seed": {
         "name": "seed",
         "tooltip": "Сид для определения необходимости повторного запуска узла; фактические результаты недетерминированы независимо от сида."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QuiverTextToSVGNodeV2": {
+    "description": "Генерирует SVG по текстовому запросу с помощью Quiver AI.",
+    "display_name": "Quiver: текст в SVG",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Модель для генерации SVG."
+      },
+      "model_height": {
+        "name": "высота"
+      },
+      "model_instructions": {
+        "name": "инструкции"
+      },
+      "model_presence_penalty": {
+        "name": "штраф за присутствие"
+      },
+      "model_prompt": {
+        "name": "запрос"
+      },
+      "model_reasoning_effort": {
+        "name": "усилия рассуждения"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_temperature": {
+        "name": "температура"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "model_width": {
+        "name": "ширина"
       }
     },
     "outputs": {
@@ -27589,6 +27679,79 @@
       },
       "seed": {
         "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu4ImageToVideoNode": {
+    "description": "Генерирует видео из начального кадра и необязательного запроса. Выходное видео сохраняет соотношение сторон входного изображения.",
+    "display_name": "Vidu Q4: генерация видео из изображения",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "image": {
+        "name": "изображение",
+        "tooltip": "Начальный кадр генерируемого видео. Соотношение сторон должно быть от 1:5 до 5:1."
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Модель для генерации видео."
+      },
+      "model_audio": {
+        "name": "аудио"
+      },
+      "model_duration": {
+        "name": "длительность"
+      },
+      "model_prompt": {
+        "name": "запрос"
+      },
+      "model_resolution": {
+        "name": "разрешение"
+      },
+      "model_seed": {
+        "name": "сид"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu4ReferenceVideoNode": {
+    "description": "Создаёт видео на основе референсных изображений, необязательного референсного аудио и промпта.",
+    "display_name": "Генерация видео Vidu Q4 по референсам",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Модель, используемая для генерации видео."
+      },
+      "model_aspect_ratio": {
+        "name": "соотношение сторон"
+      },
+      "model_audio": {
+        "name": "аудио"
+      },
+      "model_duration": {
+        "name": "длительность"
+      },
+      "model_prompt": {
+        "name": "промпт"
+      },
+      "model_resolution": {
+        "name": "разрешение"
+      },
+      "model_seed": {
+        "name": "сид"
       }
     },
     "outputs": {

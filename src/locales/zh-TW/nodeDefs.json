@@ -18707,7 +18707,7 @@
   },
   "QuiverImageToSVGNode": {
     "description": "使用 Quiver AI 將點陣圖像向量化為 SVG。",
-    "display_name": "Quiver 圖像轉 SVG",
+    "display_name": "Quiver 圖像轉 SVG（舊版）",
     "inputs": {
       "auto_crop": {
         "name": "auto_crop",
@@ -18751,9 +18751,54 @@
       }
     }
   },
+  "QuiverImageToSVGNodeV2": {
+    "description": "使用 Quiver AI 將點陣圖向量化為 SVG。",
+    "display_name": "Quiver 圖像轉 SVG",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用於 SVG 向量化的模型。"
+      },
+      "model_auto_crop": {
+        "name": "自動裁切"
+      },
+      "model_height": {
+        "name": "高度"
+      },
+      "model_presence_penalty": {
+        "name": "存在懲罰"
+      },
+      "model_reasoning_effort": {
+        "name": "推理強度"
+      },
+      "model_seed": {
+        "name": "種子"
+      },
+      "model_target_size": {
+        "name": "目標尺寸"
+      },
+      "model_temperature": {
+        "name": "溫度"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "model_width": {
+        "name": "寬度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "QuiverTextToSVGNode": {
     "description": "使用 Quiver AI 根據文字提示生成 SVG。",
-    "display_name": "Quiver 文字轉 SVG",
+    "display_name": "Quiver 文字轉 SVG（舊版）",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -18790,6 +18835,51 @@
       "seed": {
         "name": "seed",
         "tooltip": "決定節點是否重新執行的種子值；實際結果無論種子如何都不具決定性。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QuiverTextToSVGNodeV2": {
+    "description": "使用 Quiver AI 根據文字提示生成 SVG。",
+    "display_name": "Quiver 文字轉 SVG",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用於生成 SVG 的模型。"
+      },
+      "model_height": {
+        "name": "高度"
+      },
+      "model_instructions": {
+        "name": "指示"
+      },
+      "model_presence_penalty": {
+        "name": "存在懲罰"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_reasoning_effort": {
+        "name": "推理強度"
+      },
+      "model_seed": {
+        "name": "種子"
+      },
+      "model_temperature": {
+        "name": "溫度"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "model_width": {
+        "name": "寬度"
       }
     },
     "outputs": {
@@ -27589,6 +27679,79 @@
       },
       "seed": {
         "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu4ImageToVideoNode": {
+    "description": "根據起始影格和選填提示詞生成影片。輸出會保留輸入圖像的長寬比。",
+    "display_name": "Vidu Q4 圖像轉影片生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "image": {
+        "name": "圖像",
+        "tooltip": "生成影片的起始影格。長寬比必須介於 1:5 與 5:1 之間。"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用於生成影片的模型。"
+      },
+      "model_audio": {
+        "name": "音訊"
+      },
+      "model_duration": {
+        "name": "時長"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "model_seed": {
+        "name": "種子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu4ReferenceVideoNode": {
+    "description": "根據參考圖片、選用的參考音訊及提示詞生成影片。",
+    "display_name": "Vidu Q4 參考圖轉影片生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用於生成影片的模型。"
+      },
+      "model_aspect_ratio": {
+        "name": "長寬比"
+      },
+      "model_audio": {
+        "name": "音訊"
+      },
+      "model_duration": {
+        "name": "時長"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "model_seed": {
+        "name": "種子"
       }
     },
     "outputs": {

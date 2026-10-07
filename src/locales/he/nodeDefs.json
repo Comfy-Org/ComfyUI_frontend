@@ -18707,7 +18707,7 @@
   },
   "QuiverImageToSVGNode": {
     "description": "המרת תמונה רסטרית ל-SVG באמצעות Quiver AI.",
-    "display_name": "Quiver Image ל-SVG",
+    "display_name": "Quiver תמונה ל-SVG (מדור קודם)",
     "inputs": {
       "auto_crop": {
         "name": "auto_crop",
@@ -18751,9 +18751,54 @@
       }
     }
   },
+  "QuiverImageToSVGNodeV2": {
+    "description": "המרת תמונת רסטר ל-SVG וקטורי באמצעות Quiver AI.",
+    "display_name": "Quiver תמונה ל-SVG",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל שישמש לווקטוריזציה של SVG."
+      },
+      "model_auto_crop": {
+        "name": "חיתוך_אוטומטי"
+      },
+      "model_height": {
+        "name": "גובה"
+      },
+      "model_presence_penalty": {
+        "name": "קנס_נוכחות"
+      },
+      "model_reasoning_effort": {
+        "name": "מאמץ_הסקה"
+      },
+      "model_seed": {
+        "name": "זרע"
+      },
+      "model_target_size": {
+        "name": "גודל_יעד"
+      },
+      "model_temperature": {
+        "name": "טמפרטורה"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "model_width": {
+        "name": "רוחב"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "QuiverTextToSVGNode": {
     "description": "יצירת SVG מתוך הנחיה טקסטואלית באמצעות Quiver AI.",
-    "display_name": "Quiver Text ל-SVG",
+    "display_name": "Quiver טקסט ל-SVG (מדור קודם)",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -18790,6 +18835,51 @@
       "seed": {
         "name": "seed",
         "tooltip": "seed לקביעת האם הצומת ירוץ מחדש; התוצאות בפועל אינן דטרמיניסטיות ללא קשר ל-seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QuiverTextToSVGNodeV2": {
+    "description": "יצירת SVG מפרומפט טקסט באמצעות Quiver AI.",
+    "display_name": "Quiver טקסט ל-SVG",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל שישמש ליצירת SVG."
+      },
+      "model_height": {
+        "name": "גובה"
+      },
+      "model_instructions": {
+        "name": "הוראות"
+      },
+      "model_presence_penalty": {
+        "name": "קנס_נוכחות"
+      },
+      "model_prompt": {
+        "name": "פרומפט"
+      },
+      "model_reasoning_effort": {
+        "name": "מאמץ_הסקה"
+      },
+      "model_seed": {
+        "name": "זרע"
+      },
+      "model_temperature": {
+        "name": "טמפרטורה"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "model_width": {
+        "name": "רוחב"
       }
     },
     "outputs": {
@@ -27589,6 +27679,79 @@
       },
       "seed": {
         "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu4ImageToVideoNode": {
+    "description": "יצירת וידאו מתמונת פתיחה ומפרומפט אופציונלי. הפלט שומר על יחס הממדים של תמונת הקלט.",
+    "display_name": "יצירת וידאו Vidu Q4 מתמונה",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "image": {
+        "name": "תמונה",
+        "tooltip": "תמונת הפתיחה של הווידאו שנוצר. יחס הממדים חייב להיות בין 1:5 ל-5:1."
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל שישמש ליצירת וידאו."
+      },
+      "model_audio": {
+        "name": "שמע"
+      },
+      "model_duration": {
+        "name": "משך"
+      },
+      "model_prompt": {
+        "name": "פרומפט"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "model_seed": {
+        "name": "זרע"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu4ReferenceVideoNode": {
+    "description": "יצירת וידאו מתמונות הפניה, משמע שמע אופציונלי ומפרומפט.",
+    "display_name": "יצירת וידאו מהפניה Vidu Q4",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל שישמש ליצירת וידאו."
+      },
+      "model_aspect_ratio": {
+        "name": "יחס_ממדים"
+      },
+      "model_audio": {
+        "name": "שמע"
+      },
+      "model_duration": {
+        "name": "משך"
+      },
+      "model_prompt": {
+        "name": "פרומפט"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "model_seed": {
+        "name": "זרע"
       }
     },
     "outputs": {

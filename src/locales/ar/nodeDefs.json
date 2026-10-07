@@ -18707,7 +18707,7 @@
   },
   "QuiverImageToSVGNode": {
     "description": "تحويل صورة نقطية إلى SVG باستخدام Quiver AI.",
-    "display_name": "Quiver تحويل صورة إلى SVG",
+    "display_name": "تحويل صورة Quiver إلى SVG (قديم)",
     "inputs": {
       "auto_crop": {
         "name": "auto_crop",
@@ -18751,9 +18751,54 @@
       }
     }
   },
+  "QuiverImageToSVGNodeV2": {
+    "description": "حوّل صورة نقطية إلى SVG باستخدام Quiver AI.",
+    "display_name": "تحويل صورة Quiver إلى SVG",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المستخدم لتحويل SVG إلى رسوم متجهية."
+      },
+      "model_auto_crop": {
+        "name": "قص_تلقائي"
+      },
+      "model_height": {
+        "name": "الارتفاع"
+      },
+      "model_presence_penalty": {
+        "name": "عقوبة_التواجد"
+      },
+      "model_reasoning_effort": {
+        "name": "جهد_الاستدلال"
+      },
+      "model_seed": {
+        "name": "البذرة"
+      },
+      "model_target_size": {
+        "name": "الحجم_المستهدف"
+      },
+      "model_temperature": {
+        "name": "درجة الحرارة"
+      },
+      "model_top_p": {
+        "name": "أعلى_p"
+      },
+      "model_width": {
+        "name": "العرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "QuiverTextToSVGNode": {
     "description": "إنشاء SVG من وصف نصي باستخدام Quiver AI.",
-    "display_name": "Quiver تحويل نص إلى SVG",
+    "display_name": "تحويل نص Quiver إلى SVG (قديم)",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -18790,6 +18835,51 @@
       "seed": {
         "name": "seed",
         "tooltip": "البذرة لتحديد ما إذا كان يجب إعادة تشغيل العقدة؛ النتائج الفعلية غير حتمية بغض النظر عن البذرة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QuiverTextToSVGNodeV2": {
+    "description": "أنشئ SVG من مطالبة نصية باستخدام Quiver AI.",
+    "display_name": "تحويل نص Quiver إلى SVG",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المستخدم لإنشاء SVG."
+      },
+      "model_height": {
+        "name": "الارتفاع"
+      },
+      "model_instructions": {
+        "name": "التعليمات"
+      },
+      "model_presence_penalty": {
+        "name": "عقوبة_التواجد"
+      },
+      "model_prompt": {
+        "name": "المطالبة"
+      },
+      "model_reasoning_effort": {
+        "name": "جهد_الاستدلال"
+      },
+      "model_seed": {
+        "name": "البذرة"
+      },
+      "model_temperature": {
+        "name": "درجة الحرارة"
+      },
+      "model_top_p": {
+        "name": "أعلى_p"
+      },
+      "model_width": {
+        "name": "العرض"
       }
     },
     "outputs": {
@@ -27588,6 +27678,79 @@
         "tooltip": "وصف نصي لتوليد الفيديو، بحد أقصى ٢٠٠٠ حرف."
       },
       "seed": {
+        "name": "البذرة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu4ImageToVideoNode": {
+    "description": "أنشئ فيديو من إطار بداية ومطالبة اختيارية. يحافظ الإخراج على نسبة أبعاد الصورة المُدخلة.",
+    "display_name": "توليد فيديو Vidu Q4 من صورة إلى فيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "image": {
+        "name": "الصورة",
+        "tooltip": "إطار البداية للفيديو المُولَّد. يجب أن تكون نسبة الأبعاد بين 1:5 و5:1."
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المستخدم لتوليد الفيديو."
+      },
+      "model_audio": {
+        "name": "الصوت"
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_prompt": {
+        "name": "المطالبة"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "model_seed": {
+        "name": "البذرة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu4ReferenceVideoNode": {
+    "description": "أنشئ فيديو من صور مرجعية وصوت مرجعي اختياري وموجّه.",
+    "display_name": "إنشاء فيديو من مراجع Vidu Q4",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد الإنشاء"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المستخدم لإنشاء الفيديو."
+      },
+      "model_aspect_ratio": {
+        "name": "نسبة الأبعاد"
+      },
+      "model_audio": {
+        "name": "الصوت"
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_prompt": {
+        "name": "الموجّه"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "model_seed": {
         "name": "البذرة"
       }
     },
