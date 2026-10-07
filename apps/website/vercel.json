@@ -418,17 +418,17 @@
       "permanent": true
     },
     {
-      "source": "/p/supported-models/:slug(anthropic-claude|bria-ai|elevenlabs|flux|flux-2-api|flux-api|heygen|hunyuan-3d|ideogram|ltx-2|magnific-ai|meshy-7|meshy-ai|minimax|openai-dall-e|openrouter|pixverse|quiver|qwen-3|recraft|rodin-3d|runway|sonilo|sync|topaz-labs|tripo-3d|vidu|wan-api|wavespeed)",
+      "source": "/p/supported-models/:slug(anthropic-claude|hunyuan-3d|ltx-2|meshy-7|meshy-ai|minimax|openai-dall-e|openrouter|pixverse|quiver|qwen-3|rodin-3d|sonilo|sync|topaz-labs|tripo-3d|vidu|wavespeed)",
       "destination": "/hub/models/",
       "permanent": true
     },
     {
-      "source": "/p/supported-models/:slug(anthropic-claude|bria-ai|elevenlabs|flux|flux-2-api|flux-api|heygen|hunyuan-3d|ideogram|ltx-2|magnific-ai|meshy-7|meshy-ai|minimax|openai-dall-e|openrouter|pixverse|quiver|qwen-3|recraft|rodin-3d|runway|sonilo|sync|topaz-labs|tripo-3d|vidu|wan-api|wavespeed)/",
+      "source": "/p/supported-models/:slug(anthropic-claude|hunyuan-3d|ltx-2|meshy-7|meshy-ai|minimax|openai-dall-e|openrouter|pixverse|quiver|qwen-3|rodin-3d|sonilo|sync|topaz-labs|tripo-3d|vidu|wavespeed)/",
       "destination": "/hub/models/",
       "permanent": true
     },
     {
-      "source": "/p/supported-models/:slug(anthropic-claude|bria-ai|elevenlabs|flux|flux-2-api|flux-api|heygen|hunyuan-3d|ideogram|ltx-2|magnific-ai|meshy-7|meshy-ai|minimax|openai-dall-e|openrouter|pixverse|quiver|qwen-3|recraft|rodin-3d|runway|sonilo|sync|topaz-labs|tripo-3d|vidu|wan-api|wavespeed).md",
+      "source": "/p/supported-models/:slug(anthropic-claude|hunyuan-3d|ltx-2|meshy-7|meshy-ai|minimax|openai-dall-e|openrouter|pixverse|quiver|qwen-3|rodin-3d|sonilo|sync|topaz-labs|tripo-3d|vidu|wavespeed).md",
       "destination": "/hub/models.md",
       "permanent": true
     },
@@ -445,6 +445,51 @@
     {
       "source": "/p/supported-models/:slug(beeble).md",
       "destination": "/hub/models/beeble-switchx-image-edit.md",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(bria-ai)",
+      "destination": "/hub/models/bria-fibo-image-edit/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(bria-ai)/",
+      "destination": "/hub/models/bria-fibo-image-edit/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(bria-ai).md",
+      "destination": "/hub/models/bria-fibo-image-edit.md",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(elevenlabs)",
+      "destination": "/hub/models/elevenlabs-text-to-dialogue/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(elevenlabs)/",
+      "destination": "/hub/models/elevenlabs-text-to-dialogue/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(elevenlabs).md",
+      "destination": "/hub/models/elevenlabs-text-to-dialogue.md",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(flux|flux-2-api|flux-api)",
+      "destination": "/hub/models/flux-2-pro-text-to-image/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(flux|flux-2-api|flux-api)/",
+      "destination": "/hub/models/flux-2-pro-text-to-image/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(flux|flux-2-api|flux-api).md",
+      "destination": "/hub/models/flux-2-pro-text-to-image.md",
       "permanent": true
     },
     {
@@ -490,6 +535,36 @@
     {
       "source": "/p/supported-models/:slug(happyhorse1).md",
       "destination": "/hub/models/happyhorse-text-to-video.md",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(heygen)",
+      "destination": "/hub/models/heygen-starfish-text-to-speech/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(heygen)/",
+      "destination": "/hub/models/heygen-starfish-text-to-speech/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(heygen).md",
+      "destination": "/hub/models/heygen-starfish-text-to-speech.md",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(ideogram)",
+      "destination": "/hub/models/ideogram-v4-text-to-image/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(ideogram)/",
+      "destination": "/hub/models/ideogram-v4-text-to-image/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(ideogram).md",
+      "destination": "/hub/models/ideogram-v4-text-to-image.md",
       "permanent": true
     },
     {
@@ -553,6 +628,21 @@
       "permanent": true
     },
     {
+      "source": "/p/supported-models/:slug(magnific-ai)",
+      "destination": "/hub/models/magnific-skin-enhancer/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(magnific-ai)/",
+      "destination": "/hub/models/magnific-skin-enhancer/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(magnific-ai).md",
+      "destination": "/hub/models/magnific-skin-enhancer.md",
+      "permanent": true
+    },
+    {
       "source": "/p/supported-models/:slug(nano-banana-2)",
       "destination": "/hub/models/nano-banana-2-text-to-image/",
       "permanent": true
@@ -565,6 +655,36 @@
     {
       "source": "/p/supported-models/:slug(nano-banana-2).md",
       "destination": "/hub/models/nano-banana-2-text-to-image.md",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(recraft)",
+      "destination": "/hub/models/recraft-v4-1-pro-text-to-image/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(recraft)/",
+      "destination": "/hub/models/recraft-v4-1-pro-text-to-image/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(recraft).md",
+      "destination": "/hub/models/recraft-v4-1-pro-text-to-image.md",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(runway)",
+      "destination": "/hub/models/runway-gen-4-turbo-image-to-video/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(runway)/",
+      "destination": "/hub/models/runway-gen-4-turbo-image-to-video/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(runway).md",
+      "destination": "/hub/models/runway-gen-4-turbo-image-to-video.md",
       "permanent": true
     },
     {
@@ -598,17 +718,17 @@
       "permanent": true
     },
     {
-      "source": "/p/supported-models/:slug(wan-3-0)",
+      "source": "/p/supported-models/:slug(wan-3-0|wan-api)",
       "destination": "/hub/models/wan-3-0-text-to-video/",
       "permanent": true
     },
     {
-      "source": "/p/supported-models/:slug(wan-3-0)/",
+      "source": "/p/supported-models/:slug(wan-3-0|wan-api)/",
       "destination": "/hub/models/wan-3-0-text-to-video/",
       "permanent": true
     },
     {
-      "source": "/p/supported-models/:slug(wan-3-0).md",
+      "source": "/p/supported-models/:slug(wan-3-0|wan-api).md",
       "destination": "/hub/models/wan-3-0-text-to-video.md",
       "permanent": true
     },
