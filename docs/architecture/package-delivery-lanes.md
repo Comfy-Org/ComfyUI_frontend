@@ -40,8 +40,10 @@ These are implementation invariants, not package dials:
 - Forks, drafts, non-default base branches, stale event heads, incomplete file lists, and paths
   outside the lane fail closed.
 - Every approval is tied to the exact head SHA. A new commit needs a new policy decision.
-- Approval-label provenance is verified. The latest matching label event must come from a trusted
-  operator after the latest commit or force-push event.
+- Approval-label provenance is bound to the current workflow event. A non-allowlisted author is
+  eligible only on the exact-head `labeled` event from a trusted operator; later events continue
+  only when that same head already has the policy approval. Commit timestamps are never used as a
+  proxy for push order.
 - An active human change request blocks the lane. Comments and pending reviews do not count as
   change requests.
 - The credential's GitHub identity must match the identity declared in the policy, and it cannot
