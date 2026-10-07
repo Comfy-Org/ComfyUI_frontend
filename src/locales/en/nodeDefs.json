@@ -18706,7 +18706,7 @@
     }
   },
   "QuiverImageToSVGNode": {
-    "display_name": "Quiver Image to SVG",
+    "display_name": "Quiver Image to SVG (Legacy)",
     "description": "Vectorize a raster image into SVG using Quiver AI.",
     "inputs": {
       "image": {
@@ -18751,8 +18751,53 @@
       }
     }
   },
+  "QuiverImageToSVGNodeV2": {
+    "display_name": "Quiver Image to SVG",
+    "description": "Vectorize a raster image into SVG using Quiver AI.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use for SVG vectorization."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_auto_crop": {
+        "name": "auto_crop"
+      },
+      "model_height": {
+        "name": "height"
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_target_size": {
+        "name": "target_size"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "model_width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "QuiverTextToSVGNode": {
-    "display_name": "Quiver Text to SVG",
+    "display_name": "Quiver Text to SVG (Legacy)",
     "description": "Generate an SVG from a text prompt using Quiver AI.",
     "inputs": {
       "prompt": {
@@ -18790,6 +18835,51 @@
       },
       "model_top_p": {
         "name": "top_p"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QuiverTextToSVGNodeV2": {
+    "display_name": "Quiver Text to SVG",
+    "description": "Generate an SVG from a text prompt using Quiver AI.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use for SVG generation."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_height": {
+        "name": "height"
+      },
+      "model_instructions": {
+        "name": "instructions"
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "model_width": {
+        "name": "width"
       }
     },
     "outputs": {
@@ -27471,6 +27561,79 @@
       },
       "model_resolution": {
         "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu4ImageToVideoNode": {
+    "display_name": "Vidu Q4 Image-to-Video Generation",
+    "description": "Generate a video from a start frame and an optional prompt. The output keeps the aspect ratio of the input image.",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "Start frame of the generated video. Aspect ratio must be between 1:5 and 5:1."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use for video generation."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_audio": {
+        "name": "audio"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu4ReferenceVideoNode": {
+    "display_name": "Vidu Q4 Reference-to-Video Generation",
+    "description": "Generate a video from reference images, optional reference audio, and a prompt.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use for video generation."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_audio": {
+        "name": "audio"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
       }
     },
     "outputs": {

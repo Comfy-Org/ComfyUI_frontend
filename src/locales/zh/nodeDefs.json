@@ -18707,7 +18707,7 @@
   },
   "QuiverImageToSVGNode": {
     "description": "使用Quiver AI将光栅图像矢量化为SVG。",
-    "display_name": "Quiver 图像转SVG",
+    "display_name": "Quiver 图像转 SVG（旧版）",
     "inputs": {
       "auto_crop": {
         "name": "auto_crop",
@@ -18751,9 +18751,54 @@
       }
     }
   },
+  "QuiverImageToSVGNodeV2": {
+    "description": "使用 Quiver AI 将栅格图像矢量化为 SVG。",
+    "display_name": "Quiver 图像转 SVG",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用于 SVG 矢量化的模型。"
+      },
+      "model_auto_crop": {
+        "name": "自动裁剪"
+      },
+      "model_height": {
+        "name": "高度"
+      },
+      "model_presence_penalty": {
+        "name": "存在惩罚"
+      },
+      "model_reasoning_effort": {
+        "name": "推理强度"
+      },
+      "model_seed": {
+        "name": "种子"
+      },
+      "model_target_size": {
+        "name": "目标尺寸"
+      },
+      "model_temperature": {
+        "name": "温度"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "model_width": {
+        "name": "宽度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "QuiverTextToSVGNode": {
     "description": "使用Quiver AI根据文本提示生成SVG。",
-    "display_name": "Quiver 文本转SVG",
+    "display_name": "Quiver 文本转 SVG（旧版）",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -18790,6 +18835,51 @@
       "seed": {
         "name": "seed",
         "tooltip": "用于决定节点是否重新运行的种子；无论种子如何，实际结果都是非确定性的。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QuiverTextToSVGNodeV2": {
+    "description": "使用 Quiver AI 根据文本提示词生成 SVG。",
+    "display_name": "Quiver 文本转 SVG",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用于 SVG 生成的模型。"
+      },
+      "model_height": {
+        "name": "高度"
+      },
+      "model_instructions": {
+        "name": "指令"
+      },
+      "model_presence_penalty": {
+        "name": "存在惩罚"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_reasoning_effort": {
+        "name": "推理强度"
+      },
+      "model_seed": {
+        "name": "种子"
+      },
+      "model_temperature": {
+        "name": "温度"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "model_width": {
+        "name": "宽度"
       }
     },
     "outputs": {
@@ -27589,6 +27679,79 @@
       },
       "seed": {
         "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu4ImageToVideoNode": {
+    "description": "根据起始帧和可选提示词生成视频。输出将保持输入图像的宽高比。",
+    "display_name": "Vidu Q4 图像转视频生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "image": {
+        "name": "图像",
+        "tooltip": "生成视频的起始帧。宽高比必须介于 1:5 和 5:1 之间。"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用于视频生成的模型。"
+      },
+      "model_audio": {
+        "name": "音频"
+      },
+      "model_duration": {
+        "name": "时长"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "model_seed": {
+        "name": "种子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu4ReferenceVideoNode": {
+    "description": "根据参考图像、可选的参考音频和提示词生成视频。",
+    "display_name": "Vidu Q4 参考图生视频",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用于生成视频的模型。"
+      },
+      "model_aspect_ratio": {
+        "name": "宽高比"
+      },
+      "model_audio": {
+        "name": "音频"
+      },
+      "model_duration": {
+        "name": "时长"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "model_seed": {
+        "name": "种子"
       }
     },
     "outputs": {

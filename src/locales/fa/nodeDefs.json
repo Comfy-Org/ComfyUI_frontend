@@ -18707,7 +18707,7 @@
   },
   "QuiverImageToSVGNode": {
     "description": "بردارسازی یک تصویر شطرنجی به SVG با استفاده از Quiver AI.",
-    "display_name": "تبدیل تصویر Quiver به SVG",
+    "display_name": "تبدیل تصویر Quiver به SVG (قدیمی)",
     "inputs": {
       "auto_crop": {
         "name": "auto_crop",
@@ -18751,9 +18751,54 @@
       }
     }
   },
+  "QuiverImageToSVGNodeV2": {
+    "description": "یک تصویر شطرنجی را با استفاده از Quiver AI به SVG برداری تبدیل کنید.",
+    "display_name": "تبدیل تصویر Quiver به SVG",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدلی که برای برداری‌سازی SVG استفاده می‌شود."
+      },
+      "model_auto_crop": {
+        "name": "برش_خودکار"
+      },
+      "model_height": {
+        "name": "ارتفاع"
+      },
+      "model_presence_penalty": {
+        "name": "جریمه_حضور"
+      },
+      "model_reasoning_effort": {
+        "name": "تلاش_استدلال"
+      },
+      "model_seed": {
+        "name": "بذر"
+      },
+      "model_target_size": {
+        "name": "اندازه_هدف"
+      },
+      "model_temperature": {
+        "name": "دما"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "model_width": {
+        "name": "عرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "QuiverTextToSVGNode": {
     "description": "تولید یک SVG از طریق پرامپت متنی با استفاده از Quiver AI.",
-    "display_name": "تبدیل متن Quiver به SVG",
+    "display_name": "تبدیل متن Quiver به SVG (قدیمی)",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -18790,6 +18835,51 @@
       "seed": {
         "name": "seed",
         "tooltip": "Seed برای تعیین اجرای مجدد node؛ نتایج واقعی صرف‌نظر از seed غیرقطعی هستند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QuiverTextToSVGNodeV2": {
+    "description": "با استفاده از Quiver AI، از یک متن راهنما SVG تولید کنید.",
+    "display_name": "تبدیل متن Quiver به SVG",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدلی که برای تولید SVG استفاده می‌شود."
+      },
+      "model_height": {
+        "name": "ارتفاع"
+      },
+      "model_instructions": {
+        "name": "دستورالعمل‌ها"
+      },
+      "model_presence_penalty": {
+        "name": "جریمه_حضور"
+      },
+      "model_prompt": {
+        "name": "متن راهنما"
+      },
+      "model_reasoning_effort": {
+        "name": "تلاش_استدلال"
+      },
+      "model_seed": {
+        "name": "بذر"
+      },
+      "model_temperature": {
+        "name": "دما"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "model_width": {
+        "name": "عرض"
       }
     },
     "outputs": {
@@ -27589,6 +27679,79 @@
       },
       "seed": {
         "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu4ImageToVideoNode": {
+    "description": "از یک فریم آغازین و یک متن راهنمای اختیاری، ویدیو تولید کنید. خروجی نسبت ابعاد تصویر ورودی را حفظ می‌کند.",
+    "display_name": "تولید ویدیو از تصویر با Vidu Q4",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "image": {
+        "name": "تصویر",
+        "tooltip": "فریم آغازین ویدیوی تولیدشده. نسبت ابعاد باید بین ۱:۵ و ۵:۱ باشد."
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدلی که برای تولید ویدیو استفاده می‌شود."
+      },
+      "model_audio": {
+        "name": "صدا"
+      },
+      "model_duration": {
+        "name": "مدت‌زمان"
+      },
+      "model_prompt": {
+        "name": "متن راهنما"
+      },
+      "model_resolution": {
+        "name": "وضوح"
+      },
+      "model_seed": {
+        "name": "بذر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu4ReferenceVideoNode": {
+    "description": "یک ویدیو از تصاویر مرجع، صدای مرجع اختیاری و یک پرامپت تولید کنید.",
+    "display_name": "تولید ویدیو از مرجع Vidu Q4",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدلی که برای تولید ویدیو استفاده می‌شود."
+      },
+      "model_aspect_ratio": {
+        "name": "نسبت_ابعاد"
+      },
+      "model_audio": {
+        "name": "صدا"
+      },
+      "model_duration": {
+        "name": "مدت‌زمان"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_resolution": {
+        "name": "وضوح"
+      },
+      "model_seed": {
+        "name": "بذر"
       }
     },
     "outputs": {
