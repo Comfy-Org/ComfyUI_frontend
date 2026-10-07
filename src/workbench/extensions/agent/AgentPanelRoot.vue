@@ -35,7 +35,6 @@ import { useWorkflowService } from '@/platform/workflow/core/services/workflowSe
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { ChangeTracker } from '@/scripts/changeTracker'
 import { useAppMode } from '@/composables/useAppMode'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
 import { fetchDroppedAsset, getDroppedAsset } from '@/utils/eventUtils'
@@ -793,11 +792,7 @@ function canvasForWorkflow(
   if (boundPath === undefined) return null
   const target = boundOrOpenWorkflowFor(workflowId)
   if (!target || target.path !== boundPath) return null
-  if (target.path !== workflowStore.activeWorkflow?.path)
-    return target.activeState ?? undefined
-  if (ChangeTracker.isLoadingGraph) return undefined
-  const live = app.graph?.serialize()
-  return live ? { ...live } : undefined
+  return serializedCanvas(target) ?? undefined
 }
 
 const selectedTargetTab = computed<ActiveTab | null>(() => {

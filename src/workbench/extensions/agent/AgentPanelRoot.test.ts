@@ -120,8 +120,12 @@ const ws = vi.hoisted(() => {
   const emit = (type: string, data?: unknown): void => {
     for (const listener of listeners.get(type) ?? []) listener({ detail: data })
   }
+  const emitCustom = (type: string, data?: unknown): void => {
+    for (const listener of listeners.get(type) ?? [])
+      listener(new CustomEvent(type, { detail: data }))
+  }
   const clear = (): void => listeners.clear()
-  return { add, remove, emit, clear }
+  return { add, remove, emit, emitCustom, clear }
 })
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({
@@ -4507,6 +4511,59 @@ describe('AgentPanelRoot workflow binding', () => {
     if (id !== undefined) useAgentWorkflowTabBindingStore().bind(id, tab.path)
     return tab
   }
+
+  it('reseeds the active workflow from its change-tracker snapshot', async () => {
+    const snapshot = fromPartial<ComfyWorkflowJSON>({
+      id: 'wf-42',
+      nodes: [{ id: 42, type: 'MarkdownNote' }],
+      links: []
+    })
+    const tab = makeTab('wf-42')
+    const prepareForSave = vi.fn(() => {
+      tab.activeState = snapshot
+    })
+    tab.changeTracker = createMockChangeTracker({ prepareForSave })
+    appMock.graph.nodes = [{ id: 99, type: 'ForeignTransientNode' }]
+    mockMessagesEndpoint('wf-42')
+
+    await renderAndSend('bind this workflow')
+    await vi.waitFor(() =>
+      expect(
+        socketSend.mock.calls.some(([frame]) =>
+          String(frame).includes('doc_subscribe')
+        )
+      ).toBe(true)
+    )
+    prepareForSave.mockClear()
+
+    ws.emitCustom('doc_subscribed', {
+      v: 1,
+      workflow_id: 'wf-42',
+      ok: false,
+      code: 'stale_schema_reseed_required',
+      expected_seq: 7
+    })
+
+    await vi.waitFor(() =>
+      expect(
+        socketSend.mock.calls
+          .map(([frame]) => JSON.parse(String(frame)) as { type: string })
+          .some(({ type }) => type === 'doc_reseed')
+      ).toBe(true)
+    )
+    const reseed = socketSend.mock.calls
+      .map(
+        ([frame]) =>
+          JSON.parse(String(frame)) as {
+            type: string
+            data: { workflow?: unknown }
+          }
+      )
+      .find(({ type }) => type === 'doc_reseed')
+
+    expect(prepareForSave).toHaveBeenCalledOnce()
+    expect(reseed?.data.workflow).toEqual(snapshot)
+  })
 
   it.for([
     { existingThread: null, thread_id: null },
