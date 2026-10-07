@@ -106,11 +106,11 @@ describe(readSsoHint, () => {
 
 describe(forgetSsoHint, () => {
   it('removes a stored hint', () => {
-    rememberSignedInSession(user({ signInProvider: 'saml.workos' }))
+    localStorage.setItem(HINT_KEY, JSON.stringify({ email: 'ada@acme.com' }))
 
     forgetSsoHint()
 
-    expect(readSsoHint()).toBeNull()
+    expect(localStorage.getItem(HINT_KEY)).toBeNull()
   })
 
   it('survives a storage that refuses', () => {

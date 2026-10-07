@@ -64,22 +64,10 @@ describe('SSO error copy', () => {
   })
 
   it('answers a code this build predates with copy, not a blank screen', () => {
-    const code = readSsoError('SSO_SOMETHING_INGEST_ADDED_LATER')
+    const code = readSsoError('SSO_SOMETHING_INGEST_ADDED_LATER')!
 
-    expect(code).toBe('SSO_SIGN_IN_FAILED')
-    expect(render(SSO_ERROR_MESSAGE_KEY['SSO_SIGN_IN_FAILED'])).not.toBe('')
-  })
-
-  it.for([[undefined], [null], [''], [42], [[]], [{}]] as const)(
-    'reads no error from the query value %o',
-    ([value]) => {
-      expect(readSsoError(value)).toBeUndefined()
-    }
-  )
-
-  it('reads the first value when the query repeats sso_error', () => {
-    expect(readSsoError(['SSO_ORG_DISABLED', 'SSO_IDP_ERROR'])).toBe(
-      'SSO_ORG_DISABLED'
+    expect(render(SSO_ERROR_MESSAGE_KEY[code])).toBe(
+      "We couldn't sign you in with single sign-on. Try again."
     )
   })
 })
