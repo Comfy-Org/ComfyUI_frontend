@@ -38,14 +38,10 @@ describe('HeaderMainDesktop', () => {
   it('opens the Hub as Models, Workflows and Apps with an Explore row', async () => {
     const { menu } = await openMenu(/^Hub/)
 
-    expect(
-      menu
-        .getAllByTestId('nav-kind-icon')
-        .map((icon) => icon.getAttribute('data-kind'))
-    ).toEqual(['model', 'workflow', 'app'])
     for (const header of ['Models', 'Workflows', 'Apps']) {
       expect(menu.getByText(header, { exact: true })).toBeVisible()
     }
+    expect(menu.queryByTestId('nav-kind-icon')).toBeNull()
     expect(menu.queryAllByRole('img')).toHaveLength(0)
     expect(
       [

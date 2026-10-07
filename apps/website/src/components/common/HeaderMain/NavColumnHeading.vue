@@ -1,24 +1,20 @@
 <script setup lang="ts">
 import type { NavColumn } from '@/data/mainNavigation'
-import NavKindIcon from './NavKindIcon.vue'
 
 defineProps<{ column: NavColumn }>()
 </script>
 
 <template>
-  <div v-if="column.kind" class="flex items-start gap-3 pl-2">
-    <NavKindIcon :kind="column.kind" />
-    <div>
-      <p class="text-lg/tight font-medium text-primary-warm-white">
-        {{ column.header }}
-      </p>
-      <p
-        v-if="column.description"
-        class="mt-1 text-xs/snug text-primary-warm-gray"
-      >
-        {{ column.description }}
-      </p>
-    </div>
+  <div v-if="column.kind" class="pl-2" :data-kind="column.kind">
+    <p class="text-lg/tight font-medium text-primary-warm-white">
+      {{ column.header }}
+    </p>
+    <p
+      v-if="column.description"
+      class="mt-1 text-xs/snug text-primary-warm-gray"
+    >
+      {{ column.description }}
+    </p>
   </div>
   <p
     v-else

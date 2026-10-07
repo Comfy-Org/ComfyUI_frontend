@@ -20,7 +20,7 @@ export function navLinkTarget(
   return item.newTab ? { target: '_blank', rel: 'noopener' } : {}
 }
 
-export type NavColumnKind = 'model' | 'workflow' | 'app'
+type NavColumnKind = 'model' | 'workflow' | 'app'
 
 export type NavColumn = {
   header: string

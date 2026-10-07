@@ -12,7 +12,6 @@ import { getRoutes } from '@/config/routes.ts'
 import { lockScroll, unlockScroll } from '@/composables/scrollLock'
 import type { Locale } from '@/i18n/translations.ts'
 import { translationsFor } from '@/i18n/translations.ts'
-import NavKindIcon from './NavKindIcon.vue'
 import NavLinkContent from './NavLinkContent.vue'
 import Sheet from '@/components/ui/sheet/Sheet.vue'
 import SheetContent from '@/components/ui/sheet/SheetContent.vue'
@@ -152,14 +151,8 @@ onUnmounted(() => {
                   class="flex flex-col gap-y-3"
                 >
                   <p
-                    :class="
-                      cn(
-                        'text-base font-bold tracking-wider text-primary-warm-gray uppercase',
-                        column.kind && 'flex items-center gap-3'
-                      )
-                    "
+                    class="text-base font-bold tracking-wider text-primary-warm-gray uppercase"
                   >
-                    <NavKindIcon v-if="column.kind" :kind="column.kind" />
                     {{ column.header }}
                   </p>
                   <p

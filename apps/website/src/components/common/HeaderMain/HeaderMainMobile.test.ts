@@ -45,11 +45,9 @@ describe('HeaderMainMobile', () => {
     await user.click(screen.getByRole('button', { name: /^Hub/ }))
 
     expect(screen.getByText('Run, call by API or download').tagName).toBe('P')
-    expect(
-      screen
-        .getAllByTestId('nav-kind-icon')
-        .map((icon) => icon.getAttribute('data-kind'))
-    ).toEqual(['model', 'workflow', 'app'])
+    for (const header of ['Models', 'Workflows', 'Apps'])
+      expect(screen.getByText(header, { exact: true })).toBeVisible()
+    expect(screen.queryByTestId('nav-kind-icon')).toBeNull()
     expect(
       ['Seedream 5.0 Pro', 'Change material', 'All workflows'].map((name) =>
         screen.getByRole('link', { name }).getAttribute('href')
