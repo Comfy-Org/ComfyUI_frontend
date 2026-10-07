@@ -106,7 +106,10 @@ const formProps = vi.hoisted(() => ({
   value: {} as Record<string, unknown>,
   mounted: false
 }))
-let reportConfirm: (confirmationToken: string) => void = () => {}
+let reportConfirm: (
+  confirmationToken: string,
+  methodType?: string
+) => void = () => {}
 
 const PaymentFormStub = defineComponent({
   name: 'CheckoutPaymentForm',
@@ -122,7 +125,7 @@ const PaymentFormStub = defineComponent({
   setup(props, { emit }) {
     formProps.value = props
     formProps.mounted = true
-    reportConfirm = (token) => emit('confirm', token)
+    reportConfirm = (token, methodType) => emit('confirm', token, methodType)
     return () =>
       h(
         'button',
@@ -573,6 +576,52 @@ describe('CheckoutView', () => {
     expect(challengeMocks.handleNextAction).not.toHaveBeenCalled()
   })
 
+  it('offers no second way to the verification page once this tab is redirecting there', async () => {
+    const assign = stubNavigation()
+    const fake = await renderCheckout()
+    await screen.findByRole('button', { name: 'Pay and subscribe' })
+
+    fake.publishOperation(
+      hostedPendingOperation('https://hooks.stripe.test/redirect/op_1')
+    )
+
+    await waitFor(() => expect(assign).toHaveBeenCalled())
+    expect(
+      screen.queryByRole('button', { name: 'Complete verification' })
+    ).toBeNull()
+  })
+
+  it('offers no second way to the verification page while an Alipay Pay is taking this tab there', async () => {
+    stubNavigation()
+    const fake = await renderCheckout()
+    await screen.findByRole('button', { name: 'Pay and subscribe' })
+    fake.subscribe.mockImplementation(() => new Promise(() => {}))
+
+    reportConfirm('ctoken_1', 'alipay')
+    await waitFor(() => expect(fake.subscribe).toHaveBeenCalledOnce())
+    fake.publishOperation({
+      ...challengedPendingOperation('pi_1_secret'),
+      actionUrl: 'https://hooks.stripe.test/redirect/op_1'
+    })
+
+    await waitFor(() =>
+      expect(challengeMocks.handleNextAction).toHaveBeenCalledWith(
+        'pi_1_secret'
+      )
+    )
+    expect(
+      screen.queryByRole('button', { name: 'Complete verification' })
+    ).toBeNull()
+
+    const backFromAlipay = new Event('pageshow')
+    Object.defineProperty(backFromAlipay, 'persisted', { value: true })
+    window.dispatchEvent(backFromAlipay)
+
+    expect(
+      await screen.findByRole('button', { name: 'Complete verification' })
+    ).toBeInTheDocument()
+  })
+
   it('drives the 3DS challenge in place when the continuation is embedded', async () => {
     const assign = stubNavigation()
     const fake = await renderCheckout()
@@ -816,6 +865,25 @@ describe('CheckoutView', () => {
     ).toBeInTheDocument()
   })
 
+  it('releases the confirm once the in-page verification fails, before the server settles', async () => {
+    const fake = await renderCheckout()
+    fake.subscribe.mockReturnValue(new Promise(() => {}))
+    await screen.findByRole('button', { name: 'Pay and subscribe' })
+
+    reportConfirm('ctoken_1')
+    await waitFor(() => expect(formProps.value.isLoading).toBe(true))
+
+    fake.publishOperation(challengedPendingOperation('pi_1_secret'))
+    expect(formProps.value.isLoading).toBe(true)
+
+    fake.publishOperation({
+      ...challengedPendingOperation('pi_1_secret'),
+      challenge: { status: 'failed', clientSecret: 'pi_1_secret' }
+    })
+
+    await waitFor(() => expect(formProps.value.isLoading).toBe(false))
+  })
+
   it('announces the processing toast as an alert, as the app does', async () => {
     const fake = await renderCheckout()
     await screen.findByRole('button', { name: 'Pay and subscribe' })
@@ -926,6 +994,95 @@ describe('CheckoutView', () => {
     )
     expect(fake.subscribe.mock.calls[0][0]).not.toHaveProperty(
       'confirmation_token'
+    )
+  })
+
+  describe('cancel payment and try again', () => {
+    const CANCEL = 'Cancel payment and try again'
+
+    function declinedPlanChange(cancelable?: boolean): BillingOperationState {
+      return {
+        ...serverPhasePendingOperation('awaiting_invoice_payment'),
+        authenticationState: 'failed_retryable',
+        declineReason: 'authentication_failed',
+        ...(cancelable === undefined ? {} : { cancelable })
+      }
+    }
+
+    async function renderDeclinedPlanChange(
+      cancelable?: boolean,
+      options: FakeBillingClientOptions = {}
+    ) {
+      const fake = await renderCheckout(CHECKOUT_PATH, {
+        preview: { status: 'ok', value: upgradeQuote() },
+        ...options
+      })
+      await screen.findByRole('button', { name: 'Confirm upgrade' })
+      fake.publishOperation(declinedPlanChange(cancelable))
+      await nextTick()
+      return fake
+    }
+
+    it.for([
+      { cancelable: true, offered: true },
+      { cancelable: false, offered: false },
+      { cancelable: undefined, offered: false }
+    ])(
+      'offers the cancel only when the server says the payment is cancelable ($cancelable)',
+      async ({ cancelable, offered }) => {
+        await renderDeclinedPlanChange(cancelable)
+
+        expect(screen.queryByRole('button', { name: CANCEL }) !== null).toBe(
+          offered
+        )
+      }
+    )
+
+    it('cancels the payment once and frees the confirm when the operation settles', async () => {
+      const fake = await renderDeclinedPlanChange(true)
+      expect(
+        screen.getByRole('button', { name: 'Confirm upgrade' })
+      ).toBeDisabled()
+
+      await userEvent.click(screen.getByRole('button', { name: CANCEL }))
+      expect(fake.cancelOperation).toHaveBeenCalledExactlyOnceWith('op_1')
+
+      fake.publishOperation(failedOperation('authentication_failed'))
+
+      await waitFor(() =>
+        expect(
+          screen.getByRole('button', { name: 'Confirm upgrade' })
+        ).toBeEnabled()
+      )
+      expect(screen.queryByRole('button', { name: CANCEL })).toBeNull()
+    })
+
+    it.for([
+      {
+        answer: { status: 'not_canceled', code: 'PAYMENT_IN_FLIGHT' },
+        shown: "This payment is already processing and can't be canceled."
+      },
+      {
+        answer: { status: 'not_canceled', code: 'NOT_CANCELABLE' },
+        shown: 'This payment can no longer be canceled.'
+      },
+      {
+        answer: {
+          status: 'error',
+          code: 'REQUEST_FAILED',
+          serverMessage: 'Billing is briefly unavailable.'
+        },
+        shown: "We couldn't cancel this payment. Please try again."
+      }
+    ] as const)(
+      'shows our own copy, never the server text, when the cancel fails ($answer.code)',
+      async ({ answer, shown }) => {
+        await renderDeclinedPlanChange(true, { cancelOperation: answer })
+
+        await userEvent.click(screen.getByRole('button', { name: CANCEL }))
+
+        expect(await screen.findByText(shown)).toBeInTheDocument()
+      }
     )
   })
 

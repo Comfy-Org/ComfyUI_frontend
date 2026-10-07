@@ -2,9 +2,9 @@ import { expect } from '@playwright/test'
 
 import { test } from './fixtures/blockExternalMedia'
 
-test.describe('Supported model FAQ @smoke', () => {
+test.describe('Model file FAQ @smoke', () => {
   test('renders the same questions as the FAQPage schema', async ({ page }) => {
-    await page.goto('/p/supported-models/grok-imagine/')
+    await page.goto('/hub/models/local/4x-ultrasharp/')
 
     const faqHeading = page.getByRole('heading', {
       name: 'Frequently Asked Questions'

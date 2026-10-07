@@ -8,7 +8,9 @@ import {
   acquireSharedRenderer,
   applyRendererViewState,
   createRendererViewState,
-  ensureRendererSize
+  ensureRendererSize,
+  ensureSharedHighPrecisionTarget,
+  resolveHighPrecisionTarget
 } from './sharedWebGLRenderer'
 
 export class RendererView {
@@ -22,6 +24,9 @@ export class RendererView {
   private readonly context: CanvasRenderingContext2D
   private readonly handle: SharedRendererHandle
   private resizeObserver: ResizeObserver | null = null
+  private outputTarget: THREE.WebGLRenderTarget | null = null
+  private outputWidth = 1
+  private outputHeight = 1
 
   constructor(container: HTMLElement) {
     this.canvas = document.createElement('canvas')
@@ -51,12 +56,65 @@ export class RendererView {
     ensureRendererSize(this.renderer, this.width, this.height)
   }
 
-  beginRender(): void {
+  beginRender(highPrecision = false): void {
     ensureRendererSize(this.renderer, this.width, this.height)
     applyRendererViewState(this.renderer, this.state)
+    this.bindOutput(
+      highPrecision
+        ? ensureSharedHighPrecisionTarget(this.width, this.height)
+        : null,
+      this.width,
+      this.height
+    )
+  }
+
+  bindOutput(
+    target: THREE.WebGLRenderTarget | null,
+    width: number,
+    height: number
+  ): void {
+    this.outputTarget = target
+    this.outputWidth = width
+    this.outputHeight = height
+    if (target) target.texture.colorSpace = this.state.outputColorSpace
+    this.renderer.setRenderTarget(target)
+    this.setViewport(0, 0, width, height)
+    this.setScissor(0, 0, width, height)
+    this.setScissorTest(false)
+  }
+
+  resolveOutput(): void {
+    if (!this.outputTarget) return
+    resolveHighPrecisionTarget(
+      this.renderer,
+      this.outputTarget,
+      this.outputWidth,
+      this.outputHeight
+    )
+    this.outputTarget = null
+  }
+
+  setViewport(x: number, y: number, width: number, height: number): void {
+    this.renderer.setViewport(x, y, width, height)
+    this.outputTarget?.viewport.set(x, y, width, height)
+  }
+
+  getViewport(target: THREE.Vector4): THREE.Vector4 {
+    return this.renderer.getViewport(target)
+  }
+
+  setScissor(x: number, y: number, width: number, height: number): void {
+    this.renderer.setScissor(x, y, width, height)
+    this.outputTarget?.scissor.set(x, y, width, height)
+  }
+
+  setScissorTest(enabled: boolean): void {
+    this.renderer.setScissorTest(enabled)
+    if (this.outputTarget) this.outputTarget.scissorTest = enabled
   }
 
   blit(): void {
+    this.resolveOutput()
     const source = this.renderer.domElement
     this.context.globalCompositeOperation = 'copy'
     this.context.drawImage(
