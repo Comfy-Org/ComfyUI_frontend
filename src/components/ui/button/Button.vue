@@ -13,15 +13,15 @@ import ButtonTooltip from './ButtonTooltip.vue'
 defineOptions({ inheritAttrs: false })
 
 interface Props extends PrimitiveProps {
-  variant?: ButtonVariants['variant']
-  size?: ButtonVariants['size']
   class?: HTMLAttributes['class']
+  disabled?: boolean
   icon?: string
   indicator?: boolean
   loading?: boolean
-  disabled?: boolean
+  size?: ButtonVariants['size']
   tooltip?: string
   tooltipSide?: TooltipContentProps['side']
+  variant?: ButtonVariants['variant']
 }
 
 const {
