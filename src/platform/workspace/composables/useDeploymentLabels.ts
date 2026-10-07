@@ -51,7 +51,8 @@ export function useBootDeploymentLabel() {
  * The words the deployment switcher shows (FE-2434): a deployment's label
  * (its Build name and the Release version it runs now, or its short id when
  * Build names are hidden), its caption, and the labels of this browser's pick
- * and of the workspace's default deployment.
+ * and of the workspace's default deployment. Plain text, never HTML: Vue
+ * escapes them where they render, so a Build name is not escaped here.
  */
 export function useDeploymentLabels() {
   const { t } = useI18n()
@@ -60,7 +61,7 @@ export function useDeploymentLabels() {
 
   function deploymentLabel(deployment: WorkspaceDeployment): string {
     const [key, values] = labelMessage(deployment)
-    return t(key, values)
+    return t(key, values, { escapeParameter: false })
   }
 
   /** The id and status, marking the workspace's default deployment. */
@@ -69,10 +70,11 @@ export function useDeploymentLabels() {
       deployment.deployment_id === defaultDeploymentId.value
         ? 'deploymentSwitcher.captionDefault'
         : 'deploymentSwitcher.caption'
-    return t(key, {
-      id: shortId(deployment.deployment_id),
-      status: deployment.status
-    })
+    return t(
+      key,
+      { id: shortId(deployment.deployment_id), status: deployment.status },
+      { escapeParameter: false }
+    )
   }
 
   function labelFor(
@@ -81,9 +83,11 @@ export function useDeploymentLabels() {
   ): string {
     if (deploymentId === null) return t('deploymentSwitcher.comfyCloud')
     if (deployment) return deploymentLabel(deployment)
-    return t('deploymentSwitcher.unnamedDeployment', {
-      id: shortId(deploymentId)
-    })
+    return t(
+      'deploymentSwitcher.unnamedDeployment',
+      { id: shortId(deploymentId) },
+      { escapeParameter: false }
+    )
   }
 
   /** A pick the listing no longer has runs on Comfy Cloud. */
