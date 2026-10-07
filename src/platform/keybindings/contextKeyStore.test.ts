@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { useContextKeyStore } from './contextKeyStore'
 
@@ -20,7 +20,6 @@ describe('useContextKeyStore', () => {
 
   it('ignores writes to keys nobody registered', () => {
     const store = useContextKeyStore()
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
 
     expect(store.set('nope', true)).toBe(false)
     expect('nope' in store.snapshot()).toBe(false)
@@ -28,7 +27,6 @@ describe('useContextKeyStore', () => {
 
   it('lets an owner re-register its key but not take another owner’s', () => {
     const store = useContextKeyStore()
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
     store.register('shared', 'a')
     store.set('shared', true)
 
@@ -40,9 +38,24 @@ describe('useContextKeyStore', () => {
 
   it('rejects names the when grammar cannot reference', () => {
     const store = useContextKeyStore()
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
 
-    expect(store.register('has space', 'a')).toBe(false)
-    expect(store.register('1leading', 'a')).toBe(false)
+    expect(store.register('a && b', 'a')).toBe(false)
+    expect(store.register('!negated', 'a')).toBe(false)
+    expect(store.register('a == b', 'a')).toBe(false)
+  })
+
+  it('only lets extensions write true or false to keys core does not own', () => {
+    const store = useContextKeyStore()
+    store.register('ext.wasdMode', 'ext')
+
+    for (const value of [undefined, null, 0, 'yes']) {
+      expect(store.setFromExtension('ext.wasdMode', value)).toBe(false)
+    }
+    expect(store.snapshot()['ext.wasdMode']).toBe(false)
+    expect(store.setFromExtension('modalOpen', true)).toBe(false)
+    expect(store.snapshot().modalOpen).toBe(false)
+
+    expect(store.setFromExtension('ext.wasdMode', true)).toBe(true)
+    expect(store.snapshot()['ext.wasdMode']).toBe(true)
   })
 })

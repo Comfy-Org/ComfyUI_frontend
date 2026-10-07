@@ -153,8 +153,11 @@ export const useKeybindingStore = defineStore('keybinding', () => {
     return defaultKeybindingsByCommandId.value[commandId] ?? []
   }
 
+  /** The binding to advertise in menus and tooltips: one that fires anywhere. */
   function getKeybindingByCommandId(commandId: string) {
-    return getKeybindingsByCommandId(commandId).at(0)
+    return getKeybindingsByCommandId(commandId).find(
+      (binding) => binding.dialogKey === undefined && binding.when === undefined
+    )
   }
 
   function addDefaultKeybinding(keybinding: KeybindingImpl) {
@@ -177,14 +180,15 @@ export const useKeybindingStore = defineStore('keybinding', () => {
     const unset = userUnsetKeybindings.value.find((binding) =>
       binding.equals(keybinding)
     )
-    if (isDefault && unset) {
-      userUnsetKeybindings.value = without(userUnsetKeybindings.value, unset)
+    if (isDefault) {
+      if (unset) {
+        userUnsetKeybindings.value = without(userUnsetKeybindings.value, unset)
+      }
       userKeybindings.value = userKeybindings.value.filter(
         (binding) => !conflicts(binding, keybinding)
       )
       return
     }
-    if (isDefault) return
 
     for (const binding of activeDefaultKeybindings.value) {
       if (conflicts(binding, keybinding)) unsetKeybinding(binding)

@@ -16,7 +16,8 @@ export class KeybindingImpl implements Keybinding {
     this.combo = new KeyComboImpl(obj.combo)
     this.targetElementId = obj.targetElementId || undefined
     this.dialogKey = obj.dialogKey || undefined
-    this.when = obj.when ? canonicalWhenClause(obj.when) : undefined
+    const when = obj.when?.trim()
+    this.when = when ? canonicalWhenClause(when) : undefined
   }
 
   /** Every field that distinguishes one binding from another. */

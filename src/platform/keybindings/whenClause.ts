@@ -12,7 +12,17 @@ export type WhenClauseParseResult =
   | { success: true; clause: WhenClause }
   | { success: false; error: string }
 
-const ATOM_PATTERN = /^(!?)\s*([A-Za-z_][\w.-]*)$/
+/**
+ * Any text free of operator characters, so extension names with spaces, `@`
+ * or `/` can prefix their keys.
+ */
+const KEY_SOURCE = String.raw`[^\s!&|()=<>~'"](?:[^!&|()=<>~'"]*[^\s!&|()=<>~'"])?`
+const KEY_PATTERN = new RegExp(`^${KEY_SOURCE}$`)
+const ATOM_PATTERN = new RegExp(`^(!?)\\s*(${KEY_SOURCE})$`)
+
+export function isContextKeyName(name: string): boolean {
+  return KEY_PATTERN.test(name)
+}
 
 export function parseWhenClause(source: string): WhenClauseParseResult {
   const atoms: WhenAtom[] = []
@@ -46,7 +56,7 @@ export function matchesContext(
 ): boolean {
   return clause.every(
     (atom) =>
-      Object.hasOwn(context, atom.key) && context[atom.key] !== atom.negated
+      Object.hasOwn(context, atom.key) && context[atom.key] === !atom.negated
   )
 }
 

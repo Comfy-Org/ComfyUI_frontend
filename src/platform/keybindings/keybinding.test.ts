@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { KeybindingImpl } from './keybinding'
+import type { Keybinding } from './types'
 import { zKeybinding } from './types'
 
 describe('KeybindingImpl', () => {
@@ -78,6 +79,22 @@ describe('KeybindingImpl', () => {
     ).toBe(true)
   })
 
+  it('treats a whitespace-only when clause as no clause', () => {
+    const binding = new KeybindingImpl({
+      commandId: 'test.command',
+      combo: { key: 'w' },
+      when: '   '
+    })
+    const unconditioned = new KeybindingImpl({
+      commandId: 'test.command',
+      combo: { key: 'w' }
+    })
+
+    expect(binding.when).toBeUndefined()
+    expect(binding.equals(unconditioned)).toBe(true)
+    expect(binding.serialize()).toBe(unconditioned.serialize())
+  })
+
   it('treats empty scope fields as absent', () => {
     const binding = new KeybindingImpl({
       commandId: 'test.command',
@@ -100,6 +117,15 @@ describe('KeybindingImpl', () => {
 })
 
 describe('zKeybinding', () => {
+  it('accepts a binding with omitted modifiers and scope fields', () => {
+    const binding: Keybinding = {
+      commandId: 'test.command',
+      combo: { key: 'k' }
+    }
+
+    expect(zKeybinding.parse(binding)).toEqual(binding)
+  })
+
   it('accepts null optional fields from extensions', () => {
     const result = zKeybinding.safeParse({
       commandId: 'test.command',
@@ -109,5 +135,36 @@ describe('zKeybinding', () => {
 
     expect(result.success).toBe(true)
     if (result.success) expect(result.data.targetElementId).toBeUndefined()
+  })
+
+  it('accepts null modifiers from extensions', () => {
+    const result = zKeybinding.safeParse({
+      commandId: 'test.command',
+      combo: { key: 'k', ctrl: true, alt: null, shift: null, meta: null }
+    })
+
+    expect(result.success).toBe(true)
+    if (result.success) expect(result.data.combo.alt).toBeUndefined()
+  })
+
+  it.for(['', '   ', null])('drops an empty when clause (%j)', (when) => {
+    const result = zKeybinding.safeParse({
+      commandId: 'test.command',
+      combo: { key: 'w' },
+      when
+    })
+
+    expect(result.success).toBe(true)
+    if (result.success) expect(result.data.when).toBeUndefined()
+  })
+
+  it('rejects a when clause that does not parse', () => {
+    const result = zKeybinding.safeParse({
+      commandId: 'test.command',
+      combo: { key: 'w' },
+      when: 'a || b'
+    })
+
+    expect(result.success).toBe(false)
   })
 })
