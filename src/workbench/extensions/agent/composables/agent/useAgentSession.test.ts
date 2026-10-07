@@ -72,7 +72,17 @@ function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
         preference: AgentRunModePreference
       ): Promise<AgentRunModePreference> => preference
     ),
-    listCloudWorkflows: vi.fn(async () => []),
+    listCloudWorkflows: vi.fn(async () => ({
+      entries: [],
+      complete: true
+    })),
+    getCloudWorkflow: vi.fn(async (workflowId: string) => ({
+      id: workflowId,
+      latest_version: 1,
+      created_by: 'user-1',
+      created_at: '2026-09-11T10:00:00Z',
+      updated_at: '2026-09-11T10:00:00Z'
+    })),
     cancelMessage: vi.fn(
       async (): Promise<AgentCancelAccepted> => ({
         status: 'cancelling'
@@ -80,7 +90,8 @@ function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
     ),
     answerAsk: vi.fn(
       async (): Promise<AgentAnswerAccepted> => ({
-        status: 'answered'
+        status: 'answered',
+        selected: []
       })
     ),
     uploadImage: vi.fn(
@@ -1645,7 +1656,8 @@ describe('useAgentSession (v1 composition root)', () => {
   it('answers a run approval once and stays busy until its resolution event', async () => {
     const answerAsk = vi.fn(
       async (): Promise<AgentAnswerAccepted> => ({
-        status: 'answered'
+        status: 'answered',
+        selected: ['run']
       })
     )
     const rest = fakeRest({ answerAsk })
@@ -1754,7 +1766,8 @@ describe('useAgentSession (v1 composition root)', () => {
     const parkedOnApproval = async () => {
       const answerAsk = vi.fn(
         async (): Promise<AgentAnswerAccepted> => ({
-          status: 'answered'
+          status: 'answered',
+          selected: ['run']
         })
       )
       const rest = fakeRest({ answerAsk })
@@ -1918,7 +1931,7 @@ describe('useAgentSession (v1 composition root)', () => {
         .mockRejectedValueOnce(
           new AgentApiError('failed to wake the turn', 500, undefined)
         )
-        .mockResolvedValueOnce({ status: 'answered' })
+        .mockResolvedValueOnce({ status: 'answered', selected: ['run'] })
       const events = fakeEvents()
       const session = useAgentSession({
         rest: fakeRest({ answerAsk }),

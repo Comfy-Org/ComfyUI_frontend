@@ -1,8 +1,12 @@
 import type {
   AgentPostMessageRequest,
-  UploadImageResponse
+  UploadImageResponse,
+  WorkflowResponse
 } from '@comfyorg/ingest-types'
-import { zUploadImageResponse } from '@comfyorg/ingest-types/zod'
+import {
+  zUploadImageResponse,
+  zWorkflowResponse
+} from '@comfyorg/ingest-types/zod'
 import type { z } from 'zod'
 
 import {
@@ -13,7 +17,7 @@ import type { AuthScheme } from '@/scripts/api'
 import { api } from '@/scripts/api'
 
 import {
-  zAgentAnswerAccepted,
+  zAgentAnswerReceipt,
   zAgentCancelAccepted,
   zAgentError,
   zAgentMessages,
@@ -23,7 +27,7 @@ import {
   zCloudWorkflowIndex
 } from '../../schemas/agentApiSchema'
 import type {
-  AgentAnswerAccepted,
+  AgentAnswerReceipt,
   AgentCancelAccepted,
   AgentMessages,
   AgentRunModePreference,
@@ -63,6 +67,7 @@ const ANSWER_ASK_TIMEOUT_MS = 15_000
 type AgentApiOperation =
   | 'answer_thread_ask'
   | 'cancel_thread_message'
+  | 'get_cloud_workflow'
   | 'get_run_mode'
   | 'get_thread_messages'
   | 'list_cloud_workflows'
@@ -111,6 +116,12 @@ export class AgentResponseUnreadableError extends Error {
     super('Unreadable agent response body', { cause })
     this.name = 'AgentResponseUnreadableError'
   }
+}
+
+/** A workflow index and whether pagination reached its last page. */
+export interface CloudWorkflowListing {
+  entries: CloudWorkflowEntry[]
+  complete: boolean
 }
 
 export type OpenTabsSnapshot = Pick<
@@ -551,7 +562,7 @@ export function createAgentRestClient() {
     )
   }
 
-  async function listCloudWorkflows(): Promise<CloudWorkflowEntry[]> {
+  async function listCloudWorkflows(): Promise<CloudWorkflowListing> {
     const entries: CloudWorkflowEntry[] = []
     let hasMore: boolean
     let cursor: string | undefined
@@ -577,7 +588,18 @@ export function createAgentRestClient() {
       console.warn(
         `[agent] cloud workflow index truncated at ${entries.length} entries`
       )
-    return entries
+    return { entries, complete: !hasMore }
+  }
+
+  async function getCloudWorkflow(
+    workflowId: string
+  ): Promise<WorkflowResponse> {
+    return request(
+      'get_cloud_workflow',
+      `/workflows/${encodeURIComponent(workflowId)}`,
+      { method: 'GET' },
+      zWorkflowResponse
+    )
   }
 
   async function cancelMessage(
@@ -596,12 +618,12 @@ export function createAgentRestClient() {
     threadId: string,
     askId: string,
     selected: string[]
-  ): Promise<AgentAnswerAccepted> {
+  ): Promise<AgentAnswerReceipt> {
     return request(
       'answer_thread_ask',
       `/agent/threads/${encodeURIComponent(threadId)}/asks/${encodeURIComponent(askId)}/answer`,
       { ...jsonInit('POST', { selected }), timeoutMs: ANSWER_ASK_TIMEOUT_MS },
-      zAgentAnswerAccepted
+      zAgentAnswerReceipt
     )
   }
 
@@ -632,6 +654,7 @@ export function createAgentRestClient() {
     getRunMode,
     putRunMode,
     listCloudWorkflows,
+    getCloudWorkflow,
     cancelMessage,
     answerAsk,
     uploadImage

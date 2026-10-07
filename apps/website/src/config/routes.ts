@@ -52,6 +52,7 @@ const baseRoutes = {
   wan3: '/wan-3.0/',
   chatgptImage25: '/chatgpt-image-2.5/',
   qwenImage21: '/qwen-image-2.1/',
+  nanoBanana: '/nano-banana/',
   brand: '/brand/',
   // The hub catalogue. `workshop` keeps its old name.
   workshop: '/hub/models/',
@@ -263,7 +264,7 @@ export const externalLinks = {
 
 /**
  * The platform creates a key on arrival and shows this product's onboarding.
- * `model` is the website's model page id (`/models/<slug>`), not the Router id.
+ * `model` is the website's model page id (`/hub/models/<slug>/`), not the Router id.
  */
 type ApiKeysOnboarding =
   | { onboarding: 'router' | 'comfy_api' }

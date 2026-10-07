@@ -2,13 +2,13 @@ import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { expect, it, vi } from 'vitest'
 
-import { useAuthToasts } from '../../config/auth-toast-state'
-import { t } from '../../i18n/translations'
+import { useAuthToasts } from '@/config/auth-toast-state'
+import { t } from '@/i18n/translations'
 import AuthSignIn from './AuthSignIn.vue'
 
-vi.mock(import('../../scripts/posthog'))
-vi.mock(import('../../config/workshop-session-state'))
-vi.mock(import('../../config/workshop-firebase'), () => {
+vi.mock(import('@/scripts/posthog'))
+vi.mock(import('@/config/workshop-session-state'))
+vi.mock(import('@/config/workshop-firebase'), () => {
   throw new TypeError('Failed to fetch dynamically imported module')
 })
 

@@ -6,10 +6,10 @@ import type {
   WorkshopField,
   WorkshopFormValue,
   WorkshopFormValues
-} from '../../config/workshop-detail'
-import { parseWorkshopJsonInput } from '../../config/workshop-json-schema'
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
+} from '@/config/workshop-detail'
+import { parseWorkshopJsonInput } from '@/config/workshop-json-schema'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 
 const { field, locale = 'en' } = defineProps<{
   field: WorkshopField

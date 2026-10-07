@@ -63,6 +63,14 @@ export function evaluateBannerVisibility(
   return true
 }
 
+/** The first banner that passes the visibility gate, in the order given. */
+export function firstVisibleBanner<T extends EvaluableBanner>(
+  banners: readonly T[],
+  ctx: BannerVisibilityContext
+): T | undefined {
+  return banners.find((banner) => evaluateBannerVisibility(banner, ctx))
+}
+
 interface BannerLinkContent {
   href: string
   title: string

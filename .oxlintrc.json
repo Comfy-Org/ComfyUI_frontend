@@ -41,6 +41,7 @@
     "comfy/no-duplicate-ingest-type": "error",
     "comfy/no-relative-packages": "error",
     "comfy/no-js-private-class-members": "error",
+    "comfy/no-vitest-mock-method-names": "error",
     "comfy/no-render-in-watch-effect": "error",
     "comfy/no-useless-path-segments": "error",
     "no-array-constructor": "error",
@@ -288,6 +289,12 @@
             ]
           }
         ]
+      }
+    },
+    {
+      "files": ["**/vite.config.*", "**/vitest.config.*", "vitest.*.mts"],
+      "rules": {
+        "comfy/no-vitest-mock-method-names": "off"
       }
     },
     {
@@ -668,6 +675,13 @@
             ]
           }
         ]
+      }
+    },
+    {
+      "files": ["apps/website/**"],
+      "rules": {
+        "comfy/no-relative-parent-paths": "error",
+        "import/no-relative-parent-imports": "error"
       }
     },
     {
