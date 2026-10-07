@@ -491,7 +491,6 @@ function collectCurrentMediaUiDiagnostics() {
     })
   } catch (error) {
     reportError(error, {
-      surface: 'agent',
       errorType: 'agent_crdt_media_ui_diagnostics_failed',
       level: 'warning'
     })
