@@ -85,19 +85,9 @@ describe('EmptyState', () => {
       assignment: 'test',
       key: 'agent.suggestedPrompts.treatment.cloud.0',
       reported: 'test'
-    },
-    {
-      locale: 'zh',
-      assignment: 'control',
-      key: 'agent.suggestedPrompts.cloud.0'
-    },
-    {
-      locale: 'zh',
-      assignment: 'test',
-      key: 'agent.suggestedPrompts.cloud.0'
     }
   ] as const)(
-    'renders $assignment for $locale without changing experiment eligibility',
+    'renders and reports $assignment for an eligible $locale locale',
     async ({ locale, assignment, key, reported }) => {
       const previousLocale = i18n.global.locale.value
       i18n.global.locale.value = locale
@@ -112,17 +102,46 @@ describe('EmptyState', () => {
 
         await user.click(screen.getByRole('button', { name: text }))
 
-        if (reported) expect(emitted().rendered).toEqual([[reported]])
-        else expect(emitted()).not.toHaveProperty('rendered')
+        expect(emitted().rendered).toEqual([[reported]])
         expect(emitted().insert).toEqual([
-          [
-            text,
-            reported
-              ? expect.objectContaining({ assignment: reported })
-              : expect.not.objectContaining({
-                  assignment: expect.anything()
-                })
-          ]
+          [text, expect.objectContaining({ assignment: reported })]
+        ])
+      } finally {
+        i18n.global.locale.value = previousLocale
+      }
+    }
+  )
+
+  it.for([
+    {
+      locale: 'zh',
+      assignment: 'control',
+      key: 'agent.suggestedPrompts.cloud.0'
+    },
+    {
+      locale: 'zh',
+      assignment: 'test',
+      key: 'agent.suggestedPrompts.cloud.0'
+    }
+  ] as const)(
+    'renders control without reporting $assignment for an ineligible $locale locale',
+    async ({ locale, assignment, key }) => {
+      const previousLocale = i18n.global.locale.value
+      i18n.global.locale.value = locale
+      distribution.isCloud = true
+      try {
+        const user = userEvent.setup()
+        const { emitted } = render(EmptyState, {
+          props: { assignment },
+          global: { plugins: [i18n] }
+        })
+        const text = i18n.global.t(key)
+
+        await user.click(screen.getByRole('button', { name: text }))
+
+        expect(emitted()).not.toHaveProperty('rendered')
+        expect(emitted().insert).toEqual([
+          [text, expect.not.objectContaining({ assignment: expect.anything() })]
         ])
       } finally {
         i18n.global.locale.value = previousLocale
