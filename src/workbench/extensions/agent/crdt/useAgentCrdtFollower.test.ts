@@ -221,7 +221,7 @@ function mountFollower(
   initiallyActive = true,
   getGraph: () => MaterializableGraph | null = () => null,
   events: Parameters<typeof useAgentCrdtFollower>[5] = {},
-  canvasFor: Parameters<typeof useAgentCrdtFollower>[6] = () => null
+  canvasFor: Parameters<typeof useAgentCrdtFollower>[6] = () => undefined
 ): {
   unmount: () => void
   workflowId: Ref<string | null>
@@ -394,8 +394,9 @@ describe('useAgentCrdtFollower', () => {
     expect(clientState.sendOps).not.toHaveBeenCalled()
   })
 
-  it('fails terminally when a refusal has no confirmed canvas binding', () => {
-    const { status } = mountFollower('wf-1')
+  it('retries when a refusal arrives before the canvas binding settles', () => {
+    vi.useFakeTimers()
+    mountFollower('wf-1')
     bridge().canReseed.mockReturnValue(true)
 
     dispatchFrame('doc_subscribed', {
@@ -405,16 +406,10 @@ describe('useAgentCrdtFollower', () => {
       expectedSeq: 7
     })
 
-    expect(status().connected).toBe(false)
-    expect(bridge().resubscribe).not.toHaveBeenCalled()
-    expect(telemetryState.reportError).toHaveBeenCalledWith(
-      expect.objectContaining({
-        message: expect.stringContaining('no confirmed canvas binding')
-      }),
-      expect.objectContaining({
-        errorType: 'failure_reseeding_agent_cloud_workflow'
-      })
-    )
+    expect(bridge().reseed).not.toHaveBeenCalled()
+    vi.advanceTimersByTime(500)
+    expect(bridge().resubscribe).toHaveBeenCalledOnce()
+    expect(telemetryState.reportError).not.toHaveBeenCalled()
   })
 
   it('does not construct a follower when the product gate is disabled', () => {

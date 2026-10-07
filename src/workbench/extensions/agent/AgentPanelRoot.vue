@@ -786,12 +786,12 @@ function targetWorkflowDraft(origin?: TurnOrigin): DraftSnapshot | undefined {
 
 function canvasForWorkflow(
   workflowId: string
-): Record<string, unknown> | null | undefined {
+): Record<string, unknown> | undefined {
   if (workflowDetached.value) return undefined
   const boundPath = bindingStore.tabPathFor(workflowId)
-  if (boundPath === undefined) return null
+  if (boundPath === undefined) return undefined
   const target = boundOrOpenWorkflowFor(workflowId)
-  if (!target || target.path !== boundPath) return null
+  if (!target || target.path !== boundPath) return undefined
   return serializedCanvas(target) ?? undefined
 }
 

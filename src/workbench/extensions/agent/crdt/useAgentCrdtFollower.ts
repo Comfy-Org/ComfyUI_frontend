@@ -337,9 +337,8 @@ export function useAgentCrdtFollower(
    */
   getGraph: () => MaterializableGraph | null = () => null,
   events: AgentCrdtFollowerEvents = {},
-  canvasFor: (
-    workflowId: string
-  ) => Record<string, unknown> | null | undefined = () => null
+  canvasFor: (workflowId: string) => Record<string, unknown> | undefined = () =>
+    undefined
 ) {
   const productGate = useAgentPanelStore()
   const follower = shallowRef<ReturnType<typeof startAgentCrdtFollower>>()
@@ -408,7 +407,7 @@ function startAgentCrdtFollower(
   isTargetActive: Ref<boolean>,
   getGraph: () => MaterializableGraph | null,
   events: AgentCrdtFollowerEvents,
-  canvasFor: (workflowId: string) => Record<string, unknown> | null | undefined
+  canvasFor: (workflowId: string) => Record<string, unknown> | undefined
 ) {
   const connected = ref(false)
   const updatesApplied = ref(0)
@@ -689,7 +688,7 @@ function startAgentCrdtFollower(
       giveUpOnReseed('attempt budget exhausted')
       return true
     }
-    let canvas: Record<string, unknown> | null | undefined
+    let canvas: Record<string, unknown> | undefined
     try {
       canvas = canvasFor(target)
     } catch (error) {
@@ -701,10 +700,6 @@ function startAgentCrdtFollower(
       return false
     }
     if (canvas === undefined) return false
-    if (canvas === null) {
-      giveUpOnReseed('no confirmed canvas binding')
-      return true
-    }
     const sendResult = bridge.reseed(target, canvas)
     if (sendResult === 'too_large') {
       giveUpOnReseed('canvas exceeds the transport limit')
