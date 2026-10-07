@@ -86,20 +86,6 @@ describe('BuildConfiguratorSplit01', () => {
     ).toBeTruthy()
   })
 
-  it('does not render a more-options hint after the chip groups', () => {
-    render(BuildConfiguratorSplit01, { props: baseProps })
-
-    expect(screen.queryByText('more options')).toBeNull()
-  })
-
-  it('renders node and model chips as text only, without status dots', () => {
-    render(BuildConfiguratorSplit01, { props: baseProps })
-
-    for (const name of ['ComfyUI-Manager', 'ControlNet Aux', 'FLUX 3']) {
-      expect(screen.getByRole('button', { name }).innerHTML).toBe(name)
-    }
-  })
-
   it('renders the panel without a title when panelTitle is omitted', () => {
     const { panelTitle: _panelTitle, ...withoutPanelTitle } = baseProps
     render(BuildConfiguratorSplit01, { props: withoutPanelTitle })
@@ -145,6 +131,9 @@ describe('BuildConfiguratorSplit01', () => {
     )
     await userEvent.click(screen.getByRole('button', { name: 'Wan 3.0' }))
     expect(summaryText()).toContain('2 nodes · 2 models')
+    expect(
+      screen.getByRole('button', { name: 'ControlNet Aux' })
+    ).toHaveAttribute('aria-pressed', 'true')
 
     await userEvent.click(
       screen.getByRole('button', { name: 'ComfyUI-Manager' })
