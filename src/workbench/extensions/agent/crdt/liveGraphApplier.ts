@@ -458,13 +458,15 @@ function supersededOverflowAlias(
  */
 function mountedWidgetValues(
   widgets: DocNode['widgets'],
-  constructed: readonly IBaseWidget[]
+  constructed: readonly IBaseWidget[],
+  constructedNames: ReadonlySet<string>
 ): Record<string, unknown> | undefined {
   if (widgets === undefined || Array.isArray(widgets)) return undefined
-  const built = new Set(constructed.map((widget) => widget.name))
   const mounted = Object.entries(widgets).filter(([name]) => {
     const index = overflowWidgetIndex(name)
-    return index === null ? !built.has(name) : index >= constructed.length
+    return index === null
+      ? !constructedNames.has(name)
+      : index >= constructed.length
   })
   return mounted.length === 0 ? undefined : Object.fromEntries(mounted)
 }
@@ -733,11 +735,18 @@ export class LiveGraphApplier {
         )
       } else {
         const constructed = serializableWidgets(node)
+        const constructedNames = new Set(
+          node.widgets?.map((widget) => widget.name)
+        )
         node.configure({
           ...info,
           widgets_values: positionalWidgetValues(node, docNode.widgets)
         })
-        const mounted = mountedWidgetValues(docNode.widgets, constructed)
+        const mounted = mountedWidgetValues(
+          docNode.widgets,
+          constructed,
+          constructedNames
+        )
         if (mounted)
           this.applyWidgets(node, mounted, mode, docNode.widgets, false)
       }

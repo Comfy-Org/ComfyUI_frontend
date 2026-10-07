@@ -485,6 +485,35 @@ describe('LiveGraphApplier', () => {
     expect(reportError).not.toHaveBeenCalled()
   })
 
+  it('does not restore a constructed non-serializable widget by name', () => {
+    const { graph, doc, applyCollected } = setup({
+      nodes: [
+        {
+          id: 1,
+          type: 'TestOverflowWidgets',
+          pos: [0, 0],
+          size: [210, 100],
+          widgets_values: [11, 42]
+        }
+      ],
+      links: []
+    })
+    doc.transact(() => {
+      const widgets = nodesMap(doc).get('1')?.get('widgets')
+      if (!(widgets instanceof Y.Map)) throw new Error('named storage')
+      widgets.set('transient', 99)
+    })
+
+    applyCollected()
+
+    expect(
+      graph
+        .getNodeById(toNodeId(1))
+        ?.widgets?.find(({ name }) => name === 'transient')?.value
+    ).toBe(20)
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
   it('reports an out-of-range overflow key on the creation path too', () => {
     const { graph, applyCollected } = setup({
       nodes: [
