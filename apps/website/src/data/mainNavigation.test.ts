@@ -9,6 +9,7 @@ import type { HubSections, NavItem } from './mainNavigation'
 import { getMainNavigation } from './mainNavigation'
 
 const ALL_SECTIONS: HubSections = { workflows: true, apps: true }
+const GATED_HUB_LINK = /^\/hub\/(?!models\/local\/)/
 
 function hrefsOf(item: NavItem): string[] {
   if (!item.columns) return [item.href]
@@ -39,7 +40,7 @@ describe('getMainNavigation', () => {
         '/hub/models/'
       ])
       expect(links(false)).toEqual(
-        expect.not.arrayContaining([expect.stringMatching(/^\/hub\//)])
+        expect.not.arrayContaining([expect.stringMatching(GATED_HUB_LINK)])
       )
       expect(links(true)).toEqual(expect.arrayContaining(hub))
     }
@@ -210,7 +211,7 @@ describe('getMainNavigation', () => {
         }
       ])
       expect(hrefsOf(products)).toEqual(
-        expect.not.arrayContaining([expect.stringMatching(/^\/hub\//)])
+        expect.not.arrayContaining([expect.stringMatching(GATED_HUB_LINK)])
       )
       expect(products.featured?.cta.href).toBe('/gemini-omni/')
     }

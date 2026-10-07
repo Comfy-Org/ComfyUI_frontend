@@ -7,6 +7,7 @@ import type { HubSections } from '@/data/mainNavigation'
 import HeaderMainDesktop from './HeaderMainDesktop.vue'
 
 const ALL_SECTIONS: HubSections = { workflows: true, apps: true }
+const GATED_HUB_LINK = /^\/hub\/(?!models\/local\/)/
 
 async function openMenu(
   name: RegExp,
@@ -108,7 +109,7 @@ describe('HeaderMainDesktop', () => {
         .getAllByRole('link')
         .map((link) => link.getAttribute('href'))
       expect(hrefs).not.toEqual(
-        expect.arrayContaining([expect.stringMatching(/^\/hub\//)])
+        expect.arrayContaining([expect.stringMatching(GATED_HUB_LINK)])
       )
       expect(
         menu.queryByRole('link', { name: 'Supported Models' }) === null
