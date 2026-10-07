@@ -542,7 +542,6 @@ describe('Cloud workflow lifecycle', () => {
       expect(await resolver.cloudWorkflowLifecycle('cloud-a')).toBe('unknown')
 
       expect(reportError).toHaveBeenCalledWith(error, {
-        surface: 'agent',
         errorType: 'failure_reading_agent_cloud_workflow'
       })
     }
