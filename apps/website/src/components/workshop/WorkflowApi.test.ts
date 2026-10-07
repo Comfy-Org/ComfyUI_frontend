@@ -3,9 +3,14 @@ import { render, screen } from '@testing-library/vue'
 import { assert, describe, expect, it } from 'vitest'
 import { markRaw } from 'vue'
 
-import { WORKSHOP_CLOUD_BASE_URL } from '@/config/workshop-env'
 import { initialWorkshopPageState } from '@/config/workshop-page-state'
 import { workflowDetailsBySlug } from '@/config/workshop-workflow-content'
+import {
+  snippetGraphFold,
+  workflowPython,
+  workflowSdkPlan,
+  workflowSnippetRequest
+} from '@/config/workshop-workflow-snippet'
 import WorkflowApi from './WorkflowApi.vue'
 
 const fixture = workflowDetailsBySlug.get('workflows/animate-reference-sheet')
@@ -17,16 +22,23 @@ const model = markRaw(fixture)
 const values = initialWorkshopPageState(model).values
 
 describe('WorkflowApi', () => {
-  // A developer opening this tab wants the address before they want the
-  // snippet, and it was only ever readable by picking it out of the cURL.
-  it('names the address a cURL run is posted to', async () => {
+  it('walks through the key, the SDK and the run, with one key action', () => {
     render(WorkflowApi, { props: { model, values } })
 
-    await userEvent.setup().click(screen.getByRole('tab', { name: 'cURL' }))
-
-    const endpoint = screen.getByTestId('workflow-api-endpoint')
-    expect(endpoint).toHaveTextContent('POST')
-    expect(endpoint).toHaveTextContent(`${WORKSHOP_CLOUD_BASE_URL}/api/prompt`)
+    expect(
+      screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent)
+    ).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining('Get an API key'),
+        expect.stringContaining('Install the SDK'),
+        expect.stringContaining('Run it')
+      ])
+    )
+    expect(
+      screen.getAllByRole('link', { name: /^Get an API key/ })
+    ).toHaveLength(1)
+    expect(screen.getAllByText(/paid Cloud plan/)).toHaveLength(1)
+    expect(screen.getByText('pip install comfy-sdk==0.4.0')).toBeVisible()
   })
 
   it('reports the snippet language it copies and Get API key clicks', async () => {
@@ -63,38 +75,32 @@ describe('WorkflowApi', () => {
     ).toBe(true)
   })
 
-  it.for([
-    {
-      tab: 'Python',
-      shows: ['COMFY_API_KEY', 'Uploaded by the code'],
-      hides: ['/api/prompt', 'X-API-Key']
-    },
-    {
-      tab: 'TypeScript',
-      shows: ['COMFY_API_KEY', 'Uploaded by the code'],
-      hides: ['/api/prompt', 'X-API-Key']
-    },
-    {
-      tab: 'cURL',
-      shows: [
-        `POST ${WORKSHOP_CLOUD_BASE_URL}/api/prompt`,
-        'X-API-Key + extra_data.api_key_comfy_org',
-        'Uploaded before the call'
-      ],
-      hides: ['Uploaded by the code']
-    }
-  ])(
-    'lists what the $tab code needs beside it',
-    async ({ tab, shows, hides }) => {
-      render(WorkflowApi, { props: { model, values } })
+  it('folds the graph JSON behind a band that names its node count', async () => {
+    const request = workflowSnippetRequest(model, values)
+    const lines = workflowPython(workflowSdkPlan(model, values, request)).split(
+      '\n'
+    )
+    const fold = snippetGraphFold(lines)
+    assert(fold, 'the Python snippet no longer carries a graph to fold')
+    const graph = lines.slice(fold.start, fold.end).join('\n')
+    const nodes = Object.keys(request.prompt).length
+    render(WorkflowApi, { props: { model, values } })
+    const snippet = screen.getByTestId('workflow-api-snippet')
+    const band = screen.getByRole('button', { name: /Show full graph JSON/ })
 
-      await userEvent.setup().click(screen.getByRole('tab', { name: tab }))
+    expect(band).toHaveAttribute('aria-expanded', 'false')
+    expect(band).toHaveTextContent(`${nodes} nodes`)
+    expect(snippet.textContent).not.toContain(graph)
+    expect(snippet).toHaveTextContent(
+      'job = client.run(workflow, api_key=api_key)'
+    )
 
-      const facts = screen.getByTestId('api-facts')
-      for (const text of shows) expect(facts).toHaveTextContent(text)
-      for (const text of hides) expect(facts).not.toHaveTextContent(text)
-    }
-  )
+    await userEvent.setup().click(band)
+
+    expect(band).toHaveAttribute('aria-expanded', 'true')
+    expect(band).toHaveTextContent('Hide full graph JSON')
+    expect(snippet.textContent).toContain(graph)
+  })
 
   it('offers the key and the documentation, and no graph to download', () => {
     render(WorkflowApi, { props: { model, values } })

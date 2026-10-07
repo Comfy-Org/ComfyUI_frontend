@@ -79,7 +79,7 @@ test('@mobile the model API tab puts the key action above the code', async ({
   expect(action.y + action.height).toBeLessThanOrEqual(code.y)
 })
 
-test('the workflow API tab opens with the key action and what it needs beside the code', async ({
+test('the workflow API section leads with the key and the SDK, then the code', async ({
   page,
   context
 }) => {
@@ -87,19 +87,17 @@ test('the workflow API tab opens with the key action and what it needs beside th
   await page.goto(WORKFLOW_PATH)
   await page.getByTestId('workflow-path-api').click()
 
-  const facts = page.getByTestId('api-facts')
-  await expect(facts).toContainText('COMFY_API_KEY')
-  await expect(facts).not.toContainText('/api/prompt')
+  const api = page.getByTestId('workflow-api')
+  await expect(api).toContainText('pip install comfy-sdk==0.4.0')
+  await expect(api.getByTestId('api-facts')).toHaveCount(0)
   await page.getByRole('tab', { name: 'cURL', exact: true }).click()
-  await expect(facts).toContainText('POST')
-  await expect(facts).toContainText('/api/prompt')
-  await expect(facts).toContainText('X-API-Key')
-  await expect(facts).toContainText('extra_data.api_key_comfy_org')
+  const code = page.getByTestId('workflow-api-snippet')
+  await expect(code).toContainText('/api/prompt')
+  await expect(code).toContainText('X-API-Key')
 
   const action = await frame(page.getByTestId('api-get-key'))
-  const code = await frame(page.getByTestId('workflow-api-snippet'))
-  expect(action.y).toBeLessThan(code.y + code.height)
-  expect(action.x + action.width).toBeLessThanOrEqual(code.x)
+  const codeBox = await frame(code)
+  expect(action.y + action.height).toBeLessThanOrEqual(codeBox.y)
 })
 
 test('@mobile the workflow example output keeps its compact height and shows the whole picture', async ({

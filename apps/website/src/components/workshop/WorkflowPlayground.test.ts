@@ -236,7 +236,7 @@ describe('WorkflowPlayground sections', () => {
     ).toEqual([
       'Try it',
       'Inside the workflow',
-      'Call this model from your code'
+      'Use this workflow in your code'
     ])
     expect(screen.getByRole('region', { name: 'Try it' })).toHaveAttribute(
       'id',

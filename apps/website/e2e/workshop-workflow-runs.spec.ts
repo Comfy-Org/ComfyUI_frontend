@@ -222,10 +222,6 @@ test('Cloud upload, refresh, partial delivery and downloads retain one run @mobi
     "import { Comfy } from '@comfyorg/sdk'"
   )
   await page.getByRole('tab', { name: 'cURL', exact: true }).click()
-  // The address a run is posted to, before the snippet that posts to it.
-  await expect(page.getByTestId('workflow-api-endpoint')).toContainText(
-    '/api/prompt'
-  )
   await expect(page.getByRole('link', { name: /^API docs/ })).toBeVisible()
   const snippet = await page.getByTestId('workflow-api-snippet').textContent()
   expect(snippet).toContain('/api/prompt')
