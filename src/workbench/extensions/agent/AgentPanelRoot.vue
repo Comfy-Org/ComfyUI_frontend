@@ -161,6 +161,7 @@ const {
 } = useBillingContext()
 const conversationStore = useAgentConversationStore()
 const history = useAgentChatHistoryStore()
+const { accepted: consentAccepted } = storeToRefs(useAgentConsentStore())
 watch(
   subscription,
   (currentSubscription) => {
@@ -282,6 +283,7 @@ watch(
  */
 const agentHasFunds = computed(() => subscription.value?.agentHasFunds)
 const creditsExhausted = computed(() => {
+  if (!consentAccepted.value) return false
   if (billingType.value !== 'workspace') return false
   // Same gate as the impression report above: an unsettled read cannot say
   // which presentation is right, and a card naming the wrong remediation is
@@ -484,7 +486,6 @@ onBeforeUnmount(() =>
     }
   })
 )
-const { accepted: consentAccepted } = storeToRefs(useAgentConsentStore())
 const { withConsent } = useAgentConsent()
 const workspaceStore = useTeamWorkspaceStore()
 const onboardingKey = computed(() =>
@@ -672,15 +673,24 @@ function targetWorkflowTurnContext(
     : { id, tabPath: target.path }
 }
 
+function serializedCanvas(target: ComfyWorkflow) {
+  if (target.path === workflowStore.activeWorkflow?.path)
+    target.changeTracker?.prepareForSave()
+  return target.activeState
+}
+
 function targetWorkflowDraft(origin?: TurnOrigin): DraftSnapshot | undefined {
   if (workflowDetached.value) return undefined
   const target = originWorkflow(origin)
   if (!target) return undefined
-  if (target.path === workflowStore.activeWorkflow?.path)
-    target.changeTracker?.prepareForSave()
-  const content = target.activeState
+  const content = serializedCanvas(target)
   if (!content) return undefined
   return { content }
+}
+
+function canvasForWorkflow(workflowId: string): Record<string, unknown> | null {
+  const target = boundOrOpenWorkflowFor(workflowId)
+  return target ? serializedCanvas(target) : null
 }
 
 const selectedTargetTab = computed<ActiveTab | null>(() => {
@@ -906,7 +916,8 @@ const {
       const [x, y, width, height] = canvas.ds.visible_area
       return { x, y, width, height }
     }
-  }
+  },
+  canvasForWorkflow
 )
 // The bound document's serialized root graph id, independent of what is
 // currently on the canvas: `beforeLoadNewGraph` persists the outgoing

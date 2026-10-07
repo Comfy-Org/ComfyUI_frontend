@@ -52,7 +52,7 @@
         side="bottom"
         align="start"
         :side-offset="8"
-        :class="panelClass"
+        :class="menuPanelClass"
       >
         <button
           v-for="m in modeDefs"
@@ -60,22 +60,14 @@
           type="button"
           :aria-pressed="gizmoMode === m.mode"
           :class="
-            cn(
-              rowClass,
-              'gap-2',
-              gizmoMode === m.mode && 'bg-button-active-surface'
-            )
+            cn(menuButtonClass, gizmoMode === m.mode && selectedMenuButtonClass)
           "
           @click="selectMode(m.mode)"
         >
           <i :class="cn(m.icon, 'size-4')" />
           {{ t(m.labelKey) }}
         </button>
-        <button
-          type="button"
-          :class="cn(rowClass, 'gap-2')"
-          @click="selectReset"
-        >
+        <button type="button" :class="menuButtonClass" @click="selectReset">
           <i class="icon-[lucide--rotate-ccw] size-4" />
           {{ t('load3d.gizmo.reset') }}
         </button>
@@ -90,13 +82,16 @@ import { useI18n } from 'vue-i18n'
 
 import {
   actionClass,
-  panelClass,
-  rowClass,
+  menuPanelClass,
   tip
 } from '@/components/load3d/menubar/menuBarStyles'
 import { usePopoverExclusivity } from '@/components/load3d/menubar/usePopoverExclusivity'
 import Popover from '@/components/ui/popover/Popover.vue'
 import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
+import {
+  menuButtonClass,
+  selectedMenuButtonClass
+} from '@/components/ui/menu/menuStyles'
 import type {
   GizmoMode,
   ModelConfig

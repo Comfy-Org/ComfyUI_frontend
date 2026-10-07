@@ -25,7 +25,7 @@ import { api } from '@/scripts/api'
 import type { AuthCredential, AuthScheme } from '@/types/authTypes'
 
 import {
-  zAgentAnswerAccepted,
+  zAgentAnswerReceipt,
   zAgentCancelAccepted,
   zAgentError,
   zAgentMessages,
@@ -35,7 +35,7 @@ import {
   zCloudWorkflowIndex
 } from '../../schemas/agentApiSchema'
 import type {
-  AgentAnswerAccepted,
+  AgentAnswerReceipt,
   AgentCancelAccepted,
   AgentMessages,
   AgentRunModePreference,
@@ -681,12 +681,12 @@ export function createAgentRestClient() {
     threadId: string,
     askId: string,
     selected: string[]
-  ): Promise<AgentAnswerAccepted> {
+  ): Promise<AgentAnswerReceipt> {
     return request(
       'answer_thread_ask',
       `/agent/threads/${encodeURIComponent(threadId)}/asks/${encodeURIComponent(askId)}/answer`,
       { ...jsonInit('POST', { selected }), timeoutMs: ANSWER_ASK_TIMEOUT_MS },
-      zAgentAnswerAccepted
+      zAgentAnswerReceipt
     )
   }
 

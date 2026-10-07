@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import {
   markErrorReported,
@@ -96,11 +96,6 @@ const turnAccepted = {
   thread_id: 't1',
   workflow_id: 'w1'
 }
-
-beforeEach(() => {
-  vi.mocked(api.fetchApi).mockReset()
-  vi.mocked(reportError).mockReset()
-})
 
 describe('agentRestClient route + method', () => {
   it('postMessage targets the literal "new" thread path to open a thread', async () => {
@@ -208,6 +203,23 @@ describe('agentRestClient route + method', () => {
     expect(route).toBe('/agent/threads/t7%2Fx/asks/turn-1%3Acall%2F1/answer')
     expect(init.method).toBe('POST')
     expect(JSON.parse(init.body as string)).toEqual({ selected: ['run'] })
+  })
+
+  it.for([
+    {
+      name: 'a status-only 202 from an older backend',
+      body: { status: 'answered' }
+    },
+    {
+      name: 'a 202 that reports the committed answer',
+      body: { status: 'answered', selected: ['run'] }
+    }
+  ])('answerAsk accepts $name', async ({ body }) => {
+    respond(jsonResponse(202, body))
+
+    await expect(
+      makeClient().answerAsk('t7', 'ask-1', ['run'])
+    ).resolves.toEqual(body)
   })
 
   it('listCloudWorkflows GETs the paginated workflows path until has_more is false', async () => {

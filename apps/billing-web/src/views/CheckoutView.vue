@@ -100,12 +100,16 @@ const { lifecycle, status } = useBillingClient<'lifecycle' | 'status'>(
 )
 
 /** A page handed to a hosted step or a method's own site has not been abandoned. */
-let handedToHostedStep = false
+const handedToHostedStep = ref(false)
 let payingOnOwnSite = false
+
+useEventListener(window, 'pageshow', (event) => {
+  if (event.persisted) handedToHostedStep.value = false
+})
 
 const checkout = useCheckout({
   openUrl: (url) => {
-    handedToHostedStep = true
+    handedToHostedStep.value = true
     window.location.assign(url)
   },
   navigationMode: 'redirect',
@@ -318,8 +322,10 @@ const operationToast = computed(() => {
       }
 })
 
-const actionUrl = computed(
-  () => validateActionUrl(pendingOperation.value?.actionUrl) ?? null
+const actionUrl = computed(() =>
+  handedToHostedStep.value
+    ? null
+    : (validateActionUrl(pendingOperation.value?.actionUrl) ?? null)
 )
 
 const parkedCheckoutRecovery = computed(
@@ -471,7 +477,7 @@ function closeToast(key: string) {
 
 const paying = computed(
   () =>
-    checkout.submitting.value ||
+    (checkout.submitting.value && !pendingOperation.value) ||
     (operationHoldsConfirm.value && !succeeded.value)
 )
 
@@ -593,7 +599,8 @@ function leaveForHost(control: WebReturnControl) {
 }
 
 useEventListener(window, 'pagehide', () => {
-  if (!handedToHostedStep && !payingOnOwnSite) journey.abandoned('page_exit')
+  if (!handedToHostedStep.value && !payingOnOwnSite)
+    journey.abandoned('page_exit')
 })
 </script>
 

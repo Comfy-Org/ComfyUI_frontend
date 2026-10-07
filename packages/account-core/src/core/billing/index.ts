@@ -167,6 +167,7 @@ export type {
 } from './operationLifecycle.js'
 export {
   createBillingOperationLifecycle,
+  failureCategoryFor,
   operationRoute
 } from './operationLifecycle.js'
 export {

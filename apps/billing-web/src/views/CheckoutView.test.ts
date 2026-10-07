@@ -573,6 +573,21 @@ describe('CheckoutView', () => {
     expect(challengeMocks.handleNextAction).not.toHaveBeenCalled()
   })
 
+  it('offers no second way to the verification page once this tab is redirecting there', async () => {
+    const assign = stubNavigation()
+    const fake = await renderCheckout()
+    await screen.findByRole('button', { name: 'Pay and subscribe' })
+
+    fake.publishOperation(
+      hostedPendingOperation('https://hooks.stripe.test/redirect/op_1')
+    )
+
+    await waitFor(() => expect(assign).toHaveBeenCalled())
+    expect(
+      screen.queryByRole('button', { name: 'Complete verification' })
+    ).toBeNull()
+  })
+
   it('drives the 3DS challenge in place when the continuation is embedded', async () => {
     const assign = stubNavigation()
     const fake = await renderCheckout()
@@ -814,6 +829,25 @@ describe('CheckoutView', () => {
     expect(
       screen.getByText('Processing payment — setting up your workspace...')
     ).toBeInTheDocument()
+  })
+
+  it('releases the confirm once the in-page verification fails, before the server settles', async () => {
+    const fake = await renderCheckout()
+    fake.subscribe.mockReturnValue(new Promise(() => {}))
+    await screen.findByRole('button', { name: 'Pay and subscribe' })
+
+    reportConfirm('ctoken_1')
+    await waitFor(() => expect(formProps.value.isLoading).toBe(true))
+
+    fake.publishOperation(challengedPendingOperation('pi_1_secret'))
+    expect(formProps.value.isLoading).toBe(true)
+
+    fake.publishOperation({
+      ...challengedPendingOperation('pi_1_secret'),
+      challenge: { status: 'failed', clientSecret: 'pi_1_secret' }
+    })
+
+    await waitFor(() => expect(formProps.value.isLoading).toBe(false))
   })
 
   it('announces the processing toast as an alert, as the app does', async () => {
