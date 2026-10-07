@@ -93,6 +93,7 @@ import { useDialogService } from '@/services/dialogService'
 import { useExtensionService } from '@/services/extensionService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useSubgraphService } from '@/services/subgraphService'
+import { isDesktopHostSessionActive } from '@/platform/auth/desktopHost/desktopHostSession'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { createCanvasInteractionMode } from '@/renderer/core/canvas/interaction/canvasInteractionMode'
@@ -1852,13 +1853,19 @@ export class ComfyApp {
         workspaceGenerationBeforeAuthentication !==
           executionWorkspaceGeneration) &&
       (isCloud || workspaceIdBeforeAuthentication !== null)
-    const comfyOrgApiKey = useApiKeyAuthStore().getApiKey()
+    // Desktop host auth is the only credential while active: a stored
+    // personal key may belong to another account and never rides along.
+    const desktopHostAuth = isDesktopHostSessionActive()
+    const comfyOrgApiKey = desktopHostAuth
+      ? null
+      : useApiKeyAuthStore().getApiKey()
     // An API-key session mints no workspace JWT: the key itself is the
     // execution credential and the server resolves its bound workspace. Only a
     // key-authenticated session may pass without a token — a Firebase session
     // whose token mint failed must still fail closed rather than fall back to
     // a stored key and charge the key's workspace.
     const isApiKeySessionExecution =
+      !desktopHostAuth &&
       !useAuthStore().currentUser &&
       !useAuthStore().sessionOnlyUser &&
       useApiKeyAuthStore().isAuthenticated
