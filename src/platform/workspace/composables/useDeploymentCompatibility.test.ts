@@ -73,7 +73,9 @@ function addNodes(target: LGraph | Subgraph, root: LGraph, fakes: FakeNode[]) {
     if (fake.subgraphNodes) {
       const subgraph = createTestSubgraph({ rootGraph: root })
       addNodes(subgraph, root, fake.subgraphNodes)
-      target.add(createTestSubgraphNode(subgraph, { parentGraph: target }))
+      const instance = createTestSubgraphNode(subgraph, { parentGraph: target })
+      instance.mode = fake.mode ?? LGraphEventMode.ALWAYS
+      target.add(instance)
       continue
     }
     const node = new LGraphNode(fake.type, fake.type)
@@ -167,6 +169,43 @@ describe('workflowNodeTypes', () => {
       'MissingPack',
       'Power Lora Loader (rgthree)'
     ])
+  })
+
+  it.for([
+    { instance: 'muted', mode: LGraphEventMode.NEVER },
+    { instance: 'bypassed', mode: LGraphEventMode.BYPASS }
+  ])(
+    'leaves out the nodes inside a $instance subgraph instance',
+    ({ mode }) => {
+      const types = workflowNodeTypes(
+        graph(
+          { type: 'KSampler' },
+          {
+            type: 'subgraph',
+            mode,
+            subgraphNodes: [
+              { type: 'Power Lora Loader (rgthree)' },
+              { type: 'subgraph', subgraphNodes: [{ type: 'CLIP' }] }
+            ]
+          }
+        )
+      )
+
+      expect(types).toEqual(['KSampler'])
+    }
+  )
+
+  it('counts a subgraph once through its live instance when another instance is muted', () => {
+    const root = createTestRootGraph()
+    const subgraph = createTestSubgraph({ rootGraph: root })
+    subgraph.add(new LGraphNode('CLIP', 'CLIP'))
+    const muted = createTestSubgraphNode(subgraph, { parentGraph: root })
+    muted.mode = LGraphEventMode.NEVER
+    root.add(muted)
+    root.add(createTestSubgraphNode(subgraph, { parentGraph: root }))
+    root.add(createTestSubgraphNode(subgraph, { parentGraph: root }))
+
+    expect(workflowNodeTypes(root)).toEqual(['CLIP'])
   })
 })
 
