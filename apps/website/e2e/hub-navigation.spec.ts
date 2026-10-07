@@ -19,7 +19,7 @@ const SECTIONS = {
   explore: { path: '/hub/', heading: 'What do you want to make?' },
   apps: { path: '/hub/apps/', heading: 'ComfyUI apps' },
   workflows: { path: '/hub/workflows/', heading: 'ComfyUI workflows' },
-  models: { path: '/hub/models/', heading: 'ComfyUI models' }
+  models: { path: '/hub/models/', heading: 'Every model. One graph.' }
 } as const
 
 type HubSection = keyof typeof SECTIONS
@@ -143,7 +143,11 @@ for (const width of [1440, 390]) {
         await expect(
           page.getByText('Comfy Agent can now build workflows inside ComfyUI.')
         ).toBeHidden()
-        await expect(page.getByTestId('workshop-hero')).toBeVisible()
+        await expect(
+          page.getByTestId(
+            from === 'models' ? 'models-hub-hero' : 'workshop-hero'
+          )
+        ).toBeVisible()
         const way = wayTo(page, from, to)
         await way.scrollIntoViewIfNeeded()
         const observation = await observeHubNavigation(page)

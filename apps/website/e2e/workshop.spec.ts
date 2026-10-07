@@ -69,55 +69,80 @@ test.describe('Hub pages', () => {
 })
 
 test.describe('Models catalog', () => {
-  test('opens the featured model from the full banner surface', async ({
-    page
-  }) => {
+  test('opens the latest launch from the hero', async ({ page }) => {
     await page.goto('/hub/models/')
-    const slide = page.getByTestId('featured-slide')
-    const href = await page
-      .getByTestId('featured-slide-link')
-      .getAttribute('href')
-    const bounds = await slide.boundingBox()
-    if (!href || !bounds) throw new Error('Featured slide is not clickable')
+    const hero = page.getByTestId('models-hub-hero')
+    await expect(
+      hero.getByRole('heading', { level: 1, name: 'Every model. One graph.' })
+    ).toBeVisible()
+    await expect(page.getByTestId('workshop-heading')).toHaveCount(0)
+    await expect(hero.getByTestId('models-hub-counts')).toHaveText(
+      /^\d+ models · \d+ open weights · \d+ partner models$/
+    )
+    const latest = hero.getByTestId('models-hub-latest').getByRole('link')
+    await expect(latest).toContainText('Latest launch')
+    const href = await latest.getAttribute('href')
+    if (!href) throw new Error('The latest launch has no page')
 
-    await slide.click({ position: { x: bounds.width - 24, y: 24 } })
+    await latest.click()
 
     await expect(page).toHaveURL(new URL(href, page.url()).href)
   })
 
-  test('opens the model from the banner beside the pagination bars', async ({
+  test('runs a model from the hero by narrowing to the ones that run here', async ({
     page
   }) => {
-    await page.setViewportSize({ width: 1280, height: 900 })
     await page.goto('/hub/models/')
-    const strip = page.getByTestId('featured-pagination')
-    const card = page.getByTestId('featured-slide')
-    const href = await page
-      .getByTestId('featured-slide-link')
-      .getAttribute('href')
-    await card.scrollIntoViewIfNeeded()
-    const [bars, area] = [await strip.boundingBox(), await card.boundingBox()]
-    if (!href || !bars || !area)
-      throw new Error('Featured banner is not laid out')
+    await page
+      .getByTestId('models-hub-hero')
+      .getByRole('link', { name: 'Run a model' })
+      .click()
 
-    // The strip spans the card so the bars can share the room, which puts a
-    // wide empty stretch of it over the link.
-    await page.mouse.click(area.x + area.width - 80, bars.y + bars.height / 2)
-
-    await expect(page).toHaveURL(new URL(href, page.url()).href)
+    await expect(page).toHaveURL(/\/hub\/models\/\?use=run$/)
+    await expect(page.getByTestId('models-hub-hero')).toHaveCount(0)
+    await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
+    const cards = page
+      .getByTestId('workshop-models-grid')
+      .getByTestId('workshop-model-card')
+    await expect(cards.first()).toBeVisible()
+    for (const card of (await cards.all()).slice(0, 8))
+      await expect(card.getByTestId('model-access-badges')).toContainText('Run')
   })
 
-  test('keeps every pagination bar inside the banner on a phone', async ({
+  test('opens open weights and the Wan family from the default view', async ({
     page
   }) => {
-    await page.setViewportSize({ width: 390, height: 844 })
     await page.goto('/hub/models/')
-    const strip = page.getByTestId('featured-pagination')
-    const card = page.getByTestId('featured-slide')
-    const [bars, card_] = [await strip.boundingBox(), await card.boundingBox()]
-    if (!bars || !card_) throw new Error('Featured banner is not laid out')
-    expect(bars.x + bars.width).toBeLessThanOrEqual(card_.x + card_.width)
-    expect(bars.x).toBeGreaterThanOrEqual(card_.x)
+    await expect(
+      page
+        .getByTestId('model-access-partner')
+        .getByRole('link', { name: 'Get an API key' })
+    ).toHaveAttribute('href', /onboarding=router/)
+    await expect(
+      page.getByRole('link', { name: 'Explore the Wan family' })
+    ).toHaveAttribute('href', '/hub/models/?q=Wan')
+
+    await page.getByTestId('model-access-open').click()
+
+    await expect(page).toHaveURL(/\/hub\/models\/\?tab=open$/)
+    await expect(
+      page.getByTestId('open-weight-model-card').first()
+    ).toBeVisible()
+  })
+
+  test('answers questions about AI models in ComfyUI', async ({ page }) => {
+    await page.goto('/hub/models/')
+    const question = page.getByRole('button', {
+      name: 'What does day-zero support mean?'
+    })
+    await waitForIsland(page, question)
+    await question.click()
+    await expect(question).toHaveAttribute('aria-expanded', 'true')
+    await expect(
+      page.getByText('a newly released model can be used in ComfyUI', {
+        exact: false
+      })
+    ).toBeVisible()
   })
 
   test('switches between the curated recommendation and alphabetical order', async ({
@@ -244,25 +269,31 @@ test.describe('Models catalog', () => {
     await expect(page.getByTestId('workshop-sections')).toBeVisible()
   })
 
-  test('the Hub models listing leads with one Trending row', async ({
+  test('the Hub models listing leads with Trending, then the ways in', async ({
     page
   }) => {
     await page.goto('/hub/models/')
     const sections = page.getByTestId('workshop-sections')
     await expect(sections).toBeVisible()
     await expect(sections.getByRole('heading', { level: 2 })).toHaveText([
-      'Trending'
+      'Trending',
+      'Choose how you access models',
+      'Explore model families'
     ])
     const trending = page.getByTestId('section-trending')
+    await expect(trending).toContainText('What is running this week')
     await expect(trending.getByTestId('workshop-model-card')).toHaveCount(8)
-    const seeAll = await trending
-      .getByTestId('section-trending-see-all')
-      .innerText()
-    const promisedCount = Number(seeAll.match(/(\d+)/)?.[1])
-    expect(promisedCount).toBeGreaterThan(8)
 
-    await trending.getByTestId('section-trending-see-all').click()
+    await trending.getByRole('button', { name: 'View all models' }).click()
     await expect(sections).toHaveCount(0)
+    const heading = page.getByRole('heading', {
+      level: 2,
+      name: /^All models \d+$/
+    })
+    const promisedCount = Number(
+      (await heading.innerText()).match(/(\d+)\s*$/)?.[1]
+    )
+    expect(promisedCount).toBeGreaterThan(8)
     await expect(
       page
         .getByTestId('workshop-models-grid')
@@ -287,7 +318,7 @@ test.describe('Models catalog', () => {
 
   test('the rows listing opens the whole catalogue', async ({ page }) => {
     await page.goto('/hub/models/')
-    await page.getByTestId('browse-all-end').click()
+    await page.getByTestId('section-trending-see-all').click()
 
     await expect(page.getByTestId('workshop-sections')).toHaveCount(0)
     const heading = page.getByRole('heading', {
@@ -447,7 +478,7 @@ test.describe('Models catalog', () => {
 
   test('the use-case filter actually narrows the catalog', async ({ page }) => {
     await page.goto('/hub/models/')
-    await page.getByTestId('browse-all-end').click()
+    await page.getByTestId('section-trending-see-all').click()
     const all = await page
       .getByTestId('workshop-models-grid')
       .getByTestId('workshop-model-card')
@@ -489,7 +520,7 @@ test.describe('Models catalog', () => {
 
   test('compares two hosted models side by side', async ({ page }) => {
     await page.goto('/hub/models/')
-    await page.getByTestId('browse-all-end').click()
+    await page.getByTestId('section-trending-see-all').click()
     const toggles = page.getByRole('checkbox', { name: /^Compare / })
     await toggles.nth(0).check()
     await toggles.nth(1).check()
@@ -500,6 +531,10 @@ test.describe('Models catalog', () => {
     await expect(dialog).toBeVisible()
     await expect(page).toHaveURL(/#compare$/)
     await expect(dialog.getByTestId('compare-model-link')).toHaveCount(2)
+    await expect(dialog.getByTestId('compare-model-link').first()).toHaveText(
+      /^Try /
+    )
+    await expect(dialog.getByTestId('compare-thumbnail')).toHaveCount(2)
 
     await page.keyboard.press('Escape')
     await expect(dialog).toBeHidden()
@@ -599,45 +634,6 @@ test.describe('Models catalog', () => {
     await expect(
       page.getByRole('link', { name: /Explore Seedance/i })
     ).toHaveAttribute('href', '/hub/models/seedance-2-5-text-to-video/')
-  })
-
-  test('the row arrow sits level with the middle of a card', async ({
-    page
-  }) => {
-    for (const width of [1440, 820, 420]) {
-      await page.setViewportSize({ width, height: 1000 })
-      await page.goto('/hub/models/')
-      const row = page.getByTestId('section-trending')
-      const card = row.getByTestId('workshop-model-card').first()
-      await expect(card).toBeVisible()
-      await card.hover()
-      const cardBox = await card.boundingBox()
-      const arrowBox = await row.getByTestId('card-row-next').boundingBox()
-      if (!cardBox || !arrowBox) throw new Error('the row did not lay out')
-      const middleOf = (box: { y: number; height: number }) =>
-        box.y + box.height / 2
-      expect(Math.abs(middleOf(arrowBox) - middleOf(cardBox))).toBeLessThan(1)
-    }
-  })
-
-  test('the fade reaches both ends of the scrolling row', async ({ page }) => {
-    await page.goto('/hub/models/')
-    const row = page.getByTestId('section-trending')
-    await expect(row.getByTestId('workshop-model-card').first()).toBeVisible()
-    await row.hover()
-    const edges = await row.evaluate((section) => {
-      const span = (selector: string) => {
-        const element = section.querySelector(selector)
-        if (!element) return undefined
-        const { x, width } = element.getBoundingClientRect()
-        return { left: x, right: x + width }
-      }
-      return {
-        scroller: span('ul'),
-        fades: span('[data-testid="card-row-arrows"]')
-      }
-    })
-    expect(edges.fades).toEqual(edges.scroller)
   })
 })
 

@@ -1,6 +1,14 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor, within } from '@testing-library/vue'
-import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 
 import { nextTick } from 'vue'
 
@@ -141,7 +149,7 @@ describe('WorkshopModelsGrid', () => {
     await user.click(screen.getByRole('button', { name: /Back to/ }))
     await vi.waitFor(() => expect(scrollTo).toHaveBeenCalledWith({ top: 0 }))
     scrollTo.mockClear()
-    await user.click(screen.getByRole('button', { name: 'Browse all models' }))
+    await user.click(screen.getByRole('button', { name: 'View all models' }))
     await vi.waitFor(() => expect(scrollTo).toHaveBeenCalledWith({ top: 0 }))
     scrollTo.mockRestore()
   })
@@ -167,7 +175,7 @@ describe('WorkshopModelsGrid', () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
 
-    await user.click(screen.getByRole('button', { name: 'Browse all models' }))
+    await user.click(screen.getByRole('button', { name: 'View all models' }))
     await user.click(screen.getByRole('button', { name: 'Filter' }))
     const dialog = await screen.findByRole('dialog', { name: 'Filter' })
     await user.click(
@@ -189,7 +197,7 @@ describe('WorkshopModelsGrid', () => {
   it('finds open-weight models under All once the visitor searches', async () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
-    await user.click(screen.getByRole('button', { name: 'Browse all models' }))
+    await user.click(screen.getByRole('button', { name: 'View all models' }))
     expect(openWeightCards()).toEqual([])
 
     await user.type(await search(), 'kontext')
@@ -372,42 +380,6 @@ describe('WorkshopModelsGrid', () => {
     ).toEqual(['Flux', 'Kling AI', 'Mystery'])
   })
 
-  it('keeps Flux 3 out of the featured models', () => {
-    const featured = [
-      {
-        slug: 'byteplus--seedance-2-fast-text-to-video--generate-videos',
-        name: 'Seedance 2 Fast',
-        rank: 32
-      },
-      {
-        slug: 'bfl--flux-3-text-to-video--generate-videos',
-        name: 'FLUX.3 Video',
-        rank: 63
-      },
-      {
-        slug: 'byteplus--seedream-5-pro--generate-images',
-        name: 'Seedream 5 Pro',
-        rank: 0
-      }
-    ].map(({ slug, name, rank }) => ({
-      ...models[0],
-      slug,
-      name,
-      href: `/models/${slug}/`,
-      recommendedRank: rank,
-      thumbnailUrl: `https://example.com/${rank}.webp`
-    }))
-
-    render(WorkshopModelsGrid, { props: { models: featured } })
-
-    const pagination = screen.getByTestId('featured-pagination')
-    expect(
-      within(pagination)
-        .getAllByRole('button')
-        .map((button) => button.getAttribute('aria-label'))
-    ).toEqual(['Seedream 5 Pro', 'Seedance 2 Fast'])
-  })
-
   it('does not manufacture a return shelf before a model is opened', () => {
     sessionStorage.setItem('comfy-models-shelf', 'generate-videos')
     render(WorkshopModelsGrid, { props: { models } })
@@ -425,13 +397,116 @@ describe('WorkshopModelsGrid', () => {
     expect(cardNames()).toHaveLength(3)
   })
 
+  describe('models hub', () => {
+    const wan: WorkshopModel = {
+      slug: 'wan--text-to-video-3.0--generate-videos',
+      name: 'Wan 3.0 Text-to-Video',
+      workflowCount: 1,
+      href: '/models/wan-3/',
+      routerId: 'wan/wan3.0-t2v',
+      capabilities: [],
+      provider: 'Wan',
+      modality: 'video',
+      task: 'text-to-video',
+      thumbnail: { url: 'https://example.com/wan.webp', kind: 'image' }
+    }
+    const launch: WorkshopModel = {
+      slug: 'byteplus--seedance-2-5-text-to-video--generate-videos',
+      name: 'Seedance 2.5 Text-to-Video',
+      workflowCount: 1,
+      href: '/models/seedance-2-5/',
+      routerId: 'byteplus/seedance-2-5',
+      capabilities: [],
+      provider: 'ByteDance',
+      modality: 'video',
+      task: 'text-to-video'
+    }
+    const hub = [...models, wan, launch]
+
+    it('opens on the hero, Trending, the ways in and a model family', () => {
+      vi.stubEnv('PUBLIC_WORKSHOP_ROUTER_RUN', '1')
+      render(WorkshopModelsGrid, { props: { models: hub } })
+
+      const hero = screen.getByTestId('models-hub-hero')
+      expect(within(hero).getByTestId('hub-back')).toHaveAttribute(
+        'href',
+        '/hub/'
+      )
+      expect(within(hero).getByRole('heading', { level: 1 })).toHaveTextContent(
+        'Every model. One graph.'
+      )
+      expect(
+        within(hero).getByRole('link', { name: 'Run a model' })
+      ).toHaveAttribute('href', '/hub/models/?use=run')
+      expect(screen.getByTestId('models-hub-counts')).toHaveTextContent(
+        `${hub.length + OPEN_WEIGHT_MODELS.length} models · ${OPEN_WEIGHT_MODELS.length} open weights · ${hub.length} partner models`
+      )
+      expect(screen.getByTestId('models-hub-latest')).toHaveTextContent(
+        'Seedance 2.5 Text-to-Video'
+      )
+      expect(
+        screen.getByRole('heading', { level: 2, name: 'Trending' })
+      ).toBeTruthy()
+      expect(
+        within(screen.getByTestId('model-access-open')).getByText(
+          'Browse open weights'
+        )
+      ).toBeTruthy()
+      expect(screen.getByTestId('model-access-open').getAttribute('href')).toBe(
+        '/hub/models/?tab=open'
+      )
+      const family = screen.getByRole('region', {
+        name: 'Explore model families'
+      })
+      expect(
+        within(family).getByRole('link', { name: 'Wan 3.0' })
+      ).toHaveAttribute('href', '/hub/models/?q=Wan+3.0')
+      expect(
+        within(family).getByRole('link', { name: 'Wan 2.2 (open)' })
+      ).toHaveAttribute('href', '/hub/models/?q=Wan2.2')
+    })
+
+    it('leaves Run a model out while nothing runs here', () => {
+      vi.stubEnv('PUBLIC_WORKSHOP_ROUTER_RUN', undefined)
+      render(WorkshopModelsGrid, { props: { models: hub } })
+
+      expect(screen.queryByRole('link', { name: 'Run a model' })).toBeNull()
+      expect(
+        within(screen.getByTestId('models-hub-hero')).getByRole('link', {
+          name: 'Get an API key'
+        })
+      ).toBeTruthy()
+    })
+
+    it.for([
+      { narrowing: 'a search', address: '/hub/models/?q=flux' },
+      { narrowing: 'a category', address: '/hub/models/?useCase=edit-images' },
+      { narrowing: 'a tab', address: '/hub/models/?tab=video' },
+      { narrowing: 'a way to use it', address: '/hub/models/?use=api' }
+    ])(
+      'gives the hero and its sections away to $narrowing',
+      async ({ address }) => {
+        history.replaceState(null, '', address)
+        const { emitted } = render(WorkshopModelsGrid, {
+          props: { models: hub }
+        })
+        await nextTick()
+
+        expect(screen.queryByTestId('models-hub-hero')).toBeNull()
+        expect(screen.queryByTestId('model-access')).toBeNull()
+        expect(screen.queryByTestId('model-family')).toBeNull()
+        expect(emitted().hero.at(-1)).toEqual([false])
+      }
+    )
+  })
+
   describe('browsing rows', () => {
     it('leaves the rows for the whole catalogue and back', async () => {
       const user = userEvent.setup()
       render(WorkshopModelsGrid, { props: { models } })
       expect(screen.getByTestId('workshop-sections')).toBeTruthy()
 
-      await user.click(screen.getByTestId('browse-all-end'))
+      await user.click(screen.getByTestId('section-trending-see-all'))
 
       expect(screen.queryByTestId('workshop-sections')).toBeNull()
       expect(cardNames()).toHaveLength(models.length)
@@ -447,9 +522,7 @@ describe('WorkshopModelsGrid', () => {
     it('clears active filters when returning to the category rows', async () => {
       const user = userEvent.setup()
       render(WorkshopModelsGrid, { props: { models } })
-      await user.click(
-        screen.getByRole('button', { name: 'Browse all models' })
-      )
+      await user.click(screen.getByRole('button', { name: 'View all models' }))
       const field = await search()
       await user.type(field, 'forest')
       expect(cardNames()).toEqual([expect.stringContaining('Flux')])
@@ -463,7 +536,7 @@ describe('WorkshopModelsGrid', () => {
     it('leaves the heading above the toolbar holding the controls', async () => {
       const user = userEvent.setup()
       render(WorkshopModelsGrid, { props: { models } })
-      await user.click(screen.getByTestId('browse-all-end'))
+      await user.click(screen.getByTestId('section-trending-see-all'))
 
       const toolbar = screen.getByTestId('workshop-toolbar')
       const heading = screen.getByRole('heading', {
@@ -483,6 +556,10 @@ describe('WorkshopModelsGrid', () => {
   })
 
   describe('how you use it', () => {
+    beforeEach(() => {
+      vi.stubEnv('PUBLIC_WORKSHOP_ROUTER_RUN', '1')
+    })
+
     async function chooseAccess(...labels: string[]) {
       const user = userEvent.setup()
       await user.click(screen.getByRole('button', { name: 'Filter' }))
@@ -597,6 +674,38 @@ describe('WorkshopModelsGrid', () => {
       expect(openWeightCards()[0]).toHaveTextContent('Flux1 Dev Kontext')
     })
 
+    it('lists no hosted model under Run here while running here is off', async () => {
+      vi.stubEnv('PUBLIC_WORKSHOP_ROUTER_RUN', undefined)
+      render(WorkshopModelsGrid, { props: { models } })
+      const { dialog } = await chooseAccess('Run here')
+
+      expect(
+        within(dialog).getByRole('button', { name: 'Run here 0' })
+      ).toBeTruthy()
+      expect(hostedCards()).toHaveLength(0)
+    })
+
+    it('opens on the choice the address names and keeps it there', async () => {
+      history.replaceState(null, '', '/hub/models/?use=run')
+      render(WorkshopModelsGrid, { props: { models } })
+      await nextTick()
+
+      expect(hostedCards()).toHaveLength(models.length)
+      expect(screen.queryByTestId('models-hub-hero')).toBeNull()
+      expect(screen.getByTestId('workshop-filter-count')).toHaveTextContent('1')
+
+      const user = userEvent.setup()
+      await user.click(screen.getByRole('button', { name: /^Filter/ }))
+      const dialog = await screen.findByRole('dialog', { name: 'Filter' })
+      await user.click(
+        within(dialog).getByRole('tab', { name: /^How you use it/ })
+      )
+      await user.click(within(dialog).getByRole('button', { name: /^API / }))
+      expect(location.search).toBe('?use=run%2Capi')
+      await user.click(within(dialog).getByTestId('workshop-filter-clear'))
+      expect(location.search).toBe('')
+    })
+
     it('lets go of the choice with the rest of the filters', async () => {
       render(WorkshopModelsGrid, { props: { models } })
       const { user, dialog } = await chooseAccess('Download')
@@ -623,7 +732,7 @@ describe('WorkshopModelsGrid', () => {
     async function browseAll() {
       const user = userEvent.setup()
       render(WorkshopModelsGrid, { props: { models: [...models, fourth] } })
-      await user.click(screen.getByTestId('browse-all-end'))
+      await user.click(screen.getByTestId('section-trending-see-all'))
       return user
     }
 
@@ -691,11 +800,9 @@ describe('WorkshopModelsGrid', () => {
         name: '2 models side by side'
       })
       expect(location.hash).toBe('#compare')
-      expect(
-        within(dialog)
-          .getAllByRole('columnheader')
-          .map((cell) => cell.textContent.trim())
-      ).toEqual(['Kling AI', 'Seedream'])
+      expect(within(dialog).getAllByRole('columnheader')).toHaveLength(2)
+      for (const name of ['Kling AI', 'Seedream'])
+        expect(within(dialog).getByRole('columnheader', { name })).toBeTruthy()
       expect(
         within(dialog).getByRole('row', { name: /^Provider/ })
       ).toHaveTextContent('ProviderKlingByteDance')
@@ -705,6 +812,13 @@ describe('WorkshopModelsGrid', () => {
           .getAllByTestId('compare-model-link')
           .map((link) => link.getAttribute('href'))
       ).toEqual(['/models/kling-ai/', '/models/seedream/'])
+      expect(
+        within(dialog)
+          .getAllByRole('link', { name: /^Try / })
+          .map((link) => link.textContent.trim())
+      ).toEqual(['Try Kling AI', 'Try Seedream'])
+      expect(within(dialog).getAllByTestId('compare-thumbnail')).toHaveLength(2)
+      expect(within(dialog).queryByText('Model page')).toBeNull()
 
       await user.keyboard('{Escape}')
       await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())

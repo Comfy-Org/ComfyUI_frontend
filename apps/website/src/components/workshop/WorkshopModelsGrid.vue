@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ChevronLeft, ChevronRight } from '@lucide/vue'
+import { ChevronLeft } from '@lucide/vue'
 import {
   computed,
   nextTick,
@@ -32,11 +32,13 @@ import { translationsFor } from '@/i18n/translations'
 import { HUB_TOOLBAR_ID } from '@/scripts/hubToolbar'
 import type { ModelAccess } from '@/lib/workshop/explorer/model-access'
 import {
+  ACCESS_PARAM,
   accessFilterKey,
   accessFor,
   MODEL_ACCESS,
   OPEN_WEIGHT_ACCESS,
-  offersAccess
+  offersAccess,
+  parseAccess
 } from '@/lib/workshop/explorer/model-access'
 import { useCompareSelection } from '@/lib/workshop/explorer/compare-selection'
 import {
@@ -56,8 +58,9 @@ import WorkshopModelsResults from '@/components/workshop/WorkshopModelsResults.v
 import CompareDialog from '@/components/workshop/explorer/compare/CompareDialog.vue'
 import CompareTray from '@/components/workshop/explorer/compare/CompareTray.vue'
 import ModelTabs from '@/components/workshop/explorer/ModelTabs.vue'
-import FeaturedBanner from './FeaturedBanner.vue'
-import { modelSlides } from '@/lib/workshop/featured-slides'
+import ModelAccessSection from '@/components/workshop/models-hub/ModelAccessSection.vue'
+import ModelFamilySection from '@/components/workshop/models-hub/ModelFamilySection.vue'
+import ModelsExploreHero from '@/components/workshop/models-hub/ModelsExploreHero.vue'
 import WorkshopSearchField from './WorkshopSearchField.vue'
 import WorkshopSections from './WorkshopSections.vue'
 import WorkshopSortMenu from './WorkshopSortMenu.vue'
@@ -95,8 +98,16 @@ function readAddress(search: string) {
   legacyModalities.value = [...initial.modalities]
   legacyProviders.value = [...initial.providers]
   legacyCapabilities.value = [...initial.capabilities]
+  selectedAccess.value = parseAccess(search)
   readTab(search)
 }
+
+watch(selectedAccess, (value) => {
+  const url = new URL(location.href)
+  if (value.length) url.searchParams.set(ACCESS_PARAM, value.join(','))
+  else url.searchParams.delete(ACCESS_PARAM)
+  if (url.href !== location.href) history.replaceState(history.state, '', url)
+})
 
 // A browser can restore this page from its cache with a shelf still open, so
 // coming back from a model would land on that shelf rather than on the
@@ -222,31 +233,9 @@ const sectionTitleKey = computed<TranslationKey>(() =>
 
 // A category names the screen it opens, so the page heading above it would say
 // the catalogue's name twice.
-const emit = defineEmits<{ section: [boolean] }>()
+const emit = defineEmits<{ section: [boolean]; hero: [boolean] }>()
 watch(inSection, (value) => emit('section', value), { immediate: true })
-
-// Keep the launch-requested video models in the set, then let the same curated
-// order used by the rows decide where every selected model appears.
-const FEATURED_LIMIT = 6
-const FEATURED_SLUGS = [
-  'byteplus--seedance-2-fast-text-to-video--generate-videos'
-]
-const featured = computed(() => {
-  const available = sortWorkshopModels(models, 'popular').filter(
-    (model) => model.thumbnailUrl && !model.slug.startsWith('bfl--flux-3-')
-  )
-  const selected = FEATURED_SLUGS.flatMap((slug) =>
-    available.filter((model) => model.slug === slug)
-  )
-  return sortWorkshopModels(
-    [
-      ...selected,
-      ...available.filter((model) => !FEATURED_SLUGS.includes(model.slug))
-    ].slice(0, FEATURED_LIMIT),
-    'popular'
-  )
-})
-const featuredSlides = computed(() => modelSlides(featured.value, locale))
+watch(browsing, (value) => emit('hero', value), { immediate: true })
 
 function leaveSection() {
   clearFilters()
@@ -295,6 +284,8 @@ watch(browseAll, (on) => on && resetFilters())
         <ChevronLeft class="size-4" aria-hidden="true" />
         {{ t('workshop.sections.back') }}
       </button>
+
+      <ModelsExploreHero v-if="browsing" :models :locale />
 
       <!-- scroll-mt tracks the nav height; the toolbar's is lower because its py-4 absorbs the difference -->
       <h2
@@ -348,29 +339,21 @@ watch(browseAll, (on) => on && resetFilters())
         role="tabpanel"
         :aria-labelledby="`${TAB_PANEL_ID}-${tab}`"
       >
-        <FeaturedBanner
-          v-if="browsing && featured.length"
-          :slides="featuredSlides"
-          :locale
-          class="mb-10 short:mb-6"
-        />
-
-        <template v-if="browsing">
-          <WorkshopSections :models :locale @browse="browseAll = true" />
-
-          <button
-            type="button"
-            class="group mx-auto mt-12 flex w-fit cursor-pointer items-center justify-center gap-2 rounded-2xl border border-transparency-white-t8 px-8 py-4 text-sm font-medium text-primary-comfy-canvas transition-colors outline-none hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 max-sm:w-full"
-            data-testid="browse-all-end"
-            @click="browseAll = true"
-          >
-            {{ t('workshop.sections.browseAll') }}
-            <ChevronRight
-              class="size-4 transition-transform group-hover:translate-x-0.5"
-              aria-hidden="true"
-            />
-          </button>
-        </template>
+        <div
+          v-if="browsing"
+          class="flex flex-col gap-14 max-sm:gap-10"
+          data-testid="workshop-sections"
+        >
+          <WorkshopSections
+            :models
+            :compared="comparedSlugs"
+            :locale
+            @browse="browseAll = true"
+            @compare="toggleCompare"
+          />
+          <ModelAccessSection :locale />
+          <ModelFamilySection :models :locale />
+        </div>
 
         <template v-else>
           <WorkshopModelsResults

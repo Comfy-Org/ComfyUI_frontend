@@ -10,7 +10,6 @@ import type {
 } from '@/config/models-catalogue'
 import type { Locale, TranslationKey } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
-import BuildApiBand from './BuildApiBand.vue'
 import WorkshopModelsGrid from './WorkshopModelsGrid.vue'
 import type { HubSection } from '@/lib/workshop/hub-section'
 import type { WorkshopPageType } from '@/scripts/workshop-analytics'
@@ -49,8 +48,12 @@ const { t } = translationsFor(locale)
 const inSection = ref(false)
 // A category replaces the page's own heading and the switch between
 // catalogues, so the state has to reach the page that renders them.
-const emit = defineEmits<{ section: [boolean] }>()
+const emit = defineEmits<{ section: [boolean]; hero: [boolean] }>()
 watch(inSection, (value) => emit('section', value), { immediate: true })
+// The Models hero carries its own title and subtitle while nothing narrows
+// the catalogue, so the page's plain heading steps aside for it.
+const heroShown = ref(false)
+watch(heroShown, (value) => emit('hero', value), { immediate: true })
 const browseAll = ref(false)
 const mounted = useMounted()
 const enabled = useWorkshopEnabled()
@@ -116,7 +119,7 @@ whenever(
 
 <template>
   <div
-    v-if="!inSection"
+    v-if="!inSection && !heroShown"
     class="relative isolate -mx-6 mb-6 flex flex-wrap items-center justify-between gap-x-6 gap-y-4 overflow-hidden px-6 pb-2 max-sm:mb-4 max-sm:pb-0 lg:-mx-8 lg:px-8 sm:short:pb-0"
     data-testid="workshop-hero"
   >
@@ -143,16 +146,15 @@ whenever(
     :models="routerModels"
     :locale
   />
-  <template v-else-if="section === 'models'">
-    <BuildApiBand v-if="!inSection" :locale />
-    <WorkshopModelsGrid
-      v-model:browse-all="browseAll"
-      :models="routerModels"
-      :initial-search
-      :locale
-      @section="inSection = $event"
-    />
-  </template>
+  <WorkshopModelsGrid
+    v-else-if="section === 'models'"
+    v-model:browse-all="browseAll"
+    :models="routerModels"
+    :initial-search
+    :locale
+    @section="inSection = $event"
+    @hero="heroShown = $event"
+  />
   <WorkflowCatalogue
     v-else-if="section === 'workflows'"
     v-model:browse-all="browseAll"

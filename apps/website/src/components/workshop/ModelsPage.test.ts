@@ -435,7 +435,7 @@ describe('Models page entry', () => {
     )
   })
 
-  it('gives the hub heading to a category, and takes it back', async () => {
+  it('gives the page heading to the hero, then to a category, and takes it back', async () => {
     const user = userEvent.setup()
     vi.stubGlobal(
       'fetch',
@@ -448,14 +448,15 @@ describe('Models page entry', () => {
       slots: { fallback: '<h1>Public Models</h1>' }
     })
     expect(await screen.findByTestId('workshop-search')).toBeVisible()
-    const headingWrapper = () => screen.getByTestId('workshop-heading')
+    const headingWrapper = () => screen.queryByTestId('workshop-heading')
 
-    expect(headingWrapper()).not.toHaveClass('sr-only')
-    expect(
-      screen.getByRole('heading', { level: 1, name: 'Models heading' })
-    ).toBeVisible()
+    expect(headingWrapper()).toBeNull()
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1)
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
+      'Every model. One graph.'
+    )
 
-    await user.click(screen.getByTestId('browse-all-end'))
+    await user.click(screen.getByTestId('section-trending-see-all'))
     expect(headingWrapper()).toHaveClass('sr-only')
     // Hidden, not removed: the page still owns the only h1.
     expect(
@@ -463,7 +464,8 @@ describe('Models page entry', () => {
     ).toBeInTheDocument()
 
     await user.click(screen.getByTestId('section-back'))
-    expect(headingWrapper()).not.toHaveClass('sr-only')
+    expect(headingWrapper()).toBeNull()
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1)
   })
 
   it('switches the loaded catalogue and heading without fetching its data again', async () => {
@@ -493,7 +495,7 @@ describe('Models page entry', () => {
     await view.rerender({ section: 'models', heading: 'Models heading' })
     expect(await screen.findByTestId('workshop-search')).toBeVisible()
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
-      'Models heading'
+      'Every model. One graph.'
     )
     expect(fetchData).toHaveBeenCalledExactlyOnceWith('/models/catalogue.json')
     expect(
