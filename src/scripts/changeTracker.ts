@@ -471,16 +471,31 @@ export class ChangeTracker {
     const prevState = source.pop()
     if (prevState) {
       const previousState = this.activeState
-      target.push(previousState)
+      const restoresSavedState = ChangeTracker.graphEqual(
+        prevState,
+        this.initialState
+      )
+      let restored = false
       this._restoringState = true
-      this.activeState = prevState
       try {
-        await app.loadGraphData(prevState, false, false, this.workflow, {
-          checkForRerouteMigration: false,
-          silentAssetErrors: true
-        })
+        const result = await app.loadGraphData(
+          prevState,
+          false,
+          false,
+          this.workflow,
+          {
+            checkForRerouteMigration: false,
+            silentAssetErrors: true
+          }
+        )
+        if (result === false || result === undefined) return
+
+        restored = true
+        target.push(previousState)
+        if (restoresSavedState) this.initialState = clone(this.activeState)
         this.updateModified(previousState)
       } finally {
+        if (!restored) source.push(prevState)
         this._restoringState = false
       }
     }
