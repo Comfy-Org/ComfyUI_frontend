@@ -200,7 +200,7 @@ export function useWorkflowActionsMenu(
       label: t('breadcrumbsMenu.share'),
       icon: 'icon-[comfy--send]',
       command: () => openShareDialog().catch(toastErrorHandler),
-      visible: isCloud && flags.workflowSharingEnabled
+      visible: isCloud
     })
 
     addItem({

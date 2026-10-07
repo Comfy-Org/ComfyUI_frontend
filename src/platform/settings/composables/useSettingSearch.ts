@@ -10,9 +10,7 @@ import type { TreeNode } from '@/types/treeExplorerTypes'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 
-export interface SettingTreeNode extends TreeNode {
-  data?: SettingParams
-}
+export type SettingTreeNode = TreeNode<SettingParams>
 
 interface SearchableNavItem {
   key: string

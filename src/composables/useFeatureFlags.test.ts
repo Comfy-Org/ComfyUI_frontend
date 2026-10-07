@@ -10,7 +10,6 @@ import {
 import { isReactive, isReadonly, nextTick } from 'vue'
 
 import {
-  ServerFeatureFlag,
   startFeatureFlagTelemetry,
   useFeatureFlags
 } from '@/composables/useFeatureFlags'
@@ -25,6 +24,7 @@ import {
   sessionAgentGrant,
   sessionAgentGrantValidUntil
 } from '@/platform/remoteConfig/remoteConfig'
+import { ServerFeatureFlag } from '@/platform/remoteConfig/serverFeatureFlag'
 import { useTelemetry } from '@/platform/telemetry'
 import { api } from '@/scripts/api'
 import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
@@ -1157,14 +1157,14 @@ describe('useFeatureFlags', () => {
 
     it('applies a false override instead of falling through to an enabled server value', () => {
       vi.mocked(getSessionOverride).mockImplementation((flagKey) =>
-        flagKey === ServerFeatureFlag.WORKFLOW_SHARING_ENABLED
+        flagKey === ServerFeatureFlag.NODE_LIBRARY_ESSENTIALS_ENABLED
           ? false
           : undefined
       )
       vi.mocked(api.getServerFeature).mockReturnValue(true)
 
       const { flags } = useFeatureFlags()
-      expect(flags.workflowSharingEnabled).toBe(false)
+      expect(flags.nodeLibraryEssentialsEnabled).toBe(false)
     })
 
     it('turns the linear toggle off against an enabled remote config', () => {

@@ -6,6 +6,10 @@ import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useAuthStore } from '@/stores/authStore'
+import {
+  startDesktopHostSession,
+  stopDesktopHostSession
+} from '@/platform/auth/desktopHost/desktopHostSession'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import {
   afterEach,
@@ -969,6 +973,39 @@ describe('ComfyApp', () => {
       resolveToken('workspace-token')
       await expect(submission).resolves.toBe(true)
       expect(queuePrompt).toHaveBeenCalledOnce()
+    })
+
+    it('sends only the Desktop host credential, never a stored personal key', async () => {
+      prepareEmptyPromptQueue()
+      await startDesktopHostSession({
+        getState: async () => ({ status: 'signed_in', userId: 'host-user' }),
+        getWorkspaceToken: async () => 'host-token',
+        requestSignIn: async () => ({
+          status: 'signed_in',
+          userId: 'host-user'
+        }),
+        signOut: async () => ({ status: 'signed_out' }),
+        onChanged: () => () => {}
+      })
+      vi.mocked(useApiKeyAuthStore().getApiKey).mockReturnValue('stored-key')
+      Object.assign(useApiKeyAuthStore(), { isAuthenticated: true })
+      vi.mocked(useAuthStore().getWorkspaceAuthToken).mockResolvedValueOnce(
+        'host-token'
+      )
+      const queuePrompt = vi
+        .spyOn(api, 'queuePrompt')
+        .mockImplementation(() => {
+          expect(api.authToken).toBe('host-token')
+          expect(api.apiKey).toBeUndefined()
+          return Promise.resolve({ prompt_id: 'job-1' })
+        })
+
+      try {
+        await expect(app.queuePrompt(0)).resolves.toBe(true)
+        expect(queuePrompt).toHaveBeenCalledOnce()
+      } finally {
+        stopDesktopHostSession()
+      }
     })
 
     it('waits for a workspace switch before selecting the billing context', async () => {

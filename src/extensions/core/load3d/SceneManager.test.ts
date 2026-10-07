@@ -92,6 +92,8 @@ function makeView(
     width,
     height,
     beginRender: vi.fn(),
+    bindOutput: vi.fn(),
+    resolveOutput: vi.fn(),
     blit: vi.fn(),
     setSize: vi.fn()
   } as unknown as RendererView
@@ -786,6 +788,73 @@ describe('SceneManager.captureScene', () => {
     expect(camera.right).toBe(5)
     expect(camera.top).toBe(5)
     expect(camera.bottom).toBe(-5)
+  })
+
+  it.for([
+    { activeSplats: 0, highPrecision: false },
+    { activeSplats: 1000, highPrecision: true }
+  ])(
+    'resolves every pass before reading pixels, through a temporary half-float target only for splat scenes (%o)',
+    async ({ activeSplats, highPrecision }) => {
+      const { manager, view, renderer } = makeSceneManager()
+      const spark = manager.scene.children.find(
+        (child) => child instanceof SparkRenderer
+      )
+      Object.assign(spark!, { activeSplats })
+      const dispose = vi.spyOn(THREE.WebGLRenderTarget.prototype, 'dispose')
+
+      await manager.captureScene(800, 600)
+
+      const targets = vi.mocked(view.bindOutput).mock.calls.map(([t]) => t)
+      expect(targets).toHaveLength(4)
+      expect(new Set(targets.slice(0, 3)).size).toBe(1)
+      expect(targets[0] instanceof THREE.WebGLRenderTarget).toBe(highPrecision)
+      expect(targets[3]).toBeNull()
+      const callSequence = [
+        ...vi
+          .mocked(view.resolveOutput)
+          .mock.invocationCallOrder.map((order) => ({
+            order,
+            call: 'resolve'
+          })),
+        ...vi
+          .mocked(renderer.domElement.toDataURL)
+          .mock.invocationCallOrder.map((order) => ({ order, call: 'read' }))
+      ]
+        .sort((a, b) => a.order - b.order)
+        .map(({ call }) => call)
+      expect(callSequence).toEqual([
+        'resolve',
+        'read',
+        'resolve',
+        'read',
+        'resolve',
+        'read'
+      ])
+      expect(dispose).toHaveBeenCalledTimes(highPrecision ? 1 : 0)
+    }
+  )
+
+  it('rebinds the canvas before disposing the temporary target when a pass throws', async () => {
+    const { manager, view, renderer } = makeSceneManager()
+    const spark = manager.scene.children.find(
+      (child) => child instanceof SparkRenderer
+    )
+    Object.assign(spark!, { activeSplats: 1000 })
+    vi.mocked(renderer.render).mockImplementation(() => {
+      throw new Error('GPU lost')
+    })
+    const dispose = vi.spyOn(THREE.WebGLRenderTarget.prototype, 'dispose')
+    dispose.mockClear()
+
+    await expect(manager.captureScene(800, 600)).rejects.toThrow('GPU lost')
+
+    const lastBind = vi.mocked(view.bindOutput).mock
+    expect(lastBind.lastCall?.[0]).toBeNull()
+    expect(dispose).toHaveBeenCalledOnce()
+    expect(lastBind.invocationCallOrder.at(-1)).toBeLessThan(
+      dispose.mock.invocationCallOrder[0]
+    )
   })
 
   it('disposes each temporary MeshNormalMaterial after the normal pass', async () => {
