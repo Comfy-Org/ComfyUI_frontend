@@ -188,6 +188,27 @@ describe('stale-schema reseed wire protocol', () => {
     expect(bridge.follower).toBe(follower)
   })
 
+  it('ignores a late conflict after the pending reseed was abandoned', () => {
+    const { transport, bridge } = refusedBridge()
+    const replacements = vi.fn()
+    bridge.addEventListener('follower_replaced', replacements)
+    bridge.reseed('wf-1', canvas)
+    bridge.abandonPendingReseed()
+    const follower = bridge.follower
+    const subscribeCount = transport.frames('doc_subscribe').length
+
+    transport.receive('doc_reseed_result', {
+      v: 1,
+      workflow_id: 'wf-1',
+      ok: false,
+      code: 'conflict'
+    })
+
+    expect(bridge.follower).toBe(follower)
+    expect(replacements).toHaveBeenCalledOnce()
+    expect(transport.frames('doc_subscribe')).toHaveLength(subscribeCount)
+  })
+
   it('ignores an abandoned result after retargeting away and back', () => {
     const { transport, bridge } = refusedBridge()
     bridge.reseed('wf-1', canvas)
