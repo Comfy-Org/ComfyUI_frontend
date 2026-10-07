@@ -17,6 +17,7 @@
       "enablers": ["fallow"],
       "entryPoints": [
         "**/.storybook/{main,preview}.ts",
+        ".dependency-cruiser.ts",
         "apps/website/src/scripts/**/*.ts",
         "packages/ingest-types/openapi-ts.config.ts",
         "scripts/**/*.{js,ts}"
@@ -59,7 +60,9 @@
     "eslint-plugin-testing-library",
     "postcss-html",
     // Executed by models-snippets.test.ts inside the generated Node examples.
-    "mime-types"
+    "mime-types",
+    // dependency-cruiser loads it at runtime to parse .vue files.
+    "@vue/compiler-sfc"
   ],
 
   "ignoreUnresolvedImports": [

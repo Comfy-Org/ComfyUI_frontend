@@ -1,0 +1,26 @@
+import type { IConfiguration } from 'dependency-cruiser'
+
+const config: IConfiguration = {
+  forbidden: [
+    {
+      name: 'no-circular',
+      severity: 'warn',
+      from: {},
+      to: { circular: true }
+    }
+  ],
+  options: {
+    tsConfig: { fileName: 'tsconfig.json' },
+    tsPreCompilationDeps: 'specify',
+    doNotFollow: { path: 'node_modules' },
+    exclude: {
+      path: ['\\.(test|spec|stories)\\.ts$', '/__tests?__/', '/test/']
+    },
+    enhancedResolveOptions: {
+      extensions: ['.ts', '.mts', '.js', '.vue', '.json'],
+      mainFields: ['module', 'main', 'types']
+    }
+  }
+}
+
+export default config
