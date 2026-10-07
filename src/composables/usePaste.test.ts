@@ -897,6 +897,13 @@ describe('usePaste', () => {
       paste(otherApp)
 
       expect(mockCanvas.pasteFromClipboard).not.toHaveBeenCalled()
+      expect(useToastStore().add).toHaveBeenCalledWith(
+        expect.objectContaining({
+          severity: 'info',
+          summary:
+            'Nothing to paste into this node. Copy an image, or deselect the node to paste nodes.'
+        })
+      )
     })
 
     it('runs the default paste only for the latest copy', () => {
@@ -941,6 +948,7 @@ describe('usePaste', () => {
         paste(clipboardData)
 
         expect(mockCanvas.pasteFromClipboard).toHaveBeenCalledOnce()
+        expect(useToastStore().add).not.toHaveBeenCalled()
       }
     )
   })

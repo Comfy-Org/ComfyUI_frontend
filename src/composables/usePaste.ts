@@ -2,8 +2,10 @@ import { useEventListener } from '@vueuse/core'
 
 import { parseClipboardHtml } from '@/composables/useCopy'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { t } from '@/i18n'
 import { CANVAS_CLIPBOARD_ID_KEY } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { zClipboardItems } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
@@ -313,8 +315,15 @@ export const usePaste = () => {
       }
 
       // Litegraph default paste
-      if (!isMediaNodeSelected || holdsLatestCanvasCopy(html))
+      if (!isMediaNodeSelected || holdsLatestCanvasCopy(html)) {
         canvas.pasteFromClipboard()
+      } else {
+        useToastStore().add({
+          severity: 'info',
+          summary: t('toastMessages.nothingToPasteIntoNode'),
+          life: 3000
+        })
+      }
     }
   })
 }
