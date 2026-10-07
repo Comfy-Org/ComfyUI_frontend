@@ -88,11 +88,6 @@ export function desktopHostWorkspaceToken(
   return fetchToken((current) => current.getWorkspaceToken(workspaceId))
 }
 
-/** Desktop's account token for user-identity calls that name no workspace. */
-export function desktopHostIdentityToken(): Promise<string | undefined> {
-  return fetchToken((current) => current.getIdentityToken())
-}
-
 async function fetchToken(
   read: (current: DesktopHostAuthBridge) => Promise<string | null>
 ): Promise<string | undefined> {

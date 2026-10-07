@@ -2785,9 +2785,6 @@ describe('useAuthStore in local/desktop distribution', () => {
         getWorkspaceToken: vi.fn(
           async (_workspaceId: string): Promise<string | null> => 'host-token'
         ),
-        getIdentityToken: vi.fn(
-          async (): Promise<string | null> => 'host-token'
-        ),
         requestSignIn: vi.fn(async () => state),
         signOut: vi.fn(
           async (): Promise<DesktopHostAuthState> => ({ status: 'signed_out' })
@@ -2828,7 +2825,6 @@ describe('useAuthStore in local/desktop distribution', () => {
       await expect(store.getUserAuthHeader()).resolves.toEqual(hostHeader)
       await expect(store.getWorkspaceAuthHeader()).resolves.toEqual(hostHeader)
       expect(bridge.getWorkspaceToken).toHaveBeenCalledWith('ws-host')
-      expect(bridge.getIdentityToken).toHaveBeenCalled()
       expect(mockUser.getIdToken).not.toHaveBeenCalled()
     })
 

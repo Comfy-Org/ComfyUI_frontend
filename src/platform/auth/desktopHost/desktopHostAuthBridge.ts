@@ -16,7 +16,6 @@ export type DesktopHostAuthState =
 export interface DesktopHostAuthBridge {
   getState(): Promise<DesktopHostAuthState>
   getWorkspaceToken(workspaceId: string): Promise<string | null>
-  getIdentityToken(): Promise<string | null>
   requestSignIn(): Promise<DesktopHostAuthState>
   signOut(): Promise<DesktopHostAuthState>
   onChanged(callback: (state: DesktopHostAuthState) => void): () => void

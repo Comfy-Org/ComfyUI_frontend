@@ -16,7 +16,6 @@ import {
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import {
-  desktopHostIdentityToken,
   desktopHostUser,
   desktopHostWorkspaceToken,
   isDesktopHostSessionActive,
@@ -305,7 +304,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   const getIdToken = async (): Promise<string | undefined> => {
-    if (isDesktopHostSessionActive()) return desktopHostIdentityToken()
+    if (isDesktopHostSessionActive()) return desktopHostTabToken()
     const user = currentUser.value
     if (!user) return
     try {

@@ -64,7 +64,6 @@ describe('useCurrentUser', () => {
     await startDesktopHostSession({
       getState: async () => ({ status: 'signed_in', userId: 'host-user' }),
       getWorkspaceToken: async () => 'host-token',
-      getIdentityToken: async () => 'host-token',
       requestSignIn: async () => ({ status: 'signed_in', userId: 'host-user' }),
       signOut: async () => ({ status: 'signed_out' }),
       onChanged: () => () => {}
