@@ -561,10 +561,15 @@ test('@mobile keeps the way back to the Hub in place from one section to the nex
           .map((motion) => motion.finished)
       )
     )
-    return (await back.boundingBox())?.y
+    const box = await back.boundingBox()
+    expect(box, 'the link is laid out once it has landed').not.toBeNull()
+    return box?.y
   }
   await expect(back).toBeVisible()
-  const before = await settledY()
+  let before: number | undefined
+  await expect(async () => {
+    before = await settledY()
+  }).toPass()
 
   await back.click()
   await page.getByTestId('explore-door-workflows').click()
