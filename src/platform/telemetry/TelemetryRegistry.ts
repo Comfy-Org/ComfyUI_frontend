@@ -15,6 +15,7 @@ import type {
   AgentEntryButtonClickedMetadata,
   AgentErrorMetadata,
   AgentFreeUseExposureMetadata,
+  InterruptionExposureMetadata,
   AgentFreeUseNoticeMetadata,
   AgentMessageSentMetadata,
   AgentMessageFeedbackMetadata,
@@ -448,6 +449,11 @@ export class TelemetryRegistry implements TelemetryDispatcher {
   // fallow-ignore-next-line unused-class-member
   trackAgentFreeUseExposure(metadata: AgentFreeUseExposureMetadata): void {
     this.dispatch((provider) => provider.trackAgentFreeUseExposure?.(metadata))
+  }
+
+  // fallow-ignore-next-line unused-class-member
+  trackInterruptionExposure(metadata: InterruptionExposureMetadata): void {
+    this.dispatch((provider) => provider.trackInterruptionExposure?.(metadata))
   }
 
   trackAgentNodeTagged(metadata: AgentNodeTaggedMetadata): void {

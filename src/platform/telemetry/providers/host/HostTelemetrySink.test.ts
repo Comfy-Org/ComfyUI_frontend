@@ -364,6 +364,22 @@ describe('HostTelemetrySink', () => {
       }
     },
     {
+      name: TelemetryEvents.INTERRUPTION_EXPOSURE,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackInterruptionExposure({
+          surface: 'whatsNewPopup',
+          tier: 'announcement',
+          outcome: 'deferred',
+          blocked_by: 'dialog'
+        }),
+      properties: {
+        surface: 'whatsNewPopup',
+        tier: 'announcement',
+        outcome: 'deferred',
+        blocked_by: 'dialog'
+      }
+    },
+    {
       name: TelemetryEvents.AGENT_CONSENT_SHOWN,
       track: (sink: HostTelemetrySink) =>
         sink.trackAgentConsentShown({ trigger: 'first_load' }),

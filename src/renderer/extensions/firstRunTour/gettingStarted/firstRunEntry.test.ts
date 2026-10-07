@@ -1,3 +1,4 @@
+import { useInterruptionStore } from '@/platform/interruptions/interruptionStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useCommandStore } from '@/stores/commandStore'
@@ -253,6 +254,26 @@ describe('useFirstRunEntry', () => {
 
       expect(entry.gettingStartedVisible.value).toBe(true)
       expect(useCommandStore().execute).not.toHaveBeenCalled()
+    })
+
+    it('holds announcements back while it owns the screen and releases them after', async () => {
+      const entry = useFirstRunEntry()
+      const interruptionStore = useInterruptionStore()
+      expect(interruptionStore.decideFor('whatsNewPopup')).toEqual({
+        kind: 'show'
+      })
+
+      await entry.handleStartupOutcome('fresh')
+      expect(interruptionStore.decideFor('whatsNewPopup')).toEqual({
+        kind: 'defer',
+        reason: 'outranked',
+        by: 'gettingStarted'
+      })
+
+      await entry.dismissIntoFirstRunTour('image_z_image_turbo')
+      expect(interruptionStore.decideFor('whatsNewPopup')).toEqual({
+        kind: 'show'
+      })
     })
 
     it('shares first-run state across consumers during one boot', async () => {

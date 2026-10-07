@@ -210,6 +210,7 @@ import Button from '@/components/ui/button/Button.vue'
 import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
 import { usePartnerNodesRunGate } from '@/composables/billing/usePartnerNodesRunGate'
 import { usePartnerNodesInGraph } from '@/composables/node/usePartnerNodesInGraph'
+import { useGatedSurface } from '@/platform/interruptions/useGatedSurface'
 import { useDialogService } from '@/services/dialogService'
 import { usePartnerNodesEducationStore } from '@/platform/workflow/templates/stores/partnerNodesEducationStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -260,7 +261,8 @@ const isForRequestedWorkflow = computed(
   () => activeWorkflow.value?.key === requestedForWorkflowKey.value
 )
 
-const isVisible = computed(
+const { shouldShow: isVisible } = useGatedSurface(
+  'partnerNodesCard',
   () =>
     isCardRequested.value &&
     hasPartnerNodes.value &&

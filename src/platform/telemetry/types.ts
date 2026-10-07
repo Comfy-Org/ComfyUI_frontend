@@ -884,6 +884,12 @@ export type AgentFreeUsePlacement =
   | 'near-composer'
   | 'above-input'
   | 'inside-input'
+export interface InterruptionExposureMetadata extends Record<string, unknown> {
+  surface: string
+  tier: string
+  outcome: 'shown' | 'deferred' | 'withdrawn'
+  blocked_by?: string
+}
 export interface AgentFreeUseExposureMetadata extends Record<string, unknown> {
   placement: 'control' | AgentFreeUsePlacement
   '$feature/agent-free-use-message-placement': 'control' | AgentFreeUsePlacement
@@ -1442,6 +1448,7 @@ export interface TelemetryProvider {
   ): void
   trackAgentFreeUseNotice?(metadata: AgentFreeUseNoticeMetadata): void
   trackAgentFreeUseExposure?(metadata: AgentFreeUseExposureMetadata): void
+  trackInterruptionExposure?(metadata: InterruptionExposureMetadata): void
   trackAgentNodeTagged?(metadata: AgentNodeTaggedMetadata): void
   trackAgentAttachButtonClicked?(
     metadata: AgentAttachButtonClickedMetadata
@@ -1617,6 +1624,7 @@ export const TelemetryEvents = {
   AGENT_STARTER_PROMPT_CLICKED: 'app:agent_starter_prompt_clicked',
   AGENT_FREE_USE_NOTICE: 'app:agent_free_use_notice',
   AGENT_FREE_USE_EXPOSURE: 'app:agent_free_use_exposure',
+  INTERRUPTION_EXPOSURE: 'app:interruption_exposure',
   AGENT_NODE_TAGGED: 'app:agent_node_tagged',
   AGENT_ATTACH_BUTTON_CLICKED: 'app:agent_attach_button_clicked',
   AGENT_WORKFLOW_APPLIED: 'app:agent_workflow_applied',
@@ -1700,6 +1708,7 @@ export function normalizeExecutionTriggerSource(
  */
 export type TelemetryEventProperties =
   | AuthMetadata
+  | InterruptionExposureMetadata
   | OnboardingTourMetadata
   | AuthErrorMetadata
   | UnifiedAuthRetryMetadata

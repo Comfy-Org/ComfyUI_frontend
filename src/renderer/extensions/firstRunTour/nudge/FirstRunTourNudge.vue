@@ -59,8 +59,8 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
+import { useGatedSurface } from '@/platform/interruptions/useGatedSurface'
 import { useTelemetry } from '@/platform/telemetry'
-import { useDialogStore } from '@/stores/dialogStore'
 
 import { useFirstRunTourController } from '../tour/useFirstRunTourController'
 
@@ -72,7 +72,10 @@ const APPEAR_DELAY_MS = 1500
 const { t } = useI18n()
 const { nudgeArmed, tourWasCompleted, dismissNudge } =
   useFirstRunTourController()
-const dialogStore = useDialogStore()
+const { shouldShow: screenIsClear } = useGatedSurface(
+  'firstRunNudge',
+  () => nudgeArmed.value
+)
 const telemetry = useTelemetry()
 const titleId = useId()
 
@@ -105,10 +108,10 @@ useEventListener(document, 'keydown', (event: KeyboardEvent) => {
 
 /** The nudge sits below the modal stack, so it waits for a clear screen. */
 watch(
-  () => nudgeArmed.value && dialogStore.dialogStack.length === 0,
-  (screenIsClear) => {
+  screenIsClear,
+  (clear) => {
     cancelAppearance()
-    if (!screenIsClear) {
+    if (!clear) {
       onScreen.value = false
       return
     }

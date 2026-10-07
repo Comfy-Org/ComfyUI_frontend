@@ -18,7 +18,6 @@
   <!-- Release Notification Toast positioned within canvas area -->
   <Teleport to="#graph-canvas-container">
     <ReleaseNotificationToast
-      :is-visible="!canvasStore.isPickingNodes"
       :position="sidebarLocation === 'right' ? 'bottom-right' : 'bottom-left'"
     />
   </Teleport>
@@ -50,11 +49,9 @@
 import { useHelpCenter } from '@/composables/useHelpCenter'
 import ReleaseNotificationToast from '@/platform/updates/components/ReleaseNotificationToast.vue'
 import WhatsNewPopup from '@/platform/updates/components/WhatsNewPopup.vue'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import HelpCenterMenuContent from './HelpCenterMenuContent.vue'
 
-const canvasStore = useCanvasStore()
 const { isSmall = false } = defineProps<{
   isSmall?: boolean
 }>()

@@ -4,8 +4,7 @@ import { compare, valid } from 'semver'
 import { computed, ref } from 'vue'
 
 import { isCloud, isDesktop } from '@/platform/distribution/types'
-import { useOnboardingOverlayStore } from '@/platform/onboarding/onboardingOverlayStore'
-import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
+import { useGatedSurface } from '@/platform/interruptions/useGatedSurface'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { stringToLocale } from '@/utils/formatUtil'
@@ -24,8 +23,6 @@ export const useReleaseStore = defineStore('release', () => {
   const releaseService = useReleaseService()
   const systemStatsStore = useSystemStatsStore()
   const settingStore = useSettingStore()
-  const onboardingTourStore = useOnboardingTourStore()
-  const onboardingOverlayStore = useOnboardingOverlayStore()
 
   const currentVersion = computed(
     () => systemStatsStore.systemStats?.system.comfyui_version ?? ''
@@ -92,8 +89,7 @@ export const useReleaseStore = defineStore('release', () => {
     return attention === 'medium' || attention === 'high'
   })
 
-  // Show toast if needed
-  const shouldShowToast = computed(() => {
+  const toastEligible = computed(() => {
     // Only show on desktop version
     if (!isDesktop || isCloud) {
       return false
@@ -173,16 +169,7 @@ export const useReleaseStore = defineStore('release', () => {
     return true
   })
 
-  const shouldShowPopup = computed(() => {
-    // Deferred, not dropped: the tour ends and this re-evaluates.
-    if (onboardingTourStore.activeTour === 'firstRun') {
-      return false
-    }
-
-    if (onboardingOverlayStore.active) {
-      return false
-    }
-
+  const popupEligible = computed(() => {
     if (!isDesktop && !isCloud) {
       return false
     }
@@ -210,6 +197,15 @@ export const useReleaseStore = defineStore('release', () => {
 
     return true
   })
+
+  const { shouldShow: shouldShowToast } = useGatedSurface(
+    'releaseToast',
+    () => toastEligible.value
+  )
+  const { shouldShow: shouldShowPopup } = useGatedSurface(
+    'whatsNewPopup',
+    () => popupEligible.value
+  )
 
   // Action handlers for user interactions
   async function handleSkipRelease(version: string): Promise<void> {

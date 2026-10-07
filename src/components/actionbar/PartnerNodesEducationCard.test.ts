@@ -3,12 +3,13 @@ import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { getActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import * as runGateModule from '@/composables/billing/usePartnerNodesRunGate'
 import * as partnerNodesInGraphModule from '@/composables/node/usePartnerNodesInGraph'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { useInterruptionStore } from '@/platform/interruptions/interruptionStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
@@ -294,5 +295,51 @@ describe('PartnerNodesEducationCard', () => {
     await userEvent.click(partnerBtn)
     expect(openBtn).toHaveAccessibleName(copy.unmuteOpen)
     expect(partnerBtn).toHaveAccessibleName(copy.mutePartner)
+  })
+})
+
+describe('PartnerNodesEducationCard interruption gate', () => {
+  beforeEach(() => {
+    __setHasPartnerNodes(true)
+    __setGate('none')
+    vi.spyOn(api, 'storeSetting').mockResolvedValue(new Response())
+  })
+
+  it('waits behind a blocker and appears once it leaves', async () => {
+    const blocked = ref(true)
+    useInterruptionStore().registerSource({
+      id: 'dialog',
+      tier: 'blocking',
+      order: 0,
+      isActive: () => blocked.value
+    })
+    renderCard()
+
+    loadPaidTemplate('paid-wf')
+    await nextTick()
+    expect(screen.queryByTestId(CARD_TESTID)).not.toBeInTheDocument()
+
+    blocked.value = false
+    await nextTick()
+    expect(screen.getByTestId(CARD_TESTID)).toBeInTheDocument()
+  })
+
+  it('yields to a version-mismatch toast that is on screen', async () => {
+    const toastOnScreen = ref(true)
+    useInterruptionStore().registerSource({
+      id: 'versionMismatchToast',
+      tier: 'announcement',
+      order: 0,
+      isActive: () => toastOnScreen.value
+    })
+    renderCard()
+
+    loadPaidTemplate('paid-wf')
+    await nextTick()
+    expect(screen.queryByTestId(CARD_TESTID)).not.toBeInTheDocument()
+
+    toastOnScreen.value = false
+    await nextTick()
+    expect(screen.getByTestId(CARD_TESTID)).toBeInTheDocument()
   })
 })

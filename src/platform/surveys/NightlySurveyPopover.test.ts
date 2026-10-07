@@ -1,8 +1,10 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
+
+import { useInterruptionStore } from '@/platform/interruptions/interruptionStore'
 
 const FEATURE_USAGE_KEY = 'Comfy.FeatureUsage'
 
@@ -99,6 +101,34 @@ describe('NightlySurveyPopover', () => {
       expect(
         screen.queryByTestId('nightly-survey-popover')
       ).not.toBeInTheDocument()
+    })
+
+    it('waits behind an announcement on screen and is marked seen only when it opens', async () => {
+      setFeatureUsage('test-feature', 5)
+      const announcementOnScreen = ref(true)
+      useInterruptionStore().registerSource({
+        id: 'releaseToast',
+        tier: 'announcement',
+        order: 0,
+        isActive: () => announcementOnScreen.value
+      })
+      const onShown = vi.fn()
+
+      await renderComponent(defaultConfig, { onShown })
+      await vi.advanceTimersByTimeAsync(100)
+      await nextTick()
+
+      expect(
+        screen.queryByTestId('nightly-survey-popover')
+      ).not.toBeInTheDocument()
+      expect(onShown).not.toHaveBeenCalled()
+
+      announcementOnScreen.value = false
+      await nextTick()
+      await nextTick()
+
+      expect(screen.getByTestId('nightly-survey-popover')).toBeInTheDocument()
+      expect(onShown).toHaveBeenCalledTimes(1)
     })
 
     it('does not show when typeform id is invalid', async () => {

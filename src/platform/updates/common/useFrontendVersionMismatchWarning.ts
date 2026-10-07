@@ -1,6 +1,8 @@
-import { whenever } from '@vueuse/core'
-import { computed, nextTick, onMounted, onUnmounted } from 'vue'
+import { computed, effectScope, nextTick, onMounted, onUnmounted } from 'vue'
+import type { EffectScope } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+import { useGatedAction } from '@/platform/interruptions/useGatedSurface'
 
 import { useToastStore } from './toastStore'
 import { useVersionCompatibilityStore } from './versionCompatibilityStore'
@@ -82,25 +84,29 @@ export function useFrontendVersionMismatchWarning(
     versionCompatibilityStore.dismissWarning()
   }
 
-  let stopWatcher: (() => void) | null = null
+  let gateScope: EffectScope | null = null
+  let isUnmounted = false
 
   onMounted(async () => {
     if (!immediate) return
     // Wait for next tick to ensure reactive updates from settings load have propagated
     await nextTick()
+    if (isUnmounted) return
 
-    stopWatcher = whenever(
-      () => versionCompatibilityStore.shouldShowWarning,
-      () => {
-        showWarning()
-      },
-      { immediate: true }
+    gateScope = effectScope()
+    gateScope.run(() =>
+      useGatedAction(
+        'versionMismatchToast',
+        () => versionCompatibilityStore.shouldShowWarning,
+        showWarning
+      )
     )
   })
 
   onUnmounted(() => {
-    stopWatcher?.()
-    stopWatcher = null
+    isUnmounted = true
+    gateScope?.stop()
+    gateScope = null
   })
 
   return {

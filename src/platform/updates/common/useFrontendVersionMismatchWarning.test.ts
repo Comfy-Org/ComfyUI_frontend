@@ -4,6 +4,7 @@ import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { useInterruptionStore } from '@/platform/interruptions/interruptionStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useFrontendVersionMismatchWarning } from '@/platform/updates/common/useFrontendVersionMismatchWarning'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
@@ -226,5 +227,66 @@ describe('useFrontendVersionMismatchWarning', () => {
     expect(addAlertSpy).toHaveBeenCalledWith(
       expect.stringContaining('Installed comfyui-embedded-docs version 0.4.0')
     )
+  })
+})
+
+describe('useFrontendVersionMismatchWarning interruption gate', () => {
+  function mismatch() {
+    const toastStore = useToastStore()
+    const versionStore = useVersionCompatibilityStore()
+    vi.spyOn(versionStore, 'shouldShowWarning', 'get').mockReturnValue(true)
+    vi.spyOn(versionStore, 'warningMessage', 'get').mockReturnValue({
+      type: 'outdated',
+      frontendVersion: '1.0.0',
+      requiredVersion: '2.0.0'
+    })
+    return {
+      addAlertSpy: vi.spyOn(toastStore, 'addAlert'),
+      dismissWarningSpy: vi.spyOn(versionStore, 'dismissWarning')
+    }
+  }
+
+  it('keeps the seven-day dismissal unspent while a blocker is on screen', async () => {
+    const { addAlertSpy, dismissWarningSpy } = mismatch()
+    const blocked = ref(true)
+    useInterruptionStore().registerSource({
+      id: 'dialog',
+      tier: 'blocking',
+      order: 0,
+      isActive: () => blocked.value
+    })
+
+    mountVersionWarning({ immediate: true })
+    await nextTick()
+    await nextTick()
+
+    expect(addAlertSpy).not.toHaveBeenCalled()
+    expect(dismissWarningSpy).not.toHaveBeenCalled()
+
+    blocked.value = false
+    await nextTick()
+
+    expect(addAlertSpy).toHaveBeenCalledTimes(1)
+    expect(dismissWarningSpy).toHaveBeenCalledTimes(1)
+  })
+
+  it('stops waiting when unmounted before the blocker leaves', async () => {
+    const { addAlertSpy, dismissWarningSpy } = mismatch()
+    const blocked = ref(true)
+    useInterruptionStore().registerSource({
+      id: 'dialog',
+      tier: 'blocking',
+      order: 0,
+      isActive: () => blocked.value
+    })
+
+    const { unmount } = mountVersionWarning({ immediate: true })
+    await nextTick()
+    unmount()
+    blocked.value = false
+    await nextTick()
+
+    expect(addAlertSpy).not.toHaveBeenCalled()
+    expect(dismissWarningSpy).not.toHaveBeenCalled()
   })
 })

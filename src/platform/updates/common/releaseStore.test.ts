@@ -2,15 +2,19 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { createSharedComposable, until, useStorage } from '@vueuse/core'
 import { compare } from 'semver'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
 
+import { useInterruptionStore } from '@/platform/interruptions/interruptionStore'
+import { registerBuiltInInterruptionSources } from '@/platform/interruptions/registerBuiltInSources'
 import { useOnboardingOverlayStore } from '@/platform/onboarding/onboardingOverlayStore'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import type { ReleaseNote } from '@/platform/updates/common/releaseService'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import { useReleaseService } from '@/platform/updates/common/releaseService'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useDialogStore } from '@/stores/dialogStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 
 // Mock the dependencies
@@ -88,6 +92,7 @@ describe('useReleaseStore', () => {
     vi.spyOn(useOnboardingOverlayStore(), 'active', 'get').mockImplementation(
       () => overlayActive.value
     )
+    registerBuiltInInterruptionSources()
   })
 
   describe('initial state', () => {
@@ -622,6 +627,95 @@ describe('useReleaseStore', () => {
 
       overlayActive.value = false
       expect(store.shouldShowPopup).toBe(true)
+    })
+  })
+
+  describe('interruption gate', () => {
+    function showPopupConditions() {
+      const settingStore = useSettingStore()
+      useSystemStatsStore().systemStats!.system.comfyui_version = '1.2.0'
+      vi.mocked(settingStore.get).mockImplementation((key: string) => {
+        if (key === 'Comfy.Notification.ShowVersionUpdates') return true
+        return null
+      })
+      vi.mocked(compare).mockReturnValue(0)
+      const store = useReleaseStore()
+      store.releases = [mockRelease]
+      return store
+    }
+
+    function showToastConditions() {
+      const store = showPopupConditions()
+      vi.mocked(compare).mockReturnValue(1)
+      return store
+    }
+
+    it('withholds the popup while a dialog is open and shows it once closed', () => {
+      const store = showPopupConditions()
+      const dialogStore = useDialogStore()
+
+      dialogStore.showDialog({ key: 'settings', component: {} })
+      expect(store.shouldShowPopup).toBe(false)
+
+      dialogStore.closeDialog({ key: 'settings' })
+      expect(store.shouldShowPopup).toBe(true)
+    })
+
+    it('withholds the toast while node selection mode is active', () => {
+      const store = showToastConditions()
+      const canvasStore = useCanvasStore()
+
+      canvasStore.isPickingNodes = true
+      expect(store.shouldShowToast).toBe(false)
+
+      canvasStore.isPickingNodes = false
+      expect(store.shouldShowToast).toBe(true)
+    })
+
+    it('withholds the toast while the first-run tour is on screen', () => {
+      const store = showToastConditions()
+
+      activeTour.value = 'firstRun'
+      expect(store.shouldShowToast).toBe(false)
+
+      activeTour.value = null
+      expect(store.shouldShowToast).toBe(true)
+    })
+
+    it('logs the deferral and the later exposure of the popup', async () => {
+      const store = showPopupConditions()
+      const dialogStore = useDialogStore()
+      const interruptionStore = useInterruptionStore()
+
+      dialogStore.showDialog({ key: 'settings', component: {} })
+      expect(store.shouldShowPopup).toBe(false)
+      await nextTick()
+      dialogStore.closeDialog({ key: 'settings' })
+      expect(store.shouldShowPopup).toBe(true)
+      await nextTick()
+
+      expect(
+        interruptionStore.exposures.map(({ surface, outcome, by }) => ({
+          surface,
+          outcome,
+          by
+        }))
+      ).toEqual([
+        { surface: 'whatsNewPopup', outcome: 'deferred', by: 'dialog' },
+        { surface: 'whatsNewPopup', outcome: 'shown', by: undefined }
+      ])
+    })
+
+    it('logs nothing for a popup the release rules rule out', async () => {
+      vi.mocked(useSettingStore().get).mockImplementation(() => false)
+      vi.mocked(compare).mockReturnValue(0)
+      const store = useReleaseStore()
+      store.releases = [mockRelease]
+      useDialogStore().showDialog({ key: 'settings', component: {} })
+      await nextTick()
+
+      expect(store.shouldShowPopup).toBe(false)
+      expect(useInterruptionStore().exposures).toEqual([])
     })
   })
 
