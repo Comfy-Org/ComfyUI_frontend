@@ -340,6 +340,24 @@ describe('useAttachment', () => {
     }
   )
 
+  it('reports an empty browser-provided MIME type as unknown', async () => {
+    const upload = vi.fn().mockRejectedValue(new Error('upload failed'))
+    const registry = chipRegistry()
+    const { addFiles } = useAttachment({ upload, ...registry })
+
+    await addFiles([fileOfSize('unknown.bin', 128, '')])
+
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        tags: expect.objectContaining({
+          file_type: 'unknown',
+          file_size_bytes: 128
+        })
+      })
+    )
+  })
+
   it('tags an aborted-by-timeout upload with the timeout failure cause', async () => {
     vi.useFakeTimers()
     try {

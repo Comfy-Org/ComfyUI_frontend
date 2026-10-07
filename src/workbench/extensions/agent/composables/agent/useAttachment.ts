@@ -135,7 +135,7 @@ export function useAttachment(options: UseAttachmentOptions) {
           feature_flag_state: 'enabled',
           project_context: 'agent_composer',
           upload_failure_cause: uploadFailureCause(cause),
-          file_type: file.type ?? 'unknown',
+          file_type: file.type || 'unknown',
           file_size_bytes: file.size ?? -1
         }
       })
