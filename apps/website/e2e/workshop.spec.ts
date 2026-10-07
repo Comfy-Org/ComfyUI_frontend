@@ -73,7 +73,7 @@ test.describe('Models catalog', () => {
     await page.goto('/hub/models/')
     const hero = page.getByTestId('models-hub-hero')
     await expect(
-      hero.getByRole('heading', { level: 1, name: 'Every model. One graph.' })
+      hero.getByRole('heading', { level: 1, name: 'Models', exact: true })
     ).toBeVisible()
     await expect(page.getByTestId('workshop-heading')).toHaveCount(0)
     await expect(hero.getByTestId('models-hub-counts')).toHaveText(

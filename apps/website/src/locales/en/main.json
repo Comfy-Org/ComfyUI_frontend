@@ -764,8 +764,6 @@
       }
     },
     "modelsHub": {
-      "titleFirstLine": "Every model.",
-      "titleSecondLine": "One graph.",
       "subtitle": "Run models here, call them by API or download open weights for ComfyUI.",
       "runModel": "Run a model",
       "getApiKey": "Get an API key",

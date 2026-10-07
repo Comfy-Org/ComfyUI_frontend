@@ -44,10 +44,7 @@ const featured = computed(() => latestLaunch(models))
         :locale
       />
       <SectionHeader heading-tag="h1" heading-size="hero" align="start">
-        <span class="block">{{
-          `${t('workshop.modelsHub.titleFirstLine')} `
-        }}</span>
-        <span class="block">{{ t('workshop.modelsHub.titleSecondLine') }}</span>
+        {{ t('workshop.hero.eyebrow') }}
       </SectionHeader>
       <p
         class="max-w-xl text-base/relaxed font-light text-primary-comfy-canvas lg:text-lg"

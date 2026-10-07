@@ -497,7 +497,7 @@ describe('Models page entry', () => {
     expect(headingWrapper()).toBeNull()
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1)
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
-      'Every model. One graph.'
+      /^Models$/
     )
 
     await user.click(screen.getByTestId('section-trending-see-all'))
@@ -539,7 +539,7 @@ describe('Models page entry', () => {
     await view.rerender({ section: 'models', heading: 'Models heading' })
     expect(await screen.findByTestId('workshop-search')).toBeVisible()
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
-      'Every model. One graph.'
+      /^Models$/
     )
     expect(fetchData).toHaveBeenCalledExactlyOnceWith('/models/catalogue.json')
     expect(

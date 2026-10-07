@@ -19,7 +19,7 @@ const SECTIONS = {
   explore: { path: '/hub/', heading: 'What do you want to make?' },
   apps: { path: '/hub/apps/', heading: 'Apps' },
   workflows: { path: '/hub/workflows/', heading: 'Workflows' },
-  models: { path: '/hub/models/', heading: 'Every model. One graph.' }
+  models: { path: '/hub/models/', heading: 'Models' }
 } as const
 
 type HubSection = keyof typeof SECTIONS

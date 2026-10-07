@@ -4607,8 +4607,6 @@
       }
     },
     "modelsHub": {
-      "titleFirstLine": "每一个模型。",
-      "titleSecondLine": "同一个工作流。",
       "subtitle": "在这里运行模型、通过 API 调用，或下载开放权重在 ComfyUI 中使用。",
       "runModel": "运行模型",
       "getApiKey": "获取 API 密钥",

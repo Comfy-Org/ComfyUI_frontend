@@ -460,7 +460,7 @@ describe('WorkshopModelsGrid', () => {
         '/hub/'
       )
       expect(within(hero).getByRole('heading', { level: 1 })).toHaveTextContent(
-        'Every model. One graph.'
+        /^Models$/
       )
       expect(
         within(hero).getByRole('link', { name: 'Run a model' })
