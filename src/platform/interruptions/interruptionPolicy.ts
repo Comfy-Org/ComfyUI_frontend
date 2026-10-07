@@ -19,8 +19,14 @@ export interface Interrupter {
 }
 
 export const SURFACES = {
-  releaseToast: { tier: 'announcement', order: 0 },
-  whatsNewPopup: { tier: 'announcement', order: 1 }
+  versionMismatchToast: { tier: 'announcement', order: 0 },
+  desktopCloudDialog: { tier: 'announcement', order: 1 },
+  releaseToast: { tier: 'announcement', order: 2 },
+  whatsNewPopup: { tier: 'announcement', order: 3 },
+  partnerNodesCard: { tier: 'announcement', order: 4 },
+  vueNodeSwitchPopup: { tier: 'announcement', order: 5 },
+  firstRunNudge: { tier: 'announcement', order: 6 },
+  featureSurvey: { tier: 'research', order: 0 }
 } as const satisfies Record<string, Omit<Interrupter, 'id'>>
 
 export type SurfaceId = keyof typeof SURFACES

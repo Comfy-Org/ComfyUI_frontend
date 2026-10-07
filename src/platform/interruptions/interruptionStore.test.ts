@@ -1,172 +1,148 @@
-import { describe, expect, it } from 'vitest'
-import { effectScope, nextTick, ref } from 'vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { effectScope, ref } from 'vue'
 
-import { useOnboardingOverlayStore } from '@/platform/onboarding/onboardingOverlayStore'
-import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
-import { useDialogStore } from '@/stores/dialogStore'
+import { useTelemetry } from '@/platform/telemetry'
 
 import { useInterruptionStore } from './interruptionStore'
-import { useGatedSurface } from './useGatedSurface'
 
-const Stub = {}
+vi.mock(import('@/platform/telemetry'), () => ({
+  useTelemetry: vi.fn(() => null)
+}))
 
-describe('useInterruptionStore built-in sources', () => {
-  it('shows an announcement when the screen is clear', () => {
+function register(
+  id: string,
+  isActive: () => boolean,
+  tier: 'blocking' | 'announcement' | 'research' = 'blocking',
+  order = 0
+) {
+  return useInterruptionStore().registerSource({ id, tier, order, isActive })
+}
+
+describe('useInterruptionStore', () => {
+  beforeEach(() => {
+    vi.mocked(useTelemetry).mockReturnValue(null)
+  })
+
+  it('shows when nothing is registered', () => {
     expect(useInterruptionStore().decideFor('whatsNewPopup')).toEqual({
       kind: 'show'
     })
   })
 
-  it('defers while a dialog is open and releases when it closes', () => {
+  it('defers to an active higher-tier source, naming it, and releases', () => {
     const store = useInterruptionStore()
-    const dialogStore = useDialogStore()
+    const active = ref(true)
+    register('dialog', () => active.value)
 
-    dialogStore.showDialog({ key: 'settings', component: Stub })
     expect(store.decideFor('whatsNewPopup')).toEqual({
       kind: 'defer',
       reason: 'outranked',
       by: 'dialog'
     })
-
-    dialogStore.closeDialog({ key: 'settings' })
+    active.value = false
     expect(store.decideFor('whatsNewPopup')).toEqual({ kind: 'show' })
   })
 
-  it('defers while node selection mode is active', () => {
+  it('ignores an inactive source and a lower-tier one', () => {
     const store = useInterruptionStore()
-    useAgentNodeSelectionStore().isActive = true
+    register('idle', () => false)
+    register('survey', () => true, 'research')
 
-    expect(store.decideFor('releaseToast')).toMatchObject({
-      kind: 'defer',
-      by: 'nodeSelection'
-    })
-  })
-
-  it('defers while an onboarding overlay is active', () => {
-    const store = useInterruptionStore()
-    const running = ref(true)
-    useOnboardingOverlayStore().registerSource(() => running.value)
-
-    expect(store.decideFor('whatsNewPopup')).toMatchObject({
-      kind: 'defer',
-      by: 'onboardingOverlay'
-    })
-    running.value = false
     expect(store.decideFor('whatsNewPopup')).toEqual({ kind: 'show' })
   })
-})
 
-describe('useInterruptionStore.registerSource', () => {
+  it('does not read the getter of a source that cannot outrank the surface', () => {
+    const store = useInterruptionStore()
+    const lowerTier = vi.fn(() => true)
+    register('survey', lowerTier, 'research')
+
+    store.decideFor('whatsNewPopup')
+
+    expect(lowerTier).not.toHaveBeenCalled()
+  })
+
   it('drops a source with its owning scope', () => {
     const store = useInterruptionStore()
     const scope = effectScope()
-    scope.run(() =>
-      store.registerSource({
-        id: 'scoped',
-        tier: 'blocking',
-        order: 9,
-        isActive: () => true
-      })
-    )
+    scope.run(() => register('scoped', () => true))
     expect(store.decideFor('whatsNewPopup')).toMatchObject({ by: 'scoped' })
 
     scope.stop()
     expect(store.decideFor('whatsNewPopup')).toEqual({ kind: 'show' })
   })
 
-  it('stops a source by hand', () => {
+  it('stops only the registration it was returned for', () => {
     const store = useInterruptionStore()
-    const stop = store.registerSource({
-      id: 'manual',
-      tier: 'blocking',
-      order: 9,
-      isActive: () => true
+    const stopFirst = register('same', () => true)
+    register('same', () => true)
+
+    stopFirst()
+    expect(store.decideFor('whatsNewPopup')).toMatchObject({ by: 'same' })
+  })
+
+  describe('record', () => {
+    it('keeps the log bounded to the newest entries', () => {
+      const store = useInterruptionStore()
+      for (let i = 0; i < 250; i++)
+        store.record({
+          surface: i === 249 ? 'releaseToast' : 'whatsNewPopup',
+          tier: 'announcement',
+          outcome: 'shown'
+        })
+
+      expect(store.exposures).toHaveLength(200)
+      expect(store.exposures.at(-1)?.surface).toBe('releaseToast')
     })
-    stop()
 
-    expect(store.decideFor('whatsNewPopup')).toEqual({ kind: 'show' })
-  })
-})
+    it('reports the exposure to telemetry with the blocker', () => {
+      const trackInterruptionExposure = vi.fn()
+      vi.mocked(useTelemetry).mockReturnValue({
+        trackInterruptionExposure
+      } as unknown as ReturnType<typeof useTelemetry>)
 
-describe('useGatedSurface', () => {
-  it('follows eligibility and the gate together', () => {
-    const wanted = ref(false)
-    const dialogStore = useDialogStore()
-    const scope = effectScope()
-    const { shouldShow } = scope.run(() =>
-      useGatedSurface('whatsNewPopup', () => wanted.value)
-    )!
+      useInterruptionStore().record({
+        surface: 'whatsNewPopup',
+        tier: 'announcement',
+        outcome: 'deferred',
+        by: 'dialog'
+      })
 
-    expect(shouldShow.value).toBe(false)
-    wanted.value = true
-    expect(shouldShow.value).toBe(true)
-    dialogStore.showDialog({ key: 'settings', component: Stub })
-    expect(shouldShow.value).toBe(false)
-    dialogStore.closeDialog({ key: 'settings' })
-    expect(shouldShow.value).toBe(true)
-    scope.stop()
-  })
+      expect(trackInterruptionExposure).toHaveBeenCalledExactlyOnceWith({
+        surface: 'whatsNewPopup',
+        tier: 'announcement',
+        outcome: 'deferred',
+        blocked_by: 'dialog'
+      })
+    })
 
-  it('logs each change of outcome once, with the blocker', async () => {
-    const store = useInterruptionStore()
-    const dialogStore = useDialogStore()
-    const wanted = ref(true)
-    const scope = effectScope()
-    scope.run(() => useGatedSurface('whatsNewPopup', () => wanted.value))
+    it('omits blocked_by when nothing blocked', () => {
+      const trackInterruptionExposure = vi.fn()
+      vi.mocked(useTelemetry).mockReturnValue({
+        trackInterruptionExposure
+      } as unknown as ReturnType<typeof useTelemetry>)
 
-    await nextTick()
-    dialogStore.showDialog({ key: 'settings', component: Stub })
-    await nextTick()
-    dialogStore.closeDialog({ key: 'settings' })
-    await nextTick()
-    wanted.value = false
-    await nextTick()
+      useInterruptionStore().record({
+        surface: 'releaseToast',
+        tier: 'announcement',
+        outcome: 'shown'
+      })
 
-    expect(
-      store.exposures.map(({ surface, outcome, by }) => ({
-        surface,
-        outcome,
-        by
-      }))
-    ).toEqual([
-      { surface: 'whatsNewPopup', outcome: 'shown', by: undefined },
-      { surface: 'whatsNewPopup', outcome: 'deferred', by: 'dialog' },
-      { surface: 'whatsNewPopup', outcome: 'shown', by: undefined },
-      { surface: 'whatsNewPopup', outcome: 'withdrawn', by: undefined }
-    ])
-    scope.stop()
-  })
+      expect(trackInterruptionExposure).toHaveBeenCalledExactlyOnceWith({
+        surface: 'releaseToast',
+        tier: 'announcement',
+        outcome: 'shown'
+      })
+    })
 
-  it('logs nothing for a surface that was never wanted', () => {
-    const store = useInterruptionStore()
-    const scope = effectScope()
-    scope.run(() => useGatedSurface('whatsNewPopup', () => false))
-
-    expect(store.exposures).toEqual([])
-    scope.stop()
-  })
-
-  it('lets a lower-order announcement hold back a higher-order one', () => {
-    const scope = effectScope()
-    const { toast, popup } = scope.run(() => ({
-      toast: useGatedSurface('releaseToast', () => true).shouldShow,
-      popup: useGatedSurface('whatsNewPopup', () => true).shouldShow
-    }))!
-
-    expect(toast.value).toBe(true)
-    expect(popup.value).toBe(false)
-    scope.stop()
-  })
-
-  it('keeps the exposure log bounded', () => {
-    const store = useInterruptionStore()
-    for (let i = 0; i < 250; i++)
+    it('still logs when telemetry is absent', () => {
+      const store = useInterruptionStore()
       store.record({
         surface: 'releaseToast',
         tier: 'announcement',
         outcome: 'shown'
       })
 
-    expect(store.exposures).toHaveLength(200)
+      expect(store.exposures).toHaveLength(1)
+    })
   })
 })

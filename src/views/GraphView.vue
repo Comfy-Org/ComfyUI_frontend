@@ -82,6 +82,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { getShellLayoutSnapshot } from '@/platform/telemetry/utils/getShellLayoutSnapshot'
 import { getPageVisibilityMetadata } from '@/workbench/extensions/agent/utils/getPageVisibilityMetadata'
+import { registerBuiltInInterruptionSources } from '@/platform/interruptions/registerBuiltInSources'
 import { useFrontendVersionMismatchWarning } from '@/platform/updates/common/useFrontendVersionMismatchWarning'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -297,6 +298,8 @@ const onExecutionSuccess = async () => {
   await queueStore.update()
   await assetsStore.outputAssets.loadNew()
 }
+
+registerBuiltInInterruptionSources()
 
 const { onReconnecting, onReconnected } = useReconnectingNotification()
 const refreshOnReconnect = useReconnectQueueRefresh()

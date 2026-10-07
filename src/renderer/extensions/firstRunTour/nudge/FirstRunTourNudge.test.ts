@@ -5,6 +5,7 @@ import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import { registerBuiltInInterruptionSources } from '@/platform/interruptions/registerBuiltInSources'
 import { useTelemetry } from '@/platform/telemetry'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -63,6 +64,7 @@ describe('FirstRunTourNudge', () => {
     mocks.nudgeArmed.value = false
     mocks.tourWasCompleted.value = true
     useDialogStore().dialogStack = []
+    registerBuiltInInterruptionSources()
   })
 
   it('shows a nudge that came due before it mounted', async () => {

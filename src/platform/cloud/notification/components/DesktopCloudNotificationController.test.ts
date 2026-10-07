@@ -1,7 +1,8 @@
 import { useDialogService } from '@/services/dialogService'
 import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { nextTick, ref } from 'vue'
+import { useInterruptionStore } from '@/platform/interruptions/interruptionStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 
 import DesktopCloudNotificationController from './DesktopCloudNotificationController.vue'
@@ -288,4 +289,66 @@ describe('DesktopCloudNotificationController', () => {
       unmount()
     }
   )
+})
+
+describe('DesktopCloudNotificationController interruption gate', () => {
+  beforeEach(() => {
+    settingStore = useSettingStore()
+    settingStore.settingValues['Comfy.Desktop.CloudNotificationShown'] = false
+    electron.getPlatform.mockReturnValue('darwin')
+    vi.mocked(settingStore.load).mockResolvedValue(undefined)
+    vi.mocked(settingStore.set).mockImplementation(async (key, value) => {
+      Object.assign(settingStore.settingValues, { [key]: value })
+    })
+  })
+
+  it('keeps the shown flag unspent while a blocker is on screen, then shows once', async () => {
+    const blocked = ref(true)
+    useInterruptionStore().registerSource({
+      id: 'dialog',
+      tier: 'blocking',
+      order: 0,
+      isActive: () => blocked.value
+    })
+
+    const { unmount } = render(DesktopCloudNotificationController)
+    await vi.advanceTimersByTimeAsync(0)
+    await vi.advanceTimersByTimeAsync(2000)
+
+    expect(settingStore.set).not.toHaveBeenCalled()
+    expect(useDialogService().showCloudNotification).not.toHaveBeenCalled()
+
+    blocked.value = false
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(settingStore.set).toHaveBeenCalledExactlyOnceWith(
+      'Comfy.Desktop.CloudNotificationShown',
+      true
+    )
+    expect(useDialogService().showCloudNotification).toHaveBeenCalledTimes(1)
+
+    unmount()
+  })
+
+  it('does not show a second time when a blocker comes and goes after it showed', async () => {
+    const blocked = ref(false)
+    useInterruptionStore().registerSource({
+      id: 'dialog',
+      tier: 'blocking',
+      order: 0,
+      isActive: () => blocked.value
+    })
+
+    const { unmount } = render(DesktopCloudNotificationController)
+    await vi.advanceTimersByTimeAsync(0)
+    await vi.advanceTimersByTimeAsync(2000)
+    blocked.value = true
+    await vi.advanceTimersByTimeAsync(0)
+    blocked.value = false
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(useDialogService().showCloudNotification).toHaveBeenCalledTimes(1)
+
+    unmount()
+  })
 })

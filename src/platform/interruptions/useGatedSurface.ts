@@ -1,4 +1,4 @@
-import { computed, watch } from 'vue'
+import { computed, effectScope, getCurrentScope, ref, watch } from 'vue'
 
 import { SURFACES } from './interruptionPolicy'
 import type { SurfaceId } from './interruptionPolicy'
@@ -12,11 +12,47 @@ import { useInterruptionStore } from './interruptionStore'
 export function useGatedSurface(surface: SurfaceId, eligible: () => boolean) {
   const store = useInterruptionStore()
   const { tier } = SURFACES[surface]
+  const owner = getCurrentScope() ?? effectScope(true)
+  let logging = false
 
   const decision = computed(() =>
     eligible() ? store.decideFor(surface) : null
   )
-  const shouldShow = computed(() => decision.value?.kind === 'show')
+
+  function startLogging() {
+    if (logging) return
+    logging = true
+    queueMicrotask(() => {
+      if (!owner.active) return
+      owner.run(() =>
+        watch(
+          () =>
+            decision.value?.kind === 'defer'
+              ? `defer:${decision.value.by}`
+              : (decision.value?.kind ?? 'none'),
+          (key, previous) => {
+            if (key === 'show')
+              store.record({ surface, tier, outcome: 'shown' })
+            else if (key.startsWith('defer:'))
+              store.record({
+                surface,
+                tier,
+                outcome: 'deferred',
+                by: key.slice('defer:'.length)
+              })
+            else if (previous !== undefined)
+              store.record({ surface, tier, outcome: 'withdrawn' })
+          },
+          { immediate: true }
+        )
+      )
+    })
+  }
+
+  const shouldShow = computed(() => {
+    startLogging()
+    return decision.value?.kind === 'show'
+  })
 
   store.registerSource({
     id: surface,
@@ -24,25 +60,34 @@ export function useGatedSurface(surface: SurfaceId, eligible: () => boolean) {
     isActive: () => shouldShow.value
   })
 
+  return { shouldShow }
+}
+
+/**
+ * Gates a surface that is started once rather than rendered from state. `run`
+ * fires the first time the surface is eligible and the screen allows it, so a
+ * flag it burns on show is never spent while the surface is held back.
+ */
+export function useGatedAction(
+  surface: SurfaceId,
+  eligible: () => boolean,
+  run: () => void | Promise<void>
+) {
+  const started = ref(false)
+  const { shouldShow } = useGatedSurface(
+    surface,
+    () => eligible() && !started.value
+  )
+
   watch(
-    () =>
-      decision.value?.kind === 'defer'
-        ? `defer:${decision.value.by}`
-        : (decision.value?.kind ?? 'none'),
-    (key, previous) => {
-      if (key === 'show') store.record({ surface, tier, outcome: 'shown' })
-      else if (key.startsWith('defer:'))
-        store.record({
-          surface,
-          tier,
-          outcome: 'deferred',
-          by: key.slice('defer:'.length)
-        })
-      else if (previous !== undefined)
-        store.record({ surface, tier, outcome: 'withdrawn' })
+    shouldShow,
+    (show) => {
+      if (!show) return
+      started.value = true
+      void run()
     },
     { immediate: true }
   )
 
-  return { shouldShow }
+  return { started }
 }

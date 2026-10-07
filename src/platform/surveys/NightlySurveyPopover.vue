@@ -55,6 +55,7 @@ import { onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import { useGatedAction } from '@/platform/interruptions/useGatedSurface'
 
 import TypeformEmbed from './TypeformEmbed.vue'
 import type { FeatureSurveyConfig } from './useSurveyEligibility'
@@ -96,6 +97,7 @@ watch(openModel, (open) => {
 })
 
 let showTimeout: ReturnType<typeof setTimeout> | null = null
+const delayElapsed = ref(false)
 
 watch(
   isEligible,
@@ -106,6 +108,7 @@ watch(
         clearTimeout(showTimeout)
         showTimeout = null
       }
+      delayElapsed.value = false
       return
     }
 
@@ -114,13 +117,21 @@ watch(
     showTimeout = setTimeout(() => {
       showTimeout = null
       if (!isTypeformIdValid(config.typeformId)) return
-      if (openModel.value) return
-      openModel.value = true
-      markSurveyShown()
-      emit('shown')
+      delayElapsed.value = true
     }, delayMs.value)
   },
   { immediate: true }
+)
+
+useGatedAction(
+  'featureSurvey',
+  () => mode === 'eligible' && delayElapsed.value && !openModel.value,
+  () => {
+    delayElapsed.value = false
+    openModel.value = true
+    markSurveyShown()
+    emit('shown')
+  }
 )
 
 onUnmounted(() => {

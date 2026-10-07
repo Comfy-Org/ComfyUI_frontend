@@ -1,10 +1,7 @@
 import { defineStore } from 'pinia'
 import { getCurrentScope, onScopeDispose, ref, shallowRef } from 'vue'
 
-import { useOnboardingOverlayStore } from '@/platform/onboarding/onboardingOverlayStore'
-import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
-import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
-import { useDialogStore } from '@/stores/dialogStore'
+import { useTelemetry } from '@/platform/telemetry'
 
 import { SURFACES, decide, outranks } from './interruptionPolicy'
 import type {
@@ -60,37 +57,13 @@ export const useInterruptionStore = defineStore('interruption', () => {
       ...exposures.value.slice(-(MAX_EXPOSURES - 1)),
       { ...entry, at: Date.now() }
     ]
+    useTelemetry()?.trackInterruptionExposure({
+      surface: entry.surface,
+      tier: entry.tier,
+      outcome: entry.outcome,
+      ...(entry.by === undefined ? {} : { blocked_by: entry.by })
+    })
   }
-
-  const dialogStore = useDialogStore()
-  const tourStore = useOnboardingTourStore()
-  const overlayStore = useOnboardingOverlayStore()
-  const agentNodeSelectionStore = useAgentNodeSelectionStore()
-
-  registerSource({
-    id: 'dialog',
-    tier: 'blocking',
-    order: 0,
-    isActive: () => dialogStore.dialogStack.some((dialog) => dialog.visible)
-  })
-  registerSource({
-    id: 'firstRunTour',
-    tier: 'blocking',
-    order: 1,
-    isActive: () => tourStore.activeTour === 'firstRun'
-  })
-  registerSource({
-    id: 'onboardingOverlay',
-    tier: 'blocking',
-    order: 2,
-    isActive: () => overlayStore.active
-  })
-  registerSource({
-    id: 'nodeSelection',
-    tier: 'blocking',
-    order: 3,
-    isActive: () => agentNodeSelectionStore.isActive
-  })
 
   return { exposures, registerSource, decideFor, record }
 })

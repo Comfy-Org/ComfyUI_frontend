@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 
 import { isDesktop } from '@/platform/distribution/types'
+import { useGatedAction } from '@/platform/interruptions/useGatedSurface'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useDialogService } from '@/services/dialogService'
@@ -50,6 +51,48 @@ async function resetNotificationState(platform: string) {
   }
 }
 
+async function showNotification(platform: string) {
+  if (isDisposed) return
+
+  try {
+    await settingStore.set('Comfy.Desktop.CloudNotificationShown', true)
+  } catch (error) {
+    reportNotificationFailure(
+      'cloud_notification_state_save_failed',
+      'save',
+      error,
+      platform
+    )
+    await resetNotificationState(platform)
+    return
+  }
+
+  if (isDisposed) {
+    await resetNotificationState(platform)
+    return
+  }
+
+  try {
+    await dialogService.showCloudNotification()
+  } catch (error) {
+    reportNotificationFailure(
+      'cloud_notification_show_failed',
+      'render',
+      error,
+      platform
+    )
+    await resetNotificationState(platform)
+  }
+}
+
+const duePlatform = ref<string | null>(null)
+
+useGatedAction(
+  'desktopCloudDialog',
+  () => duePlatform.value !== null,
+  () => showNotification(duePlatform.value ?? '')
+)
+
 async function scheduleCloudNotification() {
   const platform = electronAPI()?.getPlatform()
   if (!isDesktop || platform !== 'darwin') return
@@ -59,38 +102,9 @@ async function scheduleCloudNotification() {
   if (isDisposed) return
   if (settingStore.get('Comfy.Desktop.CloudNotificationShown')) return
 
-  cloudNotificationTimer = setTimeout(async () => {
+  cloudNotificationTimer = setTimeout(() => {
     if (isDisposed) return
-
-    try {
-      await settingStore.set('Comfy.Desktop.CloudNotificationShown', true)
-    } catch (error) {
-      reportNotificationFailure(
-        'cloud_notification_state_save_failed',
-        'save',
-        error,
-        platform
-      )
-      await resetNotificationState(platform)
-      return
-    }
-
-    if (isDisposed) {
-      await resetNotificationState(platform)
-      return
-    }
-
-    try {
-      await dialogService.showCloudNotification()
-    } catch (error) {
-      reportNotificationFailure(
-        'cloud_notification_show_failed',
-        'render',
-        error,
-        platform
-      )
-      await resetNotificationState(platform)
-    }
+    duePlatform.value = platform
   }, 2000)
 }
 

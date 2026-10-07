@@ -9,6 +9,7 @@ import { computed, ref, watch } from 'vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { isCloud } from '@/platform/distribution/types'
+import { useInterruptionStore } from '@/platform/interruptions/interruptionStore'
 import {
   consumeFirstRunReplayRequest,
   isFirstRunReplayRequested
@@ -89,6 +90,13 @@ export const useFirstRunEntry = createSharedComposable(() => {
   const firstRunHoldsScreen = computed(
     () => firstRunScreen.value.phase !== 'released'
   )
+
+  useInterruptionStore().registerSource({
+    id: 'gettingStarted',
+    tier: 'blocking',
+    order: 4,
+    isActive: () => firstRunHoldsScreen.value
+  })
 
   function dispatchFirstRunScreen(event: FirstRunScreenEvent): void {
     firstRunScreen.value = transitionFirstRunScreen(firstRunScreen.value, event)

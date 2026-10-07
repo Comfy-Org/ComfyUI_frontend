@@ -6,13 +6,14 @@ import { nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
 
 import { useInterruptionStore } from '@/platform/interruptions/interruptionStore'
+import { registerBuiltInInterruptionSources } from '@/platform/interruptions/registerBuiltInSources'
 import { useOnboardingOverlayStore } from '@/platform/onboarding/onboardingOverlayStore'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import type { ReleaseNote } from '@/platform/updates/common/releaseService'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import { useReleaseService } from '@/platform/updates/common/releaseService'
-import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 
@@ -91,6 +92,7 @@ describe('useReleaseStore', () => {
     vi.spyOn(useOnboardingOverlayStore(), 'active', 'get').mockImplementation(
       () => overlayActive.value
     )
+    registerBuiltInInterruptionSources()
   })
 
   describe('initial state', () => {
@@ -661,12 +663,12 @@ describe('useReleaseStore', () => {
 
     it('withholds the toast while node selection mode is active', () => {
       const store = showToastConditions()
-      const agentNodeSelectionStore = useAgentNodeSelectionStore()
+      const canvasStore = useCanvasStore()
 
-      agentNodeSelectionStore.isActive = true
+      canvasStore.isPickingNodes = true
       expect(store.shouldShowToast).toBe(false)
 
-      agentNodeSelectionStore.isActive = false
+      canvasStore.isPickingNodes = false
       expect(store.shouldShowToast).toBe(true)
     })
 
