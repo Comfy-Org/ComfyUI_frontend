@@ -65,19 +65,6 @@
             {{ displayTotal }}
           </span>
         </div>
-        <p
-          v-if="hasSavedPaymentMethod !== null"
-          class="m-0 text-xs text-muted-foreground"
-        >
-          {{ paymentNote }}
-          <button
-            v-if="hasSavedPaymentMethod === false"
-            class="cursor-pointer border-none bg-transparent p-0 text-xs text-base-foreground underline"
-            @click="openManageBilling"
-          >
-            {{ $t('subscription.manageBilling') }}
-          </button>
-        </p>
       </div>
     </template>
 
@@ -300,10 +287,8 @@ import { isCloud } from '@/platform/distribution/types'
 import type { CheckoutJourneyPhaseEvent } from '@/platform/telemetry/types'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
-import { reportError } from '@/platform/telemetry/reportError'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import { useHasSavedPaymentMethod } from '@/platform/workspace/composables/useHasSavedPaymentMethod'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
@@ -330,8 +315,7 @@ const settingsDialog = useSettingsDialog()
 const telemetry = useTelemetry()
 const toast = useToast()
 const { buildDocsUrl, docsPaths } = useExternalLink()
-const { fetchBalance, fetchStatus, manageSubscription, topup } =
-  useBillingContext()
+const { fetchBalance, fetchStatus, topup } = useBillingContext()
 const { canTopUp } = useBillingCapabilities()
 
 const billingOperationStore = useBillingOperationStore()
@@ -403,17 +387,9 @@ const step = ref<'amount' | 'confirm' | 'verifying'>(
   topupOperation.value && canTopUp.value ? 'verifying' : 'amount'
 )
 
-const { hasSavedPaymentMethod } = useHasSavedPaymentMethod()
-
 // Computed
 const pricingUrl = computed(() =>
   buildDocsUrl(docsPaths.partnerNodesPricing, { includeLocale: true })
-)
-
-const paymentNote = computed(() =>
-  hasSavedPaymentMethod.value
-    ? t('credits.topUp.chargedImmediatelyNote')
-    : t('credits.topUp.paymentDetailsRequiredNote')
 )
 
 const creditsModel = computed({
@@ -496,17 +472,6 @@ function handlePrimaryAction() {
     return
   }
   void handleBuy()
-}
-
-function openManageBilling() {
-  void manageSubscription().catch((error) => {
-    reportError(error, { errorType: 'billing_portal_open_failure' })
-    toast.add({
-      severity: 'error',
-      summary: t('credits.topUp.manageBillingError'),
-      life: 5000
-    })
-  })
 }
 
 function openTopupVerification() {
