@@ -49,9 +49,9 @@ type ModelValue = T extends object ? T['value'] : T
 interface Props {
   modelValue: ModelValue | null | undefined
   options: T[]
+  disabled?: boolean
   optionLabel?: string
   optionValue?: string
-  disabled?: boolean
 }
 
 interface Emits {
