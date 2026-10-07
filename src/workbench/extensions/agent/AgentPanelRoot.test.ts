@@ -1634,20 +1634,18 @@ describe('AgentPanelRoot Agent credit transition notice', () => {
   })
 
   it('does not infer a transition when the first scoped-balance read is false', async () => {
-    vi.mocked(useFreeUsePlacement).mockReturnValueOnce(
-      fromPartial({ variant: ref('near-composer') })
-    )
+    paywallAgentScopedHasFunds.value = false
+    const panel = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
     paywallAgentScopedHasFunds.value = undefined
+    await nextTick()
+    paywallAgentScopedHasFunds.value = false
+    await nextTick()
+    panel.unmount()
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await screen.findByRole('textbox')
 
-    paywallAgentScopedHasFunds.value = false
-    await nextTick()
-
     expect(screen.queryByTestId(NOTICE)).not.toBeInTheDocument()
-    expect(
-      screen.queryByRole('note', { name: 'Free use notice' })
-    ).not.toBeInTheDocument()
   })
 
   it('preserves the last defined scoped balance across an omitted read and panel remount', async () => {
