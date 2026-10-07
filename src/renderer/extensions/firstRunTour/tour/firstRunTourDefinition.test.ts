@@ -9,6 +9,7 @@ import {
   targetMounted
 } from '@/platform/onboarding/coachmarkRegistry'
 import { FIRST_RUN_COACH_IDS } from '@/platform/onboarding/onboardingTours'
+import type { CoachId } from '@/platform/onboarding/onboardingTours'
 import { toNodeId } from '@/types/nodeId'
 
 import { TOUR_ROLE_PINS } from '../roles/tourRolePins'
@@ -23,6 +24,12 @@ const FROM_IMAGE = 'image_qwen_image_edit_2509'
 const FROM_TEXT = 'image_z_image_turbo'
 const VIDEO = 'video_ltx2_i2v_distilled'
 const NO_PROMPT = 'templates-image_to_real'
+const AGENT = ['agent.intro', 'agent.composer']
+const OFF_CANVAS = new Set<CoachId>([
+  FIRST_RUN_COACH_IDS.runButton,
+  FIRST_RUN_COACH_IDS.agentPanel,
+  FIRST_RUN_COACH_IDS.agentComposer
+])
 
 const runState = ref<RunState>('idle')
 const framings: { glide?: boolean }[] = []
@@ -122,14 +129,26 @@ describe('firstRunTourSteps', () => {
   it.for<{ templateId: keyof typeof TOUR_ROLE_PINS; names: string[] }>([
     {
       templateId: FROM_IMAGE,
-      names: ['upload.image-edit', 'prompt.image-edit', 'run', 'result.image']
+      names: [
+        'upload.image-edit',
+        'prompt.image-edit',
+        'run',
+        ...AGENT,
+        'result.image'
+      ]
     },
-    { templateId: FROM_TEXT, names: ['prompt.t2i', 'run', 'result.image'] },
+    {
+      templateId: FROM_TEXT,
+      names: ['prompt.t2i', 'run', ...AGENT, 'result.image']
+    },
     {
       templateId: VIDEO,
-      names: ['upload.i2v', 'prompt.i2v', 'run', 'result.video']
+      names: ['upload.i2v', 'prompt.i2v', 'run', ...AGENT, 'result.video']
     },
-    { templateId: NO_PROMPT, names: ['upload.other', 'run', 'result.image'] }
+    {
+      templateId: NO_PROMPT,
+      names: ['upload.other', 'run', ...AGENT, 'result.image']
+    }
   ])(
     'names $templateId steps for what the workflow does',
     async ({ templateId, names }) => {
@@ -186,6 +205,8 @@ describe('firstRunTourSteps', () => {
       'upload.image-edit': true,
       'prompt.image-edit': true,
       run: true,
+      'agent.intro': false,
+      'agent.composer': false,
       'result.image': false
     })
   })
@@ -208,10 +229,7 @@ describe('firstRunTourSteps', () => {
     loadTemplate(FROM_IMAGE)
     const steps = await buildSteps(FROM_IMAGE)
     const onCanvas = steps.filter(
-      (s) =>
-        s.kind === 'spotlight' &&
-        s.coachId &&
-        s.coachId !== FIRST_RUN_COACH_IDS.runButton
+      (s) => s.kind === 'spotlight' && s.coachId && !OFF_CANVAS.has(s.coachId)
     )
     expect(onCanvas.length).toBeGreaterThan(0)
 
@@ -227,10 +245,7 @@ describe('firstRunTourSteps', () => {
     loadTemplate(FROM_IMAGE)
     const steps = await buildSteps(FROM_IMAGE)
     const onCanvas = steps.filter(
-      (s) =>
-        s.kind === 'spotlight' &&
-        s.coachId &&
-        s.coachId !== FIRST_RUN_COACH_IDS.runButton
+      (s) => s.kind === 'spotlight' && s.coachId && !OFF_CANVAS.has(s.coachId)
     )
 
     await buildSteps(FROM_IMAGE)

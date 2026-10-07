@@ -5425,6 +5425,16 @@
         "title": "Run your workflow",
         "body": "Press Run to start generating your result."
       },
+      "agent": {
+        "intro": {
+          "title": "Meet your Comfy Agent",
+          "body": "New: describe an idea and the Agent builds, edits, and runs workflows for you. It sees your canvas and files."
+        },
+        "composer": {
+          "title": "Just ask",
+          "body": "Type what you want to make or change. The Agent works on the workflow you're viewing, so try it on this one."
+        }
+      },
       "result": {
         "generating": {
           "title": "Hang tight",

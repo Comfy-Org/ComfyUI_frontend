@@ -68,11 +68,14 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useAccountPreconditionDialog } from '@/platform/cloud/subscription/composables/useAccountPreconditionDialog'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
+import { FIRST_RUN_COACH_IDS } from '@/platform/onboarding/onboardingTours'
+import { vCoachmark } from '@/platform/onboarding/vCoachmark'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
   adoptSharedOnboardingFlag,
   hasSeenCoach,
+  markCoachSeen,
   resetCoach,
   scopedOnboardingKey,
   trackCoachDeferral
@@ -504,7 +507,16 @@ watch(
   },
   { immediate: true }
 )
-const { activeTour } = storeToRefs(useOnboardingTourStore())
+const { activeTour, step: tourStep } = storeToRefs(useOnboardingTourStore())
+watch(
+  () =>
+    tourStep.value?.kind === 'spotlight' &&
+    tourStep.value.coachId === FIRST_RUN_COACH_IDS.agentPanel,
+  (introducedByFirstRun) => {
+    if (introducedByFirstRun && onboardingKey.value)
+      markCoachSeen(onboardingKey.value)
+  }
+)
 const coachDeferredBy = computed(() =>
   canvasStore.linearMode
     ? 'app_mode'
@@ -1888,6 +1900,7 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
   <AgentGraphActivityBar :canvas="canvasStore.canvas" />
   <div
     id="agent-panel-root"
+    v-coachmark="FIRST_RUN_COACH_IDS.agentPanel"
     class="size-full"
     @dragenter="onPanelDragEnter"
     @dragleave="onPanelDragLeave"
