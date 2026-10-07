@@ -549,8 +549,16 @@ test('@mobile keeps the way back to the Hub in place from one section to the nex
   const settledY = async () => {
     await back.evaluate((link) =>
       Promise.all(
-        link.parentElement?.getAnimations().map((motion) => motion.finished) ??
-          []
+        document
+          .getAnimations()
+          .filter((motion) => {
+            const target =
+              motion.effect instanceof KeyframeEffect
+                ? motion.effect.target
+                : null
+            return target?.contains(link)
+          })
+          .map((motion) => motion.finished)
       )
     )
     return (await back.boundingBox())?.y
