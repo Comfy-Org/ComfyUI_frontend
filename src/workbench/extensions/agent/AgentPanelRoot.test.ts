@@ -1650,6 +1650,11 @@ describe('AgentPanelRoot Agent credit transition notice', () => {
       await screen.findByTestId('agent-credits-exhausted-paywall')
     ).toBeInTheDocument()
     expect(screen.queryByTestId(NOTICE)).not.toBeInTheDocument()
+
+    paywallAgentHasFunds.value = true
+    paywallHasFunds.value = true
+
+    expect(await screen.findByTestId(NOTICE)).toBeInTheDocument()
   })
 
   it('stays dismissed for the current transition episode', async () => {

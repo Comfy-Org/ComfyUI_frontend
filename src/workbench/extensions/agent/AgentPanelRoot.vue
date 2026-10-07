@@ -343,8 +343,8 @@ watch(billingIdentity, () => {
 // Preserve the prior scoped value so the notice represents an observed handoff,
 // while `agentHasFunds` keeps total exhaustion on the existing paywall path.
 watch(
-  [billingIdentity, agentScopedHasFunds, agentHasFunds],
-  ([identity, scopedHasFunds, effectiveHasFunds]) => {
+  [billingIdentity, agentScopedHasFunds],
+  ([identity, scopedHasFunds]) => {
     if (scopedHasFunds === undefined) return
     const previous = agentPanelStore.agentScopedFundsObservation
     agentPanelStore.agentScopedFundsObservation = {
@@ -353,10 +353,9 @@ watch(
     }
     if (previous === null || previous.identity !== identity) return
 
-    if (scopedHasFunds === true || effectiveHasFunds === false) {
+    if (scopedHasFunds === true) {
       agentPanelStore.creditTransitionNoticeIdentity = null
-      if (scopedHasFunds === true)
-        agentPanelStore.reportedCreditTransitionNoticeIdentity = null
+      agentPanelStore.reportedCreditTransitionNoticeIdentity = null
       return
     }
     if (previous.hasFunds === true && scopedHasFunds === false) {
