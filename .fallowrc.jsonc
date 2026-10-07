@@ -51,9 +51,12 @@
     // `icon-[prefix--name]` classes. Only lucide has a dedicated package.
     "@iconify/json",
     "@iconify-json/lucide",
-    // Loaded by config, not imported: oxlint jsPlugin (.oxlintrc.json) and
-    // stylelint customSyntax (.stylelintrc.json) respectively.
+    // Loaded by config, not imported: oxlint jsPlugins (.oxlintrc.json) and
+    // stylelint customSyntax (.stylelintrc.json) respectively. Fallow's oxlint
+    // plugin credits top-level jsPlugins only, not overrides[].jsPlugins.
     "eslint-plugin-playwright",
+    "eslint-plugin-storybook",
+    "eslint-plugin-testing-library",
     "postcss-html",
     // Executed by models-snippets.test.ts inside the generated Node examples.
     "mime-types"

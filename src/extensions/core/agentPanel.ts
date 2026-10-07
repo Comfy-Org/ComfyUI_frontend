@@ -32,10 +32,11 @@ import {
 } from '@/workbench/extensions/agent/crdt/restoreOpMinter'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useExtensionService } from '@/services/extensionService'
-import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
+import { selectedNodeKey } from '@/workbench/extensions/agent/composables/agent/useCanvasSelection'
 import { useDialogStore } from '@/stores/dialogStore'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
-import { isLGraphNode } from '@/utils/litegraphUtil'
 
 /** Upper bound on how long readiness consumers wait for a gate decision. */
 export const GATE_SETTLE_TIMEOUT_MS = 5_000
@@ -108,53 +109,24 @@ export function registerAgentPanelExtension(): void {
     name: 'Comfy.AgentPanel',
     beforeLoadGraph() {
       notifyRestoreMintersBeforeGraphLoad()
-      const agentPanelStore = useAgentPanelStore()
-      if (!agentPanelStore.isVisible || !agentPanelStore.consentAccepted) return
-
-      const nodeSelectionStore = useAgentNodeSelectionStore()
-      nodeSelectionStore.beginWorkflowLoad()
+      useCanvasStore().stopNodePicking()
     },
     afterLoadGraph(app) {
-      const agentPanelStore = useAgentPanelStore()
-      const nodeSelectionStore = useAgentNodeSelectionStore()
-      if (!nodeSelectionStore.isLoadingWorkflow) return
-      if (!agentPanelStore.isVisible || !agentPanelStore.consentAccepted) {
-        nodeSelectionStore.finishWorkflowLoad()
+      const composer = useAgentComposerStore()
+      if (composer.nodeScope !== useWorkflowStore().activeWorkflow?.instanceId)
         return
-      }
-
-      try {
-        const canvas = app.canvas
-        const workflowStore = useWorkflowStore()
-        const workflowPath = workflowStore.activeWorkflow?.path
-        const nodes = nodeSelectionStore
-          .nodeIds(workflowPath)
-          .map((locatorId) => getNodeByLocatorId(app.rootGraph, locatorId))
-          .filter(isLGraphNode)
-        if (nodes.length === 0) {
-          // Nothing was saved for this workflow (e.g. a brand-new, never-saved
-          // tab). Disarm the restore guard directly instead of arming it with
-          // an empty selection - otherwise it stays armed until the *next*
-          // unrelated selection change (such as manually adding a node), which
-          // then gets wrongly adopted as "the restored selection".
-          nodeSelectionStore.finishWorkflowLoad()
-          return
-        }
-        nodeSelectionStore.restoreNodeIds(
-          nodes.map((node) => workflowStore.nodeToNodeLocatorId(node))
-        )
-        canvas.selectItems(nodes)
-      } catch (error) {
-        nodeSelectionStore.finishWorkflowLoad()
-        throw error
-      }
+      composer.setNodes(
+        composer.nodes.flatMap((reference) => {
+          const node = getNodeByLocatorId(
+            app.rootGraph,
+            selectedNodeKey(reference)
+          )
+          return node ? [{ ...reference, title: node.title }] : []
+        })
+      )
     },
     onGraphLoadError() {
       notifyRestoreMintersGraphLoadError()
-      const nodeSelectionStore = useAgentNodeSelectionStore()
-      if (nodeSelectionStore.isLoadingWorkflow) {
-        nodeSelectionStore.finishWorkflowLoad()
-      }
     },
     afterConfigureGraph() {
       notifyRestoreMintersAfterGraphConfigure()
@@ -546,11 +518,7 @@ function setupFlagGate(
       agentPanelStore.enabled = enabled
       loadConsentIfEligible()
       openWhenStartupDecided()
-      if (!enabled) {
-        const nodeSelectionStore = useAgentNodeSelectionStore()
-        if (nodeSelectionStore.isLoadingWorkflow)
-          nodeSelectionStore.finishWorkflowLoad()
-      }
+      if (!enabled) useCanvasStore().stopNodePicking()
     },
     { immediate: true }
   )

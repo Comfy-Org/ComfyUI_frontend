@@ -100,12 +100,18 @@ const { lifecycle, status } = useBillingClient<'lifecycle' | 'status'>(
 )
 
 /** A page handed to a hosted step or a method's own site has not been abandoned. */
-let handedToHostedStep = false
-let payingOnOwnSite = false
+const handedToHostedStep = ref(false)
+const payingOnOwnSite = ref(false)
+
+useEventListener(window, 'pageshow', (event) => {
+  if (!event.persisted) return
+  handedToHostedStep.value = false
+  payingOnOwnSite.value = false
+})
 
 const checkout = useCheckout({
   openUrl: (url) => {
-    handedToHostedStep = true
+    handedToHostedStep.value = true
     window.location.assign(url)
   },
   navigationMode: 'redirect',
@@ -318,8 +324,10 @@ const operationToast = computed(() => {
       }
 })
 
-const actionUrl = computed(
-  () => validateActionUrl(pendingOperation.value?.actionUrl) ?? null
+const actionUrl = computed(() =>
+  handedToHostedStep.value || payingOnOwnSite.value
+    ? null
+    : (validateActionUrl(pendingOperation.value?.actionUrl) ?? null)
 )
 
 const parkedCheckoutRecovery = computed(
@@ -471,7 +479,7 @@ function closeToast(key: string) {
 
 const paying = computed(
   () =>
-    checkout.submitting.value ||
+    (checkout.submitting.value && !pendingOperation.value) ||
     (operationHoldsConfirm.value && !succeeded.value)
 )
 
@@ -537,7 +545,7 @@ async function pay(choice: PaymentChoice) {
   const methodType = methodTypeOf(choice)
   journey.methodSelected(selectedRailOf(choice), methodType)
   const press = journey.submitted()
-  payingOnOwnSite = paysOnOwnSite(methodType)
+  payingOnOwnSite.value = paysOnOwnSite(methodType)
   let result: SubscriptionCommandResult
   try {
     result = await attempts.run(checkoutAttemptOf(quoted, entry.value), () =>
@@ -554,7 +562,7 @@ async function pay(choice: PaymentChoice) {
       )
     )
   } finally {
-    payingOnOwnSite = false
+    payingOnOwnSite.value = false
     journey.submitSettled(press)
   }
   if (result.status === 'ok') return
@@ -593,7 +601,8 @@ function leaveForHost(control: WebReturnControl) {
 }
 
 useEventListener(window, 'pagehide', () => {
-  if (!handedToHostedStep && !payingOnOwnSite) journey.abandoned('page_exit')
+  if (!handedToHostedStep.value && !payingOnOwnSite.value)
+    journey.abandoned('page_exit')
 })
 </script>
 

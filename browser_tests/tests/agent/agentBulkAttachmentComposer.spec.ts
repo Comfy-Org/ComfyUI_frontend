@@ -8,7 +8,7 @@ const ATTACHMENT_COUNT = 36
 
 // Regression: https://linear.app/comfyorg/issue/FE-3202
 test.describe('Agent composer bulk attachments', { tag: '@cloud' }, () => {
-  test('keeps a visible send path after attaching dozens of images', async ({
+  test('keeps a visible send path and a reachable chip list after attaching dozens of images', async ({
     agentPanel,
     comfyPage,
     postedMessages
@@ -45,6 +45,20 @@ test.describe('Agent composer bulk attachments', { tag: '@cloud' }, () => {
     // ratio: 1 rather than the default ratio: 0 — a Send button clipped down to
     // a sliver is the FE-3202 symptom, and it satisfies ratio: 0.
     await expect(agentPanel.sendButton).toBeInViewport({ ratio: 1 })
+
+    // The cap is only a fix if what it hides stays reachable: `overflow-hidden`
+    // in its place strands 32 of the 36 chips yet satisfies every other
+    // assertion here, so this scrolls to the last chip rather than asserting a
+    // class. The baseline keeps the wheel the only thing that can move the list.
+    const scrollTop = () =>
+      agentPanel.composerAssetSection.evaluate((element) => element.scrollTop)
+    await expect.poll(scrollTop).toBe(0)
+    await agentPanel.composerAssetSection.hover()
+    await page.mouse.wheel(0, 2000)
+    await expect.poll(scrollTop).toBeGreaterThan(0)
+    await expect(
+      agentPanel.attachmentChip(`reference-${ATTACHMENT_COUNT}.png`)
+    ).toBeInViewport({ ratio: 1 })
 
     // Click, not Enter: the keyboard path posts even when the button has been
     // pushed out of reach, so only a real click proves Send is usable.

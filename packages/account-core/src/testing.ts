@@ -76,11 +76,13 @@ function sessionBody(user: WebSessionUser, now: () => number) {
       email: user.email,
       name: user.name,
       email_verified: user.emailVerified,
-      sign_in_provider: user.signInProvider
+      sign_in_provider: user.signInProvider,
+      has_personal_workspace: user.hasPersonalWorkspace
     },
     csrf_token: FAKE_CSRF_TOKEN,
     expires_at: new Date(now() + DAY_MS).toISOString(),
-    absolute_expires_at: new Date(now() + 7 * DAY_MS).toISOString()
+    absolute_expires_at: new Date(now() + 7 * DAY_MS).toISOString(),
+    has_personal_workspace: true
   }
 }
 
