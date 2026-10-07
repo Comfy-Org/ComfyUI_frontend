@@ -10,7 +10,6 @@ import { toNodeId } from '@/types/nodeId'
 
 import { useCompositorPsdDownload } from './useCompositorPsdDownload'
 
-const toastAdd = vi.hoisted(() => vi.fn())
 const { buildSessionPsdBlob, downloadBlob, loadCompositorSession } = vi.hoisted(
   () => ({
     buildSessionPsdBlob: vi.fn(async () => new Blob(['psd'])),
@@ -33,23 +32,6 @@ vi.mock(
   })
 )
 vi.mock(import('@/base/common/downloadUtil'), () => ({ downloadBlob }))
-beforeEach(() => {
-  vi.mocked(useToast().success).mockImplementation((...args: unknown[]) =>
-    toastAdd('success', ...args)
-  )
-  vi.mocked(useToast().error).mockImplementation((...args: unknown[]) =>
-    toastAdd('error', ...args)
-  )
-  vi.mocked(useToast().info).mockImplementation((...args: unknown[]) =>
-    toastAdd('info', ...args)
-  )
-  vi.mocked(useToast().warning).mockImplementation((...args: unknown[]) =>
-    toastAdd('warning', ...args)
-  )
-  vi.mocked(useToast().loading).mockImplementation((...args: unknown[]) =>
-    toastAdd('loading', ...args)
-  )
-})
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -116,7 +98,7 @@ describe('useCompositorPsdDownload', () => {
     )
     expect(session.dispose).toHaveBeenCalledTimes(1)
     expect(exporting.value).toBe(false)
-    expect(vi.mocked(toastAdd)).not.toHaveBeenCalled()
+    expect(useToast().toasts).toEqual([])
   })
 
   it('reports an error and still disposes when WebGL is unavailable', async () => {
@@ -128,11 +110,12 @@ describe('useCompositorPsdDownload', () => {
     await downloadPsd(node)
 
     expect(downloadBlob).not.toHaveBeenCalled()
-    expect(toastAdd).toHaveBeenCalledWith(
-      'error',
-      expect.any(String),
-      expect.objectContaining({ description: 'layerEditor.webglUnavailable' })
-    )
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        description: 'layerEditor.webglUnavailable',
+        kind: 'error'
+      })
+    ])
     expect(session.dispose).toHaveBeenCalledTimes(1)
   })
 
@@ -147,7 +130,12 @@ describe('useCompositorPsdDownload', () => {
 
     expect(buildSessionPsdBlob).not.toHaveBeenCalled()
     expect(downloadBlob).not.toHaveBeenCalled()
-    expect(vi.mocked(toastAdd)).toHaveBeenCalledTimes(1)
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        description: 'layerEditor.exportPsdFailed',
+        kind: 'error'
+      })
+    ])
     expect(session.dispose).toHaveBeenCalledTimes(1)
   })
 
@@ -161,7 +149,12 @@ describe('useCompositorPsdDownload', () => {
     await downloadPsd(node)
 
     expect(downloadBlob).not.toHaveBeenCalled()
-    expect(vi.mocked(toastAdd)).toHaveBeenCalledTimes(1)
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        description: 'layerEditor.exportPsdFailed',
+        kind: 'error'
+      })
+    ])
     expect(session.dispose).toHaveBeenCalledTimes(1)
     expect(exporting.value).toBe(false)
   })
@@ -174,7 +167,12 @@ describe('useCompositorPsdDownload', () => {
     await downloadPsd(node)
 
     expect(downloadBlob).not.toHaveBeenCalled()
-    expect(vi.mocked(toastAdd)).toHaveBeenCalledTimes(1)
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        description: 'layerEditor.exportPsdFailed',
+        kind: 'error'
+      })
+    ])
     expect(exporting.value).toBe(false)
   })
 

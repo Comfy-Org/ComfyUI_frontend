@@ -53,4 +53,14 @@ describe('AssetExportProgressDialog', () => {
 
     expect(screen.getByText('All exports completed')).toBeVisible()
   })
+
+  it('renders only while an export is tracked', async () => {
+    render(AssetExportProgressDialog, { global: { plugins: [i18n] } })
+    expect(screen.queryByRole('button', { name: 'Expand' })).toBeNull()
+
+    useAssetExportStore().trackExport('task-export-1')
+    await nextTick()
+
+    expect(screen.getByRole('button', { name: 'Expand' })).toBeVisible()
+  })
 })

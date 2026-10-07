@@ -46,6 +46,7 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import Button from '@/components/ui/button/Button.vue'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogStore } from '@/stores/dialogStore'
+import { getErrorMessage } from '@/utils/errorUtil'
 
 const { inviteId } = defineProps<{
   inviteId: string
@@ -70,7 +71,7 @@ async function onRevoke() {
     dialogStore.closeDialog({ key: 'revoke-invite' })
   } catch (error) {
     toast.error(t('g.error'), {
-      description: error instanceof Error ? error.message : undefined
+      description: getErrorMessage(error)
     })
   } finally {
     loading.value = false

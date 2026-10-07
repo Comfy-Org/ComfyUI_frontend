@@ -2,6 +2,7 @@ import { t } from '@/i18n'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import { getErrorMessage } from '@/utils/errorUtil'
 
 class Load3dUtils {
   static async uploadTempImage(
@@ -26,9 +27,9 @@ class Load3dUtils {
     })
 
     if (resp.status !== 200) {
-      const err = `Error uploading temp file: ${resp.status} - ${resp.statusText}`
-      useToast().warning(err)
-      throw new Error(err)
+      const reason = `${resp.status} - ${resp.statusText}`
+      useToast().warning(t('g.uploadFailed', { reason }))
+      throw new Error(`Error uploading temp file: ${reason}`)
     }
 
     return await resp.json()
@@ -75,14 +76,18 @@ class Load3dUtils {
 
         uploadPath = path
       } else {
-        useToast().warning(resp.status + ' - ' + resp.statusText)
+        useToast().warning(
+          t('g.uploadFailed', {
+            reason: `${resp.status} - ${resp.statusText}`
+          })
+        )
       }
     } catch (error) {
       console.error('[Load3D] uploadFile: exception', error)
       useToast().warning(
-        error instanceof Error
-          ? error.message
-          : t('toastMessages.fileUploadFailed')
+        t('g.uploadFailed', {
+          reason: getErrorMessage(error) ?? t('g.unknownError')
+        })
       )
     }
 

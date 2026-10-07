@@ -1,6 +1,7 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
@@ -228,7 +229,10 @@ describe('Comfy.UploadAudio AUDIOUPLOAD widget', () => {
 
     expect(node.isUploading).toBe(false)
     expect(audioWidget.value).toBe('previous.mp3')
-    expect(useToast().warning).toHaveBeenCalledWith('500 - Server Error')
+    expect(useToast().warning).toHaveBeenCalledWith('g.uploadFailed')
+    expect(t).toHaveBeenCalledWith('g.uploadFailed', {
+      reason: '500 - Server Error'
+    })
     expect(node.graph?.setDirtyCanvas).toHaveBeenCalledWith(true)
   })
 
@@ -245,7 +249,8 @@ describe('Comfy.UploadAudio AUDIOUPLOAD widget', () => {
 
     expect(node.isUploading).toBe(false)
     expect(audioWidget.value).toBe('previous.mp3')
-    expect(useToast().warning).toHaveBeenCalledWith(error.message)
+    expect(useToast().warning).toHaveBeenCalledWith('g.uploadFailed')
+    expect(t).toHaveBeenCalledWith('g.uploadFailed', { reason: error.message })
     expect(node.graph?.setDirtyCanvas).toHaveBeenCalledWith(true)
   })
 

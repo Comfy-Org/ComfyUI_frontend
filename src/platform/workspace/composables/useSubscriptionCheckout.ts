@@ -25,6 +25,7 @@ import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFai
 import { createBillingPortalReporter } from '@/platform/telemetry/utils/billingPortalTelemetry'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
+import { getErrorMessage } from '@/utils/errorUtil'
 import type {
   Plan,
   PreviewSubscribeOptions,
@@ -892,8 +893,8 @@ export function useSubscriptionCheckout(
         planSlug = getApiPlanSlug(tierKey, billingCycle)
       }
       if (!planSlug) {
-        toast.error('Unable to subscribe', {
-          description: 'This plan is not available'
+        toast.error(t('subscription.unableToSubscribe'), {
+          description: t('subscription.planNotAvailable')
         })
         return
       }
@@ -929,8 +930,8 @@ export function useSubscriptionCheckout(
             failure_category: 'unknown'
           })
         }
-        toast.error('Unable to subscribe', {
-          description: response?.reason || 'This plan is not available'
+        toast.error(t('subscription.unableToSubscribe'), {
+          description: response?.reason || t('subscription.planNotAvailable')
         })
         return
       }
@@ -949,12 +950,9 @@ export function useSubscriptionCheckout(
           failure_category: categorizeBillingApiError(error)
         })
       }
-      const message =
-        error instanceof Error
-          ? error.message
-          : 'Failed to load subscription preview'
-      toast.error('Error', {
-        description: message
+      toast.error(t('g.error'), {
+        description:
+          getErrorMessage(error) ?? t('subscription.previewLoadFailed')
       })
     } finally {
       isLoadingPreview.value = false
@@ -1058,9 +1056,8 @@ export function useSubscriptionCheckout(
       }
       toast.error(t('subscription.teamPlan.name'), {
         description:
-          previewError instanceof Error
-            ? previewError.message
-            : response?.reason || t('subscription.subscribeFailed')
+          getErrorMessage(previewError) ??
+          (response?.reason || t('subscription.subscribeFailed'))
       })
       checkoutStep.value = 'pricing'
       selectedTeamCheckout.value = null
@@ -1110,9 +1107,8 @@ export function useSubscriptionCheckout(
     }
     toast.error(t('subscription.teamPlan.name'), {
       description:
-        previewError instanceof Error
-          ? previewError.message
-          : response?.reason || t('subscription.subscribeFailed')
+        getErrorMessage(previewError) ??
+        (response?.reason || t('subscription.subscribeFailed'))
     })
     checkoutStep.value = 'pricing'
     selectedTeamCheckout.value = null
@@ -1271,10 +1267,7 @@ export function useSubscriptionCheckout(
   function showSubscribeError(error: unknown) {
     attemptErrorToasts.push(
       toast.error(t('g.error'), {
-        description:
-          error instanceof Error
-            ? error.message
-            : t('subscription.subscribeFailed')
+        description: getErrorMessage(error) ?? t('subscription.subscribeFailed')
       })
     )
   }
@@ -1882,8 +1875,6 @@ export function useSubscriptionCheckout(
       toast.success(t('subscription.resubscribeSuccess'), { duration: 5000 })
       emit('close', true)
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Failed to resubscribe'
       telemetry?.trackBillingEvent({
         operation: 'resubscribe',
         stage: 'failed',
@@ -1895,8 +1886,9 @@ export function useSubscriptionCheckout(
           duration_ms: Date.now() - startedAt
         })
       })
-      toast.error('Error', {
-        description: message
+      toast.error(t('g.error'), {
+        description:
+          getErrorMessage(error) ?? t('subscription.resubscribeFailed')
       })
     } finally {
       isResubscribing.value = false

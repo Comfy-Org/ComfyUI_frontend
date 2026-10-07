@@ -11,9 +11,7 @@ import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 
 import ModelImportProgressDialog from './ModelImportProgressDialog.vue'
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 const i18n = createI18n({
   legacy: false,
@@ -52,7 +50,6 @@ describe('ModelImportProgressDialog cancellation', () => {
   it('reports cancellation failures and shows the error toast', async () => {
     const user = userEvent.setup()
     const store = renderDialog()
-    const errorToast = vi.spyOn(useToast(), 'error')
     vi.spyOn(console, 'error').mockImplementation(() => {})
     const error = new Error('Cancellation unavailable')
     vi.spyOn(store, 'cancelDownload').mockResolvedValue({ ok: false, error })
@@ -66,7 +63,7 @@ describe('ModelImportProgressDialog cancellation', () => {
         errorType: 'asset_download_cancellation_failure',
         logToConsole: false
       })
-      expect(errorToast).toHaveBeenCalledWith('Error', {
+      expect(useToast().error).toHaveBeenCalledWith('Error', {
         description: 'Cancellation unavailable'
       })
     })
@@ -122,4 +119,18 @@ describe('ModelImportProgressDialog cancellation', () => {
 
     expect(store.hasDownloads).toBe(false)
   })
+})
+
+it('renders only while a download is tracked', async () => {
+  render(ModelImportProgressDialog, { global: { plugins: [i18n] } })
+  expect(screen.queryByRole('button', { name: 'Expand' })).toBeNull()
+
+  useAssetDownloadStore().trackDownload(
+    'task-123',
+    'checkpoints',
+    'model.safetensors'
+  )
+  await nextTick()
+
+  expect(screen.getByRole('button', { name: 'Expand' })).toBeVisible()
 })

@@ -1,5 +1,4 @@
 import { useCommandStore } from '@/stores/commandStore'
-import { useToast } from '@/components/ui/toast/toastStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -13,19 +12,6 @@ import { StorageKeys } from '../base/storageKeys'
 import * as storageIO from '../base/storageIO'
 import { useWorkflowDraftStoreV2 } from '../stores/workflowDraftStoreV2'
 import { useWorkflowPersistenceV2 } from './useWorkflowPersistenceV2'
-
-const mockToastAdd = vi.fn()
-vi.mock<unknown>(
-  import('primevue'), // oxlint-disable-line comfy/no-primevue-imports
-  () => ({
-    useToast: () => ({
-      success: mockToastAdd,
-      error: mockToastAdd,
-      info: mockToastAdd,
-      warning: mockToastAdd
-    })
-  })
-)
 
 vi.mock(
   import('@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'),
@@ -151,21 +137,6 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
 }))
 
 type WorkflowPersistence = ReturnType<typeof useWorkflowPersistenceV2>
-
-beforeEach(() => {
-  vi.mocked(useToast().success).mockImplementation((...args: unknown[]) =>
-    mockToastAdd('success', ...args)
-  )
-  vi.mocked(useToast().error).mockImplementation((...args: unknown[]) =>
-    mockToastAdd('error', ...args)
-  )
-  vi.mocked(useToast().info).mockImplementation((...args: unknown[]) =>
-    mockToastAdd('info', ...args)
-  )
-  vi.mocked(useToast().warning).mockImplementation((...args: unknown[]) =>
-    mockToastAdd('warning', ...args)
-  )
-})
 
 beforeEach(() => {
   vi.mocked(useCommandStore().execute).mockResolvedValue(undefined)

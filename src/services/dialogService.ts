@@ -26,6 +26,7 @@ import type { RunErrorMessageSource } from '@/platform/errorCatalog/types'
 import type { PromptError } from '@/platform/remote/comfyui/types'
 import { PromptExecutionError } from '@/scripts/api'
 import { tryExtractValidationError } from '@/utils/executionErrorUtil'
+import { getErrorMessage } from '@/utils/errorUtil'
 import type {
   DialogComponentProps,
   ShowDialogOptions
@@ -947,8 +948,7 @@ export const useDialogService = () => {
       }
     } catch (error) {
       useToast().error(t('subscription.downgrade.failed'), {
-        description:
-          error instanceof Error ? error.message : t('g.unknownError')
+        description: getErrorMessage(error) ?? t('g.unknownError')
       })
       return null
     }

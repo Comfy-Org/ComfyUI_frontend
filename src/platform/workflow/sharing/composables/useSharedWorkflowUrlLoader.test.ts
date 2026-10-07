@@ -42,8 +42,6 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
   }
 }))
 
-const mockToastAdd = vi.fn()
-
 const apps: App<Element>[] = []
 
 function useSharedWorkflowUrlLoader() {
@@ -157,21 +155,6 @@ function createDeferred() {
   })
   return { promise, resolve }
 }
-
-beforeEach(() => {
-  vi.mocked(useToast().success).mockImplementation((...args: unknown[]) =>
-    mockToastAdd('success', ...args)
-  )
-  vi.mocked(useToast().error).mockImplementation((...args: unknown[]) =>
-    mockToastAdd('error', ...args)
-  )
-  vi.mocked(useToast().info).mockImplementation((...args: unknown[]) =>
-    mockToastAdd('info', ...args)
-  )
-  vi.mocked(useToast().warning).mockImplementation((...args: unknown[]) =>
-    mockToastAdd('warning', ...args)
-  )
-})
 
 beforeEach(() => {
   Object.assign(useDialogStore(), { dialogStack: [] })
@@ -459,10 +442,9 @@ describe('useSharedWorkflowUrlLoader', () => {
       'Test Workflow',
       { openSource: 'shared_url', shareId: 'share-id-1' }
     )
-    expect(vi.mocked(useToast().error)).toHaveBeenCalledWith(
-      expect.any(String),
-      { description: 'Failed to import workflow assets' }
-    )
+    expect(useToast().error).toHaveBeenCalledWith(expect.any(String), {
+      description: 'Failed to import workflow assets'
+    })
   })
 
   it('clears share intent when graph load fails after importing assets', async () => {
@@ -565,7 +547,7 @@ describe('useSharedWorkflowUrlLoader', () => {
 
     expect(loaded).toBe('failed')
     expect(mockShowLayoutDialog).not.toHaveBeenCalled()
-    expect(vi.mocked(useToast().error)).toHaveBeenCalledWith('Error', {
+    expect(useToast().error).toHaveBeenCalledWith('Error', {
       description: 'Failed to load shared workflow'
     })
     expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })

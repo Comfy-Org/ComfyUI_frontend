@@ -7,14 +7,6 @@ import { useAudioService } from '@/services/audioService'
 const mockRegister = vi.hoisted(() => vi.fn())
 const mockConnect = vi.hoisted(() => vi.fn())
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: { canvas: {}, rootGraph: {} }
-}))
-
-const mockToastStore = vi.hoisted(() => ({
-  warning: vi.fn()
-}))
-
 vi.mock(import('extendable-media-recorder'), () => ({
   register: mockRegister
 }))
@@ -24,10 +16,6 @@ vi.mock(import('extendable-media-recorder-wav-encoder'), () => ({
 }))
 
 vi.mock(import('@/scripts/api'))
-
-beforeEach(() => {
-  vi.mocked(useToast().warning).mockImplementation(mockToastStore.warning)
-})
 
 describe('useAudioService', () => {
   let service: ReturnType<typeof useAudioService>
@@ -207,9 +195,12 @@ describe('useAudioService', () => {
         'Error uploading temp file: 500 - Internal Server Error'
       )
 
-      expect(mockToastStore.warning).toHaveBeenCalledWith(
-        'Error uploading temp file: 500 - Internal Server Error'
-      )
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({
+          kind: 'warning',
+          title: 'Upload failed: 500 - Internal Server Error'
+        })
+      ])
     })
 
     it('should handle network errors', async () => {
@@ -240,11 +231,12 @@ describe('useAudioService', () => {
           `Error uploading temp file: ${testCase.status} - ${testCase.statusText}`
         )
 
-        expect(mockToastStore.warning).toHaveBeenCalledWith(
-          `Error uploading temp file: ${testCase.status} - ${testCase.statusText}`
+        expect(useToast().toasts.at(-1)).toEqual(
+          expect.objectContaining({
+            kind: 'warning',
+            title: `Upload failed: ${testCase.status} - ${testCase.statusText}`
+          })
         )
-
-        mockToastStore.warning.mockClear()
       }
     })
 

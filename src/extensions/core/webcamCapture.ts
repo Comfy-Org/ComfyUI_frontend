@@ -124,9 +124,8 @@ app.registerExtension({
       if (captureOnQueue.value) {
         capture()
       } else if (!node.imgs?.length) {
-        const err = `No webcam image captured`
-        useToast().warning(err)
-        throw new Error(err)
+        useToast().warning(t('toastMessages.noWebcamImageCaptured'))
+        throw new Error('No webcam image captured')
       }
 
       // Upload image to temp storage
@@ -146,9 +145,9 @@ app.registerExtension({
         body
       })
       if (resp.status !== 200) {
-        const err = `Error uploading camera image: ${resp.status} - ${resp.statusText}`
-        useToast().warning(err)
-        throw new Error(err)
+        const reason = `${resp.status} - ${resp.statusText}`
+        useToast().warning(t('g.uploadFailed', { reason }))
+        throw new Error(`Error uploading camera image: ${reason}`)
       }
       const data = await resp.json()
       const serverName = data.name || name

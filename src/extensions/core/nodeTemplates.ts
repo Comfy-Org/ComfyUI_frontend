@@ -7,6 +7,7 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { useDialogService } from '@/services/dialogService'
 import type { ComfyExtension } from '@/types/comfy'
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
+import { getErrorMessage } from '@/utils/errorUtil'
 
 import { api } from '../../scripts/api'
 import { app } from '../../scripts/app'
@@ -125,7 +126,9 @@ class ManageTemplates extends ComfyDialog {
       await api.storeUserData(file, templates, { stringify: false })
     } catch (error) {
       console.error(error)
-      useToast().warning(error instanceof Error ? error.message : String(error))
+      useToast().warning(t('toastMessages.failedToSaveNodeTemplates'), {
+        description: getErrorMessage(error) ?? t('g.unknownError')
+      })
     }
   }
 

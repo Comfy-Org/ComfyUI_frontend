@@ -13,8 +13,6 @@ import ShareWorkflowDialogContent from '@/platform/workflow/sharing/components/S
 
 vi.mock(import('@/platform/telemetry'))
 
-const mockToast = vi.hoisted(() => ({ add: vi.fn() }))
-
 vi.mock(import('@formkit/auto-animate/vue'), () => ({
   vAutoAnimate: {}
 }))
@@ -112,21 +110,6 @@ const i18n = createI18n({
 async function flushPromises() {
   await new Promise((r) => setTimeout(r, 0))
 }
-
-beforeEach(() => {
-  vi.mocked(useToast().success).mockImplementation((...args: unknown[]) =>
-    mockToast.add('success', ...args)
-  )
-  vi.mocked(useToast().error).mockImplementation((...args: unknown[]) =>
-    mockToast.add('error', ...args)
-  )
-  vi.mocked(useToast().info).mockImplementation((...args: unknown[]) =>
-    mockToast.add('info', ...args)
-  )
-  vi.mocked(useToast().warning).mockImplementation((...args: unknown[]) =>
-    mockToast.add('warning', ...args)
-  )
-})
 
 describe('ShareWorkflowDialogContent', () => {
   const onClose = vi.fn()
@@ -477,7 +460,7 @@ describe('ShareWorkflowDialogContent', () => {
       await flushPromises()
 
       expect(container.textContent).toContain('Create link')
-      expect(vi.mocked(useToast().error)).toHaveBeenCalledWith(
+      expect(useToast().error).toHaveBeenCalledWith(
         'Failed to load publish status'
       )
     })
@@ -497,7 +480,7 @@ describe('ShareWorkflowDialogContent', () => {
       await flushPromises()
 
       expect(container.textContent).not.toContain('Anyone with this link...')
-      expect(vi.mocked(useToast().error)).toHaveBeenCalledWith('Error', {
+      expect(useToast().error).toHaveBeenCalledWith('Error', {
         description: 'Publish failed'
       })
     })

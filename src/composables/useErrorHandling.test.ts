@@ -332,8 +332,7 @@ describe('useErrorHandling', () => {
         const wrapped = errorHandler.wrapWithErrorHandlingAsync(action)
         await wrapped()
 
-        const toastStore = useToast()
-        expect(toastStore.error).toHaveBeenCalledWith(t('g.error'), {
+        expect(useToast().error).toHaveBeenCalledWith(t('g.error'), {
           description: t('g.disconnectedFromBackend')
         })
       })
@@ -346,8 +345,7 @@ describe('useErrorHandling', () => {
         const wrapped = errorHandler.wrapWithErrorHandlingAsync(action)
         await wrapped()
 
-        const toastStore = useToast()
-        expect(toastStore.error).toHaveBeenCalledWith(t('g.error'), {
+        expect(useToast().error).toHaveBeenCalledWith(t('g.error'), {
           description: 'Failed to fetch'
         })
       })

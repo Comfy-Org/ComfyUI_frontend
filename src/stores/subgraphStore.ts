@@ -29,6 +29,7 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import type { UserFile } from '@/stores/userFileStore'
 import { BLUEPRINT_TYPE_PREFIX } from '@/utils/blueprintUtils'
+import { getErrorMessage } from '@/utils/errorUtil'
 
 async function confirmOverwrite(name: string): Promise<boolean | null> {
   return await useDialogService().confirm({
@@ -265,7 +266,12 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     errors.forEach((e) => console.error('Failed to load subgraph blueprint', e))
     if (errors.length > 0) {
       useToast().error(t('subgraphStore.loadFailure'), {
-        description: errors.length > 3 ? `x${errors.length}` : `${errors}`
+        description:
+          errors.length > 3
+            ? `x${errors.length}`
+            : errors
+                .map((e) => getErrorMessage(e) ?? t('g.unknownError'))
+                .join(', ')
       })
     }
   }

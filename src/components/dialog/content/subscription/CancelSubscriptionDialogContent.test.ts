@@ -649,10 +649,9 @@ describe('CancelSubscriptionDialogContent', () => {
       await waitFor(() =>
         expect(useDialogStore().closeDialog).toHaveBeenCalled()
       )
-      expect(useToast().toasts).toHaveLength(1)
-      expect(useToast().toasts).toContainEqual(
+      expect(useToast().toasts).toEqual([
         expect.objectContaining({ kind: 'warning' })
-      )
+      ])
       expect(confirmedCalls()).toHaveLength(0)
     })
 
@@ -685,12 +684,11 @@ describe('CancelSubscriptionDialogContent', () => {
       resolvePortal()
 
       await waitFor(() =>
-        expect(useToast().toasts).toContainEqual(
+        expect(useToast().toasts).toEqual([
           expect.objectContaining({ kind: 'success' })
-        )
+        ])
       )
       expect(confirmedCalls()).toHaveLength(1)
-      expect(useToast().toasts).toHaveLength(1)
       expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
         key: 'cancel-subscription'
       })
@@ -736,7 +734,9 @@ describe('CancelSubscriptionDialogContent', () => {
       await nextTick()
 
       expect(confirmedCalls()).toHaveLength(1)
-      expect(useToast().toasts).toHaveLength(1)
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({ kind: 'success' })
+      ])
     })
 
     it('refreshes status on window focus while awaiting Stripe', async () => {
@@ -851,11 +851,10 @@ describe('CancelSubscriptionDialogContent', () => {
       resolvePortal()
 
       await waitFor(() =>
-        expect(useToast().toasts).toContainEqual(
+        expect(useToast().toasts).toEqual([
           expect.objectContaining({ kind: 'warning' })
-        )
+        ])
       )
-      expect(useToast().toasts).toHaveLength(1)
       expect(terminalEvents()).toHaveLength(0)
     })
 

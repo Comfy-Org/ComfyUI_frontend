@@ -1,5 +1,4 @@
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useToast } from '@/components/ui/toast/toastStore'
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -20,7 +19,6 @@ const mockUploadFile = vi.hoisted(() => vi.fn())
 const mockSettingSet = vi.hoisted(() =>
   vi.fn<ReturnType<typeof useSettingStore>['set']>(async () => undefined)
 )
-const mockToastAdd = vi.hoisted(() => vi.fn())
 const mockPersistUserKeybindings = vi.hoisted(() =>
   vi.fn(async () => undefined)
 )
@@ -87,10 +85,6 @@ beforeEach(() => {
 beforeEach(() => {
   vi.mocked(useSettingStore().set).mockImplementation(mockSettingSet)
   vi.mocked(useSettingStore().get).mockImplementation(() => 'default')
-  vi.mocked(useToast().success).mockImplementation(mockToastAdd)
-  vi.mocked(useToast().error).mockImplementation(mockToastAdd)
-  vi.mocked(useToast().info).mockImplementation(mockToastAdd)
-  vi.mocked(useToast().warning).mockImplementation(mockToastAdd)
 })
 
 describe('useKeybindingPresetService', () => {

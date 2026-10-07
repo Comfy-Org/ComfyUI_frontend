@@ -16,7 +16,6 @@ import { buildInviteLink } from '@/platform/workspace/utils/inviteLinks'
 
 import type { WorkspacePendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
 
-const mockToastAdd = vi.hoisted(() => vi.fn())
 const mockMaxSeats = ref<number | null>(73)
 const mockOccupiedSeats = ref<number | null>(0)
 
@@ -64,21 +63,6 @@ function emailInput() {
 function inviteButton() {
   return screen.getByRole('button', { name: 'workspacePanel.invite' })
 }
-
-beforeEach(() => {
-  vi.mocked(useToast().success).mockImplementation((...args: unknown[]) =>
-    mockToastAdd('success', ...args)
-  )
-  vi.mocked(useToast().error).mockImplementation((...args: unknown[]) =>
-    mockToastAdd('error', ...args)
-  )
-  vi.mocked(useToast().info).mockImplementation((...args: unknown[]) =>
-    mockToastAdd('info', ...args)
-  )
-  vi.mocked(useToast().warning).mockImplementation((...args: unknown[]) =>
-    mockToastAdd('warning', ...args)
-  )
-})
 
 beforeEach(() => {
   const billing = useBillingContext()
@@ -239,7 +223,12 @@ describe('InviteMemberDialogContent', () => {
     )
     expect(screen.getByText('fail@x.com')).toBeInTheDocument()
     expect(screen.queryByText('ok@x.com')).not.toBeInTheDocument()
-    expect(vi.mocked(useToast().error)).toHaveBeenCalled()
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        kind: 'error',
+        title: 'workspacePanel.inviteMemberDialog.failedCount'
+      })
+    ])
     expect(useTelemetry()?.trackWorkspaceInviteSent).toHaveBeenCalledWith({
       source: 'settings_members',
       count: 1
@@ -264,7 +253,12 @@ describe('InviteMemberDialogContent', () => {
     ).not.toBeInTheDocument()
     expect(screen.getByText('a@b.com')).toBeInTheDocument()
     expect(screen.getByText('c@d.com')).toBeInTheDocument()
-    expect(vi.mocked(useToast().error)).toHaveBeenCalled()
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        kind: 'error',
+        title: 'workspacePanel.inviteMemberDialog.failedCount'
+      })
+    ])
     expect(useTelemetry()?.trackWorkspaceInviteSent).not.toHaveBeenCalled()
     expect(inviteButton()).toBeEnabled()
   })

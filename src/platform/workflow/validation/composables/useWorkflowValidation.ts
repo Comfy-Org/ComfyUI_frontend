@@ -1,5 +1,6 @@
 import type { ISerialisedGraph } from '@/lib/litegraph/src/types/serialisation'
 import { useToast } from '@/components/ui/toast/toastStore'
+import { t } from '@/i18n'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { fixBadLinks } from '@/utils/linkFixer'
@@ -31,7 +32,7 @@ export function useWorkflowValidation() {
     })
 
     if (!silent && logs.length > 0) {
-      toast.warning('Workflow Validation', {
+      toast.warning(t('toastMessages.workflowValidationTitle'), {
         description: logs.join('\n')
       })
     }
@@ -39,8 +40,11 @@ export function useWorkflowValidation() {
     // If links were fixed, notify the user
     if (linkValidation.fixed) {
       if (!silent) {
-        toast.success('Workflow Links Fixed', {
-          description: `Fixed ${linkValidation.patched} node connections and removed ${linkValidation.deleted} invalid links.`
+        toast.success(t('toastMessages.workflowLinksFixedTitle'), {
+          description: t('toastMessages.workflowLinksFixed', {
+            patched: linkValidation.patched,
+            deleted: linkValidation.deleted
+          })
         })
       }
     }

@@ -51,6 +51,7 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogStore } from '@/stores/dialogStore'
+import { getErrorMessage } from '@/utils/errorUtil'
 
 const { workspaceId, workspaceName } = defineProps<{
   workspaceId?: string
@@ -77,7 +78,7 @@ async function onDelete() {
   } catch (error) {
     console.error('[DeleteWorkspaceDialog] Failed to delete workspace:', error)
     toast.error(t('workspacePanel.toast.failedToDeleteWorkspace'), {
-      description: error instanceof Error ? error.message : t('g.unknownError')
+      description: getErrorMessage(error) ?? t('g.unknownError')
     })
   } finally {
     loading.value = false

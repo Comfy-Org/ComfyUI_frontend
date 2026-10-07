@@ -716,7 +716,7 @@ test.describe('Assets sidebar - context menu', () => {
     const cards = tab.assetCards
     await expect.poll(() => cards.count()).toBeGreaterThanOrEqual(2)
 
-    await tab.dismissToasts()
+    await comfyPage.toast.closeToasts()
 
     // useKeyModifier('Control') needs keyboard events, not click modifiers.
     await cards.first().click()

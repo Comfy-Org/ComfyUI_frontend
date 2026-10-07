@@ -406,12 +406,6 @@ describe('useWorkflowService', () => {
         set: vi.fn()
       })
     }))
-
-    vi.mock('@/components/ui/toast/toastStore', () => ({
-      useToast: () => ({
-        error: vi.fn()
-      })
-    }))
   })
 
   test('should save workflow with prompt', async () => {

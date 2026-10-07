@@ -13,10 +13,6 @@ import {
 // Mock dependencies that are not stores
 vi.mock(import('@/i18n'))
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: { canvas: {}, rootGraph: {} }
-}))
-
 const distribution = vi.hoisted(() => ({ isCloud: false }))
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
@@ -280,7 +276,7 @@ describe('useManagerState', () => {
       expect(managerState.isManagerEnabled.value).toBe(false)
     })
 
-    it('fires warn-severity toast exactly once across multiple consumers', () => {
+    it('fires the warning toast exactly once across multiple consumers', () => {
       systemStatsStore.$patch({
         systemStats: enabledManagerStats(),
         isInitialized: true
@@ -294,11 +290,14 @@ describe('useManagerState', () => {
       useManagerState()
       useManagerState()
 
-      expect(useToast().warning).toHaveBeenCalledTimes(1)
-      expect(useToast().warning).toHaveBeenCalledWith(
-        'manager.incompatibleVersion.title',
-        { description: 'manager.incompatibleVersion.message', duration: 15000 }
-      )
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({
+          description: 'manager.incompatibleVersion.message',
+          duration: 15000,
+          kind: 'warning',
+          title: 'manager.incompatibleVersion.title'
+        })
+      ])
     })
 
     it('openManager on INCOMPATIBLE re-emits the upgrade toast without settings redirect', async () => {
@@ -334,7 +333,7 @@ describe('useManagerState', () => {
       mockServerFeatures({ supports_v4: true, supports_csrf_post: true })
 
       useManagerState()
-      expect(useToast().warning).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
     })
   })
 

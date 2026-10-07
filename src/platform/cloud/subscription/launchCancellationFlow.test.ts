@@ -355,7 +355,7 @@ describe('launchCancellationFlow', () => {
         error_message: 'provider unavailable'
       })
     )
-    expect(useToast().error).not.toHaveBeenCalled()
+    expect(useToast().toasts).toEqual([])
   })
 
   it('keeps an unconfigured Churnkey environment silent', async () => {

@@ -10,14 +10,6 @@ import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
 import Composer from './Composer.vue'
 import { setupInlinePromptEditorDom } from './composer/inlinePromptEditorTestSetup'
 
-vi.hoisted(() => {
-  globalThis.ResizeObserver = class {
-    observe() {}
-    unobserve() {}
-    disconnect() {}
-  }
-})
-
 setupInlinePromptEditorDom()
 
 function renderComposer() {

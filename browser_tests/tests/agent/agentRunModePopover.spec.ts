@@ -8,7 +8,6 @@ import type { AgentRunModePreference } from '@/workbench/extensions/agent/schema
 import { zAgentRunMode } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 
 // Covers a P1 from Test Plan: 1.54 — Comfy Agent, reproduced 3x by hand:
 // "The Run permissions popover does not dismiss on Escape ... It overlays the
@@ -178,7 +177,7 @@ test.describe('Agent run permissions popover', { tag: '@cloud' }, () => {
 
     await test.step('the rejected pick keeps the menu, focus and old mode', async () => {
       await expect(
-        new ToastHelper(page).withText(enMessages.agent.runModeSaveFailed)
+        comfyPage.toast.withText(enMessages.agent.runModeSaveFailed)
       ).toBeVisible()
       await expect(autoOption).toBeFocused()
       await expect(autoOption).not.toBeChecked()

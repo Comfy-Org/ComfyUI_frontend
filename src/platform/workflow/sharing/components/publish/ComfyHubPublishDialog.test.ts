@@ -11,8 +11,6 @@ import { createI18n } from 'vue-i18n'
 import type { ComfyHubPublishFormData } from '@/platform/workflow/sharing/types/comfyHubTypes'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 
-const mockToastAdd = vi.hoisted(() => vi.fn())
-
 import ComfyHubPublishDialog from '@/platform/workflow/sharing/components/publish/ComfyHubPublishDialog.vue'
 
 const mockFetchProfile = vi.hoisted(() => vi.fn())
@@ -127,21 +125,6 @@ function createTestI18n() {
 async function flushPromises() {
   await new Promise((r) => setTimeout(r, 0))
 }
-
-beforeEach(() => {
-  vi.mocked(useToast().success).mockImplementation((...args: unknown[]) =>
-    mockToastAdd('success', ...args)
-  )
-  vi.mocked(useToast().error).mockImplementation((...args: unknown[]) =>
-    mockToastAdd('error', ...args)
-  )
-  vi.mocked(useToast().info).mockImplementation((...args: unknown[]) =>
-    mockToastAdd('info', ...args)
-  )
-  vi.mocked(useToast().warning).mockImplementation((...args: unknown[]) =>
-    mockToastAdd('warning', ...args)
-  )
-})
 
 beforeEach(() => {
   vi.mocked(useWorkflowStore().saveWorkflow).mockResolvedValue(undefined)
@@ -260,7 +243,7 @@ describe('ComfyHubPublishDialog', () => {
     await flushPromises()
 
     expect(mockSubmitToComfyHub).toHaveBeenCalledOnce()
-    expect(vi.mocked(useToast().success)).toHaveBeenCalled()
+    expect(useToast().success).toHaveBeenCalled()
     expect(onClose).toHaveBeenCalledOnce()
   })
 
@@ -290,8 +273,9 @@ describe('ComfyHubPublishDialog', () => {
     await flushPromises()
 
     expect(mockSubmitToComfyHub).toHaveBeenCalledOnce()
-    expect(vi.mocked(useToast().error)).toHaveBeenCalled()
-    expect(vi.mocked(useToast().success)).not.toHaveBeenCalled()
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({ kind: 'error' })
+    ])
     expect(onClose).not.toHaveBeenCalled()
   })
 
@@ -307,13 +291,10 @@ describe('ComfyHubPublishDialog', () => {
     await userEvent.click(screen.getByTestId('publish'))
     await flushPromises()
 
-    expect(vi.mocked(useToast().error)).toHaveBeenCalledWith(
-      expect.any(String),
-      {
-        description:
-          'Something went wrong while publishing your workflow: unsupported content type "video/quicktime"; allowed: image/png, image/jpeg, video/mp4'
-      }
-    )
+    expect(useToast().error).toHaveBeenCalledWith(expect.any(String), {
+      description:
+        'Something went wrong while publishing your workflow: unsupported content type "video/quicktime"; allowed: image/png, image/jpeg, video/mp4'
+    })
   })
 
   it('shows a generic error toast without crashing when publish rejects with a non-Error value', async () => {
@@ -324,13 +305,10 @@ describe('ComfyHubPublishDialog', () => {
     await userEvent.click(screen.getByTestId('publish'))
     await flushPromises()
 
-    expect(vi.mocked(useToast().error)).toHaveBeenCalledWith(
-      expect.any(String),
-      {
-        description:
-          'Something went wrong while publishing your workflow. Please try again.'
-      }
-    )
+    expect(useToast().error).toHaveBeenCalledWith(expect.any(String), {
+      description:
+        'Something went wrong while publishing your workflow. Please try again.'
+    })
     expect(onClose).not.toHaveBeenCalled()
   })
 

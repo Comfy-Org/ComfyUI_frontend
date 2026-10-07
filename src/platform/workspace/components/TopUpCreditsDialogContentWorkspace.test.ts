@@ -54,8 +54,6 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 
-const mockToastAdd = vi.fn()
-
 const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
 
 vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
@@ -180,21 +178,6 @@ async function clickAddCredits() {
   const user = userEvent.setup()
   await user.click(screen.getByRole('button', { name: 'Add credits' }))
 }
-
-beforeEach(() => {
-  vi.mocked(useToast().success).mockImplementation((...args: unknown[]) =>
-    mockToastAdd('success', ...args)
-  )
-  vi.mocked(useToast().error).mockImplementation((...args: unknown[]) =>
-    mockToastAdd('error', ...args)
-  )
-  vi.mocked(useToast().info).mockImplementation((...args: unknown[]) =>
-    mockToastAdd('info', ...args)
-  )
-  vi.mocked(useToast().warning).mockImplementation((...args: unknown[]) =>
-    mockToastAdd('warning', ...args)
-  )
-})
 
 beforeEach(() => {
   stubFirebaseAuthHarness()
@@ -694,8 +677,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
         errorType: 'billing_portal_open_failure'
       })
     )
-    expect(mockToastAdd).toHaveBeenCalledWith(
-      'error',
+    expect(useToast().error).toHaveBeenCalledWith(
       'Failed to open the billing portal. Please try again.',
       { duration: 5000 }
     )
@@ -716,7 +698,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
 
     await waitFor(() =>
-      expect(mockToastAdd).toHaveBeenCalledWith('error', 'Purchase Failed', {
+      expect(useToast().error).toHaveBeenCalledWith('Purchase Failed', {
         description:
           'No payment method is saved for this workspace. Add one via Settings → Plan & Credits → Manage billing, then retry the top-up.'
       })
@@ -823,7 +805,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
 
     await waitFor(() =>
       expect(vi.mocked(useToast().error)).toHaveBeenCalledWith(
-        expect.any(String),
+        'Purchase Failed',
         {
           description: expect.stringContaining('credit purchase is still open')
         }
@@ -1329,7 +1311,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(
       useTelemetry()?.trackApiCreditTopupButtonPurchaseClicked
     ).not.toHaveBeenCalled()
-    expect(mockToastAdd).not.toHaveBeenCalled()
+    expect(useToast().toasts).toEqual([])
     expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
   })
 

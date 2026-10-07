@@ -56,8 +56,6 @@ vi.mock(import('@/services/dialogService'))
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('firebase/auth'))
 
-const mockToastAdd = vi.hoisted(() => vi.fn())
-
 const apps: App<Element>[] = []
 
 function useInviteUrlLoader(): ReturnType<typeof createInviteUrlLoader> {
@@ -103,21 +101,6 @@ afterEach(() => {
   for (const app of apps.splice(0)) app.unmount()
 })
 
-beforeEach(() => {
-  vi.mocked(useToast().success).mockImplementation((...args: unknown[]) =>
-    mockToastAdd('success', ...args)
-  )
-  vi.mocked(useToast().error).mockImplementation((...args: unknown[]) =>
-    mockToastAdd('error', ...args)
-  )
-  vi.mocked(useToast().info).mockImplementation((...args: unknown[]) =>
-    mockToastAdd('info', ...args)
-  )
-  vi.mocked(useToast().warning).mockImplementation((...args: unknown[]) =>
-    mockToastAdd('warning', ...args)
-  )
-})
-
 describe('useInviteUrlLoader', () => {
   beforeEach(() => {
     mockRouteQuery.value = {}
@@ -132,7 +115,7 @@ describe('useInviteUrlLoader', () => {
       await loadInviteFromUrl()
 
       expect(useTeamWorkspaceStore().acceptInvite).not.toHaveBeenCalled()
-      expect(mockToastAdd).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
       expect(mockRouterReplace).not.toHaveBeenCalled()
     })
 
@@ -173,55 +156,57 @@ describe('useInviteUrlLoader', () => {
       expect(useTeamWorkspaceStore().acceptInvite).toHaveBeenCalledWith(
         'valid-token'
       )
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        'success',
-        'Invite Accepted',
+      expect(useToast().toasts).toEqual([
         expect.objectContaining({
+          action: expect.objectContaining({ label: 'View workspace' }),
           description: 'You have been added to Test Workspace',
-          action: expect.objectContaining({ label: 'View workspace' })
+          kind: 'success',
+          title: 'Invite Accepted'
         })
-      )
+      ])
     })
 
     it.for([
       {
         name: 'dismisses the toast once the switch succeeds',
         switchWorkspace: () => Promise.resolve(),
-        dismissals: 1,
-        errors: []
+        toasts: []
       },
       {
         name: 'keeps the toast and reports a failed switch',
         switchWorkspace: () => Promise.reject(new Error('switch failed')),
-        dismissals: 0,
-        errors: [['error', 'Failed to switch workspace', { duration: 5000 }]]
+        toasts: [
+          expect.objectContaining({
+            kind: 'success',
+            title: 'Invite Accepted'
+          }),
+          expect.objectContaining({
+            duration: 5000,
+            kind: 'error',
+            title: 'Failed to switch workspace'
+          })
+        ]
       }
-    ])(
-      'View workspace $name',
-      async ({ switchWorkspace, dismissals, errors }) => {
-        mockRouteQuery.value = { invite: 'valid-token' }
-        vi.mocked(useTeamWorkspaceStore().acceptInvite).mockResolvedValue({
-          workspaceId: 'ws-123',
-          workspaceName: 'Test Workspace'
-        })
-        vi.mocked(useTeamWorkspaceStore().switchWorkspace).mockImplementation(
-          switchWorkspace
-        )
-        await useInviteUrlLoader().loadInviteFromUrl()
-        const [, , options] = mockToastAdd.mock.calls.at(-1) ?? []
-        assert(options?.action)
+    ])('View workspace $name', async ({ switchWorkspace, toasts }) => {
+      mockRouteQuery.value = { invite: 'valid-token' }
+      vi.mocked(useTeamWorkspaceStore().acceptInvite).mockResolvedValue({
+        workspaceId: 'ws-123',
+        workspaceName: 'Test Workspace'
+      })
+      vi.mocked(useTeamWorkspaceStore().switchWorkspace).mockImplementation(
+        switchWorkspace
+      )
+      await useInviteUrlLoader().loadInviteFromUrl()
+      const action = useToast().toasts.at(-1)?.action
+      assert(action)
 
-        await options.action.onClick()
+      await action.onClick()
 
-        expect(useTeamWorkspaceStore().switchWorkspace).toHaveBeenCalledWith(
-          'ws-123'
-        )
-        expect(useToast().dismiss).toHaveBeenCalledTimes(dismissals)
-        expect(
-          mockToastAdd.mock.calls.filter(([kind]) => kind === 'error')
-        ).toEqual(errors)
-      }
-    )
+      expect(useTeamWorkspaceStore().switchWorkspace).toHaveBeenCalledWith(
+        'ws-123'
+      )
+      expect(useToast().toasts).toEqual(toasts)
+    })
 
     it('shows the invalid-link dialog instead of a toast on 404', async () => {
       mockRouteQuery.value = { invite: 'dead-token' }
@@ -235,7 +220,7 @@ describe('useInviteUrlLoader', () => {
       expect(
         vi.mocked(useDialogService().showInviteLinkInvalidDialog)
       ).toHaveBeenCalled()
-      expect(mockToastAdd).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
       expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
     })
 
@@ -258,14 +243,14 @@ describe('useInviteUrlLoader', () => {
       expect(
         vi.mocked(useDialogService().showInviteWrongAccountDialog)
       ).toHaveBeenCalledWith({ inviteToken: 'other-account-token' })
-      expect(mockToastAdd).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
     })
 
-    const DIRECTORY_TOAST = [
-      'info',
-      'Admin manages membership',
-      { description: 'Ask your organization admin' }
-    ]
+    const DIRECTORY_TOAST = expect.objectContaining({
+      description: 'Ask your organization admin',
+      kind: 'info',
+      title: 'Admin manages membership'
+    })
 
     it.for([
       {
@@ -302,7 +287,7 @@ describe('useInviteUrlLoader', () => {
       expect(
         vi.mocked(useDialogService().showInviteWrongAccountDialog)
       ).toHaveBeenCalledTimes(wrongAccountDialogs)
-      expect(mockToastAdd.mock.calls).toEqual(toasts)
+      expect(useToast().toasts).toEqual(toasts)
       expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
         'invite'
       )
@@ -320,7 +305,12 @@ describe('useInviteUrlLoader', () => {
       expect(
         vi.mocked(useDialogService().showInviteLinkInvalidDialog)
       ).not.toHaveBeenCalled()
-      expect(vi.mocked(useToast().error)).toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({
+          kind: 'error',
+          title: 'Failed to Accept Invite'
+        })
+      ])
     })
 
     it('falls back to the toast when the dialog chunk fails to load', async () => {
@@ -337,7 +327,12 @@ describe('useInviteUrlLoader', () => {
       const { loadInviteFromUrl } = useInviteUrlLoader()
       await expect(loadInviteFromUrl()).resolves.toBeUndefined()
 
-      expect(vi.mocked(useToast().error)).toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({
+          kind: 'error',
+          title: 'Failed to Accept Invite'
+        })
+      ])
       vi.mocked(useDialogService().showInviteLinkInvalidDialog).mockReset()
     })
 
@@ -506,8 +501,8 @@ describe('useInviteUrlLoader', () => {
           vi.mocked(useTeamWorkspaceStore().acceptInvite).mock.calls.length
         ).toBe(accepts ? 1 : 0)
         expect(
-          mockToastAdd.mock.calls.some(
-            ([, title]) => title === 'Ask your admin to add you'
+          useToast().toasts.some(
+            ({ title }) => title === 'Ask your admin to add you'
           )
         ).toBe(!accepts)
         expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })

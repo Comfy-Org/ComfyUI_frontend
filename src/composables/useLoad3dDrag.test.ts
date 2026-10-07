@@ -30,12 +30,9 @@ function createMockDragEvent(
 }
 
 describe('useLoad3dDrag', () => {
-  let mockToastStore: ReturnType<typeof useToast>
   let mockOnModelDrop: (file: File) => void | Promise<void>
 
   beforeEach(() => {
-    mockToastStore = useToast()
-
     mockOnModelDrop = vi.fn()
   })
 
@@ -137,7 +134,7 @@ describe('useLoad3dDrag', () => {
       await handleDrop(event)
 
       expect(mockOnModelDrop).not.toHaveBeenCalled()
-      expect(mockToastStore.warning).toHaveBeenCalledWith(
+      expect(useToast().warning).toHaveBeenCalledWith(
         'load3d.unsupportedFileType'
       )
     })
@@ -217,7 +214,7 @@ describe('useLoad3dDrag', () => {
       await handleDrop(event)
 
       expect(mockOnModelDrop).not.toHaveBeenCalled()
-      expect(mockToastStore.warning).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
     })
   })
 

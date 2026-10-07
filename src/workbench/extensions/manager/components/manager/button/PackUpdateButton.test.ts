@@ -96,9 +96,9 @@ it('offers an explicit switch to the latest installable version, including Flagg
 })
 
 it.for([
-  { name: 'no eligible release', versions: [], severity: 'warn' },
-  { name: 'registry failure', versions: null, severity: 'error' }
-])('does not install and reports $name', async ({ versions, severity }) => {
+  { kind: 'warning' as const, name: 'no eligible release', versions: [] },
+  { kind: 'error' as const, name: 'registry failure', versions: null }
+])('does not install and reports $name', async ({ kind, versions }) => {
   const service = registry.useComfyRegistryService()
   vi.spyOn(service, 'getPackVersions').mockResolvedValue(versions)
   vi.spyOn(registry, 'useComfyRegistryService').mockReturnValue(service)
@@ -107,9 +107,7 @@ it.for([
   await userEvent.click(screen.getByRole('button', { name: 'Update' }))
 
   await waitFor(() => {
-    expect(
-      useToast()[severity === 'warn' ? 'warning' : 'error']
-    ).toHaveBeenCalled()
+    expect(useToast().toasts).toEqual([expect.objectContaining({ kind })])
   })
   expect(useComfyManagerStore().installPack.call).not.toHaveBeenCalled()
   expect(screen.getByRole('button', { name: 'Update' })).toBeEnabled()

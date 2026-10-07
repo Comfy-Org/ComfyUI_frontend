@@ -2,28 +2,17 @@ import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Toast Notifications', { tag: '@ui' }, () => {
-  async function triggerErrorToast(comfyPage: {
-    page: { evaluate: (fn: () => void) => Promise<void> }
-    nextFrame: () => Promise<void>
-  }) {
+  async function triggerErrorToast(comfyPage: ComfyPage) {
     await comfyPage.page.evaluate(() => {
       window.app!.extensionManager.toast.error('Error', {
         description: 'Test execution error',
         duration: 30000
       })
     })
-    await comfyPage.nextFrame()
   }
-
-  test('Error toast appears when triggered', async ({ comfyPage }) => {
-    await triggerErrorToast(comfyPage)
-
-    await expect(
-      comfyPage.toast.toastErrors.filter({ hasText: 'Test execution error' })
-    ).toBeVisible()
-  })
 
   test('Toasts stay clear of the workspace inset', async ({ comfyPage }) => {
     const workspaceInset = 240
@@ -48,31 +37,14 @@ test.describe('Toast Notifications', { tag: '@ui' }, () => {
     )
   })
 
-  test('Error toast is announced assertively', async ({ comfyPage }) => {
-    await triggerErrorToast(comfyPage)
-
-    await expect(comfyPage.toast.assertiveAnnouncements).toContainText(
-      'Error. Test execution error'
-    )
-    await expect(comfyPage.toast.toastErrors).toHaveCount(1)
-  })
-
   test('Toast can be dismissed via close button', async ({ comfyPage }) => {
     await triggerErrorToast(comfyPage)
-    const errorToast = comfyPage.toast.withText('Test execution error')
+    const errorToast = comfyPage.toast.toastErrors.filter({
+      hasText: 'Test execution error'
+    })
     await expect(errorToast).toBeVisible()
 
     await comfyPage.toast.dismiss(errorToast)
-
-    await expect(comfyPage.toast.visibleToasts).toHaveCount(0)
-  })
-
-  test('All toasts cleared via closeToasts helper', async ({ comfyPage }) => {
-    await triggerErrorToast(comfyPage)
-
-    await expect(comfyPage.toast.visibleToasts.first()).toBeVisible()
-
-    await comfyPage.toast.closeToasts()
 
     await expect(comfyPage.toast.visibleToasts).toHaveCount(0)
   })

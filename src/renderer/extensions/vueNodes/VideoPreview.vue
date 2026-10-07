@@ -210,7 +210,7 @@ const handleDownload = () => {
   try {
     downloadFile(currentVideoUrl.value)
   } catch (error) {
-    useToast().error('Error', {
+    useToast().error(t('g.error'), {
       description: t('g.failedToDownloadVideo'),
       duration: 3000
     })

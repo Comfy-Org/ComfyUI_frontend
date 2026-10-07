@@ -25,7 +25,6 @@ import {
   TOOL_CALL_EVENT,
   agentTest
 } from '@e2e/tests/agent/agentPanelMocks'
-import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 
 const test = mergeTests(agentTest, webSocketFixture)
 
@@ -632,7 +631,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
       buffer: Buffer.alloc(25 * 1024 * 1024)
     })
     await expect(
-      new ToastHelper(page).withText('too-large.mp4 is larger than 24 MB')
+      comfyPage.toast.withText('too-large.mp4 is larger than 24 MB')
     ).toBeVisible()
     await expect(panel.getByText('too-large.mp4', { exact: true })).toHaveCount(
       0

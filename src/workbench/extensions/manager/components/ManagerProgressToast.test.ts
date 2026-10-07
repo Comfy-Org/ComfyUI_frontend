@@ -487,3 +487,19 @@ it.for([
     ).toBeVisible()
   }
 )
+
+it('renders only while task logs exist', async () => {
+  render(ManagerProgressToast, {
+    global: {
+      plugins: [createI18n({ legacy: false, locale: 'en', messages: { en } })]
+    }
+  })
+  expect(screen.queryByRole('button', { name: 'Expand' })).toBeNull()
+
+  useComfyManagerStore().taskLogs = [
+    { logs: [], taskId: 'pending', taskName: 'Installing pack' }
+  ]
+  await nextTick()
+
+  expect(screen.getByRole('button', { name: 'Expand' })).toBeVisible()
+})

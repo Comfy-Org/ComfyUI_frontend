@@ -100,10 +100,9 @@ test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
       await comfyPage.nodeOps.getNodeRefsByType('LoadVideo')
     expect(loadVideoNode, 'Load Video node was added').toBeDefined()
     const videoWidget = await loadVideoNode.getWidgetByName('file')
-    const rejectionToasts = comfyPage.page.getByText(
-      enMessages.g.videoFilenameExtensionRequired,
-      { exact: true }
-    )
+    const rejectionToasts = comfyPage.toast.toastWarnings.filter({
+      hasText: enMessages.g.videoFilenameExtensionRequired
+    })
     let uploadRequests = 0
     await comfyPage.page.route('**/upload/image', async (route) => {
       uploadRequests += 1

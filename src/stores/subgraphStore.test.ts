@@ -8,6 +8,7 @@ import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { useToast } from '@/components/ui/toast/toastStore'
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
 import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
@@ -295,6 +296,9 @@ describe('useSubgraphStore', () => {
       'Failed to load subgraph blueprint',
       expect.any(Error)
     )
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({ description: 'Network error', kind: 'error' })
+    ])
     expect(store.subgraphBlueprints).toHaveLength(0)
     consoleSpy.mockRestore()
   })
