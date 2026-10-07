@@ -1548,6 +1548,7 @@ describe('useAgentCrdtFollower', () => {
     }
 
     it('merges the echo of this tab’s own ops without applying it to the graph', async () => {
+      const { recordDevEvent } = await import('./devPanelLog')
       const { unmount, status, ownActor, ownOpId } = await mountAndSendOneOp()
       expect(ownActor).toMatch(/^human:anonymous:/)
 
@@ -1568,6 +1569,10 @@ describe('useAgentCrdtFollower', () => {
         applied: 0,
         skipped: 1
       })
+      expect(recordDevEvent).toHaveBeenCalledWith(
+        'doc_update',
+        expect.objectContaining({ echo: true })
+      )
       unmount()
     })
 

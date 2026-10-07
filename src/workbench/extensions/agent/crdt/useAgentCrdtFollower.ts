@@ -564,9 +564,10 @@ function startAgentCrdtFollower(
     )
   }
   const applyFrame = (
-    update: ClassifiedDocUpdate
+    update: ClassifiedDocUpdate,
+    ownEcho: boolean
   ): { created: NodeId[]; nodes: DocNodeDelta } => {
-    if (isOwnEcho(update) && getGraph() !== null) {
+    if (ownEcho && getGraph() !== null) {
       for (const id of update.opIds ?? []) ownOpIds.delete(id)
       const nodes = projection.discardPending(update.workflowId)
       incrementOutcome('skipped')
@@ -653,12 +654,13 @@ function startAgentCrdtFollower(
     lifecycle.onDocumentUpdate()
     updatesApplied.value = bridge.follower.updatesApplied
     lastFrameType.value = event.type
-    const { created, nodes } = applyFrame(update)
+    const ownEcho = isOwnEcho(update)
+    const { created, nodes } = applyFrame(update, ownEcho)
     recordDevEvent('doc_update', {
       workflowId: update.workflowId,
       seq: update.seq,
       actor: update.actor,
-      echo: isOwnEcho(update),
+      echo: ownEcho,
       bytes: update.update instanceof Uint8Array ? update.update.length : null
     })
     if (nodes.added.length > 0 || nodes.removed.length > 0)

@@ -321,6 +321,7 @@ function hasSafeNestedDefinitions(value: unknown): boolean {
 function isSafeDefinition(value: unknown): boolean {
   return (
     isRecord(value) &&
+    typeof value.id === 'string' &&
     hasSafeInputs(value.inputs) &&
     hasSafeNodes(value.nodes) &&
     hasSafeLinks(value.links) &&

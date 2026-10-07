@@ -505,6 +505,7 @@ describe('readSubgraphDefinitions', () => {
   })
 
   it.for<[string, (definition: Y.Map<unknown>) => void]>([
+    ['id', (stored) => stored.delete('id')],
     ['inputs', (stored) => stored.set('inputs', 'invalid')],
     [
       'input entry',
