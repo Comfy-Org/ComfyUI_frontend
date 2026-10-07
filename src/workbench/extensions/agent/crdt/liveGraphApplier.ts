@@ -35,13 +35,13 @@ import type { WidgetValue } from '@/types/simplifiedWidget'
 
 import {
   allSubgraphDefinitions,
+  definitionPromotedLayout,
   projectCrdtValue,
   readDefinitionPromotedLayout,
   readDocPromotedWidgets,
   readDocPromotedWidgetValue,
   readSubgraphDefinitions
 } from './agentSubgraphDefinitions'
-import type { definitionPromotedLayout } from './agentSubgraphDefinitions'
 import type { PlacementRect } from './batchPlacement'
 import { placementOffset } from './batchPlacement'
 
@@ -530,7 +530,9 @@ interface DefinitionState {
 }
 
 function runtimeNodeSemantics(
-  node: NonNullable<ExportedSubgraph['nodes']>[number]
+  node: NonNullable<ExportedSubgraph['nodes']>[number],
+  reference?: NonNullable<ExportedSubgraph['nodes']>[number],
+  liveNode?: LGraphNode
 ): object {
   const {
     title: _title,
@@ -543,14 +545,37 @@ function runtimeNodeSemantics(
     color: _color,
     bgcolor: _bgcolor,
     showAdvanced: _showAdvanced,
-    widgets_values: _widgetValues,
-    widgets_values_named: _namedWidgetValues,
+    widgets_values,
+    widgets_values_named,
     ...runtime
   } = node
-  return runtime
+  const useNamed = reference
+    ? reference.widgets_values_named !== undefined
+    : widgets_values_named !== undefined
+  const usePositional = reference
+    ? reference.widgets_values !== undefined
+    : !useNamed && widgets_values !== undefined
+  const liveWidgets = liveNode ? serializableWidgets(liveNode) : undefined
+  const semanticNamed = liveWidgets
+    ? Object.fromEntries(
+        liveWidgets.map((widget) => [widget.name, widget.value])
+      )
+    : widgets_values_named
+  const semanticPositional = liveWidgets
+    ? liveWidgets.map((widget) => widget.value)
+    : widgets_values
+  return {
+    ...runtime,
+    ...(useNamed && { widgets_values_named: semanticNamed }),
+    ...(usePositional && { widgets_values: semanticPositional })
+  }
 }
 
-function definitionSemantics(definition: ExportedSubgraph): unknown {
+function definitionSemantics(
+  definition: ExportedSubgraph,
+  reference?: ExportedSubgraph,
+  live?: Subgraph
+): unknown {
   const {
     name: _name,
     category: _category,
@@ -561,6 +586,7 @@ function definitionSemantics(definition: ExportedSubgraph): unknown {
     reroutes: _reroutes,
     floatingLinks: _floatingLinks,
     extra: _extra,
+    definitions: _definitions,
     inputNode,
     outputNode,
     nodes,
@@ -568,12 +594,24 @@ function definitionSemantics(definition: ExportedSubgraph): unknown {
     links,
     ...runtime
   } = definition
+  const referenceNodes = new Map(
+    (reference?.nodes ?? []).map((node) => [String(node.id), node])
+  )
+  const liveNodes = new Map(
+    (live?.nodes ?? []).map((node) => [String(node.id), node])
+  )
   return {
     ...runtime,
     inputNode: { id: inputNode.id },
     outputNode: { id: outputNode.id },
-    nodes: nodes?.map(runtimeNodeSemantics),
-    subgraphs: subgraphs?.map(runtimeNodeSemantics),
+    nodes: nodes?.map((node) =>
+      runtimeNodeSemantics(
+        node,
+        referenceNodes.get(String(node.id)),
+        liveNodes.get(String(node.id))
+      )
+    ),
+    subgraphs: subgraphs?.map((node) => runtimeNodeSemantics(node)),
     links: links?.map(({ parentId: _parentId, ...link }) => link)
   }
 }
@@ -585,12 +623,22 @@ function updateDefinitionConflict(
 ): boolean {
   const semantics = definitionSemantics(definition)
   if (!isEqual(state.semantics, semantics)) {
-    const liveSemantics = definitionSemantics(state.live.asSerialisable())
+    const liveDefinition = state.live.asSerialisable()
+    const liveSemantics = definitionSemantics(
+      liveDefinition,
+      definition,
+      state.live
+    )
     if (isEqual(liveSemantics, semantics)) {
       state.semantics = semantics
-      state.layout = layout
+      if (isEqual(definitionPromotedLayout(liveDefinition), layout)) {
+        state.layout = layout
+      } else {
+        state.conflicted = true
+      }
       return state.conflicted
     }
+    state.semantics = semantics
     state.conflicted = true
   }
   if (state.layout === null) {
@@ -626,7 +674,7 @@ export class LiveGraphApplier {
       if (mode === 'replace') this.removeAbsent(graph, doc, context)
       const created: NodeId[] = []
       const touchedNodes = new Set<string>()
-      this.registerDefinitions(graph, doc)
+      this.try(context, () => this.registerDefinitions(graph, doc))
 
       for (const [id, change] of changes.nodes) {
         if (change === 'delete') {
@@ -760,15 +808,16 @@ export class LiveGraphApplier {
   ): boolean {
     const live = graph.rootGraph.subgraphs.get(definition.id)
     if (!live) return true
-    const previous = state.get(definition.id)
+    let previous = state.get(definition.id)
     if (previous?.live !== live) {
-      state.set(definition.id, {
+      const liveDefinition = live.asSerialisable()
+      previous = {
         live,
-        semantics: definitionSemantics(definition),
-        layout: readDefinitionPromotedLayout(doc, definition.id),
+        semantics: definitionSemantics(liveDefinition),
+        layout: definitionPromotedLayout(liveDefinition),
         conflicted: false
-      })
-      return false
+      }
+      state.set(definition.id, previous)
     }
     const layout = readDefinitionPromotedLayout(doc, definition.id)
     if (updateDefinitionConflict(previous, definition, layout)) {
@@ -1014,7 +1063,9 @@ export class LiveGraphApplier {
   ): void {
     if (this.hasDefinitionConflict(node)) return
     if (!Array.isArray(widgets)) {
-      this.reportNamedHostWidgets(node, mode)
+      if (Object.keys(widgets).length > 0) {
+        this.reportNamedHostWidgets(node, mode)
+      }
       return
     }
     this.applyHostWidgets(node, widgets, mode, doc)
@@ -1065,7 +1116,9 @@ export class LiveGraphApplier {
     docNodeId: string
   ): void {
     if (widgets !== undefined && !Array.isArray(widgets)) {
-      this.reportNamedHostWidgets(node, mode)
+      if (Object.keys(widgets).length > 0) {
+        this.reportNamedHostWidgets(node, mode)
+      }
       return
     }
     const afterConfigurePromotedIds = promotedWidgetIds(node)
@@ -1172,6 +1225,16 @@ export class LiveGraphApplier {
     this.invokeWidgetHook(node, widget, value, 'widget-property', () =>
       writeWidgetValue(node, widget, value)
     )
+    if (!Object.is(widget.value, value)) {
+      restoreWidgetValue(node, widget, previous)
+      this.reportOnce(
+        `widget-write-refused:${String(node.id)}:${widget.name}`,
+        `Widget ${widget.name} on node ${String(node.id)} refused or normalized the canonical value`,
+        'agent_graph_widget_write_refused',
+        { nodeId: node.id, widget: widget.name }
+      )
+      return
+    }
     this.invokeWidgetHook(node, widget, value, 'widget-callback', () =>
       widget.callback?.(value, this.deps.getCanvas?.() ?? undefined, node)
     )
@@ -1364,11 +1427,23 @@ function writeWidgetValue(
 ): void {
   const property = widget.options.property
   if (!property || node.properties[property] === undefined) {
-    widget.value = value
+    assignWidgetValue(widget, value)
+    return
+  }
+  assignWidgetValue(widget, value)
+  node.setProperty(property, value)
+}
+
+/** DOM widget setters call their callback; use the underlying setter so hooks run once. */
+function assignWidgetValue(widget: IBaseWidget, value: WidgetValue): void {
+  const setValue = (
+    widget.options as { setValue?: (value: WidgetValue) => void }
+  ).setValue
+  if ('element' in widget && widget.element && setValue) {
+    setValue(value)
     return
   }
   widget.value = value
-  node.setProperty(property, value)
 }
 
 /** Restore document state without re-entering extension-owned hooks. */
@@ -1377,7 +1452,7 @@ function restoreWidgetValue(
   widget: IBaseWidget,
   value: WidgetValue
 ): void {
-  widget.value = value
+  assignWidgetValue(widget, value)
   const property = widget.options.property
   if (property && node.properties[property] !== undefined)
     node.properties[property] = value

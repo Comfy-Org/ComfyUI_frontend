@@ -90,7 +90,7 @@ useEventListener(
     'widget-promoted',
     'widget-demoted',
     'input-added',
-    'removing-input',
+    'input-removed',
     'inputs-reordered'
   ],
   refreshPromotedRows

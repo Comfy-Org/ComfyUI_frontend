@@ -375,7 +375,7 @@ describe('ComfyApp', () => {
 
       expect(guarded).toMatchObject({
         beforeLoadGraph: false,
-        beforeConfigureGraph: true,
+        beforeConfigureGraph: false,
         afterConfigureGraph: true,
         afterLoadGraph: true,
         modelScan: false,
@@ -725,6 +725,7 @@ describe('ComfyApp', () => {
     it('closes every beforeLoadGraph when a newer load overtakes an older one', async () => {
       app.canvasElRef.value = document.createElement('canvas')
       Reflect.set(app, 'rootGraphInternal', new LGraph())
+      const cleanGraph = vi.spyOn(app, 'clean')
       let releaseFirstLoad!: () => void
       const firstLoadBlocked = new Promise<void>((resolve) => {
         releaseFirstLoad = resolve
@@ -733,10 +734,11 @@ describe('ComfyApp', () => {
         .calledWith('beforeLoadGraph')
         .thenReturnOnce(firstLoadBlocked)
 
-      const olderLoad = app.loadGraphData(createWorkflowGraphData(), false)
-      await app.loadGraphData(createWorkflowGraphData(), false)
+      const olderLoad = app.loadGraphData(createWorkflowGraphData(), true)
+      await app.loadGraphData(createWorkflowGraphData(), true)
       releaseFirstLoad()
-      await expect(olderLoad).resolves.toBeUndefined()
+      await expect(olderLoad).resolves.toBe(false)
+      expect(cleanGraph).toHaveBeenCalledTimes(1)
 
       const hooks = mockExtensionService.invokeExtensionsAsync.mock.calls.map(
         ([hook]) => hook

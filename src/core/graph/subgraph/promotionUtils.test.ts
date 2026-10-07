@@ -782,6 +782,38 @@ describe('reorderSubgraphInputsByWidgetOrder', () => {
     ])
   })
 
+  it('reorders every instance of the shared definition', () => {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph)
+    const firstNode = new LGraphNode('First')
+    const secondNode = new LGraphNode('Second')
+    subgraph.add(firstNode)
+    subgraph.add(secondNode)
+    const firstInput = firstNode.addInput('first', 'STRING')
+    const firstWidget = firstNode.addWidget('text', 'first', '', () => {})
+    firstInput.widget = { name: firstWidget.name }
+    const secondInput = secondNode.addInput('second', 'STRING')
+    const secondWidget = secondNode.addWidget('text', 'second', '', () => {})
+    secondInput.widget = { name: secondWidget.name }
+    promoteValueWidgetViaSubgraphInput(host, firstNode, firstWidget)
+    promoteValueWidgetViaSubgraphInput(host, secondNode, secondWidget)
+    const sibling = createTestSubgraphNode(subgraph)
+    subgraph.rootGraph.add(host)
+    subgraph.rootGraph.add(sibling)
+
+    expect(
+      reorderSubgraphInputsByWidgetOrder(host, [
+        promotedWidgetRef(host, 'second'),
+        promotedWidgetRef(host, 'first')
+      ])
+    ).toBe(true)
+
+    expect(sibling.inputs.map((input) => input.name)).toEqual([
+      'second',
+      'first'
+    ])
+  })
+
   it('matches stable widget identity when the interior link is stale', () => {
     const subgraph = createTestSubgraph()
     const host = createTestSubgraphNode(subgraph)
@@ -1039,6 +1071,39 @@ describe('demoteWidget — axiomatic projection retraction', () => {
 
     expect(host.subgraph.inputs).toHaveLength(0)
     expect(host.inputs).toHaveLength(0)
+  })
+
+  it('keeps the shared slot when another instance is externally connected', async () => {
+    const { host, interiorNode, interiorWidget } = setupPromotedWidget()
+    const sibling = createTestSubgraphNode(host.subgraph)
+    host.rootGraph.add(host)
+    host.rootGraph.add(sibling)
+    const source = new LGraphNode('External Source')
+    source.addOutput('out', 'STRING')
+    host.rootGraph.add(source)
+    const externalLink = source.connect(0, sibling, 0)
+
+    demoteWidget(interiorNode, interiorWidget, [host])
+    await Promise.resolve()
+
+    expect(host.subgraph.inputs).toHaveLength(1)
+    expect(sibling.inputs[0]?.link).toBe(externalLink?.id)
+    expect(interiorNode.inputs[0]?.link).toBeNull()
+  })
+
+  it('reports failure and preserves registration when input removal is vetoed', () => {
+    const { host } = setupPromotedWidget()
+    const promotedId = host.inputs[0].widgetId
+    host.subgraph.events.addEventListener('removing-input', (event) =>
+      event.preventDefault()
+    )
+
+    expect(demotePromotedHostInput(host, host.inputs[0])).toBe(false)
+
+    expect(host.subgraph.inputs).toHaveLength(1)
+    expect(host.inputs).toHaveLength(1)
+    if (!promotedId) throw new Error('Missing promoted input widgetId')
+    expect(useWidgetValueStore().getWidget(promotedId)).toBeDefined()
   })
 
   it('demotes the second of two promoted widgets sharing a source widget name', () => {

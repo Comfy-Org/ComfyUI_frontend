@@ -27,7 +27,15 @@ export interface SubgraphEventMap extends LGraphEventMap {
     input: SubgraphInput
     index: number
   }
+  'input-removed': {
+    input: SubgraphInput
+    index: number
+  }
   'removing-output': {
+    output: SubgraphOutput
+    index: number
+  }
+  'output-removed': {
     output: SubgraphOutput
     index: number
   }

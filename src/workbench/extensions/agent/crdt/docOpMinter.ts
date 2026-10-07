@@ -313,12 +313,17 @@ function promotedHostSnapshot(
       const stateValue = state.value
       hostWidgetsValues.push(isWidgetValue(stateValue) ? stateValue : undefined)
     }
-    const json = JSON.stringify(hostWidgetsValues)
+    const snapshot = jsonWireSnapshot(hostWidgetsValues)
+    if (!snapshot.ok || !Array.isArray(snapshot.value)) {
+      onUnsafeSnapshot()
+      return null
+    }
+    const json = JSON.stringify(snapshot.value)
     if (new TextEncoder().encode(json).length > WIRE_MAX_BATCH_BYTES) {
       onUnsafeSnapshot()
       return null
     }
-    return JSON.parse(json) as unknown[]
+    return snapshot.value
   } catch {
     onUnsafeSnapshot()
     return null
@@ -484,15 +489,53 @@ function fitWidgetOperation(
 
 type WireSnapshot = { ok: true; value: unknown } | { ok: false }
 
+function isLosslessJsonArray(
+  source: readonly unknown[],
+  snapshot: object
+): boolean {
+  return (
+    Array.isArray(snapshot) &&
+    source.length === snapshot.length &&
+    source.every((value, index) =>
+      isLosslessJsonSnapshot(value, snapshot[index])
+    )
+  )
+}
+
+function isLosslessJsonRecord(
+  source: Record<string, unknown>,
+  snapshot: object
+): boolean {
+  if (Array.isArray(snapshot)) return false
+  const snapshotRecord = snapshot as Record<string, unknown>
+  const sourceKeys = Object.keys(source)
+  return (
+    sourceKeys.length === Object.keys(snapshotRecord).length &&
+    sourceKeys.every(
+      (key) =>
+        Object.hasOwn(snapshotRecord, key) &&
+        isLosslessJsonSnapshot(source[key], snapshotRecord[key])
+    )
+  )
+}
+
+function isLosslessJsonSnapshot(source: unknown, snapshot: unknown): boolean {
+  if (source === null || typeof source !== 'object') {
+    return Object.is(source, snapshot)
+  }
+  if (snapshot === null || typeof snapshot !== 'object') return false
+  if (Array.isArray(source)) return isLosslessJsonArray(source, snapshot)
+  return isLosslessJsonRecord(source as Record<string, unknown>, snapshot)
+}
+
 /** Capture the exact JSON value now, before a mutable widget can change it. */
 function jsonWireSnapshot(value: unknown): WireSnapshot {
   try {
-    const json = (JSON.stringify as (candidate: unknown) => string | undefined)(
-      value
-    )
-    return json === undefined
-      ? { ok: false }
-      : { ok: true, value: JSON.parse(json) as unknown }
+    const json = JSON.stringify(value)
+    const snapshot = JSON.parse(json) as unknown
+    return isLosslessJsonSnapshot(value, snapshot)
+      ? { ok: true, value: snapshot }
+      : { ok: false }
   } catch {
     return { ok: false }
   }
@@ -832,7 +875,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       () =>
         refuse(
           'unsafe_value',
-          `promoted_snapshot:${rootGraphId}:${String(event.nodeId)}`,
+          `promoted_snapshot:${rootGraphId}:${String(event.nodeId)}:${event.name}`,
           `Widget ${event.name} on node ${String(event.nodeId)} has a value that cannot be sent safely; refusing to mint`,
           'agent_crdt_widget_snapshot_invalid',
           { nodeId: event.nodeId, widget: event.name },
@@ -955,16 +998,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
 
   function mintClear(event: IntentOf<'clear'>): void {
     if (event.nodeIds.length === 0) return
-    const boundRootGraphId = deps.boundRootGraphId()
-    if (boundRootGraphId !== null && event.graphId !== boundRootGraphId) {
-      reportOnce(
-        `clear:${event.graphId}:${boundRootGraphId}`,
-        `clear targets graph ${event.graphId}, not the bound document's root graph ${boundRootGraphId}; refusing to mint`,
-        'agent_crdt_op_for_unbound_graph',
-        { graphId: event.graphId, boundRootGraphId }
-      )
-      return
-    }
+    if (!isMintableRootScope(event.graph, 'clear', 'all')) return
     schedule({
       kind: 'op',
       operation: { op: 'clear', removed_nodes: [...event.nodeIds] }

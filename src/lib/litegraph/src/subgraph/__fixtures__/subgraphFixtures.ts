@@ -159,10 +159,12 @@ export const subgraphTest = test.extend<SubgraphFixtures>({
       'adding-input',
       'input-added',
       'removing-input',
+      'input-removed',
       'renaming-input',
       'adding-output',
       'output-added',
       'removing-output',
+      'output-removed',
       'renaming-output'
     ])
 

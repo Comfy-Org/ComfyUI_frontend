@@ -69,4 +69,20 @@ describe('writeImageWidgetValue', () => {
 
     expect(node.properties['image']).toBeUndefined()
   })
+
+  it('leaves properties untouched when the store refuses the value', () => {
+    const node = makeNode()
+    const state = useWidgetValueStore().getWidget(registeredWidgetId(node))
+    if (!state) throw new Error('Expected registered widget state')
+    Object.defineProperty(state, 'value', {
+      configurable: true,
+      get: () => 'original.png [input]',
+      set: () => {}
+    })
+
+    writeImageWidgetValue(node, 'masked.png [input]')
+
+    expect(node.widgets?.[0].value).toBe('original.png [input]')
+    expect(node.properties['image']).toBeUndefined()
+  })
 })

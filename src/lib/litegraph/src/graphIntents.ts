@@ -37,7 +37,7 @@ export type GraphIntent =
     }
   | { type: 'connect'; graph: LGraph; link: LLink }
   | { type: 'disconnect'; graph: LGraph; link: LLink }
-  | { type: 'clear'; graphId: string; nodeIds: readonly NodeId[] }
+  | { type: 'clear'; graph: LGraph; nodeIds: readonly NodeId[] }
   | {
       type: 'set_widget'
       graphId: string

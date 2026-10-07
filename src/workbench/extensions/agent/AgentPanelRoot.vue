@@ -875,7 +875,9 @@ let lastHumanOpsRejectedAt = Number.NEGATIVE_INFINITY
 // Treat that interval as having no graph so neither inbound projection nor
 // outbound minting can apply workflow A's document to workflow B's canvas.
 function activeRootGraph() {
-  return app.isGraphReady && !ChangeTracker.isLoadingGraph
+  return app.isGraphReady &&
+    !ChangeTracker.isLoadingGraph &&
+    !app.isGraphMutating
     ? app.rootGraph
     : null
 }
@@ -976,7 +978,9 @@ const restoreOpMinter = attachRestoreOpMinter({
   isEnabled: () => agentPanelStore.enabled,
   isDocBound: () => isBoundWorkflowActive.value,
   enqueue: enqueueHumanOperations,
-  getGraph: activeRootGraph,
+  // Restore snapshots deliberately span the graph-load guard: the before
+  // hook reads the old graph and afterConfigureGraph reads the restored one.
+  getGraph: () => (app.isGraphReady ? app.rootGraph : null),
   isRestoringState: () =>
     workflowStore.activeWorkflow?.changeTracker?._restoringState === true
 })

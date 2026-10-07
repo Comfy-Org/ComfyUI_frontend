@@ -155,8 +155,12 @@ export function createPromotedMultilineWidget(
       minNodeSize: [400, 200],
       getValue: readValue,
       setValue: (value: string) => {
-        widgetStore.setValue(widgetId, value)
-        if (!Object.is(widgetStore.getWidget(widgetId)?.value, value)) return
+        const registered = widgetStore.setValue(widgetId, value)
+        const canonical = widgetStore.getWidget(widgetId)?.value
+        if (registered && !Object.is(canonical, value)) {
+          element.value = typeof canonical === 'string' ? canonical : ''
+          return
+        }
         element.value = value
       }
     }

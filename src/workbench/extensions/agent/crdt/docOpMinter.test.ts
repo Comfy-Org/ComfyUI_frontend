@@ -880,7 +880,7 @@ describe('attachDocOpMinter', () => {
     const widget = host.widgets[1]
     widget.callback = callback
 
-    expect(setNodeWidgetValue(host, widget.name, 'refused')).toBe(true)
+    expect(setNodeWidgetValue(host, widget.name, 'refused')).toBe(false)
     await afterFlush()
 
     expect(widget.value).toBe('an interior default')
@@ -983,6 +983,43 @@ describe('attachDocOpMinter', () => {
           { nested: { value: 'before' } }
         ]
       }
+    })
+    doc.destroy()
+  })
+
+  it.for([Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY, -0])(
+    'refuses a lossy numeric widget value instead of coercing %s',
+    async (value) => {
+      const { source } = seedGraph(graph)
+
+      source.widgets![0].value = value
+      await afterFlush()
+
+      expect(minted).toEqual([])
+      expect(source.widgets![0].value).toBe(20)
+      expect(refused).toContainEqual({
+        nodeId: source.id,
+        name: 'steps',
+        reason: 'unsafe_value'
+      })
+    }
+  )
+
+  it('refuses a promoted snapshot containing a non-finite sibling', async () => {
+    const { host, doc } = seedPromotedHost()
+    withGraphIntentSource('load', () => {
+      host.widgets[0].value = Number.POSITIVE_INFINITY
+    })
+
+    host.widgets[1].value = 'pasted'
+    await afterFlush()
+
+    expect(minted).toEqual([])
+    expect(host.widgets[1].value).toBe('an interior default')
+    expect(refused).toContainEqual({
+      nodeId: host.id,
+      name: 'text',
+      reason: 'unsafe_value'
     })
     doc.destroy()
   })
@@ -2206,6 +2243,21 @@ describe('attachDocOpMinter', () => {
     copiedGraph.id = graph.id
 
     copiedGraph.add(new TestSource())
+    await afterFlush()
+
+    expect(minted).toEqual([])
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({ errorType: 'agent_crdt_op_for_unbound_graph' })
+    )
+  })
+
+  it('rejects clear from another root instance with the same persisted id', async () => {
+    const copiedGraph = new LGraph()
+    copiedGraph.id = graph.id
+    withGraphIntentSource('load', () => copiedGraph.add(new TestSource()))
+
+    copiedGraph.clear()
     await afterFlush()
 
     expect(minted).toEqual([])

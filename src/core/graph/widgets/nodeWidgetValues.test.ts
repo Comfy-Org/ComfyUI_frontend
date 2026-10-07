@@ -103,6 +103,21 @@ describe('setNodeWidgetValue', () => {
     expect(node.widgets?.[0].value).toBe('next.png')
   })
 
+  it('returns false when the store refuses the value', () => {
+    const node = makeRegisteredNode()
+    const state = useWidgetValueStore().getWidget(registeredId(node))
+    if (!state) throw new Error('Expected registered widget state')
+    Object.defineProperty(state, 'value', {
+      configurable: true,
+      get: () => 'registered.png',
+      set: () => {}
+    })
+
+    expect(setNodeWidgetValue(node, WIDGET_NAME, 'next.png')).toBe(false)
+
+    expect(node.widgets?.[0].value).toBe('registered.png')
+  })
+
   it('is a no-op when the widget exists nowhere', () => {
     const node = createMockLGraphNode({
       id: toNodeId(1),

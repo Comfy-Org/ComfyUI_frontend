@@ -17,7 +17,11 @@ import type { GraphIntent, GraphIntentEvent } from './graphIntents'
 
 vi.mock(import('@/platform/telemetry/reportError'))
 
-const CLEAR: GraphIntent = { type: 'clear', graphId: 'g', nodeIds: [] }
+const CLEAR: GraphIntent = {
+  type: 'clear',
+  graph: fromPartial<LGraph>({ id: 'g' }),
+  nodeIds: []
+}
 
 function listen(): { events: GraphIntentEvent[]; detach: () => void } {
   const events: GraphIntentEvent[] = []

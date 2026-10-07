@@ -79,6 +79,7 @@ const projectionState = vi.hoisted(() => {
     revertRejected: vi.fn(
       (_workflowId: string, _ops: readonly Op[]): NodeId[] => []
     ),
+    replaceFromDocument: vi.fn((_workflowId: string): NodeId[] => []),
     replaceOnNextFrame: vi.fn(),
     discardPending: vi.fn((_workflowId: string): DocNodeDelta => NO_NODES),
     noteLocalWrites: vi.fn(),
@@ -135,6 +136,7 @@ vi.mock<unknown>(import('./agentCrdtProjection'), () => ({
     applyFrame = projectionState.applyFrame
     applyCollected = projectionState.applyCollected
     revertRejected = projectionState.revertRejected
+    replaceFromDocument = projectionState.replaceFromDocument
     replaceOnNextFrame = projectionState.replaceOnNextFrame
     discardPending = projectionState.discardPending
     noteLocalWrites = projectionState.noteLocalWrites
@@ -259,6 +261,7 @@ describe('useAgentCrdtFollower', () => {
       .mockReturnValue(projectionState.applied())
     projectionState.applyCollected.mockReset().mockReturnValue([])
     projectionState.revertRejected.mockReset().mockReturnValue([])
+    projectionState.replaceFromDocument.mockReset().mockReturnValue([])
     projectionState.noteLocalWrites.mockReset()
     projectionState.settleLocalWrites.mockReset()
   })
@@ -1519,6 +1522,34 @@ describe('useAgentCrdtFollower', () => {
       ops
     )
     expect(telemetryState.reportError).not.toHaveBeenCalled()
+    unmount()
+  })
+
+  it('restores a skipped node field from the canonical document', async () => {
+    const liveGraph = fromPartial<LGraph>({ getNodeById: () => null })
+    const { unmount, enqueue } = mountFollower('wf-1', true, () => liveGraph)
+    enqueue([
+      {
+        op: 'set_node_field',
+        node_id: '2',
+        field: 'title',
+        value: 'Local title'
+      }
+    ])
+    await Promise.resolve()
+    const [, , ops] = clientState.sendOps.mock.calls[0]
+
+    dispatchFrame('doc_ops_result', {
+      workflowId: 'wf-1',
+      ok: true,
+      applied: [],
+      skipped: [ops[0].op_id]
+    })
+
+    expect(projectionState.revertRejected).toHaveBeenCalledExactlyOnceWith(
+      'wf-1',
+      ops
+    )
     unmount()
   })
 

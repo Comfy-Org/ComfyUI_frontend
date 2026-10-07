@@ -1,4 +1,4 @@
-import { mint } from '@comfyorg/comfy-multi-player'
+import { mint, OPAQUE_WIDGETS_KEY } from '@comfyorg/comfy-multi-player'
 import type { WidgetCatalog } from '@comfyorg/comfy-multi-player'
 import { assert, describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
@@ -225,6 +225,19 @@ describe('readSubgraphDefinitions', () => {
       widgets_values_named: { seed: 42, steps: 20 }
     })
     expect(projected.nodes?.[0]).not.toHaveProperty('widgets_values')
+  })
+
+  it('drops an interior node with both named and opaque widget storage', () => {
+    const definition = createTestSubgraphData({
+      nodes: [interiorNode(1, 'widget-node', { widgets_values: [42, 20] })]
+    })
+    const doc = seed(definition)
+    const node = storedNode(storedDefinition(doc, definition.id), 1)
+    node.set(OPAQUE_WIDGETS_KEY, [99, 100])
+
+    const [projected] = readSubgraphDefinitions(doc)
+
+    expect(projected.nodes).toEqual([])
   })
 
   it('sanitizes named widgets recursively without changing stored values', () => {
@@ -506,6 +519,8 @@ describe('readSubgraphDefinitions', () => {
 
   it.for<[string, (definition: Y.Map<unknown>) => void]>([
     ['id', (stored) => stored.delete('id')],
+    ['input node', (stored) => stored.delete('inputNode')],
+    ['output node', (stored) => stored.delete('outputNode')],
     ['inputs', (stored) => stored.set('inputs', 'invalid')],
     [
       'input entry',
@@ -517,6 +532,7 @@ describe('readSubgraphDefinitions', () => {
     ],
     ['nodes', (stored) => stored.set('nodes', 'invalid')],
     ['links', (stored) => stored.set('links', 'invalid')],
+    ['subgraphs', (stored) => stored.set('subgraphs', 'invalid')],
     ['definitions', (stored) => stored.set('definitions', 'invalid')],
     [
       'nested map definition',

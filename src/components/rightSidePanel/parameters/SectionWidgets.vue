@@ -240,8 +240,13 @@ function setWidgetValue(
   // are addressed by widgetId; writing there keeps the displayed value in sync.
   if (widget.widgetId) {
     const store = useWidgetValueStore()
-    store.setValue(widget.widgetId, value)
-    if (!Object.is(store.getWidget(widget.widgetId)?.value, value)) return
+    const registered = store.setValue(widget.widgetId, value)
+    if (
+      registered &&
+      !Object.is(store.getWidget(widget.widgetId)?.value, value)
+    ) {
+      return
+    }
   }
   widget.value = value
   if (!Object.is(widget.value, value)) return

@@ -19,8 +19,10 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
+import { widgetId } from '@/types/widgetId'
 import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
 
 import SectionWidgets from './SectionWidgets.vue'
@@ -169,6 +171,34 @@ describe('SectionWidgets', () => {
       'real_model.safetensors',
       { min: undefined, max: undefined }
     )
+  })
+
+  it('keeps updating a live widget after its store entry disappears', async () => {
+    const { node, widget } = createSimpleNodeWithWidget()
+    const id = widgetId('root', node.id, widget.name)
+    Object.defineProperty(widget, 'widgetId', { value: id })
+    useWidgetValueStore().registerWidget(id, {
+      type: widget.type,
+      value: widget.value,
+      options: widget.options
+    })
+    useWidgetValueStore().deleteWidget(id)
+    const user = userEvent.setup()
+
+    render(SectionWidgets, {
+      props: { widgets: [{ widget, node }] },
+      global: {
+        plugins: [i18n],
+        stubs: {
+          WidgetItem: WidgetItemStub,
+          PropertiesAccordionItem: PropertiesAccordionItemStub
+        }
+      }
+    })
+
+    await user.click(screen.getByTestId('widget-edit'))
+
+    expect(widget.value).toBe('real_model.safetensors')
   })
 
   function createSimpleNodeWithWidget(): {

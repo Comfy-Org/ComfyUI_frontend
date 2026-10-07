@@ -506,10 +506,31 @@ function removePromotedHostInput(
   if (!linkedInput) return false
   const hostWidgetId = hostInput.widgetId
 
-  if (subgraphNode.isInputConnected(subgraphNode.inputs.indexOf(hostInput))) {
+  const instances = [
+    subgraphNode,
+    ...[
+      subgraphNode.rootGraph,
+      ...subgraphNode.rootGraph.subgraphs.values()
+    ].flatMap((graph) =>
+      graph.nodes.filter(
+        (node): node is SubgraphNode =>
+          node !== subgraphNode &&
+          node.isSubgraphNode() &&
+          node.subgraph === subgraphNode.subgraph
+      )
+    )
+  ]
+  const anyInstanceConnected = instances.some((instance) => {
+    const index = instance.inputs.findIndex(
+      (input) => input._subgraphSlot?.id === linkedInput.id
+    )
+    return index !== -1 && instance.isInputConnected(index)
+  })
+
+  if (anyInstanceConnected) {
     linkedInput.disconnect()
   } else {
-    subgraphNode.subgraph.removeInput(linkedInput)
+    if (!subgraphNode.subgraph.removeInput(linkedInput)) return false
   }
   if (hostWidgetId) useWidgetValueStore().deleteWidget(hostWidgetId)
   return true

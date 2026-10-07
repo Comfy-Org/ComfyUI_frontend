@@ -198,6 +198,7 @@ function readInteriorNode(source: unknown): Record<string, unknown> | null {
   if (source.has('widgets') && !(source.get('widgets') instanceof Y.Map)) {
     return null
   }
+  if (source.has('widgets') && source.has(OPAQUE_WIDGETS_KEY)) return null
   const node: Record<string, unknown> = {}
   source.forEach((value, key) => {
     if (key === NODE_INCARNATION || !isReadableKey(key)) return
@@ -324,14 +325,28 @@ function hasSafeNestedDefinitions(value: unknown): boolean {
   )
 }
 
+function hasSafeBoundaryNode(value: unknown): boolean {
+  if (!isRecord(value)) return false
+  return typeof value.id === 'string' || typeof value.id === 'number'
+}
+
+function hasSafeDefinitionTopology(value: Record<string, unknown>): boolean {
+  return (
+    hasSafeInputs(value.inputs) &&
+    hasSafeNodes(value.nodes) &&
+    hasSafeNodes(value.subgraphs) &&
+    hasSafeLinks(value.links) &&
+    hasSafeNestedDefinitions(value.definitions)
+  )
+}
+
 function isSafeDefinition(value: unknown): value is ExportedSubgraph {
   return (
     isRecord(value) &&
     typeof value.id === 'string' &&
-    hasSafeInputs(value.inputs) &&
-    hasSafeNodes(value.nodes) &&
-    hasSafeLinks(value.links) &&
-    hasSafeNestedDefinitions(value.definitions)
+    hasSafeBoundaryNode(value.inputNode) &&
+    hasSafeBoundaryNode(value.outputNode) &&
+    hasSafeDefinitionTopology(value)
   )
 }
 

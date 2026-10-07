@@ -232,8 +232,13 @@ function createWidgetUpdateHandler({
   widgetValueStore: ReturnType<typeof useWidgetValueStore>
 }): (newValue: WidgetValue) => void {
   return (newValue: WidgetValue) => {
-    widgetValueStore.setValue(id, newValue)
-    if (!Object.is(widgetValueStore.getWidget(id)?.value, newValue)) return
+    const registered = widgetValueStore.setValue(id, newValue)
+    if (
+      registered &&
+      !Object.is(widgetValueStore.getWidget(id)?.value, newValue)
+    ) {
+      return
+    }
     if (live) {
       const normalized = normalizeWidgetValue(newValue)
       live.widget.value = normalized

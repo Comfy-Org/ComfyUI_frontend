@@ -141,6 +141,38 @@ describe('TabSubgraphInputs', () => {
     ])
   })
 
+  it('restores the latest graph order after a later reorder is refused', async () => {
+    const { host } = buildHostWithPromotedSeed()
+    const sourceNode = new LGraphNode('Sampler 2')
+    const input = sourceNode.addInput('steps', 'INT')
+    const stepsWidget = sourceNode.addWidget('number', 'steps', 20, () => {})
+    input.widget = { name: stepsWidget.name }
+    host.subgraph.add(sourceNode)
+    promoteValueWidgetViaSubgraphInput(host, sourceNode, stepsWidget)
+    renderPanel(host)
+    await nextTick()
+
+    captured.reorder?.(0, 1)
+    await nextTick()
+    expect(captured.rows.map((row) => row.widget.name)).toEqual([
+      'steps',
+      'seed'
+    ])
+
+    onTestFinished(registerDocBoundRootGraphProbe(() => host.rootGraph.id))
+    captured.reorder?.(0, 1)
+    await nextTick()
+
+    expect(host.inputs.map((hostInput) => hostInput.name)).toEqual([
+      'steps',
+      'seed'
+    ])
+    expect(captured.rows.map((row) => row.widget.name)).toEqual([
+      'steps',
+      'seed'
+    ])
+  })
+
   it('omits promoted widgets hidden by connections or panel visibility', () => {
     const { host: connectedHost } = buildHostWithPromotedSeed()
     const graph = connectedHost.graph as LGraph

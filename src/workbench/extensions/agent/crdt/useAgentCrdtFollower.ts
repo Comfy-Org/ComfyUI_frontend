@@ -417,6 +417,7 @@ function startAgentCrdtFollower(
   const rejectedOpNotifier = createRejectedOpNotifier()
   const projection = new AgentCrdtProjection(getGraph, applierDeps)
   const pendingRejected = new Map<string, Op[]>()
+  const pendingFullReprojection = new Set<string>()
   const MAX_PENDING_REJECTED_OPS = 10_000
 
   const trackAcknowledgedDeletes = (
@@ -428,6 +429,10 @@ function startAgentCrdtFollower(
   const applyPendingRejected = (workflowId: string): NodeId[] => {
     if (!isTargetActive.value || workflowId !== subscribedWorkflowId.value)
       return []
+    if (pendingFullReprojection.delete(workflowId)) {
+      pendingRejected.delete(workflowId)
+      return projection.replaceFromDocument(workflowId)
+    }
     const ops = pendingRejected.get(workflowId)
     if (!ops || !getGraph()) return []
     pendingRejected.delete(workflowId)
@@ -439,7 +444,12 @@ function startAgentCrdtFollower(
     if (ops.length === 0) return
     if (!isCurrentWorkflow(workflowId) || !getGraph()) {
       const pending = [...(pendingRejected.get(workflowId) ?? []), ...ops]
-      pendingRejected.set(workflowId, pending.slice(-MAX_PENDING_REJECTED_OPS))
+      if (pending.length > MAX_PENDING_REJECTED_OPS) {
+        pendingRejected.delete(workflowId)
+        pendingFullReprojection.add(workflowId)
+      } else if (!pendingFullReprojection.has(workflowId)) {
+        pendingRejected.set(workflowId, pending)
+      }
       return
     }
     reportMaterialized(workflowId, projection.revertRejected(workflowId, ops))
@@ -466,7 +476,8 @@ function startAgentCrdtFollower(
     return outcome.ops.filter(
       (op) =>
         !settled.has(op.op_id) ||
-        (op.op === 'set_widget' && skipped.has(op.op_id))
+        ((op.op === 'set_widget' || op.op === 'set_node_field') &&
+          skipped.has(op.op_id))
     )
   }
 
@@ -514,6 +525,7 @@ function startAgentCrdtFollower(
         const oldest = ownOpIds.values().next().value
         if (oldest === undefined) break
         ownOpIds.delete(oldest)
+        opWorkflowIds.delete(oldest)
       }
     },
     onBatchSettled: settleHumanOps
@@ -694,6 +706,7 @@ function startAgentCrdtFollower(
     incrementOutcome('reset')
     if (!isCurrentWorkflow(detail?.workflowId)) return
     pendingRejected.delete(detail.workflowId)
+    pendingFullReprojection.delete(detail.workflowId)
     projection.replaceOnNextFrame(detail.workflowId)
     sender.abortAll()
     events.onReset?.(detail.workflowId)
@@ -724,6 +737,7 @@ function startAgentCrdtFollower(
     ) {
       updatesApplied.value = 0
       pendingRejected.delete(workflowId)
+      pendingFullReprojection.delete(workflowId)
       projection.discardPending(workflowId)
       projection.bind(workflowId, bridge.follower)
     }
@@ -741,6 +755,7 @@ function startAgentCrdtFollower(
         : null
     if (detail?.workflowId !== undefined) {
       pendingRejected.delete(detail.workflowId)
+      pendingFullReprojection.delete(detail.workflowId)
       projection.discardPending(detail.workflowId)
     }
     outcomes.value = { ...outcomes.value, errored: outcomes.value.errored + 1 }

@@ -69,9 +69,11 @@ watch(
   { immediate: true }
 )
 
-const widgetsList = computed((): NodeWidgetsList => {
+function currentWidgetsList(): NodeWidgetsList {
   return promotedInputWidgets(node).map((widget) => ({ node, widget }))
-})
+}
+
+const widgetsList = computed(currentWidgetsList)
 
 const advancedInputsWidgets = computed((): NodeWidgetsList => {
   const interiorNodes = node.subgraph.nodes
@@ -107,6 +109,13 @@ async function searcher(query: string) {
   searchedWidgetsList.value = searchWidgets(widgetsList.value, query)
 }
 
+function refreshSearchedWidgets(): void {
+  searchedWidgetsList.value = searchWidgets(
+    currentWidgetsList(),
+    searchQuery.value
+  )
+}
+
 function handleReorder({
   fromIndex,
   toIndex
@@ -122,10 +131,11 @@ function handleReorder({
   if (!reorderSubgraphInputsByWidgetOrder(node, widgets)) {
     // The drag helper moved DOM nodes directly. Remount the keyed section so
     // Vue rebuilds those nodes from the graph-backed order it preserved.
-    searchedWidgetsList.value = [...searchedWidgetsList.value]
+    refreshSearchedWidgets()
     draggableRevision.value++
     return
   }
+  refreshSearchedWidgets()
   canvasStore.canvas?.setDirty(true, true)
 }
 
