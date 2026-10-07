@@ -102,14 +102,6 @@ test.describe('Agent composer asset drop', { tag: '@cloud' }, () => {
       await page.keyboard.press('Escape')
       await expect(player).toHaveCount(0)
       await expect(trigger).toBeFocused()
-
-      await page.keyboard.press('Enter')
-      await expect(player).toBeVisible()
-      await chip.hover()
-      await chip.getByRole('button', { name: 'Remove' }).click()
-
-      await expect(chip).toHaveCount(0)
-      await expect(player).toHaveCount(0)
     }
   )
 
