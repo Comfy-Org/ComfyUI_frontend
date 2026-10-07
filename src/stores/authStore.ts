@@ -303,8 +303,18 @@ export const useAuthStore = defineStore('auth', () => {
     tokenRefreshTrigger.value++
   }
 
-  const getIdToken = async (): Promise<string | undefined> => {
-    if (isDesktopHostSessionActive()) return desktopHostTabToken()
+  /**
+   * While Desktop shares its session, every credential comes from Desktop;
+   * otherwise the existing Firebase / web-session / API-key paths answer.
+   */
+  const preferDesktopHost =
+    <T>(fromHost: () => Promise<T>, otherwise: () => Promise<T>) =>
+    (): Promise<T> =>
+      isDesktopHostSessionActive() ? fromHost() : otherwise()
+  const desktopHostTabHeader = async (): Promise<AuthHeader | null> =>
+    headerFromToken(await desktopHostTabToken())
+
+  const getFirebaseIdToken = async (): Promise<string | undefined> => {
     const user = currentUser.value
     if (!user) return
     try {
@@ -369,9 +379,7 @@ export const useAuthStore = defineStore('auth', () => {
    *   - An ApiKeyAuthHeader with X-API-KEY if API key exists
    *   - null if no authentication method is available
    */
-  const getAuthHeader = async (): Promise<AuthHeader | null> => {
-    if (isDesktopHostSessionActive())
-      return headerFromToken(await desktopHostTabToken())
+  const getAccountAuthHeader = async (): Promise<AuthHeader | null> => {
     const sessionOnly = sessionOnlyRequests()
     if (sessionOnly)
       return headerFromToken(await webSessionRunToken(sessionOnly))
@@ -470,28 +478,29 @@ export const useAuthStore = defineStore('auth', () => {
    * workspace credential (the server resolves the key's bound workspace), so
    * it is sent directly instead of minting a token.
    */
-  const getWorkspaceAuthHeader = async (): Promise<AuthHeader | null> => {
-    if (isDesktopHostSessionActive())
-      return headerFromToken(await desktopHostTabToken())
-    const sessionOnly = sessionOnlyRequests()
-    if (sessionOnly)
-      return headerFromToken(await webSessionRunToken(sessionOnly))
+  const getAccountWorkspaceAuthHeader =
+    async (): Promise<AuthHeader | null> => {
+      const sessionOnly = sessionOnlyRequests()
+      if (sessionOnly)
+        return headerFromToken(await webSessionRunToken(sessionOnly))
 
-    if (flags.unifiedCloudAuthEnabled) {
-      if (await awaitUnifiedMint()) return null
-      const token = useWorkspaceAuthStore().getUnifiedToken()
-      return token ? { Authorization: `Bearer ${token}` } : null
+      if (flags.unifiedCloudAuthEnabled) {
+        if (await awaitUnifiedMint()) return null
+        const token = useWorkspaceAuthStore().getUnifiedToken()
+        return token ? { Authorization: `Bearer ${token}` } : null
+      }
+
+      if (currentUser.value === null) {
+        const apiKeyHeader = useApiKeyAuthStore().getAuthHeader()
+        if (apiKeyHeader) return apiKeyHeader
+      }
+
+      const activeWorkspaceId = useTeamWorkspaceStore().activeWorkspaceId
+      if (!activeWorkspaceId) return getFirebaseAuthHeader()
+      return useWorkspaceAuthStore().ensureWorkspaceAuthHeader(
+        activeWorkspaceId
+      )
     }
-
-    if (currentUser.value === null) {
-      const apiKeyHeader = useApiKeyAuthStore().getAuthHeader()
-      if (apiKeyHeader) return apiKeyHeader
-    }
-
-    const activeWorkspaceId = useTeamWorkspaceStore().activeWorkspaceId
-    if (!activeWorkspaceId) return getFirebaseAuthHeader()
-    return useWorkspaceAuthStore().ensureWorkspaceAuthHeader(activeWorkspaceId)
-  }
 
   /**
    * Unified Cloud JWT token. See getAuthToken for the full priority order.
@@ -508,8 +517,7 @@ export const useAuthStore = defineStore('auth', () => {
    * > Firebase token.
    * Use this for WebSocket connections and backend node auth.
    */
-  const getAuthToken = async (): Promise<string | undefined> => {
-    if (isDesktopHostSessionActive()) return desktopHostTabToken()
+  const getAccountAuthToken = async (): Promise<string | undefined> => {
     const sessionOnly = sessionOnlyRequests()
     if (sessionOnly) return webSessionRunToken(sessionOnly)
 
@@ -533,8 +541,40 @@ export const useAuthStore = defineStore('auth', () => {
     return await getIdToken()
   }
 
-  const getWorkspaceAuthToken = async (): Promise<string | undefined> => {
-    if (isDesktopHostSessionActive()) return desktopHostTabToken()
+  /**
+   * A local Firebase session resolves its workspace before its first run.
+   * False when that resolution failed.
+   */
+  const resolveLocalWorkspace = async (): Promise<boolean> => {
+    const teamWorkspaceStore = useTeamWorkspaceStore()
+    const needsResolution =
+      !isCloud &&
+      currentUser.value !== null &&
+      !teamWorkspaceStore.activeWorkspaceId &&
+      teamWorkspaceStore.initState !== 'ready'
+    if (!needsResolution) return true
+    try {
+      await teamWorkspaceStore.initialize()
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  /** The run token for the tab's active workspace, per distribution. */
+  const activeWorkspaceRunToken = async (): Promise<string | undefined> => {
+    const activeWorkspaceId = useTeamWorkspaceStore().activeWorkspaceId
+    if (!isCloud && currentUser.value && !activeWorkspaceId) return undefined
+    if (!activeWorkspaceId) return (await getIdToken()) ?? undefined
+    return (
+      (await useWorkspaceAuthStore().ensureWorkspaceToken(activeWorkspaceId)) ??
+      undefined
+    )
+  }
+
+  const getAccountWorkspaceAuthToken = async (): Promise<
+    string | undefined
+  > => {
     const requests = webSessionRequests()
     if (requests) return webSessionRunToken(requests)
 
@@ -546,30 +586,31 @@ export const useAuthStore = defineStore('auth', () => {
       return undefined
     }
 
-    const teamWorkspaceStore = useTeamWorkspaceStore()
-    if (
-      !isCloud &&
-      currentUser.value &&
-      !teamWorkspaceStore.activeWorkspaceId &&
-      (teamWorkspaceStore.initState === 'uninitialized' ||
-        teamWorkspaceStore.initState === 'loading' ||
-        teamWorkspaceStore.initState === 'error')
-    ) {
-      try {
-        await teamWorkspaceStore.initialize()
-      } catch {
-        return undefined
-      }
-    }
+    if (!(await resolveLocalWorkspace())) return undefined
 
-    const activeWorkspaceId = teamWorkspaceStore.activeWorkspaceId
-    if (!isCloud && currentUser.value && !activeWorkspaceId) return undefined
-    if (!activeWorkspaceId) return (await getIdToken()) ?? undefined
-    return (
-      (await useWorkspaceAuthStore().ensureWorkspaceToken(activeWorkspaceId)) ??
-      undefined
-    )
+    return activeWorkspaceRunToken()
   }
+
+  const getIdToken = preferDesktopHost(
+    () => desktopHostTabToken(),
+    getFirebaseIdToken
+  )
+  const getAuthHeader = preferDesktopHost(
+    desktopHostTabHeader,
+    getAccountAuthHeader
+  )
+  const getWorkspaceAuthHeader = preferDesktopHost(
+    desktopHostTabHeader,
+    getAccountWorkspaceAuthHeader
+  )
+  const getAuthToken = preferDesktopHost(
+    () => desktopHostTabToken(),
+    getAccountAuthToken
+  )
+  const getWorkspaceAuthToken = preferDesktopHost(
+    () => desktopHostTabToken(),
+    getAccountWorkspaceAuthToken
+  )
 
   const getAuthHeaderOrThrow = async (): Promise<AuthHeader> => {
     const authHeader = await getAuthHeader()
