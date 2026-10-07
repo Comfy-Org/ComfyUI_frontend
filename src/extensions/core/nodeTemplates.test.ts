@@ -1,9 +1,15 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { expect, it, vi } from 'vitest'
 
+import {
+  CANVAS_CLIPBOARD_ID_KEY,
+  CANVAS_CLIPBOARD_KEY
+} from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { ComfyApi } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import { useDialogService } from '@/services/dialogService'
 
 const getUserData = vi.hoisted(() => vi.fn())
 
@@ -85,4 +91,26 @@ it('reports invalid persisted node templates before falling back to empty', asyn
       }
     }
   ])
+})
+
+it('restores the canvas clipboard and its id after saving a template', async () => {
+  localStorage.setItem(CANVAS_CLIPBOARD_KEY, '{"nodes":[]}')
+  localStorage.setItem(CANVAS_CLIPBOARD_ID_KEY, 'copy-1')
+  vi.mocked(useDialogService).mockReturnValue(
+    fromPartial({ prompt: async () => 'Template' })
+  )
+  app.canvas = fromPartial<LGraphCanvas>({
+    selected_nodes: {},
+    copyToClipboard: () => {
+      localStorage.setItem(CANVAS_CLIPBOARD_KEY, '{"nodes":[{}]}')
+      localStorage.setItem(CANVAS_CLIPBOARD_ID_KEY, 'template-copy')
+      return '{"nodes":[{}]}'
+    }
+  })
+  const saveItem = extension.getCanvasMenuItems?.(fromAny({}))[1]
+
+  await saveItem?.callback?.call(fromAny({}))
+
+  expect(localStorage.getItem(CANVAS_CLIPBOARD_KEY)).toBe('{"nodes":[]}')
+  expect(localStorage.getItem(CANVAS_CLIPBOARD_ID_KEY)).toBe('copy-1')
 })
