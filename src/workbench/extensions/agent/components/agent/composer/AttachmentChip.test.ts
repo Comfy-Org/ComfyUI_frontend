@@ -54,6 +54,9 @@ describe('AttachmentChip', () => {
       expect(trigger).toHaveFocus()
       await user.keyboard(key)
       expect(await screen.findByRole('dialog', { name })).toBeVisible()
+      await waitFor(() =>
+        expect(trigger).toHaveAttribute('aria-expanded', 'true')
+      )
       const player = screen.getByLabelText(name, { selector })
       assert.instanceOf(player, HTMLMediaElement)
       await waitFor(() => expect(player).toHaveFocus())
@@ -63,6 +66,7 @@ describe('AttachmentChip', () => {
       await user.keyboard('{Escape}')
       await waitFor(() => expect(player).not.toBeInTheDocument())
       await waitFor(() => expect(trigger).toHaveFocus())
+      expect(trigger).toHaveAttribute('aria-expanded', 'false')
       expect(pause).toHaveBeenCalledOnce()
       await user.keyboard(key)
       expect(await screen.findByLabelText(name, { selector })).toHaveAttribute(
