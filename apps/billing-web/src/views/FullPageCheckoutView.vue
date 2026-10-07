@@ -3,6 +3,7 @@ import { useEventListener } from '@vueuse/core'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import type { SubscriptionPreview } from '@comfyorg/account-core/billing'
 import {
   formatQuoteMoney,
   isAnnualDuration
@@ -10,6 +11,7 @@ import {
 
 import { isLocked, submitPhaseOf } from '@/checkout/checkoutPage'
 import { endingOf } from '@/checkout/endingScreen'
+import { operationPlanLabel, operationPlanOf } from '@/checkout/operationPlan'
 import type { EndingPlan } from '@/components/fullPage/EndingPlanCard.vue'
 import CheckoutEnding from '@/components/fullPage/CheckoutEnding.vue'
 import type { CheckoutCharge } from '@/components/fullPage/CheckoutPaymentColumn.vue'
@@ -126,37 +128,42 @@ const breakdown = computed(() =>
 
 const locked = computed(() => isLocked(page.value))
 
-/**
- * The plan a settled payment bought: as this page's own quote priced it, or,
- * for any payment it did not price here, as the server's catalog lists it.
- */
-const boughtPlan = computed(() => {
+const recoveredPlan = computed(() => {
   const current = page.value
-  if (current.kind === 'terminal' && current.attribution !== 'started')
-    return current.plan && { ...current.plan, currency: 'usd' }
-  const quoted =
-    (current.kind === 'terminal' ? current.quote : undefined) ?? preview.value
-  return quoted && { ...quoted.new_plan, currency: quoted.currency ?? 'usd' }
+  if (current.kind !== 'waiting') return undefined
+  const plan = current.operation.plan
+  return { label: plan && operationPlanLabel(plan, ledgerContext.value) }
 })
 
+/**
+ * The plan a settled payment bought, as the server reports it for the
+ * operation. Only this page's own Pay, settled without that report, names the
+ * plan its quote priced.
+ */
 const endingPlan = computed<EndingPlan | undefined>(() => {
-  const plan = boughtPlan.value
-  if (!plan) return undefined
+  const current = page.value
+  if (current.kind !== 'terminal') return undefined
+  const reported = operationPlanOf(current.operation)
+  if (reported) return operationPlanLabel(reported, ledgerContext.value)
+  if (current.attribution !== 'started') return undefined
+  const quoted = current.quote ?? preview.value
+  return quoted && quotedPlanLabel(quoted)
+})
+
+function quotedPlanLabel(quoted: SubscriptionPreview): EndingPlan {
+  const plan = quoted.new_plan
+  const currency = quoted.currency ?? 'usd'
   return {
     name: coded('tier', plan.tier),
-    price: formatQuoteMoney(
-      Number(plan.price_cents),
-      plan.currency,
-      locale.value
-    ),
+    price: formatQuoteMoney(Number(plan.price_cents), currency, locale.value),
     period: t(
       isAnnualDuration(plan.duration)
         ? 'checkout.fullPage.ending.perYear'
         : 'checkout.fullPage.ending.perMonth',
-      { currency: plan.currency.toUpperCase() }
+      { currency: currency.toUpperCase() }
     )
   }
-})
+}
 
 function goBack() {
   reportReturnClicked('back')
@@ -192,6 +199,7 @@ function viewPlans() {
       <CheckoutSummaryColumn
         v-slot="{ ledger: shown }"
         :ledger
+        :operation-plan="recoveredPlan"
         :locked
         :repricing="promo.busy.value"
         @back="goBack"

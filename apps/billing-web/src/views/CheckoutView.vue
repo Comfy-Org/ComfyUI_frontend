@@ -47,9 +47,11 @@ import {
   teamCheckoutPlan,
   tierCheckoutPlan
 } from '@/checkout/checkoutRequest'
+import { operationPlanLabel, operationPlanOf } from '@/checkout/operationPlan'
 import CheckoutFrame from '@/components/CheckoutFrame.vue'
 import type { CheckoutToastItem } from '@/components/CheckoutToasts.vue'
 import CheckoutToasts from '@/components/CheckoutToasts.vue'
+import OperationPlanSummary from '@/components/OperationPlanSummary.vue'
 import { useBilledWorkspace } from '@/composables/useBilledWorkspace'
 import { useCheckoutCopy } from '@/composables/useCheckoutCopy'
 import { useCheckoutJourney } from '@/composables/useCheckoutJourney'
@@ -391,6 +393,40 @@ watch(
   }
 )
 
+/**
+ * The operation this page found rather than issued: one the lifecycle held
+ * before this page's own subscribe was in flight. Pay joins it, never replaces
+ * it, so it keeps that provenance to the end.
+ */
+const recoveredOperationId = ref<string>()
+watch(
+  () => checkout.operation.value?.id,
+  (id) => {
+    if (id !== undefined && !checkout.submitting.value)
+      recoveredOperationId.value = id
+  },
+  { immediate: true, flush: 'sync' }
+)
+
+/** A recovered payment is summarized by the plan the server reports for it, never the link's. */
+const recoveredPlan = computed(() => {
+  const operation = checkout.operation.value
+  if (operation === undefined || operation.id !== recoveredOperationId.value)
+    return undefined
+  if (operation.phase !== 'pending' && operation.phase !== 'succeeded')
+    return undefined
+  const plan = operationPlanOf(operation)
+  return {
+    label:
+      plan &&
+      operationPlanLabel(plan, {
+        t,
+        tierName: (tier) => coded('tier', tier),
+        locale: locale.value
+      })
+  }
+})
+
 const succeeded = computed(() => checkout.projection.value.step === 'success')
 
 /**
@@ -649,11 +685,19 @@ useEventListener(window, 'pagehide', () => {
             :dark-surface="isNewSubscription"
             :max-seats="seats.max"
             :occupied-seats="seats.occupied"
+            :plan-replaced="recoveredPlan !== undefined"
             :invites
             @invited="readSeats"
             @invites-failed="inviteFailure = $event"
             @close="leaveForHost('success_close')"
-          />
+          >
+            <template #plan>
+              <OperationPlanSummary
+                class="mt-4 w-full rounded-xl bg-secondary-background p-4"
+                :recovered="recoveredPlan"
+              />
+            </template>
+          </CheckoutTeamSuccess>
           <CheckoutSubscribeConfirm
             v-else-if="isNewSubscription"
             :selected-saved-method-id="selectedSavedMethodId"
@@ -674,6 +718,7 @@ useEventListener(window, 'pagehide', () => {
             :quote-is-current
             :is-applying-promotion-code="applyingPromotionCode"
             :embedded-checkout-enabled="true"
+            :summary-replaced="recoveredPlan !== undefined"
             @update:selected-saved-method-id="selectSavedMethod"
             @change-payment-method="selectSavedMethod(null)"
             @add-credit-card="payWithoutCard"
@@ -685,7 +730,11 @@ useEventListener(window, 'pagehide', () => {
             @invalidate-quote="quoteIsCurrent = false"
             @payment-phase="journey.track"
             @back="leaveForHost('back')"
-          />
+          >
+            <template #summary>
+              <OperationPlanSummary :recovered="recoveredPlan" />
+            </template>
+          </CheckoutSubscribeConfirm>
           <CheckoutTransitionConfirm
             v-else
             :preview-data="preview"
@@ -704,11 +753,16 @@ useEventListener(window, 'pagehide', () => {
             :quote-is-current
             :is-applying-promotion-code="applyingPromotionCode"
             :embedded-checkout-enabled="true"
+            :summary-replaced="recoveredPlan !== undefined"
             @confirm="pay({ confirmReactivation: $event })"
             @apply-promotion-code="applyPromotionCode"
             @invalidate-quote="quoteIsCurrent = false"
             @back="leaveForHost('back')"
-          />
+          >
+            <template #summary>
+              <OperationPlanSummary :recovered="recoveredPlan" />
+            </template>
+          </CheckoutTransitionConfirm>
         </CheckoutFrame>
       </template>
     </section>

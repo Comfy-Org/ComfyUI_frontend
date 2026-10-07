@@ -325,7 +325,11 @@ describe('CheckoutView', () => {
   it('keeps a live operation on the plan it was quoted for, paying', async () => {
     const fake = await renderCheckout()
     await screen.findByRole('button', { name: 'Pay and subscribe' })
-    fake.publishOperation(pendingOperation())
+    const inFlight = {
+      ...pendingOperation(),
+      plan: { slug: 'creator_monthly', duration: 'MONTHLY', tier: 'CREATOR' }
+    } as const
+    fake.publishOperation(inFlight)
     await waitFor(() => expect(formProps.value.isLoading).toBe(true))
 
     const next = `/v1/checkout?${ENTRY_QUERY}&plan=creator_annual`
@@ -334,9 +338,9 @@ describe('CheckoutView', () => {
     await nextTick()
 
     // The operation is still running against creator_monthly, so the page
-    // stays on the quote that produced it rather than pricing another plan.
+    // stays on that payment's plan rather than pricing another one.
     expect(fake.previewSubscribe).toHaveBeenCalledTimes(1)
-    expect(screen.getByText('Creator')).toBeInTheDocument()
+    expect(screen.getByText('Creator Monthly')).toBeInTheDocument()
   })
 
   it('still quotes when the lifecycle already carries an operation at mount', async () => {

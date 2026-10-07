@@ -513,8 +513,8 @@ describe('FullPageCheckoutView', () => {
     )
     expect(confirmButton('Confirm upgrade')).toBeDisabled()
     expect(
-      screen.getByText('Upgrade to Creator Plan · Acme Team')
-    ).toBeInTheDocument()
+      screen.queryByText('Upgrade to Creator Plan · Acme Team')
+    ).not.toBeInTheDocument()
   })
 
   it.for<{
@@ -1625,8 +1625,8 @@ describe('FullPageCheckoutView mount reconciliation', () => {
       "This payment is already processing and can't be canceled."
     )
     expect(
-      screen.getByText('Subscribe to Creator Plan · Acme Team')
-    ).toBeInTheDocument()
+      screen.queryByText('Subscribe to Creator Plan · Acme Team')
+    ).not.toBeInTheDocument()
     await waitFor(() => expect(form.locked()).toBe(true))
     expect(payButton()).toBeDisabled()
 
@@ -2242,7 +2242,9 @@ describe("FullPageCheckoutView over this tab's own payment", () => {
       await screen.findByRole('heading', { name: 'Already completed' })
     ).toBeInTheDocument()
     const plan = await screen.findByTestId('checkout-ending-plan')
-    expect(plan).toHaveTextContent('Pro$50.00 USD / mo10,000 credits added')
+    expect(plan).toHaveTextContent(
+      'Pro Monthly$50.00 USD / mo10,000 credits added'
+    )
     expect(screen.queryByTestId('checkout-ending-code')).not.toBeInTheDocument()
   })
 
