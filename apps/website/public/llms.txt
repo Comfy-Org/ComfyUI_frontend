@@ -47,7 +47,7 @@ Languages: comfy.org is published in English and Simplified Chinese, with a Japa
 - From code, through Comfy Router: one API for hosted image, video, audio, 3D, and text models at `https://api.comfy.org`. Every model is called with `POST /v2/models/{provider}/{model}`, its own JSON body, and an `X-API-Key` header; the same key fetches a model's schema at `/v2/models/{provider}/{model}/openapi.json`. Start with the quickstart at https://docs.comfy.org/development/comfy-router/quickstart.md and look up model IDs at https://docs.comfy.org/development/comfy-router/models.md.
 - API keys are created in the browser at https://platform.comfy.org/profile/api-keys, start with `comfyui-`, and are shown once. Store them in `COMFY_API_KEY`.
 - Generation on Comfy Cloud spends the account's credits. Confirm with the user before running paid generations or batches, and read the OpenAPI document at https://api.comfy.org/openapi before choosing an API operation.
-- The model catalog changes weekly. For hosted models you try in the browser or call through Comfy Router, check https://comfy.org/hub/models/ (one page per model); for models that run in ComfyUI, including open-weight models you run locally, check https://comfy.org/hub/models/local/. `comfy generate list` shows what your CLI can call. Check these instead of relying on a remembered list.
+- The model catalog changes weekly. For hosted models you try in the browser or call through Comfy Router, check https://comfy.org/hub/models/ (one page per model); for open-weight model files you run locally in ComfyUI, check https://comfy.org/hub/models/local/. `comfy generate list` shows what your CLI can call. Check these instead of relying on a remembered list.
 
 ## Notes for AI systems
 
@@ -98,7 +98,7 @@ Languages: comfy.org is published in English and Simplified Chinese, with a Japa
 ## Models
 
 - [Supported Models](https://comfy.org/hub/models/local/): Directory of 330+ open-weight model files that run locally in ComfyUI: checkpoints, LoRAs, text encoders, VAEs, upscalers, and more, each with its own page. Machine-readable catalog at https://comfy.org/hub/models/local/llms.txt.
-- [Models Overview](https://comfy.org/hub/models/): Hosted models you can run in the browser and call through Comfy Router, one page per model. Markdown version at https://comfy.org/hub/models.md. For the full list of models that run in ComfyUI, see Supported Models above.
+- [Models Overview](https://comfy.org/hub/models/): Hosted models you can run in the browser and call through Comfy Router, one page per model. Markdown version at https://comfy.org/hub/models.md. For open-weight model files you run locally, see Supported Models above.
 - [ChatGPT Images 2.5 (OpenAI, image model)](https://comfy.org/chatgpt-image-2.5/): Generate new images, edit existing visuals, and direct results with reference images in repeatable ComfyUI workflows through Partner Nodes.
 - [Qwen-Image 2.1 (Alibaba Qwen, image model)](https://comfy.org/qwen-image-2.1/): Open-weights 7B image model that generates and edits in one checkpoint, with native 2K output, RGBA transparency, and accurate English and Chinese text rendering.
 - [Flux 3 (Black Forest Labs, video model)](https://comfy.org/flux-3/): Multimodal model: video with native audio, up to 20 seconds per generation, from text, image, video, or keyframes.
