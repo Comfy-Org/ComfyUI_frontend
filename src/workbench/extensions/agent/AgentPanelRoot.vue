@@ -266,6 +266,7 @@ watch(
  */
 const agentHasFunds = computed(() => subscription.value?.agentHasFunds)
 const creditsExhausted = computed(() => {
+  if (!consentAccepted.value) return false
   if (billingType.value !== 'workspace') return false
   // Same gate as the impression report above: an unsettled read cannot say
   // which presentation is right, and a card naming the wrong remediation is
