@@ -474,6 +474,7 @@ function supersededOverflowAlias(
  * `configure`; a name that still matches nothing is dropped without a report.
  */
 function mountedWidgetValues(
+  node: LGraphNode,
   widgets: DocNode['widgets'],
   constructed: readonly IBaseWidget[],
   constructedNames: ReadonlySet<string>
@@ -483,7 +484,7 @@ function mountedWidgetValues(
     const index = overflowWidgetIndex(name)
     return index === null
       ? !constructedNames.has(name)
-      : index >= constructed.length
+      : overflowWidget(node, name) === undefined || index >= constructed.length
   })
   return mounted.length === 0 ? undefined : Object.fromEntries(mounted)
 }
@@ -505,9 +506,12 @@ function positionalWidgetValues(
     )
   }
   return serializableWidgets(node).map((widget, index) => {
+    const alias = `_extra_${index}`
     const name = Object.hasOwn(widgets, widget.name)
       ? widget.name
-      : `_extra_${index}`
+      : overflowWidget(node, alias) === widget && Object.hasOwn(widgets, alias)
+        ? alias
+        : widget.name
     const value = widgets[name]
     return Object.hasOwn(widgets, name) && isWidgetValue(value)
       ? value
@@ -760,6 +764,7 @@ export class LiveGraphApplier {
           widgets_values: positionalWidgetValues(node, docNode.widgets)
         })
         const mounted = mountedWidgetValues(
+          node,
           docNode.widgets,
           constructed,
           constructedNames

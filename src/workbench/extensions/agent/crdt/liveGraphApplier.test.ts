@@ -307,6 +307,33 @@ describe('LiveGraphApplier', () => {
     )
   })
 
+  it('rejects an initial positional alias on a node without a dynamic combo', () => {
+    const { graph, applyCollected } = setup({
+      nodes: [
+        {
+          id: 1,
+          type: 'TestPlainWidgets',
+          pos: [0, 0],
+          size: [210, 100],
+          widgets_values: [11, 99]
+        }
+      ],
+      links: []
+    })
+
+    applyCollected()
+
+    expect(
+      graph.getNodeById(toNodeId(1))?.widgets?.map((widget) => widget.value)
+    ).toEqual([11, 20])
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: "Node 1 (TestPlainWidgets) has no widget '_extra_1'"
+      }),
+      expect.objectContaining({ errorType: 'agent_graph_widget_missing' })
+    )
+  })
+
   it('restores an overflow entry to its serializable widget position', () => {
     const { graph, applyCollected } = setup({
       nodes: [
