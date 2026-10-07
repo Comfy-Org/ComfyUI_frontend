@@ -122,6 +122,55 @@ describe('useNodeDragAndDrop', () => {
     expect(onDrop).not.toHaveBeenCalled()
   })
 
+  it('onDragDrop claims rejected files when a rejection handler is present', async () => {
+    const onReject = vi.fn().mockReturnValue(true)
+    const file = createFile('extensionless', 'video/mp4')
+    const node = createNode()
+    useNodeDragAndDrop(node, {
+      onDrop: vi.fn().mockResolvedValue([]),
+      fileFilter: () => false,
+      onReject
+    })
+
+    const result = await node.onDragDrop?.(
+      createDragEvent({ files: [file], items: [{ kind: 'file' }] })
+    )
+
+    expect(result).toBe(true)
+    expect(onReject).toHaveBeenCalledWith([file])
+  })
+
+  it('does not claim a rejected file when the rejection handler declines it', async () => {
+    const onReject = vi.fn().mockReturnValue(false)
+    const file = createFile('image.png')
+    const node = createNode()
+    useNodeDragAndDrop(node, {
+      onDrop: vi.fn().mockResolvedValue([]),
+      fileFilter: () => false,
+      onReject
+    })
+
+    const result = await node.onDragDrop?.(
+      createDragEvent({ files: [file], items: [{ kind: 'file' }] })
+    )
+
+    expect(result).toBe(false)
+    expect(onReject).toHaveBeenCalledWith([file])
+  })
+
+  it('does not fetch the page for a non-file drop without a uri', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch')
+    const node = createNode()
+    useNodeDragAndDrop(node, { onDrop: vi.fn().mockResolvedValue([]) })
+
+    const result = await node.onDragDrop?.(
+      createDragEvent({ items: [{ kind: 'string' }], types: ['text/plain'] })
+    )
+
+    expect(result).toBe(false)
+    expect(fetchSpy).not.toHaveBeenCalled()
+  })
+
   it('onDragDrop handles same-origin uri drops', async () => {
     const onDrop = vi.fn().mockResolvedValue([])
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(

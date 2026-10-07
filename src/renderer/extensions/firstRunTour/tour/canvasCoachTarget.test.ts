@@ -92,8 +92,6 @@ describe('canvasNodeTarget', () => {
     state.canvasOffset = { left: 0, top: 0 }
     Object.assign(state.camera, { x: 0, y: 0, z: 1 })
     if (state.layout) state.layout.value = null
-    state.layoutReads.mockClear()
-    state.releaseBounds.mockClear()
   })
 
   it('releases what it watches when the tour drops it', () => {

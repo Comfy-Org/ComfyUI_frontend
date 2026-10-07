@@ -1,4 +1,4 @@
-import type { VideoTrack } from '../components/common/VideoPlayer.vue'
+import type { VideoTrack } from '@/components/common/VideoPlayer.vue'
 
 /**
  * Single source of truth for the two customer-story videos that get a

@@ -9,7 +9,9 @@
  * which this page load stays on the session client.
  */
 import type { ComputedRef } from 'vue'
-import { computed, shallowRef } from 'vue'
+import { computed, shallowRef, watch } from 'vue'
+
+import type { WebSessionMode } from '@comfyorg/account-core/billing'
 
 import type { SignInPort } from '@/auth/useSignInController'
 import { sessionClientPort } from '@/auth/useSignInController'
@@ -30,16 +32,19 @@ import {
 } from '@/session/billingWebSession'
 import type { UnifiedBillingSession } from '@/session/unifiedBillingSession'
 import { createUnifiedBillingSession } from '@/session/unifiedBillingSession'
-
-type BillingWebMode = 'session-client' | 'web-session'
+import {
+  reportSessionEstablished,
+  reportSessionFailed,
+  reportSigninRequired
+} from '@/telemetry/webSessionTelemetry'
 
 interface BilledScope {
   readonly uid: string
   readonly workspace: { readonly id: string; readonly name: string }
 }
 
-const mode = shallowRef<BillingWebMode>()
-let decision: Promise<BillingWebMode> | undefined
+const mode = shallowRef<WebSessionMode>()
+let decision: Promise<WebSessionMode> | undefined
 let unified: UnifiedBillingSession | undefined
 
 function unifiedSession(): UnifiedBillingSession {
@@ -54,8 +59,15 @@ function unifiedSession(): UnifiedBillingSession {
 
 const DECISION_CAP_MS = 800
 
+/** Set once the customer authenticates on this page, so a retry after that still reads as interactive. */
+let signedInHere = false
+
+function reportEstablished(decided: WebSessionMode): void {
+  reportSessionEstablished(signedInHere ? 'interactive' : 'restored', decided)
+}
+
 /** First answer wins; a flag arriving after the cap changes nothing. */
-function decideMode(): Promise<BillingWebMode> {
+function decideMode(): Promise<WebSessionMode> {
   decision ??= new Promise<boolean>((resolve) => {
     const cap = setTimeout(() => resolve(false), DECISION_CAP_MS)
     void readBillingWebUnifiedWebSession().then((enabled) => {
@@ -126,7 +138,7 @@ export function useBilledScope(): ComputedRef<BilledScope | undefined> {
 
 let clientPort: SignInPort | undefined
 
-function decidedPort(decided: BillingWebMode): SignInPort {
+function decidedPort(decided: WebSessionMode): SignInPort {
   if (decided === 'web-session') return unifiedSession().signInPort
   clientPort ??= sessionClientPort()
   return clientPort
@@ -135,8 +147,12 @@ function decidedPort(decided: BillingWebMode): SignInPort {
 /**
  * The sign-in page mounts before the decision lands; its port follows the
  * decision, so a Cloud session found in time leaves the page like a restore.
+ * Opening the port is what puts the page in front of the customer, so it
+ * reports that the session needs sign-in, and the port reports how each
+ * attempt to establish the session went.
  */
 export function billingWebSignInPort(): SignInPort {
+  watch(billingWebLivePhase, reportSigninRequired, { immediate: true })
   return {
     user: computed(() =>
       mode.value ? decidedPort(mode.value).user.value : null
@@ -145,7 +161,14 @@ export function billingWebSignInPort(): SignInPort {
       mode.value ? decidedPort(mode.value).failureCode.value : undefined
     ),
     loadIdentity: async () => decidedPort(await decideMode()).loadIdentity(),
-    establish: async (user) => decidedPort(await decideMode()).establish(user)
+    establish: async (user) => {
+      const decided = await decideMode()
+      if (user !== undefined) signedInHere = true
+      const result = await decidedPort(decided).establish(user)
+      if (result.status === 'ok') reportEstablished(decided)
+      else reportSessionFailed(result.code)
+      return result
+    }
   }
 }
 

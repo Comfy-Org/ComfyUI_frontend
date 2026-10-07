@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
-import { readBalanceCents } from '../acceptance/billing'
-import { waitForBalance } from '../acceptance/fixtures'
+import { readBalanceCents } from '@website/acceptance/billing'
+import { waitForBalance } from '@website/acceptance/fixtures'
 import { test } from './fixtures/blockExternalMedia'
 
 test('acceptance waits through a failed balance read and delayed fractional usage', async () => {

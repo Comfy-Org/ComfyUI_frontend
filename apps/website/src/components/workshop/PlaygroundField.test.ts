@@ -7,14 +7,11 @@ import type {
   FieldErrors,
   FieldSchema,
   FormValues
-} from '../../config/workshop-playground'
-import type { WorkshopInputDefinition } from '../../config/workshop-input-definition'
-import { resolveWorkshopUrlInputs } from '../../config/workshop-url-input'
-import {
-  defaultValues,
-  MAX_UPLOAD_BYTES
-} from '../../config/workshop-playground'
-import type { Locale } from '../../i18n/translations'
+} from '@/config/workshop-playground'
+import type { WorkshopInputDefinition } from '@/config/workshop-input-definition'
+import { resolveWorkshopUrlInputs } from '@/config/workshop-url-input'
+import { defaultValues, MAX_UPLOAD_BYTES } from '@/config/workshop-playground'
+import type { Locale } from '@/i18n/translations'
 import PlaygroundField from './PlaygroundField.vue'
 
 function mountField(

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { Alternate } from './hreflangRoutes'
 
-import { hreflangAlternates } from '../lib/hreflang'
+import { hreflangAlternates } from '@/lib/hreflang'
 import { auditBuiltSite, routeOfHref, sitemapChunkNames } from './hreflangAudit'
 
 const ORIGIN = 'https://comfy.org'

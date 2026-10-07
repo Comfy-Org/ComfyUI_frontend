@@ -3,14 +3,14 @@ import { describe, expect, it, vi } from 'vitest'
 import { createSSRApp, h, readonly, ref } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 
-import type { WorkshopModelDetail } from '../../config/models-catalogue'
-import { workshopContract } from '../../config/workshop-contract-catalog'
-import { useWorkshopEnabled } from '../../scripts/posthog'
+import type { WorkshopModelDetail } from '@/config/models-catalogue'
+import { workshopContract } from '@/config/workshop-contract-catalog'
+import { useWorkshopEnabled } from '@/scripts/posthog'
 import ModelDetail from './ModelDetail.vue'
 
-vi.mock(import('../../scripts/posthog'))
-vi.mock(import('../../config/workshop-session-state'))
-vi.mock(import('../../config/workshop-credits'))
+vi.mock(import('@/scripts/posthog'))
+vi.mock(import('@/config/workshop-session-state'))
+vi.mock(import('@/config/workshop-credits'))
 
 const model: WorkshopModelDetail = {
   slug: 'demo',

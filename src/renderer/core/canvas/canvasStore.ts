@@ -3,6 +3,7 @@ import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 
 import { useAppMode } from '@/composables/useAppMode'
+import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
 
 import type { Point, Positionable } from '@/lib/litegraph/src/interfaces'
 import type {
@@ -20,6 +21,7 @@ import { LayoutSource } from '@/renderer/core/layout/types'
 import { graphScopeOf } from '@/types/graphScopeId'
 import type { NodeId } from '@/types/nodeId'
 import { isLGraphNode } from '@/utils/litegraphUtil'
+import { createPositionBounds } from '@/utils/positionBounds'
 
 export const useTitleEditorStore = defineStore('titleEditor', () => {
   const titleEditorTarget = shallowRef<LGraphNode | LGraphGroup | null>(null)
@@ -107,6 +109,29 @@ export const useCanvasStore = defineStore('canvas', () => {
   const rootGraphId = computed(() => currentGraph.value?.rootGraph.id)
   const isInSubgraph = ref(false)
   const isGhostPlacing = ref(false)
+  const isPickingNodes = ref(false)
+
+  function startNodePicking(): void {
+    const currentCanvas = canvas.value
+    if (!currentCanvas || isPickingNodes.value) return
+    isPickingNodes.value = true
+    const selected = [...currentCanvas.selectedItems]
+    const bounds = createPositionBounds(
+      selected.length ? selected : (currentCanvas.graph?.nodes ?? []),
+      40
+    )
+    if (bounds) {
+      currentCanvas.animateToBounds(bounds, {
+        viewport: visibleCanvasViewport(currentCanvas)
+      })
+    }
+  }
+
+  function stopNodePicking(): undefined {
+    if (!isPickingNodes.value) return
+    isPickingNodes.value = false
+    canvas.value?.deselectAll()
+  }
 
   /** The selected items of the on-screen graph, derived from the selection store. */
   const selectedItems = computed<Positionable[]>(() => {
@@ -197,6 +222,9 @@ export const useCanvasStore = defineStore('canvas', () => {
     currentGraph,
     rootGraphId,
     isInSubgraph,
-    isGhostPlacing
+    isGhostPlacing,
+    isPickingNodes,
+    startNodePicking,
+    stopNodePicking
   }
 })

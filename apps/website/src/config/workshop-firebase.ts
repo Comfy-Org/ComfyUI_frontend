@@ -16,8 +16,8 @@ import {
   signUpWithProvisioning
 } from '@comfyorg/account-core/provisioning'
 
-import { captureSignupRollbackFailure } from '../scripts/posthog'
-import { createTimeoutSignal } from '../utils/abortSignal'
+import { captureSignupRollbackFailure } from '@/scripts/posthog'
+import { createTimeoutSignal } from '@/utils/abortSignal'
 import {
   WORKSHOP_FIREBASE_OPTIONS,
   WORKSHOP_ROUTER_BASE_URL

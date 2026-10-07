@@ -1,35 +1,37 @@
-import { computed, onMounted, ref, shallowRef, watchEffect } from 'vue'
+import { computed, onMounted, ref, shallowRef, watch, watchEffect } from 'vue'
 
-import type { CinematicCopyKey } from '../lib/workshop/cinematic-studio/copy'
+import { CINEMATIC_STUDIO_APP_SLUG } from '@/lib/workshop/cinematic-studio/analytics'
+import type { CinematicCopyKey } from '@/lib/workshop/cinematic-studio/copy'
+import { captureWorkshopEvent } from '@/scripts/posthog'
 
 import type {
   AspectRatio,
   Direction,
   DirectionPart,
   Resolution
-} from '../lib/workshop/cinematic-studio/catalog'
+} from '@/lib/workshop/cinematic-studio/catalog'
 import {
   DEFAULT_DIRECTION,
   RESOLUTIONS,
   directionOption
-} from '../lib/workshop/cinematic-studio/catalog'
-import { shotEstimate } from '../lib/workshop/cinematic-studio/estimate'
-import type { CinematicModel } from '../lib/workshop/cinematic-studio/models'
+} from '@/lib/workshop/cinematic-studio/catalog'
+import { shotEstimate } from '@/lib/workshop/cinematic-studio/estimate'
+import type { CinematicModel } from '@/lib/workshop/cinematic-studio/models'
 import {
   shotAspects,
   takesReferences,
   videoShotBlock
-} from '../lib/workshop/cinematic-studio/models'
-import { nearestAspect } from '../lib/workshop/cinematic-studio/frames'
-import type { CinematicVideoCapabilities } from '../lib/workshop/cinematic-studio/video'
-import type { StudioImage } from '../lib/workshop/cinematic-studio/take-image'
+} from '@/lib/workshop/cinematic-studio/models'
+import { nearestAspect } from '@/lib/workshop/cinematic-studio/frames'
+import type { CinematicVideoCapabilities } from '@/lib/workshop/cinematic-studio/video'
+import type { StudioImage } from '@/lib/workshop/cinematic-studio/take-image'
 import {
   imageFile,
   imageInput,
   keepTake
-} from '../lib/workshop/cinematic-studio/take-image'
-import { cinematicPrompt } from '../lib/workshop/cinematic-studio/prompt'
-import type { StarterShot } from '../lib/workshop/cinematic-studio/starters'
+} from '@/lib/workshop/cinematic-studio/take-image'
+import { cinematicPrompt } from '@/lib/workshop/cinematic-studio/prompt'
+import type { StarterShot } from '@/lib/workshop/cinematic-studio/starters'
 import { isCinematicDemo, useCinematicDemoRun } from './useCinematicDemoRun'
 import { useCinematicStudioRun } from './useCinematicStudioRun'
 
@@ -65,6 +67,24 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
   const modeModels = computed(() =>
     mode.value === 'video' ? videoModels : imageModels
   )
+  // The URL's own `model` param can set the mode once on mount; that is a
+  // restore, not a reader's switch, so it is the one change this skips.
+  let restoringModeFromUrl = false
+  watch(mode, (tab) => {
+    if (restoringModeFromUrl) {
+      restoringModeFromUrl = false
+      return
+    }
+    captureWorkshopEvent({
+      name: 'tab_switched',
+      properties: {
+        model_slug: CINEMATIC_STUDIO_APP_SLUG,
+        page_type: 'app',
+        app_slug: CINEMATIC_STUDIO_APP_SLUG,
+        tab
+      }
+    })
+  })
   const scene = ref('')
   const enhance = ref(true)
   const direction = ref<Direction>(DEFAULT_DIRECTION)
@@ -85,7 +105,9 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
     const requested = new URLSearchParams(window.location.search).get('model')
     const picked = models.find((model) => model.slug === requested)
     if (!picked) return
-    mode.value = picked.mode === 'video' ? 'video' : 'image'
+    const nextMode = picked.mode === 'video' ? 'video' : 'image'
+    restoringModeFromUrl = nextMode !== mode.value
+    mode.value = nextMode
     modelSlug.value = picked.slug
   })
 

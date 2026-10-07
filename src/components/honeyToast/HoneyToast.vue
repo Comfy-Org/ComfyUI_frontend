@@ -1,5 +1,11 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
+import { provide } from 'vue'
+
+import { overlayZIndexKey } from '@/composables/useModalLiftedZIndex'
+
+const zIndex = 9999
+provide(overlayZIndexKey, zIndex)
 
 const { visible } = defineProps<{
   visible: boolean
@@ -26,9 +32,10 @@ function toggle() {
         v-if="visible"
         role="status"
         aria-live="polite"
+        :style="{ zIndex }"
         :class="
           cn(
-            'fixed inset-x-4 bottom-6 z-9999 mx-auto w-auto max-w-3xl overflow-hidden rounded-lg border border-border-default bg-base-background shadow-lg transition-all duration-300 sm:inset-x-0',
+            'fixed inset-x-4 bottom-6 mx-auto w-auto max-w-3xl overflow-hidden rounded-lg border border-border-default bg-base-background shadow-lg transition-all duration-300 sm:inset-x-0',
             isExpanded ? 'sm:w-[max(400px,40vw)]' : 'sm:w-fit'
           )
         "

@@ -1,14 +1,18 @@
 <template>
-  <ContextMenuRoot>
-    <ContextMenuTrigger :disabled="!showContextMenu" as-child>
+  <ContextMenuRoot :modal="false">
+    <ContextMenuTrigger as-child :disabled="!showContextMenu">
       <TreeRoot
-        :expanded="[...expandedKeys]"
+        v-model:expanded="expandedKeys"
         :items="root.children ?? []"
         :get-key="(item) => item.key"
         :get-children="
           (item) => (item.children?.length ? item.children : undefined)
         "
         class="m-0 min-w-0 p-0 px-2 pb-2"
+        @contextmenu="preventEmptyContextMenu"
+        @pointerdown="
+          $event.pointerType !== 'mouse' && preventEmptyContextMenu($event)
+        "
       >
         <TreeVirtualizer
           v-slot="{ item }"
@@ -36,37 +40,9 @@
         </TreeVirtualizer>
       </TreeRoot>
     </ContextMenuTrigger>
-
-    <ContextMenuPortal v-if="showContextMenu && contextMenuNode?.data">
-      <ContextMenuContent
-        class="z-9999 min-w-32 overflow-hidden rounded-md border border-border-default bg-comfy-menu-bg p-1 shadow-md"
-      >
-        <ContextMenuItem
-          class="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none select-none hover:bg-highlight focus:bg-highlight"
-          @select="handleToggleBookmark"
-        >
-          <i
-            :class="
-              isCurrentNodeBookmarked
-                ? 'icon-[ph--star-fill]'
-                : 'icon-[lucide--star]'
-            "
-            class="size-4"
-          />
-          {{
-            isCurrentNodeBookmarked
-              ? $t('sideToolbar.nodeLibraryTab.sections.unfavoriteNode')
-              : $t('sideToolbar.nodeLibraryTab.sections.favoriteNode')
-          }}
-        </ContextMenuItem>
-        <ContextMenuItem
-          v-if="isCurrentNodeUserBlueprint"
-          class="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-destructive-background outline-none select-none hover:bg-highlight focus:bg-highlight"
-          @select="handleDeleteBlueprint"
-        >
-          <i class="icon-[lucide--trash-2] size-4" />
-          {{ $t('g.delete') }}
-        </ContextMenuItem>
+    <ContextMenuPortal>
+      <ContextMenuContent :class="menuContentClass">
+        <MenuItems :items="menuItems" />
       </ContextMenuContent>
     </ContextMenuPortal>
   </ContextMenuRoot>
@@ -75,16 +51,19 @@
 <script setup lang="ts">
 import type { FlattenedItem } from 'reka-ui'
 import {
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuPortal,
   ContextMenuRoot,
   ContextMenuTrigger,
+  ContextMenuPortal,
+  ContextMenuContent,
   TreeRoot,
   TreeVirtualizer
 } from 'reka-ui'
 import { computed, provide, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
+import MenuItems from '@/components/ui/menu/MenuItems.vue'
+import { menuContentClass } from '@/components/ui/menu/menuStyles'
+import type { MenuItem } from '@/components/ui/menu/types'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
@@ -116,6 +95,7 @@ provide(InjectKeyContextMenuNode, contextMenuNode)
 
 const nodeBookmarkStore = useNodeBookmarkStore()
 const subgraphStore = useSubgraphStore()
+const { t } = useI18n()
 
 const isCurrentNodeBookmarked = computed(() => {
   const node = contextMenuNode.value
@@ -126,6 +106,29 @@ const isCurrentNodeBookmarked = computed(() => {
 const isCurrentNodeUserBlueprint = computed(() =>
   subgraphStore.isUserBlueprint(contextMenuNode.value?.data?.name)
 )
+
+const menuItems = computed<MenuItem[]>(() => [
+  {
+    label: isCurrentNodeBookmarked.value
+      ? t('sideToolbar.nodeLibraryTab.sections.unfavoriteNode')
+      : t('sideToolbar.nodeLibraryTab.sections.favoriteNode'),
+    icon: isCurrentNodeBookmarked.value
+      ? 'icon-[ph--star-fill]'
+      : 'icon-[lucide--star]',
+    command: handleToggleBookmark
+  },
+  {
+    label: t('g.delete'),
+    icon: 'icon-[lucide--trash-2]',
+    visible: isCurrentNodeUserBlueprint.value,
+    class: 'text-destructive-background',
+    command: handleDeleteBlueprint
+  }
+])
+
+function preventEmptyContextMenu(event: Event) {
+  if (!contextMenuNode.value?.data) event.preventDefault()
+}
 
 function handleToggleBookmark() {
   const node = contextMenuNode.value

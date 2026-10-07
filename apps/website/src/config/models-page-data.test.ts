@@ -1,6 +1,6 @@
 import { beforeEach, expect, it, vi } from 'vitest'
 
-import { prepareModelPage } from '../routes/models/model-page'
+import { prepareModelPage } from '@/routes/models/model-page'
 import { workshopModels } from './workshop-browse-content'
 import { fetchModelsCatalogue } from './models-catalogue-data'
 import { fetchModelsPage } from './models-page-data'

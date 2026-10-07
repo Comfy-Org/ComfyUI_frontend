@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useRegistrySearchGateway } from '@/services/gateway/registrySearchGateway'
 import { useAlgoliaSearchProvider } from '@/services/providers/algoliaSearchProvider'
@@ -9,17 +9,9 @@ vi.mock(import('@/services/providers/algoliaSearchProvider'))
 vi.mock(import('@/services/providers/registrySearchProvider'))
 
 describe('useRegistrySearchGateway', () => {
-  let consoleWarnSpy: ReturnType<typeof vi.spyOn>
-  let consoleInfoSpy: ReturnType<typeof vi.spyOn>
-
   beforeEach(() => {
-    consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    consoleInfoSpy = vi.spyOn(console, 'info').mockImplementation(() => {})
-  })
-
-  afterEach(() => {
-    consoleWarnSpy.mockRestore()
-    consoleInfoSpy.mockRestore()
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    vi.spyOn(console, 'info').mockImplementation(() => {})
   })
 
   describe('Provider initialization', () => {
@@ -145,7 +137,7 @@ describe('useRegistrySearchGateway', () => {
     })
   })
 
-  describe('Circuit breaker functionality', () => {
+  describe('provider fallback', () => {
     it('should switch to fallback provider after failure and log warnings', async () => {
       const registryResult = {
         nodePacks: [{ id: 'registry-1', name: 'Registry Pack' }],
@@ -179,36 +171,6 @@ describe('useRegistrySearchGateway', () => {
       expect(mockAlgoliaProvider.searchPacks).toHaveBeenCalledTimes(1)
       expect(mockRegistryProvider.searchPacks).toHaveBeenCalledTimes(1)
       expect(result.nodePacks[0].name).toBe('Registry Pack')
-
-      // Circuit breaker behavior is internal implementation detail
-      // We only test the observable behavior (fallback works)
-    })
-
-    it('should have circuit breaker timeout mechanism', () => {
-      // This test verifies that the constants exist for circuit breaker behavior
-      // The actual circuit breaker logic is tested in integration with real provider behavior
-      expect(typeof useRegistrySearchGateway).toBe('function')
-
-      // We can test that the gateway logs circuit breaker behavior
-      const mockAlgoliaProvider = {
-        searchPacks: vi.fn().mockRejectedValue(new Error('Persistent failure')),
-        clearSearchCache: vi.fn()
-      }
-
-      const mockRegistryProvider = {
-        searchPacks: vi
-          .fn()
-          .mockResolvedValue({ nodePacks: [], querySuggestions: [] }),
-        clearSearchCache: vi.fn()
-      }
-
-      vi.mocked(useAlgoliaSearchProvider).mockReturnValue(mockAlgoliaProvider)
-      vi.mocked(useComfyRegistrySearchProvider).mockReturnValue(
-        mockRegistryProvider
-      )
-
-      const gateway = useRegistrySearchGateway()
-      expect(gateway).toBeDefined()
     })
   })
 

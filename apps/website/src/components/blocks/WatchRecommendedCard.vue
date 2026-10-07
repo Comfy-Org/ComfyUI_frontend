@@ -3,7 +3,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import type { HTMLAttributes } from 'vue'
 
-import Badge from '../ui/badge/Badge.vue'
+import Badge from '@/components/ui/badge/Badge.vue'
 import PlayOverlay from './PlayOverlay.vue'
 
 type WatchRecommendedItem = {

@@ -38,7 +38,7 @@ export async function runMissingMediaPipeline({
 }: RunMissingMediaPipelineOptions): Promise<void> {
   const missingMediaStore = useMissingMediaStore()
   const activeWf = useWorkspaceStore().workflow.activeWorkflow
-  const allCandidates = scanAllMediaCandidates(rootGraph, isCloud)
+  const allCandidates = scanAllMediaCandidates(rootGraph)
   // Drop candidates whose enclosing subgraph is muted/bypassed.
   const candidates = allCandidates.filter((candidate) =>
     isMissingMediaCandidateScopeActive(rootGraph, candidate)
@@ -86,9 +86,7 @@ export async function runMissingMediaPipeline({
       })
   } else {
     const confirmed = candidates.filter((c) => c.isMissing === true)
-    if (confirmed.length) {
-      useExecutionErrorStore().surfaceMissingMedia(confirmed, { silent })
-    }
+    useExecutionErrorStore().surfaceMissingMedia(confirmed, { silent })
     cacheMediaCandidates(activeWf, confirmed)
     onVerified?.(candidates)
   }

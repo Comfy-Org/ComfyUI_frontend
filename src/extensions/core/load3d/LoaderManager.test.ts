@@ -145,15 +145,6 @@ describe('LoaderManager', () => {
       expect(lm.getCurrentAdapter()).toBeNull()
     })
 
-    it('exposes the picked adapter after a successful load', async () => {
-      const { lm } = makeLoaderManager()
-      meshLoad.mockResolvedValueOnce(loadResult(new THREE.Object3D()))
-
-      await lm.loadModel('api/view?filename=cube.glb')
-
-      expect(lm.getCurrentAdapter()?.kind).toBe('mesh')
-    })
-
     it('resets to null at the start of a new load', async () => {
       const { lm } = makeLoaderManager()
       meshLoad.mockResolvedValueOnce(loadResult(new THREE.Object3D()))

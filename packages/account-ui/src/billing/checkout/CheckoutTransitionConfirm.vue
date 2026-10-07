@@ -100,6 +100,25 @@
         :copy
       />
 
+      <template v-if="paymentCancelable">
+        <CheckoutButton
+          variant="secondary"
+          size="lg"
+          class="w-full rounded-lg"
+          :loading="cancelingPayment"
+          @click="emit('cancelPayment')"
+        >
+          {{ copy.cancelPaymentAndRetry }}
+        </CheckoutButton>
+        <p
+          v-if="cancelPaymentError"
+          role="alert"
+          class="m-0 text-sm text-destructive-background"
+        >
+          {{ cancelPaymentError }}
+        </p>
+      </template>
+
       <CheckoutButton
         :variant="actionUrl ? 'tertiary' : 'inverted'"
         size="lg"
@@ -170,7 +189,10 @@ const {
   reconciliationOperationId = null,
   quoteIsCurrent = false,
   isApplyingPromotionCode = false,
-  embeddedCheckoutEnabled = false
+  embeddedCheckoutEnabled = false,
+  paymentCancelable = false,
+  cancelingPayment = false,
+  cancelPaymentError = null
 } = defineProps<{
   previewData: SubscriptionPreview
   /** The plan switched to: its name and the credits one month refills. All
@@ -195,6 +217,10 @@ const {
   quoteIsCurrent?: boolean
   isApplyingPromotionCode?: boolean
   embeddedCheckoutEnabled?: boolean
+  /** The server's `cancelable` for the pending payment; the cancel is offered only on true. */
+  paymentCancelable?: boolean
+  cancelingPayment?: boolean
+  cancelPaymentError?: string | null
 }>()
 
 const emit = defineEmits<{
@@ -204,6 +230,7 @@ const emit = defineEmits<{
   back: []
   applyPromotionCode: [code: string]
   invalidateQuote: []
+  cancelPayment: []
 }>()
 
 const recoveryState = computed(() => ({

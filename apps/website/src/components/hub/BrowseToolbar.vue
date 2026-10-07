@@ -29,18 +29,14 @@ import { onClickOutside, useMediaQuery, useWindowSize } from '@vueuse/core'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { FacetTemplate, FacetValue } from '../../composables/useFacets'
-import { useFacets } from '../../composables/useFacets'
-import { useSlidingUnderline } from '../../composables/useSlidingUnderline'
-import { useVisualViewport } from '../../composables/useVisualViewport'
-import type {
-  FilterBadge,
-  HubSort,
-  HubTab
-} from '../../composables/useHubStore'
-import { useHubStore } from '../../composables/useHubStore'
-import type { FacetSheetGroup } from '../workshop/FacetSheet.vue'
-import FacetSheet from '../workshop/FacetSheet.vue'
+import type { FacetTemplate, FacetValue } from '@/composables/useFacets'
+import { useFacets } from '@/composables/useFacets'
+import { useSlidingUnderline } from '@/composables/useSlidingUnderline'
+import { useVisualViewport } from '@/composables/useVisualViewport'
+import type { FilterBadge, HubSort, HubTab } from '@/composables/useHubStore'
+import { useHubStore } from '@/composables/useHubStore'
+import type { FacetSheetGroup } from '@/components/workshop/FacetSheet.vue'
+import FacetSheet from '@/components/workshop/FacetSheet.vue'
 import IconApps from './IconApps.vue'
 import IconModel from './IconModel.vue'
 import IconWorkflow from './IconWorkflow.vue'

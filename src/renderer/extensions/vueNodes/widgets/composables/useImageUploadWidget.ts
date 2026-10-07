@@ -7,6 +7,7 @@ import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
 import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ComfyWidgetConstructor } from '@/scripts/widgets'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { isImageUploadInput } from '@/types/nodeDefAugmentation'
@@ -15,11 +16,14 @@ import { addToComboValues } from '@/utils/litegraphUtil'
 
 import {
   ACCEPTED_IMAGE_TYPES,
-  ACCEPTED_VIDEO_TYPES
+  ACCEPTED_VIDEO_TYPES,
+  isExtensionlessVideo,
+  isUploadableVideo
 } from '@/utils/mediaUploadUtil'
 
-const isImageFile = (file: File) => file.type.startsWith('image/')
-const isVideoFile = (file: File) => file.type.startsWith('video/')
+function isImageFile(file: File) {
+  return file.type.startsWith('image/')
+}
 
 type ImageUploadComboWidget = Omit<IComboWidget, 'value' | 'callback'> & {
   value: string | number | string[]
@@ -54,7 +58,12 @@ export const useImageUploadWidget = () => {
     const accept = isVideo ? ACCEPTED_VIDEO_TYPES : ACCEPTED_IMAGE_TYPES
     const { showPreview } = isVideo ? useNodeVideo(node) : useNodeImage(node)
 
-    const fileFilter = isVideo ? isVideoFile : isImageFile
+    const fileFilter = isVideo ? isUploadableVideo : isImageFile
+    function alertExtensionlessVideo(files: File[]) {
+      if (!files.some(isExtensionlessVideo)) return false
+      useToastStore().addAlert(t('g.videoFilenameExtensionRequired'))
+      return true
+    }
     const fileComboWidget = findFileComboWidget(node, imageInputName)
     if (!fileComboWidget) {
       throw new Error(`Widget "${imageInputName}" not found on node`)
@@ -72,6 +81,7 @@ export const useImageUploadWidget = () => {
       fileFilter,
       accept,
       folder,
+      onReject: isVideo ? alertExtensionlessVideo : undefined,
       onUploadStart: (files) => {
         if (files.length > 0) {
           const prev = fileComboWidget.value

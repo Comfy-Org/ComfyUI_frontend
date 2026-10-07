@@ -3,7 +3,7 @@ import { computed } from 'vue'
 
 import { centsToCredits } from '@comfyorg/shared-frontend-utils/creditsUtil'
 
-import type * as realCredits from '../workshop-credits'
+import type * as realCredits from '@/config/workshop-credits'
 
 type Credits = ReturnType<typeof realCredits.useWorkshopCredits>
 
@@ -46,4 +46,4 @@ export const {
   useTopUpWatch,
   useWorkshopCredits
 } = credits
-export type { TopUpWatchContext } from '../workshop-credits'
+export type { TopUpWatchContext } from '@/config/workshop-credits'

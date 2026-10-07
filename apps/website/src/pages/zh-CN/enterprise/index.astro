@@ -1,20 +1,20 @@
 ---
 import IndustriesSection from '@/components/home/IndustriesSection.vue'
-import BenefitsGrid01 from '../../../components/blocks/BenefitsGrid01.vue'
-import BuildConfiguratorSplit01 from '../../../components/blocks/BuildConfiguratorSplit01.vue'
-import CardSplitContent02 from '../../../components/blocks/CardSplitContent02.vue'
-import CtaBands01 from '../../../components/blocks/CtaBands01.vue'
-import CtaCenter01 from '../../../components/blocks/CtaCenter01.vue'
-import FAQSplit01 from '../../../components/blocks/FAQSplit01.vue'
-import FeatureRows02 from '../../../components/blocks/FeatureRows02.vue'
-import HeroSplit01 from '../../../components/blocks/HeroSplit01.vue'
-import OfferGrid01 from '../../../components/blocks/OfferGrid01.vue'
-import SectionIntro01 from '../../../components/blocks/SectionIntro01.vue'
-import EnterpriseHeroScene from '../../../components/product/enterprise/EnterpriseHeroScene.vue'
-import { externalLinks } from '../../../config/routes'
-import BaseLayout from '../../../layouts/BaseLayout.astro'
-import { absoluteUrl, pageContext } from '../../../utils/jsonLd'
-import { buildFaqPageNode } from '../../enterprise/_faqMetadata'
+import BenefitsGrid01 from '@/components/blocks/BenefitsGrid01.vue'
+import BuildConfiguratorSplit01 from '@/components/blocks/BuildConfiguratorSplit01.vue'
+import CardSplitContent02 from '@/components/blocks/CardSplitContent02.vue'
+import CtaBands01 from '@/components/blocks/CtaBands01.vue'
+import CtaCenter01 from '@/components/blocks/CtaCenter01.vue'
+import FAQSplit01 from '@/components/blocks/FAQSplit01.vue'
+import FeatureRows02 from '@/components/blocks/FeatureRows02.vue'
+import HeroSplit01 from '@/components/blocks/HeroSplit01.vue'
+import OfferGrid01 from '@/components/blocks/OfferGrid01.vue'
+import SectionIntro01 from '@/components/blocks/SectionIntro01.vue'
+import EnterpriseHeroScene from '@/components/product/enterprise/EnterpriseHeroScene.vue'
+import { externalLinks } from '@/config/routes'
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import { absoluteUrl, pageContext } from '@/utils/jsonLd'
+import { buildFaqPageNode } from '@/pages/enterprise/_faqMetadata'
 
 const faqs = [
   {
@@ -44,7 +44,7 @@ const faqs = [
   {
     id: 'security',
     question: 'Comfy 如何支持安全审查？',
-    answer: `提供 SSO 和 DPA。Comfy 不会使用客户数据进行训练，SOC 2 Type II 审计正在进行中。请在 [Comfy Trust Center](${externalLinks.trustCenter}) 查看当前的安全控制措施。`
+    answer: `提供 SSO 和 DPA。Comfy 不会使用客户数据进行训练，SOC 2 Type II 审计已完成。请在 [Comfy Trust Center](${externalLinks.trustCenter}) 查看当前的安全控制措施。`
   },
   {
     id: 'usage',
@@ -255,7 +255,7 @@ const faqPage = buildFaqPageNode(url, faqs)
       {
         id: 'soc2',
         title: 'SOC 2',
-        description: 'Type II 审计正在进行中。'
+        description: 'Type II 报告可应要求提供。'
       },
       {
         id: 'sso',

@@ -32,11 +32,11 @@
         side="bottom"
         align="start"
         :side-offset="8"
-        :class="panelClass"
+        :class="menuPanelClass"
       >
         <button
           type="button"
-          :class="cn(rowClass, 'gap-2')"
+          :class="menuButtonClass"
           @click="downloadRecording"
         >
           <i class="icon-[lucide--download] size-4" />
@@ -44,17 +44,13 @@
         </button>
         <button
           type="button"
-          :class="cn(rowClass, 'gap-2')"
+          :class="menuButtonClass"
           @click="startNewRecording"
         >
           <i class="icon-[lucide--video] size-4" />
           {{ t('load3d.menuBar.startNewRecording') }}
         </button>
-        <button
-          type="button"
-          :class="cn(rowClass, 'gap-2')"
-          @click="deleteRecording"
-        >
+        <button type="button" :class="menuButtonClass" @click="deleteRecording">
           <i class="icon-[lucide--trash-2] size-4" />
           {{ t('load3d.menuBar.deleteRecording') }}
         </button>
@@ -90,14 +86,13 @@ import { useI18n } from 'vue-i18n'
 
 import {
   chipClass,
-  panelClass,
-  rowClass,
+  menuPanelClass,
   tip
 } from '@/components/load3d/menubar/menuBarStyles'
 import { usePopoverExclusivity } from '@/components/load3d/menubar/usePopoverExclusivity'
 import Popover from '@/components/ui/popover/Popover.vue'
 import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
-import { cn } from '@comfyorg/tailwind-utils'
+import { menuButtonClass } from '@/components/ui/menu/menuStyles'
 
 const { compact = false } = defineProps<{
   compact?: boolean

@@ -82,7 +82,7 @@ route change creates a new view during startup, such as a login redirect,
 
 `app:bootstrap_complete` carries `total_ms`, `outcome`, `phase_count`,
 `phases`, and `pending`. Custom timings cannot express `outcome` or `pending`,
-and per-phase events cannot be percentiled without a fifteen-row join. This row
+and per-phase events cannot be percentiled without a multi-row join. This row
 is what makes "how many users hit a slow load" a single query.
 
 **Cardinality is one to two rows per startup attempt, not per Datadog

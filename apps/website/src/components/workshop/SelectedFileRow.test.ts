@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import type { FileValue } from '../../config/workshop-playground'
+import type { FileValue } from '@/config/workshop-playground'
 import SelectedFileRow from './SelectedFileRow.vue'
 
 const recording: FileValue = {

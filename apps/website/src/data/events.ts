@@ -1,13 +1,13 @@
-import { localizeHref } from '../config/routes'
-import type { Locale, LocalizedText } from '../i18n/translations'
-import type { CalendarEvent } from '../utils/calendar'
-import type { JsonLdNode } from '../utils/jsonLd'
+import { localizeHref } from '@/config/routes'
+import type { Locale, LocalizedText } from '@/i18n/translations'
+import type { CalendarEvent } from '@/utils/calendar'
+import type { JsonLdNode } from '@/utils/jsonLd'
 import {
   DEFAULT_OG_IMAGE,
   absoluteUrl,
   eventNode,
   jsonLdId
-} from '../utils/jsonLd'
+} from '@/utils/jsonLd'
 
 export type EventCategory =
   | 'livestream'
@@ -198,7 +198,7 @@ export function deriveUpcomingEvents(
 ): readonly ComfyEvent[] {
   return events
     .filter((event) => eventStatus(event, now) === 'upcoming')
-    .sort((a, b) => Date.parse(a.startDateTime) - Date.parse(b.startDateTime))
+    .sort((a, b) => Date.parse(b.startDateTime) - Date.parse(a.startDateTime))
 }
 
 export function derivePastEvents(
@@ -452,6 +452,88 @@ const events: readonly ComfyEvent[] = [
       alt: {
         en: 'Comfy Developer Platform: Building with Comfy API & Comfy Router livestream',
         'zh-CN': 'Comfy 开发者平台直播：使用 Comfy API 与 Comfy Router 构建应用'
+      }
+    }
+  },
+  {
+    id: 'dev-platform-challenge-build-night',
+    category: 'meetup',
+    organizer: 'partner',
+    coords: { lat: 37.7749, lng: -122.4194 },
+    // TODO: start time and venue are not set (luma.com is unreachable from
+    // this session); add a time and endDateTime from the Luma page.
+    title: {
+      en: 'Open Call: ComfyUI Dev Platform Challenge Build Night',
+      'zh-CN': '公开征集：ComfyUI 开发者平台挑战赛创作之夜'
+    },
+    description: {
+      en: 'An in-person build night in San Francisco for the ComfyUI Dev Platform Challenge. Register on Luma.',
+      'zh-CN':
+        '在旧金山举办的线下创作之夜，围绕 ComfyUI 开发者平台挑战赛展开。请通过 Luma 报名。'
+    },
+    location: { en: 'San Francisco, CA', 'zh-CN': '美国加州旧金山' },
+    dateLabel: {
+      en: 'October 13, 2026 · San Francisco',
+      'zh-CN': '2026年10月13日 · 旧金山'
+    },
+    startDateTime: '2026-10-13',
+    link: {
+      href: {
+        en: 'https://luma.com/5mydmvu6',
+        'zh-CN': 'https://luma.com/5mydmvu6'
+      },
+      newTab: true
+    },
+    ctaLabel: { en: 'RSVP', 'zh-CN': '报名' },
+    // TODO: temporarily hosted via GitHub attachment; migrate to
+    // media.comfy.org and switch to eventImage() when available.
+    media: {
+      type: 'image',
+      src: 'https://github.com/user-attachments/assets/f58091d4-909e-44e2-b0bc-5499a8f2b468',
+      alt: {
+        en: 'Open Call: ComfyUI Dev Platform Challenge Build Night',
+        'zh-CN': '公开征集：ComfyUI 开发者平台挑战赛创作之夜'
+      }
+    }
+  },
+  {
+    id: 'codex-build-night-agents-everywhere',
+    category: 'meetup',
+    organizer: 'partner',
+    coords: { lat: 37.7749, lng: -122.4194 },
+    // TODO: start time and venue are not set (luma.com is unreachable from
+    // this session); add a time and endDateTime from the Luma page.
+    title: {
+      en: 'Codex Build Night: Agents Everywhere',
+      'zh-CN': 'Codex 创作之夜：无处不在的 Agent'
+    },
+    description: {
+      en: 'An in-person build night in San Francisco on building with agents. Register on Luma.',
+      'zh-CN':
+        '在旧金山举办的线下创作之夜，主题是使用 Agent 进行构建。请通过 Luma 报名。'
+    },
+    location: { en: 'San Francisco, CA', 'zh-CN': '美国加州旧金山' },
+    dateLabel: {
+      en: 'October 8, 2026 · San Francisco',
+      'zh-CN': '2026年10月8日 · 旧金山'
+    },
+    startDateTime: '2026-10-08',
+    link: {
+      href: {
+        en: 'https://luma.com/afl6lugb',
+        'zh-CN': 'https://luma.com/afl6lugb'
+      },
+      newTab: true
+    },
+    ctaLabel: { en: 'RSVP', 'zh-CN': '报名' },
+    // TODO: temporarily hosted via GitHub attachment; migrate to
+    // media.comfy.org and switch to eventImage() when available.
+    media: {
+      type: 'image',
+      src: 'https://github.com/user-attachments/assets/049b928c-2366-4f47-8f8d-108133723658',
+      alt: {
+        en: 'Codex Build Night: Agents Everywhere',
+        'zh-CN': 'Codex 创作之夜：无处不在的 Agent'
       }
     }
   },

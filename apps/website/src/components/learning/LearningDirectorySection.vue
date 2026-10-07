@@ -8,15 +8,15 @@
 // keeps title and meta correct. `category` is undefined on /learning (all).
 import { computed } from 'vue'
 
-import type { LearningCategory } from '../../data/learningTutorials'
-import type { Locale } from '../../i18n/translations'
+import type { LearningCategory } from '@/data/learningTutorials'
+import type { Locale } from '@/i18n/translations'
 
 import {
   featuredFor,
   filterByCategory,
   learningDescription,
   learningHeading
-} from '../../data/learningTutorials'
+} from '@/data/learningTutorials'
 import FeaturedTutorialCard from './FeaturedTutorialCard.vue'
 import LearningCategoryNav from './LearningCategoryNav.vue'
 import TutorialRow from './TutorialRow.vue'

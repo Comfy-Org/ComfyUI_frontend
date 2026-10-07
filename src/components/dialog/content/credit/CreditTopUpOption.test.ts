@@ -43,7 +43,7 @@ describe('CreditTopUpOption', () => {
 
   it('applies unselected styling when not selected', () => {
     const { container } = renderOption({ selected: false })
-    // eslint-disable-next-line testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-node-access
     const rootDiv = container.firstElementChild as HTMLElement
     expect(rootDiv).toHaveClass(
       'bg-node-component-disabled',

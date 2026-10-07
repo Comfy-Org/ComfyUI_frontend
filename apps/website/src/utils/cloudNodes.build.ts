@@ -1,6 +1,6 @@
-import type { Pack } from '../data/cloudNodes'
+import type { Pack } from '@/data/cloudNodes'
 
-import { isProductionBuild } from '../config/build-env'
+import { isProductionBuild } from '@/config/build-env'
 import { fetchCloudNodesForBuild } from './cloudNodes'
 import { reportCloudNodesOutcome } from './cloudNodes.ci'
 

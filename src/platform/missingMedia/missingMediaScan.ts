@@ -1,4 +1,5 @@
 import { groupBy } from 'es-toolkit'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   buildPromotedWidgetExecutionSources,
   hasActivePromotedWidgetConsumer,
@@ -66,13 +67,13 @@ function mediaTypeFromSpec(
 /**
  * Scan combo widgets on media nodes for file values that may be missing.
  *
- * OSS: `isMissing` is resolved immediately via widget options unless an
- * output annotation needs generated-history verification.
- * Cloud: `isMissing` left `undefined` for async verification.
+ * With the asset API enabled, `isMissing` is left `undefined` so
+ * `verifyMediaCandidates` resolves it against the asset listing on every
+ * backend. Without it, `isMissing` is resolved immediately from widget
+ * options unless an output annotation needs generated-history verification.
  */
 export function scanAllMediaCandidates(
-  rootGraph: LGraph,
-  isCloud: boolean
+  rootGraph: LGraph
 ): MissingMediaCandidate[] {
   const allNodes = collectAllNodes(rootGraph)
   const candidates: MissingMediaCandidate[] = []
@@ -85,7 +86,7 @@ export function scanAllMediaCandidates(
     )
       continue
 
-    candidates.push(...scanNodeMediaCandidates(rootGraph, node, isCloud))
+    candidates.push(...scanNodeMediaCandidates(rootGraph, node))
   }
 
   return candidates
@@ -93,10 +94,9 @@ export function scanAllMediaCandidates(
 
 function resolveMediaMissingState(
   widget: IComboWidget,
-  value: string,
-  isCloud: boolean
+  value: string
 ): boolean | undefined {
-  if (isCloud) return undefined
+  if (useFeatureFlags().flags.assetsEnabled) return undefined
   const options = resolveComboValues(widget)
   if (getAnnotatedMediaPathTypeForDetection(value) === 'output') {
     return options.includes(value) ? false : undefined
@@ -106,11 +106,10 @@ function resolveMediaMissingState(
   )
 }
 
-/** Scan a single node for missing media candidates (OSS immediate resolution). */
+/** Scan a single node for missing media candidates. */
 export function scanNodeMediaCandidates(
   rootGraph: LGraph,
-  node: LGraphNode,
-  isCloud: boolean
+  node: LGraphNode
 ): MissingMediaCandidate[] {
   if (!node.widgets?.length) return []
 
@@ -133,7 +132,7 @@ export function scanNodeMediaCandidates(
     const value = widget.value
     if (typeof value !== 'string' || !value.trim()) continue
 
-    const isMissing = resolveMediaMissingState(widget, value, isCloud)
+    const isMissing = resolveMediaMissingState(widget, value)
 
     // Label only, and leaf-derived to match missingModelScan: the overlay
     // formats nodeType directly and a SubgraphNode's own type is a UUID.
@@ -204,9 +203,9 @@ interface GeneratedCandidateMatchNames {
 /**
  * Verify media candidates against assets available to the current runtime.
  *
- * A candidate's `name` may be either a filename or an opaque asset hash.
- * Cloud-side `hash` is not guaranteed to follow a single shape, so we
- * match against the union of `asset.name` and `asset.hash`. Output
+ * A candidate's `name` may be a filename, annotated path, or opaque asset
+ * hash, so it is matched against the union of each asset's `file_path`,
+ * `hash`, `name`, and `subfolder + name` (see `getAssetDetectionNames`). Output
  * candidates are matched against Cloud output assets or Core generated-history
  * assets because Core resolves those annotations against output folders, not
  * input files.
@@ -235,8 +234,8 @@ export async function verifyMediaCandidates(
     pathOptions
   )
 
-  let inputAssets: readonly AssetItem[]
-  let generatedAssets: readonly AssetItem[]
+  let inputAssets: readonly AssetItem[] | null
+  let generatedAssets: readonly AssetItem[] | null
   try {
     const assetSources = await resolveAssetSources({
       signal,
@@ -255,23 +254,39 @@ export async function verifyMediaCandidates(
 
   if (signal?.aborted) return
 
+  markPendingCandidates(pending, inputAssets, generatedAssets, {
+    isCloud,
+    pathOptions
+  })
+}
+
+function markPendingCandidates(
+  pending: MissingMediaCandidate[],
+  inputAssets: readonly AssetItem[] | null,
+  generatedAssets: readonly AssetItem[] | null,
+  {
+    isCloud,
+    pathOptions
+  }: { isCloud: boolean; pathOptions: { allowCompactSuffix: boolean } }
+) {
   const inputAssetIdentifiers = new Set<string>()
   const outputAssetIdentifiers = new Set<string>()
   const outputAssetHashIdentifiers = new Set<string>()
-  addAssetIdentifiers(inputAssetIdentifiers, inputAssets, pathOptions)
-  addAssetIdentifiers(outputAssetIdentifiers, generatedAssets, pathOptions)
+  addAssetIdentifiers(inputAssetIdentifiers, inputAssets ?? [], pathOptions)
+  addAssetIdentifiers(
+    outputAssetIdentifiers,
+    generatedAssets ?? [],
+    pathOptions
+  )
   addAssetHashIdentifiers(
     outputAssetHashIdentifiers,
-    generatedAssets,
+    generatedAssets ?? [],
     pathOptions
   )
 
   for (const candidate of pending) {
-    const type = getAnnotatedMediaPathTypeForDetection(
-      candidate.name,
-      pathOptions
-    )
-    const isOutputCandidate = type === 'output'
+    const isOutputCandidate = isGeneratedCandidate(candidate, pathOptions)
+    if ((isOutputCandidate ? generatedAssets : inputAssets) === null) continue
     const identifiers = isOutputCandidate
       ? outputAssetIdentifiers
       : inputAssetIdentifiers

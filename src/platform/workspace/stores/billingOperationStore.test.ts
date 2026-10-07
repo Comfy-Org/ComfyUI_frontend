@@ -644,6 +644,52 @@ describe('billingOperationStore', () => {
       ])
     })
 
+    it.for([
+      {
+        name: 'a recovered subscription that succeeds',
+        type: 'subscription',
+        entryFlow: 'initial_subscription',
+        status: 'succeeded'
+      },
+      {
+        name: 'a recovered top-up that fails',
+        type: 'topup',
+        entryFlow: 'topup',
+        status: 'failed'
+      }
+    ] as const)(
+      'reports the source of the bound journey on the terminal of $name',
+      async ({ type, entryFlow, status }) => {
+        resolveCheckoutJourney({
+          actorUid: 'user-1',
+          workspaceId: 'workspace-1',
+          entryFlow,
+          entrySource: 'pricing',
+          paymentIntentSource: 'upgrade_to_add_credits',
+          assignment: { status: 'resolved', arm: 'treatment' }
+        })
+        bindOperationToCheckoutJourney('op-recovered')
+        vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+          id: 'op-recovered',
+          status,
+          started_at: new Date().toISOString()
+        })
+
+        const store = useBillingOperationStore()
+        void store.startOperation('op-recovered', type)
+        await vi.advanceTimersByTimeAsync(0)
+
+        expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith(
+          expect.objectContaining({
+            operation: 'operation',
+            stage: status,
+            billing_op_id: 'op-recovered',
+            payment_intent_source: 'upgrade_to_add_credits'
+          })
+        )
+      }
+    )
+
     it('closes both terminal streams for an initiated subscription operation', async () => {
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-initiated',
@@ -1488,6 +1534,57 @@ describe('billingOperationStore', () => {
       await vi.advanceTimersByTimeAsync(0)
 
       expect(store.getOperation('op-1')?.errorMessage).toBe(detail)
+    })
+
+    it('names a saved method that cannot be charged without the customer', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'failed',
+        error_message: 'subscribe_method_not_chargeable_off_session',
+        recovery_action: 'replace_payment_method',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-1', 'subscription')
+
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(store.getOperation('op-1')).toMatchObject({
+        status: 'failed',
+        errorMessage: 'billingOperation.methodNotChargeableOffSessionDetail'
+      })
+      expect(useToastStore().add).toHaveBeenCalledWith({
+        severity: 'error',
+        summary: 'billingOperation.subscriptionFailed',
+        detail: 'billingOperation.methodNotChargeableOffSessionDetail',
+        life: 7000
+      })
+    })
+
+    it('does not name a payment method for a downgrade to personal', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'failed',
+        error_message: 'subscribe_method_not_chargeable_off_session',
+        recovery_action: 'replace_payment_method',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-1', 'subscription', {
+        downgradeToPersonal: {
+          memberRemovalCount: 1,
+          memberRemovalFailures: 0,
+          startedAt: 0
+        }
+      })
+
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(store.getOperation('op-1')?.errorMessage).not.toBe(
+        'billingOperation.methodNotChargeableOffSessionDetail'
+      )
     })
 
     // Neither operation presents a card, so no recovery action can describe one.

@@ -2,10 +2,11 @@ import { vi } from 'vitest'
 
 import type { TopupCommand } from '@comfyorg/account-core/billing'
 
-import type * as realBillingSdk from '../workshop-billing-sdk'
+import type * as realBillingSdk from '@/config/workshop-billing-sdk'
 
 const command = vi.mockObject<TopupCommand>(
   {
+    quoteTopup: async () => ({ status: 'error', code: 'NOT_AVAILABLE' }),
     createHostedTopupCheckout: async () => ({
       status: 'error',
       code: 'NOT_AVAILABLE'

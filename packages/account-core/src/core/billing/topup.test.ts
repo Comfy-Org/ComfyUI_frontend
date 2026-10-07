@@ -24,6 +24,7 @@ import { createBillingStatusReader } from './status.js'
 import type { HostedTopupCheckoutResult, TopupResult } from './topup.js'
 import {
   TOPUP_CHECKOUT_ROUTE,
+  TOPUP_QUOTE_ROUTE,
   TOPUP_ROUTE,
   createTopupCommand
 } from './topup.js'
@@ -92,6 +93,7 @@ const CAPABILITIES = {
   can_downgrade_to_personal: false,
   can_invite_members: false,
   can_reactivate: false,
+  can_revert_scheduled_change: false,
   can_subscribe_self_serve: false,
   can_top_up: true
 }
@@ -709,6 +711,69 @@ describe('createHostedTopupCheckout', () => {
       serverMessage: 'stripe: return_url origin not allowlisted'
     })
   })
+})
+
+describe('quoteTopup', () => {
+  const EXPIRES_AT = '2027-09-30T12:00:00.000Z'
+  const QUOTE = { amount_cents: 2500, credits: 5275, expires_at: EXPIRES_AT }
+
+  it('reads the credits and expiry the server quotes, sending only the amount and no idempotency key', async () => {
+    const { command, answer, calls, routes } = harness()
+    answer('POST', TOPUP_QUOTE_ROUTE, httpOk(QUOTE))
+
+    await expect(command.quoteTopup({ amountCents: 2500 })).resolves.toEqual({
+      status: 'ok',
+      value: { amountCents: 2500, credits: 5275, expiresAt: EXPIRES_AT }
+    })
+    expect(routes()).toEqual([`POST ${TOPUP_QUOTE_ROUTE}`])
+    expect(postedBodies(calls)).toEqual([
+      { body: { amount_cents: 2500 }, idempotencyKey: undefined }
+    ])
+  })
+
+  it.for([
+    { name: 'a 404', answer: httpStatus(404), code: 'NOT_AVAILABLE' },
+    {
+      name: 'the server refusing the amount',
+      answer: httpStatus(400, {
+        code: 'INVALID_AMOUNT',
+        message: 'amount below minimum'
+      }),
+      code: 'INVALID_AMOUNT'
+    }
+  ])('maps $name to $code', async ({ answer: reply, code }) => {
+    const { command, answer } = harness()
+    answer('POST', TOPUP_QUOTE_ROUTE, reply)
+
+    await expect(command.quoteTopup({ amountCents: 2500 })).resolves.toEqual({
+      status: 'error',
+      code
+    })
+  })
+
+  it('reports a quote outside the generated contract as MALFORMED_RESPONSE', async () => {
+    const { command, answer } = harness()
+    answer('POST', TOPUP_QUOTE_ROUTE, httpOk({ ...QUOTE, credits: 5275.5 }))
+
+    await expect(command.quoteTopup({ amountCents: 2500 })).resolves.toEqual({
+      status: 'error',
+      code: 'MALFORMED_RESPONSE',
+      httpStatus: 200
+    })
+  })
+
+  it.for([0, -100, 12.5])(
+    'refuses the amount %s without sending anything',
+    async (amountCents) => {
+      const { command, calls } = harness()
+
+      await expect(command.quoteTopup({ amountCents })).resolves.toEqual({
+        status: 'error',
+        code: 'INVALID_AMOUNT'
+      })
+      expect(calls).toHaveLength(0)
+    }
+  )
 })
 
 describe('TopupResult', () => {

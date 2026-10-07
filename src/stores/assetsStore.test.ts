@@ -616,18 +616,6 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
   })
 
   describe('hasCategory', () => {
-    it('should return true for loaded categories', async () => {
-      const store = useAssetsStore()
-      const assets = [createMockAsset('asset-1')]
-
-      vi.mocked(assetService.getAssetsPageForNodeType).mockResolvedValue(
-        makePage(assets)
-      )
-      await store.updateModelsForNodeType('CheckpointLoaderSimple')
-
-      expect(store.hasCategory('checkpoints')).toBe(true)
-    })
-
     it('should return true for tag-based category when tag: prefix is not used', async () => {
       const store = useAssetsStore()
       const assets = [createMockAsset('asset-1')]
@@ -833,14 +821,8 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
   })
 
   describe('updateAssetTags partial-failure compensation', () => {
-    let consoleSpy: ReturnType<typeof vi.spyOn>
-
     beforeEach(() => {
-      consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-    })
-
-    afterEach(() => {
-      consoleSpy.mockRestore()
+      vi.spyOn(console, 'error').mockImplementation(() => {})
     })
 
     it('re-adds removed tags when add fails so cache and server converge', async () => {

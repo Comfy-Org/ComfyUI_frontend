@@ -7,8 +7,8 @@ import type {
   Direction,
   DirectionGroup,
   DirectionPart
-} from '../../../lib/workshop/cinematic-studio/catalog'
-import type { Locale } from '../../../i18n/translations'
+} from '@/lib/workshop/cinematic-studio/catalog'
+import type { Locale } from '@/i18n/translations'
 import CinematicOptionList from './CinematicOptionList.vue'
 import CinematicPickerTabs from './CinematicPickerTabs.vue'
 

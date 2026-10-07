@@ -516,11 +516,6 @@ describe('i18n', () => {
   })
 
   describe('loadLocale', () => {
-    it('should not reload already loaded locale', async () => {
-      await loadLocale('zh')
-      await loadLocale('zh')
-    })
-
     it('should load shipped BCP-47 variants', async () => {
       await loadLocale('zh-TW')
       expect(i18n.global.getLocaleMessage('zh-TW')).toEqual(

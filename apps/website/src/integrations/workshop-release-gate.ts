@@ -15,18 +15,18 @@ import {
   HUB_MODELS_PATH,
   HUB_WORKFLOWS_PATH,
   oldModelLinks
-} from '../config/hub-models'
-import { unregisteredModelsPaths } from '../config/models-url-registry'
-import { markdownTwinPath } from '../lib/markdown-twin-path'
+} from '@/config/hub-models'
+import { websiteRoot } from '@website/paths'
+import { unregisteredModelsPaths } from '@/config/models-url-registry'
+import { markdownTwinPath } from '@/lib/markdown-twin-path'
 
 import {
   assertWorkshopCloudEnvForBuild,
   isWorkshopInBuild,
   isLegacyWorkshopRoute
-} from '../config/workshop-release'
+} from '@/config/workshop-release'
 
-const entry = (name: string) =>
-  fileURLToPath(new URL(`../routes/models/${name}`, import.meta.url))
+const entry = (name: string) => join(websiteRoot, 'src/routes/models', name)
 
 const WORKSHOP_ONLY_ROUTES = [
   { pattern: '/checkout-opening', entrypoint: entry('checkout-opening.astro') },

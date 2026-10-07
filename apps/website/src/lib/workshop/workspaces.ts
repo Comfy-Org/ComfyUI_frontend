@@ -2,11 +2,8 @@ import type { z } from 'zod'
 
 import { zListWorkspacesResponse } from '@comfyorg/ingest-types/zod'
 
-import { WORKSHOP_CLOUD_BASE_URL } from '../../config/workshop-env'
-import {
-  combineAbortSignals,
-  createTimeoutSignal
-} from '../../utils/abortSignal'
+import { WORKSHOP_CLOUD_BASE_URL } from '@/config/workshop-env'
+import { combineAbortSignals, createTimeoutSignal } from '@/utils/abortSignal'
 
 export type WorkspaceWithRole = z.infer<
   typeof zListWorkspacesResponse

@@ -8,6 +8,7 @@ import './vitest.network.setup'
 
 import { clearRegisteredLiteGraphTypes } from '@/lib/litegraph/src/litegraphInstance'
 import { remoteConfigState } from '@/platform/remoteConfig/remoteConfig'
+import { StubPath2D } from '@/utils/__tests__/stubPath2D'
 
 beforeEach(({ task }) => {
   for (
@@ -25,6 +26,7 @@ beforeEach(({ task }) => {
   }
 
   vi.stubGlobal('__VUE_DEVTOOLS_GLOBAL_HOOK__', { emit: vi.fn() })
+  vi.stubGlobal('Path2D', StubPath2D)
   const pinia = createTestingPinia({ stubActions: false })
   setActivePinia(pinia)
   remoteConfigState.value = 'anonymous'

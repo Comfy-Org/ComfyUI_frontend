@@ -1,19 +1,26 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { nextTick } from 'vue'
 
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
+import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import { useCanvasScheduler } from '@/renderer/core/canvas/useCanvasScheduler'
 import { app } from '@/scripts/app'
 import {
   useSubgraphNavigationStore,
   VIEWPORT_CACHE_MAX_SIZE
 } from '@/stores/subgraphNavigationStore'
+import {
+  createTestCanvasElement,
+  setCanvasVisible
+} from '@/utils/__tests__/canvasTestUtils'
 
 vi.mock<unknown>(import('@/scripts/app'), () => {
   const mockCanvas = {
+    canvas: undefined as unknown,
     subgraph: undefined as unknown,
     graph: undefined as unknown,
     ds: {
@@ -61,17 +68,23 @@ vi.mock(import('@/services/litegraphService'))
 
 const mockCanvas = app.canvas
 
-let rafCallbacks: FrameRequestCallback[] = []
+const mockGraphNodes = app.graph as {
+  nodes: unknown[]
+  _nodes: unknown[]
+}
+
+function setMockGraphNodes(nodes: unknown[]): void {
+  mockGraphNodes.nodes = nodes
+  mockGraphNodes._nodes = nodes
+}
+
+const ONE_NODE = [{ pos: [0, 0], size: [100, 100] }]
 
 describe('useSubgraphNavigationStore - Viewport Persistence', () => {
   beforeEach(() => {
     useCanvasStore().canvas = app.canvas
     vi.mocked(useCanvasStore().getCanvas).mockImplementation(() => app.canvas)
-    rafCallbacks = []
-    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
-      rafCallbacks.push(cb)
-      return rafCallbacks.length
-    })
+    mockCanvas.canvas = createTestCanvasElement({ visible: true })
     mockCanvas.subgraph = undefined
     mockCanvas.graph = app.graph
     mockCanvas.ds.scale = 1
@@ -152,91 +165,113 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
       expect(mockCanvas.setDirty).toHaveBeenCalledWith(true, true)
     })
 
-    it('does not mutate canvas synchronously on cache miss', () => {
+    it('queues a cache-miss fit while the canvas is hidden', () => {
       const store = useSubgraphNavigationStore()
+      setCanvasVisible(mockCanvas.canvas, false)
       mockCanvas.ds.scale = 1
       mockCanvas.ds.offset = [0, 0]
       vi.mocked(mockCanvas.setDirty).mockClear()
 
       store.restoreViewport('non-existent')
 
-      // Should not change canvas synchronously
       expect(mockCanvas.ds.scale).toBe(1)
       expect(mockCanvas.ds.offset).toEqual([0, 0])
       expect(mockCanvas.setDirty).not.toHaveBeenCalled()
-      // But should have scheduled a rAF
-      expect(rafCallbacks).toHaveLength(1)
+      expect(useLitegraphService().fitView).not.toHaveBeenCalled()
     })
 
     it('calls fitView on cache miss when graph has nodes', () => {
       const store = useSubgraphNavigationStore()
       store.viewportCache.delete(':root')
-
-      const mockGraph = app.graph as { nodes: unknown[]; _nodes: unknown[] }
-      mockGraph.nodes = [{ pos: [0, 0], size: [100, 100] }]
-      mockGraph._nodes = mockGraph.nodes
+      setMockGraphNodes(ONE_NODE)
+      onTestFinished(() => setMockGraphNodes([]))
 
       store.restoreViewport('root')
 
-      expect(useLitegraphService().fitView).not.toHaveBeenCalled()
-      expect(rafCallbacks).toHaveLength(1)
-
-      rafCallbacks[0](performance.now())
-
       expect(useLitegraphService().fitView).toHaveBeenCalledOnce()
-
-      mockGraph.nodes = []
-      mockGraph._nodes = []
     })
 
     it('does not call fitView on cache miss when graph has no nodes', () => {
       const store = useSubgraphNavigationStore()
       store.viewportCache.delete(':root')
-
-      const mockGraph = app.graph as { nodes: unknown[]; _nodes: unknown[] }
-      mockGraph.nodes = []
-      mockGraph._nodes = []
+      setMockGraphNodes([])
 
       store.restoreViewport('root')
-
-      expect(rafCallbacks).toHaveLength(1)
-      rafCallbacks[0](performance.now())
 
       expect(useLitegraphService().fitView).not.toHaveBeenCalled()
     })
 
-    it('fits the first visit on the next frame', () => {
+    it('fits the first visit synchronously when the canvas is ready', () => {
       const store = useSubgraphNavigationStore()
       store.viewportCache.delete(':root')
-
-      const mockGraph = app.graph as { nodes: unknown[]; _nodes: unknown[] }
-      mockGraph.nodes = [{ pos: [0, 0], size: [100, 100] }]
-      mockGraph._nodes = mockGraph.nodes
+      setMockGraphNodes(ONE_NODE)
+      onTestFinished(() => setMockGraphNodes([]))
 
       store.restoreViewport('root')
-      expect(rafCallbacks).toHaveLength(1)
 
-      rafCallbacks[0](performance.now())
       expect(useLitegraphService().fitView).toHaveBeenCalledOnce()
-      expect(rafCallbacks).toHaveLength(1)
-
-      mockGraph.nodes = []
-      mockGraph._nodes = []
     })
 
-    it('skips fitView if active graph changed before rAF fires', () => {
+    it('does not let a first-visit fit queued for a hidden canvas overwrite a later cache restore', () => {
       const store = useSubgraphNavigationStore()
-      store.viewportCache.delete(':root')
+      const subgraphA = createTestSubgraph()
+      const subgraphB = createTestSubgraph()
+      store.viewportCache.delete(`:${subgraphA.id}`)
+      setCanvasVisible(mockCanvas.canvas, false)
+      setMockGraphNodes(ONE_NODE)
+      onTestFinished(() => setMockGraphNodes([]))
 
-      store.restoreViewport('root')
-      expect(rafCallbacks).toHaveLength(1)
+      mockCanvas.subgraph = subgraphA
+      store.restoreViewport(subgraphA.id)
 
-      // Simulate graph switching away before rAF fires
-      mockCanvas.subgraph = { id: 'different-graph' } as never
+      store.viewportCache.set(`:${subgraphB.id}`, { scale: 1, offset: [0, 0] })
+      mockCanvas.subgraph = subgraphB
+      store.restoreViewport(subgraphB.id)
 
-      rafCallbacks[0](performance.now())
+      mockCanvas.subgraph = subgraphA
+      store.viewportCache.set(`:${subgraphA.id}`, {
+        scale: 3,
+        offset: [11, 22]
+      })
+      store.restoreViewport(subgraphA.id)
+
+      setCanvasVisible(mockCanvas.canvas, true)
+      useCanvasScheduler().flush()
 
       expect(useLitegraphService().fitView).not.toHaveBeenCalled()
+      expect(mockCanvas.ds.scale).toBe(3)
+      expect(mockCanvas.ds.offset).toEqual([11, 22])
+    })
+
+    it('skips a queued fit if the active graph changes while hidden', () => {
+      const store = useSubgraphNavigationStore()
+      store.viewportCache.delete(':root')
+      setCanvasVisible(mockCanvas.canvas, false)
+
+      store.restoreViewport('root')
+
+      mockCanvas.subgraph = createTestSubgraph()
+      setCanvasVisible(mockCanvas.canvas, true)
+      useCanvasScheduler().flush()
+
+      expect(useLitegraphService().fitView).not.toHaveBeenCalled()
+    })
+
+    it('does not cancel the active graph fit for an out-of-order restore', () => {
+      const store = useSubgraphNavigationStore()
+      store.viewportCache.delete(':root')
+      setCanvasVisible(mockCanvas.canvas, false)
+      store.restoreViewport('root')
+
+      mockCanvas.subgraph = createTestSubgraph()
+      store.restoreViewport('root')
+      mockCanvas.subgraph = undefined
+      setMockGraphNodes(ONE_NODE)
+      onTestFinished(() => setMockGraphNodes([]))
+      setCanvasVisible(mockCanvas.canvas, true)
+      useCanvasScheduler().flush()
+
+      expect(useLitegraphService().fitView).toHaveBeenCalledOnce()
     })
   })
 

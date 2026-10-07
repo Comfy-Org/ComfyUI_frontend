@@ -2,6 +2,7 @@ import { useToast } from 'primevue/usetoast'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   clearPreservedQuery,
   hydratePreservedQuery,
@@ -10,9 +11,20 @@ import {
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useDialogService } from '@/services/dialogService'
+import { useAuthStore } from '@/stores/authStore'
 
 import { WorkspaceApiError } from '../api/workspaceApi'
+import { MEMBERSHIP_MANAGED_BY_DIRECTORY } from '../api/workspaceApiError'
 import { useTeamWorkspaceStore } from '../stores/teamWorkspaceStore'
+
+function isDirectoryManagedRefusal(error: unknown): boolean {
+  return (
+    error instanceof WorkspaceApiError &&
+    error.status === 403 &&
+    error.code === MEMBERSHIP_MANAGED_BY_DIRECTORY &&
+    useFeatureFlags().flags.ssoEnabled
+  )
+}
 
 /**
  * Composable for loading workspace invites from URL query parameters
@@ -31,6 +43,7 @@ export function useInviteUrlLoader() {
   const toast = useToast()
   const dialogService = useDialogService()
   const workspaceStore = useTeamWorkspaceStore()
+  const authStore = useAuthStore()
   const INVITE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.INVITE
 
   /**
@@ -79,6 +92,18 @@ export function useInviteUrlLoader() {
       return
     }
 
+    if (authStore.signedInWithSso && authStore.currentUser === null) {
+      toast.add({
+        severity: 'info',
+        summary: t('workspace.inviteSsoUnavailable'),
+        detail: t('workspace.inviteSsoUnavailableDetail'),
+        closable: true
+      })
+      cleanupUrlParams()
+      clearPreservedQuery(INVITE_NAMESPACE)
+      return
+    }
+
     try {
       const result = await workspaceStore.acceptInvite(inviteParam)
 
@@ -120,6 +145,15 @@ export function useInviteUrlLoader() {
       error instanceof WorkspaceApiError && error.code !== undefined
         ? error.status
         : undefined
+    if (isDirectoryManagedRefusal(error)) {
+      toast.add({
+        severity: 'info',
+        summary: t('workspace.inviteDirectoryManaged'),
+        detail: t('workspace.inviteDirectoryManagedDetail'),
+        closable: true
+      })
+      return
+    }
     try {
       if (status === 404) {
         await dialogService.showInviteLinkInvalidDialog()

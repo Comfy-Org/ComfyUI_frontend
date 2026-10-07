@@ -2,6 +2,10 @@ import { i18n } from '@/i18n'
 import { reportError } from '@/platform/telemetry/reportError'
 import { hasImageType } from '@/utils/eventUtils'
 import { formatSize } from '@/utils/formatUtil'
+import {
+  AgentApiError,
+  AgentResponseUnreadableError
+} from '../../services/agent/agentRestClient'
 import type { ComposerAttachment } from './useComposer'
 
 export const MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024
@@ -9,6 +13,16 @@ const UPLOAD_HANDSHAKE_TIMEOUT_MS = 30 * 1000
 const UPLOAD_FLOOR_BYTES_PER_SECOND = 64 * 1024
 const DEFERRED_FETCH_TIMEOUT_MS = 60 * 1000
 const MAX_CONCURRENT_UPLOADS = 3
+const MAX_TELEMETRY_FILE_TYPE_LENGTH = 128
+const MIME_TYPE_PATTERN =
+  /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+\/[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/
+
+class DeadlineExceededError extends Error {
+  constructor(timeoutMs: number) {
+    super(`Timed out after ${timeoutMs}ms`)
+    this.name = 'DeadlineExceededError'
+  }
+}
 
 interface UploadResult {
   ref: string
@@ -35,6 +49,11 @@ function uploadDeadlineMs(file: File): number {
   )
 }
 
+function telemetryFileType(type: string | undefined): string {
+  if (!type || type.length > MAX_TELEMETRY_FILE_TYPE_LENGTH) return 'unknown'
+  return MIME_TYPE_PATTERN.test(type) ? type : 'unknown'
+}
+
 async function withDeadline<T>(
   work: Promise<T>,
   timeoutMs: number,
@@ -44,7 +63,7 @@ async function withDeadline<T>(
   const expiry = new Promise<never>((_resolve, reject) => {
     timer = setTimeout(() => {
       onExpire?.()
-      reject(new Error(`Timed out after ${timeoutMs}ms`))
+      reject(new DeadlineExceededError(timeoutMs))
     }, timeoutMs)
   })
   try {
@@ -89,7 +108,27 @@ export function useAttachment(options: UseAttachmentOptions) {
     return true
   }
 
-  function failAttachment(id: string, name: string, errorType: string) {
+  // The file's declared size/type and the failure's shape (status code,
+  // timeout, abort) are safe, bounded context. The caught error's own
+  // message/stack are not reported: they can carry a local file path (e.g. a
+  // dropped file's full source path), which is why this always reports a
+  // fresh synthetic Error rather than the original cause.
+  function uploadFailureCause(cause: unknown): string {
+    if (cause instanceof AgentApiError) return `http_${cause.status}`
+    if (cause instanceof AgentResponseUnreadableError)
+      return 'unreadable_response'
+    if (cause instanceof DeadlineExceededError) return 'timeout'
+    if (cause instanceof DOMException && cause.name === 'AbortError')
+      return 'aborted'
+    return 'unknown'
+  }
+
+  function failAttachment(
+    id: string,
+    file: { name: string; size?: number; type?: string },
+    errorType: string,
+    cause: unknown
+  ) {
     return (): undefined => {
       reportError(new Error('Agent attachment upload failed'), {
         surface: 'agent',
@@ -102,10 +141,15 @@ export function useAttachment(options: UseAttachmentOptions) {
           integration_target: 'assets',
           feature_flag: 'agent_panel',
           feature_flag_state: 'enabled',
-          project_context: 'agent_composer'
+          project_context: 'agent_composer',
+          upload_failure_cause: uploadFailureCause(cause),
+          file_type: telemetryFileType(file.type),
+          file_size_bytes: file.size ?? -1
         }
       })
-      options.onError?.(i18n.global.t('agent.attachmentUploadFailed', { name }))
+      options.onError?.(
+        i18n.global.t('agent.attachmentUploadFailed', { name: file.name })
+      )
       options.remove(id)
       return undefined
     }
@@ -134,9 +178,9 @@ export function useAttachment(options: UseAttachmentOptions) {
         uploading: false
       })
       return true
-    } catch {
+    } catch (cause) {
       if (!cancelled.has(id))
-        failAttachment(id, file.name, 'agent_attachment_upload_failed')()
+        failAttachment(id, file, 'agent_attachment_upload_failed', cause)()
       return false
     } finally {
       settle(id)
@@ -176,9 +220,9 @@ export function useAttachment(options: UseAttachmentOptions) {
       if (!(await uploadStagedFile(id, file))) return 'failed'
       options.onUploaded?.()
       return 'uploaded'
-    } catch {
+    } catch (cause) {
       if (cancelled.has(id)) return 'cancelled'
-      failAttachment(id, name, 'agent_attachment_fetch_failed')()
+      failAttachment(id, { name }, 'agent_attachment_fetch_failed', cause)()
       return 'failed'
     } finally {
       settle(id)

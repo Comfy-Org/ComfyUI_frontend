@@ -43,7 +43,7 @@ describe('MediaVideoTop', () => {
       global: globalConfig
     })
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
     const video = container.querySelector('video')!
     expect(video).toBeInTheDocument()
     expect(video.controls).toBe(false)
@@ -58,7 +58,7 @@ describe('MediaVideoTop', () => {
       global: globalConfig
     })
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
     const video = container.querySelector('video')!
     expect(video).toBeInTheDocument()
     expect(video).not.toHaveAttribute('src')
@@ -72,14 +72,14 @@ describe('MediaVideoTop', () => {
       global: globalConfig
     })
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
     const video = container.querySelector('video')!
     await fireEvent.error(video)
     await vi.advanceTimersByTimeAsync(500)
 
     expect(video).toBeInTheDocument()
     expect(video).toHaveAttribute('src', 'https://example.com/thumb.jpg')
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- assert the failed-state fallback is absent
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- assert the failed-state fallback is absent
     expect(container.querySelector('[role="img"]')).not.toBeInTheDocument()
   })
 
@@ -91,15 +91,15 @@ describe('MediaVideoTop', () => {
       global: globalConfig
     })
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
     const video = container.querySelector('video')!
     await fireEvent.play(video)
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- the paused overlay has no ARIA role
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- the paused overlay has no ARIA role
     expect(container.querySelector('.bg-black\\/15')).not.toBeInTheDocument()
 
     await fireEvent.error(video)
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- the paused overlay has no ARIA role
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- the paused overlay has no ARIA role
     expect(container.querySelector('.bg-black\\/15')).toBeInTheDocument()
   })
 
@@ -111,7 +111,7 @@ describe('MediaVideoTop', () => {
       global: globalConfig
     })
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
     const video = container.querySelector('video')!
     for (const delay of [500, 1000, 2000, 4000, 8000]) {
       await fireEvent.error(video)
@@ -123,9 +123,9 @@ describe('MediaVideoTop', () => {
     expect(
       screen.getByRole('img', { name: 'g.videoFailedToLoad' })
     ).toBeVisible()
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
     expect(container.querySelector('video')).not.toBeInTheDocument()
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- the paused overlay has no ARIA role
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- the paused overlay has no ARIA role
     expect(container.querySelector('.bg-black\\/15')).not.toBeInTheDocument()
   })
 
@@ -138,7 +138,7 @@ describe('MediaVideoTop', () => {
       global: globalConfig
     })
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
     const video = container.querySelector('video')!
 
     await fireEvent.play(video)
@@ -166,7 +166,7 @@ describe('MediaVideoTop', () => {
       global: globalConfig
     })
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
     const video = container.querySelector('video')!
     const playSpy = vi
       .spyOn(video, 'play')
@@ -197,7 +197,7 @@ describe('MediaVideoTop', () => {
         global: globalConfig
       })
 
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
       const video = container.querySelector('video')!
       const playSpy = vi
         .spyOn(video, 'play')
@@ -226,7 +226,7 @@ describe('MediaVideoTop', () => {
       global: globalConfig
     })
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
     const video = container.querySelector('video')!
     const pauseSpy = vi.spyOn(video, 'pause').mockImplementation(() => {})
 

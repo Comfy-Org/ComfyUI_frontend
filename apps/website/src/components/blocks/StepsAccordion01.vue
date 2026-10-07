@@ -3,13 +3,13 @@ import type { HTMLAttributes } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { resolveRel } from '../../utils/cta'
+import { resolveRel } from '@/utils/cta'
 
-import Accordion from '../ui/accordion/Accordion.vue'
-import AccordionContent from '../ui/accordion/AccordionContent.vue'
-import AccordionItem from '../ui/accordion/AccordionItem.vue'
-import AccordionTrigger from '../ui/accordion/AccordionTrigger.vue'
-import Button from '../ui/button/Button.vue'
+import Accordion from '@/components/ui/accordion/Accordion.vue'
+import AccordionContent from '@/components/ui/accordion/AccordionContent.vue'
+import AccordionItem from '@/components/ui/accordion/AccordionItem.vue'
+import AccordionTrigger from '@/components/ui/accordion/AccordionTrigger.vue'
+import Button from '@/components/ui/button/Button.vue'
 
 export type AccordionStep = { id: string; title: string }
 

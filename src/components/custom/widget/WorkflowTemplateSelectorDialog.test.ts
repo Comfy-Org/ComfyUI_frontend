@@ -60,7 +60,7 @@ beforeEach(() => {
   }
   vi.stubGlobal(
     'fetch',
-    vi.fn(async () => Response.json({ nodes: [] }))
+    vi.fn(async () => Response.json({ version: 0.4, nodes: [], links: [] }))
   )
   const store = useWorkflowTemplatesStore()
   store.isLoaded = true

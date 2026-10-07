@@ -1,10 +1,10 @@
 import { render, screen } from '@testing-library/vue'
 import { assert, describe, expect, it, vi } from 'vitest'
 
-import { workflowDetailsBySlug } from '../../config/workshop-workflow-content'
+import { workflowDetailsBySlug } from '@/config/workshop-workflow-content'
 import WorkflowPage from './WorkflowPage.vue'
 
-vi.mock(import('../../config/workshop-session-state'))
+vi.mock(import('@/config/workshop-session-state'))
 
 const model = workflowDetailsBySlug.get('workflows/remove-background')
 assert(model, 'the catalogue no longer carries the fixture workflow')

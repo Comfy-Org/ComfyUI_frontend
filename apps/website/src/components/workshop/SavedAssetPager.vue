@@ -3,8 +3,8 @@ import { ChevronLeft, ChevronRight } from '@lucide/vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { t } from '../../i18n/translations'
-import type { Locale } from '../../i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import type { Locale } from '@/i18n/translations'
 
 const {
   index,
@@ -15,6 +15,7 @@ const {
   total: number
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const emit = defineEmits<{ step: [delta: number] }>()
 
@@ -36,7 +37,7 @@ const dotClass = (active: boolean) =>
       v-for="dot in total"
       :key="dot"
       type="button"
-      :aria-label="t('workshop.assets.go', locale, { n: dot })"
+      :aria-label="t('workshop.assets.go', { n: dot })"
       :aria-current="dot - 1 === index"
       :class="dotClass(dot - 1 === index)"
       @click="emit('step', dot - 1 - index)"
@@ -45,7 +46,7 @@ const dotClass = (active: boolean) =>
 
   <button
     type="button"
-    :aria-label="t('workshop.assets.previous', locale)"
+    :aria-label="t('workshop.assets.previous')"
     :disabled="index === 0"
     :class="cn(navClass, 'left-4')"
     data-testid="saved-asset-previous"
@@ -55,7 +56,7 @@ const dotClass = (active: boolean) =>
   </button>
   <button
     type="button"
-    :aria-label="t('workshop.assets.next', locale)"
+    :aria-label="t('workshop.assets.next')"
     :disabled="index >= total - 1"
     :class="cn(navClass, 'right-4')"
     data-testid="saved-asset-next"

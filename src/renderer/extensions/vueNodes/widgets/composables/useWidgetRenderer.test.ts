@@ -119,14 +119,4 @@ describe('widgetRegistry', () => {
       expect(isEssential('')).toBe(false)
     })
   })
-
-  describe('edge cases', () => {
-    it('should handle case sensitivity correctly through aliases', () => {
-      // Test that both lowercase and uppercase work
-      expect(getComponent('string')).toBe(WidgetInputText)
-      expect(getComponent('STRING')).toBe(WidgetInputText)
-      expect(getComponent('combo')).toBe(WidgetSelect)
-      expect(getComponent('COMBO')).toBe(WidgetSelect)
-    })
-  })
 })

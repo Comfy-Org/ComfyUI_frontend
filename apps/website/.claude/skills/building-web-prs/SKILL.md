@@ -41,7 +41,7 @@ it.
 - Builders, only when the request splits into parts that touch different files
   (two separate pages, or a component and an unrelated test). Each builder gets
   its files by name and stays inside them. They share the one dev server.
-  Anything that touches `translations.ts`, `routes.ts`, `llms.txt`, or the
+  Anything that touches `src/locales/<locale>/*.json`, `routes.ts`, `llms.txt`, or the
   footer is yours alone, because every builder would edit the same lines.
 - Investigators, once a pull request exists, as `review-loop.md` describes.
 

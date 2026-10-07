@@ -1,13 +1,13 @@
 import { watch } from 'vue'
 import type { Ref } from 'vue'
 
-import { getRoutes } from '../../config/routes'
+import { getRoutes } from '@/config/routes'
 import {
   useWorkshopAppsEnabled,
   useWorkshopEnabled,
   useWorkshopEnabledSettled,
   useWorkshopWorkflowsEnabled
-} from '../../scripts/posthog'
+} from '@/scripts/posthog'
 import type { CatalogueTab } from './CatalogueTabs.vue'
 
 type HubSection = Exclude<CatalogueTab, 'models'>

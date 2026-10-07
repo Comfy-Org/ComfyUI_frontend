@@ -12,6 +12,7 @@ import type {
 type Canvas = Pick<
   RealComfyApp['canvas'],
   | 'canvas'
+  | 'dpr'
   | 'ds'
   | 'graph_mouse'
   | 'graph'
@@ -191,6 +192,7 @@ function createState(): AppState {
       graph: rootGraph,
       ds: new DragAndScale(element),
       canvas: element,
+      dpr: 1,
       selected_nodes: {},
       selectedItems: new Set(),
       subgraph: undefined,

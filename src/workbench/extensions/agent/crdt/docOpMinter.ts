@@ -24,13 +24,20 @@ import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LLink } from '@/lib/litegraph/src/LLink'
+import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { reportError } from '@/platform/telemetry/reportError'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { RootGraphId } from '@/types/graphScopeId'
 import type { NodeId } from '@/types/nodeId'
+import { widgetId } from '@/types/widgetId'
+import type { WidgetState } from '@/types/widgetState'
 import {
   findNodeInHierarchy,
-  findSubgraphNodePathById
+  findSubgraphByUuid,
+  findSubgraphNodePathById,
+  traverseSubgraphPath
 } from '@/utils/graphTraversalUtil'
 
 import type { GraphOperation } from './graphOperations'
@@ -95,11 +102,13 @@ export function wireNodeSnapshot(node: LGraphNode): WorkflowNode | null {
   } catch {
     return null
   }
+  const wireSerialized = { ...serialized }
+  Reflect.deleteProperty(wireSerialized, '__incarnation')
   const {
     widgets_values_named: named,
     flags: { ghost: _ghost, ...flags },
     ...rest
-  } = serialized
+  } = wireSerialized
   const snapshot = { ...rest, flags } satisfies WorkflowNode
   return named && !node.isVirtualNode
     ? { ...snapshot, widgets_values: valueWidgetsOnly(node, named) }
@@ -111,17 +120,95 @@ function valueWidgetsOnly(
   named: object
 ): Record<string, unknown> {
   const filtered: Record<string, unknown> = {}
+  const rootGraphId = node.graph?.rootGraph.id
+  const widgetValueStore = useWidgetValueStore()
   for (const [name, value] of Object.entries(named)) {
     const widget = node.widgets?.find((candidate) => candidate.name === name)
-    if (widget && widget.type !== 'button' && widget.serialize !== false) {
-      filtered[name] = value
-    }
+    const stored = rootGraphId
+      ? widgetValueStore.getWidget(widgetId(rootGraphId, node.id, name))
+      : undefined
+    if (isValueWidget(widget, stored)) filtered[name] = value
   }
   return filtered
 }
 
+function isValueWidget(
+  widget: IBaseWidget | undefined,
+  stored?: WidgetState
+): boolean {
+  if (!widget && !stored) return false
+  // A destructuring default fires on absent AND present-but-undefined alike,
+  // which is what `IBaseWidget`'s own optional fields mean: the live widget
+  // did not state this, so the registration the intent was keyed by answers.
+  // One construct for both fields, so the two halves of the guard cannot
+  // drift apart again.
+  const { type = stored?.type, serialize = stored?.serialize } = widget ?? {}
+  return type !== 'button' && serialize !== false
+}
+
 function nodeKey(graphId: string, nodeId: NodeId): string {
   return `${graphId}:${String(nodeId)}`
+}
+
+function reachableIntentGraph(
+  graph: LGraph,
+  graphId: string
+): LGraph | Subgraph | null {
+  if (graphId === graph.id) return graph
+  const registered = findSubgraphByUuid(graph, graphId)
+  if (registered) return registered
+  const path = findSubgraphNodePathById(graph, graphId)
+  return path ? traverseSubgraphPath(graph, path) : null
+}
+
+/**
+ * Whether the live widget, or the store metadata the intent was keyed by when
+ * the live widget is missing or omits a field, identifies a value the document
+ * carries. Unknown widgets fail closed.
+ */
+function isValueWidgetWrite(
+  owner: LGraphNode | null,
+  event: IntentOf<'set_widget'>
+): boolean {
+  const rootGraphId = owner?.graph?.rootGraph.id ?? event.graphId
+  const stored = useWidgetValueStore().getWidget(
+    widgetId(rootGraphId, event.nodeId, event.name)
+  )
+  const widget = owner?.widgets?.find(
+    (candidate) => candidate.name === event.name
+  )
+  return isValueWidget(widget, stored)
+}
+
+function routedWidgetOperation(
+  graph: LGraph,
+  rootGraphId: string,
+  event: IntentOf<'set_widget'>,
+  node: LGraphNode | null
+): GraphOperation | null {
+  const operation = {
+    op: 'set_widget',
+    node_id: event.nodeId,
+    widget: event.name,
+    value: event.value,
+    old: event.previous
+  } as const
+  const owningGraphId = node?.graph?.id ?? event.graphId
+  if (owningGraphId === rootGraphId) return operation
+  const subgraphNodePath = findSubgraphNodePathById(graph, owningGraphId)
+  if (subgraphNodePath === null || subgraphNodePath.length === 0) {
+    console.error(
+      '[agent-crdt] set_widget with an unresolvable owner not minted; the bound doc diverges from the local graph',
+      nodeKey(owningGraphId, event.nodeId) + `:${event.name}`
+    )
+    return null
+  }
+  const [head, ...rest] = subgraphNodePath
+  return {
+    ...operation,
+    path: [head, ...rest, String(event.nodeId)],
+    inner_widget: event.name
+  }
 }
 
 /**
@@ -156,17 +243,6 @@ function withoutCancelledAdd(
         return true
     }
   })
-}
-
-/**
- * The graph that owns the written widget's node. The widget store keys every
- * widget by ROOT graph id (`BaseWidget.setNodeId`), so a live interior write
- * arrives naming the root; node ids are unique across a root graph and its
- * subgraphs, so the node itself names its owner.
- */
-function owningGraphIdOf(graph: LGraph, event: IntentOf<'set_widget'>): string {
-  if (event.graphId !== graph.id) return event.graphId
-  return findNodeInHierarchy(graph, event.nodeId)?.graph?.id ?? graph.id
 }
 
 /**
@@ -280,36 +356,14 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     if (pendingAdds.has(nodeKey(event.graphId, event.nodeId))) return
     const graph = deps.getGraph()
     if (!graph) return
+    const eventGraph = reachableIntentGraph(graph, event.graphId)
+    const owner = eventGraph
+      ? findNodeInHierarchy(eventGraph, event.nodeId)
+      : null
+    if (!isValueWidgetWrite(owner, event)) return
     const rootGraphId = deps.boundRootGraphId() ?? graph.id
-    const operation = {
-      op: 'set_widget',
-      node_id: event.nodeId,
-      widget: event.name,
-      value: event.value,
-      old: event.previous
-    } as const
-    const owningGraphId = owningGraphIdOf(graph, event)
-    if (owningGraphId === rootGraphId) {
-      schedule({ kind: 'op', operation })
-      return
-    }
-    const subgraphNodePath = findSubgraphNodePathById(graph, owningGraphId)
-    if (subgraphNodePath === null || subgraphNodePath.length === 0) {
-      console.error(
-        '[agent-crdt] set_widget with an unresolvable owner not minted; the bound doc diverges from the local graph',
-        nodeKey(owningGraphId, event.nodeId) + `:${event.name}`
-      )
-      return
-    }
-    const [head, ...rest] = subgraphNodePath
-    schedule({
-      kind: 'op',
-      operation: {
-        ...operation,
-        path: [head, ...rest, String(event.nodeId)],
-        inner_widget: event.name
-      }
-    })
+    const operation = routedWidgetOperation(graph, rootGraphId, event, owner)
+    if (operation) schedule({ kind: 'op', operation })
   }
 
   function mintSetNodeField(event: IntentOf<'set_node_field'>): void {

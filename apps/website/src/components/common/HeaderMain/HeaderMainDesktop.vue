@@ -10,13 +10,10 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import { navigationMenuTriggerStyle } from '@/components/ui/navigation-menu/navigationMenuTriggerStyle'
 
-import {
-  isHrefActive,
-  useCurrentPath
-} from '../../../composables/useCurrentPath'
-import { getMainNavigation } from '../../../data/mainNavigation'
-import type { NavItem } from '../../../data/mainNavigation'
-import type { Locale } from '../../../i18n/translations'
+import { isHrefActive, useCurrentPath } from '@/composables/useCurrentPath'
+import { getMainNavigation } from '@/data/mainNavigation'
+import type { NavItem } from '@/data/mainNavigation'
+import type { Locale } from '@/i18n/translations'
 import NavColumn from './NavColumn.vue'
 import NavFeaturedCard from './NavFeaturedCard.vue'
 import NewBadge from './NewBadge.vue'

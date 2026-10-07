@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Music2 } from '@lucide/vue'
 
-import type { GeneratedExample } from '../../config/models-catalogue'
+import type { GeneratedExample } from '@/config/models-catalogue'
 
 const { example, poster } = defineProps<{
   example: GeneratedExample

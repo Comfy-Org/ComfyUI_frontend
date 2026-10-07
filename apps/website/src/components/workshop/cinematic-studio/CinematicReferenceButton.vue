@@ -4,9 +4,9 @@ import { computed, useTemplateRef } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { Locale } from '../../../i18n/translations'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
-import type { StudioImage } from '../../../lib/workshop/cinematic-studio/take-image'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import type { StudioImage } from '@/lib/workshop/cinematic-studio/take-image'
 import CinematicTooltip from './CinematicTooltip.vue'
 import type { ReferenceKind } from './reference-kind'
 import { REFERENCE_SLOTS } from './reference-kind'
@@ -23,13 +23,14 @@ const { kind = 'cast', locale = 'en' } = defineProps<{
   kind?: ReferenceKind
   locale?: Locale
 }>()
+const { t: tc } = translationsFor(locale)
 
 const file = defineModel<StudioImage | undefined>()
 const preview = useImagePreview(() => file.value)
 const input = useTemplateRef<HTMLInputElement>('input')
 const slot = computed(() => REFERENCE_SLOTS[kind])
 const action = computed(() => {
-  const label = tc(slot.value.action, locale)
+  const label = tc(slot.value.action)
   return file.value ? `${label}: ${file.value.name}` : label
 })
 
@@ -44,7 +45,7 @@ function choose(event: Event) {
 
 <template>
   <div class="relative">
-    <CinematicTooltip :text="file?.name ?? tc(slot.label, locale)">
+    <CinematicTooltip :text="file?.name ?? tc(slot.label)">
       <button
         type="button"
         :aria-label="action"
@@ -73,7 +74,7 @@ function choose(event: Event) {
       v-if="file"
       type="button"
       class="absolute -top-1.5 -right-1.5 grid size-4 place-items-center rounded-full bg-primary-warm-white text-primary-comfy-ink hover:bg-primary-comfy-yellow"
-      :aria-label="`${tc('cinematic.reference.remove', locale)}: ${tc(slot.label, locale)}`"
+      :aria-label="`${tc('cinematic.reference.remove')}: ${tc(slot.label)}`"
       @click="file = undefined"
     >
       <X class="size-2.5" aria-hidden="true" />

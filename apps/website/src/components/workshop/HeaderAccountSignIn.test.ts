@@ -2,12 +2,12 @@ import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
-import { onBeforeSignInLeave } from '../../config/workshop-return'
+import { onBeforeSignInLeave } from '@/config/workshop-return'
 import HeaderAccount from './HeaderAccount.vue'
 
-vi.mock(import('../../scripts/posthog'))
-vi.mock(import('../../config/workshop-session-state'))
-vi.mock(import('../../config/workshop-credits'))
+vi.mock(import('@/scripts/posthog'))
+vi.mock(import('@/config/workshop-session-state'))
+vi.mock(import('@/config/workshop-credits'))
 
 describe('HeaderAccount sign-in link', () => {
   it('runs the registered stashes before leaving for sign-in', async () => {

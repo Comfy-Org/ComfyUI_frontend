@@ -14,17 +14,36 @@ description: 'Write or update Storybook stories for Vue components in ComfyUI_fr
    - Inspect title patterns: `rg -n "title:\\s*'" src apps --glob '*.stories.ts'`
 4. If a Figma link is provided, list the states you need to cover before writing stories.
 5. Co-locate the story file with the component: `ComponentName.stories.ts`.
-6. Add each variation on separate stories, except hover state. this should be automatically applied by the implementation and not require a separate story.
+6. Sort every variation into a control or a scenario before writing exports (see "Controls Versus Scenarios"). Hover, focus, and active come from the implementation and never get a story.
 7. Run Storybook and validation checks before handing off.
+
+## Controls Versus Scenarios
+
+`docs/guidance/storybook.md` holds the rule; apply it to each variation from step 4:
+
+| Variation                                                  | Becomes                                        |
+| ---------------------------------------------------------- | ---------------------------------------------- |
+| One enum prop (`size`, `shape`)                            | `meta.args` default plus an `argTypes` control |
+| One boolean prop (`bordered`, `disabled`)                  | `meta.args` default; the control is inferred   |
+| Design state spanning several props (`Loading`, `Invalid`) | A story                                        |
+| Data shape that stresses layout (`LongTitle`, `ManyItems`) | A story with a named fixture                   |
+| Store, mock, flag, or locale state                         | A story with `beforeEach` setting the mock     |
+| State reached only by interaction (menu open, form filled) | A story with `play`                            |
+| Side-by-side comparison of a prop's whole domain           | One grid story (`AllSizes`, `AllVariants`)     |
+
+A file whose exports differ by one prop value each is the pattern to fix, not copy, even when the nearest sibling does it.
 
 ## Match Local Conventions
 
-- Copy the closest neighboring story instead of forcing one universal template.
+- Copy the closest neighboring story's title, decorators, and mock setup instead of forcing one universal template.
 - Most repo stories use `@storybook/vue3-vite`.
 - Add `tags: ['autodocs']` unless the surrounding stories in that area intentionally omit it.
+- Put shared defaults in `meta.args`; a story's `args` lists only what differs. Derive stories with `...Other.args`.
+- Put `render` on `meta` when every story shares the wrapper; a story-level `render` is for a structurally different template.
 - Use `ComponentPropsAndSlots<typeof Component>` when it helps with prop and slot typing.
 - Keep `render` functions stateful when needed. Use `ref()`, `computed()`, and `toRefs(args)` instead of mutating Storybook args directly.
 - Use `args.default` or other slot-shaped args when the component content is provided through slots.
+- Wire emits as `on<Event>: fn()` args from `storybook/test`.
 - Use `ComponentExposed` only when a component's exposed API breaks the normal Storybook typing.
 - Add decorators for realistic width or background context when the component needs it.
 
@@ -47,19 +66,25 @@ If multiple patterns seem plausible, follow the closest sibling story in the sam
 
 ### Stateful input or `v-model`
 
+The `render` lives on `meta` so every story shares it and varies only `args`:
+
 ```typescript
-export const Default: Story = {
+const meta: Meta<typeof MyComponent> = {
+  component: MyComponent,
+  args: { disabled: false, size: 'md' },
+  argTypes: { size: { control: 'select', options: ['sm', 'md', 'lg'] } },
   render: (args) => ({
     components: { MyComponent },
     setup() {
-      const { disabled, size } = toRefs(args)
       const value = ref('Hello world')
-      return { value, disabled, size }
+      return { value, ...toRefs(args) }
     },
     template:
       '<MyComponent v-model="value" :disabled="disabled" :size="size" />'
   })
 }
+
+export const Default: Story = {}
 ```
 
 ### Slot-driven content
@@ -71,10 +96,7 @@ const meta: Meta<ComponentPropsAndSlots<typeof Button>> = {
   },
   args: {
     default: 'Button'
-  }
-}
-
-export const SingleButton: Story = {
+  },
   render: (args) => ({
     components: { Button },
     setup() {
@@ -82,6 +104,37 @@ export const SingleButton: Story = {
     },
     template: '<Button v-bind="args">{{ args.default }}</Button>'
   })
+}
+
+export const Default: Story = {}
+export const LongLabel: Story = {
+  args: { default: 'A label long enough to wrap inside a narrow toolbar' }
+}
+```
+
+### Store or mock-driven scenarios
+
+```typescript
+function story(billing: Partial<BillingContextMockState>): Story {
+  return {
+    beforeEach() {
+      setBillingContextMock({ isTeamPlan: true, ...billing })
+    }
+  }
+}
+
+export const Paused: Story = story({ billingStatus: 'paused' })
+export const OutOfCredits: Story = story({ subscription: exhausted })
+```
+
+### Interaction-only state
+
+```typescript
+export const MenuOpen: Story = {
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(canvas.getByRole('button', { name: 'Open' }))
+    await expect(canvas.getByRole('menu')).toBeVisible()
+  }
 }
 ```
 
@@ -105,9 +158,8 @@ export const AllVariants: Story = {
 
 ## Figma Mapping
 
-- Extract the named states from the design first.
-- Prefer explicit prop-driven stories such as `Disabled`, `Loading`, `Invalid`, `WithPlaceholder`, `AllSizes`, or `EdgeCases`.
-- Add an aggregate story such as `AllVariants`, `AllSizes`, or `EdgeCases` when side-by-side comparison is useful.
+- Extract the named states from the design first, then run each through "Controls Versus Scenarios".
+- Named design states that span several props or need fixture data (`Loading`, `Invalid` with its message, `WithPlaceholder`) become stories; a one-prop state (`Disabled`) and a size or color ramp become controls, plus one `AllSizes` or `AllVariants` grid when side-by-side review matters.
 - Use pseudo-state parameters only if the addon is already configured in this repo.
 - If a Figma state cannot be represented exactly, capture the closest prop-driven version and explain the gap in the story docs.
 
@@ -124,7 +176,8 @@ export const AllVariants: Story = {
 - [ ] Read the component source and any supporting types or composables
 - [ ] Match the nearest local title pattern and story style
 - [ ] Include a baseline story; name it `Default` only when that matches nearby conventions
-- [ ] Add focused stories for meaningful states
+- [ ] Every enum and boolean prop has a `meta.args` default; every enum prop has an `argTypes` control with `options`
+- [ ] Every export is a scenario from the "Controls Versus Scenarios" table, not a single prop value
 - [ ] Add `tags: ['autodocs']`
 - [ ] Keep the story co-located with the component
 - [ ] Run `pnpm storybook`

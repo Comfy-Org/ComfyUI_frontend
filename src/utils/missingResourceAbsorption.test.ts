@@ -721,7 +721,7 @@ it.for([1, 2] as const)(
       sourceIds: [42, 43, 44],
       depth
     })
-    const candidates = scanAllMediaCandidates(rootGraph, false)
+    const candidates = scanAllMediaCandidates(rootGraph)
     expect(candidates).toHaveLength(1)
 
     for (const node of sourceNodes) {

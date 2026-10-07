@@ -75,7 +75,11 @@
           >
             {{ contentTitle }}
           </h2>
-          <div :class="contentContainerClass">
+          <div
+            ref="contentContainer"
+            data-testid="base-modal-content"
+            :class="contentContainerClass"
+          >
             <slot name="content" />
           </div>
         </main>
@@ -191,6 +195,7 @@ const notMobile = breakpoints.greater('md')
 
 const isLeftPanelOpen = ref<boolean>(true)
 const mobileMenuOpen = ref<boolean>(false)
+const contentContainer = ref<HTMLElement | null>(null)
 
 watch(notMobile, (isDesktop) => {
   if (!isDesktop) {
@@ -261,4 +266,11 @@ function handleEscape(event: KeyboardEvent) {
     isRightPanelOpen.value = false
   }
 }
+
+defineExpose({
+  getContentScrollTop: () => contentContainer.value?.scrollTop ?? 0,
+  setContentScrollTop: (scrollTop: number) => {
+    if (contentContainer.value) contentContainer.value.scrollTop = scrollTop
+  }
+})
 </script>

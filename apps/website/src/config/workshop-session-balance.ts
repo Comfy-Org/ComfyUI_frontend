@@ -12,7 +12,7 @@ import type { WebSession } from '@comfyorg/account-core/webSession'
 import { zBillingBalanceResponse } from '@comfyorg/ingest-types/zod'
 import { centsToCredits } from '@comfyorg/shared-frontend-utils/creditsUtil'
 
-import { createTimeoutSignal } from '../utils/abortSignal'
+import { createTimeoutSignal } from '@/utils/abortSignal'
 import { WORKSHOP_CLOUD_BASE_URL } from './workshop-env'
 
 export type SessionBalanceState =

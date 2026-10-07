@@ -1,10 +1,10 @@
 ---
 import type { GetStaticPaths } from 'astro'
-import LearningTutorialPage from '../../../../components/learning/LearningTutorialPage.astro'
+import LearningTutorialPage from '@/components/learning/LearningTutorialPage.astro'
 import {
   getTutorialByCategoryAndSlug,
   learningTutorials
-} from '../../../../data/learningTutorials'
+} from '@/data/learningTutorials'
 
 export const getStaticPaths: GetStaticPaths = () =>
   learningTutorials.map((tutorial) => ({

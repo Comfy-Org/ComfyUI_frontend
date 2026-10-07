@@ -2,8 +2,8 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 
-import { buildVideoSources, videoKey } from '../../utils/video'
-import type { VideoFormat } from '../../utils/video'
+import { buildVideoSources, videoKey } from '@/utils/video'
+import type { VideoFormat } from '@/utils/video'
 
 const {
   name,

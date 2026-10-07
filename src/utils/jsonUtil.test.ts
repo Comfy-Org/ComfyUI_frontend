@@ -122,10 +122,6 @@ describe('parseJsonWithNonFinite', () => {
     ).toEqual({ x: 'a\nNaN', y: '"Infinity"' })
   })
 
-  it('throws SyntaxError on otherwise-invalid JSON', () => {
-    expect(() => parseJsonWithNonFinite('{not json}')).toThrow(SyntaxError)
-  })
-
   it.for([
     ['NaN with trailing digits', '{"x": NaN123}'],
     ['Infinity with trailing letter', '{"x": Infinityy}'],

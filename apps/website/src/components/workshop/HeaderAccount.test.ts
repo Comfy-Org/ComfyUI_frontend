@@ -3,17 +3,17 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { computed, ref } from 'vue'
 
-import { useWorkshopCredits } from '../../config/workshop-credits'
-import { useWorkshopSession } from '../../config/workshop-session-state'
-import { subscribeToWorkshopBuyCredits } from '../../config/workshop-buy-credits'
-import { reportWorkshopRun } from '../../config/workshop-run-state'
-import { useWorkshopAuthFlag } from '../../scripts/posthog'
-import { testFirebaseUser } from '../../config/__fixtures__/workshopSessionFakes'
+import { useWorkshopCredits } from '@/config/workshop-credits'
+import { useWorkshopSession } from '@/config/workshop-session-state'
+import { subscribeToWorkshopBuyCredits } from '@/config/workshop-buy-credits'
+import { reportWorkshopRun } from '@/config/workshop-run-state'
+import { useWorkshopAuthFlag } from '@/scripts/posthog'
+import { testFirebaseUser } from '@/config/__fixtures__/workshopSessionFakes'
 import HeaderAccount from './HeaderAccount.vue'
 
-vi.mock(import('../../scripts/posthog'))
-vi.mock(import('../../config/workshop-session-state'))
-vi.mock(import('../../config/workshop-credits'))
+vi.mock(import('@/scripts/posthog'))
+vi.mock(import('@/config/workshop-session-state'))
+vi.mock(import('@/config/workshop-credits'))
 
 let authFlag = ref(true)
 let authUser = ref<Parameters<typeof testFirebaseUser>[0] | null>(null)
@@ -363,7 +363,7 @@ describe('HeaderAccount menu', () => {
 
     await user.keyboard('{Escape}')
     await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
-    // eslint-disable-next-line testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-node-access
     expect(document.activeElement).toBe(trigger)
   })
 })
@@ -793,7 +793,7 @@ describe('HeaderAccount workspace switcher', () => {
     const retry = await screen.findByTestId('account-workspaces-retry')
     await user.keyboard('{ArrowDown}')
     await waitFor(() => {
-      // eslint-disable-next-line testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-node-access
       expect(document.activeElement).toBe(retry)
     })
     await user.keyboard('{Enter}')

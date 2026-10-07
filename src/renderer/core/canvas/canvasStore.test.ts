@@ -20,7 +20,7 @@ import { graphScopeOf } from '@/types/graphScopeId'
 import {
   createMockCanvasRenderingContext2D,
   createTestCanvas
-} from '@/utils/__tests__/litegraphTestUtils'
+} from '@/utils/__tests__/canvasTestUtils'
 
 function createMockCanvas(readOnly = false): LGraphCanvas {
   return fromPartial<LGraphCanvas>({

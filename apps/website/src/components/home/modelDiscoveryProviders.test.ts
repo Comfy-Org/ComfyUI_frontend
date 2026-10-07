@@ -3,11 +3,8 @@ import { describe, expect, it, vi } from 'vitest'
 import type {
   DiscoveryProvider,
   DiscoveryWorkflow
-} from '../../data/modelDiscovery'
-import {
-  discoveryProviders,
-  discoveryWorkflows
-} from '../../data/modelDiscovery'
+} from '@/data/modelDiscovery'
+import { discoveryProviders, discoveryWorkflows } from '@/data/modelDiscovery'
 import {
   resolveDiscoveryProviders,
   resolveDiscoveryWorkflows

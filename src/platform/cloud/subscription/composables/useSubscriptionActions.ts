@@ -4,6 +4,7 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
+import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/utils/paymentIntentSource'
 import { useDialogService } from '@/services/dialogService'
 import { useCommandStore } from '@/stores/commandStore'
 
@@ -27,7 +28,9 @@ export function useSubscriptionActions() {
     telemetry?.trackAddApiCreditButtonClicked({
       source: 'settings_billing_panel'
     })
-    void dialogService.showTopUpCreditsDialog()
+    void dialogService.showTopUpCreditsDialog({
+      source: paymentIntentSourceForAddCreditsClick('settings_billing_panel')
+    })
   }
 
   // A user who cannot reach support cannot tell us that they cannot reach

@@ -53,59 +53,16 @@
         }}
       </span>
       <div class="flex items-center justify-end">
-        <MoreButton
-          v-slot="{ close }"
-          variant="muted-textonly"
-          :aria-label="$t('g.moreOptions')"
-        >
-          <Button
-            v-if="invite.token"
-            variant="textonly"
-            size="unset"
-            :class="menuItemClass"
-            @click="
-              () => {
-                close()
-                void copyInviteLink(invite)
-              }
-            "
-          >
-            <i class="icon-[lucide--link] size-4" />
-            <span>{{
-              $t('workspacePanel.members.actions.copyInviteLink')
-            }}</span>
-          </Button>
-          <Button
-            variant="textonly"
-            size="unset"
-            :class="menuItemClass"
-            @click="
-              () => {
-                close()
-                $emit('resend', invite)
-              }
-            "
-          >
-            <!-- fallow-ignore-next-line css-token-drift -->
-            <i class="icon-[lucide--mail-plus] size-4" />
-            <span>{{ $t('workspacePanel.members.actions.resendInvite') }}</span>
-          </Button>
-          <Button
-            variant="textonly"
-            size="unset"
-            :class="menuItemClass"
-            @click="
-              () => {
-                close()
-                $emit('revoke', invite)
-              }
-            "
-          >
-            <!-- fallow-ignore-next-line css-token-drift -->
-            <i class="icon-[lucide--mail-x] size-4" />
-            <span>{{ $t('workspacePanel.members.actions.cancelInvite') }}</span>
-          </Button>
-        </MoreButton>
+        <Menu :items="getInviteMenuItems(invite)" align="end">
+          <template #trigger>
+            <Button
+              size="icon"
+              variant="muted-textonly"
+              :aria-label="$t('g.moreOptions')"
+              icon="icon-[lucide--ellipsis]"
+            />
+          </template>
+        </Menu>
       </div>
     </div>
     <div
@@ -126,17 +83,16 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-import MoreButton from '@/components/button/MoreButton.vue'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import Button from '@/components/ui/button/Button.vue'
+import Menu from '@/components/ui/menu/Menu.vue'
+import type { MenuItem } from '@/components/ui/menu/types'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { WorkspacePendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
   buildInviteLink,
   copyTextSilently
 } from '@/platform/workspace/utils/inviteLinks'
 import { cn } from '@comfyorg/tailwind-utils'
-
-const menuItemClass = 'w-full justify-start rounded-sm px-3 py-2'
 
 const toastStore = useToastStore()
 
@@ -147,7 +103,7 @@ const { searchQuery = '', loaded = false } = defineProps<{
   loaded?: boolean
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   resend: [invite: WorkspacePendingInvite]
   revoke: [invite: WorkspacePendingInvite]
 }>()
@@ -186,5 +142,26 @@ async function copyInviteLink(invite: WorkspacePendingInvite) {
       summary: t('workspacePanel.inviteLinks.copyFailedToast')
     })
   }
+}
+
+function getInviteMenuItems(invite: WorkspacePendingInvite): MenuItem[] {
+  return [
+    {
+      label: () => t('workspacePanel.members.actions.copyInviteLink'),
+      icon: 'icon-[lucide--link]',
+      visible: Boolean(invite.token),
+      command: () => copyInviteLink(invite)
+    },
+    {
+      label: () => t('workspacePanel.members.actions.resendInvite'),
+      icon: 'icon-[lucide--mail-plus]',
+      command: () => emit('resend', invite)
+    },
+    {
+      label: () => t('workspacePanel.members.actions.cancelInvite'),
+      icon: 'icon-[lucide--mail-x]',
+      command: () => emit('revoke', invite)
+    }
+  ]
 }
 </script>

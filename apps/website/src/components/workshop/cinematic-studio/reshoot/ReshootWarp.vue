@@ -7,15 +7,15 @@ import {
   watch
 } from 'vue'
 
-import type { Pose } from '../../../../lib/workshop/cinematic-studio/reshoot-engine/camera'
+import type { Pose } from '@/lib/workshop/cinematic-studio/reshoot-engine/camera'
 import {
   focalPx,
   invertPose,
   orbitPose,
   sourceAim
-} from '../../../../lib/workshop/cinematic-studio/reshoot-engine/camera'
-import type { Geometry } from '../../../../lib/workshop/cinematic-studio/reshoot-engine/cvgeo'
-import { WarpRenderer } from '../../../../lib/workshop/cinematic-studio/reshoot-engine/warp-renderer'
+} from '@/lib/workshop/cinematic-studio/reshoot-engine/camera'
+import type { Geometry } from '@/lib/workshop/cinematic-studio/reshoot-engine/cvgeo'
+import { WarpRenderer } from '@/lib/workshop/cinematic-studio/reshoot-engine/warp-renderer'
 
 // The clip seen from the camera being aimed: the CrossView node's own warp,
 // redrawn on the GPU from the depth the analysis returned, so a drag answers

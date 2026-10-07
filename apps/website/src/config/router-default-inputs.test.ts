@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import defaultMedia from '../data/router-default-media.json'
+import defaultMedia from '@/data/router-default-media.json'
 import { initialWorkshopPageState } from './workshop-page-state'
 import { prepareModelRouterRender } from './router-render'
 import { authoredWorkshopModels } from './workshop-browse-content'

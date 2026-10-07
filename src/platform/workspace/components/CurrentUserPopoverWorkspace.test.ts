@@ -415,7 +415,9 @@ describe('CurrentUserPopoverWorkspace', () => {
     ).not.toBeInTheDocument()
     await user.click(screen.getByTestId('add-credits-button'))
 
-    expect(useDialogService().showTopUpCreditsDialog).toHaveBeenCalledOnce()
+    expect(
+      useDialogService().showTopUpCreditsDialog
+    ).toHaveBeenCalledExactlyOnceWith({ source: 'avatar_menu_plans' })
   })
 
   it('offers add-credits alongside Subscribe for an unsubscribed Cloud owner', () => {

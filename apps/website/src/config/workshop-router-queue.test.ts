@@ -7,7 +7,7 @@ import {
   runWorkshopRouter,
   WORKSHOP_LEAVE_RUNNING
 } from './workshop-router-queue'
-import { workshopFailureAnalytics } from '../scripts/workshop-analytics'
+import { workshopFailureAnalytics } from '@/scripts/workshop-analytics'
 
 const MODEL = 'bfl/flux-2-pro'
 const REQUEST_ID = '6f1a1a6e-6a53-4a5f-9d3a-2b3b0a1f9c21'

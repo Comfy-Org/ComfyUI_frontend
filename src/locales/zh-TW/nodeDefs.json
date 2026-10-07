@@ -4860,7 +4860,7 @@
       },
       "language_code": {
         "name": "語言代碼",
-        "tooltip": "ISO-639-1 或 ISO-639-3 語言代碼（例如 'en'、'es'、'fra'）。留空以自動偵測。"
+        "tooltip": "ISO 639-1 語言代碼（例如 'en'、'es'、'ja'）。留空以自動偵測。"
       },
       "model": {
         "name": "模型",
@@ -4930,7 +4930,7 @@
       },
       "language_code": {
         "name": "語言代碼",
-        "tooltip": "ISO-639-1 或 ISO-639-3 語言代碼（例如 'en'、'es'、'fra'）。留空則自動偵測。"
+        "tooltip": "ISO 639-1 語言代碼（例如 'en'、'es'、'ja'）。留空以自動偵測。"
       },
       "model": {
         "name": "模型",
@@ -4938,15 +4938,6 @@
       },
       "model_similarity_boost": {
         "name": "相似度提升"
-      },
-      "model_speed": {
-        "name": "速度"
-      },
-      "model_style": {
-        "name": "風格"
-      },
-      "model_use_speaker_boost": {
-        "name": "啟用說話者增強"
       },
       "output_format": {
         "name": "輸出格式",
@@ -5834,6 +5825,52 @@
       },
       "width": {
         "name": "寬度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3ImageNode": {
+    "description": "使用 FLUX 3 根據提示詞生成圖像，或編輯並合併最多 10 張參考圖像。在提示詞中，請將參考圖像稱為圖像 1、圖像 2，依此類推。",
+    "display_name": "Flux 3 圖像",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "長寬比",
+        "tooltip": "'auto' 會依循第一張參考圖像，或從提示詞中選擇比例。"
+      },
+      "bounding_boxes": {
+        "name": "邊界框",
+        "tooltip": "來自 Create Bounding Boxes 的選用方框，可在輸出中放置物件或文字。位置相對於畫布，因此請將其設為輸出的長寬比。"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "grounding": {
+        "name": "資訊依據",
+        "tooltip": "讓模型在生成前透過網路與圖像搜尋研究提示詞。"
+      },
+      "images": {
+        "name": "圖像",
+        "tooltip": "選用的參考圖像，總數最多 10 張，每張至少為 256x256 像素。"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "要生成的內容或要進行的編輯。提示詞會在生成前經過解讀與擴展。"
+      },
+      "resolution": {
+        "name": "解析度",
+        "tooltip": "所選長寬比下的輸出尺寸：0.75K 約為 0.6 百萬像素，1K 為 1 百萬像素，1.5K 為 2.4 百萬像素，2K 為 4.2 百萬像素，4K 為 16.8 百萬像素。"
+      },
+      "safety_tolerance": {
+        "name": "安全容許度",
+        "tooltip": "審核容許度，0 為最嚴格。"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "用於決定節點是否應重新執行的種子；FLUX 3 會自行選擇種子，因此無論此值為何，實際結果皆不具決定性。"
       }
     },
     "outputs": {
@@ -7434,7 +7471,7 @@
     "inputs": {
       "aspect_ratio": {
         "name": "aspect_ratio",
-        "tooltip": "輸出影片的長寬比。"
+        "tooltip": "輸出影片的長寬比。提供輸入圖像時會忽略此設定；影片會依循圖像的長寬比。"
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -7453,11 +7490,11 @@
       },
       "prompt": {
         "name": "prompt",
-        "tooltip": "所需影片的文字描述。提供輸入圖像時，grok-imagine-video-1.5 可不填。"
+        "tooltip": "所需影片的文字描述。提供輸入圖像時，grok-imagine-video-1.5 模型可選擇不填。"
       },
       "resolution": {
         "name": "resolution",
-        "tooltip": "輸出影片的解析度。1080p 僅適用於 grok-imagine-video-1.5。"
+        "tooltip": "輸出影片的解析度。grok-imagine-video 不提供 1080p。"
       },
       "seed": {
         "name": "seed",
@@ -18481,7 +18518,7 @@
   "PrimitiveInt": {
     "display_name": "整數",
     "inputs": {
-      "fixed": {
+      "control_after_generate": {
         "name": "生成後控制"
       },
       "value": {
@@ -22372,8 +22409,8 @@
   "SeedNode": {
     "display_name": "種子",
     "inputs": {
-      "fixed": {
-        "name": "生成後鎖定"
+      "control_after_generate": {
+        "name": "生成後控制"
       },
       "seed": {
         "name": "種子"

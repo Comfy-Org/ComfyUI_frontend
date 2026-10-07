@@ -1,14 +1,15 @@
-import type { SubscriptionPreview } from '@comfyorg/account-core/billing'
+import type { BillingChargeReason } from '@comfyorg/account-core/billing'
 import { formatQuoteMoney } from '@comfyorg/account-ui/billing/checkout'
 
 import type { CheckoutPage } from '@/checkout/checkoutPage'
 import { endingOf } from '@/checkout/endingScreen'
 import type {
+  DeductionFormat,
   DiscountRow,
   LedgerContext,
   SummaryLedger
 } from '@/checkout/summaryLedger'
-import { buildSummaryLedger } from '@/checkout/summaryLedger'
+import { balanceRow, discountRow } from '@/checkout/summaryLedger'
 
 /**
  * Why a Success card's charge differs from the plan rate it shows: one row
@@ -19,119 +20,47 @@ export interface SuccessBreakdown {
   readonly paidToday: SummaryLedger['items'][number]
 }
 
-/**
- * What the page knows about the charge. This page's own Pay still holds the
- * quote it paid, so its reasons are the quote's; a return from a payment
- * provider knows only what the operation status reports.
- */
-type ChargeSource =
-  | {
-      readonly kind: 'quoted'
-      readonly quote: SubscriptionPreview
-      readonly paidCents: number
-    }
-  | {
-      readonly kind: 'op_status'
-      readonly rateCents: number
-      readonly paidCents: number
-    }
-
-type Terminal = Extract<CheckoutPage, { kind: 'terminal' }>
-
-function chargedCents({ operation }: Terminal): number | undefined {
-  return operation?.phase === 'succeeded'
-    ? operation.receipt?.amountChargedCents
-    : undefined
-}
-
-function quotedSource(
-  quote: SubscriptionPreview | undefined,
-  charged: number | undefined
-): ChargeSource | undefined {
-  if (quote === undefined) return undefined
-  return {
-    kind: 'quoted',
-    quote,
-    paidCents: charged ?? quote.amount_due_cents ?? quote.cost_today_cents
-  }
-}
-
-function opStatusSource(
-  plan: Terminal['plan'],
-  charged: number | undefined
-): ChargeSource | undefined {
-  if (plan === undefined || charged === undefined) return undefined
-  return {
-    kind: 'op_status',
-    rateCents: Number(plan.price_cents),
-    paidCents: charged
-  }
-}
-
-function chargeSourceOf(
-  page: CheckoutPage,
-  quote: SubscriptionPreview | undefined
-): ChargeSource | undefined {
-  if (page.kind !== 'terminal' || endingOf(page)?.kind !== 'success')
-    return undefined
-  const charged = chargedCents(page)
-  return page.attribution === 'started'
-    ? quotedSource(quote, charged)
-    : opStatusSource(page.plan, charged)
-}
-
 const R = 'checkout.fullPage.ending.receipt'
 
+const REASON_ROW = {
+  account_balance: (format, reason) => balanceRow(format, reason.amount_cents),
+  promo_code: (format, reason) =>
+    discountRow(format, reason.discount ?? {}, reason.amount_cents),
+  subscription_discount: (format, reason) =>
+    discountRow(format, reason.discount ?? {}, reason.amount_cents)
+} satisfies Record<
+  BillingChargeReason['kind'],
+  (format: DeductionFormat, reason: BillingChargeReason) => DiscountRow
+>
+
 /**
- * The rows under a Success card's plan rate, or none while today's charge
- * equals that rate. "Differs" compares the two server amounts; no reason's
- * amount is derived from the gap. A plan-level rate is already the card's
- * price, and a scheduled change charges nothing today, so neither gets rows.
- * Proration is not itemized, only named under the amount paid.
+ * The rows under a Success card's plan rate, exactly as the operation status
+ * reports them; absent while the server reports no breakdown. Proration is
+ * not itemized, only named under the amount paid.
  */
 export function successBreakdown(
   page: CheckoutPage,
-  quote: SubscriptionPreview | undefined,
-  context: LedgerContext
+  { t, locale }: Pick<LedgerContext, 't' | 'locale'>
 ): SuccessBreakdown | undefined {
-  const source = chargeSourceOf(page, quote)
-  if (source === undefined) return undefined
-  const { t, locale } = context
+  if (page.kind !== 'terminal' || endingOf(page)?.kind !== 'success')
+    return undefined
+  const operation = page.operation
+  if (operation?.phase !== 'succeeded') return undefined
+  const breakdown = operation.receipt?.chargeBreakdown
+  if (breakdown === undefined) return undefined
 
-  if (source.kind === 'op_status')
-    return source.paidCents === source.rateCents
-      ? undefined
-      : {
-          deductions: [],
-          paidToday: {
-            label: t(`${R}.paidToday`, {}),
-            amount: formatQuoteMoney(source.paidCents, 'usd', locale),
-            sublines: []
-          }
-        }
-
-  const { quote: paid, paidCents } = source
-  if (paidCents === paid.new_plan.price_cents) return undefined
-  const ledger = buildSummaryLedger(paid, context)
-  const paidToday = {
-    label: t(`${R}.paidToday`, {}),
-    amount: formatQuoteMoney(paidCents, paid.currency ?? 'usd', locale)
+  const format: DeductionFormat = {
+    t,
+    money: (cents) => formatQuoteMoney(cents, breakdown.currency, locale)
   }
-  switch (ledger.family) {
-    case 'scheduled':
-      return undefined
-    case 'prorated_change':
-      return {
-        deductions: [],
-        paidToday: { ...paidToday, sublines: [t(`${R}.prorated`, {})] }
-      }
-    default:
-      return {
-        deductions:
-          ledger.balance === undefined
-            ? ledger.discounts
-            : [...ledger.discounts, ledger.balance],
-        paidToday: { ...paidToday, sublines: [] }
-      }
+  return {
+    deductions: breakdown.reasons.map((reason) =>
+      REASON_ROW[reason.kind](format, reason)
+    ),
+    paidToday: {
+      label: t(`${R}.paidToday`, {}),
+      amount: format.money(breakdown.amount_charged_cents),
+      sublines: breakdown.prorated ? [t(`${R}.prorated`, {})] : []
+    }
   }
 }

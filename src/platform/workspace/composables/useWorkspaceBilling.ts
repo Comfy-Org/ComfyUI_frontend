@@ -7,7 +7,11 @@ import {
   watch
 } from 'vue'
 
-import type { PreviewSubscribeInput } from '@comfyorg/account-core/billing'
+import type {
+  BillingClient,
+  BillingTelemetryFailure,
+  PreviewSubscribeInput
+} from '@comfyorg/account-core/billing'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
@@ -18,6 +22,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { reportError } from '@/platform/telemetry/reportError'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
+import { createBillingPortalReporter } from '@/platform/telemetry/utils/billingPortalTelemetry'
 import type {
   BillingBalanceResponse,
   BillingStatusResponse,
@@ -567,13 +572,16 @@ export function useWorkspaceBilling(): WorkspaceBilling {
   }
 
   /** The rail's portal URL, or the legacy client's when the rail declines. */
-  async function requestPortalUrl(): Promise<string | undefined> {
+  async function requestPortalUrl(): Promise<{
+    url: string | undefined
+    billingClient: BillingClient
+  }> {
     const rail = useSubscriptionRail()
     if (rail) {
       const url = await onSubscriptionRail(() =>
         rail.openPaymentPortal(window.location.href)
       )
-      if (url !== DECLINED) return url
+      if (url !== DECLINED) return { url, billingClient: 'sdk' }
     }
 
     isLoading.value = true
@@ -581,7 +589,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     try {
       const returnUrl = window.location.href
       const response = await workspaceApi.getPaymentPortalUrl(returnUrl)
-      return response.url || undefined
+      return { url: response.url || undefined, billingClient: 'legacy' }
     } catch (err) {
       error.value =
         err instanceof Error ? err.message : 'Failed to open billing portal'
@@ -601,17 +609,26 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     if (hosted === 'opened') return
     if (hosted === 'blocked') return reportBillingTabBlocked()
 
+    const portal = createBillingPortalReporter(telemetry, 'manage_subscription')
     // The handle arms the return refresh, so adding `noopener` here (which
     // nulls it) silently stops billing state from re-reading on return.
     const portalTab = window.open('', '_blank')
-    if (!portalTab) return reportBillingTabBlocked()
+    if (!portalTab) {
+      portal.blocked()
+      return reportBillingTabBlocked()
+    }
     try {
-      const url = await requestPortalUrl()
-      if (!url) return portalTab.close()
+      const { url, billingClient } = await requestPortalUrl()
+      if (!url) {
+        portal.failed(undefined, billingClient)
+        return portalTab.close()
+      }
       portalTab.location.href = url
+      portal.opened(billingClient)
       refreshOnPortalReturn()
     } catch (err) {
       portalTab.close()
+      portal.failed(err)
       throw err
     }
   }
@@ -621,46 +638,60 @@ export function useWorkspaceBilling(): WorkspaceBilling {
   ): Promise<void> {
     assertCancellationScopeCurrent(isScopeCurrent)
     const attemptStartedAt = Date.now()
-    const trackCancelSucceeded = () =>
+    const rail = useSubscriptionRail()
+    const trackCancelStarted = (billingClient: BillingClient) =>
+      telemetry?.trackBillingEvent({
+        operation: 'operation',
+        stage: 'started',
+        outcome: 'pending',
+        operation_type: 'cancel',
+        billing_client: billingClient
+      })
+    const trackCancelSucceeded = (billingClient: BillingClient) =>
       telemetry?.trackBillingEvent({
         operation: 'operation',
         stage: 'succeeded',
         outcome: 'success',
         operation_type: 'cancel',
+        billing_client: billingClient,
         duration_ms: Date.now() - attemptStartedAt
       })
-    const trackCancelFailed = (err: unknown) =>
+    const trackCancelFailed = (
+      failureCategory: BillingTelemetryFailure['failure_category'],
+      billingClient: BillingClient
+    ) =>
       telemetry?.trackBillingEvent({
         operation: 'operation',
         stage: 'failed',
         outcome: 'failure',
         operation_type: 'cancel',
-        failure_category: categorizeBillingApiError(err),
+        billing_client: billingClient,
+        failure_category: failureCategory,
         duration_ms: Date.now() - attemptStartedAt
       })
 
-    telemetry?.trackBillingEvent({
-      operation: 'operation',
-      stage: 'started',
-      outcome: 'pending',
-      operation_type: 'cancel'
-    })
-
-    const rail = useSubscriptionRail()
-    if (rail) {
+    // A rail that already learned its routes are missing goes straight to the
+    // legacy call, so it never starts an SDK attempt.
+    if (rail?.subscriptionRouteAvailable) {
+      trackCancelStarted('sdk')
       const settled = await onSubscriptionRail(() =>
         rail.cancelSubscription()
       ).catch((err: unknown) => {
-        if (!(err instanceof SettledOperationError)) trackCancelFailed(err)
+        if (!(err instanceof SettledOperationError)) {
+          trackCancelFailed(categorizeBillingApiError(err), 'sdk')
+        }
         throw err
       })
       if (settled !== DECLINED) {
-        if (!settled.operationObserved) trackCancelSucceeded()
+        if (!settled.operationObserved) trackCancelSucceeded('sdk')
         return
       }
+      // The backend refused the SDK request; the legacy call is its own attempt.
+      trackCancelFailed('api_rejected', 'sdk')
     }
 
     assertCancellationScopeCurrent(isScopeCurrent)
+    trackCancelStarted('legacy')
 
     isLoading.value = true
     error.value = null
@@ -686,10 +717,12 @@ export function useWorkspaceBilling(): WorkspaceBilling {
         // fetchStatus records its own read failure; the cancellation still
         // holds, so the operation is not in error.
         error.value = null
-        trackCancelSucceeded()
+        trackCancelSucceeded('legacy')
         return
       }
-      if (billingOpId === undefined) trackCancelFailed(err)
+      if (billingOpId === undefined) {
+        trackCancelFailed(categorizeBillingApiError(err), 'legacy')
+      }
       error.value =
         err instanceof Error ? err.message : 'Failed to cancel subscription'
       throw err

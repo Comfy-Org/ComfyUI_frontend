@@ -1,25 +1,26 @@
 import { readFile, writeFile } from 'node:fs/promises'
-import { resolve } from 'node:path'
+import { join } from 'node:path'
 import { z } from 'astro/zod'
 
 import {
   workshopBindingSchema,
   workshopContractRecordSchema,
   formForContract
-} from '../src/config/workshop-contract'
-import { fieldsForDefinition } from '../src/config/workshop-form-definition'
+} from '@/config/workshop-contract'
+import { websiteRoot } from '@website/paths'
+import { fieldsForDefinition } from '@/config/workshop-form-definition'
 import {
   validateWorkshopInput,
   validatorFor
-} from '../src/config/workshop-json-schema'
+} from '@/config/workshop-json-schema'
 import {
   parseRouterOpenApiSnapshot,
   routerInputSchema
-} from '../src/config/workshop-router-openapi'
-import { workshopRouterIndexSchema } from '../src/config/workshop-router-index'
+} from '@/config/workshop-router-openapi'
+import { workshopRouterIndexSchema } from '@/config/workshop-router-index'
 import { curateWorkshopInputs } from './workshop-input-presentation'
 import { creatorFormFor, creatorVariantsFor } from './workshop-creator-forms'
-import availabilityOverrides from '../src/data/workshop-router-availability.json'
+import availabilityOverrides from '@/data/workshop-router-availability.json'
 import { isDirectExecution } from './script-entry-point'
 import { adaptRouterModel } from './router-model-adapters'
 
@@ -226,31 +227,22 @@ export function compileWorkshopIndex(
 
 async function main() {
   const [
-    snapshotPath = resolve(
-      import.meta.dirname,
-      '../src/data/workshop-router-openapi.snapshot.json'
+    snapshotPath = join(
+      websiteRoot,
+      'src/data/workshop-router-openapi.snapshot.json'
     ),
-    bindingsPath = resolve(
-      import.meta.dirname,
-      '../src/data/workshop-router-bindings.json'
-    )
+    bindingsPath = join(websiteRoot, 'src/data/workshop-router-bindings.json')
   ] = process.argv.slice(2)
   const snapshots: unknown = JSON.parse(await readFile(snapshotPath, 'utf8'))
   const packed = compileWorkshopContracts(
     snapshots,
     JSON.parse(await readFile(bindingsPath, 'utf8'))
   )
-  const output = resolve(
-    import.meta.dirname,
-    '../src/content/workshop-router-contracts.json'
-  )
+  const output = join(websiteRoot, 'src/content/workshop-router-contracts.json')
   if ((await readFile(output, 'utf8').catch(() => '')) !== packed)
     await writeFile(output, packed)
   const index = compileWorkshopIndex(snapshots, JSON.parse(packed))
-  const indexPath = resolve(
-    import.meta.dirname,
-    '../src/content/workshop-router-index.json'
-  )
+  const indexPath = join(websiteRoot, 'src/content/workshop-router-index.json')
   if ((await readFile(indexPath, 'utf8').catch(() => '')) !== index)
     await writeFile(indexPath, index)
   process.stdout.write(

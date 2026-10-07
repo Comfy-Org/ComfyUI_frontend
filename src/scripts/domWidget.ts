@@ -7,6 +7,7 @@ import { useChainCallback } from '@/composables/functional/useChainCallback'
 // would hit its TDZ. LGraphNode/LiteGraph must stay barrel-sourced — a direct
 // LGraphNode import re-triggers the LGraph<->Subgraph cycle.
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { wasWidgetRefused } from '@/lib/litegraph/src/node/widgetsView'
 import type {
   IBaseWidget,
   IWidgetOptions
@@ -329,11 +330,14 @@ export class ComponentWidgetImpl<
 export const addWidget = (node: LGraphNode, widget: BaseDOMWidget) => {
   node.addCustomWidget(widget)
 
+  if (wasWidgetRefused(node, widget)) return
+
   if (node.graph) {
     useDomWidgetStore().registerWidget(widget)
   }
 
   node.onAdded = useChainCallback(node.onAdded, () => {
+    if (wasWidgetRefused(node, widget)) return
     useDomWidgetStore().registerWidget(widget)
   })
 

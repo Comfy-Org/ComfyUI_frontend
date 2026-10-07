@@ -1,13 +1,14 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '@/i18n/translations'
 
-import { getRoutes } from '../../config/routes'
-import { t } from '../../i18n/translations'
-import BrandButton from '../common/BrandButton.vue'
-import GlassCard from '../common/GlassCard.vue'
-import VideoPlayer from '../common/VideoPlayer.vue'
+import { getRoutes } from '@/config/routes'
+import { translationsFor } from '@/i18n/translations'
+import BrandButton from '@/components/common/BrandButton.vue'
+import GlassCard from '@/components/common/GlassCard.vue'
+import VideoPlayer from '@/components/common/VideoPlayer.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 const routes = getRoutes(locale)
 </script>
 
@@ -46,17 +47,17 @@ const routes = getRoutes(locale)
           <p
             class="text-sm font-bold tracking-widest text-primary-comfy-yellow uppercase"
           >
-            {{ t('caseStudy.label', locale) }}
+            {{ t('caseStudy.label') }}
           </p>
           <h2
             class="mt-7 text-3xl leading-[135%] font-medium whitespace-pre-line text-primary-comfy-canvas"
           >
-            {{ t('caseStudy.heading', locale) }}
+            {{ t('caseStudy.heading') }}
           </h2>
           <p
             class="mt-5 text-[17px] leading-[160%] font-light text-primary-comfy-canvas"
           >
-            {{ t('caseStudy.subheading', locale) }}
+            {{ t('caseStudy.subheading') }}
           </p>
         </div>
 
@@ -66,14 +67,14 @@ const routes = getRoutes(locale)
             variant="solid"
             class="font-bold"
           >
-            {{ t('caseStudy.watchStory', locale) }}
+            {{ t('caseStudy.watchStory') }}
           </BrandButton>
           <BrandButton
             :href="routes.customers"
             variant="outline"
             class="font-bold"
           >
-            {{ t('caseStudy.seeAll', locale) }}
+            {{ t('caseStudy.seeAll') }}
           </BrandButton>
         </div>
       </div>

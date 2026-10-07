@@ -9,7 +9,7 @@
     :verification-pending
     :can-submit
     :theme-key
-    @confirm="emit('confirm', $event)"
+    @confirm="(token, methodType) => emit('confirm', token, methodType)"
     @submitting-change="emit('submittingChange', $event)"
     @phase="emit('phase', $event)"
   >
@@ -67,7 +67,7 @@ const {
 }>()
 
 const emit = defineEmits<{
-  confirm: [confirmationToken: string]
+  confirm: [confirmationToken: string, paymentMethodType: string]
   submittingChange: [submitting: boolean]
   phase: [phase: StripePaymentPhase]
 }>()

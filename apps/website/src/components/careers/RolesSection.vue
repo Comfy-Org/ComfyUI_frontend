@@ -2,19 +2,20 @@
 import { useEventListener, useTemplateRefsList } from '@vueuse/core'
 import { computed, onMounted, ref } from 'vue'
 
-import type { Department } from '../../data/roles'
-import type { Locale } from '../../i18n/translations'
+import type { Department } from '@/data/roles'
+import type { Locale } from '@/i18n/translations'
 
-import { prefersReducedMotion } from '../../composables/useReducedMotion'
-import { t } from '../../i18n/translations'
-import { scrollTo } from '../../scripts/smoothScroll'
-import CategoryNav from '../common/CategoryNav.vue'
-import SectionLabel from '../common/SectionLabel.vue'
+import { prefersReducedMotion } from '@/composables/useReducedMotion'
+import { translationsFor } from '@/i18n/translations'
+import { scrollTo } from '@/scripts/smoothScroll'
+import CategoryNav from '@/components/common/CategoryNav.vue'
+import SectionLabel from '@/components/common/SectionLabel.vue'
 
 const { locale = 'en', departments = [] } = defineProps<{
   locale?: Locale
   departments?: readonly Department[]
 }>()
+const { t } = translationsFor(locale)
 
 const visibleDepartments = computed(() =>
   departments.filter((d) => d.roles.length > 0)
@@ -95,7 +96,7 @@ function scrollToDepartment(deptKey: string) {
             <h2
               class="text-3xl font-light text-primary-comfy-canvas md:text-4xl"
             >
-              {{ t('careers.roles.heading', locale) }}
+              {{ t('careers.roles.heading') }}
             </h2>
             <CategoryNav
               v-if="hasRoles"
@@ -113,7 +114,7 @@ function scrollToDepartment(deptKey: string) {
             class="text-base text-primary-warm-gray md:text-lg"
             data-testid="careers-roles-empty"
           >
-            {{ t('careers.roles.empty', locale) }}
+            {{ t('careers.roles.empty') }}
           </p>
 
           <div

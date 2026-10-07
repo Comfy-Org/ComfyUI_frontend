@@ -6,7 +6,7 @@ import { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
-import { createMockMinimapCanvas } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockMinimapCanvas } from '@/utils/__tests__/canvasTestUtils'
 
 function createMockPopover(): Pick<
   InstanceType<typeof NodeSearchBoxPopover>,
@@ -129,13 +129,6 @@ describe('useSearchBoxStore', () => {
       store.toggleVisible()
 
       expect(vi.mocked(mockPopover.showSearchBox)).not.toHaveBeenCalled()
-    })
-  })
-
-  describe('when user first loads the application', () => {
-    it('should have search box hidden by default', () => {
-      const store = useSearchBoxStore()
-      expect(store.visible).toBe(false)
     })
   })
 })

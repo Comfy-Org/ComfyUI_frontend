@@ -63,10 +63,6 @@ const config: KnipConfig = {
     // Optional host tool the recorder probes for and degrades without
     'xcode-select'
   ],
-  ignoreDependencies: [
-    // Weird importmap things
-    '@iconify/json'
-  ],
   ignore: [
     // Auto generated API types
     'src/workbench/extensions/manager/types/generatedManagerTypes.ts',
@@ -82,9 +78,6 @@ const config: KnipConfig = {
     // Animated pill button — retained for reuse after the learning directory
     // switched to ButtonPill; no current consumer
     'apps/website/src/components/ui/button-mask/**',
-    // Pending integration: consumed by the useWorkspaceInvoices seam once
-    // #13591 (Plan & Credits tabs) lands — FE-1245
-    'src/composables/billing/useNextInvoice.ts',
     // Agent review check config, not part of the build
     '.agents/checks/eslint.strict.config.js',
     // Devtools extensions, included dynamically

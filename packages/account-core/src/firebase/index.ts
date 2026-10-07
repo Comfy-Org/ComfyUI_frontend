@@ -463,6 +463,24 @@ export function resolveStripePublishableKey(
   )
 }
 
+export type CloudTelemetryConfig = Pick<
+  CloudFeatures,
+  'posthogProjectToken' | 'posthogApiHost' | 'telemetryDisabledEvents'
+>
+
+/** The Cloud app's PostHog settings from the same shared `/api/features` document. */
+export function resolveCloudTelemetryConfig(
+  options: Pick<ResolveFirebaseIdentityOptions, 'cloudBaseUrl' | 'timeoutMs'>
+): Promise<CloudTelemetryConfig> {
+  return resolveCloudFeatures(options.cloudBaseUrl, options.timeoutMs).then(
+    ({ posthogProjectToken, posthogApiHost, telemetryDisabledEvents }) => ({
+      posthogProjectToken,
+      posthogApiHost,
+      telemetryDisabledEvents
+    })
+  )
+}
+
 /**
  * `web_session_probe` from the same shared `/api/features` document, so a
  * host that already reads it for Firebase or Stripe pays no extra request.

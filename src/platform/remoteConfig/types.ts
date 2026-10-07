@@ -79,7 +79,7 @@ export type OnboardingSurvey = {
  * Remote configuration type
  * Configuration fetched from the server at runtime
  */
-export type RemoteConfig = GetFeaturesResponses[200] & {
+export type RemoteConfig = Partial<GetFeaturesResponses[200]> & {
   gtm_container_id?: string
   ga_measurement_id?: string
   mixpanel_token?: string
@@ -110,6 +110,7 @@ export type RemoteConfig = GetFeaturesResponses[200] & {
   manager_survey_url?: string
   linear_toggle_enabled?: boolean
   'agent-in-app-experience'?: boolean
+  'agent-free-use-message-placement'?: string
   partner_node_governance_enabled?: boolean
   /** Kill switch for the local partner-nodes run gate; defaults on client-side. */
   partner_run_gate_enabled?: boolean
@@ -119,7 +120,6 @@ export type RemoteConfig = GetFeaturesResponses[200] & {
   free_tier_credits?: number
   free_tier_job_allowance_enabled?: boolean
   new_free_tier_subscriptions?: boolean
-  workflow_sharing_enabled?: boolean
   comfyhub_upload_enabled?: boolean
   comfyhub_profile_gate_enabled?: boolean
   // Raw, unvalidated wire value ('stripe' | 'billing_web' by contract). Always
@@ -127,6 +127,7 @@ export type RemoteConfig = GetFeaturesResponses[200] & {
   hosted_billing_destination?: string
   unified_cloud_auth?: boolean
   unified_web_session?: boolean
+  sso_enabled?: boolean
   // Wire key carries the server's own spelling; see ServerFeatureFlag.
   embedded_checked_enabled?: boolean
   billing_sdk_topup_enabled?: boolean

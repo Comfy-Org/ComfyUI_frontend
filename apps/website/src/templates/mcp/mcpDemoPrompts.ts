@@ -1,4 +1,4 @@
-import type { TranslationKey } from '../../i18n/translations'
+import type { TranslationKey } from '@/i18n/translations'
 
 const THUMB_BASE = 'https://media.comfy.org/website/mcp/hero-demo'
 

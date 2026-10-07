@@ -4,9 +4,16 @@ import { reactive, unref, shallowRef } from 'vue'
 
 import { partnerRunGateBlocksAutoQueue } from '@/composables/billing/usePartnerNodesRunGate'
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
+import { normalizeCameraState } from '@/renderer/core/canvas/cameraState'
+import {
+  applyViewport,
+  measureViewportFromElement
+} from '@/renderer/core/canvas/canvasViewport'
+import { useCanvasScheduler } from '@/renderer/core/canvas/useCanvasScheduler'
 
 import { promotedInputSource } from '@/core/graph/subgraph/promotedInputWidget'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
+import { resolveDynamicInputSpec } from '@/core/graph/widgets/dynamicInputSpec'
 import { setBackendNodeText, st, t } from '@/i18n'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { ChangeTracker } from '@/scripts/changeTracker'
@@ -50,6 +57,7 @@ import type {
 } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
+import { restoreDynamicGroupInputs } from '@/platform/workflow/core/utils/restoreDynamicGroupInputs'
 import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWarnings'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import {
@@ -392,6 +400,11 @@ export class ComfyApp {
   }
 
   private configuringGraphLevel: number = 0
+  private graphLoadSequence = 0
+  private committedGraphLoadSequence = 0
+  private pendingCamera:
+    | { id: number; workflow: string | null | ComfyWorkflow }
+    | undefined
   get configuringGraph() {
     return this.configuringGraphLevel > 0
   }
@@ -1104,15 +1117,9 @@ export class ComfyApp {
   }
 
   private resizeCanvas(canvas: HTMLCanvasElement) {
-    // Limit minimal scale to 1, see https://github.com/comfyanonymous/ComfyUI/pull/845
-    const scale = Math.max(window.devicePixelRatio, 1)
-
-    // Clear fixed width and height while calculating rect so it uses 100% instead
-    canvas.height = canvas.width = NaN
-    const { width, height } = canvas.getBoundingClientRect()
-    canvas.width = Math.round(width * scale)
-    canvas.height = Math.round(height * scale)
-    canvas.getContext('2d')?.scale(scale, scale)
+    const viewport = measureViewportFromElement(canvas)
+    applyViewport(viewport, canvas, this.canvas.bgcanvas, this.canvas)
+    useCanvasScheduler().flush()
     this.canvas.draw(true, true)
   }
 
@@ -1311,7 +1318,10 @@ export class ComfyApp {
       silentAssetErrors?: boolean
       workflowNavigationId?: number
     } = {}
-  ): Promise<LoadedComfyWorkflow | boolean> {
+  ): Promise<LoadedComfyWorkflow | boolean | undefined> {
+    const canvasScheduler = useCanvasScheduler()
+    const loadId = ++this.graphLoadSequence
+
     const {
       checkForRerouteMigration = false,
       openSource,
@@ -1484,8 +1494,11 @@ export class ComfyApp {
       return false
     }
 
-    const canvasVisible = !!(this.canvasEl.width && this.canvasEl.height)
     const fitView = () => {
+      const savedCameraState = normalizeCameraState(graphData.extra?.ds, {
+        minScale: this.canvas.ds.min_scale,
+        maxScale: this.canvas.ds.max_scale
+      })
       if (
         restore_view &&
         useSettingStore().get('Comfy.EnableWorkflowViewRestore')
@@ -1493,9 +1506,9 @@ export class ComfyApp {
         // Always fit view for templates to ensure they're visible on load
         if (openSource === 'template') {
           useLitegraphService().fitView()
-        } else if (graphData.extra?.ds) {
-          this.canvas.ds.offset = graphData.extra.ds.offset
-          this.canvas.ds.scale = graphData.extra.ds.scale
+        } else if (savedCameraState) {
+          this.canvas.ds.offset = savedCameraState.offset
+          this.canvas.ds.scale = savedCameraState.scale
 
           // Fit view if no nodes visible in restored viewport
           this.canvas.ds.computeVisibleArea(this.canvas.viewport)
@@ -1507,7 +1520,7 @@ export class ComfyApp {
               this.canvas.visible_area
             )
           ) {
-            requestAnimationFrame(() => useLitegraphService().fitView())
+            useLitegraphService().fitView()
           }
         } else {
           useLitegraphService().fitView()
@@ -1521,6 +1534,17 @@ export class ComfyApp {
     let resourceScanLoadCompleted = false
     try {
       try {
+        if (loadId < this.committedGraphLoadSequence) {
+          await useExtensionService().invokeExtensionsAsync(
+            'onGraphLoadError',
+            new DOMException(
+              'Graph load superseded by a newer load',
+              'AbortError'
+            )
+          )
+          return undefined
+        }
+
         this.rootGraph.configure(graphData as ISerialisedGraph)
 
         // Save original renderer version before scaling (it gets modified during scaling)
@@ -1539,7 +1563,41 @@ export class ComfyApp {
           )
         }
 
-        if (canvasVisible) fitView()
+        this.committedGraphLoadSequence = Math.max(
+          loadId,
+          this.committedGraphLoadSequence
+        )
+        const preservesPendingCamera =
+          !restore_view &&
+          workflow !== null &&
+          workflow === this.pendingCamera?.workflow
+        if (!preservesPendingCamera) {
+          canvasScheduler.cancel('graph-load-camera')
+          this.pendingCamera = restore_view
+            ? { id: loadId, workflow }
+            : undefined
+          if (restore_view) {
+            canvasScheduler.schedule({
+              key: 'graph-load-camera',
+              element: this.canvasEl,
+              isCurrent: () => this.pendingCamera?.id === loadId,
+              run: () => {
+                const viewport = measureViewportFromElement(this.canvasEl)
+                applyViewport(
+                  viewport,
+                  this.canvasEl,
+                  this.canvas.bgcanvas,
+                  this.canvas
+                )
+                fitView()
+                this.canvas.draw(true, true)
+                if (this.pendingCamera?.id === loadId) {
+                  this.pendingCamera = undefined
+                }
+              }
+            })
+          }
+        }
       } catch (error) {
         await this.reportGraphLoadFailure(error)
         // Resolves rather than throws: the close/replacement guards read this outcome.
@@ -1633,13 +1691,6 @@ export class ComfyApp {
       // Capture the workflow this load activated before the asset-scan awaits
       // below can hand control back and let the user switch to another one.
       activatedWorkflow = useWorkflowStore().activeWorkflow ?? undefined
-
-      // If the canvas was not visible and we're a fresh load, resize the canvas and fit the view
-      // This fixes switching from app mode to a new graph mode workflow (e.g. load template)
-      if (!canvasVisible && (!workflow || typeof workflow === 'string')) {
-        this.canvas.resize()
-        requestAnimationFrame(() => fitView())
-      }
 
       // Drop missing-node entries whose enclosing subgraph is
       // muted/bypassed. The initial JSON scan only checks each node's
@@ -1811,7 +1862,9 @@ export class ComfyApp {
     // whose token mint failed must still fail closed rather than fall back to
     // a stored key and charge the key's workspace.
     const isApiKeySessionExecution =
-      !useAuthStore().currentUser && useApiKeyAuthStore().isAuthenticated
+      !useAuthStore().currentUser &&
+      !useAuthStore().sessionOnlyUser &&
+      useApiKeyAuthStore().isAuthenticated
     if (
       executionWorkspaceId &&
       !comfyOrgAuthToken &&
@@ -2518,9 +2571,10 @@ export class ComfyApp {
         const node = app.rootGraph.getNodeById(currentNodeId)
         if (!node) return
         const targetNode = node
+        const inputs = restoreDynamicGroupInputs(node, data.inputs)
 
-        for (const input in data.inputs) {
-          const value = data.inputs[input]
+        for (const input in inputs) {
+          const value = inputs[input]
           if (value instanceof Array) {
             function connectInput() {
               const [fromId, fromSlot] = value
@@ -2671,23 +2725,16 @@ export class ComfyApp {
         const nodeInputs = def.input
         for (const widget of node.widgets) {
           if (widget.type === 'combo') {
-            let inputType: 'required' | 'optional' | undefined
-            if (nodeInputs.required?.[widget.name] !== undefined) {
-              inputType = 'required'
-            } else if (nodeInputs.optional?.[widget.name] !== undefined) {
-              inputType = 'optional'
-            }
-            if (inputType !== undefined) {
-              // Get the input spec associated with the widget
-              const inputSpec = nodeInputs[inputType]?.[widget.name]
-              if (inputSpec) {
-                // Refresh the combo widget's options with the values from the input spec
-                if (isComboInputSpecV2(inputSpec)) {
-                  widget.options.values = inputSpec[1]?.options
-                } else if (isComboInputSpecV1(inputSpec)) {
-                  widget.options.values = inputSpec[0]
-                }
-              }
+            const resolved = resolveDynamicInputSpec(
+              nodeInputs,
+              widget.name,
+              (name) => node.widgets?.find((item) => item.name === name)?.value
+            )
+            const inputSpec = resolved?.spec
+            if (inputSpec && isComboInputSpecV2(inputSpec)) {
+              widget.options.values = inputSpec[1]?.options
+            } else if (inputSpec && isComboInputSpecV1(inputSpec)) {
+              widget.options.values = inputSpec[0]
             }
           }
         }

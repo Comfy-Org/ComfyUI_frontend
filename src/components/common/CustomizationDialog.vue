@@ -18,6 +18,7 @@
               id="customization-icon"
               v-model="selectedIconValue"
               type="single"
+              :allow-empty="false"
               class="justify-start"
             >
               <ToggleGroupItem

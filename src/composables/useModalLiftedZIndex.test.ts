@@ -1,10 +1,17 @@
 import { ZIndex } from '@primeuix/utils/zindex'
 import { afterEach, describe, expect, it } from 'vitest'
-import { ref } from 'vue'
+import { createApp, ref } from 'vue'
+import type { Ref } from 'vue'
 
-import { useModalLiftedZIndex } from './useModalLiftedZIndex'
+import { overlayZIndexKey, useModalLiftedZIndex } from './useModalLiftedZIndex'
 
 const registered: HTMLElement[] = []
+
+function setupStyle(open: Ref<boolean>, parentZIndex = 0) {
+  const app = createApp({})
+  app.provide(overlayZIndexKey, parentZIndex)
+  return app.runWithContext(() => useModalLiftedZIndex(open))
+}
 
 function registerDialog() {
   const el = document.createElement('div')
@@ -24,7 +31,7 @@ afterEach(() => {
 describe('useModalLiftedZIndex', () => {
   it('lifts past the current top of the modal stack', () => {
     const dialogZIndex = registerDialog()
-    const style = useModalLiftedZIndex(ref(true))
+    const style = setupStyle(ref(true))
 
     expect(style.value).toEqual({ zIndex: dialogZIndex + 1 })
   })
@@ -40,7 +47,7 @@ describe('useModalLiftedZIndex', () => {
     const dialogZIndex = registerDialog()
     expect(dialogZIndex).toBeGreaterThan(3000)
 
-    const style = useModalLiftedZIndex(ref(true))
+    const style = setupStyle(ref(true))
 
     expect(style.value).toEqual({ zIndex: dialogZIndex + 1 })
   })
@@ -48,7 +55,7 @@ describe('useModalLiftedZIndex', () => {
   it('re-reads the stack on every open rather than caching the first read', () => {
     registerDialog()
     const open = ref(true)
-    const style = useModalLiftedZIndex(open)
+    const style = setupStyle(open)
     expect(style.value).toBeDefined()
 
     open.value = false
@@ -56,5 +63,12 @@ describe('useModalLiftedZIndex', () => {
     open.value = true
 
     expect(style.value).toEqual({ zIndex: laterDialogZIndex + 1 })
+  })
+
+  it('lifts past its owning toast even with a lower dialog open', () => {
+    registerDialog()
+    const style = setupStyle(ref(true), 9999)
+
+    expect(style.value).toEqual({ zIndex: 10000 })
   })
 })

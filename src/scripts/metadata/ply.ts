@@ -2,8 +2,6 @@
  * PLY (Polygon File Format) decoder
  * Parses ASCII PLY files and extracts vertex positions and colors
  */
-import { PlyReader } from '@sparkjsdev/spark'
-
 interface PLYHeader {
   vertexCount: number
   hasColor: boolean
@@ -153,28 +151,44 @@ export function isPLYAsciiFormat(arrayBuffer: ArrayBuffer): boolean {
   return header.includes('format ascii')
 }
 
-/**
- * Mirrors sparkjs's own check (PlyReader.parseSplats:
- * `hasScales && hasRots`), we delegate header parsing to sparkjs's
- * PlyReader so the property dictionary we inspect is exactly the one
- * sparkjs would see if asked to render the file. parseHeader rejects
- * ASCII PLYs by design; we catch and treat them as not-3DGS (no real
- * 3DGS export uses ASCII PLY).
- */
-export async function isGaussianSplatPLY(
-  arrayBuffer: ArrayBuffer
-): Promise<boolean> {
-  try {
-    const reader = new PlyReader({ fileBytes: arrayBuffer })
-    await reader.parseHeader()
-    const elements: Partial<PlyReader['elements']> = reader.elements
-    const vertex = elements.vertex
-    if (!vertex) return false
-    const props: Partial<typeof vertex.properties> = vertex.properties
-    const hasScales = !!(props.scale_0 && props.scale_1 && props.scale_2)
-    const hasRots = !!(props.rot_0 && props.rot_1 && props.rot_2 && props.rot_3)
-    return hasScales && hasRots
-  } catch {
-    return false
+const PLY_HEADER_SCAN_BYTES = 64 * 1024
+
+const GAUSSIAN_SPLAT_PROPERTIES = [
+  'scale_0',
+  'scale_1',
+  'scale_2',
+  'rot_0',
+  'rot_1',
+  'rot_2',
+  'rot_3'
+]
+
+function readPLYHeaderLines(arrayBuffer: ArrayBuffer): string[] | null {
+  const text = new TextDecoder('latin1').decode(
+    arrayBuffer.slice(0, PLY_HEADER_SCAN_BYTES)
+  )
+  const lines = text.split('\n').map((line) => line.trim())
+  const end = lines.indexOf('end_header')
+  if (lines[0] !== 'ply' || end < 0) return null
+  return lines.slice(0, end)
+}
+
+function vertexPropertyNames(headerLines: string[]): Set<string> {
+  const names = new Set<string>()
+  let inVertexElement = false
+  for (const line of headerLines) {
+    const parts = line.split(/\s+/)
+    if (parts[0] === 'element') inVertexElement = parts[1] === 'vertex'
+    else if (inVertexElement && parts[0] === 'property')
+      names.add(parts[parts.length - 1])
   }
+  return names
+}
+
+export function isGaussianSplatPLY(arrayBuffer: ArrayBuffer): boolean {
+  const headerLines = readPLYHeaderLines(arrayBuffer)
+  if (!headerLines) return false
+  if (headerLines.some((line) => line.startsWith('format ascii'))) return false
+  const properties = vertexPropertyNames(headerLines)
+  return GAUSSIAN_SPLAT_PROPERTIES.every((name) => properties.has(name))
 }

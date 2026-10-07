@@ -3,7 +3,7 @@ import { Check } from '@lucide/vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { GeneratedExample } from '../../config/models-catalogue'
+import type { GeneratedExample } from '@/config/models-catalogue'
 import WorkflowExamplePreview from './WorkflowExamplePreview.vue'
 
 const {

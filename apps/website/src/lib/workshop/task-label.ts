@@ -2,10 +2,10 @@ import type {
   ModalityFilter,
   TaskInput,
   WorkshopModel
-} from '../../config/models-catalogue'
-import { modalityOf, splitTask } from '../../config/models-catalogue'
-import type { Locale, TranslationKey } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+} from '@/config/models-catalogue'
+import { modalityOf, splitTask } from '@/config/models-catalogue'
+import type { Locale, TranslationKey } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 
 const modalityLabelKey: Record<
   Exclude<ModalityFilter, 'all'>,
@@ -29,13 +29,14 @@ const taskInputKey: Record<TaskInput, TranslationKey> = {
 // "Image to Video" where the schema says what goes in and what comes out, and
 // the plain modality where it only says what comes out.
 export function taskLabelFor(model: WorkshopModel, locale: Locale): string {
+  const { t } = translationsFor(locale)
   const task = model.task ? splitTask(model.task) : undefined
   return task && task.output !== 'other'
-    ? t('workshop.task.label', locale, {
-        input: t(taskInputKey[task.input], locale),
-        output: t(modalityLabelKey[task.output], locale)
+    ? t('workshop.task.label', {
+        input: t(taskInputKey[task.input]),
+        output: t(modalityLabelKey[task.output])
       })
-    : t(modalityLabelKey[modalityOf(model)], locale)
+    : t(modalityLabelKey[modalityOf(model)])
 }
 
 /**

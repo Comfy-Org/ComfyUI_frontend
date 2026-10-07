@@ -2,8 +2,10 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
-import { routerT } from './routerCopy'
+import { translationsFor } from '@/i18n/translations'
 import RouterVideoSection from './RouterVideoSection.vue'
+
+const { t } = translationsFor('en')
 
 describe('RouterVideoSection', () => {
   it('presents the explainer video with an accessible label', () => {
@@ -11,9 +13,7 @@ describe('RouterVideoSection', () => {
 
     render(RouterVideoSection, { props: { locale: 'en' } })
 
-    const video = screen.getByLabelText(
-      routerT('platform.router.video.alt', 'en')
-    )
+    const video = screen.getByLabelText(t('platform.router.video.alt'))
 
     expect(video).toBeTruthy()
     expect(video.hasAttribute('muted')).toBe(true)

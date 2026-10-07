@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, useId } from 'vue'
 
 import RadioGroup from '@/components/ui/radio-group/RadioGroup.vue'
 import RadioGroupItem from '@/components/ui/radio-group/RadioGroupItem.vue'
@@ -15,6 +15,7 @@ type ControlOption = {
 }
 
 const settingStore = useSettingStore()
+const radioIdPrefix = useId()
 
 const controlOptions: ControlOption[] = [
   {
@@ -71,7 +72,7 @@ const controlMode = defineModel<ControlOptions>()
         class="flex h-[unset] w-full items-center justify-between gap-7 py-2 text-left"
       >
         <label
-          :for="option.mode"
+          :for="`${radioIdPrefix}-${option.mode}`"
           class="flex min-w-0 flex-1 cursor-pointer items-center gap-2 text-wrap"
         >
           <div
@@ -102,7 +103,11 @@ const controlMode = defineModel<ControlOptions>()
           </div>
         </label>
 
-        <RadioGroupItem :id="option.mode" class="shrink" :value="option.mode" />
+        <RadioGroupItem
+          :id="`${radioIdPrefix}-${option.mode}`"
+          class="shrink"
+          :value="option.mode"
+        />
       </div>
     </RadioGroup>
   </div>

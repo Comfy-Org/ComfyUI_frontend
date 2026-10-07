@@ -196,7 +196,6 @@ describe('cloudOnboardingRoutes', () => {
  */
 describe('legacy /login through the cloud-login guard', () => {
   beforeEach(() => {
-    vi.mocked(useCurrentUser).mockClear()
     clearOAuthRequestId()
   })
 

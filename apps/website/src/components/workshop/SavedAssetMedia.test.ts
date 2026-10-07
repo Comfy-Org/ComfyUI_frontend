@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import type { SavedAssetKind } from '../../lib/workshop/saved-assets'
+import type { SavedAssetKind } from '@/lib/workshop/saved-assets'
 import SavedAssetMedia from './SavedAssetMedia.vue'
 
 describe('SavedAssetMedia', () => {

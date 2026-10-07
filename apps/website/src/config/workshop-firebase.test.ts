@@ -1,7 +1,7 @@
 import type { UserCredential } from 'firebase/auth'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
-import { captureSignupRollbackFailure } from '../scripts/posthog'
+import { captureSignupRollbackFailure } from '@/scripts/posthog'
 import {
   isWorkshopProvisioningError,
   provisionCustomer,
@@ -20,7 +20,7 @@ const h = vi.hoisted(() => ({
   signInWithGitHub: vi.fn()
 }))
 
-vi.mock(import('../scripts/posthog'))
+vi.mock(import('@/scripts/posthog'))
 
 vi.mock<unknown>(import('@comfyorg/account-core/firebase'), () => ({
   createFirebaseIdentity: (config: unknown) => {
@@ -162,10 +162,6 @@ describe('popup sign-in', () => {
 
 describe('social sign-in provisioning boundary', () => {
   const user = { uid: 'u1', email: 'a@b.co', getIdToken: async () => 'jwt' }
-
-  beforeEach(() => {
-    h.signInWithGoogle.mockReset()
-  })
 
   it('rethrows a popup failure untouched, so the caller sees the Firebase code', async () => {
     const popupFailure = { code: 'auth/popup-closed-by-user', message: 'x' }
