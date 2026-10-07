@@ -76,9 +76,9 @@ describe('LiteGraphCanvasSplitterOverlay', () => {
       'properties value'
     )
 
-    useAgentNodeSelectionStore().enter()
+    useCanvasStore().isPickingNodes = true
     await nextTick()
-    useAgentNodeSelectionStore().exit()
+    useCanvasStore().stopNodePicking()
     await nextTick()
 
     expect(screen.getByRole('textbox', { name: 'Sidebar draft' })).toHaveValue(

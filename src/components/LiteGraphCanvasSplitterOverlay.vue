@@ -284,10 +284,7 @@ const graphMeetsAgentPanel = computed(
 )
 
 const sidebarPanelVisible = computed(
-  () =>
-    activeSidebarTab.value !== null &&
-    !isBuilderMode.value &&
-    !agentNodeSelectionActive.value
+  () => activeSidebarTab.value !== null && !isBuilderMode.value
 )
 
 watchEffect(() => {
