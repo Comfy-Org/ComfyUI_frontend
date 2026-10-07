@@ -13,11 +13,10 @@ import { useTelemetry } from '@/platform/telemetry'
 
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import type { ErrorRecoveryStrategy } from '@/composables/useErrorHandling'
 import { st, t } from '@/i18n'
 import enLocale from '@/locales/en/main.json'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
-import { beginWorkflowLogoutTransition } from '@/platform/workflow/persistence/base/storageIO'
+import { prepareWorkflowLogoutTransition } from '@/platform/workflow/persistence/base/storageIO'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
@@ -70,7 +69,7 @@ vi.mock<unknown>(import('@/composables/billing/usePendingTopup'), () => ({
 }))
 
 vi.mock(import('@/platform/workflow/persistence/base/storageIO'), () => ({
-  beginWorkflowLogoutTransition: vi.fn()
+  prepareWorkflowLogoutTransition: vi.fn()
 }))
 
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
@@ -79,39 +78,17 @@ vi.mock(import('@/services/dialogService'))
 
 vi.mock(import('@/composables/billing/useBillingContext'))
 
-vi.mock(import('@/composables/useErrorHandling'))
+vi.mock(import('@/composables/useErrorHandling'), { spy: true })
 
 function makeWorkflow(path: string): ModifiedWorkflow {
   return { path, isModified: true } satisfies ModifiedWorkflow
 }
 
 beforeEach(() => {
-  useErrorHandling().wrapWithErrorHandlingAsync =
-    <TArgs extends unknown[], TReturn>(
-      action: (...args: TArgs) => Promise<TReturn> | TReturn,
-      errorHandler?: (error: unknown) => void,
-      finallyHandler?: () => void,
-      recoveryStrategies?: ErrorRecoveryStrategy<TArgs, TReturn>[]
-    ) =>
-    async (...args: TArgs) => {
-      try {
-        return await action(...args)
-      } catch (error) {
-        for (const strategy of recoveryStrategies ?? []) {
-          if (!strategy.shouldHandle(error)) continue
-          const recovered = await strategy.recover(error, action, args).then(
-            () => true,
-            () => false
-          )
-          if (recovered) return undefined
-        }
-        ;(errorHandler ?? mockToastErrorHandler)(error)
-        return undefined
-      } finally {
-        finallyHandler?.()
-      }
-    }
-  useErrorHandling().toastErrorHandler = mockToastErrorHandler
+  vi.mocked(useErrorHandling).mockReturnValue({
+    ...useErrorHandling(),
+    toastErrorHandler: mockToastErrorHandler
+  })
   vi.mocked(t).mockImplementation((key: unknown, values?: unknown) =>
     typeof values === 'object' && values !== null
       ? `${String(key)}:${Object.values(values).join(':')}`
@@ -203,7 +180,7 @@ describe('useAuthActions.logout', () => {
     expect(useDialogService().confirm).not.toHaveBeenCalled()
     expect(useWorkflowService().saveWorkflow).not.toHaveBeenCalled()
     expect(mockAuthStore.logout).toHaveBeenCalledTimes(1)
-    expect(beginWorkflowLogoutTransition).not.toHaveBeenCalled()
+    expect(prepareWorkflowLogoutTransition).not.toHaveBeenCalled()
   })
 
   it('logs out without prompting when no workflows are modified', async () => {
@@ -224,14 +201,14 @@ describe('useAuthActions.logout', () => {
 
     await logout()
 
-    expect(beginWorkflowLogoutTransition).toHaveBeenCalledExactlyOnceWith()
+    expect(prepareWorkflowLogoutTransition).toHaveBeenCalledExactlyOnceWith()
     expect(
       vi.mocked(mockAuthStore.logout).mock.invocationCallOrder[0]
     ).toBeLessThan(
-      vi.mocked(beginWorkflowLogoutTransition).mock.invocationCallOrder[0]
+      vi.mocked(prepareWorkflowLogoutTransition).mock.invocationCallOrder[0]
     )
     expect(
-      vi.mocked(beginWorkflowLogoutTransition).mock.invocationCallOrder[0]
+      vi.mocked(prepareWorkflowLogoutTransition).mock.invocationCallOrder[0]
     ).toBeLessThan(navigationSpy.mock.invocationCallOrder[0])
   })
 
@@ -243,7 +220,7 @@ describe('useAuthActions.logout', () => {
 
     await logout()
 
-    expect(beginWorkflowLogoutTransition).not.toHaveBeenCalled()
+    expect(prepareWorkflowLogoutTransition).not.toHaveBeenCalled()
   })
 
   it('cancels sign-out when the dialog is dismissed (null)', async () => {
@@ -375,7 +352,7 @@ describe('useAuthActions.logout', () => {
     await logout({ beforeSignOut: async () => false })
 
     expect(mockAuthStore.logout).not.toHaveBeenCalled()
-    expect(beginWorkflowLogoutTransition).not.toHaveBeenCalled()
+    expect(prepareWorkflowLogoutTransition).not.toHaveBeenCalled()
     expect(mockToastStore.add).not.toHaveBeenCalled()
   })
 
@@ -701,7 +678,7 @@ describe('useAuthActions.updatePassword reauthentication', () => {
       'the operation must retry after the user re-proves the same identity'
     ).toHaveBeenCalledTimes(2)
     expect(
-      beginWorkflowLogoutTransition,
+      prepareWorkflowLogoutTransition,
       'a password reauthentication must not delete the drafts of the user who is still here'
     ).not.toHaveBeenCalled()
   })
@@ -717,6 +694,6 @@ describe('useAuthActions.updatePassword reauthentication', () => {
 
     expect(mockAuthStore.logout).not.toHaveBeenCalled()
     expect(useDialogService().showSignInDialog).not.toHaveBeenCalled()
-    expect(beginWorkflowLogoutTransition).not.toHaveBeenCalled()
+    expect(prepareWorkflowLogoutTransition).not.toHaveBeenCalled()
   })
 })

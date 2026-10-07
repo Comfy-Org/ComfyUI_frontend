@@ -340,7 +340,7 @@ describe('storageIO', () => {
     it('blocks workflow writes during logout cleanup', async () => {
       const isolatedStorageIO = await import('./storageIO')
 
-      isolatedStorageIO.beginWorkflowLogoutTransition()
+      isolatedStorageIO.prepareWorkflowLogoutTransition()
 
       expect(isolatedStorageIO.isStorageAvailable()).toBe(false)
       expect(
@@ -387,7 +387,7 @@ describe('storageIO', () => {
     })
   })
 
-  describe('beginWorkflowLogoutTransition', () => {
+  describe('account logout storage', () => {
     it('clears scoped and legacy Agent persistence on account logout', async () => {
       const isolatedStorageIO = await import('./storageIO')
       localStorage.setItem('Comfy.Agent.ThreadId:personal', 'thread-a')
@@ -401,7 +401,7 @@ describe('storageIO', () => {
       localStorage.setItem('Comfy.Agent.DeletedThreads', '[]')
       localStorage.setItem('unrelated', 'keep')
 
-      isolatedStorageIO.beginWorkflowLogoutTransition()
+      isolatedStorageIO.prepareWorkflowLogoutTransition()
 
       expect(
         [...Array(localStorage.length)].map((_, index) =>
@@ -497,7 +497,7 @@ describe('storageIO', () => {
       isolatedStorageIO.completeWorkflowLogoutTransition()
       expect(isolatedStorageIO.isStorageAvailable()).toBe(false)
 
-      isolatedStorageIO.beginWorkflowLogoutTransition()
+      isolatedStorageIO.prepareWorkflowLogoutTransition()
       isolatedStorageIO.completeWorkflowLogoutTransition()
 
       expect(isolatedStorageIO.isStorageAvailable()).toBe(true)
@@ -507,7 +507,7 @@ describe('storageIO', () => {
       const isolatedStorageIO = await import('./storageIO')
 
       isolatedStorageIO.markStorageUnavailable()
-      isolatedStorageIO.beginWorkflowLogoutTransition()
+      isolatedStorageIO.prepareWorkflowLogoutTransition()
       isolatedStorageIO.completeWorkflowLogoutTransition()
 
       expect(isolatedStorageIO.isStorageAvailable()).toBe(false)
@@ -526,7 +526,7 @@ describe('storageIO', () => {
           writeToStorage(key, value)
         })
 
-      isolatedStorageIO.beginWorkflowLogoutTransition()
+      isolatedStorageIO.prepareWorkflowLogoutTransition()
 
       expect(setItemSpy).toHaveReturned()
     })

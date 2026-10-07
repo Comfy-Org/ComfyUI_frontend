@@ -1,6 +1,6 @@
 import { whenever } from '@vueuse/core'
 import { onTestFinished, vi } from 'vitest'
-import { computed, shallowReactive, watch } from 'vue'
+import { computed, watch } from 'vue'
 import type { WatchHandle } from 'vue'
 
 import type { useCurrentUser as realUseCurrentUser } from '../useCurrentUser'
@@ -54,7 +54,7 @@ const defaults: CurrentUser = {
   })
 }
 
-const currentUser = shallowReactive({ ...defaults })
+const currentUser = { ...defaults }
 
 export const useCurrentUser = vi.fn(() => {
   onTestFinished(() => {
