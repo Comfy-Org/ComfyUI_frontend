@@ -6,10 +6,10 @@ import { cn } from '@comfyorg/tailwind-utils'
 import Button from '@/components/ui/button/Button.vue'
 import { FALLBACK_LOCALE } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
+import type { AgentStarterPromptAssignment } from '@/platform/telemetry/types'
 
 import type { AgentStarterPromptAttribution } from '../../utils/starterPrompts'
 import { starterPromptAttribution } from '../../utils/starterPrompts'
-import type { StarterPromptAssignment } from '../../experiments/starterPromptSet'
 
 const {
   userName,
@@ -17,12 +17,12 @@ const {
   attributeExperiment = true
 } = defineProps<{
   userName?: string
-  assignment?: StarterPromptAssignment
+  assignment?: AgentStarterPromptAssignment
   attributeExperiment?: boolean
 }>()
 const emit = defineEmits<{
   insert: [text: string, prompt: AgentStarterPromptAttribution]
-  rendered: [assignment: StarterPromptAssignment]
+  rendered: [assignment: AgentStarterPromptAssignment]
 }>()
 
 const { t, te, tm, locale } = useI18n()
@@ -36,7 +36,7 @@ const treatmentPromptKey = isCloud
 const hasTreatmentCopy = computed(() =>
   te(`${treatmentPromptKey}.0`, locale.value)
 )
-const renderedAssignment = ref<StarterPromptAssignment>(
+const renderedAssignment = ref<AgentStarterPromptAssignment>(
   assignment === 'test' && hasTreatmentCopy.value ? 'test' : 'control'
 )
 const selectedPromptKey = computed(() => {
@@ -47,7 +47,7 @@ const selectedPromptKey = computed(() => {
 const prompts = computed(() => {
   return tm(selectedPromptKey.value) as string[]
 })
-const effectiveAssignment = computed<StarterPromptAssignment>(() =>
+const effectiveAssignment = computed<AgentStarterPromptAssignment>(() =>
   selectedPromptKey.value === promptKey ? 'control' : assignment
 )
 const promptLocale = computed(() => {

@@ -1,6 +1,5 @@
 import { computed } from 'vue'
 
-import type { GetFeaturesResponses } from '@comfyorg/ingest-types'
 import { zGetFeaturesResponse } from '@comfyorg/ingest-types/zod'
 
 import {
@@ -8,18 +7,16 @@ import {
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
 import { useTelemetry } from '@/platform/telemetry'
+import type { AgentStarterPromptAssignment } from '@/platform/telemetry/types'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 
 export const STARTER_PROMPT_SET_FLAG = 'agent-starter-prompt-set'
-export type StarterPromptAssignment = NonNullable<
-  GetFeaturesResponses[200][typeof STARTER_PROMPT_SET_FLAG]
->
 const starterPromptAssignmentSchema =
   zGetFeaturesResponse.shape[STARTER_PROMPT_SET_FLAG]
 
 function resolveAssignment(): {
-  assignment: StarterPromptAssignment
+  assignment: AgentStarterPromptAssignment
   hasQaOverride: boolean
 } {
   const override =
@@ -45,7 +42,7 @@ export function useStarterPromptSet() {
     () => isAuthenticatedConfigLoaded.value && !resolved.value.hasQaOverride
   )
 
-  const expose = (renderedAssignment: StarterPromptAssignment) => {
+  const expose = (renderedAssignment: AgentStarterPromptAssignment) => {
     if (!attributeExperiment.value || renderedAssignment !== assignment.value)
       return
     useTelemetry()?.trackAgentStarterPromptExposure({

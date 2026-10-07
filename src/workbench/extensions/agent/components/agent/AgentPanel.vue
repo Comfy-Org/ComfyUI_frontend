@@ -11,10 +11,10 @@ import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import type {
   AgentFreeUseNoticeMetadata,
   AgentPaywallSurface,
+  AgentStarterPromptAssignment,
   AgentStopMethod
 } from '@/platform/telemetry/types'
 import type { FreeUseVariant } from '../../experiments/freeUsePlacement'
-import type { StarterPromptAssignment } from '../../experiments/starterPromptSet'
 
 import type { ActiveTab } from '../../types/activeTab'
 import type {
@@ -122,7 +122,7 @@ const {
   editableTurnId?: TurnId | null
   answeringAskIds?: ReadonlySet<string>
   freeUsePlacement?: FreeUseVariant
-  starterPromptAssignment?: StarterPromptAssignment
+  starterPromptAssignment?: AgentStarterPromptAssignment
   attributeStarterPromptExperiment?: boolean
 }>()
 const emit = defineEmits<{
@@ -158,7 +158,7 @@ const emit = defineEmits<{
   openReferenceWorkflow: [workflowId: string, workflowName: string]
   showTarget: []
   freeUseNotice: [metadata: AgentFreeUseNoticeMetadata]
-  starterPromptRendered: [assignment: StarterPromptAssignment]
+  starterPromptRendered: [assignment: AgentStarterPromptAssignment]
 }>()
 
 const targetNotice = computed(() => {

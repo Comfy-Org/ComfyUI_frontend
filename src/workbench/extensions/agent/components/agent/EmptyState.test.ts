@@ -112,7 +112,8 @@ describe('EmptyState', () => {
 
         await user.click(screen.getByRole('button', { name: text }))
 
-        expect(emitted().rendered).toEqual(reported ? [[reported]] : [])
+        if (reported) expect(emitted().rendered).toEqual([[reported]])
+        else expect(emitted()).not.toHaveProperty('rendered')
         expect(emitted().insert).toEqual([
           [
             text,
@@ -166,7 +167,7 @@ describe('EmptyState', () => {
     const text = i18n.global.t('agent.suggestedPrompts.local.0')
     await user.click(screen.getByRole('button', { name: text }))
 
-    expect(emitted().rendered).toEqual([])
+    expect(emitted()).not.toHaveProperty('rendered')
     expect(emitted().insert).toEqual([
       [text, expect.not.objectContaining({ assignment: expect.anything() })]
     ])

@@ -1,7 +1,8 @@
-import type { AgentStarterPromptId } from '@/platform/telemetry/types'
+import type {
+  AgentStarterPromptAssignment,
+  AgentStarterPromptId
+} from '@/platform/telemetry/types'
 import { hashPath } from '@/platform/workflow/persistence/base/hashUtil'
-
-import type { StarterPromptAssignment } from '../experiments/starterPromptSet'
 
 /**
  * Stable ids for the empty state's starter prompts, index-aligned with both
@@ -29,14 +30,14 @@ export interface AgentStarterPromptAttribution {
   promptCount: number
   promptTextHash: string
   locale: string
-  assignment?: StarterPromptAssignment
+  assignment?: AgentStarterPromptAssignment
 }
 
 /** What the composer holds until the draft is submitted, or replaced. */
 export interface AgentStarterPromptSource {
   id: AgentStarterPromptId
   clickId: string
-  assignment?: StarterPromptAssignment
+  assignment?: AgentStarterPromptAssignment
 }
 
 export function starterPromptIdAt(index: number): AgentStarterPromptId {
@@ -48,7 +49,7 @@ export function starterPromptAttribution(
   index: number,
   count: number,
   locale: string,
-  assignment?: StarterPromptAssignment
+  assignment?: AgentStarterPromptAssignment
 ): AgentStarterPromptAttribution {
   return {
     promptId: starterPromptIdAt(index),

@@ -28,7 +28,7 @@ import type {
 } from '@comfyorg/account-core/billing'
 import { BILLING_TELEMETRY_EVENTS } from '@comfyorg/account-core/billing'
 import type { BillingSource } from '@comfyorg/billing-contract'
-import type { AgentRunMode } from '@comfyorg/ingest-types'
+import type { AgentRunMode, GetFeaturesResponses } from '@comfyorg/ingest-types'
 import type {
   AuthErrorMetadata,
   AuthFlowAction,
@@ -880,6 +880,9 @@ export type AgentStarterPromptId =
   | 'slot_4'
   | 'slot_5'
   | 'unregistered'
+export type AgentStarterPromptAssignment = NonNullable<
+  GetFeaturesResponses[200]['agent-starter-prompt-set']
+>
 /**
  * Where the free-use notice was placed, for the DES-1221 placement experiment.
  *
@@ -940,14 +943,17 @@ export interface AgentStarterPromptClickedMetadata extends Record<
    * something else — do not read those as a clean per-prompt outcome.
    */
   draft_was_empty: boolean
-  /** The resolved PostHog assignment; control is the fail-closed value. */
-  '$feature/agent-starter-prompt-set'?: 'control' | 'test'
+  /**
+   * Assignment of the prompt set that rendered. Omitted for QA overrides,
+   * unsupported locales, and surfaces rendered before authenticated config.
+   */
+  '$feature/agent-starter-prompt-set'?: AgentStarterPromptAssignment
 }
 export interface AgentStarterPromptExposureMetadata extends Record<
   string,
   unknown
 > {
-  '$feature/agent-starter-prompt-set': 'control' | 'test'
+  '$feature/agent-starter-prompt-set': AgentStarterPromptAssignment
 }
 export interface AgentMessageSentMetadata extends Record<string, unknown> {
   attachment_count: number
@@ -984,8 +990,11 @@ export interface AgentMessageSentMetadata extends Record<string, unknown> {
   starter_prompt_id: AgentStarterPromptId | null
   /** `click_id` of the `app:agent_starter_prompt_clicked` this send came from, `null` when typed. */
   starter_prompt_click_id: string | null
-  /** Assignment copied from the rendered starter prompt, when applicable. */
-  '$feature/agent-starter-prompt-set'?: 'control' | 'test'
+  /**
+   * Rendered assignment copied from the clicked starter prompt; omitted for
+   * typed sends, QA overrides, unsupported locales, and pre-auth surfaces.
+   */
+  '$feature/agent-starter-prompt-set'?: AgentStarterPromptAssignment
 }
 export interface AgentNodeTaggedMetadata extends Record<string, unknown> {
   source: 'mention_picker'
