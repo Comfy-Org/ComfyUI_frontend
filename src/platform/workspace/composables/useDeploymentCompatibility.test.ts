@@ -23,6 +23,7 @@ import type { DeploymentPickState } from '@/platform/workspace/deploymentPickSta
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import * as apiModule from '@/scripts/api'
+import { graphToPrompt } from '@/utils/executionUtil'
 
 import {
   useDeploymentCompatibility,
@@ -79,6 +80,7 @@ function addNodes(target: LGraph | Subgraph, root: LGraph, fakes: FakeNode[]) {
       continue
     }
     const node = new LGraphNode(fake.type, fake.type)
+    node.comfyClass = fake.type
     node.mode = fake.mode ?? LGraphEventMode.ALWAYS
     node.isVirtualNode = fake.isVirtualNode
     if (fake.serializedType) {
@@ -171,41 +173,117 @@ describe('workflowNodeTypes', () => {
     ])
   })
 
-  it.for([
-    { instance: 'muted', mode: LGraphEventMode.NEVER },
-    { instance: 'bypassed', mode: LGraphEventMode.BYPASS }
-  ])(
-    'leaves out the nodes inside a $instance subgraph instance',
-    ({ mode }) => {
-      const types = workflowNodeTypes(
+  it.for<{ name: string; build: () => LGraph; expected: string[] }>([
+    {
+      name: 'a muted subgraph instance at the root',
+      build: () =>
         graph(
           { type: 'KSampler' },
           {
             type: 'subgraph',
-            mode,
+            mode: LGraphEventMode.NEVER,
             subgraphNodes: [
               { type: 'Power Lora Loader (rgthree)' },
               { type: 'subgraph', subgraphNodes: [{ type: 'CLIP' }] }
             ]
           }
-        )
-      )
-
-      expect(types).toEqual(['KSampler'])
+        ),
+      expected: ['KSampler']
+    },
+    {
+      name: 'a bypassed subgraph instance at the root',
+      build: () =>
+        graph(
+          { type: 'KSampler' },
+          {
+            type: 'subgraph',
+            mode: LGraphEventMode.BYPASS,
+            subgraphNodes: [{ type: 'Power Lora Loader (rgthree)' }]
+          }
+        ),
+      expected: ['KSampler']
+    },
+    {
+      name: 'a muted subgraph instance inside a live one',
+      build: () =>
+        graph({
+          type: 'subgraph',
+          subgraphNodes: [
+            { type: 'KSampler' },
+            {
+              type: 'subgraph',
+              mode: LGraphEventMode.NEVER,
+              subgraphNodes: [{ type: 'Power Lora Loader (rgthree)' }]
+            }
+          ]
+        }),
+      expected: ['KSampler', 'Power Lora Loader (rgthree)']
+    },
+    {
+      name: 'a bypassed subgraph instance inside a live one',
+      build: () =>
+        graph({
+          type: 'subgraph',
+          subgraphNodes: [
+            { type: 'KSampler' },
+            {
+              type: 'subgraph',
+              mode: LGraphEventMode.BYPASS,
+              subgraphNodes: [{ type: 'Power Lora Loader (rgthree)' }]
+            }
+          ]
+        }),
+      expected: ['KSampler', 'Power Lora Loader (rgthree)']
+    },
+    {
+      name: 'muted and bypassed nodes at the root',
+      build: () =>
+        graph(
+          { type: 'KSampler' },
+          { type: 'Power Lora Loader (rgthree)', mode: LGraphEventMode.NEVER },
+          { type: 'CLIP', mode: LGraphEventMode.BYPASS }
+        ),
+      expected: ['KSampler']
+    },
+    {
+      name: 'muted and bypassed nodes inside a subgraph',
+      build: () =>
+        graph({
+          type: 'subgraph',
+          subgraphNodes: [
+            { type: 'KSampler' },
+            {
+              type: 'Power Lora Loader (rgthree)',
+              mode: LGraphEventMode.NEVER
+            },
+            { type: 'CLIP', mode: LGraphEventMode.BYPASS }
+          ]
+        }),
+      expected: ['KSampler']
+    },
+    {
+      name: 'one subgraph used by a muted and a live instance',
+      build: () => {
+        const root = graph({ type: 'KSampler' })
+        const subgraph = createTestSubgraph({ rootGraph: root })
+        addNodes(subgraph, root, [{ type: 'CLIP' }])
+        const muted = createTestSubgraphNode(subgraph, { parentGraph: root })
+        muted.mode = LGraphEventMode.NEVER
+        root.add(muted)
+        root.add(createTestSubgraphNode(subgraph, { parentGraph: root }))
+        return root
+      },
+      expected: ['CLIP', 'KSampler']
     }
-  )
+  ])('lists what the prompt sends for $name', async ({ build, expected }) => {
+    const root = build()
+    const { output } = await graphToPrompt(root)
+    const sent = [
+      ...new Set(Object.values(output).map((node) => node.class_type))
+    ].sort()
 
-  it('counts a subgraph once through its live instance when another instance is muted', () => {
-    const root = createTestRootGraph()
-    const subgraph = createTestSubgraph({ rootGraph: root })
-    subgraph.add(new LGraphNode('CLIP', 'CLIP'))
-    const muted = createTestSubgraphNode(subgraph, { parentGraph: root })
-    muted.mode = LGraphEventMode.NEVER
-    root.add(muted)
-    root.add(createTestSubgraphNode(subgraph, { parentGraph: root }))
-    root.add(createTestSubgraphNode(subgraph, { parentGraph: root }))
-
-    expect(workflowNodeTypes(root)).toEqual(['CLIP'])
+    expect(sent).toEqual(expected)
+    expect(workflowNodeTypes(root)).toEqual(sent)
   })
 })
 

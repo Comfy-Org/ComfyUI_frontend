@@ -1,7 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { fromPartial } from '@total-typescript/shoehorn'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -10,6 +9,7 @@ import type { WorkspaceDeploymentList } from '@/platform/workspace/api/workspace
 import enMessages from '@/locales/en/main.json'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import { createTestRootGraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
@@ -97,10 +97,9 @@ const listing: WorkspaceDeploymentList = {
 }
 
 function workflowWith(...types: string[]): LGraph {
-  return fromPartial<LGraph>({
-    id: 'root',
-    nodes: types.map((type) => new LGraphNode(type, type))
-  })
+  const graph = createTestRootGraph()
+  for (const type of types) graph.add(new LGraphNode(type, type))
+  return graph
 }
 
 function renderSwitcher() {

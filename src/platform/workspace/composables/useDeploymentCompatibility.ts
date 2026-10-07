@@ -6,7 +6,12 @@ import {
 import { storeToRefs } from 'pinia'
 import { computed, shallowRef, watch } from 'vue'
 
-import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
+import type {
+  ExecutableLGraphNode,
+  ExecutionId,
+  LGraph
+} from '@/lib/litegraph/src/litegraph'
+import { ExecutableNodeDTO } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { DeploymentCompatibility } from '@/platform/workspace/api/workspaceApi'
@@ -26,35 +31,31 @@ export type DeploymentCompatibilityMark =
   | { kind: 'missing'; nodeTypes: string[] }
   | { kind: 'unknown' }
 
+function isSkippedByExecution(mode: LGraphEventMode | undefined): boolean {
+  return mode === LGraphEventMode.NEVER || mode === LGraphEventMode.BYPASS
+}
+
 /**
- * The node types a graph needs from the backend, distinct and sorted. Like
- * execution, it skips muted and bypassed nodes, everything inside a muted or
- * bypassed subgraph instance, and frontend-only nodes (notes, reroutes). A
- * subgraph's nodes count once, through any instance that runs.
+ * The node types the prompt for a graph sends to the backend, distinct and
+ * sorted. It expands nodes the way graphToPrompt does: it skips muted and
+ * bypassed root nodes, expands every root subgraph instance that runs into
+ * its inner nodes at any depth (nested instances whatever their mode), then
+ * drops muted, bypassed and frontend-only nodes (notes, reroutes).
  */
 export function workflowNodeTypes(graph: LGraph): string[] {
   const types = new Set<string>()
-  const walked = new Set<string>([graph.id])
+  const executableNodes = new Map<ExecutionId, ExecutableLGraphNode>()
 
-  function walk(current: LGraph | Subgraph) {
-    for (const node of current.nodes) {
-      if (
-        node.mode === LGraphEventMode.NEVER ||
-        node.mode === LGraphEventMode.BYPASS
-      ) {
-        continue
-      }
-      if (node.isSubgraphNode()) {
-        if (walked.has(node.subgraph.id)) continue
-        walked.add(node.subgraph.id)
-        walk(node.subgraph)
-      } else if (!node.isVirtualNode) {
-        types.add(node.last_serialization?.type ?? node.type)
-      }
+  for (const node of graph.nodes) {
+    if (isSkippedByExecution(node.mode)) continue
+    const dto = new ExecutableNodeDTO(node, [], executableNodes)
+    for (const inner of dto.getInnerNodes()) {
+      if (inner.isVirtualNode || isSkippedByExecution(inner.mode)) continue
+      const source = inner instanceof ExecutableNodeDTO ? inner.node : null
+      types.add(source?.last_serialization?.type ?? inner.type)
     }
   }
 
-  walk(graph)
   return [...types].sort()
 }
 
