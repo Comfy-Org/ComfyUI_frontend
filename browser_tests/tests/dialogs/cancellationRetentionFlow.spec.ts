@@ -66,6 +66,26 @@ test.describe(
       })
     })
 
+    test.describe('on a short viewport', () => {
+      test.use({ viewport: { width: 1280, height: 540 } })
+
+      test.beforeEach(async () => {
+        flow = await retention.openCancellation(OFFER_ARM_FLOW)
+      })
+
+      test('reaches the actions of every step', async () => {
+        await flow.reason('Too expensive').click()
+        await flow.continueCancellingButton.click()
+        await expect(flow.offerHeading).toBeVisible()
+        await flow.continueCancellingButton.click()
+        await expect(flow.confirmHeading).toBeVisible()
+        await flow.confirmCancelButton.click()
+        await expect(flow.cancelledHeading).toBeVisible()
+        await flow.doneButton.click()
+        await flow.waitForHidden()
+      })
+    })
+
     test.describe('on the control arm', () => {
       test.beforeEach(async () => {
         flow = await retention.openCancellation(CONTROL_ARM_FLOW)
