@@ -141,8 +141,53 @@ export function workshopReleaseGate(): AstroIntegration {
             plugins: [workshopClientBoundary()]
           }
         })
+        if (process.env.SITE_CATALOG_API_URL) {
+          for (const [pattern, entrypoint] of [
+            ['/admin/sign-in', './src/routes/admin/sign-in.astro'],
+            ['/admin/tester-session', './src/routes/admin/tester-session.ts'],
+            ['/admin/testers', './src/routes/admin/testers.astro']
+          ])
+            injectRoute({
+              pattern: pattern,
+              entrypoint: entrypoint,
+              prerender: false
+            })
+          injectRoute({
+            pattern: '/admin/[...page]',
+            entrypoint: './src/routes/admin/index.astro',
+            prerender: false
+          })
+          injectRoute({
+            pattern: '/admin/session',
+            entrypoint: './src/routes/admin/session.ts',
+            prerender: false
+          })
+          injectRoute({
+            pattern: '/admin/local-access',
+            entrypoint: './src/routes/admin/local-access.astro',
+            prerender: false
+          })
+          injectRoute({
+            pattern: '/admin/local-session',
+            entrypoint: './src/routes/admin/local-access.ts',
+            prerender: false
+          })
+          injectRoute({
+            pattern: '/admin/actions',
+            entrypoint: './src/routes/admin/actions.ts',
+            prerender: false
+          })
+        }
         for (const route of modelsBuildRoutes(isWorkshopInBuild()))
-          injectRoute(route)
+          injectRoute({
+            ...route,
+            ...(process.env.SITE_CATALOG_API_URL &&
+            (route.pattern.startsWith('/hub/') ||
+              route.pattern === '/models/catalogue.json' ||
+              route.pattern === '/models/[...slug]/page.json')
+              ? { prerender: false }
+              : {})
+          })
       },
       'astro:build:start': () => {
         assertWorkshopCloudEnvForBuild()

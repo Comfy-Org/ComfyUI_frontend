@@ -1,0 +1,25 @@
+---
+const staff = Astro.locals.site
+const local = Astro.locals.siteLocalAccess
+const adminPage =
+  Astro.url.pathname === '/admin' || Astro.url.pathname.startsWith('/admin/')
+const t = Astro.locals.t
+---
+
+{!adminPage && (staff || local) && <a
+  data-astro-reload
+  href={staff ? '/admin/changes/' : '/admin/local-access'}
+  class="fixed right-6 bottom-6 z-40 flex items-center gap-3 rounded-full border border-primary-comfy-yellow/30 bg-primary-comfy-yellow px-5 py-3 text-sm text-primary-comfy-ink shadow-lg transition-transform hover:-translate-y-1 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-comfy-yellow"
+>
+  <svg
+    aria-hidden="true"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.5"
+    class="size-5"
+  >
+    <path d="M4 5h16v14H4zM9 5v14M12 9h5M12 13h5" />
+  </svg>
+  {t(staff ? 'cmsAdmin.title' : 'cmsAdmin.localReview')}
+</a>}

@@ -2,6 +2,7 @@ import { defineConfig } from 'astro/config'
 import mdx from '@astrojs/mdx'
 import sitemap from '@astrojs/sitemap'
 import vue from '@astrojs/vue'
+import vercel from '@astrojs/vercel'
 import tailwindcss from '@tailwindcss/vite'
 import { isExcludedFromSitemap, isIndexableBuild } from './src/config/indexing'
 import { DEFAULT_LOCALE, LOCALE_CODES } from './src/config/locales'
@@ -14,6 +15,28 @@ import { sitemapAlternates } from './src/lib/hreflang'
 export default defineConfig({
   site: 'https://comfy.org',
   output: 'static',
+  adapter: process.env.SITE_CATALOG_API_URL ? vercel() : undefined,
+  security: {
+    checkOrigin: true,
+    allowedDomains: process.env.SITE_CATALOG_API_URL
+      ? (process.env.SITE_CATALOG_WEBSITE_ORIGINS ?? '')
+          .split(',')
+          .filter(Boolean)
+          .map((origin) => {
+            const url = new URL(origin)
+            return {
+              hostname: url.hostname,
+              protocol: url.protocol.slice(0, -1),
+              port: url.port
+            }
+          })
+      : []
+  },
+  server: {
+    allowedHosts: process.env.SITE_CATALOG_PREVIEW_HOST
+      ? [process.env.SITE_CATALOG_PREVIEW_HOST]
+      : []
+  },
   prefetch: { prefetchAll: true },
   // Astro 7 changed the compressHTML default to JSX-style whitespace stripping.
   // Keep the v6 HTML-aware behavior so inline spacing across the site is unchanged.

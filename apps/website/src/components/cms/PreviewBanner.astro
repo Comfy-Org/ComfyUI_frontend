@@ -1,0 +1,61 @@
+---
+const session = Astro.locals.site
+const preview = session?.preview
+const selected = session?.review.draft
+const t = Astro.locals.t
+---
+
+{session && preview?.view === 'DRAFT' && <aside
+  aria-label={t('cmsAdmin.preview')}
+  class="sticky top-0 z-50 flex flex-wrap items-center justify-between gap-3 bg-primary-comfy-yellow px-6 py-3 text-primary-comfy-ink"
+>
+  <form
+    data-astro-reload
+    method="post"
+    action="/admin/actions"
+    class="flex flex-wrap items-center gap-2"
+  >
+    <input type="hidden" name="csrf" value={session.csrf} />
+    <input type="hidden" name="view" value={preview.view} />
+    <label for="preview-time">{t('cmsAdmin.time')}</label>
+    <input
+      id="preview-time"
+      name="now"
+      type="text"
+      value={preview.now ?? ''}
+      placeholder="2026-10-15T16:00:00Z"
+      class="w-64 rounded-sm border border-current bg-transparent px-2 py-1"
+    />
+    <button
+      name="action"
+      value="preview"
+      class="rounded-sm border border-current px-3 py-1"
+    >
+      {t('cmsAdmin.preview')}
+    </button>
+    <button
+      name="action"
+      value="now"
+      class="rounded-sm border border-current px-3 py-1"
+    >
+      {t('cmsAdmin.now')}
+    </button>
+  </form>
+  <a class="font-bold" href="/admin/changes/"
+    >{t('cmsAdmin.preview')} · {preview.view} · {selected?.revision_id} ·
+    {selected?.generation}</a
+  >
+  <nav aria-label={t('cmsAdmin.locales')} class="flex gap-2">
+    <a href="/hub/models/" lang="en">English</a
+    ><a href="/zh-CN/hub/models/" lang="zh-CN">中文</a>
+  </nav>
+  <form data-astro-reload method="post" action="/admin/actions">
+    <input type="hidden" name="csrf" value={session.csrf} /><button
+      name="action"
+      value="exit"
+      class="rounded-sm border border-current px-3 py-1"
+    >
+      {t('cmsAdmin.exit')}
+    </button>
+  </form>
+</aside>}

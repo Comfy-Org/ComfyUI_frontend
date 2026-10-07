@@ -30,10 +30,18 @@ export function modelOgImage(
 
 export async function prepareModelPage(
   slug: string | undefined,
-  locale: Locale = 'en'
+  locale: Locale = 'en',
+  catalog?: {
+    details: NonNullable<ReturnType<typeof getWorkshopPageDetail>>[]
+    models: WorkshopModel[]
+  }
 ) {
   const { t } = translationsFor(locale)
-  const model = slug ? getWorkshopPageDetail(slug) : undefined
+  const model = slug
+    ? catalog
+      ? catalog.details.find((item) => item.slug === slug)
+      : getWorkshopPageDetail(slug)
+    : undefined
   if (!model) throw new Error(`Unknown Models route: ${slug ?? '(missing)'}`)
   const { href } = model
   if (!href)
@@ -43,7 +51,7 @@ export async function prepareModelPage(
   if (slug !== model.slug) return { kind: 'redirect', href } as const
   const related = relatedModels(
     model,
-    workshopPages.filter(
+    (catalog?.models ?? workshopPages).filter(
       (other) => (other.type ?? 'MODEL') === (model.type ?? 'MODEL')
     )
   )
@@ -69,7 +77,9 @@ export async function prepareModelPage(
         })
       : t('workshop.model.related'),
     successor: model.successorSlug
-      ? getWorkshopModel(model.successorSlug)
+      ? catalog
+        ? catalog.models.find((item) => item.slug === model.successorSlug)
+        : getWorkshopModel(model.successorSlug)
       : undefined,
     priceEstimate: await estimateWorkshopNodePrice(
       model,

@@ -1,5 +1,7 @@
 ---
 import { ClientRouter } from 'astro:transitions'
+import PreviewBanner from '@/components/cms/PreviewBanner.astro'
+import StaffTools from '@/components/cms/StaffTools.astro'
 import Analytics from '@vercel/analytics/astro'
 import '@/styles/global.css'
 import SiteFooter from '@/components/common/SiteFooter.vue'
@@ -295,6 +297,8 @@ const structuredData = head.emitStructuredData
     class="overflow-x-clip bg-primary-comfy-ink font-formula text-white antialiased"
   >
     <GoogleTagManager part="noscript" />
+    <PreviewBanner />
+    <StaffTools />
 
     {bannerVisible && !minimal && (
       <AnnouncementBanner

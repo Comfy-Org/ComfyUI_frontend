@@ -1,0 +1,85 @@
+---
+import { draftChanges } from '@/lib/cms/admin'
+import { contentDiff, displayValue } from '@/lib/cms/diff'
+const session = Astro.locals.site
+const t = Astro.locals.t
+const changes = (session ? draftChanges(session.review) : [])
+  .map((change) => ({
+    ...change,
+    fields: contentDiff(change.before, change.after)
+  }))
+  .filter((change) => change.fields.length)
+---
+
+<section
+  aria-label={t('cmsAdmin.changes')}
+  class="max-h-160 space-y-4 overflow-y-auto pr-1"
+>
+  {changes.length === 0 && <p>{t('cmsAdmin.emptyChanges')}</p>}
+  {changes.map(({ uid, before, after, fields }) => <article
+    class="overflow-hidden rounded-2xl border border-white/10 bg-primary-comfy-ink-light"
+  >
+    <header class="border-b border-white/10 p-5">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <h3 class="text-xl">
+          {String(after?.data.name ?? before?.data.name ?? uid)}
+        </h3>
+        <span
+          class="rounded-full bg-white/5 px-3 py-1 text-xs text-primary-comfy-yellow"
+          >{t(
+            `cmsAdmin.${after?.deleted ? 'removed' : !before || before.deleted ? 'added' : 'changed'}`
+          )}</span
+        >
+      </div>
+      <p class="mt-2 text-sm break-all text-primary-comfy-canvas">
+        {after?.slug ?? before?.slug}
+      </p>
+      <p class="mt-1 font-mono text-xs break-all text-primary-comfy-canvas">
+        UID: {uid}
+      </p>
+    </header>
+    <details open={fields.length <= 12}>
+      <summary
+        class="cursor-pointer px-5 py-4 text-sm text-primary-comfy-canvas hover:text-primary-comfy-yellow focus-visible:outline-2 focus-visible:outline-primary-comfy-yellow"
+      >
+        {t('cmsAdmin.fieldsChanged', { count: fields.length })} ·
+        {t('cmsAdmin.inspectChanges')}
+      </summary>
+      <div class="divide-y divide-white/10">
+        {fields.map((field) => <div class="p-5">
+          <div class="mb-3 flex flex-wrap items-center gap-2">
+            <span
+              class="rounded-md border border-white/10 px-2 py-1 text-xs text-primary-comfy-canvas"
+              >{t(`cmsAdmin.${field.action}`)}</span
+            >
+            <code class="text-sm break-all text-primary-comfy-yellow"
+              >{field.path}</code
+            >
+          </div>
+          <div class="grid gap-3 md:grid-cols-2">
+            {field.action !== 'added' && <div
+              class="min-w-0 rounded-lg bg-site-bg-soft p-3"
+            >
+              <p class="mb-2 text-xs text-primary-comfy-canvas">
+                {t('cmsAdmin.before')}
+              </p>
+              <pre
+                class="max-h-40 overflow-auto font-mono text-sm break-words whitespace-pre-wrap"
+              >{displayValue(field.before)}</pre>
+            </div>}
+            {field.action !== 'removed' && <div
+              class="min-w-0 rounded-lg border border-primary-comfy-yellow/20 bg-site-bg-soft p-3"
+            >
+              <p class="mb-2 text-xs text-primary-comfy-yellow">
+                {t('cmsAdmin.after')}
+              </p>
+              <pre
+                class="max-h-40 overflow-auto font-mono text-sm break-words whitespace-pre-wrap"
+              >{displayValue(field.after)}</pre>
+            </div>}
+          </div>
+        </div>)}
+      </div>
+    </details>
+  </article>)}
+</section>

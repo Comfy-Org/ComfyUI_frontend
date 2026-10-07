@@ -6,6 +6,17 @@ import ModelsShowcase from '@/components/models/ModelsShowcase.astro'
 import { HUB_APPS_PATH, HUB_WORKFLOWS_PATH } from '@/config/hub-models'
 import { isIndexableModelPage } from '@/config/indexing'
 import { HUB_SECTION_COPY } from './hub-section-copy'
+import {
+  cmsEnabled,
+  loadSiteCatalog,
+  catalogUnavailable
+} from '@/lib/cms/catalog'
+
+const catalog = cmsEnabled()
+  ? await loadSiteCatalog(Astro.locals.site)
+  : undefined
+const failure = catalog && !catalog.ok ? catalogUnavailable() : undefined
+if (failure) return failure
 
 const SECTIONS: Readonly<Record<string, Exclude<CatalogueTab, 'models'>>> = {
   [HUB_WORKFLOWS_PATH]: 'workflows',
@@ -15,6 +26,11 @@ const section = SECTIONS[Astro.routePattern]
 if (!section)
   throw new Error(`No hub section is built at ${Astro.routePattern}`)
 const copy = HUB_SECTION_COPY[section]
+const records = catalog?.ok
+  ? catalog.projection.items.filter(
+      (item) => item.kind === (section === 'apps' ? 'APP' : 'WORKFLOW')
+    )
+  : []
 ---
 
 <BaseLayout
@@ -30,11 +46,18 @@ const copy = HUB_SECTION_COPY[section]
     section={section}
     heading={copy.heading}
     client:load
-    transition:persist="hub-catalogue"
+    transition:persist={cmsEnabled() ? undefined : 'hub-catalogue'}
   >
     <ModelsShowcase slot="fallback" />
   </ModelsPage>
   <noscript>
     <ModelsShowcase />
   </noscript>
+  {catalog?.ok && <section class="mx-auto max-w-10xl px-6 pb-16 lg:px-8">
+    <ul>
+      {records.map((record) => <li>
+        <a href={record.slug + '/'}>{String(record.data.name)}</a>
+      </li>)}
+    </ul>
+  </section>}
 </BaseLayout>

@@ -1,0 +1,126 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import { isLocalAccess } from './local-access'
+import {
+  TESTER_COOKIE,
+  createInvitation,
+  listInvitations,
+  revokeInvitation
+} from '@/lib/cms/testers'
+import { validMutation } from '@/lib/cms/admin'
+if (
+  !Astro.locals.site ||
+  !isLocalAccess(Astro) ||
+  Astro.cookies.has(TESTER_COOKIE)
+)
+  return new Response('Not found', { status: 404 })
+let code: string | undefined
+if (Astro.request.method === 'POST') {
+  const body = await Astro.request.formData()
+  if (!validMutation(Astro, body.get('csrf')))
+    return new Response('Access denied', { status: 403 })
+  if (body.get('action') === 'revoke')
+    await revokeInvitation(String(body.get('id')))
+  else {
+    const role = body.get('role')
+    const name = body.get('name')
+    if (
+      typeof name !== 'string' ||
+      !name.trim() ||
+      name.length > 100 ||
+      !['review', 'edit', 'publish'].includes(String(role))
+    )
+      return new Response('Invalid invitation', { status: 400 })
+    if (role === 'review' || role === 'edit' || role === 'publish')
+      code = await createInvitation(name, role)
+  }
+}
+const entries = await listInvitations()
+const csrf = Astro.locals.site.csrf
+const t = Astro.locals.t
+const publicOrigin = (process.env.SITE_CATALOG_WEBSITE_ORIGINS ?? '')
+  .split(',')
+  .filter(Boolean)[0]
+const signInURL = publicOrigin
+  ? new URL('/admin/sign-in', publicOrigin).href
+  : undefined
+---
+
+<BaseLayout title={t('cmsTesters.title')} noindex>
+  <section class="mx-auto max-w-4xl px-6 py-12">
+    <a href="/admin/changes/" class="text-primary-comfy-yellow"
+      >← {t('cmsTesters.back')}</a
+    >
+    <h1 class="my-6 text-3xl">{t('cmsTesters.title')}</h1>
+    <p class="mb-6 text-primary-comfy-canvas">{t('cmsTesters.notice')}</p>
+    {signInURL && <p class="mb-6 break-all">
+      <a href={signInURL} class="text-primary-comfy-yellow">{signInURL}</a>
+    </p>}
+    {code && <div
+      class="mb-6 rounded-xl border border-primary-comfy-yellow p-5"
+    >
+      <p>{t('cmsTesters.copy')}</p>
+      <input
+        aria-label={t('cmsTesters.newCode')}
+        readonly
+        value={code}
+        data-private
+        data-dd-privacy="mask"
+        class="mt-3 w-full rounded-lg bg-site-bg-soft p-3 font-mono"
+      />
+    </div>}
+    <form
+      method="post"
+      data-astro-reload
+      class="mb-8 grid gap-4 rounded-xl border border-white/10 p-5"
+    >
+      <input type="hidden" name="csrf" value={csrf} />
+      <label class="grid gap-2"
+        >{t('cmsTesters.name')}<input
+          name="name"
+          required
+          maxlength="100"
+          class="rounded-lg bg-site-bg-soft p-3"
+      /></label>
+      <label class="grid gap-2"
+        >{t('cmsTesters.access')}<select
+          name="role"
+          class="rounded-lg bg-site-bg-soft p-3"
+        >
+          <option value="review">{t('cmsTesters.review')}</option>
+          <option value="edit">{t('cmsTesters.edit')}</option>
+          <option value="publish">{t('cmsTesters.publish')}</option>
+        </select></label
+      >
+      <button
+        class="rounded-full bg-primary-comfy-yellow px-6 py-3 text-primary-comfy-ink"
+      >
+        {t('cmsTesters.create')}
+      </button>
+    </form>
+    <ul class="grid gap-4">
+      {entries.map((e) => <li class="rounded-xl border border-white/10 p-5">
+        <p>
+          {e.name} · {t(`cmsTesters.${e.role}`)} ·
+          {t(
+            `cmsTesters.${e.revoked ? 'revoked' : e.expires <= Date.now() ? 'expired' : e.redeemed ? 'used' : 'unused'}`
+          )}
+        </p>
+        <p class="my-2 text-sm text-primary-comfy-canvas">
+          {t('cmsTesters.expires', { date: new Date(e.expires).toISOString() })}
+        </p>
+        {!e.revoked && <form method="post" data-astro-reload>
+          <input type="hidden" name="csrf" value={csrf} /><input
+            type="hidden"
+            name="action"
+            value="revoke"
+          /><input type="hidden" name="id" value={e.id} /><button
+            class="text-primary-comfy-yellow"
+          >
+            {t('cmsTesters.revoke')}
+          </button>
+        </form>}
+      </li>)}
+    </ul>
+  </section>
+</BaseLayout>

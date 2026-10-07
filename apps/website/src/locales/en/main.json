@@ -1,4 +1,23 @@
 {
+  "cmsTesters": {
+    "title": "Tester invitations", "signIn": "CMS tester sign-in", "help": "Enter the one-use invitation code sent privately by your administrator. Access lasts up to seven days.",
+    "code": "Invitation code", "submit": "Sign in", "back": "Administration", "notice": "Temporary local test access, not production account permissions. Send codes privately. Revocation takes effect on the next request. Backend audit currently records the shared test account.",
+    "copy": "Copy this code now; it will not be shown again. Send it privately with the sign-in URL.", "newCode": "New invitation code", "name": "Tester name", "access": "Access", "review": "Review only", "edit": "Edit (no publication)", "publish": "Edit and publish", "create": "Create invitation", "revoke": "Revoke", "revoked": "Revoked", "expired": "Expired", "used": "Signed in", "unused": "Not used", "expires": "Expires {date}"
+  },
+  "cmsAdmin": {
+    "localReview": "Local admin",
+    "localHelp": "Open the CMS with the staff account for this local review. No production account or data is changed.",
+    "openAdmin": "Open site administration",
+    "changesHelp": "Review what differs from LIVE. Only changed fields are shown; array indices refer to LIVE for removals and DRAFT for additions or edits.",
+    "publishHelp": "Review the current Draft, publish it to LIVE, or restore the previous publication.",
+    "approvalsHelp": "Review workflows submitted to the existing Hub before approving or rejecting them.",
+    "fieldsChanged": "{count} field changes",
+    "inspectChanges": "Inspect changes",
+    "added": "Added",
+    "removed": "Removed",
+    "changed": "Changed",
+    "title": "Site administration", "changes": "Draft changes", "publish": "Publication", "approvals": "Workflow approvals", "preview": "PREVIEW", "live": "LIVE", "draft": "DRAFT", "exit": "EXIT", "now": "NOW", "time": "Preview time (UTC)", "timeHelp": "Enter an ISO date and time, including timezone. This changes visibility only, not infrastructure.", "showDraft": "View Draft website", "showLive": "View Live website", "history": "Publication history", "publishDraft": "Publish current Draft", "revert": "Revert to previous Live", "confirm": "I reviewed and approve this action", "emptyChanges": "No changes in the current Draft.", "emptyHistory": "No publication events recorded yet.", "emptyQueue": "No pending workflow submissions.", "before": "Live record", "after": "Draft record", "applyOnly": "Publishing and approvals require comfy_site.apply.", "reviewNote": "Approval updates the existing Hub workflow staging status. It does not publish the Comfy Draft.", "approve": "Approve", "reject": "Reject", "owner": "Owner", "submitted": "Submitted", "listed": "Listed", "unlisted": "Unlisted", "queueLimit": "Showing up to 100 pending submissions, oldest first.", "revision": "Revision", "generation": "Draft generation", "actor": "Actor", "locales": "Language", "hub": "Back to Hub", "unavailable": "Unable to load pending submissions. Please retry."
+  },
   "home": {
     "workshop": {
       "heading": "Run any model, from one place",

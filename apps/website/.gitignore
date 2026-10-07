@@ -1,4 +1,5 @@
 dist/
+.vercel/
 .astro/
 test-results/
 playwright-report/

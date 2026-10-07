@@ -1,4 +1,23 @@
 {
+  "cmsTesters": {
+    "title": "测试者邀请", "signIn": "CMS 测试者登录", "help": "输入管理员私下发送的一次性邀请码。访问权限最长有效七天。",
+    "code": "邀请码", "submit": "登录", "back": "管理", "notice": "仅用于本地测试，不是生产环境账户权限。请私下发送邀请码。撤销将在下一次请求时生效。后端审计目前记录的是共享测试账户。",
+    "copy": "请立即复制此邀请码；之后不会再次显示。请将其与登录网址一起私下发送。", "newCode": "新邀请码", "name": "测试者姓名", "access": "权限", "review": "仅查看", "edit": "编辑（不能发布）", "publish": "编辑和发布", "create": "创建邀请", "revoke": "撤销", "revoked": "已撤销", "expired": "已过期", "used": "已登录", "unused": "未使用", "expires": "到期时间：{date}"
+  },
+  "cmsAdmin": {
+    "localReview": "本地管理",
+    "localHelp": "使用本地审核专用的员工账号打开 CMS，不会更改生产账号或数据。",
+    "openAdmin": "打开网站管理",
+    "changesHelp": "审核与线上版本的差异。仅显示更改字段；删除项的数组索引对应线上版本，新增和修改项对应草稿。",
+    "publishHelp": "审核当前草稿并发布到线上，或恢复上一发布版本。",
+    "approvalsHelp": "审核提交到现有 Hub 的工作流，然后批准或拒绝。",
+    "fieldsChanged": "{count} 个字段更改",
+    "inspectChanges": "查看更改",
+    "added": "新增",
+    "removed": "删除",
+    "changed": "修改",
+    "title": "网站管理", "changes": "草稿更改", "publish": "发布管理", "approvals": "工作流审批", "preview": "预览", "live": "线上", "draft": "草稿", "exit": "退出", "now": "现在", "time": "预览时间（UTC）", "timeHelp": "请输入包含时区的 ISO 日期和时间。仅改变内容可见性，不改变基础设施。", "showDraft": "查看草稿网站", "showLive": "查看线上网站", "history": "发布历史", "publishDraft": "发布当前草稿", "revert": "恢复上一线上版本", "confirm": "我已审核并批准此操作", "emptyChanges": "当前草稿没有更改。", "emptyHistory": "尚无发布事件记录。", "emptyQueue": "没有待审批工作流。", "before": "线上记录", "after": "草稿记录", "applyOnly": "发布和审批需要 comfy_site.apply 权限。", "reviewNote": "审批更新现有 Hub 工作流的审核状态，不会发布 Comfy 草稿。", "approve": "批准", "reject": "拒绝", "owner": "所有者", "submitted": "提交时间", "listed": "已列出", "unlisted": "未列出", "queueLimit": "按时间顺序显示最多 100 个待审批项目。", "revision": "修订版本", "generation": "草稿代次", "actor": "操作者", "locales": "语言", "hub": "返回 Hub", "unavailable": "无法加载待审批项目，请重试。"
+  },
   "about": {
     "careers": {
       "cta": "查看开放职位",

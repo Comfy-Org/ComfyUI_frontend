@@ -1,0 +1,276 @@
+---
+import type { SiteSubmission } from '@comfyorg/ingest-types'
+import { cn } from '@comfyorg/tailwind-utils'
+import { zSiteSubmission } from '@comfyorg/ingest-types/zod'
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import DraftChanges from '@/components/cms/DraftChanges.astro'
+import { siteAPI } from '@/lib/cms/admin'
+const session = Astro.locals.site
+if (!session) return new Response('Not found', { status: 404 })
+const t = Astro.locals.t
+const page = Astro.params.page ?? ''
+if (!['', 'changes', 'publish', 'approvals'].includes(page))
+  return new Response('Not found', { status: 404 })
+const review = session.review
+let submissions: SiteSubmission[] = []
+let queueFailed = false
+if (page === 'approvals') {
+  const response = await siteAPI(
+    '/admin/api/site/submissions',
+    session.credential
+  )
+  const parsed = response.ok
+    ? zSiteSubmission.array().safeParse(await response.json())
+    : undefined
+  if (parsed?.success) submissions = parsed.data
+  else queueFailed = true
+}
+const button =
+  'rounded-full border border-white/20 px-5 py-3 text-sm transition-colors hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-comfy-yellow disabled:cursor-not-allowed disabled:opacity-40'
+const currentPage = page || 'changes'
+const navigation = ['changes', 'publish', 'approvals']
+---
+
+<BaseLayout title={t('cmsAdmin.title')} description={t('cmsAdmin.title')}>
+  <div
+    class="mx-auto grid max-w-7xl gap-8 px-6 py-10 lg:grid-cols-[16rem_minmax(0,1fr)] lg:px-8"
+  >
+    <aside
+      class="self-start rounded-2xl border border-white/10 bg-primary-comfy-ink-light p-5 lg:sticky lg:top-24"
+      aria-label={t('cmsAdmin.title')}
+    >
+      <p class="mb-5 text-sm text-primary-comfy-canvas">
+        {t('cmsAdmin.title')}
+      </p>
+      <nav class="mb-6 grid gap-2" aria-label={t('cmsAdmin.title')}>
+        {Astro.locals.siteLocalAccess && <a
+          href="/admin/testers"
+          class="rounded-lg px-4 py-3 text-sm text-primary-comfy-yellow"
+          >{t('cmsTesters.title')}</a
+        >}
+        {navigation.map((item) => <a
+          href={`/admin/${item}/`}
+          aria-current={currentPage === item ? 'page' : undefined}
+          class:list={[
+            'rounded-lg px-4 py-3 text-sm transition-colors hover:bg-white/5 focus-visible:outline-2 focus-visible:outline-primary-comfy-yellow',
+            currentPage === item
+              ? 'bg-primary-comfy-yellow/10 text-primary-comfy-yellow'
+              : 'text-primary-comfy-canvas'
+          ]}
+          >{t(`cmsAdmin.${item}`)}</a
+        >)}
+        <a
+          href="/hub/models/"
+          class="rounded-lg px-4 py-3 text-sm text-primary-comfy-canvas hover:bg-white/5"
+          >{t('cmsAdmin.hub')} →</a
+        >
+      </nav>
+      <div class="mb-5 rounded-xl border border-white/10 bg-site-bg-soft p-4">
+        <p class="mb-2 text-sm text-primary-comfy-yellow">
+          {t('cmsAdmin.draft')}: {review.draft.revision_id}
+        </p>
+        <p class="mb-2 text-xs text-primary-comfy-canvas">
+          {t('cmsAdmin.generation')}: {review.draft.generation}
+        </p>
+        <p class="text-sm break-all text-primary-comfy-canvas">
+          {t('cmsAdmin.live')}: {review.live.revision_id}
+        </p>
+      </div>
+      <form
+        data-astro-reload
+        method="post"
+        action="/admin/actions"
+        class="grid gap-3"
+      >
+        <input type="hidden" name="csrf" value={session.csrf} /><input
+          type="hidden"
+          name="action"
+          value="preview"
+        />
+        <label class="grid gap-2"
+          >{t('cmsAdmin.time')}<input
+            name="now"
+            type="text"
+            placeholder="2026-10-15T16:00:00Z"
+            class="w-full min-w-0 rounded-lg border border-white/20 bg-site-bg-soft p-3 text-sm focus-visible:outline-primary-comfy-yellow"
+        /></label>
+        <button name="view" value="DRAFT" class={button}>
+          {t('cmsAdmin.showDraft')}
+        </button
+        ><button name="view" value="LIVE" class={button}>
+          {t('cmsAdmin.showLive')}
+        </button>
+        <p class="text-xs leading-relaxed text-primary-comfy-canvas">
+          {t('cmsAdmin.timeHelp')}
+        </p>
+      </form>
+    </aside>
+    <section class="min-w-0" aria-labelledby="cms-admin-title">
+      <header class="mb-8">
+        <p
+          class="mb-3 text-xs tracking-widest text-primary-comfy-yellow uppercase"
+        >
+          {t('cmsAdmin.title')}
+        </p>
+        <h1 id="cms-admin-title" class="text-4xl">
+          {t(`cmsAdmin.${currentPage}`)}
+        </h1>
+        <p class="mt-3 max-w-2xl text-primary-comfy-canvas">
+          {t(`cmsAdmin.${currentPage}Help`)}
+        </p>
+      </header>
+      {(page === '' || page === 'changes') && <DraftChanges />}
+      {page === 'publish' && <section>
+        {!review.can_apply && <p class="mb-4">{t('cmsAdmin.applyOnly')}</p>}
+        <div class="mb-8 grid gap-6 md:grid-cols-2">
+          <form
+            data-astro-reload
+            method="post"
+            action="/admin/actions"
+            class="grid gap-4 rounded-xl border border-white/20 p-5"
+          >
+            <input type="hidden" name="csrf" value={session.csrf} /><input
+              type="hidden"
+              name="action"
+              value="publish"
+            /><input
+              type="hidden"
+              name="draft_id"
+              value={review.draft.revision_id}
+            /><input
+              type="hidden"
+              name="generation"
+              value={review.draft.generation}
+            />
+            <label
+              ><input
+                type="checkbox"
+                name="confirm"
+                value="yes"
+                required
+                disabled={!review.can_apply}
+              />
+              {t('cmsAdmin.confirm')}</label
+            ><button
+              class={cn(
+                button,
+                'bg-primary-comfy-yellow text-primary-comfy-ink hover:text-primary-comfy-ink'
+              )}
+              disabled={!review.can_apply}
+            >
+              {t('cmsAdmin.publishDraft')}
+            </button>
+          </form>
+          <form
+            data-astro-reload
+            method="post"
+            action="/admin/actions"
+            class="grid gap-4 rounded-xl border border-white/20 p-5"
+          >
+            <input type="hidden" name="csrf" value={session.csrf} /><input
+              type="hidden"
+              name="action"
+              value="revert"
+            /><input
+              type="hidden"
+              name="live_id"
+              value={review.live.revision_id}
+            />
+            <label
+              ><input
+                type="checkbox"
+                name="confirm"
+                value="yes"
+                required
+                disabled={!review.can_apply || !review.previous_live_id}
+              />
+              {t('cmsAdmin.confirm')}</label
+            ><button
+              class={button}
+              disabled={!review.can_apply || !review.previous_live_id}
+            >
+              {t('cmsAdmin.revert')}
+            </button>
+          </form>
+        </div>
+        <h2 class="mb-4 text-2xl">{t('cmsAdmin.history')}</h2>
+        {review.history.length === 0 && <p>{t('cmsAdmin.emptyHistory')}</p>}
+        <ol class="grid gap-3">
+          {review.history.map((event) => <li
+            class="rounded-xl border border-white/20 p-4"
+          >
+            <p>
+              {event.action} ·
+              <time datetime={event.created_at}>{event.created_at}</time>
+            </p>
+            <p class="text-sm break-all">
+              {t('cmsAdmin.revision')}: {event.target_id}
+            </p>
+            <p class="text-sm">{t('cmsAdmin.actor')}: {event.actor_uid}</p>
+          </li>)}
+        </ol>
+      </section>}
+      {page === 'approvals' && <section>
+        <h2 class="mb-4 text-2xl">{t('cmsAdmin.approvals')}</h2>
+        <p class="mb-2">{t('cmsAdmin.reviewNote')}</p>
+        <p class="mb-6 text-sm opacity-70">{t('cmsAdmin.queueLimit')}</p>
+        {queueFailed ? (
+          <p role="alert">{t('cmsAdmin.unavailable')}</p>
+        ) : (
+          submissions.length === 0 && <p>{t('cmsAdmin.emptyQueue')}</p>
+        )}
+        {submissions.map((row) => <article
+          class="mb-4 rounded-xl border border-white/20 p-5"
+        >
+          <h3 class="text-xl">{row.title}</h3>
+          <p class="my-2">{row.description}</p>
+          <p class="text-sm opacity-70">
+            {t('cmsAdmin.owner')}: {row.owner_uid} · {t('cmsAdmin.submitted')}:
+            {row.submitted_at} ·
+            {t(row.listed ? 'cmsAdmin.listed' : 'cmsAdmin.unlisted')}
+          </p>
+          <form
+            data-astro-reload
+            method="post"
+            action="/admin/actions"
+            class="mt-4 flex flex-wrap items-center gap-3"
+          >
+            <input type="hidden" name="csrf" value={session.csrf} /><input
+              type="hidden"
+              name="share_id"
+              value={row.share_id}
+            /><input
+              type="hidden"
+              name="version_id"
+              value={row.version_id}
+            /><label
+              ><input
+                type="checkbox"
+                name="confirm"
+                value="yes"
+                required
+                disabled={!review.can_apply}
+              />
+              {t('cmsAdmin.confirm')}</label
+            ><button
+              name="action"
+              value="approve"
+              disabled={!review.can_apply}
+              class={button}
+            >
+              {t('cmsAdmin.approve')}
+            </button
+            ><button
+              name="action"
+              value="reject"
+              disabled={!review.can_apply}
+              class={button}
+            >
+              {t('cmsAdmin.reject')}
+            </button>
+          </form>
+        </article>)}
+      </section>}
+    </section>
+  </div>
+</BaseLayout>

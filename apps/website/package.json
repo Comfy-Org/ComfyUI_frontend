@@ -62,6 +62,7 @@
   },
   "dependencies": {
     "@astrojs/sitemap": "catalog:",
+    "@astrojs/vercel": "catalog:",
     "@comfyorg/account-core": "workspace:*",
     "@comfyorg/account-ui": "workspace:*",
     "@comfyorg/design-system": "workspace:*",

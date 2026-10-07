@@ -1,10 +1,13 @@
 import 'astro/client'
 import type { t } from './i18n/translations'
+import type { SiteSession } from './lib/cms/admin'
 
 declare global {
   namespace App {
     interface Locals {
       t: typeof t
+      site?: SiteSession
+      siteLocalAccess?: boolean
     }
   }
 

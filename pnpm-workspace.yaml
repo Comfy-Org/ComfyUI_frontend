@@ -169,6 +169,7 @@ catalog:
   '@datadog/browser-logs': 6.33.0
   '@comfyorg/comfy-multi-player': 0.3.6
   typescript-native-bridge: 6.0.3-bridge.17.tsgo.7.0.2
+  '@astrojs/vercel': ^11.0.12
 
 cleanupUnusedCatalogs: true
 
@@ -210,6 +211,8 @@ overrides:
 minimumReleaseAgeExclude:
   - '@comfyorg/comfyui-desktop-bridge-types@0.3.0'
   - '@comfyorg/comfy-multi-player@0.3.6'
+  - '@astrojs/internal-helpers@0.12.0'
+  - '@astrojs/vercel@11.0.12'
 
 patchedDependencies:
   '@total-typescript/shoehorn@0.1.2': patches/@total-typescript__shoehorn@0.1.2.patch

@@ -1,7 +1,7 @@
 import { defineConfig } from '@hey-api/openapi-ts'
 
 export default defineConfig({
-  input: './openapi.yaml',
+  input: process.env.INGEST_OPENAPI_SOURCE ?? './openapi.yaml',
   output: {
     path: './src',
     clean: true,

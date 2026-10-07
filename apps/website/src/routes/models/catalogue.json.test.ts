@@ -8,7 +8,7 @@ import { workshopPages } from '@/config/workshop-page-content'
 import { GET } from './catalogue.json'
 
 it('serves the catalogue cards, apps included, as JSON', async () => {
-  const response = GET()
+  const response = await GET()
 
   expect(response.headers.get('Content-Type')).toBe('application/json')
   expect(await response.json()).toEqual(
@@ -17,8 +17,8 @@ it('serves the catalogue cards, apps included, as JSON', async () => {
 })
 
 it('serves a payload the catalogue island parses', async () => {
-  const payload = await GET().json()
-  vi.stubGlobal('fetch', vi.fn<typeof fetch>().mockResolvedValue(GET()))
+  const payload = await (await GET()).json()
+  vi.stubGlobal('fetch', vi.fn<typeof fetch>().mockResolvedValue(await GET()))
 
   expect(await fetchModelsCatalogue()).toEqual(payload)
 })
@@ -29,7 +29,7 @@ it('fails the catalogue parse when a disabled model leaks into the payload', asy
   )
   expect(disabled).toBeDefined()
   expect(disabled).not.toHaveProperty('href')
-  const payload = await GET().json()
+  const payload = await (await GET()).json()
   vi.stubGlobal(
     'fetch',
     vi
