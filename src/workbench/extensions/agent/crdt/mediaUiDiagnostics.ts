@@ -1,6 +1,6 @@
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { isDOMWidget } from '@/scripts/domWidget'
-import type { NodeExecutionOutput } from '@/platform/remote/comfyui/execution/types'
+import type { NodeExecutionOutput } from '@/schemas/apiSchema'
 
 export interface MediaUiDiagnostic {
   nodeId: string
