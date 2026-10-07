@@ -1,7 +1,7 @@
 /* oxlint-disable testing-library/no-node-access */
 /* oxlint-disable testing-library/no-container */
 /* oxlint-disable testing-library/prefer-user-event */
-import { fireEvent, render, screen } from '@testing-library/vue'
+import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
 import Tooltip from 'primevue/tooltip'
@@ -176,9 +176,10 @@ describe('PackVersionBadge', () => {
         .click(screen.getByRole('button', { name: /1\.5\.0/ }))
       expect(await screen.findByRole('dialog')).toBeVisible()
       await rerender({ nodePack: mockNodePack, isSelected: false })
-      await nextTick()
 
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+      await waitFor(() =>
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+      )
     })
 
     it('does not close the popover when card is selected', async () => {

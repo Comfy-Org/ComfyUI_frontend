@@ -27,14 +27,12 @@ test.describe(
 
         await test.step('Choose a color from the submenu', async () => {
           await openContextMenu(comfyPage, 'KSampler')
-          const menu = comfyPage.contextMenu.primeVueMenu
-          await menu
-            .getByRole('menuitem', { name: 'Color', exact: true })
-            .click()
-
-          const redSwatch = comfyPage.page.getByTitle('Red', { exact: true })
-          await expect(redSwatch.first()).toBeVisible()
-          await redSwatch.first().click()
+          const colorSubmenu = await comfyPage.contextMenu.openColorSubmenu()
+          const redSwatch = colorSubmenu.getByRole('menuitem', {
+            name: 'Red',
+            exact: true
+          })
+          await redSwatch.click()
         })
 
         await test.step('Apply the chosen color', async () => {
@@ -51,17 +49,7 @@ test.describe(
 
         await test.step('Choose a shape from the submenu', async () => {
           await openContextMenu(comfyPage, 'KSampler')
-          const menu = comfyPage.contextMenu.primeVueMenu
-          await menu
-            .getByRole('menuitem', { name: 'Shape', exact: true })
-            .click()
-
-          const shapePopover = comfyPage.page
-            .locator('.p-popover')
-            .filter({ hasText: 'Default' })
-          const boxItem = shapePopover.getByText('Box', { exact: true })
-          await expect(boxItem).toBeVisible()
-          await boxItem.click()
+          await comfyPage.contextMenu.selectShape('Box')
         })
 
         await test.step('Apply the chosen shape', async () => {
@@ -101,7 +89,7 @@ test.describe(
 
         await openContextMenu(comfyPage, 'Save Image')
         await expect(
-          comfyPage.contextMenu.primeVueMenu.getByRole('menuitem', {
+          comfyPage.contextMenu.ariaMenu.getByRole('menuitem', {
             name: 'Run Branch',
             exact: true
           })
@@ -163,7 +151,7 @@ test.describe(
 
         await test.step('Align selected nodes to the top of the context node', async () => {
           await openMultiNodeContextMenu(comfyPage, nodeTitles, nodeTitles[1])
-          const menu = comfyPage.contextMenu.primeVueMenu
+          const menu = comfyPage.contextMenu.ariaMenu
           await menu
             .getByRole('menuitem', {
               name: 'Align Selected To',
@@ -199,7 +187,7 @@ test.describe(
 
         await test.step('Choose horizontal distribution', async () => {
           await openMultiNodeContextMenu(comfyPage, threeNodes)
-          const menu = comfyPage.contextMenu.primeVueMenu
+          const menu = comfyPage.contextMenu.ariaMenu
           await menu
             .getByRole('menuitem', {
               name: 'Distribute Nodes',
@@ -298,7 +286,7 @@ test.describe(
 
         await openContextMenu(comfyPage, 'KSampler')
         await expect(
-          comfyPage.contextMenu.primeVueMenu.getByRole('menuitem', {
+          comfyPage.contextMenu.ariaMenu.getByRole('menuitem', {
             name: 'Delete',
             exact: true
           })
@@ -345,7 +333,7 @@ test.describe(
 
         await widgetLocator.click({ button: 'right' })
 
-        const menu = comfyPage.contextMenu.primeVueMenu
+        const menu = comfyPage.contextMenu.ariaMenu
         await menu.waitFor({ state: 'visible' })
         await expect(
           menu.getByRole('menuitem', {

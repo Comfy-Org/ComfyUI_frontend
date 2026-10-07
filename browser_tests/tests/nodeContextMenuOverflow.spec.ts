@@ -47,11 +47,8 @@ test.describe(
       await moreOptionsBtn.click()
       await comfyPage.nextFrame()
 
-      const menu = comfyPage.page.locator('.p-contextmenu')
+      const menu = comfyPage.page.getByRole('menu')
       await expect(menu).toBeVisible()
-
-      // Wait for constrainMenuHeight (runs via requestAnimationFrame in onMenuShow)
-      await comfyPage.nextFrame()
 
       return menu
     }
@@ -60,16 +57,12 @@ test.describe(
       comfyPage
     }) => {
       const menu = await openMoreOptions(comfyPage)
-      const rootList = menu.locator(':scope > ul')
 
       await expect
-        .poll(
-          () => rootList.evaluate((el) => el.scrollHeight > el.clientHeight),
-          {
-            message:
-              'Menu should overflow vertically so this test exercises the viewport clamp'
-          }
-        )
+        .poll(() => menu.evaluate((el) => el.scrollHeight > el.clientHeight), {
+          message:
+            'Menu should overflow vertically so this test exercises the viewport clamp'
+        })
         .toBe(true)
 
       // "Delete" is the last item in the More Options menu.
@@ -78,7 +71,7 @@ test.describe(
         name: 'Delete',
         exact: true
       })
-      const didScroll = await rootList.evaluate((el) => {
+      const didScroll = await menu.evaluate((el) => {
         const previousScrollTop = el.scrollTop
         el.scrollTo({ top: el.scrollHeight })
         return el.scrollTop > previousScrollTop

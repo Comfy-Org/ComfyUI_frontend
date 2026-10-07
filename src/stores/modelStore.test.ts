@@ -202,6 +202,20 @@ describe('useModelStore', () => {
   })
 
   describe('refresh', () => {
+    it('preserves loaded models when the same source fails to refresh', async () => {
+      enableMocks(true)
+      store = useModelStore()
+      await store.loadModels()
+      const models = store.models
+      vi.mocked(assetService.getAssetModels).mockRejectedValue(
+        new Error('assets unavailable')
+      )
+
+      await expect(store.refresh()).rejects.toThrow('assets unavailable')
+
+      expect(store.models).toEqual(models)
+    })
+
     it('re-loads only folders that were previously loaded', async () => {
       enableMocks()
       store = useModelStore()
@@ -656,6 +670,37 @@ describe('useModelStore', () => {
   })
 
   describe('assets capability change', () => {
+    it.for([
+      { name: 'empty', models: [] },
+      {
+        name: 'populated',
+        models: [{ name: 'legacy.safetensors', pathIndex: 0 }]
+      }
+    ])(
+      'keeps $name legacy folders retryable when switching to assets fails',
+      async ({ models }) => {
+        enableMocks(false)
+        vi.mocked(api.getModels).mockResolvedValue(models)
+        vi.mocked(assetService.getAssetModels).mockRejectedValue(
+          new Error('assets unavailable')
+        )
+        store = useModelStore()
+        await store.loadModels()
+
+        featureState.serverFeatures.assets = true
+        await vi.advanceTimersByTimeAsync(1000)
+
+        expect(
+          store.visibleModelFolders.map((folder) => folder.directory)
+        ).toEqual(['checkpoints', 'vae'])
+        vi.mocked(assetService.getAssetModels).mockResolvedValue([
+          { name: 'recovered.safetensors', pathIndex: 0 }
+        ])
+        const folder = await store.getLoadedModelFolder('checkpoints')
+        expect(Object.keys(folder!.models)).toEqual(['0/recovered.safetensors'])
+      }
+    )
+
     it('rebuilds the library when a late handshake turns the capability on', async () => {
       enableMocks(false)
       vi.mocked(assetService.getAssetModels).mockResolvedValue([

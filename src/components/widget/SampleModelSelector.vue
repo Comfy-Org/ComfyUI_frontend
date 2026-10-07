@@ -23,32 +23,16 @@
           <i class="icon-[lucide--upload]" />
           <span>{{ $t('g.upload') }}</span>
         </Button>
-        <MoreButton>
-          <template #default="{ close }">
+        <Menu :items="moreMenuItems" align="end">
+          <template #trigger>
             <Button
+              size="icon"
               variant="secondary"
-              @click="
-                () => {
-                  close()
-                }
-              "
-            >
-              <i class="icon-[lucide--download]" />
-              <span>{{ $t('g.settings') }}</span>
-            </Button>
-            <Button
-              variant="primary"
-              @click="
-                () => {
-                  close()
-                }
-              "
-            >
-              <i class="icon-[lucide--scroll]" />
-              <span>{{ $t('g.profile') }}</span>
-            </Button>
+              icon="icon-[lucide--ellipsis]"
+              :aria-label="$t('g.more')"
+            />
           </template>
-        </MoreButton>
+        </Menu>
       </div>
     </template>
 
@@ -126,12 +110,14 @@
 
 <script setup lang="ts">
 import { computed, provide, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
-import MoreButton from '@/components/button/MoreButton.vue'
 import CardBottom from '@/components/card/CardBottom.vue'
 import CardContainer from '@/components/card/CardContainer.vue'
 import CardTop from '@/components/card/CardTop.vue'
 import Tag from '@/components/chip/Tag.vue'
+import Menu from '@/components/ui/menu/Menu.vue'
+import type { MenuItem } from '@/components/ui/menu/types'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import MultiSelect from '@/components/ui/multi-select/MultiSelect.vue'
 import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
@@ -183,6 +169,20 @@ const tempNavigation = ref<(NavItemData | NavGroupData)[]>([
 const { onClose } = defineProps<{
   onClose: () => void
 }>()
+const { t } = useI18n()
+
+const moreMenuItems: MenuItem[] = [
+  {
+    label: () => t('g.settings'),
+    icon: 'icon-[lucide--download]',
+    command: () => {}
+  },
+  {
+    label: () => t('g.profile'),
+    icon: 'icon-[lucide--scroll]',
+    command: () => {}
+  }
+]
 
 provide(OnCloseKey, onClose)
 

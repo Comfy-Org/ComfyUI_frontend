@@ -2,11 +2,11 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
 import Spinner from './Spinner.vue'
 
-const meta = {
+const meta: Meta<typeof Spinner> = {
   title: 'Components/Spinner',
   component: Spinner,
   tags: ['autodocs']
-} satisfies Meta<typeof Spinner>
+}
 
 export default meta
 type Story = StoryObj<typeof meta>

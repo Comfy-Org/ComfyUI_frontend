@@ -99,6 +99,12 @@ describe('web session status mapping', () => {
     },
     {
       status: 403,
+      body: errorBody('sso_required'),
+      code: 'SSO_REQUIRED',
+      server: 'sso_required'
+    },
+    {
+      status: 403,
       body: errorBody('origin_not_allowed'),
       code: 'SESSION_REQUEST_REFUSED',
       server: 'origin_not_allowed'
@@ -355,6 +361,27 @@ describe('web session requests', () => {
       }
     })
   })
+
+  it.for([
+    { reported: true, expected: true },
+    { reported: false, expected: false },
+    { reported: undefined, expected: undefined }
+  ])(
+    'reads has_personal_workspace $reported as $expected',
+    async ({ reported, expected }) => {
+      const endpoint = fakeEndpoint({
+        kind: 'live',
+        user: fakeWebSessionUser({ hasPersonalWorkspace: reported })
+      })
+
+      const result = await readWebSession(optionsFor(endpoint.fetch))
+
+      expect(result.status === 'ok' && result.session.user).toHaveProperty(
+        'hasPersonalWorkspace',
+        expected
+      )
+    }
+  )
 
   it('reports IDENTITY_CHANGED when the session belongs to another user', async () => {
     const endpoint = fakeEndpoint({

@@ -34,13 +34,13 @@ export enum ServerFeatureFlag {
   USER_SECRETS_ENABLED = 'user_secrets_enabled',
   NODE_REPLACEMENTS = 'node_replacements',
   NODE_LIBRARY_ESSENTIALS_ENABLED = 'node_library_essentials_enabled',
-  WORKFLOW_SHARING_ENABLED = 'workflow_sharing_enabled',
   COMFYHUB_UPLOAD_ENABLED = 'comfyhub_upload_enabled',
   COMFYHUB_PROFILE_GATE_ENABLED = 'comfyhub_profile_gate_enabled',
   HOSTED_BILLING_DESTINATION = 'hosted_billing_destination',
   SHOW_SIGNIN_BUTTON = 'show_signin_button',
   UNIFIED_CLOUD_AUTH = 'unified_cloud_auth',
   UNIFIED_WEB_SESSION = 'unified_web_session',
+  SSO_ENABLED = 'sso_enabled',
   BILLING_CONTROL_ENABLED = 'billing_control_enabled',
   MEMBER_CREDIT_LIMITS_ENABLED = 'member_credit_limits_enabled',
   LEGACY_BILLING_MIGRATION_ENABLED = 'legacy_billing_migration_enabled',
@@ -240,15 +240,6 @@ export function useFeatureFlags() {
         isNightly || import.meta.env.DEV
       )
     },
-    get workflowSharingEnabled() {
-      // UI is also gated on `isCloud` in TopMenuSection; default false
-      // to match other flags' opt-in convention.
-      return resolveFlag(
-        ServerFeatureFlag.WORKFLOW_SHARING_ENABLED,
-        remoteConfig.value.workflow_sharing_enabled,
-        false
-      )
-    },
     get comfyHubUploadEnabled() {
       return resolveFlag(
         ServerFeatureFlag.COMFYHUB_UPLOAD_ENABLED,
@@ -295,6 +286,14 @@ export function useFeatureFlags() {
         getDevOverride<unknown>(key) ??
         remoteConfig.value.unified_web_session
       return value === true
+    },
+    get ssoEnabled() {
+      if (!isCloud) return false
+
+      return resolveStrictBooleanFlag(
+        ServerFeatureFlag.SSO_ENABLED,
+        remoteConfig.value.sso_enabled
+      )
     },
     get billingControlEnabled() {
       return resolveAuthGatedFlag(
@@ -431,8 +430,6 @@ export function startFeatureFlagTelemetry() {
       [ServerFeatureFlag.NODE_REPLACEMENTS]: flags.nodeReplacementsEnabled,
       [ServerFeatureFlag.NODE_LIBRARY_ESSENTIALS_ENABLED]:
         flags.nodeLibraryEssentialsEnabled,
-      [ServerFeatureFlag.WORKFLOW_SHARING_ENABLED]:
-        flags.workflowSharingEnabled,
       [ServerFeatureFlag.COMFYHUB_UPLOAD_ENABLED]: flags.comfyHubUploadEnabled,
       [ServerFeatureFlag.COMFYHUB_PROFILE_GATE_ENABLED]:
         flags.comfyHubProfileGateEnabled,
@@ -440,6 +437,7 @@ export function startFeatureFlagTelemetry() {
         flags.hostedBillingDestination,
       [ServerFeatureFlag.SHOW_SIGNIN_BUTTON]: flags.showSignInButton,
       [ServerFeatureFlag.UNIFIED_CLOUD_AUTH]: flags.unifiedCloudAuthEnabled,
+      [ServerFeatureFlag.SSO_ENABLED]: flags.ssoEnabled,
       [ServerFeatureFlag.BILLING_CONTROL_ENABLED]: flags.billingControlEnabled,
       [ServerFeatureFlag.MEMBER_CREDIT_LIMITS_ENABLED]:
         flags.memberCreditLimitsEnabled,

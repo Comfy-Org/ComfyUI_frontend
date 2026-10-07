@@ -9,7 +9,7 @@ import FieldError from './FieldError.vue'
 import FieldGroup from './FieldGroup.vue'
 import FieldLabel from './FieldLabel.vue'
 
-const meta = {
+const meta: Meta<typeof Field> = {
   title: 'Components/Field',
   component: Field,
   tags: ['autodocs'],
@@ -19,7 +19,7 @@ const meta = {
       options: ['vertical', 'horizontal', 'responsive']
     }
   }
-} satisfies Meta<typeof Field>
+}
 
 export default meta
 type Story = StoryObj<typeof meta>

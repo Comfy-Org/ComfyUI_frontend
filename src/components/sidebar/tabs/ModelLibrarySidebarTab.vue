@@ -55,13 +55,15 @@
         :aria-label="$t('sideToolbar.modelLibrary')"
         :root="renderedRoot"
       >
-        <template #node="{ node }">
-          <ModelTreeLeaf :node="node" />
+        <template #preview="{ node }">
+          <ModelPreview
+            v-if="node.data && hasPreviewDetails(node.data)"
+            :model-def="node.data"
+          />
         </template>
       </TreeExplorer>
     </template>
   </SidebarTabTemplate>
-  <div id="model-library-model-preview-container" />
 </template>
 
 <script setup lang="ts">
@@ -73,7 +75,7 @@ import SidebarTopArea from '@/components/sidebar/tabs/SidebarTopArea.vue'
 import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import ElectronDownloadItems from '@/components/sidebar/tabs/modelLibrary/ElectronDownloadItems.vue'
-import ModelTreeLeaf from '@/components/sidebar/tabs/modelLibrary/ModelTreeLeaf.vue'
+import ModelPreview from '@/components/sidebar/tabs/modelLibrary/ModelPreview.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { startModelLoaderDrag } from '@/composables/node/startModelNodeDragFromAsset'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -81,8 +83,13 @@ import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
-import type { ComfyModelDef, ModelFolder } from '@/stores/modelStore'
-import { ResourceState, useModelStore } from '@/stores/modelStore'
+import type { ComfyModelDef } from '@/stores/modelStore'
+import {
+  ModelFolder,
+  ResourceState,
+  getModelPreviewUrl,
+  useModelStore
+} from '@/stores/modelStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import type { TreeExplorerNode, TreeNode } from '@/types/treeExplorerTypes'
 import { isDesktop } from '@/platform/distribution/types'
@@ -141,7 +148,7 @@ const handleSearch = async (query: string) => {
 
 type ModelOrFolder = ComfyModelDef | ModelFolder
 
-const root = computed<TreeNode>(() => {
+const root = computed<TreeNode<ModelOrFolder>>(() => {
   const allNodes: ModelOrFolder[] = activeSearchQuery.value
     ? searchResults.value.models
     : [...modelStore.visibleModelFolders, ...modelStore.models]
@@ -159,8 +166,8 @@ const root = computed<TreeNode>(() => {
  */
 const autoExpandedSearchKeys = new Set<string>()
 
-function expandNewSearchFolders(node: TreeNode) {
-  if (node.leaf || typeof node.key !== 'string') return
+function expandNewSearchFolders(node: TreeNode<ModelOrFolder>) {
+  if (node.leaf) return
   if (!autoExpandedSearchKeys.has(node.key)) {
     autoExpandedSearchKeys.add(node.key)
     expandedKeys.value[node.key] = true
@@ -175,14 +182,14 @@ watch(root, (newRoot) => {
   expandNewSearchFolders(newRoot)
 })
 
-const renderedRoot = computed<TreeExplorerNode<ModelOrFolder>>(() => {
+const renderedRoot = computed<TreeExplorerNode<ComfyModelDef>>(() => {
   const nameFormat = settingStore.get('Comfy.ModelLibrary.NameFormat')
-  const fillNodeInfo = (node: TreeNode): TreeExplorerNode<ModelOrFolder> => {
+  const fillNodeInfo = (
+    node: TreeNode<ModelOrFolder>
+  ): TreeExplorerNode<ComfyModelDef> => {
     const children = node.children?.map(fillNodeInfo)
-    const model: ComfyModelDef | null =
-      node.leaf && node.data ? node.data : null
-    const folder: ModelFolder | null =
-      !node.leaf && node.data ? node.data : null
+    const folder = node.data instanceof ModelFolder ? node.data : undefined
+    const model = node.data instanceof ModelFolder ? undefined : node.data
 
     return {
       key: node.key,
@@ -192,7 +199,7 @@ const renderedRoot = computed<TreeExplorerNode<ModelOrFolder>>(() => {
           : model.simplified_file_name
         : node.label,
       leaf: node.leaf,
-      data: node.data,
+      data: model,
       getIcon() {
         if (model) {
           return model.image ? 'pi pi-image' : 'pi pi-file'
@@ -203,6 +210,9 @@ const renderedRoot = computed<TreeExplorerNode<ModelOrFolder>>(() => {
             : 'pi pi-folder'
         }
         return 'pi pi-folder'
+      },
+      getIconImage() {
+        return (model && getModelPreviewUrl(model)) || undefined
       },
       getBadgeText() {
         // Return undefined to apply default badge text
@@ -228,6 +238,41 @@ const renderedRoot = computed<TreeExplorerNode<ModelOrFolder>>(() => {
   }
 
   return fillNodeInfo(root.value)
+})
+
+function hasPreviewDetails(model: ComfyModelDef) {
+  return (
+    model.has_loaded_metadata &&
+    Boolean(
+      model.author ||
+      model.simplified_file_name != model.title ||
+      model.description ||
+      model.usage_hint ||
+      model.trigger_phrase ||
+      model.image
+    )
+  )
+}
+
+const visibleModels = computed(() => {
+  const models: ComfyModelDef[] = []
+  const collect = (node: TreeNode<ModelOrFolder>) => {
+    for (const child of node.children ?? []) {
+      if (child.leaf) {
+        if (child.data && !(child.data instanceof ModelFolder)) {
+          models.push(child.data)
+        }
+      } else if (expandedKeys.value[child.key]) {
+        collect(child)
+      }
+    }
+  }
+  collect(root.value)
+  return models
+})
+
+watch(visibleModels, (models) => {
+  for (const model of models) void model.load()
 })
 
 watch(

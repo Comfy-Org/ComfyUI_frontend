@@ -5,7 +5,7 @@ import { nextTick } from 'vue'
 
 import GlobalToast from '@/components/toast/GlobalToast.vue'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 const toastService = vi.hoisted(() => ({
   add: vi.fn(),
@@ -73,10 +73,10 @@ describe('GlobalToast', () => {
   it('holds messages raised during node selection mode until it exits', async () => {
     renderToast()
     const toastStore = useToastStore()
-    const nodeSelectionStore = useAgentNodeSelectionStore()
+    const canvasStore = useCanvasStore()
     const message = { severity: 'error' as const, summary: 'Failed' }
 
-    nodeSelectionStore.isActive = true
+    canvasStore.isPickingNodes = true
     await nextTick()
 
     toastStore.messagesToAdd = [message]
@@ -87,7 +87,7 @@ describe('GlobalToast', () => {
     expect(toastService.add).not.toHaveBeenCalled()
     expect(toastStore.messagesToAdd).toEqual([])
 
-    nodeSelectionStore.isActive = false
+    canvasStore.isPickingNodes = false
     await nextTick()
 
     expect(toastService.add).toHaveBeenCalledWith(message)
@@ -96,11 +96,11 @@ describe('GlobalToast', () => {
   it('replays held messages in the order they were raised', async () => {
     renderToast()
     const toastStore = useToastStore()
-    const nodeSelectionStore = useAgentNodeSelectionStore()
+    const canvasStore = useCanvasStore()
     const first = { severity: 'error' as const, summary: 'First' }
     const second = { severity: 'error' as const, summary: 'Second' }
 
-    nodeSelectionStore.isActive = true
+    canvasStore.isPickingNodes = true
     await nextTick()
 
     toastStore.messagesToAdd = [first]
@@ -108,7 +108,7 @@ describe('GlobalToast', () => {
     toastStore.messagesToAdd = [second]
     await nextTick()
 
-    nodeSelectionStore.isActive = false
+    canvasStore.isPickingNodes = false
     await nextTick()
 
     expect(toastService.add.mock.calls).toEqual([[first], [second]])
@@ -116,11 +116,11 @@ describe('GlobalToast', () => {
 
   it('does not replay anything when nothing was raised during the mode', async () => {
     renderToast()
-    const nodeSelectionStore = useAgentNodeSelectionStore()
+    const canvasStore = useCanvasStore()
 
-    nodeSelectionStore.isActive = true
+    canvasStore.isPickingNodes = true
     await nextTick()
-    nodeSelectionStore.isActive = false
+    canvasStore.isPickingNodes = false
     await nextTick()
 
     expect(toastService.add).not.toHaveBeenCalled()
@@ -129,9 +129,9 @@ describe('GlobalToast', () => {
   it('drops held messages when everything is dismissed mid-mode', async () => {
     renderToast()
     const toastStore = useToastStore()
-    const nodeSelectionStore = useAgentNodeSelectionStore()
+    const canvasStore = useCanvasStore()
 
-    nodeSelectionStore.isActive = true
+    canvasStore.isPickingNodes = true
     await nextTick()
 
     toastStore.messagesToAdd = [{ severity: 'error' as const, summary: 'Old' }]
@@ -142,7 +142,7 @@ describe('GlobalToast', () => {
     toastStore.removeAllRequested = true
     await nextTick()
 
-    nodeSelectionStore.isActive = false
+    canvasStore.isPickingNodes = false
     await nextTick()
 
     expect(toastService.add).not.toHaveBeenCalled()
@@ -150,17 +150,17 @@ describe('GlobalToast', () => {
   it('does not replay a removed progress message or discard other deferred messages', async () => {
     renderToast()
     const toastStore = useToastStore()
-    const selection = useAgentNodeSelectionStore()
+    const canvasStore = useCanvasStore()
     const progress = { severity: 'info' as const, summary: 'Preparing samples' }
     const warning = { severity: 'warn' as const, summary: 'Missing sample' }
-    selection.isActive = true
+    canvasStore.isPickingNodes = true
     await nextTick()
     toastStore.add(progress)
     toastStore.add(warning)
     await nextTick()
     toastStore.remove(progress)
     await nextTick()
-    selection.isActive = false
+    canvasStore.isPickingNodes = false
     await nextTick()
     expect(toastService.add).toHaveBeenCalledExactlyOnceWith(warning)
   })

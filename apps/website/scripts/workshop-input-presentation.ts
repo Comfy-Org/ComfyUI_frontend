@@ -275,14 +275,18 @@ export function curateWorkshopInputs(
         }
       : {})
   }
+  const declared = jsonObject.safeParse(source.properties)
   for (const key of ['example', 'default']) {
     const parsed = jsonObject.safeParse(source[key])
-    if (parsed.success && source.properties)
+    if (parsed.success && declared.success)
       inputSchema[key] = {
         ...Object.fromEntries(
           Object.entries(parsed.data).filter(
             ([name]) =>
-              Object.hasOwn(inputs, name) &&
+              // A field only a composed branch declares (a oneOf under allOf)
+              // has no input of its own; the request-body editor carries it.
+              (Object.hasOwn(inputs, name) ||
+                (key === 'example' && !Object.hasOwn(declared.data, name))) &&
               !hidden.has(name) &&
               (key !== 'default' || !unsetDefaults.has(name))
           )

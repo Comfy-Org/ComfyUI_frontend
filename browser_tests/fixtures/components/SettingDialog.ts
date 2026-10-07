@@ -3,26 +3,45 @@ import type { Locator, Page } from '@playwright/test'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { BaseDialog } from '@e2e/fixtures/components/BaseDialog'
+import { KeybindingPanel } from '@e2e/fixtures/components/KeybindingPanel'
 import { comfyExpect as expect } from '@e2e/fixtures/utils/customMatchers'
 
 export class SettingDialog extends BaseDialog {
-  public readonly searchBox: Locator
   public readonly categories: Locator
   public readonly contentArea: Locator
+  public readonly extensionActionsButton: Locator
+  public readonly keybindingPanel: KeybindingPanel
+  public readonly searchBox: Locator
 
   constructor(
     page: Page,
     public readonly comfyPage: ComfyPage
   ) {
     super(page, TestIds.dialogs.settings)
-    this.searchBox = this.root.getByPlaceholder(/Search/)
     this.categories = this.root.locator('nav').getByRole('button')
     this.contentArea = this.root.getByRole('main')
+    this.extensionActionsButton = this.contentArea
+      .getByRole('columnheader')
+      .getByRole('button', { name: 'More Options' })
+    this.keybindingPanel = new KeybindingPanel(page, comfyPage)
+    this.searchBox = this.root.getByPlaceholder(/Search/)
   }
 
   async open() {
     await this.comfyPage.command.executeCommand('Comfy.ShowSettingsDialog')
     await this.waitForVisible()
+  }
+
+  async openExtensionActions() {
+    await this.category('Extension').click()
+    await expect(this.extensionActionsButton).toHaveAttribute(
+      'aria-haspopup',
+      'menu'
+    )
+    await this.extensionActionsButton.click()
+    await expect(
+      this.comfyPage.contextMenu.menuItem('Enable Selected')
+    ).toBeVisible()
   }
 
   async selectLocale(locale: 'zh' | 'en') {

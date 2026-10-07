@@ -1,4 +1,4 @@
-import type { MenuItem } from 'primevue/menuitem'
+import type { MenuItem } from '@/components/ui/menu/types'
 import { storeToRefs } from 'pinia'
 import { useToast } from 'primevue/usetoast'
 import { computed, ref } from 'vue'
@@ -269,18 +269,6 @@ export function useMembersPanel() {
   const sortField = ref<SortField>('inviteDate')
   const sortDirection = ref<SortDirection>('desc')
 
-  function roleMenuItem(
-    member: WorkspaceMember,
-    role: WorkspaceRole,
-    label: string
-  ): MenuItem {
-    return {
-      label,
-      checked: member.role === role,
-      command: () => handleChangeRole(member, role)
-    }
-  }
-
   function memberMenuItems(member: WorkspaceMember): MenuItem[] {
     if (!permissions.value.canManageMembers) return []
 
@@ -302,10 +290,21 @@ export function useMembersPanel() {
     return [
       {
         label: t('workspacePanel.members.actions.changeRole'),
-        items: [
-          roleMenuItem(member, 'owner', t('workspaceSwitcher.roleOwner')),
-          roleMenuItem(member, 'member', t('workspaceSwitcher.roleMember'))
-        ]
+        radioGroup: {
+          value: member.role,
+          options: [
+            {
+              value: 'owner',
+              label: t('workspaceSwitcher.roleOwner'),
+              command: () => handleChangeRole(member, 'owner')
+            },
+            {
+              value: 'member',
+              label: t('workspaceSwitcher.roleMember'),
+              command: () => handleChangeRole(member, 'member')
+            }
+          ]
+        }
       },
       ...(flags.memberCreditLimitsEnabled && member.role === 'member'
         ? [creditLimitItem]

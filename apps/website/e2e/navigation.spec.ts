@@ -423,7 +423,7 @@ test.describe('Footer @smoke', () => {
     const footer = page.locator('footer')
     await expect(footer).toBeVisible()
 
-    for (const heading of ['Products', 'Resources', 'Company']) {
+    for (const heading of ['Products', 'Features', 'Resources', 'Company']) {
       await expect(
         footer.getByRole('heading', { name: heading }).first()
       ).toBeVisible()

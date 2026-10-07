@@ -1,8 +1,6 @@
 <script setup lang="ts">
-import { CalendarDays, ChevronDown, LayoutGrid, Map, Search } from '@lucide/vue'
+import { CalendarDays, LayoutGrid, Map } from '@lucide/vue'
 import { computed, reactive, ref, watch } from 'vue'
-
-import { cn } from '@comfyorg/tailwind-utils'
 
 import type { MapPinMarker } from '@/components/blocks/MapPins01.vue'
 import type { ComfyEvent } from '@/data/events'
@@ -10,6 +8,9 @@ import type { Locale } from '@/i18n/translations'
 import type { EventsDirectoryView } from '@/utils/eventsDirectory'
 
 import MapPins01 from '@/components/blocks/MapPins01.vue'
+import DirectorySearchField from '@/components/common/DirectorySearchField.vue'
+import DirectorySelect from '@/components/common/DirectorySelect.vue'
+import DirectoryToggleGroup from '@/components/common/DirectoryToggleGroup.vue'
 import EventsAgendaView from './EventsAgendaView.vue'
 import EventsCardsView from './EventsCardsView.vue'
 import { directoryEvents, eventsDerivedAt } from '@/data/events'
@@ -122,19 +123,32 @@ const VIEWS: ReadonlyArray<{
   { key: 'cards', icon: LayoutGrid },
   { key: 'calendar', icon: CalendarDays }
 ]
+const viewOptions = VIEWS.map(({ key, icon }) => ({
+  value: key,
+  icon,
+  label: t(`events.directory.view.${key}`)
+}))
 
-const controlClass =
-  'bg-transparency-white-t4 h-11 rounded-full border border-white/15 text-sm text-primary-comfy-canvas'
+const categoryOptions = [
+  { value: DIRECTORY_FILTER_ALL, label: t('events.directory.allTypes') },
+  ...EVENT_CATEGORIES.map((category) => ({
+    value: category,
+    label: t(`events.category.${category}`)
+  }))
+]
 
-// `appearance-none` drops the native arrow, so each select is wrapped and gets
-// a ChevronDown overlaid, the same icon the rest of the site uses.
-const selectClass = cn(
-  controlClass,
-  'w-full cursor-pointer appearance-none pr-10 pl-4 sm:w-auto'
-)
+const organizerOptions = [
+  { value: DIRECTORY_FILTER_ALL, label: t('events.directory.allOrganizers') },
+  ...EVENT_ORGANIZERS.map((organizer) => ({
+    value: organizer,
+    label: t(`events.organizer.${organizer}`)
+  }))
+]
 
-const caretClass =
-  'pointer-events-none absolute top-1/2 right-4 size-4 -translate-y-1/2 text-primary-comfy-canvas/50'
+const sortOptions = [
+  { value: 'latest', label: t('events.directory.sortLatest') },
+  { value: 'oldest', label: t('events.directory.sortOldest') }
+] as const
 </script>
 
 <template>
@@ -167,119 +181,43 @@ const caretClass =
       class="mt-10 flex flex-col gap-3 lg:mt-12 lg:flex-row lg:items-center"
       data-testid="events-directory-controls"
     >
-      <label for="events-directory-search" class="sr-only">
-        {{ t('events.directory.searchLabel') }}
-      </label>
-      <div class="relative flex-1">
-        <Search
-          class="pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-primary-comfy-canvas/50"
-          aria-hidden="true"
-        />
-        <input
-          id="events-directory-search"
-          v-model="filters.query"
-          type="search"
-          :placeholder="t('events.directory.searchPlaceholder')"
-          :class="
-            cn(
-              controlClass,
-              'w-full pr-4 pl-11 placeholder:text-primary-comfy-canvas/50'
-            )
-          "
-        />
-      </div>
+      <DirectorySearchField
+        id="events-directory-search"
+        v-model="filters.query"
+        :label="t('events.directory.searchLabel')"
+        :placeholder="t('events.directory.searchPlaceholder')"
+      />
 
-      <label for="events-directory-type" class="sr-only">
-        {{ t('events.directory.typeLabel') }}
-      </label>
-      <div class="relative">
-        <select
-          id="events-directory-type"
-          v-model="filters.category"
-          :class="selectClass"
-        >
-          <option :value="DIRECTORY_FILTER_ALL">
-            {{ t('events.directory.allTypes') }}
-          </option>
-          <option
-            v-for="category in EVENT_CATEGORIES"
-            :key="category"
-            :value="category"
-          >
-            {{ t(`events.category.${category}`) }}
-          </option>
-        </select>
-        <ChevronDown :class="caretClass" aria-hidden="true" />
-      </div>
+      <DirectorySelect
+        id="events-directory-type"
+        v-model="filters.category"
+        :label="t('events.directory.typeLabel')"
+        :options="categoryOptions"
+        class="sm:w-fit"
+      />
 
-      <label for="events-directory-organizer" class="sr-only">
-        {{ t('events.directory.organizerLabel') }}
-      </label>
-      <div class="relative">
-        <select
-          id="events-directory-organizer"
-          v-model="filters.organizer"
-          :class="selectClass"
-        >
-          <option :value="DIRECTORY_FILTER_ALL">
-            {{ t('events.directory.allOrganizers') }}
-          </option>
-          <option
-            v-for="organizer in EVENT_ORGANIZERS"
-            :key="organizer"
-            :value="organizer"
-          >
-            {{ t(`events.organizer.${organizer}`) }}
-          </option>
-        </select>
-        <ChevronDown :class="caretClass" aria-hidden="true" />
-      </div>
+      <DirectorySelect
+        id="events-directory-organizer"
+        v-model="filters.organizer"
+        :label="t('events.directory.organizerLabel')"
+        :options="organizerOptions"
+        class="sm:w-fit"
+      />
 
-      <template v-if="view !== 'calendar'">
-        <label for="events-directory-sort" class="sr-only">
-          {{ t('events.directory.sortLabel') }}
-        </label>
-        <div class="relative">
-          <select
-            id="events-directory-sort"
-            v-model="sort"
-            :class="selectClass"
-          >
-            <option value="latest">
-              {{ t('events.directory.sortLatest') }}
-            </option>
-            <option value="oldest">
-              {{ t('events.directory.sortOldest') }}
-            </option>
-          </select>
-          <ChevronDown :class="caretClass" aria-hidden="true" />
-        </div>
-      </template>
+      <DirectorySelect
+        v-if="view !== 'calendar'"
+        id="events-directory-sort"
+        v-model="sort"
+        :label="t('events.directory.sortLabel')"
+        :options="sortOptions"
+        class="sm:w-fit"
+      />
 
-      <div
-        role="group"
-        :aria-label="t('events.directory.viewLabel')"
-        class="flex gap-1 rounded-2xl border border-white/15 p-1.5"
-      >
-        <button
-          v-for="entry in VIEWS"
-          :key="entry.key"
-          type="button"
-          :aria-pressed="view === entry.key"
-          :class="
-            cn(
-              'flex h-8 cursor-pointer items-center gap-1.5 rounded-xl px-3 text-xs font-semibold whitespace-nowrap transition-colors',
-              view === entry.key
-                ? 'bg-primary-comfy-yellow text-primary-comfy-ink'
-                : 'text-primary-comfy-canvas hover:bg-white/10'
-            )
-          "
-          @click="view = entry.key"
-        >
-          <component :is="entry.icon" class="size-3.5" aria-hidden="true" />
-          {{ t(`events.directory.view.${entry.key}`) }}
-        </button>
-      </div>
+      <DirectoryToggleGroup
+        v-model="view"
+        :label="t('events.directory.viewLabel')"
+        :options="viewOptions"
+      />
     </div>
 
     <div

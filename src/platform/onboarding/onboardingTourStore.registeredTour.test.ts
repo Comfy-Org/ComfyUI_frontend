@@ -51,7 +51,6 @@ beforeEach(() => {
 describe('onboardingTourStore — runtime-resolved tours', () => {
   afterEach(() => {
     clearCoachmarks()
-    trackOnboardingTour.mockClear()
   })
 
   it('reports no start for an entry no one registered', async () => {

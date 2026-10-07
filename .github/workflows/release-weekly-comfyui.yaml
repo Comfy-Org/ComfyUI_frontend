@@ -4,10 +4,19 @@ name: 'Release: ComfyUI'
 
 on:
   # Weekly release freeze: every Monday at 20:00 UTC (noon PST / 13:00 PDT).
-  # Noon-PT freeze lets the release sheriff draft/socialize the QA test plan
-  # during business hours and hand off to QA right after the branch is frozen
-  # (weekly cadence: Monday freeze/QA → Thursday cloud deploy). Decided in
-  # #frontend-releases (Christian Byrne + Miles Ryan).
+  # The time is unchanged; its old justification is not. It used to read that
+  # the noon-PT freeze let the sheriff socialize the QA plan during business
+  # hours before handing off — written when standup preceded it. Standup is now
+  # Monday evening, i.e. after this freeze, so the freeze no longer sits where
+  # that reasoning put it. The sheriff is also a fixed role now rather than a
+  # weekly rotation, so the handoff does not depend on a meeting.
+  #
+  # Monday-only is deliberate while release-version-bump.yaml cuts RC branches
+  # Monday AND Wednesday ('0 20 * * 1,3'): doubling this one doubles the PR
+  # volume into Comfy-Org/ComfyUI, and who owns the requirements.txt bump is
+  # still unsettled between frontend and core. release-stranded-check.yaml
+  # already dispatches this workflow off-cadence when a consumed release line
+  # has unshipped commits, so the Monday cron is a baseline, not the only path.
   schedule:
     - cron: '0 20 * * 1'
 

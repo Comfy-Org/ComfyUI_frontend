@@ -75,7 +75,7 @@ const appCards = computed<readonly CatalogueApp[]>(() =>
     name: app.name,
     task: ac(app.appId === 'studio' ? 'studioTask' : 'reshootTask', locale),
     href: app.href,
-    image: app.thumbnail?.url ?? app.thumbnailUrl
+    thumbnail: app.thumbnail
   }))
 )
 const availableTabs = computed<readonly CatalogueTab[]>(() => [

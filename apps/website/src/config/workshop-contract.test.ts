@@ -327,10 +327,13 @@ describe('schema-driven Router coverage', () => {
   )(
     'rejects user-controlled streaming mode but retains event responses: $id',
     async (contract) => {
-      const body = {
-        ...object.parse(contract.inputSchema.example),
-        stream: true
-      }
+      // openrouter/chat-completions authors no example; one message is the
+      // smallest body its schema accepts.
+      const base = Object.hasOwn(contract.inputSchema, 'example')
+        ? object.parse(contract.inputSchema.example)
+        : { messages: [{ role: 'user', content: 'Hello' }] }
+      expect(validateWorkshopInput(base, contract.inputSchema)).toBe(true)
+      const body = { ...base, stream: true }
       await expect(
         prepareWorkshopRouterInput(
           contract,

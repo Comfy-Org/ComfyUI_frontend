@@ -15,7 +15,6 @@ describe('asset load error reporting', () => {
   let consoleError: MockInstance<typeof console.error>
 
   beforeEach(() => {
-    mockReportError.mockClear()
     consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
   })
 
