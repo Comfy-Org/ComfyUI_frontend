@@ -71,6 +71,9 @@ import {
 } from './graphMenuExtension'
 
 const node = {} as LGraphNode
+const registeredExtension = mocks.registerExtension.mock.calls[0][0] as {
+  setup: () => void
+}
 
 describe('customNodeCanvasMenuItems', () => {
   beforeEach(() => {
@@ -199,10 +202,7 @@ describe('Cloud registry graph menus', () => {
   })
 
   it('does not warm a private-upload cache during Cloud startup', () => {
-    const extension = mocks.registerExtension.mock.calls[0][0] as {
-      setup: () => void
-    }
-    extension.setup()
+    registeredExtension.setup()
     expect(mocks.refresh).not.toHaveBeenCalled()
   })
 })
