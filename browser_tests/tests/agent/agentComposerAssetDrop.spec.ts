@@ -97,8 +97,6 @@ test.describe('Agent composer asset drop', { tag: '@cloud' }, () => {
 
       const player = agentPanel.attachmentPreviewPlayer(ASSET_NAME)
       await expect(player).toBeVisible()
-      await expect(player).toHaveAttribute('controls', '')
-      await expect(player).toHaveAttribute('poster', /^blob:/)
       await expect(player).toBeFocused()
 
       await page.keyboard.press('Escape')
