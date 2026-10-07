@@ -252,4 +252,51 @@ describe('MissingNodeDeploymentOffer', () => {
 
     expect(screen.queryByTestId('missing-node-deployment-offer')).toBeNull()
   })
+
+  it.for([
+    {
+      when: 'ingest could not check a deployment',
+      check: {
+        deployments: [
+          {
+            deployment_id: plain.deployment_id,
+            missing_node_types: [RGTHREE]
+          },
+          {
+            deployment_id: agencyA.deployment_id,
+            missing_node_types: [],
+            unknown: true
+          }
+        ],
+        cloud: { missing_node_types: [RGTHREE] }
+      }
+    },
+    {
+      when: 'the answer leaves a deployment out',
+      check: {
+        deployments: [
+          {
+            deployment_id: plain.deployment_id,
+            missing_node_types: [RGTHREE]
+          }
+        ],
+        cloud: { missing_node_types: [RGTHREE] }
+      }
+    }
+  ] satisfies { when: string; check: DeploymentCompatibility }[])(
+    'does not say no deployment has the nodes when $when',
+    async ({ check }) => {
+      useDeploymentPickStore().state = readyOn([plain, agencyA])
+      vi.mocked(workspaceApi.checkDeploymentCompatibility).mockResolvedValue(
+        check
+      )
+      renderOffer()
+      await waitFor(() =>
+        expect(workspaceApi.checkDeploymentCompatibility).toHaveBeenCalled()
+      )
+      await new Promise((resolve) => setTimeout(resolve))
+
+      expect(screen.queryByTestId('missing-node-deployment-offer')).toBeNull()
+    }
+  )
 })
