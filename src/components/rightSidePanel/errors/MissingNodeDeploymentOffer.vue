@@ -1,0 +1,102 @@
+<!-- Under the missing-nodes message, the workspace's deployments that have
+     every node type the open workflow uses, Comfy Cloud included, each a
+     button that picks it through the deployment switcher (BE-19374). Up to
+     three are named; "and N more" opens the switcher. When none has them all
+     it says so. Renders nothing where the switcher is not shown or the
+     check has not answered. -->
+<template>
+  <div
+    v-if="offer !== null"
+    class="pb-3"
+    data-testid="missing-node-deployment-offer"
+  >
+    <p
+      v-if="offer.kind === 'none'"
+      class="m-0 text-xs/relaxed text-muted-foreground"
+    >
+      {{ t('rightSidePanel.missingNodePacks.noDeploymentRunsIt') }}
+    </p>
+    <div v-else class="flex flex-wrap items-center gap-1.5">
+      <span class="text-xs text-muted-foreground">
+        {{ t('rightSidePanel.missingNodePacks.runsOn') }}
+      </span>
+      <Button
+        v-for="choice in offer.choices.slice(0, NAMED)"
+        :key="choice.deploymentId ?? 'comfy-cloud'"
+        variant="secondary"
+        size="sm"
+        :disabled="isSwitching"
+        @click="choose(choice.deploymentId)"
+      >
+        {{ choice.label }}
+      </Button>
+      <Button
+        v-if="offer.choices.length > NAMED"
+        variant="muted-textonly"
+        size="sm"
+        @click="pickStore.requestSwitcherOpen()"
+      >
+        {{
+          t('rightSidePanel.missingNodePacks.andMore', {
+            count: offer.choices.length - NAMED
+          })
+        }}
+      </Button>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { storeToRefs } from 'pinia'
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import Button from '@/components/ui/button/Button.vue'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useDeploymentCompatibility } from '@/platform/workspace/composables/useDeploymentCompatibility'
+import { useDeploymentLabels } from '@/platform/workspace/composables/useDeploymentLabels'
+import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+
+const NAMED = 3
+
+const { t } = useI18n()
+const pickStore = useDeploymentPickStore()
+const { deployments, pickedDeploymentId, isSwitching } = storeToRefs(pickStore)
+const { deploymentsThatRunIt } = useDeploymentCompatibility()
+const { deploymentLabel } = useDeploymentLabels()
+
+/**
+ * What to say under the message: nothing without an answer, "none" when no
+ * deployment and not Comfy Cloud has every node type, else the ones to offer.
+ * The one this browser runs on is never offered; when only it has them all,
+ * there is nothing to say.
+ */
+const offer = computed(() => {
+  const runIt = deploymentsThatRunIt.value
+  if (runIt === null) return null
+  if (runIt.length === 0) return { kind: 'none' as const }
+  const choices = [
+    { deploymentId: null, label: t('deploymentSwitcher.comfyCloud') },
+    ...deployments.value.map((deployment) => ({
+      deploymentId: deployment.deployment_id,
+      label: deploymentLabel(deployment)
+    }))
+  ].filter(
+    (choice) =>
+      runIt.includes(choice.deploymentId) &&
+      choice.deploymentId !== pickedDeploymentId.value
+  )
+  return choices.length > 0 ? { kind: 'choices' as const, choices } : null
+})
+
+async function choose(deploymentId: string | null) {
+  const refusal = await pickStore.pick(deploymentId)
+  if (refusal === null) return
+  useToastStore().add({
+    severity: 'error',
+    summary: t('deploymentSwitcher.failedToSwitch'),
+    detail: refusal,
+    life: 8000
+  })
+}
+</script>
