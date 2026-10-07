@@ -1599,6 +1599,40 @@ describe('AgentPanelRoot Agent credit transition notice', () => {
     ).toHaveBeenCalledExactlyOnceWith({ action: 'shown' })
   })
 
+  it('reports one impression however often the panel remounts', async () => {
+    paywallAgentScopedHasFunds.value = true
+    const panel = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+    paywallAgentScopedHasFunds.value = false
+    await screen.findByTestId(NOTICE)
+
+    panel.unmount()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByTestId(NOTICE)
+
+    expect(
+      telemetry.trackAgentCreditTransitionNotice
+    ).toHaveBeenCalledExactlyOnceWith({ action: 'shown' })
+  })
+
+  it('reports an impression first shown without telemetry once telemetry is available', async () => {
+    paywallAgentScopedHasFunds.value = true
+    const panel = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+    vi.mocked(useTelemetry).mockReturnValue(null)
+    paywallAgentScopedHasFunds.value = false
+    await screen.findByTestId(NOTICE)
+    vi.mocked(useTelemetry).mockReturnValue(telemetry)
+
+    panel.unmount()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByTestId(NOTICE)
+
+    expect(
+      telemetry.trackAgentCreditTransitionNotice
+    ).toHaveBeenCalledExactlyOnceWith({ action: 'shown' })
+  })
+
   it('does not infer a transition when the first scoped-balance read is false', async () => {
     vi.mocked(useFreeUsePlacement).mockReturnValueOnce(
       fromPartial({ variant: ref('near-composer') })
