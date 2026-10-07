@@ -3,11 +3,12 @@ import { computed, onBeforeUnmount, ref, useTemplateRef, watch } from 'vue'
 
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
-const { name, mediaUrl, kind, posterUrl } = defineProps<{
+const { name, mediaUrl, kind, posterUrl, active } = defineProps<{
   name: string
   mediaUrl: string
   kind: 'video' | 'audio'
   posterUrl?: string
+  active: boolean
 }>()
 const player = useTemplateRef<HTMLMediaElement>('player')
 const failed = ref(false)
@@ -16,6 +17,15 @@ const colorScheme = computed(() =>
   colorPaletteStore.completedActivePalette.light_theme ? 'light' : 'dark'
 )
 onBeforeUnmount(() => player.value?.pause())
+watch(
+  () => active,
+  (isActive) => {
+    if (isActive || !player.value) return
+    player.value.pause()
+    player.value.currentTime = 0
+  },
+  { flush: 'post' }
+)
 watch(
   () => mediaUrl,
   () => {

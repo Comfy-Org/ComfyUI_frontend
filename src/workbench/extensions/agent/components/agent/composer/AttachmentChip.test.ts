@@ -90,11 +90,13 @@ describe('AttachmentChip', () => {
       await waitFor(() => expect(player).toHaveFocus())
       expect(player).toHaveAttribute('controls')
       expect(player).not.toHaveAttribute('tabindex', '-1')
+      player.currentTime = 1
       const pause = vi.spyOn(player, 'pause')
       await user.keyboard('{Escape}')
       await waitFor(() => expect(player).not.toBeInTheDocument())
       await waitFor(() => expect(trigger).toHaveFocus())
-      expect(pause).toHaveBeenCalledOnce()
+      expect(pause).toHaveBeenCalledTimes(2)
+      expect(player.currentTime).toBe(0)
       await user.keyboard(key)
       expect(await screen.findByLabelText(name, { selector })).toHaveAttribute(
         'src',
@@ -285,10 +287,12 @@ describe('AttachmentChip', () => {
       expect(screen.getByRole('region', { name })).toBeVisible()
       expect(player).toBeInTheDocument()
       await fireEvent.play(player)
+      player.currentTime = 1
       const pause = vi.spyOn(player, 'pause')
       await user.keyboard('{Escape}')
       await waitFor(() => expect(player).not.toBeInTheDocument())
-      expect(pause).toHaveBeenCalledOnce()
+      expect(pause).toHaveBeenCalledTimes(2)
+      expect(player.currentTime).toBe(0)
     }
   )
 
@@ -344,6 +348,7 @@ describe('AttachmentChip', () => {
       selector: 'audio'
     })
     assert.instanceOf(player, HTMLAudioElement)
+    player.currentTime = 1
     const pause = vi.spyOn(player, 'pause')
     await user.unhover(trigger)
     await user.pointer({
@@ -351,7 +356,8 @@ describe('AttachmentChip', () => {
       coords: { clientX: 500, clientY: 500 }
     })
     await waitFor(() => expect(player).not.toBeInTheDocument())
-    expect(pause).toHaveBeenCalledOnce()
+    expect(pause).toHaveBeenCalledTimes(2)
+    expect(player.currentTime).toBe(0)
   })
 
   it('stops an audio preview on replacement and removal', async () => {

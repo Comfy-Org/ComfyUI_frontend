@@ -136,6 +136,7 @@ function onInteractOutside(event: Event): void {
           :media-url
           :kind="playableKind"
           :poster-url="previewUrl"
+          :active="open"
         />
         <img
           v-else-if="previewUrl && (kind === 'image' || kind === 'video')"
