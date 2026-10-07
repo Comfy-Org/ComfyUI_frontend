@@ -13,7 +13,7 @@ import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 
 export const STARTER_PROMPT_SET_FLAG = 'agent-starter-prompt-set'
 const starterPromptAssignmentSchema =
-  zGetFeaturesResponse.shape[STARTER_PROMPT_SET_FLAG]
+  zGetFeaturesResponse.shape[STARTER_PROMPT_SET_FLAG].catch('control')
 
 function resolveAssignment(): {
   assignment: AgentStarterPromptAssignment
@@ -23,9 +23,8 @@ function resolveAssignment(): {
     getSessionOverride<unknown>(STARTER_PROMPT_SET_FLAG) ??
     getDevOverride<unknown>(STARTER_PROMPT_SET_FLAG)
   const candidate = override ?? remoteConfig.value[STARTER_PROMPT_SET_FLAG]
-  const parsed = starterPromptAssignmentSchema.safeParse(candidate)
   return {
-    assignment: parsed.success ? parsed.data : 'control',
+    assignment: starterPromptAssignmentSchema.parse(candidate),
     hasQaOverride: override !== undefined
   }
 }
