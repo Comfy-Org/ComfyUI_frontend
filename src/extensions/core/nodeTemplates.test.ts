@@ -1,5 +1,5 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { expect, it, vi } from 'vitest'
+import { assert, expect, it, vi } from 'vitest'
 
 import {
   CANVAS_CLIPBOARD_ID_KEY,
@@ -107,9 +107,12 @@ it('restores the canvas clipboard and its id after saving a template', async () 
       return '{"nodes":[{}]}'
     }
   })
-  const saveItem = extension.getCanvasMenuItems?.(fromAny({}))[1]
+  const saveItem = extension
+    .getCanvasMenuItems?.(fromAny({}))
+    .find((item) => item?.content === 'Save Selected as Template')
+  assert.exists(saveItem?.callback)
 
-  await saveItem?.callback?.call(fromAny({}))
+  await saveItem.callback.call(fromAny({}))
 
   expect(localStorage.getItem(CANVAS_CLIPBOARD_KEY)).toBe('{"nodes":[]}')
   expect(localStorage.getItem(CANVAS_CLIPBOARD_ID_KEY)).toBe('copy-1')
