@@ -4,7 +4,6 @@ import {
   eligibilityFailure,
   hasActiveHumanChangeRequest,
   hasCompleteChangedFileList,
-  isApprovalForHead,
   isInsideLane,
   isSameRepository,
   targetsDefaultBranch
@@ -386,7 +385,7 @@ export async function approveCurrentHead(
 ): Promise<boolean> {
   const identity = config.lane.approval.identity
   const headSha = config.eventHeadSha
-  if (reviews.some((review) => isApprovalForHead(review, identity, headSha))) {
+  if (approvalForHead(reviews, identity, headSha, POLICY_REVIEW_PREFIX)) {
     summary(`Already approved ${headSha.slice(0, 12)} as @${identity}.`)
     return true
   }

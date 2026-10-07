@@ -125,6 +125,7 @@ describe('approval lifecycle', () => {
           {
             state: 'APPROVED',
             commit_id: headSha,
+            body: '[Package fast lane] Policy-only approval. Lane: website.',
             user: { login: 'christian-byrne' }
           }
         ],
