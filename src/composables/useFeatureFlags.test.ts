@@ -1133,7 +1133,6 @@ describe('useFeatureFlags', () => {
 
   describe('session override precedence', () => {
     afterEach(() => {
-      vi.mocked(getSessionOverride).mockReset()
       vi.mocked(distributionTypes).isCloud = false
       vi.mocked(distributionTypes).isNightly = false
       remoteConfigState.value = 'unloaded'
@@ -1158,14 +1157,14 @@ describe('useFeatureFlags', () => {
 
     it('applies a false override instead of falling through to an enabled server value', () => {
       vi.mocked(getSessionOverride).mockImplementation((flagKey) =>
-        flagKey === ServerFeatureFlag.WORKFLOW_SHARING_ENABLED
+        flagKey === ServerFeatureFlag.NODE_LIBRARY_ESSENTIALS_ENABLED
           ? false
           : undefined
       )
       vi.mocked(api.getServerFeature).mockReturnValue(true)
 
       const { flags } = useFeatureFlags()
-      expect(flags.workflowSharingEnabled).toBe(false)
+      expect(flags.nodeLibraryEssentialsEnabled).toBe(false)
     })
 
     it('turns the linear toggle off against an enabled remote config', () => {
