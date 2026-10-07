@@ -206,12 +206,10 @@ async function openConfirmStep(page: Page) {
 const payButton = (dialog: TopUpCreditsDialog) =>
   dialog.root.getByRole('button', { name: 'Pay $50.00' })
 
-const successToast = (page: Page) =>
-  page.getByTestId('toast').and(page.locator('[data-toast-kind="success"]'))
-
 test.describe('Top-up rail outcomes', { tag: '@cloud' }, () => {
   test('sends a purchase with no saved card to the hosted page and settles it on return', async ({
-    page
+    page,
+    toast
   }) => {
     test.setTimeout(90_000)
     const routes = await setupTopUp(page, {
@@ -243,7 +241,7 @@ test.describe('Top-up rail outcomes', { tag: '@cloud' }, () => {
     await returnToTab(page)
 
     await expect(
-      successToast(page).getByText('Credits added successfully!')
+      toast.toastSuccesses.filter({ hasText: 'Credits added successfully!' })
     ).toBeVisible()
     await expect(dialog.root).toBeHidden()
     expect(routes.balanceRequests.length).toBeGreaterThan(
@@ -254,7 +252,8 @@ test.describe('Top-up rail outcomes', { tag: '@cloud' }, () => {
   })
 
   test('fails a declined card the way the legacy rail does, without a retry', async ({
-    page
+    page,
+    toast
   }) => {
     test.setTimeout(60_000)
     const routes = await setupTopUp(page, {
@@ -273,13 +272,10 @@ test.describe('Top-up rail outcomes', { tag: '@cloud' }, () => {
     await payButton(dialog).click()
 
     await expect(
-      page
-        .getByTestId('toast')
-        .and(page.locator('[data-toast-kind="error"]'))
-        .getByText('Purchase Failed')
+      toast.toastErrors.filter({ hasText: 'Purchase Failed' })
     ).toBeVisible()
     await expect(payButton(dialog)).toBeEnabled()
-    await expect(successToast(page)).toHaveCount(0)
+    await expect(toast.toastSuccesses).toHaveCount(0)
     // A settled purchase re-reads the balance; a declined one must not.
     expect(routes.balanceRequests).toHaveLength(
       routes.balanceReadsAtPurchase[0]
@@ -338,7 +334,8 @@ test.describe('Top-up rail outcomes', { tag: '@cloud' }, () => {
   })
 
   test('keeps a purchase started in one workspace out of another', async ({
-    page
+    page,
+    toast
   }) => {
     test.setTimeout(150_000)
     const personal = workspace('personal', 'owner')
@@ -403,13 +400,13 @@ test.describe('Top-up rail outcomes', { tag: '@cloud' }, () => {
     await returnToTab(page)
 
     expect(routes.pollRequests).toHaveLength(pollsBeforeTeam)
-    await expect(successToast(page)).toHaveCount(0)
+    await expect(toast.toastSuccesses).toHaveCount(0)
     expect(await operationPointerWorkspaces(page)).toEqual([personal.id])
 
     await topUp.root.getByRole('button', { name: 'Close' }).click()
     await switchWorkspace(page, personal.name)
     await expect(
-      successToast(page).getByText('Credits added successfully')
+      toast.toastSuccesses.filter({ hasText: 'Credits added successfully' })
     ).toBeVisible({ timeout: 45_000 })
     expect(routes.pollRequests.length).toBeGreaterThan(pollsBeforeTeam)
     await expect.poll(() => operationPointerWorkspaces(page)).toEqual([])
@@ -417,7 +414,8 @@ test.describe('Top-up rail outcomes', { tag: '@cloud' }, () => {
   })
 
   test('shows a failed bank verification with its reason and does not offer it again', async ({
-    page
+    page,
+    toast
   }) => {
     test.setTimeout(90_000)
     const routes = await setupTopUp(page, {
@@ -461,7 +459,7 @@ test.describe('Top-up rail outcomes', { tag: '@cloud' }, () => {
     await expect(
       dialog.root.getByRole('button', { name: 'Complete verification' })
     ).toHaveCount(0)
-    await expect(successToast(page)).toHaveCount(0)
+    await expect(toast.toastSuccesses).toHaveCount(0)
     expect(routes.balanceRequests).toHaveLength(balanceReadsBeforeFailure)
     expect(await routes.hostedOpens()).toEqual([HOSTED_URL])
     expect(routes.purchaseRequests).toHaveLength(1)

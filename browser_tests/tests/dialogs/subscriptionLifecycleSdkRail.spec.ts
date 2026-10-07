@@ -21,7 +21,6 @@ import {
   mockWorkspaceTokenMint,
   workspace
 } from '@e2e/fixtures/utils/workspaceMocks'
-import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 
 /**
  * Resubscribe and the payment portal across the billing SDK rail — FE-2477.
@@ -451,7 +450,8 @@ test.describe(
        * reservation tells the customer why and asks neither transport.
        */
       test('mints no portal session when the browser refuses the tab', async ({
-        page
+        page,
+        toast
       }) => {
         test.setTimeout(60_000)
         const routes = await mockCloudBoot(page, { railOnFeatures: true })
@@ -462,7 +462,7 @@ test.describe(
         await panel.getByRole('button', { name: 'Billing & invoices' }).click()
 
         await expect(
-          new ToastHelper(page).withText(
+          toast.withText(
             "Couldn't open the billing page. Allow pop-ups for this site and try again."
           )
         ).toBeVisible()

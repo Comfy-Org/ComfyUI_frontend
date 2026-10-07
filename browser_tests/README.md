@@ -475,8 +475,10 @@ properties in methods rather than rebuilding locators.
 - Never locate a toast by its copy with `getByText` or
   `getByRole('alert' | 'status').filter({ hasText })`: `Toaster` repeats every
   toast's text in live regions with those roles. Use
-  `comfyPage.toast.withText(text)` (or `new ToastHelper(page)` in page-only
-  fixtures) and its kind locators such as `toastErrors`.
+  `comfyPage.toast.withText(text)` and its kind locators such as
+  `toastErrors`. Tests without `comfyPage` (`cloudAppFixture`, `agentTest`,
+  or a `page`-only test) destructure the `toast` fixture instead. Specs may
+  not construct a `ToastHelper`; lint allows only type imports.
 
 ### Node references over coordinates
 

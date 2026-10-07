@@ -6,7 +6,6 @@ import { agentTest } from '@e2e/fixtures/agentPanelFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { workflowSelectionTest } from '@e2e/fixtures/agentWorkflowSelectionFixture'
-import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 
 const test = mergeTests(agentTest, workflowSelectionTest)
 
@@ -546,6 +545,7 @@ test.describe(
 
     test('keeps the failed selection open and allows retry without a naming dialog', async ({
       page,
+      toast,
       workflowSelection
     }) => {
       await new AgentPanel(page).open()
@@ -565,7 +565,7 @@ test.describe(
       await expect(row).toBeEnabled()
       await expect(row).toBeChecked()
       await expect(
-        new ToastHelper(page).withText(enMessages.shareWorkflow.saveFailedTitle)
+        toast.withText(enMessages.shareWorkflow.saveFailedTitle)
       ).toBeVisible()
       await expect(composer).toHaveText('Keep this draft')
       await row.click()

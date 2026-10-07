@@ -662,7 +662,8 @@ test.describe(
 
 test.describe('Embedded top-up bank step', { tag: '@cloud' }, () => {
   test('offers the in-page bank step again after a decline, and settles when it completes', async ({
-    page
+    page,
+    toast
   }) => {
     const fake = await installFakeStripe(page)
     fake.bankSteps.push('fail')
@@ -701,10 +702,7 @@ test.describe('Embedded top-up bank step', { tag: '@cloud' }, () => {
       .click()
 
     await expect(
-      page
-        .getByTestId('toast')
-        .and(page.locator('[data-toast-kind="success"]'))
-        .getByText('Credits added successfully')
+      toast.toastSuccesses.filter({ hasText: 'Credits added successfully' })
     ).toBeVisible()
     expect(bankSteps(fake)).toEqual([
       { method: 'handleNextAction', clientSecret: BANK_STEP_SECRET },

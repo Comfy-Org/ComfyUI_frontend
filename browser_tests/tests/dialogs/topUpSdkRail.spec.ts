@@ -16,7 +16,6 @@ import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
 import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { workspace } from '@e2e/fixtures/utils/workspaceMocks'
-import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 
 /**
  * Buying credits across the billing SDK rail — FE-2475.
@@ -196,7 +195,8 @@ test.describe('Top-up rail (FE-2475)', { tag: '@cloud' }, () => {
    * that has to be rewritten when it lands.
    */
   test('surfaces a closed backend gate as a failed purchase, with no legacy retry', async ({
-    page
+    page,
+    toast
   }) => {
     test.setTimeout(60_000)
     const routes = await setupTopUp(page)
@@ -207,6 +207,6 @@ test.describe('Top-up rail (FE-2475)', { tag: '@cloud' }, () => {
 
     await expect.poll(() => routes.purchaseRequests.length).toBe(1)
     expect(transport(routes.purchaseRequests[0])).toBe('fetch')
-    await expect(new ToastHelper(page).toastErrors).toBeVisible()
+    await expect(toast.toastErrors).toBeVisible()
   })
 })

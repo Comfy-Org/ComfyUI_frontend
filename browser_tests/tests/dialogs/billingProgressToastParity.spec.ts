@@ -23,7 +23,6 @@ import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
 import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { CLOUD_SELF_EMAIL } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
-import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { member, workspace } from '@e2e/fixtures/utils/workspaceMocks'
@@ -279,25 +278,27 @@ test.describe('Billing progress toast parity', { tag: '@cloud' }, () => {
   for (const { name, rails } of RAIL_MATRIX) {
     test.describe(`on the ${name} rail`, () => {
       test('announces a processing subscribe and clears it once it settles', async ({
-        page
+        page,
+        toast
       }) => {
         const server = await setupToastParity(page, { rails })
 
         await confirmCreatorUpgrade(page)
-        const toast = new ToastHelper(page).toastLoadings.filter({
+        const processingToast = toast.toastLoadings.filter({
           hasText: SUBSCRIPTION_PROCESSING
         })
-        await expect(toast).toBeVisible()
+        await expect(processingToast).toBeVisible()
 
         server.operation = SETTLED_OPERATION
         await returnToTab(page)
 
         await expect(successHeading(page)).toBeVisible()
-        await expect(toast).toBeHidden()
+        await expect(processingToast).toBeHidden()
       })
 
       test('asks for verification while a subscribe waits on the hosted payment page', async ({
-        page
+        page,
+        toast
       }) => {
         await setupToastParity(page, {
           rails,
@@ -311,15 +312,15 @@ test.describe('Billing progress toast parity', { tag: '@cloud' }, () => {
 
         await confirmCreatorUpgrade(page)
 
-        const toasts = new ToastHelper(page)
         await expect(
-          toasts.toastWarnings.filter({ hasText: SUBSCRIPTION_ACTION_REQUIRED })
+          toast.toastWarnings.filter({ hasText: SUBSCRIPTION_ACTION_REQUIRED })
         ).toBeVisible()
-        await expect(toasts.withText(SUBSCRIPTION_PROCESSING)).toBeHidden()
+        await expect(toast.withText(SUBSCRIPTION_PROCESSING)).toBeHidden()
       })
 
       test('stays quiet after a reload finds the subscribe parked on a payment method', async ({
-        page
+        page,
+        toast
       }) => {
         await setupToastParity(page, {
           rails,
@@ -337,9 +338,8 @@ test.describe('Billing progress toast parity', { tag: '@cloud' }, () => {
         await firstRead
         await operationRead(page)
 
-        const toasts = new ToastHelper(page)
-        await expect(toasts.withText(SUBSCRIPTION_PROCESSING)).toHaveCount(0)
-        await expect(toasts.withText(SUBSCRIPTION_ACTION_REQUIRED)).toHaveCount(
+        await expect(toast.withText(SUBSCRIPTION_PROCESSING)).toHaveCount(0)
+        await expect(toast.withText(SUBSCRIPTION_ACTION_REQUIRED)).toHaveCount(
           0
         )
       })
@@ -379,7 +379,8 @@ test.describe('Billing progress toast parity', { tag: '@cloud' }, () => {
       }
 
       test('asks again for verification after a reload finds the subscribe still waiting', async ({
-        page
+        page,
+        toast
       }) => {
         await setupToastParity(page, {
           rails,
@@ -392,9 +393,7 @@ test.describe('Billing progress toast parity', { tag: '@cloud' }, () => {
           }
         })
 
-        const actionRequired = new ToastHelper(page).withText(
-          SUBSCRIPTION_ACTION_REQUIRED
-        )
+        const actionRequired = toast.withText(SUBSCRIPTION_ACTION_REQUIRED)
         await page.goto(APP_URL)
         await waitForCloudApp(page)
         await expect(actionRequired).toBeVisible()
@@ -406,7 +405,8 @@ test.describe('Billing progress toast parity', { tag: '@cloud' }, () => {
       })
 
       test('announces a processing top-up and clears it once it settles', async ({
-        page
+        page,
+        toast
       }) => {
         const server = await setupToastParity(page, { rails })
         await page.goto(APP_URL)
@@ -418,18 +418,18 @@ test.describe('Billing progress toast parity', { tag: '@cloud' }, () => {
           .getByRole('button', { name: 'Add credits', exact: true })
           .click()
         await dialog.root.getByRole('button', { name: 'Pay $50.00' }).click()
-        const toast = new ToastHelper(page).toastLoadings.filter({
+        const processingToast = toast.toastLoadings.filter({
           hasText: TOPUP_PROCESSING
         })
-        await expect(toast).toBeVisible()
+        await expect(processingToast).toBeVisible()
 
         server.operation = SETTLED_OPERATION
         await returnToTab(page)
 
-        await expect(toast).toBeHidden()
+        await expect(processingToast).toBeHidden()
       })
 
-      test('raises no progress toast for a cancel', async ({ page }) => {
+      test('raises no progress toast for a cancel', async ({ page, toast }) => {
         await setupToastParity(page, { rails, operation: SETTLED_OPERATION })
         await page.goto(APP_URL)
         await waitForCloudApp(page)
@@ -438,9 +438,8 @@ test.describe('Billing progress toast parity', { tag: '@cloud' }, () => {
         await cancel.open(ACTIVE_STANDARD.renewal_date)
         await cancel.confirmCancel()
 
-        const toasts = new ToastHelper(page)
-        await expect(toasts.withText(/Processing payment/)).toHaveCount(0)
-        await expect(toasts.withText(SUBSCRIPTION_ACTION_REQUIRED)).toHaveCount(
+        await expect(toast.withText(/Processing payment/)).toHaveCount(0)
+        await expect(toast.withText(SUBSCRIPTION_ACTION_REQUIRED)).toHaveCount(
           0
         )
       })

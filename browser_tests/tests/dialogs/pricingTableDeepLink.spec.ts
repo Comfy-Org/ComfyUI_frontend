@@ -24,7 +24,6 @@ import {
 } from '@e2e/fixtures/cloudAppFixture'
 import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { createPlan } from '@e2e/fixtures/data/billingPlans'
-import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -576,7 +575,8 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
   })
 
   test('keeps an error toast dismissable over the open dialog', async ({
-    page
+    page,
+    toast
   }) => {
     await setupCloudApp(page, workspace('personal', 'owner'), [])
 
@@ -589,14 +589,13 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
       })
     }, SUBSCRIPTION_IN_PROGRESS_DETAIL)
 
-    const toasts = new ToastHelper(page)
-    const toast = toasts.toastErrors.filter({
+    const errorToast = toast.toastErrors.filter({
       hasText: SUBSCRIPTION_IN_PROGRESS_DETAIL
     })
-    await expect(toast).toBeVisible()
-    await toasts.dismiss(toast)
+    await expect(errorToast).toBeVisible()
+    await toast.dismiss(errorToast)
 
-    await expect(toast).toHaveCount(0)
+    await expect(errorToast).toHaveCount(0)
     await expect(pricingHeading(page)).toBeVisible()
   })
 
@@ -690,7 +689,8 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
   })
 
   test('restores pending checkout when retrying a timed-out operation', async ({
-    page
+    page,
+    toast
   }) => {
     const subscribeRequests: Request[] = []
     const operationPollRequests: Request[] = []
@@ -747,7 +747,7 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
 
     await expect(backButton).toBeEnabled()
     await expect(
-      new ToastHelper(page).withText('Subscription verification timed out')
+      toast.withText('Subscription verification timed out')
     ).toBeVisible()
     const pollCountAfterTimeout = operationPollRequests.length
 
@@ -1121,7 +1121,8 @@ test.describe(
       })
 
       test('reconciles status and balance without polling', async ({
-        page
+        page,
+        toast
       }) => {
         await page.goto(`${APP_URL}/?pricing=personal`)
 
@@ -1137,7 +1138,7 @@ test.describe(
         expect((await subscribeResponse).status()).toBe(200)
         expect(subscribeRequests).toHaveLength(1)
 
-        const blockedPopupToast = new ToastHelper(page).toastErrors.filter({
+        const blockedPopupToast = toast.toastErrors.filter({
           hasText: 'Failed to change plan'
         })
         await expect(blockedPopupToast).toContainText(

@@ -16,7 +16,6 @@ import {
 } from '@e2e/fixtures/data/cloudWorkspace'
 import { CloudWorkspaceMockHelper } from '@e2e/fixtures/helpers/CloudWorkspaceMockHelper'
 import { recordOpenedUrl } from '@e2e/fixtures/utils/recordOpenedUrl'
-import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 
@@ -243,7 +242,8 @@ test.describe('Enterprise workspace billing', { tag: '@cloud' }, () => {
   })
 
   test('keeps an ended Enterprise workspace out of self-service recovery', async ({
-    page
+    page,
+    toast
   }) => {
     const workspace = await setupSalesManagedWorkspace(
       page,
@@ -284,7 +284,7 @@ test.describe('Enterprise workspace billing', { tag: '@cloud' }, () => {
     await expect(
       page.getByRole('heading', { name: 'Choose a Plan' })
     ).toHaveCount(0)
-    const warning = new ToastHelper(page).toastWarnings
+    const warning = toast.toastWarnings
     await expect(warning).toContainText('Plan inactive')
     await expect(warning).toContainText(
       'Contact your Comfy account manager to restore access.'
