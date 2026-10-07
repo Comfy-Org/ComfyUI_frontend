@@ -314,8 +314,8 @@ describe('useAttachment', () => {
       expectedCause: 'unreadable_response'
     },
     {
-      label: 'an unrecognized error',
-      cause: new Error('some other failure'),
+      label: 'an upload error with a timeout-like message',
+      cause: new Error('Timed out after an upstream timeout'),
       expectedCause: 'unknown'
     }
   ])(

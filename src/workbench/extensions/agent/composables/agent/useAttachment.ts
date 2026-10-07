@@ -14,6 +14,13 @@ const UPLOAD_FLOOR_BYTES_PER_SECOND = 64 * 1024
 const DEFERRED_FETCH_TIMEOUT_MS = 60 * 1000
 const MAX_CONCURRENT_UPLOADS = 3
 
+class DeadlineExceededError extends Error {
+  constructor(timeoutMs: number) {
+    super(`Timed out after ${timeoutMs}ms`)
+    this.name = 'DeadlineExceededError'
+  }
+}
+
 interface UploadResult {
   ref: string
   url?: string
@@ -48,7 +55,7 @@ async function withDeadline<T>(
   const expiry = new Promise<never>((_resolve, reject) => {
     timer = setTimeout(() => {
       onExpire?.()
-      reject(new Error(`Timed out after ${timeoutMs}ms`))
+      reject(new DeadlineExceededError(timeoutMs))
     }, timeoutMs)
   })
   try {
@@ -102,8 +109,7 @@ export function useAttachment(options: UseAttachmentOptions) {
     if (cause instanceof AgentApiError) return `http_${cause.status}`
     if (cause instanceof AgentResponseUnreadableError)
       return 'unreadable_response'
-    if (cause instanceof Error && cause.message.startsWith('Timed out after'))
-      return 'timeout'
+    if (cause instanceof DeadlineExceededError) return 'timeout'
     if (cause instanceof DOMException && cause.name === 'AbortError')
       return 'aborted'
     return 'unknown'
