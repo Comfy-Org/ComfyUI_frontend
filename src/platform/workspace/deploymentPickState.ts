@@ -1,7 +1,7 @@
 import type {
   WorkspaceDeployment,
   WorkspaceDeploymentList
-} from '@comfyorg/ingest-types'
+} from '@/platform/workspace/api/workspaceApi'
 
 /**
  * Which developer-platform deployment this browser runs its Cloud jobs on, and
@@ -78,6 +78,8 @@ export type DeploymentPickEvent =
    * answers, and end the switch.
    */
   | { type: 'defaultChanged'; defaultDeploymentId: string | null }
+  /** Another workspace or account: nothing shown belongs to it. */
+  | { type: 'workspaceChanged' }
 
 /** The `loaded` event for a listing from GET /api/workspaces/{id}/deployments. */
 export function loadedEvent(
@@ -140,5 +142,29 @@ export function reduceDeploymentPick(
         ...listingOf(state),
         defaultDeploymentId: event.defaultDeploymentId
       }
+    case 'workspaceChanged':
+      return { phase: 'idle' }
   }
+}
+
+/**
+ * What changed between the deployment a page booted on and the one it runs
+ * on now (null for Comfy Cloud in both): `release` when the same deployment
+ * runs another Release, `deployment` when it runs on another deployment or
+ * Comfy Cloud with other nodes, null when its nodes are the same.
+ */
+export function changeBetween(
+  boot: WorkspaceDeployment | null,
+  now: WorkspaceDeployment | null
+): 'release' | 'deployment' | null {
+  if (releaseOf(boot) === releaseOf(now)) return null
+  return deploymentOf(boot) === deploymentOf(now) ? 'release' : 'deployment'
+}
+
+function releaseOf(deployment: WorkspaceDeployment | null): string | null {
+  return deployment?.release_id ?? null
+}
+
+function deploymentOf(deployment: WorkspaceDeployment | null): string | null {
+  return deployment?.deployment_id ?? null
 }

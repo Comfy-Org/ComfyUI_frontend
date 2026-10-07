@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { WorkspaceDeploymentList } from '@comfyorg/ingest-types'
+import type { WorkspaceDeploymentList } from '@/platform/workspace/api/workspaceApi'
 
 import enMessages from '@/locales/en/main.json'
 import { useToastStore } from '@/platform/updates/common/toastStore'

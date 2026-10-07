@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { WorkspaceDeploymentList } from '@comfyorg/ingest-types'
+import type { WorkspaceDeploymentList } from '@/platform/workspace/api/workspaceApi'
 
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 
@@ -384,6 +384,35 @@ describe('useDeploymentPickStore', () => {
 
     expect(store.state.phase).toBe('idle')
     expect(store.deployments).toEqual([])
+  })
+
+  it("hides the last workspace's listing as soon as the workspace changes", async () => {
+    mockWorkspaceApi.listDeployments.mockResolvedValueOnce(listing)
+    const store = useDeploymentPickStore()
+    await store.load()
+    expect(store.pickedDeploymentId).toBe('dep-2')
+
+    mockWorkspaceApi.listDeployments.mockRejectedValue(new Error('offline'))
+    Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-2' })
+    expect(store.isVisible).toBe(false)
+    expect(store.deployments).toEqual([])
+    expect(store.pickedDeploymentId).toBeNull()
+
+    await store.load()
+    expect(mockWorkspaceApi.listDeployments).toHaveBeenLastCalledWith('ws-2')
+    expect(store.state.phase).toBe('hidden')
+  })
+
+  it("loads the new workspace's listing on the next loadOnce", async () => {
+    mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+    const store = useDeploymentPickStore()
+    await store.loadOnce()
+
+    Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-2' })
+    await store.loadOnce()
+
+    expect(mockWorkspaceApi.listDeployments).toHaveBeenLastCalledWith('ws-2')
+    expect(store.pickedDeploymentId).toBe('dep-2')
   })
 
   it('does nothing without an active workspace', async () => {

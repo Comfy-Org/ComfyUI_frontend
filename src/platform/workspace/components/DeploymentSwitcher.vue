@@ -40,22 +40,11 @@
             {{ currentLabel }}
           </span>
           <span
-            v-if="goneDeployment"
+            v-if="note"
             class="text-xs text-muted-foreground"
-            data-testid="deployment-switcher-gone"
+            :data-testid="note.testId"
           >
-            {{
-              goneDeployment === 'pick'
-                ? $t('deploymentSwitcher.pickGone')
-                : $t('deploymentSwitcher.defaultGone')
-            }}
-          </span>
-          <span
-            v-else-if="showsFollowing"
-            class="text-xs text-muted-foreground"
-            data-testid="deployment-switcher-following"
-          >
-            {{ $t('deploymentSwitcher.workspaceDefault') }}
+            {{ note.text }}
           </span>
         </div>
       </div>
@@ -94,7 +83,7 @@
       </div>
       <DeploymentSwitcherOwnerFooter
         v-if="canSetDefault"
-        :default-label="defaultDeploymentId === null ? null : defaultLabel"
+        :default-label="hasDefault ? defaultLabel : null"
         :can-set-picked="canSetPicked"
         :disabled="isSwitching"
         @set-default="changeDefault(pickedDeploymentId)"
@@ -155,10 +144,31 @@ onMounted(() => {
 const { currentLabel, defaultLabel } = useDeploymentLabels()
 
 const hasDefault = computed(() => defaultDeploymentId.value !== null)
-/** No pick of its own, so this browser runs on the workspace default. */
-const showsFollowing = computed(
-  () => followsWorkspace.value && hasDefault.value
-)
+/**
+ * Under the label: that what this browser would run on is gone, or that it
+ * has no pick of its own and so runs on the workspace default.
+ */
+const note = computed(() => {
+  if (goneDeployment.value === 'pick') {
+    return {
+      testId: 'deployment-switcher-gone',
+      text: t('deploymentSwitcher.pickGone')
+    }
+  }
+  if (goneDeployment.value === 'default') {
+    return {
+      testId: 'deployment-switcher-gone',
+      text: t('deploymentSwitcher.defaultGone')
+    }
+  }
+  if (followsWorkspace.value && hasDefault.value) {
+    return {
+      testId: 'deployment-switcher-following',
+      text: t('deploymentSwitcher.workspaceDefault')
+    }
+  }
+  return null
+})
 const changeMessage = computed(() =>
   changeSinceBoot.value === 'release'
     ? t('deploymentSwitcher.releaseChanged')
