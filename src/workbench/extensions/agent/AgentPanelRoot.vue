@@ -164,6 +164,7 @@ const {
 } = useBillingContext()
 const conversationStore = useAgentConversationStore()
 const history = useAgentChatHistoryStore()
+const { accepted: consentAccepted } = storeToRefs(useAgentConsentStore())
 watch(
   subscription,
   (currentSubscription) => {
@@ -282,6 +283,7 @@ watch(
  */
 const agentHasFunds = computed(() => subscription.value?.agentHasFunds)
 const creditsExhausted = computed(() => {
+  if (!consentAccepted.value) return false
   if (billingType.value !== 'workspace') return false
   // Same gate as the impression report above: an unsettled read cannot say
   // which presentation is right, and a card naming the wrong remediation is
@@ -483,7 +485,6 @@ onBeforeUnmount(() =>
     }
   })
 )
-const { accepted: consentAccepted } = storeToRefs(useAgentConsentStore())
 const { withConsent } = useAgentConsent()
 const workspaceStore = useTeamWorkspaceStore()
 const onboardingKey = computed(() =>
