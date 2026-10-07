@@ -1,6 +1,6 @@
-import type { WorkspaceDeployment } from '@comfyorg/ingest-types'
+import type { WorkspaceDeployment } from '@/platform/workspace/api/workspaceApi'
 import { defineStore } from 'pinia'
-import { computed, shallowRef } from 'vue'
+import { computed, shallowRef, watch } from 'vue'
 
 import {
   WorkspaceApiError,
@@ -12,6 +12,7 @@ import type {
   DeploymentPickState
 } from '@/platform/workspace/deploymentPickState'
 import {
+  changeBetween,
   loadedEvent,
   reduceDeploymentPick
 } from '@/platform/workspace/deploymentPickState'
@@ -126,12 +127,10 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
    * default it follows, or its pick is gone). Jobs already run on the new
    * one; only a reload brings its nodes. Null when nothing changed.
    */
-  const changeSinceBoot = computed<'release' | 'deployment' | null>(() => {
+  const changeSinceBoot = computed(() => {
     const boot = bootDeployment.value
     if (boot === undefined || !isVisible.value) return null
-    const now = pickedDeployment.value
-    if ((now?.release_id ?? null) === (boot?.release_id ?? null)) return null
-    return now?.deployment_id === boot?.deployment_id ? 'release' : 'deployment'
+    return changeBetween(boot, pickedDeployment.value)
   })
 
   /**
@@ -151,14 +150,13 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     const id = workspaceStore.workspaceId
     if (!id) return
     const request = ++latestRequest
-    let event: DeploymentPickEvent
-    try {
-      event = loadedEvent(await workspaceApi.listDeployments(id))
-    } catch (err) {
-      event = loadFailure(err)
-    }
+    const event = await listingEvent(id)
     // The workspace may have changed while the listing was in flight.
     if (workspaceStore.workspaceId !== id) return
+    applyAnswer(request, event)
+  }
+
+  function applyAnswer(request: number, event: DeploymentPickEvent) {
     if (request <= lastApplied) return
     if (event.type === 'loadFailed') {
       if (request === latestRequest) dispatch(event)
@@ -166,14 +164,35 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     }
     lastApplied = request
     dispatch(event)
-    if (event.type !== 'loaded') return
-    if (event.gonePickedDeploymentId !== null) sawPickGone.value = true
+    if (event.type === 'loaded') noteListing(event.gonePickedDeploymentId)
+  }
+
+  function noteListing(gonePickedDeploymentId: string | null) {
+    if (gonePickedDeploymentId !== null) sawPickGone.value = true
     if (bootDeployment.value === undefined) {
       bootDeployment.value = pickedDeployment.value
     }
   }
 
   let firstLoad: Promise<void> | null = null
+
+  /**
+   * Another workspace, or another account (signed in without a reload), has
+   * its own deployments: drop the old listing at once rather than show it
+   * until the new one answers, and drop any listing still in flight. The
+   * deployment this page booted on stays, since its nodes are still the
+   * editor's until a reload.
+   */
+  watch(
+    () => workspaceStore.workspaceId,
+    () => {
+      dispatch({ type: 'workspaceChanged' })
+      sawPickGone.value = false
+      lastApplied = latestRequest
+      firstLoad = null
+    },
+    { flush: 'sync' }
+  )
 
   /**
    * The page's first `load()`, started at boot so the editor learns which
@@ -293,6 +312,14 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     setDefault
   }
 })
+
+async function listingEvent(workspaceId: string): Promise<DeploymentPickEvent> {
+  try {
+    return loadedEvent(await workspaceApi.listDeployments(workspaceId))
+  } catch (err) {
+    return loadFailure(err)
+  }
+}
 
 /**
  * A 403 means the account is outside the rollout: hide the switcher. Any

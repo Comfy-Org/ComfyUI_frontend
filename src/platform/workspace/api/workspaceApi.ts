@@ -22,7 +22,6 @@ import type {
   PaymentPortalRequest,
   PaymentPortalResponse,
   PendingInvite,
-  PickWorkspaceDeploymentRequest,
   Plan,
   PreviewSubscribeRequest,
   PreviewSubscribeResponse,
@@ -38,7 +37,6 @@ import type {
   TeamCreditStops,
   TeamCreditStopSummary,
   UpdateWorkspaceRequest,
-  WorkspaceDeploymentList,
   WorkspaceWithRole
 } from '@comfyorg/ingest-types'
 import axios from 'axios'
@@ -152,6 +150,35 @@ export type BillingOperationPhase = NonNullable<
 export type BillingRecoveryAction = NonNullable<
   BillingOpStatusResponse['recovery_action']
 >
+
+/**
+ * The developer-platform deployment listing and pick (FE-2434, BE-17480), as
+ * ingest's OpenAPI declares them. Declared here until the ingest-types sync
+ * generates them from that spec.
+ */
+export interface WorkspaceDeployment {
+  deployment_id: string
+  release_id: string
+  build_id?: string
+  build_name?: string
+  release_version?: number
+  status: string
+  created_at: string
+}
+
+export interface WorkspaceDeploymentList {
+  items: WorkspaceDeployment[]
+  builds_visible: boolean
+  picked_deployment_id?: string
+  pick_source?: 'browser' | 'workspace_default'
+  default_deployment_id?: string
+  gone_picked_deployment_id?: string
+  gone_default_deployment_id?: string
+}
+
+interface PickWorkspaceDeploymentRequest {
+  deployment_id: string
+}
 
 interface GetBillingEventsParams {
   page?: number
@@ -296,7 +323,7 @@ export const workspaceApi = {
       )
       return response.data
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'listDeployments')
     }
   },
 
@@ -318,7 +345,7 @@ export const workspaceApi = {
         auth
       )
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'pickDeployment')
     }
   },
 
@@ -342,7 +369,7 @@ export const workspaceApi = {
         }
       )
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'clearDeployment')
     }
   },
 
@@ -363,7 +390,7 @@ export const workspaceApi = {
         auth
       )
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'setDefaultDeployment')
     }
   },
 
@@ -380,7 +407,7 @@ export const workspaceApi = {
         auth
       )
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'clearDefaultDeployment')
     }
   },
 

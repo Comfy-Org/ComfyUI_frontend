@@ -242,24 +242,35 @@ function resolveMissingModelToastTitle(source: MissingModelSource): string {
   const count = getMissingModelCount(source)
 
   if (count === 1 && firstModel) {
-    const onDeployment = deploymentMessage(
-      source,
-      'errorCatalog.missingErrors.missing_model.toastTitleOneDeployment',
-      "{modelName} isn't on {deployment}",
-      { modelName: firstModel.name }
-    )
-    if (onDeployment) return onDeployment
-    const key = source.isCloud
-      ? 'errorCatalog.missingErrors.missing_model.toastTitleOneCloud'
-      : 'errorCatalog.missingErrors.missing_model.toastTitleOneOss'
-    const fallback = source.isCloud
-      ? "{modelName} isn't available on Cloud"
-      : '{modelName} is missing'
-    return translateCatalogMessage(key, fallback, {
-      modelName: firstModel.name
-    })
+    return resolveOneMissingModelToastTitle(source, firstModel.name)
   }
+  return resolveManyMissingModelsToastTitle(source, count)
+}
 
+function resolveOneMissingModelToastTitle(
+  source: MissingModelSource,
+  modelName: string
+): string {
+  const onDeployment = deploymentMessage(
+    source,
+    'errorCatalog.missingErrors.missing_model.toastTitleOneDeployment',
+    "{modelName} isn't on {deployment}",
+    { modelName }
+  )
+  if (onDeployment) return onDeployment
+  const key = source.isCloud
+    ? 'errorCatalog.missingErrors.missing_model.toastTitleOneCloud'
+    : 'errorCatalog.missingErrors.missing_model.toastTitleOneOss'
+  const fallback = source.isCloud
+    ? "{modelName} isn't available on Cloud"
+    : '{modelName} is missing'
+  return translateCatalogMessage(key, fallback, { modelName })
+}
+
+function resolveManyMissingModelsToastTitle(
+  source: MissingModelSource,
+  count: number
+): string {
   if (count > 1) {
     const onDeployment = deploymentMessage(
       source,

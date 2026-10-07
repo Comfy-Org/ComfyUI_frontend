@@ -3748,6 +3748,7 @@
     "pickGone": "The deployment you picked no longer exists.",
     "defaultGone": "The workspace's default deployment no longer exists.",
     "caption": "{id}, {status}",
+    "captionDefault": "{id}, {status} · Workspace default",
     "noDeployments": "This workspace has no deployments yet. Deploy a Release on the Developer Platform first.",
     "buildsHidden": "Build names are not visible to this account.",
     "reloadNote": "Picking reloads the editor with the deployment's nodes. When the deployment is updated to another Release, reload to get its new nodes.",

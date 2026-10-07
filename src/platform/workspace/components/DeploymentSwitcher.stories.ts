@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
-import type { WorkspaceDeployment } from '@comfyorg/ingest-types'
+import type { WorkspaceDeployment } from '@/platform/workspace/api/workspaceApi'
 import type { DeploymentPickState } from '@/platform/workspace/deploymentPickState'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 
