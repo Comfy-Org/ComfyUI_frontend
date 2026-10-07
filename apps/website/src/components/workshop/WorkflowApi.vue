@@ -64,7 +64,9 @@ const hasMedia = initialWorkshopPageState(model).schema.some((field) =>
 
 <template>
   <section aria-labelledby="workflow-api-heading">
-    <Card class="gap-8 p-4 sm:p-8 lg:p-10">
+    <Card
+      class="gap-8 max-sm:rounded-none max-sm:bg-transparent max-sm:shadow-none sm:p-8 lg:p-10"
+    >
       <div
         class="flex flex-wrap items-baseline justify-between gap-x-8 gap-y-1"
       >
@@ -94,7 +96,7 @@ const hasMedia = initialWorkshopPageState(model).schema.some((field) =>
         </a>
       </div>
 
-      <div class="flex flex-col gap-4">
+      <div class="flex flex-col gap-8 lg:gap-6">
         <ol class="flex flex-col gap-6">
           <ApiStep
             :step="1"
