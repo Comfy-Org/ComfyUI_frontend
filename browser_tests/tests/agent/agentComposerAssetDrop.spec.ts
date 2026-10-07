@@ -83,9 +83,7 @@ test.describe('Agent composer asset drop', { tag: '@cloud' }, () => {
       await assets.assetCards.first().dragTo(agentPanel.root)
 
       const chip = agentPanel.attachmentChip(ASSET_NAME)
-      const trigger = chip.getByRole('button', {
-        name: `Preview ${ASSET_NAME}`
-      })
+      const trigger = chip.getByRole('button', { name: ASSET_NAME })
       const poster = trigger.getByRole('img', { name: ASSET_NAME })
       await expect(poster).toBeVisible()
       await expect(poster).toHaveAttribute('src', /^blob:/)
