@@ -64,39 +64,16 @@ describe('createExtensionToastManager', () => {
     expect(useToast().toasts).toEqual([expect.objectContaining(expected)])
   })
 
-  it('legacy addAlert shows a warning titled Alert', () => {
+  it('legacy addAlert shows the message as a warning title', () => {
     createExtensionToastManager(useToast()).addAlert('Missing model')
 
     expect(useToast().toasts).toEqual([
       expect.objectContaining({
         kind: 'warning',
-        title: 'Alert',
-        description: 'Missing model'
+        title: 'Missing model',
+        description: undefined
       })
     ])
-  })
-
-  it('legacy remove dismisses only the toast added with that message', () => {
-    const toast = createExtensionToastManager(useToast())
-    const first = { severity: 'info', summary: 'First' } as const
-    toast.add(first)
-    toast.add({ severity: 'info', summary: 'Second' })
-
-    toast.remove(first)
-
-    expect(useToast().toasts).toEqual([
-      expect.objectContaining({ title: 'Second' })
-    ])
-  })
-
-  it('legacy removeAll dismisses legacy and new toasts', () => {
-    const toast = createExtensionToastManager(useToast())
-    toast.add({ summary: 'Legacy' })
-    toast.success('Current')
-
-    toast.removeAll()
-
-    expect(useToast().toasts).toEqual([])
   })
 
   it('exposes the id-based API', () => {

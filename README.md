@@ -480,8 +480,10 @@ to remove every toast.
 Pass `action: { label, onClick }` to add one button to the toast; `onClick`
 runs on click and does not dismiss the toast by itself.
 
-The earlier `add({ severity, summary, detail, life })`, `remove(message)`,
-`removeAll()`, and `addAlert(message)` calls still work but are deprecated.
+The earlier `add({ severity, summary, detail, life })` and `addAlert(message)`
+calls still work but are deprecated. `remove(message)` and `removeAll()` are
+gone; use the id returned by `success`/`error`/`info`/`warning`/`loading` with
+`dismiss(id)`, or `dismissAll()`.
 
 ![image](https://github.com/user-attachments/assets/de02cd7e-cd81-43d1-a0b0-bccef92ff487)
 

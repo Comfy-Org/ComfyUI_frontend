@@ -1,5 +1,4 @@
 import type { useToast } from '@/components/ui/toast/toastStore'
-import type { ToastId } from '@/types/toastId'
 import type { ToastManager, ToastMessageOptions } from '@/types/extensionTypes'
 
 const legacySeverityKinds = {
@@ -14,21 +13,13 @@ const legacySeverityKinds = {
 export function createExtensionToastManager(
   toast: ReturnType<typeof useToast>
 ): ToastManager {
-  const legacyToastIds = new WeakMap<ToastMessageOptions, ToastId>()
-
   function add(message: ToastMessageOptions) {
     const kind = legacySeverityKinds[message.severity ?? 'info']
-    const id = toast[kind](message.summary ?? message.detail ?? '', {
+    toast[kind](message.summary ?? message.detail ?? '', {
       description: message.summary === undefined ? undefined : message.detail,
       duration: message.life || undefined,
       closable: message.closable
     })
-    legacyToastIds.set(message, id)
-  }
-
-  function remove(message: ToastMessageOptions) {
-    const id = legacyToastIds.get(message)
-    if (id !== undefined) toast.dismiss(id)
   }
 
   return {
@@ -40,9 +31,6 @@ export function createExtensionToastManager(
     dismiss: toast.dismiss,
     dismissAll: toast.dismissAll,
     add,
-    remove,
-    removeAll: toast.dismissAll,
-    addAlert: (message) =>
-      add({ severity: 'warn', summary: 'Alert', detail: message })
+    addAlert: (message) => toast.warning(message)
   }
 }

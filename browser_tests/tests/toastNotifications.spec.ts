@@ -77,24 +77,24 @@ test.describe('Toast Notifications', { tag: '@ui' }, () => {
     await expect(comfyPage.toast.visibleToasts).toHaveCount(0)
   })
 
-  test('Legacy extension toast messages still render and dismiss', async ({
+  test('Legacy extension toast messages still render', async ({
     comfyPage
   }) => {
     await comfyPage.page.evaluate(() => {
-      const message = {
+      window.app!.extensionManager.toast.add({
         severity: 'warn',
         summary: 'Legacy summary',
         detail: 'Legacy detail',
         life: 30000
-      } as const
-      window.app!.extensionManager.toast.add(message)
+      })
       window.app!.extensionManager.toast.addAlert('Legacy alert')
-      window.app!.extensionManager.toast.remove(message)
     })
 
     await expect(
+      comfyPage.toast.toastWarnings.filter({ hasText: 'Legacy detail' })
+    ).toBeVisible()
+    await expect(
       comfyPage.toast.toastWarnings.filter({ hasText: 'Legacy alert' })
     ).toBeVisible()
-    await expect(comfyPage.toast.withText('Legacy detail')).toHaveCount(0)
   })
 })
