@@ -54,7 +54,8 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
   )
   /**
    * Set once a listing says ingest found this browser's own pick gone and
-   * cleared it. Only that one listing says so, so the page keeps it.
+   * cleared it. Only that one listing says so, so the page keeps it until a
+   * later listing shows a deployment picked again.
    */
   const sawPickGone = shallowRef(false)
   /**
@@ -169,6 +170,7 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
 
   function noteListing(gonePickedDeploymentId: string | null) {
     if (gonePickedDeploymentId !== null) sawPickGone.value = true
+    else if (pickedDeployment.value !== null) sawPickGone.value = false
     if (bootDeployment.value === undefined) {
       bootDeployment.value = pickedDeployment.value
     }
