@@ -330,14 +330,13 @@ test.describe(
   'Pasting onto a selected LoadImage node',
   { tag: ['@node'] },
   () => {
-    test.use({ permissions: ['clipboard-read', 'clipboard-write'] })
+    test.use({ permissions: ['clipboard-write'] })
 
     test('pastes only the latest copy the clipboard still holds', async ({
       comfyPage
     }) => {
       await comfyPage.workflow.loadWorkflow('nodes/load_image_with_ksampler')
       await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(2)
-      await comfyPage.canvasOps.pan({ x: 0, y: 200 }, { x: 1000, y: 600 })
       const [ksampler] = await comfyPage.nodeOps.getNodeRefsByType('KSampler')
       const [loadImage] = await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
 
