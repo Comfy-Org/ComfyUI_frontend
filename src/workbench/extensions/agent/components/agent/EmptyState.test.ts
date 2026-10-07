@@ -74,23 +74,61 @@ describe('EmptyState', () => {
     ])
   })
 
-  it('renders the explicit treatment set when assigned to test', () => {
-    render(EmptyState, {
-      props: { assignment: 'test' },
-      global: { plugins: [i18n] }
-    })
+  it.for([
+    {
+      locale: 'en',
+      assignment: 'control',
+      key: 'agent.suggestedPrompts.local.0',
+      reported: 'control'
+    },
+    {
+      locale: 'en',
+      assignment: 'test',
+      key: 'agent.suggestedPrompts.treatment.local.0',
+      reported: 'test'
+    },
+    {
+      locale: 'zh',
+      assignment: 'control',
+      key: 'agent.suggestedPrompts.local.0'
+    },
+    {
+      locale: 'zh',
+      assignment: 'test',
+      key: 'agent.suggestedPrompts.local.0'
+    }
+  ] as const)(
+    'renders $assignment for $locale without changing experiment eligibility',
+    async ({ locale, assignment, key, reported }) => {
+      const previousLocale = i18n.global.locale.value
+      i18n.global.locale.value = locale
+      try {
+        const onRendered = vi.fn()
+        const user = userEvent.setup()
+        const { emitted } = render(EmptyState, {
+          props: { assignment, onRendered },
+          global: { plugins: [i18n] }
+        })
+        const text = i18n.global.t(key)
 
-    expect(
-      screen.getByRole('button', {
-        name: 'Build a workflow with my installed models'
-      })
-    ).toBeVisible()
-    expect(
-      screen.queryByRole('button', {
-        name: 'Generate a realistic portrait of an astronaut'
-      })
-    ).toBeNull()
-  })
+        await user.click(screen.getByRole('button', { name: text }))
+
+        expect(onRendered.mock.calls).toEqual(reported ? [[reported]] : [])
+        expect(emitted().insert).toEqual([
+          [
+            text,
+            reported
+              ? expect.objectContaining({ assignment: reported })
+              : expect.not.objectContaining({
+                  assignment: expect.anything()
+                })
+          ]
+        ])
+      } finally {
+        i18n.global.locale.value = previousLocale
+      }
+    }
+  )
 
   it('omits experiment attribution for a QA-rendered treatment', async () => {
     const user = userEvent.setup()

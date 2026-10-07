@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -36,9 +36,11 @@ const promptKey = isCloud
 const treatmentPromptKey = isCloud
   ? 'agent.suggestedPrompts.treatment.cloud'
   : 'agent.suggestedPrompts.treatment.local'
+const hasTreatmentCopy = computed(() =>
+  te(`${treatmentPromptKey}.0`, locale.value)
+)
 const selectedPromptKey = computed(() => {
-  if (assignment !== 'test' || !te(`${treatmentPromptKey}.0`, locale.value))
-    return promptKey
+  if (assignment !== 'test' || !hasTreatmentCopy.value) return promptKey
   return treatmentPromptKey
 })
 const prompts = computed(() => {
@@ -53,8 +55,19 @@ const promptLocale = computed(() => {
     : FALLBACK_LOCALE
 })
 
-onMounted(() => onRendered(effectiveAssignment.value))
-watch(effectiveAssignment, (assignment) => onRendered(assignment))
+const eligibleAtMount = ref(false)
+const shouldAttributeExperiment = computed(
+  () => eligibleAtMount.value && hasTreatmentCopy.value
+)
+const reportRenderedAssignment = () => {
+  if (shouldAttributeExperiment.value) onRendered(effectiveAssignment.value)
+}
+
+onMounted(() => {
+  eligibleAtMount.value = attributeExperiment && hasTreatmentCopy.value
+  reportRenderedAssignment()
+})
+watch([effectiveAssignment, hasTreatmentCopy], reportRenderedAssignment)
 onUnmounted(onSurfaceUnmounted)
 
 /**
@@ -70,7 +83,7 @@ function onPromptClick(prompt: string, index: number): void {
       index,
       prompts.value.length,
       promptLocale.value,
-      attributeExperiment ? effectiveAssignment.value : undefined
+      shouldAttributeExperiment.value ? effectiveAssignment.value : undefined
     )
   )
 }
