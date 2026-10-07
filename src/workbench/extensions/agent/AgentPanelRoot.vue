@@ -2,7 +2,6 @@
 import './agentPanel.css'
 
 import type { GetFeaturesResponse } from '@comfyorg/ingest-types'
-import { useClipboard } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import {
   computed,
@@ -18,6 +17,7 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import type {
@@ -1335,7 +1335,7 @@ onBeforeUnmount(() => {
   })
 })
 
-const { copy } = useClipboard({ legacy: true })
+const { copyToClipboard } = useCopyToClipboard({ showSuccessToast: false })
 
 /**
  * DES-1221. This component mounts only while the panel is on screen, so
@@ -1451,7 +1451,7 @@ function buildTranscriptMarkdown(entries: ConversationEntry[]): string {
 
 function onCopyMarkdown(id: string): void {
   if (id === history.activeId && id === threadId.value)
-    void copy(buildTranscriptMarkdown(entries.value))
+    void copyToClipboard(buildTranscriptMarkdown(entries.value))
   else toast.add({ severity: 'info', summary: t('agent.copyUnavailable') })
 }
 
