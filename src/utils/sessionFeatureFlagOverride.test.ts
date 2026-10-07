@@ -4,6 +4,7 @@ import { initializeAuth } from 'firebase/auth'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
+import { webSessionUser } from '@/platform/auth/session/webSessionUser'
 import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 
 const mockDistribution = vi.hoisted(() => ({
@@ -35,6 +36,7 @@ describe('getSessionOverride', () => {
   beforeEach(() => {
     mockDistribution.isCloud = true
     mockCurrentUser.value = COMFY_EMPLOYEE
+    webSessionUser.value = undefined
     vi.mocked(initializeAuth).mockReturnValue(resolvedAuth)
     firebaseIdentity.initialize()
   })
@@ -217,6 +219,23 @@ describe('getSessionOverride', () => {
       mockCurrentUser.value = COMFY_EMPLOYEE
       expect(getSessionOverride('onboarding_tour_enabled')).toBe(true)
     })
+
+    it.for([
+      { email: 'dev@comfy.org', emailVerified: true, applies: true },
+      { email: 'dev@comfy.org', emailVerified: false, applies: false },
+      { email: 'dev@notcomfy.org', emailVerified: true, applies: false }
+    ])(
+      'reads the web session user when Firebase has none: $email verified=$emailVerified',
+      ({ email, emailVerified, applies }) => {
+        mockCurrentUser.value = null
+        webSessionUser.value = { id: 'uid-1', email, emailVerified }
+        visit('/?ff=onboarding_tour_enabled')
+
+        expect(getSessionOverride('onboarding_tour_enabled')).toBe(
+          applies ? true : undefined
+        )
+      }
+    )
 
     it('accepts a verified address regardless of case', () => {
       mockCurrentUser.value = { email: 'Dev@Comfy.org', emailVerified: true }
