@@ -1,6 +1,6 @@
 import { z } from 'astro/zod'
 
-import { localModelPath } from '@/config/local-models'
+import { getRoutes } from '@/config/routes'
 import type { UseCase } from '@/config/models-catalogue'
 import { USE_CASES } from '@/config/models-catalogue'
 import type { ModelTab } from './model-tabs'
@@ -31,7 +31,7 @@ export const OPEN_WEIGHT_MODELS: readonly OpenWeightModel[] = z
   .parse(generated)
 
 export function openWeightHref(model: Pick<OpenWeightModel, 'slug'>): string {
-  return localModelPath(model.slug)
+  return `${getRoutes().workshop}local/${model.slug}/`
 }
 
 export function filterOpenWeightModels(
