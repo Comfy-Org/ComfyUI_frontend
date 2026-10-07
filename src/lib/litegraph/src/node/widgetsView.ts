@@ -39,6 +39,7 @@ const restorationSlots = new WeakMap<
   {
     slots: ReadonlyMap<IBaseWidget, number>
     count: number
+    refusalChangedOrder: boolean
   }
 >()
 
@@ -129,6 +130,10 @@ function refuseAmbiguousWidgets(
     releaseRefusedWidget(node, finding.widget, finding.name, report)
     report({ kind: 'refusal', finding })
   }
+  if (removed.size) {
+    const captured = restorationSlots.get(node)
+    if (captured) captured.refusalChangedOrder = true
+  }
   return removed
 }
 
@@ -151,7 +156,11 @@ export function captureWidgetRestorationSlots(node: LGraphNode): void {
     if (widget.serialize === false) continue
     slots.set(widget, position++)
   }
-  restorationSlots.set(node, { slots, count: position })
+  restorationSlots.set(node, {
+    slots,
+    count: position,
+    refusalChangedOrder: false
+  })
 }
 
 export function getWidgetRestorationSlot(
@@ -161,7 +170,8 @@ export function getWidgetRestorationSlot(
   savedSlotCount: number
 ): number {
   const captured = restorationSlots.get(node)
-  if (!captured || captured.count !== savedSlotCount) return fallback
+  if (!captured?.refusalChangedOrder || captured.count !== savedSlotCount)
+    return fallback
   return captured.slots.get(widget) ?? fallback
 }
 

@@ -2,6 +2,12 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
+import {
+  captureWidgetRestorationSlots,
+  clearWidgetRestorationSlots,
+  getWidgetRestorationSlot
+} from './widgetsView'
+
 describe('restoring values onto a node that refused a widget', () => {
   const namedValuesRestore = LiteGraph.namedValuesRestore
 
@@ -75,6 +81,16 @@ describe('restoring values onto a node that refused a widget', () => {
       names: ['a', 'a#1', 'b'],
       values: [1, 2, 3]
     })
+  })
+
+  it('does not override ordinary positional restoration without a refusal', () => {
+    const node = new LGraphNode('ordinary')
+    node.addWidget('number', 'a', 0, () => {})
+    const b = node.addWidget('number', 'b', 0, () => {})
+    captureWidgetRestorationSlots(node)
+
+    expect(getWidgetRestorationSlot(node, b, 0, 2)).toBe(0)
+    clearWidgetRestorationSlots(node)
   })
 
   it('restores the right value from a name register, refusal or not', () => {
