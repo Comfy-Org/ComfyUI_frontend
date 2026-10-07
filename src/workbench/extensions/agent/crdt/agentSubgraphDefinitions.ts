@@ -401,7 +401,7 @@ export function readSubgraphDefinitions(
  * size nor order anything.
  */
 export interface DocPromotedWidgets {
-  valueCount: number
+  valueCount: number | null
   declaredNames: readonly string[]
   promotedNames: readonly string[] | null
 }
@@ -416,7 +416,8 @@ export function readDocPromotedWidgets(
   const stored = node.get(OPAQUE_WIDGETS_KEY)
   const values: unknown = stored instanceof Y.Array ? stored.toJSON() : stored
   return {
-    valueCount: Array.isArray(values) ? values.length : 0,
+    valueCount:
+      stored === undefined ? 0 : Array.isArray(values) ? values.length : null,
     declaredNames: declaredInputNames(doc, String(node.get('type') ?? '')),
     promotedNames: promotedInputNames(doc, node, String(node.get('type') ?? ''))
   }

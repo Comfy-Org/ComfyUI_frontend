@@ -817,6 +817,10 @@ describe('attachDocOpMinter', () => {
     {
       name: 'cannot read the promoted widget sequence',
       doc: { valueCount: 2, declaredNames: [], promotedNames: null }
+    },
+    {
+      name: 'cannot read the stored widget array',
+      doc: { valueCount: null, declaredNames: [], promotedNames: null }
     }
   ])(
     'keeps the refusal rather than misplacing a value when the document $name',

@@ -258,6 +258,7 @@ function documentAcceptsLiveIndex(
   liveNames: readonly string[]
 ): boolean {
   if (doc === null) return true
+  if (doc.valueCount === null) return false
   if (doc.valueCount === 0) return true
   if (doc.valueCount > 0 && doc.valueCount !== liveNames.length) return false
   if (doc.promotedNames === null) return false
