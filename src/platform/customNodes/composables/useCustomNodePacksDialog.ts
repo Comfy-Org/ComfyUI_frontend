@@ -22,9 +22,10 @@ export function useCustomNodePacksDialog() {
       dialogComponentProps: {
         renderer: 'reka',
         modal: true,
-        size: 'md',
-        contentClass:
-          'w-[680px] max-w-[90vw] max-h-[calc(100dvh-1rem)] overflow-y-auto rounded-2xl sm:max-w-[680px]'
+        size: isCloud ? 'full' : 'md',
+        contentClass: isCloud
+          ? 'w-[90vw] max-w-[1724px] sm:max-w-[1724px] h-[80vh] max-h-[1026px] rounded-2xl overflow-hidden'
+          : 'w-[680px] max-w-[90vw] max-h-[calc(100dvh-1rem)] overflow-y-auto rounded-2xl sm:max-w-[680px]'
       }
     })
   }

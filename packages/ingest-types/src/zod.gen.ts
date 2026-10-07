@@ -3297,7 +3297,27 @@ export const zCustomNodeEditorFiles = z.object({
   digest: z.string()
 })
 
+/**
+ * Trusted publisher's test receipt. The revision binds full upstream commit, converted source, manifest and dependency profile. This is not a claim that all nodes/workflows, frontend widgets or GPU isolation are verified.
+ */
+export const zCloudNodeRegistryVerification = z.object({
+  revision_id: z.string().regex(/^[0-9a-f]{64}$/),
+  image_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  tested_at: z.string().datetime(),
+  workflow_sha256: z.string().regex(/^[0-9a-f]{64}$/),
+  evidence_sha256: z.string().regex(/^[0-9a-f]{64}$/),
+  tested_nodes: z.array(z.string()).min(1),
+  scope: z.enum(['workflow-smoke']),
+  scope_note: z.string().min(1).max(1024)
+})
+
 export const zCloudNodeRegistryRevision = z.object({
+  node_api_version: z
+    .union([z.literal(1), z.literal(2)])
+    .readonly()
+    .optional(),
+  comfy_verified: z.boolean().readonly().optional(),
+  verification: zCloudNodeRegistryVerification.nullish(),
   revision_id: z.string(),
   name: z.string(),
   pack_id: z.string(),
@@ -3500,6 +3520,25 @@ export const zAssetCreatedWritable = zAssetWritable.and(
  * Response after submitting feedback
  */
 export const zFeedbackResponseWritable = z.record(z.unknown())
+
+export const zCloudNodeRegistryRevisionWritable = z.object({
+  revision_id: z.string(),
+  name: z.string(),
+  pack_id: z.string(),
+  upstream_commit: z.string(),
+  source_sha256: z.string(),
+  manifest_sha256: z.string(),
+  dependency_profile_sha256: z.string(),
+  nodes: z.array(z.string()),
+  prepared: z.boolean(),
+  pinned: z.boolean()
+})
+
+export const zCloudNodeRegistryWritable = z.object({
+  corpus_commit: z.string(),
+  revisions: z.array(zCloudNodeRegistryRevisionWritable),
+  pins: z.array(z.string())
+})
 
 /**
  * The workspace a media request reads from, where a media tag cannot

@@ -1,81 +1,54 @@
 <template>
-  <div
-    :class="
-      cn(
-        'flex size-full cursor-pointer flex-col overflow-hidden rounded-lg bg-modal-card-background transition-colors duration-200 select-none',
-        isSelected
-          ? 'ring-3 ring-modal-card-border-highlighted'
-          : 'hover:bg-modal-card-background-hovered',
-        isDisabled && 'opacity-60'
-      )
-    "
+  <PackCardLayout
+    :name="nodePack.name ?? ''"
+    :description="nodePack.description"
+    :is-selected
+    :disabled="isDisabled"
   >
-    <!-- Banner -->
-    <div class="w-full rounded-t-lg">
+    <template #banner>
       <PackBanner :node-pack="nodePack" />
-    </div>
-
-    <!-- Content -->
-    <div class="flex min-h-0 flex-1 flex-col rounded-lg">
-      <div class="size-full px-3 py-2">
-        <div class="flex size-full flex-col gap-y-1">
-          <span
-            class="truncate overflow-hidden text-xs font-bold text-ellipsis"
-          >
-            {{ nodePack.name }}
-          </span>
-          <p
-            v-if="nodePack.description"
-            class="my-0 mb-1 line-clamp-3 min-h-12 flex-1 overflow-hidden text-xs/4 font-medium wrap-break-word text-muted"
-          >
-            {{ nodePack.description }}
-          </p>
-          <div class="flex flex-col gap-y-2">
-            <div class="flex flex-1 items-center gap-2">
-              <div v-if="nodesLabel" class="p-2 pl-0 text-xs">
-                {{ nodesLabel }}
-              </div>
-              <PackVersionBadge
-                :node-pack="nodePack"
-                :is-selected="isSelected"
-                :fill="false"
-                :class="isInstalling ? 'pointer-events-none' : ''"
-              />
-              <div
-                v-if="formattedLatestVersionDate"
-                class="flex items-center justify-center gap-1 px-2 py-1 text-xs font-medium text-muted"
-              >
-                {{ formattedLatestVersionDate }}
-              </div>
-            </div>
-            <div class="flex">
-              <span
-                v-if="publisherName"
-                class="max-w-40 truncate text-xs/3 font-medium text-muted"
-              >
-                {{ publisherName }}
-              </span>
-            </div>
-          </div>
+    </template>
+    <div class="flex flex-col gap-y-2">
+      <div class="flex flex-1 items-center gap-2">
+        <div v-if="nodesLabel" class="p-2 pl-0 text-xs">
+          {{ nodesLabel }}
+        </div>
+        <PackVersionBadge
+          :node-pack="nodePack"
+          :is-selected="isSelected"
+          :fill="false"
+          :class="isInstalling ? 'pointer-events-none' : ''"
+        />
+        <div
+          v-if="formattedLatestVersionDate"
+          class="flex items-center justify-center gap-1 px-2 py-1 text-xs font-medium text-muted"
+        >
+          {{ formattedLatestVersionDate }}
         </div>
       </div>
+      <div class="flex">
+        <span
+          v-if="publisherName"
+          class="max-w-40 truncate text-xs/3 font-medium text-muted"
+        >
+          {{ publisherName }}
+        </span>
+      </div>
     </div>
-
-    <!-- Footer -->
-    <div class="border-t border-border-default">
+    <template #footer>
       <PackCardFooter :node-pack="nodePack" :is-installing="isInstalling" />
-    </div>
-  </div>
+    </template>
+  </PackCardLayout>
 </template>
 
 <script setup lang="ts">
 import { computed, provide } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { cn } from '@comfyorg/tailwind-utils'
 import PackVersionBadge from '@/workbench/extensions/manager/components/manager/PackVersionBadge.vue'
 import PackBanner from '@/workbench/extensions/manager/components/manager/packBanner/PackBanner.vue'
 import PackCardFooter from '@/workbench/extensions/manager/components/manager/packCard/PackCardFooter.vue'
+import PackCardLayout from '@/components/common/PackCardLayout.vue'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import {
   IsInstallingKey,

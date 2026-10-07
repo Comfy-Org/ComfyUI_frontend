@@ -5678,7 +5678,30 @@ export type CloudNodeRegistry = {
   pins: Array<string>
 }
 
+/**
+ * Trusted publisher's test receipt. The revision binds full upstream commit, converted source, manifest and dependency profile. This is not a claim that all nodes/workflows, frontend widgets or GPU isolation are verified.
+ */
+export type CloudNodeRegistryVerification = {
+  revision_id: string
+  image_digest: string
+  tested_at: string
+  workflow_sha256: string
+  evidence_sha256: string
+  tested_nodes: Array<string>
+  scope: 'workflow-smoke'
+  scope_note: string
+}
+
 export type CloudNodeRegistryRevision = {
+  /**
+   * Custom-node API generation, distinct from upstream pack version. Frozen converted corpora publish V2 only; V1 conversion requests are not implemented.
+   */
+  readonly node_api_version?: 1 | 2
+  /**
+   * Operator-reviewed real execution evidence exists for this exact conversion revision, not merely registration or preparation. See verification for tested coverage.
+   */
+  readonly comfy_verified?: boolean
+  verification?: CloudNodeRegistryVerification | null
   revision_id: string
   name: string
   pack_id: string
@@ -5905,6 +5928,31 @@ export type AssetCreatedWritable = AssetWritable & {
  */
 export type FeedbackResponseWritable = {
   [key: string]: unknown
+}
+
+export type CloudNodeRegistryWritable = {
+  corpus_commit: string
+  revisions: Array<CloudNodeRegistryRevisionWritable>
+  /**
+   * Includes retired revision pins; corpus updates never silently move them
+   */
+  pins: Array<string>
+}
+
+export type CloudNodeRegistryRevisionWritable = {
+  revision_id: string
+  name: string
+  pack_id: string
+  upstream_commit: string
+  source_sha256: string
+  manifest_sha256: string
+  dependency_profile_sha256: string
+  nodes: Array<string>
+  /**
+   * Exact sandbox image and dependency profile are ready; not workflow proof
+   */
+  prepared: boolean
+  pinned: boolean
 }
 
 /**

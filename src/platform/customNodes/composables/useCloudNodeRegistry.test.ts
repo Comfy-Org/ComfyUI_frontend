@@ -22,6 +22,8 @@ const fixture = (pinned = false, prepared = true): CloudNodeRegistry => ({
       manifest_sha256: 'e'.repeat(64),
       dependency_profile_sha256: 'f'.repeat(64),
       nodes: ['ExampleNode'],
+      node_api_version: 2,
+      comfy_verified: false,
       pinned,
       prepared
     }
@@ -95,5 +97,46 @@ describe('useCloudNodeRegistry', () => {
     expect(registry.catalog.value).toBeNull()
     expect(registry.state.value.phase).toBe('error')
     expect(fetchApi).toHaveBeenCalledOnce()
+  })
+
+  it('refuses V1 and unknown-version pin requests without calling a conversion or install API', async () => {
+    const catalog = fixture()
+    catalog.revisions[0] = { ...catalog.revisions[0], node_api_version: 1 }
+    fetchApi.mockResolvedValueOnce(Response.json(catalog))
+    const registry = useCloudNodeRegistry()
+    await registry.load()
+    expect(await registry.setPin('b'.repeat(64), true)).toBe(false)
+    expect(fetchApi).toHaveBeenCalledOnce()
+    expect(registry.state.value.phase).toBe('ready')
+    fetchApi.mockResolvedValueOnce(
+      Response.json({
+        ...catalog,
+        revisions: [{ ...catalog.revisions[0], node_api_version: undefined }]
+      })
+    )
+    await registry.load()
+    expect(await registry.setPin('b'.repeat(64), true)).toBe(false)
+    expect(fetchApi).toHaveBeenCalledTimes(2)
+  })
+
+  it('rejects a verified claim with no revision-bound execution receipt', async () => {
+    const catalog = fixture()
+    catalog.revisions[0] = { ...catalog.revisions[0], comfy_verified: true }
+    fetchApi.mockResolvedValueOnce(Response.json(catalog))
+    const registry = useCloudNodeRegistry()
+    expect(await registry.load()).toBe(false)
+    expect(registry.catalog.value).toBeNull()
+  })
+
+  it('keeps the old catalog and blocks further pins after an uncertain mutation', async () => {
+    fetchApi
+      .mockResolvedValueOnce(Response.json(fixture()))
+      .mockRejectedValueOnce(new TypeError('Disconnected'))
+    const registry = useCloudNodeRegistry()
+    await registry.load()
+    expect(await registry.setPin('b'.repeat(64), true)).toBe(false)
+    expect(await registry.setPin('b'.repeat(64), true)).toBe(false)
+    expect(fetchApi).toHaveBeenCalledTimes(2)
+    expect(registry.catalog.value?.revisions[0].pinned).toBe(false)
   })
 })

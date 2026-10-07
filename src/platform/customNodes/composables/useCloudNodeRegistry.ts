@@ -55,6 +55,24 @@ export function useCloudNodeRegistry() {
       if (!parsed.success) {
         return fail(previous, { reason: 'invalidCatalog' }, parsed.error)
       }
+      if (
+        parsed.data.revisions.some((revision) => {
+          const receipt = revision.verification
+          return (
+            Boolean(revision.comfy_verified) !== Boolean(receipt) ||
+            (receipt &&
+              (revision.node_api_version !== 2 ||
+                receipt.revision_id !== revision.revision_id ||
+                new Set(receipt.tested_nodes).size !==
+                  receipt.tested_nodes.length ||
+                receipt.tested_nodes.some(
+                  (node) => !revision.nodes.includes(node)
+                )))
+          )
+        })
+      ) {
+        return fail(previous, { reason: 'invalidCatalog' })
+      }
       state.value = { phase: 'ready', catalog: parsed.data }
       return true
     } catch (error) {
@@ -72,6 +90,17 @@ export function useCloudNodeRegistry() {
   const setPin = async (revisionId: string, pinned: boolean) => {
     if (state.value.phase !== 'ready') return false
     const previous = state.value.catalog
+    const revision = previous.revisions.find(
+      (item) => item.revision_id === revisionId
+    )
+    if (
+      pinned &&
+      (!revision ||
+        revision.node_api_version !== 2 ||
+        !revision.upstream_commit)
+    ) {
+      return false
+    }
     const body: CloudNodeRegistryPinRequest = {
       revision_id: revisionId,
       pinned
