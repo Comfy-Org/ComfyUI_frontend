@@ -18,7 +18,8 @@ import { assetPath } from '@e2e/fixtures/utils/paths'
 // The drop side accepts a drop purely on `dataTransfer.types` containing
 // `application/x-comfy-asset-info` (`AgentPanelRoot` `isAssetDrag`), so it is
 // view-agnostic by construction; what these cases pin is that every view mode
-// actually publishes that payload, and that the chip names the asset dragged.
+// actually publishes that payload, that the chip names the asset dragged, and
+// that a dropped MP4's chip previews it with a generated poster.
 const ASSET_NAME = AGENT_VIDEO_ASSET.name
 
 test.describe('Agent composer asset drop', { tag: '@cloud' }, () => {
