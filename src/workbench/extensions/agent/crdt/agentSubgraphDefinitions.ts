@@ -395,11 +395,17 @@ export function readSubgraphDefinitions(
  * is sufficient alone because the mirror can omit promoted values the array
  * still carries. An unreadable array or name sequence is represented by null
  * so the minter can fail closed.
+ *
+ * `promotedNames` separates ABSENT from UNREADABLE, because they license
+ * opposite answers on a first write: `undefined` is a document carrying no
+ * definition for the node, which contradicts no ordering and lets the live
+ * order build the array, while `null` is a definition whose inputs cannot be
+ * read, which must fail closed.
  */
 export interface DocPromotedWidgets {
   valueCount: number | null
   declaredNames: readonly string[]
-  promotedNames: readonly string[] | null
+  promotedNames: readonly string[] | null | undefined
 }
 
 /** Null when the document holds no such node. */
@@ -443,9 +449,9 @@ function promotedInputNames(
   doc: Y.Doc,
   node: Y.Map<unknown>,
   definitionId: string
-): string[] | null {
+): string[] | null | undefined {
   const definition = definitionsMap(doc)?.get(definitionId)
-  if (!(definition instanceof Y.Map)) return null
+  if (!(definition instanceof Y.Map)) return undefined
   const declared = namedInputs(definition.get('inputs'))
   const instance = namedInputs(node.get('inputs'))
   if (declared === null || instance === null) return null

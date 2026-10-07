@@ -240,12 +240,19 @@ function promotedHostWrite(
  *
  * - The array is sized for a different set of widgets. Checked against
  *   `valueCount`, the same cardinality invariant `applyHostWidgets` enforces
- *   on the way in. A document holding no array yet constrains nothing — the
- *   host builds it from `host_widgets_values` on first write.
+ *   on the way in.
  * - The promoted name sequence is different. Definition order combined with
  *   the instance's stored input mirror identifies the exact names behind the
  *   positional array, catching same-cardinality demote/promote swaps as well
  *   as `reorderSubgraphInputsByWidgetOrder` permutations.
+ *
+ * A document holding no array yet is sized by nothing, but it is NOT ordered
+ * by nothing: the first write seeds the whole array from `host_widgets_values`
+ * in live order, and a reload reads it back in the DEFINITION's order
+ * (`_applyPromotedWidgetValues`). A reorder permutes the live definition
+ * without minting, so the document's copy still holds the old order — seeding
+ * against it would land every value on a neighbour. Only a document that
+ * declares no definition at all leaves the live order unopposed.
  *
  * A refused write is dropped before enqueue so its `opaque_widgets` rejection
  * cannot abort unrelated operations in the same batch.
@@ -255,13 +262,12 @@ function documentAcceptsLiveIndex(
   liveNames: readonly string[]
 ): boolean {
   if (doc === null) return true
-  if (doc.valueCount === 0) return true
-  return (
-    doc.valueCount === liveNames.length &&
-    doc.promotedNames !== null &&
+  const namesMatch =
+    doc.promotedNames != null &&
     doc.promotedNames.length === liveNames.length &&
     doc.promotedNames.every((name, index) => name === liveNames[index])
-  )
+  if (doc.valueCount === 0) return doc.promotedNames === undefined || namesMatch
+  return doc.valueCount === liveNames.length && namesMatch
 }
 
 function routedWidgetOperation(

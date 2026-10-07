@@ -1023,7 +1023,7 @@ describe('attachDocOpMinter', () => {
     expect(readDocPromotedWidgets(doc, '11')).toEqual({
       valueCount: 2,
       declaredNames: [],
-      promotedNames: null
+      promotedNames: undefined
     })
     doc.destroy()
   })
@@ -1049,12 +1049,12 @@ describe('attachDocOpMinter', () => {
     doc.destroy()
   })
 
-  it('mints against the live order when the document places nothing', async () => {
+  it('mints against the live order when the document declares no definition', async () => {
     const { host, doc } = seedPromotedHost()
     docPromotedWidgets = () => ({
       valueCount: 0,
       declaredNames: [],
-      promotedNames: []
+      promotedNames: undefined
     })
 
     host.widgets[1].value = 'pasted'
@@ -1068,6 +1068,30 @@ describe('attachDocOpMinter', () => {
     expect(applyMinted(doc, minted)).toEqual(['applied'])
     doc.destroy()
   })
+
+  it.for([
+    {
+      name: 'declares another promoted order',
+      promotedNames: ['text', 'prefix']
+    },
+    { name: 'cannot read its declared inputs', promotedNames: null }
+  ])(
+    'refuses to seed an empty document array when the definition $name',
+    async ({ promotedNames }) => {
+      const { host, doc } = seedPromotedHost([])
+      docPromotedWidgets = () => ({
+        valueCount: 0,
+        declaredNames: [],
+        promotedNames
+      })
+
+      host.widgets[1].value = 'pasted'
+      await afterFlush()
+
+      expect(minted).toEqual([])
+      doc.destroy()
+    }
+  )
 
   it('leaves a promoted widget on a nested host on the interior route', async () => {
     const outer = createTestSubgraph({ rootGraph: graph })
