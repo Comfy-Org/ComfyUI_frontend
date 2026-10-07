@@ -1,12 +1,16 @@
 import { describe, expect, it } from 'vitest'
 
-import type { WorkspaceDeployment } from '@comfyorg/ingest-types'
+import type { WorkspaceDeployment } from '@/platform/workspace/api/workspaceApi'
 
 import type {
   DeploymentPickEvent,
   DeploymentPickState
 } from './deploymentPickState'
-import { loadedEvent, reduceDeploymentPick } from './deploymentPickState'
+import {
+  changeBetween,
+  loadedEvent,
+  reduceDeploymentPick
+} from './deploymentPickState'
 
 const deployment: WorkspaceDeployment = {
   deployment_id: 'dep-1',
@@ -46,13 +50,15 @@ describe('reduceDeploymentPick', () => {
     target: null
   }
 
-  it('loads into ready, or into hidden when refused or failed with nothing shown', () => {
-    expect(reduceDeploymentPick({ phase: 'idle' }, loaded)).toEqual(ready)
-    expect(reduceDeploymentPick({ phase: 'hidden' }, loaded)).toEqual(ready)
-    for (const state of [
-      { phase: 'idle' },
-      { phase: 'hidden' }
-    ] satisfies DeploymentPickState[]) {
+  const nothingShown: DeploymentPickState[] = [
+    { phase: 'idle' },
+    { phase: 'hidden' }
+  ]
+
+  it.for(nothingShown)(
+    'loads into ready from $phase, or into hidden when refused or failed',
+    (state) => {
+      expect(reduceDeploymentPick(state, loaded)).toEqual(ready)
       expect(reduceDeploymentPick(state, { type: 'loadRefused' })).toEqual({
         phase: 'hidden'
       })
@@ -60,7 +66,7 @@ describe('reduceDeploymentPick', () => {
         phase: 'hidden'
       })
     }
-  })
+  )
 
   it('keeps a listing on screen when a reload of it fails, but hides on a refusal', () => {
     expect(reduceDeploymentPick(ready, { type: 'loadFailed' })).toBe(ready)
@@ -79,17 +85,23 @@ describe('reduceDeploymentPick', () => {
     expect(reduceDeploymentPick(switching, { type: 'switchFailed' })).toEqual(
       ready
     )
-
-    for (const state of [
-      { phase: 'idle' },
-      { phase: 'hidden' }
-    ] satisfies DeploymentPickState[]) {
-      expect(
-        reduceDeploymentPick(state, { type: 'switchStarted', target: 'dep-1' })
-      ).toBe(state)
-    }
     expect(reduceDeploymentPick(ready, { type: 'switchFailed' })).toBe(ready)
   })
+
+  it.for(nothingShown)('does not start a switch from $phase', (state) => {
+    expect(
+      reduceDeploymentPick(state, { type: 'switchStarted', target: 'dep-1' })
+    ).toBe(state)
+  })
+
+  it.for([ready, switching])(
+    'forgets the listing from $phase when the workspace changes',
+    (state) => {
+      expect(reduceDeploymentPick(state, { type: 'workspaceChanged' })).toEqual(
+        { phase: 'idle' }
+      )
+    }
+  )
 
   it('keeps a switch in flight when a listing lands, and takes the new listing', () => {
     const newer: DeploymentPickEvent = {
@@ -196,5 +208,53 @@ describe('loadedEvent', () => {
       pickSource: 'workspace_default',
       defaultDeploymentId: 'dep-1'
     })
+  })
+})
+
+describe('changeBetween', () => {
+  const updated = { ...deployment, release_id: 'r-2' }
+  const other = { ...deployment, deployment_id: 'dep-2', release_id: 'r-3' }
+  const sameRelease = { ...deployment, deployment_id: 'dep-2' }
+
+  it.for([
+    {
+      name: 'the same deployment',
+      boot: deployment,
+      now: deployment,
+      change: null
+    },
+    { name: 'Comfy Cloud both times', boot: null, now: null, change: null },
+    {
+      name: 'a new Release',
+      boot: deployment,
+      now: updated,
+      change: 'release'
+    },
+    {
+      name: 'another deployment',
+      boot: deployment,
+      now: other,
+      change: 'deployment'
+    },
+    {
+      name: 'Comfy Cloud after a deployment',
+      boot: deployment,
+      now: null,
+      change: 'deployment'
+    },
+    {
+      name: 'a deployment after Comfy Cloud',
+      boot: null,
+      now: deployment,
+      change: 'deployment'
+    },
+    {
+      name: 'another deployment on the same Release',
+      boot: deployment,
+      now: sameRelease,
+      change: null
+    }
+  ])('reports $change for $name', ({ boot, now, change }) => {
+    expect(changeBetween(boot, now)).toBe(change)
   })
 })

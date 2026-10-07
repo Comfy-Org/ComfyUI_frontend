@@ -1,4 +1,4 @@
-import type { WorkspaceDeployment } from '@comfyorg/ingest-types'
+import type { WorkspaceDeployment } from '@/platform/workspace/api/workspaceApi'
 import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -65,13 +65,14 @@ export function useDeploymentLabels() {
 
   /** The id and status, marking the workspace's default deployment. */
   function deploymentCaption(deployment: WorkspaceDeployment): string {
-    const caption = t('deploymentSwitcher.caption', {
+    const key =
+      deployment.deployment_id === defaultDeploymentId.value
+        ? 'deploymentSwitcher.captionDefault'
+        : 'deploymentSwitcher.caption'
+    return t(key, {
       id: shortId(deployment.deployment_id),
       status: deployment.status
     })
-    return deployment.deployment_id === defaultDeploymentId.value
-      ? `${caption} · ${t('deploymentSwitcher.workspaceDefault')}`
-      : caption
   }
 
   function labelFor(
