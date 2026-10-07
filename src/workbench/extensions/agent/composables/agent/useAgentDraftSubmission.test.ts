@@ -110,11 +110,12 @@ function setup() {
           submission = useAgentDraftSubmission(options)
         })
       },
-      submit() {
+      submit(source: 'enter' | 'button' = 'button') {
         return submission.submit(
           composer.draft.trim(),
           composer.attachments,
-          composer.workflowReferences
+          composer.workflowReferences,
+          source
         )
       }
     }
@@ -193,6 +194,22 @@ describe('Agent draft submission', () => {
     expect(composer.workflowReferences).toEqual(original.references)
     expect(selection.staged.value).toEqual(original.nodes)
     expect(revoke).not.toHaveBeenCalled()
+  })
+
+  it('suppresses repeated Enter after rejection but allows explicit and edited retries', async () => {
+    const { composer, submit, send } = setup()
+    send.mockResolvedValue(false)
+
+    await submit('enter')
+    await submit('enter')
+    expect(send).toHaveBeenCalledOnce()
+
+    await submit('button')
+    expect(send).toHaveBeenCalledTimes(2)
+
+    composer.setText('edited retry')
+    await submit('enter')
+    expect(send).toHaveBeenCalledTimes(3)
   })
 
   it('does not recover over an edit that was subsequently cleared', async () => {

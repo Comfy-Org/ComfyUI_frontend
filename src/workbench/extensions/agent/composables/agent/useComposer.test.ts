@@ -4,7 +4,7 @@ import { useTelemetry } from '@/platform/telemetry'
 
 import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
 import type { AgentStarterPromptAttribution } from '../../utils/starterPrompts'
-import type { ComposerAttachment } from './useComposer'
+import type { ComposerAttachment, ComposerSubmitSource } from './useComposer'
 import { useComposer } from './useComposer'
 
 vi.mock(import('@/platform/telemetry'))
@@ -22,7 +22,13 @@ const CHIP: AgentStarterPromptAttribution = {
 
 function setup(running = false) {
   const onSend =
-    vi.fn<(text: string, attachments: ComposerAttachment[]) => void>()
+    vi.fn<
+      (
+        text: string,
+        attachments: ComposerAttachment[],
+        source: ComposerSubmitSource
+      ) => void
+    >()
   const onStop = vi.fn()
   const composer = useComposer({
     onSend,
@@ -45,9 +51,11 @@ describe('useComposer', () => {
 
     composer.submit()
 
-    expect(onSend).toHaveBeenCalledWith('make a cat  @[Image: cat.png]', [
-      attachment
-    ])
+    expect(onSend).toHaveBeenCalledWith(
+      'make a cat  @[Image: cat.png]',
+      [attachment],
+      'button'
+    )
     expect(composer.draft.value).toBe('  make a cat   ')
     expect(composer.attachments.value).toEqual([attachment])
   })
@@ -105,9 +113,11 @@ describe('useComposer', () => {
     expect(composer.canSend.value).toBe(true)
     composer.submit()
 
-    expect(onSend).toHaveBeenCalledWith('@[Image: cat.png]', [
-      { id: 'a1', name: 'cat.png', ref: 'r' }
-    ])
+    expect(onSend).toHaveBeenCalledWith(
+      '@[Image: cat.png]',
+      [{ id: 'a1', name: 'cat.png', ref: 'r' }],
+      'button'
+    )
   })
 
   it('does not send when there is neither text nor an attachment', () => {
@@ -237,9 +247,11 @@ describe('useComposer', () => {
     expect(second.attachments.value.map((a) => a.id)).toEqual(['a1'])
 
     second.submit()
-    expect(onSend).toHaveBeenCalledWith('still here@[Image: cat.png]', [
-      { id: 'a1', name: 'cat.png', ref: 'r' }
-    ])
+    expect(onSend).toHaveBeenCalledWith(
+      'still here@[Image: cat.png]',
+      [{ id: 'a1', name: 'cat.png', ref: 'r' }],
+      'button'
+    )
     expect(first.draft.value).toBe('still here ')
     expect(first.attachments.value.map((attachment) => attachment.id)).toEqual([
       'a1'

@@ -22,7 +22,10 @@ import type {
   WorkflowReferenceOption
 } from '../../types/workflowReference'
 import type { TurnId } from '../../schemas/agentApiSchema'
-import type { ComposerAttachment } from '../../composables/agent/useComposer'
+import type {
+  ComposerAttachment,
+  ComposerSubmitSource
+} from '../../composables/agent/useComposer'
 import type { SelectedNode } from '../../composables/agent/useCanvasSelection'
 import { DEFAULT_AGENT_PAYWALL_PRESENTATION } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
 import type {
@@ -124,7 +127,8 @@ const emit = defineEmits<{
   send: [
     text: string,
     attachments: ComposerAttachment[],
-    workflowReferences?: WorkflowReference[]
+    workflowReferences: WorkflowReference[] | undefined,
+    source: ComposerSubmitSource
   ]
   stop: [method: AgentStopMethod]
   attach: []
@@ -336,10 +340,10 @@ function removeAttachment(id: string): void {
 function onComposerSend(
   text: string,
   attachments: ComposerAttachment[],
-  references?: WorkflowReference[]
+  references: WorkflowReference[] | undefined,
+  source: ComposerSubmitSource
 ): void {
-  if (references !== undefined) emit('send', text, attachments, references)
-  else emit('send', text, attachments)
+  emit('send', text, attachments, references, source)
 }
 
 defineExpose({ addAttachment, updateAttachment, removeAttachment })

@@ -16,8 +16,14 @@ export interface ComposerAttachment {
   uploading?: boolean
 }
 
+export type ComposerSubmitSource = 'enter' | 'button'
+
 export interface UseComposerOptions {
-  onSend: (text: string, attachments: ComposerAttachment[]) => void
+  onSend: (
+    text: string,
+    attachments: ComposerAttachment[],
+    source: ComposerSubmitSource
+  ) => void
   isRunning: () => boolean
   onStop: () => void
 }
@@ -34,7 +40,7 @@ export function useComposer(options: UseComposerOptions) {
       !attachments.value.some((item) => item.uploading)
   )
 
-  function submit(): void {
+  function submit(source: ComposerSubmitSource = 'button'): void {
     if (options.isRunning()) {
       options.onStop()
       return
@@ -42,7 +48,8 @@ export function useComposer(options: UseComposerOptions) {
     if (!canSend.value) return
     options.onSend(
       composerPromptForSend(prompt.value).text.trim(),
-      attachments.value
+      attachments.value,
+      source
     )
   }
 
