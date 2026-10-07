@@ -712,7 +712,8 @@ describe('attachDocOpMinter', () => {
       const hostNode = serialized.nodes.find(
         (node) => String(node.id) === String(host.id)
       )
-      if (hostNode) hostNode.widgets_values = hostWidgetValues
+      assert.exists(hostNode)
+      hostNode.widgets_values = hostWidgetValues
     }
     const doc = mint(serialized, CATALOG)
     docPromotedWidgets = (nodeId) => readDocPromotedWidgets(doc, String(nodeId))
