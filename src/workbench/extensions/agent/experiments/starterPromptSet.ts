@@ -1,6 +1,7 @@
 import { computed, ref, watch } from 'vue'
 
 import type { GetFeaturesResponses } from '@comfyorg/ingest-types'
+import { zGetFeaturesResponse } from '@comfyorg/ingest-types/zod'
 
 import {
   authenticatedRemoteConfigState,
@@ -16,25 +17,20 @@ export const STARTER_PROMPT_SET_FLAG = 'agent-starter-prompt-set'
 export type StarterPromptAssignment = NonNullable<
   GetFeaturesResponses[200][typeof STARTER_PROMPT_SET_FLAG]
 >
-const STARTER_PROMPT_ASSIGNMENTS: readonly StarterPromptAssignment[] = [
-  'control',
-  'test'
-]
-
-function isAssignment(value: unknown): value is StarterPromptAssignment {
-  return STARTER_PROMPT_ASSIGNMENTS.some((assignment) => assignment === value)
-}
+const starterPromptAssignmentSchema =
+  zGetFeaturesResponse.shape[STARTER_PROMPT_SET_FLAG]
 
 function resolveAssignment(): {
   assignment: StarterPromptAssignment
   hasQaOverride: boolean
 } {
   const override =
-    getSessionOverride<string>(STARTER_PROMPT_SET_FLAG) ??
-    getDevOverride<string>(STARTER_PROMPT_SET_FLAG)
+    getSessionOverride<unknown>(STARTER_PROMPT_SET_FLAG) ??
+    getDevOverride<unknown>(STARTER_PROMPT_SET_FLAG)
   const candidate = override ?? remoteConfig.value[STARTER_PROMPT_SET_FLAG]
+  const parsed = starterPromptAssignmentSchema.safeParse(candidate)
   return {
-    assignment: isAssignment(candidate) ? candidate : 'control',
+    assignment: parsed.success ? parsed.data : 'control',
     hasQaOverride: override !== undefined
   }
 }
