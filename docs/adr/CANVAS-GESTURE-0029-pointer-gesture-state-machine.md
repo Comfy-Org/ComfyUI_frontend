@@ -76,22 +76,26 @@ Pointer input becomes a single explicit state machine. One pure reducer owns
 the interpretation of a gesture, and both renderers feed it.
 
 1. **One reducer.** A pure function
-   `reduceGesture(state, event) → { state, commands }` owns the gesture
-   lifecycle. `GestureState` is a discriminated union of `idle`, `pressed`, and
-   `dragging`. `pressed` and `dragging` hold the press origin, the
-   `PointerTarget` and effective policy captured at `down`, the button and
-   modifiers, and (for `dragging`) the drag kind. `idle` may hold the previous
-   click (timestamp, position, target key) so the reducer can recognize a
-   double click. `GestureEvent` is `down | move | up | cancel`. Every event
-   carries pointer position, modifiers, and the event timestamp; only `down`
-   carries a `PointerTarget`, button, and `InteractionPolicy`. `move` and `up`
-   may carry a hover or drop target that the adapter resolved for link and
-   reroute drags; the press target itself never changes after `down`. The
-   reducer never touches a store, the DOM, a canvas instance, or the clock.
+   `reduceGesture(state, event) → { state, effects }` owns the gesture
+   lifecycle. `GestureState` is a readonly discriminated union of `idle`,
+   `pressed`, and `dragging`. Every phase holds the previous click (position,
+   `down` timestamp, and target key) so the reducer can recognize a double
+   click. `pressed` holds the press origin and the `GesturePolicy`
+   (`maxClickDrift`, `doubleClickTime`) captured at `down`. `pressed` and
+   `dragging` also hold the `PointerTarget`, the button and modifiers, and
+   (for `dragging`) the drag kind. `GestureEvent` is
+   `down | move | up | cancel`. `down` carries the position, the event
+   timestamp, the `GesturePolicy`, the `PointerTarget`, the button, and the
+   `InteractionPolicy`. `move` and `up` carry the position and the modifiers.
+   `up` also carries `acceptsDoubleClick`, which is true when the press has a
+   double-click action. `move` and `up` may carry a hover or drop target that
+   the adapter resolved for link and reroute drags. The press target never
+   changes after `down`. The reducer never touches a store, the DOM, a canvas
+   instance, or the clock.
 
    Transitions:
 
-   - `idle` + `down` → `pressed`. Emits press-time commands such as
+   - `idle` + `down` → `pressed`. Emits press-time effects such as
      `bringToFront` and sticky selection for the right button.
    - `pressed` + `move` within the drift threshold → `pressed`. Emits
      `movePress`, which only the `CanvasPointer` adapter consumes (see
@@ -100,43 +104,54 @@ the interpretation of a gesture, and both renderers feed it.
      `startDrag` with the drag kind derived from the target and policy,
      followed by `moveDrag` for the same event.
    - `pressed` + `up` beyond the drift threshold → `idle`. Emits `startDrag`
-     followed by `endDrag`, even if no `move` arrived. It emits no click command
+     followed by `endDrag`, even if no `move` arrived. It emits no click effect
      and does not replace the previous-click record.
    - `pressed` + `up` within the drift threshold → `idle`. Emits `doubleClick`
-     when the target has a double-click action and the previous click had the
-     same target key, its `down` happened less than
-     `CanvasPointer.doubleClickTime` before this `down`, and its position lies
-     within three times the drift threshold. Otherwise it emits `click`. `idle`
-     records the press after a `click` and clears it after a `doubleClick`.
+     when `up.acceptsDoubleClick` is true, the previous click had the same
+     target key, its `down` happened less than the captured `doubleClickTime`
+     before this `down`, and its position lies at most three times the drift
+     threshold away. Otherwise it emits `click`. `idle` records the press
+     after a `click` and clears it after a `doubleClick`.
      Target-key matching intentionally tightens the current position-and-time
      rule so two overlapping targets cannot form one double click.
    - `dragging` + `move` → `dragging`. Emits `moveDrag`.
    - `dragging` + `up` → `idle`. Emits `endDrag` with the release position
      and any drop target.
    - `pressed` + `cancel` → `idle`. Preserves the previous-click record and
-     emits no command.
+     emits no effect.
    - `dragging` + `cancel` → `idle`. Preserves the previous-click record and
-     emits no command. During migration, `CanvasPointer.reset()` runs `finally`
-     and releases pointer capture.
-   - Any other pair returns the state unchanged with no commands.
+     emits `cancelDrag`. `CanvasPointer` runs `onDragCancel`, then `finally`.
+     The Vue adapter calls `useNodeDrag().cancelDrag()`. Neither snaps the
+     dragged items to the grid.
+   - Any other pair returns the state unchanged with no effects.
 
-2. **Commands are the only output.** The reducer returns plain, serializable
-   command values. They include `select`, `startDrag`, `movePress`, `moveDrag`,
-   `endDrag`, `openContextMenu`, `bringToFront`, and `marquee`. An interpreter
-   applies them to `selectionStore`, `layoutStore`, and canvas services. Nothing
-   else writes selection or drag state during a gesture. Existing node hooks and
-   extension callbacks are outward effects emitted by the interpreter in the
-   required order. This follows the command and effect distinction in [State,
-   effects and workflows](../guidance/state-and-effects.md).
+2. **Effects are the only output.** The reducer returns plain, serializable
+   effect values. The lifecycle effects are `click`, `doubleClick`,
+   `startDrag`, `movePress`, `moveDrag`, `endDrag`, and `cancelDrag`. Target
+   effects such as `select`, `openContextMenu`, `bringToFront`, and `marquee`
+   join them as target paths move. An adapter applies effects to
+   `selectionStore`, `layoutStore`, and canvas services. Nothing else writes
+   selection or drag state during a gesture. Existing node hooks and extension
+   callbacks run from the adapter in the required order. The reducer is the
+   pure transition and the adapters own the outward work, as described in
+   [State, effects and workflows](../guidance/state-and-effects.md).
 3. **Hit-test once per press.** The `down` event carries a `PointerTarget`
-   union (`canvas`, `node`, `nodeTitle`, `widget`, `slot`, `group`,
-   `groupTitle`, `reroute`, `link`, `linkCenter`, `resizeHandle`, and
-   `subgraphIO`). The classic canvas resolves it with the existing hit-test
-   helpers; Vue nodes resolve it from the DOM element that received the event.
-   Both adapters keep that target for the rest of the press. No branch
-   re-derives what was hit on `move` or `up`. This intentionally changes the
-   empty-canvas selection fallback, which currently hit-tests again on `up`.
-   Both adapters capture the primary pointer for the gesture lifetime.
+   union. The classic canvas resolves it with `resolvePointerTarget`, which
+   returns `empty`, `node`, `linkBadge`, `subgraphIO`, `reroute`, `link`,
+   `linkCentre`, `groupResize`, `groupTitle`, or `group`. A node is a `node`
+   target only when the canvas or the node allows interaction. Otherwise the
+   press falls through to the other kinds. A ctrl or meta press in panning
+   mode resolves a selectable item with `resolveSelectableTarget` only when no
+   node was hit. `nodeTitle`, `widget`, and `slot`
+   join the union as their paths move. `resolvePointerTarget` serves only the
+   classic canvas. Vue nodes press a known node through their DOM element and
+   do not build a `PointerTarget`. Both adapters keep the press target for the
+   rest of the press. No branch re-derives what was hit on `move` or `up`.
+   This intentionally changes the empty-canvas selection fallback, which
+   previously hit-tested again on `up`. Both adapters capture the primary
+   pointer for the gesture lifetime with `captureGesture`. The Vue adapter
+   captures on the pressed element only when the node can be dragged, so a
+   pinned node takes no capture.
 4. **Distance-only drag threshold.** A press becomes a drag only when the
    pointer moves further than `Comfy.Pointer.ClickDrift`. The time-based
    promotion and `CanvasPointer.bufferTime` are removed, and
@@ -157,13 +172,15 @@ the interpretation of a gesture, and both renderers feed it.
    overrides in the policy for the duration of the press; they do not write
    `read_only`. The adapter captures the effective policy at `down`; setting or
    mode changes apply to the next press, not one already in progress.
-7. **Pressing a node emits `bringToFront`.** The command is emitted on `down`
+   `GesturePolicy` already follows this rule: both adapters pass
+   `CanvasPointer.gesturePolicy()` on `down`, and `pressed` keeps it.
+7. **Pressing a node emits `bringToFront`.** The effect is emitted on `down`
    for unpinned nodes, as the classic canvas does today, so both renderers order
    nodes the same way.
 
 ## Compatibility requirements
 
-- Every command that maps to an existing node or canvas callback
+- Every effect that maps to an existing node or canvas callback
   (`onSelected`, `onDeselected`, `onNodeSelected`, `onNodeDeselected`,
   `onMouseDown`, `onMouseUp`, `onDblClick`, `onNodeMoved`, `onShowNodePanel`,
   widget `mouse`/`onPointerDown`, `onSelectionChange`) fires with the same
@@ -171,40 +188,54 @@ the interpretation of a gesture, and both renderers feed it.
   Characterization tests capture that order before the reducer replaces a
   path. Drag promotion is the intentional exception: `startDrag` fires before
   the first `moveDrag`, and no `moveDrag` fires inside the click threshold.
-  `CanvasPointer` currently invokes `onDrag` before `onDragStart` on the
-  promoting move and invokes `onDrag` for movement inside the threshold.
-  Legacy `onDrag` consumers such as number-widget drag adjustment depend on
-  that in-threshold movement, so the `CanvasPointer` adapter forwards
-  `movePress` to `onDrag` while the Vue adapter ignores it. A number-widget
-  press that moves within the drift threshold can therefore adjust the value
-  and then open its prompt on release. Characterization
-  tests cover every current `onDrag` assignment and record the callback count.
+  `CanvasPointer` still invokes `onDrag` for movement inside the threshold:
+  legacy `onDrag` consumers such as number-widget drag adjustment depend on
+  it, so the `CanvasPointer` adapter forwards `movePress` to `onDrag` while
+  the Vue adapter ignores it. A number-widget press that moves within the
+  drift threshold can therefore adjust the value and then open its prompt on
+  release. Characterization tests cover every current `onDrag` assignment and
+  record the callback count.
 - The adapter that accepts `down` owns the gesture until `up` or `cancel`.
   Renderer, mode, and feature-flag changes take effect only after the gesture
   returns to `idle`. Teardown and lost pointer capture dispatch `cancel` to
-  the current owner before ownership ends. The browser releases capture
-  immediately after `pointerup` or `pointercancel`, so `lostpointercapture`
-  reports interruptions that deliver neither event. Window blur and
-  visibility listeners are added only if a browser is shown to end a gesture
-  without firing `lostpointercapture`. Drag zoom holds no capture and ends on
-  release, a buttonless move, the next press, or teardown.
-- `CanvasPointer` remains exported with its current callback surface until
-  the corpus check shows no extension assigns any of `pointer.onClick`,
+  the current owner before ownership ends. `captureGesture` sets capture,
+  dispatches `cancel` on `lostpointercapture`, and returns a release function
+  that stops listening before it releases capture. The browser also fires
+  `lostpointercapture` after `pointerup` and `pointercancel`. That ordering,
+  not the browser, keeps a normal release from reporting an interruption.
+  Chromium fires no `lostpointercapture` when the captured element is removed
+  from the DOM. Both adapters recover from that case: a buttonless move counts
+  as a release, and a new press from the same pointer cancels the stale one.
+  Window blur and visibility listeners are added only if a browser is shown
+  to end a gesture without either signal.
+- Drag zoom holds no pointer capture. Any press ends an active drag zoom
+  before it is handled, and so does any buttonless move. A release over the
+  canvas and teardown also end it. A release outside the canvas is caught by
+  the next buttonless move or press.
+- `CanvasPointer` remains exported with its callback surface until the corpus
+  check shows no extension assigns any of `pointer.onClick`,
   `pointer.onDoubleClick`, `pointer.onDragStart`, `pointer.onDrag`,
-  `pointer.onDragEnd`, or `pointer.finally`. First-party code assigns all six
-  today, in `LGraphCanvas`, `SubgraphInputNode`, `SubgraphOutputNode`,
-  `WidgetLegacy.vue`, and `useImagePreviewWidget`. During migration
-  `CanvasPointer` is a thin adapter that dispatches `GestureEvent` values and
-  translates commands into assigned callbacks. Its existing cleanup through
-  `finally` and `reset` may remain in that adapter until the corresponding
-  target path moves to the command interpreter. Conditional `??=` assignments
-  keep their first-claimant precedence until target resolution makes that
-  precedence explicit.
+  `pointer.onDragEnd`, `pointer.onDragCancel`, or `pointer.finally`.
+  First-party code assigns all seven, in `LGraphCanvas`, `SubgraphInputNode`,
+  `SubgraphOutputNode`, `WidgetLegacy.vue`, and `useImagePreviewWidget`.
+  `onDragCancel` runs from the `cancelDrag` effect. `dragStarted` is a
+  read-only view of reducer state. The `eLastDown` field and the static
+  `bufferTime` are removed. During migration `CanvasPointer` is a thin
+  adapter that dispatches `GestureEvent` values and translates effects into
+  assigned callbacks. `up()` returns `false` when the release ended a drag or
+  did not match the pressed button. Its
+  existing cleanup through `finally` and `reset` may remain in that adapter
+  until the corresponding target path moves to reducer effects. Conditional
+  `??=` assignments keep their first-claimant precedence until target
+  resolution makes that precedence explicit.
 - `canvas.read_only`, `canvas.allow_dragcanvas`, and `canvas.multi_select`
   remain readable and writable; writes update the policy, and reads derive
   from it.
-- `Comfy.Pointer.ClickBufferTime` stays registered as a deprecated setting so
-  stored user settings do not fail validation. Its value has no effect.
+- `Comfy.Pointer.ClickBufferTime` stays registered as a hidden, deprecated
+  setting. `settingStore` loads stored values whether or not their id is
+  registered, so registration is not needed for loading. It keeps the typed
+  `Settings` key and gives the remaining `settingStore.get` and `set` callers
+  a default. Its value has no effect.
 - Vue node DOM structure and `data-*` attributes used by e2e tests do not
   change.
 
@@ -257,7 +288,7 @@ the interpretation of a gesture, and both renderers feed it.
 - Canvas mode flags become one immutable value instead of a dozen
   independently mutated fields; read-only state cannot be lost by a space-bar
   press.
-- Selection writes during gestures go through the same commands as every
+- Selection writes during gestures go through the same effects as every
   other selection change, satisfying ADR-CRDT-LAYOUT-0003 and ADR-ECS-0008.
 
 ### Negative
@@ -290,8 +321,8 @@ classifies selection as session state.
 
 Planned migration order:
 
-The first reducer may expose only lifecycle commands. Target, modifier, policy,
-and command payload fields enter as each target path moves. That staged subset
+The first reducer may expose only lifecycle effects. Target, modifier, policy,
+and effect payload fields enter as each target path moves. That staged subset
 is not the final contract above.
 
 1. Add gesture characterization tests that drive a real `LGraphCanvas` and
@@ -304,7 +335,7 @@ is not the final contract above.
 3. Route Vue node pointer events through the reducer; delete
    `handleNodeSelect`, `toggleNodeSelectionAfterPointerUp`, and the Vue
    drag-guard state. Run the same logical gesture traces through the classic
-   and Vue adapters and compare their commands.
+   and Vue adapters and compare their effects.
 4. Replace all `pointer.onClick` writers in `LGraphCanvas` one target kind at a
-   time with `PointerTarget` resolution and commands.
+   time with `PointerTarget` resolution and effects.
 5. Introduce `InteractionPolicy` and derive the legacy mode flags from it.
