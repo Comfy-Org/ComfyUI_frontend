@@ -249,6 +249,32 @@ describe('launchCancellationFlow', () => {
     expect(showFlow).toHaveBeenCalledTimes(2)
   })
 
+  it('keeps a pending launch while another workspace launches', async () => {
+    let resolvePrepare: (flow: RetentionFlowResponse) => void = () => {}
+    vi.mocked(workspaceApi.prepareRetentionFlow).mockReturnValue(
+      new Promise((resolve) => {
+        resolvePrepare = resolve
+      })
+    )
+    const { shown, showFlow } = captureFlow()
+
+    const firstLaunch = launchCancellationFlow({ showFlow })
+    mocks.activeWorkspaceId = 'workspace-2'
+    mocks.isPersonal = false
+    await launchCancellationFlow({ showFlow })
+    mocks.activeWorkspaceId = 'workspace-1'
+    mocks.isPersonal = true
+    const relaunch = launchCancellationFlow({ showFlow })
+    resolvePrepare(retentionFlow({ experiment_variant: offer.id, offer }))
+    await Promise.all([firstLaunch, relaunch])
+
+    expect(workspaceApi.prepareRetentionFlow).toHaveBeenCalledOnce()
+    expect(shown.map(({ workspaceId }) => workspaceId)).toEqual([
+      'workspace-2',
+      'workspace-1'
+    ])
+  })
+
   it('stops when the active workspace changes during preparation', async () => {
     vi.mocked(workspaceApi.prepareRetentionFlow).mockImplementation(
       async () => {

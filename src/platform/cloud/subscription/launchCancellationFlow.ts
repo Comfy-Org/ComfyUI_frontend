@@ -77,9 +77,7 @@ export async function recordRetentionFlowEvent(
   }
 }
 
-let pendingLaunch:
-  | { workspaceId: string | null; done: Promise<void> }
-  | undefined
+const pendingLaunches = new Map<string | null, Promise<void>>()
 
 export function launchCancellationFlow(
   options: LaunchCancellationFlowOptions
@@ -88,17 +86,15 @@ export function launchCancellationFlow(
     options.launchWorkspaceId === undefined
       ? useTeamWorkspaceStore().activeWorkspaceId
       : options.launchWorkspaceId
-  if (pendingLaunch?.workspaceId === launchWorkspaceId)
-    return pendingLaunch.done
+  const pending = pendingLaunches.get(launchWorkspaceId)
+  if (pending) return pending
 
   const done = showCancellationFlow(
     options.cancelAt,
     launchWorkspaceId,
     options.showFlow
-  ).finally(() => {
-    if (pendingLaunch?.done === done) pendingLaunch = undefined
-  })
-  pendingLaunch = { workspaceId: launchWorkspaceId, done }
+  ).finally(() => pendingLaunches.delete(launchWorkspaceId))
+  pendingLaunches.set(launchWorkspaceId, done)
   return done
 }
 
