@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { ModelMetadataFetchOutcome } from '@/platform/missingModel/missingModelDownload'
 import type { ModelFile } from '@/platform/workflow/validation/schemas/workflowSchema'
@@ -42,10 +42,6 @@ function deferred<T>() {
 }
 
 describe('resolveTemplateModelMetadata', () => {
-  beforeEach(() => {
-    mocks.fetchModelMetadataWithStatus.mockReset()
-  })
-
   it('fetches each URL once while preserving input order and repeated identity', async () => {
     const shared = model('shared.safetensors')
     const unique = model('unique.safetensors')

@@ -14,7 +14,7 @@ import { setWorkspaceUIMock } from '@/storybook/mocks/useWorkspaceUI'
 import BillingStatusBanner from './BillingStatusBanner.vue'
 
 /**
- * The single billing banner slot for team workspaces (FE-1246), rendered in
+ * The single billing banner slot for team and personal plans (FE-1246), rendered in
  * priority order: paused > payment declined > out of credits > ending. At most
  * one state shows at a time. Each story drives the real `deriveBillingBanner`
  * through the stubbed billing context, so these are the states the backend can
@@ -260,3 +260,48 @@ const endedEnterprise: Partial<BillingContextMockState> = {
 export const PlanEndedEnterpriseOwner: Story = story(endedEnterprise, owner)
 
 export const PlanEndedEnterpriseMember: Story = story(endedEnterprise, member)
+
+const personalOwner: Partial<WorkspaceUIMockState> = {
+  workspaceType: 'personal'
+}
+
+function personalPlan(
+  subscription: SubscriptionInfo,
+  billing: Partial<BillingContextMockState>
+): Partial<BillingContextMockState> {
+  return {
+    ...billing,
+    subscription: { ...subscription, tier: 'PRO', planSlug: 'pro-monthly' },
+    isTeamPlan: false
+  }
+}
+
+/** Personal plans get first-person copy and no member version. */
+export const OutOfCreditsPersonal: Story = story(
+  personalPlan(exhausted, {
+    canAccessSubscriptionFeatures: true,
+    billingStatus: 'paid',
+    subscriptionStatus: 'active',
+    renewalDate: RENEWAL_DATE
+  }),
+  personalOwner
+)
+
+export const EndingPersonal: Story = story(
+  personalPlan(cancelled, {
+    canAccessSubscriptionFeatures: true,
+    billingStatus: 'paid',
+    subscriptionStatus: 'canceled'
+  }),
+  personalOwner
+)
+
+/** Resubscribe opens the pricing table on Personal plans. */
+export const PlanEndedPersonal: Story = story(
+  personalPlan(endedTeam.subscription!, {
+    canAccessSubscriptionFeatures: false,
+    billingStatus: 'inactive',
+    subscriptionStatus: 'ended'
+  }),
+  personalOwner
+)

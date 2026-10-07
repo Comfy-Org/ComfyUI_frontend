@@ -269,6 +269,20 @@ describe('cancel telemetry on the billing SDK rail', () => {
     return vi.mocked(trackBillingEvent).mock.calls.map(([event]) => event.stage)
   }
 
+  function lifecycle() {
+    const trackBillingEvent = useTelemetry()?.trackBillingEvent
+    if (!trackBillingEvent) throw new Error('Telemetry mock unavailable')
+    return vi.mocked(trackBillingEvent).mock.calls.map(([event]) =>
+      'failure_category' in event
+        ? {
+            stage: event.stage,
+            billing_client: event.billing_client,
+            failure_category: event.failure_category
+          }
+        : { stage: event.stage, billing_client: event.billing_client }
+    )
+  }
+
   it('reports one started and leaves the terminal to the lifecycle when a rail cancel settles an operation', async () => {
     flagState.billingSdkSubscriptionEnabled = true
     vi.mocked(harness.sdk.commands.cancelSubscription).mockResolvedValue(
@@ -313,16 +327,31 @@ describe('cancel telemetry on the billing SDK rail', () => {
     )
   })
 
-  it('reports one started when the missing route sends the cancel to the workspace client', async () => {
+  it('closes the refused SDK attempt and starts the workspace client attempt on its own client', async () => {
     flagState.billingSdkSubscriptionEnabled = true
     vi.mocked(harness.sdk.commands.cancelSubscription).mockResolvedValue(
       ROUTE_MISSING
     )
+    const billing = setupBilling()
 
-    await setupBilling().cancelSubscription()
+    await billing.cancelSubscription()
 
-    expect(workspaceApi.cancelSubscription).toHaveBeenCalledOnce()
-    expect(stages()).toEqual(['started'])
+    expect(lifecycle()).toEqual([
+      { stage: 'started', billing_client: 'sdk' },
+      {
+        stage: 'failed',
+        billing_client: 'sdk',
+        failure_category: 'api_rejected'
+      },
+      { stage: 'started', billing_client: 'legacy' }
+    ])
+
+    const firstClick = lifecycle().length
+    await billing.cancelSubscription()
+
+    expect(lifecycle().slice(firstClick)).toEqual([
+      { stage: 'started', billing_client: 'legacy' }
+    ])
   })
 })
 

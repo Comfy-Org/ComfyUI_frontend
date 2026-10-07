@@ -128,7 +128,9 @@ export function nextPollDelayMs(
   previousDelayMs: number | undefined,
   waitedWithoutActionMs = 0
 ): number {
-  if (isParkedOnCustomer(state)) return OPERATION_POLL_TIMING.parkedMs
+  if (state.challenge?.status !== 'failed' && isParkedOnCustomer(state)) {
+    return OPERATION_POLL_TIMING.parkedMs
+  }
   if (
     isWaitingOnCustomerWithoutAction(state) &&
     waitedWithoutActionMs >= OPERATION_POLL_TIMING.actionDiscoveryMs

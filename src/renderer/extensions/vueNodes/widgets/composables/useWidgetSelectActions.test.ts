@@ -8,6 +8,7 @@ import { useWidgetSelectActions } from '@/renderer/extensions/vueNodes/widgets/c
 import { api } from '@/scripts/api'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import enMessages from '@/locales/en/main.json'
 
 const mockCaptureCanvasState = vi.hoisted(() => vi.fn())
 
@@ -76,6 +77,32 @@ describe('useWidgetSelectActions', () => {
   })
 
   describe('handleFilesUpdate', () => {
+    it('rejects extensionless videos before upload', async () => {
+      const modelValue = ref<string | undefined>('existing.mp4')
+      const { handleFilesUpdate } = useWidgetSelectActions({
+        modelValue,
+        dropdownItems: computed(() => []),
+        widget: () =>
+          fromPartial<SimplifiedWidget<string | undefined>>({
+            name: 'test',
+            type: 'combo',
+            options: { values: ['existing.mp4'] }
+          }),
+        uploadFolder: () => 'input',
+        uploadSubfolder: () => undefined
+      })
+
+      await handleFilesUpdate([
+        new File(['video'], 'extensionless', { type: 'video/mp4' })
+      ])
+
+      expect(api.fetchApi).not.toHaveBeenCalled()
+      expect(modelValue.value).toBe('existing.mp4')
+      expect(useToastStore().addAlert).toHaveBeenCalledWith(
+        enMessages.g.videoFilenameExtensionRequired
+      )
+    })
+
     it('uploads file and updates modelValue', async () => {
       vi.mocked(api.fetchApi).mockResolvedValue(
         fromPartial<Response>({

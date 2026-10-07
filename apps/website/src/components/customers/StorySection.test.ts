@@ -10,7 +10,8 @@ const stories: StoryCard[] = [
     title: 'How Series Entertainment rebuilt production with ComfyUI',
     category: 'GAME & VIDEO PRODUCTION',
     cover: 'https://media.comfy.org/website/customers/series/cover.webp',
-    description: 'Scaling emotional storytelling across 100,000+ assets.'
+    description: 'Scaling emotional storytelling across 100,000+ assets.',
+    dateAdded: '2026-07-01'
   },
   {
     slug: 'moment-factory',
@@ -18,7 +19,8 @@ const stories: StoryCard[] = [
     category: 'PUBLIC ART',
     cover:
       'https://media.comfy.org/website/customers/moment-factory/cover.webp',
-    description: 'Architectural-scale 3D projection mapping with ComfyUI.'
+    description: 'Architectural-scale 3D projection mapping with ComfyUI.',
+    dateAdded: '2026-07-01'
   }
 ]
 

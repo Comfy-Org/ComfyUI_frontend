@@ -1,5 +1,10 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useExtensionStore } from '@/stores/extensionStore'
+import { toNodeId } from '@/types/nodeId'
 
 import { toTurnId } from '../schemas/agentApiSchema'
 import type {
@@ -40,6 +45,7 @@ import type { ReportIdentifiers, ReportSources } from './crdtDebugReport'
 import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import type { DevEvent } from './devPanelLog'
 import { collectCrdtDebugReport } from './crdtDebugReport'
+import { collectMediaUiDiagnostics } from './mediaUiDiagnostics'
 
 const ALL_SOURCES: ReportSources = {
   serverLogs: true,
@@ -137,6 +143,66 @@ describe('collectCrdtDebugReport', () => {
     expect(report).toContain('doc-1')
     expect(report).toContain('doc_update')
     expect(report).toContain('Document stamps')
+  })
+
+  it('includes privacy-safe media UI state without selected values or URLs', async () => {
+    const node = new LGraphNode('LoadImage')
+    node.id = toNodeId(7)
+    node.comfyClass = 'LoadImage'
+    node.widgets = [
+      fromPartial<IBaseWidget>({ name: 'image', value: 'selected-private.png' })
+    ]
+    const privateUrl = 'https://private.example/image.png'
+    const report = await collectCrdtDebugReport({
+      crdt: SNAPSHOT,
+      events: [],
+      mediaUiDiagnostics: collectMediaUiDiagnostics({
+        nodes: [node],
+        getNodeOutputs: () => undefined,
+        getNodeImageUrls: () => [privateUrl],
+        root: document
+      })
+    })
+
+    expect(report).toContain('- Media UI diagnostics: collected (1 nodes)')
+    expect(report).toContain('## Media UI diagnostics')
+    expect(report).toContain('"selectedImagePresent": true')
+    expect(report).not.toContain('selected-private.png')
+    expect(report).not.toContain(privateUrl)
+  })
+
+  it('bounds media diagnostics without dropping the following tool section', async () => {
+    const mediaUiDiagnostics = Array.from({ length: 1_000 }, (_, index) => ({
+      nodeId: String(index),
+      nodeType: 'LoadImage',
+      mediaKinds: ['image'] as const,
+      selectedImagePresent: true,
+      selectedAudioPresent: false,
+      outputImageCount: 1,
+      outputAudioCount: 0,
+      resolvedImageUrlCount: 1,
+      legacyImageCount: 0,
+      loadedLegacyImageCount: 0,
+      vueNodeCount: 1,
+      vueImageCount: 1,
+      vueAudioCount: 0,
+      audioUiRegistered: false,
+      audioElementConnected: false,
+      audioSourcePresent: false,
+      audioHiddenAsEmpty: false,
+      hideOutputImages: false
+    }))
+
+    const report = await collectCrdtDebugReport({
+      crdt: SNAPSHOT,
+      events: [],
+      mediaUiDiagnostics
+    })
+
+    expect(report).toMatch(
+      /Media UI diagnostics: collected \(\d+ of 1000 nodes; section limit\)/
+    )
+    expect(report).toContain('## Agent tool calls')
   })
 
   it('leads with an Identifiers block carrying every ID a backend engineer searches by', async () => {
@@ -970,7 +1036,7 @@ describe('collectCrdtDebugReport', () => {
       expect(second).toBe(first)
       expect(first).toContain('report truncated')
       expect(first).toContain(
-        'Report format version: 1 · Document schema version: 1'
+        'Report format version: 2 · Document schema version: 1'
       )
       expect(first).toContain('Schema version:** 1')
       expect(first).toContain('[redacted by the debug report]')

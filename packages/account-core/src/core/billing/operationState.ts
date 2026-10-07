@@ -14,6 +14,7 @@
 import {
   zBillingOpChargeBreakdown,
   zBillingOpChargeReason,
+  zBillingOpReceiptPlan,
   zBillingOpStatusResponse
 } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
@@ -32,10 +33,16 @@ const ChargeBreakdownSchema = zBillingOpChargeBreakdown.extend({
   )
 })
 
+const ReceiptPlanSchema = zBillingOpReceiptPlan.extend({
+  price_cents: wireCents.optional(),
+  monthly_price_cents: wireCents.optional()
+})
+
 export const BillingOpStatusSchema = zBillingOpStatusResponse.extend({
   amount_charged_cents: wireCents.optional(),
   credits_added: wireCents.optional(),
-  charge_breakdown: ChargeBreakdownSchema.optional()
+  charge_breakdown: ChargeBreakdownSchema.optional(),
+  plan: ReceiptPlanSchema.optional()
 })
 
 export type BillingOpStatus = z.infer<typeof BillingOpStatusSchema>
@@ -129,6 +136,8 @@ export type PendingBillingOperation = BillingOperationIdentity & {
   /** Set while the customer's last attempt was declined and they may try again. */
   readonly declineReason?: BillingDeclineReason
   readonly recoveryAction?: BillingRecoveryAction
+  /** The server's word on whether cancelling this operation would take effect; absent is no claim. */
+  readonly cancelable?: boolean
   /** True once the operation has ever waited on the customer; widens the poll budget. */
   readonly customerActionSeen: boolean
 }
@@ -404,6 +413,7 @@ function reducePending(
     serverPhase: status.phase,
     declineReason,
     recoveryAction: status.recovery_action,
+    cancelable: status.cancelable,
     customerActionSeen:
       state.customerActionSeen ||
       actionUrl !== undefined ||

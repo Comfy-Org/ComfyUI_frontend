@@ -71,6 +71,7 @@
       "newHere": "Comfyを初めてご利用ですか？",
       "signUpLink": "こちらからサインアップ",
       "signingIn": "サインインしています…",
+      "ssoRedirecting": "組織のサインインページに移動しています…",
       "submit": "ログイン",
       "useEmailInstead": "メールアドレスを使用する"
     },

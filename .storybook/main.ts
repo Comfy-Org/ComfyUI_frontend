@@ -19,7 +19,7 @@ function withoutAppSrcAlias(alias: AliasOptions = []): Alias[] {
 const config: StorybookConfig = {
   stories: [
     '../src/**/*.stories.@(js|jsx|mjs|ts|tsx)',
-    '../apps/website/src/components/blocks/**/*.stories.@(js|jsx|mjs|ts|tsx)'
+    '../apps/website/src/**/*.stories.@(js|jsx|mjs|ts|tsx)'
   ],
   staticDirs: ['../public', '../apps/website/public'],
   addons: ['@storybook/addon-docs', '@storybook/addon-mcp'],
@@ -96,6 +96,10 @@ const config: StorybookConfig = {
           {
             find: '@comfyorg/website',
             replacement: process.cwd() + '/apps/website'
+          },
+          {
+            find: 'astro:env/client',
+            replacement: process.cwd() + '/apps/website/src/test/astroEnv.ts'
           },
           {
             find: /^\/animations\//,

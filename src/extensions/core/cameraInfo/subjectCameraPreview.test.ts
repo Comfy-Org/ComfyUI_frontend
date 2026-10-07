@@ -46,6 +46,7 @@ describe('renderInsetPreview', () => {
     const renderer = makeRenderer()
     renderInsetPreview({
       renderer,
+      view: renderer,
       canvas: { width: PREVIEW_WIDTH, height: PREVIEW_HEIGHT },
       scene: new THREE.Scene(),
       camera: new THREE.PerspectiveCamera(),
@@ -71,6 +72,7 @@ describe('renderInsetPreview', () => {
 
     renderInsetPreview({
       renderer,
+      view: renderer,
       canvas: { width: 800, height: 600 },
       scene: new THREE.Scene(),
       camera: new THREE.PerspectiveCamera(),
@@ -91,6 +93,7 @@ describe('renderInsetPreview', () => {
 
     renderInsetPreview({
       renderer,
+      view: renderer,
       canvas: { width: 800, height: 600 },
       scene: new THREE.Scene(),
       camera,
@@ -109,6 +112,7 @@ describe('renderInsetPreview', () => {
 
     renderInsetPreview({
       renderer,
+      view: renderer,
       canvas: { width: 800, height: 600 },
       scene: new THREE.Scene(),
       camera,
@@ -130,6 +134,7 @@ describe('renderInsetPreview', () => {
 
     renderInsetPreview({
       renderer,
+      view: renderer,
       canvas: { width: 800, height: 600 },
       scene: new THREE.Scene(),
       camera,

@@ -215,17 +215,6 @@ const devAgentConfig = createDevAgentConfig(process.env)
 const cloudProxyConfig =
   DISTRIBUTION === 'cloud' ? { secure: false, changeOrigin: true } : {}
 
-// The agent proxy adds the session token, so only the dev server's own pages may use it.
-function isCrossOrigin(req: IncomingMessage): boolean {
-  const origin = req.headers.origin
-  if (origin === undefined) return false
-  try {
-    return new URL(origin).host !== req.headers.host
-  } catch {
-    return true
-  }
-}
-
 function handleGcsRedirect(
   proxyRes: IncomingMessage,
   req: IncomingMessage,
@@ -344,26 +333,7 @@ export default defineConfig({
           }
         : {}),
 
-      ...(devAgentConfig.proxy
-        ? {
-            '/api/agent': {
-              ...devAgentConfig.proxy,
-              ws: true,
-              rewrite: (path: string) => path.replace(/^\/api/, ''),
-              configure: (proxy) => {
-                proxy.on('proxyReqWs', (_proxyReq, req, socket) => {
-                  if (isCrossOrigin(req)) socket.destroy()
-                })
-              },
-              bypass: (req, res) => {
-                if (!res || !isCrossOrigin(req)) return null
-                res.statusCode = 403
-                res.end('The agent proxy serves the dev server origin only')
-                return false
-              }
-            }
-          }
-        : {}),
+      ...(devAgentConfig.proxy ? { '/api/agent': devAgentConfig.proxy } : {}),
 
       '/api': {
         target: DEV_SERVER_COMFYUI_URL,
@@ -855,7 +825,6 @@ export default defineConfig({
 
   optimizeDeps: {
     exclude: ['@comfyorg/comfyui-electron-types'],
-    include: ['primevue/datatable', 'primevue/column'],
     entries: ['index.html']
   },
 

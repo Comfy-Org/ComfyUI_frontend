@@ -42,20 +42,14 @@ const i18n = createI18n({
   messages: { en: enMessages }
 })
 
-const DropdownMenuStub = {
-  props: ['entries'],
-  template:
-    '<div data-testid="menu"><button v-for="entry in entries" :key="entry.label" type="button" :disabled="entry.disabled" @click="entry.command?.()">{{ entry.label }}</button></div>'
-}
-
-function renderComponent() {
-  return render(WorkspaceMenuButton, {
+async function renderComponent() {
+  render(WorkspaceMenuButton, {
     global: {
       plugins: [i18n],
-      directives: { tooltip: {} },
-      stubs: { DropdownMenu: DropdownMenuStub }
+      directives: { tooltip: {} }
     }
   })
+  await userEvent.click(screen.getByRole('button', { name: 'More Options' }))
 }
 
 describe('WorkspaceMenuButton', () => {
@@ -80,85 +74,85 @@ describe('WorkspaceMenuButton', () => {
     Object.assign(useTeamWorkspaceStore(), { isWorkspaceSubscribed: false })
   })
 
-  it('lets a member leave and offers no destructive workspace actions', () => {
+  it('lets a member leave and offers no destructive workspace actions', async () => {
     mockUiConfig.value = memberConfig
     mockCanLeaveWorkspace.value = true
     mockCanManageSubscription.value = false
-    renderComponent()
+    await renderComponent()
 
-    const leave = screen.getByRole('button', { name: 'Leave Workspace' })
+    const leave = screen.getByRole('menuitem', { name: 'Leave Workspace' })
     expect(leave).toBeEnabled()
     expect(
-      screen.queryByRole('button', { name: 'Delete Workspace' })
+      screen.queryByRole('menuitem', { name: 'Delete Workspace' })
     ).not.toBeInTheDocument()
   })
 
   it('lets an additional workspace owner leave and delete', async () => {
     const user = userEvent.setup()
     mockCanLeaveWorkspace.value = true
-    renderComponent()
+    await renderComponent()
 
     expect(
-      screen.getByRole('button', { name: 'Leave Workspace' })
+      screen.getByRole('menuitem', { name: 'Leave Workspace' })
     ).toBeEnabled()
     expect(
-      screen.getByRole('button', { name: 'Delete Workspace' })
+      screen.getByRole('menuitem', { name: 'Delete Workspace' })
     ).toBeEnabled()
 
-    await user.click(screen.getByRole('button', { name: 'Delete Workspace' }))
+    await user.click(screen.getByRole('menuitem', { name: 'Delete Workspace' }))
     expect(useDialogService().showDeleteWorkspaceDialog).toHaveBeenCalledOnce()
   })
 
-  it('does not expose Delete in a personal workspace', () => {
+  it('does not expose Delete in a personal workspace', async () => {
     mockUiConfig.value = personalConfig
-    renderComponent()
+    await renderComponent()
 
     expect(
-      screen.queryByRole('button', { name: 'Delete Workspace' })
+      screen.queryByRole('menuitem', { name: 'Delete Workspace' })
     ).not.toBeInTheDocument()
   })
 
-  it('disables Delete while the additional workspace is subscribed', () => {
+  it('disables Delete while the additional workspace is subscribed', async () => {
     Object.assign(useTeamWorkspaceStore(), { isWorkspaceSubscribed: true })
-    renderComponent()
+    await renderComponent()
 
     expect(
-      screen.getByRole('button', { name: 'Delete Workspace' })
-    ).toBeDisabled()
+      screen.getByRole('menuitem', { name: 'Delete Workspace' })
+    ).toHaveAttribute('aria-disabled', 'true')
   })
 
-  it('hides Leave when workspace permission is withheld', () => {
-    renderComponent()
+  it('hides Leave when workspace permission is withheld', async () => {
+    await renderComponent()
 
     expect(
-      screen.queryByRole('button', { name: 'Leave Workspace' })
+      screen.queryByRole('menuitem', { name: 'Leave Workspace' })
     ).not.toBeInTheDocument()
   })
 
   it('opens the leave dialog when an owner clicks Leave', async () => {
     const user = userEvent.setup()
     mockCanLeaveWorkspace.value = true
-    renderComponent()
+    await renderComponent()
 
-    await user.click(screen.getByRole('button', { name: 'Leave Workspace' }))
+    await user.click(screen.getByRole('menuitem', { name: 'Leave Workspace' }))
     expect(useDialogService().showLeaveWorkspaceDialog).toHaveBeenCalledOnce()
   })
 
-  it('rechecks permission before opening the leave dialog', () => {
+  it('rechecks permission before opening the leave dialog', async () => {
     mockCanLeaveWorkspace.value = true
-    renderComponent()
+    await renderComponent()
 
-    const leave = screen.getByRole('button', { name: 'Leave Workspace' })
+    const leave = screen.getByRole('menuitem', { name: 'Leave Workspace' })
     mockCanLeaveWorkspace.value = false
     leave.click()
 
     expect(useDialogService().showLeaveWorkspaceDialog).not.toHaveBeenCalled()
   })
 
-  it('rechecks owner permission before opening the delete dialog', () => {
-    renderComponent()
+  it('rechecks owner permission before opening the delete dialog', async () => {
+    await renderComponent()
 
-    const deleteWorkspace = screen.getByRole('button', {
+    const deleteWorkspace = screen.getByRole('menuitem', {
       name: 'Delete Workspace'
     })
     mockCanManageSubscription.value = false
@@ -167,10 +161,10 @@ describe('WorkspaceMenuButton', () => {
     expect(useDialogService().showDeleteWorkspaceDialog).not.toHaveBeenCalled()
   })
 
-  it('rechecks the subscription lock before opening the delete dialog', () => {
-    renderComponent()
+  it('rechecks the subscription lock before opening the delete dialog', async () => {
+    await renderComponent()
 
-    const deleteWorkspace = screen.getByRole('button', {
+    const deleteWorkspace = screen.getByRole('menuitem', {
       name: 'Delete Workspace'
     })
     Object.assign(useTeamWorkspaceStore(), { isWorkspaceSubscribed: true })

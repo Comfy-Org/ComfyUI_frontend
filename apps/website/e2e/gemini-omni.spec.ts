@@ -17,7 +17,7 @@ const STEPS_CTA = t('geminiOmni.steps.secondaryCta', {}, { locale: 'en' })
 const REVIEWS_HEADING = t('geminiOmni.reviews.heading', {}, { locale: 'en' })
 const HIGHLIGHT_CTA = t('geminiOmni.reviews.highlightCta', {}, { locale: 'en' })
 const COPY_PROMPT = t('modelLaunch.copyPrompt', {}, { locale: 'en' })
-const MODELS_ROUTE = getRoutes('en').models
+const MODELS_ROUTE = getRoutes('en').workshop
 const MCP_ROUTE = getRoutes('en').mcp
 const FIRST_REVIEW = creatorReviews[0]
 
@@ -105,7 +105,7 @@ test.describe('Gemini Omni page — link targets', () => {
         name: t('ui.breadcrumb', {}, { locale: 'en' })
       })
       .getByRole('link', {
-        name: t('models.breadcrumb.models', {}, { locale: 'en' })
+        name: t('workshop.model.breadcrumb', {}, { locale: 'en' })
       })
     await expect(modelsCrumb).toHaveAttribute('href', MODELS_ROUTE)
   })

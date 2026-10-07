@@ -154,7 +154,7 @@ const fill = computed(() =>
         :src="active.media.url"
         alt=""
         class="pointer-events-none absolute inset-0 size-full object-cover"
-        decoding="async"
+        fetchpriority="high"
       />
       <div
         class="pointer-events-none absolute inset-0 bg-linear-to-t from-page/90 via-page/80 to-page/20 sm:bg-linear-to-r sm:via-page/75 sm:to-transparent"

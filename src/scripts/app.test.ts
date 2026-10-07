@@ -1163,6 +1163,24 @@ describe('ComfyApp', () => {
       expect(showDialog).toHaveBeenCalledOnce()
     })
 
+    it('does not accept the API key when a session-only SSO tab lost its workspace token', async () => {
+      prepareEmptyPromptQueue()
+      Object.assign(useAuthStore(), {
+        sessionOnlyUser: { id: 'sso-user', email: 'sso@example.com' }
+      })
+      Object.assign(useApiKeyAuthStore(), { isAuthenticated: true })
+      vi.mocked(useApiKeyAuthStore().getApiKey).mockReturnValue('api-key')
+      vi.mocked(useAuthStore().getWorkspaceAuthToken).mockResolvedValueOnce(
+        undefined
+      )
+      const queuePrompt = vi.spyOn(api, 'queuePrompt')
+      const showDialog = vi.spyOn(useDialogStore(), 'showDialog')
+
+      await expect(app.queuePrompt(0)).resolves.toBe(false)
+      expect(queuePrompt).not.toHaveBeenCalled()
+      expect(showDialog).toHaveBeenCalledOnce()
+    })
+
     it('submits with the validated API key when the key session has a workspace', async () => {
       prepareEmptyPromptQueue()
       Object.assign(useApiKeyAuthStore(), { isAuthenticated: true })

@@ -85,7 +85,6 @@ vi.mock(
 describe('useSidebarTabStore', () => {
   beforeEach(() => {
     vi.mocked(useMenuItemStore().registerCommands).mockImplementation(() => {})
-    mockOpenModelLibraryBrowser.mockClear()
   })
 
   const toggleModelLibrary = async () => {

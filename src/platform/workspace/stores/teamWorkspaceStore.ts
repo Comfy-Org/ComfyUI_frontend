@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { clearPreservedQuery } from '@/platform/navigation/preservedQueryManager'
@@ -23,6 +24,7 @@ import type {
   WorkspaceWithRole
 } from '../api/workspaceApi'
 import { WorkspaceApiError, workspaceApi } from '../api/workspaceApi'
+import { NoWorkspaceAccessError } from '../api/workspaceApiError'
 
 export interface WorkspaceMember {
   id: string
@@ -161,6 +163,7 @@ const MAX_INIT_RETRIES = 3
 const BASE_RETRY_DELAY_MS = 1000
 
 export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
+  const { flags } = useFeatureFlags()
   const initState = ref<InitState>('uninitialized')
   const workspaces = shallowRef<WorkspaceState[]>([])
   const mutableActiveWorkspaceId = ref<string | null>(null)
@@ -353,7 +356,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
           )
 
           if (workspaces.value.length === 0) {
-            throw new Error('No workspaces available')
+            throw new NoWorkspaceAccessError('No workspaces available')
           }
 
           // Verify session workspace exists in fetched list
@@ -395,7 +398,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
         )
 
         if (workspaces.value.length === 0) {
-          throw new Error('No workspaces available')
+          throw new NoWorkspaceAccessError('No workspaces available')
         }
 
         // 3. Determine target workspace (priority: localStorage > personal)
@@ -425,8 +428,10 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
         return
       } catch (e) {
         if (isStaleIdentity(generation)) return
+        // With SSO off, ingest's 403 keeps today's retries.
         const isNoWorkspacesError =
-          e instanceof Error && e.message === 'No workspaces available'
+          e instanceof NoWorkspaceAccessError &&
+          (e.status === undefined || flags.ssoEnabled)
         // A definitive 4xx on the credential lookup cannot be repaired by
         // resending the same key; retries stay reserved for transient
         // failures (network, 408/429, 5xx).
@@ -666,13 +671,12 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
       if (isStaleIdentity(generation)) return
 
       if (targetId === activeWorkspaceId.value) {
-        // Deleted active workspace - go to personal
-        const personal = personalWorkspace.value
+        // Sorted personal-first, so this is personal or the next team.
+        const fallback = workspaces.value.find((w) => w.id !== targetId)
         prepareWorkflowWorkspaceTransition()
         workspaceAuthStore.clearWorkspaceContext()
-        if (personal) {
-          setLastWorkspaceId(personal.id)
-        }
+        if (fallback) setLastWorkspaceId(fallback.id)
+        else clearLastWorkspaceId()
         window.location.reload()
         // Code after this won't run (page reloads)
       } else {

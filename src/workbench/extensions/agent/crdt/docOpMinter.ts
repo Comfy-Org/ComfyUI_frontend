@@ -102,11 +102,13 @@ export function wireNodeSnapshot(node: LGraphNode): WorkflowNode | null {
   } catch {
     return null
   }
+  const wireSerialized = { ...serialized }
+  Reflect.deleteProperty(wireSerialized, '__incarnation')
   const {
     widgets_values_named: named,
     flags: { ghost: _ghost, ...flags },
     ...rest
-  } = serialized
+  } = wireSerialized
   const snapshot = { ...rest, flags } satisfies WorkflowNode
   return named && !node.isVirtualNode
     ? { ...snapshot, widgets_values: valueWidgetsOnly(node, named) }

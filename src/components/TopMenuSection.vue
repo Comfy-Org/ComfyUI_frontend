@@ -86,7 +86,7 @@
                 />
               </Button>
               <Button
-                v-if="isCloud && flags.workflowSharingEnabled"
+                v-if="isCloud"
                 v-tooltip.bottom="shareTooltipConfig"
                 variant="secondary"
                 size="icon"
@@ -188,13 +188,12 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useActionBarButtonStore } from '@/stores/actionBarButtonStore'
 import { useQueueUIStore } from '@/stores/queueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { isCloud } from '@/platform/distribution/types'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   openShareDialog,
   prefetchShareDialog
@@ -208,13 +207,10 @@ import { cn } from '@comfyorg/tailwind-utils'
 const settingStore = useSettingStore()
 const workspaceStore = useWorkspaceStore()
 const rightSidePanelStore = useRightSidePanelStore()
-const agentNodeSelectionStore = useAgentNodeSelectionStore()
-const isActionBarsHidden = computed(
-  () => agentNodeSelectionStore.isActionBarsHidden
-)
+const canvasStore = useCanvasStore()
+const isActionBarsHidden = computed(() => canvasStore.isPickingNodes)
 const managerState = useManagerState()
 const managerSurveyDialog = useManagerSurveyDialog()
-const { flags } = useFeatureFlags()
 const { isLoggedIn } = useCurrentUser()
 const { t } = useI18n()
 const { toastErrorHandler } = useErrorHandling()
@@ -244,7 +240,7 @@ const hasDockedButtons = computed(() => {
   if (hasLegacyContent.value) return true
   if (!isIntegratedTabBar.value) return true
   if (managerState.shouldShowExtensionsButton.value) return true
-  if (isCloud && flags.workflowSharingEnabled) return true
+  if (isCloud) return true
   if (!isRightSidePanelOpen.value) return true
   return false
 })

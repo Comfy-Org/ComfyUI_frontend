@@ -222,7 +222,6 @@ const statusReadPaths = [
 global.fetch = vi.fn()
 
 beforeEach(() => {
-  vi.mocked(webSessionResourceHeader).mockReset()
   vi.mocked(webSessionResourceHeader).mockResolvedValue(undefined)
   useErrorHandling().wrapWithErrorHandlingAsync =
     (action, errorHandler) =>
@@ -2747,6 +2746,23 @@ describe('useSubscription', () => {
       expect(useAuthActions().accessBillingPortalDirect).toHaveBeenCalled()
     })
 
+    it('passes the cancel option to the portal only when asked', async () => {
+      const { manageSubscription, handleInvoiceHistory } =
+        useSubscriptionWithScope()
+      const open = vi.mocked(useAuthActions().accessBillingPortalDirect)
+
+      await manageSubscription({ cancelSubscription: true })
+      expect(open).toHaveBeenLastCalledWith(undefined, {
+        cancelSubscription: true
+      })
+
+      await manageSubscription()
+      expect(open).toHaveBeenLastCalledWith(undefined, undefined)
+
+      await handleInvoiceHistory()
+      expect(open).toHaveBeenLastCalledWith(undefined, undefined)
+    })
+
     describe('portal telemetry', () => {
       type PortalAction = 'manageSubscription' | 'handleInvoiceHistory'
 
@@ -2760,10 +2776,6 @@ describe('useSubscription', () => {
         window.dispatchEvent(new Event('blur'))
         window.dispatchEvent(new Event('focus'))
       }
-
-      beforeEach(() => {
-        mockTelemetry.trackBillingEvent.mockClear()
-      })
 
       it.for<{ action: PortalAction; target: string }>([
         { action: 'manageSubscription', target: 'manage_subscription' },

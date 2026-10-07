@@ -21,9 +21,6 @@ jobs:
         with:
           ref: ${{ github.ref_name }}
           persist-credentials: false
-          # Blobless full history: the locale pipeline lazily fetches the
-          # English source blobs recorded in
-          # apps/website/src/locales/.source-manifest.json
           fetch-depth: 0
           filter: blob:none
 
@@ -31,7 +28,7 @@ jobs:
         uses: ./.github/actions/setup-frontend
 
       - name: Update translations
-        run: pnpm locale:website
+        run: pnpm --filter @comfyorg/website locale
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 

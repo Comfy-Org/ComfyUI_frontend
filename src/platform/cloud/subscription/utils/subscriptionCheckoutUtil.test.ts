@@ -96,7 +96,6 @@ function createDeferred<T>() {
 }
 
 beforeEach(() => {
-  vi.mocked(webSessionResourceHeader).mockReset()
   vi.mocked(webSessionResourceHeader).mockResolvedValue(undefined)
   Object.assign(useAuthStore(), { userId: 'user-123' })
   vi.mocked(useAuthStore().getFirebaseAuthHeader).mockResolvedValue({

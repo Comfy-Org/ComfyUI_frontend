@@ -28,21 +28,26 @@ const SKELETON_BAR =
 
 <template>
   <section
-    class="flex bg-base-background lg:w-1/2 lg:justify-end"
+    class="flex justify-center bg-base-background lg:w-1/2 lg:justify-end"
     :aria-label="t('checkout.fullPage.summary.label')"
     :aria-busy="ledger === undefined || repricing"
   >
-    <div class="flex w-full flex-col px-6 py-12 lg:max-w-lg lg:px-16">
-      <div class="relative flex h-5 items-center">
+    <div class="flex w-full max-w-lg flex-col px-6 py-12 lg:px-16">
+      <div class="relative flex h-5 items-center max-lg:h-10">
         <button
           v-if="!locked"
           type="button"
           :aria-label="t('checkout.back')"
-          class="absolute -left-10 flex size-8 cursor-pointer items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary-background hover:text-base-foreground focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:outline-none max-lg:static max-lg:mr-2"
+          class="absolute -left-10 flex size-8 cursor-pointer items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary-background hover:text-base-foreground focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:outline-none max-lg:static max-lg:mr-2 max-lg:size-10"
           @click="emit('back')"
         >
           <i class="icon-[lucide--arrow-left] size-4" aria-hidden="true" />
         </button>
+        <span
+          v-else
+          class="mr-2 size-10 shrink-0 lg:hidden"
+          aria-hidden="true"
+        />
         <i
           class="icon-[comfy--comfy-logo] h-5 w-18 text-brand-yellow"
           role="img"

@@ -22,7 +22,6 @@ describe('NodeOutputSlot deprecated links getter', () => {
   const onWarning = vi.fn()
 
   beforeEach(() => {
-    onWarning.mockClear()
     LiteGraph.onDeprecationWarning = [onWarning]
     LiteGraph.alwaysRepeatWarnings = true
   })

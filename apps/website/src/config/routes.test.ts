@@ -17,9 +17,9 @@ describe('localizeHref', () => {
     { href: '/#features', locale: 'ja', expected: '/ja/#features' },
     { href: '/about#team', locale: 'ja', expected: '/about#team' },
     {
-      href: '/p/supported-models/grok-imagine',
+      href: '/hub/models/local/4x-ultrasharp',
       locale: 'zh-CN',
-      expected: '/p/supported-models/grok-imagine'
+      expected: '/hub/models/local/4x-ultrasharp'
     },
     {
       href: '/terms-of-service#scope',
@@ -115,7 +115,7 @@ describe('getRoutes', () => {
 
 describe('getRoutes models', () => {
   it('serves the models catalog at its canonical path for zh-CN', () => {
-    expect(getRoutes('zh-CN').models).toBe('/p/supported-models/')
+    expect(getRoutes('zh-CN').models).toBe('/hub/models/local/')
   })
 })
 

@@ -59,7 +59,6 @@ describe('reportCloudNodesOutcome', () => {
   })
 
   afterEach(() => {
-    writeSpy.mockRestore()
     rmSync(summaryDir, { recursive: true, force: true })
     if (originalSummary === undefined) delete process.env.GITHUB_STEP_SUMMARY
     else process.env.GITHUB_STEP_SUMMARY = originalSummary

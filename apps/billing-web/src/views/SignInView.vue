@@ -35,6 +35,7 @@ const {
   retryMint,
   retryAvailability
 } = useSignInController(() => {
+  if (route.name !== 'sign-in') return
   void router.replace(safeReturnTo(route.query.returnTo))
 }, billingWebSignInPort())
 
@@ -84,17 +85,20 @@ const blocked = computed(() => busy.value || !available.value)
  * the generic retry prompt is the better line for it, not `hosted.failure`'s
  * catch-all "something went wrong".
  */
-const WORKSPACE_REFUSAL_CODES: readonly SessionErrorCode[] = [
-  'ACCESS_DENIED',
-  'WORKSPACE_NOT_FOUND'
-]
-const workspaceRefused = computed(() => {
+const WORKSPACE_REFUSAL_COPY: Readonly<
+  Partial<Record<SessionErrorCode, SessionErrorCode>>
+> = {
+  ACCESS_DENIED: 'ACCESS_DENIED',
+  SSO_REQUIRED: 'ACCESS_DENIED',
+  WORKSPACE_NOT_FOUND: 'WORKSPACE_NOT_FOUND'
+}
+const refusalCopy = computed(() => {
   const code = sessionFailureCode.value
-  return code !== undefined && WORKSPACE_REFUSAL_CODES.includes(code)
+  return code === undefined ? undefined : WORKSPACE_REFUSAL_COPY[code]
 })
 const sessionErrorMessage = computed(() =>
-  workspaceRefused.value
-    ? coded('failure', sessionFailureCode.value)
+  refusalCopy.value
+    ? coded('failure', refusalCopy.value)
     : t('auth.signIn.sessionError')
 )
 
@@ -105,7 +109,7 @@ const sessionErrorMessage = computed(() =>
  */
 const appReturnLink = computed(() => {
   const arrival = entry.value
-  if (!workspaceRefused.value || !arrival) return undefined
+  if (!refusalCopy.value || !arrival) return undefined
   const url = buildReturnUrl({
     target: arrival.returnTo,
     environment: BILLING_WEB_ENV,

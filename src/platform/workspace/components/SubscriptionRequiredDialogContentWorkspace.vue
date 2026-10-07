@@ -103,6 +103,10 @@
       :reconciliation-operation-id
       :quote-is-current
       :is-applying-promotion-code
+      :payment-cancelable
+      :canceling-payment="isCancelingPayment"
+      :cancel-payment-error
+      @cancel-payment="cancelPayment"
       @confirm="handleConfirmTransition"
       @apply-promotion-code="applyPromotionCode"
       @invalidate-quote="invalidateQuote"
@@ -169,6 +173,10 @@ const {
   reconciliationOperationId,
   parkedCheckoutRecovery,
   isPolling,
+  paymentCancelable,
+  isCancelingPayment,
+  cancelPaymentError,
+  cancelPayment,
   handleSubscribeClick,
   handleBackToPricing,
   handleAddCreditCard,

@@ -50,7 +50,7 @@ pnpm build-storybook
 
 ### Creating Stories
 
-Stories are located alongside components in `src/` directories with the pattern `*.stories.ts`:
+Conventions live in `docs/guidance/storybook.md`: a story is a named scenario, and enum or boolean props are controls. Stories are located alongside components in `src/` directories with the pattern `*.stories.ts`:
 
 ```typescript
 // MyComponent.stories.ts
@@ -188,10 +188,9 @@ This project uses [Chromatic](https://chromatic.com) for automated visual regres
 
 ### How It Works
 
-- **Automated Testing**: Every push to `main` and `sno-storybook` branches triggers Chromatic builds
-- **Pull Request Reviews**: PRs against `main` branch include visual diffs for component changes
+- **When it runs**: `version-bump-*` release branches and manual `workflow_dispatch` (`.github/workflows/ci-tests-storybook.yaml`). Ordinary PRs build Storybook and deploy a Cloudflare preview; they do not snapshot.
+- **What it snapshots**: every story export (`onlyChanged: true` limits a build to stories affected by the diff). Each export is a recurring snapshot.
 - **Baseline Management**: Changes on `main` branch are automatically accepted as new baselines
-- **Cross-browser Testing**: Tests across multiple browsers and viewports
 
 ### Viewing Results
 

@@ -461,6 +461,11 @@ test.describe('Node Interaction', () => {
     'Can toggle dom widget node open/closed',
     { tag: '@screenshot' },
     async ({ comfyPage }) => {
+      const DOUBLE_CLICK_TIME = 100
+      await comfyPage.settings.setSetting(
+        'Comfy.Pointer.DoubleClickTime',
+        DOUBLE_CLICK_TIME
+      )
       // Find the node whose collapse toggler matches the hardcoded position.
       // getNodeRefsByType order is non-deterministic, so identify by proximity.
       const nodes = await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')
@@ -480,21 +485,23 @@ test.describe('Node Interaction', () => {
       await comfyPage.canvas.click({
         position: togglerPos
       })
+      const firstClickAt = await comfyPage.page.evaluate(() =>
+        performance.now()
+      )
       await expect.poll(() => targetNode.isCollapsed()).toBe(true)
       await expect(comfyPage.canvas).toHaveScreenshot(
         'text-encode-toggled-off.png'
       )
-      // Wait for the double-click window (300ms) to expire so the next
-      // click at the same position isn't interpreted as a double-click.
       await expect
-        .poll(() =>
-          comfyPage.page.evaluate(() => {
-            const pointer = window.app!.canvas.pointer
-            if (!pointer.eLastDown) return true
-            return performance.now() - pointer.eLastDown.timeStamp > 300
-          })
+        .poll(
+          () =>
+            comfyPage.page.evaluate(
+              (since) => performance.now() - since,
+              firstClickAt
+            ),
+          { message: 'double-click window after the first toggle has elapsed' }
         )
-        .toBe(true)
+        .toBeGreaterThan(DOUBLE_CLICK_TIME)
       await comfyPage.canvas.click({
         position: togglerPos
       })

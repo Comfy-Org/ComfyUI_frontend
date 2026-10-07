@@ -15,6 +15,7 @@ export const TestIds = {
     toolbar: 'side-toolbar',
     topGroup: 'sidebar-top-group',
     nodeLibrary: 'node-library-tree',
+    nodeLibraryBookmarks: 'node-library-bookmark-tree',
     nodeLibrarySearch: 'node-library-search',
     nodePreviewCard: 'node-preview-card',
     nodePreviewInputs: 'node-preview-inputs',
@@ -26,9 +27,8 @@ export const TestIds = {
     tabButton: (tabId: string) => `${tabId}-tab-button`
   },
   tree: {
-    folder: 'tree-folder',
-    leaf: 'tree-leaf',
-    node: 'tree-node'
+    itemPreview: 'tree-item-preview',
+    leafCount: 'tree-leaf-count'
   },
   canvas: {
     main: 'graph-canvas',
@@ -179,9 +179,6 @@ export const TestIds = {
     convertSubgraph: 'convert-to-subgraph-button',
     bypass: 'bypass-button'
   },
-  menu: {
-    moreMenuContent: 'more-menu-content'
-  },
   helpCenter: {
     button: 'help-center-button',
     popup: 'help-center-popup',
@@ -292,9 +289,7 @@ export const TestIds = {
     progressOverlay: 'queue-progress-overlay',
     progressNodeFill: 'queue-progress-node-fill',
     overlayToggle: 'queue-overlay-toggle',
-    dockedJobHistoryAction: 'docked-job-history-action',
     jobDetailsPopover: 'queue-job-details-popover',
-    clearHistoryAction: 'clear-history-action',
     jobAssetsList: 'job-assets-list',
     notificationBanner: 'queue-notification-banner'
   },
