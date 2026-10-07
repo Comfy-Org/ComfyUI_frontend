@@ -12,9 +12,14 @@ const PRIMEVUE_OVERLAY_SELECTORS =
 // dismiss itself. These selectors cover the portaled roots so we can treat
 // interactions on them as inside.
 const REKA_PORTAL_SELECTORS =
-  '[data-reka-popper-content-wrapper], [data-reka-dialog-content], [data-reka-menu-content], [data-reka-context-menu-content], [data-reka-nested-dialog-overlay], [data-testid="toast"], [role="dialog"], [role="menu"], [role="listbox"], [role="tooltip"]'
+  '[data-reka-popper-content-wrapper], [data-reka-dialog-content], [data-reka-menu-content], [data-reka-context-menu-content], [data-reka-nested-dialog-overlay], [role="dialog"], [role="menu"], [role="listbox"], [role="tooltip"]'
 
-const OUTSIDE_LAYER_SELECTORS = `${PRIMEVUE_OVERLAY_SELECTORS}, ${REKA_PORTAL_SELECTORS}`
+// Dismissing a toast or using a docked progress panel over a dialog must not
+// take the dialog with it; the empty viewport space beside a toast stays an
+// ordinary scrim click.
+const TOAST_SELECTORS = '[data-toast-kind], [data-toast-dock]'
+
+const OUTSIDE_LAYER_SELECTORS = `${PRIMEVUE_OVERLAY_SELECTORS}, ${REKA_PORTAL_SELECTORS}, ${TOAST_SELECTORS}`
 
 type OutsideEvent = CustomEvent<{ originalEvent: Event }>
 

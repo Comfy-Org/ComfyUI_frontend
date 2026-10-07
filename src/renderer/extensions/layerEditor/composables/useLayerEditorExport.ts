@@ -56,7 +56,7 @@ export async function buildSessionPsdBlob(
 
 export function useLayerEditorExport(session: LayerEditorSession) {
   const { t } = useI18n()
-  const toastStore = useToast()
+  const toast = useToast()
   const exporting = ref(false)
 
   async function exportPsd(): Promise<void> {
@@ -67,7 +67,7 @@ export function useLayerEditorExport(session: LayerEditorSession) {
       downloadBlob(psdExportFilename(new Date()), blob)
     } catch (err) {
       console.warn('[LayerEditor] PSD export failed', err)
-      toastStore.error(t('g.error'), {
+      toast.error(t('g.error'), {
         description: t('layerEditor.exportPsdFailed')
       })
     } finally {

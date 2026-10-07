@@ -106,15 +106,17 @@ describe('useReconnectingNotification', () => {
     expect(useToast().toasts).toEqual([])
   })
 
-  it('handles multiple reconnecting events without duplicating toasts', () => {
-    const { onReconnecting } = setupComposable()
+  it('shows one reconnecting toast across repeated disconnects and clears it on reconnect', () => {
+    const { onReconnecting, onReconnected } = setupComposable()
 
     onReconnecting()
-    vi.advanceTimersByTime(2000) // first toast fires
-    onReconnecting() // second reconnecting event
-    vi.advanceTimersByTime(2000) // second toast fires
+    vi.advanceTimersByTime(2000)
+    onReconnecting()
+    vi.advanceTimersByTime(2000)
+    expect(useToast().toasts.map(({ kind }) => kind)).toEqual(['error'])
 
-    expect(useToast().toasts).toHaveLength(2)
+    onReconnected()
+    expect(useToast().toasts.map(({ kind }) => kind)).toEqual(['success'])
   })
 
   describe('tab visibility regained', () => {

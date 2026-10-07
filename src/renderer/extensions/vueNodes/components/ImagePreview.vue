@@ -255,7 +255,7 @@ const { t } = useI18n()
 const maskEditor = useMaskEditor()
 const nodeOutputStore = useNodeOutputStore()
 const { hasMultipleOutputs, showOutputsExportDialog } = useNodeOutputsExport()
-const toastStore = useToast()
+const toast = useToast()
 
 const actionButtonClass =
   'flex h-8 min-h-8 cursor-pointer items-center justify-center rounded-lg border-0 bg-base-foreground p-2 text-base-background shadow-interface transition-colors duration-200 hover:bg-base-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:ring-offset-2'
@@ -389,7 +389,7 @@ function handleDownload() {
   try {
     downloadFile(currentImageUrl.value)
   } catch {
-    toastStore.error(t('g.error'), {
+    toast.error(t('g.error'), {
       description: t('g.failedToDownloadImage')
     })
   }

@@ -78,7 +78,7 @@ function useInviteUrlLoader(): ReturnType<typeof createInviteUrlLoader> {
         en: {
           workspace: {
             inviteAccepted: 'Invite Accepted',
-            addedToWorkspace: 'You have been added to:',
+            addedToNamedWorkspace: 'You have been added to {workspaceName}',
             viewWorkspace: 'View workspace',
             inviteFailed: 'Failed to Accept Invite',
             inviteSsoUnavailable: 'Ask your admin to add you',
@@ -177,7 +177,7 @@ describe('useInviteUrlLoader', () => {
         'success',
         'Invite Accepted',
         expect.objectContaining({
-          description: 'You have been added to: Test Workspace',
+          description: 'You have been added to Test Workspace',
           action: expect.objectContaining({ label: 'View workspace' })
         })
       )

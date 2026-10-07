@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
+const { visible } = defineProps<{
+  visible: boolean
+}>()
+
 const isExpanded = defineModel<boolean>('expanded', { default: false })
 
 function toggle() {
@@ -9,27 +13,33 @@ function toggle() {
 </script>
 
 <template>
-  <div
-    role="status"
-    aria-live="polite"
-    :class="
-      cn(
-        'w-full max-w-3xl overflow-hidden rounded-lg border border-border-default bg-base-background shadow-lg transition-all duration-300',
-        isExpanded ? 'sm:w-[max(400px,40vw)]' : 'sm:w-fit'
-      )
-    "
+  <Transition
+    enter-active-class="transition-all duration-300 ease-out"
+    enter-from-class="translate-y-full opacity-0"
+    leave-active-class="transition-all duration-200 ease-in"
+    leave-to-class="translate-y-full opacity-0"
   >
     <div
+      v-if="visible"
       :class="
         cn(
-          'max-w-full min-w-0 overflow-hidden transition-all duration-300',
-          isExpanded ? 'max-h-100 w-full' : 'max-h-0 w-0'
+          'w-full max-w-3xl overflow-hidden rounded-lg border border-border-default bg-base-background shadow-lg transition-all duration-300',
+          isExpanded ? 'sm:w-[max(400px,40vw)]' : 'sm:w-fit'
         )
       "
     >
-      <slot :is-expanded />
-    </div>
+      <div
+        :class="
+          cn(
+            'max-w-full min-w-0 overflow-hidden transition-all duration-300',
+            isExpanded ? 'max-h-100 w-full' : 'max-h-0 w-0'
+          )
+        "
+      >
+        <slot />
+      </div>
 
-    <slot name="footer" :is-expanded :toggle />
-  </div>
+      <slot name="footer" :toggle />
+    </div>
+  </Transition>
 </template>

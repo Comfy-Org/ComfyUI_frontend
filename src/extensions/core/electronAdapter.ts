@@ -17,7 +17,7 @@ void (async () => {
   const electronAPI = getElectronAPI()
   const desktopAppVersion = await electronAPI.getElectronVersion()
   const workflowStore = useWorkflowStore()
-  const toastStore = useToast()
+  const toast = useToast()
   const { staticUrls, buildDocsUrl } = useExternalLink()
 
   const onChangeRestartApp = async (newValue: unknown, oldValue: unknown) => {
@@ -182,7 +182,7 @@ void (async () => {
             })
 
             if (!updateInfo.isUpdateAvailable) {
-              toastStore.info(t('desktopUpdate.noUpdateFound'), {
+              toast.info(t('desktopUpdate.noUpdateFound'), {
                 duration: 5_000
               })
               return
@@ -200,14 +200,14 @@ void (async () => {
                 await electronAPI.restartAndInstall()
               } catch (error) {
                 log.error('Error installing update:', error)
-                toastStore.error(t('g.error'), {
+                toast.error(t('g.error'), {
                   description: t('desktopUpdate.errorInstallingUpdate')
                 })
               }
             }
           } catch (error) {
             log.error('Error checking for updates:', error)
-            toastStore.error(t('g.error'), {
+            toast.error(t('g.error'), {
               description: t('desktopUpdate.errorCheckingUpdate')
             })
           }

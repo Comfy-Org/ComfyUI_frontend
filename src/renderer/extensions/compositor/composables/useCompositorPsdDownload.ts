@@ -16,7 +16,7 @@ export function useCompositorPsdDownload(
   createSession: () => LayerEditorSession = () => useLayerEditorSession()
 ) {
   const { t } = useI18n()
-  const toastStore = useToast()
+  const toast = useToast()
   const exporting = ref(false)
 
   async function downloadPsd(node: LGraphNode): Promise<void> {
@@ -27,7 +27,7 @@ export function useCompositorPsdDownload(
       session = createSession()
       if (!session.glOk.value) {
         console.error('[Compositor] WebGL compositor unavailable')
-        toastStore.error(t('g.error'), {
+        toast.error(t('g.error'), {
           description: t('layerEditor.webglUnavailable')
         })
         return
@@ -37,7 +37,7 @@ export function useCompositorPsdDownload(
       )
       if (failed > 0) {
         console.error(`[Compositor] ${failed} layer(s) failed to load`)
-        toastStore.error(t('g.error'), {
+        toast.error(t('g.error'), {
           description: t('layerEditor.exportPsdFailed')
         })
         return
@@ -46,7 +46,7 @@ export function useCompositorPsdDownload(
       downloadBlob(psdExportFilename(new Date()), blob)
     } catch (err) {
       console.warn('[Compositor] PSD export failed', err)
-      toastStore.error(t('g.error'), {
+      toast.error(t('g.error'), {
         description:
           session && !session.glOk.value
             ? t('layerEditor.webglUnavailable')

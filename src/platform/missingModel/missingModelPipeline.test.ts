@@ -65,7 +65,7 @@ const { mockHandles } = vi.hoisted(() => {
           _signal: AbortSignal
         ) => undefined
       ),
-      toastStore: {
+      toast: {
         success: vi.fn(),
         error: vi.fn(),
         info: vi.fn(),
@@ -119,17 +119,11 @@ vi.mock<unknown>(import('@/platform/missingModel/missingModelScan'), () => ({
 }))
 
 beforeEach(() => {
-  vi.mocked(useToast().success).mockImplementation(
-    mockHandles.toastStore.success
-  )
-  vi.mocked(useToast().error).mockImplementation(mockHandles.toastStore.error)
-  vi.mocked(useToast().info).mockImplementation(mockHandles.toastStore.info)
-  vi.mocked(useToast().warning).mockImplementation(
-    mockHandles.toastStore.warning
-  )
-  vi.mocked(useToast().loading).mockImplementation(
-    mockHandles.toastStore.loading
-  )
+  vi.mocked(useToast().success).mockImplementation(mockHandles.toast.success)
+  vi.mocked(useToast().error).mockImplementation(mockHandles.toast.error)
+  vi.mocked(useToast().info).mockImplementation(mockHandles.toast.info)
+  vi.mocked(useToast().warning).mockImplementation(mockHandles.toast.warning)
+  vi.mocked(useToast().loading).mockImplementation(mockHandles.toast.loading)
 })
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({

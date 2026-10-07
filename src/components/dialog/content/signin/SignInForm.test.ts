@@ -14,14 +14,6 @@ vi.mock(import('firebase/auth'))
 // Mock the auth composables and stores
 vi.mock(import('@/composables/auth/useAuthActions'))
 
-// Mock toast
-const mockToastAdd = vi.fn()
-beforeEach(() => {
-  vi.mocked(useToast().warning).mockImplementation((...args: unknown[]) =>
-    mockToastAdd('warning', ...args)
-  )
-})
-
 const forgotPasswordText = enMessages.auth.login.forgotPassword
 const loginButtonText = enMessages.auth.login.loginButton
 
@@ -55,22 +47,16 @@ describe('SignInForm', () => {
   }
 
   describe('Forgot Password Link', () => {
-    it('shows toast and focuses email input when clicked while disabled', async () => {
+    it('flags the empty email field and focuses it instead of sending a reset', async () => {
       const { user } = renderComponent()
-
-      const emailInput = getEmailInput()
-      const focusSpy = vi.spyOn(emailInput, 'focus')
 
       await user.click(screen.getByText(forgotPasswordText))
 
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        'warning',
-        enMessages.auth.login.emailPlaceholder,
-        { duration: 5000 }
+      await waitFor(() =>
+        expect(getEmailInput()).toHaveAttribute('aria-invalid', 'true')
       )
-
-      expect(focusSpy).toHaveBeenCalled()
-
+      expect(getEmailInput()).toHaveFocus()
+      expect(useToast().toasts).toEqual([])
       expect(useAuthActions().sendPasswordReset).not.toHaveBeenCalled()
     })
   })
@@ -175,10 +161,12 @@ describe('SignInForm', () => {
       ).toHaveFocus()
       await user.keyboard('{Enter}')
 
-      expect(useAuthActions().sendPasswordReset).toHaveBeenCalledWith(
-        'test@example.com'
+      await waitFor(() =>
+        expect(useAuthActions().sendPasswordReset).toHaveBeenCalledWith(
+          'test@example.com'
+        )
       )
-      expect(mockToastAdd).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
     })
   })
 })

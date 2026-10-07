@@ -21,6 +21,8 @@ const { t } = useI18n()
 const assetDownloadStore = useAssetDownloadStore()
 const { toastErrorHandler } = useErrorHandling()
 
+const visible = computed(() => assetDownloadStore.hasDownloads)
+
 const isExpanded = ref(false)
 const activeFilter = ref<'all' | 'completed' | 'failed'>('all')
 const filterPopoverRef = ref<InstanceType<typeof Popover> | null>(null)
@@ -109,7 +111,7 @@ async function cancelDownload(taskId: TaskId) {
 </script>
 
 <template>
-  <ToastPanel v-model:expanded="isExpanded">
+  <ToastPanel v-model:expanded="isExpanded" :visible>
     <template #default>
       <div
         class="flex h-12 items-center justify-between border-b border-border-default px-4"

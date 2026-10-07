@@ -98,7 +98,7 @@ import { buildTree } from '@/utils/treeUtil'
 const modelStore = useModelStore()
 const modelToNodeStore = useModelToNodeStore()
 const settingStore = useSettingStore()
-const toastStore = useToast()
+const toast = useToast()
 const { t } = useI18n()
 const { flags } = useFeatureFlags()
 const assetDownloadStore = useAssetDownloadStore()
@@ -304,7 +304,7 @@ async function withLoadFailureToast(action: () => Promise<unknown>) {
     await action()
   } catch (error) {
     console.error('Model library load failed', error)
-    toastStore.error(t('g.error'), {
+    toast.error(t('g.error'), {
       description: t('sideToolbar.modelLibraryLoadFailed'),
       duration: 5000
     })

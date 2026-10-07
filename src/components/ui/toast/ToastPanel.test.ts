@@ -7,27 +7,29 @@ import ToastPanel from './ToastPanel.vue'
 
 const PanelWithToggle = defineComponent({
   components: { ToastPanel },
+  props: { visible: { type: Boolean, default: true } },
   setup() {
     return { expanded: ref(false) }
   },
   template: `
-    <ToastPanel v-model:expanded="expanded">
-      <template #default="{ isExpanded }">
-        <div data-testid="content">{{ isExpanded ? 'expanded' : 'collapsed' }}</div>
-      </template>
-      <template #footer="{ isExpanded, toggle }">
-        <button @click="toggle">{{ isExpanded ? 'Collapse' : 'Expand' }}</button>
+    <ToastPanel v-model:expanded="expanded" :visible>
+      <div data-testid="content">{{ expanded ? 'expanded' : 'collapsed' }}</div>
+      <template #footer="{ toggle }">
+        <button @click="toggle">{{ expanded ? 'Collapse' : 'Expand' }}</button>
       </template>
     </ToastPanel>
   `
 })
 
 describe('ToastPanel', () => {
-  it('announces politely and starts collapsed', () => {
-    render(PanelWithToggle)
+  it('renders only while visible and is not a live region', async () => {
+    const { rerender } = render(PanelWithToggle, { props: { visible: false } })
+    expect(screen.queryByTestId('content')).not.toBeInTheDocument()
 
-    expect(screen.getByRole('status')).toHaveAttribute('aria-live', 'polite')
+    await rerender({ visible: true })
+
     expect(screen.getByTestId('content')).toHaveTextContent('collapsed')
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })
 
   it('expands and collapses from the footer toggle', async () => {

@@ -79,7 +79,6 @@ import FieldGroup from '@/components/ui/field/FieldGroup.vue'
 import FieldLabel from '@/components/ui/field/FieldLabel.vue'
 import Input from '@/components/ui/input/Input.vue'
 import PasswordInput from '@/components/ui/input/PasswordInput.vue'
-import { useToast } from '@/components/ui/toast/toastStore'
 import Spinner from '@/components/ui/spinner/Spinner.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { signInSchema } from '@/schemas/signInSchema'
@@ -89,7 +88,6 @@ import { useAuthStore } from '@/stores/authStore'
 const authStore = useAuthStore()
 const authActions = useAuthActions()
 const loading = computed(() => authStore.loading)
-const toast = useToast()
 
 const { t } = useI18n()
 
@@ -99,7 +97,7 @@ const emit = defineEmits<{
 
 const emailInputId = 'comfy-org-sign-in-email'
 
-const { handleSubmit, meta, values } = useForm({
+const { handleSubmit, meta, validateField, values } = useForm({
   validationSchema: toTypedSchema(signInSchema),
   initialValues: { email: '', password: '' }
 })
@@ -112,9 +110,9 @@ const onSubmit = useThrottleFn(
 )
 
 async function handleForgotPassword() {
+  const { valid } = await validateField('email')
   const email = values.email
-  if (!email || !isEmailValid.value) {
-    toast.warning(t('auth.login.emailPlaceholder'), { duration: 5_000 })
+  if (!valid || !email) {
     document.getElementById(emailInputId)?.focus()
     return
   }

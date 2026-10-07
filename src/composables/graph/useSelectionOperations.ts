@@ -17,7 +17,7 @@ import { isSelectOnly } from '@/utils/litegraphUtil'
 export function useSelectionOperations() {
   // const { getSelectedNodes } = useSelectedLiteGraphItems() // Unused for now
   const canvasStore = useCanvasStore()
-  const toastStore = useToast()
+  const toast = useToast()
   const dialogService = useDialogService()
   const titleEditorStore = useTitleEditorStore()
   const workflowStore = useWorkflowStore()
@@ -25,7 +25,7 @@ export function useSelectionOperations() {
   const copySelection = () => {
     const canvas = app.canvas
     if (canvas.selectedItems.size === 0) {
-      toastStore.warning(t('g.nothingToCopy'), {
+      toast.warning(t('g.nothingToCopy'), {
         description: t('g.selectItemsToCopy'),
         duration: 3000
       })
@@ -33,7 +33,7 @@ export function useSelectionOperations() {
     }
 
     canvas.copyToClipboard()
-    toastStore.success(t('g.copied'), {
+    toast.success(t('g.copied'), {
       description: t('g.itemsCopiedToClipboard'),
       duration: 2000
     })
@@ -50,7 +50,7 @@ export function useSelectionOperations() {
   const duplicateSelection = () => {
     const canvas = app.canvas
     if (canvas.selectedItems.size === 0) {
-      toastStore.warning(t('g.nothingToDuplicate'), {
+      toast.warning(t('g.nothingToDuplicate'), {
         description: t('g.selectItemsToDuplicate'),
         duration: 3000
       })
@@ -76,7 +76,7 @@ export function useSelectionOperations() {
     // mode ends.
     if (isSelectOnly(canvas)) return
     if (canvas.selectedItems.size === 0) {
-      toastStore.warning(t('g.nothingToDelete'), {
+      toast.warning(t('g.nothingToDelete'), {
         description: t('g.selectItemsToDelete'),
         duration: 3000
       })
@@ -145,7 +145,7 @@ export function useSelectionOperations() {
       return
     }
 
-    toastStore.warning(t('g.nothingToRename'), {
+    toast.warning(t('g.nothingToRename'), {
       description: t('g.selectItemsToRename'),
       duration: 3000
     })

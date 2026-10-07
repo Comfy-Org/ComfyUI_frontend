@@ -1,4 +1,4 @@
-import type { useToast } from '@/components/ui/toast/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import type { ToastManager, ToastMessageOptions } from '@/types/extensionTypes'
 
 const legacySeverityKinds = {
@@ -10,9 +10,9 @@ const legacySeverityKinds = {
   contrast: 'info'
 } as const
 
-export function createExtensionToastManager(
-  toast: ReturnType<typeof useToast>
-): ToastManager {
+export function createExtensionToastManager(): ToastManager {
+  const toast = useToast()
+
   function add(message: ToastMessageOptions) {
     const kind = legacySeverityKinds[message.severity ?? 'info']
     toast[kind](message.summary ?? message.detail ?? '', {

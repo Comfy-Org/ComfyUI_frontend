@@ -59,7 +59,7 @@ export const localizedAuthErrorCopy = (): AuthErrorCopy => ({
  */
 export const useAuthActions = () => {
   const authStore = useAuthStore()
-  const toastStore = useToast()
+  const toast = useToast()
   const { wrapWithErrorHandlingAsync, toastErrorHandler } = useErrorHandling()
 
   const accessError = ref(false)
@@ -89,25 +89,24 @@ export const useAuthActions = () => {
     }
     const classification = classifyAuthError(error)
     // Ref: https://firebase.google.com/docs/auth/admin/errors
-    const severity = severityForAuthError(classification)
-    const summary = t(severity === 'warn' ? 'g.warning' : 'g.error')
-    const notify = severity === 'warn' ? toastStore.warning : toastStore.error
+    const kind =
+      severityForAuthError(classification) === 'warn' ? 'warning' : 'error'
+    const notify = (description: string) =>
+      toast[kind](t(`g.${kind}`), { description })
     if (classification.kind === 'unauthorized-domain') {
       accessError.value = true
-      notify(summary, {
-        description: t('toastMessages.unauthorizedDomain', {
+      notify(
+        t('toastMessages.unauthorizedDomain', {
           domain: window.location.hostname,
           email: 'support@comfy.org'
         })
-      })
+      )
     } else if (classification.kind !== 'unknown') {
-      notify(summary, {
-        description: authErrorMessage(classification, localizedAuthErrorCopy())
-      })
+      notify(authErrorMessage(classification, localizedAuthErrorCopy()))
     } else if (error instanceof FirebaseError) {
       // classifyAuthError only knows auth/ codes; an app/ or installations/
       // FirebaseError still gets the localized copy, never the raw SDK text.
-      toastStore.error(t('g.error'), {
+      toast.error(t('g.error'), {
         description: st(`auth.errors.${error.code}`, t('auth.errors.generic'))
       })
     } else {
@@ -157,7 +156,7 @@ export const useAuthActions = () => {
         clearAllWorkspaceStorage()
       }
 
-      toastStore.success(t('auth.signOut.success'), {
+      toast.success(t('auth.signOut.success'), {
         description: t('auth.signOut.successDetail'),
         duration: 5000
       })
@@ -177,7 +176,7 @@ export const useAuthActions = () => {
   const sendPasswordReset = wrapWithErrorHandlingAsync(
     async (email: string) => {
       await authStore.sendPasswordReset(email)
-      toastStore.success(t('auth.login.passwordResetSent'), {
+      toast.success(t('auth.login.passwordResetSent'), {
         description: t('auth.login.passwordResetSentDetail'),
         duration: 5000
       })
@@ -331,7 +330,7 @@ export const useAuthActions = () => {
   const updatePassword = wrapWithErrorHandlingAsync(
     async (newPassword: string) => {
       await authStore.updatePassword(newPassword)
-      toastStore.success(t('auth.passwordUpdate.success'), {
+      toast.success(t('auth.passwordUpdate.success'), {
         description: t('auth.passwordUpdate.successDetail'),
         duration: 5000
       })

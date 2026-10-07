@@ -59,13 +59,13 @@ describe('createExtensionToastManager', () => {
       expected: { kind: 'success', title: 'Installed' }
     }
   ])('legacy add $name', ({ message, expected }) => {
-    createExtensionToastManager(useToast()).add(message)
+    createExtensionToastManager().add(message)
 
     expect(useToast().toasts).toEqual([expect.objectContaining(expected)])
   })
 
   it('legacy addAlert shows the message as a warning title', () => {
-    createExtensionToastManager(useToast()).addAlert('Missing model')
+    createExtensionToastManager().addAlert('Missing model')
 
     expect(useToast().toasts).toEqual([
       expect.objectContaining({
@@ -76,20 +76,23 @@ describe('createExtensionToastManager', () => {
     ])
   })
 
-  it('exposes the id-based API', () => {
-    const toast = createExtensionToastManager(useToast())
-    const id = toast.loading('Uploading', { description: 'model.safetensors' })
+  it.for(['error', 'info', 'loading', 'success', 'warning'] as const)(
+    'creates and dismisses a %s toast through the id-based API',
+    (kind) => {
+      const toast = createExtensionToastManager()
+      const id = toast[kind]('Uploading', { description: 'model.safetensors' })
 
-    expect(useToast().toasts).toEqual([
-      expect.objectContaining({
-        id,
-        kind: 'loading',
-        title: 'Uploading',
-        description: 'model.safetensors'
-      })
-    ])
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({
+          description: 'model.safetensors',
+          id,
+          kind,
+          title: 'Uploading'
+        })
+      ])
 
-    toast.dismiss(id)
-    expect(useToast().toasts).toEqual([])
-  })
+      toast.dismiss(id)
+      expect(useToast().toasts).toEqual([])
+    }
+  )
 })

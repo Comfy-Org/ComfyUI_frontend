@@ -107,7 +107,11 @@ export function useInviteUrlLoader() {
       const result = await workspaceStore.acceptInvite(inviteParam)
 
       const inviteToastId = toast.success(t('workspace.inviteAccepted'), {
-        description: `${t('workspace.addedToWorkspace')} ${result.workspaceName}`,
+        description: t(
+          'workspace.addedToNamedWorkspace',
+          { workspaceName: result.workspaceName },
+          { escapeParameter: false }
+        ),
         action: {
           label: t('workspace.viewWorkspace'),
           onClick: async () => {

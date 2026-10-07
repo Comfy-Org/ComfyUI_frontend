@@ -398,14 +398,11 @@ export function useMediaAssetActions() {
     if (result.cancelled) return
 
     if (!result.success) {
-      const isNoWorkflow = result.error?.includes('No workflow')
-      const title = isNoWorkflow ? t('g.warning') : t('g.error')
-      const options = {
+      const kind = result.error?.includes('No workflow') ? 'warning' : 'error'
+      toast[kind](t(`g.${kind}`), {
         description: result.error || t('mediaAsset.failedToExportWorkflow'),
         duration: 3000
-      }
-      if (isNoWorkflow) toast.warning(title, options)
-      else toast.error(title, options)
+      })
     } else {
       toast.success(t('g.success'), {
         description: t('mediaAsset.workflowExportedSuccessfully'),

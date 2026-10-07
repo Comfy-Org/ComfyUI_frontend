@@ -33,6 +33,8 @@ import type {
   ModelFile,
   ModelFolderInfo
 } from '@/platform/assets/schemas/assetSchema'
+import { useToast } from '@/components/ui/toast/toastStore'
+import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { addBreadcrumb } from '@sentry/vue'
 import { useTelemetry } from '@/platform/telemetry'
@@ -1870,8 +1872,7 @@ export class ComfyApi extends EventTarget {
    * @param {boolean} options.freeExecutionCache - If true, also frees execution cache
    */
   async freeMemory(options: { freeExecutionCache: boolean }) {
-    const { useToast } = await import('@/components/ui/toast/toastStore')
-
+    const toast = useToast()
     try {
       let mode = ''
       if (options.freeExecutionCache) {
@@ -1887,20 +1888,19 @@ export class ComfyApi extends EventTarget {
       })
 
       if (res.status === 200) {
-        if (options.freeExecutionCache) {
-          useToast().success('Models and Execution Cache have been cleared.', {
-            duration: 3000
-          })
-        } else {
-          useToast().success('Models have been unloaded.', { duration: 3000 })
-        }
-      } else {
-        useToast().error(
-          'Unloading of models failed. Installed ComfyUI may be an outdated version.'
+        toast.success(
+          t(
+            options.freeExecutionCache
+              ? 'toastMessages.modelsAndCacheCleared'
+              : 'toastMessages.modelsUnloaded'
+          ),
+          { duration: 3000 }
         )
+      } else {
+        toast.error(t('toastMessages.unloadModelsFailed'))
       }
     } catch {
-      useToast().error('An error occurred while trying to unload models.')
+      toast.error(t('toastMessages.unloadModelsError'))
     }
   }
 

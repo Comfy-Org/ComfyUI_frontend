@@ -8,7 +8,7 @@ import { useToast } from '@/components/ui/toast/toastStore'
 export async function openModelLibraryBrowser(): Promise<void> {
   if (!useFeatureFlags().flags.assetsEnabled) return
 
-  const toastStore = useToast()
+  const toast = useToast()
   const assetBrowserDialog = useAssetBrowserDialog()
   await assetBrowserDialog.browse({
     assetType: 'models',
@@ -22,7 +22,7 @@ export async function openModelLibraryBrowser(): Promise<void> {
           tags: { code: error.code },
           context: { assetId: error.assetId, details: error.details }
         })
-        toastStore.error(t('g.error'), {
+        toast.error(t('g.error'), {
           description: t('assetBrowser.failedToCreateNode')
         })
       }

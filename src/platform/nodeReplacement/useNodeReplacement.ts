@@ -419,118 +419,21 @@ function removeReplacedMissingNodeTypes(types: string[]): void {
   })
 }
 
-function findReplacementPlaceholders(
-  graph: LGraph,
-  selectedTypes: MissingNodeType[]
-): LGraphNode[] {
-  const targetTypes = new Set(
-    selectedTypes.flatMap((selected) => {
-      const type = typeof selected === 'string' ? selected : selected.type
-      return [type, sanitizeNodeName(type)]
-    })
-  )
-
-  return collectAllNodes(graph, (node) => {
-    if (!node.last_serialization) return false
-    const originalType = node.last_serialization.type || node.type
-    return !!originalType && targetTypes.has(originalType)
-  })
-}
-
-interface ReplacementResult {
-  anyNodeReplaced: boolean
-  failedTypes: Set<string>
-  replacedTypes: string[]
-}
-
 export function useNodeReplacement() {
-  const toastStore = useToast()
-
-  function replacePlaceholder(
-    node: LGraphNode,
-    selectedTypes: MissingNodeType[]
-  ): string | null {
-    const match = findMatchingType(node, selectedTypes)
-    if (!match?.replacement) return null
-
-    const nodeGraph = node.graph
-    if (!nodeGraph) return match.type
-
-    const idx = nodeGraph._nodes.indexOf(node)
-    if (idx === -1) return match.type
-
-    const newNode = LiteGraph.createNode(match.replacement.new_node_id)
-    if (!newNode) return match.type
-
-    const replacement =
-      match.replacement.input_mapping != null ||
-      match.replacement.output_mapping != null
-        ? match.replacement
-        : {
-            ...match.replacement,
-            ...generateDefaultMapping(
-              node.last_serialization ?? node.serialize(),
-              newNode
-            )
-          }
-
-    return replaceWithMapping(node, newNode, replacement, nodeGraph, idx)
-      ? null
-      : match.type
-  }
+  const toast = useToast()
 
   function replaceNodesInPlace(selectedTypes: MissingNodeType[]): string[] {
-    const result: ReplacementResult = {
-      replacedTypes: [],
-      failedTypes: new Set(),
-      anyNodeReplaced: false
-    }
+    const replacedTypes: string[] = []
+    const failedTypes = new Set<string>()
+    let replacementFailed: true | undefined
+    let anyNodeReplaced = false
     const graph = app.rootGraph
-    const recordReplacementFailure = (type: string): void => {
-      result.failedTypes.add(type)
-      const replacedTypeIndex = result.replacedTypes.indexOf(type)
+    const recordReplacementFailure = (type: string) => {
+      replacementFailed = true
+      failedTypes.add(type)
+      const replacedTypeIndex = replacedTypes.indexOf(type)
       if (replacedTypeIndex !== -1) {
-        result.replacedTypes.splice(replacedTypeIndex, 1)
-      }
-    }
-
-    const replacePlaceholders = (placeholders: LGraphNode[]): void => {
-      for (const node of placeholders) {
-        const match = findMatchingType(node, selectedTypes)
-        if (!match?.replacement) continue
-
-        const failedType = replacePlaceholder(node, selectedTypes)
-        if (failedType) {
-          recordReplacementFailure(failedType)
-          continue
-        }
-        result.anyNodeReplaced = true
-
-        if (
-          !result.failedTypes.has(match.type) &&
-          !result.replacedTypes.includes(match.type)
-        ) {
-          result.replacedTypes.push(match.type)
-        }
-      }
-    }
-
-    const notifyReplacementResult = (): void => {
-      if (result.replacedTypes.length > 0) {
-        toastStore.success(t('g.success'), {
-          description: t('nodeReplacement.replacedAllNodes', {
-            count: result.replacedTypes.length
-          }),
-          duration: 3000
-        })
-      }
-      if (result.failedTypes.size > 0) {
-        toastStore.error(t('g.error', 'Error'), {
-          description: t(
-            'nodeReplacement.replaceFailed',
-            'Failed to replace nodes'
-          )
-        })
+        replacedTypes.splice(replacedTypeIndex, 1)
       }
     }
 
@@ -538,32 +441,121 @@ export function useNodeReplacement() {
       useWorkflowStore().activeWorkflow?.changeTracker ?? null
     changeTracker?.beforeChange()
 
-    try {
-      replacePlaceholders(findReplacementPlaceholders(graph, selectedTypes))
+    // Target types come from node_replacements fetched at workflow load time
+    // and the missing nodes detected at that point — not from the current
+    // registered_node_types. This ensures replacement still works even if
+    // the user has since installed the missing node pack.
+    // Also include sanitized variants so that when the fallback path reads
+    // n.type (which app.ts may have already run through sanitizeNodeName),
+    // we can still match against the original type stored in selectedTypes.
+    const targetTypes = new Set([
+      ...selectedTypes.map((t) => (typeof t === 'string' ? t : t.type)),
+      ...selectedTypes.map((t) =>
+        sanitizeNodeName(typeof t === 'string' ? t : t.type)
+      )
+    ])
 
-      if (result.anyNodeReplaced) {
+    try {
+      const placeholders = collectAllNodes(graph, (n) => {
+        if (!n.last_serialization) return false
+        // Prefer the original serialized type; fall back to the live type
+        // for nodes whose serialization predates the type field.
+        // n.type may have been sanitized by app.ts (HTML special chars stripped);
+        // the sanitized variants in targetTypes ensure we still match correctly.
+        const originalType = n.last_serialization.type || n.type
+        return !!originalType && targetTypes.has(originalType)
+      })
+
+      for (const node of placeholders) {
+        const match = findMatchingType(node, selectedTypes)
+        if (!match?.replacement) continue
+
+        const replacement = match.replacement
+        const nodeGraph = node.graph
+        if (!nodeGraph) {
+          recordReplacementFailure(match.type)
+          continue
+        }
+
+        const idx = nodeGraph._nodes.indexOf(node)
+        if (idx === -1) {
+          recordReplacementFailure(match.type)
+          continue
+        }
+
+        const newNode = LiteGraph.createNode(replacement.new_node_id)
+        if (!newNode) {
+          recordReplacementFailure(match.type)
+          continue
+        }
+
+        const hasMapping =
+          replacement.input_mapping != null ||
+          replacement.output_mapping != null
+
+        const effectiveReplacement = hasMapping
+          ? replacement
+          : {
+              ...replacement,
+              ...generateDefaultMapping(
+                node.last_serialization ?? node.serialize(),
+                newNode
+              )
+            }
+        const replaced = replaceWithMapping(
+          node,
+          newNode,
+          effectiveReplacement,
+          nodeGraph,
+          idx
+        )
+        if (!replaced) {
+          recordReplacementFailure(match.type)
+          continue
+        }
+        anyNodeReplaced = true
+
+        if (
+          !failedTypes.has(match.type) &&
+          !replacedTypes.includes(match.type)
+        ) {
+          replacedTypes.push(match.type)
+        }
+      }
+
+      if (anyNodeReplaced) {
         graph.updateExecutionOrder()
         graph.setDirtyCanvas(true, true)
       }
-      notifyReplacementResult()
+
+      if (replacedTypes.length > 0) {
+        toast.success(t('g.success'), {
+          description: t('nodeReplacement.replacedAllNodes', {
+            count: replacedTypes.length
+          }),
+          duration: 3000
+        })
+      }
+      if (replacementFailed) {
+        toast.error(t('g.error'), {
+          description: t('nodeReplacement.replaceFailed')
+        })
+      }
     } catch (error) {
       console.error('Failed to replace nodes:', error)
-      if (result.anyNodeReplaced) {
+      if (anyNodeReplaced) {
         graph.updateExecutionOrder()
         graph.setDirtyCanvas(true, true)
       }
-      toastStore.error(t('g.error', 'Error'), {
-        description: t(
-          'nodeReplacement.replaceFailed',
-          'Failed to replace nodes'
-        )
+      toast.error(t('g.error'), {
+        description: t('nodeReplacement.replaceFailed')
       })
-      return result.replacedTypes
+      return replacedTypes
     } finally {
       changeTracker?.afterChange()
     }
 
-    return result.replacedTypes
+    return replacedTypes
   }
 
   /**

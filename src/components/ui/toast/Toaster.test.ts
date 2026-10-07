@@ -1,11 +1,13 @@
-import { render, screen, within } from '@testing-library/vue'
+import { ZIndex } from '@primeuix/utils/zindex'
+import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
-import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
+import { MODAL_Z_BASE, vRekaZIndex } from '@/components/dialog/vRekaZIndex'
+
+import type { ToastId } from '@/types/toastId'
 
 import Toaster from './Toaster.vue'
 import { useToast } from './toastStore'
@@ -16,19 +18,32 @@ const i18n = createI18n({
   messages: {
     en: {
       g: { close: 'Close' },
-      notifications: {
-        label: 'Notification',
-        viewportLabel: 'Notifications ({hotkey})'
+      toastMessages: {
+        notificationsLabel: 'Notification',
+        notificationsViewportLabel: 'Notifications ({hotkey})'
       }
     }
   }
 })
 
-describe('Toaster', () => {
-  function renderToaster() {
-    return render(Toaster, { global: { plugins: [i18n] } })
-  }
+function renderToaster() {
+  return render(Toaster, { global: { plugins: [i18n] } })
+}
 
+function pressEscapePreventedUpstream() {
+  const prevent = (event: KeyboardEvent) => event.preventDefault()
+  window.addEventListener('keydown', prevent, { capture: true })
+  window.dispatchEvent(
+    new KeyboardEvent('keydown', {
+      bubbles: true,
+      cancelable: true,
+      key: 'Escape'
+    })
+  )
+  window.removeEventListener('keydown', prevent, { capture: true })
+}
+
+describe('Toaster', () => {
   it('announces errors and warnings assertively and other notifications politely', async () => {
     renderToaster()
     const toast = useToast()
@@ -36,15 +51,30 @@ describe('Toaster', () => {
     toast.success('Saved')
     toast.loading('Uploading')
     toast.error('Could not save', { description: 'Disk is full' })
-    toast.warning('Check settings')
+    toast.warning('Pop-up blocked', {
+      action: { label: 'Try again', onClick: vi.fn() }
+    })
     await nextTick()
 
-    expect(
-      screen.getByRole('status', { name: 'Notification' })
-    ).toHaveTextContent('SavedUploading')
-    expect(
-      screen.getByRole('alert', { name: 'Notification' })
-    ).toHaveTextContent('Could not save. Disk is fullCheck settings')
+    const polite = screen.getByRole('status', { name: 'Notification' })
+    const assertive = screen.getByRole('alert', { name: 'Notification' })
+    expect(polite).toHaveTextContent('SavedUploading')
+    expect(assertive).toHaveTextContent(
+      'Could not save. Disk is fullPop-up blocked. Try again'
+    )
+    expect(polite).toHaveAttribute('aria-atomic', 'false')
+    expect(assertive).toHaveAttribute('aria-atomic', 'false')
+  })
+
+  it('renders each notification once outside the live regions', async () => {
+    renderToaster()
+
+    useToast().error('Save failed', { description: 'Try another location' })
+    await nextTick()
+    await vi.advanceTimersByTimeAsync(1000)
+
+    expect(screen.getByTestId('toast')).toHaveAttribute('aria-live', 'off')
+    expect(document.body.textContent.match(/Save failed/g)).toHaveLength(2)
   })
 
   it('runs a notification action from its button', async () => {
@@ -53,8 +83,8 @@ describe('Toaster', () => {
     renderToaster()
 
     useToast().warning('Pop-up blocked', {
-      description: 'Allow pop-ups and try again',
-      action: { label: 'Try again', onClick }
+      action: { label: 'Try again', onClick },
+      description: 'Allow pop-ups and try again'
     })
     await nextTick()
     await user.click(screen.getByRole('button', { name: 'Try again' }))
@@ -63,22 +93,6 @@ describe('Toaster', () => {
     expect(screen.getByTestId('toast')).toHaveTextContent(
       'Pop-up blockedAllow pop-ups and try again'
     )
-  })
-
-  it('keeps visible notifications out of the live regions', async () => {
-    vi.useFakeTimers()
-    renderToaster()
-
-    useToast().error('Save failed', { description: 'Try another location' })
-    await nextTick()
-    await vi.advanceTimersByTimeAsync(1000)
-
-    const notification = screen.getByTestId('toast')
-    expect(notification).toHaveAttribute('aria-live', 'off')
-    expect(notification).toHaveTextContent('Save failedTry another location')
-    expect(
-      screen.getAllByRole('alert').map((element) => element.textContent)
-    ).not.toContainEqual(expect.stringContaining('[]'))
   })
 
   it('labels the notification regions in the active locale', async () => {
@@ -91,9 +105,9 @@ describe('Toaster', () => {
             messages: {
               fr: {
                 g: { close: 'Fermer' },
-                notifications: {
-                  label: 'Notification FR',
-                  viewportLabel: 'Notifications FR ({hotkey})'
+                toastMessages: {
+                  notificationsLabel: 'Notification FR',
+                  notificationsViewportLabel: 'Notifications FR ({hotkey})'
                 }
               }
             }
@@ -128,8 +142,19 @@ describe('Toaster', () => {
     ).toBeGreaterThan(Number(screen.getByTestId('dialog').style.zIndex))
   })
 
+  it('stays out of the modal stacking order while idle', async () => {
+    renderToaster()
+    const id = useToast().info('Ready')
+    await nextTick()
+
+    useToast().dismiss(id)
+    await nextTick()
+
+    expect(ZIndex.getCurrent('modal')).toBeLessThan(MODAL_Z_BASE)
+    expect(screen.queryByTestId('toast-viewport')).not.toBeInTheDocument()
+  })
+
   it('automatically dismisses a timed notification', async () => {
-    vi.useFakeTimers()
     renderToaster()
 
     useToast().info('Uploaded', { duration: 1000 })
@@ -139,6 +164,58 @@ describe('Toaster', () => {
     await vi.advanceTimersByTimeAsync(1000)
     await nextTick()
 
+    expect(screen.queryByTestId('toast')).not.toBeInTheDocument()
+  })
+
+  it.for([
+    {
+      name: 'the pointer closed the last notification',
+      pauseAndEmpty: async () => {
+        const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+        await user.hover(screen.getByTestId('toast'))
+        await user.click(screen.getByRole('button', { name: 'Close' }))
+      }
+    },
+    {
+      name: 'the last notification was dismissed while the window was blurred',
+      pauseAndEmpty: async (id: ToastId) => {
+        window.dispatchEvent(new Event('blur'))
+        useToast().dismiss(id)
+        await nextTick()
+        window.dispatchEvent(new Event('focus'))
+      }
+    }
+  ])('times out later notifications after $name', async ({ pauseAndEmpty }) => {
+    renderToaster()
+    const id = useToast().loading('Waiting for payment')
+    await nextTick()
+
+    await pauseAndEmpty(id)
+    await nextTick()
+    useToast().success('Payment complete', { duration: 1000 })
+    await nextTick()
+    await vi.advanceTimersByTimeAsync(1000)
+    await nextTick()
+
+    expect(screen.queryByText('Payment complete')).not.toBeInTheDocument()
+  })
+
+  it('hides held notifications and restarts their timers when shown', async () => {
+    renderToaster()
+    const toast = useToast()
+    toast.held = true
+
+    toast.info('Uploaded', { duration: 1000 })
+    await nextTick()
+    await vi.advanceTimersByTimeAsync(5000)
+    expect(screen.queryByTestId('toast')).not.toBeInTheDocument()
+
+    toast.held = false
+    await nextTick()
+    expect(screen.getByTestId('toast')).toHaveTextContent('Uploaded')
+
+    await vi.advanceTimersByTimeAsync(1000)
+    await nextTick()
     expect(screen.queryByTestId('toast')).not.toBeInTheDocument()
   })
 
@@ -165,13 +242,37 @@ describe('Toaster', () => {
     await nextTick()
 
     const event = new KeyboardEvent('keydown', {
-      key: 'Escape',
       bubbles: true,
-      cancelable: true
+      cancelable: true,
+      key: 'Escape'
     })
     window.dispatchEvent(event)
 
     expect(event.defaultPrevented).toBe(false)
+  })
+
+  it('still closes from its button after an Escape handled elsewhere', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    renderToaster()
+    useToast().warning('Check settings')
+    await nextTick()
+
+    pressEscapePreventedUpstream()
+    await user.click(screen.getByRole('button', { name: 'Close' }))
+
+    expect(useToast().toasts).toEqual([])
+  })
+
+  it('still times out after an Escape handled elsewhere', async () => {
+    renderToaster()
+    useToast().info('Uploaded', { duration: 1000 })
+    await nextTick()
+
+    pressEscapePreventedUpstream()
+    await vi.advanceTimersByTimeAsync(1000)
+    await nextTick()
+
+    expect(useToast().toasts).toEqual([])
   })
 
   it('dismisses a notification from its close button', async () => {
@@ -185,28 +286,25 @@ describe('Toaster', () => {
     expect(screen.queryByText('Check settings')).not.toBeInTheDocument()
   })
 
-  it('renders docked toasts outside the notification stack', async () => {
+  it('cannot swipe away a notification and keeps its text selectable', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     renderToaster()
+    useToast().error('Sticky', { closable: false })
+    await nextTick()
+    const notification = screen.getByTestId('toast')
+    notification.setPointerCapture = vi.fn()
+    notification.releasePointerCapture = vi.fn()
+    notification.hasPointerCapture = () => false
 
-    useToast().dock({ template: '<div>Downloading models</div>' })
+    await user.pointer([
+      { coords: { x: 0, y: 0 }, keys: '[MouseLeft>]', target: notification },
+      { coords: { x: 10, y: 0 } },
+      { coords: { x: 80, y: 0 } },
+      { keys: '[/MouseLeft]' }
+    ])
     await nextTick()
 
-    expect(screen.getByText('Downloading models')).toBeInTheDocument()
-    expect(
-      within(screen.getByTestId('toast-viewport')).queryByText(
-        'Downloading models'
-      )
-    ).not.toBeInTheDocument()
-    expect(screen.queryByTestId('toast')).not.toBeInTheDocument()
-  })
-
-  it('keeps docked panels visible during node selection', async () => {
-    renderToaster()
-    useAgentNodeSelectionStore().isActive = true
-
-    useToast().dock({ template: '<div>Downloading models</div>' })
-    await nextTick()
-
-    expect(screen.getByText('Downloading models')).toBeVisible()
+    expect(screen.getByTestId('toast')).toHaveTextContent('Sticky')
+    expect(screen.getByTestId('toast').style.userSelect).not.toBe('none')
   })
 })

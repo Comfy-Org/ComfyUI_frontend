@@ -596,7 +596,8 @@ describe('shouldPreventRekaDismiss', () => {
     ['class', 'p-autocomplete-overlay'],
     ['class', 'p-overlay-mask'],
     ['class', 'p-dialog'],
-    ['data-testid', 'toast']
+    ['data-toast-kind', 'info'],
+    ['data-toast-dock', '']
   ] as const)(
     'prevents dismiss when target is inside %j',
     ([attribute, value]) => {
@@ -621,7 +622,8 @@ describe('shouldPreventRekaDismiss', () => {
   })
 
   it('allows dismiss from the empty space beside a toast message', () => {
-    const container = document.createElement('div')
+    const container = document.createElement('ol')
+    container.setAttribute('data-testid', 'toast-viewport')
     document.body.appendChild(container)
 
     const event = makeEvent(container)
@@ -672,7 +674,7 @@ describe('shouldPreventRekaDismiss', () => {
 
   it('focus-outside on a toast does not dismiss the parent', () => {
     const toast = document.createElement('div')
-    toast.dataset.testid = 'toast'
+    toast.dataset.toastKind = 'info'
     const closeButton = document.createElement('button')
     toast.appendChild(closeButton)
     document.body.appendChild(toast)

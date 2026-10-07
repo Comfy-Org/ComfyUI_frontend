@@ -172,6 +172,7 @@ interface FailureRecovery {
 export const useBillingOperationStore = defineStore('billingOperation', () => {
   const workspaceStore = useTeamWorkspaceStore()
   const { flags } = useFeatureFlags()
+  const toast = useToast()
   const operations = ref<Map<string, BillingOperation>>(new Map())
   const timeouts = new Map<string, ReturnType<typeof setTimeout>>()
   const intervals = new Map<string, number>()
@@ -249,11 +250,10 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     type: PaymentOperationType,
     kind: ProgressToastKind | undefined
   ) {
-    const toastStore = useToast()
     const previous = progressToasts.get(opId)
     if (previous?.kind === kind) return
     if (previous) {
-      toastStore.dismiss(previous.id)
+      toast.dismiss(previous.id)
       progressToasts.delete(opId)
     }
     if (kind === undefined) return
@@ -269,8 +269,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
 
     const id =
       kind === 'action'
-        ? toastStore.warning(t(messageKey))
-        : toastStore.loading(t(messageKey))
+        ? toast.warning(t(messageKey))
+        : toast.loading(t(messageKey))
     progressToasts.set(opId, { kind, id })
   }
 
@@ -929,13 +929,12 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         useSettingsDialog().show(isCloud ? 'workspace' : 'credits')
       }
 
-      const toastStore = useToast()
       const messageKey =
         operation.type === 'subscription'
           ? 'billingOperation.subscriptionSuccess'
           : 'billingOperation.topupSuccess'
 
-      toastStore.success(t(messageKey), { duration: 5000 })
+      toast.success(t(messageKey), { duration: 5000 })
     } catch (error) {
       reportError(error, {
         surface: 'billing',
@@ -1038,7 +1037,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     }
 
     if (isPaymentOperation(operation.type) && !superseded) {
-      useToast().error(defaultMessage, {
+      toast.error(defaultMessage, {
         description: detail ?? undefined,
         duration: 7000
       })
@@ -1188,7 +1187,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     }
 
     if (isPaymentOperation(operation.type)) {
-      useToast().error(message)
+      toast.error(message)
     }
 
     resolveTerminal(opId)
@@ -1346,7 +1345,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
 
     const progressToast = progressToasts.get(opId)
     if (progressToast) {
-      useToast().dismiss(progressToast.id)
+      toast.dismiss(progressToast.id)
       progressToasts.delete(opId)
     }
   }

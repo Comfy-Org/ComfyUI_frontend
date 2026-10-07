@@ -17,7 +17,7 @@ const STORAGE_KEY = 'comfy_api_key'
 export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
   const authStore = useAuthStore()
   const apiKey = useLocalStorage<string | null>(STORAGE_KEY, null)
-  const toastStore = useToast()
+  const toast = useToast()
   const { wrapWithErrorHandlingAsync, toastErrorHandler } = useErrorHandling()
 
   const currentUser = ref<ComfyApiUser | null>(null)
@@ -56,7 +56,7 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
 
   const reportError = (error: unknown) => {
     if (error instanceof Error && error.message === 'STORAGE_FAILED') {
-      toastStore.error(t('auth.apiKey.storageFailed'), {
+      toast.error(t('auth.apiKey.storageFailed'), {
         description: t('auth.apiKey.storageFailedDetail')
       })
     } else {
@@ -66,7 +66,7 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
 
   const storeApiKey = wrapWithErrorHandlingAsync(async (newApiKey: string) => {
     apiKey.value = newApiKey
-    toastStore.success(t('auth.apiKey.stored'), {
+    toast.success(t('auth.apiKey.stored'), {
       description: t('auth.apiKey.storedDetail'),
       duration: 5000
     })
@@ -75,7 +75,7 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
 
   const clearStoredApiKey = wrapWithErrorHandlingAsync(async () => {
     apiKey.value = null
-    toastStore.success(t('auth.apiKey.cleared'), {
+    toast.success(t('auth.apiKey.cleared'), {
       description: t('auth.apiKey.clearedDetail'),
       duration: 5000
     })

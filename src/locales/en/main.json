@@ -2554,6 +2554,12 @@
   },
   "toastMessages": {
     "nothingToPasteIntoNode": "Nothing to paste into this node",
+    "notificationsLabel": "Notification",
+    "notificationsViewportLabel": "Notifications ({hotkey})",
+    "modelsAndCacheCleared": "Models and Execution Cache have been cleared.",
+    "modelsUnloaded": "Models have been unloaded.",
+    "unloadModelsFailed": "Unloading of models failed. Installed ComfyUI may be an outdated version.",
+    "unloadModelsError": "An error occurred while trying to unload models.",
     "nothingToQueue": "Nothing to queue",
     "pleaseSelectOutputNodes": "Please select output nodes",
     "failedToQueue": "Failed to queue",
@@ -5277,7 +5283,7 @@
   },
   "workspace": {
     "inviteAccepted": "Invite Accepted",
-    "addedToWorkspace": "You have been added to:",
+    "addedToNamedWorkspace": "You have been added to {workspaceName}",
     "inviteFailed": "Failed to Accept Invite",
     "inviteSsoUnavailable": "Ask your admin to add you",
     "inviteSsoUnavailableDetail": "Invite links can't be accepted from an SSO account yet. Ask a workspace admin to add you to the workspace directly.",
@@ -5832,9 +5838,5 @@
       "descriptionTooLong": "Trigger line must be {max} characters or less",
       "bodyRequired": "Instructions are required"
     }
-  },
-  "notifications": {
-    "label": "Notification",
-    "viewportLabel": "Notifications ({hotkey})"
   }
 }

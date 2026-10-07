@@ -12,6 +12,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 const { t } = useI18n()
 const assetExportStore = useAssetExportStore()
 
+const visible = computed(() => assetExportStore.hasExports)
 const isExpanded = ref(false)
 
 const exportJobs = computed(() => assetExportStore.exportList)
@@ -71,7 +72,7 @@ function closeDialog() {
 </script>
 
 <template>
-  <ToastPanel v-model:expanded="isExpanded">
+  <ToastPanel v-model:expanded="isExpanded" :visible>
     <template #default>
       <div
         class="flex h-12 items-center justify-between border-b border-border-default px-4"
