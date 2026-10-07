@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
 import publishedLocalModels from './__fixtures__/published-local-models.json' with { type: 'json' }
+import publishedPartnerModelPages from './__fixtures__/published-partner-model-pages.json' with { type: 'json' }
 import { markdownTwinPath } from '@/lib/markdown-twin-path'
-import { hubModelPath } from './hub-models'
 import { localModelAliases, localModelPath, localModels } from './local-models'
 import { models } from './models'
 import { modelsUrlKind } from './models-url-registry'
@@ -59,13 +59,10 @@ const expected = new Map<string, string>([
       (path) => [path, localModelPath(canonicalSlug)] as const
     )
   ),
-  ...Object.entries(partnerModelHubSlugs).flatMap(([slug, hubSlug]) => {
-    const page = hubSlug ? hubModelPath(hubSlug) : '/hub/models/'
-    return [
-      ...bothSlashForms(`${OLD}/${slug}`).map((path) => [path, page] as const),
-      [`${OLD}/${slug}.md`, markdownTwinPath(page)] as const
-    ]
-  }),
+  ...Object.entries(publishedPartnerModelPages).flatMap(([slug, page]) => [
+    ...bothSlashForms(`${OLD}/${slug}`).map((path) => [path, page] as const),
+    [`${OLD}/${slug}.md`, markdownTwinPath(page)] as const
+  ]),
   ...Object.entries(retiredLocalModelPages).flatMap(([slug, page]) => [
     ...bothSlashForms(`${OLD}/${slug}`).map((path) => [path, page] as const),
     [`${OLD}/${slug}.md`, markdownTwinPath(page)] as const
@@ -113,8 +110,16 @@ describe('/p/supported-models redirects', () => {
     'dreamshaper-8-pruned',
     'wan2-1-vae-fp32',
     'hailuo-minimax',
+    'wan2-2-lightning-i2v-a14b-4steps-lora-high-fp16',
+    'wan2-2-lightning-i2v-a14b-4steps-lora-low-fp16',
     'v1-5-pruned-emaonly-fp16',
+    'z-image-turbo-fun-controlnet-union-2-1',
+    'lightx2v-i2v-14b-480p-cfg-step-distill-rank128-bf16',
     'ltxv-api',
+    'gemma-2-2b-it-text_encoders',
+    'lllite-inpainting-v2',
+    'minimax-h3-ref2va-int8-convrot',
+    'wan2-2-i2v-lightx2v-4steps-lora-v1-lightx2v-4-steps-lora-v1-low-noise',
     'minimax-h3-ref2va-pruned-int8_convrot',
     'not-a-model'
   ])('leave the retired %s a 404', (slug) => {
@@ -135,6 +140,12 @@ describe('/p/supported-models redirects', () => {
     expect(
       partnerSlugs.filter((slug) => !(slug in partnerModelHubSlugs))
     ).toEqual([])
+  })
+
+  it('pin every partner redirect to a destination listed outside its table', () => {
+    expect(Object.keys(partnerModelHubSlugs).sort()).toEqual(
+      Object.keys(publishedPartnerModelPages).sort()
+    )
   })
 
   it('never send a live file page elsewhere', () => {
