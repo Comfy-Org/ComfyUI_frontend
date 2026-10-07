@@ -7,7 +7,6 @@ const config: KnipConfig = {
     '.': {
       entry: [
         '{build,scripts}/**/*.{js,ts}',
-        '.dependency-cruiser.ts',
         'vitest.matrix.config.mts',
         'src/assets/css/style.css',
         'src/scripts/ui/menu/index.ts',

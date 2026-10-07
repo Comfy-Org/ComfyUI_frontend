@@ -190,7 +190,6 @@
     "@vitejs/plugin-vue": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "@vitest/ui": "catalog:",
-    "@vue/compiler-sfc": "catalog:",
     "@webgpu/types": "catalog:",
     "cross-env": "catalog:",
     "dependency-cruiser": "catalog:",

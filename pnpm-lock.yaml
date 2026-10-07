@@ -168,9 +168,6 @@ catalogs:
     '@vitest/ui':
       specifier: ^5.0.2
       version: 5.0.2
-    '@vue/compiler-sfc':
-      specifier: ^3.5.42
-      version: 3.5.42
     '@vueuse/core':
       specifier: ^14.4.0
       version: 14.4.0
@@ -789,9 +786,6 @@ importers:
       '@vitest/ui':
         specifier: 'catalog:'
         version: 5.0.2(vitest@5.0.2)
-      '@vue/compiler-sfc':
-        specifier: 'catalog:'
-        version: 3.5.42
       '@webgpu/types':
         specifier: 'catalog:'
         version: 0.1.71
