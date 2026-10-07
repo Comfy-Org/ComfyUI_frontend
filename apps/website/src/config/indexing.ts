@@ -27,6 +27,7 @@ export const NOINDEX_ROUTES = [
   '/privacy-policy',
   '/terms-of-service',
   '/platform/serverless-animation',
+  '/nano-banana',
   ...PLACEHOLDER_PATHNAMES
 ] as const
 
