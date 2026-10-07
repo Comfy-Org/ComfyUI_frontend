@@ -310,17 +310,19 @@ describe('ReleaseNotificationToast', () => {
       shouldShowToast: false
     })
 
-    const { rerender } = renderComponent({ isVisible: true })
+    renderComponent()
 
     Object.assign(useReleaseStore(), { shouldShowToast: true })
     await nextTick()
     expect(screen.getByText('New update is out!')).toBeInTheDocument()
 
-    await rerender({ isVisible: false })
+    Object.assign(useReleaseStore(), { shouldShowToast: false })
+    await nextTick()
     expect(screen.queryByText('New update is out!')).not.toBeInTheDocument()
 
     vi.advanceTimersByTime(8000)
-    await rerender({ isVisible: true })
+    Object.assign(useReleaseStore(), { shouldShowToast: true })
+    await nextTick()
     expect(screen.getByText('New update is out!')).toBeInTheDocument()
 
     vi.advanceTimersByTime(7999)
