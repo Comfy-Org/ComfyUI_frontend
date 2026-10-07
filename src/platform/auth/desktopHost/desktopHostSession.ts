@@ -5,7 +5,7 @@ import type {
   DesktopHostAuthState
 } from '@/platform/auth/desktopHost/desktopHostAuthBridge'
 
-export interface DesktopHostUser {
+interface DesktopHostUser {
   id: string
   email?: string
   workspaceId?: string
