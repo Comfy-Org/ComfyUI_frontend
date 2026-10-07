@@ -62,8 +62,24 @@ const zAgentAskOption = z
   .passthrough()
 
 /** The ask kinds this panel can render, sent as `ask_kinds` on each turn. */
-export const RENDERED_ASK_KINDS = ['run_approval', 'ask_user'] as const
+export const RENDERED_ASK_KINDS = [
+  'run_approval',
+  'ask_user',
+  'delete_approval'
+] as const
 export type RenderedAskKind = (typeof RENDERED_ASK_KINDS)[number]
+
+/**
+ * One `context.nodes` entry of a `delete_approval` ask. Parsed per entry, so a
+ * bad entry is counted as unlisted instead of dropping the whole card.
+ */
+export const zAgentAskNodeRef = z
+  .object({
+    id: z.union([z.string().trim().min(1), z.number()]),
+    type: z.string().optional(),
+    title: z.string().optional()
+  })
+  .passthrough()
 
 const zAgentPendingAsk = z
   .object({

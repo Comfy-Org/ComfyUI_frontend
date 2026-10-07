@@ -1927,7 +1927,7 @@ describe('useAgentConversationStore', () => {
     },
     { name: 'an empty terminal row', persisted: undefined, kept: [] }
   ])(
-    'drops a pending question and its stand-in when $name settles the turn',
+    'drops pending questions, delete approvals and stand-ins when $name settles the turn',
     ({ persisted, kept }) => {
       const store = useAgentConversationStore()
       store.setThreadId('th')
@@ -1951,6 +1951,24 @@ describe('useAgentConversationStore', () => {
         chat({
           type: 'agent_ask',
           data: { ...ask, ask_id: 'q-2', kind: 'something_new' }
+        })
+      )
+      store.ingest(
+        chat({
+          type: 'agent_ask',
+          data: {
+            ...ask,
+            ask_id: 'q-3',
+            kind: 'delete_approval',
+            options: [
+              { id: 'delete', label: 'Delete' },
+              { id: 'keep', label: 'Keep' }
+            ],
+            context: {
+              action: 'delete_nodes',
+              nodes: [{ id: 12, type: 'KSampler' }]
+            }
+          }
         })
       )
 

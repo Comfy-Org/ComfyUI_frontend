@@ -131,6 +131,36 @@ function askUserQuestion(): AgentWsEvent {
   }
 }
 
+const DELETE_ASK_ID = `${MESSAGE_ID}:call-delete`
+const DELETE_PATH = `/api/agent/threads/${THREAD_ID}/asks/${DELETE_ASK_ID}/answer`
+const DELETE_PROMPT = 'Delete the 2 nodes you added?'
+
+function deleteApproval(): AgentWsEvent {
+  return {
+    type: 'agent_ask',
+    data: {
+      ...ids,
+      ask_id: DELETE_ASK_ID,
+      kind: 'delete_approval',
+      prompt: DELETE_PROMPT,
+      options: [
+        { id: 'delete', label: 'Delete' },
+        { id: 'keep', label: 'Keep' }
+      ],
+      min_selections: 1,
+      max_selections: 1,
+      allow_other: false,
+      context: {
+        action: 'delete_nodes',
+        nodes: [
+          { id: 12, type: 'KSampler', title: 'Hero sampler' },
+          { id: 13, type: 'VAEDecode' }
+        ]
+      }
+    }
+  }
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
 }
@@ -407,4 +437,93 @@ test.describe('Agent ask_user question', { tag: ['@cloud', '@agent'] }, () => {
       expect(answers()).toHaveLength(1)
     })
   })
+})
+
+test.describe('Agent delete approval', { tag: ['@cloud', '@agent'] }, () => {
+  for (const { choice, label, otherLabel, readback } of [
+    {
+      choice: 'delete',
+      label: t('agent.deleteApproval.delete'),
+      otherLabel: t('agent.deleteApproval.keep'),
+      readback: t('agent.deleteApproval.deleted')
+    },
+    {
+      choice: 'keep',
+      label: t('agent.deleteApproval.keep'),
+      otherLabel: t('agent.deleteApproval.delete'),
+      readback: t('agent.deleteApproval.kept')
+    }
+  ]) {
+    test(`the card names the nodes and answers ${choice} only for the ask it shows`, async ({
+      page
+    }) => {
+      test.setTimeout(60_000)
+      const { panel, send, answers } = await startTurn(page, 'Tidy up.', 'auto')
+      const nodes = panel.getByRole('list', {
+        name: t('agent.deleteApproval.nodes')
+      })
+      const button = panel.getByRole('button', { name: label, exact: true })
+      const other = panel.getByRole('button', {
+        name: otherLabel,
+        exact: true
+      })
+
+      await test.step('the card lists the nodes it would delete', async () => {
+        send(deleteApproval())
+        await expect(panel.getByText(DELETE_PROMPT)).toBeVisible()
+        await expect(nodes.getByRole('listitem')).toHaveText([
+          /Hero sampler\s*#12/,
+          /VAEDecode\s*#13/
+        ])
+        await expect(button).toBeEnabled()
+        expect(answers()).toHaveLength(0)
+      })
+
+      await test.step('the click posts once, to that ask, and locks the card', async () => {
+        // Hold the answer so the locked state is checked while it is in flight.
+        let release = (): void => {}
+        const held = new Promise<void>((resolve) => {
+          release = resolve
+        })
+        // The ask id is URL-encoded on the wire, so match the decoded path.
+        const isDeleteAnswer = (url: URL) =>
+          decodeURIComponent(url.pathname) === DELETE_PATH
+        await page.route(isDeleteAnswer, async (route) => {
+          await held
+          await route.fallback()
+        })
+        const posted = page.waitForRequest((request) =>
+          isDeleteAnswer(new URL(request.url()))
+        )
+        await button.click()
+        await posted
+        await expect(button).toBeDisabled()
+        await expect(other).toBeDisabled()
+
+        release()
+        await expect.poll(() => answers().length).toBe(1)
+        expect(answers()[0]).toEqual({
+          path: DELETE_PATH,
+          body: { selected: [choice] }
+        })
+      })
+
+      await test.step('the resolved card reads back the answer', async () => {
+        send({
+          type: 'agent_ask_resolved',
+          data: {
+            ...ids,
+            ask_id: DELETE_ASK_ID,
+            status: 'answered',
+            selected: [choice]
+          }
+        })
+        await expect(
+          panel.getByRole('status').filter({ hasText: readback })
+        ).toBeVisible()
+        await expect(button).toHaveCount(0)
+        expect(answers()).toHaveLength(1)
+      })
+    })
+  }
 })

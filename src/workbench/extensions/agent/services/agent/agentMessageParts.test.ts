@@ -178,13 +178,132 @@ describe('toAskPart ask_user', () => {
   })
 })
 
-describe('RENDERED_ASK_KINDS', () => {
-  it.for(RENDERED_ASK_KINDS)('renders a card for %s', (kind) => {
-    expect(isRenderedAskKind(kind)).toBe(true)
-    expect(toAskPart(askUser({ kind }))).toBeDefined()
+describe('toAskPart delete_approval', () => {
+  const deleteApproval = (ask: Partial<AskInput> = {}): AskInput =>
+    askUser({
+      kind: 'delete_approval',
+      prompt: 'Delete 2 nodes?',
+      options: [
+        { id: 'delete', label: 'Delete' },
+        { id: 'keep', label: 'Keep' }
+      ],
+      context: {
+        action: 'delete_nodes',
+        nodes: [
+          { id: '12', type: 'KSampler', title: 'Hero sampler' },
+          { id: 13, type: 'VAEDecode' },
+          { id: '12', type: 'KSampler', title: 'A repeat' }
+        ]
+      },
+      ...ask
+    })
+
+  it('lists each node once, title before type', () => {
+    expect(toAskPart(deleteApproval())).toEqual({
+      type: 'deleteApproval',
+      askId: 'turn-1:call-1',
+      prompt: 'Delete 2 nodes?',
+      nodes: [
+        { id: '12', name: 'Hero sampler' },
+        { id: '13', name: 'VAEDecode' }
+      ],
+      hiddenNodeCount: 0
+    })
   })
 
-  it.for(['paused', 'delete_approval', 'permission', 'toString', undefined])(
+  it.for([
+    { name: 'no context', context: undefined },
+    { name: 'no nodes', context: { action: 'delete_nodes' } },
+    {
+      name: 'nodes not an array',
+      context: { action: 'delete_nodes', nodes: 'oops' }
+    },
+    { name: 'an empty list', context: { action: 'delete_nodes', nodes: [] } },
+    {
+      name: 'only blank ids',
+      context: { action: 'delete_nodes', nodes: [{ id: '' }, { id: '   ' }] }
+    },
+    {
+      name: 'only unreadable entries',
+      context: { action: 'delete_nodes', nodes: [null, 7, { type: 'NoId' }] }
+    }
+  ])('falls back to the notice with $name in context', ({ context }) => {
+    expect(toAskOrNoticePart(deleteApproval({ context }))).toEqual({
+      type: 'askUnavailable',
+      askId: 'turn-1:call-1'
+    })
+  })
+
+  it('counts unreadable entries next to readable ones as not listed', () => {
+    expect(
+      toAskPart(
+        deleteApproval({
+          context: {
+            action: 'delete_nodes',
+            nodes: [{ id: 12, type: 'KSampler' }, { type: 'NoId' }]
+          }
+        })
+      )
+    ).toMatchObject({
+      nodes: [{ id: '12', name: 'KSampler' }],
+      hiddenNodeCount: 1
+    })
+  })
+
+  it('bounds an untrusted node list and counts what it does not list', () => {
+    const nodes = Array.from({ length: ASK_USER_LIMITS.nodes + 5 }, (_, i) => ({
+      id: i,
+      title: 'x'.repeat(ASK_USER_LIMITS.label + 10)
+    }))
+    const part = toAskPart(
+      deleteApproval({ context: { action: 'delete_nodes', nodes } })
+    )
+    assert(part?.type === 'deleteApproval')
+    expect(part.nodes).toHaveLength(ASK_USER_LIMITS.nodes)
+    expect(part.nodes[0].name).toHaveLength(ASK_USER_LIMITS.label)
+    expect(part.hiddenNodeCount).toBe(5)
+  })
+
+  it('tells apart nodes whose long ids share a prefix', () => {
+    const prefix = 'n'.repeat(ASK_USER_LIMITS.label)
+    expect(
+      toAskPart(
+        deleteApproval({
+          context: {
+            action: 'delete_nodes',
+            nodes: [{ id: `${prefix}-a` }, { id: `${prefix}-b` }]
+          }
+        })
+      )
+    ).toMatchObject({
+      nodes: [{ id: `${prefix}-a` }, { id: `${prefix}-b` }],
+      hiddenNodeCount: 0
+    })
+  })
+
+  it.for([
+    {
+      name: 'other option ids',
+      ask: {
+        options: [
+          { id: 'yes', label: 'Yes' },
+          { id: 'no', label: 'No' }
+        ]
+      }
+    },
+    { name: 'free text', ask: { allow_other: true } },
+    { name: 'a multi-choice', ask: { max_selections: 2 } }
+  ])('renders nothing for $name', ({ ask }) => {
+    expect(toAskPart(deleteApproval(ask))).toBeUndefined()
+  })
+})
+
+describe('RENDERED_ASK_KINDS', () => {
+  it.for(RENDERED_ASK_KINDS)('claims %s', (kind) => {
+    expect(isRenderedAskKind(kind)).toBe(true)
+  })
+
+  it.for(['paused', 'permission', 'toString', undefined])(
     'does not claim %s',
     (kind) => {
       expect(isRenderedAskKind(kind)).toBe(false)

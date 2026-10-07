@@ -5516,6 +5516,19 @@
       "closed": "This question was closed without an answer.",
       "retired": "This question is no longer open here."
     },
+    "deleteApproval": {
+      "nodes": "Nodes to delete",
+      "nodeId": "#{id}",
+      "moreNodes": "{count} more node not listed | {count} more nodes not listed",
+      "delete": "Delete",
+      "keep": "Keep",
+      "deleted": "Answered: delete them.",
+      "kept": "Answered: keep them.",
+      "answered": "Answered.",
+      "unconfirmed": "We couldn't confirm your answer. Check the canvas before trying again.",
+      "closed": "This request was closed without an answer.",
+      "retired": "This request is no longer open here."
+    },
     "dismiss": "Dismiss",
     "latest": "Latest",
     "copyUnavailable": "Only the current conversation can be copied in this version",
