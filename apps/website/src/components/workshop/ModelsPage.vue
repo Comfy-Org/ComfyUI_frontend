@@ -22,7 +22,7 @@ import {
   useWorkshopWorkflowsEnabled
 } from '@/scripts/posthog'
 
-import { loadModelsCatalogue } from '@/lib/workshop/catalogue-components'
+import { loadModelsCatalogue } from '@/lib/workshop/models-catalogue-loader'
 import type { HubSection } from '@/lib/workshop/hub-section'
 import HubEyebrow from './HubEyebrow.vue'
 import WorkshopGate from './WorkshopGate.vue'
