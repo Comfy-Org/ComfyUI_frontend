@@ -11,7 +11,7 @@ import { beforeEach, expect, it, vi } from 'vitest'
 vi.mock(import('@sentry/vue'), { spy: true })
 
 import { initSentry } from './initSentry'
-import { sentryThirdPartyErrorFilter } from './thirdPartyErrorNoise'
+import { sentryBeforeSend } from './sentryBeforeSend'
 
 function initOptions(isCloud: boolean) {
   initSentry({
@@ -38,13 +38,13 @@ function eventFrom(filename: string) {
 }
 
 beforeEach(() => {
-  vi.mocked(sentryInit).mockReset().mockReturnValue(undefined)
+  vi.mocked(sentryInit).mockReturnValue(undefined)
 })
 
 it.for([true, false])(
-  'installs the third-party error filter (isCloud: %s)',
+  'installs the beforeSend hook (isCloud: %s)',
   (isCloud) => {
-    expect(initOptions(isCloud).beforeSend).toBe(sentryThirdPartyErrorFilter)
+    expect(initOptions(isCloud).beforeSend).toBe(sentryBeforeSend)
   }
 )
 
