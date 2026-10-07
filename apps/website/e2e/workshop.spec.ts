@@ -367,8 +367,12 @@ test.describe('Models catalog', () => {
       .first()
       .click()
 
-    const back = page.getByTestId('model-back')
-    await expect(back).toHaveText('Back to Generate videos')
+    const crumbs = page.getByRole('navigation', { name: 'Breadcrumb' })
+    await expect(crumbs.getByRole('link')).toHaveText([
+      'Hub',
+      'Generate videos'
+    ])
+    const back = crumbs.getByTestId('detail-list')
     await expect(back).toHaveAttribute(
       'href',
       '/hub/models/?useCase=generate-videos'
@@ -390,8 +394,8 @@ test.describe('Models catalog', () => {
       .first()
       .click()
 
-    const back = page.getByTestId('model-back')
-    await expect(back).toHaveText('Back to Video models')
+    const back = page.getByTestId('detail-list')
+    await expect(back).toHaveText('Video models')
     await back.click()
     await expect(page).toHaveURL(/\/hub\/models\/\?tab=video$/)
   })
@@ -407,9 +411,31 @@ test.describe('Models catalog', () => {
     await waitForIsland(page, result)
     await result.click()
 
-    const back = page.getByTestId('model-back')
-    await expect(back).toHaveText('Back to Hub')
-    await expect(back).toHaveAttribute('href', '/hub/')
+    const crumbs = page.getByRole('navigation', { name: 'Breadcrumb' })
+    await expect(crumbs.getByRole('link')).toHaveText(['Hub', 'Models'])
+    await expect(crumbs.getByTestId('detail-hub')).toHaveAttribute(
+      'href',
+      '/hub/'
+    )
+  })
+
+  test('@mobile a model page leads back to its list in one short link', async ({
+    page
+  }) => {
+    await page.goto('/hub/models/?tab=video')
+    await page
+      .getByTestId('workshop-models-grid')
+      .getByTestId('workshop-model-card')
+      .first()
+      .click()
+
+    await expect(
+      page.getByRole('navigation', { name: 'Breadcrumb' })
+    ).toBeHidden()
+    const back = page.getByTestId('detail-back')
+    await expect(back).toHaveText('Video models')
+    await back.click()
+    await expect(page).toHaveURL(/\/hub\/models\/\?tab=video$/)
   })
 
   test('the search field stays put as the results swap under it', async ({
@@ -1034,24 +1060,31 @@ test.describe('Model playground', () => {
       .toBe(true)
   })
 
-  test('a lone sample takes the phone row @mobile', async ({ page }) => {
-    await page.goto('/hub/models/flux-2-pro-text-to-image/')
-    const cards = page.getByTestId('example-card')
-    await expect(cards).toHaveCount(1)
+  for (const tag of ['', ' @mobile'])
+    test(`a lone sample keeps the size of a gallery card${tag}`, async ({
+      page
+    }) => {
+      const cardWidth = async (path: string, count: number) => {
+        await page.goto(path)
+        const cards = page.getByTestId('example-card')
+        await expect(cards).toHaveCount(count)
+        let width = 0
+        await expect
+          .poll(async () => {
+            width = (await cards.first().boundingBox())?.width ?? 0
+            return width
+          })
+          .toBeGreaterThan(0)
+        return width
+      }
 
-    // The strip runs edge to edge behind a gutter of 24px on each side.
-    const list = page.getByTestId('examples-tab').locator('ul')
-    await expect
-      .poll(async () => {
-        const [listBox, cardBox] = await Promise.all([
-          list.boundingBox(),
-          cards.first().boundingBox()
-        ])
-        if (!listBox || !cardBox) return false
-        return Math.abs(cardBox.width - (listBox.width - 48)) < 2
-      })
-      .toBe(true)
-  })
+      const gallery = await cardWidth(
+        '/hub/models/luma-photon-1-text-to-image/',
+        2
+      )
+      const lone = await cardWidth('/hub/models/flux-2-pro-text-to-image/', 1)
+      expect(lone).toBeCloseTo(gallery, 0)
+    })
 })
 
 test.describe('Filter sheet @mobile', () => {

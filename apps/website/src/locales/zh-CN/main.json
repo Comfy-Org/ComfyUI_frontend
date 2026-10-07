@@ -4137,7 +4137,6 @@
       "title": "浏览模型 - Comfy"
     },
     "model": {
-      "back": "返回全部模型",
       "backTo": "返回{category}",
       "breadcrumb": "模型",
       "browseAll": "浏览全部模型",
@@ -4500,7 +4499,6 @@
       "workflowsSubtitle": "打开一个，修改任意步骤，让它成为你的。",
       "appsSubtitle": "一个应用只做一件事，无需节点。",
       "noWorkflows": "没有符合搜索和筛选条件的工作流。",
-      "backToWorkflows": "返回工作流",
       "allWorkflows": "全部工作流",
       "browseAllWorkflows": "浏览全部工作流",
       "searchWorkflows": "搜索工作流…",

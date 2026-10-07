@@ -6,7 +6,7 @@ import ModelFileTrail from './ModelFileTrail.vue'
 it('leads back to the Hub models and names the file in the breadcrumb', () => {
   render(ModelFileTrail, { props: { name: 'ae.safetensors' } })
 
-  expect(screen.getByTestId('model-back')).toHaveAttribute(
+  expect(screen.getByRole('link', { name: 'Back to Models' })).toHaveAttribute(
     'href',
     '/hub/models/'
   )

@@ -4,7 +4,6 @@ import { computed } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import type { WorkflowWorkshopModelDetail } from '@/config/models-catalogue'
-import { getRoutes } from '@/config/routes'
 import { WORKSHOP_CLOUD_BASE_URL } from '@/config/workshop-env'
 import { useWorkshopSession } from '@/config/workshop-session-state'
 import { pagePaths } from '@/lib/workshop/page-paths'
@@ -16,8 +15,7 @@ import {
   useWorkshopWorkflowsEnabled
 } from '@/scripts/posthog'
 import { workshopModelAnalytics } from '@/scripts/workshop-analytics'
-import CatalogueBackLink from './CatalogueBackLink.vue'
-import HubBreadcrumb from './HubBreadcrumb.vue'
+import DetailTrail from './DetailTrail.vue'
 import WorkflowMoreLikeThis from './WorkflowMoreLikeThis.vue'
 import WorkflowPlayground from './WorkflowPlayground.vue'
 import WorkflowPreview from './WorkflowPreview.vue'
@@ -30,17 +28,10 @@ const scope = computed(() =>
     ? JSON.stringify([session.value.uid, session.value.workspace.id])
     : 'anonymous'
 )
-const routes = getRoutes()
 const paths = pagePaths(model)
 
 const secondaryPathClass =
   'px-5 font-bold tracking-wider text-primary-warm-white uppercase'
-
-const crumbs = [
-  { label: t('workshop.catalogue.eyebrow'), href: routes.hubExplore },
-  { label: t('workshop.hub.workflows'), href: routes.hubWorkflows },
-  { label: model.name }
-]
 
 const template = model.workflow.template
 const cloudHref = template
@@ -78,14 +69,10 @@ function captureDownload() {
 <template>
   <div class="mx-auto max-w-10xl px-6 pt-5 pb-20 lg:px-8">
     <div
-      class="mb-7 flex min-h-11 items-center justify-between gap-6"
+      class="mb-7 flex min-h-11 items-center"
       data-testid="workflow-back-row"
     >
-      <CatalogueBackLink
-        :catalogue="routes.hubWorkflows"
-        :fallback="t('workshop.catalogue.backToWorkflows')"
-      />
-      <HubBreadcrumb :crumbs class="max-sm:hidden" />
+      <DetailTrail section="workflows" :name="model.name" />
     </div>
     <header class="mb-12" data-testid="workflow-hero">
       <h1

@@ -48,13 +48,14 @@ beforeEach(() => {
 })
 
 describe('WorkflowPage header', () => {
-  it('leads back to the workflows page beside a trail to the Hub', () => {
+  it('leads back to the workflows page through one trail to the Hub', () => {
     mount()
 
     const row = screen.getByTestId('workflow-back-row')
     expect(
-      within(row).getByRole('link', { name: 'Back to workflows' })
+      within(row).getByRole('link', { name: 'Back to Workflows' })
     ).toHaveAttribute('href', '/hub/workflows/')
+    expect(within(row).getAllByRole('link')).toHaveLength(3)
     const trail = within(row).getByRole('navigation', { name: 'Breadcrumb' })
     expect(
       within(trail)

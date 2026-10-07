@@ -123,3 +123,22 @@ it('asks a video example for a frame it can paint before playback', () => {
     'https://media.example/clip.mp4#t=0.1'
   )
 })
+
+it('sizes a lone example like one card of a full gallery', () => {
+  const sizing = (count: number) => {
+    const { unmount } = render(ExamplesTab, {
+      props: {
+        galleryLabel: 'Model',
+        examples: Array.from({ length: count }, (_, index) =>
+          example({ id: `e${index}`, title: `Example ${index}` })
+        )
+      }
+    })
+    const item = screen.getAllByTestId('example-item')[0].className
+    const gallery = screen.getByRole('list').className
+    unmount()
+    return { item, gallery }
+  }
+
+  expect(sizing(1)).toEqual(sizing(4))
+})

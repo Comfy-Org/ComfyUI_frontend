@@ -243,9 +243,7 @@ const facts = computed(() => [
     />
 
     <div class="flex flex-col gap-8 lg:flex-row-reverse lg:items-start">
-      <div
-        class="flex w-full flex-col gap-3 lg:sticky lg:top-24 lg:w-95 lg:shrink-0"
-      >
+      <div class="flex w-full flex-col gap-3 lg:w-95 lg:shrink-0">
         <Button
           as="a"
           :href="apiKeyHref"
@@ -326,7 +324,7 @@ const facts = computed(() => [
             role="tabpanel"
             :aria-labelledby="`snippet-tab-${language}`"
             tabindex="0"
-            class="overflow-x-auto bg-primary-comfy-ink p-6 font-mono text-sm/relaxed text-primary-warm-white"
+            class="max-h-120 overflow-auto bg-primary-comfy-ink p-6 font-mono text-sm/relaxed text-primary-warm-white"
             data-testid="snippet"
           ><HighlightedCode
               :code="snippet"

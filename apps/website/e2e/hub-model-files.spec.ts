@@ -27,13 +27,12 @@ test.describe('Model file pages in the Hub', () => {
 
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
     const trail = page.getByTestId('model-file-trail')
-    await expect(trail.getByTestId('model-back')).toHaveAttribute(
+    const crumbs = trail.getByRole('navigation', { name: 'Breadcrumb' })
+    await expect(crumbs.getByRole('link')).toHaveText(['Hub', 'Models'])
+    await expect(crumbs.getByTestId('detail-list')).toHaveAttribute(
       'href',
       '/hub/models/'
     )
-    await expect(
-      trail.getByRole('navigation', { name: 'Breadcrumb' }).getByRole('link')
-    ).toHaveText(['Hub', 'Models'])
   })
 
   test('offers the file download and nothing to run', async ({ page }) => {
@@ -72,7 +71,7 @@ test.describe('Model file pages in the Hub', () => {
     context
   }) => {
     await showWorkflows(context)
-    await page.goto('/hub/models/local/grok-imagine/')
+    await page.goto('/hub/models/local/4x-ultrasharp/')
 
     await expect(page.getByTestId('model-file-trail')).toBeVisible()
     await expect(page.getByTestId('model-file-used-by')).toHaveCount(0)

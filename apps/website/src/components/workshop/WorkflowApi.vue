@@ -114,7 +114,7 @@ const facts = computed(() => {
     class="grid gap-8 lg:grid-cols-[1fr_1.2fr] lg:items-start"
     aria-labelledby="workflow-api-heading"
   >
-    <div class="flex flex-col items-start gap-6 lg:sticky lg:top-24">
+    <div class="flex flex-col items-start gap-6">
       <SectionHeading
         title-id="workflow-api-heading"
         :title="t('workshop.api.heading')"
@@ -213,7 +213,7 @@ const facts = computed(() => {
           role="tabpanel"
           :aria-labelledby="`workflow-snippet-tab-${language}`"
           tabindex="0"
-          class="max-h-168 overflow-auto bg-primary-comfy-ink p-6 text-sm/relaxed text-primary-warm-white"
+          class="max-h-120 overflow-auto bg-primary-comfy-ink p-6 text-sm/relaxed text-primary-warm-white"
           data-testid="workflow-api-snippet"
         ><HighlightedCode :code="code" :language="highlightLanguage[language]" /></pre>
       </div>

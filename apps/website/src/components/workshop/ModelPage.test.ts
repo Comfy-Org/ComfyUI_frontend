@@ -47,15 +47,20 @@ const usedPage = await pageFor(usedSlug)
 const unusedPage = await pageFor('bfl--flux-2-max--generate-images')
 
 describe('ModelPage', () => {
-  it('puts the way back and a sentence-case breadcrumb on one row', () => {
+  it('leads back through one sentence-case breadcrumb', () => {
     render(ModelPage, { props: { page: usedPage } })
 
     const trail = screen.getByTestId('model-trail')
-    expect(within(trail).getByTestId('model-back')).toBeTruthy()
     const crumbs = within(trail).getByRole('navigation', {
       name: 'Breadcrumb'
     })
-    expect(crumbs).toHaveClass('max-sm:hidden')
+    const crumbLinks = within(crumbs).getAllByRole('link')
+    expect(
+      within(trail)
+        .getAllByRole('link')
+        .filter((link) => !crumbLinks.includes(link))
+        .map((link) => link.getAttribute('href'))
+    ).toEqual(['/hub/models/'])
     expect(
       within(crumbs)
         .getAllByRole('listitem')

@@ -15,8 +15,7 @@ import { t } from '@/i18n/translations'
 import { useWorkshopWorkflowsEnabled } from '@/scripts/posthog'
 import { SHELF_CARD } from '@/lib/workshop/card-layout'
 import CardRow from './CardRow.vue'
-import CatalogueBackLink from './CatalogueBackLink.vue'
-import HubBreadcrumb from './HubBreadcrumb.vue'
+import DetailTrail from './DetailTrail.vue'
 import ModelPrice from './ModelPrice.vue'
 import ModelDetail from './ModelDetail.vue'
 import ModelPaths from './model-detail/ModelPaths.vue'
@@ -52,11 +51,6 @@ const model = computed(() =>
 )
 const paths = computed(() => pagePaths(page.model))
 const modelUseCase = computed(() => useCaseFor(page.model))
-const crumbs = computed(() => [
-  { label: t('workshop.catalogue.eyebrow'), href: routes.hubExplore },
-  { label: t('workshop.model.breadcrumb'), href: routes.workshop },
-  { label: page.model.name }
-])
 const mounted = useMounted()
 const workflowsEnabled = useWorkshopWorkflowsEnabled()
 const showsWorkflows = computed(
@@ -74,16 +68,8 @@ const restTags = computed(() =>
 
 <template>
   <div class="mx-auto max-w-10xl px-6 py-10 lg:px-8 lg:py-14">
-    <div
-      class="mb-8 flex items-center justify-between gap-6 sm:px-8 lg:px-10"
-      data-testid="model-trail"
-    >
-      <CatalogueBackLink />
-      <HubBreadcrumb
-        :crumbs="crumbs"
-        class="max-sm:hidden"
-        data-testid="model-breadcrumb"
-      />
+    <div class="mb-8 sm:px-8 lg:px-10" data-testid="model-trail">
+      <DetailTrail section="models" :name="page.model.name" />
     </div>
     <header class="mb-12 sm:mx-8 lg:mx-10" data-testid="model-hero">
       <div

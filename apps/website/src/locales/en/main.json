@@ -75,7 +75,6 @@
     "showMore": "Show more models",
     "model": {
       "breadcrumb": "Models",
-      "back": "Back to all models",
       "backTo": "Back to {category}",
       "inputs": "Model inputs",
       "select": "Select an option",
@@ -657,7 +656,6 @@
       "workflowsSubtitle": "Open one, change any step, make it yours.",
       "appsSubtitle": "One job each, no nodes needed.",
       "noWorkflows": "No workflows match your search and filters.",
-      "backToWorkflows": "Back to workflows",
       "allWorkflows": "All workflows",
       "browseAllWorkflows": "Browse all workflows",
       "searchWorkflows": "Search workflows…",

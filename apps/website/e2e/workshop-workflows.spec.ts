@@ -643,10 +643,13 @@ test('the workflow facts link the model files it needs and its way back', async 
   await page.goto('/hub/workflows/change-material/')
 
   const back = page.getByTestId('workflow-back-row')
-  await expect(back.getByTestId('model-back')).toHaveText('Back to workflows')
-  await expect(
-    back.getByRole('navigation', { name: 'Breadcrumb' }).getByRole('link')
-  ).toHaveText(['Hub', 'Workflows'])
+  const crumbs = back.getByRole('navigation', { name: 'Breadcrumb' })
+  await expect(crumbs.getByRole('link')).toHaveText(['Hub', 'Workflows'])
+  await expect(crumbs.getByTestId('detail-list')).toHaveAttribute(
+    'href',
+    '/hub/workflows/'
+  )
+  await expect(back.getByRole('link', { name: /^Back to/ })).toBeHidden()
 
   const files = page.getByTestId('workflow-files')
   await files.scrollIntoViewIfNeeded()
