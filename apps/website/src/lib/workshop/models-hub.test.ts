@@ -109,6 +109,61 @@ describe('familyShowcase', () => {
     expect(showcase?.cover?.slug).toBe('wan-30')
   })
 
+  const still = {
+    url: 'https://example.com/still.webp',
+    kind: 'image' as const
+  }
+  const clip = { url: 'https://example.com/clip.mp4', kind: 'video' as const }
+
+  it.for([
+    {
+      kind: 'the most popular release has a still image',
+      thumbnails: [still, clip],
+      cover: 'wan-popular'
+    },
+    {
+      kind: 'the most popular release is a video without a poster',
+      thumbnails: [clip, still],
+      cover: 'wan-niche'
+    },
+    {
+      kind: 'the most popular release is a video with a poster',
+      thumbnails: [
+        { ...clip, poster: 'https://example.com/poster.jpg' },
+        still
+      ],
+      cover: 'wan-popular'
+    },
+    {
+      kind: 'the most popular release has no media',
+      thumbnails: [undefined, still],
+      cover: 'wan-niche'
+    },
+    {
+      kind: 'no release has a still',
+      thumbnails: [clip, clip],
+      cover: undefined
+    }
+  ])('covers the family with $cover when $kind', ({ thumbnails, cover }) => {
+    const [popular, niche] = thumbnails
+    const showcase = familyShowcase(
+      'Wan',
+      [
+        hosted('wan-popular', 'Wan 3.0 Text-to-Video', {
+          recommendedRank: 1,
+          thumbnail: popular
+        }),
+        hosted('wan-niche', 'Wan 2.5 Image Edit', {
+          recommendedRank: 2,
+          thumbnail: niche
+        })
+      ],
+      []
+    )
+
+    expect(showcase?.cover?.slug).toBe(cover)
+  })
+
   it('has nothing to show for a family the catalogue does not carry', () => {
     expect(
       familyShowcase('Wan', [hosted('flux', 'Flux 2')], [open('Flux1 Dev')])

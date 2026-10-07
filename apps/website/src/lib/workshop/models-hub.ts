@@ -65,6 +65,10 @@ export interface FamilyShowcase {
   readonly releases: readonly FamilyRelease[]
 }
 
+function hasStill({ thumbnail }: WorkshopModel): boolean {
+  return thumbnail?.kind === 'image' || thumbnail?.poster !== undefined
+}
+
 function newestFirst(a: FamilyRelease, b: FamilyRelease): number {
   const [left, right] = [a, b].map((release) =>
     release.version.split('.').map(Number)
@@ -79,7 +83,9 @@ function newestFirst(a: FamilyRelease, b: FamilyRelease): number {
 /**
  * A family's releases as the catalogue names them: hosted releases spell
  * "Wan 3.0 Text-to-Video", open weights "Wan2.2 T2v 14B". A family with no
- * release on either side has nothing to show.
+ * release on either side has nothing to show. The cover is the most popular
+ * release with a still to show, since a video without a poster is blank until
+ * it plays.
  */
 export function familyShowcase(
   family: string,
@@ -112,7 +118,7 @@ export function familyShowcase(
   }
   if (releases.size === 0) return undefined
   return {
-    cover: members.find((model) => model.thumbnail),
+    cover: members.find(hasStill),
     releases: [...releases.values()].toSorted(newestFirst)
   }
 }
