@@ -6,6 +6,7 @@ import {
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
 import { modelImportProgressFixture } from '@e2e/fixtures/modelImportProgressFixture'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 const test = mergeTests(comfyPageFixture, modelImportProgressFixture)
 
@@ -90,7 +91,7 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
     })
 
     const toast = page
-      .getByRole('status')
+      .getByTestId(TestIds.toast.panel)
       .filter({ hasText: 'All downloads completed' })
 
     await expect(toast).toHaveScreenshot(
@@ -127,7 +128,7 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
     })
 
     const toast = page
-      .getByRole('status')
+      .getByTestId(TestIds.toast.panel)
       .filter({ hasText: '1 download failed' })
     await expect(toast).toBeVisible()
     await expect(
@@ -181,7 +182,9 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
       })
     })
 
-    const toast = page.getByRole('status').filter({ hasText: assetName })
+    const toast = page
+      .getByTestId(TestIds.toast.panel)
+      .filter({ hasText: assetName })
     await expect(toast).toBeVisible()
 
     await test.step('cancel through user-visible controls', async () => {
@@ -244,7 +247,9 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
       await route.fulfill({ status: 404, json: { detail: 'Task not found' } })
     })
 
-    const toast = page.getByRole('status').filter({ hasText: assetName })
+    const toast = page
+      .getByTestId(TestIds.toast.panel)
+      .filter({ hasText: assetName })
 
     await test.step('cancel a running download', async () => {
       await comfyPage.assets.dispatchDownload({
@@ -317,7 +322,9 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
       status: 'running'
     })
 
-    const toast = page.getByRole('status').filter({ hasText: assetName })
+    const toast = page
+      .getByTestId(TestIds.toast.panel)
+      .filter({ hasText: assetName })
     await expect(toast).toBeVisible()
     await toast.getByRole('button', { name: 'Expand' }).click()
     const cancellation = page.waitForResponse(
@@ -399,7 +406,7 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
     })
 
     const toast = page
-      .getByRole('status')
+      .getByTestId(TestIds.toast.panel)
       .filter({ hasText: '1 download failed' })
 
     await test.step('dismiss the model import during reconciliation', async () => {

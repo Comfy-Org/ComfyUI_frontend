@@ -21,6 +21,7 @@ function toggle() {
   >
     <div
       v-if="visible"
+      data-testid="toast-panel"
       :class="
         cn(
           'w-full max-w-3xl overflow-hidden rounded-lg border border-border-default bg-base-background shadow-lg transition-all duration-300',
