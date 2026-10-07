@@ -773,9 +773,7 @@ export class ComfyApp {
               surface: 'graph',
               errorType: 'asset_drop_load_failure'
             })
-            useToast().warning('Alert', {
-              description: t('toastMessages.assetDropFailed')
-            })
+            useToast().warning(t('toastMessages.assetDropFailed'))
           }
           return
         }
@@ -821,9 +819,7 @@ export class ComfyApp {
         }
         useWorkflowService().showPendingWarnings()
       } catch (error: unknown) {
-        useToast().warning('Alert', {
-          description: t('toastMessages.dropFileError', { error })
-        })
+        useToast().warning(t('toastMessages.dropFileError', { error }))
       }
     })
 
@@ -2170,9 +2166,9 @@ export class ComfyApp {
   }
 
   showErrorOnFileLoad(file: File) {
-    useToast().warning('Alert', {
-      description: t('toastMessages.fileLoadError', { fileName: file.name })
-    })
+    useToast().warning(
+      t('toastMessages.fileLoadError', { fileName: file.name })
+    )
   }
 
   /**
@@ -2308,9 +2304,7 @@ export class ComfyApp {
       )
       switch (outcome) {
         case 'core-nodes-unavailable':
-          useToast().warning('Alert', {
-            description: t('toastMessages.a1111CoreNodesUnavailable')
-          })
+          useToast().warning(t('toastMessages.a1111CoreNodesUnavailable'))
           return
         case 'not-a1111':
           this.showErrorOnFileLoad(file)

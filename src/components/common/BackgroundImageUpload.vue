@@ -64,9 +64,7 @@ const uploadFile = async (file: File): Promise<string | null> => {
   })
 
   if (resp.status !== 200) {
-    useToast().warning('Alert', {
-      description: `Upload failed: ${resp.status} - ${resp.statusText}`
-    })
+    useToast().warning(`Upload failed: ${resp.status} - ${resp.statusText}`)
     return null
   }
 
@@ -93,9 +91,7 @@ const handleFileUpload = async (event: Event) => {
         modelValue.value = `/api/view?${params.toString()}`
       }
     } catch (error) {
-      useToast().warning('Alert', {
-        description: `Upload error: ${String(error)}`
-      })
+      useToast().warning(`Upload error: ${String(error)}`)
     } finally {
       isUploading.value = false
     }

@@ -53,9 +53,7 @@ const uploadFile = async (
   })
 
   if (resp.status !== 200) {
-    useToast().warning('Alert', {
-      description: buildUploadErrorMessage(resp)
-    })
+    useToast().warning(buildUploadErrorMessage(resp))
     return
   }
 
@@ -106,18 +104,16 @@ export const useNodeImageUpload = (
       return path
     } catch (error) {
       if (error instanceof DOMException && error.name === 'TimeoutError') {
-        useToast().warning('Alert', { description: t('g.uploadTimedOut') })
+        useToast().warning(t('g.uploadTimedOut'))
       } else {
-        useToast().warning('Alert', { description: String(error) })
+        useToast().warning(String(error))
       }
     }
   }
 
   const handleUploadBatch = async (files: File[]) => {
     if (node.isUploading) {
-      useToast().warning('Alert', {
-        description: t('g.uploadAlreadyInProgress')
-      })
+      useToast().warning(t('g.uploadAlreadyInProgress'))
       return []
     }
     node.isUploading = true

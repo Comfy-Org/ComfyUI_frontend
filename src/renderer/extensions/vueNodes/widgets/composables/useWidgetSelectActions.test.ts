@@ -98,9 +98,9 @@ describe('useWidgetSelectActions', () => {
 
       expect(api.fetchApi).not.toHaveBeenCalled()
       expect(modelValue.value).toBe('existing.mp4')
-      expect(useToast().warning).toHaveBeenCalledWith('Alert', {
-        description: enMessages.g.videoFilenameExtensionRequired
-      })
+      expect(useToast().warning).toHaveBeenCalledWith(
+        enMessages.g.videoFilenameExtensionRequired
+      )
     })
 
     it('uploads file and updates modelValue', async () => {
@@ -221,9 +221,9 @@ describe('useWidgetSelectActions', () => {
 
       expect(modelValue.value).toBe('original.png')
 
-      expect(useToast().warning).toHaveBeenCalledWith('Alert', {
-        description: 'Upload failed: Internal Server Error'
-      })
+      expect(useToast().warning).toHaveBeenCalledWith(
+        'Upload failed: Internal Server Error'
+      )
     })
 
     it('shows a status-derived toast without a dangling separator when statusText is empty', async () => {
@@ -249,9 +249,7 @@ describe('useWidgetSelectActions', () => {
 
       await handleFilesUpdate([new File(['test'], 'fail.png')])
 
-      expect(useToast().warning).toHaveBeenCalledWith('Alert', {
-        description: 'Upload failed: HTTP 502'
-      })
+      expect(useToast().warning).toHaveBeenCalledWith('Upload failed: HTTP 502')
     })
 
     it('shows a file-too-large toast on a 413 with no known upload limit', async () => {
@@ -278,9 +276,9 @@ describe('useWidgetSelectActions', () => {
 
       await handleFilesUpdate([new File(['test'], 'huge.png')])
 
-      expect(useToast().warning).toHaveBeenCalledWith('Alert', {
-        description: 'File is too large to upload.'
-      })
+      expect(useToast().warning).toHaveBeenCalledWith(
+        'File is too large to upload.'
+      )
     })
 
     it('shows a file-too-large toast with the limit on a 413 when the server reports one', async () => {
@@ -307,9 +305,9 @@ describe('useWidgetSelectActions', () => {
 
       await handleFilesUpdate([new File(['test'], 'huge.png')])
 
-      expect(useToast().warning).toHaveBeenCalledWith('Alert', {
-        description: 'File is too large to upload (limit: 100 MB).'
-      })
+      expect(useToast().warning).toHaveBeenCalledWith(
+        'File is too large to upload (limit: 100 MB).'
+      )
     })
   })
 })

@@ -70,9 +70,7 @@ export async function createNode(
     }
     return addedNode
   } else {
-    useToast().warning('Alert', {
-      description: t('assetBrowser.failedToCreateNode')
-    })
+    useToast().warning(t('assetBrowser.failedToCreateNode'))
     return null
   }
 }

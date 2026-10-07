@@ -42,11 +42,9 @@ export function useFrontendVersionMismatchWarning(
   let hasShownWarning = false
 
   const emitAlert = (detail: string) => {
-    const fullMessage = t('g.versionMismatchWarningMessage', {
-      warning: t('g.versionMismatchWarning'),
-      detail
+    toastStore.warning(t('g.versionMismatchWarning'), {
+      description: t('g.versionMismatchUpdateInstructions', { detail })
     })
-    toastStore.warning('Alert', { description: fullMessage })
   }
 
   const showWarning = () => {

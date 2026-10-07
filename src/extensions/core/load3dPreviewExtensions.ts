@@ -201,7 +201,7 @@ function createPreview3DExtension(
           if (!reported) {
             const msg = t('toastMessages.unableToGetModelFilePath')
             console.error(msg)
-            useToast().warning('Alert', { description: msg })
+            useToast().warning(msg)
             return
           }
 

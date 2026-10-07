@@ -10,9 +10,7 @@ function saveSetting<K extends keyof Settings>(id: K, value: Settings[K]) {
   useSettingStore()
     .set(id, value)
     .catch((err) => {
-      useToast().warning('Alert', {
-        description: t('toastMessages.errorSaveSetting', { id, err })
-      })
+      useToast().warning(t('toastMessages.errorSaveSetting', { id, err }))
     })
 }
 

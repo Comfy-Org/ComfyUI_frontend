@@ -66,7 +66,7 @@ export function useWorkflowValidation() {
       graphData,
       /* onError=*/ (err) => {
         if (!silent) {
-          toastStore.warning('Alert', { description: err })
+          toastStore.warning(err)
         }
       }
     )

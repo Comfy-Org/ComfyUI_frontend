@@ -83,11 +83,10 @@ describe('useFrontendVersionMismatchWarning', () => {
     // For immediate: true, the watcher should fire immediately in onMounted
     await nextTick()
 
-    expect(warningSpy).toHaveBeenCalledWith('Alert', {
-      description: expect.stringContaining('Version Compatibility Warning')
-    })
-    expect(warningSpy).toHaveBeenCalledWith('Alert', {
-      description: expect.stringContaining('Frontend version 1.0.0 is outdated')
+    expect(warningSpy).toHaveBeenCalledWith('Version Compatibility Warning', {
+      description: expect.stringMatching(
+        /^Frontend version 1\.0\.0 is outdated.* Visit https:\/\/docs\.comfy\.org\//
+      )
     })
     // Should automatically dismiss the warning
     expect(dismissWarningSpy).toHaveBeenCalled()
@@ -217,16 +216,23 @@ describe('useFrontendVersionMismatchWarning', () => {
     const { showWarning } = mountVersionWarning()
     showWarning()
 
-    expect(warningSpy).toHaveBeenCalledTimes(2)
-    expect(warningSpy).toHaveBeenCalledWith('Alert', {
-      description: expect.stringContaining(
-        'Installed comfyui-workflow-templates version 0.9.0'
-      )
-    })
-    expect(warningSpy).toHaveBeenCalledWith('Alert', {
-      description: expect.stringContaining(
-        'Installed comfyui-embedded-docs version 0.4.0'
-      )
-    })
+    expect(warningSpy.mock.calls).toEqual([
+      [
+        'Version Compatibility Warning',
+        {
+          description: expect.stringMatching(
+            /^Installed comfyui-workflow-templates version 0\.9\.0 /
+          )
+        }
+      ],
+      [
+        'Version Compatibility Warning',
+        {
+          description: expect.stringMatching(
+            /^Installed comfyui-embedded-docs version 0\.4\.0 /
+          )
+        }
+      ]
+    ])
   })
 })

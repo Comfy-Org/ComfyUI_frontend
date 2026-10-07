@@ -633,7 +633,7 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
         status: 0,
         statusText: e instanceof Error ? e.message : String(e)
       })
-      toastStore.warning('Alert', { description: err })
+      toastStore.warning(err)
       throw new Error(err, { cause: e })
     }
 
@@ -643,7 +643,7 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
         status: resp.status,
         statusText: bodyText || resp.statusText || 'unknown error'
       })
-      toastStore.warning('Alert', { description: err })
+      toastStore.warning(err)
       throw new Error(err)
     }
 
@@ -655,13 +655,13 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
         status: resp.status,
         statusText: e instanceof Error ? e.message : String(e)
       })
-      toastStore.warning('Alert', { description: err })
+      toastStore.warning(err)
       throw new Error(err, { cause: e })
     }
 
     if (!data.name) {
       const detail = `Painter upload succeeded (${resp.status}) but response is missing 'name'`
-      toastStore.warning('Alert', { description: detail })
+      toastStore.warning(detail)
       throw new Error(detail)
     }
 

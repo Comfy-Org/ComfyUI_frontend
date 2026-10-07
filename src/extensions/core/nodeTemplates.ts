@@ -125,9 +125,7 @@ class ManageTemplates extends ComfyDialog {
       await api.storeUserData(file, templates, { stringify: false })
     } catch (error) {
       console.error(error)
-      useToast().warning('Alert', {
-        description: error instanceof Error ? error.message : String(error)
-      })
+      useToast().warning(error instanceof Error ? error.message : String(error))
     }
   }
 
@@ -157,9 +155,7 @@ class ManageTemplates extends ComfyDialog {
 
   exportAll() {
     if (this.templates.length == 0) {
-      useToast().warning('Alert', {
-        description: t('toastMessages.noTemplatesToExport')
-      })
+      useToast().warning(t('toastMessages.noTemplatesToExport'))
       return
     }
 
@@ -407,9 +403,7 @@ const ext: ComfyExtension = {
                 data = JSON.parse(template.data)
               } catch (error) {
                 console.error('Failed to parse node template data', error)
-                useToast().warning('Alert', {
-                  description: t('toastMessages.invalidTemplateData')
-                })
+                useToast().warning(t('toastMessages.invalidTemplateData'))
                 return
               }
 

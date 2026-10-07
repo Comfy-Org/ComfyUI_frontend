@@ -125,7 +125,7 @@ app.registerExtension({
         capture()
       } else if (!node.imgs?.length) {
         const err = `No webcam image captured`
-        useToast().warning('Alert', { description: err })
+        useToast().warning(err)
         throw new Error(err)
       }
 
@@ -147,7 +147,7 @@ app.registerExtension({
       })
       if (resp.status !== 200) {
         const err = `Error uploading camera image: ${resp.status} - ${resp.statusText}`
-        useToast().warning('Alert', { description: err })
+        useToast().warning(err)
         throw new Error(err)
       }
       const data = await resp.json()

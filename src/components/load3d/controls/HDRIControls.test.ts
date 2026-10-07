@@ -184,9 +184,7 @@ describe('HDRIControls', () => {
       fileInput.dispatchEvent(new Event('change'))
 
       expect(onUpdateHdriFile).not.toHaveBeenCalled()
-      expect(warning).toHaveBeenCalledWith('Alert', {
-        description: 'Unsupported HDRI format'
-      })
+      expect(warning).toHaveBeenCalledWith('Unsupported HDRI format')
     })
   })
 })

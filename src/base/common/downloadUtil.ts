@@ -219,10 +219,10 @@ export async function openFileInNewTab(url: string): Promise<void> {
   } catch (error) {
     tab?.close()
     console.error('Failed to open image:', error)
-    useToast().warning('Alert', {
-      description: t('toastMessages.errorOpenImage', {
+    useToast().warning(
+      t('toastMessages.errorOpenImage', {
         error: error instanceof Error ? error.message : String(error)
       })
-    })
+    )
   }
 }

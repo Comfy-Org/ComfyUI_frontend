@@ -2102,7 +2102,7 @@ describe('useMediaAssetActions', () => {
       )
       expect(mockCaptureCanvasState).toHaveBeenCalledTimes(1)
       expect(useToast().warning).toHaveBeenCalledWith(
-        i18n.global.t('mediaAsset.assetDelete.warn'),
+        i18n.global.t('mediaAsset.assetDelete.warning'),
         {
           description: i18n.global.t(
             'mediaAsset.assetsDeleted',

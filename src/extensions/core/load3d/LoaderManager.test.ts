@@ -350,9 +350,9 @@ describe('LoaderManager', () => {
 
       await lm.loadModel('api/view?other=1')
 
-      expect(useToast().warning).toHaveBeenCalledWith('Alert', {
-        description: 'toastMessages.couldNotDetermineFileType'
-      })
+      expect(useToast().warning).toHaveBeenCalledWith(
+        'toastMessages.couldNotDetermineFileType'
+      )
       expect(modelManager.setupModel).not.toHaveBeenCalled()
       expect(meshLoad).not.toHaveBeenCalled()
     })
@@ -517,9 +517,9 @@ describe('LoaderManager', () => {
         'modelLoadingEnd',
         null
       )
-      expect(useToast().warning).toHaveBeenCalledWith('Alert', {
-        description: 'toastMessages.errorLoadingModel'
-      })
+      expect(useToast().warning).toHaveBeenCalledWith(
+        'toastMessages.errorLoadingModel'
+      )
       expect(consoleError).toHaveBeenCalled()
     })
 
@@ -538,9 +538,9 @@ describe('LoaderManager', () => {
       })
 
       expect(consoleError).toHaveBeenCalled()
-      expect(useToast().warning).not.toHaveBeenCalledWith('Alert', {
-        description: 'toastMessages.errorLoadingModel'
-      })
+      expect(useToast().warning).not.toHaveBeenCalledWith(
+        'toastMessages.errorLoadingModel'
+      )
     })
 
     it('detects a 404 from the response status field on three.js HttpError', async () => {
@@ -555,9 +555,9 @@ describe('LoaderManager', () => {
         silentOnNotFound: true
       })
 
-      expect(useToast().warning).not.toHaveBeenCalledWith('Alert', {
-        description: 'toastMessages.errorLoadingModel'
-      })
+      expect(useToast().warning).not.toHaveBeenCalledWith(
+        'toastMessages.errorLoadingModel'
+      )
     })
 
     it('still alerts on non-404 errors when silentOnNotFound is set', async () => {
@@ -569,9 +569,9 @@ describe('LoaderManager', () => {
         silentOnNotFound: true
       })
 
-      expect(useToast().warning).toHaveBeenCalledWith('Alert', {
-        description: 'toastMessages.errorLoadingModel'
-      })
+      expect(useToast().warning).toHaveBeenCalledWith(
+        'toastMessages.errorLoadingModel'
+      )
     })
 
     it('discards the result of a stale load when a newer one has started', async () => {

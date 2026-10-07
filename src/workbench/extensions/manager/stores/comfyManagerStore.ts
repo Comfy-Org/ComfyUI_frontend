@@ -384,24 +384,24 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
     policy: keyof typeof versionStatusFilters
   ) {
     const registry = useComfyRegistryService()
-    const summary = pack.name ?? pack.id
+    const packName = pack.name ?? pack.id
     const versions = await registry.getPackVersions(pack.id, {
       statuses: versionStatusFilters[policy]
     })
     if (!isEnabledPackId(pack.id)) return
     if (versions === null) {
-      toast.error(summary, {
+      toast.error(packName, {
         description: registry.error.value ?? t('manager.errorConnecting')
       })
       return
     }
     const version = versions[0]?.version
     if (!version) {
-      toast.warning(summary, { description: t('manager.noUpdateVersion') })
+      toast.warning(packName, { description: t('manager.noUpdateVersion') })
       return
     }
     if (version === getInstalledPackVersion(pack.id)) {
-      toast.info(summary, {
+      toast.info(packName, {
         description: t('manager.updateVersionInstalled', { version })
       })
       return

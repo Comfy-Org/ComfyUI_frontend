@@ -94,9 +94,7 @@ async function handleModelUpload(files: FileList, node: LGraphNode) {
     const uploadPath = await Load3dUtils.uploadFile(files[0], subfolder)
 
     if (!uploadPath) {
-      useToast().warning('Alert', {
-        description: t('toastMessages.fileUploadFailed')
-      })
+      useToast().warning(t('toastMessages.fileUploadFailed'))
       return
     }
 
@@ -111,9 +109,7 @@ async function handleModelUpload(files: FileList, node: LGraphNode) {
       try {
         await load3d.loadModel(modelUrl)
       } catch {
-        useToast().warning('Alert', {
-          description: t('toastMessages.failedToLoadModel')
-        })
+        useToast().warning(t('toastMessages.failedToLoadModel'))
       }
     })
 
@@ -128,9 +124,7 @@ async function handleModelUpload(files: FileList, node: LGraphNode) {
     markLoad3dSceneDirty(node)
   } catch (error) {
     console.error('Model upload failed:', error)
-    useToast().warning('Alert', {
-      description: t('toastMessages.fileUploadFailed')
-    })
+    useToast().warning(t('toastMessages.fileUploadFailed'))
   }
 }
 
@@ -148,9 +142,7 @@ async function handleResourcesUpload(files: FileList, node: LGraphNode) {
     markLoad3dSceneDirty(node)
   } catch (error) {
     console.error('Extra resources upload failed:', error)
-    useToast().warning('Alert', {
-      description: t('toastMessages.extraResourcesUploadFailed')
-    })
+    useToast().warning(t('toastMessages.extraResourcesUploadFailed'))
   }
 }
 
@@ -674,7 +666,7 @@ useExtensionService().registerExtension({
           if (!filePath) {
             const msg = t('toastMessages.unableToGetModelFilePath')
             console.error(msg)
-            useToast().warning('Alert', { description: msg })
+            useToast().warning(msg)
           }
 
           const cameraState = result?.[1]
@@ -911,7 +903,7 @@ function createPreview3DAdvancedExtension(
           if (!reported) {
             const msg = t('toastMessages.unableToGetModelFilePath')
             console.error(msg)
-            useToast().warning('Alert', { description: msg })
+            useToast().warning(msg)
             return
           }
 

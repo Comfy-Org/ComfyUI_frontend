@@ -214,9 +214,7 @@ describe('Comfy.UploadAudio AUDIOUPLOAD widget', () => {
     const result = await capturedDragDrop!([createFile()])
 
     expect(result).toEqual([])
-    expect(useToast().warning).toHaveBeenCalledWith('Alert', {
-      description: 'g.uploadAlreadyInProgress'
-    })
+    expect(useToast().warning).toHaveBeenCalledWith('g.uploadAlreadyInProgress')
     expect(api.fetchApi).not.toHaveBeenCalled()
   })
 
@@ -230,9 +228,7 @@ describe('Comfy.UploadAudio AUDIOUPLOAD widget', () => {
 
     expect(node.isUploading).toBe(false)
     expect(audioWidget.value).toBe('previous.mp3')
-    expect(useToast().warning).toHaveBeenCalledWith('Alert', {
-      description: '500 - Server Error'
-    })
+    expect(useToast().warning).toHaveBeenCalledWith('500 - Server Error')
     expect(node.graph?.setDirtyCanvas).toHaveBeenCalledWith(true)
   })
 
@@ -249,9 +245,7 @@ describe('Comfy.UploadAudio AUDIOUPLOAD widget', () => {
 
     expect(node.isUploading).toBe(false)
     expect(audioWidget.value).toBe('previous.mp3')
-    expect(useToast().warning).toHaveBeenCalledWith('Alert', {
-      description: error.message
-    })
+    expect(useToast().warning).toHaveBeenCalledWith(error.message)
     expect(node.graph?.setDirtyCanvas).toHaveBeenCalledWith(true)
   })
 
@@ -389,12 +383,8 @@ describe('Comfy.RecordAudio AUDIO_RECORD widget', () => {
       RECORDER_FAILURE_REPORT
     )
     expect(mockStopAllTracks).toHaveBeenCalledWith(stream)
-    expect(useToast().warning).toHaveBeenCalledWith('Alert', {
-      description: 'g.recordingFailedToStart'
-    })
-    expect(useToast().warning).not.toHaveBeenCalledWith('Alert', {
-      description: 'g.micPermissionDenied'
-    })
+    expect(useToast().warning).toHaveBeenCalledWith('g.recordingFailedToStart')
+    expect(useToast().warning).not.toHaveBeenCalledWith('g.micPermissionDenied')
     expect(recordWidget.label).toBe('g.startRecording')
   })
 
@@ -411,9 +401,7 @@ describe('Comfy.RecordAudio AUDIO_RECORD widget', () => {
 
     await pressRecord()
 
-    expect(useToast().warning).toHaveBeenCalledWith('Alert', {
-      description: 'g.micPermissionDenied'
-    })
+    expect(useToast().warning).toHaveBeenCalledWith('g.micPermissionDenied')
     expect(reportError).not.toHaveBeenCalled()
     expect(mockMediaRecorderConstruct).not.toHaveBeenCalled()
   })
@@ -430,12 +418,8 @@ describe('Comfy.RecordAudio AUDIO_RECORD widget', () => {
       accessError,
       RECORDER_FAILURE_REPORT
     )
-    expect(useToast().warning).toHaveBeenCalledWith('Alert', {
-      description: 'g.recordingFailedToStart'
-    })
-    expect(useToast().warning).not.toHaveBeenCalledWith('Alert', {
-      description: 'g.micPermissionDenied'
-    })
+    expect(useToast().warning).toHaveBeenCalledWith('g.recordingFailedToStart')
+    expect(useToast().warning).not.toHaveBeenCalledWith('g.micPermissionDenied')
     expect(mockMediaRecorderConstruct).not.toHaveBeenCalled()
   })
 })

@@ -699,11 +699,11 @@ export const useLitegraphService = () => {
                 throw error
               }
             } catch (error) {
-              toastStore.warning('Alert', {
-                description: t('toastMessages.errorCopyImage', {
+              toastStore.warning(
+                t('toastMessages.errorCopyImage', {
                   error: error instanceof Error ? error.message : error
                 })
-              })
+              )
             }
           }, 'preview')
         }

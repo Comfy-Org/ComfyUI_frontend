@@ -348,9 +348,9 @@ describe('useLoad3d', () => {
 
       await composable.initializeLoad3d(containerRef)
 
-      expect(mockToastStore.warning).toHaveBeenCalledWith('Alert', {
-        description: 'toastMessages.failedToInitializeLoad3dViewer'
-      })
+      expect(mockToastStore.warning).toHaveBeenCalledWith(
+        'toastMessages.failedToInitializeLoad3dViewer'
+      )
     })
 
     it('should handle missing container or node', async () => {
@@ -825,9 +825,9 @@ describe('useLoad3d', () => {
 
       await composable.handleExportModel('glb')
 
-      expect(mockToastStore.warning).toHaveBeenCalledWith('Alert', {
-        description: 'toastMessages.no3dSceneToExport'
-      })
+      expect(mockToastStore.warning).toHaveBeenCalledWith(
+        'toastMessages.no3dSceneToExport'
+      )
     })
 
     it('should handle export errors', async () => {
@@ -842,9 +842,9 @@ describe('useLoad3d', () => {
 
       await composable.handleExportModel('glb')
 
-      expect(mockToastStore.warning).toHaveBeenCalledWith('Alert', {
-        description: 'toastMessages.failedToExportModel'
-      })
+      expect(mockToastStore.warning).toHaveBeenCalledWith(
+        'toastMessages.failedToExportModel'
+      )
     })
   })
 
@@ -1069,9 +1069,9 @@ describe('useLoad3d', () => {
       await composable.handleModelDrop(file)
 
       expect(mockLoad3d.loadModel).not.toHaveBeenCalled()
-      expect(mockToastStore.warning).toHaveBeenCalledWith('Alert', {
-        description: 'toastMessages.no3dScene'
-      })
+      expect(mockToastStore.warning).toHaveBeenCalledWith(
+        'toastMessages.no3dScene'
+      )
     })
   })
 
