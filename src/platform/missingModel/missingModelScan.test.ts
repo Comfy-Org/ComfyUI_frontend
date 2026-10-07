@@ -20,8 +20,14 @@ import {
   verifyAssetSupportedCandidates,
   MODEL_FILE_EXTENSIONS
 } from '@/platform/missingModel/missingModelScan'
+import { releaseModelOptions as bootReleaseModelOptions } from '@/platform/missingModel/releaseModelOptions'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { WorkspaceDeploymentList } from '@/platform/workspace/api/workspaceApi'
+import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
@@ -1739,6 +1745,7 @@ const { mockUpdateModelsForNodeType, mockGetAssets } = vi.hoisted(() => ({
 }))
 
 vi.mock(import('@/i18n'))
+vi.mock(import('@/platform/workspace/api/workspaceApi'))
 
 function makeAssetCandidate(
   name: string,
@@ -2026,6 +2033,105 @@ describe('on a developer-platform deployment', () => {
       expect(candidates[0].isMissing).toBe(isMissing)
     }
   )
+})
+
+describe("while the page's deployment listing is slow", () => {
+  const onDeployment: WorkspaceDeploymentList = {
+    builds_visible: true,
+    picked_deployment_id: 'dep-2',
+    pick_source: 'browser',
+    items: [
+      {
+        deployment_id: 'dep-2',
+        release_id: 'r-2',
+        status: 'ready',
+        created_at: '2026-10-01T00:00:00Z'
+      }
+    ]
+  }
+
+  beforeEach(() => {
+    Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-1' })
+    useNodeDefStore().nodeDefsByName = {
+      CheckpointLoaderSimple: fromPartial<ComfyNodeDefImpl>({
+        inputs: {
+          ckpt_name: {
+            type: 'COMBO',
+            name: 'ckpt_name',
+            options: ['release_model.safetensors']
+          }
+        }
+      })
+    }
+    mockUpdateModelsForNodeType.mockResolvedValue(undefined)
+    mockGetAssets.mockReturnValue([])
+  })
+
+  function scanReleaseModel() {
+    const graph = makeGraph([
+      makeNode(1, 'CheckpointLoaderSimple', [
+        makeAssetWidget('ckpt_name', 'release_model.safetensors')
+      ])
+    ])
+    return scanAllModelCandidates(
+      graph,
+      () => true,
+      undefined,
+      bootReleaseModelOptions
+    )
+  }
+
+  it('checks the model against the library when the listing never answers', async () => {
+    vi.mocked(workspaceApi.listDeployments).mockReturnValue(
+      new Promise(() => {})
+    )
+    const candidates = scanReleaseModel()
+
+    const verifying = verifyAssetSupportedCandidates(candidates)
+    await vi.advanceTimersByTimeAsync(5000)
+    await verifying
+
+    expect(candidates[0].isMissing).toBe(true)
+    expect(mockUpdateModelsForNodeType).toHaveBeenCalledWith(
+      'CheckpointLoaderSimple'
+    )
+  })
+
+  it('settles at once when the scan is aborted before the listing answers', async () => {
+    vi.mocked(workspaceApi.listDeployments).mockReturnValue(
+      new Promise(() => {})
+    )
+    const candidates = scanReleaseModel()
+    const controller = new AbortController()
+
+    const verifying = verifyAssetSupportedCandidates(
+      candidates,
+      controller.signal
+    )
+    controller.abort()
+    await verifying
+
+    expect(candidates[0].isMissing).toBeUndefined()
+    expect(mockUpdateModelsForNodeType).not.toHaveBeenCalled()
+  })
+
+  it('takes the model the Release lists as present when the listing answers within 5 seconds', async () => {
+    let answer = (_listing: WorkspaceDeploymentList) => {}
+    vi.mocked(workspaceApi.listDeployments).mockReturnValue(
+      new Promise((resolve) => {
+        answer = resolve
+      })
+    )
+    const candidates = scanReleaseModel()
+
+    const verifying = verifyAssetSupportedCandidates(candidates)
+    await vi.advanceTimersByTimeAsync(4000)
+    answer(onDeployment)
+    await verifying
+
+    expect(candidates[0].isMissing).toBe(false)
+    expect(mockUpdateModelsForNodeType).not.toHaveBeenCalled()
+  })
 })
 
 describe('remote combo inventory', () => {

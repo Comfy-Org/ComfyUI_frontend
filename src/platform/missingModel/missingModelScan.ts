@@ -50,11 +50,13 @@ type DeferredVerification = (
  * On a developer-platform deployment (FE-2434) the editor's node catalog is
  * the deployment's Release, so a loader's model options there are models the
  * deployment has. Resolves those options for a loader input, or undefined
- * when the editor runs on Comfy Cloud.
+ * when the editor runs on Comfy Cloud, when that is not known yet, or once
+ * `signal` aborts.
  */
 export type ReleaseModelOptions = (
   nodeType: string,
-  widgetName: string
+  widgetName: string,
+  signal?: AbortSignal
 ) => Promise<readonly (string | number)[] | undefined>
 
 const pendingVerifications = new WeakMap<
@@ -329,10 +331,11 @@ function deferToReleaseOptions(
   releaseModelOptions: ReleaseModelOptions | undefined
 ): void {
   if (!releaseModelOptions) return
-  pendingVerifications.set(candidate, async () => {
+  pendingVerifications.set(candidate, async (signal) => {
     const options = await releaseModelOptions(
       target.nodeType,
-      target.definitionWidgetName
+      target.definitionWidgetName,
+      signal
     )
     return options?.includes(candidate.name) ? false : undefined
   })
