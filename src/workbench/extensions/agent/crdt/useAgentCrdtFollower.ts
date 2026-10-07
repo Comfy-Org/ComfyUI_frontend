@@ -602,6 +602,20 @@ function startAgentCrdtFollower(
     subscribeAckTimeouts = 0
   }
 
+  function giveUpOnReseed(reason: string): void {
+    clearStaleProbe()
+    clearSubscribeRetry()
+    clearSubscribeAckTimer()
+    subscribeGaveUp = true
+    pendingReseed = null
+    connected.value = false
+    reportError(new Error(`agent document reseed stopped: ${reason}`), {
+      errorType: 'failure_reseeding_agent_cloud_workflow',
+      level: 'warning',
+      tags: { feature_area: 'agent', operation: 'sync', outcome: 'gave_up' }
+    })
+  }
+
   const giveUpOnSubscribe = (workflowId: string): void => {
     clearStaleProbe()
     subscribeGaveUp = true
@@ -610,6 +624,10 @@ function startAgentCrdtFollower(
       { attempt: subscribeRetryAttempt, workflowId, terminal: true },
       { level: 'warn' }
     )
+    if (pendingReseed !== null) {
+      giveUpOnReseed('subscribe acknowledgement budget exhausted')
+      return
+    }
     reportError(
       new Error('agent doc subscribe was sent but never acknowledged'),
       {
@@ -650,7 +668,10 @@ function startAgentCrdtFollower(
 
   const scheduleSubscribeRetry = (): void => {
     if (subscribeGaveUp || subscribeRetryTimer !== null) return
-    if (subscribeRetryAttempt >= SUBSCRIBE_RETRY_MAX_ATTEMPTS) return
+    if (subscribeRetryAttempt >= SUBSCRIBE_RETRY_MAX_ATTEMPTS) {
+      if (pendingReseed !== null) giveUpOnReseed('retry budget exhausted')
+      return
+    }
     const target = subscribedWorkflowId.value
     if (target === null) return
     const delay = SUBSCRIBE_RETRY_BASE_MS * 2 ** subscribeRetryAttempt
@@ -665,20 +686,6 @@ function startAgentCrdtFollower(
       })
       bridge.resubscribe()
     }, delay)
-  }
-
-  const giveUpOnReseed = (reason: string): void => {
-    clearStaleProbe()
-    clearSubscribeRetry()
-    clearSubscribeAckTimer()
-    subscribeGaveUp = true
-    pendingReseed = null
-    connected.value = false
-    reportError(new Error(`agent document reseed stopped: ${reason}`), {
-      errorType: 'failure_reseeding_agent_cloud_workflow',
-      level: 'warning',
-      tags: { feature_area: 'agent', operation: 'sync', outcome: 'gave_up' }
-    })
   }
 
   const tryReseed = (): boolean => {
@@ -742,17 +749,7 @@ function startAgentCrdtFollower(
     }
     clearSubscribeAckTimer()
     if (isRetryableReseedCode(code)) scheduleSubscribeRetry()
-    else {
-      clearStaleProbe()
-      clearSubscribeRetry()
-      subscribeGaveUp = true
-      connected.value = false
-      reportError(new Error('agent document reseed was rejected'), {
-        errorType: 'failure_reseeding_agent_cloud_workflow',
-        level: 'warning',
-        tags: { feature_area: 'agent', operation: 'sync', outcome: 'gave_up' }
-      })
-    }
+    else giveUpOnReseed('host rejected the reseed')
   }
 
   const onSubscribed: EventListener = (event) => {

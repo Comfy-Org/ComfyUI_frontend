@@ -486,6 +486,49 @@ describe('useAgentCrdtFollower', () => {
     expect(telemetryState.reportError).not.toHaveBeenCalled()
     expect(bridge().resubscribe).not.toHaveBeenCalled()
   })
+
+  it('releases future edits after a terminal reseed rejection', async () => {
+    const { enqueue } = mountFollower(
+      'wf-1',
+      true,
+      () => null,
+      {},
+      () => ({ nodes: [] })
+    )
+    bridge().canReseed.mockReturnValue(true)
+    bridge().reseed.mockReturnValue('sent')
+    dispatchFrame('doc_subscribed', {
+      workflowId: 'wf-1',
+      ok: false,
+      code: 'stale_schema_reseed_required',
+      expectedSeq: 7
+    })
+    enqueue([{ op: 'delete_node', node_id: 'held', removed_links: [] }])
+
+    dispatchFrame('doc_reseed_result', {
+      workflowId: 'wf-1',
+      ok: false,
+      code: 'invalid_frame'
+    })
+    enqueue([
+      { op: 'delete_node', node_id: 'after-failure', removed_links: [] }
+    ])
+    await Promise.resolve()
+
+    expect(telemetryState.reportError).toHaveBeenCalledExactlyOnceWith(
+      expect.any(Error),
+      {
+        errorType: 'failure_reseeding_agent_cloud_workflow',
+        level: 'warning',
+        tags: { feature_area: 'agent', operation: 'sync', outcome: 'gave_up' }
+      }
+    )
+    expect(clientState.sendOps).toHaveBeenCalledExactlyOnceWith(
+      'wf-1',
+      expect.any(String),
+      [expect.objectContaining({ node_id: 'after-failure' })]
+    )
+  })
   it('replays post-snapshot edits after the same workflow tab is reactivated', async () => {
     const { enqueue, isTargetActive } = mountFollower(
       'wf-1',
