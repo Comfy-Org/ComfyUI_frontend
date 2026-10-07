@@ -15,6 +15,7 @@ export const TestIds = {
     toolbar: 'side-toolbar',
     topGroup: 'sidebar-top-group',
     nodeLibrary: 'node-library-tree',
+    nodeLibraryBookmarks: 'node-library-bookmark-tree',
     nodeLibrarySearch: 'node-library-search',
     nodePreviewCard: 'node-preview-card',
     nodePreviewInputs: 'node-preview-inputs',
@@ -26,9 +27,8 @@ export const TestIds = {
     tabButton: (tabId: string) => `${tabId}-tab-button`
   },
   tree: {
-    folder: 'tree-folder',
-    leaf: 'tree-leaf',
-    node: 'tree-node'
+    itemPreview: 'tree-item-preview',
+    leafCount: 'tree-leaf-count'
   },
   canvas: {
     main: 'graph-canvas',

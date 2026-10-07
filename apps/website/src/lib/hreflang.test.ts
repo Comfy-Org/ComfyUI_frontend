@@ -96,8 +96,8 @@ describe('hreflangAlternates', () => {
     '/enterprise-msa/',
     '/terms-of-service/',
     '/zh-CN/terms-of-service/',
-    '/p/supported-models/',
-    '/p/supported-models/flux-1-dev/',
+    '/hub/models/local/',
+    '/hub/models/local/4x-ultrasharp/',
     '/comfy-agent/',
     '/404'
   ])('emits nothing for %s without indexable translations', (pathname) => {

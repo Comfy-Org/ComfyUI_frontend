@@ -481,6 +481,29 @@ describe('Menu', () => {
     expect(onKeydown).not.toHaveBeenCalled()
   })
 
+  it('dismisses a context menu with Escape', async () => {
+    render(
+      defineComponent({
+        components: { ContextMenu },
+        setup: () => ({ menu: ref<InstanceType<typeof ContextMenu>>() }),
+        template:
+          '<button @contextmenu.prevent="menu?.show($event)">Target</button><ContextMenu ref="menu" :model="[{ label: \'Inspect\' }]" />'
+      })
+    )
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+
+    await user.pointer({
+      keys: '[MouseRight]',
+      target: screen.getByRole('button', { name: 'Target' })
+    })
+    await screen.findByRole('menu')
+    await user.keyboard('{Escape}')
+
+    await waitFor(() =>
+      expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+    )
+  })
+
   it('stays closed when its open trigger is clicked', async () => {
     const menu = ref<InstanceType<typeof ContextMenu>>()
     render(
