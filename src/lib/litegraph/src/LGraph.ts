@@ -3728,6 +3728,7 @@ export class Subgraph
     const mayContinue = this.events.dispatch('removing-input', { input, index })
     if (!mayContinue) return false
 
+    const widget = input._widget
     input.disconnect()
 
     this.inputs.splice(index, 1)
@@ -3736,7 +3737,11 @@ export class Subgraph
     for (let i = index; i < length; i++) {
       this.inputs[i].decrementSlots('inputs')
     }
-    this.events.dispatch('input-removed', { input, index })
+    this.events.dispatch('input-removed', {
+      input,
+      index,
+      ...(widget ? { widget } : {})
+    })
     return true
   }
 

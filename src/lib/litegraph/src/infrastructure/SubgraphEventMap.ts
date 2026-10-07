@@ -30,6 +30,8 @@ export interface SubgraphEventMap extends LGraphEventMap {
   'input-removed': {
     input: SubgraphInput
     index: number
+    /** Widget owned by the removed input before its links were disconnected. */
+    widget?: IBaseWidget
   }
   'removing-output': {
     output: SubgraphOutput

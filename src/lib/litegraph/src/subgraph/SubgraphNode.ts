@@ -187,7 +187,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     subgraphEvents.addEventListener(
       'input-removed',
       (e) => {
-        const widget = e.detail.input._widget
+        const widget = e.detail.widget
         if (widget) this.ensureWidgetRemoved(widget)
 
         this.removeInput(e.detail.index)
