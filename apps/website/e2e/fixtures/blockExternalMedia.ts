@@ -33,6 +33,7 @@ const GITHUB_ATTACHMENT_URLS = new Set([
   'https://github.com/user-attachments/assets/049b928c-2366-4f47-8f8d-108133723658'
 ])
 const MEDIA_PATTERNS = [
+  /^https:\/\/website-frontend-1hz67q8tg-comfyui\.vercel\.app\/videos\/vfx-sizzle-hero\.mp4$/i,
   /^https:\/\/media\.comfy\.org\/website\/comfy-agent\/[^/?]+\.svg(?:\?.*)?$/i,
   /^https:\/\/(?:media|comfy-hub-assets)\.comfy\.org\/.*\.(?:webp|webm|mp4|png|jpg|jpeg|gif|avif|vtt)(?:\?.*)?$/i,
   /^https:\/\/cloud\.comfy\.org\/templates\/[^/]+\.(?:webp|png|jpg|jpeg|gif|avif)(?:\?.*)?$/i,

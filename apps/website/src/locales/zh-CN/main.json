@@ -5577,6 +5577,177 @@
     }
   },
   "enterpriseProduction": {
-    "soc2Report": "可申请获取 Type II 报告。"
+    "soc2Report": "可申请获取 Type II 报告。",
+    "intro": {
+      "eyebrow": "与 COMFY 一起规模化",
+      "heading": "视觉 AI 的开放标准，随时服务您的组织。",
+      "subtitle": "您的团队构建工作流。Comfy 负责运行、治理，并为其提供商用授权。"
+    },
+    "rolloutHeading": "整个团队共用一个 ComfyUI 构建"
+  },
+  "industry": {
+    "advertising": {
+      "badge": "广告创作",
+      "metaTitle": "广告与创意团队的 AI 工作流 | Comfy",
+      "metaDescription": "使用 ComfyUI 为情绪板、故事板、产品图像和广告视频搭建可复用的 AI 工作流。",
+      "heroTitle": "从创意方向到广告素材。",
+      "heroDescription": "为情绪板、产品图像、故事板和视频搭建 AI 工作流。在 ComfyUI 中连接参考素材、模型与创意决策。",
+      "videoLabel": "产品摄影工作流演示",
+      "exploreLabel": "探索广告工作流",
+      "browseLabel": "浏览全部工作流",
+      "workflowsHeading": "用可调整的工作流制作下一次广告。",
+      "workflowsDescription": "精选产品植入、广告变体、重新布光与图像优化工作流。",
+      "examplesHeading": "为创意简报的每个阶段搭建工作流。",
+      "examplesDescription": "观看 Comfy 广告教程库中的实际工作流演示。",
+      "contactHeading": "搭建团队可以复用的创作流程。",
+      "storyHeading": "使用 COMFY 的创意团队",
+      "storyTitle": "Silverside AI 如何使用 ComfyUI 搭建制作工作流",
+      "storyDescription": "Silverside AI 分享结构化的节点工作流如何为创意团队提供超越单一提示词工具的控制能力。",
+      "faqHeading": "了解广告工作流。",
+      "examples": {
+        "moodboards": {
+          "title": "从参考素材探索视觉方向。",
+          "description": "使用情绪板参考图，通过 Recraft 探索风格，或用 GPT Image 调整视觉元素。在同一工作流中保留参考与转换步骤。"
+        },
+        "products": {
+          "title": "生成、修饰并让产品照片动起来。",
+          "description": "将产品放入场景，用蒙版编辑细节，再将静帧转化为主打视频。跟随现有产品摄影教程完成流程。"
+        },
+        "broll": {
+          "title": "为剪辑创建和调整 B-roll 素材。",
+          "description": "通过提示词生成片段，将主体置入参考场景，或在 B-roll 工作流中修改现有素材。"
+        }
+      },
+      "faqs": {
+        "1": {
+          "question": "广告团队可以用 ComfyUI 制作什么？",
+          "answer": "从情绪板、故事板、产品照片、创意变体和视频开始。页面中的工作流与教程提供了可根据简报调整的具体起点。"
+        },
+        "2": {
+          "question": "可以使用自己的产品图片和参考素材吗？",
+          "answer": "可以。产品植入、参考广告与重新布光工作流都支持源图像。运行前请查看各工作流的输入要求。"
+        },
+        "3": {
+          "question": "整个广告项目必须只用一个模型吗？",
+          "answer": "不需要。节点工作流可以连接不同模型与处理步骤。可用模型及费用取决于工作流和运行环境。"
+        },
+        "4": {
+          "question": "团队可以复用已批准的工作流吗？",
+          "answer": "可以。共享工作流作为可复用的起点。企业服务与 Managed Builds 可以帮助团队定义批准使用的环境和依赖。"
+        },
+        "5": {
+          "question": "如何获得搭建流程的帮助？",
+          "answer": "向 Comfy 团队介绍你的创意简报、现有工具和制作需求。Forward Deployed Creatives 可以协助搭建工作流，并指导团队使用。"
+        }
+      }
+    },
+    "film-animation": {
+      "badge": "影视与动画",
+      "metaTitle": "影视与动画的 AI 工作流 | Comfy",
+      "metaDescription": "探索用于角色开发、关键帧、故事板、动画和合成的 ComfyUI 工作流。",
+      "heroTitle": "从概念到动态影像，连接你的创作愿景。",
+      "heroDescription": "在 ComfyUI 中连接角色参考、关键帧、运动与合成。围绕你想制作的镜头搭建工作流。",
+      "videoLabel": "中间帧生成工作流演示",
+      "exploreLabel": "探索影视工作流",
+      "browseLabel": "浏览全部工作流",
+      "workflowsHeading": "从镜头出发，搭建所需工作流。",
+      "workflowsDescription": "精选故事板、角色参考、机位变化、重新布光与图像优化工作流。",
+      "examplesHeading": "从角色开发到画面合成。",
+      "examplesDescription": "跟随 Comfy 动画教程库中的实际工作流演示。",
+      "contactHeading": "围绕你的制作需求搭建工作流。",
+      "faqHeading": "了解影视与动画工作流。",
+      "examples": {
+        "characters": {
+          "title": "制作角色参考设定表。",
+          "description": "使用现有教程工作流，将概念美术转化为全身转身视图与面部特写，再拼接成角色设定表。"
+        },
+        "keyframes": {
+          "title": "在动画制作前探索镜头。",
+          "description": "设置方向、俯仰和距离，生成不同机位角度的角色关键帧。"
+        },
+        "compositing": {
+          "title": "将背景与角色融合。",
+          "description": "让静态背景动起来，再以匹配的光照合成角色。在同一工作流中查看各个阶段。"
+        }
+      },
+      "faqs": {
+        "1": {
+          "question": "ComfyUI 可以支持影视与动画的哪些阶段？",
+          "answer": "可用于概念探索、角色设定表、关键帧、故事板、图生视频和合成。每个项目都需要自己的审查与后期完善流程。"
+        },
+        "2": {
+          "question": "可以用参考素材和关键帧引导镜头吗？",
+          "answer": "可以。精选教程展示了角色参考、机位角度探索，以及基于关键帧序列的中间帧生成。请查看各模型支持的输入。"
+        },
+        "3": {
+          "question": "可以修改工作流本身吗？",
+          "answer": "可以。ComfyUI 展示节点、参数与处理步骤，让你根据镜头与制作需求调整工作流。"
+        },
+        "4": {
+          "question": "可以在工作室内共享工作流吗？",
+          "answer": "可以。向团队共享工作流并定义统一环境。Managed Builds 可以帮助固定工作室批准使用的版本、自定义节点、模型和依赖。"
+        },
+        "5": {
+          "question": "Comfy 可以协助搭建制作工作流吗？",
+          "answer": "向 Comfy 团队介绍你的制作项目与工具。Forward Deployed Creatives 可以协助搭建工作流，并指导艺术家调整流程。"
+        }
+      }
+    },
+    "architectural-visualization": {
+      "badge": "建筑可视化",
+      "metaTitle": "建筑可视化的 AI 工作流 | Comfy",
+      "metaDescription": "探索 ComfyUI 中用于建筑可视化的深度引导图像生成、机位变化、重新布光与图像优化工作流。",
+      "heroTitle": "用你掌控的工作流探索空间。",
+      "heroDescription": "在 ComfyUI 中连接源图像、材质编辑、深度引导与图像处理，构建可重复使用的空间和视觉风格探索流程。",
+      "videoLabel": "室内可视化材质替换示例",
+      "exploreLabel": "探索建筑可视化工作流",
+      "browseLabel": "浏览全部工作流",
+      "workflowsHeading": "搭建可视化工作流的工具。",
+      "workflowsDescription": "将深度控制、机位变化、重新布光与图像优化连接成可调整的工作流。",
+      "examplesHeading": "掌控图像背后的处理步骤。",
+      "examplesDescription": "探索现有工作流中的空间引导、光照与机位变化演示。",
+      "contactHeading": "围绕团队搭建可视化流程。",
+      "faqHeading": "了解可视化工作流。",
+      "examples": {
+        "depth": {
+          "title": "从已有图像探索不同材质。",
+          "description": "使用 Qwen Image Edit 工作流比较不同材质。保留源图像与编辑步骤的关联，并根据参考图像检查每个版本。"
+        },
+        "lighting": {
+          "title": "增强景观图像中的细节。",
+          "description": "使用源图像探索 Topaz 景观放大工作流。在用于演示之前，将结果与原图进行比较。"
+        },
+        "angles": {
+          "title": "从不同角度探索场景。",
+          "description": "使用多角度场景工作流，围绕源图像探索不同视角，并根据设计参考检查每个结果。"
+        }
+      },
+      "faqs": {
+        "1": {
+          "question": "ComfyUI 如何融入建筑可视化流程？",
+          "answer": "将图像生成、深度引导、机位变化、重新布光与图像优化连接成可复用的工作流。本页示例展示这些工具，而非已完成的建筑项目。"
+        },
+        "2": {
+          "question": "可以用现有图像或深度图引导结果吗？",
+          "answer": "可以。所选工作流包含深度引导生成与图像编辑。请查看各工作流的输入，并对照源参考检查生成结果。"
+        },
+        "3": {
+          "question": "生成图像的尺寸准确吗？",
+          "answer": "请将生成图像用于视觉探索。在权威设计工具中验证几何、尺寸、材质与施工细节。"
+        },
+        "4": {
+          "question": "可以统一团队的工作流吗？",
+          "answer": "可以。共享工作流并定义统一环境。Managed Builds 可以帮助固定团队批准使用的版本、自定义节点、模型和依赖。"
+        },
+        "5": {
+          "question": "Comfy 可以帮助集成到我们的流程吗？",
+          "answer": "向 Comfy 团队介绍你的源素材、现有软件和可视化需求，以确定合适的工作流与环境。"
+        }
+      }
+    },
+    "shared": {
+      "contactButton": "联系我们的团队",
+      "enterpriseButton": "了解企业服务"
+    }
   }
 }

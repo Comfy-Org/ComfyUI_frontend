@@ -1044,3 +1044,39 @@ describe('shared auth telemetry events', () => {
     )
   })
 })
+
+describe('industry campaign clicks', () => {
+  beforeEach(() => vi.resetModules())
+
+  it.for([
+    'advertising',
+    'film-animation',
+    'architectural-visualization'
+  ] as const)(
+    'captures %s attribution with its placement',
+    async (vertical) => {
+      const { initPostHog, captureVerticalLinkClick } =
+        await import('./posthog')
+      initPostHog()
+      captureVerticalLinkClick({
+        vertical,
+        destination: '/contact/',
+        placement: 'studio'
+      })
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        'website:vertical_link_clicked',
+        { vertical, destination: '/contact/', placement: 'studio' }
+      )
+    }
+  )
+
+  it('does not capture industry clicks before initialization', async () => {
+    const { captureVerticalLinkClick } = await import('./posthog')
+    captureVerticalLinkClick({
+      vertical: 'advertising',
+      destination: '/contact/',
+      placement: 'page'
+    })
+    expect(hoisted.mockCapture).not.toHaveBeenCalled()
+  })
+})

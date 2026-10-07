@@ -1,10 +1,12 @@
 ---
 import FeatureRows02 from '@/components/blocks/FeatureRows02.vue'
 import StepsCards01 from '@/components/blocks/StepsCards01.vue'
+
+const { t } = Astro.locals
 ---
 
 <FeatureRows02
-  heading="One ComfyUI build for the whole team"
+  heading={t('enterpriseProduction.rolloutHeading')}
   rows={[
     {
       id: 'packaging',

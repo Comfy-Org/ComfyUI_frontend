@@ -46,6 +46,7 @@ const ANALYTICS_EVENT = {
   agentFaqExpanded: 'website:agent_faq_expanded',
   agentUsecaseVideoPlayed: 'website:agent_usecase_video_played',
   vfxLinkClicked: 'website:vfx_link_clicked',
+  verticalLinkClicked: 'website:vertical_link_clicked',
   // Shared with the cloud app so one PostHog funnel covers auth outcomes
   // across every surface.
   authRefreshSucceeded: SESSION_TELEMETRY_EVENT.refreshSucceeded,
@@ -73,6 +74,10 @@ type AnalyticsEvent =
   | {
       name: typeof ANALYTICS_EVENT.vfxLinkClicked
       properties: VfxLinkProperties
+    }
+  | {
+      name: typeof ANALYTICS_EVENT.verticalLinkClicked
+      properties: VerticalLinkProperties
     }
   | {
       name: `website:workshop_${WorkshopAnalyticsEvent['name']}`
@@ -130,6 +135,16 @@ type AnalyticsEvent =
     }
 
 let initialized = false
+
+export type CampaignVertical =
+  | 'vfx'
+  | 'advertising'
+  | 'film-animation'
+  | 'architectural-visualization'
+
+interface VerticalLinkProperties extends VfxLinkProperties {
+  vertical: Exclude<CampaignVertical, 'vfx'>
+}
 
 interface VfxLinkProperties {
   destination: string
@@ -452,6 +467,12 @@ export function capturePageview(): void {
 
 export function captureVfxLinkClick(properties: VfxLinkProperties): void {
   captureEvent({ name: ANALYTICS_EVENT.vfxLinkClicked, properties })
+}
+
+export function captureVerticalLinkClick(
+  properties: VerticalLinkProperties
+): void {
+  captureEvent({ name: ANALYTICS_EVENT.verticalLinkClicked, properties })
 }
 
 export function captureWorkshopEvent(event: WorkshopAnalyticsEvent): void {

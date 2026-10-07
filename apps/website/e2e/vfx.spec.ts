@@ -46,12 +46,18 @@ for (const locale of [
     const workflows = page.locator('#workflows')
     const cards = workflows.getByTestId('hub-card-link')
     await expect(cards).toHaveCount(6)
-    for (const [index, slug] of destinations.entries()) {
-      await expect(cards.nth(index)).toHaveAttribute(
-        'href',
-        `https://comfy.org/workflows/${slug}/?utm_source=linkedin&utm_campaign=vfx`
+    await expect
+      .poll(() =>
+        cards.evaluateAll((elements) =>
+          elements.map((element) => element.getAttribute('href'))
+        )
       )
-    }
+      .toEqual(
+        destinations.map(
+          (slug) =>
+            `https://comfy.org/workflows/${slug}/?utm_source=linkedin&utm_campaign=vfx`
+        )
+      )
     await expect(
       workflows.getByRole('region', { name: locale.featured }).getByRole('link')
     ).toHaveCount(3)

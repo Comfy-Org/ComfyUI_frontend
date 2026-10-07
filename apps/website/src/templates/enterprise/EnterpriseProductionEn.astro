@@ -19,6 +19,8 @@ const {
   showOptionDetails?: boolean
 }
 
+const { t } = Astro.locals
+
 const enterpriseOffers = [
   {
     id: 'commercial-licensing',
@@ -100,9 +102,9 @@ const productionRows = [
 ---
 
 <SectionIntro01
-  eyebrow="WAYS TO SCALE WITH COMFY"
-  heading="The open standard for visual AI, ready for your organization."
-  subtitle="Your team builds the workflows. Comfy runs them, governs them, and licenses them for commercial use."
+  eyebrow={t('enterpriseProduction.intro.eyebrow')}
+  heading={t('enterpriseProduction.intro.heading')}
+  subtitle={t('enterpriseProduction.intro.subtitle')}
   maxWidth="xl"
 />
 

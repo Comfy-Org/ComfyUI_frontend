@@ -1,0 +1,208 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import HeroSplit01 from '@/components/blocks/HeroSplit01.vue'
+import FeatureRows01 from '@/components/blocks/FeatureRows01.vue'
+import FeaturedWorkflowsSection from '@/components/home/FeaturedWorkflowsSection.vue'
+import ProductShowcaseSection from '@/components/home/ProductShowcaseSection.vue'
+import HubWorkflowCard from '@/components/hub/HubWorkflowCard.vue'
+import FAQSplit01 from '@/components/blocks/FAQSplit01.vue'
+import BrandButton from '@/components/common/BrandButton.vue'
+import CallToActionSection from '@/components/common/CallToActionSection.vue'
+import SectionHeader from '@/components/common/SectionHeader.vue'
+import SocialProofBarSection from '@/components/common/SocialProofBarSection.vue'
+import EnterpriseProductionSections from '@/templates/enterprise/EnterpriseProductionSections.astro'
+import { getIndustryVertical } from '@/data/industryVerticals'
+import type { IndustryVerticalId } from '@/data/industryVerticals'
+import { getCustomerVideoStory } from '@/data/customerVideos'
+import { getRoutes } from '@/config/routes'
+import { faqPageNode, pageContext } from '@/utils/jsonLd'
+
+interface Props {
+  vertical: IndustryVerticalId
+}
+const { vertical } = Astro.props
+const config = getIndustryVertical(vertical)
+const { locale, url } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale
+)
+const { t } = Astro.locals
+const routes = getRoutes(locale)
+const prefix = `industry.${vertical}` as const
+const faqs = ([1, 2, 3, 4, 5] as const).map((id) => ({
+  id: `${vertical}-${id}`,
+  question: t(`${prefix}.faqs.${id}.question`),
+  answer: t(`${prefix}.faqs.${id}.answer`)
+}))
+const examples = config.examples.map(
+  ({ titleKey, descriptionKey, ...row }) => ({
+    ...row,
+    title: t(titleKey),
+    description: t(descriptionKey),
+    media: { ...row.media, alt: t(titleKey) }
+  })
+)
+const story = config.storySlug
+  ? getCustomerVideoStory(config.storySlug)
+  : undefined
+const contactHref = `${routes.contact}?interest=${vertical}`
+---
+
+<BaseLayout
+  title={t(`${prefix}.metaTitle`)}
+  description={t(`${prefix}.metaDescription`)}
+  ogImage={config.hero.poster}
+  hideAnnouncementBanner
+  extraJsonLd={[faqPageNode(url, faqs)]}
+>
+  <div data-industry-campaign={vertical}>
+    <HeroSplit01
+      data-campaign-hero
+      locale={locale}
+      badgeText={t(config.badgeKey)}
+      title={t(`${prefix}.heroTitle`)}
+      subtitle={t(`${prefix}.heroDescription`)}
+      primaryCta={{ label: t(`${prefix}.exploreLabel`), href: '#workflows' }}
+      secondaryCta={{
+        label: t('industry.shared.contactButton'),
+        href: contactHref
+      }}
+      videoSrc={config.hero.type === 'video' ? config.hero.src : undefined}
+      videoPoster={config.hero.poster}
+      videoTracks={
+        config.hero.type === 'video'
+          ? [...(config.hero.tracks ?? [])]
+          : undefined
+      }
+      imageSrc={config.hero.type === 'image' ? config.hero.src : undefined}
+      imageAlt={t(`${prefix}.videoLabel`)}
+      videoAriaLabel={t(`${prefix}.videoLabel`)}
+      videoAutoplay
+      videoLoop
+      client:load
+    />
+    <SocialProofBarSection />
+    {story && (
+      <FeatureRows01
+        locale={locale}
+        heading={t(`${prefix}.storyHeading`)}
+        rows={[
+          {
+            id: story.slug,
+            title: t(`${prefix}.storyTitle`),
+            description: t(`${prefix}.storyDescription`),
+            media: {
+              type: 'video',
+              src: story.videoSrc,
+              poster: story.poster,
+              tracks: story.captions,
+              alt: story.company
+            }
+          }
+        ]}
+        client:visible
+      />
+    )}
+    <ProductShowcaseSection
+      id="how-comfy-works"
+      locale={locale}
+      client:visible
+    />
+    <div id="workflows" class="scroll-mt-28">
+      <section class="mx-auto max-w-9xl px-6 pt-16 lg:pt-24">
+        <SectionHeader>
+          {t(`${prefix}.workflowsHeading`)}
+          <p
+            slot="subtitle"
+            class="mt-6 text-base text-primary-comfy-canvas/70"
+          >
+            {t(`${prefix}.workflowsDescription`)}
+          </p>
+        </SectionHeader>
+      </section>
+      <FeaturedWorkflowsSection
+        locale={locale}
+        items={config.featured}
+        showAuthors={false}
+        alignWithGrid
+        strongScrim
+        label={t('featuredWorkflows.label')}
+        client:visible
+      />
+      <section class="mx-auto max-w-9xl px-6 pb-12 lg:pb-16">
+        <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {config.workflows.map((workflow) => (
+            <HubWorkflowCard
+              {...workflow}
+              locale={locale}
+              tryNowLabel={t('vfx.workflows.tryNow')}
+              showTypeBadge={false}
+              showAuthor={false}
+              showAction={false}
+              providerBadgeAtTop
+              class="[&_h3]:right-5 [&_h3]:text-base [&_h3]:sm:text-lg [&_h3]:lg:text-xl"
+              client:visible
+            />
+          ))}
+        </div>
+        <div class="mt-10 flex justify-center">
+          <BrandButton
+            href={routes.hubWorkflows}
+            variant="outline"
+            class="uppercase"
+          >
+            {t(`${prefix}.browseLabel`)}
+          </BrandButton>
+        </div>
+      </section>
+    </div>
+    <FeatureRows01
+      locale={locale}
+      heading={t(`${prefix}.examplesHeading`)}
+      eyebrow={t(`${prefix}.examplesDescription`)}
+      rows={examples}
+      client:visible
+    />
+    <EnterpriseProductionSections
+      locale={locale}
+      includeManagedDetails
+      showOptionDetails={false}
+    />
+    <CallToActionSection
+      locale={locale}
+      headingKey={`${prefix}.contactHeading`}
+      primaryLabelKey="industry.shared.contactButton"
+      primaryHref={contactHref}
+      secondaryLabelKey="industry.shared.enterpriseButton"
+      secondaryHref={routes.enterprise}
+    />
+    <FAQSplit01
+      heading={t(`${prefix}.faqHeading`)}
+      faqs={faqs}
+      client:visible
+    />
+  </div>
+</BaseLayout>
+
+<script>
+  import { mountIndustryCampaign } from '@/scripts/vfx-campaign'
+  import type { CampaignVertical } from '@/scripts/posthog'
+
+  const verticals: readonly CampaignVertical[] = [
+    'advertising',
+    'film-animation',
+    'architectural-visualization'
+  ]
+  let cleanup: (() => void) | undefined
+  document.addEventListener('astro:page-load', () => {
+    cleanup?.()
+    const root = document.querySelector<HTMLElement>('[data-industry-campaign]')
+    const vertical = verticals.find(
+      (id) => id === root?.dataset.industryCampaign
+    )
+    cleanup =
+      root && vertical ? mountIndustryCampaign(root, vertical) : undefined
+  })
+  document.addEventListener('astro:before-swap', () => cleanup?.())
+</script>

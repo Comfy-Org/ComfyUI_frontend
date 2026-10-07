@@ -5577,6 +5577,177 @@
     }
   },
   "enterpriseProduction": {
-    "soc2Report": "Type II report available on request."
+    "soc2Report": "Type II report available on request.",
+    "intro": {
+      "eyebrow": "WAYS TO SCALE WITH COMFY",
+      "heading": "The open standard for visual AI, ready for your organization.",
+      "subtitle": "Your team builds the workflows. Comfy runs them, governs them, and licenses them for commercial use."
+    },
+    "rolloutHeading": "One ComfyUI build for the whole team"
+  },
+  "industry": {
+    "advertising": {
+      "badge": "ADVERTISING",
+      "metaTitle": "AI workflows for advertising and creative teams | Comfy",
+      "metaDescription": "Build repeatable AI workflows for moodboards, storyboards, product imagery and advertising video with ComfyUI.",
+      "heroTitle": "From creative direction to campaign assets.",
+      "heroDescription": "Build AI workflows for moodboards, product imagery, storyboards, and video. Keep your references, models, and creative decisions connected in ComfyUI.",
+      "videoLabel": "Product photography workflow walkthrough",
+      "exploreLabel": "EXPLORE AD WORKFLOWS",
+      "browseLabel": "BROWSE ALL WORKFLOWS",
+      "workflowsHeading": "Build your next campaign with workflows you can adapt.",
+      "workflowsDescription": "A curated selection for product placement, campaign variations, relighting, and image finishing.",
+      "examplesHeading": "A workflow for every stage of the brief.",
+      "examplesDescription": "See real walkthroughs from Comfy's advertising tutorial library.",
+      "contactHeading": "Build a creative pipeline your team can reuse.",
+      "storyHeading": "CREATIVE TEAMS ON COMFY",
+      "storyTitle": "How Silverside AI builds production workflows with ComfyUI",
+      "storyDescription": "Silverside AI explains how structured, node-based workflows give creative teams control beyond single-prompt tools.",
+      "faqHeading": "Advertising workflows, explained.",
+      "examples": {
+        "moodboards": {
+          "title": "Turn references into a visual direction.",
+          "description": "Use moodboard selects to explore a style with Recraft or adjust visual elements with GPT Image. Keep the references and transformations in one workflow."
+        },
+        "products": {
+          "title": "Generate, retouch, and animate product shots.",
+          "description": "Place your product in a scene, mask and edit details, then turn a still into a hero video. Follow the existing product photography walkthrough."
+        },
+        "broll": {
+          "title": "Create and adapt B-roll for the edit.",
+          "description": "Generate a clip from a prompt, place a subject into a reference scene, or alter existing footage in the B-roll workflow."
+        }
+      },
+      "faqs": {
+        "1": {
+          "question": "What can advertising teams build with ComfyUI?",
+          "answer": "Start with moodboards, storyboards, product shots, creative variations, and video. The linked workflows and tutorials show concrete starting points you can adapt to a brief."
+        },
+        "2": {
+          "question": "Can I use my own product images and references?",
+          "answer": "Yes. Product placement, reference ads, and relighting workflows accept source images. Check each workflow's inputs before you run it."
+        },
+        "3": {
+          "question": "Do I have to use one model for the whole campaign?",
+          "answer": "No. A node-based workflow can connect different models and processing steps. Available models and costs depend on the workflow and where you run it."
+        },
+        "4": {
+          "question": "Can a team reuse an approved workflow?",
+          "answer": "Yes. Share the workflow as a repeatable starting point. Enterprise services and Managed Builds can help teams define approved environments and dependencies."
+        },
+        "5": {
+          "question": "How do we get help building our pipeline?",
+          "answer": "Talk to the Comfy team about your brief, existing tools, and production needs. Forward Deployed Creatives can help build workflows and teach your team to use them."
+        }
+      }
+    },
+    "film-animation": {
+      "badge": "FILM & ANIMATION",
+      "metaTitle": "AI workflows for film and animation | Comfy",
+      "metaDescription": "Explore ComfyUI workflows for character development, keyframes, storyboards, animation and compositing.",
+      "heroTitle": "Keep the vision connected from concept to moving image.",
+      "heroDescription": "Connect character references, keyframes, motion, and compositing in ComfyUI. Build a workflow around the shots you want to make.",
+      "videoLabel": "In-betweening workflow walkthrough",
+      "exploreLabel": "EXPLORE FILM WORKFLOWS",
+      "browseLabel": "BROWSE ALL WORKFLOWS",
+      "workflowsHeading": "Start with a shot. Build the workflow around it.",
+      "workflowsDescription": "Curated workflows for storyboards, character references, camera variations, relighting, and image finishing.",
+      "examplesHeading": "From character development to compositing.",
+      "examplesDescription": "Follow real walkthroughs from Comfy's animation tutorial library.",
+      "contactHeading": "Build workflows around your production.",
+      "faqHeading": "Film and animation workflows, explained.",
+      "examples": {
+        "characters": {
+          "title": "Develop a character reference sheet.",
+          "description": "Turn concept art into body turnarounds and face close-ups, then assemble them into a character sheet using the existing tutorial workflow."
+        },
+        "keyframes": {
+          "title": "Explore the shot before animating it.",
+          "description": "Set direction, elevation, and distance to generate character keyframes from different camera angles."
+        },
+        "compositing": {
+          "title": "Bring backgrounds and characters together.",
+          "description": "Animate a still background, then composite a character with matched lighting. Keep the stages visible in one connected workflow."
+        }
+      },
+      "faqs": {
+        "1": {
+          "question": "Which stages of film and animation can ComfyUI support?",
+          "answer": "Use workflows for concept exploration, character sheets, keyframes, storyboards, image-to-video, and compositing. Each production will need its own review and finishing process."
+        },
+        "2": {
+          "question": "Can I guide a shot with references and keyframes?",
+          "answer": "Yes. The featured tutorials show character references, camera-angle exploration, and in-betweening from keyframe sequences. Check the inputs supported by each model."
+        },
+        "3": {
+          "question": "Can I edit the workflow itself?",
+          "answer": "Yes. ComfyUI exposes the nodes, parameters, and processing steps so you can adapt the workflow to your shot and production requirements."
+        },
+        "4": {
+          "question": "Can we share workflows across a studio?",
+          "answer": "Yes. Share workflows with your team and define a common environment. Managed Builds can help pin the release, custom nodes, models, and dependencies your studio approves."
+        },
+        "5": {
+          "question": "Can Comfy help us build a production workflow?",
+          "answer": "Talk to the Comfy team about your production and tools. Forward Deployed Creatives can help build workflows and teach artists how to adapt them."
+        }
+      }
+    },
+    "architectural-visualization": {
+      "badge": "ARCHVIZ",
+      "metaTitle": "AI workflows for architectural visualization | Comfy",
+      "metaDescription": "Explore depth-guided image generation, camera variations, relighting and finishing workflows in ComfyUI for architectural visualization.",
+      "heroTitle": "Explore a space through a workflow you control.",
+      "heroDescription": "Connect source images, material edits, depth guidance, and finishing in ComfyUI. Build a repeatable process for exploring spaces and visual treatments.",
+      "videoLabel": "Material replacement for interior visualization",
+      "exploreLabel": "EXPLORE ARCHVIZ WORKFLOWS",
+      "browseLabel": "BROWSE ALL WORKFLOWS",
+      "workflowsHeading": "Tools for shaping your visualization workflow.",
+      "workflowsDescription": "Connect depth control, camera variations, relighting, and image finishing into a workflow you can adapt.",
+      "examplesHeading": "Control the steps behind your image.",
+      "examplesDescription": "Explore existing workflow demonstrations for spatial guidance, lighting, and camera variations.",
+      "contactHeading": "Build a visualization pipeline around your team.",
+      "faqHeading": "Visualization workflows, explained.",
+      "examples": {
+        "depth": {
+          "title": "Explore materials from an existing image.",
+          "description": "Compare material treatments using the Qwen Image Edit workflow. Keep the source image connected to the edit and review each variation against your references."
+        },
+        "lighting": {
+          "title": "Bring out detail in a landscape.",
+          "description": "Explore the Topaz landscape-upscaling workflow with a source image. Compare the result with your original before bringing it into a presentation."
+        },
+        "angles": {
+          "title": "Explore a scene from different angles.",
+          "description": "Use the multi-angle scene workflow to explore viewpoints around your source image. Review each result against your design references."
+        }
+      },
+      "faqs": {
+        "1": {
+          "question": "How can ComfyUI fit into architectural visualization?",
+          "answer": "Connect image generation, depth guidance, camera variations, relighting, and finishing into a repeatable workflow. The examples on this page demonstrate these tools rather than completed architectural projects."
+        },
+        "2": {
+          "question": "Can I guide results with an existing image or depth map?",
+          "answer": "Yes. The selected workflows include depth-guided generation and image editing. Check each workflow's inputs and review generated results against your source references."
+        },
+        "3": {
+          "question": "Are generated images dimensionally accurate?",
+          "answer": "Treat generated imagery as visual exploration. Validate geometry, dimensions, materials, and construction details in your authoritative design tools."
+        },
+        "4": {
+          "question": "Can we standardize workflows across a team?",
+          "answer": "Yes. Share a workflow and define a common environment. Managed Builds can help pin the release, custom nodes, models, and dependencies your team approves."
+        },
+        "5": {
+          "question": "Can Comfy help integrate this into our pipeline?",
+          "answer": "Talk to the Comfy team about your source assets, existing software, and visualization needs to scope an appropriate workflow and environment."
+        }
+      }
+    },
+    "shared": {
+      "contactButton": "TALK TO OUR TEAM",
+      "enterpriseButton": "EXPLORE ENTERPRISE"
+    }
   }
 }
