@@ -547,7 +547,12 @@ export function createBillingCommands(
       )
       if (refusal === undefined) return response
       lifecycle.wake()
-      return { status: 'not_canceled', code: refusal }
+      const { serverMessage } = response
+      return {
+        status: 'not_canceled',
+        code: refusal,
+        ...(serverMessage === undefined ? {} : { serverMessage })
+      }
     }
     lifecycle.wake()
     return { status: response.value.data.status }

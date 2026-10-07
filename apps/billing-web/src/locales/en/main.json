@@ -90,6 +90,7 @@
       "pendingVerificationDetail": "A payment you started earlier still needs your attention. Completing it activates the plan you chose then. You can choose a different plan once it finishes.",
       "completeVerification": "Complete verification",
       "cancelPaymentAndRetry": "Cancel payment and try again",
+      "cancelPaymentFailed": "We couldn't cancel this payment. Please try again.",
       "parkedCheckoutDetail": "Your earlier checkout is still waiting for a payment method. Complete your payment to activate this plan.",
       "completePayment": "Complete your payment",
       "payAndSubscribe": "Pay and subscribe",

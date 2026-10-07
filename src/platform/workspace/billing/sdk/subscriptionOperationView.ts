@@ -105,6 +105,8 @@ export interface SubscriptionRail {
   openPaymentPortal: (
     returnUrl: string
   ) => Promise<SubscriptionRailOutcome<string>>
+  /** Asks the server to drop a pending payment it reported `cancelable`. */
+  cancelOperation: (opId: string) => Promise<SubscriptionRailOutcome>
 }
 
 const UNAVAILABLE = { status: 'unavailable' } as const
@@ -244,10 +246,21 @@ export function projectPaymentPortalResult(
   return { status: 'ok', value: result.value.url }
 }
 
+/**
+ * A cancel the server took is done: the lifecycle it woke re-reads the
+ * operation and settles it. Anything else is the server's sentence, or ours.
+ */
 export function projectCancelOperationResult(
   result: CancelOperationResult
 ): SubscriptionRailOutcome {
-  return result.status === 'error'
-    ? { status: 'unavailable' }
-    : { status: 'ok', value: undefined }
+  if (result.status !== 'not_canceled' && result.status !== 'error')
+    return { status: 'ok', value: undefined }
+  return {
+    status: 'error',
+    error: new WorkspaceApiError(
+      result.serverMessage ?? t('billingOperation.cancelPaymentFailed'),
+      'httpStatus' in result ? result.httpStatus : undefined,
+      result.code
+    )
+  }
 }

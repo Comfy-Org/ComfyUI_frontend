@@ -413,6 +413,7 @@ function reducePending(
     serverPhase: status.phase,
     declineReason,
     recoveryAction: status.recovery_action,
+    cancelable: status.cancelable,
     customerActionSeen:
       state.customerActionSeen ||
       actionUrl !== undefined ||

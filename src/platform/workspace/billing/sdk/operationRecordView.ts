@@ -89,6 +89,6 @@ export function projectOperationRecord(
       state.authenticationState === 'failed_retryable'
         ? declineDetail(state.declineReason ?? 'authentication_failed')
         : null,
-    cancelable: false
+    cancelable: state.cancelable === true
   }
 }
