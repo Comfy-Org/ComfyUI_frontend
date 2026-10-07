@@ -55,7 +55,12 @@ export function createWebSessionAdapter(send: WebSessionSend): AxiosAdapter {
     } catch (error) {
       throw AxiosError.from(
         error,
-        signal.aborted ? AxiosError.ERR_CANCELED : AxiosError.ERR_NETWORK,
+        signal.aborted
+          ? signal.reason instanceof DOMException &&
+            signal.reason.name === 'TimeoutError'
+            ? AxiosError.ETIMEDOUT
+            : AxiosError.ERR_CANCELED
+          : AxiosError.ERR_NETWORK,
         config
       )
     }

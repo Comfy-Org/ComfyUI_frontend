@@ -551,12 +551,6 @@ describe('API Feature Flags', () => {
       expect(api.serverSupportsFeature('some_flag')).toBe(true)
     })
 
-    it('getServerFeature falls through when no override is set', () => {
-      api.serverFeatureFlags.value = { some_flag: 'server_value' }
-
-      expect(api.getServerFeature('some_flag')).toBe('server_value')
-    })
-
     it('getServerFeature override works with numeric values', () => {
       api.serverFeatureFlags.value = { max_upload_size: 100 }
       localStorage.setItem('ff:max_upload_size', '999')

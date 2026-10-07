@@ -20,6 +20,20 @@ const ES2023_ARRAY_COPY_METHODS = new Set([
 ])
 const ES2023_ARRAY_COPY_MESSAGE =
   'ES2023 array method is not polyfilled for build target es2022; use the matching ES2022-safe non-mutating equivalent.'
+const VITEST_MOCK_METHOD_NAMES = new Set([
+  'mockClear',
+  'mockReset',
+  'mockRestore'
+])
+const MEMBER_DECLARATION_TYPES = [
+  'AccessorProperty',
+  'MethodDefinition',
+  'PropertyDefinition',
+  'TSAbstractMethodDefinition',
+  'TSAbstractPropertyDefinition',
+  'TSMethodSignature',
+  'TSPropertySignature'
+]
 const TEST_APIS = new Set(['describe', 'it', 'suite', 'test'])
 const DISABLING_CONDITION = new Map([
   ['skipIf', true],
@@ -306,6 +320,48 @@ export const noJsPrivateClassMembers = {
             message:
               'Do not use JavaScript hard-private class members. Use TypeScript private members instead.'
           })
+        }
+      }
+    }
+  }
+}
+
+interface MemberDeclaration extends Node {
+  readonly key: Node
+  readonly computed: boolean
+}
+
+interface ObjectExpression extends Node {
+  readonly properties: readonly Node[]
+}
+
+function declaredMemberName({
+  key,
+  computed
+}: MemberDeclaration): string | undefined {
+  if (!computed && key.type === 'Identifier') return (key as Identifier).name
+  if (key.type === 'Literal' && typeof (key as Literal).value === 'string') {
+    return (key as Literal).value as string
+  }
+}
+
+export const noVitestMockMethodNames = {
+  create(context: RuleContext) {
+    function check(member: MemberDeclaration) {
+      const name = declaredMemberName(member)
+      if (!name || !VITEST_MOCK_METHOD_NAMES.has(name)) return
+      context.report({
+        node: member.key,
+        message: `Do not declare a member named ${name}. Vitest mocks own this name, and comfy/no-redundant-vitest-cleanup treats every ${name}() call in a hook as mock cleanup.`
+      })
+    }
+    return {
+      ...Object.fromEntries(
+        MEMBER_DECLARATION_TYPES.map((type) => [type, check])
+      ),
+      ObjectExpression({ properties }: ObjectExpression) {
+        for (const property of properties) {
+          if (property.type === 'Property') check(property as MemberDeclaration)
         }
       }
     }

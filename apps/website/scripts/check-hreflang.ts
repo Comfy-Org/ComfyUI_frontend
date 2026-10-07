@@ -8,35 +8,22 @@
  * This file only gathers what was built; `hreflangAudit.ts` holds the rules, so
  * they can be tested against fixtures rather than a full build.
  */
-import type { Alternate } from '../src/utils/hreflangRoutes'
+import type { Alternate } from '@/utils/hreflangRoutes'
 
-import { existsSync, readdirSync, readFileSync } from 'node:fs'
-import { join, relative, sep } from 'node:path'
+import { existsSync, readFileSync } from 'node:fs'
+import { join, relative } from 'node:path'
 
 import {
   auditBuiltSite,
   routeOfHref,
   sitemapChunkNames
-} from '../src/utils/hreflangAudit'
+} from '@/utils/hreflangAudit'
+
+import { htmlFiles, routeOf } from './dist-html'
 
 const DIST = join(process.cwd(), 'dist')
 const PUBLIC = join(process.cwd(), 'public')
 const ORIGIN = 'https://comfy.org'
-
-function htmlFiles(dir: string): string[] {
-  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
-    const full = join(dir, entry.name)
-    if (entry.isDirectory()) return htmlFiles(full)
-    return entry.name.endsWith('.html') ? [full] : []
-  })
-}
-
-/** `dist/zh-CN/about/index.html` -> `/zh-CN/about/` */
-function routeOf(file: string): string {
-  const rel = relative(DIST, file).split(sep).join('/')
-  const withoutIndex = rel.replace(/index\.html$/, '')
-  return `/${withoutIndex}`.replace(/\/{2,}/g, '/')
-}
 
 function alternatesIn(html: string): Alternate[] {
   const out: Alternate[] = []
@@ -98,7 +85,7 @@ const pages = new Map<string, Alternate[]>()
 const canonicals = new Map<string, string>()
 
 for (const file of files) {
-  const route = routeOf(file)
+  const route = routeOf(DIST, file)
   const html = readFileSync(file, 'utf-8')
   const alternates = alternatesIn(html)
   pages.set(route, alternates)
