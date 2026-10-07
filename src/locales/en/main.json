@@ -3866,6 +3866,7 @@
     "deployment": "{build} v{version}",
     "unnamedDeployment": "Deployment {id}",
     "pickGone": "The deployment you picked no longer exists.",
+    "pickGoneDetail": "This browser now runs on Comfy Cloud. Pick a deployment again from the account menu to use one.",
     "defaultGone": "The workspace's default deployment no longer exists.",
     "caption": "{id}, {status}",
     "captionDefault": "{id}, {status} · Workspace default",
