@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 
-import { useHubStore } from '../../composables/useHubStore'
-import { badgesAvailableIn, templatesInTab } from '../../lib/hub/hub-tabs'
-import type { HubTemplate } from '../../lib/hub/types'
-import type { Locale } from '../../i18n/translations'
+import { useHubStore } from '@/composables/useHubStore'
+import { badgesAvailableIn, templatesInTab } from '@/lib/hub/hub-tabs'
+import type { HubTemplate } from '@/lib/hub/types'
+import type { Locale } from '@/i18n/translations'
 import type {
   FacetGroupConfig,
   SortOption,

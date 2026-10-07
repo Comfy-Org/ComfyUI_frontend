@@ -1,7 +1,7 @@
 <script setup lang="ts">
+import { translationsFor } from '@/i18n/translations'
 import { cn } from '@comfyorg/tailwind-utils'
-import type { Locale } from '../../../i18n/translations'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import type { Locale } from '@/i18n/translations'
 
 const {
   disabled = false,
@@ -12,6 +12,7 @@ const {
   compact?: boolean
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 const mode = defineModel<'image' | 'video'>({ required: true })
 </script>
 
@@ -24,7 +25,7 @@ const mode = defineModel<'image' | 'video'>({ required: true })
       )
     "
     role="group"
-    :aria-label="tc('cinematic.video.mode', locale)"
+    :aria-label="t('cinematic.video.mode')"
   >
     <button
       v-for="option in ['image', 'video'] as const"
@@ -42,11 +43,8 @@ const mode = defineModel<'image' | 'video'>({ required: true })
       @click="mode = option"
     >
       {{
-        tc(
-          option === 'image'
-            ? 'cinematic.video.image'
-            : 'cinematic.video.video',
-          locale
+        t(
+          option === 'image' ? 'cinematic.video.image' : 'cinematic.video.video'
         )
       }}
     </button>

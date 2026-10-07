@@ -7,6 +7,7 @@ import {
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useTelemetry } from '@/platform/telemetry'
+import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/utils/paymentIntentSource'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useDialogService } from '@/services/dialogService'
 
@@ -58,7 +59,9 @@ export function useTopUpUrlLoader() {
       telemetry?.trackAddApiCreditButtonClicked({ source: 'deep_link' })
     }
 
-    void dialogService.showTopUpCreditsDialog()
+    void dialogService.showTopUpCreditsDialog({
+      source: paymentIntentSourceForAddCreditsClick('deep_link')
+    })
   }
 
   return {

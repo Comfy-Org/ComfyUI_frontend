@@ -1,8 +1,11 @@
 import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
+import { escapeRegExp } from 'es-toolkit'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import frMessages from '@/locales/fr/main.json' with { type: 'json' }
+
+import { TestIds } from '@e2e/fixtures/selectors'
 
 export class AgentPanel {
   public readonly root: Locator
@@ -24,6 +27,7 @@ export class AgentPanel {
   public readonly sendButton: Locator
   public readonly stopButton: Locator
   public readonly creditsExhaustedPaywall: Locator
+  public readonly workSummary: Locator
   public readonly nodeSelectionBanner: Locator
   public readonly activityRows: Locator
 
@@ -35,9 +39,10 @@ export class AgentPanel {
       exact: true
     })
     this.closeButton = this.root
+      .locator('header')
       .getByRole('button', { name: enMessages.g.close, exact: true })
       .or(
-        this.root.getByRole('button', {
+        this.root.locator('header').getByRole('button', {
           name: frMessages.g.close,
           exact: true
         })
@@ -66,13 +71,19 @@ export class AgentPanel {
       name: enMessages.agent.send
     })
     this.stopButton = this.root.getByRole('button', {
-      name: enMessages.agent.stop
+      name: enMessages.agent.stop,
+      exact: true
     })
     this.creditsExhaustedPaywall = this.root.getByRole('alert').filter({
       hasText: enMessages.agent.paywall.title
     })
+    this.workSummary = this.root.getByRole('button', {
+      name: new RegExp(`^${escapeRegExp(enMessages.agent.worked)}`)
+    })
     this.nodeSelectionBanner = page.getByTestId('node-selection-mode-banner')
-    this.activityRows = this.root.getByRole('listitem')
+    this.activityRows = this.root
+      .getByTestId(TestIds.agent.activityTrace)
+      .getByRole('listitem')
   }
 
   activityRow(label: string): Locator {
@@ -147,10 +158,31 @@ export class AgentPanel {
       .toEqual(expected)
   }
 
-  async selectWorkflow(name: string = 'Unsaved Workflow'): Promise<void> {
+  /**
+   * Picks the target without waiting for the picker label, which settles only
+   * once the target's save completes.
+   */
+  async chooseWorkflow(name: string = 'Unsaved Workflow'): Promise<void> {
     await this.workflowPicker.click()
     await this.page.getByRole('menuitemradio', { name, exact: true }).click()
+  }
+
+  async selectWorkflow(name: string = 'Unsaved Workflow'): Promise<void> {
+    await this.chooseWorkflow(name)
     await expect(this.workflowPicker).toHaveText(name)
+  }
+
+  async openWorkSummary(): Promise<void> {
+    await this.workSummary.click()
+    await expect(this.workSummary).toHaveAttribute('aria-expanded', 'true')
+  }
+
+  async reload(): Promise<void> {
+    await this.page.reload()
+    await expect(
+      this.page.getByTestId(TestIds.topbar.integratedTabBarActions)
+    ).toHaveAttribute('data-agent-gate-settled', 'true', { timeout: 30_000 })
+    await expect(this.root).toBeVisible({ timeout: 30_000 })
   }
 
   /** Clicks the empty bottom-left corner of the prompt area, below any text. */

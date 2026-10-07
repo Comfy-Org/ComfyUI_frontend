@@ -6,11 +6,15 @@
  * every way out leads back there. A hosted continuation redirects this tab
  * and comes back on `/v1/result`.
  */
-import { useTimeoutFn } from '@vueuse/core'
+import { useEventListener, useTimeoutFn } from '@vueuse/core'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { BillingDeclineReason } from '@comfyorg/account-core/billing'
+import type {
+  BillingDeclineReason,
+  SubscriptionCommandResult,
+  WebReturnControl
+} from '@comfyorg/account-core/billing'
 import {
   awaitsHostedAction,
   declineDetailKey,
@@ -35,9 +39,11 @@ import {
   buildReturnUrl
 } from '@comfyorg/billing-contract'
 
+import { quoteFailureEndingOf } from '@/checkout/checkoutJourney'
 import type { PaymentChoice } from '@/checkout/checkoutRequest'
 import {
   buildSubscribeRequest,
+  paysOnOwnSite,
   teamCheckoutPlan,
   tierCheckoutPlan
 } from '@/checkout/checkoutRequest'
@@ -46,6 +52,7 @@ import type { CheckoutToastItem } from '@/components/CheckoutToasts.vue'
 import CheckoutToasts from '@/components/CheckoutToasts.vue'
 import { useBilledWorkspace } from '@/composables/useBilledWorkspace'
 import { useCheckoutCopy } from '@/composables/useCheckoutCopy'
+import { useCheckoutJourney } from '@/composables/useCheckoutJourney'
 import { useHostedCopy } from '@/composables/useHostedCopy'
 import { BILLING_WEB_ENV } from '@/config/env'
 import {
@@ -56,6 +63,11 @@ import { useBillingEntry } from '@/entry/billingEntry'
 import { returnToHost } from '@/entry/returnToHost'
 import { createDeferredStripeChallengePort } from '@/session/stripeChallengePort'
 import { useWorkspaceInvites } from '@/session/workspaceInvites'
+import {
+  checkoutAttemptOf,
+  createSubscriptionCheckoutTelemetry
+} from '@/telemetry/subscriptionCheckoutTelemetry'
+import { reportReturnClicked } from '@/telemetry/webReturnTelemetry'
 
 const { locale, t } = useI18n()
 const { coded, refusal } = useHostedCopy()
@@ -63,6 +75,8 @@ const { copy, successCopy, inviteCopy, tierName } = useCheckoutCopy()
 const invites = useWorkspaceInvites()
 const { entry } = useBillingEntry()
 const billedWorkspace = useBilledWorkspace()
+const journey = useCheckoutJourney('embedded')
+journey.enter()
 
 const planSlug = computed(() => entry.value?.plan)
 const teamCreditStopId = computed(() => entry.value?.teamCreditStopId)
@@ -85,12 +99,25 @@ const { lifecycle, status } = useBillingClient<'lifecycle' | 'status'>(
   undefined
 )
 
+/** A page handed to a hosted step or a method's own site has not been abandoned. */
+const handedToHostedStep = ref(false)
+let payingOnOwnSite = false
+
+useEventListener(window, 'pageshow', (event) => {
+  if (event.persisted) handedToHostedStep.value = false
+})
+
 const checkout = useCheckout({
-  openUrl: (url) => window.location.assign(url),
+  openUrl: (url) => {
+    handedToHostedStep.value = true
+    window.location.assign(url)
+  },
   navigationMode: 'redirect',
   // Deferred: reads the key at challenge time, not this setup's snapshot.
   challengePort: createDeferredStripeChallengePort(awaitBillingWebStripeKey)
 })
+
+const attempts = createSubscriptionCheckoutTelemetry({ ui: 'embedded' })
 
 const quotedPlan = ref<string | undefined>()
 const quotedTeamCreditStopId = ref<string | undefined>()
@@ -98,6 +125,8 @@ const quoteIsCurrent = ref(false)
 const applyingPromotionCode = ref(false)
 const submitFailure = ref<string | undefined>()
 const inviteFailure = ref<string | undefined>()
+
+let latestQuoteCall = 0
 
 async function quotePlan(
   slug: string | undefined,
@@ -107,12 +136,19 @@ async function quotePlan(
   quotedPlan.value = slug
   quotedTeamCreditStopId.value = stopId
   if (slug === undefined) return
+  const call = ++latestQuoteCall
   const result = await quote({
     planSlug: slug,
     ...(stopId === undefined ? {} : { teamCreditStopId: stopId }),
     ...(promotionCode ? { promotionCode } : {})
   })
   if (result.status === 'ok') quoteIsCurrent.value = true
+  if (call === latestQuoteCall) {
+    if (promotionCode === undefined) journey.quoted(result)
+    else journey.promoQuoted(result, promotionCode)
+    if (failure.value && !preview.value)
+      journey.ended(quoteFailureEndingOf(failure.value), undefined)
+  }
   return result
 }
 
@@ -286,8 +322,10 @@ const operationToast = computed(() => {
       }
 })
 
-const actionUrl = computed(
-  () => validateActionUrl(pendingOperation.value?.actionUrl) ?? null
+const actionUrl = computed(() =>
+  handedToHostedStep.value
+    ? null
+    : (validateActionUrl(pendingOperation.value?.actionUrl) ?? null)
 )
 
 const parkedCheckoutRecovery = computed(
@@ -334,6 +372,7 @@ watch(
   () => checkout.operation.value,
   (operation) => {
     if (operation === undefined) return
+    journey.operationIssued(operation.id)
     if (operation.phase === 'failed') {
       submitFailure.value = declineDetail(operation.declineReason)
       checkout.reset()
@@ -394,6 +433,7 @@ watch(
     if (!settled || submitting || id === announcedSuccess.value) return
     announcedSuccess.value = id
     const result = checkout.result.value
+    journey.ended('success', result?.status === 'ok' ? 'started' : 'followed')
     const tookPayment =
       result?.status !== 'ok' || result.value.issuedStatus !== 'subscribed'
     if (tookPayment) showSuccessToast()
@@ -437,7 +477,7 @@ function closeToast(key: string) {
 
 const paying = computed(
   () =>
-    checkout.submitting.value ||
+    (checkout.submitting.value && !pendingOperation.value) ||
     (operationHoldsConfirm.value && !succeeded.value)
 )
 
@@ -482,21 +522,47 @@ function resultUrl(): string | undefined {
   return built.status === 'ok' ? built.url.href : undefined
 }
 
+function selectedRailOf(choice: PaymentChoice) {
+  if (choice.confirmationToken !== undefined) return 'new'
+  return choice.savedPaymentMethodId !== undefined ? 'saved' : 'on_file'
+}
+
+/** The chosen method's type: the form names a new one, and a saved one is read from the loaded methods. */
+function methodTypeOf(choice: PaymentChoice): string | undefined {
+  return (
+    choice.methodType ??
+    methods.value?.find(({ id }) => id === choice.savedPaymentMethodId)?.type
+  )
+}
+
 async function pay(choice: PaymentChoice) {
   const quoted = preview.value
-  if (planSlug.value === undefined || !quoted || loading.value) return
+  const slug = planSlug.value
+  if (slug === undefined || !quoted || loading.value) return
   submitFailure.value = undefined
-  const result = await checkout.subscribe(
-    buildSubscribeRequest(
-      {
-        planSlug: planSlug.value,
-        teamCreditStopId: teamCreditStopId.value,
-        returnUrl: resultUrl()
-      },
-      quoted,
-      choice
+  const methodType = methodTypeOf(choice)
+  journey.methodSelected(selectedRailOf(choice), methodType)
+  const press = journey.submitted()
+  payingOnOwnSite = paysOnOwnSite(methodType)
+  let result: SubscriptionCommandResult
+  try {
+    result = await attempts.run(checkoutAttemptOf(quoted, entry.value), () =>
+      checkout.subscribe(
+        buildSubscribeRequest(
+          {
+            planSlug: slug,
+            teamCreditStopId: teamCreditStopId.value,
+            returnUrl: resultUrl()
+          },
+          quoted,
+          choice
+        )
+      )
     )
-  )
+  } finally {
+    payingOnOwnSite = false
+    journey.submitSettled(press)
+  }
   if (result.status === 'ok') return
   if (result.code === 'REACTIVATION_CONFIRMATION_REQUIRED') {
     // The quote did not say so, the server did: price it again and ask.
@@ -524,10 +590,18 @@ function payWithoutCard() {
   )
 }
 
-function leaveForHost() {
+function leaveForHost(control: WebReturnControl) {
   const href = returnLink.value
-  if (href !== undefined) returnToHost(href)
+  if (href === undefined) return
+  reportReturnClicked(control)
+  if (control !== 'success_close') journey.abandoned(control)
+  returnToHost(href)
 }
+
+useEventListener(window, 'pagehide', () => {
+  if (!handedToHostedStep.value && !payingOnOwnSite)
+    journey.abandoned('page_exit')
+})
 </script>
 
 <template>
@@ -551,7 +625,7 @@ function leaveForHost() {
           v-if="returnLink"
           type="button"
           class="mt-4 cursor-pointer text-sm text-base-foreground underline underline-offset-4"
-          @click="leaveForHost"
+          @click="leaveForHost('back')"
         >
           {{ t('checkout.back') }}
         </button>
@@ -560,7 +634,7 @@ function leaveForHost() {
         <CheckoutFrame
           :step="frameStep"
           :close-label="t('checkout.close')"
-          @close="leaveForHost"
+          @close="leaveForHost('close')"
         >
           <CheckoutTeamSuccess
             v-if="succeeded"
@@ -576,7 +650,7 @@ function leaveForHost() {
             :invites
             @invited="readSeats"
             @invites-failed="inviteFailure = $event"
-            @close="leaveForHost"
+            @close="leaveForHost('success_close')"
           />
           <CheckoutSubscribeConfirm
             v-else-if="isNewSubscription"
@@ -601,10 +675,14 @@ function leaveForHost() {
             @update:selected-saved-method-id="selectSavedMethod"
             @change-payment-method="selectSavedMethod(null)"
             @add-credit-card="payWithoutCard"
-            @confirm-payment="pay({ confirmationToken: $event })"
+            @confirm-payment="
+              (token, methodType) =>
+                pay({ confirmationToken: token, methodType })
+            "
             @apply-promotion-code="applyPromotionCode"
             @invalidate-quote="quoteIsCurrent = false"
-            @back="leaveForHost"
+            @payment-phase="journey.track"
+            @back="leaveForHost('back')"
           />
           <CheckoutTransitionConfirm
             v-else
@@ -627,7 +705,7 @@ function leaveForHost() {
             @confirm="pay({ confirmReactivation: $event })"
             @apply-promotion-code="applyPromotionCode"
             @invalidate-quote="quoteIsCurrent = false"
-            @back="leaveForHost"
+            @back="leaveForHost('back')"
           />
         </CheckoutFrame>
       </template>

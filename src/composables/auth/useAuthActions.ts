@@ -18,6 +18,7 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { AuthFlowAction } from '@/platform/telemetry/types'
+import { PaymentPopupBlockedError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import {
   clearAllWorkspaceStorage,
@@ -105,58 +106,66 @@ export const useAuthActions = () => {
     }
   }
 
-  const logout = wrapWithErrorHandlingAsync(async () => {
-    if (isCloud) {
-      const workflowStore = useWorkflowStore()
-      const modifiedWorkflows = workflowStore.modifiedWorkflows
-      if (modifiedWorkflows.length > 0) {
-        const dialogService = useDialogService()
-        const confirmed = await dialogService.confirm({
-          title: t('auth.signOut.unsavedChangesTitle'),
-          message: t('auth.signOut.unsavedChangesMessage'),
-          type: 'dirtyClose',
-          denyLabel: t('auth.signOut.signOutAnyway')
-        })
-        if (confirmed === null) return
+  /** `beforeSignOut` runs once unsaved work is settled; false keeps the user signed in. */
+  const logout = wrapWithErrorHandlingAsync(
+    async ({
+      beforeSignOut
+    }: { beforeSignOut?: () => Promise<boolean> } = {}) => {
+      if (isCloud) {
+        const workflowStore = useWorkflowStore()
+        const modifiedWorkflows = workflowStore.modifiedWorkflows
+        if (modifiedWorkflows.length > 0) {
+          const dialogService = useDialogService()
+          const confirmed = await dialogService.confirm({
+            title: t('auth.signOut.unsavedChangesTitle'),
+            message: t('auth.signOut.unsavedChangesMessage'),
+            type: 'dirtyClose',
+            denyLabel: t('auth.signOut.signOutAnyway')
+          })
+          if (confirmed === null) return
 
-        if (confirmed) {
-          const workflowService = useWorkflowService()
-          for (const workflow of modifiedWorkflows) {
-            try {
-              const saved = await workflowService.saveWorkflow(workflow)
-              if (!saved) return
-            } catch {
-              throw new Error(
-                t('auth.signOut.saveFailed', { workflow: workflow.path })
-              )
+          if (confirmed) {
+            const workflowService = useWorkflowService()
+            for (const workflow of modifiedWorkflows) {
+              try {
+                const saved = await workflowService.saveWorkflow(workflow)
+                if (!saved) return
+              } catch {
+                throw new Error(
+                  t('auth.signOut.saveFailed', { workflow: workflow.path })
+                )
+              }
             }
           }
         }
       }
-    }
 
-    await authStore.logout()
-    if (isCloud) {
-      prepareWorkflowLogoutTransition()
-      clearAllWorkspaceStorage()
-    }
+      if (beforeSignOut && !(await beforeSignOut())) return
 
-    toastStore.add({
-      severity: 'success',
-      summary: t('auth.signOut.success'),
-      detail: t('auth.signOut.successDetail'),
-      life: 5000
-    })
-
-    if (isCloud) {
-      try {
-        window.location.href = '/cloud/login'
-      } catch {
-        // needed for local development until we bring in cloud login pages.
-        window.location.reload()
+      await authStore.logout()
+      if (isCloud) {
+        prepareWorkflowLogoutTransition()
+        clearAllWorkspaceStorage()
       }
-    }
-  }, reportError)
+
+      toastStore.add({
+        severity: 'success',
+        summary: t('auth.signOut.success'),
+        detail: t('auth.signOut.successDetail'),
+        life: 5000
+      })
+
+      if (isCloud) {
+        try {
+          window.location.href = '/cloud/login'
+        } catch {
+          // needed for local development until we bring in cloud login pages.
+          window.location.reload()
+        }
+      }
+    },
+    reportError
+  )
 
   const sendPasswordReset = wrapWithErrorHandlingAsync(
     async (email: string) => {
@@ -172,6 +181,10 @@ export const useAuthActions = () => {
     reportAuthFlowError('password_reset')
   )
 
+  /** Whether `purchaseCreditsDirect` goes on to open a checkout. */
+  const canPurchaseCredits = (): boolean =>
+    useBillingContext().canAccessSubscriptionFeatures.value
+
   /**
    * Raw (unwrapped) credit purchase. Exposed separately from `purchaseCredits`
    * so callers that need to observe a rejection directly (e.g. to fire failure
@@ -179,8 +192,7 @@ export const useAuthActions = () => {
    * resolves instead of re-throwing on failure.
    */
   const purchaseCreditsDirect = async (amount: number): Promise<void> => {
-    const { canAccessSubscriptionFeatures } = useBillingContext()
-    if (!canAccessSubscriptionFeatures.value) return
+    if (!canPurchaseCredits()) return
 
     const response = await authStore.initiateCreditPurchase({
       amount_micros: usdToMicros(amount),
@@ -197,8 +209,14 @@ export const useAuthActions = () => {
 
     // Mark the pending top-up directly, not via telemetry, so the balance
     // refresh on return still fires when telemetry consent is off.
-    usePendingTopup().startPendingTopup()
-    window.open(response.checkout_url, '_blank')
+    const pendingTopup = usePendingTopup()
+    pendingTopup.startPendingTopup()
+    if (!window.open(response.checkout_url, '_blank')) {
+      pendingTopup.clearPendingTopup()
+      throw new PaymentPopupBlockedError(
+        t('subscription.preview.paymentPopupBlocked')
+      )
+    }
     watchForTopupBalanceUpdate()
   }
 
@@ -207,11 +225,12 @@ export const useAuthActions = () => {
     reportError
   )
 
-  const accessBillingPortal = wrapWithErrorHandlingAsync<
-    [targetTier?: BillingPortalTargetTier, openInNewTab?: boolean],
-    boolean
-  >(async (targetTier, openInNewTab = true) => {
-    const response = await authStore.accessBillingPortal(targetTier)
+  /** Unwrapped `accessBillingPortal`: rejects on failure, false when the tab is blocked. */
+  const accessBillingPortalDirect = async (
+    targetTier?: BillingPortalTargetTier,
+    options?: { cancelSubscription?: boolean }
+  ): Promise<boolean> => {
+    const response = await authStore.accessBillingPortal(targetTier, options)
     if (!response.billing_portal_url) {
       throw new Error(
         t('toastMessages.failedToAccessBillingPortal', {
@@ -219,13 +238,13 @@ export const useAuthActions = () => {
         })
       )
     }
-    if (openInNewTab) {
-      return window.open(response.billing_portal_url, '_blank') !== null
-    }
+    return window.open(response.billing_portal_url, '_blank') !== null
+  }
 
-    globalThis.location.href = response.billing_portal_url
-    return true
-  }, reportError)
+  const accessBillingPortal = wrapWithErrorHandlingAsync(
+    accessBillingPortalDirect,
+    reportError
+  )
 
   const fetchBalance = wrapWithErrorHandlingAsync(async () => {
     const result = await authStore.fetchBalance()
@@ -324,7 +343,9 @@ export const useAuthActions = () => {
     sendPasswordReset,
     purchaseCredits,
     purchaseCreditsDirect,
+    canPurchaseCredits,
     accessBillingPortal,
+    accessBillingPortalDirect,
     fetchBalance,
     signInWithGoogle,
     signInWithGithub,

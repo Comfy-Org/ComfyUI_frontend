@@ -5,11 +5,11 @@ import { computed } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 import { formatSize } from '@comfyorg/shared-frontend-utils/formatUtil'
 
-import { clock, useAudioPlayback } from '../../composables/useAudioPlayback'
-import { useSourceUrl } from '../../composables/useSourceUrl'
-import type { FileValue } from '../../config/workshop-playground'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { clock, useAudioPlayback } from '@/composables/useAudioPlayback'
+import { useSourceUrl } from '@/composables/useSourceUrl'
+import type { FileValue } from '@/config/workshop-playground'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import ImageSourcePreview from './ImageSourcePreview.vue'
 import VideoSourcePreview from './VideoSourcePreview.vue'
 
@@ -25,12 +25,13 @@ const {
   disabled?: boolean
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 defineEmits<{ replace: []; remove: [] }>()
 
 const fileType = computed(
   () =>
     /\.([a-z\d]{1,12})$/i.exec(file.name)?.[1].toUpperCase() ??
-    t('workshop.field.file', locale)
+    t('workshop.field.file')
 )
 
 // An audio file says nothing as a filename, so the row plays it: the square
@@ -58,8 +59,7 @@ const {
 const plays = computed(() => isAudio.value && source.value !== undefined)
 const playIcon = computed(() => (playing.value ? Pause : Play))
 const playLabel = computed(
-  () =>
-    `${t(playing.value ? 'player.pause' : 'player.play', locale)} ${file.name}`
+  () => `${t(playing.value ? 'player.pause' : 'player.play')} ${file.name}`
 )
 
 // What the line says to a reader who cannot see it: where they are, out of how
@@ -67,7 +67,7 @@ const playLabel = computed(
 const spokenPosition = computed(
   () => `${clock(elapsed.value)} / ${clock(duration.value)}`
 )
-const seekLabel = computed(() => `${t('player.seek', locale)} ${file.name}`)
+const seekLabel = computed(() => `${t('player.seek')} ${file.name}`)
 const seekEnd = computed(() => (seekable.value ? duration.value : 0))
 const seekAt = computed(() => (seekable.value ? elapsed.value : 0))
 const seekTabIndex = computed(() => (seekable.value ? 0 : -1))
@@ -122,9 +122,7 @@ const seekTabIndex = computed(() => (seekable.value ? 0 : -1))
       <button
         type="button"
         :disabled
-        :aria-label="
-          t('workshop.field.replaceFile', locale, { name: file.name })
-        "
+        :aria-label="t('workshop.field.replaceFile', { name: file.name })"
         class="min-w-0 cursor-pointer truncate text-left text-sm text-primary-warm-white underline-offset-4 hover:underline focus-visible:outline-primary-comfy-yellow"
         @click="$emit('replace')"
       >
@@ -180,9 +178,7 @@ const seekTabIndex = computed(() => (seekable.value ? 0 : -1))
     <button
       type="button"
       :disabled
-      :aria-label="
-        t('workshop.field.removeNamedFile', locale, { name: file.name })
-      "
+      :aria-label="t('workshop.field.removeNamedFile', { name: file.name })"
       class="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg text-primary-warm-gray hover:bg-transparency-white-t8 hover:text-primary-warm-white focus-visible:outline-primary-comfy-yellow"
       @click="$emit('remove')"
     >

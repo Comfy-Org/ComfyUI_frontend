@@ -405,7 +405,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     category: ['Appearance', 'Tree Explorer', 'ItemPadding'],
     name: 'Tree explorer item padding',
     type: 'slider',
-    defaultValue: 2,
+    defaultValue: 8,
     attrs: {
       min: 0,
       max: 8,
@@ -1201,6 +1201,12 @@ export const CORE_SETTINGS: SettingParams[] = [
   {
     id: 'Comfy.AppBuilder.VueNodeSwitchDismissed',
     name: 'App Builder Vue Node switch dismissed',
+    type: 'hidden',
+    defaultValue: false
+  },
+  {
+    id: 'Comfy.PartnerNodesEducation.Dismissed',
+    name: 'Partner nodes education card dismissed',
     type: 'hidden',
     defaultValue: false
   },

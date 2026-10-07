@@ -343,6 +343,39 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await expect(agentPanel.sendButton).toBeEnabled()
   })
 
+  test('shows a privacy-safe failure without retrying an unreadable accepted response', async ({
+    agentPanel,
+    comfyPage
+  }) => {
+    // Regression: https://github.com/Comfy-Org/ComfyUI_frontend/pull/19740
+    let postCount = 0
+    await comfyPage.page.route(
+      '**/api/agent/threads/*/messages',
+      async (route) => {
+        if (route.request().method() !== 'POST') return route.fallback()
+        postCount += 1
+        await route.fulfill({
+          status: 202,
+          contentType: 'application/json',
+          body: 'not-json'
+        })
+      }
+    )
+    await agentPanel.open()
+    await agentPanel.selectWorkflow()
+
+    await agentPanel.sendMessage('Build a product photo workflow')
+
+    await expect(
+      agentPanel.root.getByText(
+        `${enMessages.agent.sendFailed}: Unreadable agent response body`,
+        { exact: true }
+      )
+    ).toBeVisible()
+    await expect(agentPanel.sendButton).toBeEnabled()
+    expect(postCount).toBe(1)
+  })
+
   test.describe('diagnostic report', () => {
     test.use({
       permissions: ['clipboard-read', 'clipboard-write'],
@@ -655,6 +688,15 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     pushEvent(await getWebSocket(), MESSAGE_DONE_EVENT)
     const editButton = panel.getByRole('button', { name: enMessages.g.edit })
     await expect(editButton).toHaveCount(1)
+    await expect(editButton).toHaveCSS('pointer-events', 'none')
+
+    await editButton.focus()
+    await expect(editButton).toHaveCSS('pointer-events', 'auto')
+    await composer.focus()
+    await expect(editButton).toHaveCSS('pointer-events', 'none')
+
+    await panel.getByText(originalPrompt, { exact: true }).last().hover()
+    await expect(editButton).toHaveCSS('pointer-events', 'auto')
     await editButton.click()
 
     await expect(composer).toHaveText(originalPrompt)

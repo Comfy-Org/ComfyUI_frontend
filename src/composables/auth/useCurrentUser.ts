@@ -101,11 +101,18 @@ export const useCurrentUser = () => {
   })
 
   const isEmailProvider = computed(() => {
-    if (isApiKeyLogin.value) {
+    if (isApiKeyLogin.value || authStore.signedInWithSso) {
       return false
     }
-    return firebaseForSession.value?.providerData[0]?.providerId === 'password'
+    const firebaseUser = firebaseForSession.value
+    return firebaseUser
+      ? firebaseUser.providerData[0]?.providerId === 'password'
+      : sessionUser.value?.signInProvider === 'password'
   })
+
+  const needsFirebaseSignIn = computed(
+    () => !!sessionUser.value && !firebaseForSession.value
+  )
 
   const userPhotoUrl = computed(() => {
     if (isApiKeyLogin.value) return null
@@ -130,6 +137,7 @@ export const useCurrentUser = () => {
     isLoggedIn,
     isApiKeyLogin,
     isEmailProvider,
+    needsFirebaseSignIn,
     userDisplayName,
     userEmail,
     userPhotoUrl,

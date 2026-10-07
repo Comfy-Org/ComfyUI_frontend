@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { nextTick, readonly, ref } from 'vue'
 
 let { identifyWorkshopUser, useWorkshopAuthFlag } =
-  await import('../scripts/posthog')
+  await import('@/scripts/posthog')
 import { testFirebaseUser } from './__fixtures__/workshopSessionFakes'
 let { workshopIdentity, workshopSessionClient } =
   await import('./workshop-account')
@@ -19,7 +19,7 @@ function publish(next: Snapshot) {
   listeners.forEach((listener) => listener(next))
 }
 
-vi.mock(import('../scripts/posthog'))
+vi.mock(import('@/scripts/posthog'))
 vi.mock(import('./workshop-account'))
 
 const okSession: WorkshopSession = {
@@ -61,7 +61,7 @@ async function bootSession() {
 beforeEach(async () => {
   vi.resetModules()
   ;({ identifyWorkshopUser, useWorkshopAuthFlag } =
-    await import('../scripts/posthog'))
+    await import('@/scripts/posthog'))
   ;({ workshopIdentity, workshopSessionClient } =
     await import('./workshop-account'))
 
