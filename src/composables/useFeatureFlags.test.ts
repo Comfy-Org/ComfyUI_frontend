@@ -10,7 +10,6 @@ import {
 import { isReactive, isReadonly, nextTick } from 'vue'
 
 import {
-  ServerFeatureFlag,
   startFeatureFlagTelemetry,
   useFeatureFlags
 } from '@/composables/useFeatureFlags'
@@ -25,6 +24,7 @@ import {
   sessionAgentGrant,
   sessionAgentGrantValidUntil
 } from '@/platform/remoteConfig/remoteConfig'
+import { ServerFeatureFlag } from '@/platform/remoteConfig/serverFeatureFlag'
 import { useTelemetry } from '@/platform/telemetry'
 import { api } from '@/scripts/api'
 import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
