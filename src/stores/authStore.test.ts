@@ -2845,6 +2845,26 @@ describe('useAuthStore in local/desktop distribution', () => {
       await vi.waitFor(() => expect(initialize).toHaveBeenCalledOnce())
     })
 
+    it("loads the host account's workspaces when Desktop signed in before the store started", async () => {
+      store.$dispose()
+      const initialize = vi
+        .spyOn(useTeamWorkspaceStore(), 'initialize')
+        .mockResolvedValue()
+      await startDesktopHostSession(
+        hostBridge({
+          status: 'signed_in',
+          userId: 'host-user',
+          workspaceId: 'ws-host'
+        })
+      )
+      await nextTick()
+      expect(initialize).not.toHaveBeenCalled()
+
+      useAuthStore()
+
+      expect(initialize).toHaveBeenCalledOnce()
+    })
+
     it('has no workspace credential when no workspace is known', async () => {
       const bridge = hostBridge({ status: 'signed_in', userId: 'host-user' })
       await startDesktopHostSession(bridge)
