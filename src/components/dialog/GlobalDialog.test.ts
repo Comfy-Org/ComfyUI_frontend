@@ -590,10 +590,6 @@ describe('shouldPreventRekaDismiss', () => {
   }
 
   it.for([
-    ['class', 'p-select-overlay'],
-    ['class', 'p-colorpicker-panel'],
-    ['class', 'p-popover'],
-    ['class', 'p-autocomplete-overlay'],
     ['class', 'p-overlay-mask'],
     ['class', 'p-dialog'],
     ['data-toast-kind', 'info'],
@@ -655,22 +651,19 @@ describe('shouldPreventRekaDismiss', () => {
     expect(event.defaultPrevented).toBe(true)
   })
 
-  it.for(['p-dialog', 'p-select-overlay'])(
-    'focus-outside on a sibling %s portal does not dismiss the parent',
-    (className) => {
-      const overlay = document.createElement('div')
-      overlay.className = className
-      const inner = document.createElement('button')
-      overlay.appendChild(inner)
-      document.body.appendChild(overlay)
+  it('focus-outside on a sibling PrimeVue dialog portal does not dismiss the parent', () => {
+    const overlay = document.createElement('div')
+    overlay.className = 'p-dialog'
+    const inner = document.createElement('button')
+    overlay.appendChild(inner)
+    document.body.appendChild(overlay)
 
-      const event = makeEvent(inner)
-      onRekaFocusOutside(event)
+    const event = makeEvent(inner)
+    onRekaFocusOutside(event)
 
-      expect(event.defaultPrevented).toBe(true)
-      overlay.remove()
-    }
-  )
+    expect(event.defaultPrevented).toBe(true)
+    overlay.remove()
+  })
 
   it('focus-outside on a toast does not dismiss the parent', () => {
     const toast = document.createElement('div')

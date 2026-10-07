@@ -1,10 +1,8 @@
-// PrimeVue overlays (Select, ColorPicker, Popover, Autocomplete, stacked
-// PrimeVue Dialogs) teleport to body. Reka treats clicks on
-// body-portaled elements as outside its dialog and would auto-dismiss on the
-// first interaction, tearing the overlay down mid-interaction. Treat any
-// PrimeVue overlay click as inside.
-const PRIMEVUE_OVERLAY_SELECTORS =
-  '.p-select-overlay, .p-colorpicker-panel, .p-popover, .p-autocomplete-overlay, .p-overlay, .p-overlay-mask, .p-dialog'
+// PrimeVue Dialogs (the node search box and GlobalDialog's `primevue`
+// renderer) teleport to body. Reka treats clicks on body-portaled elements as
+// outside its dialog and would auto-dismiss on the first interaction. Treat a
+// click on a PrimeVue Dialog or its mask as inside.
+const PRIMEVUE_OVERLAY_SELECTORS = '.p-overlay-mask, .p-dialog'
 
 // Reka portals its own dialogs / popovers / menus into the body too. When a
 // nested Reka layer opens on top of a non-modal parent, the parent's
