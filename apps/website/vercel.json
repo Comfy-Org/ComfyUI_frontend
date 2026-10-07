@@ -568,17 +568,32 @@
       "permanent": true
     },
     {
-      "source": "/p/supported-models/:slug(kling-2-6|kling-ai)",
+      "source": "/p/supported-models/:slug(kling-2-6)",
+      "destination": "/hub/models/kling-2-6-pro-text-to-video-with-audio/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(kling-2-6)/",
+      "destination": "/hub/models/kling-2-6-pro-text-to-video-with-audio/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(kling-2-6).md",
+      "destination": "/hub/models/kling-2-6-pro-text-to-video-with-audio.md",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:slug(kling-ai)",
       "destination": "/hub/models/kling-3-0-text-to-video/",
       "permanent": true
     },
     {
-      "source": "/p/supported-models/:slug(kling-2-6|kling-ai)/",
+      "source": "/p/supported-models/:slug(kling-ai)/",
       "destination": "/hub/models/kling-3-0-text-to-video/",
       "permanent": true
     },
     {
-      "source": "/p/supported-models/:slug(kling-2-6|kling-ai).md",
+      "source": "/p/supported-models/:slug(kling-ai).md",
       "destination": "/hub/models/kling-3-0-text-to-video.md",
       "permanent": true
     },

@@ -18,7 +18,7 @@ export const partnerModelHubSlugs: Readonly<Record<string, string | null>> = {
   heygen: 'heygen-starfish-text-to-speech',
   'hunyuan-3d': null,
   ideogram: 'ideogram-v4-text-to-image',
-  'kling-2-6': 'kling-3-0-text-to-video',
+  'kling-2-6': 'kling-2-6-pro-text-to-video-with-audio',
   'kling-ai': 'kling-3-0-text-to-video',
   'kling-o3': 'kling-o3-text-to-video',
   'krea-2': 'krea-2-large-text-to-image',
