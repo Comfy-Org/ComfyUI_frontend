@@ -316,7 +316,8 @@ describe('useWorkspaceBilling', () => {
         endDate: '2026-06-01T00:00:00Z',
         isCancelled: true,
         hasFunds: true,
-        agentHasFunds: false
+        agentHasFunds: false,
+        agentScopedHasFunds: false
       })
       expect(billing.canAccessSubscriptionFeatures.value).toBe(true)
       expect(billing.isFreeTier.value).toBe(false)

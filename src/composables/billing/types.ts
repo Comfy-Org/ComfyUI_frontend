@@ -36,6 +36,8 @@ export interface SubscriptionInfo {
   hasFunds: boolean
   /** Agent funds across shared credits and the Agent-scoped balance. */
   agentHasFunds: boolean
+  /** Agent-scoped funds only; absent on billing rails that cannot distinguish them. */
+  agentScopedHasFunds?: boolean
 }
 
 /**

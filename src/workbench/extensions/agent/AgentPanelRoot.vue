@@ -80,6 +80,7 @@ import {
 
 import { useFreeUsePlacement } from './experiments/freeUsePlacement'
 import AgentPanel from './components/agent/AgentPanel.vue'
+import AgentCreditTransitionNotice from './components/agent/AgentCreditTransitionNotice.vue'
 import { agentBoundWorkflowIdKey } from './components/agent/agentBoundWorkflowId'
 import AgentGraphActivityBar from './components/AgentGraphActivityBar.vue'
 import OnboardingCoach from './components/agent/OnboardingCoach.vue'
@@ -282,6 +283,9 @@ watch(
  * nothing.
  */
 const agentHasFunds = computed(() => subscription.value?.agentHasFunds)
+const agentScopedHasFunds = computed(
+  () => subscription.value?.agentScopedHasFunds
+)
 const creditsExhausted = computed(() => {
   if (!consentAccepted.value) return false
   if (billingType.value !== 'workspace') return false
@@ -331,7 +335,61 @@ const billingIdentity = computed(
  */
 watch(billingIdentity, () => {
   agentPanelStore.reportedExhaustionIdentity = null
+  agentPanelStore.creditTransitionNoticeIdentity = null
+  agentPanelStore.reportedCreditTransitionNoticeIdentity = null
 })
+
+// A false first read cannot prove that this session consumed the gratis balance.
+// Preserve the prior scoped value so the notice represents an observed handoff,
+// while `agentHasFunds` keeps total exhaustion on the existing paywall path.
+watch(
+  [billingIdentity, agentScopedHasFunds, agentHasFunds],
+  ([identity, scopedHasFunds, effectiveHasFunds], previous) => {
+    const [previousIdentity, previousScopedHasFunds] = previous
+    if (identity !== previousIdentity) return
+
+    if (scopedHasFunds === true || effectiveHasFunds === false) {
+      agentPanelStore.creditTransitionNoticeIdentity = null
+      if (scopedHasFunds === true)
+        agentPanelStore.reportedCreditTransitionNoticeIdentity = null
+      return
+    }
+    if (
+      previousScopedHasFunds === true &&
+      scopedHasFunds === false &&
+      consentAccepted.value &&
+      billingType.value === 'workspace'
+    ) {
+      agentPanelStore.creditTransitionNoticeIdentity = identity
+    }
+  }
+)
+
+const showCreditTransitionNotice = computed(
+  () =>
+    agentPanelStore.creditTransitionNoticeIdentity === billingIdentity.value &&
+    consentAccepted.value &&
+    billingType.value === 'workspace' &&
+    agentScopedHasFunds.value === false &&
+    agentHasFunds.value === true
+)
+
+function onDismissCreditTransitionNotice(): void {
+  if (showCreditTransitionNotice.value)
+    useTelemetry()?.trackAgentCreditTransitionNotice({ action: 'dismissed' })
+  agentPanelStore.creditTransitionNoticeIdentity = null
+}
+
+function onCreditTransitionNoticeShown(): void {
+  if (
+    !showCreditTransitionNotice.value ||
+    agentPanelStore.reportedCreditTransitionNoticeIdentity ===
+      billingIdentity.value
+  )
+    return
+  agentPanelStore.reportedCreditTransitionNoticeIdentity = billingIdentity.value
+  useTelemetry()?.trackAgentCreditTransitionNotice({ action: 'shown' })
+}
 
 function onStandingPaywallShown(): void {
   if (
@@ -1966,8 +2024,22 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       @rename-chat="onRenameChat"
       @copy-history="onCopyMarkdown"
     >
-      <template v-if="isCrdtDevPanelEnabled" #instrument>
-        <CrdtDevPanel :status="crdtStatus" :snapshot="crdtDebugSnapshot" />
+      <template #instrument>
+        <div
+          v-if="showCreditTransitionNotice"
+          class="mx-auto w-full max-w-[640px] px-4 pt-3"
+        >
+          <AgentCreditTransitionNotice
+            data-testid="agent-credit-transition-notice"
+            @shown="onCreditTransitionNoticeShown"
+            @dismiss="onDismissCreditTransitionNotice"
+          />
+        </div>
+        <CrdtDevPanel
+          v-if="isCrdtDevPanelEnabled"
+          :status="crdtStatus"
+          :snapshot="crdtDebugSnapshot"
+        />
       </template>
     </AgentPanel>
     <OnboardingCoach
