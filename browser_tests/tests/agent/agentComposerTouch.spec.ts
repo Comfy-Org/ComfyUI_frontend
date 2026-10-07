@@ -1,5 +1,6 @@
 import { expect } from '@playwright/test'
 
+import { bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { inlineReferencesTest as test } from '@e2e/fixtures/agentInlineReferencesFixture'
 import { assetPath } from '@e2e/fixtures/utils/paths'
@@ -10,6 +11,7 @@ test(
   'discloses filenames and removes a staged asset without hover',
   { tag: '@cloud' },
   async ({ page, assetUpload }) => {
+    await bootAgentApp(page, true)
     const panel = new AgentPanel(page)
     await panel.open()
     await panel.fileInput.setInputFiles(assetPath('test_upload_image.png'))
