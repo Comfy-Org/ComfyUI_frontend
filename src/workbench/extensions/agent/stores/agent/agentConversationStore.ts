@@ -67,7 +67,6 @@ interface ActiveTurnSlot {
  * cannot leave the card disabled for the rest of the session.
  */
 const ASK_RESOLUTION_GRACE_MS = 15_000
-const MAX_RECOVERED_ASK_THREADS = 128
 
 function isLoadSkillPart(part: AssistantMessage['parts'][number]): boolean {
   return part.type === 'tool' && part.name === 'load_skill'
@@ -434,9 +433,6 @@ export const useAgentConversationStore = defineStore(
       for (const entry of backgroundTurns.values())
         if (entry.threadId === key) entry.transport.dropAskPart(askId)
       retiredAsksFor(key).add(askId)
-      const recovered = recoveredAskIds.get(key)
-      recovered?.delete(askId)
-      if (recovered?.size === 0) recoveredAskIds.delete(key)
       clearAskResolutionWatchdog(askId)
       submittedAskSelections.delete(askId)
       setAskAnswering(askId, false)
@@ -455,7 +451,6 @@ export const useAgentConversationStore = defineStore(
      * nothing here rests on an ask id being unique across threads.
      */
     const resolvedAskIds = new Map<string, Set<string>>()
-    const recoveredAskIds = new Map<string, Set<string>>()
 
     const threadKey = (owner?: string) => owner ?? threadId.value ?? ''
 
@@ -470,44 +465,6 @@ export const useAgentConversationStore = defineStore(
       return resolvedAskIds.get(threadKey(owner))?.has(askId) ?? false
     }
 
-    function markAskRecovered(askId: string, owner?: string): void {
-      const key = threadKey(owner)
-      const recovered = recoveredAskIds.get(key) ?? new Set<string>()
-      recovered.add(askId)
-      recoveredAskIds.delete(key)
-      recoveredAskIds.set(key, recovered)
-      if (recoveredAskIds.size > MAX_RECOVERED_ASK_THREADS) {
-        const oldest = recoveredAskIds.keys().next().value
-        if (oldest !== undefined) recoveredAskIds.delete(oldest)
-      }
-    }
-
-    function isAskRecovered(askId: string, owner?: string): boolean {
-      return recoveredAskIds.get(threadKey(owner))?.has(askId) ?? false
-    }
-
-    function forgetAskRecovered(askId: string, owner?: string): void {
-      const key = threadKey(owner)
-      const recovered = recoveredAskIds.get(key)
-      recovered?.delete(askId)
-      if (recovered?.size === 0) recoveredAskIds.delete(key)
-    }
-
-    function forgetRecoveredAsks(owner: string): void {
-      recoveredAskIds.delete(threadKey(owner))
-    }
-
-    function markLiveApprovalsRecovered(): void {
-      const mark = (message: AssistantMessage, owner: string) => {
-        for (const part of message.parts)
-          if (part.type === 'runApproval') markAskRecovered(part.askId, owner)
-      }
-      const slot = activeSlot.value
-      if (slot !== null && slot.threadId !== null)
-        mark(slot.message, slot.threadId)
-      for (const entry of backgroundTurns.values())
-        mark(entry.message, entry.threadId)
-    }
     /**
      * PM-1658: which way this client answered each ask. The server takes a
      * second answer from anywhere with 202 while committing only the FIRST, so
@@ -1106,13 +1063,15 @@ export const useAgentConversationStore = defineStore(
 
     function reconcileApprovalParts(
       turn: LiveTurn,
-      pendingAskId?: string
+      pendingAskId?: string,
+      protectedAskIds: ReadonlySet<string> = new Set()
     ): void {
       const message = liveTurnMessage(turn)
       if (message === null || pendingAskId === undefined) return
       const stale = message.parts.flatMap((part) =>
         part.type === 'runApproval' &&
         part.askId !== pendingAskId &&
+        !protectedAskIds.has(part.askId) &&
         submittedAskSelection(part.askId) === undefined &&
         !answeringAskIds.value.has(part.askId)
           ? [part.askId]
@@ -1213,11 +1172,6 @@ export const useAgentConversationStore = defineStore(
           )
         )
       )
-      const recovered = recoveredAskIds.get(threadKey())
-      if (recovered !== undefined)
-        for (const askId of recovered)
-          if (!named.has(askId)) recovered.delete(askId)
-      if (recovered?.size === 0) recoveredAskIds.delete(threadKey())
       for (const askId of retired) if (!named.has(askId)) retired.delete(askId)
       for (const message of transcript.messages)
         message.parts = message.parts.filter(
@@ -1412,11 +1366,6 @@ export const useAgentConversationStore = defineStore(
       commitAsk,
       retireAsk,
       isAskRetired,
-      markAskRecovered,
-      isAskRecovered,
-      forgetAskRecovered,
-      forgetRecoveredAsks,
-      markLiveApprovalsRecovered,
       reconcileApprovalParts,
       startTurn,
       ingest,

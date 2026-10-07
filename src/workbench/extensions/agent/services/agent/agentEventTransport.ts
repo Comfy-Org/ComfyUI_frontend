@@ -335,8 +335,7 @@ export function createAgentEventTransport(
    * ask dropped in routing, so it is reported the same way. Generated-contract
    * kinds without a client renderer are tagged separately from unknown input.
    *
-   * An ask already on the message emits the closed transcript parts but is
-   * NOT reported:
+   * An ask already on the message is a no-op and is not reported:
    * turn recovery restores an unanswered ask off the persisted row, and the
    * server writes that row before it publishes the frame, so the two can
    * arrive in either order for the same `ask_id`. The second arrival is a

@@ -520,11 +520,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
   let unsubscribeStatus: (() => void) | null = null
   let ownedGeneration = 0
   let connection: SocketConnection = 'initial'
+  let initiallyOffline = false
   interface RunningRecovery {
     controller: AbortController
     cause: RecoveryCause
+    rerun: boolean
   }
   const recoveringTurns = new Map<string, RunningRecovery>()
+  const recoveryPendingAskIds = new Map<string, string>()
   /**
    * Asks recovery must not re-deliver: one it already restored, one a frame
    * has delivered, and any the user has answered or the server has resolved.
@@ -1515,7 +1518,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     conversationStore.setAskAnswering(askId, true)
     try {
       await sendAnswer(currentThreadId, askId, selection)
-      reportAcceptedRecoveredAnswer(askId, currentThreadId)
+      reportAcceptedRecoveredAnswer()
       recordDeliveredAsk(askId)
       conversationStore.commitAsk(askId, currentThreadId)
       return true
@@ -1545,7 +1548,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
             { retryable: isRetryableRequestFailure(error, false) }
           )
           pushError(i18n.global.t('agent.runApproval.answerFailed'))
-        } else reportRejectedRecoveredAnswer(askId, currentThreadId)
+        } else reportRejectedRecoveredAnswer()
         // The card is retired for good here, by resolution (409) or because
         // this client could never answer it. Either way a later recovery poll
         // must not draw it again.
@@ -1575,11 +1578,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
-  function reportAcceptedRecoveredAnswer(
-    askId: string,
-    threadId: string
-  ): void {
-    if (!conversationStore.isAskRecovered(askId, threadId)) return
+  function reportAcceptedRecoveredAnswer(): void {
+    if (connection !== 'dropped') return
     reportError(new Error('accepted restored approval cannot be verified'), {
       surface: 'agent',
       errorType: 'agent_ask_answer_unconfirmed'
@@ -1587,11 +1587,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     pushError(i18n.global.t('agent.runApproval.answerUncertain'))
   }
 
-  function reportRejectedRecoveredAnswer(
-    askId: string,
-    threadId: string
-  ): void {
-    if (!conversationStore.isAskRecovered(askId, threadId)) return
+  function reportRejectedRecoveredAnswer(): void {
+    if (connection !== 'dropped') return
     reportError(new Error('restored run approval was already answered'), {
       surface: 'agent',
       errorType: 'agent_ask_answer_superseded'
@@ -1657,6 +1654,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
   function newChat(
     source?: Exclude<AgentSessionThreadStartSource, 'first_open'>
   ): void {
+    if (conversationStore.threadId !== null)
+      clearLateAskReports(conversationStore.threadId)
     readyThreadId.value = null
     loadGeneration++
     promptEditState.value = { phase: 'idle' }
@@ -1680,6 +1679,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     threadId: string,
     isNavigationCurrent: () => boolean = () => true
   ): Promise<boolean> {
+    if (conversationStore.threadId !== null)
+      clearLateAskReports(conversationStore.threadId)
     readyThreadId.value = null
     const generation = ++loadGeneration
     promptEditState.value = { phase: 'idle' }
@@ -1876,15 +1877,18 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   function onStatus(live: boolean): void {
     if (!live) {
-      const dropped = connection === 'live'
+      if (connection !== 'live') {
+        initiallyOffline = connection === 'initial'
+        return
+      }
       connection = 'dropped'
-      if (dropped) conversationStore.markLiveApprovalsRecovered()
       return
     }
     const reconnected = connection === 'dropped'
     connection = 'live'
-    if (!reconnected) return
-    reconcileLiveTurns('reconnect')
+    if (reconnected) reconcileLiveTurns('reconnect')
+    else if (initiallyOffline) reconcileLiveTurns('hydrate')
+    initiallyOffline = false
   }
 
   function reconcileLiveTurns(cause: RecoveryCause): void {
@@ -1898,22 +1902,21 @@ export function useAgentSession(deps: AgentSessionDeps) {
   ): Promise<void> {
     observeSkillTurn(turn)
     const key = recoveryKey(turn)
-    const running = recoveringTurns.get(key)
-    // A hydrate job files its ask reports as the benign publish race. Once the
-    // socket has actually dropped that reading is wrong, so a reconnect takes
-    // the job over; anything else defers to the job already running.
-    if (running) {
-      if (cause !== 'reconnect') return
-      running.controller.abort()
-    }
+    if (deferToRunningRecovery(key, cause)) return
     const recovery = new AbortController()
-    recoveringTurns.set(key, { controller: recovery, cause })
+    const state = { controller: recovery, cause, rerun: false }
+    recoveringTurns.set(key, state)
     const deadline = setTimeout(
       () => recovery.abort(),
       TURN_RECOVERY_DEADLINE_MS
     )
     try {
-      await recoverTurn(turn, cause, ownedGeneration, recovery.signal)
+      state.rerun ||= await recoverTurn(
+        turn,
+        cause,
+        ownedGeneration,
+        recovery.signal
+      )
     } catch (error) {
       // `onStatus` floats this job (`void reconcileTurn(turn)`), so a rethrow
       // would land as an `unhandledrejection` the session never sees. Abort is
@@ -1926,9 +1929,32 @@ export function useAgentSession(deps: AgentSessionDeps) {
         })
     } finally {
       clearTimeout(deadline)
-      if (recoveringTurns.get(key)?.controller === recovery)
-        recoveringTurns.delete(key)
+      finishRecovery(key, recovery, state, turn)
     }
+  }
+
+  function deferToRunningRecovery(key: string, cause: RecoveryCause): boolean {
+    const running = recoveringTurns.get(key)
+    if (running === undefined) return false
+    if (cause !== 'reconnect') return true
+    if (running.cause === 'reconnect') {
+      running.rerun = true
+      return true
+    }
+    running.controller.abort()
+    return false
+  }
+
+  function finishRecovery(
+    key: string,
+    recovery: AbortController,
+    state: RunningRecovery,
+    turn: LiveTurn
+  ): void {
+    if (recoveringTurns.get(key)?.controller !== recovery) return
+    recoveringTurns.delete(key)
+    if (state.rerun && isTurnLive(turn, ownedGeneration))
+      void reconcileTurn(turn, 'reconnect')
   }
 
   async function recoverTurn(
@@ -1936,39 +1962,68 @@ export function useAgentSession(deps: AgentSessionDeps) {
     cause: RecoveryCause,
     generation: number,
     signal: AbortSignal
-  ): Promise<void> {
+  ): Promise<boolean> {
     let consecutiveThreadMissing = 0
-    let previousPendingAskId: string | undefined
+    let previousPendingAskId = recoveryPendingAskIds.get(recoveryKey(turn))
+    let pendingAskConfirmed = false
     for (const ms of TURN_RECOVERY_DELAYS_MS) {
       await delay(ms, { signal })
-      if (!isTurnLive(turn, generation)) return
+      if (!isTurnLive(turn, generation)) return false
+      const deliveredBeforePoll = new Set(deliveredAsks)
       const outcome = await fetchTurnOutcome(turn, signal)
       signal.throwIfAborted()
-      if (!isTurnLive(turn, generation)) return
+      if (!isTurnLive(turn, generation)) return false
       consecutiveThreadMissing =
         outcome.kind === 'thread-missing' ? consecutiveThreadMissing + 1 : 0
       if (outcome.kind === 'thread-missing' && consecutiveThreadMissing < 2)
         continue
-      if (settleFinishedTurn(turn, outcome)) return
+      if (settleFinishedTurn(turn, outcome)) return false
       const pendingAskId = streamingPendingAskId(outcome)
-      const pendingAskConfirmed = isRepeatedPendingAsk(
+      pendingAskConfirmed = recordPendingAskObservation(
+        turn,
         pendingAskId,
         previousPendingAskId
       )
-      reconcileStreamingApproval(turn, outcome, cause, pendingAskConfirmed)
+      const deliveredDuringPoll = new Set(
+        [...deliveredAsks].filter((askId) => !deliveredBeforePoll.has(askId))
+      )
+      reconcileStreamingApproval(
+        turn,
+        outcome,
+        cause,
+        pendingAskConfirmed,
+        deliveredDuringPoll
+      )
       previousPendingAskId = pendingAskId
     }
+    return previousPendingAskId !== undefined && !pendingAskConfirmed
+  }
+
+  function recordPendingAskObservation(
+    turn: LiveTurn,
+    pendingAskId: string | undefined,
+    previousPendingAskId: string | undefined
+  ): boolean {
+    const key = recoveryKey(turn)
+    if (pendingAskId === undefined) recoveryPendingAskIds.delete(key)
+    else recoveryPendingAskIds.set(key, pendingAskId)
+    return isRepeatedPendingAsk(pendingAskId, previousPendingAskId)
   }
 
   function reconcileStreamingApproval(
     turn: LiveTurn,
     outcome: TurnOutcome,
     cause: RecoveryCause,
-    pendingAskConfirmed: boolean
+    pendingAskConfirmed: boolean,
+    deliveredDuringPoll: ReadonlySet<string>
   ): void {
     if (outcome.kind !== 'streaming') return
     if (pendingAskConfirmed)
-      conversationStore.reconcileApprovalParts(turn, outcome.pendingAsk?.ask_id)
+      conversationStore.reconcileApprovalParts(
+        turn,
+        outcome.pendingAsk?.ask_id,
+        deliveredDuringPoll
+      )
     if (
       !pendingAskConfirmed &&
       outcome.pendingAsk?.kind === 'run_approval' &&
@@ -2011,7 +2066,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     })
     if (!conversationStore.isApprovalShown(turn, pendingAsk.ask_id)) return
     recordDeliveredAsk(pendingAsk.ask_id)
-    conversationStore.markAskRecovered(pendingAsk.ask_id, turn.threadId)
     reportRestoredApproval(turn, pendingAsk.ask_id, cause)
   }
 
@@ -2059,7 +2113,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     event: Extract<AgentWsEvent, { type: 'agent_ask' }>
   ): void {
     const askId = event.data.ask_id
-    conversationStore.forgetAskRecovered(askId, event.data.thread_id)
     if (conversationStore.isAskRetired(askId, event.data.thread_id)) {
       withdrawLateAskReport(event.data.thread_id, askId)
       return
@@ -2203,8 +2256,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   function forgetDeletedThread(turn: LiveTurn): void {
     skillTurnUsage.delete(recoveryKey(turn))
+    recoveryPendingAskIds.delete(recoveryKey(turn))
     clearLateAskReports(turn.threadId)
-    conversationStore.forgetRecoveredAsks(turn.threadId)
     if (conversationStore.threadId !== turn.threadId) {
       conversationStore.settleTurn(turn, undefined)
       return

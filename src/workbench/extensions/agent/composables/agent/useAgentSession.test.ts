@@ -4778,12 +4778,7 @@ describe('useAgentSession (v1 composition root)', () => {
 
       expect(approvalParts(session)).toHaveLength(1)
       await session.answerAsk('turn-1:call-1', 'run')
-      expect(session.notices.value).toEqual([
-        {
-          level: 'error',
-          text: 'This request was already answered somewhere else, so that answer was used instead of yours.'
-        }
-      ])
+      expect(session.notices.value).toHaveLength(0)
     } finally {
       vi.useRealTimers()
     }
@@ -4952,7 +4947,7 @@ describe('useAgentSession (v1 composition root)', () => {
     }
   })
 
-  it('(g44) repeated polls do not erase restored-approval provenance', async () => {
+  it('(g44) a restored approval answered on a live socket is not uncertain', async () => {
     vi.useFakeTimers()
     try {
       const rest = parkedOnApprovalRest()
@@ -4967,7 +4962,7 @@ describe('useAgentSession (v1 composition root)', () => {
       await vi.advanceTimersByTimeAsync(3_000)
       await session.answerAsk('turn-1:call-1', 'run')
 
-      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      expect(reportError).not.toHaveBeenCalledWith(expect.any(Error), {
         surface: 'agent',
         errorType: 'agent_ask_answer_unconfirmed'
       })
