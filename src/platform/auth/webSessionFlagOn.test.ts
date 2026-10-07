@@ -235,7 +235,8 @@ function sessionBody(
     },
     csrf_token: `csrf-${userId}`,
     expires_at: new Date(Date.now() + 86_400_000).toISOString(),
-    absolute_expires_at: new Date(Date.now() + 604_800_000).toISOString()
+    absolute_expires_at: new Date(Date.now() + 604_800_000).toISOString(),
+    has_personal_workspace: true
   }
 }
 
