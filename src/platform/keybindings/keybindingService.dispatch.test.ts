@@ -26,7 +26,7 @@ function keydown(
 }
 
 describe('keybindingService dispatch', () => {
-  let handler: (event: KeyboardEvent) => Promise<void>
+  let handler: (event: KeyboardEvent) => void
   let undo: Mock<() => void>
   let maskEditorUndo: Mock<() => void>
   let exitSubgraph: Mock<() => void>
@@ -326,7 +326,8 @@ describe('keybindingService dispatch', () => {
 
     expect(event.defaultPrevented).toBe(false)
     expect(console.warn).toHaveBeenCalledWith(
-      expect.stringContaining('test.missing')
+      '[Reported error]: error_dispatching_keybinding',
+      expect.any(Error)
     )
   })
 })

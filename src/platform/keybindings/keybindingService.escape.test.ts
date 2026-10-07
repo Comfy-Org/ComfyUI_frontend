@@ -9,7 +9,6 @@ import {
 } from '@/platform/keybindings/escapeOverride'
 import { KeyComboImpl } from '@/platform/keybindings/keyCombo'
 import { KeybindingImpl } from '@/platform/keybindings/keybinding'
-import { registerCoreKeybindingCommands } from '@/platform/keybindings/__fixtures__/registerCoreKeybindingCommands'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useCommandStore } from '@/stores/commandStore'
@@ -45,13 +44,15 @@ describe('keybindingService - Escape key handling', () => {
   let keybindingService: ReturnType<typeof useKeybindingService>
 
   beforeEach(() => {
-    vi.mocked(useCommandStore().execute).mockResolvedValue(undefined)
-    vi.spyOn(useCommandStore(), 'isRegistered').mockReturnValue(true)
+    useCommandStore().registerCommands(
+      [...new Set(CORE_KEYBINDINGS.map((binding) => binding.commandId))].map(
+        (id) => ({ id, function: vi.fn() })
+      )
+    )
 
     const dialogStore = useDialogStore()
     dialogStore.dialogStack.length = 0
 
-    registerCoreKeybindingCommands()
     keybindingService = useKeybindingService()
     keybindingService.registerCoreKeybindings()
   })
@@ -90,9 +91,9 @@ describe('keybindingService - Escape key handling', () => {
     const event = createKeyboardEvent('Escape')
     await keybindingService.keybindHandler(event)
 
-    expect(useCommandStore().execute).toHaveBeenCalledWith(
-      'Comfy.Graph.ExitSubgraph'
-    )
+    expect(
+      useCommandStore().getCommand('Comfy.Graph.ExitSubgraph').function
+    ).toHaveBeenCalledOnce()
   })
 
   it('should NOT execute Escape keybinding when dialogs are open', async () => {
@@ -127,8 +128,8 @@ describe('keybindingService - Escape key handling', () => {
     expect(useCommandStore().execute).not.toHaveBeenCalled()
   })
 
-  it.for(['menu', 'menubar', 'dialog'])(
-    'should leave Escape events from role=%s to the overlay',
+  it.for(['menu', 'menubar'])(
+    'should leave Escape events from role=%s to the menu',
     async (role) => {
       const menu = document.createElement('div')
       menu.setAttribute('role', role)
@@ -144,15 +145,33 @@ describe('keybindingService - Escape key handling', () => {
     }
   )
 
-  it('does not throw when Escape fires with a non-Element target (e.g. document, in Safari when nothing has focus)', async () => {
+  it('should leave Escape events from a popover dialog to the popover', async () => {
+    const popper = document.createElement('div')
+    popper.setAttribute('data-reka-popper-content-wrapper', '')
+    const popover = document.createElement('div')
+    popover.setAttribute('role', 'dialog')
+    popover.setAttribute('data-dismissable-layer', '')
+    const content = document.createElement('div')
+    popover.appendChild(content)
+    popper.appendChild(popover)
+
+    const event = createKeyboardEvent('Escape', { target: content })
+    await keybindingService.keybindHandler(event)
+
+    expect(event.preventDefault).not.toHaveBeenCalled()
+    expect(useCommandStore().execute).not.toHaveBeenCalled()
+  })
+
+  it('dispatches Escape from a non-Element target (e.g. document, in Safari when nothing has focus)', async () => {
     const event = createKeyboardEvent('Escape', {
       target: document as unknown as Element
     })
 
-    await expect(keybindingService.keybindHandler(event)).resolves.not.toThrow()
+    await keybindingService.keybindHandler(event)
 
     expect(useCommandStore().execute).toHaveBeenCalledWith(
-      'Comfy.Graph.ExitSubgraph'
+      'Comfy.Graph.ExitSubgraph',
+      expect.anything()
     )
   })
 
@@ -174,7 +193,8 @@ describe('keybindingService - Escape key handling', () => {
       await keybindingService.keybindHandler(event)
 
       expect(useCommandStore().execute).toHaveBeenCalledWith(
-        'Comfy.Graph.ExitSubgraph'
+        'Comfy.Graph.ExitSubgraph',
+        expect.anything()
       )
     })
 
@@ -185,7 +205,8 @@ describe('keybindingService - Escape key handling', () => {
       await keybindingService.keybindHandler(event)
 
       expect(useCommandStore().execute).toHaveBeenCalledWith(
-        'Comfy.Graph.ExitSubgraph'
+        'Comfy.Graph.ExitSubgraph',
+        expect.anything()
       )
     })
 
@@ -205,7 +226,10 @@ describe('keybindingService - Escape key handling', () => {
       await keybindingService.keybindHandler(event)
 
       expect(override).not.toHaveBeenCalled()
-      expect(useCommandStore().execute).toHaveBeenCalledWith('Test.BareF9')
+      expect(useCommandStore().execute).toHaveBeenCalledWith(
+        'Test.BareF9',
+        expect.anything()
+      )
     })
 
     it('lets an open menu win over a registered override', async () => {

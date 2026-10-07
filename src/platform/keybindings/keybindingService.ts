@@ -1,6 +1,11 @@
+import { watch, watchEffect } from 'vue'
+
+import { t } from '@/i18n'
 import { reportError } from '@/platform/telemetry/reportError'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import type { ComfyCommandImpl } from '@/stores/commandStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { isModalOpen } from '@/utils/modalUtil'
@@ -9,11 +14,13 @@ import type { ContextSnapshot } from './contextKeyStore'
 import { useContextKeyStore } from './contextKeyStore'
 import { CORE_KEYBINDINGS } from './defaults'
 import { consultEscapeOverride } from './escapeOverride'
+import { createHoldBindings } from './holdBindings'
 import { KeyComboImpl } from './keyCombo'
 import { KeybindingImpl } from './keybinding'
 import type { KeybindingSource } from './keybindingStore'
 import { useKeybindingStore } from './keybindingStore'
 import { legacyBindings } from './persistence'
+import { useRuntimeKeybindingStore } from './runtimeKeybindingStore'
 import { zKeybindingSettings } from './types'
 import type { WhenClause } from './whenClause'
 import { matchesContext, parseWhenClause } from './whenClause'
@@ -47,13 +54,64 @@ function isTextInput(target: Element): boolean {
   )
 }
 
-/** Menus, dialogs and Reka dismissable layers own Escape. */
+/** Menus, menubars and popover layers own Escape; dialog content does not. */
 function ownsEscape(target: Element): boolean {
-  return (
-    target.closest(
-      '[role="menu"], [role="menubar"], [role="dialog"], [data-dismissable-layer]'
-    ) !== null
+  const layer = target.closest(
+    '[role="menu"], [role="menubar"], [data-dismissable-layer]'
   )
+  return (
+    layer !== null &&
+    !(
+      layer.getAttribute('role') === 'dialog' &&
+      layer.closest('[data-reka-popper-content-wrapper]') === null
+    )
+  )
+}
+
+const COMPOSITE_WIDGETS =
+  '[role="menu"], [role="listbox"], [role="combobox"], [role="tree"], [role="tablist"]'
+const ACTIVATABLE_CONTROLS =
+  'button, a[href], input, select, [role="button"], [role="checkbox"], [role="radio"], video[controls], audio[controls]'
+const RANGED_CONTROLS =
+  'select, input[type="range"], input[type="radio"], [role="slider"], [role="spinbutton"]'
+const NAVIGATION_KEYS = new Set([
+  'ArrowLeft',
+  'ArrowRight',
+  'ArrowUp',
+  'ArrowDown',
+  'Home',
+  'End',
+  'PageUp',
+  'PageDown'
+])
+
+function closesOpenPopup(target: Element, combo: KeyComboImpl): boolean {
+  return (
+    combo.key === 'Escape' &&
+    !combo.hasModifier &&
+    target.closest('[aria-haspopup][aria-expanded="true"]') !== null
+  )
+}
+
+function activatesControl(target: Element, combo: KeyComboImpl): boolean {
+  return (
+    (combo.key === ' ' || combo.key === 'Enter') &&
+    target.closest(ACTIVATABLE_CONTROLS) !== null
+  )
+}
+
+function navigatesControl(target: Element, combo: KeyComboImpl): boolean {
+  return (
+    NAVIGATION_KEYS.has(combo.key) && target.closest(RANGED_CONTROLS) !== null
+  )
+}
+
+function isNativeControlKey(target: Element, combo: KeyComboImpl): boolean {
+  if (combo.isReservedByTextInput && target.closest(COMPOSITE_WIDGETS))
+    return true
+  if (closesOpenPopup(target, combo)) return true
+  if (combo.ctrl || combo.alt) return false
+  return activatesControl(target, combo) || navigatesControl(target, combo)
 }
 
 function isWithinTargetElement(
@@ -116,6 +174,59 @@ function closeLegacyModals() {
   for (const d of document.querySelectorAll('dialog')) d.close()
 }
 
+/** Keys the dispatcher never claims: already handled, composing, or a bare modifier. */
+function isUnclaimable(event: KeyboardEvent, combo: KeyComboImpl): boolean {
+  return (
+    event.defaultPrevented ||
+    event.isComposing ||
+    event.keyCode === 229 ||
+    combo.isModifier
+  )
+}
+
+function isIgnoredNode(node: EventTarget): boolean {
+  return (
+    node instanceof Element && node.hasAttribute('data-comfy-keybinding-ignore')
+  )
+}
+
+/** The element a keydown applies to, or undefined when a native control or overlay owns it. */
+function dispatchTarget(
+  event: KeyboardEvent,
+  combo: KeyComboImpl
+): Element | undefined {
+  if (isUnclaimable(event, combo)) return
+  const path = event.composedPath()
+  if (path.some(isIgnoredNode)) return
+  // Safari targets `document` when nothing has focus.
+  const target = path[0] instanceof Element ? path[0] : document.body
+  if (isNativeControlKey(target, combo)) return
+  if (event.key === 'Escape' && ownsEscape(target)) return
+  return target
+}
+
+function isBareEscape(
+  event: KeyboardEvent,
+  combo: KeyComboImpl,
+  context: ContextSnapshot
+): boolean {
+  return event.key === 'Escape' && !combo.hasModifier && !context.textInputFocus
+}
+
+function runMetadata(commandId: string) {
+  return RUN_COMMAND_IDS.has(commandId)
+    ? { trigger_source: 'keybinding' }
+    : undefined
+}
+
+function allowsModal(binding: KeybindingImpl): boolean {
+  return (
+    clauseOf(binding)?.some(
+      (atom) => atom.key === 'modalOpen' && !atom.negated
+    ) === true
+  )
+}
+
 export function useKeybindingService() {
   const keybindingStore = useKeybindingStore()
   const commandStore = useCommandStore()
@@ -123,86 +234,194 @@ export function useKeybindingService() {
   const dialogStore = useDialogStore()
   const contextKeyStore = useContextKeyStore()
 
-  function buildContext(target: Element): ContextSnapshot {
+  function buildContext(
+    target: Element,
+    bindings: readonly KeybindingImpl[]
+  ): ContextSnapshot {
+    const keys = new Set<string>()
+    for (const binding of bindings) {
+      const parsed = binding.when && parseWhenClause(binding.when)
+      if (parsed && parsed.success) {
+        for (const atom of parsed.clause) keys.add(atom.key)
+      }
+    }
     return {
-      ...contextKeyStore.snapshot(),
+      ...contextKeyStore.snapshot(keys),
       modalOpen: isModalOpen(dialogStore.dialogStack.length),
       textInputFocus: isTextInput(target)
     }
   }
 
-  async function execute(keybinding: KeybindingImpl, event: KeyboardEvent) {
-    if (!commandStore.isRegistered(keybinding.commandId)) {
-      console.warn(
-        `Keybinding ${keybinding.combo} targets unknown command ${keybinding.commandId}`
-      )
-      return
-    }
-    event.preventDefault()
-    if (RUN_COMMAND_IDS.has(keybinding.commandId)) {
-      await commandStore.execute(keybinding.commandId, {
-        metadata: {
-          trigger_source: 'keybinding'
-        }
-      })
-    } else {
-      await commandStore.execute(keybinding.commandId)
+  const runtime = useRuntimeKeybindingStore()
+  const reported = new Set<string>()
+
+  function shouldReport(
+    operation: string,
+    binding: KeybindingImpl | undefined,
+    warning: boolean
+  ): boolean {
+    if (!warning && operation !== 'dispatching') return true
+    const identity = `${operation}:${binding?.serialize() ?? ''}`
+    if (reported.has(identity) || reported.size >= 256) return false
+    reported.add(identity)
+    return true
+  }
+
+  function failureTags(binding: KeybindingImpl | undefined) {
+    const source = binding && keybindingStore.sourceOf(binding)
+    return {
+      command_id: binding?.commandId,
+      source_tier: source?.tier,
+      extension: source?.tier === 'extension' ? source.name : undefined
     }
   }
 
-  async function keybindHandler(event: KeyboardEvent) {
-    if (event.defaultPrevented || event.isComposing) return
+  function reportFailure(
+    error: unknown,
+    operation: 'dispatching' | 'executing' | 'releasing' | 'loading',
+    binding?: KeybindingImpl,
+    warning = false
+  ) {
+    if (!shouldReport(operation, binding, warning)) return
+    reportError(error, {
+      errorType: `error_${operation}_keybinding`,
+      surface: 'platform',
+      level: warning ? 'warning' : 'error',
+      tags: failureTags(binding)
+    })
+    if (!warning && operation === 'executing') {
+      useToastStore().add({
+        severity: 'error',
+        summary: t('g.error'),
+        detail: t('g.keybindingFailed')
+      })
+    }
+  }
 
-    const keyCombo = KeyComboImpl.fromEvent(event)
-    if (keyCombo.isModifier) return
+  const holds = createHoldBindings((error, binding, phase) =>
+    reportFailure(
+      error,
+      phase === 'release' ? 'releasing' : 'executing',
+      binding
+    )
+  )
 
-    // Safari targets `document` when nothing has focus.
-    const pathTarget = event.composedPath()[0]
-    const target = pathTarget instanceof Element ? pathTarget : document.body
-    if (event.key === 'Escape' && ownsEscape(target)) return
+  function reportUnavailable(message: string, keybinding: KeybindingImpl) {
+    reportFailure(new Error(message), 'dispatching', keybinding, true)
+  }
 
-    const context = buildContext(target)
-    const activeDialogKey = dialogStore.activeKey ?? undefined
-    const scoped =
-      activeDialogKey === undefined
-        ? undefined
-        : keybindingStore
-            .getKeybindings(keyCombo, activeDialogKey)
-            .find(
-              (binding) =>
-                isWithinTargetElement(binding, target) &&
-                clauseHolds(binding, keybindingStore.sourceOf(binding), context)
-            )
-    if (scoped) {
-      await execute(scoped, event)
+  function commandsAvailable(keybinding: KeybindingImpl): boolean {
+    if (!commandStore.isRegistered(keybinding.commandId)) {
+      reportUnavailable('Shortcut command is unavailable', keybinding)
+      return false
+    }
+    if (!runtime.isAvailable(keybinding.commandId)) return false
+    const { releaseCommandId } = keybinding
+    if (releaseCommandId && !commandStore.isRegistered(releaseCommandId)) {
+      reportUnavailable('Shortcut release command is unavailable', keybinding)
+      return false
+    }
+    return true
+  }
+
+  function pressHold(
+    keybinding: KeybindingImpl,
+    event: KeyboardEvent,
+    releaseCommand: ComfyCommandImpl
+  ) {
+    const command = commandStore.getCommand(keybinding.commandId)
+    const provider = runtime.resolve(keybinding.commandId)
+    holds.press(keybinding, event, {
+      press: () =>
+        provider
+          ? provider.run(event)
+          : command.function(runMetadata(keybinding.commandId)),
+      release: () =>
+        provider?.release ? provider.release() : releaseCommand.function(),
+      isActive: () =>
+        commandStore.getCommand(keybinding.commandId) === command &&
+        commandStore.getCommand(releaseCommand.id) === releaseCommand &&
+        (!provider || runtime.resolve(keybinding.commandId) === provider)
+    })
+  }
+
+  function execute(keybinding: KeybindingImpl, event: KeyboardEvent) {
+    if (!commandsAvailable(keybinding)) return
+    if (keybinding.preventDefault !== false) event.preventDefault()
+    const releaseCommand = keybinding.releaseCommandId
+      ? commandStore.getCommand(keybinding.releaseCommandId)
+      : undefined
+    if (event.repeat && (keybinding.allowRepeat === false || releaseCommand))
+      return
+    if (releaseCommand) {
+      pressHold(keybinding, event, releaseCommand)
       return
     }
+    const provider = runtime.resolve(keybinding.commandId)
+    void commandStore
+      .execute(keybinding.commandId, {
+        metadata: provider
+          ? { keybindingEvent: event }
+          : runMetadata(keybinding.commandId),
+        errorHandler: (error) => reportFailure(error, 'executing', keybinding)
+      })
+      .catch((error: unknown) => reportFailure(error, 'executing', keybinding))
+  }
 
+  function isEligible(
+    binding: KeybindingImpl,
+    target: Element,
+    context: ContextSnapshot
+  ) {
+    if (!isWithinTargetElement(binding, target)) return false
+    if (!clauseHolds(binding, keybindingStore.sourceOf(binding), context))
+      return false
+    return runtime.isAvailable(binding.commandId)
+  }
+
+  function activeDialogKeybindings(combo: KeyComboImpl) {
+    const dialogKey = dialogStore.activeKey
+    return dialogKey === null
+      ? []
+      : keybindingStore.getKeybindings(combo, dialogKey)
+  }
+
+  /** A modal blocks workspace bindings that do not opt in with `modalOpen`. */
+  function blockedByModal(
+    keybinding: KeybindingImpl,
+    combo: KeyComboImpl,
+    context: ContextSnapshot,
+    event: KeyboardEvent
+  ): boolean {
+    if (!context.modalOpen || allowsModal(keybinding)) return false
+    if (combo.ctrl) event.preventDefault()
+    return true
+  }
+
+  function dispatch(event: KeyboardEvent) {
+    const keyCombo = KeyComboImpl.fromEvent(event)
+    const target = dispatchTarget(event, keyCombo)
+    if (!target) return
+
+    const scopedCandidates = activeDialogKeybindings(keyCombo)
     const candidates = keybindingStore
       .getKeybindings(keyCombo)
       .filter((binding) => isWithinTargetElement(binding, target))
-    const keybinding = candidates.find((binding) =>
-      clauseHolds(binding, keybindingStore.sourceOf(binding), context)
-    )
+    const context = buildContext(target, [...scopedCandidates, ...candidates])
+    const eligible = (binding: KeybindingImpl) =>
+      isEligible(binding, target, context)
+    const scoped = scopedCandidates.find(eligible)
+    if (scoped) {
+      execute(scoped, event)
+      return
+    }
+    const keybinding = candidates.find(eligible)
     if (!keybinding) {
-      const bare = !keyCombo.ctrl && !keyCombo.alt
-      const inTextInput =
-        keyCombo.isReservedByTextInput && context.textInputFocus
-      if (
-        candidates.length === 0 &&
-        event.key === 'Escape' &&
-        bare &&
-        !inTextInput
-      ) {
+      if (candidates.length === 0 && isBareEscape(event, keyCombo, context))
         closeLegacyModals()
-      }
       return
     }
-    if (context.modalOpen) {
-      // Bare keys still have to reach inputs inside the dialog.
-      if (keyCombo.ctrl) event.preventDefault()
-      return
-    }
+    if (blockedByModal(keybinding, keyCombo, context, event)) return
     // A registered override (e.g. the agent composer owning Escape while a
     // turn is running) wins over the workspace binding, but only after menus
     // and dialogs have had first refusal above.
@@ -210,7 +429,66 @@ export function useKeybindingService() {
       event.preventDefault()
       return
     }
-    await execute(keybinding, event)
+    execute(keybinding, event)
+  }
+
+  function keybindHandler(event: KeyboardEvent) {
+    try {
+      dispatch(event)
+    } catch (error) {
+      holds.releaseAll()
+      reportFailure(error, 'dispatching')
+    }
+  }
+
+  function reconcileHolds() {
+    try {
+      const target = document.activeElement ?? document.body
+      holds.reconcile((binding) => {
+        const context = buildContext(target, [binding])
+        return (
+          keybindingStore.keybindings.includes(binding) &&
+          isEligible(binding, target, context) &&
+          (binding.dialogKey
+            ? binding.dialogKey === dialogStore.activeKey
+            : !context.modalOpen || allowsModal(binding))
+        )
+      })
+    } catch (error) {
+      holds.releaseAll()
+      reportFailure(error, 'dispatching')
+    }
+  }
+
+  function install() {
+    const stopPhase = watch(
+      () => settingStore.get('Comfy.Keybinding.CapturePhase'),
+      (capture, _, onCleanup) => {
+        holds.releaseAll()
+        window.addEventListener('keydown', keybindHandler, { capture })
+        onCleanup(() =>
+          window.removeEventListener('keydown', keybindHandler, { capture })
+        )
+      },
+      { immediate: true, flush: 'sync' }
+    )
+    const stopReconcile = watchEffect(reconcileHolds)
+    const onVisibility = () => {
+      if (document.hidden) holds.releaseAll()
+    }
+    window.addEventListener('keyup', holds.keyup, true)
+    window.addEventListener('blur', holds.releaseAll)
+    window.addEventListener('focusin', reconcileHolds, true)
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => {
+      stopPhase()
+      stopReconcile()
+      holds.releaseAll()
+      window.removeEventListener('keyup', holds.keyup, true)
+      window.removeEventListener('blur', holds.releaseAll)
+      window.removeEventListener('focusin', reconcileHolds, true)
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
   }
 
   function registerCoreKeybindings() {
@@ -245,11 +523,12 @@ export function useKeybindingService() {
       })
       keybindingStore.currentPresetName = settings.currentPreset
     } catch {
-      reportError(new Error('Stored keyboard shortcuts could not be loaded'), {
-        errorType: 'error_loading_keybinding',
-        surface: 'platform',
-        level: 'warning'
-      })
+      reportFailure(
+        new Error('Stored keyboard shortcuts could not be loaded'),
+        'loading',
+        undefined,
+        true
+      )
     }
   }
 
@@ -270,6 +549,7 @@ export function useKeybindingService() {
 
   return {
     keybindHandler,
+    install,
     registerCoreKeybindings,
     registerUserKeybindings,
     persistUserKeybindings
