@@ -132,7 +132,7 @@ export class CloudAuthHelper {
    * Intercept Firebase Auth REST API endpoints so the SDK can
    * "refresh" the mock user's token without real credentials.
    */
-  async mockFirebaseEndpoints(email = CLOUD_SELF_EMAIL): Promise<void> {
+  private async mockFirebaseEndpoints(): Promise<void> {
     await this.page.route('**/securetoken.googleapis.com/**', (route) =>
       route.fulfill({
         status: 200,
@@ -158,7 +158,7 @@ export class CloudAuthHelper {
           users: [
             {
               localId: 'test-user-e2e',
-              email,
+              email: CLOUD_SELF_EMAIL,
               displayName: 'E2E Test User',
               emailVerified: true,
               validSince: '0',
