@@ -985,7 +985,6 @@ function startAgentCrdtFollower(
     clearSubscribeRetry()
     subscribeGaveUp = false
     reseedAttempts = 0
-    pendingReseed = null
     clearStaleProbe()
     recordDevEvent('reconnected', null)
     bridge.reconnect()

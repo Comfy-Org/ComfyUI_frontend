@@ -367,6 +367,43 @@ describe('useAgentCrdtFollower', () => {
     )
   })
 
+  it('replays post-snapshot edits after reconnect confirms the reseed', async () => {
+    const { enqueue } = mountFollower(
+      'wf-1',
+      true,
+      () => null,
+      {},
+      () => ({ nodes: [] })
+    )
+    bridge().canReseed.mockReturnValue(true)
+    bridge().reseed.mockReturnValue('sent')
+
+    dispatchFrame('doc_subscribed', {
+      workflowId: 'wf-1',
+      ok: false,
+      code: 'stale_schema_reseed_required',
+      expectedSeq: 7
+    })
+    enqueue([
+      { op: 'delete_node', node_id: 'during-reconnect', removed_links: [] }
+    ])
+    apiState.target.dispatchEvent(new Event('reconnected'))
+    dispatchFrame('doc_subscribed', { workflowId: 'wf-1', ok: true })
+    await Promise.resolve()
+
+    expect(clientState.sendOps).toHaveBeenCalledOnce()
+    expect(clientState.sendOps).toHaveBeenCalledWith(
+      'wf-1',
+      expect.any(String),
+      [
+        expect.objectContaining({
+          op: 'delete_node',
+          node_id: 'during-reconnect'
+        })
+      ]
+    )
+  })
+
   it('does not carry post-snapshot edits across a workflow retarget', async () => {
     const { enqueue, workflowId } = mountFollower(
       'wf-1',
