@@ -1,5 +1,6 @@
 import { useEventListener } from '@vueuse/core'
 
+import { reportError } from '@/platform/telemetry/reportError'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { createUuidv4 } from '@/utils/uuid'
 import {
@@ -10,13 +11,19 @@ import {
 const CANVAS_CLIPBOARD_KEY = 'litegrapheditor_clipboard'
 const CANVAS_CLIPBOARD_ID_KEY = 'litegrapheditor_clipboard_id'
 
-/** Identifies the last in-app copy. Only the id, never the payload. */
-export const LAST_COPY_ID_KEY = 'Comfy.Clipboard.LastCopyId'
+export const LAST_KEYBOARD_COPY_ID_KEY = 'Comfy.Clipboard.LastCopyId'
 
-const clipboardHTMLWrapper = (id: string | null) => [
-  `<meta charset="utf-8"><div><span ${id ? `data-copy-id="${id}" ` : ''}data-comfy-metadata="`,
-  '"></span></div><span style="white-space:pre-wrap;">Text</span>'
-]
+const clipboardHtmlPattern =
+  /^<meta charset="utf-8"><div><span data-(?:comfy-)?metadata="([A-Za-z0-9+/=]+)"><\/span><\/div><span style="white-space:pre-wrap;">Text<\/span>$/
+
+function clipboardHtml(base64Data: string): string {
+  return `<meta charset="utf-8"><div><span data-comfy-metadata="${base64Data}"></span></div><span style="white-space:pre-wrap;">Text</span>`
+}
+
+export function readClipboardMetadata(html: string): string | undefined {
+  return html.match(clipboardHtmlPattern)?.[1]
+}
+
 const clipboardByteChunkSize = 0x8000
 
 function bytesToBinaryString(bytes: Uint8Array): string {
@@ -39,6 +46,11 @@ function bytesToBinaryString(bytes: Uint8Array): string {
 
 function encodeClipboardData(data: string): string {
   return btoa(bytesToBinaryString(new TextEncoder().encode(data)))
+}
+
+export function decodeClipboardData(base64Data: string): unknown {
+  const bytes = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0))
+  return JSON.parse(new TextDecoder().decode(bytes))
 }
 
 /**
@@ -66,23 +78,22 @@ export const useCopy = () => {
     const canvas = canvasStore.canvas
     if (canvas?.selectedItems) {
       const serializedData = canvas.copyToClipboard()
-      // Before the clipboard write, so the two can only diverge safely.
-      let copyId: string | null = null
+      const lastCopyId = createUuidv4()
       try {
-        const id = createUuidv4()
-        localStorage.setItem(LAST_COPY_ID_KEY, id)
-        copyId = id
+        localStorage.setItem(LAST_KEYBOARD_COPY_ID_KEY, lastCopyId)
       } catch (error) {
-        console.error(error)
+        reportError(error, {
+          errorType: 'error_saving_clipboard_copy_id',
+          surface: 'graph'
+        })
       }
       keyboardCopyId = localStorage.getItem(CANVAS_CLIPBOARD_ID_KEY)
       try {
-        const base64Data = encodeClipboardData(serializedData)
-        // clearData doesn't remove images from clipboard
-        e.clipboardData?.setData(
-          'text/html',
-          clipboardHTMLWrapper(copyId).join(base64Data)
+        const base64Data = encodeClipboardData(
+          JSON.stringify({ ...JSON.parse(serializedData), copyId: lastCopyId })
         )
+        // clearData doesn't remove images from clipboard
+        e.clipboardData?.setData('text/html', clipboardHtml(base64Data))
       } catch (error) {
         console.error(error)
       }
