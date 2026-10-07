@@ -1,8 +1,5 @@
 import _ from 'es-toolkit/compat'
-import type {
-  IContextMenuValue,
-  LGraphNode
-} from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 import { app, ComfyApp } from '@/scripts/app'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
@@ -148,17 +145,20 @@ app.registerExtension({
       }
     }
   ],
-  getNodeMenuItems(node: LGraphNode): (IContextMenuValue | null)[] {
-    if (ComfyApp.clipspace_return_node || !isImageNode(node)) return []
+  beforeRegisterNodeDef(nodeType: typeof LGraphNode) {
+    const original = nodeType.prototype.getExtraMenuOptions
+    nodeType.prototype.getExtraMenuOptions = function (canvas, options) {
+      const extra = original?.call(this, canvas, options) ?? []
+      if (ComfyApp.clipspace_return_node || !isImageNode(this)) return extra
 
-    return [
-      {
+      options.push({
         content: 'Open in MaskEditor | Image Canvas',
         callback: markCoreMediaMenuCallback(() => {
-          useMaskEditor().openMaskEditor(node)
+          useMaskEditor().openMaskEditor(this)
         }, 'preview')
-      }
-    ]
+      })
+      return extra
+    }
   },
   init() {
     // Set up ComfyApp static methods for plugin compatibility (deprecated)
