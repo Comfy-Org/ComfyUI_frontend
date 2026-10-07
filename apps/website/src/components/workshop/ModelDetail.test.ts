@@ -1320,6 +1320,17 @@ describe('ModelDetail', () => {
     }
   )
 
+  it('lists the only sample of a model that cannot run here', async () => {
+    await mountDetail({ model: { ...model, examples: [model.examples[0]] } })
+
+    const cards = within(screen.getByTestId('samples-section')).getAllByTestId(
+      'example-card'
+    )
+    expect(cards.map((card) => card.getAttribute('aria-label'))).toEqual([
+      'Start and end frame: View sample'
+    ])
+  })
+
   it('lets the reader look through the samples of a model that cannot run here', async () => {
     const second = {
       ...model.examples[0],

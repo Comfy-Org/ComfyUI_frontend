@@ -50,7 +50,6 @@ const samples = computed(() =>
       @download="emit('download', $event)"
     />
     <ExamplesTab
-      v-if="samples.length > 1"
       :examples="samples"
       :gallery-label="model.name"
       :active-id
