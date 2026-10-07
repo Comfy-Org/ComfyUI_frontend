@@ -6,6 +6,7 @@ import { createI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import CurrentUserButton from './CurrentUserButton.vue'
@@ -183,5 +184,20 @@ describe('CurrentUserButton', () => {
 
     expect(screen.getByText('Workspace Popover Content')).toBeInTheDocument()
     expect(screen.queryByText('Popover Content')).not.toBeInTheDocument()
+  })
+
+  it('opens the popover when the missing-nodes message asks for the deployment switcher', async () => {
+    mockIsCloud.value = true
+    useTeamWorkspaceStore().initState = 'ready'
+    renderComponent()
+    expect(
+      screen.queryByText('Workspace Popover Content')
+    ).not.toBeInTheDocument()
+
+    useDeploymentPickStore().requestSwitcherOpen()
+
+    expect(
+      await screen.findByText('Workspace Popover Content')
+    ).toBeInTheDocument()
   })
 })

@@ -10,7 +10,8 @@
      clears it from the panel's footer. A pick the listing no longer has
      shows as Comfy Cloud, which is what ingest serves it. When a listing
      shows this page now runs on other nodes than it booted with (changed
-     elsewhere), a notice under the label offers a reload. -->
+     elsewhere), a notice under the label offers a reload. The missing-nodes
+     message can ask for it to open (BE-19374). -->
 <template>
   <div v-if="isVisible" class="relative" data-testid="deployment-switcher">
     <button
@@ -101,7 +102,7 @@
 <script setup lang="ts">
 import { onClickOutside } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { computed, onMounted, ref, useTemplateRef } from 'vue'
+import { computed, onMounted, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -126,6 +127,16 @@ const {
 } = storeToRefs(store)
 
 const isOpen = ref(false)
+
+watch(
+  () => store.switcherOpenRequested,
+  (requested) => {
+    if (!requested) return
+    isOpen.value = true
+    store.switcherOpenRequested = false
+  },
+  { immediate: true }
+)
 const trigger = useTemplateRef('trigger')
 const panel = useTemplateRef('panel')
 

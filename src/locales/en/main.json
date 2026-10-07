@@ -4713,7 +4713,10 @@
       "applyChanges": "Apply Changes",
       "viewInManager": "View in Manager",
       "collapse": "Collapse",
-      "expand": "Expand"
+      "expand": "Expand",
+      "runsOn": "Runs on:",
+      "andMore": "and {count} more",
+      "noDeploymentRunsIt": "No deployment in this workspace has all of these nodes."
     },
     "missingModels": {
       "import": "Import",

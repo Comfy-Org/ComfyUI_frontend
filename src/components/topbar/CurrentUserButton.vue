@@ -1,6 +1,6 @@
 <!-- A button that shows workspace icon (Cloud) or user avatar -->
 <template>
-  <div>
+  <div ref="root">
     <Button
       v-if="isLoggedIn"
       class="p-1 hover:bg-transparent"
@@ -60,13 +60,14 @@
 import { storeToRefs } from 'pinia'
 import Popover from '@/components/common/ImperativePopover.vue'
 import Skeleton from 'primevue/skeleton'
-import { computed, defineAsyncComponent, ref } from 'vue'
+import { computed, defineAsyncComponent, ref, useTemplateRef, watch } from 'vue'
 
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { isCloud } from '@/platform/distribution/types'
+import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -122,4 +123,15 @@ const closePopover = () => {
 const onPopoverShow = () => {
   workspacePopoverContent.value?.refreshBalance()
 }
+
+const root = useTemplateRef('root')
+const { switcherOpenRequested } = storeToRefs(useDeploymentPickStore())
+
+// The missing-nodes message asks for the deployment switcher, which lives in
+// this popover (BE-19374); only the button on screen opens it.
+watch(switcherOpenRequested, (requested) => {
+  const anchor = root.value
+  if (!requested || !anchor || anchor.getClientRects().length === 0) return
+  popover.value?.show(new MouseEvent('click'), anchor)
+})
 </script>
