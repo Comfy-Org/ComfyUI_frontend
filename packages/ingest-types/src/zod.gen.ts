@@ -3362,6 +3362,10 @@ export const zGetExtensionsResponse = z.array(z.string())
  * Success
  */
 export const zGetFeaturesResponse = z.object({
+  'agent-starter-prompt-set': z
+    .enum(['control', 'test'])
+    .optional()
+    .default('control'),
   free_tier_balance: z
     .object({
       allowance: z.number().int(),

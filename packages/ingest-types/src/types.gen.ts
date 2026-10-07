@@ -7756,6 +7756,10 @@ export type GetFeaturesResponses = {
    */
   200: {
     /**
+     * Authenticated assignment for the Agent starter-prompt experiment. Current Cloud responses include it and default to control when the caller is unauthenticated, evaluation is unavailable, or no treatment is assigned. It remains optional in the client contract so older environments and partial feature fixtures fail closed. Reading this field does not constitute experiment exposure; the frontend emits the custom exposure event only after rendering the starter prompt surface.
+     */
+    'agent-starter-prompt-set'?: 'control' | 'test'
+    /**
      * Free-tier job allowance for an authenticated non-paid (FREE-tier) user in the rollout. Absent for paid users and unauthenticated requests. Synthesized from config before a grant row exists so a brand-new user still sees their full allowance.
      */
     free_tier_balance?: {
