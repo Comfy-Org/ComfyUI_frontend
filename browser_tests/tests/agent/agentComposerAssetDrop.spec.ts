@@ -72,7 +72,7 @@ test.describe('Agent composer asset drop', { tag: '@cloud' }, () => {
   }
 
   test(
-    'previews a video from the keyboard and cleans it up with its attachment',
+    'previews a video from the keyboard and restores focus on Escape',
     { tag: '@ui' },
     async ({ page }) => {
       const agentPanel = new AgentPanel(page)
