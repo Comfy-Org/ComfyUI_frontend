@@ -130,6 +130,41 @@ test.describe('Homepage @smoke', () => {
     expect(ctaBox!.width).toBeLessThan(columnBox!.width * 0.7)
   })
 
+  test('FeaturedWorkflowsSection arrows stay clear of the slide text on mobile @mobile', async ({
+    page
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    const carousel = page.locator('[aria-roledescription="carousel"]')
+    await carousel.scrollIntoViewIfNeeded()
+
+    const boxes = await Promise.all(
+      [
+        carousel.getByRole('heading', { name: 'Product Advertisement Video' }),
+        carousel.getByText('Rob', { exact: true }),
+        carousel.getByRole('button', { name: 'Previous featured workflow' }),
+        carousel.getByRole('button', { name: 'Next featured workflow' })
+      ].map((locator) => locator.boundingBox())
+    )
+    const [title, author, prev, next] = boxes.map((box) => {
+      expect(box).not.toBeNull()
+      return box!
+    })
+    const arrows = {
+      left: prev.x,
+      right: next.x + next.width,
+      top: Math.min(prev.y, next.y),
+      bottom: Math.max(prev.y + prev.height, next.y + next.height)
+    }
+    const clearOfArrows = (box: typeof title) =>
+      box.x + box.width <= arrows.left ||
+      box.x >= arrows.right ||
+      box.y + box.height <= arrows.top ||
+      box.y >= arrows.bottom
+
+    expect(clearOfArrows(title)).toBe(true)
+    expect(clearOfArrows(author)).toBe(true)
+  })
+
   test('CaseStudySpotlight CTA has breathing room above it on mobile @mobile', async ({
     page
   }) => {
