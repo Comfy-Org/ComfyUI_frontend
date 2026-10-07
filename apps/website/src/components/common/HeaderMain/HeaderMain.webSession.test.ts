@@ -62,6 +62,7 @@ const LIVE_SESSION = {
   status: 200,
   body: {
     absolute_expires_at: '2099-01-01T00:00:00Z',
+    has_personal_workspace: true,
     expires_at: '2099-01-01T00:00:00Z',
     csrf_token: 'csrf',
     user: {
