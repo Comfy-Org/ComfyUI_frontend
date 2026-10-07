@@ -1,5 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
@@ -49,7 +49,10 @@ describe('collectMediaUiDiagnostics', () => {
     const audioRoot = document.createElement('div')
     audioRoot.dataset.nodeId = '9'
     audioRoot.append(audioElement)
-    document.body.append(imageRoot, audioRoot)
+    const mediaRoot = document.createElement('div')
+    mediaRoot.append(imageRoot, audioRoot)
+    document.body.append(mediaRoot)
+    onTestFinished(() => mediaRoot.remove())
 
     const outputs = new Map<LGraphNode, NodeExecutionOutput>([
       [image, { images: [{ filename: 'private-output.png' }] }],
