@@ -98,8 +98,8 @@ test('the workflow API tab opens with the key action and what it needs beside th
 
   const action = await frame(page.getByTestId('api-get-key'))
   const code = await frame(page.getByTestId('workflow-api-snippet'))
-  expect(action.y).toBeLessThanOrEqual(code.y)
-  expect(action.x).toBeGreaterThanOrEqual(code.x + code.width)
+  expect(action.y).toBeLessThan(code.y + code.height)
+  expect(action.x + action.width).toBeLessThanOrEqual(code.x)
 })
 
 test('@mobile the workflow example output keeps its compact height and shows the whole picture', async ({

@@ -236,7 +236,7 @@ for (const { path, name } of [
       bar.getByRole('link', { name: 'Back to apps' })
     ).toHaveAttribute('href', '/hub/apps/')
     await expect(page.getByTestId('desktop-nav-links')).toHaveCount(0)
-    await expect(page.locator('footer')).toHaveCount(0)
+    await expect(page.getByRole('contentinfo')).toHaveCount(0)
     await expect(
       page.getByRole('navigation', { name: 'Breadcrumb' })
     ).toHaveCount(0)

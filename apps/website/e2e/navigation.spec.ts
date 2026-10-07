@@ -269,7 +269,7 @@ test.describe('Desktop dropdown @interaction', () => {
             await trigger.boundingBox(),
             await panel.boundingBox()
           ]
-          return at && under ? Math.round(under.x - at.x) : undefined
+          return at && under ? Math.abs(Math.round(under.x - at.x)) : undefined
         })
         .toBe(0)
     })

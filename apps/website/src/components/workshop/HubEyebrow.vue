@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ChevronLeft } from '@lucide/vue'
+import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -16,7 +17,7 @@ const CRUMB_KEY = {
   workflows: 'workshop.hub.workflows',
   apps: 'workshop.catalogue.apps'
 } as const
-const crumbs =
+const crumbs = computed(() =>
   section === 'workflows' || section === 'apps'
     ? [
         {
@@ -27,6 +28,7 @@ const crumbs =
         { label: t(CRUMB_KEY[section]) }
       ]
     : undefined
+)
 </script>
 
 <template>

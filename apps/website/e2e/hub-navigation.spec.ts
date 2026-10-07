@@ -97,7 +97,7 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
     {
       from: 'explore',
       to: 'workflows',
-      copy: 'Turn your ideas into finished results'
+      copy: 'Open one, change any step'
     },
     {
       from: 'apps',
@@ -400,11 +400,6 @@ for (const { section, openCategory } of [
     section: 'models',
     openCategory: (page: Page) =>
       page.goto('/hub/models/?useCase=generate-images')
-  },
-  {
-    section: 'workflows',
-    openCategory: (page: Page) =>
-      page.getByRole('button', { name: 'Browse all workflows' }).click()
   }
 ] as const) {
   test(`the ${section} search fills the toolbar row in and out of a category`, async ({

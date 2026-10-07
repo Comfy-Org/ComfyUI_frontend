@@ -207,7 +207,9 @@ test('withholds workflow discovery and direct pages when the workflow flag is of
   await expect(
     page.getByRole('heading', { level: 1, name: /Grok Imagine/ })
   ).toBeVisible()
-  await expect(page.getByRole('heading', { name: 'Workflows' })).toHaveCount(0)
+  await expect(
+    page.getByRole('heading', { level: 1, name: 'Workflows', exact: true })
+  ).toHaveCount(0)
   await expect(page.getByTestId('workflow-catalogue')).toHaveCount(0)
   await page.goto('/hub/workflows/change-material/')
   await expect(
@@ -323,7 +325,13 @@ test('the workflows half narrows to the model it runs on, from the menu and from
   const outcomes = page
     .getByTestId('workflow-catalogue')
     .getByTestId('workshop-model-card')
-  await expect(outcomes).toHaveCount(30)
+  // Browsing, every workflow sits in its Image or Video row once.
+  const listed = page
+    .locator(
+      '[data-testid="workflow-shelf-image"], [data-testid="workflow-shelf-video"]'
+    )
+    .getByTestId('workshop-model-card')
+  await expect(listed).toHaveCount(30)
 
   await page.getByTestId('workshop-filter').click()
   await page.getByTestId('workshop-facet-model').click()
@@ -339,7 +347,7 @@ test('the workflows half narrows to the model it runs on, from the menu and from
   // Clearing gives the whole catalogue back, not just the badge.
   await page.getByTestId('workshop-filter-clear').click()
   await expect(page.getByTestId('workshop-filter-count')).toHaveCount(0)
-  await expect(outcomes).toHaveCount(30)
+  await expect(listed).toHaveCount(30)
 
   await page.goto('/hub/models/?type=workflows&model=LTX-2.3')
   await expect(page).toHaveURL('/hub/workflows/?model=LTX-2.3')
@@ -642,7 +650,7 @@ test('the workflow facts link the model files it needs and its way back', async 
   ).toHaveAttribute('href', '/hub/models/local/qwen-image-vae/')
 })
 
-test('a workflow card spends the tag line on its name', async ({
+test('a workflow card keeps two rows for its name and carries its tag', async ({
   page,
   context
 }) => {
@@ -671,12 +679,11 @@ test('a workflow card spends the tag line on its name', async ({
   )
   expect([...new Set(rows)]).toEqual([2])
 
-  // The heading above the row already names the kind, so the card does not
-  // repeat it under a name that needed the room.
-  await expect(cards.getByTestId('model-card-task')).toHaveCount(0)
+  // Every card carries its tag under the name, in the rows as in a search.
+  await expect(cards.getByTestId('model-card-task')).toHaveCount(
+    await cards.count()
+  )
 
-  // Searching takes the headings away, and with them the only other place the
-  // kind is written, so there every card carries its tag again.
   await page.goto('/hub/workflows/?q=video')
   await expect(cards.first()).toBeVisible()
   const found = await cards.count()

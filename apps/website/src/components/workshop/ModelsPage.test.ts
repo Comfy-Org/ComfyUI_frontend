@@ -164,6 +164,28 @@ describe('Models page entry', () => {
     }
   )
 
+  it('lays the breadcrumb in when the persisted landing swaps to workflows', async () => {
+    workflowsEnabled.value = true
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>().mockResolvedValue(Response.json(workshopPages))
+    )
+    enabled.value = true
+    const { rerender } = render(ModelsPage, {
+      props: { section: 'explore', heading: 'Section heading' }
+    })
+    await screen.findByRole('heading', { name: 'Section heading' })
+    expect(screen.queryByRole('navigation', { name: 'Breadcrumb' })).toBeNull()
+
+    await rerender({ section: 'workflows', heading: 'Section heading' })
+
+    expect(
+      within(screen.getByRole('navigation', { name: 'Breadcrumb' })).getByText(
+        'Workflows'
+      )
+    ).toHaveAttribute('aria-current', 'page')
+  })
+
   it('adds the way back when the persisted landing swaps to a section', async () => {
     vi.stubGlobal(
       'fetch',
