@@ -89,7 +89,7 @@ class TestTwoGrowing extends LGraphNode {
   constructor() {
     super('Test Two Growing')
     const mode = this.addWidget('combo', 'mode', 'creative', () => {}, {
-      values: ['creative', 'faithful']
+      values: ['creative', 'faithful', 'second']
     })
     let selected: unknown = 'creative'
     Object.defineProperty(mode, 'value', {
@@ -97,10 +97,15 @@ class TestTwoGrowing extends LGraphNode {
       get: () => selected,
       set: (next: unknown) => {
         selected = next
-        const mounted = this.widgets?.some(({ name }) => name === 'mode.a')
-        if (next === 'faithful' && mounted !== true) {
+        this.widgets = this.widgets?.filter(
+          ({ name }) => name !== 'mode.a' && name !== 'mode.b'
+        )
+        if (next === 'faithful') {
           this.addWidget('number', 'mode.a', 80, () => {})
           this.addWidget('number', 'mode.b', 70, () => {})
+        } else if (next === 'second') {
+          this.addWidget('number', 'mode.a', 40, () => {})
+          this.addWidget('number', 'mode.b', 30, () => {})
         }
       }
     })
@@ -746,6 +751,52 @@ describe('LiveGraphApplier', () => {
       { name: 'mode', value: 'faithful' },
       { name: 'mode.a', value: 91 },
       { name: 'mode.b', value: 70 }
+    ])
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('applies a mounted child after the selector rebuilds its widgets', () => {
+    const { graph, doc, applyCollected } = setup({
+      nodes: [
+        {
+          id: 1,
+          type: 'TestTwoGrowing',
+          pos: [0, 0],
+          size: [210, 100],
+          widgets_values: ['faithful', 91, 71]
+        }
+      ],
+      links: []
+    })
+    applyCollected()
+
+    const remote = new Y.Doc()
+    Y.applyUpdate(remote, Y.encodeStateAsUpdate(doc))
+    const before = Y.encodeStateVector(doc)
+    remote.transact(() => {
+      const node = nodesMap(remote).get('1')
+      if (!(node instanceof Y.Map)) throw new Error('node storage')
+      node.set(
+        'widgets',
+        new Y.Map<unknown>([
+          ['mode.a', 92],
+          ['_extra_2', 72],
+          ['mode', 'second']
+        ])
+      )
+    })
+    Y.applyUpdate(doc, Y.encodeStateAsUpdate(remote, before))
+    remote.destroy()
+    applyCollected()
+
+    expect(
+      graph
+        .getNodeById(toNodeId(1))
+        ?.widgets?.map(({ name, value }) => ({ name, value }))
+    ).toEqual([
+      { name: 'mode', value: 'second' },
+      { name: 'mode.a', value: 92 },
+      { name: 'mode.b', value: 72 }
     ])
     expect(reportError).not.toHaveBeenCalled()
   })

@@ -1125,20 +1125,22 @@ function isLinkPresent(
   )
 }
 
-/** Rank of a not-yet-mounted document name; past every overflow position. */
+/** Rank of a not-yet-mounted document name; past every live/overflow position. */
 const MOUNTED_LAST = Number.MAX_SAFE_INTEGER
 
 /**
- * Apply order for a document widget map: live names first, then overflow
- * aliases by position, then names no widget carries yet. Unresolved entries
- * are retried after each round, so selectors can mount widgets at any depth.
+ * Apply order for a document widget map: live widgets in their positional
+ * order, then overflow aliases by position, then names no widget carries yet.
+ * The live order keeps a selector ahead of children it may rebuild. Unresolved
+ * entries are retried after each round, so selectors can mount widgets at any
+ * depth.
  */
 function widgetEntryRank(node: LGraphNode, name: string): number {
+  const live = serializableWidgets(node)
+  const liveIndex = live.findIndex((widget) => widget.name === name)
+  if (liveIndex !== -1) return liveIndex
   const index = overflowWidgetIndex(name)
-  if (index !== null) return index
-  return node.widgets?.some((widget) => widget.name === name)
-    ? -1
-    : MOUNTED_LAST
+  return index === null ? MOUNTED_LAST : live.length + index
 }
 
 function isWidgetEntry(

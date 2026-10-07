@@ -220,6 +220,27 @@ export class HostDoc {
     )
   }
 
+  /** Test-only replacement preserving the caller's named-widget key order. */
+  replaceDocumentWidgets(
+    nodeId: number,
+    entries: readonly (readonly [string, unknown])[]
+  ): HostFrame {
+    const before = Y.encodeStateVector(this.doc)
+    const node = nodesMap(this.doc).get(String(nodeId))
+    if (!(node instanceof Y.Map)) {
+      throw new Error(`Host node ${String(nodeId)} does not exist`)
+    }
+    const widgets = new Y.Map<unknown>()
+    for (const [name, value] of entries) widgets.set(name, value)
+    node.set('widgets', widgets)
+    this.seq += 1
+    return this.updateFrame(
+      Y.encodeStateAsUpdate(this.doc, before),
+      HOST_ACTOR,
+      []
+    )
+  }
+
   // A batch the client minted itself (envelope included), answered the way
   // the relay answers a human write: one `doc_ops_result`, then the delta as
   // a `doc_update` when anything landed. The applier stays the only judge.

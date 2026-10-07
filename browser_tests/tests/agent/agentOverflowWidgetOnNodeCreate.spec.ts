@@ -64,6 +64,12 @@ const nodeDef: ComfyNodeDef = {
               inputs: {
                 required: { a: intSlider(80), b: intSlider(70) }
               }
+            },
+            {
+              key: 'second',
+              inputs: {
+                required: { a: intSlider(40), b: intSlider(30) }
+              }
             }
           ]
         }
@@ -199,6 +205,24 @@ test.describe(
       await expect(
         node.getByRole('spinbutton', { name: 'mode.a' })
       ).toHaveValue('91')
+
+      // A later frame can carry a child before the selector that rebuilds
+      // the group. The selector must run first so neither saved child value
+      // is overwritten by the newly selected option's defaults.
+      hostSocket.send(
+        host.replaceDocumentWidgets(NODE_ID, [
+          ['mode.a', 92],
+          ['_extra_2', 72],
+          ['mode', 'second']
+        ])
+      )
+      await expect(node.getByText('second', { exact: true })).toBeVisible()
+      await expect(
+        node.getByRole('spinbutton', { name: 'mode.a' })
+      ).toHaveValue('92')
+      await expect(
+        node.getByRole('spinbutton', { name: 'mode.b' })
+      ).toHaveValue('72')
     })
   }
 )
