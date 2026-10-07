@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 const mocks = vi.hoisted(() => ({
+  isCloud: false,
+  registryDialog: vi.fn(),
   createSession: vi.fn(),
   startCreateFlow: vi.fn(),
   fromLGraphNode: vi.fn(),
@@ -13,6 +15,16 @@ const mocks = vi.hoisted(() => ({
   registerExtension: vi.fn(),
   show: vi.fn(),
   toast: vi.fn()
+}))
+
+vi.mock('@/platform/distribution/types', () => ({
+  get isCloud() {
+    return mocks.isCloud
+  }
+}))
+
+vi.mock('./composables/useCustomNodePacksDialog', () => ({
+  useCustomNodePacksDialog: () => ({ show: mocks.registryDialog })
 }))
 
 vi.mock('@/i18n', () => ({
@@ -62,6 +74,7 @@ const node = {} as LGraphNode
 
 describe('customNodeCanvasMenuItems', () => {
   beforeEach(() => {
+    mocks.isCloud = false
     mocks.packs.value = []
     mocks.refresh.mockReset().mockResolvedValue(undefined)
     mocks.createSession.mockReset().mockResolvedValue({ id: 'session-1' })
@@ -113,6 +126,7 @@ describe('customNodeCanvasMenuItems', () => {
 
 describe('customNodeNodeMenuItems', () => {
   beforeEach(() => {
+    mocks.isCloud = false
     mocks.packs.value = [
       { revisionId: 'alpha-x01234567', name: 'Alpha Pack', uploadedAt: '' }
     ]
@@ -153,5 +167,42 @@ describe('customNodeNodeMenuItems', () => {
 
     mocks.fromLGraphNode.mockReturnValue(null)
     expect(customNodeNodeMenuItems(node)).toHaveLength(0)
+  })
+})
+
+describe('Cloud registry graph menus', () => {
+  beforeEach(() => {
+    mocks.isCloud = true
+    mocks.registryDialog.mockReset()
+    mocks.refresh.mockReset()
+    mocks.fromLGraphNode.mockReset()
+    mocks.createSession.mockReset()
+    mocks.startCreateFlow.mockReset()
+  })
+
+  it('opens the registry without listing or creating private packs', () => {
+    const items = customNodeCanvasMenuItems()
+    expect(items).toHaveLength(1)
+    expect(items[0].content).toBe('customNodePacks.registry.title')
+    ;(items[0].callback as () => void)()
+    expect(mocks.registryDialog).toHaveBeenCalledOnce()
+    expect(mocks.refresh).not.toHaveBeenCalled()
+    expect(mocks.startCreateFlow).not.toHaveBeenCalled()
+    expect(mocks.createSession).not.toHaveBeenCalled()
+  })
+
+  it('does not expose an editor for immutable Cloud pack nodes', () => {
+    expect(customNodeNodeMenuItems(node)).toEqual([])
+    expect(mocks.fromLGraphNode).not.toHaveBeenCalled()
+    expect(mocks.refresh).not.toHaveBeenCalled()
+    expect(mocks.createSession).not.toHaveBeenCalled()
+  })
+
+  it('does not warm a private-upload cache during Cloud startup', () => {
+    const extension = mocks.registerExtension.mock.calls[0][0] as {
+      setup: () => void
+    }
+    extension.setup()
+    expect(mocks.refresh).not.toHaveBeenCalled()
   })
 })

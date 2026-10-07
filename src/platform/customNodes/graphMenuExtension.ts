@@ -1,6 +1,7 @@
 import { t } from '@/i18n'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { isCloud } from '@/platform/distribution/types'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { app } from '@/scripts/app'
@@ -10,6 +11,7 @@ import { useCustomNodeEditor } from './composables/useCustomNodeEditor'
 import { useCustomNodeEditorDialog } from './composables/useCustomNodeEditorDialog'
 import type { UploadedNodePack } from './composables/useCustomNodePacks'
 import { useCustomNodePacks } from './composables/useCustomNodePacks'
+import { useCustomNodePacksDialog } from './composables/useCustomNodePacksDialog'
 import { useCustomNodeCreateFlow } from './composables/useCustomNodeCreateFlow'
 import { findOwnedPackForModule } from './utils/packIdentity'
 
@@ -50,6 +52,14 @@ async function createNodeInPack(pack: UploadedNodePack) {
 
 /** Menu builders exported for tests; menus must be assembled synchronously. */
 export function customNodeCanvasMenuItems(): IContextMenuValue[] {
+  if (isCloud) {
+    return [
+      {
+        content: t('customNodePacks.registry.title'),
+        callback: () => useCustomNodePacksDialog().show()
+      }
+    ]
+  }
   const { packs, refresh } = useCustomNodePacks()
   // Stale-while-revalidate: build from the cached list now, refresh for the
   // next menu open in the background.
@@ -94,6 +104,7 @@ export function customNodeCanvasMenuItems(): IContextMenuValue[] {
 }
 
 export function customNodeNodeMenuItems(node: LGraphNode): IContextMenuValue[] {
+  if (isCloud) return []
   const definition = useNodeDefStore().fromLGraphNode(node)
   const { packs, refresh } = useCustomNodePacks()
   // Stale-while-revalidate: decide from the cached list now, refresh for the
@@ -114,6 +125,7 @@ export function customNodeNodeMenuItems(node: LGraphNode): IContextMenuValue[] {
 app.registerExtension({
   name: 'Comfy.CustomNodePacks.GraphMenu',
   setup() {
+    if (isCloud) return
     // Warm the pack cache so the first right-click can already decide
     // whether a node is one of the workspace's own.
     void useCustomNodePacks()
