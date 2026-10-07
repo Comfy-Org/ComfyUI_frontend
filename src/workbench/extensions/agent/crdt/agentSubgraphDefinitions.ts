@@ -375,24 +375,90 @@ function nestedStoredDefinitions(
   return nested instanceof Y.Map ? storedDefinitions(nested) : []
 }
 
-/** Resolve one definition at any nesting depth; duplicate ids are unreadable. */
-function definitionById(doc: Y.Doc, id: string): Y.Map<unknown> | null {
-  const root = definitionsMap(doc)
-  if (!root) return null
-  const pending = storedDefinitions(root)
+const MAX_INDEXED_DEFINITIONS = 100_000
+
+interface DefinitionIndexState {
+  root: Y.Map<unknown> | null
+  dirty: boolean
+  overflow: boolean
+  values: Map<string, Y.Map<unknown> | null>
+}
+
+const definitionIndexes = new WeakMap<Y.Doc, DefinitionIndexState>()
+
+function transactionChangedDefinitionRoot(
+  transaction: Y.Transaction,
+  root: Y.Map<unknown>
+): boolean {
+  for (const changed of transaction.changedParentTypes.keys()) {
+    if (Object.is(changed, root)) return true
+  }
+  return false
+}
+
+function definitionIndexState(doc: Y.Doc): DefinitionIndexState {
+  const existing = definitionIndexes.get(doc)
+  if (existing) return existing
+  const state: DefinitionIndexState = {
+    root: definitionsMap(doc),
+    dirty: true,
+    overflow: false,
+    values: new Map()
+  }
+  doc.on('afterTransaction', (transaction) => {
+    const root = definitionsMap(doc)
+    if (
+      root !== state.root ||
+      (root && transactionChangedDefinitionRoot(transaction, root))
+    ) {
+      state.root = root
+      state.dirty = true
+    }
+  })
+  definitionIndexes.set(doc, state)
+  return state
+}
+
+function addDefinitionIndexEntry(
+  values: Map<string, Y.Map<unknown> | null>,
+  id: string,
+  definition: Y.Map<unknown>
+): void {
+  const existing = values.get(id)
+  if (existing === undefined) values.set(id, definition)
+  else if (existing !== definition) values.set(id, null)
+}
+
+function rebuildDefinitionIndex(state: DefinitionIndexState): void {
+  state.dirty = false
+  state.overflow = false
+  state.values.clear()
+  if (!state.root) return
+  const pending = storedDefinitions(state.root)
   const seen = new Set<Y.Map<unknown>>()
-  let match: Y.Map<unknown> | null = null
   while (pending.length > 0) {
     const [storageKey, definition] = pending.pop()!
     if (seen.has(definition)) continue
-    seen.add(definition)
-    if (storageKey === id || definition.get('id') === id) {
-      if (match !== null) return null
-      match = definition
+    if (seen.size >= MAX_INDEXED_DEFINITIONS) {
+      state.values.clear()
+      state.overflow = true
+      return
     }
+    seen.add(definition)
+    addDefinitionIndexEntry(state.values, storageKey, definition)
+    const declaredId = definition.get('id')
+    if (typeof declaredId === 'string')
+      addDefinitionIndexEntry(state.values, declaredId, definition)
     pending.push(...nestedStoredDefinitions(definition))
   }
-  return match
+}
+
+/** Resolve one definition at any nesting depth; duplicate ids are unreadable. */
+function definitionById(doc: Y.Doc, id: string): Y.Map<unknown> | null {
+  const state = definitionIndexState(doc)
+  if (state.dirty) rebuildDefinitionIndex(state)
+  if (state.overflow) return null
+  return state.values.get(id) ?? null
 }
 
 export function allSubgraphDefinitions(
