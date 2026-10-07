@@ -1,5 +1,5 @@
 // Per-model markdown twin: every model page has a .md sibling at the same URL,
-// e.g. /p/supported-models/flux-1-dev.md, for agents and the LLMs menu.
+// e.g. /hub/models/local/flux-1-dev.md, for agents and the LLMs menu.
 // Content mirrors the HTML page via the shared model-descriptions module.
 import type { APIRoute } from 'astro'
 
@@ -9,21 +9,24 @@ import {
   isPartnerModel
 } from '@/config/model-descriptions'
 import { buildPricingFact } from '@/config/model-pricing'
-import { models } from '@/config/models'
+import {
+  LOCAL_MODELS_PATH,
+  localModelPath,
+  localModels
+} from '@/config/local-models'
+import type { Model } from '@/config/models'
 
 export function getStaticPaths() {
-  // canonicalSlug entries are 301 aliases of another page — no twin for those.
-  return models
-    .filter((model) => !model.canonicalSlug)
-    .map((model) => ({ params: { slug: model.slug }, props: { model } }))
+  return localModels.map((model) => ({
+    params: { slug: model.slug },
+    props: { model }
+  }))
 }
-
-type Model = (typeof models)[number]
 
 export const GET: APIRoute = ({ props, site }) => {
   const model = props.model as Model
   const base = site ?? 'https://comfy.org'
-  const pageUrl = new URL(`/p/supported-models/${model.slug}/`, base).href
+  const pageUrl = new URL(localModelPath(model.slug), base).href
   const workflowsUrl = model.hubSlug
     ? `https://comfy.org/workflows/model/${model.hubSlug}/`
     : 'https://comfy.org/workflows/'
@@ -76,7 +79,7 @@ export const GET: APIRoute = ({ props, site }) => {
     '6. From Claude Code, Cursor, or Codex over Comfy MCP at https://cloud.comfy.org/mcp: https://docs.comfy.org/agent-tools/mcp.md',
     '',
     `This page as HTML: ${pageUrl}`,
-    `Full model catalog: ${new URL('/p/supported-models/llms.txt', base).href}`
+    `Full model catalog: ${new URL(`${LOCAL_MODELS_PATH}/llms.txt`, base).href}`
   ]
 
   return new Response(lines.join('\n') + '\n', {

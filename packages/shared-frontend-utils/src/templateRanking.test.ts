@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { searchRankBoost } from '@/platform/workflow/templates/utils/templateRanking'
+import { searchRankBoost } from './templateRanking'
 
 describe('searchRankBoost', () => {
   it('treats unset, zero and non-numeric ranks as the same neutral baseline', () => {

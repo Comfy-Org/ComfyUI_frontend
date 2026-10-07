@@ -650,9 +650,6 @@ importers:
       mediabunny:
         specifier: 'catalog:'
         version: 1.53.1
-      minisearch:
-        specifier: 'catalog:'
-        version: 7.2.0
       mixpanel-browser:
         specifier: 'catalog:'
         version: 2.81.0
@@ -1430,6 +1427,9 @@ importers:
       jsonata:
         specifier: 'catalog:'
         version: 2.2.1
+      minisearch:
+        specifier: 'catalog:'
+        version: 7.2.0
     devDependencies:
       '@vitest/coverage-v8':
         specifier: 'catalog:'

@@ -5616,6 +5616,7 @@
     "sendFailed": "Message failed to send",
     "recoveredTurnFailed": "The agent could not complete this response.",
     "sendBusy": "A message is already being sent",
+    "sendTurnInProgress": "This chat still has a response running. Wait for it to finish, or stop it, then send again.",
     "retryAfterSeconds": "You can try again in {seconds}s.",
     "malformedEvent": "The agent sent an event this panel could not read",
     "coachProgress": "{current} of {total}",

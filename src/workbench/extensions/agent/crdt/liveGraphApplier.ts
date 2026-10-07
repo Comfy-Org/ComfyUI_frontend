@@ -26,6 +26,7 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { reportError } from '@/platform/telemetry/reportError'
 import { zComfyNode } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { inputSpecTree } from '@/schemas/nodeDef/inputSpecTree'
 import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
 import type { LinkId } from '@/types/linkId'
 import { parseLinkId, toLinkId } from '@/types/linkId'
@@ -131,6 +132,11 @@ interface DocLink {
   originSlot: number
   target: string
   targetSlot: number
+}
+
+interface ApplyWidgetOptions {
+  documentWidgets?: DocNode['widgets']
+  reportMissing?: boolean
 }
 
 function plain(value: unknown): unknown {
@@ -477,6 +483,84 @@ function serializableWidgets(node: LGraphNode): IBaseWidget[] {
   return (node.widgets ?? []).filter((widget) => widget.serialize !== false)
 }
 
+function supportsDynamicWidgetOverflow(node: LGraphNode): boolean {
+  const inputs = node.constructor.nodeData?.inputs
+  return (
+    inputs !== undefined &&
+    Object.values(inputs).some((spec) =>
+      inputSpecTree(spec).some(({ type }) => type === 'COMFY_DYNAMICCOMBO_V3')
+    )
+  )
+}
+
+const OVERFLOW_WIDGET_NAME_RE = /^_extra_(0|[1-9]\d*)$/
+
+function overflowWidgetIndex(name: string): number | null {
+  const match = OVERFLOW_WIDGET_NAME_RE.exec(name)
+  return match ? Number(match[1]) : null
+}
+
+function documentWidget(
+  node: LGraphNode,
+  name: string
+): IBaseWidget | undefined {
+  return (
+    node.widgets?.find((widget) => widget.name === name) ??
+    overflowWidget(node, name)
+  )
+}
+
+/** The live widget an overflow alias addresses, if the node has that position. */
+function overflowWidget(
+  node: LGraphNode,
+  name: string
+): IBaseWidget | undefined {
+  if (!supportsDynamicWidgetOverflow(node)) return undefined
+  const overflowIndex = overflowWidgetIndex(name)
+  return overflowIndex === null
+    ? undefined
+    : serializableWidgets(node).at(overflowIndex)
+}
+
+/**
+ * Whether `name` is an overflow alias for a position the document also
+ * addresses by the live widget's real name; the named entry wins. Judged
+ * against the node's whole document map so an alias-only partial frame cannot
+ * overwrite the named value.
+ */
+function supersededOverflowAlias(
+  node: LGraphNode,
+  name: string,
+  document: DocNode['widgets']
+): boolean {
+  if (document === undefined || Array.isArray(document)) return false
+  if (node.widgets?.some((widget) => widget.name === name)) return false
+  const positional = overflowWidget(node, name)
+  return positional !== undefined && Object.hasOwn(document, positional.name)
+}
+
+/**
+ * Document entries for widgets that only exist after `configure`: aliases past
+ * the constructed list, and names the constructor did not build but the node
+ * now serializes. `constructed` is the serializable list from before
+ * `configure`; a name that still matches nothing is dropped without a report.
+ */
+function mountedWidgetValues(
+  node: LGraphNode,
+  widgets: DocNode['widgets'],
+  constructed: readonly IBaseWidget[],
+  constructedNames: ReadonlySet<string>
+): Record<string, unknown> | undefined {
+  if (widgets === undefined || Array.isArray(widgets)) return undefined
+  const mounted = Object.entries(widgets).filter(([name]) => {
+    const index = overflowWidgetIndex(name)
+    return index === null
+      ? !constructedNames.has(name)
+      : overflowWidget(node, name) === undefined || index >= constructed.length
+  })
+  return mounted.length === 0 ? undefined : Object.fromEntries(mounted)
+}
+
 /**
  * The document stores an ordinary node's widget values by name; `configure`
  * restores them positionally over the node's serializable widgets, so project
@@ -493,9 +577,17 @@ function positionalWidgetValues(
       (value): WidgetValue => (isWidgetValue(value) ? value : undefined)
     )
   }
-  return serializableWidgets(node).map((widget): WidgetValue => {
-    const value = widgets[widget.name]
-    return widget.name in widgets && isWidgetValue(value) ? value : widget.value
+  return serializableWidgets(node).map((widget, index) => {
+    const alias = `_extra_${index}`
+    const name = Object.hasOwn(widgets, widget.name)
+      ? widget.name
+      : overflowWidget(node, alias) === widget && Object.hasOwn(widgets, alias)
+        ? alias
+        : widget.name
+    const value = widgets[name]
+    return Object.hasOwn(widgets, name) && isWidgetValue(value)
+      ? value
+      : widget.value
   })
 }
 
@@ -808,16 +900,18 @@ export class LiveGraphApplier {
   ): boolean {
     const live = graph.rootGraph.subgraphs.get(definition.id)
     if (!live) return true
-    let previous = state.get(definition.id)
+    const previous = state.get(definition.id)
     if (previous?.live !== live) {
-      const liveDefinition = live.asSerialisable()
-      previous = {
+      state.set(definition.id, {
         live,
-        semantics: definitionSemantics(liveDefinition),
-        layout: definitionPromotedLayout(liveDefinition),
+        // The document seeded this already-loaded graph. Record that seed as
+        // the baseline: runtime node construction can legitimately expand or
+        // remap the serialised definition before the follower's first frame.
+        semantics: definitionSemantics(definition),
+        layout: readDefinitionPromotedLayout(doc, definition.id),
         conflicted: false
-      }
-      state.set(definition.id, previous)
+      })
+      return false
     }
     const layout = readDefinitionPromotedLayout(doc, definition.id)
     if (updateDefinitionConflict(previous, definition, layout)) {
@@ -951,10 +1045,25 @@ export class LiveGraphApplier {
           docNode.id
         )
       } else {
+        const constructed = serializableWidgets(node)
+        const constructedNames = new Set(
+          node.widgets?.map((widget) => widget.name)
+        )
         node.configure({
           ...info,
           widgets_values: positionalWidgetValues(node, docNode.widgets)
         })
+        const mounted = mountedWidgetValues(
+          node,
+          docNode.widgets,
+          constructed,
+          constructedNames
+        )
+        if (mounted)
+          this.applyWidgets(node, mounted, mode, doc, {
+            documentWidgets: docNode.widgets,
+            reportMissing: false
+          })
       }
     }
     floorSizeToContent(node)
@@ -1034,25 +1143,46 @@ export class LiveGraphApplier {
     this.applyWidgets(
       node,
       Object.fromEntries(
-        Object.entries(widgets).filter(([name]) => names.has(name))
+        Object.entries(widgets).filter(([name]) => changed(node, name, names))
       ),
       mode,
-      doc
+      doc,
+      { documentWidgets: widgets }
     )
   }
 
+  /**
+   * `options.documentWidgets` is the node's whole document map. It differs
+   * from `widgets` on partial frames, where alias precedence still depends on
+   * every key. Creation can suppress reports for unmatched names while still
+   * reporting unresolved overflow aliases.
+   */
   private applyWidgets(
     node: LGraphNode,
     widgets: DocNode['widgets'],
     mode: ApplyMode,
-    doc: Y.Doc
+    doc: Y.Doc,
+    options: ApplyWidgetOptions = {}
   ): void {
     if (widgets === undefined) return
     if (node.isSubgraphNode()) {
       this.applySubgraphWidgets(node, widgets, mode, doc)
       return
     }
-    this.applyOrdinaryWidgets(node, widgets)
+    const { documentWidgets = widgets, reportMissing = true } = options
+    let pending = ordinaryWidgetEntries(node, widgets).filter(isWidgetEntry)
+    while (pending.length > 0) {
+      const { resolved, unresolved } = this.applyWidgetRound(
+        node,
+        pending,
+        documentWidgets
+      )
+      if (!resolved) {
+        this.reportMissingWidgets(node, unresolved, reportMissing)
+        return
+      }
+      pending = unresolved
+    }
   }
 
   private applySubgraphWidgets(
@@ -1080,31 +1210,50 @@ export class LiveGraphApplier {
     )
   }
 
-  private applyOrdinaryWidgets(
+  private applyWidgetRound(
     node: LGraphNode,
-    widgets: NonNullable<DocNode['widgets']>
-  ): void {
-    const entries = Array.isArray(widgets)
-      ? serializableWidgets(node).map((widget, index): [string, unknown] => [
-          widget.name,
-          widgets[index]
-        ])
-      : Object.entries(widgets)
-    for (const [name, value] of entries) {
-      if (value === undefined || !isWidgetValue(value)) continue
+    pending: readonly [string, WidgetValue][],
+    documentWidgets: DocNode['widgets']
+  ): { resolved: boolean; unresolved: [string, WidgetValue][] } {
+    const unresolved: [string, WidgetValue][] = []
+    let resolved = false
+    for (const [name, value] of pending) {
+      if (supersededOverflowAlias(node, name, documentWidgets)) continue
       if (this.holdsLocalWrite(node, name, value)) continue
-      const widget = node.widgets?.find((candidate) => candidate.name === name)
-      if (!widget) {
-        this.reportOnce(
-          `widget:${String(node.id)}:${name}`,
-          `Node ${String(node.id)} (${node.type}) has no widget '${name}'`,
-          'agent_graph_widget_missing',
-          { nodeId: node.id, type: node.type, name }
-        )
+      const widget = documentWidget(node, name)
+      if (widget === undefined) {
+        unresolved.push([name, value])
         continue
       }
+      if (
+        widget.name !== name &&
+        this.holdsLocalWrite(node, widget.name, value)
+      )
+        continue
       this.setWidgetValue(node, widget, value)
+      resolved = true
     }
+    return { resolved, unresolved }
+  }
+
+  private reportMissingWidgets(
+    node: LGraphNode,
+    unresolved: readonly [string, WidgetValue][],
+    reportMissing: boolean
+  ): void {
+    for (const [name] of unresolved) {
+      if (reportMissing || overflowWidgetIndex(name) !== null)
+        this.reportMissingWidget(node, name)
+    }
+  }
+
+  private reportMissingWidget(node: LGraphNode, name: string): void {
+    this.reportOnce(
+      `widget:${String(node.id)}:${name}`,
+      `Node ${String(node.id)} (${node.type}) has no widget '${name}'`,
+      'agent_graph_widget_missing',
+      { nodeId: node.id, type: node.type, name }
+    )
   }
 
   private applyConfiguredHostWidgets(
@@ -1371,6 +1520,65 @@ function isLinkPresent(
     current.origin_id === origin.id &&
     current.origin_slot === originSlot
   )
+}
+
+/** Rank of a not-yet-mounted document name; past every live/overflow position. */
+const MOUNTED_LAST = Number.MAX_SAFE_INTEGER
+
+/**
+ * Apply order for a document widget map: live widgets in their positional
+ * order, then overflow aliases by position, then names no widget carries yet.
+ * The live order keeps a selector ahead of children it may rebuild. Unresolved
+ * entries are retried after each round, so selectors can mount widgets at any
+ * depth.
+ */
+function widgetEntryRank(node: LGraphNode, name: string): number {
+  const live = serializableWidgets(node)
+  const liveIndex = live.findIndex((widget) => widget.name === name)
+  if (liveIndex !== -1) return liveIndex
+  const index = overflowWidgetIndex(name)
+  return index === null ? MOUNTED_LAST : live.length + index
+}
+
+function isWidgetEntry(
+  entry: [string, unknown]
+): entry is [string, WidgetValue] {
+  return entry[1] !== undefined && isWidgetValue(entry[1])
+}
+
+/**
+ * Ordinary node widget values by document name, ordered so Y.Map insertion
+ * order cannot decide the outcome (`widgetEntryRank`); a positional list is
+ * read in serializable-widget order.
+ */
+function ordinaryWidgetEntries(
+  node: LGraphNode,
+  widgets: NonNullable<DocNode['widgets']>
+): [string, unknown][] {
+  if (!Array.isArray(widgets)) {
+    return Object.entries(widgets).sort(
+      ([a], [b]) => widgetEntryRank(node, a) - widgetEntryRank(node, b)
+    )
+  }
+  return serializableWidgets(node).map((widget, index) => [
+    widget.name,
+    widgets[index]
+  ])
+}
+
+/**
+ * Whether the changed-name set covers this document key, either directly or
+ * through the live widget an overflow alias resolves to (rejected-op name sets
+ * carry the widget's real name).
+ */
+function changed(
+  node: LGraphNode,
+  name: string,
+  names: ReadonlySet<string>
+): boolean {
+  if (names.has(name)) return true
+  const positional = overflowWidget(node, name)
+  return positional !== undefined && names.has(positional.name)
 }
 
 function promotedInputs(node: LGraphNode): INodeInputSlot[] {
