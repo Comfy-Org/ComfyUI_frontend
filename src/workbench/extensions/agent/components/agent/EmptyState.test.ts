@@ -167,7 +167,7 @@ describe('EmptyState', () => {
       attributeExperiment: true,
       onRendered
     })
-    const text = i18n.global.t('agent.suggestedPrompts.treatment.local.0')
+    const text = i18n.global.t('agent.suggestedPrompts.local.0')
     await user.click(screen.getByRole('button', { name: text }))
 
     expect(onRendered).not.toHaveBeenCalled()

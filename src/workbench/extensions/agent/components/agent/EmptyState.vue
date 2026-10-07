@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -15,14 +15,12 @@ const {
   userName,
   assignment = 'control',
   attributeExperiment = true,
-  onRendered = (_assignment: StarterPromptAssignment) => undefined,
-  onUnmounted: onSurfaceUnmounted = () => undefined
+  onRendered = (_assignment: StarterPromptAssignment) => undefined
 } = defineProps<{
   userName?: string
   assignment?: StarterPromptAssignment
   attributeExperiment?: boolean
   onRendered?: (assignment: StarterPromptAssignment) => void
-  onUnmounted?: () => void
 }>()
 const emit = defineEmits<{
   insert: [text: string, prompt: AgentStarterPromptAttribution]
@@ -39,8 +37,12 @@ const treatmentPromptKey = isCloud
 const hasTreatmentCopy = computed(() =>
   te(`${treatmentPromptKey}.0`, locale.value)
 )
+const renderedAssignment = ref<StarterPromptAssignment>(
+  assignment === 'test' && hasTreatmentCopy.value ? 'test' : 'control'
+)
 const selectedPromptKey = computed(() => {
-  if (assignment !== 'test' || !hasTreatmentCopy.value) return promptKey
+  if (renderedAssignment.value !== 'test' || !hasTreatmentCopy.value)
+    return promptKey
   return treatmentPromptKey
 })
 const prompts = computed(() => {
@@ -55,20 +57,14 @@ const promptLocale = computed(() => {
     : FALLBACK_LOCALE
 })
 
-const eligibleAtMount = ref(false)
-const shouldAttributeExperiment = computed(
-  () => eligibleAtMount.value && hasTreatmentCopy.value
+const eligibleAtMount = attributeExperiment && hasTreatmentCopy.value
+const shouldAttributeExperiment = computed(() =>
+  Boolean(eligibleAtMount && hasTreatmentCopy.value)
 )
-const reportRenderedAssignment = () => {
-  if (shouldAttributeExperiment.value) onRendered(effectiveAssignment.value)
-}
 
 onMounted(() => {
-  eligibleAtMount.value = attributeExperiment && hasTreatmentCopy.value
-  reportRenderedAssignment()
+  if (shouldAttributeExperiment.value) onRendered(effectiveAssignment.value)
 })
-watch([effectiveAssignment, hasTreatmentCopy], reportRenderedAssignment)
-onUnmounted(onSurfaceUnmounted)
 
 /**
  * One emit per click, carrying the slot's stable id rather than its text. Fires

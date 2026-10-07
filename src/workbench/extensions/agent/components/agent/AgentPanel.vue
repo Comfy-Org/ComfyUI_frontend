@@ -82,8 +82,7 @@ const {
   freeUsePlacement = 'control',
   starterPromptAssignment = 'control',
   attributeStarterPromptExperiment = true,
-  onStarterPromptRendered = (_assignment: StarterPromptAssignment) => undefined,
-  onStarterPromptUnmounted = () => undefined
+  onStarterPromptRendered = (_assignment: StarterPromptAssignment) => undefined
 } = defineProps<{
   entries: ConversationEntry[]
   userName?: string
@@ -127,7 +126,6 @@ const {
   starterPromptAssignment?: StarterPromptAssignment
   attributeStarterPromptExperiment?: boolean
   onStarterPromptRendered?: (assignment: StarterPromptAssignment) => void
-  onStarterPromptUnmounted?: () => void
 }>()
 const emit = defineEmits<{
   send: [
@@ -460,7 +458,6 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           :assignment="starterPromptAssignment"
           :attribute-experiment="attributeStarterPromptExperiment"
           :on-rendered="onStarterPromptRendered"
-          :on-unmounted="onStarterPromptUnmounted"
           @insert="
             (text, prompt) => {
               composerRef?.insert(text, prompt)

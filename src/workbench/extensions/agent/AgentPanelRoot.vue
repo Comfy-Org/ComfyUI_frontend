@@ -1323,8 +1323,7 @@ const { variant: freeUsePlacement } = useFreeUsePlacement()
 const {
   assignment: starterPromptAssignment,
   attributeExperiment: attributeStarterPromptExperiment,
-  expose: exposeStarterPromptSet,
-  invalidateSurface: invalidateStarterPromptSurface
+  expose: exposeStarterPromptSet
 } = useStarterPromptSet()
 
 function onFreeUseNotice(metadata: AgentFreeUseNoticeMetadata): void {
@@ -1919,7 +1918,6 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       :starter-prompt-assignment="starterPromptAssignment"
       :attribute-starter-prompt-experiment="attributeStarterPromptExperiment"
       :on-starter-prompt-rendered="exposeStarterPromptSet"
-      :on-starter-prompt-unmounted="invalidateStarterPromptSurface"
       @free-use-notice="onFreeUseNotice"
       @send="onSend"
       @stop="onStop"

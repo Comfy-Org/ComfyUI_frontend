@@ -1,13 +1,11 @@
-import { computed, ref, watch } from 'vue'
+import { computed } from 'vue'
 
 import type { GetFeaturesResponses } from '@comfyorg/ingest-types'
 import { zGetFeaturesResponse } from '@comfyorg/ingest-types/zod'
 
 import {
-  authenticatedRemoteConfigState,
   isAuthenticatedConfigLoaded,
-  remoteConfig,
-  remoteConfigRevision
+  remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
 import { useTelemetry } from '@/platform/telemetry'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
@@ -35,90 +33,29 @@ function resolveAssignment(): {
   }
 }
 
-/**
- * Resolves the server's PostHog assignment once per panel instance. Unknown,
- * missing, inactive, and not-yet-loaded values intentionally stay control.
- * Assignment is passed through the rendered prompt attribution so every
- * experiment event uses the same value; no prompt text or workflow data is
- * used for allocation.
- */
+/** Resolves the current assignment and attributes an eligible rendered arm. */
 export function useStarterPromptSet() {
-  const assigned = ref<StarterPromptAssignment>('control')
-  const exposedAssignment = ref<StarterPromptAssignment>()
-  const renderedSurfaceAssignment = ref<StarterPromptAssignment>()
-  const qaOverride = ref(false)
-  let surfaceRendered = false
+  const resolved = computed(resolveAssignment)
+  const assignment = computed(() =>
+    isAuthenticatedConfigLoaded.value || resolved.value.hasQaOverride
+      ? resolved.value.assignment
+      : 'control'
+  )
+  const attributeExperiment = computed(
+    () => isAuthenticatedConfigLoaded.value && !resolved.value.hasQaOverride
+  )
 
-  const exposeAssignment = () => {
-    if (
-      !surfaceRendered ||
-      renderedSurfaceAssignment.value !== assigned.value ||
-      qaOverride.value ||
-      exposedAssignment.value === assigned.value
-    ) {
+  const expose = (renderedAssignment: StarterPromptAssignment) => {
+    if (!attributeExperiment.value || renderedAssignment !== assignment.value)
       return
-    }
-    exposedAssignment.value = assigned.value
     useTelemetry()?.trackAgentStarterPromptExposure({
-      [`$feature/${STARTER_PROMPT_SET_FLAG}`]: assigned.value
+      [`$feature/${STARTER_PROMPT_SET_FLAG}`]: assignment.value
     })
   }
 
-  const assign = () => {
-    const resolved = resolveAssignment()
-    if (
-      renderedSurfaceAssignment.value !== undefined &&
-      renderedSurfaceAssignment.value !== resolved.assignment
-    ) {
-      // Keep the assignment that produced the currently rendered surface.
-      // A late auth/config update must not turn control copy into treatment
-      // without a matching exposure.
-      assigned.value = renderedSurfaceAssignment.value
-      qaOverride.value = resolved.hasQaOverride
-      return
-    }
-    qaOverride.value = resolved.hasQaOverride
-    assigned.value = resolved.assignment
-    exposeAssignment()
-  }
-
-  const expose = (renderedAssignment?: StarterPromptAssignment) => {
-    // Resolve the assignment before marking the surface rendered. Otherwise a
-    // localized control surface can emit a test exposure before its rendered
-    // assignment mismatch is checked below.
-    if (!isAuthenticatedConfigLoaded.value) return
-    surfaceRendered = false
-    assign()
-    surfaceRendered = true
-    renderedSurfaceAssignment.value = renderedAssignment ?? assigned.value
-    exposeAssignment()
-  }
-
-  const invalidateSurface = () => {
-    surfaceRendered = false
-    exposedAssignment.value = undefined
-    renderedSurfaceAssignment.value = undefined
-  }
-
-  watch(
-    [
-      isAuthenticatedConfigLoaded,
-      remoteConfigRevision,
-      authenticatedRemoteConfigState
-    ],
-    ([authenticated]) => {
-      if (!authenticated) return
-      assign()
-    },
-    { immediate: true }
-  )
-
   return {
-    assignment: computed(() => assigned.value),
-    attributeExperiment: computed(
-      () => isAuthenticatedConfigLoaded.value && !qaOverride.value
-    ),
-    expose,
-    invalidateSurface
+    assignment,
+    attributeExperiment,
+    expose
   }
 }

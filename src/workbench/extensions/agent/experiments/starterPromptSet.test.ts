@@ -49,16 +49,12 @@ describe('useStarterPromptSet', () => {
       useTelemetry()?.trackAgentStarterPromptExposure
     ).not.toHaveBeenCalled()
 
-    expose()
+    expose('test')
     expect(
       useTelemetry()?.trackAgentStarterPromptExposure
     ).toHaveBeenCalledWith({
       [`$feature/${STARTER_PROMPT_SET_FLAG}`]: 'test'
     })
-    expose()
-    expect(
-      useTelemetry()?.trackAgentStarterPromptExposure
-    ).toHaveBeenCalledTimes(1)
   })
 
   it('does not expose a surface rendered before authentication', async () => {
@@ -150,27 +146,29 @@ describe('useStarterPromptSet', () => {
     })
   })
 
-  it('re-exposes when a remounted surface resolves a new assignment', async () => {
+  it('tracks each rendered surface with its current assignment', () => {
     remoteConfig.value = { [STARTER_PROMPT_SET_FLAG]: 'control' }
     authenticatedRemoteConfigState.value = 'authenticated'
-    const { assignment, expose, invalidateSurface } = useStarterPromptSet()
+    const { assignment, expose } = useStarterPromptSet()
 
-    expose()
+    expose('control')
     expect(assignment.value).toBe('control')
     expect(
       useTelemetry()?.trackAgentStarterPromptExposure
     ).toHaveBeenCalledTimes(1)
 
-    invalidateSurface()
     remoteConfig.value = { [STARTER_PROMPT_SET_FLAG]: 'test' }
-    expose()
+    expose('test')
 
-    await vi.waitFor(() => expect(assignment.value).toBe('test'))
+    expect(assignment.value).toBe('test')
     expect(
       useTelemetry()?.trackAgentStarterPromptExposure
     ).toHaveBeenLastCalledWith({
       [`$feature/${STARTER_PROMPT_SET_FLAG}`]: 'test'
     })
+    expect(
+      useTelemetry()?.trackAgentStarterPromptExposure
+    ).toHaveBeenCalledTimes(2)
   })
 
   it('renders QA overrides without attributing experiment events', () => {
