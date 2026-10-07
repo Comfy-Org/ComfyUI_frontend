@@ -276,5 +276,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/setup-frontend
-      - name: Find unused website files, exports and dependencies
-        run: pnpm knip --workspace apps/website
+      - name: Verify website repository integrity
+        run: |
+          pnpm knip --workspace apps/website
+          pnpm --filter @comfyorg/website locale:check
