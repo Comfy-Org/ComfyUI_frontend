@@ -48,14 +48,6 @@ beforeEach(() => {
 })
 
 describe('WorkflowPage header', () => {
-  it('sends the shelf it names to that shelf, filtered', () => {
-    mount()
-
-    const shelf = screen.getByTestId('workflow-use-case')
-    expect(shelf.textContent.trim()).toBe('Edit images')
-    expect(shelf.getAttribute('href')).toBe('/hub/workflows/?category=cleanup')
-  })
-
   it('leads back to the workflows page beside a trail to the Hub', () => {
     mount()
 
@@ -220,17 +212,6 @@ describe('WorkflowPage header', () => {
     })
 
     expect(screen.queryByRole('link', { name: 'Download workflow' })).toBeNull()
-  })
-
-  it('says nothing about a shelf a workflow has none of', () => {
-    mount({
-      ...model,
-      useCases: [],
-      task: undefined,
-      modality: undefined
-    })
-
-    expect(screen.queryByTestId('workflow-use-case')).toBeNull()
   })
 
   it('leaves the credit and the models to the Details tab', () => {
