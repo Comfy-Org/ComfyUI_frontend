@@ -17,19 +17,7 @@ describe('normalizeAnnotatedMediaPathForDetection', () => {
     expect(normalizeAnnotatedMediaPathForDetection(value)).toBe(expected)
   })
 
-  it.for([
-    ['photo.png[input]', 'photo.png'],
-    ['result.png[output]', 'result.png'],
-    ['with spaces.png   [output]', 'with spaces.png']
-  ])('strips Cloud compact annotation from %s', ([value, expected]) => {
-    expect(
-      normalizeAnnotatedMediaPathForDetection(value, {
-        allowCompactSuffix: true
-      })
-    ).toBe(expected)
-  })
-
-  it('does not strip compact annotations in Core mode', () => {
+  it('does not strip compact annotations', () => {
     expect(normalizeAnnotatedMediaPathForDetection('photo.png[input]')).toBe(
       'photo.png[input]'
     )
@@ -62,14 +50,6 @@ describe('getAnnotatedMediaPathTypeForDetection', () => {
     ['photo.png [output]', 'output']
   ])('returns the Core-style annotation type from %s', ([value, expected]) => {
     expect(getAnnotatedMediaPathTypeForDetection(value)).toBe(expected)
-  })
-
-  it('returns the compact annotation type in Cloud mode', () => {
-    expect(
-      getAnnotatedMediaPathTypeForDetection('photo.png[output]', {
-        allowCompactSuffix: true
-      })
-    ).toBe('output')
   })
 
   it('returns undefined when no supported annotation is present', () => {

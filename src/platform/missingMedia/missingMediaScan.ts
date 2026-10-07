@@ -40,6 +40,8 @@ import {
   getMediaPathDetectionNames
 } from './mediaPathDetectionUtil'
 
+const ANNOTATED_NAME_PATTERN = /^(.+?) *(?:\[\w+\])?$/
+
 function isComboWidget(widget: IBaseWidget): widget is IComboWidget {
   return widget.type === 'combo'
 }
@@ -187,18 +189,7 @@ export function isMissingMediaCandidateActive(
   )
 }
 
-/**
- * Verify media candidates against assets available to the current runtime.
- *
- * A candidate's `name` may be a filename, annotated path, or opaque asset
- * hash, so it is matched against the union of each asset's `file_path`,
- * `hash`, `name`, and `subfolder + name` (see `getAssetDetectionNames`). Output
- * candidates are matched against Cloud output assets or Core generated-history
- * assets because Core resolves those annotations against output folders, not
- * input files.
- * Cloud accepts compact annotated media paths, so only Cloud verification
- * normalizes compact suffixes.
- */
+/** Resolve pending candidates against the asset store, then a remote hash lookup when assets are enabled. */
 export async function verifyMediaCandidates(
   candidates: MissingMediaCandidate[],
   { signal }: { signal?: AbortSignal } = {}
@@ -208,10 +199,8 @@ export async function verifyMediaCandidates(
   const { assetsEnabled } = useFeatureFlags().flags
   const assetsStore = useAssetsStore()
 
-  const groupedPending = Object.entries(groupBy(pending, (p) => p.name))
-  const re = /^(.+?) *(?:\[(\w+)\])?$/
   async function resolveCandidate(annotatedName: string) {
-    const [, name] = annotatedName.match(re) ?? []
+    const [, name] = annotatedName.match(ANNOTATED_NAME_PATTERN) ?? []
     const assetMatches = (asset: AssetItem) =>
       name === (asset.hash || asset.name)
     if (
@@ -221,19 +210,18 @@ export async function verifyMediaCandidates(
       return false
 
     if (!assetsEnabled) return undefined
-    //FIXME: objectively correct, but 'temp' can be incorrectly annotated
-    //intentionally left loose for now
-    //const tags_any = annotation ? [annotation] : undefined
     const query = encodeParams({ limit: 1, hash: name })
     const resp = await api.fetchApi(`/assets?${query}`, { signal })
     const { assets } = await resp.json()
     return !assets.length
   }
   const results = await Promise.allSettled(
-    groupedPending.map(async ([name, candidates]) => {
-      const isMissing = await resolveCandidate(name)
-      for (const candidate of candidates) candidate.isMissing = isMissing
-    })
+    Object.entries(groupBy(pending, (p) => p.name)).map(
+      async ([name, candidates]) => {
+        const isMissing = await resolveCandidate(name)
+        for (const candidate of candidates) candidate.isMissing = isMissing
+      }
+    )
   )
   const firstRejection = results.find((r) => r.status === 'rejected')
   if (firstRejection && !signal?.aborted) throw firstRejection.reason

@@ -1,44 +1,22 @@
 // Missing-media-scoped helpers for deriving comparison keys from media widget paths.
-const CORE_ANNOTATED_MEDIA_PATTERN = /\s+\[(input|output)\]$/
-const CLOUD_ANNOTATED_MEDIA_PATTERN = /\s*\[(input|output)\]$/
+const ANNOTATED_MEDIA_PATTERN = /\s+\[(input|output)\]$/
 
 type AnnotatedMediaPathType = 'input' | 'output'
 
-interface AnnotatedMediaPathOptions {
-  allowCompactSuffix?: boolean
-}
-
-function getAnnotatedMediaPathMatch(
-  value: string,
-  options: AnnotatedMediaPathOptions = {}
-): RegExpMatchArray | null {
-  const pattern = options.allowCompactSuffix
-    ? CLOUD_ANNOTATED_MEDIA_PATTERN
-    : CORE_ANNOTATED_MEDIA_PATTERN
-  return value.match(pattern)
-}
-
 export function getAnnotatedMediaPathTypeForDetection(
-  value: string,
-  options: AnnotatedMediaPathOptions = {}
+  value: string
 ): AnnotatedMediaPathType | undefined {
-  return getAnnotatedMediaPathMatch(value, options)?.[1] as
+  return value.match(ANNOTATED_MEDIA_PATTERN)?.[1] as
     | AnnotatedMediaPathType
     | undefined
 }
 
-export function normalizeAnnotatedMediaPathForDetection(
-  value: string,
-  options: AnnotatedMediaPathOptions = {}
-): string {
-  const match = getAnnotatedMediaPathMatch(value, options)
+export function normalizeAnnotatedMediaPathForDetection(value: string): string {
+  const match = value.match(ANNOTATED_MEDIA_PATTERN)
   return match ? value.slice(0, match.index) : value
 }
 
-export function getMediaPathDetectionNames(
-  value: string,
-  options: AnnotatedMediaPathOptions = {}
-): string[] {
-  const normalized = normalizeAnnotatedMediaPathForDetection(value, options)
+export function getMediaPathDetectionNames(value: string): string[] {
+  const normalized = normalizeAnnotatedMediaPathForDetection(value)
   return normalized === value ? [value] : [value, normalized]
 }
