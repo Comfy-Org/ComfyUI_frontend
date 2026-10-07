@@ -260,14 +260,24 @@ describe('LinearControls', () => {
 
       renderControls({ showsSubscribeToRunPrompt: true, mobile })
 
-      expect(screen.getByRole('button', { name: 'Run' })).toHaveClass(
-        'bg-base-foreground'
-      )
+      expect(screen.getByRole('button', { name: 'Run' })).toBeInTheDocument()
       expect(
         screen.queryByTestId('subscribe-to-run-button')
       ).not.toBeInTheDocument()
     }
   )
+
+  it.for([
+    { label: 'desktop', mobile: false },
+    { label: 'mobile', mobile: true }
+  ])('renders Run as the inverted button in $label controls', ({ mobile }) => {
+    renderControls({ mobile })
+
+    expect(screen.getByRole('button', { name: 'Run' })).toHaveAttribute(
+      'data-variant',
+      'inverted'
+    )
+  })
 
   it.for([
     { label: 'desktop', mobile: false },

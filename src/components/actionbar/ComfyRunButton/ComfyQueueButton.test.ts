@@ -272,6 +272,10 @@ describe('ComfyQueueButton', () => {
 
     expect(queueButton).toHaveTextContent('Run (Instant)')
     expect(queueButton).toHaveAttribute('data-variant', 'inverted')
+    expect(screen.getByTestId('queue-mode-menu-trigger')).toHaveAttribute(
+      'data-variant',
+      'inverted'
+    )
   })
 
   it('switches to stop presentation when instant mode is armed', async () => {

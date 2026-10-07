@@ -17,7 +17,6 @@
         )
       "
       data-testid="queue-button"
-      :data-variant="queueButtonVariant"
       @click="queuePrompt"
     >
       <i :class="cn(iconClass, 'size-4')" data-testid="queue-button-icon" />
@@ -38,7 +37,6 @@
           "
           :aria-label="t('menu.runOptions')"
           data-testid="queue-mode-menu-trigger"
-          :data-variant="queueMenuTriggerVariant"
         >
           <TinyChevronIcon />
         </Button>
@@ -188,22 +186,18 @@ const queueButtonVariant = computed<
         ? 'destructive'
         : 'inverted'
 )
-const queueMenuTriggerVariant = computed<
-  'destructive' | 'inverted' | 'secondary'
->(() =>
-  paymentRecoveryLock
+const queueMenuTriggerVariant = computed(() =>
+  queueButtonVariant.value === 'subscribe'
     ? 'secondary'
-    : isStopInstantAction.value
-      ? 'destructive'
-      : 'inverted'
+    : queueButtonVariant.value
 )
 const queueMenuTriggerVariantClass = {
   destructive: 'data-[state=open]:bg-destructive-background-hover',
   inverted: 'data-[state=open]:bg-base-foreground/80',
   secondary: 'text-muted-foreground'
-}
+} satisfies Record<typeof queueMenuTriggerVariant.value, string>
 const queueMenuTriggerClass =
-  'h-full w-6 rounded-l-none rounded-r-lg border-y-0 border-r-0 border-l border-solid border-base-background/25 p-0'
+  'h-full w-6 rounded-l-none rounded-r-lg border-0 border-l border-solid border-base-background/25 p-0'
 
 const iconClass = computed(() => {
   if (paymentRecoveryLock) {
