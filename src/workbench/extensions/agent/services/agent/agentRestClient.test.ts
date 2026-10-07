@@ -204,6 +204,23 @@ describe('agentRestClient route + method', () => {
     expect(JSON.parse(init.body as string)).toEqual({ selected: ['run'] })
   })
 
+  it.for([
+    {
+      name: 'a status-only 202 from an older backend',
+      body: { status: 'answered' }
+    },
+    {
+      name: 'a 202 that reports the committed answer',
+      body: { status: 'answered', selected: ['run'] }
+    }
+  ])('answerAsk accepts $name', async ({ body }) => {
+    respond(jsonResponse(202, body))
+
+    await expect(
+      makeClient().answerAsk('t7', 'ask-1', ['run'])
+    ).resolves.toEqual(body)
+  })
+
   it('listCloudWorkflows GETs the paginated workflows path until has_more is false', async () => {
     const page = (
       offset: number,
