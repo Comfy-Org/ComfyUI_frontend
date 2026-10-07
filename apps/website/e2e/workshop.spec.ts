@@ -635,6 +635,45 @@ test.describe('Models catalog', () => {
       page.getByRole('link', { name: /Explore Seedance/i })
     ).toHaveAttribute('href', '/hub/models/seedance-2-5-text-to-video/')
   })
+
+  test('the row arrow sits level with the middle of a card', async ({
+    page
+  }) => {
+    for (const width of [1440, 820, 420]) {
+      await page.setViewportSize({ width, height: 1000 })
+      await page.goto('/hub/')
+      const row = page.getByTestId('explore-results')
+      const card = row.getByTestId('explore-result').first()
+      await expect(card).toBeVisible()
+      await card.hover()
+      const cardBox = await card.boundingBox()
+      const arrowBox = await row.getByTestId('card-row-next').boundingBox()
+      if (!cardBox || !arrowBox) throw new Error('the row did not lay out')
+      const middleOf = (box: { y: number; height: number }) =>
+        box.y + box.height / 2
+      expect(Math.abs(middleOf(arrowBox) - middleOf(cardBox))).toBeLessThan(1)
+    }
+  })
+
+  test('the fade reaches both ends of the scrolling row', async ({ page }) => {
+    await page.goto('/hub/')
+    const row = page.getByTestId('explore-results')
+    await expect(row.getByTestId('explore-result').first()).toBeVisible()
+    await row.hover()
+    const edges = await row.evaluate((section) => {
+      const span = (selector: string) => {
+        const element = section.querySelector(selector)
+        if (!element) return undefined
+        const { x, width } = element.getBoundingClientRect()
+        return { left: x, right: x + width }
+      }
+      return {
+        scroller: span('ul'),
+        fades: span('[data-testid="card-row-arrows"]')
+      }
+    })
+    expect(edges.fades).toEqual(edges.scroller)
+  })
 })
 
 test.describe('Model playground', () => {
