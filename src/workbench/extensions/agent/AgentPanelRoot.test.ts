@@ -1581,7 +1581,21 @@ describe('AgentPanelRoot Agent credit transition notice', () => {
   beforeEach(() => {
     paywallHasFunds.value = true
     paywallAgentHasFunds.value = true
-    telemetry.trackAgentCreditTransitionNotice.mockClear()
+  })
+
+  it('hides the free-use notice while Agent-scoped funds are unavailable', async () => {
+    vi.mocked(useFreeUsePlacement).mockReturnValueOnce(
+      fromPartial({ variant: ref('near-composer') })
+    )
+    paywallAgentScopedHasFunds.value = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+
+    expect(
+      screen.queryByRole('note', {
+        name: i18n.global.t('agent.freeUseNoticeLabel')
+      })
+    ).not.toBeInTheDocument()
   })
 
   it('shows only after the Agent-scoped balance changes from available to exhausted', async () => {
@@ -1707,7 +1721,7 @@ describe('AgentPanelRoot Agent credit transition notice', () => {
     expect(await screen.findByTestId(NOTICE)).toBeInTheDocument()
   })
 
-  it('defers to the existing exhaustion paywall when no funding remains', async () => {
+  it('yields to the exhaustion paywall when no funding remains, then shows the notice once workspace funding returns', async () => {
     paywallAgentScopedHasFunds.value = true
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await screen.findByRole('textbox')
@@ -1765,15 +1779,10 @@ describe('AgentPanelRoot Agent credit transition notice', () => {
     await screen.findByRole('textbox')
 
     expect(screen.queryByTestId(NOTICE)).not.toBeInTheDocument()
-    expect(telemetry.trackAgentCreditTransitionNotice).toHaveBeenCalledTimes(2)
-    expect(telemetry.trackAgentCreditTransitionNotice).toHaveBeenNthCalledWith(
-      1,
-      { action: 'shown' }
-    )
-    expect(telemetry.trackAgentCreditTransitionNotice).toHaveBeenNthCalledWith(
-      2,
-      { action: 'dismissed' }
-    )
+    expect(telemetry.trackAgentCreditTransitionNotice.mock.calls).toEqual([
+      [{ action: 'shown' }],
+      [{ action: 'dismissed' }]
+    ])
   })
 })
 

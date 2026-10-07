@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import Button from '@/components/ui/button/Button.vue'
 import { onMounted } from 'vue'
+
+import Button from '@/components/ui/button/Button.vue'
 
 const emit = defineEmits<{ dismiss: []; shown: [] }>()
 

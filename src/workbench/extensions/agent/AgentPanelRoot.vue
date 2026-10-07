@@ -286,19 +286,17 @@ const agentHasFunds = computed(() => subscription.value?.agentHasFunds)
 const agentScopedHasFunds = computed(
   () => subscription.value?.agentScopedHasFunds
 )
+const billingSignalsTrusted = computed(
+  () =>
+    consentAccepted.value &&
+    billingType.value === 'workspace' &&
+    capabilityReadSettled.value &&
+    billingStatus.value !== 'paused' &&
+    billingStatus.value !== 'payment_failed'
+)
 const creditsExhausted = computed(() => {
-  if (!consentAccepted.value) return false
-  if (billingType.value !== 'workspace') return false
-  // Same gate as the impression report above: an unsettled read cannot say
-  // which presentation is right, and a card naming the wrong remediation is
-  // worse than no card.
-  if (!capabilityReadSettled.value) return false
+  if (!billingSignalsTrusted.value) return false
   if (agentHasFunds.value !== false) return false
-  if (
-    billingStatus.value === 'paused' ||
-    billingStatus.value === 'payment_failed'
-  )
-    return false
   // A standing card must offer a next step. Refusal-anchored inline cards can
   // still explain member, sales-managed, or unavailable states without a CTA.
   return ['subscribed', 'subscriptionRequired', 'local'].includes(
@@ -326,13 +324,7 @@ const billingIdentity = computed(
     `${resolvedUserInfo.value?.id ?? 'anonymous'}:${teamWorkspaceStore.workspaceId ?? 'none'}`
 )
 
-/**
- * One impression per exhaustion episode, not per render: the surface is
- * standing, so it is visible for as long as the workspace is out of credits and
- * a per-render report would make impressions a function of session length.
- * Reset when funds return, so a later exhaustion reports again — mirroring how
- * `useBillingBanner` scopes its dismissal to one episode.
- */
+/** Latches are scoped to one user and workspace; switching identity clears them. */
 watch(billingIdentity, () => {
   agentPanelStore.reportedExhaustionIdentity = null
   agentPanelStore.creditTransitionNoticeIdentity = null
@@ -361,7 +353,6 @@ watch(
     }
     if (
       previous.hasFunds === true &&
-      scopedHasFunds === false &&
       agentPanelStore.dismissedCreditTransitionNoticeIdentity !== identity
     ) {
       agentPanelStore.creditTransitionNoticeIdentity = identity
@@ -373,18 +364,13 @@ watch(
 const showCreditTransitionNotice = computed(
   () =>
     agentPanelStore.creditTransitionNoticeIdentity === billingIdentity.value &&
-    consentAccepted.value &&
-    billingType.value === 'workspace' &&
-    capabilityReadSettled.value &&
-    billingStatus.value !== 'paused' &&
-    billingStatus.value !== 'payment_failed' &&
+    billingSignalsTrusted.value &&
     agentScopedHasFunds.value === false &&
     agentHasFunds.value === true
 )
 
 function onDismissCreditTransitionNotice(): void {
-  if (showCreditTransitionNotice.value)
-    useTelemetry()?.trackAgentCreditTransitionNotice({ action: 'dismissed' })
+  useTelemetry()?.trackAgentCreditTransitionNotice({ action: 'dismissed' })
   agentPanelStore.dismissedCreditTransitionNoticeIdentity =
     billingIdentity.value
   agentPanelStore.creditTransitionNoticeIdentity = null
@@ -392,9 +378,8 @@ function onDismissCreditTransitionNotice(): void {
 
 function onCreditTransitionNoticeShown(): void {
   if (
-    !showCreditTransitionNotice.value ||
     agentPanelStore.reportedCreditTransitionNoticeIdentity ===
-      billingIdentity.value
+    billingIdentity.value
   )
     return
   const telemetry = useTelemetry()
