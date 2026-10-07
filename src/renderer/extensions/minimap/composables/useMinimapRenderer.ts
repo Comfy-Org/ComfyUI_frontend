@@ -24,6 +24,7 @@ export function useMinimapRenderer(
   height: number,
   decorations: Ref<MinimapRenderContext['decorations']> = ref([])
 ) {
+  const executionStore = useExecutionStore()
   const needsFullRedraw = ref(true)
   const needsBoundsUpdate = ref(true)
 
@@ -59,7 +60,7 @@ export function useMinimapRenderer(
         width,
         height,
         decorations: decorations.value,
-        nodeProgressStates: useExecutionStore().nodeLocationProgressStates,
+        nodeProgressStates: executionStore.nodeLocationProgressStates,
         now: performance.now()
       })
 
