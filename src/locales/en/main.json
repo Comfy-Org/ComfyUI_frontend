@@ -5645,18 +5645,18 @@
       ],
       "treatment": {
         "cloud": [
-          "Create a polished image from an idea",
-          "Make a short video from this image",
-          "Find the best workflow for this task",
-          "Explain how these nodes work together",
-          "Improve the quality of this workflow"
+          "Create a polished product image from a text prompt",
+          "Build an image-to-video workflow",
+          "Explain how a ComfyUI workflow works",
+          "Find the best workflow for a specific task",
+          "Diagnose and fix errors in a workflow"
         ],
         "local": [
-          "Build a workflow with my installed models",
-          "Diagnose and fix this workflow",
-          "Improve the output quality of this workflow",
-          "Explain how these nodes work together",
-          "Find the missing nodes for this workflow"
+          "Build an image workflow with my installed models",
+          "Build an image-to-video workflow with my installed models",
+          "Explain how a ComfyUI workflow works",
+          "Find missing nodes for a workflow",
+          "Diagnose and fix errors in a workflow"
         ]
       }
     },

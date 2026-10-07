@@ -139,7 +139,7 @@ describe('EmptyState', () => {
 
     await user.click(
       screen.getByRole('button', {
-        name: 'Build a workflow with my installed models'
+        name: 'Build an image workflow with my installed models'
       })
     )
 
