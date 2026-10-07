@@ -48,7 +48,6 @@ describe('unique-name refusal criterion', () => {
     expect(names(node)).toEqual(['seed', 'seed#1'])
     expect(storedNames(graph, node)).toEqual(['seed', 'seed#1'])
     expect(reportedTypes()).toEqual([])
-
     expect(seed.value).toBe(1)
     expect(steps.value).toBe(2)
 
@@ -56,6 +55,153 @@ describe('unique-name refusal criterion', () => {
     steps.value = 222
     expect(seed.value).toBe(111)
     expect(steps.value).toBe(222)
+  })
+
+  it('does not erase the whole widget order over one pair it cannot resolve', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    const seed = node.addWidget('number', 'seed', 1, () => undefined, {})
+    const steps = node.addWidget('number', 'steps', 2, () => undefined, {})
+    const cfg = node.addWidget('number', 'cfg', 3, () => undefined, {})
+
+    graph.remove(node)
+    steps.name = 'seed'
+    graph.add(node)
+
+    // The node's widget order is what a Vue node renders from
+    // (`getNodeWidgetIds` in `LGraphNode.vue`). A pair that cannot remain under
+    // one name must not erase the unrelated widget or weld the pair together.
+    const store = useWidgetValueStore()
+    expect(store.getNodeWidgetIds(graph.id, node.id)).toEqual([
+      widgetId(graph.id, node.id, 'seed'),
+      widgetId(graph.id, node.id, 'seed#1'),
+      widgetId(graph.id, node.id, 'cfg')
+    ])
+
+    // The duplicate is renamed apart before registration, and all three
+    // widgets retain independent values.
+    expect(node.widgets).toHaveLength(3)
+    expect(seed.value).toBe(1)
+    expect(steps.value).toBe(2)
+    expect(cfg.value).toBe(3)
+  })
+
+  it('resolves the pair when a reorder moves which widget holds the name', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    const seed = node.addWidget('number', 'seed', 1, () => undefined, {})
+    const steps = node.addWidget('number', 'steps', 2, () => undefined, {})
+
+    graph.remove(node)
+    steps.name = 'seed'
+    graph.add(node)
+
+    const store = useWidgetValueStore()
+    expect(store.getWidget(widgetId(graph.id, node.id, 'seed'))?.value).toBe(1)
+
+    // Ownership of a shared name is positional, so a whole-array assignment
+    // makes the duplicate the holder. That must not hand it the entry `seed`
+    // is bound to, which would weld the two onto one `WidgetState`.
+    node.widgets = [steps, seed]
+
+    // It resolves instead: `seed` is now the duplicate, and renaming it *does*
+    // land because it owns the entry there is to move, so the pair separates.
+    expect((node.widgets ?? []).map(({ name }) => name)).toEqual([
+      'seed#1',
+      'seed'
+    ])
+    expect(seed.value).toBe(1)
+    expect(steps.value).toBe(2)
+
+    // The decisive assertion: two entries, not one shared between them. Equal
+    // values cannot show a weld, and these two differ only by luck.
+    steps.value = 222
+    expect(seed.value).toBe(1)
+    expect(store.getWidget(widgetId(graph.id, node.id, 'seed'))?.value).toBe(1)
+    expect(store.getWidget(widgetId(graph.id, node.id, 'seed#1'))?.value).toBe(
+      222
+    )
+  })
+
+  it('still answers with its own entry id once it is spliced off the node', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    const seed = node.addWidget('number', 'seed', 1, () => undefined, {})
+    const steps = node.addWidget('number', 'steps', 2, () => undefined, {})
+
+    graph.remove(node)
+    steps.name = 'seed'
+    graph.add(node)
+
+    node.widgets = (node.widgets ?? []).filter((widget) => widget !== seed)
+
+    // Position decides who may *take* an identity, not who already has one.
+    // `dynamicWidgets.ts` splices a group's widgets off the node and then reads
+    // `widget.widgetId` to delete each entry, so a widget that answered
+    // `undefined` here would leak its entry and the next widget of that name
+    // and type would inherit the value.
+    const id = widgetId(graph.id, node.id, 'seed')
+    expect(seed.widgetId).toBe(id)
+
+    const store = useWidgetValueStore()
+    store.deleteWidget(id)
+    expect(store.getWidget(id)).toBeUndefined()
+    // Deleting the departing widget's entry must not have taken the other
+    // widget's value with it.
+    expect(steps.value).toBe(2)
+  })
+
+  it('gives no id to a refused duplicate, which never registered one', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    const first = node.addWidget('number', 'seed', 1, () => undefined, {})
+    const refused = node.addWidget('number', 'steps', 2, () => undefined, {})
+    // Unwritable, so the walk removes it rather than keeping the pair.
+    Object.defineProperty(refused, 'name', {
+      value: 'seed',
+      writable: false,
+      configurable: false,
+      enumerable: true
+    })
+    node.addWidget('number', 'cfg', 3, () => undefined, {})
+
+    expect(node.widgets).not.toContain(refused)
+
+    // Off the array like the spliced widget above, but it never registered, so
+    // the id it would claim is the entry `first` holds. Answering with it would
+    // let a caller delete the value of the widget that kept the name.
+    expect(refused.widgetId).toBeUndefined()
+    expect(first.widgetId).toBe(widgetId(graph.id, node.id, 'seed'))
+  })
+
+  it('does not let a kept duplicate adopt the entry of a widget spliced off the node', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    const seed = node.addWidget('number', 'seed', 1, () => undefined, {})
+    const steps = node.addWidget('number', 'steps', 2, () => undefined, {})
+
+    graph.remove(node)
+    steps.name = 'seed'
+    graph.add(node)
+
+    // `seed` leaves the array without its store entry being deleted, which is
+    // what a bare splice of a registered widget does. `steps` is then the only
+    // widget holding the name, so position says it may mint that id — and the
+    // entry there is still `seed`'s, with `seed`'s value.
+    node.widgets = (node.widgets ?? []).filter((widget) => widget !== seed)
+
+    // Taking it would weld `steps` onto `seed`'s state and replace the user's
+    // `2` with `1` on a widget they never touched.
+    expect(steps.value).toBe(2)
+    expect(seed.value).toBe(1)
+
+    steps.value = 222
+    expect(seed.value).toBe(1)
   })
 
   it('does not let a duplicate rename steal the entry of a widget on another node', () => {

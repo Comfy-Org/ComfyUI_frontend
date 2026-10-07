@@ -210,6 +210,26 @@ legitimate re-mint rather than an identity collision — which is why
 > graph, and `syncWidgetOrder` for every later `node.widgets` mutation
 > (`addWidget`, a raw `push`, a splice, a whole-array assignment). Their
 > boundaries are part of the decision:
+> **Whether a widget has an identity is a per-widget question, and gating it on
+> a whole-node verdict loses the node's entire widget order.**
+> `ensureUniqueWidgetNames` answers "is this node unambiguous?", so a pair that
+> no rename could separate made `setNodeId` and `BaseWidget.widgetId` bail for
+> **every** widget on the node — including widgets sharing a name with nothing.
+> A Vue node draws from the registered order (`getNodeWidgetIds`), so the node
+> rendered no widgets at all: strictly worse than the removal this criterion
+> replaced, which cost one widget and left the rest drawn. Registration is
+> therefore gated on `ownedWidgetNameKey`, which answers with the key a widget
+> may mint from unless an _earlier_ widget in the array already holds that name. First occurrence wins, as above, so one
+> name still resolves to one `WidgetId` held by one widget and a later duplicate
+> is still never registered; it is only the collateral loss that goes away.
+>
+> **There are two enforcement points, and looking only at the first one is
+> misleading.** `attachNodeToStores` calls `refuseAmbiguousNodeWidgets` as a
+> node joins a graph, which is the one that catches a node built detached and
+> then added. `syncWidgetOrder` catches every later mutation — `node.widgets`
+> is a mutation view, so `addWidget`, a raw `push`, a splice and a whole-array
+> assignment all commit through it — but it enforces nothing until `graphId`
+> exists, so it does not cover the join itself.
 >
 > - Enforcement starts at the join, not during construction: no `WidgetId`
 >   exists before then, and `litegraphService` still matches a freshly created

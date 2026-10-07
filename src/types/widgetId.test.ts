@@ -5,6 +5,7 @@ import {
   dropUnrenamableDuplicateWidgets,
   ensureUniqueWidgetNames,
   isWidgetId,
+  ownedWidgetNameKey,
   parseWidgetId,
   widgetId
 } from './widgetId'
@@ -339,6 +340,85 @@ describe('dropUnrenamableDuplicateWidgets', () => {
 
     expect(refusedWidgets(widgets)).toEqual([other])
     expect(widgets).toEqual([shared, shared])
+  })
+})
+
+/**
+ * Which widget on a node may mint an id for the name it holds. The whole-node
+ * question `ensureUniqueWidgetNames` answers is the wrong one for this: a node
+ * carrying one pair nothing could rename apart has to keep registering its
+ * other widgets, or the node's whole widget order empties and a Vue node draws
+ * nothing.
+ */
+describe('ownedWidgetNameKey', () => {
+  it('gives the name to the first widget holding it, and to no later one', () => {
+    const first = { name: 'seed' }
+    const later = { name: 'seed' }
+    const unrelated = { name: 'cfg' }
+    const widgets = [first, later, unrelated]
+
+    expect(ownedWidgetNameKey(widgets, first)).toBe('seed')
+    expect(ownedWidgetNameKey(widgets, later)).toBeUndefined()
+    // The whole point: a widget that collides with nothing keeps its identity
+    // even while the node is ambiguous.
+    expect(ownedWidgetNameKey(widgets, unrelated)).toBe('cfg')
+  })
+
+  it('treats one widget in two array slots as one widget, not a collision', () => {
+    // An index-assignment reorder transiently repeats the same object.
+    const shared = { name: 'seed' }
+
+    expect(ownedWidgetNameKey([shared, shared], shared)).toBe('seed')
+  })
+
+  it('collides names that differ as values but coincide as id strings', () => {
+    // `widgetId` keys on `encodeURIComponent(String(name))`, so these two mint
+    // one id. Comparing raw values would hand both an identity and let the
+    // clash land in the store, which is the registration this gate exists to
+    // refuse.
+    const numeric = { name: 1 as unknown as string }
+    const textual = { name: '1' }
+    const widgets = [numeric, textual]
+
+    // And the key is the coerced one, which is what the id is built from.
+    expect(ownedWidgetNameKey(widgets, numeric)).toBe('1')
+    expect(ownedWidgetNameKey(widgets, textual)).toBeUndefined()
+  })
+
+  it('refuses a widget whose own name cannot be read', () => {
+    const hostile = {
+      get name(): string {
+        throw new Error('nope')
+      }
+    }
+
+    expect(ownedWidgetNameKey([hostile], hostile)).toBeUndefined()
+  })
+
+  it('does not let an unreadable name on another widget decide this one', () => {
+    // That widget is refused in its own right. Letting its accessor throw
+    // through here would deny an identity to a widget it has nothing to do
+    // with — and abort the walk mid-`LGraph.add`.
+    const hostile = {
+      get name(): string {
+        throw new Error('nope')
+      }
+    }
+    const ordinary = { name: 'seed' }
+
+    expect(ownedWidgetNameKey([hostile, ordinary], ordinary)).toBe('seed')
+  })
+
+  it('refuses a widget the node does not list, rather than falling open', () => {
+    // Nobody holds the name, so a fall-through would grant ownership to a
+    // widget that is not this node's at all — the write `LGraphNode.addWidget`
+    // already refuses by hand. Whether a widget *already* holds an id off the
+    // array is a question for the store, and `BaseWidget.boundWidgetId` is
+    // where it is asked.
+    const stranger = { name: 'seed' }
+
+    expect(ownedWidgetNameKey([{ name: 'cfg' }], stranger)).toBeUndefined()
+    expect(ownedWidgetNameKey([], stranger)).toBeUndefined()
   })
 })
 
