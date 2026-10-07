@@ -10997,7 +10997,7 @@ describe('AgentPanelRoot workflow binding', () => {
     makeTab()
     const selection = await startVueNodeSelection()
     const active = workflowStore.activeWorkflow
-    if (!active) throw new Error('expected an active workflow')
+    assert.exists(active)
     active.path = 'workflows/renamed.json'
     active.filename = 'renamed'
     await nextTick()
