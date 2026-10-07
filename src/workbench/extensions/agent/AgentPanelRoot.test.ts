@@ -1727,6 +1727,23 @@ describe('AgentPanelRoot Agent credit transition notice', () => {
     expect(await screen.findByTestId(NOTICE)).toBeInTheDocument()
   })
 
+  it('reports a new impression when the scoped balance refills and runs out again', async () => {
+    paywallAgentScopedHasFunds.value = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+    paywallAgentScopedHasFunds.value = false
+    await screen.findByTestId(NOTICE)
+    paywallAgentScopedHasFunds.value = true
+    await nextTick()
+    paywallAgentScopedHasFunds.value = false
+    await screen.findByTestId(NOTICE)
+
+    expect(telemetry.trackAgentCreditTransitionNotice.mock.calls).toEqual([
+      [{ action: 'shown' }],
+      [{ action: 'shown' }]
+    ])
+  })
+
   it('stays dismissed for the current transition episode', async () => {
     paywallAgentScopedHasFunds.value = true
     const panel = render(AgentPanelRoot, { global: { plugins: [i18n] } })
