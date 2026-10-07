@@ -67,6 +67,7 @@ import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfil
 import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { isCloud } from '@/platform/distribution/types'
+import { useDeploymentSwitcherOffered } from '@/platform/workspace/composables/useDeploymentSwitcherOffered'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -125,13 +126,21 @@ const onPopoverShow = () => {
 }
 
 const root = useTemplateRef('root')
-const { switcherOpenRequested } = storeToRefs(useDeploymentPickStore())
+const pickStore = useDeploymentPickStore()
+const { switcherOpenAsks } = storeToRefs(pickStore)
+const switcherOffered = useDeploymentSwitcherOffered()
+
+function isOnScreen(element: HTMLElement | null): element is HTMLElement {
+  return element !== null && element.getClientRects().length > 0
+}
 
 // The missing-nodes message asks for the deployment switcher, which lives in
-// this popover (BE-19374); only the button on screen opens it.
-watch(switcherOpenRequested, (requested) => {
+// this popover (BE-19374). Only the button on screen whose popover offers the
+// switcher takes the ask and hands it to the switcher.
+watch(switcherOpenAsks, () => {
   const anchor = root.value
-  if (!requested || !anchor || anchor.getClientRects().length === 0) return
-  popover.value?.show(new MouseEvent('click'), anchor)
+  if (!switcherOffered.value || !popover.value || !isOnScreen(anchor)) return
+  pickStore.switcherOpenRequested = true
+  popover.value.show(new MouseEvent('click'), anchor)
 })
 </script>

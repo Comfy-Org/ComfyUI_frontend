@@ -681,15 +681,26 @@ describe('DeploymentSwitcher', () => {
     })
   })
 
-  it('opens its panel when the missing-nodes message asks for the switcher', async () => {
+  it('opens its panel when the user button hands it an ask for the switcher', async () => {
     mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
-    useDeploymentPickStore().requestSwitcherOpen()
+    useDeploymentPickStore().switcherOpenRequested = true
     renderSwitcher()
 
     expect(
       await screen.findByTestId('deployment-switcher-panel')
     ).toBeInTheDocument()
     expect(useDeploymentPickStore().switcherOpenRequested).toBe(false)
+  })
+
+  it('does not open on its own later for an ask nothing handled', async () => {
+    mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+    useDeploymentPickStore().requestSwitcherOpen()
+    renderSwitcher()
+
+    expect(
+      await screen.findByTestId('deployment-switcher-current')
+    ).toBeInTheDocument()
+    expect(screen.queryByTestId('deployment-switcher-panel')).toBeNull()
   })
 
   describe('marks which deployments can run the open workflow', () => {

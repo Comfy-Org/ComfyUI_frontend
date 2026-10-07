@@ -193,7 +193,7 @@ describe('MissingNodeDeploymentOffer', () => {
       'Agency B flux v2',
       'and 2 more'
     ])
-    expect(useDeploymentPickStore().switcherOpenRequested).toBe(true)
+    expect(useDeploymentPickStore().switcherOpenAsks).toBe(1)
   })
 
   it('says no deployment has all of the nodes, with no button, when none does', async () => {
