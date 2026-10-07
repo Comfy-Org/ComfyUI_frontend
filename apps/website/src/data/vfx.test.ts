@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
+import * as learningTutorials from './learningTutorials'
 import { vfxContent, vfxFaqPageNode } from './vfx'
 
 describe('VFX content', () => {
@@ -28,6 +29,50 @@ describe('VFX content', () => {
       ).toBe(true)
     }
   )
+
+  it.for([
+    {
+      slug: 'sky-replacement',
+      message: 'The VFX page requires the sky replacement tutorial'
+    },
+    {
+      slug: 'cleanplate-walkthrough',
+      message: 'Missing VFX example: cleanplate-walkthrough'
+    }
+  ])('rejects a catalog missing $slug', ({ slug, message }) => {
+    const tutorials = learningTutorials
+      .filterByCategory('vfx')
+      .filter((tutorial) => tutorial.slug !== slug)
+    vi.spyOn(learningTutorials, 'filterByCategory').mockReturnValue(tutorials)
+
+    expect(() => vfxContent('en')).toThrow(message)
+  })
+
+  it('keeps Chinese workflow cards readable when titles are untranslated', () => {
+    const tutorials = learningTutorials
+      .filterByCategory('vfx')
+      .map((tutorial) => ({
+        ...tutorial,
+        title: { ...tutorial.title, 'zh-CN': '' }
+      }))
+    vi.spyOn(learningTutorials, 'filterByCategory').mockReturnValue(tutorials)
+
+    const { workflows, examples } = vfxContent('zh-CN')
+
+    expect(workflows).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          title: 'Sky Replacement',
+          href: '/zh-CN/learning/vfx/sky-replacement/',
+          media: expect.objectContaining({ alt: 'Sky Replacement' })
+        })
+      ])
+    )
+    expect(examples.map(({ media }) => media.alt)).toEqual([
+      'Sky Replacement',
+      'Cleanplate Walkthrough'
+    ])
+  })
 
   it('publishes readable FAQ answers in structured data', () => {
     expect(
