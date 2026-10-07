@@ -34,16 +34,12 @@ permissions:
   issues: read
   pull-requests: read
 
-concurrency:
-  # One serialized compensation boundary is safer than SHA-keyed runs that can
-  # concurrently approve and withdraw the same pull request. The trial cohort
-  # is intentionally small, so global serialization is acceptable here.
-  group: website-fast-lane
-  cancel-in-progress: false
-
 jobs:
   approve:
     if: github.event_name == 'pull_request_target'
+    concurrency:
+      group: website-fast-lane-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
     environment: website-approval
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -75,8 +71,43 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: node --experimental-strip-types scripts/cicd/fast-lane/run.ts
 
-  reconcile-after-check:
+  resolve-reconcile-pull-request:
     if: github.event_name == 'status' || (github.event_name == 'workflow_run' && github.event.workflow_run.event == 'pull_request')
+    runs-on: ubuntu-latest
+    outputs:
+      pull-request-number: ${{ steps.pull-request.outputs.result }}
+    steps:
+      - name: Resolve the exact open pull request
+        id: pull-request
+        uses: actions/github-script@v9
+        with:
+          result-encoding: string
+          script: |
+            const sha = context.payload.sha ?? context.payload.workflow_run?.head_sha
+            const { data: pulls } = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+              ...context.repo,
+              commit_sha: sha,
+            })
+            const repository = `${context.repo.owner}/${context.repo.repo}`
+            const matches = pulls.filter((pull) =>
+              pull.state === 'open' &&
+              pull.head.sha === sha &&
+              pull.head.repo?.full_name === repository &&
+              pull.base.ref === context.payload.repository.default_branch &&
+              pull.base.repo.full_name === repository
+            )
+            if (matches.length !== 1) {
+              core.notice(`Expected one open same-repository pull request for ${sha}; found ${matches.length}.`)
+              return ''
+            }
+            return String(matches[0].number)
+
+  reconcile-after-check:
+    needs: resolve-reconcile-pull-request
+    if: needs.resolve-reconcile-pull-request.outputs.pull-request-number != ''
+    concurrency:
+      group: website-fast-lane-${{ needs.resolve-reconcile-pull-request.outputs.pull-request-number }}
+      cancel-in-progress: false
     environment: website-approval
     runs-on: ubuntu-latest
     timeout-minutes: 5
