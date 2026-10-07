@@ -7,6 +7,9 @@ import { createI18n } from 'vue-i18n'
 import type { WorkspaceDeploymentList } from '@/platform/workspace/api/workspaceApi'
 
 import enMessages from '@/locales/en/main.json'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import { createTestRootGraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
@@ -19,7 +22,23 @@ const mockWorkspaceApi = vi.hoisted(() => ({
   pickDeployment: vi.fn(),
   clearDeployment: vi.fn(),
   setDefaultDeployment: vi.fn(),
-  clearDefaultDeployment: vi.fn()
+  clearDefaultDeployment: vi.fn(),
+  checkDeploymentCompatibility: vi.fn()
+}))
+
+const hoisted = vi.hoisted(() => ({
+  rootGraph: undefined as unknown
+}))
+
+vi.mock<unknown>(import('@/scripts/app'), () => ({
+  app: {
+    get rootGraph() {
+      return hoisted.rootGraph
+    },
+    get isGraphReady() {
+      return hoisted.rootGraph !== undefined
+    }
+  }
 }))
 
 vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), async () => {
@@ -75,6 +94,12 @@ const listing: WorkspaceDeploymentList = {
       created_at: '2026-09-10T00:00:00Z'
     }
   ]
+}
+
+function workflowWith(...types: string[]): LGraph {
+  const graph = createTestRootGraph()
+  for (const type of types) graph.add(new LGraphNode(type, type))
+  return graph
 }
 
 function renderSwitcher() {
@@ -653,6 +678,84 @@ describe('DeploymentSwitcher', () => {
       ).toHaveTextContent(
         "This browser now runs on Vinh's R&D/Prod v1. Reload to get its nodes."
       )
+    })
+  })
+
+  describe('marks which deployments can run the open workflow', () => {
+    beforeEach(() => {
+      hoisted.rootGraph = workflowWith(
+        'KSampler',
+        'Power Lora Loader (rgthree)'
+      )
+      mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+    })
+
+    it('says which rows run it, which miss nodes (named on hover), and which were not checked', async () => {
+      mockWorkspaceApi.checkDeploymentCompatibility.mockResolvedValue({
+        deployments: [
+          { deployment_id: D2, missing_node_types: [] },
+          {
+            deployment_id: D1,
+            missing_node_types: ['Power Lora Loader (rgthree)']
+          },
+          { deployment_id: D9, missing_node_types: [], unknown: true }
+        ],
+        cloud: {
+          missing_node_types: ['Power Lora Loader (rgthree)', 'Image Saver']
+        }
+      })
+      renderSwitcher()
+      await userEvent.click(
+        await screen.findByTestId('deployment-switcher-trigger')
+      )
+
+      await waitFor(() =>
+        expect(screen.getByTestId(`deployment-row-${D2}`)).toHaveTextContent(
+          'Runs this workflow'
+        )
+      )
+      expect(
+        mockWorkspaceApi.checkDeploymentCompatibility
+      ).toHaveBeenCalledWith('ws-1', [
+        'KSampler',
+        'Power Lora Loader (rgthree)'
+      ])
+      expect(screen.getByTestId(`deployment-row-${D1}`)).toHaveTextContent(
+        'Missing 1 node'
+      )
+      expect(screen.getByText('Missing 1 node')).toHaveAttribute(
+        'title',
+        'Power Lora Loader (rgthree)'
+      )
+      expect(screen.getByTestId(`deployment-row-${D9}`)).toHaveTextContent(
+        'Not checked'
+      )
+      expect(screen.getByTestId('deployment-row-cloud')).toHaveTextContent(
+        'Missing 2 nodes'
+      )
+      expect(screen.getByText('Missing 2 nodes')).toHaveAttribute(
+        'title',
+        'Power Lora Loader (rgthree), Image Saver'
+      )
+    })
+
+    it('shows the rows as before when the check fails', async () => {
+      mockWorkspaceApi.checkDeploymentCompatibility.mockRejectedValue(
+        new WorkspaceApiError('not found', 404)
+      )
+      renderSwitcher()
+      await userEvent.click(
+        await screen.findByTestId('deployment-switcher-trigger')
+      )
+      await waitFor(() =>
+        expect(mockWorkspaceApi.checkDeploymentCompatibility).toHaveBeenCalled()
+      )
+      await nextTick()
+
+      expect(screen.getByTestId(`deployment-row-${D2}`)).toHaveTextContent(
+        'Studio Build v2'
+      )
+      expect(screen.queryByTestId('deployment-row-mark')).toBeNull()
     })
   })
 })

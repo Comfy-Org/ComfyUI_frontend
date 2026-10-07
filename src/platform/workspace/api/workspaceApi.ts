@@ -181,6 +181,20 @@ interface PickWorkspaceDeploymentRequest {
   deployment_id: string
 }
 
+/**
+ * Which of a workflow's node types each of the workspace's deployments, and
+ * Comfy Cloud, does not have (BE-19372). A deployment whose Release has no
+ * node list (not built yet, or gone) is listed with `unknown: true`.
+ */
+export interface DeploymentCompatibility {
+  deployments: {
+    deployment_id: string
+    missing_node_types: string[]
+    unknown?: boolean
+  }[]
+  cloud: { missing_node_types: string[] }
+}
+
 interface GetBillingEventsParams {
   page?: number
   limit?: number
@@ -411,6 +425,29 @@ export const workspaceApi = {
       )
     } catch (err) {
       handleAxiosError(err, 'clearDefaultDeployment')
+    }
+  },
+
+  /**
+   * Ask which of these node types each of the workspace's deployments, and
+   * Comfy Cloud, does not have. A POST because a workflow's type list does
+   * not fit a query string. Members only, like the listing.
+   * POST /api/workspaces/:id/deployments/compatibility
+   */
+  async checkDeploymentCompatibility(
+    workspaceId: WorkspaceId,
+    nodeTypes: string[]
+  ): Promise<DeploymentCompatibility> {
+    const auth = await requestAuth()
+    try {
+      const response = await workspaceApiClient.post<DeploymentCompatibility>(
+        workspaceApiUrl(`/workspaces/${workspaceId}/deployments/compatibility`),
+        { node_types: nodeTypes },
+        auth
+      )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err, 'checkDeploymentCompatibility')
     }
   },
 

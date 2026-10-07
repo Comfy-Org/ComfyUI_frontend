@@ -417,6 +417,26 @@ describe('workspaceApi', () => {
         { headers: AUTH_HEADER }
       )
     })
+
+    it('checkDeploymentCompatibility() sends POST /workspaces/:id/deployments/compatibility with the node types', async () => {
+      const data = {
+        deployments: [{ deployment_id: 'dep-1', missing_node_types: [] }],
+        cloud: { missing_node_types: ['Power Lora Loader (rgthree)'] }
+      }
+      mockAxiosInstance.post.mockResolvedValue({ data })
+
+      const result = await workspaceApi.checkDeploymentCompatibility('ws-1', [
+        'KSampler',
+        'Power Lora Loader (rgthree)'
+      ])
+
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+        '/api/workspaces/ws-1/deployments/compatibility',
+        { node_types: ['KSampler', 'Power Lora Loader (rgthree)'] },
+        { headers: AUTH_HEADER }
+      )
+      expect(result).toEqual(data)
+    })
   })
 
   describe('member management', () => {
