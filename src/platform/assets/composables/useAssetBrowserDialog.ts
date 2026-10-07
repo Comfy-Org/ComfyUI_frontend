@@ -3,8 +3,8 @@ import type { Component } from 'vue'
 import { SELF_STYLED_PANEL_CONTENT_CLASS } from '@/components/ui/dialog/dialog.variants'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { AssetBrowserModalProps } from '@/platform/assets/types/assetBrowserModalProps'
-import { useDialogService } from '@/services/dialogService'
 import { reportError } from '@/platform/telemetry/reportError'
+import { useDialogService } from '@/services/dialogService'
 import type { DialogComponentProps } from '@/stores/dialogStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
@@ -54,7 +54,7 @@ export const useAssetBrowserDialog = () => {
       reportError(
         new Error('Asset browser modal component is not registered'),
         {
-          errorType: 'asset_browser_modal_not_registered',
+          errorType: 'failure_opening_asset_browser_modal',
           surface: 'assets'
         }
       )
