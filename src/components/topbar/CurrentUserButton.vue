@@ -1,6 +1,6 @@
 <!-- A button that shows workspace icon (Cloud) or user avatar -->
 <template>
-  <div>
+  <div ref="root">
     <Button
       v-if="isLoggedIn"
       class="p-1 hover:bg-transparent"
@@ -60,13 +60,15 @@
 import { storeToRefs } from 'pinia'
 import Popover from '@/components/common/ImperativePopover.vue'
 import Skeleton from 'primevue/skeleton'
-import { computed, defineAsyncComponent, ref } from 'vue'
+import { computed, defineAsyncComponent, ref, useTemplateRef, watch } from 'vue'
 
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { isCloud } from '@/platform/distribution/types'
+import { useDeploymentSwitcherOffered } from '@/platform/workspace/composables/useDeploymentSwitcherOffered'
+import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -122,4 +124,23 @@ const closePopover = () => {
 const onPopoverShow = () => {
   workspacePopoverContent.value?.refreshBalance()
 }
+
+const root = useTemplateRef('root')
+const pickStore = useDeploymentPickStore()
+const { switcherOpenAsks } = storeToRefs(pickStore)
+const switcherOffered = useDeploymentSwitcherOffered()
+
+function isOnScreen(element: HTMLElement | null): element is HTMLElement {
+  return element !== null && element.getClientRects().length > 0
+}
+
+// The missing-nodes message asks for the deployment switcher, which lives in
+// this popover (BE-19374). Only the button on screen whose popover offers the
+// switcher takes the ask and hands it to the switcher.
+watch(switcherOpenAsks, () => {
+  const anchor = root.value
+  if (!switcherOffered.value || !popover.value || !isOnScreen(anchor)) return
+  pickStore.switcherOpenRequested = true
+  popover.value.show(new MouseEvent('click'), anchor)
+})
 </script>

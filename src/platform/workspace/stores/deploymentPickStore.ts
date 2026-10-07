@@ -133,6 +133,21 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     if (boot === undefined || !isVisible.value) return null
     return changeBetween(boot, pickedDeployment.value)
   })
+  /**
+   * Counts asks from elsewhere in the editor to open the switcher (BE-19374),
+   * so each click is a new ask. The user button on screen takes one only
+   * where its popover offers the switcher; an ask nothing takes is dropped.
+   */
+  const switcherOpenAsks = shallowRef(0)
+  /**
+   * Set by the user button as it opens its popover for an ask; the switcher
+   * clears it as it opens.
+   */
+  const switcherOpenRequested = shallowRef(false)
+
+  function requestSwitcherOpen() {
+    switcherOpenAsks.value++
+  }
 
   /**
    * Orders the answers. Each `load()` takes the next number (`latestRequest`);
@@ -307,11 +322,14 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     isSwitching,
     bootDeployment,
     changeSinceBoot,
+    switcherOpenAsks,
+    switcherOpenRequested,
     load,
     loadOnce,
     pick,
     followWorkspace,
-    setDefault
+    setDefault,
+    requestSwitcherOpen
   }
 })
 
