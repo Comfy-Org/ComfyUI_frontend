@@ -1,5 +1,3 @@
-import { readFile } from 'node:fs/promises'
-
 import type { BrowserContext, Locator } from '@playwright/test'
 import { expect } from '@playwright/test'
 
@@ -151,7 +149,7 @@ test('@mobile opens a source picture full screen with its close button clear of 
   expect(close.y + close.height).toBeLessThanOrEqual(picture.y)
 })
 
-test('the workflow API tab downloads the API graph as JSON', async ({
+test('the workflow API section offers a key and the docs, and no second download', async ({
   page,
   context
 }) => {
@@ -159,13 +157,12 @@ test('the workflow API tab downloads the API graph as JSON', async ({
   await page.goto(WORKFLOW_PATH)
   await page.getByTestId('workflow-path-api').click()
 
-  const [download] = await Promise.all([
-    page.waitForEvent('download'),
-    page.getByRole('button', { name: /Download the API graph/ }).click()
-  ])
-  expect(download.suggestedFilename()).toBe('remove-background-api.json')
-  const path = await download.path()
-  const graph = await readFile(path, 'utf8')
-  expect(Object.keys(JSON.parse(graph))).not.toHaveLength(0)
-  expect(graph).toContain('"class_type"')
+  const api = page.getByTestId('workflow-api')
+  await expect(api.getByRole('link', { name: /^Get an API key/ })).toBeVisible()
+  await expect(api.getByRole('link', { name: /^API docs/ })).toHaveAttribute(
+    'target',
+    '_blank'
+  )
+  await expect(api.getByRole('button', { name: /Download/ })).toHaveCount(0)
+  await expect(page.getByRole('link', { name: /Download/ })).toHaveCount(1)
 })

@@ -226,9 +226,7 @@ test('Cloud upload, refresh, partial delivery and downloads retain one run @mobi
   await expect(page.getByTestId('workflow-api-endpoint')).toContainText(
     '/api/prompt'
   )
-  await expect(
-    page.getByRole('link', { name: 'API documentation' })
-  ).toBeVisible()
+  await expect(page.getByRole('link', { name: /^API docs/ })).toBeVisible()
   const snippet = await page.getByTestId('workflow-api-snippet').textContent()
   expect(snippet).toContain('/api/prompt')
   expect(snippet).toContain('X-API-Key:')
@@ -241,10 +239,10 @@ test('Cloud upload, refresh, partial delivery and downloads retain one run @mobi
   const panelRight = await inside.evaluate(
     (panel) => panel.getBoundingClientRect().right
   )
-  const downloadRight = await page
-    .getByRole('link', { name: 'Download workflow JSON' })
-    .evaluate((link) => link.getBoundingClientRect().right)
-  expect(downloadRight).toBeLessThanOrEqual(panelRight)
+  const detailsRight = await page
+    .getByTestId('workflow-details')
+    .evaluate((details) => details.getBoundingClientRect().right)
+  expect(detailsRight).toBeLessThanOrEqual(panelRight)
   await page.getByTestId('workflow-path-api').click()
   await expect(page.getByTestId('workflow-api-snippet')).toHaveText(
     snippet ?? ''

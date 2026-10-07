@@ -47,10 +47,9 @@ import WorkflowExampleCard from './WorkflowExampleCard.vue'
 const SECTION_CLASS =
   'mt-16 scroll-mt-28 border-t border-transparency-white-t8 pt-12'
 
-const { model, scope, cloudHref } = defineProps<{
+const { model, scope } = defineProps<{
   model: WorkflowWorkshopModelDetail
   scope: string
-  cloudHref?: string
 }>()
 const emit = defineEmits<{ recovery: [active: boolean] }>()
 const footer = useTemplateRef<HTMLElement>('footer')
@@ -367,7 +366,6 @@ function start() {
     <WorkflowPreview
       :active="graphReached || !canWatchSections"
       :model="model"
-      :cloud-href="cloudHref"
     />
   </div>
   <div id="api" ref="api" :class="SECTION_CLASS" data-testid="workflow-api">

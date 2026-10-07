@@ -1,6 +1,14 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen, within } from '@testing-library/vue'
-import { assert, describe, expect, it, onTestFinished, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import { defineComponent, h, readonly, ref } from 'vue'
 
 import { workflowDetailsBySlug } from '@/config/workshop-workflow-content'
@@ -30,6 +38,14 @@ const mount = (selected = model) =>
       stubs: { WorkflowPlayground: PlaygroundStub, WorkflowGraph: true }
     }
   })
+
+// The More like this row reads the catalogue; nothing here reaches the network.
+beforeEach(() => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => Response.error())
+  )
+})
 
 describe('WorkflowPage header', () => {
   it('sends the shelf it names to that shelf, filtered', () => {
@@ -152,21 +168,49 @@ describe('WorkflowPage header', () => {
     expect(location.hash).toBe('#api')
   })
 
-  it('reports workflow downloads from the hero once access is enabled', async () => {
+  it.for([
+    { name: 'Download workflow', event: 'workflow_download_clicked' },
+    { name: /Try in Comfy Cloud/, event: 'try_in_cloud_clicked' }
+  ])(
+    'reports $event from the hero once access is enabled',
+    async ({ name, event }) => {
+      vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(ref(true)))
+      vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(
+        readonly(ref(true))
+      )
+      mount()
+      const link = screen.getByRole('link', { name })
+      link.addEventListener('click', (click) => click.preventDefault(), {
+        once: true
+      })
+
+      await userEvent.setup().click(link)
+
+      expect(captureWorkshopEvent).toHaveBeenCalledWith({
+        name: event,
+        properties: expect.objectContaining({
+          model_slug: model.slug,
+          page_type: 'workflow',
+          workflow_id: model.workflowId
+        })
+      })
+    }
+  )
+
+  it('reports no hero clicks while Workflows access is off', async () => {
     vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(ref(true)))
-    vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(readonly(ref(true)))
+    vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(readonly(ref(false)))
     mount()
-    const download = screen.getByRole('link', { name: 'Download workflow' })
-    download.addEventListener('click', (event) => event.preventDefault(), {
-      once: true
-    })
+    const visitor = userEvent.setup()
+    for (const name of ['Download workflow', /Try in Comfy Cloud/]) {
+      const link = screen.getByRole('link', { name })
+      link.addEventListener('click', (click) => click.preventDefault(), {
+        once: true
+      })
+      await visitor.click(link)
+    }
 
-    await userEvent.setup().click(download)
-
-    expect(captureWorkshopEvent).toHaveBeenCalledWith({
-      name: 'workflow_download_clicked',
-      properties: expect.objectContaining({ model_slug: model.slug })
-    })
+    expect(captureWorkshopEvent).not.toHaveBeenCalled()
   })
 
   it('offers no download path for a workflow with no file to download', () => {

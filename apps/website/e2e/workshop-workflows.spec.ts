@@ -115,10 +115,7 @@ test('workflow launch groups lead to the existing shared form', async ({
     .click()
   await page.getByTestId('example-replace-keep').click()
   await expect(prompt).toHaveValue('Use the material from the second image.')
-  await page.getByTestId('workflow-inside').scrollIntoViewIfNeeded()
-  await expect(
-    page.getByRole('link', { name: 'Try in Cloud' })
-  ).toHaveAttribute(
+  await expect(page.getByTestId('workflow-path-cloud')).toHaveAttribute(
     'href',
     'https://testcloud.comfy.org/?template=image_qwen_image_edit_2511'
   )
@@ -129,7 +126,7 @@ test('workflow launch groups lead to the existing shared form', async ({
       type: 'image/svg+xml'
     },
     {
-      link: page.getByRole('link', { name: 'Download workflow JSON' }),
+      link: page.getByTestId('workflow-path-download'),
       path: '/workflow-graphs/change-material.json',
       type: 'application/json'
     }
@@ -722,4 +719,34 @@ test('every workflow card carries its whole name, not a shortened one', async ({
     text.trim() === whole[index] ? [] : [`${whole[index]} -> ${text.trim()}`]
   )
   expect(shortened).toEqual([])
+})
+
+test('keeps each workflow path on one line and offers more like it', async ({
+  page,
+  context
+}) => {
+  await mockWorkflowVisibility(context, true)
+  await page.goto('/hub/workflows/remove-background/')
+
+  const paths = page.getByTestId('workflow-paths').getByRole('link')
+  await expect(paths).toHaveText([
+    'Run here',
+    /Try in Comfy Cloud/,
+    'Download workflow',
+    'API'
+  ])
+  for (const path of await paths.all()) {
+    const box = await path.boundingBox()
+    expect(box?.height).toBeLessThan(50)
+  }
+
+  const more = page.getByRole('region', { name: 'More like this' })
+  await more.scrollIntoViewIfNeeded()
+  await expect(more.getByRole('link').first()).toHaveAttribute(
+    'href',
+    /^\/hub\/workflows\/[a-z0-9-]+\/$/
+  )
+  await expect(
+    more.locator('a[href="/hub/workflows/remove-background/"]')
+  ).toHaveCount(0)
 })

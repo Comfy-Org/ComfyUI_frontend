@@ -156,7 +156,7 @@ describe('WorkflowPlayground API analytics', () => {
     vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(readonly(ref(true)))
     render(WorkflowPlayground, { props: { model, scope: 'anonymous' } })
     const visitor = userEvent.setup()
-    const getKey = screen.getByRole('link', { name: 'Get API key' })
+    const getKey = screen.getByRole('link', { name: /^Get an API key/ })
     getKey.addEventListener('click', (event) => event.preventDefault(), {
       once: true
     })
@@ -206,7 +206,7 @@ describe('WorkflowPlayground API analytics', () => {
     })
     const visitor = userEvent.setup()
     await visitor.click(screen.getByRole('button', { name: 'Copy snippet' }))
-    const getKey = screen.getByRole('link', { name: 'Get API key' })
+    const getKey = screen.getByRole('link', { name: /^Get an API key/ })
     getKey.addEventListener('click', (event) => event.preventDefault(), {
       once: true
     })
@@ -249,20 +249,17 @@ describe('WorkflowPlayground sections', () => {
     expect(screen.getByTestId('workflow-api')).toHaveAttribute('id', 'api')
   })
 
-  // The way out of the page lives beside the graph, so the panel that asks
-  // the questions carries the run control and nothing else.
-  it('heads the questions and leaves the ways out to the workflow section', () => {
+  // The ways out of the page are the hero's alone, so neither the panel that
+  // asks the questions nor the graph below it repeats them.
+  it('heads the questions and leaves the ways out to the hero', () => {
     const model = workflowDetailsBySlug.get('workflows/remove-background')
     assert(model)
-    render(WorkflowPlayground, {
-      props: { model, scope: 'anonymous', cloudHref: 'https://cloud/?t=1' }
-    })
+    render(WorkflowPlayground, { props: { model, scope: 'anonymous' } })
 
     const playground = screen.getByRole('region', { name: 'Try it' })
     expect(playground).toHaveTextContent('Input')
-    expect(
-      within(playground).queryByRole('link', { name: 'Try in Cloud' })
-    ).toBeNull()
+    expect(screen.queryByRole('link', { name: /Cloud/ })).toBeNull()
+    expect(screen.queryByRole('link', { name: /Download/ })).toBeNull()
   })
 
   it('keeps the examples inside the Try it section', () => {

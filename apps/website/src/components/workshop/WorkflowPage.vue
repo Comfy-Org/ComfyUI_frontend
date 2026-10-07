@@ -20,6 +20,7 @@ import {
 import { workshopModelAnalytics } from '@/scripts/workshop-analytics'
 import CatalogueBackLink from './CatalogueBackLink.vue'
 import HubBreadcrumb from './HubBreadcrumb.vue'
+import WorkflowMoreLikeThis from './WorkflowMoreLikeThis.vue'
 import WorkflowPlayground from './WorkflowPlayground.vue'
 import WorkflowPreview from './WorkflowPreview.vue'
 
@@ -73,6 +74,14 @@ function goTo(event: MouseEvent, id: string) {
   event.preventDefault()
   scrollToSection(id)
   history.replaceState(history.state, '', `#${id}`)
+}
+
+function captureTryInCloud() {
+  if (enabled.value && workflowsEnabled.value)
+    captureWorkshopEvent({
+      name: 'try_in_cloud_clicked',
+      properties: workshopModelAnalytics(model)
+    })
 }
 
 function captureDownload() {
@@ -130,7 +139,9 @@ function captureDownload() {
           data-testid="workflow-path-run"
           @click="goTo($event, 'playground')"
         >
-          <Play class="size-3.5 fill-current" aria-hidden="true" />
+          <template #prepend>
+            <Play class="size-3.5 fill-current" aria-hidden="true" />
+          </template>
           {{ t('workshop.workflow.runHere') }}
         </Button>
         <Button
@@ -142,13 +153,18 @@ function captureDownload() {
           :variant="primary === 'cloud' ? 'default' : 'ghost'"
           :class="primary === 'cloud' ? 'px-5' : secondaryPathClass"
           data-testid="workflow-path-cloud"
+          @click="captureTryInCloud"
         >
-          <Cloud class="size-4" aria-hidden="true" />
+          <template #prepend>
+            <Cloud class="size-4" aria-hidden="true" />
+          </template>
           {{ t('workshop.workflow.runInCloud') }}
-          <ArrowUpRight class="size-3.5 opacity-70" aria-hidden="true" />
           <span class="sr-only">{{
             t('workshop.workflow.opensInNewTab')
           }}</span>
+          <template #append>
+            <ArrowUpRight class="size-3.5 opacity-70" aria-hidden="true" />
+          </template>
         </Button>
         <Button
           v-if="template?.downloadUrl"
@@ -160,7 +176,9 @@ function captureDownload() {
           data-testid="workflow-path-download"
           @click="captureDownload"
         >
-          <Download class="size-4" aria-hidden="true" />
+          <template #prepend>
+            <Download class="size-4" aria-hidden="true" />
+          </template>
           {{ t('workshop.workflow.downloadWorkflow') }}
         </Button>
         <Button
@@ -172,7 +190,9 @@ function captureDownload() {
           data-testid="workflow-path-api"
           @click="goTo($event, 'api')"
         >
-          <Code class="size-4" aria-hidden="true" />
+          <template #prepend>
+            <Code class="size-4" aria-hidden="true" />
+          </template>
           {{ t('workshop.workflow.apiPath') }}
         </Button>
       </nav>
@@ -183,7 +203,6 @@ function captureDownload() {
       :key="scope"
       :model="model"
       :scope="scope"
-      :cloud-href="cloudHref"
       @recovery="emit('recovery', $event)"
     />
     <div
@@ -192,7 +211,11 @@ function captureDownload() {
       class="scroll-mt-28"
       data-testid="workflow-inside"
     >
-      <WorkflowPreview :model :with-actions="false" />
+      <WorkflowPreview :model />
     </div>
+    <WorkflowMoreLikeThis
+      :model
+      class="mt-16 border-t border-transparency-white-t8 pt-12"
+    />
   </div>
 </template>
