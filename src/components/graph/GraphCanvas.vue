@@ -229,6 +229,10 @@ const nodeSearchboxPopoverRef = shallowRef<InstanceType<
   typeof NodeSearchboxPopover
 > | null>(null)
 const settingStore = useSettingStore()
+// Extensions still listen for `<id>.change` events on the legacy dialog.
+settingStore.onSettingChanged(({ id, value, oldValue }) =>
+  comfyApp.ui.settings.dispatchChange(id, value, oldValue)
+)
 const nodeDefStore = useNodeDefStore()
 const workspaceStore = useWorkspaceStore()
 const { isBuilderMode } = useAppMode()
@@ -547,10 +551,6 @@ onMounted(async () => {
       throw settingsError.value
     }
 
-    // Extensions still listen for `<id>.change` events on the legacy dialog.
-    settingStore.onSettingChanged(({ id, value, oldValue }) =>
-      comfyApp.ui.settings.dispatchChange(id, value, oldValue)
-    )
     // Register core settings immediately after settings are ready
     CORE_SETTINGS.forEach(settingStore.addSetting)
 
