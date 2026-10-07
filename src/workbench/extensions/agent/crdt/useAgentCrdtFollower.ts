@@ -36,7 +36,10 @@ import type { GraphOperation } from './graphOperations'
 import type { ClassifiedDocUpdate } from './layoutFollowerBridge'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
 import type { LiveGraphApplierDeps } from './liveGraphApplier'
-import { readDocSlotNames } from './liveGraphApplier'
+import {
+  readDocPromotedWidgetNames,
+  readDocSlotNames
+} from './liveGraphApplier'
 import { createOpCoalescer } from './opCoalescer'
 import { createOpSender } from './opSender'
 import type { BatchOutcome, OpsResultView } from './opSender'
@@ -341,7 +344,9 @@ export function useAgentCrdtFollower(
     enqueueHumanOperations: (operations: GraphOperation[]) =>
       follower.value?.enqueueHumanOperations(operations),
     docInputNames: (nodeId: NodeId) =>
-      follower.value?.docInputNames(nodeId) ?? null
+      follower.value?.docInputNames(nodeId) ?? null,
+    docPromotedWidgetNames: (nodeId: NodeId) =>
+      follower.value?.docPromotedWidgetNames(nodeId) ?? null
   }
 }
 
@@ -893,6 +898,8 @@ function startAgentCrdtFollower(
       coalescer.enqueue(operations)
     },
     docInputNames: (nodeId: NodeId) =>
-      readDocSlotNames(bridge.follower.doc, String(nodeId), 'inputs')
+      readDocSlotNames(bridge.follower.doc, String(nodeId), 'inputs'),
+    docPromotedWidgetNames: (nodeId: NodeId) =>
+      readDocPromotedWidgetNames(bridge.follower.doc, String(nodeId))
   }
 }

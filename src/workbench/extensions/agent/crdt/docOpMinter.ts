@@ -65,6 +65,12 @@ export interface DocOpMinterDeps {
    * flight, or no document is subscribed).
    */
   docInputNames(nodeId: NodeId): readonly (string | undefined)[] | null
+  /**
+   * The bound document's widget-backed input names for a node, in document
+   * order, or null when the document holds no such node. Indexes the opaque
+   * `widgets_values` a promoted write addresses.
+   */
+  docPromotedWidgetNames(nodeId: NodeId): readonly string[] | null
 }
 
 export interface DocOpMinter {
@@ -185,29 +191,41 @@ function isValueWidgetWrite(
  * catalog never describes it and the document stores its promoted values as
  * one opaque positional array (schema §1.2) that no name can address: a named
  * `set_widget` against such a node is rejected outright (`opaque_widgets`),
- * which bounced every edit to a promoted widget while the agent held the
- * document (PM-1995). `value_index` is the widget's position among the node's
- * widget-backed inputs — the order `SubgraphNode.serialize` writes
- * `widgets_values` in, and the order the follower reads them back in.
+ * which bounced edits to a promoted widget while the agent held the document
+ * (PM-1995). A host nested inside another definition still takes the interior
+ * route below and is still refused.
+ *
+ * `value_index` indexes the DOCUMENT's array, so it is resolved against the
+ * document's own widget-backed input order rather than the live one, which
+ * drifts from it (`reorderSubgraphInputsByWidgetOrder` permutes the live host
+ * without minting anything). A name the document does not carry fails closed
+ * — the named op is minted and refused as before, rather than landing on
+ * whatever register sits at that index. The live order stands in only while
+ * the document has no such node yet, exactly as `docInputIndex` does for a
+ * link's target slot.
  */
 function promotedHostWrite(
   node: LGraphNode | null,
-  event: IntentOf<'set_widget'>
+  event: IntentOf<'set_widget'>,
+  docPromotedNames: () => readonly string[] | null
 ): PromotedHostWrite | null {
   if (!node?.isSubgraphNode()) return null
-  const hostInputs = node.inputs.flatMap((input) =>
-    input.widgetId ? [{ name: input.name, widgetId: input.widgetId }] : []
+  const liveNames = node.inputs.flatMap((input) =>
+    input.widgetId ? [input.name] : []
   )
-  const valueIndex = hostInputs.findIndex((input) => input.name === event.name)
+  const order = docPromotedNames() ?? liveNames
+  const valueIndex = order.indexOf(event.name)
   if (valueIndex === -1) return null
   const widgetValueStore = useWidgetValueStore()
+  const rootGraphId = node.graph?.rootGraph.id ?? event.graphId
   return {
     value_index: valueIndex,
     instance_path: [String(event.nodeId)],
-    host_widgets_values: hostInputs.map((input, index) =>
+    host_widgets_values: order.map((name, index) =>
       index === valueIndex
         ? event.value
-        : widgetValueStore.getWidget(input.widgetId)?.value
+        : widgetValueStore.getWidget(widgetId(rootGraphId, event.nodeId, name))
+            ?.value
     )
   }
 }
@@ -216,7 +234,8 @@ function routedWidgetOperation(
   graph: LGraph,
   rootGraphId: string,
   event: IntentOf<'set_widget'>,
-  node: LGraphNode | null
+  node: LGraphNode | null,
+  docPromotedNames: () => readonly string[] | null
 ): GraphOperation | null {
   const operation = {
     op: 'set_widget',
@@ -227,7 +246,7 @@ function routedWidgetOperation(
   } as const
   const owningGraphId = node?.graph?.id ?? event.graphId
   if (owningGraphId === rootGraphId) {
-    const promoted = promotedHostWrite(node, event)
+    const promoted = promotedHostWrite(node, event, docPromotedNames)
     return promoted ? { ...operation, promoted } : operation
   }
   const subgraphNodePath = findSubgraphNodePathById(graph, owningGraphId)
@@ -397,7 +416,13 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       : null
     if (!isValueWidgetWrite(owner, event)) return
     const rootGraphId = deps.boundRootGraphId() ?? graph.id
-    const operation = routedWidgetOperation(graph, rootGraphId, event, owner)
+    const operation = routedWidgetOperation(
+      graph,
+      rootGraphId,
+      event,
+      owner,
+      () => deps.docPromotedWidgetNames(event.nodeId)
+    )
     if (operation) schedule({ kind: 'op', operation })
   }
 

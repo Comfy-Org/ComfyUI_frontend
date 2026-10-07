@@ -32,7 +32,10 @@ import { createUuidv4 } from '@/utils/uuid'
 import { attachDocOpMinter, wireNodeSnapshot } from './docOpMinter'
 import type { DocOpMinter, DocOpMinterDeps } from './docOpMinter'
 import type { GraphOperation } from './graphOperations'
-import { readDocSlotNames } from './liveGraphApplier'
+import {
+  readDocPromotedWidgetNames,
+  readDocSlotNames
+} from './liveGraphApplier'
 import { mintWireOps } from './opEnvelope'
 
 vi.mock(import('@/platform/telemetry/reportError'))
@@ -170,6 +173,7 @@ describe('attachDocOpMinter', () => {
   let enabled: boolean
   let bound: boolean
   let docInputNames: DocOpMinterDeps['docInputNames']
+  let docPromotedWidgetNames: DocOpMinterDeps['docPromotedWidgetNames']
 
   beforeEach(() => {
     graph = new LGraph()
@@ -178,13 +182,15 @@ describe('attachDocOpMinter', () => {
     enabled = true
     bound = true
     docInputNames = () => null
+    docPromotedWidgetNames = () => null
     minter = attachDocOpMinter({
       isEnabled: () => enabled,
       isDocBound: () => bound,
       enqueue: (operations) => minted.push(...operations),
       getGraph: () => graph,
       boundRootGraphId: () => rootGraphId,
-      docInputNames: (nodeId) => docInputNames(nodeId)
+      docInputNames: (nodeId) => docInputNames(nodeId),
+      docPromotedWidgetNames: (nodeId) => docPromotedWidgetNames(nodeId)
     })
   })
 
@@ -472,7 +478,8 @@ describe('attachDocOpMinter', () => {
       enqueue,
       getGraph: () => graph,
       boundRootGraphId: () => rootGraphId,
-      docInputNames: () => null
+      docInputNames: () => null,
+      docPromotedWidgetNames: () => null
     })
 
     const added = new TestSink()
@@ -682,7 +689,7 @@ describe('attachDocOpMinter', () => {
     ])
   })
 
-  it('PM-1995: mints a promoted host write the doc host accepts', async () => {
+  function seedPromotedHost() {
     const subgraph = createTestSubgraph({
       rootGraph: graph,
       inputs: [
@@ -694,15 +701,22 @@ describe('attachDocOpMinter', () => {
     const host = createTestSubgraphNode(subgraph)
     withGraphIntentSource('load', () => {
       graph.add(host)
-      for (const [index, name] of ['prefix', 'text'].entries()) {
+      for (const index of [0, 1]) {
         const interior = LiteGraph.createNode('TestPrompt')
         assert.exists(interior)
         subgraph.add(interior)
         subgraph.inputNode.slots[index].connect(interior.inputs[0], interior)
-        interior.widgets![0].name = name
       }
     })
     const doc = mintDocFrom(graph)
+    docPromotedWidgetNames = (nodeId) =>
+      readDocPromotedWidgetNames(doc, String(nodeId))
+    return { host, doc }
+  }
+
+  it('PM-1995: mints a promoted host write the doc host accepts', async () => {
+    const { host, doc } = seedPromotedHost()
+    expect(host.inputs.map((input) => input.name)).toEqual(['prefix', 'text'])
 
     host.widgets[1].value = 'a prompt pasted while the agent panel is open'
     await afterFlush()
@@ -743,6 +757,46 @@ describe('attachDocOpMinter', () => {
       'an interior default',
       'a prompt pasted while the agent panel is open'
     ])
+    doc.destroy()
+  })
+
+  it('indexes a promoted write by the document order, not the live one', async () => {
+    const { host, doc } = seedPromotedHost()
+    docPromotedWidgetNames = () => ['text', 'prefix']
+
+    host.widgets[1].value = 'pasted'
+    await afterFlush()
+
+    expect(minted).toEqual([
+      expect.objectContaining({
+        widget: 'text',
+        promoted: expect.objectContaining({
+          value_index: 0,
+          host_widgets_values: ['pasted', 'an interior default']
+        })
+      })
+    ])
+    expect(applyMinted(doc, minted)).toEqual(['applied'])
+    doc.destroy()
+  })
+
+  it('refuses to guess an index the document does not carry the name for', async () => {
+    const { host, doc } = seedPromotedHost()
+    docPromotedWidgetNames = () => ['prefix']
+
+    host.widgets[1].value = 'pasted'
+    await afterFlush()
+
+    expect(minted).toEqual([
+      {
+        op: 'set_widget',
+        node_id: host.id,
+        widget: 'text',
+        value: 'pasted',
+        old: 'an interior default'
+      }
+    ])
+    expect(applyMinted(doc, minted)).toEqual(['rejected'])
     doc.destroy()
   })
 

@@ -29,7 +29,10 @@ import { emitGraphIntent } from '@/lib/litegraph/src/graphIntents'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LLink } from '@/lib/litegraph/src/LLink'
-import { readDocSlotNames } from './liveGraphApplier'
+import {
+  readDocPromotedWidgetNames,
+  readDocSlotNames
+} from './liveGraphApplier'
 import { toRootGraphId } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
 
@@ -188,7 +191,10 @@ describe('agent CRDT outbound leg: link mint by live position vs. doc order', ()
       enqueue: (operations) => minted.push(...operations),
       getGraph: () => rootGraph,
       boundRootGraphId: () => ROOT_GRAPH_ID,
-      docInputNames: (nodeId) => readDocSlotNames(doc, String(nodeId), 'inputs')
+      docInputNames: (nodeId) =>
+        readDocSlotNames(doc, String(nodeId), 'inputs'),
+      docPromotedWidgetNames: (nodeId) =>
+        readDocPromotedWidgetNames(doc, String(nodeId))
     })
 
     emitGraphIntent({

@@ -362,6 +362,25 @@ function readDocSlotName(
   return readDocSlotNames(doc, nodeId, kind)?.[slot]
 }
 
+/**
+ * The names of a node's widget-backed input slots, in document order: the
+ * order its opaque `widgets_values` is positional over, so an index into this
+ * list is an index into that array. Null when the document holds no such node.
+ */
+export function readDocPromotedWidgetNames(
+  doc: Y.Doc,
+  nodeId: string
+): readonly string[] | null {
+  const slots = nodesMap(doc).get(nodeId)?.get('inputs')
+  const list: unknown = slots instanceof Y.Array ? slots.toJSON() : slots
+  if (!Array.isArray(list)) return null
+  return list.flatMap((entry: unknown) => {
+    if (typeof entry !== 'object' || entry === null) return []
+    const { name, widget } = entry as { name?: unknown; widget?: unknown }
+    return typeof name === 'string' && widget != null ? [name] : []
+  })
+}
+
 /** The document's value for a node's named widget, or undefined when it holds none. */
 export function readDocWidgetValue(
   doc: Y.Doc,
