@@ -1,0 +1,93 @@
+---
+interface Props {
+  id: string
+  title: string
+  area: string
+  areaLabel: string
+  stageLabel: string
+  date?: string
+  link?: string
+  /** Shipped sits above the NOW marker and gets the filled dot. */
+  shipped?: boolean
+}
+
+const {
+  id,
+  title,
+  area,
+  areaLabel,
+  stageLabel,
+  date,
+  link,
+  shipped = false
+} = Astro.props
+
+const chip =
+  'rounded-full border px-2.5 py-1 text-2xs font-bold tracking-widest uppercase'
+const dot = shipped
+  ? 'bg-primary-comfy-yellow'
+  : 'border border-primary-comfy-canvas/40 bg-primary-comfy-ink'
+---
+
+<li class="roadmap-item relative pb-10 last:pb-0" data-area={area}>
+  <span
+    class={`absolute top-2 -left-7 size-2 -translate-x-1/2 rounded-full ${dot}`}
+    aria-hidden="true"
+  ></span>
+
+  <div class="flex flex-wrap items-center gap-2">
+    {date && <span
+      class="text-2xs font-bold tracking-widest text-primary-comfy-canvas/70 uppercase"
+    >
+      {date}
+    </span>}
+    <span
+      class={`${chip} border-primary-comfy-yellow/30 text-primary-comfy-yellow`}
+    >
+      {stageLabel}
+    </span>
+    <span
+      class={`${chip} border-primary-comfy-canvas/20 text-primary-comfy-canvas/60`}
+    >
+      {areaLabel}
+    </span>
+  </div>
+
+  <h3 class="mt-2 text-lg font-light wrap-break-word text-primary-comfy-canvas">
+    {link ? (
+      <a
+        href={link}
+        class="rounded-xs underline decoration-primary-comfy-canvas/30 underline-offset-4 transition-colors hover:text-primary-comfy-yellow hover:decoration-primary-comfy-yellow focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-comfy-yellow"
+      >
+        {title}
+      </a>
+    ) : (
+      title
+    )}
+  </h3>
+
+  <div
+    class="roadmap-entry mt-2 max-w-3xl text-sm font-light wrap-break-word text-primary-comfy-canvas/70"
+    data-entry={id}
+  >
+    <slot />
+  </div>
+</li>
+
+<style>
+  .roadmap-entry :global(p) {
+    margin: 0 0 0.75rem;
+  }
+  .roadmap-entry :global(p:last-child) {
+    margin-bottom: 0;
+  }
+  .roadmap-entry :global(a) {
+    color: var(--color-primary-comfy-yellow);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    transition: opacity 0.15s;
+  }
+  .roadmap-entry :global(a:hover) {
+    opacity: 0.7;
+  }
+</style>
