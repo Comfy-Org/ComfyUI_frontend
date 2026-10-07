@@ -153,26 +153,63 @@ describe('changed-path boundary', () => {
 })
 
 describe('approval policy', () => {
-  it('accepts only the current trusted label event for a non-trusted author', () => {
+  const operatorLabelEvent = {
+    name: 'pull_request_target',
+    action: 'labeled',
+    actor: 'DrJKL',
+    label: 'website-fast-lane:approve'
+  }
+
+  it.for([
+    {
+      name: 'the trusted operator label event',
+      labels: ['website-fast-lane:approve'],
+      event: operatorLabelEvent,
+      expected: true
+    },
+    {
+      name: 'an untrusted labeler',
+      labels: ['website-fast-lane:approve'],
+      event: { ...operatorLabelEvent, actor: 'someone-else' },
+      expected: false
+    },
+    {
+      name: 'a different label from the operator',
+      labels: ['website-fast-lane:approve'],
+      event: { ...operatorLabelEvent, label: 'area:website' },
+      expected: false
+    },
+    {
+      name: 'an unlabeled event',
+      labels: ['website-fast-lane:approve'],
+      event: { ...operatorLabelEvent, action: 'unlabeled' },
+      expected: false
+    },
+    {
+      name: 'a pull_request event',
+      labels: ['website-fast-lane:approve'],
+      event: { ...operatorLabelEvent, name: 'pull_request' },
+      expected: false
+    },
+    {
+      name: 'a label already removed from the pull request',
+      labels: [],
+      event: operatorLabelEvent,
+      expected: false
+    }
+  ])('authorizes $name: $expected', ({ labels, event, expected }) => {
+    const pull = eligiblePull({
+      user: { login: 'someone-else' },
+      labels: labels.map((name) => ({ name }))
+    })
+    expect(hasAuthorizedApprovalLabel(pull, lane, event)).toBe(expected)
+  })
+
+  it('gates a non-trusted author on a current label event or a head approval', () => {
     const pull = eligiblePull({
       user: { login: 'someone-else' },
       labels: [{ name: 'website-fast-lane:approve' }]
     })
-    expect(
-      hasAuthorizedApprovalLabel(pull, lane, {
-        name: 'pull_request_target',
-        action: 'labeled',
-        actor: 'DrJKL',
-        label: 'website-fast-lane:approve'
-      })
-    ).toBe(true)
-    expect(
-      hasAuthorizedApprovalLabel(pull, lane, {
-        name: 'pull_request_target',
-        action: 'synchronize',
-        actor: 'someone-else'
-      })
-    ).toBe(false)
     expect(
       failure(pull, {
         eventName: 'pull_request_target',
@@ -186,13 +223,6 @@ describe('approval policy', () => {
         eventName: 'workflow_run'
       })
     ).toBeUndefined()
-    expect(
-      failure(eligiblePull({ user: { login: 'someone-else' }, labels: [] }), {
-        hasPolicyApprovalForHead: true,
-        eventName: 'pull_request_target',
-        eventAction: 'unlabeled'
-      })
-    ).toContain('lacks a current authorized event')
     expect(
       failure(pull, {
         eventName: 'pull_request_target',
