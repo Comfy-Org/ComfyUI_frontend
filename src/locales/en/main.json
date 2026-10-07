@@ -5620,6 +5620,7 @@
     "focusNodeLabel": "Show {node} on canvas",
     "removeNodeLabel": "Remove {node} reference",
     "uploading": "Uploading",
+    "uploadingAttachments": "Uploading {count} attachment | Uploading {count} attachments",
     "noNodesToMention": "No nodes in this workflow",
     "friend": "there",
     "sendFailed": "Message failed to send",

@@ -1559,6 +1559,60 @@ describe('Composer', () => {
     )
   })
 
+  describe('attachment upload status', () => {
+    function mountUploading(count: number) {
+      const composer = ref<InstanceType<typeof Composer> | null>(null)
+      const Host = defineComponent({
+        setup: () => () => h(Composer, { ref: composer })
+      })
+      render(Host, { global: { plugins: [i18n] } })
+      for (let index = 1; index <= count; index += 1)
+        composer.value?.addAttachment({
+          id: `attachment-${index}`,
+          name: `shot-${index}.png`,
+          ref: '',
+          uploading: true
+        })
+      return composer
+    }
+
+    // Anchored: 'Uploading 1 attachment' is a substring of the plural form, so
+    // an unanchored singular case passes under either plural branch.
+    it.for([
+      { name: 'one upload', uploads: 1, expected: /^Uploading 1 attachment$/ },
+      {
+        name: 'three uploads',
+        uploads: 3,
+        expected: /^Uploading 3 attachments$/
+      }
+    ])('accounts for the blocked Send with $name', async (testCase) => {
+      mountUploading(testCase.uploads)
+      await nextTick()
+
+      expect(screen.getByTestId('composer-upload-status')).toHaveTextContent(
+        testCase.expected
+      )
+    })
+
+    it('clears the status once the last upload settles', async () => {
+      const composer = mountUploading(2)
+      await nextTick()
+      expect(screen.getByTestId('composer-upload-status')).toHaveTextContent(
+        /^Uploading 2 attachments$/
+      )
+
+      composer.value?.updateAttachment('attachment-1', { uploading: false })
+      await nextTick()
+      expect(screen.getByTestId('composer-upload-status')).toHaveTextContent(
+        /^Uploading 1 attachment$/
+      )
+
+      composer.value?.updateAttachment('attachment-2', { uploading: false })
+      await nextTick()
+      expect(screen.getByTestId('composer-upload-status')).toBeEmptyDOMElement()
+    })
+  })
+
   it('keeps uploaded attachments when navigating from a staged workflow', async () => {
     useAgentComposerStore().setWorkflowReferences([
       { id: 'wf-1', name: 'Water world', textOffset: 0 }
