@@ -1,8 +1,8 @@
 <!-- Under the missing-nodes message, the workspace's deployments that have
      every node type the open workflow uses, Comfy Cloud included, each a
      button that picks it through the deployment switcher (BE-19374). Up to
-     three are named; "and N more" opens the switcher. When none has them all
-     it says so. Renders nothing where the switcher is not shown or the
+     three are named; "and N more" opens the switcher. When each was checked
+     and none has them all, it says so. Renders nothing where the switcher is not shown or the
      check has not answered. -->
 <template>
   <div
@@ -62,19 +62,29 @@ const NAMED = 3
 const { t } = useI18n()
 const pickStore = useDeploymentPickStore()
 const { deployments, pickedDeploymentId, isSwitching } = storeToRefs(pickStore)
-const { deploymentsThatRunIt } = useDeploymentCompatibility()
+const { deploymentsThatRunIt, markFor } = useDeploymentCompatibility()
 const { deploymentLabel } = useDeploymentLabels()
 
+function eachCheckedAndLacking() {
+  return [null, ...deployments.value.map((d) => d.deployment_id)].every(
+    (id) => markFor(id)?.kind === 'missing'
+  )
+}
+
 /**
- * What to say under the message: nothing without an answer, "none" when no
- * deployment and not Comfy Cloud has every node type, else the ones to offer.
- * The one this browser runs on is never offered; when only it has them all,
- * there is nothing to say.
+ * What to say under the message: nothing without an answer, "none" when
+ * Comfy Cloud and every listed deployment were checked and each lacks a node
+ * type, else the ones to offer. A deployment ingest could not check, or one
+ * the answer leaves out, may have them all, so it rules out "none". The one
+ * this browser runs on is never offered; when only it has them all, there is
+ * nothing to say.
  */
 const offer = computed(() => {
   const runIt = deploymentsThatRunIt.value
   if (runIt === null) return null
-  if (runIt.length === 0) return { kind: 'none' as const }
+  if (runIt.length === 0) {
+    return eachCheckedAndLacking() ? { kind: 'none' as const } : null
+  }
   const choices = [
     { deploymentId: null, label: t('deploymentSwitcher.comfyCloud') },
     ...deployments.value.map((deployment) => ({
