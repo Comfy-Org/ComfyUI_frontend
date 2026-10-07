@@ -447,18 +447,18 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  /**
-   * Returns the workspace-scoped auth header. An API-key session has no
-   * Firebase token to exchange for a workspace token; the key itself is the
-   * workspace credential (the server resolves the key's bound workspace), so
-   * it is sent directly instead of minting a token.
-   */
   /** Desktop's token, only when it is scoped to this tab's active workspace. */
   const desktopHostWorkspaceToken = (): Promise<string | undefined> =>
     desktopHostAccessToken(
       useTeamWorkspaceStore().activeWorkspaceId ?? undefined
     )
 
+  /**
+   * Returns the workspace-scoped auth header. An API-key session has no
+   * Firebase token to exchange for a workspace token; the key itself is the
+   * workspace credential (the server resolves the key's bound workspace), so
+   * it is sent directly instead of minting a token.
+   */
   const getWorkspaceAuthHeader = async (): Promise<AuthHeader | null> => {
     if (isDesktopHostSessionActive())
       return headerFromToken(await desktopHostWorkspaceToken())
