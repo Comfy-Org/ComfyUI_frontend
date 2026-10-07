@@ -1402,6 +1402,9 @@ const { copy } = useClipboard({ legacy: true })
  * denominator — to the panel openers the hypothesis is about.
  */
 const { variant: freeUsePlacement } = useFreeUsePlacement()
+const displayedFreeUsePlacement = computed(() =>
+  agentScopedHasFunds.value === false ? 'control' : freeUsePlacement.value
+)
 
 function onFreeUseNotice(metadata: AgentFreeUseNoticeMetadata): void {
   useTelemetry()?.trackAgentFreeUseNotice(metadata)
@@ -1994,7 +1997,7 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       :get-mention-nodes="mentionableNodes"
       :paywall-presentation="paywallPresentation"
       :credits-exhausted="showStandingPaywall"
-      :free-use-placement="freeUsePlacement"
+      :free-use-placement="displayedFreeUsePlacement"
       @free-use-notice="onFreeUseNotice"
       @send="onSend"
       @stop="onStop"
