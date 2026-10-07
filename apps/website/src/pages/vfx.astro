@@ -37,7 +37,7 @@ const faqPage = vfxFaqPageNode(url, faqs)
     badgeText="VFX"
     title={t('vfx.hero.heading')}
     subtitle={t('vfx.hero.subtitle')}
-    class="[&_.backdrop-blur-md]:hidden [&_h1]:lg:text-primary-comfy-canvas [&_p]:lg:text-primary-comfy-canvas"
+    class="[&_.backdrop-blur-md]:hidden [&_h1]:lg:text-primary-comfy-canvas [&_p]:lg:text-primary-comfy-canvas [&>div>div:last-child]:pointer-events-none [&>div>div:last-child>div]:pointer-events-auto"
     client:load
   >
     <div
@@ -52,7 +52,7 @@ const faqPage = vfxFaqPageNode(url, faqs)
         noCors
         autoplay
         loop
-        hideControls
+        muteOnly
         class="h-full rounded-none border-0"
         client:load
       />
