@@ -17,6 +17,7 @@ const baseRoutes = {
   gallery: '/gallery/',
   launches: '/launches/',
   events: '/events/',
+  eventChallenge: '/events/dev-platform-challenge/',
   about: '/about/',
   careers: '/careers/',
   customers: '/customers/',

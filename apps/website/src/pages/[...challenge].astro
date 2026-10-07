@@ -1,0 +1,303 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import HeroCentered01 from '@/components/blocks/HeroCentered01.vue'
+import OfferGrid01 from '@/components/blocks/OfferGrid01.vue'
+import FeatureGrid02 from '@/components/blocks/FeatureGrid02.vue'
+import FeatureRows02 from '@/components/blocks/FeatureRows02.vue'
+import StepsCards01 from '@/components/blocks/StepsCards01.vue'
+import StepsGrid01 from '@/components/blocks/StepsGrid01.vue'
+import CardWorkflow01 from '@/components/blocks/CardWorkflow01.vue'
+import FAQSplit01 from '@/components/blocks/FAQSplit01.vue'
+import CtaCenter01 from '@/components/blocks/CtaCenter01.vue'
+import SectionHeader from '@/components/common/SectionHeader.vue'
+import Button from '@/components/ui/button/Button.vue'
+import ServerlessDeploySection from '@/templates/platform/ServerlessDeploySection.vue'
+import ServerlessSkipSetupBanner from '@/templates/platform/ServerlessSkipSetupBanner.vue'
+import { translationsFor } from '@/i18n/translations'
+import type { Locale } from '@/i18n/translations'
+import { isProductionBuild } from '@/config/build-env'
+
+export function getStaticPaths() {
+  if (isProductionBuild()) return []
+  return (['en', 'zh-CN'] as const).flatMap((locale) =>
+    (['general', 'timeline', 'terms'] as const).map((view) => ({
+      params: {
+        challenge: `${locale === 'en' ? '' : 'zh-CN/'}events/dev-platform-challenge${view === 'general' ? '' : `/${view}`}`
+      },
+      props: { locale, view }
+    }))
+  )
+}
+
+interface Props {
+  locale: Locale
+  view: 'general' | 'timeline' | 'terms'
+}
+
+const { locale, view }: Props = Astro.props
+const { t } = translationsFor(locale)
+const base = `${locale === 'en' ? '' : '/zh-CN'}/events/dev-platform-challenge/`
+const entry = {
+  label: t('eventChallenge.submit'),
+  href: 'https://form.typeform.com/to/V1dSQrkS'
+}
+const rules = 'https://blog.comfy.org/p/open-call-comfy-dev-platform-challenge'
+const steps = ['pick', 'build', 'publish', 'demo'] as const
+const examples = ['genjutsu', 'cinema', 'wavo'] as const
+const awards = ['practical', 'entertaining', 'oss'] as const
+const milestones = ['open', 'event', 'close', 'winner'] as const
+const tabs = ['general', 'timeline', 'terms'] as const
+const faqs = ['Demo', 'Event', 'License', 'Bonus'] as const
+---
+
+<BaseLayout
+  title={`${t('eventChallenge.name')} · Comfy`}
+  description={t('eventChallenge.description')}
+  hideAnnouncementBanner
+>
+  <p class="mx-auto max-w-9xl px-6 pt-8 text-sm text-primary-comfy-canvas/60">
+    {t('eventChallenge.draft')}
+  </p>
+  <div class="mx-auto max-w-9xl px-6 pt-8">
+    <div
+      class="flex aspect-video items-center justify-center rounded-3xl bg-transparency-white-t4 lg:aspect-3/1"
+    >
+      <p class="text-sm text-primary-comfy-canvas/60">
+        {t('eventChallenge.heroMedia')}
+      </p>
+    </div>
+  </div>
+  <HeroCentered01
+    eyebrow={t('eventChallenge.name')}
+    title={t('eventChallenge.heading')}
+    subtitle={t('eventChallenge.description')}
+    class="py-12 lg:py-16"
+  >
+    <p class="mt-8 text-xl text-primary-comfy-yellow lg:text-2xl">
+      {t('eventChallenge.prizeTeaser')}
+    </p>
+    <div class="mt-8 flex flex-col gap-4 sm:flex-row">
+      <Button href={entry.href} size="lg">{entry.label}</Button>
+      <Button href={`${base}#how-to-enter`} variant="outline" size="lg"
+        >{t('eventChallenge.how')}</Button
+      >
+    </div>
+  </HeroCentered01>
+  <nav
+    aria-label={t('eventChallenge.details')}
+    class="mx-auto flex max-w-9xl justify-center gap-2 border-y border-primary-comfy-canvas/10 px-4 py-5"
+  >
+    {tabs.map((tab) => <Button
+      href={`${base}${tab === 'general' ? '' : `${tab}/`}#challenge-content`}
+      variant={view === tab ? 'default' : 'ghost'}
+      aria-current={view === tab ? 'page' : undefined}
+    >
+      {t(tab === 'terms' ? 'eventChallenge.termsTab' : `eventChallenge.${tab}`)}
+    </Button>)}
+  </nav>
+  <div id="challenge-content" class="scroll-mt-28">
+    {view === 'general' && (
+      <>
+        <section class="mx-auto max-w-9xl px-6 py-16 lg:py-24">
+          <SectionHeader
+            >{t('eventChallenge.examples')}
+            <p
+              slot="subtitle"
+              class="mx-auto mt-6 max-w-2xl text-base text-primary-comfy-canvas/70"
+            >
+              {t('eventChallenge.examplesBody')}
+            </p></SectionHeader
+          >
+          <div class="mt-12 grid grid-cols-1 gap-4 md:grid-cols-3">
+            {examples.map((example) => (
+              <CardWorkflow01
+                item={{
+                  id: example,
+                  title: t(`eventChallenge.${example}`),
+                  description: t(`eventChallenge.${example}Body`),
+                  tags: [t('eventChallenge.clip')],
+                  media: {
+                    type: 'image',
+                    src: '/icons/logomark.svg',
+                    alt: t('eventChallenge.clip')
+                  }
+                }}
+              />
+            ))}
+          </div>
+        </section>
+        <OfferGrid01
+          heading={t('eventChallenge.prizes')}
+          featuredOffer={{
+            id: 'grand',
+            label: t('eventChallenge.grand'),
+            title: t('eventChallenge.grandValue'),
+            description: t('eventChallenge.prizeTeaser'),
+            cta: entry
+          }}
+          offers={awards.map((award) => ({
+            id: award,
+            label: t(`eventChallenge.${award}`),
+            title: t('eventChallenge.gpu'),
+            description: t(`eventChallenge.${award}`),
+            cta: {
+              label: t('eventChallenge.rulesLink'),
+              href: `${base}terms/#challenge-content`
+            }
+          }))}
+        />
+        <FeatureRows02
+          heading={t('eventChallenge.bonus')}
+          rows={[
+            { id: 'ltx', term: 'LTX', description: t('eventChallenge.ltx') },
+            {
+              id: 'flux',
+              term: 'Black Forest Labs',
+              description: t('eventChallenge.flux')
+            }
+          ]}
+        />
+        <FeatureGrid02
+          heading={t('eventChallenge.judgingHeading')}
+          steps={(['useful', 'delight', 'open'] as const).map((item) => ({
+            id: item,
+            title: t(`eventChallenge.${item}`),
+            description: t(`eventChallenge.${item}Body`)
+          }))}
+        />
+        <FeatureRows02
+          heading={t('eventChallenge.glance')}
+          rows={[
+            {
+              id: 'what',
+              term: t('eventChallenge.what'),
+              description: t('eventChallenge.whatBody')
+            },
+            {
+              id: 'deadline',
+              term: t('eventChallenge.deadline'),
+              description: t('eventChallenge.closeDate')
+            },
+            {
+              id: 'platform',
+              term: t('eventChallenge.platform'),
+              description: t('eventChallenge.buildBody')
+            },
+            {
+              id: 'repo',
+              term: t('eventChallenge.repoHeading'),
+              description: t('eventChallenge.publishBody')
+            }
+          ]}
+          footnote={t('eventChallenge.dateNote')}
+        />
+        <div id="how-to-enter" class="scroll-mt-28">
+          <StepsCards01
+            heading={t('eventChallenge.enter')}
+            steps={steps.map((step) => ({
+              id: step,
+              title: t(`eventChallenge.${step}`),
+              description: t(`eventChallenge.${step}Body`)
+            }))}
+          />
+        </div>
+        <ServerlessDeploySection locale={locale} client:visible />
+        <ServerlessSkipSetupBanner locale={locale} client:visible />
+        <CtaCenter01
+          heading={t('eventChallenge.start')}
+          primaryCta={{
+            label: t('eventChallenge.apiDocs'),
+            href: 'https://docs.comfy.org/development/serverless/quickstart'
+          }}
+          secondaryCta={{
+            label: t('eventChallenge.sdkDocs'),
+            href: 'https://docs.comfy.org/development/api-development/sdks'
+          }}
+          compact
+        />
+        <CtaCenter01
+          heading={t('eventChallenge.eventHeading')}
+          subtitle={t('eventChallenge.eventDescription')}
+          primaryCta={{
+            label: t('eventChallenge.eventCta'),
+            href: 'https://luma.com/5mydmvu6'
+          }}
+          compact
+        />
+      </>
+    )}
+    {view === 'timeline' && (
+      <>
+        <StepsGrid01
+          heading={t('eventChallenge.timeline')}
+          steps={milestones.map((milestone) => ({
+            id: milestone,
+            label: t(`eventChallenge.${milestone}Date`),
+            description: `${t(`eventChallenge.${milestone}Title`)} — ${t(`eventChallenge.${milestone}Body`)}`
+          }))}
+        />
+        <p
+          class="mx-auto max-w-3xl px-6 text-center text-sm text-primary-comfy-canvas/60"
+        >
+          {t('eventChallenge.dateNote')}
+        </p>
+        <CtaCenter01
+          heading={t('eventChallenge.eventHeading')}
+          subtitle={t('eventChallenge.eventDescription')}
+          primaryCta={{
+            label: t('eventChallenge.eventCta'),
+            href: 'https://luma.com/5mydmvu6'
+          }}
+          compact
+        />
+      </>
+    )}
+    {view === 'terms' && (
+      <FeatureRows02
+        heading={t('eventChallenge.terms')}
+        rows={[
+          {
+            id: 'platform',
+            term: t('eventChallenge.platform'),
+            description: t('eventChallenge.rule1')
+          },
+          {
+            id: 'repo',
+            term: t('eventChallenge.repoHeading'),
+            description: t('eventChallenge.rule2')
+          },
+          {
+            id: 'requirements',
+            term: t('eventChallenge.requirements'),
+            description: t('eventChallenge.rule3')
+          },
+          {
+            id: 'publicity',
+            term: t('eventChallenge.publicity'),
+            description: t('eventChallenge.rule4')
+          },
+          {
+            id: 'judging',
+            term: t('eventChallenge.judging'),
+            description: t('eventChallenge.judgingBody')
+          }
+        ]}
+      />
+    )}
+  </div>
+  <FAQSplit01
+    heading={t('eventChallenge.questions')}
+    faqs={faqs.map((faq) => ({
+      id: `challenge-${faq}`,
+      question: t(`eventChallenge.faq${faq}`),
+      answer: t(`eventChallenge.faq${faq}Body`)
+    }))}
+    client:visible
+  />
+  <CtaCenter01
+    heading={t('eventChallenge.closing')}
+    subtitle={t('eventChallenge.closingBody')}
+    primaryCta={entry}
+    termsLink={{ label: t('eventChallenge.rulesLink'), href: rules }}
+  />
+</BaseLayout>
