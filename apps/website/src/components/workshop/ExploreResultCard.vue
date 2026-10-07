@@ -2,6 +2,7 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 
+import Badge from '@/components/ui/badge/Badge.vue'
 import type { WorkshopModel } from '@/config/models-catalogue'
 import type { Locale } from '@/i18n/translations'
 import type { ModelAccess } from '@/lib/workshop/explorer/model-access'
@@ -41,9 +42,6 @@ const linkAttrs = computed(() => {
 })
 
 const hasTags = computed(() => Boolean(kind || pills.length || access.length))
-
-const pillClass =
-  'inline-flex h-6 w-fit shrink-0 items-center justify-center rounded-full bg-hub-surface px-3 py-1 text-xs font-normal whitespace-nowrap text-content'
 </script>
 
 <template>
@@ -81,9 +79,9 @@ const pillClass =
         data-testid="explore-pills"
       >
         <ExploreKindTag v-if="kind" :kind :locale />
-        <span v-for="pill in pills" :key="pill" :class="pillClass">
+        <Badge v-for="pill in pills" :key="pill" variant="subtle">
           {{ pill }}
-        </span>
+        </Badge>
         <ModelAccessBadges v-if="access.length" :access :locale />
       </span>
     </span>
