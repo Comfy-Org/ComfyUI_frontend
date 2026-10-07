@@ -86,6 +86,7 @@ The launcher log shows which path it took:
 | Log line                                                                 | Meaning                                      |
 | ------------------------------------------------------------------------ | -------------------------------------------- |
 | `Using cached image ghcr.io/...`                                         | CI image; the backend starts within seconds  |
+| `Status: Downloaded newer image for ghcr.io/...`                         | CI image pulled in about a minute            |
 | `GHCR credentials are not configured` or `The private image pull failed` | A source build follows                       |
 | `Using source-built fallback ...`                                        | Fallback image is built; ComfyUI is starting |
 | `To see the GUI go to: http://0.0.0.0:8188`                              | Backend ready                                |
