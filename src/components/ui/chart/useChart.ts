@@ -166,7 +166,14 @@ export function useChart(
     data,
     () => {
       if (!chart) return
-      chart.data = copyData()
+      const next = copyData()
+      const previousCount = chart.data.datasets.length
+      for (const [index, dataset] of next.datasets.entries()) {
+        if (index >= previousCount) break
+        const { hidden } = chart.getDatasetMeta(index)
+        if (typeof hidden === 'boolean') dataset.hidden = hidden
+      }
+      chart.data = next
       chart.update()
     },
     { deep: true }
