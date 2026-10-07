@@ -93,8 +93,7 @@ test.describe('Agent composer asset drop', { tag: '@cloud' }, () => {
         )
         .toBeGreaterThan(0)
 
-      await trigger.focus()
-      await page.keyboard.press('Enter')
+      await trigger.press('Enter')
 
       const player = page
         .getByLabel(ASSET_NAME, { exact: true })
