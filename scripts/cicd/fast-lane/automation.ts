@@ -489,9 +489,9 @@ async function approveAndArm(
         summary
       )
     } catch (cleanupError) {
-      throw new AggregateError(
-        [error, cleanupError],
-        'merge automation and compensation both failed', { cause: cleanupError }
+      throw new Error(
+        `Merge automation failed (${String(error)}) and compensation also failed.`,
+        { cause: cleanupError }
       )
     }
     throw error
