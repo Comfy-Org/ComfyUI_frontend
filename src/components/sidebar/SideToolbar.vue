@@ -338,6 +338,6 @@ onMounted(() => {
 <style scoped>
 .connected-sidebar {
   padding: var(--sidebar-padding) 0;
-  background-color: var(--sidebar-surface);
+  background-color: var(--comfy-menu-bg);
 }
 </style>
