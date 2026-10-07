@@ -350,17 +350,17 @@ export function createAgentEventTransport(
       )
       return false
     }
-    dropDraft()
-    closeOpenText()
-    closeOpenThinking()
-    message.thinking = false
-    message.thinkingText = undefined
     if (
       message.parts.some(
         (part) => part.type === 'runApproval' && part.askId === data.ask_id
       )
     )
       return true
+    dropDraft()
+    closeOpenText()
+    closeOpenThinking()
+    message.thinking = false
+    message.thinkingText = undefined
     const part: RunApprovalPart = {
       type: 'runApproval',
       askId: data.ask_id,

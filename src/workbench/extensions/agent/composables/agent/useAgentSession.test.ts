@@ -4778,7 +4778,12 @@ describe('useAgentSession (v1 composition root)', () => {
 
       expect(approvalParts(session)).toHaveLength(1)
       await session.answerAsk('turn-1:call-1', 'run')
-      expect(session.notices.value).toHaveLength(0)
+      expect(session.notices.value).toEqual([
+        {
+          level: 'error',
+          text: 'This request was already answered somewhere else, so that answer was used instead of yours.'
+        }
+      ])
     } finally {
       vi.useRealTimers()
     }
@@ -4850,7 +4855,7 @@ describe('useAgentSession (v1 composition root)', () => {
 
       status(false)
       status(true)
-      await vi.advanceTimersByTimeAsync(0)
+      await vi.advanceTimersByTimeAsync(1_000)
 
       expect(approvalParts(session).map((part) => part.askId)).toEqual([
         currentAskId
@@ -4934,6 +4939,7 @@ describe('useAgentSession (v1 composition root)', () => {
       status(false)
       status(true)
       await vi.advanceTimersByTimeAsync(0)
+      emit(runApproval('msg-1'))
       await session.answerAsk('turn-1:call-1', 'run')
 
       expect(session.notices.value).toHaveLength(0)
@@ -4941,6 +4947,64 @@ describe('useAgentSession (v1 composition root)', () => {
         surface: 'agent',
         errorType: 'agent_ask_answer_unconfirmed'
       })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('(g44) repeated polls do not erase restored-approval provenance', async () => {
+    vi.useFakeTimers()
+    try {
+      const rest = parkedOnApprovalRest()
+      const { source, status } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start({ restore: false })
+      status(true)
+      await session.sendMessage('go')
+
+      status(false)
+      status(true)
+      await vi.advanceTimersByTimeAsync(3_000)
+      await session.answerAsk('turn-1:call-1', 'run')
+
+      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+        surface: 'agent',
+        errorType: 'agent_ask_answer_unconfirmed'
+      })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('(g45) recovery reads the newest ask-bearing open row', async () => {
+    vi.useFakeTimers()
+    try {
+      const rest = fakeRest({
+        getMessages: vi.fn(
+          async (): Promise<AgentMessages> => [
+            historyRow(1, 'user', 'msg-1', 'go'),
+            parkedRow(),
+            {
+              ...historyRow(3, 'assistant', 'msg-1', '', 'row-3'),
+              content: {},
+              status: 'streaming'
+            }
+          ]
+        )
+      })
+      const { source, status } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start({ restore: false })
+      status(true)
+      await session.sendMessage('go')
+
+      status(false)
+      status(true)
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(approvalParts(session).map((part) => part.askId)).toEqual([
+        'turn-1:call-1'
+      ])
     } finally {
       vi.useRealTimers()
     }

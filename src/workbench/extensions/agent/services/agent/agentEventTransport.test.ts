@@ -606,7 +606,7 @@ describe('agentEventTransport run approval', () => {
     ])
   })
 
-  it('closes open transcript parts when a duplicate approval frame arrives', () => {
+  it('leaves open transcript parts unchanged for a duplicate approval frame', () => {
     const message = drive([
       runApproval(),
       delta('before the delayed frame'),
@@ -620,7 +620,7 @@ describe('agentEventTransport run approval', () => {
         workflowId: 'workflow-1',
         workflowName: 'Portrait workflow'
       },
-      { type: 'text', text: 'before the delayed frame', state: 'done' }
+      { type: 'text', text: 'before the delayed frame', state: 'streaming' }
     ])
   })
 

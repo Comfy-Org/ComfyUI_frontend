@@ -195,6 +195,17 @@ type TurnOutcome =
   | { kind: 'streaming'; pendingAsk: PendingAsk | undefined }
   | { kind: 'error'; message: string }
 
+function streamingPendingAskId(outcome: TurnOutcome): string | undefined {
+  return outcome.kind === 'streaming' ? outcome.pendingAsk?.ask_id : undefined
+}
+
+function isRepeatedPendingAsk(
+  pendingAskId: string | undefined,
+  previousPendingAskId: string | undefined
+): boolean {
+  return pendingAskId !== undefined && pendingAskId === previousPendingAskId
+}
+
 function isTerminalTurnStatus(
   status: AgentMessages[number]['status']
 ): boolean {
@@ -529,6 +540,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   >()
 
   function recordDeliveredAsk(askId: string): void {
+    deliveredAsks.delete(askId)
     deliveredAsks.add(askId)
     if (deliveredAsks.size <= MAX_DELIVERED_ASKS) return
     const oldest = deliveredAsks.values().next().value
@@ -1864,8 +1876,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   function onStatus(live: boolean): void {
     if (!live) {
+      const dropped = connection === 'live'
       connection = 'dropped'
-      conversationStore.markLiveApprovalsRecovered()
+      if (dropped) conversationStore.markLiveApprovalsRecovered()
       return
     }
     const reconnected = connection === 'dropped'
@@ -1890,7 +1903,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     // socket has actually dropped that reading is wrong, so a reconnect takes
     // the job over; anything else defers to the job already running.
     if (running) {
-      if (cause !== 'reconnect' || running.cause === 'reconnect') return
+      if (cause !== 'reconnect') return
       running.controller.abort()
     }
     const recovery = new AbortController()
@@ -1925,6 +1938,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     signal: AbortSignal
   ): Promise<void> {
     let consecutiveThreadMissing = 0
+    let previousPendingAskId: string | undefined
     for (const ms of TURN_RECOVERY_DELAYS_MS) {
       await delay(ms, { signal })
       if (!isTurnLive(turn, generation)) return
@@ -1936,22 +1950,32 @@ export function useAgentSession(deps: AgentSessionDeps) {
       if (outcome.kind === 'thread-missing' && consecutiveThreadMissing < 2)
         continue
       if (settleFinishedTurn(turn, outcome)) return
-      reconcileStreamingApproval(turn, outcome, cause)
+      const pendingAskId = streamingPendingAskId(outcome)
+      const pendingAskConfirmed = isRepeatedPendingAsk(
+        pendingAskId,
+        previousPendingAskId
+      )
+      reconcileStreamingApproval(turn, outcome, cause, pendingAskConfirmed)
+      previousPendingAskId = pendingAskId
     }
   }
 
   function reconcileStreamingApproval(
     turn: LiveTurn,
     outcome: TurnOutcome,
-    cause: RecoveryCause
+    cause: RecoveryCause,
+    pendingAskConfirmed: boolean
   ): void {
     if (outcome.kind !== 'streaming') return
-    conversationStore.reconcileApprovalParts(turn, outcome.pendingAsk?.ask_id)
-    if (outcome.pendingAsk?.kind === 'run_approval')
-      conversationStore.forgetAskRecovered(
-        outcome.pendingAsk.ask_id,
-        turn.threadId
-      )
+    if (pendingAskConfirmed)
+      conversationStore.reconcileApprovalParts(turn, outcome.pendingAsk?.ask_id)
+    if (
+      !pendingAskConfirmed &&
+      outcome.pendingAsk?.kind === 'run_approval' &&
+      !conversationStore.isApprovalShown(turn, outcome.pendingAsk.ask_id) &&
+      conversationStore.hasApprovalShown(turn)
+    )
+      return
     restoreMissingApproval(turn, outcome.pendingAsk, cause)
   }
 
@@ -2162,7 +2186,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
       if (latest && !isTerminalTurnStatus(latest.status))
         return {
           kind: 'streaming',
-          pendingAsk: latest.pending_ask
+          pendingAsk: rows.findLast(
+            (row) =>
+              !isTerminalTurnStatus(row.status) && row.pending_ask !== undefined
+          )?.pending_ask
         }
       return {
         kind: 'terminal',

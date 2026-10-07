@@ -1137,6 +1137,14 @@ export const useAgentConversationStore = defineStore(
       )
     }
 
+    function hasApprovalShown(turn: LiveTurn): boolean {
+      return (
+        liveTurnMessage(turn)?.parts.some(
+          (part) => part.type === 'runApproval'
+        ) ?? false
+      )
+    }
+
     function clearActive(): void {
       activeSlot.value = null
     }
@@ -1424,6 +1432,7 @@ export const useAgentConversationStore = defineStore(
       historySkillNames,
       settleTurn,
       isApprovalShown,
+      hasApprovalShown,
       reset,
       hydrate
     }
