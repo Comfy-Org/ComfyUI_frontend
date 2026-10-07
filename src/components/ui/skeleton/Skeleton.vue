@@ -11,11 +11,11 @@ const {
   borderRadius,
   shape
 } = defineProps<{
-  class?: HTMLAttributes['class']
-  width?: string
-  height?: string
   borderRadius?: string
+  class?: HTMLAttributes['class']
+  height?: string
   shape?: 'circle' | 'rectangle'
+  width?: string
 }>()
 
 const style = computed(() => ({

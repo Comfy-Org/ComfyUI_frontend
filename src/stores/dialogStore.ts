@@ -6,25 +6,12 @@ import type { DialogContentSize } from '@/components/ui/dialog/dialog.variants'
 import type { ComponentAttrs } from 'vue-component-type-helpers'
 
 export interface DialogComponentProps {
-  maximizable?: boolean
-  maximized?: boolean
-  onClose?: () => void
-  /**
-   * Guaranteed cleanup: fires exactly once when the dialog leaves the stack
-   * for any reason — `closeDialog` (user or programmatic) or the
-   * 10-dialog-cap eviction in `createDialog`. Wire promise settlement here.
-   * Keep user-intent side effects (telemetry, "don't show again") in
-   * `onClose`, which never fires on eviction.
-   */
-  onRemoved?: () => void
+  /** Class applied to the content wrapper on the non-headless path. */
+  bodyClass?: HTMLAttributes['class']
   closable?: boolean
-  /**
-   * Hides the header close button while keeping `closable` dismissal paths
-   * (Escape, programmatic close) available. Defaults to shown.
-   */
-  showCloseButton?: boolean
-  modal?: boolean
   closeOnEscape?: boolean
+  /** Class applied to the Reka-UI `DialogContent` element. */
+  contentClass?: HTMLAttributes['class']
   dismissableMask?: boolean
   /**
    * When `false`, the Reka dialog does not dismiss when focus leaves its
@@ -34,19 +21,32 @@ export interface DialogComponentProps {
    * outside-pointer dismissal are unaffected. Defaults to `true`.
    */
   dismissOnFocusOutside?: boolean
-  headless?: boolean
-  useAutomaticLabeling?: boolean
-  size?: DialogContentSize
-  /** Class applied to the Reka-UI `DialogContent` element. */
-  contentClass?: HTMLAttributes['class']
-  /** Class applied to the Reka-UI `DialogOverlay` element. */
-  overlayClass?: HTMLAttributes['class']
-  /** Class applied to the dialog header on the non-headless path. */
-  headerClass?: HTMLAttributes['class']
-  /** Class applied to the content wrapper on the non-headless path. */
-  bodyClass?: HTMLAttributes['class']
   /** Class applied to the dialog footer on the non-headless path. */
   footerClass?: HTMLAttributes['class']
+  /** Class applied to the dialog header on the non-headless path. */
+  headerClass?: HTMLAttributes['class']
+  headless?: boolean
+  maximizable?: boolean
+  maximized?: boolean
+  modal?: boolean
+  onClose?: () => void
+  /**
+   * Guaranteed cleanup: fires exactly once when the dialog leaves the stack
+   * for any reason — `closeDialog` (user or programmatic) or the
+   * 10-dialog-cap eviction in `createDialog`. Wire promise settlement here.
+   * Keep user-intent side effects (telemetry, "don't show again") in
+   * `onClose`, which never fires on eviction.
+   */
+  onRemoved?: () => void
+  /** Class applied to the Reka-UI `DialogOverlay` element. */
+  overlayClass?: HTMLAttributes['class']
+  /**
+   * Hides the header close button while keeping `closable` dismissal paths
+   * (Escape, programmatic close) available. Defaults to shown.
+   */
+  showCloseButton?: boolean
+  size?: DialogContentSize
+  useAutomaticLabeling?: boolean
 }
 
 export interface DialogInstance {
