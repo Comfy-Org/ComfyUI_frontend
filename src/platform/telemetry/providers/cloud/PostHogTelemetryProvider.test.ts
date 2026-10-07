@@ -474,7 +474,7 @@ describe('PostHogTelemetryProvider', () => {
       )
     })
 
-    it('keeps saved referral props on events without attributing a new account to that device', async () => {
+    it('keeps saved referral props on events without writing Desktop attribution to a new person profile', async () => {
       const persisted = mockPostHogPersistence({
         source_app: 'desktop',
         desktop_device_id: 'previous-device'
@@ -519,7 +519,7 @@ describe('PostHogTelemetryProvider', () => {
       expect(hoisted.mockPeopleSetOnce).not.toHaveBeenCalled()
     })
 
-    it('keeps browser referral props after logout without attributing the next account to the visit', async () => {
+    it('attributes a fresh Desktop visit to the account signed in after logout on the same page', async () => {
       const persisted = mockPostHogPersistence()
       setLocation('?utm_source=comfy.desktop&desktop_device_id=device-xyz')
       createProvider()
@@ -544,8 +544,16 @@ describe('PostHogTelemetryProvider', () => {
         source_app: 'desktop',
         desktop_device_id: 'device-xyz'
       })
-      expect(hoisted.mockPeopleSet).not.toHaveBeenCalled()
-      expect(hoisted.mockPeopleSetOnce).not.toHaveBeenCalled()
+      expect(hoisted.mockPeopleSet).toHaveBeenCalledWith(
+        expect.objectContaining({
+          source_app: 'desktop',
+          desktop_device_id: 'device-xyz',
+          last_seen_via_desktop: expect.any(String)
+        })
+      )
+      expect(hoisted.mockPeopleSetOnce).toHaveBeenCalledWith({
+        first_seen_via_desktop: expect.any(String)
+      })
     })
 
     it('does not touch the person profile on identify for non-desktop visitors', async () => {
