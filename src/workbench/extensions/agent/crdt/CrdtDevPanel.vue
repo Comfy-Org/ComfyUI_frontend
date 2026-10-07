@@ -492,8 +492,13 @@ function collectCurrentMediaUiDiagnostics() {
       getNodeImageUrls: (node) => nodeOutputStore.getNodeImageUrls(node),
       root: document
     })
-  } catch {
-    return []
+  } catch (error) {
+    reportError(error, {
+      surface: 'agent',
+      errorType: 'agent_crdt_media_ui_diagnostics_failed',
+      level: 'warning'
+    })
+    return undefined
   }
 }
 
