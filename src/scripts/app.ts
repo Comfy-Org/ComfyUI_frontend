@@ -36,7 +36,6 @@ import type {
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
 import { isCloud } from '@/platform/distribution/types'
-import { useKeybindingService } from '@/platform/keybindings/keybindingService'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
@@ -858,28 +857,6 @@ export class ComfyApp {
   }
 
   /**
-   * Handle keypress
-   */
-  private addProcessKeyHandler() {
-    const origProcessKey = LGraphCanvas.prototype.processKey
-    LGraphCanvas.prototype.processKey = function (e: KeyboardEvent) {
-      if (!this.graph) return
-
-      if (e.target instanceof Element && e.target.localName == 'input') {
-        return
-      }
-
-      if (useKeybindingService().executeCanvasKeybinding(e)) {
-        this.graph.change()
-        return
-      }
-
-      // Fall through to Litegraph defaults
-      return origProcessKey.apply(this, [e])
-    }
-  }
-
-  /**
    * Handles updates from the API socket
    */
   private addApiUpdateHandlers() {
@@ -1006,7 +983,6 @@ export class ComfyApp {
       useExtensionService().loadExtensions()
     )
 
-    this.addProcessKeyHandler()
     this.addConfigureHandler()
     this.addApiUpdateHandlers()
 
