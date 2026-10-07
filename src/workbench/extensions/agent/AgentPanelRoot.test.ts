@@ -1684,7 +1684,7 @@ describe('AgentPanelRoot Agent credit transition notice', () => {
 
   it('stays dismissed for the current transition episode', async () => {
     paywallAgentScopedHasFunds.value = true
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    const panel = render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await screen.findByRole('textbox')
     paywallAgentScopedHasFunds.value = false
     const notice = await screen.findByTestId(NOTICE)
@@ -1698,10 +1698,18 @@ describe('AgentPanelRoot Agent credit transition notice', () => {
     await nextTick()
     paywallAgentScopedHasFunds.value = false
     await nextTick()
+    panel.unmount()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
 
     expect(screen.queryByTestId(NOTICE)).not.toBeInTheDocument()
     expect(telemetry.trackAgentCreditTransitionNotice).toHaveBeenCalledTimes(2)
-    expect(telemetry.trackAgentCreditTransitionNotice).toHaveBeenLastCalledWith(
+    expect(telemetry.trackAgentCreditTransitionNotice).toHaveBeenNthCalledWith(
+      1,
+      { action: 'shown' }
+    )
+    expect(telemetry.trackAgentCreditTransitionNotice).toHaveBeenNthCalledWith(
+      2,
       { action: 'dismissed' }
     )
   })
