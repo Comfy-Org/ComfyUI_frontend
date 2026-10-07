@@ -53,6 +53,7 @@ services:
           done
           echo 'Starting the frontend in local ComfyUI mode'
           exec env VITE_REMOTE_DEV=true DISABLE_VUE_PLUGINS=true \
+            VITE_USE_LEGACY_DEFAULT_GRAPH=true \
             pnpm dev --host 0.0.0.0 --port "$PORT"
           ;;
         cloud)

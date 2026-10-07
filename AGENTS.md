@@ -61,7 +61,7 @@ This project uses **pnpm**. Always prefer scripts defined in `package.json` (e.g
 - `pnpm build`: Type-check then production build to `dist/`
 - `pnpm preview`: Preview the production build locally
 - `pnpm test:unit`: Run Vitest unit tests
-- `pnpm test:browser:local`: Run Playwright E2E tests (`browser_tests/`)
+- `pnpm test:browser:local`: Run Playwright E2E tests (`browser_tests/`) against a ComfyUI backend on 8188 and the dev server on 5173; in an orb, start both with `amp orb services ensure` (see Agent-only rules)
 - `pnpm comfy-test record`: Interactive test recorder (guided setup for non-devs; **needs a real terminal** — exits immediately with guidance if stdin isn't a TTY)
 - `pnpm comfy-test plan --description "<what to test>" [--tags a,b] [--workflow w] [--name n] [--feature-flags name:value,...]`: **Agent entry point.** Non-interactive, no terminal, no backend/dev-server required — reads the filesystem and prints text only. Validates the tags/workflow and prints a `<test-suite>/<test-name>/<test-file>/<seed-file>/<tag>/<body>` block ready to hand to the `playwright-test-generator` agent below — this is how an agent (not a human) produces a test with `comfy-test`. Example:
   ```
@@ -289,6 +289,16 @@ When working from a TDD or design doc, record its tradeoffs, alternatives consid
 ## Agent-only rules
 
 Rules for agent-based coding tasks.
+
+### Playwright E2E in orbs
+
+An Amp orb can run E2E. `.amp/services.yaml` declares the ComfyUI backend
+(8188) and the dev server (5173), but they start only when you run
+`amp orb services ensure`. Follow
+[Amp orbs and remote agent containers](browser_tests/README.md#amp-orbs-and-remote-agent-containers)
+before E2E work. Never write "Playwright cannot run here", in a report or a
+subagent brief, until those readiness checks have failed. Quote the failing
+command and its output when they do.
 
 ### PR Review Comment Resolution
 

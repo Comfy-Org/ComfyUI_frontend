@@ -126,7 +126,8 @@ await expect(async () => {
 2. Extract and view trace: `pnpm dlx playwright show-trace trace.zip`
 3. CI deploys HTML report to Cloudflare Pages (link in PR comment)
 4. Reproduce CI: `CI=true pnpm test:browser`
-5. Local runs: `pnpm test:browser:local`
+5. Local runs: `pnpm test:browser:local`; in an Amp orb, start and check the
+   services first (`browser_tests/README.md` → Amp orbs and remote agent containers)
 
 ## Anti-Patterns
 

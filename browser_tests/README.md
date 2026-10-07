@@ -32,7 +32,9 @@ the live suite is excluded from the ordinary browser test configurations.
 python main.py --multi-user
 ```
 
-Without this flag, parallel tests conflict and fail randomly.
+Without this flag, parallel tests conflict and fail randomly. The
+[container](#containerized-comfyui) and the
+[orb services](#amp-orbs-and-remote-agent-containers) already pass it.
 
 ## Setup
 
@@ -58,8 +60,10 @@ pnpm container:start
 ```
 
 The command mounts `tools/devtools` and starts ComfyUI at `localhost:8188`.
-Leave it running. Use another terminal for `pnpm dev` and a third for
-`pnpm test:browser:local`.
+Leave it running. Use another terminal for `pnpm dev:test` and a third for
+`pnpm test:browser:local`. `dev:test` sets `VITE_USE_LEGACY_DEFAULT_GRAPH=true`,
+which CI uses; plain `pnpm dev` loads a different default workflow, and tests
+that expect the default graph fail.
 
 Run browser tests against port 5173 when using this container. Port 8188 serves
 the frontend bundled into the container, not the current frontend checkout.
@@ -72,19 +76,48 @@ builds the matching release from source instead. This fallback may differ from
 the published CI image. The source build can take several minutes and uses about
 10 GB, plus Docker build cache.
 
-### Remote agent containers
+### Amp orbs and remote agent containers
 
-Remote development containers used by coding agents default to local mode.
-Local mode runs the containerized backend and one local frontend. Cloud mode
-skips Docker and the local backend, and runs one frontend against the Comfy test
-cloud. Set `COMFYUI_FRONTEND_MODE=cloud` in the container environment to switch
-modes.
+E2E runs in an Amp orb. `.agents/setup` installs Docker, Node, and Chromium.
+`.amp/services.yaml` declares `docker-daemon`, `comfyui` (the container above,
+on port 8188), and `frontend` (Vite on port 5173 with `DISABLE_VUE_PLUGINS` and
+`VITE_USE_LEGACY_DEFAULT_GRAPH` set as in CI). The services do not start by
+themselves. Never report E2E as unrunnable until these checks have failed:
 
-If the container's `GH_TOKEN` can read the private package, no other credentials
-are needed. Otherwise, add a GitHub token with `read:packages` access to the
-container's secret settings. You can use `COMFY_CI_CONTAINER_TOKEN` with
-`COMFY_CI_CONTAINER_USER` instead of `GH_TOKEN`; these dedicated values take
-precedence. Recreate the container after changing its environment or secrets.
+```bash
+amp orb service list          # "No orb services are running" means: run ensure
+timeout 50 amp orb services ensure   # waits for ports; exit 124 is fine
+amp orb service logs comfyui | tail
+curl -sf localhost:8188/system_stats >/dev/null && echo backend ready
+curl -sf localhost:5173/ >/dev/null && echo frontend ready
+```
+
+`ensure` keeps the services running after `timeout` stops it. Poll the two
+`curl` checks until both pass. The `comfyui` log shows which backend you get:
+
+| Log line                                               | Meaning                                                       |
+| ------------------------------------------------------ | ------------------------------------------------------------- |
+| `Using cached image ghcr.io/...`                       | CI image; the backend starts within seconds                   |
+| `The private image pull failed; falling back to ...`   | Token lacks `read:packages`; source build takes 15–20 minutes |
+| `GHCR credentials are not configured`                  | No token; same source build                                   |
+| `Using source-built fallback comfyui-ci-container-...` | Fallback image is built and starting; it may differ from CI   |
+| `To see the GUI go to: http://0.0.0.0:8188`            | Backend ready                                                 |
+
+The frontend waits about 10 minutes for the backend. If a source build takes
+longer, the service exits and the supervisor restarts it, so leave it alone.
+`apt-get` steps in the source build can stall for minutes on slow or
+unreachable Ubuntu mirrors such as `security.ubuntu.com`; they continue on their
+own.
+
+To get the CI image, the orb needs a classic GitHub token with `read:packages`
+whose owner can read `comfy-org/comfyui-ci-container`. Add `read:packages` to
+the `GH_TOKEN` secret, or add a `COMFY_CI_CONTAINER_TOKEN` secret (optionally
+with `COMFY_CI_CONTAINER_USER`), which takes precedence. `gh auth status` lists
+the current token's scopes. After changing secrets, run
+`amp orb restart-processes`.
+
+Set `COMFYUI_FRONTEND_MODE=cloud` to skip Docker and the local backend and run
+the frontend against the Comfy test cloud instead.
 
 ### Node.js & Playwright
 
@@ -257,6 +290,37 @@ pnpm test:browser:local --ui                # Interactive UI mode (use for devel
 - **Step debugging** — step through a test line by line via the _Source_ tab
 - **Time travel** — click any step in _Actions_ to see browser state at that moment
 - **Console / Network / Attachments** tabs — logs, API calls, and snapshot diffs
+
+### Running in an orb
+
+After the [orb services](#amp-orbs-and-remote-agent-containers) pass both
+readiness checks:
+
+```bash
+pnpm test:browser:local browser_tests/tests/<path>.spec.ts --project=chromium
+```
+
+`test:browser:local` sets `PLAYWRIGHT_LOCAL=1` (one worker, 30 s timeout, trace
+and video) and defaults `PLAYWRIGHT_TEST_URL` to `http://localhost:5173`. No
+`.env` is needed. Never point tests at port 8188; it serves the frontend
+bundled in the container. Run the first spec after the dev server starts with
+one worker. Vite compiles the app on the first load, and parallel workers
+against a cold server time out in `beforeEach` with `app never became ready`.
+Add `--workers=N` after that first run.
+
+Rule out the environment before blaming the change under test:
+
+| Symptom                                                    | Cause                                                     |
+| ---------------------------------------------------------- | --------------------------------------------------------- |
+| `connect ECONNREFUSED` on 5173 or 8188                     | Services not started or still building; see the log table |
+| `app never became ready` on the first run only             | Cold Vite with parallel workers; rerun                    |
+| Default-graph nodes such as `Load Checkpoint` are missing  | Dev server without `VITE_USE_LEGACY_DEFAULT_GRAPH=true`   |
+| Backend-provided data differs on the source-built fallback | Fallback may differ from the CI image; confirm in CI      |
+
+A failure that also reproduces on the merge base is not caused by the change.
+Rerun the same spec there before reporting it. The dev server serves whatever
+the checkout holds, so `git switch --detach "$(git merge-base HEAD origin/main)"`
+is enough; switch back afterwards.
 
 ### Slowing the browser down
 
