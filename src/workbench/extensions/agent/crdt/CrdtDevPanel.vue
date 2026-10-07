@@ -22,6 +22,8 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { collectAllNodes } from '@/utils/graphTraversalUtil'
 
 import { useAgentConversationStore } from '../stores/agent/agentConversationStore'
 import type { CrdtLogLevel } from './crdtDebugGate'
@@ -47,6 +49,7 @@ import type { MergeScenario, MergeSimulation } from './mergeScenarios'
 import { getMergeScenarios, runScenario } from './mergeScenarios'
 import type { MergeTraceEntry, NodeLifecycleRow } from './mergeTrace'
 import { MERGE_VOCABULARY, groupByRegister, nodeLifecycle } from './mergeTrace'
+import { collectMediaUiDiagnostics } from './mediaUiDiagnostics'
 import type { AgentCrdtStatus } from './useAgentCrdtFollower'
 
 /**
@@ -466,6 +469,7 @@ async function copyReport() {
       identifiers: collectIdentifiers(crdt),
       testerNote: testerNote.value,
       mergeTrace: simulation.value?.entries,
+      mediaUiDiagnostics: collectCurrentMediaUiDiagnostics(),
       sources: reportSources.value,
       ...(reportSources.value.workflow ? serializeActiveWorkflow() : {})
     })
@@ -473,6 +477,25 @@ async function copyReport() {
   } catch (error) {
     reportError(error, { errorType: 'crdt_dev_panel_report_copy_failed' })
     reportCopyState.value = { status: 'failed', report: null }
+  }
+}
+
+function collectCurrentMediaUiDiagnostics() {
+  try {
+    const nodeOutputStore = useNodeOutputStore()
+    return collectMediaUiDiagnostics({
+      nodes: collectAllNodes(app.rootGraph),
+      getNodeOutputs: (node) => nodeOutputStore.getNodeOutputs(node),
+      getNodeImageUrls: (node) => nodeOutputStore.getNodeImageUrls(node),
+      root: document
+    })
+  } catch (error) {
+    reportError(error, {
+      surface: 'agent',
+      errorType: 'agent_crdt_media_ui_diagnostics_failed',
+      level: 'warning'
+    })
+    return undefined
   }
 }
 
