@@ -98,13 +98,19 @@ ComfyUI supports three types of icons that can be used throughout the interface.
 
 ### With Tooltips
 
+Put the icon in a `Button` and give the button the tooltip, so keyboard users
+can reach it. See `src/components/ui/tooltip/README.md` for other triggers.
+
 ```vue
 <template>
-  <i
-    class="icon-[lucide--info]"
-    v-tooltip="'Click for more information'"
-    class="cursor-pointer"
-  />
+  <Button
+    variant="muted-textonly"
+    size="icon"
+    :tooltip="$t('g.moreInformation')"
+    :aria-label="$t('g.moreInformation')"
+  >
+    <i class="icon-[lucide--info]" />
+  </Button>
 </template>
 ```
 
