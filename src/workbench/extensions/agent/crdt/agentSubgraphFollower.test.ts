@@ -342,6 +342,13 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
         .get(state.instance.type)
       assert.instanceOf(definition, Y.Map)
       definition.set('name', 'peer-replaced definition')
+      definition.set('category', 'peer category')
+      definition.set('description', 'peer description')
+      const interiorNodes = definition.get('nodes')
+      assert.instanceOf(interiorNodes, Y.Map)
+      const [interior] = [...interiorNodes.values()]
+      assert.instanceOf(interior, Y.Map)
+      interior.set('pos', [900, 800])
       nodesMap(state.hostDoc)
         .get(String(state.instance.id))
         ?.set(OPAQUE_WIDGETS_KEY, [42])

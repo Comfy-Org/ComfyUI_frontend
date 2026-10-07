@@ -524,16 +524,56 @@ function floorSizeToContent(node: LGraphNode): void {
 
 interface DefinitionState {
   live: object
-  semantics: Omit<ExportedSubgraph, 'name'>
+  semantics: unknown
   layout: ReturnType<typeof definitionPromotedLayout>
   conflicted: boolean
 }
 
-function definitionSemantics(
-  definition: ExportedSubgraph
-): Omit<ExportedSubgraph, 'name'> {
-  const { name: _name, ...semantics } = definition
-  return semantics
+function runtimeNodeSemantics(
+  node: NonNullable<ExportedSubgraph['nodes']>[number]
+): object {
+  const {
+    title: _title,
+    pos: _pos,
+    size: _size,
+    flags: _flags,
+    order: _order,
+    shape: _shape,
+    boxcolor: _boxcolor,
+    color: _color,
+    bgcolor: _bgcolor,
+    showAdvanced: _showAdvanced,
+    ...runtime
+  } = node
+  return runtime
+}
+
+function definitionSemantics(definition: ExportedSubgraph): unknown {
+  const {
+    name: _name,
+    category: _category,
+    description: _description,
+    revision: _revision,
+    state: _state,
+    groups: _groups,
+    reroutes: _reroutes,
+    floatingLinks: _floatingLinks,
+    extra: _extra,
+    inputNode,
+    outputNode,
+    nodes,
+    subgraphs,
+    links,
+    ...runtime
+  } = definition
+  return {
+    ...runtime,
+    inputNode: { id: inputNode.id },
+    outputNode: { id: outputNode.id },
+    nodes: nodes?.map(runtimeNodeSemantics),
+    subgraphs: subgraphs?.map(runtimeNodeSemantics),
+    links: links?.map(({ parentId: _parentId, ...link }) => link)
+  }
 }
 
 function updateDefinitionConflict(
