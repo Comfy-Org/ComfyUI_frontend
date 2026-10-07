@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   approveCurrentHead,
   armMergeAutomation,
+  policyReviewFloor,
   stopMergeAutomation
 } from './automation.ts'
 import type {
@@ -104,6 +105,28 @@ describe('approval lifecycle', () => {
 })
 
 describe('merge automation', () => {
+  it('uses the earliest policy review as the automation ownership floor', () => {
+    expect(
+      policyReviewFloor(
+        [
+          {
+            state: 'APPROVED',
+            body: '[Package fast lane] Policy-only approval. Later head.',
+            submitted_at: '2026-10-06T10:03:00Z',
+            user: { login: 'christian-byrne' }
+          },
+          {
+            state: 'DISMISSED',
+            body: '[Package fast lane] Policy-only approval. Earlier head.',
+            submitted_at: '2026-10-06T10:00:00Z',
+            user: { login: 'christian-byrne' }
+          }
+        ],
+        'christian-byrne'
+      )?.submitted_at
+    ).toBe('2026-10-06T10:00:00Z')
+  })
+
   it('arms native auto-merge for the exact head and configured method', async () => {
     const graphql = vi
       .fn<GitHubClient['graphql']>()

@@ -197,17 +197,23 @@ export async function armMergeAutomation(
   summary(`Armed native auto-merge for ${pull.head.sha.slice(0, 12)}.`)
 }
 
-function latestPolicyReview(
+export function policyReviewFloor(
   reviews: PullRequestReview[],
   identity: string
 ): PullRequestReview | undefined {
-  return reviews.findLast(
-    (review) =>
-      review.user?.login?.toLowerCase() === identity.toLowerCase() &&
-      review.body?.startsWith(POLICY_REVIEW_PREFIX) &&
-      review.submitted_at !== undefined &&
-      !Number.isNaN(Date.parse(review.submitted_at))
-  )
+  return reviews
+    .filter(
+      (review) =>
+        review.user?.login?.toLowerCase() === identity.toLowerCase() &&
+        review.body?.startsWith(POLICY_REVIEW_PREFIX) &&
+        review.submitted_at !== undefined &&
+        !Number.isNaN(Date.parse(review.submitted_at))
+    )
+    .sort(
+      (left, right) =>
+        Date.parse(left.submitted_at ?? '') -
+        Date.parse(right.submitted_at ?? '')
+    )[0]
 }
 
 async function dismissApproval(
@@ -250,7 +256,7 @@ async function stop(
     github,
     pull,
     identity,
-    latestPolicyReview(reviews, identity)
+    policyReviewFloor(reviews, identity)
   )
   summary(message)
 }
