@@ -147,10 +147,13 @@ function updateActivePromotedRows(
     if (!nextKeys.has(promotedRowKey(item))) demoteRow(item)
   }
   if (currentKeys.size === nextKeys.size) {
-    reorderSubgraphInputsByWidgetOrder(
+    // A refusal raises no `inputs-reordered`, so the listener above never
+    // restores the dragged list to the order the graph actually kept.
+    const reordered = reorderSubgraphInputsByWidgetOrder(
       node,
       value.map((row) => ({ widgetId: row.widget.widgetId }))
     )
+    if (!reordered) refreshPromotedRows()
   }
   refreshActiveNodeRendering()
 }
