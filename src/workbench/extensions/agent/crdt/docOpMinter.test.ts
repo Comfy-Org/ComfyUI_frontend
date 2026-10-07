@@ -791,6 +791,26 @@ describe('attachDocOpMinter', () => {
     doc.destroy()
   })
 
+  it('refuses a document whose stored array outnumbers its matching promoted names', async () => {
+    const { host, doc } = seedPromotedHost(['first', 'second', 'extra'])
+    expect(readDocPromotedWidgets(doc, String(host.id))).toMatchObject({
+      valueCount: 3,
+      promotedNames: ['prefix', 'text']
+    })
+
+    host.widgets[1].value = 'pasted'
+    await afterFlush()
+
+    expect(minted).toEqual([])
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'agent_crdt_promoted_widget_order_drift'
+      })
+    )
+    doc.destroy()
+  })
+
   it.for([
     {
       name: 'sizes its array for a different set of widgets',
@@ -935,6 +955,41 @@ describe('attachDocOpMinter', () => {
     }
 
     expect(minted).toHaveLength(0)
+    expect(
+      vi
+        .mocked(reportError)
+        .mock.calls.filter(
+          ([, options]) =>
+            options.errorType === 'agent_crdt_promoted_widget_order_drift'
+        )
+    ).toHaveLength(1)
+    doc.destroy()
+  })
+
+  it('reports a drifted host once across interleaved ordinary flushes', async () => {
+    const source = new TestSource()
+    withGraphIntentSource('load', () => graph.add(source))
+    const { host, doc } = seedPromotedHost()
+    docPromotedWidgets = () => ({
+      valueCount: 2,
+      declaredNames: ['text', 'prefix'],
+      promotedNames: ['text', 'prefix']
+    })
+
+    for (const [text, steps] of [
+      ['p', 41],
+      ['pa', 42]
+    ] as const) {
+      host.widgets[1].value = text
+      await afterFlush()
+      source.widgets![0].value = steps
+      await afterFlush()
+    }
+
+    expect(minted).toEqual([
+      expect.objectContaining({ node_id: source.id, value: 41 }),
+      expect.objectContaining({ node_id: source.id, value: 42 })
+    ])
     expect(
       vi
         .mocked(reportError)
