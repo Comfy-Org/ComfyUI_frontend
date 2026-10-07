@@ -77,7 +77,7 @@ const pillClass =
       </span>
       <span
         v-if="hasTags"
-        class="flex h-6 min-w-0 items-center gap-1.5 overflow-hidden"
+        class="flex min-w-0 flex-wrap items-center gap-1.5"
         data-testid="explore-pills"
       >
         <ExploreKindTag v-if="kind" :kind :locale />

@@ -42,28 +42,30 @@ const { t } = translationsFor(locale)
       data-testid="app-card-artwork"
     >
       <WorkshopCardMedia :model="app" />
-      <span
-        :class="
-          cn(
-            'absolute top-3 left-3 z-10 rounded-full px-2.5 py-1 text-2xs font-semibold tracking-wider uppercase',
-            app.href
-              ? 'bg-primary-comfy-yellow text-primary-comfy-ink'
-              : 'bg-primary-comfy-ink/75 text-primary-comfy-canvas'
-          )
-        "
-        data-testid="app-card-status"
-      >
-        {{ t(app.href ? 'hubPages.apps.open' : 'hubPages.apps.soon') }}
-      </span>
     </div>
 
     <div class="flex flex-col gap-1.5 px-3">
-      <h3
-        class="text-base font-semibold text-content-bright"
-        data-testid="app-card-name"
-      >
-        {{ app.name }}
-      </h3>
+      <div class="flex items-center justify-between gap-3">
+        <h3
+          class="min-w-0 text-base font-semibold text-content-bright"
+          data-testid="app-card-name"
+        >
+          {{ app.name }}
+        </h3>
+        <span
+          :class="
+            cn(
+              'shrink-0 rounded-full px-2.5 py-1 text-2xs font-semibold tracking-wider uppercase',
+              app.href
+                ? 'bg-primary-comfy-yellow text-primary-comfy-ink'
+                : 'bg-primary-comfy-ink/75 text-primary-comfy-canvas'
+            )
+          "
+          data-testid="app-card-status"
+        >
+          {{ t(app.href ? 'hubPages.apps.open' : 'hubPages.apps.soon') }}
+        </span>
+      </div>
       <p
         class="line-clamp-2 text-sm/relaxed text-content-secondary"
         data-testid="app-card-task"

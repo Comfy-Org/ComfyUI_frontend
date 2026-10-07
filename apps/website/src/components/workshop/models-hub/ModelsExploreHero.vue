@@ -28,7 +28,7 @@ const featured = computed(() => latestLaunch(models))
 
 <template>
   <section
-    class="mb-12 grid items-center gap-10 pt-8 max-sm:mb-8 max-sm:pt-5 lg:pt-12 xl:grid-cols-[minmax(0,1.025fr)_minmax(0,1fr)] xl:gap-16"
+    class="mb-12 grid items-start gap-10 pt-8 max-sm:mb-8 max-sm:pt-5 lg:pt-12 xl:grid-cols-[minmax(0,1.025fr)_minmax(0,1fr)] xl:gap-16"
     data-testid="models-hub-hero"
   >
     <div class="flex min-w-0 flex-col items-start gap-6">

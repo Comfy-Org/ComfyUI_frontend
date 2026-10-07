@@ -38,7 +38,7 @@ describe('WorkshopAppCard', () => {
     expect(screen.getByTestId('app-card-status')).toHaveTextContent('Soon')
   })
 
-  it('reads its name under the artwork, never over it', () => {
+  it('reads its name and status under the artwork, never over it', () => {
     render(WorkshopAppCard, {
       props: {
         app: { ...app, thumbnail: { url: '/images/app.jpg', kind: 'image' } }
@@ -48,6 +48,12 @@ describe('WorkshopAppCard', () => {
     expect(
       within(screen.getByTestId('app-card-artwork')).queryByRole('heading'),
       'A name over the artwork covers the picture it is naming'
+    ).toBeNull()
+    expect(
+      within(screen.getByTestId('app-card-artwork')).queryByTestId(
+        'app-card-status'
+      ),
+      'A status over the artwork covers the title baked into it'
     ).toBeNull()
     expect(
       screen.getByRole('heading', { name: 'Re-shoot a video' })
