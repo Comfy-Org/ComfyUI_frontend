@@ -301,6 +301,37 @@ describe('ReleaseNotificationToast', () => {
     expect(vi.getTimerCount()).toBe(0)
   })
 
+  it('restarts auto-hide after being hidden longer than the timeout', async () => {
+    Object.assign(useReleaseStore(), {
+      recentRelease: {
+        version: '1.2.3',
+        content: '# Test Release'
+      } as ReleaseNote,
+      shouldShowToast: false
+    })
+
+    const { rerender } = renderComponent({ isVisible: true })
+
+    Object.assign(useReleaseStore(), { shouldShowToast: true })
+    await nextTick()
+    expect(screen.getByText('New update is out!')).toBeInTheDocument()
+
+    await rerender({ isVisible: false })
+    expect(screen.queryByText('New update is out!')).not.toBeInTheDocument()
+
+    vi.advanceTimersByTime(8000)
+    await rerender({ isVisible: true })
+    expect(screen.getByText('New update is out!')).toBeInTheDocument()
+
+    vi.advanceTimersByTime(7999)
+    await nextTick()
+    expect(screen.getByText('New update is out!')).toBeInTheDocument()
+
+    vi.advanceTimersByTime(1)
+    await nextTick()
+    expect(screen.queryByText('New update is out!')).not.toBeInTheDocument()
+  })
+
   it('clears auto-hide timer when manually dismissed', async () => {
     Object.assign(useReleaseStore(), {
       recentRelease: {

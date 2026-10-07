@@ -64,8 +64,9 @@ import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 import type { ReleaseNote } from '../common/releaseService'
 import { useReleaseStore } from '../common/releaseStore'
 
-const { position = 'bottom-left' } = defineProps<{
+const { position = 'bottom-left', isVisible = true } = defineProps<{
   position?: 'bottom-left' | 'bottom-right'
+  isVisible?: boolean
 }>()
 
 const { buildDocsUrl } = useExternalLink()
@@ -83,7 +84,7 @@ const latestRelease = computed<ReleaseNote | null>(() => {
 
 // Show toast when new version available and not dismissed
 const shouldShow = computed(
-  () => releaseStore.shouldShowToast && !isDismissed.value
+  () => releaseStore.shouldShowToast && !isDismissed.value && isVisible
 )
 
 // Generate changelog URL with version anchor (language-aware)

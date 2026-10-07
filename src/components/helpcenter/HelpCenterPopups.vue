@@ -18,7 +18,7 @@
   <!-- Release Notification Toast positioned within canvas area -->
   <Teleport to="#graph-canvas-container">
     <ReleaseNotificationToast
-      v-show="!canvasStore.isPickingNodes"
+      :is-visible="!canvasStore.isPickingNodes"
       :position="sidebarLocation === 'right' ? 'bottom-right' : 'bottom-left'"
     />
   </Teleport>

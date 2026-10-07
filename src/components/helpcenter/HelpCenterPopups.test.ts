@@ -17,7 +17,7 @@ vi.mock(import('@/composables/useHelpCenter'), () => ({
     })
 }))
 
-it('hides the release toast only while picking nodes', async () => {
+it('passes node-picking visibility to the release toast', async () => {
   const canvas = useCanvasStore()
   render(HelpCenterPopups, {
     global: {
@@ -26,17 +26,20 @@ it('hides the release toast only while picking nodes', async () => {
         Teleport: true,
         HelpCenterMenuContent: true,
         WhatsNewPopup: true,
-        ReleaseNotificationToast: { template: '<div>New release</div>' }
+        ReleaseNotificationToast: {
+          props: ['isVisible'],
+          template: '<div>Release toast visible: {{ isVisible }}</div>'
+        }
       }
     }
   })
-  expect(screen.getByText('New release')).toBeVisible()
+  expect(screen.getByText('Release toast visible: true')).toBeInTheDocument()
 
   canvas.isPickingNodes = true
   await nextTick()
-  expect(screen.getByText('New release')).not.toBeVisible()
+  expect(screen.getByText('Release toast visible: false')).toBeInTheDocument()
 
   canvas.stopNodePicking()
   await nextTick()
-  expect(screen.getByText('New release')).toBeVisible()
+  expect(screen.getByText('Release toast visible: true')).toBeInTheDocument()
 })
