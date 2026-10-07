@@ -484,7 +484,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       () => deps.docPromotedWidgets(event.nodeId),
       (liveNames, doc) =>
         reportOnce(
-          `promoted_drift:${String(event.nodeId)}`,
+          `promoted_drift:${rootGraphId}:${String(event.nodeId)}`,
           `Subgraph host ${String(event.nodeId)} promotes [${liveNames.join(', ')}], which the document's ${doc.valueCount} stored values and declared inputs [${doc.declaredNames.join(', ')}] do not place; refusing to mint a promoted write`,
           'agent_crdt_promoted_widget_order_drift',
           {

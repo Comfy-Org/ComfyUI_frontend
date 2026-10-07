@@ -944,6 +944,39 @@ describe('attachDocOpMinter', () => {
     doc.destroy()
   })
 
+  it('reports the same drifted node id again in another workflow', async () => {
+    const first = seedPromotedHost()
+    docPromotedWidgets = () => ({
+      valueCount: 2,
+      declaredNames: ['text', 'prefix'],
+      promotedNames: ['text', 'prefix']
+    })
+    first.host.widgets[1].value = 'first workflow'
+    await afterFlush()
+
+    graph = new LGraph()
+    rootGraphId = toRootGraphId(graph.id)
+    const second = seedPromotedHost()
+    docPromotedWidgets = () => ({
+      valueCount: 2,
+      declaredNames: ['text', 'prefix'],
+      promotedNames: ['text', 'prefix']
+    })
+    second.host.widgets[1].value = 'second workflow'
+    await afterFlush()
+
+    expect(
+      vi
+        .mocked(reportError)
+        .mock.calls.filter(
+          ([, options]) =>
+            options.errorType === 'agent_crdt_promoted_widget_order_drift'
+        )
+    ).toHaveLength(2)
+    first.doc.destroy()
+    second.doc.destroy()
+  })
+
   it('reads a shipped host whose inputs mirror under-reports its values', () => {
     const workflow = JSON.parse(
       readFileSync(
