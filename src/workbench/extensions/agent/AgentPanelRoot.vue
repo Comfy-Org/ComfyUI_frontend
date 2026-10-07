@@ -359,12 +359,7 @@ watch(
         agentPanelStore.reportedCreditTransitionNoticeIdentity = null
       return
     }
-    if (
-      previous.hasFunds === true &&
-      scopedHasFunds === false &&
-      consentAccepted.value &&
-      billingType.value === 'workspace'
-    ) {
+    if (previous.hasFunds === true && scopedHasFunds === false) {
       agentPanelStore.creditTransitionNoticeIdentity = identity
     }
   },
