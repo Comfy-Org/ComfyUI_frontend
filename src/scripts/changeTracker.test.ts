@@ -2,7 +2,15 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import { markRaw, ref } from 'vue'
 
 vi.mock(import('@vueuse/router'), () => ({ useRouteHash: () => ref('') }))
@@ -1484,24 +1492,42 @@ describe('ChangeTracker', () => {
     })
 
     it.for([
-      { direction: 'undo', restoresSaved: true },
-      { direction: 'redo', restoresSaved: true },
-      { direction: 'undo', restoresSaved: false }
+      {
+        direction: 'undo',
+        reverse: 'redo',
+        restoresSaved: true,
+        restoredValue: 1,
+        modified: false
+      },
+      {
+        direction: 'redo',
+        reverse: 'undo',
+        restoresSaved: true,
+        restoredValue: 1,
+        modified: false
+      },
+      {
+        direction: 'undo',
+        reverse: 'redo',
+        restoresSaved: false,
+        restoredValue: 3,
+        modified: true
+      }
     ] as const)(
       'tracks unsaved changes after $direction normalizes a node (saved target: $restoresSaved)',
-      async ({ direction, restoresSaved }) => {
+      async ({ direction, reverse, restoredValue, modified }) => {
         const saved = createState(1)
         saved.nodes[0].widgets_values = [1]
         const current = structuredClone(saved)
         current.nodes[0].widgets_values = [2]
         const restored = structuredClone(saved)
-        if (!restoresSaved) restored.nodes[0].widgets_values = [3]
+        restored.nodes[0].widgets_values = [restoredValue]
         const normalized = structuredClone(restored)
         normalized.nodes[0].size = [100, 178]
         const tracker = createTracker(saved)
         tracker.activeState = current
         const workflow = useWorkflowStore().activeWorkflow
-        if (!workflow) throw new Error('active workflow missing')
+        assert.exists(workflow)
         vi.mocked(useWorkflowStore().getWorkflowByPath).mockReturnValue(
           workflow
         )
@@ -1516,10 +1542,9 @@ describe('ChangeTracker', () => {
         await tracker[direction]()
         tracker.captureCanvasState()
 
-        expect(workflow.isModified).toBe(!restoresSaved)
+        expect(workflow.isModified).toBe(modified)
         expect(tracker.activeState).toEqual(normalized)
         expect(history[direction]).toEqual([])
-        const reverse = direction === 'undo' ? 'redo' : 'undo'
         expect(history[reverse]).toEqual([current])
         await tracker[reverse]()
         expect(tracker.activeState).toEqual(current)
