@@ -5,8 +5,9 @@ import type {
   DesktopHostAuthState
 } from '@/platform/auth/desktopHost/desktopHostAuthBridge'
 import {
-  desktopHostAccessToken,
+  desktopHostIdentityToken,
   desktopHostUser,
+  desktopHostWorkspaceToken,
   isDesktopHostSessionActive,
   requestDesktopHostSignIn,
   requestDesktopHostSignOut,
@@ -25,7 +26,10 @@ function fakeBridge(initial: DesktopHostAuthState) {
   const listeners = new Set<(state: DesktopHostAuthState) => void>()
   const bridge = {
     getState: vi.fn(async () => initial),
-    getAccessToken: vi.fn(async (): Promise<string | null> => 'host-token'),
+    getWorkspaceToken: vi.fn(
+      async (_workspaceId: string): Promise<string | null> => 'host-token'
+    ),
+    getIdentityToken: vi.fn(async (): Promise<string | null> => 'host-token'),
     requestSignIn: vi.fn(async (): Promise<DesktopHostAuthState> => SIGNED_IN),
     signOut: vi.fn(
       async (): Promise<DesktopHostAuthState> => ({ status: 'signed_out' })
@@ -73,7 +77,9 @@ describe('desktopHostSession', () => {
       email: 'a@example.com',
       workspaceId: 'ws-1'
     })
-    await expect(desktopHostAccessToken()).resolves.toBe('host-token')
+    await expect(desktopHostWorkspaceToken('ws-1')).resolves.toBe('host-token')
+    expect(bridge.getWorkspaceToken).toHaveBeenCalledWith('ws-1')
+    await expect(desktopHostIdentityToken()).resolves.toBe('host-token')
   })
 
   it('is active but signed out, with no token, when Desktop has no account', async () => {
@@ -83,8 +89,10 @@ describe('desktopHostSession', () => {
 
     expect(isDesktopHostSessionActive()).toBe(true)
     expect(desktopHostUser.value).toBeNull()
-    await expect(desktopHostAccessToken()).resolves.toBeUndefined()
-    expect(bridge.getAccessToken).not.toHaveBeenCalled()
+    await expect(desktopHostWorkspaceToken('ws-1')).resolves.toBeUndefined()
+    await expect(desktopHostIdentityToken()).resolves.toBeUndefined()
+    expect(bridge.getWorkspaceToken).not.toHaveBeenCalled()
+    expect(bridge.getIdentityToken).not.toHaveBeenCalled()
   })
 
   it('follows Desktop sign-out and stops when Desktop turns sharing off', async () => {
@@ -143,9 +151,9 @@ describe('desktopHostSession', () => {
       const { bridge, push } = fakeBridge(SIGNED_IN)
       await startDesktopHostSession(bridge)
       const token = deferred<string | null>()
-      bridge.getAccessToken.mockReturnValue(token.promise)
+      bridge.getWorkspaceToken.mockReturnValue(token.promise)
 
-      const fetching = desktopHostAccessToken()
+      const fetching = desktopHostWorkspaceToken('ws-1')
       push({ status: 'signed_out' })
       token.resolve('stale-token')
 

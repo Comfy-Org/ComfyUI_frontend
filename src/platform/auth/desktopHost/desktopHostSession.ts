@@ -79,16 +79,27 @@ export function stopDesktopHostSession(): void {
 }
 
 /**
- * A current access token from Desktop, which refreshes it. Undefined when
- * signed out, or when Desktop's session is not scoped to `workspaceId`.
+ * Desktop's credential for `workspaceId`, released only when its session is
+ * scoped to exactly that workspace. This is the API-node credential.
  */
-export async function desktopHostAccessToken(
-  workspaceId?: string
+export function desktopHostWorkspaceToken(
+  workspaceId: string
+): Promise<string | undefined> {
+  return fetchToken((current) => current.getWorkspaceToken(workspaceId))
+}
+
+/** Desktop's account token for user-identity calls that name no workspace. */
+export function desktopHostIdentityToken(): Promise<string | undefined> {
+  return fetchToken((current) => current.getIdentityToken())
+}
+
+async function fetchToken(
+  read: (current: DesktopHostAuthBridge) => Promise<string | null>
 ): Promise<string | undefined> {
   const current = bridge
   if (!current || session.value.status !== 'signed_in') return undefined
   const before = revision
-  const token = await current.getAccessToken(workspaceId).catch(() => null)
+  const token = await read(current).catch(() => null)
   return revision === before ? (token ?? undefined) : undefined
 }
 

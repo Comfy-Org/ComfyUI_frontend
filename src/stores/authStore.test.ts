@@ -2782,8 +2782,11 @@ describe('useAuthStore in local/desktop distribution', () => {
       const listeners = new Set<(next: DesktopHostAuthState) => void>()
       return {
         getState: vi.fn(async () => state),
-        getAccessToken: vi.fn(
-          async (_workspaceId?: string): Promise<string | null> => 'host-token'
+        getWorkspaceToken: vi.fn(
+          async (_workspaceId: string): Promise<string | null> => 'host-token'
+        ),
+        getIdentityToken: vi.fn(
+          async (): Promise<string | null> => 'host-token'
         ),
         requestSignIn: vi.fn(async () => state),
         signOut: vi.fn(
@@ -2807,13 +2810,13 @@ describe('useAuthStore in local/desktop distribution', () => {
     afterEach(() => stopDesktopHostSession())
 
     it('uses the Desktop account over the Firebase user and stored API key', async () => {
-      await startDesktopHostSession(
-        hostBridge({
-          status: 'signed_in',
-          userId: 'host-user',
-          email: 'host@example.com'
-        })
-      )
+      const bridge = hostBridge({
+        status: 'signed_in',
+        userId: 'host-user',
+        email: 'host@example.com',
+        workspaceId: 'ws-host'
+      })
+      await startDesktopHostSession(bridge)
 
       expect(store.isAuthenticated).toBe(true)
       expect(store.userId).toBe('host-user')
@@ -2824,7 +2827,19 @@ describe('useAuthStore in local/desktop distribution', () => {
       await expect(store.getAuthHeader()).resolves.toEqual(hostHeader)
       await expect(store.getUserAuthHeader()).resolves.toEqual(hostHeader)
       await expect(store.getWorkspaceAuthHeader()).resolves.toEqual(hostHeader)
+      expect(bridge.getWorkspaceToken).toHaveBeenCalledWith('ws-host')
+      expect(bridge.getIdentityToken).toHaveBeenCalled()
       expect(mockUser.getIdToken).not.toHaveBeenCalled()
+    })
+
+    it('has no workspace credential when no workspace is known', async () => {
+      const bridge = hostBridge({ status: 'signed_in', userId: 'host-user' })
+      await startDesktopHostSession(bridge)
+
+      await expect(store.getWorkspaceAuthToken()).resolves.toBeUndefined()
+      await expect(store.getAuthToken()).resolves.toBeUndefined()
+      await expect(store.getWorkspaceAuthHeader()).resolves.toBeNull()
+      expect(bridge.getWorkspaceToken).not.toHaveBeenCalled()
     })
 
     it('reads as signed out, with no credential, while Desktop has no account', async () => {
@@ -2845,7 +2860,7 @@ describe('useAuthStore in local/desktop distribution', () => {
       'uses the Desktop token for this tab only when its workspace $name',
       async ({ hostWorkspace, expected }) => {
         const bridge = hostBridge({ status: 'signed_in', userId: 'host-user' })
-        bridge.getAccessToken.mockImplementation(async (workspaceId) =>
+        bridge.getWorkspaceToken.mockImplementation(async (workspaceId) =>
           workspaceId === hostWorkspace ? 'host-token' : null
         )
         await startDesktopHostSession(bridge)
@@ -2855,7 +2870,7 @@ describe('useAuthStore in local/desktop distribution', () => {
         await expect(store.getWorkspaceAuthHeader()).resolves.toEqual(
           expected ? { Authorization: `Bearer ${expected}` } : null
         )
-        expect(bridge.getAccessToken).toHaveBeenCalledWith('ws-a')
+        expect(bridge.getWorkspaceToken).toHaveBeenCalledWith('ws-a')
       }
     )
 

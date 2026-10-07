@@ -63,7 +63,8 @@ describe('useCurrentUser', () => {
   it('gives the Desktop host account precedence over a stored API key', async () => {
     await startDesktopHostSession({
       getState: async () => ({ status: 'signed_in', userId: 'host-user' }),
-      getAccessToken: async () => 'host-token',
+      getWorkspaceToken: async () => 'host-token',
+      getIdentityToken: async () => 'host-token',
       requestSignIn: async () => ({ status: 'signed_in', userId: 'host-user' }),
       signOut: async () => ({ status: 'signed_out' }),
       onChanged: () => () => {}

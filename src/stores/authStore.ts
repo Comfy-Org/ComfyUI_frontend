@@ -16,8 +16,9 @@ import {
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import {
-  desktopHostAccessToken,
+  desktopHostIdentityToken,
   desktopHostUser,
+  desktopHostWorkspaceToken,
   isDesktopHostSessionActive,
   requestDesktopHostSignOut
 } from '@/platform/auth/desktopHost/desktopHostSession'
@@ -304,7 +305,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   const getIdToken = async (): Promise<string | undefined> => {
-    if (isDesktopHostSessionActive()) return desktopHostAccessToken()
+    if (isDesktopHostSessionActive()) return desktopHostIdentityToken()
     const user = currentUser.value
     if (!user) return
     try {
@@ -447,11 +448,17 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  /** Desktop's token, only when it is scoped to this tab's active workspace. */
-  const desktopHostWorkspaceToken = (): Promise<string | undefined> =>
-    desktopHostAccessToken(
-      useTeamWorkspaceStore().activeWorkspaceId ?? undefined
-    )
+  /**
+   * Desktop's credential, always requested for an explicit workspace: the
+   * tab's active workspace, else the one Desktop's session reports. Desktop
+   * releases nothing on a mismatch, and with neither there is no credential.
+   */
+  const desktopHostTabToken = async (): Promise<string | undefined> => {
+    const workspaceId =
+      useTeamWorkspaceStore().activeWorkspaceId ??
+      desktopHostUser.value?.workspaceId
+    return workspaceId ? desktopHostWorkspaceToken(workspaceId) : undefined
+  }
 
   /**
    * Returns the workspace-scoped auth header. An API-key session has no
@@ -461,7 +468,7 @@ export const useAuthStore = defineStore('auth', () => {
    */
   const getWorkspaceAuthHeader = async (): Promise<AuthHeader | null> => {
     if (isDesktopHostSessionActive())
-      return headerFromToken(await desktopHostWorkspaceToken())
+      return headerFromToken(await desktopHostTabToken())
     const sessionOnly = sessionOnlyRequests()
     if (sessionOnly)
       return headerFromToken(await webSessionRunToken(sessionOnly))
@@ -498,6 +505,7 @@ export const useAuthStore = defineStore('auth', () => {
    * Use this for WebSocket connections and backend node auth.
    */
   const getAuthToken = async (): Promise<string | undefined> => {
+    if (isDesktopHostSessionActive()) return desktopHostTabToken()
     const sessionOnly = sessionOnlyRequests()
     if (sessionOnly) return webSessionRunToken(sessionOnly)
 
@@ -522,7 +530,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   const getWorkspaceAuthToken = async (): Promise<string | undefined> => {
-    if (isDesktopHostSessionActive()) return desktopHostWorkspaceToken()
+    if (isDesktopHostSessionActive()) return desktopHostTabToken()
     const requests = webSessionRequests()
     if (requests) return webSessionRunToken(requests)
 
