@@ -406,8 +406,12 @@ export function readDocPromotedWidgets(
   doc: Y.Doc,
   nodeId: string
 ): DocPromotedWidgets | null {
-  const node = nodesMap(doc).get(nodeId)
-  if (!(node instanceof Y.Map)) return null
+  const nodes = nodesMap(doc)
+  if (!nodes.has(nodeId)) return null
+  const node = nodes.get(nodeId)
+  if (!(node instanceof Y.Map)) {
+    return { valueCount: null, declaredNames: [], promotedNames: null }
+  }
   const stored = node.get(OPAQUE_WIDGETS_KEY)
   const type = node.get('type')
   const definition =
@@ -445,36 +449,42 @@ function namedInputs(source: unknown): Array<[string, unknown]> | null {
   return named
 }
 
-function storedRecordById(source: unknown, id: string | number): unknown {
-  if (source instanceof Y.Map) return source.get(String(id))
-  if (!Array.isArray(source)) return undefined
-  return source.find((entry) => {
-    const candidate = readField(entry, 'id')
-    return (
-      (typeof candidate === 'string' || typeof candidate === 'number') &&
-      String(candidate) === String(id)
-    )
-  })
-}
-
 function strictList(source: unknown): unknown[] | null {
   if (source instanceof Y.Array) return source.toArray()
   return Array.isArray(source) ? source : null
 }
 
+type StoredRecordLookup = (id: string | number) => unknown
+
+/** Build one lookup per definition read so array-backed peer data stays O(n). */
+function storedRecordLookup(source: unknown): StoredRecordLookup | null {
+  if (source instanceof Y.Map) return (id) => source.get(String(id))
+  const records = strictList(source)
+  if (records === null) return null
+  const byId = new Map<string, unknown>()
+  for (const record of records) {
+    const id = readField(record, 'id')
+    if (!isRecordId(id) || byId.has(String(id))) return null
+    byId.set(String(id), record)
+  }
+  return (id) => byId.get(String(id))
+}
+
 function linkTargetsWidget(
-  definition: Y.Map<unknown>,
+  links: StoredRecordLookup,
+  nodes: StoredRecordLookup,
   linkId: string | number
 ): boolean | null {
-  const link = storedRecordById(definition.get('links'), linkId)
-  if (link === undefined) return null
+  const link = links(linkId)
+  if (link === undefined) return false
   const targetId = readField(link, 'target_id')
   const targetSlot = readField(link, 'target_slot')
   if (!isRecordId(targetId) || !isSlotIndex(targetSlot)) return null
-  const target = storedRecordById(definition.get('nodes'), targetId)
+  const target = nodes(targetId)
+  if (target === undefined) return false
   const inputs = strictList(readField(target, 'inputs'))
   const input = inputs?.[targetSlot]
-  if (input === undefined) return null
+  if (input === undefined) return false
   const widget = readField(input, 'widget')
   return widgetMarkerState(widget)
 }
@@ -493,14 +503,17 @@ function widgetMarkerState(widget: unknown): boolean | null {
 }
 
 function inputTargetsWidget(
-  definition: Y.Map<unknown>,
+  links: StoredRecordLookup,
+  nodes: StoredRecordLookup,
   input: unknown
 ): boolean | null {
-  const linkIds = strictList(readField(input, 'linkIds'))
+  const storedLinkIds = readField(input, 'linkIds')
+  if (storedLinkIds === undefined) return false
+  const linkIds = strictList(storedLinkIds)
   if (linkIds === null || !linkIds.every(isRecordId)) return null
   let widgetBacked = false
   for (const linkId of linkIds) {
-    const targetsWidget = linkTargetsWidget(definition, linkId)
+    const targetsWidget = linkTargetsWidget(links, nodes, linkId)
     if (targetsWidget === null) return null
     widgetBacked ||= targetsWidget
   }
@@ -511,10 +524,12 @@ function definitionInputNames(
   definition: Y.Map<unknown>
 ): { declared: string[]; promoted: string[] } | null {
   const declared = namedInputs(definition.get('inputs'))
-  if (declared === null) return null
+  const links = storedRecordLookup(definition.get('links'))
+  const nodes = storedRecordLookup(definition.get('nodes'))
+  if (declared === null || links === null || nodes === null) return null
   const promoted: string[] = []
   for (const [name, input] of declared) {
-    const targetsWidget = inputTargetsWidget(definition, input)
+    const targetsWidget = inputTargetsWidget(links, nodes, input)
     if (targetsWidget === null) return null
     if (targetsWidget) promoted.push(name)
   }
@@ -528,9 +543,20 @@ export function readDocPromotedWidgetValue(
   widget: string
 ): unknown {
   const layout = readDocPromotedWidgets(doc, nodeId)
-  const index = layout?.promotedNames?.indexOf(widget) ?? -1
+  const promotedNames = layout?.promotedNames
+  if (
+    layout === null ||
+    promotedNames == null ||
+    layout.valueCount !== promotedNames.length ||
+    new Set(promotedNames).size !== promotedNames.length
+  ) {
+    return undefined
+  }
+  const index = promotedNames.indexOf(widget)
   if (index < 0) return undefined
   const stored = nodesMap(doc).get(nodeId)?.get(OPAQUE_WIDGETS_KEY)
-  if (stored instanceof Y.Array) return plain(stored.get(index))
+  if (stored instanceof Y.Array) {
+    return index < stored.length ? plain(stored.get(index)) : undefined
+  }
   return Array.isArray(stored) ? plain(stored[index]) : undefined
 }

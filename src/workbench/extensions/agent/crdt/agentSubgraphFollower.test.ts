@@ -916,6 +916,54 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
     expect(state.instance.widgets[0]?.value).toBe(45)
   })
 
+  it('fails closed when a host carries named and opaque widget storage together', () => {
+    const state = startFollower()
+    forwardRaw(
+      state,
+      (nodes) => {
+        const node = nodes.get('1')!
+        node.set('widgets', new Y.Map<unknown>([['value', 98]]))
+        node.set(OPAQUE_WIDGETS_KEY, [99])
+      },
+      1
+    )
+
+    expect(state.instance.widgets[0]?.value).toBe(HOST_INITIAL_VALUE)
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({ message: expect.stringContaining('both') }),
+      expect.objectContaining({ errorType: 'agent_graph_node_malformed' })
+    )
+  })
+
+  it('fails closed when document definition order differs from the live host', () => {
+    const state = startFollower({ extraInput: true, promoteExtra: true })
+    const before = state.instance.widgets.map((widget) => widget.value)
+    const vector = Y.encodeStateVector(state.hostDoc)
+    state.hostDoc.transact(() => {
+      const definition = state.hostDoc
+        .getMap<unknown>('definitions')
+        .get(state.instance.type)
+      assert.instanceOf(definition, Y.Map)
+      const inputs = definition.get('inputs')
+      assert(Array.isArray(inputs))
+      definition.set('inputs', [...inputs].reverse())
+      nodesMap(state.hostDoc).get('1')!.set(OPAQUE_WIDGETS_KEY, [98, 99])
+    })
+    const update = Y.encodeStateAsUpdate(state.hostDoc, vector)
+    state.follower.applyRemoteUpdate(update)
+    expect(
+      state.adapter.applyFrame({ workflowId: 'workflow', seq: 2, update })
+    ).not.toBeNull()
+
+    expect(state.instance.widgets.map((widget) => widget.value)).toEqual(before)
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'agent_graph_host_widgets_mismatch'
+      })
+    )
+  })
+
   it('S1j leaves promoted values unchanged when the opaque array shrinks', () => {
     // A shorter opaque array carries no value for the declared promoted name.
     // The host keeps its current value rather than dropping the widget or

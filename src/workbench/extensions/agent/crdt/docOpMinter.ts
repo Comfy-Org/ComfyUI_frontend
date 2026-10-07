@@ -107,6 +107,8 @@ interface MintedWidgetBase {
   old: unknown
 }
 
+const REFUSAL_NOTIFICATION_INTERVAL_MS = 5000
+
 type PendingOp =
   | { kind: 'add_node'; graph: LGraph; node: LGraphNode }
   | { kind: 'op'; operation: GraphOperation }
@@ -231,7 +233,10 @@ function promotedHostWrite(
   node: LGraphNode | null,
   event: IntentOf<'set_widget'>,
   docPromotedWidgets: () => DocPromotedWidgets | null,
-  onOrderDrift: (names: readonly string[], doc: DocPromotedWidgets) => void,
+  onOrderDrift: (
+    names: readonly string[],
+    doc: DocPromotedWidgets | null
+  ) => void,
   onUnpromotedWidget: () => void
 ): PromotedHostWrite | null {
   if (!node?.isSubgraphNode()) return null
@@ -249,7 +254,7 @@ function promotedHostWrite(
     new Set(liveNames).size !== liveNames.length ||
     !documentAcceptsLiveIndex(doc, liveNames)
   ) {
-    if (doc) onOrderDrift(liveNames, doc)
+    onOrderDrift(liveNames, doc)
     return null
   }
   const widgetValueStore = useWidgetValueStore()
@@ -292,7 +297,7 @@ function documentAcceptsLiveIndex(
   doc: DocPromotedWidgets | null,
   liveNames: readonly string[]
 ): boolean {
-  if (doc === null) return true
+  if (doc === null) return false
   const namesMatch =
     doc.promotedNames != null &&
     doc.promotedNames.length === liveNames.length &&
@@ -306,7 +311,10 @@ function topLevelWidgetOperation(
   node: LGraphNode,
   event: IntentOf<'set_widget'>,
   docPromotedWidgets: () => DocPromotedWidgets | null,
-  onOrderDrift: (names: readonly string[], doc: DocPromotedWidgets) => void,
+  onOrderDrift: (
+    names: readonly string[],
+    doc: DocPromotedWidgets | null
+  ) => void,
   onRefused: (reason: WidgetRefusalReason) => void
 ): GraphOperation | null {
   if (!node.isSubgraphNode()) return operation
@@ -338,6 +346,7 @@ function interiorWidgetOperation(
       '[agent-crdt] set_widget with an unresolvable owner not minted; the bound doc diverges from the local graph',
       nodeKey(owningGraphId, event.nodeId) + `:${event.name}`
     )
+    onRefused('unresolvable_owner')
     return null
   }
   const [head, ...rest] = subgraphNodePath
@@ -354,7 +363,10 @@ function routedWidgetOperation(
   event: IntentOf<'set_widget'>,
   node: LGraphNode | null,
   docPromotedWidgets: () => DocPromotedWidgets | null,
-  onOrderDrift: (names: readonly string[], doc: DocPromotedWidgets) => void,
+  onOrderDrift: (
+    names: readonly string[],
+    doc: DocPromotedWidgets | null
+  ) => void,
   onRefused: (reason: WidgetRefusalReason) => void
 ): GraphOperation | null {
   const operation = {
@@ -450,6 +462,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
   // keystroke-paced widget path, where a per-flush budget reports every
   // character typed into a drifted host.
   const reportedDrift = new Set<string>()
+  const lastRefusalNotification = new Map<string, number>()
   let flushScheduled = false
   let detached = false
 
@@ -554,7 +567,12 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       context: Record<string, unknown>,
       budget: Set<string> = reported
     ) => {
-      if (!reportOnce(key, message, errorType, context, budget)) return
+      reportOnce(key, message, errorType, context, budget)
+      const now = Date.now()
+      const last = lastRefusalNotification.get(key)
+      if (last !== undefined && now - last < REFUSAL_NOTIFICATION_INTERVAL_MS)
+        return
+      lastRefusalNotification.set(key, now)
       deps.onWidgetWriteRefused?.({
         nodeId: event.nodeId,
         name: event.name,
@@ -571,14 +589,16 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
         refuse(
           'layout_drift',
           `promoted_drift:${rootGraphId}:${String(event.nodeId)}`,
-          `Subgraph host ${String(event.nodeId)} promotes [${liveNames.join(', ')}], which the document's ${doc.valueCount} stored values and declared inputs [${doc.declaredNames.join(', ')}] do not place; refusing to mint a promoted write`,
+          doc
+            ? `Subgraph host ${String(event.nodeId)} promotes [${liveNames.join(', ')}], which the document's ${doc.valueCount} stored values and declared inputs [${doc.declaredNames.join(', ')}] do not place; refusing to mint a promoted write`
+            : `Subgraph host ${String(event.nodeId)} is absent from the bound document; refusing to mint a promoted write`,
           'agent_crdt_promoted_widget_order_drift',
           {
             nodeId: event.nodeId,
             liveNames,
-            docValueCount: doc.valueCount,
-            docDeclaredNames: doc.declaredNames,
-            docPromotedNames: doc.promotedNames
+            docValueCount: doc?.valueCount,
+            docDeclaredNames: doc?.declaredNames,
+            docPromotedNames: doc?.promotedNames
           },
           reportedDrift
         ),

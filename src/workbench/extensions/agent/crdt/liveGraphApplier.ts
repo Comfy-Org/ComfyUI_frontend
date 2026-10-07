@@ -35,6 +35,7 @@ import type { WidgetValue } from '@/types/simplifiedWidget'
 
 import {
   allSubgraphDefinitions,
+  readDocPromotedWidgets,
   readDocPromotedWidgetValue,
   readSubgraphDefinitions
 } from './agentSubgraphDefinitions'
@@ -258,6 +259,20 @@ function readDocNode(
   const source = nodesMap(doc).get(id)
   if (!(source instanceof Y.Map)) return null
 
+  if (source.has('widgets') && source.has(OPAQUE_WIDGETS_KEY)) {
+    return {
+      malformed: `node carries both widgets and ${OPAQUE_WIDGETS_KEY}`,
+      discriminate() {
+        const type = source.get('type')
+        return {
+          classType: typeof type === 'string' ? type : undefined,
+          valueShapes: 'widgets named+opaque',
+          producer: nodeProducer(doc, id)
+        }
+      }
+    }
+  }
+
   const fields: Record<string, unknown> = { id }
   let widgets: DocNode['widgets']
   source.forEach((value, key) => {
@@ -369,7 +384,9 @@ export function readDocWidgetValue(
   nodeId: string,
   widget: string
 ): unknown {
-  const widgets = nodesMap(doc).get(nodeId)?.get('widgets')
+  const node = nodesMap(doc).get(nodeId)
+  if (node?.has('widgets') && node.has(OPAQUE_WIDGETS_KEY)) return undefined
+  const widgets = node?.get('widgets')
   if (widgets instanceof Y.Map && widgets.has(widget)) {
     return plain(widgets.get(widget))
   }
@@ -616,16 +633,17 @@ export class LiveGraphApplier {
     const live = graph.getNodeById(toNodeId(id))
     if (live && live.type === docNode.type) {
       this.applyFields(live, docNode)
-      this.applyWidgets(live, docNode.widgets, mode)
+      this.applyWidgets(live, docNode.widgets, mode, doc)
       return 'updated'
     }
     if (live) graph.remove(live)
-    this.createNode(graph, docNode, mode)
+    this.createNode(graph, doc, docNode, mode)
     return live ? 'recreated' : 'created'
   }
 
   private createNode(
     graph: LGraph,
+    doc: Y.Doc,
     docNode: DocNode,
     mode: ApplyMode
   ): LGraphNode {
@@ -664,7 +682,8 @@ export class LiveGraphApplier {
           node,
           docNode.widgets,
           beforeConfigurePromotedIds,
-          mode
+          mode,
+          doc
         )
       } else {
         node.configure({
@@ -728,7 +747,7 @@ export class LiveGraphApplier {
     if (!docNode || !node || node.type !== docNode.type) return
     const widgets = docNode.widgets
     if (names === 'all' || Array.isArray(widgets)) {
-      this.applyWidgets(node, widgets, mode)
+      this.applyWidgets(node, widgets, mode, doc)
       return
     }
     if (!widgets) return
@@ -737,18 +756,20 @@ export class LiveGraphApplier {
       Object.fromEntries(
         Object.entries(widgets).filter(([name]) => names.has(name))
       ),
-      mode
+      mode,
+      doc
     )
   }
 
   private applyWidgets(
     node: LGraphNode,
     widgets: DocNode['widgets'],
-    mode: ApplyMode
+    mode: ApplyMode,
+    doc: Y.Doc
   ): void {
     if (widgets === undefined) return
     if (node.isSubgraphNode()) {
-      this.applyHostWidgets(node, widgets, mode)
+      this.applyHostWidgets(node, widgets, mode, doc)
       return
     }
     const entries = Array.isArray(widgets)
@@ -778,7 +799,8 @@ export class LiveGraphApplier {
     node: LGraphNode,
     widgets: DocNode['widgets'],
     beforeConfigurePromotedIds: readonly string[],
-    mode: ApplyMode
+    mode: ApplyMode,
+    doc: Y.Doc
   ): void {
     const afterConfigurePromotedIds = promotedWidgetIds(node)
     if (
@@ -795,7 +817,7 @@ export class LiveGraphApplier {
       )
       return
     }
-    this.applyHostWidgets(node, widgets, mode)
+    this.applyHostWidgets(node, widgets, mode, doc)
   }
 
   private reportHostWidgetDrift(
@@ -804,8 +826,10 @@ export class LiveGraphApplier {
     expected: number,
     mode: ApplyMode,
     identity?: {
-      beforeConfigurePromotedIds: readonly string[]
-      afterConfigurePromotedIds: readonly string[]
+      beforeConfigurePromotedIds?: readonly string[]
+      afterConfigurePromotedIds?: readonly string[]
+      docPromotedNames?: readonly string[]
+      livePromotedNames?: readonly string[]
     }
   ): void {
     this.reportOnce(
@@ -819,12 +843,30 @@ export class LiveGraphApplier {
   private applyHostWidgets(
     node: LGraphNode,
     widgets: DocNode['widgets'],
-    mode: ApplyMode
+    mode: ApplyMode,
+    doc: Y.Doc
   ): void {
     const promoted = promotedInputs(node)
-    if (Array.isArray(widgets) && widgets.length !== promoted.length) {
-      this.reportHostWidgetDrift(node, widgets.length, promoted.length, mode)
-      return
+    if (Array.isArray(widgets)) {
+      const identity = promotedLayoutIdentity(
+        doc,
+        node,
+        promoted,
+        widgets.length
+      )
+      if (!identity.matches) {
+        this.reportHostWidgetDrift(
+          node,
+          widgets.length,
+          promoted.length,
+          mode,
+          {
+            docPromotedNames: identity.docPromotedNames,
+            livePromotedNames: identity.livePromotedNames
+          }
+        )
+        return
+      }
     }
     for (const [name, value] of hostWidgetEntries(promoted, widgets)) {
       if (!isWidgetValue(value)) continue
@@ -993,6 +1035,31 @@ function hostWidgetEntries(
   if (Array.isArray(widgets))
     return promoted.map((input, index) => [input.name, widgets[index]])
   return Object.entries(widgets ?? {})
+}
+
+function promotedLayoutIdentity(
+  doc: Y.Doc,
+  node: LGraphNode,
+  promoted: readonly INodeInputSlot[],
+  valueCount: number
+): {
+  matches: boolean
+  docPromotedNames: readonly string[]
+  livePromotedNames: readonly string[]
+} {
+  const docPromotedNames =
+    readDocPromotedWidgets(doc, String(node.id))?.promotedNames ?? []
+  const livePromotedNames = promoted.map((input) => input.name)
+  return {
+    matches:
+      valueCount === livePromotedNames.length &&
+      docPromotedNames.length === livePromotedNames.length &&
+      docPromotedNames.every(
+        (name, index) => name === livePromotedNames[index]
+      ),
+    docPromotedNames,
+    livePromotedNames
+  }
 }
 
 /** Writes a widget value and its mirrored node property; returns the undo. */

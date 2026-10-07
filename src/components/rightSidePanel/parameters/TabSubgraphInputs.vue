@@ -118,7 +118,13 @@ function handleReorder({
   if (!moved) return
   widgets.splice(toIndex, 0, moved)
 
-  reorderSubgraphInputsByWidgetOrder(node, widgets)
+  if (!reorderSubgraphInputsByWidgetOrder(node, widgets)) {
+    searchedWidgetsList.value = searchWidgets(
+      widgetsList.value,
+      searchQuery.value
+    )
+    return
+  }
   canvasStore.canvas?.setDirty(true, true)
 }
 

@@ -13,6 +13,7 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useLinkStore } from '@/stores/linkStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
@@ -810,6 +811,30 @@ describe('reorderSubgraphInputsByWidgetOrder', () => {
       unregister()
     }
   })
+
+  it('accepts a no-op order without warning while its root graph is doc-bound', () => {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph)
+    const node = new LGraphNode('First')
+    subgraph.add(node)
+    const input = node.addInput('first', 'STRING')
+    const sourceWidget = node.addWidget('text', 'first', '', () => {})
+    input.widget = { name: sourceWidget.name }
+    promoteValueWidgetViaSubgraphInput(host, node, sourceWidget)
+    const addToast = vi.spyOn(useToastStore(), 'add')
+    const unregister = registerDocBoundRootGraphProbe(() => host.rootGraph.id)
+
+    try {
+      expect(
+        reorderSubgraphInputsByWidgetOrder(host, [
+          promotedWidgetRef(host, 'first')
+        ])
+      ).toBe(true)
+      expect(addToast).not.toHaveBeenCalled()
+    } finally {
+      unregister()
+    }
+  })
 })
 
 describe('demoteWidget — axiomatic projection retraction', () => {
@@ -834,6 +859,27 @@ describe('demoteWidget — axiomatic projection retraction', () => {
     expect(result.ok).toBe(true)
     return { host, interiorNode, interiorWidget }
   }
+
+  it('refuses promotion and demotion while the root graph is doc-bound', () => {
+    const { host, interiorNode, interiorWidget } = setupPromotedWidget()
+    const existingInput = host.inputs[0]
+    const secondNode = new LGraphNode('Second')
+    host.subgraph.add(secondNode)
+    const secondInput = secondNode.addInput('other', 'STRING')
+    const secondWidget = secondNode.addWidget('text', 'other', '', () => {})
+    secondInput.widget = { name: secondWidget.name }
+    const unregister = registerDocBoundRootGraphProbe(() => host.rootGraph.id)
+
+    try {
+      demoteWidget(interiorNode, interiorWidget, [host])
+      promoteWidget(secondNode, secondWidget, [host])
+      expect(host.inputs).toEqual([existingInput])
+      expect(interiorNode.inputs[0]?.link).not.toBeNull()
+      expect(secondNode.inputs[0]?.link).toBeNull()
+    } finally {
+      unregister()
+    }
+  })
 
   it('drops projection but keeps slot and external link when host slot is externally connected', async () => {
     const { host, interiorNode, interiorWidget } = setupPromotedWidget()

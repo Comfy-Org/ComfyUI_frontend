@@ -1,5 +1,11 @@
 import { readFileSync } from 'node:fs'
-import { applyOps, mint, nodesMap, project } from '@comfyorg/comfy-multi-player'
+import {
+  applyOps,
+  mint,
+  nodesMap,
+  OPAQUE_WIDGETS_KEY,
+  project
+} from '@comfyorg/comfy-multi-player'
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -893,6 +899,35 @@ describe('attachDocOpMinter', () => {
     doc.destroy()
   })
 
+  it('reports duplicate live promoted names when the document node is absent', async () => {
+    const { host, doc } = seedPromotedHost()
+    host.inputs[0].name = 'text'
+    docPromotedWidgets = () => null
+
+    host.widgets[1].value = 'ambiguous'
+    await afterFlush()
+
+    expect(minted).toEqual([])
+    expect(refused).toEqual([
+      { nodeId: host.id, name: 'text', reason: 'layout_drift' }
+    ])
+    doc.destroy()
+  })
+
+  it('refuses a promoted write when the bound document node is absent', async () => {
+    const { host, doc } = seedPromotedHost()
+    docPromotedWidgets = () => null
+
+    host.widgets[1].value = 'not addressable'
+    await afterFlush()
+
+    expect(minted).toEqual([])
+    expect(refused).toEqual([
+      { nodeId: host.id, name: 'text', reason: 'layout_drift' }
+    ])
+    doc.destroy()
+  })
+
   it('drops an unpromoted host widget without poisoning its same-tick batch', async () => {
     const source = new TestSource()
     withGraphIntentSource('load', () => graph.add(source))
@@ -951,9 +986,20 @@ describe('attachDocOpMinter', () => {
       promotedNames: ['text', 'prefix']
     })
 
-    for (const value of ['p', 'pa', 'pas']) {
-      host.widgets[1].value = value
+    const now = vi.spyOn(Date, 'now').mockReturnValue(0)
+    try {
+      for (const value of ['p', 'pa', 'pas']) {
+        host.widgets[1].value = value
+        await afterFlush()
+      }
+
+      expect(refused).toHaveLength(1)
+      now.mockReturnValue(5000)
+      host.widgets[1].value = 'paste'
       await afterFlush()
+      expect(refused).toHaveLength(2)
+    } finally {
+      now.mockRestore()
     }
 
     expect(minted).toHaveLength(0)
@@ -1067,6 +1113,80 @@ describe('attachDocOpMinter', () => {
       'width',
       'height'
     ])
+    doc.destroy()
+  })
+
+  it('treats an absent linkIds field as an unconnected declared input', () => {
+    const { host, doc } = seedPromotedHost()
+    const definition = doc.getMap<unknown>('definitions').get(host.type)
+    assert.instanceOf(definition, Y.Map)
+    const inputs = definition.get('inputs')
+    assert(Array.isArray(inputs))
+    definition.set('inputs', [
+      { ...(inputs[0] as object), linkIds: undefined },
+      inputs[1]
+    ])
+
+    expect(readDocPromotedWidgets(doc, String(host.id))?.promotedNames).toEqual(
+      ['text']
+    )
+    doc.destroy()
+  })
+
+  it('indexes array-backed definition records once and accepts Y.Array records', () => {
+    const { host, doc } = seedPromotedHost()
+    const definition = doc.getMap<unknown>('definitions').get(host.type)
+    assert.instanceOf(definition, Y.Map)
+    for (const key of ['links', 'nodes'] as const) {
+      const records = definition.get(key)
+      assert.instanceOf(records, Y.Map)
+      const plainRecords = [...records.entries()].map(([id, record]) => ({
+        ...(record instanceof Y.Map
+          ? record.toJSON()
+          : (record as Record<string, unknown>)),
+        id
+      }))
+      const array = new Y.Array<unknown>()
+      array.push(plainRecords)
+      definition.set(key, array)
+    }
+
+    expect(readDocPromotedWidgets(doc, String(host.id))?.promotedNames).toEqual(
+      ['prefix', 'text']
+    )
+    doc.destroy()
+  })
+
+  it('fails closed when the document node record is present but unreadable', () => {
+    const { host, doc } = seedPromotedHost()
+    const rawNodes = nodesMap(doc) as unknown as Y.Map<unknown>
+    rawNodes.set(String(host.id), 'malformed')
+
+    expect(readDocPromotedWidgets(doc, String(host.id))).toEqual({
+      valueCount: null,
+      declaredNames: [],
+      promotedNames: null
+    })
+    doc.destroy()
+  })
+
+  it('does not settle a promoted value against a cardinality-drifted array', () => {
+    const { host, doc } = seedPromotedHost()
+    nodesMap(doc).get(String(host.id))?.set(OPAQUE_WIDGETS_KEY, ['neighbour'])
+
+    expect(readDocWidgetValue(doc, String(host.id), 'prefix')).toBeUndefined()
+    expect(readDocWidgetValue(doc, String(host.id), 'text')).toBeUndefined()
+    doc.destroy()
+  })
+
+  it('does not settle against ambiguous named and opaque widget storage', () => {
+    const { host, doc } = seedPromotedHost()
+    const stored = nodesMap(doc).get(String(host.id))
+    assert.instanceOf(stored, Y.Map)
+    stored.set('widgets', new Y.Map<unknown>([['text', 'named']]))
+    stored.set(OPAQUE_WIDGETS_KEY, ['opaque-prefix', 'opaque-text'])
+
+    expect(readDocWidgetValue(doc, String(host.id), 'text')).toBeUndefined()
     doc.destroy()
   })
 
@@ -1219,6 +1339,25 @@ describe('attachDocOpMinter', () => {
         nodeId: nestedHost.id,
         name: 'text',
         reason: 'nested_host'
+      }
+    ])
+  })
+
+  it('reports an interior write whose owning subgraph has no live host path', async () => {
+    const orphan = createTestSubgraph({ rootGraph: graph })
+    graph.subgraphs.set(orphan.id, orphan)
+    const source = new TestSource()
+    withGraphIntentSource('load', () => orphan.add(source))
+
+    source.widgets![0].value = 42
+    await afterFlush()
+
+    expect(minted).toEqual([])
+    expect(refused).toEqual([
+      {
+        nodeId: source.id,
+        name: 'steps',
+        reason: 'unresolvable_owner'
       }
     ])
   })

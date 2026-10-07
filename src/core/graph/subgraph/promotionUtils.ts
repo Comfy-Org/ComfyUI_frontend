@@ -153,15 +153,6 @@ export function reorderSubgraphInputsByWidgetOrder(
   subgraphNode: SubgraphNode,
   orderedWidgets: readonly Pick<IBaseWidget, 'widgetId'>[]
 ): boolean {
-  if (isRootGraphDocBound(subgraphNode.rootGraph.id)) {
-    useToastStore().add({
-      severity: 'warn',
-      summary: t('agent.widgetWriteNotSyncedTitle'),
-      detail: t('agent.subgraphReorderNotSyncedDetail'),
-      life: 5000
-    })
-    return false
-  }
   const remainingIndices = new Set(subgraphNode.inputs.keys())
   const orderedIndices = orderedWidgets.flatMap((orderedWidget) => {
     for (const index of remainingIndices) {
@@ -175,8 +166,35 @@ export function reorderSubgraphInputsByWidgetOrder(
 
   for (const index of remainingIndices) orderedIndices.push(index)
 
+  if (orderedIndices.every((index, position) => index === position)) {
+    return true
+  }
+  if (isRootGraphDocBound(subgraphNode.rootGraph.id)) {
+    warnDocBoundPromotionChange('agent.subgraphReorderNotSyncedDetail')
+    return false
+  }
+
   applySubgraphInputOrder(subgraphNode, orderedIndices)
   return true
+}
+
+function warnDocBoundPromotionChange(detail: string): void {
+  useToastStore().add({
+    severity: 'warn',
+    summary: t('agent.widgetWriteNotSyncedTitle'),
+    detail: t(detail),
+    life: 5000
+  })
+}
+
+function mutablePromotionParents(parents: readonly SubgraphNode[]) {
+  const mutable = parents.filter(
+    (parent) => !isRootGraphDocBound(parent.rootGraph.id)
+  )
+  if (mutable.length !== parents.length) {
+    warnDocBoundPromotionChange('agent.subgraphPromotionNotSyncedDetail')
+  }
+  return mutable
 }
 
 function applySubgraphInputOrder(
@@ -415,7 +433,11 @@ export function promoteWidget(
 ) {
   const source = toPromotionSource(node, widget)
   if (!(node instanceof LGraphNode)) return
-  for (const parent of parents) {
+  const mutableParents = isPreviewPseudoWidget(widget)
+    ? parents
+    : mutablePromotionParents(parents)
+  if (mutableParents.length === 0) return
+  for (const parent of mutableParents) {
     if (isPreviewPseudoWidget(widget)) {
       promotePreviewViaExposure(parent, node, source.sourceWidgetName)
       continue
@@ -429,7 +451,7 @@ export function promoteWidget(
       })
     }
   }
-  refreshPromotedWidgetRendering(parents)
+  refreshPromotedWidgetRendering(mutableParents)
   addBreadcrumb({
     category: 'subgraph',
     message: `Promoted widget "${source.sourceWidgetName}" on node ${node.id}`,
@@ -469,7 +491,11 @@ export function demoteWidget(
   parents: SubgraphNode[]
 ) {
   const source = toPromotionSource(node, widget)
-  for (const parent of parents) {
+  const mutableParents = isPreviewPseudoWidget(widget)
+    ? parents
+    : mutablePromotionParents(parents)
+  if (mutableParents.length === 0) return
+  for (const parent of mutableParents) {
     if (demotePromotedInput(parent, source)) continue
 
     if (isPreviewPseudoWidget(widget)) {
@@ -493,7 +519,7 @@ export function demoteWidget(
       }
     }
   }
-  refreshPromotedWidgetRendering(parents)
+  refreshPromotedWidgetRendering(mutableParents)
   addBreadcrumb({
     category: 'subgraph',
     message: `Demoted widget "${source.sourceWidgetName}" on node ${node.id}`,

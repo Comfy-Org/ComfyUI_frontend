@@ -938,13 +938,15 @@ const docOpMinter = attachDocOpMinter({
   boundRootGraphId,
   docInputNames,
   docPromotedWidgets,
-  onWidgetWriteRefused: () =>
+  onWidgetWriteRefused: (write) => {
+    if (write.reason === 'unresolvable_owner') return
     toast.add({
       severity: 'warn',
       summary: t('agent.widgetWriteNotSyncedTitle'),
       detail: t('agent.widgetWriteNotSyncedDetail'),
       life: 5000
     })
+  }
 })
 const restoreOpMinter = attachRestoreOpMinter({
   isEnabled: () => agentPanelStore.enabled,
