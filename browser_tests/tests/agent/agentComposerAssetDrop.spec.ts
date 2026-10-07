@@ -1,3 +1,5 @@
+import assert from 'node:assert/strict'
+
 import { expect } from '@playwright/test'
 
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
@@ -105,6 +107,137 @@ test.describe('Agent composer asset drop', { tag: '@cloud' }, () => {
       ).toHaveCount(1)
     })
   }
+
+  test('reuses a decoded video poster and supports native keyboard playback with cleanup', async ({
+    page
+  }) => {
+    const agentPanel = new AgentPanel(page)
+    await agentPanel.open()
+    const assets = new AssetsSidebarTab(page)
+    await assets.open()
+    await assets.assetCards.first().dragTo(agentPanel.root)
+    const poster = agentPanel
+      .attachmentChip(ASSET_NAME)
+      .getByRole('img', { name: ASSET_NAME, exact: true })
+    await expect(poster).toHaveAttribute('src', /^blob:/)
+    await expect
+      .poll(() =>
+        poster.evaluate(
+          (image: HTMLImageElement) => image.complete && image.naturalWidth > 0
+        )
+      )
+      .toBe(true)
+    const posterUrl = await poster.getAttribute('src')
+    assert(posterUrl)
+    await agentPanel.composer.fill('Animate @agent_generated')
+    const suggestion = agentPanel.root.getByRole('menuitem', {
+      name: ASSET_NAME,
+      exact: true
+    })
+    await expect(
+      suggestion.getByRole('img', { name: ASSET_NAME, exact: true })
+    ).toHaveAttribute('src', posterUrl)
+    await suggestion.click()
+    await expect(
+      agentPanel.composer
+        .getByTestId('asset-reference-chip')
+        .getByRole('img', { name: ASSET_NAME, exact: true })
+    ).toHaveAttribute('src', posterUrl)
+    await agentPanel.composer.hover()
+    await expect(agentPanel.assetPreview(ASSET_NAME)).toHaveCount(0)
+    await agentPanel.composer.pressSequentially(' with motion')
+    await expect(agentPanel.composer).toBeFocused()
+    await agentPanel.composerAssetSection.focus()
+    await agentPanel.composerAssetSection.press('Tab')
+    const trigger = agentPanel.previewAssetButton(ASSET_NAME)
+    await expect(trigger).toBeFocused()
+    await trigger.press('Enter')
+    const preview = agentPanel.assetPreview(ASSET_NAME)
+    const player = preview.locator('video')
+    await expect(preview).toBeVisible()
+    await expect(player).toBeFocused()
+    await expect(player).toHaveAttribute('controls', '')
+    await expect(player).not.toHaveAttribute('autoplay')
+    await expect(player).toHaveAttribute('poster', posterUrl)
+    await expect
+      .poll(() =>
+        player.evaluate((video: HTMLVideoElement) => video.readyState)
+      )
+      .toBeGreaterThanOrEqual(2)
+    await expect
+      .poll(() => player.evaluate((video: HTMLVideoElement) => video.paused))
+      .toBe(true)
+    await player.press('Space')
+    await expect
+      .poll(() => player.evaluate((video: HTMLVideoElement) => video.paused))
+      .toBe(false)
+    await expect
+      .poll(() =>
+        player.evaluate((video: HTMLVideoElement) => video.currentTime)
+      )
+      .toBeGreaterThan(0)
+    const playingElement = await player.elementHandle()
+    assert(playingElement)
+    await player.press('Escape')
+    await expect(preview).toHaveCount(0)
+    await expect(trigger).toBeFocused()
+    await expect
+      .poll(() =>
+        playingElement.evaluate(
+          (video) =>
+            video instanceof HTMLVideoElement &&
+            video.paused &&
+            !video.isConnected
+        )
+      )
+      .toBe(true)
+    await playingElement.dispose()
+    await trigger.press('Space')
+    await expect(player).toBeVisible()
+    await expect(player).toBeFocused()
+    await expect
+      .poll(() =>
+        player.evaluate(
+          (video: HTMLVideoElement) => video.paused && video.currentTime === 0
+        )
+      )
+      .toBe(true)
+    await player.press('Escape')
+    await expect(preview).toHaveCount(0)
+    await expect(agentPanel.composer).toContainText(' with motion')
+  })
+
+  test.describe('a short viewport', () => {
+    test.use({ viewport: { width: 1024, height: 520 } })
+
+    test('keeps the complete asset card visible as the prompt grows', async ({
+      page
+    }) => {
+      const agentPanel = new AgentPanel(page)
+      await agentPanel.open()
+      const assets = new AssetsSidebarTab(page)
+      await assets.open()
+      await assets.assetCards.first().dragTo(agentPanel.root)
+      await expect(agentPanel.attachmentChip(ASSET_NAME)).toBeVisible()
+      await agentPanel.expectAttachmentFullyVisible(ASSET_NAME)
+      const original = await agentPanel.attachmentChip(ASSET_NAME).boundingBox()
+      assert(original)
+      await agentPanel.composer.fill(
+        'Keep this line and the attached video.\n'.repeat(40)
+      )
+      await agentPanel.expectAttachmentFullyVisible(ASSET_NAME)
+      await expect
+        .poll(
+          async () =>
+            (await agentPanel.attachmentChip(ASSET_NAME).boundingBox())?.height
+        )
+        .toBe(original.height)
+      await expect(agentPanel.attachmentChips).toHaveCount(1)
+      await expect(agentPanel.composer).toContainText(
+        'Keep this line and the attached video.'
+      )
+    })
+  })
 
   // A filename is user data and may contain a quote or a backslash, which would
   // break the attribute selector the chip is matched by. Exercised end to end

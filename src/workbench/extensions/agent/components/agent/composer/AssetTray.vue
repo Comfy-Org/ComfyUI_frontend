@@ -46,7 +46,7 @@ function scrollPage(direction: -1 | 1): void {
   <div
     role="region"
     :aria-label="t('assetBrowser.assets')"
-    class="relative max-w-full min-w-0 overflow-hidden rounded-t-lg"
+    class="relative max-w-full min-w-0 shrink-0 overflow-hidden rounded-t-lg"
   >
     <div
       ref="scrollContainer"

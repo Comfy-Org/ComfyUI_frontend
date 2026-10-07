@@ -117,6 +117,38 @@ export class AgentPanel {
     return this.activityRows.getByText(label, { exact: true })
   }
 
+  assetPreview(name: string): Locator {
+    return this.page.getByRole('dialog', { name, exact: true })
+  }
+
+  previewAssetButton(name: string): Locator {
+    return this.attachmentChip(name).getByRole('button', {
+      name: enMessages.agent.previewAsset.replace('{name}', name),
+      exact: true
+    })
+  }
+
+  async expectAttachmentFullyVisible(name: string): Promise<void> {
+    const tray = this.root.getByRole('region', {
+      name: enMessages.assetBrowser.assets,
+      exact: true
+    })
+    await expect
+      .poll(async () => {
+        const [card, viewport] = await Promise.all([
+          this.attachmentChip(name).boundingBox(),
+          tray.boundingBox()
+        ])
+        return (
+          !!card &&
+          !!viewport &&
+          card.y >= viewport.y &&
+          card.y + card.height <= viewport.y + viewport.height
+        )
+      })
+      .toBe(true)
+  }
+
   /**
    * The composer attachment carrying `name`.
    *
