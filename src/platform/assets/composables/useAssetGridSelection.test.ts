@@ -1,7 +1,10 @@
 import { render, screen } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
+
+import { useKeybindingService } from '@/platform/keybindings/keybindingService'
+import { useSettingStore } from '@/platform/settings/settingStore'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
@@ -98,6 +101,13 @@ async function renderHarness(callbacks: ReturnType<typeof createCallbacks>) {
 const grid = () => screen.getByTestId('grid')
 const panel = () => screen.getByTestId('panel')
 const card = (id: string) => screen.getByTestId(`card-${id}`)
+
+let disposeDispatcher: () => void
+beforeEach(() => {
+  useSettingStore().settingValues['Comfy.Keybinding.CapturePhase'] = true
+  disposeDispatcher = useKeybindingService().install()
+})
+afterEach(() => disposeDispatcher())
 
 describe('useAssetGridSelection', () => {
   describe('marquee', () => {
@@ -625,7 +635,7 @@ describe('useAssetGridSelection', () => {
         cancelable: true,
         ...init
       })
-      window.dispatchEvent(event)
+      document.activeElement?.dispatchEvent(event)
       return event
     }
 
@@ -774,21 +784,24 @@ describe('useAssetGridSelection', () => {
       dialog.remove()
     })
 
-    it('stops the select-all keystroke from reaching other handlers when hovered', async () => {
+    it('marks a handled select-all event while keeping it observable', async () => {
       const callbacks = createCallbacks()
       await renderHarness(callbacks)
-      const downstream = vi.fn()
+      const prevented: boolean[] = []
+      const downstream = (event: KeyboardEvent) => {
+        prevented.push(event.defaultPrevented)
+      }
       window.addEventListener('keydown', downstream)
 
       panel().dispatchEvent(new MouseEvent('mouseenter'))
       pressSelectAll()
       expect(callbacks.selectAll).toHaveBeenCalledTimes(1)
-      expect(downstream).not.toHaveBeenCalled()
+      expect(prevented).toEqual([true])
 
       panel().dispatchEvent(new MouseEvent('mouseleave'))
       pressSelectAll()
       expect(callbacks.selectAll).toHaveBeenCalledTimes(1)
-      expect(downstream).toHaveBeenCalledTimes(1)
+      expect(prevented).toEqual([true, false])
 
       window.removeEventListener('keydown', downstream)
     })

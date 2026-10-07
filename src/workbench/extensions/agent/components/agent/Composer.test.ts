@@ -1,3 +1,6 @@
+import { useKeybindingService } from '@/platform/keybindings/keybindingService'
+import { useSettingStore } from '@/platform/settings/settingStore'
+
 import type {
   WorkflowReference,
   WorkflowReferenceMetadata,
@@ -6,13 +9,12 @@ import type {
 import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import type { DirectiveBinding } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
 import { i18n } from '@/i18n'
-import { consultEscapeOverride } from '@/platform/keybindings/escapeOverride'
 import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
@@ -20,6 +22,8 @@ import { useAgentRunModeStore } from '../../stores/agent/agentRunModeStore'
 import type { AgentStarterPromptAttribution } from '../../utils/starterPrompts'
 import Composer from './Composer.vue'
 import { setupInlinePromptEditorDom } from './composer/inlinePromptEditorTestSetup'
+
+vi.mock<unknown>(import('@/scripts/app'), () => ({ app: {} }))
 
 setupInlinePromptEditorDom()
 
@@ -74,6 +78,26 @@ function mount(
   })
   return { ...view, selectWorkflowReference }
 }
+
+function pressEscape(target: Element, init: KeyboardEventInit = {}) {
+  const event = new KeyboardEvent('keydown', {
+    key: 'Escape',
+    bubbles: true,
+    cancelable: true,
+    ...init
+  })
+  target.dispatchEvent(event)
+  return event
+}
+
+let disposeDispatcher: () => void
+beforeEach(() => {
+  useSettingStore().settingValues['Comfy.Keybinding.CapturePhase'] = true
+  disposeDispatcher = useKeybindingService().install()
+})
+afterEach(() => {
+  disposeDispatcher()
+})
 
 describe('Composer', () => {
   it.for(['@unmatched text', '@Nodes unmatched'])(
@@ -363,16 +387,9 @@ describe('Composer', () => {
     expect(emitted().stop).toBeUndefined()
     expect(emitted().send).toBeUndefined()
 
-    // An auto-repeated Escape is still contained by the registered override
-    // (which keybindHandler would otherwise let dispatch ExitSubgraph), but
-    // it doesn't itself trigger a stop.
-    const repeatedEscapeEvent = new KeyboardEvent('keydown', {
-      key: 'Escape',
-      repeat: true,
-      cancelable: true
-    })
-    expect(consultEscapeOverride(repeatedEscapeEvent)).toBe(true)
-    expect(repeatedEscapeEvent.defaultPrevented).toBe(true)
+    // An auto-repeated Escape is still claimed, so ExitSubgraph cannot run,
+    // but it doesn't itself trigger a stop.
+    expect(pressEscape(box, { repeat: true }).defaultPrevented).toBe(true)
     expect(emitted().stop).toBeUndefined()
 
     await userEvent.type(box, '{Escape}')
@@ -380,11 +397,7 @@ describe('Composer', () => {
   })
 
   it('stops the run on Escape after submitting by clicking Send with the mouse', async () => {
-    // A plain click moves focus onto the Send button (Chrome's behavior), so
-    // the event never reaches the editor-scoped keydown handler. This is
-    // exactly the case the registered Escape override exists for, so it's
-    // consulted directly rather than dispatched through the DOM - the same
-    // way `keybindHandler` consults it in the real app.
+    // A plain click moves focus onto the Send button (Chrome's behavior).
     useAgentComposerStore().setText('run this')
     const { rerender, emitted } = mount()
 
@@ -392,11 +405,9 @@ describe('Composer', () => {
     expect(emitted().send).toHaveLength(1)
 
     await rerender({ streaming: true })
-    const event = new KeyboardEvent('keydown', {
-      key: 'Escape',
-      cancelable: true
-    })
-    expect(consultEscapeOverride(event)).toBe(true)
+    expect(
+      pressEscape(screen.getByRole('button', { name: 'Stop' })).defaultPrevented
+    ).toBe(true)
     expect(emitted().stop).toHaveLength(1)
   })
 
@@ -418,11 +429,7 @@ describe('Composer', () => {
     expect(document.activeElement).toBe(document.body)
 
     await rerender({ streaming: true })
-    const event = new KeyboardEvent('keydown', {
-      key: 'Escape',
-      cancelable: true
-    })
-    expect(consultEscapeOverride(event)).toBe(true)
+    expect(pressEscape(document.body).defaultPrevented).toBe(true)
     expect(emitted().stop).toHaveLength(1)
   })
 
@@ -446,11 +453,10 @@ describe('Composer', () => {
     await userEvent.click(
       screen.getByRole('button', { name: 'Elsewhere on the page' })
     )
-    const event = new KeyboardEvent('keydown', {
-      key: 'Escape',
-      cancelable: true
-    })
-    expect(consultEscapeOverride(event)).toBe(false)
+    expect(
+      pressEscape(screen.getByRole('button', { name: 'Elsewhere on the page' }))
+        .defaultPrevented
+    ).toBe(false)
     expect(onStop).not.toHaveBeenCalled()
   })
 
@@ -502,11 +508,12 @@ describe('Composer', () => {
     expect(emitted().stop).toHaveLength(1)
   })
 
-  it('keeps handled Escapes inside the composer and lets idle Escape bubble', async () => {
+  it('claims handled Escapes and leaves an idle Escape unclaimed', async () => {
     const parentKeydown = vi.fn<(event: KeyboardEvent) => void>()
     const escapesSeenByParent = () =>
-      parentKeydown.mock.calls.filter(([event]) => event.key === 'Escape')
-        .length
+      parentKeydown.mock.calls
+        .filter(([event]) => event.key === 'Escape')
+        .map(([event]) => event.defaultPrevented)
     const onStop = vi.fn()
     const mentionNodes = [{ id: '2', title: 'KSampler' }]
     const streaming = ref(true)
@@ -534,17 +541,17 @@ describe('Composer', () => {
     await userEvent.keyboard('{Escape}')
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()
     expect(onStop).not.toHaveBeenCalled()
-    expect(escapesSeenByParent()).toBe(0)
+    expect(escapesSeenByParent()).toEqual([])
 
     await userEvent.keyboard('{Escape}')
     expect(onStop).toHaveBeenCalledTimes(1)
-    expect(escapesSeenByParent()).toBe(0)
+    expect(escapesSeenByParent()).toEqual([true])
 
     streaming.value = false
     await nextTick()
     await userEvent.keyboard('{Escape}')
     expect(onStop).toHaveBeenCalledTimes(1)
-    expect(escapesSeenByParent()).toBe(1)
+    expect(escapesSeenByParent()).toEqual([true, false])
   })
 
   describe('run permissions popover', () => {

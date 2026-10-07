@@ -1,3 +1,4 @@
+import { useRuntimeKeybindingStore } from '@/platform/keybindings/runtimeKeybindingStore'
 import { ref, shallowRef } from 'vue'
 
 import { t } from '@/i18n'
@@ -26,6 +27,7 @@ const lastNativeDragPosition = shallowRef<Position>()
 const pendingWidgetValues = shallowRef<WidgetValues>()
 const pendingSource = ref<NodeAddSource>('sidebar_drag')
 let listenersSetup = false
+let removeKeybinding: (() => void) | undefined
 
 // Firefox dragend can report stale clientX/Y and `drag` can fire with
 // (0, 0). dragover on the target reliably reports real client coords.
@@ -105,10 +107,6 @@ function endDrag(e: PointerEvent) {
   }
 }
 
-function handleKeydown(e: KeyboardEvent) {
-  if (e.key === 'Escape') cancelDrag()
-}
-
 // Prevent LiteGraph's empty-canvas hit-test from deselecting the placed node on pointerup.
 function blockCommitPointerDown(e: PointerEvent) {
   if (!isDragging.value || dragMode.value !== 'click') return
@@ -122,7 +120,13 @@ function setupGlobalListeners() {
 
   document.addEventListener('pointerdown', blockCommitPointerDown, true)
   document.addEventListener('pointerup', endDrag, true)
-  document.addEventListener('keydown', handleKeydown)
+  removeKeybinding = useRuntimeKeybindingStore().register({
+    id: 'Comfy.Canvas.CancelNodeDrag',
+    label: () => t('keybindings.cancelNodeDrag'),
+    binding: { combo: { key: 'Escape' } },
+    enabled: () => isDragging.value,
+    run: cancelDrag
+  })
   document.addEventListener('dragover', trackNativeDragPosition)
 }
 
@@ -132,7 +136,8 @@ function cleanupGlobalListeners() {
 
   document.removeEventListener('pointerdown', blockCommitPointerDown, true)
   document.removeEventListener('pointerup', endDrag, true)
-  document.removeEventListener('keydown', handleKeydown)
+  removeKeybinding?.()
+  removeKeybinding = undefined
   document.removeEventListener('dragover', trackNativeDragPosition)
 }
 

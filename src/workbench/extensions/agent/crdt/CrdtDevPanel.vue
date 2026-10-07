@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import { useKeybinding } from '@/platform/keybindings/useKeybinding'
 import { cn } from '@comfyorg/tailwind-utils'
-import { useClipboard, useEventListener } from '@vueuse/core'
+import { useClipboard } from '@vueuse/core'
 import {
   computed,
   nextTick,
@@ -220,14 +221,14 @@ function setOpen(value: boolean) {
   }
 }
 
-function onDocumentKeydown(event: KeyboardEvent): void {
-  if (!open.value || event.key !== 'Escape') return
-  event.stopPropagation()
-  if (event.target instanceof HTMLSelectElement) return
-  setOpen(false)
-}
-
-useEventListener(document, 'keydown', onDocumentKeydown)
+useKeybinding({
+  id: 'Comfy.Agent.CloseDiagnostics',
+  label: () => t('keybindings.closeAgentDiagnostics'),
+  binding: { combo: { key: 'Escape' } },
+  enabled: () =>
+    open.value && !(document.activeElement instanceof HTMLSelectElement),
+  run: () => setOpen(false)
+})
 
 // ── live document facts ───────────────────────────────────────────────────
 const docState = shallowRef<CrdtDebugSnapshot | null>(null)

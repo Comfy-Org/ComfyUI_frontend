@@ -10,8 +10,10 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ComputedRef } from 'vue'
 import { computed, nextTick, ref } from 'vue'
+import { createI18n } from 'vue-i18n'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { installKeybindingDispatcher } from '@/platform/keybindings/__fixtures__/installKeybindingDispatcher'
 import type {
   InProgressItem,
   OutputSelection
@@ -117,10 +119,12 @@ function makeInProgressItem(
   return { id, jobId: `job-${id}`, state, ...opts }
 }
 
+const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
+
 let activeResult: RenderResult | null = null
 
 function mountComponent() {
-  const result = render(OutputHistory)
+  const result = render(OutputHistory, { global: { plugins: [i18n] } })
   activeResult = result
   return result
 }
@@ -640,6 +644,14 @@ describe('OutputHistory', () => {
   })
 
   describe('keyboard navigation', () => {
+    beforeEach(() => {
+      installKeybindingDispatcher()
+      useWorkflowStore().activeWorkflow = fromPartial({
+        path: 'workflows/test.json',
+        activeMode: 'app'
+      })
+    })
+
     function pressKey(key: string) {
       document.body.dispatchEvent(
         new KeyboardEvent('keydown', { key, bubbles: true })

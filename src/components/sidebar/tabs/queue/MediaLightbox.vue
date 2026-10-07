@@ -11,7 +11,6 @@
       data-mask
       @mousedown="onMaskMouseDown"
       @mouseup="onMaskMouseUp"
-      @keydown.stop="handleKeyDown"
     >
       <!-- Close Button -->
       <Button
@@ -83,6 +82,9 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
 
+import { useI18n } from 'vue-i18n'
+import { useKeybinding } from '@/platform/keybindings/useKeybinding'
+
 import ComfyImage from '@/components/common/ComfyImage.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { AugmentedResultItem } from '@/utils/resultItem'
@@ -97,6 +99,8 @@ import {
 import ResultAudio from './ResultAudio.vue'
 import ResultText from './ResultText.vue'
 import ResultVideo from './ResultVideo.vue'
+
+const { t } = useI18n()
 
 const emit = defineEmits<{
   (e: 'update:activeIndex', value: number): void
@@ -157,17 +161,33 @@ function onMaskMouseUp(event: MouseEvent) {
   }
 }
 
-function handleKeyDown(event: KeyboardEvent) {
-  const actions: Record<string, () => void> = {
-    ArrowLeft: () => navigateImage(-1),
-    ArrowRight: () => navigateImage(1),
-    Escape: () => close()
-  }
-
-  const action = actions[event.key]
-  if (action) {
-    event.preventDefault()
-    action()
-  }
+for (const { key, id, label, run } of [
+  {
+    key: 'ArrowLeft',
+    id: 'Previous',
+    label: 'keybindings.previousLightboxItem',
+    run: () => navigateImage(-1)
+  },
+  {
+    key: 'ArrowRight',
+    id: 'Next',
+    label: 'keybindings.nextLightboxItem',
+    run: () => navigateImage(1)
+  },
+  { key: 'Escape', id: 'Close', label: 'keybindings.closeLightbox', run: close }
+]) {
+  useKeybinding({
+    id: `Comfy.MediaLightbox.${id}`,
+    label: () => t(label),
+    binding: {
+      combo: { key },
+      when: 'modalOpen',
+      allowRepeat: key !== 'Escape'
+    },
+    enabled: () =>
+      galleryVisible.value &&
+      dialogRef.value?.contains(document.activeElement) === true,
+    run
+  })
 }
 </script>

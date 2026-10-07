@@ -107,9 +107,7 @@ function addMarkdownWidget(
     { signal }
   )
 
-  inputEl.addEventListener('keydown', (event) => event.stopPropagation(), {
-    signal
-  })
+  inputEl.setAttribute('data-comfy-keybinding-ignore', '')
 
   forwardMiddleButtonToCanvas(inputEl, signal)
 

@@ -209,7 +209,7 @@
               isImmutable && 'cursor-not-allowed'
             )
           "
-          @keydown.escape.stop="descriptionTextarea?.blur()"
+          @keydown.escape.prevent="descriptionTextarea?.blur()"
         />
       </ModelInfoField>
     </PropertiesAccordionItem>
