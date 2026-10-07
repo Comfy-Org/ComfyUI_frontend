@@ -319,14 +319,6 @@ export function useFeatureFlags() {
         false
       )
     },
-    get churnkeyAppId() {
-      if (!isCloud) return ''
-      return resolveFlag(
-        ServerFeatureFlag.CHURNKEY_APP_ID,
-        remoteConfig.value.churnkey_app_id,
-        ''
-      ).trim()
-    },
     get signupTurnstileMode() {
       return resolveFlag(
         ServerFeatureFlag.SIGNUP_TURNSTILE,
@@ -414,7 +406,6 @@ export function startFeatureFlagTelemetry() {
       [ServerFeatureFlag.V1_PAYMENT_RECOVERY]: flags.v1PaymentRecovery,
       [ServerFeatureFlag.FREE_TIER_JOB_ALLOWANCE_ENABLED]:
         flags.freeTierJobAllowanceEnabled,
-      [ServerFeatureFlag.CHURNKEY_APP_ID]: flags.churnkeyAppId,
       [ServerFeatureFlag.SIGNUP_TURNSTILE]: flags.signupTurnstileMode,
       [ServerFeatureFlag.SUPPORTS_MODEL_TYPE_TAGS]: flags.supportsModelTypeTags,
       [ServerFeatureFlag.ONBOARDING_TOUR_ENABLED]: flags.onboardingTourEnabled,
