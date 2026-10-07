@@ -183,8 +183,7 @@ export function reorderSubgraphInputsByWidgetOrder(
     return false
   }
 
-  applySubgraphInputOrder(subgraphNode, orderedIndices)
-  return true
+  return applySubgraphInputOrder(subgraphNode, orderedIndices)
 }
 
 const docBoundWarningAt = new Map<string, number>()

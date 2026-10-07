@@ -13,6 +13,7 @@ import * as Y from 'yjs'
 import { z } from 'zod'
 
 import { isRootGraphDocBound } from '@/lib/litegraph/src/docBoundGraphs'
+import { SUBGRAPH_OUTPUT_ID } from '@/lib/litegraph/src/constants'
 import {
   emitGraphIntent,
   withGraphIntentSource
@@ -800,7 +801,7 @@ describe('attachDocOpMinter', () => {
     doc.destroy()
   })
 
-  it('mints a promoted write while its dispatched add_node is in flight', async () => {
+  it('refuses a promoted write until the document confirms its add layout', async () => {
     const subgraph = createTestSubgraph({
       rootGraph: graph,
       inputs: [
@@ -827,12 +828,9 @@ describe('attachDocOpMinter', () => {
     host.widgets[1].value = 'typed before the add echo'
     await afterFlush()
 
-    expect(minted).toEqual([
-      expect.objectContaining({
-        op: 'set_widget',
-        widget: 'text',
-        promoted: expect.objectContaining({ value_index: 1 })
-      })
+    expect(minted).toEqual([])
+    expect(refused).toEqual([
+      { nodeId: host.id, name: 'text', reason: 'layout_drift' }
     ])
   })
 
@@ -1043,7 +1041,7 @@ describe('attachDocOpMinter', () => {
     doc.destroy()
   })
 
-  it('seeds an unset sibling exactly as serializing the host would', async () => {
+  it('seeds an unset sibling with its canonical wire value', async () => {
     const { host, doc } = seedPromotedHost([])
     host.widgets[0].value = undefined
     await afterFlush()
@@ -1054,9 +1052,7 @@ describe('attachDocOpMinter', () => {
 
     const [write] = minted
     assert(write.op === 'set_widget' && write.path == null)
-    expect(write.promoted?.host_widgets_values).toEqual(
-      host.serialize().widgets_values
-    )
+    expect(write.promoted?.host_widgets_values).toEqual([null, 'pasted'])
 
     // Over the wire, where an unset sibling becomes the same `null` a saved
     // workflow carries for it (`widgetValueNullContract`).
@@ -1225,6 +1221,27 @@ describe('attachDocOpMinter', () => {
     doc.destroy()
   })
 
+  it('treats a direct subgraph-output link as a non-widget target', () => {
+    const { host, doc } = seedPromotedHost()
+    const definition = doc.getMap<unknown>('definitions').get(host.type)
+    assert.instanceOf(definition, Y.Map)
+    const inputs = definition.get('inputs')
+    const links = definition.get('links')
+    assert(Array.isArray(inputs))
+    assert.instanceOf(links, Y.Map)
+    const firstInput = inputs[0]
+    assert(typeof firstInput === 'object' && firstInput !== null)
+    const [linkId] = Reflect.get(firstInput, 'linkIds') as unknown[]
+    const link = links.get(String(linkId))
+    assert(typeof link === 'object' && link !== null)
+    links.set(String(linkId), { ...link, target_id: SUBGRAPH_OUTPUT_ID })
+
+    expect(readDocPromotedWidgets(doc, String(host.id))).toMatchObject({
+      promotedNames: ['text']
+    })
+    doc.destroy()
+  })
+
   it('indexes array-backed definition records once and accepts Y.Array records', () => {
     const { host, doc } = seedPromotedHost()
     const definition = doc.getMap<unknown>('definitions').get(host.type)
@@ -1285,6 +1302,24 @@ describe('attachDocOpMinter', () => {
       promotedNames: null
     })
     expect(readDocWidgetValue(doc, String(host.id), 'text')).toBeUndefined()
+    doc.destroy()
+  })
+
+  it('does not mint positional writes over named widget storage', async () => {
+    const { host, doc } = seedPromotedHost()
+    const stored = nodesMap(doc).get(String(host.id))
+    assert.instanceOf(stored, Y.Map)
+    stored.delete(OPAQUE_WIDGETS_KEY)
+    stored.set('widgets', new Y.Map<unknown>([['text', 'named']]))
+
+    expect(readDocPromotedWidgets(doc, String(host.id))).toEqual({
+      valueCount: null,
+      declaredNames: [],
+      promotedNames: null
+    })
+    host.widgets[1].value = 'pasted'
+    await afterFlush()
+    expect(minted).toEqual([])
     doc.destroy()
   })
 
@@ -1814,13 +1849,13 @@ describe('attachDocOpMinter', () => {
     await afterFlush()
 
     expect(minted).toEqual([])
-    expect(refused).toEqual([
-      {
-        nodeId: source.id,
-        name: 'steps',
-        reason: 'unresolvable_owner'
-      }
-    ])
+    expect(refused).toEqual([])
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'agent_crdt_op_for_unbound_graph'
+      })
+    )
   })
 
   it('refuses a resolved widget write from an unbound root graph', async () => {
@@ -1837,6 +1872,17 @@ describe('attachDocOpMinter', () => {
         errorType: 'agent_crdt_op_for_unbound_graph'
       })
     )
+  })
+
+  it('drops a deferred write when the bound workflow changes before flush', async () => {
+    const { source } = seedGraph(graph)
+    rootGraphId = toRootGraphId(graph.id)
+
+    source.widgets![0].value = 21
+    rootGraphId = toRootGraphId('new-bound-workflow')
+    await afterFlush()
+
+    expect(minted).toEqual([])
   })
 
   it('mints a set_widget that names a subgraph owner with the subgraph-node path', async () => {

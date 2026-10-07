@@ -1,5 +1,6 @@
 import { useDebounceFn } from '@vueuse/core'
 import _ from 'es-toolkit/compat'
+import { shallowRef } from 'vue'
 
 import { assert } from '@/base/assert'
 import { LAYER_EDITOR_DIALOG_KEY } from '@/renderer/extensions/layerEditor/composables/layerEditorDialog'
@@ -252,14 +253,22 @@ function reportInactiveTrackerCall(method: string, workflowPath: string) {
 
 export class ChangeTracker {
   static MAX_HISTORY = 50
+  private static readonly loadingGraphState = shallowRef(false)
   /**
    * Guard flag to prevent captureCanvasState from running during loadGraphData.
    * Between rootGraph.configure() and afterLoadNewGraph(), the rootGraph
    * contains the NEW workflow's data while activeWorkflow still points to
    * the OLD workflow. Any captureCanvasState call in that window would
    * serialize the wrong graph into the old workflow's activeState, corrupting it.
+   * The backing ref also lets graph-readiness consumers retry once loading ends.
    */
-  static isLoadingGraph = false
+  static get isLoadingGraph(): boolean {
+    return this.loadingGraphState.value
+  }
+
+  static set isLoadingGraph(value: boolean) {
+    this.loadingGraphState.value = value
+  }
   /**
    * The active state of the workflow.
    */

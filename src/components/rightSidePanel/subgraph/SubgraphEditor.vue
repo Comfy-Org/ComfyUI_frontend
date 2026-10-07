@@ -66,6 +66,7 @@ const activeNode = computed(() => {
 })
 
 const promotedRows = shallowRef<readonly PromotedRow[]>([])
+const draggableRevision = ref(0)
 function buildPromotedRows(node: SubgraphNode): PromotedRow[] {
   return node.inputs.flatMap((input): PromotedRow[] => {
     const widget = promotedInputWidget(input)
@@ -149,10 +150,11 @@ function updateActivePromotedRows(
   if (currentKeys.size === nextKeys.size) {
     // A refusal raises no `inputs-reordered`, so the listener above never
     // restores the dragged list to the order the graph actually kept.
-    reorderSubgraphInputsByWidgetOrder(
+    const reordered = reorderSubgraphInputsByWidgetOrder(
       node,
       value.map((row) => ({ widgetId: row.widget.widgetId }))
     )
+    if (!reordered) draggableRevision.value++
   }
   // Toggle handlers can be refused before the graph emits an input event;
   // always restore the child-mutated list from the graph-backed source.
@@ -374,7 +376,11 @@ onMounted(() => {
             {{ $t('subgraphStore.hideAll') }}</a
           >
         </div>
-        <DraggableList v-slot="{ dragClass }" v-model="activePromotedRows">
+        <DraggableList
+          :key="draggableRevision"
+          v-slot="{ dragClass }"
+          v-model="activePromotedRows"
+        >
           <SubgraphNodeWidget
             v-for="row in filteredActivePromoted"
             :key="rowKey(row)"

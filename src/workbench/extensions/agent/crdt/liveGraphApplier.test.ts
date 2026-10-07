@@ -260,7 +260,9 @@ describe('LiveGraphApplier', () => {
     expect(node.properties.steps).toBe(35)
     expect(reportError).toHaveBeenCalledWith(
       expect.objectContaining({ message: 'extension hook exploded' }),
-      expect.objectContaining({ errorType: 'agent_graph_apply_failed' })
+      expect.objectContaining({
+        errorType: 'agent_graph_widget_callback_failed'
+      })
     )
   })
 

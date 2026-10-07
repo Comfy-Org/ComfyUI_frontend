@@ -1,6 +1,7 @@
 import { OPAQUE_WIDGETS_KEY, nodesMap } from '@comfyorg/comfy-multi-player'
 import * as Y from 'yjs'
 
+import { SUBGRAPH_OUTPUT_ID } from '@/lib/litegraph/src/constants'
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
 
 /**
@@ -35,14 +36,28 @@ function isReadableKey(key: string): boolean {
   return key !== '__proto__'
 }
 
-function withoutUnsafeKeys(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(withoutUnsafeKeys)
+const MAX_PROJECTED_VALUE_DEPTH = 100
+const MAX_PROJECTED_VALUE_NODES = 100_000
+const PROJECTION_BUDGET_EXCEEDED = Symbol('projection-budget-exceeded')
+
+function withoutUnsafeKeys(
+  value: unknown,
+  budget = { remaining: MAX_PROJECTED_VALUE_NODES },
+  depth = 0
+): unknown {
+  if (depth > MAX_PROJECTED_VALUE_DEPTH || --budget.remaining < 0) {
+    throw PROJECTION_BUDGET_EXCEEDED
+  }
+  if (Array.isArray(value))
+    return value.map((nested) => withoutUnsafeKeys(nested, budget, depth + 1))
   if (typeof value !== 'object' || value === null) return value
   const prototype = Object.getPrototypeOf(value)
   if (prototype !== Object.prototype && prototype !== null) return value
   return Object.fromEntries(
     Object.entries(value).flatMap(([key, nested]) =>
-      isReadableKey(key) ? [[key, withoutUnsafeKeys(nested)]] : []
+      isReadableKey(key)
+        ? [[key, withoutUnsafeKeys(nested, budget, depth + 1)]]
+        : []
     )
   )
 }
@@ -289,8 +304,12 @@ function readDefinition(
   source: Y.Map<unknown>,
   excludedDefinitionIds: ReadonlySet<string>
 ): ExportedSubgraph | null {
-  const definition = projectSubgraphDefinition(source, excludedDefinitionIds)
-  return isSafeDefinition(definition) ? definition : null
+  try {
+    const definition = projectSubgraphDefinition(source, excludedDefinitionIds)
+    return isSafeDefinition(definition) ? definition : null
+  } catch {
+    return null
+  }
 }
 
 function readField(source: unknown, key: string): unknown {
@@ -449,14 +468,25 @@ export function readDocPromotedWidgets(
   if (!(node instanceof Y.Map)) {
     return { valueCount: null, declaredNames: [], promotedNames: null }
   }
-  if (node.has('widgets') && node.has(OPAQUE_WIDGETS_KEY)) {
-    return { valueCount: null, declaredNames: [], promotedNames: null }
+  // A promoted subgraph host is positional-only. The applier deliberately
+  // converts the empty named map minted for `widgets_values: []`, but a
+  // populated or malformed named store cannot be converted: adding opaque
+  // storage beside it would make the node ambiguous for every reader.
+  if (node.has('widgets')) {
+    const named = node.get('widgets')
+    if (
+      node.has(OPAQUE_WIDGETS_KEY) ||
+      !(named instanceof Y.Map) ||
+      named.size > 0
+    ) {
+      return { valueCount: null, declaredNames: [], promotedNames: null }
+    }
   }
   const stored = node.get(OPAQUE_WIDGETS_KEY)
   const type = node.get('type')
   const definition = typeof type === 'string' ? definitionById(doc, type) : null
   const names =
-    definition instanceof Y.Map ? definitionInputNames(definition) : null
+    definition instanceof Y.Map ? definitionPromotedLayout(definition) : null
   return {
     valueCount:
       stored === undefined
@@ -519,6 +549,10 @@ function linkTargetsWidget(
   const targetId = readField(link, 'target_id')
   const targetSlot = readField(link, 'target_slot')
   if (!isRecordId(targetId) || !isSlotIndex(targetSlot)) return null
+  // A subgraph input may legally pass straight through to the synthetic
+  // output node. That endpoint has no definition node record and is not a
+  // promoted widget target.
+  if (String(targetId) === String(SUBGRAPH_OUTPUT_ID)) return false
   const target = nodes(targetId)
   if (target === undefined) return null
   const inputs = strictList(readField(target, 'inputs'))
@@ -559,12 +593,17 @@ function inputTargetsWidget(
   return widgetBacked
 }
 
-function definitionInputNames(
-  definition: Y.Map<unknown>
-): { declared: string[]; promoted: string[] } | null {
-  const declared = namedInputs(definition.get('inputs'))
-  const links = storedRecordLookup(definition.get('links'))
-  const nodes = storedRecordLookup(definition.get('nodes'))
+export interface DefinitionPromotedLayout {
+  declared: string[]
+  promoted: string[]
+}
+
+export function definitionPromotedLayout(
+  definition: unknown
+): DefinitionPromotedLayout | null {
+  const declared = namedInputs(readField(definition, 'inputs'))
+  const links = storedRecordLookup(readField(definition, 'links'))
+  const nodes = storedRecordLookup(readField(definition, 'nodes'))
   if (declared === null || links === null || nodes === null) return null
   const promoted: string[] = []
   for (const [name, input] of declared) {

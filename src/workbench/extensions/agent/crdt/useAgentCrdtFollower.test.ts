@@ -1413,7 +1413,8 @@ describe('useAgentCrdtFollower', () => {
   })
 
   it('reverts only the ops the host rejected from a human batch', async () => {
-    const { unmount, enqueue } = mountFollower('wf-1')
+    const liveGraph = fromPartial<LGraph>({ getNodeById: () => null })
+    const { unmount, enqueue } = mountFollower('wf-1', true, () => liveGraph)
     enqueue([
       { op: 'set_widget', node_id: '2', widget: 'steps', value: 3 },
       { op: 'delete_node', node_id: '1', removed_links: [] }
@@ -1447,6 +1448,37 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('defers a rejected-op rollback until its workflow is active again', async () => {
+    const liveGraph = fromPartial<LGraph>({ getNodeById: () => null })
+    const { unmount, enqueue, isTargetActive } = mountFollower(
+      'wf-1',
+      true,
+      () => liveGraph
+    )
+    enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+    await Promise.resolve()
+    const [, , ops] = clientState.sendOps.mock.calls[0]
+
+    isTargetActive.value = false
+    await nextTick()
+    dispatchFrame('doc_ops_result', {
+      workflowId: 'wf-1',
+      ok: false,
+      applied: [],
+      skipped: [],
+      failed: { index: 0, op_id: ops[0].op_id, code: 'unknown_node' }
+    })
+    expect(projectionState.revertRejected).not.toHaveBeenCalled()
+
+    isTargetActive.value = true
+    await nextTick()
+    expect(projectionState.revertRejected).toHaveBeenCalledExactlyOnceWith(
+      'wf-1',
+      ops
+    )
+    unmount()
+  })
+
   it('reprojects ops the host validly skipped from an acknowledged batch', async () => {
     const { unmount, enqueue } = mountFollower('wf-1')
     enqueue([
@@ -1463,11 +1495,11 @@ describe('useAgentCrdtFollower', () => {
       skipped: [ops[1].op_id]
     })
 
-    expect(projectionState.revertRejected).toHaveBeenCalledExactlyOnceWith(
-      'wf-1',
-      [ops[1]]
+    expect(projectionState.revertRejected).not.toHaveBeenCalled()
+    expect(telemetryState.reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({ errorType: 'agent_crdt_human_ops_skipped' })
     )
-    expect(telemetryState.reportError).not.toHaveBeenCalled()
     unmount()
   })
 
@@ -1513,7 +1545,7 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
-    it('keeps its actor stable when user identity resolves before an echo', async () => {
+    it('recognizes old echoes while new ops adopt resolved identity', async () => {
       let user: string | null = null
       const { unmount, enqueue } = mountFollower(
         'wf-1',
@@ -1529,6 +1561,16 @@ describe('useAgentCrdtFollower', () => {
       const [, , firstOps] = clientState.sendOps.mock.calls[0]
       const ownActor = firstOps[0].actor
       user = 'resolved-user'
+      dispatchFrame('doc_ops_result', {
+        workflowId: 'wf-1',
+        ok: true,
+        applied: firstOps.map((op) => op.op_id),
+        skipped: []
+      })
+      enqueue([{ op: 'delete_node', node_id: '2', removed_links: [] }])
+      await Promise.resolve()
+      const [, , secondOps] = clientState.sendOps.mock.calls[1]
+      expect(secondOps[0].actor).toMatch(/^human:resolved-user:/)
 
       dispatchFrame('doc_update', {
         workflowId: 'wf-1',

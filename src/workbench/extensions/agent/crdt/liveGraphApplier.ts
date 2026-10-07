@@ -35,6 +35,7 @@ import type { WidgetValue } from '@/types/simplifiedWidget'
 
 import {
   allSubgraphDefinitions,
+  definitionPromotedLayout,
   readDocPromotedWidgets,
   readDocPromotedWidgetValue,
   readSubgraphDefinitions
@@ -478,7 +479,7 @@ function floorSizeToContent(node: LGraphNode): void {
 
 interface DefinitionState {
   live: object
-  snapshot: ExportedSubgraph
+  layout: ReturnType<typeof definitionPromotedLayout>
   conflicted: boolean
 }
 
@@ -644,12 +645,16 @@ export class LiveGraphApplier {
     if (previous?.live !== live) {
       state.set(definition.id, {
         live,
-        snapshot: definition,
+        layout: definitionPromotedLayout(definition),
         conflicted: false
       })
       return false
     }
-    previous.conflicted = !isEqual(previous.snapshot, definition)
+    const layout = definitionPromotedLayout(definition)
+    previous.conflicted =
+      previous.layout === null ||
+      layout === null ||
+      !isEqual(previous.layout, layout)
     if (previous.conflicted) {
       this.reportOnce(
         `definition-changed:${definition.id}`,
@@ -677,7 +682,7 @@ export class LiveGraphApplier {
     if (live)
       state.set(definition.id, {
         live,
-        snapshot: definition,
+        layout: definitionPromotedLayout(definition),
         conflicted: false
       })
   }
@@ -718,20 +723,18 @@ export class LiveGraphApplier {
   ): 'created' | 'recreated' | 'updated' | 'skipped' {
     const docNode = this.readDocNode(doc, id)
     if (!docNode) return 'skipped'
-    if (
+    const definitionConflicted =
       this.definitionState.get(graph.rootGraph)?.get(docNode.type)
         ?.conflicted === true
-    ) {
-      return 'skipped'
-    }
     const live = graph.getNodeById(toNodeId(id))
     if (live && live.type === docNode.type) {
       this.applyFields(live, docNode)
-      this.applyWidgets(live, docNode.widgets, mode, doc)
+      if (!definitionConflicted)
+        this.applyWidgets(live, docNode.widgets, mode, doc)
       return 'updated'
     }
     if (live) graph.remove(live)
-    this.createNode(graph, doc, docNode, mode)
+    this.createNode(graph, doc, docNode, mode, definitionConflicted)
     return live ? 'recreated' : 'created'
   }
 
@@ -739,7 +742,8 @@ export class LiveGraphApplier {
     graph: LGraph,
     doc: Y.Doc,
     docNode: DocNode,
-    mode: ApplyMode
+    mode: ApplyMode,
+    skipPromotedWidgets = false
   ): LGraphNode {
     const node =
       LiteGraph.createNode(docNode.type, docNode.serialised.title) ??
@@ -772,14 +776,15 @@ export class LiveGraphApplier {
       if (node.isSubgraphNode()) {
         const beforeConfigurePromotedIds = promotedWidgetIds(node)
         node.configure(info)
-        this.applyConfiguredHostWidgets(
-          node,
-          docNode.widgets,
-          beforeConfigurePromotedIds,
-          mode,
-          doc,
-          docNode.id
-        )
+        if (!skipPromotedWidgets)
+          this.applyConfiguredHostWidgets(
+            node,
+            docNode.widgets,
+            beforeConfigurePromotedIds,
+            mode,
+            doc,
+            docNode.id
+          )
       } else {
         node.configure({
           ...info,
@@ -1022,10 +1027,14 @@ export class LiveGraphApplier {
       node.onWidgetChanged?.(widget.name, value, previous, widget)
     } catch (error) {
       // The document already integrated this register and the collector has
-      // consumed its frame. Preserve the canonical value even if an extension
-      // callback fails; no later state-vector delta is guaranteed to repeat it.
-      node.graph?.incrementVersion()
-      throw error
+      // consumed its frame. Preserve the canonical value and continue with
+      // sibling widgets; no later state-vector delta is guaranteed to repeat
+      // either this value or the rest of the payload.
+      reportError(error, {
+        surface: 'agent',
+        errorType: 'agent_graph_widget_callback_failed',
+        context: { nodeId: node.id, widget: widget.name }
+      })
     }
     node.graph?.incrementVersion()
   }

@@ -908,6 +908,14 @@ const {
       }
     },
     onReset: graphActivity.resetWorkflow,
+    onHumanOpsRejected() {
+      toast.add({
+        severity: 'warn',
+        summary: t('agent.widgetWriteNotSyncedTitle'),
+        detail: t('agent.widgetWriteNotSyncedDetail'),
+        life: 5000
+      })
+    },
     onSyncError: (message, code) =>
       toast.add({
         severity: 'error',

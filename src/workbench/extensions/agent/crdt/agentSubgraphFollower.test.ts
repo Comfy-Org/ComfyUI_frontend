@@ -333,7 +333,7 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
     expect(useWidgetValueStore().getWidget(widgetId!)?.value).toBe(42)
   })
 
-  it('fails closed when a document replaces a registered definition under the same id', () => {
+  it('keeps host updates flowing across a cosmetic definition edit', () => {
     const state = startFollower()
     const vector = Y.encodeStateVector(state.hostDoc)
     state.hostDoc.transact(() => {
@@ -350,8 +350,8 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
     state.follower.applyRemoteUpdate(update)
     state.adapter.applyFrame({ workflowId: 'workflow', seq: 2, update })
 
-    expect(state.instance.widgets[0]?.value).toBe(HOST_INITIAL_VALUE)
-    expect(reportError).toHaveBeenCalledWith(
+    expect(state.instance.widgets[0]?.value).toBe(42)
+    expect(reportError).not.toHaveBeenCalledWith(
       expect.any(Error),
       expect.objectContaining({
         errorType: 'agent_subgraph_definition_changed'
@@ -393,7 +393,7 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
       expect.objectContaining({ message: 'extension hook exploded' }),
       expect.objectContaining({
         surface: 'agent',
-        errorType: 'agent_graph_apply_failed'
+        errorType: 'agent_graph_widget_callback_failed'
       })
     )
   })
