@@ -143,11 +143,12 @@ describe('EmptyState', () => {
       })
     )
 
-    const [[, attribution]] = emitted().insert as [
-      string,
-      { assignment?: string }
-    ][]
-    expect(attribution).not.toHaveProperty('assignment')
+    expect(emitted().insert).toEqual([
+      [
+        'Build an image workflow with my installed models',
+        expect.not.objectContaining({ assignment: expect.anything() })
+      ]
+    ])
   })
 
   it('does not attribute a surface that mounted before experiment config loaded', async () => {
