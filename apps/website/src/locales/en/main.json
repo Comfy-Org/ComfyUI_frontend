@@ -2469,6 +2469,7 @@
     "wan3": "Wan 3.0",
     "chatgptImage25": "ChatGPT Images 2.5",
     "qwenImage21": "Qwen-Image 2.1",
+    "nanoBanana": "Nano Banana 2.1",
     "cloudNodes": "Comfy Cloud Nodes",
     "modelCatalogue": "ComfyUI Models"
   },
@@ -4078,7 +4079,9 @@
       "description": "Google's newest Gemini image model, now in Comfy. Give it a prompt and references, and it returns an image at up to 4K. It works anywhere Nano Banana 2 does, with a new thinking level and a lower price.",
       "tagTextToImage": "Text to Image",
       "tagImageEditing": "Image Editing",
-      "tagPartnerNode": "Partner Node"
+      "tagPartnerNode": "Partner Node",
+      "primaryCta": "RUN NANO BANANA 2.1",
+      "secondaryCta": "READ THE GUIDE"
     },
     "showcase": {
       "photography": {
