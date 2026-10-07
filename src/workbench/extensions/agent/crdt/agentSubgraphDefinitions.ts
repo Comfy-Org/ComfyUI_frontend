@@ -389,23 +389,16 @@ export function readSubgraphDefinitions(
  * What the document knows about a node's promoted widget layout.
  *
  * `valueCount` sizes the positional array a promoted write indexes.
- * `promotedNames` reconstructs that array's exact name order from the
- * definition plus the instance's input mirror: a definition input is promoted
- * when the mirror either omits it or carries its widget marker. Neither source
- * is sufficient alone because the mirror can omit promoted values the array
- * still carries. An unreadable array or name sequence is represented by null
- * so the minter can fail closed.
- *
- * `promotedNames` separates ABSENT from UNREADABLE, because they license
- * opposite answers on a first write: `undefined` is a document carrying no
- * definition for the node, which contradicts no ordering and lets the live
- * order build the array, while `null` is a definition whose inputs cannot be
- * read, which must fail closed.
+ * `promotedNames` reconstructs that array's exact name order from definition
+ * links that target widget-backed interior inputs. The instance input mirror
+ * is not authoritative: shipped workflows can mirror promoted inputs without
+ * a `widget` marker. An absent or unreadable definition is represented by
+ * null so the minter fails closed.
  */
 export interface DocPromotedWidgets {
   valueCount: number | null
   declaredNames: readonly string[]
-  promotedNames: readonly string[] | null | undefined
+  promotedNames: readonly string[] | null
 }
 
 /** Null when the document holds no such node. */
@@ -416,6 +409,11 @@ export function readDocPromotedWidgets(
   const node = nodesMap(doc).get(nodeId)
   if (!(node instanceof Y.Map)) return null
   const stored = node.get(OPAQUE_WIDGETS_KEY)
+  const type = node.get('type')
+  const definition =
+    typeof type === 'string' ? definitionsMap(doc)?.get(type) : undefined
+  const names =
+    definition instanceof Y.Map ? definitionInputNames(definition) : null
   return {
     valueCount:
       stored === undefined
@@ -423,8 +421,8 @@ export function readDocPromotedWidgets(
         : stored instanceof Y.Array || Array.isArray(stored)
           ? stored.length
           : null,
-    declaredNames: declaredInputNames(doc, String(node.get('type') ?? '')),
-    promotedNames: promotedInputNames(doc, node, String(node.get('type') ?? ''))
+    declaredNames: names?.declared ?? [],
+    promotedNames: names?.promoted ?? null
   }
 }
 
@@ -437,35 +435,102 @@ function namedInputs(source: unknown): Array<[string, unknown]> | null {
         : null
   if (inputs === null) return null
   const named: Array<[string, unknown]> = []
+  const seen = new Set<string>()
   for (const input of inputs) {
     const name = readField(input, 'name')
-    if (typeof name !== 'string') return null
+    if (typeof name !== 'string' || seen.has(name)) return null
+    seen.add(name)
     named.push([name, input])
   }
   return named
 }
 
-function promotedInputNames(
-  doc: Y.Doc,
-  node: Y.Map<unknown>,
-  definitionId: string
-): string[] | null | undefined {
-  const definition = definitionsMap(doc)?.get(definitionId)
-  if (!(definition instanceof Y.Map)) return undefined
-  const declared = namedInputs(definition.get('inputs'))
-  const instance = namedInputs(node.get('inputs'))
-  if (declared === null || instance === null) return null
-  const instanceByName = new Map(instance)
-  return declared.flatMap(([name]) => {
-    const input = instanceByName.get(name)
-    return input === undefined || readField(input, 'widget') !== undefined
-      ? [name]
-      : []
+function storedRecordById(source: unknown, id: string | number): unknown {
+  if (source instanceof Y.Map) return source.get(String(id))
+  if (!Array.isArray(source)) return undefined
+  return source.find((entry) => {
+    const candidate = readField(entry, 'id')
+    return (
+      (typeof candidate === 'string' || typeof candidate === 'number') &&
+      String(candidate) === String(id)
+    )
   })
 }
 
-function declaredInputNames(doc: Y.Doc, definitionId: string): string[] {
-  const definition = definitionsMap(doc)?.get(definitionId)
-  if (!(definition instanceof Y.Map)) return []
-  return namedInputs(definition.get('inputs'))?.map(([name]) => name) ?? []
+function strictList(source: unknown): unknown[] | null {
+  if (source instanceof Y.Array) return source.toArray()
+  return Array.isArray(source) ? source : null
+}
+
+function linkTargetsWidget(
+  definition: Y.Map<unknown>,
+  linkId: string | number
+): boolean | null {
+  const link = storedRecordById(definition.get('links'), linkId)
+  if (link === undefined) return null
+  const targetId = readField(link, 'target_id')
+  const targetSlot = readField(link, 'target_slot')
+  if (!isRecordId(targetId) || !isSlotIndex(targetSlot)) return null
+  const target = storedRecordById(definition.get('nodes'), targetId)
+  const inputs = strictList(readField(target, 'inputs'))
+  const input = inputs?.[targetSlot]
+  if (input === undefined) return null
+  const widget = readField(input, 'widget')
+  return widgetMarkerState(widget)
+}
+
+function isRecordId(value: unknown): value is string | number {
+  return typeof value === 'string' || typeof value === 'number'
+}
+
+function isSlotIndex(value: unknown): value is number {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 0
+}
+
+function widgetMarkerState(widget: unknown): boolean | null {
+  if (widget === undefined || widget === null) return false
+  return typeof readField(widget, 'name') === 'string' ? true : null
+}
+
+function inputTargetsWidget(
+  definition: Y.Map<unknown>,
+  input: unknown
+): boolean | null {
+  const linkIds = strictList(readField(input, 'linkIds'))
+  if (linkIds === null || !linkIds.every(isRecordId)) return null
+  let widgetBacked = false
+  for (const linkId of linkIds) {
+    const targetsWidget = linkTargetsWidget(definition, linkId)
+    if (targetsWidget === null) return null
+    widgetBacked ||= targetsWidget
+  }
+  return widgetBacked
+}
+
+function definitionInputNames(
+  definition: Y.Map<unknown>
+): { declared: string[]; promoted: string[] } | null {
+  const declared = namedInputs(definition.get('inputs'))
+  if (declared === null) return null
+  const promoted: string[] = []
+  for (const [name, input] of declared) {
+    const targetsWidget = inputTargetsWidget(definition, input)
+    if (targetsWidget === null) return null
+    if (targetsWidget) promoted.push(name)
+  }
+  return { declared: declared.map(([name]) => name), promoted }
+}
+
+/** The document value behind a promoted host register, when safely addressable. */
+export function readDocPromotedWidgetValue(
+  doc: Y.Doc,
+  nodeId: string,
+  widget: string
+): unknown {
+  const layout = readDocPromotedWidgets(doc, nodeId)
+  const index = layout?.promotedNames?.indexOf(widget) ?? -1
+  if (index < 0) return undefined
+  const stored = nodesMap(doc).get(nodeId)?.get(OPAQUE_WIDGETS_KEY)
+  if (stored instanceof Y.Array) return plain(stored.get(index))
+  return Array.isArray(stored) ? plain(stored[index]) : undefined
 }

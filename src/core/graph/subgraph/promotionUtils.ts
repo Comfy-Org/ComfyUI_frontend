@@ -2,6 +2,7 @@ import cloneDeep from 'es-toolkit/compat/cloneDeep'
 import { addBreadcrumb } from '@sentry/vue'
 import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { t } from '@/i18n'
+import { isRootGraphDocBound } from '@/lib/litegraph/src/docBoundGraphs'
 import type { IContextMenuValue } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
@@ -151,7 +152,16 @@ export function reorderSubgraphInputsByName(
 export function reorderSubgraphInputsByWidgetOrder(
   subgraphNode: SubgraphNode,
   orderedWidgets: readonly Pick<IBaseWidget, 'widgetId'>[]
-): void {
+): boolean {
+  if (isRootGraphDocBound(subgraphNode.rootGraph.id)) {
+    useToastStore().add({
+      severity: 'warn',
+      summary: t('agent.widgetWriteNotSyncedTitle'),
+      detail: t('agent.subgraphReorderNotSyncedDetail'),
+      life: 5000
+    })
+    return false
+  }
   const remainingIndices = new Set(subgraphNode.inputs.keys())
   const orderedIndices = orderedWidgets.flatMap((orderedWidget) => {
     for (const index of remainingIndices) {
@@ -166,6 +176,7 @@ export function reorderSubgraphInputsByWidgetOrder(
   for (const index of remainingIndices) orderedIndices.push(index)
 
   applySubgraphInputOrder(subgraphNode, orderedIndices)
+  return true
 }
 
 function applySubgraphInputOrder(

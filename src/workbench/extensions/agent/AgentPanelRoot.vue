@@ -937,7 +937,14 @@ const docOpMinter = attachDocOpMinter({
   getGraph: () => (app.isGraphReady ? app.rootGraph : null),
   boundRootGraphId,
   docInputNames,
-  docPromotedWidgets
+  docPromotedWidgets,
+  onWidgetWriteRefused: () =>
+    toast.add({
+      severity: 'warn',
+      summary: t('agent.widgetWriteNotSyncedTitle'),
+      detail: t('agent.widgetWriteNotSyncedDetail'),
+      life: 5000
+    })
 })
 const restoreOpMinter = attachRestoreOpMinter({
   isEnabled: () => agentPanelStore.enabled,

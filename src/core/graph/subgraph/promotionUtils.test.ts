@@ -2,6 +2,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import { promotedInputWidget } from '@/core/graph/subgraph/promotedInputWidget'
+import { registerDocBoundRootGraphProbe } from '@/lib/litegraph/src/docBoundGraphs'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import {
@@ -777,6 +778,37 @@ describe('reorderSubgraphInputsByWidgetOrder', () => {
       'second value',
       'first value'
     ])
+  })
+
+  it('refuses to reorder a definition while its root graph is doc-bound', () => {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph)
+    const firstNode = new LGraphNode('First')
+    const secondNode = new LGraphNode('Second')
+    subgraph.add(firstNode)
+    subgraph.add(secondNode)
+    const firstInput = firstNode.addInput('first', 'STRING')
+    const firstWidget = firstNode.addWidget('text', 'first', '', () => {})
+    firstInput.widget = { name: firstWidget.name }
+    const secondInput = secondNode.addInput('second', 'STRING')
+    const secondWidget = secondNode.addWidget('text', 'second', '', () => {})
+    secondInput.widget = { name: secondWidget.name }
+    promoteValueWidgetViaSubgraphInput(host, firstNode, firstWidget)
+    promoteValueWidgetViaSubgraphInput(host, secondNode, secondWidget)
+    const before = host.inputs.map((input) => input.name)
+    const unregister = registerDocBoundRootGraphProbe(() => host.rootGraph.id)
+
+    try {
+      expect(
+        reorderSubgraphInputsByWidgetOrder(host, [
+          promotedWidgetRef(host, 'second'),
+          promotedWidgetRef(host, 'first')
+        ])
+      ).toBe(false)
+      expect(host.inputs.map((input) => input.name)).toEqual(before)
+    } finally {
+      unregister()
+    }
   })
 })
 

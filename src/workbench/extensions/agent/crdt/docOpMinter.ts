@@ -72,6 +72,16 @@ export interface DocOpMinterDeps {
    * when the document holds no such node.
    */
   docPromotedWidgets(nodeId: NodeId): DocPromotedWidgets | null
+  /** A local widget changed live but cannot be represented safely in the doc. */
+  onWidgetWriteRefused?(write: {
+    nodeId: NodeId
+    name: string
+    reason:
+      | 'layout_drift'
+      | 'nested_host'
+      | 'unpromoted_host_widget'
+      | 'unresolvable_owner'
+  }): void
 }
 
 export interface DocOpMinter {
@@ -82,6 +92,20 @@ type IntentOf<T extends GraphIntentEvent['type']> = Extract<
   GraphIntentEvent,
   { type: T }
 >
+
+type WidgetRefusalReason =
+  | 'layout_drift'
+  | 'nested_host'
+  | 'unpromoted_host_widget'
+  | 'unresolvable_owner'
+
+interface MintedWidgetBase {
+  op: 'set_widget'
+  node_id: NodeId
+  widget: string
+  value: unknown
+  old: unknown
+}
 
 type PendingOp =
   | { kind: 'add_node'; graph: LGraph; node: LGraphNode }
@@ -207,17 +231,24 @@ function promotedHostWrite(
   node: LGraphNode | null,
   event: IntentOf<'set_widget'>,
   docPromotedWidgets: () => DocPromotedWidgets | null,
-  onOrderDrift: (names: readonly string[], doc: DocPromotedWidgets) => void
+  onOrderDrift: (names: readonly string[], doc: DocPromotedWidgets) => void,
+  onUnpromotedWidget: () => void
 ): PromotedHostWrite | null {
   if (!node?.isSubgraphNode()) return null
   const hostInputs = node.inputs.flatMap((input) =>
     input.widgetId ? [{ name: input.name, widgetId: input.widgetId }] : []
   )
   const valueIndex = hostInputs.findIndex((input) => input.name === event.name)
-  if (valueIndex === -1) return null
   const liveNames = hostInputs.map((input) => input.name)
+  if (valueIndex === -1) {
+    onUnpromotedWidget()
+    return null
+  }
   const doc = docPromotedWidgets()
-  if (!documentAcceptsLiveIndex(doc, liveNames)) {
+  if (
+    new Set(liveNames).size !== liveNames.length ||
+    !documentAcceptsLiveIndex(doc, liveNames)
+  ) {
     if (doc) onOrderDrift(liveNames, doc)
     return null
   }
@@ -266,35 +297,40 @@ function documentAcceptsLiveIndex(
     doc.promotedNames != null &&
     doc.promotedNames.length === liveNames.length &&
     doc.promotedNames.every((name, index) => name === liveNames[index])
-  if (doc.valueCount === 0) return doc.promotedNames === undefined || namesMatch
+  if (doc.valueCount === 0) return namesMatch
   return doc.valueCount === liveNames.length && namesMatch
 }
 
-function routedWidgetOperation(
-  graph: LGraph,
-  rootGraphId: string,
+function topLevelWidgetOperation(
+  operation: MintedWidgetBase,
+  node: LGraphNode,
   event: IntentOf<'set_widget'>,
-  node: LGraphNode | null,
   docPromotedWidgets: () => DocPromotedWidgets | null,
-  onOrderDrift: (names: readonly string[], doc: DocPromotedWidgets) => void
+  onOrderDrift: (names: readonly string[], doc: DocPromotedWidgets) => void,
+  onRefused: (reason: WidgetRefusalReason) => void
 ): GraphOperation | null {
-  const operation = {
-    op: 'set_widget',
-    node_id: event.nodeId,
-    widget: event.name,
-    value: event.value,
-    old: event.previous
-  } as const
-  const owningGraphId = node?.graph?.id ?? event.graphId
-  if (owningGraphId === rootGraphId) {
-    if (!node?.isSubgraphNode()) return operation
-    const promoted = promotedHostWrite(
-      node,
-      event,
-      docPromotedWidgets,
-      onOrderDrift
-    )
-    return promoted ? { ...operation, promoted } : null
+  if (!node.isSubgraphNode()) return operation
+  const promoted = promotedHostWrite(
+    node,
+    event,
+    docPromotedWidgets,
+    onOrderDrift,
+    () => onRefused('unpromoted_host_widget')
+  )
+  return promoted ? { ...operation, promoted } : null
+}
+
+function interiorWidgetOperation(
+  graph: LGraph,
+  operation: MintedWidgetBase,
+  event: IntentOf<'set_widget'>,
+  node: LGraphNode,
+  owningGraphId: string,
+  onRefused: (reason: WidgetRefusalReason) => void
+): GraphOperation | null {
+  if (node.isSubgraphNode()) {
+    onRefused('nested_host')
+    return null
   }
   const subgraphNodePath = findSubgraphNodePathById(graph, owningGraphId)
   if (subgraphNodePath === null || subgraphNodePath.length === 0) {
@@ -310,6 +346,47 @@ function routedWidgetOperation(
     path: [head, ...rest, String(event.nodeId)],
     inner_widget: event.name
   }
+}
+
+function routedWidgetOperation(
+  graph: LGraph,
+  rootGraphId: string,
+  event: IntentOf<'set_widget'>,
+  node: LGraphNode | null,
+  docPromotedWidgets: () => DocPromotedWidgets | null,
+  onOrderDrift: (names: readonly string[], doc: DocPromotedWidgets) => void,
+  onRefused: (reason: WidgetRefusalReason) => void
+): GraphOperation | null {
+  const operation = {
+    op: 'set_widget',
+    node_id: event.nodeId,
+    widget: event.name,
+    value: event.value,
+    old: event.previous
+  } as const
+  if (node === null) {
+    onRefused('unresolvable_owner')
+    return null
+  }
+  const owningGraphId = node.graph?.id ?? event.graphId
+  if (owningGraphId === rootGraphId) {
+    return topLevelWidgetOperation(
+      operation,
+      node,
+      event,
+      docPromotedWidgets,
+      onOrderDrift,
+      onRefused
+    )
+  }
+  return interiorWidgetOperation(
+    graph,
+    operation,
+    event,
+    node,
+    owningGraphId,
+    onRefused
+  )
 }
 
 /**
@@ -423,10 +500,11 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     errorType: string,
     context: Record<string, unknown>,
     budget: Set<string> = reported
-  ): void {
-    if (budget.has(key)) return
+  ): boolean {
+    if (budget.has(key)) return false
     budget.add(key)
     reportError(new Error(message), { surface: 'agent', errorType, context })
+    return true
   }
 
   /** True when `graph` is the bound document's root graph. */
@@ -468,6 +546,21 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       : null
     if (!isValueWidgetWrite(owner, event)) return
     const rootGraphId = deps.boundRootGraphId() ?? graph.id
+    const refuse = (
+      reason: WidgetRefusalReason,
+      key: string,
+      message: string,
+      errorType: string,
+      context: Record<string, unknown>,
+      budget: Set<string> = reported
+    ) => {
+      if (!reportOnce(key, message, errorType, context, budget)) return
+      deps.onWidgetWriteRefused?.({
+        nodeId: event.nodeId,
+        name: event.name,
+        reason
+      })
+    }
     const operation = routedWidgetOperation(
       graph,
       rootGraphId,
@@ -475,7 +568,8 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       owner,
       () => deps.docPromotedWidgets(event.nodeId),
       (liveNames, doc) =>
-        reportOnce(
+        refuse(
+          'layout_drift',
           `promoted_drift:${rootGraphId}:${String(event.nodeId)}`,
           `Subgraph host ${String(event.nodeId)} promotes [${liveNames.join(', ')}], which the document's ${doc.valueCount} stored values and declared inputs [${doc.declaredNames.join(', ')}] do not place; refusing to mint a promoted write`,
           'agent_crdt_promoted_widget_order_drift',
@@ -485,6 +579,19 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
             docValueCount: doc.valueCount,
             docDeclaredNames: doc.declaredNames,
             docPromotedNames: doc.promotedNames
+          },
+          reportedDrift
+        ),
+      (reason) =>
+        refuse(
+          reason,
+          `widget_refused:${reason}:${rootGraphId}:${String(event.nodeId)}:${event.name}`,
+          `Widget ${event.name} on node ${String(event.nodeId)} cannot be represented safely in the bound document; refusing to mint`,
+          `agent_crdt_${reason}`,
+          {
+            nodeId: event.nodeId,
+            widget: event.name,
+            graphId: event.graphId
           },
           reportedDrift
         )

@@ -1,8 +1,9 @@
 import { readFileSync } from 'node:fs'
-import { applyOps, mint, project } from '@comfyorg/comfy-multi-player'
+import { applyOps, mint, nodesMap, project } from '@comfyorg/comfy-multi-player'
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import * as Y from 'yjs'
 import { z } from 'zod'
 
 import { isRootGraphDocBound } from '@/lib/litegraph/src/docBoundGraphs'
@@ -27,6 +28,7 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toRootGraphId } from '@/types/graphScopeId'
 import type { RootGraphId } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 import { createUuidv4 } from '@/utils/uuid'
 
@@ -34,7 +36,7 @@ import { attachDocOpMinter, wireNodeSnapshot } from './docOpMinter'
 import type { DocOpMinter, DocOpMinterDeps } from './docOpMinter'
 import type { GraphOperation } from './graphOperations'
 import { readDocPromotedWidgets } from './agentSubgraphDefinitions'
-import { readDocSlotNames } from './liveGraphApplier'
+import { readDocSlotNames, readDocWidgetValue } from './liveGraphApplier'
 import { mintWireOps } from './opEnvelope'
 
 vi.mock(import('@/platform/telemetry/reportError'))
@@ -171,6 +173,11 @@ describe('attachDocOpMinter', () => {
   let minter: DocOpMinter
   let enabled: boolean
   let bound: boolean
+  let refused: Array<{
+    nodeId: NodeId
+    name: string
+    reason: string
+  }>
   let docInputNames: DocOpMinterDeps['docInputNames']
   let docPromotedWidgets: DocOpMinterDeps['docPromotedWidgets']
 
@@ -180,6 +187,7 @@ describe('attachDocOpMinter', () => {
     minted = []
     enabled = true
     bound = true
+    refused = []
     docInputNames = () => null
     docPromotedWidgets = () => null
     minter = attachDocOpMinter({
@@ -189,7 +197,8 @@ describe('attachDocOpMinter', () => {
       getGraph: () => graph,
       boundRootGraphId: () => rootGraphId,
       docInputNames: (nodeId) => docInputNames(nodeId),
-      docPromotedWidgets: (nodeId) => docPromotedWidgets(nodeId)
+      docPromotedWidgets: (nodeId) => docPromotedWidgets(nodeId),
+      onWidgetWriteRefused: (write) => refused.push(write)
     })
   })
 
@@ -870,6 +879,20 @@ describe('attachDocOpMinter', () => {
     doc.destroy()
   })
 
+  it('refuses duplicate live promoted names instead of choosing the first', async () => {
+    const { host, doc } = seedPromotedHost()
+    host.inputs[0].name = 'text'
+
+    host.widgets[1].value = 'ambiguous'
+    await afterFlush()
+
+    expect(minted).toEqual([])
+    expect(refused).toEqual([
+      { nodeId: host.id, name: 'text', reason: 'layout_drift' }
+    ])
+    doc.destroy()
+  })
+
   it('drops an unpromoted host widget without poisoning its same-tick batch', async () => {
     const source = new TestSource()
     withGraphIntentSource('load', () => graph.add(source))
@@ -1005,6 +1028,45 @@ describe('attachDocOpMinter', () => {
       ],
       promotedNames: ['text', 'seed']
     })
+    expect(readDocWidgetValue(doc, '11', 'text')).toBe('a photo of a pier')
+    expect(readDocWidgetValue(doc, '11', 'seed')).toBe(0)
+    doc.destroy()
+  })
+
+  it('derives promoted names from definition links when the host mirror has no markers', () => {
+    const workflow = JSON.parse(
+      readFileSync(
+        'browser_tests/assets/subgraphs/subgraph-promoted-int-text-with-primitives.json',
+        'utf8'
+      )
+    ) as WorkflowJSON
+    const catalog: WidgetCatalog = {
+      types: {
+        ...CATALOG.types,
+        CLIPTextEncode: { widget_order: ['text'] },
+        EmptyLatentImage: {
+          widget_order: ['width', 'height', 'batch_size']
+        },
+        PrimitiveInt: { widget_order: ['value'] },
+        PrimitiveString: { widget_order: ['value'] }
+      }
+    }
+    const doc = mint(workflow, catalog)
+
+    expect(readDocPromotedWidgets(doc, '1')).toEqual({
+      valueCount: 3,
+      declaredNames: ['text', 'width', 'height'],
+      promotedNames: ['text', 'width', 'height']
+    })
+
+    const host = nodesMap(doc).get('1')
+    assert.instanceOf(host, Y.Map)
+    host.delete('inputs')
+    expect(readDocPromotedWidgets(doc, '1')?.promotedNames).toEqual([
+      'text',
+      'width',
+      'height'
+    ])
     doc.destroy()
   })
 
@@ -1023,8 +1085,38 @@ describe('attachDocOpMinter', () => {
     expect(readDocPromotedWidgets(doc, '11')).toEqual({
       valueCount: 2,
       declaredNames: [],
-      promotedNames: undefined
+      promotedNames: null
     })
+    doc.destroy()
+  })
+
+  it('fails closed on a non-string host type without coercing document data', () => {
+    const { host, doc } = seedPromotedHost()
+    const stored = nodesMap(doc).get(String(host.id))
+    assert.instanceOf(stored, Y.Map)
+    stored.set('type', { toString: null, valueOf: null })
+
+    expect(readDocPromotedWidgets(doc, String(host.id))).toEqual({
+      valueCount: 2,
+      declaredNames: [],
+      promotedNames: null
+    })
+    doc.destroy()
+  })
+
+  it('fails closed when a definition repeats an input name', () => {
+    const { host, doc } = seedPromotedHost()
+    const definition = doc.getMap<unknown>('definitions').get(host.type)
+    assert.instanceOf(definition, Y.Map)
+    const inputs = definition.get('inputs')
+    assert(Array.isArray(inputs))
+    const first = inputs[0]
+    assert(typeof first === 'object' && first !== null)
+    definition.set('inputs', [first, { ...first }])
+
+    expect(
+      readDocPromotedWidgets(doc, String(host.id))?.promotedNames
+    ).toBeNull()
     doc.destroy()
   })
 
@@ -1049,23 +1141,18 @@ describe('attachDocOpMinter', () => {
     doc.destroy()
   })
 
-  it('mints against the live order when the document declares no definition', async () => {
+  it('refuses a first write when the document definition is unavailable', async () => {
     const { host, doc } = seedPromotedHost()
     docPromotedWidgets = () => ({
       valueCount: 0,
       declaredNames: [],
-      promotedNames: undefined
+      promotedNames: null
     })
 
     host.widgets[1].value = 'pasted'
     await afterFlush()
 
-    expect(minted).toEqual([
-      expect.objectContaining({
-        promoted: expect.objectContaining({ value_index: 1 })
-      })
-    ])
-    expect(applyMinted(doc, minted)).toEqual(['applied'])
+    expect(minted).toEqual([])
     doc.destroy()
   })
 
@@ -1093,7 +1180,7 @@ describe('attachDocOpMinter', () => {
     }
   )
 
-  it('leaves a promoted widget on a nested host on the interior route', async () => {
+  it('drops a nested promoted host write before it can reject its batch', async () => {
     const outer = createTestSubgraph({ rootGraph: graph })
     graph.subgraphs.set(outer.id, outer)
     const inner = createTestSubgraph({
@@ -1103,8 +1190,10 @@ describe('attachDocOpMinter', () => {
     graph.subgraphs.set(inner.id, inner)
     const outerHost = createTestSubgraphNode(outer)
     const nestedHost = createTestSubgraphNode(inner, { parentGraph: outer })
+    const source = new TestSource()
     withGraphIntentSource('load', () => {
       graph.add(outerHost)
+      graph.add(source)
       outer.add(nestedHost)
       const interior = LiteGraph.createNode('TestPrompt')
       assert.exists(interior)
@@ -1113,16 +1202,25 @@ describe('attachDocOpMinter', () => {
     })
 
     nestedHost.widgets[0].value = 'pasted'
+    source.widgets![0].value = 42
     await afterFlush()
 
     expect(minted).toEqual([
-      expect.objectContaining({
+      {
         op: 'set_widget',
-        path: [String(outerHost.id), String(nestedHost.id)],
-        inner_widget: 'text'
-      })
+        node_id: source.id,
+        widget: 'steps',
+        value: 42,
+        old: 20
+      }
     ])
-    expect(minted[0]).not.toHaveProperty('promoted')
+    expect(refused).toEqual([
+      {
+        nodeId: nestedHost.id,
+        name: 'text',
+        reason: 'nested_host'
+      }
+    ])
   })
 
   it('does not let an ephemeral widget write roll a hand edit back with it', async () => {
@@ -1434,6 +1532,31 @@ describe('attachDocOpMinter', () => {
     await afterFlush()
 
     expect(minted).toEqual([])
+  })
+
+  it('refuses a stale value write whose live owner cannot be resolved', async () => {
+    const previousGraph = new LGraph()
+    const { source } = seedGraph(previousGraph)
+    rootGraphId = toRootGraphId(previousGraph.id)
+
+    emitGraphIntent({
+      type: 'set_widget',
+      graphId: previousGraph.id,
+      nodeId: source.id,
+      name: 'steps',
+      value: 21,
+      previous: 20
+    })
+    await afterFlush()
+
+    expect(minted).toEqual([])
+    expect(refused).toEqual([
+      {
+        nodeId: source.id,
+        name: 'steps',
+        reason: 'unresolvable_owner'
+      }
+    ])
   })
 
   it('mints a set_widget that names a subgraph owner with the subgraph-node path', async () => {

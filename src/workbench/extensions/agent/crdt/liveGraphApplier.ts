@@ -35,6 +35,7 @@ import type { WidgetValue } from '@/types/simplifiedWidget'
 
 import {
   allSubgraphDefinitions,
+  readDocPromotedWidgetValue,
   readSubgraphDefinitions
 } from './agentSubgraphDefinitions'
 import type { PlacementRect } from './batchPlacement'
@@ -369,7 +370,10 @@ export function readDocWidgetValue(
   widget: string
 ): unknown {
   const widgets = nodesMap(doc).get(nodeId)?.get('widgets')
-  return widgets instanceof Y.Map ? plain(widgets.get(widget)) : undefined
+  if (widgets instanceof Y.Map && widgets.has(widget)) {
+    return plain(widgets.get(widget))
+  }
+  return readDocPromotedWidgetValue(doc, nodeId, widget)
 }
 
 export function docLinksIncident(doc: Y.Doc, nodeId: string): DocLink[] {
