@@ -40,26 +40,78 @@ const MAX_PROJECTED_VALUE_DEPTH = 100
 const MAX_PROJECTED_VALUE_NODES = 100_000
 const PROJECTION_BUDGET_EXCEEDED = Symbol('projection-budget-exceeded')
 
-function withoutUnsafeKeys(
-  value: unknown,
-  budget = { remaining: MAX_PROJECTED_VALUE_NODES },
-  depth = 0
-): unknown {
-  if (depth > MAX_PROJECTED_VALUE_DEPTH || --budget.remaining < 0) {
+type ProjectionBudget = { remaining: number }
+
+function consumeProjectionBudget(
+  budget: ProjectionBudget,
+  depth: number
+): void {
+  if (depth > MAX_PROJECTED_VALUE_DEPTH || --budget.remaining < 0)
     throw PROJECTION_BUDGET_EXCEEDED
-  }
-  if (Array.isArray(value))
-    return value.map((nested) => withoutUnsafeKeys(nested, budget, depth + 1))
-  if (typeof value !== 'object' || value === null) return value
-  const prototype = Object.getPrototypeOf(value)
-  if (prototype !== Object.prototype && prototype !== null) return value
+}
+
+function projectEntries(
+  entries: Iterable<[string, unknown]>,
+  budget: ProjectionBudget,
+  depth: number
+): Record<string, unknown> {
   return Object.fromEntries(
-    Object.entries(value).flatMap(([key, nested]) =>
+    [...entries].flatMap(([key, nested]) =>
       isReadableKey(key)
         ? [[key, withoutUnsafeKeys(nested, budget, depth + 1)]]
         : []
     )
   )
+}
+
+function projectYArray(
+  value: Y.Array<unknown>,
+  budget: ProjectionBudget,
+  depth: number
+): unknown[] {
+  return Array.from({ length: value.length }, (_, index) =>
+    withoutUnsafeKeys(value.get(index), budget, depth + 1)
+  )
+}
+
+function isYTextual(
+  value: unknown
+): value is Y.Text | Y.XmlFragment | Y.XmlElement | Y.XmlText {
+  return (
+    value instanceof Y.Text ||
+    value instanceof Y.XmlFragment ||
+    value instanceof Y.XmlElement ||
+    value instanceof Y.XmlText
+  )
+}
+
+function projectPlainRecord(
+  value: object,
+  budget: ProjectionBudget,
+  depth: number
+): unknown {
+  const prototype = Object.getPrototypeOf(value)
+  return prototype === Object.prototype || prototype === null
+    ? projectEntries(Object.entries(value), budget, depth)
+    : value
+}
+
+function withoutUnsafeKeys(
+  value: unknown,
+  budget: ProjectionBudget = { remaining: MAX_PROJECTED_VALUE_NODES },
+  depth = 0
+): unknown {
+  consumeProjectionBudget(budget, depth)
+  if (value instanceof Y.Doc)
+    return projectEntries(value.share.entries(), budget, depth)
+  if (value instanceof Y.Map)
+    return projectEntries(value.entries(), budget, depth)
+  if (value instanceof Y.Array) return projectYArray(value, budget, depth)
+  if (isYTextual(value)) return value.toString()
+  if (Array.isArray(value))
+    return value.map((nested) => withoutUnsafeKeys(nested, budget, depth + 1))
+  if (typeof value !== 'object' || value === null) return value
+  return projectPlainRecord(value, budget, depth)
 }
 
 /**
@@ -71,9 +123,23 @@ function withoutUnsafeKeys(
  */
 function plain(value: unknown): unknown {
   if (value instanceof Y.AbstractType || value instanceof Y.Doc) {
-    return withoutUnsafeKeys(value.toJSON())
+    return withoutUnsafeKeys(value)
   }
   return withoutUnsafeKeys(structuredClone(value))
+}
+
+/** Budgeted, own-key-only projection for document values used by the follower. */
+export function projectCrdtValue(value: unknown): unknown {
+  return plain(value)
+}
+
+function readableString(value: unknown): string | null {
+  try {
+    const result = plain(value)
+    return typeof result === 'string' ? result : null
+  } catch {
+    return null
+  }
 }
 
 function withoutDefinitionBookkeeping(source: unknown): unknown {
@@ -131,12 +197,15 @@ function readInteriorNode(source: unknown): Record<string, unknown> | null {
     if (key === NODE_INCARNATION || !isReadableKey(key)) return
     if (key === 'widgets' && value instanceof Y.Map) {
       node.widgets_values_named = Object.fromEntries(
-        [...value.entries()].flatMap(([name, widgetValue]) =>
-          isReadableKey(name) ? [[name, plain(widgetValue)]] : []
-        )
+        [...value.entries()].map(([name, widgetValue]) => [
+          name,
+          plain(widgetValue)
+        ])
       )
     } else if (key === OPAQUE_WIDGETS_KEY) {
       node.widgets_values = plain(value)
+    } else if (key === 'widgets_values' || key === 'widgets_values_named') {
+      return
     } else {
       node[key] = plain(value)
     }
@@ -264,8 +333,8 @@ function isExcludedDefinition(
   source: Y.Map<unknown>,
   excludedDefinitionIds: ReadonlySet<string>
 ): boolean {
-  const id = plain(source.get('id'))
-  return typeof id === 'string' && excludedDefinitionIds.has(id)
+  const id = readableString(source.get('id'))
+  return id !== null && excludedDefinitionIds.has(id)
 }
 
 function readNestedDefinitions(
@@ -334,8 +403,8 @@ function collectDefinitionIds(source: unknown, ids: string[]): void {
   const pending = [source]
   while (pending.length > 0) {
     const definition = pending.pop()
-    const id = plain(readField(definition, 'id'))
-    if (typeof id === 'string') ids.push(id)
+    const id = readableString(readField(definition, 'id'))
+    if (id !== null) ids.push(id)
     const container = readField(definition, 'definitions')
     const nested = readField(container, 'subgraphs')
     const definitions =
@@ -512,18 +581,23 @@ function indexDefinition(
 ): boolean {
   addDefinitionIndexEntry(state.values, storageKey, definition)
   const declaredId = readField(definition, 'id')
-  if (typeof declaredId === 'string')
-    addDefinitionIndexEntry(state.values, declaredId, definition)
+  const readableId = readableString(declaredId)
+  if (readableId !== null)
+    addDefinitionIndexEntry(state.values, readableId, definition)
+  if (declaredId instanceof Y.AbstractType)
+    state.structuralTypes.set(declaredId, 'all')
   if (definition instanceof Y.Map)
     state.structuralTypes.set(definition, DEFINITION_STRUCTURE_KEYS)
   const container = readField(definition, 'definitions')
   if (container instanceof Y.Map)
     state.structuralTypes.set(container, DEFINITION_CONTAINER_KEYS)
+  const nested = readField(container, 'subgraphs')
   return enqueueDefinitions(
-    readField(container, 'subgraphs'),
+    nested,
     pending,
     state,
-    budget
+    budget,
+    nested instanceof Y.Map
   )
 }
 
@@ -629,6 +703,8 @@ export function readSubgraphDefinitions(
     const definition = readDefinition(value, excludedDefinitionIds)
     if (definition) definitions.push(definition)
   })
+  const ids = allSubgraphDefinitions(definitions).map(({ id }) => id)
+  if (new Set(ids).size !== ids.length) return []
   return definitions
 }
 
@@ -751,29 +827,61 @@ function storedRecordLookup(
   return (id) => byId.get(String(id))
 }
 
+function projectedRecordLookup(
+  definition: unknown,
+  field: 'nodes' | 'links',
+  orderField: typeof NODE_ORDER | typeof LINK_ORDER,
+  budget: LayoutReadBudget
+): StoredRecordLookup | null {
+  const source = readField(definition, field)
+  if (!(source instanceof Y.Map)) return storedRecordLookup(source, budget)
+  const keys = orderedKeys(readField(definition, orderField), source)
+  if (!consumeLayoutBudget(budget, keys.length)) return null
+  const included = new Set(keys)
+  return (id) => (included.has(String(id)) ? source.get(String(id)) : undefined)
+}
+
 function linkTargetsWidget(
   links: StoredRecordLookup,
   nodes: StoredRecordLookup,
   linkId: string | number,
   budget: LayoutReadBudget
 ): boolean | null {
-  if (!consumeLayoutBudget(budget, 1)) return null
-  const link = links(linkId)
-  if (link === undefined) return null
-  const targetId = readField(link, 'target_id')
-  const targetSlot = readField(link, 'target_slot')
-  if (!isRecordId(targetId) || !isSlotIndex(targetSlot)) return null
+  const target = readLinkTarget(links, linkId, budget)
+  if (target === null) return null
   // A subgraph input may legally pass straight through to the synthetic
   // output node. That endpoint has no definition node record and is not a
   // promoted widget target.
-  if (String(targetId) === String(SUBGRAPH_OUTPUT_ID)) return false
-  const target = nodes(targetId)
+  if (String(target.id) === String(SUBGRAPH_OUTPUT_ID)) return false
+  const input = readTargetInput(nodes(target.id), target.slot, budget)
+  return input === null ? null : widgetMarkerState(readField(input, 'widget'))
+}
+
+function readLinkTarget(
+  links: StoredRecordLookup,
+  linkId: string | number,
+  budget: LayoutReadBudget
+): { id: string | number; slot: number } | null {
+  if (!consumeLayoutBudget(budget, 1)) return null
+  const link = links(linkId)
+  if (link === undefined) return null
+  const id = readField(link, 'target_id')
+  const slot = readField(link, 'target_slot')
+  return isRecordId(id) && isSlotIndex(slot) ? { id, slot } : null
+}
+
+function readTargetInput(
+  target: unknown,
+  targetSlot: number,
+  budget: LayoutReadBudget
+): unknown | null {
   if (target === undefined) return null
-  const inputs = strictList(readField(target, 'inputs'))
-  const input = inputs?.[targetSlot]
-  if (input === undefined) return null
-  const widget = readField(input, 'widget')
-  return widgetMarkerState(widget)
+  const inputs = readField(target, 'inputs')
+  if (!(inputs instanceof Y.Array) && !Array.isArray(inputs)) return null
+  if (!consumeLayoutBudget(budget, inputs.length)) return null
+  const input =
+    inputs instanceof Y.Array ? inputs.get(targetSlot) : inputs[targetSlot]
+  return input === undefined ? null : input
 }
 
 function isRecordId(value: unknown): value is string | number {
@@ -819,8 +927,8 @@ export function definitionPromotedLayout(
 ): DefinitionPromotedLayout | null {
   const budget = { remaining: MAX_LAYOUT_RECORDS }
   const declared = namedInputs(readField(definition, 'inputs'), budget)
-  const links = storedRecordLookup(readField(definition, 'links'), budget)
-  const nodes = storedRecordLookup(readField(definition, 'nodes'), budget)
+  const links = projectedRecordLookup(definition, 'links', LINK_ORDER, budget)
+  const nodes = projectedRecordLookup(definition, 'nodes', NODE_ORDER, budget)
   if (declared === null || links === null || nodes === null) return null
   const promoted: string[] = []
   for (const [name, input] of declared) {

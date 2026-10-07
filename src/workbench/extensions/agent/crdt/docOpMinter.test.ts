@@ -846,14 +846,14 @@ describe('attachDocOpMinter', () => {
     ])
   })
 
-  it('restores an absent store entry when its first promoted write is refused', async () => {
+  it('restores an undefined value without unregistering its widget', async () => {
     const { host, doc } = seedPromotedHost()
     const id = host.inputs[1].widgetId
     assert.exists(id)
-    useWidgetValueStore().deleteWidget(id)
     docPromotedWidgets = () => null
 
     withGraphIntentSource('load', () => {
+      useWidgetValueStore().setValue(id, undefined)
       useWidgetValueStore().setValue(id, 'typed before the layout was readable')
     })
     emitGraphIntent({
@@ -867,7 +867,7 @@ describe('attachDocOpMinter', () => {
     await afterFlush()
 
     expect(minted).toEqual([])
-    expect(useWidgetValueStore().getWidget(id)).toBeUndefined()
+    expect(useWidgetValueStore().getWidget(id)?.value).toBeUndefined()
     expect(refused).toEqual([
       { nodeId: host.id, name: 'text', reason: 'layout_drift' }
     ])
@@ -1119,6 +1119,24 @@ describe('attachDocOpMinter', () => {
         (node) => String(node.id) === String(host.id)
       )?.widgets_values
     ).toEqual([null, 'pasted'])
+    doc.destroy()
+  })
+
+  it('refuses a promoted snapshot when a sibling registration is missing', async () => {
+    const { host, doc } = seedPromotedHost([])
+    const siblingId = host.inputs[0].widgetId
+    assert.exists(siblingId)
+    useWidgetValueStore().deleteWidget(siblingId)
+
+    host.widgets[1].value = 'pasted'
+    await afterFlush()
+
+    expect(minted).toEqual([])
+    expect(refused).toContainEqual({
+      nodeId: host.id,
+      name: 'text',
+      reason: 'layout_drift'
+    })
     doc.destroy()
   })
 
@@ -1977,7 +1995,7 @@ describe('attachDocOpMinter', () => {
     expect(minted).toEqual([])
   })
 
-  it('refuses a stale value write whose live owner cannot be resolved', async () => {
+  it('ignores a value write from another live root without touching either graph', async () => {
     const previousGraph = new LGraph()
     const { source } = seedGraph(previousGraph)
     rootGraphId = toRootGraphId(previousGraph.id)
@@ -1994,12 +2012,8 @@ describe('attachDocOpMinter', () => {
 
     expect(minted).toEqual([])
     expect(refused).toEqual([])
-    expect(reportError).toHaveBeenCalledWith(
-      expect.any(Error),
-      expect.objectContaining({
-        errorType: 'agent_crdt_op_for_unbound_graph'
-      })
-    )
+    expect(source.widgets![0].value).toBe(20)
+    expect(reportError).not.toHaveBeenCalled()
   })
 
   it('refuses a resolved widget write from an unbound root graph', async () => {
@@ -2168,6 +2182,22 @@ describe('attachDocOpMinter', () => {
       bound = false
       expect(isRootGraphDocBound(graph.id)).toBe(false)
       bound = true
+
+      expect(isRootGraphDocBound(graph.id)).toBe(true)
+    })
+
+    it('keeps the bound id protected while the live graph is load-gated', () => {
+      minter.detach()
+      minter = attachDocOpMinter({
+        isEnabled: () => enabled,
+        isDocBound: () => bound,
+        enqueue: (operations) => minted.push(...operations),
+        getGraph: () => null,
+        boundWorkflowId: () => workflowId,
+        boundRootGraphId: () => rootGraphId,
+        docInputNames: (nodeId) => docInputNames(nodeId),
+        docPromotedWidgets: (nodeId) => docPromotedWidgets(nodeId)
+      })
 
       expect(isRootGraphDocBound(graph.id)).toBe(true)
     })

@@ -506,9 +506,10 @@ function startAgentCrdtFollower(
     actor: ownActor,
     baseVersion: () => bridge.lastSequence,
     onOpsMinted: (ops, workflowId) => {
+      const outcomeTarget = workflowId ?? subscribedWorkflowId.value
       for (const op of ops) {
         ownOpIds.add(op.op_id)
-        if (workflowId !== null) opWorkflowIds.set(op.op_id, workflowId)
+        if (outcomeTarget !== null) opWorkflowIds.set(op.op_id, outcomeTarget)
       }
       while (ownOpIds.size > MAX_TRACKED_OWN_OP_IDS) {
         const oldest = ownOpIds.values().next().value

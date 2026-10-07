@@ -1868,6 +1868,21 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('pins rollback to the desired workflow while subscribe is still pending', async () => {
+    const liveGraph = fromPartial<LGraph>({ getNodeById: () => null })
+    const { enqueue, unmount } = mountFollower('wf-1', true, () => liveGraph)
+    bridge().subscribedWorkflowId = null
+
+    enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+    await Promise.resolve()
+
+    expect(clientState.sendOps).not.toHaveBeenCalled()
+    expect(projectionState.revertRejected).toHaveBeenCalledWith('wf-1', [
+      expect.objectContaining({ op: 'delete_node', node_id: '1' })
+    ])
+    unmount()
+  })
+
   function mountWithHumanOps(): {
     enqueue: ReturnType<typeof useAgentCrdtFollower>['enqueueHumanOperations']
     workflowId: Ref<string | null>

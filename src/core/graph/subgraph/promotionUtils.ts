@@ -542,7 +542,7 @@ export function demoteWidget(
   node: PartialNode,
   widget: IBaseWidget,
   parents: SubgraphNode[]
-) {
+): boolean {
   const source = toPromotionSource(node, widget)
   const removesPromotedInput = parents.some((parent) =>
     isLinkedPromotion(parent, source.sourceNodeId, source.sourceWidgetName)
@@ -550,9 +550,13 @@ export function demoteWidget(
   const mutableParents = removesPromotedInput
     ? mutablePromotionParents(parents)
     : parents
-  if (mutableParents.length === 0) return
+  if (mutableParents.length === 0) return false
+  let changed = false
   for (const parent of mutableParents) {
-    if (demotePromotedInput(parent, source)) continue
+    if (demotePromotedInput(parent, source)) {
+      changed = true
+      continue
+    }
 
     if (isPreviewPseudoWidget(widget)) {
       const previewStore = usePreviewExposureStore()
@@ -571,6 +575,7 @@ export function demoteWidget(
           hostLocator,
           exposure.name
         )
+        changed = true
         continue
       }
     }
@@ -581,6 +586,7 @@ export function demoteWidget(
     message: `Demoted widget "${source.sourceWidgetName}" on node ${node.id}`,
     level: 'info'
   })
+  return changed
 }
 
 function getParentNodes(): SubgraphNode[] {

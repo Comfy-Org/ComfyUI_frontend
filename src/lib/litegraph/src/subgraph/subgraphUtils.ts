@@ -610,7 +610,7 @@ export function reorderSubgraphInputs(
   if (
     orderedIndices.length !== n ||
     new Set(orderedIndices).size !== orderedIndices.length ||
-    orderedIndices.some((i) => i < 0 || i >= n)
+    orderedIndices.some((i) => !Number.isInteger(i) || i < 0 || i >= n)
   ) {
     console.error(
       `reorderSubgraphInputs: orderedIndices must be a permutation of 0..${n - 1}`,

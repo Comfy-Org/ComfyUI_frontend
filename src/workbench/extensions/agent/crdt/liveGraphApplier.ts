@@ -35,6 +35,7 @@ import type { WidgetValue } from '@/types/simplifiedWidget'
 
 import {
   allSubgraphDefinitions,
+  projectCrdtValue,
   readDefinitionPromotedLayout,
   readDocPromotedWidgets,
   readDocPromotedWidgetValue,
@@ -133,8 +134,7 @@ interface DocLink {
 }
 
 function plain(value: unknown): unknown {
-  if (value instanceof Y.Map || value instanceof Y.Array) return value.toJSON()
-  return structuredClone(value)
+  return projectCrdtValue(value)
 }
 
 /**
@@ -261,7 +261,12 @@ function readDocNodeWidgets(
 ): DocNode['widgets'] {
   if (widgetIssue) return undefined
   const named = source.get('widgets')
-  if (named instanceof Y.Map) return named.toJSON()
+  if (named instanceof Y.Map) {
+    const projected = plain(named)
+    return typeof projected === 'object' && projected !== null
+      ? (projected as Record<string, unknown>)
+      : undefined
+  }
   const opaque = plain(source.get(OPAQUE_WIDGETS_KEY))
   return Array.isArray(opaque) ? opaque : undefined
 }
@@ -280,9 +285,13 @@ function readDocNodeFields(
   source: Y.Map<unknown>,
   id: string
 ): Record<string, unknown> {
-  const fields: Record<string, unknown> = { id }
+  const fields: Record<string, unknown> = Object.assign(
+    Object.create(null) as Record<string, unknown>,
+    { id }
+  )
   for (const [key, value] of source.entries()) {
-    if (!isDocNodeStorageKey(key)) fields[key] = plain(value)
+    if (key !== '__proto__' && !isDocNodeStorageKey(key))
+      fields[key] = plain(value)
   }
   return fields
 }
@@ -390,7 +399,12 @@ export function readDocSlotNames(
   const node = nodesMap(doc).get(nodeId)
   if (!(node instanceof Y.Map)) return null
   const slots = node.get(kind)
-  const list: unknown = slots instanceof Y.Array ? slots.toJSON() : slots
+  let list: unknown
+  try {
+    list = plain(slots)
+  } catch {
+    return null
+  }
   if (!Array.isArray(list)) return null
   return list.map((entry: unknown) => {
     const name =
@@ -510,8 +524,33 @@ function floorSizeToContent(node: LGraphNode): void {
 
 interface DefinitionState {
   live: object
+  semantics: Omit<ExportedSubgraph, 'name'>
   layout: ReturnType<typeof definitionPromotedLayout>
   conflicted: boolean
+}
+
+function definitionSemantics(
+  definition: ExportedSubgraph
+): Omit<ExportedSubgraph, 'name'> {
+  const { name: _name, ...semantics } = definition
+  return semantics
+}
+
+function updateDefinitionConflict(
+  state: DefinitionState,
+  definition: ExportedSubgraph,
+  layout: DefinitionState['layout']
+): boolean {
+  state.conflicted ||= !isEqual(
+    state.semantics,
+    definitionSemantics(definition)
+  )
+  if (state.layout === null) {
+    if (!state.conflicted && layout !== null) state.layout = layout
+    return state.conflicted
+  }
+  state.conflicted ||= layout === null || !isEqual(state.layout, layout)
+  return state.conflicted
 }
 
 export class LiveGraphApplier {
@@ -677,17 +716,14 @@ export class LiveGraphApplier {
     if (previous?.live !== live) {
       state.set(definition.id, {
         live,
+        semantics: definitionSemantics(definition),
         layout: readDefinitionPromotedLayout(doc, definition.id),
         conflicted: false
       })
       return false
     }
     const layout = readDefinitionPromotedLayout(doc, definition.id)
-    previous.conflicted =
-      previous.layout === null ||
-      layout === null ||
-      !isEqual(previous.layout, layout)
-    if (previous.conflicted) {
+    if (updateDefinitionConflict(previous, definition, layout)) {
       this.reportOnce(
         `definition-changed:${definition.id}`,
         `Document subgraph definition ${definition.id} changed while its live definition remained registered; refusing host updates until the graph reloads`,
@@ -715,6 +751,7 @@ export class LiveGraphApplier {
     if (live)
       state.set(definition.id, {
         live,
+        semantics: definitionSemantics(definition),
         layout: readDefinitionPromotedLayout(doc, definition.id),
         conflicted: false
       })
@@ -928,6 +965,15 @@ export class LiveGraphApplier {
     doc: Y.Doc
   ): void {
     if (this.hasDefinitionConflict(node)) return
+    if (!Array.isArray(widgets)) {
+      this.reportOnce(
+        `host-widgets-named:${String(node.id)}`,
+        `Subgraph host ${String(node.id)} carries named widget storage; refusing positional host updates`,
+        'agent_graph_host_widgets_named',
+        { nodeId: node.id, mode }
+      )
+      return
+    }
     this.applyHostWidgets(node, widgets, mode, doc)
   }
 
@@ -1068,22 +1114,38 @@ export class LiveGraphApplier {
     if (widget.type === 'button' || Object.is(widget.value, value)) return
     const previous = widget.value
     writeWidgetValue(node, widget, value)
-    try {
+    this.invokeWidgetHook(node, widget, value, 'widget-callback', () =>
       widget.callback?.(value, this.deps.getCanvas?.() ?? undefined, node)
+    )
+    this.invokeWidgetHook(node, widget, value, 'widget-changed', () =>
       node.onWidgetChanged?.(widget.name, value, previous, widget)
+    )
+    node.graph?.incrementVersion()
+  }
+
+  /**
+   * A document register has already been consumed before either hook runs.
+   * Preserve that canonical value and let sibling widgets continue if an
+   * extension hook mutates and then throws; no later delta is guaranteed.
+   */
+  private invokeWidgetHook(
+    node: LGraphNode,
+    widget: IBaseWidget,
+    value: WidgetValue,
+    key: string,
+    invoke: () => void
+  ): void {
+    try {
+      invoke()
     } catch (error) {
-      // The document already integrated this register and the collector has
-      // consumed its frame. Preserve the canonical value and continue with
-      // sibling widgets; no later state-vector delta is guaranteed to repeat
-      // either this value or the rest of the payload.
       this.reportOnce(
-        `widget-callback:${String(node.id)}:${widget.name}`,
+        `${key}:${String(node.id)}:${widget.name}`,
         error instanceof Error ? error.message : String(error),
         'agent_graph_widget_callback_failed',
         { nodeId: node.id, widget: widget.name }
       )
+      writeWidgetValue(node, widget, value)
     }
-    node.graph?.incrementVersion()
   }
 
   private applyLinks(

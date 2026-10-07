@@ -38,6 +38,7 @@ import { toRootGraphId } from '@/types/graphScopeId'
 import type { RootGraphId } from '@/types/graphScopeId'
 import type { NodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
+import type { WidgetId } from '@/types/widgetId'
 import type { WidgetState } from '@/types/widgetState'
 import {
   findNodeInHierarchy,
@@ -266,28 +267,51 @@ function promotedHostWrite(
     onOrderDrift(liveNames, doc)
     return null
   }
+  const hostWidgetsValues = promotedHostSnapshot(
+    hostInputs,
+    valueIndex,
+    event.value,
+    onUnsafeSnapshot
+  )
+  if (hostWidgetsValues === null) return null
+  return {
+    value_index: valueIndex,
+    instance_path: [String(event.nodeId)],
+    host_widgets_values: hostWidgetsValues
+  }
+}
+
+function promotedHostSnapshot(
+  hostInputs: readonly { name: string; widgetId: WidgetId }[],
+  valueIndex: number,
+  eventValue: unknown,
+  onUnsafeSnapshot: () => void
+): unknown[] | null {
   const widgetValueStore = useWidgetValueStore()
-  let hostWidgetsValues: unknown[]
   try {
-    hostWidgetsValues = hostInputs.map((input, index) => {
-      if (index === valueIndex) return event.value
-      const value = widgetValueStore.getWidget(input.widgetId)?.value
-      return isWidgetValue(value) ? value : undefined
-    })
+    const hostWidgetsValues: unknown[] = []
+    for (const [index, input] of hostInputs.entries()) {
+      if (index === valueIndex) {
+        hostWidgetsValues.push(eventValue)
+        continue
+      }
+      const state = widgetValueStore.getWidget(input.widgetId)
+      if (!state) {
+        onUnsafeSnapshot()
+        return null
+      }
+      const stateValue = state.value
+      hostWidgetsValues.push(isWidgetValue(stateValue) ? stateValue : undefined)
+    }
     const json = JSON.stringify(hostWidgetsValues)
     if (new TextEncoder().encode(json).length > WIRE_MAX_BATCH_BYTES) {
       onUnsafeSnapshot()
       return null
     }
-    hostWidgetsValues = JSON.parse(json) as unknown[]
+    return JSON.parse(json) as unknown[]
   } catch {
     onUnsafeSnapshot()
     return null
-  }
-  return {
-    value_index: valueIndex,
-    instance_path: [String(event.nodeId)],
-    host_widgets_values: hostWidgetsValues
   }
 }
 
@@ -598,9 +622,10 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     const graph = deps.getGraph()
     if (!graph) return
     const eventGraph = reachableIntentGraph(graph, event.graphId)
-    const owner = eventGraph
-      ? findNodeInHierarchy(eventGraph, event.nodeId)
-      : null
+    // An intent from another still-live root is local to that workflow. It is
+    // neither mintable into nor rejectable against the bound document.
+    if (!eventGraph) return
+    const owner = findNodeInHierarchy(eventGraph, event.nodeId)
     if (!isValueWidgetWrite(owner, event)) return
     const rootGraphId = deps.boundRootGraphId() ?? graph.id
     const liveRootGraphId = graph.rootGraph.id
@@ -616,9 +641,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       withGraphIntentSource('agent-remote', () => {
         const store = useWidgetValueStore()
         const id = widgetId(liveRootGraphId, event.nodeId, event.name)
-        if (event.previous === undefined) store.deleteWidget(id)
-        else if (isWidgetValue(event.previous))
-          store.setValue(id, event.previous)
+        if (isWidgetValue(event.previous)) store.setValue(id, event.previous)
       })
       reportOnce(key, message, errorType, context, budget)
       const now = Date.now()
@@ -858,7 +881,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
   // node ids from the disjoint range (`idAllocation.ts`).
   const unregisterDocBoundProbe = registerDocBoundRootGraphProbe(() => {
     if (!deps.isEnabled() || !deps.isDocBound()) return null
-    return deps.getGraph()?.rootGraph.id ?? null
+    return deps.getGraph()?.rootGraph.id ?? deps.boundRootGraphId()
   })
 
   return {

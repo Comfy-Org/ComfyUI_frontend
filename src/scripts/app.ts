@@ -1329,12 +1329,11 @@ export class ComfyApp {
       workflowNavigationId
     } = options
     useWorkflowService().beforeLoadNewGraph(clean)
-    await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
-
     const endGraphLoad = ChangeTracker.beginGraphLoad()
     let reset_invalid_values = false
     const missingNodeTypes: MissingNodeType[] = []
     try {
+      await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
       useExecutionErrorStore().setActiveGraph(null)
 
       if (skipAssetScans) {
@@ -1484,12 +1483,15 @@ export class ComfyApp {
       // below. Left unhandled, that would both reject silently and leak any
       // suppression/loading-state a `beforeLoadGraph` listener opened for
       // this load, since nothing ever notifies it the load ended.
-      await this.reportGraphLoadFailure(error)
-      void useSubgraphNavigationStore().updateHash(
-        'workflow-load',
-        workflowNavigationId
-      )
-      endGraphLoad()
+      try {
+        await this.reportGraphLoadFailure(error)
+        void useSubgraphNavigationStore().updateHash(
+          'workflow-load',
+          workflowNavigationId
+        )
+      } finally {
+        endGraphLoad()
+      }
       return false
     }
 

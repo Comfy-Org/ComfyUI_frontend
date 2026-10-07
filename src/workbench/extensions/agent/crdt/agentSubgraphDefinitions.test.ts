@@ -164,6 +164,18 @@ describe('readSubgraphDefinitions', () => {
     expect(toJSON).not.toHaveBeenCalled()
   })
 
+  it('fails closed when nested definitions duplicate a declared id', () => {
+    const nested = createTestSubgraphData({ nodes: [interiorNode(1)] })
+    const outer = createTestSubgraphData({
+      definitions: {
+        subgraphs: [{ ...nested, id: nested.id, nodes: [interiorNode(2)] }]
+      }
+    })
+    const doc = seed(outer, nested)
+
+    expect(readSubgraphDefinitions(doc)).toEqual([])
+  })
+
   it('keeps interior nodes and links in mint order, not key order', () => {
     const definition = createTestSubgraphData({
       nodes: [interiorNode(10), interiorNode(2), interiorNode(7)],
@@ -198,6 +210,23 @@ describe('readSubgraphDefinitions', () => {
     expect(projected.nodes?.[1]).not.toHaveProperty('widgets_values_named')
   })
 
+  it('does not let legacy shadow fields overwrite canonical widget storage', () => {
+    const definition = createTestSubgraphData({
+      nodes: [interiorNode(1, 'widget-node', { widgets_values: [42, 20] })]
+    })
+    const doc = seed(definition)
+    const node = storedNode(storedDefinition(doc, definition.id), 1)
+    node.set('widgets_values', [999, 999])
+    node.set('widgets_values_named', { seed: 999, steps: 999 })
+
+    const [projected] = readSubgraphDefinitions(doc)
+
+    expect(projected.nodes?.[0]).toMatchObject({
+      widgets_values_named: { seed: 42, steps: 20 }
+    })
+    expect(projected.nodes?.[0]).not.toHaveProperty('widgets_values')
+  })
+
   it('sanitizes named widgets recursively without changing stored values', () => {
     const definition = createTestSubgraphData({
       nodes: [interiorNode(1, 'widget-node', { widgets_values: [42, 20] })]
@@ -219,14 +248,17 @@ describe('readSubgraphDefinitions', () => {
     const [projected] = readSubgraphDefinitions(doc)
     const named = projected.nodes?.[0]?.widgets_values_named
 
-    expect(named).toEqual({
+    expect(named).toMatchObject({
       seed: { values: [{ safe: 'kept' }] },
       steps: 20,
       __custom_widget: 'public-widget-value'
     })
     expect(Object.getPrototypeOf(named)).toBe(Object.prototype)
     expect(named).not.toHaveProperty('polluted')
-    expect(Object.keys(named ?? {})).not.toContain('__proto__')
+    expect(Object.hasOwn(named ?? {}, '__proto__')).toBe(true)
+    expect(Reflect.get(named ?? {}, '__proto__')).toEqual({
+      polluted: 'named-widget'
+    })
     expect(Object.keys(nested)).toContain('__proto__')
     expect(widgets.get('__proto__')).toEqual({ polluted: 'named-widget' })
     expect(Y.encodeStateAsUpdate(doc)).toEqual(before)
@@ -574,6 +606,24 @@ describe('readSubgraphDefinitions', () => {
     expect(projected.nodes?.[0]?.title).toBe('from text')
     expect(projected.extra).toBe('markup')
     expect(projected).toHaveProperty('sub', {})
+  })
+
+  it('skips a definition whose id exceeds the projection depth budget', () => {
+    const definition = createTestSubgraphData()
+    const doc = seed(definition)
+    const stored = storedDefinition(doc, definition.id)
+    let deep = new Y.Map<unknown>()
+    for (let depth = 0; depth < 102; depth++) {
+      const parent = new Y.Map<unknown>()
+      parent.set('nested', deep)
+      deep = parent
+    }
+    stored.set('id', deep)
+
+    expect(() => readSubgraphDefinitions(doc)).not.toThrow()
+    expect(readSubgraphDefinitions(doc)).toEqual([])
+    expect(() => readSubgraphDefinitionIds(doc)).not.toThrow()
+    expect(readSubgraphDefinitionIds(doc)).toEqual([])
   })
 
   it('drops a `__proto__` key instead of assigning through it', () => {

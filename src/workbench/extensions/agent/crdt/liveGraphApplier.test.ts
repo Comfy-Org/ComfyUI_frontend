@@ -246,9 +246,12 @@ describe('LiveGraphApplier', () => {
     if (!node || !widget) throw new Error('node 1 was not created')
     node.properties.steps = 20
     widget.options.property = 'steps'
-    node.onWidgetChanged = () => {
+    widget.callback = () => {
+      widget.value = 999
+      node.properties.steps = 999
       throw new Error('extension hook exploded')
     }
+    node.onWidgetChanged = vi.fn()
 
     applyEdit(() => {
       const widgets = nodesMap(doc).get('1')?.get('widgets')
@@ -258,6 +261,7 @@ describe('LiveGraphApplier', () => {
 
     expect(widget.value).toBe(35)
     expect(node.properties.steps).toBe(35)
+    expect(node.onWidgetChanged).toHaveBeenCalled()
     expect(reportError).toHaveBeenCalledWith(
       expect.objectContaining({ message: 'extension hook exploded' }),
       expect.objectContaining({

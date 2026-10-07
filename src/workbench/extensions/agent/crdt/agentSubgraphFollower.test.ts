@@ -922,10 +922,10 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
     expect(storedHostWidgets(state)).toEqual([['value', 46]])
   })
 
-  it('S1i keeps promoted names when the host flips back to named storage', () => {
-    // Deleting `__widgets_opaque` and writing a named `widgets` map lands in
-    // the replaced-widget-storage loop, which used to run `reconcileNode` on
-    // the host and reset its live inputs.
+  it('S1i refuses named storage on a positional subgraph host', () => {
+    // A populated named map is not a valid host representation. Applying it
+    // would poison the node one-way: outbound writes correctly refuse the same
+    // shape because promoted host values are positional.
     const state = startFollower()
     forwardRaw(
       state,
@@ -937,9 +937,13 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
       1
     )
 
-    expect(storedHostWidgets(state)).toEqual([['value', 45]])
+    expect(storedHostWidgets(state)).toEqual([['value', HOST_INITIAL_VALUE]])
     expect(state.instance.widgets.map((w) => w.name)).toEqual(['value'])
-    expect(state.instance.widgets[0]?.value).toBe(45)
+    expect(state.instance.widgets[0]?.value).toBe(HOST_INITIAL_VALUE)
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({ errorType: 'agent_graph_host_widgets_named' })
+    )
   })
 
   it('fails closed when a host carries named and opaque widget storage together', () => {
@@ -990,6 +994,67 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
         errorType: 'agent_subgraph_definition_changed'
       })
     )
+  })
+
+  it('fails closed when a definition body changes without changing promotion layout', () => {
+    const state = startFollower()
+    const before = state.instance.widgets[0]?.value
+
+    forwardRaw(
+      state,
+      (nodes) => {
+        const definition = state.hostDoc
+          .getMap<unknown>('definitions')
+          .get(state.instance.type)
+        assert.instanceOf(definition, Y.Map)
+        const interiorNodes = definition.get('nodes')
+        assert.instanceOf(interiorNodes, Y.Map)
+        const [interior] = [...interiorNodes.values()]
+        assert.instanceOf(interior, Y.Map)
+        interior.set('type', 'different-source')
+        nodes.get('1')!.set(OPAQUE_WIDGETS_KEY, [98])
+      },
+      1
+    )
+
+    expect(state.instance.widgets[0]?.value).toBe(before)
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'agent_subgraph_definition_changed'
+      })
+    )
+  })
+
+  it('keeps a definition conflict latched after the document layout reconverges', () => {
+    const state = startFollower({ extraInput: true, promoteExtra: true })
+    const before = state.instance.widgets.map((widget) => widget.value)
+    const definition = state.hostDoc
+      .getMap<unknown>('definitions')
+      .get(state.instance.type)
+    assert.instanceOf(definition, Y.Map)
+    const inputs = definition.get('inputs')
+    assert(Array.isArray(inputs))
+    const originalInputs = [...inputs]
+
+    forwardRaw(
+      state,
+      (nodes) => {
+        definition.set('inputs', [...originalInputs].reverse())
+        nodes.get('1')!.set(OPAQUE_WIDGETS_KEY, [98, 99])
+      },
+      1
+    )
+    forwardRaw(
+      state,
+      (nodes) => {
+        definition.set('inputs', originalInputs)
+        nodes.get('1')!.set(OPAQUE_WIDGETS_KEY, [77, 88])
+      },
+      2
+    )
+
+    expect(state.instance.widgets.map((widget) => widget.value)).toEqual(before)
   })
 
   it('S1j leaves promoted values unchanged when the opaque array shrinks', () => {

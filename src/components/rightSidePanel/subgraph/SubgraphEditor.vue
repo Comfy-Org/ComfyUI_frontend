@@ -284,8 +284,12 @@ function demoteRow(row: ActiveRow) {
     const sourceWidget = source
       ? row.node.widgets?.find((widget) => widget.name === source.widgetName)
       : undefined
-    if (sourceWidget) demoteWidget(row.node, sourceWidget, [subgraphNode])
-    else demotePromotedHostInput(subgraphNode, row.input)
+    if (
+      !sourceWidget ||
+      !demoteWidget(row.node, sourceWidget, [subgraphNode])
+    ) {
+      demotePromotedHostInput(subgraphNode, row.input)
+    }
     refreshActiveNodeRendering()
     return
   }
