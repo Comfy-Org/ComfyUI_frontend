@@ -1,10 +1,8 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { describe, expect, it, vi } from 'vitest'
 
 import {
   authenticatedRemoteConfigState,
-  remoteConfig,
-  remoteConfigRevision
+  remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
 import { useTelemetry } from '@/platform/telemetry'
 import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
@@ -16,22 +14,11 @@ import {
 
 vi.mock(import('@/platform/remoteConfig/remoteConfig'))
 vi.mock(import('@/platform/telemetry'))
-vi.mock(import('@/utils/devFeatureFlagOverride'), () => ({
-  getDevOverride: vi.fn(() => undefined)
-}))
-vi.mock(import('@/utils/sessionFeatureFlagOverride'), () => ({
-  getSessionOverride: vi.fn(() => undefined)
-}))
+vi.mock(import('@/utils/devFeatureFlagOverride'))
+vi.mock(import('@/utils/sessionFeatureFlagOverride'))
 
 describe('useStarterPromptSet', () => {
-  beforeEach(() => {
-    vi.mocked(getSessionOverride).mockReturnValue(undefined)
-    authenticatedRemoteConfigState.value = 'unloaded'
-    remoteConfig.value = {}
-    remoteConfigRevision.value = 0
-  })
-
-  it('selects test but waits for the rendered surface before exposure', async () => {
+  it('selects test but waits for the rendered surface before exposure', () => {
     remoteConfig.value = { [STARTER_PROMPT_SET_FLAG]: 'test' }
     const { assignment, attributeExperiment, expose } = useStarterPromptSet()
 
@@ -42,8 +29,7 @@ describe('useStarterPromptSet', () => {
     ).not.toHaveBeenCalled()
 
     authenticatedRemoteConfigState.value = 'authenticated'
-    remoteConfigRevision.value++
-    await vi.waitFor(() => expect(assignment.value).toBe('test'))
+    expect(assignment.value).toBe('test')
     expect(attributeExperiment.value).toBe(true)
     expect(
       useTelemetry()?.trackAgentStarterPromptExposure
@@ -57,15 +43,13 @@ describe('useStarterPromptSet', () => {
     })
   })
 
-  it('does not expose a surface rendered before authentication', async () => {
+  it('does not expose a surface rendered before authentication', () => {
     remoteConfig.value = { [STARTER_PROMPT_SET_FLAG]: 'test' }
     const { assignment, expose } = useStarterPromptSet()
 
     expose('control')
     authenticatedRemoteConfigState.value = 'authenticated'
-    remoteConfigRevision.value++
 
-    await nextTick()
     expect(assignment.value).toBe('test')
     expect(
       useTelemetry()?.trackAgentStarterPromptExposure
@@ -94,7 +78,7 @@ describe('useStarterPromptSet', () => {
 
   it.for(['unloaded', 'error'] as const)(
     'does not carry a pre-auth %s surface into the experiment',
-    async (configState) => {
+    (configState) => {
       remoteConfig.value = { [STARTER_PROMPT_SET_FLAG]: 'test' }
       authenticatedRemoteConfigState.value = configState
       const { expose } = useStarterPromptSet()
@@ -105,8 +89,6 @@ describe('useStarterPromptSet', () => {
       ).not.toHaveBeenCalled()
 
       authenticatedRemoteConfigState.value = 'authenticated'
-      remoteConfigRevision.value++
-      await nextTick()
       expect(
         useTelemetry()?.trackAgentStarterPromptExposure
       ).not.toHaveBeenCalled()
@@ -120,7 +102,7 @@ describe('useStarterPromptSet', () => {
     }
   )
 
-  it('requires a new rendered surface after authenticated config recovers', async () => {
+  it('requires a new rendered surface after authenticated config recovers', () => {
     remoteConfig.value = { [STARTER_PROMPT_SET_FLAG]: 'test' }
     authenticatedRemoteConfigState.value = 'authenticated'
     const { expose } = useStarterPromptSet()
@@ -132,8 +114,6 @@ describe('useStarterPromptSet', () => {
     ).not.toHaveBeenCalled()
 
     authenticatedRemoteConfigState.value = 'authenticated'
-    remoteConfigRevision.value++
-    await nextTick()
     expect(
       useTelemetry()?.trackAgentStarterPromptExposure
     ).not.toHaveBeenCalled()
