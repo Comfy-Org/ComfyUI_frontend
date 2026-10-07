@@ -167,12 +167,10 @@ function readPLYHeaderLines(arrayBuffer: ArrayBuffer): string[] | null {
   const text = new TextDecoder('latin1').decode(
     arrayBuffer.slice(0, PLY_HEADER_SCAN_BYTES)
   )
-  const end = text.indexOf('end_header')
-  if (!text.startsWith('ply') || end < 0) return null
-  return text
-    .slice(0, end)
-    .split('\n')
-    .map((line) => line.trim())
+  const lines = text.split('\n').map((line) => line.trim())
+  const end = lines.indexOf('end_header')
+  if (lines[0] !== 'ply' || end < 0) return null
+  return lines.slice(0, end)
 }
 
 function vertexPropertyNames(headerLines: string[]): Set<string> {

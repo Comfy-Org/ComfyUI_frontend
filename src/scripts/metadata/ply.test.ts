@@ -25,9 +25,14 @@ const SPLAT_PROPERTIES = [
 
 function binaryPLYHeader(
   elements: Record<string, string[]>,
-  format = 'binary_little_endian'
+  format = 'binary_little_endian',
+  comments: string[] = []
 ): ArrayBuffer {
-  const lines = ['ply', `format ${format} 1.0`]
+  const lines = [
+    'ply',
+    `format ${format} 1.0`,
+    ...comments.map((comment) => `comment ${comment}`)
+  ]
   for (const [name, properties] of Object.entries(elements)) {
     lines.push(`element ${name} 1`)
     lines.push(...properties.map((property) => `property float ${property}`))
@@ -92,6 +97,15 @@ end_header`
       {
         name: 'a 3DGS vertex element',
         buffer: binaryPLYHeader({ vertex: SPLAT_PROPERTIES }),
+        expected: true
+      },
+      {
+        name: 'a 3DGS header whose comment mentions end_header',
+        buffer: binaryPLYHeader(
+          { vertex: SPLAT_PROPERTIES },
+          'binary_little_endian',
+          ['the end_header token below terminates this file']
+        ),
         expected: true
       },
       {

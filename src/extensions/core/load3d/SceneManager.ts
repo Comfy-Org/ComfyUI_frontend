@@ -507,6 +507,7 @@ export class SceneManager implements SceneManagerInterface {
 
       return { scene: sceneData, mask: maskData, normal: normalData }
     } finally {
+      this.view.bindOutput(null, width, height)
       captureTarget?.dispose()
       this.scene.traverse((child) => {
         if (child instanceof THREE.Mesh) {
