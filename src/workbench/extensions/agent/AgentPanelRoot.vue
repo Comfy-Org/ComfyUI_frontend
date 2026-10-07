@@ -1917,7 +1917,7 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       :free-use-placement="freeUsePlacement"
       :starter-prompt-assignment="starterPromptAssignment"
       :attribute-starter-prompt-experiment="attributeStarterPromptExperiment"
-      :on-starter-prompt-rendered="exposeStarterPromptSet"
+      @starter-prompt-rendered="exposeStarterPromptSet"
       @free-use-notice="onFreeUseNotice"
       @send="onSend"
       @stop="onStop"

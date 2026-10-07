@@ -14,16 +14,15 @@ import type { StarterPromptAssignment } from '../../experiments/starterPromptSet
 const {
   userName,
   assignment = 'control',
-  attributeExperiment = true,
-  onRendered = (_assignment: StarterPromptAssignment) => undefined
+  attributeExperiment = true
 } = defineProps<{
   userName?: string
   assignment?: StarterPromptAssignment
   attributeExperiment?: boolean
-  onRendered?: (assignment: StarterPromptAssignment) => void
 }>()
 const emit = defineEmits<{
   insert: [text: string, prompt: AgentStarterPromptAttribution]
+  rendered: [assignment: StarterPromptAssignment]
 }>()
 
 const { t, te, tm, locale } = useI18n()
@@ -63,7 +62,8 @@ const shouldAttributeExperiment = computed(() =>
 )
 
 onMounted(() => {
-  if (shouldAttributeExperiment.value) onRendered(effectiveAssignment.value)
+  if (shouldAttributeExperiment.value)
+    emit('rendered', effectiveAssignment.value)
 })
 
 /**

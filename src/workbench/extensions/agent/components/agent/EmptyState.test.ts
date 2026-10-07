@@ -103,17 +103,16 @@ describe('EmptyState', () => {
       const previousLocale = i18n.global.locale.value
       i18n.global.locale.value = locale
       try {
-        const onRendered = vi.fn()
         const user = userEvent.setup()
         const { emitted } = render(EmptyState, {
-          props: { assignment, onRendered },
+          props: { assignment },
           global: { plugins: [i18n] }
         })
         const text = i18n.global.t(key)
 
         await user.click(screen.getByRole('button', { name: text }))
 
-        expect(onRendered.mock.calls).toEqual(reported ? [[reported]] : [])
+        expect(emitted().rendered).toEqual(reported ? [[reported]] : [])
         expect(emitted().insert).toEqual([
           [
             text,
@@ -151,26 +150,23 @@ describe('EmptyState', () => {
   })
 
   it('does not attribute a surface that mounted before experiment config loaded', async () => {
-    const onRendered = vi.fn()
     const user = userEvent.setup()
     const { emitted, rerender } = render(EmptyState, {
       props: {
         assignment: 'control',
-        attributeExperiment: false,
-        onRendered
+        attributeExperiment: false
       },
       global: { plugins: [i18n] }
     })
 
     await rerender({
       assignment: 'test',
-      attributeExperiment: true,
-      onRendered
+      attributeExperiment: true
     })
     const text = i18n.global.t('agent.suggestedPrompts.local.0')
     await user.click(screen.getByRole('button', { name: text }))
 
-    expect(onRendered).not.toHaveBeenCalled()
+    expect(emitted().rendered).toEqual([])
     expect(emitted().insert).toEqual([
       [text, expect.not.objectContaining({ assignment: expect.anything() })]
     ])

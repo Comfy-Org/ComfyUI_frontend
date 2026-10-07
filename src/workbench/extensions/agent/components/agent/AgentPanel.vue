@@ -81,8 +81,7 @@ const {
   answeringAskIds = new Set<string>(),
   freeUsePlacement = 'control',
   starterPromptAssignment = 'control',
-  attributeStarterPromptExperiment = true,
-  onStarterPromptRendered = (_assignment: StarterPromptAssignment) => undefined
+  attributeStarterPromptExperiment = true
 } = defineProps<{
   entries: ConversationEntry[]
   userName?: string
@@ -125,7 +124,6 @@ const {
   freeUsePlacement?: FreeUseVariant
   starterPromptAssignment?: StarterPromptAssignment
   attributeStarterPromptExperiment?: boolean
-  onStarterPromptRendered?: (assignment: StarterPromptAssignment) => void
 }>()
 const emit = defineEmits<{
   send: [
@@ -160,6 +158,7 @@ const emit = defineEmits<{
   openReferenceWorkflow: [workflowId: string, workflowName: string]
   showTarget: []
   freeUseNotice: [metadata: AgentFreeUseNoticeMetadata]
+  starterPromptRendered: [assignment: StarterPromptAssignment]
 }>()
 
 const targetNotice = computed(() => {
@@ -457,7 +456,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           :user-name
           :assignment="starterPromptAssignment"
           :attribute-experiment="attributeStarterPromptExperiment"
-          :on-rendered="onStarterPromptRendered"
+          @rendered="emit('starterPromptRendered', $event)"
           @insert="
             (text, prompt) => {
               composerRef?.insert(text, prompt)
