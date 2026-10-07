@@ -231,12 +231,10 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
       })
     })
 
-    test.describe('fallback', () => {
-      test.use({ starterPromptSet: 'inactive-or-unknown' })
+    test.describe('control', () => {
+      test.use({ starterPromptSet: 'control' })
 
-      test('fails closed to the unchanged control set', async ({
-        agentPanel
-      }) => {
+      test('renders the unchanged control set', async ({ agentPanel }) => {
         await agentPanel.open()
         await agentPanel.selectWorkflow()
         const panel = agentPanel.root

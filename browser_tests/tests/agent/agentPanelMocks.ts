@@ -584,7 +584,7 @@ type AgentFixtures = {
   agentConsentWebSession: boolean
   agentConsentWrites: boolean[]
   agentFlagEnabled: boolean
-  starterPromptSet: string | undefined
+  starterPromptSet: RemoteConfig['agent-starter-prompt-set']
   agentPanel: AgentPanel
   agentPanelInitiallyOpen: boolean
   agentOnboardingCompleted: boolean
