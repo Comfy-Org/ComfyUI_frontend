@@ -31,7 +31,7 @@ const baseRoutes = {
   affiliates: '/affiliates/',
   affiliateTerms: '/affiliates/terms/',
   contact: '/contact/',
-  models: '/p/supported-models/',
+  models: '/hub/models/local/',
   mcp: '/mcp/',
   agent: '/agent/',
   platform: '/platform/',
@@ -53,6 +53,7 @@ const baseRoutes = {
   wan3: '/wan-3.0/',
   chatgptImage25: '/chatgpt-image-2.5/',
   qwenImage21: '/qwen-image-2.1/',
+  nanoBanana: '/nano-banana/',
   brand: '/brand/',
   // The hub catalogue. `workshop` keeps its old name.
   workshop: '/hub/models/',
@@ -81,8 +82,8 @@ type Routes = Readonly<Record<RouteKey, string>>
 // Customer Agreement template), same reasoning. See the comment header
 // in src/pages/enterprise-msa.astro.
 //
-// models: the supported-models catalog only exists at /p/supported-models;
-// there is no /<locale>/p/supported-models page, so a prefixed link 404s.
+// models: the model files catalog only exists at /hub/models/local;
+// there is no /<locale>/hub/models/local page, so a prefixed link 404s.
 //
 // minimaxLicenseProfessionalRequest: embeds an English-only HubSpot intake
 // form, so no localized variant exists. See the comment header in
@@ -265,7 +266,7 @@ export const externalLinks = {
 
 /**
  * The platform creates a key on arrival and shows this product's onboarding.
- * `model` is the website's model page id (`/models/<slug>`), not the Router id.
+ * `model` is the website's model page id (`/hub/models/<slug>/`), not the Router id.
  */
 type ApiKeysOnboarding =
   | { onboarding: 'router' | 'comfy_api' }

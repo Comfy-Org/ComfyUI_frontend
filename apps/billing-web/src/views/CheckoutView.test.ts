@@ -106,7 +106,10 @@ const formProps = vi.hoisted(() => ({
   value: {} as Record<string, unknown>,
   mounted: false
 }))
-let reportConfirm: (confirmationToken: string) => void = () => {}
+let reportConfirm: (
+  confirmationToken: string,
+  methodType?: string
+) => void = () => {}
 
 const PaymentFormStub = defineComponent({
   name: 'CheckoutPaymentForm',
@@ -122,7 +125,7 @@ const PaymentFormStub = defineComponent({
   setup(props, { emit }) {
     formProps.value = props
     formProps.mounted = true
-    reportConfirm = (token) => emit('confirm', token)
+    reportConfirm = (token, methodType) => emit('confirm', token, methodType)
     return () =>
       h(
         'button',
@@ -573,6 +576,52 @@ describe('CheckoutView', () => {
     expect(challengeMocks.handleNextAction).not.toHaveBeenCalled()
   })
 
+  it('offers no second way to the verification page once this tab is redirecting there', async () => {
+    const assign = stubNavigation()
+    const fake = await renderCheckout()
+    await screen.findByRole('button', { name: 'Pay and subscribe' })
+
+    fake.publishOperation(
+      hostedPendingOperation('https://hooks.stripe.test/redirect/op_1')
+    )
+
+    await waitFor(() => expect(assign).toHaveBeenCalled())
+    expect(
+      screen.queryByRole('button', { name: 'Complete verification' })
+    ).toBeNull()
+  })
+
+  it('offers no second way to the verification page while an Alipay Pay is taking this tab there', async () => {
+    stubNavigation()
+    const fake = await renderCheckout()
+    await screen.findByRole('button', { name: 'Pay and subscribe' })
+    fake.subscribe.mockImplementation(() => new Promise(() => {}))
+
+    reportConfirm('ctoken_1', 'alipay')
+    await waitFor(() => expect(fake.subscribe).toHaveBeenCalledOnce())
+    fake.publishOperation({
+      ...challengedPendingOperation('pi_1_secret'),
+      actionUrl: 'https://hooks.stripe.test/redirect/op_1'
+    })
+
+    await waitFor(() =>
+      expect(challengeMocks.handleNextAction).toHaveBeenCalledWith(
+        'pi_1_secret'
+      )
+    )
+    expect(
+      screen.queryByRole('button', { name: 'Complete verification' })
+    ).toBeNull()
+
+    const backFromAlipay = new Event('pageshow')
+    Object.defineProperty(backFromAlipay, 'persisted', { value: true })
+    window.dispatchEvent(backFromAlipay)
+
+    expect(
+      await screen.findByRole('button', { name: 'Complete verification' })
+    ).toBeInTheDocument()
+  })
+
   it('drives the 3DS challenge in place when the continuation is embedded', async () => {
     const assign = stubNavigation()
     const fake = await renderCheckout()
@@ -814,6 +863,25 @@ describe('CheckoutView', () => {
     expect(
       screen.getByText('Processing payment — setting up your workspace...')
     ).toBeInTheDocument()
+  })
+
+  it('releases the confirm once the in-page verification fails, before the server settles', async () => {
+    const fake = await renderCheckout()
+    fake.subscribe.mockReturnValue(new Promise(() => {}))
+    await screen.findByRole('button', { name: 'Pay and subscribe' })
+
+    reportConfirm('ctoken_1')
+    await waitFor(() => expect(formProps.value.isLoading).toBe(true))
+
+    fake.publishOperation(challengedPendingOperation('pi_1_secret'))
+    expect(formProps.value.isLoading).toBe(true)
+
+    fake.publishOperation({
+      ...challengedPendingOperation('pi_1_secret'),
+      challenge: { status: 'failed', clientSecret: 'pi_1_secret' }
+    })
+
+    await waitFor(() => expect(formProps.value.isLoading).toBe(false))
   })
 
   it('announces the processing toast as an alert, as the app does', async () => {

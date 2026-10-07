@@ -2,12 +2,12 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
 import Message from './Message.vue'
 
-const meta = {
+const meta: Meta<typeof Message> = {
   title: 'Components/Message',
   component: Message,
   tags: ['autodocs'],
   args: { severity: 'info' }
-} satisfies Meta<typeof Message>
+}
 
 export default meta
 type Story = StoryObj<typeof meta>

@@ -88,4 +88,62 @@ describe('SiteFooter', () => {
       expect(link.getAttribute('href')).toBe('/zh-CN/minimax/license/')
     }
   })
+
+  // The footer mirrors the top nav: same Products and Features columns, same
+  // order, with Pricing kept at the end of Products.
+  it('lists the nav Products and Features links in nav order (en)', () => {
+    render(SiteFooter)
+    const routes = getRoutes()
+
+    const linksIn = (name: string) =>
+      within(screen.getByRole('navigation', { name }))
+        .getAllByRole('link')
+        .map((link) => [link.textContent.trim(), link.getAttribute('href')])
+
+    expect(linksIn('Products')).toEqual([
+      ['Comfy Desktop', routes.download],
+      ['Comfy Cloud', routes.cloud],
+      ['Developer Platform', routes.platform],
+      ['Comfy Router', routes.platformRouter],
+      ['Comfy Enterprise', routes.enterprise],
+      ['Managed Builds', routes.managedBuilds],
+      ['Pricing', routes.pricing]
+    ])
+    expect(linksIn('Features')).toEqual([
+      ['Comfy MCP', routes.mcp],
+      ['Comfy Agent', routes.agent],
+      ['Comfy CLI', routes.cli],
+      ['Launches', routes.launches],
+      ['Supported Models', routes.models]
+    ])
+  })
+
+  it('keeps Docs in Resources, opening in a new tab', () => {
+    render(SiteFooter)
+
+    const docs = within(
+      screen.getByRole('navigation', { name: 'Resources' })
+    ).getByRole('link', { name: 'Docs' })
+    expect(docs.getAttribute('href')).toBe(externalLinks.docs)
+    expect(docs.getAttribute('target')).toBe('_blank')
+  })
+
+  it('lists Launches and Supported Models only in Features', () => {
+    render(SiteFooter)
+
+    for (const column of ['Products', 'Models', 'Resources', 'Company']) {
+      const nav = screen.getByRole('navigation', { name: column })
+      expect(within(nav).queryByRole('link', { name: 'Launches' })).toBeNull()
+      expect(
+        within(nav).queryByRole('link', { name: 'Supported Models' })
+      ).toBeNull()
+    }
+    const features = screen.getByRole('navigation', { name: 'Features' })
+    expect(
+      within(features).getByRole('link', { name: 'Launches' })
+    ).toBeTruthy()
+    expect(
+      within(features).getByRole('link', { name: 'Supported Models' })
+    ).toBeTruthy()
+  })
 })

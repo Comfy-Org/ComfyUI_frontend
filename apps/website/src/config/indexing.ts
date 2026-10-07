@@ -3,7 +3,6 @@ import { hubAppHref, hubAppSlugs } from './hub-models'
 import { LOCALE_CODES, LOCALES } from './locales'
 import type { ModelPageLaunch } from './model-page-launch'
 import { launchedModelPages, launchedWorkflowPages } from './model-page-launch'
-import { models } from './models'
 import { modelsUrlKind, modelsUrlPaths } from './models-url-registry'
 import { workshopModels } from './workshop-browse-content'
 import { isLegacyWorkshopRoute, isWorkshopRoute } from './workshop-release'
@@ -29,6 +28,7 @@ export const NOINDEX_ROUTES = [
   '/privacy-policy',
   '/terms-of-service',
   '/platform/serverless-animation',
+  '/nano-banana',
   ...PLACEHOLDER_PATHNAMES
 ] as const
 
@@ -40,16 +40,6 @@ const NOINDEX_PATHNAMES = new Set([
   // the older /comfy-agent preview route stays out of the index.
   '/comfy-agent'
 ])
-
-const MODEL_REDIRECT_PATHNAMES = new Set(
-  models
-    .filter((model) => model.canonicalSlug !== undefined)
-    .flatMap((model) =>
-      ALL_LOCALE_PREFIXES.map(
-        (prefix) => `${prefix}/p/supported-models/${model.slug}`
-      )
-    )
-)
 
 function normalizePathname(pathname: string): string {
   return pathname.replace(/\/$/, '')
@@ -126,7 +116,6 @@ export function isExcludedFromSitemap(
   return (
     isNoindexPathname(pathname) ||
     isLegacyWorkshopRoute(pathname) ||
-    MODEL_REDIRECT_PATHNAMES.has(pathname) ||
     (isWorkshopRoute(pathname) &&
       !isIndexableModelPage(pathname, launched, workflowsLaunched))
   )

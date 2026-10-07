@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
+import { getRoutes } from '@/config/routes'
+
 import { drops, isRecentLaunch } from './drops'
 
 const NOW = new Date('2026-10-01T12:00:00Z')
@@ -25,5 +27,19 @@ describe('isRecentLaunch', () => {
 describe('drops', () => {
   it.for(drops)('$id has a parseable launchDate', (drop) => {
     expect(Number.isNaN(Date.parse(drop.launchDate))).toBe(false)
+  })
+
+  it('cards that open the local file catalogue do not promise partner models', () => {
+    const localCatalogueCards = drops.filter((drop) =>
+      Object.values(drop.cta.href).includes(getRoutes().models)
+    )
+    const promisingPartnerModels = localCatalogueCards.filter(
+      (drop) =>
+        /partner/i.test(drop.description.en) ||
+        drop.description['zh-CN'].includes('合作伙伴')
+    )
+
+    expect(localCatalogueCards).not.toHaveLength(0)
+    expect(promisingPartnerModels.map((drop) => drop.id)).toEqual([])
   })
 })

@@ -408,7 +408,7 @@
         :cloud-url="activeDetailCloudUrl"
         :is-partner-node="activeDetail.template.openSource === false"
         :open-pending="openPending"
-        :model-setup-state="activeDetailModelSetupState"
+        :model-setup="activeDetailModelSetup"
         @open-template="onOpenTemplate"
         @download-models-and-open="onDownloadModelsAndOpen"
         @download-model="onDownloadModel"
@@ -445,6 +445,7 @@ import {
   watch
 } from 'vue'
 import { useI18n } from 'vue-i18n'
+import type { ComfyTemplateInputAsset } from '@comfyorg/comfyui-desktop-bridge-types'
 
 import CardBottom from '@/components/card/CardBottom.vue'
 import CardContainer from '@/components/card/CardContainer.vue'
@@ -489,7 +490,7 @@ import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates
 import type {
   TemplateDetailGroup,
   TemplateDetailRow,
-  TemplateModelSetupState
+  TemplateModelSetup
 } from '@/platform/workflow/templates/types/templateDetail'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import {
@@ -501,11 +502,17 @@ import { resolveTemplateModelMetadata } from '@/platform/workflow/templates/util
 import { extractTemplateModelRequirementDetails } from '@/platform/workflow/templates/utils/templateModelRequirements'
 import type { TemplateModelRequirementDetail } from '@/platform/workflow/templates/utils/templateModelRequirements'
 import type { ResolvedTemplateModelAvailability } from '@/platform/workflow/templates/utils/templateModelAvailability'
-import { deriveTemplateModelSetup } from '@/platform/workflow/templates/utils/templateModelSetup'
+import {
+  deriveTemplateModelSetup,
+  isModelDownloadCandidate,
+  isModelRowComplete,
+  remainingModelDownloadTotal
+} from '@/platform/workflow/templates/utils/templateModelSetup'
 import type {
   TemplateModelSetupResult,
   TemplateModelSetupRow
 } from '@/platform/workflow/templates/utils/templateModelSetup'
+import { resolveTemplateInputAssets } from '@/platform/workflow/templates/utils/templateInputAssets'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
 import { OnCloseKey } from '@/types/widgetTypes'
 import { formatSize } from '@/utils/formatUtil'
@@ -780,6 +787,7 @@ const activeDetail = ref<{
   template: TemplateInfo
   prepared: PreparedWorkflowTemplate
   modelSetup: ActiveTemplateModelSetup
+  inputAssets: readonly ComfyTemplateInputAsset[]
 } | null>(null)
 const openPending = ref(false)
 let detailGeneration = 0
@@ -1013,6 +1021,7 @@ function toModelDetailRow(
 ): TemplateDetailRow {
   const detailRow: TemplateDetailRow = {
     id: `model:${getModelFileKey(row.model)}`,
+    kind: 'model',
     name: row.model.name,
     description: getModelDetailDescription(row)
   }
@@ -1065,50 +1074,99 @@ function toModelDetailRow(
   }
 }
 
+function toInputDetailRow(asset: ComfyTemplateInputAsset): TemplateDetailRow {
+  return {
+    id: `input:${asset.assetId}`,
+    kind: 'input',
+    name: t(`templateWorkflows.detail.inputMediaTypes.${asset.mediaType}`),
+    description: asset.filename,
+    ...(asset.previewUrl && {
+      preview: { src: asset.previewUrl, mediaType: asset.mediaType }
+    })
+  }
+}
+
 function buildTemplateDetailGroups(
   setup: TemplateModelSetupResult,
-  rowDownloads: TemplateModelRowDownloads
+  rowDownloads: TemplateModelRowDownloads,
+  inputAssets: readonly ComfyTemplateInputAsset[]
 ): readonly TemplateDetailGroup[] {
-  if (setup.rows.length === 0) return []
+  const groups: TemplateDetailGroup[] = []
 
-  return [
-    {
+  if (setup.rows.length > 0) {
+    groups.push({
       id: 'models',
       label: t('templateWorkflows.detail.models'),
       ...(setup.declarationTotal.isComplete && {
         total: formatSize(setup.declarationTotal.bytes)
       }),
       rows: setup.rows.map((row) => toModelDetailRow(row, rowDownloads))
-    }
-  ]
+    })
+  }
+
+  if (inputAssets.length > 0) {
+    groups.push({
+      id: 'input-assets',
+      label: t('templateWorkflows.detail.inputAssets'),
+      rows: inputAssets.map(toInputDetailRow)
+    })
+  }
+
+  return groups
 }
 
 const activeDetailGroups = computed<readonly TemplateDetailGroup[]>(() => {
-  const setup = activeDetail.value?.modelSetup
-  return setup
-    ? buildTemplateDetailGroups(setup.result, setup.rowDownloads)
-    : []
+  const detail = activeDetail.value
+  if (!detail) return []
+
+  return buildTemplateDetailGroups(
+    detail.modelSetup.result,
+    detail.modelSetup.rowDownloads,
+    detail.inputAssets
+  )
 })
 
-function isModelDownloadCandidate(
-  row: TemplateModelSetupRow,
-  rowDownloads: TemplateModelRowDownloads
-): boolean {
-  if (row.status !== 'downloadable') return false
-
-  const state = rowDownloads.stateFor(row.model)
-  return state.status === 'idle' || state.status === 'failed'
-}
-
-const activeDetailModelSetupState = computed<TemplateModelSetupState>(() => {
+/** The rows this click would start. */
+const activeDetailModelDownloadCandidates = computed<
+  readonly TemplateModelSetupRow[]
+>(() => {
   const setup = activeDetail.value?.modelSetup
-  if (!setup) return 'none'
-  if (setup.pending) return 'resolving'
-  return setup.result.rows.some((row) =>
-    isModelDownloadCandidate(row, setup.rowDownloads)
+  if (!setup || setup.pending) return []
+  return setup.result.rows.filter((row) =>
+    isModelDownloadCandidate(row, setup.rowDownloads.stateFor)
   )
-    ? 'downloadable'
-    : 'none'
+})
+
+const activeDetailModelDownloadsAvailable = computed(
+  () => activeDetailModelDownloadCandidates.value.length > 0
+)
+
+/** Withheld unless every candidate declares a size: a partial total reads as complete. */
+const activeDetailModelRequirementsMet = computed(() => {
+  const setup = activeDetail.value?.modelSetup
+  return Boolean(
+    setup &&
+    setup.result.rows.every((row) =>
+      isModelRowComplete(row, setup.rowDownloads.stateFor)
+    )
+  )
+})
+
+const activeDetailModelSetup = computed<TemplateModelSetup | undefined>(() => {
+  const setup = activeDetail.value?.modelSetup
+  if (!setup) return undefined
+  if (setup.pending) return { state: 'resolving' }
+  if (activeDetailModelRequirementsMet.value) return undefined
+  if (!activeDetailModelDownloadsAvailable.value) return undefined
+
+  const total = remainingModelDownloadTotal(
+    setup.result.rows,
+    setup.rowDownloads.stateFor
+  )
+  return {
+    state: 'startable',
+    remainingSize: total.isComplete ? formatSize(total.bytes) : undefined
+  }
 })
 
 function applyTemplateModelMetadata(
@@ -1194,6 +1252,10 @@ async function showModelSetupIfNeeded(
   const requirements = extractTemplateModelRequirementDetails(
     prepared.data.json
   )
+  const inputAssetsPromise =
+    prepared.sourceModule === 'default'
+      ? resolveTemplateInputAssets(template.name, () => window.__comfyDesktop2)
+      : Promise.resolve<readonly ComfyTemplateInputAsset[]>([])
   if (requirements.length === 0) return false
 
   // Only the Electron path needs real directories, and resolving them here
@@ -1208,10 +1270,14 @@ async function showModelSetupIfNeeded(
   if (generation !== detailGeneration) return true
   if (!availability.some(({ status }) => status === 'missing')) return false
 
+  const inputAssets = await inputAssetsPromise
+  if (generation !== detailGeneration) return true
+
   const rowDownloads = useTemplateModelRowDownloads({ folderPaths })
   activeDetail.value = {
     template,
     prepared: markRaw(prepared),
+    inputAssets,
     modelSetup: {
       result: deriveTemplateModelSetup(
         requirements,
@@ -1289,13 +1355,12 @@ function onDownloadModel(rowId: string) {
 }
 
 async function onDownloadModelsAndOpen() {
-  const setup = activeDetail.value?.modelSetup
-  if (!setup || setup.pending || openPending.value) return
+  const detail = activeDetail.value
+  const setup = detail?.modelSetup
+  if (!detail || !setup || setup.pending || openPending.value) return
 
-  for (const row of setup.result.rows) {
-    if (isModelDownloadCandidate(row, setup.rowDownloads)) {
-      setup.rowDownloads.request(row.model)
-    }
+  for (const row of activeDetailModelDownloadCandidates.value) {
+    setup.rowDownloads.request(row.model)
   }
 
   await onOpenTemplate()
