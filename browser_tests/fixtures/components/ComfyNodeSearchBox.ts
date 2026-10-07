@@ -2,8 +2,8 @@ import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 
 class ComfyNodeSearchFilterSelectionPanel {
-  readonly root: Locator
   readonly header: Locator
+  readonly root: Locator
 
   constructor(public readonly page: Page) {
     this.root = page.getByRole('dialog', { name: 'Add node filter condition' })

@@ -12,11 +12,11 @@ const {
   class: className
 } = defineProps<{
   modelValue: number
-  min?: number
-  max?: number
-  step?: number
-  disabled?: boolean
   class?: string
+  disabled?: boolean
+  max?: number
+  min?: number
+  step?: number
 }>()
 
 const emit = defineEmits<{ 'update:modelValue': [value: number] }>()
