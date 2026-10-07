@@ -2488,7 +2488,7 @@
     "noVideoSource": "Select or connect a video to preview and edit"
   },
   "toastMessages": {
-    "nothingToPasteIntoNode": "Nothing to paste into this node. Copy an image, or deselect the node to paste nodes.",
+    "nothingToPasteIntoNode": "Nothing to paste into this node",
     "nothingToQueue": "Nothing to queue",
     "pleaseSelectOutputNodes": "Please select output nodes",
     "failedToQueue": "Failed to queue",
