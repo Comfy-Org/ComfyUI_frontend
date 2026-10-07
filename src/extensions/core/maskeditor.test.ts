@@ -1,5 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { describe, expect, it, vi } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 
 import type { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 import type {
@@ -35,7 +35,8 @@ async function registerNodeType(
 ): Promise<typeof LGraphNode> {
   class TestNode extends LGraphNode {}
   if (original) TestNode.prototype.getExtraMenuOptions = original
-  await ext.beforeRegisterNodeDef!(TestNode, nodeData, app)
+  assert.exists(ext.beforeRegisterNodeDef)
+  await ext.beforeRegisterNodeDef(TestNode, nodeData, app)
   return TestNode
 }
 
@@ -44,7 +45,8 @@ function menuOptions(
   node: LGraphNode
 ): (IContextMenuValue | null)[] {
   const options: (IContextMenuValue | null)[] = []
-  nodeType.prototype.getExtraMenuOptions!.call(node, canvas, options)
+  assert.exists(nodeType.prototype.getExtraMenuOptions)
+  nodeType.prototype.getExtraMenuOptions.call(node, canvas, options)
   return options
 }
 
@@ -103,7 +105,8 @@ describe('Comfy.MaskEditor getExtraMenuOptions', () => {
     const node = imageNode()
     const options: (IContextMenuValue | null)[] = []
 
-    const result = nodeType.prototype.getExtraMenuOptions!.call(
+    assert.exists(nodeType.prototype.getExtraMenuOptions)
+    const result = nodeType.prototype.getExtraMenuOptions.call(
       node,
       canvas,
       options
