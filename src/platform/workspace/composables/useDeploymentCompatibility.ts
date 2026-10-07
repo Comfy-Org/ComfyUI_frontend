@@ -1,0 +1,163 @@
+import {
+  createSharedComposable,
+  tryOnScopeDispose,
+  useThrottleFn
+} from '@vueuse/core'
+import { storeToRefs } from 'pinia'
+import { computed, shallowRef, watch } from 'vue'
+
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { DeploymentCompatibility } from '@/platform/workspace/api/workspaceApi'
+import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
+import { mapUniqueNodes } from '@/utils/graphTraversalUtil'
+
+/**
+ * Whether a deployment (or Comfy Cloud) can run the open workflow: it has
+ * every node type, it lacks some, or ingest could not check it because its
+ * Release has no node list.
+ */
+export type DeploymentCompatibilityMark =
+  | { kind: 'runs' }
+  | { kind: 'missing'; nodeTypes: string[] }
+  | { kind: 'unknown' }
+
+/**
+ * The node types a graph needs from the backend, subgraphs included, distinct
+ * and sorted. Muted and bypassed nodes, frontend-only nodes (notes, reroutes)
+ * and subgraph instances need none.
+ */
+export function workflowNodeTypes(graph: LGraph): string[] {
+  const types = mapUniqueNodes(graph, (node) => {
+    if (node.isSubgraphNode() || node.isVirtualNode) return undefined
+    if (
+      node.mode === LGraphEventMode.NEVER ||
+      node.mode === LGraphEventMode.BYPASS
+    ) {
+      return undefined
+    }
+    return node.last_serialization?.type ?? node.type
+  })
+  return [...new Set(types)].sort()
+}
+
+function missingMark(missing: string[]): DeploymentCompatibilityMark {
+  return missing.length === 0
+    ? { kind: 'runs' }
+    : { kind: 'missing', nodeTypes: missing }
+}
+
+/**
+ * Which of the workspace's deployments, and Comfy Cloud, can run the open
+ * workflow (BE-19373), from ingest's compatibility answer (BE-19372). Asks
+ * once per distinct set of node types, so editing a widget value sends
+ * nothing, and only in a workspace that shows the deployment switcher with at
+ * least one deployment. A failed or outdated answer gives no marks at all.
+ */
+export const useDeploymentCompatibility = createSharedComposable(() => {
+  const pickStore = useDeploymentPickStore()
+  const { deployments, isVisible } = storeToRefs(pickStore)
+  const workspaceStore = useTeamWorkspaceStore()
+  const workflowStore = useWorkflowStore()
+
+  const nodeTypes = shallowRef<string[]>([])
+
+  function readNodeTypes() {
+    nodeTypes.value = app.isGraphReady ? workflowNodeTypes(app.rootGraph) : []
+  }
+  const throttledRead = useThrottleFn(readNodeTypes, 200, true, true)
+  const onGraphChanged = () => {
+    void throttledRead()
+  }
+  api.addEventListener('graphChanged', onGraphChanged)
+  tryOnScopeDispose(() => {
+    api.removeEventListener('graphChanged', onGraphChanged)
+  })
+  watch(() => workflowStore.activeWorkflow, readNodeTypes, { immediate: true })
+
+  watch(
+    () => workspaceStore.workspaceId,
+    (workspaceId) => {
+      if (workspaceId && pickStore.state.phase === 'idle') void pickStore.load()
+    },
+    { immediate: true }
+  )
+
+  /**
+   * What the current answer must be for: null when there is nothing to ask.
+   * Deployment ids are part of it so a newly listed deployment gets checked.
+   */
+  const request = computed(() => {
+    const workspaceId = workspaceStore.workspaceId
+    if (!workspaceId || !isVisible.value || deployments.value.length === 0) {
+      return null
+    }
+    if (nodeTypes.value.length === 0) return null
+    return {
+      workspaceId,
+      nodeTypes: nodeTypes.value,
+      key: JSON.stringify([
+        workspaceId,
+        deployments.value.map((d) => d.deployment_id),
+        nodeTypes.value
+      ])
+    }
+  })
+  const requestKey = computed(() => request.value?.key ?? null)
+
+  const answer = shallowRef<{
+    key: string
+    compatibility: DeploymentCompatibility
+  } | null>(null)
+
+  watch(
+    requestKey,
+    async (key) => {
+      const current = request.value
+      if (key === null || current === null) return
+      try {
+        const compatibility = await workspaceApi.checkDeploymentCompatibility(
+          current.workspaceId,
+          current.nodeTypes
+        )
+        if (requestKey.value === key) answer.value = { key, compatibility }
+      } catch {
+        // A failed check shows no marks rather than wrong ones.
+      }
+    },
+    { immediate: true }
+  )
+
+  const compatibility = computed(() =>
+    answer.value !== null && answer.value.key === requestKey.value
+      ? answer.value.compatibility
+      : null
+  )
+
+  /**
+   * The mark for one deployment, or Comfy Cloud with null; null when there
+   * is no answer for the open workflow or it does not list the deployment.
+   */
+  function markFor(
+    deploymentId: string | null
+  ): DeploymentCompatibilityMark | null {
+    const current = compatibility.value
+    if (current === null) return null
+    if (deploymentId === null) {
+      return missingMark(current.cloud.missing_node_types)
+    }
+    const entry = current.deployments.find(
+      (d) => d.deployment_id === deploymentId
+    )
+    if (!entry) return null
+    if (entry.unknown) return { kind: 'unknown' }
+    return missingMark(entry.missing_node_types)
+  }
+
+  return { compatibility, markFor }
+})
