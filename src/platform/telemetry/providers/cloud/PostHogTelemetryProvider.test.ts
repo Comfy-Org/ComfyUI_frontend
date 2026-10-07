@@ -552,6 +552,28 @@ describe('PostHogTelemetryProvider', () => {
       )
     })
 
+    it('captures interruption exposure with the blocking source', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackInterruptionExposure({
+        surface: 'whatsNewPopup',
+        tier: 'announcement',
+        outcome: 'deferred',
+        blocked_by: 'dialog'
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.INTERRUPTION_EXPOSURE,
+        {
+          surface: 'whatsNewPopup',
+          tier: 'announcement',
+          outcome: 'deferred',
+          blocked_by: 'dialog'
+        }
+      )
+    })
+
     it('captures link dedup drop events with metadata', async () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()

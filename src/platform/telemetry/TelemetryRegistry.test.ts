@@ -283,6 +283,25 @@ describe('TelemetryRegistry', () => {
     )
   })
 
+  it('dispatches trackInterruptionExposure to every registered provider', () => {
+    const a: TelemetryProvider = { trackInterruptionExposure: vi.fn() }
+    const b: TelemetryProvider = { trackInterruptionExposure: vi.fn() }
+    const registry = new TelemetryRegistry()
+    registry.registerProvider(a)
+    registry.registerProvider(b)
+
+    const payload = {
+      surface: 'whatsNewPopup',
+      tier: 'announcement',
+      outcome: 'deferred' as const,
+      blocked_by: 'dialog'
+    }
+    registry.trackInterruptionExposure(payload)
+
+    expect(a.trackInterruptionExposure).toHaveBeenCalledExactlyOnceWith(payload)
+    expect(b.trackInterruptionExposure).toHaveBeenCalledExactlyOnceWith(payload)
+  })
+
   describe('agent telemetry dispatch', () => {
     const feedbackMetadata = {
       message_id: 'm1',

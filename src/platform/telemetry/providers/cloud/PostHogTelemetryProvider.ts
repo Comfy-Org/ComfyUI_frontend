@@ -38,6 +38,7 @@ import type {
   AgentEntryButtonClickedMetadata,
   AgentErrorMetadata,
   AgentFreeUseExposureMetadata,
+  InterruptionExposureMetadata,
   AgentFreeUseNoticeMetadata,
   AgentPaywallCtaMetadata,
   AgentPaywallShownMetadata,
@@ -815,6 +816,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackAgentFreeUseExposure(metadata: AgentFreeUseExposureMetadata): void {
     this.trackEvent(TelemetryEvents.AGENT_FREE_USE_EXPOSURE, metadata)
+  }
+
+  trackInterruptionExposure(metadata: InterruptionExposureMetadata): void {
+    this.trackEvent(TelemetryEvents.INTERRUPTION_EXPOSURE, metadata)
   }
 
   trackAgentNodeTagged(metadata: AgentNodeTaggedMetadata): void {
