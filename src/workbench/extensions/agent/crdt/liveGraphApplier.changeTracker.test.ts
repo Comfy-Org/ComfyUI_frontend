@@ -176,4 +176,107 @@ describe('LiveGraphApplier with the real change tracker', () => {
     expect(tracker.activeState).toEqual(await workflowJson(graph))
     expect(tracker.activeState).not.toEqual(beforeFrame)
   })
+
+  it('resizes an existing DynamicGroup remotely as one undo unit without outbound echo', async () => {
+    const graph = new LGraph()
+    appState.rootGraph = graph
+    onTestFinished(() => {
+      appState.rootGraph = undefined
+    })
+    const node = LiteGraph.createNode('DynamicGroupTest')
+    assert.exists(node)
+    graph.add(node)
+    const count = node.widgets?.find((widget) => widget.name === 'rows')
+    assert.exists(count)
+    count.value = 2
+    const first = node.widgets?.find(
+      (widget) => widget.name === 'rows.0.strength'
+    )
+    const second = node.widgets?.find(
+      (widget) => widget.name === 'rows.1.strength'
+    )
+    assert.exists(first)
+    assert.exists(second)
+    first.value = 0.5
+    second.value = 0.7
+    expect(node.serialize().widgets_values).toEqual([
+      'head',
+      2,
+      0.5,
+      0.7,
+      'tail'
+    ])
+    const beforeFrame = await workflowJson(graph)
+    const { flags, ...serialized } = node.serialize()
+    const { doc, collector } = followedDoc(
+      { nodes: [{ ...serialized, flags: { ...flags } }], links: [] },
+      CATALOG
+    )
+    collector.take()
+    const applier = new LiveGraphApplier({ getGraph: () => graph })
+    const tracker = markRaw(
+      new ChangeTracker(fromPartial({ path: '/dynamic.json' }), beforeFrame)
+    )
+    useWorkflowStore().activeWorkflow = fromPartial({ changeTracker: tracker })
+    graph.list_of_graphcanvas = [
+      fromPartial<LGraphCanvas>({
+        emitBeforeChange: () => tracker.beforeChange(),
+        emitAfterChange: () => tracker.afterChange(),
+        setDirty: () => {},
+        deselect: () => {},
+        checkPanels: () => {}
+      })
+    ]
+    const enqueue = vi.fn()
+    const minter = attachDocOpMinter({
+      isEnabled: () => true,
+      isDocBound: () => true,
+      getGraph: () => graph,
+      boundRootGraphId: () => toRootGraphId(graph.id),
+      docInputNames: () => [],
+      docPromotedWidgets: () => null,
+      enqueue
+    })
+    onTestFinished(() => minter.detach())
+    const resize = op({
+      op: 'set_widget',
+      node_id: 1,
+      widget: 'rows',
+      value: 0
+    })
+    const after = {
+      ...op({
+        op: 'set_widget',
+        node_id: 1,
+        widget: 'after',
+        value: 'remote tail'
+      }),
+      op_id: 'op-after'.padEnd(32, '0')
+    }
+
+    expect(
+      applyOps(doc, [resize, after], CATALOG).outcomes.map(
+        ({ outcome }) => outcome
+      )
+    ).toEqual(['applied', 'applied'])
+    applier.applyChanges(doc, collector.take(), CONTEXT)
+
+    expect(node.serialize().widgets_values).toEqual(['head', 0, 'remote tail'])
+    expect(tracker.undoQueue).toEqual([beforeFrame])
+    expect(tracker.activeState).toEqual(await workflowJson(graph))
+    const afterWidget = node.widgets?.find((widget) => widget.name === 'after')
+    assert.exists(afterWidget)
+    afterWidget.value = 'human tail'
+    await vi.waitFor(() =>
+      expect(enqueue).toHaveBeenCalledExactlyOnceWith([
+        {
+          op: 'set_widget',
+          node_id: '1',
+          widget: 'after',
+          value: 'human tail',
+          old: 'remote tail'
+        }
+      ])
+    )
+  })
 })
