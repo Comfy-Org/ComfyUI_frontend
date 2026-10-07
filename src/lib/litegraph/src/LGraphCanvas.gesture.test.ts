@@ -244,14 +244,17 @@ describe('CanvasPointer lifecycle callbacks', () => {
   it('treats callback-less double clicks as normal clicks', () => {
     const pointer = new CanvasPointer(document.createElement('canvas'))
     const onClick = vi.fn()
-
-    for (const timeStamp of [100, 200, 300]) {
+    const clickAt = (timeStamp: number) => {
       pointer.down(pointerEvent('pointerdown', 10, 20, { timeStamp }))
       pointer.onClick = onClick
       pointer.up(
         pointerEvent('pointerup', 10, 20, { timeStamp: timeStamp + 1 })
       )
     }
+
+    clickAt(100)
+    clickAt(200)
+    clickAt(300)
 
     expect(onClick).toHaveBeenCalledTimes(3)
   })
@@ -947,6 +950,16 @@ describe('LGraphCanvas interrupted gestures', () => {
     expect(canvas.read_only).toBe(true)
 
     canvas.unbindEvents()
+
+    expect(canvas.read_only).toBe(false)
+  })
+
+  it('a second drag-zoom press restores the original read-only state', () => {
+    canvas.dragZoomEnabled = true
+    gesture.press(A_BODY, { ctrlKey: true, shiftKey: true })
+    gesture.press(A_BODY, { ctrlKey: true, shiftKey: true })
+
+    canvas.canvas.ownerDocument.defaultView?.dispatchEvent(new Event('blur'))
 
     expect(canvas.read_only).toBe(false)
   })

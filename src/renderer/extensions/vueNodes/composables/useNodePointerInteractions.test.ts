@@ -455,6 +455,20 @@ describe('useNodePointerInteractions', () => {
     expect(releasePointerCapture).toHaveBeenCalledWith(1)
   })
 
+  it('disposing an idle node does not end another node drag', () => {
+    const scope = effectScope()
+    scope.run(() =>
+      useNodePointerInteractions(createNodeState({ id: second.id }))
+    )
+    press(handlers, 10, 10)
+    move(handlers, 40, 10)
+    expect(layoutStore.isDraggingVueNodes.value).toBe(true)
+
+    scope.stop()
+
+    expect(layoutStore.isDraggingVueNodes.value).toBe(true)
+  })
+
   it('disposing the scope while dragging ends the drag', () => {
     const scope = effectScope()
     const scoped = scope.run(() =>

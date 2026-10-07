@@ -2519,6 +2519,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       !e.altKey &&
       e.buttons
     ) {
+      this._finishDragZoom()
       this._dragZoomStart = {
         pos: [e.x, e.y],
         scale: this.ds.scale,

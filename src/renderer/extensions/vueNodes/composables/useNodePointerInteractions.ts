@@ -240,7 +240,6 @@ export function useNodePointerInteractions(
 
   onScopeDispose(() => {
     cancelPress()
-    layoutStore.isDraggingVueNodes.value = false
     clearPress()
   })
 
