@@ -1,4 +1,4 @@
-import { OPAQUE_WIDGETS_KEY } from '@comfyorg/comfy-multi-player'
+import { OPAQUE_WIDGETS_KEY, nodesMap } from '@comfyorg/comfy-multi-player'
 import * as Y from 'yjs'
 
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
@@ -383,4 +383,52 @@ export function readSubgraphDefinitions(
     if (definition) definitions.push(definition)
   })
   return definitions
+}
+
+/**
+ * What the document knows about a node's promoted widget layout.
+ *
+ * The two halves answer different questions and neither substitutes for the
+ * other. `valueCount` sizes the positional array a promoted write indexes.
+ * `declaredNames` is the node's DEFINITION's declared input order — the list
+ * `SubgraphNode.configure` rebuilds `inputs` from, so a host's widget-backed
+ * order is always an ordered subsequence of it. Empty when the document
+ * carries no definition for the node, which is the first-write case: the
+ * array does not exist yet and the live order builds it.
+ *
+ * The instance's own `inputs` mirror is deliberately NOT used: it omits
+ * promoted inputs whose values the array still carries, so it can neither
+ * size nor order anything.
+ */
+export interface DocPromotedWidgets {
+  valueCount: number
+  declaredNames: readonly string[]
+}
+
+/** Null when the document holds no such node. */
+export function readDocPromotedWidgets(
+  doc: Y.Doc,
+  nodeId: string
+): DocPromotedWidgets | null {
+  const node = nodesMap(doc).get(nodeId)
+  if (!(node instanceof Y.Map)) return null
+  const stored = node.get(OPAQUE_WIDGETS_KEY)
+  const values: unknown = stored instanceof Y.Array ? stored.toJSON() : stored
+  return {
+    valueCount: Array.isArray(values) ? values.length : 0,
+    declaredNames: declaredInputNames(doc, String(node.get('type') ?? ''))
+  }
+}
+
+function declaredInputNames(doc: Y.Doc, definitionId: string): string[] {
+  const definition = definitionsMap(doc)?.get(definitionId)
+  if (!(definition instanceof Y.Map)) return []
+  const inputs = definition.get('inputs')
+  const list: unknown = inputs instanceof Y.Array ? inputs.toJSON() : inputs
+  if (!Array.isArray(list)) return []
+  return list.flatMap((entry: unknown) => {
+    if (typeof entry !== 'object' || entry === null) return []
+    const { name } = entry as { name?: unknown }
+    return typeof name === 'string' ? [name] : []
+  })
 }

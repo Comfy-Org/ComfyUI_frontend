@@ -43,7 +43,7 @@ import {
 } from '@/utils/graphTraversalUtil'
 
 import type { GraphOperation } from './graphOperations'
-import type { DocPromotedWidgets } from './liveGraphApplier'
+import type { DocPromotedWidgets } from './agentSubgraphDefinitions'
 
 export interface DocOpMinterDeps {
   /** Slice 00's product gate. */
@@ -246,10 +246,13 @@ function promotedHostWrite(
  * - The widgets are in a different ORDER. `reorderSubgraphInputsByWidgetOrder`
  *   permutes the live host without minting anything, and a write indexed
  *   against the permuted order would land on another widget's value. The
- *   names the document marks must therefore still appear in the live order,
- *   and in the same relative order. They are a SUBSET, not a copy: the
- *   instance's `inputs` mirror routinely omits promoted inputs the array
- *   still carries, so requiring equality would refuse ordinary hosts.
+ *   live widget-backed names must therefore still read in the definition's
+ *   declared order; they are a SUBSEQUENCE of it, since a declared input
+ *   fed by a link backs no widget.
+ *
+ * A refused write keeps its old `opaque_widgets` rejection, which also aborts
+ * the remainder of its batch — the same cost every promoted write paid before
+ * the promoted form existed, now only on a drifted host.
  */
 function documentAcceptsLiveIndex(
   doc: DocPromotedWidgets | null,
@@ -257,9 +260,10 @@ function documentAcceptsLiveIndex(
 ): boolean {
   if (doc === null) return true
   if (doc.valueCount > 0 && doc.valueCount !== liveNames.length) return false
+  if (doc.declaredNames.length === 0) return true
   let at = -1
-  for (const name of doc.markedNames) {
-    const next = liveNames.indexOf(name, at + 1)
+  for (const name of liveNames) {
+    const next = doc.declaredNames.indexOf(name, at + 1)
     if (next === -1) return false
     at = next
   }
@@ -364,6 +368,10 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
   let pending: PendingOp[] = []
   const pendingAdds = new Map<string, LGraphNode>()
   const reported = new Set<string>()
+  // Budgeted for the minter's whole life, not per flush: this one sits on the
+  // keystroke-paced widget path, where a per-flush budget reports every
+  // character typed into a drifted host.
+  const reportedDrift = new Set<string>()
   let flushScheduled = false
   let detached = false
 
@@ -412,10 +420,11 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     key: string,
     message: string,
     errorType: string,
-    context: Record<string, unknown>
+    context: Record<string, unknown>,
+    budget: Set<string> = reported
   ): void {
-    if (reported.has(key)) return
-    reported.add(key)
+    if (budget.has(key)) return
+    budget.add(key)
     reportError(new Error(message), { surface: 'agent', errorType, context })
   }
 
@@ -467,14 +476,15 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       (liveNames, doc) =>
         reportOnce(
           `promoted_drift:${String(event.nodeId)}`,
-          `Subgraph host ${String(event.nodeId)} promotes [${liveNames.join(', ')}], which the document's ${doc.valueCount} stored values and marked inputs [${doc.markedNames.join(', ')}] do not place; refusing to mint a promoted write`,
+          `Subgraph host ${String(event.nodeId)} promotes [${liveNames.join(', ')}], which the document's ${doc.valueCount} stored values and declared inputs [${doc.declaredNames.join(', ')}] do not place; refusing to mint a promoted write`,
           'agent_crdt_promoted_widget_order_drift',
           {
             nodeId: event.nodeId,
             liveNames,
             docValueCount: doc.valueCount,
-            docMarkedNames: doc.markedNames
-          }
+            docDeclaredNames: doc.declaredNames
+          },
+          reportedDrift
         )
     )
     if (operation) schedule({ kind: 'op', operation })

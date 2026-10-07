@@ -362,44 +362,6 @@ function readDocSlotName(
   return readDocSlotNames(doc, nodeId, kind)?.[slot]
 }
 
-/**
- * What the document knows about a node's promoted widget layout.
- *
- * The two halves answer different questions and neither substitutes for the
- * other: `valueCount` sizes the positional array a promoted write indexes,
- * while `markedNames` is the instance's `inputs` mirror, which under-reports
- * — a promoted input can be missing from it entirely while its value is
- * present in the array.
- */
-export interface DocPromotedWidgets {
-  valueCount: number
-  markedNames: readonly string[]
-}
-
-/** Null when the document holds no such node. */
-export function readDocPromotedWidgets(
-  doc: Y.Doc,
-  nodeId: string
-): DocPromotedWidgets | null {
-  const node = nodesMap(doc).get(nodeId)
-  if (!node) return null
-  const stored = node.get(OPAQUE_WIDGETS_KEY)
-  const values: unknown = stored instanceof Y.Array ? stored.toJSON() : stored
-  const slots = node.get('inputs')
-  const list: unknown = slots instanceof Y.Array ? slots.toJSON() : slots
-  const markedNames = Array.isArray(list)
-    ? list.flatMap((entry: unknown) => {
-        if (typeof entry !== 'object' || entry === null) return []
-        const { name, widget } = entry as { name?: unknown; widget?: unknown }
-        return widget != null && typeof name === 'string' ? [name] : []
-      })
-    : []
-  return {
-    valueCount: Array.isArray(values) ? values.length : 0,
-    markedNames
-  }
-}
-
 /** The document's value for a node's named widget, or undefined when it holds none. */
 export function readDocWidgetValue(
   doc: Y.Doc,

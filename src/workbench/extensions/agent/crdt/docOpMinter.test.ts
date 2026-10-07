@@ -33,7 +33,8 @@ import { createUuidv4 } from '@/utils/uuid'
 import { attachDocOpMinter, wireNodeSnapshot } from './docOpMinter'
 import type { DocOpMinter, DocOpMinterDeps } from './docOpMinter'
 import type { GraphOperation } from './graphOperations'
-import { readDocPromotedWidgets, readDocSlotNames } from './liveGraphApplier'
+import { readDocPromotedWidgets } from './agentSubgraphDefinitions'
+import { readDocSlotNames } from './liveGraphApplier'
 import { mintWireOps } from './opEnvelope'
 
 vi.mock(import('@/platform/telemetry/reportError'))
@@ -791,11 +792,11 @@ describe('attachDocOpMinter', () => {
   it.for([
     {
       name: 'sizes its array for a different set of widgets',
-      doc: { valueCount: 3, markedNames: [] }
+      doc: { valueCount: 3, declaredNames: [] }
     },
     {
-      name: 'holds the promoted widgets in another order',
-      doc: { valueCount: 2, markedNames: ['text', 'prefix'] }
+      name: 'declares the promoted widgets in another order',
+      doc: { valueCount: 2, declaredNames: ['text', 'clip', 'prefix'] }
     }
   ])(
     'keeps the refusal rather than misplacing a value when the document $name',
@@ -826,6 +827,30 @@ describe('attachDocOpMinter', () => {
     }
   )
 
+  it('reports a drifted host once, not once per keystroke', async () => {
+    const { host, doc } = seedPromotedHost()
+    docPromotedWidgets = () => ({
+      valueCount: 2,
+      declaredNames: ['text', 'prefix']
+    })
+
+    for (const value of ['p', 'pa', 'pas']) {
+      host.widgets[1].value = value
+      await afterFlush()
+    }
+
+    expect(minted).toHaveLength(3)
+    expect(
+      vi
+        .mocked(reportError)
+        .mock.calls.filter(
+          ([, options]) =>
+            options.errorType === 'agent_crdt_promoted_widget_order_drift'
+        )
+    ).toHaveLength(1)
+    doc.destroy()
+  })
+
   it('reads a shipped host whose inputs mirror under-reports its values', () => {
     const workflow = JSON.parse(
       readFileSync(
@@ -836,20 +861,31 @@ describe('attachDocOpMinter', () => {
     const doc = mint(workflow, CATALOG)
     const host = workflow.nodes.find((node) => String(node.id) === '11')
 
-    // `text` is promoted and holds a value but is absent from the inputs
-    // mirror, so the marked names are a SUBSET: sizing the promoted order by
-    // them would put a write to `seed` on top of the prompt at index 0.
+    // `text` holds a value and is declared by the definition, but the
+    // instance's own `inputs` mirror omits it — which is why the definition,
+    // not the mirror, is what places a write.
     expect(host?.widgets_values).toEqual(['a photo of a pier', 0])
     expect(readDocPromotedWidgets(doc, '11')).toEqual({
       valueCount: 2,
-      markedNames: ['seed']
+      declaredNames: [
+        'text',
+        'clip',
+        'model',
+        'positive',
+        'negative',
+        'latent_image',
+        'seed'
+      ]
     })
     doc.destroy()
   })
 
   it('mints for a shipped host whose inputs mirror omits a promoted widget', async () => {
     const { host, doc } = seedPromotedHost()
-    docPromotedWidgets = () => ({ valueCount: 2, markedNames: ['text'] })
+    docPromotedWidgets = () => ({
+      valueCount: 2,
+      declaredNames: ['prefix', 'clip', 'text']
+    })
 
     host.widgets[1].value = 'pasted'
     await afterFlush()
@@ -866,7 +902,7 @@ describe('attachDocOpMinter', () => {
 
   it('mints against the live order when the document places nothing', async () => {
     const { host, doc } = seedPromotedHost()
-    docPromotedWidgets = () => ({ valueCount: 0, markedNames: [] })
+    docPromotedWidgets = () => ({ valueCount: 0, declaredNames: [] })
 
     host.widgets[1].value = 'pasted'
     await afterFlush()
