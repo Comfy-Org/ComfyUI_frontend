@@ -2828,6 +2828,23 @@ describe('useAuthStore in local/desktop distribution', () => {
       expect(mockUser.getIdToken).not.toHaveBeenCalled()
     })
 
+    it("loads the host account's workspaces when Desktop signs in", async () => {
+      const initialize = vi
+        .spyOn(useTeamWorkspaceStore(), 'initialize')
+        .mockResolvedValue()
+      const bridge = hostBridge({ status: 'signed_out' })
+      await startDesktopHostSession(bridge)
+      expect(initialize).not.toHaveBeenCalled()
+
+      bridge.push({
+        status: 'signed_in',
+        userId: 'host-user',
+        workspaceId: 'ws-host'
+      })
+
+      await vi.waitFor(() => expect(initialize).toHaveBeenCalledOnce())
+    })
+
     it('has no workspace credential when no workspace is known', async () => {
       const bridge = hostBridge({ status: 'signed_in', userId: 'host-user' })
       await startDesktopHostSession(bridge)

@@ -270,8 +270,16 @@ export const useAuthStore = defineStore('auth', () => {
 
   watch(
     () => desktopHostUser.value?.id ?? null,
-    (nextUserId, previousUserId) =>
+    (nextUserId, previousUserId) => {
       resetAccountState(previousUserId, nextUserId)
+      // Off Cloud, nothing else loads a host account's workspaces before the
+      // account menu needs them.
+      if (nextUserId !== null && !isCloud) {
+        useTeamWorkspaceStore()
+          .initialize()
+          .catch(() => undefined)
+      }
+    }
   )
 
   // Listen for token refresh events
