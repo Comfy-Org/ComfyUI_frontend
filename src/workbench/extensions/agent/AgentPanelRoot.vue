@@ -337,6 +337,7 @@ watch(billingIdentity, () => {
   agentPanelStore.reportedExhaustionIdentity = null
   agentPanelStore.creditTransitionNoticeIdentity = null
   agentPanelStore.reportedCreditTransitionNoticeIdentity = null
+  agentPanelStore.dismissedCreditTransitionNoticeIdentity = null
 })
 
 // A false first read cannot prove that this session consumed the gratis balance.
@@ -358,7 +359,11 @@ watch(
       agentPanelStore.reportedCreditTransitionNoticeIdentity = null
       return
     }
-    if (previous.hasFunds === true && scopedHasFunds === false) {
+    if (
+      previous.hasFunds === true &&
+      scopedHasFunds === false &&
+      agentPanelStore.dismissedCreditTransitionNoticeIdentity !== identity
+    ) {
       agentPanelStore.creditTransitionNoticeIdentity = identity
     }
   },
@@ -377,6 +382,8 @@ const showCreditTransitionNotice = computed(
 function onDismissCreditTransitionNotice(): void {
   if (showCreditTransitionNotice.value)
     useTelemetry()?.trackAgentCreditTransitionNotice({ action: 'dismissed' })
+  agentPanelStore.dismissedCreditTransitionNoticeIdentity =
+    billingIdentity.value
   agentPanelStore.creditTransitionNoticeIdentity = null
 }
 

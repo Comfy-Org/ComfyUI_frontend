@@ -85,6 +85,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   const reportedExhaustionIdentity = ref<string | null>(null)
   const creditTransitionNoticeIdentity = ref<string | null>(null)
   const reportedCreditTransitionNoticeIdentity = ref<string | null>(null)
+  const dismissedCreditTransitionNoticeIdentity = ref<string | null>(null)
   const agentScopedFundsObservation = ref<AgentScopedFundsObservation | null>(
     null
   )
@@ -349,6 +350,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     reportedExhaustionIdentity,
     creditTransitionNoticeIdentity,
     reportedCreditTransitionNoticeIdentity,
+    dismissedCreditTransitionNoticeIdentity,
     agentScopedFundsObservation,
     width,
     requestedWidth,
