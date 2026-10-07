@@ -150,6 +150,32 @@ describe('EmptyState', () => {
     expect(attribution).not.toHaveProperty('assignment')
   })
 
+  it('does not attribute a surface that mounted before experiment config loaded', async () => {
+    const onRendered = vi.fn()
+    const user = userEvent.setup()
+    const { emitted, rerender } = render(EmptyState, {
+      props: {
+        assignment: 'control',
+        attributeExperiment: false,
+        onRendered
+      },
+      global: { plugins: [i18n] }
+    })
+
+    await rerender({
+      assignment: 'test',
+      attributeExperiment: true,
+      onRendered
+    })
+    const text = i18n.global.t('agent.suggestedPrompts.treatment.local.0')
+    await user.click(screen.getByRole('button', { name: text }))
+
+    expect(onRendered).not.toHaveBeenCalled()
+    expect(emitted().insert).toEqual([
+      [text, expect.not.objectContaining({ assignment: expect.anything() })]
+    ])
+  })
+
   it.for([
     ...LOCAL_PROMPTS.map((prompt, index) => ({
       ...prompt,
