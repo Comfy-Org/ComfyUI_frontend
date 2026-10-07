@@ -26,6 +26,7 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { reportError } from '@/platform/telemetry/reportError'
 import { zComfyNode } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { inputSpecTree } from '@/schemas/nodeDef/inputSpecTree'
 import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
 import type { LinkId } from '@/types/linkId'
 import { parseLinkId, toLinkId } from '@/types/linkId'
@@ -410,6 +411,16 @@ function serializableWidgets(node: LGraphNode): IBaseWidget[] {
   return (node.widgets ?? []).filter((widget) => widget.serialize !== false)
 }
 
+function supportsDynamicWidgetOverflow(node: LGraphNode): boolean {
+  const inputs = node.constructor.nodeData?.inputs
+  return (
+    inputs !== undefined &&
+    Object.values(inputs).some((spec) =>
+      inputSpecTree(spec).some(({ type }) => type === 'COMFY_DYNAMICCOMBO_V3')
+    )
+  )
+}
+
 const OVERFLOW_WIDGET_NAME_RE = /^_extra_(0|[1-9]\d*)$/
 
 function overflowWidgetIndex(name: string): number | null {
@@ -432,6 +443,7 @@ function overflowWidget(
   node: LGraphNode,
   name: string
 ): IBaseWidget | undefined {
+  if (!supportsDynamicWidgetOverflow(node)) return undefined
   const overflowIndex = overflowWidgetIndex(name)
   return overflowIndex === null
     ? undefined

@@ -14,6 +14,7 @@ import type {
   LGraphCanvas
 } from '@/lib/litegraph/src/litegraph'
 import { reportError } from '@/platform/telemetry/reportError'
+import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 
@@ -47,6 +48,15 @@ class TestOverflowWidgets extends LGraphNode {
     const transient = this.addWidget('number', 'transient', 20, () => {})
     transient.serialize = false
     this.addWidget('number', 'overflow', 30, () => {})
+    this.serialize_widgets = true
+  }
+}
+
+class TestPlainWidgets extends LGraphNode {
+  constructor() {
+    super('Test Plain Widgets')
+    this.addWidget('number', 'known', 10, () => {})
+    this.addWidget('number', 'addedAfterCatalog', 20, () => {})
     this.serialize_widgets = true
   }
 }
@@ -179,6 +189,7 @@ const CATALOG: WidgetCatalog = {
     TestSource: { widget_order: ['steps'] },
     TestDefinedSource: { widget_order: [] },
     TestOverflowWidgets: { widget_order: ['known'] },
+    TestPlainWidgets: { widget_order: ['known'] },
     TestGrowingWidgets: { widget_order: ['mode'] },
     // The catalog names `mode.a` but not `mode.b`, so the host stores the last
     // value under the positional alias `_extra_2`.
@@ -234,6 +245,7 @@ beforeEach(() => {
   LiteGraph.registerNodeType('TestSource', TestSource)
   LiteGraph.registerNodeType('TestDefinedSource', TestDefinedSource)
   LiteGraph.registerNodeType('TestOverflowWidgets', TestOverflowWidgets)
+  LiteGraph.registerNodeType('TestPlainWidgets', TestPlainWidgets)
   LiteGraph.registerNodeType('TestGrowingWidgets', TestGrowingWidgets)
   LiteGraph.registerNodeType('TestTwoGrowing', TestTwoGrowing)
   LiteGraph.registerNodeType('TestNestedGrowing', TestNestedGrowing)
@@ -243,9 +255,58 @@ beforeEach(() => {
     TestPrototypeNamedWidget
   )
   LiteGraph.registerNodeType('TestSink', TestSink)
+
+  const dynamicCombo = transformInputSpecV1ToV2(
+    ['COMFY_DYNAMICCOMBO_V3', { options: [] }],
+    { name: 'mode' }
+  )
+  const dynamicNodeData = fromPartial<
+    NonNullable<LGraphNode['constructor']['nodeData']>
+  >({ inputs: { mode: dynamicCombo } })
+  for (const nodeType of [
+    TestOverflowWidgets,
+    TestGrowingWidgets,
+    TestTwoGrowing,
+    TestNestedGrowing,
+    TestPrototypeNamedWidget
+  ]) {
+    nodeType.nodeData = dynamicNodeData
+  }
 })
 
 describe('LiveGraphApplier', () => {
+  it('rejects a positional alias on a node without a dynamic combo', () => {
+    const { graph, doc, applyCollected, applyEdit } = setup({
+      nodes: [
+        {
+          id: 1,
+          type: 'TestPlainWidgets',
+          pos: [0, 0],
+          size: [210, 100],
+          widgets_values: [11]
+        }
+      ],
+      links: []
+    })
+
+    applyCollected()
+    applyEdit(() => {
+      const widgets = nodesMap(doc).get('1')?.get('widgets')
+      if (!(widgets instanceof Y.Map)) throw new Error('named storage')
+      widgets.set('_extra_1', 99)
+    })
+
+    expect(
+      graph.getNodeById(toNodeId(1))?.widgets?.map((widget) => widget.value)
+    ).toEqual([11, 20])
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: "Node 1 (TestPlainWidgets) has no widget '_extra_1'"
+      }),
+      expect.objectContaining({ errorType: 'agent_graph_widget_missing' })
+    )
+  })
+
   it('restores an overflow entry to its serializable widget position', () => {
     const { graph, applyCollected } = setup({
       nodes: [
