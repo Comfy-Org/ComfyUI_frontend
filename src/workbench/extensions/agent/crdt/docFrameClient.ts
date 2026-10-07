@@ -49,6 +49,8 @@ export interface DocReseedResult {
   message?: string
 }
 
+export type DocReseedSendResult = 'sent' | 'too_large' | 'unavailable'
+
 interface DocOpFailure {
   index: number
   /** Absent when the relay cannot map the failing index to an op id. */
@@ -463,15 +465,22 @@ export class DocFrameClient extends EventTarget {
     workflowId: string,
     expectedSeq: number,
     workflow: Record<string, unknown>
-  ): boolean {
+  ): DocReseedSendResult {
     const data = {
       v: DOC_PROTOCOL_VERSION,
       workflow_id: workflowId,
       expected_seq: expectedSeq,
       workflow
     }
-    if (JSON.stringify(data).length > MAX_DOC_UPDATE_B64_LENGTH) return false
-    return this.send('doc_reseed', data)
+    let frame: string
+    try {
+      frame = JSON.stringify({ type: 'doc_reseed', data })
+    } catch {
+      return 'too_large'
+    }
+    if (utf8.encode(frame).length > MAX_DOC_UPDATE_B64_LENGTH)
+      return 'too_large'
+    return this.transport.send(frame) ? 'sent' : 'unavailable'
   }
 
   /** @returns whether the unsubscribe frame actually left the transport. */

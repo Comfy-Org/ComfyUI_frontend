@@ -23,6 +23,7 @@ import { toNodeId } from '@/types/nodeId'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import type { MaterializableGraph } from './agentNodeMaterializer'
+import type { DocReseedSendResult } from './docFrameClient'
 import type { BatchOutcome } from './opSender'
 import type { GraphOperation } from './graphOperations'
 
@@ -32,8 +33,9 @@ const bridgeState = vi.hoisted(() => {
     unsubscribe = vi.fn()
     resubscribe = vi.fn()
     reconnect = vi.fn(() => this.resubscribe())
+    abandonPendingReseed = vi.fn(() => false)
     canReseed = vi.fn(() => false)
-    reseed = vi.fn(() => false)
+    reseed = vi.fn<() => DocReseedSendResult>(() => 'unavailable')
     reconcile = vi.fn()
     destroy = vi.fn()
     sendHumanOps = vi.fn()
@@ -290,7 +292,7 @@ describe('useAgentCrdtFollower', () => {
     const canvasFor = vi.fn(() => visibleCanvas)
     mountFollower('wf-1', true, () => null, {}, canvasFor)
     bridge().canReseed.mockReturnValue(true)
-    bridge().reseed.mockReturnValue(true)
+    bridge().reseed.mockReturnValue('sent')
 
     dispatchFrame('doc_subscribed', {
       workflowId: 'wf-1',
@@ -313,7 +315,7 @@ describe('useAgentCrdtFollower', () => {
       () => emptyCanvas
     )
     bridge().canReseed.mockReturnValue(true)
-    bridge().reseed.mockReturnValue(true)
+    bridge().reseed.mockReturnValue('sent')
 
     dispatchFrame('doc_subscribed', {
       workflowId: 'wf-1',
@@ -323,6 +325,29 @@ describe('useAgentCrdtFollower', () => {
     })
 
     expect(bridge().reseed).toHaveBeenCalledWith('wf-1', emptyCanvas)
+  })
+
+  it('fails terminally when a refusal has no confirmed canvas binding', () => {
+    const { status } = mountFollower('wf-1')
+    bridge().canReseed.mockReturnValue(true)
+
+    dispatchFrame('doc_subscribed', {
+      workflowId: 'wf-1',
+      ok: false,
+      code: 'stale_schema_reseed_required',
+      expectedSeq: 7
+    })
+
+    expect(status().connected).toBe(false)
+    expect(bridge().resubscribe).not.toHaveBeenCalled()
+    expect(telemetryState.reportError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.stringContaining('no confirmed canvas binding')
+      }),
+      expect.objectContaining({
+        errorType: 'failure_reseeding_agent_cloud_workflow'
+      })
+    )
   })
 
   it('does not construct a follower when the product gate is disabled', () => {
@@ -1850,6 +1875,19 @@ describe('useAgentCrdtFollower', () => {
     expect(bridge().resubscribe).not.toHaveBeenCalled()
     vi.advanceTimersByTime(1)
     expect(bridge().resubscribe).toHaveBeenCalledTimes(1)
+    unmount()
+  })
+
+  it('abandons an unacknowledged reseed before retrying', () => {
+    vi.useFakeTimers()
+    const { unmount } = mountFollower('wf-1')
+    bridge().abandonPendingReseed.mockReturnValue(true)
+    dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
+
+    vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
+
+    expect(bridge().abandonPendingReseed).toHaveBeenCalledOnce()
+    expect(bridge().resubscribe).not.toHaveBeenCalled()
     unmount()
   })
 

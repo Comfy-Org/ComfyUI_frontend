@@ -785,8 +785,14 @@ function targetWorkflowDraft(origin?: TurnOrigin): DraftSnapshot | undefined {
 
 function canvasForWorkflow(workflowId: string): Record<string, unknown> | null {
   if (workflowDetached.value) return null
-  const target = boundOrOpenWorkflowFor(workflowId)
-  return target?.activeState ?? null
+  const boundPath = bindingStore.tabPathFor(workflowId)
+  if (boundPath === undefined) return null
+  const target = workflowStore.getWorkflowByPath(boundPath)
+  if (!target || !bindingStore.matchesWorkflow(workflowId, target)) return null
+  if (target.path !== workflowStore.activeWorkflow?.path)
+    return target.activeState ?? null
+  const live = app.graph?.serialize()
+  return live ? { ...live } : null
 }
 
 const selectedTargetTab = computed<ActiveTab | null>(() => {

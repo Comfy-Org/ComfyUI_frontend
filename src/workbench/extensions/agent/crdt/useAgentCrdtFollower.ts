@@ -1,3 +1,4 @@
+import type { Op } from '@comfyorg/comfy-multi-player'
 import {
   computed,
   effectScope,
@@ -535,6 +536,8 @@ function startAgentCrdtFollower(
   let subscribeAckTimer: ReturnType<typeof setTimeout> | null = null
   let subscribeAckTimeouts = 0
   let subscribeGaveUp = false
+  let reseedAttempts = 0
+  let reseedReplayOps: Op[] = []
 
   // The recency heartbeat: armed only while a subscribe is CONFIRMED (bound +
   // healthy by definition), slid forward by every doc-scoped frame, cancelled
@@ -638,7 +641,7 @@ function startAgentCrdtFollower(
         attempt: subscribeRetryAttempt,
         workflowId
       })
-      bridge.resubscribe()
+      if (!bridge.abandonPendingReseed()) bridge.resubscribe()
     }, SUBSCRIBE_ACK_TIMEOUT_MS)
   }
 
@@ -661,9 +664,26 @@ function startAgentCrdtFollower(
     }, delay)
   }
 
+  const giveUpOnReseed = (reason: string): void => {
+    clearStaleProbe()
+    clearSubscribeRetry()
+    clearSubscribeAckTimer()
+    subscribeGaveUp = true
+    connected.value = false
+    reportError(new Error(`agent document reseed stopped: ${reason}`), {
+      errorType: 'failure_reseeding_agent_cloud_workflow',
+      level: 'warning',
+      tags: { feature_area: 'agent', operation: 'sync', outcome: 'gave_up' }
+    })
+  }
+
   const tryReseed = (): boolean => {
     const target = subscribedWorkflowId.value
     if (target === null || !bridge.canReseed(target)) return false
+    if (reseedAttempts >= SUBSCRIBE_RETRY_MAX_ATTEMPTS) {
+      giveUpOnReseed('attempt budget exhausted')
+      return true
+    }
     let canvas: Record<string, unknown> | null
     try {
       canvas = canvasFor(target)
@@ -675,7 +695,17 @@ function startAgentCrdtFollower(
       })
       return false
     }
-    if (canvas === null || !bridge.reseed(target, canvas)) return false
+    if (canvas === null) {
+      giveUpOnReseed('no confirmed canvas binding')
+      return true
+    }
+    const sendResult = bridge.reseed(target, canvas)
+    if (sendResult === 'too_large') {
+      giveUpOnReseed('canvas exceeds the transport limit')
+      return true
+    }
+    if (sendResult !== 'sent') return false
+    reseedAttempts += 1
     recordDevEvent('doc_reseed_sent', { workflowId: target })
     onSubscribeSent(
       new CustomEvent('doc_subscribe_sent', {
@@ -696,7 +726,12 @@ function startAgentCrdtFollower(
     lastFrameType.value = event.type
     recordDevEvent('doc_reseed_result', detail)
     const code = typeof detail.code === 'string' ? detail.code : undefined
-    if (detail.ok === true || code === RESEED_CONFLICT) return
+    if (detail.ok === true) {
+      reseedReplayOps = sender.pendingOps().flatMap(({ ops }) => ops)
+      sender.abortAll()
+      return
+    }
+    if (code === RESEED_CONFLICT) return
     clearSubscribeAckTimer()
     if (isRetryableReseedCode(code)) scheduleSubscribeRetry()
     else {
@@ -725,6 +760,12 @@ function startAgentCrdtFollower(
       clearSubscribeRetry()
       armStaleProbe()
       resumeHeldOpsIfSubscribed()
+      if (reseedReplayOps.length > 0) {
+        const replay = reseedReplayOps
+        reseedReplayOps = []
+        sender.enqueue(replay)
+      }
+      reseedAttempts = 0
       // FE-1902 (poc-3): only a CONFIRMED binding is worth rebinding to after
       // a remount — persist on ok, not on intent.
       if (subscribedWorkflowId.value !== null)
@@ -879,6 +920,7 @@ function startAgentCrdtFollower(
       updatesApplied.value = 0
       confirmedDeletes.clear()
       pendingLiveNodeIds.clear()
+      knownDocNodeIds = new Set()
       if (detail?.preserveCanvas !== true) {
         adapter.clearForReset(workflowId, {
           source: 'agent-remote',

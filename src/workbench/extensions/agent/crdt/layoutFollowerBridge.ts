@@ -4,6 +4,7 @@ import type {
   DocFrameClient,
   DocOp,
   DocReseedResult,
+  DocReseedSendResult,
   DocReset,
   DocSubscribed,
   DocUpdate
@@ -42,6 +43,17 @@ function trySend(send: () => boolean): boolean {
     })
     wireLog.warn('frame_send_failed', 'outbound doc frame dropped', error)
     return false
+  }
+}
+
+function tryReseedSend(send: () => DocReseedSendResult): DocReseedSendResult {
+  try {
+    return send()
+  } catch (error) {
+    trySend(() => {
+      throw error
+    })
+    return 'unavailable'
   }
 }
 
@@ -246,10 +258,7 @@ export class LayoutFollowerBridge extends EventTarget {
   }
 
   reconnect(): void {
-    this.pendingReseedWorkflowId = null
-    this.reseedBlockedUntilConfirmedWorkflowId = null
-    this.reseedToken = null
-    this.resubscribe()
+    if (!this.abandonPendingReseed()) this.resubscribe()
   }
 
   unsubscribe(): void {
@@ -259,13 +268,34 @@ export class LayoutFollowerBridge extends EventTarget {
     this.reconcile()
   }
 
-  reseed(workflowId: string, workflow: Record<string, unknown>): boolean {
+  reseed(
+    workflowId: string,
+    workflow: Record<string, unknown>
+  ): DocReseedSendResult {
     const expectedSeq = this.reseedSequenceFor(workflowId)
-    if (expectedSeq === null) return false
+    if (expectedSeq === null) return 'unavailable'
     this.reseedToken = null
-    if (!trySend(() => this.client.reseed(workflowId, expectedSeq, workflow)))
-      return false
+    const result = tryReseedSend(() =>
+      this.client.reseed(workflowId, expectedSeq, workflow)
+    )
+    if (result !== 'sent') return result
     this.pendingReseedWorkflowId = workflowId
+    return 'sent'
+  }
+
+  abandonPendingReseed(): boolean {
+    const workflowId = this.pendingReseedWorkflowId
+    if (workflowId === null) return false
+    this.pendingReseedWorkflowId = null
+    this.reseedBlockedUntilConfirmedWorkflowId = null
+    this.reseedToken = null
+    this.dropDocForNewLineage()
+    this.dispatchEvent(
+      new CustomEvent('follower_replaced', {
+        detail: { workflowId, preserveCanvas: true }
+      })
+    )
+    this.resubscribe()
     return true
   }
 
@@ -486,7 +516,10 @@ export class LayoutFollowerBridge extends EventTarget {
     this.dispatchEvent(new CustomEvent(event.type, { detail: result }))
     if (result.workflowId !== this.desiredWorkflowId) return
     if (!result.ok) {
-      if (result.code === RESEED_CONFLICT) this.resubscribe()
+      if (result.code === RESEED_CONFLICT) {
+        this.pendingReseedWorkflowId = result.workflowId
+        this.abandonPendingReseed()
+      }
       return
     }
     this.reseedBlockedUntilConfirmedWorkflowId = result.workflowId

@@ -83,8 +83,8 @@ describe('stale-schema reseed wire protocol', () => {
   it('sends one canvas with the exact sequence authorized by the refusal', () => {
     const { transport, bridge } = refusedBridge()
 
-    expect(bridge.reseed('wf-1', canvas)).toBe(true)
-    expect(bridge.reseed('wf-1', canvas)).toBe(false)
+    expect(bridge.reseed('wf-1', canvas)).toBe('sent')
+    expect(bridge.reseed('wf-1', canvas)).toBe('unavailable')
     expect(transport.frames('doc_reseed')).toEqual([
       {
         v: 1,
@@ -97,13 +97,22 @@ describe('stale-schema reseed wire protocol', () => {
 
   it('accepts an empty canvas and rejects an oversized one', () => {
     const empty = refusedBridge()
-    expect(empty.bridge.reseed('wf-1', { nodes: [] })).toBe(true)
+    expect(empty.bridge.reseed('wf-1', { nodes: [] })).toBe('sent')
 
     const oversized = refusedBridge()
     expect(
       oversized.bridge.reseed('wf-1', { value: 'x'.repeat((8 << 20) + 1) })
-    ).toBe(false)
+    ).toBe('too_large')
     expect(oversized.transport.frames('doc_reseed')).toHaveLength(0)
+  })
+
+  it('counts the complete UTF-8 frame against the transport limit', () => {
+    const multibyte = refusedBridge()
+
+    expect(
+      multibyte.bridge.reseed('wf-1', { value: '界'.repeat(3_000_000) })
+    ).toBe('too_large')
+    expect(multibyte.transport.frames('doc_reseed')).toHaveLength(0)
   })
 
   it('replaces the old lineage without emitting a destructive reset after success', () => {
@@ -133,7 +142,7 @@ describe('stale-schema reseed wire protocol', () => {
     )
   })
 
-  it('keeps the old lineage and requests a fresh refusal after conflict', () => {
+  it('abandons the ambiguous lineage and requests a fresh refusal after conflict', () => {
     const { transport, bridge } = refusedBridge()
     bridge.reseed('wf-1', canvas)
     const oldFollower = bridge.follower
@@ -145,7 +154,7 @@ describe('stale-schema reseed wire protocol', () => {
       code: 'conflict'
     })
 
-    expect(bridge.follower).toBe(oldFollower)
+    expect(bridge.follower).not.toBe(oldFollower)
     expect(transport.frames('doc_subscribe')).toHaveLength(2)
   })
 
