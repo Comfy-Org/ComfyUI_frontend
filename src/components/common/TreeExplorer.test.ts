@@ -26,7 +26,8 @@ function renderHarness(
   {
     expandedKeys = ref<Record<string, boolean>>({}),
     oneWayExpandedKeys = false,
-    selectionKeys = ref<Record<string, boolean>>()
+    selectionKeys = ref<Record<string, boolean>>(),
+    withPreview = false
   } = {}
 ) {
   const explorer = ref<{ addFolderCommand: (targetNodeKey: string) => void }>()
@@ -44,7 +45,9 @@ function renderHarness(
           v-model:selection-keys="selectionKeys"
           :root="root"
           aria-label="Files"
-        />
+        >
+          ${withPreview ? '<template #preview="{ node }">Preview of {{ node.label }}</template>' : ''}
+        </TreeExplorer>
       `
     }),
     {
@@ -114,6 +117,23 @@ describe('TreeExplorer', () => {
     expect(within(row).getByTestId('tree-node-icon-image')).toHaveStyle({
       backgroundImage: 'url(/preview.webp)'
     })
+  })
+
+  it('previews only the hovered leaf', async () => {
+    const user = userEvent.setup()
+    renderHarness(root, {
+      expandedKeys: ref({ folder: true }),
+      withPreview: true
+    })
+
+    await user.hover(screen.getByRole('treeitem', { name: 'Folder' }))
+    expect(screen.queryByText(/Preview of/)).not.toBeInTheDocument()
+
+    await user.hover(screen.getByRole('treeitem', { name: 'Leaf' }))
+    expect(screen.getByText('Preview of Leaf')).toBeInTheDocument()
+
+    await user.unhover(screen.getByRole('treeitem', { name: 'Leaf' }))
+    expect(screen.queryByText(/Preview of/)).not.toBeInTheDocument()
   })
 
   it('selects a clicked row when the selection is bound', async () => {

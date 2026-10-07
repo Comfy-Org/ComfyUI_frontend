@@ -93,32 +93,32 @@ test.describe('Layout & sidebar settings', { tag: ['@settings'] }, () => {
   })
 
   test.describe('Comfy.TreeExplorer.ItemPadding', () => {
-    test.use({ initialSettings: { 'Comfy.NodeLibrary.NewDesign': false } })
+    test.describe('legacy node library', () => {
+      test.use({ initialSettings: { 'Comfy.NodeLibrary.NewDesign': false } })
 
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.menu.nodeLibraryTab.open()
-    })
-
-    test('low padding (0px) is applied to tree node content', async ({
-      comfyPage
-    }) => {
-      await comfyPage.settings.setSetting('Comfy.TreeExplorer.ItemPadding', 0)
-      await expect(
-        comfyPage.menu.nodeLibraryTab.nodeLibraryTree
+      test('applies the padding to tree rows', async ({ comfyPage }) => {
+        await comfyPage.settings.setSetting('Comfy.TreeExplorer.ItemPadding', 4)
+        await comfyPage.menu.nodeLibraryTab.open()
+        const row = comfyPage.menu.nodeLibraryTab.nodeLibraryTree
           .getByRole('treeitem')
           .first()
-      ).toHaveCSS('padding', '0px')
+        await expect(row).toHaveCSS('padding-top', '4px')
+        await expect(row).toHaveCSS('padding-bottom', '4px')
+      })
     })
 
-    test('high padding (8px) is applied to tree node content', async ({
-      comfyPage
-    }) => {
-      await comfyPage.settings.setSetting('Comfy.TreeExplorer.ItemPadding', 8)
-      await expect(
-        comfyPage.menu.nodeLibraryTab.nodeLibraryTree
+    test.describe('new node library', () => {
+      test.use({ initialSettings: { 'Comfy.NodeLibrary.NewDesign': true } })
+
+      test('applies the padding to tree rows', async ({ comfyPage }) => {
+        await comfyPage.settings.setSetting('Comfy.TreeExplorer.ItemPadding', 4)
+        await comfyPage.menu.nodeLibraryTabV2.open()
+        const row = comfyPage.menu.nodeLibraryTabV2.sidebarContent
           .getByRole('treeitem')
           .first()
-      ).toHaveCSS('padding', '8px')
+        await expect(row).toHaveCSS('padding-top', '4px')
+        await expect(row).toHaveCSS('padding-bottom', '4px')
+      })
     })
   })
 })

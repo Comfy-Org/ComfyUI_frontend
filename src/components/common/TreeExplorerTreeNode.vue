@@ -10,12 +10,11 @@
     :data-testid="`tree-node-${node.key}`"
   >
     <div class="node-content flex min-w-0 flex-1 items-center">
-      <span class="node-label min-w-0">
+      <span class="node-label block min-w-0 truncate">
         <slot name="before-label" :node="node" />
         <EditableText
           :model-value="node.label"
           :is-editing="isEditing"
-          label-class="break-all"
           @edit="handleRename"
         />
         <slot name="after-label" :node="node" />
@@ -50,7 +49,10 @@ import {
   usePragmaticDraggable,
   usePragmaticDroppable
 } from '@/composables/usePragmaticDragAndDrop'
-import { InjectKeyHandleEditLabelFunction } from '@/types/treeExplorerTypes'
+import {
+  InjectKeyExpandedKeys,
+  InjectKeyHandleEditLabelFunction
+} from '@/types/treeExplorerTypes'
 import type {
   RenderedTreeExplorerNode,
   TreeExplorerDragAndDropData
@@ -61,11 +63,6 @@ const { node } = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (
-    e: 'itemDropped',
-    node: RenderedTreeExplorerNode<T>,
-    data: RenderedTreeExplorerNode<T>
-  ): void
   (e: 'dragStart', node: RenderedTreeExplorerNode<T>): void
   (e: 'dragEnd', node: RenderedTreeExplorerNode<T>): void
 }>()
@@ -83,6 +80,7 @@ const showNodeBadgeText = computed<boolean>(() => nodeBadgeText.value !== '')
 
 const isEditing = computed<boolean>(() => node.isEditingLabel ?? false)
 const handleEditLabel = inject(InjectKeyHandleEditLabelFunction)
+const expandedKeys = inject(InjectKeyExpandedKeys)
 const handleRename = (newName: string) => {
   handleEditLabel?.(node as RenderedTreeExplorerNode, newName)
 }
@@ -123,7 +121,9 @@ if (node.droppable) {
       if (dndData.type === 'tree-explorer-node') {
         await node.handleDrop?.(dndData as TreeExplorerDragAndDropData<T>)
         canDrop.value = false
-        emit('itemDropped', node, dndData.data as RenderedTreeExplorerNode<T>)
+        if (expandedKeys) {
+          expandedKeys.value = { ...expandedKeys.value, [node.key]: true }
+        }
       }
     },
     onDragEnter: (event) => {

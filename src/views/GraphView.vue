@@ -193,7 +193,7 @@ watchEffect(() => {
 watchEffect(() => {
   const padding = settingStore.get('Comfy.TreeExplorer.ItemPadding')
   document.documentElement.style.setProperty(
-    '--comfy-tree-explorer-item-padding',
+    '--tree-item-padding',
     `${padding}px`
   )
 })

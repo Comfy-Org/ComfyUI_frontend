@@ -55,8 +55,11 @@
         :aria-label="$t('sideToolbar.modelLibrary')"
         :root="renderedRoot"
       >
-        <template #node="{ node }">
-          <ModelTreeLeaf :node="node" />
+        <template #preview="{ node }">
+          <ModelPreview
+            v-if="node.data && hasPreviewDetails(node.data)"
+            :model-def="node.data"
+          />
         </template>
       </TreeExplorer>
     </template>
@@ -72,7 +75,7 @@ import SidebarTopArea from '@/components/sidebar/tabs/SidebarTopArea.vue'
 import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import ElectronDownloadItems from '@/components/sidebar/tabs/modelLibrary/ElectronDownloadItems.vue'
-import ModelTreeLeaf from '@/components/sidebar/tabs/modelLibrary/ModelTreeLeaf.vue'
+import ModelPreview from '@/components/sidebar/tabs/modelLibrary/ModelPreview.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { startModelLoaderDrag } from '@/composables/node/startModelNodeDragFromAsset'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -235,6 +238,41 @@ const renderedRoot = computed<TreeExplorerNode<ComfyModelDef>>(() => {
   }
 
   return fillNodeInfo(root.value)
+})
+
+function hasPreviewDetails(model: ComfyModelDef) {
+  return (
+    model.has_loaded_metadata &&
+    Boolean(
+      model.author ||
+      model.simplified_file_name != model.title ||
+      model.description ||
+      model.usage_hint ||
+      model.trigger_phrase ||
+      model.image
+    )
+  )
+}
+
+const visibleModels = computed(() => {
+  const models: ComfyModelDef[] = []
+  const collect = (node: TreeNode<ModelOrFolder>) => {
+    for (const child of node.children ?? []) {
+      if (child.leaf) {
+        if (child.data && !(child.data instanceof ModelFolder)) {
+          models.push(child.data)
+        }
+      } else if (expandedKeys.value[child.key]) {
+        collect(child)
+      }
+    }
+  }
+  collect(root.value)
+  return models
+})
+
+watch(visibleModels, (models) => {
+  for (const model of models) void model.load()
 })
 
 watch(

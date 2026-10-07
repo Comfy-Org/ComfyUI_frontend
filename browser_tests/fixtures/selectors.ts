@@ -27,6 +27,7 @@ export const TestIds = {
     tabButton: (tabId: string) => `${tabId}-tab-button`
   },
   tree: {
+    itemPreview: 'tree-item-preview',
     leafCount: 'tree-leaf-count'
   },
   canvas: {

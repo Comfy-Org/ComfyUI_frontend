@@ -4,12 +4,7 @@
     v-bind="forwarded"
     v-model="selected"
     v-model:expanded="expanded"
-    :class="
-      cn(
-        'm-0 min-h-px min-w-0 list-none p-0 [--tree-item-padding:--spacing(1)]',
-        className
-      )
-    "
+    :class="cn('m-0 min-h-px min-w-0 list-none p-0', className)"
   >
     <slot :flatten-items />
   </TreeRoot>

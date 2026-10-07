@@ -72,7 +72,7 @@ export class NodeLibrarySidebarTab extends SidebarTab {
     this.newFolderButton = this.tabContainer.locator('.new-folder-button')
     this.nodeLibrarySearchBoxInput = page.getByPlaceholder('Search Nodes...')
     this.nodeLibraryTree = page.getByTestId(TestIds.sidebar.nodeLibrary)
-    this.nodePreview = page.locator('.node-lib-node-preview')
+    this.nodePreview = page.getByTestId(TestIds.tree.itemPreview)
   }
 
   override async open() {
@@ -85,38 +85,34 @@ export class NodeLibrarySidebarTab extends SidebarTab {
     await this.nodeLibraryTree.waitFor({ state: 'hidden' })
   }
 
+  getBookmarkedNode(nodeName: string) {
+    return this.getNode(nodeName).and(this.bookmarkTree.getByRole('treeitem'))
+  }
+
   getFolder(folderName: string) {
-    return this.page.locator(this.folderSelector(folderName))
+    return this.getTreeItem(folderName, 'folder')
   }
 
   getFolderIcon(folderName: string) {
-    return this.bookmarkTree
-      .getByRole('treeitem')
-      .filter({ has: this.getFolder(folderName) })
+    return this.getFolder(folderName)
+      .and(this.bookmarkTree.getByRole('treeitem'))
       .locator('.tree-explorer-node-icon')
   }
 
   getNode(nodeName: string) {
-    return this.page.locator(this.nodeSelector(nodeName))
-  }
-
-  nodeSelector(nodeName: string): string {
-    return `[data-testid="node-tree-leaf"][data-node-name="${nodeName}"]`
-  }
-
-  folderSelector(folderName: string): string {
-    return `[data-testid="node-tree-folder"][data-folder-name="${folderName}"]`
-  }
-
-  getBookmarkedNode(nodeName: string) {
-    return this.bookmarkTree.locator(this.nodeSelector(nodeName))
+    return this.getTreeItem(nodeName, 'node')
   }
 
   getNodeInParentFolder(nodeName: string, folderName: string) {
-    return this.nodeLibraryTree
-      .getByRole('treeitem')
-      .and(this.nodeLibraryTree.locator(`[data-parent-label="${folderName}"]`))
-      .locator(this.nodeSelector(nodeName))
+    return this.getNode(nodeName).and(
+      this.nodeLibraryTree.locator(`[data-parent-label="${folderName}"]`)
+    )
+  }
+
+  private getTreeItem(label: string, type: 'folder' | 'node') {
+    return this.tabContainer
+      .getByRole('treeitem', { name: label, exact: true })
+      .and(this.tabContainer.locator(`[data-tree-node-type="${type}"]`))
   }
 }
 
@@ -277,7 +273,7 @@ export class ModelLibrarySidebarTab extends SidebarTab {
     this.loadAllFoldersButton = page.getByRole('button', {
       name: 'Load All Folders'
     })
-    this.modelPreview = page.locator('.model-lib-model-preview')
+    this.modelPreview = page.getByTestId(TestIds.tree.itemPreview)
     this.refreshButton = page.getByRole('button', { name: 'Refresh' })
     this.searchInput = page.getByPlaceholder('Search Models...')
   }

@@ -1,16 +1,10 @@
 <template>
   <RekaTreeItem
+    ref="item"
     v-slot="{ isExpanded, handleToggle }"
     v-bind="forwarded"
-    :class="
-      cn(
-        'group/tree-node flex min-w-0 cursor-pointer items-center gap-1 rounded-sm py-(--tree-item-padding) pr-(--tree-item-padding) outline-none hover:bg-secondary-background-hover focus-visible:bg-secondary-background-hover data-selected:bg-secondary-background-selected',
-        className
-      )
-    "
-    :style="{
-      paddingLeft: `calc(var(--tree-item-padding) + ${(restProps.level - 1) * 16}px)`
-    }"
+    :class="cn(treeItemClass, className)"
+    :style="treeItemIndent(restProps.level)"
     @select="emits('select', $event)"
     @toggle="preventClickToggle"
   >
@@ -35,7 +29,7 @@
     </Button>
     <span v-else class="size-5 shrink-0" />
     <div class="contents" @keydown="keepKeysInEditableContent">
-      <slot />
+      <slot :is-hovered />
     </div>
   </RekaTreeItem>
 </template>
@@ -47,12 +41,14 @@ import {
   injectTreeRootContext,
   useForwardProps
 } from 'reka-ui'
+import { useElementHover } from '@vueuse/core'
 import type { HTMLAttributes } from 'vue'
-import { computed } from 'vue'
+import { computed, useTemplateRef } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
+import { treeItemClass, treeItemIndent } from '@/components/ui/tree/treeStyles'
 
 const { class: className, ...restProps } = defineProps<
   Omit<TreeItemProps<T>, 'as' | 'asChild'> & {
@@ -63,6 +59,8 @@ const { class: className, ...restProps } = defineProps<
 const emits = defineEmits<TreeItemEmits<T>>()
 
 const forwarded = useForwardProps(restProps)
+
+const isHovered = useElementHover(useTemplateRef('item'))
 
 const rootContext = injectTreeRootContext()
 const hasChildren = computed(() => !!rootContext.getChildren(restProps.value))

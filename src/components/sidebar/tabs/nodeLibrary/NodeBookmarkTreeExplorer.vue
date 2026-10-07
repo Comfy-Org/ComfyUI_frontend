@@ -6,11 +6,68 @@
     data-testid="node-library-bookmark-tree"
     :root="renderedBookmarkedRoot"
   >
-    <template #folder="{ node }">
-      <NodeTreeFolder :node="node" />
-    </template>
     <template #node="{ node }">
-      <NodeTreeLeaf :node="node" :open-node-help="openNodeHelp" />
+      <TreeExplorerTreeNode :node>
+        <template #before-label>
+          <Badge v-if="node.data?.experimental" severity="primary">
+            {{ $t('g.experimental') }}
+          </Badge>
+          <Badge v-if="node.data?.deprecated" severity="danger">
+            {{ $t('g.deprecated') }}
+          </Badge>
+        </template>
+        <template v-if="node.data" #actions>
+          <template v-if="subgraphStore.isUserBlueprint(node.data.name)">
+            <Button
+              variant="destructive"
+              size="icon-sm"
+              :aria-label="$t('g.delete')"
+              @click.stop="void subgraphStore.deleteBlueprint(node.data.name)"
+            >
+              <i class="icon-[lucide--trash-2] size-4" />
+            </Button>
+            <Button
+              variant="muted-textonly"
+              size="icon-sm"
+              :aria-label="$t('g.edit')"
+              @click.stop="void subgraphStore.editBlueprint(node.data.name)"
+            >
+              <i class="icon-[lucide--square-pen] size-4" />
+            </Button>
+          </template>
+          <template v-else>
+            <Button
+              variant="muted-textonly"
+              size="icon-sm"
+              :aria-label="$t('icon.bookmark')"
+              @click.stop="void nodeBookmarkStore.toggleBookmark(node.data)"
+            >
+              <i
+                :class="
+                  cn(
+                    nodeBookmarkStore.isBookmarked(node.data)
+                      ? 'pi pi-bookmark-fill'
+                      : 'pi pi-bookmark',
+                    'size-3.5'
+                  )
+                "
+              />
+            </Button>
+            <Button
+              v-tooltip.bottom="$t('g.learnMore')"
+              variant="muted-textonly"
+              size="icon-sm"
+              :aria-label="$t('g.learnMore')"
+              @click.stop="openNodeHelp(node.data)"
+            >
+              <i class="pi pi-question size-3.5" />
+            </Button>
+          </template>
+        </template>
+      </TreeExplorerTreeNode>
+    </template>
+    <template #preview="{ node }">
+      <NodePreview v-if="node.data" :node-def="node.data" />
     </template>
   </TreeExplorer>
 
@@ -36,20 +93,23 @@ import { useI18n } from 'vue-i18n'
 
 import FolderCustomizationDialog from '@/components/common/CustomizationDialog.vue'
 import TreeExplorer from '@/components/common/TreeExplorer.vue'
+import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import NodePreview from '@/components/node/NodePreview.vue'
-import NodeTreeFolder from '@/components/sidebar/tabs/nodeLibrary/NodeTreeFolder.vue'
-import NodeTreeLeaf from '@/components/sidebar/tabs/nodeLibrary/NodeTreeLeaf.vue'
+import Badge from '@/components/ui/badge/Badge.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { useSubgraphStore } from '@/stores/subgraphStore'
 import type {
   RenderedTreeExplorerNode,
   TreeExplorerDragAndDropData,
   TreeExplorerNode,
   TreeNode
 } from '@/types/treeExplorerTypes'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const instance = getCurrentInstance()!
 const appContext = instance.appContext
@@ -62,6 +122,7 @@ const expandedKeys = ref<Record<string, boolean>>({})
 const { expandNode, toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
 
 const nodeBookmarkStore = useNodeBookmarkStore()
+const subgraphStore = useSubgraphStore()
 const bookmarkedRoot = computed<TreeNode<ComfyNodeDefImpl>>(() => {
   const filterTree = (
     node: TreeNode<ComfyNodeDefImpl>
@@ -209,7 +270,15 @@ const renderedBookmarkedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(
         },
         contextMenuItems: extraMenuItems,
         ...(node.leaf
-          ? {}
+          ? node.data && subgraphStore.isUserBlueprint(node.data.name)
+            ? {
+                async handleDelete() {
+                  if (this.data) {
+                    await subgraphStore.deleteBlueprint(this.data.name)
+                  }
+                }
+              }
+            : {}
           : {
               async handleRename(newName: string) {
                 if (this.data && this.data.isDummyFolder) {

@@ -3,12 +3,7 @@
     v-bind="$attrs"
     v-model:expanded="expandedNodeKeys"
     v-model:selected="selectedNode"
-    :class="
-      cn(
-        'tree-explorer px-2 [--tree-item-padding:var(--comfy-tree-explorer-item-padding)]',
-        className
-      )
-    "
+    :class="cn('tree-explorer px-2', className)"
     :items="renderedRoot.children ?? []"
     :get-key="(node) => node.key"
     :get-children="(node) => (node.leaf ? undefined : (node.children ?? []))"
@@ -16,6 +11,7 @@
     <template #default="{ flattenItems }">
       <UiTreeItem
         v-for="item in flattenItems"
+        v-slot="{ isHovered }"
         :key="item._id"
         class="tree-explorer-item"
         :value="item.value"
@@ -29,7 +25,12 @@
       >
         <span class="relative size-4 shrink-0">
           <i
-            :class="cn(item.value.icon, 'tree-explorer-node-icon size-4')"
+            :class="
+              cn(
+                item.value.icon,
+                'tree-explorer-node-icon size-4 text-muted-foreground'
+              )
+            "
             :style="{ color: item.value.iconColor }"
           />
           <span
@@ -51,13 +52,23 @@
             <TreeExplorerTreeNode :node="item.value" />
           </slot>
         </div>
+        <div
+          v-if="isHovered && item.value.leaf && $slots.preview"
+          ref="preview"
+          data-testid="tree-item-preview"
+          class="pointer-events-none fixed z-1001"
+          :style="previewStyle"
+        >
+          <slot name="preview" :node="item.value" />
+        </div>
       </UiTreeItem>
     </template>
   </UiTree>
   <ContextMenu ref="menu" :model="menuItems" />
 </template>
 <script setup lang="ts" generic="T">
-import { computed, provide, ref, shallowRef } from 'vue'
+import { useElementBounding, useElementSize, useWindowSize } from '@vueuse/core'
+import { computed, provide, ref, shallowRef, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
@@ -67,6 +78,7 @@ import UiTree from '@/components/ui/tree/Tree.vue'
 import UiTreeItem from '@/components/ui/tree/TreeItem.vue'
 import { useTreeFolderOperations } from '@/composables/tree/useTreeFolderOperations'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import {
   InjectKeyExpandedKeys,
   InjectKeyHandleEditLabelFunction
@@ -279,6 +291,33 @@ const wrapCommandWithErrorHandler = (
   const node = menuTargetNode.value
   return errorHandling.wrapWithErrorHandlingAsync(command, node?.handleError)
 }
+
+const PREVIEW_GAP = 16
+
+const previews = useTemplateRef<HTMLElement[]>('preview')
+const previewElement = computed(() => previews.value?.[0])
+const previewRow = useElementBounding(() =>
+  previewElement.value?.closest<HTMLElement>('[role="treeitem"]')
+)
+const previewSize = useElementSize(previewElement, undefined, {
+  box: 'border-box'
+})
+const { height: windowHeight } = useWindowSize()
+const settingStore = useSettingStore()
+const previewStyle = computed(() => {
+  const top = Math.max(
+    0,
+    Math.min(
+      previewRow.top.value,
+      windowHeight.value - previewSize.height.value - PREVIEW_GAP
+    )
+  )
+  const left =
+    settingStore.get('Comfy.Sidebar.Location') === 'right'
+      ? previewRow.left.value - previewSize.width.value - PREVIEW_GAP
+      : previewRow.right.value + PREVIEW_GAP
+  return { top: `${top}px`, left: `${left}px` }
+})
 
 defineExpose({
   /**
