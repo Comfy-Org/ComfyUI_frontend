@@ -32,17 +32,9 @@ const crumbs = computed(() =>
 </script>
 
 <template>
-  <template v-if="crumbs">
-    <HubBreadcrumb :crumbs class="mb-8 max-sm:mb-5" />
-    <p :class="workshopEyebrowClass">
-      {{ t('workshop.catalogue.eyebrow') }}
-    </p>
-  </template>
-  <p v-else-if="section === 'explore'" :class="workshopEyebrowClass">
-    {{ t('workshop.catalogue.eyebrow') }}
-  </p>
+  <HubBreadcrumb v-if="crumbs" :crumbs class="mb-8 max-sm:mb-5" />
   <a
-    v-else
+    v-else-if="section !== 'explore'"
     :href="routes.hubExplore"
     :class="
       cn(
