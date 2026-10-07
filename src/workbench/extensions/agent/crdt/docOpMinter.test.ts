@@ -955,10 +955,12 @@ describe('attachDocOpMinter', () => {
       promotedNames: ['text', 'prefix']
     })
 
-    for (const value of ['p', 'pa', 'pas']) {
-      host.widgets[1].value = value
-      await afterFlush()
-    }
+    host.widgets[1].value = 'p'
+    await afterFlush()
+    host.widgets[1].value = 'pa'
+    await afterFlush()
+    host.widgets[1].value = 'pas'
+    await afterFlush()
 
     expect(minted).toHaveLength(0)
     expect(
@@ -982,15 +984,14 @@ describe('attachDocOpMinter', () => {
       promotedNames: ['text', 'prefix']
     })
 
-    for (const [text, steps] of [
-      ['p', 41],
-      ['pa', 42]
-    ] as const) {
-      host.widgets[1].value = text
-      await afterFlush()
-      source.widgets![0].value = steps
-      await afterFlush()
-    }
+    host.widgets[1].value = 'p'
+    await afterFlush()
+    source.widgets![0].value = 41
+    await afterFlush()
+    host.widgets[1].value = 'pa'
+    await afterFlush()
+    source.widgets![0].value = 42
+    await afterFlush()
 
     expect(minted).toEqual([
       expect.objectContaining({ node_id: source.id, value: 41 }),
