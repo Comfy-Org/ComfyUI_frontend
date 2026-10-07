@@ -1678,9 +1678,23 @@ describe('AgentPanelRoot Agent credit transition notice', () => {
     expect(await screen.findByTestId(NOTICE)).toBeInTheDocument()
   })
 
-  it('defers the notice until billing can authorize continued activity', async () => {
+  it.for([{ status: 'paused' }, { status: 'payment_failed' }] as const)(
+    'withholds the notice while billing is $status',
+    async ({ status }) => {
+      paywallBilling.status = status
+      paywallAgentScopedHasFunds.value = true
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      await screen.findByRole('textbox')
+
+      paywallAgentScopedHasFunds.value = false
+      await nextTick()
+
+      expect(screen.queryByTestId(NOTICE)).not.toBeInTheDocument()
+    }
+  )
+
+  it('defers the notice until the billing capability read settles', async () => {
     paywallCapabilities.isReady = false
-    paywallBilling.status = 'paused'
     paywallAgentScopedHasFunds.value = true
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await screen.findByRole('textbox')
@@ -1690,7 +1704,6 @@ describe('AgentPanelRoot Agent credit transition notice', () => {
     expect(screen.queryByTestId(NOTICE)).not.toBeInTheDocument()
 
     paywallCapabilities.isReady = true
-    paywallBilling.status = 'paid'
     expect(await screen.findByTestId(NOTICE)).toBeInTheDocument()
   })
 
