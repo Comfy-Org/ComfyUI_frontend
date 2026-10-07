@@ -477,8 +477,20 @@ describe('useSubscriptionCheckout', () => {
     tierPlanType: 'personal' | 'team' = 'personal',
     embeddedCheckoutEnabled = true
   ) {
+    return mountCheckout(
+      paymentIntentSource,
+      tierPlanType,
+      embeddedCheckoutEnabled
+    ).checkout
+  }
+
+  function mountCheckout(
+    paymentIntentSource?: PaymentIntentSource,
+    tierPlanType: 'personal' | 'team' = 'personal',
+    embeddedCheckoutEnabled = true
+  ) {
     let checkout!: ReturnType<typeof useSubscriptionCheckout>
-    render(
+    const { unmount } = render(
       {
         setup() {
           checkout = useSubscriptionCheckout(emit, paymentIntentSource, {
@@ -490,7 +502,7 @@ describe('useSubscriptionCheckout', () => {
       },
       { global: { plugins: [i18n] } }
     )
-    return checkout
+    return { checkout, unmount }
   }
 
   function activeJourneyId(): string {
@@ -553,13 +565,9 @@ describe('useSubscriptionCheckout', () => {
   }
 
   beforeEach(() => {
-    mockSubscribe.mockReset()
-    mockPreviewSubscribe.mockReset()
-    mockFetchPlans.mockReset()
-    mockFetchStatus.mockReset().mockResolvedValue(undefined)
+    mockFetchStatus.mockResolvedValue(undefined)
     vi.mocked(useBillingOperationStore().startOperation).mockReset()
-    mockListSavedPaymentMethods.mockReset()
-    mockOpenHostedBillingTab.mockReset().mockReturnValue(false)
+    mockOpenHostedBillingTab.mockReturnValue(false)
     railState.rail = null
     Object.assign(useBillingOperationStore(), {
       subscriptionActionOperation: undefined
@@ -823,6 +831,101 @@ describe('useSubscriptionCheckout', () => {
       // The failure must carry the entered journey's identity and no operation.
       expect(failed.checkout_journey_id).toBe(entered.checkout_journey_id)
       expect('billing_op_id' in failed).toBe(false)
+    })
+
+    describe('checkout exit', () => {
+      function abandonedEvents() {
+        return journeyEvents().filter((event) => event.phase === 'abandoned')
+      }
+
+      it.for([
+        { exit: 'dialog_close', leave: (unmount: () => void) => unmount() },
+        {
+          exit: 'page_exit',
+          leave: () => window.dispatchEvent(new Event('pagehide'))
+        }
+      ] as const)(
+        'reports a $exit after the quote with no operation',
+        async ({ exit, leave }) => {
+          const { checkout, unmount } = mountCheckout()
+          await checkout.handleSubscribeClick({
+            tierKey: 'standard',
+            billingCycle: 'yearly'
+          })
+
+          leave(unmount)
+
+          expect(abandonedEvents()).toEqual([
+            expect.objectContaining({
+              checkout_journey_id: activeJourneyId(),
+              entry_flow: 'initial_subscription',
+              last_phase: 'preview_ready',
+              exit
+            })
+          ])
+        }
+      )
+
+      it('reports no exit when the dialog closes after the operation was linked', async () => {
+        const { checkout, unmount } = mountCheckout()
+        await checkout.handleSubscribeClick({
+          tierKey: 'standard',
+          billingCycle: 'yearly'
+        })
+        mockSubscribe.mockResolvedValueOnce({
+          status: 'subscribed',
+          billing_op_id: 'op-1'
+        })
+        await checkout.handleConfirmTransition()
+
+        unmount()
+
+        expect(journeyPhases()).toContain('operation_linked')
+        expect(abandonedEvents()).toEqual([])
+      })
+
+      it('reports no exit when the dialog closes for the hosted checkout', async () => {
+        mockOpenHostedBillingTab.mockReturnValue(true)
+        const { checkout, unmount } = mountCheckout()
+        await checkout.handleSubscribeClick({
+          tierKey: 'standard',
+          billingCycle: 'yearly'
+        })
+
+        unmount()
+
+        expect(emit).toHaveBeenCalledWith('close', false)
+        expect(abandonedEvents()).toEqual([])
+      })
+
+      it('reports a reopened journey again only after new progress', async () => {
+        const first = mountCheckout()
+        await first.checkout.handleSubscribeClick({
+          tierKey: 'standard',
+          billingCycle: 'yearly'
+        })
+        first.unmount()
+
+        const idle = mountCheckout()
+        idle.unmount()
+
+        const resumed = mountCheckout()
+        await resumed.checkout.handleSubscribeClick({
+          tierKey: 'standard',
+          billingCycle: 'yearly'
+        })
+        resumed.unmount()
+
+        expect(
+          abandonedEvents().map((event) => [
+            event.checkout_journey_id,
+            event.last_phase
+          ])
+        ).toEqual([
+          [activeJourneyId(), 'preview_ready'],
+          [activeJourneyId(), 'preview_ready']
+        ])
+      })
     })
   })
 
@@ -5878,7 +5981,8 @@ describe('useSubscriptionCheckout', () => {
         stage: 'succeeded',
         outcome: 'success',
         source: 'pricing_dialog',
-        payment_intent_source: 'subscribe_to_run'
+        payment_intent_source: 'subscribe_to_run',
+        duration_ms: expect.any(Number)
       })
     })
 
@@ -5902,7 +6006,8 @@ describe('useSubscriptionCheckout', () => {
         outcome: 'failure',
         source: 'pricing_dialog',
         payment_intent_source: undefined,
-        failure_category: 'unknown'
+        failure_category: 'unknown',
+        duration_ms: expect.any(Number)
       })
     })
 

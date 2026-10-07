@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import snapshots from '../data/workshop-router-openapi.snapshot.json'
-import { packRouterSchemas } from '../../scripts/generate-workshop-router-snapshot'
+import snapshots from '@/data/workshop-router-openapi.snapshot.json'
+import { packRouterSchemas } from '@website/scripts/generate-workshop-router-snapshot'
 import { fieldsForDefinition } from './workshop-form-definition'
 import {
   groupPlaygroundFields,

@@ -107,12 +107,21 @@ export type BatchOutcome =
   | { state: 'unconfirmed'; ops: Op[] }
   | { state: 'undeliverable'; ops: Op[] }
 
+interface AdmissionGroup {
+  workflowId: string
+  ops: Op[]
+}
+
 export interface OpSender {
   enqueue(operations: GraphOperation[]): void
   /**
    * Mint and target-pin operations into the open admission group without
    * starting transport delivery. Consecutive admissions for one workflow
    * share the group until `flush()` seals it.
+   *
+   * Each op is serialized once here; a malformed op settles `undeliverable`
+   * at once and the rest of the admission is still admitted. Mint order is
+   * preserved per document, not across documents.
    */
   admit(operations: GraphOperation[]): void
   /** Seal the open admission group into wire batches and start delivery. */
@@ -120,7 +129,7 @@ export interface OpSender {
   /** Unsettled batch count for observability; 0 = drained. */
   pending(): number
   /** Every unsettled batch, in-flight first, each addressed to its mint-time workflow. */
-  pendingOps(): ReadonlyArray<{ workflowId: string; ops: Op[] }>
+  pendingOps(): ReadonlyArray<AdmissionGroup>
   /**
    * The bound workflow's tab went inactive: the subscription is paused, not
    * lost. Until `resume()`, a batch reaching `transmit()` is parked instead
@@ -192,8 +201,10 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   let queueHead = 0
   let open: { workflowId: string; ops: SizedOp[] } | null = null
   let inFlight: InFlight | null = null
-  let lastMintedVersion = -1
-  let lastMintedWorkflowId: string | null = null
+  // One Lamport cursor per workflow, cleared only by that doc's reset: the
+  // observed sequence reads 0 between a subscribe and its ack, so only the
+  // cursor keeps a re-bound workflow's stamps past ones this actor used there.
+  const lastMintedVersions = new Map<string, number>()
   let detached = false
   let suspended = false
   let pumping = false
@@ -212,6 +223,15 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   const retiredOpIds = new Set<string>()
   const mayReportSettlementFailure = createReportBudget()
   const mayReportSerializationFailure = createReportBudget()
+
+  function mintBaseVersion(workflowId: string | null): number {
+    const observed = deps.baseVersion()
+    if (workflowId === null) return observed
+    const lastMinted = lastMintedVersions.get(workflowId)
+    return lastMinted === undefined
+      ? observed
+      : Math.max(observed, lastMinted + 1)
+  }
 
   function retire(batch: InFlight, answered: number): void {
     const outstanding = batch.sends - answered
@@ -430,16 +450,13 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     operations: GraphOperation[],
     workflowId: string | null
   ): Op[] {
-    if (workflowId !== lastMintedWorkflowId) {
-      lastMintedVersion = -1
-      lastMintedWorkflowId = workflowId
-    }
-    const baseVersion = Math.max(deps.baseVersion(), lastMintedVersion + 1)
+    const baseVersion = mintBaseVersion(workflowId)
     const actor = deps.actor()
     const minted = operations.flatMap((operation, index) =>
       mintWireOps([operation], { actor, baseVersion: baseVersion + index })
     )
-    lastMintedVersion = baseVersion + minted.length - 1
+    if (workflowId !== null)
+      lastMintedVersions.set(workflowId, baseVersion + minted.length - 1)
     return minted
   }
 
@@ -566,8 +583,10 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       }
     },
     abortAll() {
-      lastMintedVersion = -1
-      lastMintedWorkflowId = null
+      // A doc_reset replaces only the bound document (the follower guards on
+      // isCurrentWorkflow), so only its cursor restarts.
+      const resetWorkflowId = deps.workflowId()
+      if (resetWorkflowId !== null) lastMintedVersions.delete(resetWorkflowId)
       drainOutstanding(
         guardedSettlementNotifier('failure_settling_agent_op_sender_abort')
       )

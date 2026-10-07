@@ -443,7 +443,7 @@ async function routeTurnLock(
       })
 
     server.recordAnswer(selected)
-    const accepted: AgentAnswerAccepted = { status: 'answered' }
+    const accepted: AgentAnswerAccepted = { status: 'answered', selected }
     return route.fulfill(jsonRoute(accepted))
   })
 

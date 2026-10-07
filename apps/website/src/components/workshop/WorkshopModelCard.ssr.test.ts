@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { createSSRApp, h } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 
-import type { WorkshopModel } from '../../config/models-catalogue'
+import type { WorkshopModel } from '@/config/models-catalogue'
 import WorkshopModelCard from './WorkshopModelCard.vue'
 
 const model: WorkshopModel = {

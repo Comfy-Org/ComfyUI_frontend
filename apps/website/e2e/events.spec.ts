@@ -1,8 +1,8 @@
 import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import { externalLinks, localizeHref } from '../src/config/routes'
-import type { ComfyEvent } from '../src/data/events'
+import { externalLinks, localizeHref } from '@/config/routes'
+import type { ComfyEvent } from '@/data/events'
 import {
   directoryEvents,
   eventPath,
@@ -11,14 +11,14 @@ import {
   featuredEvents,
   pastEvents,
   upcomingEvents
-} from '../src/data/events'
-import type { Locale } from '../src/i18n/translations'
-import { t } from '../src/i18n/translations'
+} from '@/data/events'
+import type { Locale } from '@/i18n/translations'
+import { t } from '@/i18n/translations'
 import {
   EVENT_CATEGORIES,
   PAST_EVENTS_PAGE_SIZE,
   pastCtaLabel
-} from '../src/utils/eventsDirectory'
+} from '@/utils/eventsDirectory'
 import { test } from './fixtures/blockExternalMedia'
 
 const PATH_EN = '/events'
@@ -63,38 +63,22 @@ const matchesSearch = (event: ComfyEvent, query: string) =>
 
 // The agenda contract restated from the raw data. Month keys are the event's
 // own written month — the ISO strings carry the event's offset, so their
-// leading YYYY-MM already is that month. Upcoming months ascend then past
-// months descend; rows inside an upcoming month ascend by start, inside a
-// past month they descend. A month counts as upcoming while any of its
-// events does.
+// leading YYYY-MM already is that month. Months descend, upcoming and past
+// alike, and rows inside each month descend by start.
 function expectedAgendaMonths(): { key: string; eventIds: string[] }[] {
-  const upcomingIds = new Set(upcomingEvents.map((event) => event.id))
   const byMonth = new Map<string, ComfyEvent[]>()
   for (const event of directoryEvents) {
     const key = event.startDateTime.slice(0, 7)
     byMonth.set(key, [...(byMonth.get(key) ?? []), event])
   }
-  const byStart = (a: ComfyEvent, b: ComfyEvent) =>
-    Date.parse(a.startDateTime) - Date.parse(b.startDateTime)
-  const months = [...byMonth.entries()].map(([key, events]) => ({
-    key,
-    upcoming: events.some((event) => upcomingIds.has(event.id)),
-    events: [...events]
-  }))
-  for (const month of months) {
-    month.events.sort(month.upcoming ? byStart : (a, b) => byStart(b, a))
-  }
-  return [
-    ...months
-      .filter((month) => month.upcoming)
-      .sort((a, b) => a.key.localeCompare(b.key)),
-    ...months
-      .filter((month) => !month.upcoming)
-      .sort((a, b) => b.key.localeCompare(a.key))
-  ].map(({ key, events }) => ({
-    key,
-    eventIds: events.map((event) => event.id)
-  }))
+  const latestFirst = (a: ComfyEvent, b: ComfyEvent) =>
+    Date.parse(b.startDateTime) - Date.parse(a.startDateTime)
+  return [...byMonth.entries()]
+    .map(([key, events]) => ({
+      key,
+      eventIds: [...events].sort(latestFirst).map((event) => event.id)
+    }))
+    .sort((a, b) => b.key.localeCompare(a.key))
 }
 
 // Month headings are localized by Intl, not by an i18n key.
@@ -605,8 +589,7 @@ test.describe('Events page — desktop @smoke', () => {
     await expect(rows).toHaveCount(directoryEvents.length)
     await expect(section.locator('.leaflet-container')).toHaveCount(0)
 
-    // The grouping and its upcoming-ascending-then-past-descending month
-    // order, checked against a restatement built from the raw event data.
+    // The grouping and its descending month order, checked against a restatement built from the raw event data.
     const expectedMonths = expectedAgendaMonths()
     const headings = agenda.locator('[data-month]')
     await expect(headings).toHaveCount(expectedMonths.length)

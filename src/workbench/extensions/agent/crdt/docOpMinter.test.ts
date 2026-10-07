@@ -155,7 +155,6 @@ describe('attachDocOpMinter', () => {
   let docInputNames: DocOpMinterDeps['docInputNames']
 
   beforeEach(() => {
-    vi.mocked(reportError).mockClear()
     graph = new LGraph()
     rootGraphId = toRootGraphId(graph.id)
     minted = []
@@ -850,6 +849,57 @@ describe('attachDocOpMinter', () => {
     expect(minted).toEqual([])
   })
 
+  it('uses the store serialize flag when a projected widget leaves it undefined', async () => {
+    const { source } = seedGraph(graph)
+    const widget = source.widgets![0]
+    const stored = useWidgetValueStore().getWidget(
+      widgetId(graph.id, source.id, widget.name)
+    )
+    assert.exists(stored)
+    stored.serialize = false
+    widget.serialize = undefined
+
+    emitGraphIntent({
+      type: 'set_widget',
+      graphId: graph.id,
+      nodeId: source.id,
+      name: 'steps',
+      value: 21,
+      previous: 20
+    })
+    await afterFlush()
+
+    expect(minted).toEqual([])
+  })
+
+  it('uses the store type when the live widget leaves it undefined', async () => {
+    const { source } = seedGraph(graph)
+    const button = source.widgets![1]
+    const stored = useWidgetValueStore().getWidget(
+      widgetId(graph.id, source.id, button.name)
+    )
+    assert.exists(stored)
+    expect(stored.type).toBe('button')
+    // `type` is required on `IBaseWidget`, so only a non-conforming runtime
+    // object reaches this state — which is the point: the guard has to answer
+    // for one anyway. Assigned through `Object.assign` rather than a
+    // suppression, since the subject here is runtime fallback and not a
+    // compiler diagnostic.
+    Object.assign(button, { type: undefined })
+
+    emitGraphIntent({
+      type: 'set_widget',
+      graphId: graph.id,
+      nodeId: source.id,
+      name: 'upload',
+      value: 'clicked',
+      previous: 'button-slot'
+    })
+    await afterFlush()
+
+    expect(minted).toEqual([])
+  })
+
   it('uses the same store fallback when filtering an add-node snapshot', () => {
     const { source } = seedGraph(graph)
     const widget = source.widgets![0]
@@ -977,6 +1027,40 @@ describe('attachDocOpMinter', () => {
       'agent_crdt_unrepresentable_subgraph_connect',
       'agent_crdt_unrepresentable_subgraph_node_delete'
     ])
+  })
+
+  it('surfaces a subgraph-interior node field write instead of minting it', async () => {
+    const subgraph = createTestSubgraph({ rootGraph: graph })
+    const interior = new TestSource()
+    withGraphIntentSource('load', () => subgraph.add(interior))
+    await afterFlush()
+    minted.length = 0
+    vi.mocked(reportError).mockClear()
+
+    interior.title = 'renamed inside the subgraph'
+    await afterFlush()
+
+    expect(minted).toEqual([])
+    expect(
+      vi.mocked(reportError).mock.calls.map(([, meta]) => meta.errorType)
+    ).toEqual(['agent_crdt_unrepresentable_subgraph_set_node_field'])
+  })
+
+  it('drops a subgraph-interior clear with neither a wire op nor telemetry', async () => {
+    const subgraph = createTestSubgraph({ rootGraph: graph })
+    const interior = new TestSource()
+    withGraphIntentSource('load', () => subgraph.add(interior))
+    await afterFlush()
+    minted.length = 0
+    vi.mocked(reportError).mockClear()
+    expect(subgraph.nodes).toContain(interior)
+
+    subgraph.clear()
+    await afterFlush()
+
+    expect(subgraph.nodes).toEqual([])
+    expect(minted).toEqual([])
+    expect(vi.mocked(reportError)).not.toHaveBeenCalled()
   })
 
   it('refuses to mint a command on a graph other than the bound root, reporting once per tick', async () => {

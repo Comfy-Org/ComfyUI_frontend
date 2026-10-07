@@ -130,7 +130,10 @@
     <!-- Amount (USD) / Credits -->
     <div v-if="step === 'amount'" class="flex gap-2 px-8 pt-8">
       <!-- You Pay -->
-      <div class="flex flex-1 flex-col gap-3" data-testid="top-up-pay-amount">
+      <div
+        class="flex min-w-0 flex-1 flex-col gap-3"
+        data-testid="top-up-pay-amount"
+      >
         <div class="text-sm text-muted-foreground">
           {{ $t('credits.topUp.youPay') }}
         </div>
@@ -155,7 +158,7 @@
       </div>
 
       <!-- You Get -->
-      <div class="flex flex-1 flex-col gap-3">
+      <div class="flex min-w-0 flex-1 flex-col gap-3">
         <div class="text-sm text-muted-foreground">
           {{ $t('credits.topUp.youGet') }}
         </div>
@@ -298,10 +301,7 @@
 </template>
 
 <script setup lang="ts">
-import type {
-  BillingOperationTerminal,
-  CheckoutJourneyPhaseEvent
-} from '@comfyorg/account-core/billing'
+import type { BillingOperationTerminal } from '@comfyorg/account-core/billing'
 import {
   getTopupAmountPreset,
   TOPUP_AMOUNT_PRESETS_USD
@@ -339,10 +339,12 @@ import {
   getActiveCheckoutJourney,
   resolveCheckoutAssignment,
   resolveCheckoutJourney,
-  resolveEntrySource,
-  toCheckoutJourneyContext
+  resolveEntrySource
 } from '@/platform/workspace/utils/checkoutJourney'
-import type { CheckoutJourneyRecord } from '@/platform/workspace/utils/checkoutJourney'
+import {
+  trackCheckoutJourneyPhase,
+  useCheckoutJourneyExit
+} from '@/platform/workspace/utils/checkoutJourneyTelemetry'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -364,16 +366,6 @@ const { canTopUp } = useBillingCapabilities()
 
 const workspaceStore = useTeamWorkspaceStore()
 
-function emitTopupJourneyPhase(
-  record: CheckoutJourneyRecord,
-  phase: CheckoutJourneyPhaseEvent
-): void {
-  telemetry?.trackCheckoutJourneyEvent({
-    ...toCheckoutJourneyContext(record),
-    ...phase
-  })
-}
-
 function enterTopupJourney(): void {
   const workspaceId = workspaceStore.activeWorkspaceId
   const ownerUid = useAuthStore().userId
@@ -391,10 +383,11 @@ function enterTopupJourney(): void {
   })
   if (resolved.status === 'blocked' || resolved.resumed) return
 
-  emitTopupJourneyPhase(resolved.record, { phase: 'entered' })
+  trackCheckoutJourneyPhase(resolved.record, { phase: 'entered' })
 }
 
 onMounted(enterTopupJourney)
+useCheckoutJourneyExit()
 const {
   isAddingCredits,
   topupOperation,
@@ -635,7 +628,7 @@ async function handleBuy() {
 
     const submittingJourney = getActiveCheckoutJourney()
     if (submittingJourney) {
-      emitTopupJourneyPhase(submittingJourney, { phase: 'submitted' })
+      trackCheckoutJourneyPhase(submittingJourney, { phase: 'submitted' })
     }
 
     const response = await topup(amountCents)
@@ -660,7 +653,7 @@ async function handleBuy() {
         response.billing_op_id
       )
       if (linkedJourney) {
-        emitTopupJourneyPhase(linkedJourney, {
+        trackCheckoutJourneyPhase(linkedJourney, {
           phase: 'operation_linked',
           billing_op_id: response.billing_op_id
         })

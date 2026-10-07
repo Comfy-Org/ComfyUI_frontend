@@ -1,7 +1,7 @@
 import { render } from '@testing-library/vue'
 import { expect, it, vi } from 'vitest'
 
-import { useWorkshopSession } from '../../config/workshop-session-state'
+import { useWorkshopSession } from '@/config/workshop-session-state'
 import ModelsPage from './ModelsPage.vue'
 
 const build = vi.hoisted(() => ({ included: true }))
@@ -14,8 +14,8 @@ vi.mock(import('astro:env/client'), () => ({
     return build.included
   }
 }))
-vi.mock(import('../../config/workshop-session-state'))
-vi.mock(import('../../scripts/posthog'))
+vi.mock(import('@/config/workshop-session-state'))
+vi.mock(import('@/scripts/posthog'))
 
 it.for([
   { included: true, startsSession: true },

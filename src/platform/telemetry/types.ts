@@ -152,7 +152,11 @@ export interface BootstrapCompleteMetadata {
   total_ms: number
   outcome: 'completed' | 'failed' | 'timed_out'
   phase_count: number
-  /** Per-phase durations, keyed `<namespace>/<phase>` (e.g. `bootstrap/object-info`). */
+  /**
+   * Per-phase durations, keyed `<namespace>/<phase>` (e.g.
+   * `bootstrap/object-info`). Nested phases intentionally overlap their
+   * aggregate parent, so consumers must not sum entries across the map.
+   */
   phases: Record<string, number>
   /** Phases still running when this row was emitted. Only set for `timed_out`. */
   pending?: string[]
@@ -942,10 +946,16 @@ export interface AgentMessageSentMetadata extends Record<string, unknown> {
   /**
    * Minted client-side, one per send attempt, so duplicate deliveries of this
    * event collapse onto one message. A retry after a failed send is a new
-   * attempt and gets a new id. The backend does not receive it yet — the turn
-   * POST contract carries no client id — so it dedups within the frontend
-   * stream rather than joining to the backend turn; `thread_id` is the join
-   * today.
+   * attempt and gets a new id.
+   *
+   * Also sent to the backend on the turn POST (`client_message_id`), which
+   * echoes it onto its own `agent_turn_started` event. That is what makes this
+   * the join key for the message → turn step: the backend's `turn_id` is minted
+   * after the POST arrives, so it can never appear on this event, and
+   * `thread_id` is `null` for the first message in a thread — precisely the
+   * sends that matter most to activation. An older server that ignores the field
+   * leaves the correlation unknown for that turn, which is a gap in the read and
+   * never a failed send.
    */
   client_message_id: string
   input_method: AgentInputMethod

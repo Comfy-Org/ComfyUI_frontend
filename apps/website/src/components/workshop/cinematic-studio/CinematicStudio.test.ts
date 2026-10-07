@@ -5,51 +5,48 @@ import { computed, ref } from 'vue'
 
 import type { AccountCredential } from '@comfyorg/account-core/session'
 
-import {
-  resolveModelRouterRender,
-  router_render
-} from '../../../config/router-render'
+import { resolveModelRouterRender, router_render } from '@/config/router-render'
 import type {
   PreparedRouterRender,
   RouterRenderResult
-} from '../../../config/router-render'
+} from '@/config/router-render'
 import {
   refreshWorkshopCredits,
   useTopUpWatch,
   useWorkshopCredits
-} from '../../../config/workshop-credits'
-import { getRouterWorkshopModelDetail } from '../../../config/workshop-router-content'
-import { WorkshopRouterError } from '../../../config/workshop-router-errors'
-import { useWorkshopSession } from '../../../config/workshop-session-state'
-import { appModels } from '../../../config/workshop-app-content'
-import { prepareModelPage } from '../../../routes/models/model-page'
+} from '@/config/workshop-credits'
+import { getRouterWorkshopModelDetail } from '@/config/workshop-router-content'
+import { WorkshopRouterError } from '@/config/workshop-router-errors'
+import { useWorkshopSession } from '@/config/workshop-session-state'
+import { appModels } from '@/config/workshop-app-content'
+import { prepareModelPage } from '@/routes/models/model-page'
 import {
   captureWorkshopEvent,
   useWorkshopEnabled,
   useWorkshopEnabledSettled,
   useWorkshopAppsEnabled,
   useWorkshopFlag
-} from '../../../scripts/posthog'
-import { CINEMATIC_STUDIO_APP_SLUG } from '../../../lib/workshop/cinematic-studio/analytics'
-import { sampleImageColors } from '../../../lib/workshop/cinematic-studio/colors'
-import { t, translationsFor } from '../../../i18n/translations'
-import { MAX_TAKES } from '../../../lib/workshop/cinematic-studio/catalog'
-import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
+} from '@/scripts/posthog'
+import { CINEMATIC_STUDIO_APP_SLUG } from '@/lib/workshop/cinematic-studio/analytics'
+import { sampleImageColors } from '@/lib/workshop/cinematic-studio/colors'
+import { t, translationsFor } from '@/i18n/translations'
+import { MAX_TAKES } from '@/lib/workshop/cinematic-studio/catalog'
+import type { CinematicModel } from '@/lib/workshop/cinematic-studio/models'
 import {
   runnableCinematicModels,
   runnableCinematicVideoModels
-} from '../../../lib/workshop/cinematic-studio/models'
+} from '@/lib/workshop/cinematic-studio/models'
 import CinematicStudio from './CinematicStudio.vue'
 import CinematicStudioPage from './CinematicStudioPage.vue'
 import CinematicStudioPanel from './CinematicStudioPanel.vue'
 
 const { t: tc } = translationsFor('en')
 
-vi.mock(import('../../../config/workshop-session-state'))
-vi.mock(import('../../../config/workshop-credits'))
-vi.mock(import('../../../scripts/posthog'))
-vi.mock(import('../../../config/router-render'), { spy: true })
-vi.mock(import('../../../lib/workshop/cinematic-studio/colors'), { spy: true })
+vi.mock(import('@/config/workshop-session-state'))
+vi.mock(import('@/config/workshop-credits'))
+vi.mock(import('@/scripts/posthog'))
+vi.mock(import('@/config/router-render'), { spy: true })
+vi.mock(import('@/lib/workshop/cinematic-studio/colors'), { spy: true })
 
 const deploy = vi.hoisted(() => ({ env: '' }))
 vi.mock(import('astro:env/client'), () => ({
@@ -1138,6 +1135,37 @@ describe('CinematicStudio', () => {
       })
     }
   )
+
+  it('reports switching to Video as a tab_switched event', async () => {
+    const user = renderStudio([...models, ...videoModels])
+
+    await user.click(screen.getByRole('button', { name: 'Video' }))
+
+    expect(captureWorkshopEvent).toHaveBeenCalledWith({
+      name: 'tab_switched',
+      properties: {
+        model_slug: CINEMATIC_STUDIO_APP_SLUG,
+        page_type: 'app',
+        app_slug: CINEMATIC_STUDIO_APP_SLUG,
+        tab: 'video'
+      }
+    })
+  })
+
+  it('does not report a tab switch when the URL alone sets the mode', () => {
+    window.history.replaceState(
+      null,
+      '',
+      `/cinematic-studio?model=${videoModels[0].slug}`
+    )
+    renderStudio([...models, ...videoModels])
+
+    expect(
+      vi
+        .mocked(captureWorkshopEvent)
+        .mock.calls.some(([event]) => event.name === 'tab_switched')
+    ).toBe(false)
+  })
 
   it('shoots a clip on the first video model in video mode', async () => {
     vi.mocked(router_render).mockImplementation(async (slug) => rendered(slug))
