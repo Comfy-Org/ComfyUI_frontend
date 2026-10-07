@@ -33,7 +33,11 @@ function evaluateBoolean(expression: string, context: object) {
   return z.boolean().parse(runInNewContext(javascript, context))
 }
 
-function selectChecks(eventName: string, relevant: Record<string, string>) {
+function selectChecks(
+  eventName: string,
+  relevant: Record<string, string>,
+  filter: Record<string, string> = {}
+) {
   const root = mkdtempSync(join(tmpdir(), 'changes-filter-'))
   try {
     const output = join(root, 'output')
@@ -69,7 +73,12 @@ function selectChecks(eventName: string, relevant: Record<string, string>) {
     const relevantStep = action.runs.steps.find(
       (step) => step.id === 'relevant'
     )
+    const filterStep = action.runs.steps.find((step) => step.id === 'filter')
+    assert.exists(filterStep?.if)
     assert.exists(relevantStep?.if)
+    context.steps.filter.outputs = evaluateBoolean(filterStep.if, context)
+      ? filter
+      : {}
     context.steps.relevant.outputs = evaluateBoolean(relevantStep.if, context)
       ? relevant
       : {}
@@ -161,4 +170,35 @@ it.for([
     'should-run-e2e': e2e,
     'should-run-source': source
   })
+})
+
+it.for([
+  {
+    name: 'website-only pull request',
+    relevant: {
+      relevant: 'false',
+      unit: 'false',
+      e2e: 'false',
+      source: 'false',
+      outside_website: 'false'
+    },
+    filter: { app_website: 'true', deps: 'false' },
+    expected: true
+  },
+  {
+    name: 'website plus root pull request',
+    relevant: {
+      relevant: 'true',
+      unit: 'true',
+      e2e: 'true',
+      source: 'true',
+      outside_website: 'true'
+    },
+    filter: { app_website: 'true', deps: 'false' },
+    expected: false
+  }
+])('classifies a $name', ({ relevant, filter, expected }) => {
+  expect(
+    selectChecks('pull_request', relevant, filter)['website-only-changes']
+  ).toBe(expected)
 })
