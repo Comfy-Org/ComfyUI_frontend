@@ -2,6 +2,8 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { legacyMenuCompat } from '@/lib/litegraph/src/contextMenuCompat'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
+import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExtensionStore } from '@/stores/extensionStore'
@@ -12,6 +14,7 @@ import { useWidgetStore } from '@/stores/widgetStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import type { ComfyExtension } from '@/types/comfy'
 import type { AuthUserInfo } from '@/types/authTypes'
+import { toError } from '@/utils/errorUtil'
 import { app } from '@/scripts/app'
 import type { ComfyApp } from '@/scripts/app'
 
@@ -26,6 +29,69 @@ export function shouldLoadExtension(
 ): boolean {
   if (extension.includes('extensions/core')) return false
   return !isCloudBuild || !INLINED_CLOUD_EXTENSIONS.has(extension)
+}
+
+const MAX_EXTENSION_PATH_LENGTH = 512
+
+export interface ExtensionLoadFailure {
+  ext: string
+  error: unknown
+}
+
+/**
+ * Import one backend-provided extension, returning the failure rather than
+ * throwing, so one broken pack cannot abort the rest of the parallel load.
+ *
+ * Reporting deliberately does not happen here. A systemic failure — a backend
+ * restart, or a proxy serving HTML for every `.js` — fails every import in the
+ * list, and one report per extension is then unbounded. Off cloud that is
+ * actively harmful: with no sink live, each report is held in `reportError`'s
+ * 25-entry pending buffer, so a handful of broken packs during bootstrap would
+ * silently crowd out every later error in the session. The batch is reported
+ * once, by `reportExtensionLoadFailures`.
+ */
+async function importCustomExtension(
+  ext: string
+): Promise<ExtensionLoadFailure | undefined> {
+  try {
+    await import(/* @vite-ignore */ api.fileURL(ext))
+  } catch (error) {
+    return { ext, error }
+  }
+}
+
+/**
+ * The count is tagged; backend paths are unbounded and belong in context
+ * instead of the message or an indexed facet.
+ */
+export function reportExtensionLoadFailures(
+  failures: ExtensionLoadFailure[]
+): void {
+  if (failures.length === 0) return
+
+  const noun = failures.length === 1 ? 'extension' : 'extensions'
+  const errors = failures.map(({ error }) => {
+    try {
+      return toError(error)
+    } catch {
+      return new Error('Unknown extension load failure')
+    }
+  })
+
+  reportError(
+    new AggregateError(errors, `Error loading ${failures.length} ${noun}`),
+    {
+      errorType: 'error_loading_extension',
+      level: 'warning',
+      tags: { failed_extension_count: failures.length },
+      context: {
+        failures: failures.map(({ ext }, index) => ({
+          ext: ext.slice(0, MAX_EXTENSION_PATH_LENGTH),
+          message: errors[index].message
+        }))
+      }
+    }
+  )
 }
 
 export const useExtensionService = () => {
@@ -50,21 +116,23 @@ export const useExtensionService = () => {
 
     // Need to load core extensions first as some custom extensions
     // may depend on them.
-    await import('../extensions/core/index')
-    extensionStore.captureCoreExtensions()
-    await Promise.all(
-      extensions
-        .filter((extension) =>
-          shouldLoadExtension(extension, __DISTRIBUTION__ === 'cloud')
-        )
-        .map(async (ext) => {
-          try {
-            await import(/* @vite-ignore */ api.fileURL(ext))
-          } catch (error) {
-            console.error('Error loading extension', ext, error)
-          }
-        })
+    await bootstrapTracer.settle(
+      'bootstrap/extensions-load-core',
+      () => import('../extensions/core/index')
     )
+    extensionStore.captureCoreExtensions()
+    const outcomes = await bootstrapTracer.settle(
+      'bootstrap/extensions-load-custom',
+      () =>
+        Promise.all(
+          extensions
+            .filter((extension) =>
+              shouldLoadExtension(extension, __DISTRIBUTION__ === 'cloud')
+            )
+            .map((ext) => importCustomExtension(ext))
+        )
+    )
+    reportExtensionLoadFailures(outcomes.filter((outcome) => !!outcome))
   }
 
   /**

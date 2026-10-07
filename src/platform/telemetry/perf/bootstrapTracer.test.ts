@@ -58,6 +58,47 @@ describe('bootstrapTracer', () => {
     ])
   })
 
+  it('records extension loading subphases inside the aggregate load phase', async () => {
+    const tracer = new BootstrapTracer()
+    // happy-dom reports a constant performance.measure() duration, so
+    // containment is read from mark order rather than from durations.
+    const mark = vi.spyOn(performance, 'mark')
+
+    await tracer.settle('bootstrap/extensions-load', async () => {
+      await vi.advanceTimersByTimeAsync(5)
+      await tracer.settle('bootstrap/extensions-load-core', () =>
+        vi.advanceTimersByTimeAsync(40)
+      )
+      await tracer.settle('bootstrap/extensions-load-custom', () =>
+        vi.advanceTimersByTimeAsync(7)
+      )
+    })
+
+    expect(mark.mock.calls.map(([name]) => name)).toEqual([
+      'bootstrap/extensions-load:start',
+      'bootstrap/extensions-load-core:start',
+      'bootstrap/extensions-load-core:end',
+      'bootstrap/extensions-load-custom:start',
+      'bootstrap/extensions-load-custom:end',
+      'bootstrap/extensions-load:end'
+    ])
+
+    const rows = tracer.summary()
+    expect(rows.map((r) => r.name)).toEqual([
+      'bootstrap/extensions-load',
+      'bootstrap/extensions-load-core',
+      'bootstrap/extensions-load-custom'
+    ])
+    expect(rows[1].startMs).toBeGreaterThanOrEqual(rows[0].startMs)
+    expect(rows[2].startMs).toBeGreaterThanOrEqual(rows[1].startMs)
+  })
+
+  it('publishes milestones under RUM-safe timing names', () => {
+    const mark = vi.spyOn(performance, 'mark')
+    new BootstrapTracer().milestone('stores-ready')
+    expect(mark).toHaveBeenCalledWith('bootstrap/milestone/stores-ready')
+  })
+
   it('records a phase whose work rejects and rethrows', async () => {
     const tracer = new BootstrapTracer()
 
