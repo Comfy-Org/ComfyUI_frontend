@@ -1,5 +1,5 @@
-// Drops_2x2card_Events.jpg and Drops_2x2card_CLI.jpg are not uploaded to
-// media.comfy.org/website/drops/ yet, and native zh-CN review is pending.
+// Drops_2x2card_CLI.jpg is not uploaded to media.comfy.org/website/drops/
+// yet, and native zh-CN review is pending.
 import { externalLinks } from '@/config/routes'
 import type { LocalizedText } from '@/i18n/translations'
 
@@ -89,10 +89,18 @@ export const drops: readonly Drop[] = [
     id: 'events',
     launchDate: '2026-09-12',
     category: COMMUNITY,
-    media: imageFor('Drops_2x2card_Events.jpg', {
-      en: 'Comfy Events',
-      'zh-CN': 'Comfy 活动'
-    }),
+    // TODO: temporarily self-hosted under public/images/drops (the events
+    // page screenshot Bert attached on this PR) because this session has no
+    // upload access to media.comfy.org; migrate to the CDN and switch back
+    // to imageFor() when available.
+    media: {
+      type: 'image',
+      src: '/images/drops/events-preview.png',
+      alt: {
+        en: 'Comfy Events',
+        'zh-CN': 'Comfy 活动'
+      }
+    },
     title: { en: 'Events', 'zh-CN': '活动' },
     description: {
       en: 'Livestreams, hackathons, and meetups — find ComfyUI events around the world, or host your own.',
