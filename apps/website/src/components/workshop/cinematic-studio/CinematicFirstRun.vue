@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Badge from '@/components/ui/badge/Badge.vue'
 import { translationsFor } from '@/i18n/translations'
 import { workshopAppRepo } from '@/lib/workshop/apps'
 import type { StarterShot } from '@/lib/workshop/cinematic-studio/starters'
@@ -23,11 +24,9 @@ const emit = defineEmits<{ start: [shot: StarterShot] }>()
         class="flex items-center gap-3 text-3xl font-semibold tracking-tight text-primary-warm-white lg:text-5xl"
       >
         {{ t('cinematic.title') }}
-        <span
-          class="rounded-full border border-transparency-white-t20 px-2 py-0.5 font-mono text-[10px] font-normal tracking-wider text-primary-comfy-canvas uppercase lg:text-xs"
-        >
+        <Badge variant="category" size="xs">
           {{ t('cinematic.beta') }}
-        </span>
+        </Badge>
       </h2>
       <p class="max-w-xl text-sm text-primary-comfy-canvas lg:text-base">
         {{ t('cinematic.firstRun.body') }}

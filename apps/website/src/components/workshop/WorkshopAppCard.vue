@@ -53,12 +53,7 @@ const { t } = translationsFor(locale)
         >
           {{ app.name }}
         </h3>
-        <Badge
-          :variant="app.href ? 'accent' : 'default'"
-          size="xs"
-          class="uppercase"
-          data-testid="app-card-status"
-        >
+        <Badge variant="subtle" class="uppercase" data-testid="app-card-status">
           {{ t(app.href ? 'hubPages.apps.open' : 'hubPages.apps.soon') }}
         </Badge>
       </div>

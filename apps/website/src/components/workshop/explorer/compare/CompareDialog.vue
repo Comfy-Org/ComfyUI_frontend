@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
+import Button from '@/components/ui/button/Button.vue'
 import Dialog from '@/components/ui/dialog/Dialog.vue'
 import DialogContent from '@/components/ui/dialog/DialogContent.vue'
 import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
@@ -100,18 +101,19 @@ const rows = computed(() => compareRows(models, locale))
             <tr class="border-t border-transparency-white-t8">
               <td />
               <td v-for="model in models" :key="model.slug" class="pt-5 pr-4">
-                <a
+                <Button
                   v-if="model.href"
                   :href="model.href"
-                  class="flex h-10 w-full items-center justify-center rounded-2xl border border-transparency-white-t20 px-4 text-sm font-medium text-primary-warm-white transition-colors outline-none hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
+                  variant="outline"
+                  class="w-full"
                   data-testid="compare-model-link"
                 >
-                  <span class="truncate">
+                  <span class="block truncate">
                     {{
                       t('workshop.explorer.compare.try', { name: model.name })
                     }}
                   </span>
-                </a>
+                </Button>
               </td>
             </tr>
           </tbody>
