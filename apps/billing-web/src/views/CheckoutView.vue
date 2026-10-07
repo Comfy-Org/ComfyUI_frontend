@@ -101,10 +101,12 @@ const { lifecycle, status } = useBillingClient<'lifecycle' | 'status'>(
 
 /** A page handed to a hosted step or a method's own site has not been abandoned. */
 const handedToHostedStep = ref(false)
-let payingOnOwnSite = false
+const payingOnOwnSite = ref(false)
 
 useEventListener(window, 'pageshow', (event) => {
-  if (event.persisted) handedToHostedStep.value = false
+  if (!event.persisted) return
+  handedToHostedStep.value = false
+  payingOnOwnSite.value = false
 })
 
 const checkout = useCheckout({
@@ -323,7 +325,7 @@ const operationToast = computed(() => {
 })
 
 const actionUrl = computed(() =>
-  handedToHostedStep.value
+  handedToHostedStep.value || payingOnOwnSite.value
     ? null
     : (validateActionUrl(pendingOperation.value?.actionUrl) ?? null)
 )
@@ -543,7 +545,7 @@ async function pay(choice: PaymentChoice) {
   const methodType = methodTypeOf(choice)
   journey.methodSelected(selectedRailOf(choice), methodType)
   const press = journey.submitted()
-  payingOnOwnSite = paysOnOwnSite(methodType)
+  payingOnOwnSite.value = paysOnOwnSite(methodType)
   let result: SubscriptionCommandResult
   try {
     result = await attempts.run(checkoutAttemptOf(quoted, entry.value), () =>
@@ -560,7 +562,7 @@ async function pay(choice: PaymentChoice) {
       )
     )
   } finally {
-    payingOnOwnSite = false
+    payingOnOwnSite.value = false
     journey.submitSettled(press)
   }
   if (result.status === 'ok') return
@@ -599,7 +601,7 @@ function leaveForHost(control: WebReturnControl) {
 }
 
 useEventListener(window, 'pagehide', () => {
-  if (!handedToHostedStep.value && !payingOnOwnSite)
+  if (!handedToHostedStep.value && !payingOnOwnSite.value)
     journey.abandoned('page_exit')
 })
 </script>
