@@ -4561,8 +4561,7 @@
     },
     "backToApps": "返回应用",
     "panel": {
-      "label": "镜头设置",
-      "newShot": "新镜头"
+      "label": "镜头设置"
     },
     "section": {
       "output": "画幅",

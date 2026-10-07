@@ -1607,7 +1607,7 @@ describe('CinematicStudio', () => {
     ).toHaveAttribute('href', '/hub/apps/')
   })
 
-  it('heads the side panel as a new shot, with Shot then Format and no field labels', async () => {
+  it('heads the side panel as the input, with Shot then Format and no field labels', async () => {
     render(CinematicStudioPage, { props: { apps: appModels, models } })
 
     const panel = await screen.findByRole('complementary', {
@@ -1618,7 +1618,7 @@ describe('CinematicStudio', () => {
       within(panel)
         .getAllByRole('heading')
         .map((heading) => heading.textContent.trim())
-    ).toEqual(['New shot'])
+    ).toEqual(['Input'])
     expect(
       within(panel)
         .getAllByRole('region')
