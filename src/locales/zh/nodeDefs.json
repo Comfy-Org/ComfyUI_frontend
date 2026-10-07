@@ -2766,6 +2766,41 @@
       }
     }
   },
+  "CameraAngle": {
+    "description": "通过 3D 预览选择围绕主体的相机角度。输出供 3D 节点使用的 camera_info，以及用于提示词的英文镜头描述。",
+    "display_name": "编写相机角度提示词",
+    "inputs": {
+      "horizontal_angle": {
+        "name": "水平角度",
+        "tooltip": "围绕主体的方位角，单位为度。0 为正面，90 为右侧，180 为背面。"
+      },
+      "image": {
+        "name": "图像",
+        "tooltip": "可选的参考图像，会显示在 3D 预览中主体立方体的正面。"
+      },
+      "vertical_angle": {
+        "name": "垂直角度",
+        "tooltip": "仰角，单位为度。负值表示从下方向上看，正值表示从上方向下看。"
+      },
+      "view": {
+        "name": "视图"
+      },
+      "zoom": {
+        "name": "缩放",
+        "tooltip": "主体的镜头缩放：0 为广角镜头，10 为特写。将传递至 camera_info.zoom。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "1": {
+        "name": "提示词",
+        "tooltip": null
+      }
+    }
+  },
   "Canny": {
     "display_name": "Canny边缘检测",
     "inputs": {
@@ -2900,6 +2935,27 @@
       "start_sigma": {
         "name": "起始sigma",
         "tooltip": "这些选项生效的第一个sigma值。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ClarityCrystalUpscaleNode": {
+    "description": "使用 Clarity AI 的 Crystal Upscaler 放大图像。这是一款高保真放大器，忠实保留原图，并恢复面部、皮肤和精细纹理。最大输出：1 亿像素。",
+    "display_name": "Clarity AI Crystal 放大",
+    "inputs": {
+      "model": {
+        "name": "模型",
+        "tooltip": "要使用的模型。"
+      },
+      "model_creativity": {
+        "name": "创造力"
+      },
+      "model_scale_factor": {
+        "name": "缩放系数"
       }
     },
     "outputs": {
@@ -4078,9 +4134,12 @@
     }
   },
   "CreateCameraInfo": {
-    "description": "构建 camera_info。模式 'orbit' 通过偏航/俯仰/距离围绕目标旋转；'look_at' 将相机放置在世界坐标位置。坐标为观察者的世界空间（右手系，Y轴向上）。",
+    "description": "构建 camera_info。模式“orbit”使用围绕目标的偏航角/俯仰角/距离进行瞄准；“look_at”将相机放置在世界坐标位置。坐标采用查看器的世界空间（右手坐标系，Y 轴向上）。",
     "display_name": "创建相机信息",
     "inputs": {
+      "camera_info_state": {
+        "name": "camera_info_state"
+      },
       "camera_type": {
         "name": "相机类型",
         "tooltip": "Render Splat 使用的投影方式：透视（有透视缩短）或正交（平行投影）。"
@@ -6840,7 +6899,7 @@
   },
   "GeminiNanoBanana2V2": {
     "description": "通过 Google Vertex API 同步生成或编辑图像。",
-    "display_name": "Nano Banana 2",
+    "display_name": "Nano Banana 2.1",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -6890,7 +6949,7 @@
       },
       "2": {
         "name": "thought_image",
-        "tooltip": "模型思考过程中的第一张图像。仅在 thinking_level 设为 HIGH 且 response_modalities 为 IMAGE+TEXT 时可用。"
+        "tooltip": "模型思考过程中的第一张图像。仅在 IMAGE+TEXT 模态下可用。"
       }
     }
   },
@@ -18669,7 +18728,7 @@
   },
   "QuiverImageToSVGNode": {
     "description": "使用Quiver AI将光栅图像矢量化为SVG。",
-    "display_name": "Quiver 图像转SVG",
+    "display_name": "Quiver 图像转 SVG（旧版）",
     "inputs": {
       "auto_crop": {
         "name": "auto_crop",
@@ -18713,9 +18772,54 @@
       }
     }
   },
+  "QuiverImageToSVGNodeV2": {
+    "description": "使用 Quiver AI 将栅格图像矢量化为 SVG。",
+    "display_name": "Quiver 图像转 SVG",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用于 SVG 矢量化的模型。"
+      },
+      "model_auto_crop": {
+        "name": "自动裁剪"
+      },
+      "model_height": {
+        "name": "高度"
+      },
+      "model_presence_penalty": {
+        "name": "存在惩罚"
+      },
+      "model_reasoning_effort": {
+        "name": "推理强度"
+      },
+      "model_seed": {
+        "name": "种子"
+      },
+      "model_target_size": {
+        "name": "目标尺寸"
+      },
+      "model_temperature": {
+        "name": "温度"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "model_width": {
+        "name": "宽度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "QuiverTextToSVGNode": {
     "description": "使用Quiver AI根据文本提示生成SVG。",
-    "display_name": "Quiver 文本转SVG",
+    "display_name": "Quiver 文本转 SVG（旧版）",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -18752,6 +18856,51 @@
       "seed": {
         "name": "seed",
         "tooltip": "用于决定节点是否重新运行的种子；无论种子如何，实际结果都是非确定性的。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QuiverTextToSVGNodeV2": {
+    "description": "使用 Quiver AI 根据文本提示生成 SVG。",
+    "display_name": "Quiver 文本转 SVG",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用于生成 SVG 的模型。"
+      },
+      "model_height": {
+        "name": "高度"
+      },
+      "model_instructions": {
+        "name": "指令"
+      },
+      "model_presence_penalty": {
+        "name": "存在惩罚"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_reasoning_effort": {
+        "name": "推理强度"
+      },
+      "model_seed": {
+        "name": "种子"
+      },
+      "model_temperature": {
+        "name": "温度"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "model_width": {
+        "name": "宽度"
       }
     },
     "outputs": {
@@ -27551,6 +27700,79 @@
       },
       "seed": {
         "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu4ImageToVideoNode": {
+    "description": "根据起始帧和可选提示词生成视频。输出将保持输入图像的宽高比。",
+    "display_name": "Vidu Q4 图像转视频生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "image": {
+        "name": "图像",
+        "tooltip": "生成视频的起始帧。宽高比必须介于 1:5 和 5:1 之间。"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用于生成视频的模型。"
+      },
+      "model_audio": {
+        "name": "音频"
+      },
+      "model_duration": {
+        "name": "时长"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "model_seed": {
+        "name": "种子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu4ReferenceVideoNode": {
+    "description": "根据参考图像、可选参考音频和提示词生成视频。",
+    "display_name": "Vidu Q4 参考图转视频生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用于生成视频的模型。"
+      },
+      "model_aspect_ratio": {
+        "name": "宽高比"
+      },
+      "model_audio": {
+        "name": "音频"
+      },
+      "model_duration": {
+        "name": "时长"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "model_seed": {
+        "name": "种子"
       }
     },
     "outputs": {

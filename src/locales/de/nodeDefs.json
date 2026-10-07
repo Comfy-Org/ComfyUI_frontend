@@ -2766,6 +2766,41 @@
       }
     }
   },
+  "CameraAngle": {
+    "description": "Wählen Sie einen Kamerawinkel um ein Motiv mit einer 3D-Vorschau. Gibt camera_info für 3D-Nodes und eine englischsprachige Aufnahmebeschreibung für Prompts aus.",
+    "display_name": "Kamerawinkel-Prompt erstellen",
+    "inputs": {
+      "horizontal_angle": {
+        "name": "horizontaler_winkel",
+        "tooltip": "Azimut um das Motiv in Grad. 0 ist die Vorderseite, 90 die rechte Seite, 180 die Rückseite."
+      },
+      "image": {
+        "name": "bild",
+        "tooltip": "Optionale Referenzbild, das in der 3D-Vorschau auf der Vorderseite des Motivwürfels angezeigt wird."
+      },
+      "vertical_angle": {
+        "name": "vertikaler_winkel",
+        "tooltip": "Höhenwinkel in Grad. Negative Werte blicken von unten nach oben, positive von oben nach unten."
+      },
+      "view": {
+        "name": "ansicht"
+      },
+      "zoom": {
+        "name": "zoom",
+        "tooltip": "Objektivzoom auf das Motiv: 0 ist eine Totale, 10 eine Nahaufnahme. Wird in camera_info.zoom übernommen."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "1": {
+        "name": "prompt",
+        "tooltip": null
+      }
+    }
+  },
   "Canny": {
     "display_name": "Kanten erkennen (Canny)",
     "inputs": {
@@ -2900,6 +2935,27 @@
       "start_sigma": {
         "name": "start_sigma",
         "tooltip": "Erstes Sigma, für das diese Optionen gelten."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ClarityCrystalUpscaleNode": {
+    "description": "Skalieren Sie ein Bild mit dem Crystal Upscaler von Clarity AI hoch, einem hochpräzisen Upscaler, der dem Original treu bleibt und Gesichter, Haut und feine Texturen wiederherstellt. Maximale Ausgabe: 100 Megapixel.",
+    "display_name": "Clarity AI Crystal-Upscale",
+    "inputs": {
+      "model": {
+        "name": "modell",
+        "tooltip": "Zu verwendendes Modell."
+      },
+      "model_creativity": {
+        "name": "kreativität"
+      },
+      "model_scale_factor": {
+        "name": "skalierungsfaktor"
       }
     },
     "outputs": {
@@ -4078,9 +4134,12 @@
     }
   },
   "CreateCameraInfo": {
-    "description": "Erstellt eine camera_info. Der Modus 'orbit' richtet die Kamera mit yaw/pitch/distance um das Ziel aus; 'look_at' positioniert die Kamera an der Weltposition. Die Koordinaten befinden sich im Weltkoordinatensystem des Viewers (rechtshändig, Y nach oben).",
+    "description": "Erstellt camera_info. Der Modus „orbit“ richtet die Kamera mit Gier-/Nickwinkel/Abstand um das Ziel aus; „look_at“ platziert die Kamera an der Weltposition. Koordinaten entsprechen dem Weltraum des Betrachters (rechtshändig, Y nach oben).",
     "display_name": "Kamera-Info erstellen",
     "inputs": {
+      "camera_info_state": {
+        "name": "camera_info_status"
+      },
       "camera_type": {
         "name": "camera_type",
         "tooltip": "Von Render Splat verwendete Projektion: perspektivisch (Tiefenverkürzung) oder orthografisch (parallel)."
@@ -6840,7 +6899,7 @@
   },
   "GeminiNanoBanana2V2": {
     "description": "Generiert oder bearbeitet Bilder synchron über die Google Vertex API.",
-    "display_name": "Nano Banana 2",
+    "display_name": "Nano Banana 2.1",
     "inputs": {
       "control_after_generate": {
         "name": "Steuerung nach Generierung"
@@ -6890,7 +6949,7 @@
       },
       "2": {
         "name": "thought_image",
-        "tooltip": "Erstes Bild aus dem Denkprozess des Modells. Nur verfügbar mit thinking_level HIGH und der Modalität IMAGE+TEXT."
+        "tooltip": "Erstes Bild aus dem Denkprozess des Modells. Nur mit der Modalität IMAGE+TEXT verfügbar."
       }
     }
   },
@@ -18669,7 +18728,7 @@
   },
   "QuiverImageToSVGNode": {
     "description": "Vektorisiert ein Rasterbild mit Quiver AI in SVG.",
-    "display_name": "Quiver Bild zu SVG",
+    "display_name": "Quiver Bild zu SVG (Legacy)",
     "inputs": {
       "auto_crop": {
         "name": "auto_crop",
@@ -18713,9 +18772,54 @@
       }
     }
   },
+  "QuiverImageToSVGNodeV2": {
+    "description": "Vektorisieren Sie ein Rasterbild mit Quiver AI in SVG.",
+    "display_name": "Quiver Bild zu SVG",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "model": {
+        "name": "modell",
+        "tooltip": "Für die SVG-Vektorisierung zu verwendendes Modell."
+      },
+      "model_auto_crop": {
+        "name": "automatisch_zuschneiden"
+      },
+      "model_height": {
+        "name": "höhe"
+      },
+      "model_presence_penalty": {
+        "name": "präsenzstrafe"
+      },
+      "model_reasoning_effort": {
+        "name": "schlussfolgerungsaufwand"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_target_size": {
+        "name": "zielgröße"
+      },
+      "model_temperature": {
+        "name": "temperatur"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "model_width": {
+        "name": "breite"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "QuiverTextToSVGNode": {
     "description": "Erzeugt mit Quiver AI ein SVG aus einem Text-Prompt.",
-    "display_name": "Quiver Text zu SVG",
+    "display_name": "Quiver Text zu SVG (Legacy)",
     "inputs": {
       "control_after_generate": {
         "name": "Steuerung nach Generierung"
@@ -18752,6 +18856,51 @@
       "seed": {
         "name": "Seed",
         "tooltip": "Seed, um festzulegen, ob der Node erneut ausgeführt werden soll; die tatsächlichen Ergebnisse sind unabhängig vom Seed nicht deterministisch."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QuiverTextToSVGNodeV2": {
+    "description": "Generieren Sie mit Quiver AI ein SVG aus einem Text-Prompt.",
+    "display_name": "Quiver Text zu SVG",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "model": {
+        "name": "Modell",
+        "tooltip": "Modell für die SVG-Generierung."
+      },
+      "model_height": {
+        "name": "Höhe"
+      },
+      "model_instructions": {
+        "name": "Anweisungen"
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_prompt": {
+        "name": "Prompt"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "Seed"
+      },
+      "model_temperature": {
+        "name": "Temperatur"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "model_width": {
+        "name": "Breite"
       }
     },
     "outputs": {
@@ -27550,6 +27699,79 @@
         "tooltip": "Textbeschreibung für die Videogenerierung mit maximal 2000 Zeichen."
       },
       "seed": {
+        "name": "Seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu4ImageToVideoNode": {
+    "description": "Generieren Sie ein Video aus einem Startbild und einem optionalen Prompt. Die Ausgabe behält das Seitenverhältnis des Eingabebilds bei.",
+    "display_name": "Vidu Q4 Bild-zu-Video-Generierung",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "image": {
+        "name": "Bild",
+        "tooltip": "Startbild des generierten Videos. Das Seitenverhältnis muss zwischen 1:5 und 5:1 liegen."
+      },
+      "model": {
+        "name": "Modell",
+        "tooltip": "Modell für die Videogenerierung."
+      },
+      "model_audio": {
+        "name": "Audio"
+      },
+      "model_duration": {
+        "name": "Dauer"
+      },
+      "model_prompt": {
+        "name": "Prompt"
+      },
+      "model_resolution": {
+        "name": "Auflösung"
+      },
+      "model_seed": {
+        "name": "Seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu4ReferenceVideoNode": {
+    "description": "Generieren Sie ein Video aus Referenzbildern, optionalem Referenz-Audio und einem Prompt.",
+    "display_name": "Vidu Q4 Referenz-zu-Video-Generierung",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "model": {
+        "name": "Modell",
+        "tooltip": "Modell für die Videogenerierung."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_audio": {
+        "name": "Audio"
+      },
+      "model_duration": {
+        "name": "Dauer"
+      },
+      "model_prompt": {
+        "name": "Prompt"
+      },
+      "model_resolution": {
+        "name": "Auflösung"
+      },
+      "model_seed": {
         "name": "Seed"
       }
     },

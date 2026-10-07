@@ -2766,6 +2766,41 @@
       }
     }
   },
+  "CameraAngle": {
+    "description": "Choisissez un angle de caméra autour d’un sujet avec un aperçu 3D. Produit un camera_info pour les nœuds 3D et une description de plan en langage naturel pour les invites.",
+    "display_name": "Composer une invite d’angle de caméra",
+    "inputs": {
+      "horizontal_angle": {
+        "name": "horizontal_angle",
+        "tooltip": "Azimut autour du sujet en degrés. 0 correspond à la face avant, 90 au côté droit, 180 à l’arrière."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Image de référence facultative affichée sur la face avant du cube représentant le sujet dans l’aperçu 3D."
+      },
+      "vertical_angle": {
+        "name": "vertical_angle",
+        "tooltip": "Élévation en degrés. Une valeur négative regarde vers le haut depuis le bas, une valeur positive vers le bas depuis le haut."
+      },
+      "view": {
+        "name": "view"
+      },
+      "zoom": {
+        "name": "zoom",
+        "tooltip": "Zoom de l’objectif sur le sujet : 0 correspond à un plan large, 10 à un gros plan. Transmis dans camera_info.zoom."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "1": {
+        "name": "prompt",
+        "tooltip": null
+      }
+    }
+  },
   "Canny": {
     "display_name": "Canny",
     "inputs": {
@@ -2900,6 +2935,27 @@
       "start_sigma": {
         "name": "sigma_début",
         "tooltip": "Premier sigma pour lequel ces options seront actives."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ClarityCrystalUpscaleNode": {
+    "description": "Agrandissez une image avec Crystal Upscaler de Clarity AI, un outil d’agrandissement haute fidélité qui reste fidèle à l’original et restaure les visages, la peau et les textures fines. Sortie maximale : 100 mégapixels.",
+    "display_name": "Agrandissement Crystal par Clarity AI",
+    "inputs": {
+      "model": {
+        "name": "Modèle",
+        "tooltip": "Modèle à utiliser."
+      },
+      "model_creativity": {
+        "name": "créativité"
+      },
+      "model_scale_factor": {
+        "name": "scale_factor"
       }
     },
     "outputs": {
@@ -4078,9 +4134,12 @@
     }
   },
   "CreateCameraInfo": {
-    "description": "Construit une camera_info. Le mode 'orbit' vise avec les angles de lacet/tangage/distance autour de la cible ; 'look_at' place la caméra à une position dans l'espace mondial. Les coordonnées sont dans l'espace mondial du spectateur (main droite, Y vers le haut).",
+    "description": "Crée un camera_info. Le mode « orbit » vise la cible avec le lacet, le tangage et la distance autour d’elle ; « look_at » place la caméra à une position dans l’espace monde. Les coordonnées correspondent à l’espace monde du visualiseur (droitier, axe Y vers le haut).",
     "display_name": "Créer des informations de caméra",
     "inputs": {
+      "camera_info_state": {
+        "name": "camera_info_state"
+      },
       "camera_type": {
         "name": "camera_type",
         "tooltip": "Projection utilisée par Render Splat : perspective (raccourcissement) ou orthographique (parallèle)."
@@ -6840,7 +6899,7 @@
   },
   "GeminiNanoBanana2V2": {
     "description": "Générez ou modifiez des images de manière synchrone via l'API Google Vertex.",
-    "display_name": "Nano Banana 2",
+    "display_name": "Nano Banana 2.1",
     "inputs": {
       "control_after_generate": {
         "name": "contrôle après génération"
@@ -6890,7 +6949,7 @@
       },
       "2": {
         "name": "image de réflexion",
-        "tooltip": "Première image issue du processus de réflexion du modèle. Disponible uniquement avec le niveau de réflexion ÉLEVÉ et la modalité IMAGE+TEXTE."
+        "tooltip": "Première image du processus de réflexion du modèle. Disponible uniquement avec la modalité IMAGE+TEXT."
       }
     }
   },
@@ -18669,7 +18728,7 @@
   },
   "QuiverImageToSVGNode": {
     "description": "Vectorisez une image matricielle en SVG à l'aide de Quiver AI.",
-    "display_name": "Quiver Image vers SVG",
+    "display_name": "Quiver Image vers SVG (hérité)",
     "inputs": {
       "auto_crop": {
         "name": "auto_crop",
@@ -18713,9 +18772,54 @@
       }
     }
   },
+  "QuiverImageToSVGNodeV2": {
+    "description": "Vectorisez une image matricielle en SVG à l’aide de Quiver AI.",
+    "display_name": "Quiver Image vers SVG",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après la génération"
+      },
+      "model": {
+        "name": "Modèle",
+        "tooltip": "Modèle à utiliser pour la vectorisation SVG."
+      },
+      "model_auto_crop": {
+        "name": "auto_crop"
+      },
+      "model_height": {
+        "name": "hauteur"
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_target_size": {
+        "name": "target_size"
+      },
+      "model_temperature": {
+        "name": "température"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "model_width": {
+        "name": "largeur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "QuiverTextToSVGNode": {
     "description": "Générez un SVG à partir d'une invite textuelle avec Quiver AI.",
-    "display_name": "Quiver Texte vers SVG",
+    "display_name": "Quiver Texte vers SVG (hérité)",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -18752,6 +18856,51 @@
       "seed": {
         "name": "seed",
         "tooltip": "Graine pour déterminer si le nœud doit être relancé ; les résultats réels restent non déterministes quel que soit le seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QuiverTextToSVGNodeV2": {
+    "description": "Générer un SVG à partir d’une invite textuelle à l’aide de Quiver AI.",
+    "display_name": "Quiver Texte vers SVG",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après la génération"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Modèle à utiliser pour la génération de SVG."
+      },
+      "model_height": {
+        "name": "hauteur"
+      },
+      "model_instructions": {
+        "name": "instructions"
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_prompt": {
+        "name": "invite"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "graine"
+      },
+      "model_temperature": {
+        "name": "température"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "model_width": {
+        "name": "largeur"
       }
     },
     "outputs": {
@@ -27550,6 +27699,79 @@
         "tooltip": "Description textuelle pour la génération de vidéo, longueur maximale de 2000 caractères."
       },
       "seed": {
+        "name": "graine"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu4ImageToVideoNode": {
+    "description": "Générer une vidéo à partir d’une image de départ et d’une invite facultative. La sortie conserve le rapport largeur/hauteur de l’image d’entrée.",
+    "display_name": "Génération d’image en vidéo Vidu Q4",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après la génération"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Image de départ de la vidéo générée. Le rapport largeur/hauteur doit être compris entre 1:5 et 5:1."
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Modèle à utiliser pour la génération de vidéo."
+      },
+      "model_audio": {
+        "name": "audio"
+      },
+      "model_duration": {
+        "name": "durée"
+      },
+      "model_prompt": {
+        "name": "invite"
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "model_seed": {
+        "name": "graine"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu4ReferenceVideoNode": {
+    "description": "Générer une vidéo à partir d’images de référence, d’un audio de référence facultatif et d’une invite.",
+    "display_name": "Génération de référence en vidéo Vidu Q4",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après la génération"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Modèle à utiliser pour la génération de vidéo."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_audio": {
+        "name": "audio"
+      },
+      "model_duration": {
+        "name": "durée"
+      },
+      "model_prompt": {
+        "name": "invite"
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "model_seed": {
         "name": "graine"
       }
     },

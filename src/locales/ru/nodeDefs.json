@@ -2766,6 +2766,41 @@
       }
     }
   },
+  "CameraAngle": {
+    "description": "Выберите ракурс камеры вокруг объекта с помощью 3D-предпросмотра. Выводит camera_info для 3D-узлов и описание кадра на естественном языке для промптов.",
+    "display_name": "Создание промпта с ракурсом камеры",
+    "inputs": {
+      "horizontal_angle": {
+        "name": "horizontal_angle",
+        "tooltip": "Азимут вокруг объекта в градусах. 0 — спереди, 90 — справа, 180 — сзади."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Необязательное эталонное изображение, отображаемое на передней стороне куба объекта в 3D-предпросмотре."
+      },
+      "vertical_angle": {
+        "name": "vertical_angle",
+        "tooltip": "Угол возвышения в градусах. Отрицательные значения показывают снизу, положительные — сверху."
+      },
+      "view": {
+        "name": "view"
+      },
+      "zoom": {
+        "name": "zoom",
+        "tooltip": "Зум объектива на объекте: 0 — общий план, 10 — крупный план. Передаётся в camera_info.zoom."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "1": {
+        "name": "prompt",
+        "tooltip": null
+      }
+    }
+  },
   "Canny": {
     "display_name": "Canny",
     "inputs": {
@@ -2900,6 +2935,27 @@
       "start_sigma": {
         "name": "начальная_сигма",
         "tooltip": "Первая сигма, для которой эти настройки вступят в силу."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ClarityCrystalUpscaleNode": {
+    "description": "Увеличивает разрешение изображения с помощью Crystal Upscaler от Clarity AI — высокоточного апскейлера, который сохраняет верность оригиналу и восстанавливает лица, кожу и мелкие текстуры. Максимальный размер результата: 100 мегапикселей.",
+    "display_name": "Увеличение разрешения Crystal от Clarity AI",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Используемая модель."
+      },
+      "model_creativity": {
+        "name": "creativity"
+      },
+      "model_scale_factor": {
+        "name": "scale_factor"
       }
     },
     "outputs": {
@@ -4078,9 +4134,12 @@
     }
   },
   "CreateCameraInfo": {
-    "description": "Создаёт camera_info. Режим 'orbit' наводит с помощью углов yaw/pitch/distance вокруг цели; 'look_at' размещает камеру в мировой позиции. Координаты — в мировой системе координат наблюдателя (правосторонняя, Y-вверх).",
+    "description": "Создаёт camera_info. Режим «orbit» наводит камеру на цель с помощью yaw/pitch/distance вокруг неё; «look_at» размещает камеру в мировой позиции. Координаты соответствуют мировому пространству зрителя (правосторонняя система, ось Y направлена вверх).",
     "display_name": "Создать информацию о камере",
     "inputs": {
+      "camera_info_state": {
+        "name": "camera_info_state"
+      },
       "camera_type": {
         "name": "camera_type",
         "tooltip": "Проекция, используемая Render Splat: перспективная (с искажением) или ортографическая (параллельная)."
@@ -6840,7 +6899,7 @@
   },
   "GeminiNanoBanana2V2": {
     "description": "Генерируйте или редактируйте изображения синхронно через Google Vertex API.",
-    "display_name": "Nano Banana 2",
+    "display_name": "Nano Banana 2.1",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -6890,7 +6949,7 @@
       },
       "2": {
         "name": "thought_image",
-        "tooltip": "Первое изображение из процесса мышления модели. Доступно только при thinking_level HIGH и модальности IMAGE+TEXT."
+        "tooltip": "Первое изображение из процесса рассуждений модели. Доступно только для модальности IMAGE+TEXT."
       }
     }
   },
@@ -18669,7 +18728,7 @@
   },
   "QuiverImageToSVGNode": {
     "description": "Векторизация растрового изображения в SVG с помощью Quiver AI.",
-    "display_name": "Quiver Image to SVG",
+    "display_name": "Quiver: изображение в SVG (устаревшее)",
     "inputs": {
       "auto_crop": {
         "name": "auto_crop",
@@ -18713,9 +18772,54 @@
       }
     }
   },
+  "QuiverImageToSVGNodeV2": {
+    "description": "Векторизует растровое изображение в SVG с помощью Quiver AI.",
+    "display_name": "Quiver: изображение в SVG",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Модель для векторизации в SVG."
+      },
+      "model_auto_crop": {
+        "name": "auto_crop"
+      },
+      "model_height": {
+        "name": "height"
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_target_size": {
+        "name": "target_size"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "model_width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "QuiverTextToSVGNode": {
     "description": "Генерация SVG по текстовому запросу с помощью Quiver AI.",
-    "display_name": "Quiver Text to SVG",
+    "display_name": "Quiver: текст в SVG (устаревшее)",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -18752,6 +18856,51 @@
       "seed": {
         "name": "seed",
         "tooltip": "Сид для определения необходимости повторного запуска узла; фактические результаты недетерминированы независимо от сида."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QuiverTextToSVGNodeV2": {
+    "description": "Создаёт SVG из текстового промпта с помощью Quiver AI.",
+    "display_name": "Quiver: текст в SVG",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Модель для генерации SVG."
+      },
+      "model_height": {
+        "name": "высота"
+      },
+      "model_instructions": {
+        "name": "инструкции"
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_prompt": {
+        "name": "промпт"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_temperature": {
+        "name": "температура"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "model_width": {
+        "name": "ширина"
       }
     },
     "outputs": {
@@ -27550,6 +27699,79 @@
         "tooltip": "Текстовое описание для генерации видео, максимум 2000 символов."
       },
       "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu4ImageToVideoNode": {
+    "description": "Создаёт видео на основе начального кадра и необязательного промпта. Выходное видео сохраняет соотношение сторон входного изображения.",
+    "display_name": "Vidu Q4: создание видео из изображения",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "image": {
+        "name": "изображение",
+        "tooltip": "Начальный кадр создаваемого видео. Соотношение сторон должно быть от 1:5 до 5:1."
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Модель для генерации видео."
+      },
+      "model_audio": {
+        "name": "аудио"
+      },
+      "model_duration": {
+        "name": "длительность"
+      },
+      "model_prompt": {
+        "name": "промпт"
+      },
+      "model_resolution": {
+        "name": "разрешение"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu4ReferenceVideoNode": {
+    "description": "Создаёт видео по референсным изображениям, необязательному референсному аудио и промпту.",
+    "display_name": "Vidu Q4: создание видео по референсам",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Модель для генерации видео."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_audio": {
+        "name": "аудио"
+      },
+      "model_duration": {
+        "name": "длительность"
+      },
+      "model_prompt": {
+        "name": "промпт"
+      },
+      "model_resolution": {
+        "name": "разрешение"
+      },
+      "model_seed": {
         "name": "seed"
       }
     },

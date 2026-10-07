@@ -2766,6 +2766,41 @@
       }
     }
   },
+  "CameraAngle": {
+    "description": "3Dプレビューで被写体の周囲のカメラアングルを選択します。3Dノード用のcamera_infoと、プロンプト用の平易な英語のショット説明を出力します。",
+    "display_name": "カメラアングルプロンプトを作成",
+    "inputs": {
+      "horizontal_angle": {
+        "name": "horizontal_angle",
+        "tooltip": "被写体の周囲の方位角（度）。0は正面、90は右側、180は背面です。"
+      },
+      "image": {
+        "name": "画像",
+        "tooltip": "3Dプレビューで被写体キューブの正面に表示する、任意の参照画像です。"
+      },
+      "vertical_angle": {
+        "name": "vertical_angle",
+        "tooltip": "仰角（度）。負の値は下から見上げ、正の値は上から見下ろします。"
+      },
+      "view": {
+        "name": "ビュー"
+      },
+      "zoom": {
+        "name": "zoom",
+        "tooltip": "被写体に対するレンズズーム：0はワイドショット、10はクローズアップです。camera_info.zoomに引き継がれます。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "1": {
+        "name": "プロンプト",
+        "tooltip": null
+      }
+    }
+  },
   "Canny": {
     "display_name": "キャニー",
     "inputs": {
@@ -2900,6 +2935,27 @@
       "start_sigma": {
         "name": "開始シグマ",
         "tooltip": "これらのオプションが有効になる最初のシグマ値。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ClarityCrystalUpscaleNode": {
+    "description": "Clarity AIのCrystal Upscalerを使用して画像をアップスケールします。これは、元画像への忠実性を保ちながら顔、肌、細かな質感を復元する高忠実度アップスケーラーです。最大出力：1億画素。",
+    "display_name": "Clarity AI Crystal アップスケール",
+    "inputs": {
+      "model": {
+        "name": "モデル",
+        "tooltip": "使用するモデル。"
+      },
+      "model_creativity": {
+        "name": "創造性"
+      },
+      "model_scale_factor": {
+        "name": "scale_factor"
       }
     },
     "outputs": {
@@ -4078,9 +4134,12 @@
     }
   },
   "CreateCameraInfo": {
-    "description": "camera_infoを構築します。モード「orbit」はターゲットの周囲をヨー/ピッチ/距離で回転します。「look_at」はカメラをワールド座標に配置します。座標はビューアのワールド空間（右手系、Yアップ）です。",
+    "description": "camera_infoを構築します。モード「orbit」はターゲットの周囲でyaw/pitch/distanceを使ってカメラを向けます。「look_at」はカメラをワールド座標に配置します。座標はビューアのワールド空間です（右手系、Y軸上向き）。",
     "display_name": "カメラ情報の作成",
     "inputs": {
+      "camera_info_state": {
+        "name": "camera_info_state"
+      },
       "camera_type": {
         "name": "カメラタイプ",
         "tooltip": "Render Splatで使用する投影方法：パースペクティブ（遠近法）またはオーソグラフィック（平行投影）。"
@@ -6840,7 +6899,7 @@
   },
   "GeminiNanoBanana2V2": {
     "description": "Google Vertex API を使用して画像を同期的に生成または編集します。",
-    "display_name": "Nano Banana 2",
+    "display_name": "Nano Banana 2.1",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -6890,7 +6949,7 @@
       },
       "2": {
         "name": "思考画像",
-        "tooltip": "モデルの思考過程から得られる最初の画像。思考レベルがHIGHかつモダリティがIMAGE+TEXTの場合のみ利用可能です。"
+        "tooltip": "モデルの思考プロセスによる最初の画像。IMAGE+TEXTモダリティでのみ利用できます。"
       }
     }
   },
@@ -18669,7 +18728,7 @@
   },
   "QuiverImageToSVGNode": {
     "description": "Quiver AIを使ってラスタ画像をSVGにベクトル化します。",
-    "display_name": "Quiver画像からSVGへ",
+    "display_name": "Quiver Image to SVG（レガシー）",
     "inputs": {
       "auto_crop": {
         "name": "auto_crop",
@@ -18713,9 +18772,54 @@
       }
     }
   },
+  "QuiverImageToSVGNodeV2": {
+    "description": "Quiver AIを使用して、ラスター画像をSVGにベクター化します。",
+    "display_name": "Quiver Image to SVG",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "SVGベクター化に使用するモデル。"
+      },
+      "model_auto_crop": {
+        "name": "auto_crop"
+      },
+      "model_height": {
+        "name": "高さ"
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "シード"
+      },
+      "model_target_size": {
+        "name": "target_size"
+      },
+      "model_temperature": {
+        "name": "温度"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "model_width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "QuiverTextToSVGNode": {
     "description": "Quiver AIを使ってテキストプロンプトからSVGを生成します。",
-    "display_name": "QuiverテキストからSVGへ",
+    "display_name": "Quiver Text to SVG（レガシー）",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -18752,6 +18856,51 @@
       "seed": {
         "name": "seed",
         "tooltip": "ノードを再実行するかどうかを決定するシード値。実際の結果はシードに関係なく非決定的です。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QuiverTextToSVGNodeV2": {
+    "description": "Quiver AI を使用して、テキストプロンプトから SVG を生成します。",
+    "display_name": "Quiver Text to SVG",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "SVG の生成に使用するモデル。"
+      },
+      "model_height": {
+        "name": "高さ"
+      },
+      "model_instructions": {
+        "name": "指示"
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "シード"
+      },
+      "model_temperature": {
+        "name": "温度"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "model_width": {
+        "name": "幅"
       }
     },
     "outputs": {
@@ -27550,6 +27699,79 @@
         "tooltip": "動画生成用のテキスト説明（最大2000文字）。"
       },
       "seed": {
+        "name": "シード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu4ImageToVideoNode": {
+    "description": "開始フレームと任意のプロンプトから動画を生成します。出力は入力画像のアスペクト比を維持します。",
+    "display_name": "Vidu Q4 画像から動画の生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "image": {
+        "name": "画像",
+        "tooltip": "生成する動画の開始フレーム。アスペクト比は 1:5 ～ 5:1 である必要があります。"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "動画の生成に使用するモデル。"
+      },
+      "model_audio": {
+        "name": "音声"
+      },
+      "model_duration": {
+        "name": "長さ"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "model_seed": {
+        "name": "シード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu4ReferenceVideoNode": {
+    "description": "参照画像、任意の参照音声、プロンプトから動画を生成します。",
+    "display_name": "Vidu Q4 参照画像から動画の生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "動画の生成に使用するモデル。"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_audio": {
+        "name": "音声"
+      },
+      "model_duration": {
+        "name": "長さ"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "model_seed": {
         "name": "シード"
       }
     },

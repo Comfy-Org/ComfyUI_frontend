@@ -2766,6 +2766,41 @@
       }
     }
   },
+  "CameraAngle": {
+    "description": "اختر زاوية كاميرا حول موضوع باستخدام معاينة ثلاثية الأبعاد. يُخرج camera_info لعُقد ثلاثية الأبعاد ووصفًا نصيًا بسيطًا بالإنجليزية للّقطات لاستخدامه في المطالبات.",
+    "display_name": "إنشاء مطالبة زاوية الكاميرا",
+    "inputs": {
+      "horizontal_angle": {
+        "name": "horizontal_angle",
+        "tooltip": "السمت حول الموضوع بالدرجات. 0 هو الأمام، و90 الجانب الأيمن، و180 الخلف."
+      },
+      "image": {
+        "name": "الصورة",
+        "tooltip": "صورة مرجعية اختيارية تُعرض على واجهة مكعب الموضوع في المعاينة ثلاثية الأبعاد."
+      },
+      "vertical_angle": {
+        "name": "vertical_angle",
+        "tooltip": "الارتفاع بالدرجات. القيم السالبة تنظر إلى أعلى من الأسفل، والموجبة تنظر إلى أسفل من الأعلى."
+      },
+      "view": {
+        "name": "العرض"
+      },
+      "zoom": {
+        "name": "التكبير",
+        "tooltip": "تكبير العدسة على الموضوع: 0 لقطة واسعة، و10 لقطة مقرّبة. يُنقل إلى camera_info.zoom."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "1": {
+        "name": "المطالبة",
+        "tooltip": null
+      }
+    }
+  },
   "Canny": {
     "display_name": "كاني",
     "inputs": {
@@ -2900,6 +2935,27 @@
       "start_sigma": {
         "name": "start_sigma",
         "tooltip": "أول قيمة سيجما التي ستكون هذه الخيارات سارية المفعول عندها."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ClarityCrystalUpscaleNode": {
+    "description": "رقِّ دقة صورة باستخدام مُرقّي Crystal من Clarity AI، وهو مُرقٍّ عالي الدقة يحافظ على الأصل ويستعيد الوجوه والبشرة والملمس الدقيق. الحد الأقصى للإخراج: 100 ميغابكسل.",
+    "display_name": "ترقية الدقة Crystal من Clarity AI",
+    "inputs": {
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المراد استخدامه."
+      },
+      "model_creativity": {
+        "name": "الإبداعية"
+      },
+      "model_scale_factor": {
+        "name": "scale_factor"
       }
     },
     "outputs": {
@@ -4078,9 +4134,12 @@
     }
   },
   "CreateCameraInfo": {
-    "description": "إنشاء camera_info. وضع 'orbit' يوجه الكاميرا حول الهدف باستخدام yaw/pitch/distance؛ وضع 'look_at' يضع الكاميرا في موقع محدد في العالم. الإحداثيات في فضاء العالم للمشاهد (نظام اليد اليمنى، المحور Y للأعلى).",
+    "description": "أنشئ camera_info. يوجّه النمط 'orbit' الكاميرا باستخدام yaw/pitch/distance حول الهدف؛ ويضع 'look_at' الكاميرا عند موضع العالم. الإحداثيات هي فضاء العالم الخاص بالمشاهد (يميني الاتجاه، والمحور Y لأعلى).",
     "display_name": "إنشاء معلومات الكاميرا",
     "inputs": {
+      "camera_info_state": {
+        "name": "camera_info_state"
+      },
       "camera_type": {
         "name": "camera_type",
         "tooltip": "الإسقاط المستخدم بواسطة Render Splat: منظور (تقريب المسافات) أو متوازي (خطوط متوازية)."
@@ -6840,7 +6899,7 @@
   },
   "GeminiNanoBanana2V2": {
     "description": "توليد أو تعديل الصور بشكل متزامن عبر Google Vertex API.",
-    "display_name": "نانا موز 2",
+    "display_name": "Nano Banana 2.1",
     "inputs": {
       "control_after_generate": {
         "name": "التحكم بعد التوليد"
@@ -6890,7 +6949,7 @@
       },
       "2": {
         "name": "صورة التفكير",
-        "tooltip": "أول صورة من عملية تفكير النموذج. متوفرة فقط عند مستوى التفكير العالي ونمط الاستجابة صورة+نص."
+        "tooltip": "الصورة الأولى من عملية تفكير النموذج. لا تتاح إلا مع نمط IMAGE+TEXT."
       }
     }
   },
@@ -18669,7 +18728,7 @@
   },
   "QuiverImageToSVGNode": {
     "description": "تحويل صورة نقطية إلى SVG باستخدام Quiver AI.",
-    "display_name": "Quiver تحويل صورة إلى SVG",
+    "display_name": "تحويل صورة Quiver إلى SVG (قديم)",
     "inputs": {
       "auto_crop": {
         "name": "auto_crop",
@@ -18713,9 +18772,54 @@
       }
     }
   },
+  "QuiverImageToSVGNodeV2": {
+    "description": "حوّل صورة نقطية إلى SVG متّجهي باستخدام Quiver AI.",
+    "display_name": "تحويل صورة Quiver إلى SVG",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد الإنشاء"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المراد استخدامه لتحويل SVG إلى متجهات."
+      },
+      "model_auto_crop": {
+        "name": "auto_crop"
+      },
+      "model_height": {
+        "name": "الارتفاع"
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "البذرة"
+      },
+      "model_target_size": {
+        "name": "target_size"
+      },
+      "model_temperature": {
+        "name": "الحرارة"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "model_width": {
+        "name": "العرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "QuiverTextToSVGNode": {
     "description": "إنشاء SVG من وصف نصي باستخدام Quiver AI.",
-    "display_name": "Quiver تحويل نص إلى SVG",
+    "display_name": "تحويل نص Quiver إلى SVG (قديم)",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -18752,6 +18856,51 @@
       "seed": {
         "name": "seed",
         "tooltip": "البذرة لتحديد ما إذا كان يجب إعادة تشغيل العقدة؛ النتائج الفعلية غير حتمية بغض النظر عن البذرة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QuiverTextToSVGNodeV2": {
+    "description": "أنشئ ملف SVG من مطالبة نصية باستخدام Quiver AI.",
+    "display_name": "تحويل نص Quiver إلى SVG",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المراد استخدامه لتوليد SVG."
+      },
+      "model_height": {
+        "name": "الارتفاع"
+      },
+      "model_instructions": {
+        "name": "التعليمات"
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_prompt": {
+        "name": "المطالبة"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "البذرة"
+      },
+      "model_temperature": {
+        "name": "درجة الحرارة"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "model_width": {
+        "name": "العرض"
       }
     },
     "outputs": {
@@ -27550,6 +27699,79 @@
         "tooltip": "وصف نصي لتوليد الفيديو، بحد أقصى ٢٠٠٠ حرف."
       },
       "seed": {
+        "name": "البذرة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu4ImageToVideoNode": {
+    "description": "أنشئ فيديو من إطار بداية ومطالبة اختيارية. يحافظ الناتج على نسبة العرض إلى الارتفاع للصورة المُدخلة.",
+    "display_name": "توليد فيديو من صورة باستخدام Vidu Q4",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "image": {
+        "name": "الصورة",
+        "tooltip": "إطار البداية للفيديو المُولَّد. يجب أن تكون نسبة العرض إلى الارتفاع بين 1:5 و5:1."
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المراد استخدامه لتوليد الفيديو."
+      },
+      "model_audio": {
+        "name": "الصوت"
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_prompt": {
+        "name": "المطالبة"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "model_seed": {
+        "name": "البذرة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu4ReferenceVideoNode": {
+    "description": "أنشئ فيديو من صور مرجعية وصوت مرجعي اختياري ومطالبة.",
+    "display_name": "توليد فيديو من مراجع باستخدام Vidu Q4",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المراد استخدامه لتوليد الفيديو."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_audio": {
+        "name": "الصوت"
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_prompt": {
+        "name": "المطالبة"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "model_seed": {
         "name": "البذرة"
       }
     },
