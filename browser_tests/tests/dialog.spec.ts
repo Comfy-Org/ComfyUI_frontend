@@ -159,6 +159,7 @@ test.describe('Signin dialog', () => {
   })
 
   test('Sign-in dialog resolves true on login', async ({ comfyPage }) => {
+    await comfyPage.cloudAuth.mockFirebaseEndpoints('test@example.com')
     await mockWorkspace(comfyPage.page, workspace('personal', 'owner'), [])
     await mockBilling(comfyPage.page)
     await comfyPage.page.route(
