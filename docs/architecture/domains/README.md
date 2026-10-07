@@ -65,6 +65,8 @@ debt. Baseline acceptance must never accompany unrelated product work.
 Exact fingerprints and historical prefix scopes are separate ledger fields;
 exact ownership wins when both could match, and exact matching never treats one
 occurrence suffix as a prefix of another.
+`sunset` is review metadata for planned debt retirement; it does not make
+unrelated checks fail when the date passes.
 When recorded debt is removed, `architecture:check` requires an update and
 `architecture:update` deletes only the resolved fingerprints. This prevents a
 later reintroduction from inheriting stale baseline permission.
