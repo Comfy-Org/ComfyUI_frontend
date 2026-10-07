@@ -83,6 +83,7 @@ describe('Comfy.MaskEditor getExtraMenuOptions', () => {
     const nodeType = await registerNodeType()
     const items = menuOptions(nodeType, imageNode())
 
+    expect(items).toHaveLength(1)
     expect(
       filterUnavailableCoreMediaMenuActions(items, new Set(['preview']))
     ).toEqual([])
