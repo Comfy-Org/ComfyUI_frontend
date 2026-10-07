@@ -1,5 +1,4 @@
-# Auto-approve website-only pull requests from explicitly trusted authors or
-# after an explicitly trusted operator applies the approval label.
+# Run the website package's configured delivery lane.
 #
 # Security boundary:
 # - pull_request_target loads this workflow from the trusted default branch.
@@ -8,7 +7,7 @@
 # - the script rejects other base branches and forks, re-fetches the live PR,
 #   verifies the exact head SHA, requires every changed path to be under
 #   apps/website/**, and verifies the PAT owner.
-name: 'PR: Website Auto-Approve'
+name: 'PR: Website Fast Lane'
 
 on:
   pull_request_target:
@@ -38,7 +37,7 @@ permissions:
   pull-requests: read
 
 concurrency:
-  group: website-auto-approve-${{ github.event.pull_request.number || github.event.workflow_run.head_sha || github.event.sha || github.run_id }}
+  group: website-fast-lane-${{ github.event.pull_request.number || github.event.workflow_run.head_sha || github.event.sha || github.run_id }}
   cancel-in-progress: true
 
 jobs:
@@ -49,27 +48,28 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Checkout trusted base automation
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        uses: actions/checkout@v7
         with:
           ref: refs/heads/${{ github.event.repository.default_branch }}
           persist-credentials: false
-          sparse-checkout: .github/scripts
+          sparse-checkout: |
+            .nvmrc
+            .github/fast-lanes/website.json
+            scripts/cicd/fast-lane
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
 
       - name: Approve and queue eligible website pull request
         env:
+          FAST_LANE_CONFIG: .github/fast-lanes/website.json
+          FAST_LANE_TOKEN: ${{ secrets.WEBSITE_APPROVAL_TOKEN }}
+          FAST_LANE_BASE_REF: ${{ github.event.repository.default_branch }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
-          WEBSITE_APPROVAL_BASE_REF: ${{ github.event.repository.default_branch }}
-          WEBSITE_APPROVAL_TOKEN: ${{ secrets.WEBSITE_APPROVAL_TOKEN }}
-          WEBSITE_APPROVER_LOGIN: christian-byrne
-          # This is intentionally checked in: changing who can receive an
-          # automatic approval must itself pass normal repository review.
-          WEBSITE_AUTO_APPROVE_AUTHORS: '["bertfy"]'
-          # The label is a second route for a non-allowlisted author. The script
-          # verifies its latest event came from one of these operators.
-          WEBSITE_AUTO_APPROVE_LABELERS: '["christian-byrne", "DrJKL", "benjcooley"]'
-        run: node .github/scripts/website-auto-approve.mjs
+        run: node --experimental-strip-types scripts/cicd/fast-lane/run.ts
 
   reconcile-after-check:
     if: github.event_name == 'status' || (github.event_name == 'workflow_run' && github.event.workflow_run.event == 'pull_request')
@@ -78,19 +78,24 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Checkout trusted base automation
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        uses: actions/checkout@v7
         with:
           ref: refs/heads/${{ github.event.repository.default_branch }}
           persist-credentials: false
-          sparse-checkout: .github/scripts
+          sparse-checkout: |
+            .nvmrc
+            .github/fast-lanes/website.json
+            scripts/cicd/fast-lane
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
 
       - name: Reconcile approval and native queue state
         env:
+          FAST_LANE_CONFIG: .github/fast-lanes/website.json
+          FAST_LANE_TOKEN: ${{ secrets.WEBSITE_APPROVAL_TOKEN }}
+          FAST_LANE_BASE_REF: ${{ github.event.repository.default_branch }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           PR_HEAD_SHA: ${{ github.event.sha || github.event.workflow_run.head_sha }}
-          WEBSITE_APPROVAL_BASE_REF: ${{ github.event.repository.default_branch }}
-          WEBSITE_APPROVAL_TOKEN: ${{ secrets.WEBSITE_APPROVAL_TOKEN }}
-          WEBSITE_APPROVER_LOGIN: christian-byrne
-          WEBSITE_AUTO_APPROVE_AUTHORS: '["bertfy"]'
-          WEBSITE_AUTO_APPROVE_LABELERS: '["christian-byrne", "DrJKL", "benjcooley"]'
-        run: node .github/scripts/website-auto-approve.mjs
+        run: node --experimental-strip-types scripts/cicd/fast-lane/run.ts

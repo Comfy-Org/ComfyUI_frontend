@@ -23,73 +23,8 @@ The candidate dependency prototype lives in `ci-tests-e2e.yaml`. See
 for measured runtimes, required-check compatibility, and rollout limits.
 
 The required `lint-and-format` context keeps one stable name across pull requests and merge-queue
-candidates. Changes confined to `apps/website/**` run website-scoped lint, format, typecheck, and
-Knip jobs. Any file outside that directory selects the full repository jobs; pushes to protected
-branches always run the full jobs.
+candidates. See [Package delivery lanes](../../docs/architecture/package-delivery-lanes.md) for the
+path-scoped quality and approval model, and [Website delivery validation](../../docs/architecture/website-delivery-validation.md)
+for the current trial and rollback procedure.
 
 For GitHub Actions documentation, see [Events that trigger workflows](https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows).
-
-## Website auto-approval
-
-`pr-website-auto-approve.yaml` removes the human approval wait for explicitly
-allowlisted authors, or after an allowlisted operator applies
-`website-fast-lane:approve`, when every changed file is under
-`apps/website/**`. It runs
-from the protected default branch on `pull_request_target`, never executes PR code,
-rejects other base branches and fork pull requests, rechecks the live head, and verifies that
-`WEBSITE_APPROVAL_TOKEN` belongs to `christian-byrne` before approving. Christian is a member of
-`comfy_website_devs`, so the review satisfies the website path reviewer rule. The workflow cannot
-approve Christian's own pull requests; use another allowlisted author or the fresh-label route on
-a pull request from a different author.
-
-After exact-head approval, the same Christian credential arms GitHub's native auto-merge with the
-repository's only allowed merge method, squash. GitHub moves the pull request into the protected
-branch's native merge queue as soon as its remaining requirements pass; no manual merge click or
-queue jump is used. Because native auto-merge has not always handed ruleset-protected pull requests
-to the queue reliably, the workflow also reconciles after each required Actions workflow and commit
-status completes. When GitHub reports the exact head as clean, it explicitly enters that head in the
-native queue with `jump: false`; otherwise it leaves native auto-merge armed. The workflow also
-listens for human review changes. If a draft, hold, stale
-head, mixed path, or active human change request makes the pull request ineligible, it withdraws
-Christian's policy approval and disables or dequeues merge state created by Christian's workflow.
-Merge state created by another person is left alone.
-
-Approval-label eligibility is provenance-checked against the issue event
-timeline; the latest matching label event must be from an allowlisted operator
-and later than the latest commit or force-push event. Every new head therefore
-requires a fresh authorized label. Label presence by itself is not authorization. The
-`website-fast-lane:hold` label, draft state, an active non-app reviewer change request, a base
-or head change, or a path outside `apps/website/**` stops approval and withdraws an existing
-current-head policy approval when the trusted workflow evaluates the PR. A human change request
-submitted after policy approval blocks merge immediately through GitHub's review rules; the next
-trusted PR event reevaluates and withdraws the policy approval. The review body identifies the
-verdict as policy-only; it must not be interpreted as a diff review.
-
-The Stage 1 author allowlist contains `bertfy`. Expand or retain either allowlist only by reviewing
-a change to `WEBSITE_AUTO_APPROVE_AUTHORS` or
-`WEBSITE_AUTO_APPROVE_LABELERS` in the workflow. A repository administrator
-must configure a `website-approval` environment whose deployment branch restriction allows only the
-protected default branch, then provide Christian's token as that environment's
-`WEBSITE_APPROVAL_TOKEN` secret. Missing or mismatched credentials fail closed.
-
-## Website production identity and validation rollback
-
-Every website preview and production build writes a cache-disabled `/__build.json` containing the
-repository, exact source SHA, workflow run, attempt, and build time. The deploy workflow verifies
-the immutable Vercel URL before it accepts canonical `comfy.org` promotion and retains the prior
-and newly deployed IDs/SHA values as a short-lived artifact.
-
-`validation-website-rollback.yaml` is a manually dispatched validation-only workflow. It accepts
-that captured immutable deployment ID and expected SHA. Its safe default validates that the target
-belongs to the website project and serves the expected marker without changing production. Setting
-`perform_rollback` to true uses Vercel's instant rollback, verifies the canonical marker and public
-homepage, then promotes the same known-good deployment to preserve it while resuming normal
-automatic production-domain assignment.
-
-The first production deploy containing `/__build.json` is the rollback bootstrap, not the positive
-canary. Before any disposable canary PR is opened or queued, download that deploy's transition
-artifact and run `Validation: Website Production Rollback` with its `deployedDeploymentId` and
-`deployedSha`, leaving `perform_rollback` false. The positive canary may start only after this
-no-mutation preflight is green. This ensures its captured previous deployment is a known-good,
-marker-bearing rollback target; an older legacy deployment with an unavailable marker is never
-silently accepted as the canary rollback proof.

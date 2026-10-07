@@ -27,7 +27,6 @@
       "name": "comfyui-test-entry-points",
       "enablers": ["@playwright/test"],
       "entryPoints": [
-        ".github/scripts/**/*.test.mjs",
         "apps/website/src/**/__mocks__/**/*.ts",
         "browser_tests/global{Setup,Teardown}.ts",
         "playwright.session.config.ts",

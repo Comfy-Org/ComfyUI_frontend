@@ -32,22 +32,7 @@ env:
     packages/*/node_modules/.cache/tsbuildinfo
 
 jobs:
-  changes:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    outputs:
-      website-only: ${{ steps.changes.outputs.website-only-changes }}
-    steps:
-      - uses: actions/checkout@v7
-      - id: changes
-        uses: ./.github/actions/changes-filter
-        with:
-          evaluate-candidate: 'true'
-
   lint:
-    needs: changes
-    if: ${{ needs.changes.result == 'success' && needs.changes.outputs.website-only != 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout ref
@@ -77,8 +62,6 @@ jobs:
           path: ${{ env.LINT_CACHE_PATHS }}
 
   typecheck:
-    needs: changes
-    if: ${{ needs.changes.result == 'success' && needs.changes.outputs.website-only != 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout ref
@@ -105,8 +88,6 @@ jobs:
           path: ${{ env.TYPECHECK_CACHE_PATHS }}
 
   typecheck-aux:
-    needs: changes
-    if: ${{ needs.changes.result == 'success' && needs.changes.outputs.website-only != 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout ref
@@ -133,8 +114,6 @@ jobs:
           path: ${{ env.TYPECHECK_CACHE_PATHS }}
 
   repo-checks:
-    needs: changes
-    if: ${{ needs.changes.result == 'success' && needs.changes.outputs.website-only != 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout ref
@@ -150,55 +129,6 @@ jobs:
 
       - name: Verify knip, locale integrity and ADR index
         uses: ./.github/actions/repo-checks
-
-  website-lint:
-    needs: changes
-    if: ${{ needs.changes.result == 'success' && needs.changes.outputs.website-only == 'true' }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: ./.github/actions/setup-frontend
-
-      - name: Restore lint caches
-        id: lint-cache
-        uses: ./.github/actions/tool-cache-restore
-        with:
-          scope: website-lint
-          path: ${{ env.LINT_CACHE_PATHS }}
-
-      - name: Verify website lint and format
-        run: |
-          pnpm exec stylelint --cache --cache-strategy content 'apps/website/**/*.{css,vue}'
-          pnpm exec oxlint apps/website --type-aware
-          pnpm exec eslint apps/website --cache --cache-strategy content --concurrency auto
-          pnpm --filter @comfyorg/website format:check
-
-      - name: Save lint caches
-        if: always()
-        uses: ./.github/actions/tool-cache-save
-        with:
-          cache-key: ${{ steps.lint-cache.outputs.cache-key }}
-          path: ${{ env.LINT_CACHE_PATHS }}
-
-  website-typecheck:
-    needs: changes
-    if: ${{ needs.changes.result == 'success' && needs.changes.outputs.website-only == 'true' }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: ./.github/actions/setup-frontend
-      - name: Typecheck website
-        run: pnpm typecheck:website
-
-  website-repo-checks:
-    needs: changes
-    if: ${{ needs.changes.result == 'success' && needs.changes.outputs.website-only == 'true' }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: ./.github/actions/setup-frontend
-      - name: Find unused website files, exports and dependencies
-        run: pnpm knip --workspace apps/website
 
   # Single stable branch-protection context over the parallel jobs above.
   lint-and-format:
