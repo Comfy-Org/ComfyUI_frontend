@@ -585,7 +585,7 @@ describe('workspaceApi', () => {
       expect(mockAxiosInstance.post).toHaveBeenCalledWith(
         '/api/billing/retention/prepare',
         {},
-        { headers: AUTH_HEADER }
+        { headers: AUTH_HEADER, timeout: 5_000 }
       )
     })
 

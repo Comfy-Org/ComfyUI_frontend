@@ -118,7 +118,7 @@
     </div>
 
     <p
-      v-else-if="phase === 'failed'"
+      v-else-if="phase === 'failed' || phase === 'declined'"
       class="m-0 text-xs/5 text-muted-foreground"
     >
       {{ $t('subscription.retentionOffer.supportCode') }}
@@ -151,6 +151,18 @@
       <template v-else-if="phase === 'failed'">
         <Button variant="inverted" size="lg" @click="acceptOffer">
           {{ $t('subscription.retentionOffer.tryAgain') }}
+        </Button>
+        <Button
+          variant="secondary"
+          size="lg"
+          @click="onDecide('continueToCancel')"
+        >
+          {{ $t('subscription.cancelFlow.continueCancelling') }}
+        </Button>
+      </template>
+      <template v-else-if="phase === 'declined' || phase === 'expired'">
+        <Button variant="textonly" size="lg" @click="close">
+          {{ $t('subscription.cancelFlow.keepPlan') }}
         </Button>
         <Button
           variant="secondary"
@@ -198,9 +210,8 @@ import {
   fullPriceRenewal,
   outcomeOnClose
 } from '@/platform/cloud/subscription/utils/retentionOffer'
-import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import { formatCurrencyCents } from '@/utils/numberUtil'
 
 const {
   offer,
@@ -220,7 +231,7 @@ const {
 
 const { t, n, locale } = useI18n()
 const { planName, creditGrant, includesCustomLoRAs } = useCancellationPlan()
-const { phase, accept } = useRetentionOffer(sessionId, workspaceId)
+const { phase, accept, recordShown } = useRetentionOffer(sessionId, workspaceId)
 
 const percent = offer.percent_off
 const months = offer.duration_in_months
@@ -228,11 +239,7 @@ const monthlyAmount = subscription.unit_amount * subscription.quantity
 const discountedMonthly = discountedAmount(monthlyAmount, offer)
 
 function headlinePrice(cents: number) {
-  return new Intl.NumberFormat(locale.value, {
-    style: 'currency',
-    currency: subscription.currency.toUpperCase(),
-    minimumFractionDigits: cents % 100 === 0 ? 0 : 2
-  }).format(cents / 100)
+  return formatCurrencyCents(locale.value, cents, subscription.currency)
 }
 
 function exactAmount(cents: number) {
@@ -300,6 +307,16 @@ const heading = computed(() => {
         plan: planName.value
       })
     },
+    declined: {
+      title: t('subscription.retentionOffer.failedTitle'),
+      subtitle: t('subscription.retentionOffer.declinedBody', {
+        plan: planName.value
+      })
+    },
+    expired: {
+      title: t('subscription.retentionOffer.expiredTitle'),
+      subtitle: t('subscription.retentionOffer.expiredBody')
+    },
     unconfirmed: {
       title: t('subscription.retentionOffer.unconfirmedTitle'),
       subtitle: t('subscription.retentionOffer.unconfirmedBody')
@@ -309,14 +326,7 @@ const heading = computed(() => {
 })
 
 onMounted(() => {
-  workspaceApi
-    .recordRetentionFlowEvent({ session_id: sessionId, event: 'offer_shown' })
-    .catch((error: unknown) =>
-      reportError(error, {
-        surface: 'billing',
-        errorType: 'retention_offer_exposure_not_recorded'
-      })
-    )
+  void recordShown()
 })
 
 function close() {

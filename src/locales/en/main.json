@@ -3052,6 +3052,9 @@
       "renewsAt": "Renews at {regular} on {date}.",
       "failedTitle": "We couldn't apply your discount",
       "failedBody": "Something went wrong on our end, and your {plan} plan hasn't changed. Try again, or continue cancelling.",
+      "declinedBody": "Your {plan} plan hasn't changed. You can keep it at its current price or continue cancelling.",
+      "expiredTitle": "This offer is no longer available",
+      "expiredBody": "It expired, or your plan changed since it was made. Close and reopen cancellation to see your current options.",
       "supportCode": "If this keeps happening, contact support with code DISCOUNT_NOT_APPLIED.",
       "tryAgain": "Try again",
       "unconfirmedTitle": "Your discount isn't confirmed yet",
@@ -3059,7 +3062,8 @@
       "failed": "We couldn't apply this offer, and your plan hasn't changed. You can still cancel.",
       "unconfirmed": "We're still confirming your discount. Check again in a moment, or contact support if this doesn't clear up.",
       "checkAgain": "Check again",
-      "pendingToast": "Your discount is still being confirmed. Check your plan before making another billing change."
+      "pendingToast": "Your discount is still being confirmed. Check your plan before making another billing change.",
+      "refreshFailed": "Your discount was applied. Refresh the page to see your updated plan."
     },
     "downgrade": {
       "title": "Change to {plan} plan?",

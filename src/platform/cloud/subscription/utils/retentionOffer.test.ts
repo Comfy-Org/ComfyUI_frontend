@@ -13,6 +13,8 @@ const phases: RetentionOfferPhase[] = [
   'accepting',
   'applied',
   'failed',
+  'declined',
+  'expired',
   'unconfirmed'
 ]
 
@@ -27,6 +29,8 @@ const transitions: Record<
   },
   applied: { accepting: 'applied' },
   rejected: { accepting: 'failed' },
+  declined: { accepting: 'declined' },
+  expired: { offered: 'expired', accepting: 'expired' },
   unconfirmed: { accepting: 'unconfirmed' }
 }
 
@@ -34,6 +38,8 @@ const events: RetentionOfferEvent[] = [
   { type: 'acceptRequested' },
   { type: 'applied' },
   { type: 'rejected' },
+  { type: 'declined' },
+  { type: 'expired' },
   { type: 'unconfirmed' }
 ]
 
@@ -58,6 +64,8 @@ describe('outcomeOnClose', () => {
   it.for([
     { phase: 'offered', outcome: 'dismissed' },
     { phase: 'failed', outcome: 'dismissed' },
+    { phase: 'declined', outcome: 'dismissed' },
+    { phase: 'expired', outcome: 'dismissed' },
     { phase: 'accepting', outcome: 'pending' },
     { phase: 'unconfirmed', outcome: 'pending' },
     { phase: 'applied', outcome: 'retained' }

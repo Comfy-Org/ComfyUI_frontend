@@ -1,4 +1,7 @@
-import type { RetentionFlowResponse } from '@comfyorg/ingest-types'
+import type {
+  RetentionFlowEventRequest,
+  RetentionFlowResponse
+} from '@comfyorg/ingest-types'
 
 import { supportsInAppCancellation } from '@/composables/billing/billingRail'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
@@ -38,7 +41,7 @@ async function prepareRetentionFlow(): Promise<RetentionFlowResponse | null> {
     if (!offersUnavailable(error)) {
       reportError(error, {
         surface: 'billing',
-        errorType: 'cloud_cancellation_offer_unavailable',
+        errorType: 'failure_preparing_retention_flow',
         level: 'warning'
       })
     }
@@ -46,61 +49,108 @@ async function prepareRetentionFlow(): Promise<RetentionFlowResponse | null> {
   }
 }
 
-function recordFlowOpened(sessionId: string) {
-  workspaceApi
-    .recordRetentionFlowEvent({ session_id: sessionId, event: 'flow_opened' })
-    .catch((error: unknown) =>
-      reportError(error, {
-        surface: 'billing',
-        errorType: 'retention_flow_exposure_not_recorded'
-      })
-    )
+type RetentionFlowEventOutcome = 'recorded' | 'expired' | 'failed'
+
+export async function recordRetentionFlowEvent(
+  sessionId: string,
+  event: RetentionFlowEventRequest['event']
+): Promise<RetentionFlowEventOutcome> {
+  try {
+    await workspaceApi.recordRetentionFlowEvent({
+      session_id: sessionId,
+      event
+    })
+    return 'recorded'
+  } catch (error) {
+    if (
+      error instanceof WorkspaceApiError &&
+      error.code === 'RETENTION_SESSION_STALE'
+    ) {
+      return 'expired'
+    }
+    reportError(error, {
+      surface: 'billing',
+      errorType: 'failure_recording_retention_flow_event',
+      context: { event }
+    })
+    return 'failed'
+  }
 }
 
-export async function launchCancellationFlow({
-  cancelAt,
-  launchWorkspaceId: capturedWorkspaceId,
-  showFlow
-}: LaunchCancellationFlowOptions): Promise<void> {
-  const billing = useBillingContext()
-  const workspaceStore = useTeamWorkspaceStore()
+let pendingLaunch:
+  | { workspaceId: string | null; done: Promise<void> }
+  | undefined
+
+export function launchCancellationFlow(
+  options: LaunchCancellationFlowOptions
+): Promise<void> {
   const launchWorkspaceId =
-    capturedWorkspaceId === undefined
-      ? workspaceStore.activeWorkspaceId
-      : capturedWorkspaceId
+    options.launchWorkspaceId === undefined
+      ? useTeamWorkspaceStore().activeWorkspaceId
+      : options.launchWorkspaceId
+  if (pendingLaunch?.workspaceId === launchWorkspaceId)
+    return pendingLaunch.done
+
+  const done = showCancellationFlow(
+    options.cancelAt,
+    launchWorkspaceId,
+    options.showFlow
+  ).finally(() => {
+    if (pendingLaunch?.done === done) pendingLaunch = undefined
+  })
+  pendingLaunch = { workspaceId: launchWorkspaceId, done }
+  return done
+}
+
+function canOfferRetention(launchWorkspaceId: string | null): boolean {
+  const workspaceStore = useTeamWorkspaceStore()
+  return (
+    useBillingContext().type.value === 'workspace' &&
+    !!launchWorkspaceId &&
+    workspaceStore.isInPersonalWorkspace &&
+    supportsInAppCancellation(workspaceStore.activeWorkspaceBillingRail)
+  )
+}
+
+function reportFlowNotShown(error: unknown, workspaceStillCurrent: boolean) {
+  reportError(error, {
+    surface: 'billing',
+    errorType: 'error_showing_cancellation_flow',
+    tags: { workspace_still_current: workspaceStillCurrent },
+    level: workspaceStillCurrent ? 'error' : 'warning'
+  })
+  if (!workspaceStillCurrent) return
+  useToastStore().add({
+    severity: 'error',
+    summary: t('subscription.cancelDialog.failed'),
+    life: 8000
+  })
+}
+
+async function showCancellationFlow(
+  cancelAt: string | undefined,
+  launchWorkspaceId: string | null,
+  showFlow: LaunchCancellationFlowOptions['showFlow']
+): Promise<void> {
+  const workspaceStore = useTeamWorkspaceStore()
   const isScopeCurrent = launchWorkspaceId
     ? () => workspaceStore.activeWorkspaceId === launchWorkspaceId
     : () => true
-  const canOfferRetention =
-    billing.type.value === 'workspace' &&
-    !!launchWorkspaceId &&
-    supportsInAppCancellation(workspaceStore.activeWorkspaceBillingRail)
 
-  const flow = canOfferRetention ? await prepareRetentionFlow() : null
+  const flow = canOfferRetention(launchWorkspaceId)
+    ? await prepareRetentionFlow()
+    : null
   if (!isScopeCurrent()) return
-  if (flow) recordFlowOpened(flow.session_id)
 
   try {
     await showFlow({
       cancelAt,
       surveyId: remoteConfig.value.cancellation_survey_id || undefined,
       flow,
-      workspaceId: launchWorkspaceId ?? null,
+      workspaceId: launchWorkspaceId,
       isScopeCurrent
     })
   } catch (error) {
-    const workspaceStillCurrent = isScopeCurrent()
-    reportError(error, {
-      surface: 'billing',
-      errorType: 'cloud_cancellation_flow_failed',
-      tags: { workspace_still_current: workspaceStillCurrent },
-      level: workspaceStillCurrent ? 'error' : 'warning'
-    })
-    if (!workspaceStillCurrent) return
-    useToastStore().add({
-      severity: 'error',
-      summary: t('subscription.cancelDialog.failed'),
-      life: 8000
-    })
+    reportFlowNotShown(error, isScopeCurrent())
   }
 }

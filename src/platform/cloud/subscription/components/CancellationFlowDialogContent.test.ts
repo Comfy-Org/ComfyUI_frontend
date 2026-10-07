@@ -12,12 +12,14 @@ import type { CancellationSurveyExit } from '@/platform/cloud/subscription/utils
 import type { RetentionOfferOutcome } from '@/platform/cloud/subscription/utils/retentionOffer'
 import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useDialogStore } from '@/stores/dialogStore'
 
 import CancellationFlowDialogContent from './CancellationFlowDialogContent.vue'
 
 vi.mock(import('@/composables/billing/useBillingContext'))
 vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@/platform/workspace/api/workspaceApi'))
 
 const CancellationSurveyStep = defineComponent({
   props: {
@@ -197,6 +199,24 @@ describe('CancellationFlowDialogContent', () => {
 
     expect(screen.getByText(shown)).toBeInTheDocument()
   })
+
+  it.for([
+    {
+      name: 'a retention session',
+      flow: retentionFlow({ experiment_variant: 'control' }),
+      recorded: [[{ session_id: 'session-1', event: 'flow_opened' }]]
+    },
+    { name: 'no retention session', flow: null, recorded: [] }
+  ])(
+    'records the opened flow with the server for $name',
+    ({ flow, recorded }) => {
+      renderFlow({ surveyId: 'survey-1', flow })
+
+      expect(
+        vi.mocked(workspaceApi.recordRetentionFlowEvent).mock.calls
+      ).toEqual(recorded)
+    }
+  )
 
   it('reports the flow as opened once, and abandoned when the plan is kept from the survey', async () => {
     const closeDialog = vi.spyOn(useDialogStore(), 'closeDialog')

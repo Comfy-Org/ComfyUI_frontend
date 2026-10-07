@@ -10,6 +10,7 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { RetentionOfferOutcome } from '@/platform/cloud/subscription/utils/retentionOffer'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApiError'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 
 import RetentionOfferStep from './RetentionOfferStep.vue'
@@ -216,7 +217,9 @@ describe('RetentionOfferStep', () => {
   })
 
   it('lets the owner retry or continue cancelling after the discount is refused', async () => {
-    settlesAs('failed')
+    vi.mocked(workspaceApi.acceptRetentionOffer).mockRejectedValueOnce(
+      new WorkspaceApiError('busy', 409, 'SUBSCRIPTION_CHANGE_IN_PROGRESS')
+    )
     const { onDecide, user } = renderOffer()
 
     await user.click(
@@ -242,7 +245,9 @@ describe('RetentionOfferStep', () => {
   })
 
   it('continues cancelling after the discount is refused', async () => {
-    settlesAs('failed')
+    vi.mocked(workspaceApi.acceptRetentionOffer).mockRejectedValueOnce(
+      new WorkspaceApiError('busy', 409, 'SUBSCRIPTION_CHANGE_IN_PROGRESS')
+    )
     const { onDecide, user } = renderOffer()
 
     await user.click(
@@ -254,6 +259,59 @@ describe('RetentionOfferStep', () => {
     )
 
     expect(onDecide).toHaveBeenCalledExactlyOnceWith('continueToCancel')
+  })
+
+  it.for([
+    {
+      name: 'the discount is declined',
+      refuse: () => settlesAs('failed'),
+      heading: "We couldn't apply your discount"
+    },
+    {
+      name: 'the session expired',
+      refuse: () =>
+        vi
+          .mocked(workspaceApi.acceptRetentionOffer)
+          .mockRejectedValue(
+            new WorkspaceApiError('stale', 409, 'RETENTION_SESSION_STALE')
+          ),
+      heading: 'This offer is no longer available'
+    }
+  ])('offers no retry when $name', async ({ refuse, heading }) => {
+    refuse()
+    const { onDecide, user } = renderOffer()
+
+    await user.click(
+      screen.getByRole('button', { name: 'Keep Pro and save 30%' })
+    )
+    await screen.findByRole('heading', { name: heading })
+
+    expect(
+      screen.queryByRole('button', { name: 'Try again' })
+    ).not.toBeInTheDocument()
+    await user.click(
+      screen.getByRole('button', { name: 'Continue cancelling' })
+    )
+    await user.click(screen.getByRole('button', { name: 'Keep my plan' }))
+
+    expect(onDecide.mock.calls).toEqual([['continueToCancel'], ['dismissed']])
+    expect(workspaceApi.acceptRetentionOffer).toHaveBeenCalledOnce()
+  })
+
+  it('withdraws an offer whose session expired before it was shown', async () => {
+    vi.mocked(workspaceApi.recordRetentionFlowEvent).mockRejectedValue(
+      new WorkspaceApiError('stale', 409, 'RETENTION_SESSION_STALE')
+    )
+    renderOffer()
+
+    expect(
+      await screen.findByRole('heading', {
+        name: 'This offer is no longer available'
+      })
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Keep Pro and save 30%' })
+    ).not.toBeInTheDocument()
   })
 
   it('does not redeem after the active workspace changed', async () => {

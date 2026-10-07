@@ -79,6 +79,12 @@ function trackLegacyBillingEvent(event: BillingTelemetryEvent) {
 }
 
 type OperationType = 'subscription' | 'topup' | 'cancel' | 'retention'
+type PaymentOperationType = Extract<OperationType, 'subscription' | 'topup'>
+
+function isPaymentOperation(type: OperationType): type is PaymentOperationType {
+  return type === 'subscription' || type === 'topup'
+}
+
 type OperationStatus =
   | 'pending'
   | 'succeeded'
@@ -240,7 +246,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   // do here" next to the verification prompt the same state renders.
   function syncProgressToast(
     opId: string,
-    type: Exclude<OperationType, 'cancel' | 'retention'>,
+    type: PaymentOperationType,
     kind: ProgressToastKind | undefined
   ) {
     const toastStore = useToastStore()
@@ -276,8 +282,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     metadata: StartOperationMetadata | undefined
   ) {
     if (
-      operation.type === 'cancel' ||
-      operation.type === 'retention' ||
+      !isPaymentOperation(operation.type) ||
       metadata?.suppressProcessingToast
     )
       return
@@ -299,8 +304,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     after: BillingOperation
   ) {
     if (
-      after.type !== 'cancel' &&
-      after.type !== 'retention' &&
+      isPaymentOperation(after.type) &&
       progressToastsAwaitingFirstRead.delete(after.opId)
     ) {
       syncProgressToast(after.opId, after.type, progressToastKind(after))
@@ -313,7 +317,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     before: BillingOperation,
     after: BillingOperation
   ) {
-    if (after.type === 'cancel' || after.type === 'retention') return
+    if (!isPaymentOperation(after.type)) return
     const kind = progressToastKind(after)
     if (kind !== progressToastKind(before)) {
       syncProgressToast(after.opId, after.type, kind)
@@ -568,8 +572,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   function hasTimedOut(operation: BillingOperation): boolean {
     const elapsed = Date.now() - operation.startedAt
     if (
-      operation.type !== 'cancel' &&
-      operation.type !== 'retention' &&
+      isPaymentOperation(operation.type) &&
       (operation.authenticationRequiredSeen || operation.blockedOnCustomerSeen)
     ) {
       return elapsed > AUTHENTICATION_TIMEOUT_MS
@@ -900,6 +903,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         })
       }
 
+      if (operation.type === 'retention') return
+
       const billingContext = useBillingContext()
       const capabilities = useBillingCapabilities()
       if (operation.type === 'subscription') {
@@ -914,8 +919,6 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
           capabilities.refresh()
         ])
       }
-
-      if (operation.type === 'retention') return
 
       if (operation.type === 'cancel') {
         useTeamWorkspaceStore().updateActiveWorkspace({ isSubscribed: false })
@@ -966,9 +969,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     // operation that never charges one — a cancellation, a downgrade — cannot
     // be recovered that way whatever the server reports.
     const chargesACard =
-      operation.type !== 'cancel' &&
-      operation.type !== 'retention' &&
-      !operation.downgradeToPersonal
+      isPaymentOperation(operation.type) && !operation.downgradeToPersonal
     const detail = billingFailureDetail(
       operation.type,
       errorMessage,
@@ -1043,11 +1044,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       })
     }
 
-    if (
-      operation.type !== 'cancel' &&
-      operation.type !== 'retention' &&
-      !superseded
-    ) {
+    if (isPaymentOperation(operation.type) && !superseded) {
       useToastStore().add({
         severity: 'error',
         summary: defaultMessage,
@@ -1199,7 +1196,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       })
     }
 
-    if (operation.type !== 'cancel' && operation.type !== 'retention') {
+    if (isPaymentOperation(operation.type)) {
       useToastStore().add({
         severity: 'error',
         summary: message
@@ -1223,7 +1220,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     errorMessage: string | null,
     isZeroPaymentOperation: boolean
   ): BillingTelemetryFailure['failure_category'] {
-    if (type === 'cancel' || type === 'retention' || isZeroPaymentOperation)
+    if (!isPaymentOperation(type) || isZeroPaymentOperation)
       return 'api_rejected'
 
     if (errorMessage && /network|connection|unreachable/i.test(errorMessage)) {

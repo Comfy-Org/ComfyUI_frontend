@@ -1,12 +1,15 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { reportError } from '@/platform/telemetry/reportError'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApiError'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 
 import { useRetentionOffer } from './useRetentionOffer'
 
+vi.mock(import('@/composables/billing/useBillingContext'))
 vi.mock(import('@/platform/workspace/api/workspaceApi'))
 vi.mock(import('@/platform/telemetry/reportError'))
 
@@ -38,6 +41,10 @@ function settlesAs(status: TerminalOperation['status']) {
 }
 
 describe('useRetentionOffer', () => {
+  beforeEach(() => {
+    vi.mocked(useBillingContext).mockReturnValue(useBillingContext())
+  })
+
   it('redeems through the session and polls the operation for the launch workspace', async () => {
     settlesAs('succeeded')
     const { phase, accept } = useRetentionOffer('session-1', 'workspace-1')
@@ -55,8 +62,40 @@ describe('useRetentionOffer', () => {
     })
   })
 
+  it('applies an acceptance the server already settled without polling', async () => {
+    vi.mocked(workspaceApi.acceptRetentionOffer).mockResolvedValue({
+      billing_op_id: 'op-retention',
+      status: 'succeeded'
+    })
+    const { phase, accept } = useRetentionOffer('session-1', 'workspace-1')
+
+    await accept()
+
+    expect(phase.value).toBe('applied')
+    expect(useBillingOperationStore().startOperation).not.toHaveBeenCalled()
+    expect(useBillingContext().fetchStatus).toHaveBeenCalledOnce()
+  })
+
+  it('tells the owner to refresh when the applied plan cannot be reloaded', async () => {
+    settlesAs('succeeded')
+    const error = new Error('status unavailable')
+    vi.mocked(useBillingContext().fetchStatus).mockRejectedValue(error)
+    const { phase, accept } = useRetentionOffer('session-1', 'workspace-1')
+
+    await accept()
+
+    expect(phase.value).toBe('applied')
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(error, {
+      surface: 'billing',
+      errorType: 'error_refreshing_billing_after_retention_discount'
+    })
+    expect(useToastStore().add).toHaveBeenCalledWith(
+      expect.objectContaining({ severity: 'warn' })
+    )
+  })
+
   it.for([
-    { status: 'failed', phase: 'failed' },
+    { status: 'failed', phase: 'declined' },
     { status: 'timeout', phase: 'unconfirmed' },
     { status: 'reconciliation_needed', phase: 'unconfirmed' }
   ] as const)(
@@ -71,20 +110,71 @@ describe('useRetentionOffer', () => {
     }
   )
 
-  it.for([400, 403, 409, 422, 503])(
-    'a %i refusal fails without reporting an unknown outcome',
-    async (status) => {
+  it.for([
+    { status: 400, code: undefined, phase: 'failed' },
+    { status: 409, code: 'SUBSCRIPTION_CHANGE_IN_PROGRESS', phase: 'failed' },
+    { status: 422, code: undefined, phase: 'failed' },
+    { status: 503, code: 'RETENTION_UNAVAILABLE', phase: 'failed' },
+    { status: 409, code: 'RETENTION_SESSION_STALE', phase: 'expired' },
+    { status: 409, code: 'RETENTION_ALREADY_REDEEMED', phase: 'expired' },
+    { status: 409, code: 'PREVIOUS_OPERATION_FAILED', phase: 'declined' },
+    { status: 403, code: 'RETENTION_NOT_ALLOWED', phase: 'declined' }
+  ] as const)(
+    'a $status $code refusal leaves the offer $phase without reporting',
+    async ({ status, code, phase: expected }) => {
       vi.mocked(workspaceApi.acceptRetentionOffer).mockRejectedValue(
-        new WorkspaceApiError('refused', status, 'RETENTION_SESSION_STALE')
+        new WorkspaceApiError('refused', status, code)
       )
       const { phase, accept } = useRetentionOffer('session-1', 'workspace-1')
 
       await accept()
 
-      expect(phase.value).toBe('failed')
+      expect(phase.value).toBe(expected)
       expect(reportError).not.toHaveBeenCalled()
     }
   )
+
+  it.for(['declined', 'expired'] as const)(
+    'sends nothing more once the offer is %s',
+    async (expected) => {
+      vi.mocked(workspaceApi.acceptRetentionOffer).mockRejectedValue(
+        new WorkspaceApiError(
+          'refused',
+          409,
+          expected === 'declined'
+            ? 'PREVIOUS_OPERATION_FAILED'
+            : 'RETENTION_SESSION_STALE'
+        )
+      )
+      const { phase, accept } = useRetentionOffer('session-1', 'workspace-1')
+
+      await accept()
+      await accept()
+
+      expect(phase.value).toBe(expected)
+      expect(workspaceApi.acceptRetentionOffer).toHaveBeenCalledOnce()
+    }
+  )
+
+  it.for([
+    {
+      name: 'an expired session expires the offer',
+      error: new WorkspaceApiError('stale', 409, 'RETENTION_SESSION_STALE'),
+      phase: 'expired'
+    },
+    {
+      name: 'a failed record keeps the offer',
+      error: new WorkspaceApiError('boom', 500),
+      phase: 'offered'
+    }
+  ])('recording the shown offer: $name', async ({ error, phase: expected }) => {
+    vi.mocked(workspaceApi.recordRetentionFlowEvent).mockRejectedValue(error)
+    const { phase, recordShown } = useRetentionOffer('session-1', 'workspace-1')
+
+    await recordShown()
+
+    expect(phase.value).toBe(expected)
+  })
 
   it.for([
     { name: 'a server error', error: new WorkspaceApiError('boom', 500) },

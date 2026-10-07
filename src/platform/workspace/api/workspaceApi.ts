@@ -654,7 +654,7 @@ export const workspaceApi = {
       const response = await workspaceApiClient.post<unknown>(
         workspaceApiUrl('/billing/retention/prepare'),
         {},
-        auth
+        { ...auth, timeout: 5_000 }
       )
       return zRetentionFlowResponse.parse(response.data)
     } catch (err) {

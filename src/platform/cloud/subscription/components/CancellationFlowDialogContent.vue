@@ -28,6 +28,7 @@ import CancelSubscriptionDialogContent from '@/components/dialog/content/subscri
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import CancellationSurveyStep from '@/platform/cloud/subscription/components/CancellationSurveyStep.vue'
 import RetentionOfferStep from '@/platform/cloud/subscription/components/RetentionOfferStep.vue'
+import { recordRetentionFlowEvent } from '@/platform/cloud/subscription/launchCancellationFlow'
 import type { CancellationSurveyExit } from '@/platform/cloud/subscription/utils/cancellationSurvey'
 import type { RetentionOfferOutcome } from '@/platform/cloud/subscription/utils/retentionOffer'
 import {
@@ -83,6 +84,7 @@ function cancellationMetadata() {
 }
 
 onMounted(() => {
+  if (flow) void recordRetentionFlowEvent(flow.session_id, 'flow_opened')
   telemetry?.trackSubscriptionCancellation(
     'flow_opened',
     cancellationMetadata()

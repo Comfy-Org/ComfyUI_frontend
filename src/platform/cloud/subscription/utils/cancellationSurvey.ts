@@ -45,6 +45,22 @@ function surveyResponses({
   return responses
 }
 
+function experimentProperties(
+  experimentVariant: string | undefined
+): Record<string, string> {
+  return experimentVariant ? { experiment_variant: experimentVariant } : {}
+}
+
+export function cancellationSurveyShownEvent(options: {
+  surveyId: string
+  experimentVariant?: string
+}): InAppSurveyEvent {
+  return {
+    surveyId: options.surveyId,
+    properties: experimentProperties(options.experimentVariant)
+  }
+}
+
 export function cancellationSurveyExitEvent(options: {
   surveyId: string
   answers: CancellationSurveyAnswers
@@ -52,9 +68,10 @@ export function cancellationSurveyExitEvent(options: {
   experimentVariant?: string
 }): { stage: InAppSurveyStage; event: InAppSurveyEvent } {
   const responses = surveyResponses(options.answers)
-  const properties: Record<string, string> = { outcome: options.exit }
-  if (options.experimentVariant)
-    properties.experiment_variant = options.experimentVariant
+  const properties = {
+    outcome: options.exit,
+    ...experimentProperties(options.experimentVariant)
+  }
   if (Object.keys(responses).length === 0)
     return {
       stage: 'dismissed',

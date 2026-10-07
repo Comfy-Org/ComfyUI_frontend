@@ -84,7 +84,8 @@ import type {
 } from '@/platform/cloud/subscription/utils/cancellationSurvey'
 import {
   CANCELLATION_REASONS,
-  cancellationSurveyExitEvent
+  cancellationSurveyExitEvent,
+  cancellationSurveyShownEvent
 } from '@/platform/cloud/subscription/utils/cancellationSurvey'
 import { useTelemetry } from '@/platform/telemetry'
 
@@ -100,7 +101,10 @@ const comment = ref('')
 const commentId = useId()
 
 onMounted(() => {
-  telemetry?.trackInAppSurvey('shown', { surveyId })
+  telemetry?.trackInAppSurvey(
+    'shown',
+    cancellationSurveyShownEvent({ surveyId, experimentVariant })
+  )
 })
 
 function selectReason(value: unknown) {

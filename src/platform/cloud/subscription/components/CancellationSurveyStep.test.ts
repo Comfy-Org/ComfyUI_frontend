@@ -38,14 +38,19 @@ function surveyEvents() {
 }
 
 describe('CancellationSurveyStep', () => {
-  it('asks why and records that the survey was shown', () => {
-    renderSurvey()
+  it('asks why and records that the survey was shown to its arm', () => {
+    renderSurvey({ experimentVariant: 'control' })
 
     expect(
       screen.getByRole('heading', { name: 'Why are you cancelling?' })
     ).toBeInTheDocument()
     expect(screen.getAllByRole('radio')).toHaveLength(5)
-    expect(surveyEvents()).toEqual([['shown', { surveyId: 'survey-1' }]])
+    expect(surveyEvents()).toEqual([
+      [
+        'shown',
+        { surveyId: 'survey-1', properties: { experiment_variant: 'control' } }
+      ]
+    ])
   })
 
   it('sends the chosen reason and comment, then continues cancelling', async () => {

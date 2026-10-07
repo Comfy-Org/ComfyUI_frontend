@@ -3395,7 +3395,7 @@ describe('billingOperationStore', () => {
   })
 
   describe('retention operations', () => {
-    it('refreshes billing without ending the subscription or toasting', async () => {
+    it('leaves the refresh and the outcome to the offer dialog', async () => {
       const billing = mockBillingContext()
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-1',
@@ -3410,7 +3410,7 @@ describe('billingOperationStore', () => {
       const operation = await terminal
 
       expect(operation.status).toBe('succeeded')
-      expect(billing.fetchStatus).toHaveBeenCalled()
+      expect(billing.fetchStatus).not.toHaveBeenCalled()
       expect(
         useTeamWorkspaceStore().updateActiveWorkspace
       ).not.toHaveBeenCalled()

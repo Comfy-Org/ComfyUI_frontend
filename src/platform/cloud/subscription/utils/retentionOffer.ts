@@ -5,12 +5,16 @@ export type RetentionOfferPhase =
   | 'accepting'
   | 'applied'
   | 'failed'
+  | 'declined'
+  | 'expired'
   | 'unconfirmed'
 
 export type RetentionOfferEvent =
   | { type: 'acceptRequested' }
   | { type: 'applied' }
   | { type: 'rejected' }
+  | { type: 'declined' }
+  | { type: 'expired' }
   | { type: 'unconfirmed' }
 
 export type RetentionOfferOutcome =
@@ -25,11 +29,19 @@ export function reduceRetentionOffer(
 ): RetentionOfferPhase {
   switch (event.type) {
     case 'acceptRequested':
-      return phase === 'accepting' || phase === 'applied' ? phase : 'accepting'
+      return phase === 'offered' ||
+        phase === 'failed' ||
+        phase === 'unconfirmed'
+        ? 'accepting'
+        : phase
     case 'applied':
       return phase === 'accepting' ? 'applied' : phase
     case 'rejected':
       return phase === 'accepting' ? 'failed' : phase
+    case 'declined':
+      return phase === 'accepting' ? 'declined' : phase
+    case 'expired':
+      return phase === 'offered' || phase === 'accepting' ? 'expired' : phase
     case 'unconfirmed':
       return phase === 'accepting' ? 'unconfirmed' : phase
   }
@@ -46,6 +58,8 @@ export function outcomeOnClose(
       return 'pending'
     case 'offered':
     case 'failed':
+    case 'declined':
+    case 'expired':
       return 'dismissed'
   }
 }
