@@ -28,6 +28,8 @@ import MenuSubTrigger from '@/components/ui/menu/MenuSubTrigger.vue'
 import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { registerEscapeOverride } from '@/platform/keybindings/escapeOverride'
+import { FIRST_RUN_COACH_IDS } from '@/platform/onboarding/onboardingTours'
+import { vCoachmark } from '@/platform/onboarding/vCoachmark'
 import type { AgentStopMethod } from '@/platform/telemetry/types'
 
 import InlinePromptEditor from './composer/InlinePromptEditor.vue'
@@ -342,6 +344,7 @@ defineExpose({
   <div
     id="agent-composer"
     ref="composerContainerRef"
+    v-coachmark="FIRST_RUN_COACH_IDS.agentComposer"
     data-testid="agent-composer"
     class="relative flex flex-col rounded-lg border border-border-subtle bg-base-background"
   >

@@ -36,6 +36,24 @@ const COACH_ID: Record<TourStep['kind'], CoachId> = {
   result: FIRST_RUN_COACH_IDS.sink
 }
 
+/** Shown while the run generates; dropped at start when the Agent panel is not open. */
+const AGENT_STEPS: CoachStep[] = [
+  {
+    kind: 'spotlight',
+    name: 'agent.intro',
+    coachId: FIRST_RUN_COACH_IDS.agentPanel,
+    placement: 'leftCenter',
+    cursor: true
+  },
+  {
+    kind: 'spotlight',
+    name: 'agent.composer',
+    coachId: FIRST_RUN_COACH_IDS.agentComposer,
+    placement: 'leftCenter',
+    cursor: true
+  }
+]
+
 /** Undoes the last registration; the tour holds one target set at a time. */
 let releaseRegistered = () => {}
 
@@ -142,6 +160,9 @@ export async function firstRunTourSteps(
   registerCanvasTargets(sequence)
   const context: StepContext = { shape: tourShape(roles), runState }
   return {
-    steps: sequence.map((step, index) => toCoachStep(step, index, context))
+    steps: sequence.flatMap((step, index) => {
+      const coachStep = toCoachStep(step, index, context)
+      return step.kind === 'run' ? [coachStep, ...AGENT_STEPS] : [coachStep]
+    })
   }
 }

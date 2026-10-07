@@ -32,14 +32,17 @@ export const COACH_IDS = {
 /**
  * Graph-view anchors for the first-run tour. Kept out of {@link COACH_IDS}
  * because the drift guard iterates that map and asserts each id resolves in
- * App mode, where none of these exist. `runButton` is the exception: ordinary
- * chrome, so only the first-run walk covers its drift.
+ * App mode, where none of these exist. `runButton` and the Agent anchors are
+ * the exceptions: ordinary chrome, so only the first-run walk covers their
+ * drift.
  */
 export const FIRST_RUN_COACH_IDS = {
   runButton: 'first-run-run-button',
   source: 'first-run-source',
   prompt: 'first-run-prompt',
-  sink: 'first-run-sink'
+  sink: 'first-run-sink',
+  agentPanel: 'first-run-agent-panel',
+  agentComposer: 'first-run-agent-composer'
 } as const
 
 export type CoachId =
