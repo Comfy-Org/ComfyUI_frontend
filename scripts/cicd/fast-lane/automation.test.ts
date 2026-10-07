@@ -325,4 +325,39 @@ describe('merge automation', () => {
 
     expect(graphql).toHaveBeenCalledTimes(1)
   })
+
+  it('still disables auto-merge when dequeue fails', async () => {
+    const graphql = vi
+      .fn<GitHubClient['graphql']>()
+      .mockResolvedValueOnce({
+        node: {
+          id: 'PR_1',
+          headRefOid: headSha,
+          autoMergeRequest: {
+            enabledAt: '2026-10-06T10:01:00Z',
+            enabledBy: { login: 'christian-byrne' }
+          },
+          mergeQueueEntry: {
+            id: 'MQE_1',
+            enqueuedAt: '2026-10-06T10:02:00Z',
+            enqueuer: { login: 'christian-byrne' }
+          }
+        }
+      })
+      .mockRejectedValueOnce(new Error('already dequeued'))
+      .mockResolvedValueOnce({})
+    const github: GitHubClient = {
+      request: unusedRequest,
+      paginate: unusedPaginate,
+      graphql
+    }
+
+    await expect(
+      stopMergeAutomation(github, pull(), 'christian-byrne', {
+        submitted_at: '2026-10-06T10:00:00Z'
+      })
+    ).rejects.toThrow('failed to stop all merge automation')
+    expect(graphql).toHaveBeenCalledTimes(3)
+    expect(graphql.mock.calls[2][0]).toContain('disablePullRequestAutoMerge')
+  })
 })

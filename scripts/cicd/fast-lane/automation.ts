@@ -100,18 +100,23 @@ export async function stopMergeAutomation(
   }
 
   const state = await readMergeState(github, pull.node_id)
+  const errors: unknown[] = []
   const entry = state.mergeQueueEntry
   if (
     entry?.id &&
     actorMatches(entry.enqueuer, identity) &&
     atOrAfter(entry.enqueuedAt, policyReview.submitted_at)
   ) {
-    await github.graphql(
-      `mutation PackageFastLaneDequeue($pullRequestId: ID!) {
-        dequeuePullRequest(input: { id: $pullRequestId }) { clientMutationId }
-      }`,
-      { pullRequestId: pull.node_id }
-    )
+    try {
+      await github.graphql(
+        `mutation PackageFastLaneDequeue($pullRequestId: ID!) {
+          dequeuePullRequest(input: { id: $pullRequestId }) { clientMutationId }
+        }`,
+        { pullRequestId: pull.node_id }
+      )
+    } catch (error) {
+      errors.push(error)
+    }
   }
 
   const autoMerge = state.autoMergeRequest
@@ -120,14 +125,21 @@ export async function stopMergeAutomation(
     actorMatches(autoMerge.enabledBy, identity) &&
     atOrAfter(autoMerge.enabledAt, policyReview.submitted_at)
   ) {
-    await github.graphql(
-      `mutation PackageFastLaneDisableAutoMerge($pullRequestId: ID!) {
-        disablePullRequestAutoMerge(input: { pullRequestId: $pullRequestId }) {
-          clientMutationId
-        }
-      }`,
-      { pullRequestId: pull.node_id }
-    )
+    try {
+      await github.graphql(
+        `mutation PackageFastLaneDisableAutoMerge($pullRequestId: ID!) {
+          disablePullRequestAutoMerge(input: { pullRequestId: $pullRequestId }) {
+            clientMutationId
+          }
+        }`,
+        { pullRequestId: pull.node_id }
+      )
+    } catch (error) {
+      errors.push(error)
+    }
+  }
+  if (errors.length > 0) {
+    throw new AggregateError(errors, 'failed to stop all merge automation')
   }
 }
 
@@ -254,21 +266,36 @@ async function stop(
   summary: Summary
 ): Promise<void> {
   const identity = config.lane.approval.identity
-  for (const approval of activePolicyApprovals(reviews, identity)) {
-    await dismissApproval(
+  const errors: unknown[] = []
+  try {
+    await stopMergeAutomation(
       github,
-      config.pullRequestNumber,
-      approval,
-      `Fast-lane approval withdrawn: ${message}`
+      pull,
+      identity,
+      policyReviewFloor(reviews, identity)
+    )
+  } catch (error) {
+    errors.push(error)
+  }
+  for (const approval of activePolicyApprovals(reviews, identity)) {
+    try {
+      await dismissApproval(
+        github,
+        config.pullRequestNumber,
+        approval,
+        `Fast-lane approval withdrawn: ${message}`
+      )
+    } catch (error) {
+      errors.push(error)
+    }
+  }
+  summary(message)
+  if (errors.length > 0) {
+    throw new AggregateError(
+      errors,
+      'failed to complete fast-lane compensation'
     )
   }
-  await stopMergeAutomation(
-    github,
-    pull,
-    identity,
-    policyReviewFloor(reviews, identity)
-  )
-  summary(message)
 }
 
 async function resolvePullRequestNumber(
