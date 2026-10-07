@@ -282,7 +282,7 @@ jobs:
           GIT_COMMIT_SHA: ${{ github.sha }}
           GIT_REPO: ${{ github.repository }}
         run: |
-          URL=$(vercel deploy --prebuilt --archive=tgz \
+          URL=$(vercel deploy --prebuilt --prod --skip-domain --archive=tgz \
             --meta githubCommitSha="$GIT_COMMIT_SHA" \
             --meta githubRepo="$GIT_REPO" \
             --meta githubRunId="$GITHUB_RUN_ID")
