@@ -1,8 +1,11 @@
 import { useEventListener } from '@vueuse/core'
 
-import { LAST_COPY_ID_KEY } from '@/composables/useCopy'
+import { parseClipboardHtml } from '@/composables/useCopy'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { t } from '@/i18n'
+import { CANVAS_CLIPBOARD_ID_KEY } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { zClipboardItems } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
@@ -43,25 +46,15 @@ export function cloneDataTransfer(original: DataTransfer): DataTransfer {
   return persistent
 }
 
-const clipboardHtmlPattern =
-  /^<meta charset="utf-8"><div><span (?:data-copy-id="([^"]+)" )?data-(?:comfy-)?metadata="([A-Za-z0-9+/=]+)"><\/span><\/div><span style="white-space:pre-wrap;">Text<\/span>$/
-
 function pasteClipboardItems(data: DataTransfer): boolean {
-  const match = data.getData('text/html').match(clipboardHtmlPattern)?.[2]
-  if (!match) return false
-
-  let parsed: unknown
-  try {
-    const binaryString = atob(match)
-    const bytes = Uint8Array.from(binaryString, (c) => c.charCodeAt(0))
-    const decodedData = new TextDecoder().decode(bytes)
-    parsed = JSON.parse(decodedData)
-  } catch (err) {
-    useErrorHandling().toastErrorHandler(err)
+  const parsed = parseClipboardHtml(data.getData('text/html'))
+  if (parsed.status === 'absent') return false
+  if (parsed.status === 'unreadable') {
+    useErrorHandling().toastErrorHandler(parsed.cause)
     return true
   }
 
-  const clipboardItems = zClipboardItems.safeParse(parsed)
+  const clipboardItems = zClipboardItems.safeParse(parsed.payload)
   if (!clipboardItems.success) {
     useErrorHandling().toastErrorHandler(clipboardItems.error)
     return true
@@ -75,13 +68,18 @@ function pasteClipboardItems(data: DataTransfer): boolean {
   return true
 }
 
-/** Stale when the copy that produced it is not the last one made here. */
-function hasStaleNodeMetadata(rawHtml: string): boolean {
-  const match = rawHtml.match(clipboardHtmlPattern)
-  if (!match) return false
-  const copyId = match[1]
+function holdsLatestCanvasCopy(html: string): boolean {
+  const parsed = parseClipboardHtml(html)
+  if (parsed.status !== 'read') return false
+  const { payload } = parsed
   try {
-    return !copyId || copyId !== localStorage.getItem(LAST_COPY_ID_KEY)
+    return (
+      typeof payload === 'object' &&
+      payload !== null &&
+      'clipboardId' in payload &&
+      typeof payload.clipboardId === 'string' &&
+      payload.clipboardId === localStorage.getItem(CANVAS_CLIPBOARD_ID_KEY)
+    )
   } catch {
     return false
   }
@@ -287,8 +285,7 @@ export const usePaste = () => {
     const isMediaNodeSelected =
       isImageNodeSelected || isVideoNodeSelected || isAudioNodeSelected
     if (!isMediaNodeSelected && pasteClipboardItems(data)) return
-    const staleMetadataOnMediaNode =
-      isMediaNodeSelected && hasStaleNodeMetadata(data.getData('text/html'))
+    const html = data.getData('text/html')
 
     // No image found. Look for node data
     data = data.getData('text/plain')
@@ -317,8 +314,16 @@ export const usePaste = () => {
         return
       }
 
-      // Litegraph default paste.
-      if (!staleMetadataOnMediaNode) canvas.pasteFromClipboard()
+      // Litegraph default paste
+      if (!isMediaNodeSelected || holdsLatestCanvasCopy(html)) {
+        canvas.pasteFromClipboard()
+      } else {
+        useToastStore().add({
+          severity: 'info',
+          summary: t('toastMessages.nothingToPasteIntoNode'),
+          life: 3000
+        })
+      }
     }
   })
 }
