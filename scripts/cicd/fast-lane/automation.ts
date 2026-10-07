@@ -288,13 +288,13 @@ async function stop(
       errors.push(error)
     }
   }
-  summary(message)
   if (errors.length > 0) {
     throw new AggregateError(
       errors,
       'failed to complete fast-lane compensation'
     )
   }
+  summary(message)
 }
 
 async function resolvePullRequestNumber(
