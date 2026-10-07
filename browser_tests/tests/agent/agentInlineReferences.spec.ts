@@ -103,6 +103,17 @@ test(
     await expect.poll(() => workflowSelection.savedPaths.length).toBe(2)
     workflowSelection.finishSave(true)
     await expect(editor.getByTestId('node-reference-chip')).toHaveCount(0)
+    await editor.pressSequentially(' @')
+    await panel
+      .getByRole('menuitem', { name: enMessages.agent.nodes, exact: true })
+      .click()
+    await expect(
+      panel.getByText(enMessages.agent.noNodesToMention, { exact: true })
+    ).toBeVisible()
+    await expect(
+      panel.getByRole('menuitem', { name: /Color balance/ })
+    ).toHaveCount(0)
+    await editor.press('Escape')
     await editor.press('ControlOrMeta+a')
     await editor.press('Backspace')
     await editor.press('ControlOrMeta+v')
@@ -118,7 +129,10 @@ test(
     await tray.getByRole('group', { name: 'test_upload_image.png' }).hover()
     await panel
       .getByTestId('composer-asset-section')
-      .getByRole('button', { name: enMessages.agent.remove, exact: true })
+      .getByRole('button', {
+        name: 'Remove test_upload_image.png',
+        exact: true
+      })
       .click()
     await expect(panel.getByTestId('composer-asset-section')).toHaveCount(0)
     await expect(

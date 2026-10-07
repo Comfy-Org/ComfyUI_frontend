@@ -42,6 +42,37 @@ function iconMarker(container: Element): string {
 
 describe('AttachmentChip', () => {
   it.for([
+    { name: 'cat.png', previewUrl: 'blob:cat', key: '{Enter}' },
+    { name: 'notes.txt', previewUrl: undefined, key: ' ' }
+  ])(
+    'discloses $name from the keyboard and restores focus on Escape',
+    async ({ key, ...props }) => {
+      const user = userEvent.setup()
+      renderChip(props)
+      expect(screen.queryByText(props.name)).not.toBeInTheDocument()
+      await user.tab()
+      const trigger = screen.getByRole('button', {
+        name: `Preview ${props.name}`
+      })
+      expect(trigger).toHaveFocus()
+      await user.keyboard(key)
+      const preview = await screen.findByRole('dialog', { name: props.name })
+      expect(within(preview).getByText(props.name)).toBeVisible()
+      await user.keyboard('{Escape}')
+      await waitFor(() => expect(preview).not.toBeInTheDocument())
+      expect(trigger).toHaveFocus()
+    }
+  )
+
+  it('names the removal action and keeps it separate from preview activation', async () => {
+    const user = userEvent.setup()
+    const { emitted } = renderChip({ name: 'notes.txt' })
+    await user.click(screen.getByRole('button', { name: 'Remove notes.txt' }))
+    expect(emitted().remove).toHaveLength(1)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it.for([
     { name: 'clip.mp4', selector: 'video', key: '{Enter}' },
     { name: 'song.mp3', selector: 'audio', key: ' ' }
   ])(
@@ -75,7 +106,7 @@ describe('AttachmentChip', () => {
   it('keeps removal independent of opening media playback', async () => {
     const user = userEvent.setup()
     const { emitted } = renderChip({ name: 'clip.mp4', mediaUrl: '/clip.mp4' })
-    await user.click(screen.getByRole('button', { name: 'Remove' }))
+    await user.click(screen.getByRole('button', { name: 'Remove clip.mp4' }))
     expect(emitted().remove).toHaveLength(1)
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
@@ -163,8 +194,10 @@ describe('AttachmentChip', () => {
       const user = userEvent.setup()
       renderChip(props)
       expect(screen.queryByText(props.name)).not.toBeInTheDocument()
-      await user.hover(screen.getByTestId('agent-asset-preview-trigger'))
-      const preview = await screen.findByRole('tooltip', { name: props.name })
+      await user.hover(
+        screen.getByRole('button', { name: `Preview ${props.name}` })
+      )
+      const preview = await screen.findByRole('dialog', { name: props.name })
       expect(within(preview).getByText(props.name)).toBeVisible()
     }
   )

@@ -2496,7 +2496,7 @@ describe('AgentPanelRoot attach flow', () => {
     await userEvent.hover(trayItem)
     await userEvent.click(
       within(trayItem).getByRole('button', {
-        name: i18n.global.t('agent.remove')
+        name: i18n.global.t('agent.removeAsset', { name: 'library.png' })
       })
     )
     expect(store.attachments).toEqual([])
@@ -3116,7 +3116,9 @@ describe('AgentPanelRoot attach flow', () => {
     const prompt = composer.prompt
 
     await userEvent.click(
-      await screen.findByRole('button', { name: i18n.global.t('agent.remove') })
+      await screen.findByRole('button', {
+        name: i18n.global.t('agent.removeAsset', { name: 'cat.png' })
+      })
     )
 
     expect(signals[0].aborted).toBe(false)
@@ -3586,7 +3588,9 @@ describe('AgentPanelRoot attach flow', () => {
 
       if (outcome === 'cancelled') {
         await userEvent.click(
-          screen.getByRole('button', { name: i18n.global.t('agent.remove') })
+          screen.getByRole('button', {
+            name: i18n.global.t('agent.removeAsset', { name: 'gen.png' })
+          })
         )
         resolveAsset(new Response(new Blob(['asset'], { type: 'image/png' })))
       } else {
@@ -10229,7 +10233,7 @@ describe('AgentPanelRoot workflow binding', () => {
           })
           await userEvent.click(
             await screen.findByRole('button', {
-              name: i18n.global.t('agent.remove')
+              name: i18n.global.t('agent.removeAsset', { name: 'new.png' })
             })
           )
         }

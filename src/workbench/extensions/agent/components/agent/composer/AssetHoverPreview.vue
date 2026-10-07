@@ -2,19 +2,17 @@
 import { useElementHover } from '@vueuse/core'
 import { PopoverAnchor } from 'reka-ui'
 import { computed, ref, useId, useTemplateRef, watch } from 'vue'
-import type { ComponentInstance } from 'vue'
 import { useI18n } from 'vue-i18n'
+import type { ComponentInstance } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
-import HoverCard from '@/components/ui/hover-card/HoverCard.vue'
-import HoverCardContent from '@/components/ui/hover-card/HoverCardContent.vue'
-import HoverCardTrigger from '@/components/ui/hover-card/HoverCardTrigger.vue'
+import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
+import AssetMediaPreview from './AssetMediaPreview.vue'
+
 import Popover from '@/components/ui/popover/Popover.vue'
 import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
 import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
-import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
-import AssetMediaPreview from './AssetMediaPreview.vue'
 
 const { name, previewUrl, mediaUrl, mediaKind } = defineProps<{
   name: string
@@ -27,17 +25,15 @@ const kind = computed(() => mediaKind ?? getMediaTypeFromFilename(name))
 const playableKind = computed(() =>
   kind.value === 'video' || kind.value === 'audio' ? kind.value : undefined
 )
-const canPlay = computed(() => !!mediaUrl && !!playableKind.value)
+const player =
+  useTemplateRef<ComponentInstance<typeof AssetMediaPreview>>('player')
 const mode = ref<'closed' | 'hover' | 'interactive' | 'dismissed'>('closed')
 const open = computed(
-  () =>
-    canPlay.value && (mode.value === 'hover' || mode.value === 'interactive')
+  () => mode.value === 'hover' || mode.value === 'interactive'
 )
 const contentId = useId()
 const trigger = useTemplateRef<HTMLButtonElement>('trigger')
 const content = useTemplateRef<HTMLDivElement>('content')
-const player =
-  useTemplateRef<ComponentInstance<typeof AssetMediaPreview>>('player')
 const triggerPointerInside = useElementHover(trigger)
 const triggerHovered = useElementHover(trigger, {
   delayEnter: 250,
@@ -58,13 +54,15 @@ watch(
     mode.value = onTrigger || onContent ? 'hover' : 'closed'
   }
 )
-watch(canPlay, (playable) => {
-  if (!playable) mode.value = 'closed'
-})
+
+function focusPreview(): void {
+  if (player.value) player.value.focus()
+  else content.value?.focus()
+}
 
 function activate(): void {
   mode.value = 'interactive'
-  player.value?.focus()
+  focusPreview()
 }
 
 function onOpenChange(next: boolean): void {
@@ -76,7 +74,8 @@ function onOpenChange(next: boolean): void {
 }
 
 function onOpenAutoFocus(event: Event): void {
-  if (mode.value === 'hover') event.preventDefault()
+  event.preventDefault()
+  if (mode.value === 'interactive') focusPreview()
 }
 
 function onEscape(): void {
@@ -94,7 +93,7 @@ function onInteractOutside(event: Event): void {
 </script>
 
 <template>
-  <Popover v-if="mediaUrl && playableKind" :open @update:open="onOpenChange">
+  <Popover :open @update:open="onOpenChange">
     <PopoverAnchor as-child>
       <button
         ref="trigger"
@@ -128,8 +127,9 @@ function onInteractOutside(event: Event): void {
       @escape-key-down="onEscape"
       @interact-outside="onInteractOutside"
     >
-      <div ref="content" role="region" :aria-label="name">
+      <div ref="content" tabindex="-1" role="region" :aria-label="name">
         <AssetMediaPreview
+          v-if="mediaUrl && playableKind"
           :key="playableKind"
           ref="player"
           :name
@@ -137,30 +137,8 @@ function onInteractOutside(event: Event): void {
           :kind="playableKind"
           :poster-url="previewUrl"
         />
-        <div class="px-3 py-2 text-sm wrap-anywhere text-base-foreground">
-          {{ name }}
-        </div>
-      </div>
-    </PopoverContent>
-  </Popover>
-  <HoverCard v-else :open-delay="250" :close-delay="150">
-    <HoverCardTrigger as-child>
-      <span
-        data-testid="agent-asset-preview-trigger"
-        class="relative flex size-full items-center justify-center overflow-hidden rounded-md"
-      >
-        <slot />
-      </span>
-    </HoverCardTrigger>
-    <HoverCardContent
-      side="top"
-      align="start"
-      :collision-padding="16"
-      class="w-80 max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl p-0"
-    >
-      <div role="tooltip" :aria-label="name">
         <img
-          v-if="previewUrl && (kind === 'image' || kind === 'video')"
+          v-else-if="previewUrl && (kind === 'image' || kind === 'video')"
           :src="previewUrl"
           :alt="name"
           class="max-h-80 w-full object-contain"
@@ -169,6 +147,6 @@ function onInteractOutside(event: Event): void {
           {{ name }}
         </div>
       </div>
-    </HoverCardContent>
-  </HoverCard>
+    </PopoverContent>
+  </Popover>
 </template>

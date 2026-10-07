@@ -87,7 +87,7 @@ describe('inline node and asset references', () => {
     await screen.findByTestId('asset-reference-chip')
     await userEvent.click(
       within(screen.getByTestId('composer-asset-section')).getByRole('button', {
-        name: 'Remove'
+        name: 'Remove pending.png'
       })
     )
     store.updateAttachment('image', { ref: 'complete.png', uploading: false })

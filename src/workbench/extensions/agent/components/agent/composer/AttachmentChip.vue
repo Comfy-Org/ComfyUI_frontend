@@ -64,8 +64,8 @@ const kind = computed(() => mediaKind ?? getMediaTypeFromFilename(name))
       </span>
     </AssetHoverPreview>
     <TagRemoveButton
-      :label="$t('agent.remove')"
-      class="pointer-events-none absolute top-1 right-1 size-5 shrink-0 rounded-full bg-base-background text-base-foreground opacity-0 ring-1 ring-border-subtle group-focus-within/attachment:pointer-events-auto group-focus-within/attachment:opacity-100 group-hover/attachment:pointer-events-auto group-hover/attachment:opacity-100 hover:bg-secondary-background-hover"
+      :label="$t('agent.removeAsset', { name })"
+      class="pointer-events-none absolute top-1 right-1 size-5 shrink-0 rounded-full bg-base-background text-base-foreground opacity-0 ring-1 ring-border-subtle group-focus-within/attachment:pointer-events-auto group-focus-within/attachment:opacity-100 group-hover/attachment:pointer-events-auto group-hover/attachment:opacity-100 hover:bg-secondary-background-hover touch:pointer-events-auto touch:size-7 touch:opacity-100"
       @click="emit('remove')"
     />
   </span>

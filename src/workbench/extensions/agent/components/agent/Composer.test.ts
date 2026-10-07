@@ -1841,7 +1841,9 @@ describe('Composer', () => {
       'https://example.com/cat.png'
     )
 
-    await userEvent.click(screen.getByRole('button', { name: 'Remove' }))
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Remove cat.png' })
+    )
     expect(screen.queryByRole('img', { name: 'cat.png' })).toBeNull()
   })
 
