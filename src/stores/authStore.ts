@@ -15,6 +15,11 @@ import {
 
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
+import {
+  desktopHostAccessToken,
+  desktopHostUser,
+  isDesktopHostSessionActive
+} from '@/platform/auth/desktopHost/desktopHostSession'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
 import type { WebSessionRequests } from '@/platform/auth/session/webSessionFetch'
@@ -153,13 +158,21 @@ export const useAuthStore = defineStore('auth', () => {
 
   // Getters
   const sessionUser = computed(() => cloudWebSessionStore.signedInUser)
-  const isAuthenticated = computed(
-    () => !!currentUser.value || !!sessionUser.value
+  const isAuthenticated = computed(() =>
+    isDesktopHostSessionActive()
+      ? !!desktopHostUser.value
+      : !!currentUser.value || !!sessionUser.value
   )
-  const userEmail = computed(
-    () => sessionUser.value?.email ?? currentUser.value?.email
+  const userEmail = computed(() =>
+    isDesktopHostSessionActive()
+      ? desktopHostUser.value?.email
+      : (sessionUser.value?.email ?? currentUser.value?.email)
   )
-  const userId = computed(() => sessionUser.value?.id ?? currentUser.value?.uid)
+  const userId = computed(() =>
+    isDesktopHostSessionActive()
+      ? desktopHostUser.value?.id
+      : (sessionUser.value?.id ?? currentUser.value?.uid)
+  )
   /** False only when SSO is on and the session says there is no personal workspace. */
   const hasPersonalWorkspace = computed(
     () =>
@@ -274,6 +287,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   const getIdToken = async (): Promise<string | undefined> => {
+    if (isDesktopHostSessionActive()) return desktopHostAccessToken()
     const user = currentUser.value
     if (!user) return
     try {
@@ -384,7 +398,7 @@ export const useAuthStore = defineStore('auth', () => {
    * stored API key for API-key sessions. Never a workspace-scoped token.
    */
   const getUserAuthHeader = async (): Promise<AuthHeader | null> =>
-    currentUser.value === null
+    currentUser.value === null && !isDesktopHostSessionActive()
       ? useApiKeyAuthStore().getAuthHeader()
       : await getFirebaseAuthHeader()
 
@@ -393,9 +407,11 @@ export const useAuthStore = defineStore('auth', () => {
   > | null> => (await webSessionResourceHeader()) ?? (await getUserAuthHeader())
 
   const currentUserIdentity = (): string | null =>
-    sessionUser.value?.id ??
-    currentUser.value?.uid ??
-    useApiKeyAuthStore().getApiKey()
+    isDesktopHostSessionActive()
+      ? (desktopHostUser.value?.id ?? null)
+      : (sessionUser.value?.id ??
+        currentUser.value?.uid ??
+        useApiKeyAuthStore().getApiKey())
 
   const currentUserCredentialIdentity = (): string | null =>
     currentUser.value?.uid ?? useApiKeyAuthStore().getApiKey()
@@ -421,6 +437,8 @@ export const useAuthStore = defineStore('auth', () => {
    * it is sent directly instead of minting a token.
    */
   const getWorkspaceAuthHeader = async (): Promise<AuthHeader | null> => {
+    if (isDesktopHostSessionActive())
+      return headerFromToken(await desktopHostAccessToken())
     const sessionOnly = sessionOnlyRequests()
     if (sessionOnly)
       return headerFromToken(await webSessionRunToken(sessionOnly))
@@ -481,6 +499,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   const getWorkspaceAuthToken = async (): Promise<string | undefined> => {
+    if (isDesktopHostSessionActive()) return desktopHostAccessToken()
     const requests = webSessionRequests()
     if (requests) return webSessionRunToken(requests)
 

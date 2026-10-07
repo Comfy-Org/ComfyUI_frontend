@@ -30,6 +30,11 @@ import { useDialogService } from '@/services/dialogService'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { api } from '@/scripts/api'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
+import type { DesktopHostAuthState } from '@/platform/auth/desktopHost/desktopHostAuthBridge'
+import {
+  startDesktopHostSession,
+  stopDesktopHostSession
+} from '@/platform/auth/desktopHost/desktopHostSession'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import type { IdentityObserver } from '@/utils/__tests__/stubAccountIdentityPort'
 import { replayIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
@@ -2769,6 +2774,62 @@ describe('useAuthStore in local/desktop distribution', () => {
       mintSpy,
       'mintAtLogin is gated on isCloud; local/desktop has no Cloud workspace JWT to mint'
     ).not.toHaveBeenCalled()
+  })
+
+  describe('with the Desktop host session', () => {
+    const hostBridge = (state: DesktopHostAuthState) => ({
+      getState: vi.fn(async () => state),
+      getAccessToken: vi.fn(async (): Promise<string | null> => 'host-token'),
+      requestSignIn: vi.fn(async () => state),
+      onChanged: vi.fn(() => () => {})
+    })
+
+    beforeEach(() => {
+      vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue({
+        'X-API-KEY': 'stored-key'
+      })
+    })
+
+    afterEach(() => stopDesktopHostSession())
+
+    it('uses the Desktop account over the Firebase user and stored API key', async () => {
+      await startDesktopHostSession(
+        hostBridge({
+          status: 'signed_in',
+          userId: 'host-user',
+          email: 'host@example.com'
+        })
+      )
+
+      expect(store.isAuthenticated).toBe(true)
+      expect(store.userId).toBe('host-user')
+      expect(store.userEmail).toBe('host@example.com')
+      await expect(store.getWorkspaceAuthToken()).resolves.toBe('host-token')
+      await expect(store.getAuthToken()).resolves.toBe('host-token')
+      const hostHeader = { Authorization: 'Bearer host-token' }
+      await expect(store.getAuthHeader()).resolves.toEqual(hostHeader)
+      await expect(store.getUserAuthHeader()).resolves.toEqual(hostHeader)
+      await expect(store.getWorkspaceAuthHeader()).resolves.toEqual(hostHeader)
+      expect(mockUser.getIdToken).not.toHaveBeenCalled()
+    })
+
+    it('reads as signed out, with no credential, while Desktop has no account', async () => {
+      await startDesktopHostSession(hostBridge({ status: 'signed_out' }))
+
+      expect(store.isAuthenticated).toBe(false)
+      expect(store.userId).toBeUndefined()
+      await expect(store.getWorkspaceAuthToken()).resolves.toBeUndefined()
+      await expect(store.getUserAuthHeader()).resolves.toBeNull()
+      await expect(store.getWorkspaceAuthHeader()).resolves.toBeNull()
+      expect(mockUser.getIdToken).not.toHaveBeenCalled()
+    })
+
+    it('keeps the Firebase user when Desktop does not share its session', async () => {
+      await startDesktopHostSession(hostBridge({ status: 'disabled' }))
+
+      expect(store.userId).toBe('local-user-id')
+      await expect(store.getAuthToken()).resolves.toBe('mock-id-token')
+    })
   })
 })
 

@@ -1,6 +1,7 @@
 import { whenever } from '@vueuse/core'
 import { computed, watch } from 'vue'
 
+import { desktopHostUser } from '@/platform/auth/desktopHost/desktopHostSession'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useAuthStore } from '@/stores/authStore'
@@ -25,7 +26,8 @@ export const useCurrentUser = () => {
     () =>
       apiKeyStore.isAuthenticated &&
       authStore.currentUser === null &&
-      !sessionUser.value
+      !sessionUser.value &&
+      !desktopHostUser.value
   )
   const isLoggedIn = computed(
     () => isApiKeyLogin.value || authStore.isAuthenticated
