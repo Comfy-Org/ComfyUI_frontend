@@ -561,11 +561,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   function recordPendingAskObservation(
     key: string,
-    pendingAskId: string | undefined
+    pendingAskId: string | undefined,
+    deliveredAskIds: Set<string>
   ): PendingAskObservation {
     const observation = {
       pendingAskId,
-      deliveredAskIds: new Set(deliveredAsks)
+      deliveredAskIds
     }
     recoveryPendingAskObservations.delete(key)
     recoveryPendingAskObservations.set(key, observation)
@@ -2020,12 +2021,16 @@ export function useAgentSession(deps: AgentSessionDeps) {
     for (const ms of TURN_RECOVERY_DELAYS_MS) {
       await delay(ms, { signal })
       if (!isTurnLive(turn, generation)) return false
+      const deliveredBeforeFetch = new Set(deliveredAsks)
       const outcome = await fetchTurnOutcome(turn, signal)
       signal.throwIfAborted()
       if (!isTurnLive(turn, generation)) return false
       consecutiveThreadMissing =
         outcome.kind === 'thread-missing' ? consecutiveThreadMissing + 1 : 0
-      if (isTransientMissingTurn(outcome, consecutiveThreadMissing)) continue
+      if (isTransientMissingTurn(outcome, consecutiveThreadMissing)) {
+        hasUnconfirmedObservation = true
+        continue
+      }
       if (settleFinishedTurn(turn, outcome)) {
         recoveryPendingAskObservations.delete(key)
         return false
@@ -2048,7 +2053,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
         pendingAskConfirmed,
         deliveredSincePreviousObservation
       )
-      previousObservation = recordPendingAskObservation(key, pendingAskId)
+      previousObservation = recordPendingAskObservation(
+        key,
+        pendingAskId,
+        deliveredBeforeFetch
+      )
     }
     return hasUnconfirmedObservation
   }

@@ -1067,10 +1067,10 @@ export const useAgentConversationStore = defineStore(
       protectedAskIds: ReadonlySet<string> = new Set()
     ): void {
       const message = liveTurnMessage(turn)
-      if (message === null || pendingAskId === undefined) return
+      if (message === null) return
       const stale = message.parts.flatMap((part) =>
         part.type === 'runApproval' &&
-        part.askId !== pendingAskId &&
+        (pendingAskId === undefined || part.askId !== pendingAskId) &&
         !protectedAskIds.has(part.askId) &&
         submittedAskSelection(part.askId) === undefined &&
         !answeringAskIds.value.has(part.askId)

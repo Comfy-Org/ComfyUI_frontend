@@ -4861,6 +4861,34 @@ describe('useAgentSession (v1 composition root)', () => {
     }
   })
 
+  it('(g46) a confirmed row with no pending ask retires a stale approval', async () => {
+    vi.useFakeTimers()
+    try {
+      const rest = fakeRest({
+        getMessages: vi.fn(
+          async (): Promise<AgentMessages> => [
+            historyRow(1, 'user', 'msg-1', 'go'),
+            unparkedRow()
+          ]
+        )
+      })
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start({ restore: false })
+      status(true)
+      await session.sendMessage('go')
+      emit(runApproval('msg-1'))
+
+      status(false)
+      status(true)
+      await vi.advanceTimersByTimeAsync(1_000)
+
+      expect(approvalParts(session)).toHaveLength(0)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('(g41) a missing turn row cannot retire a live approval', async () => {
     vi.useFakeTimers()
     try {
