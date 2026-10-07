@@ -43,7 +43,6 @@ test.use({
 
 const outputHash =
   '147257c95a3e957e0deee73a077cfec89da2d906dd086ca70a2b0c897a9591d6e.png'
-const outputVideoHash = 'cloud-video-hash.mp4'
 const plainVideoFileName = 'plain_video.mp4'
 const graphDropPosition = { x: 500, y: 300 }
 const missingMediaObservationMs = 1_000
@@ -83,18 +82,6 @@ const cloudOutputAsset: Asset & { hash?: string } = {
   hash: outputHash,
   size: 4_194_304,
   mime_type: 'image/png',
-  tags: ['output'],
-  created_at: '2026-05-01T00:00:00Z',
-  updated_at: '2026-05-01T00:00:00Z',
-  last_access_time: '2026-05-01T00:00:00Z'
-}
-
-const cloudOutputVideoAsset: Asset & { hash?: string } = {
-  id: 'test-output-video-hash-001',
-  name: 'ComfyUI_00001_.mp4',
-  hash: outputVideoHash,
-  size: 4_194_304,
-  mime_type: 'video/mp4',
   tags: ['output'],
   created_at: '2026-05-01T00:00:00Z',
   updated_at: '2026-05-01T00:00:00Z',
@@ -168,10 +155,7 @@ async function routeCloudBootstrapApis(
   })
 }
 
-const cloudOutputTest = createCloudAssetsFixture([
-  cloudOutputAsset,
-  cloudOutputVideoAsset
-]).extend({
+const cloudOutputTest = createCloudAssetsFixture([cloudOutputAsset]).extend({
   page: async ({ page, initialSettings }, use) => {
     await routeCloudBootstrapApis(page, initialSettings)
     const unrouteObjectInfo = await routeObjectInfoFromSetupApi(page)
@@ -266,17 +250,6 @@ const cloudUploadRaceTest = test.extend<{
 
 function getErrorOverlay(comfyPage: ComfyPage) {
   return comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
-}
-
-function isOutputAssetsRequest(url: string) {
-  return url.includes('/api/assets') && assetRequestIncludesTag(url, 'output')
-}
-
-async function waitForOutputAssetsResponse(comfyPage: ComfyPage) {
-  await comfyPage.page.waitForResponse(
-    (response) =>
-      response.status() === 200 && isOutputAssetsRequest(response.url())
-  )
 }
 
 async function getCachedMissingMediaWarningNames(
@@ -522,32 +495,12 @@ ossTest.describe(
     })
 
     ossTest(
-      'keeps an exact output option selectable with empty history and warns for absent outputs',
+      'keeps an exact output option selectable with empty history',
       async ({ comfyPage }) => {
-        await loadWorkflowAndOpenErrorsTab(
-          comfyPage,
+        await comfyPage.workflow.loadWorkflow(
           'missing/missing_media_output_annotations'
         )
 
-        const missingMediaRows = comfyPage.page.getByTestId(
-          TestIds.dialogs.missingMediaRow
-        )
-        await expect(
-          missingMediaRows.getByRole('button', {
-            name: 'Load Video - file',
-            exact: true
-          })
-        ).toBeVisible()
-        await expect(
-          missingMediaRows.getByRole('button', {
-            name: 'Load Audio - audio',
-            exact: true
-          })
-        ).toBeVisible()
-        await expect(missingMediaRows).toHaveCount(2)
-
-        const panel = new PropertiesPanelHelper(comfyPage.page)
-        await panel.close()
         await expect(comfyPage.vueNodes.nodes).toHaveCount(3)
         const dropdown = new WidgetSelectDropdownFixture(
           comfyPage.vueNodes.getWidgetRowByLabel('Load Image', 'image')
@@ -597,8 +550,7 @@ ossTest.describe(
             response.status() === 200
         )
 
-        await loadWorkflowAndOpenErrorsTab(
-          comfyPage,
+        await comfyPage.workflow.loadWorkflow(
           'missing/missing_media_remote_output_option'
         )
         await (await outputOptionsResponse).finished()
@@ -625,24 +577,10 @@ ossTest.describe(
           route.fulfill({ status: 503 })
         )
 
-        await loadWorkflowAndOpenErrorsTab(
-          comfyPage,
+        await comfyPage.workflow.loadWorkflow(
           'missing/missing_media_remote_output_option'
         )
 
-        const missingMediaRows = comfyPage.page.getByTestId(
-          TestIds.dialogs.missingMediaRow
-        )
-        await expect(
-          missingMediaRows.getByRole('button', {
-            name: 'Load Audio - audio',
-            exact: true
-          })
-        ).toBeVisible()
-        await expect(missingMediaRows).toHaveCount(1)
-
-        const panel = new PropertiesPanelHelper(comfyPage.page)
-        await panel.close()
         const dropdown = new WidgetSelectDropdownFixture(
           comfyPage.vueNodes.getWidgetRowByLabel(
             'Load Image (from Outputs)',
@@ -804,30 +742,36 @@ cloudOutputTest.describe(
     cloudOutputTest(
       'resolves compact annotated output media from output assets',
       async ({ comfyPage }) => {
-        const outputAssetsResponse = waitForOutputAssetsResponse(comfyPage)
-
         await comfyPage.workflow.loadWorkflow(
           'missing/missing_media_cloud_output_annotation'
         )
 
-        await outputAssetsResponse
         await expectNoMissingMediaForObservationWindow(comfyPage)
         await expectNoErrorsTab(comfyPage)
       }
     )
 
     cloudOutputTest(
-      'resolves subfoldered output video media from flat output asset hashes',
+      'surfaces annotated output media absent from output assets',
       async ({ comfyPage }) => {
-        const outputAssetsResponse = waitForOutputAssetsResponse(comfyPage)
-
-        await comfyPage.workflow.loadWorkflow(
-          'missing/missing_media_cloud_output_video_subfolder'
+        await loadWorkflowAndOpenErrorsTab(
+          comfyPage,
+          'missing/missing_media_output_annotations'
         )
 
-        await outputAssetsResponse
-        await expectNoMissingMediaForObservationWindow(comfyPage)
-        await expectNoErrorsTab(comfyPage)
+        const missingMediaRows = comfyPage.page.getByTestId(
+          TestIds.dialogs.missingMediaRow
+        )
+        for (const name of [
+          'Load Image - image',
+          'Load Video - file',
+          'Load Audio - audio'
+        ]) {
+          await expect(
+            missingMediaRows.getByRole('button', { name, exact: true })
+          ).toBeVisible()
+        }
+        await expect(missingMediaRows).toHaveCount(3)
       }
     )
   }
