@@ -7,9 +7,9 @@ import {
   buildWhatIsDescription,
   dirLabels,
   isPartnerModel
-} from '../../../config/model-descriptions'
-import { buildPricingFact } from '../../../config/model-pricing'
-import { models } from '../../../config/models'
+} from '@/config/model-descriptions'
+import { buildPricingFact } from '@/config/model-pricing'
+import { models } from '@/config/models'
 
 export function getStaticPaths() {
   // canonicalSlug entries are 301 aliases of another page — no twin for those.

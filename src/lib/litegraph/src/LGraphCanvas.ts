@@ -32,7 +32,7 @@ import {
 import { useSelectionStore } from '@/core/selection/selectionStore'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import {
-  applyParentSizedCanvasStyle,
+  applyLogicalCanvasStyle,
   applyViewport,
   measureViewport,
   readBrowserDpr
@@ -86,7 +86,9 @@ import {
 } from './canvas/linkBadgeRenderer'
 import {
   getLinkMenuOptions,
+  getVisibleRerouteLink,
   hideLink,
+  hideLinks,
   promptRenameLinkBadge,
   showLink
 } from './canvas/linkVisibility'
@@ -1040,8 +1042,21 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   /** Link rendering adapter for litegraph-to-canvas integration */
   linkRenderer: LitegraphLinkAdapter | null = null
 
-  /** Device pixel ratio applied with the current viewport dimensions. */
-  dpr: number = 1
+  private _dpr: number = 1
+
+  /**
+   * Device pixel ratio of the canvas contexts. Assigning a new value
+   * recomputes the low-quality zoom threshold.
+   */
+  get dpr(): number {
+    return this._dpr
+  }
+
+  set dpr(value: number) {
+    if (this._dpr === value) return
+    this._dpr = value
+    this.updateLowQualityThreshold()
+  }
 
   /** If true, enable drag zoom. Ctrl+Shift+Drag Up/Down: zoom canvas. */
   dragZoomEnabled: boolean = false
@@ -2196,6 +2211,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     // maybe detach events from old_canvas
     this.canvas = element
     this.ds.element = element
+    this.ds.invalidateViewportSize()
     this.pointer.element = element
 
     this._setCursor = createCursorCache(element)
@@ -6672,10 +6688,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
   /**
    * @deprecated Use {@link measureViewport} + {@link applyViewport} from `canvasViewport.ts` instead.
+   * Call {@link applyLogicalCanvasStyle} first so the DPR-scaled backing store
+   * cannot size the layout box of a canvas that has no CSS dimensions.
    * This method remains for legacy callers that rely on parent-element fallback sizing.
    */
   resize(width?: number, height?: number): void {
-    const usesParentSize = !width && !height
     if (!width && !height) {
       const parent = this.canvas.parentElement
       if (!parent)
@@ -6686,17 +6703,16 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       height = parent.offsetHeight
     }
 
-    if (usesParentSize) {
-      applyParentSizedCanvasStyle(this.canvas, width ?? 0, height ?? 0)
-    }
-
-    const viewport = measureViewport(
+    const discardedBitmap = applyLogicalCanvasStyle(
+      this.canvas,
       width ?? 0,
-      height ?? 0,
-      window.devicePixelRatio
+      height ?? 0
     )
 
+    const viewport = measureViewport(width ?? 0, height ?? 0, readBrowserDpr())
+
     if (
+      !discardedBitmap &&
       this.canvas.width === viewport.physicalWidth &&
       this.canvas.height === viewport.physicalHeight &&
       this.bgcanvas.width === viewport.physicalWidth &&
@@ -6743,10 +6759,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const node_left = graph.getNodeById(origin_id)
     const fromType = node_left?.outputs[origin_slot]?.type
 
+    const rerouteLink =
+      segment instanceof Reroute
+        ? getVisibleRerouteLink(graph, segment)
+        : undefined
     const link =
       segment instanceof LLink && graph.getLink(segment.id) === segment
         ? segment
-        : presentationLink
+        : (presentationLink ?? rerouteLink)
     const graphScope = graphScopeOf(graph)
     const options = getLinkMenuOptions(graphScope, link?.id)
     const menu = new LiteGraph.ContextMenu<string>(options, {
@@ -6821,7 +6841,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           break
         }
         case 'Hide Link':
-          if (link) hideLink(this, graphScope, link.id)
+          if (segment instanceof Reroute) {
+            hideLinks(this, graphScope, segment.linkIds)
+          } else if (link) {
+            hideLink(this, graphScope, link.id)
+          }
           break
         case 'Show Link':
           if (link) showLink(this, graphScope, link.id)

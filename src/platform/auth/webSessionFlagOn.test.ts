@@ -1,6 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import type { User, UserCredential } from 'firebase/auth'
 import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Mock } from 'vitest'
 import { setActivePinia } from 'pinia'
 import { defineComponent, effectScope } from 'vue'
 
@@ -17,7 +18,10 @@ import { MISSING_CUSTOMER_MESSAGE } from '@comfyorg/account-core/customerRecover
 import { COMFY_CLIENT } from '@comfyorg/account-core/requestAuth'
 import { SessionTokenError } from '@comfyorg/account-core/sessionTokenMint'
 
-import { clearPreservedQuery } from '@/platform/navigation/preservedQueryManager'
+import {
+  clearPreservedQuery,
+  getPreservedQueryParam
+} from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
@@ -30,7 +34,13 @@ import {
   takeInteractiveSignIn
 } from '@/platform/auth/session/interactiveSignInMarker'
 import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
+import {
+  readSsoHint,
+  rememberSignedInSession
+} from '@/platform/auth/session/ssoReentryStorage'
+import { submitSurvey } from '@/platform/cloud/onboarding/auth'
 import { useSessionCookie } from '@/platform/auth/session/useSessionCookie'
+import { SSO_REQUIRED_DIALOG_KEY } from '@/platform/auth/sso/ssoRequiredDialogKey'
 import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
 import {
   WebSessionTokenError,
@@ -44,6 +54,7 @@ import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import { NoWorkspaceAccessError } from '@/platform/workspace/api/workspaceApiError'
 import {
   getGlobalSetting,
   setGlobalSetting
@@ -58,7 +69,10 @@ import { api } from '@/scripts/api'
 import type { ComfyApp } from '@/scripts/app'
 import type { useExtensionService } from '@/services/extensionService'
 import { createDisposablePinia } from '@/testing/pinia'
-import { useAuthStore } from '@/stores/authStore'
+import { useCustomerEventsService } from '@/services/customerEventsService'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
+import { NO_PERSONAL_WORKSPACE, useAuthStore } from '@/stores/authStore'
+import { useDialogStore } from '@/stores/dialogStore'
 import type { ComfyExtension } from '@/types/comfy'
 import {
   resultItemUrl,
@@ -180,7 +194,8 @@ type ServerSession =
   | 'revoked'
   | 'network'
   | 'restore_token_revoked'
-  | { userId: string }
+  | 'sso_required'
+  | { userId: string; provider?: string }
 
 interface FeatureAnswers {
   probe: boolean
@@ -201,17 +216,27 @@ function jsonResponse(body: unknown, status = 200): Response {
   })
 }
 
-function sessionBody(userId: string) {
+function sessionBody(
+  userId: string,
+  {
+    provider = 'google.com',
+    hasPersonalWorkspace
+  }: { provider?: string; hasPersonalWorkspace?: boolean } = {}
+) {
   return {
     user: {
       id: userId,
       email: `${userId}@example.com`,
       email_verified: true,
-      sign_in_provider: 'google.com'
+      sign_in_provider: provider,
+      ...(hasPersonalWorkspace !== undefined && {
+        has_personal_workspace: hasPersonalWorkspace
+      })
     },
     csrf_token: `csrf-${userId}`,
     expires_at: new Date(Date.now() + 86_400_000).toISOString(),
-    absolute_expires_at: new Date(Date.now() + 604_800_000).toISOString()
+    absolute_expires_at: new Date(Date.now() + 604_800_000).toISOString(),
+    has_personal_workspace: true
   }
 }
 
@@ -241,6 +266,9 @@ function installServer(
     if (server.session === 'restore_token_revoked') {
       return jsonResponse({ code: 'TOKEN_REVOKED', message: 'revoked' }, 401)
     }
+    if (server.session === 'sso_required') {
+      return jsonResponse({ code: 'sso_required', message: 'use SSO' }, 403)
+    }
     server.session = { userId: 'user-a' }
     return jsonResponse({ success: true })
   }
@@ -251,7 +279,9 @@ function installServer(
       return jsonResponse({ code: 'unavailable', message: 'down' }, 503)
     }
     if (typeof session === 'object')
-      return jsonResponse(sessionBody(session.userId))
+      return jsonResponse(
+        sessionBody(session.userId, { provider: session.provider })
+      )
     const code = session === 'revoked' ? 'session_revoked' : 'no_session'
     return jsonResponse({ code, message: code }, 401)
   }
@@ -388,6 +418,21 @@ describe('cloud app on the shared web session (unified_web_session on)', () => {
       expect(methodsOf(server.requests)).toEqual(['POST', 'GET'])
     )
   })
+
+  it.for([
+    { session: 'none', requiresSso: false },
+    { session: 'sso_required', requiresSso: true }
+  ] satisfies { session: ServerSession; requiresSso: boolean }[])(
+    'an interactive sign-in answered $session tells the login page requiresSso=$requiresSso',
+    async ({ session, requiresSso }) => {
+      installServer(session)
+      await refreshRemoteConfig({ useAuth: false })
+
+      await useAuthStore().login('user-a@example.com', 'password')
+
+      expect(await useSessionCookie().sessionRequiresSso()).toBe(requiresSso)
+    }
+  )
 
   it.for([
     {
@@ -635,6 +680,7 @@ function installIngest(features: Record<string, boolean> = {}) {
     userId: 'user-a',
     csrfToken: 'csrf-1',
     sessionDown: false,
+    sessionMissing: false,
     refusals: [] as string[],
     mintRefusal: undefined as (() => Response) | undefined,
     mintGate: undefined as Promise<void> | undefined,
@@ -652,7 +698,8 @@ function installIngest(features: Record<string, boolean> = {}) {
     currentWorkspaceDown: undefined as (() => Response) | undefined,
     billingUnauthorized: 0,
     customerMissing: false,
-    capabilitiesDown: false
+    capabilitiesDown: false,
+    hasPersonalWorkspace: undefined as boolean | undefined
   }
 
   const mint = (body: unknown): Response => {
@@ -702,17 +749,24 @@ function installIngest(features: Record<string, boolean> = {}) {
     )
   }
 
-  const answerSession = (): Response =>
-    ingest.sessionDown
+  const answerSession = (method: string): Response => {
+    if (ingest.sessionMissing) {
+      return jsonResponse({ code: 'no_session', message: 'no_session' }, 401)
+    }
+    if (method === 'POST') return jsonResponse({ success: true })
+    return ingest.sessionDown
       ? jsonResponse({ code: 'unavailable', message: 'down' }, 503)
       : jsonResponse({
-          ...sessionBody(ingest.userId),
+          ...sessionBody(ingest.userId, {
+            hasPersonalWorkspace: ingest.hasPersonalWorkspace
+          }),
           csrf_token: ingest.csrfToken
         })
+  }
 
   const respond = (request: ApiRequest, body: unknown): Response => {
     const { path, headers } = request
-    if (path === '/api/auth/session') return answerSession()
+    if (path === '/api/auth/session') return answerSession(request.method)
     if (path === '/api/auth/token') return mint(body)
     if (path === '/api/workspaces/current') {
       if (ingest.currentWorkspaceDown) return ingest.currentWorkspaceDown()
@@ -915,6 +969,29 @@ describe('cloud API requests on the shared web session', () => {
     ])
   })
 
+  it.for([
+    { ssoEnabled: true, shown: true },
+    { ssoEnabled: false, shown: false }
+  ])(
+    'sso_required is returned as is; the SSO screen shows: $shown (sso_enabled $ssoEnabled)',
+    async ({ ssoEnabled, shown }) => {
+      const ingest = await bootOnSession({ sso_enabled: ssoEnabled })
+      ingest.refusals.push('sso_required')
+
+      const response = await postPrompt()
+      await vi.dynamicImportSettled()
+
+      expect(response.status).toBe(403)
+      expect(ingest.requests).toHaveLength(1)
+      const dialog = useDialogStore().dialogStack.find(
+        ({ key }) => key === SSO_REQUIRED_DIALOG_KEY
+      )
+      expect(dialog?.contentProps).toEqual(
+        shown ? { email: 'user-a@example.com' } : undefined
+      )
+    }
+  )
+
   it('reports a request sent on the session as authenticated', async () => {
     await bootOnSession()
     const onAuthHeader = vi.fn()
@@ -1047,6 +1124,15 @@ describe('workspace API and global settings on the shared web session', () => {
       code: 'plan_required',
       message: 'plan_required'
     })
+  })
+
+  it('maps a 403 no_workspace_access on the session to NoWorkspaceAccessError', async () => {
+    const ingest = await bootOnSession()
+    ingest.refusals.push('no_workspace_access')
+
+    await expect(workspaceApi.getBillingStatus()).rejects.toBeInstanceOf(
+      NoWorkspaceAccessError
+    )
   })
 
   it('returns no workspace auth header and sends nothing', async () => {
@@ -1392,6 +1478,36 @@ describe('comfy-api calls on the shared web session', () => {
       assert(rejection instanceof WebSessionTokenError)
       expect(rejection.failure.code).toBe(failure)
       expect(rejection.message).toBe(copy)
+    }
+  )
+
+  it.for([
+    {
+      ssoEnabled: false,
+      copy: 'Your request was refused. Reload the page and try again.',
+      shown: false
+    },
+    {
+      ssoEnabled: true,
+      copy: 'Your organization requires single sign-on. Continue with SSO to sign in.',
+      shown: true
+    }
+  ])(
+    'a mint refused with sso_required is SSO_REQUIRED; the SSO screen shows: $shown (sso_enabled $ssoEnabled)',
+    async ({ ssoEnabled, copy, shown }) => {
+      const ingest = await bootOnSession({ sso_enabled: ssoEnabled })
+      ingest.mintRefusal = () =>
+        jsonResponse({ code: 'sso_required', message: 'use SSO' }, 403)
+
+      const rejection = await webSessionResourceHeader().catch(
+        (error: unknown) => error
+      )
+      await vi.dynamicImportSettled()
+
+      assert(rejection instanceof WebSessionTokenError)
+      expect(rejection.failure.code).toBe('SSO_REQUIRED')
+      expect(rejection.message).toBe(copy)
+      expect(useDialogStore().isDialogOpen(SSO_REQUIRED_DIALOG_KEY)).toBe(shown)
     }
   )
 
@@ -1910,9 +2026,147 @@ describe.for([{ unified: false }, { unified: true }])(
   }
 )
 
+describe('a sibling tab under unified_cloud_auth', () => {
+  const openChannels = new Set<InMemoryChannel>()
+
+  class InMemoryChannel extends EventTarget {
+    constructor(readonly name: string) {
+      super()
+      openChannels.add(this)
+    }
+
+    postMessage(data: unknown) {
+      for (const peer of openChannels) {
+        if (peer !== this && peer.name === this.name) {
+          peer.dispatchEvent(new MessageEvent('message', { data }))
+        }
+      }
+    }
+
+    close() {
+      openChannels.delete(this)
+    }
+  }
+
+  const followerLocks = fromPartial<LockManager>({
+    request: (_name: string, options: LockOptions) =>
+      new Promise((_resolve, reject) => {
+        options.signal?.addEventListener('abort', () =>
+          reject(new DOMException('abandoned', 'AbortError'))
+        )
+      })
+  })
+
+  const publishFromSibling = () => {
+    const sibling = new InMemoryChannel(
+      'comfy-account-refresh:user-a:ws-personal'
+    )
+    sibling.postMessage({
+      token: 'sibling-jwt',
+      expiresAt: Date.now() + 60 * 60_000,
+      uid: 'user-a',
+      workspace: { id: 'ws-personal', name: 'Personal', type: 'personal' },
+      role: 'owner',
+      permissions: []
+    })
+    sibling.close()
+  }
+
+  const firebaseExchanges = () =>
+    vi
+      .mocked(fetch)
+      .mock.calls.map(([input, init]) => recordApiRequest(input, init))
+      .filter(
+        ({ path, headers }) =>
+          path === '/api/auth/token' &&
+          headers.authorization === 'Bearer firebase-id-token'
+      )
+
+  beforeEach(() => {
+    identity.reset()
+    openChannels.clear()
+    vi.spyOn(api, 'resetSocket').mockResolvedValue()
+    vi.stubGlobal('BroadcastChannel', InMemoryChannel)
+    vi.spyOn(navigator, 'locks', 'get').mockReturnValue(followerLocks)
+  })
+
+  afterEach(() => {
+    remoteConfig.value = {}
+    localStorage.clear()
+  })
+
+  it('leaves a session tab on its own workspace, and its Run carries that workspace', async () => {
+    const ingest = await bootOnSession({ unified_cloud_auth: true })
+    const workspaceAuth = useWorkspaceAuthStore()
+
+    await workspaceAuth.mintAtLogin()
+    await workspaceAuth.switchWorkspace('ws-team')
+    publishFromSibling()
+    await postPrompt()
+
+    expect(workspaceAuth.currentWorkspace?.id).toBe('ws-team')
+    expect(ingest.requests.at(-1)).toEqual(
+      sessionRequest('POST', '/api/prompt', {
+        'x-comfy-workspace-id': 'ws-team',
+        ...PROMPT_HEADERS,
+        'x-csrf-token': 'csrf-1'
+      })
+    )
+    expect(firebaseExchanges()).toEqual([])
+  })
+
+  it('still mints at login and adopts the sibling token with the web session off', async () => {
+    await bootOnSession({
+      unified_cloud_auth: true,
+      unified_web_session: false
+    })
+    const workspaceAuth = useWorkspaceAuthStore()
+
+    await vi.waitFor(() =>
+      expect(workspaceAuth.getUnifiedToken()).toBeDefined()
+    )
+    publishFromSibling()
+
+    expect(firebaseExchanges()).toHaveLength(1)
+    expect(workspaceAuth.currentWorkspace?.id).toBe('ws-personal')
+    expect(workspaceAuth.getUnifiedToken()).toBe('sibling-jwt')
+  })
+  it('drops the fallback credential once the session signs the tab in, so a sibling token cannot move its Run', async () => {
+    const ingest = installIngest({ unified_cloud_auth: true })
+    ingest.sessionMissing = true
+    await refreshRemoteConfig({ useAuth: false })
+    useAuthStore()
+    const workspaceAuth = useWorkspaceAuthStore()
+    identity.signIn(USER_A)
+    await useSessionCookie().ensureSessionCookie()
+    await expect(workspaceAuth.mintAtLogin()).resolves.toBe(true)
+
+    ingest.sessionMissing = false
+    const webSession = useCloudWebSessionStore()
+    webSession.signedInInteractively(USER_A)
+    await webSession.whenSessionCreated()
+    await workspaceAuth.switchWorkspace('ws-team')
+    publishFromSibling()
+    await postPrompt()
+
+    expect(workspaceAuth.currentWorkspace?.id).toBe('ws-team')
+    expect(ingest.requests.at(-1)).toEqual(
+      sessionRequest('POST', '/api/prompt', {
+        'x-comfy-workspace-id': 'ws-team',
+        ...PROMPT_HEADERS,
+        'x-csrf-token': 'csrf-1'
+      })
+    )
+  })
+})
+
 describe('billing on a tab that arrived by session', () => {
-  const bootSessionOnly = async () => {
-    const ingest = installIngest()
+  const bootSessionOnly = async (
+    features: Record<string, boolean> = {},
+    hasPersonalWorkspace?: boolean
+  ) => {
+    const ingest = installIngest(features)
+    ingest.hasPersonalWorkspace = hasPersonalWorkspace
     await refreshRemoteConfig({ useAuth: false })
     const authStore = useAuthStore()
     await useSessionCookie().ensureSessionCookie()
@@ -1984,6 +2238,79 @@ describe('billing on a tab that arrived by session', () => {
       expect(authorizationsOf(ingest)).toEqual([SESSION_MINT, ...sent])
     }
   )
+
+  it.for([
+    { sso: false, reported: false, sendsCustomers: true },
+    { sso: true, reported: undefined, sendsCustomers: true },
+    { sso: true, reported: true, sendsCustomers: true },
+    { sso: true, reported: false, sendsCustomers: false }
+  ])(
+    'sso_enabled $sso with has_personal_workspace $reported: balance reaches /customers is $sendsCustomers',
+    async ({ sso, reported, sendsCustomers }) => {
+      const { ingest, authStore } = await bootSessionOnly(
+        { sso_enabled: sso },
+        reported
+      )
+
+      await authStore.fetchBalance()
+
+      expect(
+        ingest.requests.some(({ path }) => path.startsWith('/customers'))
+      ).toBe(sendsCustomers)
+    }
+  )
+
+  it.for([
+    {
+      name: 'top-up',
+      call: (authStore: ReturnType<typeof useAuthStore>) =>
+        authStore.initiateCreditPurchase({
+          amount_micros: 5_000_000,
+          currency: 'usd'
+        })
+    },
+    {
+      name: 'billing portal',
+      call: (authStore: ReturnType<typeof useAuthStore>) =>
+        authStore.accessBillingPortal()
+    },
+    {
+      name: 'subscription checkout',
+      call: (authStore: ReturnType<typeof useAuthStore>) =>
+        authStore.fetchWithCustomerRecovery(
+          '/customers/cloud-subscription-checkout',
+          { method: 'POST' }
+        )
+    }
+  ])(
+    'the $name call is refused before /customers without a personal workspace',
+    async ({ call }) => {
+      const { ingest, authStore } = await bootSessionOnly(
+        { sso_enabled: true },
+        false
+      )
+
+      await expect(call(authStore)).rejects.toMatchObject({
+        code: NO_PERSONAL_WORKSPACE
+      })
+      expect(
+        ingest.requests.filter(({ path }) => path.startsWith('/customers'))
+      ).toEqual([])
+    }
+  )
+
+  it('loads no customer events without a personal workspace', async () => {
+    const { ingest } = await bootSessionOnly({ sso_enabled: true }, false)
+    const events = useCustomerEventsService()
+
+    await expect(events.getMyEvents()).resolves.toBeNull()
+    expect(events.error.value).toBe(
+      'This account has no personal billing. Manage billing from your team workspace.'
+    )
+    expect(
+      ingest.requests.filter(({ path }) => path.startsWith('/customers'))
+    ).toEqual([])
+  })
 
   it('provisions a missing customer on the session token and retries once', async () => {
     const { ingest, authStore } = await bootSessionOnly()
@@ -2496,6 +2823,63 @@ describe.for([{ unified: false }, { unified: true }])(
         await expect(enterApp()).resolves.toBe('/cloud/login')
       })
 
+      describe('once the tab is in the app', () => {
+        const stopRecording: (() => void)[] = []
+
+        afterEach(() => {
+          stopRecording.splice(0).forEach((stop) => stop())
+        })
+
+        const enterAppRecordingNavigations = async () => {
+          const { server } = await install({ userId: 'user-a' })
+          identity.resolve(null)
+          await expect(enterApp()).resolves.toBe('/user-select')
+          const started: string[] = []
+          const landings: string[] = []
+          stopRecording.push(
+            router.beforeEach((to) => {
+              started.push(to.path)
+            }),
+            router.afterEach((to) => {
+              landings.push(to.path)
+            })
+          )
+          return { server, started, landings }
+        }
+
+        it.for<{ name: string; session: ServerSession }>([
+          { name: 'its heartbeat reads session_revoked', session: 'revoked' },
+          {
+            name: 'its heartbeat finds no session and no login to restore',
+            session: 'none'
+          }
+        ])(
+          'sends the tab to the login page once, keeping its path, when $name',
+          async ({ session }) => {
+            const { server, landings } = await enterAppRecordingNavigations()
+
+            server.session = session
+            await vi.advanceTimersByTimeAsync(TEN_MINUTES_MS)
+            await vi.waitFor(() => expect(landings).toEqual(['/cloud/login']))
+            await vi.advanceTimersByTimeAsync(TEN_MINUTES_MS)
+
+            expect(landings).toEqual(['/cloud/login'])
+            expect(router.currentRoute.value.query.previousFullPath).toBe(
+              encodeURIComponent('/user-select')
+            )
+          }
+        )
+
+        it('leaves the navigation of a sign-out in this tab to the sign-out flow', async () => {
+          const { started } = await enterAppRecordingNavigations()
+
+          await useAuthStore().logout()
+          await vi.advanceTimersByTimeAsync(TEN_MINUTES_MS)
+
+          expect(started).toEqual([])
+        })
+      })
+
       it('waits out an outage instead of sending the tab to the login page', async () => {
         const { server } = await install('network')
         identity.resolve(null)
@@ -2676,3 +3060,547 @@ describe.for([{ unified: false }, { unified: true }])(
     })
   }
 )
+
+describe('a lapsed SSO session signs in again through SSO (sso_enabled)', () => {
+  const SSO_SESSION = { userId: 'user-a', provider: 'saml.workos' }
+  const FIVE_MINUTES_MS = 5 * 60_000
+  const pages: Disposable[] = []
+  let assign: Mock<(url: string | URL) => void>
+
+  beforeEach(() => {
+    identity.reset()
+    firebaseSignOut.mockReset()
+    firebaseSignOut.mockImplementation(async () => identity.signOut())
+    vi.spyOn(api, 'resetSocket').mockResolvedValue()
+    assign = vi.fn<(url: string | URL) => void>()
+    vi.spyOn(window.location, 'assign').mockImplementation(assign)
+  })
+
+  afterEach(() => {
+    pages.splice(0).forEach((page) => page[Symbol.dispose]())
+    remoteConfig.value = {}
+  })
+
+  const loadPage = async (session: ServerSession, ssoEnabled = true) => {
+    const page = createDisposablePinia()
+    pages.push(page)
+    setActivePinia(page.pinia)
+    const server = installServer(session, { sso_enabled: ssoEnabled })
+    await refreshRemoteConfig({ useAuth: false })
+    useAuthStore()
+    identity.resolve(null)
+    await router.push('/cloud/login')
+    return server
+  }
+
+  const visit = async (path: string) => {
+    await router.push(path)
+    const { path: landed, query } = router.currentRoute.value
+    return { landed, query }
+  }
+
+  const startedAt = (call: number) => {
+    const url = new URL(String(assign.mock.calls[call][0]))
+    return {
+      path: url.pathname,
+      email: url.searchParams.get('email'),
+      returnTo: url.searchParams.get('return_to')
+    }
+  }
+
+  const inAppThenLapsed = async (ssoEnabled: boolean) => {
+    const server = await loadPage(SSO_SESSION, ssoEnabled)
+    await expect(visit('/user-select')).resolves.toMatchObject({
+      landed: '/user-select'
+    })
+    const landings: string[] = []
+    pages.push({
+      [Symbol.dispose]: router.afterEach((to, _from, failure) => {
+        if (!failure) landings.push(to.path)
+      })
+    })
+    server.session = 'none'
+    await vi.advanceTimersByTimeAsync(TEN_MINUTES_MS)
+    return landings
+  }
+
+  describe('the hint', () => {
+    it.for<{
+      name: string
+      session: ServerSession
+      ssoEnabled: boolean
+      hint: { email: string } | null
+    }>([
+      {
+        name: 'an SSO session leaves its email',
+        session: SSO_SESSION,
+        ssoEnabled: true,
+        hint: { email: 'user-a@example.com' }
+      },
+      {
+        name: 'an OIDC SSO session leaves its email',
+        session: { userId: 'user-a', provider: 'oidc.workos' },
+        ssoEnabled: true,
+        hint: { email: 'user-a@example.com' }
+      },
+      {
+        name: 'a Google session clears an earlier SSO hint',
+        session: { userId: 'user-a' },
+        ssoEnabled: true,
+        hint: null
+      }
+    ])('$name', async ({ session, ssoEnabled, hint }) => {
+      localStorage.setItem(
+        'Comfy.WebSession.SsoHint',
+        JSON.stringify({ email: 'earlier@example.com' })
+      )
+
+      await loadPage(session, ssoEnabled)
+
+      expect(readSsoHint()).toEqual(hint)
+    })
+
+    it('with the flag off an SSO session leaves nothing', async () => {
+      await loadPage(SSO_SESSION, false)
+
+      expect(readSsoHint()).toBeNull()
+    })
+
+    it('is cleared by a sign-out in this tab', async () => {
+      await loadPage(SSO_SESSION)
+      expect(readSsoHint()).not.toBeNull()
+
+      await useAuthStore().logout()
+
+      expect(readSsoHint()).toBeNull()
+    })
+
+    it('is cleared when the session is revoked', async () => {
+      const server = await loadPage(SSO_SESSION)
+      await visit('/user-select')
+
+      server.session = 'revoked'
+      await vi.advanceTimersByTimeAsync(TEN_MINUTES_MS)
+
+      expect(readSsoHint()).toBeNull()
+    })
+  })
+
+  it('sends a tab whose SSO session lapses under it to SSO, returning to its page', async () => {
+    const landings = await inAppThenLapsed(true)
+
+    await vi.waitFor(() => expect(assign).toHaveBeenCalledOnce())
+    expect(startedAt(0)).toEqual({
+      path: '/api/auth/sso/start',
+      email: 'user-a@example.com',
+      returnTo: '/user-select'
+    })
+    expect(landings).toEqual([])
+  })
+
+  it('with the flag off sends that tab to the plain login page', async () => {
+    const landings = await inAppThenLapsed(false)
+
+    await vi.waitFor(() => expect(landings).toEqual(['/cloud/login']))
+    expect(router.currentRoute.value.query.sso).toBeUndefined()
+    expect(assign).not.toHaveBeenCalled()
+  })
+
+  it('redirects a reload once per tab per five minutes, then opens the SSO entry instead', async () => {
+    rememberSignedInSession({
+      id: 'user-a',
+      email: 'ada@acme.com',
+      emailVerified: true,
+      signInProvider: 'saml.workos'
+    })
+
+    await loadPage('none')
+    await expect(visit('/user-select')).resolves.toMatchObject({
+      landed: '/cloud/login'
+    })
+    expect(assign).toHaveBeenCalledOnce()
+    expect(startedAt(0).email).toBe('ada@acme.com')
+
+    await loadPage('none')
+    await expect(visit('/user-select')).resolves.toEqual({
+      landed: '/cloud/login',
+      query: {
+        previousFullPath: encodeURIComponent('/user-select'),
+        sso: 'open'
+      }
+    })
+    expect(assign).toHaveBeenCalledOnce()
+
+    await vi.advanceTimersByTimeAsync(FIVE_MINUTES_MS)
+    await loadPage('none')
+    await visit('/user-select')
+    expect(assign).toHaveBeenCalledTimes(2)
+  })
+
+  it('shows the login page with the error when SSO comes back with sso_error', async () => {
+    rememberSignedInSession({
+      id: 'user-a',
+      email: 'ada@acme.com',
+      emailVerified: true,
+      signInProvider: 'saml.workos'
+    })
+    await loadPage('none')
+
+    const { landed, query } = await visit(
+      '/user-select?sso_error=SSO_IDP_ERROR'
+    )
+
+    expect(landed).toBe('/cloud/login')
+    expect(query.sso_error).toBe('SSO_IDP_ERROR')
+    expect(query.sso).toBeUndefined()
+    expect(assign).not.toHaveBeenCalled()
+  })
+
+  it.for([{ ssoEnabled: true }, { ssoEnabled: false }])(
+    'sends a visitor with no hint and no session to the plain login page (sso_enabled $ssoEnabled)',
+    async ({ ssoEnabled }) => {
+      await loadPage('none', ssoEnabled)
+
+      await expect(visit('/user-select')).resolves.toEqual({
+        landed: '/cloud/login',
+        query: { previousFullPath: encodeURIComponent('/user-select') }
+      })
+      expect(assign).not.toHaveBeenCalled()
+    }
+  )
+
+  it('sends a tab whose Google session lapses under it to the plain login page', async () => {
+    const server = await loadPage({ userId: 'user-a' })
+    await visit('/user-select')
+
+    server.session = 'none'
+    await vi.advanceTimersByTimeAsync(TEN_MINUTES_MS)
+
+    await vi.waitFor(() =>
+      expect(router.currentRoute.value.path).toBe('/cloud/login')
+    )
+    expect(router.currentRoute.value.query).toEqual({
+      previousFullPath: encodeURIComponent('/user-select')
+    })
+    expect(assign).not.toHaveBeenCalled()
+  })
+
+  it('sends a tab that signed out here to the plain login page', async () => {
+    await loadPage(SSO_SESSION)
+    await visit('/user-select')
+
+    await useAuthStore().logout()
+    await router.push('/cloud/login')
+    const { query } = await visit('/user-select')
+
+    expect(query.sso).toBeUndefined()
+    expect(assign).not.toHaveBeenCalled()
+  })
+})
+
+describe('an SSO account with no Firebase login (sso_enabled)', () => {
+  const STALE_API_KEY = 'stale-api-key'
+
+  const install = async (
+    session: ServerSession,
+    { sso, apiKey }: { sso: boolean; apiKey: boolean }
+  ) => {
+    const server = installServer(session, { sso_enabled: sso })
+    await refreshRemoteConfig({ useAuth: false })
+    if (apiKey) localStorage.setItem('comfy_api_key', STALE_API_KEY)
+    const authStore = useAuthStore()
+    identity.resolve(null)
+    return { server, authStore }
+  }
+
+  beforeEach(() => {
+    identity.reset()
+    firebaseSignOut.mockReset()
+    firebaseSignOut.mockImplementation(async () => identity.signOut())
+    vi.spyOn(api, 'resetSocket').mockResolvedValue()
+  })
+
+  afterEach(() => {
+    remoteConfig.value = {}
+  })
+
+  it.for<{
+    name: string
+    sso: boolean
+    session: ServerSession
+    sessionReads: string[]
+    onSession: boolean
+    sessionOnlyUserId: string | undefined
+  }>([
+    {
+      name: 'SSO on: a signed-in session wins over the key',
+      sso: true,
+      session: { userId: 'user-a' },
+      sessionReads: ['GET', 'GET'],
+      onSession: true,
+      sessionOnlyUserId: 'user-a'
+    },
+    {
+      name: 'SSO on: no session falls back to the key',
+      sso: true,
+      session: 'none',
+      sessionReads: ['GET'],
+      onSession: false,
+      sessionOnlyUserId: undefined
+    },
+    {
+      name: 'SSO on: a revoked session falls back to the key',
+      sso: true,
+      session: 'revoked',
+      sessionReads: ['GET'],
+      onSession: false,
+      sessionOnlyUserId: undefined
+    },
+    {
+      name: 'SSO off: the key wins without reading the session',
+      sso: false,
+      session: { userId: 'user-a' },
+      sessionReads: [],
+      onSession: false,
+      sessionOnlyUserId: undefined
+    }
+  ])(
+    'boot with a stored API key: $name',
+    async ({ sso, session, sessionReads, onSession, sessionOnlyUserId }) => {
+      const { server, authStore } = await install(session, {
+        sso,
+        apiKey: true
+      })
+
+      await expect(cloudSignIn()).resolves.toBe('signed_in')
+
+      expect(methodsOf(server.requests)).toEqual(sessionReads)
+      expect(useCloudWebSessionStore().isActive()).toBe(onSession)
+      expect(authStore.sessionOnlyUser?.id).toBe(sessionOnlyUserId)
+      expect(useCurrentUser().isApiKeyLogin.value).toBe(!onSession)
+    }
+  )
+
+  it.for([
+    { name: 'a stored API key', apiKey: true },
+    { name: 'no stored API key', apiKey: false }
+  ])(
+    'SSO on: a session-only tab with $name enters the app as the session user',
+    async ({ apiKey }) => {
+      const { authStore } = await install(
+        { userId: 'user-a' },
+        { sso: true, apiKey }
+      )
+      await router.push('/cloud/login')
+
+      await router.push('/user-select')
+
+      expect(router.currentRoute.value.path).toBe('/user-select')
+      expect(authStore.sessionOnlyUser?.id).toBe('user-a')
+      expect(authStore.userId).toBe('user-a')
+      expect(useCurrentUser().isApiKeyLogin.value).toBe(false)
+    }
+  )
+
+  it.for([
+    { sso: true, sessionOnlyUserId: 'user-a' },
+    { sso: false, sessionOnlyUserId: undefined }
+  ])(
+    'the session user is the session-only identity only with SSO on ($sso)',
+    async ({ sso, sessionOnlyUserId }) => {
+      const { authStore } = await install(
+        { userId: 'user-a' },
+        { sso, apiKey: false }
+      )
+      await bootCloudIdentity()
+
+      expect(authStore.sessionOnlyUser?.id).toBe(sessionOnlyUserId)
+
+      identity.signIn(USER_A)
+      expect(authStore.sessionOnlyUser).toBeUndefined()
+    }
+  )
+
+  describe('the onboarding survey', () => {
+    const bootSessionOnlyTab = async (sso: boolean) => {
+      const { server } = await install(
+        { userId: 'user-a' },
+        { sso, apiKey: false }
+      )
+      await bootCloudIdentity()
+      return server
+    }
+
+    it.for([
+      { sso: true, status: 'stored' },
+      { sso: false, status: 'cancelled' }
+    ])(
+      'is stored for the session user only with SSO on ($sso)',
+      async ({ sso, status }) => {
+        await bootSessionOnlyTab(sso)
+        const observers = identity.userObservers.size
+
+        const submission = submitSurvey({ q1: 'a' }, 'user-a')
+        expect(identity.userObservers.size).toBe(observers + 1)
+        identity.resolve(null)
+
+        await expect(submission).resolves.toMatchObject({ status })
+      }
+    )
+
+    it('is not stored once the session moves to another account', async () => {
+      const server = await bootSessionOnlyTab(true)
+      const fetchNow = fetch
+      let releaseSettings: () => void = () => {}
+      vi.stubGlobal(
+        'fetch',
+        async (input: RequestInfo | URL, init?: RequestInit) => {
+          if (String(input).includes('/settings')) {
+            await new Promise<void>((resolve) => (releaseSettings = resolve))
+          }
+          return fetchNow(input, init)
+        }
+      )
+
+      const submission = submitSurvey({ q1: 'a' }, 'user-a')
+      server.session = { userId: 'user-b' }
+      await vi.advanceTimersByTimeAsync(TEN_MINUTES_MS)
+      releaseSettings()
+
+      await expect(submission).resolves.toMatchObject({ status: 'cancelled' })
+    })
+  })
+})
+
+describe('an SSO session with no Firebase login reaching Firebase-only paths', () => {
+  const STORED_API_KEY = 'stored-api-key'
+
+  beforeEach(() => {
+    identity.reset()
+    firebaseSignOut.mockReset()
+    firebaseSignOut.mockImplementation(async () => identity.signOut())
+    vi.spyOn(api, 'resetSocket').mockResolvedValue()
+  })
+
+  afterEach(() => {
+    remoteConfig.value = {}
+    localStorage.clear()
+    clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.DESKTOP_LOGIN)
+  })
+
+  it.for([
+    { sso: true, provider: 'saml.workos', inApp: true, code: 'S' },
+    { sso: true, provider: 'oidc.workos', inApp: true, code: 'O' },
+    { sso: true, provider: 'google.com', inApp: false, code: 'G' },
+    { sso: false, provider: 'saml.workos', inApp: false, code: 'F' }
+  ])(
+    'a pending desktop login code on a $provider session-only tab (sso_enabled $sso)',
+    async ({ sso, provider, inApp, code }) => {
+      const desktopCode = `dlc_${code.repeat(43)}`
+      installServer({ userId: 'user-a', provider }, { sso_enabled: sso })
+      await refreshRemoteConfig({ useAuth: false })
+      useAuthStore()
+      identity.resolve(null)
+      await router.push('/cloud/login')
+
+      await router.push(`/user-select?desktop_login_code=${desktopCode}`)
+
+      const { path, query } = router.currentRoute.value
+      const ssoNotice = useToastStore().messagesToAdd.filter(
+        ({ summary }) =>
+          summary === "Desktop sign-in isn't available for SSO accounts yet"
+      )
+      expect({
+        path,
+        switchAccount: query.switchAccount,
+        noticed: ssoNotice.length,
+        stashedCode: getPreservedQueryParam(
+          PRESERVED_QUERY_NAMESPACES.DESKTOP_LOGIN,
+          'desktop_login_code'
+        )
+      }).toEqual(
+        inApp
+          ? {
+              path: '/user-select',
+              switchAccount: undefined,
+              noticed: 1,
+              stashedCode: undefined
+            }
+          : {
+              path: '/cloud/login',
+              switchAccount: 'true',
+              noticed: 0,
+              stashedCode: desktopCode
+            }
+      )
+    }
+  )
+
+  describe.for([{ unified: false }, { unified: true }])(
+    'the legacy auth getters (unified_cloud_auth $unified)',
+    ({ unified }) => {
+      it.for([
+        { sso: true, header: 'Bearer session-jwt-1', token: 'session-jwt-1' },
+        { sso: false, header: undefined, token: undefined }
+      ])(
+        'authorize a session-only tab on the session first (sso_enabled $sso)',
+        async ({ sso, header, token }) => {
+          installIngest({ sso_enabled: sso, unified_cloud_auth: unified })
+          await refreshRemoteConfig({ useAuth: false })
+          const authStore = useAuthStore()
+          identity.resolve(null)
+          await bootCloudIdentity()
+          expect(authStore.sessionUser?.id).toBe('user-a')
+
+          const expectedHeader = header ? { Authorization: header } : null
+          expect(await authStore.getAuthHeader()).toEqual(expectedHeader)
+          expect(await authStore.getWorkspaceAuthHeader()).toEqual(
+            expectedHeader
+          )
+          expect(await authStore.getAuthToken()).toBe(token)
+        }
+      )
+    }
+  )
+
+  const signInWithFirebase = async () => {
+    await useAuthStore().login('user-a@example.com', 'password')
+  }
+  const signInWithSessionOnly = async () => {
+    identity.resolve(null)
+  }
+
+  it.for([
+    {
+      sso: true,
+      login: 'session',
+      signIn: signInWithSessionOnly,
+      keyKept: false
+    },
+    {
+      sso: true,
+      login: 'firebase',
+      signIn: signInWithFirebase,
+      keyKept: false
+    },
+    { sso: false, login: 'firebase', signIn: signInWithFirebase, keyKept: true }
+  ])(
+    'a stored API key outlives a $login sign-out only with SSO off (sso_enabled $sso)',
+    async ({ sso, signIn, keyKept }) => {
+      installServer({ userId: 'user-a' }, { sso_enabled: sso })
+      await refreshRemoteConfig({ useAuth: false })
+      localStorage.setItem('comfy_api_key', STORED_API_KEY)
+      const authStore = useAuthStore()
+      await signIn()
+      await bootCloudIdentity()
+      expect(authStore.isAuthenticated).toBe(true)
+
+      await authStore.logout()
+
+      expect(authStore.isAuthenticated).toBe(false)
+      expect(useApiKeyAuthStore().getApiKey()).toBe(
+        keyKept ? STORED_API_KEY : null
+      )
+    }
+  )
+})

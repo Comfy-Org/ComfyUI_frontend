@@ -6,6 +6,18 @@ and renaming a widget after it's added leaves its stored value behind.
 `node.widgets` can also be `undefined` until it's first assigned, and only
 registered widgets participate in the store.
 
+## Gallery values after the PrimeVue replacement
+
+The Vue `galleria` widget accepts an array of image URL strings, matching the
+`GALLERIA` input schema. Multiple images show thumbnails and previous/next
+buttons. Navigation stops at the first and last image.
+
+PrimeVue image objects with `itemImageSrc` or `thumbnailImageSrc` are no longer
+supported. Convert them to URL strings. The widget no longer reads PrimeVue
+options such as `showThumbnails`, `showItemNavigators`, `circular`, `autoPlay`,
+`transitionInterval`, `showIndicators`, `numVisible`, or `responsiveOptions`.
+Extensions that need these controls must supply their own gallery widget.
+
 ## Widget names must be unique and stable
 
 Two widgets on the same node cannot share a name. Adding a second widget with

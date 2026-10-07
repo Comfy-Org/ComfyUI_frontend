@@ -44,9 +44,24 @@ function mountHistory(
       historyGroups: {
         ...createHistoryGroups(),
         today: [
-          { id: 'first', title: 'First chat', updatedAt: 1 },
-          { id: 'second', title: 'Second chat', updatedAt: 2 },
-          { id: 'previous', title: 'Previous chat', updatedAt: 3 }
+          {
+            id: 'first',
+            title: 'First chat',
+            updatedAt: 1,
+            titleSource: 'server'
+          },
+          {
+            id: 'second',
+            title: 'Second chat',
+            updatedAt: 2,
+            titleSource: 'server'
+          },
+          {
+            id: 'previous',
+            title: 'Previous chat',
+            updatedAt: 3,
+            titleSource: 'server'
+          }
         ]
       },
       selectHistory

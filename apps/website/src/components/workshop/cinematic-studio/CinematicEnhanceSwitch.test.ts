@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import { h, ref } from 'vue'
 
-import { translationsFor } from '../../../i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import CinematicEnhanceSwitch from './CinematicEnhanceSwitch.vue'
 
 const { t: tc } = translationsFor('en')

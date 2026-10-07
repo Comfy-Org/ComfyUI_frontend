@@ -11,28 +11,28 @@ import {
 } from 'vitest'
 import { computed, markRaw, readonly, ref, shallowRef } from 'vue'
 
-import { subscribeToWorkshopBuyCredits } from '../../config/workshop-buy-credits'
-import { useWorkshopModelBalance } from '../../config/workshop-model-balance'
-import type { WorkshopSession } from '../../config/workshop-session-state'
-import { useWorkshopSession } from '../../config/workshop-session-state'
-import { WorkshopWorkflowError } from '../../config/workshop-workflow-api'
-import type { WorkflowState } from '../../config/workshop-workflow-state'
-import { workflowDetailsBySlug } from '../../config/workshop-workflow-content'
-import { useWorkflowRun } from '../../composables/useWorkflowRun'
+import { subscribeToWorkshopBuyCredits } from '@/config/workshop-buy-credits'
+import { useWorkshopModelBalance } from '@/config/workshop-model-balance'
+import type { WorkshopSession } from '@/config/workshop-session-state'
+import { useWorkshopSession } from '@/config/workshop-session-state'
+import { WorkshopWorkflowError } from '@/config/workshop-workflow-api'
+import type { WorkflowState } from '@/config/workshop-workflow-state'
+import { workflowDetailsBySlug } from '@/config/workshop-workflow-content'
+import { useWorkflowRun } from '@/composables/useWorkflowRun'
 import {
   captureWorkshopEvent,
   useWorkshopEnabled,
   useWorkshopWorkflowsEnabled
-} from '../../scripts/posthog'
+} from '@/scripts/posthog'
 import WorkflowPlayground from './WorkflowPlayground.vue'
 
-vi.mock(import('../../config/workshop-session-state'))
-vi.mock(import('../../config/workshop-credits'))
-vi.mock(import('../../config/workshop-model-balance'), () => ({
+vi.mock(import('@/config/workshop-session-state'))
+vi.mock(import('@/config/workshop-credits'))
+vi.mock(import('@/config/workshop-model-balance'), () => ({
   useWorkshopModelBalance: vi.fn()
 }))
-vi.mock(import('../../composables/useWorkflowRun'))
-vi.mock(import('../../scripts/posthog'))
+vi.mock(import('@/composables/useWorkflowRun'))
+vi.mock(import('@/scripts/posthog'))
 
 beforeEach(() => {
   vi.mocked(useWorkshopModelBalance).mockReturnValue(

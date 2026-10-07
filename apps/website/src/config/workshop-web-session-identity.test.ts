@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { testFirebaseUser } from './__fixtures__/workshopSessionFakes'
 import { WORKSHOP_CLOUD_BASE_URL } from './workshop-env'
 
-vi.mock(import('../scripts/posthog'))
+vi.mock(import('@/scripts/posthog'))
 vi.mock(import('./workshop-firebase'))
 
 const SESSION = `${WORKSHOP_CLOUD_BASE_URL}/api/auth/session`
@@ -18,6 +18,7 @@ function liveSession(userId: string): Answer {
     status: 200,
     body: {
       absolute_expires_at: '2099-01-01T00:00:00Z',
+      has_personal_workspace: true,
       expires_at: '2099-01-01T00:00:00Z',
       csrf_token: 'csrf',
       user: { id: userId, email: 'a@b.c', email_verified: true }
@@ -71,7 +72,7 @@ async function loadModules(firebaseUid: string | undefined) {
     return () => {}
   })
   const { workshopIdentity } = await import('./workshop-account')
-  const { captureWebSessionEvent } = await import('../scripts/posthog')
+  const { captureWebSessionEvent } = await import('@/scripts/posthog')
   await import('@comfyorg/account-core/requestAuth')
   return {
     signOutWorkshop: vi.mocked(firebase.signOutWorkshop),

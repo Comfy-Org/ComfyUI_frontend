@@ -101,7 +101,7 @@ export const useCurrentUser = () => {
   })
 
   const isEmailProvider = computed(() => {
-    if (isApiKeyLogin.value) {
+    if (isApiKeyLogin.value || authStore.signedInWithSso) {
       return false
     }
     const firebaseUser = firebaseForSession.value
