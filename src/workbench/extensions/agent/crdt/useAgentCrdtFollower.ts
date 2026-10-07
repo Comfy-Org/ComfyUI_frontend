@@ -417,6 +417,7 @@ function startAgentCrdtFollower(
   const rejectedOpNotifier = createRejectedOpNotifier()
   const projection = new AgentCrdtProjection(getGraph, applierDeps)
   const pendingRejected = new Map<string, Op[]>()
+  const MAX_PENDING_REJECTED_OPS = 10_000
 
   const trackAcknowledgedDeletes = (
     outcome: Extract<BatchOutcome, { state: 'acknowledged' }>
@@ -437,10 +438,8 @@ function startAgentCrdtFollower(
     if (workflowId === null) return
     if (ops.length === 0) return
     if (!isCurrentWorkflow(workflowId) || !getGraph()) {
-      pendingRejected.set(workflowId, [
-        ...(pendingRejected.get(workflowId) ?? []),
-        ...ops
-      ])
+      const pending = [...(pendingRejected.get(workflowId) ?? []), ...ops]
+      pendingRejected.set(workflowId, pending.slice(-MAX_PENDING_REJECTED_OPS))
       return
     }
     reportMaterialized(workflowId, projection.revertRejected(workflowId, ops))

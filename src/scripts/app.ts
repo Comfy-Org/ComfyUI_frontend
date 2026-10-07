@@ -1329,11 +1329,12 @@ export class ComfyApp {
       workflowNavigationId
     } = options
     useWorkflowService().beforeLoadNewGraph(clean)
-    const endGraphLoad = ChangeTracker.beginGraphLoad()
+    let endGraphLoad: (() => void) | undefined
     let reset_invalid_values = false
     const missingNodeTypes: MissingNodeType[] = []
     try {
       await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
+      endGraphLoad = ChangeTracker.beginGraphLoad()
       useExecutionErrorStore().setActiveGraph(null)
 
       if (skipAssetScans) {
@@ -1490,7 +1491,7 @@ export class ComfyApp {
           workflowNavigationId
         )
       } finally {
-        endGraphLoad()
+        endGraphLoad?.()
       }
       return false
     }
@@ -1688,6 +1689,11 @@ export class ComfyApp {
         effectiveShareId
       )
       await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
+      // Configuration and its lifecycle hooks are complete. Asset scans below
+      // can await the network while the canvas is interactive, so they must
+      // not keep real user edits classified as load noise.
+      endGraphLoad()
+      endGraphLoad = undefined
       // Capture the workflow this load activated before the asset-scan awaits
       // below can hand control back and let the user switch to another one.
       activatedWorkflow = useWorkflowStore().activeWorkflow ?? undefined
@@ -1755,7 +1761,7 @@ export class ComfyApp {
         'workflow-load',
         workflowNavigationId
       )
-      endGraphLoad()
+      endGraphLoad?.()
       // The retirement watcher skips transitions made during the load.
       useExecutionErrorStore().retireResolvedMissingNodePromptError()
       reconcileResourceErrors?.()

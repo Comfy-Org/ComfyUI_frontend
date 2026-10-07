@@ -366,6 +366,39 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
     )
   })
 
+  it('keeps host updates flowing after the same interior edit reaches live and document state', () => {
+    const state = startFollower()
+    const liveInterior = state.instance.subgraph.nodes[0]
+    const liveWidget = liveInterior.widgets?.[0]
+    assert.exists(liveWidget)
+
+    forwardRaw(
+      state,
+      (nodes) => {
+        liveWidget.value = 77
+        const definition = state.hostDoc
+          .getMap<unknown>('definitions')
+          .get(state.instance.type)
+        assert.instanceOf(definition, Y.Map)
+        const interiorNodes = definition.get('nodes')
+        assert.instanceOf(interiorNodes, Y.Map)
+        const [interior] = [...interiorNodes.values()]
+        assert.instanceOf(interior, Y.Map)
+        interior.set(OPAQUE_WIDGETS_KEY, [77])
+        nodes.get('1')!.set(OPAQUE_WIDGETS_KEY, [42])
+      },
+      1
+    )
+
+    expect(state.instance.widgets[0]?.value).toBe(42)
+    expect(reportError).not.toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'agent_subgraph_definition_changed'
+      })
+    )
+  })
+
   it('S1z runs the host widget hooks on an accepted promoted write', () => {
     const state = startFollower()
     const widget = state.instance.widgets[0]

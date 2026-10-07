@@ -14,7 +14,7 @@ import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { withGraphIntentSource } from '@/lib/litegraph/src/graphIntents'
 import { detachSerialisedLinks } from '@/lib/litegraph/src/linkDeduplication'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import { topologicalSortSubgraphs } from '@/lib/litegraph/src/subgraph/subgraphDeduplication'
 import type {
   ExportedSubgraph,
@@ -523,7 +523,7 @@ function floorSizeToContent(node: LGraphNode): void {
 }
 
 interface DefinitionState {
-  live: object
+  live: Subgraph
   semantics: unknown
   layout: ReturnType<typeof definitionPromotedLayout>
   conflicted: boolean
@@ -543,6 +543,8 @@ function runtimeNodeSemantics(
     color: _color,
     bgcolor: _bgcolor,
     showAdvanced: _showAdvanced,
+    widgets_values: _widgetValues,
+    widgets_values_named: _namedWidgetValues,
     ...runtime
   } = node
   return runtime
@@ -581,10 +583,16 @@ function updateDefinitionConflict(
   definition: ExportedSubgraph,
   layout: DefinitionState['layout']
 ): boolean {
-  state.conflicted ||= !isEqual(
-    state.semantics,
-    definitionSemantics(definition)
-  )
+  const semantics = definitionSemantics(definition)
+  if (!isEqual(state.semantics, semantics)) {
+    const liveSemantics = definitionSemantics(state.live.asSerialisable())
+    if (isEqual(liveSemantics, semantics)) {
+      state.semantics = semantics
+      state.layout = layout
+      return state.conflicted
+    }
+    state.conflicted = true
+  }
   if (state.layout === null) {
     if (!state.conflicted && layout !== null) state.layout = layout
     return state.conflicted
@@ -1161,7 +1169,9 @@ export class LiveGraphApplier {
   ) {
     if (widget.type === 'button' || Object.is(widget.value, value)) return
     const previous = widget.value
-    writeWidgetValue(node, widget, value)
+    this.invokeWidgetHook(node, widget, value, 'widget-property', () =>
+      writeWidgetValue(node, widget, value)
+    )
     this.invokeWidgetHook(node, widget, value, 'widget-callback', () =>
       widget.callback?.(value, this.deps.getCanvas?.() ?? undefined, node)
     )
@@ -1192,7 +1202,7 @@ export class LiveGraphApplier {
         'agent_graph_widget_callback_failed',
         { nodeId: node.id, widget: widget.name }
       )
-      writeWidgetValue(node, widget, value)
+      restoreWidgetValue(node, widget, value)
     }
   }
 
@@ -1359,6 +1369,18 @@ function writeWidgetValue(
   }
   widget.value = value
   node.setProperty(property, value)
+}
+
+/** Restore document state without re-entering extension-owned hooks. */
+function restoreWidgetValue(
+  node: LGraphNode,
+  widget: IBaseWidget,
+  value: WidgetValue
+): void {
+  widget.value = value
+  const property = widget.options.property
+  if (property && node.properties[property] !== undefined)
+    node.properties[property] = value
 }
 
 function applyAppearance(node: LGraphNode, source: ISerialisedNode): void {

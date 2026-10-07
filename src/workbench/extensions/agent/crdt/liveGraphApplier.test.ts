@@ -270,6 +270,40 @@ describe('LiveGraphApplier', () => {
     )
   })
 
+  it('keeps applying after a mirrored property hook throws', () => {
+    const { graph, doc, applyCollected, applyEdit } = setup({
+      nodes: [sourceNode(1)],
+      links: []
+    })
+    applyCollected()
+    const node = graph.getNodeById(toNodeId(1))
+    const widget = node?.widgets?.[0]
+    if (!node || !widget) throw new Error('node 1 was not created')
+    node.properties.steps = 20
+    widget.options.property = 'steps'
+    node.onPropertyChanged = () => {
+      node.properties.steps = 999
+      throw new Error('property hook exploded')
+    }
+    widget.callback = vi.fn()
+
+    applyEdit(() => {
+      const widgets = nodesMap(doc).get('1')?.get('widgets')
+      if (!(widgets instanceof Y.Map)) throw new Error('named storage')
+      widgets.set('steps', 35)
+    })
+
+    expect(widget.value).toBe(35)
+    expect(node.properties.steps).toBe(35)
+    expect(widget.callback).toHaveBeenCalled()
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'property hook exploded' }),
+      expect.objectContaining({
+        errorType: 'agent_graph_widget_callback_failed'
+      })
+    )
+  })
+
   it('mints a later local link above every document link id', () => {
     const { graph, applyCollected } = setup({
       nodes: [sourceNode(1), sinkNode(2), sourceNode(3), sinkNode(4)],

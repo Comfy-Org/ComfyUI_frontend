@@ -197,10 +197,9 @@ function readInteriorNode(source: unknown): Record<string, unknown> | null {
     if (key === NODE_INCARNATION || !isReadableKey(key)) return
     if (key === 'widgets' && value instanceof Y.Map) {
       node.widgets_values_named = Object.fromEntries(
-        [...value.entries()].map(([name, widgetValue]) => [
-          name,
-          plain(widgetValue)
-        ])
+        [...value.entries()].flatMap(([name, widgetValue]) =>
+          isReadableKey(name) ? [[name, plain(widgetValue)]] : []
+        )
       )
     } else if (key === OPAQUE_WIDGETS_KEY) {
       node.widgets_values = plain(value)

@@ -255,10 +255,7 @@ describe('readSubgraphDefinitions', () => {
     })
     expect(Object.getPrototypeOf(named)).toBe(Object.prototype)
     expect(named).not.toHaveProperty('polluted')
-    expect(Object.hasOwn(named ?? {}, '__proto__')).toBe(true)
-    expect(Reflect.get(named ?? {}, '__proto__')).toEqual({
-      polluted: 'named-widget'
-    })
+    expect(Object.hasOwn(named ?? {}, '__proto__')).toBe(false)
     expect(Object.keys(nested)).toContain('__proto__')
     expect(widgets.get('__proto__')).toEqual({ polluted: 'named-widget' })
     expect(Y.encodeStateAsUpdate(doc)).toEqual(before)

@@ -513,6 +513,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
   // character typed into a drifted host.
   const reportedDrift = new Set<string>()
   const lastRefusalNotification = new Map<string, number>()
+  let reportedBinding: string | null = null
   let flushScheduled = false
   let detached = false
 
@@ -531,6 +532,14 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     if (flushScheduled) return
     flushScheduled = true
     queueMicrotask(flush)
+  }
+
+  function resetReportsForCurrentBinding(): void {
+    const binding = currentBindingIdentity()
+    if (binding === reportedBinding) return
+    reportedBinding = binding
+    reportedDrift.clear()
+    lastRefusalNotification.clear()
   }
 
   function materializePending(
@@ -617,6 +626,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
   }
 
   function mintSetWidget(event: IntentOf<'set_widget'>): void {
+    resetReportsForCurrentBinding()
     const key = nodeKey(event.graphId, event.nodeId)
     if (pendingAdds.has(key)) return
     const graph = deps.getGraph()
