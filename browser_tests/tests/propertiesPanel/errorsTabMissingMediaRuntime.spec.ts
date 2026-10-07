@@ -762,16 +762,11 @@ cloudOutputTest.describe(
         const missingMediaRows = comfyPage.page.getByTestId(
           TestIds.dialogs.missingMediaRow
         )
-        for (const name of [
+        await expect(missingMediaRows).toHaveText([
           'Load Image - image',
           'Load Video - file',
           'Load Audio - audio'
-        ]) {
-          await expect(
-            missingMediaRows.getByRole('button', { name, exact: true })
-          ).toBeVisible()
-        }
-        await expect(missingMediaRows).toHaveCount(3)
+        ])
       }
     )
   }
