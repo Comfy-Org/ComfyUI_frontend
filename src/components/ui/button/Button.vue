@@ -32,6 +32,7 @@ const {
     :as-child
     :disabled="disabled || loading"
     :aria-busy="loading || undefined"
+    :data-variant="variant"
     :class="cn(buttonVariants({ variant, size }), customClass)"
   >
     <i v-if="loading" class="pi pi-spin pi-spinner" aria-hidden="true" />

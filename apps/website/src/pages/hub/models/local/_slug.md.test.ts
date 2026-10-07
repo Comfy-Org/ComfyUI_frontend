@@ -26,9 +26,9 @@ function render(model: Model, site?: URL) {
 }
 
 describe('getStaticPaths', () => {
-  it('generates a path per model and skips 301 aliases', () => {
+  it('generates a path per model file and skips aliases and partner pages', () => {
     const slugs = new Set(getStaticPaths().map((p) => p.params.slug))
-    expect(slugs.has(partner.slug)).toBe(true)
+    expect(slugs.has(partner.slug)).toBe(false)
     expect(slugs.has(open.slug)).toBe(true)
     for (const alias of models.filter((m) => m.canonicalSlug)) {
       expect(slugs.has(alias.slug)).toBe(false)
@@ -42,16 +42,14 @@ describe('GET', () => {
     expect(res.headers.get('Content-Type')).toContain('text/markdown')
     const body = await res.text()
     expect(body).toContain(`# ${open.displayName} in ComfyUI`)
-    expect(body).toContain(
-      `https://example.org/p/supported-models/${open.slug}`
-    )
+    expect(body).toContain(`https://example.org/hub/models/local/${open.slug}`)
   })
 
   it('leads with front matter and ends with the agent run paths', async () => {
     const body = await render(open, new URL('https://example.org')).text()
     expect(body.startsWith('---\ntitle: "')).toBe(true)
     expect(body).toContain(
-      `canonical: https://example.org/p/supported-models/${open.slug}/\nlang: en\nindex: https://example.org/llms.txt\n---`
+      `canonical: https://example.org/hub/models/local/${open.slug}/\nlang: en\nindex: https://example.org/llms.txt\n---`
     )
     expect(body).toContain('https://docs.comfy.org/agent-tools/cli.md')
     expect(body).toContain('https://cloud.comfy.org/mcp')
@@ -59,7 +57,7 @@ describe('GET', () => {
 
   it('falls back to comfy.org when no site is configured', async () => {
     const body = await render(open).text()
-    expect(body).toContain(`https://comfy.org/p/supported-models/${open.slug}`)
+    expect(body).toContain(`https://comfy.org/hub/models/local/${open.slug}`)
   })
 
   it('gives partner models the provider-API run path and pricing section', async () => {

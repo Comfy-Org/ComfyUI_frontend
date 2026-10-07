@@ -1,9 +1,9 @@
-// llms.txt for the supported-models section: a machine-readable catalog of
-// every model page, each pointing at its markdown twin.
+// llms.txt for the model files section: a machine-readable catalog of every
+// model file page, each pointing at its markdown twin.
 import type { APIRoute } from 'astro'
 
 import { dirLabels } from '@/config/model-descriptions'
-import { models } from '@/config/models'
+import { localModelTwinPath, localModels } from '@/config/local-models'
 import { getRoutes } from '@/config/routes'
 
 export const GET: APIRoute = ({ site }) => {
@@ -12,15 +12,14 @@ export const GET: APIRoute = ({ site }) => {
   const lines = [
     '# Supported models in ComfyUI',
     '',
-    "> Every model on this list runs in ComfyUI. Open models run locally on your own hardware or on Comfy Cloud; partner models run through partner nodes with inference on the provider's API. Pages under Models have a markdown twin at the same URL plus `.md`; the Latest model launches links are HTML launch pages without twins.",
+    '> Every model file on this list runs in ComfyUI, locally on your own hardware or on Comfy Cloud. Hosted models you call through an API are listed at https://comfy.org/hub/models/. Pages under Models have a markdown twin at the same URL plus `.md`; the Latest model launches links are HTML launch pages without twins.',
     '',
     '## Models',
     ''
   ]
 
-  for (const model of models) {
-    if (model.canonicalSlug) continue
-    const mdUrl = new URL(`/p/supported-models/${model.slug}.md`, base).href
+  for (const model of localModels) {
+    const mdUrl = new URL(localModelTwinPath(model.slug), base).href
     const label = dirLabels[model.directory] ?? model.directory
     const templates = `${model.workflowCount} workflow template${model.workflowCount === 1 ? '' : 's'}`
     lines.push(`- [${model.displayName}](${mdUrl}): ${label}, ${templates}`)
