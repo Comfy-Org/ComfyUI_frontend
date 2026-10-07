@@ -96,6 +96,9 @@ describe('hreflangAlternates', () => {
     '/affiliates/terms/',
     '/enterprise-msa/',
     '/terms-of-service/',
+    '/privacy-policy/',
+    '/zh-CN/privacy-policy/',
+    '/booking-confirmation/',
     '/zh-CN/terms-of-service/',
     '/p/supported-models/',
     '/p/supported-models/flux-1-dev/',
@@ -119,6 +122,28 @@ describe('hreflangAlternates', () => {
 
 describe('localeAlternates', () => {
   it.for([
+    {
+      pathname: '/privacy-policy/',
+      expected: [
+        { locale: 'en', path: '/privacy-policy/' },
+        { locale: 'zh-CN', path: '/zh-CN/privacy-policy/' }
+      ]
+    },
+    {
+      pathname: '/zh-CN/privacy-policy/',
+      expected: [
+        { locale: 'en', path: '/privacy-policy/' },
+        { locale: 'zh-CN', path: '/zh-CN/privacy-policy/' }
+      ]
+    },
+    {
+      pathname: '/booking-confirmation/',
+      expected: [
+        { locale: 'en', path: '/booking-confirmation/' },
+        { locale: 'zh-CN', path: '/zh-CN/booking-confirmation/' }
+      ]
+    },
+    { pathname: '/terms-of-service/', expected: [] },
     {
       pathname: '/cli/',
       expected: [

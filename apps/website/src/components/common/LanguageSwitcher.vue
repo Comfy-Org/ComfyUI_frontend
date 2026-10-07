@@ -24,7 +24,7 @@ const { t } = translationsFor(locale)
           :aria-current="alternate.locale === locale ? 'page' : undefined"
           :class="
             cn(
-              'text-sm transition-colors hover:text-primary-warm-white',
+              'block py-1.5 text-sm transition-colors hover:text-primary-warm-white',
               alternate.locale === locale && 'underline underline-offset-4'
             )
           "

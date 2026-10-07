@@ -35,7 +35,7 @@ export function localeAlternates(pathname: string): LocaleAlternate[] {
     const path = withRouteSlash(
       `${LOCALES[locale].prefix}${en === '/' ? '' : en}`
     )
-    return isNoindexPathname(path) ? [] : [{ locale, path }]
+    return [{ locale, path }]
   })
 }
 
@@ -43,7 +43,9 @@ export function hreflangAlternates(
   pathname: string,
   origin: string
 ): Alternate[] {
-  const locales = localeAlternates(pathname)
+  const locales = localeAlternates(pathname).filter(
+    ({ path }) => !isNoindexPathname(path)
+  )
   // A cluster needs at least one translation to link to; a lone indexable
   // page (or one whose only published locale is itself noindexed, like
   // /comfy-agent) has nothing to pair with, so hreflang has nothing to say.
