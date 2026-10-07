@@ -30,7 +30,9 @@ describe('ChangelogMarkdown', () => {
     ['a style block', '<style>body{display:none}</style>', ''],
     ['a script block', '<script>window.bad = true</script>', '']
   ] as const)('renders %s as allowlisted markup', ([, markdown, html]) => {
-    const { container } = render(ChangelogMarkdown, { props: { markdown } })
-    expect(container.firstElementChild?.innerHTML.trim()).toBe(html)
+    const { html: rendered } = render(ChangelogMarkdown, {
+      props: { markdown }
+    })
+    expect(rendered().replace(/\n\s*/g, '')).toBe(`<div>${html}</div>`)
   })
 })
