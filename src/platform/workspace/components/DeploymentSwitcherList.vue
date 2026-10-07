@@ -69,8 +69,10 @@ const canFollow = computed(
   () => defaultDeploymentId.value !== null && !followsWorkspace.value
 )
 const followCaption = computed(() =>
-  t('deploymentSwitcher.followWorkspaceCaption', {
-    deployment: defaultLabel.value
-  })
+  t(
+    'deploymentSwitcher.followWorkspaceCaption',
+    { deployment: defaultLabel.value },
+    { escapeParameter: false }
+  )
 )
 </script>

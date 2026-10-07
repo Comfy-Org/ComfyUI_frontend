@@ -172,9 +172,11 @@ const note = computed(() => {
 const changeMessage = computed(() =>
   changeSinceBoot.value === 'release'
     ? t('deploymentSwitcher.releaseChanged')
-    : t('deploymentSwitcher.deploymentChanged', {
-        deployment: currentLabel.value
-      })
+    : t(
+        'deploymentSwitcher.deploymentChanged',
+        { deployment: currentLabel.value },
+        { escapeParameter: false }
+      )
 )
 
 function reloadPage() {
