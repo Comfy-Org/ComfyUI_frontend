@@ -1065,9 +1065,9 @@ export const useAgentConversationStore = defineStore(
       turn: LiveTurn,
       pendingAskId?: string,
       protectedAskIds: ReadonlySet<string> = new Set()
-    ): void {
+    ): string[] {
       const message = liveTurnMessage(turn)
-      if (message === null) return
+      if (message === null) return []
       const stale = message.parts.flatMap((part) =>
         part.type === 'runApproval' &&
         (pendingAskId === undefined || part.askId !== pendingAskId) &&
@@ -1078,6 +1078,7 @@ export const useAgentConversationStore = defineStore(
           : []
       )
       for (const askId of stale) retireAsk(askId, turn.threadId, false)
+      return stale
     }
 
     /**
@@ -1183,7 +1184,9 @@ export const useAgentConversationStore = defineStore(
       if (activeSlot.value) rememberDepartedActiveTurn('no-live-turn')
       disposeActiveAndSettledTransports()
       clearActive()
-      const transcript = normalizeAgentTranscript(history)
+      const transcript = normalizeAgentTranscript(history, (askId) =>
+        isAskRetired(askId)
+      )
       // Only the card is retired, never the turn: answering it is what lets
       // the turn RESUME, so it is still live and still needs a transport, or
       // every frame of the rest of it is dropped and the row stays "Working…"
