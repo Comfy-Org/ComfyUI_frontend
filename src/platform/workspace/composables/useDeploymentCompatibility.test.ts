@@ -344,6 +344,38 @@ describe('useDeploymentCompatibility', () => {
     expect(markFor(null)).toEqual({ kind: 'runs' })
   })
 
+  it.for([
+    {
+      change: 'moves to a new Release',
+      moved: { ...deployment('dep-building'), release_id: 'r-new' }
+    },
+    {
+      change: 'finishes building',
+      moved: { ...deployment('dep-building'), status: 'running' }
+    }
+  ])(
+    'asks again and shows the new answer when a deployment $change',
+    async ({ moved }) => {
+      const { markFor } = setup()
+      await settle()
+      expect(markFor('dep-building')).toEqual({ kind: 'unknown' })
+
+      vi.mocked(workspaceApi.checkDeploymentCompatibility).mockResolvedValue({
+        ...answer,
+        deployments: [{ deployment_id: 'dep-building', missing_node_types: [] }]
+      })
+      useDeploymentPickStore().state = ready([
+        deployment('dep-rgthree'),
+        deployment('dep-plain'),
+        moved
+      ])
+      await settle()
+
+      expect(workspaceApi.checkDeploymentCompatibility).toHaveBeenCalledTimes(2)
+      expect(markFor('dep-building')).toEqual({ kind: 'runs' })
+    }
+  )
+
   it('ignores an answer for node types the workflow no longer has', async () => {
     let answerFirst!: (value: DeploymentCompatibility) => void
     vi.mocked(workspaceApi.checkDeploymentCompatibility)

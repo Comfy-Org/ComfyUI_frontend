@@ -104,7 +104,8 @@ export const useDeploymentCompatibility = createSharedComposable(() => {
 
   /**
    * What the current answer must be for: null when there is nothing to ask.
-   * Deployment ids are part of it so a newly listed deployment gets checked.
+   * Each deployment's Release and status are part of it, so a new deployment,
+   * one moved to another Release, or one that finishes building gets checked.
    */
   const request = computed(() => {
     const workspaceId = workspaceStore.workspaceId
@@ -117,7 +118,7 @@ export const useDeploymentCompatibility = createSharedComposable(() => {
       nodeTypes: nodeTypes.value,
       key: JSON.stringify([
         workspaceId,
-        deployments.value.map((d) => d.deployment_id),
+        deployments.value.map((d) => [d.deployment_id, d.release_id, d.status]),
         nodeTypes.value
       ])
     }
