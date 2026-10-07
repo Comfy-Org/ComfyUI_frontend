@@ -66,15 +66,22 @@ export function lastList(modelPath: string): ListReturn | undefined {
   }
 }
 
-function isStoredReturn(value: unknown): value is StoredReturn {
-  if (!value || typeof value !== 'object') return false
-  if (!('href' in value) || !('modelPath' in value)) return false
-  const label = 'label' in value ? value.label : undefined
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
+
+function isSameSitePath(href: unknown): href is string {
   return (
-    typeof value.href === 'string' &&
-    value.href.startsWith('/') &&
-    !value.href.startsWith('//') &&
-    typeof value.modelPath === 'string' &&
+    typeof href === 'string' && href.startsWith('/') && !href.startsWith('//')
+  )
+}
+
+function isStoredReturn(value: unknown): value is StoredReturn {
+  if (!isRecord(value)) return false
+  const { href, label, modelPath } = value
+  return (
+    isSameSitePath(href) &&
+    typeof modelPath === 'string' &&
     (label === undefined || typeof label === 'string')
   )
 }

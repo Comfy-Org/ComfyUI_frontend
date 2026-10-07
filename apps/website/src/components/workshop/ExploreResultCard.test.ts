@@ -59,13 +59,24 @@ describe('ExploreResultCard', () => {
   })
 
   it.for([
-    { href: '/hub/apps/cinematic-studio/', links: 1, target: '_blank' },
-    { href: undefined, links: 0, target: undefined }
+    {
+      href: '/hub/apps/cinematic-studio/',
+      newTab: true,
+      links: 1,
+      target: '_blank'
+    },
+    {
+      href: '/hub/workflows/relight/',
+      newTab: false,
+      links: 1,
+      target: undefined
+    },
+    { href: undefined, newTab: true, links: 0, target: undefined }
   ])(
     'opens an app in a tab of its own, and nothing for one still coming ($href)',
-    ({ href, links, target }) => {
+    ({ href, newTab, links, target }) => {
       render(ExploreResultCard, {
-        props: { href, newTab: true, kind: 'app', name: 'Relight', pills: [] }
+        props: { href, newTab, kind: 'app', name: 'Relight', pills: [] }
       })
 
       expect(screen.queryAllByRole('link')).toHaveLength(links)

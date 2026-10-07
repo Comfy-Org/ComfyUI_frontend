@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
+import { computed } from 'vue'
 
 import type { WorkshopModel } from '@/config/models-catalogue'
 import type { Locale } from '@/i18n/translations'
@@ -34,6 +35,13 @@ const {
   locale?: Locale
 }>()
 
+const linkAttrs = computed(() => {
+  if (!href) return { 'aria-disabled': 'true' as const }
+  return newTab ? { href, target: '_blank', rel: 'noopener' } : { href }
+})
+
+const hasTags = computed(() => Boolean(kind || pills.length || access.length))
+
 const pillClass =
   'inline-flex h-6 w-fit shrink-0 items-center justify-center rounded-full bg-hub-surface px-3 py-1 text-xs font-normal whitespace-nowrap text-content'
 </script>
@@ -41,10 +49,7 @@ const pillClass =
 <template>
   <component
     :is="href ? 'a' : 'div'"
-    :href
-    :target="href && newTab ? '_blank' : undefined"
-    :rel="href && newTab ? 'noopener' : undefined"
-    :aria-disabled="href ? undefined : 'true'"
+    v-bind="linkAttrs"
     :class="
       cn(
         'group flex h-full flex-col gap-3 overflow-hidden rounded-3xl bg-hub-surface p-2 pb-4',
@@ -71,7 +76,7 @@ const pillClass =
         {{ name }}
       </span>
       <span
-        v-if="kind || pills.length || access.length"
+        v-if="hasTags"
         class="flex h-6 min-w-0 items-center gap-1.5 overflow-hidden"
         data-testid="explore-pills"
       >

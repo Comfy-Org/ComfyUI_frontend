@@ -3,6 +3,8 @@ import { cn } from '@comfyorg/tailwind-utils'
 import BrandButton from '@/components/common/BrandButton.vue'
 import { translationsFor } from '@/i18n/translations'
 
+import { modelHeroActions } from './modelHeroActions'
+
 const { t } = translationsFor('en')
 const {
   displayName,
@@ -25,9 +27,13 @@ const {
   localFile?: boolean
 }>()
 
-const workflowsUrl = hubSlug
-  ? `https://comfy.org/workflows/model/${hubSlug}/`
-  : null
+const actions = modelHeroActions({
+  huggingFaceUrl,
+  docsUrl,
+  hubSlug,
+  directory,
+  localFile
+})
 
 const dirDisplayMap: Record<string, string> = {
   diffusion_models: 'Diffusion Model',
@@ -46,7 +52,6 @@ const dirDisplayMap: Record<string, string> = {
 }
 
 const eyebrow = dirDisplayMap[directory] ?? directory
-const isPartnerNode = directory === 'partner_nodes'
 </script>
 
 <template>
@@ -73,65 +78,19 @@ const isPartnerNode = directory === 'partner_nodes'
         {{ t('models.hero.workflowCount', { count: workflowCount }) }}
       </p>
 
-      <div v-if="localFile" class="flex flex-col gap-3 sm:flex-row">
+      <div class="flex flex-col gap-3 sm:flex-row">
         <BrandButton
-          v-if="huggingFaceUrl"
-          :href="huggingFaceUrl"
-          target="_blank"
-          rel="noopener noreferrer"
-          variant="solid"
+          v-for="action in actions"
+          :key="action.labelKey"
+          :href="action.href"
+          :target="action.external ? '_blank' : undefined"
+          :rel="action.external ? 'noopener noreferrer' : undefined"
+          :variant="action.variant"
           size="lg"
           class="w-full uppercase sm:w-auto sm:min-w-48"
-          data-testid="model-file-download"
+          :data-testid="action.testId"
         >
-          {{ t('models.hero.downloadForComfy') }}
-        </BrandButton>
-      </div>
-      <div v-else class="flex flex-col gap-3 sm:flex-row">
-        <BrandButton
-          v-if="workflowsUrl"
-          :href="workflowsUrl"
-          variant="solid"
-          size="lg"
-          class="w-full uppercase sm:w-auto sm:min-w-48"
-        >
-          {{ t('models.hero.primaryCta') }}
-        </BrandButton>
-
-        <BrandButton
-          v-if="!isPartnerNode && huggingFaceUrl"
-          :href="huggingFaceUrl"
-          target="_blank"
-          rel="noopener noreferrer"
-          :variant="workflowsUrl ? 'outline' : 'solid'"
-          size="lg"
-          class="w-full uppercase sm:w-auto sm:min-w-48"
-        >
-          {{ t('models.hero.secondaryCta') }}
-        </BrandButton>
-
-        <BrandButton
-          v-if="!workflowsUrl"
-          href="https://comfy.org/cloud/"
-          target="_blank"
-          rel="noopener noreferrer"
-          :variant="huggingFaceUrl && !isPartnerNode ? 'outline' : 'solid'"
-          size="lg"
-          class="w-full uppercase sm:w-auto sm:min-w-48"
-        >
-          {{ t('models.hero.cloudCta') }}
-        </BrandButton>
-
-        <BrandButton
-          v-if="docsUrl"
-          :href="docsUrl"
-          target="_blank"
-          rel="noopener noreferrer"
-          variant="outline"
-          size="lg"
-          class="w-full uppercase sm:w-auto sm:min-w-48"
-        >
-          {{ t('models.hero.tutorialCta') }}
+          {{ t(action.labelKey) }}
         </BrandButton>
       </div>
 

@@ -57,6 +57,19 @@ describe('list memory', () => {
 
   it.for([
     { named: 'an old shelf', stored: 'retired-category' },
+    { named: 'an empty record', stored: 'null' },
+    {
+      named: 'a list without its model',
+      stored: JSON.stringify({ href: '/hub/' })
+    },
+    {
+      named: 'a relative address',
+      stored: JSON.stringify({ href: 'hub/', modelPath: '/models/kling/' })
+    },
+    {
+      named: 'an address that is not text',
+      stored: JSON.stringify({ href: 7, modelPath: '/models/kling/' })
+    },
     {
       named: 'another site',
       stored: JSON.stringify({
