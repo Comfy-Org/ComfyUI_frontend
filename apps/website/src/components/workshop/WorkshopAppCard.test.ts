@@ -42,6 +42,29 @@ describe('WorkshopAppCard', () => {
 
   it.for([
     {
+      name: 'Seedance Studio',
+      logo: '/icons/ai-models/bytedance.svg',
+      initials: 0
+    },
+    { name: 'Re-shoot a video', logo: undefined, initials: 1 }
+  ])(
+    'marks $name with its logo, or with the initial when none matches',
+    ({ name, logo, initials }) => {
+      render(WorkshopAppCard, { props: { app: { ...app, name } } })
+      const mark = screen.getByTestId('model-card-provider')
+
+      expect(mark).toHaveTextContent('Comfy app')
+      expect(mark.innerHTML.match(/\/icons\/ai-models\/[\w-]+\.svg/)?.[0]).toBe(
+        logo
+      )
+      expect(within(mark).queryAllByText('C', { exact: true })).toHaveLength(
+        initials
+      )
+    }
+  )
+
+  it.for([
+    {
       thumbnail: { url: '/images/app.jpg', kind: 'image' },
       media: 'IMG',
       poster: null,
