@@ -1947,6 +1947,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
   ): void {
     if (outcome.kind !== 'streaming') return
     conversationStore.reconcileApprovalParts(turn, outcome.pendingAsk?.ask_id)
+    if (outcome.pendingAsk?.kind === 'run_approval')
+      conversationStore.forgetAskRecovered(
+        outcome.pendingAsk.ask_id,
+        turn.threadId
+      )
     restoreMissingApproval(turn, outcome.pendingAsk, cause)
   }
 
@@ -2009,7 +2014,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       threadId: turn.threadId,
       timer: setTimeout(() => {
         lateAskReports.delete(key)
-        sendRestoredApprovalReport(turn, askId, 'reconnect', 'error')
+        sendRestoredApprovalReport(turn, askId, cause, 'error')
       }, LATE_ASK_FRAME_GRACE_MS)
     })
   }
@@ -2030,6 +2035,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     event: Extract<AgentWsEvent, { type: 'agent_ask' }>
   ): void {
     const askId = event.data.ask_id
+    conversationStore.forgetAskRecovered(askId, event.data.thread_id)
     if (conversationStore.isAskRetired(askId, event.data.thread_id)) {
       withdrawLateAskReport(event.data.thread_id, askId)
       return
@@ -2145,32 +2151,18 @@ export function useAgentSession(deps: AgentSessionDeps) {
       const anchor = history.find(
         (entry) => entry.role === 'assistant' && entry.id === turn.messageId
       )
-      if (!anchor) return { kind: 'streaming', pendingAsk: undefined }
+      if (!anchor) return { kind: 'error', message: 'turn row is not visible' }
       const rows = history
         .filter(
           (entry) =>
             entry.role === 'assistant' && entry.turn_id === anchor.turn_id
         )
         .sort((a, b) => a.seq - b.seq)
-      if (rows.some((row) => !isTerminalTurnStatus(row.status)))
-        // PM-1738: a turn parked on an approval persists the unanswered ask on
-        // whichever of its rows is still open, which is the last one to carry
-        // one -- not necessarily the anchor the turn is keyed by.
-        //
-        // Only an open row is read. The server clears `pending_ask` behind the
-        // answer rather than with it (see `(g33)`), so a row it has already
-        // closed can still be carrying one that is spent, and restoring that
-        // would draw a card over a resolved ask. `applyAssistantRow` gates the
-        // hydrate path on the same `row.status` authority.
+      const latest = rows.at(-1)
+      if (latest && !isTerminalTurnStatus(latest.status))
         return {
           kind: 'streaming',
-          pendingAsk: rows.reduce<PendingAsk | undefined>(
-            (found, row) =>
-              isTerminalTurnStatus(row.status)
-                ? found
-                : (row.pending_ask ?? found),
-            undefined
-          )
+          pendingAsk: latest.pending_ask
         }
       return {
         kind: 'terminal',

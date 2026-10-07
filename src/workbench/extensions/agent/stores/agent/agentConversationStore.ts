@@ -474,6 +474,7 @@ export const useAgentConversationStore = defineStore(
       const key = threadKey(owner)
       const recovered = recoveredAskIds.get(key) ?? new Set<string>()
       recovered.add(askId)
+      recoveredAskIds.delete(key)
       recoveredAskIds.set(key, recovered)
       if (recoveredAskIds.size > MAX_RECOVERED_ASK_THREADS) {
         const oldest = recoveredAskIds.keys().next().value
@@ -485,6 +486,13 @@ export const useAgentConversationStore = defineStore(
       return recoveredAskIds.get(threadKey(owner))?.has(askId) ?? false
     }
 
+    function forgetAskRecovered(askId: string, owner?: string): void {
+      const key = threadKey(owner)
+      const recovered = recoveredAskIds.get(key)
+      recovered?.delete(askId)
+      if (recovered?.size === 0) recoveredAskIds.delete(key)
+    }
+
     function forgetRecoveredAsks(owner: string): void {
       recoveredAskIds.delete(threadKey(owner))
     }
@@ -494,8 +502,6 @@ export const useAgentConversationStore = defineStore(
         for (const part of message.parts)
           if (part.type === 'runApproval') markAskRecovered(part.askId, owner)
       }
-      const current = threadKey()
-      for (const message of messages.value) mark(message, current)
       const slot = activeSlot.value
       if (slot !== null && slot.threadId !== null)
         mark(slot.message, slot.threadId)
@@ -1103,9 +1109,12 @@ export const useAgentConversationStore = defineStore(
       pendingAskId?: string
     ): void {
       const message = liveTurnMessage(turn)
-      if (message === null) return
+      if (message === null || pendingAskId === undefined) return
       const stale = message.parts.flatMap((part) =>
-        part.type === 'runApproval' && part.askId !== pendingAskId
+        part.type === 'runApproval' &&
+        part.askId !== pendingAskId &&
+        submittedAskSelection(part.askId) === undefined &&
+        !answeringAskIds.value.has(part.askId)
           ? [part.askId]
           : []
       )
@@ -1397,6 +1406,7 @@ export const useAgentConversationStore = defineStore(
       isAskRetired,
       markAskRecovered,
       isAskRecovered,
+      forgetAskRecovered,
       forgetRecoveredAsks,
       markLiveApprovalsRecovered,
       reconcileApprovalParts,

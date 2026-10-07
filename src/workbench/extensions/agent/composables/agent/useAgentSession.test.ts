@@ -4778,12 +4778,7 @@ describe('useAgentSession (v1 composition root)', () => {
 
       expect(approvalParts(session)).toHaveLength(1)
       await session.answerAsk('turn-1:call-1', 'run')
-      expect(session.notices.value).toEqual([
-        {
-          level: 'error',
-          text: 'This request was already answered somewhere else, so that answer was used instead of yours.'
-        }
-      ])
+      expect(session.notices.value).toHaveLength(0)
     } finally {
       vi.useRealTimers()
     }
@@ -4860,6 +4855,92 @@ describe('useAgentSession (v1 composition root)', () => {
       expect(approvalParts(session).map((part) => part.askId)).toEqual([
         currentAskId
       ])
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('(g41) a missing turn row cannot retire a live approval', async () => {
+    vi.useFakeTimers()
+    try {
+      const rest = fakeRest({
+        getMessages: vi.fn(
+          async (): Promise<AgentMessages> => [
+            historyRow(1, 'user', 'msg-1', 'go')
+          ]
+        )
+      })
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start({ restore: false })
+      status(true)
+      await session.sendMessage('go')
+      emit(runApproval('msg-1'))
+
+      status(false)
+      status(true)
+      await vi.advanceTimersByTimeAsync(31_000)
+
+      expect(approvalParts(session)).toHaveLength(1)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('(g42) the newest assistant row decides whether a turn is terminal', async () => {
+    vi.useFakeTimers()
+    try {
+      const rest = fakeRest({
+        getMessages: vi.fn(
+          async (): Promise<AgentMessages> => [
+            historyRow(1, 'user', 'msg-1', 'go'),
+            parkedRow(),
+            {
+              ...historyRow(3, 'assistant', 'msg-1', 'done', 'row-3'),
+              status: 'complete'
+            }
+          ]
+        )
+      })
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start({ restore: false })
+      status(true)
+      await session.sendMessage('go')
+      emit(runApproval('msg-1'))
+
+      status(false)
+      status(true)
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(session.isStreaming.value).toBe(false)
+      expect(approvalParts(session)).toHaveLength(0)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('(g43) a confirmed current ask clears reconnect-only answer warnings', async () => {
+    vi.useFakeTimers()
+    try {
+      const rest = parkedOnApprovalRest()
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start({ restore: false })
+      status(true)
+      await session.sendMessage('go')
+      emit(runApproval('msg-1'))
+
+      status(false)
+      status(true)
+      await vi.advanceTimersByTimeAsync(0)
+      await session.answerAsk('turn-1:call-1', 'run')
+
+      expect(session.notices.value).toHaveLength(0)
+      expect(reportError).not.toHaveBeenCalledWith(expect.any(Error), {
+        surface: 'agent',
+        errorType: 'agent_ask_answer_unconfirmed'
+      })
     } finally {
       vi.useRealTimers()
     }
