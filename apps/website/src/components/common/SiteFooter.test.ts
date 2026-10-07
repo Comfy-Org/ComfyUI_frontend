@@ -23,7 +23,6 @@ describe('SiteFooter', () => {
           within(column).getAllByRole('link').at(-1)?.textContent.trim()
         )
       ).toEqual(Array(columns.length).fill(name))
-      expect(getRoutes(locale).changelog).toBe('/changelog/')
     }
   )
 

@@ -1,12 +1,11 @@
 import { marked } from 'marked'
-import { html, parseFragment } from 'parse5'
+import { parseFragment } from 'parse5'
 import type { DefaultTreeAdapterTypes } from 'parse5'
 import { defineComponent, h } from 'vue'
-import type { VNodeChild } from 'vue'
 
-// Match SafeRichTextContent's parse5-to-VNode boundary, with the block tags
-// needed by release Markdown. Never assign remote markup through innerHTML.
-const allowed = new Set([
+import { safeHttpsUrl, toSafeVNodes } from '@/components/common/safeMarkup'
+
+const allowedTags = new Set([
   'p',
   'strong',
   'em',
@@ -22,44 +21,17 @@ const allowed = new Set([
   'h4',
   'blockquote'
 ])
-const blocked = new Set([
-  'script',
-  'style',
-  'iframe',
-  'object',
-  'embed',
-  'template',
-  'svg',
-  'math'
-])
 
-function safeHref(value: string | undefined): string | undefined {
-  if (!value || !/^https:\/\//i.test(value.trim())) return undefined
-  try {
-    const url = new URL(value.trim())
-    if (url.protocol === 'https:' && !url.username && !url.password)
-      return url.href
-  } catch {
-    /* Invalid source links render as plain text. */
-  }
-  return undefined
+function attrs(
+  element: DefaultTreeAdapterTypes.Element
+): Record<string, string> | null {
+  if (element.tagName !== 'a') return {}
+  const href = element.attrs.find((attr) => attr.name === 'href')?.value
+  const url = safeHttpsUrl(href ?? '')
+  return url ? { href: url.href } : null
 }
 
-function nodes(node: DefaultTreeAdapterTypes.ChildNode): VNodeChild[] {
-  if ('value' in node) return [node.value]
-  if (!('tagName' in node)) return []
-  if (node.namespaceURI !== html.NS.HTML || blocked.has(node.tagName)) return []
-  const children = node.childNodes.flatMap(nodes)
-  if (!allowed.has(node.tagName)) return children
-  const attrs: Record<string, string> = {}
-  if (node.tagName === 'a') {
-    const href = safeHref(
-      node.attrs.find((attr) => attr.name === 'href')?.value
-    )
-    if (href) attrs.href = href
-  }
-  return [h(node.tagName, attrs, children)]
-}
+const policy = { allowedTags, attrs }
 
 export default defineComponent({
   name: 'ChangelogMarkdown',
@@ -70,7 +42,7 @@ export default defineComponent({
         'div',
         parseFragment(
           marked.parse(props.markdown, { async: false })
-        ).childNodes.flatMap(nodes)
+        ).childNodes.flatMap((node) => toSafeVNodes(node, policy))
       )
   }
 })

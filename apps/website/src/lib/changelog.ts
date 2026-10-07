@@ -1,4 +1,4 @@
-import { createTimeoutSignal } from '@/utils/abortSignal'
+import { combineAbortSignals, createTimeoutSignal } from '@/utils/abortSignal'
 
 const CHANGELOG_SOURCE =
   'https://raw.githubusercontent.com/Comfy-Org/docs/main/changelog/index.mdx'
@@ -18,8 +18,10 @@ export function releaseId(label: string) {
   return label.toLowerCase().replace(/[^a-z0-9]+/g, '-')
 }
 
+const UPDATE_ATTRIBUTES = new Set(['description', 'label', 'rss', 'tags'])
+
 const attributesPattern =
-  /\s+([\w-]+)\s*=\s*("([^"]*)"|'([^']*)'|\{(?:[^{}]|\{[^{}]*\})*\})/g
+  /\s+(?<name>\w+)\s*=\s*("(?<double>[^"]*)"|'(?<single>[^']*)'|\{(?:[^{}]|\{[^{}]*\})*\})/g
 const updatePattern = new RegExp(
   `<Update(?<attributes>(?:${attributesPattern.source})*)\\s*>(?<markdown>[\\s\\S]*?)<\\/Update>`,
   'g'
@@ -29,19 +31,13 @@ function updateMetadata(attributes: string) {
   const values = new Map<string, string | undefined>()
   for (const match of attributes.matchAll(attributesPattern)) {
     const [, name] = match
-    if (
-      !['label', 'description', 'tags', 'rss'].includes(name) ||
-      values.has(name)
-    )
+    if (!UPDATE_ATTRIBUTES.has(name) || values.has(name))
       throw new Error('Unsupported update metadata')
-    values.set(name, match.at(3) ?? match.at(4))
+    values.set(name, match.groups?.double ?? match.groups?.single)
   }
   return { label: values.get('label'), date: values.get('description') }
 }
 
-// Mintlify wrappers are data, never executable MDX. Optional tags/rss are
-// ignored, including braced metadata; no expression is evaluated. Fail closed
-// on unsupported wrapper syntax rather than presenting partial notes as current.
 export function parseChangelog(source: string): ChangelogEntry[] {
   const body = source.replace(/^---\r?\n[\s\S]*?\r?\n---\s*/, '')
   const entries: ChangelogEntry[] = []
@@ -62,10 +58,10 @@ export function parseChangelog(source: string): ChangelogEntry[] {
   return entries
 }
 
-export function readChangelogCache(storage: Pick<Storage, 'getItem'>) {
+export function readChangelogCache(storage?: Pick<Storage, 'getItem'>) {
   try {
     const raw: unknown = JSON.parse(
-      storage.getItem(CHANGELOG_CACHE_KEY) ?? 'null'
+      (storage ?? localStorage).getItem(CHANGELOG_CACHE_KEY) ?? 'null'
     )
     if (
       !raw ||
@@ -74,7 +70,6 @@ export function readChangelogCache(storage: Pick<Storage, 'getItem'>) {
       typeof raw.source !== 'string' ||
       !('checkedAt' in raw) ||
       typeof raw.checkedAt !== 'number' ||
-      !Number.isFinite(raw.checkedAt) ||
       raw.checkedAt > Date.now() ||
       Date.now() - raw.checkedAt > CHANGELOG_CACHE_MAX_AGE_MS
     )
@@ -85,13 +80,30 @@ export function readChangelogCache(storage: Pick<Storage, 'getItem'>) {
   }
 }
 
-export async function fetchChangelog() {
+export function writeChangelogCache(
+  source: string,
+  storage?: Pick<Storage, 'setItem'>
+) {
+  try {
+    const target = storage ?? localStorage
+    target.setItem(
+      CHANGELOG_CACHE_KEY,
+      JSON.stringify({ source, checkedAt: Date.now() })
+    )
+    return true
+  } catch {
+    return false
+  }
+}
+
+export async function fetchChangelog(signal?: AbortSignal) {
+  const timeout = createTimeoutSignal(CHANGELOG_TIMEOUT_MS)
   const response = await fetch(CHANGELOG_SOURCE, {
     cache: 'no-cache',
-    signal: createTimeoutSignal(CHANGELOG_TIMEOUT_MS)
+    signal: signal ? combineAbortSignals([signal, timeout]) : timeout
   })
   if (!response.ok)
     throw new Error(`Changelog request failed: ${response.status}`)
   const source = await response.text()
-  return { source, entries: parseChangelog(source), checkedAt: Date.now() }
+  return { source, entries: parseChangelog(source) }
 }

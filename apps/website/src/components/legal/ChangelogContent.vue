@@ -1,13 +1,14 @@
 <script setup lang="ts">
-import { nextTick, onMounted, onUnmounted, ref } from 'vue'
+import { useDocumentVisibility, useIntervalFn } from '@vueuse/core'
+import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import {
-  CHANGELOG_CACHE_KEY,
   CHANGELOG_DOCS,
   CHANGELOG_REFRESH_MS,
   fetchChangelog,
   readChangelogCache,
-  releaseId
+  releaseId,
+  writeChangelogCache
 } from '@/lib/changelog'
 import type { ChangelogEntry } from '@/lib/changelog'
 import { translationsFor } from '@/i18n/translations'
@@ -17,7 +18,12 @@ import ChangelogMarkdown from './ChangelogMarkdown'
 const { t } = translationsFor('en')
 
 const entries = ref<ChangelogEntry[]>([])
+const loading = ref(false)
+const failed = ref(false)
+const requests = new AbortController()
 let initialAnchorHandled = false
+let disposed = false
+let inFlight = false
 
 async function applyEntries(nextEntries: ChangelogEntry[]) {
   entries.value = nextEntries
@@ -37,33 +43,18 @@ async function applyEntries(nextEntries: ChangelogEntry[]) {
   element.scrollIntoView({ block: 'start' })
   initialAnchorHandled = true
 }
-const loading = ref(false)
-const failed = ref(false)
-let refreshTimer: ReturnType<typeof setInterval> | undefined
-let disposed = false
-let inFlight = false
 
 async function refresh() {
   if (inFlight) return
   inFlight = true
   loading.value = true
   try {
-    const result = await fetchChangelog()
+    const result = await fetchChangelog(requests.signal)
     if (disposed) return
     await applyEntries(result.entries)
     initialAnchorHandled = true
     failed.value = false
-    try {
-      localStorage.setItem(
-        CHANGELOG_CACHE_KEY,
-        JSON.stringify({
-          source: result.source,
-          checkedAt: result.checkedAt
-        })
-      )
-    } catch {
-      /* Storage is optional; live data still works. */
-    }
+    writeChangelogCache(result.source)
   } catch {
     if (!disposed) failed.value = true
   } finally {
@@ -72,21 +63,30 @@ async function refresh() {
   }
 }
 
-onMounted(() => {
-  try {
-    const cached = readChangelogCache(localStorage)
-    if (cached) {
-      void applyEntries(cached.entries)
-    }
-  } catch {
-    /* Storage can be disabled by the browser. */
+const visibility = useDocumentVisibility()
+const { pause, resume } = useIntervalFn(
+  () => void refresh(),
+  CHANGELOG_REFRESH_MS,
+  { immediate: false }
+)
+watch(visibility, (state) => {
+  if (state === 'visible') {
+    void refresh()
+    resume()
+  } else {
+    pause()
   }
+})
+
+onMounted(() => {
+  const cached = readChangelogCache()
+  if (cached) void applyEntries(cached.entries)
   void refresh()
-  refreshTimer = setInterval(() => void refresh(), CHANGELOG_REFRESH_MS)
+  if (visibility.value === 'visible') resume()
 })
 onUnmounted(() => {
   disposed = true
-  clearInterval(refreshTimer)
+  requests.abort()
 })
 </script>
 
@@ -105,7 +105,7 @@ onUnmounted(() => {
       t('changelog.saved')
     }}</template>
     <template v-else-if="failed">{{ t('changelog.unavailable') }}</template>
-    <template v-else-if="loading">{{ t('changelog.loading') }}</template>
+    <template v-else>{{ t('changelog.loading') }}</template>
   </p>
   <p
     class="mx-auto mt-8 max-w-3xl px-4 text-center text-sm/relaxed text-primary-comfy-canvas lg:px-0"
@@ -114,12 +114,15 @@ onUnmounted(() => {
   </p>
   <section class="px-4 pt-8 pb-24 lg:px-20 lg:pt-12 lg:pb-32">
     <div class="mx-auto max-w-3xl">
-      <div class="min-w-0 flex-1 lg:max-w-3xl" :aria-busy="loading">
-        <div v-if="failed" class="mb-16 flex flex-wrap items-center gap-6">
-          <BrandButton :disabled="loading" variant="outline" @click="refresh">{{
-            t('changelog.retry')
-          }}</BrandButton>
-        </div>
+      <div :aria-busy="loading">
+        <BrandButton
+          v-if="failed"
+          :disabled="loading"
+          variant="outline"
+          class="mb-16"
+          @click="refresh"
+          >{{ t('changelog.retry') }}</BrandButton
+        >
         <article
           v-for="entry in entries"
           :id="releaseId(entry.label)"
@@ -128,7 +131,8 @@ onUnmounted(() => {
           class="mb-16 scroll-mt-24 lg:grid lg:scroll-mt-36 lg:grid-cols-[10rem_minmax(0,1fr)] lg:gap-6"
         >
           <div
-            class="release-metadata mb-6 lg:sticky lg:top-36 lg:mb-0 lg:self-start"
+            data-testid="release-metadata"
+            class="mb-6 lg:sticky lg:top-36 lg:mb-0 lg:self-start"
           >
             <h2
               :id="`${releaseId(entry.label)}-title`"
@@ -138,8 +142,8 @@ onUnmounted(() => {
             </h2>
             <p class="text-sm text-primary-warm-gray">{{ entry.date }}</p>
           </div>
-          <!-- Only allowlisted, sanitized Markdown; remote MDX is never evaluated. -->
           <ChangelogMarkdown
+            data-testid="release-notes"
             class="min-w-0 text-sm/relaxed wrap-break-word text-primary-comfy-canvas *:first:mt-0 lg:text-base/relaxed [&_a]:text-primary-comfy-yellow [&_a]:underline [&_h3]:mt-6 [&_h3]:mb-2 [&_h3]:text-lg [&_h3]:font-semibold [&_li]:marker:text-primary-comfy-yellow [&_ol]:mt-4 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:mt-4 [&_pre]:overflow-x-auto [&_ul]:mt-4 [&_ul]:list-disc [&_ul]:space-y-2 [&_ul]:pl-5"
             :markdown="entry.markdown"
           />

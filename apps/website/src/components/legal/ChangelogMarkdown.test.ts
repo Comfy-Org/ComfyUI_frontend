@@ -10,17 +10,15 @@ describe('ChangelogMarkdown', () => {
       '[Docs](https://docs.comfy.org)',
       '<p><a href="https://docs.comfy.org/">Docs</a></p>'
     ],
-    ['an http link', '[Old](http://example.com)', '<p><a>Old</a></p>'],
+    ['an http link', '[Old](http://example.com)', '<p>Old</p>'],
+    ['an upper-case javascript: link', '[X](JAVASCRIPT:alert(1))', '<p>X</p>'],
+    ['a credentialed link', '[X](https://user:pass@example.com)', '<p>X</p>'],
     [
-      'an upper-case javascript: link',
-      '[X](JAVASCRIPT:alert(1))',
-      '<p><a>X</a></p>'
+      'a tab-smuggled https link',
+      '<a href="https://docs.comfy.org/\tx">T</a>',
+      '<p>T</p>'
     ],
-    [
-      'a credentialed link',
-      '[X](https://user:pass@example.com)',
-      '<p><a>X</a></p>'
-    ],
+    ['a relative link', '[Install](/installation)', '<p>Install</p>'],
     [
       'inline event and style attributes',
       '<p onclick="alert(1)" style="color:red">Hi</p>',
