@@ -2,7 +2,7 @@ import type { Locator, Page, WebSocketRoute } from '@playwright/test'
 import { expect } from '@playwright/test'
 import { z } from 'zod'
 
-import type { WidgetCatalog } from '@comfyorg/comfy-multi-player'
+import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import type { WorkflowListResponse } from '@comfyorg/ingest-types'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -28,12 +28,11 @@ import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
-import { emptySeed } from '@e2e/fixtures/data/agent/agentRemoteApply'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 const SOCKET_SID = 'b6f0a2c1-8e34-4d21-9c07-2a1b3c4d5e60'
-const PANEL_MOUNT_TIMEOUT = 30_000
 const SUBSCRIBE_TIMEOUT = 15_000
+const EMPTY_SEED: WorkflowJSON = { nodes: [], links: [] }
 
 const SEND_LABEL = enMessages.agent.send
 const STOP_LABEL = enMessages.agent.stop
@@ -81,7 +80,7 @@ export class AgentTwoSessionCrdtHarness {
     name: string,
     catalog: WidgetCatalog
   ): AgentBoundWorkflow {
-    const host = new HostDoc(workflowId, emptySeed, catalog)
+    const host = new HostDoc(workflowId, EMPTY_SEED, catalog)
     this.hosts.set(workflowId, host)
     this.subscribes.set(workflowId, 0)
     return { workflowId, name, host }
@@ -112,7 +111,7 @@ export class AgentTwoSessionCrdtHarness {
         objectInfo: 'server'
       })
     ])
-    await this.agentPanel.open(PANEL_MOUNT_TIMEOUT)
+    await this.agentPanel.open()
     await this.selectHomeTarget()
   }
 
