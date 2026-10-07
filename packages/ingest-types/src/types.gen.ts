@@ -4614,6 +4614,10 @@ export type AgentPostMessageRequest = {
    */
   attachments?: Array<string>
   /**
+   * Client-generated identifier for this send attempt. The frontend emits the same value on app:agent_message_sent; the agent echoes it on agent_turn_started so accepted turns can be joined to their originating sends without using timestamp proximity. Retries mint a new value. Older clients may omit it.
+   */
+  client_message_id?: string
+  /**
    * The user's message.
    */
   content: string
