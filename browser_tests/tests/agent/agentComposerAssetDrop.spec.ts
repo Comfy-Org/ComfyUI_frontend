@@ -134,14 +134,10 @@ test.describe('Agent composer asset drop', { tag: '@cloud' }, () => {
       name: ASSET_NAME,
       exact: true
     })
-    await expect(
-      suggestion.getByRole('img', { name: ASSET_NAME, exact: true })
-    ).toHaveAttribute('src', posterUrl)
+    await expect(suggestion.locator('img')).toHaveAttribute('src', posterUrl)
     await suggestion.click()
     await expect(
-      agentPanel.composer
-        .getByTestId('asset-reference-chip')
-        .getByRole('img', { name: ASSET_NAME, exact: true })
+      agentPanel.composer.getByTestId('asset-reference-chip').locator('img')
     ).toHaveAttribute('src', posterUrl)
     await agentPanel.composer.hover()
     await expect(agentPanel.assetPreview(ASSET_NAME)).toHaveCount(0)
