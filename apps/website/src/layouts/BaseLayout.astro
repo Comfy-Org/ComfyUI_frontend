@@ -349,6 +349,12 @@ const structuredData = head.emitStructuredData
 
       initSmoothScroll()
 
+      if (import.meta.env.DEV) {
+        void import('@/scripts/agentation').then(({ mountAgentation }) =>
+          mountAgentation()
+        )
+      }
+
       if (import.meta.env.PROD) {
         initPostHog()
         document.addEventListener('astro:page-load', capturePageview)
