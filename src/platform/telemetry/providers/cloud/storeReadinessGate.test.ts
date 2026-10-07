@@ -10,9 +10,6 @@ const hoisted = vi.hoisted(() => {
   const customerIoTrack = vi.fn(
     (_event: string, _properties?: Record<string, unknown>) => Promise.resolve()
   )
-  const customerIoRegistration: { rejection: Error | null } = {
-    rejection: null
-  }
   const userEmail: { value: string | null } = { value: null }
   const resolvedUserInfo: { value: { id: string } | null } = { value: null }
 
@@ -21,30 +18,19 @@ const hoisted = vi.hoisted(() => {
     onUserLogout: vi.fn(),
     userEmail,
     resolvedUserInfo,
-    reportError: vi.fn(),
     posthogInit: vi.fn(),
     mixpanelInit: vi.fn(
       (_token: string, _options: { loaded: () => void }) => {}
     ),
     customerIoTrack,
-    customerIoRegistration,
     customerIoLoad: vi.fn(() => ({
       identify: vi.fn(() => Promise.resolve()),
       page: vi.fn(),
       track: customerIoTrack,
-      reset: vi.fn(),
-      register: vi.fn(() =>
-        customerIoRegistration.rejection
-          ? Promise.reject(customerIoRegistration.rejection)
-          : Promise.resolve()
-      )
+      reset: vi.fn()
     }))
   }
 })
-
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: hoisted.reportError
-}))
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
@@ -70,8 +56,7 @@ vi.mock<unknown>(import('mixpanel-browser'), () => ({
 }))
 
 vi.mock<unknown>(import('@customerio/cdp-analytics-browser'), () => ({
-  AnalyticsBrowser: { load: hoisted.customerIoLoad },
-  InAppPlugin: vi.fn(() => ({ name: 'Customer.io In-App Plugin' }))
+  AnalyticsBrowser: { load: hoisted.customerIoLoad }
 }))
 
 vi.mock(import('@/platform/remoteConfig/remoteConfig'))
@@ -118,7 +103,6 @@ describe('telemetry providers wait for Pinia before touching stores', () => {
 
   afterEach(() => {
     markStoresReady()
-    hoisted.customerIoRegistration.rejection = null
     delete (window as { __CONFIG__?: unknown }).__CONFIG__
   })
 
@@ -158,32 +142,24 @@ describe('telemetry providers wait for Pinia before touching stores', () => {
     await vi.waitFor(() => expect(hoisted.onUserResolved).toHaveBeenCalled())
   })
 
-  it('gates Customer.io user identification', async () => {
+  it('disables Customer.io in-app before gating user identification', async () => {
     configureCustomerIo()
 
     new CustomerIoTelemetryProvider()
     await vi.waitFor(() => expect(hoisted.customerIoLoad).toHaveBeenCalled())
+    expect(hoisted.customerIoLoad).toHaveBeenCalledWith(
+      { writeKey: 'cdp_test_write_key' },
+      {
+        integrations: {
+          'Customer.io In-App Plugin': { enabled: false }
+        }
+      }
+    )
     await flushMicrotasks()
     expect(hoisted.onUserResolved).not.toHaveBeenCalled()
 
     markStoresReady()
     await vi.waitFor(() => expect(hoisted.onUserResolved).toHaveBeenCalled())
-  })
-
-  it('handles a Customer.io in-app registration failure raised while the gate is still closed', async () => {
-    const registrationError = new Error('in-app registration failed')
-    hoisted.customerIoRegistration.rejection = registrationError
-    configureCustomerIo()
-
-    new CustomerIoTelemetryProvider()
-    await vi.waitFor(() => expect(hoisted.customerIoLoad).toHaveBeenCalled())
-    await flushMicrotasks()
-
-    expect(hoisted.onUserResolved).not.toHaveBeenCalled()
-    expect(hoisted.reportError).toHaveBeenCalledWith(registrationError, {
-      surface: 'platform',
-      errorType: 'customerio_in_app_plugin_registration_failure'
-    })
   })
 
   it('keeps Customer.io startup events in order across the gate', async () => {
