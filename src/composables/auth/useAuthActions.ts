@@ -89,8 +89,7 @@ export const useAuthActions = () => {
     }
     const classification = classifyAuthError(error)
     // Ref: https://firebase.google.com/docs/auth/admin/errors
-    const kind =
-      severityForAuthError(classification) === 'warn' ? 'warning' : 'error'
+    const kind = severityForAuthError(classification)
     const notify = (description: string) =>
       toast[kind](t(`g.${kind}`), { description })
     if (classification.kind === 'unauthorized-domain') {
