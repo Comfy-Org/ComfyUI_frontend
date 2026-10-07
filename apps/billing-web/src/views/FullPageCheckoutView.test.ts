@@ -1646,6 +1646,119 @@ describe('FullPageCheckoutView mount reconciliation', () => {
     expect(screen.queryByTestId('checkout-ending-plan')).not.toBeInTheDocument()
   })
 
+  const summaryColumn = () =>
+    screen.getByRole('region', { name: 'Order summary' })
+
+  type ServerPlan = NonNullable<BillingOperationReceipt['plan']>
+
+  /** Money in flight that this page did not send, on the plan the server reports for it. */
+  function recoveredOn(plan: ServerPlan, id: string) {
+    const recovered = { ...processingOperation(id), plan }
+    return recovered
+  }
+
+  it.for<{
+    name: string
+    plan: ServerPlan
+    shows: readonly string[]
+    hides: readonly string[]
+  }>([
+    {
+      name: 'its own plan and monthly rate, never the link plan',
+      plan: {
+        slug: 'team_monthly',
+        duration: 'MONTHLY',
+        tier: 'TEAM',
+        price_cents: 66_500,
+        currency: 'usd'
+      },
+      shows: ['Team Monthly', '$665.00', 'USD / mo'],
+      hides: ['Creator', '$28', 'Total due today']
+    },
+    {
+      name: 'the per-month figure the server gives an annual plan',
+      plan: {
+        slug: 'pro_annual',
+        duration: 'ANNUAL',
+        tier: 'PRO',
+        price_cents: 48_000,
+        monthly_price_cents: 4_000,
+        currency: 'usd'
+      },
+      shows: ['Pro Yearly', '$40.00', 'USD / mo'],
+      hides: ['$480', 'Creator', 'Total due today']
+    },
+    {
+      name: 'no name or price where the server describes neither',
+      plan: { slug: 'team_seats_legacy', duration: 'MONTHLY' },
+      shows: [],
+      hides: ['Team', 'Creator', '$', 'Total due today']
+    }
+  ])(
+    'summarizes a recovered payment with $name',
+    async ({ plan, shows, hides }) => {
+      await renderCheckout({
+        recover: {
+          status: 'ok',
+          value: recoveredOn(plan, 'op_recovered')
+        }
+      })
+
+      await waitingStatus()
+      const summary = summaryColumn()
+      for (const text of shows) expect(summary).toHaveTextContent(text)
+      for (const text of hides) expect(summary).not.toHaveTextContent(text)
+    }
+  )
+
+  it("ends a recovered payment on the plan the server says it bought, not the link's", async () => {
+    const TEAM_MONTHLY = {
+      slug: 'team_monthly',
+      duration: 'MONTHLY',
+      tier: 'TEAM',
+      price_cents: 66_500,
+      currency: 'usd'
+    } as const
+    const fake = await renderCheckout({
+      recover: {
+        status: 'ok',
+        value: recoveredOn(TEAM_MONTHLY, 'op_team')
+      }
+    })
+    await waitingStatus()
+
+    fake.publishOperation({
+      ...succeededOperation('op_team'),
+      phase: 'succeeded',
+      receipt: { plan: TEAM_MONTHLY }
+    })
+
+    const plan = await screen.findByTestId('checkout-ending-plan')
+    expect(plan).toHaveTextContent('Team Monthly$665.00 USD / mo')
+    expect(plan).not.toHaveTextContent('Creator')
+  })
+
+  it('names no plan on the ending when the server cannot describe the one the payment bought', async () => {
+    const fake = await renderCheckout({
+      plans: { status: 'ok', value: { plans: [planOf()] } },
+      recover: { status: 'ok', value: processingOperation('op_legacy') }
+    })
+    await waitingStatus()
+
+    fake.publishOperation({
+      ...succeededOperation('op_legacy'),
+      phase: 'succeeded',
+      receipt: { plan: { slug: 'creator_monthly', duration: 'MONTHLY' } }
+    })
+
+    await screen.findByRole('heading', { name: 'Already completed' })
+    await capturePromisesFlushed()
+    expect(screen.queryByTestId('checkout-ending-plan')).not.toBeInTheDocument()
+    expect(screen.getByTestId('checkout-ending-code')).toHaveTextContent(
+      'op_legacy'
+    )
+  })
+
   it.for<{
     name: string
     serverPhase: 'awaiting_invoice_payment' | 'in_progress'
@@ -2026,26 +2139,19 @@ describe("FullPageCheckoutView over this tab's own payment", () => {
     ...awaited(succeededOperation(id)),
     phase: 'reconciliation_needed'
   })
-  const ON_PRO: FakeBillingClientOptions = {
-    status: {
-      is_active: true,
-      has_funds: true,
-      max_seats: 1,
-      occupied_seats: 1,
-      plan_slug: 'pro_monthly',
-      scheduled_change: null,
-      team_credit_stop: null
-    },
-    plans: {
-      status: 'ok',
-      value: {
-        plans: [
-          planOf(),
-          planOf({ slug: 'pro_monthly', tier: 'PRO', price_cents: 5000n })
-        ]
-      }
-    }
-  }
+  const RECEIPT_PLAN = {
+    slug: 'pro_monthly',
+    duration: 'MONTHLY',
+    tier: 'PRO',
+    price_cents: 5000,
+    currency: 'usd'
+  } as const
+  const withReceipt = (
+    operation: BillingOperationState,
+    receipt: BillingOperationReceipt
+  ): BillingOperationState => ({ ...operation, phase: 'succeeded', receipt })
+  const mineOnPro = () =>
+    withReceipt(awaited(succeededOperation('op_mine')), { plan: RECEIPT_PLAN })
 
   it("asks the lifecycle for this tab's settled payment too", async () => {
     const fake = await renderCheckout()
@@ -2071,10 +2177,9 @@ describe("FullPageCheckoutView over this tab's own payment", () => {
     expect(form.mounts).toBe(0)
   })
 
-  it('is Success, naming the plan the server now lists, for its own payment that went through while it was on a provider page', async () => {
+  it('is Success, naming the plan the server reports for it, for its own payment that went through while it was on a provider page', async () => {
     await renderCheckout({
-      ...ON_PRO,
-      recover: { status: 'ok', value: awaited(succeededOperation('op_mine')) },
+      recover: { status: 'ok', value: mineOnPro() },
       preview: { status: 'ok', value: previewOf({ allowed: false }) }
     })
 
@@ -2091,7 +2196,6 @@ describe("FullPageCheckoutView over this tab's own payment", () => {
   it('keeps re-reading a payment it could not confirm, and resolves forward to Success when it settles', async () => {
     vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] })
     const fake = await renderCheckout({
-      ...ON_PRO,
       recover: { status: 'ok', value: couldNotConfirm('op_mine') }
     })
     expect(
@@ -2108,8 +2212,8 @@ describe("FullPageCheckoutView over this tab's own payment", () => {
     ).toBeInTheDocument()
 
     fake.recover.mockImplementationOnce(async () => {
-      fake.publishOperation(awaited(succeededOperation('op_mine')))
-      return { status: 'ok', value: awaited(succeededOperation('op_mine')) }
+      fake.publishOperation(mineOnPro())
+      return { status: 'ok', value: mineOnPro() }
     })
     vi.advanceTimersByTime(OPERATION_POLL_TIMING.parkedMs)
 
@@ -2122,15 +2226,8 @@ describe("FullPageCheckoutView over this tab's own payment", () => {
     expect(fake.subscribe).not.toHaveBeenCalled()
   })
 
-  const RECEIPT_PLAN = { slug: 'pro_monthly', duration: 'MONTHLY' } as const
-  const withReceipt = (
-    operation: BillingOperationState,
-    receipt: BillingOperationReceipt
-  ): BillingOperationState => ({ ...operation, phase: 'succeeded', receipt })
-
-  it('328-4444: Already completed names the plan and credits its receipt reports, from the catalog', async () => {
+  it('328-4444: Already completed names the plan and credits its receipt reports', async () => {
     await renderCheckout({
-      plans: ON_PRO.plans,
       recover: {
         status: 'ok',
         value: withReceipt(succeededOperation('op_done'), {
@@ -2156,7 +2253,6 @@ describe("FullPageCheckoutView over this tab's own payment", () => {
       plan: RECEIPT_PLAN
     })
     const fake = await renderCheckout({
-      ...ON_PRO,
       recover: { status: 'ok', value: landing },
       preview: { status: 'ok', value: previewOf({ allowed: false }) }
     })
