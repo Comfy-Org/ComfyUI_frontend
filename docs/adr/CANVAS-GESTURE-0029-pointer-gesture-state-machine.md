@@ -197,8 +197,10 @@ the interpretation of a gesture, and both renderers feed it.
   release. Handlers that only make sense for a drag (node and group
   resize, live marquee selection) return until `pointer.dragStarted`, so a
   press that ends as a click never mutates the graph outside an undo
-  transaction. Characterization tests cover every current `onDrag` assignment and
-  record the callback count. Vue node selection is the second exception: it
+  transaction. Tests cover the `CanvasPointer` `onDrag` lifecycle, including
+  forwarding inside the threshold, and the resize and live-selection guards.
+  They do not record a callback count for every production `onDrag`
+  assignment. Vue node selection is the second exception: it
   now goes through `processSelect`, so a Vue click emits the same
   `onSelectionChange` calls as a classic click. Before, a modified Vue click
   emitted none and a replacing click emitted only the clearing call.
