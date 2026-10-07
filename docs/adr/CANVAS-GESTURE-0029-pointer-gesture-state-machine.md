@@ -195,7 +195,10 @@ the interpretation of a gesture, and both renderers feed it.
   the Vue adapter ignores it. A number-widget press that moves within the
   drift threshold can therefore adjust the value and then open its prompt on
   release. Characterization tests cover every current `onDrag` assignment and
-  record the callback count.
+  record the callback count. Vue node selection is the second exception: it
+  now goes through `processSelect`, so a Vue click emits the same
+  `onSelectionChange` calls as a classic click. Before, a modified Vue click
+  emitted none and a replacing click emitted only the clearing call.
 - The adapter that accepts `down` owns the gesture until `up` or `cancel`.
   Renderer, mode, and feature-flag changes take effect only after the gesture
   returns to `idle`. Teardown and lost pointer capture dispatch `cancel` to
@@ -207,6 +210,8 @@ the interpretation of a gesture, and both renderers feed it.
   Chromium fires no `lostpointercapture` when the captured element is removed
   from the DOM. Both adapters recover from that case: a buttonless move counts
   as a release, and a new press from the same pointer cancels the stale one.
+  The Vue adapter tracks one press per pointer id across all node instances,
+  so a press on another node also cancels a stale press.
   Window blur and visibility listeners are added only if a browser is shown
   to end a gesture without either signal.
 - Drag zoom holds no pointer capture. Any press ends an active drag zoom

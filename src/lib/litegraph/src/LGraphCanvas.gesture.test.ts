@@ -327,31 +327,57 @@ describe('CanvasPointer lifecycle callbacks', () => {
     expect(onClick).toHaveBeenCalledTimes(3)
   })
 
-  it('completes the click on a pointermove that reports the primary button released', () => {
+  const releasedButtons = [
+    { held: 'no buttons', buttons: 0 },
+    { held: 'another button', buttons: 2 }
+  ]
+
+  it.for(releasedButtons)(
+    'completes the click on a pointermove with $held held',
+    ({ buttons }) => {
+      const pointer = new CanvasPointer(document.createElement('canvas'))
+      pointer.clearEventsOnReset = false
+      const onClick = vi.fn()
+      pointer.down(pointerEvent('pointerdown', 10, 20))
+      pointer.onClick = onClick
+      const releasedMove = pointerEvent('pointermove', 10, 20, { buttons })
+
+      pointer.move(releasedMove)
+
+      expect(onClick).toHaveBeenCalledWith(releasedMove)
+      expect(pointer.eUp).toBe(releasedMove)
+    }
+  )
+
+  it.for(releasedButtons)(
+    'ends the drag, not cancels it, on a pointermove with $held held',
+    ({ buttons }) => {
+      const pointer = new CanvasPointer(document.createElement('canvas'))
+      const onDragEnd = vi.fn()
+      const onDragCancel = vi.fn()
+      pointer.down(pointerEvent('pointerdown', 10, 20))
+      pointer.onDragEnd = onDragEnd
+      pointer.onDragCancel = onDragCancel
+      pointer.move(pointerEvent('pointermove', 30, 40))
+      const releasedMove = pointerEvent('pointermove', 30, 40, { buttons })
+
+      pointer.move(releasedMove)
+
+      expect(onDragEnd).toHaveBeenCalledWith(releasedMove)
+      expect(onDragCancel).not.toHaveBeenCalled()
+    }
+  )
+
+  it('keeps the recorded release when idle hover moves follow it', () => {
     const pointer = new CanvasPointer(document.createElement('canvas'))
     pointer.clearEventsOnReset = false
-    const onClick = vi.fn()
     pointer.down(pointerEvent('pointerdown', 10, 20))
-    pointer.onClick = onClick
-    const releasedMove = pointerEvent('pointermove', 10, 20, { buttons: 2 })
+    const release = pointerEvent('pointerup', 10, 20)
+    pointer.up(release)
 
-    pointer.move(releasedMove)
+    pointer.move(pointerEvent('pointermove', 50, 60, { buttons: 0 }))
 
-    expect(onClick).toHaveBeenCalledWith(releasedMove)
-    expect(pointer.eUp).toBe(releasedMove)
-  })
-
-  it('ends the drag on a pointermove that reports the primary button released', () => {
-    const pointer = new CanvasPointer(document.createElement('canvas'))
-    const onDragEnd = vi.fn()
-    pointer.down(pointerEvent('pointerdown', 10, 20))
-    pointer.onDragEnd = onDragEnd
-    pointer.move(pointerEvent('pointermove', 30, 40))
-    const releasedMove = pointerEvent('pointermove', 30, 40, { buttons: 2 })
-
-    pointer.move(releasedMove)
-
-    expect(onDragEnd).toHaveBeenCalledWith(releasedMove)
+    expect(pointer.eUp).toBe(release)
   })
 })
 
@@ -376,6 +402,41 @@ describe('LGraphCanvas pointer gestures', () => {
   })
 
   describe('node', () => {
+    it.for([
+      {
+        click: 'a plain click replacing the selection',
+        modifiers: {},
+        preselect: ['B'],
+        emitted: [[], ['A']]
+      },
+      {
+        click: 'a shift click adding a node',
+        modifiers: { shiftKey: true },
+        preselect: ['B'],
+        emitted: [['A', 'B']]
+      },
+      {
+        click: 'a ctrl click removing a node',
+        modifiers: { ctrlKey: true },
+        preselect: ['A', 'B'],
+        emitted: [['B']]
+      }
+    ])(
+      '$click reports these onSelectionChange payloads',
+      ({ modifiers, preselect, emitted }) => {
+        const byTitle: Record<string, LGraphNode> = { A: a, B: b }
+        canvas.selectItems(preselect.map((title) => byTitle[title]))
+        const reported: string[][] = []
+        canvas.onSelectionChange = () => {
+          reported.push(selectedTitles(canvas))
+        }
+
+        gesture.click(A_BODY, modifiers)
+
+        expect(reported).toEqual(emitted)
+      }
+    )
+
     it('click selects on release without moving', () => {
       gesture.press(A_BODY)
       expect(selectedTitles(canvas)).toEqual([])

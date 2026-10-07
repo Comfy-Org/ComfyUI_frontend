@@ -13,6 +13,7 @@ import type {
 } from '@/lib/litegraph/src/__fixtures__/canvasHarness'
 import { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 import { LGraph, LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
@@ -126,6 +127,47 @@ describe('useNodePointerInteractions', () => {
     node.release(10, 10)
     expect(selectedTitles(canvas)).toEqual(['First'])
   })
+
+  it.for([
+    {
+      click: 'a plain click replacing the selection',
+      modifiers: {},
+      preselect: ['Second'],
+      emitted: [[], ['First']]
+    },
+    {
+      click: 'a shift click adding a node',
+      modifiers: { shiftKey: true },
+      preselect: ['Second'],
+      emitted: [['First', 'Second']]
+    },
+    {
+      click: 'a ctrl click removing a node',
+      modifiers: { ctrlKey: true },
+      preselect: ['First', 'Second'],
+      emitted: [['Second']]
+    }
+  ])(
+    '$click reports selection changes like the classic canvas',
+    async ({ modifiers, preselect, emitted }) => {
+      const { canvas, first, second } = await setup()
+      const node = mountNode(createNodeState({ id: first.id }))
+      const byTitle: Record<string, LGraphNode> = {
+        First: first,
+        Second: second
+      }
+      canvas.selectItems(preselect.map((title) => byTitle[title]))
+      const reported: string[][] = []
+      canvas.onSelectionChange = () => {
+        reported.push(selectedTitles(canvas))
+      }
+
+      node.press(10, 10, modifiers)
+      node.release(10, 10, modifiers)
+
+      expect(reported).toEqual(emitted)
+    }
+  )
 
   it('press brings the node to front before release', async () => {
     const { first } = await setup()
@@ -418,6 +460,25 @@ describe('useNodePointerInteractions', () => {
     node.release(10, 10)
 
     expect(selectedTitles(canvas)).toEqual(['First'])
+  })
+
+  it('a press on another node from the same pointer cancels a press whose release was lost', async () => {
+    const { first, second } = await setup()
+    const { cancelDrag, handleDrag, startDrag } = useNodeDrag()
+    const stale = mountNode(createNodeState({ id: first.id }))
+    const next = mountNode(createNodeState({ id: second.id }))
+    stale.press(10, 10)
+    stale.move(40, 10)
+
+    next.press(310, 10)
+    expect(cancelDrag).toHaveBeenCalledOnce()
+    expect(layoutStore.isDraggingVueNodes.value).toBe(false)
+    stale.move(80, 10)
+
+    expect(handleDrag).toHaveBeenCalledOnce()
+    next.move(350, 10)
+    expect(vi.mocked(startDrag).mock.lastCall?.[1]).toBe(second.id)
+    expect(layoutStore.isDraggingVueNodes.value).toBe(true)
   })
 
   it.for(['pointercancel', 'pointerup'] as const)(
