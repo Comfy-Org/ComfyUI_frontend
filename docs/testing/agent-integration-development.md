@@ -126,16 +126,8 @@ before using it. The shell expands `~` in the command above, but `.env` is read 
 at a literal `./~/.comfy-agent` and the dev server will say so rather than answering 401
 forever.
 
-Prefer it over copying the token by hand, because **the agent mints a new session token
-every time it starts** (unless `AGENT_SESSION_TOKEN` pins one, which is what the launcher
-does) and atomically replaces `agent.json` with it. A token read out of that file once
-and passed as `DEV_AGENT_SESSION_TOKEN` is stale from the agent's next start onward, and
-the symptom is total: every `/api/agent` call and the `/api/agent/events` stream answer
-`401` with no explanation, for as long as the dev server lives. Restarting ComfyUI, the
-browser, or the machine does not help, because neither holds the credential —
-[PM-1927](https://linear.app/comfyorg/issue/PM-1927) is that failure reported from the
-outside. Starting Vite first is also fine: requests 401 until the agent publishes, then
-succeed.
+Starting Vite before the agent is fine once the directory exists: requests answer `401`
+until the agent publishes `agent.json`, then succeed.
 
 ## How it works
 
