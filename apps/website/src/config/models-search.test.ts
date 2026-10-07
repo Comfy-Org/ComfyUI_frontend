@@ -105,10 +105,12 @@ describe('searchWorkshopModels', () => {
     ).toEqual(['d', 'b'])
   })
 
-  it('filters by facets alone when the query is blank', () => {
-    const filter = { query: '   ', providers: ['Kling'] }
-    expect(searchWorkshopModels(catalogue, filter)).toEqual(
-      filterWorkshopModels(catalogue, filter)
-    )
-  })
+  it.for([{ query: '   ', providers: ['Kling'] }, { providers: ['Kling'] }])(
+    'filters by facets alone when the query is $query',
+    (filter) => {
+      expect(searchWorkshopModels(catalogue, filter)).toEqual(
+        filterWorkshopModels(catalogue, filter)
+      )
+    }
+  )
 })
