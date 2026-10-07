@@ -2,8 +2,8 @@
   <CloudTemplate>
     <!-- This will render the nested route components -->
     <RouterView />
+    <Toaster />
   </CloudTemplate>
-  <Toaster />
 </template>
 
 <script setup lang="ts">
