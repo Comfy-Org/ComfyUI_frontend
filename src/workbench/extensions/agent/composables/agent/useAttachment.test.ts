@@ -370,6 +370,27 @@ describe('useAttachment', () => {
     }
   })
 
+  it('tags a non-cancelled AbortError upload with the aborted failure cause', async () => {
+    const upload = vi
+      .fn()
+      .mockRejectedValue(new DOMException('request aborted', 'AbortError'))
+    const registry = chipRegistry()
+    const { addFiles } = useAttachment({ upload, ...registry })
+
+    await addFiles([fileOfSize('shot.png', 512, 'image/png')])
+
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        tags: expect.objectContaining({
+          upload_failure_cause: 'aborted',
+          file_type: 'image/png',
+          file_size_bytes: 512
+        })
+      })
+    )
+  })
+
   it('keeps earlier settled chips and continues the batch when one upload fails', async () => {
     const upload = vi
       .fn()
