@@ -119,21 +119,18 @@ export function useStarterPromptSet() {
     renderedSurfaceAssignment.value = undefined
   }
 
-  if (isAuthenticatedConfigLoaded.value) {
-    assign()
-  } else {
-    watch(
-      [
-        isAuthenticatedConfigLoaded,
-        remoteConfigRevision,
-        authenticatedRemoteConfigState
-      ],
-      ([authenticated]) => {
-        if (!authenticated) return
-        assign()
-      }
-    )
-  }
+  watch(
+    [
+      isAuthenticatedConfigLoaded,
+      remoteConfigRevision,
+      authenticatedRemoteConfigState
+    ],
+    ([authenticated]) => {
+      if (!authenticated) return
+      assign()
+    },
+    { immediate: true }
+  )
 
   return {
     assignment: computed(() => assigned.value),

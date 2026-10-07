@@ -118,6 +118,28 @@ describe('useStarterPromptSet', () => {
     }
   )
 
+  it('exposes a surface after authenticated config recovers from an error', async () => {
+    remoteConfig.value = { [STARTER_PROMPT_SET_FLAG]: 'test' }
+    authenticatedRemoteConfigState.value = 'authenticated'
+    const { expose } = useStarterPromptSet()
+
+    authenticatedRemoteConfigState.value = 'error'
+    expose('test')
+    expect(
+      useTelemetry()?.trackAgentStarterPromptExposure
+    ).not.toHaveBeenCalled()
+
+    authenticatedRemoteConfigState.value = 'authenticated'
+    remoteConfigRevision.value++
+    await vi.waitFor(() =>
+      expect(
+        useTelemetry()?.trackAgentStarterPromptExposure
+      ).toHaveBeenCalledWith({
+        [`$feature/${STARTER_PROMPT_SET_FLAG}`]: 'test'
+      })
+    )
+  })
+
   it('re-exposes when a remounted surface resolves a new assignment', async () => {
     remoteConfig.value = { [STARTER_PROMPT_SET_FLAG]: 'control' }
     authenticatedRemoteConfigState.value = 'authenticated'
