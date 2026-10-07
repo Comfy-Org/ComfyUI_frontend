@@ -22,7 +22,7 @@ Which icon goes on a button or link depends on where it takes the visitor.
 | --- | --- | --- | --- |
 | CTA button | none | Any call to action. UPPERCASE label, \`BrandButton\` or \`ui/button\` \`Button\` with an existing variant. | GET AN API KEY, RUN, TRY IN COMFY CLOUD, BROWSE ALL MODELS |
 | Text link | → \`ArrowRight\` | Goes to another page on comfy.org. | Explore the Hub →, See all → |
-| Text link | ↗ \`ArrowUpRight\` | Leaves comfy.org or opens a new tab. Always add sr-only "(opens in a new tab)". | GitHub ↗, Docs ↗ |
+| Text link | ↗ \`ArrowUpRight\` | Leaves comfy.org or opens a new tab. When it opens a new tab, add sr-only "(opens in a new tab)". | GitHub ↗, Docs ↗ |
 | Prev / next, separators, back | › ‹ \`ChevronRight\` / \`ChevronLeft\` | Moves within the same place, no new page. | Row or carousel prev/next, breadcrumb separators, mobile "‹ Models", mobile submenu drill-in |
 | Disclosure trigger | ⌄ \`ChevronDown\` | Opens something in place. Rotates when open. | Dropdowns, filters, disclosures, folds |
 
