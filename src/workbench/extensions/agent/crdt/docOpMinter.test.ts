@@ -1316,6 +1316,28 @@ describe('attachDocOpMinter', () => {
     doc.destroy()
   })
 
+  it('fails closed when a definition link targets a slot past a Y.Array', () => {
+    const { host, doc } = seedPromotedHost()
+    const definition = doc.getMap<unknown>('definitions').get(host.type)
+    assert.instanceOf(definition, Y.Map)
+    const inputs = definition.get('inputs')
+    const links = definition.get('links')
+    assert(Array.isArray(inputs))
+    assert.instanceOf(links, Y.Map)
+    const firstInput = inputs[0]
+    assert(typeof firstInput === 'object' && firstInput !== null)
+    const [linkId] = Reflect.get(firstInput, 'linkIds') as unknown[]
+    const link = links.get(String(linkId))
+    assert(typeof link === 'object' && link !== null)
+    links.set(String(linkId), { ...link, target_slot: 100_000 })
+
+    expect(() => readDocPromotedWidgets(doc, String(host.id))).not.toThrow()
+    expect(
+      readDocPromotedWidgets(doc, String(host.id))?.promotedNames
+    ).toBeNull()
+    doc.destroy()
+  })
+
   it('indexes array-backed definition records once and accepts Y.Array records', () => {
     const { host, doc } = seedPromotedHost()
     const definition = doc.getMap<unknown>('definitions').get(host.type)

@@ -879,6 +879,7 @@ function readTargetInput(
   const inputs = readField(target, 'inputs')
   if (!(inputs instanceof Y.Array) && !Array.isArray(inputs)) return null
   if (!consumeLayoutBudget(budget, inputs.length)) return null
+  if (targetSlot >= inputs.length) return null
   const input =
     inputs instanceof Y.Array ? inputs.get(targetSlot) : inputs[targetSlot]
   return input === undefined ? null : input
