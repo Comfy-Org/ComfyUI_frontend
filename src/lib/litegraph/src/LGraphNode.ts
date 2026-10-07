@@ -74,7 +74,11 @@ import {
   createOutputSlotView,
   resolveInputSlotView
 } from './node/slotDescriptorView'
-import { initializeWidgetsView } from './node/widgetsView'
+import {
+  clearWidgetRestorationSlots,
+  getWidgetRestorationSlot,
+  initializeWidgetsView
+} from './node/widgetsView'
 import type { NodeCanonicalField } from './extensionPersistence'
 import {
   extensionConfigureView,
@@ -1263,7 +1267,12 @@ export class LGraphNode
             graphId,
             this.id,
             widget.name,
-            positionalIndex++
+            getWidgetRestorationSlot(
+              this,
+              widget,
+              positionalIndex++,
+              restoration.positional.length
+            )
           )
           if (restored) widget.value = restored.value
         }
@@ -1292,6 +1301,7 @@ export class LGraphNode
         )
       }
     } finally {
+      clearWidgetRestorationSlots(this)
       useWidgetValueStore().clearNodeWidgetRestoration(graphId, this.id)
     }
   }

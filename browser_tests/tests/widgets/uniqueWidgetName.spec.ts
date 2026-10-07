@@ -20,11 +20,16 @@ const test = comfyPageFixture.extend<{ workflowName: string }>({
 
 async function addNodeWithWidgets(
   comfyPage: ComfyPage,
-  widgets: { first: string; second: string; pinSecondAs?: string }
+  widgets: {
+    first: string
+    second: string
+    third?: string
+    pinSecondAs?: string
+  }
 ): Promise<{ node: Locator; nodeId: string }> {
   await comfyPage.nodeOps.clearGraph()
   await comfyPage.page.evaluate(
-    ({ nodeTypeName, first, second, pinSecondAs }) => {
+    ({ nodeTypeName, first, second, third, pinSecondAs }) => {
       const nodeType = window.LiteGraph!.registered_node_types[nodeTypeName]
       const onNodeCreated = nodeType.prototype.onNodeCreated
       nodeType.prototype.onNodeCreated = function (...args) {
@@ -43,6 +48,9 @@ async function addNodeWithWidgets(
           writable: false,
           configurable: false
         })
+        if (third !== undefined) {
+          this.addWidget('string', third, 'third default', () => {})
+        }
       }
     },
     { nodeTypeName: NODE_TYPE, ...widgets }
@@ -156,6 +164,50 @@ test.describe(
           'second default'
         ])
       })
+    })
+
+    test('keeps a surviving sibling value through duplicate refusal and reload', async ({
+      comfyPage,
+      workflowName
+    }) => {
+      const { nodeId } = await addNodeWithWidgets(comfyPage, {
+        first: 'a',
+        second: 'duplicate',
+        third: 'b',
+        pinSecondAs: 'a'
+      })
+      const workflow = await comfyPage.workflow.getExportedWorkflow()
+      const savedNode = workflow.nodes.find(({ id }) => String(id) === nodeId)
+      if (!savedNode) throw new Error(`node ${nodeId} was not exported`)
+      savedNode.widgets_values = ['saved-a', 'saved-duplicate', 'saved-b']
+      savedNode.widgets_values_named = {
+        a: 'saved-duplicate',
+        b: 'saved-b'
+      }
+
+      await comfyPage.page.evaluate(() => {
+        window.LiteGraph!.namedValuesRestore = false
+      })
+      await comfyPage.workflow.loadGraphData(workflow)
+
+      const siblingInput = widgetRowsNamed(
+        comfyPage,
+        comfyPage.page,
+        'b'
+      ).locator('input')
+      await expect(siblingInput).toHaveValue('saved-b')
+      expect(await saveWidgetValues(comfyPage, workflowName)).toEqual([
+        'saved-a',
+        'saved-b'
+      ])
+
+      await comfyPage.workflow.newBlankWorkflow()
+      await comfyPage.menu.topbar.closeWorkflowTab(workflowName)
+      await openWorkflowFromSidebar(comfyPage, workflowName)
+
+      await expect(
+        widgetRowsNamed(comfyPage, comfyPage.page, 'b').locator('input')
+      ).toHaveValue('saved-b')
     })
   }
 )

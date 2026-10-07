@@ -34,6 +34,13 @@ interface WidgetsViewState {
 }
 
 const reportedUnresolved = new WeakMap<LGraphNode, Set<IBaseWidget>>()
+const restorationSlots = new WeakMap<
+  LGraphNode,
+  {
+    slots: ReadonlyMap<IBaseWidget, number>
+    count: number
+  }
+>()
 
 const states = new WeakMap<LGraphNode, WidgetsViewState>()
 const widgetsViewGetters = new WeakSet<() => IBaseWidget[] | undefined>()
@@ -135,6 +142,31 @@ export function wasWidgetRefused(
   widget: IBaseWidget
 ): boolean {
   return commitsThroughWidgetsView(node) && !node.widgets?.includes(widget)
+}
+
+export function captureWidgetRestorationSlots(node: LGraphNode): void {
+  const slots = new Map<IBaseWidget, number>()
+  let position = 0
+  for (const widget of node.widgets ?? []) {
+    if (widget.serialize === false) continue
+    slots.set(widget, position++)
+  }
+  restorationSlots.set(node, { slots, count: position })
+}
+
+export function getWidgetRestorationSlot(
+  node: LGraphNode,
+  widget: IBaseWidget,
+  fallback: number,
+  savedSlotCount: number
+): number {
+  const captured = restorationSlots.get(node)
+  if (!captured || captured.count !== savedSlotCount) return fallback
+  return captured.slots.get(widget) ?? fallback
+}
+
+export function clearWidgetRestorationSlots(node: LGraphNode): void {
+  restorationSlots.delete(node)
 }
 
 export function refuseAmbiguousNodeWidgets(
