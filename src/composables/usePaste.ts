@@ -1,7 +1,8 @@
 import { useEventListener } from '@vueuse/core'
 
-import { holdsLatestCanvasCopy, readClipboardHtml } from '@/composables/useCopy'
+import { parseClipboardHtml } from '@/composables/useCopy'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { CANVAS_CLIPBOARD_ID_KEY } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { zClipboardItems } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -44,14 +45,14 @@ export function cloneDataTransfer(original: DataTransfer): DataTransfer {
 }
 
 function pasteClipboardItems(data: DataTransfer): boolean {
-  const read = readClipboardHtml(data.getData('text/html'))
-  if (read.status === 'absent') return false
-  if (read.status === 'unreadable') {
-    useErrorHandling().toastErrorHandler(read.error)
+  const parsed = parseClipboardHtml(data.getData('text/html'))
+  if (parsed.status === 'absent') return false
+  if (parsed.status === 'unreadable') {
+    useErrorHandling().toastErrorHandler(parsed.cause)
     return true
   }
 
-  const clipboardItems = zClipboardItems.safeParse(read.payload)
+  const clipboardItems = zClipboardItems.safeParse(parsed.payload)
   if (!clipboardItems.success) {
     useErrorHandling().toastErrorHandler(clipboardItems.error)
     return true
@@ -63,6 +64,23 @@ function pasteClipboardItems(data: DataTransfer): boolean {
     useErrorHandling().toastErrorHandler(err)
   }
   return true
+}
+
+function holdsLatestCanvasCopy(html: string): boolean {
+  const parsed = parseClipboardHtml(html)
+  if (parsed.status !== 'read') return false
+  const { payload } = parsed
+  try {
+    return (
+      typeof payload === 'object' &&
+      payload !== null &&
+      'clipboardId' in payload &&
+      typeof payload.clipboardId === 'string' &&
+      payload.clipboardId === localStorage.getItem(CANVAS_CLIPBOARD_ID_KEY)
+    )
+  } catch {
+    return false
+  }
 }
 
 function isWorkflow(

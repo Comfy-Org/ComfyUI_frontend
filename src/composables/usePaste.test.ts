@@ -19,6 +19,10 @@ import type {
   Positionable
 } from '@/lib/litegraph/src/litegraph'
 import { useCopy } from '@/composables/useCopy'
+import {
+  CANVAS_CLIPBOARD_ID_KEY,
+  CANVAS_CLIPBOARD_KEY
+} from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
@@ -115,8 +119,8 @@ const mockCanvas = {
 function copyToCanvasClipboard(data: unknown): () => string {
   return () => {
     const serialized = JSON.stringify(data)
-    localStorage.setItem('litegrapheditor_clipboard', serialized)
-    localStorage.setItem('litegrapheditor_clipboard_id', crypto.randomUUID())
+    localStorage.setItem(CANVAS_CLIPBOARD_KEY, serialized)
+    localStorage.setItem(CANVAS_CLIPBOARD_ID_KEY, crypto.randomUUID())
     return serialized
   }
 }
@@ -743,8 +747,7 @@ describe('usePaste', () => {
   })
 
   it('does not treat metadata embedded in arbitrary HTML as a Comfy clipboard', async () => {
-    const encoded = btoa(JSON.stringify({ nodes: [] }))
-    const html = `<article><span data-comfy-metadata="${encoded}"></span></article>`
+    const html = `<article>${clipboardHtml({ nodes: [] })}</article>`
 
     usePaste()
     const dataTransfer = new DataTransfer()
@@ -868,10 +871,16 @@ describe('usePaste', () => {
       document.dispatchEvent(new ClipboardEvent('paste', { clipboardData }))
     }
 
-    it('skips the default paste for node metadata without a copy id', () => {
+    it.for([
+      { name: 'without a clipboard id', data: { nodes: [] } },
+      {
+        name: 'with a null clipboard id',
+        data: { nodes: [], clipboardId: null }
+      }
+    ])('skips the default paste for node metadata $name', ({ data }) => {
       setupMediaNodeSelected()
       const clipboardData = new DataTransfer()
-      clipboardData.setData('text/html', clipboardHtml({ nodes: [] }))
+      clipboardData.setData('text/html', clipboardHtml(data))
 
       paste(clipboardData)
 
