@@ -64,7 +64,7 @@ jobs:
           FAST_LANE_TOKEN: ${{ secrets.WEBSITE_APPROVAL_TOKEN }}
           FAST_LANE_BASE_REF: ${{ github.event.repository.default_branch }}
           FAST_LANE_EVENT_ACTION: ${{ github.event.action }}
-          FAST_LANE_EVENT_ACTOR: ${{ github.actor }}
+          FAST_LANE_EVENT_ACTOR: ${{ github.triggering_actor }}
           FAST_LANE_EVENT_LABEL: ${{ github.event.label.name }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
