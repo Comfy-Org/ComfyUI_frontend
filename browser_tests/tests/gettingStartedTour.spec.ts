@@ -2,6 +2,7 @@ import { expect, mergeTests } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { FIRST_RUN_COACH_IDS } from '@/platform/onboarding/onboardingTours'
 import { TOUR_ROLE_PINS } from '@/renderer/extensions/firstRunTour/roles/tourRolePins'
 import type { SupportedTemplateId } from '@/renderer/extensions/firstRunTour/roles/tourRolePins'
 
@@ -353,7 +354,8 @@ test.describe(
       })
 
       test('leaves the nudge until the upgrade dialog closes', async ({
-        comfyPage
+        comfyPage,
+        onboarding
       }) => {
         test.slow()
         const { page } = comfyPage
@@ -377,6 +379,30 @@ test.describe(
           nudge,
           'the tour ended, so the user still needs somewhere to go next'
         ).toBeVisible({ timeout: 10_000 })
+
+        const templatesButton = onboarding.coachAnchor(
+          FIRST_RUN_COACH_IDS.templatesButton
+        )
+        await expect
+          .poll(
+            async () => {
+              const [card, button] = await Promise.all([
+                nudge.boundingBox(),
+                templatesButton.boundingBox()
+              ])
+              if (!card || !button) return false
+              const besideButton = card.x >= button.x + button.width
+              const sharesRow =
+                card.y < button.y + button.height &&
+                card.y + card.height > button.y
+              return besideButton && sharesRow
+            },
+            {
+              message:
+                'the nudge points at the Templates button, clear of the docked Agent panel on the right'
+            }
+          )
+          .toBe(true)
       })
     })
 

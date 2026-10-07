@@ -1,10 +1,19 @@
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useDialogStore } from '@/stores/dialogStore'
+import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import {
+  clearCoachmarks,
+  registerCoachmark,
+  unregisterCoachmark
+} from '@/platform/onboarding/coachmarkRegistry'
+import { laidOut } from '@/platform/onboarding/fixtures/coachmarkTargets'
+import { FIRST_RUN_COACH_IDS } from '@/platform/onboarding/onboardingTours'
 import { useTelemetry } from '@/platform/telemetry'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -63,6 +72,8 @@ describe('FirstRunTourNudge', () => {
     mocks.nudgeArmed.value = false
     mocks.tourWasCompleted.value = true
     useDialogStore().dialogStack = []
+    clearCoachmarks()
+    registerCoachmark(FIRST_RUN_COACH_IDS.templatesButton, laidOut())
   })
 
   it('shows a nudge that came due before it mounted', async () => {
@@ -145,6 +156,72 @@ describe('FirstRunTourNudge', () => {
       shown,
       'the funnel counts nudges, so a reappearance is not a second one'
     ).toHaveLength(1)
+  })
+
+  it('waits for a Templates button to point at', async () => {
+    clearCoachmarks()
+    mocks.nudgeArmed.value = true
+    renderNudge()
+
+    await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS)
+    expect(
+      nudge(),
+      'builder mode has no sidebar, and a nudge pointing at nothing is noise'
+    ).toBeNull()
+
+    registerCoachmark(FIRST_RUN_COACH_IDS.templatesButton, laidOut())
+    await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS)
+
+    expect(nudge()).not.toBeNull()
+  })
+
+  it('leaves once the Templates button goes away', async () => {
+    const button = laidOut()
+    clearCoachmarks()
+    registerCoachmark(FIRST_RUN_COACH_IDS.templatesButton, button)
+    mocks.nudgeArmed.value = true
+    renderNudge()
+    await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS)
+
+    unregisterCoachmark(FIRST_RUN_COACH_IDS.templatesButton, button)
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(nudge()).toBeNull()
+  })
+
+  it.for([
+    {
+      blocker: 'agent node selection hides the sidebar',
+      block: () => {
+        useAgentNodeSelectionStore().isActionBarsHidden = true
+      },
+      clear: () => {
+        useAgentNodeSelectionStore().isActionBarsHidden = false
+      }
+    },
+    {
+      blocker: 'a sidebar panel is open beside the button',
+      block: () => {
+        const sidebar = useSidebarTabStore()
+        sidebar.sidebarTabs = [fromPartial({ id: 'node-library' })]
+        sidebar.activeSidebarTabId = 'node-library'
+      },
+      clear: () => {
+        useSidebarTabStore().activeSidebarTabId = null
+      }
+    }
+  ])('waits while $blocker', async ({ block, clear }) => {
+    block()
+    mocks.nudgeArmed.value = true
+    renderNudge()
+
+    await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS)
+    expect(nudge()).toBeNull()
+
+    clear()
+    await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS)
+
+    expect(nudge()).not.toBeNull()
   })
 
   it('congratulates a tour the user walked to the end', async () => {
