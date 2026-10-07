@@ -948,7 +948,7 @@ export function getExecutionIdsForSelectedNodes(
     node: LGraphNode,
     parentExecutionId: string | null
   ): NodeExecutionId | null {
-    if (!parentExecutionId) return createNodeExecutionId([node.id])
+    if (!parentExecutionId) return createLeafNodeExecutionId(node.id)
 
     return createExecutionIdFromPath(parentExecutionId, node.id)
   }
