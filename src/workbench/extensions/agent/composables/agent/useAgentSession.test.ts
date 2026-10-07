@@ -2037,13 +2037,12 @@ describe('useAgentSession (v1 composition root)', () => {
     const answerAsk = vi
       .fn<AgentRestClient['answerAsk']>()
       .mockRejectedValue(new AgentApiError('already answered', 409, undefined))
-    const { source, emit, status } = fakeEvents()
+    const { source, emit } = fakeEvents()
     const session = useAgentSession({
       rest: fakeRest({ answerAsk }),
       events: source
     })
     session.start()
-    status(true)
     await session.sendMessage('build it')
     emit(runApproval('msg-1'))
 
@@ -4011,7 +4010,7 @@ describe('useAgentSession (v1 composition root)', () => {
     )
   })
 
-  it('(g10) a failing recovery fetch stays silent and leaves the turn live for the socket', async () => {
+  it('(g10) a failing recovery fetch gets one bounded follow-up and leaves the turn live', async () => {
     const rest = fakeRest({
       getMessages: vi.fn(async (): Promise<AgentMessages> => {
         throw new TypeError('Failed to fetch')
@@ -4029,7 +4028,7 @@ describe('useAgentSession (v1 composition root)', () => {
     status(true)
     await vi.advanceTimersByTimeAsync(60_000)
 
-    expect(rest.getMessages).toHaveBeenCalledTimes(6)
+    expect(rest.getMessages).toHaveBeenCalledTimes(11)
     expect(session.notices.value).toEqual([])
     expect(session.isStreaming.value).toBe(true)
 
@@ -4916,7 +4915,7 @@ describe('useAgentSession (v1 composition root)', () => {
     }
   })
 
-  it('(g42) the newest assistant row decides whether a turn is terminal', async () => {
+  it('(g42) an open approval keeps the turn live despite a newer terminal row', async () => {
     vi.useFakeTimers()
     try {
       const rest = fakeRest({
@@ -4942,8 +4941,8 @@ describe('useAgentSession (v1 composition root)', () => {
       status(true)
       await vi.advanceTimersByTimeAsync(0)
 
-      expect(session.isStreaming.value).toBe(false)
-      expect(approvalParts(session)).toHaveLength(0)
+      expect(session.isStreaming.value).toBe(true)
+      expect(approvalParts(session)).toHaveLength(1)
     } finally {
       vi.useRealTimers()
     }

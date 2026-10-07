@@ -406,7 +406,7 @@ export const useAgentConversationStore = defineStore(
      * has to be told, or whichever one is asked to republish next puts the
      * card back.
      */
-    function retireAsk(askId: string, owner?: string): void {
+    function retireAsk(askId: string, owner?: string, permanent = true): void {
       const key = threadKey(owner)
       const withoutAsk = (parts: AssistantMessage['parts']) =>
         parts.filter(
@@ -432,7 +432,7 @@ export const useAgentConversationStore = defineStore(
       // screen if this did not strip it.
       for (const entry of backgroundTurns.values())
         if (entry.threadId === key) entry.transport.dropAskPart(askId)
-      retiredAsksFor(key).add(askId)
+      if (permanent) retiredAsksFor(key).add(askId)
       clearAskResolutionWatchdog(askId)
       submittedAskSelections.delete(askId)
       setAskAnswering(askId, false)
@@ -1077,7 +1077,7 @@ export const useAgentConversationStore = defineStore(
           ? [part.askId]
           : []
       )
-      for (const askId of stale) retireAsk(askId, turn.threadId)
+      for (const askId of stale) retireAsk(askId, turn.threadId, false)
     }
 
     /**
