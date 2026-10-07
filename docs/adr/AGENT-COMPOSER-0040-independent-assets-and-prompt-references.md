@@ -29,6 +29,13 @@ remain owned by the store while included or held by a pending snapshot, and are
 released when no longer retained. UI hover/focus highlighting and native scroll
 measurements remain local to components and never change the draft.
 
+Playable media URLs and image poster URLs are distinct metadata. The store owns
+one cancellable video-thumbnail job per asset/source and publishes its result to
+the tray and all prompt occurrences. UI surfaces render that poster; only tray
+hover mounts a player. A source change, removal or disposal cancels obsolete
+capture. Pending snapshots retain media resources and failed recovery preserves
+a poster completed for the same source while the send was pending.
+
 ## Alternatives considered
 
 - Continue deriving attachments from references: cannot express an unmentioned

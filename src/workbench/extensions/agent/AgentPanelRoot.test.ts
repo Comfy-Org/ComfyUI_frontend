@@ -2113,7 +2113,10 @@ function fileOfSize(name: string, size: number, type: string): File {
   return file
 }
 
-function assetPanelDrag(displayName: string | null) {
+function assetPanelDrag(
+  displayName: string | null,
+  overrides: Partial<AssetItem> = {}
+) {
   const asset = {
     id: 'library-source',
     name: 'library.png',
@@ -2121,7 +2124,8 @@ function assetPanelDrag(displayName: string | null) {
     display_name: displayName,
     tags: ['input'],
     created_at: '2026-10-03T00:00:00Z',
-    updated_at: '2026-10-03T00:00:00Z'
+    updated_at: '2026-10-03T00:00:00Z',
+    ...overrides
   } satisfies AssetItem
   const dataTransfer = new DataTransfer()
   const event = new DragEvent('dragstart', { cancelable: true })
@@ -2411,6 +2415,67 @@ describe('AgentPanelRoot attach flow', () => {
         })
       ])
       expect(store.prompt).toEqual({ text: 'Keep this draft', references: [] })
+      expect(uploaded).toEqual([])
+    }
+  )
+
+  it.for([
+    {
+      filename: 'clip.mp4',
+      label: 'My clip',
+      kind: 'video',
+      previewId: 'poster',
+      previewUrl: 'http://localhost:3000/api/assets/poster/content',
+      indicatorLabel: 'My clip',
+      indicatorSource: 'http://localhost:3000/api/assets/poster/content'
+    },
+    {
+      filename: 'song.mp3',
+      label: 'My recording',
+      kind: 'audio',
+      previewId: undefined,
+      previewUrl: undefined,
+      indicatorLabel: 'Audio',
+      indicatorSource: null
+    }
+  ])(
+    'preserves playable $kind metadata from the assets panel through the chat tray',
+    async ({
+      filename,
+      label,
+      kind,
+      previewId,
+      previewUrl,
+      indicatorLabel,
+      indicatorSource
+    }) => {
+      const uploaded = stubUploadFetch()
+      renderWithSelectedTarget()
+      const store = useAgentComposerStore()
+      store.setText('Keep typing')
+      await nextTick()
+      const data = assetPanelDrag(label, {
+        name: filename,
+        hash: `stored-${filename}`,
+        preview_id: previewId
+      })
+      expect(dispatchDrag(screen.getByRole('textbox'), 'drop', data)).toBe(true)
+      const trayItem = await screen.findByRole('group', { name: label })
+      expect(store.attachments).toEqual([
+        expect.objectContaining({
+          name: label,
+          mediaKind: kind,
+          previewUrl,
+          mediaUrl:
+            'http://localhost:3000/api/assets/library-source/content?disposition=inline'
+        })
+      ])
+      expect(
+        within(trayItem)
+          .getByRole('img', { name: indicatorLabel })
+          .getAttribute('src')
+      ).toBe(indicatorSource)
+      expect(store.prompt).toEqual({ text: 'Keep typing', references: [] })
       expect(uploaded).toEqual([])
     }
   )

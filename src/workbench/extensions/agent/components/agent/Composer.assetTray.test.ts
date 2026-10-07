@@ -24,6 +24,12 @@ const asset = {
   previewUrl: 'https://example.com/source.png'
 }
 
+type MediaSurfaces = {
+  chip: HTMLElement
+  trayItem: HTMLElement
+  menuItem: HTMLElement
+}
+
 function setup() {
   const store = useAgentComposerStore()
   store.setNodeScope('workflow-a')
@@ -104,6 +110,121 @@ function setTrayGeometry(
 }
 
 describe('composer asset tray', () => {
+  it('updates every inline video thumbnail without changing its references or opening a preview', async () => {
+    const user = userEvent.setup()
+    const { store } = setup()
+    store.addAttachment({
+      id: 'video',
+      name: 'My video',
+      ref: '',
+      mediaKind: 'video',
+      mediaUrl: 'blob:video',
+      uploading: true
+    })
+    store.referenceAttachment('video')
+    store.referenceAttachment('video')
+    const chips = await screen.findAllByTestId('asset-reference-chip')
+    expect(
+      chips.map((chip) =>
+        within(chip)
+          .getByRole('img', { name: 'Video' })
+          .getAttribute('aria-label')
+      )
+    ).toEqual(['Video', 'Video'])
+    store.updateAttachment('video', {
+      ref: 'stored.mp4',
+      mediaUrl: '/stored.mp4',
+      previewUrl: '/poster.png',
+      uploading: false
+    })
+    await waitFor(() =>
+      expect(
+        screen
+          .getAllByTestId('asset-reference-chip')
+          .map((chip) => within(chip).getByAltText('').getAttribute('src'))
+      ).toEqual(['/poster.png', '/poster.png'])
+    )
+    await user.hover(screen.getAllByTestId('asset-reference-chip')[0])
+    expect(screen.getByRole('group', { name: 'My video' })).toHaveAttribute(
+      'data-highlighted',
+      'true'
+    )
+    expect(
+      screen.queryByRole('region', { name: 'My video' })
+    ).not.toBeInTheDocument()
+    expect(store.prompt.references).toHaveLength(2)
+    expect(store.attachments).toHaveLength(1)
+  })
+
+  it('shows the audio type of a renamed inline attachment', async () => {
+    const { store } = setup()
+    store.addAttachment({
+      id: 'audio',
+      name: 'Recording',
+      ref: 'song.mp3',
+      mediaKind: 'audio',
+      mediaUrl: '/song.mp3'
+    })
+    store.referenceAttachment('audio')
+    const chip = await screen.findByTestId('asset-reference-chip')
+    expect(within(chip).getByRole('img', { name: 'Audio' })).toBeInTheDocument()
+  })
+
+  it.for([
+    {
+      name: 'My video',
+      mediaKind: 'video',
+      previewUrl: '/poster.png',
+      indicators: ({ chip, trayItem, menuItem }: MediaSurfaces) => [
+        within(chip).getByAltText(''),
+        within(trayItem).getByAltText('My video'),
+        within(menuItem).getByAltText('')
+      ],
+      sources: ['/poster.png', '/poster.png', '/poster.png'],
+      labels: [null, null, null]
+    },
+    {
+      name: 'Recording',
+      mediaKind: 'audio',
+      previewUrl: undefined,
+      indicators: ({ chip, trayItem, menuItem }: MediaSurfaces) =>
+        [chip, trayItem, menuItem].map((surface) =>
+          within(surface).getByRole('img', { name: 'Audio' })
+        ),
+      sources: [null, null, null],
+      labels: ['Audio', 'Audio', 'Audio']
+    }
+  ] as const)(
+    'uses the same media indicator for $mediaKind in the tray, menu and inline',
+    async ({ name, mediaKind, previewUrl, indicators, sources, labels }) => {
+      const user = userEvent.setup()
+      const { store, editor } = setup()
+      store.addAttachment({
+        id: 'media',
+        name,
+        ref: '/file',
+        mediaKind,
+        previewUrl
+      })
+      store.referenceAttachment('media')
+      const chip = await screen.findByTestId('asset-reference-chip')
+      await user.click(editor)
+      await user.keyboard('@')
+      const menuItem = await screen.findByRole('menuitem', { name })
+      const trayItem = screen.getByRole('group', { name })
+      const images = indicators({ chip, trayItem, menuItem })
+      expect(images.map((image) => image.getAttribute('src'))).toEqual(sources)
+      expect(images.map((image) => image.getAttribute('aria-label'))).toEqual(
+        labels
+      )
+      await user.click(menuItem)
+      expect(await screen.findAllByTestId('asset-reference-chip')).toHaveLength(
+        2
+      )
+      expect(store.attachments).toHaveLength(1)
+    }
+  )
+
   it('announces all pending uploads outside the scroll viewport and preserves the draft on Enter', async () => {
     const user = userEvent.setup()
     const { store, editor, send } = setup()
@@ -536,7 +657,7 @@ describe('composer asset tray', () => {
       screen.queryByRole('tooltip', { name: asset.name })
     ).not.toBeInTheDocument()
 
-    const trigger = screen.getByTestId('agent-attachment-chip')
+    const trigger = screen.getByTestId('agent-asset-preview-trigger')
     await user.hover(trigger)
     const preview = await screen.findByRole('tooltip', { name: asset.name })
     expect(

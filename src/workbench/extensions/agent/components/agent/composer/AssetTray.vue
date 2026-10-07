@@ -46,7 +46,7 @@ function scrollPage(direction: -1 | 1): void {
   <div
     role="region"
     :aria-label="t('assetBrowser.assets')"
-    class="relative max-w-full min-w-0 shrink-0 overflow-hidden rounded-t-lg"
+    class="relative max-w-full min-w-0 overflow-hidden rounded-t-lg"
   >
     <div
       ref="scrollContainer"
@@ -63,6 +63,8 @@ function scrollPage(direction: -1 | 1): void {
         :key="item.id"
         :name="item.name"
         :preview-url="item.previewUrl"
+        :media-url="item.mediaUrl"
+        :media-kind="item.mediaKind"
         :uploading="item.uploading"
         :highlighted="highlightedIds.includes(item.id)"
         @remove="emit('remove', item.id)"

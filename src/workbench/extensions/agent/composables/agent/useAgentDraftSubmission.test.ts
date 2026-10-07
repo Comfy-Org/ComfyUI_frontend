@@ -195,6 +195,37 @@ describe('Agent draft submission', () => {
     expect(revoke).not.toHaveBeenCalled()
   })
 
+  it('retains media through a pending send and failed recovery, releasing it on success', async () => {
+    const { composer, submit, send, pending } = setup()
+    const revoke = vi.spyOn(URL, 'revokeObjectURL')
+    composer.addAttachment({
+      id: 'video',
+      name: 'clip.mp4',
+      ref: 'clip.mp4',
+      mediaKind: 'video',
+      mediaUrl: 'blob:video'
+    })
+    composer.referenceAttachment('video')
+    const sending = submit()
+    composer.releaseUnusedAssets()
+    expect(revoke).not.toHaveBeenCalled()
+    pending.resolve(false)
+    await sending
+    await nextTick()
+    expect(composer.attachments).toContainEqual({
+      id: 'video',
+      name: 'clip.mp4',
+      ref: 'clip.mp4',
+      mediaKind: 'video',
+      mediaUrl: 'blob:video'
+    })
+    expect(revoke).not.toHaveBeenCalled()
+    send.mockResolvedValue(true)
+    await submit()
+    expect(composer.attachments).toEqual([])
+    expect(revoke.mock.calls).toEqual([['blob:cat'], ['blob:video']])
+  })
+
   it('does not recover over an edit that was subsequently cleared', async () => {
     const { composer, selection, submit, pending } = setup()
     const sending = submit()

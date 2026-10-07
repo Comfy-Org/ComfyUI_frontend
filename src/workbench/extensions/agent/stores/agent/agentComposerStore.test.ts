@@ -162,6 +162,48 @@ describe('composer reference ownership', () => {
     expect(revoke).not.toHaveBeenCalledWith('blob:new')
   })
 
+  it('retains included media until replacement/removal and rejects late object URLs', () => {
+    const store = useAgentComposerStore()
+    const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    store.addAttachment({
+      id: 'video',
+      name: 'clip.mp4',
+      ref: '',
+      mediaUrl: 'blob:video'
+    })
+    store.referenceAttachment('video')
+    store.removeReference('asset:video')
+    store.releaseUnusedAssets()
+    expect(revoke).not.toHaveBeenCalled()
+    store.updateAttachment('video', { mediaUrl: '/clip.mp4', ref: 'clip.mp4' })
+    expect(revoke).toHaveBeenCalledExactlyOnceWith('blob:video')
+    store.updateAttachment('video', { mediaUrl: 'blob:replacement' })
+    store.removeAttachment('video')
+    store.updateAttachment('video', { mediaUrl: 'blob:late' })
+    expect(revoke.mock.calls).toEqual([
+      ['blob:video'],
+      ['blob:replacement'],
+      ['blob:late']
+    ])
+    expect(store.attachments).toEqual([])
+  })
+
+  it('releases a shared blob only after both its image and media uses end', () => {
+    const store = useAgentComposerStore()
+    const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    store.addAttachment({
+      id: 'video',
+      name: 'clip.mp4',
+      ref: '',
+      previewUrl: 'blob:shared',
+      mediaUrl: 'blob:shared'
+    })
+    store.updateAttachment('video', { previewUrl: undefined })
+    expect(revoke).not.toHaveBeenCalled()
+    store.removeAttachment('video')
+    expect(revoke).toHaveBeenCalledExactlyOnceWith('blob:shared')
+  })
+
   it('rejects node history from a different target even when node IDs collide', () => {
     const store = useAgentComposerStore()
     store.setNodeScope('workflow-A')

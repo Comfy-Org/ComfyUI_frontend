@@ -18,7 +18,8 @@ import { assetPath } from '@e2e/fixtures/utils/paths'
 // The drop side accepts a drop purely on `dataTransfer.types` containing
 // `application/x-comfy-asset-info` (`AgentPanelRoot` `isAssetDrag`), so it is
 // view-agnostic by construction; what these cases pin is that every view mode
-// actually publishes that payload, and that the chip names the asset dragged.
+// actually publishes that payload, that the chip names the asset dragged, and
+// that a dropped MP4's chip previews it with a generated poster.
 const ASSET_NAME = AGENT_VIDEO_ASSET.name
 
 test.describe('Agent composer asset drop', { tag: '@cloud' }, () => {
@@ -70,6 +71,40 @@ test.describe('Agent composer asset drop', { tag: '@cloud' }, () => {
       await expect(agentPanel.attachmentChips).toHaveCount(1)
     })
   }
+
+  test(
+    'previews a video from the keyboard and restores focus on Escape',
+    { tag: '@ui' },
+    async ({ page }) => {
+      const agentPanel = new AgentPanel(page)
+      await agentPanel.open()
+
+      const assets = new AssetsSidebarTab(page)
+      await assets.open()
+      await assets.assetCards.first().dragTo(agentPanel.root)
+
+      const chip = agentPanel.attachmentChip(ASSET_NAME)
+      const trigger = chip.getByRole('button', { name: ASSET_NAME })
+      const poster = trigger.getByRole('img', { name: ASSET_NAME })
+      await expect(poster).toBeVisible()
+      await expect(poster).toHaveAttribute('src', /^blob:/)
+      await expect
+        .poll(() =>
+          poster.evaluate((image: HTMLImageElement) => image.naturalWidth)
+        )
+        .toBeGreaterThan(0)
+
+      await trigger.press('Enter')
+
+      const player = agentPanel.attachmentPreviewPlayer(ASSET_NAME)
+      await expect(player).toBeVisible()
+      await expect(player).toBeFocused()
+
+      await page.keyboard.press('Escape')
+      await expect(player).toHaveCount(0)
+      await expect(trigger).toBeFocused()
+    }
+  )
 
   // A filename is user data and may contain a quote or a backslash, which would
   // break the attribute selector the chip is matched by. Exercised end to end

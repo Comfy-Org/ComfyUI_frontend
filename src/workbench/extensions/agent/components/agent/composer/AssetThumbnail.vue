@@ -1,18 +1,29 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
+import { computed, ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
-const { name, previewUrl, variant } = defineProps<{
+const { name, previewUrl, mediaKind, variant } = defineProps<{
   name: string
   previewUrl?: string
+  mediaKind?: MediaKind
   variant: 'tray' | 'inline' | 'menu'
 }>()
-const kind = computed(() => getMediaTypeFromFilename(name))
+const kind = computed(() => mediaKind ?? getMediaTypeFromFilename(name))
+const failedUrl = ref<string>()
+
+function onImageError(event: Event): void {
+  if (
+    event.target instanceof HTMLImageElement &&
+    event.target.getAttribute('src') === previewUrl
+  )
+    failedUrl.value = event.target.getAttribute('src') ?? undefined
+}
 const isMediaIcon = computed(
-  () => variant === 'tray' && (kind.value === 'audio' || kind.value === 'video')
+  () => kind.value === 'audio' || kind.value === 'video'
 )
 const mediaLabel = computed(() =>
   kind.value === 'audio'
@@ -28,7 +39,8 @@ const iconSize = computed(
     })[variant]
 )
 const icon = computed(() => {
-  if (variant !== 'tray') return 'icon-[lucide--paperclip]'
+  if (variant !== 'tray' && !isMediaIcon.value)
+    return 'icon-[lucide--paperclip]'
   return kind.value === 'other'
     ? 'icon-[lucide--file]'
     : iconForMediaType(kind.value)
@@ -38,11 +50,17 @@ const icon = computed(() => {
 <template>
   <span class="flex items-center justify-center">
     <img
-      v-if="previewUrl && kind === 'image'"
+      v-if="
+        previewUrl &&
+        previewUrl !== failedUrl &&
+        (kind === 'image' || kind === 'video')
+      "
+      :key="previewUrl"
       :src="previewUrl"
       :alt="variant === 'tray' ? name : ''"
       :aria-hidden="variant !== 'tray' || undefined"
       class="size-full rounded-sm object-cover"
+      @error="onImageError"
     />
     <span
       v-else

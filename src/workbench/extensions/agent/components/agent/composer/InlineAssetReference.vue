@@ -3,6 +3,7 @@ import { useElementHover, useFocusWithin } from '@vueuse/core'
 import { onBeforeUnmount, useTemplateRef, watch } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
+import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 
 import AssetThumbnail from './AssetThumbnail.vue'
 
@@ -13,9 +14,10 @@ import {
   inlineReferenceRemoveButtonClass
 } from './inlineReferenceChipStyles'
 
-const { name, previewUrl, removeLabel } = defineProps<{
+const { name, previewUrl, mediaKind, removeLabel } = defineProps<{
   name: string
   previewUrl?: string
+  mediaKind?: MediaKind
   removeLabel: string
 }>()
 const emit = defineEmits<{ remove: []; highlight: [active: boolean] }>()
@@ -39,6 +41,7 @@ onBeforeUnmount(() => emit('highlight', false))
     <AssetThumbnail
       :name
       :preview-url
+      :media-kind
       variant="inline"
       class="size-4 shrink-0"
     />
