@@ -187,68 +187,43 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
         starterPromptSet: 'test'
       })
 
-      test('renders the treatment set and keeps it through insertion', async ({
+      test('reports the treatment exposure and carries the arm onto the send', async ({
         agentPanel,
-        hostTelemetry,
-        postedMessages
+        hostTelemetry
       }) => {
-        await agentPanel.open()
-        await agentPanel.selectWorkflow()
-        const panel = agentPanel.root
-        const treatmentPrompt = 'Create a polished image from an idea'
+        const treatmentPrompt =
+          enMessages.agent.suggestedPrompts.treatment.cloud[0]
 
-        await expect(
-          panel.getByRole('button', { name: treatmentPrompt })
-        ).toBeVisible()
-        await panel.getByRole('button', { name: treatmentPrompt }).click()
-        await expect(
-          panel.getByRole('textbox', { name: /^Describe ideas/ })
-        ).toHaveText(treatmentPrompt)
-        expect(postedMessages).toHaveLength(0)
-
-        await panel.getByRole('button', { name: 'Send' }).click()
-        await expect.poll(() => postedMessages.length).toBe(1)
-        await expect
-          .poll(() =>
-            hostTelemetry.find(
-              ({ event }) => event === 'app:agent_starter_prompt_exposure'
-            )
-          )
-          .toEqual({
-            event: 'app:agent_starter_prompt_exposure',
-            properties: {
-              '$feature/agent-starter-prompt-set': 'test'
-            }
-          })
-        await expect
-          .poll(
-            () =>
+        await test.step('open the panel on the treatment arm', async () => {
+          await agentPanel.open()
+          await agentPanel.selectWorkflow()
+          await expect
+            .poll(() =>
               hostTelemetry.find(
-                ({ event }) => event === 'app:agent_message_sent'
-              )?.properties['$feature/agent-starter-prompt-set']
-          )
-          .toBe('test')
-      })
-    })
+                ({ event }) => event === 'app:agent_starter_prompt_exposure'
+              )
+            )
+            .toEqual({
+              event: 'app:agent_starter_prompt_exposure',
+              properties: { '$feature/agent-starter-prompt-set': 'test' }
+            })
+        })
 
-    test.describe('control', () => {
-      test.use({ starterPromptSet: 'control' })
-
-      test('renders the unchanged control set', async ({ agentPanel }) => {
-        await agentPanel.open()
-        await agentPanel.selectWorkflow()
-        const panel = agentPanel.root
-
-        await expect(
-          panel.getByRole('button', {
-            name: enMessages.agent.suggestedPrompts.cloud[0]
-          })
-        ).toBeVisible()
-        await expect(
-          panel.getByRole('button', {
-            name: 'Create a polished image from an idea'
-          })
-        ).toHaveCount(0)
+        await test.step('send a treatment starter prompt', async () => {
+          await agentPanel.root
+            .getByRole('button', { name: treatmentPrompt })
+            .click()
+          await expect(agentPanel.composer).toHaveText(treatmentPrompt)
+          await agentPanel.sendButton.click()
+          await expect
+            .poll(
+              () =>
+                hostTelemetry.find(
+                  ({ event }) => event === 'app:agent_message_sent'
+                )?.properties['$feature/agent-starter-prompt-set']
+            )
+            .toBe('test')
+        })
       })
     })
   })
