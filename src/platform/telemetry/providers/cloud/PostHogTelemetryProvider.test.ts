@@ -479,6 +479,16 @@ describe('PostHogTelemetryProvider', () => {
         source_app: 'desktop',
         desktop_device_id: 'previous-device'
       })
+      const events: Array<CaptureResult | null> = []
+      hoisted.mockCapture.mockImplementation((event: string) => {
+        events.push(
+          runBeforeSend({
+            uuid: 'saved-referral-event',
+            event,
+            properties: Object.fromEntries(persisted)
+          })
+        )
+      })
       setLocation('')
       const provider = createProvider()
       await vi.dynamicImportSettled()
@@ -492,6 +502,47 @@ describe('PostHogTelemetryProvider', () => {
       expect(Object.fromEntries(persisted)).toEqual({
         source_app: 'desktop',
         desktop_device_id: 'previous-device'
+      })
+      expect(events).toEqual([
+        {
+          uuid: 'saved-referral-event',
+          event: TelemetryEvents.USER_SIGN_UP_OPENED,
+          properties: {
+            source_app: 'desktop',
+            desktop_device_id: 'previous-device',
+            client: 'web',
+            deployment: 'cloud'
+          }
+        }
+      ])
+      expect(hoisted.mockPeopleSet).not.toHaveBeenCalled()
+      expect(hoisted.mockPeopleSetOnce).not.toHaveBeenCalled()
+    })
+
+    it('keeps browser referral props after logout without attributing the next account to the visit', async () => {
+      const persisted = mockPostHogPersistence()
+      setLocation('?utm_source=comfy.desktop&desktop_device_id=device-xyz')
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      const resolved = vi.mocked(useCurrentUser().onUserResolved).mock
+        .calls[0][0]
+      const logout = vi.mocked(useCurrentUser().onUserLogout).mock.calls[0][0]
+      resolved({ id: 'first-user' })
+      expect(hoisted.mockPeopleSet).toHaveBeenCalledWith(
+        expect.objectContaining({ desktop_device_id: 'device-xyz' })
+      )
+      expect(hoisted.mockPeopleSetOnce).toHaveBeenCalledOnce()
+      hoisted.mockPeopleSet.mockClear()
+      hoisted.mockPeopleSetOnce.mockClear()
+
+      logout()
+      resolved({ id: 'next-user' })
+
+      expect(hoisted.mockIdentify).toHaveBeenLastCalledWith('next-user')
+      expect(Object.fromEntries(persisted)).toEqual({
+        source_app: 'desktop',
+        desktop_device_id: 'device-xyz'
       })
       expect(hoisted.mockPeopleSet).not.toHaveBeenCalled()
       expect(hoisted.mockPeopleSetOnce).not.toHaveBeenCalled()

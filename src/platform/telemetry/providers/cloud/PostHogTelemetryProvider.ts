@@ -256,6 +256,9 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
             currentUser.onUserLogout(() => {
               this.posthog?.reset(true)
               this.registerDesktopEntryProps()
+              if (this.desktopEntryAttribution) {
+                this.desktopEntryAttribution.source = 'persisted'
+              }
             })
           })
           .catch((error) => {
