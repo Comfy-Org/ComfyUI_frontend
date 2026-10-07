@@ -83,7 +83,7 @@ import { getShellLayoutSnapshot } from '@/platform/telemetry/utils/getShellLayou
 import { getPageVisibilityMetadata } from '@/workbench/extensions/agent/utils/getPageVisibilityMetadata'
 import { useFrontendVersionMismatchWarning } from '@/platform/updates/common/useFrontendVersionMismatchWarning'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
-import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+import { useDeploymentPickAtBoot } from '@/platform/workspace/composables/useDeploymentPickAtBoot'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { StatusWsMessageStatus } from '@/platform/remote/comfyui/execution/types'
 import { api } from '@/scripts/api'
@@ -181,7 +181,7 @@ const authStore = useAuthStore()
 let hasTrackedLogin = false
 
 // Learn which developer-platform deployment this page booted on (FE-2434).
-if (isCloud) void useDeploymentPickStore().loadOnce()
+if (isCloud) void useDeploymentPickAtBoot()
 
 watch(
   () => colorPaletteStore.completedActivePalette,
