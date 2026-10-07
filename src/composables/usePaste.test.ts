@@ -15,7 +15,8 @@ import type {
   LGraphCanvas,
   LGraph,
   LGraphGroup,
-  LGraphNode
+  LGraphNode,
+  Positionable
 } from '@/lib/litegraph/src/litegraph'
 import { useCopy } from '@/composables/useCopy'
 import { app } from '@/scripts/app'
@@ -106,8 +107,19 @@ const mockCanvas = {
   } as Partial<LGraph> as LGraph,
   graph_mouse: [100, 200],
   pasteFromClipboard: vi.fn(),
-  _deserializeItems: vi.fn()
+  _deserializeItems: vi.fn(),
+  selectedItems: new Set<Positionable>(),
+  copyToClipboard: vi.fn()
 } as Partial<LGraphCanvas> as LGraphCanvas
+
+function copyToCanvasClipboard(data: unknown): () => string {
+  return () => {
+    const serialized = JSON.stringify(data)
+    localStorage.setItem('litegrapheditor_clipboard', serialized)
+    localStorage.setItem('litegrapheditor_clipboard_id', crypto.randomUUID())
+    return serialized
+  }
+}
 
 let mockCanvasStore: ReturnType<typeof useCanvasStore>
 
@@ -693,10 +705,9 @@ describe('usePaste', () => {
       links: [],
       subgraphs: []
     }
-    Object.assign(mockCanvas, {
-      selectedItems: new Set([{}]),
-      copyToClipboard: () => JSON.stringify(data)
-    })
+    vi.mocked(mockCanvas.copyToClipboard).mockImplementation(
+      copyToCanvasClipboard(data)
+    )
     scope.run(useCopy)
     usePaste()
     const clipboardData = new DataTransfer()
@@ -845,10 +856,9 @@ describe('usePaste', () => {
     }
 
     function copyNodes(): DataTransfer {
-      Object.assign(mockCanvas, {
-        selectedItems: new Set([{}]),
-        copyToClipboard: () => JSON.stringify({ nodes: [] })
-      })
+      vi.mocked(mockCanvas.copyToClipboard).mockImplementation(
+        copyToCanvasClipboard({ nodes: [] })
+      )
       const clipboardData = new DataTransfer()
       document.dispatchEvent(new ClipboardEvent('copy', { clipboardData }))
       return clipboardData
@@ -890,6 +900,40 @@ describe('usePaste', () => {
       paste(latest)
       expect(mockCanvas.pasteFromClipboard).toHaveBeenCalledOnce()
     })
+
+    it('skips the default paste after a menu copy replaced the canvas clipboard', () => {
+      setupMediaNodeSelected()
+      const keyboardCopy = copyNodes()
+      mockCanvas.copyToClipboard()
+
+      paste(keyboardCopy)
+
+      expect(mockCanvas.pasteFromClipboard).not.toHaveBeenCalled()
+    })
+
+    it.for([
+      {
+        platform: 'Windows',
+        wrap: (html: string) =>
+          `<html>\r\n<body>\r\n<!--StartFragment-->${html}<!--EndFragment-->\r\n</body>\r\n</html>`
+      },
+      {
+        platform: 'macOS',
+        wrap: (html: string) => `<meta charset='utf-8'>${html}`
+      }
+    ])(
+      'runs the default paste for the latest copy as $platform returns it',
+      ({ wrap }) => {
+        setupMediaNodeSelected()
+        const written = copyNodes().getData('text/html')
+        const clipboardData = new DataTransfer()
+        clipboardData.setData('text/html', wrap(written))
+
+        paste(clipboardData)
+
+        expect(mockCanvas.pasteFromClipboard).toHaveBeenCalledOnce()
+      }
+    )
   })
 })
 

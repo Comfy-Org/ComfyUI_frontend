@@ -1,10 +1,6 @@
 import { useEventListener } from '@vueuse/core'
 
-import {
-  LAST_KEYBOARD_COPY_ID_KEY,
-  decodeClipboardData,
-  readClipboardMetadata
-} from '@/composables/useCopy'
+import { holdsLatestCanvasCopy, readClipboardHtml } from '@/composables/useCopy'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { zClipboardItems } from '@/platform/workflow/validation/schemas/workflowSchema'
@@ -48,18 +44,14 @@ export function cloneDataTransfer(original: DataTransfer): DataTransfer {
 }
 
 function pasteClipboardItems(data: DataTransfer): boolean {
-  const metadata = readClipboardMetadata(data.getData('text/html'))
-  if (!metadata) return false
-
-  let parsed: unknown
-  try {
-    parsed = decodeClipboardData(metadata)
-  } catch (err) {
-    useErrorHandling().toastErrorHandler(err)
+  const read = readClipboardHtml(data.getData('text/html'))
+  if (read.status === 'absent') return false
+  if (read.status === 'unreadable') {
+    useErrorHandling().toastErrorHandler(read.error)
     return true
   }
 
-  const clipboardItems = zClipboardItems.safeParse(parsed)
+  const clipboardItems = zClipboardItems.safeParse(read.payload)
   if (!clipboardItems.success) {
     useErrorHandling().toastErrorHandler(clipboardItems.error)
     return true
@@ -71,22 +63,6 @@ function pasteClipboardItems(data: DataTransfer): boolean {
     useErrorHandling().toastErrorHandler(err)
   }
   return true
-}
-
-function holdsLatestKeyboardCopy(html: string): boolean {
-  const metadata = readClipboardMetadata(html)
-  if (!metadata) return false
-  try {
-    const parsed = decodeClipboardData(metadata)
-    return (
-      typeof parsed === 'object' &&
-      parsed !== null &&
-      'copyId' in parsed &&
-      parsed.copyId === localStorage.getItem(LAST_KEYBOARD_COPY_ID_KEY)
-    )
-  } catch {
-    return false
-  }
 }
 
 function isWorkflow(
@@ -289,8 +265,7 @@ export const usePaste = () => {
     const isMediaNodeSelected =
       isImageNodeSelected || isVideoNodeSelected || isAudioNodeSelected
     if (!isMediaNodeSelected && pasteClipboardItems(data)) return
-    const canPasteCanvasClipboard =
-      !isMediaNodeSelected || holdsLatestKeyboardCopy(data.getData('text/html'))
+    const html = data.getData('text/html')
 
     // No image found. Look for node data
     data = data.getData('text/plain')
@@ -320,7 +295,8 @@ export const usePaste = () => {
       }
 
       // Litegraph default paste
-      if (canPasteCanvasClipboard) canvas.pasteFromClipboard()
+      if (!isMediaNodeSelected || holdsLatestCanvasCopy(html))
+        canvas.pasteFromClipboard()
     }
   })
 }
