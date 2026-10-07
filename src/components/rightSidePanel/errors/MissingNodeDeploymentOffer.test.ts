@@ -3,14 +3,15 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import type { WorkspaceDeployment } from '@comfyorg/ingest-types'
-
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { createTestRootGraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import enMessages from '@/locales/en/main.json'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import type { DeploymentCompatibility } from '@/platform/workspace/api/workspaceApi'
+import type {
+  DeploymentCompatibility,
+  WorkspaceDeployment
+} from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import type { DeploymentPickState } from '@/platform/workspace/deploymentPickState'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
@@ -77,6 +78,8 @@ function readyOn(
     pickedDeploymentId,
     pickSource: pickedDeploymentId === null ? null : 'browser',
     defaultDeploymentId: null,
+    gonePickedDeploymentId: null,
+    goneDefaultDeploymentId: null,
     buildsVisible: true
   }
 }
