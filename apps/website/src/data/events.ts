@@ -623,11 +623,12 @@ const events: readonly ComfyEvent[] = [
     id: 'machine-cinema-wip-salon',
     category: 'meetup',
     organizer: 'partner',
-    // TODO: date and time are still a best guess (luma.com is unreachable
-    // from this session) — confirm against https://luma.com/machine-tclv
-    // before merging. Location confirmed as Los Angeles from Allyson's
-    // Luma link-preview screenshot on this PR (comment #5819753977, whose
-    // title reads "Machine Cinema LA - Work in Progress Salon").
+    // TODO: the date (September 30, 2026) is confirmed by the requester, but
+    // the 6-9 PM PT time is still a best guess (luma.com is unreachable from
+    // this session) — confirm against https://luma.com/machine-tclv.
+    // Location confirmed as Los Angeles from Allyson's Luma link-preview
+    // screenshot on this PR (comment #5819753977, whose title reads "Machine
+    // Cinema LA - Work in Progress Salon").
     coords: { lat: 34.0522, lng: -118.2437 },
     title: {
       en: 'Machine Cinema: Work in Progress Salon',
@@ -640,11 +641,11 @@ const events: readonly ComfyEvent[] = [
     },
     location: { en: 'Los Angeles, CA', 'zh-CN': '美国加州洛杉矶' },
     dateLabel: {
-      en: 'October 8, 2026 · 6-9 PM PT',
-      'zh-CN': '2026年10月8日 · 下午6点至9点（PT）'
+      en: 'September 30, 2026 · 6-9 PM PT',
+      'zh-CN': '2026年9月30日 · 下午6点至9点（PT）'
     },
-    startDateTime: '2026-10-08T18:00:00-07:00',
-    endDateTime: '2026-10-08T21:00:00-07:00',
+    startDateTime: '2026-09-30T18:00:00-07:00',
+    endDateTime: '2026-09-30T21:00:00-07:00',
     link: {
       href: {
         en: 'https://luma.com/machine-tclv?lm_source=embed',
