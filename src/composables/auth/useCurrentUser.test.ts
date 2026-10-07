@@ -65,6 +65,7 @@ describe('useCurrentUser', () => {
       getState: async () => ({ status: 'signed_in', userId: 'host-user' }),
       getAccessToken: async () => 'host-token',
       requestSignIn: async () => ({ status: 'signed_in', userId: 'host-user' }),
+      signOut: async () => ({ status: 'signed_out' }),
       onChanged: () => () => {}
     })
     Object.assign(mockApiKeyState, { isAuthenticated: true })

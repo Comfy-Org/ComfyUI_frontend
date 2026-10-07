@@ -9,6 +9,7 @@ import {
   desktopHostUser,
   isDesktopHostSessionActive,
   requestDesktopHostSignIn,
+  requestDesktopHostSignOut,
   startDesktopHostSession,
   stopDesktopHostSession
 } from '@/platform/auth/desktopHost/desktopHostSession'
@@ -26,6 +27,9 @@ function fakeBridge(initial: DesktopHostAuthState) {
     getState: vi.fn(async () => initial),
     getAccessToken: vi.fn(async (): Promise<string | null> => 'host-token'),
     requestSignIn: vi.fn(async (): Promise<DesktopHostAuthState> => SIGNED_IN),
+    signOut: vi.fn(
+      async (): Promise<DesktopHostAuthState> => ({ status: 'signed_out' })
+    ),
     onChanged: vi.fn((callback: (state: DesktopHostAuthState) => void) => {
       listeners.add(callback)
       return () => listeners.delete(callback)
@@ -162,6 +166,25 @@ describe('desktopHostSession', () => {
       expect(desktopHostUser.value).toBeNull()
     })
   })
+
+  it.for([
+    {
+      name: 'signs out',
+      result: { status: 'signed_out' } as const,
+      expected: true
+    },
+    { name: 'keeps its session', result: SIGNED_IN, expected: false }
+  ])(
+    'reports whether Desktop $name on sign-out',
+    async ({ result, expected }) => {
+      const { bridge } = fakeBridge(SIGNED_IN)
+      bridge.signOut.mockResolvedValue(result)
+      await startDesktopHostSession(bridge)
+
+      await expect(requestDesktopHostSignOut()).resolves.toBe(expected)
+      expect(desktopHostUser.value === null).toBe(expected)
+    }
+  )
 
   it('does not start a Desktop sign-in while inactive', async () => {
     await expect(requestDesktopHostSignIn()).resolves.toBe(false)

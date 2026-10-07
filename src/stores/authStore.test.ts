@@ -7,6 +7,7 @@ import type { Auth, User, UserCredential } from 'firebase/auth'
 import * as firebaseAuth from 'firebase/auth'
 import type { Mock } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import { useTelemetry } from '@/platform/telemetry'
 
@@ -2777,12 +2778,23 @@ describe('useAuthStore in local/desktop distribution', () => {
   })
 
   describe('with the Desktop host session', () => {
-    const hostBridge = (state: DesktopHostAuthState) => ({
-      getState: vi.fn(async () => state),
-      getAccessToken: vi.fn(async (): Promise<string | null> => 'host-token'),
-      requestSignIn: vi.fn(async () => state),
-      onChanged: vi.fn(() => () => {})
-    })
+    const hostBridge = (state: DesktopHostAuthState) => {
+      const listeners = new Set<(next: DesktopHostAuthState) => void>()
+      return {
+        getState: vi.fn(async () => state),
+        getAccessToken: vi.fn(async (): Promise<string | null> => 'host-token'),
+        requestSignIn: vi.fn(async () => state),
+        signOut: vi.fn(
+          async (): Promise<DesktopHostAuthState> => ({ status: 'signed_out' })
+        ),
+        onChanged: vi.fn((listener: (next: DesktopHostAuthState) => void) => {
+          listeners.add(listener)
+          return () => listeners.delete(listener)
+        }),
+        push: (next: DesktopHostAuthState) =>
+          listeners.forEach((listener) => listener(next))
+      }
+    }
 
     beforeEach(() => {
       vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue({
@@ -2822,6 +2834,53 @@ describe('useAuthStore in local/desktop distribution', () => {
       await expect(store.getUserAuthHeader()).resolves.toBeNull()
       await expect(store.getWorkspaceAuthHeader()).resolves.toBeNull()
       expect(mockUser.getIdToken).not.toHaveBeenCalled()
+    })
+
+    it('drops the previous account state when Desktop switches accounts', async () => {
+      const bridge = hostBridge({ status: 'signed_in', userId: 'host-a' })
+      await startDesktopHostSession(bridge)
+      const resetTeams = vi.spyOn(
+        useTeamWorkspaceStore(),
+        'resetForIdentityChange'
+      )
+      const clearWorkspace = vi.spyOn(
+        useWorkspaceAuthStore(),
+        'clearWorkspaceContext'
+      )
+      store.balance = fromPartial<NonNullable<typeof store.balance>>({
+        amount_micros: 5
+      })
+
+      bridge.push({ status: 'signed_in', userId: 'host-b' })
+      await nextTick()
+
+      expect(store.userId).toBe('host-b')
+      expect(resetTeams).toHaveBeenCalledOnce()
+      expect(clearWorkspace).toHaveBeenCalledOnce()
+      expect(store.balance).toBeNull()
+    })
+
+    it('signs Desktop out on logout', async () => {
+      const bridge = hostBridge({ status: 'signed_in', userId: 'host-user' })
+      await startDesktopHostSession(bridge)
+
+      await store.logout()
+
+      expect(bridge.signOut).toHaveBeenCalledOnce()
+      expect(store.isAuthenticated).toBe(false)
+    })
+
+    it('reports a failed logout when Desktop keeps its session', async () => {
+      const signedIn: DesktopHostAuthState = {
+        status: 'signed_in',
+        userId: 'host-user'
+      }
+      const bridge = hostBridge(signedIn)
+      bridge.signOut.mockResolvedValue(signedIn)
+      await startDesktopHostSession(bridge)
+
+      await expect(store.logout()).rejects.toBeInstanceOf(AuthStoreError)
+      expect(store.isAuthenticated).toBe(true)
     })
 
     it('keeps the Firebase user when Desktop does not share its session', async () => {

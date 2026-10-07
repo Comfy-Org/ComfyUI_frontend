@@ -17,5 +17,6 @@ export interface DesktopHostAuthBridge {
   getState(): Promise<DesktopHostAuthState>
   getAccessToken(): Promise<string | null>
   requestSignIn(): Promise<DesktopHostAuthState>
+  signOut(): Promise<DesktopHostAuthState>
   onChanged(callback: (state: DesktopHostAuthState) => void): () => void
 }

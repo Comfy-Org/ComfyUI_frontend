@@ -96,3 +96,13 @@ export async function requestDesktopHostSignIn(): Promise<boolean> {
   if (next && bridge === current && revision === before) apply(next)
   return desktopHostUser.value !== null
 }
+
+/** Signs Desktop out of its account. Resolves true once no Desktop user remains. */
+export async function requestDesktopHostSignOut(): Promise<boolean> {
+  const current = bridge
+  if (!current) return true
+  const before = revision
+  const next = await current.signOut().catch(() => undefined)
+  if (next && bridge === current && revision === before) apply(next)
+  return desktopHostUser.value === null
+}

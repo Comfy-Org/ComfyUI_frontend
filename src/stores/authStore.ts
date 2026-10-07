@@ -5,7 +5,7 @@ import type { User, UserCredential } from 'firebase/auth'
 
 import type { PopupSignInOptions } from '@comfyorg/account-core/firebase'
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import { fetchWithCustomerRecovery as fetchHealingMissingCustomer } from '@comfyorg/account-core/customerRecovery'
 import {
@@ -18,7 +18,8 @@ import { t } from '@/i18n'
 import {
   desktopHostAccessToken,
   desktopHostUser,
-  isDesktopHostSessionActive
+  isDesktopHostSessionActive,
+  requestDesktopHostSignOut
 } from '@/platform/auth/desktopHost/desktopHostSession'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
@@ -212,12 +213,18 @@ export const useAuthStore = defineStore('auth', () => {
     return shareId ? { share_id: shareId } : {}
   }
 
-  firebaseIdentity.onUserChanged((user) => {
-    const previousUserId = currentUser.value?.uid ?? null
+  /**
+   * Drops the previous account's state when the signed-in identity changes
+   * or signs out, whichever source (Firebase or the Desktop host) changed it.
+   */
+  const resetAccountState = (
+    previousUserId: string | null,
+    nextUserId: string | null
+  ): void => {
     const identityChanged =
-      previousUserId !== null && previousUserId !== (user?.uid ?? null)
+      previousUserId !== null && previousUserId !== nextUserId
 
-    if (user === null || identityChanged) {
+    if (nextUserId === null || identityChanged) {
       useWorkspaceAuthStore().clearWorkspaceContext()
       mintUnifiedToken.clear()
     }
@@ -235,6 +242,21 @@ export const useAuthStore = defineStore('auth', () => {
       void api.resetSocket()
     }
 
+    // Reset balance when auth state changes
+    balance.value = null
+    lastBalanceUpdateTime.value = null
+
+    // Customer provisioning state is per-account: without this reset, a
+    // second account in the same browser session would be short-circuited by
+    // the previous account's memoized recovery and stay stuck on 409s.
+    customerProvisionedIdentity.value = null
+    customerRecovery = null
+    customerRecoveryIdentity = null
+  }
+
+  firebaseIdentity.onUserChanged((user) => {
+    resetAccountState(currentUser.value?.uid ?? null, user?.uid ?? null)
+
     currentUser.value = user
     isInitialized.value = true
     if (user === null) {
@@ -246,18 +268,13 @@ export const useAuthStore = defineStore('auth', () => {
       // mints instead, and only for a tab the session did not sign in.
       void mintUnifiedToken(user.uid)
     }
-
-    // Reset balance when auth state changes
-    balance.value = null
-    lastBalanceUpdateTime.value = null
-
-    // Customer provisioning state is per-account: without this reset, a
-    // second account in the same browser session would be short-circuited by
-    // the previous account's memoized recovery and stay stuck on 409s.
-    customerProvisionedIdentity.value = null
-    customerRecovery = null
-    customerRecoveryIdentity = null
   })
+
+  watch(
+    () => desktopHostUser.value?.id ?? null,
+    (nextUserId, previousUserId) =>
+      resetAccountState(previousUserId, nextUserId)
+  )
 
   // Listen for token refresh events
   firebaseIdentity.onTokenChanged((user) => {
@@ -871,6 +888,12 @@ export const useAuthStore = defineStore('auth', () => {
 
   const logout = async (): Promise<void> =>
     executeAuthAction(async () => {
+      if (
+        isDesktopHostSessionActive() &&
+        !(await requestDesktopHostSignOut())
+      ) {
+        throw new AuthStoreError(t('auth.desktopHost.signOutFailed'))
+      }
       // Local and Desktop keep the key: partner nodes run on it.
       const dropsStoredApiKey =
         flags.ssoEnabled && flags.unifiedWebSessionEnabled
