@@ -1,7 +1,7 @@
 ---
 import { getCollection, render } from 'astro:content'
 
-import { ROADMAP_STAGES } from '@/content/roadmap.schema'
+import { ROADMAP_AREA_ORDER } from '@/content/roadmap.schema'
 import type { Locale } from '@/i18n/translations'
 
 interface Props {
@@ -14,70 +14,76 @@ const { t } = Astro.locals
 const entries = await getCollection('roadmap', (entry) =>
   entry.id.startsWith(`${locale}/`)
 )
-entries.sort((a, b) => a.data.order - b.data.order)
 
-const columns = await Promise.all(
-  ROADMAP_STAGES.map(async (stage) => ({
-    stage,
+const sections = await Promise.all(
+  ROADMAP_AREA_ORDER.map(async (area) => ({
+    area,
     items: await Promise.all(
       entries
-        .filter((entry) => entry.data.stage === stage)
+        .filter((entry) => entry.data.area === area)
+        .sort((a, b) => a.data.order - b.data.order)
         .map(async (entry) => ({
           id: entry.id,
           title: entry.data.title,
-          area: entry.data.area,
+          stage: entry.data.stage,
+          date: entry.data.date,
           Content: (await render(entry)).Content
         }))
     )
   }))
 )
+
+const populated = sections.filter(({ items }) => items.length > 0)
+
+const chip =
+  'rounded-full border px-2.5 py-1 text-2xs font-bold tracking-widest uppercase'
 ---
 
 <section
   id="roadmap"
   class="mx-auto max-w-9xl px-4 pt-8 pb-16 lg:px-20 lg:pt-10 lg:pb-24"
 >
-  <ol class="grid list-none grid-cols-1 gap-10 md:grid-cols-3 md:gap-8">
-    {columns.map(({ stage, items }) => <li class="min-w-0">
-      <div class="border-b border-primary-comfy-canvas/10 pb-4">
-        <h2 class="text-2xl font-light text-primary-comfy-canvas">
-          {t(`roadmap.stage.${stage}.name`)}
-        </h2>
-        <p class="mt-2 text-sm font-light text-primary-comfy-canvas/60">
-          {t(`roadmap.stage.${stage}.description`)}
-        </p>
-      </div>
+  <div class="flex flex-col gap-12 lg:gap-16">
+    {populated.map(({ area, items }) => <div
+      class="flex flex-col gap-6 md:flex-row md:gap-16"
+    >
+      <h2
+        class="shrink-0 text-xs font-bold tracking-widest text-primary-comfy-yellow uppercase md:w-56 md:pt-1"
+      >
+        {t(`roadmap.area.${area}`)}
+      </h2>
 
-      {items.length === 0 ? (
-        <p class="mt-6 text-sm font-light text-primary-comfy-canvas/50">
-          {t('roadmap.empty')}
-        </p>
-      ) : (
-        <ol class="mt-6 flex list-none flex-col gap-4">
-          {items.map(({ id, title, area, Content }) => <li
-            class="rounded-lg border border-primary-comfy-canvas/10 p-5"
+      <ol class="flex min-w-0 flex-1 list-none flex-col gap-8">
+        {items.map(({ id, title, stage, date, Content }) => <li class="min-w-0">
+          <h3
+            class="text-lg font-light wrap-break-word text-primary-comfy-canvas"
           >
+            {title}
+          </h3>
+
+          <div class="mt-2 flex flex-wrap items-center gap-2">
             <span
-              class="text-2xs font-bold tracking-widest text-primary-comfy-yellow uppercase"
+              class={`${chip} border-primary-comfy-yellow/30 text-primary-comfy-yellow`}
             >
-              {t(`roadmap.area.${area}`)}
+              {t(`roadmap.stage.${stage}`)}
             </span>
-            <h3
-              class="mt-2 text-base font-medium wrap-break-word text-primary-comfy-canvas"
+            {date && <span
+              class={`${chip} border-primary-comfy-canvas/20 text-primary-comfy-canvas/70`}
             >
-              {title}
-            </h3>
-            <div
-              class="roadmap-entry mt-2 text-sm font-light wrap-break-word text-primary-comfy-canvas/70"
-              data-entry={id}
-            >
-              <Content />
-            </div>
-          </li>)}
-        </ol>
-      )}
-    </li>)}
-  </ol>
+              {date}
+            </span>}
+          </div>
+
+          <div
+            class="roadmap-entry mt-3 text-sm font-light wrap-break-word text-primary-comfy-canvas/70"
+            data-entry={id}
+          >
+            <Content />
+          </div>
+        </li>)}
+      </ol>
+    </div>)}
+  </div>
 </section>
 
 <style>

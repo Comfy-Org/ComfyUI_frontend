@@ -1,6 +1,7 @@
 import { z } from 'astro/zod'
 
-const ROADMAP_AREAS = [
+// Page section order. Areas with no entries are skipped.
+export const ROADMAP_AREA_ORDER = [
   'engine',
   'cloud',
   'frontend',
@@ -9,12 +10,14 @@ const ROADMAP_AREAS = [
   'community'
 ] as const
 
-// Stage of work, not a date. The roadmap deliberately carries no timing.
-export const ROADMAP_STAGES = ['exploring', 'building', 'shipping'] as const
+const ROADMAP_STAGES = ['exploring', 'building', 'shipping'] as const
 
 export const roadmapSchema = z.strictObject({
   title: z.string(),
-  area: z.enum(ROADMAP_AREAS),
+  area: z.enum(ROADMAP_AREA_ORDER),
   stage: z.enum(ROADMAP_STAGES),
+  // Rendered verbatim, so each locale writes its own string and an entry can
+  // be as coarse as it honestly is. Omit the field when there is no date.
+  date: z.string().optional(),
   order: z.number().int().nonnegative()
 })

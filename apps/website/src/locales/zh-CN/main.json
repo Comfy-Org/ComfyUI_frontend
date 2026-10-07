@@ -4912,28 +4912,19 @@
   "roadmap": {
     "page": {
       "title": "路线图：我们正在做什么",
-      "description": "Comfy 团队当前正在进行的工作，涵盖引擎、Comfy Cloud、编辑器、Desktop、平台与社区。按工作阶段分组，不含时间点。"
+      "description": "Comfy 团队当前正在进行的工作，涵盖引擎、Comfy Cloud、编辑器、Desktop、平台与社区。按领域分组，已有时间安排的条目会标注时间。"
     },
     "eyebrow": "路线图",
     "heading": "我们正在做什么",
-    "intro": "这里是我们面前的工作，而不是已经完成的工作。它包含 bug 和尚未成形的想法，也不标注任何时间点，因为工作的顺序是可靠的，而时间点并不可靠。",
+    "intro": "这里是我们面前的工作，而不是已经完成的工作。它包含 bug，也包含我们尚未决定要做的想法。有些条目标注了时间，有些没有，这如实反映了工作的真实状态，并非遗漏。",
     "changelog": {
       "prompt": "想看已经发布的内容？",
       "linkLabel": "查看更新日志"
     },
     "stage": {
-      "exploring": {
-        "name": "探索中",
-        "description": "我们仍在思考的问题，这里的内容都还没有定下来。"
-      },
-      "building": {
-        "name": "进行中",
-        "description": "已经有人在做的工作，包括修 bug。"
-      },
-      "shipping": {
-        "name": "即将上线",
-        "description": "已完成或接近完成，正在逐步放量。"
-      }
+      "exploring": "探索中",
+      "building": "进行中",
+      "shipping": "即将上线"
     },
     "area": {
       "engine": "引擎",
@@ -4942,7 +4933,6 @@
       "desktop": "Desktop",
       "platform": "平台",
       "community": "社区"
-    },
-    "empty": "当前该阶段暂无内容。"
+    }
   }
 }

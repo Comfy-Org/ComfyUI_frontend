@@ -5519,28 +5519,19 @@
   "roadmap": {
     "page": {
       "title": "Roadmap - What We Are Working On",
-      "description": "What the Comfy team is working on right now, across the engine, Comfy Cloud, the editor, Desktop, the platform, and the community. Grouped by stage of work, no dates."
+      "description": "What the Comfy team is working on right now, across the engine, Comfy Cloud, the editor, Desktop, the platform, and the community. Grouped by area, with a date on the entries that have one."
     },
     "eyebrow": "Roadmap",
     "heading": "What we are working on",
-    "intro": "This is the work in front of us, not the work behind us. It includes bugs and unfinished ideas, and it carries no dates, because the order of the work is the honest part and a date would not be.",
+    "intro": "This is the work in front of us, not the work behind us. It includes bugs and ideas we have not committed to yet. Some entries carry a date and some do not, which is the honest state of the work rather than an oversight.",
     "changelog": {
       "prompt": "Looking for what already shipped?",
       "linkLabel": "Read the changelog"
     },
     "stage": {
-      "exploring": {
-        "name": "Exploring",
-        "description": "Questions we are still asking. Nothing is committed here."
-      },
-      "building": {
-        "name": "Building",
-        "description": "Work someone is actively on, bugs included."
-      },
-      "shipping": {
-        "name": "Shipping",
-        "description": "Done or nearly done, and rolling out now."
-      }
+      "exploring": "Exploring",
+      "building": "Building",
+      "shipping": "Shipping"
     },
     "area": {
       "engine": "Engine",
@@ -5549,7 +5540,6 @@
       "desktop": "Desktop",
       "platform": "Platform",
       "community": "Community"
-    },
-    "empty": "Nothing at this stage right now."
+    }
   }
 }
