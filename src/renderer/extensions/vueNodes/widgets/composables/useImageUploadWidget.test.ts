@@ -164,9 +164,9 @@ describe('useImageUploadWidget', () => {
       ])
     ).toBe(true)
 
-    expect(useToast().warning).toHaveBeenCalledWith('Alert', {
-      description: 'g.videoFilenameExtensionRequired'
-    })
+    expect(useToast().warning).toHaveBeenCalledWith(
+      'g.videoFilenameExtensionRequired'
+    )
 
     vi.mocked(useToast().warning).mockClear()
 

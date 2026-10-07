@@ -88,9 +88,7 @@ export function useCameraAngle(
     } catch (error) {
       console.error('Failed to initialize CameraAngleViewport:', error)
       cleanup()
-      useToast().warning('Alert', {
-        description: t('toastMessages.failedToInitializeCameraAngleViewer')
-      })
+      useToast().warning(t('toastMessages.failedToInitializeCameraAngleViewer'))
     }
   }
 

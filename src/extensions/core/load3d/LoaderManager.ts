@@ -112,9 +112,7 @@ export class LoaderManager implements LoaderManagerInterface {
       }
 
       if (!fileExtension) {
-        useToast().warning('Alert', {
-          description: t('toastMessages.couldNotDetermineFileType')
-        })
+        useToast().warning(t('toastMessages.couldNotDetermineFileType'))
         return
       }
 
@@ -142,9 +140,7 @@ export class LoaderManager implements LoaderManagerInterface {
         this.eventManager.emitEvent('modelLoadingEnd', null)
         console.error('Error loading model:', error)
         if (!(options?.silentOnNotFound && isNotFoundError(error))) {
-          useToast().warning('Alert', {
-            description: t('toastMessages.errorLoadingModel')
-          })
+          useToast().warning(t('toastMessages.errorLoadingModel'))
         }
       }
     }

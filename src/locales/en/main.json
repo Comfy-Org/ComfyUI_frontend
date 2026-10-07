@@ -264,7 +264,7 @@
     "community": "Community",
     "all": "All",
     "versionMismatchWarning": "Version Compatibility Warning",
-    "versionMismatchWarningMessage": "{warning}: {detail} Visit https://docs.comfy.org/installation/update_comfyui#common-update-issues for update instructions.",
+    "versionMismatchUpdateInstructions": "{detail} Visit https://docs.comfy.org/installation/update_comfyui#common-update-issues for update instructions.",
     "frontendOutdated": "Frontend version {frontendVersion} is outdated. Backend requires {requiredVersion} or higher.",
     "frontendNewer": "Frontend version {frontendVersion} may not be compatible with backend version {backendVersion}.",
     "comfyPackageOutdated": "Installed {name} version {installedVersion} is lower than the required version {requiredVersion}.",
@@ -4304,7 +4304,7 @@
     "assetDelete": {
       "error": "Items failed to delete",
       "success": "Deletion successful",
-      "warn": "Some items failed to delete"
+      "warning": "Some items failed to delete"
     },
     "assetsDeleted": "{n} / {total} assets were deleted",
     "jobsDeleted": "{n} / {total} jobs were deleted",

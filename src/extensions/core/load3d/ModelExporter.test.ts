@@ -141,9 +141,9 @@ describe('ModelExporter', () => {
       await expect(
         ModelExporter.downloadFromURL('http://example.com/cube.glb', 'cube.glb')
       ).rejects.toThrow('network')
-      expect(useToast().warning).toHaveBeenCalledWith('Alert', {
-        description: 'toastMessages.failedToDownloadFile'
-      })
+      expect(useToast().warning).toHaveBeenCalledWith(
+        'toastMessages.failedToDownloadFile'
+      )
       vi.unstubAllGlobals()
     })
 
@@ -156,9 +156,9 @@ describe('ModelExporter', () => {
         ModelExporter.downloadFromURL('http://example.com/cube.glb', 'cube.glb')
       ).rejects.toThrow('HTTP 404')
       expect(downloadBlob).not.toHaveBeenCalled()
-      expect(useToast().warning).toHaveBeenCalledWith('Alert', {
-        description: 'toastMessages.failedToDownloadFile'
-      })
+      expect(useToast().warning).toHaveBeenCalledWith(
+        'toastMessages.failedToDownloadFile'
+      )
       vi.unstubAllGlobals()
     })
   })
@@ -211,9 +211,9 @@ describe('ModelExporter', () => {
       const settled = Promise.allSettled([promise])
       await vi.runAllTimersAsync()
       expect(await settled).toMatchObject([rejectedWith('parse fail')])
-      expect(useToast().warning).toHaveBeenCalledWith('Alert', {
-        description: 'toastMessages.failedToExportModel'
-      })
+      expect(useToast().warning).toHaveBeenCalledWith(
+        'toastMessages.failedToExportModel'
+      )
       expect(t).toHaveBeenCalledWith('toastMessages.failedToExportModel', {
         format: 'GLB'
       })
@@ -256,9 +256,9 @@ describe('ModelExporter', () => {
       const settled = Promise.allSettled([promise])
       await vi.runAllTimersAsync()
       expect(await settled).toMatchObject([rejectedWith('obj fail')])
-      expect(useToast().warning).toHaveBeenCalledWith('Alert', {
-        description: 'toastMessages.failedToExportModel'
-      })
+      expect(useToast().warning).toHaveBeenCalledWith(
+        'toastMessages.failedToExportModel'
+      )
       expect(t).toHaveBeenCalledWith('toastMessages.failedToExportModel', {
         format: 'OBJ'
       })
@@ -301,9 +301,9 @@ describe('ModelExporter', () => {
       const settled = Promise.allSettled([promise])
       await vi.runAllTimersAsync()
       expect(await settled).toMatchObject([rejectedWith('stl fail')])
-      expect(useToast().warning).toHaveBeenCalledWith('Alert', {
-        description: 'toastMessages.failedToExportModel'
-      })
+      expect(useToast().warning).toHaveBeenCalledWith(
+        'toastMessages.failedToExportModel'
+      )
       expect(t).toHaveBeenCalledWith('toastMessages.failedToExportModel', {
         format: 'STL'
       })
@@ -369,9 +369,9 @@ describe('ModelExporter', () => {
       const settled = Promise.allSettled([promise])
       await vi.runAllTimersAsync()
       expect(await settled).toMatchObject([rejectedWith('fbx fail')])
-      expect(useToast().warning).toHaveBeenCalledWith('Alert', {
-        description: 'toastMessages.failedToExportModel'
-      })
+      expect(useToast().warning).toHaveBeenCalledWith(
+        'toastMessages.failedToExportModel'
+      )
       expect(t).toHaveBeenCalledWith('toastMessages.failedToExportModel', {
         format: 'FBX'
       })

@@ -774,11 +774,11 @@ export function useMediaAssetActions() {
       }
     }
 
-    const severity =
+    const outcome =
       failedDeletions.length === 0
         ? 'success'
         : deletedJobCount || deletedAssetCount
-          ? 'warn'
+          ? 'warning'
           : 'error'
 
     const resultMessages: string[] = []
@@ -797,14 +797,10 @@ export function useMediaAssetActions() {
       )
     }
 
-    const resultTitle = t(`mediaAsset.assetDelete.${severity}`)
-    const resultOptions = {
+    toast[outcome](t(`mediaAsset.assetDelete.${outcome}`), {
       description: resultMessages.join('\n'),
-      duration: severity === 'success' ? 2000 : 5000
-    }
-    if (severity === 'success') toast.success(resultTitle, resultOptions)
-    else if (severity === 'warn') toast.warning(resultTitle, resultOptions)
-    else toast.error(resultTitle, resultOptions)
+      duration: outcome === 'success' ? 2000 : 5000
+    })
     return true
   }
 

@@ -267,9 +267,7 @@ function handleSelection(item: FormDropdownItem, index: number) {
       sel.clear()
       sel.add(item.id)
     } else {
-      toastStore.warning('Alert', {
-        description: t('widgets.uploadSelect.maxSelectionReached')
-      })
+      toastStore.warning(t('widgets.uploadSelect.maxSelectionReached'))
       return
     }
   }

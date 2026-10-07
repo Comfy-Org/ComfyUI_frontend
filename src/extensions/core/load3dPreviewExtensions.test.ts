@@ -412,9 +412,9 @@ describe('Comfy.PreviewGaussianSplat.nodeCreated', () => {
     await splatExt.nodeCreated!(node, app)
     node.onExecuted!({ result: [] })
 
-    expect(useToast().warning).toHaveBeenCalledWith('Alert', {
-      description: 'toastMessages.unableToGetModelFilePath'
-    })
+    expect(useToast().warning).toHaveBeenCalledWith(
+      'toastMessages.unableToGetModelFilePath'
+    )
   })
 })
 

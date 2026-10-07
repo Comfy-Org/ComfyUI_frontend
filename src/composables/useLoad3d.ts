@@ -286,9 +286,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       }
     } catch (error) {
       console.error('Error initializing Load3d:', error)
-      useToast().warning('Alert', {
-        description: t('toastMessages.failedToInitializeLoad3dViewer')
-      })
+      useToast().warning(t('toastMessages.failedToInitializeLoad3dViewer'))
     }
   }
 
@@ -769,9 +767,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
           showAsBackground: false
         }
       }
-      useToast().warning('Alert', {
-        description: t('toastMessages.failedToLoadHDRI')
-      })
+      useToast().warning(t('toastMessages.failedToLoadHDRI'))
     } finally {
       loading.value = false
       loadingMessage.value = ''
@@ -802,9 +798,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
 
   const handleExportModel = async (format: string) => {
     if (!load3d) {
-      useToast().warning('Alert', {
-        description: t('toastMessages.no3dSceneToExport')
-      })
+      useToast().warning(t('toastMessages.no3dSceneToExport'))
       return
     }
 
@@ -812,17 +806,17 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       await load3d.exportModel(format)
     } catch (error) {
       console.error('Error exporting model:', error)
-      useToast().warning('Alert', {
-        description: t('toastMessages.failedToExportModel', {
+      useToast().warning(
+        t('toastMessages.failedToExportModel', {
           format: format.toUpperCase()
         })
-      })
+      )
     }
   }
 
   const handleModelDrop = async (file: File) => {
     if (!load3d) {
-      useToast().warning('Alert', { description: t('toastMessages.no3dScene') })
+      useToast().warning(t('toastMessages.no3dScene'))
       return
     }
 
@@ -843,9 +837,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       const uploadedPath = await Load3dUtils.uploadFile(file, subfolder)
 
       if (!uploadedPath) {
-        useToast().warning('Alert', {
-          description: t('toastMessages.fileUploadFailed')
-        })
+        useToast().warning(t('toastMessages.fileUploadFailed'))
         return
       }
 
@@ -871,9 +863,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       }
     } catch (error) {
       console.error('Model drop failed:', error)
-      useToast().warning('Alert', {
-        description: t('toastMessages.failedToLoadModel')
-      })
+      useToast().warning(t('toastMessages.failedToLoadModel'))
     } finally {
       loading.value = false
       loadingMessage.value = ''

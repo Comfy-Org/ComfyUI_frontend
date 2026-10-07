@@ -107,9 +107,7 @@ function onHdriFilePicked(event: Event) {
   if (file) {
     const ext = `.${file.name.split('.').pop()?.toLowerCase() ?? ''}`
     if (!SUPPORTED_HDRI_EXTENSIONS.has(ext)) {
-      useToast().warning('Alert', {
-        description: t('toastMessages.unsupportedHDRIFormat')
-      })
+      useToast().warning(t('toastMessages.unsupportedHDRIFormat'))
       return
     }
   }

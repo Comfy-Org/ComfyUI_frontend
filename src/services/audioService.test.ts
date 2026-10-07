@@ -205,9 +205,9 @@ describe('useAudioService', () => {
         'Error uploading temp file: 500 - Internal Server Error'
       )
 
-      expect(mockToastStore.warning).toHaveBeenCalledWith('Alert', {
-        description: 'Error uploading temp file: 500 - Internal Server Error'
-      })
+      expect(mockToastStore.warning).toHaveBeenCalledWith(
+        'Error uploading temp file: 500 - Internal Server Error'
+      )
     })
 
     it('should handle network errors', async () => {
@@ -238,9 +238,9 @@ describe('useAudioService', () => {
           `Error uploading temp file: ${testCase.status} - ${testCase.statusText}`
         )
 
-        expect(mockToastStore.warning).toHaveBeenCalledWith('Alert', {
-          description: `Error uploading temp file: ${testCase.status} - ${testCase.statusText}`
-        })
+        expect(mockToastStore.warning).toHaveBeenCalledWith(
+          `Error uploading temp file: ${testCase.status} - ${testCase.statusText}`
+        )
 
         mockToastStore.warning.mockClear()
       }

@@ -3744,9 +3744,9 @@ describe('ComfyApp', () => {
       await app.handleFile(createTestFile('broken.json', 'application/json'))
 
       expect(mockToastStore.warning).toHaveBeenCalledTimes(1)
-      expect(mockToastStore.warning).toHaveBeenCalledWith('Alert', {
-        description: 'Unable to find workflow in broken.json'
-      })
+      expect(mockToastStore.warning).toHaveBeenCalledWith(
+        'Unable to find workflow in broken.json'
+      )
     })
 
     it.for([
@@ -3794,9 +3794,9 @@ describe('ComfyApp', () => {
         )
         expect(mockWorkflowService.afterLoadNewGraph).toHaveBeenCalledOnce()
       } else {
-        expect(mockToastStore.warning).toHaveBeenCalledWith('Alert', {
-          description: testCase.expectedToast
-        })
+        expect(mockToastStore.warning).toHaveBeenCalledWith(
+          testCase.expectedToast
+        )
         expect(mockWorkflowService.afterLoadNewGraph).not.toHaveBeenCalled()
       }
     })
@@ -3994,9 +3994,7 @@ describe('ComfyApp', () => {
         await noFiles
 
         expect(
-          vi
-            .mocked(useToast().warning)
-            .mock.calls.map(([, options]) => options?.description)
+          vi.mocked(useToast().warning).mock.calls.map(([title]) => title)
         ).toEqual(alerts)
         expect(
           vi.mocked(reportError).mock.calls.map(([, opts]) => opts.errorType)

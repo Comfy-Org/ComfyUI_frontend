@@ -54,7 +54,7 @@ describe('saving a setting that fails to persist', () => {
       expect(useToast().toasts).toContainEqual(
         expect.objectContaining({
           kind: 'warning',
-          description: expect.stringContaining(
+          title: expect.stringContaining(
             'Error saving setting Comfy.EditAttention.Delta'
           )
         })

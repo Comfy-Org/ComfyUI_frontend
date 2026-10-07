@@ -65,7 +65,7 @@ export const useAudioService = () => {
 
     if (resp.status !== 200) {
       const err = `Error uploading temp file: ${resp.status} - ${resp.statusText}`
-      useToast().warning('Alert', { description: err })
+      useToast().warning(err)
       throw new Error(err)
     }
 

@@ -186,9 +186,7 @@ describe('useNodeImageUpload', () => {
     await capturedDragOnDrop([createFile()])
 
     expect(t).toHaveBeenCalledWith('g.uploadFileTooLarge')
-    expect(useToast().warning).toHaveBeenCalledWith('Alert', {
-      description: 'g.uploadFileTooLarge'
-    })
+    expect(useToast().warning).toHaveBeenCalledWith('g.uploadFileTooLarge')
   })
 
   it('shows a file-too-large toast with the limit on a 413 when the server reports one', async () => {
@@ -233,9 +231,7 @@ describe('useNodeImageUpload', () => {
     const second = await capturedDragOnDrop([createFile('b.png')])
 
     expect(second).toEqual([])
-    expect(useToast().warning).toHaveBeenCalledWith('Alert', {
-      description: 'g.uploadAlreadyInProgress'
-    })
+    expect(useToast().warning).toHaveBeenCalledWith('g.uploadAlreadyInProgress')
 
     await first
   })

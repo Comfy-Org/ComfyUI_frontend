@@ -455,9 +455,9 @@ describe('Comfy.Preview3D.nodeCreated', () => {
     await preview3DExt.nodeCreated!(node, app)
     node.onExecuted!({ result: [] })
 
-    expect(useToast().warning).toHaveBeenCalledWith('Alert', {
-      description: 'toastMessages.unableToGetModelFilePath'
-    })
+    expect(useToast().warning).toHaveBeenCalledWith(
+      'toastMessages.unableToGetModelFilePath'
+    )
   })
 })
 
@@ -575,9 +575,9 @@ describe('Comfy.Load3D.getCustomWidgets LOAD_3D', () => {
     await flush()
 
     expect(load3d.loadModel).toHaveBeenCalledWith('/api/view')
-    expect(useToast().warning).toHaveBeenCalledWith('Alert', {
-      description: 'toastMessages.failedToLoadModel'
-    })
+    expect(useToast().warning).toHaveBeenCalledWith(
+      'toastMessages.failedToLoadModel'
+    )
   })
 
   it('skips upload and clear buttons when the node has no model_file widget (e.g. Preview3DAdvanced)', async () => {
@@ -1078,9 +1078,9 @@ describe('Comfy.Preview3DAdvanced.nodeCreated', () => {
     await preview3DAdvancedExt.nodeCreated!(node, app)
     node.onExecuted!({ result: [] })
 
-    expect(useToast().warning).toHaveBeenCalledWith('Alert', {
-      description: 'toastMessages.unableToGetModelFilePath'
-    })
+    expect(useToast().warning).toHaveBeenCalledWith(
+      'toastMessages.unableToGetModelFilePath'
+    )
     expect(configureForSaveMeshMock).not.toHaveBeenCalled()
   })
 })

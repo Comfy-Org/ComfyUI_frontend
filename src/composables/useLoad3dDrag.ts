@@ -56,9 +56,7 @@ export function useLoad3dDrag(options: UseLoad3dDragOptions) {
     if (modelFile) {
       await options.onModelDrop(modelFile)
     } else {
-      useToast().warning('Alert', {
-        description: t('load3d.unsupportedFileType')
-      })
+      useToast().warning(t('load3d.unsupportedFileType'))
     }
   }
 

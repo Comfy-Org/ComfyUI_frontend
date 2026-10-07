@@ -137,9 +137,9 @@ describe('useLoad3dDrag', () => {
       await handleDrop(event)
 
       expect(mockOnModelDrop).not.toHaveBeenCalled()
-      expect(mockToastStore.warning).toHaveBeenCalledWith('Alert', {
-        description: 'load3d.unsupportedFileType'
-      })
+      expect(mockToastStore.warning).toHaveBeenCalledWith(
+        'load3d.unsupportedFileType'
+      )
     })
 
     it('should not call onModelDrop when disabled', async () => {

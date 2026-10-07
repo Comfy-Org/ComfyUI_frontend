@@ -65,9 +65,7 @@ export function useCameraInfo(nodeRef: MaybeRef<LGraphNode | null>) {
     } catch (error) {
       console.error('Failed to initialize CameraInfoViewport:', error)
       cleanup()
-      useToast().warning('Alert', {
-        description: t('toastMessages.failedToInitializeCameraInfoViewer')
-      })
+      useToast().warning(t('toastMessages.failedToInitializeCameraInfoViewer'))
     }
   }
 

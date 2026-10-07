@@ -61,9 +61,7 @@ export const useImageUploadWidget = () => {
     const fileFilter = isVideo ? isUploadableVideo : isImageFile
     function alertExtensionlessVideo(files: File[]) {
       if (!files.some(isExtensionlessVideo)) return false
-      useToast().warning('Alert', {
-        description: t('g.videoFilenameExtensionRequired')
-      })
+      useToast().warning(t('g.videoFilenameExtensionRequired'))
       return true
     }
     const fileComboWidget = findFileComboWidget(node, imageInputName)

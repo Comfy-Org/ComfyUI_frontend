@@ -166,11 +166,11 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       load3d.setBackgroundColor(newColor)
     } catch (error) {
       console.error('Error updating background color:', error)
-      useToast().warning('Alert', {
-        description: t('toastMessages.failedToUpdateBackgroundColor', {
+      useToast().warning(
+        t('toastMessages.failedToUpdateBackgroundColor', {
           color: newColor
         })
-      })
+      )
     }
   })
 
@@ -180,11 +180,11 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       load3d.toggleGrid(newValue)
     } catch (error) {
       console.error('Error toggling grid:', error)
-      useToast().warning('Alert', {
-        description: t('toastMessages.failedToToggleGrid', {
+      useToast().warning(
+        t('toastMessages.failedToToggleGrid', {
           show: newValue ? 'on' : 'off'
         })
-      })
+      )
     }
   })
 
@@ -194,11 +194,11 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       load3d.toggleCamera(newCameraType)
     } catch (error) {
       console.error('Error toggling camera:', error)
-      useToast().warning('Alert', {
-        description: t('toastMessages.failedToToggleCamera', {
+      useToast().warning(
+        t('toastMessages.failedToToggleCamera', {
           camera: newCameraType
         })
-      })
+      )
     }
   })
 
@@ -208,9 +208,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       load3d.setFOV(newFov)
     } catch (error) {
       console.error('Error updating FOV:', error)
-      useToast().warning('Alert', {
-        description: t('toastMessages.failedToUpdateFOV', { fov: newFov })
-      })
+      useToast().warning(t('toastMessages.failedToUpdateFOV', { fov: newFov }))
     }
   })
 
@@ -220,11 +218,11 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       load3d.setLightIntensity(newValue)
     } catch (error) {
       console.error('Error updating light intensity:', error)
-      useToast().warning('Alert', {
-        description: t('toastMessages.failedToUpdateLightIntensity', {
+      useToast().warning(
+        t('toastMessages.failedToUpdateLightIntensity', {
           intensity: newValue
         })
-      })
+      )
     }
   })
 
@@ -235,9 +233,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       hasBackgroundImage.value = !!newValue
     } catch (error) {
       console.error('Error updating background image:', error)
-      useToast().warning('Alert', {
-        description: t('toastMessages.failedToUpdateBackgroundImage')
-      })
+      useToast().warning(t('toastMessages.failedToUpdateBackgroundImage'))
     }
   })
 
@@ -247,11 +243,11 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       load3d.setBackgroundRenderMode(newValue)
     } catch (error) {
       console.error('Error updating background render mode:', error)
-      useToast().warning('Alert', {
-        description: t('toastMessages.failedToUpdateBackgroundRenderMode', {
+      useToast().warning(
+        t('toastMessages.failedToUpdateBackgroundRenderMode', {
           mode: newValue
         })
-      })
+      )
     }
   })
 
@@ -261,11 +257,11 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       load3d.setUpDirection(newValue)
     } catch (error) {
       console.error('Error updating up direction:', error)
-      useToast().warning('Alert', {
-        description: t('toastMessages.failedToUpdateUpDirection', {
+      useToast().warning(
+        t('toastMessages.failedToUpdateUpDirection', {
           direction: newValue
         })
-      })
+      )
     }
   })
 
@@ -275,11 +271,11 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       load3d.setMaterialMode(newValue)
     } catch (error) {
       console.error('Error updating material mode:', error)
-      useToast().warning('Alert', {
-        description: t('toastMessages.failedToUpdateMaterialMode', {
+      useToast().warning(
+        t('toastMessages.failedToUpdateMaterialMode', {
           mode: newValue
         })
-      })
+      )
     }
   })
 
@@ -474,9 +470,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       setupAnimationEvents()
     } catch (error) {
       console.error('Error initializing Load3d viewer:', error)
-      useToast().warning('Alert', {
-        description: t('toastMessages.failedToInitializeLoad3dViewer')
-      })
+      useToast().warning(t('toastMessages.failedToInitializeLoad3dViewer'))
     }
   }
 
@@ -523,9 +517,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       persistStandaloneThumbnail(modelUrl)
     } catch (error) {
       console.error('Error initializing standalone 3D viewer:', error)
-      useToast().warning('Alert', {
-        description: t('toastMessages.failedToLoadModel')
-      })
+      useToast().warning(t('toastMessages.failedToLoadModel'))
     }
   }
 
@@ -558,7 +550,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       persistStandaloneThumbnail(modelUrl)
     } catch (error) {
       console.error('Error loading model in standalone viewer:', error)
-      useToast().warning('Alert', { description: 'Failed to load 3D model' })
+      useToast().warning('Failed to load 3D model')
     }
   }
 
@@ -620,11 +612,11 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       await load3d.exportModel(format)
     } catch (error) {
       console.error('Error exporting model:', error)
-      useToast().warning('Alert', {
-        description: t('toastMessages.failedToExportModel', {
+      useToast().warning(
+        t('toastMessages.failedToExportModel', {
           format: format.toUpperCase()
         })
-      })
+      )
     }
   }
 
@@ -793,7 +785,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
     }
 
     if (!load3d) {
-      useToast().warning('Alert', { description: t('toastMessages.no3dScene') })
+      useToast().warning(t('toastMessages.no3dScene'))
       return
     }
 
@@ -810,9 +802,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       }
     } catch (error) {
       console.error('Error uploading background image:', error)
-      useToast().warning('Alert', {
-        description: t('toastMessages.failedToUploadBackgroundImage')
-      })
+      useToast().warning(t('toastMessages.failedToUploadBackgroundImage'))
     }
   }
 
@@ -823,7 +813,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
    */
   const handleModelDrop = async (file: File) => {
     if (!load3d) {
-      useToast().warning('Alert', { description: t('toastMessages.no3dScene') })
+      useToast().warning(t('toastMessages.no3dScene'))
       return
     }
 
@@ -834,9 +824,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       )
 
       if (!uploadedPath) {
-        useToast().warning('Alert', {
-          description: t('toastMessages.fileUploadFailed')
-        })
+        useToast().warning(t('toastMessages.fileUploadFailed'))
         return
       }
 
@@ -862,9 +850,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       }
     } catch (error) {
       console.error('Model drop failed:', error)
-      useToast().warning('Alert', {
-        description: t('toastMessages.failedToLoadModel')
-      })
+      useToast().warning(t('toastMessages.failedToLoadModel'))
     }
   }
 

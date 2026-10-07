@@ -160,7 +160,7 @@ describe('useCameraAngle', () => {
     expect(useToast().toasts).toContainEqual(
       expect.objectContaining({
         kind: 'warning',
-        description:
+        title:
           'Failed to initialize Camera Angle viewer. Try reloading the page.'
       })
     )

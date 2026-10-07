@@ -38,11 +38,11 @@ export function createExportMenuItems(
                   )
                 } catch (error) {
                   console.error('Export failed:', error)
-                  useToast().warning('Alert', {
-                    description: t('toastMessages.failedToExportModel', {
+                  useToast().warning(
+                    t('toastMessages.failedToExportModel', {
                       format: format.label
                     })
-                  })
+                  )
                 }
               })()
             }

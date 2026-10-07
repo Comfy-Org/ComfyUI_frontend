@@ -77,9 +77,7 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
     })
 
     if (resp.status !== 200) {
-      toastStore.warning('Alert', {
-        description: buildUploadErrorMessage(resp)
-      })
+      toastStore.warning(buildUploadErrorMessage(resp))
       return null
     }
 
@@ -105,16 +103,14 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
     async (files: File[]) => {
       if (files.length === 0) return
       if (files.some(isExtensionlessVideo)) {
-        toastStore.warning('Alert', {
-          description: t('g.videoFilenameExtensionRequired')
-        })
+        toastStore.warning(t('g.videoFilenameExtensionRequired'))
         return
       }
 
       const uploadedPaths = await uploadFiles(files)
 
       if (uploadedPaths.length === 0) {
-        toastStore.warning('Alert', { description: 'File upload failed' })
+        toastStore.warning('File upload failed')
         return
       }
 

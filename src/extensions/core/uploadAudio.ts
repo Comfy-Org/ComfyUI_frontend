@@ -84,13 +84,11 @@ async function uploadFile(
       }
       return true
     } else {
-      useToast().warning('Alert', {
-        description: resp.status + ' - ' + resp.statusText
-      })
+      useToast().warning(resp.status + ' - ' + resp.statusText)
       return false
     }
   } catch (error) {
-    useToast().warning('Alert', { description: toError(error).message })
+    useToast().warning(toError(error).message)
     return false
   }
 }
@@ -251,9 +249,7 @@ app.registerExtension({
           if (!files.length) return files
 
           if (node.isUploading) {
-            useToast().warning('Alert', {
-              description: t('g.uploadAlreadyInProgress')
-            })
+            useToast().warning(t('g.uploadAlreadyInProgress'))
             return []
           }
 
@@ -350,9 +346,7 @@ app.registerExtension({
             },
             level: 'error'
           })
-          useToast().warning('Alert', {
-            description: t('g.recordingFailedToStart')
-          })
+          useToast().warning(t('g.recordingFailedToStart'))
 
           if (mediaRecorder) {
             try {
@@ -384,7 +378,7 @@ app.registerExtension({
           const audioSrc = audioUIWidget.element.src
 
           if (!audioSrc) {
-            useToast().warning('Alert', { description: t('g.noAudioRecorded') })
+            useToast().warning(t('g.noAudioRecorded'))
             return ''
           }
 
@@ -413,9 +407,7 @@ app.registerExtension({
                 err.name === 'NotAllowedError'
               ) {
                 console.error('Error accessing microphone:', err)
-                useToast().warning('Alert', {
-                  description: t('g.micPermissionDenied')
-                })
+                useToast().warning(t('g.micPermissionDenied'))
                 useAudioService().stopAllTracks(currentStream)
                 currentStream = null
               } else {

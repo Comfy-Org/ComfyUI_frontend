@@ -46,9 +46,7 @@ export class ModelExporter {
       downloadBlob(desiredFilename, blob)
     } catch (error) {
       console.error('Error downloading from URL:', error)
-      useToast().warning('Alert', {
-        description: t('toastMessages.failedToDownloadFile')
-      })
+      useToast().warning(t('toastMessages.failedToDownloadFile'))
       throw error
     }
   }
@@ -85,9 +83,9 @@ export class ModelExporter {
       ModelExporter.saveArrayBuffer(result, filename)
     } catch (error) {
       console.error('Error exporting GLB:', error)
-      useToast().warning('Alert', {
-        description: t('toastMessages.failedToExportModel', { format: 'GLB' })
-      })
+      useToast().warning(
+        t('toastMessages.failedToExportModel', { format: 'GLB' })
+      )
       throw error
     }
   }
@@ -113,9 +111,9 @@ export class ModelExporter {
       ModelExporter.saveString(result, filename)
     } catch (error) {
       console.error('Error exporting OBJ:', error)
-      useToast().warning('Alert', {
-        description: t('toastMessages.failedToExportModel', { format: 'OBJ' })
-      })
+      useToast().warning(
+        t('toastMessages.failedToExportModel', { format: 'OBJ' })
+      )
       throw error
     }
   }
@@ -148,9 +146,9 @@ export class ModelExporter {
       )
     } catch (error) {
       console.error('Error exporting FBX:', error)
-      useToast().warning('Alert', {
-        description: t('toastMessages.failedToExportModel', { format: 'FBX' })
-      })
+      useToast().warning(
+        t('toastMessages.failedToExportModel', { format: 'FBX' })
+      )
       throw error
     }
   }
@@ -176,9 +174,9 @@ export class ModelExporter {
       ModelExporter.saveString(result, filename)
     } catch (error) {
       console.error('Error exporting STL:', error)
-      useToast().warning('Alert', {
-        description: t('toastMessages.failedToExportModel', { format: 'STL' })
-      })
+      useToast().warning(
+        t('toastMessages.failedToExportModel', { format: 'STL' })
+      )
       throw error
     }
   }
