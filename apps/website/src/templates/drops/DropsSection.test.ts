@@ -1,4 +1,4 @@
-import { render, within } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { Drop } from '@/data/drops'
@@ -51,43 +51,45 @@ vi.mock(import('@/data/drops'), () => ({
   drops: [drop(overriddenDrop), drop(staleDrop), drop(recentDrop)]
 }))
 
-function cards(container: Element) {
-  // Card has no accessible role; it's the only way to scope a badge check
-  // to one item among several otherwise-identical cards.
-  return container.querySelectorAll<HTMLElement>('[data-slot="card"]')
-}
-
 describe('DropsSection order', () => {
   it('renders drops newest launchDate first, regardless of data-file order', () => {
-    const { container } = render(DropsSection, { props: { locale: 'en' } })
+    render(DropsSection, { props: { locale: 'en' } })
 
-    const titles = Array.from(cards(container)).map(
-      (card) => within(card).getByText(/Drop$/).textContent
-    )
-    expect(titles).toEqual(['Recent Drop', 'Stale Drop', 'Overridden Drop'])
+    const names = screen
+      .getAllByRole('link')
+      .map((link) => link.getAttribute('aria-label'))
+    expect(names).toEqual([
+      'Recent Drop — EXPLORE',
+      'Stale Drop — EXPLORE',
+      'Overridden Drop — EXPLORE'
+    ])
   })
 })
 
+function cardByTitle(title: string): HTMLElement {
+  return screen.getByText(title).closest('[data-slot="card"]')!
+}
+
 describe('DropsSection badge', () => {
   it('shows a computed NEW badge for a drop launched within the window', () => {
-    const { container } = render(DropsSection, { props: { locale: 'en' } })
+    render(DropsSection, { props: { locale: 'en' } })
 
-    const [recentCard] = cards(container)
+    const recentCard = cardByTitle('Recent Drop')
     expect(within(recentCard).getByText('NEW')).toBeInTheDocument()
   })
 
   it('shows no badge for a drop whose launchDate is outside the window', () => {
-    const { container } = render(DropsSection, { props: { locale: 'en' } })
+    render(DropsSection, { props: { locale: 'en' } })
 
-    const [, staleCard] = cards(container)
+    const staleCard = cardByTitle('Stale Drop')
     expect(within(staleCard).queryByText('NEW')).not.toBeInTheDocument()
     expect(within(staleCard).queryByText('BETA')).not.toBeInTheDocument()
   })
 
   it('prefers a manual badge override over the computed one, localized', () => {
-    const { container } = render(DropsSection, { props: { locale: 'zh-CN' } })
+    render(DropsSection, { props: { locale: 'zh-CN' } })
 
-    const [, , overriddenCard] = cards(container)
+    const overriddenCard = cardByTitle('手动标记发布')
     expect(within(overriddenCard).getByText('BETA')).toBeInTheDocument()
     expect(within(overriddenCard).queryByText('新')).not.toBeInTheDocument()
   })

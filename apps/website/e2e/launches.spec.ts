@@ -16,12 +16,6 @@ const LOCALES: ReadonlyArray<readonly [string, Locale]> = [
   [PATH_ZH, 'zh-CN']
 ]
 
-// DropsSection renders newest launchDate first, independent of `drops`'
-// insertion order — mirror that sort here rather than assuming array order.
-const dropsNewestFirst = [...drops].sort(
-  (a, b) => Date.parse(b.launchDate) - Date.parse(a.launchDate)
-)
-
 function heroSection(page: Page, locale: Locale) {
   return page.locator('section').filter({
     has: page.getByRole('heading', {
@@ -167,11 +161,13 @@ test.describe('Launches landing — desktop @smoke', () => {
       ).toBeVisible()
 
       const cards = section.locator('[data-slot="card"]')
-      await expect(cards).toHaveCount(dropsNewestFirst.length)
+      await expect(cards).toHaveCount(drops.length)
 
-      for (const [i, drop] of dropsNewestFirst.entries()) {
-        const card = cards.nth(i)
-        await expect(card).toContainText(drop.title[locale] || drop.title.en)
+      for (const drop of drops) {
+        const card = cards.filter({
+          hasText: drop.title[locale] || drop.title.en
+        })
+        await expect(card).toHaveCount(1)
         const explore = card.getByRole('link', {
           name: drop.cta.label[locale] || drop.cta.label.en
         })

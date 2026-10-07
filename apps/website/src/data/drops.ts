@@ -1,10 +1,5 @@
-// Entries still using `imageFor`/`videoFor` below point at
-// media.comfy.org/website/drops/<id> placeholders that haven't been
-// uploaded yet — asset uploads and native zh-CN review are pending
-// follow-ups (see apps/website/.scratch/drops-page/PRD.md). A few entries
-// instead reuse the real hero/product video already live on their own
-// destination page (inline `media` literal with a comment above it) —
-// those don't need a drops-specific upload.
+// Drops_2x2card_Events.jpg and Drops_2x2card_CLI.jpg are not uploaded to
+// media.comfy.org/website/drops/ yet, and native zh-CN review is pending.
 import { externalLinks } from '@/config/routes'
 import type { LocalizedText } from '@/i18n/translations'
 
@@ -74,9 +69,6 @@ export const drops: readonly Drop[] = [
     id: 'comfy-router',
     launchDate: '2026-09-10',
     category: DEVELOPER,
-    // Reuses the capability image already live on /platform/router/
-    // (RouterCapabilitiesSection) — the page's own hero is an interactive
-    // code demo with no static asset to borrow.
     media: {
       type: 'image',
       src: 'https://media.comfy.org/website/router/integrate-once-v2.webp',
@@ -135,14 +127,10 @@ export const drops: readonly Drop[] = [
     id: 'comfy-cloud-nodes',
     launchDate: '2026-09-06',
     category: MODELS_AND_NODES,
-    // Reuses the real hero video+poster already live on /cloud-nodes/
-    // (src/templates/cloud-nodes/HeroSection.vue).
-    media: {
-      type: 'video',
-      src: 'https://media.comfy.org/website/cloud-nodes/hero_v1.mp4',
-      poster: 'https://media.comfy.org/website/cloud-nodes/hero-poster_v1.webp',
-      alt: { en: 'Comfy Cloud Nodes', 'zh-CN': 'Comfy Cloud 节点' }
-    },
+    media: imageFor('Drops_2x2card_CloudNodes.jpg', {
+      en: 'Comfy Cloud Nodes',
+      'zh-CN': 'Comfy Cloud 节点'
+    }),
     title: { en: 'Comfy Cloud Nodes', 'zh-CN': 'Comfy Cloud 节点' },
     description: {
       en: 'Run the newest open models on our GPUs from inside your own ComfyUI. No subscription, no downloads.',
@@ -216,9 +204,6 @@ export const drops: readonly Drop[] = [
     id: 'agent',
     launchDate: '2026-09-29',
     category: PLATFORM,
-    // Reuses the capability image already live on /agent (AgentPage.astro)
-    // — the page's own hero is a composed multi-asset canvas animation
-    // with no single static asset to borrow.
     media: {
       type: 'image',
       src: 'https://media.comfy.org/website/comfy-agent/multiplayer.png',
@@ -239,14 +224,10 @@ export const drops: readonly Drop[] = [
     id: 'comfy-api',
     launchDate: '2026-09-30',
     category: DEVELOPER,
-    // Reuses the product demo video already live on /platform/comfy-api/
-    // (ServerlessProductVideoSection) — the page's own hero is an
-    // animated JSON/GPU illustration with no static asset to borrow.
-    media: {
-      type: 'video',
-      src: 'https://media.comfy.org/website/comfy-api/comfy-api-product-demo.mp4',
-      alt: { en: 'Comfy API', 'zh-CN': 'Comfy API' }
-    },
+    media: imageFor('Drops_2x2card_API.jpg', {
+      en: 'Comfy API',
+      'zh-CN': 'Comfy API'
+    }),
     title: { en: 'Comfy API', 'zh-CN': 'Comfy API' },
     description: {
       en: 'Deploy your ComfyUI workflow as a production API. It scales effortlessly with your team or project’s needs.',
@@ -363,13 +344,10 @@ export const drops: readonly Drop[] = [
     id: 'share-comfy',
     launchDate: '2026-06-26',
     category: COMMUNITY,
-    // Reuses the real hero video already live on /affiliates/
-    // (src/templates/affiliate/HeroSection.vue).
-    media: {
-      type: 'video',
-      src: 'https://media.comfy.org/website/affiliates/rainlit-ronin_compressed.mp4',
-      alt: { en: 'Comfy Affiliate', 'zh-CN': 'Comfy Affiliate' }
-    },
+    media: videoFor('Drops_3x3card_Affilliate.mp4', {
+      en: 'Comfy Affiliate',
+      'zh-CN': 'Comfy Affiliate'
+    }),
     title: {
       en: 'Comfy Affiliate',
       'zh-CN': 'Comfy Affiliate'
