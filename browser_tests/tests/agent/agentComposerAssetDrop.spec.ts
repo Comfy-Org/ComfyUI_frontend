@@ -87,6 +87,11 @@ test.describe('Agent composer asset drop', { tag: '@cloud' }, () => {
       const poster = trigger.getByRole('img', { name: ASSET_NAME })
       await expect(poster).toBeVisible()
       await expect(poster).toHaveAttribute('src', /^blob:/)
+      await expect
+        .poll(() =>
+          poster.evaluate((image: HTMLImageElement) => image.naturalWidth)
+        )
+        .toBeGreaterThan(0)
 
       await trigger.focus()
       await page.keyboard.press('Enter')
