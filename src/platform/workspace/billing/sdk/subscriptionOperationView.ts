@@ -9,6 +9,7 @@
  */
 import type {
   BillingTelemetryFailure,
+  CancelOperationResult,
   PaymentPortalResult,
   PreviewSubscribeInput,
   PreviewSubscribeResult,
@@ -241,4 +242,12 @@ export function projectPaymentPortalResult(
 ): SubscriptionRailOutcome<string> {
   if (result.status === 'error') return projectFailure(result)
   return { status: 'ok', value: result.value.url }
+}
+
+export function projectCancelOperationResult(
+  result: CancelOperationResult
+): SubscriptionRailOutcome {
+  return result.status === 'error'
+    ? { status: 'unavailable' }
+    : { status: 'ok', value: undefined }
 }

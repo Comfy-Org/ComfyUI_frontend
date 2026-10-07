@@ -1369,11 +1369,19 @@ describe('createBillingCommands', () => {
       },
       {
         answer: serverError(409, 'NOT_CANCELABLE'),
-        result: { status: 'not_canceled', code: 'NOT_CANCELABLE' }
+        result: {
+          status: 'not_canceled',
+          code: 'NOT_CANCELABLE',
+          serverMessage: SERVER_TEXT
+        }
       },
       {
         answer: serverError(409, 'PAYMENT_IN_FLIGHT'),
-        result: { status: 'not_canceled', code: 'PAYMENT_IN_FLIGHT' }
+        result: {
+          status: 'not_canceled',
+          code: 'PAYMENT_IN_FLIGHT',
+          serverMessage: SERVER_TEXT
+        }
       },
       {
         answer: serverError(404, 'NOT_FOUND'),

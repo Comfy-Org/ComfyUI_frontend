@@ -285,6 +285,11 @@ export function useSubscriptionCheckout(
       operation.authenticationState !== 'requires_action'
     )
   })
+  const paymentCancelable = computed(() => false)
+  const isCancelingPayment = ref(false)
+  const cancelPaymentError = ref<string | null>(null)
+  async function cancelPayment() {}
+
   // The lock is owned by one attempt at a time. An attempt that releases early
   // (see advanceToSuccessOnOperation) still runs its own finally afterwards, by
   // which point a newer attempt may hold the lock — releasing on a bare boolean
@@ -1976,6 +1981,10 @@ export function useSubscriptionCheckout(
     reconciliationOperationId,
     parkedCheckoutRecovery,
     isPolling,
+    paymentCancelable,
+    isCancelingPayment,
+    cancelPaymentError,
+    cancelPayment,
     isTeamCheckout,
     previewVariant,
     handleSubscribeClick,

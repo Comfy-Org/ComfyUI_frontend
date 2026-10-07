@@ -963,6 +963,95 @@ describe('CheckoutView', () => {
     )
   })
 
+  describe('cancel payment and try again', () => {
+    const CANCEL = 'Cancel payment and try again'
+
+    function declinedPlanChange(cancelable?: boolean): BillingOperationState {
+      return {
+        ...serverPhasePendingOperation('awaiting_invoice_payment'),
+        authenticationState: 'failed_retryable',
+        declineReason: 'authentication_failed',
+        ...(cancelable === undefined ? {} : { cancelable })
+      }
+    }
+
+    async function renderDeclinedPlanChange(
+      cancelable?: boolean,
+      options: FakeBillingClientOptions = {}
+    ) {
+      const fake = await renderCheckout(CHECKOUT_PATH, {
+        preview: { status: 'ok', value: upgradeQuote() },
+        ...options
+      })
+      await screen.findByRole('button', { name: 'Confirm upgrade' })
+      fake.publishOperation(declinedPlanChange(cancelable))
+      await nextTick()
+      return fake
+    }
+
+    it.for([
+      { cancelable: true, offered: true },
+      { cancelable: false, offered: false },
+      { cancelable: undefined, offered: false }
+    ])(
+      'offers the cancel only when the server says the payment is cancelable ($cancelable)',
+      async ({ cancelable, offered }) => {
+        await renderDeclinedPlanChange(cancelable)
+
+        expect(screen.queryByRole('button', { name: CANCEL }) !== null).toBe(
+          offered
+        )
+      }
+    )
+
+    it('cancels the payment once and frees the confirm when the operation settles', async () => {
+      const fake = await renderDeclinedPlanChange(true)
+      expect(
+        screen.getByRole('button', { name: 'Confirm upgrade' })
+      ).toBeDisabled()
+
+      await userEvent.click(screen.getByRole('button', { name: CANCEL }))
+      expect(fake.cancelOperation).toHaveBeenCalledExactlyOnceWith('op_1')
+
+      fake.publishOperation(failedOperation('authentication_failed'))
+
+      await waitFor(() =>
+        expect(
+          screen.getByRole('button', { name: 'Confirm upgrade' })
+        ).toBeEnabled()
+      )
+      expect(screen.queryByRole('button', { name: CANCEL })).toBeNull()
+    })
+
+    it.for([
+      {
+        answer: {
+          status: 'not_canceled',
+          code: 'PAYMENT_IN_FLIGHT',
+          serverMessage: 'This payment is already processing.'
+        },
+        shown: 'This payment is already processing.'
+      },
+      {
+        answer: {
+          status: 'error',
+          code: 'REQUEST_FAILED',
+          serverMessage: 'Billing is briefly unavailable.'
+        },
+        shown: 'Billing is briefly unavailable.'
+      }
+    ] as const)(
+      "shows the server's sentence when the cancel fails ($answer.status)",
+      async ({ answer, shown }) => {
+        await renderDeclinedPlanChange(true, { cancelOperation: answer })
+
+        await userEvent.click(screen.getByRole('button', { name: CANCEL }))
+
+        expect(await screen.findByText(shown)).toBeInTheDocument()
+      }
+    )
+  })
+
   it('re-quotes and asks when the server, not the quote, demands the confirmation', async () => {
     const fake = await renderCheckout(CHECKOUT_PATH, {
       preview: { status: 'ok', value: upgradeQuote() }

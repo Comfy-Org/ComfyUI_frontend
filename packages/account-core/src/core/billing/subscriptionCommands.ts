@@ -132,7 +132,11 @@ export type CancelRefusalCode = (typeof CANCEL_REFUSAL_SERVER_CODES)[number]
  */
 export type CancelOperationResult =
   | { readonly status: 'canceled' | 'cancel_requested' }
-  | { readonly status: 'not_canceled'; readonly code: CancelRefusalCode }
+  | {
+      readonly status: 'not_canceled'
+      readonly code: CancelRefusalCode
+      readonly serverMessage?: string
+    }
   | BillingFailure
 
 export type PaymentPortalResult =
