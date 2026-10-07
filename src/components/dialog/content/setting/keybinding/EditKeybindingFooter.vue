@@ -17,7 +17,7 @@
             : 'primary'
       "
       size="md"
-      :disabled="!dialogState.newCombo"
+      :disabled="!newKeybinding"
       class="px-4 py-2"
       @click="handleSave"
     >
@@ -36,7 +36,7 @@
 import type { Reactive } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
-import { KeybindingImpl } from '@/platform/keybindings/keybinding'
+import type { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -44,8 +44,9 @@ import { useDialogStore } from '@/stores/dialogStore'
 import type { EditKeybindingDialogState } from '@/composables/useEditKeybindingDialog'
 import { DIALOG_KEY } from '@/composables/useEditKeybindingDialog'
 
-const { dialogState, existingKeybindingOnCombo } = defineProps<{
+const { dialogState, newKeybinding, existingKeybindingOnCombo } = defineProps<{
   dialogState: Reactive<EditKeybindingDialogState>
+  newKeybinding: KeybindingImpl | null
   existingKeybindingOnCombo: KeybindingImpl | null
 }>()
 
@@ -58,23 +59,17 @@ function handleCancel() {
 }
 
 async function handleSave() {
-  const combo = dialogState.newCombo
-  const commandId = dialogState.commandId
-  if (!combo || !commandId) return
+  if (!newKeybinding) return
 
   dialogStore.closeDialog({ key: DIALOG_KEY })
 
-  if (dialogState.mode === 'add') {
-    keybindingStore.addUserKeybinding(new KeybindingImpl({ commandId, combo }))
-  } else if (dialogState.existingBinding) {
+  if (dialogState.existingBinding) {
     keybindingStore.updateSpecificKeybinding(
       dialogState.existingBinding,
-      new KeybindingImpl({ commandId, combo })
+      newKeybinding
     )
   } else {
-    keybindingStore.updateKeybindingOnCommand(
-      new KeybindingImpl({ commandId, combo })
-    )
+    keybindingStore.addUserKeybinding(newKeybinding)
   }
   await keybindingService.persistUserKeybindings()
 }

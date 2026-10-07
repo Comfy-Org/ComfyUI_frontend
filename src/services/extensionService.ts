@@ -1,5 +1,9 @@
+import { z } from 'zod'
+import { fromZodError } from 'zod-validation-error'
+
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { t } from '@/i18n'
 import { legacyMenuCompat } from '@/lib/litegraph/src/contextMenuCompat'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
@@ -7,8 +11,10 @@ import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExtensionStore } from '@/stores/extensionStore'
+import { useContextKeyStore } from '@/platform/keybindings/contextKeyStore'
 import { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
+import { zKeybinding } from '@/platform/keybindings/types'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
@@ -17,6 +23,8 @@ import type { AuthUserInfo } from '@/types/authTypes'
 import { getErrorMessage } from '@/utils/errorUtil'
 import { app } from '@/scripts/app'
 import type { ComfyApp } from '@/scripts/app'
+
+const zContextKeys = z.array(z.string()).optional()
 
 const INLINED_CLOUD_EXTENSIONS = new Set([
   '/extensions/cloud/rum.js',
@@ -149,8 +157,35 @@ export const useExtensionService = () => {
     )
     const addSetting = wrapWithErrorHandling(settingStore.addSetting)
 
+    const contextKeyStore = useContextKeyStore()
+    const contextKeys = zContextKeys.safeParse(extension.contextKeys)
+    if (!contextKeys.success) {
+      toastErrorHandler(
+        new Error(t('g.invalidExtensionContextKeys', { name: extension.name }))
+      )
+    }
+    contextKeys.data?.forEach((key) => {
+      if (
+        !contextKeyStore.register(`${extension.name}.${key}`, extension.name)
+      ) {
+        toastErrorHandler(
+          new Error(
+            t('g.invalidExtensionContextKey', { name: extension.name, key })
+          )
+        )
+      }
+    })
     extension.keybindings?.forEach((keybinding) => {
-      addKeybinding(new KeybindingImpl(keybinding))
+      const parsed = zKeybinding.safeParse(keybinding)
+      if (!parsed.success) {
+        toastErrorHandler(
+          new Error(
+            `${t('g.invalidExtensionKeybinding', { name: extension.name })}: ${fromZodError(parsed.error).message}`
+          )
+        )
+        return
+      }
+      addKeybinding(new KeybindingImpl(parsed.data))
     })
     useCommandStore().loadExtensionCommands(extension)
     useMenuItemStore().loadExtensionMenuCommands(extension)

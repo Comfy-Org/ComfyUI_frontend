@@ -108,7 +108,7 @@
       <div class="pl-4" data-testid="keybinding-expansion-content">
         <div
           v-for="(binding, index) in command.keybindings"
-          :key="binding.combo.serialize()"
+          :key="binding.serialize()"
           data-testid="keybinding-expansion-binding"
           class="flex items-center justify-between border-b border-border-subtle py-1.5 last:border-b-0"
         >
@@ -118,6 +118,7 @@
               :key-combo="binding.combo"
               :is-modified="command.isModified"
             />
+            <KeybindingScope :binding="binding" />
           </div>
           <div class="flex flex-row">
             <Button
@@ -158,6 +159,7 @@ import type { ComfyCommandImpl } from '@/stores/commandStore'
 
 import KeybindingList from './KeybindingList.vue'
 import KeyComboDisplay from './KeyComboDisplay.vue'
+import KeybindingScope from './KeybindingScope.vue'
 
 const { command, expanded, selected } = defineProps<{
   command: Pick<ComfyCommandImpl, 'id' | 'source'> & {

@@ -329,7 +329,6 @@ function editKeybinding(command: KeybindingCommand, binding: KeybindingImpl) {
     commandId: command.id,
     commandLabel: command.label,
     currentCombo: binding.combo,
-    mode: 'edit',
     existingBinding: binding
   })
 }
@@ -338,8 +337,7 @@ function addKeybinding(command: KeybindingCommand) {
   editKeybindingDialog.show({
     commandId: command.id,
     commandLabel: command.label,
-    currentCombo: null,
-    mode: 'add'
+    currentCombo: null
   })
 }
 
