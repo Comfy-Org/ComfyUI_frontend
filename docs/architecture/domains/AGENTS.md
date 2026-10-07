@@ -14,8 +14,5 @@ When `pnpm architecture:check` fails, act on the message:
 - `owners differ from CODEOWNERS`: make the CODEOWNERS line for that path list
   exactly the record's `owners`.
 - `is stale`: run `pnpm architecture:update`.
-- `is expired`: remove the exception's debt or ask its owner to extend
-  `sunset`.
-
-Leave unclassified files unclassified. Add a public entry point only together
-with a characterization test that covers it.
+  Leave unclassified files unclassified. Add a public entry point only together
+  with a characterization test that covers it.

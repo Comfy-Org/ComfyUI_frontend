@@ -4,13 +4,13 @@ import { fileURLToPath } from 'node:url'
 
 import { markdownTable } from 'markdown-table'
 import {
-  LanguageVariant,
   ScriptKind,
   ScriptTarget,
   SyntaxKind,
-  createScanner,
   createSourceFile,
   forEachChild,
+  getLeadingCommentRanges,
+  getTrailingCommentRanges,
   isCallExpression,
   isExportDeclaration,
   isImportDeclaration,
@@ -333,22 +333,30 @@ const suppressionViolations = (
 
 const eslintComments = (filename: string, source: string): string[] =>
   scriptBodies(filename, source).flatMap(({ body, kind }) => {
-    const variant = [ScriptKind.JSX, ScriptKind.TSX].includes(kind)
-      ? LanguageVariant.JSX
-      : LanguageVariant.Standard
-    const scanner = createScanner(ScriptTarget.Latest, false, variant, body)
-    const comments: string[] = []
-    for (
-      let token = scanner.scan();
-      token !== SyntaxKind.EndOfFileToken;
-      token = scanner.scan()
+    const sourceFile = createSourceFile(
+      filename,
+      body,
+      ScriptTarget.Latest,
+      false,
+      kind
     )
-      if (
-        token === SyntaxKind.SingleLineCommentTrivia ||
-        token === SyntaxKind.MultiLineCommentTrivia
-      )
-        comments.push(scanner.getTokenText())
-    return comments
+    const ranges = new Map<number, number>()
+    const collect = (position: number, trailing = false): void => {
+      const found = trailing
+        ? getTrailingCommentRanges(body, position)
+        : getLeadingCommentRanges(body, position)
+      for (const { pos, end } of found ?? []) ranges.set(pos, end)
+    }
+    const visit = (node: Node): void => {
+      collect(node.pos)
+      collect(node.end, true)
+      for (const child of node.getChildren(sourceFile)) visit(child)
+    }
+    collect(0)
+    visit(sourceFile)
+    return [...ranges]
+      .sort(([left], [right]) => left - right)
+      .map(([start, end]) => body.slice(start, end))
   })
 
 const disablesArchitectureRule = (comment: string): boolean => {
@@ -1074,7 +1082,11 @@ const enforceBaseline = (
   const recorded: { violations: string[] } = JSON.parse(
     readFileSync(baselinePath, 'utf8')
   )
+  const current = new Set(
+    census.violations.map(({ fingerprint }) => fingerprint)
+  )
   for (const fingerprint of recorded.violations) {
+    if (mode === 'update' && !current.has(fingerprint)) continue
     const owners = exceptions.filter(({ exactFingerprints }) =>
       exactFingerprints.includes(fingerprint)
     )
@@ -1095,13 +1107,13 @@ const enforceBaseline = (
           .map(({ detail, fingerprint }) => `- ${detail}\n  ${fingerprint}`)
           .join('\n')
     )
-  const current = new Set(
+  const currentBaseline = new Set(
     census.violations
       .filter(({ maturity }) => maturity === 'baseline')
       .map(({ fingerprint }) => fingerprint)
   )
   const retained = recorded.violations.filter((fingerprint) =>
-    current.has(fingerprint)
+    currentBaseline.has(fingerprint)
   )
   const resolved = recorded.violations.length - retained.length
   if (!resolved) return
@@ -1124,6 +1136,19 @@ export const runArchitectureCheck = (
   const { records, exceptions } = loadArchitectureConfiguration(repositoryRoot)
   const census = censusRepository(repositoryRoot, records)
   validateExceptionCoverage(census.violations, exceptions)
+  const currentFingerprints = new Set(
+    census.violations.map(({ fingerprint }) => fingerprint)
+  )
+  const staleOwned = exceptions.flatMap(({ id, exactFingerprints }) =>
+    exactFingerprints
+      .filter((fingerprint) => !currentFingerprints.has(fingerprint))
+      .map((fingerprint) => `${id}: ${fingerprint}`)
+  )
+  if (staleOwned.length)
+    throw new Error(
+      `exceptions.json has ${staleOwned.length} stale exact fingerprint(s):\n` +
+        staleOwned.map((fingerprint) => `- ${fingerprint}`).join('\n')
+    )
   if (mode === 'report') {
     process.stdout.write(stableJson(report(census)))
     return

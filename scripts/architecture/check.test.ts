@@ -7,7 +7,7 @@ import {
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
+import { afterEach, describe, expect, test } from 'vitest'
 
 import type { ArchitectureException, DomainRecord, Violation } from './check'
 import {
@@ -91,10 +91,6 @@ const createConfiguredRepository = (): string => {
   })
 }
 
-beforeEach(() => {
-  vi.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-10-01T00:00:00Z'))
-})
-
 afterEach(() => {
   for (const directory of temporaryDirectories.splice(0))
     rmSync(directory, { recursive: true })
@@ -141,6 +137,28 @@ describe('parseImportSpecifiers', () => {
         `<script lang="ts">${source}</script>`
       )
     ).toEqual(['./dynamic'])
+  })
+})
+
+describe('architecture suppression parsing', () => {
+  test('ignores comment-like text in templates and regular expressions', () => {
+    const root = createConfiguredRepository()
+    writeFileSync(
+      join(root, 'src/template.ts'),
+      [
+        'export const template = `x${value}y`',
+        'export const pattern = /[/*] eslint-disable */',
+        '// eslint-disable-next-line comfy/no-restricted-paths',
+        'export const value = true'
+      ].join('\n')
+    )
+    expect(
+      censusRepository(root, loadArchitectureConfiguration(root).records)
+        .violations.filter(({ kind }) => kind === 'anonymous-suppression')
+        .map(({ fingerprint }) => fingerprint)
+    ).toEqual([
+      'anonymous-suppression:src/template.ts:comfy/no-restricted-paths#1'
+    ])
   })
 })
 
@@ -550,7 +568,16 @@ describe('baseline and exception controls', () => {
       'exactly one owned exception'
     )
     expect(() =>
-      validateExceptionCoverage([current], [exception(), exception()])
+      validateExceptionCoverage(
+        [current],
+        [
+          exception({ exactFingerprints: [current.fingerprint] }),
+          exception({
+            id: 'DDD-EX-002',
+            exactFingerprints: [current.fingerprint]
+          })
+        ]
+      )
     ).toThrow('exactly one owned exception')
     expect(() =>
       validateExceptionCoverage(
@@ -621,16 +648,6 @@ describe('baseline admission and catalog stability', () => {
     ).toEqual(['anonymous-suppression:src/new.ts:comfy/no-restricted-paths#1'])
   })
 
-  test('keeps an exception valid through its sunset day', () => {
-    const root = createConfiguredRepository()
-    const ledgerPath = join(root, 'docs/architecture/domains/exceptions.json')
-    const ledger = JSON.parse(readFileSync(ledgerPath, 'utf8'))
-    vi.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-10-01T23:00:00Z'))
-    ledger.exceptions[0].sunset = '2026-10-01'
-    writeFileSync(ledgerPath, JSON.stringify(ledger))
-    expect(() => loadArchitectureConfiguration(root)).not.toThrow()
-  })
-
   test('stable catalog ignores live census churn', () => {
     const root = createConfiguredRepository()
     runArchitectureCheck(root, 'update')
@@ -653,26 +670,25 @@ describe('baseline admission and catalog stability', () => {
     expect(() => runArchitectureCheck(root, 'check')).not.toThrow()
   })
 
-  test('check rejects stale debt and update removes it from the baseline', () => {
+  test('check and update reject stale exact debt ownership', () => {
     const root = createConfiguredRepository()
+    runArchitectureCheck(root, 'update')
     const resolved =
       'anonymous-suppression:src/resolved.ts:comfy/no-restricted-paths#1'
     const ledgerPath = join(root, 'docs/architecture/domains/exceptions.json')
     const ledger = JSON.parse(readFileSync(ledgerPath, 'utf8'))
     ledger.exceptions[0].exactFingerprints.push(resolved)
     writeFileSync(ledgerPath, JSON.stringify(ledger))
-    runArchitectureCheck(root, 'update')
     const baselinePath = join(root, 'docs/architecture/domains/baseline.json')
     writeFileSync(
       baselinePath,
       JSON.stringify({ schemaVersion: 1, violations: [resolved] })
     )
     expect(() => runArchitectureCheck(root, 'check')).toThrow(
-      'baseline.json has 1 resolved fingerprint(s)'
+      'exceptions.json has 1 stale exact fingerprint(s)'
     )
-    runArchitectureCheck(root, 'update')
-    expect(JSON.parse(readFileSync(baselinePath, 'utf8')).violations).toEqual(
-      []
+    expect(() => runArchitectureCheck(root, 'update')).toThrow(
+      'exceptions.json has 1 stale exact fingerprint(s)'
     )
   })
 
@@ -694,6 +710,8 @@ describe('baseline admission and catalog stability', () => {
       baselinePath,
       JSON.stringify({ schemaVersion: 1, violations: [kept, resolved] })
     )
+    ledger.exceptions[0].exactFingerprints = [kept]
+    writeFileSync(ledgerPath, JSON.stringify(ledger))
     runArchitectureCheck(root, 'update')
     expect(JSON.parse(readFileSync(baselinePath, 'utf8')).violations).toEqual([
       kept

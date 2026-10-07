@@ -48,9 +48,10 @@ Files outside the enrolled pilots are reported as `unclassified-module`
 inventory and never fail the check. That changes only after every `src` module
 is assigned a capability and role. Adding or renaming an unclassified file
 does not touch the exception ledger unless the file imports an enrolled
-domain's internal module. Renaming one of the existing deep-import callers
-changes its fingerprint and needs a new `exactFingerprints` entry and
-`pnpm architecture:accept-baseline`. Imports between enrolled and unclassified
+domain's internal module. Renaming a baseline-enforced deep-import caller, such
+as a mask-editor caller, changes its fingerprint and needs a new
+`exactFingerprints` entry and `pnpm architecture:accept-baseline`.
+Inventory-only workflow-template callers do not. Imports between enrolled and unclassified
 code are `legacy`, and role direction is checked only when both files are
 enrolled. The census covers `src/**/*.{ts,tsx,vue}`; `browser_tests`,
 workspace packages, and other roots are not scanned.
