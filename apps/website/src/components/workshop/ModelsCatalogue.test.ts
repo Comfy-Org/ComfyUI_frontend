@@ -269,7 +269,7 @@ describe('ModelsCatalogue', () => {
     it.for([
       {
         query: 'relight',
-        kinds: ['workflow'],
+        kinds: ['workflow', 'app'],
         heading: 'Results for “relight”'
       },
       { query: 'studio', kinds: ['app'], heading: 'Results for “studio”' },

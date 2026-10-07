@@ -712,7 +712,6 @@
       "communityBody": "Real work from the community, made in ComfyUI.",
       "communityExplore": "Explore the gallery",
       "communityShare": "Share yours",
-      "modelsSeeAll": "See all models",
       "modelsIntent": "Explore and compare",
       "workflowsIntent": "Work with nodes",
       "appsIntent": "Fastest result",
@@ -5678,9 +5677,7 @@
       "models": "{count} model | {count} models",
       "workflows": "{count} workflow | {count} workflows",
       "apps": "{count} app | {count} apps",
-      "kinds": "Results by kind",
-      "kindWorkflow": "Workflow",
-      "soon": "Soon"
+      "kinds": "Results by kind"
     },
     "workflows": {
       "popular": "Popular",

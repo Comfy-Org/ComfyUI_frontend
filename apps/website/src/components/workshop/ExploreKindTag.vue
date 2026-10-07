@@ -1,32 +1,54 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
+import IconApps from '@/components/hub/IconApps.vue'
+import IconModel from '@/components/hub/IconModel.vue'
+import IconWorkflow from '@/components/hub/IconWorkflow.vue'
 import type { Locale, TranslationKey } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
+import type { ExploreKind } from '@/lib/workshop/explore-search'
 
-type Kind = 'app' | 'workflow' | 'model'
-
-const { kind, locale = 'en' } = defineProps<{ kind: Kind; locale?: Locale }>()
+const { kind, locale = 'en' } = defineProps<{
+  kind: ExploreKind
+  locale?: Locale
+}>()
 const { t } = translationsFor(locale)
 
-const labels: Record<Kind, TranslationKey> = {
-  app: 'workshop.explore.kindApp',
-  workflow: 'workshop.explore.workflowPill',
-  model: 'workshop.explore.kindModel'
-}
+// The same surface each kind's door on the Hub wears.
+const KINDS = {
+  app: {
+    label: 'workshop.explore.kindApp',
+    icon: IconApps,
+    surface: 'bg-cobalt-800'
+  },
+  workflow: {
+    label: 'workshop.explore.workflowPill',
+    icon: IconWorkflow,
+    surface: 'bg-primary-comfy-plum'
+  },
+  model: {
+    label: 'workshop.explore.kindModel',
+    icon: IconModel,
+    surface: 'bg-illustration-forest'
+  }
+} as const satisfies Record<
+  ExploreKind,
+  { label: TranslationKey; icon: typeof IconApps; surface: string }
+>
 </script>
 
 <template>
   <span
     :class="
       cn(
-        'pointer-events-none absolute top-4 right-4 z-10 rounded-lg px-2 py-1 text-2xs/none font-medium text-white uppercase',
-        kind === 'app' ? 'bg-cobalt-800' : 'bg-black/40 backdrop-blur-md'
+        'pointer-events-none absolute top-3 left-3 z-10 inline-flex items-center gap-1 rounded-lg px-2 py-1 text-2xs/none font-semibold tracking-wider text-primary-warm-white uppercase',
+        KINDS[kind].surface
       )
     "
     data-testid="explore-kind"
     :data-kind="kind"
   >
-    {{ t(labels[kind]) }}
+    <component :is="KINDS[kind].icon" class="size-3 shrink-0" />
+    {{ t(KINDS[kind].label) }}
   </span>
 </template>

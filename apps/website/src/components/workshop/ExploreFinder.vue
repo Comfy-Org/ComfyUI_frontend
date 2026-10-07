@@ -11,7 +11,7 @@ const query = defineModel<string>({ required: true })
 </script>
 
 <template>
-  <label class="relative flex w-full max-w-2xl items-center">
+  <label class="relative flex w-full max-w-3xl items-center">
     <span class="sr-only">{{ t('workshop.explore.searchLabel') }}</span>
     <Search
       class="pointer-events-none absolute left-5 size-5 text-primary-warm-gray"
@@ -21,7 +21,7 @@ const query = defineModel<string>({ required: true })
       v-model="query"
       type="search"
       :placeholder="t('workshop.explore.searchPlaceholder')"
-      class="h-14 w-full rounded-full border border-transparency-white-t8 bg-hub-surface pr-6 pl-13 text-base text-primary-warm-white outline-none placeholder:text-primary-warm-gray focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
+      class="h-14 w-full rounded-2xl border border-transparency-white-t8 bg-hub-surface pr-6 pl-13 text-base text-primary-warm-white outline-none placeholder:text-primary-warm-gray focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
       data-testid="explore-search"
     />
   </label>

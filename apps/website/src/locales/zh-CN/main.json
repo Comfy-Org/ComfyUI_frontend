@@ -4502,7 +4502,6 @@
       "communityBody": "社区用 ComfyUI 创作的真实作品。",
       "communityExplore": "浏览作品集",
       "communityShare": "分享你的作品",
-      "modelsSeeAll": "查看全部模型",
       "modelsIntent": "探索与比较",
       "workflowsIntent": "使用节点",
       "appsIntent": "最快出结果",
@@ -5071,9 +5070,7 @@
       "models": "{count} 个模型",
       "workflows": "{count} 个工作流",
       "apps": "{count} 个应用",
-      "kinds": "按类型统计的结果",
-      "kindWorkflow": "工作流",
-      "soon": "即将推出"
+      "kinds": "按类型统计的结果"
     },
     "workflows": {
       "popular": "热门",

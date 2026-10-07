@@ -5,16 +5,15 @@ import type {
   WorkflowWorkshopModel,
   WorkshopModel
 } from '@/config/models-catalogue'
-import {
-  catalogSearch,
-  filterWorkshopModels,
-  sortWorkshopModels
-} from '@/config/models-catalogue'
+import { catalogSearch, sortWorkshopModels } from '@/config/models-catalogue'
 import { getRoutes } from '@/config/routes'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import type { CatalogueApp } from '@/lib/workshop/catalogue-apps'
+import { upcomingApps } from '@/lib/workshop/coming-soon-apps'
 import { doorArt } from '@/lib/workshop/explore-art'
+import type { ExploreCount, ExploreEntry } from '@/lib/workshop/explore-search'
+import { exploreRow, searchExplore } from '@/lib/workshop/explore-search'
 import ExploreCommunity from './ExploreCommunity.vue'
 import ExploreDoors from './ExploreDoors.vue'
 import ExploreFinder from './ExploreFinder.vue'
@@ -38,33 +37,57 @@ const { t } = translationsFor(locale)
 const routes = getRoutes(locale)
 const query = ref('')
 
-const everything = computed(() =>
-  sortWorkshopModels([...workflows, ...models], 'popular')
-)
 const art = computed(() => doorArt({ models, workflows, apps }, locale))
 
-const needle = computed(() => query.value.trim().toLowerCase())
-const shownApps = computed(() =>
-  apps.filter((app) =>
-    `${app.name} ${app.task}`.toLowerCase().includes(needle.value)
-  )
+const needle = computed(() => query.value.trim())
+// An app still being built is found by name, but not offered as popular.
+const searchedApps = computed(() =>
+  apps.length ? [...apps, ...upcomingApps(locale)] : []
 )
-const results = computed(() =>
-  filterWorkshopModels(everything.value, { query: query.value }).slice(
-    0,
-    RESULTS - shownApps.value.length
-  )
+const matches = computed(() =>
+  searchExplore({ apps: searchedApps.value, workflows, models }, needle.value)
 )
+
+const popular = computed<ExploreEntry[]>(() => [
+  ...apps.map((app) => ({ kind: 'app' as const, app })),
+  ...sortWorkshopModels([...workflows, ...models], 'popular')
+    .slice(0, RESULTS - apps.length)
+    .map((model) => ({
+      kind: model.workflowId ? ('workflow' as const) : ('model' as const),
+      model
+    }))
+])
+
+const entries = computed(() =>
+  needle.value ? exploreRow(matches.value, RESULTS) : popular.value
+)
+
+const counts = computed<ExploreCount[]>(() => {
+  if (!needle.value) return []
+  const search = catalogSearch({ query: needle.value })
+  return [
+    {
+      kind: 'models' as const,
+      count: matches.value.models.length,
+      href: routes.workshop + search
+    },
+    {
+      kind: 'workflows' as const,
+      count: matches.value.workflows.length,
+      href: routes.hubWorkflows + search
+    },
+    {
+      kind: 'apps' as const,
+      count: matches.value.apps.length,
+      href: routes.hubApps
+    }
+  ].filter((entry) => entry.count > 0)
+})
 
 const resultsTitle = computed(() =>
   needle.value
-    ? t('workshop.explore.resultsFor', { query: query.value.trim() })
+    ? t('workshop.explore.resultsFor', { query: needle.value })
     : t('workshop.explore.popularTitle')
-)
-const seeAllHref = computed(() =>
-  needle.value
-    ? routes.workshop + catalogSearch({ query: query.value.trim() })
-    : undefined
 )
 
 function clear() {
@@ -88,11 +111,10 @@ function clear() {
     />
 
     <ExploreResults
-      v-if="needle || shownApps.length || results.length"
+      v-if="needle || entries.length"
       :title="resultsTitle"
-      :apps="shownApps"
-      :results
-      :see-all-href="seeAllHref"
+      :entries
+      :counts
       :locale
       @clear="clear"
     />

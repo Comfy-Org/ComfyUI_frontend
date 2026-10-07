@@ -315,6 +315,40 @@ test('Popular right now shows every format with no task chips', async ({
   await expect(popular.getByRole('button', { name: 'All' })).toHaveCount(0)
 })
 
+test('a Hub search finds models, workflows and apps, and counts each kind', async ({
+  page
+}) => {
+  await page.goto('/hub/')
+  await page.getByTestId('explore-search').fill('relight')
+
+  const results = page.getByTestId('explore-results')
+  await expect(
+    results.getByRole('heading', { name: 'Results for “relight”' })
+  ).toBeVisible()
+  await expect
+    .poll(
+      async () =>
+        new Set(
+          await results
+            .getByTestId('explore-kind')
+            .evaluateAll((tags) => tags.map((tag) => tag.dataset.kind))
+        )
+    )
+    .toEqual(new Set(['model', 'workflow', 'app']))
+  const counts = results.getByTestId('explore-counts').getByRole('link')
+  await expect(counts).toHaveText([
+    /^\d+ models?$/,
+    /^\d+ workflows?$/,
+    /^\d+ apps?$/
+  ])
+  await expect(counts.nth(0)).toHaveAttribute('href', '/hub/models/?q=relight')
+  await expect(counts.nth(1)).toHaveAttribute(
+    'href',
+    '/hub/workflows/?q=relight'
+  )
+  await expect(results.getByText('See all models')).toHaveCount(0)
+})
+
 test('keeps the Hub visible until a cold section is ready', async ({
   page,
   context
