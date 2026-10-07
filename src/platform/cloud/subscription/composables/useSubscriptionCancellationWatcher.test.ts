@@ -16,6 +16,7 @@ describe('useSubscriptionCancellationWatcher', () => {
   }
 
   const baseStatus: BillingStatusResponse = {
+    scheduled_change: null,
     is_active: true,
     has_funds: true,
     max_seats: 0,

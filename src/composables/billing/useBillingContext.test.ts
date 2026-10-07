@@ -15,6 +15,7 @@ import {
 import { useBillingContext } from './useBillingContext'
 
 const DEFAULT_BILLING_STATUS: BillingStatusResponse = {
+  scheduled_change: null,
   is_active: true,
   max_seats: 73,
   occupied_seats: 72,
@@ -189,6 +190,7 @@ describe('useBillingContext', () => {
     )
     mockPlans.value = []
     mockLegacyStatus.value = {
+      scheduled_change: null,
       is_active: true,
       has_funds: true,
       max_seats: 0,

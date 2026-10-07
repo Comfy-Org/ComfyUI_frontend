@@ -1,5 +1,29 @@
 {
   "customNodePacks": {
+    "registry": {
+      "title": "Cloud V2 node registry",
+      "description": "Select exact converted pack revisions for this workspace. Pinning does not install nodes or dependencies.",
+      "search": "Search converted packs or node names",
+      "corpus": "{count} revisions · corpus {commit}",
+      "revision": "Upstream {commit} · conversion {digest}",
+      "prepared": "Prepared to run",
+      "pending": "Not yet prepared on this worker",
+      "provenanceMissing": "Provenance incomplete",
+      "pin": "Pin",
+      "unpin": "Unpin",
+      "pinNamed": "Pin {name}",
+      "unpinNamed": "Unpin {name}",
+      "nodes": "{count} nodes",
+      "noMatches": "No matching converted packs",
+      "qualification": "Converted and prepared do not mean every workflow has been tested. Rendering requires a pinned, prepared revision.",
+      "refresh": "Refresh catalog",
+      "failed": "Could not update the Cloud node registry.",
+      "errors": {
+        "http": "Server returned {status}. Refresh the catalog to confirm the current pins.",
+        "invalidCatalog": "The server returned an invalid catalog. Refresh to confirm the current pins.",
+        "network": "The request could not be confirmed. Refresh the catalog before trying again."
+      }
+    },
     "customNodes": "Custom Nodes",
     "title": "Custom node packs",
     "description": "Create, edit, download, or upload a private V2 custom node pack (.zip) for this workspace. Its nodes appear in the node library and run in an isolated process when used.",

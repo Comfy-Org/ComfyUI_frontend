@@ -2,6 +2,8 @@ import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 
 import CustomNodePacksDialog from '../components/CustomNodePacksDialog.vue'
+import CloudNodeRegistryDialog from '../components/CloudNodeRegistryDialog.vue'
+import { isCloud } from '@/platform/distribution/types'
 
 const DIALOG_KEY = 'custom-node-packs'
 
@@ -15,7 +17,7 @@ export function useCustomNodePacksDialog() {
   const show = () => {
     dialogService.showLayoutDialog({
       key: DIALOG_KEY,
-      component: CustomNodePacksDialog,
+      component: isCloud ? CloudNodeRegistryDialog : CustomNodePacksDialog,
       props: { onClose: hide },
       dialogComponentProps: {
         renderer: 'reka',
