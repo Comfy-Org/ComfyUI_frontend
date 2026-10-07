@@ -388,17 +388,13 @@ export function readSubgraphDefinitions(
 /**
  * What the document knows about a node's promoted widget layout.
  *
- * The two halves answer different questions and neither substitutes for the
- * other. `valueCount` sizes the positional array a promoted write indexes.
- * `declaredNames` is the node's DEFINITION's declared input order — the list
- * `SubgraphNode.configure` rebuilds `inputs` from, so a host's widget-backed
- * order is always an ordered subsequence of it. Empty when the document
- * carries no definition for the node, which is the first-write case: the
- * array does not exist yet and the live order builds it.
- *
- * The instance's own `inputs` mirror is deliberately NOT used: it omits
- * promoted inputs whose values the array still carries, so it can neither
- * size nor order anything.
+ * `valueCount` sizes the positional array a promoted write indexes.
+ * `promotedNames` reconstructs that array's exact name order from the
+ * definition plus the instance's input mirror: a definition input is promoted
+ * when the mirror either omits it or carries its widget marker. Neither source
+ * is sufficient alone because the mirror can omit promoted values the array
+ * still carries. An unreadable array or name sequence is represented by null
+ * so the minter can fail closed.
  */
 export interface DocPromotedWidgets {
   valueCount: number | null

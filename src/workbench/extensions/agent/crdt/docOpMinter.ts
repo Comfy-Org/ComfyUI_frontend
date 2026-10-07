@@ -236,19 +236,16 @@ function promotedHostWrite(
 /**
  * Whether a live index is a safe index into the document's array.
  *
- * Two independent ways it is not, and the document answers each with a
- * different half of what it knows:
+ * Two independent ways it is not, and the document answers both:
  *
  * - The array is sized for a different set of widgets. Checked against
  *   `valueCount`, the same cardinality invariant `applyHostWidgets` enforces
  *   on the way in. A document holding no array yet constrains nothing — the
  *   host builds it from `host_widgets_values` on first write.
- * - The widgets are in a different ORDER. `reorderSubgraphInputsByWidgetOrder`
- *   permutes the live host without minting anything, and a write indexed
- *   against the permuted order would land on another widget's value. The
- *   live widget-backed names must therefore still read in the definition's
- *   declared order; they are a SUBSEQUENCE of it, since a declared input
- *   fed by a link backs no widget.
+ * - The promoted name sequence is different. Definition order combined with
+ *   the instance's stored input mirror identifies the exact names behind the
+ *   positional array, catching same-cardinality demote/promote swaps as well
+ *   as `reorderSubgraphInputsByWidgetOrder` permutations.
  *
  * A refused write is dropped before enqueue so its `opaque_widgets` rejection
  * cannot abort unrelated operations in the same batch.
