@@ -57,6 +57,10 @@ const linkClass =
 const summary = computed(() =>
   defaultLabel === null
     ? t('deploymentSwitcher.noWorkspaceDefault')
-    : t('deploymentSwitcher.workspaceDefaultIs', { deployment: defaultLabel })
+    : t(
+        'deploymentSwitcher.workspaceDefaultIs',
+        { deployment: defaultLabel },
+        { escapeParameter: false }
+      )
 )
 </script>

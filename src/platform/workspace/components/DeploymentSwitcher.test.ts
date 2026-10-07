@@ -577,4 +577,82 @@ describe('DeploymentSwitcher', () => {
       'Deployment dep-b9b9b9b9'
     )
   })
+
+  describe('with the app i18n, which escapes message parameters', () => {
+    const escapingI18n = createI18n({
+      legacy: false,
+      locale: 'en',
+      escapeParameter: true,
+      messages: { en: enMessages }
+    })
+    const oddlyNamed: WorkspaceDeploymentList = {
+      ...listing,
+      items: listing.items.map((item) => ({
+        ...item,
+        build_name: item.build_name && "Vinh's R&D/Prod"
+      }))
+    }
+
+    function renderEscaping() {
+      return render(DeploymentSwitcher, {
+        global: { plugins: [escapingI18n] }
+      })
+    }
+
+    it("shows a Build name with ', & and / as written in the label, the list, the follow row and the owner's footer", async () => {
+      Object.assign(useTeamWorkspaceStore(), {
+        workspaceId: 'ws-1',
+        activeWorkspace: { id: 'ws-1', role: 'owner' }
+      })
+      mockWorkspaceApi.listDeployments.mockResolvedValue({
+        ...oddlyNamed,
+        picked_deployment_id: D2,
+        pick_source: 'browser',
+        default_deployment_id: D1
+      })
+      renderEscaping()
+
+      await waitFor(() =>
+        expect(
+          screen.getByTestId('deployment-switcher-current')
+        ).toHaveTextContent("Vinh's R&D/Prod v2")
+      )
+      await userEvent.click(screen.getByTestId('deployment-switcher-trigger'))
+      expect(screen.getByTestId(`deployment-row-${D1}`)).toHaveTextContent(
+        "Vinh's R&D/Prod v1dep-a1a1a1a1, stopped · Workspace default"
+      )
+      expect(screen.getByTestId('deployment-row-follow')).toHaveTextContent(
+        "Drop this browser's own pick and run on Vinh's R&D/Prod v1"
+      )
+      expect(screen.getByTestId('deployment-switcher-owner')).toHaveTextContent(
+        "Workspace default: Vinh's R&D/Prod v1"
+      )
+    })
+
+    it("shows a Build name with ', & and / as written in the reload notice", async () => {
+      mockWorkspaceApi.listDeployments
+        .mockResolvedValueOnce({
+          ...oddlyNamed,
+          picked_deployment_id: D2,
+          pick_source: 'workspace_default',
+          default_deployment_id: D2
+        })
+        .mockResolvedValue({
+          ...oddlyNamed,
+          picked_deployment_id: D1,
+          pick_source: 'workspace_default',
+          default_deployment_id: D1
+        })
+      renderEscaping()
+      await screen.findByTestId('deployment-switcher-trigger')
+
+      await useDeploymentPickStore().load()
+
+      expect(
+        await screen.findByTestId('deployment-switcher-changed')
+      ).toHaveTextContent(
+        "This browser now runs on Vinh's R&D/Prod v1. Reload to get its nodes."
+      )
+    })
+  })
 })
