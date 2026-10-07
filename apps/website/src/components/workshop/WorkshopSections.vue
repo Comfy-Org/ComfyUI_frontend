@@ -2,6 +2,7 @@
 import { ChevronRight } from '@lucide/vue'
 import { computed } from 'vue'
 
+import Button from '@/components/ui/button/Button.vue'
 import type { WorkshopModel } from '@/config/models-catalogue'
 import { sortWorkshopModels } from '@/config/models-catalogue'
 import type { Locale } from '@/i18n/translations'
@@ -58,18 +59,15 @@ function rememberModel(model: WorkshopModel, event: MouseEvent) {
           {{ t('workshop.modelsHub.trendingSubtitle') }}
         </p>
       </div>
-      <button
+      <Button
         type="button"
-        class="group inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-lg text-sm font-medium text-primary-comfy-yellow transition-opacity outline-none hover:opacity-80 focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
+        variant="link"
+        :append-icon="ChevronRight"
         data-testid="section-trending-see-all"
         @click="emit('browse')"
       >
         {{ t('workshop.modelsHub.viewAll') }}
-        <ChevronRight
-          class="size-4 transition-transform group-hover:translate-x-0.5"
-          aria-hidden="true"
-        />
-      </button>
+      </Button>
     </div>
 
     <ul :class="CARD_GRID">

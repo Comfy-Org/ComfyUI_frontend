@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ChevronLeft } from '@lucide/vue'
 
+import Badge from '@/components/ui/badge/Badge.vue'
+import IconButton from '@/components/ui/icon-button/IconButton.vue'
 import { getRoutes } from '@/config/routes'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
@@ -38,22 +40,21 @@ const routes = getRoutes(locale)
         <img src="/icons/logo.svg" alt="" class="h-5 w-auto max-sm:hidden" />
         <img src="/icons/logomark.svg" alt="" class="h-5 w-auto sm:hidden" />
       </a>
-      <a
+      <IconButton
+        as="a"
         :href="routes.hubApps"
-        class="grid size-9 shrink-0 place-items-center rounded-xl text-content-secondary outline-none hover:bg-transparency-white-t8 hover:text-primary-warm-white focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
+        size="sm"
         :aria-label="t('cinematic.backToApps')"
         data-testid="apps-back"
       >
         <ChevronLeft class="size-4" aria-hidden="true" />
-      </a>
+      </IconButton>
       <h1 class="truncate text-sm font-semibold text-primary-warm-white">
         {{ name }}
       </h1>
-      <span
-        class="ml-2 shrink-0 rounded-full bg-primary-comfy-yellow/15 px-2 py-0.5 text-2xs font-semibold tracking-wider text-primary-comfy-yellow uppercase"
-      >
+      <Badge variant="category" size="xs" class="ml-2">
         {{ t('cinematic.beta') }}
-      </span>
+      </Badge>
     </div>
     <div v-if="repo" class="pointer-events-auto flex items-center gap-2">
       <AppRepoLink :repo :app-slug="appSlug" :locale class="backdrop-blur-sm" />

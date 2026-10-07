@@ -2,6 +2,8 @@
 import { X } from '@lucide/vue'
 import { computed } from 'vue'
 
+import Button from '@/components/ui/button/Button.vue'
+import IconButton from '@/components/ui/icon-button/IconButton.vue'
 import type { WorkshopModel } from '@/config/models-catalogue'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
@@ -42,16 +44,16 @@ defineEmits<{ remove: [slug: string]; clear: []; compare: [] }>()
         class="inline-flex h-8 items-center gap-1 rounded-xl bg-transparency-white-t8 pr-1 pl-3 text-xs text-primary-warm-white"
       >
         {{ model.name }}
-        <button
+        <IconButton
           type="button"
-          class="grid size-6 cursor-pointer place-items-center rounded-lg text-primary-warm-gray outline-none hover:text-primary-warm-white focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
+          size="sm"
           :aria-label="
             t('workshop.explorer.compare.remove', { name: model.name })
           "
           @click="$emit('remove', model.slug)"
         >
           <X class="size-3.5" aria-hidden="true" />
-        </button>
+        </IconButton>
       </li>
     </ul>
     <button
@@ -70,9 +72,9 @@ defineEmits<{ remove: [slug: string]; clear: []; compare: [] }>()
       >
         {{ hint }}
       </span>
-      <button
+      <Button
         type="button"
-        class="inline-flex h-9 cursor-pointer items-center rounded-xl bg-primary-comfy-yellow px-4 text-xs font-bold tracking-wider text-primary-comfy-ink uppercase outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 disabled:cursor-not-allowed disabled:opacity-40"
+        size="sm"
         :disabled="models.length < MIN_COMPARED"
         data-testid="compare-open"
         @click="$emit('compare')"
@@ -84,7 +86,7 @@ defineEmits<{ remove: [slug: string]; clear: []; compare: [] }>()
             { plural: models.length }
           )
         }}
-      </button>
+      </Button>
     </div>
   </section>
 </template>

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import SectionHeader from '@/components/common/SectionHeader.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { externalLinks, getRoutes } from '@/config/routes'
 import type { GalleryItem } from '@/data/gallery'
 import { visibleGalleryItems } from '@/data/gallery'
@@ -27,35 +29,33 @@ const posts = items.slice(0, POSTS)
     <div
       class="mb-6 flex flex-wrap items-end justify-between gap-x-8 gap-y-4 rounded-3xl bg-hub-surface p-6 lg:p-8"
     >
-      <div class="flex max-w-xl flex-col gap-2">
-        <p class="text-sm font-medium text-primary-comfy-yellow">
-          {{ t('workshop.explore.communityTitle') }}
-        </p>
-        <h2
-          id="explore-community"
-          class="text-3xl/tight font-light text-primary-warm-white"
-        >
+      <SectionHeader
+        :label="t('workshop.explore.communityTitle')"
+        heading-size="compact"
+        max-width="md"
+        align="start"
+      >
+        <span id="explore-community">
           {{ t('workshop.explore.communityHeading') }}
-        </h2>
-        <p class="text-sm text-content-secondary">
-          {{ t('workshop.explore.communityBody') }}
-        </p>
-      </div>
+        </span>
+        <template #subtitle>
+          <p class="mt-2 text-sm text-content-secondary">
+            {{ t('workshop.explore.communityBody') }}
+          </p>
+        </template>
+      </SectionHeader>
       <div class="flex flex-wrap gap-2">
-        <a
-          :href="gallery"
-          class="rounded-xl bg-primary-comfy-yellow px-4 py-2 text-sm font-medium text-primary-comfy-ink outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
-        >
+        <Button :href="gallery">
           {{ t('workshop.explore.communityExplore') }}
-        </a>
-        <a
+        </Button>
+        <Button
           :href="externalLinks.gallerySubmit"
           target="_blank"
           rel="noopener noreferrer"
-          class="rounded-xl border border-transparency-white-t20 px-4 py-2 text-sm font-medium text-primary-warm-white outline-none hover:bg-hub-surface-hover focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
+          variant="outline"
         >
           {{ t('workshop.explore.communityShare') }}
-        </a>
+        </Button>
       </div>
     </div>
     <div class="columns-2 gap-4 md:columns-3 xl:columns-4">

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
+import Button from '@/components/ui/button/Button.vue'
 import type { WorkshopModel } from '@/config/models-catalogue'
 import { useCaseFor } from '@/config/models-catalogue'
 import type { Locale } from '@/i18n/translations'
@@ -99,13 +100,9 @@ function keyOf(entry: ExploreEntry): string {
         <p class="text-base text-content-secondary">
           {{ t('workshop.explore.empty') }}
         </p>
-        <button
-          type="button"
-          class="cursor-pointer rounded-lg text-sm font-medium text-primary-comfy-yellow outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
-          @click="$emit('clear')"
-        >
+        <Button type="button" variant="link" @click="$emit('clear')">
           {{ t('workshop.explore.clear') }}
-        </button>
+        </Button>
       </div>
     </template>
   </section>

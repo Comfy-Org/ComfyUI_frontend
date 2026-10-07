@@ -3,6 +3,7 @@ import { ArrowRight } from '@lucide/vue'
 import { useMounted } from '@vueuse/core'
 import { computed } from 'vue'
 
+import Button from '@/components/ui/button/Button.vue'
 import { catalogSearch, useCaseFor } from '@/config/models-catalogue'
 import { getRoutes } from '@/config/routes'
 import type {
@@ -172,9 +173,10 @@ const restTags = computed(() =>
           <h2 class="text-2xl font-bold text-primary-comfy-canvas">
             {{ page.relatedHeading }}
           </h2>
-          <a
+          <Button
             :href="routes.workshop"
-            class="inline-flex items-center gap-2 text-sm font-bold tracking-wider text-primary-comfy-yellow uppercase hover:underline"
+            variant="link"
+            :append-icon="ArrowRight"
           >
             <span class="sm:hidden">{{
               t('workshop.model.browseAllShort')
@@ -182,8 +184,7 @@ const restTags = computed(() =>
             <span class="max-sm:hidden">{{
               t('workshop.model.browseAll')
             }}</span>
-            <ArrowRight class="size-4 shrink-0" aria-hidden="true" />
-          </a>
+          </Button>
         </div>
         <ul
           class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
