@@ -49,7 +49,8 @@ const i18n = createI18n({
       },
       agent: {
         widgetWriteNotSyncedTitle: 'This edit could not sync',
-        subgraphReorderNotSyncedDetail: 'Promoted inputs cannot be reordered'
+        subgraphReorderNotSyncedDetail: 'Promoted inputs cannot be reordered',
+        subgraphPromotionNotSyncedDetail: 'Promoted inputs cannot be removed'
       }
     }
   }
@@ -233,6 +234,37 @@ describe('SubgraphEditor', () => {
 
     expect(host.inputs.map((input) => input.name)).toEqual(['first', 'second'])
     expect(labels()).toEqual(['first', 'second'])
+  })
+
+  it('hide-all demotes a visible promoted row after its source goes stale', async () => {
+    const { host } = renderTwoPromotedWidgets()
+    await nextTick()
+    const source = host.subgraph.nodes.find(
+      (node) => node.title === 'FirstNode'
+    )!
+    source.removeWidget(source.widgets![0])
+
+    const shown = screen.getByTestId('subgraph-editor-shown-section')
+    await userEvent.click(within(shown).getByText('Hide all'))
+    await nextTick()
+
+    expect(host.inputs).toEqual([])
+  })
+
+  it('visibly refuses a stale-row demotion while doc-bound', async () => {
+    const { host } = renderTwoPromotedWidgets()
+    onTestFinished(registerDocBoundRootGraphProbe(() => host.rootGraph.id))
+    await nextTick()
+    const source = host.subgraph.nodes.find(
+      (node) => node.title === 'FirstNode'
+    )!
+    source.removeWidget(source.widgets![0])
+
+    const shown = screen.getByTestId('subgraph-editor-shown-section')
+    await userEvent.click(within(shown).getByText('Hide all'))
+    await nextTick()
+
+    expect(host.inputs.map((input) => input.name)).toEqual(['first', 'second'])
   })
 
   it('moves a widget to shown when promoted from the hidden section', async () => {

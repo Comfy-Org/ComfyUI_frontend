@@ -5650,6 +5650,7 @@
     "widgetWriteNotSyncedTitle": "This edit couldn't sync",
     "widgetWriteNotSyncedDetail": "The workflow's shared structure does not safely address this widget. Your local value may be replaced by the synced workflow.",
     "subgraphReorderNotSyncedDetail": "Promoted inputs can't be reordered while this workflow is syncing with the Agent.",
+    "subgraphReorderUnavailableDetail": "Promoted inputs couldn't be reordered because one or more inputs are stale. Remove disconnected inputs and try again.",
     "subgraphPromotionNotSyncedDetail": "Promoted inputs can't be added or removed while this workflow is syncing with the Agent.",
     "runModeTriggerAutoLimit": "Auto (limited)",
     "runModeTriggerAutoLimitTooltip": "Ask when credit limit is reached",

@@ -614,11 +614,11 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       budget: Set<string> = reported
     ) => {
       withGraphIntentSource('agent-remote', () => {
-        if (isWidgetValue(event.previous))
-          useWidgetValueStore().setValue(
-            widgetId(liveRootGraphId, event.nodeId, event.name),
-            event.previous
-          )
+        const store = useWidgetValueStore()
+        const id = widgetId(liveRootGraphId, event.nodeId, event.name)
+        if (event.previous === undefined) store.deleteWidget(id)
+        else if (isWidgetValue(event.previous))
+          store.setValue(id, event.previous)
       })
       reportOnce(key, message, errorType, context, budget)
       const now = Date.now()
@@ -858,7 +858,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
   // node ids from the disjoint range (`idAllocation.ts`).
   const unregisterDocBoundProbe = registerDocBoundRootGraphProbe(() => {
     if (!deps.isEnabled() || !deps.isDocBound()) return null
-    return deps.boundRootGraphId()
+    return deps.getGraph()?.rootGraph.id ?? null
   })
 
   return {

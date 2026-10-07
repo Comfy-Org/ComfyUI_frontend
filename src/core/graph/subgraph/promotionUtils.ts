@@ -164,11 +164,12 @@ export function reorderSubgraphInputsByWidgetOrder(
     return []
   })
   if (orderedPromotedIndices.length !== orderedWidgets.length) {
-    if (isRootGraphDocBound(subgraphNode.rootGraph.id))
-      warnDocBoundPromotionChange(
-        subgraphNode.rootGraph,
-        'agent.subgraphReorderNotSyncedDetail'
-      )
+    warnPromotionChange(
+      subgraphNode.rootGraph,
+      isRootGraphDocBound(subgraphNode.rootGraph.id)
+        ? 'agent.subgraphReorderNotSyncedDetail'
+        : 'agent.subgraphReorderUnavailableDetail'
+    )
     return false
   }
   const promotedPositions = [...orderedPromotedIndices].sort(
@@ -183,7 +184,7 @@ export function reorderSubgraphInputsByWidgetOrder(
     return true
   }
   if (isRootGraphDocBound(subgraphNode.rootGraph.id)) {
-    warnDocBoundPromotionChange(
+    warnPromotionChange(
       subgraphNode.rootGraph,
       'agent.subgraphReorderNotSyncedDetail'
     )
@@ -198,7 +199,7 @@ const docBoundWarningAt = new WeakMap<
   Map<string, number>
 >()
 
-function warnDocBoundPromotionChange(
+function warnPromotionChange(
   rootGraph: SubgraphNode['rootGraph'],
   detail: string
 ): void {
@@ -221,7 +222,7 @@ function mutablePromotionParents(parents: readonly SubgraphNode[]) {
     isRootGraphDocBound(parent.rootGraph.id)
   )
   if (bound) {
-    warnDocBoundPromotionChange(
+    warnPromotionChange(
       bound.rootGraph,
       'agent.subgraphPromotionNotSyncedDetail'
     )
@@ -264,8 +265,10 @@ function isSamePromotedInput(
   orderedWidget: Pick<IBaseWidget, 'widgetId'>
 ): boolean {
   const input = subgraphNode.inputs.at(inputIndex)
-  const linkedInput = input?._subgraphSlot
-  if (!input || !linkedInput) return false
+  if (!input) return false
+  if (input.widgetId && input.widgetId === orderedWidget.widgetId) return true
+  const linkedInput = input._subgraphSlot
+  if (!linkedInput) return false
 
   for (const linkId of linkedInput.linkIds) {
     const link = subgraphNode.subgraph.getLink(linkId)
@@ -278,8 +281,6 @@ function isSamePromotedInput(
 
     const targetWidget = inputNode.getWidgetFromSlot(targetInput)
     if (targetWidget === orderedWidget) return true
-
-    if (input.widgetId && input.widgetId === orderedWidget.widgetId) return true
   }
 
   return false
@@ -497,16 +498,11 @@ export function promoteWidget(
  * Removes the host input projecting a linked promotion identified by source.
  * Returns true when an input was found and demoted.
  */
-function demotePromotedInput(
+function removePromotedHostInput(
   subgraphNode: SubgraphNode,
-  source: PromotedWidgetSource
+  hostInput: SubgraphNode['inputs'][number]
 ): boolean {
-  const hostInput = findHostInputForPromotion(
-    subgraphNode,
-    source.sourceNodeId,
-    source.sourceWidgetName
-  )
-  const linkedInput = hostInput?._subgraphSlot
+  const linkedInput = hostInput._subgraphSlot
   if (!linkedInput) return false
   const hostWidgetId = hostInput.widgetId
 
@@ -517,6 +513,29 @@ function demotePromotedInput(
   }
   if (hostWidgetId) useWidgetValueStore().deleteWidget(hostWidgetId)
   return true
+}
+
+function demotePromotedInput(
+  subgraphNode: SubgraphNode,
+  source: PromotedWidgetSource
+): boolean {
+  const hostInput = findHostInputForPromotion(
+    subgraphNode,
+    source.sourceNodeId,
+    source.sourceWidgetName
+  )
+  return hostInput ? removePromotedHostInput(subgraphNode, hostInput) : false
+}
+
+/** Demote a visible host input even when its interior widget is stale. */
+export function demotePromotedHostInput(
+  subgraphNode: SubgraphNode,
+  hostInput: SubgraphNode['inputs'][number]
+): boolean {
+  if (mutablePromotionParents([subgraphNode]).length === 0) return false
+  const removed = removePromotedHostInput(subgraphNode, hostInput)
+  if (removed) refreshPromotedWidgetRendering([subgraphNode])
+  return removed
 }
 
 export function demoteWidget(
@@ -711,7 +730,7 @@ export function autoExposeKnownPreviewNodes(subgraphNode: SubgraphNode): void {
 export function promoteRecommendedWidgets(subgraphNode: SubgraphNode) {
   autoExposeKnownPreviewNodes(subgraphNode)
   if (isRootGraphDocBound(subgraphNode.rootGraph.id)) {
-    warnDocBoundPromotionChange(
+    warnPromotionChange(
       subgraphNode.rootGraph,
       'agent.subgraphPromotionNotSyncedDetail'
     )

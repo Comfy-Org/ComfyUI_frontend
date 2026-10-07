@@ -35,12 +35,12 @@ import type { WidgetValue } from '@/types/simplifiedWidget'
 
 import {
   allSubgraphDefinitions,
-  definitionPromotedLayout,
   readDefinitionPromotedLayout,
   readDocPromotedWidgets,
   readDocPromotedWidgetValue,
   readSubgraphDefinitions
 } from './agentSubgraphDefinitions'
+import type { definitionPromotedLayout } from './agentSubgraphDefinitions'
 import type { PlacementRect } from './batchPlacement'
 import { placementOffset } from './batchPlacement'
 
@@ -297,8 +297,24 @@ function readDocNode(
     source.has('widgets') && source.has(OPAQUE_WIDGETS_KEY)
       ? `node carries both widgets and ${OPAQUE_WIDGETS_KEY}`
       : undefined
-  const fields = readDocNodeFields(source, id)
-  const widgets = readDocNodeWidgets(source, widgetIssue)
+  let fields: Record<string, unknown>
+  let widgets: DocNode['widgets']
+  try {
+    fields = readDocNodeFields(source, id)
+    widgets = readDocNodeWidgets(source, widgetIssue)
+  } catch {
+    const rawType = source.get('type')
+    return {
+      malformed: 'node fields could not be projected safely',
+      discriminate() {
+        return {
+          classType: typeof rawType === 'string' ? rawType : undefined,
+          valueShapes: 'projection unreadable',
+          producer: nodeProducer(doc, id)
+        }
+      }
+    }
+  }
   const parsed = zDocNodeFields.safeParse(fields)
   if (!parsed.success) {
     const { error } = parsed
@@ -636,7 +652,7 @@ export class LiveGraphApplier {
     if (missing.length === 0) return
     const reserved = docRootIds(doc)
     for (const definition of topologicalSortSubgraphs(missing)) {
-      this.registerDefinition(graph, definition, reserved, state)
+      this.registerDefinition(graph, doc, definition, reserved, state)
     }
   }
 
@@ -684,6 +700,7 @@ export class LiveGraphApplier {
 
   private registerDefinition(
     graph: LGraph,
+    doc: Y.Doc,
     definition: ExportedSubgraph,
     reserved: { nodeIds: NodeId[]; linkIds: number[] },
     state: Map<string, DefinitionState>
@@ -698,7 +715,7 @@ export class LiveGraphApplier {
     if (live)
       state.set(definition.id, {
         live,
-        layout: definitionPromotedLayout(definition),
+        layout: readDefinitionPromotedLayout(doc, definition.id),
         conflicted: false
       })
   }

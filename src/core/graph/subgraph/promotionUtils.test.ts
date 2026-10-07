@@ -781,6 +781,39 @@ describe('reorderSubgraphInputsByWidgetOrder', () => {
     ])
   })
 
+  it('matches stable widget identity when the interior link is stale', () => {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph)
+    const source = new LGraphNode('Source')
+    subgraph.add(source)
+    const input = source.addInput('first', 'STRING')
+    const sourceWidget = source.addWidget('text', 'first', '', () => {})
+    input.widget = { name: sourceWidget.name }
+    promoteValueWidgetViaSubgraphInput(host, source, sourceWidget)
+    const promoted = promotedWidgetRef(host, 'first')
+    host.inputs[0]._subgraphSlot!.linkIds.length = 0
+
+    expect(reorderSubgraphInputsByWidgetOrder(host, [promoted])).toBe(true)
+  })
+
+  it('warns when an unbound reorder contains an unknown widget', () => {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph)
+    const addToast = vi.spyOn(useToastStore(), 'add')
+
+    expect(
+      reorderSubgraphInputsByWidgetOrder(host, [
+        { widgetId: widgetId('missing', toNodeId('node'), 'widget') }
+      ])
+    ).toBe(false)
+    expect(addToast).toHaveBeenCalledWith(
+      expect.objectContaining({
+        detail: expect.stringContaining('stale'),
+        severity: 'warn'
+      })
+    )
+  })
+
   it('refuses to reorder a definition while its root graph is doc-bound', () => {
     const subgraph = createTestSubgraph()
     const host = createTestSubgraphNode(subgraph)

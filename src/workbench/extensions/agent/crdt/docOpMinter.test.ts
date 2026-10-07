@@ -846,6 +846,34 @@ describe('attachDocOpMinter', () => {
     ])
   })
 
+  it('restores an absent store entry when its first promoted write is refused', async () => {
+    const { host, doc } = seedPromotedHost()
+    const id = host.inputs[1].widgetId
+    assert.exists(id)
+    useWidgetValueStore().deleteWidget(id)
+    docPromotedWidgets = () => null
+
+    withGraphIntentSource('load', () => {
+      useWidgetValueStore().setValue(id, 'typed before the layout was readable')
+    })
+    emitGraphIntent({
+      type: 'set_widget',
+      graphId: graph.id,
+      nodeId: host.id,
+      name: 'text',
+      value: 'typed before the layout was readable',
+      previous: undefined
+    })
+    await afterFlush()
+
+    expect(minted).toEqual([])
+    expect(useWidgetValueStore().getWidget(id)).toBeUndefined()
+    expect(refused).toEqual([
+      { nodeId: host.id, name: 'text', reason: 'layout_drift' }
+    ])
+    doc.destroy()
+  })
+
   it('builds the array from the host values when the document holds none', async () => {
     const { host, doc } = seedPromotedHost([])
 
@@ -1588,7 +1616,6 @@ describe('attachDocOpMinter', () => {
       inner.add(interior)
       inner.inputNode.slots[0].connect(interior.inputs[0], interior)
     })
-
     nestedHost.widgets[0].value = 'pasted'
     source.widgets![0].value = 42
     await afterFlush()
@@ -1609,6 +1636,7 @@ describe('attachDocOpMinter', () => {
         reason: 'nested_host'
       }
     ])
+    expect(nestedHost.widgets[0].value).toBe('an interior default')
   })
 
   it('reports an interior write whose owning subgraph has no live host path', async () => {
@@ -1969,6 +1997,8 @@ describe('attachDocOpMinter', () => {
   it('refuses a resolved widget write from an unbound root graph', async () => {
     const { source } = seedGraph(graph)
     rootGraphId = toRootGraphId('the-bound-workflow')
+
+    expect(isRootGraphDocBound(graph.id)).toBe(true)
 
     source.widgets![0].value = 21
     await afterFlush()

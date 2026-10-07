@@ -6,6 +6,7 @@ import DraggableList from '@/components/common/DraggableList.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import {
+  demotePromotedHostInput,
   demoteWidget,
   getPromotableWidgets,
   isRecommendedWidget,
@@ -284,6 +285,7 @@ function demoteRow(row: ActiveRow) {
       ? row.node.widgets?.find((widget) => widget.name === source.widgetName)
       : undefined
     if (sourceWidget) demoteWidget(row.node, sourceWidget, [subgraphNode])
+    else demotePromotedHostInput(subgraphNode, row.input)
     refreshActiveNodeRendering()
     return
   }
