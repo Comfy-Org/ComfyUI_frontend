@@ -9,10 +9,7 @@
           {{ displayLabel }}
         </SelectValue>
       </SelectTrigger>
-      <SelectContent
-        :style="contentStyle"
-        class="max-w-64 min-w-0 **:[[role=listbox]]:gap-1"
-      >
+      <SelectContent class="max-w-64 min-w-0">
         <div class="max-w-60">
           <SelectItem
             value="default"
@@ -49,7 +46,6 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import type { StyleValue } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -61,9 +57,8 @@ import SelectValue from '@/components/ui/select/SelectValue.vue'
 import { useKeybindingPresetService } from '@/platform/keybindings/presetService'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 
-const { presetNames, contentStyle } = defineProps<{
+const { presetNames } = defineProps<{
   presetNames: string[]
-  contentStyle?: StyleValue
 }>()
 
 const emit = defineEmits<{

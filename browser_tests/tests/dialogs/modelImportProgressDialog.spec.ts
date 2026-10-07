@@ -1,11 +1,36 @@
-import type { TaskResponse } from '@/platform/tasks/services/taskService'
+import { mergeTests } from '@playwright/test'
 
+import type { TaskResponse } from '@/platform/tasks/services/taskService'
 import {
-  comfyPageFixture as test,
+  comfyPageFixture,
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
+import { modelImportProgressFixture } from '@e2e/fixtures/modelImportProgressFixture'
+
+const test = mergeTests(comfyPageFixture, modelImportProgressFixture)
 
 test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
+  test('filters failed imports through the popover above the expanded toast', async ({
+    modelImportProgress
+  }) => {
+    await modelImportProgress.expand()
+    await expect(
+      modelImportProgress.job('completed-model.safetensors')
+    ).toBeVisible()
+    await expect(
+      modelImportProgress.job('failed-model.safetensors')
+    ).toBeVisible()
+
+    await modelImportProgress.filterBy('Failed')
+
+    await expect(
+      modelImportProgress.job('completed-model.safetensors')
+    ).toBeHidden()
+    await expect(
+      modelImportProgress.job('failed-model.safetensors')
+    ).toBeVisible()
+  })
+
   test('recovers from a premature failed status once the backend silently retries and completes it (PM-1302)', async ({
     comfyPage
   }) => {
@@ -261,10 +286,10 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
   test('a dismissed unconfirmed cancellation stays hidden from late progress', async ({
     comfyPage
   }) => {
+    test.setTimeout(30_000)
     const { page } = comfyPage
     const taskId = '1396cc07-bab2-4f12-9b54-741f83f9224e'
     const assetName = 'unconfirmed-cancel-model.safetensors'
-    await page.clock.install()
     await page.route(`**/tasks/${taskId}`, async (route) => {
       if (route.request().method() === 'DELETE') {
         await route.fulfill({ status: 204 })
@@ -295,7 +320,16 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
     const toast = page.getByRole('status').filter({ hasText: assetName })
     await expect(toast).toBeVisible()
     await toast.getByRole('button', { name: 'Expand' }).click()
+    const cancellation = page.waitForResponse(
+      (candidate) =>
+        candidate.url().endsWith(`/tasks/${taskId}`) &&
+        candidate.request().method() === 'DELETE'
+    )
     await toast.getByRole('button', { name: 'Cancel Download' }).click()
+    await cancellation
+    await expect(
+      toast.getByText('Cancelled', { exact: true }).first()
+    ).toBeVisible()
 
     const advanceReconciliation = async () => {
       const response = page.waitForResponse(
@@ -303,9 +337,7 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
           candidate.url().endsWith(`/tasks/${taskId}`) &&
           candidate.request().method() === 'GET'
       )
-      await page.clock.runFor(10_001)
       await (await response).finished()
-      await page.clock.runFor(1)
     }
     await advanceReconciliation()
     await expect(

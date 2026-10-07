@@ -233,7 +233,7 @@ export function useUploadModelWizard(
 
   async function uploadPreviewImage(
     filename: string
-  ): Promise<string | undefined> {
+  ): Promise<{ id: string; createdNew: boolean } | undefined> {
     if (!wizardData.value.previewImage) return undefined
 
     try {
@@ -251,19 +251,20 @@ export function useUploadModelWizard(
         name: `${baseFilename}_preview.${extension}`,
         tags: ['preview']
       })
-      return previewAsset.id
+      return {
+        id: previewAsset.id,
+        createdNew: previewAsset.created_new
+      }
     } catch (error) {
       console.error('Failed to upload preview image:', error)
       return undefined
     }
   }
 
-  async function refreshModelCaches() {
-    if (!resolvedModelType.value) return
+  async function refreshModelCaches(modelType = resolvedModelType.value) {
+    if (!modelType) return
 
-    const providers = modelToNodeStore.getAllNodeProviders(
-      resolvedModelType.value
-    )
+    const providers = modelToNodeStore.getAllNodeProviders(modelType)
     const results = await Promise.allSettled(
       providers.map((provider) =>
         assetsStore.updateModelsForNodeType(provider.nodeDef.name)
@@ -418,8 +419,17 @@ export function useUploadModelWizard(
         wizardData.value.metadata?.name ||
         'model'
 
-      const previewId = await uploadPreviewImage(filename)
-      if (isStaleUpload(generation)) return null
+      const preview = await uploadPreviewImage(filename)
+      if (isStaleUpload(generation)) {
+        if (preview?.createdNew) {
+          try {
+            await assetService.deleteAsset(preview.id)
+          } catch (error) {
+            console.error('Failed to clean up stale preview image:', error)
+          }
+        }
+        return null
+      }
 
       const userMetadata = {
         source: source.type,
@@ -431,7 +441,7 @@ export function useUploadModelWizard(
         source_url: wizardData.value.url,
         tags,
         user_metadata: userMetadata,
-        preview_id: previewId
+        preview_id: preview?.id
       })
 
       if (result.type === 'async' && result.task.status !== 'completed') {
@@ -444,7 +454,12 @@ export function useUploadModelWizard(
         }
       }
 
-      if (isStaleUpload(generation)) return null
+      if (isStaleUpload(generation)) {
+        if (result.type === 'sync' || result.task.status === 'completed') {
+          await refreshModelCaches(modelType)
+        }
+        return null
+      }
 
       if (result.type === 'async' && result.task.status !== 'completed') {
         uploadSuccess = watchAsyncUpload(
@@ -465,6 +480,7 @@ export function useUploadModelWizard(
 
         uploadStatus.value = 'success'
         await refreshModelCaches()
+        if (isStaleUpload(generation)) return null
         uploadSuccess = {
           filename:
             result.type === 'sync' ? getAssetFilename(result.asset) : filename,

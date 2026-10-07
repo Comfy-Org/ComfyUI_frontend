@@ -118,6 +118,40 @@ test.describe('Output History', { tag: '@ui' }, () => {
     await expect(comfyPage.appMode.outputHistory.imageOutputs).toHaveCount(3)
   })
 
+  test('keeps the selected output when opening and closing the sidebar', async ({
+    comfyPage,
+    getWebSocket
+  }) => {
+    const ws = await getWebSocket()
+    const { exec, jobId } = await startExecution(comfyPage, ws)
+    const history = comfyPage.appMode.outputHistory
+
+    await test.step('Select an older output', async () => {
+      exec.executed(jobId, SAVE_IMAGE_NODE, imageOutput('first.png'))
+      await expect(history.imageOutputs).toHaveCount(1)
+      exec.executed(jobId, SAVE_IMAGE_NODE, imageOutput('second.png'))
+      await expect(history.imageOutputs).toHaveCount(2)
+      await history.selectInProgressItem(1)
+      await expect(history.selectedImageOutput).toHaveAttribute(
+        'src',
+        /first\.png/
+      )
+    })
+
+    await test.step('Keep that selection across sidebar visibility changes', async () => {
+      await comfyPage.menu.assetsTab.open({ waitForAssets: false })
+      await expect(history.selectedImageOutput).toHaveAttribute(
+        'src',
+        /first\.png/
+      )
+      await comfyPage.menu.assetsTab.close()
+      await expect(history.selectedImageOutput).toHaveAttribute(
+        'src',
+        /first\.png/
+      )
+    })
+  })
+
   test('Video output renders video element', async ({
     comfyPage,
     getWebSocket
