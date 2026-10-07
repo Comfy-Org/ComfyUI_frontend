@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { ChevronLeft } from '@lucide/vue'
 import { computed } from 'vue'
 
 import BrandButton from '@/components/common/BrandButton.vue'
@@ -11,6 +10,7 @@ import { translationsFor } from '@/i18n/translations'
 import { ACCESS_PARAM, runsHere } from '@/lib/workshop/explorer/model-access'
 import { OPEN_WEIGHT_MODELS } from '@/lib/workshop/explorer/open-weight-models'
 import { latestLaunch, modelsHubCounts } from '@/lib/workshop/models-hub'
+import HubBreadcrumb from '@/components/workshop/HubBreadcrumb.vue'
 import ModelExploreCard from './ModelExploreCard.vue'
 
 const { models, locale = 'en' } = defineProps<{
@@ -32,23 +32,17 @@ const featured = computed(() => latestLaunch(models))
     data-testid="models-hub-hero"
   >
     <div class="flex min-w-0 flex-col items-start gap-6">
-      <p
-        class="-mb-2 flex items-center gap-1.5 text-sm font-medium tracking-widest text-primary-comfy-yellow uppercase"
-      >
-        <a
-          :href="routes.hubExplore"
-          class="group inline-flex items-center gap-1 rounded-lg outline-none hover:text-primary-warm-white focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
-          data-testid="hub-back"
-        >
-          <ChevronLeft
-            class="size-4 transition-transform group-hover:-translate-x-0.5"
-            aria-hidden="true"
-          />
-          {{ t('workshop.catalogue.eyebrow') }}
-        </a>
-        <span aria-hidden="true">·</span>
-        <span>{{ t('workshop.hero.eyebrow') }}</span>
-      </p>
+      <HubBreadcrumb
+        :crumbs="[
+          {
+            label: t('workshop.catalogue.eyebrow'),
+            href: routes.hubExplore,
+            testId: 'hub-back'
+          },
+          { label: t('workshop.hero.eyebrow') }
+        ]"
+        :locale
+      />
       <SectionHeader heading-tag="h1" heading-size="hero" align="start">
         <span class="block">{{
           `${t('workshop.modelsHub.titleFirstLine')} `
