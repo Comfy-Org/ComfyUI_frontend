@@ -241,9 +241,20 @@ function fitMediaDiagnostics(
   diagnostics: readonly MediaUiDiagnostic[]
 ): readonly MediaUiDiagnostic[] {
   const retained: MediaUiDiagnostic[] = []
+  let serializedLength = '[\n\n]'.length
   for (const diagnostic of diagnostics) {
-    if (json([...retained, diagnostic]).length > MAX_SECTION_CHARS) break
+    const diagnosticJson = json(diagnostic)
+    const indentedLength =
+      diagnosticJson.length + diagnosticJson.split('\n').length * 2
+    const separatorLength = retained.length > 0 ? ',\n'.length : 0
+    if (
+      serializedLength + separatorLength + indentedLength >
+      MAX_SECTION_CHARS
+    ) {
+      break
+    }
     retained.push(diagnostic)
+    serializedLength += separatorLength + indentedLength
   }
   return retained
 }
