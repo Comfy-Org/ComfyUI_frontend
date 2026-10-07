@@ -20,8 +20,6 @@ on:
       - edited
       - labeled
       - unlabeled
-  pull_request_review:
-    types: [submitted, dismissed]
   workflow_run:
     workflows:
       - 'CI: Lint Format'
