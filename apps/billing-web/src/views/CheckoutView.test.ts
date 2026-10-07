@@ -573,6 +573,21 @@ describe('CheckoutView', () => {
     expect(challengeMocks.handleNextAction).not.toHaveBeenCalled()
   })
 
+  it('offers no second way to the verification page once this tab is redirecting there', async () => {
+    const assign = stubNavigation()
+    const fake = await renderCheckout()
+    await screen.findByRole('button', { name: 'Pay and subscribe' })
+
+    fake.publishOperation(
+      hostedPendingOperation('https://hooks.stripe.test/redirect/op_1')
+    )
+
+    await waitFor(() => expect(assign).toHaveBeenCalled())
+    expect(
+      screen.queryByRole('button', { name: 'Complete verification' })
+    ).toBeNull()
+  })
+
   it('drives the 3DS challenge in place when the continuation is embedded', async () => {
     const assign = stubNavigation()
     const fake = await renderCheckout()
