@@ -2037,12 +2037,13 @@ describe('useAgentSession (v1 composition root)', () => {
     const answerAsk = vi
       .fn<AgentRestClient['answerAsk']>()
       .mockRejectedValue(new AgentApiError('already answered', 409, undefined))
-    const { source, emit } = fakeEvents()
+    const { source, emit, status } = fakeEvents()
     const session = useAgentSession({
       rest: fakeRest({ answerAsk }),
       events: source
     })
     session.start()
+    status(true)
     await session.sendMessage('build it')
     emit(runApproval('msg-1'))
 
