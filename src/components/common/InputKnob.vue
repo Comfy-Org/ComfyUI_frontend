@@ -38,12 +38,12 @@ import NumberFieldInput from '@/components/ui/number-field/NumberFieldInput.vue'
 
 defineProps<{
   modelValue: number
-  min?: number
-  max?: number
-  step?: number
-  disabled?: boolean
   ariaLabel?: string
   ariaLabelledby?: string
+  disabled?: boolean
+  max?: number
+  min?: number
+  step?: number
 }>()
 
 const emit = defineEmits<{
