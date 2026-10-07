@@ -352,6 +352,17 @@ async function driveThroughDocReset(
   // frame able to sweep already-rendered nodes off the canvas; now it only
   // arms the next frame to replace the graph. From here on the resubscribe's
   // catch-up is governed by `dropCatchUpAfterReset`.
+  //
+  // Stamped on the live element before the reset so the assertion below can
+  // tell a node that was never unmounted from one that was torn down and
+  // rebuilt. `toBeVisible` cannot: a remounted node is equally visible, and a
+  // remount is what restarts media playback (PM-1790). Vue does not manage
+  // this dataset key, so only a fresh element loses it.
+  await page.evaluate((nodeId) => {
+    const el = document.querySelector(`[data-node-id="${nodeId}"]`)
+    if (el instanceof HTMLElement) el.dataset.identityProbe = 'before-reset'
+  }, '1')
+
   resetSent = true
   send({
     type: 'doc_reset',
@@ -387,6 +398,14 @@ async function driveThroughDocReset(
 
   await expect(vueNodes.getNodeLocator('1')).toBeVisible()
   await expect(vueNodes.getNodeLocator('2')).toBeVisible()
+
+  // The same element, not merely an equivalent one. This is the assertion
+  // that exercises `GraphCanvas`'s own `:key="nodeData.id"`: re-keying it by
+  // type or lineage would remount the node here and drop the stamp, which no
+  // visibility assertion in this repo would catch.
+  await expect(
+    page.locator('[data-node-id="1"][data-identity-probe="before-reset"]')
+  ).toBeVisible()
 
   return { vueNodes, send }
 }
