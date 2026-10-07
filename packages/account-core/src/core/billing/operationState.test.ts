@@ -221,6 +221,27 @@ describe('reduceBillingOperation', () => {
     }
   )
 
+  it.for([
+    { latest: true, expected: true },
+    { latest: false, expected: false },
+    { latest: undefined, expected: undefined }
+  ])(
+    "carries only the latest poll's cancelable claim ($latest)",
+    ({ latest, expected }) => {
+      const claimed = polled(pending(), {
+        authentication_state: 'failed_retryable',
+        cancelable: true
+      })
+
+      const next = polled(claimed, {
+        authentication_state: 'failed_retryable',
+        ...(latest === undefined ? {} : { cancelable: latest })
+      })
+
+      expect((next as PendingBillingOperation).cancelable).toBe(expected)
+    }
+  )
+
   it('reads a retryable failure served without a reason as a generic decline', () => {
     const failed = polled(pending(), {
       authentication_state: 'failed_retryable'
