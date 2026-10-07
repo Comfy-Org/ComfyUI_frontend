@@ -12,6 +12,7 @@ import {
 } from '@comfyorg/ingest-types/zod'
 import type {
   AgentAnswerAccepted,
+  AgentAnswerRequest,
   AgentCancelAccepted,
   AgentRunMode as AgentRunModePreference,
   AgentThreadSummary,
@@ -24,6 +25,7 @@ import { isNodeLocatorId } from '@/types/nodeIdentification'
 export { zAgentAdmissionError, zAgentCancelAccepted }
 export type {
   AgentAnswerAccepted,
+  AgentAnswerRequest,
   AgentCancelAccepted,
   AgentRunModePreference,
   AgentThreadSummary
@@ -58,6 +60,10 @@ const zAgentAskOption = z
     description: z.string().optional()
   })
   .passthrough()
+
+/** The ask kinds this panel can render, sent as `ask_kinds` on each turn. */
+export const RENDERED_ASK_KINDS = ['run_approval', 'ask_user'] as const
+export type RenderedAskKind = (typeof RENDERED_ASK_KINDS)[number]
 
 const zAgentPendingAsk = z
   .object({

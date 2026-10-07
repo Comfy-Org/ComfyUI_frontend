@@ -1,13 +1,14 @@
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
-
+import type { AgentAnswerRequest } from '../../../schemas/agentApiSchema'
 import type { ActivityPart } from '../../../services/agent/agentMessageParts'
 import type {
   AgentPaywallAction,
   AgentPaywallPresentation
 } from '../../../services/agent/agentPaywallPresentation'
 import ActivityTrace from './ActivityTrace.vue'
+import AgentNoticeCard from './AgentNoticeCard.vue'
 import AgentPaywallCard from './AgentPaywallCard.vue'
+import AskUserCard from './AskUserCard.vue'
 import MarkdownStream from './MarkdownStream.vue'
 import RunApprovalCard from './RunApprovalCard.vue'
 import TabLinkCard from './TabLinkCard.vue'
@@ -23,7 +24,7 @@ const { group } = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  answer: [askId: string, selection: 'run' | 'cancel']
+  answer: [askId: string, answer: AgentAnswerRequest]
   openWorkflow: [askId: string, workflowId: string, workflowName?: string]
   approvalShown: [askId: string, workflowId: string | null]
   paywallAction: [action: AgentPaywallAction]
@@ -56,12 +57,20 @@ const emit = defineEmits<{
     v-else-if="group.kind === 'runApproval'"
     :part="group.part"
     :answering="answeringAskIds.has(group.part.askId)"
-    @answer="(askId, selection) => emit('answer', askId, selection)"
+    @answer="
+      (askId, selection) => emit('answer', askId, { selected: [selection] })
+    "
     @shown="(askId, workflowId) => emit('approvalShown', askId, workflowId)"
     @open-workflow="
       (askId, workflowId, workflowName) =>
         emit('openWorkflow', askId, workflowId, workflowName)
     "
+  />
+  <AskUserCard
+    v-else-if="group.kind === 'askUser'"
+    :part="group.part"
+    :answering="answeringAskIds.has(group.part.askId)"
+    @answer="(askId, answer) => emit('answer', askId, answer)"
   />
   <AgentPaywallCard
     v-else-if="group.kind === 'paywall'"
@@ -69,31 +78,5 @@ const emit = defineEmits<{
     :message="group.part.message"
     @paywall-action="emit('paywallAction', $event)"
   />
-  <div
-    v-else
-    :role="group.part.level === 'error' ? 'alert' : 'status'"
-    :class="
-      cn(
-        'flex items-start gap-2 rounded-xl border px-3 py-2 text-sm',
-        group.part.level === 'error'
-          ? 'border-destructive-background/40 text-destructive-background'
-          : 'border-component-node-border text-muted-foreground'
-      )
-    "
-  >
-    <span class="mt-0.5 icon-[lucide--triangle-alert] size-4 shrink-0" />
-    <span class="flex flex-col gap-0.5">
-      <span>{{ group.part.text }}</span>
-      <span
-        v-if="group.part.retryAfterSeconds !== undefined"
-        class="text-xs text-muted-foreground"
-      >
-        {{
-          $t('agent.retryAfterSeconds', {
-            seconds: group.part.retryAfterSeconds
-          })
-        }}
-      </span>
-    </span>
-  </div>
+  <AgentNoticeCard v-else :part="group.part" />
 </template>

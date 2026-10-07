@@ -21,6 +21,7 @@ import {
 import { createUuidv4 } from '@/utils/uuid'
 import type {
   AgentActiveTabData,
+  AgentAnswerRequest,
   AgentMessages,
   AgentTurnAccepted,
   AgentWsEvent,
@@ -317,6 +318,22 @@ function isRetryableAnswerFailure(error: unknown): boolean {
   if (error instanceof AgentApiError)
     return error.status >= 500 && error.status !== 501
   return error instanceof TypeError || error instanceof DOMException
+}
+
+/**
+ * PM-1658: whether a resolution frame names an answer other than the one this
+ * client sent. The server commits the first answer only, so any option we
+ * chose that the settled selection lacks means someone else's choice won. An
+ * empty settlement (a free-text-only answer, or a cancelled ask) names no
+ * option to disagree with.
+ */
+function isSupersededAnswer(
+  submitted: AgentAnswerRequest,
+  settled: readonly string[]
+): boolean {
+  if (settled.length === 0) return false
+  if (submitted.selected.length !== settled.length) return true
+  return submitted.selected.some((id) => !settled.includes(id))
 }
 
 let sessionGeneration = 0
@@ -1369,7 +1386,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   async function answerAsk(
     askId: string,
-    selection: 'run' | 'cancel'
+    answer: AgentAnswerRequest
   ): Promise<boolean> {
     const currentThreadId = conversationStore.threadId
     if (currentThreadId === null) {
@@ -1389,10 +1406,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     // parks a run approval for days, so a card can still be answered long
     // after the turn that raised it stopped streaming to this client.
     if (answeringAskIds.value.has(askId)) return false
-    conversationStore.recordAskSelection(askId, selection)
+    conversationStore.recordAskSelection(askId, answer)
     conversationStore.setAskAnswering(askId, true)
     try {
-      await sendAnswer(currentThreadId, askId, selection)
+      await sendAnswer(currentThreadId, askId, answer)
       conversationStore.commitAsk(askId, currentThreadId)
       return true
     } catch (error) {
@@ -1441,7 +1458,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
       // effect. On a spend authorization that is the wrong way to be wrong, so
       // retire the card and say the outcome is unknown rather than show a raw
       // transport string next to a card that is about to vanish.
-      conversationStore.retireAsk(askId, currentThreadId)
+      conversationStore.retireAsk(askId, currentThreadId, {
+        status: 'unknown',
+        selected: []
+      })
       pushError(i18n.global.t('agent.runApproval.answerUncertain'))
       return false
     }
@@ -1464,13 +1484,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (
       submitted === undefined ||
       settled === null ||
-      settled.length === 0 ||
-      settled.includes(submitted)
+      !isSupersededAnswer(submitted, settled)
     )
       return
     reportError(
       new Error(
-        `run approval resolved as ${settled.join(',')}, not ${submitted}`
+        `agent ask resolved as ${settled.join(',')}, not ${submitted.selected.join(',')}`
       ),
       { surface: 'agent', errorType: 'agent_ask_answer_superseded' }
     )
@@ -1480,11 +1499,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
   async function sendAnswer(
     threadId: string,
     askId: string,
-    selection: 'run' | 'cancel'
+    answer: AgentAnswerRequest
   ): Promise<void> {
     for (let attempt = 0; ; attempt++) {
       try {
-        await rest.answerAsk(threadId, askId, [selection])
+        await rest.answerAsk(threadId, askId, answer)
         return
       } catch (error) {
         if (
@@ -1681,7 +1700,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
       // Not just un-busying it: `ingest` below routes this frame through the
       // owning turn's transport, and the turn is gone in exactly the case that
       // matters, so on its own it would re-enable a card it cannot remove.
-      conversationStore.retireAsk(event.data.ask_id, event.data.thread_id)
+      conversationStore.retireAsk(
+        event.data.ask_id,
+        event.data.thread_id,
+        conversationStore.settledAskResolution(
+          event.data.status === 'answered',
+          { selected: event.data.selected }
+        )
+      )
       onAskResolved?.(event.data.ask_id)
     }
     conversationStore.ingest(event)

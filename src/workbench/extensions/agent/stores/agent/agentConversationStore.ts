@@ -1,15 +1,29 @@
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 
-import type { AgentMessages, TurnId } from '../../schemas/agentApiSchema'
+import type {
+  AgentAnswerRequest,
+  AgentMessages,
+  TurnId
+} from '../../schemas/agentApiSchema'
 import { toTurnId } from '../../schemas/agentApiSchema'
 import type {
   AgentChatEvent,
   AgentEventTransport
 } from '../../services/agent/agentEventTransport'
 import { createAgentEventTransport } from '../../services/agent/agentEventTransport'
-import type { AssistantMessage } from '../../services/agent/agentMessageParts'
-import { createAssistantMessage } from '../../services/agent/agentMessageParts'
+import type {
+  AskUserResolution,
+  AssistantMessage
+} from '../../services/agent/agentMessageParts'
+import {
+  askIdOf,
+  createAssistantMessage,
+  isOpenAskPart,
+  isPendingAskPart,
+  retireAskParts,
+  settleResolution
+} from '../../services/agent/agentMessageParts'
 import {
   normalizeAgentTranscript,
   settleLiveMessage
@@ -24,8 +38,6 @@ import type { WorkflowReference } from '../../types/workflowReference'
 export type { UserAttachment }
 
 type ConversationStatus = 'idle' | 'thinking' | 'streaming'
-
-type AskSelection = 'run' | 'cancel'
 
 interface UserEntry {
   id: TurnId
@@ -91,7 +103,7 @@ function anchorLocalParts(
       textOffset = 0
       continue
     }
-    if (part.type === 'runApproval') continue
+    if (isOpenAskPart(part)) continue
     localParts.push({ part, toolCount, textOffset })
   }
   return localParts
@@ -184,7 +196,7 @@ function finishWithPersistedParts(
   persistedParts: AssistantMessage['parts'] | undefined
 ): void {
   if (persistedParts === undefined) {
-    message.parts = message.parts.filter((part) => part.type !== 'runApproval')
+    message.parts = message.parts.filter((part) => !isOpenAskPart(part))
     for (const part of message.parts) {
       if (!('state' in part) || part.state !== 'streaming') continue
       if (part.type === 'tool') {
@@ -380,19 +392,22 @@ export const useAgentConversationStore = defineStore(
     }
 
     /**
-     * PM-1658: retires a run-approval card that must never be offered again,
-     * the way an `agent_ask_resolved` frame would. `ingest` cannot serve this:
-     * it routes only to the active turn, and the cases this exists for are
+     * PM-1658: retires an ask card that must never be offered again, the way
+     * an `agent_ask_resolved` frame would. `ingest` cannot serve this: it
+     * routes only to the active turn, and the cases this exists for are
      * exactly the ones where that turn is gone. Every holder of the message
      * has to be told, or whichever one is asked to republish next puts the
-     * card back.
+     * card back. A run-approval card is removed; an `ask_user` card stays,
+     * read-only, showing `resolution` (or that it closed unanswered).
      */
-    function retireAsk(askId: string, owner?: string): void {
+    function retireAsk(
+      askId: string,
+      owner?: string,
+      resolution?: AskUserResolution
+    ): void {
       const key = threadKey(owner)
       const withoutAsk = (parts: AssistantMessage['parts']) =>
-        parts.filter(
-          (part) => part.type !== 'runApproval' || part.askId !== askId
-        )
+        retireAskParts(parts, askId, resolution)
       // Everything below the stash belongs to whichever thread is on screen,
       // so it is only the right target when this ask belongs to that thread
       // too. An answer that settles after the user moved on must reach back to
@@ -400,20 +415,22 @@ export const useAgentConversationStore = defineStore(
       if (key === threadKey()) {
         messages.value = messages.value.map((message) => {
           const parts = withoutAsk(message.parts)
-          return parts.length === message.parts.length
-            ? message
-            : { ...message, parts }
+          return parts === message.parts ? message : { ...message, parts }
         })
-        activeSlot.value?.transport.dropAskPart(askId)
+        activeSlot.value?.transport.dropAskPart(askId, resolution)
         for (const settledTransport of settledActiveTransports)
-          settledTransport.dropAskPart(askId)
+          settledTransport.dropAskPart(askId, resolution)
       }
       // The stashed turn IS that reach-back: a thread the user has left keeps
       // its message here, and resumeBackgroundTurn would put the card back on
       // screen if this did not strip it.
       for (const entry of backgroundTurns.values())
-        if (entry.threadId === key) entry.transport.dropAskPart(askId)
-      retiredAsksFor(key).add(askId)
+        if (entry.threadId === key)
+          entry.transport.dropAskPart(askId, resolution)
+      // A later local retirement (the POST settling after the frame) must
+      // not erase the server's answer that a refetch rebuilds the card from.
+      const retired = retiredAsksFor(key)
+      retired.set(askId, settleResolution(retired.get(askId), resolution))
       clearAskResolutionWatchdog(askId)
       submittedAskSelections.delete(askId)
       setAskAnswering(askId, false)
@@ -429,15 +446,18 @@ export const useAgentConversationStore = defineStore(
      * does; pruned once the thread's own transcript stops naming the ask.
      *
      * Keyed by thread so that loading another one cannot prune these, and so
-     * nothing here rests on an ask id being unique across threads.
+     * nothing here rests on an ask id being unique across threads. Each entry
+     * keeps the `ask_user` resolution the card was retired with, so a refetch
+     * rebuilds it read-only rather than dropping the user's answer.
      */
-    const resolvedAskIds = new Map<string, Set<string>>()
+    const resolvedAskIds = new Map<string, Map<string, AskUserResolution>>()
 
     const threadKey = (owner?: string) => owner ?? threadId.value ?? ''
 
-    function retiredAsksFor(owner?: string): Set<string> {
+    function retiredAsksFor(owner?: string): Map<string, AskUserResolution> {
       const key = threadKey(owner)
-      const retired = resolvedAskIds.get(key) ?? new Set<string>()
+      const retired =
+        resolvedAskIds.get(key) ?? new Map<string, AskUserResolution>()
       resolvedAskIds.set(key, retired)
       return retired
     }
@@ -447,14 +467,52 @@ export const useAgentConversationStore = defineStore(
      * without a record of what we sent, a resolution naming someone else's
      * choice is indistinguishable from confirmation of our own.
      */
-    const submittedAskSelections = new Map<string, AskSelection>()
+    const submittedAskSelections = new Map<string, AgentAnswerRequest>()
 
-    function recordAskSelection(askId: string, selection: AskSelection): void {
-      submittedAskSelections.set(askId, selection)
+    function recordAskSelection(
+      askId: string,
+      answer: AgentAnswerRequest
+    ): void {
+      submittedAskSelections.set(askId, answer)
     }
 
-    function submittedAskSelection(askId: string): AskSelection | undefined {
+    function submittedAskSelection(
+      askId: string
+    ): AgentAnswerRequest | undefined {
       return submittedAskSelections.get(askId)
+    }
+
+    /**
+     * The resolution a card shows once the server settles it, read only from
+     * what the frame reports: its selection is the committed answer, whoever
+     * gave it. This client's own free text is never echoed; when the frame
+     * names no selection the card just reads as answered.
+     */
+    function settledAskResolution(
+      answered: boolean,
+      settled: Pick<AgentAnswerRequest, 'other_text'> & {
+        selected: string[] | null
+      }
+    ): AskUserResolution {
+      if (!answered) return { status: 'closed', selected: [] }
+      const { selected, other_text: otherText } = settled
+      if (selected === null) return { status: 'answered', selected: [] }
+      return otherText
+        ? { status: 'answered', selected, otherText }
+        : { status: 'answered', selected }
+    }
+
+    /**
+     * The resolution for an answer the server accepted (202). A 202 also
+     * comes back for a later answer while the server keeps the first, so it
+     * confirms the ask was answered but not with what.
+     */
+    function acceptedAskResolution(
+      askId: string
+    ): AskUserResolution | undefined {
+      return submittedAskSelections.has(askId)
+        ? { status: 'answered', selected: [] }
+        : undefined
     }
 
     const askResolutionWatchdogs = new Map<
@@ -491,13 +549,16 @@ export const useAgentConversationStore = defineStore(
     function commitAsk(askId: string, owner?: string): void {
       const key = threadKey(owner)
       if (!activeTurnOwnsAsk(askId) || key !== threadKey()) {
-        retireAsk(askId, key)
+        retireAsk(askId, key, acceptedAskResolution(askId))
         return
       }
       clearAskResolutionWatchdog(askId)
       askResolutionWatchdogs.set(
         askId,
-        setTimeout(() => retireAsk(askId, key), ASK_RESOLUTION_GRACE_MS)
+        setTimeout(
+          () => retireAsk(askId, key, acceptedAskResolution(askId)),
+          ASK_RESOLUTION_GRACE_MS
+        )
       )
     }
 
@@ -521,6 +582,7 @@ export const useAgentConversationStore = defineStore(
     }
 
     function ingest(event: AgentChatEvent): void {
+      if (isRetiredAskReplay(event)) return
       const activeTransport = activeSlot.value?.transport
       if (activeTransport && event.data.message_id === activeTurnId.value) {
         ingestActiveTurnEvent(event, activeTransport)
@@ -540,6 +602,19 @@ export const useAgentConversationStore = defineStore(
       // every event except `agent_active_tab`, handled above.
       if (eventThreadId === undefined) return
       ingestBackgroundTurnEvent(event, eventThreadId)
+    }
+
+    /**
+     * An `agent_ask` replayed (a resubscribe) for an ask this client already
+     * retired: putting it back would re-arm a settled card or a stale notice.
+     */
+    function isRetiredAskReplay(event: AgentChatEvent): boolean {
+      return (
+        event.type === 'agent_ask' &&
+        resolvedAskIds
+          .get(threadKey(event.data.thread_id))
+          ?.has(event.data.ask_id) === true
+      )
     }
 
     /**
@@ -1047,16 +1122,14 @@ export const useAgentConversationStore = defineStore(
       if (retired.size === 0) return
       const named = new Set(
         transcript.messages.flatMap((message) =>
-          message.parts.flatMap((part) =>
-            part.type === 'runApproval' ? [part.askId] : []
-          )
+          message.parts.flatMap((part) => askIdOf(part) ?? [])
         )
       )
-      for (const askId of retired) if (!named.has(askId)) retired.delete(askId)
+      for (const askId of retired.keys())
+        if (!named.has(askId)) retired.delete(askId)
       for (const message of transcript.messages)
-        message.parts = message.parts.filter(
-          (part) => part.type !== 'runApproval' || !retired.has(part.askId)
-        )
+        for (const [askId, resolution] of retired)
+          message.parts = retireAskParts(message.parts, askId, resolution)
     }
 
     function hydrate(history: AgentMessages): void {
@@ -1199,7 +1272,7 @@ export const useAgentConversationStore = defineStore(
     function activeTurnOwnsAsk(askId: string): boolean {
       return (
         activeMessage.value?.parts.some(
-          (part) => part.type === 'runApproval' && part.askId === askId
+          (part) => isPendingAskPart(part) && part.askId === askId
         ) ?? false
       )
     }
@@ -1235,6 +1308,7 @@ export const useAgentConversationStore = defineStore(
       setAskAnswering,
       recordAskSelection,
       submittedAskSelection,
+      settledAskResolution,
       commitAsk,
       retireAsk,
       startTurn,

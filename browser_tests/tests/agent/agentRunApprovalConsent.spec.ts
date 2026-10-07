@@ -39,11 +39,12 @@ const SEND_LABEL = enMessages.agent.send
 const CARD_LEAD = enMessages.agent.runApproval.leadBound
 const RUN_LABEL = enMessages.agent.runApproval.run
 const CANCEL_LABEL = enMessages.agent.runApproval.cancel
-const COMPOSER_LABEL = createI18n({
+const { t } = createI18n({
   legacy: false,
   locale: 'en',
   messages: { en: enMessages }
-}).global.t('agent.placeholder')
+}).global
+const COMPOSER_LABEL = t('agent.placeholder')
 
 const ids = { thread_id: THREAD_ID, message_id: MESSAGE_ID }
 
@@ -106,6 +107,29 @@ interface Turn {
 }
 
 const ANSWER_PATH = `/api/agent/threads/${THREAD_ID}/asks/${ASK_ID}/answer`
+const QUESTION_ASK_ID = `${MESSAGE_ID}:call-ask`
+const QUESTION_PATH = `/api/agent/threads/${THREAD_ID}/asks/${QUESTION_ASK_ID}/answer`
+const QUESTION = 'Which styles should I try?'
+
+function askUserQuestion(): AgentWsEvent {
+  return {
+    type: 'agent_ask',
+    data: {
+      ...ids,
+      ask_id: QUESTION_ASK_ID,
+      kind: 'ask_user',
+      prompt: QUESTION,
+      options: [
+        { id: 'oil', label: 'Oil painting', description: 'Thick strokes' },
+        { id: 'ink', label: 'Ink sketch' },
+        { id: 'pixel', label: 'Pixel art' }
+      ],
+      min_selections: 1,
+      max_selections: 2,
+      allow_other: true
+    }
+  }
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
@@ -324,3 +348,63 @@ test.describe(
     })
   }
 )
+
+test.describe('Agent ask_user question', { tag: ['@cloud', '@agent'] }, () => {
+  test('the card answers only the ask it shows and then reads back the answer', async ({
+    page
+  }) => {
+    test.setTimeout(60_000)
+    const { panel, send, answers } = await startTurn(page, 'Paint it.', 'auto')
+    const choices = panel.getByRole('group', { name: QUESTION })
+    const submit = panel.getByRole('button', { name: t('g.submit') })
+
+    await test.step('the question arrives as a card with every option', async () => {
+      send(askUserQuestion())
+      await expect(
+        choices.getByRole('checkbox', { name: 'Oil painting' })
+      ).toBeVisible()
+      await expect(
+        choices.getByRole('checkbox', { name: 'Ink sketch' })
+      ).toBeVisible()
+      await expect(
+        choices.getByRole('checkbox', { name: 'Pixel art' })
+      ).toBeVisible()
+      await expect(
+        panel.getByText(t('agent.askUser.chooseBetween', { min: 1, max: 2 }))
+      ).toBeVisible()
+    })
+
+    await test.step('answering posts once, to that ask', async () => {
+      await choices.getByRole('checkbox', { name: 'Oil painting' }).click()
+      await panel
+        .getByRole('textbox', { name: t('agent.askUser.other') })
+        .fill('watercolor')
+      await submit.click()
+      await expect.poll(() => answers().length).toBe(1)
+      expect(answers()[0]).toEqual({
+        path: QUESTION_PATH,
+        body: { selected: ['oil'], other_text: 'watercolor' }
+      })
+    })
+
+    await test.step('the resolved card reads back the answer', async () => {
+      send({
+        type: 'agent_ask_resolved',
+        data: {
+          ...ids,
+          ask_id: QUESTION_ASK_ID,
+          status: 'answered',
+          selected: ['oil']
+        }
+      })
+      const record = panel.getByRole('status').filter({
+        hasText: t('agent.askUser.answered')
+      })
+      await expect(record).toContainText('Oil painting')
+      // The frame names the ids, not the free text, so ours is not echoed.
+      await expect(record).not.toContainText('watercolor')
+      await expect(submit).toHaveCount(0)
+      expect(answers()).toHaveLength(1)
+    })
+  })
+})
