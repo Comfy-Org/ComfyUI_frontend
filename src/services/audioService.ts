@@ -1,9 +1,7 @@
 import { register } from 'extendable-media-recorder'
 import { connect } from 'extendable-media-recorder-wav-encoder'
 
-import { useToast } from '@/components/ui/toast/toastStore'
-import { t } from '@/i18n'
-import { api } from '@/scripts/api'
+import { uploadTempFile } from '@/services/uploadTempFile'
 
 export interface AudioRecordingError {
   type: 'permission' | 'not_supported' | 'encoder' | 'recording' | 'unknown'
@@ -54,23 +52,10 @@ export const useAudioService = () => {
     const name = `recording-${Date.now()}.wav`
     const file = new File([blob], name, { type: blob.type || 'audio/wav' })
 
-    const body = new FormData()
-    body.append('image', file)
-    body.append('subfolder', 'audio')
-    body.append('type', 'temp')
-
-    const resp = await api.fetchApi('/upload/image', {
-      method: 'POST',
-      body
-    })
-
-    if (resp.status !== 200) {
-      const reason = `${resp.status} - ${resp.statusText}`
-      useToast().warning(t('g.uploadFailed', { reason }))
-      throw new Error(`Error uploading temp file: ${reason}`)
-    }
-
-    const tempAudio = await resp.json()
+    const upload = await uploadTempFile(file, 'audio')
+    if (!upload.ok)
+      throw new Error(`Error uploading temp file: ${upload.reason}`)
+    const tempAudio = upload.file
 
     return `audio/${tempAudio.name} [temp]`
   }

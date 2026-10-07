@@ -7,7 +7,6 @@ import type { AgentWorkflowBindSource } from '@/platform/telemetry/types'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { getErrorMessage } from '@/utils/errorUtil'
 
 import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
 import { useAgentPanelStore } from '../../stores/agent/agentPanelStore'
@@ -145,7 +144,7 @@ export function useAgentWorkflowSelection({
       if (workflowId === undefined) warnWorkflowUnavailable()
       return workflowId
     } catch (error) {
-      return fail(getErrorMessage(error))
+      return fail(error instanceof Error ? error.message : undefined)
     }
   }
 
@@ -176,7 +175,10 @@ export function useAgentWorkflowSelection({
       commitWorkflowTarget(tab, workflowId, 'selector_chip', previousWorkflowId)
       return true
     } catch (error) {
-      if (isCurrent()) warnWorkflowSelectionFailed(getErrorMessage(error))
+      if (isCurrent())
+        warnWorkflowSelectionFailed(
+          error instanceof Error ? error.message : undefined
+        )
       return false
     } finally {
       workflowSelection.value = null
@@ -216,7 +218,10 @@ export function useAgentWorkflowSelection({
         name: cloudWorkflowName(tab)
       }
     } catch (error) {
-      if (isCurrent()) warnWorkflowSelectionFailed(getErrorMessage(error))
+      if (isCurrent())
+        warnWorkflowSelectionFailed(
+          error instanceof Error ? error.message : undefined
+        )
       return undefined
     } finally {
       workflowSelection.value = null

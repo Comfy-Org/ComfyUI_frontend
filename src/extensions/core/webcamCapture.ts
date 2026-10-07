@@ -2,8 +2,8 @@ import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { uploadTempFile } from '@/services/uploadTempFile'
 
-import { api } from '../../scripts/api'
 import { app } from '../../scripts/app'
 
 const webcamReady = new WeakMap<LGraphNode, Promise<HTMLVideoElement>>()
@@ -136,20 +136,10 @@ app.registerExtension({
       )
       const name = `${+new Date()}.png`
       const file = new File([blob], name)
-      const body = new FormData()
-      body.append('image', file)
-      body.append('subfolder', 'webcam')
-      body.append('type', 'temp')
-      const resp = await api.fetchApi('/upload/image', {
-        method: 'POST',
-        body
-      })
-      if (resp.status !== 200) {
-        const reason = `${resp.status} - ${resp.statusText}`
-        useToast().warning(t('g.uploadFailed', { reason }))
-        throw new Error(`Error uploading camera image: ${reason}`)
-      }
-      const data = await resp.json()
+      const upload = await uploadTempFile(file, 'webcam')
+      if (!upload.ok)
+        throw new Error(`Error uploading camera image: ${upload.reason}`)
+      const data = upload.file
       const serverName = data.name || name
       const subfolder = data.subfolder || 'webcam'
       const type = data.type || 'temp'

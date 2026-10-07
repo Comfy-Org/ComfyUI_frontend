@@ -2,6 +2,7 @@ import { t } from '@/i18n'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import { uploadTempFile } from '@/services/uploadTempFile'
 import { getErrorMessage } from '@/utils/errorUtil'
 
 class Load3dUtils {
@@ -16,23 +17,10 @@ class Load3dUtils {
       type: fileType === 'mp4' ? 'video/mp4' : 'image/png'
     })
 
-    const body = new FormData()
-    body.append('image', file)
-    body.append('subfolder', 'threed')
-    body.append('type', 'temp')
-
-    const resp = await api.fetchApi('/upload/image', {
-      method: 'POST',
-      body
-    })
-
-    if (resp.status !== 200) {
-      const reason = `${resp.status} - ${resp.statusText}`
-      useToast().warning(t('g.uploadFailed', { reason }))
-      throw new Error(`Error uploading temp file: ${reason}`)
-    }
-
-    return await resp.json()
+    const upload = await uploadTempFile(file, 'threed')
+    if (!upload.ok)
+      throw new Error(`Error uploading temp file: ${upload.reason}`)
+    return upload.file
   }
 
   static readonly MAX_UPLOAD_SIZE_MB = 100
