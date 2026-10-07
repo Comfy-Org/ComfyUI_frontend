@@ -27,7 +27,11 @@ defineProps<{ column: NavColumn; locale: Locale; currentPath: string }>()
     <NavColumnHeading :column />
     <ul
       :class="
-        cn('flex', column.placement === 'footer' ? 'flex-row' : 'flex-col')
+        cn(
+          'flex',
+          column.placement === 'footer' ? 'flex-row' : 'flex-col',
+          column.kind && 'w-64 gap-1'
+        )
       "
     >
       <li v-for="item in column.items" :key="item.label">
@@ -39,7 +43,7 @@ defineProps<{ column: NavColumn; locale: Locale; currentPath: string }>()
           <a
             :href="item.href"
             v-bind="navLinkTarget(item)"
-            class="whitespace-nowrap"
+            :class="cn('whitespace-nowrap', column.kind && 'min-w-0')"
           >
             <NavLinkContent :item="item" :locale="locale" />
           </a>

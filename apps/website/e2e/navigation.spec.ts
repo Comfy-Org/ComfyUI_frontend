@@ -223,7 +223,7 @@ test.describe('Desktop dropdown @interaction', () => {
     })
   }
 
-  test('hovering HUB shows the Models examples and the Explore row', async ({
+  test('hovering HUB shows the Explore row, then the Models examples with their stills', async ({
     page
   }) => {
     const nav = page.getByRole('navigation', { name: 'Main navigation' })
@@ -237,9 +237,17 @@ test.describe('Desktop dropdown @interaction', () => {
     await expect(
       dropdown.getByText('Run, call by API or download')
     ).toBeVisible()
-    await expect(
-      dropdown.getByRole('link', { name: 'Seedream 5.0 Pro' })
-    ).toHaveAttribute('href', '/hub/models/seedream-5-0-pro-text-to-image/')
+    await expect(dropdown.getByTestId('nav-explore-row')).toContainText(
+      'Try in the browser, call by API, or take it into ComfyUI'
+    )
+    const seedream = dropdown.getByRole('link', { name: /^Seedream 5\.0 Pro/ })
+    await expect(seedream).toHaveAttribute(
+      'href',
+      '/hub/models/seedream-5-0-pro-text-to-image/'
+    )
+    await expect(seedream).toContainText('ByteDance · Image')
+    await expect(seedream.getByTestId('nav-item-thumb')).toBeVisible()
+    await expect(dropdown.locator('video')).toHaveCount(0)
     await expect(
       dropdown.getByRole('link', { name: 'All models' })
     ).toHaveAttribute('href', '/hub/models/')
@@ -459,11 +467,17 @@ test.describe('Mobile menu @mobile', () => {
     ).toHaveCount(0)
   })
 
-  test('Hub drill-down ends with the Explore row', async ({ page }) => {
+  test('Hub drill-down shows the examples with their stills and ends with the Explore link', async ({
+    page
+  }) => {
     await page.getByRole('button', { name: 'Toggle menu' }).click()
 
     const menu = page.getByRole('dialog')
     await menu.getByRole('button', { name: 'Hub' }).click()
+
+    const seedream = menu.getByRole('link', { name: /^Seedream 5\.0 Pro/ })
+    await expect(seedream).toContainText('ByteDance · Image')
+    await expect(seedream.getByTestId('nav-item-thumb')).toBeVisible()
 
     await expect(
       menu.getByRole('link', { name: 'All models' })

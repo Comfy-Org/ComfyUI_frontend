@@ -2617,7 +2617,7 @@
     "hubKlingO3": "Kling O3",
     "hubAllModels": "All models",
     "hubExplore": "Explore the Hub",
-    "hubExploreHint": "Search everything, see what’s popular and new",
+    "hubExploreHint": "Try in the browser, call by API, or take it into ComfyUI",
     "comfyApi": "Comfy API",
     "builds": "Builds",
     "comfySdks": "Comfy SDKs",

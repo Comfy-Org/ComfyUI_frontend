@@ -2,7 +2,16 @@ import { externalLinks, getRoutes } from '@/config/routes'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 
-export type NavColumnItem = {
+export type NavItemPreview = {
+  /** A still from the catalogue, never a video. */
+  thumbnail?: string
+  meta?: string
+}
+
+/** Catalogue previews for the Hub menu, keyed by the entry's page. */
+export type HubMenuPreviews = Readonly<Record<string, NavItemPreview>>
+
+export type NavColumnItem = NavItemPreview & {
   label: string
   href: string
   badge?: 'new' | 'beta'
@@ -44,9 +53,9 @@ export type NavFeatured = {
   }
 }
 
-export type NavFooterLink = {
+export type NavExploreLink = {
   label: string
-  description: string
+  intro: string
   href: string
 }
 
@@ -55,7 +64,7 @@ export type NavItem =
       label: string
       columns: NavColumn[]
       featured?: NavFeatured
-      footerLink?: NavFooterLink
+      exploreLink?: NavExploreLink
       activePathPrefix?: string
       badge?: 'new'
       href?: never
@@ -66,7 +75,7 @@ export type NavItem =
       badge?: 'new'
       columns?: never
       featured?: never
-      footerLink?: never
+      exploreLink?: never
       activePathPrefix?: never
     }
 
@@ -80,11 +89,16 @@ export const NO_HUB_SECTIONS: HubSections = { workflows: false, apps: false }
 export function getMainNavigation(
   locale: Locale,
   workshopInBuild = false,
-  hubSections: HubSections = NO_HUB_SECTIONS
+  hubSections: HubSections = NO_HUB_SECTIONS,
+  hubPreviews: HubMenuPreviews = {}
 ): NavItem[] {
   const { t } = translationsFor(locale)
   const routes = getRoutes(locale)
   const when = <T>(shown: boolean, items: T[]) => (shown ? items : [])
+  const previewed = (item: NavColumnItem): NavColumnItem => ({
+    ...hubPreviews[item.href],
+    ...item
+  })
   const hub: NavItem = {
     label: t('nav.workshop'),
     badge: 'new',
@@ -95,14 +109,14 @@ export function getMainNavigation(
         kind: 'model',
         description: t('nav.hubModelsHint'),
         items: [
-          {
+          previewed({
             label: t('nav.hubSeedream5Pro'),
             href: `${routes.workshop}seedream-5-0-pro-text-to-image/`
-          },
-          {
+          }),
+          previewed({
             label: t('nav.hubKlingO3'),
             href: `${routes.workshop}kling-o3-text-to-video/`
-          },
+          }),
           { label: t('nav.hubAllModels'), href: routes.workshop, seeAll: true }
         ]
       },
@@ -112,14 +126,14 @@ export function getMainNavigation(
           kind: 'workflow',
           description: t('nav.hubWorkflowsHint'),
           items: [
-            {
+            previewed({
               label: t('nav.hubChangeMaterial'),
               href: `${routes.hubWorkflows}change-material/`
-            },
-            {
+            }),
+            previewed({
               label: t('nav.hubMatchLighting'),
               href: `${routes.hubWorkflows}match-lighting/`
-            },
+            }),
             {
               label: t('nav.hubAllWorkflows'),
               href: routes.hubWorkflows,
@@ -134,20 +148,24 @@ export function getMainNavigation(
           kind: 'app',
           description: t('nav.hubAppsHint'),
           items: [
-            {
+            previewed({
               label: t('nav.cinematicStudio'),
               href: routes.cinematicStudio,
               newTab: true
-            },
-            { label: t('nav.reshoot'), href: routes.reshoot, newTab: true },
+            }),
+            previewed({
+              label: t('nav.reshoot'),
+              href: routes.reshoot,
+              newTab: true
+            }),
             { label: t('nav.hubAllApps'), href: routes.hubApps, seeAll: true }
           ]
         }
       ])
     ],
-    footerLink: {
+    exploreLink: {
       label: t('nav.hubExplore'),
-      description: t('nav.hubExploreHint'),
+      intro: t('nav.hubExploreHint'),
       href: routes.hubExplore
     }
   }

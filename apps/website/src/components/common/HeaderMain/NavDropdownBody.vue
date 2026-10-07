@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { ArrowRight } from '@lucide/vue'
 import { computed } from 'vue'
 
 import NavigationMenuLink from '@/components/ui/navigation-menu/NavigationMenuLink.vue'
@@ -7,17 +6,18 @@ import NavigationMenuLink from '@/components/ui/navigation-menu/NavigationMenuLi
 import { isHrefActive } from '@/composables/useCurrentPath'
 import type {
   NavColumn as NavColumnData,
-  NavFeatured,
-  NavFooterLink
+  NavExploreLink,
+  NavFeatured
 } from '@/data/mainNavigation'
 import type { Locale } from '@/i18n/translations'
 import NavColumn from './NavColumn.vue'
 import NavFeaturedCard from './NavFeaturedCard.vue'
+import NavLinkContent from './NavLinkContent.vue'
 
 const { columns } = defineProps<{
   columns: NavColumnData[]
   featured?: NavFeatured
-  footerLink?: NavFooterLink
+  exploreLink?: NavExploreLink
   locale: Locale
   currentPath: string
 }>()
@@ -33,6 +33,28 @@ const footer = computed(() =>
 <template>
   <ul class="flex w-max gap-10">
     <li class="flex flex-col gap-8">
+      <div
+        v-if="exploreLink"
+        class="-mb-2 flex items-center justify-between gap-8 border-b border-transparency-white-t8 pb-4"
+        data-testid="nav-explore-row"
+      >
+        <p class="pl-2 text-sm text-primary-warm-gray">
+          {{ exploreLink.intro }}
+        </p>
+        <NavigationMenuLink
+          as-child
+          :active="isHrefActive(exploreLink.href, currentPath)"
+          class="shrink-0 hover:bg-transparency-white-t4"
+        >
+          <a :href="exploreLink.href" data-testid="nav-explore-link">
+            <NavLinkContent
+              :item="{ label: exploreLink.label, seeAll: true }"
+              :locale
+              lead
+            />
+          </a>
+        </NavigationMenuLink>
+      </div>
       <ul class="flex gap-16">
         <NavColumn
           v-for="column in main"
@@ -54,29 +76,6 @@ const footer = computed(() =>
           :current-path
         />
       </ul>
-      <NavigationMenuLink
-        v-if="footerLink"
-        as-child
-        :active="isHrefActive(footerLink.href, currentPath)"
-        class="flex-row items-center justify-between gap-4 rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4 px-5 py-4 hover:bg-transparency-white-t8 data-active:bg-transparency-white-t4 data-active:hover:bg-transparency-white-t8"
-      >
-        <a :href="footerLink.href" data-testid="nav-footer-link">
-          <span class="flex min-w-0 flex-col">
-            <span class="text-base font-medium text-primary-warm-white">
-              {{ footerLink.label }}
-            </span>
-            <span class="text-sm text-primary-warm-gray">
-              {{ footerLink.description }}
-            </span>
-          </span>
-          <span
-            class="grid size-10 shrink-0 place-items-center rounded-full bg-primary-comfy-yellow text-primary-comfy-ink"
-            aria-hidden="true"
-          >
-            <ArrowRight class="size-5" />
-          </span>
-        </a>
-      </NavigationMenuLink>
     </li>
     <NavFeaturedCard v-if="featured" :featured />
   </ul>

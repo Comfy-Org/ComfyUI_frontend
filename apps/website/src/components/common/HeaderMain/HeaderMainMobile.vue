@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import BreadthumbIcon from '@/components/icons/BreadthumbIcon.vue'
-import { ArrowRight, ChevronLeft, ChevronRight } from '@lucide/vue'
+import { ChevronLeft, ChevronRight } from '@lucide/vue'
 import { computed, onUnmounted, ref, watch } from 'vue'
 import {
   NO_HUB_SECTIONS,
   getMainNavigation,
   navLinkTarget
 } from '@/data/mainNavigation'
-import type { HubSections } from '@/data/mainNavigation'
+import type { HubMenuPreviews, HubSections } from '@/data/mainNavigation'
 import { getRoutes } from '@/config/routes.ts'
 import { lockScroll, unlockScroll } from '@/composables/scrollLock'
 import type { Locale } from '@/i18n/translations.ts'
@@ -25,16 +25,18 @@ import { cn } from '@comfyorg/tailwind-utils'
 const {
   locale = 'en',
   workshopInBuild = false,
-  hubSections = NO_HUB_SECTIONS
+  hubSections = NO_HUB_SECTIONS,
+  hubPreviews
 } = defineProps<{
   locale?: Locale
   workshopInBuild?: boolean
   hubSections?: HubSections
+  hubPreviews?: HubMenuPreviews
 }>()
 const { t } = translationsFor(locale)
 const routes = getRoutes(locale)
 const mainNavigation = computed(() =>
-  getMainNavigation(locale, workshopInBuild, hubSections)
+  getMainNavigation(locale, workshopInBuild, hubSections, hubPreviews)
 )
 
 const isOpen = ref(false)
@@ -176,32 +178,29 @@ onUnmounted(() => {
                       :href="link.href"
                       variant="nav"
                       as="a"
+                      class="max-w-full [&>span]:min-w-0"
                       v-bind="navLinkTarget(link)"
                     >
                       <NavLinkContent :item="link" :locale="locale" />
                     </Button>
                   </div>
                 </div>
-                <a
-                  v-if="activeItem.footerLink"
-                  :href="activeItem.footerLink.href"
-                  class="flex items-center justify-between gap-4 rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4 px-4 py-4 transition-colors outline-none hover:bg-transparency-white-t8 focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
+                <Button
+                  v-if="activeItem.exploreLink"
+                  :href="activeItem.exploreLink.href"
+                  variant="nav"
+                  as="a"
+                  data-testid="nav-explore-link"
                 >
-                  <span class="flex min-w-0 flex-col">
-                    <span class="text-base font-medium text-primary-warm-white">
-                      {{ activeItem.footerLink.label }}
-                    </span>
-                    <span class="text-sm text-primary-warm-gray">
-                      {{ activeItem.footerLink.description }}
-                    </span>
-                  </span>
-                  <span
-                    class="grid size-10 shrink-0 place-items-center rounded-full bg-primary-comfy-yellow text-primary-comfy-ink"
-                    aria-hidden="true"
-                  >
-                    <ArrowRight class="size-5" />
-                  </span>
-                </a>
+                  <NavLinkContent
+                    :item="{
+                      label: activeItem.exploreLink.label,
+                      seeAll: true
+                    }"
+                    :locale="locale"
+                    lead
+                  />
+                </Button>
               </div>
             </div>
             <div

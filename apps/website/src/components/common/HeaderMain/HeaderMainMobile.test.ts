@@ -2,12 +2,20 @@ import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 
+import type { HubMenuPreviews } from '@/data/mainNavigation'
 import HeaderMainMobile from './HeaderMainMobile.vue'
 
-async function openMenu(workshopInBuild: boolean) {
+async function openMenu(
+  workshopInBuild: boolean,
+  hubPreviews?: HubMenuPreviews
+) {
   const user = userEvent.setup()
   render(HeaderMainMobile, {
-    props: { workshopInBuild, hubSections: { workflows: true, apps: true } }
+    props: {
+      workshopInBuild,
+      hubSections: { workflows: true, apps: true },
+      hubPreviews
+    }
   })
   await user.click(screen.getByRole('button', { name: 'Toggle menu' }))
   return user
@@ -60,6 +68,23 @@ describe('HeaderMainMobile', () => {
     expect(
       screen.getByRole('link', { name: /^Explore the Hub/ })
     ).toHaveAttribute('href', '/hub/')
+  })
+
+  it('shows the Hub examples with their stills and lines', async () => {
+    const user = await openMenu(true, {
+      '/hub/apps/reshoot/': {
+        thumbnail: 'https://media.comfy.org/reshoot.jpg',
+        meta: 'Aim a new camera at your clip'
+      }
+    })
+    await user.click(screen.getByRole('button', { name: /^Hub/ }))
+    const reshoot = screen.getByRole('link', { name: /^Re-shoot/ })
+
+    expect(reshoot).toHaveTextContent('Aim a new camera at your clip')
+    expect(reshoot).toHaveAttribute('target', '_blank')
+    expect(
+      within(reshoot).getByTestId('nav-item-thumb').getAttribute('src')
+    ).toBe('https://media.comfy.org/reshoot.jpg')
   })
 
   it('ends the Company drill-down without the social links', async () => {

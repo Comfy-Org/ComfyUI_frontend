@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
 
-import type { HubSections } from '@/data/mainNavigation'
+import type { HubMenuPreviews, HubSections } from '@/data/mainNavigation'
 import HeaderMainDesktop from './HeaderMainDesktop.vue'
 
 const ALL_SECTIONS: HubSections = { workflows: true, apps: true }
@@ -14,15 +14,19 @@ async function openMenu(
   {
     path = '/pricing',
     workshopInBuild = true,
-    hubSections = ALL_SECTIONS
+    hubSections = ALL_SECTIONS,
+    hubPreviews
   }: {
     path?: string
     workshopInBuild?: boolean
     hubSections?: HubSections
+    hubPreviews?: HubMenuPreviews
   } = {}
 ) {
   history.replaceState(null, '', path)
-  render(HeaderMainDesktop, { props: { workshopInBuild, hubSections } })
+  render(HeaderMainDesktop, {
+    props: { workshopInBuild, hubSections, hubPreviews }
+  })
   const trigger = screen.getByRole('button', { name })
   await userEvent.click(trigger)
   const menu = within(await screen.findByTestId('nav-dropdown'))
@@ -70,6 +74,48 @@ describe('HeaderMainDesktop', () => {
     expect(
       menu.getByRole('link', { name: /^Explore the Hub/ })
     ).toHaveAttribute('href', '/hub/')
+  })
+
+  it('leads the Hub with its intro and Explore link, above the columns', async () => {
+    const { menu } = await openMenu(/^Hub/)
+    const row = menu.getByTestId('nav-explore-row')
+
+    expect(row).toHaveTextContent(
+      'Try in the browser, call by API, or take it into ComfyUI'
+    )
+    expect(
+      within(row).getByRole('link', { name: 'Explore the Hub' })
+    ).toHaveAttribute('href', '/hub/')
+    expect(
+      row.compareDocumentPosition(menu.getByText('Models', { exact: true }))
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
+  })
+
+  it('shows each Hub example with its catalogue still and a line about it', async () => {
+    const { menu } = await openMenu(/^Hub/, {
+      hubPreviews: {
+        '/hub/models/seedream-5-0-pro-text-to-image/': {
+          thumbnail: 'https://media.comfy.org/seedream.png',
+          meta: 'ByteDance · Image'
+        },
+        '/hub/models/kling-o3-text-to-video/': { meta: 'Kling · Video' }
+      }
+    })
+    const seedream = menu.getByRole('link', { name: /^Seedream 5\.0 Pro/ })
+    const kling = menu.getByRole('link', { name: /^Kling O3/ })
+
+    expect(seedream).toHaveTextContent('ByteDance · Image')
+    expect(
+      within(seedream).getByTestId('nav-item-thumb').getAttribute('src')
+    ).toBe('https://media.comfy.org/seedream.png')
+    expect(kling).toHaveTextContent('Kling · Video')
+    expect(within(kling).queryByTestId('nav-item-thumb')).toBeNull()
+    expect(within(kling).getByTestId('nav-item-thumb-placeholder')).toBeTruthy()
+    expect(
+      within(menu.getByRole('link', { name: 'All models' })).queryByTestId(
+        'nav-item-thumb-placeholder'
+      )
+    ).toBeNull()
   })
 
   it('opens each app in a tab of its own, and the apps list in this one', async () => {

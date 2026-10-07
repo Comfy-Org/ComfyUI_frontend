@@ -15,7 +15,7 @@ function hrefsOf(item: NavItem): string[] {
   if (!item.columns) return [item.href]
   return [
     ...item.columns.flatMap((column) => column.items.map(({ href }) => href)),
-    ...(item.footerLink ? [item.footerLink.href] : [])
+    ...(item.exploreLink ? [item.exploreLink.href] : [])
   ]
 }
 
@@ -79,9 +79,9 @@ describe('getMainNavigation', () => {
       expect(hub.href).toBeUndefined()
       expect(hub.badge).toBe('new')
       expect(hub.columns?.map((column) => column.header)).toEqual(headers)
-      expect(hub.footerLink).toEqual({
+      expect(hub.exploreLink).toEqual({
         label: 'Explore the Hub',
-        description: 'Search everything, see what’s popular and new',
+        intro: 'Try in the browser, call by API, or take it into ComfyUI',
         href: '/hub/'
       })
       expect(hub.activePathPrefix).toBe('/hub/')
@@ -147,6 +147,37 @@ describe('getMainNavigation', () => {
         ]
       }
     ])
+  })
+
+  it('shows a catalogue preview beside each Hub example, never beside an All link', () => {
+    const preview = { thumbnail: 'https://media.comfy.org/a.png', meta: 'M' }
+    const hub = findItem(
+      getMainNavigation('en', true, ALL_SECTIONS, {
+        '/hub/models/kling-o3-text-to-video/': preview,
+        '/hub/models/': preview,
+        '/hub/apps/reshoot/': { meta: 'Only a summary' }
+      }),
+      'Hub'
+    )
+    const previews = Object.fromEntries(
+      (hub.columns ?? [])
+        .flatMap((column) => column.items)
+        .map(({ href, thumbnail, meta }) => [href, { thumbnail, meta }])
+    )
+
+    expect(previews['/hub/models/kling-o3-text-to-video/']).toEqual(preview)
+    expect(previews['/hub/apps/reshoot/']).toEqual({
+      thumbnail: undefined,
+      meta: 'Only a summary'
+    })
+    expect(previews['/hub/models/seedream-5-0-pro-text-to-image/']).toEqual({
+      thumbnail: undefined,
+      meta: undefined
+    })
+    expect(previews['/hub/models/']).toEqual({
+      thumbnail: undefined,
+      meta: undefined
+    })
   })
 
   it('links the Hub examples to pages the site builds', () => {

@@ -2667,7 +2667,7 @@
     "hubKlingO3": "Kling O3",
     "hubAllModels": "全部模型",
     "hubExplore": "探索 Hub",
-    "hubExploreHint": "搜索全部内容，查看热门与最新",
+    "hubExploreHint": "在浏览器中试用、通过 API 调用，或导入 ComfyUI",
     "comfyApi": "Comfy API",
     "builds": "Builds",
     "comfySdks": "Comfy SDK",

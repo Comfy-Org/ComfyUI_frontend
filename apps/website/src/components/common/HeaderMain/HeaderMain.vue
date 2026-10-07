@@ -13,6 +13,7 @@ import { useMounted } from '@vueuse/core'
 import { isHrefActive, useCurrentPath } from '@/composables/useCurrentPath.ts'
 import type { Locale } from '@/i18n/translations.ts'
 import { translationsFor } from '@/i18n/translations.ts'
+import type { HubMenuPreviews } from '@/data/mainNavigation'
 import { externalLinks, getRoutes } from '@/config/routes.ts'
 import type { WorkshopBuyCreditsTrigger } from '@/config/workshop-buy-credits.ts'
 import { subscribeToWorkshopBuyCredits } from '@/config/workshop-buy-credits.ts'
@@ -37,11 +38,13 @@ import Button from '@/components/ui/button/Button.vue'
 const {
   locale = 'en',
   githubStars = '',
-  workshopInBuild = false
+  workshopInBuild = false,
+  hubPreviews
 } = defineProps<{
   locale?: Locale
   githubStars?: string
   workshopInBuild?: boolean
+  hubPreviews?: HubMenuPreviews
 }>()
 const { t } = translationsFor(locale)
 const routes = getRoutes(locale)
@@ -239,6 +242,7 @@ const ctaButtons = computed(() =>
       :locale
       :workshop-in-build="showWorkshop"
       :hub-sections
+      :hub-previews
       :class="showWorkshop ? 'hidden xl:block' : 'hidden lg:block'"
     />
     <div
@@ -251,6 +255,7 @@ const ctaButtons = computed(() =>
         :locale
         :workshop-in-build="showWorkshop"
         :hub-sections
+        :hub-previews
       />
     </div>
 

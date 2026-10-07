@@ -12,7 +12,11 @@ import { navigationMenuTriggerStyle } from '@/components/ui/navigation-menu/navi
 
 import { isHrefActive, useCurrentPath } from '@/composables/useCurrentPath'
 import { NO_HUB_SECTIONS, getMainNavigation } from '@/data/mainNavigation'
-import type { HubSections, NavItem } from '@/data/mainNavigation'
+import type {
+  HubMenuPreviews,
+  HubSections,
+  NavItem
+} from '@/data/mainNavigation'
 import type { Locale } from '@/i18n/translations'
 import NavDropdownBody from './NavDropdownBody.vue'
 import NewBadge from './NewBadge.vue'
@@ -20,14 +24,16 @@ import NewBadge from './NewBadge.vue'
 const {
   locale = 'en',
   workshopInBuild = false,
-  hubSections = NO_HUB_SECTIONS
+  hubSections = NO_HUB_SECTIONS,
+  hubPreviews
 } = defineProps<{
   locale?: Locale
   workshopInBuild?: boolean
   hubSections?: HubSections
+  hubPreviews?: HubMenuPreviews
 }>()
 const mainNavigation = computed(() =>
-  getMainNavigation(locale, workshopInBuild, hubSections)
+  getMainNavigation(locale, workshopInBuild, hubSections, hubPreviews)
 )
 const currentPath = useCurrentPath()
 
@@ -72,7 +78,7 @@ function isNavItemActive(navItem: NavItem, path: string): boolean {
             <NavDropdownBody
               :columns="navItem.columns"
               :featured="navItem.featured"
-              :footer-link="navItem.footerLink"
+              :explore-link="navItem.exploreLink"
               :locale
               :current-path="currentPath"
             />
