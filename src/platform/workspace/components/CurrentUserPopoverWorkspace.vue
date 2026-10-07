@@ -165,10 +165,12 @@
       }}</span>
     </div>
 
-    <button
+    <Button
       v-if="!accountActionsOnly && isCloud && showManagePlan"
       type="button"
-      class="flex w-full cursor-pointer appearance-none items-center gap-2 border-0 bg-transparent px-4 py-2 text-left hover:bg-secondary-background-hover focus-visible:bg-secondary-background-hover focus-visible:outline-none"
+      variant="textonly"
+      size="unset"
+      class="w-full justify-start rounded-none px-4 py-2 text-left font-normal"
       data-testid="manage-plan-menu-item"
       @click="handleOpenManagePlanSettings"
     >
@@ -176,7 +178,7 @@
       <span class="flex-1 text-sm text-base-foreground">{{
         $t('subscription.managePlan')
       }}</span>
-    </button>
+    </Button>
 
     <button
       v-if="!accountActionsOnly && showLocalPlansAndCredits"
