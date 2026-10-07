@@ -2,7 +2,7 @@ import { computed, shallowReactive } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { LLink } from '@/lib/litegraph/src/litegraph'
+import type { ExecutableLGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
@@ -23,7 +23,9 @@ function applyToGraph(this: LGraphNode, extraLinks: LLink[] = []) {
  * building the API prompt (see `executionUtil.ts`), not on `LGraphNode`
  * itself. Prompt serialization is the only place that can resolve a
  * promoted widget's per-host value, so this is a runtime duck-type check
- * rather than a static one.
+ * rather than a static one. Core prompt serialization only ever passes
+ * an `ExecutableNodeDTO`, but extensions written before the subgraphs
+ * may still pass a live `LGraphNode`.
  */
 type LinkedInputResolver = {
   resolveInput: (
@@ -32,8 +34,8 @@ type LinkedInputResolver = {
 }
 
 function hasLinkedInputResolver(
-  node: LGraphNode
-): node is LGraphNode & LinkedInputResolver {
+  node: ExecutableLGraphNode | LGraphNode
+): node is (ExecutableLGraphNode | LGraphNode) & LinkedInputResolver {
   return (
     typeof (node as Partial<LinkedInputResolver>).resolveInput === 'function'
   )
@@ -53,7 +55,7 @@ function hasLinkedInputResolver(
 function resolveChoiceValue(
   interiorNode: LGraphNode,
   comboWidget: IBaseWidget,
-  resolverNode: LGraphNode = interiorNode
+  resolverNode: ExecutableLGraphNode | LGraphNode = interiorNode
 ) {
   const choiceInputIndex = interiorNode.inputs.findIndex(
     (input) => input.widget?.name === comboWidget.name
@@ -145,7 +147,10 @@ function onCustomComboCreated(this: LGraphNode) {
     hidden: true,
     options: {},
     y: 0,
-    serializeValue: (resolverNode: LGraphNode, _index: number) =>
+    serializeValue: (
+      resolverNode?: ExecutableLGraphNode | LGraphNode,
+      _index?: number
+    ) =>
       widgets
         .slice(2)
         .findIndex(

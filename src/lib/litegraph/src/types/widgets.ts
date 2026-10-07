@@ -18,7 +18,12 @@ import type {
   RequiredProps,
   Size
 } from '../interfaces'
-import type { CanvasPointer, LGraphCanvas, LGraphNode } from '../litegraph'
+import type {
+  CanvasPointer,
+  ExecutableLGraphNode,
+  LGraphCanvas,
+  LGraphNode
+} from '../litegraph'
 import type { CanvasPointerEvent } from './events'
 
 export interface NodeBindable {
@@ -74,6 +79,17 @@ export interface IWidgetOptions<TValues = unknown> {
    * @see IBaseWidget.serialize — workflow persistence
    */
   serialize?: boolean
+  /**
+   * Rounding value for numeric float widgets.
+   */
+  round?: number
+  /**
+   * The minimum size of the node if the widget is present.
+   */
+  minNodeSize?: Size
+
+  /** If the widget is advanced, this will be set to true. */
+  advanced?: boolean
 
   values?: TValues
   /** Optional function to format values for display (e.g., hash → human-readable name) */
@@ -468,6 +484,10 @@ export function isWidgetValue(value: unknown): value is TWidgetValue {
   return typeof value === 'object'
 }
 
+export interface WidgetCallbackOptions {
+  isPartialExecution?: boolean
+}
+
 /**
  * The base type for all widgets.  Should not be implemented directly.
  * @template TValue The type of value this widget holds.
@@ -652,4 +672,20 @@ export interface IBaseWidget<
     node: LGraphNode,
     canvas: LGraphCanvas
   ): boolean
+
+  onRemove?(): void
+  beforeQueued?(options?: WidgetCallbackOptions): unknown
+  afterQueued?(options?: WidgetCallbackOptions): unknown
+  serializeValue?(node: ExecutableLGraphNode, index: number): unknown
+
+  /**
+   * Refreshes the widget's value or options from its remote source.
+   */
+  refresh?(): unknown
+
+  /**
+   * If the widget supports dynamic prompts, this will be set to true.
+   * See extensions/core/dynamicPrompts.ts
+   */
+  dynamicPrompts?: boolean
 }

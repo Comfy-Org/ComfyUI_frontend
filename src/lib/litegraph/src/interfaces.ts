@@ -2,6 +2,8 @@ import type { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import type { WidgetId } from '@/types/widgetId'
 import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
+import type { InputSpec } from '@/schemas/nodeDefSchema'
+import type { CONFIG, GET_CONFIG } from '@/services/litegraphService'
 import type { NodeId } from '@/types/nodeId'
 import type { SlotIndex } from '@/types/slotId'
 import type { UUID } from '@/utils/uuid'
@@ -361,6 +363,8 @@ export interface INodeFlags {
 export interface IWidgetLocator {
   name: string
   type?: string
+  [CONFIG]?: InputSpec
+  [GET_CONFIG]?: () => InputSpec | undefined
 }
 
 export interface INodeInputSlot extends INodeSlot {
@@ -401,6 +405,12 @@ export interface INodeOutputSlot extends INodeSlot {
    */
   links?: LinkId[] | null
   _data?: unknown
+  /**
+   * Only used by the Primitive node. Primitive node is using the widget property
+   * to store/access the widget config.
+   * We should remove this hacky solution once we have a proper solution.
+   */
+  widget?: IWidgetLocator
 }
 
 /** Options for {@link LiteGraphGlobal.createNode}. Shallow-copied onto the new node. */

@@ -22,6 +22,12 @@ import {
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { isSelectedIn, setSelectedIn } from '@/core/selection/selectionStore'
 import { toSelectableKey } from '@/core/selection/selectionState'
+import type {
+  NodeExecutionOutput,
+  ResultItem
+} from '@/platform/remote/comfyui/execution/types'
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { DOMWidget, DOMWidgetOptions } from '@/scripts/domWidget'
 import { useExecutionOrderStore } from '@/stores/executionOrderStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { graphScopeOf } from '@/types/graphScopeId'
@@ -29,7 +35,7 @@ import { toLinkId } from '@/types/linkId'
 import type { GraphScope } from '@/types/graphScopeId'
 import { linkIdReservations, mintLinkId } from './idAllocation'
 import { UNASSIGNED_NODE_ID, toNodeId, serializeNodeId } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import type { NodeProperty, NodeState } from '@/types/nodeState'
 import {
   deriveWidgetVisibility,
@@ -130,6 +136,10 @@ import {
   isWidgetInputSlot,
   outputAsSerialisable
 } from './node/slotUtils'
+import type {
+  ExecutableLGraphNode,
+  ExecutionId
+} from './subgraph/ExecutableNodeDTO'
 import type { SubgraphInputNode } from './subgraph/SubgraphInputNode'
 import type { SubgraphOutputNode } from './subgraph/SubgraphOutputNode'
 import type { NodeLike } from './types/NodeLike'
@@ -366,6 +376,16 @@ supported callbacks:
 
 export interface LGraphNode {
   constructor: LGraphNodeConstructor
+
+  addDOMWidget<
+    T extends HTMLElement = HTMLElement,
+    V extends object | string = string
+  >(
+    name: string,
+    type: string,
+    element: T,
+    options?: DOMWidgetOptions<V>
+  ): DOMWidget<T, V>
 }
 
 // #endregion Types
@@ -769,8 +789,61 @@ export class LGraphNode
 
   declare comfyDynamic?: Record<string, object>
   declare comfyClass?: string
+  /**
+   * If the node is a frontend only node and should not be serialized into the prompt.
+   */
   declare isVirtualNode?: boolean
+  /**
+   * @deprecated primitive node.
+   * Used by virtual nodes (primitives) to insert their values into the graph prior to queueing.
+   * Externally used by
+   * - https://github.com/pythongosssss/ComfyUI-Custom-Scripts/blob/bbda5e52ad580c13ceaa53136d9c2bed9137bd2e/web/js/presetText.js#L160-L182
+   * - https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite/blob/4c7858ddd5126f7293dc3c9f6e0fc4c263cde079/web/js/VHS.core.js#L1889-L1889
+   */
   applyToGraph?(extraLinks?: LLink[]): void
+
+  declare animatedImages?: boolean
+  declare imgs?: HTMLImageElement[]
+  declare images?: ResultItem[]
+  /** Container for the node's video preview */
+  declare videoContainer?: HTMLElement
+  /** Whether the node's preview media is loading */
+  declare isLoading?: boolean
+  /** Whether a file is being uploaded to this node */
+  declare isUploading?: boolean
+  /** The content type of the node's preview media */
+  declare previewMediaType?: 'image' | 'video' | 'audio' | 'model'
+  /** If true, output images are stored but not rendered below the node */
+  declare hideOutputImages?: boolean
+
+  declare preview?: string[]
+  /** Index of the currently selected image on a multi-image node such as Preview Image */
+  declare imageIndex?: number | null
+  declare imageRects?: Rect[]
+  declare overIndex?: number | null
+  declare pointerDown?: { index: number | null; pos: Point } | null
+  /**
+   * @deprecated No longer needed as we use {@link useImagePreviewWidget}
+   */
+  setSizeForImage?(force?: boolean): void
+  /** @deprecated Unused */
+  declare inputHeight?: unknown
+
+  /** The y offset of the image preview to the top of the node body. */
+  declare imageOffset?: number
+
+  declare canvasHeight?: number
+  declare index?: number
+  declare runningInternalNodeId?: SerializedNodeId
+
+  /** Used internally for sizing the node during creation */
+  declare _initialMinSize?: { width: number; height: number }
+
+  /**
+   * widgets_values is set to LGraphNode by `LGraphNode.configure`, but it is not
+   * used by litegraph internally. We should remove the dependency on it later.
+   */
+  declare widgets_values?: TWidgetValue[]
 
   isSubgraphNode(): this is SubgraphNode {
     return false
@@ -950,6 +1023,46 @@ export class LGraphNode
   setTrigger?(this: LGraphNode, func?: () => void): void
   onDrawBackground?(this: LGraphNode, ctx: CanvasRenderingContext2D): void
   onNodeCreated?(this: LGraphNode): void
+  /**
+   * Callback fired on each node after the graph is configured
+   */
+  onAfterGraphConfigured?(): void
+  onGraphConfigured?(): void
+  /**
+   * Callback fired when node execution completes.
+   * Output contains known media properties (images, audio, video) plus
+   * arbitrary node-specific outputs (text, ui, custom properties).
+   */
+  onExecuted?(output: NodeExecutionOutput): void
+  onExecutionStart?(): unknown
+  /** Flattens a subgraph node into its executable inner nodes. */
+  refreshComboInNode?(defs?: Record<string, ComfyNodeDef>): void
+  getInnerNodes?(
+    nodesByExecutionId: Map<ExecutionId, ExecutableLGraphNode>,
+    subgraphNodePath?: readonly SerializedNodeId[],
+    nodes?: ExecutableLGraphNode[],
+    subgraphs?: Set<LGraphNode>
+  ): ExecutableLGraphNode[]
+  recreate?(): Promise<LGraphNode>
+  /**
+   * Callback invoked when the node is dragged over from an external source, i.e.
+   * a file or another HTML element.
+   * @param e The drag event
+   * @returns {boolean} True if the drag event should be handled by this node, false otherwise
+   */
+  onDragOver?(e: DragEvent): boolean
+  /**
+   * Callback invoked when the node is dropped from an external source, i.e.
+   * a file or another HTML element.
+   * @param e The drag event
+   * @returns {boolean} True if the drag event should be handled by this node, false otherwise
+   */
+  onDragDrop?(e: DragEvent): Promise<boolean> | boolean
+  convertWidgetToInput?(): boolean
+  /** Callback for pasting an image file into the node */
+  pasteFile?(file: File): void
+  /** Callback for pasting multiple files into the node */
+  pasteFiles?(files: File[]): void
   /**
    * Callback invoked by {@link connect} to override the target slot index.
    * Its return value overrides the target index selection.

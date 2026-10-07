@@ -27,6 +27,7 @@ function getCoreMediaLoaderClass(
     !nodeData ||
     !('isCoreNode' in nodeData) ||
     nodeData.isCoreNode !== true ||
+    nodeClass === undefined ||
     !isLinkedCoreMediaLoaderClass(nodeClass)
   )
     return undefined

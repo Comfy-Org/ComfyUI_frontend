@@ -29,8 +29,8 @@ import type {
   LGraphGroup,
   LGraphNode,
   LLink,
-  LiteGraph
-} from '@/lib/litegraph/src/litegraph'
+  LiteGraphGlobal
+} from './litegraph'
 
 import type {
   BottomPanelExtension,
@@ -50,6 +50,7 @@ export { toRerouteId } from './rerouteId'
 export type { SlotDirection, SlotId, SlotIndex } from './slotId'
 export { slotId } from './slotId'
 export type { ComfyExtension } from './comfy'
+export type * from './litegraph'
 export type { ComfyDesktop2Bridge } from '@comfyorg/comfyui-desktop-bridge-types'
 export type { ComfyApi } from '@/scripts/api'
 export type { ComfyApp } from '@/scripts/app'
@@ -110,7 +111,7 @@ declare global {
     /** For use by extensions and in the browser console. Where possible, import `app` and access via `app.graph` instead. */
     graph?: unknown
 
-    LiteGraph?: typeof LiteGraph
+    LiteGraph?: LiteGraphGlobal
     LGraph?: typeof LGraph
     LLink?: typeof LLink
     LGraphNode?: typeof LGraphNode
