@@ -340,21 +340,48 @@ describe('useAttachment', () => {
     }
   )
 
-  it('reports an empty browser-provided MIME type as unknown', async () => {
+  it.for([
+    { label: 'empty', fileType: '' },
+    { label: 'overlong', fileType: `application/${'x'.repeat(128)}` }
+  ])(
+    'reports a $label browser-provided MIME type as unknown',
+    async ({ fileType }) => {
+      const upload = vi.fn().mockRejectedValue(new Error('upload failed'))
+      const registry = chipRegistry()
+      const { addFiles } = useAttachment({ upload, ...registry })
+
+      await addFiles([fileOfSize('unknown.bin', 128, fileType)])
+
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          tags: expect.objectContaining({
+            file_type: 'unknown',
+            file_size_bytes: 128
+          })
+        })
+      )
+    }
+  )
+
+  it('does not report a path from a constructed MIME parameter', async () => {
+    const privatePath = '/Users/alice/Secret/private.txt'
     const upload = vi.fn().mockRejectedValue(new Error('upload failed'))
     const registry = chipRegistry()
     const { addFiles } = useAttachment({ upload, ...registry })
 
-    await addFiles([fileOfSize('unknown.bin', 128, '')])
+    await addFiles([
+      fileOfSize('unknown.bin', 128, `text/plain; name="${privatePath}"`)
+    ])
 
     expect(reportError).toHaveBeenCalledWith(
       expect.any(Error),
       expect.objectContaining({
-        tags: expect.objectContaining({
-          file_type: 'unknown',
-          file_size_bytes: 128
-        })
+        tags: expect.objectContaining({ file_type: 'unknown' })
       })
+    )
+    expect(JSON.stringify(vi.mocked(reportError).mock.calls)).not.toContain(
+      privatePath
     )
   })
 

@@ -13,6 +13,9 @@ const UPLOAD_HANDSHAKE_TIMEOUT_MS = 30 * 1000
 const UPLOAD_FLOOR_BYTES_PER_SECOND = 64 * 1024
 const DEFERRED_FETCH_TIMEOUT_MS = 60 * 1000
 const MAX_CONCURRENT_UPLOADS = 3
+const MAX_TELEMETRY_FILE_TYPE_LENGTH = 128
+const MIME_TYPE_PATTERN =
+  /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+\/[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/
 
 class DeadlineExceededError extends Error {
   constructor(timeoutMs: number) {
@@ -44,6 +47,11 @@ function uploadDeadlineMs(file: File): number {
     UPLOAD_HANDSHAKE_TIMEOUT_MS +
     (file.size / UPLOAD_FLOOR_BYTES_PER_SECOND) * 1000
   )
+}
+
+function telemetryFileType(type: string | undefined): string {
+  if (!type || type.length > MAX_TELEMETRY_FILE_TYPE_LENGTH) return 'unknown'
+  return MIME_TYPE_PATTERN.test(type) ? type : 'unknown'
 }
 
 async function withDeadline<T>(
@@ -135,7 +143,7 @@ export function useAttachment(options: UseAttachmentOptions) {
           feature_flag_state: 'enabled',
           project_context: 'agent_composer',
           upload_failure_cause: uploadFailureCause(cause),
-          file_type: file.type || 'unknown',
+          file_type: telemetryFileType(file.type),
           file_size_bytes: file.size ?? -1
         }
       })
