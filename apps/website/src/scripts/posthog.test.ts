@@ -752,6 +752,23 @@ describe('captureDownloadClick', () => {
   })
 })
 
+describe('VFX campaign clicks', () => {
+  beforeEach(() => vi.resetModules())
+
+  it('captures the destination and placement without visitor form data', async () => {
+    const { initPostHog, captureVfxLinkClick } = await import('./posthog')
+    initPostHog()
+    captureVfxLinkClick({ destination: '/contact/', placement: 'hero' })
+    expect(hoisted.mockCapture).toHaveBeenCalledWith(
+      'website:vfx_link_clicked',
+      {
+        destination: '/contact/',
+        placement: 'hero'
+      }
+    )
+  })
+})
+
 describe('captureCliConnectionTabClick', () => {
   beforeEach(() => {
     vi.resetModules()

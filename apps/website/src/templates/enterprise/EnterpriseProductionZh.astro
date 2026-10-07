@@ -1,0 +1,208 @@
+---
+import IndustriesSection from '@/components/home/IndustriesSection.vue'
+import ManagedBuildsRolloutSections from './ManagedBuildsRolloutSections.astro'
+import BenefitsGrid01 from '@/components/blocks/BenefitsGrid01.vue'
+import BuildConfiguratorSplit01 from '@/components/blocks/BuildConfiguratorSplit01.vue'
+import CardSplitContent02 from '@/components/blocks/CardSplitContent02.vue'
+import FeatureRows02 from '@/components/blocks/FeatureRows02.vue'
+import OfferGrid01 from '@/components/blocks/OfferGrid01.vue'
+import SectionIntro01 from '@/components/blocks/SectionIntro01.vue'
+import { externalLinks } from '@/config/routes'
+
+const {
+  includeIndustries = false,
+  includeManagedDetails = false,
+  showOptionDetails = true
+} = Astro.props as {
+  includeIndustries?: boolean
+  includeManagedDetails?: boolean
+  showOptionDetails?: boolean
+}
+
+const enterpriseOffers = [
+  {
+    id: 'commercial-licensing',
+    label: '商业权利',
+    title: '模型授权',
+    description: 'MiniMax 商用条款现已提供，本地模型条款可按供应商申请获取。',
+    cta: {
+      label: '查看 MINIMAX 授权',
+      href: '/zh-CN/minimax/license/'
+    }
+  },
+  {
+    id: 'forward-deployed-creatives',
+    label: '驻场交付',
+    title: 'Forward Deployed Creatives',
+    description:
+      '与 ComfyUI 专家合作，与您的创意和技术团队一起设计生产级 Comfy Workflows，并为您的团队留下可运行、可审查、可扩展的工作流。',
+    cta: {
+      label: '查看服务详情',
+      href: '/zh-CN/forward-deployed-creatives/'
+    }
+  }
+] as const
+
+const governanceRows = [
+  {
+    id: 'build-policy',
+    term: '构建策略',
+    description: '固定受批准构建中包含的 ComfyUI 版本、自定义节点、模型和依赖。'
+  },
+  {
+    id: 'model-policy',
+    term: '模型策略与 BYOK',
+    description:
+      '选择团队可用的合作伙伴模型、开源模型和私有模型。使用受支持的供应商密钥和现有合同。'
+  },
+  {
+    id: 'people-access',
+    term: '人员与访问',
+    description: '使用企业身份和 SSO 将受批准的环境分配给需要的团队。'
+  },
+  {
+    id: 'usage-records',
+    term: '用量可见性与审计要求',
+    description:
+      '在 Developer Platform 上按模型和合作伙伴追踪用量。在企业安全审查中界定身份验证、构建分配、发布、留存和导出要求。'
+  }
+] as const
+
+const productionRows = [
+  {
+    id: 'dedicated-capacity',
+    term: '专属 GPU 算力',
+    description:
+      '通过 Developer Platform 为生产工作负载预留 GPU 算力，并按您的部署方案确定规模。'
+  },
+  {
+    id: 'priority-queueing',
+    term: '优先排队',
+    description: '需求高峰时，生产任务优先于标准共享算力流量运行。'
+  },
+  {
+    id: 'deployment',
+    term: '灵活部署',
+    description:
+      '在 Comfy Cloud 上、通过 Developer Platform，或在您掌控的基础设施上运行 Comfy Workflows。'
+  },
+  {
+    id: 'support',
+    term: '定制 SLA 与支持',
+    description:
+      '获得上手指导、优先支持、直接对接 Comfy 工程团队，以及协议中界定的响应承诺。'
+  }
+] as const
+---
+
+<SectionIntro01
+  eyebrow="与 COMFY 一起规模化"
+  heading="视觉 AI 的开放标准，随时服务您的组织。"
+  subtitle="您的团队构建工作流。Comfy 负责运行、治理，并为其提供商用授权。"
+  maxWidth="xl"
+/>
+
+<BuildConfiguratorSplit01
+  showOptionDetails={showOptionDetails}
+  eyebrow="MANAGED BUILDS"
+  heading={'一个受批准的 ComfyUI 环境，随团队运行到任何地方。'}
+  body="定义团队获准运行的 ComfyUI 版本、自定义节点、模型和依赖。无论工作在哪里进行，都交付同一个版本化构建。"
+  features={[
+    '私有自定义节点与模型',
+    '使用受支持的供应商密钥和现有合同',
+    '通过企业身份分配受批准的构建'
+  ]}
+  releasesLabel="COMFYUI 版本"
+  releases={['v0.3.41', 'v0.3.40', 'v0.3.38']}
+  environmentsLabel="PYTHON · PYTORCH · CUDA"
+  environments={[
+    { id: 'env-current', python: '3.12', torch: '2.6', cuda: '12.8' },
+    { id: 'env-previous', python: '3.12', torch: '2.5', cuda: '12.4' },
+    { id: 'env-legacy', python: '3.11', torch: '2.5', cuda: '12.4' }
+  ]}
+  nodesLabel="自定义节点"
+  nodes={[
+    { id: 'manager', label: 'ComfyUI-Manager', selected: true },
+    { id: 'ipadapter', label: 'IPAdapter Plus', selected: true },
+    { id: 'controlnet', label: 'ControlNet Aux' },
+    { id: 'videohelper', label: 'VideoHelperSuite', selected: true },
+    { id: 'studio-nodes', label: 'studio-nodes（私有）', selected: true }
+  ]}
+  modelsLabel="模型"
+  models={[
+    { id: 'flux', label: 'FLUX 3', selected: true },
+    { id: 'wan', label: 'Wan 3.0' },
+    { id: 'sdxl', label: 'SDXL Base', selected: true },
+    { id: 'ltx', label: 'LTX-2.5' },
+    { id: 'brand-lora', label: 'brand-lora（私有）', selected: true }
+  ]}
+  cta={{ label: '申请演示', href: '/zh-CN/contact/' }}
+  moreOptionsLabel="更多选项"
+  nodesUnit="个节点"
+  modelsUnit="个模型"
+  pinnedLabel="已固定"
+  client:visible
+/>
+
+{includeManagedDetails && <ManagedBuildsRolloutSections locale="zh-CN" />}
+
+<OfferGrid01 offers={enterpriseOffers} />
+
+<CardSplitContent02
+  title="治理构建、模型、人员与用量。"
+  imageSrc="https://media.comfy.org/website/enterprise/enterprise-featured.png"
+/>
+<FeatureRows02
+  class="pt-0 lg:pt-0"
+  rows={governanceRows}
+  footnote="计算图保持灵活。围绕它的环境则成为组织受批准、可审查的运营模式。"
+/>
+
+<CardSplitContent02
+  title="面向生产的算力与支持。"
+  imageSrc="/assets/enterprise/capacity-checker-falls.webp"
+  reverse
+/>
+<FeatureRows02
+  class="pt-0 lg:pt-0"
+  rows={productionRows}
+  footnote="Enterprise 包含 99.5% 工作流执行可用性 SLA。专属算力、响应承诺与定制 SLA 条款在您的协议中界定。"
+/>
+
+{includeIndustries && (
+  <IndustriesSection heading="与工作室共同打造" locale="zh-CN" client:visible />
+)}
+
+<BenefitsGrid01
+  heading="更顺畅的安全审查路径。"
+  numbered={false}
+  benefits={[
+    {
+      id: 'soc2',
+      title: 'SOC 2',
+      description: Astro.locals.t('enterpriseProduction.soc2Report')
+    },
+    {
+      id: 'sso',
+      title: '身份认证',
+      description: '企业团队可使用单点登录（SSO）。'
+    },
+    {
+      id: 'data',
+      title: '数据控制',
+      description:
+        '对于本地部署，您的 Comfy Workflows 和输出保留在运行它们的设备上。Comfy 不会使用客户数据进行训练。'
+    },
+    {
+      id: 'dpa',
+      title: '采购流程',
+      description: '提供 DPA 与企业协议。'
+    }
+  ]}
+  footnote="数据在美国的 Google Cloud 上处理。Enterprise 包含 99.5% 工作流执行可用性 SLA。"
+  primaryCta={{
+    label: '查看 TRUST CENTER',
+    href: externalLinks.trustCenter,
+    target: '_blank'
+  }}
+/>

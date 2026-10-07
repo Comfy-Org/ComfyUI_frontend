@@ -92,6 +92,21 @@ describe('BuildConfiguratorSplit01', () => {
     expect(screen.getAllByText('more options')).toHaveLength(4)
   })
 
+  it('keeps selections interactive without the optional details', async () => {
+    render(BuildConfiguratorSplit01, {
+      props: { ...baseProps, showOptionDetails: false }
+    })
+
+    expect(screen.queryByText('more options')).toBeNull()
+    await userEvent.click(screen.getByRole('button', { name: 'Wan 3.0' }))
+    expect(summaryText()).toContain('1 nodes · 2 models')
+    expect(
+      screen
+        .getByRole('button', { name: 'Wan 3.0' })
+        .getAttribute('aria-pressed')
+    ).toBe('true')
+  })
+
   it('renders the panel without a title when panelTitle is omitted', () => {
     const { panelTitle: _panelTitle, ...withoutPanelTitle } = baseProps
     render(BuildConfiguratorSplit01, { props: withoutPanelTitle })

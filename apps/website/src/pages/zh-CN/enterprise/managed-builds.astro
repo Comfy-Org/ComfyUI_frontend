@@ -7,10 +7,10 @@ import CtaBands01 from '@/components/blocks/CtaBands01.vue'
 import FAQSplit01 from '@/components/blocks/FAQSplit01.vue'
 import FeatureRows02 from '@/components/blocks/FeatureRows02.vue'
 import HeroProduct01 from '@/components/blocks/HeroProduct01.vue'
-import StepsCards01 from '@/components/blocks/StepsCards01.vue'
 import IndustriesSection from '@/components/home/IndustriesSection.vue'
 import DistributionsScene from '@/components/product/enterprise/DistributionsScene.vue'
 import BaseLayout from '@/layouts/BaseLayout.astro'
+import ManagedBuildsRolloutSections from '@/templates/enterprise/ManagedBuildsRolloutSections.astro'
 import ClosingCtaSection from '@/templates/platform/ClosingCtaSection.vue'
 import { absoluteUrl, pageContext } from '@/utils/jsonLd'
 import { buildFaqPageNode } from '@/pages/enterprise/_faqMetadata'
@@ -173,60 +173,7 @@ const faqPage = buildFaqPageNode(url, faqs)
     client:visible
   />
 
-  <FeatureRows02
-    heading="整个团队共用一个 ComfyUI 构建"
-    rows={[
-      {
-        id: 'packaging',
-        term: '环境打包',
-        description:
-          '用一个版本化构建取代零散的安装脚本、依赖矩阵和逐台设备的修补。'
-      },
-      {
-        id: 'governance',
-        term: '节点治理',
-        description:
-          'ComfyUI 生态涵盖 5,000+ 扩展和 60,000+ 社区节点。固定并批准每个构建中包含的节点。'
-      },
-      {
-        id: 'rollout',
-        term: '上手与发布',
-        description:
-          '通过企业身份分配可用的构建，让新成员快速上手，并在版本就绪时让整个团队一起升级。'
-      }
-    ]}
-  />
-
-  <div id="how-it-works" class="scroll-mt-24">
-    <StepsCards01
-      heading="从一套可用配置到受批准的团队环境"
-      steps={[
-        {
-          id: 'define',
-          title: '定义构建',
-          description: '从一个可用的环境开始，或导入您已在运行的配置快照。'
-        },
-        {
-          id: 'build',
-          title: '一次构建',
-          description:
-            '固定 ComfyUI 版本、Python 和 CUDA 版本、自定义节点、模型和依赖。'
-        },
-        {
-          id: 'update',
-          title: '有计划地更新',
-          description:
-            '由您决定何时发布新版本。让团队一起升级，而不影响进行中的工作。'
-        },
-        {
-          id: 'deploy',
-          title: '发布到整个团队',
-          description:
-            '通过 Comfy Desktop 或您的 GPU 服务器分配构建。通过 Developer Platform 部署端点。'
-        }
-      ]}
-    />
-  </div>
+  <ManagedBuildsRolloutSections locale="zh-CN" />
 
   <CardSplitContent02
     title="治理构建、模型、人员与用量。"

@@ -1,0 +1,11 @@
+---
+import type { Locale } from '@/i18n/translations'
+import ManagedBuildsRolloutEn from './ManagedBuildsRolloutEn.astro'
+import ManagedBuildsRolloutZh from './ManagedBuildsRolloutZh.astro'
+
+const { locale } = Astro.props as { locale: Locale }
+---
+
+<div id="managed-builds-rollout" class="scroll-mt-28">
+  {locale === 'zh-CN' ? <ManagedBuildsRolloutZh /> : <ManagedBuildsRolloutEn />}
+</div>

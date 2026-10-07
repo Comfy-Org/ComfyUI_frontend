@@ -72,7 +72,7 @@ export function vfxContent(locale: Locale) {
     title: t(`vfx.why.${id}.title`),
     description: t(`vfx.why.${id}.description`)
   }))
-  const faqs = ([1, 2, 3, 4] as const).map((id) => ({
+  const faqs = ([1, 2, 3, 4, 5] as const).map((id) => ({
     id: `vfx-${id}`,
     question: t(`vfx.faq.${id}.q`),
     answer: t(`vfx.faq.${id}.a`)

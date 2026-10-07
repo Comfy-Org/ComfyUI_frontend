@@ -1,0 +1,33 @@
+---
+import type { Locale } from '@/i18n/translations'
+import EnterpriseProductionEn from './EnterpriseProductionEn.astro'
+import EnterpriseProductionZh from './EnterpriseProductionZh.astro'
+
+const {
+  locale,
+  includeIndustries = false,
+  includeManagedDetails = false,
+  showOptionDetails = true
+} = Astro.props as {
+  locale: Locale
+  includeIndustries?: boolean
+  includeManagedDetails?: boolean
+  showOptionDetails?: boolean
+}
+---
+
+<div id="studio" class="scroll-mt-28 [&_a]:uppercase">
+  {locale === 'zh-CN' ? (
+    <EnterpriseProductionZh
+      includeIndustries={includeIndustries}
+      includeManagedDetails={includeManagedDetails}
+      showOptionDetails={showOptionDetails}
+    />
+  ) : (
+    <EnterpriseProductionEn
+      includeIndustries={includeIndustries}
+      includeManagedDetails={includeManagedDetails}
+      showOptionDetails={showOptionDetails}
+    />
+  )}
+</div>

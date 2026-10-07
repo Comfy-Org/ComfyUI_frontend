@@ -1,10 +1,13 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro'
-import HeroBackdrop01 from '@/components/blocks/HeroBackdrop01.vue'
+import EnterpriseProductionSections from '@/templates/enterprise/EnterpriseProductionSections.astro'
+import HeroSplit01 from '@/components/blocks/HeroSplit01.vue'
 import BrandButton from '@/components/common/BrandButton.vue'
-import VideoPlayer from '@/components/common/VideoPlayer.vue'
 import FeatureRows01 from '@/components/blocks/FeatureRows01.vue'
-import CardWorkflowGallery01 from '@/components/blocks/CardWorkflowGallery01.vue'
+import FeaturedWorkflowsSection from '@/components/home/FeaturedWorkflowsSection.vue'
+import ProductShowcaseSection from '@/components/home/ProductShowcaseSection.vue'
+import HubWorkflowCard from '@/components/hub/HubWorkflowCard.vue'
+import { vfxWorkflows } from '@/data/vfxWorkflows'
 import FAQSplit01 from '@/components/blocks/FAQSplit01.vue'
 import CallToActionSection from '@/components/common/CallToActionSection.vue'
 import SectionHeader from '@/components/common/SectionHeader.vue'
@@ -21,7 +24,7 @@ const { locale, url } = pageContext(
 )
 const { t } = Astro.locals
 const routes = getRoutes(locale)
-const { examples, workflows, faqs } = vfxContent(locale)
+const { examples, faqs } = vfxContent(locale)
 const story = getCustomerVideoStory('black-math')
 const faqPage = vfxFaqPageNode(url, faqs)
 ---
@@ -29,98 +32,154 @@ const faqPage = vfxFaqPageNode(url, faqs)
 <BaseLayout
   title={t('vfx.meta.title')}
   description={t('vfx.meta.description')}
-  ogImage="/images/vfx-cleanplate-hero.webp"
-  minimal
+  ogImage="/images/vfx-sizzle-hero.jpg"
   hideAnnouncementBanner
   extraJsonLd={[faqPage]}
 >
-  <HeroBackdrop01
-    badgeText="VFX"
-    title={t('vfx.hero.heading')}
-    subtitle={t('vfx.hero.subtitle')}
-    class="[&_.backdrop-blur-md]:hidden [&_h1]:lg:text-primary-comfy-canvas [&_p]:lg:text-primary-comfy-canvas [&>div>div:last-child]:pointer-events-none [&>div>div:last-child>div]:pointer-events-auto"
-    client:load
-  >
-    <div
-      slot="backdrop"
-      class="relative aspect-3/2 lg:absolute lg:inset-0 lg:aspect-auto"
-    >
-      <VideoPlayer
-        locale={locale}
-        src="https://comfy-hub-assets.comfy.org/uploads/8a3a846f-5017-428e-b2a2-24025c55e884.mp4"
-        poster="/images/vfx-cleanplate-hero.webp"
-        ariaLabel={t('vfx.examples.clean')}
-        noCors
-        autoplay
-        loop
-        muteOnly
-        class="h-full rounded-none border-0"
-        client:load
-      />
-      <div
-        aria-hidden="true"
-        class="pointer-events-none absolute inset-0 hidden bg-linear-to-r from-primary-comfy-ink via-primary-comfy-ink/80 via-40% to-transparent lg:block"
-      />
-    </div>
-    <div class="mt-10 flex flex-col gap-4 sm:flex-row">
-      <BrandButton href="#workflows" size="lg" class="uppercase">
-        {t('vfx.hero.explore')}
-      </BrandButton>
-      <BrandButton
-        href={`${routes.contact}?interest=vfx`}
-        variant="outline"
-        size="lg"
-        class="uppercase"
-      >
-        {t('vfx.hero.contact')}
-      </BrandButton>
-    </div>
-  </HeroBackdrop01>
-  <SocialProofBarSection />
-  <FeatureRows01
-    locale={locale}
-    heading={t('vfx.proof.heading')}
-    rows={[
-      {
-        id: story.slug,
-        title: t('vfx.proof.title'),
-        description: t('vfx.proof.description'),
-        media: {
-          type: 'video',
-          src: story.videoSrc,
-          poster: story.poster,
-          tracks: story.captions,
-          alt: t('vfx.proof.title')
+  <div id="vfx-campaign">
+    <HeroSplit01
+      data-vfx-hero
+      locale={locale}
+      badgeText="VFX"
+      title={t('vfx.hero.heading')}
+      subtitle={t('vfx.hero.subtitle')}
+      primaryCta={{ label: t('vfx.hero.explore'), href: '#workflows' }}
+      secondaryCta={{
+        label: t('vfx.hero.contact'),
+        href: `${routes.contact}?interest=vfx`
+      }}
+      videoSrc="https://website-frontend-1hz67q8tg-comfyui.vercel.app/videos/vfx-sizzle-hero.mp4"
+      videoPoster="/images/vfx-sizzle-hero.jpg"
+      videoAriaLabel={t('vfx.hero.videoLabel')}
+      videoAutoplay
+      videoLoop
+      client:load
+    />
+    <SocialProofBarSection />
+    <FeatureRows01
+      locale={locale}
+      heading={t('vfx.proof.heading')}
+      rows={[
+        {
+          id: story.slug,
+          title: t('vfx.proof.title'),
+          description: t('vfx.proof.description'),
+          media: {
+            type: 'video',
+            src: story.videoSrc,
+            poster: story.poster,
+            tracks: story.captions,
+            alt: t('vfx.proof.title')
+          }
         }
-      }
-    ]}
-    client:visible
-  />
-  <div id="workflows" class="scroll-mt-28">
-    <section class="mx-auto max-w-9xl px-6 pt-16 lg:pt-24">
-      <SectionHeader>
-        {t('vfx.workflows.heading')}
-        <p slot="subtitle" class="mt-6 text-base text-primary-comfy-canvas/70">
-          {t('vfx.workflows.description')}
-        </p>
-      </SectionHeader>
-    </section>
-    <CardWorkflowGallery01 items={workflows} />
+      ]}
+      client:visible
+    />
+    <ProductShowcaseSection
+      id="how-comfy-works"
+      locale={locale}
+      client:visible
+    />
+    <div id="workflows" class="scroll-mt-28">
+      <section class="mx-auto max-w-9xl px-6 pt-16 lg:pt-24">
+        <SectionHeader>
+          {t('vfx.workflows.heading')}
+          <p
+            slot="subtitle"
+            class="mt-6 text-base text-primary-comfy-canvas/70"
+          >
+            {t('vfx.workflows.description')}
+          </p>
+        </SectionHeader>
+      </section>
+      <FeaturedWorkflowsSection
+        locale={locale}
+        showAuthors={false}
+        alignWithGrid
+        strongScrim
+        label={t('featuredWorkflows.label')}
+        items={[
+          {
+            title: t('vfx.workflows.storyboard'),
+            href: 'https://comfy.org/workflows/f4e29143100c-f4e29143100c/',
+            media:
+              'https://media.comfy.org/hub-media/video/34ea9f1a-1aac-4c6f-af48-b88cf154ec9b.mp4',
+            mediaType: 'video',
+            poster:
+              'https://media.comfy.org/hub-media/posters/34ea9f1a-1aac-4c6f-af48-b88cf154ec9b.jpg',
+            tags: ['Seedance 2.0', t('vfx.workflows.storyboarding')],
+            models: ['Seedance']
+          },
+          ...vfxWorkflows.slice(1, 3).map(({ template, href }) => ({
+            title: template.title,
+            href,
+            media: template.thumbnails[0],
+            mediaType: 'image' as const,
+            tags: template.tags,
+            models: template.models
+          }))
+        ]}
+        client:visible
+      />
+      <section class="mx-auto max-w-9xl px-6 pb-12 lg:pb-16">
+        <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {vfxWorkflows.map((workflow) => (
+            <HubWorkflowCard
+              {...workflow}
+              locale={locale}
+              tryNowLabel={t('vfx.workflows.tryNow')}
+              showTypeBadge={false}
+              showAuthor={false}
+              showAction={false}
+              providerBadgeAtTop
+              class="[&_h3]:right-5 [&_h3]:text-base [&_h3]:sm:text-lg [&_h3]:lg:text-xl"
+              client:visible
+            />
+          ))}
+        </div>
+        <div class="mt-10 flex justify-center">
+          <BrandButton
+            href="https://comfy.org/workflows/tag/visual-effects/"
+            variant="outline"
+            class="uppercase"
+          >
+            {t('vfx.workflows.browse')}
+          </BrandButton>
+        </div>
+      </section>
+    </div>
+    <FeatureRows01
+      locale={locale}
+      heading={t('vfx.examples.heading')}
+      eyebrow={t('vfx.examples.eyebrow')}
+      rows={examples}
+      client:visible
+    />
+    <EnterpriseProductionSections
+      locale={locale}
+      includeManagedDetails
+      showOptionDetails={false}
+    />
+    <CallToActionSection
+      locale={locale}
+      headingKey="vfx.contact.heading"
+      primaryLabelKey="vfx.contact.button"
+      primaryHref={`${routes.contact}?interest=vfx`}
+      secondaryLabelKey="vfx.contact.models"
+      secondaryHref={routes.enterprise}
+    />
+    <FAQSplit01 heading={t('vfx.faq.heading')} faqs={faqs} client:visible />
   </div>
-  <FeatureRows01
-    locale={locale}
-    heading={t('vfx.examples.heading')}
-    eyebrow={t('vfx.examples.eyebrow')}
-    rows={examples}
-    client:visible
-  />
-  <CallToActionSection
-    locale={locale}
-    headingKey="vfx.contact.heading"
-    primaryLabelKey="vfx.contact.button"
-    primaryHref={`${routes.contact}?interest=vfx`}
-    secondaryLabelKey="vfx.contact.models"
-    secondaryHref={routes.models}
-  />
-  <FAQSplit01 heading={t('vfx.faq.heading')} faqs={faqs} client:visible />
 </BaseLayout>
+
+<script>
+  import { mountVfxCampaign } from '@/scripts/vfx-campaign'
+
+  let cleanup: (() => void) | undefined
+  document.addEventListener('astro:page-load', () => {
+    cleanup?.()
+    const root = document.getElementById('vfx-campaign')
+    cleanup = root ? mountVfxCampaign(root) : undefined
+  })
+  document.addEventListener('astro:before-swap', () => cleanup?.())
+</script>

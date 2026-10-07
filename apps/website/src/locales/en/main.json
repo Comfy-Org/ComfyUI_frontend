@@ -5505,7 +5505,8 @@
       "heading": "Build your VFX pipeline\nwith Comfy.",
       "subtitle": "From cleanplates to sky replacement, turn complex shot work into workflows your team can inspect, adapt, and use again.",
       "explore": "Explore VFX workflows",
-      "contact": "Talk to our team"
+      "contact": "Talk to our team",
+      "videoLabel": "Comfy showcase"
     },
     "examples": {
       "heading": "See what you can make.",
@@ -5516,9 +5517,14 @@
       "cleanDescription": "Explore a cleanplate workflow and see how ComfyUI fits into shot cleanup. Follow the walkthrough before bringing it into your own pipeline."
     },
     "workflows": {
-      "heading": "Ready-to-use VFX workflows",
-      "description": "Choose a task, watch the breakdown, and open the linked workflow. Each example comes from our published VFX series.",
-      "tag": "Watch + open workflow"
+      "heading": "Popular VFX workflows",
+      "description": "Explore popular Visual Effects workflows from the Comfy community. Open a workflow and make it your own.",
+      "tag": "Watch + open workflow",
+      "tryNow": "Try now",
+      "browse": "Browse all VFX workflows",
+      "featured": "Featured workflow",
+      "storyboard": "Storyboard to Seedance",
+      "storyboarding": "Storyboarding"
     },
     "why": {
       "heading": "Your pipeline.\nYour control.",
@@ -5544,7 +5550,7 @@
     "contact": {
       "heading": "Bring Comfy into your studio’s pipeline.",
       "button": "Talk to our team",
-      "models": "Explore models in the Hub"
+      "models": "Explore Enterprise"
     },
     "faq": {
       "heading": "VFX questions, answered.",
@@ -5554,7 +5560,7 @@
       },
       "2": {
         "q": "Where can I open the workflows?",
-        "a": "Each card opens a tutorial with its workflow link. Some workflows open in Comfy Cloud; others have a dedicated workflow page. The tutorial shows the destination before you open it."
+        "a": "Each workflow card opens its page in the Comfy Hub, where you can review the workflow and its requirements before running it."
       },
       "3": {
         "q": "Can my team run Comfy locally?",
@@ -5562,8 +5568,15 @@
       },
       "4": {
         "q": "How do we discuss a studio deployment?",
-        "a": "Use “Talk to our team” to share your studio’s requirements. Our team can discuss managed builds and how Comfy fits into your pipeline."
+        "a": "Bring your deployment requirements to our team. We can discuss Managed Builds, capacity, commercial model terms, and implementation support."
+      },
+      "5": {
+        "q": "Can we use these models commercially?",
+        "a": "On Cloud, every model is licensed for commercial use. Local model licenses vary by provider. Comfy offers MiniMax commercial licenses; discuss local terms with our team."
       }
     }
+  },
+  "enterpriseProduction": {
+    "soc2Report": "Type II report available on request."
   }
 }
