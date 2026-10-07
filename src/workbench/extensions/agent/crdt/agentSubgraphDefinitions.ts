@@ -403,6 +403,7 @@ export function readSubgraphDefinitions(
 export interface DocPromotedWidgets {
   valueCount: number
   declaredNames: readonly string[]
+  promotedNames?: readonly string[]
 }
 
 /** Null when the document holds no such node. */
@@ -416,8 +417,45 @@ export function readDocPromotedWidgets(
   const values: unknown = stored instanceof Y.Array ? stored.toJSON() : stored
   return {
     valueCount: Array.isArray(values) ? values.length : 0,
-    declaredNames: declaredInputNames(doc, String(node.get('type') ?? ''))
+    declaredNames: declaredInputNames(doc, String(node.get('type') ?? '')),
+    promotedNames: promotedInputNames(doc, node, String(node.get('type') ?? ''))
   }
+}
+
+function namedInputs(source: unknown): Array<[string, unknown]> | null {
+  const inputs =
+    source instanceof Y.Array
+      ? source.toArray()
+      : Array.isArray(source)
+        ? source
+        : null
+  if (inputs === null) return null
+  const named: Array<[string, unknown]> = []
+  for (const input of inputs) {
+    const name = readField(input, 'name')
+    if (typeof name !== 'string') return null
+    named.push([name, input])
+  }
+  return named
+}
+
+function promotedInputNames(
+  doc: Y.Doc,
+  node: Y.Map<unknown>,
+  definitionId: string
+): string[] | undefined {
+  const definition = definitionsMap(doc)?.get(definitionId)
+  if (!(definition instanceof Y.Map)) return undefined
+  const declared = namedInputs(definition.get('inputs'))
+  const instance = namedInputs(node.get('inputs'))
+  if (declared === null || instance === null) return undefined
+  const instanceByName = new Map(instance)
+  return declared.flatMap(([name]) => {
+    const input = instanceByName.get(name)
+    return input === undefined || readField(input, 'widget') !== undefined
+      ? [name]
+      : []
+  })
 }
 
 function declaredInputNames(doc: Y.Doc, definitionId: string): string[] {

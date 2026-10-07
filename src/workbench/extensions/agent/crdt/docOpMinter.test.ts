@@ -797,6 +797,14 @@ describe('attachDocOpMinter', () => {
     {
       name: 'declares the promoted widgets in another order',
       doc: { valueCount: 2, declaredNames: ['text', 'clip', 'prefix'] }
+    },
+    {
+      name: 'stores another same-size promoted widget sequence',
+      doc: {
+        valueCount: 2,
+        declaredNames: ['prefix', 'clip', 'text'],
+        promotedNames: ['prefix', 'clip']
+      }
     }
   ])(
     'keeps the refusal rather than misplacing a value when the document $name',
@@ -902,7 +910,8 @@ describe('attachDocOpMinter', () => {
         'negative',
         'latent_image',
         'seed'
-      ]
+      ],
+      promotedNames: ['text', 'seed']
     })
     doc.destroy()
   })
