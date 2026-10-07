@@ -39,7 +39,7 @@
     {
       "name": "Template ranking and display metadata remain deterministic",
       "checks": [
-        "src/platform/workflow/templates/utils/templateRanking.test.ts",
+        "packages/shared-frontend-utils/src/templateRanking.test.ts",
         "src/platform/workflow/templates/utils/templateDisplay.test.ts"
       ]
     },
