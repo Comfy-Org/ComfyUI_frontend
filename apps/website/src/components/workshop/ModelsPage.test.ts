@@ -142,6 +142,28 @@ describe('Models page entry', () => {
     }
   )
 
+  it.for([
+    { section: 'apps', current: 'Apps' },
+    { section: 'workflows', current: 'Workflows' }
+  ] as const)(
+    'places $section under a Hub breadcrumb above the eyebrow',
+    async ({ section, current }) => {
+      appsEnabled.value = true
+      workflowsEnabled.value = true
+      await renderSection(section)
+
+      const trail = screen.getByRole('navigation', { name: 'Breadcrumb' })
+      expect(within(trail).getByRole('link', { name: 'Hub' })).toHaveAttribute(
+        'href',
+        '/hub/'
+      )
+      expect(within(trail).getByText(current)).toHaveAttribute(
+        'aria-current',
+        'page'
+      )
+    }
+  )
+
   it('adds the way back when the persisted landing swaps to a section', async () => {
     vi.stubGlobal(
       'fetch',

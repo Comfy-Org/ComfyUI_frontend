@@ -99,23 +99,28 @@ test('lists both apps, then the apps still being built, on the hub apps page', a
   await mockFlags(context, { apps: true, workflows: false })
   await page.goto('/hub/apps/')
   await expect(
-    page.getByRole('heading', { level: 1, name: 'ComfyUI apps' })
+    page.getByRole('heading', { level: 1, name: 'Apps' })
   ).toBeVisible()
   await expect(page.getByTestId('hub-back')).toHaveAttribute('href', '/hub/')
-  const shelf = page.getByTestId('app-shelf')
-  const cards = shelf.getByRole('link')
+  await expect(page.getByText('One job each, no nodes needed.')).toBeVisible()
+  await expect(page.getByTestId('app-featured')).toHaveCount(0)
+  const grid = page.getByTestId('app-grid')
+  const cards = grid.getByRole('link')
   await expect(cards).toHaveCount(2)
   await expect(cards.nth(0)).toHaveAttribute(
     'href',
     '/hub/apps/cinematic-studio/'
   )
   await expect(cards.nth(1)).toHaveAttribute('href', '/hub/apps/reshoot/')
-  await expect(shelf.getByTestId('workshop-app-card').nth(2)).toContainText(
-    'Move anything'
-  )
-  await expect(
-    page.getByRole('button', { name: /Browse all apps/ })
-  ).toBeVisible()
+  for (const card of await cards.all()) {
+    await expect(card).toHaveAttribute('target', '_blank')
+    await expect(card).toContainText('Open')
+  }
+  const soon = grid.getByTestId('workshop-app-card').nth(2)
+  await expect(soon).toContainText('Move anything')
+  await expect(soon).toContainText('Soon')
+  await expect(soon).toHaveAttribute('aria-disabled', 'true')
+  await expect(page.getByRole('button', { name: /Browse all/ })).toHaveCount(0)
 })
 
 const APP_MEDIA = 'https://media.comfy.org/website/workshop/apps'
@@ -137,7 +142,7 @@ for (const { reducedMotion, paused } of [
     await page.goto('/hub/apps/')
 
     const artwork = page
-      .getByTestId('app-shelf')
+      .getByTestId('app-grid')
       .getByRole('link')
       .getByTestId('model-card-media')
     await expect(artwork).toHaveCount(2)
@@ -169,7 +174,7 @@ test('decodes a frame of each hub app card video while it plays', async ({
   await page.goto('/hub/apps/')
 
   const artwork = page
-    .getByTestId('app-shelf')
+    .getByTestId('app-grid')
     .getByRole('link')
     .getByTestId('model-card-media')
   await expect(artwork).toHaveCount(2)
@@ -189,7 +194,7 @@ test('hides Re-shoot from the hub apps page and closes its page while its flag i
 }) => {
   await mockFlags(context, { apps: true, workflows: false, reshoot: false })
   await page.goto('/hub/apps/')
-  const cards = page.getByTestId('app-shelf').getByRole('link')
+  const cards = page.getByTestId('app-grid').getByRole('link')
   await expect(cards).toHaveCount(1)
   await expect(cards.first()).toHaveAttribute(
     'href',
@@ -251,7 +256,7 @@ test('sends an old catalogue link for the Apps tab to the hub apps page', async 
   await mockFlags(context, { apps: true, workflows: false })
   await page.goto('/hub/models/?type=apps&q=studio#top')
   await expect(page).toHaveURL('/hub/apps/?q=studio#top')
-  await expect(page.getByTestId('app-shelf')).toBeVisible()
+  await expect(page.getByTestId('app-grid')).toBeVisible()
 })
 
 test('keeps an old catalogue link for the Apps tab on the models catalogue while the apps flag is off', async ({
@@ -277,9 +282,7 @@ test('shows the showcase instead of the hub apps page while the apps flag is off
   await expect(
     page.getByRole('heading', { level: 1, name: /Grok Imagine/ })
   ).toBeVisible()
-  await expect(page.getByRole('heading', { name: 'ComfyUI apps' })).toHaveCount(
-    0
-  )
+  await expect(page.getByRole('heading', { name: 'Apps' })).toHaveCount(0)
   await expect(page.getByTestId('apps-catalogue')).toHaveCount(0)
 })
 

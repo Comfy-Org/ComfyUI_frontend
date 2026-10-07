@@ -662,8 +662,8 @@
       "eyebrow": "Hub",
       "categories": "Categories",
       "show": "Browse",
-      "workflowsSubtitle": "Turn your ideas into finished results with multi-step workflows powered by AI models.",
-      "appsSubtitle": "Take on bigger ideas with apps that bring multiple workflows together.",
+      "workflowsSubtitle": "Open one, change any step, make it yours.",
+      "appsSubtitle": "One job each, no nodes needed.",
       "noWorkflows": "No workflows match your search and filters.",
       "backToWorkflows": "Back to workflows",
       "allWorkflows": "All workflows",
@@ -5673,5 +5673,33 @@
     "noWebgl": "This preview needs WebGL2, which this browser does not offer.",
     "play": "Play",
     "pause": "Pause"
+  },
+  "hubPages": {
+    "apps": {
+      "open": "Open",
+      "soon": "Soon",
+      "opensInNewTab": "(opens in a new tab)"
+    },
+    "appShell": {
+      "home": "Comfy home"
+    },
+    "explore": {
+      "models": "{count} model | {count} models",
+      "workflows": "{count} workflow | {count} workflows",
+      "apps": "{count} app | {count} apps",
+      "kinds": "Results by kind",
+      "kindWorkflow": "Workflow",
+      "soon": "Soon"
+    },
+    "workflows": {
+      "popular": "Popular",
+      "image": "Image",
+      "video": "Video"
+    },
+    "workflow": {
+      "moreLikeThis": "More like this",
+      "getApiKey": "Get an API key",
+      "apiDocs": "API docs"
+    }
   }
 }

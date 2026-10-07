@@ -32,7 +32,7 @@ test('workflow launch groups lead to the existing shared form', async ({
   await page.getByTestId('explore-door-workflows').click()
   await expect(page).toHaveURL('/hub/workflows/')
   await expect(
-    page.getByRole('heading', { level: 1, name: 'ComfyUI workflows' })
+    page.getByRole('heading', { level: 1, name: 'Workflows' })
   ).toBeVisible()
   await expect(page.getByTestId('hub-back')).toHaveAttribute('href', '/hub/')
   const catalogue = page.getByTestId('workflow-catalogue')
@@ -143,7 +143,7 @@ test('workflow launch groups lead to the existing shared form', async ({
   await shelf.click()
   await expect(page).toHaveURL('/hub/workflows/?category=product')
   await expect(
-    page.getByRole('heading', { level: 1, name: 'ComfyUI workflows' })
+    page.getByRole('heading', { level: 1, name: 'Workflows' })
   ).toBeVisible()
   await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
   const filtered = page.getByTestId('workflow-search-results')
@@ -223,9 +223,7 @@ test('withholds workflow discovery and direct pages when the workflow flag is of
   await expect(
     page.getByRole('heading', { level: 1, name: /Grok Imagine/ })
   ).toBeVisible()
-  await expect(
-    page.getByRole('heading', { name: 'ComfyUI workflows' })
-  ).toHaveCount(0)
+  await expect(page.getByRole('heading', { name: 'Workflows' })).toHaveCount(0)
   await expect(page.getByTestId('workflow-catalogue')).toHaveCount(0)
   await page.goto('/hub/workflows/change-material/')
   await expect(

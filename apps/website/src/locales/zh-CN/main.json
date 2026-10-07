@@ -4452,8 +4452,8 @@
       "eyebrow": "Hub",
       "categories": "分类",
       "show": "浏览",
-      "workflowsSubtitle": "用由 AI 模型驱动的多步骤工作流，把你的想法变成完成的作品。",
-      "appsSubtitle": "用把多个工作流组合在一起的应用，挑战更大的想法。",
+      "workflowsSubtitle": "打开一个，修改任意步骤，让它成为你的。",
+      "appsSubtitle": "一个应用只做一件事，无需节点。",
       "noWorkflows": "没有符合搜索和筛选条件的工作流。",
       "backToWorkflows": "返回工作流",
       "allWorkflows": "全部工作流",
@@ -5066,5 +5066,33 @@
     "noWebgl": "此预览需要 WebGL2，当前浏览器不支持。",
     "play": "播放",
     "pause": "暂停"
+  },
+  "hubPages": {
+    "apps": {
+      "open": "可用",
+      "soon": "即将推出",
+      "opensInNewTab": "（在新标签页中打开）"
+    },
+    "appShell": {
+      "home": "Comfy 首页"
+    },
+    "explore": {
+      "models": "{count} 个模型",
+      "workflows": "{count} 个工作流",
+      "apps": "{count} 个应用",
+      "kinds": "按类型统计的结果",
+      "kindWorkflow": "工作流",
+      "soon": "即将推出"
+    },
+    "workflows": {
+      "popular": "热门",
+      "image": "图像",
+      "video": "视频"
+    },
+    "workflow": {
+      "moreLikeThis": "更多类似内容",
+      "getApiKey": "获取 API 密钥",
+      "apiDocs": "API 文档"
+    }
   }
 }

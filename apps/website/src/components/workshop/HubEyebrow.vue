@@ -6,18 +6,42 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { getRoutes } from '@/config/routes'
 import { t } from '@/i18n/translations'
 import type { HubSection } from '@/lib/workshop/hub-section'
+import HubBreadcrumb from './HubBreadcrumb.vue'
 import { workshopEyebrowClass } from './workshopHeadingClasses'
 
 const { section } = defineProps<{ section: HubSection }>()
+
+const routes = getRoutes('en')
+const CRUMB_KEY = {
+  workflows: 'workshop.hub.workflows',
+  apps: 'workshop.catalogue.apps'
+} as const
+const crumbs =
+  section === 'workflows' || section === 'apps'
+    ? [
+        {
+          label: t('workshop.catalogue.eyebrow'),
+          href: routes.hubExplore,
+          testId: 'hub-back'
+        },
+        { label: t(CRUMB_KEY[section]) }
+      ]
+    : undefined
 </script>
 
 <template>
-  <p v-if="section === 'explore'" :class="workshopEyebrowClass">
+  <template v-if="crumbs">
+    <HubBreadcrumb :crumbs class="mb-8 max-sm:mb-5" />
+    <p :class="workshopEyebrowClass">
+      {{ t('workshop.catalogue.eyebrow') }}
+    </p>
+  </template>
+  <p v-else-if="section === 'explore'" :class="workshopEyebrowClass">
     {{ t('workshop.catalogue.eyebrow') }}
   </p>
   <a
     v-else
-    :href="getRoutes('en').hubExplore"
+    :href="routes.hubExplore"
     :class="
       cn(
         workshopEyebrowClass,

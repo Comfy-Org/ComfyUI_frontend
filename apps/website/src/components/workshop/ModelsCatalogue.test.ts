@@ -115,14 +115,12 @@ describe('ModelsCatalogue', () => {
     {
       locale: 'en',
       tab: 'workflows',
-      subtitle:
-        'Turn your ideas into finished results with multi-step workflows powered by AI models.'
+      subtitle: 'Open one, change any step, make it yours.'
     },
     {
       locale: 'en',
       tab: 'apps',
-      subtitle:
-        'Take on bigger ideas with apps that bring multiple workflows together.'
+      subtitle: 'One job each, no nodes needed.'
     },
     {
       locale: 'zh-CN',
@@ -132,12 +130,12 @@ describe('ModelsCatalogue', () => {
     {
       locale: 'zh-CN',
       tab: 'workflows',
-      subtitle: '用由 AI 模型驱动的多步骤工作流，把你的想法变成完成的作品。'
+      subtitle: '打开一个，修改任意步骤，让它成为你的。'
     },
     {
       locale: 'zh-CN',
       tab: 'apps',
-      subtitle: '用把多个工作流组合在一起的应用，挑战更大的想法。'
+      subtitle: '一个应用只做一件事，无需节点。'
     }
   ] as const)(
     'introduces the $tab section in its own words ($locale)',
@@ -424,17 +422,13 @@ describe('ModelsCatalogue', () => {
     })
   })
 
-  it('leads the apps page with a featured app and lists the apps still being built', async () => {
+  it('lists the open apps, then every app still being built', async () => {
     render(ModelsCatalogue, {
       props: { models: launchModels, section: 'apps' }
     })
 
-    expect(await screen.findByTestId('app-featured')).toHaveAttribute(
-      'href',
-      '/hub/apps/cinematic-studio/'
-    )
     expect(
-      within(screen.getByTestId('app-shelf'))
+      within(await screen.findByTestId('app-grid'))
         .getAllByTestId('workshop-app-card')
         .map((card) => [
           within(card).getByTestId('app-card-name').textContent.trim(),
@@ -448,9 +442,10 @@ describe('ModelsCatalogue', () => {
       ['Hand product swap', null],
       ['Background Removal', null],
       ['Virtual try-on', null],
-      ['Sprite Sheet Generator', null]
+      ['Sprite Sheet Generator', null],
+      ['Paparazzi me', null]
     ])
-    expect(screen.getByTestId('browse-all-end')).toBeVisible()
+    expect(screen.queryByTestId('browse-all-end')).toBeNull()
   })
 
   it('opens the models page with the API paths and a key link', async () => {
@@ -485,7 +480,7 @@ describe('ModelsCatalogue', () => {
       props: { models: launchModels, section: 'apps' }
     })
 
-    const shelf = await screen.findByTestId('app-shelf')
+    const shelf = await screen.findByTestId('app-grid')
     expect(
       within(shelf)
         .getAllByRole('link')
@@ -499,7 +494,7 @@ describe('ModelsCatalogue', () => {
       props: { models: launchModels, section: 'apps' }
     })
     const hrefs = () =>
-      within(screen.getByTestId('app-shelf'))
+      within(screen.getByTestId('app-grid'))
         .getAllByRole('link')
         .map((link) => link.getAttribute('href'))
 

@@ -5,7 +5,7 @@ import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 
 const { crumbs, locale = 'en' } = defineProps<{
-  crumbs: readonly { label: string; href?: string }[]
+  crumbs: readonly { label: string; href?: string; testId?: string }[]
   locale?: Locale
 }>()
 const { t } = translationsFor(locale)
@@ -32,6 +32,7 @@ const { t } = translationsFor(locale)
         <a
           v-if="crumb.href"
           :href="crumb.href"
+          :data-testid="crumb.testId"
           class="shrink-0 rounded-sm transition-colors outline-none hover:text-primary-comfy-canvas focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
           >{{ crumb.label }}</a
         >

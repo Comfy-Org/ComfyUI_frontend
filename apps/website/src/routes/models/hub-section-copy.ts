@@ -12,13 +12,13 @@ export const HUB_SECTION_COPY = {
     title: 'ComfyUI Workflows: Multi-Step AI Image & Video Workflows - Comfy',
     description:
       'Browse ComfyUI workflows that chain AI models into finished images and videos, and run any of them right in your browser.',
-    heading: 'ComfyUI workflows'
+    heading: 'Workflows'
   },
   apps: {
     title: 'ComfyUI Apps: Creative Tools Built from Workflows - Comfy',
     description:
       'Take on bigger ideas with ComfyUI apps that bring multiple workflows together, and open them right in your browser.',
-    heading: 'ComfyUI apps'
+    heading: 'Apps'
   }
 } as const satisfies Record<
   Exclude<HubSection, 'models'>,

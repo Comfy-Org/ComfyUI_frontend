@@ -12,16 +12,30 @@ const app: CatalogueApp = {
 }
 
 describe('WorkshopAppCard', () => {
-  it('links to the app and names it and what it makes', () => {
-    render(WorkshopAppCard, { props: { app } })
-    const link = screen.getByRole('link')
+  it('opens the app in a new tab and names it and what it makes', () => {
+    render(WorkshopAppCard, { props: { app, meta: 'Video · MiniMax H3' } })
+    const link = screen.getByRole('link', { name: /opens in a new tab/ })
     expect(link).toHaveAttribute('href', '/cinematic-studio?app=reshoot')
+    expect(link).toHaveAttribute('target', '_blank')
+    expect(link).toHaveAttribute('rel', 'noopener')
+    expect(screen.getByTestId('app-card-status')).toHaveTextContent('Open')
     expect(
       screen.getByRole('heading', { name: 'Re-shoot a video' })
     ).toBeVisible()
     expect(screen.getByTestId('app-card-task')).toHaveTextContent(
       'Re-shoot from any angle'
     )
+    expect(link).toHaveTextContent('Video · MiniMax H3')
+  })
+
+  it('shows an app without a page as coming soon, and opens nothing', () => {
+    render(WorkshopAppCard, { props: { app: { ...app, href: undefined } } })
+    expect(screen.queryByRole('link')).toBeNull()
+    expect(screen.getByTestId('workshop-app-card')).toHaveAttribute(
+      'aria-disabled',
+      'true'
+    )
+    expect(screen.getByTestId('app-card-status')).toHaveTextContent('Soon')
   })
 
   it('reads its name under the artwork, never over it', () => {
