@@ -1,5 +1,6 @@
 import { useShortcutsTab } from '@/composables/bottomPanelTabs/useShortcutsTab'
 import { isDesktop } from '@/platform/distribution/types'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 
 export async function registerCoreBottomPanelTabs() {
@@ -18,7 +19,10 @@ export async function registerCoreBottomPanelTabs() {
         bottomPanelStore.registerBottomPanelTab(useCommandTerminalTab())
       }
     } catch (error) {
-      console.error('Failed to load terminal tabs:', error)
+      reportError(error, {
+        errorType: 'error_loading_terminal_tabs',
+        surface: 'platform'
+      })
     }
   }
 }
