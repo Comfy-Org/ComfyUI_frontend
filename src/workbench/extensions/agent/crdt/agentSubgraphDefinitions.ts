@@ -466,8 +466,7 @@ function declaredInputNames(doc: Y.Doc, definitionId: string): string[] {
   const list: unknown = inputs instanceof Y.Array ? inputs.toJSON() : inputs
   if (!Array.isArray(list)) return []
   return list.flatMap((entry: unknown) => {
-    if (typeof entry !== 'object' || entry === null) return []
-    const { name } = entry as { name?: unknown }
+    const name = readField(entry, 'name')
     return typeof name === 'string' ? [name] : []
   })
 }
