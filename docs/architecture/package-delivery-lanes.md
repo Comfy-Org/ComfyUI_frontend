@@ -49,9 +49,9 @@ These are implementation invariants, not package dials:
 - The credential's GitHub identity must match the identity declared in the policy, and it cannot
   approve its own pull request.
 - If post-approval verification fails, the newly created approval is dismissed.
-- Approval, queue, and compensation runs are serialized. Compensation attempts merge-state
-  teardown and every active policy-review dismissal independently so one API failure cannot skip
-  the other safety action.
+- Approval, queue, and compensation runs are serialized per pull request. Compensation attempts
+  merge-state teardown and every active policy-review dismissal independently so one API failure
+  cannot skip the other safety action.
 - The lane only disables auto-merge or queue state that its own identity created after its policy
   approval. It does not undo another person's merge decision.
 
