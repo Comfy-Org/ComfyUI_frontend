@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { test } from './fixtures/blockExternalMedia'
+import { waitForIsland } from './fixtures/islands'
 
 const locales = [
   {
@@ -43,9 +44,12 @@ for (const locale of locales) {
     await expect(
       page.getByRole('link', { name: locale.event })
     ).toHaveAttribute('href', 'https://luma.com/5mydmvu6')
-    await page
-      .getByRole('button', { name: locale.question, exact: true })
-      .click()
+    const question = page.getByRole('button', {
+      name: locale.question,
+      exact: true
+    })
+    await waitForIsland(page, question)
+    await question.click()
     await expect(
       page
         .getByRole('region', { name: locale.question })
