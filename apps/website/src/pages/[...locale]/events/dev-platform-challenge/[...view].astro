@@ -22,7 +22,8 @@ export function getStaticPaths() {
   return (['en', 'zh-CN'] as const).flatMap((locale) =>
     (['general', 'timeline', 'terms'] as const).map((view) => ({
       params: {
-        challenge: `${locale === 'en' ? '' : 'zh-CN/'}events/dev-platform-challenge${view === 'general' ? '' : `/${view}`}`
+        locale: locale === 'en' ? undefined : locale,
+        view: view === 'general' ? undefined : view
       },
       props: { locale, view }
     }))

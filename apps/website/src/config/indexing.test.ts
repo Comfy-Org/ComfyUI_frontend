@@ -318,14 +318,15 @@ describe('NOINDEX_ROUTES', () => {
       `^${route
         .replace(/\/$/, '')
         .split('/')
+        .filter(Boolean)
         .map((segment) =>
           segment.startsWith('[...')
-            ? '.+'
+            ? '(?:/.*)?'
             : segment.startsWith('[')
-              ? '[^/]+'
-              : segment.replace(/[.*+?^${}()|\\]/g, '\\$&')
+              ? '/[^/]+'
+              : `/${segment.replace(/[.*+?^${}()|\\]/g, '\\$&')}`
         )
-        .join('/')}$`
+        .join('')}$`
     )
 
   const builtRoutes = [
