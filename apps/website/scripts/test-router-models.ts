@@ -2,19 +2,19 @@ import { createHash, randomUUID } from 'node:crypto'
 import { execFileSync } from 'node:child_process'
 import { appendFileSync } from 'node:fs'
 import { mkdir, writeFile } from 'node:fs/promises'
-import { join, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { dirname, join, resolve } from 'node:path'
 import { parseArgs } from 'node:util'
 
 import { z } from 'zod'
 
-import { authoredWorkshopModels } from '../src/config/workshop-browse-content'
-import { resolveWorkshopCloudEnv } from '../src/config/workshop-cloud-env'
-import { WORKSHOP_ROUTER_BASE_URL } from '../src/config/workshop-env'
-import { releaseRouterOutputs } from '../src/config/workshop-response'
-import { WorkshopRouterError } from '../src/config/workshop-router-errors'
-import { getAuthoredRouterWorkshopModelDetail } from '../src/config/workshop-router-content'
-import type { RunOutput } from '../src/config/workshop-run'
+import { repoRoot, websiteRoot } from '@website/paths'
+import { authoredWorkshopModels } from '@/config/workshop-browse-content'
+import { resolveWorkshopCloudEnv } from '@/config/workshop-cloud-env'
+import { WORKSHOP_ROUTER_BASE_URL } from '@/config/workshop-env'
+import { releaseRouterOutputs } from '@/config/workshop-response'
+import { WorkshopRouterError } from '@/config/workshop-router-errors'
+import { getAuthoredRouterWorkshopModelDetail } from '@/config/workshop-router-content'
+import type { RunOutput } from '@/config/workshop-run'
 import type { MediaKind } from './router-model-artifacts'
 import { checkMediaDecoders, validateArtifact } from './router-model-artifacts'
 import { createStartGate, mapConcurrent } from './router-model-batch'
@@ -142,12 +142,8 @@ function printSweepPlan(
 function resolveReportPaths(report: string | undefined) {
   if (!report)
     return {
-      markdownPath: fileURLToPath(
-        new URL('../MODELS_TEST_RESULTS.md', import.meta.url)
-      ),
-      jsonPath: fileURLToPath(
-        new URL('../testing/models-test-results.json', import.meta.url)
-      )
+      markdownPath: join(websiteRoot, 'MODELS_TEST_RESULTS.md'),
+      jsonPath: join(websiteRoot, 'testing/models-test-results.json')
     }
   if (!report.endsWith('.md')) throw new Error('--report must name a .md file')
   const markdownPath = resolve(report)
@@ -187,9 +183,7 @@ async function main() {
   const runId = `${new Date().toISOString().replaceAll(':', '-')}-${randomUUID()}`
   const directory = values.output
     ? resolve(values.output)
-    : fileURLToPath(
-        new URL(`../../../temp/router-model-tests/${runId}/`, import.meta.url)
-      )
+    : join(repoRoot, 'temp/router-model-tests', runId)
   const selectedModels = selectSweepModels(values)
   const maxCases = positiveInteger(values['max-cases'], 1000)
   if (values.plan) {
@@ -206,15 +200,14 @@ async function main() {
   const environment = resolveWorkshopCloudEnv(
     process.env.PUBLIC_WORKSHOP_CLOUD_ENV
   )
-  const repoDirectory = fileURLToPath(new URL('../../../', import.meta.url))
   const source = {
     revision: execFileSync('git', ['rev-parse', 'HEAD'], {
-      cwd: repoDirectory,
+      cwd: repoRoot,
       encoding: 'utf8'
     }).trim(),
     dirty: Boolean(
       execFileSync('git', ['status', '--porcelain'], {
-        cwd: repoDirectory,
+        cwd: repoRoot,
         encoding: 'utf8'
       }).trim()
     ),
@@ -233,7 +226,7 @@ async function main() {
         inputMode: 'page-defaults'
       })
     }
-    await mkdir(resolve(directory, '..'), { recursive: true })
+    await mkdir(dirname(directory), { recursive: true })
     await mkdir(directory, { mode: 0o700 })
     const journal = join(directory, 'events.jsonl')
     function record(event: Readonly<Record<string, unknown>>) {

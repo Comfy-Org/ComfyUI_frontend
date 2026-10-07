@@ -20,14 +20,23 @@ const forwarded = useForwardPropsEmits(reactiveOmit(props, 'class'), emits)
     data-slot="checkbox"
     :class="
       cn(
-        'inline-flex size-4 shrink-0 cursor-pointer items-center justify-center rounded-sm border border-border-default bg-transparent text-base-background transition-colors outline-none focus-visible:ring-1 focus-visible:ring-border-default disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:border-primary-background data-[state=checked]:bg-primary-background',
+        'inline-flex size-4 shrink-0 cursor-pointer items-center justify-center rounded-sm border border-border-default bg-transparent text-base-background transition-colors outline-none focus-visible:ring-1 focus-visible:ring-border-default disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:border-primary-background data-[state=checked]:bg-primary-background data-[state=indeterminate]:border-primary-background data-[state=indeterminate]:bg-primary-background',
         props.class
       )
     "
   >
     <CheckboxIndicator class="flex items-center justify-center">
       <slot v-bind="slotProps">
-        <i class="icon-[lucide--check] size-3" />
+        <i
+          :class="
+            cn(
+              'size-3',
+              slotProps.state === 'indeterminate'
+                ? 'icon-[lucide--minus]'
+                : 'icon-[lucide--check]'
+            )
+          "
+        />
       </slot>
     </CheckboxIndicator>
   </CheckboxRoot>

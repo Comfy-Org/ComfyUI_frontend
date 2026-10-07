@@ -441,6 +441,28 @@ test.describe('Workflows sidebar', () => {
       .toEqual(['*Unsaved Workflow', '*workflow1 (Copy)'])
   })
 
+  test(
+    'suppresses the native context menu on a saved workflow',
+    { tag: '@ui' },
+    async ({ comfyPage }) => {
+      await comfyPage.workflow.setupWorkflowsDirectory({
+        'workflow1.json': 'default.json'
+      })
+      const tab = comfyPage.menu.workflowsTab
+      await tab.open()
+
+      const event = await comfyPage.contextMenu.dispatchFor(
+        tab.getPersistedItem('workflow1')
+      )
+
+      expect(event.defaultPrevented).toBe(true)
+      await comfyPage.contextMenu.clickMenuItemExact('Duplicate')
+      await expect
+        .poll(() => tab.getOpenedWorkflowNames())
+        .toEqual(['*Unsaved Workflow', '*workflow1 (Copy)'])
+    }
+  )
+
   test('Can drop workflow from workflows sidebar', async ({ comfyPage }) => {
     await comfyPage.workflow.setupWorkflowsDirectory({
       'workflow1.json': 'default.json'

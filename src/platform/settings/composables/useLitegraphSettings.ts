@@ -6,9 +6,8 @@ import {
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
-// eslint-disable-next-line import-x/no-restricted-paths
+// oxlint-disable-next-line comfy/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 
 /**
  * Watch for changes in the setting store and update the LiteGraph settings accordingly.
@@ -16,13 +15,12 @@ import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 export const useLitegraphSettings = () => {
   const settingStore = useSettingStore()
   const canvasStore = useCanvasStore()
-  const agentNodeSelectionStore = useAgentNodeSelectionStore()
 
   watch(
     [
       () => settingStore.get('Comfy.Graph.CanvasInfo'),
       () => canvasStore.canvas,
-      () => agentNodeSelectionStore.isActive
+      () => canvasStore.isPickingNodes
     ],
     ([canvasInfoEnabled, canvas, picking]) => {
       if (canvas) {

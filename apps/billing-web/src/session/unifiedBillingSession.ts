@@ -19,9 +19,11 @@ import type {
 } from '@comfyorg/account-core/billing'
 import type { FirebaseIdentity } from '@comfyorg/account-core/firebase'
 import { createRequestAuthorizer } from '@comfyorg/account-core/requestAuth'
+import { webSessionTelemetryHooks } from '@comfyorg/account-core/telemetry'
 import type { SessionErrorCode } from '@comfyorg/account-core/session'
 import type {
   WebSession,
+  WebSessionFailure,
   WebSessionOptions
 } from '@comfyorg/account-core/webSession'
 import {
@@ -31,8 +33,12 @@ import {
 import type { WebSessionIdentityState } from '@comfyorg/account-core/webSessionIdentity'
 import { createWebSessionIdentity } from '@comfyorg/account-core/webSessionIdentity'
 
-import type { SignInPort } from '@/auth/useSignInController'
+import type {
+  SessionEstablishment,
+  SignInPort
+} from '@/auth/useSignInController'
 import type { BillingWebSessionPhase } from '@/router'
+import { billingWebTelemetry } from '@/telemetry/billingWebTelemetry'
 
 export interface UnifiedBillingSessionDeps {
   /** Ingest API root, e.g. `https://cloud.comfy.org/api`. */
@@ -56,6 +62,21 @@ async function refusalCode(response: Response): Promise<SessionErrorCode> {
   if (response.status === 401) return 'NOT_AUTHENTICATED'
   const body = zErrorResponse.safeParse(await response.json().catch(() => 0))
   return (body.success && REFUSALS[body.data.code]) || 'TOKEN_EXCHANGE_FAILED'
+}
+
+function establishmentOf(
+  resolution: WorkspaceResolution
+): SessionEstablishment {
+  return resolution.status === 'ok'
+    ? { status: 'ok' }
+    : { status: 'error', code: resolution.code }
+}
+
+/** A refused credential is its own code; every other failure to create the session is one bucket, as in the token exchange. */
+function creationFailureCode(failure: WebSessionFailure): SessionErrorCode {
+  return failure.httpStatus === 401
+    ? 'INVALID_FIREBASE_TOKEN'
+    : 'TOKEN_EXCHANGE_FAILED'
 }
 
 function restoredUser(identity: FirebaseIdentity): Promise<User | null> {
@@ -93,7 +114,8 @@ export function createUnifiedBillingSession(deps: UnifiedBillingSessionDeps) {
           (await (await firebaseUser())?.getIdToken()) ?? null,
         signOutLocally: async () => (await deps.loadFirebase())?.signOut()
       }
-    }
+    },
+    ...webSessionTelemetryHooks(billingWebTelemetry.trackWebSessionEvent)
   })
   const authorize = createRequestAuthorizer({
     getWorkspaceToken: () =>
@@ -161,7 +183,11 @@ export function createUnifiedBillingSession(deps: UnifiedBillingSessionDeps) {
 
   function settledOf(): BillingWebSessionPhase | undefined {
     const current = state.value
-    if (current.phase === 'signed_out' || current.phase === 'api_key') {
+    if (
+      current.phase === 'signed_out' ||
+      current.phase === 'api_key' ||
+      current.phase === 'retry_wait'
+    ) {
       return 'signed-out'
     }
     if (current.phase !== 'signed_in' || workspace.value === undefined) {
@@ -187,12 +213,26 @@ export function createUnifiedBillingSession(deps: UnifiedBillingSessionDeps) {
     })
   }
 
-  async function establish(user?: User): Promise<boolean> {
-    if (user === undefined) return (await resolveWorkspace()).status === 'ok'
-    const created = await createWebSession(session, () => user.getIdToken())
-    if (created.status !== 'ok') return false
+  /** Without a session to resolve against, a retry creates one for whoever Firebase holds. */
+  async function sessionCreator(user?: User): Promise<User | undefined> {
+    if (user !== undefined || state.value.phase === 'signed_in') return user
+    return (await firebaseUser()) ?? undefined
+  }
+
+  async function establish(user?: User): Promise<SessionEstablishment> {
+    const creator = await sessionCreator(user)
+    if (creator === undefined) return establishmentOf(await resolveWorkspace())
+    const created = await createWebSession(session, () => creator.getIdToken())
+    if (created.status !== 'ok') {
+      return { status: 'error', code: creationFailureCode(created) }
+    }
     identity.dispose()
-    return (await settledPhase()) === 'authenticated'
+    if ((await settledPhase()) === 'authenticated') return { status: 'ok' }
+    const resolved = workspace.value
+    return {
+      status: 'error',
+      code: resolved?.status === 'error' ? resolved.code : 'NOT_AUTHENTICATED'
+    }
   }
 
   const scope = computed<BillingScope | undefined>(() => {
