@@ -25,20 +25,20 @@ import { useCommandStore } from '@/stores/commandStore'
 import type { ViewMode } from '@/utils/appMode'
 
 interface ViewModeSegment {
-  mode: ViewMode
-  icon: string
-  label: string
-  switchLabel: string
-  switchTooltip: string
   /** Drives behavior and aria; flips as soon as the mode changes. */
   active: boolean
-  /** Frame-lagged mirror of {@link active} that drives the morph order. */
-  displayActive: boolean
-  tooltip: string
-  tooltipContentClass?: string
   ariaLabel: string
   buttonClass: string
+  /** Frame-lagged mirror of {@link active} that drives the morph order. */
+  displayActive: boolean
+  icon: string
+  label: string
   labelClass: string
+  mode: ViewMode
+  switchLabel: string
+  switchTooltip: string
+  tooltip: string
+  tooltipContentClass?: string
 }
 
 const { source, align = 'start' } = defineProps<{

@@ -69,11 +69,11 @@ interface WidgetErrorTarget {
 
 export interface ProcessedWidget extends WidgetGridItem {
   handleContextMenu: (e: PointerEvent) => void
-  hasLayoutSize: boolean
   hasError: boolean
-  widgetId: WidgetId
+  hasLayoutSize: boolean
   tooltip: string
   updateHandler: (value: WidgetValue) => void
+  widgetId: WidgetId
 }
 
 export interface WidgetUiCallbacks {

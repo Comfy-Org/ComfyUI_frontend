@@ -1,10 +1,10 @@
 import type { Locator, Page } from '@playwright/test'
 
 export class GraphCanvasMenu {
-  public readonly root: Locator
   public readonly fitViewButton: Locator
-  public readonly zoomControlsButton: Locator
   public readonly minimapButton: Locator
+  public readonly root: Locator
+  public readonly zoomControlsButton: Locator
 
   constructor(page: Page) {
     this.root = page.getByRole('toolbar', { name: 'Canvas Toolbar' })
