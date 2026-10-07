@@ -93,24 +93,33 @@ describe('ExploreCatalogue search', () => {
     expect(soon).toHaveTextContent('Soon')
   })
 
-  it('offers runs only where the Hub runs the model', async () => {
-    await search('beeble')
+  it.for([
+    { routerRun: '1', access: /Run\s*API/ },
+    { routerRun: undefined, access: /^(?!.*Run).*API$/ }
+  ])(
+    'offers runs only where the Hub runs the model (router run $routerRun)',
+    async ({ routerRun, access }) => {
+      vi.stubEnv('PUBLIC_WORKSHOP_ROUTER_RUN', routerRun)
+      await search('beeble')
 
-    for (const card of results().getAllByTestId('explore-result')) {
-      expect(card).toHaveTextContent(/Run\s*API/)
-      expect(within(card).getByTestId('explore-source')).toHaveTextContent(
-        'Beeble'
+      for (const card of results().getAllByTestId('explore-result')) {
+        expect(card).toHaveTextContent(access)
+        expect(within(card).getByTestId('explore-source')).toHaveTextContent(
+          'Beeble'
+        )
+      }
+      const box = screen.getByTestId('explore-search')
+      const user = userEvent.setup()
+      await user.clear(box)
+      await user.type(box, 'match')
+      expect(results().getByTestId('explore-result')).not.toHaveTextContent(
+        /Run/
+      )
+      expect(results().getByTestId('explore-source')).toHaveTextContent(
+        'Qwen Image Edit'
       )
     }
-    const box = screen.getByTestId('explore-search')
-    const user = userEvent.setup()
-    await user.clear(box)
-    await user.type(box, 'match')
-    expect(results().getByTestId('explore-result')).not.toHaveTextContent(/Run/)
-    expect(results().getByTestId('explore-source')).toHaveTextContent(
-      'Qwen Image Edit'
-    )
-  })
+  )
 
   it('keeps the coming apps out of a search while the apps are closed', async () => {
     await search('relight', [])
