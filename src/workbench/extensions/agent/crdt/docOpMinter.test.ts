@@ -791,25 +791,31 @@ describe('attachDocOpMinter', () => {
     doc.destroy()
   })
 
-  it('refuses a document whose stored array outnumbers its matching promoted names', async () => {
-    const { host, doc } = seedPromotedHost(['first', 'second', 'extra'])
-    expect(readDocPromotedWidgets(doc, String(host.id))).toMatchObject({
-      valueCount: 3,
-      promotedNames: ['prefix', 'text']
-    })
-
-    host.widgets[1].value = 'pasted'
-    await afterFlush()
-
-    expect(minted).toEqual([])
-    expect(reportError).toHaveBeenCalledWith(
-      expect.any(Error),
-      expect.objectContaining({
-        errorType: 'agent_crdt_promoted_widget_order_drift'
+  it.for([
+    { name: 'outnumbers', stored: ['first', 'second', 'extra'] },
+    { name: 'undercounts', stored: ['only'] }
+  ])(
+    'refuses a document whose stored array $name its matching promoted names',
+    async ({ stored }) => {
+      const { host, doc } = seedPromotedHost(stored)
+      expect(readDocPromotedWidgets(doc, String(host.id))).toMatchObject({
+        valueCount: stored.length,
+        promotedNames: ['prefix', 'text']
       })
-    )
-    doc.destroy()
-  })
+
+      host.widgets[1].value = 'pasted'
+      await afterFlush()
+
+      expect(minted).toEqual([])
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'agent_crdt_promoted_widget_order_drift'
+        })
+      )
+      doc.destroy()
+    }
+  )
 
   it.for([
     {
