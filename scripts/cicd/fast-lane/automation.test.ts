@@ -19,6 +19,7 @@ function runtimeConfig(): ResolvedRuntimeConfig {
     repository: 'Comfy-Org/ComfyUI_frontend',
     pullRequestNumber: 42,
     eventHeadSha: headSha,
+    eventName: 'pull_request_target',
     defaultBranch: 'main',
     lane: {
       schemaVersion: 1,

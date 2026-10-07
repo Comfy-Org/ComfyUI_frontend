@@ -17,8 +17,7 @@ import type {
   PullRequestReview,
   ResolvedRuntimeConfig,
   RuntimeConfig,
-  Summary,
-  TimelineEvent
+  Summary
 } from './types.ts'
 
 const POLICY_REVIEW_PREFIX = '[Package fast lane] Policy-only approval.'
@@ -51,10 +50,6 @@ function asPullRequest(value: unknown): PullRequest {
 
 function asReviews(value: unknown[]): PullRequestReview[] {
   return value as PullRequestReview[]
-}
-
-function asEvents(value: unknown[]): TimelineEvent[] {
-  return value as TimelineEvent[]
 }
 
 function asFiles(value: unknown[]): PullRequestFile[] {
@@ -290,17 +285,14 @@ async function readPullState(
 ): Promise<{
   pull: PullRequest
   reviews: PullRequestReview[]
-  events: TimelineEvent[]
 }> {
-  const [pull, reviews, events] = await Promise.all([
+  const [pull, reviews] = await Promise.all([
     github.request(`/pulls/${pullRequestNumber}`),
-    github.paginate(`/pulls/${pullRequestNumber}/reviews`),
-    github.paginate(`/issues/${pullRequestNumber}/timeline`)
+    github.paginate(`/pulls/${pullRequestNumber}/reviews`)
   ])
   return {
     pull: asPullRequest(pull),
-    reviews: asReviews(reviews),
-    events: asEvents(events)
+    reviews: asReviews(reviews)
   }
 }
 
@@ -316,7 +308,18 @@ async function revalidate(
     repository: config.repository,
     defaultBranch: config.defaultBranch,
     expectedHeadSha: config.eventHeadSha,
-    events: state.events
+    hasPolicyApprovalForHead: Boolean(
+      approvalForHead(
+        state.reviews,
+        config.lane.approval.identity,
+        config.eventHeadSha,
+        POLICY_REVIEW_PREFIX
+      )
+    ),
+    eventName: config.eventName,
+    eventAction: config.eventAction,
+    eventActor: config.eventActor,
+    eventLabel: config.eventLabel
   })
   const reason =
     failure ??

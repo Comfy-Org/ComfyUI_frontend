@@ -2,8 +2,7 @@ import type {
   FastLaneConfig,
   PullRequest,
   PullRequestFile,
-  PullRequestReview,
-  TimelineEvent
+  PullRequestReview
 } from './types.ts'
 
 const DECISIVE_REVIEW_STATES = new Set([
@@ -18,7 +17,11 @@ export interface EligibilityContext {
   repository: string
   defaultBranch: string
   expectedHeadSha: string
-  events: TimelineEvent[]
+  hasPolicyApprovalForHead: boolean
+  eventName: string
+  eventAction?: string
+  eventActor?: string
+  eventLabel?: string
 }
 
 export function changedPaths(files: PullRequestFile[]): string[] | undefined {
@@ -59,27 +62,22 @@ function hasLabel(pull: PullRequest, expected: string): boolean {
 
 export function hasAuthorizedApprovalLabel(
   pull: PullRequest,
-  events: TimelineEvent[],
-  lane: FastLaneConfig
+  lane: FastLaneConfig,
+  event: {
+    name: string
+    action?: string
+    actor?: string
+    label?: string
+  }
 ): boolean {
   const { approvalLabel, trustedLabelers } = lane.approval
   if (!hasLabel(pull, approvalLabel)) return false
-
-  const latestCodeEvent = events.findLastIndex(
-    (event) =>
-      event.event === 'committed' || event.event === 'head_ref_force_pushed'
-  )
-  const latestLabelEvent = events.findLastIndex(
-    (event) => event.label?.name?.toLowerCase() === approvalLabel
-  )
-  if (latestCodeEvent < 0 || latestLabelEvent <= latestCodeEvent) return false
-
-  const labelEvent = events[latestLabelEvent]
-  const actor = labelEvent.actor?.login?.toLowerCase()
   return (
-    labelEvent.event === 'labeled' &&
-    actor !== undefined &&
-    trustedLabelers.includes(actor)
+    event.name === 'pull_request_target' &&
+    event.action === 'labeled' &&
+    event.label?.toLowerCase() === approvalLabel &&
+    event.actor !== undefined &&
+    trustedLabelers.includes(event.actor.toLowerCase())
   )
 }
 
@@ -127,7 +125,11 @@ export function eligibilityFailure({
   repository,
   defaultBranch,
   expectedHeadSha,
-  events
+  hasPolicyApprovalForHead,
+  eventName,
+  eventAction,
+  eventActor,
+  eventLabel
 }: EligibilityContext): string | undefined {
   if (pull.state !== 'open' || pull.draft) {
     return 'Skipped: the pull request is not open and ready for review.'
@@ -144,7 +146,13 @@ export function eligibilityFailure({
 
   const author = pull.user?.login?.toLowerCase()
   const trustedAuthor = author && lane.approval.trustedAuthors.includes(author)
-  if (!trustedAuthor && !hasAuthorizedApprovalLabel(pull, events, lane)) {
+  const currentLabelEvent = hasAuthorizedApprovalLabel(pull, lane, {
+    name: eventName,
+    action: eventAction,
+    actor: eventActor,
+    label: eventLabel
+  })
+  if (!trustedAuthor && !hasPolicyApprovalForHead && !currentLabelEvent) {
     return `Skipped: @${author ?? 'unknown'} is not trusted and ${lane.approval.approvalLabel} lacks a current authorized event.`
   }
   if (hasLabel(pull, lane.approval.holdLabel)) {

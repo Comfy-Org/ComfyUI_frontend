@@ -121,6 +121,10 @@ function requiredEnv(name: string): string {
   return value
 }
 
+function optionalEnv(name: string): string | undefined {
+  return process.env[name]?.trim() || undefined
+}
+
 function optionalPositiveIntegerEnv(name: string): number | undefined {
   const value = process.env[name]?.trim()
   if (!value) return
@@ -147,6 +151,10 @@ export function loadRuntimeConfig(): RuntimeConfig {
     repository: requiredEnv('GITHUB_REPOSITORY'),
     pullRequestNumber: optionalPositiveIntegerEnv('PR_NUMBER'),
     eventHeadSha: requiredEnv('PR_HEAD_SHA'),
+    eventName: requiredEnv('GITHUB_EVENT_NAME'),
+    eventAction: optionalEnv('FAST_LANE_EVENT_ACTION'),
+    eventActor: optionalEnv('FAST_LANE_EVENT_ACTOR'),
+    eventLabel: optionalEnv('FAST_LANE_EVENT_LABEL'),
     defaultBranch: requiredEnv('FAST_LANE_BASE_REF'),
     lane: parseFastLaneConfig(parsed)
   }

@@ -46,12 +46,6 @@ export interface PullRequestReview {
   user?: { login?: string; type?: string }
 }
 
-export interface TimelineEvent {
-  event?: string
-  label?: { name?: string }
-  actor?: { login?: string }
-}
-
 export interface GitHubClient {
   request(path: string, options?: RequestInit): Promise<unknown>
   paginate(path: string): Promise<unknown[]>
@@ -79,6 +73,10 @@ export interface RuntimeConfig {
   repository: string
   pullRequestNumber?: number
   eventHeadSha: string
+  eventName: string
+  eventAction?: string
+  eventActor?: string
+  eventLabel?: string
   defaultBranch: string
   lane: FastLaneConfig
 }

@@ -11,12 +11,7 @@ import {
   isApprovalForHead,
   isInsideLane
 } from './policy.ts'
-import type {
-  FastLaneConfig,
-  PullRequest,
-  PullRequestReview,
-  TimelineEvent
-} from './types.ts'
+import type { FastLaneConfig, PullRequest, PullRequestReview } from './types.ts'
 
 const lane: FastLaneConfig = {
   schemaVersion: 1,
@@ -52,7 +47,13 @@ function eligiblePull(overrides: Partial<PullRequest> = {}): PullRequest {
 
 function failure(
   pull: PullRequest,
-  events: TimelineEvent[] = []
+  authorization: {
+    hasPolicyApprovalForHead?: boolean
+    eventName?: string
+    eventAction?: string
+    eventActor?: string
+    eventLabel?: string
+  } = {}
 ): string | undefined {
   return eligibilityFailure({
     pull,
@@ -60,7 +61,11 @@ function failure(
     repository: 'Comfy-Org/ComfyUI_frontend',
     defaultBranch: 'main',
     expectedHeadSha: 'head-sha',
-    events
+    hasPolicyApprovalForHead: authorization.hasPolicyApprovalForHead ?? false,
+    eventName: authorization.eventName ?? 'pull_request_target',
+    eventAction: authorization.eventAction,
+    eventActor: authorization.eventActor,
+    eventLabel: authorization.eventLabel
   })
 }
 
@@ -148,23 +153,47 @@ describe('changed-path boundary', () => {
 })
 
 describe('approval policy', () => {
-  it('accepts a trusted label event only after the latest code event', () => {
+  it('accepts only the current trusted label event for a non-trusted author', () => {
     const pull = eligiblePull({
       user: { login: 'someone-else' },
       labels: [{ name: 'website-fast-lane:approve' }]
     })
-    const events: TimelineEvent[] = [
-      { event: 'committed' },
-      {
-        event: 'labeled',
-        label: { name: 'website-fast-lane:approve' },
-        actor: { login: 'DrJKL' }
-      }
-    ]
-    expect(hasAuthorizedApprovalLabel(pull, events, lane)).toBe(true)
-    expect(hasAuthorizedApprovalLabel(pull, [...events].reverse(), lane)).toBe(
-      false
-    )
+    expect(
+      hasAuthorizedApprovalLabel(pull, lane, {
+        name: 'pull_request_target',
+        action: 'labeled',
+        actor: 'DrJKL',
+        label: 'website-fast-lane:approve'
+      })
+    ).toBe(true)
+    expect(
+      hasAuthorizedApprovalLabel(pull, lane, {
+        name: 'pull_request_target',
+        action: 'synchronize',
+        actor: 'someone-else'
+      })
+    ).toBe(false)
+    expect(
+      failure(pull, {
+        eventName: 'pull_request_target',
+        eventAction: 'synchronize',
+        eventActor: 'someone-else'
+      })
+    ).toContain('lacks a current authorized event')
+    expect(
+      failure(pull, {
+        hasPolicyApprovalForHead: true,
+        eventName: 'workflow_run'
+      })
+    ).toBeUndefined()
+    expect(
+      failure(pull, {
+        eventName: 'pull_request_target',
+        eventAction: 'labeled',
+        eventActor: 'DrJKL',
+        eventLabel: 'website-fast-lane:approve'
+      })
+    ).toBeUndefined()
   })
 
   it('keeps a human change request active after a comment-only review', () => {
