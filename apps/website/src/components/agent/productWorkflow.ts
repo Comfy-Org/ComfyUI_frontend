@@ -177,7 +177,7 @@ export const productWorkflow: WorkflowGraph = {
   height: 599,
   holdDuration: 10,
   userRest: { x: 24, y: 67 },
-  agentRest: { x: 1638, y: 521 },
+  agentRest: { x: 1600, y: 521 },
   nodes,
   edges: [
     connection('base', 'keygen', 263.5),

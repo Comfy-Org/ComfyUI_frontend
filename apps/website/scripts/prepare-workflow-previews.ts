@@ -3,7 +3,8 @@ import { execFileSync } from 'node:child_process'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-import { parseWorkflowCatalog } from '../src/config/workshop-workflow-catalog-schema'
+import { websiteRoot } from '@website/paths'
+import { parseWorkflowCatalog } from '@/config/workshop-workflow-catalog-schema'
 import { isDirectExecution } from './script-entry-point'
 
 const coordinate = z.number().finite().min(-1e6).max(1e6)
@@ -149,10 +150,12 @@ export function workflowPreviewSvg(raw: unknown): string {
 }
 
 function main() {
-  const site = join(import.meta.dirname, '..')
-  const target = join(site, 'public/workflow-graphs')
+  const target = join(websiteRoot, 'public/workflow-graphs')
   const entries = parseWorkflowCatalog(
-    readFileSync(join(site, 'src/content/workshop-workflows.jsonl'), 'utf8')
+    readFileSync(
+      join(websiteRoot, 'src/content/workshop-workflows.jsonl'),
+      'utf8'
+    )
   )
   mkdirSync(target, { recursive: true })
   for (const entry of entries) {
@@ -163,7 +166,7 @@ function main() {
     const original = execFileSync(
       'git',
       ['show', `${entry.source.commit}:${entry.source.uiWorkflowPath}`],
-      { cwd: site, encoding: 'utf8', maxBuffer: 4 * 1024 * 1024 }
+      { cwd: websiteRoot, encoding: 'utf8', maxBuffer: 4 * 1024 * 1024 }
     )
     const raw: unknown = JSON.parse(original)
     const svg = workflowPreviewSvg(raw)

@@ -1,17 +1,14 @@
 import { writeFile } from 'node:fs/promises'
-import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { join } from 'node:path'
 
-import type {
-  RouterWorkshopModel,
-  UseCase
-} from '../src/config/models-catalogue'
-import { USE_CASES } from '../src/config/models-catalogue'
-import { modelPageUrls } from '../src/config/model-urls'
+import { websiteRoot } from '@website/paths'
+import type { RouterWorkshopModel, UseCase } from '@/config/models-catalogue'
+import { USE_CASES } from '@/config/models-catalogue'
+import { modelPageUrls } from '@/config/model-urls'
 import {
   routerModelSlugAliases,
   workshopModels
-} from '../src/config/workshop-browse-content'
+} from '@/config/workshop-browse-content'
 import { isDirectExecution } from './script-entry-point'
 
 type MapModel = Pick<
@@ -248,9 +245,8 @@ export function renderModelUrlTable(
   ].join('\n')
 }
 
-const appDir = join(dirname(fileURLToPath(import.meta.url)), '..')
-export const MODEL_URLS_MODULE = join(appDir, 'src/config/model-urls.ts')
-export const MODEL_URL_TABLE = join(appDir, 'MODEL_URL_MAP.md')
+export const MODEL_URLS_MODULE = join(websiteRoot, 'src/config/model-urls.ts')
+export const MODEL_URL_TABLE = join(websiteRoot, 'MODEL_URL_MAP.md')
 
 if (isDirectExecution(process.argv[1], import.meta.filename)) {
   const map = compileModelUrlMap(

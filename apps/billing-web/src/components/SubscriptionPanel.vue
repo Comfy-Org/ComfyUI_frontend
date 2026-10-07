@@ -29,13 +29,14 @@ async function subscriptionChanged() {
 
 const endsAt = computed(() => billingStatus.value?.cancel_at)
 
-const currentName = computed(() => {
+const currentPlan = computed(() => {
   const catalog = plans.value
-  const current = catalog?.plans.find(
-    (plan) => plan.slug === catalog.current_plan_slug
-  )
-  return current ? planName(current) : undefined
+  return catalog?.plans.find((plan) => plan.slug === catalog.current_plan_slug)
 })
+
+const currentName = computed(() =>
+  currentPlan.value ? planName(currentPlan.value) : undefined
+)
 </script>
 
 <template>
@@ -58,6 +59,9 @@ const currentName = computed(() => {
       {{ t('hosted.subscription.endsOn', { date: date(endsAt) }) }}
     </p>
 
-    <SubscriptionActions @changed="subscriptionChanged" />
+    <SubscriptionActions
+      :current-plan="currentPlan"
+      @changed="subscriptionChanged"
+    />
   </section>
 </template>

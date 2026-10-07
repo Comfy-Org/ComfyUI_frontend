@@ -1,4 +1,4 @@
-/* eslint-disable testing-library/no-node-access, testing-library/no-container, testing-library/prefer-user-event */
+/* oxlint-disable testing-library/no-node-access, testing-library/no-container, testing-library/prefer-user-event */
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'

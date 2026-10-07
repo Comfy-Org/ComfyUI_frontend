@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import type { Locale } from '../../../i18n/translations'
-import { t } from '../../../i18n/translations'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 
-import type { Reason } from '../shared/ReasonSection.vue'
+import type { Reason } from '@/components/product/shared/ReasonSection.vue'
 
-import ReasonSection from '../shared/ReasonSection.vue'
+import ReasonSection from '@/components/product/shared/ReasonSection.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 
 interface CloudReason extends Reason {
   badge?: boolean
@@ -45,9 +46,9 @@ const reasons: CloudReason[] = [
         <span
           class="font-formula-narrow text-lg font-bold tracking-wide text-primary-comfy-yellow"
         >
-          {{ t('cloud.reason.2.badge.onlyOn', locale) }}
+          {{ t('cloud.reason.2.badge.onlyOn') }}
           <img src="/icons/logo.svg" alt="Comfy" class="inline-block h-5" />
-          {{ t('cloud.reason.2.badge.cloud', locale) }}
+          {{ t('cloud.reason.2.badge.cloud') }}
         </span>
       </div>
     </template>

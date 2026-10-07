@@ -1,6 +1,6 @@
-import type { WorkshopWorkflowError } from '../../config/workshop-workflow-api'
-import type { RunFailure } from '../../config/workshop-run'
-import type { WorkflowState } from '../../config/workshop-workflow-state'
+import type { WorkshopWorkflowError } from '@/config/workshop-workflow-api'
+import type { RunFailure } from '@/config/workshop-run'
+import type { WorkflowState } from '@/config/workshop-workflow-state'
 
 /**
  * Which refusal the output panel should stand up, where the panel's own words

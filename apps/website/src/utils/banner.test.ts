@@ -5,6 +5,7 @@ import type { EvaluableBanner } from './banner'
 import {
   createBannerVersion,
   evaluateBannerVisibility,
+  firstVisibleBanner,
   toClosedBanners
 } from './banner'
 
@@ -77,6 +78,26 @@ describe('evaluateBannerVisibility', () => {
 
   it('hides when targetSections is absent (nothing to match)', () => {
     expect(evaluateBannerVisibility({ isActive: true }, ctx)).toBe(false)
+  })
+})
+
+describe('firstVisibleBanner', () => {
+  const sitewide: EvaluableBanner = { ...base }
+  const expired: EvaluableBanner = { ...base, endsAt: '2026-07-01T00:00:00Z' }
+  const running: EvaluableBanner = { ...base, endsAt: '2026-07-10T00:00:00Z' }
+
+  it('prefers the page banner while its window is open', () => {
+    expect(firstVisibleBanner([running, sitewide], ctx)).toBe(running)
+  })
+
+  it('falls back to the sitewide banner once the page banner has ended', () => {
+    expect(firstVisibleBanner([expired, sitewide], ctx)).toBe(sitewide)
+  })
+
+  it('returns nothing when no banner is visible', () => {
+    expect(
+      firstVisibleBanner([expired, { ...sitewide, isActive: false }], ctx)
+    ).toBeUndefined()
   })
 })
 

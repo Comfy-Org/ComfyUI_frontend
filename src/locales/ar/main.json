@@ -75,6 +75,8 @@
     "feedbackCaption": "مشاركة الملاحظات",
     "focusNode": "إظهار على اللوحة",
     "focusNodeLabel": "إظهار {node} على اللوحة",
+    "freeUseNotice": "المطالبات وتشغيلات سير العمل مجانية خلال المرحلة التجريبية.",
+    "freeUseNoticeLabel": "إشعار الاستخدام المجاني",
     "friend": "مرحبًا",
     "gotIt": "فهمت",
     "greeting": "مرحبًا {name}،",
@@ -124,12 +126,16 @@
       "upgradePlan": "ترقية الخطة"
     },
     "placeholder": "صف الأفكار، واستخدم {'@'} للإشارة إلى سير العمل، واسحب أصول الوسائط والملفات، أو\nاذكر العقد",
+    "recoveredTurnFailed": "تعذر على الوكيل إكمال هذه الاستجابة.",
     "reference": "مرجع",
     "remove": "إزالة",
     "removeNodeLabel": "إزالة مرجع {node}",
     "removeWorkflowReference": "إزالة مرجع {name}",
     "retryAfterSeconds": "يمكنك المحاولة مرة أخرى خلال {seconds}ث.",
     "runApproval": {
+      "answerFailed": "تعذر إرسال إجابتك. أعد تحميل الصفحة وحاول مرة أخرى.",
+      "answerSuperseded": "تمت الإجابة عن هذا الطلب مسبقًا في مكان آخر، لذا استُخدمت تلك الإجابة بدلًا من إجابتك.",
+      "answerUncertain": "تعذر تأكيد وصول إجابتك إلى الوكيل. ربما كانت قد طُبقت بالفعل — أعد تحميل الصفحة لمعرفة الوضع الحالي.",
       "cancel": "إلغاء",
       "lead": "تريد هذه الأداة تشغيل سير العمل:",
       "leadBound": "تريد هذه الأداة تشغيل مخطط سير العمل هذا.",
@@ -196,8 +202,11 @@
     "targetWorkflowUnavailable": "لم يعد سير العمل المستهدف متاحًا.",
     "thinking": "جارٍ التفكير...",
     "title": "Comfy Agent",
+    "toolFailedSkill": "فشل تحميل {skill}",
     "toolForgettingPreference": "إزالة تفضيل",
     "toolForgotPreference": "نسي تفضيلًا",
+    "toolLoadedSkill": "تم تحميل {skill}",
+    "toolLoadingSkill": "جارٍ تحميل {skill}",
     "toolOpenedNewTab": "فتح علامة تبويب جديدة",
     "toolOpeningNewTab": "فتح علامة تبويب جديدة",
     "toolSavedPreference": "حفظ تفضيلًا",
@@ -274,6 +283,7 @@
       "failed": "فشل التنزيل",
       "inProgress": "جاري تنزيل {assetName}..."
     },
+    "downloadFailed": "فشل تنزيل {name}",
     "emptyImported": {
       "canImport": "لا توجد نماذج مستوردة بعد. انقر على \"استيراد نموذج\" لإضافة نموذجك الخاص.",
       "restricted": "النماذج الشخصية متاحة فقط لمستوى Creator وما فوق."
@@ -464,6 +474,7 @@
       "generic": "حدث خطأ أثناء تسجيل الدخول. يرجى المحاولة مرة أخرى.",
       "signupBlocked": "تعذر إنشاء حسابك الآن. يرجى المحاولة لاحقًا. إذا استمرت المشكلة، راسل support@comfy.org."
     },
+    "hidePassword": "إخفاء كلمة المرور",
     "login": {
       "andText": "و",
       "backToGithubLogin": "سجّل باستخدام Github بدلاً من ذلك",
@@ -480,6 +491,7 @@
       "forgotPassword": "هل نسيت كلمة المرور؟",
       "forgotPasswordError": "فشل في إرسال بريد إعادة تعيين كلمة المرور",
       "freeRunsSuffix": "للحصول على {count} تشغيل مجاني. | للحصول على {count} تشغيلات مجانية.",
+      "freeRunsSuffixGoogle": "سجّل الدخول باستخدام Google لتحصل على {count} تشغيل مجاني | سجّل الدخول باستخدام Google لتحصل على {count} عمليات تشغيل مجانية",
       "freeTierBadge": "مؤهل للخطة المجانية",
       "freeTierDescription": "سجّل باستخدام Google للحصول على {credits} رصيد مجاني كل شهر. لا حاجة لبطاقة.",
       "freeTierDescriptionGeneric": "سجّل باستخدام Google للحصول على رصيد مجاني كل شهر. لا حاجة لبطاقة.",
@@ -524,6 +536,7 @@
       "message": "لأسباب أمنية، يتطلب هذا الإجراء تسجيل الدخول مرة أخرى. هل ترغب في المتابعة؟",
       "title": "إعادة المصادقة مطلوبة"
     },
+    "showPassword": "إظهار كلمة المرور",
     "signOut": {
       "saveFailed": "تم إلغاء تسجيل الخروج بسبب فشل حفظ \"{workflow}\".",
       "signOut": "تسجيل الخروج",
@@ -532,6 +545,12 @@
       "successDetail": "لقد تم تسجيل خروجك من حسابك.",
       "unsavedChangesMessage": "لديك تغييرات غير محفوظة ستفقد عند تسجيل الخروج. هل ترغب في المتابعة؟",
       "unsavedChangesTitle": "تغييرات غير محفوظة"
+    },
+    "signOutEverywhere": {
+      "action": "تسجيل الخروج من جميع الأجهزة",
+      "failed": "تعذّر تسجيل الخروج من جميع الأجهزة",
+      "success": "تم تسجيل الخروج من جميع الأجهزة",
+      "successDetail": "تم تسجيل خروج كل جهاز سجّل الدخول إلى حسابك."
     },
     "signup": {
       "alreadyHaveAccount": "هل لديك حساب بالفعل؟",
@@ -963,25 +982,6 @@
     "workflowName": "اسم سير العمل",
     "workflowNamePlaceholder": "نصيحة: أدخل اسمًا وصفيًا يسهل البحث عنه"
   },
-  "commands": {
-    "clear": "مسح سير العمل",
-    "clipspace": "فتح مساحة القص",
-    "dark": "داكن",
-    "execute": "تنفيذ",
-    "help": "مساعدة",
-    "interrupt": "إلغاء التشغيل الحالي",
-    "light": "فاتح",
-    "manageExtensions": "إدارة الإضافات",
-    "queue": "لوحة قائمة الانتظار",
-    "refresh": "تحديث تعريفات العقد",
-    "resetView": "إعادة تعيين عرض اللوحة",
-    "run": "تشغيل",
-    "runWorkflow": "تشغيل سير العمل",
-    "runWorkflowFront": "تشغيل سير العمل (إضافة في المقدمة)",
-    "settings": "الإعدادات",
-    "theme": "المظهر",
-    "toggleBottomPanel": "تبديل اللوحة السفلية"
-  },
   "compositor": {
     "downloadPsd": "تحميل PSD",
     "empty": "شغّل سير العمل لإنشاء تركيب",
@@ -1008,6 +1008,7 @@
     "Copy Image": "نسخ الصورة",
     "Delete": "حذف",
     "Distribute Nodes": "توزيع العقد",
+    "Download Images": "تنزيل الصور",
     "Duplicate": "تكرار",
     "Edit Subgraph Widgets": "تعديل عناصر الرسم البياني الفرعي",
     "Expand": "توسيع",
@@ -1261,6 +1262,13 @@
     "WAN_CAMERA_EMBEDDING": "تضمين كاميرا وان",
     "WEBCAM": "كاميرا ويب"
   },
+  "deployToComfyApi": {
+    "body": "انشر سير العمل هذا كواجهة API للإنتاج في غضون دقائق. ضمّن عُقدك المخصصة ونماذجك وتبعيات Python في حزمة إصدار قابلة لإعادة الإنتاج، وسيشغّلها Comfy API كنقطة نهاية ذات تحجيم تلقائي.",
+    "buttonLabel": "النشر إلى Comfy API",
+    "deployOnPlatform": "النشر على المنصة",
+    "readDocs": "قراءة الوثائق",
+    "title": "النشر إلى Comfy API"
+  },
   "desktopLogin": {
     "confirmMessage": "تطبيق ComfyUI لسطح المكتب ينتظر تسجيل الدخول باستخدام حسابك. تابع فقط إذا بدأت عملية تسجيل الدخول من تطبيق ComfyUI لسطح المكتب.",
     "confirmSummary": "تأكيد تسجيل الدخول من سطح المكتب؟",
@@ -1297,6 +1305,11 @@
     "skip": "تخطي",
     "title": "تنزيل git",
     "warning": "إذا كنت متأكدًا من أنك لا تحتاج إلى git، أو كان هناك خطأ، يمكنك النقر على تخطي لتجاوز هذا الفحص. محاولة تشغيل ComfyUI بدون git غير مدعومة حالياً."
+  },
+  "dynamicGroup": {
+    "add": "إضافة {group}",
+    "remove": "إزالة {row}",
+    "row": "{group} رقم {index}"
   },
   "electronFileDownload": {
     "cancel": "إلغاء التنزيل",
@@ -1784,7 +1797,8 @@
     "exportingAssets": "جاري تصدير العناصر",
     "noExportsInQueue": "لا يوجد {filter} عمليات تصدير في قائمة الانتظار",
     "preparingExport": "جاري تجهيز التصدير...",
-    "retryDownload": "إعادة محاولة التحميل"
+    "retryDownload": "إعادة محاولة التحميل",
+    "unsupportedDownloadUrl": "عنوان URL لتنزيل التصدير غير مدعوم"
   },
   "feedback": {
     "title": "مشاركة الملاحظات"
@@ -1886,6 +1900,7 @@
     "download": "تنزيل",
     "downloadAudio": "تنزيل الصوت",
     "downloadImage": "تنزيل الصورة",
+    "downloadImages": "تنزيل الصور",
     "downloadVideo": "تنزيل الفيديو",
     "downloadWithSize": "تنزيل ({size})",
     "downloading": "جارٍ التحميل",
@@ -2023,6 +2038,7 @@
     "nMoreKeybindings": "+ {count} المزيد",
     "nMoreKeybindingsCompact": "+ {count}",
     "name": "الاسم",
+    "new": "جديد",
     "newFolder": "مجلد جديد",
     "next": "التالي",
     "nextImage": "الصورة التالية",
@@ -2139,6 +2155,7 @@
     "selectItemsToDelete": "حدد العناصر للحذف",
     "selectItemsToDuplicate": "حدد العناصر لعمل نسخة",
     "selectItemsToRename": "حدد العناصر لإعادة التسمية",
+    "selected": "محدَّد",
     "selectedFile": "الملف المحدد",
     "setAKeybindingForTheFollowing": "تعيين اختصار لوحة المفاتيح لما يلي:",
     "setAsBackground": "تعيين كخلفية",
@@ -2195,6 +2212,7 @@
     "usageHint": "تلميح الاستخدام",
     "use": "استخدم",
     "user": "المستخدم",
+    "validate": "تحقّق",
     "versionMismatchWarning": "تحذير توافق الإصدارات",
     "versionMismatchWarningMessage": "{warning}: {detail} زر https://docs.comfy.org/installation/update_comfyui#common-update-issues للحصول على تعليمات التحديث.",
     "videoFailedToLoad": "فشل تحميل الفيديو",
@@ -3457,6 +3475,11 @@
     "outputs": "المُخرجات",
     "type": "النوع"
   },
+  "nodeOutputsExport": {
+    "download": "تنزيل ({count})",
+    "downloadAll": "تنزيل الكل",
+    "title": "تنزيل الأصول"
+  },
   "nodeReplacement": {
     "compatibleAlternatives": "بدائل متوافقة",
     "installMissingNodes": "تثبيت العقد المفقودة",
@@ -3507,6 +3530,7 @@
       "deny": "إلغاء",
       "detailsHeader": "التفاصيل",
       "errorExpired": "انتهت صلاحية طلب الموافقة هذا أو تم استخدامه بالفعل. يرجى إعادة البدء من تطبيق العميل.",
+      "errorOriginRefused": "تعذّرت الموافقة على هذا من هذه الصفحة. أعد فتح تسجيل الدخول من التطبيق.",
       "errorScopeBroadening": "الأذونات التي تمت الموافقة عليها سابقًا لا تغطي هذا الطلب. ستحتاج إلى إعادة التفويض بالأذونات الجديدة.",
       "errorUnavailable": "هذه الميزة غير متوفرة حاليًا. يرجى التواصل مع الدعم إذا استمرت المشكلة.",
       "genericError": "فشل طلب OAuth. يرجى إعادة البدء من تطبيق العميل.",
@@ -3708,7 +3732,8 @@
     "importingModels": "جاري استيراد النماذج",
     "noImportsInQueue": "لا يوجد {filter} في قائمة الانتظار",
     "pending": "قيد الانتظار",
-    "progressCount": "{completed} من {total}"
+    "progressCount": "{completed} من {total}",
+    "taskUnavailable": "لم تعد مهمة التنزيل متاحة."
   },
   "queue": {
     "completedIn": "انتهى في {duration}",
@@ -4256,6 +4281,7 @@
     "assets": "الأصول",
     "backToAssets": "العودة إلى جميع الأصول",
     "browseTemplates": "تصفح القوالب المثال",
+    "closeSidebar": "إغلاق الشريط الجانبي",
     "downloads": "التنزيلات",
     "folderView": {
       "errorDetail": "تعذر استرجاع المخرجات لهذه المهمة. يرجى المحاولة مرة أخرى.",
@@ -4494,6 +4520,7 @@
       "discountRefreshFailed": "تم تطبيق خصمك. حدّث الصفحة لرؤية خطتك المحدّثة.",
       "endOfBillingPeriod": "نهاية فترة الفوترة",
       "failed": "فشل إلغاء الاشتراك",
+      "finishOnStripe": "لم يتم إلغاء اشتراكك بعد. أكمل الإلغاء في صفحة Stripe التي فُتحت للتو. إلى أن تفعل ذلك، ستتجدد خطتك كالمعتاد.",
       "keepSubscription": "الاحتفاظ بالاشتراك",
       "offerUnavailable": "هذا الخيار غير متوفر. يرجى اختيار خيار آخر.",
       "title": "إلغاء الاشتراك",
@@ -4567,7 +4594,7 @@
       "runLabel": "تشغيل"
     },
     "inactiveEnterpriseDescription": "لا يمكنك تشغيل سير العمل أو إضافة أعضاء جدد. تواصل مع المبيعات لاستعادة الوصول.",
-    "inactiveTeamDescription": "أعد تفعيل خطة فريقك لإضافة المزيد من الأعضاء وتشغيل سير العمل",
+    "inactiveTeamDescription": "أعِد تفعيل خطة فريقك لإضافة المزيد من الأعضاء وتشغيل سير العمل",
     "inactiveTeamPlanIncludes": "تشمل الخطة النشطة كل ما في {plan}، بالإضافة إلى:",
     "inactiveTeamTitle": "اشتراك الفريق غير نشط",
     "inviteUpTo": "ادعُ حتى",
@@ -4626,7 +4653,7 @@
     "perMonth": "دولار أمريكي / شهر",
     "perYear": "/ سنة",
     "personalHeader": "الخطط الشخصية للاستخدام الفردي فقط. {action}",
-    "personalHeaderAction": "لإضافة زملاء، اشترك في خطة الفريق.",
+    "personalHeaderAction": "لإضافة زملاء في الفريق، اشترك في خطة الفريق.",
     "personalWorkspace": "مساحة العمل الشخصية",
     "planLoadError": "تعذر تحميل تفاصيل خطتك.",
     "planLoadErrorRetry": "حاول مرة أخرى",
@@ -4808,7 +4835,7 @@
       "perkRolePermissions": "أذونات حسب الدور",
       "perkSharedPool": "رصيد مشترك لجميع الأعضاء",
       "tagline": "اختر اشتراك الأرصدة الخاص بك. احصل على خصم أكبر مع اشتراك أرصدة أكبر.",
-      "unavailable": "خطة الفريق هذه غير متوفرة حالياً."
+      "unavailable": "خطة الفريق هذه غير متاحة حاليًا."
     },
     "teamPlanIncludes": "تشمل خطتك كل ما في {plan}، بالإضافة إلى:",
     "teamPlanName": "فريق",
@@ -4923,6 +4950,38 @@
       "Video API": "واجهة برمجة تطبيقات الفيديو"
     },
     "clearAllFilters": "مسح جميع الفلاتر",
+    "detail": {
+      "backToTemplates": "العودة إلى {category}",
+      "breadcrumbLabel": "التنقل بين القوالب",
+      "cloudUpsellDescription": "شغّل على وحدات معالجة الرسومات السحابية من دون إعداد محلي أو تنزيلات.",
+      "cloudUpsellTitle": "تشغيل هذا القالب في Comfy Cloud",
+      "downloadCancelled": "أُلغي التنزيل",
+      "downloadFailed": "فشل التنزيل",
+      "downloadModel": "تنزيل النموذج",
+      "downloadModelNamed": "تنزيل {model}",
+      "downloadModelsAndOpen": "تنزيل النماذج وفتح",
+      "downloadPaused": "متوقف مؤقتًا",
+      "downloadPausedModel": "تم إيقاف تنزيل {model} مؤقتًا",
+      "downloadPausedProgress": "متوقف مؤقتًا · {progress}",
+      "downloadQueued": "في قائمة الانتظار",
+      "downloadStarting": "جارٍ البدء",
+      "downloaded": "تم التنزيل",
+      "downloading": "جارٍ التنزيل",
+      "downloadingModel": "جارٍ تنزيل {model}",
+      "getItManually": "احصل عليه يدويًا",
+      "installed": "مثبّت",
+      "models": "النماذج",
+      "openInCloud": "فتح في السحابة",
+      "openNow": "فتح الآن",
+      "partnerNodeDescription": "اختر ما إذا كنت تريد تشغيل سير العمل هذا محليًا أم في Comfy Cloud.",
+      "partnerNodeTitle": "يستخدم سير العمل هذا عُقد الشركاء",
+      "requirements": "متطلبات القالب",
+      "retryDownload": "إعادة المحاولة",
+      "retryDownloadNamed": "إعادة محاولة تنزيل {model}",
+      "unavailable": "غير متاح",
+      "unknown": "غير معروف",
+      "usedBy": "تستخدمه {nodes}"
+    },
     "error": {
       "loading": "تعذّر فتح القالب. يُرجى المحاولة مرة أخرى.",
       "preparingMedia": "تعذر تحضير بعض وسائط المثال. سيُفتح سير العمل؛ اختر ملفاتك الخاصة لأي مدخلات مفقودة.",
@@ -4978,6 +5037,7 @@
     "errorOpenImage": "حدث خطأ أثناء فتح الصورة: {error}",
     "errorSaveSetting": "خطأ في حفظ الإعداد {id}: {err}",
     "exportSuccess": "تم تصدير النموذج بنجاح كـ {format}",
+    "extraResourcesUploadFailed": "فشل رفع الموارد الإضافية",
     "failedExecutionPathResolution": "تعذر حل المسار إلى العُقَد المحددة",
     "failedToAccessBillingPortal": "فشل في الوصول إلى بوابة الفواتير: {error}",
     "failedToApplyTexture": "فشل في تطبيق الخامة",
@@ -5246,37 +5306,46 @@
     },
     "billingStatus": {
       "ending": {
-        "body": "يحتفظ الأعضاء بكامل الوصول حتى ذلك الحين. استأنف اشتراكك للاحتفاظ بأرصِدتك المشتركة ومقاعدك.",
+        "body": "يحتفظ الأعضاء بالوصول الكامل حتى ذلك الحين. استأنف خطتك للاحتفاظ بأرصدة فريقك المشتركة.",
+        "contactSales": "التواصل مع المبيعات",
         "enterpriseBody": "يحتفظ الأعضاء بوصول كامل حتى ذلك الحين. تواصل مع فريق المبيعات لدينا للتمديد.",
         "enterpriseTitle": "تنتهي خطة المؤسسات الخاصة بك في {date}",
-        "reactivate": "استئناف الاشتراك",
+        "memberBody": "يمكنك تشغيل سير العمل حتى ذلك الحين.",
+        "reactivate": "استئناف الخطة",
         "title": "تنتهي خطة فريقك في {date}"
       },
       "outOfCredits": {
         "addCredits": "إضافة أرصدة",
-        "body": "لقد استخدم فريقك جميع أرصدته. أضف المزيد من الأرصدة للمتابعة أو انتظر حتى يتم إعادة تعبئة الأرصدة في {date}.",
-        "bodyNoDate": "لقد استخدم فريقك جميع أرصدته. أضف المزيد من الأرصدة للمتابعة.",
+        "body": "استخدم فريقك جميع أرصدته. أضف المزيد من الأرصدة أو انتظر حتى تُعاد تعبئة الأرصدة في {date}.",
+        "bodyNoDate": "استخدم فريقك جميع أرصدته. أضف المزيد من الأرصدة.",
         "dismiss": "تجاهل",
-        "memberBody": "لقد استخدم فريقك جميع أرصدته. يجب على مسؤولي المساحة workspace إضافة المزيد من الأرصدة للمتابعة.",
-        "title": "نفدت الأرصدة",
-        "upgradeBody": "قم بترقية خطتك لإضافة أرصدة ومتابعة التوليد."
+        "memberBody": "استخدم فريقك جميع أرصدته. اطلب من مالك مساحة العمل إضافة المزيد من الأرصدة أو انتظر حتى تُعاد تعبئة الأرصدة في {date}.",
+        "memberBodyNoDate": "استخدم فريقك جميع أرصدته. اطلب من مالك مساحة العمل إضافة المزيد من الأرصدة.",
+        "title": "نفدت الأرصدة"
       },
       "paused": {
         "body": "تم إيقاف اشتراك هذه المساحة workspace مؤقتًا. يرجى تحديث الدفع للاستمرار.",
         "memberBody": "تم إيقاف اشتراك هذه المساحة workspace مؤقتًا. يجب على مسؤولي المساحة تحديث طريقة الدفع.",
+        "personalBody": "اشتراكك متوقف مؤقتًا. حدّث طريقة الدفع لاستئنافه.",
+        "personalPaymentFailedBody": "لم تتم معالجة دفعتك. حدّث طريقة الدفع للاستئناف.",
         "title": "تم إيقاف الاشتراك مؤقتًا"
       },
       "payInvoice": "دفع الفاتورة",
       "planChange": {
         "body": "تظل خطتك الحالية نشطة حتى ذلك الحين.",
-        "title": "تتغير خطتك إلى {plan} في {date}"
+        "title": "تتغير خطتك إلى {plan} في {date}."
       },
-      "updatePayment": "تحديث الدفع",
-      "warning": {
-        "bodyNoDate": "لم تتم معالجة آخر دفعة لك. يرجى تحديث الدفع لتجنب الإيقاف.",
-        "bodyWithAmount": "تعذّرت معالجة دفعتك البالغة {amount}. ادفع الفاتورة أو حدّث طريقة الدفع لتجنّب الإيقاف المؤقت.",
-        "title": "تم رفض الدفع"
-      }
+      "planEnded": {
+        "enterpriseBody": "تواصل مع المبيعات لبدء خطة مؤسسات جديدة.",
+        "enterpriseTitle": "انتهت خطة المؤسسات الخاصة بك في {date}",
+        "planTitle": "انتهت خطتك في {date}",
+        "salesBody": "تواصل مع المبيعات لبدء خطة جديدة.",
+        "salesMemberBody": "اطلب من مالك مساحة العمل التواصل مع المبيعات.",
+        "teamBody": "أعد الاشتراك لتشغيل سير العمل والحصول على الأرصدة المشتركة مجددًا.",
+        "teamMemberBody": "اطلب من مالك مساحة العمل إعادة الاشتراك.",
+        "teamTitle": "انتهت خطة فريقك في {date}"
+      },
+      "updatePayment": "تحديث الدفع"
     },
     "changeRoleDialog": {
       "demoteConfirm": "تخفيض إلى عضو",
@@ -5347,6 +5416,11 @@
       "titleSingleSeat": "خطتك الحالية تدعم مقعدًا واحدًا فقط",
       "upgradeToTeam": "الترقية إلى فريق"
     },
+    "invoices": {
+      "fullHistory": "سجل الفواتير الكامل",
+      "nextInvoice": "الفاتورة التالية",
+      "usd": "USD"
+    },
     "leaveDialog": {
       "leave": "مغادرة",
       "message": "لن تتمكن من الانضمام مرة أخرى إلا إذا تواصلت مع مالك مساحة العمل.",
@@ -5397,6 +5471,7 @@
       "noMembers": "لا يوجد أعضاء",
       "noMembersMatch": "لا يوجد أعضاء يطابقون \"{query}\"",
       "pendingInvitesCount": "{count} دعوة معلقة | {count} دعوات معلقة",
+      "planEndedFooter": "انتهت خطتك، لذلك لا يمكنك إضافة أعضاء جدد.",
       "reactivateTeam": "إعادة تفعيل الفريق",
       "resubscribe": "إعادة الاشتراك",
       "searchPlaceholder": "بحث...",
@@ -5415,6 +5490,7 @@
     "menu": {
       "creatorCannotLeave": "لا يمكن لمنشئ مساحة العمل مغادرة المساحة التي أنشأها",
       "deleteWorkspace": "حذف مساحة العمل",
+      "deleteWorkspaceAfterPlanEndsTooltip": "يمكنك حذف مساحة العمل هذه بعد انتهاء خطتك في {date}",
       "deleteWorkspaceDisabledTooltip": "يرجى إلغاء الاشتراك النشط لمساحة العمل أولاً",
       "editWorkspace": "تعديل تفاصيل مساحة العمل",
       "leaveWorkspace": "مغادرة مساحة العمل"
@@ -5467,6 +5543,7 @@
     "planCredits": {
       "tabs": {
         "activity": "النشاط",
+        "invoices": "الفواتير",
         "overview": "الرصيد"
       }
     },
@@ -5528,6 +5605,7 @@
     "hideMinimap": "إخفاء الخريطة المصغرة",
     "label": "عناصر التحكم في التكبير",
     "showMinimap": "إظهار الخريطة المصغرة",
+    "zoomPercentage": "نسبة التكبير",
     "zoomToFit": "تكبير لتناسب الشاشة"
   }
 }

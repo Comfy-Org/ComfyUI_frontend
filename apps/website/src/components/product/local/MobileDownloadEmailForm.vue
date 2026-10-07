@@ -2,18 +2,19 @@
 import { ArrowRight } from '@lucide/vue'
 import { computed, nextTick, onMounted, ref, useId } from 'vue'
 
-import type { Locale } from '../../../i18n/translations'
+import type { Locale } from '@/i18n/translations'
 
 import IconButton from '@/components/ui/icon-button/IconButton.vue'
-import { useDownloadUrl } from '../../../composables/useDownloadUrl'
-import { t } from '../../../i18n/translations'
+import { useDownloadUrl } from '@/composables/useDownloadUrl'
+import { translationsFor } from '@/i18n/translations'
 import {
   isDownloadLinkRequestEnabled,
   preloadDownloadLinkAnalytics,
   requestDownloadLink
-} from '../../../scripts/customerio'
+} from '@/scripts/customerio'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 
 const { isMobileUa } = useDownloadUrl()
 
@@ -35,16 +36,15 @@ const successRegion = ref<HTMLParagraphElement | null>(null)
 
 const successMessage = computed(() =>
   status.value === 'success'
-    ? t('download.emailForm.success', locale, {
+    ? t('download.emailForm.success', {
         email: submittedEmail.value
       })
     : ''
 )
 
 const errorMessage = computed(() => {
-  if (status.value === 'invalid')
-    return t('download.emailForm.invalidEmail', locale)
-  if (status.value === 'error') return t('download.emailForm.error', locale)
+  if (status.value === 'invalid') return t('download.emailForm.invalidEmail')
+  if (status.value === 'error') return t('download.emailForm.error')
   return ''
 })
 
@@ -91,7 +91,7 @@ async function onSubmit() {
       @submit.prevent="onSubmit"
     >
       <h2 class="text-[17px] font-medium text-primary-comfy-yellow">
-        {{ t('download.emailForm.heading', locale) }}
+        {{ t('download.emailForm.heading') }}
       </h2>
       <input
         v-model="decoy"
@@ -108,10 +108,10 @@ async function onSubmit() {
           type="email"
           required
           autocomplete="email"
-          :aria-label="t('download.emailForm.emailLabel', locale)"
+          :aria-label="t('download.emailForm.emailLabel')"
           :aria-invalid="status === 'invalid' || undefined"
           :aria-describedby="errorMessage ? errorMessageId : undefined"
-          :placeholder="t('download.emailForm.placeholder', locale)"
+          :placeholder="t('download.emailForm.placeholder')"
           class="h-16 w-full rounded-3xl border border-primary-comfy-canvas bg-transparency-white-t4 pr-14 pl-4 text-[13px] font-semibold text-primary-comfy-canvas placeholder:text-primary-comfy-canvas/60"
         />
         <IconButton
@@ -121,7 +121,7 @@ async function onSubmit() {
           class="absolute right-4 rounded-xl"
           :disabled="status === 'pending'"
           :aria-busy="status === 'pending'"
-          :aria-label="t('download.emailForm.submit', locale)"
+          :aria-label="t('download.emailForm.submit')"
         >
           <span
             v-if="status === 'pending'"

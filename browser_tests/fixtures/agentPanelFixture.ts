@@ -18,6 +18,7 @@ import type { AgentTurnAccepted } from '@/workbench/extensions/agent/schemas/age
 
 import { cloudAppFixture, waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { DEPLOY_ACTION_SEEN_SETTINGS } from '@e2e/fixtures/constants/workflowActions'
 import {
   AGENT_COMPOSER_THREAD_ID,
   agentComposerRunMode,
@@ -43,6 +44,8 @@ function agentFeatures(agentFlag: boolean): RemoteConfig {
 interface BootAgentAppOptions {
   /** Extra `/api/settings` entries layered over the panel defaults. */
   settings?: Record<string, unknown>
+  /** Extra authenticated `/api/features` values layered over panel defaults. */
+  features?: Partial<RemoteConfig>
   vueNodes?: boolean
   /** Server definitions, optionally augmented with deterministic test entries. */
   objectInfo?: 'server' | Record<string, ComfyNodeDef>
@@ -63,15 +66,17 @@ async function mockAgentBoot(
   {
     agentFlag,
     settings,
+    features,
     vueNodes,
     objectInfo,
     assets
   }: { agentFlag: boolean } & BootAgentAppOptions
 ): Promise<void> {
   await mockCloudBoot(page, {
-    features: agentFeatures(agentFlag),
+    features: { ...agentFeatures(agentFlag), ...features },
     settings: {
       'Comfy.TutorialCompleted': true,
+      ...DEPLOY_ACTION_SEEN_SETTINGS,
       'Comfy.RightSidePanel.ShowErrorsTab': false,
       ...settings,
       ...((vueNodes || cloudAppFixture.info().tags.includes('@vue-nodes')) && {

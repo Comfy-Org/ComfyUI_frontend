@@ -1,8 +1,8 @@
-import { generationPending } from '../../config/workshop-generation-assets'
+import { generationPending } from '@/config/workshop-generation-assets'
 import type {
   SavedGeneration,
   SavedGenerationOutput
-} from '../../config/workshop-generation-assets'
+} from '@/config/workshop-generation-assets'
 
 /** How many tiles the strip keeps. Anything older lives in Cloud. */
 const SAVED_ASSETS_SHOWN = 8

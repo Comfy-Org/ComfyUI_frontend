@@ -7,10 +7,10 @@
  */
 import type { Alternate } from './hreflangRoutes'
 
-import { isExcludedFromSitemap } from '../config/indexing'
-import { DEFAULT_LOCALE, LOCALE_CODES, LOCALES } from '../config/locales'
-import { astroRedirects } from '../config/redirects'
-import { supportsLocaleRoute } from '../config/routes'
+import { isExcludedFromSitemap } from '@/config/indexing'
+import { DEFAULT_LOCALE, LOCALE_CODES, LOCALES } from '@/config/locales'
+import { astroRedirects } from '@/config/redirects'
+import { supportsLocaleRoute } from '@/config/routes'
 import { unprefixed } from './hreflangRoutes'
 
 export interface BuiltSite {

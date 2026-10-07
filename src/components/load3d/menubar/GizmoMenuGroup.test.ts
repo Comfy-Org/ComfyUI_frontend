@@ -88,7 +88,7 @@ describe('GizmoMenuGroup', () => {
 
     expect(
       screen.getByRole('button', { name: 'Translate', pressed: true })
-    ).toBeInTheDocument()
+    ).toHaveClass('bg-secondary-background-selected')
 
     await user.click(
       screen.getByRole('button', { name: 'Rotate', pressed: false })

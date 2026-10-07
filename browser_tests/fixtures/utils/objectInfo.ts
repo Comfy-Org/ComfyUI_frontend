@@ -16,7 +16,7 @@ type ComboInput = ComboInputSpec | ComboInputSpecV2
 
 const OBJECT_INFO_ROUTE = '**/object_info'
 
-function getNodeInfo(
+export function getNodeInfo(
   objectInfo: Partial<ObjectInfoResponse>,
   nodeType: string
 ) {

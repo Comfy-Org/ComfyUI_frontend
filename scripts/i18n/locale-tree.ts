@@ -187,7 +187,8 @@ export function rebuildLocale(
   source: LocaleObject,
   existing: LocaleObject,
   invalidated: ReadonlySet<string>,
-  translations: ReadonlyMap<string, LocaleTrackedLeaf>
+  translations: ReadonlyMap<string, LocaleTrackedLeaf>,
+  omitted: ReadonlySet<string> = new Set()
 ): LocaleObject {
   function rebuildObject(node: LocaleObject, parent: string[]): LocaleObject {
     // Object.fromEntries defines own data properties, so keys like __proto__
@@ -195,24 +196,26 @@ export function rebuildLocale(
     return Object.fromEntries(
       Object.keys(node)
         .sort()
-        .map((key) => {
+        .flatMap<[string, LocaleValue]>((key) => {
           const child = node[key]
           const path = [...parent, key]
-          return [
-            key,
-            child && typeof child === 'object' && !Array.isArray(child)
-              ? rebuildObject(child, path)
-              : rebuildLeaf(child, path)
-          ]
+          if (omitted.has(pathKey(path))) return []
+          if (child && typeof child === 'object' && !Array.isArray(child)) {
+            const nested = rebuildObject(child, path)
+            return Object.keys(nested).length || !Object.keys(child).length
+              ? [[key, nested]]
+              : []
+          }
+          return [[key, rebuildLeaf(child, path)]]
         })
     )
   }
 
   function rebuildLeaf(leaf: LocaleTrackedLeaf, path: string[]): LocaleValue {
-    if (!isTranslatableLeaf(leaf)) return structuredClone(leaf)
     const key = pathKey(path)
     const translated = translations.get(key)
     if (translated !== undefined) return structuredClone(translated)
+    if (!isTranslatableLeaf(leaf)) return structuredClone(leaf)
     const existingLeaf = getLeaf(existing, path)
     if (
       existingLeaf !== undefined &&

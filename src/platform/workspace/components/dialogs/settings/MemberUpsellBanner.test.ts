@@ -51,7 +51,7 @@ describe('MemberUpsellBanner', () => {
   it('shows the ended title and resume action for an ended team plan', () => {
     renderBanner({ variant: 'reactivate' })
 
-    expect(screen.getByText('Your team plan has ended')).toBeInTheDocument()
+    expect(screen.getByText('Your Team plan has ended')).toBeInTheDocument()
     expect(
       screen.getByText('To add more teammates, reactivate your plan.')
     ).toBeInTheDocument()

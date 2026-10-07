@@ -1,6 +1,6 @@
 import { assert, describe, expect, it } from 'vitest'
 
-import { workflowDetailsBySlug } from '../src/config/workshop-workflow-content'
+import { workflowDetailsBySlug } from '@/config/workshop-workflow-content'
 import type { WorkflowRunResult } from './workflow-sweep'
 import {
   checkPassed,

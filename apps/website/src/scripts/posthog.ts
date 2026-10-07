@@ -14,7 +14,8 @@ import {
 } from '@comfyorg/account-core/telemetry'
 import type {
   AuthCompletedMetadata,
-  AuthErrorMetadata
+  AuthErrorMetadata,
+  WebSessionTelemetryEvent
 } from '@comfyorg/account-core/telemetry'
 import { createPostHogBeforeSend } from '@comfyorg/shared-frontend-utils/piiUtil'
 import { normalizeTurnstileMode } from '@comfyorg/account-core/turnstile'
@@ -22,7 +23,7 @@ import type { TurnstileMode } from '@comfyorg/account-core/turnstile'
 
 import type { Platform } from '@/composables/useDownloadUrl'
 import type { ConnectionId, McpClientId } from '@/config/mcpClients'
-import { WORKSHOP_CLOUD_ENV } from '../config/workshop-env'
+import { WORKSHOP_CLOUD_ENV } from '@/config/workshop-env'
 import type { WorkshopAnalyticsEvent } from './workshop-analytics'
 import { captureWorkshopHealth } from './workshop-datadog'
 
@@ -67,6 +68,7 @@ export type CliClientId =
 export type RouterRoadmapCardId = 'workflow' | 'strategy' | 'use-case' | 'byok'
 
 type AnalyticsEvent =
+  | WebSessionTelemetryEvent
   | {
       name: `website:workshop_${WorkshopAnalyticsEvent['name']}`
       properties: WorkshopAnalyticsEvent['properties']
@@ -526,6 +528,10 @@ export function captureAuthRefreshFailed(outcome: SessionRefreshOutcome): void {
     name: ANALYTICS_EVENT.authRefreshFailed,
     properties: { outcome }
   })
+}
+
+export function captureWebSessionEvent(event: WebSessionTelemetryEvent): void {
+  captureEvent(event)
 }
 
 export function captureSignupOpened(): void {

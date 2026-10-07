@@ -10,7 +10,8 @@ export const zResultItem = z.object({
   filename: z.string().optional(),
   subfolder: z.string().optional(),
   type: resultItemType.optional(),
-  display_name: z.string().optional()
+  display_name: z.string().optional(),
+  id: z.string().optional()
 })
 export type ResultItem = z.infer<typeof zResultItem>
 // Uses .passthrough() because custom nodes can output arbitrary keys.
@@ -137,7 +138,7 @@ export interface AssetExportWsMessage {
   bytes_total: number
   bytes_processed: number
   progress: number
-  status: Exclude<TaskStatus, 'cancelled'>
+  status: TaskStatus
   error?: string
 }
 

@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 const mockSnapshot = vi.hoisted(() => ({ cloudFreeTier: false }))
 
-vi.mock(import('../data/feature-flags.snapshot.json'), () => ({
+vi.mock(import('@/data/feature-flags.snapshot.json'), () => ({
   default: {
     fetchedAt: '2026-05-12T00:00:00.000Z',
     flags: mockSnapshot
@@ -15,7 +15,7 @@ async function loadPricingPlans(cloudFreeTier: boolean) {
 
   const [{ SHOW_FREE_TIER }, { pricingPlans }] = await Promise.all([
     import('./features'),
-    import('../data/pricingPlans')
+    import('@/data/pricingPlans')
   ])
   return { SHOW_FREE_TIER, pricingPlans }
 }

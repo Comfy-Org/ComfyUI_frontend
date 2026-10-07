@@ -118,9 +118,9 @@ test.describe('Agent run permissions popover', { tag: '@cloud' }, () => {
     })
   })
 
-  // A rejected write keeps the menu open to retry from, but the options go
-  // aria-disabled mid-write: that retry survives only if focus does.
-  test('A failed save can be retried from the keyboard', async ({
+  // Regression coverage for https://github.com/Comfy-Org/ComfyUI_frontend/pull/20177:
+  // auth diagnostics must leave the rejected write retryable at the UI.
+  test('An auth-rejected save can be retried from the keyboard', async ({
     agentPanel,
     comfyPage
   }) => {
@@ -145,7 +145,17 @@ test.describe('Agent run permissions popover', { tag: '@cloud' }, () => {
       if (rejectNext) {
         rejectNext = false
         await held
-        return route.fulfill({ status: 500, body: 'nope' })
+        return route.fulfill({
+          ...jsonRoute({
+            accepted: ['bearer_jwt', 'x_api_key'],
+            error: {
+              type: 'auth_type_not_allowed',
+              message:
+                'Authentication method not allowed for this endpoint. Accepted: bearer_jwt, x_api_key'
+            }
+          }),
+          status: 403
+        })
       }
       return route.fulfill(jsonRoute(saved))
     })

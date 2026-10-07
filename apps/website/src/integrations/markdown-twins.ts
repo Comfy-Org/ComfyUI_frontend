@@ -3,11 +3,11 @@ import { access, mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { isExcludedFromSitemap } from '../config/indexing'
-import { htmlToTwin, renderTwin } from '../lib/markdown-twin'
-import { markdownTwinPath } from '../lib/markdown-twin-path'
-import { writeFullText, writeSectionIndexes } from '../lib/section-index'
-import type { SectionSpec } from '../lib/section-index'
+import { isExcludedFromSitemap } from '@/config/indexing'
+import { htmlToTwin, renderTwin } from '@/lib/markdown-twin'
+import { markdownTwinPath } from '@/lib/markdown-twin-path'
+import { writeFullText, writeSectionIndexes } from '@/lib/section-index'
+import type { SectionSpec } from '@/lib/section-index'
 
 /** Sections that get their own llms.txt, the Vercel and Cloudflare pattern. */
 const SECTIONS: SectionSpec[] = [
@@ -68,7 +68,7 @@ async function builtPagePath(
   return undefined
 }
 
-async function readBuiltPage(
+export async function readBuiltPage(
   root: string,
   pathname: string
 ): Promise<string | undefined> {
@@ -111,7 +111,7 @@ export async function writeMarkdownTwins(
       continue
     }
     if (await exists(target)) {
-      // A page endpoint (e.g. supported-models' [slug].md.ts) already wrote
+      // A page endpoint (e.g. the model files' [slug].md.ts) already wrote
       // this twin. It is a real, current twin — section indexes and
       // llms-full.txt must still include it, just not regenerate it here.
       // Checked ahead of readBuiltPage: a page can ship a markdown twin with

@@ -4,8 +4,8 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 import type { HTMLAttributes } from 'vue'
 
-import { prefersReducedMotion } from '../../composables/useReducedMotion'
-import ProductHeroBadge from '../common/ProductHeroBadge.vue'
+import { prefersReducedMotion } from '@/composables/useReducedMotion'
+import ProductHeroBadge from '@/components/common/ProductHeroBadge.vue'
 
 type Backdrop =
   | { type: 'image'; src: string; alt?: string }

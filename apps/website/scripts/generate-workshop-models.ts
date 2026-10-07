@@ -6,23 +6,18 @@
 // input schema straight from its define_schema(), the template's widget
 // values as defaults, its price badge and its output modality.
 import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { dirname, join } from 'node:path'
+
+import { repoRoot, websiteRoot } from '@website/paths'
 
 import { API_PROVIDER_MAP } from './generate-models'
 import { sliceBalanced } from './python-source-parser'
 
-const TEMPLATES_DIR = fileURLToPath(
-  new URL('../../../../workflow_templates/templates', import.meta.url)
-)
-const API_NODES_DIR = fileURLToPath(
-  new URL('../../../../ComfyUI/comfy_api_nodes', import.meta.url)
-)
+const TEMPLATES_DIR = join(dirname(repoRoot), 'workflow_templates/templates')
+const API_NODES_DIR = join(dirname(repoRoot), 'ComfyUI/comfy_api_nodes')
 const WORKFLOW_TEMPLATES_BASE =
   'https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates'
-const OUTPUT = fileURLToPath(
-  new URL('../src/config/workshop-models.generated.json', import.meta.url)
-)
+const OUTPUT = join(websiteRoot, 'src/config/workshop-models.generated.json')
 const EXAMPLES_PER_MODEL = 3
 
 type Modality = 'image' | 'video' | 'audio' | '3d' | 'text'
@@ -566,12 +561,7 @@ function thumbnailFor(name: string): string | undefined {
 
 function run() {
   const generated = JSON.parse(
-    readFileSync(
-      fileURLToPath(
-        new URL('../src/config/generated-models.json', import.meta.url)
-      ),
-      'utf8'
-    )
+    readFileSync(join(websiteRoot, 'src/config/generated-models.json'), 'utf8')
   ) as { slug: string; directory: string; canonicalSlug?: string }[]
   const partnerSlugs = new Set(
     generated

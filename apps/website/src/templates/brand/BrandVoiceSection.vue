@@ -1,45 +1,40 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '@/i18n/translations'
 
-import SectionHeader from '../../components/common/SectionHeader.vue'
-import { t } from '../../i18n/translations'
+import SectionHeader from '@/components/common/SectionHeader.vue'
+import { translationsFor } from '@/i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 
 const principles = [
   {
-    title: t('brand.voice.direct.title', locale),
-    body: t('brand.voice.direct.body', locale)
+    title: t('brand.voice.direct.title'),
+    body: t('brand.voice.direct.body')
   },
   {
-    title: t('brand.voice.precise.title', locale),
-    body: t('brand.voice.precise.body', locale)
+    title: t('brand.voice.precise.title'),
+    body: t('brand.voice.precise.body')
   },
   {
-    title: t('brand.voice.human.title', locale),
-    body: t('brand.voice.human.body', locale)
+    title: t('brand.voice.human.title'),
+    body: t('brand.voice.human.body')
   },
   {
-    title: t('brand.voice.antihype.title', locale),
-    body: t('brand.voice.antihype.body', locale)
+    title: t('brand.voice.antihype.title'),
+    body: t('brand.voice.antihype.body')
   }
 ]
 
-const doExamples = [
-  t('brand.voice.do.0', locale),
-  t('brand.voice.do.1', locale)
-]
+const doExamples = [t('brand.voice.do.0'), t('brand.voice.do.1')]
 
-const dontExamples = [
-  t('brand.voice.dont.0', locale),
-  t('brand.voice.dont.1', locale)
-]
+const dontExamples = [t('brand.voice.dont.0'), t('brand.voice.dont.1')]
 </script>
 
 <template>
   <section class="mx-auto max-w-9xl px-6 py-10 lg:px-20 lg:py-12">
     <SectionHeader align="start" max-width="xl">
-      {{ t('brand.voice.heading', locale) }}
+      {{ t('brand.voice.heading') }}
     </SectionHeader>
 
     <dl class="mt-10 flex max-w-4xl flex-col gap-3.5 text-sm/[1.6]">
@@ -59,7 +54,7 @@ const dontExamples = [
           <span
             class="text-sm font-bold tracking-wider text-primary-comfy-canvas uppercase"
           >
-            {{ t('brand.voice.doLabel', locale) }}
+            {{ t('brand.voice.doLabel') }}
           </span>
         </div>
         <div
@@ -82,7 +77,7 @@ const dontExamples = [
           <span
             class="text-sm font-bold tracking-wider text-primary-warm-gray uppercase"
           >
-            {{ t('brand.voice.dontLabel', locale) }}
+            {{ t('brand.voice.dontLabel') }}
           </span>
         </div>
         <div

@@ -1,30 +1,27 @@
 import { z } from 'astro/zod'
 import { describe, expect, it } from 'vitest'
 
-import packedContracts from '../src/content/workshop-router-contracts.json'
-import rawPresentation from '../src/data/workshop-input-presentation.json'
-import rawSnapshots from '../src/data/workshop-router-openapi.snapshot.json'
+import packedContracts from '@/content/workshop-router-contracts.json'
+import rawPresentation from '@/data/workshop-input-presentation.json'
+import rawSnapshots from '@/data/workshop-router-openapi.snapshot.json'
 import {
   formForContract,
   workshopContractRecordSchema,
   workshopContractSchema
-} from '../src/config/workshop-contract'
-import { fieldsForDefinition } from '../src/config/workshop-form-definition'
-import { validateWorkshopInput } from '../src/config/workshop-json-schema'
-import {
-  defaultValues,
-  schemaForModel
-} from '../src/config/workshop-playground'
-import type { FormValues } from '../src/config/workshop-playground'
-import { prepareWorkshopRouterInput } from '../src/config/workshop-request'
-import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from '../src/config/workshop-router-content'
-import { initialWorkshopPageState } from '../src/config/workshop-page-state'
-import { prepareModelRouterRender } from '../src/config/router-render'
+} from '@/config/workshop-contract'
+import { fieldsForDefinition } from '@/config/workshop-form-definition'
+import { validateWorkshopInput } from '@/config/workshop-json-schema'
+import { defaultValues, schemaForModel } from '@/config/workshop-playground'
+import type { FormValues } from '@/config/workshop-playground'
+import { prepareWorkshopRouterInput } from '@/config/workshop-request'
+import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from '@/config/workshop-router-content'
+import { initialWorkshopPageState } from '@/config/workshop-page-state'
+import { prepareModelRouterRender } from '@/config/router-render'
 import {
   parseRouterOpenApiSnapshot,
   routerInputSchema,
   resolveSchemaReference
-} from '../src/config/workshop-router-openapi'
+} from '@/config/workshop-router-openapi'
 import { curateWorkshopInputs } from './workshop-input-presentation'
 
 const object = z.record(z.string(), z.json())
@@ -238,6 +235,26 @@ describe('curated model inputs', () => {
     ).toThrow('Invalid fixed input')
   })
 
+  it('keeps example fields that only a composed branch declares', () => {
+    const { inputSchema } = curateWorkshopInputs('fixture/composed-example', {
+      allOf: [
+        {
+          oneOf: [
+            { properties: { mode: { const: 'preview' }, prompt: {} } },
+            { properties: { mode: { const: 'refine' } } }
+          ]
+        }
+      ],
+      properties: { quality: { type: 'string', enum: ['standard'] } },
+      example: { mode: 'preview', prompt: 'A cube', quality: 'standard' }
+    })
+    expect(inputSchema.example).toEqual({
+      mode: 'preview',
+      prompt: 'A cube',
+      quality: 'standard'
+    })
+  })
+
   it('offers no output-count controls across the generated Router contracts', () => {
     const outputCountNames =
       /^(?:param_)?(?:n|count|num_images|sampleCount|series_amount)$/
@@ -247,6 +264,44 @@ describe('curated model inputs', () => {
         .map((field) => `${contract.id}:${field.name}`)
     )
     expect(controls).toEqual([])
+  })
+
+  it.for([
+    'openai--gpt-image-1--edit-images',
+    'openai--gpt-image-1.5--edit-images'
+  ])('renders no free-text image or mask field on %s', async (pageId) => {
+    const model = getRouterWorkshopModelDetail(pageId)
+    if (!model) throw new Error(`Missing ${pageId} page`)
+    const names = initialWorkshopPageState(model).schema.map(
+      (field) => field.name
+    )
+    expect(names).toContain('prompt')
+    expect(names).not.toContain('image')
+    expect(names).not.toContain('mask')
+    const render = await prepareModelRouterRender(model)
+    expect(render.body).not.toHaveProperty('image')
+    expect(render.body).not.toHaveProperty('mask')
+  })
+
+  it('gives Kling 3.0 Turbo one aspect-ratio and one duration control, sent nested under settings', async () => {
+    const model = getRouterWorkshopModelDetail(
+      'kling--kling-3.0-turbo-text-to-video--generate-videos'
+    )
+    if (!model) throw new Error('Missing Kling 3.0 Turbo page')
+    const names = initialWorkshopPageState(model).schema.map(
+      (field) => field.name
+    )
+    expect(names.filter((name) => name.endsWith('aspect_ratio'))).toEqual([
+      'setting_aspect_ratio'
+    ])
+    expect(names.filter((name) => name.endsWith('duration'))).toEqual([
+      'setting_duration'
+    ])
+    const render = await prepareModelRouterRender(model)
+    expect(render.body).not.toHaveProperty('aspect_ratio')
+    expect(render.body).not.toHaveProperty('duration')
+    expect(render.body).toHaveProperty('settings.aspect_ratio')
+    expect(render.body).toHaveProperty('settings.duration')
   })
 
   it('applies every model-specific widget to an authored Router schema', () => {
@@ -474,6 +529,7 @@ describe('curated model inputs', () => {
     })
     expect(fields.has('callback_url')).toBe(false)
     expect(fields.has('model')).toBe(false)
+    expect(fields.has('draft')).toBe(false)
     const example = object.parse(contract.inputSchema.example)
     for (const change of [
       { duration: '5' },
@@ -561,15 +617,13 @@ describe('curated model inputs', () => {
       absent: ['style']
     },
     {
-      id: 'bfl/flux-pro-1.0-canny',
+      id: 'bfl/flux-pro-1.1-ultra',
       values: {
         prompt: 'A red cube',
-        canny_high_threshold: 250,
-        guidance: 30.125
+        image_prompt_strength: 0.125
       },
       expected: {
-        canny_high_threshold: 250,
-        guidance: 30.125,
+        image_prompt_strength: 0.125,
         prompt_upsampling: false
       },
       absent: ['seed']

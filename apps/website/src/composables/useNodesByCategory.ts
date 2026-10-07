@@ -1,7 +1,7 @@
 import { computed, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
-import type { PackNode } from '../data/cloudNodes'
+import type { PackNode } from '@/data/cloudNodes'
 
 const UNCATEGORIZED = '—'
 

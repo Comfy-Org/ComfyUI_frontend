@@ -339,10 +339,6 @@
     "name": "Versionsupdates anzeigen",
     "tooltip": "Updates für neue Modelle und wichtige neue Funktionen anzeigen."
   },
-  "Comfy_Pointer_ClickBufferTime": {
-    "name": "Verzögerung bei Zeigerklickabweichung",
-    "tooltip": "Nach dem Drücken einer Zeigertaste ist dies die maximale Zeit (in Millisekunden), für die Zeigerbewegungen ignoriert werden können.\n\nDies verhindert, dass Objekte unbeabsichtigt verschoben werden, wenn der Zeiger beim Klicken bewegt wird.\n\nDer Distanzschwellenwert (Zeigerklickabweichung) unterscheidet bereits zwischen Klicks und Ziehvorgängen; dieser Zeitschwellenwert ist nur relevant, wenn der Zeiger stillgehalten und dann losgelassen wird. Eine lange Verzögerung zwingt bei jedem pointerdown zum Warten, bevor das Ziehen beginnt, was sich beim Klicken und Ziehen eines nicht ausgewählten Node verzögert anfühlt. ~2 Frames bei 60 fps sind ausreichend."
-  },
   "Comfy_Pointer_ClickDrift": {
     "name": "Zeigerbewegung beim Klicken (maximale Entfernung)",
     "tooltip": "Wenn sich der Zeiger beim Gedrückthalten einer Maustaste weiter als diese Entfernung bewegt, wird dies als Ziehen (statt als Klicken) betrachtet.\n\nHilft, unbeabsichtigtes Verschieben von Objekten zu verhindern, wenn der Zeiger beim Klicken bewegt wird."

@@ -1300,3 +1300,38 @@ describe('resolveWebSessionProbe', () => {
     }
   )
 })
+
+describe('resolveCloudTelemetryConfig', () => {
+  it('reads the PostHog settings from the fetch resolveStripePublishableKey already shares', async () => {
+    const fetchImpl = vi.fn<typeof fetch>(
+      async () =>
+        new Response(
+          JSON.stringify({
+            stripe_publishable_key: 'pk',
+            posthog_project_token: 'phc_project',
+            posthog_api_host: 'https://t.comfy.org',
+            telemetry_disabled_events: ['billing.operation.started']
+          })
+        )
+    )
+    vi.stubGlobal('fetch', fetchImpl)
+    const { resolveStripePublishableKey, resolveCloudTelemetryConfig } =
+      await import('./index.js')
+    const options = {
+      cloudBaseUrl: 'https://telemetry.example',
+      timeoutMs: 4000
+    }
+
+    const [, config] = await Promise.all([
+      resolveStripePublishableKey(options),
+      resolveCloudTelemetryConfig(options)
+    ])
+
+    expect(config).toEqual({
+      posthogProjectToken: 'phc_project',
+      posthogApiHost: 'https://t.comfy.org',
+      telemetryDisabledEvents: ['billing.operation.started']
+    })
+    expect(fetchImpl).toHaveBeenCalledOnce()
+  })
+})

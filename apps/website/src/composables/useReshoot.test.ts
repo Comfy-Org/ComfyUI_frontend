@@ -2,35 +2,36 @@ import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, nextTick, ref } from 'vue'
 
-import { refreshWorkshopCredits } from '../config/workshop-credits'
-import { useWorkshopSession } from '../config/workshop-session-state'
-import { clipSecondsOf } from '../lib/workshop/cinematic-studio/reshoot-clip'
-import { readGeometry } from '../lib/workshop/cinematic-studio/reshoot-engine/cvgeo'
+import { refreshWorkshopCredits } from '@/config/workshop-credits'
+import { useWorkshopSession } from '@/config/workshop-session-state'
+import { RESHOOT_APP_SLUG } from '@/lib/workshop/cinematic-studio/analytics'
+import { clipSecondsOf } from '@/lib/workshop/cinematic-studio/reshoot-clip'
+import { readGeometry } from '@/lib/workshop/cinematic-studio/reshoot-engine/cvgeo'
 import {
   FREE_QUOTE,
   RESHOOT_CREDENTIAL,
   fakeGeometry,
   fakeTransport,
   signIn
-} from '../lib/workshop/cinematic-studio/reshoot-engine/__fixtures__/reshootFakes'
-import type { ReshootTransport } from '../lib/workshop/cinematic-studio/reshoot-engine/transport'
-import { ReshootError } from '../lib/workshop/cinematic-studio/reshoot-engine/transport'
-import { reshootTransport } from '../lib/workshop/cinematic-studio/reshoot-engine/transport-config'
+} from '@/lib/workshop/cinematic-studio/reshoot-engine/__fixtures__/reshootFakes'
+import type { ReshootTransport } from '@/lib/workshop/cinematic-studio/reshoot-engine/transport'
+import { ReshootError } from '@/lib/workshop/cinematic-studio/reshoot-engine/transport'
+import { reshootTransport } from '@/lib/workshop/cinematic-studio/reshoot-engine/transport-config'
+import { captureWorkshopEvent } from '@/scripts/posthog'
 import { useReshoot } from './useReshoot'
 
-vi.mock(import('../config/workshop-session-state'))
-vi.mock(import('../config/workshop-credits'))
-vi.mock(import('../scripts/posthog'))
+vi.mock(import('@/config/workshop-session-state'))
+vi.mock(import('@/config/workshop-credits'))
+vi.mock(import('@/scripts/posthog'))
 vi.mock(
-  import('../lib/workshop/cinematic-studio/reshoot-engine/transport-config'),
+  import('@/lib/workshop/cinematic-studio/reshoot-engine/transport-config'),
   () => ({ reshootTransport: vi.fn() })
 )
-vi.mock(
-  import('../lib/workshop/cinematic-studio/reshoot-engine/cvgeo'),
-  () => ({ readGeometry: vi.fn() })
-)
+vi.mock(import('@/lib/workshop/cinematic-studio/reshoot-engine/cvgeo'), () => ({
+  readGeometry: vi.fn()
+}))
 // jsdom never loads video metadata; each test says how long its clip is.
-vi.mock(import('../lib/workshop/cinematic-studio/reshoot-clip'), () => ({
+vi.mock(import('@/lib/workshop/cinematic-studio/reshoot-clip'), () => ({
   clipSecondsOf: vi.fn(),
   fileSecondsOf: vi.fn()
 }))
@@ -557,5 +558,76 @@ describe('useReshoot: seeds and clips', () => {
 
     await readScene(reshoot)
     expect(reshoot.frames.value).toBe(97)
+  })
+})
+
+describe('useReshoot: analytics', () => {
+  const analytics = {
+    model_slug: RESHOOT_APP_SLUG,
+    page_type: 'app',
+    app_slug: RESHOOT_APP_SLUG,
+    user_id: 'user-1',
+    workspace_id: 'workspace-1'
+  }
+
+  it('reports a successful take as a started and finished run', async () => {
+    const reshoot = start()
+    await readScene(reshoot)
+
+    void reshoot.generate()
+    expect(captureWorkshopEvent).toHaveBeenLastCalledWith({
+      name: 'run_started',
+      properties: expect.objectContaining(analytics)
+    })
+    await vi.advanceTimersByTimeAsync(2_500)
+
+    expect(captureWorkshopEvent).toHaveBeenLastCalledWith({
+      name: 'run_finished',
+      properties: expect.objectContaining({
+        ...analytics,
+        status: 'succeeded',
+        output_count: 1
+      })
+    })
+  })
+
+  it('reports a refused take as a failed run', async () => {
+    const reshoot = start()
+    await readScene(reshoot)
+    vi.mocked(transport.submit).mockRejectedValueOnce(
+      new ReshootError('insufficient_credits')
+    )
+    vi.mocked(transport.quote).mockResolvedValue({
+      ...FREE_QUOTE,
+      next_run: 'blocked',
+      blocked_reason: 'insufficient_credits'
+    })
+
+    await reshoot.generate()
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(captureWorkshopEvent).toHaveBeenLastCalledWith({
+      name: 'run_finished',
+      properties: expect.objectContaining({
+        ...analytics,
+        status: 'failed',
+        reason: 'noCredits'
+      })
+    })
+  })
+
+  it('reports a cancelled take as a cancelled run', async () => {
+    const reshoot = start()
+    await readScene(reshoot)
+
+    void reshoot.generate()
+    await vi.advanceTimersByTimeAsync(0)
+    reshoot.cancel()
+    await vi.advanceTimersByTimeAsync(2_500)
+
+    expect(captureWorkshopEvent).toHaveBeenLastCalledWith({
+      name: 'run_finished',
+      properties: expect.objectContaining({ ...analytics, status: 'cancelled' })
+    })
   })
 })

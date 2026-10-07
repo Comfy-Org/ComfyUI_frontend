@@ -2,18 +2,19 @@
 import { computed } from 'vue'
 import { useMounted } from '@vueuse/core'
 
-import { useWorkshopEnabled } from '../../scripts/posthog'
-import { getRoutes } from '../../config/routes'
-import { modelReleaseSlides } from '../../data/modelRelease'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
-import FeaturedCarousel02 from '../blocks/FeaturedCarousel02.vue'
-import type { FeaturedSplitSlide } from '../blocks/FeaturedCarousel02.vue'
+import { useWorkshopEnabled } from '@/scripts/posthog'
+import { getRoutes } from '@/config/routes'
+import { modelReleaseSlides } from '@/data/modelRelease'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import FeaturedCarousel02 from '@/components/blocks/FeaturedCarousel02.vue'
+import type { FeaturedSplitSlide } from '@/components/blocks/FeaturedCarousel02.vue'
 
 const { locale = 'en', modelLinks = {} } = defineProps<{
   locale?: Locale
   modelLinks?: Readonly<Partial<Record<string, string>>>
 }>()
+const { t } = translationsFor(locale)
 const routes = getRoutes(locale)
 
 const enabled = useWorkshopEnabled()
@@ -28,21 +29,21 @@ const slides = computed<FeaturedSplitSlide[]>(() =>
         type: slide.media.type,
         src: slide.media.src,
         poster: slide.media.poster,
-        alt: t(slide.media.ariaLabelKey, locale)
+        alt: t(slide.media.ariaLabelKey)
       },
-      eyebrow: t('modelRelease.eyebrow', locale),
-      title: t(slide.titleKey, locale),
-      body: t(slide.bodyKey, locale),
+      eyebrow: t('modelRelease.eyebrow'),
+      title: t(slide.titleKey),
+      body: t(slide.bodyKey),
       primaryCta: {
-        label: t(slide.exploreLabelKey, locale),
+        label: t(slide.exploreLabelKey),
         href: workshopUrl ?? routes[slide.exploreRoute]
       },
       secondaryCta: {
-        label: t(slide.tryCta.labelKey, locale),
+        label: t(slide.tryCta.labelKey),
         href: workshopUrl ?? slide.tryCta.href,
         newTab: !workshopUrl
       },
-      tags: slide.tagKeys.map((key) => t(key, locale)),
+      tags: slide.tagKeys.map((key) => t(key)),
       autoplayMs: slide.autoplayMs
     }
   })

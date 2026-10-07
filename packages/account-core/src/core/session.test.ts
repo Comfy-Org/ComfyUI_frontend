@@ -132,15 +132,36 @@ describe('ensureFresh', () => {
   })
 
   it.for([
-    ['a 401', 401, 'INVALID_FIREBASE_TOKEN', 401],
-    ['a 403', 403, 'ACCESS_DENIED', 403],
-    ['a 404', 404, 'WORKSPACE_NOT_FOUND', 404],
-    ['a 5xx', 503, 'TOKEN_EXCHANGE_FAILED', 503]
+    ['a 401', 401, 'INVALID_FIREBASE_TOKEN', 401, {}],
+    ['a 403', 403, 'ACCESS_DENIED', 403, {}],
+    [
+      'a 403 another refusal',
+      403,
+      'ACCESS_DENIED',
+      403,
+      { code: 'FORBIDDEN', message: 'x' }
+    ],
+    [
+      'a 403 sso_required',
+      403,
+      'SSO_REQUIRED',
+      403,
+      { code: 'sso_required', message: 'x' }
+    ],
+    [
+      'a 401 sso_required',
+      401,
+      'INVALID_FIREBASE_TOKEN',
+      401,
+      { code: 'sso_required', message: 'x' }
+    ],
+    ['a 404', 404, 'WORKSPACE_NOT_FOUND', 404, {}],
+    ['a 5xx', 503, 'TOKEN_EXCHANGE_FAILED', 503, {}]
   ] as const)(
     'maps %s to the production error code and caches nothing',
-    async ([, status, code, httpStatus]) => {
+    async ([, status, code, httpStatus, body]) => {
       const { client, storage } = makeClient({
-        fetchImpl: vi.fn<typeof fetch>(async () => jsonResponse(status, {}))
+        fetchImpl: vi.fn<typeof fetch>(async () => jsonResponse(status, body))
       })
 
       const result = await client.ensureFresh(testUser(), {})

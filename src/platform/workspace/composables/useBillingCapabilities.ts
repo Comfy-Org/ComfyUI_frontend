@@ -89,7 +89,7 @@ function useBillingCapabilitiesInternal() {
   let invalidatedRequestId = 0
 
   const capabilities = computed(() => {
-    const userId = authStore.currentUser?.uid
+    const userId = authStore.userId
     const workspaceId = workspaceStore.activeWorkspaceId
     const state = readState.value
     if (
@@ -110,7 +110,7 @@ function useBillingCapabilitiesInternal() {
     const state = readState.value
     return (
       state.status === 'unavailable' &&
-      state.authUid === authStore.currentUser?.uid &&
+      state.authUid === authStore.userId &&
       state.workspaceId === workspaceStore.activeWorkspaceId
     )
   })
@@ -148,7 +148,7 @@ function useBillingCapabilitiesInternal() {
     const state = readState.value
     if (state.status === 'idle' || state.status === 'pending') return false
     return (
-      state.authUid === authStore.currentUser?.uid &&
+      state.authUid === authStore.userId &&
       state.workspaceId === workspaceStore.activeWorkspaceId
     )
   })
@@ -158,7 +158,7 @@ function useBillingCapabilitiesInternal() {
     const state = readState.value
     if (state.status !== 'resolved' && state.status !== 'denied') return false
     return (
-      state.authUid === authStore.currentUser?.uid &&
+      state.authUid === authStore.userId &&
       state.workspaceId === workspaceStore.activeWorkspaceId
     )
   })
@@ -272,7 +272,7 @@ function useBillingCapabilitiesInternal() {
   }
 
   async function fetchCapabilities(signal?: AbortSignal): Promise<void> {
-    const userId = authStore.currentUser?.uid
+    const userId = authStore.userId
     const workspaceId = workspaceStore.activeWorkspaceId
     if (!userId || !workspaceId) {
       resetRead()
@@ -325,7 +325,7 @@ function useBillingCapabilitiesInternal() {
         )
         if (
           requestId !== latestRequestId ||
-          userId !== authStore.currentUser?.uid ||
+          userId !== authStore.userId ||
           workspaceId !== workspaceStore.activeWorkspaceId
         ) {
           return
@@ -367,7 +367,7 @@ function useBillingCapabilitiesInternal() {
       } catch (error) {
         if (
           requestId !== latestRequestId ||
-          userId !== authStore.currentUser?.uid ||
+          userId !== authStore.userId ||
           workspaceId !== workspaceStore.activeWorkspaceId
         ) {
           return
@@ -442,7 +442,7 @@ function useBillingCapabilitiesInternal() {
       await fetchCapabilities(signal)
     } while (
       !signal?.aborted &&
-      !!authStore.currentUser?.uid &&
+      !!authStore.userId &&
       !!workspaceStore.activeWorkspaceId &&
       !isReady.value
     )
@@ -454,7 +454,7 @@ function useBillingCapabilitiesInternal() {
 
   watch(
     [
-      () => authStore.currentUser?.uid,
+      () => authStore.userId,
       () => workspaceStore.activeWorkspaceId,
       () => workspaceStore.activeWorkspace?.role
     ],

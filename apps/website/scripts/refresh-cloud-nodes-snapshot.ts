@@ -1,11 +1,10 @@
+import { join } from 'node:path'
 import { renameSync, writeFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
 
-import { fetchCloudNodesForBuild } from '../src/utils/cloudNodes'
+import { websiteRoot } from '@website/paths'
+import { fetchCloudNodesForBuild } from '@/utils/cloudNodes'
 
-const snapshotPath = fileURLToPath(
-  new URL('../src/data/cloud-nodes.snapshot.json', import.meta.url)
-)
+const snapshotPath = join(websiteRoot, 'src/data/cloud-nodes.snapshot.json')
 const tempPath = `${snapshotPath}.tmp`
 
 const outcome = await fetchCloudNodesForBuild()

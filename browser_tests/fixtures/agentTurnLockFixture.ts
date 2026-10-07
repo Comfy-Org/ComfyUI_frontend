@@ -16,7 +16,10 @@ import {
 import { z } from 'zod'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import type {
+  AgentWsEvent,
+  zTurnInProgressError
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import { agentTest } from '@e2e/fixtures/agentPanelFixture'
 import { workflowSelectionTest } from '@e2e/fixtures/agentWorkflowSelectionFixture'
@@ -29,20 +32,23 @@ const zAnswerRequest = z.object({ selected: z.array(z.string()) })
 
 const THREAD_ID = 'b9d0a2a1-0f2c-4f1a-9a5e-6b0f4f2c1d77'
 const TURN_ID = '2dd4f367-3399-4cb4-8127-547f531c289a'
+const FOREIGN_TURN_ID = 'd3f2b1c0-8a4e-4d6f-9b11-0c7a5e2f4318'
 const WORKFLOW_ID = 'a81718a4-02ae-41e6-ae85-000000000001'
 const BACKGROUND_THREAD_TITLE = 'Audio workflow'
 const OTHER_THREAD_ID = '4ccb6603-4bbc-49e2-8b7d-b985230285e3'
 const OTHER_THREAD_TITLE = 'Earlier workflow'
 
-/**
- * Verbatim from `services/agent/server/agent_handler.go`, which answers a post
- * to a thread whose assistant row is still `streaming` with HTTP 409 and this
- * body. The client renders it as `agent.sendFailed` + ': ' + this text.
- */
 export const TURN_IN_PROGRESS_MESSAGE =
   'a turn is already in progress for this thread'
 
-const TURN_IN_PROGRESS: AgentError = { error: TURN_IN_PROGRESS_MESSAGE }
+type TurnInProgressBody = AgentError & z.infer<typeof zTurnInProgressError>
+
+const TURN_IN_PROGRESS: TurnInProgressBody = {
+  error: TURN_IN_PROGRESS_MESSAGE,
+  type: 'TURN_IN_PROGRESS',
+  active_message_id: TURN_ID,
+  turn_id: TURN_ID
+}
 
 const TURN_THINKING_TEXT = 'Wiring the audio output node.'
 export const POST_RECONNECT_TEXT = 'Reconnected, and the graph is ready.'
@@ -78,6 +84,11 @@ export const POST_RECONNECT_EVENT: AgentWsEvent = {
 export const TURN_DONE_EVENT: AgentWsEvent = {
   type: 'agent_message_done',
   data: { message_id: TURN_ID, thread_id: THREAD_ID }
+}
+
+const FOREIGN_TURN_DONE_EVENT: AgentWsEvent = {
+  type: 'agent_message_done',
+  data: { message_id: FOREIGN_TURN_ID, thread_id: THREAD_ID }
 }
 
 const RUN_APPROVAL_ASK_ID = `${TURN_ID}:call-run-workflow`
@@ -163,6 +174,7 @@ function deferred(): Deferred {
 class TurnLockServer {
   private streaming = false
   private prompt = ''
+  private foreignPrompt: string | undefined
   private rejected = 0
   private posts = 0
   private readonly answered: string[][] = []
@@ -215,6 +227,7 @@ class TurnLockServer {
 
   completeTurn(): void {
     this.streaming = false
+    this.foreignPrompt = undefined
   }
 
   holdNextTranscript(): void {
@@ -282,7 +295,7 @@ class TurnLockServer {
         content: { text: this.prompt }
       }
     ]
-    if (!this.streaming) {
+    if (!this.streaming || this.foreignPrompt !== undefined) {
       rows.push(
         {
           id: TURN_ID,
@@ -324,6 +337,28 @@ class TurnLockServer {
           content: { text: PERSISTED_AFTER_TOOL_TEXT }
         }
       )
+      if (this.foreignPrompt !== undefined)
+        rows.push(
+          {
+            id: 'user-2',
+            thread_id: THREAD_ID,
+            turn_id: FOREIGN_TURN_ID,
+            seq: 5,
+            role: 'user',
+            status: 'complete',
+            workflow_id: WORKFLOW_ID,
+            content: { text: this.foreignPrompt }
+          },
+          {
+            id: FOREIGN_TURN_ID,
+            thread_id: THREAD_ID,
+            turn_id: FOREIGN_TURN_ID,
+            seq: 6,
+            role: 'assistant',
+            status: 'streaming',
+            workflow_id: WORKFLOW_ID
+          }
+        )
       return rows
     }
     rows.push({
@@ -345,9 +380,20 @@ class TurnLockServer {
     return { message_id: TURN_ID, thread_id: THREAD_ID }
   }
 
-  rejectPost(): AgentError {
+  lockThreadElsewhere(prompt: string): void {
+    this.foreignPrompt = prompt
+    this.streaming = true
+  }
+
+  rejectPost(): TurnInProgressBody {
     this.rejected++
-    return TURN_IN_PROGRESS
+    return this.foreignPrompt === undefined
+      ? TURN_IN_PROGRESS
+      : {
+          ...TURN_IN_PROGRESS,
+          active_message_id: FOREIGN_TURN_ID,
+          turn_id: FOREIGN_TURN_ID
+        }
   }
 }
 
@@ -443,7 +489,7 @@ async function routeTurnLock(
       })
 
     server.recordAnswer(selected)
-    const accepted: AgentAnswerAccepted = { status: 'answered' }
+    const accepted: AgentAnswerAccepted = { status: 'answered', selected }
     return route.fulfill(jsonRoute(accepted))
   })
 
@@ -464,6 +510,7 @@ export class AgentTurnLockHarness {
   public readonly workingRow: Locator
   public readonly liveProgressRow: Locator
   public readonly userBubbles: Locator
+  public readonly turnInProgressNotice: Locator
   private readonly entryButton: Locator
   private readonly dock: Locator
   private readonly agentPanel: AgentPanel
@@ -516,6 +563,10 @@ export class AgentTurnLockHarness {
       .filter({ visible: true })
       .first()
     this.userBubbles = this.panel.getByTestId('user-message-bubble')
+    this.turnInProgressNotice = this.panel.getByText(
+      enMessages.agent.sendTurnInProgress,
+      { exact: true }
+    )
     this.entryButton = this.agentPanel.openButton
     this.dock = page.getByTestId('docked-agent-panel')
   }
@@ -580,8 +631,29 @@ export class AgentTurnLockHarness {
     this.push(ws, TURN_DONE_EVENT)
   }
 
+  finishForeignTurn(ws: WebSocketRoute): void {
+    this.server.completeTurn()
+    this.push(ws, FOREIGN_TURN_DONE_EVENT)
+  }
+
+  async waitForForeignTurnCancellation(): Promise<void> {
+    const request = await this.page.waitForRequest(
+      '**/api/agent/threads/*/messages/*/cancel'
+    )
+    const segments = new URL(request.url()).pathname
+      .split('/')
+      .map(decodeURIComponent)
+    expect(request.method()).toBe('POST')
+    expect(segments[segments.indexOf('threads') + 1]).toBe(THREAD_ID)
+    expect(segments[segments.indexOf('messages') + 1]).toBe(FOREIGN_TURN_ID)
+  }
+
   finishTurnOnServer(): void {
     this.server.completeTurn()
+  }
+
+  lockThreadFromAnotherClient(prompt: string): void {
+    this.server.lockThreadElsewhere(prompt)
   }
 
   /** Makes an ask available through transcript hydration, independently of WS delivery. */

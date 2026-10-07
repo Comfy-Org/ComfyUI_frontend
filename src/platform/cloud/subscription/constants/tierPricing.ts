@@ -1,3 +1,4 @@
+import type { BillingTierKey } from '@comfyorg/account-core/billing'
 import { TIER_CATALOG } from '@comfyorg/account-ui/billing/catalog'
 import type { SubscriptionTier as IngestSubscriptionTier } from '@comfyorg/ingest-types'
 
@@ -8,7 +9,7 @@ export type { IngestSubscriptionTier }
 
 export type RegistrySubscriptionTier = components['schemas']['SubscriptionTier']
 
-export type TierKey = 'free' | 'standard' | 'creator' | 'pro' | 'founder'
+export type TierKey = BillingTierKey
 
 // Self-serve personal-plan tiers only. TEAM and ENTERPRISE are workspace-level
 // and sales-managed respectively, and intentionally have no catalog key (see

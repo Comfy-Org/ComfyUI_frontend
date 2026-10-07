@@ -6,7 +6,7 @@ import { pathToFileURL } from 'node:url'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { sanitizeUserContent } from '@comfyorg/object-info-parser'
 
-import type { NodesSnapshot } from '../data/cloudNodes'
+import type { NodesSnapshot } from '@/data/cloudNodes'
 
 import type { RegistryPackWithNodes } from './cloudNodes.registry'
 

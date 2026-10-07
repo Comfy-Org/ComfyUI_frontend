@@ -85,8 +85,6 @@ export interface IWidgetOptions<TValues = unknown> {
   disabled?: boolean
   useGrouping?: boolean
   placeholder?: string
-  showThumbnails?: boolean
-  showItemNavigators?: boolean
   hidden?: boolean
 }
 

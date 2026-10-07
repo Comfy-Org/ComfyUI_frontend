@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { getAuthoredRouterWorkshopModelDetail } from '../../../config/workshop-router-content'
+import { getAuthoredRouterWorkshopModelDetail } from '@/config/workshop-router-content'
 import { acceptsLinks, imageInput, keepTake } from './take-image'
 
 const LINK =

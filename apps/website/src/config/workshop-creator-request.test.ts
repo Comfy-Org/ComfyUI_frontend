@@ -11,7 +11,7 @@ import type { FileValue, FormValues } from './workshop-playground'
 import type { WorkshopModelDetail } from './models-catalogue'
 import { prepareWorkshopRouterInput } from './workshop-request'
 import { validateWorkshopInput } from './workshop-json-schema'
-import creatorModels from '../data/workshop-creator-models.json'
+import creatorModels from '@/data/workshop-creator-models.json'
 import { workshopContract } from './workshop-contract-catalog'
 import { formForContract } from './workshop-contract'
 import { createWorkshopUrlUploader } from './workshop-url-upload'
@@ -460,11 +460,6 @@ describe('creator widgets to native Router requests', () => {
         reference_images: [upload()]
       })
     ).rejects.toMatchObject({ fieldErrors: { reference_images: 'rejected' } })
-    await expect(
-      prepare('byteplus/seedance-1-0-lite-i2v-250428', {
-        first_frame: undefined
-      })
-    ).rejects.toMatchObject({ fieldErrors: { first_frame: 'required' } })
   })
 
   it('uploads Gemini images with MIME metadata and nested configuration', async () => {

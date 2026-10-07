@@ -16,12 +16,12 @@ function makeItem(overrides: Partial<CardArticleItem> = {}): CardArticleItem {
 }
 
 const mediaStandIn = (root: Element) =>
-  // eslint-disable-next-line testing-library/no-node-access
+  // oxlint-disable-next-line testing-library/no-node-access
   root.querySelector('.aspect-video > div[aria-hidden="true"]')
 
 // CardArrow is decorative (aria-hidden), so it has no accessible query.
 const cardArrow = (root: Element) =>
-  // eslint-disable-next-line testing-library/no-node-access
+  // oxlint-disable-next-line testing-library/no-node-access
   root.querySelector('[data-slot="card-footer"] [aria-hidden="true"]')
 
 describe('CardArticle01', () => {
@@ -58,7 +58,7 @@ describe('CardArticle01', () => {
     })
 
     // <video> has no queryable role in happy-dom, so reach it directly.
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const video = container.querySelector('video')
     expect(video?.getAttribute('src')).toBe('https://example.com/clip.mp4')
     expect(video?.getAttribute('poster')).toBe('https://example.com/poster.jpg')
@@ -70,7 +70,7 @@ describe('CardArticle01', () => {
 
     expect(mediaStandIn(container)).toBeTruthy()
     expect(screen.queryByRole('img')).toBeNull()
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     expect(container.querySelector('video')).toBeNull()
   })
 

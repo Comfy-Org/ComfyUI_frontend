@@ -2,7 +2,7 @@
 import { File as FileIcon, Loader2, TriangleAlert } from '@lucide/vue'
 import { computed } from 'vue'
 
-import type { SavedAssetTile } from '../../lib/workshop/saved-assets'
+import type { SavedAssetTile } from '@/lib/workshop/saved-assets'
 import SavedAssetMedia from './SavedAssetMedia.vue'
 
 const { tile, url } = defineProps<{

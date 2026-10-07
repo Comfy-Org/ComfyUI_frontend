@@ -1,4 +1,4 @@
-import defaultMedia from '../data/router-default-media.json'
+import defaultMedia from '@/data/router-default-media.json'
 import type { WorkshopModelDetail } from './models-catalogue'
 import type { RouterRenderParameters } from './router-parameters'
 import { mapRouterParameters } from './router-parameters'

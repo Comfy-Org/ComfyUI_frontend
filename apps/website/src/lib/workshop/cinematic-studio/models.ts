@@ -1,4 +1,4 @@
-import type { WorkshopModelDetail } from '../../../config/models-catalogue'
+import type { WorkshopModelDetail } from '@/config/models-catalogue'
 import type { AspectRatio } from './catalog'
 import type { CinematicCopyKey } from './copy'
 import type { CinematicPrices } from './estimate'

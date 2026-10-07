@@ -6,15 +6,23 @@ import type { HTMLAttributes } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-const props = defineProps<TabsListProps & { class?: HTMLAttributes['class'] }>()
-const forwarded = useForwardProps(reactiveOmit(props, 'class'))
+import type { TabsListVariants } from './tabs.variants'
+import { tabsListVariants } from './tabs.variants'
+
+const props = defineProps<
+  TabsListProps & {
+    class?: HTMLAttributes['class']
+    variant?: TabsListVariants['variant']
+  }
+>()
+const forwarded = useForwardProps(reactiveOmit(props, 'class', 'variant'))
 </script>
 
 <template>
   <TabsList
     v-bind="forwarded"
     data-slot="tabs-list"
-    :class="cn('inline-flex items-center gap-2', props.class)"
+    :class="cn(tabsListVariants({ variant: props.variant }), props.class)"
   >
     <slot />
   </TabsList>

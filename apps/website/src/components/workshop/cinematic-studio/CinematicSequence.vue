@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { translationsFor } from '@/i18n/translations'
 import type { Component } from 'vue'
 import {
   CircleAlert,
@@ -11,13 +12,9 @@ import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type {
-  Take,
-  TakeKind
-} from '../../../lib/workshop/cinematic-studio/reel'
-import { takeKind } from '../../../lib/workshop/cinematic-studio/reel'
-import type { Locale } from '../../../i18n/translations'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import type { Take, TakeKind } from '@/lib/workshop/cinematic-studio/reel'
+import { takeKind } from '@/lib/workshop/cinematic-studio/reel'
+import type { Locale } from '@/i18n/translations'
 import { aspectStyle } from './aspect-style'
 
 const {
@@ -29,6 +26,7 @@ const {
   currentId?: string
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const emit = defineEmits<{ select: [id: string] }>()
 
@@ -72,12 +70,12 @@ const thumbs = computed(() =>
       take,
       look,
       current,
-      label: tc('cinematic.stage.takeName', locale, {
+      label: t('cinematic.stage.takeName', {
         shot: take.shot,
         take: take.letter
       }),
       description:
-        kind === 'unpaid' ? tc('cinematic.state.noCredits', locale) : undefined,
+        kind === 'unpaid' ? t('cinematic.state.noCredits') : undefined,
       class: cn(
         'grid h-12 shrink-0 cursor-pointer place-items-center overflow-hidden rounded-xl border-2 bg-transparency-white-t4 transition-opacity focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none focus-visible:ring-inset',
         index > 0 && takes[index - 1].shot !== take.shot && 'ml-2',
@@ -93,7 +91,7 @@ const thumbs = computed(() =>
 
 <template>
   <nav
-    :aria-label="tc('cinematic.stage.sequence', locale)"
+    :aria-label="t('cinematic.stage.sequence')"
     class="flex max-w-full items-center gap-2 overflow-x-auto"
   >
     <button

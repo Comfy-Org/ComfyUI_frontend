@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { sanitizeUserContent } from '../helpers/sanitizeUserContent'
-import type { ComfyNodeDef } from '../schemas/nodeDefSchema'
+import type { ComfyNodeDef, InputSpec } from '../schemas/nodeDefSchema'
 
 function makeNodeDef(
   name: string,
@@ -34,6 +34,36 @@ describe('sanitizeUserContent', () => {
     const required = sanitized.CustomCombo.input?.required
     expect(required?.choice).toEqual([['safe-option', 42], {}])
     expect(required?.choiceV2).toEqual(['COMBO', { options: ['keep-me', 'b'] }])
+  })
+
+  it('sanitizes both DynamicGroup template sections without mutating the definition', () => {
+    const group = [
+      'COMFY_DYNAMICGROUP_V3',
+      {
+        min: 0,
+        max: 5,
+        template: {
+          required: { model: [['private.safetensors', 'safe', 42], {}] },
+          optional: { image: ['COMBO', { options: ['private.png', 'safe'] }] }
+        }
+      }
+    ] satisfies InputSpec
+    const defs = {
+      Group: makeNodeDef('Group', 'custom_nodes', { required: { group } })
+    }
+    const original = structuredClone(defs)
+    expect(sanitizeUserContent(defs).Group.input?.required?.group).toEqual([
+      'COMFY_DYNAMICGROUP_V3',
+      {
+        min: 0,
+        max: 5,
+        template: {
+          required: { model: [['safe', 42], {}] },
+          optional: { image: ['COMBO', { options: ['safe'] }] }
+        }
+      }
+    ])
+    expect(defs).toEqual(original)
   })
 
   it('zeros combo lists for known upload nodes in required/optional/hidden sections', () => {

@@ -240,7 +240,8 @@ describe('PricingTable', () => {
         previous_tier: 'standard'
       })
       expect(useAuthStore().accessBillingPortal).toHaveBeenCalledWith(
-        'creator-yearly'
+        'creator-yearly',
+        undefined
       )
     })
 
@@ -259,7 +260,8 @@ describe('PricingTable', () => {
       await flushPromises()
 
       expect(useAuthStore().accessBillingPortal).toHaveBeenCalledWith(
-        'pro-yearly'
+        'pro-yearly',
+        undefined
       )
     })
 
@@ -290,7 +292,8 @@ describe('PricingTable', () => {
       await flushPromises()
 
       expect(useAuthStore().accessBillingPortal).toHaveBeenCalledWith(
-        'creator-yearly'
+        'creator-yearly',
+        undefined
       )
       expect(
         JSON.parse(
@@ -532,7 +535,8 @@ describe('PricingTable', () => {
       await flushPromises()
 
       expect(useAuthStore().accessBillingPortal).toHaveBeenCalledWith(
-        'standard-yearly'
+        'standard-yearly',
+        undefined
       )
     })
 

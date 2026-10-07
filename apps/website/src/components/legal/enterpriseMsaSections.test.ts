@@ -1,27 +1,28 @@
 import { describe, expect, it } from 'vitest'
 
-import { getRoutes } from '../../config/routes'
-import { hasKey, translationKeys } from '../../i18n/translations'
+import { getRoutes } from '@/config/routes'
+import { te } from '@/i18n/translations'
+import en from '@/locales/en/main.json' with { type: 'json' }
 
 const PREFIX = 'enterprise-msa'
 
 function deriveMsaSectionIds(): string[] {
-  const labelRegex = new RegExp(`^${PREFIX}\\.([0-9]+-[a-z-]+)\\.label$`)
-  const ids: string[] = []
-  for (const key of translationKeys) {
-    const match = key.match(labelRegex)
-    if (match && !ids.includes(match[1])) ids.push(match[1])
-  }
-  return ids
+  return Object.keys(en[PREFIX]).filter((key) => /^[0-9]+-[a-z-]+$/.test(key))
 }
 
 describe('enterprise MSA i18n', () => {
+  it('exposes the sections in numeric order', () => {
+    expect(deriveMsaSectionIds().map((id) => parseInt(id))).toEqual([
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12
+    ])
+  })
+
   it('every derived section has a title and at least one block', () => {
     const sectionIds = deriveMsaSectionIds()
     expect(sectionIds.length).toBeGreaterThan(0)
     for (const id of sectionIds) {
-      expect(hasKey(`${PREFIX}.${id}.title`)).toBe(true)
-      expect(hasKey(`${PREFIX}.${id}.block.0`)).toBe(true)
+      expect(te(`${PREFIX}.${id}.title`, 'en')).toBe(true)
+      expect(te(`${PREFIX}.${id}.block.0`, 'en')).toBe(true)
     }
   })
 
@@ -35,7 +36,7 @@ describe('enterprise MSA i18n', () => {
       'page.effectiveDateLabel',
       'page.parties'
     ]) {
-      expect(hasKey(`${PREFIX}.${suffix}`)).toBe(true)
+      expect(te(`${PREFIX}.${suffix}`, 'en')).toBe(true)
     }
   })
 

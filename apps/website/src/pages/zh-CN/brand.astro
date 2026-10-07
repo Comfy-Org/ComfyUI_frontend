@@ -1,18 +1,17 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro'
-import BrandBackground from '../../templates/brand/BrandBackground.vue'
-import BrandHeroSection from '../../templates/brand/BrandHeroSection.vue'
-import BrandLogosSection from '../../templates/brand/BrandLogosSection.vue'
-import BrandColorSection from '../../templates/brand/BrandColorSection.vue'
-import BrandVoiceSection from '../../templates/brand/BrandVoiceSection.vue'
-import BrandTrademarkSection from '../../templates/brand/BrandTrademarkSection.vue'
-import BrandQuestionsSection from '../../templates/brand/BrandQuestionsSection.vue'
-import { t } from '../../i18n/translations'
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import BrandBackground from '@/templates/brand/BrandBackground.vue'
+import BrandHeroSection from '@/templates/brand/BrandHeroSection.vue'
+import BrandLogosSection from '@/templates/brand/BrandLogosSection.vue'
+import BrandColorSection from '@/templates/brand/BrandColorSection.vue'
+import BrandVoiceSection from '@/templates/brand/BrandVoiceSection.vue'
+import BrandTrademarkSection from '@/templates/brand/BrandTrademarkSection.vue'
+import BrandQuestionsSection from '@/templates/brand/BrandQuestionsSection.vue'
 ---
 
 <BaseLayout
-  title={t('brand.page.title', 'zh-CN')}
-  description={t('brand.page.description', 'zh-CN')}
+  title={Astro.locals.t('brand.page.title')}
+  description={Astro.locals.t('brand.page.description')}
 >
   <div class="relative">
     <BrandBackground client:idle />

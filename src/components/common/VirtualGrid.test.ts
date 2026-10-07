@@ -125,7 +125,7 @@ describe('VirtualGrid', () => {
 
     await nextTick()
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const gridElement = container.querySelector(
       '[style*="display: grid"]'
     ) as HTMLElement

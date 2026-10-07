@@ -4,7 +4,11 @@ import type { CheckoutPage } from '@/checkout/checkoutPage'
 import { RESOLVING } from '@/checkout/checkoutPage'
 import type { EndingScreen } from '@/checkout/endingScreen'
 import { endingOf } from '@/checkout/endingScreen'
-import { pendingOperation, succeededOperation } from '@/test/fakeBillingClient'
+import {
+  pendingOperation,
+  previewOf,
+  succeededOperation
+} from '@/test/fakeBillingClient'
 
 const capture: CheckoutPage = {
   kind: 'capture',
@@ -101,6 +105,31 @@ describe('endingOf', () => {
       screen: { kind: 'already_completed' }
     },
     {
+      name: 'a quote the server refused with its own code and sentence',
+      page: {
+        kind: 'refused',
+        server: {
+          code: 'TRANSITION_NOT_ALLOWED',
+          message: 'the selected plan is already the current plan'
+        }
+      },
+      screen: {
+        kind: 'refused',
+        code: 'TRANSITION_NOT_ALLOWED',
+        copy: 'unknown',
+        serverMessage: 'the selected plan is already the current plan'
+      }
+    },
+    {
+      name: 'a quote the server refused with its own code and no sentence',
+      page: { kind: 'refused', server: { code: 'TRANSITION_NOT_ALLOWED' } },
+      screen: {
+        kind: 'refused',
+        code: 'TRANSITION_NOT_ALLOWED',
+        copy: 'unknown'
+      }
+    },
+    {
       name: 'a checkout that could not load',
       page: { kind: 'unavailable', cause: 'quote', code: 'REQUEST_FAILED' },
       screen: { kind: 'load_failed', cause: 'quote', code: 'REQUEST_FAILED' }
@@ -119,6 +148,11 @@ describe('endingOf', () => {
       name: 'a team link without its commit stop',
       page: { kind: 'plan_unavailable', reason: 'team_stop_missing' },
       screen: { kind: 'plan_unavailable', code: 'CHECKOUT_LINK_INVALID' }
+    },
+    {
+      name: 'a top-up link with no readable amount',
+      page: { kind: 'plan_unavailable', reason: 'amount_invalid' },
+      screen: { kind: 'link_invalid', code: 'CHECKOUT_LINK_INVALID' }
     },
     {
       name: 'a link the contract cannot read',
@@ -156,6 +190,22 @@ describe('endingOf with the receipt the server reported', () => {
       screen: {
         kind: 'success',
         receipt: { amountChargedCents: 3250, creditsAdded: 6858, plan: PLAN }
+      }
+    },
+    {
+      name: "this page's own top-up, which bought credits and no plan",
+      page: {
+        kind: 'terminal',
+        operation: {
+          ...settledWith({ amountChargedCents: 1500, creditsAdded: 3165 }),
+          kind: 'topup'
+        },
+        attribution: 'started'
+      },
+      screen: {
+        kind: 'success',
+        purchase: 'credits',
+        receipt: { amountChargedCents: 1500, creditsAdded: 3165 }
       }
     },
     {
@@ -208,5 +258,83 @@ describe('endingOf with the receipt the server reported', () => {
     }
   ])('$name', ({ page, screen }) => {
     expect(endingOf(page)).toEqual(screen)
+  })
+})
+
+describe('endingOf with the quote its own Pay was priced on', () => {
+  const PRO = previewOf().new_plan
+  const STANDARD = {
+    ...PRO,
+    slug: 'standard_monthly',
+    tier: 'STANDARD'
+  } as const
+  const downgrade = previewOf({
+    transition_type: 'downgrade',
+    is_immediate: false,
+    effective_at: '2026-11-04T00:00:00.000Z',
+    cost_today_cents: 0,
+    new_plan: STANDARD,
+    current_plan: { ...PRO, tier: 'PRO' }
+  })
+  const SCHEDULED: EndingScreen = {
+    kind: 'scheduled',
+    change: {
+      plan: { tier: 'STANDARD', duration: 'MONTHLY' },
+      effectiveAt: '2026-11-04T00:00:00.000Z'
+    },
+    kept: { tier: 'PRO', duration: 'MONTHLY' }
+  }
+  const SUCCESS: EndingScreen = { kind: 'success' }
+  const withCredits = {
+    ...succeededOperation('op_mine'),
+    receipt: { creditsAdded: 6900 }
+  }
+
+  it.for<{
+    name: string
+    page: Extract<CheckoutPage, { kind: 'terminal' }>
+    quoted: ReturnType<typeof previewOf>
+    screen: EndingScreen
+  }>([
+    {
+      name: 'a change scheduled for later, settled on the spot',
+      page: { kind: 'terminal', attribution: 'started' },
+      quoted: downgrade,
+      screen: SCHEDULED
+    },
+    {
+      name: 'a change scheduled for later, settled through its operation',
+      page: {
+        kind: 'terminal',
+        operation: withCredits,
+        attribution: 'started'
+      },
+      quoted: downgrade,
+      screen: SCHEDULED
+    },
+    {
+      name: 'a change that takes effect today',
+      page: { kind: 'terminal', attribution: 'started' },
+      quoted: { ...downgrade, is_immediate: true },
+      screen: SUCCESS
+    },
+    {
+      name: 'a later quote naming no plan to keep',
+      page: { kind: 'terminal', attribution: 'started' },
+      quoted: { ...downgrade, current_plan: undefined },
+      screen: SUCCESS
+    },
+    {
+      name: 'a Pay that settled after the quote it was priced on went away',
+      page: {
+        kind: 'terminal',
+        operation: succeededOperation('op_mine'),
+        attribution: 'returned'
+      },
+      quoted: downgrade,
+      screen: SUCCESS
+    }
+  ])('$name', ({ page, quoted, screen }) => {
+    expect(endingOf({ ...page, quote: quoted })).toEqual(screen)
   })
 })

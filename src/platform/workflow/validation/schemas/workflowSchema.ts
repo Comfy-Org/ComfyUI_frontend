@@ -57,12 +57,25 @@ const zVector2 = z.union([
 ])
 
 // Definition of an AI model file used in the workflow.
-const zModelFile = z.object({
+export const zModelFile = z.object({
   name: z.string(),
   url: z.string().url(),
   hash: z.string().optional(),
   hash_type: z.string().optional(),
   directory: z.string()
+})
+
+/**
+ * A node's declared model entry. Only `name` is required - the shape a
+ * workflow must declare to pass validation is `zModelFile`, and a workflow
+ * that failed it still loads.
+ */
+export const zDeclaredModelFile = z.object({
+  name: z.string(),
+  url: z.string().optional(),
+  hash: z.string().optional(),
+  hash_type: z.string().optional(),
+  directory: z.string().optional()
 })
 
 const zGraphState = z
@@ -677,6 +690,7 @@ export const zClipboardItems: z.ZodType<
 > = zClipboardItemsSchema
 
 export type ModelFile = z.infer<typeof zModelFile>
+export type DeclaredModelFile = z.infer<typeof zDeclaredModelFile>
 export type ComfyLinkObject = z.infer<typeof zComfyLinkObject>
 export type ComfyNode = z.infer<typeof zComfyNode>
 export type Reroute = z.infer<typeof zReroute>
@@ -684,6 +698,28 @@ export type WorkflowJSON04 = z.infer<typeof zComfyWorkflow>
 export type ComfyWorkflowJSON = z.infer<
   typeof zComfyWorkflow | typeof zComfyWorkflow1
 >
+
+/**
+ * The minimum a node must carry for `LGraph.configure` to instantiate it:
+ * it calls `LiteGraph.createNode(type)` and assigns `id`.
+ */
+const zLegacyLoadableNode = z
+  .object({
+    id: zNodeId,
+    type: z.string()
+  })
+  .passthrough()
+
+export const zLegacyLoadableWorkflow = z
+  .object({
+    version: z.number(),
+    nodes: z.array(zLegacyLoadableNode),
+    links: z.array(z.unknown()).optional(),
+    last_node_id: zNodeId.optional(),
+    last_link_id: z.number().optional()
+  })
+  .passthrough()
+export type LegacyLoadableWorkflow = z.infer<typeof zLegacyLoadableWorkflow>
 
 const zWorkflowVersion = z.object({
   version: z.number()

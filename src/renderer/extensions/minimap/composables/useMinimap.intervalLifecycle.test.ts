@@ -18,11 +18,11 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { toNodeId } from '@/types/nodeId'
 
+import { createMockLinks } from '@/utils/__tests__/litegraphTestUtils'
 import {
-  createMockCanvas2DContext,
-  createMockLinks,
+  createMockCanvasRenderingContext2D,
   createMockMinimapCanvas
-} from '@/utils/__tests__/litegraphTestUtils'
+} from '@/utils/__tests__/canvasTestUtils'
 
 const mockNodes = fromPartial<LGraphNode[]>([
   {
@@ -128,7 +128,7 @@ describe('useMinimap change-detection interval', () => {
 
   beforeEach(() => {
     vi.useFakeTimers()
-    context = createMockCanvas2DContext()
+    context = createMockCanvasRenderingContext2D()
     mockNodes[0].pos = [0, 0]
   })
 

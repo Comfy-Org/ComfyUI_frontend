@@ -5,18 +5,18 @@ import { useMediaQuery, useResizeObserver } from '@vueuse/core'
 import type { CSSProperties } from 'vue'
 import { ref, useTemplateRef, watch } from 'vue'
 
-import SectionHeader from '../../components/common/SectionHeader.vue'
-import Button from '../../components/ui/button/Button.vue'
-import { externalLinks } from '../../config/routes'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
-import { routerT } from './routerCopy'
-import type { RouterRoadmapCardId } from '../../scripts/posthog'
-import { captureRouterRoadmapCardExpanded } from '../../scripts/posthog'
+import SectionHeader from '@/components/common/SectionHeader.vue'
+import Button from '@/components/ui/button/Button.vue'
+import { externalLinks } from '@/config/routes'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import type { RouterRoadmapCardId } from '@/scripts/posthog'
+import { captureRouterRoadmapCardExpanded } from '@/scripts/posthog'
 import FeatureCard from './FeatureCard.vue'
 import RouterRoadmapIllustration from './RouterRoadmapIllustration.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 
 const cards: readonly {
   id: RouterRoadmapCardId
@@ -26,27 +26,27 @@ const cards: readonly {
 }[] = [
   {
     id: 'workflow',
-    title: routerT('platform.router.roadmap.1.title', locale),
-    description: routerT('platform.router.roadmap.1.description', locale),
-    details: routerT('platform.router.roadmap.1.details', locale)
+    title: t('platform.router.roadmap.1.title'),
+    description: t('platform.router.roadmap.1.description'),
+    details: t('platform.router.roadmap.1.details')
   },
   {
     id: 'strategy',
-    title: routerT('platform.router.roadmap.2.title', locale),
-    description: routerT('platform.router.roadmap.2.description', locale),
-    details: routerT('platform.router.roadmap.2.details', locale)
+    title: t('platform.router.roadmap.2.title'),
+    description: t('platform.router.roadmap.2.description'),
+    details: t('platform.router.roadmap.2.details')
   },
   {
     id: 'use-case',
-    title: routerT('platform.router.roadmap.3.title', locale),
-    description: routerT('platform.router.roadmap.3.description', locale),
-    details: routerT('platform.router.roadmap.3.details', locale)
+    title: t('platform.router.roadmap.3.title'),
+    description: t('platform.router.roadmap.3.description'),
+    details: t('platform.router.roadmap.3.details')
   },
   {
     id: 'byok',
-    title: routerT('platform.router.roadmap.4.title', locale),
-    description: routerT('platform.router.roadmap.4.description', locale),
-    details: routerT('platform.router.roadmap.4.details', locale)
+    title: t('platform.router.roadmap.4.title'),
+    description: t('platform.router.roadmap.4.description'),
+    details: t('platform.router.roadmap.4.details')
   }
 ]
 
@@ -112,16 +112,16 @@ function panelStyle(index: number, expanded: boolean): CSSProperties {
 <template>
   <section class="mx-auto max-w-9xl px-6 py-10 lg:py-14">
     <SectionHeader
-      :label="routerT('platform.router.roadmap.eyebrow', locale)"
+      :label="t('platform.router.roadmap.eyebrow')"
       max-width="xl"
       heading-size="compact"
     >
-      {{ routerT('platform.router.roadmap.heading', locale) }}
+      {{ t('platform.router.roadmap.heading') }}
       <template #subtitle>
         <p
           class="mx-auto mt-4 max-w-2xl text-sm text-pretty text-primary-comfy-canvas/70"
         >
-          {{ routerT('platform.router.roadmap.subtitle', locale) }}
+          {{ t('platform.router.roadmap.subtitle') }}
         </p>
       </template>
     </SectionHeader>
@@ -176,7 +176,7 @@ function panelStyle(index: number, expanded: boolean): CSSProperties {
           "
           @click="toggle(card.id)"
         >
-          {{ t(isExpanded(card.id) ? 'ui.readLess' : 'ui.readMore', locale) }}
+          {{ t(isExpanded(card.id) ? 'ui.readLess' : 'ui.readMore') }}
           <span class="sr-only">{{ card.title }}</span>
           <component
             :is="isExpanded(card.id) ? Minus : Plus"
@@ -189,7 +189,7 @@ function panelStyle(index: number, expanded: boolean): CSSProperties {
 
     <div class="mt-8 flex justify-center">
       <Button as="a" :href="externalLinks.docsComfyRouter" variant="outline">
-        {{ routerT('platform.router.roadmap.learnMore', locale) }}
+        {{ t('platform.router.roadmap.learnMore') }}
       </Button>
     </div>
   </section>

@@ -4860,7 +4860,7 @@
       },
       "language_code": {
         "name": "语言代码",
-        "tooltip": "ISO-639-1 或 ISO-639-3 语言代码（如 'en'、'es'、'fra'）。留空以自动检测。"
+        "tooltip": "ISO 639-1 语言代码（例如“en”、“es”、“ja”）。留空以自动检测。"
       },
       "model": {
         "name": "模型",
@@ -4930,7 +4930,7 @@
       },
       "language_code": {
         "name": "language_code",
-        "tooltip": "ISO-639-1 或 ISO-639-3 语言代码（如 'en'、'es'、'fra'）。留空则自动检测。"
+        "tooltip": "ISO 639-1 语言代码（例如“en”、“es”、“ja”）。留空以自动检测。"
       },
       "model": {
         "name": "model",
@@ -4938,15 +4938,6 @@
       },
       "model_similarity_boost": {
         "name": "similarity_boost"
-      },
-      "model_speed": {
-        "name": "speed"
-      },
-      "model_style": {
-        "name": "style"
-      },
-      "model_use_speaker_boost": {
-        "name": "use_speaker_boost"
       },
       "output_format": {
         "name": "output_format",
@@ -5834,6 +5825,52 @@
       },
       "width": {
         "name": "宽度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3ImageNode": {
+    "description": "根据提示词使用 FLUX 3 生成图像，或编辑和组合最多 10 张参考图像。在提示词中将参考图像称为图像 1、图像 2，依此类推。",
+    "display_name": "Flux 3 图像",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "“auto”会遵循第一张参考图像，或从提示词中选择一个比例。"
+      },
+      "bounding_boxes": {
+        "name": "bounding_boxes",
+        "tooltip": "来自 Create Bounding Boxes 的可选框，用于在输出中放置对象或文本。位置相对于画布，因此请提供输出的宽高比。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "grounding": {
+        "name": "grounding",
+        "tooltip": "让模型在生成前通过网络和图像搜索检索提示词相关信息。"
+      },
+      "images": {
+        "name": "图像",
+        "tooltip": "可选的参考图像，最多共 10 张，每张至少为 256x256 像素。"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "要生成的内容，或要进行的编辑。提示词会在生成前被解析和扩展。"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "按所选宽高比输出的尺寸：0.75K 约为 0.6 百万像素，1K 为 1 MP，1.5K 为 2.4 MP，2K 为 4.2 MP，4K 为 16.8 MP。"
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "内容审核容忍度，0 最严格。"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "用于确定节点是否应重新运行的种子；FLUX 3 会自行选择种子，因此无论此值为何，实际结果均不具确定性。"
       }
     },
     "outputs": {
@@ -7434,7 +7471,7 @@
     "inputs": {
       "aspect_ratio": {
         "name": "aspect_ratio",
-        "tooltip": "输出视频的宽高比。"
+        "tooltip": "输出视频的宽高比。提供输入图像时将被忽略；视频会遵循图像的宽高比。"
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -7453,11 +7490,11 @@
       },
       "prompt": {
         "name": "prompt",
-        "tooltip": "所需视频的文本描述。提供输入图像时，grok-imagine-video-1.5 可不填。"
+        "tooltip": "所需视频的文本描述。提供输入图像时，对于 grok-imagine-video-1.5 模型，此项为可选。"
       },
       "resolution": {
         "name": "resolution",
-        "tooltip": "输出视频的分辨率。1080p 仅适用于 grok-imagine-video-1.5。"
+        "tooltip": "输出视频的分辨率。grok-imagine-video 不支持 1080p。"
       },
       "seed": {
         "name": "seed",
@@ -18481,7 +18518,7 @@
   "PrimitiveInt": {
     "display_name": "整数",
     "inputs": {
-      "fixed": {
+      "control_after_generate": {
         "name": "生成后控制"
       },
       "value": {
@@ -22372,7 +22409,7 @@
   "SeedNode": {
     "display_name": "种子",
     "inputs": {
-      "fixed": {
+      "control_after_generate": {
         "name": "生成后控制"
       },
       "seed": {

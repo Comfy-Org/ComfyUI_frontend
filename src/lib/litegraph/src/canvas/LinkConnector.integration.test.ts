@@ -21,7 +21,7 @@ import { toRerouteId } from '@/types/rerouteId'
 import {
   createMockCanvasPointerEvent,
   createMockCanvasRenderingContext2D
-} from '@/utils/__tests__/litegraphTestUtils'
+} from '@/utils/__tests__/canvasTestUtils'
 
 interface TestContext {
   graph: LGraph

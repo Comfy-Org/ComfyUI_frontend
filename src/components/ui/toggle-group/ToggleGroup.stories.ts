@@ -4,7 +4,7 @@ import { ref } from 'vue'
 import ToggleGroup from './ToggleGroup.vue'
 import ToggleGroupItem from './ToggleGroupItem.vue'
 
-const meta = {
+const meta: Meta<typeof ToggleGroup> = {
   title: 'Components/ToggleGroup',
   component: ToggleGroup,
   tags: ['autodocs'],
@@ -25,7 +25,7 @@ const meta = {
     },
     'onUpdate:modelValue': { action: 'update:modelValue' }
   }
-} satisfies Meta<typeof ToggleGroup>
+}
 
 export default meta
 type Story = StoryObj<typeof meta>

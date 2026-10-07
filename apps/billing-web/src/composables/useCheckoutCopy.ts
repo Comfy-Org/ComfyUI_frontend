@@ -50,6 +50,7 @@ export function useCheckoutCopy() {
     ),
     pendingVerificationDetail: preview('pendingVerificationDetail'),
     completeVerification: preview('completeVerification'),
+    cancelPaymentAndRetry: preview('cancelPaymentAndRetry'),
     confirmPayment: preview('confirmPayment'),
     startingToday: preview('startingToday'),
     parkedCheckoutDetail: preview('parkedCheckoutDetail'),

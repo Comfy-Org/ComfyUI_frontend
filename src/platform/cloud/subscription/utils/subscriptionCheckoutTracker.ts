@@ -1,3 +1,4 @@
+import type { SubscriptionCheckoutType } from '@comfyorg/account-core/billing'
 import type { SubscriptionDuration } from '@comfyorg/ingest-types'
 import {
   getTierPrice,
@@ -12,7 +13,6 @@ import type {
   BeginCheckoutMetadata,
   PaymentIntentSource,
   ResubscribeClickMetadata,
-  SubscriptionCheckoutType,
   SubscriptionSuccessMetadata
 } from '@/platform/telemetry/types'
 

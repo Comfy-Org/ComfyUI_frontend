@@ -339,10 +339,6 @@
     "name": "显示版本更新",
     "tooltip": "显示新模型和主要新功能的更新。"
   },
-  "Comfy_Pointer_ClickBufferTime": {
-    "name": "指针点击漂移延迟",
-    "tooltip": "按下指针按钮后，忽略指针移动的最大时间（毫秒）。\n\n有助于防止在点击时意外移动鼠标。"
-  },
   "Comfy_Pointer_ClickDrift": {
     "name": "指针点击漂移（距离）",
     "tooltip": "如果指针在按住按钮时移动超过此距离，则视为拖动（而不是点击）。\n\n有助于防止在点击时意外移动鼠标"

@@ -1,14 +1,15 @@
+import userEvent from '@testing-library/user-event'
 import { render, screen, within } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { readonly, ref, createSSRApp, h, nextTick } from 'vue'
 import type { Ref } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 
-import { workshopModels } from '../../config/workshop-browse-content'
-import { workshopPages } from '../../config/workshop-page-content'
+import { workshopModels } from '@/config/workshop-browse-content'
+import { workshopPages } from '@/config/workshop-page-content'
 import './ModelPage.vue'
 import './ModelsCatalogue.vue'
-import { prepareModelPage } from '../../routes/models/model-page'
+import { prepareModelPage } from '@/routes/models/model-page'
 import {
   useWorkshopAppsEnabled,
   captureWorkshopEvent,
@@ -16,11 +17,11 @@ import {
   useWorkshopEnabledSettled,
   useWorkshopWorkflowsEnabled,
   useWorkshopAuthFlag
-} from '../../scripts/posthog'
+} from '@/scripts/posthog'
 import { FORWARD_GRACE_MS, forwardLegacySection } from './forwardLegacySection'
 import ModelsPage from './ModelsPage.vue'
 
-vi.mock(import('../../scripts/posthog'))
+vi.mock(import('@/scripts/posthog'))
 
 let enabled: Ref<boolean>
 let settled: Ref<boolean>
@@ -367,6 +368,40 @@ describe('Models page entry', () => {
         expect(replace).not.toHaveBeenCalled()
       }
     )
+  })
+
+  it('gives the hub heading and the tabs to a category, and takes them back', async () => {
+    const user = userEvent.setup()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>().mockResolvedValue(Response.json(workshopPages))
+    )
+    enabled.value = true
+    workflowsEnabled.value = true
+    render(ModelsPage, {
+      props: { section: 'models', heading: 'Models heading' },
+      slots: { fallback: '<h1>Public Models</h1>' }
+    })
+    expect(await screen.findByTestId('workshop-search')).toBeVisible()
+    const headingWrapper = () => screen.getByTestId('workshop-heading')
+
+    expect(headingWrapper()).not.toHaveClass('sr-only')
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Models heading' })
+    ).toBeVisible()
+    expect(screen.getByTestId('catalogue-tabs')).toBeVisible()
+
+    await user.click(screen.getByTestId('browse-all-end'))
+    expect(headingWrapper()).toHaveClass('sr-only')
+    // Hidden, not removed: the page still owns the only h1.
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Models heading' })
+    ).toBeInTheDocument()
+    expect(screen.queryByTestId('catalogue-tabs')).toBeNull()
+
+    await user.click(screen.getByTestId('section-back'))
+    expect(headingWrapper()).not.toHaveClass('sr-only')
+    expect(screen.getByTestId('catalogue-tabs')).toBeVisible()
   })
 
   it('switches the loaded catalogue and heading without fetching its data again', async () => {

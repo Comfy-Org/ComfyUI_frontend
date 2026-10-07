@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
-import SectionHeader from '../../components/common/SectionHeader.vue'
+import SectionHeader from '@/components/common/SectionHeader.vue'
 import type { FeatureCardLink } from './FeatureCard.vue'
 import FeatureCard from './FeatureCard.vue'
 

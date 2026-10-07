@@ -24,7 +24,8 @@ const EYEBROW = 'Subscribe to Pro Plan · Personal'
 
 /**
  * Prices LAUNCH20 at 20% off the $50 plan and refuses any other code the way
- * billing does, with a 400 carrying `PROMOTION_CODE_INVALID`.
+ * billing does, with a 400 carrying `PROMOTION_CODE_INVALID`. As on the real
+ * quote, today's cost is net of the code and the subtotal is the plan before it.
  */
 function quoteCodes(cloud: MockCloud, valid: () => boolean = () => true) {
   cloud.reply('POST', '/billing/preview-subscribe', ({ body }) => {
@@ -45,6 +46,8 @@ function quoteCodes(cloud: MockCloud, valid: () => boolean = () => true) {
       body: {
         ...cloud.scenario.preview,
         quote_id: 'quote_launch20',
+        subtotal_cents: 5000,
+        cost_today_cents: 4000,
         amount_due_cents: 4000,
         promotion_code: 'LAUNCH20',
         discounts: [
@@ -77,7 +80,9 @@ test('applies a valid code: its row, its removable chip, and the new total', asy
 
   await enterCode(page, 'launch20')
 
-  await expect(summary(page)).toContainText('Promo code−$10.00')
+  await expect(summary(page)).toContainText(
+    'Pro Plan$50.00$50 /mo, billed monthlyPromo code−$10.00'
+  )
   await expect(summary(page)).toContainText('Total due today$40.00')
   await expect(
     page.getByRole('button', { name: 'Remove LAUNCH20' })
@@ -304,6 +309,8 @@ test('discount rows follow the server order, the entered code first when it come
       body: {
         ...cloud.scenario.preview,
         quote_id: 'quote_launch20',
+        subtotal_cents: 5000,
+        cost_today_cents: 3000,
         amount_due_cents: 3000,
         promotion_code: 'LAUNCH20',
         discounts: [
@@ -328,4 +335,34 @@ test('discount rows follow the server order, the entered code first when it come
   await expect(
     page.getByRole('button', { name: 'Remove LAUNCH20' })
   ).toBeVisible()
+})
+
+test.describe('below desktop width', () => {
+  test.use({ viewport: { width: 390, height: 844 } })
+
+  test('the promo controls grow to a finger-sized hit area', async ({
+    page,
+    cloud,
+    signIn
+  }) => {
+    quoteCodes(cloud)
+    await signIn(CHECKOUT)
+    await expect(page.getByText(EYEBROW)).toBeVisible()
+
+    const heightOf = async (name: string) =>
+      (await page.getByRole('button', { name }).boundingBox())?.height
+    expect(await heightOf('Add promo code')).toBe(40)
+
+    await page.getByRole('button', { name: 'Add promo code' }).click()
+    expect((await promoField(page).boundingBox())?.height).toBe(40)
+    expect(await heightOf('Apply')).toBe(40)
+    expect(await heightOf('Close promo code')).toBe(40)
+
+    await promoField(page).fill('launch20')
+    await page.getByRole('button', { name: 'Apply' }).click()
+    await expect(
+      page.getByRole('button', { name: 'Remove LAUNCH20' })
+    ).toBeVisible()
+    expect(await heightOf('Remove LAUNCH20')).toBe(32)
+  })
 })

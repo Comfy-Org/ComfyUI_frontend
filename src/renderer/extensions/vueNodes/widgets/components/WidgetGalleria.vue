@@ -1,132 +1,115 @@
 <template>
   <div class="flex flex-col gap-1">
-    <Galleria
-      v-model:active-index="activeIndex"
-      :value="galleryImages"
-      v-bind="filteredProps"
-      :show-thumbnails="showThumbnails"
-      :show-item-navigators="showNavButtons"
-      class="max-w-full"
-      :pt="{
-        thumbnails: {
-          class: 'overflow-hidden'
-        },
-        thumbnailContent: {
-          class: 'py-4 px-2'
-        },
-        thumbnailPrevButton: {
-          class: 'm-0'
-        },
-        thumbnailNextButton: {
-          class: 'm-0'
-        }
-      }"
+    <div
+      class="max-w-full overflow-hidden rounded-lg border border-border-default"
+      role="region"
+      :aria-label="t('g.imageGallery')"
     >
-      <template #item="{ item }">
+      <div class="relative flex items-center justify-center">
         <img
-          :src="item?.itemImageSrc || item?.src || ''"
+          v-if="images.length"
+          :src="images[activeIndex]"
           :alt="
-            item?.alt ||
-            `${t('g.galleryImage')} ${activeIndex + 1} of ${galleryImages.length}`
+            t('g.galleryImagePosition', {
+              index: activeIndex + 1,
+              total: images.length
+            })
           "
           class="h-auto max-h-64 w-full object-contain"
         />
-      </template>
-      <template #thumbnail="{ item }">
-        <div class="size-full p-1">
-          <img
-            :src="item?.thumbnailImageSrc || item?.src || ''"
-            :alt="
-              item?.alt ||
-              `${t('g.galleryThumbnail')} ${galleryImages.findIndex((img) => img === item) + 1} of ${galleryImages.length}`
-            "
-            class="size-full rounded-lg object-cover"
-          />
-        </div>
-      </template>
-    </Galleria>
+        <button
+          v-if="images.length > 1"
+          type="button"
+          :aria-label="t('g.previousImage')"
+          :disabled="activeIndex === 0"
+          :class="cn(navButtonClass, 'left-2')"
+          @click="activeIndex--"
+        >
+          <i class="icon-[lucide--chevron-left] size-4" aria-hidden="true" />
+        </button>
+        <button
+          v-if="images.length > 1"
+          type="button"
+          :aria-label="t('g.nextImage')"
+          :disabled="activeIndex === images.length - 1"
+          :class="cn(navButtonClass, 'right-2')"
+          @click="activeIndex++"
+        >
+          <i class="icon-[lucide--chevron-right] size-4" aria-hidden="true" />
+        </button>
+      </div>
+
+      <div v-if="images.length > 1" class="overflow-x-auto px-2 py-4">
+        <RovingFocusGroup
+          :current-tab-stop-id="`gallery-thumbnail-${activeIndex}`"
+          orientation="horizontal"
+          class="flex min-w-max items-center justify-center gap-1"
+        >
+          <RovingFocusItem
+            v-for="(image, index) in images"
+            :key="`${image}-${index}`"
+            as-child
+            :tab-stop-id="`gallery-thumbnail-${index}`"
+          >
+            <button
+              type="button"
+              :class="
+                cn(
+                  'size-12 shrink-0 overflow-hidden rounded-lg border-0 bg-transparent p-1 opacity-50 transition-opacity hover:opacity-100',
+                  index === activeIndex && 'opacity-100'
+                )
+              "
+              :aria-label="
+                t('g.galleryThumbnailPosition', {
+                  index: index + 1,
+                  total: images.length
+                })
+              "
+              :aria-current="index === activeIndex ? 'true' : undefined"
+              @focus="activeIndex = index"
+              @click="activeIndex = index"
+            >
+              <img
+                :src="image"
+                alt=""
+                class="size-full rounded-lg object-cover"
+              />
+            </button>
+          </RovingFocusItem>
+        </RovingFocusGroup>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import Galleria from 'primevue/galleria'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { RovingFocusGroup, RovingFocusItem } from 'reka-ui'
 
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import {
-  GALLERIA_EXCLUDED_PROPS,
-  filterWidgetProps
-} from '@/utils/widgetPropFilter'
+import { cn } from '@comfyorg/tailwind-utils'
 
-export interface GalleryImage {
-  itemImageSrc?: string
-  thumbnailImageSrc?: string
-  src?: string
-  alt?: string
-}
+defineOptions({ inheritAttrs: false })
 
-export type GalleryValue = string[] | GalleryImage[]
-
-const value = defineModel<GalleryValue>({ required: true })
-
-const props = defineProps<{
-  widget: SimplifiedWidget<GalleryValue>
-}>()
-
+const modelValue = defineModel<unknown>({ required: true })
+const images = computed(() =>
+  Array.isArray(modelValue.value)
+    ? modelValue.value.filter(
+        (image): image is string =>
+          typeof image === 'string' && image.length > 0
+      )
+    : []
+)
 const activeIndex = ref(0)
-
 const { t } = useI18n()
 
-const filteredProps = computed(() =>
-  filterWidgetProps(props.widget.options, GALLERIA_EXCLUDED_PROPS)
+const navButtonClass =
+  'absolute top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded-full border-0 bg-secondary-background/80 text-base-foreground transition-colors hover:bg-secondary-background disabled:pointer-events-none disabled:opacity-40'
+
+watch(
+  () => images.value.length,
+  (length) => {
+    activeIndex.value = Math.max(0, Math.min(activeIndex.value, length - 1))
+  }
 )
-
-const galleryImages = computed(() => {
-  if (!value.value || !Array.isArray(value.value)) return []
-
-  return value.value
-    .filter((item) => item !== null && item !== undefined) // Filter out null/undefined
-    .map((item, index) => {
-      if (typeof item === 'string') {
-        return {
-          itemImageSrc: item,
-          thumbnailImageSrc: item,
-          alt: `Image ${index}`
-        }
-      }
-      return item ?? {} // Ensure we have at least an empty object
-    })
-})
-
-const showThumbnails = computed(() => {
-  return (
-    props.widget.options?.showThumbnails !== false &&
-    galleryImages.value.length > 1
-  )
-})
-
-const showNavButtons = computed(() => {
-  return (
-    props.widget.options?.showItemNavigators !== false &&
-    galleryImages.value.length > 1
-  )
-})
 </script>
-
-<style scoped>
-/* Ensure thumbnail container doesn't overflow */
-:deep(.p-galleria-thumbnails) {
-  overflow: hidden;
-}
-
-/* Constrain thumbnail items to prevent overlap */
-:deep(.p-galleria-thumbnail-item) {
-  flex-shrink: 0;
-}
-
-/* Ensure thumbnail wrapper maintains aspect ratio */
-:deep(.p-galleria-thumbnail) {
-  overflow: hidden;
-}
-</style>

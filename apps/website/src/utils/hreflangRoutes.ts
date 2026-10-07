@@ -6,7 +6,7 @@
  * Kept free of `import.meta.glob` so a plain Node script can import it.
  */
 
-import { NON_DEFAULT_LOCALE_PREFIXES, withRouteSlash } from '../config/locales'
+import { NON_DEFAULT_LOCALE_PREFIXES, withRouteSlash } from '@/config/locales'
 
 /**
  * `/src/pages/cloud/pricing.astro` -> `/cloud/pricing/`, index files -> their directory.

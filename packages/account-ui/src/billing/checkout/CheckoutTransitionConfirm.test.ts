@@ -119,6 +119,54 @@ describe('CheckoutTransitionConfirm', () => {
     expect(confirmButton('Confirm upgrade').disabled).toBe(true)
   })
 
+  describe('cancel payment and try again', () => {
+    const CANCEL = 'Cancel payment and try again'
+
+    it.for([
+      { paymentCancelable: true, offered: true },
+      { paymentCancelable: false, offered: false },
+      { paymentCancelable: undefined, offered: false }
+    ])(
+      'offers the cancel only when the server says so ($paymentCancelable)',
+      ({ paymentCancelable, offered }) => {
+        renderTransition({
+          embeddedCheckoutEnabled: true,
+          authenticationState: 'failed_retryable',
+          ...(paymentCancelable === undefined ? {} : { paymentCancelable })
+        })
+        expect(screen.queryByRole('button', { name: CANCEL }) !== null).toBe(
+          offered
+        )
+      }
+    )
+
+    it('asks the host to cancel once per click, even while the confirm is busy', async () => {
+      const onCancelPayment = vi.fn()
+      renderTransition({
+        paymentCancelable: true,
+        isLoading: true,
+        onCancelPayment
+      })
+      await userEvent.click(confirmButton(CANCEL))
+      expect(onCancelPayment).toHaveBeenCalledOnce()
+    })
+
+    it('holds the cancel while it is in flight', () => {
+      renderTransition({ paymentCancelable: true, cancelingPayment: true })
+      expect(confirmButton(CANCEL).disabled).toBe(true)
+    })
+
+    it("shows the host's failure sentence beside the cancel", () => {
+      renderTransition({
+        paymentCancelable: true,
+        cancelPaymentError: 'This payment is already processing.'
+      })
+      expect(screen.getByRole('alert').textContent).toContain(
+        'This payment is already processing.'
+      )
+    })
+  })
+
   describe('reactivation', () => {
     it('shows no banner for a subscription that is not cancelled', () => {
       renderTransition()

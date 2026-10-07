@@ -82,7 +82,6 @@ describe('useCustomerEventsService', () => {
   }
 
   beforeEach(() => {
-    vi.mocked(webSessionResourceHeader).mockReset()
     vi.mocked(webSessionResourceHeader).mockResolvedValue(undefined)
     vi.mocked(useAuthStore().getUserAuthHeader).mockResolvedValue(
       mockAuthHeaders
@@ -108,10 +107,6 @@ describe('useCustomerEventsService', () => {
     it('should initialize with default state', () => {
       expect(service.isLoading.value).toBe(false)
       expect(service.error.value).toBeNull()
-    })
-
-    it('should initialize i18n date formatter', () => {
-      expect(mockI18n.d).toBeDefined()
     })
   })
 

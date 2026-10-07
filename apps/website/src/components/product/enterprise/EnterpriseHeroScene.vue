@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 
-import { prefersReducedMotion } from '../../../composables/useReducedMotion'
+import { prefersReducedMotion } from '@/composables/useReducedMotion'
 
 // Scene extracted from the retired /cloud/enterprise hero (HeroSection.vue):
 // ripple rings expand behind an isometric block cluster whose pieces

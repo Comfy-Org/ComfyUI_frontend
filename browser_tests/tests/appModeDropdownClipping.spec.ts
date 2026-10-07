@@ -136,8 +136,6 @@ test.describe('App mode dropdown clipping', { tag: '@ui' }, () => {
     )
     await imageInput.open()
 
-    // The unstyled PrimeVue Popover renders with role="dialog".
-    // Locate the one containing the image grid (filter buttons like "All", "Inputs").
     const popover = comfyPage.appMode.imagePickerPopover
     await expect(popover).toBeVisible()
 

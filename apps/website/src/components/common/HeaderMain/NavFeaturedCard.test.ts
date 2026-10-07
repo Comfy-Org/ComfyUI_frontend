@@ -1,12 +1,12 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
-import type { NavFeatured } from '../../../data/mainNavigation'
+import type { NavFeatured } from '@/data/mainNavigation'
 import NavFeaturedCard from './NavFeaturedCard.vue'
 
 const motion = vi.hoisted(() => ({ reduced: false }))
 
-vi.mock(import('../../../composables/useReducedMotion'), () => ({
+vi.mock(import('@/composables/useReducedMotion'), () => ({
   prefersReducedMotion: () => motion.reduced
 }))
 

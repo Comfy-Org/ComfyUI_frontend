@@ -6,8 +6,8 @@ import { vi } from 'vitest'
 
 import { COMFY_CLIENT } from '@comfyorg/account-core/requestAuth'
 
-import { WORKSHOP_CLOUD_BASE_URL } from '../workshop-env'
-import type { WorkshopSession } from '../workshop-session-state'
+import { WORKSHOP_CLOUD_BASE_URL } from '@/config/workshop-env'
+import type { WorkshopSession } from '@/config/workshop-session-state'
 
 export const FEATURES = `${WORKSHOP_CLOUD_BASE_URL}/api/features`
 export const SESSION = `${WORKSHOP_CLOUD_BASE_URL}/api/auth/session`
@@ -34,6 +34,7 @@ const LIVE_SESSION = {
   status: 200,
   body: {
     absolute_expires_at: '2099-01-01T00:00:00Z',
+    has_personal_workspace: true,
     expires_at: '2099-01-01T00:00:00Z',
     csrf_token: 'csrf',
     user: {

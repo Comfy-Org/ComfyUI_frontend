@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { FetchOutcome } from './featureFlags'
-import type { FeatureFlagsSnapshot } from '../data/feature-flags'
+import type { FeatureFlagsSnapshot } from '@/data/feature-flags'
 
 import {
   reportFeatureFlagsOutcome,
@@ -39,7 +39,6 @@ describe('reportFeatureFlagsOutcome', () => {
   })
 
   afterEach(() => {
-    writeSpy.mockRestore()
     rmSync(summaryDir, { recursive: true, force: true })
     if (originalSummary === undefined) delete process.env.GITHUB_STEP_SUMMARY
     else process.env.GITHUB_STEP_SUMMARY = originalSummary

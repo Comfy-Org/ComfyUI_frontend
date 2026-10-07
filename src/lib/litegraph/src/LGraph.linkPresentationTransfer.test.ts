@@ -22,7 +22,7 @@ import {
   createTestSubgraph,
   enableSubgraphNodeCreation
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { createMockCanvasPointerEvent } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockCanvasPointerEvent } from '@/utils/__tests__/canvasTestUtils'
 
 describe('link presentation transfer across recreation flows', () => {
   it('keeps interior presentation through a convert and unpack round-trip', () => {

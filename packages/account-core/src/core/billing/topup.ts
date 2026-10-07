@@ -14,7 +14,8 @@ import {
   zCreateTopupCheckoutRequest,
   zCreateTopupCheckoutResponse,
   zCreateTopupRequest,
-  zCreateTopupResponse
+  zCreateTopupResponse,
+  zTopupQuoteResponse
 } from '@comfyorg/ingest-types/zod'
 
 import type {
@@ -36,6 +37,7 @@ import type {
 } from './operationState.js'
 import { isTerminal, validateActionUrl } from './operationState.js'
 import { readValidatedBillingResponse } from './sharedRead.js'
+import { wireCents } from './wireCents.js'
 
 export const TOPUP_ROUTE = '/billing/topup'
 /**
@@ -44,6 +46,38 @@ export const TOPUP_ROUTE = '/billing/topup'
  * through a webhook, so completion is the host's return plus a balance watch.
  */
 export const TOPUP_CHECKOUT_ROUTE = '/billing/topup/checkout'
+/** A read the backend shapes as a POST: nothing is charged or reserved. */
+export const TOPUP_QUOTE_ROUTE = '/billing/topup/quote'
+
+/** The server's own server code for an amount it will not sell. */
+const INVALID_AMOUNT_SERVER_CODE = 'INVALID_AMOUNT'
+
+const TopupQuoteSchema = zTopupQuoteResponse.extend({
+  amount_cents: wireCents,
+  credits: wireCents
+})
+
+/**
+ * What the server says an amount buys. `credits` is the server's display
+ * count; `expiresAt` is when the grant would lapse, which the server may
+ * move, so a host never states the expiry policy itself.
+ */
+export interface TopupQuote {
+  readonly amountCents: number
+  readonly credits: number
+  readonly expiresAt: string
+}
+
+export type TopupQuoteResult =
+  | { readonly status: 'ok'; readonly value: TopupQuote }
+  | BillingFailure
+  | TopupNotAvailable
+  | TopupInvalidAmount
+
+export interface QuoteTopupInput {
+  readonly amountCents: number
+  readonly signal?: AbortSignal
+}
 
 /** The one coded error body this command acts on; every other code stays a `BillingFailure`. */
 const NO_PAYMENT_METHOD_SERVER_CODE = 'NO_PAYMENT_METHOD'
@@ -172,6 +206,12 @@ export interface TopupCommandOptions {
 }
 
 export interface TopupCommand {
+  /**
+   * Quotes an amount without starting anything. It does not check the plan
+   * tier or the payment method, so a quote does not promise the top-up will
+   * go through.
+   */
+  quoteTopup: (input: QuoteTopupInput) => Promise<TopupQuoteResult>
   createTopupCheckout: (input: CreateTopupCheckoutInput) => Promise<TopupResult>
   /**
    * The route Workshop and Platform ship on today. Unlike
@@ -406,5 +446,35 @@ export function createTopupCommand(options: TopupCommandOptions): TopupCommand {
     }
   }
 
-  return { createTopupCheckout, createHostedTopupCheckout }
+  async function quoteTopup(input: QuoteTopupInput): Promise<TopupQuoteResult> {
+    const { amountCents, signal } = input
+    if (!wireCents.positive().safeParse(amountCents).success)
+      return INVALID_AMOUNT
+    const response = await readValidatedBillingResponse(
+      transport,
+      {
+        method: 'POST',
+        route: TOPUP_QUOTE_ROUTE,
+        body: { amount_cents: amountCents },
+        ...(signal === undefined ? {} : { signal })
+      },
+      (raw) => TopupQuoteSchema.safeParse(raw)
+    )
+    if (response.status === 'error') {
+      if (matchesServerCode(response, INVALID_AMOUNT_SERVER_CODE))
+        return INVALID_AMOUNT
+      return response.httpStatus === 404 ? NOT_AVAILABLE : response
+    }
+    const quote = response.value.data
+    return {
+      status: 'ok',
+      value: {
+        amountCents: quote.amount_cents,
+        credits: quote.credits,
+        expiresAt: quote.expires_at
+      }
+    }
+  }
+
+  return { quoteTopup, createTopupCheckout, createHostedTopupCheckout }
 }

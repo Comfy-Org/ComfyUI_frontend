@@ -243,14 +243,10 @@ function useWorkspaceUIInternal() {
     () => isTeamPlan.value && isSubscriptionCancelled.value
   )
 
-  // A workspace can't be deleted while its subscription is active and not yet
-  // cancelled — the owner must cancel first. Both settings panels read this so
-  // their menus can't desync on a billing-flag change.
-  const isDeleteDisabled = computed(
-    () =>
-      canAccessSubscriptionFeatures.value &&
-      !(subscription.value?.isCancelled ?? false)
-  )
+  // The server refuses deleting a workspace until its plan has ended, and a
+  // cancelled plan stays active until cancel_at. Both settings panels read
+  // this so their menus can't desync on a billing-flag change.
+  const isDeleteDisabled = computed(() => canAccessSubscriptionFeatures.value)
 
   const deleteDisabledTooltipKey = computed(() =>
     isDeleteDisabled.value ? uiConfig.value.workspaceMenuDisabledTooltip : null

@@ -1,6 +1,6 @@
 import { z } from 'astro/zod'
 
-import rawInputs from '../data/workshop-content-inputs.json'
+import rawInputs from '@/data/workshop-content-inputs.json'
 
 export const workshopContentInputs = new Map(
   Object.entries(

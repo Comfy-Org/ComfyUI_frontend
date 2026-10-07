@@ -48,7 +48,7 @@ describe('WidgetInputText Value Binding', () => {
     if (trigger === 'blur') {
       await fireEvent.blur(input)
     } else {
-      // eslint-disable-next-line testing-library/prefer-user-event
+      // oxlint-disable-next-line testing-library/prefer-user-event
       await fireEvent.keyDown(input, { key: 'Enter' })
     }
     return input

@@ -13,7 +13,7 @@ import type {
 } from '@comfyorg/account-core/session'
 import { zBillingBalanceResponse } from '@comfyorg/ingest-types/zod'
 
-import { createTimeoutSignal } from '../utils/abortSignal'
+import { createTimeoutSignal } from '@/utils/abortSignal'
 
 export type BalanceState =
   /** Cents, as the cloud app reads it: the `_micros` fields carry cents. */

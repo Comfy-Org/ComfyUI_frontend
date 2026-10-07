@@ -151,10 +151,10 @@ describe('event list derivation', () => {
     eventAt('older', { startDateTime: '2026-06-20' })
   ]
 
-  it('splits and orders upcoming events by start ascending', () => {
+  it('splits and orders upcoming events latest first by start', () => {
     expect(deriveUpcomingEvents(list, now).map((event) => event.id)).toEqual([
-      'sooner',
-      'later'
+      'later',
+      'sooner'
     ])
   })
 
@@ -326,6 +326,26 @@ describe('site event data', () => {
     )
 
     expect(matches.map((event) => event.id)).toEqual(['dev-platform-oct-1'])
+  })
+
+  it('lists every exported event collection latest first', () => {
+    for (const list of [directoryEvents, upcomingEvents, pastEvents]) {
+      const starts = list.map((event) => Date.parse(event.startDateTime))
+      expect(starts).toEqual([...starts].sort((a, b) => b - a))
+    }
+  })
+
+  it('lists the Oct 2026 Build Nights as partner events, latest first', () => {
+    const ids = directoryEvents.map((event) => event.id)
+    const devPlatform = 'dev-platform-challenge-build-night'
+    const codex = 'codex-build-night-agents-everywhere'
+
+    expect(ids.indexOf(devPlatform)).toBeLessThan(ids.indexOf(codex))
+    for (const id of [devPlatform, codex]) {
+      expect(directoryEvents.find((event) => event.id === id)?.organizer).toBe(
+        'partner'
+      )
+    }
   })
 
   it('has unique event ids', () => {

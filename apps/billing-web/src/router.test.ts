@@ -3,6 +3,7 @@ import { createMemoryHistory } from 'vue-router'
 import type { Router } from 'vue-router'
 
 import { BILLING_CLIENT_KEY } from '@comfyorg/account-ui/billing'
+import type { BillingSource } from '@comfyorg/billing-contract'
 
 import App from '@/App.vue'
 import { safeReturnTo } from '@/auth/returnTo'
@@ -281,6 +282,39 @@ describe('hosted billing entry routing', () => {
       product: 'comfyui',
       returnTo: 'comfyui_workspace',
       plan: 'creator_monthly'
+    })
+  })
+
+  it('publishes the source and journey the product handed over', async () => {
+    await arriveAt(
+      `/v1/subscription?${ENTRY_QUERY}&source=agent_paywall&correlation_id=journey-1`
+    )
+
+    const { entry } = useBillingEntry()
+    expect(entry.value).toEqual({
+      version: 'v1',
+      intent: 'subscription',
+      product: 'comfyui',
+      returnTo: 'comfyui_workspace',
+      source: 'agent_paywall',
+      correlationId: 'journey-1'
+    })
+    expectTypeOf(entry.value?.source).toEqualTypeOf<BillingSource | undefined>()
+    expectTypeOf(entry.value?.correlationId).toEqualTypeOf<string | undefined>()
+  })
+
+  it('publishes a link whose source is outside the shared list without one', async () => {
+    await arriveAt(
+      `/v1/subscription?${ENTRY_QUERY}&source=https%3A%2F%2Fevil.test&correlation_id=journey-1`
+    )
+
+    expect(useBillingEntry().error.value).toBeUndefined()
+    expect(useBillingEntry().entry.value).toEqual({
+      version: 'v1',
+      intent: 'subscription',
+      product: 'comfyui',
+      returnTo: 'comfyui_workspace',
+      correlationId: 'journey-1'
     })
   })
 

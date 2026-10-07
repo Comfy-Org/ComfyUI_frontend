@@ -18,8 +18,16 @@ import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/
 export const CONSENT_DIALOG_KEY = 'agent-consent'
 const DOCS_URL = 'https://docs.comfy.org/agent-tools/in-app-agent'
 const CONSENT_MEDIA_BASE = 'https://media.comfy.org/website/comfy-agent'
-const CONSENT_VIDEO_SRC = `${CONSENT_MEDIA_BASE}/agent-consent-v2-1280.webm`
-const CONSENT_VIDEO_SRC_MP4 = `${CONSENT_MEDIA_BASE}/agent-consent-v2-1280.mp4`
+const CONSENT_VIDEO_SOURCES = [
+  {
+    src: `${CONSENT_MEDIA_BASE}/agent-consent-v2-1280.webm`,
+    type: 'video/webm'
+  },
+  {
+    src: `${CONSENT_MEDIA_BASE}/agent-consent-v2-1280.mp4`,
+    type: 'video/mp4'
+  }
+]
 const CONSENT_POSTER_SRC = `${CONSENT_MEDIA_BASE}/agent-consent-v2-poster.jpg`
 
 const AgentConsentCard = defineAsyncComponent(
@@ -178,8 +186,7 @@ export function useAgentConsent() {
           title: t('agent.consent.title'),
           titleId: CONSENT_DIALOG_KEY,
           paragraphs: [t('agent.consent.body1'), t('agent.consent.body2')],
-          videoSrc: CONSENT_VIDEO_SRC,
-          videoSrcMp4: CONSENT_VIDEO_SRC_MP4,
+          videoSources: CONSENT_VIDEO_SOURCES,
           posterSrc: CONSENT_POSTER_SRC,
           docsUrl: DOCS_URL,
           accepting: false,

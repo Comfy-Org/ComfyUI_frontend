@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { DiscoveryWorkflow } from '../../data/modelDiscovery'
-import StaticFrame from '../workshop/StaticFrame.vue'
+import type { DiscoveryWorkflow } from '@/data/modelDiscovery'
+import StaticFrame from '@/components/workshop/StaticFrame.vue'
 
 // A provider stands for a body of work and says so with its mark; a workflow
 // stands for one finished job, so it leads with the job.

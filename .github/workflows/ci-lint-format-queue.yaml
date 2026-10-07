@@ -52,7 +52,7 @@ jobs:
         run: pnpm lint:ci
 
       - name: Verify format
-        run: pnpm format:check
+        run: pnpm -r --include-workspace-root format:check
 
       - name: Save lint caches
         if: always()

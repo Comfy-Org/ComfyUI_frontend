@@ -9,6 +9,7 @@ import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useTelemetry } from '@/platform/telemetry'
+import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
@@ -72,8 +73,9 @@ const i18n = createI18n({
   }
 })
 
-function renderDialog() {
+function renderDialog(props: { source?: PaymentIntentSource } = {}) {
   return render(TopUpCreditsDialogContentLegacy, {
+    props,
     global: {
       config: { errorHandler: () => {} },
       plugins: [i18n]
@@ -102,6 +104,110 @@ describe('TopUpCreditsDialogContentLegacy', () => {
     })
     vi.spyOn(window, 'open').mockImplementation(() => window)
   })
+
+  it.for([
+    {
+      name: 'a preset',
+      choose: async (user: ReturnType<typeof userEvent.setup>) => {
+        await user.click(screen.getByRole('button', { name: '$25' }))
+      },
+      reported: { amount_cents: 2500, amount_preset: '25' }
+    },
+    {
+      name: 'a typed amount',
+      choose: async (user: ReturnType<typeof userEvent.setup>) => {
+        const payInput = screen.getByRole('spinbutton', { name: 'You pay' })
+        await user.tripleClick(payInput)
+        await user.keyboard('75{Enter}')
+      },
+      reported: { amount_cents: 7500, amount_preset: 'custom' }
+    },
+    {
+      name: 'a typed amount that equals a preset',
+      choose: async (user: ReturnType<typeof userEvent.setup>) => {
+        const payInput = screen.getByRole('spinbutton', { name: 'You pay' })
+        await user.tripleClick(payInput)
+        await user.keyboard('100{Enter}')
+      },
+      reported: { amount_cents: 10000, amount_preset: 'custom' }
+    }
+  ])(
+    'reports the amount and the preset of $name on the started event',
+    async ({ choose, reported }) => {
+      renderDialog({ source: 'deep_link' })
+
+      await choose(userEvent.setup())
+      await clickBuyCredits()
+
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
+        operation: 'topup',
+        stage: 'started',
+        outcome: 'pending',
+        payment_intent_source: 'deep_link',
+        ...reported
+      })
+    }
+  )
+
+  it.for([
+    {
+      name: 'a rejected purchase',
+      purchase: () => Promise.reject(new Error('declined')),
+      expectedEvents: [
+        [
+          {
+            operation: 'topup',
+            stage: 'started',
+            outcome: 'pending',
+            payment_intent_source: 'deep_link',
+            amount_cents: 5000,
+            amount_preset: '50'
+          }
+        ],
+        [
+          {
+            operation: 'topup',
+            stage: 'failed',
+            outcome: 'failure',
+            failure_category: 'unknown',
+            payment_intent_source: 'deep_link'
+          }
+        ]
+      ]
+    },
+    {
+      name: 'a checkout that opens',
+      purchase: () =>
+        Promise.resolve({ checkout_url: 'https://checkout.stripe.test' }),
+      expectedEvents: [
+        [
+          {
+            operation: 'topup',
+            stage: 'started',
+            outcome: 'pending',
+            payment_intent_source: 'deep_link',
+            amount_cents: 5000,
+            amount_preset: '50'
+          }
+        ]
+      ]
+    }
+  ])(
+    'reports the surface it was opened from on the events of $name',
+    async ({ purchase, expectedEvents }) => {
+      vi.mocked(useAuthStore().initiateCreditPurchase).mockImplementation(
+        purchase
+      )
+      renderDialog({ source: 'deep_link' })
+      await clickBuyCredits()
+
+      const telemetry = useTelemetry()
+      assert.exists(telemetry)
+      expect(vi.mocked(telemetry.trackBillingEvent).mock.calls).toEqual(
+        expectedEvents
+      )
+    }
+  )
 
   it('shows Plan & Credits after a successful Cloud purchase', async () => {
     renderDialog()
@@ -251,7 +357,15 @@ describe('TopUpCreditsDialogContentLegacy', () => {
         Promise.resolve({ checkout_url: 'https://checkout.stripe.test' }),
       openedWindow: window,
       expectedEvents: [
-        [{ operation: 'topup', stage: 'started', outcome: 'pending' }]
+        [
+          {
+            operation: 'topup',
+            stage: 'started',
+            outcome: 'pending',
+            amount_cents: 5000,
+            amount_preset: '50'
+          }
+        ]
       ],
       markerKept: true,
       settingsCalls: [['workspace']]
@@ -261,7 +375,15 @@ describe('TopUpCreditsDialogContentLegacy', () => {
       purchase: () => Promise.reject(new Error('declined')),
       openedWindow: window,
       expectedEvents: [
-        [{ operation: 'topup', stage: 'started', outcome: 'pending' }],
+        [
+          {
+            operation: 'topup',
+            stage: 'started',
+            outcome: 'pending',
+            amount_cents: 5000,
+            amount_preset: '50'
+          }
+        ],
         [
           {
             operation: 'topup',
@@ -280,7 +402,15 @@ describe('TopUpCreditsDialogContentLegacy', () => {
         Promise.resolve({ checkout_url: 'https://checkout.stripe.test' }),
       openedWindow: null,
       expectedEvents: [
-        [{ operation: 'topup', stage: 'started', outcome: 'pending' }],
+        [
+          {
+            operation: 'topup',
+            stage: 'started',
+            outcome: 'pending',
+            amount_cents: 5000,
+            amount_preset: '50'
+          }
+        ],
         [
           {
             operation: 'topup',

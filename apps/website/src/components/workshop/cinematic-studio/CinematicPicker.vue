@@ -5,8 +5,8 @@ import type {
   Direction,
   DirectionGroup,
   DirectionPart
-} from '../../../lib/workshop/cinematic-studio/catalog'
-import type { Locale } from '../../../i18n/translations'
+} from '@/lib/workshop/cinematic-studio/catalog'
+import type { Locale } from '@/i18n/translations'
 import CinematicGradeImageTile from './CinematicGradeImageTile.vue'
 import CinematicOptionGrid from './CinematicOptionGrid.vue'
 import CinematicPaletteEditor from './CinematicPaletteEditor.vue'

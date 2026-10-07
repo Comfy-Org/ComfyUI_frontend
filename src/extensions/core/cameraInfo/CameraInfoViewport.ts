@@ -363,6 +363,7 @@ export class CameraInfoViewport {
   private renderSubjectCameraPreview(): void {
     renderInsetPreview({
       renderer: this.viewport.renderer,
+      view: this.viewport.rendererView,
       canvas: this.viewport.domElement,
       scene: this.viewport.sceneManager.scene,
       camera: this.overlay.getSubjectCamera(),

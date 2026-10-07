@@ -1,7 +1,7 @@
 import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -280,11 +280,6 @@ describe('WidgetRecordAudio', () => {
           blob instanceof Blob ? `blob:fake/${blob.size}` : 'blob:fake/media'
       )
       vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
-    })
-
-    afterEach(() => {
-      vi.mocked(URL.createObjectURL).mockRestore()
-      vi.mocked(URL.revokeObjectURL).mockRestore()
     })
 
     it('replaces the audio widget element src with a new blob URL when a recording completes', async () => {

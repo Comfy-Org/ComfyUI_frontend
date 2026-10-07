@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { RateCard, StorageRate } from '../types/rate-card'
+import type { RateCard, StorageRate } from '@/types/rate-card'
 import {
   formatCreditsPerGbMonth,
   formatCreditsPerHour,

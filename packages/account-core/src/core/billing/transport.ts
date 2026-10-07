@@ -50,7 +50,9 @@ export interface SessionBillingTransportOptions {
 }
 
 function codeForSessionFailure(code: SessionErrorCode): BillingErrorCode {
-  if (code === 'ACCESS_DENIED') return 'ACCESS_DENIED'
+  if (code === 'ACCESS_DENIED' || code === 'SSO_REQUIRED') {
+    return 'ACCESS_DENIED'
+  }
   if (code === 'WORKSPACE_NOT_FOUND') return 'NOT_FOUND'
   if (code === 'NOT_AUTHENTICATED' || code === 'INVALID_FIREBASE_TOKEN') {
     return 'NOT_AUTHENTICATED'

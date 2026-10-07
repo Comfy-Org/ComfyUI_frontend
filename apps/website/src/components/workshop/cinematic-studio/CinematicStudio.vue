@@ -1,17 +1,17 @@
 <script setup lang="ts">
+import { translationsFor } from '@/i18n/translations'
 import { computed, ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { useCinematicLeaveGuard } from '../../../composables/useCinematicLeaveGuard'
-import { useCinematicPopover } from '../../../composables/useCinematicPopover'
-import { useCinematicShot } from '../../../composables/useCinematicShot'
-import { reportStudioBusy } from '../../../composables/useStudioSwitchGuard'
-import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
-import type { StarterShot } from '../../../lib/workshop/cinematic-studio/starters'
-import type { Locale } from '../../../i18n/translations'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
-import RunLeaveDialog from '../RunLeaveDialog.vue'
+import { useCinematicLeaveGuard } from '@/composables/useCinematicLeaveGuard'
+import { useCinematicPopover } from '@/composables/useCinematicPopover'
+import { useCinematicShot } from '@/composables/useCinematicShot'
+import { reportStudioBusy } from '@/composables/useStudioSwitchGuard'
+import type { CinematicModel } from '@/lib/workshop/cinematic-studio/models'
+import type { StarterShot } from '@/lib/workshop/cinematic-studio/starters'
+import type { Locale } from '@/i18n/translations'
+import RunLeaveDialog from '@/components/workshop/RunLeaveDialog.vue'
 import AppsBackLink from './AppsBackLink.vue'
 import CinematicComposer from './CinematicComposer.vue'
 import CinematicModeSwitch from './CinematicModeSwitch.vue'
@@ -30,6 +30,7 @@ const {
   showCredits?: boolean
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const {
   studio,
@@ -173,7 +174,7 @@ function generateOn(slug: string) {
           role="status"
           class="mb-2 text-xs text-primary-comfy-canvas"
         >
-          {{ tc('cinematic.references.unreadable', locale) }}
+          {{ t('cinematic.references.unreadable') }}
         </p>
         <CinematicModeSwitch
           v-if="hasVideo"

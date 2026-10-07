@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { ReshootZone } from '../../../../lib/workshop/cinematic-studio/reshoot'
+import type { ReshootZone } from '@/lib/workshop/cinematic-studio/reshoot'
 
 const { zone, dotOnly = false } = defineProps<{
   zone: ReshootZone

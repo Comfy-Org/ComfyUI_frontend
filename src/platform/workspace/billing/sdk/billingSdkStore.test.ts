@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
@@ -12,6 +12,11 @@ import { workspaceApiUrl } from '@/platform/workspace/api/workspaceApiUrl'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
+import {
+  bindOperationToCheckoutJourney,
+  clearCheckoutJourney,
+  resolveCheckoutJourney
+} from '@/platform/workspace/utils/checkoutJourney'
 import { stubAccountIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
 import { useDialogStore } from '@/stores/dialogStore'
 
@@ -74,6 +79,11 @@ beforeEach(() => {
     return harness.sdk
   })
   vi.mocked(useDialogStore().closeDialog).mockImplementation(() => {})
+})
+
+afterEach(() => {
+  clearCheckoutJourney()
+  sessionStorage.clear()
 })
 
 function startedEvent(resumed: boolean) {
@@ -292,6 +302,34 @@ describe('useBillingSdkStore', () => {
       })
     )
     expect(harness.sdk.driveChallenge).toHaveBeenCalledTimes(2)
+  })
+
+  it('reports the source of the journey a reattached operation is bound to', () => {
+    resolveCheckoutJourney({
+      actorUid: 'user-1',
+      workspaceId: 'ws-1',
+      entryFlow: 'topup',
+      entrySource: 'settings_billing',
+      paymentIntentSource: 'avatar_menu_plans',
+      assignment: { status: 'unavailable' }
+    })
+    bindOperationToCheckoutJourney('op-1')
+    useBillingSdkStore()
+
+    options.onTelemetry({
+      ...startedEvent(true),
+      name: 'billing.operation.succeeded',
+      duration_ms: 1200
+    })
+
+    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        operation: 'operation',
+        stage: 'succeeded',
+        billing_op_id: 'op-1',
+        payment_intent_source: 'avatar_menu_plans'
+      })
+    )
   })
 
   it('finishes a reattached top-up the way the poller did', async () => {
@@ -819,6 +857,25 @@ describe('useBillingSdkStore subscription commands', () => {
     )
   })
 
+  it.for([
+    { page: 'opened', opened: window, reported: [['op-1', 'new_tab']] },
+    { page: 'had blocked', opened: null, reported: [] }
+  ])(
+    'reports to the lifecycle a hosted page it $page in a new tab',
+    ({ opened, reported }) => {
+      vi.spyOn(window, 'open').mockReturnValue(opened)
+      useBillingSdkStore()
+
+      harness.publish(
+        pendingSubscription({ actionUrl: 'https://pay.example/first' })
+      )
+
+      expect(
+        vi.mocked(harness.sdk.lifecycle.reportHostedStepOpened).mock.calls
+      ).toEqual(reported)
+    }
+  )
+
   it('offers the next hosted page the same subscribe moves to', () => {
     const openPage = vi.spyOn(window, 'open').mockReturnValue(null)
     const store = useBillingSdkStore()
@@ -1067,6 +1124,34 @@ describe('useBillingSdkStore telemetry ownership', () => {
       await run(store)
 
       expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledTimes(reports)
+    }
+  )
+
+  it.for(['topup', 'subscription'] as const)(
+    'reports the payment friction of a %s this tab issued, which no dialog reports',
+    (kind) => {
+      useBillingSdkStore()
+
+      options.onTelemetry({
+        name: 'billing.checkout.challenge_failed',
+        billing_op_id: 'op-1',
+        operation_type: kind,
+        presentation: 'embedded',
+        resumed: false,
+        decline_reason: 'authentication_failed'
+      })
+
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
+        operation: 'checkout',
+        billing_client: 'sdk',
+        stage: 'challenge_failed',
+        outcome: 'pending',
+        operation_type: kind,
+        billing_op_id: 'op-1',
+        presentation: 'embedded',
+        resumed: false,
+        decline_reason: 'authentication_failed'
+      })
     }
   )
 

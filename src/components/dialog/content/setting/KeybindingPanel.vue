@@ -1,11 +1,8 @@
 <template>
-  <div
-    :ref="primeVueOverlay.overlayScopeRef"
-    class="keybinding-panel flex min-w-0 flex-col gap-2 overflow-x-hidden"
-  >
+  <div class="keybinding-panel flex min-w-0 flex-col gap-2 overflow-x-hidden">
     <Teleport defer to="#keybinding-panel-header">
       <SearchInput
-        v-model="filters['global'].value"
+        v-model="searchQuery"
         class="max-w-96"
         size="lg"
         autofocus
@@ -19,261 +16,66 @@
       <div class="flex items-center gap-2">
         <KeybindingPresetToolbar
           :preset-names="presetNames"
-          :content-style="keybindingOverlayContentStyle"
           @presets-changed="refreshPresetList"
         />
-        <DropdownMenu
-          :entries="menuEntries"
-          :style="keybindingOverlayContentStyle"
-          icon="icon-[lucide--ellipsis]"
-          item-class="text-sm gap-2"
-          button-size="unset"
-          button-class="size-10"
-          to="#keybinding-panel-actions"
-          align="end"
-        >
-          <template #button>
+        <Menu :items="menuEntries" to="#keybinding-panel-actions" align="end">
+          <template #trigger>
             <Button
-              size="unset"
-              class="size-10"
+              size="icon-lg"
               data-testid="keybinding-preset-menu"
-            >
-              <i class="icon-[lucide--ellipsis]" />
-            </Button>
+              icon="icon-[lucide--ellipsis]"
+              :aria-label="$t('g.more')"
+            />
           </template>
-        </DropdownMenu>
+        </Menu>
       </div>
     </Teleport>
 
-    <ContextMenuRoot>
-      <ContextMenuTrigger as-child>
-        <div
-          class="min-w-0 overflow-x-hidden"
-          @contextmenu.capture="clearContextMenuTarget"
-        >
-          <DataTable
-            v-model:selection="selectedCommandData"
-            v-model:expanded-rows="expandedRows"
-            :value="commandsData"
-            data-key="id"
-            :global-filter-fields="['id', 'label']"
-            :filters="filters"
-            :paginator="true"
-            :rows="50"
-            :rows-per-page-options="[25, 50, 100]"
-            selection-mode="single"
-            context-menu
-            striped-rows
-            :table-style="{ tableLayout: 'fixed', width: '100%' }"
-            :pt="{
-              header: 'px-0'
-            }"
-            @row-click="handleRowClick($event)"
-            @row-dblclick="handleRowDblClick($event.data)"
-            @row-contextmenu="handleRowContextMenu($event)"
-          >
-            <Column
-              field="id"
-              :header="$t('g.command')"
-              sortable
-              :pt="{ bodyCell: 'p-1 min-h-8' }"
-            >
-              <template #body="slotProps">
-                <div
-                  class="flex min-w-0 items-center gap-1 truncate"
-                  :class="slotProps.data.keybindings.length < 2 && 'pl-5'"
-                  :title="slotProps.data.id"
-                >
-                  <i
-                    v-if="slotProps.data.keybindings.length >= 2"
-                    class="icon-[lucide--chevron-right] size-4 shrink-0 text-muted-foreground transition-transform"
-                    :class="
-                      expandedCommandIds.has(slotProps.data.id) && 'rotate-90'
-                    "
-                  />
-                  <i
-                    v-if="
-                      slotProps.data.keybindings.some(
-                        (b: KeybindingImpl) => b.combo.isBrowserReserved
-                      )
-                    "
-                    v-tooltip="$t('g.browserReservedKeybindingTooltip')"
-                    class="icon-[lucide--triangle-alert] shrink-0 text-warning-background"
-                  />
-                  {{ slotProps.data.label }}
-                </div>
-              </template>
-            </Column>
-            <Column
-              field="keybindings"
-              :header="$t('g.keybinding')"
-              :style="{ width: '30%' }"
-              :pt="{ bodyCell: 'p-1 min-h-8' }"
-            >
-              <template #body="slotProps">
-                <KeybindingList
-                  :keybindings="slotProps.data.keybindings"
-                  :is-modified="slotProps.data.isModified"
-                />
-              </template>
-            </Column>
-            <Column
-              field="source"
-              :header="$t('g.source')"
-              :style="{ width: '16%' }"
-              :pt="{ bodyCell: 'p-1 min-h-8' }"
-            >
-              <template #body="slotProps">
-                <span class="block truncate" :title="slotProps.data.source">{{
-                  slotProps.data.source || '-'
-                }}</span>
-              </template>
-            </Column>
-            <Column
-              field="actions"
-              header=""
-              :style="{ width: '9rem' }"
-              :pt="{ bodyCell: 'p-1 min-h-8 whitespace-nowrap' }"
-            >
-              <template #body="slotProps">
-                <div
-                  class="actions flex flex-row justify-end whitespace-nowrap"
-                >
-                  <Button
-                    v-if="slotProps.data.keybindings.length === 1"
-                    v-tooltip="$t('g.edit')"
-                    variant="textonly"
-                    size="icon"
-                    :aria-label="$t('g.edit')"
-                    @click="
-                      editKeybinding(
-                        slotProps.data,
-                        slotProps.data.keybindings[0]
-                      )
-                    "
-                  >
-                    <i class="icon-[lucide--pencil]" />
-                  </Button>
-                  <Button
-                    v-tooltip="$t('g.addNewKeybinding')"
-                    variant="textonly"
-                    size="icon"
-                    :aria-label="$t('g.addNewKeybinding')"
-                    @click="addKeybinding(slotProps.data)"
-                  >
-                    <i class="icon-[lucide--plus]" />
-                  </Button>
-                  <Button
-                    v-tooltip="$t('g.reset')"
-                    variant="textonly"
-                    size="icon"
-                    :aria-label="$t('g.reset')"
-                    :disabled="!slotProps.data.isModified"
-                    @click="resetKeybinding(slotProps.data)"
-                  >
-                    <i class="icon-[lucide--rotate-ccw]" />
-                  </Button>
-                  <Button
-                    v-tooltip="$t('g.delete')"
-                    variant="textonly"
-                    size="icon"
-                    :aria-label="$t('g.delete')"
-                    :disabled="slotProps.data.keybindings.length === 0"
-                    @click="handleRemoveKeybindingFromMenu(slotProps.data)"
-                  >
-                    <i class="icon-[lucide--trash-2]" />
-                  </Button>
-                </div>
-              </template>
-            </Column>
-            <template #expansion="slotProps">
-              <div class="pl-4" data-testid="keybinding-expansion-content">
-                <div
-                  v-for="(binding, idx) in (slotProps.data as ICommandData)
-                    .keybindings"
-                  :key="binding.combo.serialize()"
-                  data-testid="keybinding-expansion-binding"
-                  class="flex items-center justify-between border-b border-border-subtle py-1.5 last:border-b-0"
-                >
-                  <div class="flex items-center gap-4">
-                    <span class="text-muted-foreground">{{
-                      slotProps.data.label
-                    }}</span>
-                    <KeyComboDisplay
-                      :key-combo="binding.combo"
-                      :is-modified="slotProps.data.isModified"
-                    />
-                  </div>
-                  <div class="flex flex-row">
-                    <Button
-                      v-tooltip="$t('g.edit')"
-                      variant="textonly"
-                      size="icon"
-                      :aria-label="$t('g.edit')"
-                      @click="editKeybinding(slotProps.data, binding)"
-                    >
-                      <i class="icon-[lucide--pencil]" />
-                    </Button>
-                    <Button
-                      v-tooltip="$t('g.removeKeybinding')"
-                      variant="textonly"
-                      size="icon"
-                      :aria-label="$t('g.removeKeybinding')"
-                      @click="removeSingleKeybinding(slotProps.data, idx)"
-                    >
-                      <i class="icon-[lucide--trash-2]" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </template>
-          </DataTable>
-        </div>
-      </ContextMenuTrigger>
-      <ContextMenuPortal>
-        <ContextMenuContent
-          :style="keybindingOverlayContentStyle"
-          class="z-1800 min-w-56 rounded-lg border border-border-subtle bg-base-background px-2 py-3 shadow-interface"
-        >
-          <ContextMenuItem
-            class="flex cursor-pointer items-center gap-2 rounded-sm px-3 py-2 text-sm text-text-primary outline-none select-none hover:bg-node-component-surface-hovered focus:bg-node-component-surface-hovered data-disabled:cursor-default data-disabled:opacity-50"
-            :disabled="
-              !contextMenuTarget || contextMenuTarget.keybindings.length === 0
-            "
-            @select="ctxChangeKeybinding"
-          >
-            <i class="icon-[lucide--pencil] size-4" />
-            {{ $t('g.changeKeybinding') }}
-          </ContextMenuItem>
-          <ContextMenuItem
-            class="flex cursor-pointer items-center gap-2 rounded-sm px-3 py-2 text-sm text-text-primary outline-none select-none hover:bg-node-component-surface-hovered focus:bg-node-component-surface-hovered"
-            @select="ctxAddKeybinding"
-          >
-            <i class="icon-[lucide--plus] size-4" />
-            {{ $t('g.addNewKeybinding') }}
-          </ContextMenuItem>
-          <ContextMenuSeparator class="my-1 h-px bg-border-subtle" />
-          <ContextMenuItem
-            class="flex cursor-pointer items-center gap-2 rounded-sm px-3 py-2 text-sm text-text-primary outline-none select-none hover:bg-node-component-surface-hovered focus:bg-node-component-surface-hovered data-disabled:cursor-default data-disabled:opacity-50"
-            :disabled="!contextMenuTarget?.isModified"
-            @select="ctxResetToDefault"
-          >
-            <i class="icon-[lucide--rotate-ccw] size-4" />
-            {{ $t('g.resetToDefault') }}
-          </ContextMenuItem>
-          <ContextMenuItem
-            class="flex cursor-pointer items-center gap-2 rounded-sm px-3 py-2 text-sm text-text-primary outline-none select-none hover:bg-node-component-surface-hovered focus:bg-node-component-surface-hovered data-disabled:cursor-default data-disabled:opacity-50"
-            :disabled="
-              !contextMenuTarget || contextMenuTarget.keybindings.length === 0
-            "
-            @select="ctxRemoveKeybinding"
-          >
-            <i class="icon-[lucide--trash-2] size-4" />
-            {{ $t('g.removeKeybinding') }}
-          </ContextMenuItem>
-        </ContextMenuContent>
-      </ContextMenuPortal>
-    </ContextMenuRoot>
+    <Table data-testid="keybinding-table-container">
+      <TableHeader>
+        <TableRow>
+          <TableSortHead v-model:direction="commandSortDirection">
+            {{ $t('g.command') }}
+          </TableSortHead>
+          <TableHead class="w-3/10">{{ $t('g.keybinding') }}</TableHead>
+          <TableHead class="w-4/25">{{ $t('g.source') }}</TableHead>
+          <TableHead class="w-36">
+            <span class="sr-only">{{ $t('g.actions') }}</span>
+          </TableHead>
+        </TableRow>
+      </TableHeader>
+      <RovingFocusGroup
+        v-model:current-tab-stop-id="currentRowTabStopId"
+        as-child
+        orientation="vertical"
+      >
+        <TableBody>
+          <KeybindingCommandRows
+            v-for="command in visibleCommands"
+            :key="command.id"
+            :command="command"
+            :expanded="expandedCommandIds.has(command.id)"
+            :selected="selectedCommandId === command.id"
+            @activate="activateRow(command)"
+            @row-dblclick="handleRowDblClick(command)"
+            @row-contextmenu="handleRowContextMenu($event, command)"
+            @edit="editKeybinding(command, $event)"
+            @add="addKeybinding(command)"
+            @reset="resetKeybinding(command)"
+            @remove="handleRemoveKeybindingFromMenu(command)"
+            @remove-single="removeSingleKeybinding(command, $event)"
+          />
+        </TableBody>
+      </RovingFocusGroup>
+    </Table>
+    <Pagination
+      v-if="filteredCommands.length > commandsPerPageOptions[0]"
+      v-model:page="currentPage"
+      v-model:items-per-page="commandsPerPage"
+      :total="filteredCommands.length"
+      :items-per-page-options="commandsPerPageOptions"
+    />
+    <ContextMenu ref="rowMenu" :model="rowMenuItems" @hide="restoreRowFocus" />
 
     <Button
       v-tooltip="$t('g.resetAllKeybindingsTooltip')"
@@ -288,44 +90,43 @@
 </template>
 
 <script setup lang="ts">
-import type { MenuItem } from 'primevue/menuitem'
-import { FilterMatchMode } from '@primevue/core/api'
-import Column from 'primevue/column'
-import DataTable from 'primevue/datatable'
-import { useToast } from 'primevue/usetoast'
-import {
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuPortal,
-  ContextMenuRoot,
-  ContextMenuSeparator,
-  ContextMenuTrigger
-} from 'reka-ui'
-import { computed, onMounted, ref, watch } from 'vue'
+import type { ComponentProps } from 'vue-component-type-helpers'
+import { computed, onMounted, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { RovingFocusGroup } from 'reka-ui'
 
-import DropdownMenu from '@/components/common/DropdownMenu.vue'
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
 import Button from '@/components/ui/button/Button.vue'
+import ContextMenu from '@/components/ui/menu/ContextMenu.vue'
+import Menu from '@/components/ui/menu/Menu.vue'
+import type { MenuItem } from '@/components/ui/menu/types'
+import Pagination from '@/components/ui/pagination/Pagination.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
+import Table from '@/components/ui/table/Table.vue'
+import TableBody from '@/components/ui/table/TableBody.vue'
+import TableHead from '@/components/ui/table/TableHead.vue'
+import TableHeader from '@/components/ui/table/TableHeader.vue'
+import TableRow from '@/components/ui/table/TableRow.vue'
+import TableSortHead from '@/components/ui/table/TableSortHead.vue'
+import { filterByQuery, sortByText } from '@/components/ui/table/tableUtils'
+import type { TableSortDirection } from '@/components/ui/table/tableUtils'
 import { useEditKeybindingDialog } from '@/composables/useEditKeybindingDialog'
-import { usePrimeVueOverlayChildStyle } from '@/composables/usePopoverSizing'
 import type { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useKeybindingPresetService } from '@/platform/keybindings/presetService'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
-import KeybindingList from './keybinding/KeybindingList.vue'
+import KeybindingCommandRows from './keybinding/KeybindingCommandRows.vue'
 import KeybindingPresetToolbar from './keybinding/KeybindingPresetToolbar.vue'
-import KeyComboDisplay from './keybinding/KeyComboDisplay.vue'
 
-const filters = ref({
-  global: { value: '', matchMode: FilterMatchMode.CONTAINS }
-})
+type KeybindingCommand = ComponentProps<typeof KeybindingCommandRows>['command']
+
+const searchQuery = ref('')
 
 const keybindingStore = useKeybindingStore()
 const keybindingService = useKeybindingService()
@@ -334,8 +135,7 @@ const settingStore = useSettingStore()
 const commandStore = useCommandStore()
 const dialogStore = useDialogStore()
 const { t } = useI18n()
-const primeVueOverlay = usePrimeVueOverlayChildStyle()
-const keybindingOverlayContentStyle = primeVueOverlay.contentStyle
+const toastStore = useToastStore()
 
 const presetNames = ref<string[]>([])
 
@@ -416,41 +216,62 @@ const menuEntries = computed<MenuItem[]>(() => [
 ])
 
 // Keybinding table logic
-interface ICommandData {
-  id: string
-  keybindings: KeybindingImpl[]
-  label: string
-  source?: string
-  isModified: boolean
-}
+const commandsData = computed<KeybindingCommand[]>(() => {
+  return Object.values(commandStore.commands).map((command) => {
+    const keybindings = keybindingStore.getKeybindingsByCommandId(command.id)
+    return {
+      expandable: keybindings.length >= 2,
+      id: command.id,
+      isModified: keybindingStore.isCommandKeybindingModified(command.id),
+      keybindings,
+      label: t(
+        `commands.${normalizeI18nKey(command.id)}.label`,
+        command.label ?? command.id
+      ),
+      rowId: `keybinding-row-${command.id}`,
+      source: command.source
+    }
+  })
+})
 
-const commandsData = computed<ICommandData[]>(() => {
-  return Object.values(commandStore.commands).map((command) => ({
-    id: command.id,
-    label: t(
-      `commands.${normalizeI18nKey(command.id)}.label`,
-      command.label ?? command.id
-    ),
-    keybindings: keybindingStore.getKeybindingsByCommandId(command.id),
-    source: command.source,
-    isModified: keybindingStore.isCommandKeybindingModified(command.id)
-  }))
+const commandSortDirection = ref<TableSortDirection | null>(null)
+const currentPage = ref(1)
+const commandsPerPage = ref(50)
+const commandsPerPageOptions = [25, 50, 100]
+const filteredCommands = computed(() => {
+  const filtered = filterByQuery(
+    commandsData.value,
+    searchQuery.value,
+    (command) => [command.id, command.label]
+  )
+  return sortByText(
+    filtered,
+    commandSortDirection.value,
+    (command) => command.label
+  )
+})
+const visibleCommands = computed(() => {
+  const start = (currentPage.value - 1) * commandsPerPage.value
+  return filteredCommands.value.slice(start, start + commandsPerPage.value)
+})
+
+watch(commandSortDirection, () => {
+  currentPage.value = 1
+})
+
+const focusedRowTabStopId = ref<string | null>(null)
+const currentRowTabStopId = computed({
+  get: () => {
+    const rowIds = visibleCommands.value.map((command) => command.rowId)
+    const focused = focusedRowTabStopId.value
+    return focused && rowIds.includes(focused) ? focused : (rowIds[0] ?? null)
+  },
+  set: (rowId: string | null) => {
+    focusedRowTabStopId.value = rowId
+  }
 })
 
 const expandedCommandIds = ref<Set<string>>(new Set())
-
-const expandedRows = computed({
-  get() {
-    const result: Record<string, boolean> = {}
-    for (const id of expandedCommandIds.value) {
-      result[id] = true
-    }
-    return result
-  },
-  set(value: Record<string, boolean>) {
-    expandedCommandIds.value = new Set(Object.keys(value))
-  }
-})
 
 function toggleExpanded(commandId: string) {
   if (expandedCommandIds.value.has(commandId)) {
@@ -460,78 +281,114 @@ function toggleExpanded(commandId: string) {
   }
 }
 
-watch(filters, () => expandedCommandIds.value.clear(), { deep: true })
+watch(searchQuery, () => {
+  currentPage.value = 1
+  expandedCommandIds.value.clear()
+})
 
-const selectedCommandData = ref<ICommandData | null>(null)
+const selectedCommandId = ref<string | null>(null)
 const editKeybindingDialog = useEditKeybindingDialog()
 
-const contextMenuTarget = ref<ICommandData | null>(null)
+const rowMenu = useTemplateRef('rowMenu')
+const contextMenuTarget = ref<KeybindingCommand | null>(null)
+let rowMenuOrigin: HTMLElement | null = null
+const rowMenuItems = computed<MenuItem[]>(() => {
+  const target = contextMenuTarget.value
+  if (!target) return []
+  const hasBindings = target.keybindings.length > 0
+  return [
+    {
+      label: t('g.changeKeybinding'),
+      icon: 'icon-[lucide--pencil]',
+      disabled: !hasBindings,
+      command: () => changeKeybinding(target)
+    },
+    {
+      label: t('g.addNewKeybinding'),
+      icon: 'icon-[lucide--plus]',
+      command: () => addKeybinding(target)
+    },
+    { separator: true },
+    {
+      label: t('g.resetToDefault'),
+      icon: 'icon-[lucide--rotate-ccw]',
+      disabled: !target.isModified,
+      command: () => resetKeybinding(target)
+    },
+    {
+      label: t('g.removeKeybinding'),
+      icon: 'icon-[lucide--trash-2]',
+      disabled: !hasBindings,
+      command: () => handleRemoveKeybindingFromMenu(target)
+    }
+  ]
+})
 
-function editKeybinding(commandData: ICommandData, binding: KeybindingImpl) {
+function editKeybinding(command: KeybindingCommand, binding: KeybindingImpl) {
   editKeybindingDialog.show({
-    commandId: commandData.id,
-    commandLabel: commandData.label,
+    commandId: command.id,
+    commandLabel: command.label,
     currentCombo: binding.combo,
     mode: 'edit',
     existingBinding: binding
   })
 }
 
-function addKeybinding(commandData: ICommandData) {
+function addKeybinding(command: KeybindingCommand) {
   editKeybindingDialog.show({
-    commandId: commandData.id,
-    commandLabel: commandData.label,
+    commandId: command.id,
+    commandLabel: command.label,
     currentCombo: null,
     mode: 'add'
   })
 }
 
-function handleRowClick(event: { originalEvent: Event; data: ICommandData }) {
-  const target = event.originalEvent.target as HTMLElement
-  if (target.closest('.actions')) return
-  const commandData = event.data
-  if (
-    commandData.keybindings.length >= 2 ||
-    expandedCommandIds.value.has(commandData.id)
-  ) {
-    toggleExpanded(commandData.id)
+function activateRow(command: KeybindingCommand) {
+  selectedCommandId.value = command.id
+  if (command.expandable || expandedCommandIds.value.has(command.id)) {
+    toggleExpanded(command.id)
   }
 }
 
-function handleRowDblClick(commandData: ICommandData) {
-  if (commandData.keybindings.length === 0) {
-    addKeybinding(commandData)
-  } else if (commandData.keybindings.length === 1) {
-    editKeybinding(commandData, commandData.keybindings[0])
+function handleRowDblClick(command: KeybindingCommand) {
+  if (command.keybindings.length === 0) {
+    addKeybinding(command)
+  } else if (command.keybindings.length === 1) {
+    editKeybinding(command, command.keybindings[0])
   }
 }
 
-function handleRowContextMenu(event: {
-  originalEvent: Event
-  data: ICommandData
-}) {
-  contextMenuTarget.value = event.data
+function handleRowContextMenu(event: Event, command: KeybindingCommand) {
+  selectedCommandId.value = command.id
+  contextMenuTarget.value = command
+  rowMenuOrigin =
+    event.currentTarget instanceof HTMLElement ? event.currentTarget : null
+  rowMenu.value?.show(event)
 }
 
-function clearContextMenuTarget() {
-  contextMenuTarget.value = null
+function restoreRowFocus() {
+  const focused = document.activeElement
+  if (focused === document.body || focused?.closest('[role="menu"]')) {
+    rowMenuOrigin?.focus()
+  }
+  rowMenuOrigin = null
 }
 
 async function removeSingleKeybinding(
-  commandData: ICommandData,
+  command: KeybindingCommand,
   index: number
 ) {
-  const binding = commandData.keybindings[index]
+  const binding = command.keybindings[index]
   if (binding) {
     keybindingStore.unsetKeybinding(binding)
-    if (commandData.keybindings.length <= 2) {
-      expandedCommandIds.value.delete(commandData.id)
+    if (command.keybindings.length <= 2) {
+      expandedCommandIds.value.delete(command.id)
     }
     await keybindingService.persistUserKeybindings()
   }
 }
 
-function handleRemoveAllKeybindings(commandData: ICommandData) {
+function handleRemoveAllKeybindings(command: KeybindingCommand) {
   const dialog = showConfirmDialog({
     headerProps: { title: t('g.removeAllKeybindingsTitle') },
     props: { promptText: t('g.removeAllKeybindingsMessage') },
@@ -540,7 +397,7 @@ function handleRemoveAllKeybindings(commandData: ICommandData) {
       confirmVariant: 'destructive',
       onCancel: () => dialogStore.closeDialog(dialog),
       onConfirm: async () => {
-        keybindingStore.removeAllKeybindingsForCommand(commandData.id)
+        keybindingStore.removeAllKeybindingsForCommand(command.id)
         await keybindingService.persistUserKeybindings()
         dialogStore.closeDialog(dialog)
       }
@@ -548,59 +405,32 @@ function handleRemoveAllKeybindings(commandData: ICommandData) {
   })
 }
 
-function handleRemoveKeybindingFromMenu(commandData: ICommandData) {
-  if (commandData.keybindings.length >= 2) {
-    handleRemoveAllKeybindings(commandData)
+function handleRemoveKeybindingFromMenu(command: KeybindingCommand) {
+  if (command.expandable) {
+    handleRemoveAllKeybindings(command)
   } else {
-    removeSingleKeybinding(commandData, 0)
+    removeSingleKeybinding(command, 0)
   }
 }
 
-function ctxChangeKeybinding() {
-  if (!contextMenuTarget.value) return
-  const target = contextMenuTarget.value
-  if (target.keybindings.length === 1) {
-    editKeybinding(target, target.keybindings[0])
-  } else if (target.keybindings.length >= 2) {
-    if (!expandedCommandIds.value.has(target.id)) {
-      toggleExpanded(target.id)
-    }
+function changeKeybinding(command: KeybindingCommand) {
+  if (command.keybindings.length === 1) {
+    editKeybinding(command, command.keybindings[0])
+  } else {
+    expandedCommandIds.value.add(command.id)
   }
 }
 
-function ctxAddKeybinding() {
-  if (contextMenuTarget.value) {
-    addKeybinding(contextMenuTarget.value)
-  }
-}
-
-function ctxResetToDefault() {
-  if (contextMenuTarget.value) {
-    resetKeybinding(contextMenuTarget.value)
-  }
-}
-
-function ctxRemoveKeybinding() {
-  if (
-    contextMenuTarget.value &&
-    contextMenuTarget.value.keybindings.length > 0
-  ) {
-    handleRemoveKeybindingFromMenu(contextMenuTarget.value)
-  }
-}
-
-async function resetKeybinding(commandData: ICommandData) {
-  if (keybindingStore.resetKeybindingForCommand(commandData.id)) {
-    expandedCommandIds.value.delete(commandData.id)
+async function resetKeybinding(command: KeybindingCommand) {
+  if (keybindingStore.resetKeybindingForCommand(command.id)) {
+    expandedCommandIds.value.delete(command.id)
     await keybindingService.persistUserKeybindings()
   } else {
     console.warn(
-      `No changes made when resetting keybinding for command: ${commandData.id}`
+      `No changes made when resetting keybinding for command: ${command.id}`
     )
   }
 }
-
-const toast = useToast()
 
 function resetAllKeybindings() {
   const dialog = showConfirmDialog({
@@ -620,7 +450,7 @@ function resetAllKeybindings() {
         keybindingStore.resetAllKeybindings()
         await keybindingService.persistUserKeybindings()
         dialogStore.closeDialog(dialog)
-        toast.add({
+        toastStore.add({
           severity: 'info',
           summary: t('g.info'),
           detail: t('g.allKeybindingsReset'),

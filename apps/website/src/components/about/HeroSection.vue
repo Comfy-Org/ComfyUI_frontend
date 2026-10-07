@@ -1,14 +1,15 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
-import { useHeroAnimation } from '../../composables/useHeroAnimation'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
-import BrandButton from '../common/BrandButton.vue'
-import SectionLabel from '../common/SectionLabel.vue'
-import VideoPlayer from '../common/VideoPlayer.vue'
+import { useHeroAnimation } from '@/composables/useHeroAnimation'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import BrandButton from '@/components/common/BrandButton.vue'
+import SectionLabel from '@/components/common/SectionLabel.vue'
+import VideoPlayer from '@/components/common/VideoPlayer.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 
 const sectionRef = ref<HTMLElement>()
 const logoRef = ref<HTMLElement>()
@@ -48,26 +49,26 @@ useHeroAnimation({
         class="order-1 flex flex-col items-center lg:order-2 lg:w-7/12 lg:items-start lg:pt-16 lg:pl-12"
       >
         <SectionLabel ref="labelRef">
-          {{ t('about.hero.label', locale) }}
+          {{ t('about.hero.label') }}
         </SectionLabel>
         <h1
           ref="headingRef"
           class="mt-4 text-4xl/tight font-light text-primary-comfy-canvas lg:text-6xl"
         >
-          {{ t('about.hero.heading', locale) }}
+          {{ t('about.hero.heading') }}
         </h1>
         <p
           ref="bodyRef"
           class="mt-6 max-w-sm text-base text-primary-comfy-canvas"
         >
-          {{ t('about.hero.body', locale) }}
+          {{ t('about.hero.body') }}
         </p>
         <div ref="ctaRef" class="mt-8">
           <BrandButton
             :href="locale === 'zh-CN' ? '/zh-CN/careers/' : '/careers/'"
             variant="outline"
           >
-            {{ t('about.hero.cta', locale) }}
+            {{ t('about.hero.cta') }}
           </BrandButton>
         </div>
       </div>

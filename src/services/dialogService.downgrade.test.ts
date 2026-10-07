@@ -15,6 +15,7 @@ const refreshMembers = vi.hoisted(() => vi.fn())
 const previewDowngrade = vi.hoisted(() => vi.fn())
 const downgradeToPersonal = vi.hoisted(() => vi.fn())
 const hasOtherMembers = vi.hoisted(() => ({ value: false }))
+const useDowngradeToPersonal = vi.hoisted(() => vi.fn())
 
 const {
   ReactivationConfirmationRequiredError,
@@ -41,6 +42,12 @@ vi.mock(import('@/i18n'))
 vi.mock(import('@/platform/telemetry'))
 
 beforeEach(() => {
+  useDowngradeToPersonal.mockReturnValue({
+    hasOtherMembers,
+    refreshMembers,
+    previewDowngrade,
+    downgradeToPersonal
+  })
   const billing = useBillingContext()
   billing.canAccessSubscriptionFeatures = computed(() => true)
   billing.isFreeTier = computed(() => false)
@@ -57,12 +64,7 @@ vi.mock(import('@/composables/billing/useBillingContext'))
 vi.mock<unknown>(
   import('@/platform/workspace/composables/useDowngradeToPersonal'),
   () => ({
-    useDowngradeToPersonal: () => ({
-      hasOtherMembers,
-      refreshMembers,
-      previewDowngrade,
-      downgradeToPersonal
-    }),
+    useDowngradeToPersonal,
     ReactivationConfirmationRequiredError,
     ReactivationAmountChangedError
   })
@@ -108,6 +110,17 @@ describe('showDowngradeToPersonalDialog', () => {
     expect(calls).toEqual(['refresh', 'downgrade'])
     expect(downgradeToPersonal).toHaveBeenCalledWith('standard-monthly')
     expect(useDialogStore().showDialog).not.toHaveBeenCalled()
+  })
+
+  it('hands the surface the downgrade was started from to the downgrade', async () => {
+    await useDialogService().showDowngradeToPersonalDialog({
+      ...options,
+      paymentIntentSource: 'team_members_panel'
+    })
+
+    expect(useDowngradeToPersonal).toHaveBeenCalledExactlyOnceWith({
+      paymentIntentSource: 'team_members_panel'
+    })
   })
 
   it('returns the downgrade result from the no-members fast path', async () => {
