@@ -453,9 +453,15 @@ export const useAuthStore = defineStore('auth', () => {
    * workspace credential (the server resolves the key's bound workspace), so
    * it is sent directly instead of minting a token.
    */
+  /** Desktop's token, only when it is scoped to this tab's active workspace. */
+  const desktopHostWorkspaceToken = (): Promise<string | undefined> =>
+    desktopHostAccessToken(
+      useTeamWorkspaceStore().activeWorkspaceId ?? undefined
+    )
+
   const getWorkspaceAuthHeader = async (): Promise<AuthHeader | null> => {
     if (isDesktopHostSessionActive())
-      return headerFromToken(await desktopHostAccessToken())
+      return headerFromToken(await desktopHostWorkspaceToken())
     const sessionOnly = sessionOnlyRequests()
     if (sessionOnly)
       return headerFromToken(await webSessionRunToken(sessionOnly))
@@ -516,7 +522,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   const getWorkspaceAuthToken = async (): Promise<string | undefined> => {
-    if (isDesktopHostSessionActive()) return desktopHostAccessToken()
+    if (isDesktopHostSessionActive()) return desktopHostWorkspaceToken()
     const requests = webSessionRequests()
     if (requests) return webSessionRunToken(requests)
 

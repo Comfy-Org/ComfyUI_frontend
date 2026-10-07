@@ -78,12 +78,17 @@ export function stopDesktopHostSession(): void {
   session.value = { status: 'inactive' }
 }
 
-/** A current access token from Desktop, which refreshes it; undefined when signed out. */
-export async function desktopHostAccessToken(): Promise<string | undefined> {
+/**
+ * A current access token from Desktop, which refreshes it. Undefined when
+ * signed out, or when Desktop's session is not scoped to `workspaceId`.
+ */
+export async function desktopHostAccessToken(
+  workspaceId?: string
+): Promise<string | undefined> {
   const current = bridge
   if (!current || session.value.status !== 'signed_in') return undefined
   const before = revision
-  const token = await current.getAccessToken().catch(() => null)
+  const token = await current.getAccessToken(workspaceId).catch(() => null)
   return revision === before ? (token ?? undefined) : undefined
 }
 

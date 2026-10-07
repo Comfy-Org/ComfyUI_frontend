@@ -2782,7 +2782,9 @@ describe('useAuthStore in local/desktop distribution', () => {
       const listeners = new Set<(next: DesktopHostAuthState) => void>()
       return {
         getState: vi.fn(async () => state),
-        getAccessToken: vi.fn(async (): Promise<string | null> => 'host-token'),
+        getAccessToken: vi.fn(
+          async (_workspaceId?: string): Promise<string | null> => 'host-token'
+        ),
         requestSignIn: vi.fn(async () => state),
         signOut: vi.fn(
           async (): Promise<DesktopHostAuthState> => ({ status: 'signed_out' })
@@ -2835,6 +2837,27 @@ describe('useAuthStore in local/desktop distribution', () => {
       await expect(store.getWorkspaceAuthHeader()).resolves.toBeNull()
       expect(mockUser.getIdToken).not.toHaveBeenCalled()
     })
+
+    it.for([
+      { name: 'matches', hostWorkspace: 'ws-a', expected: 'host-token' },
+      { name: 'differs', hostWorkspace: 'ws-b', expected: undefined }
+    ])(
+      'uses the Desktop token for this tab only when its workspace $name',
+      async ({ hostWorkspace, expected }) => {
+        const bridge = hostBridge({ status: 'signed_in', userId: 'host-user' })
+        bridge.getAccessToken.mockImplementation(async (workspaceId) =>
+          workspaceId === hostWorkspace ? 'host-token' : null
+        )
+        await startDesktopHostSession(bridge)
+        Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-a' })
+
+        await expect(store.getWorkspaceAuthToken()).resolves.toBe(expected)
+        await expect(store.getWorkspaceAuthHeader()).resolves.toEqual(
+          expected ? { Authorization: `Bearer ${expected}` } : null
+        )
+        expect(bridge.getAccessToken).toHaveBeenCalledWith('ws-a')
+      }
+    )
 
     it('drops the previous account state when Desktop switches accounts', async () => {
       const bridge = hostBridge({ status: 'signed_in', userId: 'host-a' })
