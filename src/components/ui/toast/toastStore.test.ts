@@ -1,7 +1,4 @@
 import { describe, expect, expectTypeOf, it } from 'vitest'
-import { nextTick } from 'vue'
-
-import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 
 import type { ToastId } from '@/types/toastId'
 
@@ -14,11 +11,11 @@ describe('useToast', () => {
 
     expect(toast.toasts).toEqual([
       expect.objectContaining({
+        description: 'Disk is full',
+        duration: Number.POSITIVE_INFINITY,
         id,
         kind: 'error',
-        title: 'Save failed',
-        description: 'Disk is full',
-        duration: Number.POSITIVE_INFINITY
+        title: 'Save failed'
       })
     ])
 
@@ -26,74 +23,14 @@ describe('useToast', () => {
     expect(toast.toasts).toEqual([])
   })
 
-  it('queues notifications during node selection and replays them in order', async () => {
-    const selection = useAgentNodeSelectionStore()
+  it('dismisses every notification at once', () => {
     const toast = useToast()
-    selection.isActive = true
-
-    toast.info('First')
-    toast.error('Second')
-    expect(toast.toasts).toEqual([])
-
-    selection.isActive = false
-    await nextTick()
-
-    expect(toast.toasts).toEqual([
-      expect.objectContaining({ title: 'First' }),
-      expect.objectContaining({ title: 'Second' })
-    ])
-  })
-
-  it('does not replay queued notifications after dismissing all', async () => {
-    const selection = useAgentNodeSelectionStore()
-    const toast = useToast()
-    selection.isActive = true
-    toast.info('Old')
-
-    toast.dismissAll()
-    selection.isActive = false
-    await nextTick()
-
-    expect(toast.toasts).toEqual([])
-  })
-
-  it('does not replay dismissed progress but replays other queued warnings', async () => {
-    const selection = useAgentNodeSelectionStore()
-    const toast = useToast()
-    selection.isActive = true
-    const progressId = toast.loading('Preparing samples')
-    toast.warning('Missing sample')
-
-    toast.dismiss(progressId)
-    selection.isActive = false
-    await nextTick()
-
-    expect(toast.toasts).toEqual([
-      expect.objectContaining({ kind: 'warning', title: 'Missing sample' })
-    ])
-  })
-
-  it('keeps docked toasts when dismissing all notifications', () => {
-    const toast = useToast()
-    const panel = { template: '<div>Downloads</div>' }
-    const dockedId = toast.dock(panel)
     toast.info('Saved')
+    toast.loading('Uploading')
 
     toast.dismissAll()
 
-    expect(toast.toasts).toEqual([
-      expect.objectContaining({ id: dockedId, kind: 'dock' })
-    ])
-  })
-
-  it('docks panels immediately during node selection', () => {
-    const selection = useAgentNodeSelectionStore()
-    const toast = useToast()
-    selection.isActive = true
-
-    toast.dock({ template: '<div>Downloads</div>' })
-
-    expect(toast.toasts).toEqual([expect.objectContaining({ kind: 'dock' })])
+    expect(toast.toasts).toEqual([])
   })
 
   it('accepts only minted toast ids', () => {

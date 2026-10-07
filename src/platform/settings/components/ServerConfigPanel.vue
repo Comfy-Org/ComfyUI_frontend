@@ -72,7 +72,7 @@ import { electronAPI } from '@/utils/envUtil'
 
 const settingStore = useSettingStore()
 const serverConfigStore = useServerConfigStore()
-const toastStore = useToast()
+const toast = useToast()
 const {
   serverConfigsByCategory,
   serverConfigValues,
@@ -116,7 +116,7 @@ onBeforeUnmount(() => {
     return
   }
 
-  toastStore.warning(t('serverConfig.restartRequiredToastSummary'), {
+  toast.warning(t('serverConfig.restartRequiredToastSummary'), {
     description: t('serverConfig.restartRequiredToastDetail'),
     duration: 10_000
   })

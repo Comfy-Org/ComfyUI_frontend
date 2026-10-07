@@ -203,9 +203,10 @@ export function useSubscriptionCheckout(
   let activeCheckoutAttemptStartedAt: number | undefined
   let lastEmittedPreviewRevision: string | undefined
   const paymentRecoveryToasts: ToastId[] = []
-  onScopeDispose(() => {
-    for (const id of paymentRecoveryToasts.splice(0)) toast.dismiss(id)
-  })
+  function dismissToasts(ids: ToastId[]) {
+    for (const id of ids.splice(0)) toast.dismiss(id)
+  }
+  onScopeDispose(() => dismissToasts(paymentRecoveryToasts))
   useCheckoutJourneyExit()
   // Some legacy-rail status reads cannot expose a scheduled cancellation even
   // though the subscribe authority can see it in Stripe. Once that authority
@@ -1128,7 +1129,7 @@ export function useSubscriptionCheckout(
     selectedTeamCheckout.value = null
     activeCheckoutOperationId.value = null
     activeCheckoutAttemptStartedAt = undefined
-    for (const id of paymentRecoveryToasts.splice(0)) toast.dismiss(id)
+    dismissToasts(paymentRecoveryToasts)
   }
 
   function handleBackToPricing() {
@@ -1280,7 +1281,7 @@ export function useSubscriptionCheckout(
 
   watch(checkoutStep, (step) => {
     if (step !== 'success') return
-    for (const id of attemptErrorToasts.splice(0)) toast.dismiss(id)
+    dismissToasts(attemptErrorToasts)
   })
 
   async function recoverStaleQuote(error: unknown): Promise<boolean> {

@@ -155,9 +155,7 @@ function rejection(opId: string, code: string): Record<string, unknown> {
 }
 
 function toastDetails(): unknown[] {
-  return useToast().toasts.flatMap((toast) =>
-    toast.kind === 'dock' ? [] : [toast.description]
-  )
+  return useToast().toasts.map((toast) => toast.description)
 }
 
 /**

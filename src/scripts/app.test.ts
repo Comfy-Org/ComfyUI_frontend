@@ -1,6 +1,5 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { toToastId } from '@/types/toastId'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -119,21 +118,12 @@ type WorkflowValidation = ReturnType<typeof useWorkflowValidation>
 vi.mock(import('firebase/auth'))
 
 const {
-  mockToastStore,
   mockExtensionService,
   mockRefreshMissingModelPipeline,
   mockImportA1111,
   mockWorkflowService,
   mockValidateWorkflow
 } = vi.hoisted(() => ({
-  mockToastStore: {
-    warning: vi.fn(),
-    success: vi.fn(),
-    error: vi.fn(),
-    info: vi.fn(),
-    custom: vi.fn(),
-    dismiss: vi.fn()
-  },
   mockExtensionService: {
     invokeExtensions: vi.fn(),
     invokeExtensionsAsync: vi.fn()
@@ -190,17 +180,6 @@ vi.mock(import('@/extensions/core/load3d/Load3dUtils'), () => ({
     uploadFile: vi.fn()
   })
 }))
-
-beforeEach(() => {
-  vi.mocked(useToast().warning).mockImplementation(mockToastStore.warning)
-  vi.mocked(useToast().success).mockImplementation(mockToastStore.success)
-  vi.mocked(useToast().error).mockImplementation(mockToastStore.error)
-  vi.mocked(useToast().info).mockImplementation((...args) => {
-    mockToastStore.info(...args)
-    return toToastId(1)
-  })
-  vi.mocked(useToast().dismiss).mockImplementation(mockToastStore.dismiss)
-})
 
 vi.mock(import('@/services/extensionService'), () => ({
   useExtensionService: vi.fn(() =>
@@ -498,18 +477,21 @@ describe('ComfyApp', () => {
       await app.loadGraphData(legacyReroute, false, true, null, {
         checkForRerouteMigration: true
       })
-      const [title, options] = mockToastStore.info.mock.calls.at(-1) ?? []
-      assert(options?.action)
+      const [offer] = useToast().toasts
+      expect(offer).toEqual(
+        expect.objectContaining({
+          action: expect.objectContaining({ label: t('g.migrate') }),
+          kind: 'warning',
+          title: t('toastMessages.migrateToLitegraphReroute')
+        })
+      )
       const reload = vi.spyOn(app, 'loadGraphData').mockResolvedValue(true)
 
-      await options.action.onClick()
+      await offer.action?.onClick()
 
-      expect([title, options.action.label]).toEqual([
-        t('toastMessages.migrateToLitegraphReroute'),
-        t('g.migrate')
-      ])
-      expect(reload).toHaveBeenCalledOnce()
-      expect(mockToastStore.dismiss).toHaveBeenCalledWith(1)
+      const [migrated] = reload.mock.calls[0]
+      expect(migrated?.nodes.map((node) => node.type)).not.toContain('Reroute')
+      expect(useToast().toasts).toEqual([])
     })
 
     it('forwards clean and navigation intent to workflow navigation', async () => {
@@ -3183,14 +3165,12 @@ describe('ComfyApp', () => {
 
       await app.refreshComboInNodes()
 
-      expect(mockToastStore.info).toHaveBeenCalledWith(
-        t('g.update'),
-        expect.objectContaining({
-          description: t('toastMessages.updateRequested')
-        })
-      )
-      expect(mockToastStore.success).toHaveBeenCalled()
-      expect(mockToastStore.dismiss).toHaveBeenCalledWith(1)
+      expect(useToast().info).toHaveBeenCalledWith(t('g.update'), {
+        description: t('toastMessages.updateRequested')
+      })
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({ kind: 'success' })
+      ])
     })
 
     it('shows failure toast, removes the pending toast, and rethrows reload failures', async () => {
@@ -3200,8 +3180,9 @@ describe('ComfyApp', () => {
 
       await expect(app.refreshComboInNodes()).rejects.toThrow(error)
 
-      expect(mockToastStore.error).toHaveBeenCalled()
-      expect(mockToastStore.dismiss).toHaveBeenCalledWith(1)
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({ kind: 'error' })
+      ])
     })
   })
 
@@ -3709,33 +3690,36 @@ describe('ComfyApp', () => {
 
       await app.handleFile(createTestFile('broken.json', 'application/json'))
 
-      expect(mockToastStore.warning).toHaveBeenCalledTimes(1)
-      expect(mockToastStore.warning).toHaveBeenCalledWith(
-        'Unable to find workflow in broken.json'
-      )
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({
+          kind: 'warning',
+          title: 'Unable to find workflow in broken.json'
+        })
+      ])
       consoleError.mockRestore()
     })
 
     it.for([
       {
+        description: undefined,
+        fileName: 'a1111.png',
+        loadsGraph: false,
         outcome: 'core-nodes-unavailable' as const,
-        fileName: 'a1111.png',
-        toastMethod: 'warning' as const,
-        expectedToast: t('toastMessages.a1111CoreNodesUnavailable')
+        title: t('toastMessages.a1111CoreNodesUnavailable')
       },
       {
-        outcome: 'not-a1111' as const,
+        description: undefined,
         fileName: 'parameters.png',
-        toastMethod: 'warning' as const,
-        expectedToast: t('toastMessages.fileLoadError', {
-          fileName: 'parameters.png'
-        })
+        loadsGraph: false,
+        outcome: 'not-a1111' as const,
+        title: t('toastMessages.fileLoadError', { fileName: 'parameters.png' })
       },
       {
-        outcome: 'imported-without-embeddings' as const,
+        description: t('toastMessages.a1111EmbeddingsUnavailable'),
         fileName: 'a1111.png',
-        toastMethod: 'warning' as const,
-        expectedToast: t('g.warning')
+        loadsGraph: true,
+        outcome: 'imported-without-embeddings' as const,
+        title: t('g.warning')
       }
     ])('maps $outcome to its message', async (testCase) => {
       const graph = new LGraph()
@@ -3751,21 +3735,16 @@ describe('ComfyApp', () => {
         parameters,
         expect.any(Function)
       )
-      expect(mockToastStore[testCase.toastMethod]).toHaveBeenCalledOnce()
-      if (testCase.outcome === 'imported-without-embeddings') {
-        expect(mockToastStore.warning).toHaveBeenCalledWith(
-          testCase.expectedToast,
-          {
-            description: t('toastMessages.a1111EmbeddingsUnavailable')
-          }
-        )
-        expect(mockWorkflowService.afterLoadNewGraph).toHaveBeenCalledOnce()
-      } else {
-        expect(mockToastStore.warning).toHaveBeenCalledWith(
-          testCase.expectedToast
-        )
-        expect(mockWorkflowService.afterLoadNewGraph).not.toHaveBeenCalled()
-      }
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({
+          description: testCase.description,
+          kind: 'warning',
+          title: testCase.title
+        })
+      ])
+      expect(mockWorkflowService.afterLoadNewGraph).toHaveBeenCalledTimes(
+        testCase.loadsGraph ? 1 : 0
+      )
     })
 
     it('awaits persistence and orders its clear callback before setGraph', async () => {

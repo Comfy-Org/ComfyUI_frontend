@@ -35,14 +35,14 @@ export function useFrontendVersionMismatchWarning(
 ) {
   const { immediate = false } = options
   const { t } = useI18n()
-  const toastStore = useToast()
+  const toast = useToast()
   const versionCompatibilityStore = useVersionCompatibilityStore()
 
   // Track if we've already shown the warning
   let hasShownWarning = false
 
   const emitAlert = (detail: string) => {
-    toastStore.warning(t('g.versionMismatchWarning'), {
+    toast.warning(t('g.versionMismatchWarning'), {
       description: t('g.versionMismatchUpdateInstructions', { detail })
     })
   }

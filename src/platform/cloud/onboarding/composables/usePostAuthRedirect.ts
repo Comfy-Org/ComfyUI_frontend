@@ -20,18 +20,18 @@ export function usePostAuthRedirect(options: {
   const { t } = useI18n()
   const router = useRouter()
   const route = useRoute()
-  const toastStore = useToast()
+  const toast = useToast()
   const { resumeOAuthIfNeeded } = useOAuthPostLoginRedirect()
 
   async function onAuthSuccess() {
-    toastStore.success(options.successSummary, { duration: 2000 })
+    toast.success(options.successSummary, { duration: 2000 })
 
     const oauthResume = await resumeOAuthIfNeeded(route.query)
     if (oauthResume.kind === 'error') {
       // authError renders only in email-form mode; surface the failure via
       // a toast so social-login users (Google / GitHub) can see it too.
       options.authError.value = oauthResume.message
-      toastStore.error(t('oauth.consent.sessionErrorToastSummary'), {
+      toast.error(t('oauth.consent.sessionErrorToastSummary'), {
         description: oauthResume.message,
         duration: 4000
       })

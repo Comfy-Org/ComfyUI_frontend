@@ -42,7 +42,7 @@ interface UseWidgetSelectActionsOptions {
 
 export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
   const { modelValue, dropdownItems } = options
-  const toastStore = useToast()
+  const toast = useToast()
   const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
   function updateSelectedItems(selectedItems: Set<string>) {
@@ -77,7 +77,7 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
     })
 
     if (resp.status !== 200) {
-      toastStore.warning(buildUploadErrorMessage(resp))
+      toast.warning(buildUploadErrorMessage(resp))
       return null
     }
 
@@ -103,14 +103,14 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
     async (files: File[]) => {
       if (files.length === 0) return
       if (files.some(isExtensionlessVideo)) {
-        toastStore.warning(t('g.videoFilenameExtensionRequired'))
+        toast.warning(t('g.videoFilenameExtensionRequired'))
         return
       }
 
       const uploadedPaths = await uploadFiles(files)
 
       if (uploadedPaths.length === 0) {
-        toastStore.warning('File upload failed')
+        toast.warning('File upload failed')
         return
       }
 

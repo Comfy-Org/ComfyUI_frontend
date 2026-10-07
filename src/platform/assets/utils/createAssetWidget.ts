@@ -51,7 +51,7 @@ function createAssetWidgetOptions({
   const assetBrowserDialog = useAssetBrowserDialog()
 
   async function openModal(widget: IBaseWidget) {
-    const toastStore = useToast()
+    const toast = useToast()
 
     await assetBrowserDialog.show({
       nodeType: nodeTypeForBrowser,
@@ -65,7 +65,7 @@ function createAssetWidgetOptions({
             'Invalid asset item:',
             fromZodError(validatedAsset.error).message
           )
-          toastStore.error(t('assetBrowser.invalidAsset'), {
+          toast.error(t('assetBrowser.invalidAsset'), {
             description: t('assetBrowser.invalidAssetDetail')
           })
           return
@@ -81,7 +81,7 @@ function createAssetWidgetOptions({
             'for asset:',
             validatedAsset.data.id
           )
-          toastStore.error(t('assetBrowser.invalidFilename'), {
+          toast.error(t('assetBrowser.invalidFilename'), {
             description: t('assetBrowser.invalidFilenameDetail')
           })
           return

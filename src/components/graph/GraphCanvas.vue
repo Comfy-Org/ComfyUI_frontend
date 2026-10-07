@@ -242,7 +242,7 @@ const { linearMode } = storeToRefs(canvasStore)
 const { docked: agentDocked, DockedAgentPanel } = useAgentDockMount()
 const executionStore = useExecutionStore()
 const executionErrorStore = useExecutionErrorStore()
-const toastStore = useToast()
+const toast = useToast()
 const colorPaletteStore = useColorPaletteStore()
 const colorPaletteService = useColorPaletteService()
 const canvasInteractions = useCanvasInteractions()
@@ -475,7 +475,7 @@ useEventListener(
   canvasRef,
   'litegraph:no-items-selected',
   () => {
-    toastStore.warning(t('toastMessages.nothingSelected'), { duration: 2000 })
+    toast.warning(t('toastMessages.nothingSelected'), { duration: 2000 })
   },
   { passive: true }
 )

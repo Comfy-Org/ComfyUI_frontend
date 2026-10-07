@@ -40,6 +40,8 @@ const activeTabData = computed(
   () => tabs.value.find((tab) => tab.value === activeTab.value) ?? tabs.value[0]
 )
 
+const visible = computed(() => comfyManagerStore.taskLogs.length > 0)
+
 const isInProgress = computed(
   () => comfyManagerStore.isProcessingTasks || isRestarting.value
 )
@@ -160,7 +162,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <ToastPanel v-model:expanded="isExpanded">
+  <ToastPanel v-model:expanded="isExpanded" :visible>
     <template #default>
       <Tabs
         v-if="isExpanded"

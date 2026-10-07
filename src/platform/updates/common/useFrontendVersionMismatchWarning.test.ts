@@ -52,9 +52,9 @@ function mountVersionWarning(
 
 describe('useFrontendVersionMismatchWarning', () => {
   it('should not show warning when there is no version mismatch', () => {
-    const toastStore = useToast()
+    const toast = useToast()
     const versionStore = useVersionCompatibilityStore()
-    const warningSpy = vi.spyOn(toastStore, 'warning')
+    const warningSpy = vi.spyOn(toast, 'warning')
 
     // Mock no version mismatch
     vi.spyOn(versionStore, 'shouldShowWarning', 'get').mockReturnValue(false)
@@ -65,9 +65,9 @@ describe('useFrontendVersionMismatchWarning', () => {
   })
 
   it('should show warning immediately when immediate option is true and there is a mismatch', async () => {
-    const toastStore = useToast()
+    const toast = useToast()
     const versionStore = useVersionCompatibilityStore()
-    const warningSpy = vi.spyOn(toastStore, 'warning')
+    const warningSpy = vi.spyOn(toast, 'warning')
     const dismissWarningSpy = vi.spyOn(versionStore, 'dismissWarning')
 
     // Mock version mismatch
@@ -93,9 +93,9 @@ describe('useFrontendVersionMismatchWarning', () => {
   })
 
   it('should not show warning immediately when immediate option is false', async () => {
-    const toastStore = useToast()
+    const toast = useToast()
     const versionStore = useVersionCompatibilityStore()
-    const warningSpy = vi.spyOn(toastStore, 'warning')
+    const warningSpy = vi.spyOn(toast, 'warning')
 
     // Mock version mismatch
     vi.spyOn(versionStore, 'shouldShowWarning', 'get').mockReturnValue(true)
@@ -136,9 +136,9 @@ describe('useFrontendVersionMismatchWarning', () => {
   })
 
   it('stops watching for mismatches after unmount', async () => {
-    const toastStore = useToast()
+    const toast = useToast()
     const versionStore = useVersionCompatibilityStore()
-    const warningSpy = vi.spyOn(toastStore, 'warning')
+    const warningSpy = vi.spyOn(toast, 'warning')
     const shouldShowWarning = ref(false)
     vi.spyOn(versionStore, 'shouldShowWarning', 'get').mockImplementation(
       () => shouldShowWarning.value
@@ -160,9 +160,9 @@ describe('useFrontendVersionMismatchWarning', () => {
   })
 
   it('should not show warning when warningMessage is null', () => {
-    const toastStore = useToast()
+    const toast = useToast()
     const versionStore = useVersionCompatibilityStore()
-    const warningSpy = vi.spyOn(toastStore, 'warning')
+    const warningSpy = vi.spyOn(toast, 'warning')
 
     vi.spyOn(versionStore, 'warningMessage', 'get').mockReturnValue(null)
 
@@ -173,9 +173,9 @@ describe('useFrontendVersionMismatchWarning', () => {
   })
 
   it('should only show warning once even if called multiple times', () => {
-    const toastStore = useToast()
+    const toast = useToast()
     const versionStore = useVersionCompatibilityStore()
-    const warningSpy = vi.spyOn(toastStore, 'warning')
+    const warningSpy = vi.spyOn(toast, 'warning')
 
     vi.spyOn(versionStore, 'warningMessage', 'get').mockReturnValue({
       type: 'outdated',
@@ -195,9 +195,9 @@ describe('useFrontendVersionMismatchWarning', () => {
   })
 
   it('should emit a separate alert for each outdated comfy package', () => {
-    const toastStore = useToast()
+    const toast = useToast()
     const versionStore = useVersionCompatibilityStore()
-    const warningSpy = vi.spyOn(toastStore, 'warning')
+    const warningSpy = vi.spyOn(toast, 'warning')
 
     vi.spyOn(versionStore, 'warningMessage', 'get').mockReturnValue(null)
     vi.spyOn(versionStore, 'packageWarningMessages', 'get').mockReturnValue([

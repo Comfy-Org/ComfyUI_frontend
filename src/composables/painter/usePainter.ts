@@ -38,7 +38,7 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
   const { canvasEl, cursorEl, modelValue } = options
   const { t } = useI18n()
   const nodeOutputStore = useNodeOutputStore()
-  const toastStore = useToast()
+  const toast = useToast()
 
   const isDirty = ref(false)
 
@@ -633,7 +633,7 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
         status: 0,
         statusText: e instanceof Error ? e.message : String(e)
       })
-      toastStore.warning(err)
+      toast.warning(err)
       throw new Error(err, { cause: e })
     }
 
@@ -643,7 +643,7 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
         status: resp.status,
         statusText: bodyText || resp.statusText || 'unknown error'
       })
-      toastStore.warning(err)
+      toast.warning(err)
       throw new Error(err)
     }
 
@@ -655,13 +655,13 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
         status: resp.status,
         statusText: e instanceof Error ? e.message : String(e)
       })
-      toastStore.warning(err)
+      toast.warning(err)
       throw new Error(err, { cause: e })
     }
 
     if (!data.name) {
       const detail = `Painter upload succeeded (${resp.status}) but response is missing 'name'`
-      toastStore.warning(detail)
+      toast.warning(detail)
       throw new Error(detail)
     }
 

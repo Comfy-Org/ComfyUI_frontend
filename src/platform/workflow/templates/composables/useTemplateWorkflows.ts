@@ -211,12 +211,6 @@ export function useTemplateWorkflows() {
   ) {
     const toast = useToast()
     let progressToastId: ToastId | undefined
-    function showPreparingMediaToast() {
-      progressToastId ??= toast.loading(t('templateWorkflows.preparingMedia'))
-    }
-    function dismissPreparingMediaToast() {
-      if (progressToastId !== undefined) toast.dismiss(progressToastId)
-    }
     let preparedJson: ComfyWorkflowJSON | LegacyLoadableWorkflow = workflow
     const errors: unknown[] = []
     try {
@@ -225,7 +219,9 @@ export function useTemplateWorkflows() {
         inputs,
         signal,
         useSettingStore().get('Comfy.Workflow.NamedValuesRestore'),
-        showPreparingMediaToast
+        () => {
+          progressToastId = toast.loading(t('templateWorkflows.preparingMedia'))
+        }
       )
       errors.push(...result.errors)
       preparedJson = result.workflow
@@ -238,7 +234,7 @@ export function useTemplateWorkflows() {
       signal.throwIfAborted()
       errors.push(error)
     } finally {
-      dismissPreparingMediaToast()
+      if (progressToastId !== undefined) toast.dismiss(progressToastId)
     }
     if (errors.length) {
       reportError(

@@ -191,7 +191,7 @@ function getMinSize(node: LGraphNode) {
  */
 export const useLitegraphService = () => {
   const extensionService = useExtensionService()
-  const toastStore = useToast()
+  const toast = useToast()
   const widgetStore = useWidgetStore()
   const canvasStore = useCanvasStore()
   const { toggleSelectedNodesMode } = useSelectedLiteGraphItems()
@@ -699,7 +699,7 @@ export const useLitegraphService = () => {
                 throw error
               }
             } catch (error) {
-              toastStore.warning(
+              toast.warning(
                 t('toastMessages.errorCopyImage', {
                   error: error instanceof Error ? error.message : error
                 })

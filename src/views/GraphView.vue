@@ -21,6 +21,11 @@
   </div>
 
   <Toaster />
+  <ToastDock>
+    <ModelImportProgressDialog />
+    <AssetExportProgressDialog />
+    <ManagerProgressToast />
+  </ToastDock>
   <PartnerNodesEducationCard v-if="!isCloud" />
   <DesktopCloudNotificationController />
   <UnloadWindowConfirmDialog v-if="!isDesktop" />
@@ -48,6 +53,7 @@ import MenuHamburger from '@/components/MenuHamburger.vue'
 import UnloadWindowConfirmDialog from '@/components/dialog/UnloadWindowConfirmDialog.vue'
 import GraphCanvas from '@/components/graph/GraphCanvas.vue'
 import PartnerNodesEducationCard from '@/components/actionbar/PartnerNodesEducationCard.vue'
+import ToastDock from '@/components/ui/toast/ToastDock.vue'
 import Toaster from '@/components/ui/toast/Toaster.vue'
 import TourOverlay from '@/platform/onboarding/TourOverlay.vue'
 import FirstRunTour from '@/renderer/extensions/firstRunTour/FirstRunTour.vue'
@@ -65,7 +71,8 @@ import { refreshDownloadedTemplateInputBindings } from '@/platform/workflow/temp
 import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
 import type { ServerConfig, ServerConfigValue } from '@/constants/serverConfig'
 import { setActiveLocale } from '@/i18n'
-import { useAssetProgressToasts } from '@/platform/assets/composables/useAssetProgressToasts'
+import AssetExportProgressDialog from '@/platform/assets/components/AssetExportProgressDialog.vue'
+import ModelImportProgressDialog from '@/platform/assets/components/ModelImportProgressDialog.vue'
 import DesktopCloudNotificationController from '@/platform/cloud/notification/components/DesktopCloudNotificationController.vue'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -104,13 +111,11 @@ import BuilderFooterToolbar from '@/components/builder/BuilderFooterToolbar.vue'
 import BuilderMenu from '@/components/builder/BuilderMenu.vue'
 import BuilderToolbar from '@/components/builder/BuilderToolbar.vue'
 import LinearView from '@/views/LinearView.vue'
-import { useManagerProgressToast } from '@/workbench/extensions/manager/composables/useManagerProgressToast'
+import ManagerProgressToast from '@/workbench/extensions/manager/components/ManagerProgressToast.vue'
 
 setupAutoQueueHandler()
 useProgressFavicon()
 useBrowserTabTitle()
-useAssetProgressToasts()
-useManagerProgressToast()
 
 const settingStore = useSettingStore()
 const executionStore = useExecutionStore()

@@ -1,4 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { api } from '@/scripts/api'
@@ -57,6 +58,18 @@ describe('agentNodeSelectionStore', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     vi.spyOn(api, 'storeSetting').mockResolvedValue(new Response())
+  })
+
+  it('holds notifications for the duration of the mode', async () => {
+    const store = useAgentNodeSelectionStore()
+
+    store.enter()
+    await nextTick()
+    expect(useToast().held).toBe(true)
+
+    store.exit()
+    await nextTick()
+    expect(useToast().held).toBe(false)
   })
 
   // Flipping the setting rather than overriding the minimap is what keeps the

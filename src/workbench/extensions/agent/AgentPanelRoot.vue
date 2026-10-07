@@ -892,8 +892,7 @@ const {
     onReset: graphActivity.resetWorkflow,
     onSyncError: (message, code) =>
       toast.error(t('agent.workflowSyncFailedTitle'), {
-        description: formatWorkflowSyncErrorDetail(t, message, code),
-        duration: Number.POSITIVE_INFINITY
+        description: formatWorkflowSyncErrorDetail(t, message, code)
       })
   },
   {

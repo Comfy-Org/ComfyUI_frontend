@@ -3,7 +3,6 @@ import _ from 'es-toolkit/compat'
 import { reactive, unref, shallowRef } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
-import type { ToastId } from '@/types/toastId'
 import { partnerRunGateBlocksAutoQueue } from '@/composables/billing/usePartnerNodesRunGate'
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { normalizeCameraState } from '@/renderer/core/canvas/cameraState'
@@ -1390,7 +1389,7 @@ export class ComfyApp {
         noNativeReroutes(graphData)
       ) {
         const toast = useToast()
-        const migrationToastId = toast.info(
+        const migrationToastId = toast.warning(
           t('toastMessages.migrateToLitegraphReroute'),
           {
             action: {
@@ -2773,12 +2772,11 @@ export class ComfyApp {
    * Refresh combo list on whole nodes
    */
   async refreshComboInNodes() {
-    let requestToastId: ToastId | undefined
-    if (this.vueAppReady) {
-      requestToastId = useToast().info(t('g.update'), {
-        description: t('toastMessages.updateRequested')
-      })
-    }
+    const requestToastId = this.vueAppReady
+      ? useToast().info(t('g.update'), {
+          description: t('toastMessages.updateRequested')
+        })
+      : undefined
 
     try {
       await this.reloadNodeDefs()

@@ -3,7 +3,6 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useToast } from '@/components/ui/toast/toastStore'
 import { createExtensionToastManager } from '@/platform/extensions/extensionToastManager'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { Settings } from '@/platform/settings/types'
@@ -29,7 +28,7 @@ function workspaceStoreSetup() {
    */
   const focusMode = ref(false)
 
-  const toast = computed(() => createExtensionToastManager(useToast()))
+  const toast = createExtensionToastManager()
   const queueSettings = computed(() => useQueueSettingsStore())
   const command = computed(() => ({
     commands: useCommandStore().commands,

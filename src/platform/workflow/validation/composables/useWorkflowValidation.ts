@@ -9,7 +9,7 @@ interface ValidationResult {
 }
 
 export function useWorkflowValidation() {
-  const toastStore = useToast()
+  const toast = useToast()
 
   function tryFixLinks(
     graphData: ComfyWorkflowJSON,
@@ -31,7 +31,7 @@ export function useWorkflowValidation() {
     })
 
     if (!silent && logs.length > 0) {
-      toastStore.warning('Workflow Validation', {
+      toast.warning('Workflow Validation', {
         description: logs.join('\n')
       })
     }
@@ -39,7 +39,7 @@ export function useWorkflowValidation() {
     // If links were fixed, notify the user
     if (linkValidation.fixed) {
       if (!silent) {
-        toastStore.success('Workflow Links Fixed', {
+        toast.success('Workflow Links Fixed', {
           description: `Fixed ${linkValidation.patched} node connections and removed ${linkValidation.deleted} invalid links.`
         })
       }
@@ -66,7 +66,7 @@ export function useWorkflowValidation() {
       graphData,
       /* onError=*/ (err) => {
         if (!silent) {
-          toastStore.warning(err)
+          toast.warning(err)
         }
       }
     )

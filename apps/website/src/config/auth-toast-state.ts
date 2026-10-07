@@ -2,8 +2,7 @@
  * The auth pages' toast list, shared between the host island in AuthLayout
  * and whichever island raises a message. It owns the rendered list rather
  * than handing messages over, so one raised before the host hydrates still
- * shows. Ids and the add/remove shape mirror PrimeVue's ToastService, which
- * the cloud app's GlobalToast sits on.
+ * shows. Ids and the add/remove shape mirror PrimeVue's ToastService.
  */
 import { readonly, ref } from 'vue'
 

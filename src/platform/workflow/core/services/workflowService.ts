@@ -157,7 +157,7 @@ function queueWorkflowLoad<T>(
 export const useWorkflowService = () => {
   const settingStore = useSettingStore()
   const workflowStore = useWorkflowStore()
-  const toastStore = useToast()
+  const toast = useToast()
   const dialogService = useDialogService()
   const workflowThumbnail = useWorkflowThumbnail()
   const domWidgetStore = useDomWidgetStore()
@@ -165,7 +165,7 @@ export const useWorkflowService = () => {
   const workflowDraftStore = useWorkflowDraftStoreV2()
 
   const showFailedToSaveDraftToast = () => {
-    toastStore.error(t('g.error'), {
+    toast.error(t('g.error'), {
       description: t('toastMessages.failedToSaveDraft')
     })
   }
@@ -336,7 +336,7 @@ export const useWorkflowService = () => {
         await deleteWorkflow(existing, true)
       }
       await renameWorkflow(workflow, expectedPath)
-      toastStore.info(
+      toast.info(
         t(
           isApp
             ? 'workflowService.savedAsApp'
@@ -640,7 +640,7 @@ export const useWorkflowService = () => {
     }
     await workflowStore.deleteWorkflow(workflow)
     if (!silent) {
-      toastStore.info(t('sideToolbar.workflowTab.deleted'), { duration: 1000 })
+      toast.info(t('sideToolbar.workflowTab.deleted'), { duration: 1000 })
     }
     return true
   }

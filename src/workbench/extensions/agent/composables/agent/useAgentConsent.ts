@@ -45,7 +45,7 @@ export function useAgentConsent() {
   const dialogStore = useDialogStore()
   const dialogService = useDialogService()
   const consentStore = useAgentConsentStore()
-  const toastStore = useToast()
+  const toast = useToast()
   const { isLoggedIn } = useCurrentUser()
   const { accepted, identity, isChecking } = storeToRefs(consentStore)
   const { t } = i18n.global
@@ -248,7 +248,7 @@ export function useAgentConsent() {
         surface: 'agent',
         errorType: 'agent_consent_sign_in_failure'
       })
-      toastStore.error(t('g.error'), {
+      toast.error(t('g.error'), {
         description: t('agent.consent.signInError')
       })
       return null
@@ -277,7 +277,7 @@ export function useAgentConsent() {
         surface: 'agent',
         errorType: 'agent_consent_setting_write_failure'
       })
-      toastStore.error(t('g.error'), {
+      toast.error(t('g.error'), {
         description: t('agent.consent.saveError')
       })
       return null
@@ -312,7 +312,7 @@ export function useAgentConsent() {
         surface: 'agent',
         errorType: 'agent_consent_setting_load_failure'
       })
-      toastStore.error(t('g.error'), {
+      toast.error(t('g.error'), {
         description: t('agent.consent.loadError')
       })
       return null

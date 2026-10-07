@@ -2,6 +2,7 @@ import { useEventListener } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -22,6 +23,7 @@ export const useAgentNodeSelectionStore = defineStore(
     const sidebarTabStore = useSidebarTabStore()
     const canvasStore = useCanvasStore()
     const settingStore = useSettingStore()
+    const toast = useToast()
     const isActive = ref(false)
     const isActionBarsHidden = ref(false)
     const isBannerVisible = ref(false)
@@ -36,6 +38,7 @@ export const useAgentNodeSelectionStore = defineStore(
     watch(isActive, (active) => {
       clearTimeout(transitionTimeoutId)
       clearTimeout(sidebarTimeoutId)
+      toast.held = active
 
       if (active) {
         isActionBarsHidden.value = true

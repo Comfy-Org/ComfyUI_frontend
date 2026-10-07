@@ -108,7 +108,7 @@ const baseModelSelected = defineModel<Set<string>>('baseModelSelected', {
 })
 const isOpen = defineModel<boolean>('isOpen', { default: false })
 
-const toastStore = useToast()
+const toast = useToast()
 const popoverRef = ref<InstanceType<typeof Popover>>()
 const triggerAnchorRef = useTemplateRef<HTMLElement>('triggerAnchorRef')
 const menuRef = useTemplateRef<ComponentPublicInstance>('menuRef')
@@ -267,7 +267,7 @@ function handleSelection(item: FormDropdownItem, index: number) {
       sel.clear()
       sel.add(item.id)
     } else {
-      toastStore.warning(t('widgets.uploadSelect.maxSelectionReached'))
+      toast.warning(t('widgets.uploadSelect.maxSelectionReached'))
       return
     }
   }

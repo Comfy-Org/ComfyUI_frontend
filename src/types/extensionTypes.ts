@@ -1,6 +1,5 @@
 import type { Component } from 'vue'
 
-import type { ToastOptions } from '@/components/ui/toast/toastStore'
 import type { ToastId } from '@/types/toastId'
 
 import type { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -50,8 +49,20 @@ export type BottomPanelExtension =
   | VueBottomPanelExtension
   | CustomBottomPanelExtension
 
+export interface ToastAction {
+  label: string
+  onClick: () => unknown
+}
+
+export interface ToastOptions {
+  action?: ToastAction
+  closable?: boolean
+  description?: string
+  duration?: number
+}
+
 /**
- * @deprecated Use `toast.success/error/info/warning(title, options)`.
+ * @deprecated Use `toast.success/error/info/warning/loading(title, options)`.
  */
 export interface ToastMessageOptions {
   closable?: boolean
@@ -62,9 +73,9 @@ export interface ToastMessageOptions {
 }
 
 export type ToastManager = {
-  /** @deprecated Use `success/error/info/warning`. */
+  /** @deprecated Use `success/error/info/warning/loading`. */
   add(message: ToastMessageOptions): void
-  /** @deprecated Use `warning(title, { description })`. */
+  /** @deprecated Use `warning(message)`. */
   addAlert(message: string): void
   dismiss(id: ToastId): void
   dismissAll(): void

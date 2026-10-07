@@ -17,11 +17,11 @@ export function useReconnectingNotification() {
   const settingStore = useSettingStore()
 
   const toastDelayMs = ref(RECONNECT_TOAST_DELAY_MS)
-  const reconnectingToastId = ref<ToastId>()
+  let reconnectingToastId: ToastId | undefined
 
   const { start, stop, isPending } = useTimeoutFn(
     () => {
-      reconnectingToastId.value = toast.error(t('g.reconnecting'))
+      reconnectingToastId ??= toast.error(t('g.reconnecting'))
     },
     toastDelayMs,
     { immediate: false }
@@ -53,10 +53,10 @@ export function useReconnectingNotification() {
   function onReconnected() {
     stop()
 
-    if (reconnectingToastId.value !== undefined) {
-      toast.dismiss(reconnectingToastId.value)
+    if (reconnectingToastId !== undefined) {
+      toast.dismiss(reconnectingToastId)
       toast.success(t('g.reconnected'), { duration: 2000 })
-      reconnectingToastId.value = undefined
+      reconnectingToastId = undefined
     }
   }
 
