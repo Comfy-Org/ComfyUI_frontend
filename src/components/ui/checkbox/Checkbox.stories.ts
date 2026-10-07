@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
+import type { CheckboxCheckedState } from 'reka-ui'
 import { ref } from 'vue'
 
 import Checkbox from './Checkbox.vue'
@@ -16,12 +17,12 @@ const meta: Meta<typeof Checkbox> = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-function renderCheckbox(initialValue: boolean) {
+function renderCheckbox(initialValue: CheckboxCheckedState) {
   function render(args: { disabled?: boolean }) {
     return {
       components: { Checkbox },
       setup() {
-        const checked = ref(initialValue)
+        const checked = ref<CheckboxCheckedState>(initialValue)
         return { args, checked }
       },
       template: `
@@ -42,6 +43,10 @@ export const Default: Story = {
 
 export const Checked: Story = {
   render: renderCheckbox(true)
+}
+
+export const Indeterminate: Story = {
+  render: renderCheckbox('indeterminate')
 }
 
 export const Disabled: Story = {
