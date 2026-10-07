@@ -108,6 +108,7 @@ export type RemoteConfig = Partial<GetFeaturesResponses[200]> & {
   onboarding_tour_enabled?: boolean
   /** Full hosted (external) survey URL embedded in the Nodes Manager modal on Cloud. */
   manager_survey_url?: string
+  cancellation_survey_id?: string
   linear_toggle_enabled?: boolean
   'agent-in-app-experience'?: boolean
   'agent-free-use-message-placement'?: string
@@ -137,7 +138,6 @@ export type RemoteConfig = Partial<GetFeaturesResponses[200]> & {
   member_credit_limits_enabled?: boolean
   legacy_billing_migration_enabled?: boolean
   v1_payment_recovery?: boolean
-  churnkey_app_id?: string
   sentry_dsn?: string
   turnstile_sitekey?: string
   /** Absent when the backend has no key configured, not an empty string; always sanitize with the reader before trusting it. */

@@ -50,7 +50,6 @@ export enum ServerFeatureFlag {
   BILLING_SDK_SUBSCRIPTION_ENABLED = 'billing_sdk_subscription_enabled',
   V1_PAYMENT_RECOVERY = 'v1_payment_recovery',
   FREE_TIER_JOB_ALLOWANCE_ENABLED = 'free_tier_job_allowance_enabled',
-  CHURNKEY_APP_ID = 'churnkey_app_id',
   SIGNUP_TURNSTILE = 'signup_turnstile',
   SUPPORTS_MODEL_TYPE_TAGS = 'supports_model_type_tags',
   ONBOARDING_TOUR_ENABLED = 'onboarding_tour_enabled',
@@ -367,14 +366,6 @@ export function useFeatureFlags() {
         false
       )
     },
-    get churnkeyAppId() {
-      if (!isCloud) return ''
-      return resolveFlag(
-        ServerFeatureFlag.CHURNKEY_APP_ID,
-        remoteConfig.value.churnkey_app_id,
-        ''
-      ).trim()
-    },
     get signupTurnstileMode() {
       return resolveFlag(
         ServerFeatureFlag.SIGNUP_TURNSTILE,
@@ -464,7 +455,6 @@ export function startFeatureFlagTelemetry() {
       [ServerFeatureFlag.V1_PAYMENT_RECOVERY]: flags.v1PaymentRecovery,
       [ServerFeatureFlag.FREE_TIER_JOB_ALLOWANCE_ENABLED]:
         flags.freeTierJobAllowanceEnabled,
-      [ServerFeatureFlag.CHURNKEY_APP_ID]: flags.churnkeyAppId,
       [ServerFeatureFlag.SIGNUP_TURNSTILE]: flags.signupTurnstileMode,
       [ServerFeatureFlag.SUPPORTS_MODEL_TYPE_TAGS]: flags.supportsModelTypeTags,
       [ServerFeatureFlag.ONBOARDING_TOUR_ENABLED]: flags.onboardingTourEnabled,
