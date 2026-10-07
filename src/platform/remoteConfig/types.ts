@@ -118,7 +118,6 @@ export type RemoteConfig = Partial<GetFeaturesResponses[200]> & {
   node_library_essentials_enabled?: boolean
   supports_model_type_tags?: boolean
   free_tier_credits?: number
-  free_tier_job_allowance_enabled?: boolean
   new_free_tier_subscriptions?: boolean
   comfyhub_upload_enabled?: boolean
   comfyhub_profile_gate_enabled?: boolean
