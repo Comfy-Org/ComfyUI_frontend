@@ -107,7 +107,9 @@ or set `COMFY_CI_CONTAINER_TOKEN` to keep that scope off `GH_TOKEN`. Restart
 the container processes after changing secrets.
 
 Set `COMFYUI_FRONTEND_MODE=cloud` to skip Docker and the local backend and run
-the frontend against the Comfy test cloud instead.
+the frontend against the Comfy test cloud for manual work. E2E needs local
+mode. The regular Playwright projects, `cloud` included, all run against the
+local backend.
 
 ### Node.js & Playwright
 
