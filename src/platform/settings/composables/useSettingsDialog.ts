@@ -40,7 +40,7 @@ export function useSettingsDialog() {
   function show(panel?: SettingPanelType, settingId?: string) {
     if (!settingDialogComponent) {
       reportError(new Error('Setting dialog component is not registered'), {
-        errorType: 'settings_dialog_not_registered',
+        errorType: 'failure_opening_settings_dialog',
         surface: 'platform'
       })
       return
