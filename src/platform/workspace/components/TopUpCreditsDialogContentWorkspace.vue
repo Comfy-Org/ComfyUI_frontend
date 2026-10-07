@@ -333,6 +333,7 @@ import {
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 import { useDialogStore } from '@/stores/dialogStore'
+import { getErrorMessage } from '@/utils/errorUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { isInsufficientCredits = false, source } = defineProps<{
@@ -770,8 +771,7 @@ function purchaseErrorDetail(error?: unknown): string {
     return t('credits.topUp.changeInProgressError')
   }
   return t('credits.topUp.purchaseErrorDetail', {
-    error:
-      error instanceof Error ? error.message : t('credits.topUp.unknownError')
+    error: getErrorMessage(error) ?? t('credits.topUp.unknownError')
   })
 }
 </script>

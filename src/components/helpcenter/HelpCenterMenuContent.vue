@@ -168,6 +168,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import type { ReleaseNote } from '@/platform/updates/common/releaseService'
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import { useCommandStore } from '@/stores/commandStore'
+import { getErrorMessage } from '@/utils/errorUtil'
 import { electronAPI } from '@/utils/envUtil'
 import { formatVersionAnchor } from '@/utils/formatUtil'
 import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
@@ -630,7 +631,7 @@ const onUpdateComfyUI = async (): Promise<void> => {
     await rebootComfyUI()
   } catch (err) {
     toast.error(t('g.error'), {
-      description: err instanceof Error ? err.message : t('g.unknownError')
+      description: getErrorMessage(err) ?? t('g.unknownError')
     })
   }
 }

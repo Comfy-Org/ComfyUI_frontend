@@ -1,7 +1,7 @@
 import { respondToFetch } from '@comfyorg/test-utils/fetch'
 import { fromPartial } from '@total-typescript/shoehorn'
-import type { useDialogService as realUseDialogService } from '@/services/dialogService'
 import { useToast } from '@/components/ui/toast/toastStore'
+import type { useDialogService as realUseDialogService } from '@/services/dialogService'
 import { useAuthStore } from '@/stores/authStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
@@ -15,45 +15,15 @@ import type { RouteRecordRaw } from 'vue-router'
  *
  */
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: { canvas: {}, rootGraph: {} }
-}))
-
 vi.mock(import('@/services/dialogService'))
 
 let useDialogService: typeof realUseDialogService
 
-const mockToastAdd = vi.hoisted(() => vi.fn())
-beforeEach(() => {
-  vi.mocked(useToast().success).mockImplementation((...args: unknown[]) =>
-    mockToastAdd('success', ...args)
-  )
-  vi.mocked(useToast().error).mockImplementation((...args: unknown[]) =>
-    mockToastAdd('error', ...args)
-  )
-  vi.mocked(useToast().info).mockImplementation((...args: unknown[]) =>
-    mockToastAdd('info', ...args)
-  )
-  vi.mocked(useToast().warning).mockImplementation((...args: unknown[]) =>
-    mockToastAdd('warning', ...args)
-  )
-  vi.mocked(useToast().loading).mockImplementation((...args: unknown[]) =>
-    mockToastAdd('loading', ...args)
-  )
-})
-
 const mockUserGetIdToken = vi.hoisted(() => vi.fn())
-const mockStoreGetIdToken = vi.hoisted(() => vi.fn())
 
-vi.mock(import('@/i18n'), () => ({
-  t: (key: string) => key
-}))
+vi.mock(import('@/i18n'))
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    apiURL: (path: string) => `/api${path}`
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
 const VALID_CODE = `dlc_${'A'.repeat(43)}`
 const SECOND_CODE = `dlc_${'B'.repeat(43)}`
@@ -133,7 +103,6 @@ describe('installDesktopLoginRedemption', () => {
       uid: 'user-1',
       getIdToken: mockUserGetIdToken
     })
-    vi.mocked(mockAuthStore.getIdToken).mockImplementation(mockStoreGetIdToken)
   })
 
   it('does nothing on navigation when no code is stashed', async () => {
@@ -143,7 +112,7 @@ describe('installDesktopLoginRedemption', () => {
 
     expect(useDialogService().confirm).not.toHaveBeenCalled()
     expect(fetch).not.toHaveBeenCalled()
-    expect(mockToastAdd).not.toHaveBeenCalled()
+    expect(useToast().toasts).toEqual([])
   })
 
   it('redeems a stashed code once on navigation with the Firebase bearer token after approval', async () => {
@@ -165,11 +134,14 @@ describe('installDesktopLoginRedemption', () => {
       expectedFetchOptions(VALID_CODE)
     )
     expect(stashedCode()).toBeUndefined()
-    expect(mockToastAdd).toHaveBeenCalledWith(
-      'success',
-      'desktopLogin.successSummary',
-      { description: 'desktopLogin.successDetail', duration: 4000 }
-    )
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        description: 'desktopLogin.successDetail',
+        duration: 4000,
+        kind: 'success',
+        title: 'desktopLogin.successSummary'
+      })
+    ])
   })
 
   it('does not fetch before the user approves the confirmation dialog', async () => {
@@ -290,7 +262,7 @@ describe('installDesktopLoginRedemption', () => {
 
       expect(fetch).not.toHaveBeenCalled()
       expect(stashedCode()).toBeUndefined()
-      expect(mockToastAdd).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
 
       // Declining is final for that code: re-capturing it never re-prompts.
       seedStash(VALID_CODE)
@@ -360,11 +332,14 @@ describe('installDesktopLoginRedemption', () => {
       await trigger()
 
       expect(stashedCode()).toBeUndefined()
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        'error',
-        'desktopLogin.expiredSummary',
-        { description: 'desktopLogin.expiredDetail', duration: 6000 }
-      )
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({
+          description: 'desktopLogin.expiredDetail',
+          duration: 6000,
+          kind: 'error',
+          title: 'desktopLogin.expiredSummary'
+        })
+      ])
     }
   )
 
@@ -379,7 +354,7 @@ describe('installDesktopLoginRedemption', () => {
 
       expect(fetch).toHaveBeenCalledTimes(1)
       expect(stashedCode()).toBe(VALID_CODE)
-      expect(mockToastAdd).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
     }
   )
 
@@ -391,17 +366,20 @@ describe('installDesktopLoginRedemption', () => {
     await trigger()
     expect(fetch).toHaveBeenCalledTimes(1)
     expect(stashedCode()).toBe(VALID_CODE)
-    expect(mockToastAdd).not.toHaveBeenCalled()
+    expect(useToast().toasts).toEqual([])
 
     await vi.advanceTimersByTimeAsync(RETRY_DELAY_MS)
 
     expect(fetch).toHaveBeenCalledTimes(2)
     expect(stashedCode()).toBeUndefined()
-    expect(mockToastAdd).toHaveBeenCalledWith(
-      'error',
-      'desktopLogin.failedSummary',
-      { description: 'desktopLogin.failedDetail', duration: 6000 }
-    )
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        description: 'desktopLogin.failedDetail',
+        duration: 6000,
+        kind: 'error',
+        title: 'desktopLogin.failedSummary'
+      })
+    ])
   })
 
   it('forces a token refresh on the retry after a 401', async () => {
@@ -420,9 +398,9 @@ describe('installDesktopLoginRedemption', () => {
     expect(fetch).toHaveBeenCalledTimes(2)
     expect(mockUserGetIdToken).toHaveBeenLastCalledWith(true)
     expect(stashedCode()).toBeUndefined()
-    expect(mockToastAdd.mock.calls.map(([method]) => method)).toContain(
-      'success'
-    )
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({ kind: 'success' })
+    ])
   })
 
   it('passes a timeout signal and treats an aborted request as transient', async () => {
@@ -441,7 +419,7 @@ describe('installDesktopLoginRedemption', () => {
       expectedFetchOptions(VALID_CODE)
     )
     expect(stashedCode()).toBe(VALID_CODE)
-    expect(mockToastAdd).not.toHaveBeenCalled()
+    expect(useToast().toasts).toEqual([])
   })
 
   it('treats an id token failure as transient without a toast', async () => {
@@ -454,9 +432,9 @@ describe('installDesktopLoginRedemption', () => {
     expect(fetch).not.toHaveBeenCalled()
     // authStore.getIdToken surfaces failures through a modal error dialog,
     // which this background flow must never trigger.
-    expect(mockStoreGetIdToken).not.toHaveBeenCalled()
+    expect(mockAuthStore.getIdToken).not.toHaveBeenCalled()
     expect(stashedCode()).toBe(VALID_CODE)
-    expect(mockToastAdd).not.toHaveBeenCalled()
+    expect(useToast().toasts).toEqual([])
   })
 
   it('clears the stash without a dialog or request for a malformed code', async () => {
@@ -483,7 +461,7 @@ describe('installDesktopLoginRedemption', () => {
       '[DesktopLoginRedemption] Redemption failed:',
       expect.any(Error)
     )
-    expect(mockToastAdd).not.toHaveBeenCalled()
+    expect(useToast().toasts).toEqual([])
   })
 
   it('keeps the stash while unauthenticated and redeems via the auth watcher once a session appears', async () => {

@@ -110,7 +110,7 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
       const uploadedPaths = await uploadFiles(files)
 
       if (uploadedPaths.length === 0) {
-        toast.warning('File upload failed')
+        toast.warning(t('toastMessages.fileUploadFailed'))
         return
       }
 

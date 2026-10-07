@@ -1,8 +1,6 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor, within } from '@testing-library/vue'
-import { useClipboard } from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, ref } from 'vue'
 
 import { i18n } from '@/i18n'
 import { useToast } from '@/components/ui/toast/toastStore'
@@ -11,11 +9,7 @@ import { api } from '@/scripts/api'
 import type { ReplyAsset } from '../../../utils/replyAssets'
 import MessageFeedback from './MessageFeedback.vue'
 
-const clipboard = vi.hoisted(() => ({ copy: vi.fn() }))
-
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 vi.mock(import('@/scripts/api'))
 
@@ -23,18 +17,6 @@ vi.mock(import('@/platform/assets/utils/assetPreviewUtil'), () => ({
   isAssetPreviewSupported: () => false,
   findOutputAsset: async () => undefined
 }))
-
-vi.mock(import('@vueuse/core'), { spy: true })
-vi.mocked(useClipboard).mockImplementation(
-  () =>
-    ({
-      copy: clipboard.copy,
-      copyPending: ref(false),
-      copied: ref(false),
-      isSupported: computed(() => true),
-      text: ref('')
-    }) satisfies ReturnType<typeof useClipboard>
-)
 
 const markdownSource = '# Title\n\n**bold** move'
 

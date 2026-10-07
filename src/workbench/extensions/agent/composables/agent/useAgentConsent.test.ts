@@ -30,10 +30,6 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 
 vi.mock(import('@/scripts/api'))
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: { canvas: {}, rootGraph: {} }
-}))
-
 const fetchWithUnifiedRemint = vi.hoisted(() => vi.fn())
 vi.mock(import('@/platform/auth/unified/remintRetry'), () => ({
   attachUnifiedRemintInterceptor: vi.fn(),
@@ -735,7 +731,7 @@ describe('useAgentConsent', () => {
     expect(fetchWithUnifiedRemint).not.toHaveBeenCalled()
     expect(onOpen).not.toHaveBeenCalled()
     expect(reportError).not.toHaveBeenCalled()
-    expect(useToast().error).not.toHaveBeenCalled()
+    expect(useToast().toasts).toEqual([])
     // Accepting the card is only half of the signed-out flow. Consent was
     // never persisted, so reporting it accepted would put a decision the user
     // did not complete into the funnel — but the card half did happen, and

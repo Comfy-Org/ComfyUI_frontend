@@ -48,7 +48,7 @@ describe('useCompositorEditor', () => {
   it('shows a toast and keeps the dialog closed without cached layers', () => {
     mountComposable().openCompositorEditor(node)
 
-    expect(vi.mocked(useToast().info)).toHaveBeenCalledWith(
+    expect(useToast().info).toHaveBeenCalledWith(
       'Layer editor',
       expect.objectContaining({ description: 'Run the workflow first' })
     )
@@ -62,7 +62,7 @@ describe('useCompositorEditor', () => {
 
     mountComposable().openCompositorEditor(node)
 
-    expect(vi.mocked(useToast().info)).toHaveBeenCalledWith(
+    expect(useToast().info).toHaveBeenCalledWith(
       'Layer editor',
       expect.objectContaining({ description: 'Run the workflow first' })
     )
@@ -78,7 +78,7 @@ describe('useCompositorEditor', () => {
 
     mountComposable().openCompositorEditor(node)
 
-    expect(vi.mocked(useToast().info)).not.toHaveBeenCalled()
+    expect(useToast().toasts).toEqual([])
     expect(vi.mocked(useDialogStore().showDialog)).toHaveBeenCalledWith(
       expect.objectContaining({
         key: 'global-layer-editor',

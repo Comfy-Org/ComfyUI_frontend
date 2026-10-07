@@ -64,6 +64,7 @@ import { formatUsdFromCents } from '@/base/credits/comfyCredits'
 import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
 import { useDialogStore } from '@/stores/dialogStore'
+import { getErrorMessage } from '@/utils/errorUtil'
 
 const {
   planName,
@@ -133,7 +134,7 @@ async function onConfirmDowngrade() {
     dialogStore.closeDialog({ key: 'downgrade-remove-members' })
   } catch (error) {
     toast.error(t('subscription.downgrade.failed'), {
-      description: error instanceof Error ? error.message : t('g.unknownError')
+      description: getErrorMessage(error) ?? t('g.unknownError')
     })
   } finally {
     isLoading.value = false

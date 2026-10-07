@@ -79,6 +79,7 @@ beforeEach(() => {
     return harness.sdk
   })
   vi.mocked(useDialogStore().closeDialog).mockImplementation(() => {})
+  vi.spyOn(window, 'open').mockReturnValue(window)
 })
 
 afterEach(() => {
@@ -191,18 +192,18 @@ describe('useBillingSdkStore', () => {
     harness.publish(pendingTopup())
     expect(toast.toasts).toEqual([
       expect.objectContaining({
+        duration: Number.POSITIVE_INFINITY,
         kind: 'loading',
-        title: 'Processing payment — adding credits...',
-        duration: Number.POSITIVE_INFINITY
+        title: 'Processing payment — adding credits...'
       })
     ])
 
     harness.publish(pendingTopup({ actionUrl: 'https://verify.example/op-1' }))
     expect(toast.toasts).toEqual([
       expect.objectContaining({
+        duration: Number.POSITIVE_INFINITY,
         kind: 'warning',
-        title: 'Verify your payment to add your credits',
-        duration: Number.POSITIVE_INFINITY
+        title: 'Verify your payment to add your credits'
       })
     ])
 
@@ -225,10 +226,12 @@ describe('useBillingSdkStore', () => {
     harness.publish(
       pendingSubscription({ actionUrl: 'https://verify.example/op-1' })
     )
-    expect(toast.toasts.at(-1)).toMatchObject({
-      kind: 'warning',
-      title: 'Verify your payment to finish setting up your workspace'
-    })
+    expect(toast.toasts).toEqual([
+      expect.objectContaining({
+        kind: 'warning',
+        title: 'Verify your payment to finish setting up your workspace'
+      })
+    ])
 
     harness.publish(settledOperation('succeeded', 'subscription'))
     expect(toast.toasts).toEqual([])
@@ -684,7 +687,12 @@ describe('useBillingSdkStore subscription commands', () => {
     )
 
     expect(openPage).not.toHaveBeenCalled()
-    expect(useToast().toasts).toHaveLength(1)
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        kind: 'warning',
+        title: 'Verify your payment to finish setting up your workspace'
+      })
+    ])
     expect(store.subscriptionActionUrl).toBe('https://pay.example/op-1')
   })
 
@@ -803,14 +811,18 @@ describe('useBillingSdkStore subscription commands', () => {
       'https://pay.example/op-1',
       '_blank'
     )
-    expect(useToast().toasts).toContainEqual(
+    expect(useToast().toasts).toEqual([
       expect.objectContaining({
         kind: 'warning',
-        title: 'Warning',
+        title: 'Verify your payment to finish setting up your workspace'
+      }),
+      expect.objectContaining({
         description:
-          "Couldn't open the payment page — please allow popups and try again."
+          "Couldn't open the payment page — please allow popups and try again.",
+        kind: 'warning',
+        title: 'Warning'
       })
-    )
+    ])
     expect(store.subscriptionActionUrl).toBe('https://pay.example/op-1')
   })
 
@@ -828,7 +840,12 @@ describe('useBillingSdkStore subscription commands', () => {
 
     expect(harness.sdk.driveChallenge).toHaveBeenCalledExactlyOnceWith('op-1')
     expect(openPage).not.toHaveBeenCalled()
-    expect(useToast().toasts).toHaveLength(1)
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        kind: 'warning',
+        title: 'Verify your payment to finish setting up your workspace'
+      })
+    ])
   })
 
   it('opens the hosted page for an embedded operation that carries no in-page challenge', () => {

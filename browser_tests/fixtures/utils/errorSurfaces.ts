@@ -1,7 +1,7 @@
 import type { Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import { toastSelector } from '@e2e/fixtures/helpers/ToastHelper'
+import { ToastHelper, toastSelector } from '@e2e/fixtures/helpers/ToastHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
 
 interface VisibleError {
@@ -96,7 +96,7 @@ export function errorSurfaces(page: Page): Record<string, Locator> {
     errorOverlay: page.getByTestId(TestIds.dialogs.errorOverlay),
     errorDialog: page.getByTestId(TestIds.dialogs.errorDialog),
     nodeRenderErrors: page.locator('.node-error'),
-    errorToasts: page.locator(toastSelector('error'))
+    errorToasts: new ToastHelper(page).toastErrors
   }
 }
 

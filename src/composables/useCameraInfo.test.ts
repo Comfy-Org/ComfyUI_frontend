@@ -19,7 +19,7 @@ interface ViewportInstance {
   }
 }
 
-const { ViewportMock, instances, warning } = vi.hoisted(() => {
+const { ViewportMock, instances } = vi.hoisted(() => {
   const instances: ViewportInstance[] = []
   const ViewportMock = vi.fn(function (...ctorArgs: unknown[]) {
     const instance: ViewportInstance = {
@@ -38,7 +38,7 @@ const { ViewportMock, instances, warning } = vi.hoisted(() => {
     instances.push(instance)
     return instance
   })
-  return { ViewportMock, instances, warning: vi.fn() }
+  return { ViewportMock, instances }
 })
 
 vi.mock<unknown>(
@@ -47,9 +47,6 @@ vi.mock<unknown>(
     CameraInfoViewport: ViewportMock
   })
 )
-beforeEach(() => {
-  vi.mocked(useToast().warning).mockImplementation(warning)
-})
 
 import { useCameraInfo } from './useCameraInfo'
 
@@ -84,7 +81,6 @@ function nodeRef(node: FakeNode) {
 beforeEach(() => {
   instances.length = 0
   ViewportMock.mockClear()
-  warning.mockClear()
 })
 
 describe('useCameraInfo', () => {
@@ -120,7 +116,13 @@ describe('useCameraInfo', () => {
     const camera = useCameraInfo(nodeRef(makeNode({ mode: 'orbit' })))
 
     expect(() => camera.initialize(document.createElement('div'))).not.toThrow()
-    expect(warning).toHaveBeenCalledOnce()
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        kind: 'warning',
+        title:
+          'Failed to initialize Camera Info viewer. Try reloading the page.'
+      })
+    ])
 
   })
 

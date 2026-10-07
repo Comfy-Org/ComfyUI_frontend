@@ -894,7 +894,7 @@ describe('useTemplateWorkflows', () => {
         { openSource: 'template' }
       )
       expect(fetch).toHaveBeenCalledTimes(1)
-      expect(useToast().loading).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
     }
   )
 
@@ -1269,9 +1269,9 @@ describe('useTemplateWorkflows', () => {
       expect(await first).toBe('not-started')
 
       expect(app.loadGraphData).toHaveBeenCalledTimes(1)
-      expect(
-        useToast().toasts.filter((message) => message.kind === 'error')
-      ).toEqual([])
+      expect(useToast().toasts).not.toContainEqual(
+        expect.objectContaining({ kind: 'error' })
+      )
     }
   )
 
@@ -1323,9 +1323,9 @@ describe('useTemplateWorkflows', () => {
       expect(await first).toBe('not-started')
 
       expect(app.loadGraphData).toHaveBeenCalledTimes(1)
-      expect(
-        useToast().toasts.filter((message) => message.kind === 'error')
-      ).toEqual([])
+      expect(useToast().toasts).not.toContainEqual(
+        expect.objectContaining({ kind: 'error' })
+      )
     }
   )
 

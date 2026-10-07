@@ -97,7 +97,7 @@ describe('useWorkspaceUrlLoader', () => {
 
     expect(mockRouterReplace).not.toHaveBeenCalled()
     expect(useTeamWorkspaceStore().switchWorkspace).not.toHaveBeenCalled()
-    expect(useToast().info).not.toHaveBeenCalled()
+    expect(useToast().toasts).toEqual([])
   })
 
   it('switches into a member workspace named by the link', async () => {
@@ -112,7 +112,7 @@ describe('useWorkspaceUrlLoader', () => {
     expect(useTeamWorkspaceStore().switchWorkspace).toHaveBeenCalledWith(
       'workspace-2'
     )
-    expect(useToast().info).not.toHaveBeenCalled()
+    expect(useToast().toasts).toEqual([])
   })
 
   it('strips the param before switching, so a reload does not re-trigger it', async () => {
@@ -236,7 +236,7 @@ describe('useWorkspaceUrlLoader', () => {
 
     expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
     expect(useTeamWorkspaceStore().switchWorkspace).not.toHaveBeenCalled()
-    expect(useToast().info).not.toHaveBeenCalled()
+    expect(useToast().toasts).toEqual([])
   })
 
   it('restores the link after a login redirect via the preserved query', async () => {

@@ -15,7 +15,6 @@ import { useDialogStore } from '@/stores/dialogStore'
 const refreshMembers = vi.hoisted(() => vi.fn())
 const previewDowngrade = vi.hoisted(() => vi.fn())
 const downgradeToPersonal = vi.hoisted(() => vi.fn())
-const toastAdd = vi.hoisted(() => vi.fn())
 const hasOtherMembers = vi.hoisted(() => ({ value: false }))
 const useDowngradeToPersonal = vi.hoisted(() => vi.fn())
 
@@ -62,14 +61,6 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 }))
 
 vi.mock(import('@/composables/billing/useBillingContext'))
-
-beforeEach(() => {
-  vi.mocked(useToast().success).mockImplementation(toastAdd)
-  vi.mocked(useToast().error).mockImplementation(toastAdd)
-  vi.mocked(useToast().info).mockImplementation(toastAdd)
-  vi.mocked(useToast().warning).mockImplementation(toastAdd)
-  vi.mocked(useToast().loading).mockImplementation(toastAdd)
-})
 
 vi.mock<unknown>(
   import('@/platform/workspace/composables/useDowngradeToPersonal'),
@@ -403,10 +394,13 @@ describe('showDowngradeToPersonalDialog', () => {
 
     await useDialogService().showDowngradeToPersonalDialog(options)
 
-    expect(toastAdd).toHaveBeenCalledWith(
-      expect.any(String),
-      expect.objectContaining({ description: 'Outstanding balance' })
-    )
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        description: 'Outstanding balance',
+        kind: 'error',
+        title: 'subscription.downgrade.failed'
+      })
+    ])
     expect(useDialogStore().showDialog).not.toHaveBeenCalled()
   })
 
@@ -416,10 +410,13 @@ describe('showDowngradeToPersonalDialog', () => {
 
     await useDialogService().showDowngradeToPersonalDialog(options)
 
-    expect(toastAdd).toHaveBeenCalledWith(
-      expect.any(String),
-      expect.objectContaining({ description: 'network' })
-    )
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        description: 'network',
+        kind: 'error',
+        title: 'subscription.downgrade.failed'
+      })
+    ])
     expect(useDialogStore().showDialog).not.toHaveBeenCalled()
     expect(downgradeToPersonal).not.toHaveBeenCalled()
   })
@@ -429,10 +426,13 @@ describe('showDowngradeToPersonalDialog', () => {
 
     await useDialogService().showDowngradeToPersonalDialog(options)
 
-    expect(toastAdd).toHaveBeenCalledWith(
-      expect.any(String),
-      expect.objectContaining({ description: 'Outstanding balance' })
-    )
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        description: 'Outstanding balance',
+        kind: 'error',
+        title: 'subscription.downgrade.failed'
+      })
+    ])
     expect(useDialogStore().showDialog).not.toHaveBeenCalled()
     expect(downgradeToPersonal).not.toHaveBeenCalled()
   })

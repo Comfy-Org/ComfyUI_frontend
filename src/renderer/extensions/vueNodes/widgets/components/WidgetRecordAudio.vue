@@ -117,9 +117,7 @@ const recorder = useAudioRecorder({
     waveform.dispose()
   },
   onError: () => {
-    useToast().warning(
-      t('g.micPermissionDenied') || 'Microphone permission denied'
-    )
+    useToast().warning(t('g.micPermissionDenied'))
   }
 })
 

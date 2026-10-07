@@ -20,6 +20,7 @@ import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { NodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
+import { getErrorMessage } from '@/utils/errorUtil'
 
 type PainterTool = 'brush' | 'eraser'
 
@@ -631,7 +632,7 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
     } catch (e) {
       const err = t('painter.uploadError', {
         status: 0,
-        statusText: e instanceof Error ? e.message : String(e)
+        statusText: getErrorMessage(e) ?? t('g.unknownError')
       })
       toast.warning(err)
       throw new Error(err, { cause: e })
@@ -653,16 +654,17 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
     } catch (e) {
       const err = t('painter.uploadError', {
         status: resp.status,
-        statusText: e instanceof Error ? e.message : String(e)
+        statusText: getErrorMessage(e) ?? t('g.unknownError')
       })
       toast.warning(err)
       throw new Error(err, { cause: e })
     }
 
     if (!data.name) {
-      const detail = `Painter upload succeeded (${resp.status}) but response is missing 'name'`
-      toast.warning(detail)
-      throw new Error(detail)
+      toast.warning(t('painter.uploadMissingName'))
+      throw new Error(
+        `Painter upload succeeded (${resp.status}) but response is missing 'name'`
+      )
     }
 
     const result = `${data.name} [input]`

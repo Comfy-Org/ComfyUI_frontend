@@ -138,6 +138,7 @@ The following table lists ALL 46 store instances in the system as of 2026-01-29:
 | settingStore.ts              | useSettingStore               | Manages application settings                            | Config     |
 | subgraphNavigationStore.ts   | useSubgraphNavigationStore    | Handles subgraph navigation state                       | Navigation |
 | systemStatsStore.ts          | useSystemStatsStore           | Tracks system performance statistics                    | System     |
+| toastStore.ts                | useToast                      | Manages toast notifications                             | UI         |
 | userFileStore.ts             | useUserFileStore              | Manages user file operations                            | Files      |
 | userStore.ts                 | useUserStore                  | Manages user data and preferences                       | User       |
 | versionCompatibilityStore.ts | useVersionCompatibilityStore  | Manages frontend/backend version compatibility warnings | Core       |

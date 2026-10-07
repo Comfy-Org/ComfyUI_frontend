@@ -18,31 +18,13 @@ import type {
 import { useLayerEditorExport } from './useLayerEditorExport'
 import type { LayerEditorSession } from './useLayerEditorSession'
 
-const { writePsd, downloadBlob, toastAdd } = vi.hoisted(() => ({
-  toastAdd: vi.fn(),
+const { writePsd, downloadBlob } = vi.hoisted(() => ({
   writePsd: vi.fn((_psd: unknown) => new ArrayBuffer(4)),
   downloadBlob: vi.fn()
 }))
 
 vi.mock(import('ag-psd'), () => ({ writePsd }))
 vi.mock(import('@/base/common/downloadUtil'), () => ({ downloadBlob }))
-beforeEach(() => {
-  vi.mocked(useToast().success).mockImplementation((...args: unknown[]) =>
-    toastAdd('success', ...args)
-  )
-  vi.mocked(useToast().error).mockImplementation((...args: unknown[]) =>
-    toastAdd('error', ...args)
-  )
-  vi.mocked(useToast().info).mockImplementation((...args: unknown[]) =>
-    toastAdd('info', ...args)
-  )
-  vi.mocked(useToast().warning).mockImplementation((...args: unknown[]) =>
-    toastAdd('warning', ...args)
-  )
-  vi.mocked(useToast().loading).mockImplementation((...args: unknown[]) =>
-    toastAdd('loading', ...args)
-  )
-})
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -221,7 +203,7 @@ describe('useLayerEditorExport', () => {
     expect(blob).toBeInstanceOf(Blob)
     expect(exporting.value).toBe(false)
     expect(session.requestRender).toHaveBeenCalled()
-    expect(vi.mocked(toastAdd)).not.toHaveBeenCalled()
+    expect(useToast().toasts).toEqual([])
   })
 
   it('shows an error toast when writing fails', async () => {
@@ -234,11 +216,12 @@ describe('useLayerEditorExport', () => {
     await exportPsd()
 
     expect(downloadBlob).not.toHaveBeenCalled()
-    expect(toastAdd).toHaveBeenCalledWith(
-      'error',
-      expect.any(String),
-      expect.objectContaining({ description: 'layerEditor.exportPsdFailed' })
-    )
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        description: 'layerEditor.exportPsdFailed',
+        kind: 'error'
+      })
+    ])
     expect(exporting.value).toBe(false)
     expect(session.requestRender).toHaveBeenCalled()
   })

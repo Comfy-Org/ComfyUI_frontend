@@ -53,21 +53,6 @@ function createInvite(
   }
 }
 
-beforeEach(() => {
-  vi.mocked(useToast().success).mockImplementation((...args: unknown[]) =>
-    mockToastAdd('success', ...args)
-  )
-  vi.mocked(useToast().error).mockImplementation((...args: unknown[]) =>
-    mockToastAdd('error', ...args)
-  )
-  vi.mocked(useToast().info).mockImplementation((...args: unknown[]) =>
-    mockToastAdd('info', ...args)
-  )
-  vi.mocked(useToast().warning).mockImplementation((...args: unknown[]) =>
-    mockToastAdd('warning', ...args)
-  )
-})
-
 describe('sortMembers', () => {
   it('places owners before members', () => {
     const owner = createMember({ id: 'o', role: 'owner', name: 'Owner' })
@@ -233,8 +218,6 @@ describe('sortPendingInvites', () => {
     expect(invites).toEqual(original)
   })
 })
-
-const mockToastAdd = vi.fn()
 
 const {
   mockMaxSeats,

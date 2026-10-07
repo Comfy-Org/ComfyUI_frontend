@@ -37,12 +37,16 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { api } from '@/scripts/api'
+import { getErrorMessage } from '@/utils/errorUtil'
+
+const { t } = useI18n()
 
 const modelValue = defineModel<string>()
 
@@ -64,7 +68,9 @@ const uploadFile = async (file: File): Promise<string | null> => {
   })
 
   if (resp.status !== 200) {
-    useToast().warning(`Upload failed: ${resp.status} - ${resp.statusText}`)
+    useToast().warning(
+      t('g.uploadFailed', { reason: `${resp.status} - ${resp.statusText}` })
+    )
     return null
   }
 
@@ -91,7 +97,11 @@ const handleFileUpload = async (event: Event) => {
         modelValue.value = `/api/view?${params.toString()}`
       }
     } catch (error) {
-      useToast().warning(`Upload error: ${String(error)}`)
+      useToast().warning(
+        t('g.uploadFailed', {
+          reason: getErrorMessage(error) ?? t('g.unknownError')
+        })
+      )
     } finally {
       isUploading.value = false
     }

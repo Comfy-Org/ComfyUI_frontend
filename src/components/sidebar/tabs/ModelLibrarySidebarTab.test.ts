@@ -56,25 +56,6 @@ const {
 
 vi.mock(import('@/composables/node/useNodeDragToCanvas'))
 
-const mockToastAdd = vi.hoisted(() => vi.fn())
-beforeEach(() => {
-  vi.mocked(useToast().success).mockImplementation((...args: unknown[]) =>
-    mockToastAdd('success', ...args)
-  )
-  vi.mocked(useToast().error).mockImplementation((...args: unknown[]) =>
-    mockToastAdd('error', ...args)
-  )
-  vi.mocked(useToast().info).mockImplementation((...args: unknown[]) =>
-    mockToastAdd('info', ...args)
-  )
-  vi.mocked(useToast().warning).mockImplementation((...args: unknown[]) =>
-    mockToastAdd('warning', ...args)
-  )
-  vi.mocked(useToast().loading).mockImplementation((...args: unknown[]) =>
-    mockToastAdd('loading', ...args)
-  )
-})
-
 const mockModel = fromPartial<ComfyModelDef>({
   key: 'checkpoints/model.safetensors',
   file_name: 'model.safetensors',
@@ -434,13 +415,12 @@ describe('ModelLibrarySidebarTab', () => {
       await nextTick()
       await nextTick()
 
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        'error',
-        expect.any(String),
+      expect(useToast().toasts).toEqual([
         expect.objectContaining({
-          description: 'sideToolbar.modelLibraryLoadFailed'
+          description: 'sideToolbar.modelLibraryLoadFailed',
+          kind: 'error'
         })
-      )
+      ])
     })
 
     it('hides the load-all button and eager-loads models on mount', async () => {

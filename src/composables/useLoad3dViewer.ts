@@ -550,7 +550,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       persistStandaloneThumbnail(modelUrl)
     } catch (error) {
       console.error('Error loading model in standalone viewer:', error)
-      useToast().warning('Failed to load 3D model')
+      useToast().warning(t('toastMessages.failedToLoadModel'))
     }
   }
 

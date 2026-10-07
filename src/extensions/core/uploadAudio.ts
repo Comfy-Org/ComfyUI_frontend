@@ -22,7 +22,7 @@ import type { DOMWidget } from '@/scripts/domWidget'
 import { useAudioService } from '@/services/audioService'
 import type { NodeLocatorId } from '@/types'
 import { widgetId } from '@/types/widgetId'
-import { toError } from '@/utils/errorUtil'
+import { getErrorMessage } from '@/utils/errorUtil'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 import { api } from '../../scripts/api'
@@ -84,11 +84,17 @@ async function uploadFile(
       }
       return true
     } else {
-      useToast().warning(resp.status + ' - ' + resp.statusText)
+      useToast().warning(
+        t('g.uploadFailed', { reason: `${resp.status} - ${resp.statusText}` })
+      )
       return false
     }
   } catch (error) {
-    useToast().warning(toError(error).message)
+    useToast().warning(
+      t('g.uploadFailed', {
+        reason: getErrorMessage(error) ?? t('g.unknownError')
+      })
+    )
     return false
   }
 }

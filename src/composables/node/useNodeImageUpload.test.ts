@@ -212,6 +212,19 @@ describe('useNodeImageUpload', () => {
     })
   })
 
+  it('shows a localized upload-failed toast when the upload throws', async () => {
+    vi.mocked(api.fetchApi).mockRejectedValueOnce(new Error('Network error'))
+
+    await capturedDragOnDrop([createFile()])
+
+    expect(t).toHaveBeenCalledWith('g.uploadFailed', {
+      reason: 'Network error'
+    })
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({ kind: 'warning', title: 'g.uploadFailed' })
+    ])
+  })
+
   it('resets isUploading even when upload fails', async () => {
     vi.mocked(api.fetchApi).mockRejectedValueOnce(new Error('Network error'))
 

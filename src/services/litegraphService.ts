@@ -78,6 +78,7 @@ import { parseNodeId } from '@/types/nodeId'
 import type { SerializedNodeId } from '@/types/nodeId'
 import { isBlueprintType } from '@/utils/blueprintUtils'
 import { markCoreMediaMenuCallback } from '@/utils/coreMediaMenuActionUtils'
+import { getErrorMessage } from '@/utils/errorUtil'
 import type { WidgetId } from '@/types/widgetId'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import {
@@ -699,7 +700,7 @@ export const useLitegraphService = () => {
             } catch (error) {
               toast.warning(
                 t('toastMessages.errorCopyImage', {
-                  error: error instanceof Error ? error.message : error
+                  error: getErrorMessage(error) ?? t('g.unknownError')
                 })
               )
             }

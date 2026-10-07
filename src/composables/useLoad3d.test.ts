@@ -68,7 +68,6 @@ describe('useLoad3d', () => {
   afterEach(() => scope.stop())
   let mockLoad3d: Partial<Load3d>
   let mockNode: LGraphNode
-  let mockToastStore: ReturnType<typeof useToast>
 
   beforeEach(() => {
     vi.mocked(api.getServerFeature).mockReturnValue(false)
@@ -191,8 +190,6 @@ describe('useLoad3d', () => {
       return this
     })
     vi.mocked(createLoad3d).mockImplementation(() => mockLoad3d as Load3d)
-
-    mockToastStore = useToast()
   })
 
   describe('initialization', () => {
@@ -348,7 +345,7 @@ describe('useLoad3d', () => {
 
       await composable.initializeLoad3d(containerRef)
 
-      expect(mockToastStore.warning).toHaveBeenCalledWith(
+      expect(useToast().warning).toHaveBeenCalledWith(
         'toastMessages.failedToInitializeLoad3dViewer'
       )
     })
@@ -825,7 +822,7 @@ describe('useLoad3d', () => {
 
       await composable.handleExportModel('glb')
 
-      expect(mockToastStore.warning).toHaveBeenCalledWith(
+      expect(useToast().warning).toHaveBeenCalledWith(
         'toastMessages.no3dSceneToExport'
       )
     })
@@ -842,7 +839,7 @@ describe('useLoad3d', () => {
 
       await composable.handleExportModel('glb')
 
-      expect(mockToastStore.warning).toHaveBeenCalledWith(
+      expect(useToast().warning).toHaveBeenCalledWith(
         'toastMessages.failedToExportModel'
       )
     })
@@ -1069,9 +1066,7 @@ describe('useLoad3d', () => {
       await composable.handleModelDrop(file)
 
       expect(mockLoad3d.loadModel).not.toHaveBeenCalled()
-      expect(mockToastStore.warning).toHaveBeenCalledWith(
-        'toastMessages.no3dScene'
-      )
+      expect(useToast().warning).toHaveBeenCalledWith('toastMessages.no3dScene')
     })
   })
 
@@ -1785,7 +1780,7 @@ describe('useLoad3d', () => {
       expect(throwing).toHaveBeenCalledTimes(1)
       expect(after).toHaveBeenCalledTimes(1)
       expect(mockLoad3d.addEventListener).toHaveBeenCalled()
-      expect(mockToastStore.warning).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
       expect(console.error).toHaveBeenCalledWith(
         'Load3d ready callback failed:',
         expect.any(Error)

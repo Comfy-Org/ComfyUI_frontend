@@ -122,6 +122,7 @@ import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { ComfyExtension } from '@/types/comfy'
 import type { ExtensionManager } from '@/types/extensionTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
+import { getErrorMessage } from '@/utils/errorUtil'
 import { normalizePromptError } from '@/utils/executionErrorUtil'
 import { graphToPrompt, unwrapExportedWidgetValue } from '@/utils/executionUtil'
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
@@ -822,7 +823,11 @@ export class ComfyApp {
         }
         useWorkflowService().showPendingWarnings()
       } catch (error: unknown) {
-        useToast().warning(t('toastMessages.dropFileError', { error }))
+        useToast().warning(
+          t('toastMessages.dropFileError', {
+            error: getErrorMessage(error) ?? t('g.unknownError')
+          })
+        )
       }
     })
 
@@ -1017,8 +1022,8 @@ export class ComfyApp {
         useSubgraphService().registerNewSubgraph(subgraph, data)
       } catch (err) {
         console.error('Failed to register subgraph', err)
-        useToast().error('Failed to register subgraph', {
-          description: err instanceof Error ? err.message : String(err)
+        useToast().error(t('toastMessages.failedToRegisterSubgraph'), {
+          description: getErrorMessage(err) ?? t('g.unknownError')
         })
       }
     })

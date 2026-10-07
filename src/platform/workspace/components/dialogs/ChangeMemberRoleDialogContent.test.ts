@@ -10,8 +10,6 @@ import ChangeMemberRoleDialogContent from './ChangeMemberRoleDialogContent.vue'
 
 import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
 
-const { mockToastAdd } = vi.hoisted(() => ({ mockToastAdd: vi.fn() }))
-
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -28,21 +26,6 @@ function renderDialog(targetRole: WorkspaceRole) {
   })
   return { ...result, user }
 }
-
-beforeEach(() => {
-  vi.mocked(useToast().success).mockImplementation((...args: unknown[]) =>
-    mockToastAdd('success', ...args)
-  )
-  vi.mocked(useToast().error).mockImplementation((...args: unknown[]) =>
-    mockToastAdd('error', ...args)
-  )
-  vi.mocked(useToast().info).mockImplementation((...args: unknown[]) =>
-    mockToastAdd('info', ...args)
-  )
-  vi.mocked(useToast().warning).mockImplementation((...args: unknown[]) =>
-    mockToastAdd('warning', ...args)
-  )
-})
 
 beforeEach(() => {
   vi.mocked(useTeamWorkspaceStore().changeMemberRole).mockResolvedValue(
@@ -84,7 +67,12 @@ describe('ChangeMemberRoleDialogContent', () => {
         key: 'change-member-role'
       })
     )
-    expect(vi.mocked(useToast().success)).toHaveBeenCalled()
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        kind: 'success',
+        title: 'workspacePanel.changeRoleDialog.success'
+      })
+    ])
   })
 
   it('shows demote copy and confirms with Demote to member', async () => {
@@ -121,7 +109,14 @@ describe('ChangeMemberRoleDialogContent', () => {
       })
     )
 
-    await waitFor(() => expect(vi.mocked(useToast().error)).toHaveBeenCalled())
+    await waitFor(() =>
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({
+          kind: 'error',
+          title: 'workspacePanel.changeRoleDialog.error'
+        })
+      ])
+    )
     expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
   })
 

@@ -3,34 +3,25 @@ import type { Locator, Page } from '@playwright/test'
 
 type ToastKind = 'error' | 'success' | 'warning' | 'loading'
 
+const TOAST_SELECTOR = '[data-testid="toast"]'
+
 export function toastSelector(kind: ToastKind): string {
-  return `[data-testid="toast"][data-toast-kind="${kind}"]`
+  return `${TOAST_SELECTOR}[data-toast-kind="${kind}"]`
 }
 
 export class ToastHelper {
-  public readonly assertiveAnnouncements: Locator
-  public readonly politeAnnouncements: Locator
   public readonly toastErrors: Locator
   public readonly toastLoadings: Locator
   public readonly toastSuccesses: Locator
   public readonly toastWarnings: Locator
   public readonly visibleToasts: Locator
 
-  constructor(private readonly page: Page) {
-    const toasts = page.getByTestId('toast')
-    this.assertiveAnnouncements = page.getByRole('alert', {
-      name: 'Notification',
-      exact: true
-    })
-    this.politeAnnouncements = page.getByRole('status', {
-      name: 'Notification',
-      exact: true
-    })
+  constructor(page: Page) {
     this.toastErrors = page.locator(toastSelector('error'))
     this.toastLoadings = page.locator(toastSelector('loading'))
     this.toastSuccesses = page.locator(toastSelector('success'))
     this.toastWarnings = page.locator(toastSelector('warning'))
-    this.visibleToasts = toasts.filter({ visible: true })
+    this.visibleToasts = page.locator(TOAST_SELECTOR).filter({ visible: true })
   }
 
   withText(text: string | RegExp): Locator {
@@ -48,13 +39,12 @@ export class ToastHelper {
         .waitFor({ state: 'visible' })
     }
 
-    // Clear all toasts
-    const toastCloseButtons = await this.page.getByTestId('toast-close').all()
-    for (const button of toastCloseButtons) {
-      await button.click()
+    const closeButtons = this.visibleToasts.getByTestId('toast-close')
+    for (let open = await closeButtons.count(); open > 0; open--) {
+      await closeButtons.first().click()
+      await expect(closeButtons).toHaveCount(open - 1)
     }
 
-    // Assert all toasts are closed
     await expect(this.visibleToasts).toHaveCount(0)
   }
 }

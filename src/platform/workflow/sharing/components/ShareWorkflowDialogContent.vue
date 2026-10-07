@@ -211,6 +211,7 @@ import { useShareFlowContext } from '@/platform/workflow/sharing/composables/use
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTelemetry } from '@/platform/telemetry'
 import { appendJsonExt } from '@/utils/formatUtil'
+import { getErrorMessage } from '@/utils/errorUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { onClose } = defineProps<{
@@ -444,7 +445,7 @@ const {
     onError: (error) => {
       console.error('Failed to publish workflow:', error)
       toast.error(t('g.error'), {
-        description: error instanceof Error ? error.message : t('g.error')
+        description: getErrorMessage(error) ?? t('g.error')
       })
     }
   }

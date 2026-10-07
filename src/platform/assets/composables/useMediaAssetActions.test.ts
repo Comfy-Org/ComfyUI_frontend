@@ -627,7 +627,7 @@ describe('useMediaAssetActions', () => {
 
       await actions.exportWorkflow(createMockAsset())
 
-      expect(useToast().success).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
     })
 
     it('shows a success toast on successful export', async () => {
@@ -666,7 +666,7 @@ describe('useMediaAssetActions', () => {
         createMockAsset({ id: 'b' })
       ])
 
-      expect(useToast().success).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
     })
 
     it('shows a success toast for the succeeded subset when some bulk exports are cancelled', async () => {
@@ -1610,17 +1610,10 @@ describe('useMediaAssetActions', () => {
       expect(mockDeleteAsset.mock.invocationCallOrder[0]).toBeLessThan(
         mockSetAssetDeleting.mock.invocationCallOrder[1]
       )
-      expect(useToast().success).toHaveBeenCalledWith(
-        i18n.global.t('mediaAsset.assetDelete.success'),
-        {
-          description: i18n.global.t(
-            'mediaAsset.assetsDeleted',
-            { total: 1 },
-            1
-          ),
-          duration: 2000
-        }
-      )
+      expect(useToast().success).toHaveBeenCalledWith('Deletion successful', {
+        description: i18n.global.t('mediaAsset.assetsDeleted', { total: 1 }, 1),
+        duration: 2000
+      })
 
       unmount()
     })
@@ -2025,17 +2018,10 @@ describe('useMediaAssetActions', () => {
       expect(mockInputAssets.items.map((item) => item.id)).toEqual([
         'asset-503'
       ])
-      expect(useToast().error).toHaveBeenCalledWith(
-        i18n.global.t('mediaAsset.assetDelete.error'),
-        {
-          description: i18n.global.t(
-            'mediaAsset.assetsDeleted',
-            { total: 1 },
-            0
-          ),
-          duration: 5000
-        }
-      )
+      expect(useToast().error).toHaveBeenCalledWith('Items failed to delete', {
+        description: i18n.global.t('mediaAsset.assetsDeleted', { total: 1 }, 0),
+        duration: 5000
+      })
       expect(mockMarkMissingMedia).not.toHaveBeenCalled()
       expect(mockClearWidgetValues).not.toHaveBeenCalled()
 
@@ -2044,7 +2030,7 @@ describe('useMediaAssetActions', () => {
       expect(mockDeleteAsset).toHaveBeenCalledTimes(2)
       expect(mockInputAssets.items).toEqual([])
       expect(useToast().success).toHaveBeenLastCalledWith(
-        i18n.global.t('mediaAsset.assetDelete.success'),
+        'Deletion successful',
         {
           description: i18n.global.t(
             'mediaAsset.assetsDeleted',
@@ -2098,7 +2084,7 @@ describe('useMediaAssetActions', () => {
       )
       expect(mockCaptureCanvasState).toHaveBeenCalledTimes(1)
       expect(useToast().warning).toHaveBeenCalledWith(
-        i18n.global.t('mediaAsset.assetDelete.warning'),
+        'Some items failed to delete',
         {
           description: i18n.global.t(
             'mediaAsset.assetsDeleted',

@@ -472,10 +472,11 @@ properties in methods rather than rebuilding locators.
 - When multiple nodes share a title, disambiguate:
   `vueNodes.getNodeByTitle(name).nth(n)` — strict mode fails on ambiguous
   locators.
-- Never locate a toast by its copy with `getByText`. `Toaster` repeats every
-  toast's text in a screen-reader live region, so strict mode resolves two
-  elements. Use `comfyPage.toast.withText(text)` (or `new ToastHelper(page)`
-  in page-only fixtures) and its kind locators such as `toastErrors`.
+- Never locate a toast by its copy with `getByText` or
+  `getByRole('alert' | 'status').filter({ hasText })`: `Toaster` repeats every
+  toast's text in live regions with those roles. Use
+  `comfyPage.toast.withText(text)` (or `new ToastHelper(page)` in page-only
+  fixtures) and its kind locators such as `toastErrors`.
 
 ### Node references over coordinates
 

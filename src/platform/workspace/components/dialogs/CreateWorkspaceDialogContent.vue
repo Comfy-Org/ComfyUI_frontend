@@ -65,6 +65,7 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogStore } from '@/stores/dialogStore'
+import { getErrorMessage } from '@/utils/errorUtil'
 
 const { onConfirm } = defineProps<{
   onConfirm?: (name: string) => void | Promise<void>
@@ -100,7 +101,7 @@ async function onCreate() {
   } catch (error) {
     console.error('[CreateWorkspaceDialog] Failed to create workspace:', error)
     toast.error(t('workspacePanel.toast.failedToCreateWorkspace'), {
-      description: error instanceof Error ? error.message : t('g.unknownError')
+      description: getErrorMessage(error) ?? t('g.unknownError')
     })
   } finally {
     loading.value = false

@@ -20,22 +20,6 @@ vi.mock(import('@/platform/cloud/oauth/useOAuthPostLoginRedirect'), () => ({
   useOAuthPostLoginRedirect: () => ({ resumeOAuthIfNeeded })
 }))
 
-const toasts = vi.hoisted(() => ({
-  success: vi.fn(),
-  error: vi.fn(),
-  info: vi.fn(),
-  warning: vi.fn(),
-  loading: vi.fn(),
-  custom: vi.fn()
-}))
-beforeEach(() => {
-  vi.mocked(useToast().success).mockImplementation(toasts.success)
-  vi.mocked(useToast().error).mockImplementation(toasts.error)
-  vi.mocked(useToast().info).mockImplementation(toasts.info)
-  vi.mocked(useToast().warning).mockImplementation(toasts.warning)
-  vi.mocked(useToast().loading).mockImplementation(toasts.loading)
-})
-
 const DEFAULT_REDIRECT = { name: 'cloud-user-check' }
 
 function setup() {
@@ -82,9 +66,13 @@ describe('usePostAuthRedirect', () => {
 
     await onAuthSuccess()
 
-    expect(toasts.success).toHaveBeenCalledWith('Login Completed', {
-      duration: 2000
-    })
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        duration: 2000,
+        kind: 'success',
+        title: 'Login Completed'
+      })
+    ])
   })
 
   it('returns a deep-linked user to where they were headed', async () => {
@@ -149,7 +137,7 @@ describe('usePostAuthRedirect', () => {
     await onAuthSuccess()
 
     expect(
-      toasts.error,
+      useToast().error,
       'authError only renders in email-form mode, so a Google/GitHub user would see the failure nowhere at all'
     ).toHaveBeenCalledWith('oauth.consent.sessionErrorToastSummary', {
       description: 'Session expired',

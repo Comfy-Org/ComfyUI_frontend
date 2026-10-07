@@ -12,6 +12,7 @@ import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQuery
 import { reportError } from '@/platform/telemetry/reportError'
 import { useDialogService } from '@/services/dialogService'
 import { useAuthStore } from '@/stores/authStore'
+import { getErrorMessage } from '@/utils/errorUtil'
 
 import { WorkspaceApiError } from '../api/workspaceApi'
 import { MEMBERSHIP_MANAGED_BY_DIRECTORY } from '../api/workspaceApiError'
@@ -172,7 +173,7 @@ export function useInviteUrlLoader() {
       surface: 'workspace'
     })
     toast.error(t('workspace.inviteFailed'), {
-      description: error instanceof Error ? error.message : t('g.unknownError')
+      description: getErrorMessage(error) ?? t('g.unknownError')
     })
   }
 

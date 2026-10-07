@@ -1,22 +1,20 @@
 import { expect } from '@playwright/test'
 
-import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { WorkspaceStore } from '@e2e/types/globals'
 
 import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
 
-const OPEN_AGENT_LABEL = enMessages.agent.entryButton
 const OPEN_STORAGE_KEY = 'Comfy.AgentPanel.open'
 
 test.describe('In-App Agent panel across view modes', { tag: '@cloud' }, () => {
   test('T-16 / PM-653 / FE-1298 keeps a single docked panel root and active workflow in app mode', async ({
+    agentPanel,
     comfyPage
   }) => {
     test.setTimeout(30_000)
 
     const page = comfyPage.page
-    const panelRoot = page.locator('#agent-panel-root')
     const activeWorkflowPath = () =>
       page.evaluate(
         () =>
@@ -27,16 +25,11 @@ test.describe('In-App Agent panel across view modes', { tag: '@cloud' }, () => {
 
     expect(selectedWorkflowPath).toBeTruthy()
 
-    const openButton = page.getByRole('button', {
-      name: OPEN_AGENT_LABEL,
-      exact: true
-    })
-    await expect(openButton).toBeVisible()
-    const agentPanel = new AgentPanel(page)
+    await expect(agentPanel.openButton).toBeVisible()
     await agentPanel.open()
 
-    await expect(panelRoot).toHaveCount(1)
-    await expect(panelRoot).toBeVisible()
+    await expect(agentPanel.root).toHaveCount(1)
+    await expect(agentPanel.root).toBeVisible()
     await expect
       .poll(() =>
         page.evaluate((key) => localStorage.getItem(key), OPEN_STORAGE_KEY)
@@ -50,8 +43,8 @@ test.describe('In-App Agent panel across view modes', { tag: '@cloud' }, () => {
 
     // Enter app mode: the docked panel re-hosts under LinearView.
     await comfyPage.appMode.toggleAppMode()
-    await expect(panelRoot).toHaveCount(1)
-    await expect(panelRoot).toBeVisible()
+    await expect(agentPanel.root).toHaveCount(1)
+    await expect(agentPanel.root).toBeVisible()
     await expect.poll(activeWorkflowPath).toBe(selectedWorkflowPath)
     await expect(agentPanel.dockedPanelShell).toHaveCSS(
       'border-left-width',
@@ -60,8 +53,8 @@ test.describe('In-App Agent panel across view modes', { tag: '@cloud' }, () => {
 
     // Return to graph mode: the docked panel re-hosts under GraphCanvas.
     await comfyPage.appMode.toggleAppMode()
-    await expect(panelRoot).toHaveCount(1)
-    await expect(panelRoot).toBeVisible()
+    await expect(agentPanel.root).toHaveCount(1)
+    await expect(agentPanel.root).toBeVisible()
     await expect.poll(activeWorkflowPath).toBe(selectedWorkflowPath)
     await expect(agentPanel.dockedPanelShell).toHaveCSS(
       'border-left-width',

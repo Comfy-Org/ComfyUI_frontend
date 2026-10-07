@@ -9,6 +9,7 @@ import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
 import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { api } from '@/scripts/api'
+import { getErrorMessage } from '@/utils/errorUtil'
 
 const UPLOAD_TIMEOUT_MS = 120_000
 const BYTES_PER_MB = 1024 * 1024
@@ -106,7 +107,11 @@ export const useNodeImageUpload = (
       if (error instanceof DOMException && error.name === 'TimeoutError') {
         useToast().warning(t('g.uploadTimedOut'))
       } else {
-        useToast().warning(String(error))
+        useToast().warning(
+          t('g.uploadFailed', {
+            reason: getErrorMessage(error) ?? t('g.unknownError')
+          })
+        )
       }
     }
   }

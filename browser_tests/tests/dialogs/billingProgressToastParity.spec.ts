@@ -311,14 +311,11 @@ test.describe('Billing progress toast parity', { tag: '@cloud' }, () => {
 
         await confirmCreatorUpgrade(page)
 
+        const toasts = new ToastHelper(page)
         await expect(
-          new ToastHelper(page).toastWarnings.filter({
-            hasText: SUBSCRIPTION_ACTION_REQUIRED
-          })
+          toasts.toastWarnings.filter({ hasText: SUBSCRIPTION_ACTION_REQUIRED })
         ).toBeVisible()
-        await expect(
-          new ToastHelper(page).withText(SUBSCRIPTION_PROCESSING)
-        ).toBeHidden()
+        await expect(toasts.withText(SUBSCRIPTION_PROCESSING)).toBeHidden()
       })
 
       test('stays quiet after a reload finds the subscribe parked on a payment method', async ({
@@ -340,12 +337,11 @@ test.describe('Billing progress toast parity', { tag: '@cloud' }, () => {
         await firstRead
         await operationRead(page)
 
-        await expect(
-          new ToastHelper(page).withText(SUBSCRIPTION_PROCESSING)
-        ).toHaveCount(0)
-        await expect(
-          new ToastHelper(page).withText(SUBSCRIPTION_ACTION_REQUIRED)
-        ).toHaveCount(0)
+        const toasts = new ToastHelper(page)
+        await expect(toasts.withText(SUBSCRIPTION_PROCESSING)).toHaveCount(0)
+        await expect(toasts.withText(SUBSCRIPTION_ACTION_REQUIRED)).toHaveCount(
+          0
+        )
       })
 
       for (const { parked, operation } of [
@@ -396,18 +392,17 @@ test.describe('Billing progress toast parity', { tag: '@cloud' }, () => {
           }
         })
 
+        const actionRequired = new ToastHelper(page).withText(
+          SUBSCRIPTION_ACTION_REQUIRED
+        )
         await page.goto(APP_URL)
         await waitForCloudApp(page)
-        await expect(
-          new ToastHelper(page).withText(SUBSCRIPTION_ACTION_REQUIRED)
-        ).toBeVisible()
+        await expect(actionRequired).toBeVisible()
 
         await page.reload()
         await waitForCloudApp(page)
 
-        await expect(
-          new ToastHelper(page).withText(SUBSCRIPTION_ACTION_REQUIRED)
-        ).toBeVisible()
+        await expect(actionRequired).toBeVisible()
       })
 
       test('announces a processing top-up and clears it once it settles', async ({
@@ -443,12 +438,11 @@ test.describe('Billing progress toast parity', { tag: '@cloud' }, () => {
         await cancel.open(ACTIVE_STANDARD.renewal_date)
         await cancel.confirmCancel()
 
-        await expect(
-          new ToastHelper(page).withText(/Processing payment/)
-        ).toHaveCount(0)
-        await expect(
-          new ToastHelper(page).withText(SUBSCRIPTION_ACTION_REQUIRED)
-        ).toHaveCount(0)
+        const toasts = new ToastHelper(page)
+        await expect(toasts.withText(/Processing payment/)).toHaveCount(0)
+        await expect(toasts.withText(SUBSCRIPTION_ACTION_REQUIRED)).toHaveCount(
+          0
+        )
       })
     })
   }

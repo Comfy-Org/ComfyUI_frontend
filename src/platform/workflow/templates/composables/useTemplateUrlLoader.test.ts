@@ -146,7 +146,7 @@ describe('useTemplateUrlLoader', () => {
       const { loadTemplateFromUrl } = useTemplateUrlLoader()
       await loadTemplateFromUrl()
 
-      expect(useToast().error).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
     }
   )
 

@@ -2,6 +2,7 @@ import { register } from 'extendable-media-recorder'
 import { connect } from 'extendable-media-recorder-wav-encoder'
 
 import { useToast } from '@/components/ui/toast/toastStore'
+import { t } from '@/i18n'
 import { api } from '@/scripts/api'
 
 export interface AudioRecordingError {
@@ -64,9 +65,9 @@ export const useAudioService = () => {
     })
 
     if (resp.status !== 200) {
-      const err = `Error uploading temp file: ${resp.status} - ${resp.statusText}`
-      useToast().warning(err)
-      throw new Error(err)
+      const reason = `${resp.status} - ${resp.statusText}`
+      useToast().warning(t('g.uploadFailed', { reason }))
+      throw new Error(`Error uploading temp file: ${reason}`)
     }
 
     const tempAudio = await resp.json()

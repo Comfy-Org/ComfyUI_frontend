@@ -262,6 +262,38 @@ https://github.com/user-attachments/assets/5696a89d-4a47-4fcc-9e8c-71e1264943f2
 
 ### Developer APIs
 
+<details id='extension-api-toast-kinds'>
+  <summary>v1.58: Kind-based toast API</summary>
+
+`app.extensionManager.toast` has `success`, `error`, `info`, `warning`, and
+`loading`. Each takes `(title, { description, duration, closable, action })`
+and returns an id for `dismiss(id)`. `dismissAll()` removes every toast.
+
+```js
+const toast = app.extensionManager.toast
+
+toast.info('Loaded!', { description: 'Extension loaded!', duration: 3000 })
+
+const toastId = toast.warning('Model missing', {
+  action: {
+    label: 'Download',
+    onClick: () => {
+      startDownload()
+      toast.dismiss(toastId)
+    }
+  }
+})
+```
+
+A toast stays open until dismissed unless `duration` (ms) is set. Clicking an
+`action` button does not dismiss the toast.
+
+`add()` and `addAlert()` still work but are deprecated. `addAlert(message)` now
+shows `message` as the warning title, like `warning(message)`. `remove()` and
+`removeAll()` were removed; use `dismiss(id)` or `dismissAll()`.
+
+</details>
+
 <details>
   <summary>v1.6.13: prompt/confirm/alert replacements for ComfyUI desktop</summary>
 
@@ -303,7 +335,7 @@ window['app'].extensionManager.dialog
 
 ```js
 // window.alert
-window['app'].extensionManager.toast.info('Test Alert')
+window['app'].extensionManager.toast.addAlert('Test Alert')
 ```
 
 ![image](https://github.com/user-attachments/assets/9b18bdca-76ef-4432-95de-5cd2369684f2)
@@ -464,26 +496,17 @@ app.registerExtension({
 Extensions can call the following API to add toast messages.
 
 ```js
-const toastId = app.extensionManager.toast.info('Loaded!', {
-  description: 'Extension loaded!',
-  duration: 3000,
-  closable: true
+app.extensionManager.toast.add({
+  severity: 'info',
+  summary: 'Loaded!',
+  detail: 'Extension loaded!',
+  life: 3000
 })
-
-app.extensionManager.toast.dismiss(toastId)
 ```
 
-The toast manager provides `success`, `error`, `info`, `warning`, and `loading`
-methods with the same `(title, options?)` signature. Toasts persist when
-`duration` is omitted. Use `dismiss(id)` to remove one toast or `dismissAll()`
-to remove every toast.
-Pass `action: { label, onClick }` to add one button to the toast; `onClick`
-runs on click and does not dismiss the toast by itself.
+Documentation of all supported options can be found here: <https://primevue.org/toast/#api.toast.interfaces.ToastMessageOptions>
 
-The earlier `add({ severity, summary, detail, life })` and `addAlert(message)`
-calls still work but are deprecated. `remove(message)` and `removeAll()` are
-gone; use the id returned by `success`/`error`/`info`/`warning`/`loading` with
-`dismiss(id)`, or `dismissAll()`.
+Deprecated in v1.58 by the [kind-based toast API](#extension-api-toast-kinds).
 
 ![image](https://github.com/user-attachments/assets/de02cd7e-cd81-43d1-a0b0-bccef92ff487)
 

@@ -149,6 +149,7 @@ import {
 } from '@/platform/workflow/sharing/utils/validateFileSize'
 import { useComfyHubProfileGate } from '@/platform/workflow/sharing/composables/useComfyHubProfileGate'
 import type { ComfyHubProfile } from '@/platform/workflow/sharing/schemas/shareSchemas'
+import { getErrorMessage } from '@/utils/errorUtil'
 
 const {
   onProfileCreated,
@@ -206,7 +207,7 @@ async function handleCreate() {
     onProfileCreated(profile)
   } catch (error) {
     toast.error(t('g.error'), {
-      description: error instanceof Error ? error.message : t('g.error')
+      description: getErrorMessage(error) ?? t('g.error')
     })
   } finally {
     isCreating.value = false

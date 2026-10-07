@@ -133,9 +133,12 @@ describe('createExportMenuItems', () => {
     glb.callback()
 
     await vi.waitFor(() =>
-      expect(useToast().warning).toHaveBeenCalledWith(
-        'toastMessages.failedToExportModel'
-      )
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({
+          kind: 'warning',
+          title: 'toastMessages.failedToExportModel'
+        })
+      ])
     )
     expect(t).toHaveBeenCalledWith('toastMessages.failedToExportModel', {
       format: 'GLB'
@@ -144,6 +147,5 @@ describe('createExportMenuItems', () => {
       'Export failed:',
       expect.any(Error)
     )
-    expect(useToast().success).not.toHaveBeenCalled()
   })
 })

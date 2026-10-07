@@ -17,7 +17,6 @@ import TeamWorkspacesDialogContent from './TeamWorkspacesDialogContent.vue'
 const flushPromises = () =>
   new Promise<void>((resolve) => setTimeout(resolve, 0))
 
-const mockToastAdd = vi.fn()
 const mockSwitchWorkspace = vi.fn()
 
 let pinia: Pinia
@@ -116,21 +115,6 @@ function setOwnedWorkspaces() {
 }
 
 beforeEach(() => {
-  vi.mocked(useToast().success).mockImplementation((...args: unknown[]) =>
-    mockToastAdd('success', ...args)
-  )
-  vi.mocked(useToast().error).mockImplementation((...args: unknown[]) =>
-    mockToastAdd('error', ...args)
-  )
-  vi.mocked(useToast().info).mockImplementation((...args: unknown[]) =>
-    mockToastAdd('info', ...args)
-  )
-  vi.mocked(useToast().warning).mockImplementation((...args: unknown[]) =>
-    mockToastAdd('warning', ...args)
-  )
-})
-
-beforeEach(() => {
   vi.mocked(useDialogStore().closeDialog).mockImplementation(() => {})
 })
 
@@ -206,7 +190,7 @@ describe('TeamWorkspacesDialogContent', () => {
 
       expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
       expect(vi.mocked(useToast().error)).toHaveBeenCalledWith(
-        expect.any(String),
+        'workspaceSwitcher.failedToSwitch',
         { description: 'Network error' }
       )
     })
@@ -299,7 +283,7 @@ describe('TeamWorkspacesDialogContent', () => {
       await typeAndCreate(container, user, 'New Team')
 
       expect(vi.mocked(useToast().error)).toHaveBeenCalledWith(
-        expect.any(String),
+        'workspacePanel.toast.failedToCreateWorkspace',
         { description: 'Limit reached' }
       )
       expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
@@ -320,7 +304,7 @@ describe('TeamWorkspacesDialogContent', () => {
 
       expect(workspaceStore.createWorkspace).toHaveBeenCalledWith('New Team')
       expect(vi.mocked(useToast().error)).toHaveBeenCalledWith(
-        expect.any(String),
+        'teamWorkspacesDialog.confirmCallbackFailed',
         { description: 'Setup failed' }
       )
       expect(useDialogStore().closeDialog).toHaveBeenCalledWith({

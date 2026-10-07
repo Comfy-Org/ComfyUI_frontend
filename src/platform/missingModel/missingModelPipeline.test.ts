@@ -65,14 +65,6 @@ const { mockHandles } = vi.hoisted(() => {
           _signal: AbortSignal
         ) => undefined
       ),
-      toast: {
-        success: vi.fn(),
-        error: vi.fn(),
-        info: vi.fn(),
-        warning: vi.fn(),
-        loading: vi.fn(),
-        custom: vi.fn()
-      },
       assetService: {
         shouldUseWidgetAssetPicker: vi.fn()
       },
@@ -117,14 +109,6 @@ vi.mock<unknown>(import('@/platform/missingModel/missingModelScan'), () => ({
     signal: AbortSignal
   ) => mockHandles.verifyAssetSupportedCandidates(candidates, signal)
 }))
-
-beforeEach(() => {
-  vi.mocked(useToast().success).mockImplementation(mockHandles.toast.success)
-  vi.mocked(useToast().error).mockImplementation(mockHandles.toast.error)
-  vi.mocked(useToast().info).mockImplementation(mockHandles.toast.info)
-  vi.mocked(useToast().warning).mockImplementation(mockHandles.toast.warning)
-  vi.mocked(useToast().loading).mockImplementation(mockHandles.toast.loading)
-})
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
@@ -274,7 +258,7 @@ describe('missingModelPipeline', () => {
           }
         )
       } else {
-        expect(useToast().warning).not.toHaveBeenCalled()
+        expect(useToast().toasts).toEqual([])
         expect(reportError).not.toHaveBeenCalled()
       }
     }

@@ -4,7 +4,6 @@ import type { Page } from '@playwright/test'
 import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { workspaceRailAuthFixture as test } from '@e2e/fixtures/workspaceRailAuthFixture'
-import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 
 /**
  * Regression coverage for the 1.51 QA finding: with no payment method saved,
@@ -49,7 +48,7 @@ test.describe('Top-up without a saved payment method', () => {
     await topUpDialog.root.getByRole('button', { name: 'Pay $50.00' }).click()
 
     await expect(
-      new ToastHelper(page).toastErrors.filter({
+      comfyPage.toast.toastErrors.filter({
         hasText: /Add one via Settings → Plan & Credits → Manage billing/
       })
     ).toBeVisible()

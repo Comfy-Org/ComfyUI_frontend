@@ -13,10 +13,6 @@ import InviteMembersForm from './InviteMembersForm.vue'
 
 import type { WorkspacePendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
 
-const { mockToastAdd } = vi.hoisted(() => ({
-  mockToastAdd: vi.fn()
-}))
-
 vi.mock(import('@/composables/billing/useBillingContext'))
 
 vi.mock(import('@/platform/telemetry'))
@@ -68,21 +64,6 @@ function submittedPayloads(
 ): SubmittedPayload[] {
   return (emitted().submitted ?? []) as SubmittedPayload[]
 }
-
-beforeEach(() => {
-  vi.mocked(useToast().success).mockImplementation((...args: unknown[]) =>
-    mockToastAdd('success', ...args)
-  )
-  vi.mocked(useToast().error).mockImplementation((...args: unknown[]) =>
-    mockToastAdd('error', ...args)
-  )
-  vi.mocked(useToast().info).mockImplementation((...args: unknown[]) =>
-    mockToastAdd('info', ...args)
-  )
-  vi.mocked(useToast().warning).mockImplementation((...args: unknown[]) =>
-    mockToastAdd('warning', ...args)
-  )
-})
 
 describe('InviteMembersForm', () => {
   beforeEach(() => {
@@ -240,7 +221,12 @@ describe('InviteMembersForm', () => {
     )
     expect(screen.getByText('fail@x.com')).toBeInTheDocument()
     expect(screen.queryByText('ok@x.com')).not.toBeInTheDocument()
-    expect(vi.mocked(useToast().error)).toHaveBeenCalled()
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        kind: 'error',
+        title: 'workspacePanel.inviteMemberDialog.failedCount'
+      })
+    ])
     expect(emitted().submitted).toBeUndefined()
     expect(useTelemetry()?.trackWorkspaceInviteSent).toHaveBeenCalledWith({
       source: 'post_upgrade_success',
@@ -274,7 +260,12 @@ describe('InviteMembersForm', () => {
     )
     expect(screen.getByText('a@b.com')).toBeInTheDocument()
     expect(screen.getByText('c@d.com')).toBeInTheDocument()
-    expect(vi.mocked(useToast().error)).toHaveBeenCalled()
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        kind: 'error',
+        title: 'workspacePanel.inviteMemberDialog.failedCount'
+      })
+    ])
     expect(emitted().submitted).toBeUndefined()
     expect(useTelemetry()?.trackWorkspaceInviteSent).not.toHaveBeenCalled()
     expect(useBillingContext().fetchStatus).not.toHaveBeenCalled()

@@ -45,6 +45,7 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogStore } from '@/stores/dialogStore'
+import { getErrorMessage } from '@/utils/errorUtil'
 
 const { t } = useI18n()
 const toast = useToast()
@@ -66,7 +67,7 @@ async function onLeave() {
   } catch (error) {
     console.error('[LeaveWorkspaceDialog] Failed to leave workspace:', error)
     toast.error(t('workspacePanel.toast.failedToLeaveWorkspace'), {
-      description: error instanceof Error ? error.message : t('g.unknownError')
+      description: getErrorMessage(error) ?? t('g.unknownError')
     })
   } finally {
     loading.value = false

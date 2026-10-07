@@ -5,7 +5,6 @@ import { useDialogStore } from '@/stores/dialogStore'
 import { SSO_REQUIRED_DIALOG_KEY } from '@/platform/auth/sso/ssoRequiredDialogKey'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { toToastId } from '@/types/toastId'
 import type { User } from 'firebase/auth'
 
 import { storeToRefs } from 'pinia'
@@ -134,8 +133,6 @@ beforeEach(() => {
     return error ? `${String(key)}: ${String(error)}` : String(key)
   })
   stubFirebaseAuthHarness()
-
-  vi.mocked(useToast().error).mockImplementation(() => toToastId(0))
 })
 
 describe('useWorkspaceAuthStore', () => {
@@ -960,7 +957,9 @@ describe('useWorkspaceAuthStore', () => {
 
       expect(token).toBeNull()
       expect(currentWorkspace.value).toBeNull()
-      expect(useToast().error).toHaveBeenCalledTimes(1)
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({ kind: 'error' })
+      ])
     })
 
     it.for([
@@ -996,11 +995,9 @@ describe('useWorkspaceAuthStore', () => {
 
         expect(token).toBeNull()
         expect(currentWorkspace.value).toBeNull()
-        expect(
-          vi
-            .mocked(useToast().error)
-            .mock.calls.map(([, options]) => options?.description)
-        ).toEqual(toasts)
+        expect(useToast().toasts.map(({ description }) => description)).toEqual(
+          toasts
+        )
         expect(useDialogStore().isDialogOpen(SSO_REQUIRED_DIALOG_KEY)).toBe(
           shown
         )
@@ -1109,7 +1106,7 @@ describe('useWorkspaceAuthStore', () => {
 
       expect(token).toBeNull()
       expect(currentWorkspace.value?.id).toBe('workspace-123')
-      expect(useToast().error).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
       expect(
         useTeamWorkspaceStore().forgetRevokedActiveWorkspace
       ).not.toHaveBeenCalled()
@@ -2469,7 +2466,7 @@ describe('useWorkspaceAuthStore', () => {
       const result = await store.remintUnifiedOnce('unified-token-1')
 
       expect(result).toBeNull()
-      expect(useToast().error).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
       expect(unifiedToken.value).toBe('unified-token-1')
     })
 
@@ -2568,7 +2565,7 @@ describe('useWorkspaceAuthStore', () => {
 
       await expect(mintPromise).resolves.toBe(false)
       expect(store.unifiedToken).toBeNull()
-      expect(useToast().error).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
     })
 
     it('coalesces concurrent re-mints and returns the winning token to every caller', async () => {
@@ -2971,11 +2968,9 @@ describe('useWorkspaceAuthStore', () => {
             tags: { failure_code: 'SSO_REQUIRED', retry_count: 0 }
           })
         )
-        expect(
-          vi
-            .mocked(useToast().error)
-            .mock.calls.map(([, options]) => options?.description)
-        ).toEqual(toasts)
+        expect(useToast().toasts.map(({ description }) => description)).toEqual(
+          toasts
+        )
         expect(useDialogStore().isDialogOpen(SSO_REQUIRED_DIALOG_KEY)).toBe(
           shown
         )
@@ -3008,7 +3003,7 @@ describe('useWorkspaceAuthStore', () => {
       await vi.advanceTimersByTimeAsync(expiresInMs - 5 * 60 * 1000)
 
       expect(fetch).toHaveBeenCalledTimes(1)
-      expect(useToast().error).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
     })
 
     it('does not toast on a successful refresh re-mint', async () => {
@@ -3027,7 +3022,7 @@ describe('useWorkspaceAuthStore', () => {
       await store.mintAtLogin()
       await vi.advanceTimersByTimeAsync(expiresInMs - 5 * 60 * 1000)
 
-      expect(useToast().error).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
     })
 
     it('does not toast on a transient refresh failure and keeps the slot', async () => {
@@ -3059,7 +3054,7 @@ describe('useWorkspaceAuthStore', () => {
       const refreshDelay = expiresInMs - 5 * 60 * 1000
       await vi.advanceTimersByTimeAsync(refreshDelay)
 
-      expect(useToast().error).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
       expect(unifiedToken.value).toBe('unified-token-1')
     })
 
@@ -3210,7 +3205,7 @@ describe('useWorkspaceAuthStore', () => {
       await vi.advanceTimersByTimeAsync(60 * 60 * 1000)
 
       expect(fetch).toHaveBeenCalledTimes(5)
-      expect(useToast().error).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
       expect(useTelemetry()?.trackUnifiedAuthRefresh).toHaveBeenLastCalledWith({
         outcome: 'expired',
         retry_count: 3
@@ -3267,7 +3262,7 @@ describe('useWorkspaceAuthStore', () => {
         retry_count: 3
       })
       expect(fetch).toHaveBeenCalledTimes(1)
-      expect(useToast().error).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
       expect(
         unifiedToken.value,
         'a token read failure is not a revocation; the token serves until it expires'
@@ -3312,7 +3307,7 @@ describe('useWorkspaceAuthStore', () => {
 
       await vi.advanceTimersByTimeAsync(expiresInMs - 5 * 60 * 1000)
       expect(fetch).toHaveBeenCalledTimes(1)
-      expect(useToast().error).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
 
       await vi.advanceTimersByTimeAsync(5000)
 
@@ -3420,7 +3415,7 @@ describe('useWorkspaceAuthStore', () => {
       await store.remintUnifiedOnce('unified-token-1')
       await vi.advanceTimersByTimeAsync(60 * 60 * 1000)
 
-      expect(useToast().error).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
     })
   })
 

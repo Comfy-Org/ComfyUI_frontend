@@ -1,4 +1,3 @@
-import { useToast } from '@/components/ui/toast/toastStore'
 import { getActivePinia } from 'pinia'
 
 import { render, screen } from '@testing-library/vue'
@@ -7,7 +6,7 @@ import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
 import { reactive, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 
@@ -20,10 +19,6 @@ function createItem(id: string, name: string): FormDropdownItem {
 }
 
 const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
-
-beforeEach(() => {
-  vi.mocked(useToast().warning).mockImplementation(vi.fn())
-})
 
 vi.mock(import('@/renderer/core/layout/transform/useTransformState'))
 

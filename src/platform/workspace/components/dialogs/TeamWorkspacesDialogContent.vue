@@ -147,6 +147,7 @@ import { useWorkspaceSwitch } from '@/platform/workspace/composables/useWorkspac
 import { useWorkspaceTierLabel } from '@/platform/workspace/composables/useWorkspaceTierLabel'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogStore } from '@/stores/dialogStore'
+import { getErrorMessage } from '@/utils/errorUtil'
 
 const { onConfirm } = defineProps<{
   onConfirm?: (name: string) => void | Promise<void>
@@ -192,7 +193,7 @@ async function handleSwitch(workspaceId: string) {
     dialogStore.closeDialog({ key: DIALOG_KEY })
   } catch (error) {
     toast.error(t('workspaceSwitcher.failedToSwitch'), {
-      description: error instanceof Error ? error.message : t('g.unknownError')
+      description: getErrorMessage(error) ?? t('g.unknownError')
     })
   }
 }
@@ -206,8 +207,7 @@ async function onCreate() {
       await workspaceStore.createWorkspace(name)
     } catch (error) {
       toast.error(t('workspacePanel.toast.failedToCreateWorkspace'), {
-        description:
-          error instanceof Error ? error.message : t('g.unknownError')
+        description: getErrorMessage(error) ?? t('g.unknownError')
       })
       return
     }
@@ -215,8 +215,7 @@ async function onCreate() {
       await onConfirm?.(name)
     } catch (error) {
       toast.error(t('teamWorkspacesDialog.confirmCallbackFailed'), {
-        description:
-          error instanceof Error ? error.message : t('g.unknownError')
+        description: getErrorMessage(error) ?? t('g.unknownError')
       })
     }
     dialogStore.closeDialog({ key: DIALOG_KEY })

@@ -7,8 +7,6 @@ import { createI18n } from 'vue-i18n'
 
 import DowngradeRemoveMembersDialogContent from './DowngradeRemoveMembersDialogContent.vue'
 
-const mockToastAdd = vi.fn()
-
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -56,21 +54,6 @@ const getPhraseInput = () => screen.getByRole('textbox')
 const getChangePlanButton = () =>
   screen.getByRole('button', { name: 'Change plan' })
 const getCancelButton = () => screen.getByRole('button', { name: 'Cancel' })
-
-beforeEach(() => {
-  vi.mocked(useToast().success).mockImplementation((...args: unknown[]) =>
-    mockToastAdd('success', ...args)
-  )
-  vi.mocked(useToast().error).mockImplementation((...args: unknown[]) =>
-    mockToastAdd('error', ...args)
-  )
-  vi.mocked(useToast().info).mockImplementation((...args: unknown[]) =>
-    mockToastAdd('info', ...args)
-  )
-  vi.mocked(useToast().warning).mockImplementation((...args: unknown[]) =>
-    mockToastAdd('warning', ...args)
-  )
-})
 
 beforeEach(() => {
   vi.mocked(useDialogStore().closeDialog).mockImplementation(() => {})
@@ -165,7 +148,13 @@ describe('DowngradeRemoveMembersDialogContent', () => {
     await user.type(getPhraseInput(), 'I understand')
     await user.click(getChangePlanButton())
 
-    expect(vi.mocked(useToast().error)).toHaveBeenCalled()
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        description: 'boom',
+        kind: 'error',
+        title: 'Failed to change plan'
+      })
+    ])
     expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
   })
 
