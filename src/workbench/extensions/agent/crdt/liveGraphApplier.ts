@@ -910,7 +910,7 @@ export class LiveGraphApplier {
       writeWidgetValue(node, widget, value, false)
     )
     try {
-      callback?.(value, this.deps.getCanvas?.() ?? undefined, node)
+      callback?.call(widget, value, this.deps.getCanvas?.() ?? undefined, node)
       node.onWidgetChanged?.(widget.name, value, previous, widget)
       if (!Object.is(widget.value, value)) {
         writeWithoutCallback(() => writeWidgetValue(node, widget, value, false))

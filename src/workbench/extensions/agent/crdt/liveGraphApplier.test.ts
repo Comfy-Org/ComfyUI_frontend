@@ -287,7 +287,9 @@ describe('LiveGraphApplier', () => {
     graph.add(host)
     const hostWidget = host.widgets[0]
     const originalCallback = hostWidget.callback
-    const callback = vi.fn((value: WidgetValue) => {
+    const callbackReceivers: unknown[] = []
+    const callback = vi.fn(function (this: unknown, value: WidgetValue) {
+      callbackReceivers.push(this)
       originalCallback?.(value, undefined, host)
       hostWidget.value = 30
       queueMicrotask(() => {
@@ -342,6 +344,7 @@ describe('LiveGraphApplier', () => {
     expect(host.properties.steps).toBe(99)
     expect(callback).toHaveBeenCalledTimes(1)
     expect(callback).toHaveBeenCalledWith(35, undefined, host)
+    expect(callbackReceivers).toEqual([hostWidget])
     expect(onWidgetChanged).toHaveBeenCalledWith('steps', 35, 20, hostWidget)
     expect(intents).toContainEqual({
       source: 'agent-remote',
