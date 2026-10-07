@@ -35,7 +35,7 @@ export function useEditKeybindingDialog() {
       keybindingStore
         .getDefaultKeybindingsByCommandId(options.commandId)
         .at(0) ??
-      keybindingStore.getKeybindingByCommandId(options.commandId)
+      keybindingStore.getKeybindingsByCommandId(options.commandId).at(0)
     const dialogState = reactive<EditKeybindingDialogState>({
       commandId: options.commandId,
       newCombo: options.currentCombo,

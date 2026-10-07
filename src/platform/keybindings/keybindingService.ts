@@ -1,3 +1,5 @@
+import { fromZodError } from 'zod-validation-error'
+
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCommandStore } from '@/stores/commandStore'
@@ -9,6 +11,7 @@ import { consultEscapeOverride } from './escapeOverride'
 import { KeyComboImpl } from './keyCombo'
 import { KeybindingImpl } from './keybinding'
 import { useKeybindingStore } from './keybindingStore'
+import { zKeybinding } from './types'
 
 export function useKeybindingService() {
   const keybindingStore = useKeybindingStore()
@@ -146,23 +149,38 @@ export function useKeybindingService() {
     }
   }
 
+  function storedKeybindings(
+    key: 'Comfy.Keybinding.UnsetBindings' | 'Comfy.Keybinding.NewBindings'
+  ): KeybindingImpl[] {
+    return settingStore.get(key).flatMap((stored) => {
+      const parsed = zKeybinding.safeParse(stored)
+      if (parsed.success) return [new KeybindingImpl(parsed.data)]
+      console.warn(
+        `Skipping invalid stored keybinding: ${fromZodError(parsed.error).message}`
+      )
+      return []
+    })
+  }
+
   function registerUserKeybindings() {
-    const unsetBindings = settingStore.get('Comfy.Keybinding.UnsetBindings')
-    for (const keybinding of unsetBindings) {
+    for (const keybinding of storedKeybindings(
+      'Comfy.Keybinding.UnsetBindings'
+    )) {
       if (!commandStore.isRegistered(keybinding.commandId)) {
         continue
       }
-      keybindingStore.unsetKeybinding(new KeybindingImpl(keybinding))
+      keybindingStore.unsetKeybinding(keybinding)
     }
-    const newBindings = settingStore.get('Comfy.Keybinding.NewBindings')
-    for (const keybinding of newBindings) {
+    for (const keybinding of storedKeybindings(
+      'Comfy.Keybinding.NewBindings'
+    )) {
       if (
         isCloud &&
         keybinding.commandId === 'Workspace.ToggleBottomPanelTab.logs-terminal'
       ) {
         continue
       }
-      keybindingStore.addUserKeybinding(new KeybindingImpl(keybinding))
+      keybindingStore.addUserKeybinding(keybinding)
     }
   }
 

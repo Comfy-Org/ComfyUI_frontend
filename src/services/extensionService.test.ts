@@ -230,6 +230,18 @@ describe('registerExtension keybindings', () => {
     expect(contextKeys.set('Test.Keys.wasdMode', true)).toBe(true)
   })
 
+  it.for(['My Extension', '@scope/pkg', '3d-viewer'])(
+    'registers context keys for an extension named "%s"',
+    (name) => {
+      useExtensionService().registerExtension({
+        name,
+        contextKeys: ['ready']
+      })
+
+      expect(useContextKeyStore().ownerOf(`${name}.ready`)).toBe(name)
+    }
+  )
+
   it('rejects contextKeys that are not a list of names', () => {
     const toast = vi.spyOn(useToastStore(), 'add')
     const extension: ComfyExtension = {

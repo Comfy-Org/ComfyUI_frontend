@@ -118,6 +118,7 @@
               :key-combo="binding.combo"
               :is-modified="command.isModified"
             />
+            <KeybindingScope :binding="binding" />
           </div>
           <div class="flex flex-row">
             <Button
@@ -158,6 +159,7 @@ import type { ComfyCommandImpl } from '@/stores/commandStore'
 
 import KeybindingList from './KeybindingList.vue'
 import KeyComboDisplay from './KeyComboDisplay.vue'
+import KeybindingScope from './KeybindingScope.vue'
 
 const { command, expanded, selected } = defineProps<{
   command: Pick<ComfyCommandImpl, 'id' | 'source'> & {

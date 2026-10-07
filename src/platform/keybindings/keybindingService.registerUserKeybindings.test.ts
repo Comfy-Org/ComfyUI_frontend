@@ -130,4 +130,27 @@ describe('keybindingService - registerUserKeybindings', () => {
       ]
     })
   })
+
+  it('skips stored bindings that fail validation and keeps the rest', () => {
+    useCommandStore().registerCommands([
+      { id: 'Comfy.Test.Valid', function: vi.fn() },
+      { id: 'Comfy.Test.BadWhen', function: vi.fn() }
+    ])
+    useSettingStore().settingValues['Comfy.Keybinding.NewBindings'] = [
+      { commandId: 'Comfy.Test.Valid', combo: { key: 'v', ctrl: true } },
+      {
+        commandId: 'Comfy.Test.BadWhen',
+        combo: { key: 'b', ctrl: true },
+        when: 'a || b'
+      }
+    ]
+
+    useKeybindingService().registerUserKeybindings()
+
+    expect(
+      useKeybindingStore()
+        .getUserKeybindings()
+        .map(({ commandId }) => commandId)
+    ).toEqual(['Comfy.Test.Valid'])
+  })
 })

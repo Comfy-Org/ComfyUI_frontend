@@ -671,6 +671,48 @@ describe('useKeybindingStore', () => {
       expect(store.isCommandKeybindingModified('test.undo')).toBe(false)
     })
 
+    it('overwrites a user binding with a default registered after it', () => {
+      const store = useKeybindingStore()
+      const userBinding = new KeybindingImpl({
+        commandId: 'test.save',
+        combo: { key: 'z', ctrl: true }
+      })
+      store.addUserKeybinding(userBinding)
+      store.addDefaultKeybinding(workspaceUndo())
+
+      store.addUserKeybinding(workspaceUndo())
+
+      expect(store.getUserKeybindings()).toEqual([])
+      expect(store.keybindings).toEqual([workspaceUndo()])
+      expect(store.isCommandKeybindingModified('test.undo')).toBe(false)
+    })
+
+    it('advertises only the binding that fires outside any dialog', () => {
+      const store = useKeybindingStore()
+      store.addDefaultKeybinding(
+        new KeybindingImpl({
+          commandId: 'test.undo',
+          combo: { key: 'u', ctrl: true },
+          dialogKey: 'global-mask-editor'
+        })
+      )
+      store.addDefaultKeybinding(
+        new KeybindingImpl({
+          commandId: 'test.undo',
+          combo: { key: 'y', ctrl: true },
+          when: 'test.wasdMode'
+        })
+      )
+
+      expect(store.getKeybindingByCommandId('test.undo')).toBeUndefined()
+
+      store.addDefaultKeybinding(workspaceUndo())
+
+      expect(store.getKeybindingByCommandId('test.undo')).toEqual(
+        workspaceUndo()
+      )
+    })
+
     it('reclaims the combo when resetting a command whose default a user binding took', () => {
       const store = useKeybindingStore()
       store.addDefaultKeybinding(workspaceUndo())

@@ -42,7 +42,24 @@ describe('useContextKeyStore', () => {
     const store = useContextKeyStore()
     vi.spyOn(console, 'warn').mockImplementation(() => {})
 
-    expect(store.register('has space', 'a')).toBe(false)
-    expect(store.register('1leading', 'a')).toBe(false)
+    expect(store.register('a && b', 'a')).toBe(false)
+    expect(store.register('!negated', 'a')).toBe(false)
+    expect(store.register('a == b', 'a')).toBe(false)
+  })
+
+  it('only lets extensions write true or false to keys core does not own', () => {
+    const store = useContextKeyStore()
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    store.register('ext.wasdMode', 'ext')
+
+    for (const value of [undefined, null, 0, 'yes']) {
+      expect(store.setFromExtension('ext.wasdMode', value)).toBe(false)
+    }
+    expect(store.snapshot()['ext.wasdMode']).toBe(false)
+    expect(store.setFromExtension('modalOpen', true)).toBe(false)
+    expect(store.snapshot().modalOpen).toBe(false)
+
+    expect(store.setFromExtension('ext.wasdMode', true)).toBe(true)
+    expect(store.snapshot()['ext.wasdMode']).toBe(true)
   })
 })

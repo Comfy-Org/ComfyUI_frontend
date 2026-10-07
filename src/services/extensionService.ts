@@ -15,7 +15,6 @@ import { useContextKeyStore } from '@/platform/keybindings/contextKeyStore'
 import { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { zKeybinding } from '@/platform/keybindings/types'
-import { parseWhenClause } from '@/platform/keybindings/whenClause'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
@@ -182,15 +181,6 @@ export const useExtensionService = () => {
         toastErrorHandler(
           new Error(
             `${t('g.invalidExtensionKeybinding', { name: extension.name })}: ${fromZodError(parsed.error).message}`
-          )
-        )
-        return
-      }
-      const when = parsed.data.when && parseWhenClause(parsed.data.when)
-      if (when && !when.success) {
-        toastErrorHandler(
-          new Error(
-            `${t('g.invalidExtensionKeybinding', { name: extension.name })}: ${when.error}`
           )
         )
         return

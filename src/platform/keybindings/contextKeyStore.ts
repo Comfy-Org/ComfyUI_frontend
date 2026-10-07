@@ -1,14 +1,14 @@
 import { defineStore } from 'pinia'
 import { shallowRef } from 'vue'
 
+import { isContextKeyName } from './whenClause'
+
 export type ContextSnapshot = Readonly<Record<string, boolean>>
 
 /** Derived by the dispatcher on every keydown rather than set by anyone. */
 const BUILT_IN_CONTEXT_KEYS = ['modalOpen', 'textInputFocus']
 
-const CONTEXT_KEY_PATTERN = /^[A-Za-z_][\w.-]*$/
-
-export const CORE_CONTEXT_KEY_OWNER = 'core'
+const CORE_CONTEXT_KEY_OWNER = 'core'
 
 export const useContextKeyStore = defineStore('contextKey', () => {
   const values = shallowRef<Record<string, boolean>>(
@@ -19,7 +19,7 @@ export const useContextKeyStore = defineStore('contextKey', () => {
   )
 
   function register(name: string, owner: string): boolean {
-    if (!CONTEXT_KEY_PATTERN.test(name)) {
+    if (!isContextKeyName(name)) {
       console.warn(`Context key "${name}" is not a valid identifier`)
       return false
     }
@@ -47,6 +47,18 @@ export const useContextKeyStore = defineStore('contextKey', () => {
     return true
   }
 
+  function setFromExtension(name: string, value: unknown): boolean {
+    if (owners.get(name) === CORE_CONTEXT_KEY_OWNER) {
+      console.warn(`Context key "${name}" is owned by core`)
+      return false
+    }
+    if (typeof value !== 'boolean') {
+      console.warn(`Context key "${name}" must be set to true or false`)
+      return false
+    }
+    return set(name, value)
+  }
+
   function ownerOf(name: string): string | undefined {
     return owners.get(name)
   }
@@ -55,5 +67,5 @@ export const useContextKeyStore = defineStore('contextKey', () => {
     return values.value
   }
 
-  return { register, set, ownerOf, snapshot }
+  return { register, set, setFromExtension, ownerOf, snapshot }
 })

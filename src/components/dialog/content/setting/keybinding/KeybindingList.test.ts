@@ -14,7 +14,9 @@ const i18n = createI18n({
       g: {
         nMoreKeybindings: '+ {count} more',
         nMoreKeybindingsCompact: '+ {count}',
-        keybindingListAriaLabel: 'Keybindings: {combos}'
+        keybindingListAriaLabel: 'Keybindings: {combos}',
+        keybindingInDialog: 'in {dialog}',
+        keybindingWhen: 'when {when}'
       }
     }
   }
@@ -114,5 +116,28 @@ describe('KeybindingList', () => {
     expect(ariaText).toContain('A')
     expect(ariaText).toContain('Shift')
     expect(ariaText).toContain('B')
+  })
+
+  it('labels a single binding with the dialog and clause it is scoped to', () => {
+    renderList({
+      keybindings: [
+        new KeybindingImpl({
+          commandId: 'test.cmd',
+          combo: { key: 'z', ctrl: true },
+          dialogKey: 'global-mask-editor',
+          when: 'ext.wasdMode'
+        })
+      ]
+    })
+
+    expect(screen.getByTestId('keybinding-scope')).toHaveTextContent(
+      'in global-mask-editor, when ext.wasdMode'
+    )
+  })
+
+  it('shows no scope label for a binding that fires anywhere', () => {
+    renderList({ keybindings: [makeKeybinding('A', true)] })
+
+    expect(screen.queryByTestId('keybinding-scope')).not.toBeInTheDocument()
   })
 })
