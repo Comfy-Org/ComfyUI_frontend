@@ -1256,6 +1256,28 @@ describe('FullPageCheckoutView outcomes after Pay', () => {
     expect(fake.subscribe).toHaveBeenCalledOnce()
   })
 
+  it("keeps the plan its own Pay quoted when the receipt's plan carries no tier or price", async () => {
+    await payReady({
+      subscribe: {
+        status: 'ok',
+        value: {
+          phase: 'succeeded',
+          operation: {
+            ...succeededOperation('op_mine'),
+            phase: 'succeeded',
+            receipt: { plan: { slug: 'creator_monthly', duration: 'MONTHLY' } }
+          }
+        }
+      }
+    })
+
+    form.emit('confirm', 'ctoken_1')
+
+    expect(await screen.findByTestId('checkout-ending-plan')).toHaveTextContent(
+      'Creator$28.00 USD / mo'
+    )
+  })
+
   describe('Close', () => {
     const SETTLED: FakeBillingClientOptions = {
       subscribe: {
@@ -1648,6 +1670,8 @@ describe('FullPageCheckoutView mount reconciliation', () => {
 
   const summaryColumn = () =>
     screen.getByRole('region', { name: 'Order summary' })
+  const shownText = (element: HTMLElement) =>
+    element.textContent.replace(/\s+/g, ' ').trim()
 
   type ServerPlan = NonNullable<BillingOperationReceipt['plan']>
 
@@ -1660,8 +1684,7 @@ describe('FullPageCheckoutView mount reconciliation', () => {
   it.for<{
     name: string
     plan: ServerPlan
-    shows: readonly string[]
-    hides: readonly string[]
+    summary: string
   }>([
     {
       name: 'its own plan and monthly rate, never the link plan',
@@ -1672,8 +1695,7 @@ describe('FullPageCheckoutView mount reconciliation', () => {
         price_cents: 66_500,
         currency: 'usd'
       },
-      shows: ['Team Monthly', '$665.00', 'USD / mo'],
-      hides: ['Creator', '$28', 'Total due today']
+      summary: 'Team Monthly$665.00USD / mo'
     },
     {
       name: 'the per-month figure the server gives an annual plan',
@@ -1685,31 +1707,24 @@ describe('FullPageCheckoutView mount reconciliation', () => {
         monthly_price_cents: 4_000,
         currency: 'usd'
       },
-      shows: ['Pro Yearly', '$40.00', 'USD / mo'],
-      hides: ['$480', 'Creator', 'Total due today']
+      summary: 'Pro Yearly$40.00USD / mo'
     },
     {
       name: 'no name or price where the server describes neither',
       plan: { slug: 'team_seats_legacy', duration: 'MONTHLY' },
-      shows: [],
-      hides: ['Team', 'Creator', '$', 'Total due today']
+      summary: ''
     }
-  ])(
-    'summarizes a recovered payment with $name',
-    async ({ plan, shows, hides }) => {
-      await renderCheckout({
-        recover: {
-          status: 'ok',
-          value: recoveredOn(plan, 'op_recovered')
-        }
-      })
+  ])('summarizes a recovered payment with $name', async ({ plan, summary }) => {
+    await renderCheckout({
+      recover: {
+        status: 'ok',
+        value: recoveredOn(plan, 'op_recovered')
+      }
+    })
 
-      await waitingStatus()
-      const summary = summaryColumn()
-      for (const text of shows) expect(summary).toHaveTextContent(text)
-      for (const text of hides) expect(summary).not.toHaveTextContent(text)
-    }
-  )
+    await waitingStatus()
+    expect(shownText(summaryColumn())).toBe(summary)
+  })
 
   it("ends a recovered payment on the plan the server says it bought, not the link's", async () => {
     const TEAM_MONTHLY = {

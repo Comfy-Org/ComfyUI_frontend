@@ -860,14 +860,12 @@ describe('CheckoutView', () => {
     it.for<{
       name: string
       plan: ServerPlan
-      shows: readonly string[]
-      hides: readonly string[]
+      summary: string
     }>([
       {
         name: 'its own plan and monthly rate',
         plan: TEAM_MONTHLY,
-        shows: ['Team Monthly', '$665.00', 'USD / mo'],
-        hides: ['Creator', '$28', 'Total due today']
+        summary: 'Team Monthly$665.00USD / mo'
       },
       {
         name: 'the per-month figure the server gives an annual plan',
@@ -879,24 +877,24 @@ describe('CheckoutView', () => {
           monthly_price_cents: 4_000,
           currency: 'usd'
         },
-        shows: ['Pro Yearly', '$40.00', 'USD / mo'],
-        hides: ['$480', 'Creator', 'Total due today']
+        summary: 'Pro Yearly$40.00USD / mo'
       },
       {
         name: 'no name or price where the server describes neither',
         plan: { slug: 'team_seats_legacy', duration: 'MONTHLY' },
-        shows: [],
-        hides: ['Team', 'Creator', '$', 'Total due today']
+        summary: ''
       }
-    ])('summarizes it with $name', async ({ plan, shows, hides }) => {
+    ])('summarizes it with $name', async ({ plan, summary }) => {
       await renderCheckout(CHECKOUT_PATH, {
         recover: { status: 'ok', value: recoveredOn(plan) }
       })
 
-      const summary = await screen.findByTestId('checkout-operation-plan')
-      for (const text of shows) expect(summary).toHaveTextContent(text)
-      for (const text of hides)
-        expect(screen.getByRole('main')).not.toHaveTextContent(text)
+      const shown = await screen.findByTestId('checkout-operation-plan')
+
+      expect(shown.textContent.replace(/\s+/g, ' ').trim()).toBe(summary)
+      expect(screen.getByRole('main')).not.toHaveTextContent(
+        /Creator|\$28|Total due today/
+      )
     })
 
     it("ends on the plan the server says it bought, not the link's", async () => {

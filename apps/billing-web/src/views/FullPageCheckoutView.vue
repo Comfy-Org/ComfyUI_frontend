@@ -137,14 +137,15 @@ const recoveredPlan = computed(() => {
 
 /**
  * The plan a settled payment bought, as the server reports it for the
- * operation. Only this page's own Pay, settled without that report, names the
- * plan its quote priced.
+ * operation. Only this page's own Pay, settled without a report that names or
+ * prices the plan, names the plan its quote priced.
  */
 const endingPlan = computed<EndingPlan | undefined>(() => {
   const current = page.value
   if (current.kind !== 'terminal') return undefined
   const reported = operationPlanOf(current.operation)
-  if (reported) return operationPlanLabel(reported, ledgerContext.value)
+  const label = reported && operationPlanLabel(reported, ledgerContext.value)
+  if (label) return label
   if (current.attribution !== 'started') return undefined
   const quoted = current.quote ?? preview.value
   return quoted && quotedPlanLabel(quoted)
