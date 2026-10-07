@@ -8,6 +8,7 @@ import {
   resolveActivePromotedWidgetConsumers
 } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
+import { assetResponseSchema } from '@/platform/assets/schemas/assetSchema'
 import { isComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -202,10 +203,12 @@ export async function verifyMediaCandidates(
       return false
 
     if (!assetsEnabled) return undefined
+
     const query = encodeParams({ limit: 1, hash: name })
     const resp = await api.fetchApi(`/assets?${query}`, { signal })
-    const { assets } = await resp.json()
-    return !assets.length
+    const json = await resp.json().catch(() => {})
+    const parseResult = assetResponseSchema.safeParse(json)
+    return parseResult.success ? !parseResult.data.assets.length : undefined
   }
   const results = await Promise.allSettled(
     Object.entries(groupBy(pending, (p) => p.name)).map(
