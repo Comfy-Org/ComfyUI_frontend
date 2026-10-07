@@ -7,9 +7,9 @@ import { createExtensionToastManager } from './extensionToastManager'
 
 describe('createExtensionToastManager', () => {
   it.for<{
-    name: string
-    message: ToastMessageOptions
     expected: Record<string, unknown>
+    message: ToastMessageOptions
+    name: string
   }>([
     {
       name: 'maps warn severity, summary, detail and life',

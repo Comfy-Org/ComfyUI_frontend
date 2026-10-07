@@ -436,9 +436,9 @@ function findReplacementPlaceholders(
 }
 
 interface ReplacementResult {
-  replacedTypes: string[]
-  failedTypes: Set<string>
   anyNodeReplaced: boolean
+  failedTypes: Set<string>
+  replacedTypes: string[]
 }
 
 export function useNodeReplacement() {

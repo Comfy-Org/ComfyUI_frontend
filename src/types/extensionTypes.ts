@@ -54,29 +54,29 @@ export type BottomPanelExtension =
  * @deprecated Use `toast.success/error/info/warning(title, options)`.
  */
 export interface ToastMessageOptions {
+  closable?: boolean
+  detail?: string
+  life?: number
   severity?: 'success' | 'info' | 'warn' | 'error' | 'secondary' | 'contrast'
   summary?: string
-  detail?: string
-  closable?: boolean
-  life?: number
 }
 
 export type ToastManager = {
-  success(title: string, options?: ToastOptions): ToastId
-  error(title: string, options?: ToastOptions): ToastId
-  info(title: string, options?: ToastOptions): ToastId
-  warning(title: string, options?: ToastOptions): ToastId
-  loading(title: string, options?: ToastOptions): ToastId
-  dismiss(id: ToastId): void
-  dismissAll(): void
   /** @deprecated Use `success/error/info/warning`. */
   add(message: ToastMessageOptions): void
+  /** @deprecated Use `warning(title, { description })`. */
+  addAlert(message: string): void
+  dismiss(id: ToastId): void
+  dismissAll(): void
+  error(title: string, options?: ToastOptions): ToastId
+  info(title: string, options?: ToastOptions): ToastId
+  loading(title: string, options?: ToastOptions): ToastId
   /** @deprecated Use `dismiss(id)`. */
   remove(message: ToastMessageOptions): void
   /** @deprecated Use `dismissAll()`. */
   removeAll(): void
-  /** @deprecated Use `warning(title, { description })`. */
-  addAlert(message: string): void
+  success(title: string, options?: ToastOptions): ToastId
+  warning(title: string, options?: ToastOptions): ToastId
 }
 
 export interface ExtensionManager {

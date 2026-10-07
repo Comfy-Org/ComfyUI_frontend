@@ -8,29 +8,29 @@ export function toastSelector(kind: ToastKind): string {
 }
 
 export class ToastHelper {
-  public readonly visibleToasts: Locator
+  public readonly assertiveAnnouncements: Locator
+  public readonly politeAnnouncements: Locator
   public readonly toastErrors: Locator
+  public readonly toastLoadings: Locator
   public readonly toastSuccesses: Locator
   public readonly toastWarnings: Locator
-  public readonly toastLoadings: Locator
-  public readonly politeAnnouncements: Locator
-  public readonly assertiveAnnouncements: Locator
+  public readonly visibleToasts: Locator
 
   constructor(private readonly page: Page) {
     const toasts = page.getByTestId('toast')
-    this.visibleToasts = toasts.filter({ visible: true })
-    this.toastErrors = page.locator(toastSelector('error'))
-    this.toastSuccesses = page.locator(toastSelector('success'))
-    this.toastWarnings = page.locator(toastSelector('warning'))
-    this.toastLoadings = page.locator(toastSelector('loading'))
-    this.politeAnnouncements = page.getByRole('status', {
-      name: 'Notification',
-      exact: true
-    })
     this.assertiveAnnouncements = page.getByRole('alert', {
       name: 'Notification',
       exact: true
     })
+    this.politeAnnouncements = page.getByRole('status', {
+      name: 'Notification',
+      exact: true
+    })
+    this.toastErrors = page.locator(toastSelector('error'))
+    this.toastLoadings = page.locator(toastSelector('loading'))
+    this.toastSuccesses = page.locator(toastSelector('success'))
+    this.toastWarnings = page.locator(toastSelector('warning'))
+    this.visibleToasts = toasts.filter({ visible: true })
   }
 
   withText(text: string | RegExp): Locator {

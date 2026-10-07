@@ -1,9 +1,9 @@
 <script lang="ts">
 export interface PaymentRecoveryToastProps {
-  title: string
-  description: string
   actionLabel: string
+  description: string
   onAction: () => void
+  title: string
 }
 </script>
 
