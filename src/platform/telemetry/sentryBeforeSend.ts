@@ -39,5 +39,7 @@ export function sentryBeforeSend(
   hint: EventHint
 ): ErrorEvent | null {
   const kept = sentryThirdPartyErrorFilter(event, hint)
-  return kept && groupWorkspaceApiError(addVueDirectiveDiagnostics(kept, hint), hint)
+  return (
+    kept && groupWorkspaceApiError(addVueDirectiveDiagnostics(kept, hint), hint)
+  )
 }
