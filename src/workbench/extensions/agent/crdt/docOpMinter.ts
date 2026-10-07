@@ -33,7 +33,6 @@ import { reportError } from '@/platform/telemetry/reportError'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { RootGraphId } from '@/types/graphScopeId'
 import type { NodeId } from '@/types/nodeId'
-import type { WidgetValue } from '@/types/simplifiedWidget'
 import { widgetId } from '@/types/widgetId'
 import type { WidgetState } from '@/types/widgetState'
 import {
@@ -197,15 +196,12 @@ function isValueWidgetWrite(
  * (PM-1995). A host nested inside another definition still takes the interior
  * route below and is still refused.
  *
- * `value_index` indexes the DOCUMENT's array, so it is resolved against the
- * document's own widget-backed input order rather than the live one, which
- * drifts from it (`reorderSubgraphInputsByWidgetOrder` permutes the live host
- * without minting anything). A name the document does not carry fails closed
- * — the named op is minted and refused as before, rather than landing on
- * whatever register sits at that index. The live order stands in only while
- * the document has no such node yet, exactly as `docInputIndex` does for a
- * link's target slot. The inbound leg (`applyHostWidgets`) still reads the
- * array in LIVE order and has not been moved to this basis.
+ * `value_index` is the widget's position among the node's widget-backed
+ * inputs — the order `SubgraphNode.serialize` builds `widgets_values` in and
+ * the order `applyHostWidgets` reads it back in. The document is consulted
+ * only to REFUSE a write it would misplace, never as the index itself: its
+ * `inputs` mirror can widget-mark fewer slots than `widgets_values` has
+ * entries, so an index taken from it lands on another widget's value.
  */
 function promotedHostWrite(
   node: LGraphNode | null,
@@ -213,39 +209,43 @@ function promotedHostWrite(
   docPromotedNames: () => readonly (string | undefined)[] | null
 ): PromotedHostWrite | null {
   if (!node?.isSubgraphNode()) return null
-  const liveNames = node.inputs.flatMap((input) =>
-    input.widgetId ? [input.name] : []
+  const hostInputs = node.inputs.flatMap((input) =>
+    input.widgetId ? [{ name: input.name, widgetId: input.widgetId }] : []
   )
-  const order = docPromotedNames() ?? liveNames
-  const valueIndex = order.indexOf(event.name)
+  const valueIndex = hostInputs.findIndex((input) => input.name === event.name)
   if (valueIndex === -1) return null
-  const rootGraphId = node.graph?.rootGraph.id ?? event.graphId
+  if (!documentHoldsSameOrder(docPromotedNames(), hostInputs)) return null
+  const widgetValueStore = useWidgetValueStore()
   return {
     value_index: valueIndex,
     instance_path: [String(event.nodeId)],
-    host_widgets_values: order.map((name, index) =>
-      index === valueIndex
-        ? event.value
-        : hostWidgetValue(rootGraphId, event.nodeId, name)
-    )
+    host_widgets_values: hostInputs.map((input, index) => {
+      if (index === valueIndex) return event.value
+      const value = widgetValueStore.getWidget(input.widgetId)?.value
+      return isWidgetValue(value) ? value : undefined
+    })
   }
 }
 
 /**
- * A promoted sibling's current value, read exactly as
- * `SubgraphNode.serializeFromStoreState` reads it so the array a write
- * extends the document from agrees with the one a save would have written.
+ * Whether the document's widget-backed input order is the one `value_index`
+ * will be read against. A document naming NONE of them answers nothing — its
+ * array is then positional over whatever the live host promotes, which is
+ * already what the inbound leg assumes. A document naming a DIFFERENT order
+ * is drift (`reorderSubgraphInputsByWidgetOrder` permutes the live host
+ * without minting anything), and an index minted against the live order
+ * would land on another widget's register, so that write keeps its refusal
+ * instead.
  */
-function hostWidgetValue(
-  rootGraphId: string,
-  nodeId: NodeId,
-  name: string | undefined
-): WidgetValue | undefined {
-  if (name === undefined) return undefined
-  const value = useWidgetValueStore().getWidget(
-    widgetId(rootGraphId, nodeId, name)
-  )?.value
-  return isWidgetValue(value) ? value : undefined
+function documentHoldsSameOrder(
+  docNames: readonly (string | undefined)[] | null,
+  hostInputs: readonly { name: string }[]
+): boolean {
+  if (docNames === null || docNames.length === 0) return true
+  return (
+    docNames.length === hostInputs.length &&
+    docNames.every((name, index) => name === hostInputs[index].name)
+  )
 }
 
 function routedWidgetOperation(

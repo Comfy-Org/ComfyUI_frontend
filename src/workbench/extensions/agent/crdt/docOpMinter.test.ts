@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { applyOps, mint, project } from '@comfyorg/comfy-multi-player'
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import { fromPartial } from '@total-typescript/shoehorn'
@@ -767,58 +768,122 @@ describe('attachDocOpMinter', () => {
     doc.destroy()
   })
 
-  it('indexes a promoted write by the document order, not the live one', async () => {
-    const { host, doc } = seedPromotedHost()
-    docPromotedWidgetNames = () => ['text', 'prefix']
-
-    host.widgets[1].value = 'pasted'
-    await afterFlush()
-
-    expect(minted).toEqual([
-      expect.objectContaining({
-        widget: 'text',
-        promoted: expect.objectContaining({
-          value_index: 0,
-          host_widgets_values: ['pasted', 'an interior default']
-        })
-      })
-    ])
-    expect(applyMinted(doc, minted)).toEqual(['applied'])
-    doc.destroy()
-  })
-
   it('extends a short document array from the host values it carries', async () => {
     const { host, doc } = seedPromotedHost(['only the prefix'])
 
     host.widgets[1].value = 'pasted'
     await afterFlush()
 
+    expect(minted).toEqual([
+      expect.objectContaining({
+        promoted: {
+          value_index: 1,
+          instance_path: [String(host.id)],
+          host_widgets_values: ['an interior default', 'pasted']
+        }
+      })
+    ])
     expect(applyMinted(doc, minted)).toEqual(['applied'])
     expect(
       project(doc, CATALOG).nodes.find(
         (node) => String(node.id) === String(host.id)
       )?.widgets_values
     ).toEqual(['only the prefix', 'pasted'])
+    doc.destroy()
   })
 
-  it('refuses to guess an index the document does not carry the name for', async () => {
+  it.for([
+    {
+      name: 'widget-marks fewer inputs than it holds values for',
+      docNames: ['prefix']
+    },
+    { name: 'holds a different order', docNames: ['text', 'prefix'] }
+  ])(
+    'keeps the refusal rather than misplacing a value when the document $name',
+    async ({ docNames }) => {
+      const { host, doc } = seedPromotedHost()
+      docPromotedWidgetNames = () => docNames
+
+      host.widgets[1].value = 'pasted'
+      await afterFlush()
+
+      expect(minted).toEqual([
+        {
+          op: 'set_widget',
+          node_id: host.id,
+          widget: 'text',
+          value: 'pasted',
+          old: 'an interior default'
+        }
+      ])
+      expect(applyMinted(doc, minted)).toEqual(['rejected'])
+      doc.destroy()
+    }
+  )
+
+  it('reads a shipped host whose inputs mirror under-reports its values', () => {
+    const workflow = JSON.parse(
+      readFileSync(
+        'browser_tests/assets/subgraphs/agent-subgraph-with-two-promoted-widgets.json',
+        'utf8'
+      )
+    ) as WorkflowJSON
+    const doc = mint(workflow, CATALOG)
+    const host = workflow.nodes.find((node) => String(node.id) === '11')
+
+    // Two values, but only `seed` is widget-marked: an index taken from this
+    // list would put a write to `seed` on top of the prompt at index 0.
+    expect(host?.widgets_values).toEqual(['a photo of a pier', 0])
+    expect(readDocPromotedWidgetNames(doc, '11')).toEqual(['seed'])
+    doc.destroy()
+  })
+
+  it('mints against the live order when the document names no promoted input', async () => {
     const { host, doc } = seedPromotedHost()
-    docPromotedWidgetNames = () => ['prefix']
+    docPromotedWidgetNames = () => []
 
     host.widgets[1].value = 'pasted'
     await afterFlush()
 
     expect(minted).toEqual([
-      {
-        op: 'set_widget',
-        node_id: host.id,
-        widget: 'text',
-        value: 'pasted',
-        old: 'an interior default'
-      }
+      expect.objectContaining({
+        promoted: expect.objectContaining({ value_index: 1 })
+      })
     ])
-    expect(applyMinted(doc, minted)).toEqual(['rejected'])
+    expect(applyMinted(doc, minted)).toEqual(['applied'])
     doc.destroy()
+  })
+
+  it('leaves a promoted widget on a nested host on the interior route', async () => {
+    const outer = createTestSubgraph({ rootGraph: graph })
+    graph.subgraphs.set(outer.id, outer)
+    const inner = createTestSubgraph({
+      rootGraph: graph,
+      inputs: [{ name: 'text', type: 'STRING' }]
+    })
+    graph.subgraphs.set(inner.id, inner)
+    const outerHost = createTestSubgraphNode(outer)
+    const nestedHost = createTestSubgraphNode(inner, { parentGraph: outer })
+    withGraphIntentSource('load', () => {
+      graph.add(outerHost)
+      outer.add(nestedHost)
+      const interior = LiteGraph.createNode('TestPrompt')
+      assert.exists(interior)
+      inner.add(interior)
+      inner.inputNode.slots[0].connect(interior.inputs[0], interior)
+    })
+
+    nestedHost.widgets[0].value = 'pasted'
+    await afterFlush()
+
+    expect(minted).toEqual([
+      expect.objectContaining({
+        op: 'set_widget',
+        path: [String(outerHost.id), String(nestedHost.id)],
+        inner_widget: 'text'
+      })
+    ])
+    expect(minted[0]).not.toHaveProperty('promoted')
   })
 
   it('does not let an ephemeral widget write roll a hand edit back with it', async () => {
