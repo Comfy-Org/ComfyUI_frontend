@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Download, ExternalLink } from '@lucide/vue'
+import { Download } from '@lucide/vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import type { RunOutput } from '@/config/workshop-run'
@@ -51,7 +51,7 @@ defineEmits<{ useInCode: []; download: [event: MouseEvent] }>()
       as="a"
       :href="shown.download?.url ?? url"
       :download="needsLink || shown.download ? undefined : shown.fileName"
-      :prepend-icon="needsLink ? ExternalLink : Download"
+      :prepend-icon="needsLink ? undefined : Download"
       target="_blank"
       rel="noopener"
       size="sm"

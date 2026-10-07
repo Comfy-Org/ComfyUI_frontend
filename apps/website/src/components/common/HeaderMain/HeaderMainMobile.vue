@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import BreadthumbIcon from '@/components/icons/BreadthumbIcon.vue'
-import { ChevronLeft, ChevronRight } from '@lucide/vue'
+import { ArrowRight, ChevronLeft, ChevronRight } from '@lucide/vue'
 import { computed, onUnmounted, ref, watch } from 'vue'
 import {
   NO_HUB_SECTIONS,
@@ -116,7 +116,8 @@ onUnmounted(() => {
                 >
                   <NavLinkContent :item="item" :locale="locale" />
                   <template #append>
-                    <ChevronRight class="size-7" />
+                    <ChevronRight v-if="item.columns" class="size-7" />
+                    <ArrowRight v-else class="size-7" />
                   </template>
                 </Button>
               </li>
@@ -198,7 +199,6 @@ onUnmounted(() => {
                       seeAll: true
                     }"
                     :locale="locale"
-                    lead
                   />
                 </Button>
               </div>

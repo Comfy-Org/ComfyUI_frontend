@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowRight, ArrowUpRight, ChevronRight } from '@lucide/vue'
+import { ArrowRight, ArrowUpRight } from '@lucide/vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { NavColumnItem } from '@/data/mainNavigation'
@@ -7,14 +7,12 @@ import type { Locale } from '@/i18n/translations'
 import NavItemThumb from './NavItemThumb.vue'
 import NewBadge from './NewBadge.vue'
 
-const { item, lead = false } = defineProps<{
+const { item } = defineProps<{
   item: Pick<
     NavColumnItem,
     'label' | 'badge' | 'external' | 'seeAll' | 'thumbnail' | 'meta'
   >
   locale: Locale
-  /** A see-all link that leads somewhere broader, marked with an arrow. */
-  lead?: boolean
 }>()
 </script>
 
@@ -57,7 +55,6 @@ const { item, lead = false } = defineProps<{
       v-if="item.external"
       class="size-4 text-primary-comfy-yellow"
     />
-    <ArrowRight v-if="item.seeAll && lead" class="size-4" aria-hidden="true" />
-    <ChevronRight v-else-if="item.seeAll" class="size-4" aria-hidden="true" />
+    <ArrowRight v-if="item.seeAll" class="size-4" aria-hidden="true" />
   </span>
 </template>

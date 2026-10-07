@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowUpRight, Cloud, Code, Download, Play } from '@lucide/vue'
+import { Cloud, Code, Download, Play } from '@lucide/vue'
 import { computed } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -123,9 +123,6 @@ function captureDownload() {
           <span class="sr-only">{{
             t('workshop.workflow.opensInNewTab')
           }}</span>
-          <template #append>
-            <ArrowUpRight class="size-3.5 opacity-70" aria-hidden="true" />
-          </template>
         </Button>
         <Button
           v-if="template?.downloadUrl"

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ChevronRight } from '@lucide/vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { Locale } from '@/i18n/translations'
@@ -23,12 +24,11 @@ const { t } = translationsFor(locale)
         :key="crumb.label"
         :class="cn('flex items-center gap-1.5', !crumb.href && 'min-w-0')"
       >
-        <span
+        <ChevronRight
           v-if="index > 0"
           aria-hidden="true"
-          class="text-primary-warm-gray/50"
-          >›</span
-        >
+          class="size-3.5 shrink-0 text-primary-warm-gray/50"
+        />
         <a
           v-if="crumb.href"
           :href="crumb.href"

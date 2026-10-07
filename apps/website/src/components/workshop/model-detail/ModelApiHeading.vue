@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ExternalLink } from '@lucide/vue'
+import { ArrowUpRight } from '@lucide/vue'
 
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
@@ -28,7 +28,8 @@ const { t } = translationsFor(locale)
       data-testid="model-docs-link"
     >
       {{ t('workshop.hub.docs') }}
-      <ExternalLink class="size-4" aria-hidden="true" />
+      <span class="sr-only">{{ t('workshop.workflow.opensInNewTab') }}</span>
+      <ArrowUpRight class="size-4" aria-hidden="true" />
     </a>
   </div>
 </template>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowUpRight, Cloud, Code, Play } from '@lucide/vue'
+import { Cloud, Code, Play } from '@lucide/vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import { WORKSHOP_CLOUD_BASE_URL } from '@/config/workshop-env'
@@ -64,9 +64,6 @@ function jumpTo(event: MouseEvent, section: 'playground' | 'api') {
           <Cloud aria-hidden="true" />
         </template>
         {{ t('workshop.model.paths.cloud') }}
-        <template #append>
-          <ArrowUpRight aria-hidden="true" />
-        </template>
       </Button>
     </li>
   </ul>

@@ -50,7 +50,6 @@ const footer = computed(() =>
             <NavLinkContent
               :item="{ label: exploreLink.label, seeAll: true }"
               :locale
-              lead
             />
           </a>
         </NavigationMenuLink>

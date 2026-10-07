@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ArrowUpRight } from '@lucide/vue'
 import { computed, ref, watch } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -350,7 +351,10 @@ const facts = computed(() => [
           data-testid="api-docs"
         >
           {{ t('workshop.api.docs') }}
-          <span aria-hidden="true">↗</span>
+          <span class="sr-only">{{
+            t('workshop.workflow.opensInNewTab')
+          }}</span>
+          <ArrowUpRight class="size-4" aria-hidden="true" />
         </a>
       </div>
     </div>

@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { ArrowUpRight } from '@lucide/vue'
-
 import { cn } from '@comfyorg/tailwind-utils'
 
 import BrandButton from '@/components/common/BrandButton.vue'
@@ -95,11 +93,6 @@ const cards: {
             :data-testid="link.testId"
           >
             {{ link.label }}
-            <ArrowUpRight
-              v-if="link.external"
-              class="ml-1 size-4"
-              aria-hidden="true"
-            />
           </BrandButton>
         </div>
       </div>
