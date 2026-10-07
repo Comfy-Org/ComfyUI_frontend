@@ -248,7 +248,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     expect(
       screen.queryByTestId('workspace-switcher-trigger')
     ).not.toBeInTheDocument()
-    expect(screen.queryByTestId('credits-info-button')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('credits-section')).not.toBeInTheDocument()
     expect(
       screen.queryByTestId('workspace-settings-menu-item')
     ).not.toBeInTheDocument()

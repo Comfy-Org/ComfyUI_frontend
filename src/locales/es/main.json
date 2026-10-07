@@ -1134,10 +1134,6 @@
       "youGet": "Créditos",
       "youPay": "Cantidad (USD)"
     },
-    "unified": {
-      "message": "Los créditos han sido unificados",
-      "tooltip": "Hemos unificado los pagos en Comfy. Ahora todo funciona con Comfy Credits:\n- Nodos de socios (antes nodos API)\n- Flujos de trabajo en la nube\n\nTu saldo existente de nodos de socios se ha convertido en créditos."
-    },
     "workspaceCredits": "Créditos del espacio de trabajo",
     "yourCreditBalance": "Tu saldo de créditos"
   },
