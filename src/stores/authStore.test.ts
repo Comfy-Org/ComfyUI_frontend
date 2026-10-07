@@ -2838,16 +2838,14 @@ describe('useAuthStore in local/desktop distribution', () => {
       expect(bridge.getWorkspaceToken).not.toHaveBeenCalled()
     })
 
-    it('reads as signed out, with no credential, while Desktop has no account', async () => {
-      await startDesktopHostSession(hostBridge({ status: 'signed_out' }))
+    it('keeps the existing sign-in while no Desktop account is signed in', async () => {
+      const bridge = hostBridge({ status: 'signed_out' })
+      await startDesktopHostSession(bridge)
 
-      expect(store.isAuthenticated).toBe(false)
-      expect(store.userId).toBeUndefined()
-      await expect(store.getWorkspaceAuthToken()).resolves.toBeUndefined()
-      await expect(store.getUserAuthHeader()).resolves.toBeNull()
-      await expect(store.getWorkspaceAuthHeader()).resolves.toBeNull()
-      await expect(store.getAuthHeader()).resolves.toBeNull()
-      expect(mockUser.getIdToken).not.toHaveBeenCalled()
+      expect(store.isAuthenticated).toBe(true)
+      expect(store.userId).toBe('local-user-id')
+      await expect(store.getAuthToken()).resolves.toBe('mock-id-token')
+      expect(bridge.getWorkspaceToken).not.toHaveBeenCalled()
     })
 
     it('drops a token fetched for a workspace the tab switched away from', async () => {
@@ -2920,7 +2918,7 @@ describe('useAuthStore in local/desktop distribution', () => {
       await store.logout()
 
       expect(bridge.signOut).toHaveBeenCalledOnce()
-      expect(store.isAuthenticated).toBe(false)
+      expect(store.userId).not.toBe('host-user')
     })
 
     it('reports a failed logout when Desktop keeps its session', async () => {

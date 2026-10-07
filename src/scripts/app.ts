@@ -93,7 +93,7 @@ import { useDialogService } from '@/services/dialogService'
 import { useExtensionService } from '@/services/extensionService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useSubgraphService } from '@/services/subgraphService'
-import { isDesktopHostSessionActive } from '@/platform/auth/desktopHost/desktopHostSession'
+import { isDesktopHostSignedIn } from '@/platform/auth/desktopHost/desktopHostSession'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { createCanvasInteractionMode } from '@/renderer/core/canvas/interaction/canvasInteractionMode'
@@ -1855,7 +1855,7 @@ export class ComfyApp {
       (isCloud || workspaceIdBeforeAuthentication !== null)
     // Desktop host auth is the only credential while active: a stored
     // personal key may belong to another account and never rides along.
-    const desktopHostAuth = isDesktopHostSessionActive()
+    const desktopHostAuth = isDesktopHostSignedIn()
     const comfyOrgApiKey = desktopHostAuth
       ? null
       : useApiKeyAuthStore().getApiKey()

@@ -18,10 +18,6 @@ import { useBillingCapabilities } from '@/platform/workspace/composables/useBill
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { t } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
-import {
-  isDesktopHostSessionActive,
-  requestDesktopHostSignIn
-} from '@/platform/auth/desktopHost/desktopHostSession'
 import { isCloud } from '@/platform/distribution/types'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -377,7 +373,6 @@ export const useDialogService = () => {
   }
 
   async function showSignInDialog(): Promise<boolean> {
-    if (isDesktopHostSessionActive()) return requestDesktopHostSignIn()
     const [{ default: SignInContent }, { default: ComfyOrgHeader }] =
       await Promise.all([lazySignInContent(), lazyComfyOrgHeader()])
 

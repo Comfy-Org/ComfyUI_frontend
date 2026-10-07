@@ -18,7 +18,7 @@ import { t } from '@/i18n'
 import {
   desktopHostUser,
   desktopHostWorkspaceToken,
-  isDesktopHostSessionActive,
+  isDesktopHostSignedIn,
   requestDesktopHostSignOut
 } from '@/platform/auth/desktopHost/desktopHostSession'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
@@ -159,18 +159,16 @@ export const useAuthStore = defineStore('auth', () => {
 
   // Getters
   const sessionUser = computed(() => cloudWebSessionStore.signedInUser)
-  const isAuthenticated = computed(() =>
-    isDesktopHostSessionActive()
-      ? !!desktopHostUser.value
-      : !!currentUser.value || !!sessionUser.value
+  const isAuthenticated = computed(
+    () => isDesktopHostSignedIn() || !!currentUser.value || !!sessionUser.value
   )
   const userEmail = computed(() =>
-    isDesktopHostSessionActive()
+    isDesktopHostSignedIn()
       ? desktopHostUser.value?.email
       : (sessionUser.value?.email ?? currentUser.value?.email)
   )
   const userId = computed(() =>
-    isDesktopHostSessionActive()
+    isDesktopHostSignedIn()
       ? desktopHostUser.value?.id
       : (sessionUser.value?.id ?? currentUser.value?.uid)
   )
@@ -310,7 +308,7 @@ export const useAuthStore = defineStore('auth', () => {
   const preferDesktopHost =
     <T>(fromHost: () => Promise<T>, otherwise: () => Promise<T>) =>
     (): Promise<T> =>
-      isDesktopHostSessionActive() ? fromHost() : otherwise()
+      isDesktopHostSignedIn() ? fromHost() : otherwise()
   const desktopHostTabHeader = async (): Promise<AuthHeader | null> =>
     headerFromToken(await desktopHostTabToken())
 
@@ -425,7 +423,7 @@ export const useAuthStore = defineStore('auth', () => {
    * stored API key for API-key sessions. Never a workspace-scoped token.
    */
   const getUserAuthHeader = async (): Promise<AuthHeader | null> =>
-    currentUser.value === null && !isDesktopHostSessionActive()
+    currentUser.value === null && !isDesktopHostSignedIn()
       ? useApiKeyAuthStore().getAuthHeader()
       : await getFirebaseAuthHeader()
 
@@ -434,7 +432,7 @@ export const useAuthStore = defineStore('auth', () => {
   > | null> => (await webSessionResourceHeader()) ?? (await getUserAuthHeader())
 
   const currentUserIdentity = (): string | null =>
-    isDesktopHostSessionActive()
+    isDesktopHostSignedIn()
       ? (desktopHostUser.value?.id ?? null)
       : (sessionUser.value?.id ??
         currentUser.value?.uid ??
@@ -947,10 +945,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   const logout = async (): Promise<void> =>
     executeAuthAction(async () => {
-      if (
-        isDesktopHostSessionActive() &&
-        !(await requestDesktopHostSignOut())
-      ) {
+      if (isDesktopHostSignedIn() && !(await requestDesktopHostSignOut())) {
         throw new AuthStoreError(t('auth.desktopHost.signOutFailed'))
       }
       // Local and Desktop keep the key: partner nodes run on it.

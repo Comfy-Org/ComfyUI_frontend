@@ -50,6 +50,11 @@ export function isDesktopHostSessionActive(): boolean {
   return session.value.status !== 'inactive'
 }
 
+/** True while a Desktop account is signed in; only then does it own auth. */
+export function isDesktopHostSignedIn(): boolean {
+  return desktopHostUser.value !== null
+}
+
 /**
  * Makes the Desktop account the identity for this page when Desktop shares
  * its session. Stays inactive, leaving Firebase in charge, when Desktop

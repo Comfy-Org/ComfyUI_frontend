@@ -57,6 +57,7 @@ export const useCurrentUser = () => {
   }
 
   const userDisplayName = computed(() => {
+    if (desktopHostUser.value) return desktopHostUser.value.email
     if (isApiKeyLogin.value) {
       return apiKeyStore.currentUser?.name
     }
