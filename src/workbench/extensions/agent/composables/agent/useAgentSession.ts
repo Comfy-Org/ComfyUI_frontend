@@ -32,7 +32,8 @@ import {
   parseAgentWsEvent,
   toTurnId,
   zAgentAdmissionError,
-  zDisownedWorkflowError
+  zDisownedWorkflowError,
+  zTurnInProgressError
 } from '../../schemas/agentApiSchema'
 import {
   AgentApiError,
@@ -370,6 +371,13 @@ function disownsWorkflow(error: unknown): boolean {
     error.status === 403 &&
     zDisownedWorkflowError.safeParse(error.body).success
   )
+}
+
+function parseTurnInProgress(error: unknown) {
+  if (!(error instanceof AgentApiError) || error.status !== 409)
+    return undefined
+  const parsed = zTurnInProgressError.safeParse(error.body)
+  return parsed.success ? parsed.data : undefined
 }
 
 export function useAgentSession(deps: AgentSessionDeps) {
@@ -1014,6 +1022,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     conversationStore.startTurn(turnId)
     readyThreadId.value = ack.thread_id
     recordTurnStarted(turnId, startsThread)
+    stopPendingActiveTurn()
+  }
+
+  function stopPendingActiveTurn(): void {
     const pendingStop = consumeStopPendingAck()
     if (pendingStop !== null) void stopTurn(pendingStop.method)
   }
@@ -1021,7 +1033,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
   function recordSendError(
     error: unknown,
     text: string,
-    accepted: boolean
+    accepted: boolean,
+    reattached: boolean
   ): void {
     const admission = parseAdmissionError(error)
     if (admission?.reason === 'no_funds') {
@@ -1043,16 +1056,13 @@ export function useAgentSession(deps: AgentSessionDeps) {
       )
       return
     }
-    const message =
-      error instanceof AgentApiError
-        ? error.message
-        : error instanceof Error
-          ? error.message
-          : String(error)
+    const message = error instanceof Error ? error.message : String(error)
     conversationStore.recordFailedSend(
       nextLocalErrorId(),
       text,
-      `${i18n.global.t('agent.sendFailed')}: ${message}`
+      reattached
+        ? i18n.global.t('agent.sendTurnInProgress')
+        : `${i18n.global.t('agent.sendFailed')}: ${message}`
     )
     const turnAccepted = accepted || isUnreadableAckFailure(error)
     reportError(error, {
@@ -1066,6 +1076,18 @@ export function useAgentSession(deps: AgentSessionDeps) {
       'inline_notice',
       { retryable: isRetryableRequestFailure(error, turnAccepted) }
     )
+  }
+
+  function recordCurrentSendError(
+    error: unknown,
+    text: string,
+    accepted: boolean,
+    reattached: boolean,
+    threadAtSend: string
+  ): void {
+    if (threadAtSend !== 'new' && conversationStore.threadId !== threadAtSend)
+      return
+    recordSendError(error, text, accepted, reattached)
   }
 
   /**
@@ -1088,6 +1110,35 @@ export function useAgentSession(deps: AgentSessionDeps) {
     workflow?.disowned?.(sent.id)
     if (boundWorkflowId.value === sent.id) boundWorkflowId.value = null
     if (rememberedWorkflowId === sent.id) rememberedWorkflowId = null
+  }
+
+  async function reattachRefusedTurn(
+    error: unknown,
+    threadAtSend: string,
+    generation: number
+  ): Promise<boolean> {
+    const conflict = parseTurnInProgress(error)
+    if (conflict === undefined || threadAtSend === 'new') return false
+    const reattachGeneration = ++refusedTurnReattachGeneration
+    const isCurrentReattachment = () =>
+      reattachGeneration === refusedTurnReattachGeneration &&
+      generation === loadGeneration &&
+      ownedGeneration === sessionGeneration &&
+      conversationStore.threadId === threadAtSend
+    await Promise.race([
+      hydrateFromServer(threadAtSend, isCurrentReattachment),
+      new Promise<void>((resolve) => setTimeout(resolve, RECONCILE_TIMEOUT_MS))
+    ])
+    const activeTurnId = conversationStore.activeTurnId
+    const adoptedActiveTurn =
+      isCurrentReattachment() &&
+      activeTurnId !== null &&
+      (conflict.active_message_id === undefined ||
+        activeTurnId === conflict.active_message_id)
+    if (reattachGeneration === refusedTurnReattachGeneration)
+      refusedTurnReattachGeneration++
+    if (adoptedActiveTurn) stopPendingActiveTurn()
+    return adoptedActiveTurn
   }
 
   async function performSend(
@@ -1135,7 +1186,13 @@ export function useAgentSession(deps: AgentSessionDeps) {
       // moved on still has to release, or the dead id survives the reload.
       releaseDisownedWorkflow(sentContext, error)
       if (generation !== loadGeneration) return false
-      recordSendError(error, text, accepted)
+      const reattached = await reattachRefusedTurn(
+        error,
+        threadAtSend,
+        generation
+      )
+      if (generation !== loadGeneration) return false
+      recordCurrentSendError(error, text, accepted, reattached, threadAtSend)
       return false
     }
   }
@@ -1170,7 +1227,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     sendInFlight = true
     stopPendingAck = null
     try {
-      return await performSend(
+      const sent = await performSend(
         text,
         attachments,
         tags,
@@ -1178,6 +1235,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
         selectionWorkflowId,
         clientMessageId
       )
+      if (!sent) stopPendingAck = null
+      return sent
     } finally {
       sending.value = false
       releaseSendGate()
@@ -1457,6 +1516,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   let loadGeneration = 0
+  let refusedTurnReattachGeneration = 0
 
   function newChat(
     source?: Exclude<AgentSessionThreadStartSource, 'first_open'>
