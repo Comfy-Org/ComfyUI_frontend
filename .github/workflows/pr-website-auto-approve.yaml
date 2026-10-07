@@ -37,8 +37,11 @@ permissions:
   pull-requests: read
 
 concurrency:
-  group: website-fast-lane-${{ github.event.pull_request.number || github.event.workflow_run.head_sha || github.event.sha || github.run_id }}
-  cancel-in-progress: true
+  # One serialized compensation boundary is safer than SHA-keyed runs that can
+  # concurrently approve and withdraw the same pull request. The trial cohort
+  # is intentionally small, so global serialization is acceptable here.
+  group: website-fast-lane
+  cancel-in-progress: false
 
 jobs:
   approve:
