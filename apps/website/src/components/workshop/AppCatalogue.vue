@@ -66,7 +66,7 @@ const hasMore = computed(() => apps.length > ROW_LIMIT)
       data-testid="app-search-results"
     >
       <li v-for="app in apps" :key="app.key">
-        <WorkshopAppCard :app />
+        <WorkshopAppCard :app :locale />
       </li>
     </ul>
 
@@ -82,7 +82,7 @@ const hasMore = computed(() => apps.length > ROW_LIMIT)
             </h2>
           </template>
           <li v-for="app in shelf" :key="app.key" :class="SHELF_CARD">
-            <WorkshopAppCard :app />
+            <WorkshopAppCard :app :locale />
           </li>
         </CardRow>
       </section>

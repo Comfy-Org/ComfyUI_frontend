@@ -4352,7 +4352,15 @@
       "image": "图像",
       "label": "{input}转{output}",
       "text": "文本",
-      "video": "视频"
+      "video": "视频",
+      "output": {
+        "text": "文本",
+        "image": "图像",
+        "video": "视频",
+        "audio": "音频",
+        "3d": "3D",
+        "other": "其他"
+      }
     },
     "title": "模型",
     "useCase": {

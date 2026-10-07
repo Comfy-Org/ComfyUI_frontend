@@ -1,9 +1,21 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import { getLogoPath } from '@/lib/hub/model-logos'
 import type { CatalogueApp } from '@/lib/workshop/catalogue-apps'
 
+import WorkshopCardMark from './WorkshopCardMark.vue'
 import WorkshopCardMedia from './WorkshopCardMedia.vue'
 
-const { app } = defineProps<{ app: CatalogueApp }>()
+const { app, locale = 'en' } = defineProps<{
+  app: CatalogueApp
+  locale?: Locale
+}>()
+const { t } = translationsFor(locale)
+
+const logo = computed(() => getLogoPath(app.name))
 </script>
 
 <template>
@@ -16,6 +28,7 @@ const { app } = defineProps<{ app: CatalogueApp }>()
       class="relative aspect-4/3 overflow-hidden rounded-2xl bg-hub-surface"
       data-testid="app-card-artwork"
     >
+      <WorkshopCardMark :label="t('workshop.card.comfyApp')" :logo />
       <WorkshopCardMedia :model="app" />
     </div>
 

@@ -2,6 +2,7 @@
 import { useElementVisibility } from '@vueuse/core'
 import { ref, useTemplateRef, watch } from 'vue'
 
+import CarouselArrows from '@/components/ui/carousel/CarouselArrows.vue'
 import { useAutoAdvance } from '@/composables/useAutoAdvance'
 import { prefersReducedMotion } from '@/composables/useReducedMotion'
 import type { Locale } from '@/i18n/translations'
@@ -224,52 +225,13 @@ watch([active, onScreen], ([current, visible], [previous]) => {
         </div>
       </div>
 
-      <div
-        class="absolute right-6 bottom-6 z-30 flex gap-2 lg:right-8 lg:bottom-8"
-      >
-        <button
-          type="button"
-          class="flex size-11 cursor-pointer items-center justify-center rounded-xl bg-white/10 text-white backdrop-blur-xs transition-colors hover:bg-white/20"
-          :aria-label="t('featuredWorkflows.prev')"
-          @click="pick(-1)"
-        >
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            class="size-5"
-            aria-hidden="true"
-          >
-            <path
-              d="M15 6l-6 6 6 6"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-        </button>
-        <button
-          type="button"
-          class="flex size-11 cursor-pointer items-center justify-center rounded-xl bg-white/10 text-white backdrop-blur-xs transition-colors hover:bg-white/20"
-          :aria-label="t('featuredWorkflows.next')"
-          @click="pick(1)"
-        >
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            class="size-5"
-            aria-hidden="true"
-          >
-            <path
-              d="M9 6l6 6-6 6"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-        </button>
-      </div>
+      <CarouselArrows
+        class="absolute right-6 bottom-6 z-30 lg:right-8 lg:bottom-8"
+        :prev-label="t('featuredWorkflows.prev')"
+        :next-label="t('featuredWorkflows.next')"
+        @prev="pick(-1)"
+        @next="pick(1)"
+      />
     </div>
   </section>
 </template>
