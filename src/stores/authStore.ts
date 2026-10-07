@@ -370,6 +370,8 @@ export const useAuthStore = defineStore('auth', () => {
    *   - null if no authentication method is available
    */
   const getAuthHeader = async (): Promise<AuthHeader | null> => {
+    if (isDesktopHostSessionActive())
+      return headerFromToken(await desktopHostTabToken())
     const sessionOnly = sessionOnlyRequests()
     if (sessionOnly)
       return headerFromToken(await webSessionRunToken(sessionOnly))
@@ -453,10 +455,13 @@ export const useAuthStore = defineStore('auth', () => {
    * releases nothing on a mismatch, and with neither there is no credential.
    */
   const desktopHostTabToken = async (): Promise<string | undefined> => {
-    const workspaceId =
+    const tabWorkspaceId = (): string | undefined =>
       useTeamWorkspaceStore().activeWorkspaceId ??
       desktopHostUser.value?.workspaceId
-    return workspaceId ? desktopHostWorkspaceToken(workspaceId) : undefined
+    const workspaceId = tabWorkspaceId()
+    if (!workspaceId) return undefined
+    const token = await desktopHostWorkspaceToken(workspaceId)
+    return tabWorkspaceId() === workspaceId ? token : undefined
   }
 
   /**

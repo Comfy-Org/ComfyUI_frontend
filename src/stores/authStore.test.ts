@@ -2846,7 +2846,26 @@ describe('useAuthStore in local/desktop distribution', () => {
       await expect(store.getWorkspaceAuthToken()).resolves.toBeUndefined()
       await expect(store.getUserAuthHeader()).resolves.toBeNull()
       await expect(store.getWorkspaceAuthHeader()).resolves.toBeNull()
+      await expect(store.getAuthHeader()).resolves.toBeNull()
       expect(mockUser.getIdToken).not.toHaveBeenCalled()
+    })
+
+    it('drops a token fetched for a workspace the tab switched away from', async () => {
+      const bridge = hostBridge({ status: 'signed_in', userId: 'host-user' })
+      let release: (token: string) => void = () => {}
+      bridge.getWorkspaceToken.mockReturnValueOnce(
+        new Promise((resolve) => {
+          release = resolve
+        })
+      )
+      await startDesktopHostSession(bridge)
+      Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-a' })
+
+      const fetching = store.getWorkspaceAuthToken()
+      Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-b' })
+      release('token-for-a')
+
+      await expect(fetching).resolves.toBeUndefined()
     })
 
     it.for([
