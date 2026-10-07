@@ -2573,6 +2573,7 @@ export const zAgentRunMode = z.object({
  * A user turn posted to the agent.
  */
 export const zAgentPostMessageRequest = z.object({
+  client_message_id: z.string().max(128).optional(),
   content: z.string(),
   workflow_id: z.string().optional(),
   selection: z.record(z.unknown()).optional(),
