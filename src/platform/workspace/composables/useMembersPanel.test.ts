@@ -431,7 +431,6 @@ describe('useMembersPanel', () => {
     mockIsTeamPlan.value = true
     mockSubscriptionStatus.value = 'active'
     mockWorkspaceRole.value = 'owner'
-    useBillingCapabilities().canChangeSeats = computed(() => true)
     useBillingCapabilities().canInviteMembers = computed(() => true)
     mockSubscription.value = { tier: 'PRO', isCancelled: false }
     mockPermissions.value = {
@@ -859,7 +858,6 @@ describe('useMembersPanel', () => {
 
     it('returns no actions without member-management permission', async () => {
       mockWorkspaceRole.value = 'member'
-      useBillingCapabilities().canChangeSeats = computed(() => false)
       const panel = await setup()
 
       expect(panel.memberMenuItems(createMember())).toEqual([])
@@ -1251,8 +1249,47 @@ describe('useMembersPanel', () => {
       expect(useDialogService().showInviteMemberDialog).not.toHaveBeenCalled()
     })
 
-    it('hides member management when the server denies seat changes', async () => {
+    // The real Enterprise payload: can_change_seats is seat quantity, which the
+    // server zeroes on every sales-managed tier, while the member endpoints
+    // authorize from the owner role alone (FE-3268).
+    it('keeps member management for an Enterprise owner denied seat changes', async () => {
+      mockSubscription.value = { tier: 'ENTERPRISE', isCancelled: false }
       useBillingCapabilities().canChangeSeats = computed(() => false)
+      const panel = await setup()
+      const member = createMember({ id: 'member-1' })
+
+      expect(panel.permissions.value.canManageMembers).toBe(true)
+      expect(panel.memberMenuItems(member).map((i) => i.label)).toEqual([
+        'workspacePanel.members.actions.changeRole',
+        'workspacePanel.members.actions.setCreditLimit',
+        'workspacePanel.members.actions.removeMember'
+      ])
+
+      panel.handleChangeRole(member, 'owner')
+
+      expect(
+        useDialogService().showChangeMemberRoleDialog
+      ).toHaveBeenCalledWith({
+        memberId: 'member-1',
+        memberName: 'Member One',
+        targetRole: 'owner'
+      })
+    })
+
+    it('withdraws member management once the owner is demoted', async () => {
+      const panel = await setup()
+      expect(panel.permissions.value.canManageMembers).toBe(true)
+
+      mockWorkspaceRole.value = 'member'
+
+      expect(panel.permissions.value.canManageMembers).toBe(false)
+      expect(panel.memberMenuItems(createMember())).toEqual([])
+    })
+
+    // The backend collapses max_seats to 1 when a plan ends, which is what
+    // makes the seat conjunct the ended-plan freeze.
+    it('freezes member management on a single-seat plan', async () => {
+      mockMaxSeats.value = 1
       const panel = await setup()
       const member = createMember({ id: 'member-1' })
 

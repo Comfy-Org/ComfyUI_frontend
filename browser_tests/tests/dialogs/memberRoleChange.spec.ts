@@ -1,4 +1,8 @@
 import { expect } from '@playwright/test'
+import type {
+  BillingCapabilities,
+  BillingStatusResponse
+} from '@comfyorg/ingest-types'
 
 import type { Member } from '@/platform/workspace/api/workspaceApi'
 
@@ -9,6 +13,8 @@ import {
   DEFAULT_TEAM_MEMBERS,
   MEMBER_JANE,
   MEMBER_JOHN,
+  TEAM_BILLING_STATUS,
+  TEAM_WORKSPACE,
   VIEWER
 } from '@e2e/fixtures/data/cloudWorkspace'
 import { CloudWorkspaceMockHelper } from '@e2e/fixtures/helpers/CloudWorkspaceMockHelper'
@@ -19,6 +25,25 @@ import { workspace } from '@e2e/fixtures/utils/workspaceMocks'
 // devtools backend during setup.
 
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
+
+const ACTIVE_ENTERPRISE_STATUS = {
+  ...TEAM_BILLING_STATUS,
+  subscription_tier: 'ENTERPRISE',
+  plan_slug: 'enterprise_monthly'
+} satisfies BillingStatusResponse
+
+// What billing-api resolves for a sales-managed tier: hideLifecycleCapabilities
+// closes the self-serve lifecycle, including seat quantity, while leaving the
+// owner-derived can_invite_members alone.
+const SALES_MANAGED_CAPABILITIES: Partial<BillingCapabilities> = {
+  can_subscribe_self_serve: false,
+  can_cancel: false,
+  can_reactivate: false,
+  can_change_seats: false,
+  can_downgrade_to_personal: false,
+  can_invite_members: true,
+  can_top_up: true
+}
 
 test.describe('Members plan gating', { tag: '@cloud' }, () => {
   test('personal workspace with a Team plan gets member management', async ({
@@ -240,6 +265,41 @@ test.describe('Member role change (Members tab)', { tag: '@cloud' }, () => {
       {
         url: expect.stringContaining('/api/workspace/members/u-jane'),
         role: 'member'
+      }
+    ])
+  })
+
+  // An Enterprise workspace is sales-managed, so the server denies seat
+  // quantity while still authorizing member writes from the owner role alone.
+  // Gating the row menu on can_change_seats left every Enterprise owner unable
+  // to promote anyone (FE-3268).
+  test('Enterprise owner can promote a member despite denied seat changes', async ({
+    page
+  }) => {
+    const state = await new CloudWorkspaceMockHelper(page).setup(
+      DEFAULT_TEAM_MEMBERS,
+      TEAM_WORKSPACE,
+      ACTIVE_ENTERPRISE_STATUS,
+      SALES_MANAGED_CAPABILITIES
+    )
+    const members = new MembersSettingsPanel(page)
+    await members.open(APP_URL)
+
+    const janeRow = members.memberRow(MEMBER_JANE.email)
+    await expect(members.menuButton(janeRow)).toBeVisible()
+
+    await members.menuButton(janeRow).click()
+    await members.openChangeRoleSubmenu()
+    await page
+      .getByRole('menuitemradio', { name: 'Owner', exact: true })
+      .click()
+    await page.getByRole('button', { name: 'Make owner' }).click()
+
+    await expect(janeRow.getByText('Owner', { exact: true })).toBeVisible()
+    expect(state.patches).toEqual([
+      {
+        url: expect.stringContaining('/api/workspace/members/u-jane'),
+        role: 'owner'
       }
     ])
   })

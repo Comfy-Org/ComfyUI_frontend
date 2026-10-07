@@ -118,14 +118,17 @@ export function useMembersPanel() {
     useTeamPlan()
   const subscriptionDialog = useSubscriptionDialog()
   const { maxSeats, occupiedSeats } = useBillingContext()
-  const { canChangeSeats, canInviteMembers } = useBillingCapabilities()
+  const { canInviteMembers } = useBillingCapabilities()
 
   const { isPlanEnded, isSalesManagedPlan, isEnterprisePlan } = usePlanEnded()
 
+  // Not can_change_seats: that capability is seat *quantity*, which the server
+  // zeroes on every sales-managed tier, and it took the role and remove actions
+  // of each Enterprise owner with it (FE-3268). Member writes are authorized by
+  // the owner role alone — RequireWorkspaceOwner, no tier check.
   const permissions = computed(() => {
     const canManageMembers =
-      hasMemberSeats.value &&
-      (isCloud ? canChangeSeats.value : workspaceRole.value === 'owner')
+      hasMemberSeats.value && workspaceRole.value === 'owner'
     const canManageInvites =
       hasMemberSeats.value &&
       (isCloud ? canInviteMembers.value : workspaceRole.value === 'owner')
