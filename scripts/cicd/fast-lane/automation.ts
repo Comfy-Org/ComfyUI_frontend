@@ -233,6 +233,18 @@ async function dismissApproval(
   )
 }
 
+export function activePolicyApprovals(
+  reviews: PullRequestReview[],
+  identity: string
+): PullRequestReview[] {
+  return reviews.filter(
+    (review) =>
+      review.state === 'APPROVED' &&
+      review.user?.login?.toLowerCase() === identity.toLowerCase() &&
+      review.body?.startsWith(POLICY_REVIEW_PREFIX)
+  )
+}
+
 async function stop(
   github: GitHubClient,
   config: ResolvedRuntimeConfig,
@@ -242,16 +254,14 @@ async function stop(
   summary: Summary
 ): Promise<void> {
   const identity = config.lane.approval.identity
-  const headSha = pull.head?.sha
-  const approval = headSha
-    ? approvalForHead(reviews, identity, headSha, POLICY_REVIEW_PREFIX)
-    : undefined
-  await dismissApproval(
-    github,
-    config.pullRequestNumber,
-    approval,
-    `Fast-lane approval withdrawn: ${message}`
-  )
+  for (const approval of activePolicyApprovals(reviews, identity)) {
+    await dismissApproval(
+      github,
+      config.pullRequestNumber,
+      approval,
+      `Fast-lane approval withdrawn: ${message}`
+    )
+  }
   await stopMergeAutomation(
     github,
     pull,

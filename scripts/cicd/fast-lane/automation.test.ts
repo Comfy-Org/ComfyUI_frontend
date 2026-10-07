@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import {
+  activePolicyApprovals,
   approveCurrentHead,
   armMergeAutomation,
   policyReviewFloor,
@@ -51,6 +52,38 @@ function unusedPaginate(): Promise<never> {
 }
 
 describe('approval lifecycle', () => {
+  it('selects active policy approvals across current and stale heads', () => {
+    const policyBody =
+      '[Package fast lane] Policy-only approval. Lane: website.'
+    expect(
+      activePolicyApprovals(
+        [
+          {
+            id: 1,
+            state: 'APPROVED',
+            commit_id: 'old-head',
+            body: policyBody,
+            user: { login: 'christian-byrne' }
+          },
+          {
+            id: 2,
+            state: 'APPROVED',
+            commit_id: headSha,
+            body: policyBody,
+            user: { login: 'christian-byrne' }
+          },
+          {
+            id: 3,
+            state: 'DISMISSED',
+            body: policyBody,
+            user: { login: 'christian-byrne' }
+          }
+        ],
+        'christian-byrne'
+      ).map((review) => review.id)
+    ).toEqual([1, 2])
+  })
+
   it('withdraws a new approval when post-approval verification fails', async () => {
     const verificationError = new Error('verification unavailable')
     const calls: { path: string; method: string }[] = []
