@@ -3,10 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
-import {
-  AGENT_DISCOVERY_FILE,
-  readAgentDiscoveryToken
-} from './devAgentDiscovery.ts'
+import { readAgentDiscoveryToken } from './devAgentDiscovery.ts'
 
 describe('agent discovery token', () => {
   let dataDir: string
@@ -20,7 +17,7 @@ describe('agent discovery token', () => {
   })
 
   async function publish(contents: string): Promise<void> {
-    await writeFile(join(dataDir, AGENT_DISCOVERY_FILE), contents, {
+    await writeFile(join(dataDir, 'agent.json'), contents, {
       mode: 0o600
     })
   }
@@ -44,7 +41,7 @@ describe('agent discovery token', () => {
   })
 
   it('ignores a discovery path that is not a regular file', async () => {
-    await mkdir(join(dataDir, AGENT_DISCOVERY_FILE))
+    await mkdir(join(dataDir, 'agent.json'))
     expect(readAgentDiscoveryToken(dataDir)).toBeUndefined()
   })
 
@@ -53,8 +50,11 @@ describe('agent discovery token', () => {
     expect(readAgentDiscoveryToken(dataDir)).toBeUndefined()
   })
 
+  it('publishes no usable token when the file is absent', () => {
+    expect(readAgentDiscoveryToken(dataDir)).toBeUndefined()
+  })
+
   it.for([
-    ['an absent file', null],
     ['a half-written file', '{"port":6286,"tok'],
     ['a file with no token', '{"port":6286,"pid":42}'],
     ['a file with an empty token', '{"port":6286,"token":"","pid":42}'],
@@ -64,12 +64,7 @@ describe('agent discovery token', () => {
     ['an oversized token', JSON.stringify({ token: 'a'.repeat(4097) })],
     ['a JSON null', 'null']
   ] as const)('publishes no usable token from %s', async ([, contents]) => {
-    if (contents !== null) await publish(contents)
+    await publish(contents)
     expect(readAgentDiscoveryToken(dataDir)).toBeUndefined()
-  })
-
-  it('does not throw a parse error that would quote the credential', async () => {
-    await publish('{"port":6286,"token":"sensitive-value"')
-    expect(() => readAgentDiscoveryToken(dataDir)).not.toThrow()
   })
 })
