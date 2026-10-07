@@ -2,9 +2,9 @@
 // every model page, each pointing at its markdown twin.
 import type { APIRoute } from 'astro'
 
-import { dirLabels } from '../../../config/model-descriptions'
-import { models } from '../../../config/models'
-import { getRoutes } from '../../../config/routes'
+import { dirLabels } from '@/config/model-descriptions'
+import { models } from '@/config/models'
+import { getRoutes } from '@/config/routes'
 
 export const GET: APIRoute = ({ site }) => {
   const base = site ?? 'https://comfy.org'

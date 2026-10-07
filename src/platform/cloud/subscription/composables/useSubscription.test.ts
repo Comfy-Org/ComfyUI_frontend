@@ -2,7 +2,7 @@ import { useDialogService } from '@/services/dialogService'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, effectScope } from 'vue'
+import { computed, effectScope, nextTick } from 'vue'
 
 import { SessionTokenError } from '@comfyorg/account-core/sessionTokenMint'
 
@@ -20,6 +20,7 @@ import {
   claimPendingCheckoutTerminal
 } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
 import { performSubscriptionCheckout } from '@/platform/cloud/subscription/utils/subscriptionCheckoutUtil'
+import { PaymentPopupBlockedError } from '@/platform/telemetry/utils/billingFailureCategory'
 
 const {
   mockGetCheckoutAttribution,
@@ -221,7 +222,6 @@ const statusReadPaths = [
 global.fetch = vi.fn()
 
 beforeEach(() => {
-  vi.mocked(webSessionResourceHeader).mockReset()
   vi.mocked(webSessionResourceHeader).mockResolvedValue(undefined)
   useErrorHandling().wrapWithErrorHandlingAsync =
     (action, errorHandler) =>
@@ -641,6 +641,30 @@ describe('useSubscription', () => {
       expect(
         useTeamWorkspaceStore().setWorkspaceBillingRail
       ).toHaveBeenCalledWith('workspace-456', 'legacy_stripe')
+    })
+
+    it('drops the previous workspace renewal invoice link on a workspace switch', async () => {
+      mockGetBillingStatus.mockResolvedValue({
+        is_active: false,
+        has_funds: false,
+        billing_status: 'payment_failed',
+        renewal_invoice: {
+          hosted_invoice_url: 'https://invoice.stripe.com/i/old',
+          amount_due: 100,
+          currency: 'usd'
+        }
+      })
+      const { subscriptionStatus, fetchStatus } = useSubscriptionWithScope()
+      await fetchStatus()
+      expect(subscriptionStatus.value?.renewal_invoice).toBeDefined()
+
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspaceId: 'workspace-456'
+      })
+      await nextTick()
+
+      expect(subscriptionStatus.value?.renewal_invoice).toBeUndefined()
+      expect(subscriptionStatus.value?.billing_status).toBe('payment_failed')
     })
 
     it('coalesces concurrent callers into one fetch', async () => {
@@ -2722,6 +2746,23 @@ describe('useSubscription', () => {
       expect(useAuthActions().accessBillingPortalDirect).toHaveBeenCalled()
     })
 
+    it('passes the cancel option to the portal only when asked', async () => {
+      const { manageSubscription, handleInvoiceHistory } =
+        useSubscriptionWithScope()
+      const open = vi.mocked(useAuthActions().accessBillingPortalDirect)
+
+      await manageSubscription({ cancelSubscription: true })
+      expect(open).toHaveBeenLastCalledWith(undefined, {
+        cancelSubscription: true
+      })
+
+      await manageSubscription()
+      expect(open).toHaveBeenLastCalledWith(undefined, undefined)
+
+      await handleInvoiceHistory()
+      expect(open).toHaveBeenLastCalledWith(undefined, undefined)
+    })
+
     describe('portal telemetry', () => {
       type PortalAction = 'manageSubscription' | 'handleInvoiceHistory'
 
@@ -2735,10 +2776,6 @@ describe('useSubscription', () => {
         window.dispatchEvent(new Event('blur'))
         window.dispatchEvent(new Event('focus'))
       }
-
-      beforeEach(() => {
-        mockTelemetry.trackBillingEvent.mockClear()
-      })
 
       it.for<{ action: PortalAction; target: string }>([
         { action: 'manageSubscription', target: 'manage_subscription' },
@@ -2769,15 +2806,27 @@ describe('useSubscription', () => {
         }
       )
 
-      it.for<{ action: PortalAction; target: string }>([
-        { action: 'manageSubscription', target: 'manage_subscription' },
-        { action: 'handleInvoiceHistory', target: 'invoices' }
+      it.for<{
+        action: PortalAction
+        target: string
+        settles: (run: Promise<void>) => Promise<void>
+      }>([
+        {
+          action: 'manageSubscription',
+          target: 'manage_subscription',
+          settles: (run) => expect(run).rejects.toThrow()
+        },
+        {
+          action: 'handleInvoiceHistory',
+          target: 'invoices',
+          settles: (run) => expect(run).resolves.toBeUndefined()
+        }
       ])(
         'reports $action as a failed open when the tab is blocked',
-        async ({ action, target }) => {
+        async ({ action, target, settles }) => {
           mockAccessBillingPortalDirect.mockResolvedValueOnce(false)
 
-          await useSubscriptionWithScope()[action]()
+          await settles(useSubscriptionWithScope()[action]())
           leaveAndReturn()
 
           expect(portalEvents()).toEqual([
@@ -2794,70 +2843,56 @@ describe('useSubscription', () => {
         }
       )
 
-      it('reports a refused portal request as a failed open and still reports the error', async () => {
-        const refusal = new AuthStoreError('Portal refused', 500)
-        mockAccessBillingPortalDirect.mockRejectedValueOnce(refusal)
+      it.for([
+        {
+          name: 'a refused portal request',
+          failure: new AuthStoreError('Portal refused', 500),
+          category: { failure_category: 'api_rejected' }
+        },
+        {
+          name: 'a rail-mismatch refusal',
+          failure: new AuthStoreError(
+            'refused',
+            409,
+            'WORKSPACE_BILLING_REQUIRED'
+          ),
+          category: {}
+        }
+      ])(
+        'reports $name as a failed open and rejects without reporting the error',
+        async ({ failure, category }) => {
+          mockAccessBillingPortalDirect.mockRejectedValueOnce(failure)
+
+          await expect(
+            useSubscriptionWithScope().manageSubscription()
+          ).rejects.toBe(failure)
+
+          expect(portalEvents()).toMatchObject([
+            {
+              operation: 'portal',
+              stage: 'failed',
+              outcome: 'failure',
+              target: 'manage_subscription',
+              billing_client: 'legacy',
+              ...category
+            }
+          ])
+          expect(mockReportError).not.toHaveBeenCalled()
+        }
+      )
+
+      it('rejects a blocked manage subscription tab with the blocked-tab message, without reporting it', async () => {
+        mockAccessBillingPortalDirect.mockResolvedValueOnce(false)
 
         await expect(
           useSubscriptionWithScope().manageSubscription()
-        ).resolves.toBeUndefined()
-
-        expect(portalEvents()).toEqual([
-          {
-            operation: 'portal',
-            stage: 'failed',
-            outcome: 'failure',
-            target: 'manage_subscription',
-            billing_client: 'legacy',
-            failure_category: 'api_rejected'
-          }
-        ])
-        expect(mockReportError).toHaveBeenCalledWith(refusal)
-      })
-
-      it('reports a rail-mismatch refusal as a failed open and leaves recovery to the adapter', async () => {
-        const refusal = new AuthStoreError(
-          'refused',
-          409,
-          'WORKSPACE_BILLING_REQUIRED'
+        ).rejects.toEqual(
+          new PaymentPopupBlockedError(
+            "Couldn't open the billing page. Allow pop-ups for this site and try again."
+          )
         )
-        mockAccessBillingPortalDirect.mockRejectedValueOnce(refusal)
-
-        await expect(
-          useSubscriptionWithScope().manageSubscription()
-        ).rejects.toBe(refusal)
-
-        expect(portalEvents()).toMatchObject([
-          {
-            operation: 'portal',
-            stage: 'failed',
-            target: 'manage_subscription'
-          }
-        ])
         expect(mockReportError).not.toHaveBeenCalled()
       })
-    })
-
-    it('rethrows a rail-mismatch refusal from the billing portal', async () => {
-      const refusal = new AuthStoreError(
-        'refused',
-        409,
-        'WORKSPACE_BILLING_REQUIRED'
-      )
-      mockAccessBillingPortalDirect.mockRejectedValueOnce(refusal)
-      const { manageSubscription } = useSubscriptionWithScope()
-
-      await expect(manageSubscription()).rejects.toBe(refusal)
-      expect(mockReportError).not.toHaveBeenCalled()
-    })
-
-    it('reports other billing portal failures instead of throwing', async () => {
-      const failure = new Error('portal down')
-      mockAccessBillingPortalDirect.mockRejectedValueOnce(failure)
-      const { manageSubscription } = useSubscriptionWithScope()
-
-      await expect(manageSubscription()).resolves.toBeUndefined()
-      expect(mockReportError).toHaveBeenCalledWith(failure)
     })
 
     it('does not start cancellation watching when the billing portal does not open', async () => {
@@ -2875,7 +2910,11 @@ describe('useSubscription', () => {
       await fetchStatus()
       mockGetBillingStatus.mockClear()
 
-      await manageSubscription()
+      const blockedOpen = manageSubscription()
+      await expect(blockedOpen).rejects.toBeInstanceOf(PaymentPopupBlockedError)
+      await expect(blockedOpen).rejects.toThrow(
+        "Couldn't open the billing page. Allow pop-ups for this site and try again."
+      )
       await vi.advanceTimersByTimeAsync(5000)
 
       expect(mockGetBillingStatus).not.toHaveBeenCalled()

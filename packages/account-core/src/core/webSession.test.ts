@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import type { FakeWebSessionState } from '../testing.js'
 import { createFakeWebSessionEndpoint, fakeWebSessionUser } from '../testing.js'
+import { COMFY_CLIENT } from './requestAuth.js'
 import type { WebSessionOptions } from './webSession.js'
 import {
   createWebSession,
@@ -40,7 +41,7 @@ function heldUntilAborted(answered: Promise<Response>): typeof fetch {
 const errorBody = (code: string) => JSON.stringify({ code, message: code })
 
 const revokeAll = (o: WebSessionOptions, csrfToken = 'fake-csrf-token') =>
-  revokeAllWebSessions(o, csrfToken, async () => 'id-token')
+  revokeAllWebSessions(o, csrfToken)
 
 const ENDPOINTS = [
   { name: 'read', call: (o: WebSessionOptions) => readWebSession(o) },
@@ -95,6 +96,12 @@ describe('web session status mapping', () => {
       body: errorBody('workspace_access_denied'),
       code: 'WORKSPACE_ACCESS_DENIED',
       server: 'workspace_access_denied'
+    },
+    {
+      status: 403,
+      body: errorBody('sso_required'),
+      code: 'SSO_REQUIRED',
+      server: 'sso_required'
     },
     {
       status: 403,
@@ -355,6 +362,27 @@ describe('web session requests', () => {
     })
   })
 
+  it.for([
+    { reported: true, expected: true },
+    { reported: false, expected: false },
+    { reported: undefined, expected: undefined }
+  ])(
+    'reads has_personal_workspace $reported as $expected',
+    async ({ reported, expected }) => {
+      const endpoint = fakeEndpoint({
+        kind: 'live',
+        user: fakeWebSessionUser({ hasPersonalWorkspace: reported })
+      })
+
+      const result = await readWebSession(optionsFor(endpoint.fetch))
+
+      expect(result.status === 'ok' && result.session.user).toHaveProperty(
+        'hasPersonalWorkspace',
+        expected
+      )
+    }
+  )
+
   it('reports IDENTITY_CHANGED when the session belongs to another user', async () => {
     const endpoint = fakeEndpoint({
       kind: 'live',
@@ -480,19 +508,24 @@ describe('revoke-all', () => {
     })
   })
 
-  it('sends the identity proof and CSRF token to the revoke-all route', async () => {
+  it('revokes with the session cookie alone: client header and CSRF token, no bearer', async () => {
     const endpoint = fakeEndpoint({ kind: 'live', user: fakeWebSessionUser() })
 
-    await revokeAll(optionsFor(endpoint.fetch))
+    const result = await revokeAll(optionsFor(endpoint.fetch))
 
-    expect(endpoint.requests[0]).toMatchObject({
-      method: 'POST',
-      path: '/api/auth/sessions/revoke-all',
-      headers: {
-        authorization: 'Bearer id-token',
-        'x-csrf-token': 'fake-csrf-token'
+    expect(result).toEqual({ status: 'ok' })
+    expect(endpoint.requests).toEqual([
+      {
+        method: 'POST',
+        path: '/api/auth/sessions/revoke-all',
+        credentials: 'include',
+        cache: undefined,
+        headers: {
+          'x-comfy-client': COMFY_CLIENT,
+          'x-csrf-token': 'fake-csrf-token'
+        }
       }
-    })
+    ])
   })
 
   it('ends the session, so the next read is SESSION_REVOKED', async () => {

@@ -157,6 +157,8 @@ const PreviewSchema = zPreviewSubscribeResponse.extend({
   cost_today_cents: wireCents,
   credits_next_period_cents: wireCents,
   credits_today_cents: wireCents,
+  credits_today: wireCents.nonnegative().optional(),
+  credits_next_period: wireCents.nonnegative().optional(),
   renewal_amount_cents: wireCents.optional(),
   subtotal_cents: wireCents.optional(),
   balance_applied_cents: wireCents.optional(),

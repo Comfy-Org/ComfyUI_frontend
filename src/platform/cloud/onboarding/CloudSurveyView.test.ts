@@ -156,6 +156,21 @@ describe('CloudSurveyView', () => {
     expect(screen.getByRole('button', { name: 'Submit survey' })).toBeEnabled()
   })
 
+  it('stays usable without reporting a cancelled submission', async () => {
+    mocks.submitSurvey.mockResolvedValue({ status: 'cancelled' })
+    const { router } = await renderView()
+    await waitFor(() =>
+      expect(mocks.getSurveyCompletedStatus).toHaveBeenCalledOnce()
+    )
+
+    await userEvent.click(screen.getByRole('button', { name: 'Submit survey' }))
+
+    expect(router.currentRoute.value.name).toBe('survey')
+    expect(mocks.reportError).not.toHaveBeenCalled()
+    expect(useToastStore().add).not.toHaveBeenCalled()
+    expect(screen.getByRole('button', { name: 'Submit survey' })).toBeEnabled()
+  })
+
   it('reports a missing account instead of silently ignoring submission', async () => {
     Object.assign(useAuthStore(), { userId: undefined })
     await renderView()

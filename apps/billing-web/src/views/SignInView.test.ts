@@ -18,31 +18,36 @@ const h = vi.hoisted(() => ({
   signInWith: vi.fn(),
   submitEmail: vi.fn(),
   retryMint: vi.fn(),
-  retryAvailability: vi.fn()
+  retryAvailability: vi.fn(),
+  phase: 'signed-out' as 'signed-out' | 'authenticated',
+  onSignedIn: () => {}
 }))
 
 vi.mock(import('@/auth/useSignInController'), async () => {
   const { computed, ref } = await import('vue')
   return {
-    useSignInController: () => ({
-      state: ref<SignInState>(h.initialState ?? { step: 'idle' }),
-      busy: computed(() => false),
-      leaving: computed(() => false),
-      errorMessage: computed(() => ''),
-      sessionFailureCode: computed(() => h.sessionFailureCode),
-      available: computed(() => h.available),
-      signInWith: h.signInWith,
-      submitEmail: h.submitEmail,
-      retryMint: h.retryMint,
-      retryAvailability: h.retryAvailability
-    })
+    useSignInController: (onSignedIn: () => void) => {
+      h.onSignedIn = onSignedIn
+      return {
+        state: ref<SignInState>(h.initialState ?? { step: 'idle' }),
+        busy: computed(() => false),
+        leaving: computed(() => false),
+        errorMessage: computed(() => ''),
+        sessionFailureCode: computed(() => h.sessionFailureCode),
+        available: computed(() => h.available),
+        signInWith: h.signInWith,
+        submitEmail: h.submitEmail,
+        retryMint: h.retryMint,
+        retryAvailability: h.retryAvailability
+      }
+    }
   }
 })
 
 async function renderSignIn(path = '/sign-in') {
   const router = createBillingRouter(
     createMemoryHistory(),
-    () => 'signed-out',
+    () => h.phase,
     () => {}
   )
   await router.push(path)
@@ -50,6 +55,7 @@ async function renderSignIn(path = '/sign-in') {
   render(SignInView, {
     global: { plugins: [createBillingI18n(), router] }
   })
+  return router
 }
 
 const REFUSED_ENTRY =
@@ -61,10 +67,37 @@ beforeEach(() => {
   h.retryMint.mockClear()
   h.initialState = undefined
   h.sessionFailureCode = undefined
+  h.phase = 'signed-out'
   recordBillingEntry(undefined)
 })
 
 describe('SignInView', () => {
+  it('returns to the link it was sent from once signed in', async () => {
+    const router = await renderSignIn(
+      `/sign-in?returnTo=${encodeURIComponent(REFUSED_ENTRY)}`
+    )
+    h.phase = 'authenticated'
+
+    h.onSignedIn()
+
+    await vi.waitFor(() =>
+      expect(router.currentRoute.value.fullPath).toBe(REFUSED_ENTRY)
+    )
+  })
+
+  it('leaves the page alone when a sign-in resolves after the tab already moved on', async () => {
+    const router = await renderSignIn(
+      `/sign-in?returnTo=${encodeURIComponent(REFUSED_ENTRY)}`
+    )
+    h.phase = 'authenticated'
+    await router.replace(REFUSED_ENTRY)
+    const replace = vi.spyOn(router, 'replace')
+
+    h.onSignedIn()
+
+    expect(replace).not.toHaveBeenCalled()
+  })
+
   it('hands the entered credentials to the controller once', async () => {
     await renderSignIn()
 
@@ -175,6 +208,7 @@ describe('SignInView', () => {
 
   it.for([
     ['ACCESS_DENIED', "This account can't manage billing for that workspace."],
+    ['SSO_REQUIRED', "This account can't manage billing for that workspace."],
     [
       'WORKSPACE_NOT_FOUND',
       "This account can't access that workspace. Reopen billing from the app while signed in with the right account."
@@ -246,7 +280,7 @@ describe('SignInView', () => {
     ).toBeInTheDocument()
   })
 
-  it.for(['ACCESS_DENIED', 'WORKSPACE_NOT_FOUND'] as const)(
+  it.for(['ACCESS_DENIED', 'SSO_REQUIRED', 'WORKSPACE_NOT_FOUND'] as const)(
     'offers a way back to the app instead of a retry for %s',
     async (code) => {
       h.initialState = {

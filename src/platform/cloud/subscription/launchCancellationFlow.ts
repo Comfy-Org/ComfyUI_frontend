@@ -1,3 +1,4 @@
+import { supportsInAppCancellation } from '@/composables/billing/billingRail'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { t } from '@/i18n'
 import { prepareChurnkey } from '@/platform/cloud/churnkey/churnkeyClient'
@@ -184,7 +185,7 @@ export async function launchCancellationFlow({
   if (
     billing.type.value !== 'workspace' ||
     !launchWorkspaceId ||
-    workspaceStore.activeWorkspaceBillingRail !== 'stripe'
+    !supportsInAppCancellation(workspaceStore.activeWorkspaceBillingRail)
   ) {
     await showCancellationFallback(
       showFallback,

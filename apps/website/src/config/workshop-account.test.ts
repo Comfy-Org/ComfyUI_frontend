@@ -5,7 +5,7 @@ import type { User } from 'firebase/auth'
 import {
   captureAuthRefreshFailed,
   captureAuthRefreshSucceeded
-} from '../scripts/posthog'
+} from '@/scripts/posthog'
 import { okFetch, testFirebaseUser } from './__fixtures__/workshopSessionFakes'
 import {
   workshopSessionClient,
@@ -16,7 +16,7 @@ import { workshopIdentity as firebaseIdentity } from './workshop-firebase'
 
 let deliver: ((user: User | null) => void) | undefined
 
-vi.mock(import('../scripts/posthog'))
+vi.mock(import('@/scripts/posthog'))
 vi.mock(import('./workshop-firebase'))
 
 function statusFetch(status: number) {

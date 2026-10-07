@@ -1072,6 +1072,69 @@ describe('createBillingOperationLifecycle', () => {
       expect(storedPointer(storage)).toMatchObject({ settled: 'succeeded' })
     })
 
+    it.for([
+      {
+        settledAs: 'succeeded',
+        answers: SETTLED_ANSWERS,
+        revisitedAs: opStatus({ status: 'succeeded' })
+      },
+      {
+        settledAs: 'reconciliation_needed',
+        answers: [
+          httpOk(opStatus()),
+          httpOk(opStatus({ status: 'reconciliation_needed' }))
+        ],
+        revisitedAs: opStatus({ status: 'succeeded' })
+      }
+    ])(
+      'reports nothing when a revisit reads back an operation this tab already reported as $settledAs',
+      async ({ answers, revisitedAs }) => {
+        const storage = await settleOwnOperation(answers)
+        const reloaded = harness({
+          storage,
+          retainSettled: true,
+          answers: [httpOk(revisitedAs)]
+        })
+
+        await reloaded.lifecycle.recover({ includeSettled: true })
+        await vi.advanceTimersByTimeAsync(OPERATION_POLL_TIMING.initialMs * 1.5)
+
+        expect(reloaded.lifecycle.get('op-1')).toMatchObject({
+          phase: 'succeeded'
+        })
+        expect(reloaded.telemetry).toEqual([])
+      }
+    )
+
+    it('keeps a revisit quiet across a second reload while the operation is still pending', async () => {
+      const storage = await settleOwnOperation([
+        httpOk(opStatus()),
+        httpOk(opStatus({ status: 'reconciliation_needed' }))
+      ])
+      const revisit = harness({
+        storage,
+        retainSettled: true,
+        answers: [httpOk(opStatus())]
+      })
+      await revisit.lifecycle.recover({ includeSettled: true })
+      revisit.lifecycle.dispose()
+
+      expect(storedPointer(storage)).toMatchObject({
+        settled: 'reconciliation_needed'
+      })
+
+      const reloaded = harness({
+        storage,
+        retainSettled: true,
+        answers: [httpOk(opStatus({ status: 'succeeded' }))]
+      })
+      await reloaded.lifecycle.recover({ includeSettled: true })
+      await flush()
+
+      expect(revisit.telemetry).toEqual([])
+      expect(reloaded.telemetry).toEqual([])
+    })
+
     it('marks an operation this tab issued and left pending as awaited here when it comes back settled', async () => {
       const storage = memoryStorage()
       const left = harness({ storage, retainSettled: true })
@@ -1460,7 +1523,9 @@ describe('createBillingOperationLifecycle', () => {
         'no_hosted_url'
       )
 
-      await vi.advanceTimersByTimeAsync(OPERATION_POLL_TIMING.parkedMs)
+      await vi.advanceTimersByTimeAsync(
+        OPERATION_POLL_TIMING.initialMs * OPERATION_POLL_TIMING.multiplier
+      )
       expect(calls).toHaveLength(2)
       expect(lifecycle.switchPresentation('op-1', 'hosted')).toBe('switched')
       expect(lifecycle.get('op-1')).toMatchObject({
@@ -1896,6 +1961,93 @@ describe('hosted redirect telemetry', () => {
       }
     ])
     expect(redirectsOf(reloaded.telemetry)).toEqual([])
+  })
+
+  function challengeWithPaymentPage(id: string) {
+    return httpOk(
+      opStatus({
+        id,
+        authentication_state: 'requires_action',
+        payment_intent_client_secret: 'pi_secret',
+        action_url: PAYMENT_PAGE
+      })
+    )
+  }
+
+  it('still reports the return after the operation switched presentation on the way out', async () => {
+    const storage = memoryStorage()
+    const left = harness({
+      storage,
+      embedded: true,
+      answers: [challengeWithPaymentPage('op-1')]
+    })
+    await left.lifecycle.begin(
+      'topup',
+      issued({ operationId: 'op-1', clientSecret: 'pi_secret' })
+    )
+    await flush()
+    left.lifecycle.reportHostedStepOpened('op-1', 'redirect', 'card')
+    expect(left.lifecycle.switchPresentation('op-1', 'hosted')).toBe('switched')
+    left.lifecycle.dispose()
+
+    const back = harness({
+      storage,
+      status: statusSnapshot({
+        pending_billing_op_id: 'op-1',
+        pending_billing_op_type: 'topup'
+      })
+    })
+    await back.lifecycle.recover()
+
+    expect(redirectsOf(back.telemetry)).toEqual([
+      {
+        name: 'billing.checkout.returned',
+        billing_op_id: 'op-1',
+        operation_type: 'topup',
+        presentation: 'hosted',
+        resumed: true,
+        destination: 'stripe',
+        step: 'authentication',
+        navigation: 'redirect',
+        method_kind: 'card'
+      }
+    ])
+  })
+
+  it('reports no return for an operation that never redirected, though another one did', async () => {
+    const storage = memoryStorage()
+    const left = harness({
+      storage,
+      embedded: true,
+      answers: [
+        challengeWithPaymentPage('op-2'),
+        challengeWithPaymentPage('op-1')
+      ]
+    })
+    await left.lifecycle.begin(
+      'subscription',
+      issued({ operationId: 'op-2', clientSecret: 'pi_secret' })
+    )
+    await flush()
+    await left.lifecycle.begin(
+      'topup',
+      issued({ operationId: 'op-1', clientSecret: 'pi_secret' })
+    )
+    await flush()
+    left.lifecycle.reportHostedStepOpened('op-1', 'redirect')
+    expect(left.lifecycle.switchPresentation('op-2', 'hosted')).toBe('switched')
+    left.lifecycle.dispose()
+
+    const back = harness({
+      storage,
+      status: statusSnapshot({
+        pending_billing_op_id: 'op-2',
+        pending_billing_op_type: 'subscription'
+      })
+    })
+    await back.lifecycle.recover()
+
+    expect(redirectsOf(back.telemetry)).toEqual([])
   })
 
   it('reports the return once when the customer comes back to this tab from a new one', async () => {

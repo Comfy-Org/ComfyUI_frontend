@@ -3,7 +3,7 @@ import { ref } from 'vue'
 
 import Checkbox from './Checkbox.vue'
 
-const meta = {
+const meta: Meta<typeof Checkbox> = {
   title: 'Components/Checkbox',
   component: Checkbox,
   tags: ['autodocs'],
@@ -11,7 +11,7 @@ const meta = {
     disabled: { control: 'boolean' },
     'onUpdate:modelValue': { action: 'update:modelValue' }
   }
-} satisfies Meta<typeof Checkbox>
+}
 
 export default meta
 type Story = StoryObj<typeof meta>
