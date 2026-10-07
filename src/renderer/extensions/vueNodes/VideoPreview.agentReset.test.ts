@@ -159,7 +159,7 @@ function renderCanvasHost(graph: LGraph) {
     const node = screen.queryByTestId(`node-${nodeId}`)
     if (!node) return null
     const region = within(node).queryByRole('region')
-    // eslint-disable-next-line testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-node-access -- <video> has no implicit ARIA role or accessible name; scoped through the node's region so it still fails if the element moves
     return region?.querySelector('video') ?? null
   }
   return {
