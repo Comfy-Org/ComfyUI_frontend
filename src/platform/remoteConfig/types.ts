@@ -121,7 +121,6 @@ export type RemoteConfig = Partial<GetFeaturesResponses[200]> & {
   free_tier_credits?: number
   free_tier_job_allowance_enabled?: boolean
   new_free_tier_subscriptions?: boolean
-  workflow_sharing_enabled?: boolean
   comfyhub_upload_enabled?: boolean
   comfyhub_profile_gate_enabled?: boolean
   // Raw, unvalidated wire value ('stripe' | 'billing_web' by contract). Always
