@@ -59,6 +59,7 @@ import {
   errorResponseFromBody
 } from '@/platform/remote/comfyui/errors'
 import { attachCapabilityRevisionInterceptor } from '@/platform/workspace/api/capabilityRevision'
+import { DEPLOYMENT_LISTING_TIMEOUT_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
 import type {
   WorkspaceId,
   WorkspaceInviteId
@@ -316,9 +317,8 @@ export const workspaceApi = {
   /**
    * List the developer-platform deployments this browser may pick, each
    * with the Release it runs now, and which one it picked. 403 when the account is outside the rollout.
-   * Times out after 30 seconds: ingest answers it with several upstream calls
-   * in a row (deployments, builds, then each Build's Releases), and the
-   * editor's missing-model check waits for it, so it must always settle.
+   * Times out `DEPLOYMENT_LISTING_TIMEOUT_MS` after it is sent; the
+   * sign-in step before it is not covered and can hang.
    * GET /api/workspaces/:id/deployments
    */
   async listDeployments(
@@ -328,7 +328,7 @@ export const workspaceApi = {
     try {
       const response = await workspaceApiClient.get<WorkspaceDeploymentList>(
         workspaceApiUrl(`/workspaces/${workspaceId}/deployments`),
-        { ...auth, timeout: 30_000 }
+        { ...auth, timeout: DEPLOYMENT_LISTING_TIMEOUT_MS }
       )
       return response.data
     } catch (err) {
