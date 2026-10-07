@@ -302,27 +302,25 @@ describe('useAttachment', () => {
     )
   })
 
-  it('tags the failure cause when the upload rejects with a known error shape', async () => {
-    const cases: Array<{
-      cause: unknown
-      expectedCause: string
-    }> = [
-      {
-        cause: new AgentApiError('nope', 503, undefined),
-        expectedCause: 'http_503'
-      },
-      {
-        cause: new AgentResponseUnreadableError(new Error('bad json')),
-        expectedCause: 'unreadable_response'
-      },
-      {
-        cause: new Error('some other failure'),
-        expectedCause: 'unknown'
-      }
-    ]
-
-    for (const { cause, expectedCause } of cases) {
-      vi.mocked(reportError).mockClear()
+  it.for([
+    {
+      label: 'an API error',
+      cause: new AgentApiError('nope', 503, undefined),
+      expectedCause: 'http_503'
+    },
+    {
+      label: 'an unreadable response',
+      cause: new AgentResponseUnreadableError(new Error('bad json')),
+      expectedCause: 'unreadable_response'
+    },
+    {
+      label: 'an unrecognized error',
+      cause: new Error('some other failure'),
+      expectedCause: 'unknown'
+    }
+  ])(
+    'tags the upload failure cause for $label',
+    async ({ cause, expectedCause }) => {
       const upload = vi.fn().mockRejectedValue(cause)
       const registry = chipRegistry()
       const { addFiles } = useAttachment({ upload, ...registry })
@@ -340,7 +338,7 @@ describe('useAttachment', () => {
         })
       )
     }
-  })
+  )
 
   it('tags an aborted-by-timeout upload with the timeout failure cause', async () => {
     vi.useFakeTimers()
