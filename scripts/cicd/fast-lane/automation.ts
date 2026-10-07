@@ -134,6 +134,7 @@ export async function stopMergeAutomation(
 export async function armMergeAutomation(
   github: GitHubClient,
   pull: PullRequest,
+  approvedHeadSha: string,
   config: RuntimeConfig,
   summary: Summary
 ): Promise<void> {
@@ -143,7 +144,10 @@ export async function armMergeAutomation(
   }
 
   const state = await readMergeState(github, pull.node_id)
-  if (state.headRefOid !== pull.head.sha) {
+  if (
+    pull.head.sha !== approvedHeadSha ||
+    state.headRefOid !== approvedHeadSha
+  ) {
     throw new Error('the pull request head advanced before merge automation')
   }
   if (state.mergeQueueEntry) {
@@ -462,11 +466,36 @@ async function approveAndArm(
     summary
   )
   if (!approved) return
-  const pull = asPullRequest(
-    await github.request(`/pulls/${config.pullRequestNumber}`)
-  )
-  await armMergeAutomation(github, pull, config, summary)
-  await revalidate(github, config, summary)
+  const verified = await revalidate(github, config, summary)
+  if (!verified) return
+  try {
+    await armMergeAutomation(
+      github,
+      verified.pull,
+      config.eventHeadSha,
+      config,
+      summary
+    )
+    await revalidate(github, config, summary)
+  } catch (error) {
+    const state = await readPullState(github, config.pullRequestNumber)
+    try {
+      await stop(
+        github,
+        config,
+        state.pull,
+        state.reviews,
+        'Merge automation failed; approval and merge state were withdrawn.',
+        summary
+      )
+    } catch (cleanupError) {
+      throw new AggregateError(
+        [error, cleanupError],
+        'merge automation and compensation both failed', { cause: cleanupError }
+      )
+    }
+    throw error
+  }
 }
 
 export async function runFastLane(

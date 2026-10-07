@@ -125,7 +125,7 @@ describe('merge automation', () => {
       graphql
     }
 
-    await armMergeAutomation(github, pull(), runtimeConfig(), vi.fn())
+    await armMergeAutomation(github, pull(), headSha, runtimeConfig(), vi.fn())
 
     expect(graphql).toHaveBeenCalledTimes(2)
     expect(graphql.mock.calls[1][0]).toContain('enablePullRequestAutoMerge')
@@ -157,13 +157,42 @@ describe('merge automation', () => {
       graphql
     }
 
-    await armMergeAutomation(github, pull(), runtimeConfig(), vi.fn())
+    await armMergeAutomation(github, pull(), headSha, runtimeConfig(), vi.fn())
 
     expect(graphql.mock.calls[1][0]).toContain('jump: false')
     expect(graphql.mock.calls[1][1]).toEqual({
       pullRequestId: 'PR_1',
       expectedHeadOid: headSha
     })
+  })
+
+  it('does not arm a head that advanced after policy approval', async () => {
+    const advancedSha = 'abcdef0123456789abcdef0123456789abcdef01'
+    const graphql = vi.fn<GitHubClient['graphql']>().mockResolvedValueOnce({
+      node: {
+        id: 'PR_1',
+        headRefOid: advancedSha,
+        mergeStateStatus: 'CLEAN',
+        autoMergeRequest: null,
+        mergeQueueEntry: null
+      }
+    })
+    const github: GitHubClient = {
+      request: unusedRequest,
+      paginate: unusedPaginate,
+      graphql
+    }
+
+    await expect(
+      armMergeAutomation(
+        github,
+        { node_id: 'PR_1', head: { sha: advancedSha } },
+        headSha,
+        runtimeConfig(),
+        vi.fn()
+      )
+    ).rejects.toThrow('head advanced')
+    expect(graphql).toHaveBeenCalledTimes(1)
   })
 
   it('does not mutate merge state in a manual lane', async () => {
@@ -176,7 +205,7 @@ describe('merge automation', () => {
       graphql
     }
 
-    await armMergeAutomation(github, pull(), config, vi.fn())
+    await armMergeAutomation(github, pull(), headSha, config, vi.fn())
 
     expect(graphql).not.toHaveBeenCalled()
   })
