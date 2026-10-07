@@ -253,6 +253,26 @@ describe('tabs of one site', () => {
     ])
   })
 
+  it('a follower adopts the personal-workspace answer the leader read', async () => {
+    const endpoint = liveEndpoint()
+    const site = createFakeSiteBus()
+    const leader = openTab({ endpoint, site })
+    const follower = openTab({ endpoint, site })
+    await settle()
+
+    endpoint.state = {
+      kind: 'live',
+      user: { ...USER_1, hasPersonalWorkspace: false }
+    }
+    leader.scheduler.fire(HEARTBEAT_MS)
+    await settle()
+
+    expect(follower.identity.getState()).toMatchObject({
+      phase: 'signed_in',
+      session: { user: { hasPersonalWorkspace: false } }
+    })
+  })
+
   it('hands leadership to a visible sibling when the leader is hidden', async () => {
     const endpoint = liveEndpoint()
     const site = createFakeSiteBus()

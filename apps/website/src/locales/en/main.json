@@ -672,6 +672,7 @@
       "googleSsoInAppBrowserNotice": "If you opened this from an in-app browser (e.g. Instagram, LinkedIn), Google sign-in may not work. Use GitHub or email, or open this page in your device's default browser.",
       "pending": "Finish signing in from the pop-up window.",
       "signingIn": "Signing you in…",
+      "ssoRedirecting": "Continuing to your organization's sign-in…",
       "signOut": "Sign out",
       "useEmailInstead": "Use email instead",
       "backToSocialLogin": "Sign up with Google or Github instead",
@@ -2468,6 +2469,7 @@
     "wan3": "Wan 3.0",
     "chatgptImage25": "ChatGPT Images 2.5",
     "qwenImage21": "Qwen-Image 2.1",
+    "nanoBanana": "Nano Banana 2.1",
     "cloudNodes": "Comfy Cloud Nodes",
     "modelCatalogue": "ComfyUI Models"
   },
@@ -3295,7 +3297,7 @@
       "q3": "What does Comfy Enterprise include?",
       "a3": "Cloud or in-house deployment with data ownership, bring-your-own-key support, orchestration, support from the team that builds the engine, and add-ons like MiniMax commercial licensing. [See Comfy Enterprise](https://comfy.org/enterprise/), or request a demo through this form.",
       "q4": "Is Comfy SOC 2 compliant?",
-      "a4": "A SOC 2 Type II audit is in progress. Security documentation and real-time control status are available in our [Trust Center](https://app.vanta.com/comfy.org/trust/o6nu46b16iu3e7fhc41hnz), and our team can walk through security requirements as part of an Enterprise conversation."
+      "a4": "Our SOC 2 Type II audit is complete, and the Type II report is available on request. Security documentation and real-time control status are available in our [Trust Center](https://app.vanta.com/comfy.org/trust/o6nu46b16iu3e7fhc41hnz), and our team can walk through security requirements as part of an Enterprise conversation."
     }
   },
   "hubspotForm": {
@@ -4063,6 +4065,57 @@
       "highlightCta": "GET STARTED"
     }
   },
+  "nanoBanana": {
+    "meta": {
+      "title": "Nano Banana on Comfy: Generate and Edit Images",
+      "description": "Run Nano Banana in ComfyUI. Generate images from text, edit existing visuals, and direct results with reference images in a repeatable workflow."
+    },
+    "breadcrumb": {
+      "model": "Nano Banana",
+      "updated": "Updated October 2026"
+    },
+    "hero": {
+      "title": "Nano Banana 2.1 is here",
+      "description": "Google's newest Gemini image model, now in Comfy. Give it a prompt and references, and it returns an image at up to 4K. It works anywhere Nano Banana 2 does, with a new thinking level and a lower price.",
+      "tagTextToImage": "Text to Image",
+      "tagImageEditing": "Image Editing",
+      "tagPartnerNode": "Partner Node",
+      "primaryCta": "RUN NANO BANANA 2.1",
+      "secondaryCta": "READ THE GUIDE"
+    },
+    "showcase": {
+      "photography": {
+        "heading": "Shot like it happened.",
+        "description": "Realistic light and detail for the scenes you've only pictured."
+      },
+      "design": {
+        "heading": "One idea, every style.",
+        "description": "Iterate your designs in any style you want."
+      },
+      "advertising": {
+        "heading": "From brief to campaign.",
+        "description": "Advertising for any industry, with crisp detail and type that reads."
+      }
+    },
+    "pricing": {
+      "banner": {
+        "title": "Start Comfy Cloud for free. Upgrade when you're ready.",
+        "subtitle": "5 free runs on real GPUs — no credit card required.",
+        "cta": "TRY FREE"
+      }
+    },
+    "faq": {
+      "heading": "Q&A"
+    },
+    "runOptions": {
+      "heading": "One engine, every way to run it",
+      "subtitle": "Build workflows in the browser today. Batch campaigns with the API, or connect image generation to the rest of your creative pipeline.",
+      "cta": "LEARN MORE"
+    },
+    "reviews": {
+      "heading": "4+ million Comfy creators say"
+    }
+  },
   "qwenImage21": {
     "meta": {
       "title": "Qwen-Image 2.1 on Comfy: Open-Weight Image Generation and Editing",
@@ -4458,6 +4511,11 @@
       "getStarted": "Get Started",
       "readDocs": "Read the docs"
     },
+    "challengeBanner": {
+      "label": "OPEN CALL CHALLENGE",
+      "line": "Build on the platform for a chance to win $10k. Ends Oct 19, 9am PT.",
+      "cta": "Read the post"
+    },
     "serverless": {
       "codeHeading": "Call your endpoint",
       "codeSubtitle": "The SDK is the front door; plain HTTP works too."
@@ -4647,7 +4705,7 @@
       },
       "enterprise": {
         "title": "Enterprise",
-        "description": "Managed Builds: approved checkpoints, vetted nodes, and deployment governance across the fleet. SOC 2 underway.",
+        "description": "Managed Builds: approved checkpoints, vetted nodes, and deployment governance across the fleet. SOC 2 Type II audit complete.",
         "cta": "Contact sales"
       }
     },
@@ -4695,7 +4753,7 @@
       },
       "7": {
         "q": "Is the platform SOC 2 certified?",
-        "a": "SOC 2 is underway. Contact us for current status and security documentation."
+        "a": "Our SOC 2 Type II audit is complete, and the report is available on request. Contact us for security documentation."
       },
       "8": {
         "q": "Does it autoscale? What about cold starts?",
