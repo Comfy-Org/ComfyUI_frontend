@@ -16,7 +16,7 @@ export type StarterPromptAssignment =
   (typeof STARTER_PROMPT_ASSIGNMENTS)[number]
 
 function isAssignment(
-  value: string | undefined
+  value: unknown
 ): value is StarterPromptAssignment {
   return STARTER_PROMPT_ASSIGNMENTS.some((assignment) => assignment === value)
 }
@@ -65,10 +65,19 @@ export function useStarterPromptSet() {
     }
     qaOverride.value = resolved.hasQaOverride
     assigned.value = resolved.assignment
+    // An EmptyState can mount before authenticated config is available. Keep
+    // its rendered assignment pending, but only make it an exposure once the
+    // authenticated result has settled and the surface is still mounted.
+    if (
+      isAuthenticatedConfigLoaded.value &&
+      !surfaceRendered &&
+      renderedSurfaceAssignment.value !== undefined
+    ) {
+      surfaceRendered = true
+    }
     if (
       surfaceRendered &&
-      (renderedSurfaceAssignment.value === undefined ||
-        renderedSurfaceAssignment.value === assigned.value) &&
+      renderedSurfaceAssignment.value === assigned.value &&
       !qaOverride.value &&
       exposedAssignment.value !== assigned.value
     ) {
@@ -83,12 +92,9 @@ export function useStarterPromptSet() {
     // Resolve the assignment before marking the surface rendered. Otherwise a
     // localized control surface can emit a test exposure before its rendered
     // assignment mismatch is checked below.
-    if (
-      !isAuthenticatedConfigLoaded.value &&
-      renderedAssignment === undefined
-    ) {
-      renderedSurfaceAssignment.value = assigned.value
-      surfaceRendered = true
+    if (!isAuthenticatedConfigLoaded.value) {
+      renderedSurfaceAssignment.value = renderedAssignment ?? assigned.value
+      surfaceRendered = false
       return
     }
     surfaceRendered = false
