@@ -3939,6 +3939,10 @@ export const zGetFeaturesResponse = z.object({
       'inside-input'
     ])
     .default('control'),
+  'agent-starter-prompt-set': z
+    .enum(['control', 'test'])
+    .optional()
+    .default('control'),
   billing_web_url: z.string().optional(),
   free_tier_balance: z
     .object({
