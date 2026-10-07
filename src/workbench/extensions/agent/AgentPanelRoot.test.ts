@@ -14,10 +14,12 @@ import {
   computed,
   createApp,
   defineComponent,
+  effectScope,
   h,
   nextTick,
   reactive,
-  ref
+  ref,
+  watch
 } from 'vue'
 import type { Ref } from 'vue'
 import { useClipboard } from '@vueuse/core'
@@ -39,6 +41,10 @@ import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
+import {
+  toDocumentUid,
+  useDocumentLifecycleStore
+} from '@/platform/workflow/core/stores/documentLifecycleStore'
 import { toNodeId } from '@/types/nodeId'
 
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
@@ -294,6 +300,60 @@ function syncFakeSelection() {
   setCanvasSelection([...(canvasStore.canvas?.selectedItems ?? [])])
 }
 
+/**
+ * Read through the nullable base contract: `LoadedComfyWorkflow` declares
+ * `activeState` non-null by an unchecked cast, and `addTab` really does leave
+ * it null for a tab the test seeded no id for.
+ */
+function seededRootGraphId(workflow: ComfyWorkflow): string | undefined {
+  return workflow.activeState?.id
+}
+
+/**
+ * The app publishes the active document's root graph id at the end of a
+ * completed `loadGraphData` (`workflowService.afterLoadNewGraph`); this harness
+ * switches tabs by assigning `workflowStore.activeWorkflow` directly, which in
+ * the app is a pointer move with no graph load. Which document is presented
+ * therefore needs no mirroring — the lifecycle store reads the pointer this
+ * harness already sets — but the root graph id does, because this harness does
+ * not model the canvas graph.
+ *
+ * The published root graph id is the workflow's own serialized id, which is what
+ * `rootGraph.configure()` adopts on a real load. Nothing mirrors *later*
+ * mutations of `activeState.id`: following those was the behaviour the
+ * lifecycle store replaces, so a test that needs an in-place rotation drives
+ * `rebindActiveRootGraph` the way `app.clean()` does.
+ *
+ * A tab the test did not seed an `activeState.id` for still gets a distinct
+ * synthetic one. In the app a live root graph always has a uuid; publishing
+ * nothing would read as "no document is on the canvas" and silence the
+ * follower.
+ */
+function startDocumentLifecycleMirror(): () => void {
+  const scope = effectScope(true)
+  scope.run(() => {
+    watch(
+      () => workflowStore.activeWorkflow,
+      (active) => {
+        const lifecycle = useDocumentLifecycleStore()
+        if (!active) {
+          lifecycle.beginTransition(null)
+          return
+        }
+        const uid = toDocumentUid(active.instanceId)
+        const transition = lifecycle.beginTransition(uid)
+        const seeded = seededRootGraphId(active)
+        lifecycle.activate(
+          toRootGraphId(seeded ?? `live-root-${uid}`),
+          transition
+        )
+      },
+      { flush: 'sync' }
+    )
+  })
+  return () => scope.stop()
+}
+
 beforeEach(() => {
   let clientMessageIds = 0
   nextClientMessageId.mockImplementation(
@@ -413,6 +473,8 @@ beforeEach(() => {
   )
 
   workflowStore.activeWorkflow = null
+  useDocumentLifecycleStore().$reset()
+  const stopDocumentLifecycleMirror = startDocumentLifecycleMirror()
   setCanvasSelection([])
   canvasStore.currentGraph = null
   appMock.graph.nodes = []
@@ -451,6 +513,7 @@ beforeEach(() => {
   paywallBilling.fetchStatus.mockReset().mockResolvedValue(undefined)
   paywallHasFunds.value = false
   paywallAgentHasFunds.value = undefined
+  return stopDocumentLifecycleMirror
 })
 
 const zAgentWsEventForTest = (raw: unknown): AgentChatEvent =>
@@ -11127,7 +11190,7 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(docOpMinterDeps.current?.boundRootGraphId()).toBeNull()
   })
 
-  it("reports the newly bound workflow's root graph id after an active-tab switch, even though the previously bound workflow stayed correct while its tab was inactive", async () => {
+  it("reports the newly bound workflow's root graph id after an active-tab switch, and nothing while the bound workflow's tab is backgrounded", async () => {
     makeTab('wf-a')
     const tabB = addTab('workflows/b.json', {
       activeState: fromPartial<ComfyWorkflowJSON>({ id: 'wf-b' })
@@ -11143,13 +11206,14 @@ describe('AgentPanelRoot workflow binding', () => {
       )
     )
 
-    // A stays bound but leaves the screen; a write-once latch would also
-    // still report wf-a here, so this alone would not catch a regression.
+    // A stays bound but leaves the screen, so the root graph on the canvas is
+    // no longer A's: the minter must report nothing rather than name a graph
+    // the user is not editing. The final assertion is what a write-once latch
+    // stuck on wf-a would fail.
     workflowStore.activeWorkflow = addTab('workflows/elsewhere.json')
     await nextTick()
-    expect(docOpMinterDeps.current?.boundRootGraphId()).toBe(
-      toRootGraphId('wf-a')
-    )
+    expect(docOpMinterDeps.current?.boundRootGraphId()).toBeNull()
+    expect(docOpMinterDeps.current?.isDocBound()).toBe(false)
 
     // The agent moves the session onto B's own tab.
     ws.emit('agent_active_tab', { workflow_id: 'wf-b', thread_id: 'th-1' })
@@ -11163,7 +11227,7 @@ describe('AgentPanelRoot workflow binding', () => {
   })
 
   it("reflects the bound workflow's own root graph id rotating without a rebind (regression)", async () => {
-    const tab = makeTab('wf-42')
+    makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
 
     await renderAndSend('add an upscaler')
@@ -11174,12 +11238,20 @@ describe('AgentPanelRoot workflow binding', () => {
       )
     )
 
-    // The same bound workflow's own graph id rotates in place (LGraph.clear
-    // mints a fresh uuid) without boundWorkflowId itself ever changing.
-    tab.activeState = fromPartial<ComfyWorkflowJSON>({ id: 'wf-42-rotated' })
+    // The same bound workflow's own graph id rotates in place without
+    // boundWorkflowId ever changing: `Comfy.ClearWorkflow` calls `app.clean()`,
+    // whose `LGraph.clear()` mints a fresh uuid with no graph load. That
+    // `clean()` reports the rotation here is pinned in `app.test.ts`
+    // ("follows the root graph id that Clear Workflow mints in place"); this
+    // asserts the minter's cross-graph guard follows it, which is what #18109
+    // guards and what a write-once latch would break.
+    useDocumentLifecycleStore().rebindActiveRootGraph(
+      toRootGraphId('wf-42-rotated')
+    )
 
     expect(docOpMinterDeps.current?.boundRootGraphId()).toBe(
       toRootGraphId('wf-42-rotated')
     )
+    expect(docOpMinterDeps.current?.isDocBound()).toBe(true)
   })
 })
