@@ -40,7 +40,10 @@ it('keeps the model files a workflow page needs', async () => {
   expect(workflowPage.model.parts.files).toContainEqual({
     name: 'qwen_image_vae.safetensors',
     directory: 'vae',
-    href: '/hub/models/local/qwen-image-vae/'
+    folder: 'models/vae/',
+    href: '/hub/models/local/qwen-image-vae/',
+    downloadUrl:
+      'https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI/resolve/main/split_files/vae/qwen_image_vae.safetensors'
   })
 })
 

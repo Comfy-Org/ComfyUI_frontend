@@ -30,7 +30,9 @@ const workflowPartsSchema = z.object({
     z.object({
       name: z.string(),
       directory: z.string().optional(),
-      href: z.string().optional()
+      folder: z.string().optional(),
+      href: z.string().optional(),
+      downloadUrl: z.string().url().optional()
     })
   )
 })

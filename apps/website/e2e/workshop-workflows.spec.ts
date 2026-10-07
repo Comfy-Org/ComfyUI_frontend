@@ -635,7 +635,7 @@ test('the workflow page stacks its sections and its path buttons lead to them', 
   await expect(cloud).toHaveAttribute('href', /\?template=/)
 })
 
-test('the workflow facts link the model files it needs and its way back', async ({
+test('the workflow facts open on Comfy Cloud and list the files for your machine, with its way back', async ({
   page,
   context
 }) => {
@@ -651,11 +651,32 @@ test('the workflow facts link the model files it needs and its way back', async 
   )
   await expect(back.getByRole('link', { name: /^Back to/ })).toBeHidden()
 
-  const files = page.getByTestId('workflow-files')
-  await files.scrollIntoViewIfNeeded()
+  const facts = page.getByTestId('workflow-facts')
+  await facts.scrollIntoViewIfNeeded()
+  const cloud = facts.getByRole('tab', { name: 'Comfy Cloud' })
+  await expect(cloud).toHaveAttribute('aria-selected', 'true')
+  await expect(facts.getByRole('tabpanel')).toContainText(
+    'Nothing to download — Comfy Cloud already has every file.'
+  )
+  await cloud.focus()
+  await page.keyboard.press('ArrowRight')
   await expect(
-    files.getByRole('link', { name: /qwen_image_vae\.safetensors/ })
+    facts.getByRole('tab', { name: 'Your machine' })
+  ).toHaveAttribute('aria-selected', 'true')
+
+  const files = page.getByTestId('workflow-files')
+  const vae = files
+    .getByTestId('workflow-file')
+    .filter({ hasText: 'qwen_image_vae.safetensors' })
+  await expect(
+    vae.getByRole('link', { name: /^qwen_image_vae\.safetensors/ })
   ).toHaveAttribute('href', '/hub/models/local/qwen-image-vae/')
+  await expect(vae.getByTestId('workflow-file-place')).toHaveText(
+    'VAE · models/vae/'
+  )
+  await expect(
+    vae.getByRole('link', { name: 'Download qwen_image_vae.safetensors' })
+  ).toHaveAttribute('href', /^https:\/\/huggingface\.co\//)
 })
 
 test('a workflow card keeps two rows for its name and carries its tag', async ({

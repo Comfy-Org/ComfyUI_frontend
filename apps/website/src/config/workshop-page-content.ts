@@ -21,12 +21,14 @@ const modelFileSlug = (name: string) => {
 
 function modelFilePage(name: string) {
   const model = modelFiles.get(name)
-  return model
-    ? {
-        directory: model.directory,
-        href: localModelPath(model.canonicalSlug ?? model.slug)
-      }
-    : undefined
+  if (!model) return undefined
+  const downloadUrl =
+    model.directory === 'partner_nodes' ? '' : model.huggingFaceUrl
+  return {
+    directory: model.directory,
+    href: localModelPath(model.canonicalSlug ?? model.slug),
+    ...(downloadUrl ? { downloadUrl } : {})
+  }
 }
 
 const fileLoadingWorkflows = workflowModels.flatMap((model) => {

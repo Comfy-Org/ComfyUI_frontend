@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { render, screen, waitFor, within } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { getWorkshopPageDetail } from '@/config/workshop-page-content'
@@ -138,15 +139,81 @@ describe('WorkflowPreview', () => {
     expect(within(runsOn).queryByRole('link')).toBeNull()
   })
 
-  it('lists the model files it loads, linking those with a page', () => {
+  it('opens on Comfy Cloud, where there is nothing to download', () => {
+    const ltx = getWorkshopPageDetail('workflows/remove-object-from-video')
+    assert(ltx && 'parts' in ltx && ltx.parts.files.length > 0)
+    render(WorkflowPreview, { props: { model: ltx } })
+
+    expect(
+      screen.getByRole('tab', { name: 'Comfy Cloud', selected: true })
+    ).toBeTruthy()
+    expect(screen.getByRole('tabpanel')).toHaveTextContent(
+      'Nothing to download — Comfy Cloud already has every file.'
+    )
+    expect(screen.queryByTestId('workflow-files')).toBeNull()
+  })
+
+  it('opens on Your machine for a workflow that does not run on Comfy Cloud', () => {
+    render(WorkflowPreview, {
+      props: { model: { ...model, type: 'SERVERLESS' } }
+    })
+
+    expect(
+      screen.getByRole('tab', { name: 'Your machine', selected: true })
+    ).toBeTruthy()
+  })
+
+  it('moves between the tabs with the arrow keys', async () => {
+    const user = userEvent.setup()
+    render(WorkflowPreview, { props: { model } })
+
+    await user.click(screen.getByRole('tab', { name: 'Comfy Cloud' }))
+    await user.keyboard('{ArrowRight}')
+
+    const machine = screen.getByRole('tab', { name: 'Your machine' })
+    expect(machine).toHaveFocus()
+    expect(machine).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByRole('tabpanel')).toHaveAttribute(
+      'aria-labelledby',
+      machine.id
+    )
+  })
+
+  it('puts each file in its ComfyUI folder, with a download where the data has one', async () => {
+    const user = userEvent.setup()
     const ltx = getWorkshopPageDetail('workflows/remove-object-from-video')
     assert(ltx && 'parts' in ltx && ltx.parts)
     render(WorkflowPreview, { props: { model: ltx } })
+    await user.click(screen.getByRole('tab', { name: 'Your machine' }))
+
+    const encoder = within(screen.getByTestId('workflow-files'))
+      .getAllByTestId('workflow-file')
+      .find((row) => row.textContent.includes('gemma_3_12B_it_fp4_mixed'))
+    assert(encoder, 'the fixture no longer loads the Gemma text encoder')
+    expect(
+      within(encoder).getByTestId('workflow-file-place')
+    ).toHaveTextContent('Text encoder · models/text_encoders/')
+    expect(
+      within(encoder).getByRole('link', {
+        name: 'Download gemma_3_12B_it_fp4_mixed.safetensors'
+      })
+    ).toHaveAttribute(
+      'href',
+      expect.stringMatching(/^https:\/\/huggingface\.co\//)
+    )
+  })
+
+  it('lists the model files it loads, linking those with a page', async () => {
+    const user = userEvent.setup()
+    const ltx = getWorkshopPageDetail('workflows/remove-object-from-video')
+    assert(ltx && 'parts' in ltx && ltx.parts)
+    render(WorkflowPreview, { props: { model: ltx } })
+    await user.click(screen.getByRole('tab', { name: 'Your machine' }))
 
     const files = screen.getByTestId('workflow-files')
     expect(files).toHaveTextContent('Files it needs')
     const encoder = within(files).getByRole('link', {
-      name: /gemma_3_12B_it_fp4_mixed\.safetensors/
+      name: /^gemma_3_12B_it_fp4_mixed\.safetensors/
     })
     expect(encoder).toHaveAttribute(
       'href',
@@ -155,16 +222,21 @@ describe('WorkflowPreview', () => {
     expect(encoder).toHaveTextContent('Text encoder')
     expect(files).toHaveTextContent('LTX23_video_vae_bf16.safetensors')
     expect(
-      within(files).queryByRole('link', { name: /LTX23_video_vae_bf16/ })
+      within(files).queryByRole('link', { name: /^LTX23_video_vae_bf16/ })
     ).toBeNull()
   })
 
-  it('shows no files group for a workflow that loads none', () => {
+  it('says there is nothing to download for a workflow that loads no files', async () => {
+    const user = userEvent.setup()
     const seedance = getWorkshopPageDetail('workflows/change-video-background')
     assert(seedance && 'parts' in seedance)
     render(WorkflowPreview, { props: { model: seedance } })
+    await user.click(screen.getByRole('tab', { name: 'Your machine' }))
 
     expect(screen.queryByTestId('workflow-files')).toBeNull()
+    expect(screen.getByTestId('workflow-no-files')).toHaveTextContent(
+      'It loads no model files, so there is nothing to download.'
+    )
   })
 
   // The graph is read from the same JSON the page offers for download, so what

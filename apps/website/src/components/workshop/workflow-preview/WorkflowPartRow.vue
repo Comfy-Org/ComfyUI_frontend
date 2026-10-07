@@ -3,11 +3,10 @@ import type { Component } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-const { icon, name, href, detail, textClass } = defineProps<{
+const { icon, name, href, textClass } = defineProps<{
   icon: Component
   name: string
   href?: string
-  detail?: string
   textClass: string
 }>()
 </script>
@@ -33,9 +32,6 @@ const { icon, name, href, detail, textClass } = defineProps<{
       "
     >
       {{ name }}
-    </span>
-    <span v-if="detail" class="shrink-0 text-xs text-primary-warm-gray">
-      {{ detail }}
     </span>
   </component>
 </template>

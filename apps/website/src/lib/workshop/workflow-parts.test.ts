@@ -5,7 +5,7 @@ import type {
   WorkshopModel
 } from '@/config/models-catalogue'
 import { workflowDetailsBySlug } from '@/config/workshop-workflow-content'
-import { workflowParts } from './workflow-parts'
+import { comfyuiFolder, workflowParts } from './workflow-parts'
 
 function loadFixture(): WorkflowWorkshopModelDetail {
   const detail = workflowDetailsBySlug.get('workflows/remove-background')
@@ -127,11 +127,13 @@ describe('workflowParts files', () => {
       {
         name: 'flux1-fill-dev.safetensors',
         directory: 'vae',
+        folder: 'models/vae/',
         href: '/p/supported-models/flux1-fill-dev.safetensors/'
       },
       {
         name: 'ae.safetensors',
         directory: 'vae',
+        folder: 'models/vae/',
         href: '/p/supported-models/ae.safetensors/'
       },
       { name: 'private.pth' }
@@ -142,5 +144,47 @@ describe('workflowParts files', () => {
     expect(
       workflowParts(workflowWith([], [{ prompt: 'a cat' }]), [], noFiles).files
     ).toEqual([])
+  })
+})
+
+describe('comfyuiFolder', () => {
+  it.for([
+    { directory: 'diffusion_models', folder: 'models/diffusion_models/' },
+    { directory: 'loras', folder: 'models/loras/' },
+    { directory: 'text_encoders', folder: 'models/text_encoders/' },
+    { directory: 'clip_vision', folder: 'models/clip_vision/' },
+    { directory: 'checkpoints', folder: 'models/checkpoints/' },
+    { directory: 'upscale_models', folder: 'models/upscale_models/' },
+    { directory: 'partner_nodes', folder: undefined },
+    { directory: 'background_removal', folder: undefined },
+    { directory: undefined, folder: undefined }
+  ])('puts a $directory file in $folder', ({ directory, folder }) => {
+    expect(comfyuiFolder(directory)).toBe(folder)
+  })
+})
+
+describe('workflowParts downloads', () => {
+  it('keeps the download address the lookup has, and invents none', () => {
+    const { files } = workflowParts(
+      workflowWith(
+        [],
+        [{ vae_name: 'ae.safetensors' }, { unet_name: 'other.safetensors' }]
+      ),
+      [],
+      (name) =>
+        name === 'ae.safetensors'
+          ? { directory: 'vae', downloadUrl: 'https://huggingface.co/ae' }
+          : { directory: 'partner_nodes' }
+    )
+
+    expect(files).toEqual([
+      {
+        name: 'ae.safetensors',
+        directory: 'vae',
+        folder: 'models/vae/',
+        downloadUrl: 'https://huggingface.co/ae'
+      },
+      { name: 'other.safetensors', directory: 'partner_nodes' }
+    ])
   })
 })

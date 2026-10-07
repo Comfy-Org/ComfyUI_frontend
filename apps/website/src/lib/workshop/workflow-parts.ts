@@ -12,7 +12,10 @@ interface WorkflowModelLink {
 interface WorkflowFile {
   readonly name: string
   readonly directory?: string
+  /** Where it goes inside a ComfyUI install, when the type says for certain. */
+  readonly folder?: string
   readonly href?: string
+  readonly downloadUrl?: string
 }
 
 export interface WorkflowParts {
@@ -22,7 +25,29 @@ export interface WorkflowParts {
 
 type FileLookup = (
   name: string
-) => Pick<WorkflowFile, 'directory' | 'href'> | undefined
+) => Pick<WorkflowFile, 'directory' | 'href' | 'downloadUrl'> | undefined
+
+const COMFYUI_MODEL_FOLDERS = new Set([
+  'checkpoints',
+  'diffusion_models',
+  'loras',
+  'vae',
+  'text_encoders',
+  'clip_vision',
+  'controlnet',
+  'upscale_models',
+  'latent_upscale_models',
+  'audio_encoders',
+  'model_patches',
+  'style_models'
+])
+
+/** The folder ComfyUI loads this type of model file from. */
+export function comfyuiFolder(directory: string | undefined) {
+  return directory && COMFYUI_MODEL_FOLDERS.has(directory)
+    ? `models/${directory}/`
+    : undefined
+}
 
 const MODEL_FILE = /\.(?:safetensors|ckpt|pth|pt|bin|gguf|onnx)$/i
 
@@ -66,7 +91,11 @@ function filesLoadedBy(
   workflow: WorkflowWorkshopModelDetail,
   lookup: FileLookup
 ): WorkflowFile[] {
-  return modelFileNames(workflow).map((name) => ({ name, ...lookup(name) }))
+  return modelFileNames(workflow).map((name) => {
+    const found = lookup(name)
+    const folder = comfyuiFolder(found?.directory)
+    return { name, ...found, ...(folder ? { folder } : {}) }
+  })
 }
 
 export function workflowParts(
