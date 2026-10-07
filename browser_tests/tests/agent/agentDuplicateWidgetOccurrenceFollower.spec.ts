@@ -396,7 +396,11 @@ test.describe(
       // enough — it keeps matching when a suffix is appended to the type.
       const refusalReports: string[] = []
       page.on('console', (message) => {
-        if (/\bwidget_duplicate_name_refused(?![\w-])/.test(message.text()))
+        if (
+          /\bfailure_renaming_widget_duplicate_name(?![\w-])/.test(
+            message.text()
+          )
+        )
           refusalReports.push(message.text())
       })
 
