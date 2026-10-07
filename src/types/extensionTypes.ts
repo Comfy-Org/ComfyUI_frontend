@@ -71,10 +71,6 @@ export type ToastManager = {
   error(title: string, options?: ToastOptions): ToastId
   info(title: string, options?: ToastOptions): ToastId
   loading(title: string, options?: ToastOptions): ToastId
-  /** @deprecated Use `dismiss(id)`. */
-  remove(message: ToastMessageOptions): void
-  /** @deprecated Use `dismissAll()`. */
-  removeAll(): void
   success(title: string, options?: ToastOptions): ToastId
   warning(title: string, options?: ToastOptions): ToastId
 }
