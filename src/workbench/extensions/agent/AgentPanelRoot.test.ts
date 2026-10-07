@@ -1603,9 +1603,12 @@ describe('AgentPanelRoot Agent credit transition notice', () => {
     vi.mocked(useFreeUsePlacement).mockReturnValueOnce(
       fromPartial({ variant: ref('near-composer') })
     )
-    paywallAgentScopedHasFunds.value = false
+    paywallAgentScopedHasFunds.value = undefined
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await screen.findByRole('textbox')
+
+    paywallAgentScopedHasFunds.value = false
+    await nextTick()
 
     expect(screen.queryByTestId(NOTICE)).not.toBeInTheDocument()
     expect(
