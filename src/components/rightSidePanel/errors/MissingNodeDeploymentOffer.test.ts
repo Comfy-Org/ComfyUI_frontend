@@ -1,7 +1,10 @@
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
+
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
@@ -20,6 +23,8 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import MissingNodeDeploymentOffer from './MissingNodeDeploymentOffer.vue'
 
 vi.mock(import('@/platform/workspace/api/workspaceApi'))
+vi.mock(import('@/composables/auth/useCurrentUser'))
+vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
 const hoisted = vi.hoisted(() => ({
   rootGraph: undefined as unknown
@@ -114,6 +119,7 @@ describe('MissingNodeDeploymentOffer', () => {
   beforeEach(() => {
     hoisted.rootGraph = workflowWith('KSampler', RGTHREE)
     Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-1' })
+    useTeamWorkspaceStore().initState = 'ready'
     Object.defineProperty(window, 'location', {
       value: { reload, origin: 'http://localhost' },
       writable: true,
@@ -297,6 +303,36 @@ describe('MissingNodeDeploymentOffer', () => {
       await new Promise((resolve) => setTimeout(resolve))
 
       expect(screen.queryByTestId('missing-node-deployment-offer')).toBeNull()
+    }
+  )
+
+  it.for([
+    {
+      when: 'in an API-key session',
+      apiKeyLogin: true,
+      initState: 'ready'
+    },
+    {
+      when: 'while the workspace is still loading',
+      apiKeyLogin: false,
+      initState: 'loading'
+    }
+  ] as const)(
+    'offers no deployment where the user menu hides the switcher, $when',
+    async ({ apiKeyLogin, initState }) => {
+      useCurrentUser().isApiKeyLogin = computed(() => apiKeyLogin)
+      useTeamWorkspaceStore().initState = initState
+      useDeploymentPickStore().state = readyOn([plain, agencyA])
+      vi.mocked(workspaceApi.checkDeploymentCompatibility).mockResolvedValue(
+        answer([agencyA], [plain], true)
+      )
+      renderOffer()
+      await waitFor(() =>
+        expect(workspaceApi.checkDeploymentCompatibility).toHaveBeenCalled()
+      )
+      await new Promise((resolve) => setTimeout(resolve))
+
+      expect(screen.queryAllByRole('button')).toEqual([])
     }
   )
 })

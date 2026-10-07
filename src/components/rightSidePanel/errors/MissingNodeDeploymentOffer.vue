@@ -2,8 +2,9 @@
      every node type the open workflow uses, Comfy Cloud included, each a
      button that picks it through the deployment switcher (BE-19374). Up to
      three are named; "and N more" opens the switcher. When each was checked
-     and none has them all, it says so. Renders nothing where the switcher is not shown or the
-     check has not answered. -->
+     and none has them all, it says so. Renders nothing where the user popover
+     does not offer the switcher (useDeploymentSwitcherOffered), where the
+     deployment listing hides it, or before the check answers. -->
 <template>
   <div
     v-if="offer !== null"
@@ -55,6 +56,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDeploymentCompatibility } from '@/platform/workspace/composables/useDeploymentCompatibility'
 import { useDeploymentLabels } from '@/platform/workspace/composables/useDeploymentLabels'
+import { useDeploymentSwitcherOffered } from '@/platform/workspace/composables/useDeploymentSwitcherOffered'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 
 const NAMED = 3
@@ -64,6 +66,7 @@ const pickStore = useDeploymentPickStore()
 const { deployments, pickedDeploymentId, isSwitching } = storeToRefs(pickStore)
 const { deploymentsThatRunIt, markFor } = useDeploymentCompatibility()
 const { deploymentLabel } = useDeploymentLabels()
+const switcherOffered = useDeploymentSwitcherOffered()
 
 function eachCheckedAndLacking() {
   return [null, ...deployments.value.map((d) => d.deployment_id)].every(
@@ -81,7 +84,7 @@ function eachCheckedAndLacking() {
  */
 const offer = computed(() => {
   const runIt = deploymentsThatRunIt.value
-  if (runIt === null) return null
+  if (!switcherOffered.value || runIt === null) return null
   if (runIt.length === 0) {
     return eachCheckedAndLacking() ? { kind: 'none' as const } : null
   }

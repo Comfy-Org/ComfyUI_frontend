@@ -13,6 +13,8 @@ import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comf
 
 import MissingNodeCard from './MissingNodeCard.vue'
 
+vi.mock(import('@/composables/auth/useCurrentUser'))
+
 const mockIsCloud = vi.hoisted(() => ({ value: false }))
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
