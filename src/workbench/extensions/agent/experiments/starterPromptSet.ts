@@ -1,5 +1,7 @@
 import { computed, ref, watch } from 'vue'
 
+import type { GetFeaturesResponses } from '@comfyorg/ingest-types'
+
 import {
   authenticatedRemoteConfigState,
   isAuthenticatedConfigLoaded,
@@ -11,9 +13,12 @@ import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 
 export const STARTER_PROMPT_SET_FLAG = 'agent-starter-prompt-set'
-const STARTER_PROMPT_ASSIGNMENTS = ['control', 'test'] as const
 export type StarterPromptAssignment =
-  (typeof STARTER_PROMPT_ASSIGNMENTS)[number]
+  GetFeaturesResponses[200][typeof STARTER_PROMPT_SET_FLAG]
+const STARTER_PROMPT_ASSIGNMENTS: readonly StarterPromptAssignment[] = [
+  'control',
+  'test'
+]
 
 function isAssignment(value: unknown): value is StarterPromptAssignment {
   return STARTER_PROMPT_ASSIGNMENTS.some((assignment) => assignment === value)
