@@ -9,20 +9,19 @@
       "signInCaption": "Nós parceiros exigem uma conta",
       "signInToRun": "Entre para executar"
     },
-    "share": "Compartilhar",
     "shareTooltip": "Compartilhar fluxo de trabalho"
   },
   "agent": {
     "addFromAssets": "Arraste um ativo do painel de ativos",
     "addNodesFromGraph": "Mencionar nós do grafo",
     "addToPrompt": "Adicionar ao prompt",
-    "alpha": "ALFA",
     "assetNotAttachable": "Imagens, vídeos, áudios, modelos 3D e arquivos de texto podem ser anexados",
     "attach": "Anexar um arquivo",
     "attachFiles": "Envie imagens ou arquivos",
     "attachmentTooLarge": "{name} é maior que {limit}",
     "attachmentUploadFailed": "Não foi possível enviar {name}",
     "backToPreviousChat": "Voltar à conversa anterior",
+    "beta": "BETA",
     "changeWorkflowForChat": "Altere o fluxo de trabalho que o agente pode editar",
     "chatOptions": "Opções de conversa",
     "chooseWorkflow": "Escolha um fluxo de trabalho",
@@ -35,8 +34,8 @@
     "coachHistoryTitle": "Retome de onde parou",
     "coachProgress": "{current} de {total}",
     "coachTitle": "Conheça seu Agente Comfy",
-    "coachWorkflowBody": "O agente edita apenas o fluxo de trabalho que você escolher. Você também pode enviar arquivos de referência ou mencionar outros fluxos de trabalho.",
-    "coachWorkflowTitle": "Selecione um fluxo de trabalho para seu agente editar",
+    "coachWorkflowBody": "Ele muda conforme suas abas até você enviar uma mensagem, escolher um workflow ou adicionar uma referência de nó.",
+    "coachWorkflowTitle": "Seu agente edita o workflow que você está visualizando",
     "consent": {
       "accept": "Começar a usar o Comfy Agent",
       "body1": "O Comfy Agent ajuda você a planejar, criar, executar e iterar fluxos de trabalho. Descreva o que você quer criar, e o Comfy Agent trabalhará como seu poderoso colega de equipe.",
@@ -65,11 +64,19 @@
     "dismiss": "Dispensar",
     "downloadAssets": "Baixar recursos",
     "dragAndDropAssets": "Arraste e solte recursos aqui",
+    "editRejected": {
+      "generic": "Sua edição foi rejeitada e não foi salva. O workflow შესაძლოა não corresponda mais ao canvas — recarregue o workflow para ver o que foi mantido.",
+      "genericPartial": "Sua edição foi rejeitada e não foi salva, embora algumas edições anteriores tenham sido salvas. O workflow შესაძლოა não corresponda mais ao canvas — recarregue o workflow para ver o que foi mantido.",
+      "widgetWrite": "A edição do widget foi rejeitada e não foi salva. O valor digitado existe apenas no canvas — recarregue o workflow para ver o valor que foi mantido.",
+      "widgetWritePartial": "A edição do widget foi rejeitada e não foi salva, embora algumas edições anteriores tenham sido salvas. O valor digitado existe apenas no canvas — recarregue o workflow para ver os valores que foram mantidos."
+    },
     "editWhileWorking": "Você pode continuar editando enquanto ele trabalha",
     "entryButton": "Agente",
     "feedbackCaption": "Enviar feedback",
     "focusNode": "Mostrar na tela",
     "focusNodeLabel": "Mostrar {node} na tela",
+    "freeUseNotice": "Os prompts e as execuções de workflow são GRATUITOS durante a BETA.",
+    "freeUseNoticeLabel": "Aviso de uso gratuito",
     "friend": "aí",
     "gotIt": "Entendi",
     "greeting": "Olá, {name},",
@@ -118,6 +125,7 @@
       "upgradePlan": "Fazer upgrade do plano"
     },
     "placeholder": "Descreva ideias, {'@'} para referenciar fluxos de trabalho, arraste recursos de mídia e arquivos ou\nmencione nós",
+    "recoveredTurnFailed": "O agente não conseguiu concluir esta resposta.",
     "reference": "Referência",
     "remove": "Remover",
     "removeNodeLabel": "Remover referência a {node}",
@@ -126,6 +134,7 @@
     "runApproval": {
       "cancel": "Cancelar",
       "lead": "Esta ferramenta deseja executar o fluxo de trabalho:",
+      "leadBound": "Esta ferramenta quer executar este workflow.",
       "question": "Você aprova?",
       "run": "Executar",
       "thisWorkflow": "este fluxo de trabalho"
@@ -158,18 +167,31 @@
     "showChatHistory": "Mostrar histórico de conversas",
     "showLess": "Mostrar menos",
     "showMore": "Mostrar mais",
+    "showTarget": "Mostrar destino",
+    "showTargetWorkflow": "Mostrar workflow de destino: {workflowName}",
     "skip": "Pular",
     "stop": "Parar",
     "stopShortcut": "Esc",
-    "suggestedPrompts": [
-      "Gere um pato amarelo com uma máscara de hóquei",
-      "Liste meus fluxos de trabalho salvos",
-      "Encontre o melhor fluxo de trabalho para ampliação de pele",
-      "Explique o nó selecionado",
-      "Crie um fluxo de trabalho de imagem para vídeo com 3 modelos"
-    ],
+    "suggestedPrompts": {
+      "cloud": [
+        "Gere uma folha de personagem de um astronauta",
+        "Transforme a imagem do produto em um anúncio curto",
+        "Explique os nós selecionados",
+        "Melhor workflow de ampliação de imagem para 4K",
+        "Corrija os erros neste workflow"
+      ],
+      "local": [
+        "Gere um retrato realista de um astronauta",
+        "Um workflow de imagem para vídeo adequado à minha GPU",
+        "Explique os nós selecionados",
+        "Ajude-me a instalar os nós ausentes para este workflow",
+        "Corrija os erros neste workflow"
+      ]
+    },
     "switchWorkflow": "Alternar fluxo de trabalho",
     "switchWorkflowForNodes": "Alterne para {workflowName} para adicionar nós.",
+    "takeTour": "Fazer o tour",
+    "targetFollowsVisibleWorkflow": "O workflow de destino segue a aba visível até você escolher um destino, nós de referência ou enviar uma mensagem.",
     "targetForThisChat": "Alvo do agente para este chat",
     "targetNavigationUnavailable": "Este destino do fluxo de trabalho não está mais disponível.",
     "thinking": "Pensando...",
@@ -188,11 +210,15 @@
     "updatingGraph": "O agente está atualizando o grafo",
     "uploading": "Enviando",
     "viewAddedNodes": "Ver nó | Ver nós",
+    "viewingDifferentWorkflow": "Você está visualizando um workflow diferente do destino.",
     "worked": "Concluído",
     "workedForMinutes": "Concluído em {minutes}m {seconds}s",
     "workedForSeconds": "Concluído em {seconds} segundos",
     "workflowEditNotice": "O agente agora pode editar {workflow}. Ele trabalha em um fluxo de trabalho por vez, e você pode alternar entre fluxos de trabalho durante o chat.",
     "workflowReferenceUnavailableReason": "Este fluxo de trabalho referenciado não está mais disponível ou você não tem acesso a ele.",
+    "workflowSyncFailedDetail": "Este workflow foi criado com uma versão de documento incompatível. Seu canvas permaneceu inalterado.",
+    "workflowSyncFailedDetailCatalogMismatch": "Este workflow usa um catálogo de nós incompatível com este espaço de trabalho. Seu canvas permaneceu inalterado.",
+    "workflowSyncFailedTitle": "Não é possível sincronizar este workflow",
     "workflows": "Fluxos de trabalho",
     "working": "Trabalhando..."
   },
@@ -453,6 +479,7 @@
       "forgotPassword": "Esqueceu a senha?",
       "forgotPasswordError": "Falha ao enviar e-mail de redefinição de senha",
       "freeRunsSuffix": "para ganhar {count} execução gratuita. | para ganhar {count} execuções gratuitas.",
+      "freeRunsSuffixGoogle": "com o Google para receber {count} execução gratuita. | com o Google para receber {count} execuções gratuitas.",
       "freeTierBadge": "Elegível para o Plano Gratuito",
       "freeTierDescription": "Cadastre-se com Google para ganhar {credits} créditos gratuitos todo mês. Não precisa de cartão.",
       "freeTierDescriptionGeneric": "Cadastre-se com Google para ganhar créditos gratuitos todo mês. Não precisa de cartão.",
@@ -540,6 +567,7 @@
     "expiredCardDetail": "Este cartão expirou. Use um método de pagamento diferente.",
     "incorrectCvcDetail": "O código de segurança do cartão está incorreto. Verifique-o e tente novamente.",
     "insufficientFundsDetail": "Este método de pagamento não tem fundos suficientes. Tente outro método de pagamento ou entre em contato com seu banco.",
+    "operationAlreadyPendingDetail": "Um pagamento que você iniciou anteriormente ainda está sendo processado. Ele precisa ser concluído antes que você possa escolher um plano diferente.",
     "paymentDeclinedDetail": "Seu banco recusou este pagamento. Tente outro método de pagamento ou entre em contato com seu banco.",
     "processingErrorDetail": "Não foi possível processar seu pagamento. Tente novamente ou use outro método de pagamento.",
     "reconciliationDetail": "Seu pagamento foi recebido, mas não foi possível concluir a atualização do seu espaço de trabalho. Entre em contato com o suporte e inclua este ID da operação:",
@@ -630,6 +658,46 @@
     "switchToOutputs": "Ir para Saídas",
     "viewApp": "Visualizar aplicativo"
   },
+  "cameraAngle": {
+    "cameraView": "Câmera",
+    "cameraViewTooltip": "Mova a câmera ao redor do assunto",
+    "faces": {
+      "back": "TRÁS",
+      "bottom": "INFERIOR",
+      "left": "ESQUERDA",
+      "right": "DIREITA",
+      "top": "SUPERIOR"
+    },
+    "hidePreview": "Ocultar prévia do enquadramento",
+    "horizontal": {
+      "back": "Traseira",
+      "backLeft": "Traseira esquerda",
+      "backRight": "Traseira direita",
+      "front": "Frente",
+      "frontLeft": "Frente à esquerda",
+      "frontRight": "Frente à direita",
+      "left": "Lado esquerdo",
+      "right": "Lado direito"
+    },
+    "horizontalLabel": "Ângulo horizontal",
+    "objectView": "Objeto",
+    "objectViewTooltip": "Olhe pela câmera e gire o assunto",
+    "preview": "Prévia",
+    "showPreview": "Mostrar prévia do enquadramento",
+    "vertical": {
+      "elevated": "Elevado",
+      "eyeLevel": "Ao nível dos olhos",
+      "highAngle": "Ângulo alto",
+      "lowAngle": "Ângulo baixo"
+    },
+    "verticalLabel": "Ângulo vertical",
+    "zoom": {
+      "closeUp": "Close-up",
+      "medium": "Plano médio",
+      "wide": "Plano aberto"
+    },
+    "zoomLabel": "Enquadramento"
+  },
   "clipboard": {
     "errorMessage": "Falha ao copiar para a área de transferência",
     "errorNotSupported": "API de área de transferência não suportada no seu navegador",
@@ -717,6 +785,8 @@
         "selectAtLeastOne": "Por favor, selecione pelo menos uma opção."
       },
       "intro": "Ajude-nos a personalizar sua experiência no ComfyUI.",
+      "navigationFailed": "A pesquisa foi salva, mas não foi possível continuar a integração",
+      "navigationFailedDetail": "Tente novamente.",
       "options": {
         "experience": {
           "new": "Novo no ComfyUI",
@@ -757,6 +827,8 @@
       },
       "otherPlaceholder": "Conte-nos mais",
       "placeholder": "Espaço reservado para perguntas da pesquisa",
+      "submitFailed": "Não foi possível enviar a pesquisa",
+      "submitFailedDetail": "Suas respostas não foram salvas. Tente novamente.",
       "title": "Pesquisa da Nuvem"
     }
   },
@@ -922,6 +994,7 @@
     "Copy Image": "Copiar Imagem",
     "Delete": "Excluir",
     "Distribute Nodes": "Distribuir Nós",
+    "Download Images": "Baixar imagens",
     "Duplicate": "Duplicar",
     "Edit Subgraph Widgets": "Editar Widgets do Subgrafo",
     "Expand": "Expandir",
@@ -1069,6 +1142,7 @@
     "BOOLEAN": "BOOLEANO",
     "BOUNDING_BOX": "BOUNDING_BOX",
     "BOUNDING_BOXES": "BOUNDING_BOXES",
+    "CAMERA_INFO_STATE": "CAMERA_INFO_STATE",
     "CLIP": "clip",
     "CLIP_VISION": "clip visão",
     "CLIP_VISION_OUTPUT": "saída de clip visão",
@@ -1698,7 +1772,8 @@
     "exportingAssets": "Exportando ativos",
     "noExportsInQueue": "Nenhuma exportação de {filter} na fila",
     "preparingExport": "Preparando exportação...",
-    "retryDownload": "Tentar baixar novamente"
+    "retryDownload": "Tentar baixar novamente",
+    "unsupportedDownloadUrl": "URL de download da exportação não compatível"
   },
   "feedback": {
     "title": "Enviar feedback"
@@ -1800,6 +1875,7 @@
     "download": "Baixar",
     "downloadAudio": "Baixar áudio",
     "downloadImage": "Baixar imagem",
+    "downloadImages": "Baixar imagens",
     "downloadVideo": "Baixar vídeo",
     "downloadWithSize": "Baixar ({size})",
     "downloading": "Baixando",
@@ -2100,6 +2176,9 @@
     "updating": "Atualizando {id}",
     "upload": "Enviar",
     "uploadAlreadyInProgress": "O upload já está em andamento",
+    "uploadFailed": "Falha no envio: {reason}",
+    "uploadFileTooLarge": "O arquivo é grande demais para enviar.",
+    "uploadFileTooLargeWithLimit": "O arquivo é grande demais para enviar (limite: {limit} MB).",
     "uploadTimedOut": "O envio excedeu o tempo limite. Por favor, tente novamente.",
     "usageHint": "Dica de uso",
     "use": "Usar",
@@ -2223,8 +2302,10 @@
     "star": "Estrela"
   },
   "imageCompare": {
+    "afterAlt": "Imagem posterior",
     "batchLabelA": "A:",
     "batchLabelB": "B:",
+    "beforeAlt": "Imagem anterior",
     "noImages": "Nenhuma imagem para comparar"
   },
   "imageCrop": {
@@ -3212,7 +3293,6 @@
     "Rodin": "Rodin",
     "Runway": "Runway",
     "Sonilo": "Sonilo",
-    "Sora": "Sora",
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
@@ -3280,6 +3360,7 @@
     "mask": "máscara",
     "merging": "mesclagem",
     "mesh": "malha",
+    "ming image": "ming image",
     "minimax": "minimax",
     "minimax music": "minimax music",
     "mochi": "mochi",
@@ -3361,6 +3442,11 @@
     "moreHelp": "Para mais ajuda, visite a",
     "outputs": "Saídas",
     "type": "Tipo"
+  },
+  "nodeOutputsExport": {
+    "download": "Baixar ({count})",
+    "downloadAll": "Baixar tudo",
+    "title": "Baixar recursos"
   },
   "nodeReplacement": {
     "compatibleAlternatives": "Alternativas Compatíveis",
@@ -3541,6 +3627,12 @@
     "skip": "Pular",
     "stepLabel": "Etapa {current} de {total}"
   },
+  "onboardingReplay": {
+    "confirmMessage": "Isso recarrega o ComfyUI e redefine as etapas de integração disponíveis neste ambiente. Seus fluxos de trabalho não são afetados.",
+    "confirmTitle": "Repetir a integração?",
+    "failedDetail": "Não foi possível redefinir o estado da sua integração. Tente novamente.",
+    "failedSummary": "Não foi possível repetir a integração"
+  },
   "openSharedWorkflow": {
     "author": "Autor:",
     "copyAssetsAndOpen": "Importar ativos e abrir fluxo de trabalho",
@@ -3607,7 +3699,8 @@
     "importingModels": "Importando modelos",
     "noImportsInQueue": "Nenhum {filter} na fila",
     "pending": "Pendente",
-    "progressCount": "{completed} de {total}"
+    "progressCount": "{completed} de {total}",
+    "taskUnavailable": "A tarefa de download não está mais disponível."
   },
   "queue": {
     "completedIn": "Finalizado em {duration}",
@@ -4385,6 +4478,7 @@
       "message": "A cobrança para equipes estará disponível em breve. Você poderá assinar um plano para seu workspace com preço por usuário. Fique atento para novidades.",
       "title": "Em breve"
     },
+    "billingTabBlocked": "Não foi possível abrir a página de cobrança. Permita pop-ups para este site e tente novamente.",
     "cancelDialog": {
       "confirmCancel": "Cancelar assinatura",
       "description": "Seu acesso continua até {date}. Você não será mais cobrado, e seu workspace e créditos serão preservados. Você pode reassinar a qualquer momento.",
@@ -4462,6 +4556,7 @@
       "memberTitle": "A assinatura deste workspace está inativa",
       "runLabel": "Executar"
     },
+    "inactiveEnterpriseDescription": "Você não pode executar fluxos de trabalho nem adicionar novos membros. Entre em contato com a equipe de vendas para restaurar o acesso.",
     "inactiveTeamDescription": "Reative seu plano de equipe para adicionar mais membros e executar fluxos de trabalho",
     "inactiveTeamPlanIncludes": "Um plano ativo inclui tudo do {plan}, além de:",
     "inactiveTeamTitle": "Assinatura de equipe inativa",
@@ -4577,6 +4672,7 @@
       "payAndSubscribe": "Pagar e assinar",
       "paymentMethod": "Método de pagamento",
       "paymentPopupBlocked": "Não foi possível abrir a página de pagamento — permita pop-ups e tente novamente.",
+      "pendingVerificationDetail": "Um pagamento que você iniciou anteriormente ainda precisa da sua atenção. Concluí-lo ativa o plano que você escolheu naquele momento. Você poderá escolher um plano diferente quando ele for concluído.",
       "perMember": "/ membro",
       "privacyPolicy": "Política de Privacidade",
       "promoCodePlaceholder": "Código promocional",
@@ -4597,7 +4693,13 @@
         "title": "Reativando sua assinatura",
         "titleAnnual": "Reativando sua assinatura — ano completo cobrado hoje",
         "unavailable": "Não podemos confirmar esta reativação agora — por favor, escolha seu plano novamente",
-        "upgradeBody": "Sua {plan} estava programada para terminar em {date}. Fazer o upgrade agora a reativa — você será cobrado {amount} hoje, e ela será renovada automaticamente em {nextDate} em vez de encerrar."
+        "upgradeBody": "Sua {plan} estava programada para terminar em {date}. Fazer o upgrade agora a reativa — você será cobrado {amount} hoje, e ela será renovada automaticamente em {nextDate} em vez de encerrar.",
+        "withoutRenewalDate": {
+          "downgradeBody": "Seu {plan} estava programado para terminar em {date}. Mudar para {newPlan} o reativa — você não será cobrado hoje, mas ele passará a ser renovado automaticamente pelo novo preço em vez de terminar.",
+          "durationChangeBody": "Seu {plan} estava programado para terminar em {date}. Mudar para a cobrança anual o reativa e cobra o ano inteiro, {amount}, hoje. Depois, ele será renovado anualmente em vez de terminar.",
+          "durationChangeBodyMonthly": "Seu {plan} estava programado para terminar em {date}. Mudar para a cobrança mensal o reativa — será cobrado {amount} hoje, e ele será renovado automaticamente em vez de terminar.",
+          "upgradeBody": "Seu {plan} estava programado para terminar em {date}. Fazer upgrade agora o reativa — será cobrado {amount} hoje, e ele será renovado automaticamente em vez de terminar."
+        }
       },
       "refillReplacesNote": "Substitui sua recarga mensal. O saldo existente é mantido.",
       "renewsAt": "Renova por {amount} em {date}. Cancele a qualquer momento.",
@@ -4644,6 +4746,8 @@
     "resubscribeFailed": "Falha ao reativar a assinatura",
     "resubscribeSuccess": "Assinatura reativada com sucesso",
     "resubscribeTo": "Retomar {plan}",
+    "salesManagedCreditsEndedNote": "Os créditos do plano terminaram junto com sua assinatura.",
+    "salesManagedInactiveCreditsNote": "Utilizáveis quando seu plano for restaurado.",
     "salesManagedRunBlockedDetail": "O plano deste espaço de trabalho აღარ está ativo. Entre em contato com seu gerente de conta da Comfy para restaurar o acesso.",
     "salesManagedRunBlockedTitle": "Plano inativo",
     "saveYearly": "Economize 20%",
@@ -4654,7 +4758,7 @@
     "subscribe": "Assinar",
     "subscribeFailed": "Falha ao assinar",
     "subscribeForMore": "Fazer upgrade",
-    "subscribeNow": "Assine Agora",
+    "subscribeNow": "Assinar",
     "subscribeTo": "Assinar {plan}",
     "subscribeToComfyCloud": "Assine o Comfy Cloud",
     "subscribeToRun": "Assinar",
@@ -4809,6 +4913,8 @@
     },
     "clearAllFilters": "Limpar todos os filtros",
     "error": {
+      "loading": "Não foi possível abrir o modelo. Tente novamente.",
+      "preparingMedia": "Não foi possível preparar algumas mídias de exemplo. O fluxo de trabalho será aberto; escolha seus próprios arquivos para quaisquer entradas ausentes.",
       "templateNotFound": "Modelo \"{templateName}\" não encontrado"
     },
     "filtersApplied": "{count} filtro aplicado | {count} filtros aplicados",
@@ -4825,6 +4931,7 @@
       "credits": "Executa com créditos",
       "title": "Template premium"
     },
+    "preparingMedia": "Preparando mídia de exemplo...",
     "resultsCount": "Mostrando {count} de {total} modelos",
     "runsOnFilter": "Executa em",
     "runsOnSelected": "{count} Execuções em",
@@ -4870,6 +4977,7 @@
     "failedToFetchBalance": "Falha ao buscar saldo: {error}",
     "failedToFetchLogs": "Falha ao buscar logs do servidor",
     "failedToFetchSubscription": "Falha ao buscar status da assinatura: {error}",
+    "failedToInitializeCameraAngleViewer": "Não foi possível inicializar o visualizador de ângulo da câmera. Tente recarregar a página.",
     "failedToInitializeCameraInfoViewer": "Falha ao inicializar o visualizador de informações da câmera. Tente recarregar a página.",
     "failedToInitializeLoad3dViewer": "Falha ao inicializar o Visualizador 3D",
     "failedToInitiateCreditPurchase": "Falha ao iniciar compra de créditos: {error}",
@@ -5089,6 +5197,7 @@
   },
   "workspace": {
     "addedToWorkspace": "Você foi adicionado a:",
+    "deepLinkStayed": "Não foi possível abrir esse espaço de trabalho. Você ainda está em {workspaceName}.",
     "inviteAccepted": "Convite aceito",
     "inviteFailed": "Falha ao aceitar convite",
     "switchFailed": "Falha ao alternar o workspace. Por favor, tente novamente.",
@@ -5127,6 +5236,8 @@
     "billingStatus": {
       "ending": {
         "body": "Os membros mantêm acesso total até lá. Retome sua assinatura para manter seus créditos e assentos compartilhados.",
+        "enterpriseBody": "Os membros mantêm acesso completo até lá. Entre em contato com nossa equipe de vendas para estender.",
+        "enterpriseTitle": "Seu plano Enterprise termina em {date}",
         "reactivate": "Retomar assinatura",
         "title": "O plano da sua equipe termina em {date}"
       },
@@ -5148,11 +5259,7 @@
         "body": "Seu plano atual permanece ativo até lá.",
         "title": "Seu plano muda para {plan} em {date}"
       },
-      "updatePayment": "Atualizar pagamento",
-      "warning": {
-        "bodyNoDate": "Seu último pagamento não foi processado. Atualize o pagamento para evitar a pausa.",
-        "title": "Pagamento recusado"
-      }
+      "updatePayment": "Atualizar pagamento"
     },
     "changeRoleDialog": {
       "demoteConfirm": "Rebaixar para membro",
@@ -5240,6 +5347,7 @@
         "inviteDate": "Data do convite",
         "role": "Função"
       },
+      "contactSales": "Entrar em contato com vendas",
       "contactUs": "Fale conosco",
       "creditLimitDialog": {
         "description": "Quando atingir esse limite, não será possível executar workflows.",
@@ -5250,6 +5358,9 @@
         "update": "Atualizar limite",
         "warning": "Este usuário já gastou {credits} créditos. Definir o limite igual ou abaixo do uso atual impedirá novas execuções até o próximo mês."
       },
+      "endedEnterpriseTitle": "Seu plano Enterprise terminou",
+      "endedPlanTitle": "Seu plano terminou",
+      "endedTeamTitle": "Seu plano de equipe terminou",
       "header": "Membros",
       "membersCount": "{count} de {maxSeats} membros",
       "needMoreMembers": "Precisa de mais membros?",
@@ -5257,6 +5368,7 @@
       "noMembers": "Nenhum membro",
       "pendingInvitesCount": "{count} convite pendente | {count} convites pendentes",
       "reactivateTeam": "Reativar Team",
+      "resubscribe": "Assinar novamente",
       "searchPlaceholder": "Pesquisar...",
       "tabs": {
         "active": "Ativo",
@@ -5264,11 +5376,14 @@
       },
       "upgradeToTeam": "Fazer upgrade para Team",
       "upsellBanner": "Para adicionar colegas de equipe, faça upgrade do seu plano.",
+      "upsellBannerEnterpriseEnded": "Entre em contato com a equipe de vendas para reativar seu plano Enterprise.",
+      "upsellBannerPlanEnded": "Entre em contato com a equipe de vendas para reativar seu plano.",
       "upsellBannerReactivate": "Para adicionar mais colegas de equipe, reative seu plano."
     },
     "menu": {
       "creatorCannotLeave": "O criador do workspace não pode sair do workspace que criou",
       "deleteWorkspace": "Excluir espaço de trabalho",
+      "deleteWorkspaceAfterPlanEndsTooltip": "Você pode excluir este espaço de trabalho depois que seu plano terminar em {date}",
       "deleteWorkspaceDisabledTooltip": "Cancele a assinatura ativa do seu espaço de trabalho primeiro",
       "editWorkspace": "Editar detalhes do espaço de trabalho",
       "leaveWorkspace": "Sair do espaço de trabalho"

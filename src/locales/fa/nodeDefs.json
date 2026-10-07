@@ -1486,6 +1486,25 @@
       }
     }
   },
+  "ByteDance2DraftToFinalVideoNode": {
+    "description": "ویدیوی نهایی ۱۰۸۰p یک پیش‌نویس Seedance 2.5 را رندر کنید. نسخه نهایی صحنه و حرکت پیش‌نویس را حفظ می‌کند و از پرامپت، مراجع، مدت، نسبت تصویر و تنظیم صوتی آن دوباره استفاده می‌کند.",
+    "display_name": "پیش‌نویس به ویدیوی نهایی ByteDance Seedance 2.5",
+    "inputs": {
+      "draft_task_id": {
+        "name": "draft_task_id",
+        "tooltip": "خروجی draft_task_id از یک node Seedance 2.5 که با مدل Seedance 2.5 Draft اجرا شده است، یا یک شناسه وظیفه پیش‌نویسِ جای‌گذاری‌شده. کنترل seed آن node را روی ثابت تنظیم کنید؛ در غیر این صورت، اجرای بعدی به‌جای استفاده مجدد از پیش‌نویسی که بررسی کرده‌اید، یک پیش‌نویس جدید تولید می‌کند. یک پیش‌نویس تا ۷ روز پس از ایجادشدنش قابل رندر است."
+      },
+      "watermark": {
+        "name": "واترمارک",
+        "tooltip": "اینکه آیا به ویدیو واترمارک اضافه شود یا نه."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "تولید ویدیو با استفاده از Seedance 2.0 از تصویر اولین فریم و در صورت نیاز تصویر آخرین فریم.",
     "display_name": "ByteDance Seedance 2.0 تبدیل اولین-آخرین فریم به ویدیو",
@@ -1511,7 +1530,7 @@
       },
       "model": {
         "name": "مدل",
-        "tooltip": "Seedance 2.5 برای جدیدترین مدل، ویدیوهای تا ۳۰ ثانیه و خروجی mp4/mov؛ Seedance 2.0 برای بیشترین کیفیت و ۴k؛ Fast برای بهینه‌سازی سرعت؛ Mini برای سریع‌ترین تولید با کمترین هزینه."
+        "tooltip": "Seedance 2.5 برای جدیدترین مدل، ویدیوهای تا ۳۰ ثانیه و خروجی mp4/mov؛ Seedance 2.5 Draft برای پیش‌نمایش سریع ۴۸۰p که draft_task_id آن، نسخه نهایی ۱۰۸۰p را در node پیش‌نویس به ویدیوی نهایی Seedance 2.5 رندر می‌کند؛ Seedance 2.0 برای بیشترین کیفیت و ۴k؛ Fast برای بهینه‌سازی سرعت؛ Mini برای سریع‌ترین و کم‌هزینه‌ترین تولید."
       },
       "model_duration": {
         "name": "مدت زمان"
@@ -1540,6 +1559,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "شناسه وظیفه یک اجرای Seedance 2.5 Draft. آن را به node پیش‌نویس به ویدیوی نهایی Seedance 2.5 متصل کنید تا نسخه نهایی ۱۰۸۰p رندر شود."
       }
     }
   },
@@ -1552,7 +1575,7 @@
       },
       "model": {
         "name": "مدل",
-        "tooltip": "Seedance 2.5 برای جدیدترین مدل، ویدیوهای تا ۳۰ ثانیه و خروجی mp4/mov؛ Seedance 2.0 برای بیشترین کیفیت و ۴k؛ Fast برای بهینه‌سازی سرعت؛ Mini برای سریع‌ترین تولید با کمترین هزینه."
+        "tooltip": "Seedance 2.5 برای جدیدترین مدل، ویدیوهای تا ۳۰ ثانیه و خروجی mp4/mov؛ Seedance 2.5 Draft برای پیش‌نمایش سریع ۴۸۰p که draft_task_id آن، نسخه نهایی ۱۰۸۰p را در node پیش‌نویس به ویدیوی نهایی Seedance 2.5 رندر می‌کند؛ Seedance 2.0 برای بیشترین کیفیت و ۴k؛ Fast برای بهینه‌سازی سرعت؛ Mini برای سریع‌ترین و کم‌هزینه‌ترین تولید."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -1605,7 +1628,7 @@
       },
       "model": {
         "name": "مدل",
-        "tooltip": "Seedance 2.5 برای جدیدترین مدل، ویدیوهای تا ۳۰ ثانیه و خروجی mp4/mov؛ Seedance 2.0 برای بیشترین کیفیت و ۴k؛ Fast برای بهینه‌سازی سرعت؛ Mini برای سریع‌ترین تولید با کمترین هزینه."
+        "tooltip": "Seedance 2.5 برای جدیدترین مدل، ویدیوهای تا ۳۰ ثانیه و خروجی mp4/mov؛ Seedance 2.5 Draft برای پیش‌نمایش سریع ۴۸۰p که draft_task_id آن، نسخه نهایی ۱۰۸۰p را در node پیش‌نویس به ویدیوی نهایی Seedance 2.5 رندر می‌کند؛ Seedance 2.0 برای بیشترین کیفیت و ۴k؛ Fast برای بهینه‌سازی سرعت؛ Mini برای سریع‌ترین و کم‌هزینه‌ترین تولید."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -1646,6 +1669,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "شناسه وظیفه یک اجرای Seedance 2.5 Draft. آن را به node پیش‌نویس به ویدیوی نهایی Seedance 2.5 متصل کنید تا نسخه نهایی ۱۰۸۰p رندر شود."
       }
     }
   },
@@ -1658,7 +1685,7 @@
       },
       "model": {
         "name": "مدل",
-        "tooltip": "Seedance 2.5 برای جدیدترین مدل، ویدئوهای تا ۳۰ ثانیه و خروجی mp4/mov؛ Seedance 2.0 برای بیشترین کیفیت و 4k؛ Fast برای بهینه‌سازی سرعت؛ Mini برای سریع‌ترین و کم‌هزینه‌ترین تولید."
+        "tooltip": "Seedance 2.5 برای جدیدترین مدل، ویدیوهای تا ۳۰ ثانیه و خروجی mp4/mov؛ Seedance 2.5 Draft برای پیش‌نمایش سریع ۴۸۰p که draft_task_id آن، نسخه نهایی ۱۰۸۰p را در node پیش‌نویس به ویدیوی نهایی Seedance 2.5 رندر می‌کند؛ Seedance 2.0 برای بیشترین کیفیت و ۴k؛ Fast برای بهینه‌سازی سرعت؛ Mini برای سریع‌ترین و کم‌هزینه‌ترین تولید."
       },
       "model_duration": {
         "name": "مدت زمان"
@@ -1690,6 +1717,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "شناسه وظیفه یک اجرای Seedance 2.5 Draft. آن را به node پیش‌نویس به ویدیوی نهایی Seedance 2.5 متصل کنید تا نسخه نهایی ۱۰۸۰p رندر شود."
       }
     }
   },
@@ -1932,7 +1963,7 @@
   },
   "ByteDanceSeedreamLayerSeparationNode": {
     "description": "تجزیه یک تصویر به یک پس‌زمینه به‌علاوه حداکثر ۱۶ لایه شفاف قابل جابجایی، هرکدام با ترتیب چیدمان، جعبه مرزی (bounding box)، نام و توضیح.",
-    "display_name": "ByteDance Seedream ۵.۰ Pro جداسازی لایه",
+    "display_name": "جداسازی لایه ByteDance Seedream 5.0 Pro (قدیمی)",
     "inputs": {
       "control_after_generate": {
         "name": "کنترل پس از تولید"
@@ -1990,6 +2021,62 @@
       "5": {
         "name": "پشته لایه",
         "tooltip": "سند لایه‌بندی آماده ویرایش برای Create Layered Image: صفحه پایه به‌علاوه هر عنصر به عنوان یک لایه نام‌گذاری شده و فشرده در موقعیت و ترتیب واقعی خود. مستقیماً متصل کنید یا با Add Layer گسترش دهید."
+      }
+    }
+  },
+  "ByteDanceSeedreamLayerSeparationNodeV2": {
+    "description": "یک تصویر را به یک صفحه پس‌زمینه به‌همراه حداکثر ۱۶ لایه شفافِ قابل جابه‌جایی تجزیه می‌کند که هر یک دارای ترتیب چیدمان، کادر محدودکننده، نام و توضیح هستند.",
+    "display_name": "جداسازی لایه ByteDance Seedream 5.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "model_crop_layers": {
+        "name": "crop_layers"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_prompt_optimization": {
+        "name": "prompt_optimization"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_size": {
+        "name": "اندازه"
+      },
+      "model_watermark": {
+        "name": "واترمارک"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "base_image",
+        "tooltip": "تصویر پایه (صفحه پس‌زمینه) که لایه‌ها روی آن قرار می‌گیرند."
+      },
+      "1": {
+        "name": "base_mask",
+        "tooltip": "شفافیت تصویر پایه (۱ = شفاف، طبق قرارداد LoadImage)؛ در حال حاضر همیشه کاملاً کدر است."
+      },
+      "2": {
+        "name": "لایه‌ها",
+        "tooltip": "لایه‌های شفاف، مرتب‌شده از پایین به بالا. حالت بوم کامل: در موقعیت کادر محدودکننده خود روی یک بوم سیاه به‌اندازه تصویر پایه قرار می‌گیرند. حالت اندازه حداقلی: به کادر محدودکننده خود برش می‌خورند، در بالا-چپ لنگر می‌شوند و تا اندازه بزرگ‌ترین لایه padding می‌گیرند."
+      },
+      "3": {
+        "name": "ماسک‌ها",
+        "tooltip": "شفافیت هر لایه، هم‌راستا از نظر اندیس با batch لایه‌ها (۱ = شفاف، طبق قرارداد LoadImage). برای کامپوزیت‌سازی به‌سبک ImageCompositeMasked، ابتدا InvertMask را اضافه کنید."
+      },
+      "4": {
+        "name": "کادرهای محدودکننده",
+        "tooltip": "یک کادر جای‌گذاری برای هر لایه، هم‌راستا از نظر اندیس با batch لایه‌ها (برای بازسازی جای‌گذاری هر لایه، هر دو را به‌همراه masks به Layers From Bounding Boxes بدهید): {x, y, width, height, metadata: {name, desc, z_index, native_size, content_rect, flags}}. content_rect = [left, top, width, height] ناحیه محتوای لایه در چارچوب خودش است؛ روی بوم در موقعیت کادر به‌اضافه آن جابه‌جایی قرار می‌گیرد."
+      },
+      "5": {
+        "name": "layer_stack",
+        "tooltip": "سند لایه‌ای آماده‌ویرایش برای Create Layered Image: صفحه پایه به‌علاوه هر عنصر به‌عنوان یک لایه نام‌دار و با برش فشرده، در موقعیت و ترتیب چیدمان واقعی خود. مستقیماً متصل کنید، یا با Add Layer گسترش دهید."
       }
     }
   },
@@ -2676,6 +2763,41 @@
     "inputs": {
       "clip_name": {
         "name": "نام clip"
+      }
+    }
+  },
+  "CameraAngle": {
+    "description": "یک زاویهٔ دوربین را پیرامون سوژه با پیش‌نمایش سه‌بعدی انتخاب کنید. یک camera_info برای nodeهای سه‌بعدی و یک توضیح سادهٔ انگلیسی از نما برای promptها خروجی می‌دهد.",
+    "display_name": "ترکیب پرامپت زاویه دوربین",
+    "inputs": {
+      "horizontal_angle": {
+        "name": "horizontal_angle",
+        "tooltip": "زاویهٔ سمتی پیرامون سوژه بر حسب درجه. ۰ روبه‌رو، ۹۰ سمت راست و ۱۸۰ پشت است."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "تصویر مرجع اختیاری که در پیش‌نمایش سه‌بعدی روی جلوی مکعب سوژه نمایش داده می‌شود."
+      },
+      "vertical_angle": {
+        "name": "vertical_angle",
+        "tooltip": "ارتفاع بر حسب درجه. مقدار منفی از پایین به بالا نگاه می‌کند و مقدار مثبت از بالا به پایین."
+      },
+      "view": {
+        "name": "view"
+      },
+      "zoom": {
+        "name": "zoom",
+        "tooltip": "بزرگ‌نمایی لنز روی سوژه: ۰ نمای باز و ۱۰ نمای نزدیک است. به camera_info.zoom منتقل می‌شود."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "1": {
+        "name": "prompt",
+        "tooltip": null
       }
     }
   },
@@ -3991,9 +4113,12 @@
     }
   },
   "CreateCameraInfo": {
-    "description": "ساخت camera_info. حالت 'orbit' با استفاده از yaw/pitch/distance به دور هدف می‌چرخد؛ حالت 'look_at' دوربین را در موقعیت جهانی قرار می‌دهد. مختصات در فضای جهانی بیننده (راست‌دست، محور Y رو به بالا) هستند.",
+    "description": "یک camera_info بسازید. حالت 'orbit' با yaw/pitch/distance پیرامون هدف نشانه‌گیری می‌کند؛ 'look_at' دوربین را در موقعیت جهانی قرار می‌دهد. مختصات، فضای جهانیِ نمایشگر هستند (راست‌گرد، محور Y رو به بالا).",
     "display_name": "ایجاد اطلاعات دوربین",
     "inputs": {
+      "camera_info_state": {
+        "name": "camera_info_state"
+      },
       "camera_type": {
         "name": "camera_type",
         "tooltip": "پروژکشن مورد استفاده توسط Render Splat: پرسپکتیو (کوتاه‌شدگی) یا اورتوگرافیک (موازی)."
@@ -4773,7 +4898,7 @@
       },
       "language_code": {
         "name": "language_code",
-        "tooltip": "کد زبان بر اساس ISO-639-1 یا ISO-639-3 (مثلاً 'en'، 'es'، 'fra'). برای شناسایی خودکار خالی بگذارید."
+        "tooltip": "کد زبان ISO 639-1 (برای نمونه، 'en'، 'es'، 'ja'). برای تشخیص خودکار خالی بگذارید."
       },
       "model": {
         "name": "model",
@@ -4843,7 +4968,7 @@
       },
       "language_code": {
         "name": "language_code",
-        "tooltip": "کد زبان ISO-639-1 یا ISO-639-3 (مثلاً 'en'، 'es'، 'fra'). برای تشخیص خودکار خالی بگذارید."
+        "tooltip": "کد زبان ISO 639-1 (برای نمونه، 'en'، 'es'، 'ja'). برای تشخیص خودکار خالی بگذارید."
       },
       "model": {
         "name": "model",
@@ -4851,15 +4976,6 @@
       },
       "model_similarity_boost": {
         "name": "similarity_boost"
-      },
-      "model_speed": {
-        "name": "speed"
-      },
-      "model_style": {
-        "name": "style"
-      },
-      "model_use_speaker_boost": {
-        "name": "use_speaker_boost"
       },
       "output_format": {
         "name": "output_format",
@@ -5747,6 +5863,52 @@
       },
       "width": {
         "name": "عرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3ImageNode": {
+    "description": "با FLUX 3 تصویری را از یک prompt تولید می‌کند، یا حداکثر ۱۰ تصویر مرجع را ویرایش و ترکیب می‌کند. در prompt، به مراجع با عنوان image 1، image 2 و به همین ترتیب اشاره کنید.",
+    "display_name": "تصویر Flux 3",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "'auto' از نخستین تصویر مرجع پیروی می‌کند یا نسبتی را از prompt انتخاب می‌کند."
+      },
+      "bounding_boxes": {
+        "name": "bounding_boxes",
+        "tooltip": "کادرهای اختیاری از Create Bounding Boxes که اشیا یا متن را در خروجی قرار می‌دهند. موقعیت‌ها نسبت به بوم هستند؛ بنابراین نسبت ابعاد خروجی را به آن بدهید."
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "grounding": {
+        "name": "grounding",
+        "tooltip": "پیش از تولید، به مدل اجازه دهید prompt را با جستجوی وب و تصویر بررسی کند."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "تصاویر مرجع اختیاری، در مجموع حداکثر ۱۰ تصویر، که هرکدام دست‌کم ۲۵۶×۲۵۶ پیکسل باشند."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "آنچه باید تولید شود یا ویرایشی که باید انجام شود. prompt پیش از تولید تفسیر و گسترش داده می‌شود."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "اندازهٔ خروجی با نسبت ابعاد انتخاب‌شده: ۰٫۷۵K حدود ۰٫۶ مگاپیکسل، ۱K برابر ۱ مگاپیکسل، ۱٫۵K برابر ۲٫۴ مگاپیکسل، ۲K برابر ۴٫۲ مگاپیکسل، و ۴K برابر ۱۶٫۸ مگاپیکسل است."
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "تحمل تعدیل محتوا؛ ۰ سخت‌گیرانه‌ترین مقدار است."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed برای تعیین اینکه node باید دوباره اجرا شود یا نه؛ FLUX 3 seed خودش را انتخاب می‌کند، بنابراین نتایج واقعی صرف‌نظر از این مقدار غیرقطعی هستند."
       }
     },
     "outputs": {
@@ -6716,7 +6878,7 @@
   },
   "GeminiNanoBanana2V2": {
     "description": "تولید یا ویرایش تصاویر به صورت همزمان از طریق Google Vertex API.",
-    "display_name": "نانو بنانا ۲",
+    "display_name": "Nano Banana 2.1",
     "inputs": {
       "control_after_generate": {
         "name": "کنترل پس از تولید"
@@ -6766,7 +6928,7 @@
       },
       "2": {
         "name": "تصویر تفکر",
-        "tooltip": "اولین تصویر از فرایند تفکر مدل. فقط در صورت انتخاب سطح تفکر HIGH و حالت پاسخ IMAGE+TEXT در دسترس است."
+        "tooltip": "نخستین تصویر از فرایند تفکر مدل. فقط با modalityِ IMAGE+TEXT در دسترس است."
       }
     }
   },
@@ -7347,7 +7509,7 @@
     "inputs": {
       "aspect_ratio": {
         "name": "نسبت ابعاد",
-        "tooltip": "نسبت ابعاد ویدیوی خروجی."
+        "tooltip": "نسبت ابعاد ویدیوی خروجی. هنگام ارائهٔ تصویر ورودی نادیده گرفته می‌شود؛ ویدیو از نسبت ابعاد تصویر پیروی می‌کند."
       },
       "control_after_generate": {
         "name": "کنترل پس از تولید"
@@ -7366,11 +7528,11 @@
       },
       "prompt": {
         "name": "راهنما",
-        "tooltip": "توضیح متنی ویدیوی موردنظر. هنگامی که یک تصویر ورودی ارائه شده باشد، برای grok-imagine-video-1.5 اختیاری است."
+        "tooltip": "توضیح متنیِ ویدیوی موردنظر. برای مدل‌های grok-imagine-video-1.5 هنگام ارائهٔ تصویر ورودی، اختیاری است."
       },
       "resolution": {
         "name": "وضوح",
-        "tooltip": "وضوح ویدیوی خروجی. 1080p فقط برای grok-imagine-video-1.5 در دسترس است."
+        "tooltip": "وضوح ویدیوی خروجی. 1080p برای grok-imagine-video در دسترس نیست."
       },
       "seed": {
         "name": "بذر",
@@ -7676,6 +7838,67 @@
       }
     }
   },
+  "HeyGenImageToVideoNode": {
+    "description": "با استفاده از HeyGen Video ۱.۰، یک تصویر را با گفت‌وگو و صدای همگام به ویدیو تبدیل کنید. تصویر به‌عنوان فریم نخست استفاده می‌شود.",
+    "display_name": "HeyGen Video ۱.۰: تصویر به ویدیو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "model_duration": {
+        "name": "مدت‌زمان"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_resolution": {
+        "name": "رزولوشن"
+      },
+      "model_seed": {
+        "name": "بذر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenReferenceToVideoNode": {
+    "description": "با استفاده از HeyGen Video ۱.۰، از یک پرامپت متنی ویدیویی با گفت‌وگو و صدای همگام تولید کنید. می‌توانید به‌صورت اختیاری تا ۱۲ تصویر مرجع، ویدیو و کلیپ صوتی متصل کنید و در پرامپت با {'@'}Image1، {'@'}Video1، {'@'}Audio1 به آن‌ها اشاره کنید.",
+    "display_name": "HeyGen Video ۱.۰: مرجع به ویدیو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration": {
+        "name": "مدت‌زمان"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_resolution": {
+        "name": "رزولوشن"
+      },
+      "model_seed": {
+        "name": "بذر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenTalkingPhotoNode": {
     "description": "هر تصویر از یک فرد را به یک ویدیوی صحبت‌کننده با هماهنگی لب (HeyGen Avatar IV) تبدیل کنید. می‌توانید آن را با یک متن یا صدای خود هدایت کنید.",
     "display_name": "HeyGen Talking Photo",
@@ -7955,6 +8178,87 @@
       }
     }
   },
+  "HunyuanImageEditApi": {
+    "description": "با استفاده از مدل Hunyuan Image شرکت Tencent، حداکثر ۵ تصویر مرجع را بر اساس یک پرامپت متنی ویرایش یا ترکیب می‌کند.",
+    "display_name": "Tencent HY Image: ویرایش",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدلی که باید استفاده شود."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_height": {
+        "name": "ارتفاع"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_reference_detail": {
+        "name": "reference_detail"
+      },
+      "model_resolution": {
+        "name": "رزولوشن"
+      },
+      "model_seed": {
+        "name": "بذر"
+      },
+      "model_watermark": {
+        "name": "واترمارک"
+      },
+      "model_width": {
+        "name": "عرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HunyuanImageTextToImageApi": {
+    "description": "با استفاده از مدل Hunyuan Image شرکت Tencent، از یک پرامپت متنی تصویر تولید می‌کند.",
+    "display_name": "Tencent HY Image: متن به تصویر",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدلی که باید استفاده شود."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_height": {
+        "name": "ارتفاع"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_resolution": {
+        "name": "رزولوشن"
+      },
+      "model_seed": {
+        "name": "بذر"
+      },
+      "model_watermark": {
+        "name": "واترمارک"
+      },
+      "model_width": {
+        "name": "عرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HunyuanImageToVideo": {
     "display_name": "HunyuanImageToVideo",
     "inputs": {
@@ -8208,6 +8512,42 @@
       }
     }
   },
+  "IdeogramEditApi": {
+    "description": "با استفاده از Ideogram ۴.۵، تا ۵ تصویر را بر اساس یک پرامپت متنی ویرایش یا ترکیب می‌کند. کل تصویر را دوباره رندر می‌کند و می‌تواند اندازه یا نسبت ابعاد آن را تغییر دهد؛ برای ثابت نگه‌داشتن پیکسل‌های دست‌نخورده، از ویرایش دقیق Ideogram ۴.۵ استفاده کنید.",
+    "display_name": "ویرایش Ideogram ۴.۵",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدل مورد استفاده."
+      },
+      "model_height": {
+        "name": "ارتفاع"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_quality": {
+        "name": "کیفیت"
+      },
+      "model_seed": {
+        "name": "بذر"
+      },
+      "model_size": {
+        "name": "اندازه"
+      },
+      "model_width": {
+        "name": "عرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "IdeogramPImage": {
     "description": "تولید تصویر با استفاده از P-Image، مدل سریع تبدیل متن به تصویر ایدوگرام. دارای تایپوگرافی قوی و فوتورئالیسم؛ پشتیبانی از کپشن ساختاریافته JSON نسخه ۴.۰ ایدوگرام برای متن، رنگ و چیدمان دقیق.",
     "display_name": "Ideogram & Pruna P-Image",
@@ -8247,6 +8587,70 @@
       "1": {
         "name": "final_prompt",
         "tooltip": "پرومپتی که تصویر واقعاً با آن تولید شده است (کپشن ساختاریافته بازنویسی‌شده در صورت اجرای prompt_upsampling، در غیر این صورت پرومپت شما). برای بازتولید این تصویر، آن را با prompt_upsampling روی OFF و همان بذر وارد کنید."
+      }
+    }
+  },
+  "IdeogramPreciseEditApi": {
+    "description": "یک تصویر را با استفاده از ویرایش دقیق Ideogram ۴.۵ و بر اساس یک پرامپت متنی ویرایش می‌کند: فقط مواردی که پرامپت درخواست می‌کند تغییر می‌کنند، پیکسل‌های دست‌نخورده یکسان می‌مانند و خروجی اندازهٔ تصویر ۱ را حفظ می‌کند (تصاویر بزرگ‌تر از حدود ۴ MP ابتدا کوچک‌مقیاس می‌شوند). تا ۴ تصویر مرجع را می‌پذیرد.",
+    "display_name": "ویرایش دقیق Ideogram ۴.۵",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدل مورد استفاده."
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_quality": {
+        "name": "کیفیت"
+      },
+      "model_seed": {
+        "name": "بذر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramTextToImageApi": {
+    "description": "با استفاده از Ideogram ۴.۵، از یک پرامپت متنی تصویر تولید می‌کند.",
+    "display_name": "متن به تصویر Ideogram ۴.۵",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدل مورد استفاده."
+      },
+      "model_magic_prompt": {
+        "name": "magic_prompt"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_quality": {
+        "name": "کیفیت"
+      },
+      "model_seed": {
+        "name": "بذر"
+      },
+      "model_size": {
+        "name": "اندازه"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "final_prompt",
+        "tooltip": "توضیح ساختاریافته‌ای که تصویر از آن تولید شده است. برای بازتولید تصویر، آن را با magic_prompt تنظیم‌شده روی 'off' و همان بذر دوباره وارد کنید."
       }
     }
   },
@@ -8410,12 +8814,12 @@
     }
   },
   "ImageColorSpace": {
-    "description": "sRGB، Rec.709 خطی، HDR ‏(Rec.2020 HLG) و HDR PQ ‏(Rec.2020 PQ) را تبدیل می‌کند. Linear 1.0 از همان سفید مرجع 203-nit مانند sRGB استفاده می‌کند؛ HLG از نمایشگر مرجع 1000-nit استفاده می‌کند. خروجی خطی و تبدیل‌های خطی‌به-HDR مقادیر گسترده را بدون نگاشت تُن حفظ می‌کنند. خروجی SDR و تبدیل PQ-به-HLG روشنایی اضافی را در سراسر batch نگاشت تُن می‌کنند و رنگ‌های خارج از gamut را فشرده می‌سازند. تبدیل‌ها با float32 محاسبه می‌شوند و device و dtype میانی را بازمی‌گردانند. آلفای مستقیم تبدیل رنگی نمی‌شود.",
+    "description": "فضاهای رنگی sRGB، Rec.709 خطی، HDR (Rec.2020 HLG)، HDR PQ (Rec.2020 PQ)، HDR LogC3 و HDR ACEScct را تبدیل می‌کند. LogC3 از منحنی EI ۸۰۰ با رنگ‌های اولیهٔ Rec.709 استفاده می‌کند و کدها به [0, 1] محدود می‌شوند. ACEScct از رنگ‌های اولیهٔ AP1 و سفید D60، همراه با تطبیق Bradford با D65 استفاده می‌کند. پیش از ذخیره‌سازی EXR، LogC3 یا ACEScct را به خطی تبدیل کنید. Linear ۱.۰ از همان سفید مرجع ۲۰۳-nit مانند sRGB استفاده می‌کند؛ HLG از نمایشگر مرجع ۱۰۰۰-nit استفاده می‌کند. خروجی‌های Linear و ACEScct مقادیر گسترده را حفظ می‌کنند. تبدیل‌های Linear به HDR، روشنایی‌های شدید را بدون نگاشت تُن حفظ می‌کنند؛ خروجی‌های HLG و PQ کانال‌های منفی را برش می‌دهند. خروجی SDR و تبدیل PQ به HLG، روشنایی اضافی را در سراسر batch نگاشت تُن می‌کنند و رنگ‌های خارج از gamut را فشرده می‌سازند. تبدیل‌ها با float32 محاسبه می‌شوند و device و dtype میانی را بازمی‌گردانند. آلفای مستقیم تبدیل رنگی نمی‌شود.",
     "display_name": "تبدیل فضای رنگ تصویر",
     "inputs": {
       "destination": {
         "name": "destination",
-        "tooltip": "فضای رنگ پیکسل‌های خروجی. node ذخیره را روی همین فضای رنگ تنظیم کنید."
+        "tooltip": "فضای رنگی پیکسل‌های خروجی. node ذخیره را روی همین فضای رنگی تنظیم کنید. پیش از ذخیرهٔ EXR، LogC3 یا ACEScct را به خطی تبدیل کنید، یا پیش از ذخیرهٔ ویدیو آن را به sRGB/HDR/HDR PQ تبدیل کنید."
       },
       "image": {
         "name": "image"
@@ -16812,7 +17216,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "میزان استدلال مدل پیش از پاسخ‌گویی. «default» انتخاب را به مدل واگذار می‌کند. سطوح پشتیبانی‌شده برای هر مدل متفاوت‌اند: GPT-6 Astra از low تا max، GPT-5.6 از none تا max (بدون minimal)، GPT-5.5 از none تا xhigh، GPT-5.5 Pro از medium تا xhigh، GPT-5 از minimal تا high، و سری o از low تا high؛ GPT-4.1 استدلال ندارد. سطوح پشتیبانی‌نشده پیش از ارسال درخواست رد می‌شوند."
+        "tooltip": "میزان استدلال مدل پیش از پاسخ‌گویی. 'default' انتخاب را به مدل واگذار می‌کند. سطوح پشتیبانی‌شده برای هر مدل متفاوت‌اند: GPT-6 Astra از low تا max، GPT-6 Sol/Luna و GPT-5.6 از none تا max (بدون minimal)، GPT-5.5 از none تا xhigh، GPT-5.5 Pro از medium تا xhigh، GPT-5 از minimal تا high، و o-series از low تا high؛ GPT-4.1 استدلال ندارد. سطوح پشتیبانی‌نشده پیش از ارسال درخواست رد می‌شوند."
       },
       "truncation": {
         "name": "truncation",
@@ -16972,40 +17376,6 @@
       "file": {
         "name": "file",
         "tooltip": "فایل‌های ورودی برای استفاده به عنوان زمینه برای مدل. در حال حاضر فقط فایل‌های متنی (.txt) و PDF (.pdf) پذیرفته می‌شوند."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "OpenAIVideoSora2": {
-    "description": "تولید ویدیو و صوت توسط OpenAI.",
-    "display_name": "OpenAI Sora - ویدیو",
-    "inputs": {
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "duration": {
-        "name": "duration"
-      },
-      "image": {
-        "name": "image"
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "متن راهنما؛ در صورت وجود تصویر ورودی می‌تواند خالی باشد."
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Seed برای تعیین اینکه node باید مجدداً اجرا شود یا خیر؛ نتایج واقعی صرف‌نظر از seed غیرقطعی هستند."
-      },
-      "size": {
-        "name": "size"
       }
     },
     "outputs": {
@@ -18366,6 +18736,10 @@
       "model_top_p": {
         "name": "top_p"
       },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "میزان استدلالی که مدل پیش از ترسیم صرف می‌کند. سطوح بالاتر جزئیات را بهبود می‌دهند و توکن بیشتری هزینه دارند. فقط توسط مدل‌های Arrow 2 استفاده می‌شود."
+      },
       "seed": {
         "name": "seed",
         "tooltip": "Seed برای تعیین اجرای مجدد node؛ نتایج واقعی صرف‌نظر از seed غیرقطعی هستند."
@@ -18404,6 +18778,10 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "توضیح متنی برای خروجی SVG مورد نظر."
+      },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "میزان استدلالی که مدل پیش از ترسیم صرف می‌کند. سطوح بالاتر جزئیات را بهبود می‌دهند و توکن بیشتری هزینه دارند. فقط توسط مدل‌های Arrow 2 استفاده می‌شود."
       },
       "reference_images": {
         "name": "reference_images",
@@ -18445,6 +18823,9 @@
   "QwenImageDiffsynthControlnet": {
     "display_name": "QwenImageDiffsynthControlnet",
     "inputs": {
+      "end_percent": {
+        "name": "درصد پایان"
+      },
       "image": {
         "name": "تصویر"
       },
@@ -18456,6 +18837,9 @@
       },
       "model_patch": {
         "name": "patch مدل"
+      },
+      "start_percent": {
+        "name": "درصد آغاز"
       },
       "strength": {
         "name": "شدت"
@@ -19075,7 +19459,7 @@
       },
       "model": {
         "name": "مدل",
-        "tooltip": "مدلی که برای تولید استفاده می‌شود. مدل‌های recraftv4_styles برای تولید با سبک یکپارچه ساخته شده‌اند و همیشه به style_id یا style_references نیاز دارند."
+        "tooltip": "مدلی که برای تولید استفاده می‌شود. مدل‌های recraftv4_styles برای تولید با سبک یکدست ساخته شده‌اند و همیشه به style_id یا style_references نیاز دارند؛ recraftv4_1_flash سریع‌ترین و ارزان‌ترین مدل است و هیچ سبکی را پشتیبانی نمی‌کند."
       },
       "model_size": {
         "name": "اندازه"
@@ -23799,6 +24183,30 @@
       }
     }
   },
+  "TextEncodeMingImageEdit": {
+    "display_name": "کدگذاری متن برای ویرایش تصویر Ming",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "تصاویر",
+        "tooltip": "تصاویر مرجع اختیاری که توسط کدگذار متن دیده می‌شوند و به‌صورت فریم‌های تمیز به دنباله latent افزوده می‌شوند. تصاویر بعدی به اندازه تصویر اول تغییر اندازه می‌یابند و latent نمونه‌برداری‌شده باید با اندازه آن مطابقت داشته باشد."
+      },
+      "prompt": {
+        "name": "پرامپت"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "بدون VAE، تصاویر فقط از طریق برج بینایی، کدگذار متن را شرطی می‌کنند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TextEncodeQwenImage21": {
     "display_name": "کدگذاری متن Qwen Image 2.1",
     "inputs": {
@@ -23968,6 +24376,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "پرامپت سیستم",
+        "tooltip": "پرامپت سیستم را در قالب گفت‌وگوی مدل جایگزین می‌کند. هنگامی که از قالب پیش‌فرض استفاده نشود، نادیده گرفته می‌شود."
+      },
       "thinking": {
         "name": "تفکر",
         "tooltip": "در حالت تفکر عمل کنید اگر مدل از آن پشتیبانی می‌کند."
@@ -23984,6 +24396,10 @@
     "outputs": {
       "0": {
         "name": "متن تولید شده",
+        "tooltip": null
+      },
+      "1": {
+        "name": "تفکر",
         "tooltip": null
       }
     }
@@ -24034,6 +24450,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "پرامپت سیستم",
+        "tooltip": "پرامپت سیستم را در قالب گفت‌وگوی مدل جایگزین می‌کند. هنگامی که از قالب پیش‌فرض استفاده نشود، نادیده گرفته می‌شود."
+      },
       "thinking": {
         "name": "تفکر",
         "tooltip": "در حالت تفکر عمل کنید اگر مدل از آن پشتیبانی می‌کند."
@@ -24050,6 +24470,10 @@
     "outputs": {
       "0": {
         "name": "متن تولید شده",
+        "tooltip": null
+      },
+      "1": {
+        "name": "تفکر",
         "tooltip": null
       }
     }
@@ -28628,6 +29052,10 @@
       "positive": {
         "name": "مثبت"
       },
+      "ref_pad_image": {
+        "name": "تصویر پد مرجع",
+        "tooltip": "به‌جای خاکستری، فریم‌های پدینگ شرطی‌سازی تصویر را با این تصویر پر می‌کند و بدون ثابت‌کردن فریم‌ها، هویت را حفظ می‌کند (پدینگ ضد رانش به سبک SVI که توسط مدل‌هایی مانند ID-V2V استفاده می‌شود)."
+      },
       "start_image": {
         "name": "تصویر شروع"
       },
@@ -29608,8 +30036,12 @@
     }
   },
   "ZImageFunControlnet": {
-    "display_name": "ZImageFunControlnet",
+    "description": "یک Fun ControlNet از Z-Image یا Qwen Image ۲.۱ را که با Load Model Patch بارگذاری شده است اعمال می‌کند.",
+    "display_name": "اعمال Fun ControlNet",
     "inputs": {
+      "end_percent": {
+        "name": "درصد پایان"
+      },
       "image": {
         "name": "تصویر"
       },
@@ -29624,6 +30056,9 @@
       },
       "model_patch": {
         "name": "patch مدل"
+      },
+      "start_percent": {
+        "name": "درصد آغاز"
       },
       "strength": {
         "name": "شدت"
