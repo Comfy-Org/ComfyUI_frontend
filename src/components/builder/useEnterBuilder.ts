@@ -11,7 +11,7 @@ export function useEnterBuilder() {
   function enterBuilder() {
     if (!appModeStore.hasNodes) {
       emptyWorkflowDialog.show({
-        onEnterBuilder: enterBuilder,
+        onEnterBuilder: appModeStore.enterBuilder,
         onDismiss: () => setMode('graph')
       })
       return

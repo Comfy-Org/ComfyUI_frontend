@@ -8,7 +8,7 @@ import { useEnterBuilder } from './useEnterBuilder'
 
 vi.mock(import('@/composables/useAppMode'))
 
-vi.mock<unknown>(import('./useEmptyWorkflowDialog'), () => {
+vi.mock(import('./useEmptyWorkflowDialog'), () => {
   const dialog = { show: vi.fn() }
   return { useEmptyWorkflowDialog: () => dialog }
 })
@@ -52,16 +52,12 @@ describe('useEnterBuilder', () => {
     expect(useAppMode().setMode).toHaveBeenCalledWith('graph')
   })
 
-  it('re-checks for nodes when the dialog asks to enter the builder', () => {
+  it('enters the builder when the dialog confirms a loaded template, even before hasNodes refreshes', () => {
     useEnterBuilder().enterBuilder()
-    const { onEnterBuilder } = lastDialogOptions()
 
-    onEnterBuilder()
-    expect(useAppModeStore().enterBuilder).not.toHaveBeenCalled()
-    expect(useEmptyWorkflowDialog().show).toHaveBeenCalledTimes(2)
+    lastDialogOptions().onEnterBuilder()
 
-    setHasNodes(true)
-    onEnterBuilder()
     expect(useAppModeStore().enterBuilder).toHaveBeenCalledOnce()
+    expect(useEmptyWorkflowDialog().show).toHaveBeenCalledOnce()
   })
 })
