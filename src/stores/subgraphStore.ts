@@ -1,5 +1,4 @@
 import { defineStore } from 'pinia'
-import { computed } from 'vue'
 
 import { t } from '@/i18n'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
@@ -182,9 +181,6 @@ export const useSubgraphStore = defineStore('subgraph', () => {
   const subgraphCache: Record<string, LoadedComfyWorkflow> = {}
   const { blueprintNodeDefsByName } = useNodeDefStore()
   const canvasStore = useCanvasStore()
-  const subgraphBlueprints = computed(() => [
-    ...blueprintNodeDefsByName.values()
-  ])
   async function fetchSubgraphs() {
     async function loadBlueprint(options: {
       path: string
@@ -447,7 +443,6 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     isGlobalBlueprint,
     isSubgraphBlueprint,
     isUserBlueprint,
-    publishSubgraph,
-    subgraphBlueprints
+    publishSubgraph
   }
 })

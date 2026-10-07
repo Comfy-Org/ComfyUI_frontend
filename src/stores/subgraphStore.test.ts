@@ -36,6 +36,9 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
     storeUserData: vi.fn(),
     listUserDataFullInfo: vi.fn(),
     getGlobalSubgraphs: vi.fn(),
+    deleteUserData: vi.fn(() =>
+      Promise.resolve(new Response(null, { status: 204 }))
+    ),
     apiURL: vi.fn(),
     addEventListener: vi.fn()
   }
@@ -79,6 +82,12 @@ describe('useSubgraphStore', () => {
     )
     vi.mocked(api.getGlobalSubgraphs).mockResolvedValue(globalSubgraphs)
     return await store.fetchSubgraphs()
+  }
+
+  function userBlueprintNames() {
+    return useNodeDefStore()
+      .nodeDefs.filter((d) => d.category === 'Subgraph Blueprints/User')
+      .map((d) => d.name)
   }
 
   beforeEach(() => {
@@ -128,11 +137,13 @@ describe('useSubgraphStore', () => {
   })
   it('should display published nodes in the node library', async () => {
     await mockFetch({ 'test.json': mockGraph })
-    expect(
-      useNodeDefStore().nodeDefs.filter(
-        (d) => d.category === 'Subgraph Blueprints/User'
-      )
-    ).toHaveLength(1)
+    expect(userBlueprintNames()).toEqual(['SubgraphBlueprint.test'])
+  })
+  it('should remove deleted blueprints from the node library', async () => {
+    await mockFetch({ 'test.json': mockGraph })
+    await store.deleteBlueprint('SubgraphBlueprint.test')
+    expect(api.deleteUserData).toHaveBeenCalledWith('subgraphs/test.json')
+    expect(userBlueprintNames()).toEqual([])
   })
   it('should allow subgraphs to be edited', async () => {
     await mockFetch({ 'test.json': mockGraph })
@@ -273,7 +284,7 @@ describe('useSubgraphStore', () => {
       'Failed to load subgraph blueprint',
       expect.any(Error)
     )
-    expect(store.subgraphBlueprints).toHaveLength(0)
+    expect(useNodeDefStore().blueprintNodeDefsByName.size).toBe(0)
     consoleSpy.mockRestore()
   })
 
@@ -295,7 +306,7 @@ describe('useSubgraphStore', () => {
       'Failed to load subgraph blueprint',
       expect.any(Error)
     )
-    expect(store.subgraphBlueprints).toHaveLength(0)
+    expect(useNodeDefStore().blueprintNodeDefsByName.size).toBe(0)
     consoleSpy.mockRestore()
   })
 
@@ -317,7 +328,7 @@ describe('useSubgraphStore', () => {
       }
     )
     expect(consoleSpy).toHaveBeenCalled()
-    expect(store.subgraphBlueprints).toHaveLength(1)
+    expect(useNodeDefStore().blueprintNodeDefsByName.size).toBe(1)
     consoleSpy.mockRestore()
   })
 
