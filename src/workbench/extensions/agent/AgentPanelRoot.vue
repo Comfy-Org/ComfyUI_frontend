@@ -35,6 +35,7 @@ import { useWorkflowService } from '@/platform/workflow/core/services/workflowSe
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { ChangeTracker } from '@/scripts/changeTracker'
 import { useAppMode } from '@/composables/useAppMode'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
 import { fetchDroppedAsset, getDroppedAsset } from '@/utils/eventUtils'
@@ -783,16 +784,19 @@ function targetWorkflowDraft(origin?: TurnOrigin): DraftSnapshot | undefined {
   return { content }
 }
 
-function canvasForWorkflow(workflowId: string): Record<string, unknown> | null {
-  if (workflowDetached.value) return null
+function canvasForWorkflow(
+  workflowId: string
+): Record<string, unknown> | null | undefined {
+  if (workflowDetached.value) return undefined
   const boundPath = bindingStore.tabPathFor(workflowId)
   if (boundPath === undefined) return null
-  const target = workflowStore.getWorkflowByPath(boundPath)
-  if (!target || !bindingStore.matchesWorkflow(workflowId, target)) return null
+  const target = boundOrOpenWorkflowFor(workflowId)
+  if (!target || target.path !== boundPath) return null
   if (target.path !== workflowStore.activeWorkflow?.path)
-    return target.activeState ?? null
+    return target.activeState ?? undefined
+  if (ChangeTracker.isLoadingGraph) return undefined
   const live = app.graph?.serialize()
-  return live ? { ...live } : null
+  return live ? { ...live } : undefined
 }
 
 const selectedTargetTab = computed<ActiveTab | null>(() => {

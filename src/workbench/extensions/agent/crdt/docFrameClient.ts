@@ -49,7 +49,11 @@ export interface DocReseedResult {
   message?: string
 }
 
-export type DocReseedSendResult = 'sent' | 'too_large' | 'unavailable'
+export type DocReseedSendResult =
+  | 'sent'
+  | 'too_large'
+  | 'serialization_failed'
+  | 'unavailable'
 
 interface DocOpFailure {
   index: number
@@ -476,8 +480,9 @@ export class DocFrameClient extends EventTarget {
     try {
       frame = JSON.stringify({ type: 'doc_reseed', data })
     } catch {
-      return 'too_large'
+      return 'serialization_failed'
     }
+    if (frame.length > MAX_DOC_UPDATE_B64_LENGTH) return 'too_large'
     if (utf8.encode(frame).length > MAX_DOC_UPDATE_B64_LENGTH)
       return 'too_large'
     return this.transport.send(frame) ? 'sent' : 'unavailable'

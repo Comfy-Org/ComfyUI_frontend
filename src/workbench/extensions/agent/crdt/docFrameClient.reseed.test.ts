@@ -115,6 +115,17 @@ describe('stale-schema reseed wire protocol', () => {
     expect(multibyte.transport.frames('doc_reseed')).toHaveLength(0)
   })
 
+  it('reports serialization failures separately from oversized frames', () => {
+    const circular = refusedBridge()
+    const workflow: Record<string, unknown> = {}
+    workflow.self = workflow
+
+    expect(circular.bridge.reseed('wf-1', workflow)).toBe(
+      'serialization_failed'
+    )
+    expect(circular.transport.frames('doc_reseed')).toHaveLength(0)
+  })
+
   it('replaces the old lineage without emitting a destructive reset after success', () => {
     const { transport, bridge } = refusedBridge()
     const resets = vi.fn()
@@ -144,6 +155,8 @@ describe('stale-schema reseed wire protocol', () => {
 
   it('abandons the ambiguous lineage and requests a fresh refusal after conflict', () => {
     const { transport, bridge } = refusedBridge()
+    const replacements = vi.fn()
+    bridge.addEventListener('follower_replaced', replacements)
     bridge.reseed('wf-1', canvas)
     const oldFollower = bridge.follower
 
@@ -155,6 +168,11 @@ describe('stale-schema reseed wire protocol', () => {
     })
 
     expect(bridge.follower).not.toBe(oldFollower)
+    expect(replacements).toHaveBeenCalledWith(
+      expect.objectContaining({
+        detail: { workflowId: 'wf-1', preserveCanvas: false }
+      })
+    )
     expect(transport.frames('doc_subscribe')).toHaveLength(2)
   })
 

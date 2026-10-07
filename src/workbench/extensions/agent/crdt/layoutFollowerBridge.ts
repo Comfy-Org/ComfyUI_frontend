@@ -258,7 +258,10 @@ export class LayoutFollowerBridge extends EventTarget {
   }
 
   reconnect(): void {
-    if (!this.abandonPendingReseed()) this.resubscribe()
+    if (this.abandonPendingReseed()) return
+    this.reseedBlockedUntilConfirmedWorkflowId = null
+    this.reseedToken = null
+    this.resubscribe()
   }
 
   unsubscribe(): void {
@@ -283,7 +286,7 @@ export class LayoutFollowerBridge extends EventTarget {
     return 'sent'
   }
 
-  abandonPendingReseed(): boolean {
+  abandonPendingReseed(preserveCanvas = true): boolean {
     const workflowId = this.pendingReseedWorkflowId
     if (workflowId === null) return false
     this.pendingReseedWorkflowId = null
@@ -292,7 +295,7 @@ export class LayoutFollowerBridge extends EventTarget {
     this.dropDocForNewLineage()
     this.dispatchEvent(
       new CustomEvent('follower_replaced', {
-        detail: { workflowId, preserveCanvas: true }
+        detail: { workflowId, preserveCanvas }
       })
     )
     this.resubscribe()
@@ -518,7 +521,7 @@ export class LayoutFollowerBridge extends EventTarget {
     if (!result.ok) {
       if (result.code === RESEED_CONFLICT) {
         this.pendingReseedWorkflowId = result.workflowId
-        this.abandonPendingReseed()
+        this.abandonPendingReseed(false)
       }
       return
     }
