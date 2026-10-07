@@ -58,7 +58,6 @@ const pillClass =
     <span class="relative block aspect-4/3 overflow-hidden rounded-2xl">
       <WorkshopCardMedia v-if="model" :model />
       <span v-else class="block size-full bg-hub-surface-hover" />
-      <ExploreKindTag v-if="kind" :kind :locale />
       <span
         v-if="source"
         class="pointer-events-none absolute right-3 bottom-3 z-10 max-w-7/10 truncate rounded-lg bg-black/45 px-2 py-1 text-2xs font-semibold text-white backdrop-blur-md"
@@ -72,10 +71,11 @@ const pillClass =
         {{ name }}
       </span>
       <span
-        v-if="pills.length || access.length"
+        v-if="kind || pills.length || access.length"
         class="flex h-6 min-w-0 items-center gap-1.5 overflow-hidden"
         data-testid="explore-pills"
       >
+        <ExploreKindTag v-if="kind" :kind :locale />
         <span v-for="pill in pills" :key="pill" :class="pillClass">
           {{ pill }}
         </span>
