@@ -792,11 +792,19 @@ describe('attachDocOpMinter', () => {
   it.for([
     {
       name: 'sizes its array for a different set of widgets',
-      doc: { valueCount: 3, declaredNames: [] }
+      doc: {
+        valueCount: 3,
+        declaredNames: [],
+        promotedNames: ['prefix', 'text', 'other']
+      }
     },
     {
       name: 'declares the promoted widgets in another order',
-      doc: { valueCount: 2, declaredNames: ['text', 'clip', 'prefix'] }
+      doc: {
+        valueCount: 2,
+        declaredNames: ['text', 'clip', 'prefix'],
+        promotedNames: ['text', 'prefix']
+      }
     },
     {
       name: 'stores another same-size promoted widget sequence',
@@ -805,6 +813,10 @@ describe('attachDocOpMinter', () => {
         declaredNames: ['prefix', 'clip', 'text'],
         promotedNames: ['prefix', 'clip']
       }
+    },
+    {
+      name: 'cannot read the promoted widget sequence',
+      doc: { valueCount: 2, declaredNames: [], promotedNames: null }
     }
   ])(
     'keeps the refusal rather than misplacing a value when the document $name',
@@ -866,7 +878,8 @@ describe('attachDocOpMinter', () => {
     const { host, doc } = seedPromotedHost()
     docPromotedWidgets = () => ({
       valueCount: 2,
-      declaredNames: ['text', 'prefix']
+      declaredNames: ['text', 'prefix'],
+      promotedNames: ['text', 'prefix']
     })
 
     for (const value of ['p', 'pa', 'pas']) {
@@ -916,11 +929,32 @@ describe('attachDocOpMinter', () => {
     doc.destroy()
   })
 
+  it('marks stored values unreadable when their definition is unavailable', () => {
+    const workflow = JSON.parse(
+      readFileSync(
+        'browser_tests/assets/subgraphs/agent-subgraph-with-two-promoted-widgets.json',
+        'utf8'
+      )
+    ) as WorkflowJSON
+    const doc = mint(workflow, CATALOG)
+    const host = workflow.nodes.find((node) => String(node.id) === '11')
+    assert(typeof host?.type === 'string')
+    doc.getMap('definitions').delete(host.type)
+
+    expect(readDocPromotedWidgets(doc, '11')).toEqual({
+      valueCount: 2,
+      declaredNames: [],
+      promotedNames: null
+    })
+    doc.destroy()
+  })
+
   it('mints for a shipped host whose inputs mirror omits a promoted widget', async () => {
     const { host, doc } = seedPromotedHost()
     docPromotedWidgets = () => ({
       valueCount: 2,
-      declaredNames: ['prefix', 'clip', 'text']
+      declaredNames: ['prefix', 'clip', 'text'],
+      promotedNames: ['prefix', 'text']
     })
 
     host.widgets[1].value = 'pasted'
@@ -938,7 +972,11 @@ describe('attachDocOpMinter', () => {
 
   it('mints against the live order when the document places nothing', async () => {
     const { host, doc } = seedPromotedHost()
-    docPromotedWidgets = () => ({ valueCount: 0, declaredNames: [] })
+    docPromotedWidgets = () => ({
+      valueCount: 0,
+      declaredNames: [],
+      promotedNames: []
+    })
 
     host.widgets[1].value = 'pasted'
     await afterFlush()

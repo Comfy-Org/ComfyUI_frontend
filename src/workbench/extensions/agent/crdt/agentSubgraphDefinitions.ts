@@ -403,7 +403,7 @@ export function readSubgraphDefinitions(
 export interface DocPromotedWidgets {
   valueCount: number
   declaredNames: readonly string[]
-  promotedNames?: readonly string[]
+  promotedNames: readonly string[] | null
 }
 
 /** Null when the document holds no such node. */
@@ -443,12 +443,12 @@ function promotedInputNames(
   doc: Y.Doc,
   node: Y.Map<unknown>,
   definitionId: string
-): string[] | undefined {
+): string[] | null {
   const definition = definitionsMap(doc)?.get(definitionId)
-  if (!(definition instanceof Y.Map)) return undefined
+  if (!(definition instanceof Y.Map)) return null
   const declared = namedInputs(definition.get('inputs'))
   const instance = namedInputs(node.get('inputs'))
-  if (declared === null || instance === null) return undefined
+  if (declared === null || instance === null) return null
   const instanceByName = new Map(instance)
   return declared.flatMap(([name]) => {
     const input = instanceByName.get(name)
