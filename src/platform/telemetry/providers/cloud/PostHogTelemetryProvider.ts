@@ -145,6 +145,11 @@ interface DesktopEntryProps {
   desktop_device_id?: string
 }
 
+interface DesktopEntryAttribution {
+  props: DesktopEntryProps
+  source: 'url' | 'persisted'
+}
+
 // Stamped via before_send rather than posthog.register() so the axes
 // survive the posthog.reset(true) on logout, which wipes super properties.
 function stampPlatformAxes(event: CaptureResult | null): CaptureResult | null {
@@ -154,7 +159,9 @@ function stampPlatformAxes(event: CaptureResult | null): CaptureResult | null {
   return event
 }
 
-function readDesktopEntryProps(posthog: PostHog): DesktopEntryProps | null {
+function readDesktopEntryAttribution(
+  posthog: PostHog
+): DesktopEntryAttribution | null {
   const params = new URLSearchParams(window.location.search)
   const isDesktopEntry = params.get('utm_source') === 'comfy.desktop'
   if (!isDesktopEntry && posthog.get_property('source_app') !== 'desktop') {
@@ -167,7 +174,7 @@ function readDesktopEntryProps(posthog: PostHog): DesktopEntryProps | null {
   if (typeof deviceId === 'string' && deviceId) {
     props.desktop_device_id = deviceId
   }
-  return props
+  return { props, source: isDesktopEntry ? 'url' : 'persisted' }
 }
 
 /**
@@ -187,7 +194,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   private isInitialized = false
   private lastTriggerSource: ExecutionTriggerSource | undefined
   private disabledEvents = new Set<TelemetryEventName>(DEFAULT_DISABLED_EVENTS)
-  private desktopEntryProps: DesktopEntryProps | null = null
+  private desktopEntryAttribution: DesktopEntryAttribution | null = null
   private stopSubscriptionTierWatch: WatchStopHandle | null = null
 
   constructor() {
@@ -222,7 +229,9 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
               before_send: [stampPlatformAxes, createPostHogBeforeSend()]
             })
             this.isInitialized = true
-            this.desktopEntryProps = readDesktopEntryProps(this.posthog)
+            this.desktopEntryAttribution = readDesktopEntryAttribution(
+              this.posthog
+            )
             this.registerDesktopEntryProps()
             this.flushEventQueue()
 
@@ -372,12 +381,13 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   }
 
   private registerDesktopEntryProps(): void {
-    if (!this.posthog || !this.desktopEntryProps) return
+    if (!this.posthog || !this.desktopEntryAttribution) return
+    const { props } = this.desktopEntryAttribution
     try {
-      if (!this.desktopEntryProps.desktop_device_id) {
+      if (!props.desktop_device_id) {
         this.posthog.unregister('desktop_device_id')
       }
-      this.posthog.register(this.desktopEntryProps)
+      this.posthog.register(props)
     } catch (error) {
       console.error('Failed to register desktop entry props:', error)
     }
@@ -386,11 +396,11 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   // Persisted onto the person so backend-fired billing events inherit
   // desktop_device_id via person-on-events at ingest.
   private setDesktopEntryPersonProperties(): void {
-    if (!this.posthog || !this.desktopEntryProps) return
+    if (!this.posthog || this.desktopEntryAttribution?.source !== 'url') return
     const now = new Date().toISOString()
     try {
       this.posthog.people.set({
-        ...this.desktopEntryProps,
+        ...this.desktopEntryAttribution.props,
         last_seen_via_desktop: now
       })
       this.posthog.people.set_once({ first_seen_via_desktop: now })

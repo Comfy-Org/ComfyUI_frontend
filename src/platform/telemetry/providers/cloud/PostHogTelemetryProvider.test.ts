@@ -474,6 +474,29 @@ describe('PostHogTelemetryProvider', () => {
       )
     })
 
+    it('keeps saved referral props on events without attributing a new account to that device', async () => {
+      const persisted = mockPostHogPersistence({
+        source_app: 'desktop',
+        desktop_device_id: 'previous-device'
+      })
+      setLocation('')
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      const callback = vi.mocked(useCurrentUser().onUserResolved).mock
+        .calls[0][0]
+      callback({ id: 'different-user' })
+      provider.trackSignupOpened()
+
+      expect(hoisted.mockIdentify).toHaveBeenCalledWith('different-user')
+      expect(Object.fromEntries(persisted)).toEqual({
+        source_app: 'desktop',
+        desktop_device_id: 'previous-device'
+      })
+      expect(hoisted.mockPeopleSet).not.toHaveBeenCalled()
+      expect(hoisted.mockPeopleSetOnce).not.toHaveBeenCalled()
+    })
+
     it('does not touch the person profile on identify for non-desktop visitors', async () => {
       setLocation('')
       createProvider()
