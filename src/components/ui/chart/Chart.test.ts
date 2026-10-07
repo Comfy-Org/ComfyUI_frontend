@@ -63,27 +63,30 @@ describe('Chart', () => {
     expect(toRaw(data.datasets[0])).toEqual({ label: 'x', data: [1, 2, 3] })
   })
 
-  it('keeps a series hidden from the legend through a data edit', async () => {
-    const data = reactive({
-      labels: ['a', 'b'],
-      datasets: [
-        { label: 'x', data: [1, 2] },
-        { label: 'y', data: [3, 4] }
-      ]
-    })
-    render(ChartComponent, {
-      props: { type: 'line', label: 'Hidden series chart', data }
-    })
-    const chart = getChartByName('Hidden series chart')
-    chart?.hide(0)
+  it.for([0, 1])(
+    'keeps a series hidden from the legend when series %i data changes',
+    async (editedIndex) => {
+      const data = reactive({
+        labels: ['a', 'b'],
+        datasets: [
+          { label: 'x', data: [1, 2] },
+          { label: 'y', data: [3, 4] }
+        ]
+      })
+      render(ChartComponent, {
+        props: { type: 'line', label: 'Hidden series chart', data }
+      })
+      const chart = getChartByName('Hidden series chart')
+      chart?.hide(0)
 
-    data.datasets[1].data.push(5)
-    await nextTick()
+      data.datasets[editedIndex].data[0] = 9
+      await nextTick()
 
-    expect(chart?.isDatasetVisible(0)).toBe(false)
-    expect(chart?.isDatasetVisible(1)).toBe(true)
-    expect(toRaw(data.datasets[0])).toEqual({ label: 'x', data: [1, 2] })
-  })
+      expect(chart?.isDatasetVisible(0)).toBe(false)
+      expect(chart?.isDatasetVisible(1)).toBe(true)
+      expect(toRaw(data.datasets[0])).not.toHaveProperty('hidden')
+    }
+  )
 
   it('keeps category labels Chart.js discovers out of the caller labels', () => {
     const labels: string[] = []
