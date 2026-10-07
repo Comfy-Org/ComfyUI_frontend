@@ -42,6 +42,7 @@ import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import { presentSsoRequired } from '@/platform/auth/sso/ssoRequired'
+import { webSessionUser } from '@/platform/auth/session/webSessionUser'
 import {
   clearInteractiveSignIn,
   markInteractiveSignIn,
@@ -301,6 +302,8 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
     identity = session
     session.subscribe((next) => {
       state.value = next
+      webSessionUser.value =
+        next.phase === 'signed_in' ? next.session.user : undefined
       followSsoHint(next)
     })
     const mint = createSessionTokenMint({
