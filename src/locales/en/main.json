@@ -2659,6 +2659,11 @@
     }
   },
   "auth": {
+    "desktopHost": {
+      "continueInBrowser": "Finish signing in in your browser",
+      "signInFailed": "Sign-in didn't finish. Try again.",
+      "signOutFailed": "Comfy Desktop is still signed in. Finish or cancel any running install, then sign out again."
+    },
     "showPassword": "Show password",
     "hidePassword": "Hide password",
     "apiKey": {
