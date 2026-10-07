@@ -14,7 +14,7 @@ The `website-approval` environment supplies `WEBSITE_APPROVAL_TOKEN`. The creden
 belongs to `christian-byrne`, whose team membership satisfies the website path review rule. The
 workflow verifies that identity before it acts and cannot approve Christian's own pull requests.
 After approval it uses squash auto-merge or enters an already-clean exact head in GitHub's native
-queue without queue jumping. Later check and review events reconcile the decision.
+queue without queue jumping. Later status and workflow-run events reconcile the decision.
 
 For a website-only pull request, the required lint context runs website-scoped lint, format,
 typecheck, and unused-code checks. A change outside `apps/website/` falls back to the full repository
