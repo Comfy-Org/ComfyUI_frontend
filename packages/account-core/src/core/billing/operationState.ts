@@ -14,6 +14,7 @@
 import {
   zBillingOpChargeBreakdown,
   zBillingOpChargeReason,
+  zBillingOpReceiptPlan,
   zBillingOpStatusResponse
 } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
@@ -32,10 +33,16 @@ const ChargeBreakdownSchema = zBillingOpChargeBreakdown.extend({
   )
 })
 
+const ReceiptPlanSchema = zBillingOpReceiptPlan.extend({
+  price_cents: wireCents.optional(),
+  monthly_price_cents: wireCents.optional()
+})
+
 export const BillingOpStatusSchema = zBillingOpStatusResponse.extend({
   amount_charged_cents: wireCents.optional(),
   credits_added: wireCents.optional(),
-  charge_breakdown: ChargeBreakdownSchema.optional()
+  charge_breakdown: ChargeBreakdownSchema.optional(),
+  plan: ReceiptPlanSchema.optional()
 })
 
 export type BillingOpStatus = z.infer<typeof BillingOpStatusSchema>

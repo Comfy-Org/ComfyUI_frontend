@@ -246,9 +246,10 @@ export const useAuthActions = () => {
 
   /** Unwrapped `accessBillingPortal`: rejects on failure, false when the tab is blocked. */
   const accessBillingPortalDirect = async (
-    targetTier?: BillingPortalTargetTier
+    targetTier?: BillingPortalTargetTier,
+    options?: { cancelSubscription?: boolean }
   ): Promise<boolean> => {
-    const response = await authStore.accessBillingPortal(targetTier)
+    const response = await authStore.accessBillingPortal(targetTier, options)
     if (!response.billing_portal_url) {
       throw new Error(
         t('toastMessages.failedToAccessBillingPortal', {

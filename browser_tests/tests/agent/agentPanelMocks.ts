@@ -9,6 +9,7 @@ import type {
 } from '@comfyorg/ingest-types'
 
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import { DEPLOY_ACTION_SEEN_SETTINGS } from '@e2e/fixtures/constants/workflowActions'
 
 import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
@@ -360,6 +361,7 @@ async function mockAgentBoot(
     settings: {
       'Comfy.TutorialCompleted': true,
       'Comfy.RightSidePanel.ShowErrorsTab': false,
+      ...DEPLOY_ACTION_SEEN_SETTINGS,
       ...(vueNodes && { 'Comfy.VueNodes.Enabled': true }),
       ...initialSettings
     },
@@ -446,7 +448,8 @@ async function mockAgentBoot(
           },
           csrf_token: csrfToken,
           expires_at: '2100-01-01T00:00:00.000Z',
-          absolute_expires_at: '2100-01-08T00:00:00.000Z'
+          absolute_expires_at: '2100-01-08T00:00:00.000Z',
+          has_personal_workspace: true
         })
       )
     )

@@ -27,7 +27,15 @@
     </div>
 
     <!-- Footer -->
-    <div class="flex items-center justify-end gap-4 p-4">
+    <div
+      v-if="isAwaitingStripe"
+      class="flex items-center justify-end gap-4 p-4"
+    >
+      <Button variant="muted-textonly" @click="onClose">
+        {{ $t('g.close') }}
+      </Button>
+    </div>
+    <div v-else class="flex items-center justify-end gap-4 p-4">
       <Button variant="muted-textonly" :disabled="isLoading" @click="onClose">
         {{ $t('subscription.cancelDialog.keepSubscription') }}
       </Button>
@@ -44,11 +52,13 @@
 </template>
 
 <script setup lang="ts">
+import { defaultWindow, useEventListener, useThrottleFn } from '@vueuse/core'
 import { useToast } from 'primevue/usetoast'
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import type { CancelRail } from '@/composables/billing/types'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import {
@@ -88,6 +98,11 @@ const telemetry = useTelemetry()
 
 const isLoading = ref(false)
 const didCancelSucceed = ref(false)
+const isAwaitingStripe = ref(false)
+// Last seen `isCancelled` (null until the status loads). A cancel only counts
+// as observed when it turns true after a loaded, not-cancelled reading.
+let lastCancelled: boolean | null = null
+let cancelObserved = false
 const didScopeAbort = ref(false)
 const cancelReport = createCancelFlowReporter(
   telemetry,
@@ -116,10 +131,16 @@ onMounted(() => {
   cancelReport.intent()
 })
 
-onUnmounted(() => {
-  if (didCancelSucceed.value || didScopeAbort.value || isLoading.value) return
+function reportAbandoned() {
   telemetry?.trackSubscriptionCancellation('abandoned', cancellationMetadata())
   cancelReport.abandoned()
+}
+
+let unmounted = false
+onUnmounted(() => {
+  unmounted = true
+  if (didCancelSucceed.value || didScopeAbort.value || isLoading.value) return
+  reportAbandoned()
 })
 
 const formattedEndDate = computed(() => {
@@ -133,55 +154,98 @@ const formattedEndDate = computed(() => {
 })
 
 const description = computed(() =>
-  t('subscription.cancelDialog.description', { date: formattedEndDate.value })
+  isAwaitingStripe.value
+    ? t('subscription.cancelDialog.finishOnStripe')
+    : t('subscription.cancelDialog.description', {
+        date: formattedEndDate.value
+      })
 )
+
+function completeObservedCancel() {
+  if (!cancelObserved || didCancelSucceed.value) return
+  if (!isScopeCurrent()) return abortForScopeChange()
+  didCancelSucceed.value = true
+  isAwaitingStripe.value = false
+  telemetry?.trackSubscriptionCancellation('confirmed', cancellationMetadata())
+  cancelReport.confirmed({ operationFollows: false })
+  dialogStore.closeDialog({ key: 'cancel-subscription' })
+  toast.add({
+    severity: 'success',
+    summary: t('subscription.cancelSuccess'),
+    life: 5000
+  })
+}
+
+watch(
+  () => (subscription.value ? !!subscription.value.isCancelled : null),
+  (cancelled) => {
+    if (cancelled === null) return
+    if (cancelled && lastCancelled === false) cancelObserved = true
+    if (!cancelled) cancelObserved = false
+    lastCancelled = cancelled
+    if (cancelObserved && isAwaitingStripe.value) completeObservedCancel()
+  }
+)
+
+// The shared watcher gives up after a few minutes; keep checking on return from Stripe.
+const refreshOnFocus = useThrottleFn(() => {
+  if (isAwaitingStripe.value) fetchStatus().catch(() => {})
+}, 10_000)
+useEventListener(defaultWindow, 'focus', () => void refreshOnFocus())
 
 function onClose() {
   if (isLoading.value) return
   dialogStore.closeDialog({ key: 'cancel-subscription' })
 }
 
-async function onConfirmCancel() {
-  if (!isScopeCurrent()) {
-    didScopeAbort.value = true
-    toast.add({
-      severity: 'warn',
-      summary: t('subscription.cancelDialog.workspaceChanged')
-    })
-    dialogStore.closeDialog({ key: 'cancel-subscription' })
-    return
-  }
-  if (
+function abortForScopeChange() {
+  didScopeAbort.value = true
+  toast.add({
+    severity: 'warn',
+    summary: t('subscription.cancelDialog.workspaceChanged')
+  })
+  dialogStore.closeDialog({ key: 'cancel-subscription' })
+}
+
+function lacksWorkspaceCancelPermission() {
+  return (
     shouldUseWorkspaceBilling.value &&
     !(isCloud
       ? canCancel.value
       : permissions.value.canManageSubscriptionLifecycle)
-  ) {
-    return
-  }
+  )
+}
 
-  telemetry?.trackSubscriptionCancellation('confirmed', cancellationMetadata())
-  cancelReport.confirmed({
-    operationFollows: shouldUseWorkspaceBilling.value
+function reportCancelFailure(error: unknown) {
+  if (!shouldUseWorkspaceBilling.value) {
+    telemetry?.trackSubscriptionCancellation('failed', cancellationMetadata())
+    cancelReport.confirmed({ operationFollows: false })
+    cancelReport.failed(categorizeBillingApiError(error))
+  }
+  toast.add({
+    severity: 'error',
+    summary: t('subscription.cancelDialog.failed'),
+    detail: getErrorMessage(error) ?? t('g.unknownError')
   })
-  isLoading.value = true
-  try {
-    await cancelSubscription(isScopeCurrent)
-  } catch (error) {
-    const errorMessage = getErrorMessage(error)
-    if (!shouldUseWorkspaceBilling.value) {
-      telemetry?.trackSubscriptionCancellation('failed', cancellationMetadata())
-      cancelReport.failed(categorizeBillingApiError(error))
-    }
-    toast.add({
-      severity: 'error',
-      summary: t('subscription.cancelDialog.failed'),
-      detail: errorMessage ?? t('g.unknownError')
-    })
-    isLoading.value = false
-    return
-  }
+  isLoading.value = false
+}
 
+function reportWorkspaceConfirmed() {
+  telemetry?.trackSubscriptionCancellation('confirmed', cancellationMetadata())
+  cancelReport.confirmed({ operationFollows: true })
+}
+
+function awaitStripeCancel() {
+  // Dismissed while the portal call was pending: nothing was observed and no
+  // other terminal event will fire.
+  if (unmounted) return reportAbandoned()
+  isAwaitingStripe.value = true
+  isLoading.value = false
+  // The cancel may have been observed while the portal call was pending.
+  completeObservedCancel()
+}
+
+async function finishWorkspaceCancel() {
   didCancelSucceed.value = true
   try {
     await fetchStatus()
@@ -195,5 +259,38 @@ async function onConfirmCancel() {
     life: 5000
   })
   isLoading.value = false
+}
+
+function handleCancelError(error: unknown) {
+  if (!isScopeCurrent()) return abortForScopeChange()
+  reportCancelFailure(error)
+}
+
+// The rail comes from the cancel call itself; current routing may have flipped since.
+async function finishCancel(rail: CancelRail, confirmedBeforeCall: boolean) {
+  if (!isScopeCurrent()) return abortForScopeChange()
+  if (rail === 'legacy') return awaitStripeCancel()
+  if (!confirmedBeforeCall) reportWorkspaceConfirmed()
+  await finishWorkspaceCancel()
+}
+
+async function onConfirmCancel() {
+  if (!isScopeCurrent()) return abortForScopeChange()
+  if (lacksWorkspaceCancelPermission()) return
+
+  // The legacy rail only opens the Stripe portal, so it reports `confirmed`
+  // once the cancellation is observed instead of on click.
+  const confirmedBeforeCall = shouldUseWorkspaceBilling.value
+  if (confirmedBeforeCall) reportWorkspaceConfirmed()
+  lastCancelled = subscription.value ? !!subscription.value.isCancelled : null
+  cancelObserved = false
+  isLoading.value = true
+  let rail: CancelRail
+  try {
+    rail = await cancelSubscription(isScopeCurrent)
+  } catch (error) {
+    return handleCancelError(error)
+  }
+  await finishCancel(rail, confirmedBeforeCall)
 }
 </script>

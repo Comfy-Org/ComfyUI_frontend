@@ -38,6 +38,8 @@ const expandLabel = computed(() => `${t('workshop.output.expand')} ${name}`)
           :alt="name"
           referrerpolicy="no-referrer"
           class="size-full object-cover"
+          fetchpriority="low"
+          decoding="async"
           @error="failedSource = source"
         />
       </button>
