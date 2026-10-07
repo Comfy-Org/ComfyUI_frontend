@@ -375,6 +375,9 @@ const showCreditTransitionNotice = computed(
     agentPanelStore.creditTransitionNoticeIdentity === billingIdentity.value &&
     consentAccepted.value &&
     billingType.value === 'workspace' &&
+    capabilityReadSettled.value &&
+    billingStatus.value !== 'paused' &&
+    billingStatus.value !== 'payment_failed' &&
     agentScopedHasFunds.value === false &&
     agentHasFunds.value === true
 )
