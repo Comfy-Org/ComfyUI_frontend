@@ -1115,6 +1115,29 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
     expectNode3RebuiltAsHost(state)
   })
 
+  it('S1j refuses named host storage on the create path', () => {
+    const state = startFollower({ rootWidgetNode: true })
+
+    forwardRaw(
+      state,
+      (nodes) => {
+        retypeNode3AsHost(nodes)
+        const host = nodes.get('3')!
+        host.delete(OPAQUE_WIDGETS_KEY)
+        host.set('widgets', new Y.Map<unknown>([['value', 99]]))
+      },
+      1
+    )
+
+    const rebuilt = state.graph.getNodeById(toNodeId(3))
+    expect(rebuilt).toBeInstanceOf(SubgraphNode)
+    expect(rebuilt?.widgets?.[0]?.value).toBe(INTERIOR_DEFAULT_VALUE)
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({ errorType: 'agent_graph_host_widgets_named' })
+    )
+  })
+
   it('S1u reports drift on a catch-up frame when the definition promotes nothing', () => {
     const state = startFollower({ unpromotedDefinition: true })
 

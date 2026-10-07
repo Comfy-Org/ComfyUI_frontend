@@ -1006,15 +1006,19 @@ export class LiveGraphApplier {
   ): void {
     if (this.hasDefinitionConflict(node)) return
     if (!Array.isArray(widgets)) {
-      this.reportOnce(
-        `host-widgets-named:${String(node.id)}`,
-        `Subgraph host ${String(node.id)} carries named widget storage; refusing positional host updates`,
-        'agent_graph_host_widgets_named',
-        { nodeId: node.id, mode }
-      )
+      this.reportNamedHostWidgets(node, mode)
       return
     }
     this.applyHostWidgets(node, widgets, mode, doc)
+  }
+
+  private reportNamedHostWidgets(node: LGraphNode, mode: ApplyMode): void {
+    this.reportOnce(
+      `host-widgets-named:${String(node.id)}`,
+      `Subgraph host ${String(node.id)} carries named widget storage; refusing positional host updates`,
+      'agent_graph_host_widgets_named',
+      { nodeId: node.id, mode }
+    )
   }
 
   private applyOrdinaryWidgets(
@@ -1052,6 +1056,10 @@ export class LiveGraphApplier {
     doc: Y.Doc,
     docNodeId: string
   ): void {
+    if (widgets !== undefined && !Array.isArray(widgets)) {
+      this.reportNamedHostWidgets(node, mode)
+      return
+    }
     const afterConfigurePromotedIds = promotedWidgetIds(node)
     if (
       Array.isArray(widgets) &&
