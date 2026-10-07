@@ -75,7 +75,10 @@ describe('agentRunModeStore', () => {
     const store = useAgentRunModeStore()
     await store.load()
 
-    expect(fetchApi).toHaveBeenCalledWith('/agent/run-mode', { method: 'GET' })
+    expect(fetchApi).toHaveBeenCalledWith(
+      '/agent/run-mode',
+      expect.objectContaining({ method: 'GET' })
+    )
     expect(store.mode).toBe('auto_limited')
     expect(store.creditLimit).toBe(25)
   })
@@ -95,9 +98,10 @@ describe('agentRunModeStore', () => {
 
     const load = store.load()
     await vi.waitFor(() =>
-      expect(fetchApi).toHaveBeenCalledWith('/agent/run-mode', {
-        method: 'GET'
-      })
+      expect(fetchApi).toHaveBeenCalledWith(
+        '/agent/run-mode',
+        expect.objectContaining({ method: 'GET' })
+      )
     )
     await store.save('auto_limited', 20)
     resolveGet(jsonResponse(200, { mode: 'ask_approval', credit_limit: null }))

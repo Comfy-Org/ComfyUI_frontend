@@ -81,6 +81,19 @@ describe('reportError', () => {
     )
   })
 
+  it('does not report an error again after its complete diagnostic was emitted', async () => {
+    const { markErrorReported, reportError } = await loadReportError()
+    const error = new Error('backend-controlled message')
+    markErrorReported(error)
+
+    reportError(error, {
+      errorType: 'duplicate_agent_failure'
+    })
+
+    expect(captureException).not.toHaveBeenCalled()
+    expect(addError).not.toHaveBeenCalled()
+  })
+
   it('names a Datadog copy without changing the original error', async () => {
     const { reportError } = await loadReportError()
     const cause = new Error('Connection closed')
