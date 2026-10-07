@@ -12,6 +12,12 @@ function fileOfSize(name: string, size: number, type = 'image/png'): File {
   return file
 }
 
+function identicalFile(name: string, size: number, type = 'image/png'): File {
+  const file = new File(['x'], name, { type, lastModified: 0 })
+  Object.defineProperty(file, 'size', { value: size })
+  return file
+}
+
 function chipRegistry() {
   const chips: ComposerAttachment[] = []
   return {
@@ -195,6 +201,38 @@ describe('useAttachment', () => {
     })
   })
 
+  it('reuses the prior upload when the same file is attached again', async () => {
+    const upload = vi.fn(async (file: File) => ({
+      ref: `uploaded_${file.name}`
+    }))
+    const registry = chipRegistry()
+    const { addFiles } = useAttachment({ upload, ...registry })
+
+    await addFiles([identicalFile('cat.png', 1024)])
+    await addFiles([identicalFile('cat.png', 1024)])
+
+    expect(upload).toHaveBeenCalledOnce()
+    expect(registry.chips.map(({ ref }) => ref)).toEqual([
+      'uploaded_cat.png',
+      'uploaded_cat.png'
+    ])
+  })
+
+  it('uploads again when the same name and size carry different content', async () => {
+    const upload = vi.fn(async (file: File) => ({
+      ref: `uploaded_${file.name}`
+    }))
+    const registry = chipRegistry()
+    const { addFiles } = useAttachment({ upload, ...registry })
+
+    await addFiles([identicalFile('cat.png', 1024)])
+    const edited = identicalFile('cat.png', 1024)
+    Object.defineProperty(edited, 'lastModified', { value: 1 })
+    await addFiles([edited])
+
+    expect(upload).toHaveBeenCalledTimes(2)
+  })
+
   it('stages a deferred file before its source resolves', async () => {
     let resolveFile: (file: File | undefined) => void = () => {}
     const resolve = vi.fn(
@@ -360,7 +398,10 @@ describe('useAttachment', () => {
       return { ref: file.name }
     })
     const registry = chipRegistry()
-    const { addFiles, addDeferredFile } = useAttachment({ upload, ...registry })
+    const { addFiles, addDeferredFile } = useAttachment({
+      upload,
+      ...registry
+    })
 
     const first = addFiles(['a', 'b', 'c'].map((name) => fileOfSize(name, 1)))
     const second = addFiles(['d', 'e', 'f'].map((name) => fileOfSize(name, 1)))

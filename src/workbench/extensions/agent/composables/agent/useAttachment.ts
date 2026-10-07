@@ -56,11 +56,23 @@ async function withDeadline<T>(
 
 let stagedCount = 0
 
+// A file's (name, size, last-modified) triple is a cheap, no-dependency stand-in
+// for a content hash: a real content change almost always touches one of the
+// three, and collisions only let an already-uploaded result be reused, never
+// block a genuinely new upload. Scoped to one useAttachment instance's
+// lifetime, not persisted, so this only catches the common case (the same
+// file re-attached across messages in one session) and never claims to be a
+// cross-session or cross-user content dedup.
+function fileUploadKey(file: File): string {
+  return `${file.name}:${file.size}:${file.lastModified}`
+}
+
 export function useAttachment(options: UseAttachmentOptions) {
   const pending = new Set<string>()
   const inFlight = new Map<string, AbortController>()
   const cancelled = new Set<string>()
   const waiting: Array<() => void> = []
+  const uploaded = new Map<string, UploadResult>()
   let activeUploads = 0
 
   function stage(name: string): string {
@@ -111,6 +123,22 @@ export function useAttachment(options: UseAttachmentOptions) {
     }
   }
 
+  async function resolveUpload(id: string, file: File): Promise<UploadResult> {
+    const key = fileUploadKey(file)
+    const cached = uploaded.get(key)
+    if (cached) return cached
+
+    const controller = new AbortController()
+    inFlight.set(id, controller)
+    const result = await withDeadline(
+      options.upload(file, controller.signal),
+      options.uploadTimeoutMs ?? uploadDeadlineMs(file),
+      () => controller.abort()
+    )
+    uploaded.set(key, result)
+    return result
+  }
+
   async function uploadStagedFile(id: string, file: File): Promise<boolean> {
     if (activeUploads === MAX_CONCURRENT_UPLOADS)
       await new Promise<void>((resolve) => waiting.push(resolve))
@@ -121,13 +149,7 @@ export function useAttachment(options: UseAttachmentOptions) {
         name: file.name,
         previewUrl: hasImageType(file) ? URL.createObjectURL(file) : undefined
       })
-      const controller = new AbortController()
-      inFlight.set(id, controller)
-      const result = await withDeadline(
-        options.upload(file, controller.signal),
-        options.uploadTimeoutMs ?? uploadDeadlineMs(file),
-        () => controller.abort()
-      )
+      const result = await resolveUpload(id, file)
       options.update(id, {
         ref: result.ref,
         ...(result.url ? { previewUrl: result.url } : {}),
