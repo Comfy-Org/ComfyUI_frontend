@@ -1,9 +1,9 @@
 # Run the website package's configured delivery lane.
 #
 # Security boundary:
-# - pull_request_target loads this workflow from the trusted default branch.
-# - automation is checked out from the repository's protected default branch;
-#   pull request code is never executed.
+# - pull_request_target, workflow_run, and status load this workflow from the
+#   default branch. Automation and policy are checked out from the protected
+#   default branch; pull request code is never executed.
 # - the script rejects other base branches and forks, re-fetches the live PR,
 #   verifies the exact head SHA, requires every changed path to be under
 #   apps/website/**, and verifies the PAT owner.
