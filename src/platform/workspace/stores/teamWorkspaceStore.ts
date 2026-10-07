@@ -1052,17 +1052,38 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
   }
 
   // A switch made in Desktop (its chooser, or another view) re-scopes this
-  // view's credential, so the active workspace follows it.
+  // view's credential. The tab drops its old scope at once and takes the new
+  // workspace only once the account's list confirms it.
+  async function followDesktopHostWorkspace(
+    hostWorkspaceId: string
+  ): Promise<void> {
+    const generation = identityGeneration
+    mutableActiveWorkspaceId.value = null
+    const isListed = () =>
+      workspaces.value.some((w) => w.id === hostWorkspaceId)
+    if (!isListed()) {
+      await refreshWorkspaces().catch(() => undefined)
+      if (
+        isStaleIdentity(generation) ||
+        desktopHostUser.value?.workspaceId !== hostWorkspaceId
+      ) {
+        return
+      }
+    }
+    if (isListed()) mutableActiveWorkspaceId.value = hostWorkspaceId
+  }
+
   watch(
     () => desktopHostUser.value?.workspaceId,
     (hostWorkspaceId) => {
       if (
-        hostWorkspaceId &&
-        initState.value === 'ready' &&
-        workspaces.value.some((w) => w.id === hostWorkspaceId)
+        !hostWorkspaceId ||
+        initState.value !== 'ready' ||
+        hostWorkspaceId === mutableActiveWorkspaceId.value
       ) {
-        mutableActiveWorkspaceId.value = hostWorkspaceId
+        return
       }
+      void followDesktopHostWorkspace(hostWorkspaceId)
     }
   )
 

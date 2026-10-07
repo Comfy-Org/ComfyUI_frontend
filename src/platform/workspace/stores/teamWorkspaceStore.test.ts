@@ -2368,6 +2368,38 @@ describe('useTeamWorkspaceStore', () => {
       expect(store.isSwitching).toBe(false)
     })
 
+    it('refreshes the list for a Desktop workspace it has not seen, then takes it', async () => {
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+      mockWorkspaceApi.list.mockResolvedValue({
+        workspaces: [
+          mockPersonalWorkspace,
+          mockTeamWorkspace,
+          mockMemberWorkspace
+        ]
+      })
+
+      pushHostState(hostOn(mockMemberWorkspace.id))
+      await nextTick()
+      expect(store.activeWorkspaceId).toBeNull()
+
+      await vi.waitFor(() =>
+        expect(store.activeWorkspaceId).toBe(mockMemberWorkspace.id)
+      )
+    })
+
+    it('keeps no active workspace when the refreshed list lacks the Desktop workspace', async () => {
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+      mockWorkspaceApi.list.mockClear()
+
+      pushHostState(hostOn(mockMemberWorkspace.id))
+
+      await vi.waitFor(() => expect(mockWorkspaceApi.list).toHaveBeenCalled())
+      await nextTick()
+      expect(store.activeWorkspaceId).toBeNull()
+    })
+
     it('follows a switch made in Desktop', async () => {
       mockWorkspaceApi.list.mockResolvedValue({
         workspaces: [

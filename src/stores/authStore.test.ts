@@ -2865,6 +2865,32 @@ describe('useAuthStore in local/desktop distribution', () => {
       expect(initialize).toHaveBeenCalledOnce()
     })
 
+    it('drops workspaces loaded for the Firebase account when Desktop signs in', async () => {
+      const teams = useTeamWorkspaceStore()
+      teams.initState = 'ready'
+      const reset = vi.spyOn(teams, 'resetForIdentityChange')
+      const clearWorkspace = vi.spyOn(
+        useWorkspaceAuthStore(),
+        'clearWorkspaceContext'
+      )
+      const initialize = vi.spyOn(teams, 'initialize').mockResolvedValue()
+      const bridge = hostBridge({ status: 'signed_out' })
+      await startDesktopHostSession(bridge)
+
+      bridge.push({
+        status: 'signed_in',
+        userId: 'host-user',
+        workspaceId: 'ws-host'
+      })
+      await nextTick()
+
+      expect(clearWorkspace).toHaveBeenCalled()
+      expect(reset).toHaveBeenCalledOnce()
+      expect(reset.mock.invocationCallOrder[0]).toBeLessThan(
+        initialize.mock.invocationCallOrder[0]
+      )
+    })
+
     it('has no workspace credential when no workspace is known', async () => {
       const bridge = hostBridge({ status: 'signed_in', userId: 'host-user' })
       await startDesktopHostSession(bridge)
