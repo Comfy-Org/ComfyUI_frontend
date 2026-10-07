@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { reportError } from '@/platform/telemetry/reportError'
+import {
+  AgentApiError,
+  AgentResponseUnreadableError
+} from '../../services/agent/agentRestClient'
 import type { ComposerAttachment } from './useComposer'
 import { MAX_ATTACHMENT_BYTES, useAttachment } from './useAttachment'
 
@@ -266,7 +270,7 @@ describe('useAttachment', () => {
     const registry = chipRegistry()
     const { addFiles } = useAttachment({ upload, onError, ...registry })
 
-    await addFiles([fileOfSize(privateFilename, 1024)])
+    await addFiles([fileOfSize(privateFilename, 1024, 'image/png')])
 
     expect(registry.chips).toEqual([])
     expect(onError).toHaveBeenCalledOnce()
@@ -281,7 +285,10 @@ describe('useAttachment', () => {
         integration_target: 'assets',
         feature_flag: 'agent_panel',
         feature_flag_state: 'enabled',
-        project_context: 'agent_composer'
+        project_context: 'agent_composer',
+        upload_failure_cause: 'unknown',
+        file_type: 'image/png',
+        file_size_bytes: 1024
       }
     })
     const reportedError = vi.mocked(reportError).mock.calls[0][0] as Error
@@ -293,6 +300,76 @@ describe('useAttachment', () => {
     expect(`${reportedError.message}\n${reportedError.stack}`).not.toContain(
       privatePath
     )
+  })
+
+  it('tags the failure cause when the upload rejects with a known error shape', async () => {
+    const cases: Array<{
+      cause: unknown
+      expectedCause: string
+    }> = [
+      {
+        cause: new AgentApiError('nope', 503, undefined),
+        expectedCause: 'http_503'
+      },
+      {
+        cause: new AgentResponseUnreadableError(new Error('bad json')),
+        expectedCause: 'unreadable_response'
+      },
+      {
+        cause: new Error('some other failure'),
+        expectedCause: 'unknown'
+      }
+    ]
+
+    for (const { cause, expectedCause } of cases) {
+      vi.mocked(reportError).mockClear()
+      const upload = vi.fn().mockRejectedValue(cause)
+      const registry = chipRegistry()
+      const { addFiles } = useAttachment({ upload, ...registry })
+
+      await addFiles([fileOfSize('shot.png', 2048, 'image/png')])
+
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          tags: expect.objectContaining({
+            upload_failure_cause: expectedCause,
+            file_type: 'image/png',
+            file_size_bytes: 2048
+          })
+        })
+      )
+    }
+  })
+
+  it('tags an aborted-by-timeout upload with the timeout failure cause', async () => {
+    vi.useFakeTimers()
+    try {
+      const upload = vi.fn(() => new Promise<{ ref: string }>(() => {}))
+      const registry = chipRegistry()
+      const { addFiles } = useAttachment({
+        upload,
+        uploadTimeoutMs: 1000,
+        ...registry
+      })
+
+      const pending = addFiles([fileOfSize('stuck.png', 512, 'image/png')])
+      await vi.advanceTimersByTimeAsync(1000)
+      await pending
+
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          tags: expect.objectContaining({
+            upload_failure_cause: 'timeout',
+            file_type: 'image/png',
+            file_size_bytes: 512
+          })
+        })
+      )
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('keeps earlier settled chips and continues the batch when one upload fails', async () => {
@@ -534,7 +611,10 @@ describe('useAttachment', () => {
         tags: expect.objectContaining({
           feature_area: 'agent',
           integration_target: 'assets',
-          outcome: 'failed'
+          outcome: 'failed',
+          upload_failure_cause: 'timeout',
+          file_type: 'unknown',
+          file_size_bytes: -1
         })
       })
     } finally {
