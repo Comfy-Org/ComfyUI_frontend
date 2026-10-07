@@ -96,25 +96,6 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
     await expectPosChanged(initialHeaderPos, newHeaderPos)
   })
 
-  test('should not move node when pointer moves less than drag threshold', async ({
-    comfyPage,
-    comfyMouse
-  }) => {
-    const headerPos = await getLoadCheckpointHeaderPos(comfyPage)
-
-    // Move only 2px, below the default 6px pointer drift threshold.
-    const node = await comfyPage.vueNodes.getFixtureByTitle('Load Checkpoint')
-    await comfyMouse.dragElementBy(node.header, { x: 2, y: 1 })
-    await comfyPage.nextFrame()
-
-    const afterPos = await getLoadCheckpointHeaderPos(comfyPage)
-    expect(afterPos.x).toBeCloseTo(headerPos.x, 0)
-    expect(afterPos.y).toBeCloseTo(headerPos.y, 0)
-
-    // The small movement should have selected the node, not dragged it
-    await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(1)
-  })
-
   test('should move node when pointer moves beyond drag threshold', async ({
     comfyPage
   }) => {

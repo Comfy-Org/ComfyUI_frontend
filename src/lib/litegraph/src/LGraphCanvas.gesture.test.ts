@@ -1,10 +1,19 @@
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 
 import type { PointerEventOptions } from '@/lib/litegraph/src/__fixtures__/canvasHarness'
 import {
   addGroup,
   addNode,
   createCanvas,
+  loseCapture,
   pointerEvent,
   selectedTitles
 } from '@/lib/litegraph/src/__fixtures__/canvasHarness'
@@ -75,7 +84,7 @@ class Gesture {
 
   press([x, y]: Point, options: PointerEventOptions = {}, after = 1) {
     const { graph } = this.canvas
-    if (!graph) throw new Error('canvas graph is required')
+    assert(graph, 'canvas graph is required')
     this.canvas.visible_nodes = [...graph.nodes]
     this.canvas.processMouseDown(
       pointerEvent('pointerdown', x, y, {
@@ -162,6 +171,20 @@ function recordCallbacks(canvas: LGraphCanvas, node: LGraphNode) {
   return { args: callbackArgs, log }
 }
 
+function listenerKeys(spy: {
+  mock: {
+    calls: Parameters<EventTarget['removeEventListener']>[]
+    contexts: unknown[]
+  }
+}) {
+  return spy.mock.calls.map(([type, listener, options], i) => ({
+    target: spy.mock.contexts[i],
+    type,
+    listener,
+    capture: typeof options === 'boolean' ? options : Boolean(options?.capture)
+  }))
+}
+
 describe('CanvasPointer lifecycle callbacks', () => {
   it('passes the release event to click and then runs final cleanup', () => {
     const pointer = new CanvasPointer(document.createElement('canvas'))
@@ -217,9 +240,7 @@ describe('CanvasPointer lifecycle callbacks', () => {
     pointer.onDragEnd = onDragEnd
     pointer.finally = finallyCallback
     pointer.move(pointerEvent('pointermove', 30, 40))
-    element.dispatchEvent(
-      new PointerEvent('lostpointercapture', { pointerId: 1 })
-    )
+    loseCapture(element)
 
     expect(pointer.dragStarted).toBe(false)
     expect(pointer.eDown).toBeUndefined()
@@ -234,11 +255,58 @@ describe('CanvasPointer lifecycle callbacks', () => {
 
     pointer.down(pointerEvent('pointerdown', 10, 20))
     pointer.finally = finallyCallback
-    element.dispatchEvent(
-      new PointerEvent('lostpointercapture', { pointerId: 2 })
-    )
+    loseCapture(element, 2)
 
     expect(finallyCallback).not.toHaveBeenCalled()
+  })
+
+  it('forwards movement within the drift threshold to onDrag', () => {
+    const pointer = new CanvasPointer(document.createElement('canvas'))
+    const onDrag = vi.fn()
+    pointer.down(pointerEvent('pointerdown', 10, 20))
+    pointer.onDrag = onDrag
+    const nudge = pointerEvent('pointermove', 12, 20)
+
+    pointer.move(nudge)
+
+    expect(onDrag).toHaveBeenCalledWith(nudge)
+    expect(pointer.dragStarted).toBe(false)
+  })
+
+  it('reports a stray pointerup after a completed click as a click', () => {
+    const pointer = new CanvasPointer(document.createElement('canvas'))
+    pointer.clearEventsOnReset = false
+    pointer.down(pointerEvent('pointerdown', 10, 20, { timeStamp: 1 }))
+    pointer.up(pointerEvent('pointerup', 10, 20, { timeStamp: 2 }))
+
+    const isClick = pointer.up(
+      pointerEvent('pointerup', 10, 20, { timeStamp: 3 })
+    )
+
+    expect(isClick).toBe(true)
+  })
+
+  it('a callback-less double click starts the next double click', () => {
+    const pointer = new CanvasPointer(document.createElement('canvas'))
+    const onClick = vi.fn()
+    const onDoubleClick = vi.fn()
+    const clickAt = (timeStamp: number) => {
+      pointer.down(pointerEvent('pointerdown', 10, 20, { timeStamp }))
+      pointer.onClick = onClick
+      pointer.up(
+        pointerEvent('pointerup', 10, 20, { timeStamp: timeStamp + 1 })
+      )
+    }
+    clickAt(100)
+    clickAt(300)
+
+    pointer.down(pointerEvent('pointerdown', 10, 20, { timeStamp: 450 }))
+    pointer.onClick = onClick
+    pointer.onDoubleClick = onDoubleClick
+    pointer.up(pointerEvent('pointerup', 10, 20, { timeStamp: 451 }))
+
+    expect(onClick).toHaveBeenCalledTimes(2)
+    expect(onDoubleClick).toHaveBeenCalledOnce()
   })
 
   it('treats callback-less double clicks as normal clicks', () => {
@@ -259,15 +327,31 @@ describe('CanvasPointer lifecycle callbacks', () => {
     expect(onClick).toHaveBeenCalledTimes(3)
   })
 
-  it('records pointermove as eUp when it detects a released button', () => {
+  it('completes the click on a pointermove that reports the primary button released', () => {
     const pointer = new CanvasPointer(document.createElement('canvas'))
     pointer.clearEventsOnReset = false
+    const onClick = vi.fn()
     pointer.down(pointerEvent('pointerdown', 10, 20))
+    pointer.onClick = onClick
+    const releasedMove = pointerEvent('pointermove', 10, 20, { buttons: 2 })
+
+    pointer.move(releasedMove)
+
+    expect(onClick).toHaveBeenCalledWith(releasedMove)
+    expect(pointer.eUp).toBe(releasedMove)
+  })
+
+  it('ends the drag on a pointermove that reports the primary button released', () => {
+    const pointer = new CanvasPointer(document.createElement('canvas'))
+    const onDragEnd = vi.fn()
+    pointer.down(pointerEvent('pointerdown', 10, 20))
+    pointer.onDragEnd = onDragEnd
+    pointer.move(pointerEvent('pointermove', 30, 40))
     const releasedMove = pointerEvent('pointermove', 30, 40, { buttons: 2 })
 
     pointer.move(releasedMove)
 
-    expect(pointer.eUp).toBe(releasedMove)
+    expect(onDragEnd).toHaveBeenCalledWith(releasedMove)
   })
 })
 
@@ -358,26 +442,21 @@ describe('LGraphCanvas pointer gestures', () => {
       expect(posOf(b)).toEqual([320, 70])
     })
 
-    it('quick movement within the drift threshold stays a click', () => {
-      gesture.press(A_BODY)
-      gesture.move(shifted(A_BODY, NEAR), {}, 10)
-      gesture.release(shifted(A_BODY, NEAR))
+    it.for([
+      { speed: 'quick', hold: 10 },
+      { speed: 'slow', hold: 500 }
+    ])(
+      '$speed movement within the drift threshold stays a click',
+      ({ hold }) => {
+        gesture.press(A_BODY)
+        gesture.move(shifted(A_BODY, NEAR), {}, hold)
+        gesture.release(shifted(A_BODY, NEAR))
 
-      expect(selectedTitles(canvas)).toEqual(['A'])
-      expect(posOf(a)).toEqual([20, 40])
-      expect(log).not.toContain('canvas.onNodeMoved')
-    })
-
-    it('slow movement within the drift threshold stays a click', () => {
-      gesture.press(A_BODY)
-      gesture.move(shifted(A_BODY, NEAR), {}, 500)
-      gesture.release(shifted(A_BODY, NEAR))
-
-      expect({
-        moved: log.includes('canvas.onNodeMoved'),
-        position: posOf(a)
-      }).toEqual({ moved: false, position: [20, 40] })
-    })
+        expect(selectedTitles(canvas)).toEqual(['A'])
+        expect(posOf(a)).toEqual([20, 40])
+        expect(log).not.toContain('canvas.onNodeMoved')
+      }
+    )
 
     it('currently emits onNodeMoved for a far release that did not move the node', () => {
       gesture.press(A_BODY)
@@ -413,23 +492,6 @@ describe('LGraphCanvas pointer gestures', () => {
       gesture.press([outputPosition[0], outputPosition[1]])
 
       expect(dragNewFromOutput).toHaveBeenCalledWith(graph, a, output)
-    })
-
-    it('starts a link drag from a reroute slot', () => {
-      a.addOutput('value', 'number')
-      b.addInput('value', 'number')
-      const link = a.connect(0, b, 0)
-      assert(link)
-      const reroute = graph.createReroute([220, 200], link)
-      assert(reroute)
-      canvas._visibleReroutes.add(reroute)
-      const dragFromReroute = vi
-        .spyOn(canvas.linkConnector, 'dragFromReroute')
-        .mockImplementation(() => {})
-
-      gesture.press([220, 200], { shiftKey: true })
-
-      expect(dragFromReroute).toHaveBeenCalledWith(graph, reroute)
     })
 
     it('two clicks inside the double-click window fire the double-click callbacks once', () => {
@@ -545,21 +607,33 @@ describe('LGraphCanvas pointer gestures', () => {
       ])
     })
 
-    it('latches an empty press when release crosses into a group at low zoom', () => {
+    it('ctrl click latches an empty press when release crosses into a group at low zoom', () => {
       canvas.ds.scale = 0.1
 
-      gesture.press([20, -0.1])
-      gesture.release([20, 0.1])
+      gesture.press([20, -0.1], { ctrlKey: true })
+      gesture.release([20, 0.1], { ctrlKey: true })
 
       expect(selectedTitles(canvas)).toEqual([])
     })
 
-    it('latches a group press when release crosses outside at low zoom', () => {
+    it('ctrl click latches a group press when release crosses outside at low zoom', () => {
       canvas.ds.scale = 0.1
 
-      gesture.press([20, 0.1])
-      gesture.release([20, -0.1])
+      gesture.press([20, 0.1], { ctrlKey: true })
+      gesture.release([20, -0.1], { ctrlKey: true })
 
+      expect(selectedTitles(canvas)).toEqual(['G'])
+    })
+
+    it('press on a non-interactive node over the group title selects the group', () => {
+      canvas.allow_interaction = false
+      a.pos = [100, 2]
+      a.updateArea()
+
+      gesture.press([150, 20])
+      expect(canvas.selected_group).toBe(group)
+
+      gesture.release([150, 20])
       expect(selectedTitles(canvas)).toEqual(['G'])
     })
 
@@ -581,17 +655,33 @@ describe('LGraphCanvas pointer gestures', () => {
       }
     )
 
-    it('press sets selected_group; a node press leaves it untouched', () => {
-      gesture.click(G_TITLE)
-      expect(canvas.selected_group).toBe(group)
+    it.for([
+      { target: 'the title', at: G_TITLE, selectsGroup: true },
+      { target: 'the body', at: [220, 150], selectsGroup: true },
+      { target: 'the resize handle', at: G_RESIZE, selectsGroup: true },
+      { target: 'empty canvas', at: EMPTY, selectsGroup: false }
+    ] satisfies { target: string; at: Point; selectsGroup: boolean }[])(
+      'press on $target selects the group: $selectsGroup',
+      ({ at, selectsGroup }) => {
+        canvas.selected_group = addGroup(graph, 'Other', [1000, 1000, 50, 50])
+
+        gesture.press(at)
+
+        expect(canvas.selected_group).toBe(selectsGroup ? group : null)
+      }
+    )
+
+    it('node click leaves selected_group untouched', () => {
+      canvas.selected_group = group
 
       gesture.click(A_BODY)
+
       expect(canvas.selected_group).toBe(group)
+    })
 
-      gesture.click(EMPTY)
-      expect(canvas.selected_group).toBeNull()
-
+    it('title drag clears selected_group on release', () => {
       gesture.drag(G_TITLE, FAR)
+
       expect(canvas.selected_group).toBeNull()
     })
   })
@@ -736,73 +826,6 @@ describe('LGraphCanvas pointer gestures', () => {
         expect(canvas.ds.offset).toEqual([0, 0])
       })
 
-      it('ctrl drag in panning mode also selects', () => {
-        LiteGraph.leftMouseClickBehavior = 'panning'
-
-        gesture.drag([5, 5], [135, 105], { ctrlKey: true })
-
-        expect(selectedTitles(canvas)).toEqual(['A'])
-        expect(canvas.ds.offset).toEqual([0, 0])
-      })
-
-      it('ctrl click in panning mode selects the group under the pointer', () => {
-        LiteGraph.leftMouseClickBehavior = 'panning'
-        addGroup(graph, 'G', [0, 0, 500, 300])
-
-        gesture.click(G_TITLE, { ctrlKey: true })
-
-        expect(selectedTitles(canvas)).toEqual(['G'])
-      })
-
-      it('ctrl click selects a group title beneath a link centre', () => {
-        LiteGraph.leftMouseClickBehavior = 'panning'
-        const group = addGroup(graph, 'G', [0, 240, 500, 300])
-        const link = connect(a, b)
-        link._pos = [...LINK_CENTRE]
-        canvas.renderedPaths.add(link)
-
-        gesture.click(LINK_CENTRE, { ctrlKey: true })
-
-        expect([...canvas.selectedItems]).toEqual([group])
-      })
-
-      it('ctrl click selects a lower group title beneath a resize handle', () => {
-        LiteGraph.leftMouseClickBehavior = 'panning'
-        const lower = addGroup(graph, 'Lower', [450, 290, 100, 100])
-        addGroup(graph, 'Upper', [0, 0, 500, 300])
-
-        gesture.click(G_RESIZE, { ctrlKey: true })
-
-        expect([...canvas.selectedItems]).toEqual([lower])
-      })
-
-      it('ctrl click selects a lower group title beneath an overlapping group', () => {
-        LiteGraph.leftMouseClickBehavior = 'panning'
-        const lower = addGroup(graph, 'Lower', [0, 0, 500, 300])
-        addGroup(graph, 'Upper', [0, -50, 500, 100])
-
-        gesture.click(G_TITLE, { ctrlKey: true })
-
-        expect([...canvas.selectedItems]).toEqual([lower])
-      })
-
-      it('ctrl click selects a group title beneath a reroute slot', () => {
-        LiteGraph.leftMouseClickBehavior = 'panning'
-        const group = addGroup(graph, 'G', [0, 0, 500, 300])
-        const link = connect(a, b)
-        const reroute = graph.createReroute(
-          [G_TITLE[0] - Reroute.slotOffset, G_TITLE[1]],
-          link
-        )
-        assert(reroute)
-        reroute.updateVisibility(G_TITLE)
-        canvas._visibleReroutes.add(reroute)
-
-        gesture.click(G_TITLE, { ctrlKey: true })
-
-        expect([...canvas.selectedItems]).toEqual([group])
-      })
-
       it('cancel discards the rectangle and the selection change', () => {
         gesture.press([5, 5])
         gesture.move([140, 110])
@@ -813,143 +836,222 @@ describe('LGraphCanvas pointer gestures', () => {
       })
     })
   })
-})
 
-describe('LGraphCanvas interrupted gestures', () => {
-  let graph: LGraph
-  let canvas: LGraphCanvas
-  let a: LGraphNode
-  let gesture: Gesture
+  describe('ctrl selection in panning mode', () => {
+    it('ctrl drag selects the enclosed nodes without panning', () => {
+      gesture.drag([5, 5], [135, 105], { ctrlKey: true })
 
-  beforeEach(() => {
-    LiteGraph.vueNodesMode = false
-    LiteGraph.leftMouseClickBehavior = 'panning'
-    graph = new LGraph()
-    canvas = createCanvas(graph)
-    a = addNode(graph, 'A', 20, 40)
-    gesture = new Gesture(canvas)
-    recordCallbacks(canvas, a)
+      expect(selectedTitles(canvas)).toEqual(['A'])
+      expect(canvas.ds.offset).toEqual([0, 0])
+    })
+
+    it('ctrl click selects the group under the pointer', () => {
+      addGroup(graph, 'G', [0, 0, 500, 300])
+
+      gesture.click(G_TITLE, { ctrlKey: true })
+
+      expect(selectedTitles(canvas)).toEqual(['G'])
+    })
+
+    it('ctrl click selects a group title beneath a link centre', () => {
+      const group = addGroup(graph, 'G', [0, 240, 500, 300])
+      const link = connect(a, b)
+      link._pos = [...LINK_CENTRE]
+      canvas.renderedPaths.add(link)
+
+      gesture.click(LINK_CENTRE, { ctrlKey: true })
+
+      expect([...canvas.selectedItems]).toEqual([group])
+    })
+
+    it('ctrl click selects a lower group title beneath a resize handle', () => {
+      const lower = addGroup(graph, 'Lower', [450, 290, 100, 100])
+      addGroup(graph, 'Upper', [0, 0, 500, 300])
+
+      gesture.click(G_RESIZE, { ctrlKey: true })
+
+      expect([...canvas.selectedItems]).toEqual([lower])
+    })
+
+    it('ctrl click selects a lower group title beneath an overlapping group', () => {
+      const lower = addGroup(graph, 'Lower', [0, 0, 500, 300])
+      addGroup(graph, 'Upper', [0, -50, 500, 100])
+
+      gesture.click(G_TITLE, { ctrlKey: true })
+
+      expect([...canvas.selectedItems]).toEqual([lower])
+    })
+
+    it('ctrl click selects a group title beneath a reroute slot', () => {
+      const group = addGroup(graph, 'G', [0, 0, 500, 300])
+      const link = connect(a, b)
+      const reroute = graph.createReroute(
+        [G_TITLE[0] - Reroute.slotOffset, G_TITLE[1]],
+        link
+      )
+      assert(reroute)
+      reroute.updateVisibility(G_TITLE)
+      canvas._visibleReroutes.add(reroute)
+
+      gesture.click(G_TITLE, { ctrlKey: true })
+
+      expect([...canvas.selectedItems]).toEqual([group])
+    })
   })
 
-  function loseCapture() {
-    canvas.canvas.dispatchEvent(
-      new PointerEvent('lostpointercapture', { pointerId: 1 })
+  describe('interrupted gestures', () => {
+    it('lost pointer capture while dragging ends the drag where it was', () => {
+      gesture.press(A_BODY)
+      gesture.move(shifted(A_BODY, FAR))
+      expect(canvas.isDragging).toBe(true)
+
+      loseCapture(canvas.canvas)
+
+      expect(canvas.isDragging).toBe(false)
+      expect(canvas.pointer.isDown).toBe(false)
+      expect(posOf(a)).toEqual([40, 70])
+      expect(callbackArgs.get('canvas.onNodeMoved')).toEqual([[a]])
+      gesture.move(shifted(A_BODY, [40, 60]))
+      expect(posOf(a)).toEqual([40, 70])
+    })
+
+    it('lost pointer capture does not snap the interrupted drag', () => {
+      LiteGraph.alwaysSnapToGrid = true
+      onTestFinished(() => {
+        LiteGraph.alwaysSnapToGrid = undefined
+      })
+      gesture.press(A_BODY)
+      gesture.move(shifted(A_BODY, [23, 31]))
+
+      loseCapture(canvas.canvas)
+
+      expect(posOf(a)).toEqual([43, 71])
+      expect(log).toContain('canvas.onNodeMoved')
+    })
+
+    it('lost pointer capture finalizes an interrupted resize transaction', () => {
+      const beforeChange = vi.spyOn(graph, 'beforeChange')
+      const afterChange = vi.spyOn(graph, 'afterChange')
+      const resizeHandle: Point = [119, 99]
+      gesture.press(resizeHandle)
+      gesture.move(shifted(resizeHandle, FAR))
+
+      loseCapture(canvas.canvas)
+
+      expect(beforeChange).toHaveBeenCalledOnce()
+      expect(afterChange).toHaveBeenCalledOnce()
+      expect(afterChange).toHaveBeenCalledWith(a)
+      expect(canvas.resizing_node).toBeNull()
+    })
+
+    it('lost pointer capture while pressed discards the click', () => {
+      gesture.press(A_BODY)
+      loseCapture(canvas.canvas)
+      gesture.release(A_BODY)
+
+      expect(selectedTitles(canvas)).toEqual([])
+    })
+
+    it('finishes cleanup when interrupted drag finalization throws', () => {
+      const afterChange = vi.spyOn(graph, 'afterChange')
+      canvas.onNodeMoved = () => {
+        throw new Error('finalization failed')
+      }
+      gesture.press(A_BODY)
+      gesture.move(shifted(A_BODY, FAR))
+      expect(canvas.canvas.hasPointerCapture(1)).toBe(true)
+
+      expect(() => canvas.pointer.reset()).toThrow('finalization failed')
+
+      expect(canvas.isDragging).toBe(false)
+      expect(canvas.pointer.isDown).toBe(false)
+      expect(afterChange).toHaveBeenCalledOnce()
+      expect(canvas.canvas.hasPointerCapture(1)).toBe(false)
+    })
+
+    it('unbinding events while dragging ends the drag', () => {
+      gesture.press(A_BODY)
+      gesture.move(shifted(A_BODY, FAR))
+
+      canvas.unbindEvents()
+
+      expect(canvas.isDragging).toBe(false)
+      expect(canvas.pointer.isDown).toBe(false)
+    })
+
+    it('unbinding still unbinds when drag finalization throws', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      canvas.onNodeMoved = () => {
+        throw new Error('finalization failed')
+      }
+      gesture.press(A_BODY)
+      gesture.move(shifted(A_BODY, FAR))
+
+      expect(() => canvas.unbindEvents()).toThrow('finalization failed')
+
+      canvas.bindEvents()
+      expect(warn).not.toHaveBeenCalled()
+    })
+  })
+
+  it('unbinding removes each listener with the capture flag it was bound with', () => {
+    canvas.unbindEvents()
+    const targets: EventTarget[] = [canvas.canvas, document]
+    const added = targets.map((target) => vi.spyOn(target, 'addEventListener'))
+    const removed = targets.map((target) =>
+      vi.spyOn(target, 'removeEventListener')
     )
-  }
-
-  it('lost pointer capture while dragging ends the drag where it was', () => {
-    const onNodeMoved = vi.fn()
-    canvas.onNodeMoved = onNodeMoved
-    gesture.press(A_BODY)
-    gesture.move(shifted(A_BODY, FAR))
-    expect(canvas.isDragging).toBe(true)
-
-    loseCapture()
-
-    expect(canvas.isDragging).toBe(false)
-    expect(canvas.pointer.isDown).toBe(false)
-    expect(posOf(a)).toEqual([40, 70])
-    expect(onNodeMoved).toHaveBeenCalledWith(a)
-    gesture.move(shifted(A_BODY, [40, 60]))
-    expect(posOf(a)).toEqual([40, 70])
-  })
-
-  it('lost pointer capture finalizes an interrupted resize transaction', () => {
-    const beforeChange = vi.spyOn(graph, 'beforeChange')
-    const afterChange = vi.spyOn(graph, 'afterChange')
-    const resizeHandle: Point = [119, 99]
-    gesture.press(resizeHandle)
-    gesture.move(shifted(resizeHandle, FAR))
-
-    loseCapture()
-
-    expect(beforeChange).toHaveBeenCalledOnce()
-    expect(afterChange).toHaveBeenCalledOnce()
-    expect(afterChange).toHaveBeenCalledWith(a)
-    expect(canvas.resizing_node).toBeNull()
-  })
-
-  it('lost pointer capture while pressed discards the click', () => {
-    gesture.press(A_BODY)
-    loseCapture()
-    gesture.release(A_BODY)
-
-    expect(selectedTitles(canvas)).toEqual([])
-  })
-
-  it('finishes cleanup when interrupted drag finalization throws', () => {
-    const afterChange = vi.spyOn(graph, 'afterChange')
-    const releasePointerCapture = vi.spyOn(
-      canvas.canvas,
-      'releasePointerCapture'
-    )
-    vi.spyOn(canvas.canvas, 'hasPointerCapture').mockReturnValue(true)
-    canvas.onNodeMoved = () => {
-      throw new Error('finalization failed')
-    }
-    gesture.press(A_BODY)
-    gesture.move(shifted(A_BODY, FAR))
-
-    expect(() => canvas.pointer.reset()).toThrow('finalization failed')
-
-    expect(canvas.isDragging).toBe(false)
-    expect(canvas.pointer.isDown).toBe(false)
-    expect(afterChange).toHaveBeenCalledOnce()
-    expect(releasePointerCapture).toHaveBeenCalledWith(1)
-  })
-
-  it('unbinding events while dragging ends the drag', () => {
     canvas.bindEvents()
-    gesture.press(A_BODY)
-    gesture.move(shifted(A_BODY, FAR))
 
     canvas.unbindEvents()
 
-    expect(canvas.isDragging).toBe(false)
-    expect(canvas.pointer.isDown).toBe(false)
-  })
-
-  it('unbinding removes events when drag finalization throws', () => {
-    const removeEventListener = vi.spyOn(canvas.canvas, 'removeEventListener')
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    canvas.bindEvents()
-    warn.mockClear()
-    canvas.onNodeMoved = () => {
-      throw new Error('finalization failed')
-    }
-    gesture.press(A_BODY)
-    gesture.move(shifted(A_BODY, FAR))
-
-    expect(() => canvas.unbindEvents()).toThrow('finalization failed')
-
-    expect(removeEventListener).toHaveBeenCalledWith(
-      'pointerdown',
-      expect.any(Function)
+    expect(added.flatMap(listenerKeys)).toEqual(
+      expect.arrayContaining(removed.flatMap(listenerKeys))
     )
-    canvas.bindEvents()
-    expect(warn).not.toHaveBeenCalled()
-    canvas.onNodeMoved = undefined
-    canvas.unbindEvents()
   })
 
-  it('unbinding events finishes an active drag zoom', () => {
-    canvas.bindEvents()
-    canvas.dragZoomEnabled = true
-    gesture.press(A_BODY, { ctrlKey: true, shiftKey: true })
-    expect(canvas.read_only).toBe(true)
+  describe('drag zoom', () => {
+    beforeEach(() => {
+      canvas.dragZoomEnabled = true
+      gesture.press(EMPTY, { ctrlKey: true, shiftKey: true })
+    })
 
-    canvas.unbindEvents()
+    it('a drag-zoom press makes the canvas read-only', () => {
+      expect(canvas.read_only).toBe(true)
+    })
 
-    expect(canvas.read_only).toBe(false)
-  })
+    it('unbinding events finishes an active drag zoom', () => {
+      canvas.unbindEvents()
 
-  it('a second drag-zoom press restores the original read-only state', () => {
-    canvas.dragZoomEnabled = true
-    gesture.press(A_BODY, { ctrlKey: true, shiftKey: true })
-    gesture.press(A_BODY, { ctrlKey: true, shiftKey: true })
+      expect(canvas.read_only).toBe(false)
+    })
 
-    gesture.release(A_BODY)
+    it('a second drag-zoom press restores the original read-only state', () => {
+      gesture.press(EMPTY, { ctrlKey: true, shiftKey: true })
 
-    expect(canvas.read_only).toBe(false)
+      gesture.release(EMPTY)
+
+      expect(canvas.read_only).toBe(false)
+    })
+
+    it('a plain press after an unreleased drag zoom interacts normally', () => {
+      gesture.press(A_BODY)
+      expect(canvas.read_only).toBe(false)
+
+      gesture.release(A_BODY)
+      expect(selectedTitles(canvas)).toEqual(['A'])
+    })
+
+    it.for([
+      {
+        when: 'with ctrl and shift held',
+        modifiers: { ctrlKey: true, shiftKey: true }
+      },
+      { when: 'after releasing ctrl', modifiers: { shiftKey: true } }
+    ])('a buttonless move $when ends drag zoom', ({ modifiers }) => {
+      gesture.move(EMPTY, { ...modifiers, buttons: 0 })
+
+      expect(canvas.read_only).toBe(false)
+    })
   })
 })

@@ -25,6 +25,7 @@ import type { NodeState } from '@/types/nodeState'
 import { resizeNodeLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import type NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
+import type { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import type { ResizeCallbackPayload } from '@/renderer/extensions/vueNodes/interactions/resize/useNodeResize'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -43,11 +44,13 @@ const mockData = vi.hoisted(() => ({
   mockLgraphNode: null as Record<string, unknown> | null,
   resizeCallback: null as ResizeCallback | null
 }))
-const mockNodeEventHandlers = vi.hoisted(() => ({
-  handleNodeCollapse: vi.fn(),
-  handleNodeRightClick: vi.fn(),
-  handleNodeTitleUpdate: vi.fn()
-}))
+const mockNodeEventHandlers = vi.hoisted(
+  (): ReturnType<typeof useNodeEventHandlers> => ({
+    handleNodeCollapse: vi.fn(),
+    handleNodeRightClick: vi.fn(),
+    handleNodeTitleUpdate: vi.fn()
+  })
+)
 
 vi.mock(import('@/utils/graphTraversalUtil'))
 vi.mocked(getNodeByLocatorId).mockImplementation(() =>
@@ -58,7 +61,7 @@ vi.mocked(getNodeByLocatorId).mockImplementation(() =>
 
 vi.mock(import('@/renderer/core/layout/transform/useTransformState'))
 
-vi.mock<unknown>(
+vi.mock(
   import('@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'),
   () => ({ useNodeEventHandlers: () => mockNodeEventHandlers })
 )
@@ -601,8 +604,8 @@ describe('LGraphNode', () => {
     renderLGraphNode({ nodeData: mockNodeData })
 
     const overlay = screen.getByTestId('node-state-outline-overlay')
-    expect(overlay).toHaveClass('rounded-node-selection-md')
-    expect(overlay).not.toHaveClass('rounded-node-selection-sm')
+    expect(overlay).toHaveClass('rounded-[19px]')
+    expect(overlay).not.toHaveClass('rounded-[15px]')
   })
 
   it('should apply the bypass overlay when the node is bypassed', () => {

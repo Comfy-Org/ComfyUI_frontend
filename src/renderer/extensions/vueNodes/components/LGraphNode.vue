@@ -435,7 +435,7 @@ const handleContextMenu = (event: MouseEvent) => {
   event.stopPropagation()
 
   // First handle the standard right-click behavior (selection)
-  handleNodeRightClick(event as PointerEvent, nodeData.id)
+  handleNodeRightClick(event, nodeData.id)
 
   // Show the node options menu at the cursor position
   showNodeOptions(event, { nodeId: nodeData.id })
@@ -527,11 +527,9 @@ const selectionShapeClass = computed(() => {
   return shapeVariantClass(nodeData.shape, {
     box: '',
     card: isExpanded
-      ? 'rounded-tl-node-selection-lg rounded-br-node-selection-lg'
-      : 'rounded-tl-node-selection-md rounded-br-node-selection-md',
-    default: isExpanded
-      ? 'rounded-node-selection-md'
-      : 'rounded-node-selection-sm'
+      ? 'rounded-tl-[23px] rounded-br-[23px]'
+      : 'rounded-tl-[19px] rounded-br-[19px]',
+    default: isExpanded ? 'rounded-[19px]' : 'rounded-[15px]'
   })
 })
 

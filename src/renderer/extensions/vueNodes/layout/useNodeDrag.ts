@@ -1,4 +1,4 @@
-import { createSharedComposable, whenever } from '@vueuse/core'
+import { createSharedComposable } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { toValue } from 'vue'
 
@@ -48,7 +48,7 @@ export const useNodeDrag = createSharedComposable(() => {
   function startDrag(
     event: PointerEvent,
     nodeId: NodeId,
-    initialShiftKey = event.shiftKey
+    initialShiftKey: boolean
   ) {
     const { rootGraphId } = canvasStore
     if (!rootGraphId) return
@@ -217,12 +217,6 @@ export const useNodeDrag = createSharedComposable(() => {
     // Throttle position updates using requestAnimationFrame for better performance
     if (rafId !== null) return // Skip if frame already scheduled
 
-    const { target, pointerId } = event
-    if (target instanceof HTMLElement && !target.hasPointerCapture(pointerId)) {
-      // Delay capture to drag to allow for the Node cloning
-      target.setPointerCapture(pointerId)
-    }
-
     lastPointerX = event.clientX
     lastPointerY = event.clientY
     startAutoPan(event, nodeId)
@@ -319,10 +313,10 @@ export const useNodeDrag = createSharedComposable(() => {
     }
   }
 
-  whenever(() => !layoutStore.isDraggingVueNodes.value, resetDragState)
   return {
     startDrag,
     handleDrag,
-    endDrag
+    endDrag,
+    cancelDrag: resetDragState
   }
 })

@@ -1,29 +1,40 @@
 import { dist2 } from '@/lib/litegraph/src/measure'
 
 export interface GesturePoint {
-  x: number
-  y: number
+  readonly x: number
+  readonly y: number
 }
 
 interface ClickRecord {
-  position: GesturePoint
-  timeStamp: number
+  readonly position: GesturePoint
+  readonly timeStamp: number
+}
+
+export interface GesturePolicy {
+  readonly maxClickDrift: number
+  readonly doubleClickTime: number
 }
 
 export type GestureState =
-  | { phase: 'idle'; lastClick?: ClickRecord }
+  | { readonly phase: 'idle'; readonly lastClick: ClickRecord | undefined }
   | {
-      phase: 'pressed'
-      origin: GesturePoint
-      timeStamp: number
-      lastClick?: ClickRecord
+      readonly phase: 'pressed'
+      readonly origin: GesturePoint
+      readonly timeStamp: number
+      readonly policy: GesturePolicy
+      readonly lastClick: ClickRecord | undefined
     }
-  | { phase: 'dragging'; lastClick?: ClickRecord }
+  | { readonly phase: 'dragging'; readonly lastClick: ClickRecord | undefined }
 
 export type GestureEvent =
-  | { type: 'down'; position: GesturePoint; timeStamp: number }
+  | {
+      type: 'down'
+      position: GesturePoint
+      timeStamp: number
+      policy: GesturePolicy
+    }
   | { type: 'move'; position: GesturePoint }
-  | { type: 'up'; position: GesturePoint }
+  | { type: 'up'; position: GesturePoint; acceptsDoubleClick: boolean }
   | { type: 'cancel' }
 
 export type GestureEffect =
@@ -33,36 +44,32 @@ export type GestureEffect =
   | 'movePress'
   | 'moveDrag'
   | 'endDrag'
-
-interface GesturePolicy {
-  /** Maximum pointer travel, in pixels, for a press to remain a click. */
-  clickDrift: number
-  /** Maximum gap, in milliseconds, between two presses for a double click. */
-  doubleClickTime: number
-}
+  | 'cancelDrag'
 
 interface GestureResult {
   state: GestureState
   effects: GestureEffect[]
 }
 
-export const idleGesture: GestureState = { phase: 'idle' }
+export const idleGesture: GestureState = Object.freeze({
+  phase: 'idle',
+  lastClick: undefined
+})
 
 function within(a: GesturePoint, b: GesturePoint, distance: number): boolean {
   return dist2(a.x, a.y, b.x, b.y) <= distance * distance
 }
 
 function isDoubleClick(
-  state: Extract<GestureState, { phase: 'pressed' }>,
-  policy: GesturePolicy
+  state: Extract<GestureState, { phase: 'pressed' }>
 ): boolean {
-  const { lastClick, origin, timeStamp } = state
+  const { lastClick, origin, timeStamp, policy } = state
   if (!lastClick) return false
   const gap = timeStamp - lastClick.timeStamp
   return (
     gap > 0 &&
     gap < policy.doubleClickTime &&
-    within(origin, lastClick.position, 3 * policy.clickDrift)
+    within(origin, lastClick.position, 3 * policy.maxClickDrift)
   )
 }
 
@@ -81,6 +88,7 @@ function reduceIdle(
           phase: 'pressed',
           origin: event.position,
           timeStamp: event.timeStamp,
+          policy: event.policy,
           lastClick: state.lastClick
         },
         effects: []
@@ -97,37 +105,34 @@ function reduceIdle(
 
 function reducePressed(
   state: Extract<GestureState, { phase: 'pressed' }>,
-  event: GestureEvent,
-  policy: GesturePolicy
+  event: GestureEvent
 ): GestureResult {
+  const { origin, policy, lastClick } = state
   switch (event.type) {
     case 'move':
-      if (within(event.position, state.origin, policy.clickDrift))
+      if (within(event.position, origin, policy.maxClickDrift))
         return { state, effects: ['movePress'] }
       return {
-        state: { phase: 'dragging', lastClick: state.lastClick },
+        state: { phase: 'dragging', lastClick },
         effects: ['startDrag', 'moveDrag']
       }
     case 'up':
-      if (!within(event.position, state.origin, policy.clickDrift))
+      if (!within(event.position, origin, policy.maxClickDrift))
         return {
-          state: { phase: 'idle', lastClick: state.lastClick },
+          state: { phase: 'idle', lastClick },
           effects: ['startDrag', 'endDrag']
         }
-      if (isDoubleClick(state, policy))
+      if (event.acceptsDoubleClick && isDoubleClick(state))
         return { state: idleGesture, effects: ['doubleClick'] }
       return {
         state: {
           phase: 'idle',
-          lastClick: { position: state.origin, timeStamp: state.timeStamp }
+          lastClick: { position: origin, timeStamp: state.timeStamp }
         },
         effects: ['click']
       }
     case 'cancel':
-      return {
-        state: { phase: 'idle', lastClick: state.lastClick },
-        effects: []
-      }
+      return { state: { phase: 'idle', lastClick }, effects: [] }
     case 'down':
       return unchanged(state)
     default:
@@ -140,19 +145,14 @@ function reduceDragging(
   state: Extract<GestureState, { phase: 'dragging' }>,
   event: GestureEvent
 ): GestureResult {
+  const { lastClick } = state
   switch (event.type) {
     case 'move':
       return { state, effects: ['moveDrag'] }
     case 'up':
-      return {
-        state: { phase: 'idle', lastClick: state.lastClick },
-        effects: ['endDrag']
-      }
+      return { state: { phase: 'idle', lastClick }, effects: ['endDrag'] }
     case 'cancel':
-      return {
-        state: { phase: 'idle', lastClick: state.lastClick },
-        effects: []
-      }
+      return { state: { phase: 'idle', lastClick }, effects: ['cancelDrag'] }
     case 'down':
       return unchanged(state)
     default:
@@ -163,14 +163,13 @@ function reduceDragging(
 
 export function reduceGesture(
   state: GestureState,
-  event: GestureEvent,
-  policy: GesturePolicy
+  event: GestureEvent
 ): GestureResult {
   switch (state.phase) {
     case 'idle':
       return reduceIdle(state, event)
     case 'pressed':
-      return reducePressed(state, event, policy)
+      return reducePressed(state, event)
     case 'dragging':
       return reduceDragging(state, event)
     default:

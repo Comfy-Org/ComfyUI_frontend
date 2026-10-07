@@ -49,7 +49,8 @@ A small amount of movement is tolerated between down/up events to prevent accide
 When double clicking, the double click callback is executed shortly after one normal click callback (if present). At present, dragging from the second click simply invalidates the event - nothing will happen.
 
 - `doubleClickTime` is the maximum time between two `down` events for them to be considered a double click (Default: 300ms)
-- Distance between the two events must be less than `3 * maxClickDrift`
+- Distance between the two events must be at most `3 * maxClickDrift`
+- Only a press that assigns `onDoubleClick` can complete a double click
 
 ### Configuration
 
@@ -99,6 +100,8 @@ pointer.onDragStart = (e) => {
 pointer.onDrag = () => {}
 // finally() is preferred where possible, as it is guaranteed to run
 pointer.onDragEnd = () => {}
+// Interrupted drag (lost pointer capture, reset) - runs instead of onDragEnd
+pointer.onDragCancel = () => {}
 
 // Always run, regardless of outcome
 pointer.finally = () => (node.isBeingDragged = false)
@@ -130,12 +133,15 @@ widget.onPointerDown = function (pointer, node, canvas) {
   }
   pointer.onDoubleClick = (upEvent) => this.customFunction(upEvent)
 
-  // Runs once before the first onDrag event
+  // Runs once when the pointer first moves past maxClickDrift.
+  // onDrag may already have run for smaller movements.
   pointer.onDragStart = () => {}
-  // Receives every movement event
+  // Receives every movement event, including movement within maxClickDrift
   pointer.onDrag = (moveEvent) => {}
   // The pointerup event of a drag
   pointer.onDragEnd = (upEvent) => {}
+  // Runs instead of onDragEnd when the drag is interrupted (lost pointer capture, reset)
+  pointer.onDragCancel = () => {}
 
   // Semantics of a "finally" block (try/catch).  Once set, the block always executes.
   pointer.finally = () => {}

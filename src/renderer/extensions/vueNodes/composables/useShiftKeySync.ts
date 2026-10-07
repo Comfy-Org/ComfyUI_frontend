@@ -3,25 +3,6 @@ import { shallowRef } from 'vue'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
-/**
- * Composable for synchronizing shift key state from Vue nodes to LiteGraph canvas.
- *
- * Enables snap-to-grid preview rendering in LiteGraph during Vue node drag/resize operations
- * by dispatching synthetic keyboard events to the canvas element.
- *
- * @returns Object containing trackShiftKey function for shift state synchronization lifecycle
- *
- * @example
- * ```ts
- * const { trackShiftKey } = useShiftKeySync()
- *
- * function startDrag(event: PointerEvent) {
- *   const stopTracking = trackShiftKey(event.shiftKey)
- *   // ... drag logic
- *   // Call stopTracking() on pointerup to cleanup listeners
- * }
- * ```
- */
 export function useShiftKeySync() {
   const shiftKeyState = shallowRef(false)
   let canvasEl: HTMLCanvasElement | null = null

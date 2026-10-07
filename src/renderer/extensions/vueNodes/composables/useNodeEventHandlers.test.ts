@@ -1,24 +1,16 @@
-import { describe, expect, it, vi } from 'vitest'
-import { computed, nextTick } from 'vue'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { effectScope, nextTick } from 'vue'
 
 import {
   addNode,
   createCanvas,
-  pointerEvent,
   selectedTitles
 } from '@/lib/litegraph/src/__fixtures__/canvasHarness'
 import { LGraph } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 
-vi.mock<unknown>(
-  import('@/renderer/core/canvas/useCanvasInteractions'),
-  () => ({
-    useCanvasInteractions: () => ({
-      shouldHandleNodePointerEvents: computed(() => true)
-    })
-  })
-)
+vi.mock(import('@/renderer/core/canvas/useCanvasInteractions'))
 
 describe('useNodeEventHandlers', () => {
   async function setup() {
@@ -28,29 +20,31 @@ describe('useNodeEventHandlers', () => {
     const canvas = createCanvas(graph)
     useCanvasStore().canvas = canvas
     await nextTick()
-    return { canvas, first, second }
+    const scope = effectScope()
+    onTestFinished(() => scope.stop())
+    const handlers = scope.run(useNodeEventHandlers)
+    if (!handlers) throw new Error('handlers require an active scope')
+    return { canvas, first, second, handlers }
+  }
+
+  function rightClick() {
+    return new MouseEvent('contextmenu', { button: 2, cancelable: true })
   }
 
   it('right click on an unselected node replaces the selection', async () => {
-    const { canvas, first, second } = await setup()
+    const { canvas, first, second, handlers } = await setup()
     canvas.select(second)
 
-    useNodeEventHandlers().handleNodeRightClick(
-      pointerEvent('pointerdown', 10, 10, { button: 2 }),
-      first.id
-    )
+    handlers.handleNodeRightClick(rightClick(), first.id)
 
     expect(selectedTitles(canvas)).toEqual(['First'])
   })
 
   it('right click on a selected node keeps the multi-selection', async () => {
-    const { canvas, first, second } = await setup()
+    const { canvas, first, second, handlers } = await setup()
     canvas.selectItems([first, second])
 
-    useNodeEventHandlers().handleNodeRightClick(
-      pointerEvent('pointerdown', 10, 10, { button: 2 }),
-      first.id
-    )
+    handlers.handleNodeRightClick(rightClick(), first.id)
 
     expect(selectedTitles(canvas)).toEqual(['First', 'Second'])
   })

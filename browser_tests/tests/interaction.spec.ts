@@ -461,11 +461,15 @@ test.describe('Node Interaction', () => {
     'Can toggle dom widget node open/closed',
     { tag: '@screenshot' },
     async ({ comfyPage }) => {
+      const DOUBLE_CLICK_TIME = 100
+      await comfyPage.settings.setSetting(
+        'Comfy.Pointer.DoubleClickTime',
+        DOUBLE_CLICK_TIME
+      )
       // Find the node whose collapse toggler matches the hardcoded position.
       // getNodeRefsByType order is non-deterministic, so identify by proximity.
       const nodes = await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')
       const togglerPos = DefaultGraphPositions.textEncodeNodeToggler
-      await comfyPage.settings.setSetting('Comfy.Pointer.DoubleClickTime', 0)
       let targetNode = nodes[0]
       let minDist = Infinity
       for (const n of nodes) {
@@ -481,10 +485,23 @@ test.describe('Node Interaction', () => {
       await comfyPage.canvas.click({
         position: togglerPos
       })
+      const firstClickAt = await comfyPage.page.evaluate(() =>
+        performance.now()
+      )
       await expect.poll(() => targetNode.isCollapsed()).toBe(true)
       await expect(comfyPage.canvas).toHaveScreenshot(
         'text-encode-toggled-off.png'
       )
+      await expect
+        .poll(
+          () =>
+            comfyPage.page.evaluate(
+              (since) => performance.now() - since,
+              firstClickAt
+            ),
+          { message: 'double-click window after the first toggle has elapsed' }
+        )
+        .toBeGreaterThan(DOUBLE_CLICK_TIME)
       await comfyPage.canvas.click({
         position: togglerPos
       })

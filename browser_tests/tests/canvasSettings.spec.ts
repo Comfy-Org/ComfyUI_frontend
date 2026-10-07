@@ -365,19 +365,18 @@ test.describe('Canvas settings', { tag: '@canvas' }, () => {
 
   test.describe('Pointer settings', () => {
     /**
-     * Press left-mouse at canvas-relative `pos`, hold for `holdMs` (0 = no
-     * hold), nudge by `(dx, dy)` absolute pixels, then release. Spec-local
-     * because it exists only to probe the CanvasPointer gesture thresholds.
+     * Press left-mouse at canvas-relative `pos`, nudge by `(dx, dy)` absolute
+     * pixels, then release. Spec-local because it exists only to probe the
+     * CanvasPointer drift threshold.
      */
-    const holdDragAt = async (
+    const nudgeAt = async (
       comfyPage: ComfyPage,
       pos: { x: number; y: number },
-      opts: { dx: number; dy: number; holdMs: number }
+      opts: { dx: number; dy: number }
     ) => {
       const abs = await comfyPage.canvasOps.toAbsolute(pos)
       await comfyPage.page.mouse.move(abs.x, abs.y)
       await comfyPage.page.mouse.down()
-      await sleep(opts.holdMs)
       await comfyPage.page.mouse.move(abs.x + opts.dx, abs.y + opts.dy)
       await comfyPage.page.mouse.up()
       await comfyPage.nextFrame()
@@ -422,28 +421,6 @@ test.describe('Canvas settings', { tag: '@canvas' }, () => {
       })
     })
 
-    test('ClickBufferTime does not promote movement within drift', async ({
-      comfyPage
-    }) => {
-      const node = (
-        await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')
-      )[0]
-      await comfyPage.settings.setSetting('Comfy.Pointer.ClickDrift', 6)
-      await comfyPage.settings.setSetting('Comfy.Pointer.ClickBufferTime', 0)
-      const titlePos = await node.getTitlePosition()
-      const before = await node.getPosition()
-
-      await holdDragAt(comfyPage, titlePos, {
-        dx: 2,
-        dy: 0,
-        holdMs: 250
-      })
-
-      const after = await node.getPosition()
-      expect(after.x).toBeCloseTo(before.x, 0)
-      expect(after.y).toBeCloseTo(before.y, 0)
-    })
-
     test('ClickDrift governs the click-vs-drag distance threshold', async ({
       comfyPage
     }) => {
@@ -456,11 +433,7 @@ test.describe('Canvas settings', { tag: '@canvas' }, () => {
       await test.step(`Drift=20px (nudge=${NUDGE}px within tolerance) → click, node stays put`, async () => {
         await comfyPage.settings.setSetting('Comfy.Pointer.ClickDrift', 20)
         const before = await node.getPosition()
-        await holdDragAt(comfyPage, titlePos, {
-          dx: NUDGE,
-          dy: NUDGE,
-          holdMs: 0
-        })
+        await nudgeAt(comfyPage, titlePos, { dx: NUDGE, dy: NUDGE })
         const after = await node.getPosition()
         expect(after.x).toBeCloseTo(before.x, 0)
         expect(after.y).toBeCloseTo(before.y, 0)
@@ -469,11 +442,7 @@ test.describe('Canvas settings', { tag: '@canvas' }, () => {
       await test.step(`Drift=1px (nudge=${NUDGE}px exceeds tolerance) → drag, node moves`, async () => {
         await comfyPage.settings.setSetting('Comfy.Pointer.ClickDrift', 1)
         const before = await node.getPosition()
-        await holdDragAt(comfyPage, titlePos, {
-          dx: NUDGE,
-          dy: NUDGE,
-          holdMs: 0
-        })
+        await nudgeAt(comfyPage, titlePos, { dx: NUDGE, dy: NUDGE })
         const after = await node.getPosition()
         expect(
           Math.abs(after.x - before.x) + Math.abs(after.y - before.y)

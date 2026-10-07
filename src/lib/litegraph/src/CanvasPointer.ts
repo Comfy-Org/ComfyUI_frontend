@@ -1,11 +1,12 @@
+import { captureGesture } from './canvas/captureGesture'
 import type {
   GestureEffect,
   GestureEvent,
   GesturePoint,
+  GesturePolicy,
   GestureState
 } from './canvas/reduceGesture'
 import { idleGesture, reduceGesture } from './canvas/reduceGesture'
-import { watchGestureInterrupts } from './canvas/watchGestureInterrupts'
 import type { CompassCorners } from './interfaces'
 import type { CanvasPointerEvent } from './types/events'
 
@@ -67,7 +68,14 @@ export class CanvasPointer {
   }
 
   private state: GestureState = idleGesture
-  private stopWatchingInterrupts?: () => void
+  private releaseCapture?: () => void
+
+  static gesturePolicy(): GesturePolicy {
+    return {
+      maxClickDrift: CanvasPointer.maxClickDrift,
+      doubleClickTime: CanvasPointer.doubleClickTime
+    }
+  }
 
   /** Used downstream for touch event support. */
   isDouble: boolean = false
@@ -133,7 +141,6 @@ export class CanvasPointer {
    */
   onDragEnd?(upEvent: CanvasPointerEvent): unknown
 
-  /** Called when an active drag is interrupted without normal completion. */
   onDragCancel?(): unknown
 
   /**
@@ -180,14 +187,16 @@ export class CanvasPointer {
     this.reset()
     this.eDown = e
     this.pointerId = e.pointerId
-    this.element.setPointerCapture(e.pointerId)
-    this.stopWatchingInterrupts = watchGestureInterrupts(
-      this.element,
-      e.pointerId,
-      () => this.reset()
+    this.releaseCapture = captureGesture(this.element, e.pointerId, () =>
+      this.reset()
     )
     this.dispatch(
-      { type: 'down', position: positionOf(e), timeStamp: e.timeStamp },
+      {
+        type: 'down',
+        position: positionOf(e),
+        timeStamp: e.timeStamp,
+        policy: CanvasPointer.gesturePolicy()
+      },
       e
     )
   }
@@ -209,7 +218,7 @@ export class CanvasPointer {
     // Primary button released - treat as pointerup.
     if (!(e.buttons & eDown.buttons)) {
       this.eUp = e
-      this.dispatch({ type: 'up', position: positionOf(e) }, e)
+      this.dispatch(this.upEvent(e), e)
       this.reset()
       return
     }
@@ -226,49 +235,40 @@ export class CanvasPointer {
     if (e.button !== this.eDown?.button) return false
 
     this.eUp = e
-    const effects = this.dispatch({ type: 'up', position: positionOf(e) }, e)
+    const effects = this.dispatch(this.upEvent(e), e)
     this.reset()
-    return effects.includes('click') || effects.includes('doubleClick')
+    return !effects.includes('endDrag')
+  }
+
+  private upEvent(e: CanvasPointerEvent): GestureEvent {
+    return {
+      type: 'up',
+      position: positionOf(e),
+      acceptsDoubleClick: !!this.onDoubleClick
+    }
   }
 
   private dispatch(
     event: GestureEvent,
     e: CanvasPointerEvent
   ): GestureEffect[] {
-    const { state, effects } = reduceGesture(this.state, event, {
-      clickDrift: CanvasPointer.maxClickDrift,
-      doubleClickTime: CanvasPointer.doubleClickTime
-    })
+    const { state, effects } = reduceGesture(this.state, event)
     this.state = state
     const eMove = event.type === 'move' ? e : undefined
     const handlers: Record<GestureEffect, () => void> = {
       click: () => this.onClick?.(e),
-      doubleClick: () => this.runDoubleClick(e),
+      doubleClick: () => this.onDoubleClick?.(e),
       startDrag: () => {
         this.onDragStart?.(this, eMove)
         delete this.onDragStart
       },
       movePress: () => this.onDrag?.(e),
       moveDrag: () => this.onDrag?.(e),
-      endDrag: () => this.onDragEnd?.(e)
+      endDrag: () => this.onDragEnd?.(e),
+      cancelDrag: () => this.onDragCancel?.()
     }
     for (const effect of effects) handlers[effect]()
     return effects
-  }
-
-  private runDoubleClick(e: CanvasPointerEvent): void {
-    if (this.onDoubleClick) {
-      this.onDoubleClick(e)
-      return
-    }
-    this.onClick?.(e)
-    this.state = {
-      phase: 'idle',
-      lastClick: {
-        position: positionOf(this.eDown ?? e),
-        timeStamp: this.eDown?.timeStamp ?? e.timeStamp
-      }
-    }
   }
 
   /**
@@ -449,16 +449,16 @@ export class CanvasPointer {
   /**
    * Resets the state of this {@link CanvasPointer} instance.
    *
-   * Stops interruption watching, cancels any active drag, runs final cleanup,
+   * Releases pointer capture, cancels any active drag, runs final cleanup,
    * then clears callbacks and intra-click state.
    */
   reset(): void {
-    this.stopWatchingInterrupts?.()
-    this.stopWatchingInterrupts = undefined
-    const wasDragging = this.dragStarted
-    if (this.eDown) this.dispatch({ type: 'cancel' }, this.eDown)
+    const { releaseCapture } = this
+    this.releaseCapture = undefined
+    this.pointerId = undefined
+    releaseCapture?.()
     try {
-      if (wasDragging) this.onDragCancel?.()
+      if (this.eDown) this.dispatch({ type: 'cancel' }, this.eDown)
     } finally {
       try {
         this.finally = undefined
@@ -478,15 +478,6 @@ export class CanvasPointer {
           this.eDown = undefined
           this.eMove = undefined
           this.eUp = undefined
-        }
-
-        const { element, pointerId } = this
-        this.pointerId = undefined
-        if (
-          typeof pointerId === 'number' &&
-          element.hasPointerCapture(pointerId)
-        ) {
-          element.releasePointerCapture(pointerId)
         }
       }
     }

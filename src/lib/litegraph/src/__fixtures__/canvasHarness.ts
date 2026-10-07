@@ -82,6 +82,11 @@ export function pointerEvent(
   })
 }
 
+export function loseCapture(element: Element, pointerId = 1): void {
+  element.releasePointerCapture(pointerId)
+  element.dispatchEvent(new PointerEvent('lostpointercapture', { pointerId }))
+}
+
 export function keyEvent(
   type: 'keydown' | 'keyup',
   key: string

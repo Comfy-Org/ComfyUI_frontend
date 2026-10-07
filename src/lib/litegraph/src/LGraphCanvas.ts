@@ -2321,15 +2321,18 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     try {
       this.pointer.reset()
     } finally {
-      // Assertions: removing nullish is fine.
-      canvas.removeEventListener('pointercancel', this._mousecancel_callback!)
+      canvas.removeEventListener(
+        'pointercancel',
+        this._mousecancel_callback!,
+        true
+      )
       canvas.removeEventListener('pointerout', this._mouseout_callback!)
       canvas.removeEventListener('pointermove', this._mousemove_callback!)
-      canvas.removeEventListener('pointerup', this._mouseup_callback!)
-      canvas.removeEventListener('pointerdown', this._mousedown_callback!)
+      canvas.removeEventListener('pointerup', this._mouseup_callback!, true)
+      canvas.removeEventListener('pointerdown', this._mousedown_callback!, true)
       canvas.removeEventListener('wheel', this._mousewheel_callback!)
-      canvas.removeEventListener('keydown', this._key_callback!)
-      document.removeEventListener('keyup', this._key_callback!)
+      canvas.removeEventListener('keydown', this._key_callback!, true)
+      document.removeEventListener('keyup', this._key_callback!, true)
       canvas.removeEventListener('contextmenu', this._doNothing)
       canvas.removeEventListener('auxclick', this._preventMiddleAuxClick)
       canvas.removeEventListener('dragenter', this._doReturnTrue)
@@ -2501,6 +2504,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   }
 
   processMouseDown(e: MouseEvent): void {
+    this._finishDragZoom()
     if (this.state.ghostNodeId != null) {
       if (e.button === 0) this.finalizeGhostPlacement(false)
       if (e.button === 2) this.finalizeGhostPlacement(true)
@@ -2517,7 +2521,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       !e.altKey &&
       e.buttons
     ) {
-      this._finishDragZoom()
       this._dragZoomStart = {
         pos: [e.x, e.y],
         scale: this.ds.scale,
@@ -2666,8 +2669,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       !e.altKey &&
       LiteGraph.leftMouseClickBehavior === 'panning'
     ) {
-      const clickTarget = resolveSelectableTarget(this, e.canvasX, e.canvasY)
-      this._setupNodeSelectionDrag(e, pointer, node ?? clickTarget)
+      this._setupNodeSelectionDrag(
+        e,
+        pointer,
+        node ?? resolveSelectableTarget(this, graph, e.canvasX, e.canvasY)
+      )
 
       return
     }
@@ -2709,11 +2715,20 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       return
     }
 
-    const target = resolvePointerTarget(this, e, node)
+    const pressGroup = (group: LGraphGroup) => {
+      this.selected_group = group
+      pointer.onDoubleClick = () =>
+        this.emitEvent({
+          subType: 'group-double-click',
+          originalEvent: e,
+          group
+        })
+    }
+
+    const target = resolvePointerTarget(this, graph, e, node)
     switch (target.kind) {
       case 'node':
-        if (this.allow_interaction || target.node.flags.allow_interaction)
-          this._processNodeClick(e, ctrlOrMeta, target.node)
+        this._processNodeClick(e, ctrlOrMeta, target.node)
         break
 
       case 'linkBadge': {
@@ -2791,20 +2806,19 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
         pointer.onDragStart = () => (this.resizingGroup = group)
         pointer.onDrag = (eMove) => {
-          if (this.read_only || this.selectOnly) return
+          if (this.read_only) return
 
-          // Resize only by the exact pointer movement
           const pos: Point = [
             eMove.canvasX - group.pos[0] - offsetX,
             eMove.canvasY - group.pos[1] - offsetY
           ]
-          // Unless snapping.
           if (this._snapToGrid) snapPoint(pos, this._snapToGrid)
 
           const resized = group.resize(pos[0], pos[1])
           if (resized) this.dirty_bgcanvas = true
         }
         pointer.finally = () => (this.resizingGroup = null)
+        pressGroup(group)
         break
       }
 
@@ -2816,13 +2830,16 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           this._startDraggingItems(group, pointer, true)
         }
         pointer.onDragEnd = (e) => this._processDraggedItems(e)
+        pressGroup(target.group)
         break
       }
 
       case 'group':
+        pressGroup(target.group)
         break
 
       case 'empty':
+        this.selected_group = null
         pointer.onDoubleClick = () => {
           if (this.allow_searchbox) {
             this.showSearchBox(e)
@@ -2837,17 +2854,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
       default:
         target satisfies never
-    }
-
-    if (target.kind !== 'node')
-      this.selected_group = 'group' in target ? target.group : null
-    if ('group' in target) {
-      pointer.onDoubleClick = () =>
-        this.emitEvent({
-          subType: 'group-double-click',
-          originalEvent: e,
-          group: target.group
-        })
     }
 
     if (
@@ -3393,12 +3399,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   }
 
   private _processDragZoom(e: PointerEvent): void {
-    // stop canvas zoom action
-    if (!e.buttons) {
-      this._finishDragZoom()
-      return
-    }
-
     const start = this._dragZoomStart
     if (!start) throw new TypeError('Drag-zoom state object was null')
     if (!this.graph) throw new NullGraphError()
@@ -3424,6 +3424,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    * Called when a mouse move event has to be processed
    */
   processMouseMove(e: PointerEvent): void {
+    if (this._dragZoomStart && !e.buttons) {
+      this._finishDragZoom()
+      return
+    }
     if (
       this.dragZoomEnabled &&
       e.ctrlKey &&
@@ -3808,7 +3812,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       this.graph?.afterChange()
       this.emitAfterChange()
     }
-    pointer.onDragCancel = () => this._finalizeDraggedItems()
+    pointer.onDragCancel = () => this._processDraggedItems()
 
     this.processSelect(item, pointer.eDown, sticky)
     this.isDragging = true
@@ -3848,17 +3852,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
   /**
    * Handles shared clean up and placement after items have been dragged.
-   * @param e The event that completed the drag, e.g. pointerup, pointermove
+   * @param e The event that completed the drag, e.g. pointerup, pointermove;
+   * omitted when the drag was interrupted, which skips snapping
    */
-  private _processDraggedItems(e: CanvasPointerEvent): void {
+  private _processDraggedItems(e?: CanvasPointerEvent): void {
     const { graph } = this
-    if (e.shiftKey || LiteGraph.alwaysSnapToGrid)
+    if (e && (e.shiftKey || LiteGraph.alwaysSnapToGrid))
       graph?.snapToGrid(this.selectedItems)
 
-    this._finalizeDraggedItems()
-  }
-
-  private _finalizeDraggedItems(): void {
     this.dirty_canvas = true
     this.dirty_bgcanvas = true
 

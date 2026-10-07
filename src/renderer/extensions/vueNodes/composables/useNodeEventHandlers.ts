@@ -1,11 +1,3 @@
-/**
- * Node Event Handlers Composable
- *
- * Handles Vue node interaction events including:
- * - Node collapse/expand state management
- * - Node title editing and updates
- * - Right-click selection ahead of the context menu
- */
 import { createSharedComposable } from '@vueuse/core'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -60,7 +52,7 @@ function useNodeEventHandlersIndividual() {
    * Handle node right-click context menu events
    * Integrates with LiteGraph's context menu system
    */
-  function handleNodeRightClick(event: PointerEvent, nodeId: NodeId) {
+  function handleNodeRightClick(event: MouseEvent, nodeId: NodeId) {
     if (!shouldHandleNodePointerEvents.value) return
 
     if (!canvasStore.canvas) return
