@@ -114,6 +114,55 @@ describe('desktopHostSession', () => {
     }
   )
 
+  describe('when Desktop changes state while a request is pending', () => {
+    function deferred<T>() {
+      let resolve!: (value: T) => void
+      const promise = new Promise<T>((done) => (resolve = done))
+      return { promise, resolve }
+    }
+
+    it('keeps a change that arrives while the initial state is loading', async () => {
+      const { bridge, push } = fakeBridge(SIGNED_IN)
+      const initial = deferred<DesktopHostAuthState>()
+      bridge.getState.mockReturnValue(initial.promise)
+
+      const starting = startDesktopHostSession(bridge)
+      push({ status: 'signed_out' })
+      initial.resolve(SIGNED_IN)
+      await starting
+
+      expect(isDesktopHostSessionActive()).toBe(true)
+      expect(desktopHostUser.value).toBeNull()
+    })
+
+    it('drops a token fetched across a sign-out', async () => {
+      const { bridge, push } = fakeBridge(SIGNED_IN)
+      await startDesktopHostSession(bridge)
+      const token = deferred<string | null>()
+      bridge.getAccessToken.mockReturnValue(token.promise)
+
+      const fetching = desktopHostAccessToken()
+      push({ status: 'signed_out' })
+      token.resolve('stale-token')
+
+      await expect(fetching).resolves.toBeUndefined()
+    })
+
+    it('ignores a sign-in result that a newer change overtook', async () => {
+      const { bridge, push } = fakeBridge({ status: 'signed_out' })
+      await startDesktopHostSession(bridge)
+      const signIn = deferred<DesktopHostAuthState>()
+      bridge.requestSignIn.mockReturnValue(signIn.promise)
+
+      const signingIn = requestDesktopHostSignIn()
+      push({ status: 'signed_out' })
+      signIn.resolve(SIGNED_IN)
+
+      await expect(signingIn).resolves.toBe(false)
+      expect(desktopHostUser.value).toBeNull()
+    })
+  })
+
   it('does not start a Desktop sign-in while inactive', async () => {
     await expect(requestDesktopHostSignIn()).resolves.toBe(false)
   })

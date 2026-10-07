@@ -20,6 +20,8 @@ type DesktopHostSession =
 const session = shallowRef<DesktopHostSession>({ status: 'inactive' })
 let bridge: DesktopHostAuthBridge | undefined
 let unsubscribe: (() => void) | undefined
+/** Bumped on every session change, so a reply that raced one is dropped. */
+let revision = 0
 
 function toSession(state: DesktopHostAuthState): DesktopHostSession {
   if (state.status === 'disabled') return { status: 'inactive' }
@@ -34,6 +36,7 @@ function apply(state: DesktopHostAuthState): void {
     stopDesktopHostSession()
     return
   }
+  revision++
   session.value = next
 }
 
@@ -58,12 +61,12 @@ export async function startDesktopHostSession(
   stopDesktopHostSession()
   bridge = hostBridge
   try {
-    const initial = await hostBridge.getState()
-    if (bridge !== hostBridge) return
     unsubscribe = hostBridge.onChanged(apply)
-    apply(initial)
+    const before = revision
+    const initial = await hostBridge.getState()
+    if (bridge === hostBridge && revision === before) apply(initial)
   } catch {
-    stopDesktopHostSession()
+    if (bridge === hostBridge) stopDesktopHostSession()
   }
 }
 
@@ -71,20 +74,25 @@ export function stopDesktopHostSession(): void {
   unsubscribe?.()
   unsubscribe = undefined
   bridge = undefined
+  revision++
   session.value = { status: 'inactive' }
 }
 
 /** A current access token from Desktop, which refreshes it; undefined when signed out. */
 export async function desktopHostAccessToken(): Promise<string | undefined> {
-  if (!bridge || session.value.status !== 'signed_in') return undefined
-  return (await bridge.getAccessToken().catch(() => null)) ?? undefined
+  const current = bridge
+  if (!current || session.value.status !== 'signed_in') return undefined
+  const before = revision
+  const token = await current.getAccessToken().catch(() => null)
+  return revision === before ? (token ?? undefined) : undefined
 }
 
 /** Runs Desktop's browser sign-in. Resolves true when it ends signed in. */
 export async function requestDesktopHostSignIn(): Promise<boolean> {
   const current = bridge
   if (!current) return false
+  const before = revision
   const next = await current.requestSignIn().catch(() => undefined)
-  if (next && bridge === current) apply(next)
+  if (next && bridge === current && revision === before) apply(next)
   return desktopHostUser.value !== null
 }
