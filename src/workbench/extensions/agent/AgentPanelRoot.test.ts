@@ -5368,7 +5368,6 @@ describe('AgentPanelRoot workflow binding', () => {
           prompt_count: 5,
           prompt_text_hash: expect.stringMatching(/^[0-9a-f]{8}$/),
           locale: 'en',
-          '$feature/agent-starter-prompt-set': 'control',
           click_id: 'client-message-1',
           draft_was_empty: true
         }
@@ -5380,7 +5379,6 @@ describe('AgentPanelRoot workflow binding', () => {
           {
             attachment_count: 0,
             node_tag_count: 0,
-            '$feature/agent-starter-prompt-set': 'control',
             thread_id: null,
             workflow_id: 'wf-42',
             client_message_id: 'client-message-2',

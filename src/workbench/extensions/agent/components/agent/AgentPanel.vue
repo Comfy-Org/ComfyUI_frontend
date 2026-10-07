@@ -81,6 +81,7 @@ const {
   answeringAskIds = new Set<string>(),
   freeUsePlacement = 'control',
   starterPromptAssignment = 'control',
+  attributeStarterPromptExperiment = true,
   onStarterPromptRendered = (_assignment: StarterPromptAssignment) => undefined,
   onStarterPromptUnmounted = () => undefined
 } = defineProps<{
@@ -124,6 +125,7 @@ const {
   answeringAskIds?: ReadonlySet<string>
   freeUsePlacement?: FreeUseVariant
   starterPromptAssignment?: StarterPromptAssignment
+  attributeStarterPromptExperiment?: boolean
   onStarterPromptRendered?: (assignment: StarterPromptAssignment) => void
   onStarterPromptUnmounted?: () => void
 }>()
@@ -457,6 +459,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           v-if="!entries.length"
           :user-name
           :assignment="starterPromptAssignment"
+          :attribute-experiment="attributeStarterPromptExperiment"
           :on-rendered="onStarterPromptRendered"
           :on-unmounted="onStarterPromptUnmounted"
           @insert="

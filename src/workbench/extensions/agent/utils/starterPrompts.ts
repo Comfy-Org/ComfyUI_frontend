@@ -46,7 +46,7 @@ export function starterPromptAttribution(
   index: number,
   count: number,
   locale: string,
-  assignment: 'control' | 'test' = 'control'
+  assignment?: 'control' | 'test'
 ): AgentStarterPromptAttribution {
   return {
     promptId: starterPromptIdAt(index),
@@ -54,6 +54,6 @@ export function starterPromptAttribution(
     promptCount: count,
     promptTextHash: hashPath(text),
     locale,
-    assignment
+    ...(assignment ? { assignment } : {})
   }
 }

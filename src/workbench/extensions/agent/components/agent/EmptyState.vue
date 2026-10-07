@@ -14,11 +14,13 @@ import type { StarterPromptAssignment } from '../../experiments/starterPromptSet
 const {
   userName,
   assignment = 'control',
+  attributeExperiment = true,
   onRendered = (_assignment: StarterPromptAssignment) => undefined,
   onUnmounted: onSurfaceUnmounted = () => undefined
 } = defineProps<{
   userName?: string
   assignment?: StarterPromptAssignment
+  attributeExperiment?: boolean
   onRendered?: (assignment: StarterPromptAssignment) => void
   onUnmounted?: () => void
 }>()
@@ -68,7 +70,7 @@ function onPromptClick(prompt: string, index: number): void {
       index,
       prompts.value.length,
       promptLocale.value,
-      effectiveAssignment.value
+      attributeExperiment ? effectiveAssignment.value : undefined
     )
   )
 }

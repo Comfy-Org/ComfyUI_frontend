@@ -136,6 +136,9 @@ export function useStarterPromptSet() {
 
   return {
     assignment: computed(() => assigned.value),
+    attributeExperiment: computed(
+      () => isAuthenticatedConfigLoaded.value && !qaOverride.value
+    ),
     expose,
     invalidateSurface
   }

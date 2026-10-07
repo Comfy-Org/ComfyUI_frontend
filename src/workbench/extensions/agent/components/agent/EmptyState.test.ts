@@ -92,6 +92,26 @@ describe('EmptyState', () => {
     ).toBeNull()
   })
 
+  it('omits experiment attribution for a QA-rendered treatment', async () => {
+    const user = userEvent.setup()
+    const { emitted } = render(EmptyState, {
+      props: { assignment: 'test', attributeExperiment: false },
+      global: { plugins: [i18n] }
+    })
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Build a workflow with my installed models'
+      })
+    )
+
+    const [[, attribution]] = emitted().insert as [
+      string,
+      { assignment?: string }
+    ][]
+    expect(attribution).not.toHaveProperty('assignment')
+  })
+
   it.for([
     ...LOCAL_PROMPTS.map((prompt, index) => ({
       ...prompt,

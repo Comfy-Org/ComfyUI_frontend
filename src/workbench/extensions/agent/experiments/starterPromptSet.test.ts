@@ -6,6 +6,7 @@ import {
   remoteConfigRevision
 } from '@/platform/remoteConfig/remoteConfig'
 import { useTelemetry } from '@/platform/telemetry'
+import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 
 import {
   STARTER_PROMPT_SET_FLAG,
@@ -23,6 +24,7 @@ vi.mock(import('@/utils/sessionFeatureFlagOverride'), () => ({
 
 describe('useStarterPromptSet', () => {
   beforeEach(() => {
+    vi.mocked(getSessionOverride).mockReturnValue(undefined)
     authenticatedRemoteConfigState.value = 'unloaded'
     remoteConfig.value = {}
     remoteConfigRevision.value = 0
@@ -30,9 +32,10 @@ describe('useStarterPromptSet', () => {
 
   it('selects test but waits for the rendered surface before exposure', async () => {
     remoteConfig.value = { [STARTER_PROMPT_SET_FLAG]: 'test' }
-    const { assignment, expose } = useStarterPromptSet()
+    const { assignment, attributeExperiment, expose } = useStarterPromptSet()
 
     expect(assignment.value).toBe('control')
+    expect(attributeExperiment.value).toBe(false)
     expect(
       useTelemetry()?.trackAgentStarterPromptExposure
     ).not.toHaveBeenCalled()
@@ -40,6 +43,7 @@ describe('useStarterPromptSet', () => {
     authenticatedRemoteConfigState.value = 'authenticated'
     remoteConfigRevision.value++
     await vi.waitFor(() => expect(assignment.value).toBe('test'))
+    expect(attributeExperiment.value).toBe(true)
     expect(
       useTelemetry()?.trackAgentStarterPromptExposure
     ).not.toHaveBeenCalled()
@@ -135,5 +139,20 @@ describe('useStarterPromptSet', () => {
     ).toHaveBeenLastCalledWith({
       [`$feature/${STARTER_PROMPT_SET_FLAG}`]: 'test'
     })
+  })
+
+  it('renders QA overrides without attributing experiment events', () => {
+    authenticatedRemoteConfigState.value = 'authenticated'
+    remoteConfig.value = { [STARTER_PROMPT_SET_FLAG]: 'control' }
+    vi.mocked(getSessionOverride).mockReturnValue('test')
+
+    const { assignment, attributeExperiment, expose } = useStarterPromptSet()
+
+    expect(assignment.value).toBe('test')
+    expect(attributeExperiment.value).toBe(false)
+    expose('test')
+    expect(
+      useTelemetry()?.trackAgentStarterPromptExposure
+    ).not.toHaveBeenCalled()
   })
 })

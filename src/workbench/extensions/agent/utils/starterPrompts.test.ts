@@ -71,8 +71,7 @@ describe('starter prompt identity', () => {
       promptIndex: 3,
       promptCount: 5,
       promptTextHash: '3849a858',
-      locale: 'zh',
-      assignment: 'control'
+      locale: 'zh'
     })
   })
 })

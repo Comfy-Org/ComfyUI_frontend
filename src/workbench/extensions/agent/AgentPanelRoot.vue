@@ -1322,6 +1322,7 @@ const { copy } = useClipboard({ legacy: true })
 const { variant: freeUsePlacement } = useFreeUsePlacement()
 const {
   assignment: starterPromptAssignment,
+  attributeExperiment: attributeStarterPromptExperiment,
   expose: exposeStarterPromptSet,
   invalidateSurface: invalidateStarterPromptSurface
 } = useStarterPromptSet()
@@ -1916,6 +1917,7 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       :credits-exhausted="showStandingPaywall"
       :free-use-placement="freeUsePlacement"
       :starter-prompt-assignment="starterPromptAssignment"
+      :attribute-starter-prompt-experiment="attributeStarterPromptExperiment"
       :on-starter-prompt-rendered="exposeStarterPromptSet"
       :on-starter-prompt-unmounted="invalidateStarterPromptSurface"
       @free-use-notice="onFreeUseNotice"
