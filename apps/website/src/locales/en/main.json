@@ -5553,6 +5553,7 @@
       "label": "Filter the roadmap by area",
       "all": "All"
     },
-    "now": "Now"
+    "now": "Now",
+    "opensInNewTab": "opens in a new tab"
   }
 }

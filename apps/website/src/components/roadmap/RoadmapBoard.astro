@@ -2,6 +2,7 @@
 import { getCollection, render } from 'astro:content'
 
 import RoadmapEntry from '@/components/roadmap/RoadmapEntry.astro'
+import RoadmapLink from '@/components/roadmap/RoadmapLink.astro'
 import {
   ROADMAP_AREA_ORDER,
   ROADMAP_BELOW_NOW,
@@ -123,7 +124,7 @@ const filterChip = `${chip} cursor-pointer border-primary-comfy-canvas/20 text-p
         area={item.area}
         shipped
       >
-        <item.Content />
+        <item.Content components={{ a: RoadmapLink }} />
       </RoadmapEntry>)}
     </ol>
 
@@ -155,7 +156,7 @@ const filterChip = `${chip} cursor-pointer border-primary-comfy-canvas/20 text-p
         link={item.link}
         area={item.area}
       >
-        <item.Content />
+        <item.Content components={{ a: RoadmapLink }} />
       </RoadmapEntry>)}
     </ol>
   </div>

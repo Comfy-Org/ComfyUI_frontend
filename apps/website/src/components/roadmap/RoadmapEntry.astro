@@ -21,6 +21,7 @@ const {
   link,
   shipped = false
 } = Astro.props
+const { t } = Astro.locals
 
 const chip =
   'rounded-full border px-2.5 py-1 text-2xs font-bold tracking-widest uppercase'
@@ -57,9 +58,12 @@ const dot = shipped
     {link ? (
       <a
         href={link}
+        target="_blank"
+        rel="noopener noreferrer"
         class="rounded-xs underline decoration-primary-comfy-canvas/30 underline-offset-4 transition-colors hover:text-primary-comfy-yellow hover:decoration-primary-comfy-yellow focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-comfy-yellow"
       >
         {title}
+        <span class="sr-only">{` (${t('roadmap.opensInNewTab')})`}</span>
       </a>
     ) : (
       title

@@ -82,7 +82,9 @@ link, because the page already links the changelog once at the top.
   it rather than linking it.
 - **Curl it before you commit it.** A 404 from our own roadmap is worse than an
   unlinked row. If there is no live page, omit the field.
-- Links open in the same tab, since they are all our own pages.
+- Links open in a new tab so a reader does not lose their place on the
+  timeline. That applies to `link` and to any anchor you write in a body, and
+  both get a visually hidden "opens in a new tab" suffix for screen readers.
 
 ## Gotchas
 
