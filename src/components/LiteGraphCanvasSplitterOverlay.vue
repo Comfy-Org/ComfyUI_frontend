@@ -107,7 +107,7 @@
                   id="graph-canvas-panel"
                   :order="1"
                   :default-size="bottomPanelDefaultSizes[0]"
-                  class="graph-canvas-panel relative overflow-visible"
+                  class="graph-canvas-panel relative overflow-visible [anchor-name:--graph-canvas-panel]"
                 >
                   <slot name="graph-canvas-panel" />
                 </SplitterPanel>

@@ -26,7 +26,7 @@ const forwardedProps = useForwardProps(restProps)
       v-reka-z-index="zIndexVersion"
       :class="
         cn(
-          'pointer-events-none fixed top-20 right-[calc(1rem+var(--workspace-inset-right,0px))] flex max-h-[calc(100dvh-5rem)] w-full max-w-sm flex-col gap-2 overflow-y-auto p-4',
+          'pointer-events-none fixed top-20 right-[calc(1rem+var(--workspace-inset-right,0px))] flex max-h-[calc(100dvh-5rem)] w-full max-w-sm flex-col gap-2 overflow-y-auto p-4 supports-[right:anchor(--a_right)]:right-[calc(anchor(--graph-canvas-panel_right,anchor(--docked-agent-panel_left,var(--workspace-inset-right,0px)))+1rem)]',
           className
         )
       "

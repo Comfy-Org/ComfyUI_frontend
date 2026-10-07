@@ -14,13 +14,22 @@ test.describe('Toast Notifications', { tag: '@ui' }, () => {
     })
   }
 
-  test('Toasts stay clear of the workspace inset', async ({ comfyPage }) => {
+  test('Toasts outside the graph fall back to the workspace inset', async ({
+    comfyPage
+  }) => {
     const workspaceInset = 240
     await comfyPage.page.evaluate((inset) => {
       document.documentElement.style.setProperty(
         '--workspace-inset-right',
         `${inset}px`
       )
+      document
+        .querySelectorAll<HTMLElement>(
+          '.graph-canvas-panel, .docked-agent-panel'
+        )
+        .forEach((element) => {
+          element.style.setProperty('anchor-name', 'none')
+        })
     }, workspaceInset)
 
     await triggerErrorToast(comfyPage)
@@ -34,6 +43,27 @@ test.describe('Toast Notifications', { tag: '@ui' }, () => {
     expect(viewport).not.toBeNull()
     expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(
       viewport!.width - workspaceInset
+    )
+  })
+
+  test('Toasts stay clear of the open properties panel', async ({
+    comfyPage
+  }) => {
+    const { propertiesPanel } = comfyPage.menu
+    await propertiesPanel.toggleButton.click()
+    await expect(propertiesPanel.root).toBeVisible()
+
+    await triggerErrorToast(comfyPage)
+
+    const graphToast = comfyPage.toast.withText('Test execution error')
+    await expect(graphToast).toBeVisible()
+
+    const toastBounds = await graphToast.boundingBox()
+    const panelBounds = await propertiesPanel.root.boundingBox()
+    expect(toastBounds).not.toBeNull()
+    expect(panelBounds).not.toBeNull()
+    expect(toastBounds!.x + toastBounds!.width).toBeLessThanOrEqual(
+      panelBounds!.x
     )
   })
 
