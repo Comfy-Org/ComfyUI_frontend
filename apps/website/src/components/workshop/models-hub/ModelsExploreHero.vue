@@ -71,7 +71,7 @@ const featured = computed(() => latestLaunch(models))
           :href="apiKeysLink({ onboarding: 'router' })"
           :variant="canRun ? 'outline' : 'solid'"
           size="nav"
-          class="justify-center"
+          class="justify-center uppercase"
           data-testid="models-hub-api-key"
         >
           {{ t('workshop.modelsHub.getApiKey') }}

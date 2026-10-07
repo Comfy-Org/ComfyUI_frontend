@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { ArrowUpRight } from '@lucide/vue'
 
-import ProductCard from '@/components/common/ProductCard.vue'
-import Button from '@/components/ui/button/Button.vue'
+import { cn } from '@comfyorg/tailwind-utils'
+
+import BrandButton from '@/components/common/BrandButton.vue'
 import { apiKeysLink, externalLinks, getRoutes } from '@/config/routes'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
@@ -11,7 +12,51 @@ import { MODEL_TAB_PARAM } from '@/lib/workshop/explorer/model-tabs'
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const { t } = translationsFor(locale)
 
-const openWeightsHref = `${getRoutes(locale).workshop}?${MODEL_TAB_PARAM}=open`
+type AccessLink = {
+  label: string
+  href: string
+  external?: boolean
+  testId?: string
+}
+
+const cards: {
+  title: string
+  body: string
+  surface: string
+  links: AccessLink[]
+  testId: string
+}[] = [
+  {
+    title: t('workshop.modelsHub.access.openTitle'),
+    body: t('workshop.modelsHub.access.openBody'),
+    surface: 'bg-primary-comfy-plum',
+    links: [
+      {
+        label: t('workshop.modelsHub.access.openCta'),
+        href: `${getRoutes(locale).workshop}?${MODEL_TAB_PARAM}=open`,
+        testId: 'model-access-open'
+      }
+    ],
+    testId: 'model-access-open-card'
+  },
+  {
+    title: t('workshop.modelsHub.access.partnerTitle'),
+    body: t('workshop.modelsHub.access.partnerBody'),
+    surface: 'bg-transparency-white-t8',
+    links: [
+      {
+        label: t('workshop.modelsHub.getApiKey'),
+        href: apiKeysLink({ onboarding: 'router' })
+      },
+      {
+        label: t('workshop.modelsHub.access.apiDocs'),
+        href: externalLinks.docsComfyRouter,
+        external: true
+      }
+    ],
+    testId: 'model-access-partner'
+  }
+]
 </script>
 
 <template>
@@ -23,41 +68,39 @@ const openWeightsHref = `${getRoutes(locale).workshop}?${MODEL_TAB_PARAM}=open`
     <h2 id="model-access-heading" class="sr-only">
       {{ t('workshop.modelsHub.access.heading') }}
     </h2>
-    <ProductCard
-      :title="t('workshop.modelsHub.access.openTitle')"
-      :description="t('workshop.modelsHub.access.openBody')"
-      :cta="t('workshop.modelsHub.access.openCta')"
-      :href="openWeightsHref"
-      bg="bg-primary-comfy-plum"
-      data-testid="model-access-open"
-    />
     <div
-      class="flex flex-col justify-between rounded-4.5xl bg-transparency-white-t8 p-8"
-      data-testid="model-access-partner"
+      v-for="card in cards"
+      :key="card.testId"
+      :class="
+        cn('flex flex-col justify-between rounded-4.5xl p-8', card.surface)
+      "
+      :data-testid="card.testId"
     >
       <h3 class="text-3xl font-light text-white lg:text-4xl">
-        {{ t('workshop.modelsHub.access.partnerTitle') }}
+        {{ card.title }}
       </h3>
       <div class="mt-auto pt-16">
         <p class="text-sm text-white/70">
-          {{ t('workshop.modelsHub.access.partnerBody') }}
+          {{ card.body }}
         </p>
         <div class="mt-4 flex flex-wrap gap-3">
-          <Button :href="apiKeysLink({ onboarding: 'router' })" size="sm">
-            {{ t('workshop.modelsHub.getApiKey') }}
-          </Button>
-          <Button
-            :href="externalLinks.docsComfyRouter"
-            target="_blank"
-            rel="noopener noreferrer"
-            variant="ghost"
-            size="sm"
+          <BrandButton
+            v-for="(link, index) in card.links"
+            :key="link.href"
+            :href="link.href"
+            :target="link.external ? '_blank' : undefined"
+            :variant="index === 0 ? 'solid' : 'outline'"
+            size="nav"
+            class="uppercase"
+            :data-testid="link.testId"
           >
-            {{ t('workshop.modelsHub.access.apiDocs') }}
-            <template #append>
-              <ArrowUpRight aria-hidden="true" />
-            </template>
-          </Button>
+            {{ link.label }}
+            <ArrowUpRight
+              v-if="link.external"
+              class="ml-1 size-4"
+              aria-hidden="true"
+            />
+          </BrandButton>
         </div>
       </div>
     </div>

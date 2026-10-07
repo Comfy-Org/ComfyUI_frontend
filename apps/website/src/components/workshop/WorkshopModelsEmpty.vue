@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import Button from '@/components/ui/button/Button.vue'
+import BrandButton from '@/components/common/BrandButton.vue'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 
@@ -23,8 +23,15 @@ defineEmits<{ clear: [] }>()
     <p class="text-sm text-primary-warm-gray">
       {{ t('workshop.empty.body') }}
     </p>
-    <Button v-if="filtered" variant="outline" size="sm" @click="$emit('clear')">
+    <BrandButton
+      v-if="filtered"
+      type="button"
+      variant="outline"
+      size="nav"
+      class="uppercase"
+      @click="$emit('clear')"
+    >
       {{ t('workshop.empty.clear') }}
-    </Button>
+    </BrandButton>
   </div>
 </template>
