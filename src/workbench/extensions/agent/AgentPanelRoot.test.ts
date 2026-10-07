@@ -1694,10 +1694,13 @@ describe('AgentPanelRoot Agent credit transition notice', () => {
         name: i18n.global.t('agent.dismiss')
       })
     )
-    paywallCapabilities.canTopUp = false
+    paywallAgentScopedHasFunds.value = true
+    await nextTick()
+    paywallAgentScopedHasFunds.value = false
     await nextTick()
 
     expect(screen.queryByTestId(NOTICE)).not.toBeInTheDocument()
+    expect(telemetry.trackAgentCreditTransitionNotice).toHaveBeenCalledTimes(2)
     expect(telemetry.trackAgentCreditTransitionNotice).toHaveBeenLastCalledWith(
       { action: 'dismissed' }
     )
