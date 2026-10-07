@@ -25,11 +25,11 @@ async function badgePlacement(row: Locator, label: string) {
 
 const minimaxLabel = 'MiniMax H3'
 const minimaxLabelZh = 'MiniMax H3'
-const minimaxRoute = '/minimax-h3'
-const minimaxRouteZh = '/zh-CN/minimax-h3'
+const minimaxRoute = '/minimax-h3/'
+const minimaxRouteZh = '/zh-CN/minimax-h3/'
 
 const TOP_LEVEL_LABELS = [
-  'Models',
+  'Hub',
   'Products',
   'Pricing',
   'Community',
@@ -39,26 +39,27 @@ const TOP_LEVEL_LABELS = [
 const RETIRED_BADGE_PANELS = [
   {
     section: 'Products',
-    badged: 'Comfy Agent',
-    bare: [{ label: 'Comfy CLI', href: '/cli' }]
+    badged: [
+      { label: 'Comfy Agent', href: '/agent/' },
+      { label: 'Developer Platform', href: '/platform/' },
+      { label: 'Comfy Router', href: '/platform/router/' }
+    ],
+    bare: [
+      { label: 'Comfy CLI', href: '/cli/' },
+      { label: 'Managed Builds', href: '/enterprise/managed-builds/' }
+    ]
   },
   {
     section: 'Community',
-    badged: 'Events',
+    badged: [{ label: 'Events', href: '/events/' }],
     bare: [
-      { label: 'Affiliates', href: '/affiliates' },
-      { label: 'Learning', href: '/learning' }
+      { label: 'Affiliates', href: '/affiliates/' },
+      { label: 'Learning', href: '/learning/' }
     ]
   }
 ] as const
 
 const BADGE_PALETTES = [
-  {
-    link: 'Developer Platform',
-    label: 'BETA',
-    text: '--color-primary-warm-white',
-    fill: '--color-primary-comfy-plum'
-  },
   {
     link: 'Comfy Agent',
     label: 'NEW',
@@ -71,14 +72,16 @@ async function expectRetiredBadges(
   panel: Locator,
   { badged, bare }: (typeof RETIRED_BADGE_PANELS)[number]
 ) {
-  await expect(
-    panel.getByRole('link', { name: badged }).getByText('NEW', { exact: true })
-  ).toBeVisible()
+  for (const { label, href } of badged) {
+    const link = panel.getByRole('link', { name: label })
+    await expect(link).toHaveAttribute('href', href)
+    await expect(link.getByText('NEW', { exact: true })).toBeVisible()
+  }
   for (const { label, href } of bare) {
     const link = panel.getByRole('link', { name: label })
     await expect(link).toBeVisible()
     await expect(link).toHaveAttribute('href', href)
-    await expect(link.getByText('NEW', { exact: true })).toHaveCount(0)
+    await expect(link.locator('[data-slot="badge"]')).toHaveCount(0)
   }
 }
 
@@ -113,7 +116,7 @@ test.describe('Desktop navigation @smoke', () => {
 
     await expect(
       desktopLinks
-        .getByRole('link', { name: 'Models' })
+        .getByRole('link', { name: 'Hub' })
         .getByText('NEW', { exact: true })
     ).toBeVisible()
     for (const label of ['Products', 'Community']) {
@@ -185,7 +188,7 @@ test.describe('Desktop dropdown @interaction', () => {
       const card = nav.getByTestId('nav-dropdown').getByRole('link', {
         name: 'Explore the Gemini Omni 1.1 Flash release'
       })
-      await expect(card).toHaveAttribute('href', '/gemini-omni')
+      await expect(card).toHaveAttribute('href', '/gemini-omni/')
       const video = card.locator('video')
       await expect(video).toHaveAttribute(
         'src',
@@ -210,7 +213,7 @@ test.describe('Desktop dropdown @interaction', () => {
       .getByRole('link', { name: 'Watch the Product Photography demo' })
     await expect(card).toHaveAttribute(
       'href',
-      '/learning/ads/product-photography'
+      '/learning/ads/product-photography/'
     )
     await expect(
       card.getByRole('img', { name: 'Product Photography workflow demo image' })
@@ -218,7 +221,7 @@ test.describe('Desktop dropdown @interaction', () => {
   })
 
   for (const panel of RETIRED_BADGE_PANELS) {
-    test(`${panel.section} dropdown keeps NEW on ${panel.badged} and drops it from the retired entries`, async ({
+    test(`${panel.section} dropdown keeps NEW on ${panel.badged.map((b) => b.label).join(', ')} and drops it from the retired entries`, async ({
       page
     }) => {
       const nav = page.getByRole('navigation', { name: 'Main navigation' })
@@ -229,9 +232,7 @@ test.describe('Desktop dropdown @interaction', () => {
     })
   }
 
-  test('BETA badges paint plum behind warm-white while NEW stays ink on yellow', async ({
-    page
-  }) => {
+  test('NEW badges paint ink on yellow', async ({ page }) => {
     const nav = page.getByRole('navigation', { name: 'Main navigation' })
     const desktopLinks = nav.getByTestId('desktop-nav-links')
     await desktopLinks.getByRole('button', { name: 'Products' }).hover()
@@ -326,7 +327,7 @@ test.describe('Mobile menu @mobile', () => {
     const menu = page.getByRole('dialog')
     await expect(menu).toBeVisible()
 
-    for (const label of ['Models', 'Products', 'Pricing', 'Community']) {
+    for (const label of ['Hub', 'Products', 'Pricing', 'Community']) {
       await expect(menu.getByText(label, { exact: true }).first()).toBeVisible()
     }
   })
@@ -339,7 +340,7 @@ test.describe('Mobile menu @mobile', () => {
     const menu = page.getByRole('dialog')
 
     await expect(
-      menu.getByRole('link', { name: 'Models' }).getByText('NEW', {
+      menu.getByRole('link', { name: 'Hub' }).getByText('NEW', {
         exact: true
       })
     ).toBeVisible()
@@ -360,7 +361,7 @@ test.describe('Mobile menu @mobile', () => {
   })
 
   for (const panel of RETIRED_BADGE_PANELS) {
-    test(`${panel.section} drill-down keeps NEW on ${panel.badged} and drops it from the retired entries`, async ({
+    test(`${panel.section} drill-down keeps NEW on ${panel.badged.map((b) => b.label).join(', ')} and drops it from the retired entries`, async ({
       page
     }) => {
       await page.getByRole('button', { name: 'Toggle menu' }).click()
@@ -422,7 +423,7 @@ test.describe('Footer @smoke', () => {
     const footer = page.locator('footer')
     await expect(footer).toBeVisible()
 
-    for (const heading of ['Products', 'Resources', 'Company']) {
+    for (const heading of ['Products', 'Features', 'Resources', 'Company']) {
       await expect(
         footer.getByRole('heading', { name: heading }).first()
       ).toBeVisible()

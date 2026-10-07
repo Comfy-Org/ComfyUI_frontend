@@ -4,7 +4,10 @@ import { expect } from '@playwright/test'
 import { createI18n } from 'vue-i18n'
 
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
-import type { WorkflowListResponse } from '@comfyorg/ingest-types'
+import type {
+  DocResetFrame,
+  WorkflowListResponse
+} from '@comfyorg/ingest-types'
 import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -143,6 +146,33 @@ function parseDocSubscribeFields(
 }
 
 /**
+ * The node carries a stamp written before the reset, on an attribute Vue does
+ * not manage, so only a fresh element loses it. Both checks below read it;
+ * they differ in WHEN, which is the whole point.
+ *
+ * Right after the reset: proves the reset alone did not tear the node down.
+ */
+async function expectNodeSurvivedReset(page: Page): Promise<void> {
+  await expect(
+    page.locator('[data-node-id="1"][data-identity-probe="before-reset"]')
+  ).toBeVisible()
+}
+
+/**
+ * After the replacement content has actually landed: this is the one that
+ * exercises `GraphCanvas`'s own `:key="nodeData.id"`. Re-keying the list by
+ * anything unstable remounts every node when the new lineage is applied,
+ * which restarts media playback (PM-1790) while every visibility assertion in
+ * this repo still passes. Only reachable on the recovery paths -- the
+ * no-catch-up case never replaces the graph, so it has nothing to re-render.
+ */
+async function expectNodeSurvivedReplacement(page: Page): Promise<void> {
+  await expect(
+    page.locator('[data-node-id="1"][data-identity-probe="before-reset"]')
+  ).toBeVisible()
+}
+
+/**
  * Drives a plain "run the workflow" turn up through a mid-turn `doc_reset`
  * whose post-reset resubscribes have their catch-up withheld per
  * `dropCatchUpAfterReset`, and asserts the canvas keeps its two nodes the
@@ -240,8 +270,7 @@ async function driveThroughDocReset(
   await loadSeedIntoActiveTab(page, SEED)
 
   const panel = page.locator('#agent-panel-root')
-  await new AgentPanel(page).open()
-  await expect(panel).toBeVisible({ timeout: 30_000 })
+  await new AgentPanel(page).open(30_000)
 
   let savedName: string | undefined
   await page.route('**/api/userdata/*', (route) => {
@@ -350,6 +379,17 @@ async function driveThroughDocReset(
   // frame able to sweep already-rendered nodes off the canvas; now it only
   // arms the next frame to replace the graph. From here on the resubscribe's
   // catch-up is governed by `dropCatchUpAfterReset`.
+  //
+  // Stamped on the live element before the reset so the assertion below can
+  // tell a node that was never unmounted from one that was torn down and
+  // rebuilt. `toBeVisible` cannot: a remounted node is equally visible, and a
+  // remount is what restarts media playback (PM-1790). Vue does not manage
+  // this dataset key, so only a fresh element loses it.
+  await page.evaluate((nodeId) => {
+    const el = document.querySelector(`[data-node-id="${nodeId}"]`)
+    if (el instanceof HTMLElement) el.dataset.identityProbe = 'before-reset'
+  }, '1')
+
   resetSent = true
   send({
     type: 'doc_reset',
@@ -357,9 +397,10 @@ async function driveThroughDocReset(
       v: 1,
       workflow_id: WORKFLOW_ID,
       seq: 2,
+      lineage_seq: 2,
       actor: 'system:mint'
     }
-  })
+  } satisfies DocResetFrame)
   host.apply([
     {
       op: 'add_node',
@@ -384,6 +425,13 @@ async function driveThroughDocReset(
 
   await expect(vueNodes.getNodeLocator('1')).toBeVisible()
   await expect(vueNodes.getNodeLocator('2')).toBeVisible()
+
+  // The same element, not merely an equivalent one: a reset that went back to
+  // clearing would drop this node and its stamp with it. It does NOT yet say
+  // anything about `GraphCanvas`'s key -- nothing re-renders between the
+  // reset and here, so the stamp survives a randomised key too. That is what
+  // `expectNodeSurvivedReplacement` covers, once content actually lands.
+  await expectNodeSurvivedReset(page)
 
   return { vueNodes, send }
 }
@@ -522,6 +570,7 @@ test.describe(
       ).toBeVisible()
       await expect(vueNodes.getNodeLocator('1')).toBeVisible()
       await expect(vueNodes.getNodeLocator('2')).toBeVisible()
+      await expectNodeSurvivedReplacement(page)
     })
 
     test('PM-1406 fix: a one-off dropped catch-up recovers via the active probe, well before the run completes', async ({
@@ -545,6 +594,7 @@ test.describe(
       ).toBeVisible()
       await expect(vueNodes.getNodeLocator('1')).toBeVisible()
       await expect(vueNodes.getNodeLocator('2')).toBeVisible()
+      await expectNodeSurvivedReplacement(page)
     })
   }
 )

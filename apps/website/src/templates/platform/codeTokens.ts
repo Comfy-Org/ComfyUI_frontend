@@ -1,5 +1,5 @@
-import type { CodeLang, HighlightToken } from '../../lib/highlight'
-import { highlightTokens } from '../../lib/highlight'
+import type { CodeLang, HighlightToken } from '@/lib/highlight'
+import { highlightTokens } from '@/lib/highlight'
 
 /**
  * A segment is either static code, or a set of values the tab cycles

@@ -1,13 +1,14 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '@/i18n/translations'
 
-import type { CardWorkflowItem } from '../../components/blocks/CardWorkflow01.vue'
-import TeamGrid01 from '../../components/blocks/TeamGrid01.vue'
-import type { FdctTechnologist } from '../../data/fdct'
-import { projects, technologists } from '../../data/fdct'
-import { t } from '../../i18n/translations'
+import type { CardWorkflowItem } from '@/components/blocks/CardWorkflow01.vue'
+import TeamGrid01 from '@/components/blocks/TeamGrid01.vue'
+import type { FdctTechnologist } from '@/data/fdct'
+import { projects, technologists } from '@/data/fdct'
+import { translationsFor } from '@/i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 
 // Each dialog shows its technologist's workflows from the shared past-projects
 // list (already in most-popular order); profiles without any get no grid.
@@ -26,7 +27,7 @@ function workflowsOf(person: FdctTechnologist): CardWorkflowItem[] {
 
 const people = technologists(locale).map((person) => ({
   ...person,
-  ctaLabel: t('fdct.technologists.seeWork', locale, {
+  ctaLabel: t('fdct.technologists.seeWork', {
     name: person.nickname ?? person.name.split(' ')[0]
   }),
   workflows: workflowsOf(person)
@@ -35,9 +36,9 @@ const people = technologists(locale).map((person) => ({
 
 <template>
   <TeamGrid01
-    :heading="t('fdct.technologists.title', locale)"
-    :lead="t('fdct.technologists.lead', locale)"
+    :heading="t('fdct.technologists.title')"
+    :lead="t('fdct.technologists.lead')"
     :people="people"
-    :close-label="t('fdct.technologists.close', locale)"
+    :close-label="t('fdct.technologists.close')"
   />
 </template>

@@ -2,14 +2,13 @@
 import { computed, ref, watch } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
-import { usePersonalWorkspaceSwitch } from '../../../composables/usePersonalWorkspaceSwitch'
-import { requestWorkshopBuyCredits } from '../../../config/workshop-buy-credits'
-import {
-  useTopUpWatch,
-  useWorkshopCredits
-} from '../../../config/workshop-credits'
-import type { Locale } from '../../../i18n/translations'
-import { t } from '../../../i18n/translations'
+import { usePersonalWorkspaceSwitch } from '@/composables/usePersonalWorkspaceSwitch'
+import { requestWorkshopBuyCredits } from '@/config/workshop-buy-credits'
+import { useTopUpWatch } from '@/config/workshop-credits'
+import { useWorkshopModelBalance } from '@/config/workshop-model-balance'
+import { useWorkshopSession } from '@/config/workshop-session-state'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 
 const {
   member = false,
@@ -20,12 +19,13 @@ const {
   retryLabel: string
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const emit = defineEmits<{ retry: [] }>()
 
 const topUp = useTopUpWatch()
 const personal = usePersonalWorkspaceSwitch()
-const { balance } = useWorkshopCredits()
+const balance = useWorkshopModelBalance(useWorkshopSession().session)
 
 const credits = computed(() =>
   balance.value.status === 'ok' ? balance.value.credits : undefined
@@ -65,8 +65,7 @@ const canRetry = computed(
         t(
           personal.pending.value
             ? 'workshop.run.preparingSession'
-            : 'workshop.run.switchPersonal',
-          locale
+            : 'workshop.run.switchPersonal'
         )
       }}
     </Button>
@@ -76,14 +75,14 @@ const canRetry = computed(
       class="rounded-full"
       @click="requestWorkshopBuyCredits"
     >
-      {{ t('workshop.run.buyCredits', locale) }}
+      {{ t('workshop.run.buyCredits') }}
     </Button>
     <span
       v-if="personal.failed.value"
       role="alert"
       class="text-xs text-primary-comfy-red"
     >
-      {{ t('nav.workspaceSwitchError', locale) }}
+      {{ t('nav.workspaceSwitchError') }}
     </span>
   </span>
 </template>

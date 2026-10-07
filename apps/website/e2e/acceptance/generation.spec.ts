@@ -1,14 +1,15 @@
 import { expect } from '@playwright/test'
 
-import { modelCases } from '../../acceptance/cases'
+import { modelCases } from '@website/acceptance/cases'
 import {
   runAndVerify,
   signIn,
   test,
   useAdvancedInputs,
   useOwnInputs
-} from '../../acceptance/fixtures'
-import { expectedCharge } from '../../acceptance/settings'
+} from '@website/acceptance/fixtures'
+import { expectedCharge } from '@website/acceptance/settings'
+import { hubModelHref } from '@/config/hub-models'
 
 for (const model of modelCases) {
   test(`${model.slug}: defaults, own inputs, advanced settings${model.smoke ? ' @smoke' : ''}`, async ({
@@ -18,7 +19,7 @@ for (const model of modelCases) {
     expectedCharge(model.slug, 'defaults')
     expectedCharge(model.slug, 'own')
     expectedCharge(model.slug, 'advanced')
-    await signIn(page, `/models/${model.slug}/`)
+    await signIn(page, hubModelHref(model.slug))
     const defaults = await runAndVerify(
       page,
       billing,

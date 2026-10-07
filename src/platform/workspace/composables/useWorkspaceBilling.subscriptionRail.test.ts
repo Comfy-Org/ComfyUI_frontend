@@ -269,11 +269,37 @@ describe('cancel telemetry on the billing SDK rail', () => {
     return vi.mocked(trackBillingEvent).mock.calls.map(([event]) => event.stage)
   }
 
-  it('reports a rail cancel that settles as one started and one succeeded', async () => {
+  function lifecycle() {
+    const trackBillingEvent = useTelemetry()?.trackBillingEvent
+    if (!trackBillingEvent) throw new Error('Telemetry mock unavailable')
+    return vi.mocked(trackBillingEvent).mock.calls.map(([event]) =>
+      'failure_category' in event
+        ? {
+            stage: event.stage,
+            billing_client: event.billing_client,
+            failure_category: event.failure_category
+          }
+        : { stage: event.stage, billing_client: event.billing_client }
+    )
+  }
+
+  it('reports one started and leaves the terminal to the lifecycle when a rail cancel settles an operation', async () => {
     flagState.billingSdkSubscriptionEnabled = true
     vi.mocked(harness.sdk.commands.cancelSubscription).mockResolvedValue(
       SETTLED
     )
+
+    await setupBilling().cancelSubscription()
+
+    expect(stages()).toEqual(['started'])
+  })
+
+  it('reports one started and one succeeded when the server says the cancel already held', async () => {
+    flagState.billingSdkSubscriptionEnabled = true
+    vi.mocked(harness.sdk.commands.cancelSubscription).mockResolvedValue({
+      status: 'ok',
+      value: { phase: 'succeeded' }
+    })
 
     await setupBilling().cancelSubscription()
 
@@ -301,16 +327,31 @@ describe('cancel telemetry on the billing SDK rail', () => {
     )
   })
 
-  it('reports one started when the missing route sends the cancel to the workspace client', async () => {
+  it('closes the refused SDK attempt and starts the workspace client attempt on its own client', async () => {
     flagState.billingSdkSubscriptionEnabled = true
     vi.mocked(harness.sdk.commands.cancelSubscription).mockResolvedValue(
       ROUTE_MISSING
     )
+    const billing = setupBilling()
 
-    await setupBilling().cancelSubscription()
+    await billing.cancelSubscription()
 
-    expect(workspaceApi.cancelSubscription).toHaveBeenCalledOnce()
-    expect(stages()).toEqual(['started'])
+    expect(lifecycle()).toEqual([
+      { stage: 'started', billing_client: 'sdk' },
+      {
+        stage: 'failed',
+        billing_client: 'sdk',
+        failure_category: 'api_rejected'
+      },
+      { stage: 'started', billing_client: 'legacy' }
+    ])
+
+    const firstClick = lifecycle().length
+    await billing.cancelSubscription()
+
+    expect(lifecycle().slice(firstClick)).toEqual([
+      { stage: 'started', billing_client: 'legacy' }
+    ])
   })
 })
 
@@ -389,7 +430,8 @@ describe('subscribe on the billing SDK rail', () => {
     expect(response).toEqual({
       billing_op_id: 'op-1',
       status: 'subscribed',
-      requiredPayment: false
+      requiredPayment: false,
+      operationObserved: true
     })
     expect(workspaceApi.subscribe).not.toHaveBeenCalled()
   })
@@ -544,5 +586,105 @@ describe('payment portal on the billing SDK rail', () => {
     expect(portalTab.location.href).toBe(
       'https://portal.legacy.example/session'
     )
+  })
+})
+
+describe('payment portal telemetry', () => {
+  function portalEvents() {
+    const trackBillingEvent = useTelemetry()?.trackBillingEvent
+    if (!trackBillingEvent) throw new Error('Telemetry mock unavailable')
+    return vi
+      .mocked(trackBillingEvent)
+      .mock.calls.map(([event]) => event)
+      .filter((event) => event.operation === 'portal')
+  }
+
+  function leaveAndReturn() {
+    window.dispatchEvent(new Event('blur'))
+    window.dispatchEvent(new Event('focus'))
+  }
+
+  beforeEach(() => {
+    const trackBillingEvent = useTelemetry()?.trackBillingEvent
+    if (trackBillingEvent) vi.mocked(trackBillingEvent).mockClear()
+    vi.mocked(window.open).mockReturnValue({
+      location: { href: '' },
+      close: vi.fn()
+    } as unknown as Window)
+  })
+
+  it.for<{
+    name: string
+    railOn: boolean
+    billingClient: 'sdk' | 'legacy'
+  }>([
+    { name: 'the SDK rail', railOn: true, billingClient: 'sdk' },
+    { name: 'the workspace client', railOn: false, billingClient: 'legacy' }
+  ])(
+    'reports the portal opening from $name and one return',
+    async ({ railOn, billingClient }) => {
+      flagState.billingSdkSubscriptionEnabled = railOn
+      vi.mocked(harness.sdk.commands.openPaymentPortal).mockResolvedValue({
+        status: 'ok',
+        value: { url: 'https://portal.sdk.example/session' }
+      })
+
+      await setupBilling().manageSubscription()
+      leaveAndReturn()
+      leaveAndReturn()
+
+      expect(portalEvents()).toEqual([
+        {
+          operation: 'portal',
+          stage: 'opened',
+          outcome: 'pending',
+          target: 'manage_subscription',
+          billing_client: billingClient
+        },
+        {
+          operation: 'portal',
+          stage: 'returned',
+          outcome: 'pending',
+          target: 'manage_subscription',
+          billing_client: billingClient
+        }
+      ])
+    }
+  )
+
+  it('reports a blocked portal tab as a failed open', async () => {
+    vi.mocked(window.open).mockReturnValue(null)
+
+    await setupBilling().manageSubscription()
+
+    expect(portalEvents()).toEqual([
+      {
+        operation: 'portal',
+        stage: 'failed',
+        outcome: 'failure',
+        target: 'manage_subscription',
+        failure_category: 'redirect',
+        error_code: 'payment_popup_blocked'
+      }
+    ])
+  })
+
+  it('reports a refused portal request as a failed open', async () => {
+    vi.mocked(workspaceApi.getPaymentPortalUrl).mockRejectedValue(
+      new WorkspaceApiError('Forbidden', 403)
+    )
+
+    await expect(setupBilling().manageSubscription()).rejects.toThrow()
+    leaveAndReturn()
+
+    expect(portalEvents()).toEqual([
+      {
+        operation: 'portal',
+        stage: 'failed',
+        outcome: 'failure',
+        target: 'manage_subscription',
+        failure_category: 'api_rejected'
+      }
+    ])
   })
 })

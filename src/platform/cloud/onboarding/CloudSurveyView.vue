@@ -84,6 +84,10 @@ const onSubmitSurvey = async (payload: Record<string, unknown>) => {
     return
   }
   const result = await submitSurvey(payload, replayOwner)
+  if (result.status === 'cancelled') {
+    isSubmitting.value = false
+    return
+  }
   if (result.status === 'failed') {
     reportSurveySubmissionFailure(result.cause)
     isSubmitting.value = false
@@ -93,13 +97,20 @@ const onSubmitSurvey = async (payload: Record<string, unknown>) => {
     useTelemetry()?.trackSurvey('submitted', payload)
   }
 
+  await advanceFromSurvey(replaying, replayOwner)
+}
+
+async function advanceFromSurvey(replaying: boolean, replayOwner: string) {
   try {
     const failure = await router.push({ name: 'cloud-user-check' })
     if (isNavigationFailure(failure)) throw failure
   } catch (error) {
     if (replaying && useAuthStore().userId === replayOwner)
       restoreSurveyReplayRequest(replayOwner)
-    reportError(error, { errorType: 'error_navigating_from_onboarding_survey' })
+    reportError(error, {
+      surface: 'platform',
+      errorType: 'error_navigating_from_onboarding_survey'
+    })
     useToastStore().add({
       severity: 'error',
       summary: t('cloudOnboarding.survey.navigationFailed'),
@@ -113,6 +124,7 @@ const onSubmitSurvey = async (payload: Record<string, unknown>) => {
 
 function reportSurveySubmissionFailure(cause: unknown) {
   reportError(cause, {
+    surface: 'platform',
     errorType: 'error_submitting_onboarding_survey'
   })
   useToastStore().add({

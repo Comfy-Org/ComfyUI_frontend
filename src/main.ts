@@ -1,5 +1,6 @@
 import { definePreset } from '@primevue/themes'
 import Aura from '@primevue/themes/aura'
+import type { PaletteDesignToken } from '@primevue/themes/aura'
 import { captureMessage } from '@sentry/vue'
 import { createPinia } from 'pinia'
 import 'primeicons/primeicons.css'
@@ -75,8 +76,8 @@ if (hasHostTelemetryBridge) {
 
 const ComfyUIPreset = definePreset(Aura, {
   semantic: {
-    // @ts-expect-error fixme ts strict error
-    primary: Aura['primitive'].blue
+    primary: (Aura as { primitive: { blue: PaletteDesignToken } }).primitive
+      .blue
   }
 })
 
@@ -133,11 +134,6 @@ app.directive('tooltip', Tooltip)
 app
   .use(router)
   .use(PrimeVue, {
-    pt: {
-      popover: {
-        root: { 'aria-modal': false }
-      }
-    },
     zIndex: {
       modal: 1800,
       overlay: 1800,

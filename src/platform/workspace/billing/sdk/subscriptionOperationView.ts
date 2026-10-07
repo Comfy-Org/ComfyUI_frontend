@@ -8,6 +8,7 @@
  * leave the customer on the path that still works.
  */
 import type {
+  BillingTelemetryFailure,
   PaymentPortalResult,
   PreviewSubscribeInput,
   PreviewSubscribeResult,
@@ -16,15 +17,21 @@ import type {
   SubscriptionCommandOutcome,
   SubscriptionCommandResult
 } from '@comfyorg/account-core/billing'
+import { failureCategoryFor } from '@comfyorg/account-core/billing'
 
 import { t } from '@/i18n'
 import type {
   PreviewSubscribeResponse,
   SubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
-import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
+import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApiError'
 
 import { declineDetail } from './topupOperationView'
+
+/** False only when the server said the state already held: no operation was issued, so the lifecycle reported nothing. */
+export interface SettledCommand {
+  readonly operationObserved: boolean
+}
 
 /**
  * A subscribe response as the checkout reads it. `requiredPayment` is set only
@@ -32,10 +39,25 @@ import { declineDetail } from './topupOperationView'
  * whether the server had to take a payment from the customer to get there.
  * The legacy path leaves it unset — there a `subscribed` response is a plan
  * that was already active, and the poller it never started is what drew the
- * same line.
+ * same line. `operationObserved` is set on the same rail, for the same reason
+ * as on `SettledCommand`.
  */
-export interface SettledSubscribeResponse extends SubscribeResponse {
+export interface SettledSubscribeResponse
+  extends SubscribeResponse, Partial<SettledCommand> {
   readonly requiredPayment?: boolean
+}
+
+/** The lifecycle drove the operation to a failed terminal and reported it; a refused attempt stays a plain `WorkspaceApiError` for the caller to report. */
+export class SettledOperationError extends WorkspaceApiError {
+  constructor(
+    message: string,
+    phase: string,
+    readonly billingOpId: string | undefined,
+    failureCategory?: BillingTelemetryFailure['failure_category']
+  ) {
+    super(message, undefined, phase, failureCategory)
+    this.name = 'SettledOperationError'
+  }
 }
 
 import type { BillingOperationRecordView } from './operationRecordView'
@@ -65,16 +87,20 @@ export interface SubscriptionRail {
    * state off this, so on this rail it has to come from the lifecycle.
    */
   readonly subscriptionActionOperation: BillingOperationRecordView | undefined
+  /** False once this tab's backend answered that the routes are not deployed. */
+  readonly subscriptionRouteAvailable: boolean
   /** One operation by id, unscoped: the caller compares the workspace itself. */
   getOperation: (opId: string) => BillingOperationRecordView | undefined
+  /** `callerStarted`: the caller reported `started`, so the rail reports only the terminal. */
   subscribe: (
-    input: SubscribeInput
+    input: SubscribeInput,
+    options?: { readonly callerStarted?: boolean }
   ) => Promise<SubscriptionRailOutcome<SettledSubscribeResponse>>
   previewSubscribe: (
     input: PreviewSubscribeInput
   ) => Promise<SubscriptionRailOutcome<PreviewSubscribeResponse>>
-  cancelSubscription: () => Promise<SubscriptionRailOutcome>
-  resubscribe: () => Promise<SubscriptionRailOutcome>
+  cancelSubscription: () => Promise<SubscriptionRailOutcome<SettledCommand>>
+  resubscribe: () => Promise<SubscriptionRailOutcome<SettledCommand>>
   openPaymentPortal: (
     returnUrl: string
   ) => Promise<SubscriptionRailOutcome<string>>
@@ -82,7 +108,15 @@ export interface SubscriptionRail {
 
 const UNAVAILABLE = { status: 'unavailable' } as const
 
-const SETTLED: SubscriptionRailOutcome = { status: 'ok', value: undefined }
+const OBSERVED: SubscriptionRailOutcome<SettledCommand> = {
+  status: 'ok',
+  value: { operationObserved: true }
+}
+
+const ALREADY_HELD: SubscriptionRailOutcome<SettledCommand> = {
+  status: 'ok',
+  value: { operationObserved: false }
+}
 
 /**
  * The failure as the adapter's own error. `serverCode` lands where the
@@ -134,27 +168,29 @@ function projectUnsuccessfulSettle(
   const { operation, phase } = outcome
   return {
     status: 'error',
-    error: new WorkspaceApiError(
+    error: new SettledOperationError(
       operation?.phase === 'failed'
         ? declineDetail(operation.declineReason)
         : t('billingOperation.subscriptionFailedDetail'),
-      undefined,
-      phase
+      phase,
+      operation?.id,
+      operation && failureCategoryFor(operation)
     )
   }
 }
 
 /**
  * A command that settled anywhere but `succeeded` failed for the customer,
- * exactly as a poller operation that ends in any other status does.
+ * exactly as a poller operation that ends in any other status does. A success
+ * with no operation is the server saying the state already held.
  */
 export function projectSubscriptionResult(
   result: SubscriptionCommandResult
-): SubscriptionRailOutcome {
+): SubscriptionRailOutcome<SettledCommand> {
   if (result.status === 'error') return projectFailure(result)
-  return result.value.phase === 'succeeded'
-    ? SETTLED
-    : projectUnsuccessfulSettle(result.value)
+  const { phase, operation } = result.value
+  if (phase !== 'succeeded') return projectUnsuccessfulSettle(result.value)
+  return operation === undefined ? ALREADY_HELD : OBSERVED
 }
 
 /**
@@ -186,7 +222,8 @@ export function projectSubscribeResult(
     value: {
       billing_op_id: operation.id,
       status: 'subscribed',
-      requiredPayment: issuedStatus !== 'subscribed'
+      requiredPayment: issuedStatus !== 'subscribed',
+      operationObserved: true
     }
   }
 }

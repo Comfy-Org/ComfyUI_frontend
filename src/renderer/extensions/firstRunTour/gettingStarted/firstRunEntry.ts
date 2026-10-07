@@ -104,6 +104,7 @@ export const useFirstRunEntry = createSharedComposable(() => {
         .cancelPendingStart()
         .catch((error) =>
           reportError(error, {
+            surface: 'platform',
             errorType: 'failure_restoring_first_run_renderer_setting',
             level: 'warning'
           })
@@ -221,6 +222,7 @@ export const useFirstRunEntry = createSharedComposable(() => {
       await settingStore.set('Comfy.TutorialCompleted', true)
     } catch (error) {
       reportError(error, {
+        surface: 'platform',
         errorType: 'failure_writing_tutorial_completed_setting',
         level: 'warning'
       })

@@ -1,13 +1,8 @@
 <script setup lang="ts">
 import {
-  DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuPortal,
   DropdownMenuRoot,
-  DropdownMenuSeparator,
   DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
   DropdownMenuTrigger
 } from 'reka-ui'
 import {
@@ -25,6 +20,11 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import Tag from '@/components/chip/Tag.vue'
+import MenuContent from '@/components/ui/menu/MenuContent.vue'
+import MenuItem from '@/components/ui/menu/MenuItem.vue'
+import MenuSeparator from '@/components/ui/menu/MenuSeparator.vue'
+import MenuSubContent from '@/components/ui/menu/MenuSubContent.vue'
+import MenuSubTrigger from '@/components/ui/menu/MenuSubTrigger.vue'
 import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { registerEscapeOverride } from '@/platform/keybindings/escapeOverride'
@@ -32,6 +32,7 @@ import type { AgentStopMethod } from '@/platform/telemetry/types'
 
 import InlinePromptEditor from './composer/InlinePromptEditor.vue'
 import { composerPromptForSend } from '../../utils/composerPrompt'
+import type { AgentStarterPromptAttribution } from '../../utils/starterPrompts'
 import { useAgentMentionPicker } from '../../composables/agent/useAgentMentionPicker'
 import { useWorkflowReferencePicker } from '../../composables/agent/useWorkflowReferencePicker'
 import type { ComposerAttachment } from '../../composables/agent/useComposer'
@@ -315,8 +316,11 @@ onUnmounted(() => {
   unregisterEscapeOverride?.()
 })
 
-function insert(text: string): void {
-  composer.insert(text)
+function insert(
+  text: string,
+  starterPrompt?: AgentStarterPromptAttribution
+): void {
+  composer.insert(text, starterPrompt)
   editorRef.value?.focus()
 }
 
@@ -338,6 +342,7 @@ defineExpose({
   <div
     id="agent-composer"
     ref="composerContainerRef"
+    data-testid="agent-composer"
     class="relative flex flex-col rounded-lg border border-border-subtle bg-base-background"
   >
     <div
@@ -438,10 +443,13 @@ defineExpose({
       <slot name="header" />
     </div>
 
+    <slot name="aboveInput" />
+
     <div
+      data-testid="composer-input-box"
       :class="
         cn(
-          'relative -m-px flex flex-col border transition-colors',
+          'relative -m-px flex max-h-[50dvh] flex-col border transition-colors',
           assetDragActive
             ? 'h-28 rounded-lg border-dashed border-component-node-border bg-secondary-background'
             : 'min-h-28 rounded-lg border-border-subtle bg-secondary-background focus-within:border-muted-foreground'
@@ -459,10 +467,11 @@ defineExpose({
         />
         <span>{{ t('agent.dragAndDropAssets') }}</span>
       </div>
+      <slot name="insideInput" />
       <div
         v-if="selectionTags.length"
         data-testid="composer-node-section"
-        class="flex flex-wrap items-center gap-2 border-b border-border-default p-3"
+        class="flex min-h-0 flex-wrap items-center gap-2 overflow-y-auto border-b border-border-default p-3"
       >
         <Tag
           v-for="tag in selectionTags"
@@ -491,7 +500,7 @@ defineExpose({
       <div
         v-if="composer.attachments.value.length"
         data-testid="composer-asset-section"
-        class="flex flex-wrap gap-2 p-3"
+        class="flex max-h-32 flex-wrap gap-2 overflow-y-auto p-3"
       >
         <AttachmentChip
           v-for="item in composer.attachments.value"
@@ -505,49 +514,53 @@ defineExpose({
 
       <div
         data-testid="composer-inline-input"
-        class="max-h-100 min-h-16 overflow-x-hidden overflow-y-auto p-3"
+        class="flex max-h-100 min-h-16 flex-col overflow-x-hidden overflow-y-auto"
       >
         <div
           v-if="workflowSelecting"
           role="status"
-          class="mb-1 flex items-center gap-1 text-xs text-muted-foreground"
+          class="-mb-2 flex items-center gap-1 px-3 pt-3 text-xs text-muted-foreground"
         >
           <span class="icon-[lucide--loader-circle] size-3 animate-spin" />
           {{ t('agent.savingWorkflow') }}
         </div>
-        <div class="relative min-h-7">
-          <InlinePromptEditor
-            ref="editorRef"
-            :model-value="composer.prompt.value"
-            :label="t('agent.placeholder')"
-            :expanded="mentionVisible"
-            :active-descendant="
-              mentionVisible
-                ? `agent-reference-item-${mentionActive}`
-                : undefined
-            "
-            :history-epoch="composer.promptEpoch.value"
-            :editable-workflow-id
-            @keydown="onComposerKeydown"
-            @update:model-value="composer.applyEditorPrompt"
-            @keyup="onComposerKeyup"
-            @input="syncMention"
-            @selection-change="onEditorSelectionChange"
-            @click="syncMention"
-            @blur="closeMention()"
-            @attach-files="emit('attachFiles', $event)"
-            @open-reference-workflow="
-              (id, name) => emit('openReferenceWorkflow', id, name)
-            "
-            @remove-node-reference="emit('removeTag', $event)"
-            @remove-workflow-reference="emit('removeWorkflowReference', $event)"
-          />
+        <div class="grid flex-1">
+          <div class="col-start-1 row-start-1 flex flex-col">
+            <InlinePromptEditor
+              ref="editorRef"
+              :model-value="composer.prompt.value"
+              :label="t('agent.placeholder')"
+              :expanded="mentionVisible"
+              :active-descendant="
+                mentionVisible
+                  ? `agent-reference-item-${mentionActive}`
+                  : undefined
+              "
+              :history-epoch="composer.promptEpoch.value"
+              :editable-workflow-id
+              @keydown="onComposerKeydown"
+              @update:model-value="composer.applyEditorPrompt"
+              @keyup="onComposerKeyup"
+              @input="syncMention"
+              @selection-change="onEditorSelectionChange"
+              @click="syncMention"
+              @blur="closeMention()"
+              @attach-files="emit('attachFiles', $event)"
+              @open-reference-workflow="
+                (id, name) => emit('openReferenceWorkflow', id, name)
+              "
+              @remove-node-reference="emit('removeTag', $event)"
+              @remove-workflow-reference="
+                emit('removeWorkflowReference', $event)
+              "
+            />
+          </div>
 
           <div
             v-if="
               !composer.draft.value && !composer.prompt.value.references.length
             "
-            class="pointer-events-none relative z-10 -mt-7 font-inter text-[14px]/5 font-normal text-muted-foreground"
+            class="pointer-events-none z-10 col-start-1 row-start-1 self-start p-3 font-inter text-[14px]/5 font-normal text-muted-foreground"
           >
             <span>{{ placeholderHint.text }} </span>
             <AccessibleTooltip
@@ -581,7 +594,7 @@ defineExpose({
         </div>
       </div>
 
-      <div class="flex items-center justify-between px-3 py-2">
+      <div class="flex shrink-0 items-center justify-between px-3 py-2">
         <DropdownMenuRoot v-model:open="addMenuOpen">
           <DropdownMenuTrigger as-child>
             <Button
@@ -594,11 +607,12 @@ defineExpose({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuPortal>
-            <DropdownMenuContent
+            <MenuContent
               side="top"
               align="start"
               :side-offset="4"
-              class="agent-scope z-1100 box-border w-max min-w-46.5 rounded-lg border border-border-subtle bg-secondary-background p-1 font-inter shadow-lg"
+              width="compact"
+              class="agent-scope"
             >
               <AccessibleTooltip
                 :label="nodeReferenceDisabledReason ?? ''"
@@ -608,51 +622,47 @@ defineExpose({
                 :collision-padding="8"
               >
                 <template #trigger>
-                  <DropdownMenuItem
+                  <MenuItem
                     :disabled="!!nodeReferenceDisabledReason"
                     :aria-description="nodeReferenceDisabledReason"
-                    class="mb-0.5 box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal text-base-foreground outline-none aria-disabled:cursor-not-allowed aria-disabled:opacity-50 data-highlighted:bg-secondary-background-hover"
                     @select="onSelectNodes"
                   >
                     <span class="icon-[comfy--node] size-4 shrink-0" />
                     <span class="whitespace-nowrap">
                       {{ t('agent.nodes') }}
                     </span>
-                  </DropdownMenuItem>
+                  </MenuItem>
                 </template>
               </AccessibleTooltip>
               <DropdownMenuSub
                 v-model:open="workflowSubmenuOpen"
                 @update:open="onWorkflowSubmenuOpenChange"
               >
-                <DropdownMenuSubTrigger
-                  class="mb-0.5 box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal text-base-foreground outline-none data-highlighted:bg-secondary-background-hover"
-                >
+                <MenuSubTrigger>
                   <span class="icon-[comfy--workflow] size-4 shrink-0" />
                   <span class="flex-1 text-left whitespace-nowrap">
                     {{ t('agent.workflows') }}
                   </span>
                   <span class="icon-[lucide--chevron-right] size-4 shrink-0" />
-                </DropdownMenuSubTrigger>
+                </MenuSubTrigger>
                 <DropdownMenuPortal>
-                  <DropdownMenuSubContent
+                  <MenuSubContent
+                    :open="workflowSubmenuOpen"
                     :side-offset="4"
-                    class="agent-scope z-1100 box-border max-h-64 min-w-46.5 overflow-y-auto rounded-lg border border-border-subtle bg-secondary-background p-1 font-inter shadow-lg"
+                    width="compact"
+                    max-height="compact"
+                    class="agent-scope"
                   >
-                    <DropdownMenuItem
-                      class="mb-0.5 box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal text-base-foreground outline-none data-highlighted:bg-secondary-background-hover"
-                      @select.prevent="workflowSubmenuOpen = false"
-                    >
+                    <MenuItem @select.prevent="workflowSubmenuOpen = false">
                       <span
                         class="icon-[lucide--chevron-left] size-4 shrink-0"
                       />
                       <span>{{ t('g.back') }}</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
+                    </MenuItem>
+                    <MenuItem
                       v-for="workflow in eligibleWorkflows"
                       :key="workflow.id ?? workflow.tabPath"
                       :disabled="workflowSelecting"
-                      class="box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal text-base-foreground outline-none data-highlighted:bg-secondary-background-hover"
                       @select.prevent="pickWorkflow(workflow)"
                     >
                       <span class="icon-[comfy--workflow] size-4 shrink-0" />
@@ -662,41 +672,33 @@ defineExpose({
                         class="text-xs text-muted-foreground"
                         >{{ t('agent.unsavedWorkflow') }}</span
                       >
-                    </DropdownMenuItem>
+                    </MenuItem>
                     <div
                       v-if="eligibleWorkflows.length === 0"
                       class="px-2 py-1 text-xs text-muted-foreground"
                     >
                       {{ t('agent.noWorkflowsToReference') }}
                     </div>
-                  </DropdownMenuSubContent>
+                  </MenuSubContent>
                 </DropdownMenuPortal>
               </DropdownMenuSub>
-              <DropdownMenuItem
-                v-if="canOpenAssets"
-                class="box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal text-base-foreground outline-none data-highlighted:bg-secondary-background-hover"
-                @select="emit('openAssets')"
-              >
+              <MenuItem v-if="canOpenAssets" @select="emit('openAssets')">
                 <span class="icon-[comfy--image-ai-edit] size-4 shrink-0" />
                 <span class="whitespace-nowrap">
                   {{ t('agent.addFromAssets') }}
                 </span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator
+              </MenuItem>
+              <MenuSeparator
                 v-if="canAttach && canOpenAssets"
                 class="mt-0 mb-px h-px bg-border-subtle"
               />
-              <DropdownMenuItem
-                v-if="canAttach"
-                class="box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal text-base-foreground outline-none data-highlighted:bg-secondary-background-hover"
-                @select="emit('attach')"
-              >
+              <MenuItem v-if="canAttach" @select="emit('attach')">
                 <i-lucide:paperclip class="size-4 shrink-0" />
                 <span class="whitespace-nowrap">{{
                   t('agent.attachFiles')
                 }}</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
+              </MenuItem>
+            </MenuContent>
           </DropdownMenuPortal>
         </DropdownMenuRoot>
 

@@ -8,16 +8,23 @@ import { test } from './fixtures/blockExternalMedia'
 // that load. It reached a committed visual baseline once: the pricing headline
 // and price, the only two elements on that page in the unpreloaded Light face,
 // were captured in the fallback while every preloaded weight matched exactly.
-const PAGES = ['/', '/pricing', '/download', '/about', '/customers', '/models/']
+const PAGES = [
+  '/',
+  '/pricing',
+  '/download',
+  '/about',
+  '/customers',
+  '/hub/models/'
+]
 
 for (const path of PAGES) {
   test(`every PP Formula face rendered above the fold on ${path} is preloaded`, async ({
     page,
     context
   }) => {
-    if (path === '/models/') {
+    if (path === '/hub/models/') {
       // The Hub only draws its own toolbar and shelves once Workshop is on;
-      // with it off, /models/ would hide the faces this case measures.
+      // with it off, /hub/models/ would hide the faces this case measures.
       await context.route('**/t.comfy.org/**', (route) =>
         /\/(flags|decide)\//.test(route.request().url())
           ? route.fulfill({
@@ -31,7 +38,13 @@ for (const path of PAGES) {
       )
     }
     await page.goto(path)
-    if (path === '/models/') await page.getByTestId('workshop-hero').waitFor()
+    if (path === '/download')
+      await page
+        .getByRole('link', { name: /^DOWNLOAD DESKTOP .+/ })
+        .first()
+        .waitFor()
+    if (path === '/hub/models/')
+      await page.getByTestId('workshop-hero').waitFor()
     await page.evaluate(() => document.fonts.ready)
 
     const gaps = await page.evaluate(() => {

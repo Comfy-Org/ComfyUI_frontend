@@ -63,6 +63,8 @@ function createWorkspaceState(
     subscriptionTier: null,
     members: [],
     pendingInvites: [],
+    membersLoaded: true,
+    pendingInvitesLoaded: true,
     ...overrides
   }
 }
@@ -195,7 +197,8 @@ describe('WorkspaceSwitcherPopover', () => {
       renewalDate: null,
       endDate: null,
       isCancelled: false,
-      hasFunds: true
+      hasFunds: true,
+      agentHasFunds: true
     }))
 
     renderComponent({

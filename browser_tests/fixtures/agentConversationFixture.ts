@@ -1,6 +1,6 @@
 import type { Locator, Page, TestInfo } from '@playwright/test'
 import { expect } from '@playwright/test'
-import type { ApplyOutcome } from '@comfyorg/comfy-multi-player'
+import type { ApplyOutcome, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import type { ListAssetsResponse } from '@comfyorg/ingest-types'
 import { z } from 'zod'
 
@@ -329,8 +329,7 @@ export class AgentConversationHarness {
       )
 
     await loadSeedIntoActiveTab(this.page, this.conversation.workflow.seed)
-    await new AgentPanel(this.page).open()
-    await expect(this.panel).toBeVisible({ timeout: PANEL_MOUNT_TIMEOUT })
+    await new AgentPanel(this.page).open(PANEL_MOUNT_TIMEOUT)
     await this.selectWorkflowTarget()
   }
 
@@ -776,9 +775,15 @@ export class AgentConversationHarness {
   // A host-side edit outside the recording, pushed as one `doc_update`. The
   // follower applies frames in order, so a rendered effect of this edit
   // proves every earlier frame (a catch-up included) has been applied too.
-  pushHostOps(operations: RecordedGraphOperation[]): void {
-    this.hostSocket.send(this.host.apply(operations))
+  pushHostOps(operations: RecordedGraphOperation[]): HostFrame {
+    const frame = this.host.apply(operations)
+    this.hostSocket.send(frame)
     for (const id of Object.keys(this.host.graph().nodes)) this.seenIds.add(id)
+    return frame
+  }
+
+  redeliverHostFrame(frame: HostFrame): void {
+    this.hostSocket.send(frame)
   }
 
   // A host-side delete applied to the document WITHOUT sending a frame: what
@@ -1012,6 +1017,18 @@ export class AgentConversationHarness {
 
   hostNodePositions(): (number[] | undefined)[] {
     return this.host.projection().nodes.map((node) => node.pos)
+  }
+
+  /**
+   * The workflow node the host document holds for `nodeId`, as the library
+   * projects it — the same snapshot a catch-up, a resubscribe or an agent op
+   * that copies an existing node would carry. Undefined when the document has
+   * no such node.
+   */
+  hostNode(nodeId: string): WorkflowJSON['nodes'][number] | undefined {
+    return this.host
+      .projection()
+      .nodes.find((node) => String(node.id) === nodeId)
   }
 
   async reloadWithoutLocalWorkflow(): Promise<void> {

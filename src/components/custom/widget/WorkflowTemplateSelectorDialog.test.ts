@@ -60,7 +60,7 @@ beforeEach(() => {
   }
   vi.stubGlobal(
     'fetch',
-    vi.fn(async () => Response.json({ nodes: [] }))
+    vi.fn(async () => Response.json({ version: 0.4, nodes: [], links: [] }))
   )
   const store = useWorkflowTemplatesStore()
   store.isLoaded = true
@@ -197,7 +197,7 @@ describe('custom templates that share a filename', () => {
     vi.mocked(fetch).mockImplementation(async (url) =>
       String(url).endsWith('/decimate.json')
         ? templateFetch.promise
-        : Response.json({ nodes: [] })
+        : Response.json({ version: 0.4, nodes: [], links: [] })
     )
     renderDuplicates()
 
@@ -217,7 +217,7 @@ describe('custom templates that share a filename', () => {
     ).toBeNull()
 
     // Settle the load so no async work outlives the test (dialog closes).
-    templateFetch.resolve(Response.json({ nodes: [] }))
+    templateFetch.resolve(Response.json({ version: 0.4, nodes: [], links: [] }))
     await waitFor(() => expect(app.loadGraphData).toHaveBeenCalled())
     await waitFor(() =>
       expect(

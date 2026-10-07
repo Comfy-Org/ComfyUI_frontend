@@ -14,7 +14,7 @@ import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 // Test-only: builds a node with the real renderer-owned widget constructor
 // so the fixture's `image` widget carries the same preview-rendering
 // callback a production LoadImage node does.
-// eslint-disable-next-line import-x/no-restricted-paths
+// oxlint-disable-next-line comfy/no-restricted-paths
 import { useImageUploadWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useImageUploadWidget'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 import { toNodeId } from '@/types/nodeId'

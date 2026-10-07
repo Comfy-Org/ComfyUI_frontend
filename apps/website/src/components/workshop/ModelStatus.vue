@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import type { ModelStatus } from '../../config/models-catalogue'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { ModelStatus } from '@/config/models-catalogue'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 
 const {
   variant,
@@ -11,9 +11,10 @@ const {
 } = defineProps<{
   variant: 'pill' | 'banner'
   status?: ModelStatus
-  successor?: { name: string; href: string }
+  successor?: { name: string; href?: string }
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 </script>
 
 <template>
@@ -25,8 +26,8 @@ const {
     >
       {{
         shown === 'deprecated'
-          ? t('workshop.model.deprecated', locale)
-          : t('workshop.model.degraded', locale)
+          ? t('workshop.model.deprecated')
+          : t('workshop.model.degraded')
       }}
     </span>
     <p
@@ -35,14 +36,14 @@ const {
       data-testid="model-status-banner"
     >
       <template v-if="shown === 'deprecated'">
-        {{ t('workshop.model.deprecatedBody', locale) }}
+        {{ t('workshop.model.deprecatedBody') }}
         <a
-          v-if="successor"
+          v-if="successor?.href"
           :href="successor.href"
           class="ml-2 font-bold text-primary-comfy-yellow hover:underline"
         >
           {{
-            t('workshop.model.deprecatedSuccessor', locale, {
+            t('workshop.model.deprecatedSuccessor', {
               successor: successor.name
             })
           }}
@@ -50,7 +51,7 @@ const {
         </a>
       </template>
       <template v-else>
-        {{ t('workshop.model.degradedBody', locale) }}
+        {{ t('workshop.model.degradedBody') }}
       </template>
     </p>
   </template>

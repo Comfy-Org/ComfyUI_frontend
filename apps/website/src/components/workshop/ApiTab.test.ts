@@ -2,10 +2,10 @@ import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 
-import { buildSnippet } from '../../config/models-snippets'
-import { workshopContract } from '../../config/workshop-contract-catalog'
-import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
-import { initialWorkshopPageState } from '../../config/workshop-page-state'
+import { buildSnippet } from '@/config/models-snippets'
+import { workshopContract } from '@/config/workshop-contract-catalog'
+import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from '@/config/workshop-router-content'
+import { initialWorkshopPageState } from '@/config/workshop-page-state'
 import ApiTab from './ApiTab.vue'
 
 const routerId = 'bfl/flux-2-pro'
@@ -13,6 +13,21 @@ const contract = workshopContract(routerId)
 const values = { prompt: 'a capybara', seed: 5 }
 
 describe('ApiTab', () => {
+  it('reports the snippet language it copies and Get API key clicks', async () => {
+    const visitor = userEvent.setup()
+    const { emitted } = render(ApiTab, { props: { contract, values } })
+    await visitor.click(await screen.findByRole('tab', { name: 'cURL' }))
+    await visitor.click(screen.getByRole('button', { name: 'Copy snippet' }))
+    const getKey = screen.getByRole('link', { name: 'Get API key' })
+    getKey.addEventListener('click', (event) => event.preventDefault(), {
+      once: true
+    })
+    await visitor.click(getKey)
+
+    expect(emitted('copy')).toEqual([['curl']])
+    expect(emitted('getKey')).toEqual([[]])
+  })
+
   it('reuses one file setup for repeated positions in a multi-file input', async () => {
     const visitor = userEvent.setup()
     const model = getRouterWorkshopModelDetail(

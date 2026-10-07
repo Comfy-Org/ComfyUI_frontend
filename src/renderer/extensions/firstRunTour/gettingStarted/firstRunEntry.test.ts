@@ -69,9 +69,7 @@ vi.mock<unknown>(import('@/services/useNewUserService'), () => ({
 
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/platform/auth/firebaseIdentity'), { spy: true })
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock<unknown>(import('../tour/useFirstRunTourController'), () => ({
   useFirstRunTourController: () => ({
     beginTour: mocks.beginTour,
@@ -748,6 +746,7 @@ describe('useFirstRunEntry', () => {
     await entry.dismissGettingStarted()
 
     expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
+      surface: 'platform',
       errorType: 'failure_writing_tutorial_completed_setting',
       level: 'warning'
     })

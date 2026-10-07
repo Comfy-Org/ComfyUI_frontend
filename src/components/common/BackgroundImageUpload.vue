@@ -1,6 +1,6 @@
 <template>
   <div class="flex gap-2">
-    <InputText
+    <Input
       v-model="modelValue"
       class="flex-1"
       :placeholder="$t('g.imageUrl')"
@@ -36,10 +36,10 @@
 </template>
 
 <script setup lang="ts">
-import InputText from 'primevue/inputtext'
 import { ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
+import Input from '@/components/ui/input/Input.vue'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'

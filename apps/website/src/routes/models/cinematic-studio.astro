@@ -1,5 +1,5 @@
 ---
-import { getRoutes } from '../../config/routes'
+import { getRoutes } from '@/config/routes'
 
 const { cinematicStudio, reshoot } = getRoutes('en')
 ---
@@ -9,18 +9,18 @@ const { cinematicStudio, reshoot } = getRoutes('en')
   <head>
     <meta charset="utf-8" />
     <meta name="robots" content="noindex" />
-    <meta http-equiv="refresh" content={`0;url=${cinematicStudio}/`} />
-    <link rel="canonical" href={`${cinematicStudio}/`} />
+    <meta http-equiv="refresh" content={`0;url=${cinematicStudio}`} />
+    <link rel="canonical" href={cinematicStudio} />
     <title>Cinematic Studio - Comfy</title>
     <script is:inline define:vars={{ cinematicStudio, reshoot }}>
       const params = new URLSearchParams(location.search)
       const target = params.get('app') === 'reshoot' ? reshoot : cinematicStudio
       params.delete('app')
       const query = params.toString()
-      location.replace(`${target}/${query ? `?${query}` : ''}`)
+      location.replace(`${target}${query ? `?${query}` : ''}`)
     </script>
   </head>
   <body>
-    <a href={`${cinematicStudio}/`}>Cinematic Studio</a>
+    <a href={cinematicStudio}>Cinematic Studio</a>
   </body>
 </html>

@@ -22,7 +22,8 @@ import type {
   BillingScopeSource,
   BillingSession,
   BillingTransport,
-  CredentialedWebSession
+  CredentialedWebSession,
+  WorkspaceInviteCommands
 } from '@comfyorg/account-core/billing'
 import {
   createBillingCommands,
@@ -36,13 +37,16 @@ import {
   createPlansReader,
   createSessionBillingTransport,
   createTopupCommand,
-  sessionBillingScopeSource
+  createWorkspaceInviteCommands,
+  sessionBillingScopeSource,
+  toBillingTelemetryEvent
 } from '@comfyorg/account-core/billing'
 import type { BillingClient } from '@comfyorg/account-ui/billing'
 
 import { CLOUD_BASE_URL } from '@/config/env'
 import { billingWebStripeKey } from '@/config/stripeKey'
 import { boundWorkspaceId } from '@/entry/workspaceBinding'
+import { billingWebTelemetry } from '@/telemetry/billingWebTelemetry'
 
 /** Tab-local, like the credential cache: a pointer must not outlive the tab. */
 const pointerStorage: BillingOperationPointerStorage = {
@@ -64,7 +68,18 @@ function targetWorkspaceId(session: BillingSession): string | undefined {
 
 const resolveUrl = (route: string) => `${CLOUD_BASE_URL}/api${route}`
 
-export function createBillingWebClient(session: BillingSession): BillingClient {
+/**
+ * The billing client plus the workspace's invite commands, over one
+ * transport, so the checkout's team invite goes to the workspace the tab is
+ * billing.
+ */
+export type BillingWebClient = BillingClient & {
+  readonly invites: WorkspaceInviteCommands
+}
+
+export function createBillingWebClient(
+  session: BillingSession
+): BillingWebClient {
   const transport = createSessionBillingTransport({
     session,
     resolveUrl,
@@ -81,7 +96,7 @@ export function createWebSessionBillingClient(unified: {
   readonly scopeSource: BillingScopeSource
   readonly webSession: CredentialedWebSession
   readonly fetchImpl: typeof fetch
-}): BillingClient {
+}): BillingWebClient {
   const { scopeSource, webSession, fetchImpl } = unified
   const transport = createCredentialedBillingTransport({
     resolveUrl,
@@ -95,7 +110,7 @@ export function createWebSessionBillingClient(unified: {
 function composeBillingWebClient(
   transport: BillingTransport,
   scopeSource: BillingScopeSource
-): BillingClient {
+): BillingWebClient {
   const readerOptions = { transport, scopeSource }
   const capabilities = createCapabilitiesReader(readerOptions)
   const credits = createCreditsReader(readerOptions)
@@ -108,7 +123,10 @@ function composeBillingWebClient(
     scopeSource,
     statusReader: status,
     pointerStorage,
-    embeddedCheckoutAvailable: () => billingWebStripeKey() !== undefined
+    retainSettledPointer: true,
+    embeddedCheckoutAvailable: () => billingWebStripeKey() !== undefined,
+    onTelemetry: (event) =>
+      billingWebTelemetry.trackBillingEvent(toBillingTelemetryEvent(event))
   })
 
   return {
@@ -120,6 +138,7 @@ function composeBillingWebClient(
     paymentMethods,
     events,
     topup: createTopupCommand({ transport, lifecycle, capabilities, credits }),
+    invites: createWorkspaceInviteCommands({ transport }),
     commands: createBillingCommands({
       transport,
       lifecycle,

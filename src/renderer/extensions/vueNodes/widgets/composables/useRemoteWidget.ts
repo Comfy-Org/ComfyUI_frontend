@@ -69,11 +69,70 @@ const isBackingOff = (entry: CacheEntry<unknown> | undefined) =>
   entry.lastErrorTime &&
   Date.now() - entry.lastErrorTime < getBackoff(entry.retryCount || 0)
 
+class RemoteWidgetRequestError extends Error {}
+
+const isSameOrigin = (route: string) =>
+  new URL(route, location.href).origin === location.origin
+
+const withQuery = (
+  route: string,
+  params: RemoteWidgetConfig['query_params']
+) => {
+  const query = new URLSearchParams(params).toString()
+  if (!query) return route
+  return `${route}${route.includes('?') ? '&' : '?'}${query}`
+}
+
+const parseBody = (text: string): unknown => {
+  try {
+    return JSON.parse(text)
+  } catch {
+    return text
+  }
+}
+
+const pickKey = (data: unknown, key: string | undefined) => {
+  if (!key) return data
+  return typeof data === 'object' && data !== null
+    ? Reflect.get(data, key)
+    : undefined
+}
+
+const fetchOnSession = async (
+  config: RemoteWidgetConfig,
+  controller: AbortController
+): Promise<{ data: unknown } | undefined> => {
+  const { route, query_params, timeout = TIMEOUT } = config
+  if (!isSameOrigin(route)) return undefined
+
+  const timeoutController = new AbortController()
+  const timer =
+    timeout > 0 ? setTimeout(() => timeoutController.abort(), timeout) : 0
+  try {
+    const res = await api.fetchOnWebSession(withQuery(route, query_params), {
+      method: 'GET',
+      signal: AbortSignal.any([controller.signal, timeoutController.signal])
+    })
+    if (!res) return undefined
+    if (!res.ok) {
+      throw new RemoteWidgetRequestError(
+        `Request failed with status ${res.status}`
+      )
+    }
+    return { data: parseBody(await res.text()) }
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
 const fetchData = async (
   config: RemoteWidgetConfig,
   controller: AbortController
 ) => {
   const { route, response_key, query_params, timeout = TIMEOUT } = config
+
+  const sessionRes = await fetchOnSession(config, controller)
+  if (sessionRes) return pickKey(sessionRes.data, response_key)
 
   const authHeaders = await getAuthHeaders()
 
@@ -101,6 +160,7 @@ export function useRemoteWidget<
   const cacheKey = createCacheKey(remoteConfig)
   let isLoaded = false
   let refreshQueued = false
+  let removed = false
 
   const setSuccess = (entry: CacheEntry<T>, data: T) => {
     entry.retryCount = 0
@@ -241,6 +301,7 @@ export function useRemoteWidget<
   function getValue(onFulfilled?: () => void) {
     void fetchValue()
       .then((data) => {
+        if (removed) return
         if (isFirstLoad()) onFirstLoad(data)
         if (refreshQueued && data !== defaultValue) {
           onRefresh()
@@ -299,10 +360,14 @@ export function useRemoteWidget<
     // Register event listener
     api.addEventListener('execution_success', handleExecutionSuccess)
 
-    // Cleanup on node removal
-    node.onRemoved = useChainCallback(node.onRemoved, function () {
+    const cleanup = () => {
       api.removeEventListener('execution_success', handleExecutionSuccess)
+    }
+    widget.onRemove = useChainCallback(widget.onRemove, () => {
+      removed = true
+      cleanup()
     })
+    node.onRemoved = useChainCallback(node.onRemoved, cleanup)
 
     return autoRefreshWidget
   }
