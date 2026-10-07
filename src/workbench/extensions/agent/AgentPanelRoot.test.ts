@@ -3624,7 +3624,10 @@ describe('AgentPanelRoot attach flow', () => {
         integration_target: 'assets',
         feature_flag: 'agent_panel',
         feature_flag_state: 'enabled',
-        project_context: 'agent_composer'
+        project_context: 'agent_composer',
+        upload_failure_cause: 'http_500',
+        file_type: 'image/png',
+        file_size_bytes: 1
       }
     })
     const serializedReport = JSON.stringify(vi.mocked(reportError).mock.calls)
