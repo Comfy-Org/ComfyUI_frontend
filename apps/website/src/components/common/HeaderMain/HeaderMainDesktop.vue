@@ -51,7 +51,7 @@ function isNavItemActive(navItem: NavItem, path: string): boolean {
 </script>
 
 <template>
-  <NavigationMenu data-testid="desktop-nav-links">
+  <NavigationMenu viewport-align="start" data-testid="desktop-nav-links">
     <NavigationMenuList>
       <NavigationMenuItem
         v-for="navItem in mainNavigation"

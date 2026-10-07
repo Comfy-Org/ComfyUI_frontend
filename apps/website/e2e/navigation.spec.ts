@@ -249,6 +249,31 @@ test.describe('Desktop dropdown @interaction', () => {
     ).toHaveAttribute('href', '/hub/')
   })
 
+  for (const name of ['Hub', 'Products'])
+    test(`opens the ${name} panel under its trigger, not at the page edge`, async ({
+      page
+    }) => {
+      await page.setViewportSize({ width: 1440, height: 900 })
+      const nav = page.getByRole('navigation', { name: 'Main navigation' })
+      const trigger = nav
+        .getByTestId('desktop-nav-links')
+        .getByRole('button', { name })
+      await waitForIsland(page, trigger)
+      await trigger.hover()
+
+      const panel = page.locator('[data-slot="navigation-menu-viewport"]')
+      await expect(nav.getByTestId('nav-dropdown')).toBeVisible()
+      await expect
+        .poll(async () => {
+          const [at, under] = [
+            await trigger.boundingBox(),
+            await panel.boundingBox()
+          ]
+          return at && under ? Math.round(under.x - at.x) : undefined
+        })
+        .toBe(0)
+    })
+
   test('PRODUCTS keeps social links out and shows its card on the right', async ({
     page
   }) => {
