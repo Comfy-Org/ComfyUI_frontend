@@ -128,6 +128,7 @@ export function useCoachmarkTarget(
 
   const { floatingStyles, middlewareData, isPositioned, placement, update } =
     useFloating(reference, cardRef, {
+      open: () => !!cardRef.value,
       strategy: 'fixed',
       transform: false,
       placement: () => floatingPlacement(toValue(step)),
@@ -169,6 +170,7 @@ export function useCoachmarkTarget(
   const hasTarget = computed(() => !!anchor.value)
 
   return {
+    anchor,
     hasTarget,
     targetRect,
     targetMoves,

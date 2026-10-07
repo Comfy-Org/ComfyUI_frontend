@@ -13,7 +13,13 @@ import {
   unregisterCoachmark
 } from '@/platform/onboarding/coachmarkRegistry'
 import { laidOut } from '@/platform/onboarding/fixtures/coachmarkTargets'
-import { FIRST_RUN_COACH_IDS } from '@/platform/onboarding/onboardingTours'
+import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
+import {
+  FIRST_RUN_COACH_IDS,
+  TOUR_SEEN_SETTING,
+  registerTour
+} from '@/platform/onboarding/onboardingTours'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -21,6 +27,22 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import FirstRunTourNudge from './FirstRunTourNudge.vue'
 
 const APPEAR_DELAY_MS = 1500
+const BUTTON = new DOMRect(600, 300, 48, 48)
+const DESKTOP_WIDTH = 1280
+const MOBILE_WIDTH = 500
+
+function resizeWindow(width: number) {
+  window.innerWidth = width
+  Object.defineProperty(document.documentElement, 'clientWidth', {
+    configurable: true,
+    value: width
+  })
+  Object.defineProperty(document.documentElement, 'clientHeight', {
+    configurable: true,
+    value: 800
+  })
+  window.dispatchEvent(new Event('resize'))
+}
 
 const mocks = await vi.hoisted(async () => {
   const { ref } = await import('vue')
@@ -74,6 +96,7 @@ describe('FirstRunTourNudge', () => {
     useDialogStore().dialogStack = []
     clearCoachmarks()
     registerCoachmark(FIRST_RUN_COACH_IDS.templatesButton, laidOut())
+    resizeWindow(DESKTOP_WIDTH)
   })
 
   it('shows a nudge that came due before it mounted', async () => {
@@ -222,6 +245,76 @@ describe('FirstRunTourNudge', () => {
     await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS)
 
     expect(nudge()).not.toBeNull()
+  })
+
+  it.for([
+    {
+      blocker: 'a tour is running',
+      block: () => {
+        useSettingStore().settingValues[TOUR_SEEN_SETTING] = []
+        registerTour('firstRun', [{ kind: 'landing', name: 'landing' }])
+        useOnboardingTourStore().replayTour('firstRun')
+      },
+      clear: () => useOnboardingTourStore().skip()
+    },
+    {
+      blocker: 'the window is narrower than the onboarding layout',
+      block: () => resizeWindow(MOBILE_WIDTH),
+      clear: () => resizeWindow(DESKTOP_WIDTH)
+    }
+  ])('also waits while $blocker', async ({ block, clear }) => {
+    block()
+    mocks.nudgeArmed.value = true
+    renderNudge()
+
+    await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS)
+    expect(nudge()).toBeNull()
+
+    clear()
+    await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS)
+
+    expect(nudge()).not.toBeNull()
+  })
+
+  it.for([
+    { location: 'left', side: 'right of' },
+    { location: 'right', side: 'left of' }
+  ] as const)(
+    'with the sidebar on the $location, sits $side the Templates button',
+    async ({ location }) => {
+      useSettingStore().settingValues['Comfy.Sidebar.Location'] = location
+      clearCoachmarks()
+      registerCoachmark(FIRST_RUN_COACH_IDS.templatesButton, laidOut(BUTTON))
+      mocks.nudgeArmed.value = true
+      renderNudge()
+      await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS)
+
+      const cardLeft = parseFloat(nudge()!.style.left)
+      if (location === 'left') {
+        expect(cardLeft).toBeGreaterThanOrEqual(BUTTON.right)
+      } else {
+        expect(
+          cardLeft,
+          'a right sidebar sits beside the docked Agent panel, so the card must open toward the canvas'
+        ).toBeLessThan(BUTTON.left)
+      }
+    }
+  )
+
+  it('brings a scrolled-away Templates button into view before pointing at it', async () => {
+    const button = laidOut(BUTTON)
+    const scrollIntoView = vi.spyOn(button, 'scrollIntoView')
+    clearCoachmarks()
+    registerCoachmark(FIRST_RUN_COACH_IDS.templatesButton, button)
+    mocks.nudgeArmed.value = true
+    renderNudge()
+
+    await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS)
+
+    expect(
+      scrollIntoView,
+      'on a short window the sidebar scrolls, and a pointer at a hidden button points at nothing'
+    ).toHaveBeenCalledWith({ block: 'nearest' })
   })
 
   it('congratulates a tour the user walked to the end', async () => {

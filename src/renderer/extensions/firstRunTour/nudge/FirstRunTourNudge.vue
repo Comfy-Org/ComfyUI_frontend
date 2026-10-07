@@ -1,7 +1,7 @@
 <template>
   <template v-if="onScreen">
     <div
-      v-if="ringStyle"
+      v-if="isPositioned && ringStyle"
       aria-hidden="true"
       data-testid="first-run-nudge-ring"
       class="pointer-events-none fixed z-1000 rounded-xl outline-2 outline-coach-ring"
@@ -12,10 +12,16 @@
       role="region"
       :aria-labelledby="titleId"
       data-testid="first-run-nudge"
-      class="fixed z-1000 w-80 transition-opacity duration-500"
-      :style="cardStyle"
+      :class="
+        cn(
+          'fixed z-1000 w-80 animate-in duration-500 fade-in-0',
+          !isPositioned && 'invisible'
+        )
+      "
+      :style="floatingStyles"
     >
       <i
+        data-testid="first-run-nudge-cursor"
         :class="
           cn(
             'absolute icon-[lucide--mouse-pointer-2] size-4 text-base-foreground drop-shadow-md',
@@ -77,7 +83,13 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { useEventListener, useTimeoutFn, useWindowSize } from '@vueuse/core'
+import {
+  breakpointsTailwind,
+  useBreakpoints,
+  useEventListener,
+  useTimeoutFn,
+  useWindowSize
+} from '@vueuse/core'
 import { computed, ref, useId, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -88,6 +100,7 @@ import {
   clampSpotlight,
   cursorEdgeClass
 } from '@/platform/onboarding/coachmarkLayout'
+import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import { FIRST_RUN_COACH_IDS } from '@/platform/onboarding/onboardingTours'
 import type { SpotlightStep } from '@/platform/onboarding/onboardingTours'
 import { useCoachmarkTarget } from '@/platform/onboarding/useCoachmarkTarget'
@@ -111,6 +124,8 @@ const dialogStore = useDialogStore()
 const settingStore = useSettingStore()
 const sidebarTabStore = useSidebarTabStore()
 const agentNodeSelectionStore = useAgentNodeSelectionStore()
+const onboardingTourStore = useOnboardingTourStore()
+const desktopLayout = useBreakpoints(breakpointsTailwind).greaterOrEqual('md')
 const telemetry = useTelemetry()
 const titleId = useId()
 
@@ -126,14 +141,15 @@ const nudgeStep = computed<SpotlightStep>(() => ({
 }))
 
 const cardRef = ref<HTMLElement | null>(null)
-const { hasTarget, targetRect, floatingStyles, isPositioned, placement } =
-  useCoachmarkTarget(nudgeStep, cardRef)
+const {
+  anchor,
+  hasTarget,
+  targetRect,
+  floatingStyles,
+  isPositioned,
+  placement
+} = useCoachmarkTarget(nudgeStep, cardRef)
 const { width: windowWidth, height: windowHeight } = useWindowSize()
-
-const cardStyle = computed(() => ({
-  ...floatingStyles.value,
-  opacity: isPositioned.value ? '1' : '0'
-}))
 
 const ringStyle = computed(
   () =>
@@ -155,6 +171,8 @@ const onScreen = ref(false)
 let reported = false
 const { start: scheduleAppearance, stop: cancelAppearance } = useTimeoutFn(
   () => {
+    if (anchor.value instanceof HTMLElement)
+      anchor.value.scrollIntoView({ block: 'nearest' })
     onScreen.value = true
     if (reported) return
     reported = true
@@ -174,9 +192,10 @@ useEventListener(document, 'keydown', (event: KeyboardEvent) => {
 /** The nudge sits below the modal stack, so it waits for a clear screen. */
 watch(
   () =>
-    nudgeArmed.value &&
+    desktopLayout.value &&
     dialogStore.dialogStack.length === 0 &&
     hasTarget.value &&
+    !onboardingTourStore.activeTour &&
     !agentNodeSelectionStore.isActionBarsHidden &&
     !sidebarTabStore.activeSidebarTab,
   (screenIsClear) => {
