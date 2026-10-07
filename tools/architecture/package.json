@@ -6,8 +6,7 @@
   "type": "module",
   "scripts": {
     "format": "oxfmt --write",
-    "format:check": "oxfmt --check",
-    "typecheck": "tsx ../../scripts/vue-tsc-native.ts --noEmit"
+    "format:check": "oxfmt --check"
   },
   "dependencies": {
     "markdown-table": "catalog:",
