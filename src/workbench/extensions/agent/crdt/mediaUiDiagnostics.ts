@@ -39,10 +39,18 @@ function selectedMediaPresent(node: LGraphNode, widgetName: string): boolean {
   )
 }
 
-function nodeRoots(root: ParentNode, nodeId: string): readonly HTMLElement[] {
-  return [...root.querySelectorAll<HTMLElement>('[data-node-id]')].filter(
-    (element) => element.dataset.nodeId === nodeId
-  )
+function nodeRootsById(
+  root: ParentNode
+): ReadonlyMap<string, readonly HTMLElement[]> {
+  const roots = new Map<string, HTMLElement[]>()
+  for (const element of root.querySelectorAll<HTMLElement>('[data-node-id]')) {
+    const nodeId = element.dataset.nodeId
+    if (nodeId === undefined) continue
+    const matchingRoots = roots.get(nodeId)
+    if (matchingRoots) matchingRoots.push(element)
+    else roots.set(nodeId, [element])
+  }
+  return roots
 }
 
 function mediaKinds(evidence: {
@@ -126,7 +134,9 @@ function audioElementState(element: HTMLAudioElement | null): {
 
 function diagnosticForNode(
   node: LGraphNode,
-  source: Omit<MediaUiDiagnosticSource, 'nodes'>
+  source: Omit<MediaUiDiagnosticSource, 'nodes' | 'root'> & {
+    nodeRootsById: ReadonlyMap<string, readonly HTMLElement[]>
+  }
 ): MediaUiDiagnostic | null {
   const output = source.getNodeOutputs(node)
   const imageUrls = source.getNodeImageUrls(node) ?? []
@@ -136,7 +146,7 @@ function diagnosticForNode(
   const counts = outputCounts(output)
   const selectedImagePresent = selectedMediaPresent(node, 'image')
   const selectedAudioPresent = selectedMediaPresent(node, 'audio')
-  const roots = nodeRoots(source.root, String(node.id))
+  const roots = source.nodeRootsById.get(String(node.id)) ?? []
   const vueImageCount = descendantCount(roots, 'img')
   const vueAudioCount = descendantCount(roots, 'audio')
   const kinds = mediaKinds({
@@ -189,7 +199,11 @@ export function collectMediaUiDiagnostics({
   getNodeImageUrls,
   root
 }: MediaUiDiagnosticSource): MediaUiDiagnostic[] {
-  const source = { getNodeOutputs, getNodeImageUrls, root }
+  const source = {
+    getNodeOutputs,
+    getNodeImageUrls,
+    nodeRootsById: nodeRootsById(root)
+  }
   return nodes
     .map((node) => diagnosticForNode(node, source))
     .filter(isDiagnostic)
