@@ -4577,9 +4577,6 @@
       "getKey": "获取 API 密钥",
       "docs": "文档",
       "snippetLabel": "Comfy Router 请求示例"
-    },
-    "app": {
-      "builtWith": "构建所用"
     }
   },
   "cinematic": {
@@ -4713,7 +4710,6 @@
       "portrait": "阴天码头上的老渔夫",
       "train": "蓝调时刻的夜车车窗"
     },
-    "lead": "执导每一个镜头。选择摄影机、镜头、光线与调色，用任意模型生成电影级画面。",
     "camera": {
       "body": "机身",
       "lens": "镜头",
@@ -4877,7 +4873,6 @@
     "edit": "编辑",
     "credit": "基于 Cseti 的 CrossView-Warp LoRA 与节点",
     "pick": {
-      "lead": "从任意角度重拍任意视频。机位随心移动，无需补拍。",
       "drop": "将视频拖到这里",
       "upload": "上传视频",
       "exampleMeta": "无需上传即可试用",

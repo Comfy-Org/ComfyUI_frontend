@@ -7,7 +7,17 @@ export type NavColumnItem = {
   href: string
   badge?: 'new' | 'beta'
   external?: boolean
+  /** Opens in a tab of its own without leaving the site, like a full-screen app. */
+  newTab?: boolean
   seeAll?: boolean
+}
+
+/** Where a menu link opens: another site, or an app in a tab of its own. */
+export function navLinkTarget(
+  item: Pick<NavColumnItem, 'external' | 'newTab'>
+): { target?: '_blank'; rel?: string } {
+  if (item.external) return { target: '_blank', rel: 'noopener noreferrer' }
+  return item.newTab ? { target: '_blank', rel: 'noopener' } : {}
 }
 
 export type NavColumnKind = 'model' | 'workflow' | 'app'
@@ -126,9 +136,10 @@ export function getMainNavigation(
           items: [
             {
               label: t('nav.cinematicStudio'),
-              href: routes.cinematicStudio
+              href: routes.cinematicStudio,
+              newTab: true
             },
-            { label: t('nav.reshoot'), href: routes.reshoot },
+            { label: t('nav.reshoot'), href: routes.reshoot, newTab: true },
             { label: t('nav.hubAllApps'), href: routes.hubApps, seeAll: true }
           ]
         }

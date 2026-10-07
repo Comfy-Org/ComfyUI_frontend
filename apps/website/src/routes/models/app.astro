@@ -9,8 +9,6 @@ import {
 } from '@/lib/workshop/cinematic-studio/models'
 import { priceCinematicModels } from '@/lib/workshop/cinematic-studio/pricing'
 import { appModels, appPagePaths } from '@/config/workshop-app-content'
-import { workshopPages } from '@/config/workshop-page-content'
-import { appBuiltWith } from '@/lib/workshop/app-built-with'
 import type { AppWorkshopModel } from '@/config/models-catalogue'
 import { modelOgImage } from './model-page'
 
@@ -33,11 +31,6 @@ const models = [
   ...runnableCinematicVideoModels(getRouterWorkshopModelDetail)
 ]
 if (!models.length) throw new Error('Cinematic Studio has no runnable models')
-const studioModels = models.map((studioModel) => studioModel.slug)
-const builtWith = {
-  studio: appBuiltWith('studio', studioModels, workshopPages),
-  reshoot: appBuiltWith('reshoot', studioModels, workshopPages)
-}
 ---
 
 <BaseLayout
@@ -45,11 +38,11 @@ const builtWith = {
   description={model.summary ?? Astro.locals.t('cinematic.meta.description')}
   ogImage={modelOgImage(model)}
   noindex
+  bare
 >
   <CinematicStudioPage
     apps={appModels}
     models={models}
-    builtWith={builtWith}
     initialApp={app}
     client:load
   />

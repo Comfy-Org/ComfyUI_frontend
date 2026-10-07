@@ -215,38 +215,48 @@ test('opens Re-shoot once its flag is on', async ({ page, context }) => {
   )
 })
 
-test('names the Hub models behind Cinematic Studio and links them', async ({
+for (const { path, name } of [
+  { path: '/hub/apps/cinematic-studio/', name: 'Cinematic Studio' },
+  { path: '/hub/apps/reshoot/', name: 'Re-shoot a video' }
+])
+  test(`opens ${name} full screen under its own bar, with no site around it`, async ({
+    page,
+    context
+  }) => {
+    await mockFlags(context, { apps: true, workflows: false, reshoot: true })
+    await page.goto(path)
+
+    const bar = page.getByTestId('app-shell-bar')
+    await expect(
+      bar.getByRole('heading', { level: 1, name, exact: true })
+    ).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1)
+    await expect(bar.getByText('Beta')).toBeVisible()
+    await expect(
+      bar.getByRole('link', { name: 'Back to apps' })
+    ).toHaveAttribute('href', '/hub/apps/')
+    await expect(page.getByTestId('desktop-nav-links')).toHaveCount(0)
+    await expect(page.locator('footer')).toHaveCount(0)
+    await expect(
+      page.getByRole('navigation', { name: 'Breadcrumb' })
+    ).toHaveCount(0)
+    await expect(page.getByTestId('app-built-with')).toHaveCount(0)
+  })
+
+test('opens an app from the hub apps page in a new tab', async ({
   page,
   context
 }) => {
   await mockFlags(context, { apps: true, workflows: false })
-  await page.goto('/hub/apps/cinematic-studio/')
-
-  await expect(
-    page.getByRole('navigation', { name: 'Breadcrumb' }).getByRole('link')
-  ).toHaveText(['Hub', 'Apps'])
-  const builtWith = page.getByTestId('app-built-with')
-  await builtWith.scrollIntoViewIfNeeded()
-  await expect(
-    builtWith.getByRole('heading', { name: 'Built with' })
-  ).toBeVisible()
-  const first = builtWith.getByTestId('explore-result').first()
-  await expect(first).toHaveAttribute('href', /^\/hub\/models\/[a-z0-9-]+\/$/)
-})
-
-test('names the workflow behind Re-shoot once workflows are open', async ({
-  page,
-  context
-}) => {
-  await mockFlags(context, { apps: true, workflows: true, reshoot: true })
-  await page.goto('/hub/apps/reshoot/')
-
-  const builtWith = page.getByTestId('app-built-with')
-  await builtWith.scrollIntoViewIfNeeded()
-  await expect(builtWith.getByTestId('explore-result')).toHaveAttribute(
-    'href',
-    '/hub/workflows/video-from-references/'
-  )
+  await page.goto('/hub/apps/')
+  const opened = context.waitForEvent('page')
+  await page
+    .getByTestId('app-grid')
+    .getByRole('link', { name: /Cinematic Studio/ })
+    .click()
+  const app = await opened
+  await expect(app).toHaveURL('/hub/apps/cinematic-studio/')
+  await expect(page).toHaveURL('/hub/apps/')
 })
 
 test('sends an old catalogue link for the Apps tab to the hub apps page', async ({

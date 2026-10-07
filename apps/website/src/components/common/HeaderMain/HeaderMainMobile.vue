@@ -2,7 +2,11 @@
 import BreadthumbIcon from '@/components/icons/BreadthumbIcon.vue'
 import { ArrowRight, ChevronLeft, ChevronRight } from '@lucide/vue'
 import { computed, onUnmounted, ref, watch } from 'vue'
-import { NO_HUB_SECTIONS, getMainNavigation } from '@/data/mainNavigation'
+import {
+  NO_HUB_SECTIONS,
+  getMainNavigation,
+  navLinkTarget
+} from '@/data/mainNavigation'
 import type { HubSections } from '@/data/mainNavigation'
 import { getRoutes } from '@/config/routes.ts'
 import { lockScroll, unlockScroll } from '@/composables/scrollLock'
@@ -179,8 +183,7 @@ onUnmounted(() => {
                       :href="link.href"
                       variant="nav"
                       as="a"
-                      :target="link.external ? '_blank' : undefined"
-                      :rel="link.external ? 'noopener noreferrer' : undefined"
+                      v-bind="navLinkTarget(link)"
                     >
                       <NavLinkContent :item="link" :locale="locale" />
                     </Button>

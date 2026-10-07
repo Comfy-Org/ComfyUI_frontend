@@ -2,17 +2,21 @@
 import type { WorkshopModel } from '@/config/models-catalogue'
 import WorkshopCardMedia from './WorkshopCardMedia.vue'
 
-const { href, name, detail, model } = defineProps<{
+const { href, name, detail, model, newTab } = defineProps<{
   href?: string
   name: string
   detail: string
   model?: Pick<WorkshopModel, 'name' | 'thumbnail'>
+  /** An app opens full screen in a tab of its own. */
+  newTab?: boolean
 }>()
 </script>
 
 <template>
   <a
     :href
+    :target="newTab ? '_blank' : undefined"
+    :rel="newTab ? 'noopener' : undefined"
     class="group flex h-full flex-col gap-3 overflow-hidden rounded-3xl bg-hub-surface p-2 pb-4 transition-colors duration-200 outline-none hover:bg-hub-surface-hover focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
     data-testid="explore-result"
   >

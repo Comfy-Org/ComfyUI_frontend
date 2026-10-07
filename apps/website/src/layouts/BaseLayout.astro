@@ -55,6 +55,8 @@ interface Props {
   mainEntityId?: string
   extraJsonLd?: (JsonLdNode | null | undefined)[]
   minimal?: boolean
+  /** A full-screen app: no banner, site header or footer around it. */
+  bare?: boolean
   hideAnnouncementBanner?: boolean
   banner?: BannerConfig
   /** PP Formula faces this page renders above the fold beyond the site-wide set. */
@@ -75,6 +77,7 @@ const {
   mainEntityId,
   extraJsonLd,
   minimal = false,
+  bare = false,
   hideAnnouncementBanner = false,
   banner,
   preloadFonts = []
@@ -114,6 +117,7 @@ const activeBanner = activeBannerFor(banner, {
 const bannerData = getBannerData(activeBanner ?? bannerConfig, locale)
 const bannerVisible =
   !hideAnnouncementBanner &&
+  !bare &&
   activeBanner !== undefined &&
   !isHrefActive(bannerData.link?.href ?? '', Astro.url.pathname)
 const bannerVersion = createBannerVersion(bannerData, locale)
@@ -304,7 +308,7 @@ const structuredData = head.emitStructuredData
         client:load
       />
     )}
-    {minimal ? (
+    {bare ? null : minimal ? (
       <div class="mx-auto max-w-7xl px-6 py-8 lg:px-8">
         <a
           href={getRoutes(locale).home}
@@ -330,7 +334,7 @@ const structuredData = head.emitStructuredData
     <main class="overflow-x-clip">
       <slot />
     </main>
-    {!minimal && (
+    {!minimal && !bare && (
       <SiteFooter locale={locale} client:visible={{ rootMargin: '200px' }} />
     )}
 

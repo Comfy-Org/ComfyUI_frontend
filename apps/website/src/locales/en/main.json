@@ -787,9 +787,6 @@
       "getKey": "Get an API key",
       "docs": "Docs",
       "snippetLabel": "Example request to Comfy Router"
-    },
-    "app": {
-      "builtWith": "Built with"
     }
   },
   "auth": {
@@ -5320,7 +5317,6 @@
       "portrait": "Old fisherman on an overcast pier",
       "train": "Night train window at blue hour"
     },
-    "lead": "Direct every shot. Pick the camera, lens, light and grade, and get film-grade frames from any model.",
     "camera": {
       "body": "Body",
       "lens": "Lens",
@@ -5484,7 +5480,6 @@
     "edit": "Edit",
     "credit": "Built on Cseti's CrossView-Warp LoRA and node",
     "pick": {
-      "lead": "Re-shoot any video from any angle. Move the camera anywhere, no reshoot day needed.",
       "drop": "Drop a video here",
       "upload": "Upload a video",
       "exampleMeta": "Try it without uploading anything",

@@ -19,7 +19,7 @@ const emit = defineEmits<{ start: [shot: StarterShot] }>()
 <template>
   <div class="flex max-w-4xl flex-col items-center gap-8 text-center">
     <div class="flex flex-col items-center gap-3">
-      <h1
+      <h2
         class="flex items-center gap-3 text-3xl font-semibold tracking-tight text-primary-warm-white lg:text-5xl"
       >
         {{ t('cinematic.title') }}
@@ -28,7 +28,7 @@ const emit = defineEmits<{ start: [shot: StarterShot] }>()
         >
           {{ t('cinematic.beta') }}
         </span>
-      </h1>
+      </h2>
       <p class="max-w-xl text-sm text-primary-comfy-canvas lg:text-base">
         {{ t('cinematic.firstRun.body') }}
       </p>

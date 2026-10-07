@@ -56,6 +56,7 @@ defineEmits<{ clear: [] }>()
           :name="app.name"
           :detail="app.task"
           :model="app"
+          new-tab
         />
         <ExploreKindTag kind="app" :locale />
       </li>

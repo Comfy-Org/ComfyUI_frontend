@@ -75,6 +75,18 @@ describe('HeaderMainDesktop', () => {
     ).toHaveAttribute('href', '/hub/')
   })
 
+  it('opens each app in a tab of its own, and the apps list in this one', async () => {
+    const { menu } = await openMenu(/^Hub/)
+
+    for (const name of ['Cinematic Studio', 'Re-shoot']) {
+      const link = menu.getByRole('link', { name })
+      expect(link).toHaveAttribute('target', '_blank')
+      expect(link).toHaveAttribute('rel', 'noopener')
+    }
+    for (const name of ['All apps', 'Change material', 'Kling O3'])
+      expect(menu.getByRole('link', { name })).not.toHaveAttribute('target')
+  })
+
   it('leaves the API key and docs links to the Models page', async () => {
     const { menu } = await openMenu(/^Hub/)
 

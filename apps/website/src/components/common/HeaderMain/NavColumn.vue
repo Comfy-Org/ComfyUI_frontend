@@ -5,6 +5,7 @@ import NavigationMenuLink from '@/components/ui/navigation-menu/NavigationMenuLi
 
 import { isHrefActive } from '@/composables/useCurrentPath'
 import type { NavColumn } from '@/data/mainNavigation'
+import { navLinkTarget } from '@/data/mainNavigation'
 import type { Locale } from '@/i18n/translations'
 import NavColumnHeading from './NavColumnHeading.vue'
 import NavLinkContent from './NavLinkContent.vue'
@@ -37,8 +38,7 @@ defineProps<{ column: NavColumn; locale: Locale; currentPath: string }>()
         >
           <a
             :href="item.href"
-            :target="item.external ? '_blank' : undefined"
-            :rel="item.external ? 'noopener noreferrer' : undefined"
+            v-bind="navLinkTarget(item)"
             class="whitespace-nowrap"
           >
             <NavLinkContent :item="item" :locale="locale" />

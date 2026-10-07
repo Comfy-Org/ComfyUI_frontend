@@ -7,8 +7,6 @@ import { useReshoot } from '@/composables/useReshoot'
 import { reportStudioBusy } from '@/composables/useStudioSwitchGuard'
 import type { Locale } from '@/i18n/translations'
 import RunLeaveDialog from '@/components/workshop/RunLeaveDialog.vue'
-import AppsBackLink from '@/components/workshop/cinematic-studio/AppsBackLink.vue'
-import ReshootHeader from './ReshootHeader.vue'
 import ReshootExamples from './ReshootExamples.vue'
 import ReshootSide from './ReshootSide.vue'
 import ReshootStage from './ReshootStage.vue'
@@ -63,11 +61,9 @@ const { leavingTo, leave, stay } = useCinematicLeaveGuard(
 
 <template>
   <div
-    class="mx-auto mb-12 flex w-full max-w-10xl flex-col gap-4 px-4 pt-6 sm:px-8 lg:mb-20 lg:px-14"
+    class="mx-auto mb-12 flex w-full max-w-10xl flex-col gap-4 px-4 pt-2 sm:px-8 lg:mb-20 lg:px-14"
     data-testid="reshoot"
   >
-    <AppsBackLink :current="t('reshoot.title')" :locale />
-    <ReshootHeader :locale class="mb-4" />
     <div
       class="grid grid-cols-[minmax(0,1fr)] items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]"
     >
@@ -153,6 +149,9 @@ const { leavingTo, leave, stay } = useCinematicLeaveGuard(
       class="mt-6"
       @pick="reshoot.pick()"
     />
+    <p class="text-xs text-primary-warm-gray/80" data-testid="reshoot-credit">
+      {{ t('reshoot.credit') }}
+    </p>
     <RunLeaveDialog
       :open="leavingTo !== undefined"
       :locale
