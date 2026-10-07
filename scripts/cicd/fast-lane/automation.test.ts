@@ -5,6 +5,7 @@ import {
   approveCurrentHead,
   armMergeAutomation,
   policyReviewFloor,
+  runFastLane,
   stopMergeAutomation
 } from './automation.ts'
 import type {
@@ -108,6 +109,53 @@ describe('approval lifecycle', () => {
       { path: '/pulls/42', method: 'GET' },
       { path: '/pulls/42/reviews/123/dismissals', method: 'PUT' }
     ])
+  })
+
+  it('withdraws an existing policy approval on hold even when merge teardown fails', async () => {
+    const dismissals: string[] = []
+    const github: GitHubClient = {
+      async request(path, options = {}) {
+        if (path === 'https://api.github.com/user') {
+          return { login: 'christian-byrne' }
+        }
+        if (options.method === 'PUT') {
+          dismissals.push(path)
+          return null
+        }
+        return {
+          state: 'open',
+          node_id: 'PR_1',
+          user: { login: 'bertfy' },
+          labels: [{ name: 'website-fast-lane:hold' }],
+          head: {
+            sha: headSha,
+            repo: { full_name: 'Comfy-Org/ComfyUI_frontend' }
+          },
+          base: {
+            ref: 'main',
+            repo: { full_name: 'Comfy-Org/ComfyUI_frontend' }
+          }
+        }
+      },
+      async paginate() {
+        return [
+          {
+            id: 123,
+            state: 'APPROVED',
+            commit_id: headSha,
+            body: '[Package fast lane] Policy-only approval. Lane: website.',
+            submitted_at: '2026-10-06T10:00:00Z',
+            user: { login: 'christian-byrne' }
+          }
+        ]
+      },
+      graphql: () => Promise.reject(new Error('merge state unavailable'))
+    }
+
+    await expect(runFastLane(github, runtimeConfig(), vi.fn())).rejects.toThrow(
+      'failed to complete fast-lane compensation'
+    )
+    expect(dismissals).toEqual(['/pulls/42/reviews/123/dismissals'])
   })
 
   it('does not create a second approval for the same identity and head', async () => {
