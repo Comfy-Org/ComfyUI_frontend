@@ -43,6 +43,7 @@ import {
 } from '@/utils/graphTraversalUtil'
 
 import type { GraphOperation } from './graphOperations'
+import type { DocPromotedWidgets } from './liveGraphApplier'
 
 export interface DocOpMinterDeps {
   /** Slice 00's product gate. */
@@ -67,11 +68,10 @@ export interface DocOpMinterDeps {
    */
   docInputNames(nodeId: NodeId): readonly (string | undefined)[] | null
   /**
-   * The bound document's widget-backed input names for a node, in document
-   * order, or null when the document holds no such node. Indexes the opaque
-   * `widgets_values` a promoted write addresses.
+   * The bound document's view of a node's promoted widget layout, or null
+   * when the document holds no such node.
    */
-  docPromotedWidgetNames(nodeId: NodeId): readonly (string | undefined)[] | null
+  docPromotedWidgets(nodeId: NodeId): DocPromotedWidgets | null
 }
 
 export interface DocOpMinter {
@@ -206,7 +206,8 @@ function isValueWidgetWrite(
 function promotedHostWrite(
   node: LGraphNode | null,
   event: IntentOf<'set_widget'>,
-  docPromotedNames: () => readonly (string | undefined)[] | null
+  docPromotedWidgets: () => DocPromotedWidgets | null,
+  onOrderDrift: (names: readonly string[], doc: DocPromotedWidgets) => void
 ): PromotedHostWrite | null {
   if (!node?.isSubgraphNode()) return null
   const hostInputs = node.inputs.flatMap((input) =>
@@ -214,7 +215,12 @@ function promotedHostWrite(
   )
   const valueIndex = hostInputs.findIndex((input) => input.name === event.name)
   if (valueIndex === -1) return null
-  if (!documentHoldsSameOrder(docPromotedNames(), hostInputs)) return null
+  const liveNames = hostInputs.map((input) => input.name)
+  const doc = docPromotedWidgets()
+  if (!documentAcceptsLiveIndex(doc, liveNames)) {
+    if (doc) onOrderDrift(liveNames, doc)
+    return null
+  }
   const widgetValueStore = useWidgetValueStore()
   return {
     value_index: valueIndex,
@@ -228,24 +234,36 @@ function promotedHostWrite(
 }
 
 /**
- * Whether the document's widget-backed input order is the one `value_index`
- * will be read against. A document naming NONE of them answers nothing — its
- * array is then positional over whatever the live host promotes, which is
- * already what the inbound leg assumes. A document naming a DIFFERENT order
- * is drift (`reorderSubgraphInputsByWidgetOrder` permutes the live host
- * without minting anything), and an index minted against the live order
- * would land on another widget's register, so that write keeps its refusal
- * instead.
+ * Whether a live index is a safe index into the document's array.
+ *
+ * Two independent ways it is not, and the document answers each with a
+ * different half of what it knows:
+ *
+ * - The array is sized for a different set of widgets. Checked against
+ *   `valueCount`, the same cardinality invariant `applyHostWidgets` enforces
+ *   on the way in. A document holding no array yet constrains nothing — the
+ *   host builds it from `host_widgets_values` on first write.
+ * - The widgets are in a different ORDER. `reorderSubgraphInputsByWidgetOrder`
+ *   permutes the live host without minting anything, and a write indexed
+ *   against the permuted order would land on another widget's value. The
+ *   names the document marks must therefore still appear in the live order,
+ *   and in the same relative order. They are a SUBSET, not a copy: the
+ *   instance's `inputs` mirror routinely omits promoted inputs the array
+ *   still carries, so requiring equality would refuse ordinary hosts.
  */
-function documentHoldsSameOrder(
-  docNames: readonly (string | undefined)[] | null,
-  hostInputs: readonly { name: string }[]
+function documentAcceptsLiveIndex(
+  doc: DocPromotedWidgets | null,
+  liveNames: readonly string[]
 ): boolean {
-  if (docNames === null || docNames.length === 0) return true
-  return (
-    docNames.length === hostInputs.length &&
-    docNames.every((name, index) => name === hostInputs[index].name)
-  )
+  if (doc === null) return true
+  if (doc.valueCount > 0 && doc.valueCount !== liveNames.length) return false
+  let at = -1
+  for (const name of doc.markedNames) {
+    const next = liveNames.indexOf(name, at + 1)
+    if (next === -1) return false
+    at = next
+  }
+  return true
 }
 
 function routedWidgetOperation(
@@ -253,7 +271,8 @@ function routedWidgetOperation(
   rootGraphId: string,
   event: IntentOf<'set_widget'>,
   node: LGraphNode | null,
-  docPromotedNames: () => readonly (string | undefined)[] | null
+  docPromotedWidgets: () => DocPromotedWidgets | null,
+  onOrderDrift: (names: readonly string[], doc: DocPromotedWidgets) => void
 ): GraphOperation | null {
   const operation = {
     op: 'set_widget',
@@ -264,7 +283,12 @@ function routedWidgetOperation(
   } as const
   const owningGraphId = node?.graph?.id ?? event.graphId
   if (owningGraphId === rootGraphId) {
-    const promoted = promotedHostWrite(node, event, docPromotedNames)
+    const promoted = promotedHostWrite(
+      node,
+      event,
+      docPromotedWidgets,
+      onOrderDrift
+    )
     return promoted ? { ...operation, promoted } : operation
   }
   const subgraphNodePath = findSubgraphNodePathById(graph, owningGraphId)
@@ -439,7 +463,19 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       rootGraphId,
       event,
       owner,
-      () => deps.docPromotedWidgetNames(event.nodeId)
+      () => deps.docPromotedWidgets(event.nodeId),
+      (liveNames, doc) =>
+        reportOnce(
+          `promoted_drift:${String(event.nodeId)}`,
+          `Subgraph host ${String(event.nodeId)} promotes [${liveNames.join(', ')}], which the document's ${doc.valueCount} stored values and marked inputs [${doc.markedNames.join(', ')}] do not place; refusing to mint a promoted write`,
+          'agent_crdt_promoted_widget_order_drift',
+          {
+            nodeId: event.nodeId,
+            liveNames,
+            docValueCount: doc.valueCount,
+            docMarkedNames: doc.markedNames
+          }
+        )
     )
     if (operation) schedule({ kind: 'op', operation })
   }

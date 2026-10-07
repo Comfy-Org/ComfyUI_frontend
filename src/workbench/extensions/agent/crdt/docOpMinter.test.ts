@@ -33,10 +33,7 @@ import { createUuidv4 } from '@/utils/uuid'
 import { attachDocOpMinter, wireNodeSnapshot } from './docOpMinter'
 import type { DocOpMinter, DocOpMinterDeps } from './docOpMinter'
 import type { GraphOperation } from './graphOperations'
-import {
-  readDocPromotedWidgetNames,
-  readDocSlotNames
-} from './liveGraphApplier'
+import { readDocPromotedWidgets, readDocSlotNames } from './liveGraphApplier'
 import { mintWireOps } from './opEnvelope'
 
 vi.mock(import('@/platform/telemetry/reportError'))
@@ -174,7 +171,7 @@ describe('attachDocOpMinter', () => {
   let enabled: boolean
   let bound: boolean
   let docInputNames: DocOpMinterDeps['docInputNames']
-  let docPromotedWidgetNames: DocOpMinterDeps['docPromotedWidgetNames']
+  let docPromotedWidgets: DocOpMinterDeps['docPromotedWidgets']
 
   beforeEach(() => {
     graph = new LGraph()
@@ -183,7 +180,7 @@ describe('attachDocOpMinter', () => {
     enabled = true
     bound = true
     docInputNames = () => null
-    docPromotedWidgetNames = () => null
+    docPromotedWidgets = () => null
     minter = attachDocOpMinter({
       isEnabled: () => enabled,
       isDocBound: () => bound,
@@ -191,7 +188,7 @@ describe('attachDocOpMinter', () => {
       getGraph: () => graph,
       boundRootGraphId: () => rootGraphId,
       docInputNames: (nodeId) => docInputNames(nodeId),
-      docPromotedWidgetNames: (nodeId) => docPromotedWidgetNames(nodeId)
+      docPromotedWidgets: (nodeId) => docPromotedWidgets(nodeId)
     })
   })
 
@@ -480,7 +477,7 @@ describe('attachDocOpMinter', () => {
       getGraph: () => graph,
       boundRootGraphId: () => rootGraphId,
       docInputNames: () => null,
-      docPromotedWidgetNames: () => null
+      docPromotedWidgets: () => null
     })
 
     const added = new TestSink()
@@ -717,8 +714,7 @@ describe('attachDocOpMinter', () => {
       if (hostNode) hostNode.widgets_values = hostWidgetValues
     }
     const doc = mint(serialized, CATALOG)
-    docPromotedWidgetNames = (nodeId) =>
-      readDocPromotedWidgetNames(doc, String(nodeId))
+    docPromotedWidgets = (nodeId) => readDocPromotedWidgets(doc, String(nodeId))
     return { host, doc }
   }
 
@@ -768,8 +764,8 @@ describe('attachDocOpMinter', () => {
     doc.destroy()
   })
 
-  it('extends a short document array from the host values it carries', async () => {
-    const { host, doc } = seedPromotedHost(['only the prefix'])
+  it('builds the array from the host values when the document holds none', async () => {
+    const { host, doc } = seedPromotedHost([])
 
     host.widgets[1].value = 'pasted'
     await afterFlush()
@@ -788,21 +784,24 @@ describe('attachDocOpMinter', () => {
       project(doc, CATALOG).nodes.find(
         (node) => String(node.id) === String(host.id)
       )?.widgets_values
-    ).toEqual(['only the prefix', 'pasted'])
+    ).toEqual(['an interior default', 'pasted'])
     doc.destroy()
   })
 
   it.for([
     {
-      name: 'widget-marks fewer inputs than it holds values for',
-      docNames: ['prefix']
+      name: 'sizes its array for a different set of widgets',
+      doc: { valueCount: 3, markedNames: [] }
     },
-    { name: 'holds a different order', docNames: ['text', 'prefix'] }
+    {
+      name: 'holds the promoted widgets in another order',
+      doc: { valueCount: 2, markedNames: ['text', 'prefix'] }
+    }
   ])(
     'keeps the refusal rather than misplacing a value when the document $name',
-    async ({ docNames }) => {
+    async ({ doc: docWidgets }) => {
       const { host, doc } = seedPromotedHost()
-      docPromotedWidgetNames = () => docNames
+      docPromotedWidgets = () => docWidgets
 
       host.widgets[1].value = 'pasted'
       await afterFlush()
@@ -817,6 +816,12 @@ describe('attachDocOpMinter', () => {
         }
       ])
       expect(applyMinted(doc, minted)).toEqual(['rejected'])
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'agent_crdt_promoted_widget_order_drift'
+        })
+      )
       doc.destroy()
     }
   )
@@ -831,16 +836,37 @@ describe('attachDocOpMinter', () => {
     const doc = mint(workflow, CATALOG)
     const host = workflow.nodes.find((node) => String(node.id) === '11')
 
-    // Two values, but only `seed` is widget-marked: an index taken from this
-    // list would put a write to `seed` on top of the prompt at index 0.
+    // `text` is promoted and holds a value but is absent from the inputs
+    // mirror, so the marked names are a SUBSET: sizing the promoted order by
+    // them would put a write to `seed` on top of the prompt at index 0.
     expect(host?.widgets_values).toEqual(['a photo of a pier', 0])
-    expect(readDocPromotedWidgetNames(doc, '11')).toEqual(['seed'])
+    expect(readDocPromotedWidgets(doc, '11')).toEqual({
+      valueCount: 2,
+      markedNames: ['seed']
+    })
     doc.destroy()
   })
 
-  it('mints against the live order when the document names no promoted input', async () => {
+  it('mints for a shipped host whose inputs mirror omits a promoted widget', async () => {
     const { host, doc } = seedPromotedHost()
-    docPromotedWidgetNames = () => []
+    docPromotedWidgets = () => ({ valueCount: 2, markedNames: ['text'] })
+
+    host.widgets[1].value = 'pasted'
+    await afterFlush()
+
+    expect(minted).toEqual([
+      expect.objectContaining({
+        widget: 'text',
+        promoted: expect.objectContaining({ value_index: 1 })
+      })
+    ])
+    expect(applyMinted(doc, minted)).toEqual(['applied'])
+    doc.destroy()
+  })
+
+  it('mints against the live order when the document places nothing', async () => {
+    const { host, doc } = seedPromotedHost()
+    docPromotedWidgets = () => ({ valueCount: 0, markedNames: [] })
 
     host.widgets[1].value = 'pasted'
     await afterFlush()
