@@ -1331,7 +1331,7 @@ export class ComfyApp {
     useWorkflowService().beforeLoadNewGraph(clean)
     await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
 
-    ChangeTracker.isLoadingGraph = true
+    const endGraphLoad = ChangeTracker.beginGraphLoad()
     let reset_invalid_values = false
     const missingNodeTypes: MissingNodeType[] = []
     try {
@@ -1489,7 +1489,7 @@ export class ComfyApp {
         'workflow-load',
         workflowNavigationId
       )
-      ChangeTracker.isLoadingGraph = false
+      endGraphLoad()
       return false
     }
 
@@ -1753,7 +1753,7 @@ export class ComfyApp {
         'workflow-load',
         workflowNavigationId
       )
-      ChangeTracker.isLoadingGraph = false
+      endGraphLoad()
       // The retirement watcher skips transitions made during the load.
       useExecutionErrorStore().retireResolvedMissingNodePromptError()
       reconcileResourceErrors?.()

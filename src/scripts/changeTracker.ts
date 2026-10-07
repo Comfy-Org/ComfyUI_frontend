@@ -267,11 +267,26 @@ export class ChangeTracker {
     return this.loadingGraphState.value
   }
 
+  /**
+   * Own one overlapping graph-load guard. The returned closer is idempotent,
+   * so each async load can release only the depth it acquired.
+   */
+  static beginGraphLoad(): () => void {
+    this.loadingGraphDepth++
+    this.loadingGraphState.value = true
+    let ended = false
+    return () => {
+      if (ended) return
+      ended = true
+      this.loadingGraphDepth = Math.max(0, this.loadingGraphDepth - 1)
+      this.loadingGraphState.value = this.loadingGraphDepth > 0
+    }
+  }
+
+  /** Absolute compatibility control for tests and legacy callers. */
   static set isLoadingGraph(value: boolean) {
-    this.loadingGraphDepth = value
-      ? this.loadingGraphDepth + 1
-      : Math.max(0, this.loadingGraphDepth - 1)
-    this.loadingGraphState.value = this.loadingGraphDepth > 0
+    this.loadingGraphDepth = value ? 1 : 0
+    this.loadingGraphState.value = value
   }
   /**
    * The active state of the workflow.

@@ -876,6 +876,11 @@ describe('attachDocOpMinter', () => {
 
   it('builds the array from the host values when the document holds none', async () => {
     const { host, doc } = seedPromotedHost([])
+    const stored = nodesMap(doc).get(String(host.id))
+    assert.exists(stored)
+    stored.delete(OPAQUE_WIDGETS_KEY)
+    stored.set('widgets', new Y.Map())
+    expect(readDocPromotedWidgets(doc, String(host.id))?.valueCount).toBe(0)
 
     host.widgets[1].value = 'pasted'
     await afterFlush()
@@ -890,6 +895,9 @@ describe('attachDocOpMinter', () => {
       })
     ])
     expect(applyMinted(doc, minted)).toEqual(['applied'])
+    expect(stored.has('widgets')).toBe(false)
+    expect(stored.has(OPAQUE_WIDGETS_KEY)).toBe(true)
+    expect(readDocPromotedWidgets(doc, String(host.id))?.valueCount).toBe(2)
     expect(
       project(doc, CATALOG).nodes.find(
         (node) => String(node.id) === String(host.id)

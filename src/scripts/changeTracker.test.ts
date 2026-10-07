@@ -208,13 +208,25 @@ describe('ChangeTracker', () => {
   })
 
   it('stays loading until overlapping graph loads both finish', async () => {
-    ChangeTracker.isLoadingGraph = true
-    ChangeTracker.isLoadingGraph = true
-    ChangeTracker.isLoadingGraph = false
+    const endFirst = ChangeTracker.beginGraphLoad()
+    const endSecond = ChangeTracker.beginGraphLoad()
+    endFirst()
 
     expect(ChangeTracker.isLoadingGraph).toBe(true)
 
-    ChangeTracker.isLoadingGraph = false
+    endSecond()
+    expect(ChangeTracker.isLoadingGraph).toBe(false)
+  })
+
+  it('does not let one load release another load twice', () => {
+    const endFirst = ChangeTracker.beginGraphLoad()
+    const endSecond = ChangeTracker.beginGraphLoad()
+
+    endFirst()
+    endFirst()
+    expect(ChangeTracker.isLoadingGraph).toBe(true)
+
+    endSecond()
     expect(ChangeTracker.isLoadingGraph).toBe(false)
   })
 
