@@ -6,7 +6,7 @@ import {
   makeFetchTransport
 } from '@sentry/vue'
 import { createApp } from 'vue'
-import { beforeEach, expect, it, vi } from 'vitest'
+import { assert, beforeEach, expect, it, vi } from 'vitest'
 
 vi.mock(import('@sentry/vue'), { spy: true })
 
@@ -85,7 +85,7 @@ it('adds Vue directive diagnostics after filtering', async () => {
     }
   } satisfies ErrorEvent
   const beforeSend = initOptions(true).beforeSend
-  if (!beforeSend) throw new Error('Sentry beforeSend was not installed')
+  assert.exists(beforeSend)
 
   expect((await beforeSend(event, {}))?.tags?.diagnostic).toBe(
     'vue_directive_runtime'
