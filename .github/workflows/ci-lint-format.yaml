@@ -275,6 +275,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          filter: blob:none
       - uses: ./.github/actions/setup-frontend
       - name: Verify website repository integrity
         run: |
