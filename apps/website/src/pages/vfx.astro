@@ -8,6 +8,7 @@ import CardWorkflowGallery01 from '@/components/blocks/CardWorkflowGallery01.vue
 import FAQSplit01 from '@/components/blocks/FAQSplit01.vue'
 import CallToActionSection from '@/components/common/CallToActionSection.vue'
 import SectionHeader from '@/components/common/SectionHeader.vue'
+import SocialProofBarSection from '@/components/common/SocialProofBarSection.vue'
 import { getRoutes } from '@/config/routes'
 import { vfxContent, vfxFaqPageNode } from '@/data/vfx'
 import { getCustomerVideoStory } from '@/data/customerVideos'
@@ -75,6 +76,7 @@ const faqPage = vfxFaqPageNode(url, faqs)
       </BrandButton>
     </div>
   </HeroBackdrop01>
+  <SocialProofBarSection />
   <FeatureRows01
     locale={locale}
     heading={t('vfx.proof.heading')}
