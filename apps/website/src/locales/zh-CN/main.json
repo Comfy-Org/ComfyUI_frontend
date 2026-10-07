@@ -2500,7 +2500,8 @@
       "primaryCta": "在 Comfy 中试用",
       "secondaryCta": "下载模型",
       "tutorialCta": "查看教程",
-      "workflowCount": "{count} 个工作流使用此模型"
+      "workflowCount": "{count} 个工作流使用此模型",
+      "downloadForComfy": "下载到 ComfyUI"
     },
     "index": {
       "subtitle": "在 ComfyUI 中运行世界领先的 AI 模型",
@@ -4279,13 +4280,11 @@
     "sections": {
       "allModels": "所有模型",
       "back": "返回所有类别",
-      "browseAll": "浏览所有模型",
       "count": "{n} 个模型",
       "featured": "精选",
       "otherFormats": "其他格式",
       "scrollBack": "向前滚动",
       "scrollForward": "向后滚动",
-      "seeAll": "查看全部 ({n})",
       "trending": "热门"
     },
     "showMore": "显示更多模型",
@@ -4325,8 +4324,6 @@
       "label": "排序",
       "name": "名称 A 到 Z",
       "popular": "推荐",
-      "priceAsc": "价格：从低到高",
-      "priceDesc": "价格：从高到低",
       "recommended": "推荐顺序"
     },
     "task": {
@@ -4556,22 +4553,83 @@
         "provider": "提供方",
         "task": "用途",
         "access": "使用方式",
-        "page": "模型页面",
-        "openModel": "打开"
+        "try": "试用 {name}"
       }
     },
-    "build": {
-      "title": "把它用在你的产品中。",
-      "body": "用 Comfy Router 调用任意模型，或用 Comfy API 运行工作流。密钥和用量在开发者平台管理。",
-      "routerTitle": "Comfy Router",
-      "routerBody": "用一个 API 密钥调用下面的任意模型。",
-      "apiTitle": "Comfy API",
-      "apiBody": "把任意 Hub 工作流作为端点运行。",
-      "platformTitle": "开发者平台",
-      "platformBody": "API 密钥、用量和部署。",
-      "getKey": "获取 API 密钥",
-      "docs": "文档",
-      "snippetLabel": "Comfy Router 请求示例"
+    "modelsHub": {
+      "titleFirstLine": "每一个模型。",
+      "titleSecondLine": "同一个工作流。",
+      "subtitle": "在这里运行模型、通过 API 调用，或下载开放权重在 ComfyUI 中使用。",
+      "runModel": "运行模型",
+      "getApiKey": "获取 API 密钥",
+      "counts": "{models} 个模型 · {openWeights} 个开放权重 · {partner} 个合作伙伴模型",
+      "latestLaunch": "最新发布",
+      "trendingSubtitle": "本周正在运行的模型",
+      "viewAll": "查看全部模型",
+      "access": {
+        "heading": "选择模型访问方式",
+        "openTitle": "开放权重",
+        "openBody": "下载模型文件，在你自己的机器上用 ComfyUI 运行。",
+        "openCta": "浏览开放权重",
+        "partnerTitle": "合作伙伴模型与 API",
+        "partnerBody": "在这里运行，或用一个 API 密钥从你的代码中调用。",
+        "apiDocs": "API 文档"
+      },
+      "family": {
+        "eyebrow": "模型家族",
+        "title": "探索模型家族",
+        "openVersion": "{name}（开放）",
+        "versionsLabel": "{name} 模型家族的版本",
+        "wanTitle": "Wan 模型家族",
+        "wanDescription": "来自阿里巴巴的开放及托管视频模型。",
+        "wanExplore": "探索 Wan 模型家族"
+      },
+      "faqHeading": "ComfyUI 中的 AI 模型",
+      "faq": {
+        "1": {
+          "q": "首发支持是什么意思？",
+          "a": "这意味着新发布的模型在受支持的集成可用后即可在 ComfyUI 中使用。"
+        },
+        "2": {
+          "q": "ComfyUI 免费吗？",
+          "a": "ComfyUI 桌面版可在您自己的硬件上免费运行。Cloud 和合作伙伴服务有各自的使用条款。"
+        },
+        "3": {
+          "q": "合作伙伴模型需要单独的账户吗？",
+          "a": "账户和计费要求取决于工作流使用的合作伙伴集成。"
+        },
+        "4": {
+          "q": "开放模型需要多少显存？",
+          "a": "要求因模型、分辨率、精度和工作流而异。量化变体可以减少内存使用。"
+        },
+        "5": {
+          "q": "可以通过 API 运行这些模型吗？",
+          "a": "Comfy API 可以将受支持的工作流转换为生产端点。"
+        },
+        "6": {
+          "q": "这些模型可以用于商业用途吗？在哪里可以使用？",
+          "a": "商业使用权取决于具体模型。本地可用表示你可以在自己的硬件上运行模型，但不代表自动获得商业使用权；请查看该模型的许可证和限制。Comfy Cloud 的可用性取决于云端支持的模型及其适用条款。需要协商条款、赔偿保障或其他合同保证的组织，应联系 Comfy Enterprise 讨论商业协议。"
+        }
+      },
+      "back": {
+        "search": "“{query}”的结果",
+        "tab": {
+          "image": "图像模型",
+          "video": "视频模型",
+          "audio": "音频模型",
+          "3d": "3D 模型",
+          "edit": "编辑模型",
+          "upscale": "放大模型",
+          "llm": "语言模型",
+          "open": "开放权重",
+          "partner": "合作伙伴模型"
+        },
+        "access": {
+          "run": "可在这里运行的模型",
+          "api": "可通过 API 调用的模型",
+          "download": "可下载的开放权重"
+        }
+      }
     }
   },
   "cinematic": {

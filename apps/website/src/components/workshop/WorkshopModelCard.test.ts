@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/vue'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import type { WorkshopModel } from '@/config/models-catalogue'
@@ -302,7 +302,13 @@ describe('WorkshopModelCard', () => {
   it.for([
     { kind: 'a hosted model', model: base, badges: ['Run', 'API'] },
     {
-      kind: 'a hosted model that cannot run here',
+      kind: 'a hosted model while running here is off',
+      model: base,
+      run: undefined,
+      badges: ['API']
+    },
+    {
+      kind: 'a hosted model without an input schema',
       model: { ...base, incompleteReason: 'missing-input-schema' },
       badges: []
     },
@@ -323,8 +329,14 @@ describe('WorkshopModelCard', () => {
   ] satisfies {
     kind: string
     model: WorkshopModel
+    run?: string
     badges: string[]
-  }[])('says how $kind can be used', ({ model, badges }) => {
+  }[])('says how $kind can be used', (testCase) => {
+    const { model, badges } = testCase
+    vi.stubEnv(
+      'PUBLIC_WORKSHOP_ROUTER_RUN',
+      'run' in testCase ? testCase.run : '1'
+    )
     render(WorkshopModelCard, { props: { model } })
     expect(
       screen

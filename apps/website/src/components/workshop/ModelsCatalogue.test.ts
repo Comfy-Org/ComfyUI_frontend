@@ -11,6 +11,7 @@ import {
   useWorkshopFlag
 } from '@/scripts/posthog'
 import ModelsCatalogue from './ModelsCatalogue.vue'
+import { lastList } from '@/lib/workshop/shelf-memory'
 import type { WorkshopModel } from '@/config/models-catalogue'
 
 vi.mock(import('@/scripts/posthog'))
@@ -110,7 +111,7 @@ describe('ModelsCatalogue', () => {
       locale: 'en',
       tab: 'models',
       subtitle:
-        'Run many of them right here, call them by API or download them.'
+        'Run models here, call them by API or download open weights for ComfyUI.'
     },
     {
       locale: 'en',
@@ -125,7 +126,8 @@ describe('ModelsCatalogue', () => {
     {
       locale: 'zh-CN',
       tab: 'models',
-      subtitle: '其中许多可以直接在这里运行，也可以通过 API 调用或下载。'
+      subtitle:
+        '在这里运行模型、通过 API 调用，或下载开放权重在 ComfyUI 中使用。'
     },
     {
       locale: 'zh-CN',
@@ -144,7 +146,9 @@ describe('ModelsCatalogue', () => {
         props: { models: launchModels, locale, section: tab }
       })
 
-      const hero = await screen.findByTestId('workshop-hero')
+      const hero = await screen.findByTestId(
+        tab === 'models' ? 'models-hub-hero' : 'workshop-hero'
+      )
       expect(within(hero).getByText(subtitle, { exact: false })).toBeVisible()
     }
   )
@@ -245,6 +249,24 @@ describe('ModelsCatalogue', () => {
         expect(await screen.findByPlaceholderText(placeholder)).toBeVisible()
       }
     )
+
+    it('sends a model opened from the Hub back to the Hub', async () => {
+      history.replaceState(null, '', '/hub/')
+      const user = userEvent.setup()
+      renderExplore()
+      const painter = within(await screen.findByTestId('explore-results'))
+        .getAllByRole('link')
+        .find((link) => link.getAttribute('href') === '/hub/models/painter/')
+      if (!painter) throw new Error('painter is not listed')
+      painter.addEventListener('click', (event) => event.preventDefault())
+
+      await user.click(painter)
+
+      expect(lastList('/hub/models/painter/')).toEqual({
+        href: '/hub/',
+        label: 'Hub'
+      })
+    })
 
     it('shows Popular right now across every format with no task chips', async () => {
       renderExplore()
@@ -446,31 +468,35 @@ describe('ModelsCatalogue', () => {
     expect(screen.queryByTestId('browse-all-end')).toBeNull()
   })
 
-  it('opens the models page with the API paths and a key link', async () => {
+  it('opens the models page with an API key link and the API docs', async () => {
     render(ModelsCatalogue, {
       props: { models: launchModels, section: 'models' }
     })
 
     expect(
-      within(await screen.findByTestId('build-api-band'))
+      within(await screen.findByTestId('models-hub-hero'))
+        .getByRole('link', { name: 'Get an API key' })
+        .getAttribute('href')
+    ).toBe('https://platform.comfy.org/profile/api-keys?onboarding=router')
+    expect(
+      within(screen.getByTestId('model-access-partner'))
         .getAllByRole('link')
         .map((link) => link.getAttribute('href'))
     ).toEqual([
       'https://platform.comfy.org/profile/api-keys?onboarding=router',
-      'https://docs.comfy.org/development/comfy-router/quickstart#comfy-router-quickstart',
-      '/platform/router/',
-      '/platform/comfy-api/',
-      '/platform/'
+      'https://docs.comfy.org/development/comfy-router/quickstart#comfy-router-quickstart'
     ])
+    expect(screen.queryByTestId('workshop-hero')).toBeNull()
   })
 
-  it('keeps the API paths off the workflows page', async () => {
+  it('keeps the models hero off the workflows page', async () => {
     render(ModelsCatalogue, {
       props: { models: launchModels, section: 'workflows' }
     })
 
     await screen.findByTestId('workflow-catalogue')
-    expect(screen.queryByTestId('build-api-band')).toBeNull()
+    expect(screen.queryByTestId('models-hub-hero')).toBeNull()
+    expect(screen.queryByTestId('model-access')).toBeNull()
   })
 
   it('lists the catalogue apps in the apps section, each on its own page', async () => {
@@ -521,7 +547,7 @@ describe('ModelsCatalogue', () => {
   it('keeps all models limited to models when workflows are available', async () => {
     const user = userEvent.setup()
     render(ModelsCatalogue, { props: { models: launchModels } })
-    await user.click(screen.getByTestId('browse-all-end'))
+    await user.click(screen.getByTestId('section-trending-see-all'))
     expect(
       screen.getByRole('heading', { level: 2, name: /^All models \d+$/ })
     ).toBeVisible()
@@ -574,7 +600,7 @@ describe('ModelsCatalogue', () => {
       history.replaceState(null, '', `/models/${query}`)
       localStorage.setItem('comfy-workshop-version', 'v2')
       render(ModelsCatalogue, { props: { models: [] } })
-      expect(screen.getByTestId('workshop-hero')).toBeTruthy()
+      expect(screen.getByTestId('models-hub-hero')).toBeTruthy()
       expect(screen.queryByTestId('workshop-hub')).toBeNull()
       expect(screen.getByTestId('workshop-sections')).toBeTruthy()
     }
@@ -582,13 +608,39 @@ describe('ModelsCatalogue', () => {
 
   it('gives the hero away to the section the reader opened', async () => {
     const user = userEvent.setup()
-    render(ModelsCatalogue, { props: { models: [] } })
-    expect(screen.getByTestId('workshop-hero')).toBeTruthy()
+    const { emitted } = render(ModelsCatalogue, {
+      props: { models: launchModels }
+    })
+    expect(screen.getByTestId('models-hub-hero')).toBeTruthy()
+    expect(emitted().hero.at(-1)).toEqual([true])
 
     // Inside a section the page is about that section, and the heading over it
     // belongs to the whole catalogue.
-    await user.click(screen.getByTestId('browse-all-end'))
+    await user.click(screen.getByTestId('section-trending-see-all'))
 
+    expect(screen.queryByTestId('models-hub-hero')).toBeNull()
     expect(screen.queryByTestId('workshop-hero')).toBeNull()
+    expect(emitted().hero.at(-1)).toEqual([false])
+  })
+
+  it('brings back the plain heading and subtitle while a search narrows the models', async () => {
+    const user = userEvent.setup()
+    const { emitted } = render(ModelsCatalogue, {
+      props: { models: launchModels }
+    })
+
+    const field = screen.getByRole('searchbox', {
+      name: 'Search models, providers, and categories'
+    })
+    await waitFor(() => expect(field).not.toHaveProperty('disabled', true))
+    await user.type(field, 'image')
+
+    await waitFor(() =>
+      expect(screen.queryByTestId('models-hub-hero')).toBeNull()
+    )
+    expect(screen.getByTestId('workshop-hero')).toHaveTextContent(
+      'Run many of them right here'
+    )
+    expect(emitted().hero.at(-1)).toEqual([false])
   })
 })

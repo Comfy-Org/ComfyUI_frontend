@@ -10,7 +10,6 @@ import type {
 } from '@/config/models-catalogue'
 import type { Locale, TranslationKey } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
-import BuildApiBand from './BuildApiBand.vue'
 import WorkshopModelsGrid from './WorkshopModelsGrid.vue'
 import type { HubSection } from '@/lib/workshop/hub-section'
 import type { WorkshopPageType } from '@/scripts/workshop-analytics'
@@ -28,6 +27,8 @@ import {
   loadWorkflowCatalogue
 } from '@/lib/workshop/catalogue-components'
 import { isWorkshopModelShown } from '@/scripts/workshop-model-flags'
+import { getRoutes } from '@/config/routes'
+import { rememberListOnClick } from '@/lib/workshop/shelf-memory'
 
 const WorkflowCatalogue = defineAsyncComponent(loadWorkflowCatalogue)
 const AppCatalogue = defineAsyncComponent(loadAppCatalogue)
@@ -49,8 +50,12 @@ const { t } = translationsFor(locale)
 const inSection = ref(false)
 // A category replaces the page's own heading and the switch between
 // catalogues, so the state has to reach the page that renders them.
-const emit = defineEmits<{ section: [boolean] }>()
+const emit = defineEmits<{ section: [boolean]; hero: [boolean] }>()
 watch(inSection, (value) => emit('section', value), { immediate: true })
+// The Models hero carries its own title and subtitle while nothing narrows
+// the catalogue, so the page's plain heading steps aside for it.
+const heroShown = ref(false)
+watch(heroShown, (value) => emit('hero', value), { immediate: true })
 const browseAll = ref(false)
 const mounted = useMounted()
 const enabled = useWorkshopEnabled()
@@ -81,6 +86,21 @@ const appCards = computed<readonly CatalogueApp[]>(() =>
     thumbnail: app.thumbnail
   }))
 )
+
+function rememberHub(event: MouseEvent) {
+  const link =
+    event.target instanceof Element ? event.target.closest('a[href]') : null
+  const modelHref = link?.getAttribute('href')
+  if (modelHref)
+    rememberListOnClick(
+      {
+        href: getRoutes(locale).hubExplore,
+        label: t('workshop.catalogue.eyebrow')
+      },
+      modelHref,
+      event
+    )
+}
 
 // Each tab says what its own listing is for, in Eric's words.
 const SUBTITLE_KEY = {
@@ -116,7 +136,7 @@ whenever(
 
 <template>
   <div
-    v-if="!inSection"
+    v-if="!inSection && !heroShown"
     class="relative isolate -mx-6 mb-6 flex flex-wrap items-center justify-between gap-x-6 gap-y-4 overflow-hidden px-6 pb-2 max-sm:mb-4 max-sm:pb-0 lg:-mx-8 lg:px-8 sm:short:pb-0"
     data-testid="workshop-hero"
   >
@@ -136,23 +156,23 @@ whenever(
       </p>
     </div>
   </div>
-  <ExploreCatalogue
-    v-if="section === 'explore'"
-    :apps="appsEnabled ? appCards : []"
-    :workflows
-    :models="routerModels"
-    :locale
-  />
-  <template v-else-if="section === 'models'">
-    <BuildApiBand v-if="!inSection" :locale />
-    <WorkshopModelsGrid
-      v-model:browse-all="browseAll"
+  <div v-if="section === 'explore'" @click="rememberHub">
+    <ExploreCatalogue
+      :apps="appsEnabled ? appCards : []"
+      :workflows
       :models="routerModels"
-      :initial-search
       :locale
-      @section="inSection = $event"
     />
-  </template>
+  </div>
+  <WorkshopModelsGrid
+    v-else-if="section === 'models'"
+    v-model:browse-all="browseAll"
+    :models="routerModels"
+    :initial-search
+    :locale
+    @section="inSection = $event"
+    @hero="heroShown = $event"
+  />
   <WorkflowCatalogue
     v-else-if="section === 'workflows'"
     v-model:browse-all="browseAll"

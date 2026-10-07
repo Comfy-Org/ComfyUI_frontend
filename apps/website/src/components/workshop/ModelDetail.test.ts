@@ -2180,17 +2180,17 @@ describe('ModelDetail', () => {
   )
 
   it.for([true, false])(
-    'keeps execution disabled when the run opt-in is absent (flag on: %s)',
+    'offers no playground and no run notice when the run opt-in is absent (flag on: %s)',
     async (flagOn) => {
       vi.stubEnv('PUBLIC_WORKSHOP_ROUTER_RUN', undefined)
       auth.session.value = credential
       auth.workshopEnabled.value = flagOn
       await mountDetail({ model: runnable })
+      expect(screen.queryByTestId('playground-section')).toBeNull()
       expect(
-        screen.getByRole('button', {
-          name: 'This model cannot be run from the browser yet.'
-        })
-      ).toHaveProperty('disabled', true)
+        screen.queryByText('This model cannot be run from the browser yet.')
+      ).toBeNull()
+      expect(screen.getByTestId('api-section')).toBeTruthy()
       expect(runWorkshopRouter).not.toHaveBeenCalled()
     }
   )
@@ -2278,20 +2278,27 @@ describe('ModelDetail', () => {
     }
   )
 
-  it.for(['run', 'auth', 'model'] as const)(
-    'does not solicit sign-in when %s is unavailable',
-    async (disabled) => {
+  it.for([
+    { disabled: 'run', playground: false },
+    { disabled: 'model', playground: true },
+    { disabled: 'auth', playground: true }
+  ] as const)(
+    'does not solicit sign-in when $disabled is unavailable',
+    async ({ disabled, playground }) => {
       if (disabled === 'run')
         vi.stubEnv('PUBLIC_WORKSHOP_ROUTER_RUN', undefined)
       if (disabled === 'auth') auth.enabled.value = false
       await mountDetail({ model: disabled === 'model' ? playable : runnable })
       await nextTick()
       expect(screen.queryByRole('link', { name: 'Sign in to run' })).toBeNull()
+      expect(screen.queryByTestId('playground-section') !== null).toBe(
+        playground
+      )
       expect(
-        screen.getByRole('button', {
+        screen.queryByRole('button', {
           name: 'This model cannot be run from the browser yet.'
-        })
-      ).toHaveProperty('disabled', true)
+        }) !== null
+      ).toBe(playground)
     }
   )
 

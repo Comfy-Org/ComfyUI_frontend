@@ -8,6 +8,7 @@ import type { WorkshopModel } from '@/config/models-catalogue'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import { compareRows } from '@/lib/workshop/explorer/compare'
+import WorkshopCardMedia from '@/components/workshop/WorkshopCardMedia.vue'
 
 const { models, locale = 'en' } = defineProps<{
   models: readonly WorkshopModel[]
@@ -42,16 +43,36 @@ const rows = computed(() => compareRows(models, locale))
         <table
           class="w-full min-w-136 table-fixed border-collapse text-left text-sm"
         >
+          <colgroup>
+            <col class="w-36" />
+            <col v-for="model in models" :key="model.slug" />
+          </colgroup>
           <thead>
             <tr>
-              <td class="w-36" />
+              <td />
               <th
                 v-for="model in models"
                 :key="model.slug"
                 scope="col"
                 class="pr-4 pb-4 align-bottom font-medium text-primary-warm-white"
               >
-                {{ model.name }}
+                <component
+                  :is="model.href ? 'a' : 'span'"
+                  :href="model.href"
+                  class="group flex flex-col gap-2 rounded-xl outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
+                >
+                  <span
+                    class="relative block aspect-4/3 w-full overflow-hidden rounded-xl bg-hub-surface"
+                    data-testid="compare-thumbnail"
+                  >
+                    <WorkshopCardMedia :model />
+                  </span>
+                  <span
+                    class="transition-colors group-hover:text-primary-comfy-yellow"
+                  >
+                    {{ model.name }}
+                  </span>
+                </component>
               </th>
             </tr>
           </thead>
@@ -77,23 +98,20 @@ const rows = computed(() => compareRows(models, locale))
               </td>
             </tr>
             <tr class="border-t border-transparency-white-t8">
-              <th
-                scope="row"
-                class="py-3 pr-4 text-xs font-medium tracking-wider text-primary-warm-gray uppercase"
-              >
-                {{ t('workshop.explorer.compare.page') }}
-              </th>
-              <td v-for="model in models" :key="model.slug" class="py-3 pr-4">
+              <td />
+              <td v-for="model in models" :key="model.slug" class="pt-5 pr-4">
                 <a
                   v-if="model.href"
                   :href="model.href"
-                  class="rounded-lg font-medium text-primary-comfy-yellow underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
+                  class="flex h-10 w-full items-center justify-center rounded-2xl border border-transparency-white-t20 px-4 text-sm font-medium text-primary-warm-white transition-colors outline-none hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
                   data-testid="compare-model-link"
                 >
-                  {{ t('workshop.explorer.compare.openModel') }}
-                  <span class="sr-only">{{ model.name }}</span>
+                  <span class="truncate">
+                    {{
+                      t('workshop.explorer.compare.try', { name: model.name })
+                    }}
+                  </span>
                 </a>
-                <span v-else class="text-primary-comfy-canvas">—</span>
               </td>
             </tr>
           </tbody>

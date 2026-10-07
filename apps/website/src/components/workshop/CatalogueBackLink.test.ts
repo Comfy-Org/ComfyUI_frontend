@@ -1,7 +1,8 @@
 import { render, screen, waitFor } from '@testing-library/vue'
 import { afterEach, describe, expect, it } from 'vitest'
+import { nextTick } from 'vue'
 
-import { rememberShelf } from '@/lib/workshop/shelf-memory'
+import { rememberList } from '@/lib/workshop/shelf-memory'
 import CatalogueBackLink from './CatalogueBackLink.vue'
 
 afterEach(() => {
@@ -31,41 +32,40 @@ describe('CatalogueBackLink', () => {
     expect(link.getAttribute('href')).toBe('/hub')
   })
 
-  it('carries the shelf back to that listing too', async () => {
-    history.replaceState(null, '', '/hub/model/demo/')
-    rememberShelf('generate-videos', '/hub/model/demo/')
-    render(CatalogueBackLink, { props: { catalogue: '/hub' } })
-
-    await waitFor(() =>
-      expect(screen.getByTestId('model-back').getAttribute('href')).toBe(
-        '/hub?useCase=generate-videos'
-      )
-    )
-  })
-
-  it('adds the shelf to a listing that already carries a query', async () => {
-    history.replaceState(null, '', '/hub/model/demo/')
-    rememberShelf('generate-videos', '/hub/model/demo/')
-    render(CatalogueBackLink, { props: { catalogue: '/hub?view=grid' } })
-
-    await waitFor(() =>
-      expect(screen.getByTestId('model-back').getAttribute('href')).toBe(
-        '/hub?view=grid&useCase=generate-videos'
-      )
-    )
-  })
-
-  it('offers the shelf the visitor came from', async () => {
-    history.replaceState(null, '', '/models/demo/')
-    rememberShelf('generate-videos', '/models/demo/')
+  it.for([
+    {
+      list: {
+        href: '/hub/models/?useCase=generate-videos',
+        label: 'Generate videos'
+      },
+      text: 'Back to Generate videos'
+    },
+    {
+      list: { href: '/hub/models/?tab=video', label: 'Video models' },
+      text: 'Back to Video models'
+    },
+    { list: { href: '/hub/', label: 'Hub' }, text: 'Back to Hub' },
+    { list: { href: '/hub/models/?q=flux' }, text: 'Back to all models' }
+  ])('returns to $list.href as "$text"', async ({ list, text }) => {
+    history.replaceState(null, '', '/hub/models/demo/')
+    rememberList(list, '/hub/models/demo/')
     render(CatalogueBackLink)
 
     await waitFor(() => {
       const link = screen.getByTestId('model-back')
-      expect(link.textContent.trim()).toBe('Back to Generate videos')
-      expect(link.getAttribute('href')).toBe(
-        '/hub/models/?useCase=generate-videos'
-      )
+      expect(link.textContent.trim()).toBe(text)
+      expect(link.getAttribute('href')).toBe(list.href)
     })
+  })
+
+  it('leaves a list remembered for another model alone', async () => {
+    history.replaceState(null, '', '/hub/models/demo/')
+    rememberList({ href: '/hub/', label: 'Hub' }, '/hub/models/other/')
+    render(CatalogueBackLink)
+    await nextTick()
+
+    const link = screen.getByTestId('model-back')
+    expect(link.textContent.trim()).toBe('Back to all models')
+    expect(link.getAttribute('href')).toBe('/hub/models/')
   })
 })

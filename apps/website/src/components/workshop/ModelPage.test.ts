@@ -70,6 +70,7 @@ describe('ModelPage', () => {
   })
 
   it('offers three ways to use the model under the summary', async () => {
+    vi.stubEnv('PUBLIC_WORKSHOP_ROUTER_RUN', '1')
     const scroll = vi
       .spyOn(Element.prototype, 'scrollIntoView')
       .mockImplementation(() => undefined)
@@ -77,6 +78,11 @@ describe('ModelPage', () => {
     render(ModelPage, { props: { page: usedPage } })
 
     const paths = screen.getByRole('list', { name: 'Ways to use this model' })
+    expect(
+      within(paths)
+        .getAllByRole('link')
+        .map((link) => link.textContent.trim())
+    ).toEqual(['Run here', 'Use via API', 'Open in Cloud'])
     const run = within(paths).getByRole('link', { name: 'Run here' })
     const cloud = within(paths).getByRole('link', { name: 'Open in Cloud' })
     const api = within(paths).getByRole('link', { name: 'Use via API' })
@@ -115,6 +121,22 @@ describe('ModelPage', () => {
         .map((link) => link.textContent.trim())
     ).toEqual(['Open in Cloud'])
     expect(screen.queryByTestId('playground-section')).toBeNull()
+  })
+
+  it('offers no run and no playground while running here is switched off', () => {
+    vi.stubEnv('PUBLIC_WORKSHOP_ROUTER_RUN', undefined)
+    render(ModelPage, { props: { page: usedPage } })
+
+    const paths = screen.getByRole('list', { name: 'Ways to use this model' })
+    expect(
+      within(paths)
+        .getAllByRole('link')
+        .map((link) => link.textContent.trim())
+    ).toEqual(['Use via API', 'Open in Cloud'])
+    expect(screen.queryByTestId('playground-section')).toBeNull()
+    expect(
+      screen.queryByText('This model cannot be run from the browser yet.')
+    ).toBeNull()
   })
 
   it('lists the real workflows that use the model, behind the workflows flag', async () => {

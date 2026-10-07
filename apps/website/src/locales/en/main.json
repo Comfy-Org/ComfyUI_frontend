@@ -187,10 +187,8 @@
     "sections": {
       "featured": "Featured",
       "trending": "Trending",
-      "seeAll": "See all ({n})",
       "otherFormats": "Other formats",
       "back": "Back to all categories",
-      "browseAll": "Browse all models",
       "allModels": "All models",
       "scrollBack": "Scroll back",
       "scrollForward": "Scroll forward",
@@ -256,8 +254,6 @@
       "label": "Sort",
       "popular": "Most popular",
       "name": "Name A to Z",
-      "priceAsc": "Price: low to high",
-      "priceDesc": "Price: high to low",
       "recommended": "Recommended"
     },
     "form": {
@@ -766,22 +762,83 @@
         "provider": "Provider",
         "task": "What it does",
         "access": "How you use it",
-        "page": "Model page",
-        "openModel": "Open"
+        "try": "Try {name}"
       }
     },
-    "build": {
-      "title": "Put it in your product.",
-      "body": "Call any model with Comfy Router, or run a workflow with Comfy API. Keys and usage live on Developer Platform.",
-      "routerTitle": "Comfy Router",
-      "routerBody": "Call any model below with one API key.",
-      "apiTitle": "Comfy API",
-      "apiBody": "Run any Hub workflow as an endpoint.",
-      "platformTitle": "Developer Platform",
-      "platformBody": "API keys, usage and deploys.",
-      "getKey": "Get an API key",
-      "docs": "Docs",
-      "snippetLabel": "Example request to Comfy Router"
+    "modelsHub": {
+      "titleFirstLine": "Every model.",
+      "titleSecondLine": "One graph.",
+      "subtitle": "Run models here, call them by API or download open weights for ComfyUI.",
+      "runModel": "Run a model",
+      "getApiKey": "Get an API key",
+      "counts": "{models} models · {openWeights} open weights · {partner} partner models",
+      "latestLaunch": "Latest launch",
+      "trendingSubtitle": "What is running this week",
+      "viewAll": "View all models",
+      "access": {
+        "heading": "Choose how you access models",
+        "openTitle": "Open weights",
+        "openBody": "Download the files and run them on your own machine in ComfyUI.",
+        "openCta": "Browse open weights",
+        "partnerTitle": "Partner models & API",
+        "partnerBody": "Run them here or call them from your code with one API key.",
+        "apiDocs": "API docs"
+      },
+      "family": {
+        "eyebrow": "Model family",
+        "title": "Explore model families",
+        "openVersion": "{name} (open)",
+        "versionsLabel": "Releases in the {name} family",
+        "wanTitle": "The Wan family",
+        "wanDescription": "Open and hosted video models from Alibaba.",
+        "wanExplore": "Explore the Wan family"
+      },
+      "faqHeading": "AI models in ComfyUI",
+      "faq": {
+        "1": {
+          "q": "What does day-zero support mean?",
+          "a": "It means a newly released model can be used in ComfyUI as soon as its supported integration is available."
+        },
+        "2": {
+          "q": "Is ComfyUI free?",
+          "a": "ComfyUI Desktop is free to run on your own hardware. Cloud and partner services have separate usage terms."
+        },
+        "3": {
+          "q": "Do partner models need separate accounts?",
+          "a": "Account and billing requirements depend on the partner integration used by a workflow."
+        },
+        "4": {
+          "q": "What VRAM do open models need?",
+          "a": "Requirements vary by model, resolution, precision, and workflow. Quantized variants can reduce memory use."
+        },
+        "5": {
+          "q": "Can I run these models through an API?",
+          "a": "Comfy API can turn supported workflows into production endpoints."
+        },
+        "6": {
+          "q": "Can I use these models commercially, and where are they available?",
+          "a": "Commercial-use rights are model-specific. Local availability means you can run a model on your own hardware, but it does not grant commercial rights—review that model’s license and restrictions. Comfy Cloud availability depends on the models supported there and their applicable terms. Organizations that need negotiated terms, indemnity, or other contractual assurances should contact Comfy Enterprise to discuss a commercial agreement."
+        }
+      },
+      "back": {
+        "search": "results for “{query}”",
+        "tab": {
+          "image": "Image models",
+          "video": "Video models",
+          "audio": "Audio models",
+          "3d": "3D models",
+          "edit": "Edit models",
+          "upscale": "Upscale models",
+          "llm": "Language models",
+          "open": "Open weights",
+          "partner": "Partner models"
+        },
+        "access": {
+          "run": "Models you can run here",
+          "api": "Models with an API",
+          "download": "Open weights to download"
+        }
+      }
     }
   },
   "auth": {
@@ -3518,7 +3575,8 @@
       "cloudCta": "RUN ON CLOUD",
       "tutorialCta": "VIEW TUTORIAL",
       "blogLink": "Read blog post",
-      "workflowCount": "{count} workflows use this model"
+      "workflowCount": "{count} workflows use this model",
+      "downloadForComfy": "Download for ComfyUI"
     },
     "whatIs": {
       "heading": "What is {name}?",

@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 
 import type { WorkshopModel } from '@/config/models-catalogue'
 import WorkshopSections from './WorkshopSections.vue'
-import { lastShelf } from '@/lib/workshop/shelf-memory'
+import { lastList } from '@/lib/workshop/shelf-memory'
 
 afterEach(() => {
   sessionStorage.clear()
@@ -87,7 +87,7 @@ describe('WorkshopSections', () => {
 
     const row = within(screen.getByTestId('section-trending'))
     await user.click(row.getByRole('link', { name: /\ba\b/i }))
-    expect(lastShelf('/models/a/')).toBe('all')
+    expect(lastList('/models/a/')).toEqual({ href: '/hub/models/' })
   })
 
   it.for([
@@ -106,32 +106,40 @@ describe('WorkshopSections', () => {
       // oxlint-disable-next-line testing-library/prefer-user-event
       await fireEvent.click(row.getByRole('link', { name: /\ba\b/i }), event)
 
-      expect(lastShelf('/models/a/')).toBeUndefined()
+      expect(lastList('/models/a/')).toBeUndefined()
     }
   )
 
   it.for([
-    { total: 8, seeAll: undefined, shown: 8 },
-    { total: 9, seeAll: 'See all (9)', shown: 8 }
-  ] as const)(
-    'loads $shown of $total and offers See all only as $seeAll',
-    ({ total, seeAll, shown }) => {
-      render(WorkshopSections, { props: { models: videos(total) } })
+    { total: 3, shown: 3 },
+    { total: 8, shown: 8 },
+    { total: 9, shown: 8 }
+  ] as const)('shows $shown of $total in the grid', ({ total, shown }) => {
+    render(WorkshopSections, { props: { models: videos(total) } })
 
-      expect(trendingNames()).toHaveLength(shown)
-      expect(
-        screen.queryByTestId('section-trending-see-all')?.textContent.trim()
-      ).toBe(seeAll)
-    }
-  )
+    expect(trendingNames()).toHaveLength(shown)
+  })
 
-  it('asks the catalogue to browse every model from See all', async () => {
+  it('asks the catalogue to browse every model from View all models', async () => {
     const { emitted } = render(WorkshopSections, {
-      props: { models: videos(9) }
+      props: { models: videos(3) }
     })
 
-    await userEvent.click(screen.getByRole('button', { name: 'See all (9)' }))
+    await userEvent.click(
+      screen.getByRole('button', { name: 'View all models' })
+    )
 
     expect(emitted().browse).toEqual([[]])
+  })
+
+  it('offers each comparable model to compare and reports the choice', async () => {
+    const { emitted } = render(WorkshopSections, {
+      props: { models, compared: ['a'] }
+    })
+
+    expect(screen.getByRole('checkbox', { name: 'Compare a' })).toBeChecked()
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Compare b' }))
+
+    expect(emitted().compare).toEqual([['b']])
   })
 })

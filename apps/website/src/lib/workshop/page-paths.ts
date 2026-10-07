@@ -1,6 +1,6 @@
 import type { WorkshopModelDetail } from '@/config/models-catalogue'
 import { workflowRunsHere } from '@/config/workflow-render'
-import { canRunModel } from '@/lib/workshop/cinematic-studio/gate'
+import { runsHere } from '@/lib/workshop/explorer/model-access'
 
 /** The ways a model or workflow page can really be used from the Hub. */
 export interface PagePaths {
@@ -13,5 +13,5 @@ export function pagePaths(model: WorkshopModelDetail): PagePaths {
     const runs = workflowRunsHere(model)
     return { run: runs, api: runs }
   }
-  return { run: canRunModel(model), api: !!model.execution }
+  return { run: runsHere(model), api: !!model.execution }
 }

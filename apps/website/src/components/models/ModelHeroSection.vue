@@ -11,7 +11,8 @@ const {
   blogUrl,
   hubSlug,
   workflowCount,
-  directory
+  directory,
+  localFile = false
 } = defineProps<{
   displayName: string
   huggingFaceUrl: string
@@ -20,6 +21,8 @@ const {
   hubSlug?: string
   workflowCount: number
   directory: string
+  /** Shown at the Hub address, where the page is about the file itself. */
+  localFile?: boolean
 }>()
 
 const workflowsUrl = hubSlug
@@ -70,7 +73,21 @@ const isPartnerNode = directory === 'partner_nodes'
         {{ t('models.hero.workflowCount', { count: workflowCount }) }}
       </p>
 
-      <div class="flex flex-col gap-3 sm:flex-row">
+      <div v-if="localFile" class="flex flex-col gap-3 sm:flex-row">
+        <BrandButton
+          v-if="huggingFaceUrl"
+          :href="huggingFaceUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+          variant="solid"
+          size="lg"
+          class="w-full uppercase sm:w-auto sm:min-w-48"
+          data-testid="model-file-download"
+        >
+          {{ t('models.hero.downloadForComfy') }}
+        </BrandButton>
+      </div>
+      <div v-else class="flex flex-col gap-3 sm:flex-row">
         <BrandButton
           v-if="workflowsUrl"
           :href="workflowsUrl"

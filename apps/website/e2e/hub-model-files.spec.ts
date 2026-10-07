@@ -36,6 +36,20 @@ test.describe('Model file pages in the Hub', () => {
     ).toHaveText(['Hub', 'Models'])
   })
 
+  test('offers the file download and nothing to run', async ({ page }) => {
+    await page.goto('/hub/models/local/qwen-image-vae/')
+
+    await expect(page.getByTestId('model-file-download')).toHaveText(
+      'Download for ComfyUI'
+    )
+    await expect(page.getByRole('link', { name: 'TRY IN COMFY' })).toHaveCount(
+      0
+    )
+    await expect(page.getByRole('link', { name: 'RUN ON CLOUD' })).toHaveCount(
+      0
+    )
+  })
+
   test('lists the Hub workflows that load the file', async ({
     page,
     context

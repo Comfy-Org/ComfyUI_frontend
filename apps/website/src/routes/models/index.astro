@@ -3,6 +3,7 @@ import BaseLayout from '@/layouts/BaseLayout.astro'
 import { workshopModels } from '@/config/workshop-browse-content'
 import ModelsPage from '@/components/workshop/ModelsPage.vue'
 import ModelsShowcase from '@/components/models/ModelsShowcase.astro'
+import FAQSection from '@/components/common/FAQSection.vue'
 import { pageContext } from '@/utils/jsonLd'
 import { modelsHubJsonLd } from '@/utils/modelJsonLd'
 import { modelsHubMeta } from './models-hub-meta'
@@ -107,4 +108,11 @@ const jsonLd = modelsHubJsonLd({
       </div>
     </details>
   </section>
+  <FAQSection
+    client:visible
+    headingKey="workshop.modelsHub.faqHeading"
+    faqPrefix="workshop.modelsHub.faq"
+    faqCount={6}
+    data-testid="models-faq"
+  />
 </BaseLayout>
