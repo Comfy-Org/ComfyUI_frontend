@@ -230,7 +230,7 @@ describe('composer asset tray', () => {
     await userEvent.click(
       within(screen.getByRole('group', { name: 'other.png' })).getByRole(
         'button',
-        { name: 'Remove' }
+        { name: 'Remove other.png' }
       )
     )
 
@@ -412,7 +412,7 @@ describe('composer asset tray', () => {
     await nextTick()
     await vi.advanceTimersByTimeAsync(300)
     expect(
-      screen.queryByRole('tooltip', { name: asset.name })
+      screen.queryByRole('dialog', { name: asset.name })
     ).not.toBeInTheDocument()
     expect(editor).toHaveFocus()
     await user.keyboard('and keep typing')
@@ -421,7 +421,7 @@ describe('composer asset tray', () => {
     await user.hover(chip)
     await vi.advanceTimersByTimeAsync(300)
     expect(
-      screen.queryByRole('tooltip', { name: asset.name })
+      screen.queryByRole('dialog', { name: asset.name })
     ).not.toBeInTheDocument()
     const trayItem = within(
       screen.getByTestId('composer-asset-section')
@@ -447,7 +447,7 @@ describe('composer asset tray', () => {
     expect(chip).toHaveFocus()
     await vi.advanceTimersByTimeAsync(300)
     expect(
-      screen.queryByRole('tooltip', { name: asset.name })
+      screen.queryByRole('dialog', { name: asset.name })
     ).not.toBeInTheDocument()
     const trayItem = within(
       screen.getByTestId('composer-asset-section')
@@ -533,12 +533,14 @@ describe('composer asset tray', () => {
     await user.keyboard('{Enter}')
     await screen.findByTestId('asset-reference-chip')
     expect(
-      screen.queryByRole('tooltip', { name: asset.name })
+      screen.queryByRole('dialog', { name: asset.name })
     ).not.toBeInTheDocument()
 
-    const trigger = screen.getByTestId('agent-attachment-chip')
+    const trigger = screen.getByRole('button', {
+      name: `Preview ${asset.name}`
+    })
     await user.hover(trigger)
-    const preview = await screen.findByRole('tooltip', { name: asset.name })
+    const preview = await screen.findByRole('dialog', { name: asset.name })
     expect(
       within(preview).getByRole('img', { name: asset.name })
     ).toHaveAttribute('src', asset.previewUrl)
@@ -549,15 +551,15 @@ describe('composer asset tray', () => {
     })
     await waitFor(() =>
       expect(
-        screen.queryByRole('tooltip', { name: asset.name })
+        screen.queryByRole('dialog', { name: asset.name })
       ).not.toBeInTheDocument()
     )
 
     await user.hover(trigger)
-    await screen.findByRole('tooltip', { name: asset.name })
+    await screen.findByRole('dialog', { name: asset.name })
     unmount()
     expect(
-      screen.queryByRole('tooltip', { name: asset.name })
+      screen.queryByRole('dialog', { name: asset.name })
     ).not.toBeInTheDocument()
   })
 
@@ -586,7 +588,7 @@ describe('composer asset tray', () => {
     )
     await userEvent.click(
       within(screen.getByTestId('composer-asset-section')).getByRole('button', {
-        name: 'Remove'
+        name: 'Remove source.png'
       })
     )
     store.updateAttachment(asset.id, { uploading: false, ref: asset.ref })

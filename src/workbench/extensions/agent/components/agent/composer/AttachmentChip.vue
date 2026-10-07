@@ -19,35 +19,31 @@ const emit = defineEmits<{ remove: [] }>()
 </script>
 
 <template>
-  <AssetHoverPreview :name :preview-url>
-    <span
-      data-testid="agent-attachment-chip"
-      :data-attachment-name="name"
-      :data-highlighted="highlighted || undefined"
-      role="group"
-      :aria-label="name"
-      class="group/attachment relative flex size-20 shrink-0 items-center justify-center rounded-lg p-1 data-highlighted:ring-2 data-highlighted:ring-base-foreground data-highlighted:ring-inset"
-    >
+  <span
+    data-testid="agent-attachment-chip"
+    :data-attachment-name="name"
+    :data-highlighted="highlighted || undefined"
+    role="group"
+    :aria-label="name"
+    class="group/attachment relative flex size-20 shrink-0 items-center justify-center rounded-lg p-1 data-highlighted:ring-2 data-highlighted:ring-base-foreground data-highlighted:ring-inset"
+  >
+    <AssetHoverPreview :name :preview-url>
+      <AssetThumbnail :name :preview-url variant="tray" class="size-full" />
       <span
-        class="relative flex size-full items-center justify-center overflow-hidden rounded-md"
+        v-if="uploading"
+        role="status"
+        :aria-label="$t('agent.uploading')"
+        class="absolute inset-0 flex items-center justify-center bg-base-background/60"
       >
-        <AssetThumbnail :name :preview-url variant="tray" class="size-full" />
         <span
-          v-if="uploading"
-          role="status"
-          :aria-label="$t('agent.uploading')"
-          class="absolute inset-0 flex items-center justify-center bg-base-background/60"
-        >
-          <span
-            class="icon-[lucide--loader-circle] size-5 animate-spin text-muted-foreground"
-          />
-        </span>
+          class="icon-[lucide--loader-circle] size-5 animate-spin text-muted-foreground"
+        />
       </span>
-      <TagRemoveButton
-        :label="$t('agent.remove')"
-        class="pointer-events-none absolute top-1 right-1 size-5 shrink-0 rounded-full bg-base-background text-base-foreground opacity-0 ring-1 ring-border-subtle group-focus-within/attachment:pointer-events-auto group-focus-within/attachment:opacity-100 group-hover/attachment:pointer-events-auto group-hover/attachment:opacity-100 hover:bg-secondary-background-hover"
-        @click="emit('remove')"
-      />
-    </span>
-  </AssetHoverPreview>
+    </AssetHoverPreview>
+    <TagRemoveButton
+      :label="$t('agent.removeAsset', { name })"
+      class="pointer-events-none absolute top-1 right-1 size-5 shrink-0 rounded-full bg-base-background text-base-foreground opacity-0 ring-1 ring-border-subtle group-focus-within/attachment:pointer-events-auto group-focus-within/attachment:opacity-100 group-hover/attachment:pointer-events-auto group-hover/attachment:opacity-100 hover:bg-secondary-background-hover touch:pointer-events-auto touch:size-7 touch:opacity-100"
+      @click="emit('remove')"
+    />
+  </span>
 </template>

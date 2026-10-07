@@ -5603,6 +5603,8 @@
     "focusNodeLabel": "Show {node} on canvas",
     "removeNodeLabel": "Remove {node} reference",
     "removeAssetReference": "Remove {name} reference",
+    "removeAsset": "Remove {name}",
+    "previewAsset": "Preview {name}",
     "uploading": "Uploading",
     "uploadingAttachments": "Uploading {count} attachment | Uploading {count} attachments",
     "noNodesToMention": "No nodes in this workflow",

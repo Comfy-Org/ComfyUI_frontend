@@ -36,12 +36,16 @@ test.describe('Agent composer asset drop', { tag: '@cloud' }, () => {
     )
 
     await bootAgentApp(page, agentFlagEnabled, {
-      assets: { assets: [AGENT_VIDEO_ASSET], total: 1, has_more: false }
+      assets: {
+        assets: [{ ...AGENT_VIDEO_ASSET, display_name: null }],
+        total: 1,
+        has_more: false
+      }
     })
   })
 
   for (const view of ['grid', 'list'] as const) {
-    test(`attaches an asset dragged onto the composer from ${view} view`, async ({
+    test(`re-attaches a library asset without a display name from ${view} view`, async ({
       page
     }) => {
       const agentPanel = new AgentPanel(page)
@@ -53,6 +57,7 @@ test.describe('Agent composer asset drop', { tag: '@cloud' }, () => {
       if (view === 'list') {
         await assets.openSettingsMenu()
         await assets.listViewOption.click()
+        await assets.closeSettingsMenu()
       }
 
       const source =
@@ -68,6 +73,36 @@ test.describe('Agent composer asset drop', { tag: '@cloud' }, () => {
       // PM-1157/PM-1158 failure, and it would pass a bare count assertion.
       await expect(agentPanel.attachmentChip(ASSET_NAME)).toBeVisible()
       await expect(agentPanel.attachmentChips).toHaveCount(1)
+      await source.dragTo(agentPanel.root)
+      await expect(agentPanel.attachmentChips).toHaveCount(1)
+      await agentPanel.composer.fill('Keep this draft @agent_generated')
+      await agentPanel.root
+        .getByRole('menuitem', { name: ASSET_NAME, exact: true })
+        .click()
+      await expect(
+        agentPanel.composer.getByTestId('asset-reference-chip')
+      ).toHaveCount(1)
+      await agentPanel.attachmentChip(ASSET_NAME).hover()
+      await agentPanel
+        .attachmentChip(ASSET_NAME)
+        .getByRole('button', { name: `Remove ${ASSET_NAME}`, exact: true })
+        .click()
+      await expect(agentPanel.attachmentChips).toHaveCount(0)
+      await expect(
+        agentPanel.composer.getByTestId('asset-reference-chip')
+      ).toHaveCount(0)
+      await expect(agentPanel.composer).toContainText('Keep this draft')
+      await source.dragTo(agentPanel.root)
+      await expect(agentPanel.attachmentChip(ASSET_NAME)).toBeVisible()
+      await expect(agentPanel.attachmentChips).toHaveCount(1)
+      await agentPanel.composer.press('End')
+      await agentPanel.composer.pressSequentially('@agent_generated')
+      await agentPanel.root
+        .getByRole('menuitem', { name: ASSET_NAME, exact: true })
+        .click()
+      await expect(
+        agentPanel.composer.getByTestId('asset-reference-chip')
+      ).toHaveCount(1)
     })
   }
 
