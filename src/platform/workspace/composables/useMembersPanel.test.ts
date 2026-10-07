@@ -1334,6 +1334,20 @@ describe('useMembersPanel', () => {
       expect(panel.permissions.value.canManageMembers).toBe(false)
     })
 
+    // isPlanEnded additionally requires the team/sales-managed classifier that
+    // selects the ended banner, so it under-covers the freeze. The capability
+    // this replaced was withheld for every terminal plan, banner or not.
+    it('freezes member management on a terminal plan with no ended treatment', async () => {
+      mockIsTeamPlan.value = false
+      mockSubscription.value = { tier: 'PRO', isCancelled: false }
+      mockSubscriptionStatus.value = 'ended'
+      mockMaxSeats.value = 30
+      const panel = await setup()
+
+      expect(panel.isPlanEnded.value).toBe(false)
+      expect(panel.permissions.value.canManageMembers).toBe(false)
+    })
+
     it('keeps invite disabled while billing is initializing', async () => {
       mockIsInitialized.value = false
       const panel = await setup()

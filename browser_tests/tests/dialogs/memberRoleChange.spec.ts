@@ -278,7 +278,7 @@ test.describe('Member role change (Members tab)', { tag: '@cloud' }, () => {
   }) => {
     const state = await new CloudWorkspaceMockHelper(page).setup(
       DEFAULT_TEAM_MEMBERS,
-      TEAM_WORKSPACE,
+      { ...TEAM_WORKSPACE, subscription_tier: 'ENTERPRISE' },
       ACTIVE_ENTERPRISE_STATUS,
       SALES_MANAGED_CAPABILITIES
     )

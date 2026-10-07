@@ -120,17 +120,20 @@ export function useMembersPanel() {
   const { maxSeats, occupiedSeats } = useBillingContext()
   const { canInviteMembers } = useBillingCapabilities()
 
-  const { isPlanEnded, isSalesManagedPlan, isEnterprisePlan } = usePlanEnded()
+  const { isPlanEnded, isPlanTerminal, isSalesManagedPlan, isEnterprisePlan } =
+    usePlanEnded()
 
   const permissions = computed(() => {
-    // Not can_change_seats: it is seat *quantity*, which the server zeroes on
-    // every sales-managed tier, taking the whole row menu from Enterprise
-    // owners (FE-3268). RequireWorkspaceOwner gates these writes on role
-    // alone. The ended freeze is explicit because the seat count misses it:
-    // max_seats 0 means uncapped, not seatless.
+    // Three near-misses, each of which this predicate used to get wrong.
+    // can_change_seats: seat *quantity*, zeroed on every sales-managed tier,
+    // so it took the row menu from Enterprise owners (FE-3268) — role is what
+    // RequireWorkspaceOwner actually checks. hasMemberSeats: cannot stand in
+    // for the dead-plan freeze, since max_seats 0 means uncapped. And
+    // isPlanTerminal, not isPlanEnded: the old capability was withheld for
+    // every dead plan, not just the banner-eligible ones.
     const canManageMembers =
       hasMemberSeats.value &&
-      !isPlanEnded.value &&
+      !isPlanTerminal.value &&
       workspaceRole.value === 'owner'
     const canManageInvites =
       hasMemberSeats.value &&
