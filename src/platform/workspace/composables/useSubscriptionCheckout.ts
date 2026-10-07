@@ -37,7 +37,6 @@ import { openHostedBillingTab } from '@/platform/workspace/billing/openHostedBil
 import { registerRefreshOnReturn } from '@/platform/workspace/billing/refreshOnReturn'
 import type { SettledSubscribeResponse } from '@/platform/workspace/billing/sdk/subscriptionOperationView'
 import { SettledOperationError } from '@/platform/workspace/billing/sdk/subscriptionOperationView'
-import PaymentRecoveryToast from '@/platform/workspace/components/PaymentRecoveryToast.vue'
 import { readOnRail } from '@/platform/workspace/composables/readOnRail'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useBillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
@@ -641,15 +640,13 @@ export function useSubscriptionCheckout(
         // it and got blocked. The toast's own button click is a gesture, so
         // retrying from there isn't blocked.
         paymentRecoveryToasts.push(
-          toast.custom(
-            PaymentRecoveryToast,
-            {
-              title: t('g.warning'),
-              description: t('subscription.preview.paymentPopupBlocked'),
-              actionLabel: t('subscription.planLoadErrorRetry'),
+          toast.warning(t('g.warning'), {
+            description: t('subscription.preview.paymentPopupBlocked'),
+            action: {
+              label: t('subscription.planLoadErrorRetry'),
               // The toast can outlive this attempt (a newer one started, or the
               // checkout reset); a stale click must not reopen its captured URL.
-              onAction: () => {
+              onClick: () => {
                 if (!isCurrent()) return
                 if (window.open(portalUrl.href, '_blank')) {
                   portal.opened(billingClient)
@@ -658,9 +655,8 @@ export function useSubscriptionCheckout(
                 }
                 armPaymentRecoveryReturnRefresh()
               }
-            },
-            { role: 'alert' }
-          )
+            }
+          })
         )
         return 'blocked'
       }
@@ -1594,20 +1590,17 @@ export function useSubscriptionCheckout(
         const paymentMethodUrl = initialActionUrl
         const opId = response.billing_op_id
         paymentRecoveryToasts.push(
-          toast.custom(
-            PaymentRecoveryToast,
-            {
-              title: t('g.warning'),
-              description: t('subscription.preview.paymentPopupBlocked'),
-              actionLabel: t('subscription.planLoadErrorRetry'),
+          toast.warning(t('g.warning'), {
+            description: t('subscription.preview.paymentPopupBlocked'),
+            action: {
+              label: t('subscription.planLoadErrorRetry'),
               // Not the mutation lock, which is released once the op is adopted.
-              onAction: () => {
+              onClick: () => {
                 if (activeCheckoutOperationId.value !== opId) return
                 window.open(paymentMethodUrl, '_blank')
               }
-            },
-            { role: 'alert' }
-          )
+            }
+          })
         )
       }
     }

@@ -21,7 +21,7 @@ export function useDockedToast(
     () => toValue(visible),
     (shown) => {
       if (!shown) return undock()
-      id ??= toast.custom(panel, {}, { placement: 'dock' })
+      id ??= toast.dock(panel)
     },
     { immediate: true }
   )

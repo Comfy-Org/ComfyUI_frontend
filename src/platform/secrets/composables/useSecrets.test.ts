@@ -25,9 +25,6 @@ beforeEach(() => {
   vi.mocked(useToast().loading).mockImplementation((...args: unknown[]) =>
     mockAdd('loading', ...args)
   )
-  vi.mocked(useToast().custom).mockImplementation((...args: unknown[]) =>
-    mockAdd('custom', ...args)
-  )
 })
 
 const mockListSecrets = vi.fn()

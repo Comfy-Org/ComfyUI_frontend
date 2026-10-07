@@ -1,7 +1,5 @@
 import { useToast } from '@/components/ui/toast/toastStore'
 import { toToastId } from '@/types/toastId'
-import PaymentRecoveryToast from '@/platform/workspace/components/PaymentRecoveryToast.vue'
-import type { PaymentRecoveryToastProps } from '@/platform/workspace/components/PaymentRecoveryToast.vue'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { render } from '@testing-library/vue'
 import type { Mock } from 'vitest'
@@ -433,29 +431,18 @@ beforeEach(() => {
       return toToastId(0)
     })
   }
-  vi.mocked(toast.custom).mockImplementation((...args) => {
-    mockToastAdd('custom', ...args)
-    return toToastId(0)
-  })
 })
 
-function latestPaymentRecoveryToastProps(): PaymentRecoveryToastProps {
+function latestPaymentRecoveryAction(): () => unknown {
   const call = mockToastAdd.mock.calls.at(-1)
-  assert(call?.[0] === 'custom')
-  assert(call[1] === PaymentRecoveryToast)
-  const props = call[2]
-  assert(props && typeof props === 'object')
-  assert('title' in props && typeof props.title === 'string')
-  assert('description' in props && typeof props.description === 'string')
-  assert('actionLabel' in props && typeof props.actionLabel === 'string')
-  assert('onAction' in props && typeof props.onAction === 'function')
-  const onAction = props.onAction
-  return {
-    title: props.title,
-    description: props.description,
-    actionLabel: props.actionLabel,
-    onAction: () => onAction()
-  }
+  assert(call?.[0] === 'warning')
+  const options = call[2]
+  assert(options && typeof options === 'object' && 'action' in options)
+  const action = options.action
+  assert(action && typeof action === 'object' && 'onClick' in action)
+  const onClick = action.onClick
+  assert(typeof onClick === 'function')
+  return () => onClick()
 }
 
 const i18n = createI18n({
@@ -1661,14 +1648,12 @@ describe('useSubscriptionCheckout', () => {
         'https://app.test/subscribe?invite=secret#token'
       )
       expect(mockToastAdd).toHaveBeenCalledWith(
-        'custom',
-        PaymentRecoveryToast,
+        'warning',
+        'Warning',
         expect.objectContaining({
           description: 'Payment popup blocked',
-          actionLabel: 'Try again',
-          onAction: expect.any(Function)
-        }),
-        { role: 'alert' }
+          action: { label: 'Try again', onClick: expect.any(Function) }
+        })
       )
     })
 
@@ -1678,10 +1663,9 @@ describe('useSubscriptionCheckout', () => {
         'SUBSCRIPTION_PAYMENT_REQUIRED'
       )
       expect(mockToastAdd).toHaveBeenCalledWith(
-        'custom',
-        PaymentRecoveryToast,
-        expect.any(Object),
-        { role: 'alert' }
+        'warning',
+        'Warning',
+        expect.objectContaining({ action: expect.any(Object) })
       )
 
       checkout.handleBackToPricing()
@@ -1709,10 +1693,9 @@ describe('useSubscriptionCheckout', () => {
         billingCycle: 'yearly'
       })
       expect(mockToastAdd).toHaveBeenCalledWith(
-        'custom',
-        PaymentRecoveryToast,
-        expect.any(Object),
-        { role: 'alert' }
+        'warning',
+        'Warning',
+        expect.objectContaining({ action: expect.any(Object) })
       )
 
       unmount()
@@ -1739,7 +1722,7 @@ describe('useSubscriptionCheckout', () => {
         tierKey: 'standard',
         billingCycle: 'yearly'
       })
-      const { onAction } = latestPaymentRecoveryToastProps()
+      const onAction = latestPaymentRecoveryAction()
 
       // Click retry (a real gesture opens the popup this time), then close
       // checkout — completing payment in that popup and returning must still
@@ -2102,7 +2085,7 @@ describe('useSubscriptionCheckout', () => {
           }
         ])
 
-        const { onAction } = latestPaymentRecoveryToastProps()
+        const onAction = latestPaymentRecoveryAction()
         mockOpen.mockReturnValueOnce({})
         onAction()
         leaveAndReturn()
@@ -2129,7 +2112,7 @@ describe('useSubscriptionCheckout', () => {
         mockOpen.mockReturnValueOnce(null)
         await submitRejectedPreview('SUBSCRIPTION_PAYMENT_REQUIRED')
 
-        const { onAction } = latestPaymentRecoveryToastProps()
+        const onAction = latestPaymentRecoveryAction()
         mockOpen.mockReturnValueOnce(null)
         onAction()
         leaveAndReturn()
@@ -2894,7 +2877,7 @@ describe('useSubscriptionCheckout', () => {
       mockOpen.mockReturnValueOnce(null)
       const { checkout, selection } = await startTeamPaymentRecovery()
       await selection
-      const { onAction } = latestPaymentRecoveryToastProps()
+      const onAction = latestPaymentRecoveryAction()
 
       // The retry toast can survive a reset that raced ahead of removing it;
       // its action must still refuse to reopen a URL from the old attempt.
@@ -4821,14 +4804,12 @@ describe('useSubscriptionCheckout', () => {
       await checkout.handleAddCreditCard()
 
       expect(mockToastAdd).toHaveBeenCalledWith(
-        'custom',
-        PaymentRecoveryToast,
+        'warning',
+        'Warning',
         expect.objectContaining({
           description: 'Payment popup blocked',
-          actionLabel: 'Try again',
-          onAction: expect.any(Function)
-        }),
-        { role: 'alert' }
+          action: { label: 'Try again', onClick: expect.any(Function) }
+        })
       )
       expect(useBillingOperationStore().startOperation).toHaveBeenCalledWith(
         'op-blocked',

@@ -130,7 +130,6 @@ beforeEach(() => {
   vi.mocked(useToast().loading).mockImplementation(
     mockHandles.toastStore.loading
   )
-  vi.mocked(useToast().custom).mockImplementation(mockHandles.toastStore.custom)
 })
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({

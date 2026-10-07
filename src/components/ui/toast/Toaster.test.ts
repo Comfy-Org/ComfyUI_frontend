@@ -47,15 +47,22 @@ describe('Toaster', () => {
     ).toHaveTextContent('Could not save. Disk is fullCheck settings')
   })
 
-  it('announces custom notifications by their text', async () => {
+  it('runs a notification action from its button', async () => {
+    const user = userEvent.setup()
+    const onClick = vi.fn()
     renderToaster()
 
-    useToast().custom({ template: '<div>Invite accepted</div>' }, {})
+    useToast().warning('Pop-up blocked', {
+      description: 'Allow pop-ups and try again',
+      action: { label: 'Try again', onClick }
+    })
     await nextTick()
+    await user.click(screen.getByRole('button', { name: 'Try again' }))
 
-    expect(
-      screen.getByRole('status', { name: 'Notification' })
-    ).toHaveTextContent('Invite accepted')
+    expect(onClick).toHaveBeenCalledOnce()
+    expect(screen.getByTestId('toast')).toHaveTextContent(
+      'Pop-up blockedAllow pop-ups and try again'
+    )
   })
 
   it('keeps visible notifications out of the live regions', async () => {
@@ -181,11 +188,7 @@ describe('Toaster', () => {
   it('renders docked toasts outside the notification stack', async () => {
     renderToaster()
 
-    useToast().custom(
-      { template: '<div>Downloading models</div>' },
-      {},
-      { placement: 'dock' }
-    )
+    useToast().dock({ template: '<div>Downloading models</div>' })
     await nextTick()
 
     expect(screen.getByText('Downloading models')).toBeInTheDocument()
@@ -201,11 +204,7 @@ describe('Toaster', () => {
     renderToaster()
     useAgentNodeSelectionStore().isActive = true
 
-    useToast().custom(
-      { template: '<div>Downloading models</div>' },
-      {},
-      { placement: 'dock' }
-    )
+    useToast().dock({ template: '<div>Downloading models</div>' })
     await nextTick()
 
     expect(screen.getByText('Downloading models')).toBeVisible()

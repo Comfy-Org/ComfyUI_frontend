@@ -15,7 +15,7 @@ describe('useDockedToast', () => {
     visible.value = true
     await nextTick()
     expect(useToast().toasts).toEqual([
-      expect.objectContaining({ kind: 'custom', placement: 'dock' })
+      expect.objectContaining({ kind: 'dock' })
     ])
 
     visible.value = false

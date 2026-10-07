@@ -477,6 +477,8 @@ The toast manager provides `success`, `error`, `info`, `warning`, and `loading`
 methods with the same `(title, options?)` signature. Toasts persist when
 `duration` is omitted. Use `dismiss(id)` to remove one toast or `dismissAll()`
 to remove every toast.
+Pass `action: { label, onClick }` to add one button to the toast; `onClick`
+runs on click and does not dismiss the toast by itself.
 
 The earlier `add({ severity, summary, detail, life })`, `remove(message)`,
 `removeAll()`, and `addAlert(message)` calls still work but are deprecated.

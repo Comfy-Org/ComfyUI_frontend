@@ -30,7 +30,6 @@ beforeEach(() => {
   vi.mocked(useToast().info).mockImplementation(vi.fn())
   vi.mocked(useToast().warning).mockImplementation(vi.fn())
   vi.mocked(useToast().loading).mockImplementation(vi.fn())
-  vi.mocked(useToast().custom).mockImplementation(vi.fn())
 })
 
 vi.mock(import('@/services/dialogService'))

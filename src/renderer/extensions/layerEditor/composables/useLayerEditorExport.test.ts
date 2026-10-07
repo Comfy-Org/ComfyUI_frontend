@@ -42,9 +42,6 @@ beforeEach(() => {
   vi.mocked(useToast().loading).mockImplementation((...args: unknown[]) =>
     toastAdd('loading', ...args)
   )
-  vi.mocked(useToast().custom).mockImplementation((...args: unknown[]) =>
-    toastAdd('custom', ...args)
-  )
 })
 const i18n = createI18n({
   legacy: false,

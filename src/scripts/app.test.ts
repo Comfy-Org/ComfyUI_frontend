@@ -199,7 +199,6 @@ beforeEach(() => {
     mockToastStore.info(...args)
     return toToastId(1)
   })
-  vi.mocked(useToast().custom).mockImplementation(mockToastStore.custom)
   vi.mocked(useToast().dismiss).mockImplementation(mockToastStore.dismiss)
 })
 
@@ -475,6 +474,42 @@ describe('ComfyApp', () => {
         '1': nodeError([unrelated]),
         '2': nodeError([mediaError])
       })
+    })
+
+    it('offers to migrate legacy reroutes and dismisses the offer once migrated', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      const legacyReroute = {
+        ...createWorkflowGraphData(),
+        nodes: [
+          {
+            id: 1,
+            type: 'Reroute',
+            pos: [0, 0],
+            size: [75, 26],
+            flags: {},
+            order: 0,
+            mode: 0,
+            properties: {}
+          }
+        ]
+      } satisfies ComfyWorkflowJSON
+
+      await app.loadGraphData(legacyReroute, false, true, null, {
+        checkForRerouteMigration: true
+      })
+      const [title, options] = mockToastStore.info.mock.calls.at(-1) ?? []
+      assert(options?.action)
+      const reload = vi.spyOn(app, 'loadGraphData').mockResolvedValue(true)
+
+      await options.action.onClick()
+
+      expect([title, options.action.label]).toEqual([
+        t('toastMessages.migrateToLitegraphReroute'),
+        t('g.migrate')
+      ])
+      expect(reload).toHaveBeenCalledOnce()
+      expect(mockToastStore.dismiss).toHaveBeenCalledWith(1)
     })
 
     it('forwards clean and navigation intent to workflow navigation', async () => {
