@@ -55,6 +55,11 @@ export type AgentPanelView =
         | { status: 'loading' | 'failed'; id: string }
     }
 
+interface AgentScopedFundsObservation {
+  identity: string
+  hasFunds: boolean
+}
+
 export const useAgentPanelStore = defineStore('agentPanel', () => {
   const enabled = ref(false)
   const consentAccepted = ref(false)
@@ -80,6 +85,9 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   const reportedExhaustionIdentity = ref<string | null>(null)
   const creditTransitionNoticeIdentity = ref<string | null>(null)
   const reportedCreditTransitionNoticeIdentity = ref<string | null>(null)
+  const agentScopedFundsObservation = ref<AgentScopedFundsObservation | null>(
+    null
+  )
   const dismissedSelectionSignature = ref<string | null>(null)
   const workflowStore = useWorkflowStore()
   const targetTracking = ref<TargetTracking>({ mode: 'uninitialized' })
@@ -341,6 +349,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     reportedExhaustionIdentity,
     creditTransitionNoticeIdentity,
     reportedCreditTransitionNoticeIdentity,
+    agentScopedFundsObservation,
     width,
     requestedWidth,
     isOverlay,

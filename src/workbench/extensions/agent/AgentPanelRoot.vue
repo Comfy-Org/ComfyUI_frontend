@@ -344,9 +344,14 @@ watch(billingIdentity, () => {
 // while `agentHasFunds` keeps total exhaustion on the existing paywall path.
 watch(
   [billingIdentity, agentScopedHasFunds, agentHasFunds],
-  ([identity, scopedHasFunds, effectiveHasFunds], previous) => {
-    const [previousIdentity, previousScopedHasFunds] = previous
-    if (identity !== previousIdentity) return
+  ([identity, scopedHasFunds, effectiveHasFunds]) => {
+    if (scopedHasFunds === undefined) return
+    const previous = agentPanelStore.agentScopedFundsObservation
+    agentPanelStore.agentScopedFundsObservation = {
+      identity,
+      hasFunds: scopedHasFunds
+    }
+    if (previous === null || previous.identity !== identity) return
 
     if (scopedHasFunds === true || effectiveHasFunds === false) {
       agentPanelStore.creditTransitionNoticeIdentity = null
@@ -355,14 +360,15 @@ watch(
       return
     }
     if (
-      previousScopedHasFunds === true &&
+      previous.hasFunds === true &&
       scopedHasFunds === false &&
       consentAccepted.value &&
       billingType.value === 'workspace'
     ) {
       agentPanelStore.creditTransitionNoticeIdentity = identity
     }
-  }
+  },
+  { immediate: true }
 )
 
 const showCreditTransitionNotice = computed(

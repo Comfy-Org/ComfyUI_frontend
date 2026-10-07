@@ -1607,6 +1607,22 @@ describe('AgentPanelRoot Agent credit transition notice', () => {
     expect(screen.queryByTestId(NOTICE)).not.toBeInTheDocument()
   })
 
+  it('preserves the last defined scoped balance across an omitted read and panel remount', async () => {
+    paywallAgentScopedHasFunds.value = true
+    const firstPanel = render(AgentPanelRoot, {
+      global: { plugins: [i18n] }
+    })
+    await screen.findByRole('textbox')
+    firstPanel.unmount()
+
+    paywallAgentScopedHasFunds.value = undefined
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+    paywallAgentScopedHasFunds.value = false
+
+    expect(await screen.findByTestId(NOTICE)).toBeInTheDocument()
+  })
+
   it('defers to the existing exhaustion paywall when no funding remains', async () => {
     paywallAgentScopedHasFunds.value = true
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
