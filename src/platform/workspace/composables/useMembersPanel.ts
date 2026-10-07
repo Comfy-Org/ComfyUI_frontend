@@ -117,23 +117,33 @@ export function useMembersPanel() {
   const { hasTeamPlan, isOnTeamPlan, hasMemberSeats, isPlanLoading } =
     useTeamPlan()
   const subscriptionDialog = useSubscriptionDialog()
-  const { maxSeats, occupiedSeats } = useBillingContext()
+  const { maxSeats, occupiedSeats, subscription, subscriptionStatus } =
+    useBillingContext()
   const { canInviteMembers } = useBillingCapabilities()
 
-  const { isPlanEnded, isPlanTerminal, isSalesManagedPlan, isEnterprisePlan } =
-    usePlanEnded()
+  const { isPlanEnded, isSalesManagedPlan, isEnterprisePlan } = usePlanEnded()
+
+  // The backend's IsTerminalSubscription. usePlanEnded's isPlanTerminal
+  // cannot be reused: it reads canAccessSubscriptionFeatures, which BE-1530
+  // also clears on a failed payment, so a wind-down in dunning reads as dead
+  // while its paid-for term still runs. cancel_at is only ever sent while it
+  // is still ahead, so its presence alone separates the two.
+  const isSubscriptionTerminal = computed(
+    () =>
+      subscriptionStatus.value === 'ended' ||
+      (subscriptionStatus.value === 'canceled' &&
+        subscription.value?.endDate == null)
+  )
 
   const permissions = computed(() => {
-    // Three near-misses, each of which this predicate used to get wrong.
-    // can_change_seats: seat *quantity*, zeroed on every sales-managed tier,
-    // so it took the row menu from Enterprise owners (FE-3268) — role is what
-    // RequireWorkspaceOwner actually checks. hasMemberSeats: cannot stand in
-    // for the dead-plan freeze, since max_seats 0 means uncapped. And
-    // isPlanTerminal, not isPlanEnded: the old capability was withheld for
-    // every dead plan, not just the banner-eligible ones.
+    // Not can_change_seats: it is seat *quantity*, zeroed on every
+    // sales-managed tier, so it took the row menu from Enterprise owners
+    // (FE-3268). Role is what RequireWorkspaceOwner checks. The dead-plan
+    // freeze is spelled out because hasMemberSeats cannot carry it: max_seats
+    // 0 means uncapped, not seatless.
     const canManageMembers =
       hasMemberSeats.value &&
-      !isPlanTerminal.value &&
+      !isSubscriptionTerminal.value &&
       workspaceRole.value === 'owner'
     const canManageInvites =
       hasMemberSeats.value &&

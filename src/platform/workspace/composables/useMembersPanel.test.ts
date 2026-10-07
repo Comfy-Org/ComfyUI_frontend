@@ -1348,6 +1348,41 @@ describe('useMembersPanel', () => {
       expect(panel.permissions.value.canManageMembers).toBe(false)
     })
 
+    // BE-1530 ANDs a dunning failure into is_active, so a cancel-scheduled
+    // term in dunning looks terminal to any predicate reading that flag --
+    // including usePlanEnded's. The term is still paid for and the server
+    // still honours member writes, so winding the team down must stay
+    // possible: removing members is the whole point of that window.
+    it('keeps member management during a cancel-scheduled term in dunning', async () => {
+      mockSubscription.value = {
+        tier: 'TEAM',
+        isCancelled: true,
+        endDate: '2027-06-01T00:00:00Z'
+      }
+      mockSubscriptionStatus.value = 'canceled'
+      mockCanAccessSubscriptionFeatures.value = false
+      mockMaxSeats.value = 30
+      const panel = await setup()
+      const member = createMember({ id: 'member-1' })
+
+      expect(panel.permissions.value.canManageMembers).toBe(true)
+      panel.handleRemoveMember(member)
+
+      expect(useDialogService().showRemoveMemberDialog).toHaveBeenCalledWith(
+        'member-1'
+      )
+    })
+
+    it('freezes member management once a cancellation has elapsed', async () => {
+      mockSubscription.value = { tier: 'TEAM', isCancelled: true }
+      mockSubscriptionStatus.value = 'canceled'
+      mockCanAccessSubscriptionFeatures.value = false
+      mockMaxSeats.value = 30
+      const panel = await setup()
+
+      expect(panel.permissions.value.canManageMembers).toBe(false)
+    })
+
     it('keeps invite disabled while billing is initializing', async () => {
       mockIsInitialized.value = false
       const panel = await setup()
