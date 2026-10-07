@@ -462,7 +462,6 @@ async function copyReport() {
   }
   try {
     const crdt = snapshot?.() ?? docState.value ?? fallbackSnapshot()
-    const nodeOutputStore = useNodeOutputStore()
     const report = await collectCrdtDebugReport({
       crdt,
       events: devEvents.value,
@@ -470,12 +469,7 @@ async function copyReport() {
       identifiers: collectIdentifiers(crdt),
       testerNote: testerNote.value,
       mergeTrace: simulation.value?.entries,
-      mediaUiDiagnostics: collectMediaUiDiagnostics({
-        nodes: collectAllNodes(app.rootGraph),
-        getNodeOutputs: (node) => nodeOutputStore.getNodeOutputs(node),
-        getNodeImageUrls: (node) => nodeOutputStore.getNodeImageUrls(node),
-        root: document
-      }),
+      mediaUiDiagnostics: collectCurrentMediaUiDiagnostics(),
       sources: reportSources.value,
       ...(reportSources.value.workflow ? serializeActiveWorkflow() : {})
     })
@@ -486,6 +480,20 @@ async function copyReport() {
       errorType: 'crdt_dev_panel_report_copy_failed'
     })
     reportCopyState.value = { status: 'failed', report: null }
+  }
+}
+
+function collectCurrentMediaUiDiagnostics() {
+  try {
+    const nodeOutputStore = useNodeOutputStore()
+    return collectMediaUiDiagnostics({
+      nodes: collectAllNodes(app.rootGraph),
+      getNodeOutputs: (node) => nodeOutputStore.getNodeOutputs(node),
+      getNodeImageUrls: (node) => nodeOutputStore.getNodeImageUrls(node),
+      root: document
+    })
+  } catch {
+    return []
   }
 }
 
