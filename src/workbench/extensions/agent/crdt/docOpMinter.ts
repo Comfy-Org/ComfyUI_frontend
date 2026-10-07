@@ -255,24 +255,13 @@ function documentAcceptsLiveIndex(
   liveNames: readonly string[]
 ): boolean {
   if (doc === null) return true
-  if (doc.valueCount === null) return false
   if (doc.valueCount === 0) return true
-  if (doc.valueCount > 0 && doc.valueCount !== liveNames.length) return false
-  if (doc.promotedNames === null) return false
-  if (
-    doc.promotedNames.length !== liveNames.length ||
-    doc.promotedNames.some((name, index) => name !== liveNames[index])
-  ) {
-    return false
-  }
-  if (doc.declaredNames.length === 0) return true
-  let at = -1
-  for (const name of liveNames) {
-    const next = doc.declaredNames.indexOf(name, at + 1)
-    if (next === -1) return false
-    at = next
-  }
-  return true
+  return (
+    doc.valueCount === liveNames.length &&
+    doc.promotedNames !== null &&
+    doc.promotedNames.length === liveNames.length &&
+    doc.promotedNames.every((name, index) => name === liveNames[index])
+  )
 }
 
 function routedWidgetOperation(
