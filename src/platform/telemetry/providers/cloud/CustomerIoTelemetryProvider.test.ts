@@ -16,7 +16,6 @@ const hoisted = vi.hoisted(() => {
   const resolvedUserInfo = { value: null as { id: string } | null }
   return {
     analytics,
-    reportError: vi.fn(),
     load: vi.fn(() => analytics),
     inAppPlugin: vi.fn(() => ({ name: 'Customer.io In-App Plugin' })),
     userEmail: { value: null as string | null },
@@ -43,10 +42,6 @@ const hoisted = vi.hoisted(() => {
     }
   }
 })
-
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: hoisted.reportError
-}))
 
 vi.mock<unknown>(import('@customerio/cdp-analytics-browser'), () => ({
   AnalyticsBrowser: { load: hoisted.load },
@@ -115,18 +110,23 @@ describe('CustomerIoTelemetryProvider', () => {
     window.__CONFIG__ = {}
   })
 
-  it('loads the client and registers the in-app plugin with the site id', async () => {
+  it('loads the client with in-app messaging disabled', async () => {
     createProvider()
     await vi.dynamicImportSettled()
 
-    expect(hoisted.load).toHaveBeenCalledWith({ writeKey: WRITE_KEY })
-    expect(hoisted.inAppPlugin).toHaveBeenCalledWith(
-      expect.objectContaining({ siteId: SITE_ID })
+    expect(hoisted.load).toHaveBeenCalledWith(
+      { writeKey: WRITE_KEY },
+      {
+        integrations: {
+          'Customer.io In-App Plugin': { enabled: false }
+        }
+      }
     )
-    expect(hoisted.analytics.register).toHaveBeenCalled()
+    expect(hoisted.inAppPlugin).not.toHaveBeenCalled()
+    expect(hoisted.analytics.register).not.toHaveBeenCalled()
   })
 
-  it('reports the current page after registering the in-app plugin', async () => {
+  it('reports the current page after loading the client', async () => {
     const provider = createProvider()
     provider.trackPageView('workflow_editor', {
       path: 'https://cloud.comfy.org/'
@@ -135,29 +135,6 @@ describe('CustomerIoTelemetryProvider', () => {
 
     expect(hoisted.analytics.page).toHaveBeenCalledOnce()
     expect(hoisted.analytics.page).toHaveBeenCalledWith()
-    expect(hoisted.analytics.register.mock.invocationCallOrder[0]).toBeLessThan(
-      hoisted.analytics.page.mock.invocationCallOrder[0]
-    )
-  })
-
-  it('queues page views until the in-app plugin is registered', async () => {
-    let resolveRegistration: (() => void) | undefined
-    const registration = new Promise<void>((resolve) => {
-      resolveRegistration = resolve
-    })
-    hoisted.analytics.register.mockReturnValue(registration)
-    const provider = createProvider()
-    await vi.dynamicImportSettled()
-
-    provider.trackPageView('workflow_editor', {
-      path: 'https://cloud.comfy.org/'
-    })
-    expect(hoisted.analytics.page).not.toHaveBeenCalled()
-
-    resolveRegistration?.()
-    await vi.waitFor(() =>
-      expect(hoisted.analytics.page).toHaveBeenCalledOnce()
-    )
   })
 
   it('reports client-side route changes', async () => {
@@ -172,40 +149,6 @@ describe('CustomerIoTelemetryProvider', () => {
 
     expect(hoisted.analytics.page).toHaveBeenCalledOnce()
     expect(hoisted.analytics.page).toHaveBeenCalledWith()
-  })
-
-  it('continues tracking events and page views when the in-app plugin fails to register', async () => {
-    const registrationError = new Error('in-app setup failed')
-    hoisted.analytics.register.mockRejectedValue(registrationError)
-    const provider = createProvider()
-    provider.trackWorkflowExecution()
-    provider.trackPageView('workflow_editor', {
-      path: 'https://cloud.comfy.org/'
-    })
-
-    await vi.dynamicImportSettled()
-
-    expect(hoisted.analytics.track).toHaveBeenCalledWith(
-      'execution_start',
-      SOURCE
-    )
-    expect(hoisted.analytics.page).toHaveBeenCalledOnce()
-    expect(hoisted.reportError).toHaveBeenCalledWith(registrationError, {
-      surface: 'platform',
-      errorType: 'customerio_in_app_plugin_registration_failure'
-    })
-
-    provider.trackAddApiCreditButtonClicked()
-    await vi.waitFor(() =>
-      expect(hoisted.analytics.track).toHaveBeenCalledWith(
-        'app:add_api_credit_button_clicked',
-        SOURCE
-      )
-    )
-    provider.trackPageView('settings', {
-      path: 'https://cloud.comfy.org/settings'
-    })
-    expect(hoisted.analytics.page).toHaveBeenCalledTimes(2)
   })
 
   it('does not initialize without a write key', async () => {
