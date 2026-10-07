@@ -194,7 +194,10 @@ the interpretation of a gesture, and both renderers feed it.
   it, so the `CanvasPointer` adapter forwards `movePress` to `onDrag` while
   the Vue adapter ignores it. A number-widget press that moves within the
   drift threshold can therefore adjust the value and then open its prompt on
-  release. Characterization tests cover every current `onDrag` assignment and
+  release. Handlers that only make sense for a drag (node and group
+  resize, live marquee selection) return until `pointer.dragStarted`, so a
+  press that ends as a click never mutates the graph outside an undo
+  transaction. Characterization tests cover every current `onDrag` assignment and
   record the callback count. Vue node selection is the second exception: it
   now goes through `processSelect`, so a Vue click emits the same
   `onSelectionChange` calls as a classic click. Before, a modified Vue click

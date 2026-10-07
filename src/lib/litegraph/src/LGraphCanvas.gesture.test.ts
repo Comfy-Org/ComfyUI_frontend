@@ -765,6 +765,15 @@ describe('LGraphCanvas pointer gestures', () => {
       expect(selectedTitles(canvas)).toEqual([])
       expect(canvas.resizingGroup).toBeNull()
     })
+
+    it('movement within the drift threshold does not resize the group', () => {
+      gesture.press(G_RESIZE)
+      gesture.move(shifted(G_RESIZE, [4, 3]))
+      expect([...group.size]).toEqual([500, 300])
+      gesture.release(shifted(G_RESIZE, [4, 3]))
+
+      expect([...group.size]).toEqual([500, 300])
+    })
   })
 
   describe('reroute', () => {
@@ -890,6 +899,16 @@ describe('LGraphCanvas pointer gestures', () => {
         expect(canvas.ds.offset).toEqual([0, 0])
       })
 
+      it('live selection ignores movement within the drift threshold', () => {
+        canvas.liveSelection = true
+        canvas.select(a)
+
+        gesture.press([5, 5])
+        gesture.move([9, 8])
+
+        expect(selectedTitles(canvas)).toEqual(['A'])
+      })
+
       it('cancel discards the rectangle and the selection change', () => {
         gesture.press([5, 5])
         gesture.move([140, 110])
@@ -991,6 +1010,19 @@ describe('LGraphCanvas pointer gestures', () => {
 
       expect(posOf(a)).toEqual([43, 71])
       expect(log).toContain('canvas.onNodeMoved')
+    })
+
+    it('movement within the drift threshold does not resize the node or open an undo transaction', () => {
+      const beforeChange = vi.spyOn(graph, 'beforeChange')
+      const size = [...a.size]
+      const resizeHandle: Point = [119, 99]
+      gesture.press(resizeHandle)
+      gesture.move(shifted(resizeHandle, [4, 3]))
+      expect([...a.size]).toEqual(size)
+      gesture.release(shifted(resizeHandle, [4, 3]))
+
+      expect([...a.size]).toEqual(size)
+      expect(beforeChange).not.toHaveBeenCalled()
     })
 
     it('lost pointer capture finalizes an interrupted resize transaction', () => {

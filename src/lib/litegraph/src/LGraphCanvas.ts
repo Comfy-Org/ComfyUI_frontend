@@ -2806,7 +2806,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
         pointer.onDragStart = () => (this.resizingGroup = group)
         pointer.onDrag = (eMove) => {
-          if (this.read_only) return
+          if (this.read_only || !pointer.dragStarted) return
 
           const pos: Point = [
             eMove.canvasX - group.pos[0] - offsetX,
@@ -2912,8 +2912,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (this.liveSelection) {
       const initialSelection = new Set(this.selectedItems)
 
-      pointer.onDrag = (eMove) =>
-        this.handleLiveSelect(eMove, dragRect, initialSelection)
+      pointer.onDrag = (eMove) => {
+        if (pointer.dragStarted)
+          this.handleLiveSelect(eMove, dragRect, initialSelection)
+      }
 
       pointer.onDragEnd = () => this.finalizeLiveSelect()
     } else {
@@ -3124,7 +3126,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           }
 
           pointer.onDrag = (eMove) => {
-            if (this.read_only) return
+            if (this.read_only || !pointer.dragStarted) return
 
             const deltaX = eMove.canvasX - x
             const deltaY = eMove.canvasY - y
