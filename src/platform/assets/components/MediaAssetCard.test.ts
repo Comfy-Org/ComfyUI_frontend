@@ -15,7 +15,15 @@ import { provideWebSessionRequests } from '@/platform/auth/session/webSessionFet
 import type { WebSessionRequests } from '@/platform/auth/session/webSessionFetch'
 import { useMediaAssetActions } from '../composables/useMediaAssetActions'
 
+const mockIsCloud = vi.hoisted(() => ({ value: false }))
+
 vi.mock(import('../composables/useMediaAssetActions'))
+
+vi.mock(import('@/platform/distribution/types'), () => ({
+  get isCloud() {
+    return mockIsCloud.value
+  }
+}))
 
 vi.mock(import('@/composables/useFeatureFlags'))
 
@@ -125,6 +133,7 @@ function dispatchDragStart(
 
 beforeEach(() => {
   vi.mocked(useAssetsStore().isAssetDeleting).mockImplementation(() => false)
+  mockIsCloud.value = false
 })
 
 describe('MediaAssetCard', () => {
@@ -557,4 +566,66 @@ describe('MediaAssetCard', () => {
       )
     }
   )
+
+  it.for([
+    {
+      kind: 'video',
+      name: 'cloud_video.mp4',
+      testId: 'media-asset-video'
+    },
+    {
+      kind: 'audio',
+      name: 'cloud_audio.mp3',
+      testId: 'wave-audio-media'
+    }
+  ])(
+    'plays a hashed $kind asset on cloud from a cookie-compatible /view url',
+    async ({ name, testId }) => {
+      mockIsCloud.value = true
+      vi.mocked(useFeatureFlags().flags).assetsEnabled = true
+
+      renderCard({
+        loading: false,
+        asset: {
+          ...asset,
+          id: 'cloud-media',
+          name,
+          hash: 'abc123.mp4',
+          tags: ['output'],
+          preview_url: undefined,
+          thumbnail_url: undefined
+        }
+      })
+
+      const src = (await screen.findByTestId(testId)).getAttribute('src')
+      const url = new URL(src ?? '', 'http://localhost')
+
+      expect(url.pathname).toBe('/api/view')
+      expect(url.searchParams.get('filename')).toBe('abc123.mp4')
+      expect(url.searchParams.get('type')).toBe('output')
+      expect(src).not.toContain('/content')
+    }
+  )
+
+  it('falls back to the inline content url on cloud when the asset has no hash', async () => {
+    mockIsCloud.value = true
+    vi.mocked(useFeatureFlags().flags).assetsEnabled = true
+
+    renderCard({
+      loading: false,
+      asset: {
+        ...asset,
+        id: 'no-hash',
+        name: 'clip.mp4',
+        hash: undefined,
+        preview_url: undefined,
+        thumbnail_url: undefined
+      }
+    })
+
+    expect(await screen.findByTestId('media-asset-video')).toHaveAttribute(
+      'src',
+      '/api/assets/no-hash/content?disposition=inline'
+    )
+  })
 })

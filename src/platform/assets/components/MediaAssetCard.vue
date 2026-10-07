@@ -181,7 +181,7 @@ import {
 import { getAssetType } from '../composables/media/assetMappers'
 import { startAssetDrag } from '../utils/assetDragUtil'
 import {
-  getAssetFileUrl,
+  getAssetInlineMediaUrl,
   getAssetUrl,
   resolveMediaSrc
 } from '../utils/assetUrlUtil'
@@ -284,7 +284,7 @@ const adaptedAsset = computed(() => {
         ? getAssetUrl(asset)
         : resolveMediaSrc(asset.thumbnail_url || asset.preview_url) ||
           (fileKind.value === 'video' || fileKind.value === 'audio'
-            ? getAssetFileUrl(asset, { disposition: 'inline' })
+            ? getAssetInlineMediaUrl(asset)
             : ''),
     preview_url: asset.preview_url,
     preview_id: asset.preview_id,
