@@ -43,7 +43,7 @@ concurrency:
 
 jobs:
   approve:
-    if: github.event_name == 'pull_request_target' || github.event_name == 'pull_request_review'
+    if: github.event_name == 'pull_request_target'
     environment: website-approval
     runs-on: ubuntu-latest
     timeout-minutes: 5
