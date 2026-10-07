@@ -10,15 +10,13 @@ import {
   searchTemplates,
   termFuzziness,
   tokenize
-} from '@/composables/templateSearchConfig'
-import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
+} from './templateSearch'
+import type { SearchableTemplate } from './templateSearch'
 
 const buildTemplate = (
-  overrides: Partial<TemplateInfo> & { name: string }
-): TemplateInfo => ({
+  overrides: Partial<SearchableTemplate> & { name: string }
+): SearchableTemplate => ({
   description: '',
-  mediaType: 'image',
-  mediaSubtype: 'png',
   ...overrides
 })
 
@@ -119,7 +117,7 @@ describe('expandQuery', () => {
 })
 
 describe('searchTemplates', () => {
-  const buildIndex = (templates: TemplateInfo[]) =>
+  const buildIndex = (templates: SearchableTemplate[]) =>
     createTemplateSearchIndex(templates)
 
   it('keeps searching when two templates share a name', () => {

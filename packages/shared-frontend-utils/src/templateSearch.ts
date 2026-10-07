@@ -2,8 +2,19 @@ import { uniqBy } from 'es-toolkit'
 import MiniSearch from 'minisearch'
 import type { SearchResult } from 'minisearch'
 
-import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
-import { searchRankBoost } from '@/platform/workflow/templates/utils/templateRanking'
+import { searchRankBoost } from './templateRanking'
+
+export interface SearchableTemplate {
+  name: string
+  title?: string
+  description?: string
+  localizedTitle?: string
+  localizedDescription?: string
+  tags?: string[]
+  models?: string[]
+  searchRank?: number
+  usage?: number
+}
 
 // MiniSearch serializes the index but not the search options, so the tokenizer
 // and field list live here and are used at both index and query time.
@@ -136,9 +147,9 @@ export function expandQuery(query: string): string | null {
 }
 
 export function createTemplateSearchIndex(
-  templates: TemplateInfo[]
-): MiniSearch<TemplateInfo> {
-  const index = new MiniSearch<TemplateInfo>({
+  templates: SearchableTemplate[]
+): MiniSearch<SearchableTemplate> {
+  const index = new MiniSearch<SearchableTemplate>({
     idField: 'name',
     fields: [...SEARCH_FIELDS],
     // Returned on each hit so ranking can read usage and curation without a
@@ -151,7 +162,7 @@ export function createTemplateSearchIndex(
       if (field === 'description') {
         return template.localizedDescription ?? template.description
       }
-      const value = template[field as keyof TemplateInfo]
+      const value = template[field as keyof SearchableTemplate]
       return Array.isArray(value) ? value.join(' ') : (value as string)
     },
     tokenize,
@@ -193,7 +204,7 @@ export function rankByRelevanceThenUsage(hits: SearchResult[]): SearchResult[] {
 
 /** Ordered template names for a query: literal matches first, then dedup'd expansion matches. */
 export function searchTemplates(
-  index: MiniSearch<TemplateInfo>,
+  index: MiniSearch<SearchableTemplate>,
   query: string
 ): string[] {
   const trimmed = query.trim()
