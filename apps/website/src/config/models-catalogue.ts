@@ -498,23 +498,8 @@ function searchText(model: WorkshopModel): string {
     .toLowerCase()
 }
 
-const SORT_ORDERS = ['popular', 'name', 'priceAsc', 'priceDesc'] as const
+export const SORT_ORDERS = ['popular', 'name'] as const
 export type SortOrder = (typeof SORT_ORDERS)[number]
-
-/**
- * Price orders only mean something where a price exists. Offering them over a
- * list that carries none hands the visitor three controls that all sort by
- * name, so they are withheld until a model brings a price of its own.
- */
-export function sortOrdersFor(
-  list: readonly WorkshopModel[]
-): readonly SortOrder[] {
-  return list.some((model) => model.creditsPerRun !== undefined)
-    ? SORT_ORDERS
-    : SORT_ORDERS.filter(
-        (order) => order !== 'priceAsc' && order !== 'priceDesc'
-      )
-}
 
 export function sortWorkshopModels<T extends WorkshopModel>(
   list: readonly T[],
@@ -536,12 +521,7 @@ export function sortWorkshopModels<T extends WorkshopModel>(
     (a: WorkshopModel, b: WorkshopModel) => number
   > = {
     popular: byRecommendation,
-    name: byName,
-    priceAsc: (a, b) =>
-      (a.creditsPerRun ?? Number.POSITIVE_INFINITY) -
-        (b.creditsPerRun ?? Number.POSITIVE_INFINITY) || byName(a, b),
-    priceDesc: (a, b) =>
-      (b.creditsPerRun ?? -1) - (a.creditsPerRun ?? -1) || byName(a, b)
+    name: byName
   }
   return [...list].sort(compare[order])
 }

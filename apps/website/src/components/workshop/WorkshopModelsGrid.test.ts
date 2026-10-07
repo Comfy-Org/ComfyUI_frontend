@@ -14,7 +14,7 @@ import { nextTick } from 'vue'
 
 import type { WorkshopModel } from '@/config/models-catalogue'
 import { OPEN_WEIGHT_MODELS } from '@/lib/workshop/explorer/open-weight-models'
-import { lastShelf } from '@/lib/workshop/shelf-memory'
+import { lastList } from '@/lib/workshop/shelf-memory'
 import WorkshopModelsGrid from './WorkshopModelsGrid.vue'
 
 const models: WorkshopModel[] = [
@@ -360,6 +360,19 @@ describe('WorkshopModelsGrid', () => {
     expect(cardNames()[0]).toContain('Flux')
   })
 
+  it('offers no price order, even for models that carry a price', async () => {
+    const user = userEvent.setup()
+    render(WorkshopModelsGrid, { props: { models } })
+
+    await user.click(screen.getByRole('button', { name: 'Sort' }))
+
+    expect(
+      (await screen.findAllByRole('menuitemradio')).map((item) =>
+        item.textContent.trim()
+      )
+    ).toEqual(['Most popular', 'Name A to Z'])
+  })
+
   it('leaves the Trending row for the full list sorted by name', async () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
@@ -384,7 +397,21 @@ describe('WorkshopModelsGrid', () => {
     sessionStorage.setItem('comfy-models-shelf', 'generate-videos')
     render(WorkshopModelsGrid, { props: { models } })
 
-    expect(lastShelf('/models/kling-ai/')).toBeUndefined()
+    expect(lastList('/models/kling-ai/')).toBeUndefined()
+  })
+
+  it('remembers the category tab a model was opened from', async () => {
+    history.replaceState(null, '', '/hub/models/?tab=video')
+    const user = userEvent.setup()
+    render(WorkshopModelsGrid, { props: { models } })
+    await nextTick()
+
+    await user.click(screen.getByRole('link', { name: /Kling AI/ }))
+
+    expect(lastList('/models/kling-ai/')).toEqual({
+      href: '/hub/models/?tab=video',
+      label: 'Video models'
+    })
   })
 
   it('clears search and filters together from the empty state', async () => {

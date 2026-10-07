@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 
 import type { WorkshopModel } from '@/config/models-catalogue'
 import WorkshopSections from './WorkshopSections.vue'
-import { lastShelf } from '@/lib/workshop/shelf-memory'
+import { lastList } from '@/lib/workshop/shelf-memory'
 
 afterEach(() => {
   sessionStorage.clear()
@@ -87,7 +87,7 @@ describe('WorkshopSections', () => {
 
     const row = within(screen.getByTestId('section-trending'))
     await user.click(row.getByRole('link', { name: /\ba\b/i }))
-    expect(lastShelf('/models/a/')).toBe('all')
+    expect(lastList('/models/a/')).toEqual({ href: '/hub/models/' })
   })
 
   it.for([
@@ -106,7 +106,7 @@ describe('WorkshopSections', () => {
       // oxlint-disable-next-line testing-library/prefer-user-event
       await fireEvent.click(row.getByRole('link', { name: /\ba\b/i }), event)
 
-      expect(lastShelf('/models/a/')).toBeUndefined()
+      expect(lastList('/models/a/')).toBeUndefined()
     }
   )
 

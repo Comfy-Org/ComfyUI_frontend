@@ -21,10 +21,10 @@ import type {
 } from '@/config/models-catalogue'
 import {
   parseCatalogSearch,
+  SORT_ORDERS,
   USE_CASES,
   countByUseCase,
   filterWorkshopModels,
-  sortOrdersFor,
   sortWorkshopModels
 } from '@/config/models-catalogue'
 import type { Locale, TranslationKey } from '@/i18n/translations'
@@ -47,7 +47,8 @@ import {
 } from '@/lib/workshop/explorer/open-weight-models'
 import { hostedInTab } from '@/lib/workshop/explorer/model-tabs'
 import { useModelTab } from '@/lib/workshop/explorer/model-tab-address'
-import { rememberShelfOnClick } from '@/lib/workshop/shelf-memory'
+import { rememberListOnClick } from '@/lib/workshop/shelf-memory'
+import { modelsListReturn } from '@/lib/workshop/models-list-return'
 import { openedUseCases, shelfOf } from '@/lib/workshop/shelf-use-cases'
 import { sectionTitleKeyFor } from '@/lib/workshop/section-title'
 import { useCaseLabelKey } from '@/lib/workshop/use-case-label'
@@ -137,7 +138,6 @@ const {
 
 const toolbar = useTemplateRef<HTMLElement>('toolbar')
 const heading = useTemplateRef<HTMLElement>('heading')
-const sortOrders = sortOrdersFor(models)
 
 const useCaseOptions = computed<FacetMenuOption[]>(() => {
   const counts = countByUseCase(models)
@@ -260,12 +260,18 @@ function clearFilters() {
   resetFilters()
 }
 
-function rememberModel(
-  model: WorkshopModel,
-  event: MouseEvent,
-  shelf = openedShelf.value
-) {
-  if (model.href) rememberShelfOnClick(shelf, model.href, event)
+function rememberModel(model: WorkshopModel, event: MouseEvent) {
+  if (!model.href) return
+  const list = modelsListReturn(
+    {
+      query: query.value,
+      useCases: selectedUseCases.value,
+      tab: tab.value,
+      access: selectedAccess.value
+    },
+    locale
+  )
+  rememberListOnClick(list, model.href, event)
 }
 
 watch(browseAll, (on) => on && resetFilters())
@@ -327,7 +333,7 @@ watch(browseAll, (on) => on && resetFilters())
               @update:use-cases="applyUseCases"
             />
 
-            <WorkshopSortMenu v-model="sort" :orders="sortOrders" :locale />
+            <WorkshopSortMenu v-model="sort" :orders="SORT_ORDERS" :locale />
           </div>
         </div>
       </div>

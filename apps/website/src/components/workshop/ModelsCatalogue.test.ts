@@ -11,6 +11,7 @@ import {
   useWorkshopFlag
 } from '@/scripts/posthog'
 import ModelsCatalogue from './ModelsCatalogue.vue'
+import { lastList } from '@/lib/workshop/shelf-memory'
 import type { WorkshopModel } from '@/config/models-catalogue'
 
 vi.mock(import('@/scripts/posthog'))
@@ -252,6 +253,24 @@ describe('ModelsCatalogue', () => {
         expect(await screen.findByPlaceholderText(placeholder)).toBeVisible()
       }
     )
+
+    it('sends a model opened from the Hub back to the Hub', async () => {
+      history.replaceState(null, '', '/hub/')
+      const user = userEvent.setup()
+      renderExplore()
+      const painter = within(await screen.findByTestId('explore-results'))
+        .getAllByRole('link')
+        .find((link) => link.getAttribute('href') === '/hub/models/painter/')
+      if (!painter) throw new Error('painter is not listed')
+      painter.addEventListener('click', (event) => event.preventDefault())
+
+      await user.click(painter)
+
+      expect(lastList('/hub/models/painter/')).toEqual({
+        href: '/hub/',
+        label: 'Hub'
+      })
+    })
 
     it('shows Popular right now across every format with no task chips', async () => {
       renderExplore()

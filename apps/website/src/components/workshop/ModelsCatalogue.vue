@@ -27,6 +27,8 @@ import {
   loadWorkflowCatalogue
 } from '@/lib/workshop/catalogue-components'
 import { isWorkshopModelShown } from '@/scripts/workshop-model-flags'
+import { getRoutes } from '@/config/routes'
+import { rememberListOnClick } from '@/lib/workshop/shelf-memory'
 
 const WorkflowCatalogue = defineAsyncComponent(loadWorkflowCatalogue)
 const AppCatalogue = defineAsyncComponent(loadAppCatalogue)
@@ -85,6 +87,21 @@ const appCards = computed<readonly CatalogueApp[]>(() =>
   }))
 )
 
+function rememberHub(event: MouseEvent) {
+  const link =
+    event.target instanceof Element ? event.target.closest('a[href]') : null
+  const modelHref = link?.getAttribute('href')
+  if (modelHref)
+    rememberListOnClick(
+      {
+        href: getRoutes(locale).hubExplore,
+        label: t('workshop.catalogue.eyebrow')
+      },
+      modelHref,
+      event
+    )
+}
+
 // Each tab says what its own listing is for, in Eric's words.
 const SUBTITLE_KEY = {
   explore: 'workshop.explore.subtitle',
@@ -139,13 +156,14 @@ whenever(
       </p>
     </div>
   </div>
-  <ExploreCatalogue
-    v-if="section === 'explore'"
-    :apps="appsEnabled ? appCards : []"
-    :workflows
-    :models="routerModels"
-    :locale
-  />
+  <div v-if="section === 'explore'" @click="rememberHub">
+    <ExploreCatalogue
+      :apps="appsEnabled ? appCards : []"
+      :workflows
+      :models="routerModels"
+      :locale
+    />
+  </div>
   <WorkshopModelsGrid
     v-else-if="section === 'models'"
     v-model:browse-all="browseAll"

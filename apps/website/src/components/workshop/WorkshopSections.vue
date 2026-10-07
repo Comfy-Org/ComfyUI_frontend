@@ -9,7 +9,8 @@ import { translationsFor } from '@/i18n/translations'
 import { groupModels } from '@/config/model-family'
 import { CARD_GRID } from '@/lib/workshop/card-layout'
 import { canCompare, MAX_COMPARED } from '@/lib/workshop/explorer/compare'
-import { rememberShelfOnClick } from '@/lib/workshop/shelf-memory'
+import { getRoutes } from '@/config/routes'
+import { rememberListOnClick } from '@/lib/workshop/shelf-memory'
 import CompareToggle from '@/components/workshop/explorer/compare/CompareToggle.vue'
 import WorkshopModelCard from './WorkshopModelCard.vue'
 
@@ -33,7 +34,8 @@ const trending = computed(() =>
 )
 
 function rememberModel(model: WorkshopModel, event: MouseEvent) {
-  if (model.href) rememberShelfOnClick('all', model.href, event)
+  if (model.href)
+    rememberListOnClick({ href: getRoutes(locale).workshop }, model.href, event)
 }
 </script>
 

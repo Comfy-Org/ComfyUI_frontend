@@ -254,8 +254,6 @@
       "label": "Sort",
       "popular": "Most popular",
       "name": "Name A to Z",
-      "priceAsc": "Price: low to high",
-      "priceDesc": "Price: high to low",
       "recommended": "Recommended"
     },
     "form": {
@@ -828,6 +826,25 @@
         "6": {
           "q": "Can I use these models commercially, and where are they available?",
           "a": "Commercial-use rights are model-specific. Local availability means you can run a model on your own hardware, but it does not grant commercial rights—review that model’s license and restrictions. Comfy Cloud availability depends on the models supported there and their applicable terms. Organizations that need negotiated terms, indemnity, or other contractual assurances should contact Comfy Enterprise to discuss a commercial agreement."
+        }
+      },
+      "back": {
+        "search": "results for “{query}”",
+        "tab": {
+          "image": "Image models",
+          "video": "Video models",
+          "audio": "Audio models",
+          "3d": "3D models",
+          "edit": "Edit models",
+          "upscale": "Upscale models",
+          "llm": "Language models",
+          "open": "Open weights",
+          "partner": "Partner models"
+        },
+        "access": {
+          "run": "Models you can run here",
+          "api": "Models with an API",
+          "download": "Open weights to download"
         }
       }
     }
@@ -3566,7 +3583,8 @@
       "cloudCta": "RUN ON CLOUD",
       "tutorialCta": "VIEW TUTORIAL",
       "blogLink": "Read blog post",
-      "workflowCount": "{count} workflows use this model"
+      "workflowCount": "{count} workflows use this model",
+      "downloadForComfy": "Download for ComfyUI"
     },
     "whatIs": {
       "heading": "What is {name}?",

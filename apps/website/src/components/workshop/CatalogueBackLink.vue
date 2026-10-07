@@ -5,8 +5,7 @@ import { onMounted, ref } from 'vue'
 import { getRoutes } from '@/config/routes'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
-import { lastShelf } from '@/lib/workshop/shelf-memory'
-import { useCaseLabelKey } from '@/lib/workshop/use-case-label'
+import { lastList } from '@/lib/workshop/shelf-memory'
 
 const {
   catalogue,
@@ -25,16 +24,15 @@ const catalogueHref = catalogue ?? getRoutes(locale).workshop
 const href = ref(catalogueHref)
 const category = ref<string>()
 
-// Most visitors reach a model from a shelf, and the way back they want is that
-// shelf, not the whole catalogue. Opened in a new tab, or reached from a link
-// somebody shared, there is no shelf to return to and the catalogue answers.
+// Most visitors reach a model from a list, and the way back they want is that
+// list as they left it, not the whole catalogue. Opened in a new tab, or
+// reached from a link somebody shared, there is no list to return to and the
+// catalogue answers.
 onMounted(() => {
-  const shelf = lastShelf(location.pathname)
-  if (!shelf || shelf === 'all') return
-  const url = new URL(catalogueHref, location.origin)
-  url.searchParams.set('useCase', shelf)
-  href.value = `${url.pathname}${url.search}${url.hash}`
-  category.value = t(useCaseLabelKey[shelf])
+  const list = lastList(location.pathname)
+  if (!list) return
+  href.value = list.href
+  category.value = list.label
 })
 </script>
 

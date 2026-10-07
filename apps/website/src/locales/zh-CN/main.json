@@ -2500,7 +2500,8 @@
       "primaryCta": "在 Comfy 中试用",
       "secondaryCta": "下载模型",
       "tutorialCta": "查看教程",
-      "workflowCount": "{count} 个工作流使用此模型"
+      "workflowCount": "{count} 个工作流使用此模型",
+      "downloadForComfy": "下载到 ComfyUI"
     },
     "index": {
       "subtitle": "在 ComfyUI 中运行世界领先的 AI 模型",
@@ -4324,8 +4325,6 @@
       "label": "排序",
       "name": "名称 A 到 Z",
       "popular": "推荐",
-      "priceAsc": "价格：从低到高",
-      "priceDesc": "价格：从高到低",
       "recommended": "推荐顺序"
     },
     "task": {
@@ -4618,6 +4617,25 @@
         "6": {
           "q": "这些模型可以用于商业用途吗？在哪里可以使用？",
           "a": "商业使用权取决于具体模型。本地可用表示你可以在自己的硬件上运行模型，但不代表自动获得商业使用权；请查看该模型的许可证和限制。Comfy Cloud 的可用性取决于云端支持的模型及其适用条款。需要协商条款、赔偿保障或其他合同保证的组织，应联系 Comfy Enterprise 讨论商业协议。"
+        }
+      },
+      "back": {
+        "search": "“{query}”的结果",
+        "tab": {
+          "image": "图像模型",
+          "video": "视频模型",
+          "audio": "音频模型",
+          "3d": "3D 模型",
+          "edit": "编辑模型",
+          "upscale": "放大模型",
+          "llm": "语言模型",
+          "open": "开放权重",
+          "partner": "合作伙伴模型"
+        },
+        "access": {
+          "run": "可在这里运行的模型",
+          "api": "可通过 API 调用的模型",
+          "download": "可下载的开放权重"
         }
       }
     }
