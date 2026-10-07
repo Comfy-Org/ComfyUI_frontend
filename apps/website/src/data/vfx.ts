@@ -4,12 +4,27 @@ import { localizeHref } from '@/config/routes'
 import { filterByCategory, tutorialPath } from '@/data/learningTutorials'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
+import { faqAnswerPlainText } from '@/utils/faqAnswer'
+import { faqPageNode } from '@/utils/jsonLd'
+
+export function vfxFaqPageNode(
+  url: string,
+  faqs: readonly { question: string; answer: string }[]
+) {
+  return faqPageNode(
+    url,
+    faqs.map((faq) => ({
+      question: faq.question,
+      answer: faqAnswerPlainText(faq.answer)
+    }))
+  )
+}
 
 export function vfxContent(locale: Locale) {
   const { t } = translationsFor(locale)
   const tutorials = filterByCategory('vfx')
   const hero = tutorials.find((item) => item.slug === 'sky-replacement')
-  if (!hero)
+  if (!hero?.videoSrc)
     throw new Error('The VFX page requires the sky replacement tutorial')
 
   const examples: FeatureRow[] = [

@@ -1,17 +1,17 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro'
-import HeroSplit01 from '@/components/blocks/HeroSplit01.vue'
+import HeroBackdrop01 from '@/components/blocks/HeroBackdrop01.vue'
+import BrandButton from '@/components/common/BrandButton.vue'
+import VideoPlayer from '@/components/common/VideoPlayer.vue'
 import FeatureRows01 from '@/components/blocks/FeatureRows01.vue'
 import CardWorkflowGallery01 from '@/components/blocks/CardWorkflowGallery01.vue'
-import ReasonsSplit01 from '@/components/blocks/ReasonsSplit01.vue'
 import FAQSplit01 from '@/components/blocks/FAQSplit01.vue'
 import CallToActionSection from '@/components/common/CallToActionSection.vue'
 import SectionHeader from '@/components/common/SectionHeader.vue'
 import { getRoutes } from '@/config/routes'
-import { vfxContent } from '@/data/vfx'
+import { vfxContent, vfxFaqPageNode } from '@/data/vfx'
 import { getCustomerVideoStory } from '@/data/customerVideos'
-import { faqAnswerPlainText } from '@/utils/faqAnswer'
-import { faqPageNode, pageContext } from '@/utils/jsonLd'
+import { pageContext } from '@/utils/jsonLd'
 
 const { locale, url } = pageContext(
   Astro.site,
@@ -20,63 +20,61 @@ const { locale, url } = pageContext(
 )
 const { t } = Astro.locals
 const routes = getRoutes(locale)
-const { hero, examples, workflows, reasons, faqs } = vfxContent(locale)
+const { examples, workflows, faqs } = vfxContent(locale)
 const story = getCustomerVideoStory('black-math')
-const faqPage = faqPageNode(
-  url,
-  faqs.map((faq) => ({
-    question: faq.question,
-    answer: faqAnswerPlainText(faq.answer)
-  }))
-)
+const faqPage = vfxFaqPageNode(url, faqs)
 ---
 
 <BaseLayout
   title={t('vfx.meta.title')}
   description={t('vfx.meta.description')}
-  ogImage={hero.poster}
+  ogImage="/images/vfx-cleanplate-hero.webp"
+  minimal
   hideAnnouncementBanner
   extraJsonLd={[faqPage]}
 >
-  <HeroSplit01
-    locale={locale}
+  <HeroBackdrop01
     badgeText="VFX"
     title={t('vfx.hero.heading')}
     subtitle={t('vfx.hero.subtitle')}
-    primaryCta={{ label: t('vfx.hero.explore'), href: '#workflows' }}
-    secondaryCta={{
-      label: t('vfx.hero.contact'),
-      href: `${routes.contact}?interest=vfx`
-    }}
-    videoSrc={hero.videoSrc}
-    videoPoster={hero.poster}
-    videoTracks={hero.caption ? [...hero.caption] : []}
-    videoAriaLabel={hero.title[locale] || hero.title.en}
+    class="[&_.backdrop-blur-md]:hidden [&_h1]:lg:text-primary-comfy-canvas [&_p]:lg:text-primary-comfy-canvas"
     client:load
-  />
-  <FeatureRows01
-    locale={locale}
-    heading={t('vfx.examples.heading')}
-    eyebrow={t('vfx.examples.eyebrow')}
-    rows={examples}
-    client:visible
-  />
-  <div id="workflows" class="scroll-mt-28">
-    <section class="mx-auto max-w-9xl px-6 pt-16 lg:pt-24">
-      <SectionHeader>
-        {t('vfx.workflows.heading')}
-        <p slot="subtitle" class="mt-6 text-base text-primary-comfy-canvas/70">
-          {t('vfx.workflows.description')}
-        </p>
-      </SectionHeader>
-    </section>
-    <CardWorkflowGallery01 items={workflows} />
-  </div>
-  <ReasonsSplit01
-    heading={t('vfx.why.heading')}
-    subtitle={t('vfx.why.subtitle')}
-    reasons={reasons}
-  />
+  >
+    <div
+      slot="backdrop"
+      class="relative aspect-3/2 lg:absolute lg:inset-0 lg:aspect-auto"
+    >
+      <VideoPlayer
+        locale={locale}
+        src="https://comfy-hub-assets.comfy.org/uploads/8a3a846f-5017-428e-b2a2-24025c55e884.mp4"
+        poster="/images/vfx-cleanplate-hero.webp"
+        ariaLabel={t('vfx.examples.clean')}
+        noCors
+        autoplay
+        loop
+        hideControls
+        class="h-full rounded-none border-0"
+        client:load
+      />
+      <div
+        aria-hidden="true"
+        class="pointer-events-none absolute inset-0 hidden bg-linear-to-r from-primary-comfy-ink via-primary-comfy-ink/80 via-40% to-transparent lg:block"
+      />
+    </div>
+    <div class="mt-10 flex flex-col gap-4 sm:flex-row">
+      <BrandButton href="#workflows" size="lg" class="uppercase">
+        {t('vfx.hero.explore')}
+      </BrandButton>
+      <BrandButton
+        href={`${routes.contact}?interest=vfx`}
+        variant="outline"
+        size="lg"
+        class="uppercase"
+      >
+        {t('vfx.hero.contact')}
+      </BrandButton>
+    </div>
+  </HeroBackdrop01>
   <FeatureRows01
     locale={locale}
     heading={t('vfx.proof.heading')}
@@ -94,6 +92,24 @@ const faqPage = faqPageNode(
         }
       }
     ]}
+    client:visible
+  />
+  <div id="workflows" class="scroll-mt-28">
+    <section class="mx-auto max-w-9xl px-6 pt-16 lg:pt-24">
+      <SectionHeader>
+        {t('vfx.workflows.heading')}
+        <p slot="subtitle" class="mt-6 text-base text-primary-comfy-canvas/70">
+          {t('vfx.workflows.description')}
+        </p>
+      </SectionHeader>
+    </section>
+    <CardWorkflowGallery01 items={workflows} />
+  </div>
+  <FeatureRows01
+    locale={locale}
+    heading={t('vfx.examples.heading')}
+    eyebrow={t('vfx.examples.eyebrow')}
+    rows={examples}
     client:visible
   />
   <CallToActionSection
