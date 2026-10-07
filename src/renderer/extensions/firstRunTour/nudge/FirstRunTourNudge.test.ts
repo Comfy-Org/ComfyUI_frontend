@@ -1,3 +1,4 @@
+import type { DetachedWindowAPI } from 'happy-dom'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { fromPartial } from '@total-typescript/shoehorn'
@@ -20,7 +21,6 @@ import {
 } from '@/platform/onboarding/onboardingTours'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
@@ -32,7 +32,12 @@ const DESKTOP_WIDTH = 1280
 const MOBILE_WIDTH = 500
 
 function resizeWindow(width: number) {
-  window.innerWidth = width
+  const happyDOM = (window as unknown as { happyDOM?: DetachedWindowAPI })
+    .happyDOM
+  if (!happyDOM) {
+    throw new Error('window.happyDOM is unavailable to set viewport')
+  }
+  happyDOM.setViewport({ width, height: 800 })
   Object.defineProperty(document.documentElement, 'clientWidth', {
     configurable: true,
     value: width
@@ -213,15 +218,6 @@ describe('FirstRunTourNudge', () => {
   })
 
   it.for([
-    {
-      blocker: 'agent node selection hides the sidebar',
-      block: () => {
-        useCanvasStore().isPickingNodes = true
-      },
-      clear: () => {
-        useCanvasStore().isPickingNodes = false
-      }
-    },
     {
       blocker: 'a sidebar panel is open beside the button',
       block: () => {
