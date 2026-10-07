@@ -30,11 +30,9 @@ const { t, te, tm, locale } = useI18n()
 const promptKey = isCloud
   ? 'agent.suggestedPrompts.cloud'
   : 'agent.suggestedPrompts.local'
-const treatmentPromptKey = isCloud
-  ? 'agent.suggestedPrompts.treatment.cloud'
-  : 'agent.suggestedPrompts.treatment.local'
+const treatmentPromptKey = 'agent.suggestedPrompts.treatment.cloud'
 const hasTreatmentCopy = computed(() =>
-  te(`${treatmentPromptKey}.0`, locale.value)
+  isCloud ? te(`${treatmentPromptKey}.0`, locale.value) : false
 )
 const renderedAssignment = ref<AgentStarterPromptAssignment>(
   assignment === 'test' && hasTreatmentCopy.value ? 'test' : 'control'

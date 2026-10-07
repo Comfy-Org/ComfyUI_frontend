@@ -67,8 +67,7 @@ describe('EmptyState', () => {
           promptIndex: 4,
           promptCount: 5,
           promptTextHash: '2f8b1ba4',
-          locale: 'en',
-          assignment: 'control'
+          locale: 'en'
         }
       ]
     ])
@@ -78,30 +77,31 @@ describe('EmptyState', () => {
     {
       locale: 'en',
       assignment: 'control',
-      key: 'agent.suggestedPrompts.local.0',
+      key: 'agent.suggestedPrompts.cloud.0',
       reported: 'control'
     },
     {
       locale: 'en',
       assignment: 'test',
-      key: 'agent.suggestedPrompts.treatment.local.0',
+      key: 'agent.suggestedPrompts.treatment.cloud.0',
       reported: 'test'
     },
     {
       locale: 'zh',
       assignment: 'control',
-      key: 'agent.suggestedPrompts.local.0'
+      key: 'agent.suggestedPrompts.cloud.0'
     },
     {
       locale: 'zh',
       assignment: 'test',
-      key: 'agent.suggestedPrompts.local.0'
+      key: 'agent.suggestedPrompts.cloud.0'
     }
   ] as const)(
     'renders $assignment for $locale without changing experiment eligibility',
     async ({ locale, assignment, key, reported }) => {
       const previousLocale = i18n.global.locale.value
       i18n.global.locale.value = locale
+      distribution.isCloud = true
       try {
         const user = userEvent.setup()
         const { emitted } = render(EmptyState, {
@@ -131,6 +131,7 @@ describe('EmptyState', () => {
   )
 
   it('omits experiment attribution for a QA-rendered treatment', async () => {
+    distribution.isCloud = true
     const user = userEvent.setup()
     const { emitted } = render(EmptyState, {
       props: { assignment: 'test', attributeExperiment: false },
@@ -139,13 +140,13 @@ describe('EmptyState', () => {
 
     await user.click(
       screen.getByRole('button', {
-        name: 'Build an image workflow with my installed models'
+        name: 'Create a polished product image from a text prompt'
       })
     )
 
     expect(emitted().insert).toEqual([
       [
-        'Build an image workflow with my installed models',
+        'Create a polished product image from a text prompt',
         expect.not.objectContaining({ assignment: expect.anything() })
       ]
     ])

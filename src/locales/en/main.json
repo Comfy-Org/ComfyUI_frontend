@@ -5650,13 +5650,6 @@
           "Explain how a ComfyUI workflow works",
           "Find the best workflow for a specific task",
           "Diagnose and fix errors in a workflow"
-        ],
-        "local": [
-          "Build an image workflow with my installed models",
-          "Build an image-to-video workflow with my installed models",
-          "Explain how a ComfyUI workflow works",
-          "Find missing nodes for a workflow",
-          "Diagnose and fix errors in a workflow"
         ]
       }
     },

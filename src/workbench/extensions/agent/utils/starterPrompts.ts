@@ -6,9 +6,9 @@ import { hashPath } from '@/platform/workflow/persistence/base/hashUtil'
 
 /**
  * Stable ids for the empty state's starter prompts, index-aligned with
- * `agent.suggestedPrompts.{cloud,local}` and
- * `agent.suggestedPrompts.treatment.{cloud,local}` in the English locale, and
- * with the icon list in `EmptyState.vue`. A slot shows different copy per arm.
+ * `agent.suggestedPrompts.{cloud,local}` and the Cloud-only
+ * `agent.suggestedPrompts.treatment.cloud` list in the English locale, and with
+ * the icon list in `EmptyState.vue`. A Cloud slot shows different copy per arm.
  *
  * The copy is owned by product and is expected to change; these ids are not,
  * which is the whole point of them — an event keyed on display text cannot

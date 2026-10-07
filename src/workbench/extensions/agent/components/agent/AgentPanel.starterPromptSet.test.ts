@@ -9,6 +9,8 @@ vi.hoisted(() => {
   }
 })
 
+vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
+
 import { i18n } from '@/i18n'
 
 import AgentPanel from './AgentPanel.vue'
@@ -33,7 +35,7 @@ describe('AgentPanel starter prompt set', () => {
 
     expect(
       screen.getByRole('button', {
-        name: 'Build an image workflow with my installed models'
+        name: 'Create a polished product image from a text prompt'
       })
     ).toBeVisible()
     expect(emitted('starterPromptRendered')).toEqual([['test']])
