@@ -3,8 +3,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope } from 'vue'
 import type { EffectScope } from 'vue'
 
-import type { WorkspaceDeployment } from '@comfyorg/ingest-types'
-
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
@@ -16,7 +14,10 @@ import {
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
-import type { DeploymentCompatibility } from '@/platform/workspace/api/workspaceApi'
+import type {
+  DeploymentCompatibility,
+  WorkspaceDeployment
+} from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import type { DeploymentPickState } from '@/platform/workspace/deploymentPickState'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
@@ -109,6 +110,8 @@ function ready(deployments: WorkspaceDeployment[]): DeploymentPickState {
     pickedDeploymentId: null,
     pickSource: null,
     defaultDeploymentId: null,
+    gonePickedDeploymentId: null,
+    goneDefaultDeploymentId: null,
     buildsVisible: true
   }
 }
@@ -340,5 +343,20 @@ describe('useDeploymentCompatibility', () => {
     await vi.waitFor(() =>
       expect(workspaceApi.checkDeploymentCompatibility).toHaveBeenCalledOnce()
     )
+  })
+
+  it('shares the boot listing instead of asking for a second one', async () => {
+    useDeploymentPickStore().state = { phase: 'idle' }
+    vi.mocked(workspaceApi.listDeployments).mockResolvedValue({
+      items: [deployment('dep-rgthree')],
+      builds_visible: true
+    })
+
+    const booting = useDeploymentPickStore().loadOnce()
+    setup()
+    await booting
+    await settle()
+
+    expect(workspaceApi.listDeployments).toHaveBeenCalledOnce()
   })
 })

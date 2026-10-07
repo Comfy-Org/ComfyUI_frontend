@@ -83,7 +83,9 @@ export const useDeploymentCompatibility = createSharedComposable(() => {
   watch(
     () => workspaceStore.workspaceId,
     (workspaceId) => {
-      if (workspaceId && pickStore.state.phase === 'idle') void pickStore.load()
+      if (workspaceId && pickStore.state.phase === 'idle') {
+        void pickStore.loadOnce()
+      }
     },
     { immediate: true }
   )
@@ -159,5 +161,17 @@ export const useDeploymentCompatibility = createSharedComposable(() => {
     return missingMark(entry.missing_node_types)
   }
 
-  return { compatibility, markFor }
+  /**
+   * Comfy Cloud (as null) and the deployments that have every node type the
+   * open workflow uses, Comfy Cloud first, then in listing order; null
+   * when there is no answer for the open workflow.
+   */
+  const deploymentsThatRunIt = computed<(string | null)[] | null>(() => {
+    if (compatibility.value === null) return null
+    return [null, ...deployments.value.map((d) => d.deployment_id)].filter(
+      (id) => markFor(id)?.kind === 'runs'
+    )
+  })
+
+  return { compatibility, markFor, deploymentsThatRunIt }
 })
