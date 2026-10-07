@@ -35,6 +35,7 @@ import type { GraphOperation } from './graphOperations'
 import type { ClassifiedDocUpdate } from './layoutFollowerBridge'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
 import type { LiveGraphApplierDeps } from './liveGraphApplier'
+import { readDocPromotedWidgets } from './agentSubgraphDefinitions'
 import { readDocSlotNames } from './liveGraphApplier'
 import { createOpCoalescer } from './opCoalescer'
 import { createOpSender } from './opSender'
@@ -330,7 +331,9 @@ export function useAgentCrdtFollower(
     enqueueHumanOperations: (operations: GraphOperation[]) =>
       follower.value?.enqueueHumanOperations(operations),
     docInputNames: (nodeId: NodeId) =>
-      follower.value?.docInputNames(nodeId) ?? null
+      follower.value?.docInputNames(nodeId) ?? null,
+    docPromotedWidgets: (nodeId: NodeId) =>
+      follower.value?.docPromotedWidgets(nodeId) ?? null
   }
 }
 
@@ -844,6 +847,8 @@ function startAgentCrdtFollower(
       coalescer.enqueue(operations)
     },
     docInputNames: (nodeId: NodeId) =>
-      readDocSlotNames(bridge.follower.doc, String(nodeId), 'inputs')
+      readDocSlotNames(bridge.follower.doc, String(nodeId), 'inputs'),
+    docPromotedWidgets: (nodeId: NodeId) =>
+      readDocPromotedWidgets(bridge.follower.doc, String(nodeId))
   }
 }

@@ -767,7 +767,8 @@ const {
   status: crdtStatus,
   debugSnapshot: crdtDebugSnapshot,
   enqueueHumanOperations,
-  docInputNames
+  docInputNames,
+  docPromotedWidgets
 } = useAgentCrdtFollower(
   boundWorkflowId,
   () => resolvedUserInfo.value?.id ?? null,
@@ -824,7 +825,8 @@ const docOpMinter = attachDocOpMinter({
   enqueue: enqueueHumanOperations,
   getGraph: () => (app.isGraphReady ? app.rootGraph : null),
   boundRootGraphId,
-  docInputNames
+  docInputNames,
+  docPromotedWidgets
 })
 const restoreOpMinter = attachRestoreOpMinter({
   isEnabled: () => agentPanelStore.enabled,
