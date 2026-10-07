@@ -120,6 +120,42 @@ describe('keybindingService - Canvas Keybindings', () => {
     expect(vi.mocked(useCommandStore().execute)).not.toHaveBeenCalled()
   })
 
+  it('executes a single-key shortcut when not typing', async () => {
+    const event = createTestKeyboardEvent('r')
+
+    await keybindingService.keybindHandler(event)
+
+    expect(vi.mocked(useCommandStore().execute)).toHaveBeenCalledWith(
+      'Comfy.RefreshNodeDefinitions'
+    )
+  })
+
+  it('does not execute a single-key shortcut when typing in a plaintext-only contenteditable', async () => {
+    const editor = document.createElement('div')
+    editor.setAttribute('contenteditable', 'plaintext-only')
+    document.body.appendChild(editor)
+    const event = createTestKeyboardEvent('r', { target: editor })
+
+    await keybindingService.keybindHandler(event)
+
+    expect(vi.mocked(useCommandStore().execute)).not.toHaveBeenCalled()
+    editor.remove()
+  })
+
+  it('does not execute a single-key shortcut when typing inside a nested contenteditable element', async () => {
+    const editor = document.createElement('div')
+    editor.setAttribute('contenteditable', 'true')
+    const paragraph = document.createElement('p')
+    editor.appendChild(paragraph)
+    document.body.appendChild(editor)
+    const event = createTestKeyboardEvent('r', { target: paragraph })
+
+    await keybindingService.keybindHandler(event)
+
+    expect(vi.mocked(useCommandStore().execute)).not.toHaveBeenCalled()
+    editor.remove()
+  })
+
   it('should execute SelectAll for Ctrl+A on canvas', async () => {
     const event = createTestKeyboardEvent('a', {
       ctrlKey: true,
