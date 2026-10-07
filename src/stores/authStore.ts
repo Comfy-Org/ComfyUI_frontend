@@ -945,12 +945,15 @@ export const useAuthStore = defineStore('auth', () => {
 
   const logout = async (): Promise<void> =>
     executeAuthAction(async () => {
-      if (isDesktopHostSignedIn() && !(await requestDesktopHostSignOut())) {
+      const signsOutDesktopHost = isDesktopHostSignedIn()
+      if (signsOutDesktopHost && !(await requestDesktopHostSignOut())) {
         throw new AuthStoreError(t('auth.desktopHost.signOutFailed'))
       }
-      // Local and Desktop keep the key: partner nodes run on it.
+      // Local and Desktop keep the key: partner nodes run on it. A Desktop
+      // host logout drops it, or an earlier session's key would take over.
       const dropsStoredApiKey =
-        flags.ssoEnabled && flags.unifiedWebSessionEnabled
+        signsOutDesktopHost ||
+        (flags.ssoEnabled && flags.unifiedWebSessionEnabled)
       await useCloudWebSessionStore().signOut()
       if (currentUser.value) await firebaseIdentity.signOut()
       const apiKeyStore = useApiKeyAuthStore()

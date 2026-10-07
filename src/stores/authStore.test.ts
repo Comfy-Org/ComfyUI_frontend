@@ -2911,7 +2911,13 @@ describe('useAuthStore in local/desktop distribution', () => {
       expect(store.balance).toBeNull()
     })
 
-    it('signs Desktop out on logout', async () => {
+    it('signs Desktop out on logout and drops an earlier stored API key', async () => {
+      const apiKeyStore = useApiKeyAuthStore()
+      let storedKey: string | null = 'stored-key'
+      vi.mocked(apiKeyStore.getApiKey).mockImplementation(() => storedKey)
+      vi.mocked(apiKeyStore.clearStoredApiKey).mockImplementation(async () => {
+        storedKey = null
+      })
       const bridge = hostBridge({ status: 'signed_in', userId: 'host-user' })
       await startDesktopHostSession(bridge)
 
@@ -2919,6 +2925,18 @@ describe('useAuthStore in local/desktop distribution', () => {
 
       expect(bridge.signOut).toHaveBeenCalledOnce()
       expect(store.userId).not.toBe('host-user')
+      expect(apiKeyStore.clearStoredApiKey).toHaveBeenCalledOnce()
+      expect(apiKeyStore.getApiKey()).toBeNull()
+    })
+
+    it('keeps the stored API key on a logout that was not a Desktop host one', async () => {
+      const apiKeyStore = useApiKeyAuthStore()
+      vi.mocked(apiKeyStore.getApiKey).mockReturnValue('stored-key')
+      await startDesktopHostSession(hostBridge({ status: 'signed_out' }))
+
+      await store.logout()
+
+      expect(apiKeyStore.clearStoredApiKey).not.toHaveBeenCalled()
     })
 
     it('reports a failed logout when Desktop keeps its session', async () => {
