@@ -19,6 +19,7 @@ const { label, logo } = defineProps<{
       class="size-3.5 shrink-0 bg-white mask-contain mask-center mask-no-repeat"
       :style="{ maskImage: `url(${logo})` }"
       aria-hidden="true"
+      data-testid="model-card-provider-logo"
     />
     <span v-else class="shrink-0 text-xs" aria-hidden="true">
       {{ label.charAt(0).toUpperCase() }}

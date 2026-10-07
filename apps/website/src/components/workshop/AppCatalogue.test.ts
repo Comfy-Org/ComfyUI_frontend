@@ -33,27 +33,36 @@ describe('AppCatalogue', () => {
   )
 
   it.for([
-    { locale: 'en', mark: 'Comfy app', browseAll: 'Browse all apps' },
-    { locale: 'zh-CN', mark: 'Comfy 应用', browseAll: '浏览全部应用' }
+    {
+      locale: 'en',
+      initial: 'C',
+      mark: 'Comfy app',
+      browseAll: 'Browse all apps'
+    },
+    {
+      locale: 'zh-CN',
+      initial: 'C',
+      mark: 'Comfy 应用',
+      browseAll: '浏览全部应用'
+    }
   ] as const)(
     'labels the cards in $locale on the shelf and in the full catalogue',
-    async ({ locale, mark, browseAll }) => {
+    async ({ locale, initial, mark, browseAll }) => {
       const user = userEvent.setup()
+      const markText = (container: HTMLElement) =>
+        within(container)
+          .getAllByTestId('model-card-provider')
+          .map((element) => element.textContent.trim())
       render(AppCatalogue, { props: { apps: appsOf(9), locale } })
 
-      const shelfMarks = within(screen.getByTestId('app-shelf')).getAllByTestId(
-        'model-card-provider'
+      expect(markText(screen.getByTestId('app-shelf'))).toEqual(
+        Array(8).fill(`${initial}${mark}`)
       )
-      expect(shelfMarks).toHaveLength(8)
-      for (const element of shelfMarks) expect(element).toHaveTextContent(mark)
 
       await user.click(screen.getByRole('button', { name: browseAll }))
-      const catalogueMarks = within(
-        screen.getByTestId('app-search-results')
-      ).getAllByTestId('model-card-provider')
-      expect(catalogueMarks).toHaveLength(9)
-      for (const element of catalogueMarks)
-        expect(element).toHaveTextContent(mark)
+      expect(markText(screen.getByTestId('app-search-results'))).toEqual(
+        Array(9).fill(`${initial}${mark}`)
+      )
     }
   )
 
