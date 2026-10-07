@@ -32,6 +32,7 @@ import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import type { DevEvent } from './devPanelLog'
 import { devEventReplacer } from './devPanelLog'
 import type { MergeTraceEntry } from './mergeTrace'
+import type { MediaUiDiagnostic } from './mediaUiDiagnostics'
 
 /** Server logs beyond this are tail-trimmed; a paste has to stay pasteable. */
 const MAX_LOG_CHARS = 40_000
@@ -186,6 +187,8 @@ export interface CrdtDebugReportInput {
   workflow?: unknown
   workflowError?: string
   agentMessages?: readonly AssistantMessage[]
+  /** Privacy-safe counts and booleans for media nodes at capture time. */
+  mediaUiDiagnostics?: readonly MediaUiDiagnostic[]
 }
 
 async function attempt<T>(label: string, load: () => Promise<T>) {
@@ -613,13 +616,14 @@ export async function collectCrdtDebugReport(
   const sections: string[] = [
     '# ComfyUI Agent — CRDT debug report',
     `Generated ${new Date().toISOString()}`,
-    `Report format version: 1 · Document schema version: ${input.crdt.meta.schema_version ?? 'unknown'} · Redaction marker: ${REDACTED}`,
+    `Report format version: 2 · Document schema version: ${input.crdt.meta.schema_version ?? 'unknown'} · Redaction marker: ${REDACTED}`,
     '## Identifiers',
     'Paste this block into a bug report or search Datadog/logs by any of these fields.',
     identifiersSection(input.identifiers ?? EMPTY_REPORT_IDENTIFIERS),
     '## Collection status',
     [
       ...collectionStatus,
+      `- Media UI diagnostics: ${input.mediaUiDiagnostics === undefined ? 'unavailable' : `collected (${input.mediaUiDiagnostics.length} nodes)`}`,
       `- Workflow: ${workflow?.status ?? 'unavailable'}`
     ].join('\n')
   ]
@@ -633,6 +637,14 @@ export async function collectCrdtDebugReport(
   }
 
   sections.push('## CRDT state', crdtSection(input.crdt))
+
+  if (input.mediaUiDiagnostics !== undefined) {
+    sections.push(
+      '## Media UI diagnostics',
+      'Counts and booleans only; selected filenames and resolved media URLs are not included.',
+      fence('json', json(input.mediaUiDiagnostics))
+    )
+  }
 
   sections.push('## Agent tool calls', agentTools.section)
 

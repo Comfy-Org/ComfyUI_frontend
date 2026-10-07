@@ -139,6 +139,40 @@ describe('collectCrdtDebugReport', () => {
     expect(report).toContain('Document stamps')
   })
 
+  it('includes privacy-safe media UI state without selected values or URLs', async () => {
+    const report = await collectCrdtDebugReport({
+      crdt: SNAPSHOT,
+      events: [],
+      mediaUiDiagnostics: [
+        {
+          nodeId: '7',
+          nodeType: 'LoadImage',
+          mediaKinds: ['image'],
+          selectedImagePresent: true,
+          selectedAudioPresent: false,
+          outputImageCount: 1,
+          outputAudioCount: 0,
+          resolvedImageUrlCount: 1,
+          legacyImageCount: 0,
+          loadedLegacyImageCount: 0,
+          vueNodeCount: 1,
+          vueImageCount: 0,
+          vueAudioCount: 0,
+          audioUiRegistered: false,
+          audioElementConnected: false,
+          audioSourcePresent: false,
+          audioHiddenAsEmpty: false,
+          hideOutputImages: false
+        }
+      ]
+    })
+
+    expect(report).toContain('- Media UI diagnostics: collected (1 nodes)')
+    expect(report).toContain('## Media UI diagnostics')
+    expect(report).toContain('"selectedImagePresent": true')
+    expect(report).not.toMatch(/selected\.png|https:\/\//)
+  })
+
   it('leads with an Identifiers block carrying every ID a backend engineer searches by', async () => {
     const report = await collectCrdtDebugReport({
       crdt: SNAPSHOT,
@@ -970,7 +1004,7 @@ describe('collectCrdtDebugReport', () => {
       expect(second).toBe(first)
       expect(first).toContain('report truncated')
       expect(first).toContain(
-        'Report format version: 1 · Document schema version: 1'
+        'Report format version: 2 · Document schema version: 1'
       )
       expect(first).toContain('Schema version:** 1')
       expect(first).toContain('[redacted by the debug report]')

@@ -22,6 +22,8 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { collectAllNodes } from '@/utils/graphTraversalUtil'
 
 import { useAgentConversationStore } from '../stores/agent/agentConversationStore'
 import type { CrdtLogLevel } from './crdtDebugGate'
@@ -47,6 +49,7 @@ import type { MergeScenario, MergeSimulation } from './mergeScenarios'
 import { getMergeScenarios, runScenario } from './mergeScenarios'
 import type { MergeTraceEntry, NodeLifecycleRow } from './mergeTrace'
 import { MERGE_VOCABULARY, groupByRegister, nodeLifecycle } from './mergeTrace'
+import { collectMediaUiDiagnostics } from './mediaUiDiagnostics'
 import type { AgentCrdtStatus } from './useAgentCrdtFollower'
 
 /**
@@ -459,6 +462,7 @@ async function copyReport() {
   }
   try {
     const crdt = snapshot?.() ?? docState.value ?? fallbackSnapshot()
+    const nodeOutputStore = useNodeOutputStore()
     const report = await collectCrdtDebugReport({
       crdt,
       events: devEvents.value,
@@ -466,6 +470,12 @@ async function copyReport() {
       identifiers: collectIdentifiers(crdt),
       testerNote: testerNote.value,
       mergeTrace: simulation.value?.entries,
+      mediaUiDiagnostics: collectMediaUiDiagnostics({
+        nodes: collectAllNodes(app.rootGraph),
+        getNodeOutputs: (node) => nodeOutputStore.getNodeOutputs(node),
+        getNodeImageUrls: (node) => nodeOutputStore.getNodeImageUrls(node),
+        root: document
+      }),
       sources: reportSources.value,
       ...(reportSources.value.workflow ? serializeActiveWorkflow() : {})
     })
