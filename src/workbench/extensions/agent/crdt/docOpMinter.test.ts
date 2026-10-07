@@ -689,7 +689,7 @@ describe('attachDocOpMinter', () => {
     ])
   })
 
-  function seedPromotedHost() {
+  function seedPromotedHost(hostWidgetValues?: unknown[]) {
     const subgraph = createTestSubgraph({
       rootGraph: graph,
       inputs: [
@@ -708,7 +708,14 @@ describe('attachDocOpMinter', () => {
         subgraph.inputNode.slots[index].connect(interior.inputs[0], interior)
       }
     })
-    const doc = mintDocFrom(graph)
+    const serialized = graph.serialize() as unknown as WorkflowJSON
+    if (hostWidgetValues) {
+      const hostNode = serialized.nodes.find(
+        (node) => String(node.id) === String(host.id)
+      )
+      if (hostNode) hostNode.widgets_values = hostWidgetValues
+    }
+    const doc = mint(serialized, CATALOG)
     docPromotedWidgetNames = (nodeId) =>
       readDocPromotedWidgetNames(doc, String(nodeId))
     return { host, doc }
@@ -778,6 +785,20 @@ describe('attachDocOpMinter', () => {
     ])
     expect(applyMinted(doc, minted)).toEqual(['applied'])
     doc.destroy()
+  })
+
+  it('extends a short document array from the host values it carries', async () => {
+    const { host, doc } = seedPromotedHost(['only the prefix'])
+
+    host.widgets[1].value = 'pasted'
+    await afterFlush()
+
+    expect(applyMinted(doc, minted)).toEqual(['applied'])
+    expect(
+      project(doc, CATALOG).nodes.find(
+        (node) => String(node.id) === String(host.id)
+      )?.widgets_values
+    ).toEqual(['only the prefix', 'pasted'])
   })
 
   it('refuses to guess an index the document does not carry the name for', async () => {

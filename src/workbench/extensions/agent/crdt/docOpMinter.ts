@@ -27,11 +27,13 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
+import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { RootGraphId } from '@/types/graphScopeId'
 import type { NodeId } from '@/types/nodeId'
+import type { WidgetValue } from '@/types/simplifiedWidget'
 import { widgetId } from '@/types/widgetId'
 import type { WidgetState } from '@/types/widgetState'
 import {
@@ -70,7 +72,7 @@ export interface DocOpMinterDeps {
    * order, or null when the document holds no such node. Indexes the opaque
    * `widgets_values` a promoted write addresses.
    */
-  docPromotedWidgetNames(nodeId: NodeId): readonly string[] | null
+  docPromotedWidgetNames(nodeId: NodeId): readonly (string | undefined)[] | null
 }
 
 export interface DocOpMinter {
@@ -202,12 +204,13 @@ function isValueWidgetWrite(
  * — the named op is minted and refused as before, rather than landing on
  * whatever register sits at that index. The live order stands in only while
  * the document has no such node yet, exactly as `docInputIndex` does for a
- * link's target slot.
+ * link's target slot. The inbound leg (`applyHostWidgets`) still reads the
+ * array in LIVE order and has not been moved to this basis.
  */
 function promotedHostWrite(
   node: LGraphNode | null,
   event: IntentOf<'set_widget'>,
-  docPromotedNames: () => readonly string[] | null
+  docPromotedNames: () => readonly (string | undefined)[] | null
 ): PromotedHostWrite | null {
   if (!node?.isSubgraphNode()) return null
   const liveNames = node.inputs.flatMap((input) =>
@@ -216,7 +219,6 @@ function promotedHostWrite(
   const order = docPromotedNames() ?? liveNames
   const valueIndex = order.indexOf(event.name)
   if (valueIndex === -1) return null
-  const widgetValueStore = useWidgetValueStore()
   const rootGraphId = node.graph?.rootGraph.id ?? event.graphId
   return {
     value_index: valueIndex,
@@ -224,10 +226,26 @@ function promotedHostWrite(
     host_widgets_values: order.map((name, index) =>
       index === valueIndex
         ? event.value
-        : widgetValueStore.getWidget(widgetId(rootGraphId, event.nodeId, name))
-            ?.value
+        : hostWidgetValue(rootGraphId, event.nodeId, name)
     )
   }
+}
+
+/**
+ * A promoted sibling's current value, read exactly as
+ * `SubgraphNode.serializeFromStoreState` reads it so the array a write
+ * extends the document from agrees with the one a save would have written.
+ */
+function hostWidgetValue(
+  rootGraphId: string,
+  nodeId: NodeId,
+  name: string | undefined
+): WidgetValue | undefined {
+  if (name === undefined) return undefined
+  const value = useWidgetValueStore().getWidget(
+    widgetId(rootGraphId, nodeId, name)
+  )?.value
+  return isWidgetValue(value) ? value : undefined
 }
 
 function routedWidgetOperation(
@@ -235,7 +253,7 @@ function routedWidgetOperation(
   rootGraphId: string,
   event: IntentOf<'set_widget'>,
   node: LGraphNode | null,
-  docPromotedNames: () => readonly string[] | null
+  docPromotedNames: () => readonly (string | undefined)[] | null
 ): GraphOperation | null {
   const operation = {
     op: 'set_widget',
