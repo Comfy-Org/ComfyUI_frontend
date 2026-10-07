@@ -74,7 +74,11 @@ import {
   createOutputSlotView,
   resolveInputSlotView
 } from './node/slotDescriptorView'
-import { initializeWidgetsView } from './node/widgetsView'
+import {
+  clearWidgetRestorationSlots,
+  getWidgetRestorationSlot,
+  initializeWidgetsView
+} from './node/widgetsView'
 import type { NodeCanonicalField } from './extensionPersistence'
 import {
   extensionConfigureView,
@@ -1263,7 +1267,12 @@ export class LGraphNode
             graphId,
             this.id,
             widget.name,
-            positionalIndex++
+            getWidgetRestorationSlot(
+              this,
+              widget,
+              positionalIndex++,
+              restoration.positional.length
+            )
           )
           if (restored) widget.value = restored.value
         }
@@ -1292,6 +1301,7 @@ export class LGraphNode
         )
       }
     } finally {
+      clearWidgetRestorationSlots(this)
       useWidgetValueStore().clearNodeWidgetRestoration(graphId, this.id)
     }
   }
@@ -2320,6 +2330,8 @@ export class LGraphNode
     this.widgets ||= []
     const widget = toConcreteWidget(custom_widget, this)
     this.widgets.push(widget)
+
+    if (!this.widgets.includes(widget)) return widget
 
     // Only register with store if node has a valid ID (is already in a graph).
     // If the node isn't in a graph yet (id === -1), registration happens
