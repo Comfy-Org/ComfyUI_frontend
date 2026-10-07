@@ -1542,12 +1542,13 @@ describe('billingOperationStore', () => {
         status: 'failed',
         errorMessage: 'billingOperation.methodNotChargeableOffSessionDetail'
       })
-      expect(useToastStore().add).toHaveBeenCalledWith({
-        severity: 'error',
-        summary: 'billingOperation.subscriptionFailed',
-        detail: 'billingOperation.methodNotChargeableOffSessionDetail',
-        life: 7000
-      })
+      expect(useToast().error).toHaveBeenCalledWith(
+        'billingOperation.subscriptionFailed',
+        {
+          description: 'billingOperation.methodNotChargeableOffSessionDetail',
+          duration: 7000
+        }
+      )
     })
 
     it('does not name a payment method for a downgrade to personal', async () => {

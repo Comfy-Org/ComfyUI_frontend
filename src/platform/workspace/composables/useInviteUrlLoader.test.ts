@@ -224,12 +224,11 @@ describe('useInviteUrlLoader', () => {
       expect(mockToastAdd).not.toHaveBeenCalled()
     })
 
-    const DIRECTORY_TOAST = {
-      severity: 'info',
-      summary: 'Admin manages membership',
-      detail: 'Ask your organization admin',
-      closable: true
-    }
+    const DIRECTORY_TOAST = [
+      'info',
+      'Admin manages membership',
+      { description: 'Ask your organization admin' }
+    ]
 
     it.for([
       {
@@ -237,7 +236,7 @@ describe('useInviteUrlLoader', () => {
         sso: true,
         code: 'membership_managed_by_directory',
         wrongAccountDialogs: 0,
-        toasts: [[DIRECTORY_TOAST]]
+        toasts: [DIRECTORY_TOAST]
       },
       {
         name: 'a directory-managed refusal with sso_enabled off opens the wrong-account dialog',
@@ -471,7 +470,7 @@ describe('useInviteUrlLoader', () => {
         ).toBe(accepts ? 1 : 0)
         expect(
           mockToastAdd.mock.calls.some(
-            ([toast]) => toast.summary === 'Ask your admin to add you'
+            ([, title]) => title === 'Ask your admin to add you'
           )
         ).toBe(!accepts)
         expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })

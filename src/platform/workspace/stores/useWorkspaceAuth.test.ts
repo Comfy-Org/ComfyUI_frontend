@@ -1111,8 +1111,8 @@ describe('useWorkspaceAuthStore', () => {
         expect(currentWorkspace.value).toBeNull()
         expect(
           vi
-            .mocked(useToastStore().add)
-            .mock.calls.map(([toast]) => toast.detail)
+            .mocked(useToast().error)
+            .mock.calls.map(([, options]) => options?.description)
         ).toEqual(toasts)
         expect(useDialogStore().isDialogOpen(SSO_REQUIRED_DIALOG_KEY)).toBe(
           shown
@@ -3386,8 +3386,8 @@ describe('useWorkspaceAuthStore', () => {
         )
         expect(
           vi
-            .mocked(useToastStore().add)
-            .mock.calls.map(([toast]) => toast.detail)
+            .mocked(useToast().error)
+            .mock.calls.map(([, options]) => options?.description)
         ).toEqual(toasts)
         expect(useDialogStore().isDialogOpen(SSO_REQUIRED_DIALOG_KEY)).toBe(
           shown

@@ -3506,9 +3506,10 @@ describe('an SSO session with no Firebase login reaching Firebase-only paths', (
       await router.push(`/user-select?desktop_login_code=${desktopCode}`)
 
       const { path, query } = router.currentRoute.value
-      const ssoNotice = useToastStore().messagesToAdd.filter(
-        ({ summary }) =>
-          summary === "Desktop sign-in isn't available for SSO accounts yet"
+      const ssoNotice = useToast().toasts.filter(
+        (toast) =>
+          'title' in toast &&
+          toast.title === "Desktop sign-in isn't available for SSO accounts yet"
       )
       expect({
         path,
