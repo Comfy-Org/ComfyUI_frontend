@@ -237,6 +237,17 @@ function json(value: unknown): string {
   }
 }
 
+function fitMediaDiagnostics(
+  diagnostics: readonly MediaUiDiagnostic[]
+): readonly MediaUiDiagnostic[] {
+  const retained: MediaUiDiagnostic[] = []
+  for (const diagnostic of diagnostics) {
+    if (json([...retained, diagnostic]).length > MAX_SECTION_CHARS) break
+    retained.push(diagnostic)
+  }
+  return retained
+}
+
 function redactEventPayloads(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(redactEventPayloads)
   if (!isRecord(value)) return value
@@ -604,6 +615,16 @@ export async function collectCrdtDebugReport(
       fence('json', truncate(json(redactSecrets(value)), MAX_SECTION_CHARS))
   )
   const workflow = serializeWorkflow(input)
+  const mediaUiDiagnostics =
+    input.mediaUiDiagnostics === undefined
+      ? undefined
+      : fitMediaDiagnostics(input.mediaUiDiagnostics)
+  const mediaUiStatus =
+    mediaUiDiagnostics === undefined
+      ? 'unavailable'
+      : mediaUiDiagnostics.length === input.mediaUiDiagnostics?.length
+        ? `collected (${mediaUiDiagnostics.length} nodes)`
+        : `collected (${mediaUiDiagnostics.length} of ${input.mediaUiDiagnostics?.length} nodes; section limit)`
   const collectionStatus = (
     [
       ['System stats', systemReport],
@@ -623,7 +644,7 @@ export async function collectCrdtDebugReport(
     '## Collection status',
     [
       ...collectionStatus,
-      `- Media UI diagnostics: ${input.mediaUiDiagnostics === undefined ? 'unavailable' : `collected (${input.mediaUiDiagnostics.length} nodes)`}`,
+      `- Media UI diagnostics: ${mediaUiStatus}`,
       `- Workflow: ${workflow?.status ?? 'unavailable'}`
     ].join('\n')
   ]
@@ -638,11 +659,11 @@ export async function collectCrdtDebugReport(
 
   sections.push('## CRDT state', crdtSection(input.crdt))
 
-  if (input.mediaUiDiagnostics !== undefined) {
+  if (mediaUiDiagnostics !== undefined) {
     sections.push(
       '## Media UI diagnostics',
       'Counts and booleans only; selected filenames and resolved media URLs are not included.',
-      fence('json', json(input.mediaUiDiagnostics))
+      fence('json', json(mediaUiDiagnostics))
     )
   }
 

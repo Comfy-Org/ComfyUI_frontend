@@ -171,6 +171,40 @@ describe('collectCrdtDebugReport', () => {
     expect(report).not.toContain(privateUrl)
   })
 
+  it('bounds media diagnostics without dropping the following tool section', async () => {
+    const mediaUiDiagnostics = Array.from({ length: 1_000 }, (_, index) => ({
+      nodeId: String(index),
+      nodeType: 'LoadImage',
+      mediaKinds: ['image'] as const,
+      selectedImagePresent: true,
+      selectedAudioPresent: false,
+      outputImageCount: 1,
+      outputAudioCount: 0,
+      resolvedImageUrlCount: 1,
+      legacyImageCount: 0,
+      loadedLegacyImageCount: 0,
+      vueNodeCount: 1,
+      vueImageCount: 1,
+      vueAudioCount: 0,
+      audioUiRegistered: false,
+      audioElementConnected: false,
+      audioSourcePresent: false,
+      audioHiddenAsEmpty: false,
+      hideOutputImages: false
+    }))
+
+    const report = await collectCrdtDebugReport({
+      crdt: SNAPSHOT,
+      events: [],
+      mediaUiDiagnostics
+    })
+
+    expect(report).toMatch(
+      /Media UI diagnostics: collected \(\d+ of 1000 nodes; section limit\)/
+    )
+    expect(report).toContain('## Agent tool calls')
+  })
+
   it('leads with an Identifiers block carrying every ID a backend engineer searches by', async () => {
     const report = await collectCrdtDebugReport({
       crdt: SNAPSHOT,
