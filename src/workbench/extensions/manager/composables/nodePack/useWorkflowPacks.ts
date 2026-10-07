@@ -32,19 +32,9 @@ const _useWorkflowPacks = () => {
   const workflowPacks = ref<WorkflowPack[]>([])
   const unresolvedNodeNames = ref<string[]>([])
 
-  /** A fetch asked for before the graph existed, owed a retry once it does. */
-  const fetchDeferredUntilGraphReady = ref(false)
+  /** A fetch asked for before the graph existed, owed a retry on `configured`. */
+  let fetchDeferredUntilConfigured = false
 
-  /**
-   * Bumped at the start of every {@link startFetchWorkflowPacks} call.
-   * `useMissingNodes`' `activeWorkflow` watch, the manager tab trigger, and
-   * the graph-readiness retry below can all ask for a fetch around the same
-   * time, and {@link getWorkflowPacks} both awaits a per-node registry
-   * lookup and then unconditionally overwrites `workflowPacks`. Capturing
-   * the generation at the start of a call and checking it again once that
-   * await resolves is the standard stale-response guard: an older, slower
-   * call that finishes after a newer one started no longer wins.
-   */
   let fetchGeneration = 0
 
   const getWorkflowNodePackId = (node: LGraphNode): string | undefined => {
@@ -73,10 +63,6 @@ const _useWorkflowPacks = () => {
   ): Promise<WorkflowPack | undefined> => {
     const nodeName = node.type
 
-    // Check if node is a core node. `nodeDefsByName` may not have an entry
-    // yet for this node — this watcher can fire before `registerNodes()`
-    // populates the store, and that's exactly the unregistered-node case
-    // this feature targets — so this must not assume a def exists here.
     if (nodeDefStore.nodeDefsByName[nodeName]?.isCoreNode) {
       if (!systemStatsStore.systemStats) {
         await systemStatsStore.refetchSystemStats()
@@ -131,18 +117,11 @@ const _useWorkflowPacks = () => {
    * Nodes that have no local definition and no registry match are tracked
    * as unresolved so downstream consumers can surface them to the user.
    *
-   * @param generation this call's {@link fetchGeneration} snapshot, so a
-   * newer overlapping call can be detected once the per-node registry
-   * lookups below resolve.
-   * @returns `false` when the root graph does not exist yet and nothing was
-   * parsed, so the caller can leave its state unready instead of publishing an
-   * empty result as the workflow's answer. Also `false` when a newer call
-   * superseded this one while it was awaiting the registry lookups, so the
-   * stale result is dropped instead of overwriting the newer one's.
+   * @returns `undefined` when the root graph does not exist yet.
    */
-  const getWorkflowPacks = async (generation: number) => {
+  const getWorkflowPacks = async () => {
     const rootGraph = app.rootGraphOrUndefined
-    if (!rootGraph) return false
+    if (!rootGraph) return undefined
 
     const resolvedPacks: WorkflowPack[] = []
     const unresolved: string[] = []
@@ -156,13 +135,7 @@ const _useWorkflowPacks = () => {
       })
     )
 
-    // A newer call started (and may already have published its own result)
-    // while this one was awaiting per-node registry lookups. Let it win.
-    if (generation !== fetchGeneration) return false
-
-    workflowPacks.value = resolvedPacks
-    unresolvedNodeNames.value = [...new Set(unresolved)]
-    return true
+    return { resolvedPacks, unresolved }
   }
 
   const packsToUniqueIds = (packs: WorkflowPack[]) =>
@@ -184,49 +157,27 @@ const _useWorkflowPacks = () => {
   const filterWorkflowPack = (packs: components['schemas']['Node'][]) =>
     packs.filter((pack) => !!pack.id && isIdInWorkflow(pack.id))
 
-  /**
-   * Parse the workflow's packs, then fetch their registry info.
-   *
-   * Nothing runs while the root graph is still loading. Letting the fetch
-   * through on an unready graph would resolve an empty pack-ID list and flip
-   * `isReady` to true, which is terminal for both callers: the manager tab
-   * trigger only fires while `!isReady`, and the missing-node trigger only
-   * fires when the active workflow changes. CLOUD-FRONTEND-PROD-1YN proves the
-   * active workflow can arrive before the graph, so an unready pass would
-   * leave the Workflow and Missing tabs permanently empty for that workflow.
-   */
   const startFetchWorkflowPacks = async () => {
     const generation = ++fetchGeneration
 
-    const hasRootGraph = await getWorkflowPacks(generation)
-    // A newer call superseded this one; it owns `fetchDeferredUntilGraphReady`
-    // and the pack state now, so this call has nothing left to do.
+    const parsed = await getWorkflowPacks()
     if (generation !== fetchGeneration) return
 
-    if (!hasRootGraph) {
-      fetchDeferredUntilGraphReady.value = true
-      return
-    }
-    fetchDeferredUntilGraphReady.value = false
+    fetchDeferredUntilConfigured = !parsed
+    if (!parsed) return
+
+    workflowPacks.value = parsed.resolvedPacks
+    unresolvedNodeNames.value = [...new Set(parsed.unresolved)]
     await startFetch()
   }
 
-  // Serve whatever was deferred once the workflow's nodes actually land, not
-  // merely once an LGraph object exists. `ComfyApp.setup()` installs an
-  // empty graph well before `GraphCanvas.vue` deserializes the workflow into
-  // it (`workflowPersistence.initializeWorkflow()` runs after `setup()`
-  // resolves), so gating on `app.isGraphReady` retried on that empty graph
-  // and reproduced the exact terminal-empty-state bug this retry exists to
-  // fix. `LGraph.configure()` dispatches `configured` once nodes are
-  // actually (re)loaded — on first load and on every later one (workflow
-  // switch, undo, subgraph enter/exit) — so a fetch still deferred after one
-  // `configured` keeps getting retried instead of being owed to a single,
-  // possibly-empty transition.
+  // Retry on `configured`, not on `isGraphReady`: `setup()` installs an empty
+  // graph before the workflow is configured into it.
   useEventListener(
     () => (app.isGraphReady ? app.rootGraph.events : undefined),
     'configured',
     () => {
-      if (!fetchDeferredUntilGraphReady.value) return
+      if (!fetchDeferredUntilConfigured) return
       startFetchWorkflowPacks().catch((err: unknown) => {
         error.value = err instanceof Error ? err : new Error(String(err))
       })

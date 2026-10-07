@@ -39,12 +39,6 @@ const makePackedNode = (cnrId: string): LGraphNode =>
     properties: { cnr_id: cnrId }
   })
 
-/**
- * What `ComfyApp.setup()` publishes: an empty `LGraph`, well before the
- * workflow's nodes are deserialized into it. `events` is real so tests can
- * dispatch `configured` the same way `LGraph.configure()` does in
- * production.
- */
 function installEmptyRootGraph(): LGraph {
   const graph = fromPartial<LGraph>({
     nodes: [],
@@ -54,17 +48,11 @@ function installEmptyRootGraph(): LGraph {
   return graph
 }
 
-/**
- * What production does once the workflow is actually deserialized into the
- * graph `ComfyApp.setup()` installed: the nodes land, then
- * `LGraph.configure()` dispatches `configured`.
- */
 function deserializeWorkflow(graph: LGraph, cnrId: string) {
   graph.nodes.push(makePackedNode(cnrId))
   graph.events.dispatch('configured')
 }
 
-/** A root graph that already has the workflow's node loaded. */
 function finishSetup(cnrId: string) {
   const graph = installEmptyRootGraph()
   deserializeWorkflow(graph, cnrId)
@@ -82,8 +70,6 @@ describe('useWorkflowPacks', () => {
       })
     )
 
-    // The startup state CLOUD-FRONTEND-PROD-1YN was reported from: the workflow
-    // is known to the app, the root graph is not installed yet.
     vi.mocked(app).rootGraphOrUndefined = undefined
   })
 
@@ -126,8 +112,6 @@ describe('useWorkflowPacks', () => {
     const { startFetchWorkflowPacks, isReady, workflowPacks } =
       useWorkflowPacks()
 
-    // Mirrors the production race: a caller (e.g. useMissingNodes' watch on
-    // activeWorkflow) requests a fetch before the canvas has finished setup.
     await startFetchWorkflowPacks()
     expect(isReady.value).toBe(false)
 
@@ -135,11 +119,6 @@ describe('useWorkflowPacks', () => {
       nodes: [fromPartial<NodePack>({ id: 'pack-1', name: 'Pack 1' })]
     })
 
-    // `ComfyApp.setup()` installs the graph object -- still empty -- well
-    // before the workflow's nodes are deserialized into it. This is the
-    // exact state the Cursor review's finding #2 flagged: gating the retry
-    // on `app.isGraphReady` alone fired right here, on zero nodes, and
-    // reproduced the terminal-empty-state bug this retry exists to fix.
     const graph = installEmptyRootGraph()
     await nextTick()
     await flushPromises()
@@ -148,8 +127,6 @@ describe('useWorkflowPacks', () => {
     expect(isReady.value).toBe(false)
     expect(mockListAllPacks).not.toHaveBeenCalled()
 
-    // Only once the workflow's node actually lands and `configure()` fires
-    // `configured` does the deferred fetch retry and resolve.
     deserializeWorkflow(graph, 'pack-1')
     await nextTick()
     await flushPromises()
@@ -165,21 +142,18 @@ describe('useWorkflowPacks', () => {
     )
   })
 
-  // The retry is owed only to a fetch that was actually deferred; a
-  // `configured` event on its own is not a reason to go to the registry.
   it('does not fetch on the configured event when nothing was deferred', async () => {
     useWorkflowPacks()
 
-    finishSetup('pack-1')
+    const graph = installEmptyRootGraph()
+    await nextTick()
+    deserializeWorkflow(graph, 'pack-1')
     await nextTick()
     await flushPromises()
 
     expect(mockListAllPacks).not.toHaveBeenCalled()
   })
 
-  // Finding #3 on PR #19736's Cursor review: `inferPack` dereferenced
-  // `nodeDefsByName[nodeName].isCoreNode` with no nil check, which throws for
-  // exactly the unregistered-node case this feature targets.
   it('falls back to the registry instead of throwing when the node has no local def', async () => {
     mockInferPackFromNodeName.mockResolvedValue(
       fromPartial<NodePack>({
@@ -191,9 +165,6 @@ describe('useWorkflowPacks', () => {
       nodes: [fromPartial<NodePack>({ id: 'pack-1', name: 'Pack 1' })]
     })
 
-    // No `cnr_id`/`aux_id`, so `workflowNodeToPack` falls through to
-    // `inferPack`, whose `nodeDefsByName` lookup misses for an unregistered
-    // node type.
     vi.mocked(app).rootGraph = fromPartial<LGraph>({
       nodes: [
         createMockLGraphNode({ type: 'UnregisteredNode', properties: {} })
@@ -211,17 +182,9 @@ describe('useWorkflowPacks', () => {
     )
   })
 
-  // Finding #3: a rejection in the deferred retry must surface through the
-  // composable's own `error` state rather than becoming an unhandled
-  // rejection that silently loses the deferred-fetch flag. `useCachedRequest`
-  // swallows a rejecting registry call itself (resolves `null`), so this
-  // drives the rejection from the registry lookup call directly, the same
-  // way a bug in that call path (sync throw, bad response shape, etc) would.
   it('surfaces a retry rejection through the error state instead of losing it silently', async () => {
     const { startFetchWorkflowPacks, error } = useWorkflowPacks()
 
-    // Defer a fetch (root graph not ready yet) so the `configured` retry
-    // below actually fires.
     await startFetchWorkflowPacks()
 
     vi.spyOn(
@@ -229,8 +192,6 @@ describe('useWorkflowPacks', () => {
       'call'
     ).mockRejectedValue(new Error('registry down'))
 
-    // No `cnr_id`/`aux_id` and no local node def, so the retry's pack
-    // resolution falls through to the rejecting registry lookup.
     const graph = installEmptyRootGraph()
     await nextTick() // let `useEventListener` attach to the new graph.events
     graph.nodes.push(
@@ -244,10 +205,6 @@ describe('useWorkflowPacks', () => {
     expect(error.value).toBeInstanceOf(Error)
   })
 
-  // Finding #5 on PR #19736's Cursor review: `getWorkflowPacks` awaits a
-  // per-node registry lookup, then unconditionally overwrote `workflowPacks`
-  // with no in-flight guard, so an older, slower call finishing after a
-  // newer one could publish a stale result over it.
   it('does not let a stale, slower fetch overwrite a newer fetch that already resolved', async () => {
     let resolveSlowLookup: ((pack: NodePack) => void) | undefined
     mockInferPackFromNodeName.mockImplementation((nodeName: string) => {
@@ -276,17 +233,16 @@ describe('useWorkflowPacks', () => {
       events: new CustomEventTarget<LGraphEventMap>()
     })
 
-    const { startFetchWorkflowPacks, workflowPacks, isReady } =
-      useWorkflowPacks()
+    const {
+      startFetchWorkflowPacks,
+      workflowPacks,
+      isReady,
+      filterWorkflowPack
+    } = useWorkflowPacks()
 
-    // Call A starts resolving the slow node and is left awaiting the
-    // registry lookup below.
     const callA = startFetchWorkflowPacks()
     await flushPromises()
 
-    // The workflow switches before call A resolves (e.g. the manager tab
-    // trigger and this retry racing), and a newer call B starts and
-    // finishes first.
     vi.mocked(app).rootGraph = fromPartial<LGraph>({
       nodes: [createMockLGraphNode({ type: 'FastNode', properties: {} })],
       events: new CustomEventTarget<LGraphEventMap>()
@@ -298,8 +254,6 @@ describe('useWorkflowPacks', () => {
       fromPartial<NodePack>({ id: 'pack-fast', name: 'pack-fast' })
     ])
 
-    // Call A's slow registry lookup finally resolves. Its stale result must
-    // not overwrite call B's fresher one.
     resolveSlowLookup?.(
       fromPartial<NodePack>({
         id: 'pack-slow',
@@ -312,5 +266,11 @@ describe('useWorkflowPacks', () => {
     expect(workflowPacks.value).toEqual([
       fromPartial<NodePack>({ id: 'pack-fast', name: 'pack-fast' })
     ])
+    expect(
+      filterWorkflowPack([
+        fromPartial<NodePack>({ id: 'pack-fast' }),
+        fromPartial<NodePack>({ id: 'pack-slow' })
+      ])
+    ).toEqual([fromPartial<NodePack>({ id: 'pack-fast' })])
   })
 })

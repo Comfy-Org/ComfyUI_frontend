@@ -4,7 +4,6 @@ import { effectScope, nextTick, watch } from 'vue'
 import { LGraph } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
 
-/** Stands in for the single assignment `ComfyApp.setup()` makes. */
 const setGraph = (graph: LGraph | undefined) => {
   ;(
     app as unknown as {
@@ -16,10 +15,8 @@ const setGraph = (graph: LGraph | undefined) => {
 describe('ComfyApp graph-readiness reactivity', () => {
   beforeEach(() => setGraph(undefined))
 
-  // Guards the `shallowRef` backing `rootGraphInternal`. As a plain field this
-  // transition is invisible, and useWorkflowPacks' deferred fetch is never
-  // served (CLOUD-FRONTEND-PROD-1YN / PR #19736). Every other test mocks
-  // `@/scripts/app`, so this is the only place the real seam is asserted.
+  // Every other test mocks `@/scripts/app`, so this is the only place the real
+  // `shallowRef` seam is asserted.
   it('a watcher over app.isGraphReady sees the setup() transition', async () => {
     const scope = effectScope()
     const seen: boolean[] = []

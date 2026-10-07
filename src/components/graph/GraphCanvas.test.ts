@@ -91,12 +91,6 @@ vi.mock<unknown>(import('@/scripts/app'), () => {
     setDirty: mocks.setDirty,
     canvas: document.createElement('canvas')
   }
-  // Mirrors ComfyApp's real accessors rather than exposing a `null` graph: the
-  // backing field is `undefined` until `setup()` installs the graph, `graph`
-  // and `rootGraph` force-cast it anyway, and only `rootGraphOrUndefined`
-  // reports it honestly. CLOUD-FRONTEND-PROD-1YN is a traversal of that
-  // force-cast `undefined`, so a `null` stand-in reproduces a different
-  // TypeError than production throws.
   let rootGraphInternal: LGraph | undefined
   return {
     app: {
@@ -114,7 +108,6 @@ vi.mock<unknown>(import('@/scripts/app'), () => {
       get isGraphReady(): boolean {
         return !!rootGraphInternal
       },
-      /** Test-only seam for the `setup()` assignment production makes. */
       set rootGraph(graph: LGraph | undefined) {
         rootGraphInternal = graph
       },
@@ -192,8 +185,6 @@ async function mountGraphCanvas(stubs: Record<string, unknown> = {}) {
   const pinia = getActivePinia()!
   vi.mocked(useReleaseStore().initialize).mockResolvedValue(undefined)
   app.canvas.graph = null
-  // The mock app is module state shared by every test in this file, so each
-  // mount starts from the pre-`setup()` state production starts from.
   setRootGraph(undefined)
 
   // Startup waits on both readiness gates before it reaches the tour hand-off.
@@ -499,7 +490,6 @@ describe('GraphCanvas execution progress updates', () => {
 })
 
 describe('GraphCanvas widget control mode watcher', () => {
-  /** Flips the setting twice, resolving only if neither flush threw. */
   async function cycleWidgetControlMode() {
     const settingStore = useSettingStore()
     settingStore.settingValues['Comfy.WidgetControlMode'] = 'before'
@@ -524,12 +514,10 @@ describe('GraphCanvas widget control mode watcher', () => {
     return { graph, controlWidget }
   }
 
-  // Pins the Sentry shape of CLOUD-FRONTEND-PROD-1YN: the alert is a traversal
-  // of `undefined`, not of `null`, and it fails inside visitGraphNodes reading
-  // `graph.nodes`. This holds with or without the watcher guard — it is what
-  // makes the guard test below a reproduction of the production input rather
-  // than of a null stand-in that throws a different TypeError.
-  it('pins the unready-root-graph traversal failure the alert reported', async () => {
+  // Exercises this file's app mock, not GraphCanvas: it checks that the mock's
+  // force-cast `rootGraph` getter hands `undefined` (not `null`) to a traversal,
+  // so the guard test below runs against the real getter's shape.
+  it('hands an undefined root graph to a traversal like the real getter', async () => {
     await mountGraphCanvas()
 
     expect(app.rootGraphOrUndefined).toBeUndefined()
@@ -546,19 +534,18 @@ describe('GraphCanvas widget control mode watcher', () => {
     expect((thrown as TypeError).message).toMatch(/'nodes'/)
   })
 
-  it('skips the control-widget sync instead of throwing when the root graph is not ready', async () => {
+  // Defensive: the app only writes `canvasStore.canvas` after `setup()` has
+  // installed the root graph, so this state is not reachable in production. The
+  // guard keeps the watcher consistent with its siblings that read the graph.
+  it('defensively skips the control-widget sync when the root graph is not ready', async () => {
     await mountGraphCanvas()
 
     useCanvasStore().canvas = app.canvas
-    // Same input the alert carried: the force-cast getter hands out `undefined`.
     expect(app.rootGraphOrUndefined).toBeUndefined()
 
     await expect(cycleWidgetControlMode()).resolves.toBeUndefined()
   })
 
-  // The early return must skip a sync, not cancel one: a user who changes the
-  // setting during startup still gets correct labels from the next change once
-  // the graph exists.
   it('still syncs control-widget labels once the root graph is ready', async () => {
     await mountGraphCanvas()
 

@@ -27,11 +27,20 @@ vi.mock(
   })
 )
 
-// Mirrors ComfyApp's accessors: tests assign `rootGraph`, and the honest
-// `rootGraphOrUndefined` the composable guards on reads the same value. A mock
-// that only answers one of the two cannot tell a loaded graph apart from the
-// pre-`setup()` state that produced CLOUD-FRONTEND-PROD-1YN.
-const mockApp: { rootGraph?: Partial<LGraph> } = vi.hoisted(() => ({}))
+// Backed by a `shallowRef`, like the real `ComfyApp`, so a test can install the
+// graph after the composable exists and have its watchers see it.
+const mockApp: { rootGraph?: Partial<LGraph> } = await vi.hoisted(async () => {
+  const { shallowRef } = await import('vue')
+  const graph = shallowRef<Partial<LGraph> | undefined>()
+  return {
+    get rootGraph() {
+      return graph.value
+    },
+    set rootGraph(value: Partial<LGraph> | undefined) {
+      graph.value = value
+    }
+  }
+})
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
@@ -398,10 +407,6 @@ describe('useMissingNodes', () => {
       expect(missingCoreNodes.value['1.2.0'][1].type).toBe('CoreNode2')
     })
 
-    // CLOUD-FRONTEND-PROD-1YN: `rootGraph` force-casts an absent graph, so
-    // traversing it before `ComfyApp.setup()` throws
-    // `TypeError: Cannot read properties of undefined (reading 'nodes')`.
-    // `hasMissingNodes` is read from the workflow chrome, which can mount first.
     it('reports no missing core nodes instead of traversing an unready graph', () => {
       mockApp.rootGraph = undefined
       mockCollectAllNodes.mockImplementation((graph) => {
@@ -450,11 +455,6 @@ describe('useMissingNodes', () => {
       expect(missingCoreNodes.value['1.2.0'][0].type).toBe('CoreNode')
     })
 
-    // Finding #1 on PR #19736's Cursor review: `rootGraphOrUndefined`'s
-    // underlying `shallowRef` only changes identity once (`ComfyApp.setup()`
-    // installing the graph), so `missingCoreNodes` needs a dependency that
-    // changes when the workflow's nodes actually arrive — the graph's
-    // `configured` event — or it freezes at the first (pre-node) snapshot.
     it('recomputes once the graph is configured, not just once at graph-ready', () => {
       const mockGraph = {
         nodes: [],
@@ -464,22 +464,41 @@ describe('useMissingNodes', () => {
       mockApp.rootGraph = mockGraph
       useNodeDefStore().nodeDefsByName = {}
 
-      // The first recompute sees the empty graph `ComfyApp.setup()` installs,
-      // before the workflow's nodes are deserialized into it.
       mockCollectAllNodes.mockReturnValueOnce([])
 
       const { missingCoreNodes } = useMissingNodes()
       expect(Object.keys(missingCoreNodes.value)).toHaveLength(0)
 
-      // The workflow's node has now landed and `LGraph.configure()`
-      // dispatched `configured`. Without a tracked dependency on this,
-      // `missingCoreNodes` would stay frozen at the empty snapshot above.
       const coreNode = createMockNode('CoreNode', 'comfy-core', '1.2.0')
       mockCollectAllNodes.mockReturnValueOnce([coreNode])
       mockGraph.events.dispatch('configured')
 
       expect(Object.keys(missingCoreNodes.value)).toHaveLength(1)
       expect(missingCoreNodes.value['1.2.0']).toHaveLength(1)
+    })
+
+    it('picks up nodes configured into a graph installed after the composable was created', async () => {
+      mockApp.rootGraph = undefined
+      useNodeDefStore().nodeDefsByName = {}
+      mockCollectAllNodes.mockImplementation((graph) => [...graph.nodes])
+
+      const { missingCoreNodes } = useMissingNodes()
+      expect(missingCoreNodes.value).toEqual({})
+
+      const graph = {
+        nodes: [],
+        subgraphs: new Map(),
+        events: new CustomEventTarget<LGraphEventMap>()
+      } as unknown as LGraph
+      mockApp.rootGraph = graph
+      await nextTick()
+      expect(missingCoreNodes.value).toEqual({})
+
+      const coreNode = createMockNode('CoreNode', 'comfy-core', '1.2.0')
+      graph.nodes.push(coreNode)
+      graph.events.dispatch('configured')
+
+      expect(missingCoreNodes.value).toEqual({ '1.2.0': [coreNode] })
     })
 
     it('returns empty object when no core nodes are missing', () => {

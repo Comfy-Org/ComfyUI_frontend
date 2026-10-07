@@ -342,16 +342,6 @@ export class ComfyApp {
   )
   nodePreviewImages: Partial<Record<string, string[]>>
 
-  /**
-   * Holds the root graph in a ref so its arrival can be watched.
-   *
-   * As a plain field it could not be: a watcher over any getter reading it
-   * never fired, so callers that had to react to the graph appearing watched an
-   * unrelated reactive value set at the same moment instead. `shallowRef` keeps
-   * the graph itself non-reactive, and the slot is written once per page load,
-   * so nothing recomputes more often than before — it just stops missing the
-   * one transition that matters.
-   */
   private readonly rootGraphRef = shallowRef<LGraph | undefined>(undefined)
 
   private get rootGraphInternal(): LGraph | undefined {

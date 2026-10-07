@@ -154,10 +154,6 @@ type AppState = {
     | 'nodePreviewImages'
     | 'vueAppReady']: RealComfyApp[K]
 } & {
-  /**
-   * A ref, mirroring the real `isGraphReady`'s reactivity, so a test can stand
-   * in for `ComfyApp.setup()` and have readiness watchers fire.
-   */
   rootGraph: ShallowRef<RealComfyApp['rootGraphOrUndefined']>
   canvas: Canvas
   api: Pick<RealComfyApp['api'], 'clientId'> & typeof apiActions
