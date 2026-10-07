@@ -187,6 +187,13 @@ describe('approval policy', () => {
       })
     ).toBeUndefined()
     expect(
+      failure(eligiblePull({ user: { login: 'someone-else' }, labels: [] }), {
+        hasPolicyApprovalForHead: true,
+        eventName: 'pull_request_target',
+        eventAction: 'unlabeled'
+      })
+    ).toContain('lacks a current authorized event')
+    expect(
       failure(pull, {
         eventName: 'pull_request_target',
         eventAction: 'labeled',

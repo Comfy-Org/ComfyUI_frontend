@@ -152,7 +152,9 @@ export function eligibilityFailure({
     actor: eventActor,
     label: eventLabel
   })
-  if (!trustedAuthor && !hasPolicyApprovalForHead && !currentLabelEvent) {
+  const retainedPolicyApproval =
+    hasPolicyApprovalForHead && hasLabel(pull, lane.approval.approvalLabel)
+  if (!trustedAuthor && !retainedPolicyApproval && !currentLabelEvent) {
     return `Skipped: @${author ?? 'unknown'} is not trusted and ${lane.approval.approvalLabel} lacks a current authorized event.`
   }
   if (hasLabel(pull, lane.approval.holdLabel)) {
