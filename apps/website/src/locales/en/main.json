@@ -5575,7 +5575,6 @@
       "description": "The latest ComfyUI features, improvements, and fixes from Comfy docs."
     },
     "title": "Changelog",
-    "noscriptLink": "Read the changelog in Comfy docs",
     "viewDocs": "VIEW DOCS",
     "saved": "Showing saved release notes. The latest updates could not be loaded.",
     "unavailable": "Release notes could not be loaded.",

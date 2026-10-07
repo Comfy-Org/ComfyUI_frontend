@@ -50,7 +50,7 @@ describe('ChangelogContent', () => {
     localStorage.clear()
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(source)))
     render(ChangelogContent)
-    expect(screen.getByRole('status').textContent).toContain('Loading')
+    expect(await screen.findByRole('status')).toHaveTextContent('Loading')
     await screen.findByRole('heading', { name: 'v1' })
     expect(screen.queryByText('window.bad = true')).toBeNull()
     expect(screen.queryByRole('link', { name: 'Unsafe' })).toBeNull()
@@ -110,34 +110,38 @@ describe('ChangelogContent', () => {
     )
     expect(screen.getAllByRole('article')).toHaveLength(1)
   })
-  it('waits for a fresh release when its initial hash is absent from saved notes', async () => {
-    const originalURL = window.location.href
+  it('scrolls once to an initial hash that only fresh notes contain', async () => {
     window.history.replaceState(null, '', '#v2')
     const scroll = vi
       .spyOn(HTMLElement.prototype, 'scrollIntoView')
       .mockImplementation(() => {})
-    const cachedSource = source
     localStorage.setItem(
       CHANGELOG_CACHE_KEY,
-      JSON.stringify({ source: cachedSource, checkedAt: Date.now() })
+      JSON.stringify({ source, checkedAt: Date.now() })
     )
-    let finish: ((response: Response) => void) | undefined
+    let finish = (_response: Response) => {}
     const pending = new Promise<Response>((resolve) => {
       finish = resolve
     })
-    vi.stubGlobal('fetch', vi.fn().mockReturnValue(pending))
-    try {
-      render(ChangelogContent)
-      await screen.findByRole('heading', { name: 'v1' })
-      expect(scroll).not.toHaveBeenCalled()
-      finish!(new Response(source.replace('v1', 'v2') + source))
-      await screen.findByRole('heading', { name: 'v2' })
-      await waitFor(() => expect(scroll).toHaveBeenCalledOnce())
-      expect(scroll.mock.instances[0]).toBe(
-        screen.getByRole('article', { name: 'v2' })
-      )
-    } finally {
-      window.history.replaceState(null, '', originalURL)
-    }
+    const v2 = source.replace('v1', 'v2')
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockReturnValueOnce(pending)
+        .mockResolvedValue(new Response(v2 + source.replace('v1', 'v3')))
+    )
+    render(ChangelogContent)
+    await screen.findByRole('heading', { name: 'v1' })
+    expect(scroll).not.toHaveBeenCalled()
+    finish(new Response(v2 + source))
+    await screen.findByRole('heading', { name: 'v2' })
+    await waitFor(() => expect(scroll).toHaveBeenCalledOnce())
+    expect(scroll.mock.instances[0]).toBe(
+      screen.getByRole('article', { name: 'v2' })
+    )
+    await vi.advanceTimersByTimeAsync(CHANGELOG_REFRESH_MS)
+    await screen.findByRole('heading', { name: 'v3' })
+    expect(scroll).toHaveBeenCalledOnce()
   })
 })

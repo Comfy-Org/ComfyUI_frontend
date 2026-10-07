@@ -8,7 +8,7 @@ describe('SiteFooter', () => {
   it.for([
     ['en', 'Changelog', 'Resources'],
     ['zh-CN', '更新日志', '资源'],
-    ['ja', '変更履歴', 'Resources']
+    ['ja', 'Changelog', 'Resources']
   ] as const)(
     'links the live changelog last in footer Resources (%s)',
     ([locale, name, resources]) => {

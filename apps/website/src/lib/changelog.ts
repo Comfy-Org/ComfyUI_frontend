@@ -1,9 +1,12 @@
+import { createTimeoutSignal } from '@/utils/abortSignal'
+
 const CHANGELOG_SOURCE =
   'https://raw.githubusercontent.com/Comfy-Org/docs/main/changelog/index.mdx'
 export const CHANGELOG_DOCS = 'https://docs.comfy.org/changelog/index'
 export const CHANGELOG_CACHE_KEY = 'comfy-docs-changelog-v1'
 export const CHANGELOG_REFRESH_MS = 5 * 60 * 1000
-export const CHANGELOG_CACHE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000
+const CHANGELOG_CACHE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000
+const CHANGELOG_TIMEOUT_MS = 10 * 1000
 
 export interface ChangelogEntry {
   label: string
@@ -85,7 +88,7 @@ export function readChangelogCache(storage: Pick<Storage, 'getItem'>) {
 export async function fetchChangelog() {
   const response = await fetch(CHANGELOG_SOURCE, {
     cache: 'no-cache',
-    signal: AbortSignal.timeout(10000)
+    signal: createTimeoutSignal(CHANGELOG_TIMEOUT_MS)
   })
   if (!response.ok)
     throw new Error(`Changelog request failed: ${response.status}`)

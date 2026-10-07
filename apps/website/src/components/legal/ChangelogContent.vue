@@ -37,7 +37,7 @@ async function applyEntries(nextEntries: ChangelogEntry[]) {
   element.scrollIntoView({ block: 'start' })
   initialAnchorHandled = true
 }
-const loading = ref(true)
+const loading = ref(false)
 const failed = ref(false)
 let refreshTimer: ReturnType<typeof setInterval> | undefined
 let disposed = false
@@ -51,6 +51,7 @@ async function refresh() {
     const result = await fetchChangelog()
     if (disposed) return
     await applyEntries(result.entries)
+    initialAnchorHandled = true
     failed.value = false
     try {
       localStorage.setItem(

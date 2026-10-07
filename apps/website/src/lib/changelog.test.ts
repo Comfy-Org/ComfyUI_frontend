@@ -1,11 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import {
-  CHANGELOG_CACHE_MAX_AGE_MS,
-  fetchChangelog,
-  parseChangelog,
-  readChangelogCache
-} from './changelog'
+import { fetchChangelog, parseChangelog, readChangelogCache } from './changelog'
 
 const source =
   '<Update label="v1" description="October 5, 2026">\n**New**\n* [Feature](https://docs.comfy.org)\n</Update>'
@@ -50,18 +45,25 @@ describe('docs changelog boundary', () => {
       )
     }
   )
-  it('keeps a validated recent cache', () => {
+  it('keeps a validated six-day-old cache', () => {
+    const checkedAt = Date.now() - 518_400_000
     expect(
       readChangelogCache({
-        getItem: () => JSON.stringify({ source, checkedAt: Date.now() })
+        getItem: () => JSON.stringify({ source, checkedAt })
       })
-    ).toBeDefined()
+    ).toEqual({
+      entries: [
+        {
+          label: 'v1',
+          date: 'October 5, 2026',
+          markdown: '**New**\n* [Feature](https://docs.comfy.org)'
+        }
+      ],
+      checkedAt
+    })
   })
   it.for([
-    [
-      'expired',
-      () => ({ source, checkedAt: Date.now() - CHANGELOG_CACHE_MAX_AGE_MS - 1 })
-    ],
+    ['expired', () => ({ source, checkedAt: Date.now() - 604_800_001 })],
     ['invalid source', () => ({ source: 'broken', checkedAt: Date.now() })],
     ['future timestamp', () => ({ source, checkedAt: Date.now() + 10000 })]
   ] as const)('rejects a cache with %s', ([, value]) => {

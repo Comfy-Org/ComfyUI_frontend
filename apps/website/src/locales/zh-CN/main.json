@@ -4968,7 +4968,6 @@
       "description": "来自 Comfy 文档的 ComfyUI 最新功能、改进和修复。"
     },
     "title": "更新日志",
-    "noscriptLink": "在 Comfy 文档中阅读更新日志",
     "viewDocs": "查看文档",
     "saved": "正在显示已保存的更新日志。无法加载最新更新。",
     "unavailable": "无法加载更新日志。",

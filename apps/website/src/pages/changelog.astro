@@ -11,13 +11,4 @@ import ChangelogContent from '@/components/legal/ChangelogContent.vue'
 >
   <HeroSection title={Astro.locals.t('changelog.title')} />
   <ChangelogContent client:load />
-  <noscript>
-    <p class="px-4 pb-24 text-sm text-primary-comfy-canvas lg:px-20">
-      <a
-        href="https://docs.comfy.org/changelog/index"
-        class="text-primary-comfy-yellow underline"
-        >{Astro.locals.t('changelog.noscriptLink')}</a
-      >.
-    </p>
-  </noscript>
 </BaseLayout>
