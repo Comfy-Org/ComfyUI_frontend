@@ -103,4 +103,28 @@ describe('collectMediaUiDiagnostics', () => {
       })
     ).toEqual([])
   })
+
+  it('includes nodes whose only media evidence is rendered UI', () => {
+    const node = mediaNode(5, 'PreviewNode', [])
+    const host = document.createElement('div')
+    const root = document.createElement('div')
+    root.dataset.nodeId = '5'
+    root.append(document.createElement('img'))
+    host.append(root)
+
+    expect(
+      collectMediaUiDiagnostics({
+        nodes: [node],
+        getNodeOutputs: () => undefined,
+        getNodeImageUrls: () => undefined,
+        root: host
+      })
+    ).toEqual([
+      expect.objectContaining({
+        nodeId: '5',
+        mediaKinds: ['image'],
+        vueImageCount: 1
+      })
+    ])
+  })
 })

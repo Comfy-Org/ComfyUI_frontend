@@ -54,6 +54,8 @@ function mediaKinds(evidence: {
   selectedImagePresent: boolean
   selectedAudioPresent: boolean
   audioUiRegistered: boolean
+  vueImageCount: number
+  vueAudioCount: number
 }): ('image' | 'audio')[] {
   const kinds: ('image' | 'audio')[] = []
   const hasImage = [
@@ -61,13 +63,15 @@ function mediaKinds(evidence: {
     evidence.selectedImagePresent,
     evidence.outputImageCount > 0,
     evidence.imageUrlCount > 0,
-    evidence.legacyImageCount > 0
+    evidence.legacyImageCount > 0,
+    evidence.vueImageCount > 0
   ].some(Boolean)
   const hasAudio = [
     evidence.previewMediaType === 'audio',
     evidence.selectedAudioPresent,
     evidence.outputAudioCount > 0,
-    evidence.audioUiRegistered
+    evidence.audioUiRegistered,
+    evidence.vueAudioCount > 0
   ].some(Boolean)
   if (hasImage) kinds.push('image')
   if (hasAudio) kinds.push('audio')
@@ -132,6 +136,9 @@ function diagnosticForNode(
   const counts = outputCounts(output)
   const selectedImagePresent = selectedMediaPresent(node, 'image')
   const selectedAudioPresent = selectedMediaPresent(node, 'audio')
+  const roots = nodeRoots(source.root, String(node.id))
+  const vueImageCount = descendantCount(roots, 'img')
+  const vueAudioCount = descendantCount(roots, 'audio')
   const kinds = mediaKinds({
     previewMediaType: node.previewMediaType,
     imageUrlCount: imageUrls.length,
@@ -140,11 +147,12 @@ function diagnosticForNode(
     outputAudioCount: counts.audio,
     selectedImagePresent,
     selectedAudioPresent,
-    audioUiRegistered: audioUi !== undefined
+    audioUiRegistered: audioUi !== undefined,
+    vueImageCount,
+    vueAudioCount
   })
   if (!kinds.length) return null
 
-  const roots = nodeRoots(source.root, String(node.id))
   return {
     nodeId: String(node.id),
     nodeType: node.comfyClass ?? node.type,
@@ -159,8 +167,8 @@ function diagnosticForNode(
       (image) => image.complete && image.naturalWidth > 0
     ).length,
     vueNodeCount: roots.length,
-    vueImageCount: descendantCount(roots, 'img'),
-    vueAudioCount: descendantCount(roots, 'audio'),
+    vueImageCount,
+    vueAudioCount,
     audioUiRegistered: audioUi !== undefined,
     audioElementConnected: audioState.connected,
     audioSourcePresent: audioState.sourcePresent,
