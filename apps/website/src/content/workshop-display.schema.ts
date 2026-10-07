@@ -1,7 +1,7 @@
 import { z } from 'astro/zod'
 
-import { workshopInputDefinitionSchema } from '../config/workshop-input-definition'
-import { workshopTemplateSchema } from '../config/workshop-workflow-definition'
+import { workshopInputDefinitionSchema } from '@/config/workshop-input-definition'
+import { workshopTemplateSchema } from '@/config/workshop-workflow-definition'
 
 /**
  * How a media asset should be presented. Carried explicitly rather than
@@ -23,10 +23,17 @@ export const WORKSHOP_USE_CASES = [
 
 const workshopUseCaseSchema = z.enum(WORKSHOP_USE_CASES)
 
+const STILL_IMAGE = /\.(?:avif|gif|jpe?g|png|webp)(?:[?#].*)?$/i
+
 const mediaAssetSchema = z.object({
   /** An absolute URL, or a root-relative path to a file this site serves. */
   url: z.union([z.string().url(), z.string().regex(/^\/[^/]/)]),
   kind: mediaKindSchema,
+  /** A still shown in place of a video until it plays, or when it never does. */
+  poster: z
+    .union([z.string().url(), z.string().regex(/^\/[^/]/)])
+    .refine((url) => STILL_IMAGE.test(url), 'A poster must be a still image')
+    .optional(),
   /** The prompt that produced a sample, where the content side recorded one. */
   prompt: z.string().optional()
 })

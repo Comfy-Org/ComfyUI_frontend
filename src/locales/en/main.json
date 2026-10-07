@@ -49,6 +49,8 @@
     "imageGallery": "image gallery",
     "galleryImage": "Gallery image",
     "galleryThumbnail": "Gallery thumbnail",
+    "galleryImagePosition": "Gallery image {index} of {total}",
+    "galleryThumbnailPosition": "Gallery thumbnail {index} of {total}",
     "previousImage": "Previous image",
     "nextImage": "Next image",
     "switchToGridView": "Switch to grid view",
@@ -125,6 +127,9 @@
     "info": "Node Info",
     "bookmark": "Save to Library",
     "moreOptions": "More Options",
+    "selectAll": "Select All",
+    "expand": "Expand",
+    "collapse": "Collapse",
     "more": "More",
     "loading": "Loading",
     "loadingPanel": "Loading {panel} panel...",
@@ -180,12 +185,17 @@
     "back": "Back",
     "previous": "Previous",
     "next": "Next",
+    "pageNumber": "Page {page}",
+    "itemsPerPage": "Items per page",
+    "actions": "Actions",
+    "selectItem": "Select {name}",
     "submit": "Submit",
     "install": "Install",
     "installing": "Installing",
     "overwrite": "Overwrite",
     "customize": "Customize",
     "experimental": "BETA",
+    "new": "NEW",
     "deprecated": "DEPR",
     "devOnly": "DEV",
     "loadWorkflow": "Load Workflow",
@@ -236,6 +246,7 @@
     "uploadFileTooLarge": "File is too large to upload.",
     "uploadFileTooLargeWithLimit": "File is too large to upload (limit: {limit} MB).",
     "uploadFailed": "Upload failed: {reason}",
+    "videoFilenameExtensionRequired": "The video filename must end with an extension such as .mp4. Rename the file and try again.",
     "capture": "capture",
     "nodes": "Nodes",
     "jobs": "Jobs",
@@ -1241,8 +1252,37 @@
       "openInCloud": "Open in Cloud",
       "requirements": "Template requirements",
       "models": "Models",
+      "inputAssets": "Input Assets",
+      "inputMediaTypes": {
+        "image": "Image",
+        "video": "Video",
+        "audio": "Audio"
+      },
+      "installed": "Installed",
+      "unavailable": "Unavailable",
+      "unknown": "Unknown",
+      "downloadModel": "Download model",
+      "downloadModelNamed": "Download {model}",
+      "downloadQueued": "Queued",
+      "downloadStarting": "Starting",
+      "downloading": "Downloading",
+      "downloadingModel": "Downloading {model}",
+      "downloadPaused": "Paused",
+      "downloadPausedModel": "Paused download for {model}",
+      "downloadPausedProgress": "Paused · {progress}",
+      "downloaded": "Downloaded",
+      "downloadFailed": "Download failed",
+      "downloadCancelled": "Download cancelled",
+      "retryDownload": "Retry",
+      "downloadFailedHint": "The download couldn't be completed. Use Retry to try again.",
+      "retryDownloadNamed": "Retry download for {model}",
+      "getItManually": "Get it manually",
       "usedBy": "Used by {nodes}",
-      "openTemplate": "Open template",
+      "downloadModelsAndOpen": "Download models & open",
+      "downloadModelsAndOpenWithSize": "Download models & open ({size})",
+      "descriptionMore": "Show more",
+      "descriptionLess": "Show less",
+      "openNow": "Open now",
       "backToTemplates": "Back to {category}",
       "breadcrumbLabel": "Template navigation"
     },
@@ -1712,7 +1752,8 @@
     "Other": "Other",
     "Secrets": "Secrets",
     "Node Library": "Node Library",
-    "PointCloud": "Point Cloud"
+    "PointCloud": "Point Cloud",
+    "SkillPacks": "Skill Packs"
   },
   "serverConfigItems": {
     "listen": {
@@ -2533,6 +2574,7 @@
     "legacyMaskEditorDeprecated": "The legacy mask editor is deprecated and will be removed soon.",
     "userNotAuthenticated": "User not authenticated",
     "failedToFetchBalance": "Failed to fetch balance: {error}",
+    "noPersonalWorkspace": "This account has no personal billing. Manage billing from your team workspace.",
     "failedToCreateCustomer": "Failed to create customer: {error}",
     "failedToInitiateCreditPurchase": "Failed to initiate credit purchase: {error}",
     "failedToAccessBillingPortal": "Failed to access billing portal: {error}",
@@ -2683,6 +2725,36 @@
       "backToSocialLogin": "Sign up with Google or Github instead",
       "backToGithubLogin": "Sign up with Github instead"
     },
+    "sso": {
+      "continueWithSso": "Continue with SSO",
+      "required": {
+        "title": "Your organization requires single sign-on",
+        "body": "This account signs in with your organization's single sign-on. Continue with SSO to sign in.",
+        "bodyWithEmail": "{email} signs in with your organization's single sign-on. Continue with SSO to sign in.",
+        "dismiss": "Not now"
+      },
+      "emailLabel": "Work email",
+      "emailPlaceholder": "Enter your work email",
+      "submit": "Continue",
+      "notSso": "This email doesn't use single sign-on. Use one of the sign-in options above.",
+      "invalidEmail": "Enter a valid email address.",
+      "unavailable": "We couldn't check single sign-on right now. Try again in a moment, or use one of the sign-in options above.",
+      "errors": {
+        "unavailable": "Single sign-on is unavailable right now. Try again in a moment.",
+        "expired": "Your sign-in expired or was started in another browser. Start again.",
+        "notConfigured": "Single sign-on isn't set up for your organization. Contact your administrator.",
+        "orgDisabled": "Single sign-on is turned off for your organization. Contact your administrator.",
+        "orgNotAttached": "Your organization's Comfy workspace isn't set up yet. Contact your administrator.",
+        "emailDomainNotAllowed": "Your organization's sign-in returned an email outside its domains. Ask your administrator to use your work email in the directory.",
+        "orgMismatch": "You signed in to a different organization than the one for this email. Try again with your work account.",
+        "suspended": "Your organization has removed your access. Contact your administrator.",
+        "accountDeleted": "This account is scheduled for deletion. If this is a mistake, email support{'@'}comfy.org.",
+        "accountConflict": "More than one Comfy account uses this email. Email support{'@'}comfy.org for help.",
+        "idpError": "Your identity provider didn't complete the sign-in. Try again.",
+        "rateLimited": "Too many sign-in attempts. Wait a few minutes and try again.",
+        "failed": "We couldn't sign you in with single sign-on. Try again."
+      }
+    },
     "signup": {
       "title": "Create an account",
       "alreadyHaveAccount": "Already have an account?",
@@ -2709,7 +2781,8 @@
         "identityChanged": "Your session changed. Reload to continue.",
         "unavailable": "We couldn't reach your account. Try again in a moment.",
         "workspaceDenied": "You don't have access to this workspace. Contact support if this keeps happening.",
-        "refused": "Your request was refused. Reload the page and try again."
+        "refused": "Your request was refused. Reload the page and try again.",
+        "ssoRequired": "Your organization requires single sign-on. Continue with SSO to sign in."
       },
       "reconnecting": {
         "title": "Reconnecting to your account",
@@ -2778,7 +2851,9 @@
     "expiredSummary": "Desktop sign-in failed",
     "expiredDetail": "The sign-in request expired or was already used. Start signing in again from the ComfyUI desktop app.",
     "failedSummary": "Desktop sign-in failed",
-    "failedDetail": "Something went wrong completing the desktop sign-in. Start signing in again from the ComfyUI desktop app."
+    "failedDetail": "Something went wrong completing the desktop sign-in. Start signing in again from the ComfyUI desktop app.",
+    "ssoUnavailableSummary": "Desktop sign-in isn't available for SSO accounts yet",
+    "ssoUnavailableDetail": "Your account signs in through your organization's SSO, which the ComfyUI desktop app can't use yet. Ask your admin for another way to sign in to the desktop app."
   },
   "validation": {
     "invalidEmail": "Invalid email address",
@@ -2870,6 +2945,7 @@
     "time": "Time",
     "additionalInfo": "Additional Info",
     "model": "Model",
+    "api": "API",
     "added": "Added",
     "accountInitialized": "Account initialized",
     "loadEventsError": "Failed to load activity. Please try again.",
@@ -2908,6 +2984,7 @@
     "authenticationFailedDetail": "We couldn't complete payment verification. Please try again.",
     "authenticatePaymentDetail": "Your bank needs to approve this payment. Please try again and confirm the payment with your bank when prompted.",
     "authenticatePaymentBlockedDetail": "Your bank didn't approve this payment. Contact your bank before trying another purchase.",
+    "methodNotChargeableOffSessionDetail": "This payment method can't be used for subscriptions. Add a different payment method, then try again.",
     "reconciliationTitle": "Payment received — confirmation pending",
     "reconciliationDetail": "Your payment was received, but we couldn't finish updating your workspace. Contact support and include this operation ID:",
     "cancelFailed": "Failed to cancel subscription",
@@ -2961,6 +3038,7 @@
       "title": "Cancel subscription",
       "description": "Your access continues until {date}. You won't be charged again, and your workspace and credits will be preserved. You can resubscribe anytime.",
       "endOfBillingPeriod": "end of billing period",
+      "finishOnStripe": "Your subscription isn't cancelled yet. Finish cancelling on the Stripe page that just opened. Until you do, your plan will renew as usual.",
       "keepSubscription": "Keep subscription",
       "confirmCancel": "Cancel subscription",
       "failed": "Failed to cancel subscription",
@@ -3032,7 +3110,7 @@
     "salesManagedRunBlockedDetail": "This workspace's plan is no longer active. Contact your Comfy account manager to restore access.",
     "teamPlanIncludes": "Your plan includes everything in {plan}, plus:",
     "inactiveTeamTitle": "Inactive team subscription",
-    "inactiveTeamDescription": "Reactivate your team plan to add more members and run workflows",
+    "inactiveTeamDescription": "Reactivate your Team plan to add more members and run workflows",
     "inactiveTeamPlanIncludes": "An active plan features everything in {plan}, plus:",
     "reactivateToUseCredits": "Reactivate your plan to use these credits",
     "salesManagedInactiveCreditsNote": "Spendable once your plan is restored.",
@@ -3142,7 +3220,7 @@
     "teamHeader": "For teams wanting to collaborate. Need more members? {learnMore} about enterprise.",
     "teamHeaderLearnMore": "Learn more",
     "personalHeader": "Personal plans are for individual use only. {action}",
-    "personalHeaderAction": "To add teammates, subscribe to the team plan.",
+    "personalHeaderAction": "To add teammates, subscribe to the Team plan.",
     "scheduledChangeNotice": "Your plan changes to {plan} on {date}.",
     "scheduledForDate": "Scheduled for {date}",
     "everythingInPlus": "Everything in {plan}, plus:",
@@ -3162,7 +3240,7 @@
       "perkProjectAssets": "Project & asset management",
       "cta": "Subscribe to Team Yearly",
       "ctaMonthly": "Subscribe to Team Monthly",
-      "unavailable": "This team plan is not available right now.",
+      "unavailable": "This Team plan is not available right now.",
       "changePlan": "Change plan",
       "currentPlan": "Current plan"
     },
@@ -3351,32 +3429,37 @@
       "paused": {
         "title": "Subscription paused",
         "body": "This workspace's subscription is paused. Update payment to resume.",
-        "personalBody": "Your subscription is paused. Update your payment method to resume.",
-        "personalPaymentFailedBody": "Your payment didn't go through. Update your payment method to resume.",
         "memberBody": "Ask your workspace owner to restore the workspace's subscription."
       },
       "outOfCredits": {
         "title": "Out of credits",
         "body": "Your team has used all its credits. Add more credits or wait until credits refill on {date}.",
         "bodyNoDate": "Your team has used all its credits. Add more credits.",
+        "personalBody": "You've used all your credits. Add more credits or wait until credits refill on {date}.",
+        "personalBodyNoDate": "You've used all your credits. Add more credits.",
         "memberBody": "Your team has used all its credits. Ask your workspace owner to add more credits or wait until credits refill on {date}.",
         "memberBodyNoDate": "Your team has used all its credits. Ask your workspace owner to add more credits.",
         "addCredits": "Add credits",
         "dismiss": "Dismiss"
       },
       "ending": {
-        "title": "Your team plan ends on {date}",
-        "body": "Members keep full access until then. Resume your plan to keep your team's shared credits.",
+        "title": "Your Team plan ends on {date}",
+        "body": "You won't be charged again. Members keep full access until then. Resume your plan to keep your team's shared credits.",
         "memberBody": "You can run workflows until then.",
+        "personalTitle": "Your {plan} plan ends on {date}",
+        "personalBody": "You won't be charged again. Resume your plan to keep your monthly credits.",
         "enterpriseTitle": "Your Enterprise plan ends on {date}",
         "enterpriseBody": "Members keep full access until then. Reach out to our sales team to extend.",
         "reactivate": "Resume plan",
         "contactSales": "Contact sales"
       },
       "planEnded": {
-        "teamTitle": "Your team plan ended on {date}",
+        "teamTitle": "Your Team plan ended on {date}",
         "teamBody": "Resubscribe to run workflows and get shared credits again.",
         "teamMemberBody": "Ask your workspace owner to resubscribe.",
+        "personalTitle": "Your {plan} plan ended on {date}",
+        "personalTitleNoDate": "Your {plan} plan has ended",
+        "personalBody": "Resubscribe to run workflows and get monthly credits again.",
         "enterpriseTitle": "Your Enterprise plan ended on {date}",
         "enterpriseBody": "Contact sales to start a new Enterprise plan.",
         "planTitle": "Your plan ended on {date}",
@@ -3452,7 +3535,7 @@
       "upsellBannerReactivate": "To add more teammates, reactivate your plan.",
       "resubscribe": "Resubscribe",
       "upsellBannerEnterpriseEnded": "Contact sales to reactivate your Enterprise plan.",
-      "endedTeamTitle": "Your team plan has ended",
+      "endedTeamTitle": "Your Team plan has ended",
       "endedEnterpriseTitle": "Your Enterprise plan has ended",
       "endedPlanTitle": "Your plan has ended",
       "upsellBannerPlanEnded": "Contact sales to reactivate your plan.",
@@ -4234,6 +4317,13 @@
     "comfyHubDescription": "Comfy Workflows is ComfyUI's official community hub.\nYour workflow will have a public page viewable by all.",
     "comfyHubButton": "Upload to Comfy Workflows"
   },
+  "deployToComfyApi": {
+    "title": "Deploy to Comfy API",
+    "buttonLabel": "Deploy to Comfy API",
+    "body": "Deploy this workflow as a production API in minutes. Package your custom nodes, models and Python dependencies into a reproducible build, and Comfy API runs it as an autoscaling endpoint.",
+    "readDocs": "Read the docs",
+    "deployOnPlatform": "Deploy on Platform"
+  },
   "openSharedWorkflow": {
     "dialogTitle": "Open shared workflow",
     "author": "Author:",
@@ -4375,6 +4465,10 @@
     "hasCreditCost": "Requires additional credits",
     "viewGraph": "View node graph",
     "mobileNoWorkflow": "This workflow hasn't been built for app mode. Try a different one.",
+    "inputDownloads": {
+      "downloading": "Downloading {count} starter input | Downloading {count} starter inputs",
+      "finalizing": "Preparing downloaded starter inputs"
+    },
     "welcome": {
       "title": "App Mode",
       "message": "A simplified view that hides the node graph so you can focus on creating.",
@@ -5049,6 +5143,7 @@
     "failed": "Failed",
     "finished": "Finished",
     "pending": "Pending",
+    "taskUnavailable": "The download task is no longer available.",
     "progressCount": "{completed} of {total}",
     "filter": {
       "all": "All",
@@ -5068,12 +5163,17 @@
     "exportFailedSingle": "Failed to create ZIP export",
     "downloadExport": "Download export",
     "downloadFailed": "Failed to download \"{name}\"",
+    "unsupportedDownloadUrl": "Unsupported export download URL",
     "retryDownload": "Retry download"
   },
   "workspace": {
     "inviteAccepted": "Invite Accepted",
     "addedToWorkspace": "You have been added to:",
     "inviteFailed": "Failed to Accept Invite",
+    "inviteSsoUnavailable": "Ask your admin to add you",
+    "inviteSsoUnavailableDetail": "Invite links can't be accepted from an SSO account yet. Ask a workspace admin to add you to the workspace directly.",
+    "inviteDirectoryManaged": "Your organization's admin manages membership",
+    "inviteDirectoryManagedDetail": "This workspace's members are managed through your organization's directory, so invite links can't be used to join it. Ask your organization's admin to add you.",
     "viewWorkspace": "View workspace",
     "switchFailed": "Failed to switch workspace. Please try again.",
     "deepLinkStayed": "Couldn't open that workspace. You're still in {workspaceName}."
@@ -5083,12 +5183,17 @@
     "initializationFailedDetail": "Check your connection and try again.",
     "initializationFailedSignOutDetail": "Sign out and log in again to continue.",
     "retry": "Try again",
+    "noWorkspaceAccess": {
+      "title": "You don't have access to any workspace",
+      "detail": "Ask your admin to add you to a workspace, then sign in again."
+    },
     "errors": {
       "notAuthenticated": "You must be logged in to access workspaces",
       "invalidFirebaseToken": "Authentication failed. Please try logging in again.",
       "accessDenied": "You do not have access to this workspace",
       "workspaceNotFound": "Workspace not found",
-      "tokenExchangeFailed": "Failed to authenticate with workspace: {error}"
+      "tokenExchangeFailed": "Failed to authenticate with workspace: {error}",
+      "ssoRequired": "Your organization requires single sign-on. Continue with SSO to sign in."
     }
   },
   "nightly": {
@@ -5511,6 +5616,7 @@
     "sendFailed": "Message failed to send",
     "recoveredTurnFailed": "The agent could not complete this response.",
     "sendBusy": "A message is already being sent",
+    "sendTurnInProgress": "This chat still has a response running. Wait for it to finish, or stop it, then send again.",
     "retryAfterSeconds": "You can try again in {seconds}s.",
     "malformedEvent": "The agent sent an event this panel could not read",
     "coachProgress": "{current} of {total}",
@@ -5576,6 +5682,40 @@
       "addCredits": "Add credits",
       "subscribe": "Subscribe",
       "upgradePlan": "Upgrade plan"
+    }
+  },
+  "skillPacks": {
+    "title": "Agent Skill Packs",
+    "panelDescription": "Write down a preference once and the agent loads it when the trigger line matches. Packs are private to you.",
+    "yourPacks": "Your Packs",
+    "addPack": "Add Skill Pack",
+    "editPack": "Edit Skill Pack",
+    "publish": "Publish",
+    "noPacks": "No skill packs yet. Add one to teach the agent a preference you keep repeating.",
+    "name": "Name",
+    "namePlaceholder": "e.g., my-render-defaults",
+    "nameHint": "Letters, digits, '.', '_' and '-'. This is the name the agent loads the pack by.",
+    "triggerLine": "Trigger line",
+    "triggerLinePlaceholder": "Load me when the user asks about upscaling",
+    "triggerLineHint": "One line saying when to load this pack. It rides in every prompt whether the pack is used or not, so keep it short.",
+    "body": "Instructions",
+    "bodyPlaceholder": "The instructions the agent follows once this pack is loaded.",
+    "bodySize": "{bytes} bytes",
+    "packSize": "{bytes} bytes",
+    "atLimitTitle": "You are at your limit",
+    "atLimitHint": "Remove a pack to make room for this one.",
+    "deleteConfirmTitle": "Delete Skill Pack",
+    "deleteConfirmMessage": "Are you sure you want to delete \"{name}\"? This action cannot be undone.",
+    "errors": {
+      "nameRequired": "Name is required",
+      "nameTooLong": "Name must be {max} characters or less",
+      "nameCharset": "Name may only use letters, digits, '.', '_' and '-', and must include at least one character that is not a dot",
+      "nameReserved": "\"{name}\" is a built-in pack name and cannot be used",
+      "nameAlreadyExists": "A skill pack named \"{name}\" already exists. Edit that pack instead.",
+      "descriptionRequired": "Trigger line is required",
+      "descriptionSingleLine": "Trigger line must be a single line with no control characters",
+      "descriptionTooLong": "Trigger line must be {max} characters or less",
+      "bodyRequired": "Instructions are required"
     }
   }
 }

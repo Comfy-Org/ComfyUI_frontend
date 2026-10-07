@@ -3,8 +3,8 @@ import { ChevronLeft, ChevronRight } from '@lucide/vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { translationsFor } from '../../i18n/translations'
-import type { Locale } from '../../i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import type { Locale } from '@/i18n/translations'
 
 const {
   index,

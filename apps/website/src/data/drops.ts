@@ -1,8 +1,8 @@
 // Image URLs are placeholders at media.comfy.org/website/drops/<id>.png —
 // asset uploads and native zh-CN review are pending follow-ups (see
 // apps/website/.scratch/drops-page/PRD.md).
-import { externalLinks } from '../config/routes'
-import type { LocalizedText } from '../i18n/translations'
+import { externalLinks } from '@/config/routes'
+import type { LocalizedText } from '@/i18n/translations'
 
 type DropMedia =
   | { type: 'image'; src: string; alt: LocalizedText }
@@ -253,13 +253,13 @@ export const drops: readonly Drop[] = [
     }),
     title: { en: 'Supported Models', 'zh-CN': '支持的模型' },
     description: {
-      en: 'Run the latest open and partner models — every checkpoint, LoRA, and ControlNet, ready to use in your graph.',
+      en: 'Download open-weight model files to run locally — every checkpoint, LoRA, and ControlNet, ready to use in your graph.',
       'zh-CN':
-        '运行最新的开源和合作伙伴模型 — 每个 checkpoint、LoRA 和 ControlNet 都可直接在工作流中使用。'
+        '下载在本地运行的开放权重模型文件 — 每个 checkpoint、LoRA 和 ControlNet 都可直接在工作流中使用。'
     },
     cta: {
       label: EXPLORE,
-      href: { en: '/p/supported-models/', 'zh-CN': '/p/supported-models/' }
+      href: { en: '/hub/models/local/', 'zh-CN': '/hub/models/local/' }
     }
   },
   {
