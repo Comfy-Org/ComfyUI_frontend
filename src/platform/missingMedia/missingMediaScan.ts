@@ -34,13 +34,8 @@ import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { resolveComboValues } from '@/utils/litegraphUtil'
 import { api } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
+import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { encodeParams } from '@/utils/requestUtil'
-import {
-  getAnnotatedMediaPathTypeForDetection,
-  getMediaPathDetectionNames
-} from './mediaPathDetectionUtil'
-
-const ANNOTATED_NAME_PATTERN = /^(.+?) *(?:\[\w+\])?$/
 
 function isComboWidget(widget: IBaseWidget): widget is IComboWidget {
   return widget.type === 'combo'
@@ -98,12 +93,9 @@ function resolveMediaMissingState(
 ): boolean | undefined {
   if (useFeatureFlags().flags.assetsEnabled) return undefined
   const options = resolveComboValues(widget)
-  if (getAnnotatedMediaPathTypeForDetection(value) === 'output') {
-    return options.includes(value) ? false : undefined
-  }
-  return !getMediaPathDetectionNames(value).some((name) =>
-    options.includes(name)
-  )
+  const { filepath, rootFolder } = parseAnnotatedPath(value)
+  if (rootFolder !== 'input') return options.includes(value) ? false : undefined
+  return !options.includes(value) && !options.includes(filepath)
 }
 
 /** Scan a single node for missing media candidates. */
@@ -200,7 +192,7 @@ export async function verifyMediaCandidates(
   const assetsStore = useAssetsStore()
 
   async function resolveCandidate(annotatedName: string) {
-    const [, name] = annotatedName.match(ANNOTATED_NAME_PATTERN) ?? []
+    const { filepath: name } = parseAnnotatedPath(annotatedName)
     const assetMatches = (asset: AssetItem) =>
       name === (asset.hash || asset.name)
     if (

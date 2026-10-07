@@ -319,9 +319,14 @@ describe('scanNodeMediaCandidates', () => {
       nodeType: 'LoadAudio',
       widgetName: 'audio',
       value: 'sound.wav [output]'
+    },
+    {
+      nodeType: 'LoadImage',
+      widgetName: 'image',
+      value: 'preview.png [temp]'
     }
   ])(
-    'leaves OSS $nodeType output annotations pending when not in options',
+    'leaves OSS $nodeType $value pending when not in options',
     ({ nodeType, widgetName, value }) => {
       const node = makeMediaNode(
         1,
@@ -417,7 +422,7 @@ describe('scanNodeMediaCandidates', () => {
     })
   })
 
-  it('does not treat compact Cloud annotations as valid OSS options', () => {
+  it('matches compact annotations against clean OSS options', () => {
     const node = makeMediaNode(
       1,
       'LoadImage',
@@ -430,7 +435,7 @@ describe('scanNodeMediaCandidates', () => {
 
     expect(result[0]).toMatchObject({
       name: 'photo.png[input]',
-      isMissing: true
+      isMissing: false
     })
   })
 })

@@ -209,10 +209,6 @@ const uploadedAssetResponseSchema = assetItemSchema.extend({
   created_new: z.boolean()
 })
 
-function createAbortError(): DOMException {
-  return new DOMException('Aborted', 'AbortError')
-}
-
 function normalizeAssetTags(tags: string[]): string[] {
   return tags.map((tag) => tag.trim()).filter(Boolean)
 }
@@ -730,7 +726,7 @@ function createAssetService() {
     let batchCount = 0
 
     for (;;) {
-      if (signal?.aborted) throw createAbortError()
+      if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
       if (batchCount++ >= MAX_PAGINATION_BATCHES) {
         console.warn(
           `Paginated walk for tag '${tag}' hit the ${MAX_PAGINATION_BATCHES}-batch backstop; returning a truncated listing.`
