@@ -94,11 +94,8 @@ export function useInviteUrlLoader() {
     }
 
     if (authStore.signedInWithSso && authStore.currentUser === null) {
-      toast.add({
-        severity: 'info',
-        summary: t('workspace.inviteSsoUnavailable'),
-        detail: t('workspace.inviteSsoUnavailableDetail'),
-        closable: true
+      toast.info(t('workspace.inviteSsoUnavailable'), {
+        description: t('workspace.inviteSsoUnavailableDetail')
       })
       cleanupUrlParams()
       clearPreservedQuery(INVITE_NAMESPACE)
@@ -146,11 +143,8 @@ export function useInviteUrlLoader() {
         ? error.status
         : undefined
     if (isDirectoryManagedRefusal(error)) {
-      toast.add({
-        severity: 'info',
-        summary: t('workspace.inviteDirectoryManaged'),
-        detail: t('workspace.inviteDirectoryManagedDetail'),
-        closable: true
+      toast.info(t('workspace.inviteDirectoryManaged'), {
+        description: t('workspace.inviteDirectoryManagedDetail')
       })
       return
     }

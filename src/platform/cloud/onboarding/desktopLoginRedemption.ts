@@ -131,11 +131,9 @@ function settledForSsoSession(
   const auth = useAuthStore()
   if (auth.currentUser !== null || !auth.signedInWithSso) return false
   settle(code, state)
-  useToastStore().add({
-    severity: 'warn',
-    summary: t('desktopLogin.ssoUnavailableSummary'),
-    detail: t('desktopLogin.ssoUnavailableDetail'),
-    life: 8000
+  useToast().warning(t('desktopLogin.ssoUnavailableSummary'), {
+    description: t('desktopLogin.ssoUnavailableDetail'),
+    duration: 8000
   })
   return true
 }
