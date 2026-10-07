@@ -67,22 +67,18 @@ function warnSpecDrift(
   })
 }
 
-/**
- * `value` read through `schema`, or undefined when it does not match. Skips
- * validation when `/object_info` is trusted; it dominates node registration.
- */
 function parseSpec<T>(
   schema: z.ZodType<T, z.ZodTypeDef, unknown>,
-  value: unknown,
   spec: InputSpecV2,
-  optionIndex?: number
-): T | undefined {
-  if (isTrustedObjectInfo) return value as T
+  option?: { option: unknown; index: number }
+): T[] {
+  const value = option ? option.option : spec
+  if (isTrustedObjectInfo) return [value as T]
 
   const parsed = schema.safeParse(value)
-  if (parsed.success) return parsed.data
-  warnSpecDrift(spec, parsed.error, optionIndex)
-  return undefined
+  if (parsed.success) return [parsed.data]
+  warnSpecDrift(spec, parsed.error, option?.index)
+  return []
 }
 
 /**
@@ -105,28 +101,24 @@ export function splitSlotTypes(type: unknown): string[] {
 function parseDynamicComboOptions(
   spec: InputSpecV2
 ): { key: string; inputs: ComfyInputsSpec }[] {
-  const parsed = parseSpec(zDynamicComboSpecV2, spec, spec)
-  if (!parsed) return []
-
-  return parsed.options.flatMap((option, index) => {
-    const parsedOption = parseSpec(zDynamicComboOption, option, spec, index)
-    return parsedOption ? [parsedOption] : []
-  })
+  return parseSpec(zDynamicComboSpecV2, spec).flatMap(({ options }) =>
+    options.flatMap((option, index) =>
+      parseSpec(zDynamicComboOption, spec, { option, index })
+    )
+  )
 }
 
 const dynamicControls = {
   COMFY_DYNAMICGROUP_V3: {
-    nestedInputs: (spec) => {
-      const parsed = parseSpec(zDynamicGroupInputSpec, [spec.type, spec], spec)
-      return parsed ? [parsed[1].template] : []
-    },
+    nestedInputs: (spec) =>
+      parseSpec(zDynamicGroupInputSpec.items[1], spec).map(
+        ({ template }) => template
+      ),
     ownTypes: none
   },
   COMFY_AUTOGROW_V3: {
-    nestedInputs: (spec) => {
-      const parsed = parseSpec(zAutogrowOptions, spec, spec)
-      return parsed ? [parsed.template.input] : []
-    },
+    nestedInputs: (spec) =>
+      parseSpec(zAutogrowOptions, spec).map(({ template }) => template.input),
     ownTypes: none
   },
   COMFY_DYNAMICCOMBO_V3: {
@@ -136,10 +128,10 @@ const dynamicControls = {
   },
   COMFY_MATCHTYPE_V3: {
     nestedInputs: none,
-    ownTypes: (spec) => {
-      const parsed = parseSpec(zMatchTypeOptions, spec, spec)
-      return parsed ? splitSlotTypes(parsed.template.allowed_types) : []
-    }
+    ownTypes: (spec) =>
+      parseSpec(zMatchTypeOptions, spec).flatMap(({ template }) =>
+        splitSlotTypes(template.allowed_types)
+      )
   }
 } satisfies Record<DynamicControlType, DynamicControl>
 
@@ -241,11 +233,10 @@ export function matchTypeTemplate(
 ): { templateId: string; allowedTypes: string[] } | undefined {
   if (spec.type !== 'COMFY_MATCHTYPE_V3') return undefined
 
-  const parsed = parseSpec(zMatchTypeOptions, spec, spec)
-  if (!parsed) return undefined
-
-  return {
-    templateId: parsed.template.template_id,
-    allowedTypes: splitSlotTypes(parsed.template.allowed_types)
-  }
+  return parseSpec(zMatchTypeOptions, spec)
+    .map(({ template }) => ({
+      templateId: template.template_id,
+      allowedTypes: splitSlotTypes(template.allowed_types)
+    }))
+    .at(0)
 }
