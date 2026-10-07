@@ -25,8 +25,8 @@ env:
   VERCEL_SCOPE: comfyui
 
 concurrency:
-  group: ${{ github.event_name == 'push' && 'website-production' || format('{0}-{1}', github.workflow, github.ref) }}
-  cancel-in-progress: ${{ github.event_name != 'push' }}
+  group: ${{ github.event_name != 'pull_request' && 'website-production' || format('{0}-{1}', github.workflow, github.ref) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   deploy-preview:
