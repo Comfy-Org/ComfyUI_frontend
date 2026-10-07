@@ -220,12 +220,23 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
     for (const asset of assets) {
       if (getMediaTypeFromFilename(asset.name) !== targetMediaType) continue
       if (seen.has(asset.id)) continue
+
+      // Temp assets (e.g. Preview Image / Compare Images outputs) aren't
+      // retained across a restart, and the backend only ever serves them via
+      // /view?type=temp -- annotating one "[output]" below (the only variant
+      // this list produces) sets a widget value that resolves to a file never
+      // written to output/. asset.preview_url is the only place `type` is
+      // still available this far down (mapOutputsToAssetItems bakes it into
+      // the URL's querystring rather than keeping it as its own AssetItem
+      // field), so recover it from there.
+      const previewType = new URLSearchParams(
+        asset.preview_url?.split('?')[1] ?? ''
+      ).get('type')
+      if (previewType === 'temp') continue
+
       seen.add(asset.id)
       const filenameForUrl = getAssetUrlFilename(asset)
-      const subfolder =
-        kind === 'mesh'
-          ? getOutputAssetMetadata(asset.user_metadata)?.subfolder
-          : undefined
+      const subfolder = getOutputAssetMetadata(asset.user_metadata)?.subfolder
       const pathWithSubfolder = subfolder
         ? `${subfolder}/${filenameForUrl}`
         : filenameForUrl
