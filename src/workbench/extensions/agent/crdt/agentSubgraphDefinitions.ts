@@ -414,10 +414,13 @@ export function readDocPromotedWidgets(
   const node = nodesMap(doc).get(nodeId)
   if (!(node instanceof Y.Map)) return null
   const stored = node.get(OPAQUE_WIDGETS_KEY)
-  const values: unknown = stored instanceof Y.Array ? stored.toJSON() : stored
   return {
     valueCount:
-      stored === undefined ? 0 : Array.isArray(values) ? values.length : null,
+      stored === undefined
+        ? 0
+        : stored instanceof Y.Array || Array.isArray(stored)
+          ? stored.length
+          : null,
     declaredNames: declaredInputNames(doc, String(node.get('type') ?? '')),
     promotedNames: promotedInputNames(doc, node, String(node.get('type') ?? ''))
   }
@@ -462,11 +465,5 @@ function promotedInputNames(
 function declaredInputNames(doc: Y.Doc, definitionId: string): string[] {
   const definition = definitionsMap(doc)?.get(definitionId)
   if (!(definition instanceof Y.Map)) return []
-  const inputs = definition.get('inputs')
-  const list: unknown = inputs instanceof Y.Array ? inputs.toJSON() : inputs
-  if (!Array.isArray(list)) return []
-  return list.flatMap((entry: unknown) => {
-    const name = readField(entry, 'name')
-    return typeof name === 'string' ? [name] : []
-  })
+  return namedInputs(definition.get('inputs'))?.map(([name]) => name) ?? []
 }
