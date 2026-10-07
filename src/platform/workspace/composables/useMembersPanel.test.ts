@@ -1286,8 +1286,6 @@ describe('useMembersPanel', () => {
       expect(panel.memberMenuItems(createMember())).toEqual([])
     })
 
-    // The backend collapses max_seats to 1 when a plan ends, which is what
-    // makes the seat conjunct the ended-plan freeze.
     it('freezes member management on a single-seat plan', async () => {
       mockMaxSeats.value = 1
       const panel = await setup()
@@ -1301,6 +1299,39 @@ describe('useMembersPanel', () => {
       expect(
         useDialogService().showChangeMemberRoleDialog
       ).not.toHaveBeenCalled()
+    })
+
+    // Ended is the one member-management freeze (DES-1200). can_change_seats
+    // used to carry it, so dropping that read has to restate it: the seat
+    // conjunct cannot stand in, because max_seats 0 reads as uncapped.
+    it('freezes member management on an ended plan that kept its seats', async () => {
+      mockSubscription.value = { tier: 'ENTERPRISE', isCancelled: false }
+      mockSubscriptionStatus.value = 'ended'
+      mockMaxSeats.value = 30
+      const panel = await setup()
+      const member = createMember({ id: 'member-1' })
+
+      expect(panel.isPlanEnded.value).toBe(true)
+      expect(panel.permissions.value.canManageMembers).toBe(false)
+      expect(panel.memberMenuItems(member)).toEqual([])
+
+      panel.handleRemoveMember(member)
+      panel.handleChangeRole(member, 'owner')
+
+      expect(useDialogService().showRemoveMemberDialog).not.toHaveBeenCalled()
+      expect(
+        useDialogService().showChangeMemberRoleDialog
+      ).not.toHaveBeenCalled()
+    })
+
+    it('freezes member management on an ended uncapped-seat plan', async () => {
+      mockSubscription.value = { tier: 'ENTERPRISE', isCancelled: false }
+      mockSubscriptionStatus.value = 'ended'
+      mockMaxSeats.value = 0
+      const panel = await setup()
+
+      expect(panel.hasMemberSeats.value).toBe(true)
+      expect(panel.permissions.value.canManageMembers).toBe(false)
     })
 
     it('keeps invite disabled while billing is initializing', async () => {

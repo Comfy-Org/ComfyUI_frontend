@@ -122,13 +122,16 @@ export function useMembersPanel() {
 
   const { isPlanEnded, isSalesManagedPlan, isEnterprisePlan } = usePlanEnded()
 
-  // Not can_change_seats: that capability is seat *quantity*, which the server
-  // zeroes on every sales-managed tier, and it took the role and remove actions
-  // of each Enterprise owner with it (FE-3268). Member writes are authorized by
-  // the owner role alone — RequireWorkspaceOwner, no tier check.
   const permissions = computed(() => {
+    // Not can_change_seats: it is seat *quantity*, which the server zeroes on
+    // every sales-managed tier, taking the whole row menu from Enterprise
+    // owners (FE-3268). RequireWorkspaceOwner gates these writes on role
+    // alone. The ended freeze is explicit because the seat count misses it:
+    // max_seats 0 means uncapped, not seatless.
     const canManageMembers =
-      hasMemberSeats.value && workspaceRole.value === 'owner'
+      hasMemberSeats.value &&
+      !isPlanEnded.value &&
+      workspaceRole.value === 'owner'
     const canManageInvites =
       hasMemberSeats.value &&
       (isCloud ? canInviteMembers.value : workspaceRole.value === 'owner')
