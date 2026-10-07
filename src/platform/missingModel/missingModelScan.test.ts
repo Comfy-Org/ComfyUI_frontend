@@ -2081,15 +2081,45 @@ describe("while the page's deployment listing is slow", () => {
     )
   }
 
-  it('checks the model against the library when the listing never answers', async () => {
+  it('takes the model the Release lists as present when the listing answers after 6 seconds', async () => {
+    let answer = (_listing: WorkspaceDeploymentList) => {}
     vi.mocked(workspaceApi.listDeployments).mockReturnValue(
-      new Promise(() => {})
+      new Promise((resolve) => {
+        answer = resolve
+      })
     )
     const candidates = scanReleaseModel()
 
     const verifying = verifyAssetSupportedCandidates(candidates)
-    await vi.advanceTimersByTimeAsync(5000)
+    await vi.advanceTimersByTimeAsync(6000)
+    answer(onDeployment)
     await verifying
+
+    expect(candidates[0].isMissing).toBe(false)
+    expect(mockUpdateModelsForNodeType).not.toHaveBeenCalled()
+  })
+
+  it('checks the model against the library when the listing request fails', async () => {
+    vi.mocked(workspaceApi.listDeployments).mockRejectedValue(
+      new Error('timeout of 30000ms exceeded')
+    )
+    const candidates = scanReleaseModel()
+
+    await verifyAssetSupportedCandidates(candidates)
+
+    expect(candidates[0].isMissing).toBe(true)
+    expect(mockUpdateModelsForNodeType).toHaveBeenCalledWith(
+      'CheckpointLoaderSimple'
+    )
+  })
+
+  it('checks the model against the library when the listing cannot be read', async () => {
+    vi.mocked(workspaceApi.listDeployments).mockResolvedValue(
+      fromAny<WorkspaceDeploymentList, unknown>({ builds_visible: true })
+    )
+    const candidates = scanReleaseModel()
+
+    await verifyAssetSupportedCandidates(candidates)
 
     expect(candidates[0].isMissing).toBe(true)
     expect(mockUpdateModelsForNodeType).toHaveBeenCalledWith(
@@ -2112,24 +2142,6 @@ describe("while the page's deployment listing is slow", () => {
     await verifying
 
     expect(candidates[0].isMissing).toBeUndefined()
-    expect(mockUpdateModelsForNodeType).not.toHaveBeenCalled()
-  })
-
-  it('takes the model the Release lists as present when the listing answers within 5 seconds', async () => {
-    let answer = (_listing: WorkspaceDeploymentList) => {}
-    vi.mocked(workspaceApi.listDeployments).mockReturnValue(
-      new Promise((resolve) => {
-        answer = resolve
-      })
-    )
-    const candidates = scanReleaseModel()
-
-    const verifying = verifyAssetSupportedCandidates(candidates)
-    await vi.advanceTimersByTimeAsync(4000)
-    answer(onDeployment)
-    await verifying
-
-    expect(candidates[0].isMissing).toBe(false)
     expect(mockUpdateModelsForNodeType).not.toHaveBeenCalled()
   })
 })

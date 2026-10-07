@@ -316,6 +316,9 @@ export const workspaceApi = {
   /**
    * List the developer-platform deployments this browser may pick, each
    * with the Release it runs now, and which one it picked. 403 when the account is outside the rollout.
+   * Times out after 30 seconds: ingest answers it with several upstream calls
+   * in a row (deployments, builds, then each Build's Releases), and the
+   * editor's missing-model check waits for it, so it must always settle.
    * GET /api/workspaces/:id/deployments
    */
   async listDeployments(
@@ -325,7 +328,7 @@ export const workspaceApi = {
     try {
       const response = await workspaceApiClient.get<WorkspaceDeploymentList>(
         workspaceApiUrl(`/workspaces/${workspaceId}/deployments`),
-        auth
+        { ...auth, timeout: 30_000 }
       )
       return response.data
     } catch (err) {
