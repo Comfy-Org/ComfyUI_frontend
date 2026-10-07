@@ -202,15 +202,6 @@ export function useFeatureFlags() {
         isNightly || import.meta.env.DEV
       )
     },
-    get workflowSharingEnabled() {
-      // UI is also gated on `isCloud` in TopMenuSection; default false
-      // to match other flags' opt-in convention.
-      return resolveFlag(
-        ServerFeatureFlag.WORKFLOW_SHARING_ENABLED,
-        remoteConfig.value.workflow_sharing_enabled,
-        false
-      )
-    },
     get comfyHubUploadEnabled() {
       return resolveFlag(
         ServerFeatureFlag.COMFYHUB_UPLOAD_ENABLED,
@@ -401,8 +392,6 @@ export function startFeatureFlagTelemetry() {
       [ServerFeatureFlag.NODE_REPLACEMENTS]: flags.nodeReplacementsEnabled,
       [ServerFeatureFlag.NODE_LIBRARY_ESSENTIALS_ENABLED]:
         flags.nodeLibraryEssentialsEnabled,
-      [ServerFeatureFlag.WORKFLOW_SHARING_ENABLED]:
-        flags.workflowSharingEnabled,
       [ServerFeatureFlag.COMFYHUB_UPLOAD_ENABLED]: flags.comfyHubUploadEnabled,
       [ServerFeatureFlag.COMFYHUB_PROFILE_GATE_ENABLED]:
         flags.comfyHubProfileGateEnabled,
