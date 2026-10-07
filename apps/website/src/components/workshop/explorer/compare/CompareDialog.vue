@@ -105,14 +105,10 @@ const rows = computed(() => compareRows(models, locale))
                   v-if="model.href"
                   :href="model.href"
                   variant="outline"
-                  class="w-full"
+                  class="h-auto min-h-10 w-full text-center whitespace-normal"
                   data-testid="compare-model-link"
                 >
-                  <span class="block truncate">
-                    {{
-                      t('workshop.explorer.compare.try', { name: model.name })
-                    }}
-                  </span>
+                  {{ t('workshop.explorer.compare.try', { name: model.name }) }}
                 </Button>
               </td>
             </tr>
