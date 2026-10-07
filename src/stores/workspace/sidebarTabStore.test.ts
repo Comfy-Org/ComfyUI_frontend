@@ -1,9 +1,8 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCommandStore } from '@/stores/commandStore'
-import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 const mockOpenModelLibraryBrowser = vi.hoisted(() => vi.fn())
@@ -22,11 +21,6 @@ vi.mock(import('@/i18n'), () => ({
 }))
 
 describe('useSidebarTabStore', () => {
-  beforeEach(() => {
-    vi.mocked(useMenuItemStore().registerCommands).mockImplementation(() => {})
-    mockOpenModelLibraryBrowser.mockClear()
-  })
-
   const registerModelLibraryTab = () => {
     const store = useSidebarTabStore()
     store.registerSidebarTab({

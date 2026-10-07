@@ -49,6 +49,23 @@ const coreTabIds = [
   'apps'
 ]
 
+const coreToggleCommandIds = [
+  'Workspace.ToggleSidebarTab.apps',
+  'Workspace.ToggleSidebarTab.assets',
+  'Workspace.ToggleSidebarTab.model-library',
+  'Workspace.ToggleSidebarTab.node-library',
+  'Workspace.ToggleSidebarTab.workflows'
+]
+
+const allToggleCommandIds = [
+  'Workspace.ToggleSidebarTab.apps',
+  'Workspace.ToggleSidebarTab.assets',
+  'Workspace.ToggleSidebarTab.job-history',
+  'Workspace.ToggleSidebarTab.model-library',
+  'Workspace.ToggleSidebarTab.node-library',
+  'Workspace.ToggleSidebarTab.workflows'
+]
+
 describe('registerCoreSidebarTabs', () => {
   beforeEach(() => {
     vi.mocked(useMenuItemStore().registerCommands).mockImplementation(() => {})
@@ -57,13 +74,18 @@ describe('registerCoreSidebarTabs', () => {
   const registeredTabIds = () =>
     useSidebarTabStore().sidebarTabs.map((tab) => tab.id)
 
+  const registeredCommandIds = () =>
+    useCommandStore()
+      .commands.map((command) => command.id)
+      .toSorted()
+
   it('registers the job history tab when QPO V2 is enabled', () => {
     useSettingStore().settingValues['Comfy.Queue.QPOV2'] = true
 
     registerCoreSidebarTabs()
 
     expect(registeredTabIds()).toEqual(['job-history', ...coreTabIds])
-    expect(useCommandStore().registerCommand).toHaveBeenCalledTimes(6)
+    expect(registeredCommandIds()).toEqual(allToggleCommandIds)
   })
 
   it('does not register the job history tab when QPO V2 is disabled', () => {
@@ -72,7 +94,7 @@ describe('registerCoreSidebarTabs', () => {
     registerCoreSidebarTabs()
 
     expect(registeredTabIds()).toEqual(coreTabIds)
-    expect(useCommandStore().registerCommand).toHaveBeenCalledTimes(5)
+    expect(registeredCommandIds()).toEqual(coreToggleCommandIds)
   })
 
   it('prepends the job history tab when QPO V2 is toggled on', async () => {
@@ -84,6 +106,39 @@ describe('registerCoreSidebarTabs', () => {
     await nextTick()
 
     expect(registeredTabIds()).toEqual(['job-history', ...coreTabIds])
-    expect(useCommandStore().registerCommand).toHaveBeenCalledTimes(6)
+    expect(registeredCommandIds()).toEqual(allToggleCommandIds)
+  })
+
+  it('removes the job history tab when QPO V2 is toggled off', async () => {
+    useSettingStore().settingValues['Comfy.Queue.QPOV2'] = true
+
+    registerCoreSidebarTabs()
+
+    useSettingStore().settingValues['Comfy.Queue.QPOV2'] = false
+    await nextTick()
+
+    expect(registeredTabIds()).toEqual(coreTabIds)
+  })
+
+  it('adds the canvas and zoom commands to the View menu', () => {
+    registerCoreSidebarTabs()
+
+    expect(vi.mocked(useMenuItemStore().registerCommands).mock.calls).toEqual([
+      [
+        ['View'],
+        [
+          'Workspace.ToggleBottomPanel',
+          'Comfy.BrowseTemplates',
+          'Workspace.ToggleFocusMode',
+          'Comfy.ToggleCanvasInfo',
+          'Comfy.Canvas.ToggleMinimap',
+          'Comfy.Canvas.ToggleLinkVisibility'
+        ]
+      ],
+      [
+        ['View'],
+        ['Comfy.Canvas.ZoomIn', 'Comfy.Canvas.ZoomOut', 'Comfy.Canvas.FitView']
+      ]
+    ])
   })
 })
