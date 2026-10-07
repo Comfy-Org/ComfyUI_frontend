@@ -286,6 +286,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
   watch(
     () => workspaceStore.activeWorkspace?.id,
     () => {
+      statusData.value = null
       seatCapacity.value = null
     }
   )

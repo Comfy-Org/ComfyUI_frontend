@@ -6,7 +6,7 @@ import { useBillingOperationStore } from '@/platform/workspace/stores/billingOpe
 import { useBillingSdkStore } from '@/platform/workspace/billing/sdk/billingSdkStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { effectScope } from 'vue'
+import { effectScope, nextTick } from 'vue'
 
 import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -569,6 +569,20 @@ describe('useWorkspaceBilling', () => {
       await fetch
 
       expect(useBillingOperationStore().startOperation).not.toHaveBeenCalled()
+      expect(billing.subscription.value).toBeNull()
+    })
+
+    it('clears the previous workspace status while the next workspace loads', async () => {
+      mockWorkspaceApi.getBillingStatus.mockResolvedValue(activeStatus)
+      const billing = setupBilling()
+      await billing.fetchStatus()
+      expect(billing.subscription.value).not.toBeNull()
+
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspace: { id: 'workspace-2' }
+      })
+      await nextTick()
+
       expect(billing.subscription.value).toBeNull()
     })
 
