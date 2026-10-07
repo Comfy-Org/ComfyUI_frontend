@@ -47,8 +47,7 @@ export function hreflangAlternates(
     ({ path }) => !isNoindexPathname(path)
   )
   // A cluster needs at least one translation to link to; a lone indexable
-  // page (or one whose only published locale is itself noindexed, like
-  // /comfy-agent) has nothing to pair with, so hreflang has nothing to say.
+  // page has nothing to pair with, so hreflang has nothing to say.
   if (locales.length < 2) return []
 
   const alternates: Alternate[] = locales.map(({ locale, path }) => ({

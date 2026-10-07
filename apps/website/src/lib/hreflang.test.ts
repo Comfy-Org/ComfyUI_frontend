@@ -288,32 +288,29 @@ describe('the emitter agrees with the page tree', () => {
     })
     .filter(
       ({ pathname, unprefixed }) =>
-        unprefixed !== '/404/' &&
-        !isNoindexPathname(pathname) &&
-        !redirected.has(pathname.replace(/\/$/, ''))
+        unprefixed !== '/404/' && !redirected.has(pathname.replace(/\/$/, ''))
     )
+  const indexablePages = publishedPages.filter(
+    ({ pathname }) => !isNoindexPathname(pathname)
+  )
 
-  const cases = publishedPages.map(({ pathname, unprefixed }) => {
-    const twins = publishedPages.filter(
-      (page) => page.unprefixed === unprefixed
+  function translationsOf(pages: typeof publishedPages, unprefixed: string) {
+    const twins = pages.filter((page) => page.unprefixed === unprefixed)
+    if (twins.length < 2) return []
+    return LOCALE_CODES.flatMap((locale) =>
+      twins.filter((page) => page.locale === locale)
     )
-    return {
-      pathname,
-      expected:
-        twins.length < 2
-          ? []
-          : LOCALE_CODES.flatMap((locale) =>
-              twins
-                .filter((page) => page.locale === locale)
-                .map((page) => ({
-                  hreflang: LOCALES[locale].hreflang,
-                  href: new URL(page.pathname, ORIGIN).href
-                }))
-            )
-    }
-  })
+  }
 
-  it.for(cases)(
+  const hreflangCases = indexablePages.map(({ pathname, unprefixed }) => ({
+    pathname,
+    expected: translationsOf(indexablePages, unprefixed).map((page) => ({
+      hreflang: LOCALES[page.locale].hreflang,
+      href: new URL(page.pathname, ORIGIN).href
+    }))
+  }))
+
+  it.for(hreflangCases)(
     'advertises exactly the published locales on $pathname',
     ({ pathname, expected }) => {
       expect(
@@ -321,6 +318,21 @@ describe('the emitter agrees with the page tree', () => {
           (alternate) => alternate.hreflang !== 'x-default'
         )
       ).toEqual(expected)
+    }
+  )
+
+  const switcherCases = publishedPages.map(({ pathname, unprefixed }) => ({
+    pathname,
+    expected: translationsOf(publishedPages, unprefixed).map((page) => ({
+      locale: page.locale,
+      path: page.pathname
+    }))
+  }))
+
+  it.for(switcherCases)(
+    'offers exactly the published translations of $pathname',
+    ({ pathname, expected }) => {
+      expect(localeAlternates(pathname)).toEqual(expected)
     }
   )
 })
