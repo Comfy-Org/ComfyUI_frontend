@@ -827,6 +827,33 @@ describe('attachDocOpMinter', () => {
     }
   )
 
+  it('seeds an unset sibling exactly as serializing the host would', async () => {
+    const { host, doc } = seedPromotedHost([])
+    host.widgets[0].value = undefined
+    await afterFlush()
+    minted.length = 0
+
+    host.widgets[1].value = 'pasted'
+    await afterFlush()
+
+    const [write] = minted
+    assert(write.op === 'set_widget' && write.path == null)
+    expect(write.promoted?.host_widgets_values).toEqual(
+      host.serialize().widgets_values
+    )
+
+    // Over the wire, where an unset sibling becomes the same `null` a saved
+    // workflow carries for it (`widgetValueNullContract`).
+    const overTheWire = JSON.parse(JSON.stringify(minted)) as GraphOperation[]
+    expect(applyMinted(doc, overTheWire)).toEqual(['applied'])
+    expect(
+      project(doc, CATALOG).nodes.find(
+        (node) => String(node.id) === String(host.id)
+      )?.widgets_values
+    ).toEqual([null, 'pasted'])
+    doc.destroy()
+  })
+
   it('reports a drifted host once, not once per keystroke', async () => {
     const { host, doc } = seedPromotedHost()
     docPromotedWidgets = () => ({
