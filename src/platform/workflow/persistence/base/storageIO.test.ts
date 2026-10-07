@@ -340,7 +340,7 @@ describe('storageIO', () => {
     it('blocks workflow writes during logout cleanup', async () => {
       const isolatedStorageIO = await import('./storageIO')
 
-      isolatedStorageIO.prepareWorkflowLogoutTransition()
+      isolatedStorageIO.signOutWorkflowStorage()
 
       expect(isolatedStorageIO.isStorageAvailable()).toBe(false)
       expect(
@@ -401,7 +401,7 @@ describe('storageIO', () => {
       localStorage.setItem('Comfy.Agent.DeletedThreads', '[]')
       localStorage.setItem('unrelated', 'keep')
 
-      isolatedStorageIO.prepareWorkflowLogoutTransition()
+      isolatedStorageIO.signOutWorkflowStorage()
 
       expect(
         [...Array(localStorage.length)].map((_, index) =>
@@ -497,7 +497,7 @@ describe('storageIO', () => {
       isolatedStorageIO.completeWorkflowLogoutTransition()
       expect(isolatedStorageIO.isStorageAvailable()).toBe(false)
 
-      isolatedStorageIO.prepareWorkflowLogoutTransition()
+      isolatedStorageIO.signOutWorkflowStorage()
       isolatedStorageIO.completeWorkflowLogoutTransition()
 
       expect(isolatedStorageIO.isStorageAvailable()).toBe(true)
@@ -507,7 +507,7 @@ describe('storageIO', () => {
       const isolatedStorageIO = await import('./storageIO')
 
       isolatedStorageIO.markStorageUnavailable()
-      isolatedStorageIO.prepareWorkflowLogoutTransition()
+      isolatedStorageIO.signOutWorkflowStorage()
       isolatedStorageIO.completeWorkflowLogoutTransition()
 
       expect(isolatedStorageIO.isStorageAvailable()).toBe(false)
@@ -526,7 +526,7 @@ describe('storageIO', () => {
           writeToStorage(key, value)
         })
 
-      isolatedStorageIO.prepareWorkflowLogoutTransition()
+      isolatedStorageIO.signOutWorkflowStorage()
 
       expect(setItemSpy).toHaveReturned()
     })

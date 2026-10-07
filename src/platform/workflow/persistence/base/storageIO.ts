@@ -586,7 +586,7 @@ function handleSignOutIntent(event: StorageEvent): void {
   }
 }
 
-export function prepareWorkflowLogoutTransition(): void {
+export function signOutWorkflowStorage(): void {
   fenceAndClearWorkflowStorage()
   try {
     localStorage.setItem(WORKFLOW_SIGN_OUT_INTENT_KEY, crypto.randomUUID())

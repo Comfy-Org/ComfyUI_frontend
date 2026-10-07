@@ -786,7 +786,7 @@ describe('useWorkflowPersistenceV2', () => {
     cancelTransition()
   })
 
-  it('keeps drafts and persistence alive when another window changes the shared auth record', async () => {
+  it('keeps drafts and persistence alive when another window removes the shared auth record', async () => {
     distributionMocks.isCloud = true
     sessionStorage.setItem(
       WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE,
@@ -943,7 +943,7 @@ describe('useWorkflowPersistenceV2', () => {
     const payloadKey = StorageKeys.draftPayload(workflow.path, 'personal')
     expect(localStorage.getItem(payloadKey)).toBeNull()
 
-    storageIO.prepareWorkflowLogoutTransition()
+    storageIO.signOutWorkflowStorage()
 
     Object.assign(useTeamWorkspaceStore(), {
       initState: 'ready',
@@ -967,7 +967,7 @@ describe('useWorkflowPersistenceV2', () => {
 
     const onUserResolved = vi.mocked(useCurrentUser().onUserResolved).mock
       .calls[0][0]
-    storageIO.prepareWorkflowLogoutTransition()
+    storageIO.signOutWorkflowStorage()
 
     expect(localStorage).toHaveLength(0)
     expect(sessionStorage).toHaveLength(0)
@@ -1009,9 +1009,9 @@ describe('useWorkflowPersistenceV2', () => {
 
     const onUserResolved = vi.mocked(useCurrentUser().onUserResolved).mock
       .calls[0][0]
-    storageIO.prepareWorkflowLogoutTransition()
+    storageIO.signOutWorkflowStorage()
     onUserResolved({ id: 'user-b' })
-    storageIO.prepareWorkflowLogoutTransition()
+    storageIO.signOutWorkflowStorage()
     onUserResolved({ id: 'user-c' })
 
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-c' })
@@ -1031,7 +1031,7 @@ describe('useWorkflowPersistenceV2', () => {
 
     const onUserResolved = vi.mocked(useCurrentUser().onUserResolved).mock
       .calls[0][0]
-    storageIO.prepareWorkflowLogoutTransition()
+    storageIO.signOutWorkflowStorage()
     onUserResolved({ id: 'user-a' })
 
     expect(completeTransitionSpy).not.toHaveBeenCalled()
@@ -1061,7 +1061,7 @@ describe('useWorkflowPersistenceV2', () => {
 
     const onUserResolved = vi.mocked(useCurrentUser().onUserResolved).mock
       .calls[0][0]
-    storageIO.prepareWorkflowLogoutTransition()
+    storageIO.signOutWorkflowStorage()
     onUserResolved({ id: 'user-b' })
     await vi.runAllTimersAsync()
 

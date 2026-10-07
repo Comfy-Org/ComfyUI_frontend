@@ -4,7 +4,7 @@ import {
 } from '@e2e/fixtures/workflowDraftCrossWindowAuthFixture'
 
 test.describe('workflow drafts across windows', { tag: '@cloud' }, () => {
-  test('a second window signing in neither wipes drafts nor stops persistence', async ({
+  test('a second window removing the shared auth record neither wipes drafts nor stops persistence', async ({
     workflowDraft
   }) => {
     const initialTouch = await workflowDraft.touchGraph()
