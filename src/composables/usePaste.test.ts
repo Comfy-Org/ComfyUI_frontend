@@ -900,8 +900,7 @@ describe('usePaste', () => {
       expect(useToastStore().add).toHaveBeenCalledWith(
         expect.objectContaining({
           severity: 'info',
-          summary:
-            'Nothing to paste into this node. Copy an image, or deselect the node to paste nodes.'
+          summary: 'Nothing to paste into this node'
         })
       )
     })
