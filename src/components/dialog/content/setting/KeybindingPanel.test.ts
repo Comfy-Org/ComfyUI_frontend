@@ -1,10 +1,4 @@
-import {
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-  within
-} from '@testing-library/vue'
+import { render, screen, waitFor, within } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import userEvent from '@testing-library/user-event'
 import type { UserEvent } from '@testing-library/user-event'
@@ -312,18 +306,21 @@ describe('KeybindingPanel', () => {
     )
   })
 
-  it('returns focus to the row when its keyboard-opened menu closes with Escape', async () => {
-    const user = userEvent.setup()
-    registerCommand('command-plain', 'Plain command')
-    renderPanel()
-    await waitForSearchAutofocus()
-    const row = screen.getByRole('row', { name: /Plain command/ })
+  it.for(['{Shift>}{F10}{/Shift}', '{ContextMenu}'])(
+    'opens the focused row menu with %s and refocuses the row on Escape',
+    async (keys) => {
+      const user = userEvent.setup()
+      registerCommand('command-plain', 'Plain command')
+      renderPanel()
+      await waitForSearchAutofocus()
+      const row = screen.getByRole('row', { name: /Plain command/ })
 
-    row.focus()
-    await fireEvent.contextMenu(row)
-    await waitFor(() => expect(screen.getByRole('menu')).toHaveFocus())
-    await user.keyboard('{Escape}')
+      row.focus()
+      await user.keyboard(keys)
+      await waitFor(() => expect(screen.getByRole('menu')).toHaveFocus())
+      await user.keyboard('{Escape}')
 
-    await waitFor(() => expect(row).toHaveFocus())
-  })
+      await waitFor(() => expect(row).toHaveFocus())
+    }
+  )
 })

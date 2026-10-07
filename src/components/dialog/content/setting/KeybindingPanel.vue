@@ -358,7 +358,7 @@ function handleRowDblClick(command: KeybindingCommand) {
   }
 }
 
-function handleRowContextMenu(event: MouseEvent, command: KeybindingCommand) {
+function handleRowContextMenu(event: Event, command: KeybindingCommand) {
   selectedCommandId.value = command.id
   contextMenuTarget.value = command
   rowMenuOrigin =

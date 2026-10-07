@@ -7,7 +7,9 @@
       @click="emit('activate')"
       @dblclick="emit('rowDblclick')"
       @contextmenu="emit('rowContextmenu', $event)"
+      @keydown.context-menu.self.prevent="emit('rowContextmenu', $event)"
       @keydown.enter.self.prevent="emit('activate')"
+      @keydown.shift.f10.self.prevent="emit('rowContextmenu', $event)"
       @keydown.space.self.prevent="emit('activate')"
     >
       <TableCell class="p-1">
@@ -176,7 +178,7 @@ const emit = defineEmits<{
   remove: []
   removeSingle: [index: number]
   reset: []
-  rowContextmenu: [event: MouseEvent]
+  rowContextmenu: [event: Event]
   rowDblclick: []
 }>()
 </script>
