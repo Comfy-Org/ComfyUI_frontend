@@ -181,13 +181,13 @@ the interpretation of a gesture, and both renderers feed it.
   tests cover every current `onDrag` assignment and record the callback count.
 - The adapter that accepts `down` owns the gesture until `up` or `cancel`.
   Renderer, mode, and feature-flag changes take effect only after the gesture
-  returns to `idle`. Teardown, lost pointer capture, window blur, and the
-  document becoming hidden dispatch `cancel` to the current owner before
-  ownership ends. The browser releases capture immediately after `pointerup`
-  or `pointercancel`, so `lostpointercapture` reports interruptions that
-  deliver neither event. Blur and visibility cover gestures that hold no
-  capture, such as drag zoom, and focus changes the platform does not report
-  as a capture loss.
+  returns to `idle`. Teardown and lost pointer capture dispatch `cancel` to
+  the current owner before ownership ends. The browser releases capture
+  immediately after `pointerup` or `pointercancel`, so `lostpointercapture`
+  reports interruptions that deliver neither event. Window blur and
+  visibility listeners are added only if a browser is shown to end a gesture
+  without firing `lostpointercapture`. Drag zoom holds no capture and ends on
+  release, a buttonless move, the next press, or teardown.
 - `CanvasPointer` remains exported with its current callback surface until
   the corpus check shows no extension assigns any of `pointer.onClick`,
   `pointer.onDoubleClick`, `pointer.onDragStart`, `pointer.onDrag`,

@@ -831,36 +831,37 @@ describe('LGraphCanvas interrupted gestures', () => {
     recordCallbacks(canvas, a)
   })
 
-  function hideDocument() {
-    const doc = canvas.canvas.ownerDocument
-    vi.spyOn(doc, 'visibilityState', 'get').mockReturnValue('hidden')
-    doc.dispatchEvent(new Event('visibilitychange'))
+  function loseCapture() {
+    canvas.canvas.dispatchEvent(
+      new PointerEvent('lostpointercapture', { pointerId: 1 })
+    )
   }
 
-  it('window blur while dragging ends the drag where it was', () => {
+  it('lost pointer capture while dragging ends the drag where it was', () => {
     const onNodeMoved = vi.fn()
     canvas.onNodeMoved = onNodeMoved
     gesture.press(A_BODY)
     gesture.move(shifted(A_BODY, FAR))
     expect(canvas.isDragging).toBe(true)
 
-    canvas.canvas.ownerDocument.defaultView!.dispatchEvent(new Event('blur'))
+    loseCapture()
 
     expect(canvas.isDragging).toBe(false)
+    expect(canvas.pointer.isDown).toBe(false)
     expect(posOf(a)).toEqual([40, 70])
     expect(onNodeMoved).toHaveBeenCalledWith(a)
     gesture.move(shifted(A_BODY, [40, 60]))
     expect(posOf(a)).toEqual([40, 70])
   })
 
-  it('window blur finalizes an interrupted resize transaction', () => {
+  it('lost pointer capture finalizes an interrupted resize transaction', () => {
     const beforeChange = vi.spyOn(graph, 'beforeChange')
     const afterChange = vi.spyOn(graph, 'afterChange')
     const resizeHandle: Point = [119, 99]
     gesture.press(resizeHandle)
     gesture.move(shifted(resizeHandle, FAR))
 
-    canvas.canvas.ownerDocument.defaultView?.dispatchEvent(new Event('blur'))
+    loseCapture()
 
     expect(beforeChange).toHaveBeenCalledOnce()
     expect(afterChange).toHaveBeenCalledOnce()
@@ -868,24 +869,12 @@ describe('LGraphCanvas interrupted gestures', () => {
     expect(canvas.resizing_node).toBeNull()
   })
 
-  it('hidden document while pressed discards the click', () => {
+  it('lost pointer capture while pressed discards the click', () => {
     gesture.press(A_BODY)
-    hideDocument()
+    loseCapture()
     gesture.release(A_BODY)
 
     expect(selectedTitles(canvas)).toEqual([])
-  })
-
-  it('lost pointer capture while dragging ends the drag', () => {
-    gesture.press(A_BODY)
-    gesture.move(shifted(A_BODY, FAR))
-
-    canvas.canvas.dispatchEvent(
-      new PointerEvent('lostpointercapture', { pointerId: 1 })
-    )
-
-    expect(canvas.isDragging).toBe(false)
-    expect(canvas.pointer.isDown).toBe(false)
   })
 
   it('finishes cleanup when interrupted drag finalization throws', () => {
@@ -959,17 +948,7 @@ describe('LGraphCanvas interrupted gestures', () => {
     gesture.press(A_BODY, { ctrlKey: true, shiftKey: true })
     gesture.press(A_BODY, { ctrlKey: true, shiftKey: true })
 
-    canvas.canvas.ownerDocument.defaultView?.dispatchEvent(new Event('blur'))
-
-    expect(canvas.read_only).toBe(false)
-  })
-
-  it('window blur finishes an active drag zoom', () => {
-    canvas.dragZoomEnabled = true
-    gesture.press(A_BODY, { ctrlKey: true, shiftKey: true })
-    expect(canvas.read_only).toBe(true)
-
-    canvas.canvas.ownerDocument.defaultView?.dispatchEvent(new Event('blur'))
+    gesture.release(A_BODY)
 
     expect(canvas.read_only).toBe(false)
   })

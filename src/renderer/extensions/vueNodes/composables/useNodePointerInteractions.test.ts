@@ -427,34 +427,6 @@ describe('useNodePointerInteractions', () => {
     expect(layoutStore.isDraggingVueNodes.value).toBe(false)
   })
 
-  it('window blur while dragging ends the drag without snapping', () => {
-    const { endDrag } = useNodeDrag()
-    const { target, releasePointerCapture } = captureTarget()
-    handlers.onPointerdown(
-      onTarget(pointerEvent('pointerdown', 10, 10), target)
-    )
-    move(handlers, 40, 10)
-
-    window.dispatchEvent(new Event('blur'))
-
-    expect(endDrag).not.toHaveBeenCalled()
-    expect(layoutStore.isDraggingVueNodes.value).toBe(false)
-    expect(releasePointerCapture).toHaveBeenCalledWith(1)
-  })
-
-  it('hidden document while pressed discards the click', () => {
-    const { target, releasePointerCapture } = captureTarget()
-    handlers.onPointerdown(
-      onTarget(pointerEvent('pointerdown', 10, 10), target)
-    )
-    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden')
-    document.dispatchEvent(new Event('visibilitychange'))
-    release(handlers, 10, 10)
-
-    expect(selectedTitles(canvas)).toEqual([])
-    expect(releasePointerCapture).toHaveBeenCalledWith(1)
-  })
-
   it('disposing an idle node does not end another node drag', () => {
     const scope = effectScope()
     scope.run(() =>

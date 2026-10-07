@@ -90,7 +90,6 @@ import {
   resolvePointerTarget,
   resolveSelectableTarget
 } from './canvas/resolvePointerTarget'
-import { watchGestureInterrupts } from './canvas/watchGestureInterrupts'
 import { isOverNodeInput, isOverNodeOutput } from './canvas/measureSlots'
 import { strokeShape } from './draw'
 import { defineDeprecatedProperty } from './utils/feedback'
@@ -1065,7 +1064,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     scale: number
     readOnly: boolean
   } | null = null
-  private _stopWatchingDragZoomInterrupts?: () => void
 
   /** If true, enable live selection during drag. Nodes are selected/deselected in real-time. */
   liveSelection: boolean = false
@@ -2526,13 +2524,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         readOnly: this.read_only
       }
       this.read_only = true
-      const pointerId =
-        'pointerId' in e && typeof e.pointerId === 'number' ? e.pointerId : -1
-      this._stopWatchingDragZoomInterrupts = watchGestureInterrupts(
-        this.canvas,
-        pointerId,
-        () => this._finishDragZoom()
-      )
       return
     }
 
@@ -3426,8 +3417,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const start = this._dragZoomStart
     if (!start) return
     this._dragZoomStart = null
-    this._stopWatchingDragZoomInterrupts?.()
-    this._stopWatchingDragZoomInterrupts = undefined
     this.read_only = start.readOnly
   }
 
