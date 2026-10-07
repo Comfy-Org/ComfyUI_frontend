@@ -5,6 +5,8 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { discoverSso, ssoStartUrl } from '@comfyorg/account-core/sso'
 
+import { toSsoReturnPath } from '@/platform/auth/sso/ssoReturnPath'
+
 import {
   captureOAuthRequestId,
   getOAuthRequestId
@@ -20,8 +22,6 @@ import {
 import { getSafePreviousFullPath } from '@/platform/cloud/onboarding/utils/previousFullPath'
 
 const SSO_DEFAULT_RETURN_TO = '/cloud/user-check'
-/** The consent path the server serves as a page; `/oauth/consent` is SPA-only. */
-const SSO_CONSENT_RETURN_PATH = '/cloud/oauth/consent'
 
 /**
  * Where SSO lands the person. A pending OAuth consent outranks
@@ -36,10 +36,12 @@ export function resolveSsoReturnTo(
   const oauthRequestId =
     captureOAuthRequestId(route.query) ?? getOAuthRequestId()
   if (oauthRequestId) {
-    return router.resolve({
-      path: SSO_CONSENT_RETURN_PATH,
-      query: { oauth_request_id: oauthRequestId }
-    }).href
+    return toSsoReturnPath(
+      router.resolve({
+        name: 'cloud-oauth-consent',
+        query: { oauth_request_id: oauthRequestId }
+      }).href
+    )
   }
   return getSafePreviousFullPath(route.query) ?? SSO_DEFAULT_RETURN_TO
 }
