@@ -101,7 +101,6 @@ test.describe('Agent composer asset drop', { tag: '@cloud' }, () => {
 
       await page.keyboard.press('Escape')
       await expect(player).toHaveCount(0)
-      await expect(trigger).toHaveAttribute('aria-expanded', 'false')
       await expect(trigger).toBeFocused()
 
       await page.keyboard.press('Enter')

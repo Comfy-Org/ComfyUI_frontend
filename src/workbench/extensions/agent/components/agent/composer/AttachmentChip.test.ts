@@ -63,6 +63,7 @@ describe('AttachmentChip', () => {
       await user.keyboard('{Escape}')
       await waitFor(() => expect(player).not.toBeInTheDocument())
       await waitFor(() => expect(trigger).toHaveFocus())
+      expect(trigger).toHaveAttribute('aria-expanded', 'false')
       expect(pause).toHaveBeenCalledOnce()
       await user.keyboard(key)
       expect(await screen.findByLabelText(name, { selector })).toHaveAttribute(
