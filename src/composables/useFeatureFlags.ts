@@ -26,7 +26,6 @@ export enum ServerFeatureFlag {
   MANAGER_SUPPORTS_V4 = 'extension.manager.supports_v4',
   MODEL_UPLOAD_BUTTON_ENABLED = 'model_upload_button_enabled',
   ASSET_DELETION_ENABLED = 'asset_deletion_enabled',
-  ASSET_RENAME_ENABLED = 'asset_rename_enabled',
   PRIVATE_MODELS_ENABLED = 'private_models_enabled',
   ONBOARDING_SURVEY_ENABLED = 'onboarding_survey_enabled',
   LINEAR_TOGGLE_ENABLED = 'linear_toggle_enabled',
@@ -35,14 +34,15 @@ export enum ServerFeatureFlag {
   USER_SECRETS_ENABLED = 'user_secrets_enabled',
   NODE_REPLACEMENTS = 'node_replacements',
   NODE_LIBRARY_ESSENTIALS_ENABLED = 'node_library_essentials_enabled',
-  WORKFLOW_SHARING_ENABLED = 'workflow_sharing_enabled',
   COMFYHUB_UPLOAD_ENABLED = 'comfyhub_upload_enabled',
   COMFYHUB_PROFILE_GATE_ENABLED = 'comfyhub_profile_gate_enabled',
   HOSTED_BILLING_DESTINATION = 'hosted_billing_destination',
   SHOW_SIGNIN_BUTTON = 'show_signin_button',
   UNIFIED_CLOUD_AUTH = 'unified_cloud_auth',
   UNIFIED_WEB_SESSION = 'unified_web_session',
+  SSO_ENABLED = 'sso_enabled',
   BILLING_CONTROL_ENABLED = 'billing_control_enabled',
+  MEMBER_CREDIT_LIMITS_ENABLED = 'member_credit_limits_enabled',
   LEGACY_BILLING_MIGRATION_ENABLED = 'legacy_billing_migration_enabled',
   EMBEDDED_CHECKOUT_ENABLED = 'embedded_checked_enabled',
   BILLING_SDK_TOPUP_ENABLED = 'billing_sdk_topup_enabled',
@@ -188,13 +188,6 @@ export function useFeatureFlags() {
         false
       )
     },
-    get assetRenameEnabled() {
-      return resolveFlag(
-        ServerFeatureFlag.ASSET_RENAME_ENABLED,
-        remoteConfig.value.asset_rename_enabled,
-        false
-      )
-    },
     get privateModelsEnabled() {
       return resolveFlag(
         ServerFeatureFlag.PRIVATE_MODELS_ENABLED,
@@ -247,15 +240,6 @@ export function useFeatureFlags() {
         isNightly || import.meta.env.DEV
       )
     },
-    get workflowSharingEnabled() {
-      // UI is also gated on `isCloud` in TopMenuSection; default false
-      // to match other flags' opt-in convention.
-      return resolveFlag(
-        ServerFeatureFlag.WORKFLOW_SHARING_ENABLED,
-        remoteConfig.value.workflow_sharing_enabled,
-        false
-      )
-    },
     get comfyHubUploadEnabled() {
       return resolveFlag(
         ServerFeatureFlag.COMFYHUB_UPLOAD_ENABLED,
@@ -303,11 +287,25 @@ export function useFeatureFlags() {
         remoteConfig.value.unified_web_session
       return value === true
     },
+    get ssoEnabled() {
+      if (!isCloud) return false
+
+      return resolveStrictBooleanFlag(
+        ServerFeatureFlag.SSO_ENABLED,
+        remoteConfig.value.sso_enabled
+      )
+    },
     get billingControlEnabled() {
       return resolveAuthGatedFlag(
         ServerFeatureFlag.BILLING_CONTROL_ENABLED,
         remoteConfig.value.billing_control_enabled,
         cachedBillingControlEnabled
+      )
+    },
+    get memberCreditLimitsEnabled() {
+      return resolveStrictBooleanFlag(
+        ServerFeatureFlag.MEMBER_CREDIT_LIMITS_ENABLED,
+        remoteConfig.value.member_credit_limits_enabled
       )
     },
     get legacyBillingMigrationEnabled() {
@@ -422,7 +420,6 @@ export function startFeatureFlagTelemetry() {
       [ServerFeatureFlag.MODEL_UPLOAD_BUTTON_ENABLED]:
         flags.modelUploadButtonEnabled,
       [ServerFeatureFlag.ASSET_DELETION_ENABLED]: flags.assetDeletionEnabled,
-      [ServerFeatureFlag.ASSET_RENAME_ENABLED]: flags.assetRenameEnabled,
       [ServerFeatureFlag.PRIVATE_MODELS_ENABLED]: flags.privateModelsEnabled,
       [ServerFeatureFlag.ONBOARDING_SURVEY_ENABLED]:
         flags.onboardingSurveyEnabled,
@@ -433,8 +430,6 @@ export function startFeatureFlagTelemetry() {
       [ServerFeatureFlag.NODE_REPLACEMENTS]: flags.nodeReplacementsEnabled,
       [ServerFeatureFlag.NODE_LIBRARY_ESSENTIALS_ENABLED]:
         flags.nodeLibraryEssentialsEnabled,
-      [ServerFeatureFlag.WORKFLOW_SHARING_ENABLED]:
-        flags.workflowSharingEnabled,
       [ServerFeatureFlag.COMFYHUB_UPLOAD_ENABLED]: flags.comfyHubUploadEnabled,
       [ServerFeatureFlag.COMFYHUB_PROFILE_GATE_ENABLED]:
         flags.comfyHubProfileGateEnabled,
@@ -442,7 +437,10 @@ export function startFeatureFlagTelemetry() {
         flags.hostedBillingDestination,
       [ServerFeatureFlag.SHOW_SIGNIN_BUTTON]: flags.showSignInButton,
       [ServerFeatureFlag.UNIFIED_CLOUD_AUTH]: flags.unifiedCloudAuthEnabled,
+      [ServerFeatureFlag.SSO_ENABLED]: flags.ssoEnabled,
       [ServerFeatureFlag.BILLING_CONTROL_ENABLED]: flags.billingControlEnabled,
+      [ServerFeatureFlag.MEMBER_CREDIT_LIMITS_ENABLED]:
+        flags.memberCreditLimitsEnabled,
       [ServerFeatureFlag.LEGACY_BILLING_MIGRATION_ENABLED]:
         flags.legacyBillingMigrationEnabled,
       [ServerFeatureFlag.EMBEDDED_CHECKOUT_ENABLED]:

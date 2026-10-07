@@ -1,11 +1,11 @@
 // @vitest-environment node
 import { describe, expect, it, vi } from 'vitest'
 
-import { workflowDetailsBySlug } from '../src/config/workshop-workflow-content'
-import { initialWorkshopPageState } from '../src/config/workshop-page-state'
-import { urlUploadField } from '../src/config/workshop-playground'
-import { prepareWorkflowRender } from '../src/config/workflow-render'
-import { workflowCloudRequest } from '../src/config/workshop-workflow-api'
+import { workflowDetailsBySlug } from '@/config/workshop-workflow-content'
+import { initialWorkshopPageState } from '@/config/workshop-page-state'
+import { urlUploadField } from '@/config/workshop-playground'
+import { prepareWorkflowRender } from '@/config/workflow-render'
+import { workflowCloudRequest } from '@/config/workshop-workflow-api'
 import { workflow_for_model, workflow_render } from './workflow-render'
 
 describe('CLI workflow rendering', () => {
@@ -14,14 +14,19 @@ describe('CLI workflow rendering', () => {
     async (model) => {
       const initial = initialWorkshopPageState(model)
       expect(workflow_for_model(model.slug)).toEqual(initial.values)
-      const inputs = Object.fromEntries(
-        initial.schema
+      // An empty `randomize` input (the seed) is drawn per run, so pin it to
+      // compare the CLI submission with the browser's prepared request.
+      const inputs = Object.fromEntries([
+        ...initial.schema
           .filter((field) => urlUploadField(field))
           .map((field) => [
             field.name,
             `https://storage.googleapis.com/inputs/${field.name}`
-          ])
-      )
+          ]),
+        ...Object.entries(model.workflow.inputs)
+          .filter(([, input]) => input.randomize)
+          .map(([name]) => [name, 7])
+      ])
       const expected = await prepareWorkflowRender(
         model,
         inputs,

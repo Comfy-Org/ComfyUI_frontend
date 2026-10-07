@@ -1,11 +1,14 @@
 import {
   linksMap,
   nodesMap,
-  OPAQUE_WIDGETS_KEY
+  OPAQUE_WIDGETS_KEY,
+  readStamps
 } from '@comfyorg/comfy-multi-player'
+import { isEqual } from 'es-toolkit'
 import * as Y from 'yjs'
 import { z } from 'zod'
 
+import { growAutogrowInput } from '@/core/graph/widgets/dynamicWidgets'
 import type { INodeFlags, INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { withGraphIntentSource } from '@/lib/litegraph/src/graphIntents'
@@ -24,7 +27,6 @@ import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { reportError } from '@/platform/telemetry/reportError'
 import { zComfyNode } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { LinkId } from '@/types/linkId'
 import { parseLinkId, toLinkId } from '@/types/linkId'
 import type { NodeId } from '@/types/nodeId'
@@ -172,8 +174,80 @@ const zDocNodeFields = zComfyNode
     properties: z.record(zNodeProperty.optional()).optional()
   })
 
+/**
+ * Only the actor's kind is reported: the segments after it in
+ * `agent:<thread>:<turn>` and `human:<user>:<tab>` identify a user.
+ */
+type ActorKind = 'agent' | 'human' | 'unknown'
+type NodeProducer =
+  | { origin: 'operation'; actorKind: ActorKind; opId: string; version: number }
+  | { origin: 'unstamped' | 'unreadable' }
+
 interface MalformedDocNode {
   malformed: string
+  discriminate(): {
+    classType?: string
+    valueShapes: string
+    producer: NodeProducer
+  }
+}
+
+function valueShape(value: unknown): string {
+  if (value === null) return 'null'
+  if (Array.isArray(value)) return `array:${value.length}`
+  if (typeof value === 'object') return `object:${Object.keys(value).length}`
+  return typeof value
+}
+
+/** `absent` when the path's own key is missing, so it is not read as `undefined`. */
+function shapeAtPath(
+  root: unknown,
+  path: readonly (string | number)[]
+): string {
+  let cursor: unknown = root
+  for (const [depth, key] of path.entries()) {
+    if (cursor === null || typeof cursor !== 'object') return 'unreachable'
+    if (!Object.hasOwn(cursor, key))
+      return depth === path.length - 1 ? 'absent' : 'unreachable'
+    cursor = Reflect.get(cursor, key)
+  }
+  return valueShape(cursor)
+}
+
+function issueShapes(fields: unknown, error: z.ZodError): string {
+  return error.issues
+    .map(
+      (issue) =>
+        `${issue.path.join('.')} ${issue.code} ${shapeAtPath(fields, issue.path)}`
+    )
+    .join('; ')
+}
+
+function actorKind(actor: unknown): ActorKind {
+  const kind = typeof actor === 'string' ? actor.split(':', 1)[0] : ''
+  return kind === 'agent' || kind === 'human' ? kind : 'unknown'
+}
+
+function nodeProducer(doc: Y.Doc, id: string): NodeProducer {
+  let stamps: Readonly<Record<string, unknown>>
+  try {
+    stamps = readStamps(doc)
+  } catch {
+    return { origin: 'unreadable' }
+  }
+  const key = JSON.stringify(['node', id])
+  if (!Object.hasOwn(stamps, key)) return { origin: 'unstamped' }
+  const stamp = stamps[key]
+  if (!Array.isArray(stamp)) return { origin: 'unreadable' }
+  const [version, actor, opId]: unknown[] = stamp
+  if (typeof version !== 'number' || typeof opId !== 'string')
+    return { origin: 'unreadable' }
+  return {
+    origin: 'operation',
+    actorKind: actorKind(actor),
+    opId,
+    version
+  }
 }
 
 function readDocNode(
@@ -197,10 +271,18 @@ function readDocNode(
   })
   const parsed = zDocNodeFields.safeParse(fields)
   if (!parsed.success) {
+    const { error } = parsed
     return {
-      malformed: parsed.error.issues
+      malformed: error.issues
         .map((issue) => `${issue.path.join('.')} ${issue.message}`)
-        .join('; ')
+        .join('; '),
+      discriminate() {
+        return {
+          classType: typeof fields.type === 'string' ? fields.type : undefined,
+          valueShapes: issueShapes(fields, error),
+          producer: nodeProducer(doc, id)
+        }
+      }
     }
   }
   const {
@@ -398,7 +480,7 @@ export class LiveGraphApplier {
         }
         touchedNodes.add(id)
         this.try(context, () => {
-          const result = this.upsertNode(graph, doc, id)
+          const result = this.upsertNode(graph, doc, id, mode)
           if (result === 'created') created.push(toNodeId(id))
           if (result === 'recreated') {
             for (const link of docLinksIncident(doc, id)) {
@@ -415,7 +497,7 @@ export class LiveGraphApplier {
 
       for (const [id, names] of changes.widgets) {
         if (touchedNodes.has(id)) continue
-        this.try(context, () => this.syncWidgets(graph, doc, id, names))
+        this.try(context, () => this.syncWidgets(graph, doc, id, names, mode))
       }
 
       this.applyLinks(graph, doc, [...changes.links], context)
@@ -466,6 +548,7 @@ export class LiveGraphApplier {
       fn()
     } catch (error) {
       reportError(error, {
+        surface: 'agent',
         errorType: 'agent_graph_apply_failed',
         tags: { ...AGENT_APPLY_TAGS, outcome: 'degraded' },
         context: { actor: context.actor, opIds: [...context.opIds] }
@@ -482,6 +565,7 @@ export class LiveGraphApplier {
     if (this.reported.has(key)) return
     this.reported.add(key)
     reportError(new Error(message), {
+      surface: 'agent',
       errorType,
       tags: { ...AGENT_APPLY_TAGS, outcome: 'degraded' },
       context
@@ -504,6 +588,7 @@ export class LiveGraphApplier {
       if (this.reported.has(`definition:${definition.id}`)) continue
       this.reported.add(`definition:${definition.id}`)
       reportError(failure, {
+        surface: 'agent',
         errorType: 'agent_subgraph_definitions_failed',
         tags: { ...AGENT_APPLY_TAGS, outcome: 'degraded' },
         context: { graphId: graph.id, definitionId: definition.id }
@@ -519,22 +604,27 @@ export class LiveGraphApplier {
   private upsertNode(
     graph: LGraph,
     doc: Y.Doc,
-    id: string
+    id: string,
+    mode: ApplyMode
   ): 'created' | 'recreated' | 'updated' | 'skipped' {
     const docNode = this.readDocNode(doc, id)
     if (!docNode) return 'skipped'
     const live = graph.getNodeById(toNodeId(id))
     if (live && live.type === docNode.type) {
       this.applyFields(live, docNode)
-      this.applyWidgets(live, docNode.widgets)
+      this.applyWidgets(live, docNode.widgets, mode)
       return 'updated'
     }
     if (live) graph.remove(live)
-    this.createNode(graph, docNode)
+    this.createNode(graph, docNode, mode)
     return live ? 'recreated' : 'created'
   }
 
-  private createNode(graph: LGraph, docNode: DocNode): LGraphNode {
+  private createNode(
+    graph: LGraph,
+    docNode: DocNode,
+    mode: ApplyMode
+  ): LGraphNode {
     const node =
       LiteGraph.createNode(docNode.type, docNode.serialised.title) ??
       missingNode(docNode)
@@ -563,10 +653,21 @@ export class LiveGraphApplier {
       node.last_serialization = info
       node.configure(info)
     } else {
-      node.configure({
-        ...info,
-        widgets_values: positionalWidgetValues(node, docNode.widgets)
-      })
+      if (node.isSubgraphNode()) {
+        const beforeConfigurePromotedIds = promotedWidgetIds(node)
+        node.configure(info)
+        this.applyConfiguredHostWidgets(
+          node,
+          docNode.widgets,
+          beforeConfigurePromotedIds,
+          mode
+        )
+      } else {
+        node.configure({
+          ...info,
+          widgets_values: positionalWidgetValues(node, docNode.widgets)
+        })
+      }
     }
     floorSizeToContent(node)
     return node
@@ -588,15 +689,18 @@ export class LiveGraphApplier {
   private readDocNode(doc: Y.Doc, id: string): DocNode | null {
     const read = readDocNode(doc, id)
     if (read === null) return null
+    const key = `node-shape:${id}`
     if (!('malformed' in read)) {
-      this.reported.delete(`node-shape:${id}`)
+      this.reported.delete(key)
       return read
     }
+    if (this.reported.has(key)) return null
+    const { classType, valueShapes, producer } = read.discriminate()
     this.reportOnce(
-      `node-shape:${id}`,
-      `Document node ${id} is malformed: ${read.malformed}`,
+      key,
+      `Document node ${id} (${classType ?? 'unknown class'}) is malformed: ${read.malformed}`,
       'agent_graph_node_malformed',
-      { nodeId: id, issues: read.malformed }
+      { nodeId: id, issues: read.malformed, classType, valueShapes, producer }
     )
     return null
   }
@@ -612,14 +716,15 @@ export class LiveGraphApplier {
     graph: LGraph,
     doc: Y.Doc,
     id: string,
-    names: ReadonlySet<string> | 'all'
+    names: ReadonlySet<string> | 'all',
+    mode: ApplyMode
   ): void {
     const docNode = this.readDocNode(doc, id)
     const node = graph.getNodeById(toNodeId(id))
     if (!docNode || !node || node.type !== docNode.type) return
     const widgets = docNode.widgets
     if (names === 'all' || Array.isArray(widgets)) {
-      this.applyWidgets(node, widgets)
+      this.applyWidgets(node, widgets, mode)
       return
     }
     if (!widgets) return
@@ -627,14 +732,19 @@ export class LiveGraphApplier {
       node,
       Object.fromEntries(
         Object.entries(widgets).filter(([name]) => names.has(name))
-      )
+      ),
+      mode
     )
   }
 
-  private applyWidgets(node: LGraphNode, widgets: DocNode['widgets']): void {
+  private applyWidgets(
+    node: LGraphNode,
+    widgets: DocNode['widgets'],
+    mode: ApplyMode
+  ): void {
     if (widgets === undefined) return
     if (node.isSubgraphNode()) {
-      this.applyHostWidgets(node, widgets)
+      this.applyHostWidgets(node, widgets, mode)
       return
     }
     const entries = Array.isArray(widgets)
@@ -660,26 +770,63 @@ export class LiveGraphApplier {
     }
   }
 
-  private applyHostWidgets(
+  private applyConfiguredHostWidgets(
     node: LGraphNode,
-    widgets: DocNode['widgets']
+    widgets: DocNode['widgets'],
+    beforeConfigurePromotedIds: readonly string[],
+    mode: ApplyMode
   ): void {
-    const promoted = node.inputs.filter((input) => input.widgetId)
-    if (Array.isArray(widgets) && widgets.length !== promoted.length) {
-      this.reportOnce(
-        `host-widgets:${String(node.id)}:${widgets.length}`,
-        `Subgraph host ${String(node.id)} carries ${widgets.length} opaque widget values for ${promoted.length} promoted widgets`,
-        'agent_graph_host_widgets_mismatch',
-        { nodeId: node.id, expected: promoted.length, actual: widgets.length }
+    const afterConfigurePromotedIds = promotedWidgetIds(node)
+    if (
+      Array.isArray(widgets) &&
+      (widgets.length !== afterConfigurePromotedIds.length ||
+        !isEqual(beforeConfigurePromotedIds, afterConfigurePromotedIds))
+    ) {
+      this.reportHostWidgetDrift(
+        node,
+        widgets.length,
+        afterConfigurePromotedIds.length,
+        mode,
+        { beforeConfigurePromotedIds, afterConfigurePromotedIds }
       )
       return
     }
-    const store = useWidgetValueStore()
+    this.applyHostWidgets(node, widgets, mode)
+  }
+
+  private reportHostWidgetDrift(
+    node: LGraphNode,
+    actual: number,
+    expected: number,
+    mode: ApplyMode,
+    identity?: {
+      beforeConfigurePromotedIds: readonly string[]
+      afterConfigurePromotedIds: readonly string[]
+    }
+  ): void {
+    this.reportOnce(
+      `host-widgets:${mode}:${String(node.id)}`,
+      `Subgraph host ${String(node.id)} (${node.type}) carries ${actual} opaque widget values for ${expected} promoted widgets`,
+      'agent_graph_host_widgets_mismatch',
+      { nodeId: node.id, type: node.type, expected, actual, mode, ...identity }
+    )
+  }
+
+  private applyHostWidgets(
+    node: LGraphNode,
+    widgets: DocNode['widgets'],
+    mode: ApplyMode
+  ): void {
+    const promoted = promotedInputs(node)
+    if (Array.isArray(widgets) && widgets.length !== promoted.length) {
+      this.reportHostWidgetDrift(node, widgets.length, promoted.length, mode)
+      return
+    }
     for (const [name, value] of hostWidgetEntries(promoted, widgets)) {
       if (!isWidgetValue(value)) continue
       if (this.holdsLocalWrite(node, name, value)) continue
-      const widgetId = promoted.find((input) => input.name === name)?.widgetId
-      if (!widgetId) {
+      const widget = node.widgets?.find((candidate) => candidate.name === name)
+      if (!widget) {
         this.reportOnce(
           `widget:${String(node.id)}:${name}`,
           `Subgraph host ${String(node.id)} (${node.type}) promotes no widget '${name}'`,
@@ -688,9 +835,8 @@ export class LiveGraphApplier {
         )
         continue
       }
-      store.setValue(widgetId, value)
+      this.setWidgetValue(node, widget, value)
     }
-    node.graph?.incrementVersion()
   }
 
   private holdsLocalWrite(
@@ -770,12 +916,7 @@ export class LiveGraphApplier {
       link.originSlot,
       'positional'
     )
-    const targetSlot = resolveSlot(
-      target.inputs.map((input) => input.name),
-      readDocSlotName(doc, link.target, 'inputs', link.targetSlot),
-      link.targetSlot,
-      'none'
-    )
+    const targetSlot = resolveTargetSlot(target, doc, link)
     if (originSlot < 0 || targetSlot < 0) {
       if (graph.links.has(link.id)) graph.removeLink(link.id)
       return 'unresolved'
@@ -830,6 +971,16 @@ function isLinkPresent(
   )
 }
 
+function promotedInputs(node: LGraphNode): INodeInputSlot[] {
+  return node.inputs.filter((input) => input.widgetId)
+}
+
+function promotedWidgetIds(node: LGraphNode): string[] {
+  return promotedInputs(node).flatMap((input) =>
+    input.widgetId ? [input.widgetId] : []
+  )
+}
+
 /** Host widget values by promoted-input name; a positional list is read in promoted-input order. */
 function hostWidgetEntries(
   promoted: readonly INodeInputSlot[],
@@ -870,6 +1021,29 @@ function applyAppearance(node: LGraphNode, source: ISerialisedNode): void {
       Object.assign(node, { [key]: value })
     }
   }
+}
+
+/**
+ * The live input index a document link targets. A dynamic input slot the host
+ * grew has no live counterpart until the node's autogrow group is grown to it,
+ * so grow it rather than drop a link the document holds against a slot it
+ * legitimately owns. `growAutogrowInput` refuses a name outside the node's own
+ * groups, leaving a slot the live node really lacks unresolved as before.
+ */
+function resolveTargetSlot(
+  target: LGraphNode,
+  doc: Y.Doc,
+  link: DocLink
+): number {
+  const docName = readDocSlotName(doc, link.target, 'inputs', link.targetSlot)
+  const resolved = resolveSlot(
+    target.inputs.map((input) => input.name),
+    docName,
+    link.targetSlot,
+    'none'
+  )
+  if (resolved >= 0 || docName === undefined) return resolved
+  return growAutogrowInput(target, docName) ?? resolved
 }
 
 /**

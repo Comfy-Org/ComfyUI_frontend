@@ -1,20 +1,14 @@
 # Description: Linting and code formatting validation for pull requests.
-# Paired with ci-lint-format-queue.yaml - workflow name and the gate job name
-# `lint-and-format` must match so branch protection resolves a single
-# required check in both the pull_request and merge_group contexts.
-#
 # Work is split across parallel jobs so wall time is the slowest job rather
 # than the sum. The `lint` job runs the fixers; every fixer exits non-zero
 # when unfixable problems remain, so no second verify-only lint pass runs.
 name: 'CI: Lint Format'
 
 on:
-  pull_request:
-    branches-ignore: [wip/*, draft/*, temp/*]
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  workflow_call:
+    secrets:
+      PR_GH_TOKEN:
+        required: false
 
 permissions:
   contents: write
@@ -40,6 +34,10 @@ jobs:
 
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
+        with:
+          # The optional pnpm cache currently fails during runner cleanup on this PR.
+          # Lint and format verification do not depend on the cache.
+          node_cache: 'false'
 
       - name: Restore lint caches
         id: lint-cache
@@ -49,13 +47,13 @@ jobs:
           path: ${{ env.LINT_CACHE_PATHS }}
 
       - name: Run ESLint with auto-fix
-        run: pnpm lint:fix
+        run: pnpm lint:fix:ci
 
       - name: Run Stylelint with auto-fix
         run: pnpm stylelint:fix
 
       - name: Run oxfmt with auto-format
-        run: pnpm format
+        run: pnpm -r --include-workspace-root format
 
       - name: Check for changes
         id: verify-changed-files
@@ -83,7 +81,7 @@ jobs:
           echo "Please run these commands locally and push the changes:"
           echo "  pnpm lint:fix"
           echo "  pnpm stylelint:fix"
-          echo "  pnpm format"
+          echo "  pnpm -r --include-workspace-root format"
           echo ""
           echo "Or set up pre-commit hooks to automatically format on every commit:"
           echo "  pnpm prepare"
@@ -179,17 +177,3 @@ jobs:
 
       - name: Verify knip, locale integrity and ADR index
         uses: ./.github/actions/repo-checks
-
-  # Single stable branch-protection context over the parallel jobs above.
-  lint-and-format:
-    needs: [lint, typecheck, typecheck-aux, repo-checks]
-    if: ${{ always() }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Verify every lint and format job passed
-        env:
-          RESULTS: ${{ toJSON(needs.*.result) }}
-        run: |
-          echo "$RESULTS"
-          echo "$RESULTS" | jq -e 'all(. == "success")' > /dev/null ||
-            { echo "::error::At least one lint/format job did not succeed."; exit 1; }

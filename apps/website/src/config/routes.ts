@@ -5,60 +5,62 @@ import {
   normalizeRoute
 } from './locales'
 import type { Locale } from './locales'
+import type { AppWorkshopModel } from './models-catalogue'
 
 const baseRoutes = {
   home: '/',
-  download: '/download',
-  cloud: '/cloud',
-  pricing: '/pricing',
-  enterprise: '/enterprise',
-  managedBuilds: '/enterprise/managed-builds',
-  gallery: '/gallery',
-  launches: '/launches',
-  events: '/events',
-  about: '/about',
-  careers: '/careers',
-  customers: '/customers',
-  customerVideoBlackMath: '/customers/videos/black-math',
-  customerVideoSilversideAi: '/customers/videos/silverside-ai',
-  demos: '/demos',
-  learning: '/learning',
-  termsOfService: '/terms-of-service',
-  enterpriseMsa: '/enterprise-msa',
-  privacyPolicy: '/privacy-policy',
-  affiliates: '/affiliates',
-  affiliateTerms: '/affiliates/terms',
-  contact: '/contact',
-  models: '/p/supported-models',
-  modelsShowcase: '/models',
-  mcp: '/mcp',
-  agent: '/agent',
-  platform: '/platform',
-  platformComfyApi: '/platform/comfy-api',
-  platformRouter: '/platform/router',
-  platformBuilder: '/platform/builder',
-  cli: '/cli',
-  minimax: '/minimax-h3',
-  minimaxMusic3: '/minimax-music-3',
-  minimaxLicense: '/minimax/license',
-  minimaxLicenseProfessionalRequest: '/minimax/license/professional-request',
-  flux3: '/flux-3',
-  seedance: '/seedance-2.5',
-  fdct: '/forward-deployed-creatives',
-  ltx: '/ltx-2.5',
-  geminiOmni: '/gemini-omni',
-  wanAnimate2: '/wan-animate-2',
-  cloudNodes: '/cloud-nodes',
-  wan3: '/wan-3.0',
-  chatgptImage25: '/chatgpt-image-2.5',
-  qwenImage21: '/qwen-image-2.1',
-  brand: '/brand',
-  // The catalogue answers to /models now. The keys keep their old names while
-  // the pull requests stacked on this branch are still open against them.
-  workshop: '/models',
+  download: '/download/',
+  cloud: '/cloud/',
+  pricing: '/pricing/',
+  enterprise: '/enterprise/',
+  managedBuilds: '/enterprise/managed-builds/',
+  gallery: '/gallery/',
+  launches: '/launches/',
+  events: '/events/',
+  about: '/about/',
+  careers: '/careers/',
+  customers: '/customers/',
+  customerVideoBlackMath: '/customers/videos/black-math/',
+  customerVideoSilversideAi: '/customers/videos/silverside-ai/',
+  demos: '/demos/',
+  learning: '/learning/',
+  termsOfService: '/terms-of-service/',
+  enterpriseMsa: '/enterprise-msa/',
+  privacyPolicy: '/privacy-policy/',
+  affiliates: '/affiliates/',
+  affiliateTerms: '/affiliates/terms/',
+  contact: '/contact/',
+  models: '/p/supported-models/',
+  mcp: '/mcp/',
+  agent: '/agent/',
+  platform: '/platform/',
+  platformComfyApi: '/platform/comfy-api/',
+  platformRouter: '/platform/router/',
+  platformBuilder: '/platform/builder/',
+  cli: '/cli/',
+  minimax: '/minimax-h3/',
+  minimaxMusic3: '/minimax-music-3/',
+  minimaxLicense: '/minimax/license/',
+  minimaxLicenseProfessionalRequest: '/minimax/license/professional-request/',
+  flux3: '/flux-3/',
+  seedance: '/seedance-2.5/',
+  fdct: '/forward-deployed-creatives/',
+  ltx: '/ltx-2.5/',
+  geminiOmni: '/gemini-omni/',
+  wanAnimate2: '/wan-animate-2/',
+  cloudNodes: '/cloud-nodes/',
+  wan3: '/wan-3.0/',
+  chatgptImage25: '/chatgpt-image-2.5/',
+  qwenImage21: '/qwen-image-2.1/',
+  nanoBanana: '/nano-banana/',
+  brand: '/brand/',
+  // The hub catalogue. `workshop` keeps its old name.
+  workshop: '/hub/models/',
+  hubWorkflows: '/hub/workflows/',
+  hubApps: '/hub/apps/',
   workshopSignIn: '/login/',
-  cinematicStudio: '/models/apps/cinematic-studio',
-  reshoot: '/models/apps/reshoot'
+  cinematicStudio: '/hub/apps/cinematic-studio/',
+  reshoot: '/hub/apps/reshoot/'
 } as const
 
 type RouteKey = keyof typeof baseRoutes
@@ -70,8 +72,8 @@ type Routes = Readonly<Record<RouteKey, string>>
 // exist. Remove a route from this list once its translation ships.
 //
 // affiliateTerms: legal-reviewed English-only document. See the comment
-// header in src/pages/affiliates/terms.astro and the affiliate-terms i18n
-// block in src/i18n/translations.ts for the reasoning.
+// header in src/pages/affiliates/terms.astro and README.md's English-only
+// copy section for the reasoning.
 //
 // termsOfService: legal-reviewed English-only document, same reasoning.
 //
@@ -86,8 +88,8 @@ type Routes = Readonly<Record<RouteKey, string>>
 // form, so no localized variant exists. See the comment header in
 // src/pages/minimax/license/professional-request.astro.
 //
-// workshop, workshopSignIn, cinematicStudio, reshoot: prototype pages, English
-// only for now.
+// workshop, hubWorkflows, hubApps, workshopSignIn, cinematicStudio, reshoot:
+// English only. Every locale links the one catalogue.
 //
 // customerVideoBlackMath / customerVideoSilversideAi: dedicated watch pages
 // built from a single English-language caption track — a "translated" watch
@@ -101,6 +103,8 @@ const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
   'models',
   'minimaxLicenseProfessionalRequest',
   'workshop',
+  'hubWorkflows',
+  'hubApps',
   'workshopSignIn',
   'cinematicStudio',
   'reshoot',
@@ -126,18 +130,25 @@ const LOCALE_INVARIANT_EXTRA_PATHS = [
   '/pixal3d-trellis2',
   '/platform/serverless-animation',
   '/signup',
-  '/workshop'
+  '/workshop',
+  '/hub/models',
+  '/hub/workflows',
+  '/hub/apps',
+  '/models'
 ]
 
-const LOCALE_INVARIANT_PATHS = new Set<string>([
-  ...[...LOCALE_INVARIANT_ROUTE_KEYS].map((key) => baseRoutes[key]),
-  ...LOCALE_INVARIANT_EXTRA_PATHS
-])
+const LOCALE_INVARIANT_PATHS = new Set<string>(
+  [
+    ...[...LOCALE_INVARIANT_ROUTE_KEYS].map((key) => baseRoutes[key]),
+    ...LOCALE_INVARIANT_EXTRA_PATHS
+  ].map(normalizeRoute)
+)
 
 /** True for a locale-invariant route or anything nested under one. */
 function isLocaleInvariantPath(pathname: string): boolean {
+  const route = normalizeRoute(pathname)
   return [...LOCALE_INVARIANT_PATHS].some(
-    (path) => pathname === path || pathname.startsWith(`${path}/`)
+    (path) => route === path || route.startsWith(`${path}/`)
   )
 }
 
@@ -152,7 +163,7 @@ export function supportsLocaleRoute(locale: Locale, pathname: string): boolean {
 }
 
 /**
- * Prefix an internal path with the locale (`/mcp` → `/zh-CN/mcp`). External
+ * Prefix an internal path with the locale (`/mcp/` → `/zh-CN/mcp/`). External
  * URLs and locale-invariant routes pass through unchanged.
  */
 export function localizeHref(
@@ -176,6 +187,13 @@ export function getRoutes(locale: Locale = DEFAULT_LOCALE): Routes {
   ) as Routes
 }
 
+const workshopAppRepos: Readonly<
+  Partial<Record<AppWorkshopModel['appId'], string>>
+> = {
+  studio: 'https://github.com/Comfy-Org/comfy-cinematic-studio',
+  reshoot: 'https://github.com/Comfy-Org/comfy-reshoot'
+}
+
 export const externalLinks = {
   affiliateApplicationForm: 'https://forms.gle/RS8L2ttcuGap4Q1v6',
   apiKeys: 'https://platform.comfy.org/profile/api-keys',
@@ -194,6 +212,7 @@ export const externalLinks = {
   comfyCliRepo: 'https://github.com/Comfy-Org/comfy-cli',
   comfyMcpRepo: 'https://github.com/Comfy-Org/comfy-mcp',
   docsInAppAgent: 'https://docs.comfy.org/agent-tools/in-app-agent',
+  workshopAppRepos,
   docsCli: 'https://docs.comfy.org/agent-tools/cli',
   // Markdown variant handed to agents in the "ask your agent" cards, same
   // rationale as docsMcpMd below.
@@ -221,6 +240,7 @@ export const externalLinks = {
   docsSubscription: 'https://docs.comfy.org/support/subscription/subscribing',
   g2ComfyUi: 'https://www.g2.com/products/comfyui',
   github: 'https://github.com/Comfy-Org/ComfyUI',
+  githubOrg: 'https://github.com/Comfy-Org',
   githubInstall: 'https://github.com/Comfy-Org/ComfyUI#installing',
   instagram: 'https://www.instagram.com/comfyui/',
   linkedin: 'https://www.linkedin.com/company/comfyui',
@@ -229,7 +249,7 @@ export const externalLinks = {
   platform: 'https://platform.comfy.org',
   platformBuilds: 'https://platform.comfy.org/profile/builds',
   platformUsage: 'https://platform.comfy.org/profile/usage',
-  pricing: 'https://comfy.org/pricing',
+  pricing: 'https://comfy.org/pricing/',
   reddit: 'https://www.reddit.com/r/comfyui/',
   support: 'https://support.comfy.org/hc/en-us',
   trustCenter: 'https://app.vanta.com/comfy.org/trust/o6nu46b16iu3e7fhc41hnz',
@@ -244,7 +264,7 @@ export const externalLinks = {
 
 /**
  * The platform creates a key on arrival and shows this product's onboarding.
- * `model` is the website's model page id (`/models/<slug>`), not the Router id.
+ * `model` is the website's model page id (`/hub/models/<slug>/`), not the Router id.
  */
 type ApiKeysOnboarding =
   | { onboarding: 'router' | 'comfy_api' }

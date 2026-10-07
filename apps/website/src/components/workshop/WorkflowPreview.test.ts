@@ -2,9 +2,17 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { readonly, ref } from 'vue'
 
-import { workflowDetailsBySlug } from '../../config/workshop-workflow-content'
+import { workflowDetailsBySlug } from '@/config/workshop-workflow-content'
+import {
+  captureWorkshopEvent,
+  useWorkshopEnabled,
+  useWorkshopWorkflowsEnabled
+} from '@/scripts/posthog'
 import WorkflowPreview from './WorkflowPreview.vue'
+
+vi.mock(import('@/scripts/posthog'))
 
 const model = workflowDetailsBySlug.get('workflows/animate-reference-sheet')
 assert(model, 'the catalogue no longer carries the fixture workflow')
@@ -56,6 +64,23 @@ describe('WorkflowPreview', () => {
     const runsOn = screen.getByTestId('workflow-runs-on')
     expect(runsOn).toHaveTextContent('Runs on')
     for (const name of template.models) expect(runsOn).toHaveTextContent(name)
+  })
+
+  // The frame takes the pointer so a drag pans the graph, and a captured press
+  // hands its click to the frame instead of whatever it started on. The way to
+  // the full-size export sits inside that frame, so it has to be let through.
+  it('lets a press on the full-size link reach the link', () => {
+    render(WorkflowPreview, { props: { model, cloudHref } })
+
+    const frame = screen.getByTestId('workflow-graph')
+    screen
+      .getByTestId('workflow-graph-full')
+      .dispatchEvent(
+        new PointerEvent('pointerdown', { bubbles: true, pointerId: 1 })
+      )
+
+    expect(frame.className).toContain('cursor-grab')
+    expect(frame.className).not.toContain('cursor-grabbing')
   })
 
   // Three of the design's six facts; the other three — how often it has run,
@@ -169,5 +194,58 @@ describe('WorkflowPreview', () => {
         screen.getByTestId('workflow-graph-flat').getAttribute('src')
       ).toBe(template.previewUrl)
     )
+  })
+})
+
+describe('WorkflowPreview analytics', () => {
+  it('reports Try in Cloud and workflow download clicks once access is enabled', async () => {
+    vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(ref(true)))
+    vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(readonly(ref(true)))
+    render(WorkflowPreview, { props: { model, cloudHref } })
+    const link = (name: string) => {
+      const anchor = screen.getByRole('link', { name })
+      anchor.addEventListener('click', (event) => event.preventDefault(), {
+        once: true
+      })
+      return anchor
+    }
+
+    link('Try in Cloud').click()
+    expect(captureWorkshopEvent).toHaveBeenLastCalledWith({
+      name: 'try_in_cloud_clicked',
+      properties: expect.objectContaining({
+        model_slug: model.slug,
+        page_type: 'workflow',
+        workflow_id: model.workflowId
+      })
+    })
+
+    link('Download workflow JSON').click()
+    expect(captureWorkshopEvent).toHaveBeenLastCalledWith({
+      name: 'workflow_download_clicked',
+      properties: expect.objectContaining({
+        model_slug: model.slug,
+        page_type: 'workflow',
+        workflow_id: model.workflowId
+      })
+    })
+  })
+
+  it('reports no clicks while Workflows access is off', () => {
+    vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(ref(true)))
+    vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(readonly(ref(false)))
+    render(WorkflowPreview, { props: { model, cloudHref } })
+    const link = (name: string) => {
+      const anchor = screen.getByRole('link', { name })
+      anchor.addEventListener('click', (event) => event.preventDefault(), {
+        once: true
+      })
+      return anchor
+    }
+
+    link('Try in Cloud').click()
+    link('Download workflow JSON').click()
+
+    expect(captureWorkshopEvent).not.toHaveBeenCalled()
   })
 })

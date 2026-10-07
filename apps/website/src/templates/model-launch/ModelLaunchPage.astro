@@ -1,28 +1,30 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro'
-import BreadcrumbBar from '../../components/common/BreadcrumbBar.vue'
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import BreadcrumbBar from '@/components/common/BreadcrumbBar.vue'
 import ModelLaunchAudioGallerySection from './ModelLaunchAudioGallerySection.vue'
 import ModelLaunchComparisonSection from './ModelLaunchComparisonSection.vue'
 import ModelLaunchCtaSection from './ModelLaunchCtaSection.vue'
 import ModelLaunchFaqSection from './ModelLaunchFaqSection.vue'
 import ModelLaunchGallerySection from './ModelLaunchGallerySection.vue'
 import ModelLaunchHeroSection from './ModelLaunchHeroSection.vue'
+import ModelLaunchHighlightSection from './ModelLaunchHighlightSection.vue'
 import ModelLaunchPricingSection from './ModelLaunchPricingSection.vue'
 import ModelLaunchReviewsSection from './ModelLaunchReviewsSection.vue'
+import ModelLaunchShowcaseSection from './ModelLaunchShowcaseSection.vue'
 import ModelLaunchStepsSection from './ModelLaunchStepsSection.vue'
 import ModelLaunchRunOptionsSection from './ModelLaunchRunOptionsSection.vue'
 import type { ModelLaunchPage } from './types'
 import { DEFAULT_SECTION_ORDER } from './types'
-import { getRoutes } from '../../config/routes'
-import { t } from '../../i18n/translations'
-import { faqAnswerPlainText } from '../../utils/faqAnswer'
-import { absoluteUrl, faqPageNode, pageContext } from '../../utils/jsonLd'
+import { getRoutes } from '@/config/routes'
+import { faqAnswerPlainText } from '@/utils/faqAnswer'
+import { absoluteUrl, faqPageNode, pageContext } from '@/utils/jsonLd'
 
 interface Props {
   page: ModelLaunchPage
 }
 
 const { page } = Astro.props
+const { t } = Astro.locals
 
 const { locale, url } = pageContext(
   Astro.site,
@@ -32,9 +34,12 @@ const { locale, url } = pageContext(
 const routes = getRoutes(locale)
 
 const crumbs = [
-  { label: t('breadcrumb.home', locale), href: routes.home },
-  { label: t('models.breadcrumb.models', locale), href: routes.models },
-  { label: t(page.breadcrumbLabelKey, locale) }
+  { label: t('breadcrumb.home'), href: routes.home },
+  {
+    label: t('models.breadcrumb.models'),
+    href: routes.models
+  },
+  { label: t(page.breadcrumbLabelKey) }
 ]
 
 const breadcrumbs = crumbs.map((crumb) =>
@@ -60,19 +65,28 @@ const sectionOrder = page.sectionOrder ?? DEFAULT_SECTION_ORDER
 ---
 
 <BaseLayout
-  title={t(page.metaTitleKey, locale)}
-  description={t(page.metaDescriptionKey, locale)}
+  title={t(page.metaTitleKey)}
+  description={t(page.metaDescriptionKey)}
   breadcrumbs={breadcrumbs}
   extraJsonLd={faqPage ? [faqPage] : []}
 >
   <BreadcrumbBar
     crumbs={crumbs}
-    updated={t(page.breadcrumbUpdatedKey, locale)}
-    label={t('ui.breadcrumb', locale)}
+    updated={t(page.breadcrumbUpdatedKey)}
+    label={t('ui.breadcrumb')}
+    stackOnMobile={page.stackBreadcrumbOnMobile}
   />
   <ModelLaunchHeroSection client:load hero={page.hero} locale={locale} />
   {sectionOrder.map((section) => {
     switch (section) {
+      case 'showcases':
+        return page.showcases?.map((showcase) => (
+          <ModelLaunchShowcaseSection
+            client:visible={{ rootMargin: '400px' }}
+            showcase={showcase}
+            locale={locale}
+          />
+        ))
       case 'gallery':
         return (
           page.gallery && (
@@ -124,6 +138,15 @@ const sectionOrder = page.sectionOrder ?? DEFAULT_SECTION_ORDER
             <ModelLaunchFaqSection
               client:visible
               faq={page.faq}
+              locale={locale}
+            />
+          )
+        )
+      case 'highlight':
+        return (
+          page.highlight && (
+            <ModelLaunchHighlightSection
+              highlight={page.highlight}
               locale={locale}
             />
           )

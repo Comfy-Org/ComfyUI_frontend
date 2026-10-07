@@ -199,6 +199,32 @@ describe('submitOAuthConsentDecision', () => {
     ).rejects.toBeInstanceOf(OAuthApiError)
   })
 
+  it('carries the refusal code from the error body', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          code: 'origin_not_allowed',
+          message: 'This origin may not use the session'
+        }),
+        { status: 403, headers: { 'Content-Type': 'application/json' } }
+      )
+    )
+
+    await expect(
+      submitOAuthConsentDecision({
+        oauthRequestId: validChallenge.oauth_request_id,
+        csrfToken: validChallenge.csrf_token,
+        decision: 'allow',
+        workspaceId: 'personal-workspace'
+      })
+    ).rejects.toMatchObject({
+      name: 'OAuthApiError',
+      status: 403,
+      code: 'origin_not_allowed',
+      message: 'This origin may not use the session'
+    })
+  })
+
   it('throws when redirect_url is missing from a successful response', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(okResponse({}))
 

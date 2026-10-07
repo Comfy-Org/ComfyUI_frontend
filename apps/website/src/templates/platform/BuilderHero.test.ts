@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import { t } from '../../i18n/translations'
+import { t } from '@/i18n/translations'
 import BuilderHero from './BuilderHero.vue'
 
 describe('BuilderHero', () => {
@@ -10,11 +10,11 @@ describe('BuilderHero', () => {
 
     expect(
       screen.getByRole('heading', {
-        name: t('platform.builderHero.heading', 'en')
+        name: t('platform.builderHero.heading', {}, { locale: 'en' })
       })
     ).toBeTruthy()
     expect(
-      screen.getByText(t('platform.builderHero.subtitle', 'en'))
+      screen.getByText(t('platform.builderHero.subtitle', {}, { locale: 'en' }))
     ).toBeTruthy()
   })
 })

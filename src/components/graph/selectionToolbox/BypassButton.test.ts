@@ -64,12 +64,6 @@ describe('BypassButton', () => {
     expect(screen.getByTestId('bypass-button')).toBeInTheDocument()
   })
 
-  it('should have correct test id', () => {
-    setCanvasSelection([getMockLGraphNode()])
-    renderComponent()
-    expect(screen.getByTestId('bypass-button')).toBeInTheDocument()
-  })
-
   it('should execute bypass command when clicked', async () => {
     setCanvasSelection([getMockLGraphNode()])
     const executeSpy = vi.spyOn(commandStore, 'execute').mockResolvedValue()

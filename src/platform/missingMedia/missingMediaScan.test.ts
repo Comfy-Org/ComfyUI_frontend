@@ -173,7 +173,13 @@ beforeEach(() => {
   seedMediaNodeDefs()
 })
 
+function disableAssetApi() {
+  vi.mocked(useFeatureFlags().flags).assetsEnabled = false
+}
+
 describe('scanNodeMediaCandidates', () => {
+  beforeEach(disableAssetApi)
+
   it('does not report a regular media widget whose input value comes from a link', () => {
     const graph = new LGraph()
     const upstream = new LGraphNode('ImageSource')
@@ -194,7 +200,7 @@ describe('scanNodeMediaCandidates', () => {
     const link = upstream.connect(0, node, 0)
     if (!link) throw new Error('Expected regular media input link')
 
-    expect(scanNodeMediaCandidates(graph, node, false)).toEqual([])
+    expect(scanNodeMediaCandidates(graph, node)).toEqual([])
   })
 
   it('returns candidate for a LoadImage node with missing image', () => {
@@ -206,7 +212,7 @@ describe('scanNodeMediaCandidates', () => {
     )
     const graph = makeGraph([node])
 
-    const result = scanNodeMediaCandidates(graph, node, false)
+    const result = scanNodeMediaCandidates(graph, node)
 
     expect(result).toHaveLength(1)
     expect(result[0]).toEqual({
@@ -228,7 +234,7 @@ describe('scanNodeMediaCandidates', () => {
     )
     const graph = makeGraph([node])
 
-    const result = scanNodeMediaCandidates(graph, node, false)
+    const result = scanNodeMediaCandidates(graph, node)
 
     expect(result).toEqual([])
   })
@@ -237,14 +243,15 @@ describe('scanNodeMediaCandidates', () => {
     const node = makeMediaNode(1, 'LoadImage', [], 0)
     const graph = makeGraph([node])
 
-    const result = scanNodeMediaCandidates(graph, node, false)
+    const result = scanNodeMediaCandidates(graph, node)
 
     expect(result).toEqual([])
   })
 
   it.for([false, true])(
-    'returns empty while a media upload is pending on the node (isCloud: %s)',
-    (isCloud) => {
+    'returns empty while a media upload is pending on the node (assetsEnabled: %s)',
+    (assetsEnabled) => {
+      vi.mocked(useFeatureFlags().flags).assetsEnabled = assetsEnabled
       const node = makeMediaNode(
         1,
         'LoadVideo',
@@ -254,7 +261,7 @@ describe('scanNodeMediaCandidates', () => {
       const graph = makeGraph([node])
       node.isUploading = true
 
-      const result = scanNodeMediaCandidates(graph, node, isCloud)
+      const result = scanNodeMediaCandidates(graph, node)
 
       expect(result).toEqual([])
     }
@@ -270,10 +277,10 @@ describe('scanNodeMediaCandidates', () => {
     const graph = makeGraph([node])
 
     node.isUploading = true
-    expect(scanNodeMediaCandidates(graph, node, false)).toEqual([])
+    expect(scanNodeMediaCandidates(graph, node)).toEqual([])
 
     node.isUploading = false
-    expect(scanNodeMediaCandidates(graph, node, false)).toEqual([
+    expect(scanNodeMediaCandidates(graph, node)).toEqual([
       expect.objectContaining({
         nodeType: 'LoadVideo',
         widgetName: 'file',
@@ -324,7 +331,7 @@ describe('scanNodeMediaCandidates', () => {
       )
       const graph = makeGraph([node])
 
-      const result = scanNodeMediaCandidates(graph, node, false)
+      const result = scanNodeMediaCandidates(graph, node)
 
       expect(result).toHaveLength(1)
       expect(result[0]).toMatchObject({
@@ -364,7 +371,7 @@ describe('scanNodeMediaCandidates', () => {
       )
       const graph = makeGraph([node])
 
-      const result = scanNodeMediaCandidates(graph, node, false)
+      const result = scanNodeMediaCandidates(graph, node)
 
       expect(result[0]).toMatchObject({
         nodeType,
@@ -372,6 +379,29 @@ describe('scanNodeMediaCandidates', () => {
         name: value,
         isMissing: undefined
       })
+    }
+  )
+
+  it.for([
+    { value: 'photo.png', options: ['other.png'] },
+    { value: 'photo.png', options: ['photo.png'] },
+    { value: 'photo.png [output]', options: ['photo.png [output]'] }
+  ])(
+    'defers $value to asset verification when the asset API is enabled',
+    ({ value, options }) => {
+      vi.mocked(useFeatureFlags().flags).assetsEnabled = true
+      const node = makeMediaNode(
+        1,
+        'LoadImage',
+        [makeMediaCombo('image', value, options)],
+        0
+      )
+
+      const result = scanNodeMediaCandidates(makeGraph([node]), node)
+
+      expect(result).toEqual([
+        expect.objectContaining({ name: value, isMissing: undefined })
+      ])
     }
   )
 
@@ -386,7 +416,7 @@ describe('scanNodeMediaCandidates', () => {
       0
     )
 
-    const result = scanNodeMediaCandidates(makeGraph([node]), node, false)
+    const result = scanNodeMediaCandidates(makeGraph([node]), node)
 
     expect(result).toEqual([
       expect.objectContaining({
@@ -408,7 +438,7 @@ describe('scanNodeMediaCandidates', () => {
     )
     const graph = makeGraph([node])
 
-    const result = scanNodeMediaCandidates(graph, node, false)
+    const result = scanNodeMediaCandidates(graph, node)
 
     expect(result[0]).toMatchObject({
       name: 'photo.png [input]',
@@ -425,7 +455,7 @@ describe('scanNodeMediaCandidates', () => {
     )
     const graph = makeGraph([node])
 
-    const result = scanNodeMediaCandidates(graph, node, false)
+    const result = scanNodeMediaCandidates(graph, node)
 
     expect(result[0]).toMatchObject({
       name: 'photo.png[input]',
@@ -482,6 +512,8 @@ describe('isMissingMediaCandidateScopeActive', () => {
 })
 
 describe('scanAllMediaCandidates', () => {
+  beforeEach(disableAssetApi)
+
   it('skips muted nodes (mode === NEVER)', () => {
     const node = makeMediaNode(
       1,
@@ -489,7 +521,7 @@ describe('scanAllMediaCandidates', () => {
       [makeMediaCombo('image', 'photo.png', ['other.png'])],
       2 // NEVER
     )
-    const result = scanAllMediaCandidates(makeGraph([node]), false)
+    const result = scanAllMediaCandidates(makeGraph([node]))
     expect(result).toHaveLength(0)
   })
 
@@ -500,7 +532,7 @@ describe('scanAllMediaCandidates', () => {
       [makeMediaCombo('image', 'photo.png', ['other.png'])],
       4 // BYPASS
     )
-    const result = scanAllMediaCandidates(makeGraph([node]), false)
+    const result = scanAllMediaCandidates(makeGraph([node]))
     expect(result).toHaveLength(0)
   })
 
@@ -511,7 +543,7 @@ describe('scanAllMediaCandidates', () => {
       [makeMediaCombo('image', 'photo.png', ['other.png'])],
       0 // ALWAYS
     )
-    const result = scanAllMediaCandidates(makeGraph([node]), false)
+    const result = scanAllMediaCandidates(makeGraph([node]))
     expect(result).toHaveLength(1)
     expect(result[0].isMissing).toBe(true)
   })
@@ -653,7 +685,8 @@ describe('verifyMediaCandidates', () => {
       const node = makeMediaNode(1, nodeType, [
         makeMediaCombo(widgetName, value, [value])
       ])
-      const candidates = scanNodeMediaCandidates(makeGraph([node]), node, false)
+      disableAssetApi()
+      const candidates = scanNodeMediaCandidates(makeGraph([node]), node)
 
       await verifyMediaCandidates(candidates, { isCloud: false })
 
@@ -685,7 +718,8 @@ describe('verifyMediaCandidates', () => {
       const node = makeMediaNode(1, 'LoadImage', [
         makeMediaCombo('image', value, [option])
       ])
-      const candidates = scanNodeMediaCandidates(makeGraph([node]), node, false)
+      disableAssetApi()
+      const candidates = scanNodeMediaCandidates(makeGraph([node]), node)
       const jobs = hasHistory
         ? [makeHistoryJob('photo.png', { subfolder: 'subfolder' })]
         : []
@@ -710,7 +744,7 @@ describe('verifyMediaCandidates', () => {
     const node = makeMediaNode(1, 'LoadImage', [
       makeMediaCombo('image', value, [value])
     ])
-    const candidates = scanNodeMediaCandidates(makeGraph([node]), node, true)
+    const candidates = scanNodeMediaCandidates(makeGraph([node]), node)
 
     await verifyMediaCandidates(candidates, { isCloud: true })
 
@@ -718,6 +752,36 @@ describe('verifyMediaCandidates', () => {
       expect.objectContaining({ name: value, isMissing: true })
     ])
   })
+
+  it.for([
+    {
+      unavailable: 'input',
+      sources: { inputAssets: null, generatedAssets: [] },
+      expected: { input: undefined, output: true }
+    },
+    {
+      unavailable: 'generated',
+      sources: { inputAssets: [], generatedAssets: null },
+      expected: { input: true, output: undefined }
+    }
+  ] as const)(
+    'leaves candidates unresolved when the $unavailable asset source failed',
+    async ({ sources, expected }) => {
+      const input = makeCandidate('1', 'photo.png', { isMissing: undefined })
+      const output = makeCandidate('2', 'render.png [output]', {
+        isMissing: undefined
+      })
+
+      await verifyMediaCandidates([input, output], {
+        isCloud: true,
+        resolveAssetSources: vi.fn(async () => sources)
+      })
+
+      expect({ input: input.isMissing, output: output.isMissing }).toEqual(
+        expected
+      )
+    }
+  )
 
   it('matches candidates by available input asset name or hash', async () => {
     const candidates = [

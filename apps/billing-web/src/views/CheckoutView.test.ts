@@ -1,3 +1,4 @@
+import { datadogRum } from '@datadog/browser-rum'
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { defineComponent, h, nextTick, ref } from 'vue'
@@ -24,11 +25,15 @@ import {
   succeededOperation,
   serverPhasePendingOperation
 } from '@/test/fakeBillingClient'
+import { trackedBillingEvents } from '@/test/trackedBillingEvents'
+import { WORKSPACE_INVITES_KEY } from '@/session/workspaceInvites'
 import CheckoutView from '@/views/CheckoutView.vue'
 
 const ENTRY_QUERY = 'product=comfyui&return_to=comfyui_workspace'
 const ENTRY_QUERY_PATH = `/v1/checkout?${ENTRY_QUERY}`
 const CHECKOUT_PATH = `${ENTRY_QUERY_PATH}&plan=creator_monthly`
+
+vi.mock(import('@datadog/browser-rum'))
 
 /** The values this view and its surface read; a test-family key stands in for a deployment's. */
 vi.mock<unknown>(import('@/config/env'), () => ({
@@ -86,7 +91,10 @@ vi.mock(import('@/session/stripeChallengePort'), () => ({
     getKey: () => string | undefined | Promise<string | undefined>
   ) => {
     void Promise.resolve(getKey()).then((key) => challengeMocks.createPort(key))
-    return { handleNextAction: challengeMocks.handleNextAction }
+    return {
+      handleNextAction: challengeMocks.handleNextAction,
+      leavesPage: () => Promise.resolve(true)
+    }
   }
 }))
 
@@ -181,7 +189,10 @@ async function renderCheckout(
   render(CheckoutView, {
     global: {
       plugins: [createBillingI18n(), router],
-      provide: { [BILLING_CLIENT_KEY]: fake.client },
+      provide: {
+        [BILLING_CLIENT_KEY]: fake.client,
+        [WORKSPACE_INVITES_KEY]: fake.invites
+      },
       stubs: { CheckoutPaymentForm: PaymentFormStub }
     }
   })
@@ -582,6 +593,7 @@ describe('CheckoutView', () => {
 
   it('shows the success step and closes back to the product with the outcome', async () => {
     const assign = stubNavigation()
+    const sent = trackedBillingEvents()
     await renderCheckout(CHECKOUT_PATH, {
       subscribe: {
         status: 'ok',
@@ -600,6 +612,67 @@ describe('CheckoutView', () => {
     expect(assign).toHaveBeenCalledExactlyOnceWith(
       'https://testcloud.comfy.org/?billing_result=success&billing_ref=op_9'
     )
+    expect(
+      sent().filter((event) => event.operation === 'web_return')
+    ).toStrictEqual([
+      {
+        operation: 'web_return',
+        stage: 'clicked',
+        outcome: 'pending',
+        control: 'success_close'
+      }
+    ])
+  })
+
+  it('offers the team invite on a multi-seat success and sends it to the workspace', async () => {
+    const fake = await renderCheckout(CHECKOUT_PATH, {
+      subscribe: {
+        status: 'ok',
+        value: { phase: 'succeeded', operation: succeededOperation('op_9') }
+      },
+      status: {
+        is_active: true,
+        has_funds: true,
+        max_seats: 20,
+        occupied_seats: 1,
+        scheduled_change: null,
+        team_credit_stop: null
+      }
+    })
+    await screen.findByRole('button', { name: 'Pay and subscribe' })
+    reportConfirm('ctoken_1')
+
+    expect(
+      await screen.findByRole('heading', { name: 'Invite your team' })
+    ).toBeInTheDocument()
+    await userEvent.type(
+      screen.getByRole('textbox', { name: 'Enter emails separated by commas' }),
+      'ada@example.com,'
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'Send invites' }))
+
+    expect(
+      await screen.findByText('An invite was sent to ada@example.com')
+    ).toBeInTheDocument()
+    expect(fake.invites.createInvite).toHaveBeenCalledWith('ada@example.com')
+  })
+
+  it('shows no invite on a single-seat success', async () => {
+    const fake = await renderCheckout(CHECKOUT_PATH, {
+      subscribe: {
+        status: 'ok',
+        value: { phase: 'succeeded', operation: succeededOperation('op_9') }
+      }
+    })
+    await screen.findByRole('button', { name: 'Pay and subscribe' })
+    reportConfirm('ctoken_1')
+
+    await screen.findByRole('heading', { name: "You're all set" })
+    await waitFor(() => expect(fake.readStatus).toHaveBeenCalled())
+    expect(
+      screen.queryByRole('heading', { name: 'Invite your team' })
+    ).toBeNull()
+    expect(fake.invites.listPendingInvites).not.toHaveBeenCalled()
   })
 
   it('returns the customer into the workspace the session was minted for', async () => {
@@ -644,7 +717,19 @@ describe('CheckoutView', () => {
     ['insufficient_funds', 'This payment method has insufficient funds.'],
     ['expired_card', 'This card has expired.'],
     ['incorrect_cvc', 'The card security code is incorrect.'],
-    ['processing_error', "Your payment couldn't be processed."]
+    ['processing_error', "Your payment couldn't be processed."],
+    [
+      'authentication_failed',
+      "We couldn't complete payment verification. Please try again."
+    ],
+    [
+      'authentication_required',
+      "We couldn't complete payment verification. Please try again."
+    ],
+    [
+      'payment_not_completed',
+      "We couldn't complete payment verification. Please try again."
+    ]
   ] as const)(
     'reports a %s decline as the app does and keeps the confirm usable',
     async ([reason, detail]) => {
@@ -729,6 +814,25 @@ describe('CheckoutView', () => {
     expect(
       screen.getByText('Processing payment — setting up your workspace...')
     ).toBeInTheDocument()
+  })
+
+  it('releases the confirm once the in-page verification fails, before the server settles', async () => {
+    const fake = await renderCheckout()
+    fake.subscribe.mockReturnValue(new Promise(() => {}))
+    await screen.findByRole('button', { name: 'Pay and subscribe' })
+
+    reportConfirm('ctoken_1')
+    await waitFor(() => expect(formProps.value.isLoading).toBe(true))
+
+    fake.publishOperation(challengedPendingOperation('pi_1_secret'))
+    expect(formProps.value.isLoading).toBe(true)
+
+    fake.publishOperation({
+      ...challengedPendingOperation('pi_1_secret'),
+      challenge: { status: 'failed', clientSecret: 'pi_1_secret' }
+    })
+
+    await waitFor(() => expect(formProps.value.isLoading).toBe(false))
   })
 
   it('announces the processing toast as an alert, as the app does', async () => {
@@ -873,6 +977,72 @@ describe('CheckoutView', () => {
     )
   })
 
+  it('re-quotes a stale quote and pays against the replacement', async () => {
+    const fake = await renderCheckout(CHECKOUT_PATH, {
+      preview: { status: 'ok', value: upgradeQuote() }
+    })
+    fake.subscribe.mockResolvedValueOnce({
+      status: 'error',
+      code: 'QUOTE_STALE'
+    })
+    fake.previewSubscribe.mockResolvedValueOnce({
+      status: 'ok',
+      value: upgradeQuote({
+        quote_id: 'q_2',
+        quote_version: 4,
+        amount_due_cents: 3100
+      })
+    })
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Confirm upgrade' })
+    )
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Your quote changed. Review the updated amount and try again.'
+    )
+    expect(fake.previewSubscribe).toHaveBeenCalledTimes(2)
+    expect(await screen.findByText('$31.00')).toBeInTheDocument()
+    expect(screen.queryByText('$28.00')).not.toBeInTheDocument()
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Confirm upgrade' })
+    )
+
+    await waitFor(() => expect(fake.subscribe).toHaveBeenCalledTimes(2))
+    expect(fake.subscribe).toHaveBeenLastCalledWith(
+      expect.objectContaining({ quote_id: 'q_2', quote_version: 4 })
+    )
+    expect(fake.subscribe).not.toHaveBeenLastCalledWith(
+      expect.objectContaining({ quote_id: 'q_1' })
+    )
+  })
+
+  it('keeps Confirm closed on the stale quote when its refresh fails', async () => {
+    const fake = await renderCheckout(CHECKOUT_PATH, {
+      preview: { status: 'ok', value: upgradeQuote() }
+    })
+    fake.subscribe.mockResolvedValueOnce({
+      status: 'error',
+      code: 'QUOTE_STALE'
+    })
+    fake.previewSubscribe.mockResolvedValueOnce({
+      status: 'error',
+      code: 'REQUEST_FAILED'
+    })
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Confirm upgrade' })
+    )
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      "Your quote expired and couldn't be refreshed. Choose your plan again."
+    )
+    expect(
+      screen.getByRole('button', { name: 'Confirm upgrade' })
+    ).toBeDisabled()
+  })
+
   it('tells the customer when the subscribe itself was refused and keeps the form', async () => {
     await renderCheckout(CHECKOUT_PATH, {
       subscribe: { status: 'error', code: 'REQUEST_FAILED' }
@@ -892,9 +1062,52 @@ describe('CheckoutView', () => {
   })
 
   it.for(['Back', 'Close'])(
-    'returns to the product, where plans are chosen, on %s',
+    'closes a tab the product opened on %s, leaving the product where it was',
     async (action) => {
       const assign = stubNavigation()
+      const close = vi.spyOn(window, 'close').mockImplementation(() => {
+        vi.spyOn(window, 'closed', 'get').mockReturnValue(true)
+      })
+      await renderCheckout()
+      await screen.findByRole('button', { name: 'Pay and subscribe' })
+
+      await userEvent.click(screen.getByRole('button', { name: action }))
+
+      expect(close).toHaveBeenCalledOnce()
+      expect(assign).not.toHaveBeenCalled()
+    }
+  )
+
+  it('closes the tab from the success step instead of opening the product in it', async () => {
+    const assign = stubNavigation()
+    const close = vi.spyOn(window, 'close').mockImplementation(() => {
+      vi.spyOn(window, 'closed', 'get').mockReturnValue(true)
+    })
+    await renderCheckout(CHECKOUT_PATH, {
+      subscribe: {
+        status: 'ok',
+        value: { phase: 'succeeded', operation: succeededOperation('op_9') }
+      }
+    })
+    await screen.findByRole('button', { name: 'Pay and subscribe' })
+    reportConfirm('ctoken_1')
+    await screen.findByRole('heading', { name: "You're all set" })
+
+    const [, closeButton] = screen.getAllByRole('button', { name: 'Close' })
+    await userEvent.click(closeButton)
+
+    expect(close).toHaveBeenCalledOnce()
+    expect(assign).not.toHaveBeenCalled()
+  })
+
+  it.for([
+    { action: 'Back', control: 'back' },
+    { action: 'Close', control: 'close' }
+  ])(
+    'returns to the product, where plans are chosen, on $action, and reports it',
+    async ({ action, control }) => {
+      const assign = stubNavigation()
+      const sent = trackedBillingEvents()
       await renderCheckout()
       await screen.findByRole('button', { name: 'Pay and subscribe' })
 
@@ -903,6 +1116,14 @@ describe('CheckoutView', () => {
       expect(assign).toHaveBeenCalledExactlyOnceWith(
         'https://testcloud.comfy.org/'
       )
+      expect(sent()).toStrictEqual([
+        {
+          operation: 'web_return',
+          stage: 'clicked',
+          outcome: 'pending',
+          control
+        }
+      ])
     }
   )
 
@@ -946,6 +1167,7 @@ describe('CheckoutView', () => {
     })
 
     const assign = stubNavigation()
+    const sent = trackedBillingEvents()
     expect(
       await screen.findByText('There is no active subscription to change.')
     ).toBeInTheDocument()
@@ -954,6 +1176,214 @@ describe('CheckoutView', () => {
 
     expect(assign).toHaveBeenCalledExactlyOnceWith(
       'https://testcloud.comfy.org/'
+    )
+    expect(sent()).toStrictEqual([
+      {
+        operation: 'web_return',
+        stage: 'clicked',
+        outcome: 'pending',
+        control: 'back'
+      }
+    ])
+  })
+
+  it('shows the reason the server gave for a refused quote, as the app does', async () => {
+    await renderCheckout(CHECKOUT_PATH, {
+      preview: {
+        status: 'error',
+        code: 'REQUEST_FAILED',
+        httpStatus: 400,
+        serverMessage:
+          'team_credit_stop_id is required for the per-credit Team plan'
+      }
+    })
+
+    expect(
+      await screen.findByText(
+        'team_credit_stop_id is required for the per-credit Team plan'
+      )
+    ).toBeInTheDocument()
+  })
+
+  it.for([
+    {
+      name: 'a status-mapped refusal shows the server reason',
+      failure: {
+        code: 'CONFLICT',
+        httpStatus: 409,
+        serverMessage: 'That plan cannot be changed right now'
+      },
+      shown: 'That plan cannot be changed right now'
+    },
+    {
+      name: 'a code billing-web words itself keeps its own copy',
+      failure: {
+        code: 'OPERATION_ALREADY_PENDING',
+        httpStatus: 409,
+        serverMessage: 'a subscription change is already in progress'
+      },
+      shown:
+        'A payment you started earlier is still going through. It has to finish before you can choose a different plan.'
+    }
+  ] as const)('refused subscribe: $name', async ({ failure, shown }) => {
+    await renderCheckout(CHECKOUT_PATH, {
+      subscribe: { status: 'error', ...failure }
+    })
+    await screen.findByRole('button', { name: 'Pay and subscribe' })
+
+    reportConfirm('ctoken_1')
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(shown)
+  })
+})
+
+/** What the facade sent to the RUM sink for one billing operation, in order. */
+function reportedBillingEvents(operation: string) {
+  return vi
+    .mocked(datadogRum.addAction)
+    .mock.calls.filter(([name]) => name.startsWith(`billing.${operation}.`))
+    .map(([name, context]) => ({ name, context }))
+}
+
+describe('CheckoutView attempt telemetry', () => {
+  const SOURCE_PATH = `${CHECKOUT_PATH}&source=subscribe_now_button`
+  const ATTEMPT = {
+    operation: 'subscription_checkout',
+    tier: 'creator',
+    cycle: 'monthly',
+    checkout_type: 'new',
+    payment_intent_source: 'subscribe_now_button',
+    checkout_ui: 'embedded',
+    billing_client: 'sdk',
+    billing_surface: 'billing_web'
+  }
+
+  beforeEach(() => {
+    workspace.session = undefined
+    workspace.bound = undefined
+    formProps.mounted = false
+    vi.mocked(datadogRum.getInitConfiguration).mockReturnValue({
+      clientToken: 'pub',
+      applicationId: 'app'
+    })
+  })
+
+  it.for<{
+    name: string
+    subscribe: FakeBillingClientOptions['subscribe']
+    terminal: Record<string, unknown>
+  }>([
+    {
+      name: 'a payment the server settled',
+      subscribe: {
+        status: 'ok',
+        value: {
+          phase: 'succeeded',
+          operation: succeededOperation('op_1'),
+          issuedStatus: 'subscribed'
+        }
+      },
+      terminal: {
+        stage: 'succeeded',
+        outcome: 'success',
+        billing_op_id: 'op_1'
+      }
+    },
+    {
+      name: 'a decline',
+      subscribe: {
+        status: 'ok',
+        value: {
+          phase: 'failed',
+          operation: failedOperation('card_declined', 'op_1')
+        }
+      },
+      terminal: {
+        stage: 'failed',
+        outcome: 'failure',
+        failure_category: 'provider_decline',
+        decline_reason: 'card_declined',
+        billing_op_id: 'op_1'
+      }
+    },
+    {
+      name: 'a refusal before any operation exists',
+      subscribe: { status: 'error', code: 'REQUEST_FAILED' },
+      terminal: {
+        stage: 'failed',
+        outcome: 'failure',
+        failure_category: 'network'
+      }
+    }
+  ])('reports $name as one intent, one start and one terminal', async (row) => {
+    await renderCheckout(SOURCE_PATH, { subscribe: row.subscribe })
+    await screen.findByRole('button', { name: 'Pay and subscribe' })
+
+    reportConfirm('ctoken_1')
+
+    await waitFor(() =>
+      expect(reportedBillingEvents('subscription_checkout')).toHaveLength(3)
+    )
+    expect(reportedBillingEvents('subscription_checkout')).toEqual([
+      {
+        name: 'billing.subscription_checkout.intent',
+        context: { ...ATTEMPT, stage: 'intent', outcome: 'pending' }
+      },
+      {
+        name: 'billing.subscription_checkout.started',
+        context: { ...ATTEMPT, stage: 'started', outcome: 'pending' }
+      },
+      {
+        name: `billing.subscription_checkout.${row.terminal.stage}`,
+        context: {
+          ...ATTEMPT,
+          ...row.terminal,
+          duration_ms: expect.any(Number)
+        }
+      }
+    ])
+  })
+
+  it('keeps one attempt open across the reactivation the server demands, and ends it once', async () => {
+    const fake = await renderCheckout(SOURCE_PATH, {
+      preview: { status: 'ok', value: upgradeQuote() },
+      subscribe: {
+        status: 'ok',
+        value: {
+          phase: 'succeeded',
+          operation: succeededOperation('op_1'),
+          issuedStatus: 'subscribed'
+        }
+      }
+    })
+    fake.subscribe.mockResolvedValueOnce({
+      status: 'error',
+      code: 'REACTIVATION_CONFIRMATION_REQUIRED'
+    })
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Confirm upgrade' })
+    )
+    const reactivate = await screen.findByRole('button', {
+      name: 'Confirm & reactivate — $28.00 today'
+    })
+    expect(
+      reportedBillingEvents('subscription_checkout').map(({ name }) => name)
+    ).toEqual([
+      'billing.subscription_checkout.intent',
+      'billing.subscription_checkout.started'
+    ])
+
+    await userEvent.click(screen.getByRole('checkbox'))
+    await userEvent.click(reactivate)
+
+    await waitFor(() =>
+      expect(
+        reportedBillingEvents('subscription_checkout').map(({ name }) => name)
+      ).toEqual([
+        'billing.subscription_checkout.intent',
+        'billing.subscription_checkout.started',
+        'billing.subscription_checkout.succeeded'
+      ])
     )
   })
 })

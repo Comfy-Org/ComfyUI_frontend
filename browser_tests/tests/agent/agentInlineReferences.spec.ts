@@ -24,9 +24,7 @@ test(
       mimeType: 'application/json',
       buffer: Buffer.from(JSON.stringify(referenceWorkflow))
     })
-    const agentPanel = new AgentPanel(page)
-    await agentPanel.open()
-    const panel = agentPanel.root
+    const panel = await new AgentPanel(page).open()
     const editor = panel.getByRole('textbox')
     await panel
       .getByRole('button', { name: enMessages.agent.switchWorkflow })

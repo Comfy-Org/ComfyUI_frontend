@@ -1,0 +1,153 @@
+import * as THREE from 'three'
+
+import type { RendererView } from '@/renderer/three/RendererView'
+
+export const PREVIEW_WIDTH = 200
+export const PREVIEW_HEIGHT = 150
+const PREVIEW_PADDING = 8
+const PREVIEW_BORDER_COLOR = 0x2a2a2a
+const PREVIEW_BACKGROUND_COLOR = 0x0a0a0a
+
+interface Hideable {
+  isVisible(): boolean
+  setVisible(visible: boolean): void
+}
+
+type PreviewRenderer = Pick<THREE.WebGLRenderer, 'setClearColor' | 'clear'> & {
+  render(scene: THREE.Object3D, camera: THREE.Camera): void
+}
+
+type PreviewViewport = Pick<
+  RendererView,
+  'setViewport' | 'setScissor' | 'setScissorTest'
+>
+
+interface InsetPreviewLayout {
+  width: number
+  height: number
+  marginRight: number
+  marginBottom: number
+}
+
+const DEFAULT_LAYOUT: InsetPreviewLayout = {
+  width: PREVIEW_WIDTH,
+  height: PREVIEW_HEIGHT,
+  marginRight: PREVIEW_PADDING,
+  marginBottom: PREVIEW_PADDING
+}
+
+export interface InsetPreviewTarget {
+  renderer: PreviewRenderer
+  view: PreviewViewport
+  canvas: { width: number; height: number }
+  scene: THREE.Scene
+  camera: THREE.Camera
+  hidden: readonly Hideable[]
+  layout?: InsetPreviewLayout
+  borderColor?: THREE.ColorRepresentation
+  backgroundColor?: THREE.ColorRepresentation
+}
+
+export function fitCameraAspect(camera: THREE.Camera, aspect: number): void {
+  if (!Number.isFinite(aspect) || aspect <= 0) return
+  if (camera instanceof THREE.PerspectiveCamera) {
+    if (Math.abs(camera.aspect - aspect) < 1e-4) return
+    camera.aspect = aspect
+    camera.updateProjectionMatrix()
+    return
+  }
+  if (camera instanceof THREE.OrthographicCamera) {
+    const half = (camera.top - camera.bottom) / 2 || 1
+    const left = -half * aspect
+    const right = half * aspect
+    if (
+      Math.abs(camera.left - left) < 1e-4 &&
+      Math.abs(camera.right - right) < 1e-4
+    )
+      return
+    camera.left = left
+    camera.right = right
+    camera.updateProjectionMatrix()
+  }
+}
+
+function withPreviewAspect(
+  camera: THREE.Camera,
+  aspect: number,
+  render: () => void
+): void {
+  if (camera instanceof THREE.PerspectiveCamera) {
+    const saved = camera.aspect
+    camera.aspect = aspect
+    camera.updateProjectionMatrix()
+    render()
+    camera.aspect = saved
+    camera.updateProjectionMatrix()
+    return
+  }
+  if (camera instanceof THREE.OrthographicCamera) {
+    const { left, right, top, bottom } = camera
+    const half = (top - bottom) / 2 || 1
+    camera.left = -half * aspect
+    camera.right = half * aspect
+    camera.top = half
+    camera.bottom = -half
+    camera.updateProjectionMatrix()
+    render()
+    Object.assign(camera, { left, right, top, bottom })
+    camera.updateProjectionMatrix()
+    return
+  }
+  render()
+}
+
+function fitsCanvas(
+  { width, height, marginRight, marginBottom }: InsetPreviewLayout,
+  canvas: InsetPreviewTarget['canvas']
+): boolean {
+  return (
+    width > 0 &&
+    height > 0 &&
+    canvas.width >= width + marginRight * 2 &&
+    canvas.height >= height + marginBottom + PREVIEW_PADDING
+  )
+}
+
+export function renderInsetPreview({
+  renderer,
+  view,
+  canvas,
+  scene,
+  camera,
+  hidden,
+  layout = DEFAULT_LAYOUT,
+  borderColor = PREVIEW_BORDER_COLOR,
+  backgroundColor = PREVIEW_BACKGROUND_COLOR
+}: InsetPreviewTarget): void {
+  if (!fitsCanvas(layout, canvas)) return
+  const { width, height, marginRight, marginBottom } = layout
+
+  const restore = hidden
+    .filter((item) => item.isVisible())
+    .map((item) => () => item.setVisible(true))
+  for (const item of hidden) item.setVisible(false)
+
+  const x = canvas.width - width - marginRight
+  const y = marginBottom
+
+  withPreviewAspect(camera, width / height, () => {
+    view.setViewport(x - 1, y - 1, width + 2, height + 2)
+    view.setScissor(x - 1, y - 1, width + 2, height + 2)
+    view.setScissorTest(true)
+    renderer.setClearColor(borderColor)
+    renderer.clear()
+
+    view.setViewport(x, y, width, height)
+    view.setScissor(x, y, width, height)
+    renderer.setClearColor(backgroundColor)
+    renderer.clear()
+    renderer.render(scene, camera)
+  })
+
+  for (const restoreItem of restore) restoreItem()
+}

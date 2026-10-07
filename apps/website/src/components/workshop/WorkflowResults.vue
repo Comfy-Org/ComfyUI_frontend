@@ -3,18 +3,18 @@ import { useNow } from '@vueuse/core'
 import { computed, ref, watch } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
-import type { WorkflowWorkshopModelDetail } from '../../config/models-catalogue'
-import type { RunOutput, RunState } from '../../config/workshop-run'
-import { useWorkshopDelivery } from '../../composables/useWorkshopDelivery'
-import type { WorkflowState } from '../../config/workshop-workflow-state'
-import { workflowOutputs } from '../../config/workshop-workflow-response'
-import { outputLabels } from '../../lib/workshop/output-labels'
-import { requestWorkshopBuyCredits } from '../../config/workshop-buy-credits'
-import { workflowRunFailure } from '../../lib/workshop/workflow-refusal'
-import { t } from '../../i18n/translations'
-import { captureWorkshopEvent } from '../../scripts/posthog'
-import type { WorkshopRunAnalytics } from '../../scripts/workshop-analytics'
-import { workshopModelAnalytics } from '../../scripts/workshop-analytics'
+import type { WorkflowWorkshopModelDetail } from '@/config/models-catalogue'
+import type { RunOutput, RunState } from '@/config/workshop-run'
+import { useWorkshopDelivery } from '@/composables/useWorkshopDelivery'
+import type { WorkflowState } from '@/config/workshop-workflow-state'
+import { workflowOutputs } from '@/config/workshop-workflow-response'
+import { outputLabels } from '@/lib/workshop/output-labels'
+import { requestWorkshopBuyCredits } from '@/config/workshop-buy-credits'
+import { workflowRunFailure } from '@/lib/workshop/workflow-refusal'
+import { t } from '@/i18n/translations'
+import { captureWorkshopEvent } from '@/scripts/posthog'
+import type { WorkshopRunAnalytics } from '@/scripts/workshop-analytics'
+import { workshopModelAnalytics } from '@/scripts/workshop-analytics'
 import PlaygroundOutput from './PlaygroundOutput.vue'
 
 const {
@@ -209,7 +209,6 @@ function captureDownload(kind: RunOutput['kind']) {
     :state="outputState"
     :attachments="outputs.slice(1)"
     :now="now.getTime()"
-    :model-name="model.name"
     :modality="model.modality"
     :retry-disabled="!canStart"
     :cancelled-message="t('workshop.workflow.cancelled')"
@@ -221,7 +220,6 @@ function captureDownload(kind: RunOutput['kind']) {
     @playback-started="delivery.beginPlayback"
     @download="captureDownload"
   >
-    <template #example-hint>{{ t('workshop.workflow.exampleHint') }}</template>
   </PlaygroundOutput>
   <div
     v-if="retryableDelivery || failedMedia.size"

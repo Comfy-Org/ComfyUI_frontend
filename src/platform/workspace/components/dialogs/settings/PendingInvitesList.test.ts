@@ -1,27 +1,26 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
-import type { Slots } from 'vue'
-import { h } from 'vue'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
+
+import { useToastStore } from '@/platform/updates/common/toastStore'
 
 import PendingInvitesList from './PendingInvitesList.vue'
 
 import type { WorkspacePendingInvite } from '../../../stores/teamWorkspaceStore'
-
-const mockMenuClose = vi.hoisted(() => vi.fn())
-
-vi.mock<unknown>(import('@/components/button/MoreButton.vue'), () => ({
-  default: (_: unknown, { slots }: { slots: Slots }) =>
-    h('div', slots.default?.({ close: mockMenuClose }))
-}))
 
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
   messages: {
     en: {
-      workspacePanel: { members: { expiredOn: 'Expired {date}' } }
+      workspacePanel: {
+        members: {
+          noInvites: 'No pending invites',
+          noInvitesMatch: 'No invites match "{query}"',
+          expiredOn: 'Expired {date}'
+        }
+      }
     }
   },
   missingWarn: false,
@@ -40,44 +39,73 @@ function createInvite(
   }
 }
 
-function renderComponent(invites: WorkspacePendingInvite[]) {
+function renderComponent(
+  invites: WorkspacePendingInvite[],
+  props: { searchQuery?: string; loaded?: boolean } = {}
+) {
   return render(PendingInvitesList, {
     props: {
       invites,
-      gridCols: 'grid-cols-[50%_20%_20%_10%]'
+      gridCols: 'grid-cols-[50%_20%_20%_10%]',
+      loaded: true,
+      ...props
     },
     global: { plugins: [i18n] }
   })
 }
 
 describe('PendingInvitesList', () => {
+  afterEach(() => {
+    Reflect.deleteProperty(document, 'execCommand')
+  })
+
   it('shows the empty state without action buttons when there are no invites', () => {
     renderComponent([])
 
-    expect(screen.getByText('workspacePanel.members.noInvites')).toBeTruthy()
+    expect(screen.getByText('No pending invites')).toBeInTheDocument()
     expect(screen.queryAllByRole('button')).toHaveLength(0)
+  })
+
+  it('names the query when a search matches no invite', () => {
+    renderComponent([], { searchQuery: 'nobody' })
+
+    expect(screen.getByText('No invites match "nobody"')).toBeInTheDocument()
+    expect(screen.queryByText('No pending invites')).not.toBeInTheDocument()
+  })
+
+  it('renders no empty copy before the first request completes', () => {
+    renderComponent([], { loaded: false, searchQuery: 'nobody' })
+
+    expect(screen.queryByText('No pending invites')).not.toBeInTheDocument()
+    expect(
+      screen.queryByText('No invites match "nobody"')
+    ).not.toBeInTheDocument()
   })
 
   it('emits resend with the invite and closes the menu', async () => {
     const invite = createInvite({ id: 'inv-7' })
     const { emitted } = renderComponent([invite])
 
+    await userEvent.click(screen.getByRole('button', { name: 'g.moreOptions' }))
     await userEvent.click(
-      screen.getByRole('button', {
+      await screen.findByRole('menuitem', {
         name: 'workspacePanel.members.actions.resendInvite'
       })
     )
 
     expect(emitted('resend')).toEqual([[invite]])
-    expect(mockMenuClose).toHaveBeenCalled()
+    await waitFor(() =>
+      expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+    )
   })
 
   it('emits revoke with the invite from the cancel item', async () => {
     const invite = createInvite({ id: 'inv-8' })
     const { emitted } = renderComponent([invite])
 
+    await userEvent.click(screen.getByRole('button', { name: 'g.moreOptions' }))
     await userEvent.click(
-      screen.getByRole('button', {
+      await screen.findByRole('menuitem', {
         name: 'workspacePanel.members.actions.cancelInvite'
       })
     )
@@ -86,16 +114,14 @@ describe('PendingInvitesList', () => {
   })
 
   it('copies the invite link from the menu when the invite has a token', async () => {
-    const writeText = vi.fn<(text: string) => Promise<void>>()
-    writeText.mockResolvedValue(undefined)
-    Object.defineProperty(navigator, 'clipboard', {
-      value: { writeText },
-      configurable: true
-    })
+    const writeText = vi
+      .spyOn(navigator.clipboard, 'writeText')
+      .mockResolvedValue(undefined)
     renderComponent([createInvite({ token: 'tok-9' })])
 
+    await userEvent.click(screen.getByRole('button', { name: 'g.moreOptions' }))
     await userEvent.click(
-      screen.getByRole('button', {
+      await screen.findByRole('menuitem', {
         name: 'workspacePanel.members.actions.copyInviteLink'
       })
     )
@@ -103,14 +129,24 @@ describe('PendingInvitesList', () => {
     expect(writeText).toHaveBeenCalledWith(
       `${window.location.origin}/?invite=tok-9`
     )
-    expect(mockMenuClose).toHaveBeenCalled()
+    expect(vi.mocked(useToastStore().add)).toHaveBeenCalledWith(
+      expect.objectContaining({
+        severity: 'success',
+        summary: 'workspacePanel.inviteLinks.copiedToast'
+      })
+    )
+    await waitFor(() =>
+      expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+    )
   })
 
-  it('hides the copy item for expired invites without a token', () => {
+  it('hides the copy item for expired invites without a token', async () => {
     renderComponent([createInvite()])
 
+    await userEvent.click(screen.getByRole('button', { name: 'g.moreOptions' }))
+    await screen.findByRole('menu')
     expect(
-      screen.queryByRole('button', {
+      screen.queryByRole('menuitem', {
         name: 'workspacePanel.members.actions.copyInviteLink'
       })
     ).not.toBeInTheDocument()
@@ -137,32 +173,41 @@ describe('PendingInvitesList', () => {
     expect(screen.getByText('fresh@example.com')).toBeInTheDocument()
   })
 
-  it('swallows a rejected clipboard write and keeps the copy item usable', async () => {
-    const writeText = vi.fn<(text: string) => Promise<void>>()
-    writeText.mockRejectedValue(new Error('denied'))
-    Object.defineProperty(navigator, 'clipboard', {
-      value: { writeText },
+  it('reports a rejected clipboard write with an error toast and keeps the copy item usable', async () => {
+    const writeText = vi
+      .spyOn(navigator.clipboard, 'writeText')
+      .mockRejectedValue(new Error('denied'))
+    Object.defineProperty(document, 'execCommand', {
+      value: vi.fn().mockReturnValue(false),
       configurable: true
     })
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.spyOn(console, 'error').mockImplementation(() => {})
     renderComponent([createInvite({ token: 'tok-9' })])
 
+    const trigger = screen.getByRole('button', { name: 'g.moreOptions' })
+    await userEvent.click(trigger)
     await userEvent.click(
-      screen.getByRole('button', {
+      await screen.findByRole('menuitem', {
         name: 'workspacePanel.members.actions.copyInviteLink'
       })
     )
 
-    // The failure is silent by design, so the only guarantee is that nothing
-    // escapes as an unhandled rejection and the item stays available to retry.
     expect(writeText).toHaveBeenCalledWith(
       `${window.location.origin}/?invite=tok-9`
     )
-    expect(
-      screen.getByRole('button', {
+    expect(vi.mocked(useToastStore().add)).toHaveBeenCalledWith(
+      expect.objectContaining({
+        severity: 'error',
+        summary: 'workspacePanel.inviteLinks.copyFailedToast'
+      })
+    )
+
+    await userEvent.click(trigger)
+    await userEvent.click(
+      await screen.findByRole('menuitem', {
         name: 'workspacePanel.members.actions.copyInviteLink'
       })
-    ).toBeInTheDocument()
-    consoleError.mockRestore()
+    )
+    expect(writeText).toHaveBeenCalledTimes(2)
   })
 })

@@ -1,10 +1,10 @@
 import { render, screen } from '@testing-library/vue'
 import { assert, describe, expect, it, vi } from 'vitest'
 
-import { workflowDetailsBySlug } from '../../config/workshop-workflow-content'
+import { workflowDetailsBySlug } from '@/config/workshop-workflow-content'
 import WorkflowPage from './WorkflowPage.vue'
 
-vi.mock(import('../../config/workshop-session-state'))
+vi.mock(import('@/config/workshop-session-state'))
 
 const model = workflowDetailsBySlug.get('workflows/remove-background')
 assert(model, 'the catalogue no longer carries the fixture workflow')
@@ -23,9 +23,15 @@ describe('WorkflowPage header', () => {
 
     const shelf = screen.getByTestId('workflow-use-case')
     expect(shelf.textContent.trim()).toBe('Edit images')
-    expect(shelf.getAttribute('href')).toBe(
-      '/models?type=workflows&category=cleanup'
-    )
+    expect(shelf.getAttribute('href')).toBe('/hub/workflows/?category=cleanup')
+  })
+
+  it('leads back to the workflows page', () => {
+    mount()
+
+    expect(
+      screen.getByRole('link', { name: 'Back to workflows' })
+    ).toHaveAttribute('href', '/hub/workflows/')
   })
 
   it('says nothing about a shelf a workflow has none of', () => {
@@ -39,12 +45,12 @@ describe('WorkflowPage header', () => {
     expect(screen.queryByTestId('workflow-use-case')).toBeNull()
   })
 
-  it('credits the template and leaves the models to the Details tab', () => {
+  it('leaves the credit and the models to the Details tab', () => {
     mount()
 
     const hero = screen.getByTestId('workflow-hero')
     expect(hero).toHaveTextContent(model.name)
-    expect(hero).toHaveTextContent(`Template by ${template.author}`)
+    expect(hero).not.toHaveTextContent(`Template by ${template.author}`)
     for (const name of template.models) expect(hero).not.toHaveTextContent(name)
   })
 })

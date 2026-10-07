@@ -1,6 +1,6 @@
 import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
 import { getActivePinia } from 'pinia'
-import { render, screen, within } from '@testing-library/vue'
+import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { defineComponent, nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -18,6 +18,7 @@ import { i18n } from '@/i18n'
 import type { ComposerAttachment } from '../../composables/agent/useComposer'
 import { toTurnId } from '../../schemas/agentApiSchema'
 import type { WorkflowReference } from '../../types/workflowReference'
+import type { AgentStarterPromptAttribution } from '../../utils/starterPrompts'
 
 import AgentPanel from './AgentPanel.vue'
 import { setupInlinePromptEditorDom } from './composer/inlinePromptEditorTestSetup'
@@ -31,6 +32,42 @@ function createHistoryGroups() {
     yesterday: [],
     earlier: []
   }
+}
+
+function mountHistory(
+  selectHistory: (id: string, isCurrent: () => boolean) => Promise<boolean>
+) {
+  return render(AgentPanel, {
+    props: {
+      entries: [],
+      sessionId: 'previous',
+      historyGroups: {
+        ...createHistoryGroups(),
+        today: [
+          {
+            id: 'first',
+            title: 'First chat',
+            updatedAt: 1,
+            titleSource: 'server'
+          },
+          {
+            id: 'second',
+            title: 'Second chat',
+            updatedAt: 2,
+            titleSource: 'server'
+          },
+          {
+            id: 'previous',
+            title: 'Previous chat',
+            updatedAt: 3,
+            titleSource: 'server'
+          }
+        ]
+      },
+      selectHistory
+    },
+    global: { plugins: [i18n], stubs: { Composer: true, EmptyState: true } }
+  })
 }
 
 function mount(isMaximized = false) {
@@ -68,7 +105,7 @@ const chatHistoryStub = defineComponent({
 type AddAttachmentArgs = [attachment: ComposerAttachment]
 type UpdateAttachmentArgs = [id: string, patch: Partial<ComposerAttachment>]
 type RemoveAttachmentArgs = [id: string]
-type InsertArgs = [text: string]
+type InsertArgs = [text: string, prompt?: AgentStarterPromptAttribution]
 type ReplaceDraftArgs = [text: string]
 
 const attachmentCalls: {
@@ -90,6 +127,13 @@ const draftCalls: {
 }
 
 const suggestedPrompt = 'Generate a yellow duck with a hockey mask'
+const suggestedPromptAttribution: AgentStarterPromptAttribution = {
+  promptId: 'slot_1',
+  promptIndex: 0,
+  promptCount: 5,
+  promptTextHash: 'a62d17a3',
+  locale: 'en'
+}
 const editedPrompt = 'Generate a yellow duck at sunrise'
 
 const attachment: ComposerAttachment = {
@@ -176,9 +220,12 @@ const eventComposerStub = defineComponent({
 
 const eventEmptyStateStub = defineComponent({
   emits: ['insert'],
+  setup() {
+    return { suggestedPromptAttribution }
+  },
   template: `
     <div>
-      <button type="button" @click="$emit('insert', '${suggestedPrompt}')">Empty state suggestion</button>
+      <button type="button" @click="$emit('insert', '${suggestedPrompt}', suggestedPromptAttribution)">Empty state suggestion</button>
     </div>
   `
 })
@@ -212,6 +259,171 @@ describe('AgentPanel', () => {
     attachmentCalls.remove.length = 0
     draftCalls.insert.length = 0
     draftCalls.replaceDraft.length = 0
+  })
+
+  it('keeps a failed opening in history and lets the user retry that row', async () => {
+    const select = vi.fn().mockResolvedValueOnce(false).mockResolvedValue(true)
+    mountHistory(select)
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Show chat history' })
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'First chat' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      i18n.global.t('agent.historyOpenFailed')
+    )
+    expect(screen.getByRole('heading', { name: 'Chat history' })).toBeVisible()
+    await userEvent.click(screen.getByRole('button', { name: 'First chat' }))
+
+    await waitFor(() =>
+      expect(screen.queryByRole('heading', { name: 'Chat history' })).toBeNull()
+    )
+    expect(
+      screen.getByRole('button', { name: 'Show chat history' })
+    ).toBeVisible()
+  })
+
+  it.for([true, false])(
+    'ignores an older opening that resolves to %s',
+    async (result) => {
+      let finishFirst = (_ready: boolean) => {}
+      const first = new Promise<boolean>((resolve) => {
+        finishFirst = resolve
+      })
+      let finishSecond = (_ready: boolean) => {}
+      const second = new Promise<boolean>((resolve) => {
+        finishSecond = resolve
+      })
+      const select = vi
+        .fn()
+        .mockReturnValueOnce(first)
+        .mockReturnValueOnce(second)
+      mountHistory(select)
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Show chat history' })
+      )
+      await userEvent.click(screen.getByRole('button', { name: 'First chat' }))
+      expect(screen.getByRole('button', { name: 'First chat' })).toBeDisabled()
+      await userEvent.click(screen.getByRole('button', { name: 'Second chat' }))
+      finishFirst(result)
+      await first
+      await nextTick()
+
+      expect(
+        screen.getByRole('button', { name: 'Second chat' })
+      ).toHaveAttribute('aria-busy', 'true')
+      expect(screen.queryByRole('alert')).toBeNull()
+      expect(
+        screen.getByRole('heading', { name: 'Chat history' })
+      ).toBeVisible()
+      finishSecond(true)
+      await waitFor(() =>
+        expect(
+          screen.queryByRole('heading', { name: 'Chat history' })
+        ).toBeNull()
+      )
+      expect(
+        screen.getByRole('button', { name: 'Show chat history' })
+      ).toBeVisible()
+    }
+  )
+
+  it('invalidates opening when the user starts a new chat', async () => {
+    let finish = (_ready: boolean) => {}
+    const pending = new Promise<boolean>((resolve) => {
+      finish = resolve
+    })
+    let isCurrent = () => false
+    const { emitted } = mountHistory((_id, current) => {
+      isCurrent = current
+      return pending
+    })
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Show chat history' })
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'First chat' }))
+    expect(isCurrent()).toBe(true)
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+    )
+    expect(isCurrent()).toBe(false)
+    finish(false)
+    await pending
+    await nextTick()
+
+    expect(emitted().newChat).toEqual([[]])
+    expect(screen.queryByRole('heading', { name: 'Chat history' })).toBeNull()
+    expect(screen.queryByRole('alert')).toBeNull()
+    expect(
+      screen.getByRole('button', { name: 'Show chat history' })
+    ).toBeVisible()
+  })
+
+  it.for([true, false])(
+    'keeps the original chat after Back and an obsolete %s result',
+    async (result) => {
+      let finish = (_ready: boolean) => {}
+      const pending = new Promise<boolean>((resolve) => {
+        finish = resolve
+      })
+      const select = vi.fn((id: string) =>
+        id === 'first' ? pending : Promise.resolve(true)
+      )
+      mountHistory(select)
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Show chat history' })
+      )
+      await userEvent.click(screen.getByRole('button', { name: 'First chat' }))
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Back to previous chat' })
+      )
+      await screen.findByRole('button', { name: 'Show chat history' })
+      finish(result)
+      await pending
+      await nextTick()
+
+      expect(select.mock.calls.map(([id]) => id)).toEqual(['first', 'previous'])
+      expect(
+        screen.getByRole('button', { name: 'Show chat history' })
+      ).toBeVisible()
+      expect(screen.queryByRole('heading', { name: 'Chat history' })).toBeNull()
+    }
+  )
+
+  it('does not return to a chat deleted while another chat is opening', async () => {
+    let finish = (_ready: boolean) => {}
+    const pending = new Promise<boolean>((resolve) => {
+      finish = resolve
+    })
+    const select = vi.fn((id: string) =>
+      id === 'first' ? pending : Promise.resolve(true)
+    )
+    const { emitted } = mountHistory(select)
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Show chat history' })
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'First chat' }))
+    await userEvent.click(
+      screen.getAllByRole('button', {
+        name: i18n.global.t('agent.chatOptions')
+      })[2]
+    )
+    await userEvent.click(
+      await screen.findByRole('menuitem', { name: i18n.global.t('g.delete') })
+    )
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Back to previous chat' })
+    )
+    finish(false)
+    await pending
+    await nextTick()
+
+    expect(select.mock.calls.map(([id]) => id)).toEqual(['first'])
+    expect(emitted().newChat).toEqual([[]])
+    expect(
+      screen.getByRole('button', { name: 'Show chat history' })
+    ).toBeVisible()
+    expect(screen.queryByRole('heading', { name: 'Chat history' })).toBeNull()
   })
 
   it('passes the editable workflow into the minimized run notice', () => {
@@ -284,7 +496,7 @@ describe('AgentPanel', () => {
         }
       }
     })
-    const prompt = 'Generate a yellow duck with a hockey mask'
+    const prompt = i18n.global.t('agent.suggestedPrompts.local.0')
     const suggestion = screen.getByRole('button', { name: prompt })
     const textarea = screen.getByRole('textbox')
 
@@ -376,8 +588,13 @@ describe('AgentPanel', () => {
 
   it('switches into history mode and routes history actions', async () => {
     const user = userEvent.setup()
+    const selectHistory = vi.fn(async () => true)
     const { emitted } = render(AgentPanel, {
-      props: { entries: [], historyGroups: createHistoryGroups() },
+      props: {
+        entries: [],
+        historyGroups: createHistoryGroups(),
+        selectHistory
+      },
       global: {
         plugins: [i18n],
         stubs: {
@@ -425,8 +642,13 @@ describe('AgentPanel', () => {
     expect(emitted().renameHistory).toEqual([
       ['history-1', 'Renamed saved chat']
     ])
-    expect(emitted().selectHistory).toEqual([['history-1']])
-    expect(screen.queryByTestId('chat-history')).not.toBeInTheDocument()
+    expect(selectHistory).toHaveBeenCalledExactlyOnceWith(
+      'history-1',
+      expect.any(Function)
+    )
+    await waitFor(() =>
+      expect(screen.queryByTestId('chat-history')).not.toBeInTheDocument()
+    )
   })
 
   it('renames the current chat from the title button', async () => {
@@ -717,7 +939,9 @@ describe('AgentPanel', () => {
       screen.getByRole('button', { name: 'Empty state suggestion' })
     )
 
-    expect(draftCalls.insert).toEqual([[suggestedPrompt]])
+    expect(draftCalls.insert).toEqual([
+      [suggestedPrompt, suggestedPromptAttribution]
+    ])
     expect(draftCalls.replaceDraft).toEqual([])
   })
 

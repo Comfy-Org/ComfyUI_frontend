@@ -3,7 +3,7 @@ import type { HTMLAttributes } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { youtubeEmbedUrl } from '../../data/learningTutorials'
+import { youtubeEmbedUrl } from '@/data/learningTutorials'
 
 const {
   youtubeId,

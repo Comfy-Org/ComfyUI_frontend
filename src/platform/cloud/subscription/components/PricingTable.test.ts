@@ -1,14 +1,14 @@
-import { useAuthStore } from '@/stores/authStore'
+import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useTelemetry } from '@/platform/telemetry'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import PricingTable from '@/platform/cloud/subscription/components/PricingTable.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { IngestSubscriptionTier } from '@/platform/cloud/subscription/constants/tierPricing'
@@ -25,6 +25,14 @@ function createDeferredPromise<T>() {
   })
 
   return { promise, resolve }
+}
+
+type BillingPortalResponse = Awaited<
+  ReturnType<ReturnType<typeof useAuthStore>['accessBillingPortal']>
+>
+
+const billingPortal: BillingPortalResponse = {
+  billing_portal_url: 'https://billing.stripe.com/p/session'
 }
 
 const mockCanAccessSubscriptionFeatures = ref(false)
@@ -63,8 +71,6 @@ Object.defineProperty(globalThis, 'localStorage', {
 })
 
 vi.mock(import('@/composables/billing/useBillingContext'))
-
-vi.mock(import('@/composables/auth/useAuthActions'))
 
 vi.mock(import('@/composables/useErrorHandling'))
 
@@ -142,26 +148,6 @@ function renderComponent() {
       plugins: [i18n],
       components: {
         Button
-      },
-      stubs: {
-        SelectButton: {
-          template: `
-            <div>
-              <button
-                v-for="option in options"
-                :key="option.value"
-                type="button"
-                @click="$emit('update:modelValue', option.value)"
-              >
-                <slot name="option" :option="option">
-                  {{ option.label }}
-                </slot>
-              </button>
-            </div>
-          `,
-          props: ['modelValue', 'options'],
-          emits: ['update:modelValue']
-        }
       }
     }
   })
@@ -196,7 +182,8 @@ beforeEach(() => {
           renewalDate: null,
           endDate: null,
           isCancelled: false,
-          hasFunds: true
+          hasFunds: true,
+          agentHasFunds: true
         }
       : null
   )
@@ -208,6 +195,8 @@ beforeEach(() => {
   vi.mocked(useAuthStore().fetchWithCustomerRecovery).mockImplementation(
     (input, init) => fetch(input, init)
   )
+  vi.mocked(useAuthStore().accessBillingPortal).mockResolvedValue(billingPortal)
+  vi.spyOn(window, 'open').mockImplementation(() => window)
 })
 
 describe('PricingTable', () => {
@@ -216,6 +205,9 @@ describe('PricingTable', () => {
     mockSubscriptionTier.value = null
     mockSubscriptionDuration.value = 'MONTHLY'
     Object.assign(useAuthStore(), { userId: 'user-123' })
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: 'workspace-123'
+    })
     mockLocalStorage.__reset()
     vi.mocked(global.fetch).mockResolvedValue({
       ok: true,
@@ -247,8 +239,9 @@ describe('PricingTable', () => {
         checkout_attempt_id: expect.any(String),
         previous_tier: 'standard'
       })
-      expect(useAuthActions().accessBillingPortal).toHaveBeenCalledWith(
-        'creator-yearly'
+      expect(useAuthStore().accessBillingPortal).toHaveBeenCalledWith(
+        'creator-yearly',
+        undefined
       )
     })
 
@@ -266,8 +259,9 @@ describe('PricingTable', () => {
       await userEvent.click(proButton!)
       await flushPromises()
 
-      expect(useAuthActions().accessBillingPortal).toHaveBeenCalledWith(
-        'pro-yearly'
+      expect(useAuthStore().accessBillingPortal).toHaveBeenCalledWith(
+        'pro-yearly',
+        undefined
       )
     })
 
@@ -275,8 +269,8 @@ describe('PricingTable', () => {
       mockCanAccessSubscriptionFeatures.value = true
       mockSubscriptionTier.value = 'STANDARD'
 
-      const portalOpen = createDeferredPromise<boolean>()
-      vi.mocked(useAuthActions().accessBillingPortal).mockReturnValueOnce(
+      const portalOpen = createDeferredPromise<BillingPortalResponse>()
+      vi.mocked(useAuthStore().accessBillingPortal).mockReturnValueOnce(
         portalOpen.promise
       )
 
@@ -294,11 +288,12 @@ describe('PricingTable', () => {
       await userEvent.click(monthlyToggle)
       await flushPromises()
 
-      portalOpen.resolve(true)
+      portalOpen.resolve(billingPortal)
       await flushPromises()
 
-      expect(useAuthActions().accessBillingPortal).toHaveBeenCalledWith(
-        'creator-yearly'
+      expect(useAuthStore().accessBillingPortal).toHaveBeenCalledWith(
+        'creator-yearly',
+        undefined
       )
       expect(
         JSON.parse(
@@ -315,12 +310,50 @@ describe('PricingTable', () => {
       })
     })
 
+    it('keeps the initiating account and workspace while the portal opens', async () => {
+      mockCanAccessSubscriptionFeatures.value = true
+      mockSubscriptionTier.value = 'STANDARD'
+      Object.assign(useAuthStore(), { userId: 'user-early' })
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspaceId: 'workspace-early'
+      })
+      const portalOpen = createDeferredPromise<BillingPortalResponse>()
+      vi.mocked(useAuthStore().accessBillingPortal).mockReturnValueOnce(
+        portalOpen.promise
+      )
+
+      renderComponent()
+      await flushPromises()
+
+      const creatorButton = screen
+        .getAllByRole('button')
+        .find((button) => button.textContent.includes('Creator'))
+      await userEvent.click(creatorButton!)
+      await flushPromises()
+
+      Object.assign(useAuthStore(), { userId: 'user-late' })
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspaceId: 'workspace-late'
+      })
+      portalOpen.resolve(billingPortal)
+      await flushPromises()
+
+      expect(
+        JSON.parse(
+          window.localStorage.getItem(
+            PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY
+          ) ?? '{}'
+        )
+      ).toMatchObject({
+        owner_id: 'user-early',
+        workspace_id: 'workspace-early'
+      })
+    })
+
     it('does not record a pending upgrade when the billing portal does not open', async () => {
       mockCanAccessSubscriptionFeatures.value = true
       mockSubscriptionTier.value = 'STANDARD'
-      vi.mocked(useAuthActions().accessBillingPortal).mockResolvedValueOnce(
-        false
-      )
+      vi.spyOn(window, 'open').mockImplementation(() => null)
 
       renderComponent()
       await flushPromises()
@@ -383,7 +416,7 @@ describe('PricingTable', () => {
       await userEvent.click(currentPlanButton!)
       await flushPromises()
 
-      expect(useAuthActions().accessBillingPortal).not.toHaveBeenCalled()
+      expect(useAuthStore().accessBillingPortal).not.toHaveBeenCalled()
     })
 
     it('does not highlight a current plan when the facade duration differs from the selected cycle', async () => {
@@ -418,7 +451,7 @@ describe('PricingTable', () => {
       await userEvent.click(subscribeButton!)
       await flushPromises()
 
-      expect(useAuthActions().accessBillingPortal).not.toHaveBeenCalled()
+      expect(useAuthStore().accessBillingPortal).not.toHaveBeenCalled()
       expect(global.fetch).toHaveBeenCalledWith(
         expect.stringContaining('/customers/cloud-subscription-checkout/'),
         expect.any(Object)
@@ -459,9 +492,11 @@ describe('PricingTable', () => {
         cycle: 'yearly',
         checkout_type: 'new',
         payment_intent_source: undefined,
-        failure_category: 'api_rejected'
+        checkout_attempt_id: expect.any(String),
+        failure_category: 'api_rejected',
+        duration_ms: expect.any(Number)
       })
-      expect(useAuthActions().reportError).toHaveBeenCalled()
+      expect(useErrorHandling().toastErrorHandler).toHaveBeenCalled()
     })
 
     it('categorizes a connectivity failure as network, not api_rejected', async () => {
@@ -499,10 +534,162 @@ describe('PricingTable', () => {
       await userEvent.click(standardButton!)
       await flushPromises()
 
-      expect(useAuthActions().accessBillingPortal).toHaveBeenCalledWith(
-        'standard-yearly'
+      expect(useAuthStore().accessBillingPortal).toHaveBeenCalledWith(
+        'standard-yearly',
+        undefined
       )
     })
+
+    it.for([
+      {
+        name: 'the portal opens and the attempt waits for its success',
+        currentTier: 'STANDARD',
+        currentDuration: 'MONTHLY',
+        target: 'Creator',
+        portal: () => Promise.resolve(billingPortal),
+        openedWindow: window,
+        expectedEvents: [
+          [
+            {
+              operation: 'subscription_checkout',
+              stage: 'started',
+              outcome: 'pending',
+              checkout_attempt_id: '00000000-0000-4000-8000-000000000006',
+              tier: 'creator',
+              cycle: 'yearly',
+              checkout_type: 'change'
+            }
+          ]
+        ],
+        storedAttempt: expect.objectContaining({
+          attempt_id: '00000000-0000-4000-8000-000000000006',
+          start_reported: true
+        })
+      },
+      {
+        name: 'the browser blocks the portal tab',
+        currentTier: 'STANDARD',
+        currentDuration: 'MONTHLY',
+        target: 'Creator',
+        portal: () => Promise.resolve(billingPortal),
+        openedWindow: null,
+        expectedEvents: [
+          [
+            {
+              operation: 'subscription_checkout',
+              stage: 'started',
+              outcome: 'pending',
+              checkout_attempt_id: '00000000-0000-4000-8000-000000000006',
+              tier: 'creator',
+              cycle: 'yearly',
+              checkout_type: 'change'
+            }
+          ],
+          [
+            {
+              operation: 'subscription_checkout',
+              stage: 'failed',
+              outcome: 'failure',
+              checkout_attempt_id: '00000000-0000-4000-8000-000000000006',
+              tier: 'creator',
+              cycle: 'yearly',
+              checkout_type: 'change',
+              failure_category: 'redirect',
+              error_code: 'payment_popup_blocked',
+              duration_ms: expect.any(Number)
+            }
+          ]
+        ],
+        storedAttempt: null
+      },
+      {
+        name: 'the portal request is rejected',
+        currentTier: 'STANDARD',
+        currentDuration: 'MONTHLY',
+        target: 'Creator',
+        portal: () =>
+          Promise.reject(new AuthStoreError('portal unavailable', 503)),
+        openedWindow: window,
+        expectedEvents: [
+          [
+            {
+              operation: 'subscription_checkout',
+              stage: 'started',
+              outcome: 'pending',
+              checkout_attempt_id: '00000000-0000-4000-8000-000000000006',
+              tier: 'creator',
+              cycle: 'yearly',
+              checkout_type: 'change'
+            }
+          ],
+          [
+            {
+              operation: 'subscription_checkout',
+              stage: 'failed',
+              outcome: 'failure',
+              checkout_attempt_id: '00000000-0000-4000-8000-000000000006',
+              tier: 'creator',
+              cycle: 'yearly',
+              checkout_type: 'change',
+              failure_category: 'api_rejected',
+              duration_ms: expect.any(Number)
+            }
+          ]
+        ],
+        storedAttempt: null
+      },
+      {
+        name: 'a downgrade opens the plain portal and reports nothing',
+        currentTier: 'PRO',
+        currentDuration: 'ANNUAL',
+        target: 'Standard',
+        portal: () => Promise.resolve(billingPortal),
+        openedWindow: window,
+        expectedEvents: [],
+        storedAttempt: null
+      }
+    ] as const)(
+      'reports a portal plan change attempt once: $name',
+      async ({
+        currentTier,
+        currentDuration,
+        target,
+        portal,
+        openedWindow,
+        expectedEvents,
+        storedAttempt
+      }) => {
+        vi.spyOn(crypto, 'randomUUID').mockReturnValue(
+          '00000000-0000-4000-8000-000000000006'
+        )
+        mockCanAccessSubscriptionFeatures.value = true
+        mockSubscriptionTier.value = currentTier
+        mockSubscriptionDuration.value = currentDuration
+        vi.mocked(useAuthStore().accessBillingPortal).mockImplementation(portal)
+        vi.spyOn(window, 'open').mockImplementation(() => openedWindow)
+
+        renderComponent()
+        await flushPromises()
+        const targetButton = screen
+          .getAllByRole('button')
+          .find((button) => button.textContent.includes(target))
+        await userEvent.click(targetButton!)
+        await flushPromises()
+
+        const telemetry = useTelemetry()
+        assert.exists(telemetry)
+        expect(vi.mocked(telemetry.trackBillingEvent).mock.calls).toEqual(
+          expectedEvents
+        )
+        expect(
+          JSON.parse(
+            window.localStorage.getItem(
+              PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY
+            ) ?? 'null'
+          )
+        ).toEqual(storedAttempt)
+      }
+    )
   })
 
   describe('credit allotment display', () => {
@@ -517,13 +704,16 @@ describe('PricingTable', () => {
       expect(screen.getByText('~22,980')).toBeTruthy()
     })
 
-    it('states the monthly allotment on the monthly cycle', async () => {
+    it('keeps the monthly allotment when Monthly is selected again', async () => {
       renderComponent()
       await flushPromises()
 
-      await userEvent.click(screen.getByRole('button', { name: 'Monthly' }))
+      const monthly = screen.getByRole('button', { name: 'Monthly' })
+      await userEvent.click(monthly)
+      await userEvent.click(monthly)
       await nextTick()
 
+      expect(monthly).toHaveAttribute('aria-pressed', 'true')
       expect(screen.getAllByText('Monthly credits')).toHaveLength(3)
       expect(screen.getByText('4,200')).toBeTruthy()
       expect(screen.getByText('~380')).toBeTruthy()
