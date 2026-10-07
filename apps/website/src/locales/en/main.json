@@ -1731,10 +1731,6 @@
     "detail": {
       "close": "Close",
       "visitHub": "VISIT COMMUNITY HUB"
-    },
-    "contact": {
-      "label": "CONTACT",
-      "heading": "Built something cool with ComfyUI?<br> <a href=\"https://docs.google.com/forms/d/1B6_RPQfhTyKvqHk9OO2bUn8z1Qgh6QIZsF3GNMiCXDw/preview\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"text-primary-comfy-yellow underline\">Submit</a> your work to be featured on our website and socials and get seen by the global ComfyUI community."
     }
   },
   "about": {

@@ -1784,10 +1784,6 @@
       "teamUsing": "团队使用",
       "using": "使用"
     },
-    "contact": {
-      "heading": "用 ComfyUI 创作了很酷的作品？<br><a href=\"https://docs.google.com/forms/d/1B6_RPQfhTyKvqHk9OO2bUn8z1Qgh6QIZsF3GNMiCXDw/preview\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"text-primary-comfy-yellow underline\">提交</a>你的作品，展示在我们的网站和社交媒体上，让全球 ComfyUI 社区看到。",
-      "label": "联系"
-    },
     "detail": {
       "close": "关闭",
       "visitHub": "访问社区中心"
