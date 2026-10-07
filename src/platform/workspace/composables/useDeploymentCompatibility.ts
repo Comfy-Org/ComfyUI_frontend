@@ -6,7 +6,7 @@ import {
 import { storeToRefs } from 'pinia'
 import { computed, shallowRef, watch } from 'vue'
 
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { DeploymentCompatibility } from '@/platform/workspace/api/workspaceApi'
@@ -15,7 +15,6 @@ import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPi
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import { mapUniqueNodes } from '@/utils/graphTraversalUtil'
 
 /**
  * Whether a deployment (or Comfy Cloud) can run the open workflow: it has
@@ -28,22 +27,35 @@ export type DeploymentCompatibilityMark =
   | { kind: 'unknown' }
 
 /**
- * The node types a graph needs from the backend, subgraphs included, distinct
- * and sorted. Muted and bypassed nodes, frontend-only nodes (notes, reroutes)
- * and subgraph instances need none.
+ * The node types a graph needs from the backend, distinct and sorted. Like
+ * execution, it skips muted and bypassed nodes, everything inside a muted or
+ * bypassed subgraph instance, and frontend-only nodes (notes, reroutes). A
+ * subgraph's nodes count once, through any instance that runs.
  */
 export function workflowNodeTypes(graph: LGraph): string[] {
-  const types = mapUniqueNodes(graph, (node) => {
-    if (node.isSubgraphNode() || node.isVirtualNode) return undefined
-    if (
-      node.mode === LGraphEventMode.NEVER ||
-      node.mode === LGraphEventMode.BYPASS
-    ) {
-      return undefined
+  const types = new Set<string>()
+  const walked = new Set<string>([graph.id])
+
+  function walk(current: LGraph | Subgraph) {
+    for (const node of current.nodes) {
+      if (
+        node.mode === LGraphEventMode.NEVER ||
+        node.mode === LGraphEventMode.BYPASS
+      ) {
+        continue
+      }
+      if (node.isSubgraphNode()) {
+        if (walked.has(node.subgraph.id)) continue
+        walked.add(node.subgraph.id)
+        walk(node.subgraph)
+      } else if (!node.isVirtualNode) {
+        types.add(node.last_serialization?.type ?? node.type)
+      }
     }
-    return node.last_serialization?.type ?? node.type
-  })
-  return [...new Set(types)].sort()
+  }
+
+  walk(graph)
+  return [...types].sort()
 }
 
 function missingMark(missing: string[]): DeploymentCompatibilityMark {
