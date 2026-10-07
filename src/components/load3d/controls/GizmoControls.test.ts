@@ -47,8 +47,7 @@ function renderComponent(initial: Partial<GizmoConfig> = {}) {
       }
     },
     global: {
-      plugins: [i18n],
-      directives: { tooltip: () => {} }
+      plugins: [i18n]
     }
   })
 
@@ -139,8 +138,7 @@ describe('GizmoControls', () => {
     const { emitted } = render(GizmoControls, {
       props: { gizmoConfig: undefined },
       global: {
-        plugins: [i18n],
-        directives: { tooltip: () => {} }
+        plugins: [i18n]
       }
     })
 

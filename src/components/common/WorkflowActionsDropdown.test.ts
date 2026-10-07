@@ -79,8 +79,7 @@ function renderDropdown() {
   const result = render(WorkflowActionsDropdown, {
     props: { source: 'test' },
     global: {
-      plugins: [i18n],
-      directives: { tooltip: {} }
+      plugins: [i18n]
     }
   })
   return { ...result, user }

@@ -45,8 +45,7 @@ const i18n = createI18n({
 async function renderComponent() {
   render(WorkspaceMenuButton, {
     global: {
-      plugins: [i18n],
-      directives: { tooltip: {} }
+      plugins: [i18n]
     }
   })
   await userEvent.click(screen.getByRole('button', { name: 'More Options' }))

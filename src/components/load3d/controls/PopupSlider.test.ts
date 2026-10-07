@@ -30,12 +30,7 @@ function renderComponent(
             if (v !== undefined) value.value = v
           }
         })
-    }),
-    {
-      global: {
-        directives: { tooltip: () => {} }
-      }
-    }
+    })
   )
   return { ...utils, value, user: userEvent.setup() }
 }

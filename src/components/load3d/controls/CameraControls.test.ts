@@ -42,8 +42,7 @@ function renderComponent(initial: { type?: CameraType; fov?: number } = {}) {
       }
     },
     global: {
-      plugins: [i18n],
-      directives: { tooltip: () => {} }
+      plugins: [i18n]
     }
   })
 

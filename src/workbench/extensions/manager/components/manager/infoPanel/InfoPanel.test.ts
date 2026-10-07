@@ -32,8 +32,7 @@ it('keeps update options available when the latest Active version is installed',
   render(InfoPanel, {
     props: { nodePack: pack },
     global: {
-      plugins: [createI18n({ legacy: false, locale: 'en', messages: { en } })],
-      directives: { tooltip: {} }
+      plugins: [createI18n({ legacy: false, locale: 'en', messages: { en } })]
     }
   })
 
@@ -75,10 +74,7 @@ it.for([
     render(component, {
       props,
       global: {
-        plugins: [
-          createI18n({ legacy: false, locale: 'en', messages: { en } })
-        ],
-        directives: { tooltip: {} }
+        plugins: [createI18n({ legacy: false, locale: 'en', messages: { en } })]
       }
     })
 

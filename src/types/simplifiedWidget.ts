@@ -73,31 +73,31 @@ export interface SimplifiedWidget<
   /** Optional method to compute widget size requirements */
   computeSize?: () => { minHeight: number; maxHeight?: number }
 
-  /** Localized display label (falls back to name if not provided) */
-  label?: string
+  controlWidget?: SafeControlWidget
 
   displayLabel?: string
 
-  /** Widget options including filtered PrimeVue props */
-  options?: O
+  /** Localized display label (falls back to name if not provided) */
+  label?: string
+
+  linkedUpstream?: LinkedUpstreamInfo
+
+  /** NodeLocatorId for the node that owns this widget's execution outputs */
+  nodeLocatorId?: NodeLocatorId
 
   /** Override for use with subgraph promoted asset widgets*/
   nodeType?: string
 
+  /** Widget options including filtered presentation props */
+  options?: O
+
   /** Optional serialization method for custom value handling */
   serializeValue?: () => unknown
-
-  /** NodeLocatorId for the node that owns this widget's execution outputs */
-  nodeLocatorId?: NodeLocatorId
 
   /** Optional input specification backing this widget */
   spec?: InputSpecV2
 
   tooltip?: string
-
-  controlWidget?: SafeControlWidget
-
-  linkedUpstream?: LinkedUpstreamInfo
 }
 
 export interface SimplifiedControlWidget<

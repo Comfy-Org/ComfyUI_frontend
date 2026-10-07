@@ -1033,7 +1033,7 @@ export const useDialogService = () => {
       props: {
         onClose: () => dialogStore.closeDialog({ key }),
         // Falls through to the BaseModalLayout root — keeps the e2e
-        // publish-dialog selector working without the PrimeVue pt hook.
+        // Keep the publish-dialog selector working for the dialog content.
         'data-testid': 'publish-dialog'
       },
       dialogComponentProps: {

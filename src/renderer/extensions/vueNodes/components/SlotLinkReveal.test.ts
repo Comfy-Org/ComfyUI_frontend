@@ -93,7 +93,6 @@ describe('slot reveal error recovery', () => {
               messages: { en: enMessages }
             })
           ],
-          directives: { tooltip: {} },
           stubs: { SlotConnectionDot }
         }
       })

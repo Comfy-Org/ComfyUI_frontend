@@ -2,28 +2,38 @@
 import type { ToastViewportProps } from 'reka-ui'
 import { ToastViewport, useForwardProps } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
+import { useTemplateRef, watchPostEffect } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
+import type { ToastId } from '@/types/toastId'
+import { raiseModalLayer, releaseModalLayer } from '@/utils/modalLayerStack'
 
 const {
   class: className,
-  zIndexVersion,
+  latestToastId,
   ...restProps
 } = defineProps<
   ToastViewportProps & {
     class?: HTMLAttributes['class']
-    zIndexVersion?: number
+    latestToastId?: ToastId
   }
 >()
 const forwardedProps = useForwardProps(restProps)
+const viewport = useTemplateRef<HTMLOListElement>('viewport')
+
+watchPostEffect((onCleanup) => {
+  const element = viewport.value
+  if (!element || latestToastId === undefined) return
+  raiseModalLayer(element)
+  onCleanup(() => releaseModalLayer(element))
+})
 </script>
 
 <template>
   <ToastViewport v-bind="forwardedProps" as-child>
     <ol
-      v-reka-z-index="zIndexVersion"
+      ref="viewport"
       :class="
         cn(
           'pointer-events-none fixed top-20 right-[calc(1rem+var(--workspace-inset-right,0px))] flex max-h-[calc(100dvh-5rem)] w-full max-w-sm flex-col gap-2 overflow-y-auto p-4',

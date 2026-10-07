@@ -197,20 +197,3 @@ onBeforeUnmount(() => {
   // we will manually cleanup the viewer in dialog close handler
 })
 </script>
-
-<style scoped>
-:deep(.p-panel-content) {
-  padding: 0;
-}
-
-:deep(.p-slider) {
-  height: 6px;
-}
-
-:deep(.p-slider-handle) {
-  width: 14px;
-  height: 14px;
-  margin-top: -4px;
-  margin-left: -7px;
-}
-</style>

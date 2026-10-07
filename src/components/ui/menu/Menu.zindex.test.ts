@@ -1,4 +1,3 @@
-import { ZIndex } from '@primeuix/utils/zindex'
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -6,6 +5,7 @@ import { createI18n } from 'vue-i18n'
 
 import type { MenuItem } from '@/components/ui/menu/types'
 import enMessages from '@/locales/en/main.json'
+import { raiseModalLayer, releaseModalLayer } from '@/utils/modalLayerStack'
 
 import Menu from './Menu.vue'
 
@@ -19,7 +19,7 @@ function renderMenu(items: MenuItem[] = [{ label: 'Item A' }]) {
   return render(Menu, {
     props: { items },
     slots: { trigger: '<button>Open</button>' },
-    global: { plugins: [i18n], directives: { tooltip: {} } }
+    global: { plugins: [i18n] }
   })
 }
 
@@ -27,7 +27,7 @@ let openModal: HTMLElement | undefined
 
 afterEach(() => {
   if (openModal) {
-    ZIndex.clear(openModal)
+    releaseModalLayer(openModal)
     openModal = undefined
   }
 })
@@ -35,7 +35,7 @@ afterEach(() => {
 describe('Menu z-index', () => {
   it('opens above a dialog registered with the modal z-index counter', async () => {
     openModal = document.createElement('div')
-    ZIndex.set('modal', openModal, 1700)
+    raiseModalLayer(openModal)
     const dialogZ = Number(openModal.style.zIndex)
 
     const user = userEvent.setup()
@@ -58,7 +58,7 @@ describe('Menu z-index', () => {
 
   it('opens a nested menu above a registered dialog', async () => {
     openModal = document.createElement('div')
-    ZIndex.set('modal', openModal, 1700)
+    raiseModalLayer(openModal)
     const dialogZ = Number(openModal.style.zIndex)
     const command = vi.fn()
     const user = userEvent.setup()

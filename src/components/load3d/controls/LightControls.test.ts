@@ -64,8 +64,7 @@ function renderComponent(opts: RenderOpts = {}) {
     }),
     {
       global: {
-        plugins: [i18n],
-        directives: { tooltip: () => {} }
+        plugins: [i18n]
       }
     }
   )

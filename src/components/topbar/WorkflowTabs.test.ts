@@ -158,10 +158,7 @@ function renderComponent(errorHandler?: (error: unknown) => void) {
   const result = render(WorkflowTabs, {
     global: {
       config: { errorHandler },
-      plugins: [i18n],
-      directives: {
-        tooltip: {}
-      }
+      plugins: [i18n]
     }
   })
 

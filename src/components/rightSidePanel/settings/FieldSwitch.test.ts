@@ -6,10 +6,7 @@ import FieldSwitch from './FieldSwitch.vue'
 describe('FieldSwitch', () => {
   it('forwards its identity and visible label to the switch', () => {
     render(FieldSwitch, {
-      props: { id: 'enable-preview', label: 'Enable preview' },
-      global: {
-        directives: { tooltip: {} }
-      }
+      props: { id: 'enable-preview', label: 'Enable preview' }
     })
 
     const control = screen.getByRole('switch', { name: 'Enable preview' })

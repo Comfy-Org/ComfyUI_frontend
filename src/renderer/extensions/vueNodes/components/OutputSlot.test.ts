@@ -66,7 +66,6 @@ function renderOutputSlot(slotData: Partial<INodeSlot>, index = 0) {
     },
     global: {
       plugins: [i18n],
-      directives: { tooltip: {} },
       stubs: { SlotConnectionDot: SlotConnectionDotStub }
     }
   })

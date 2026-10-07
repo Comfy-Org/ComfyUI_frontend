@@ -34,7 +34,7 @@ type Props = {
 function renderGroup(props: Props = {}) {
   const result = render(SceneMenuGroup, {
     props: { config: makeConfig(), ...props },
-    global: { plugins: [i18n], directives: { tooltip: () => {} } }
+    global: { plugins: [i18n] }
   })
   return { ...result, user: userEvent.setup() }
 }

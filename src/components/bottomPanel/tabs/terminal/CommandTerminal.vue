@@ -59,11 +59,11 @@ const terminalCreated = (
 </script>
 
 <style scoped>
-:deep(.p-terminal) .xterm {
+:deep(.terminal-container) .xterm {
   overflow-x: auto;
 }
 
-:deep(.p-terminal) .xterm-screen {
+:deep(.terminal-container) .xterm-screen {
   overflow-y: hidden;
 }
 </style>

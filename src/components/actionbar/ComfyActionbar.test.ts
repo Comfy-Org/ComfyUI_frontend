@@ -42,8 +42,7 @@ const renderActionbar = (showRunProgressBar: boolean) => {
         QueueInlineProgress: true
       },
       directives: {
-        coachmark: vCoachmark,
-        tooltip: () => {}
+        coachmark: vCoachmark
       }
     }
   })

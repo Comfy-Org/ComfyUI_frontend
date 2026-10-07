@@ -113,8 +113,7 @@ function renderTile(props: Record<string, unknown> = {}) {
   return render(CreditsTile, {
     props,
     global: {
-      plugins: [i18n],
-      directives: { tooltip: () => {} }
+      plugins: [i18n]
     }
   })
 }

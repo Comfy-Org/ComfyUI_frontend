@@ -1,7 +1,6 @@
 /* oxlint-disable testing-library/no-container, testing-library/no-node-access */
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -136,7 +135,7 @@ describe('SelectionToolbox', () => {
     const { container } = render(SelectionToolbox, {
       props,
       global: {
-        plugins: [i18n, PrimeVue],
+        plugins: [i18n],
         provide: {
           [Symbol.for('SelectionOverlay')]: mockProvide
         },

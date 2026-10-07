@@ -1,7 +1,7 @@
 <template>
   <Dialog v-model:open="visible">
     <DialogPortal>
-      <DialogOverlay v-reka-z-index data-reka-nested-dialog-overlay />
+      <DialogOverlay v-reka-z-index />
       <DialogContent v-reka-z-index size="md" :aria-labelledby="titleId">
         <DialogHeader>
           <DialogTitle :id="titleId">

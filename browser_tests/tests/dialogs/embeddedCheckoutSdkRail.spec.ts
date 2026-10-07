@@ -22,6 +22,7 @@ import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCa
 import { createPlan } from '@e2e/fixtures/data/billingPlans'
 import { CLOUD_SELF_EMAIL } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
+import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { member, workspace } from '@e2e/fixtures/utils/workspaceMocks'
@@ -664,6 +665,7 @@ test.describe('Embedded top-up bank step', { tag: '@cloud' }, () => {
   test('offers the in-page bank step again after a decline, and settles when it completes', async ({
     page
   }) => {
+    const toast = new ToastHelper(page)
     const fake = await installFakeStripe(page)
     fake.bankSteps.push('fail')
     const routes = await setupCheckout(page, {
@@ -700,12 +702,7 @@ test.describe('Embedded top-up bank step', { tag: '@cloud' }, () => {
       .getByRole('button', { name: 'Complete verification' })
       .click()
 
-    await expect(
-      page
-        .getByTestId('toast')
-        .and(page.locator('[data-toast-kind="success"]'))
-        .getByText('Credits added successfully')
-    ).toBeVisible()
+    await expect(toast.withText('Credits added successfully')).toBeVisible()
     expect(bankSteps(fake)).toEqual([
       { method: 'handleNextAction', clientSecret: BANK_STEP_SECRET },
       { method: 'handleNextAction', clientSecret: RETRY_SECRET }

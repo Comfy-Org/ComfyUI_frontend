@@ -25,6 +25,7 @@ import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCa
 import { createPlan } from '@e2e/fixtures/data/billingPlans'
 import { CLOUD_SELF_EMAIL } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
+import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { member, workspace } from '@e2e/fixtures/utils/workspaceMocks'
@@ -380,12 +381,6 @@ async function returnToTab(page: Page) {
   await page.evaluate(() => window.dispatchEvent(new Event('focus')))
 }
 
-const successToast = (page: Page) =>
-  page
-    .getByTestId('toast')
-    .and(page.locator('[data-toast-kind="success"]'))
-    .filter({ hasText: 'Credits added successfully!' })
-
 /** The plan summary on the success step, which names what was bought. */
 const successSummary = (page: Page) =>
   page.getByRole('heading', { name: "You're all set" }).locator('..')
@@ -444,7 +439,9 @@ async function expectPortalReturnRefresh(
 async function topUpThenUpgrade(page: Page): Promise<Locator> {
   await bootApp(page)
   const topUp = await buyFiftyDollars(page)
-  await expect(successToast(page)).toBeVisible()
+  await expect(
+    new ToastHelper(page).withText('Credits added successfully!')
+  ).toBeVisible()
   await expect(topUp.root).toBeHidden()
 
   // A settled purchase lands the customer on Plan & Credits.
@@ -479,13 +476,14 @@ test.describe('Billing rail parity', { tag: '@cloud' }, () => {
     test('buys credits on the legacy transport and refreshes the balance', async ({
       page
     }) => {
+      const toast = new ToastHelper(page)
       const routes = await setupParity(page, { rails: SUBSCRIPTION_RAIL_ONLY })
       await bootApp(page)
       const readsBeforePurchase = routes.balanceRequests.length
 
       await buyFiftyDollars(page)
 
-      await expect(successToast(page)).toBeVisible()
+      await expect(toast.withText('Credits added successfully!')).toBeVisible()
       expect(routes.topupRequests).toHaveLength(1)
       const [purchase] = routes.topupRequests
       expect(transport(purchase)).toBe('xhr')

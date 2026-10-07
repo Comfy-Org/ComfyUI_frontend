@@ -101,8 +101,7 @@ function renderMenuBar(overrides: RenderProps = {}) {
       ...overrides
     },
     global: {
-      plugins: [i18n],
-      directives: { tooltip: () => {} }
+      plugins: [i18n]
     }
   })
   return { ...result, user: userEvent.setup() }

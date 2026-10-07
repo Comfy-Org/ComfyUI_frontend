@@ -40,8 +40,8 @@ describe('Button', () => {
     const button = screen.getByRole('button', { name: 'Submit' })
     expect(button).toBeDisabled()
     expect(button).toHaveAttribute('aria-busy', 'true')
-    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeVue spinner icon has no accessible role
-    expect(container.querySelector('.pi-spin')).toBeInTheDocument()
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- spinner icon has no accessible role
+    expect(container.querySelector('.animate-spin')).toHaveClass('size-4')
   })
 
   it('does not fire click when loading', async () => {

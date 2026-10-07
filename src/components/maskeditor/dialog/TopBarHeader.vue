@@ -101,7 +101,7 @@
           </svg>
         </button>
 
-        <div class="h-5 w-px bg-(--p-form-field-border-color)" />
+        <div class="h-5 w-px bg-(--theme-form-border)" />
 
         <button :class="textButtonClass" @click="onInvert">
           {{ t('maskEditor.invert') }}
