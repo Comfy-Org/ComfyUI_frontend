@@ -3,14 +3,9 @@ import { hubAppHref, hubAppSlugs } from './hub-models'
 import { LOCALE_CODES, LOCALES } from './locales'
 import type { ModelPageLaunch } from './model-page-launch'
 import { launchedModelPages, launchedWorkflowPages } from './model-page-launch'
-import { models } from './models'
 import { modelsUrlKind, modelsUrlPaths } from './models-url-registry'
 import { workshopModels } from './workshop-browse-content'
-import {
-  isLegacyWorkshopRoute,
-  isWorkshopInBuild,
-  isWorkshopRoute
-} from './workshop-release'
+import { isLegacyWorkshopRoute, isWorkshopRoute } from './workshop-release'
 
 const PAYMENT_STATUSES = ['success', 'failed'] as const
 const PLACEHOLDER_PATHNAMES = ['/case-studies', '/videos', '/demos'] as const
@@ -32,6 +27,7 @@ export const NOINDEX_ROUTES = [
   '/privacy-policy',
   '/terms-of-service',
   '/platform/serverless-animation',
+  '/nano-banana',
   ...PLACEHOLDER_PATHNAMES
 ] as const
 
@@ -43,16 +39,6 @@ const NOINDEX_PATHNAMES = new Set([
   // the older /comfy-agent preview route stays out of the index.
   '/comfy-agent'
 ])
-
-const MODEL_REDIRECT_PATHNAMES = new Set(
-  models
-    .filter((model) => model.canonicalSlug !== undefined)
-    .flatMap((model) =>
-      ALL_LOCALE_PREFIXES.map(
-        (prefix) => `${prefix}/p/supported-models/${model.slug}`
-      )
-    )
-)
 
 function normalizePathname(pathname: string): string {
   return pathname.replace(/\/$/, '')
@@ -109,12 +95,10 @@ const routerIdByModelPage = routerIdsByModelPage(
 export function isIndexableModelPage(
   pathname: string,
   launched: ModelPageLaunch = launchedModelPages,
-  workflowsLaunched: boolean = launchedWorkflowPages,
-  workshopInBuild: boolean = isWorkshopInBuild()
+  workflowsLaunched: boolean = launchedWorkflowPages
 ): boolean {
   const kind = modelsUrlKind(pathname)
   if (kind === 'workflow') return workflowsLaunched
-  if (kind === 'file') return workshopInBuild
   if (kind !== 'model') return false
   const routerId = routerIdByModelPage.get(normalizePathname(pathname))
   return (
@@ -122,30 +106,16 @@ export function isIndexableModelPage(
   )
 }
 
-const SUPPORTED_MODEL_FILE_PATHNAMES = new Set(
-  models
-    .filter((model) => model.canonicalSlug === undefined)
-    .map((model) => `/p/supported-models/${model.slug}`)
-)
-
 export function isExcludedFromSitemap(
   page: string,
   launched: ModelPageLaunch = launchedModelPages,
-  workflowsLaunched: boolean = launchedWorkflowPages,
-  workshopInBuild: boolean = isWorkshopInBuild()
+  workflowsLaunched: boolean = launchedWorkflowPages
 ): boolean {
   const pathname = normalizePathname(new URL(page).pathname)
   return (
     isNoindexPathname(pathname) ||
     isLegacyWorkshopRoute(pathname) ||
-    MODEL_REDIRECT_PATHNAMES.has(pathname) ||
-    (workshopInBuild && SUPPORTED_MODEL_FILE_PATHNAMES.has(pathname)) ||
     (isWorkshopRoute(pathname) &&
-      !isIndexableModelPage(
-        pathname,
-        launched,
-        workflowsLaunched,
-        workshopInBuild
-      ))
+      !isIndexableModelPage(pathname, launched, workflowsLaunched))
   )
 }

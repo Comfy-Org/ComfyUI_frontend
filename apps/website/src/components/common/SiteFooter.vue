@@ -124,6 +124,7 @@ const topColumns: { title: string; links: FooterLink[] }[] = [
         label: t('footer.qwenImage21'),
         href: routes.qwenImage21
       },
+      { label: t('footer.nanoBanana'), href: routes.nanoBanana },
       { label: t('footer.flux3'), href: routes.flux3 }
     ]
   },

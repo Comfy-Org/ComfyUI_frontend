@@ -23,7 +23,7 @@ const sources = {
   workflows: ['workflows/relight'],
   apps: ['apps/studio'],
   aliases: new Map([['acme--image', 'acme-image']]),
-  files: ['ae']
+  localFiles: ['acme-vae']
 }
 
 describe('models URL registry', () => {
@@ -46,8 +46,10 @@ describe('models URL registry', () => {
     ['/models/catalogue.json', 'reserved'],
     ['/models/workflows/relight/page.json', 'reserved'],
     ['/models/local/', undefined],
-    ['/hub/models/local/ae/', 'file'],
-    ['/hub/models/local/', undefined]
+    ['/hub/models/local/', 'local'],
+    ['/hub/models/local/acme-vae/', 'local'],
+    ['/hub/models/local/acme-vae.md', 'reserved'],
+    ['/hub/models/local/llms.txt', 'reserved']
   ])('registers %s as %s', ([path, kind]) => {
     const registry = buildModelsUrlRegistry(modelsUrlEntries(sources), roots)
     expect(modelsUrlKind(path, registry)).toBe(kind)
@@ -85,6 +87,14 @@ describe('models URL registry', () => {
         ...sources,
         aliases: new Map([['acme--image--generate-images', 'acme-image']])
       }
+    ],
+    [
+      'a model named like the local files index',
+      { ...sources, models: new Map([['acme--local', 'local']]) }
+    ],
+    [
+      'a local file named like the catalog',
+      { ...sources, localFiles: ['llms.txt'] }
     ]
   ])('rejects %s', ([, collision]) => {
     expect(() =>
@@ -213,10 +223,10 @@ describe('models URL registry', () => {
     expect(modelsUrlKind('/hub/models/acme-image/', registry)).toBe('model')
     expect(
       unregisteredModelsPaths(
-        ['hub/models/', 'hub/models/acme-image/', 'hub/models/local/'],
+        ['hub/models/', 'hub/models/acme-image/', 'hub/models/stray/'],
         registry
       )
-    ).toEqual(['/hub/models/local'])
+    ).toEqual(['/hub/models/stray'])
   })
 
   it('builds the real registry from the Models content', () => {

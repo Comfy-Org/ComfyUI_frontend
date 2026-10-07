@@ -24,9 +24,9 @@ import {
   SORT_ORDERS,
   USE_CASES,
   countByUseCase,
-  filterWorkshopModels,
   sortWorkshopModels
 } from '@/config/models-catalogue'
+import { searchWorkshopModels } from '@/config/models-search'
 import type { Locale, TranslationKey } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import { HUB_TOOLBAR_ID } from '@/scripts/hubToolbar'
@@ -181,7 +181,7 @@ const openWeightVisible = computed(() =>
 const visible = computed(() =>
   groupModels(
     sortWorkshopModels(
-      filterWorkshopModels(models, {
+      searchWorkshopModels(models, {
         query: query.value,
         useCases: selectedUseCases.value,
         modalities: legacyModalities.value,

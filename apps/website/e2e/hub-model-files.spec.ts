@@ -77,12 +77,4 @@ test.describe('Model file pages in the Hub', () => {
     await expect(page.getByTestId('model-file-trail')).toBeVisible()
     await expect(page.getByTestId('model-file-used-by')).toHaveCount(0)
   })
-
-  test('keeps the supported-models address working', async ({ page }) => {
-    const response = await page.goto('/p/supported-models/qwen-image-vae/')
-
-    expect(response?.status()).toBe(200)
-    await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
-    await expect(page.getByTestId('model-file-trail')).toHaveCount(0)
-  })
 })

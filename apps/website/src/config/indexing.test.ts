@@ -104,49 +104,12 @@ describe('indexing policy', () => {
     '/agent/',
     '/zh-CN/agent',
     '/zh-CN/agent/',
+    '/hub/models/local/',
+    '/hub/models/local/4x-ultrasharp/',
     '/demos/image-to-video'
   ])('keeps %s indexable', (pathname) => {
     expect(isNoindexPathname(pathname)).toBe(false)
     expect(isExcludedFromSitemap(`https://comfy.org${pathname}`)).toBe(false)
-  })
-
-  it.for([
-    {
-      workshopInBuild: false,
-      indexed: '/p/supported-models/grok-imagine/',
-      dropped: '/hub/models/local/grok-imagine/'
-    },
-    {
-      workshopInBuild: true,
-      indexed: '/hub/models/local/grok-imagine/',
-      dropped: '/p/supported-models/grok-imagine/'
-    }
-  ])(
-    'indexes a model file page at $indexed when the Hub in the build is $workshopInBuild',
-    ({ workshopInBuild, indexed, dropped }) => {
-      const excluded = (pathname: string) =>
-        isExcludedFromSitemap(
-          `https://comfy.org${pathname}`,
-          undefined,
-          undefined,
-          workshopInBuild
-        )
-      expect(isNoindexPathname(indexed)).toBe(false)
-      expect(excluded(indexed)).toBe(false)
-      expect(excluded(dropped)).toBe(true)
-      expect(excluded('/p/supported-models/')).toBe(false)
-    }
-  )
-
-  it('derives model redirect exclusions from canonical model metadata', () => {
-    expect(
-      isExcludedFromSitemap('https://comfy.org/p/supported-models/qwen-3-8b/')
-    ).toBe(true)
-    expect(
-      isExcludedFromSitemap(
-        'https://comfy.org/zh-CN/p/supported-models/grok-image/'
-      )
-    ).toBe(true)
   })
 
   it.for([

@@ -133,7 +133,6 @@ describe('Workshop release output', () => {
       '/hub',
       '/hub/models',
       '/hub/models/[slug]',
-      '/hub/models/local/[slug]',
       '/hub/workflows',
       '/hub/apps',
       '/hub/workflows/[slug]',
@@ -189,7 +188,14 @@ describe('Workshop release output', () => {
     async (value) => {
       vi.stubEnv('WORKSHOP_IN_BUILD', value)
       await expect(
-        buildDone(builtModelsRoutes(), ['models/', `models/${modelSlug}/`])
+        buildDone(builtModelsRoutes(), [
+          'models/',
+          `models/${modelSlug}/`,
+          'hub/models/local/',
+          'hub/models/local/4x-ultrasharp/',
+          'hub/models/local/4x-ultrasharp.md',
+          'hub/models/local/llms.txt'
+        ])
       ).resolves.toBeUndefined()
       await expect(
         buildDone(builtModelsRoutes(), ['models/unregistered/'])

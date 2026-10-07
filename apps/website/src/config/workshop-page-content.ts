@@ -1,9 +1,8 @@
-import { modelFileHref } from '@/lib/workshop/model-file-href'
 import { workflowsUsingFile } from '@/lib/workshop/model-file-usage'
 import { modelFileNames, workflowParts } from '@/lib/workshop/workflow-parts'
+import { localModelPath } from './local-models'
 import { models } from './models'
 import { workshopModels } from './workshop-browse-content'
-import { isWorkshopInBuild } from './workshop-release'
 import { getRouterWorkshopModelDetail } from './workshop-router-content'
 import {
   workflowDetailsBySlug,
@@ -25,10 +24,7 @@ function modelFilePage(name: string) {
   return model
     ? {
         directory: model.directory,
-        href: modelFileHref(
-          model.canonicalSlug ?? model.slug,
-          isWorkshopInBuild()
-        )
+        href: localModelPath(model.canonicalSlug ?? model.slug)
       }
     : undefined
 }

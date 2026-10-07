@@ -7,10 +7,8 @@ import type {
   SortOrder,
   WorkflowWorkshopModel
 } from '@/config/models-catalogue'
-import {
-  filterWorkshopModels,
-  sortWorkshopModels
-} from '@/config/models-catalogue'
+import { sortWorkshopModels } from '@/config/models-catalogue'
+import { searchWorkshopModels } from '@/config/models-search'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import { HUB_TOOLBAR_ID } from '@/scripts/hubToolbar'
@@ -107,10 +105,13 @@ const matchingCategories = computed(() =>
       : []
   )
 )
+const searched = computed(
+  () => new Set(searchWorkshopModels(models, { query: query.value }))
+)
 const visible = computed(() => {
-  const matching = filterWorkshopModels(matchingCategories.value, {
-    query: query.value
-  })
+  const matching = matchingCategories.value.filter((model) =>
+    searched.value.has(model)
+  )
   return sort.value === 'popular'
     ? matching
     : sortWorkshopModels(matching, sort.value)

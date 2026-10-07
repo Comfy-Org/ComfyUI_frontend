@@ -1,7 +1,6 @@
-import { WORKSHOP_INCLUDED } from 'astro:env/client'
 import { z } from 'astro/zod'
 
-import { modelFileHref } from '@/lib/workshop/model-file-href'
+import { localModelPath } from '@/config/local-models'
 import type { UseCase } from '@/config/models-catalogue'
 import { USE_CASES } from '@/config/models-catalogue'
 import type { ModelTab } from './model-tabs'
@@ -32,7 +31,7 @@ export const OPEN_WEIGHT_MODELS: readonly OpenWeightModel[] = z
   .parse(generated)
 
 export function openWeightHref(model: Pick<OpenWeightModel, 'slug'>): string {
-  return modelFileHref(model.slug, WORKSHOP_INCLUDED)
+  return localModelPath(model.slug)
 }
 
 export function filterOpenWeightModels(

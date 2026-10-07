@@ -47,10 +47,6 @@ export function modelsBuildRoutes(enabled: boolean) {
     { pattern: HUB_PATH, entrypoint: entry('hub-section.astro') },
     { pattern: HUB_MODELS_PATH, entrypoint: entry('index.astro') },
     { pattern: `${HUB_MODELS_PATH}/[slug]`, entrypoint: entry('[slug].astro') },
-    {
-      pattern: `${HUB_MODELS_PATH}/local/[slug]`,
-      entrypoint: entry('model-file.astro')
-    },
     { pattern: HUB_WORKFLOWS_PATH, entrypoint: entry('hub-section.astro') },
     { pattern: HUB_APPS_PATH, entrypoint: entry('hub-section.astro') },
     {

@@ -10,8 +10,7 @@ import {
   hubWorkflowHref,
   hubWorkflowSlugs
 } from './hub-models'
-import { models as supportedModels } from './models'
-import { modelFileHref } from '@/lib/workshop/model-file-href'
+import { LOCAL_MODELS_PATH, localModels } from './local-models'
 
 const MODELS_BASE_PATH = '/models'
 
@@ -21,7 +20,7 @@ type PageKind =
   | 'model'
   | 'workflow'
   | 'app'
-  | 'file'
+  | 'local'
   | 'reserved'
 
 const navigableKinds: ReadonlySet<string> = new Set<PageKind>([
@@ -54,8 +53,8 @@ interface ModelsUrlSources {
   readonly apps: readonly string[]
   /** Old alias under `/models` → the slug under `/hub/models` it serves. */
   readonly aliases: ReadonlyMap<string, string>
-  /** Model file page slugs, served under `/hub/models/local`. */
-  readonly files?: readonly string[]
+  /** Downloadable model files under `/hub/models/local`. */
+  readonly localFiles: readonly string[]
 }
 
 const withoutTrailingSlash = (pathname: string) => pathname.replace(/\/$/, '')
@@ -65,10 +64,11 @@ export function modelsUrlEntries({
   workflows,
   apps,
   aliases,
-  files = []
+  localFiles
 }: ModelsUrlSources): ModelsUrlEntry[] {
   const at = (slug: string) => `${MODELS_BASE_PATH}/${slug}`
   const atHub = (slug: string) => `${HUB_MODELS_PATH}/${slug}`
+  const atLocal = (file: string) => `${LOCAL_MODELS_PATH}/${file}`
   const page = (kind: PageKind) => (slug: string) => ({ path: at(slug), kind })
   const redirect = ([slug, hubSlug]: readonly [string, string]) => ({
     path: at(slug),
@@ -101,10 +101,6 @@ export function modelsUrlEntries({
       destination: hubWorkflowHref(slug)
     })),
     ...apps.map((slug) => ({ path: hubAppHref(slug), kind: 'app' as const })),
-    ...files.map((slug) => ({
-      path: modelFileHref(slug, true),
-      kind: 'file' as const
-    })),
     ...apps.map((slug) => ({
       path: at(slug),
       kind: 'alias' as const,
@@ -113,6 +109,16 @@ export function modelsUrlEntries({
     ...[...models.keys(), ...workflows].map((slug) =>
       page('reserved')(`${slug}/page.json`)
     ),
+    { path: LOCAL_MODELS_PATH, kind: 'local' },
+    { path: atLocal('llms.txt'), kind: 'reserved' },
+    ...localFiles.map((slug) => ({
+      path: atLocal(slug),
+      kind: 'local' as const
+    })),
+    ...localFiles.map((slug) => ({
+      path: atLocal(`${slug}.md`),
+      kind: 'reserved' as const
+    })),
     ...Array.from(models, redirect),
     ...Array.from(aliases, redirect)
   ]
@@ -165,18 +171,13 @@ export function buildModelsUrlRegistry(
   return { roots: normalizedRoots, entries: registry }
 }
 
-/** Every model file page: one per supported model that is not an alias. */
-export const modelFileSlugs: readonly string[] = supportedModels.flatMap(
-  ({ slug, canonicalSlug }) => (canonicalSlug ? [] : [slug])
-)
-
 const modelsUrlRegistry = buildModelsUrlRegistry(
   modelsUrlEntries({
     models: hubModelSlugs,
     workflows: hubWorkflowSlugs,
     apps: hubAppSlugs,
     aliases: hubModelAliases,
-    files: modelFileSlugs
+    localFiles: localModels.map(({ slug }) => slug)
   }),
   [MODELS_BASE_PATH, HUB_PATH]
 )

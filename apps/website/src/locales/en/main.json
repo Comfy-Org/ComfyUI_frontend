@@ -2675,6 +2675,7 @@
     "wan3": "Wan 3.0",
     "chatgptImage25": "ChatGPT Images 2.5",
     "qwenImage21": "Qwen-Image 2.1",
+    "nanoBanana": "Nano Banana 2.1",
     "cloudNodes": "Comfy Cloud Nodes",
     "modelCatalogue": "ComfyUI Models",
     "social": "Follow Comfy"
@@ -4270,6 +4271,57 @@
       "highlightTitle": "Comfy MCP: now turn your agent into a creative technologist.",
       "highlightDescription": "Your AI assistant can access the ecosystem, build workflows, and generate images, video, audio, or 3D.",
       "highlightCta": "GET STARTED"
+    }
+  },
+  "nanoBanana": {
+    "meta": {
+      "title": "Nano Banana on Comfy: Generate and Edit Images",
+      "description": "Run Nano Banana in ComfyUI. Generate images from text, edit existing visuals, and direct results with reference images in a repeatable workflow."
+    },
+    "breadcrumb": {
+      "model": "Nano Banana",
+      "updated": "Updated October 2026"
+    },
+    "hero": {
+      "title": "Nano Banana 2.1 is here",
+      "description": "Google's newest Gemini image model, now in Comfy. Give it a prompt and references, and it returns an image at up to 4K. It works anywhere Nano Banana 2 does, with a new thinking level and a lower price.",
+      "tagTextToImage": "Text to Image",
+      "tagImageEditing": "Image Editing",
+      "tagPartnerNode": "Partner Node",
+      "primaryCta": "RUN NANO BANANA 2.1",
+      "secondaryCta": "READ THE GUIDE"
+    },
+    "showcase": {
+      "photography": {
+        "heading": "Shot like it happened.",
+        "description": "Realistic light and detail for the scenes you've only pictured."
+      },
+      "design": {
+        "heading": "One idea, every style.",
+        "description": "Iterate your designs in any style you want."
+      },
+      "advertising": {
+        "heading": "From brief to campaign.",
+        "description": "Advertising for any industry, with crisp detail and type that reads."
+      }
+    },
+    "pricing": {
+      "banner": {
+        "title": "Start Comfy Cloud for free. Upgrade when you're ready.",
+        "subtitle": "5 free runs on real GPUs — no credit card required.",
+        "cta": "TRY FREE"
+      }
+    },
+    "faq": {
+      "heading": "Q&A"
+    },
+    "runOptions": {
+      "heading": "One engine, every way to run it",
+      "subtitle": "Build workflows in the browser today. Batch campaigns with the API, or connect image generation to the rest of your creative pipeline.",
+      "cta": "LEARN MORE"
+    },
+    "reviews": {
+      "heading": "4+ million Comfy creators say"
     }
   },
   "qwenImage21": {

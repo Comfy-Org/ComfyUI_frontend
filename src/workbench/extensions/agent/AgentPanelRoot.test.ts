@@ -1716,6 +1716,16 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
     expect(telemetry.trackAgentPaywallShown).not.toHaveBeenCalled()
   })
 
+  it('stays hidden before Agent consent is accepted', async () => {
+    Object.assign(useAgentConsentStore(), { accepted: false })
+    paywallHasFunds.value = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+
+    expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
+    expect(telemetry.trackAgentPaywallShown).not.toHaveBeenCalled()
+  })
+
   it('stays hidden on the legacy rail whose unloaded balance reads as false', async () => {
     paywallHasFunds.value = false
     paywallBilling.type = 'legacy'
