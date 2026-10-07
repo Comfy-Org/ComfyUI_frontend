@@ -22,6 +22,7 @@ export function createBillingCapabilities(
       can_reactivate: false,
       can_subscribe_self_serve: true,
       can_top_up: true,
+      can_revert_scheduled_change: false,
       ...overrides
     },
     rollout_defaults_applied: {
