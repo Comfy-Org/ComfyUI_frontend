@@ -143,7 +143,7 @@ describe(hasRecentSsoReentry, () => {
       expected: false
     }
   ])('$name reads $expected', ({ at, expected }) => {
-    sessionStorage.setItem(ATTEMPT_KEY, JSON.stringify(at))
+    markSsoReentry(at)
 
     expect(hasRecentSsoReentry(NOW)).toBe(expected)
   })
@@ -158,7 +158,7 @@ describe(hasRecentSsoReentry, () => {
   )
 
   it('reads false for an attempt in the future, so a clock moved back cannot wedge a tab', () => {
-    sessionStorage.setItem(ATTEMPT_KEY, JSON.stringify(NOW + 1))
+    markSsoReentry(NOW + 1)
 
     expect(hasRecentSsoReentry(NOW)).toBe(false)
   })
@@ -171,10 +171,11 @@ describe(hasRecentSsoReentry, () => {
 })
 
 describe(markSsoReentry, () => {
-  it('records the attempt and reports that it did', () => {
+  it('records the attempt at the time it was given', () => {
     expect(markSsoReentry(NOW)).toBe(true)
 
-    expect(sessionStorage.getItem(ATTEMPT_KEY)).toBe(String(NOW))
+    expect(hasRecentSsoReentry(NOW + ATTEMPT_WINDOW_MS - 1)).toBe(true)
+    expect(hasRecentSsoReentry(NOW + ATTEMPT_WINDOW_MS)).toBe(false)
   })
 
   it('reports false when the attempt could not be recorded', () => {

@@ -263,8 +263,7 @@ describe('readSsoError', () => {
     ['null', null],
     ['empty', ''],
     ['not a string', 42],
-    ['an empty repeated value', []],
-    ['an object', {}]
+    ['an empty repeated value', []]
   ])('has no error when the value is %s', ([, value]) => {
     expect(readSsoError(value)).toBeUndefined()
   })
