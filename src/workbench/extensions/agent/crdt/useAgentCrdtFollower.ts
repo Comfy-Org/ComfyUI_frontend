@@ -928,10 +928,10 @@ function startAgentCrdtFollower(
       workflowId === subscribedWorkflowId.value
     ) {
       updatesApplied.value = 0
-      confirmedDeletes.clear()
       pendingLiveNodeIds.clear()
       knownDocNodeIds = new Set()
       if (detail?.preserveCanvas !== true) {
+        confirmedDeletes.clear()
         adapter.clearForReset(workflowId, {
           source: 'agent-remote',
           actor: 'agent-lineage',

@@ -2026,6 +2026,32 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
+    it('keeps confirmed deletes across a canvas-preserving follower replacement', async () => {
+      const { unmount, enqueue } = mountWriter('wf-1')
+      const intent = adapterState.intent!
+      bridge().follower.doc.getMap = () => ({
+        toJSON: () => ({ '1': {} })
+      })
+
+      enqueue([deleteNode('1')])
+      await Promise.resolve()
+      ackSent(0)
+      expect([...intent.pendingDeletes('wf-1')]).toEqual(['1'])
+
+      dispatchFrame('follower_replaced', {
+        workflowId: 'wf-1',
+        preserveCanvas: true
+      })
+      expect([...intent.pendingDeletes('wf-1')]).toEqual(['1'])
+
+      dispatchFrame('follower_replaced', {
+        workflowId: 'wf-1',
+        preserveCanvas: false
+      })
+      expect([...intent.pendingDeletes('wf-1')]).toEqual([])
+      unmount()
+    })
+
     it('a refused resubscribe on return still settles the held batch undeliverable', async () => {
       const { unmount, isTargetActive, enqueue } = mountWriter('wf-1')
       enqueue([deleteNode('1')])
