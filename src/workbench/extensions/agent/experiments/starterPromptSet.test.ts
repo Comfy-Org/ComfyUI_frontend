@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import {
   authenticatedRemoteConfigState,
@@ -68,7 +69,8 @@ describe('useStarterPromptSet', () => {
     authenticatedRemoteConfigState.value = 'authenticated'
     remoteConfigRevision.value++
 
-    await vi.waitFor(() => expect(assignment.value).toBe('control'))
+    await nextTick()
+    expect(assignment.value).toBe('control')
     expect(
       useTelemetry()?.trackAgentStarterPromptExposure
     ).not.toHaveBeenCalled()

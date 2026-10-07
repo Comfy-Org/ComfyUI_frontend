@@ -71,7 +71,6 @@ export function useStarterPromptSet() {
   const assign = () => {
     const resolved = resolveAssignment()
     if (
-      surfaceRendered &&
       renderedSurfaceAssignment.value !== undefined &&
       renderedSurfaceAssignment.value !== resolved.assignment
     ) {
