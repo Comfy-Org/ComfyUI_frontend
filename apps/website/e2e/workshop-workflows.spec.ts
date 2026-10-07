@@ -35,9 +35,9 @@ test('workflow launch groups lead to the existing shared form', async ({
     page.getByRole('heading', { level: 1, name: 'Workflows' })
   ).toBeVisible()
   await expect(page.getByTestId('hub-back')).toHaveAttribute('href', '/hub/')
-  await expect(page.getByRole('navigation', { name: 'Breadcrumb' })).toHaveText(
-    /Hub\s*›\s*Workflows/
-  )
+  await expect(
+    page.getByRole('navigation', { name: 'Breadcrumb' }).getByRole('listitem')
+  ).toHaveText(['Hub', 'Workflows'])
   await expect(
     page.getByText('Open one, change any step, make it yours.')
   ).toBeVisible()

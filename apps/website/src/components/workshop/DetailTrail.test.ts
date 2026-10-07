@@ -18,7 +18,7 @@ function trail() {
   return {
     crumbs: within(crumbs)
       .getAllByRole('listitem')
-      .map((item) => item.textContent.replace('›', '').trim()),
+      .map((item) => item.textContent.trim()),
     links: within(crumbs)
       .getAllByRole('link')
       .map((link) => link.getAttribute('href')),

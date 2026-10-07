@@ -64,7 +64,7 @@ describe('ModelPage', () => {
     expect(
       within(crumbs)
         .getAllByRole('listitem')
-        .map((item) => item.textContent.replace('›', '').trim())
+        .map((item) => item.textContent.trim())
     ).toEqual(['Hub', 'Models', usedPage.model.name])
     expect(
       within(crumbs).getByRole('link', { name: 'Hub' }).getAttribute('href')
