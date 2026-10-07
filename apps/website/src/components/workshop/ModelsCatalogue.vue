@@ -69,11 +69,16 @@ const apps = computed(() =>
     (model): model is AppWorkshopModel => model.type === 'APP'
   )
 )
+const APP_TASKS = {
+  studio: 'studioTask',
+  reshoot: 'reshootTask',
+  openjutsu: 'openjutsuTask'
+} as const satisfies Record<AppWorkshopModel['appId'], string>
 const appCards = computed<readonly CatalogueApp[]>(() =>
   apps.value.map((app) => ({
     key: app.slug,
     name: app.name,
-    task: ac(app.appId === 'studio' ? 'studioTask' : 'reshootTask', locale),
+    task: ac(APP_TASKS[app.appId], locale),
     href: app.href,
     thumbnail: app.thumbnail
   }))

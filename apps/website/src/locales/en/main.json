@@ -5108,7 +5108,10 @@
       "prototype": "Prototype",
       "reshoot": "Re-shoot a video",
       "reshootSummary": "Aim a new camera at your clip and generate the scene from that angle.",
-      "reshootMeta": "Video · MiniMax H3"
+      "reshootMeta": "Video · MiniMax H3",
+      "openjutsu": "Openjutsu",
+      "openjutsuSummary": "Swap a character in your video for one from a single image, and keep the scene and its sound.",
+      "openjutsuMeta": "Video · MiniMax H3"
     },
     "stage": {
       "longWait": "Still going. Some models take about a minute. Nothing is queued; yours already started.",
@@ -5567,5 +5570,79 @@
     "noWebgl": "This preview needs WebGL2, which this browser does not offer.",
     "play": "Play",
     "pause": "Pause"
+  },
+  "openjutsu": {
+    "title": "Openjutsu",
+    "lead": "Swap a character in your video for one from a single image. The scene, the camera and the sound stay as they were.",
+    "credit": "Built on MiniMax H3 and the Akatz Labs Character Swap LoRA",
+    "panel": "Swap settings",
+    "closed": "Openjutsu is not open yet",
+    "unavailable": "Openjutsu is not available right now. Try again later.",
+    "signIn": "Sign in to run a swap.",
+    "video": {
+      "heading": "Video",
+      "drop": "Add the video to edit",
+      "hint": "5–15 seconds. One continuous shot works best.",
+      "detail": "{seconds} s · swapping {used} s",
+      "length": "{name} is {seconds} s long. Use a video between 5 and 15 seconds.",
+      "unreadable": "{name} could not be read as a video. Try an MP4."
+    },
+    "character": {
+      "heading": "New character",
+      "drop": "Add a character image",
+      "hint": "One image: a clear full view or a character sheet.",
+      "detail": "Replaces the person you name below"
+    },
+    "target": {
+      "heading": "Who to replace",
+      "placeholder": "e.g. the man in the purple shirt",
+      "hint": "Describe one person so they cannot be confused with anyone else in the shot.",
+      "help": "The swap follows this description, not a click on the picture. Say what sets the person apart: clothing, position, hair."
+    },
+    "trim": {
+      "label": "Part to swap",
+      "readout": "{from} – {to} s · {seconds} s",
+      "start": "Start of the part to swap",
+      "length": "Length of the part to swap",
+      "seconds": "{seconds} s",
+      "help": "Drag to move it. Pull the right edge to lengthen it.",
+      "long": "Longer parts can drift in framing and timing. Around 5 seconds is steadiest."
+    },
+    "needs": {
+      "video": "Add a video to start",
+      "character": "Add a character image",
+      "target": "Say who to replace"
+    },
+    "generate": {
+      "note": "The original sound is kept on the result.",
+      "busy": "Swapping. You can set up the next take meanwhile."
+    },
+    "phase": {
+      "uploading": "Uploading your files",
+      "starting": "Starting a server",
+      "queued": "Waiting for a server",
+      "running": "Swapping the character",
+      "fetching": "Fetching the result",
+      "note": "This can take several minutes. The first run after a quiet spell also loads the model."
+    },
+    "take": {
+      "name": "Take {n}",
+      "source": "Source video",
+      "reuse": "Use these settings",
+      "retry": "Back to settings",
+      "detail": "Replaced {target}",
+      "audio": "original sound"
+    },
+    "empty": {
+      "title": "Your swapped video plays here",
+      "hint": "Add a 5 to 15 second video and one character image."
+    },
+    "error": {
+      "swap": "The swap did not finish. Try again, or try a shorter part."
+    },
+    "sample": {
+      "banner": "Sample mode: this page is answering itself. No model runs and nothing is charged.",
+      "result": "Sample result: this is your own clip handed back unchanged, to show where a real swap will appear."
+    }
   }
 }

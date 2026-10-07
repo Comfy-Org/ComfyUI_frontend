@@ -4501,7 +4501,10 @@
       "prototype": "原型",
       "reshoot": "重拍视频",
       "reshootSummary": "为你的片段重新架设机位，从新的角度生成这一场景。",
-      "reshootMeta": "视频 · MiniMax H3"
+      "reshootMeta": "视频 · MiniMax H3",
+      "openjutsu": "Openjutsu",
+      "openjutsuSummary": "用一张图片替换视频中的角色，并保留场景和声音。",
+      "openjutsuMeta": "视频 · MiniMax H3"
     },
     "stage": {
       "longWait": "仍在进行。部分模型需要约一分钟。没有排队，你的任务已经开始。",
@@ -4960,5 +4963,79 @@
     "noWebgl": "此预览需要 WebGL2，当前浏览器不支持。",
     "play": "播放",
     "pause": "暂停"
+  },
+  "openjutsu": {
+    "title": "Openjutsu",
+    "lead": "用一张图片替换视频中的角色。场景、镜头和声音保持不变。",
+    "credit": "基于 MiniMax H3 与 Akatz Labs 的 Character Swap LoRA 构建",
+    "panel": "替换设置",
+    "closed": "Openjutsu 尚未开放",
+    "unavailable": "Openjutsu 暂时不可用，请稍后再试。",
+    "signIn": "登录后即可开始替换。",
+    "video": {
+      "heading": "视频",
+      "drop": "添加要编辑的视频",
+      "hint": "5–15 秒，单个连续镜头效果最好。",
+      "detail": "{seconds} 秒 · 替换其中 {used} 秒",
+      "length": "{name} 时长为 {seconds} 秒。请使用 5 到 15 秒的视频。",
+      "unreadable": "无法将 {name} 读取为视频。请尝试 MP4。"
+    },
+    "character": {
+      "heading": "新角色",
+      "drop": "添加角色图片",
+      "hint": "一张图片：清晰的全身图或角色设定图。",
+      "detail": "替换你在下方指定的人物"
+    },
+    "target": {
+      "heading": "替换谁",
+      "placeholder": "例如：穿紫色衬衫的男人",
+      "hint": "只描述一个人，确保不会与画面中的其他人混淆。",
+      "help": "替换依据这段描述，而不是在画面上点选。请说明此人的特征：衣着、位置、发型。"
+    },
+    "trim": {
+      "label": "要替换的片段",
+      "readout": "{from} – {to} 秒 · {seconds} 秒",
+      "start": "替换片段的起点",
+      "length": "替换片段的长度",
+      "seconds": "{seconds} 秒",
+      "help": "拖动可移动片段，拉动右侧边缘可延长。",
+      "long": "片段越长，构图和节奏越容易偏移。5 秒左右最稳定。"
+    },
+    "needs": {
+      "video": "先添加一段视频",
+      "character": "添加一张角色图片",
+      "target": "说明要替换谁"
+    },
+    "generate": {
+      "note": "结果会保留原始声音。",
+      "busy": "正在替换。你可以同时准备下一次生成。"
+    },
+    "phase": {
+      "uploading": "正在上传文件",
+      "starting": "正在启动服务器",
+      "queued": "正在等待服务器",
+      "running": "正在替换角色",
+      "fetching": "正在获取结果",
+      "note": "可能需要几分钟。闲置一段时间后的首次运行还需要加载模型。"
+    },
+    "take": {
+      "name": "第 {n} 次",
+      "source": "源视频",
+      "reuse": "使用这些设置",
+      "retry": "返回设置",
+      "detail": "已替换{target}",
+      "audio": "原始声音"
+    },
+    "empty": {
+      "title": "替换后的视频将在这里播放",
+      "hint": "添加一段 5 到 15 秒的视频和一张角色图片。"
+    },
+    "error": {
+      "swap": "替换未完成。请重试，或换一个更短的片段。"
+    },
+    "sample": {
+      "banner": "示例模式：页面自行应答，不会运行模型，也不会扣费。",
+      "result": "示例结果：这是原样返回的你自己的视频，用来展示真实替换结果出现的位置。"
+    }
   }
 }

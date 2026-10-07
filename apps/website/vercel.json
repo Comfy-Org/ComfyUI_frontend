@@ -4773,6 +4773,16 @@
       "permanent": true
     },
     {
+      "source": "/models/apps/openjutsu",
+      "destination": "/hub/apps/openjutsu/",
+      "permanent": true
+    },
+    {
+      "source": "/models/apps/openjutsu/",
+      "destination": "/hub/apps/openjutsu/",
+      "permanent": true
+    },
+    {
       "source": "/models/apps/reshoot",
       "destination": "/hub/apps/reshoot/",
       "permanent": true

@@ -2,6 +2,7 @@
 import type { GetStaticPaths } from 'astro'
 import BaseLayout from '@/layouts/BaseLayout.astro'
 import CinematicStudioPage from '@/components/workshop/cinematic-studio/CinematicStudioPage.vue'
+import OpenjutsuPage from '@/components/workshop/openjutsu/OpenjutsuPage.vue'
 import { getRouterWorkshopModelDetail } from '@/config/workshop-router-content'
 import {
   runnableCinematicModels,
@@ -39,12 +40,16 @@ if (!models.length) throw new Error('Cinematic Studio has no runnable models')
   ogImage={modelOgImage(model)}
   noindex
 >
-  <CinematicStudioPage
-    apps={appModels}
-    models={models}
-    initialApp={app}
-    client:load
-  />
+  {app === 'openjutsu' ? (
+    <OpenjutsuPage model={model} client:load />
+  ) : (
+    <CinematicStudioPage
+      apps={appModels}
+      models={models}
+      initialApp={app}
+      client:load
+    />
+  )}
   <noscript>
     <p class="p-8 text-center">
       {Astro.locals.t('cinematic.unavailable.title')}

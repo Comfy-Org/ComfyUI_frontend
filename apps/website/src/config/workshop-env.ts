@@ -124,3 +124,16 @@ const RESHOOT_PROXY_IDS: Record<WorkshopCloudEnv, string | undefined> = {
 }
 
 export const WORKSHOP_RESHOOT_PROXY_ID = RESHOOT_PROXY_IDS[WORKSHOP_CLOUD_ENV]
+
+/**
+ * Openjutsu's app proxy id in each family's comfy-api catalog. None exists
+ * yet, so the page reports itself unavailable outside `astro dev`.
+ */
+const OPENJUTSU_PROXY_IDS: Record<WorkshopCloudEnv, string | undefined> = {
+  prod: undefined,
+  staging: undefined,
+  test: undefined
+}
+
+export const WORKSHOP_OPENJUTSU_PROXY_ID =
+  OPENJUTSU_PROXY_IDS[WORKSHOP_CLOUD_ENV]

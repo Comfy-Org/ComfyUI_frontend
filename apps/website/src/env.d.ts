@@ -33,6 +33,10 @@ declare global {
     readonly PUBLIC_WORKSHOP_SAVE_ASSETS?: string
     /** `astro dev` only: the local CrossView dev proxy, e.g. http://127.0.0.1:4329. */
     readonly PUBLIC_CROSSVIEW_PROXY?: string
+    /** `astro dev` only: '1' answers Openjutsu from the page itself, with no backend. */
+    readonly PUBLIC_OPENJUTSU_SAMPLE?: string
+    /** `astro dev` only: a local dev proxy in front of Openjutsu's deployment. */
+    readonly PUBLIC_OPENJUTSU_PROXY?: string
     /** Optional Turnstile mode override: off, shadow, or enforce. */
     readonly PUBLIC_WORKSHOP_TURNSTILE_MODE?: string
     readonly PUBLIC_POSTHOG_KEY?: string

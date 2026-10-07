@@ -1780,7 +1780,7 @@ describe('CinematicStudio', () => {
       expect(document.title).toBe('Re-shoot a video - Comfy')
     })
 
-    it('lists only Cinematic Studio and Re-shoot a video in the Hub apps tab', async () => {
+    it('lists only the apps that open in the Hub apps tab', async () => {
       window.history.replaceState(
         null,
         '',
@@ -1791,14 +1791,17 @@ describe('CinematicStudio', () => {
       const tab = await screen.findByRole('button', { name: 'Apps' })
       expect(tab).toHaveAttribute('aria-pressed', 'true')
       const apps = screen.getAllByRole('listitem')
-      expect(apps, 'Apps that do not open yet stay off the Hub').toHaveLength(2)
-      const [firstApp, secondApp] = apps
+      expect(apps, 'Apps that do not open yet stay off the Hub').toHaveLength(3)
+      const [firstApp, secondApp, thirdApp] = apps
       expect(
         within(firstApp).getByRole('link', { name: 'Cinematic Studio' })
       ).toHaveAttribute('href', '/hub/apps/cinematic-studio/')
       expect(
         within(secondApp).getByRole('link', { name: 'Re-shoot a video' })
       ).toHaveAttribute('href', '/hub/apps/reshoot/')
+      expect(
+        within(thirdApp).getByRole('link', { name: 'Openjutsu' })
+      ).toHaveAttribute('href', '/hub/apps/openjutsu/')
     })
 
     it('runs a shot from the side panel on the model picked there', async () => {
