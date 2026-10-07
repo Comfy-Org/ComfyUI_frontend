@@ -90,7 +90,7 @@ export function useNodePointerInteractions(
     (activePress: Press, event: PointerEvent) => void
   > = {
     click: (activePress) => selectNode(activePress),
-    doubleClick: () => {},
+    doubleClick: (activePress) => selectNode(activePress),
     movePress: () => {},
     startDrag: startNodeDrag,
     moveDrag: (activePress, event) => {
@@ -187,7 +187,7 @@ export function useNodePointerInteractions(
       {
         type: 'up',
         position: { x: event.clientX, y: event.clientY },
-        acceptsDoubleClick: true
+        acceptsDoubleClick: false
       },
       event
     )

@@ -88,7 +88,8 @@ the interpretation of a gesture, and both renderers feed it.
    timestamp, the `GesturePolicy`, the `PointerTarget`, the button, and the
    `InteractionPolicy`. `move` and `up` carry the position and the modifiers.
    `up` also carries `acceptsDoubleClick`, which is true when the press has a
-   double-click action. `move` and `up` may carry a hover or drop target that
+   double-click action. Vue nodes have none and pass `false`, so a quick
+   second modifier click still toggles selection. `move` and `up` may carry a hover or drop target that
    the adapter resolved for link and reroute drags. The press target never
    changes after `down`. The reducer never touches a store, the DOM, a canvas
    instance, or the clock.

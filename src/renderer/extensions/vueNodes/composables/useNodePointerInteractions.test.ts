@@ -209,11 +209,11 @@ describe('useNodePointerInteractions', () => {
   })
 
   it.for([
-    { name: 'plain', modifiers: {} },
-    { name: 'ctrl', modifiers: { ctrlKey: true } }
+    { name: 'plain', modifiers: {}, selected: ['First'] },
+    { name: 'ctrl', modifiers: { ctrlKey: true }, selected: ['Second'] }
   ])(
-    'a $name second click inside the double-click window keeps the selection',
-    async ({ modifiers }) => {
+    'a $name second click inside the double-click window is a click',
+    async ({ modifiers, selected }) => {
       const { canvas, first, second } = await setup()
       const node = mountNode(createNodeState({ id: first.id }))
       canvas.select(second)
@@ -223,7 +223,7 @@ describe('useNodePointerInteractions', () => {
       node.press(10, 10, { ...modifiers, timeStamp: 100 })
       node.release(10, 10, modifiers)
 
-      expect(selectedTitles(canvas)).toEqual(['First', 'Second'])
+      expect(selectedTitles(canvas)).toEqual(selected)
     }
   )
 
