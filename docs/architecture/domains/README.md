@@ -13,7 +13,7 @@ pnpm architecture:check
 pnpm architecture:update
 pnpm architecture:report
 pnpm architecture:accept-baseline
-pnpm test:unit scripts/architecture/check.test.ts
+pnpm test:unit tools/architecture
 ```
 
 `architecture:check` parses TypeScript imports and the script blocks of Vue
