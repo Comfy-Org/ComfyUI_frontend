@@ -69,7 +69,6 @@ beforeEach(() => {
   vi.mocked(useToast().info).mockImplementation(toastAdd)
   vi.mocked(useToast().warning).mockImplementation(toastAdd)
   vi.mocked(useToast().loading).mockImplementation(toastAdd)
-  vi.mocked(useToast().custom).mockImplementation(toastAdd)
 })
 
 vi.mock<unknown>(

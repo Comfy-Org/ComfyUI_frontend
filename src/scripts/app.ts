@@ -2,7 +2,6 @@ import { useEventListener, useResizeObserver } from '@vueuse/core'
 import _ from 'es-toolkit/compat'
 import { reactive, unref, shallowRef } from 'vue'
 
-import RerouteMigrationToast from '@/components/toast/RerouteMigrationToast.vue'
 import { useToast } from '@/components/ui/toast/toastStore'
 import type { ToastId } from '@/types/toastId'
 import { partnerRunGateBlocksAutoQueue } from '@/composables/billing/usePartnerNodesRunGate'
@@ -1395,18 +1394,26 @@ export class ComfyApp {
         findLegacyRerouteNodes(graphData).length &&
         noNativeReroutes(graphData)
       ) {
-        useToast().custom(RerouteMigrationToast, {
-          onMigrate: async () => {
-            await this.loadGraphData(
-              migrateLegacyRerouteNodes(
-                this.rootGraph.serialize() as unknown as WorkflowJSON04
-              ),
-              false,
-              false,
-              useWorkflowStore().activeWorkflow
-            )
+        const toast = useToast()
+        const migrationToastId = toast.info(
+          t('toastMessages.migrateToLitegraphReroute'),
+          {
+            action: {
+              label: t('g.migrate'),
+              onClick: async () => {
+                await this.loadGraphData(
+                  migrateLegacyRerouteNodes(
+                    this.rootGraph.serialize() as unknown as WorkflowJSON04
+                  ),
+                  false,
+                  false,
+                  useWorkflowStore().activeWorkflow
+                )
+                toast.dismiss(migrationToastId)
+              }
+            }
           }
-        })
+        )
       }
 
       useSubgraphService().loadSubgraphs(graphData)

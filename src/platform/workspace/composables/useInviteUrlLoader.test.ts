@@ -9,7 +9,7 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { WorkspaceApiError } from '../api/workspaceApi'
 import { useTeamWorkspaceStore } from '../stores/teamWorkspaceStore'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp, defineComponent } from 'vue'
 import type { App } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -78,13 +78,15 @@ function useInviteUrlLoader(): ReturnType<typeof createInviteUrlLoader> {
         en: {
           workspace: {
             inviteAccepted: 'Invite Accepted',
-            addedToWorkspace: 'You have been added to {workspaceName}',
+            addedToWorkspace: 'You have been added to:',
+            viewWorkspace: 'View workspace',
             inviteFailed: 'Failed to Accept Invite',
             inviteSsoUnavailable: 'Ask your admin to add you',
             inviteSsoUnavailableDetail:
               'SSO accounts cannot accept invite links',
             inviteDirectoryManaged: 'Admin manages membership',
-            inviteDirectoryManagedDetail: 'Ask your organization admin'
+            inviteDirectoryManagedDetail: 'Ask your organization admin',
+            switchFailed: 'Failed to switch workspace'
           },
           g: { unknownError: 'Unknown error' }
         }
@@ -171,20 +173,55 @@ describe('useInviteUrlLoader', () => {
       expect(useTeamWorkspaceStore().acceptInvite).toHaveBeenCalledWith(
         'valid-token'
       )
-      expect(useToast().toasts).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            kind: 'custom',
-            props: {
-              title: 'Invite Accepted',
-              text: 'You have been added to Test Workspace',
-              workspaceId: 'ws-123',
-              workspaceName: 'Test Workspace'
-            }
-          })
-        ])
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        'success',
+        'Invite Accepted',
+        expect.objectContaining({
+          description: 'You have been added to: Test Workspace',
+          action: expect.objectContaining({ label: 'View workspace' })
+        })
       )
     })
+
+    it.for([
+      {
+        name: 'dismisses the toast once the switch succeeds',
+        switchWorkspace: () => Promise.resolve(),
+        dismissals: 1,
+        errors: []
+      },
+      {
+        name: 'keeps the toast and reports a failed switch',
+        switchWorkspace: () => Promise.reject(new Error('switch failed')),
+        dismissals: 0,
+        errors: [['error', 'Failed to switch workspace', { duration: 5000 }]]
+      }
+    ])(
+      'View workspace $name',
+      async ({ switchWorkspace, dismissals, errors }) => {
+        mockRouteQuery.value = { invite: 'valid-token' }
+        vi.mocked(useTeamWorkspaceStore().acceptInvite).mockResolvedValue({
+          workspaceId: 'ws-123',
+          workspaceName: 'Test Workspace'
+        })
+        vi.mocked(useTeamWorkspaceStore().switchWorkspace).mockImplementation(
+          switchWorkspace
+        )
+        await useInviteUrlLoader().loadInviteFromUrl()
+        const [, , options] = mockToastAdd.mock.calls.at(-1) ?? []
+        assert(options?.action)
+
+        await options.action.onClick()
+
+        expect(useTeamWorkspaceStore().switchWorkspace).toHaveBeenCalledWith(
+          'ws-123'
+        )
+        expect(useToast().dismiss).toHaveBeenCalledTimes(dismissals)
+        expect(
+          mockToastAdd.mock.calls.filter(([kind]) => kind === 'error')
+        ).toEqual(errors)
+      }
+    )
 
     it('shows the invalid-link dialog instead of a toast on 404', async () => {
       mockRouteQuery.value = { invite: 'dead-token' }

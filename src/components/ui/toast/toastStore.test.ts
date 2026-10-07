@@ -18,8 +18,7 @@ describe('useToast', () => {
         kind: 'error',
         title: 'Save failed',
         description: 'Disk is full',
-        duration: Number.POSITIVE_INFINITY,
-        role: 'alert'
+        duration: Number.POSITIVE_INFINITY
       })
     ])
 
@@ -77,13 +76,13 @@ describe('useToast', () => {
   it('keeps docked toasts when dismissing all notifications', () => {
     const toast = useToast()
     const panel = { template: '<div>Downloads</div>' }
-    const dockedId = toast.custom(panel, {}, { placement: 'dock' })
+    const dockedId = toast.dock(panel)
     toast.info('Saved')
 
     toast.dismissAll()
 
     expect(toast.toasts).toEqual([
-      expect.objectContaining({ id: dockedId, placement: 'dock' })
+      expect.objectContaining({ id: dockedId, kind: 'dock' })
     ])
   })
 
@@ -92,15 +91,9 @@ describe('useToast', () => {
     const toast = useToast()
     selection.isActive = true
 
-    toast.custom(
-      { template: '<div>Downloads</div>' },
-      {},
-      { placement: 'dock' }
-    )
+    toast.dock({ template: '<div>Downloads</div>' })
 
-    expect(toast.toasts).toEqual([
-      expect.objectContaining({ placement: 'dock' })
-    ])
+    expect(toast.toasts).toEqual([expect.objectContaining({ kind: 'dock' })])
   })
 
   it('accepts only minted toast ids', () => {

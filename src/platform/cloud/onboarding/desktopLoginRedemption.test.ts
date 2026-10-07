@@ -40,9 +40,6 @@ beforeEach(() => {
   vi.mocked(useToast().loading).mockImplementation((...args: unknown[]) =>
     mockToastAdd('loading', ...args)
   )
-  vi.mocked(useToast().custom).mockImplementation((...args: unknown[]) =>
-    mockToastAdd('custom', ...args)
-  )
 })
 
 const mockUserGetIdToken = vi.hoisted(() => vi.fn())

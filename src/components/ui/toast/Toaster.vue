@@ -1,17 +1,17 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, shallowReactive } from 'vue'
-import type { ComponentPublicInstance } from 'vue'
+import { ToastProvider } from 'reka-ui'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
 import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
+import Button from '@/components/ui/button/Button.vue'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import ToastClose from './ToastClose.vue'
 import ToastDescription from './ToastDescription.vue'
-import ToastProvider from './ToastProvider.vue'
 import ToastRoot from './ToastRoot.vue'
 import ToastTitle from './ToastTitle.vue'
 import ToastViewport from './ToastViewport.vue'
@@ -31,27 +31,11 @@ const latestToastId = computed(() => stackedToasts.value.at(-1)?.id)
 const latestDockedToastId = computed(() => dockedToasts.value.at(-1)?.id)
 const { t } = useI18n()
 const providerLabel = computed(() => t('notifications.label'))
-const customToastText = shallowReactive(new Map<ToastId, string>())
-
-function rememberCustomToastText(
-  id: ToastId,
-  element: Element | ComponentPublicInstance | null
-) {
-  if (element instanceof HTMLElement) {
-    customToastText.set(id, element.textContent?.trim() ?? '')
-  } else {
-    customToastText.delete(id)
-  }
-}
-
 const announcements = computed(() =>
   stackedToasts.value.map((message) => ({
     id: message.id,
-    assertive: message.role === 'alert',
-    text:
-      message.kind === 'custom'
-        ? (customToastText.get(message.id) ?? '')
-        : [message.title, message.description].filter(Boolean).join('. ')
+    assertive: message.kind === 'error' || message.kind === 'warning',
+    text: [message.title, message.description].filter(Boolean).join('. ')
   }))
 )
 const politeAnnouncements = computed(() =>
@@ -111,29 +95,25 @@ const icons = {
         @escape-key-down="preserveToastOnEscape(message.id)"
         @update:open="updateToastOpen(message.id, $event)"
       >
-        <div
-          v-if="message.kind === 'custom'"
-          :ref="(element) => rememberCustomToastText(message.id, element)"
-          class="contents"
-        >
-          <component
-            :is="message.component"
-            v-bind="message.props"
-            :toast-id="message.id"
-          />
+        <i
+          :class="cn(icons[message.kind], 'mt-0.5 size-5 shrink-0')"
+          aria-hidden="true"
+        />
+        <div class="min-w-0 flex-1">
+          <ToastTitle>{{ message.title }}</ToastTitle>
+          <ToastDescription v-if="message.description">
+            {{ message.description }}
+          </ToastDescription>
         </div>
-        <template v-else>
-          <i
-            :class="cn(icons[message.kind], 'mt-0.5 size-5 shrink-0')"
-            aria-hidden="true"
-          />
-          <div class="min-w-0 flex-1">
-            <ToastTitle>{{ message.title }}</ToastTitle>
-            <ToastDescription v-if="message.description">
-              {{ message.description }}
-            </ToastDescription>
-          </div>
-        </template>
+        <Button
+          v-if="message.action"
+          class="shrink-0 self-center"
+          size="md"
+          variant="inverted"
+          @click="message.action.onClick()"
+        >
+          {{ message.action.label }}
+        </Button>
         <ToastClose v-if="message.closable" data-testid="toast-close" />
       </ToastRoot>
     </div>
@@ -157,8 +137,6 @@ const icons = {
       :is="message.component"
       v-for="message in dockedToasts"
       :key="message.id"
-      v-bind="message.props"
-      :toast-id="message.id"
     />
   </TransitionGroup>
 </template>

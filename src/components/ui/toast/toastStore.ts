@@ -1,58 +1,47 @@
 import { defineStore } from 'pinia'
 import { markRaw, ref, watch } from 'vue'
 import type { Component } from 'vue'
-import type { ComponentProps } from 'vue-component-type-helpers'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { toToastId } from '@/types/toastId'
 import type { ToastId } from '@/types/toastId'
 
-type ToastRole = 'alert' | 'status'
 type ToastKind = 'success' | 'error' | 'info' | 'warning' | 'loading'
 
+interface ToastAction {
+  label: string
+  onClick: () => unknown
+}
+
 export interface ToastOptions {
+  action?: ToastAction
   closable?: boolean
   description?: string
   duration?: number
 }
 
-type ToastPlacement = 'stack' | 'dock'
-
-interface CustomToastOptions {
-  closable?: boolean
-  duration?: number
-  placement?: ToastPlacement
-  role?: ToastRole
-}
-
-interface ToastBase {
+interface StandardToast {
   closable: boolean
   duration: number
   id: ToastId
-  role: ToastRole
-}
-
-interface StandardToast extends ToastBase {
   kind: ToastKind
   title: string
+  action?: ToastAction
   description?: string
 }
 
-interface CustomToast extends ToastBase {
+interface DockedToast {
   component: Component
-  kind: 'custom'
-  placement: ToastPlacement
-  props?: Record<string, unknown>
+  id: ToastId
+  kind: 'dock'
 }
 
-type Toast = StandardToast | CustomToast
+type Toast = StandardToast | DockedToast
 
 const PERSISTENT = Number.POSITIVE_INFINITY
 
-export function isDocked(
-  toast: Toast
-): toast is CustomToast & { placement: 'dock' } {
-  return toast.kind === 'custom' && toast.placement === 'dock'
+export function isDocked(toast: Toast): toast is DockedToast {
+  return toast.kind === 'dock'
 }
 
 export const useToast = defineStore('toast', () => {
@@ -82,13 +71,13 @@ export const useToast = defineStore('toast', () => {
   function add(kind: ToastKind, title: string, options: ToastOptions = {}) {
     const id = toToastId(nextId++)
     enqueue({
-      id,
-      kind,
-      title,
+      action: options.action,
+      closable: options.closable ?? true,
       description: options.description,
       duration: options.duration ?? PERSISTENT,
-      closable: options.closable ?? true,
-      role: kind === 'error' || kind === 'warning' ? 'alert' : 'status'
+      id,
+      kind,
+      title
     })
     return id
   }
@@ -113,22 +102,9 @@ export const useToast = defineStore('toast', () => {
     return add('loading', title, options)
   }
 
-  function custom<C extends Component>(
-    component: C,
-    props: Omit<ComponentProps<C>, 'toastId'>,
-    options: CustomToastOptions = {}
-  ) {
+  function dock(component: Component) {
     const id = toToastId(nextId++)
-    enqueue({
-      id,
-      kind: 'custom',
-      component: markRaw(component),
-      props,
-      duration: options.duration ?? PERSISTENT,
-      closable: options.closable ?? true,
-      role: options.role ?? 'status',
-      placement: options.placement ?? 'stack'
-    })
+    enqueue({ component: markRaw(component), id, kind: 'dock' })
     return id
   }
 
@@ -149,7 +125,7 @@ export const useToast = defineStore('toast', () => {
     info,
     warning,
     loading,
-    custom,
+    dock,
     dismiss,
     dismissAll
   }

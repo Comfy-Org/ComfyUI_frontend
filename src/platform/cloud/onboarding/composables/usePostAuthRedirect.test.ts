@@ -34,7 +34,6 @@ beforeEach(() => {
   vi.mocked(useToast().info).mockImplementation(toasts.info)
   vi.mocked(useToast().warning).mockImplementation(toasts.warning)
   vi.mocked(useToast().loading).mockImplementation(toasts.loading)
-  vi.mocked(useToast().custom).mockImplementation(toasts.custom)
 })
 
 const DEFAULT_REDIRECT = { name: 'cloud-user-check' }

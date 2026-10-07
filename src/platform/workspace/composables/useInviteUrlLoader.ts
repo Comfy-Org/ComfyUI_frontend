@@ -3,7 +3,6 @@ import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import InviteAcceptedToast from '@/platform/workspace/components/toasts/InviteAcceptedToast.vue'
 import {
   clearPreservedQuery,
   hydratePreservedQuery,
@@ -17,6 +16,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { WorkspaceApiError } from '../api/workspaceApi'
 import { MEMBERSHIP_MANAGED_BY_DIRECTORY } from '../api/workspaceApiError'
 import { useTeamWorkspaceStore } from '../stores/teamWorkspaceStore'
+import { useWorkspaceSwitch } from './useWorkspaceSwitch'
 
 function isDirectoryManagedRefusal(error: unknown): boolean {
   return (
@@ -42,6 +42,7 @@ export function useInviteUrlLoader() {
   const router = useRouter()
   const { t } = useI18n()
   const toast = useToast()
+  const { switchWorkspace } = useWorkspaceSwitch()
   const dialogService = useDialogService()
   const workspaceStore = useTeamWorkspaceStore()
   const authStore = useAuthStore()
@@ -105,20 +106,19 @@ export function useInviteUrlLoader() {
     try {
       const result = await workspaceStore.acceptInvite(inviteParam)
 
-      toast.custom(
-        InviteAcceptedToast,
-        {
-          title: t('workspace.inviteAccepted'),
-          text: t(
-            'workspace.addedToWorkspace',
-            { workspaceName: result.workspaceName },
-            { escapeParameter: false }
-          ),
-          workspaceName: result.workspaceName,
-          workspaceId: result.workspaceId
-        },
-        { role: 'status' }
-      )
+      const inviteToastId = toast.success(t('workspace.inviteAccepted'), {
+        description: `${t('workspace.addedToWorkspace')} ${result.workspaceName}`,
+        action: {
+          label: t('workspace.viewWorkspace'),
+          onClick: async () => {
+            if (await switchWorkspace(result.workspaceId)) {
+              toast.dismiss(inviteToastId)
+            } else {
+              toast.error(t('workspace.switchFailed'), { duration: 5000 })
+            }
+          }
+        }
+      })
     } catch (error) {
       await presentAcceptFailure(error, inviteParam)
     } finally {
