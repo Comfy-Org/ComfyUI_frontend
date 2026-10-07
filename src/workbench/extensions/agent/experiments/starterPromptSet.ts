@@ -13,8 +13,9 @@ import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 
 export const STARTER_PROMPT_SET_FLAG = 'agent-starter-prompt-set'
-export type StarterPromptAssignment =
+export type StarterPromptAssignment = NonNullable<
   GetFeaturesResponses[200][typeof STARTER_PROMPT_SET_FLAG]
+>
 const STARTER_PROMPT_ASSIGNMENTS: readonly StarterPromptAssignment[] = [
   'control',
   'test'
