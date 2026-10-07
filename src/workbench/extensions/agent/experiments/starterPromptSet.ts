@@ -15,9 +15,7 @@ const STARTER_PROMPT_ASSIGNMENTS = ['control', 'test'] as const
 export type StarterPromptAssignment =
   (typeof STARTER_PROMPT_ASSIGNMENTS)[number]
 
-function isAssignment(
-  value: unknown
-): value is StarterPromptAssignment {
+function isAssignment(value: unknown): value is StarterPromptAssignment {
   return STARTER_PROMPT_ASSIGNMENTS.some((assignment) => assignment === value)
 }
 
