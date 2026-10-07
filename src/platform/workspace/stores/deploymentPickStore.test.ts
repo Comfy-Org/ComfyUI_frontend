@@ -134,6 +134,27 @@ describe('useDeploymentPickStore', () => {
     expect(store.bootDeployment).toBeNull()
   })
 
+  it('stops saying the pick is gone once a later listing shows a picked deployment', async () => {
+    const onCloud = {
+      ...listing,
+      picked_deployment_id: undefined,
+      pick_source: undefined
+    }
+    mockWorkspaceApi.listDeployments
+      .mockResolvedValueOnce({ ...onCloud, gone_picked_deployment_id: 'dep-x' })
+      .mockResolvedValueOnce(onCloud)
+      .mockResolvedValue({ ...listing, picked_deployment_id: 'dep-1' })
+    const store = useDeploymentPickStore()
+    await store.loadOnce()
+    await store.load()
+    expect(store.goneDeployment).toBe('pick')
+
+    await store.load()
+
+    expect(store.pickedDeployment?.deployment_id).toBe('dep-1')
+    expect(store.goneDeployment).toBeNull()
+  })
+
   it.for([
     { now: 'the same deployment and Release', next: listing, change: null },
     {
