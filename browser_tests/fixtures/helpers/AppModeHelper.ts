@@ -13,64 +13,63 @@ import { BuilderStepsHelper } from '@e2e/fixtures/helpers/BuilderStepsHelper'
 import { MobileAppHelper } from '@e2e/fixtures/helpers/MobileAppHelper'
 
 export class AppModeHelper {
-  readonly footer: BuilderFooterHelper
-  readonly mobile: MobileAppHelper
-  readonly saveAs: BuilderSaveAsHelper
-  readonly select: BuilderSelectHelper
-  readonly outputHistory: OutputHistoryComponent
-  readonly steps: BuilderStepsHelper
-  readonly widgets: AppModeWidgetHelper
-  readonly workflowActions: WorkflowActionsDropdown
-
+  /** Arrange-step state shown when no outputs have been configured. */
+  public readonly arrangeNoOutputs: Locator
+  /** Arrange-step placeholder shown when outputs are configured but no run has happened. */
+  public readonly arrangePreview: Locator
+  /** "Switch to Outputs" button inside the arrange no-outputs state. */
+  public readonly arrangeSwitchToOutputsButton: Locator
+  /** The "Back to workflow" button on the welcome screen. */
+  public readonly backToWorkflowButton: Locator
+  /** The "Build app" button shown when nodes exist but no outputs. */
+  public readonly buildAppButton: Locator
+  /** The cancel button for an in-progress run in the output history. */
+  public readonly cancelRunButton: Locator
+  /** The main content area where outputs are displayed*/
+  public readonly centerPanel: Locator
   /** The "Connect an output" popover shown when saving without outputs. */
   public readonly connectOutputPopover: Locator
   /** The "Switch to Outputs" button inside the connect-output popover. */
   public readonly connectOutputSwitchButton: Locator
-  /** The empty-workflow dialog shown when entering builder on an empty graph. */
-  public readonly emptyWorkflowDialog: Locator
   /** "Back to workflow" button on the empty-workflow dialog. */
   public readonly emptyWorkflowBackButton: Locator
+  /** The empty-workflow dialog shown when entering builder on an empty graph. */
+  public readonly emptyWorkflowDialog: Locator
   /** "Load template" button on the empty-workflow dialog. */
   public readonly emptyWorkflowLoadTemplateButton: Locator
-  /** The empty-state placeholder shown when no outputs are selected. */
-  public readonly outputPlaceholder: Locator
+  /** The empty workflow message shown when no nodes exist. */
+  public readonly emptyWorkflowText: Locator
+  readonly footer: BuilderFooterHelper
+  /** The image picker popover (renders with role="dialog"). */
+  public readonly imagePickerPopover: Locator
   /** The linear-mode widget list container (visible in app mode). */
   public readonly linearWidgets: Locator
+  /** The "Load template" button shown when no nodes exist. */
+  public readonly loadTemplateButton: Locator
+  readonly mobile: MobileAppHelper
+  readonly outputHistory: OutputHistoryComponent
+  /** The empty-state placeholder shown when no outputs are selected. */
+  public readonly outputPlaceholder: Locator
+  public readonly rightPanelResizeHandle: Locator
+  /** The Run button in the app mode footer. */
+  public readonly runButton: Locator
+  readonly saveAs: BuilderSaveAsHelper
+  readonly select: BuilderSelectHelper
+  readonly steps: BuilderStepsHelper
   /** The validation warning shown above the app mode run button. */
   public readonly validationWarning: Locator
   /** The action that opens graph mode errors from the validation warning. */
   public readonly viewErrorsInGraphButton: Locator
-  /** The image picker popover (renders with role="dialog"). */
-  public readonly imagePickerPopover: Locator
-  /** The Run button in the app mode footer. */
-  public readonly runButton: Locator
-  /** The welcome screen shown when app mode has no outputs or no nodes. */
-  public readonly welcome: Locator
-  /** The empty workflow message shown when no nodes exist. */
-  public readonly emptyWorkflowText: Locator
-  /** The "Build app" button shown when nodes exist but no outputs. */
-  public readonly buildAppButton: Locator
-  /** The "Back to workflow" button on the welcome screen. */
-  public readonly backToWorkflowButton: Locator
-  /** The "Load template" button shown when no nodes exist. */
-  public readonly loadTemplateButton: Locator
-  /** The cancel button for an in-progress run in the output history. */
-  public readonly cancelRunButton: Locator
-  /** Arrange-step placeholder shown when outputs are configured but no run has happened. */
-  public readonly arrangePreview: Locator
-  /** Arrange-step state shown when no outputs have been configured. */
-  public readonly arrangeNoOutputs: Locator
-  /** "Switch to Outputs" button inside the arrange no-outputs state. */
-  public readonly arrangeSwitchToOutputsButton: Locator
-  /** The Vue Node switch notification popup shown on entering builder. */
-  public readonly vueNodeSwitchPopup: Locator
   /** The "Dismiss" button inside the Vue Node switch popup. */
   public readonly vueNodeSwitchDismissButton: Locator
   /** The "Don't show again" checkbox inside the Vue Node switch popup. */
   public readonly vueNodeSwitchDontShowAgainCheckbox: Locator
-  /** The main content area where outputs are displayed*/
-  public readonly centerPanel: Locator
-  public readonly rightPanelResizeHandle: Locator
+  /** The Vue Node switch notification popup shown on entering builder. */
+  public readonly vueNodeSwitchPopup: Locator
+  /** The welcome screen shown when app mode has no outputs or no nodes. */
+  public readonly welcome: Locator
+  readonly widgets: AppModeWidgetHelper
+  readonly workflowActions: WorkflowActionsDropdown
 
   constructor(private readonly comfyPage: ComfyPage) {
     this.mobile = new MobileAppHelper(comfyPage)
