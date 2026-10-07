@@ -534,7 +534,14 @@ export function demotePromotedHostInput(
 ): boolean {
   if (mutablePromotionParents([subgraphNode]).length === 0) return false
   const removed = removePromotedHostInput(subgraphNode, hostInput)
-  if (removed) refreshPromotedWidgetRendering([subgraphNode])
+  if (removed) {
+    refreshPromotedWidgetRendering([subgraphNode])
+  } else {
+    warnPromotionChange(
+      subgraphNode.rootGraph,
+      'agent.subgraphPromotionUnavailableDetail'
+    )
+  }
   return removed
 }
 

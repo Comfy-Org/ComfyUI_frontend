@@ -56,6 +56,7 @@ import {
   CANVAS_IMAGE_PREVIEW_WIDGET,
   autoExposeKnownPreviewNodes,
   createPromotedHostWidgetIdLookup,
+  demotePromotedHostInput,
   demoteWidget,
   getPromotableWidgets,
   hasUnpromotedWidgets,
@@ -806,6 +807,27 @@ describe('reorderSubgraphInputsByWidgetOrder', () => {
         { widgetId: widgetId('missing', toNodeId('node'), 'widget') }
       ])
     ).toBe(false)
+    expect(addToast).toHaveBeenCalledWith(
+      expect.objectContaining({
+        detail: expect.stringContaining('stale'),
+        severity: 'warn'
+      })
+    )
+  })
+
+  it('warns when a stale promoted host input cannot be removed', () => {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph)
+    const source = new LGraphNode('Source')
+    subgraph.add(source)
+    const input = source.addInput('first', 'STRING')
+    const sourceWidget = source.addWidget('text', 'first', '', () => {})
+    input.widget = { name: sourceWidget.name }
+    promoteValueWidgetViaSubgraphInput(host, source, sourceWidget)
+    host.inputs[0]._subgraphSlot = undefined
+    const addToast = vi.spyOn(useToastStore(), 'add')
+
+    expect(demotePromotedHostInput(host, host.inputs[0])).toBe(false)
     expect(addToast).toHaveBeenCalledWith(
       expect.objectContaining({
         detail: expect.stringContaining('stale'),
