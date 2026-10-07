@@ -1,5 +1,10 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useExtensionStore } from '@/stores/extensionStore'
+import { toNodeId } from '@/types/nodeId'
 
 import { toTurnId } from '../schemas/agentApiSchema'
 import type {
@@ -40,6 +45,7 @@ import type { ReportIdentifiers, ReportSources } from './crdtDebugReport'
 import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import type { DevEvent } from './devPanelLog'
 import { collectCrdtDebugReport } from './crdtDebugReport'
+import { collectMediaUiDiagnostics } from './mediaUiDiagnostics'
 
 const ALL_SOURCES: ReportSources = {
   serverLogs: true,
@@ -140,37 +146,29 @@ describe('collectCrdtDebugReport', () => {
   })
 
   it('includes privacy-safe media UI state without selected values or URLs', async () => {
+    const node = new LGraphNode('LoadImage')
+    node.id = toNodeId(7)
+    node.comfyClass = 'LoadImage'
+    node.widgets = [
+      fromPartial<IBaseWidget>({ name: 'image', value: 'selected-private.png' })
+    ]
+    const privateUrl = 'https://private.example/image.png'
     const report = await collectCrdtDebugReport({
       crdt: SNAPSHOT,
       events: [],
-      mediaUiDiagnostics: [
-        {
-          nodeId: '7',
-          nodeType: 'LoadImage',
-          mediaKinds: ['image'],
-          selectedImagePresent: true,
-          selectedAudioPresent: false,
-          outputImageCount: 1,
-          outputAudioCount: 0,
-          resolvedImageUrlCount: 1,
-          legacyImageCount: 0,
-          loadedLegacyImageCount: 0,
-          vueNodeCount: 1,
-          vueImageCount: 0,
-          vueAudioCount: 0,
-          audioUiRegistered: false,
-          audioElementConnected: false,
-          audioSourcePresent: false,
-          audioHiddenAsEmpty: false,
-          hideOutputImages: false
-        }
-      ]
+      mediaUiDiagnostics: collectMediaUiDiagnostics({
+        nodes: [node],
+        getNodeOutputs: () => undefined,
+        getNodeImageUrls: () => [privateUrl],
+        root: document
+      })
     })
 
     expect(report).toContain('- Media UI diagnostics: collected (1 nodes)')
     expect(report).toContain('## Media UI diagnostics')
     expect(report).toContain('"selectedImagePresent": true')
-    expect(report).not.toMatch(/selected\.png|https:\/\//)
+    expect(report).not.toContain('selected-private.png')
+    expect(report).not.toContain(privateUrl)
   })
 
   it('leads with an Identifiers block carrying every ID a backend engineer searches by', async () => {
