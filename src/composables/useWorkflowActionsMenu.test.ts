@@ -43,7 +43,7 @@ let mockAppModeStore: ReturnType<typeof useAppModeStore>
 
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
-vi.mock<unknown>(import('@/components/builder/useEnterBuilder'), () => {
+vi.mock(import('@/components/builder/useEnterBuilder'), () => {
   const enterBuilder = vi.fn()
   return { useEnterBuilder: () => ({ enterBuilder }) }
 })
