@@ -91,6 +91,8 @@
       "completeVerification": "Complete verification",
       "cancelPaymentAndRetry": "Cancel payment and try again",
       "cancelPaymentFailed": "We couldn't cancel this payment. Please try again.",
+      "cancelPaymentInFlight": "This payment is already processing and can't be canceled.",
+      "cancelPaymentNotCancelable": "This payment can no longer be canceled.",
       "parkedCheckoutDetail": "Your earlier checkout is still waiting for a payment method. Complete your payment to activate this plan.",
       "completePayment": "Complete your payment",
       "payAndSubscribe": "Pay and subscribe",

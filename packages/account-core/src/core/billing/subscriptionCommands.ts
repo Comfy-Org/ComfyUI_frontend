@@ -132,11 +132,7 @@ export type CancelRefusalCode = (typeof CANCEL_REFUSAL_SERVER_CODES)[number]
  */
 export type CancelOperationResult =
   | { readonly status: 'canceled' | 'cancel_requested' }
-  | {
-      readonly status: 'not_canceled'
-      readonly code: CancelRefusalCode
-      readonly serverMessage?: string
-    }
+  | { readonly status: 'not_canceled'; readonly code: CancelRefusalCode }
   | BillingFailure
 
 export type PaymentPortalResult =
@@ -547,12 +543,7 @@ export function createBillingCommands(
       )
       if (refusal === undefined) return response
       lifecycle.wake()
-      const { serverMessage } = response
-      return {
-        status: 'not_canceled',
-        code: refusal,
-        ...(serverMessage === undefined ? {} : { serverMessage })
-      }
+      return { status: 'not_canceled', code: refusal }
     }
     lifecycle.wake()
     return { status: response.value.data.status }

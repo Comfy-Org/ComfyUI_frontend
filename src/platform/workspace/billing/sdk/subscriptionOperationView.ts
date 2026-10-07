@@ -246,9 +246,15 @@ export function projectPaymentPortalResult(
   return { status: 'ok', value: result.value.url }
 }
 
+const CANCEL_REFUSAL_COPY = {
+  NOT_CANCELABLE: 'billingOperation.cancelPaymentNotCancelable',
+  PAYMENT_IN_FLIGHT: 'billingOperation.cancelPaymentInFlight'
+} as const
+
 /**
  * A cancel the server took is done: the lifecycle it woke re-reads the
- * operation and settles it. Anything else is the server's sentence, or ours.
+ * operation and settles it. Anything else reads as our own copy; the
+ * server's text stays diagnostic.
  */
 export function projectCancelOperationResult(
   result: CancelOperationResult
@@ -258,7 +264,11 @@ export function projectCancelOperationResult(
   return {
     status: 'error',
     error: new WorkspaceApiError(
-      result.serverMessage ?? t('billingOperation.cancelPaymentFailed'),
+      t(
+        result.status === 'not_canceled'
+          ? CANCEL_REFUSAL_COPY[result.code]
+          : 'billingOperation.cancelPaymentFailed'
+      ),
       'httpStatus' in result ? result.httpStatus : undefined,
       result.code
     )

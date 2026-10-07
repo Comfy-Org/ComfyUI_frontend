@@ -1025,12 +1025,12 @@ describe('CheckoutView', () => {
 
     it.for([
       {
-        answer: {
-          status: 'not_canceled',
-          code: 'PAYMENT_IN_FLIGHT',
-          serverMessage: 'This payment is already processing.'
-        },
-        shown: 'This payment is already processing.'
+        answer: { status: 'not_canceled', code: 'PAYMENT_IN_FLIGHT' },
+        shown: "This payment is already processing and can't be canceled."
+      },
+      {
+        answer: { status: 'not_canceled', code: 'NOT_CANCELABLE' },
+        shown: 'This payment can no longer be canceled.'
       },
       {
         answer: {
@@ -1038,10 +1038,10 @@ describe('CheckoutView', () => {
           code: 'REQUEST_FAILED',
           serverMessage: 'Billing is briefly unavailable.'
         },
-        shown: 'Billing is briefly unavailable.'
+        shown: "We couldn't cancel this payment. Please try again."
       }
     ] as const)(
-      "shows the server's sentence when the cancel fails ($answer.status)",
+      'shows our own copy, never the server text, when the cancel fails ($answer.code)',
       async ({ answer, shown }) => {
         await renderDeclinedPlanChange(true, { cancelOperation: answer })
 

@@ -326,16 +326,12 @@ describe('projectCancelOperationResult', () => {
 
   it.for([
     {
-      result: {
-        status: 'not_canceled',
-        code: 'PAYMENT_IN_FLIGHT',
-        serverMessage: 'This payment is already processing.'
-      },
-      message: 'This payment is already processing.'
+      result: { status: 'not_canceled', code: 'PAYMENT_IN_FLIGHT' },
+      message: "This payment is already processing and can't be canceled."
     },
     {
       result: { status: 'not_canceled', code: 'NOT_CANCELABLE' },
-      message: "We couldn't cancel this payment. Please try again."
+      message: 'This payment can no longer be canceled.'
     },
     {
       result: {
@@ -344,10 +340,10 @@ describe('projectCancelOperationResult', () => {
         httpStatus: 502,
         serverMessage: 'Billing is briefly unavailable.'
       },
-      message: 'Billing is briefly unavailable.'
+      message: "We couldn't cancel this payment. Please try again."
     }
   ] as const)(
-    "surfaces a cancel that did not happen with the server's sentence ($result.code)",
+    'surfaces a cancel that did not happen in our own copy, never the server text ($result.code)',
     ({ result, message }) => {
       const outcome = projectCancelOperationResult(result)
 

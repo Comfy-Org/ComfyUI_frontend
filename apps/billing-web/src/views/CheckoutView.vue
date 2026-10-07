@@ -362,6 +362,10 @@ const operationHoldsConfirm = computed(() => {
 const paymentCancelable = computed(
   () => pendingOperation.value?.cancelable === true
 )
+const CANCEL_REFUSAL_COPY = {
+  NOT_CANCELABLE: 'checkout.preview.cancelPaymentNotCancelable',
+  PAYMENT_IN_FLIGHT: 'checkout.preview.cancelPaymentInFlight'
+} as const
 const cancelingPayment = ref(false)
 const cancelPaymentError = ref<string>()
 
@@ -372,10 +376,10 @@ async function cancelPayment() {
   cancelPaymentError.value = undefined
   const answer = await commands.cancelOperation(operationId)
   cancelingPayment.value = false
-  if (answer.status === 'error') cancelPaymentError.value = refusal(answer)
+  if (answer.status === 'error')
+    cancelPaymentError.value = t('checkout.preview.cancelPaymentFailed')
   else if (answer.status === 'not_canceled')
-    cancelPaymentError.value =
-      answer.serverMessage ?? t('checkout.preview.cancelPaymentFailed')
+    cancelPaymentError.value = t(CANCEL_REFUSAL_COPY[answer.code])
 }
 
 /** The app keeps a closed progress toast closed until the operation's state changes. */
