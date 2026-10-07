@@ -342,8 +342,7 @@ test.describe('Cloud account switch', { tag: '@cloud' }, () => {
       await expect(
         popover.root.getByText(ACCOUNT_B.email, { exact: true })
       ).toBeVisible()
-      await page.keyboard.press('Escape')
-      await expect(popover.root).toBeHidden()
+      await popover.close()
       await expect
         .poll(() => workspaceMintOwners, { timeout: 15_000 })
         .toContain(ACCOUNT_B.id)
