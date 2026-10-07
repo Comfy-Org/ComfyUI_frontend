@@ -431,6 +431,61 @@ describe('useAgentCrdtFollower', () => {
     expect(clientState.sendOps).not.toHaveBeenCalled()
   })
 
+  it('ignores a reseed result after the target starts retargeting', () => {
+    const { workflowId } = mountFollower(
+      'wf-1',
+      true,
+      () => null,
+      {},
+      () => ({ nodes: [] })
+    )
+    bridge().canReseed.mockReturnValue(true)
+    bridge().reseed.mockReturnValue('sent')
+    dispatchFrame('doc_subscribed', {
+      workflowId: 'wf-1',
+      ok: false,
+      code: 'stale_schema_reseed_required',
+      expectedSeq: 7
+    })
+
+    workflowId.value = 'wf-2'
+    dispatchFrame('doc_reseed_result', {
+      workflowId: 'wf-1',
+      ok: false,
+      code: 'invalid_frame'
+    })
+
+    expect(telemetryState.reportError).not.toHaveBeenCalled()
+    expect(bridge().resubscribe).not.toHaveBeenCalled()
+  })
+
+  it('ignores a reseed result after the target detaches', () => {
+    const { workflowId } = mountFollower(
+      'wf-1',
+      true,
+      () => null,
+      {},
+      () => ({ nodes: [] })
+    )
+    bridge().canReseed.mockReturnValue(true)
+    bridge().reseed.mockReturnValue('sent')
+    dispatchFrame('doc_subscribed', {
+      workflowId: 'wf-1',
+      ok: false,
+      code: 'stale_schema_reseed_required',
+      expectedSeq: 7
+    })
+
+    workflowId.value = null
+    dispatchFrame('doc_reseed_result', {
+      workflowId: 'wf-1',
+      ok: false,
+      code: 'invalid_frame'
+    })
+
+    expect(telemetryState.reportError).not.toHaveBeenCalled()
+    expect(bridge().resubscribe).not.toHaveBeenCalled()
+  })
   it('replays post-snapshot edits after the same workflow tab is reactivated', async () => {
     const { enqueue, isTargetActive } = mountFollower(
       'wf-1',

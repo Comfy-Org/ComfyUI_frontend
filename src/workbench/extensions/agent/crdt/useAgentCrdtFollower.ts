@@ -729,7 +729,9 @@ function startAgentCrdtFollower(
       ok?: unknown
       code?: unknown
     } | null
-    if (detail?.workflowId !== subscribedWorkflowId.value) return
+    if (detail?.workflowId !== workflowId.value) return
+    if (detail.workflowId !== subscribedWorkflowId.value) return
+    if (detail.workflowId !== pendingReseed?.workflowId) return
     lastFrameType.value = event.type
     recordDevEvent('doc_reseed_result', detail)
     const code = typeof detail.code === 'string' ? detail.code : undefined
