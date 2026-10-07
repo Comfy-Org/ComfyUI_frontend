@@ -85,32 +85,29 @@ export function useNodePointerInteractions(
     startDrag(activePress.event, activePress.nodeId, event.shiftKey)
   }
 
-  function runEffect(effect: GestureEffect, event: PointerEvent) {
-    const activePress = press
-    if (!activePress) return
-    switch (effect) {
-      case 'click':
-        selectNode(activePress)
-        return
-      case 'doubleClick':
-      case 'movePress':
-        return
-      case 'startDrag':
-        startNodeDrag(activePress, event)
-        return
-      case 'moveDrag':
-        if (activePress.movingNode && canDrag())
-          handleDrag(event, activePress.nodeId)
-        return
-      case 'endDrag':
-        if (activePress.movingNode)
-          endDrag(event, canDrag() ? activePress.nodeId : undefined)
-        return
-      case 'cancelDrag':
-        if (activePress.movingNode) cancelDrag()
-        return
+  const effectHandlers: Record<
+    GestureEffect,
+    (activePress: Press, event: PointerEvent) => void
+  > = {
+    click: (activePress) => selectNode(activePress),
+    doubleClick: () => {},
+    movePress: () => {},
+    startDrag: startNodeDrag,
+    moveDrag: (activePress, event) => {
+      if (activePress.movingNode && canDrag())
+        handleDrag(event, activePress.nodeId)
+    },
+    endDrag: (activePress, event) => {
+      if (activePress.movingNode)
+        endDrag(event, canDrag() ? activePress.nodeId : undefined)
+    },
+    cancelDrag: (activePress) => {
+      if (activePress.movingNode) cancelDrag()
     }
-    effect satisfies never
+  }
+
+  function runEffect(effect: GestureEffect, event: PointerEvent) {
+    if (press) effectHandlers[effect](press, event)
   }
 
   const forwardMiddlePointerIfNeeded = (
