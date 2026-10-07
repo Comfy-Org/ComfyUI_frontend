@@ -66,6 +66,7 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { api } from '@/scripts/api'
+import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 import type { ComfyApp } from '@/scripts/app'
 import type { useExtensionService } from '@/services/extensionService'
 import { createDisposablePinia } from '@/testing/pinia'
@@ -195,7 +196,7 @@ type ServerSession =
   | 'network'
   | 'restore_token_revoked'
   | 'sso_required'
-  | { userId: string; provider?: string }
+  | { userId: string; provider?: string; email?: string }
 
 interface FeatureAnswers {
   probe: boolean
@@ -220,13 +221,14 @@ function sessionBody(
   userId: string,
   {
     provider = 'google.com',
+    email = `${userId}@example.com`,
     hasPersonalWorkspace
-  }: { provider?: string; hasPersonalWorkspace?: boolean } = {}
+  }: { provider?: string; email?: string; hasPersonalWorkspace?: boolean } = {}
 ) {
   return {
     user: {
       id: userId,
-      email: `${userId}@example.com`,
+      email,
       email_verified: true,
       sign_in_provider: provider,
       ...(hasPersonalWorkspace !== undefined && {
@@ -280,7 +282,10 @@ function installServer(
     }
     if (typeof session === 'object')
       return jsonResponse(
-        sessionBody(session.userId, { provider: session.provider })
+        sessionBody(session.userId, {
+          provider: session.provider,
+          email: session.email
+        })
       )
     const code = session === 'revoked' ? 'session_revoked' : 'no_session'
     return jsonResponse({ code, message: code }, 401)
@@ -532,6 +537,20 @@ describe('cloud app on the shared web session (unified_web_session on)', () => {
 
     expect(await webSession.revokeAllSessions()).toEqual({ status: 'ok' })
     expect(server.revokeAllRequests).toEqual([cookieRevokeAll])
+  })
+
+  it('honours an employee ?ff= override on a session-only tab until sign-out', async () => {
+    window.history.replaceState({}, '', '/?ff=onboarding_tour_enabled')
+    installServer({ userId: 'user-a', email: 'dev@comfy.org' })
+    await refreshRemoteConfig({ useAuth: false })
+    await useSessionCookie().ensureSessionCookie()
+    const webSession = useCloudWebSessionStore()
+    expect(webSession.state.phase).toBe('signed_in')
+    expect(getSessionOverride('onboarding_tour_enabled')).toBe(true)
+
+    await webSession.signOut()
+
+    expect(getSessionOverride('onboarding_tour_enabled')).toBeUndefined()
   })
 
   it('resets the tab and tells the user when another account takes the session', async () => {
