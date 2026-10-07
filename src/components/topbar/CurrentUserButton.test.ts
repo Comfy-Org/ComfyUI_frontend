@@ -200,4 +200,46 @@ describe('CurrentUserButton', () => {
       await screen.findByText('Workspace Popover Content')
     ).toBeInTheDocument()
   })
+
+  it('opens the popover again on a second ask after it was closed', async () => {
+    mockIsCloud.value = true
+    useTeamWorkspaceStore().initState = 'ready'
+    const { user } = renderComponent()
+    useDeploymentPickStore().requestSwitcherOpen()
+    await screen.findByText('Workspace Popover Content')
+    await user.click(screen.getByRole('button', { name: 'Current user' }))
+    expect(
+      screen.queryByText('Workspace Popover Content')
+    ).not.toBeInTheDocument()
+
+    useDeploymentPickStore().requestSwitcherOpen()
+
+    expect(
+      await screen.findByText('Workspace Popover Content')
+    ).toBeInTheDocument()
+  })
+
+  it.for([
+    { when: 'in an API-key session', apiKeyLogin: true, initState: 'ready' },
+    {
+      when: 'while the workspace is still loading',
+      apiKeyLogin: false,
+      initState: 'loading'
+    }
+  ] as const)(
+    'leaves the popover closed for an ask it cannot show the switcher for, $when',
+    async ({ apiKeyLogin, initState }) => {
+      mockIsCloud.value = true
+      useCurrentUser().isApiKeyLogin = computed(() => apiKeyLogin)
+      useTeamWorkspaceStore().initState = initState
+      renderComponent()
+
+      useDeploymentPickStore().requestSwitcherOpen()
+      await new Promise((resolve) => setTimeout(resolve))
+
+      expect(
+        screen.queryByText('Workspace Popover Content')
+      ).not.toBeInTheDocument()
+    }
+  )
 })
