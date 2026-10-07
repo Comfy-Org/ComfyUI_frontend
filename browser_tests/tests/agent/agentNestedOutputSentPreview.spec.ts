@@ -19,11 +19,9 @@ test.use({ connectWebSocketToServer: false })
 //
 // #18197 proved the drag source is correct (a nested row attaches its own
 // output), and #18104 repaired `UserMessage`'s `splitAttachments` to prefer
-// `item.previewUrl`. But `startAssetDrag` publishes `preview_url` only for
-// `mediaKind === 'image'`, so a video drags none, and the fallback rebuilds
-// `/view?filename=<ref>&type=input` from `attachment_ref`. For a nested output
-// that ref is the display filename, because `outputAssetUtil` deliberately
-// does not copy the jobs-endpoint hash onto nested items.
+// `item.previewUrl`. This covers the remaining non-image path: the drag must
+// publish the asset's content URL rather than make the sent message rebuild
+// `/view?filename=<ref>&type=input` from the display filename.
 //
 // This drives the REAL drag out of the panel rather than synthesizing a
 // DataTransfer, which is what distinguishes it from
@@ -39,22 +37,8 @@ const REPRESENTATIVE_VIDEO = {
   mime_type: 'video/mp4'
 }
 
-// REPRODUCES A LIVE DEFECT. Measured on main at `00b02cbea3`: the sent
-// message's video source is `/api/view?filename=out_one.mp4&type=input`, the
-// display-name lookup, instead of the dragged asset's own
-// `/api/assets/<id>/content`. That URL resolves only when the display name
-// happens to equal the storage name, which is the PM-1157/PM-1158 symptom.
-//
-// Left failing rather than fixed here: the candidates are to publish a
-// `preview_url` for non-image kinds (which ADR-ASSETS-DRAG-DROP-0035 rule 2
-// deliberately scopes to image previews) or to resolve a staged attachment
-// through its asset id at send time. Both change product behaviour, so this
-// shipped as the repro and the decision stayed with the PM-1157/PM-1158
-// owners. PM-1158 has since closed on a partial fix (#18104, image path
-// only) and PM-1157 on this repro, so the non-image path below is unowned.
-// Remove `.fail()` with the fix.
-test.fail(
-  'sends a nested video output by its display name, not its asset id',
+test(
+  'renders a dragged nested video from its asset content URL',
   { tag: ['@cloud', '@agent'] },
   async ({ page, workflowSelection, promptHistory }) => {
     // The boot fixture already routed `/api/assets` to an empty list, so these
@@ -139,8 +123,9 @@ test.fail(
     // The dragged output is what the sent message must show. A nested output
     // has no hash, so a ref-based `/view?filename=<display name>&type=input`
     // only resolves when the display name happens to equal the storage name -
-    // the PM-1157/PM-1158 shape. Assert the source identifies the dragged
-    // asset by its own id instead.
+    // the PM-1157/PM-1158 shape. Assert the rendered preview source identifies
+    // the dragged asset by its own id instead; attachment upload identity is
+    // a separate backend-facing contract.
     const src = await video.getAttribute('src')
     expect(
       src,

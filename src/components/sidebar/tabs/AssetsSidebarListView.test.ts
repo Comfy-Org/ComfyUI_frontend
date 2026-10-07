@@ -230,7 +230,8 @@ describe('AssetsSidebarListView', () => {
           display_name: 'Clip',
           attachment_ref: 'clip.mp4',
           media_kind: 'video',
-          preview_url: undefined
+          preview_url:
+            'http://localhost:3000/api/view?filename=clip.mp4&type=output&subfolder='
         }),
         MIME_ASSET_INFO
       )

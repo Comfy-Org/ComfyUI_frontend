@@ -48,10 +48,11 @@ after the last URL segment, which for a content URL is the literal `content`.
    rule is media-kind agnostic: no consumer may assume a preview is the file,
    even when a preview exists.
 2. Previews stay a rendering concern. `application/x-comfy-asset-info` keeps
-   `preview_url` for image previews, and `resolvePreviewUrl` remains the
-   source for `<img>` and `<video>` elements. Its own fallback resolves
-   through `getAssetContentId` as well, so no code path derives a content URL
-   from a job id.
+   `preview_url` for image previews and adds a same-origin, inline-disposition
+   file URL for playable video and audio attachments. Other non-image kinds
+   do not overload `preview_url` with raw file bytes. `resolvePreviewUrl`
+   remains the image source, and every file URL resolves through
+   `getAssetContentId`, so no code path derives a content URL from a job id.
 3. Drop consumers take the display name from the asset-info payload, not
    from the URI. `useNodeDragAndDrop` prefers `parseAssetInfo(...).filename`
    and falls back to the URL-derived name only for drags that carry no

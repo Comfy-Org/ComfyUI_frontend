@@ -80,6 +80,13 @@ const historyImage: AssetItem = fromPartial({
   preview_url: '/api/view?filename=a.png&type=output&subfolder='
 })
 
+const crossOriginHistoryVideo: AssetItem = fromPartial({
+  id: 'external-video',
+  name: 'external.mp4',
+  tags: ['output'],
+  preview_url: 'https://cdn.example/external.mp4'
+})
+
 function renderCard(
   props: Partial<ComponentProps<typeof MediaAssetCard>> = {}
 ) {
@@ -165,6 +172,45 @@ describe('MediaAssetCard', () => {
         MIME_ASSET_INFO
       )
     })
+
+    it('uses the asset content URL to preview a dragged video attachment', () => {
+      vi.mocked(useFeatureFlags().flags).assetsEnabled = true
+      const { container } = renderCard({ asset: jobGroupedVideo })
+
+      const { add } = dispatchDragStart(container, {
+        assetId: jobGroupedVideo.id
+      })
+      const payload = add.mock.calls[0]?.[0]
+
+      expect(JSON.parse(String(payload))).toMatchObject({
+        media_kind: 'video',
+        preview_url: `http://localhost:3000/api/assets/${videoAssetId}/content?disposition=inline`
+      })
+    })
+
+    it.for([
+      {
+        kind: 'a non-playable 3D file',
+        assetsEnabled: true,
+        item: modelWithThumbnail
+      },
+      {
+        kind: 'a cross-origin video',
+        assetsEnabled: false,
+        item: crossOriginHistoryVideo
+      }
+    ])(
+      'does not publish raw bytes as preview_url for $kind',
+      ({ assetsEnabled, item }) => {
+        vi.mocked(useFeatureFlags().flags).assetsEnabled = assetsEnabled
+        const { container } = renderCard({ asset: item })
+
+        const { add } = dispatchDragStart(container, { assetId: item.id })
+        const payload = JSON.parse(String(add.mock.calls[0]?.[0]))
+
+        expect(payload).not.toHaveProperty('preview_url')
+      }
+    )
 
     it.for([
       {
