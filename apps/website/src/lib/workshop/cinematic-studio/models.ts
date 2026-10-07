@@ -1,4 +1,4 @@
-import type { WorkshopModelDetail } from '../../../config/models-catalogue'
+import type { WorkshopModelDetail } from '@/config/models-catalogue'
 import type { AspectRatio } from './catalog'
 import type { CinematicCopyKey } from './copy'
 import type { CinematicPrices } from './estimate'
@@ -244,15 +244,6 @@ export function runnableCinematicVideoModels(
       }
     ]
   })
-}
-
-export function cinematicStudioHref(
-  slug: string,
-  studioRoute: string
-): string | undefined {
-  return slug in CINEMATIC_MODEL_LOGOS || slug in CINEMATIC_VIDEO_MODELS
-    ? `${studioRoute}?model=${encodeURIComponent(slug)}`
-    : undefined
 }
 
 /** What a video shot holds, and whether each frame can be sent as it is. */

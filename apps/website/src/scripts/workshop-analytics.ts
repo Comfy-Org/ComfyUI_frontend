@@ -1,18 +1,27 @@
-import type { Modality, WorkshopModel } from '../config/models-catalogue'
-import type { RunFailure, RunOutput } from '../config/workshop-run'
+import type { Modality, WorkshopModel } from '@/config/models-catalogue'
+import type { SnippetLanguage } from '@/config/models-snippets'
+import type { RunFailure, RunOutput } from '@/config/workshop-run'
 import type {
   FieldErrorCode,
   FieldErrors,
   FieldSchema
-} from '../config/workshop-playground'
-import type { WorkshopFailureStage } from '../config/workshop-router-errors'
-import { WorkshopRouterError } from '../config/workshop-router-errors'
-import type { WorkshopWorkflowError } from '../config/workshop-workflow-api'
-import type { WorkflowExecutionFailure } from '../config/workshop-workflow-response'
+} from '@/config/workshop-playground'
+import type { WorkshopFailureStage } from '@/config/workshop-router-errors'
+import { WorkshopRouterError } from '@/config/workshop-router-errors'
+import type { WorkshopWorkflowError } from '@/config/workshop-workflow-api'
+import type { WorkflowExecutionFailure } from '@/config/workshop-workflow-response'
 import type { WorkshopExceptionAnalytics } from './workshop-exception'
 import { workshopExceptionAnalytics } from './workshop-exception'
 
 export type WorkshopPageType = 'model' | 'workflow' | 'app'
+
+/** The tab or mode a reader switched to, on a workflow page or in an app. */
+export type WorkshopTabName =
+  | 'playground'
+  | 'workflow'
+  | 'api'
+  | 'image'
+  | 'video'
 
 interface WorkshopModelAnalytics {
   model_slug: string
@@ -84,8 +93,12 @@ export type WorkshopAnalyticsEvent =
       properties: { model_count: number; page_type?: WorkshopPageType }
     }
   | {
-      name: 'model_viewed' | 'api_viewed'
+      name: 'model_viewed' | 'api_viewed' | 'api_key_clicked'
       properties: WorkshopModelAnalytics
+    }
+  | {
+      name: 'api_snippet_copied'
+      properties: WorkshopModelAnalytics & { snippet_language: SnippetLanguage }
     }
   | {
       name: 'run_validation_failed'
@@ -131,18 +144,32 @@ export type WorkshopAnalyticsEvent =
     }
   | {
       name: 'checkout_failed'
-      properties: {
-        attempt_id?: string
-        user_id: string
-        workspace_id: string
-        stage: WorkshopCheckoutFailureStage
-        http_status?: number
-        error_code?: WorkshopCheckoutErrorCode
-      }
+      properties:
+        | {
+            attempt_id?: string
+            user_id: string
+            workspace_id: string
+            stage: WorkshopCheckoutFailureStage
+            http_status?: number
+            error_code?: WorkshopCheckoutErrorCode
+          }
+        | { stage: 'no_owner_scope' }
     }
   | {
       name: 'output_download_clicked'
       properties: WorkshopModelAnalytics & { output_kind: RunOutput['kind'] }
+    }
+  | {
+      name: 'try_in_cloud_clicked' | 'workflow_download_clicked'
+      properties: WorkshopModelAnalytics
+    }
+  | {
+      name: 'tab_switched'
+      properties: WorkshopModelAnalytics & { tab: WorkshopTabName }
+    }
+  | {
+      name: 'github_clicked'
+      properties: { app_slug: string; page_type: 'app' }
     }
 
 export function workshopModelAnalytics(

@@ -7,6 +7,7 @@ import {
   zAgentRunMode as zGeneratedAgentRunMode,
   zAgentThreadListResponse as zGeneratedAgentThreadListResponse,
   zAgentTurnAccepted as zGeneratedAgentTurnAccepted,
+  zToolCallSummary,
   zWorkflowListResponse
 } from '@comfyorg/ingest-types/zod'
 import type {
@@ -20,13 +21,22 @@ import { z } from 'zod'
 
 import { isNodeLocatorId } from '@/types/nodeIdentification'
 
-export { zAgentAdmissionError, zAgentAnswerAccepted, zAgentCancelAccepted }
+export { zAgentAdmissionError, zAgentCancelAccepted }
 export type {
   AgentAnswerAccepted,
   AgentCancelAccepted,
   AgentRunModePreference,
   AgentThreadSummary
 }
+
+/**
+ * The 202 from the answer route. A backend that predates the committed-answer
+ * body sends only `status`, so `selected` is optional here.
+ */
+export const zAgentAnswerReceipt = zAgentAnswerAccepted.partial({
+  selected: true
+})
+export type AgentAnswerReceipt = z.infer<typeof zAgentAnswerReceipt>
 
 const zTurnId = z.string().brand<'TurnId'>()
 export type TurnId = z.infer<typeof zTurnId>
@@ -94,40 +104,58 @@ export const zAgentRunMode = zGeneratedAgentRunMode.superRefine(
 )
 export type AgentRunModeValue = AgentRunModePreference['mode']
 
+const SKILL_NAME_MAX = 256
+
+/**
+ * Display-only, so an over-long name is clamped. Rejecting it would drop
+ * the live frame or the whole persisted transcript.
+ */
+const zSkillName = z
+  .string()
+  .nullish()
+  .transform((skill) =>
+    typeof skill === 'string'
+      ? Array.from(skill).slice(0, SKILL_NAME_MAX).join('')
+      : skill
+  )
+
 /**
  * One entry of a persisted assistant row's `content.tool_calls` (see
  * `agentTranscript.ts`'s `parseToolCallEntry`), the reload-path counterpart
- * to the live WebSocket's `zAgentToolCallData` above. `status` is
- * deliberately `z.string()` rather than a closed enum: an unrecognized value
- * must still surface as a failed `ToolPart` (`toolCallOk` treats anything
- * other than `pending`/`running`/`ok`/`success` as failure), so schema
- * validation should reject a malformed *entry* (missing `id`/`tool_name`),
- * not an unfamiliar *status* string or a bad `duration_ms` — `duration_ms` is
- * `z.unknown().optional()` so a NaN/Infinity/negative value there doesn't
- * sink the whole entry; `parseToolCallEntry` narrows it separately and just
- * omits it. `status` is likewise `.optional()`: an entry that omits it
- * entirely must still survive validation (`toolCallPartState`/`toolCallOk`
- * already treat `undefined` as terminal-and-failed, matching the old
- * parser's behavior for a status-less call).
+ * to the live WebSocket's `zAgentToolCallData` above. Sourced directly from
+ * the generated `ToolCallSummary` schema (Comfy-Org/cloud#10360) — the
+ * backend only ever persists terminal rows (`status: 'success' | 'error'`);
+ * a row a dead turn left in `pending`/`running` has no wire-status mapping
+ * and is dropped server-side rather than reaching this parser.
+ *
+ * This is also the element type of `zAgentMessageContent.tool_calls` below,
+ * which is what lets a persisted `skill` reach `parseToolCallEntry` at all —
+ * the generated `zToolCallSummary` has no `skill` key and no `.passthrough()`,
+ * so using it there stripped the field before the transcript parser saw it.
  */
-export const zPersistedToolCallSummary = z
+export const zPersistedToolCallSummary = zToolCallSummary.extend({
+  skill: zSkillName
+})
+export type PersistedToolCallSummary = z.infer<typeof zPersistedToolCallSummary>
+
+/**
+ * The generated `AgentMessage.content` schema narrows to just `tool_calls`
+ * (typed via `zToolCallSummary`), but the OpenAPI-generated TS type still
+ * carries a `[key: string]: unknown` index signature for it — the zod
+ * plugin's output didn't get a matching `.passthrough()`. Re-widened here so
+ * a persisted row's other `content` fields (`text`, `attachments`,
+ * `attachment_refs`, `workflow_references`, ...; see `agentTranscript.ts`)
+ * keep parsing.
+ */
+const zAgentMessageContent = z
   .object({
-    id: z.string(),
-    // The provider tool-use id a LIVE `agent_tool_call` frame carries as
-    // `tool_call_id` (see `zAgentToolCallData` above). `parseToolCallEntry`
-    // prefers this over `id` when building `callId` so a restored `ToolPart`
-    // is keyed the same way a live frame for the same call will be, and can
-    // be updated in place rather than rendered as an unmatched duplicate.
-    // Optional: rows recorded before `tool_call_id` existed have none.
-    tool_call_id: z.string().optional(),
-    tool_name: z.string(),
-    status: z.string().optional(),
-    duration_ms: z.unknown().optional()
+    tool_calls: z.array(zPersistedToolCallSummary).optional()
   })
   .passthrough()
 
 export const zAgentMessage = zGeneratedAgentMessage
   .extend({
+    content: zAgentMessageContent.optional(),
     pending_ask: zAgentPendingAsk.optional()
   })
   .passthrough()
@@ -159,6 +187,27 @@ export const zAgentError = z.union([zGeneratedAgentError, zAgentAdmissionError])
 export const zDisownedWorkflowError = z.object({
   error: z.literal('workflow not found or access denied')
 })
+
+/**
+ * The 409 body the agent service returns when the thread already has a turn in
+ * progress (`rejectTurnInProgress` in `services/agent/server/agent_handler.go`).
+ * `type` is the discriminator — a 409 from the cancel or answer endpoints
+ * carries no `type` at all — and the two ids name the turn that holds the
+ * thread, so the client can re-attach to it instead of reporting a dead end.
+ *
+ * Both ids are optional on the wire: the server resolves them best-effort and
+ * documents that a lookup failure "still yields the 409, just without the id".
+ * A conflict with no ids is still a conflict, so the discriminator alone has to
+ * be enough to recognise one.
+ */
+export const zTurnInProgressError = z
+  .object({
+    type: z.literal('TURN_IN_PROGRESS'),
+    active_message_id: z.string().optional(),
+    turn_id: z.string().optional()
+  })
+  .passthrough()
+
 const zAgentThinkingData = z
   .object({
     delta: z.string(),
@@ -172,6 +221,7 @@ const zAgentToolCallData = z
     tool_call_id: z.string(),
     tool_name: z.string(),
     status: z.enum(['running', 'success', 'error']),
+    skill: zSkillName,
     args: z.never().optional(),
     duration_ms: z.number().optional(),
     message_id: z.string(),

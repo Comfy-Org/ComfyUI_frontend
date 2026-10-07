@@ -77,10 +77,10 @@ const toggle = () =>
 
 describe('ReplyAssetGroup', () => {
   beforeEach(() => {
-    isAssetPreviewSupported.mockReset().mockReturnValue(false)
-    findServerPreviewUrl.mockReset().mockResolvedValue(null)
-    findOutputAsset.mockReset().mockResolvedValue(undefined)
-    generateModelThumbnail.mockReset().mockResolvedValue(null)
+    isAssetPreviewSupported.mockReturnValue(false)
+    findServerPreviewUrl.mockResolvedValue(null)
+    findOutputAsset.mockResolvedValue(undefined)
+    generateModelThumbnail.mockResolvedValue(null)
   })
 
   it('T-09 / PM-652 / FE-1326 renders image and video previews inline', () => {
@@ -148,6 +148,19 @@ describe('ReplyAssetGroup', () => {
     expect(card.dataset.src).toBe('https://x/song.mp3')
     expect(card.dataset.title).toBe('song.mp3')
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
+  })
+
+  it('uses the presentation label for audio and 3D titles', async () => {
+    renderGroup([
+      { ...audio, filename: 'upload_song.mp3', label: 'song.mp3' },
+      { ...model, filename: 'asset-hash', label: 'model.glb' }
+    ])
+
+    expect(screen.getByTestId('audio-card').dataset.title).toBe('song.mp3')
+    await userEvent.click(screen.getByRole('button', { name: 'model.glb' }))
+    expect(vi.mocked(useDialogStore().showDialog)).toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'model.glb' })
+    )
   })
 
   it('collapses long audio lists behind Show more', async () => {

@@ -928,6 +928,7 @@ export function useCoreCommands(): ComfyCommand[] {
               life: 5000
             })
             reportError(result.cause, {
+              surface: 'platform',
               errorType: 'error_resetting_onboarding_state'
             })
             return
@@ -985,7 +986,7 @@ export function useCoreCommands(): ComfyCommand[] {
     {
       id: 'Comfy.Canvas.PasteFromClipboardWithConnect',
       icon: 'icon-[lucide--clipboard-paste]',
-      label: () => t('Paste with Connect'),
+      label: () => t('menuLabels.Paste with Connect'),
       mutatesGraph: true,
       function: () => {
         app.canvas.pasteFromClipboard({ connectInputs: true })

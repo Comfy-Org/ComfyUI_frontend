@@ -24,15 +24,128 @@ latest check and last successful generation.
 
 ## Formatting
 
-Run `pnpm format:astro` from the repository root to format Astro files, or
-`pnpm format:astro:check` to check them. Both are included in the root format
-commands and shared CI checks. Pre-commit formats staged Astro files after
-ESLint fixes.
+Run `pnpm --filter @comfyorg/website format` from the repository root to format
+the website, or `pnpm --filter @comfyorg/website format:check` to check it. CI
+runs every workspace's format check with
+`pnpm -r --include-workspace-root format:check`. Pre-commit formats staged
+Astro files after ESLint fixes.
 
 Astro files use Prettier with the official Astro plugin; other formats continue
 to use Oxfmt. The website's `.prettierrc.json` matches the repository's style
 and preserves whitespace around inline HTML elements. The Astro editor
 extension also reads this configuration.
+
+## Localization
+
+The site ships English, Simplified Chinese (`zh-CN`) and Japanese (`ja`).
+Catalogs live in `src/locales/<locale>/*.json` in the same nested JSON layout
+and [vue-i18n message syntax](https://vue-i18n.intlify.dev/guide/essentials/syntax)
+as the application's `src/locales/` at the repository root:
+
+- Named placeholders: `"Show {n} models"`, filled with
+  `t('workshop.search.show', { n }, { locale })`.
+- Plural forms separated by `|`: `"{count} node | {count} nodes"`, picked with
+  `t('cloudNodesLaunch.models.nodeCount', { count }, { locale, plural: count })`.
+- The characters `{`, `}`, `@` and `|` are message syntax, so literal ones are
+  written as `{'{'}`, `{'}'}`, `{'@'}` and `{'|'}`.
+
+`src/i18n/translations.ts` configures vue-i18n and exports its public translation
+API. Astro middleware binds `Astro.locals.t` to the request locale. In Vue and
+TypeScript, bind once with `translationsFor(locale).t`; each locale has its own
+composer because the site renders locales concurrently. Missing messages fall
+back to English. The catalog test compiles every message and checks that each
+eligible English message has Chinese copy.
+
+`main.json` is the catalog for each locale. Keep feature copy grouped under a
+nested feature key.
+
+Add new English copy to the English catalog; translated copy lives in the
+matching file under each locale. Every eligible English message requires a
+Chinese entry. Excluded namespaces use English fallback when no translation
+exists. The catalog tests enforce this distinction.
+Catalog files use two-space JSON indentation and a final newline. Legal and
+content pages render their sections in the order they appear in the catalog, so
+keep `en/main.json` in document order and never sort its keys.
+
+### Excluded and English-only copy
+
+`src/config/translation.ts` owns the website's language guidance, glossary and
+generation exclusions, and derives target locales from the locale registry in
+`src/config/locales.ts`. Generation never machine-translates these excluded
+namespaces: `tos`, `enterprise-msa`, `privacy`, `desktop_privacy`,
+`affiliate-terms` and `minimaxLicense`.
+
+Exclusion controls translation only. Route availability is a separate policy,
+recorded in the page headers and `LOCALE_INVARIANT_ROUTE_KEYS`:
+
+- Affiliate terms, Terms of Service (`tos`) and the Enterprise MSA are
+  legal-reviewed English documents on English-only routes. Their untranslated
+  Chinese entries are absent, so fallback renders the current English. The two
+  translated affiliate page labels remain.
+- Desktop privacy (`desktop_privacy`) keeps its `/zh-CN/privacy/desktop` route,
+  which renders the governing English document through fallback.
+- The Privacy Policy (`privacy`) keeps its translated `/zh-CN/privacy-policy`
+  route. Generation never refreshes that Chinese copy; people maintain it.
+- The whole `minimaxLicense` namespace is excluded. This covers the entire
+  localized `/zh-CN/minimax/license` page, including its marketing copy, not
+  only the professional-request intake that embeds an English-only HubSpot
+  form. New copy on that page renders English until someone translates it.
+
+Do not translate or publish localized legal documents until legal approves
+them; an unreviewed translation can diverge from the governing English text.
+
+The reverse also holds: eligible namespaces are translated even when their page
+has no localized route. Japanese catalogs therefore contain copy for pages that
+have no `/ja/` route yet. Generation never enables routes or indexing.
+
+### Generating translations
+
+Inside this package, run `pnpm locale:check` for an offline preflight, or
+`pnpm locale` with `OPENAI_API_KEY` to translate eligible missing or changed
+copy. Both scripts call the shared CLI in `scripts/i18n/update-locales.ts` with
+`--target website`. From the repository root, run
+`pnpm --filter @comfyorg/website locale:check` or
+`pnpm --filter @comfyorg/website locale`.
+
+The website uses the app's pipeline and manifest format, described in
+[`src/locales/CONTRIBUTING.md`](../../src/locales/CONTRIBUTING.md#what-happens-in-ci).
+`apps/website/src/locales/.source-manifest.json` maps each English file to the Git blob ID
+of the English last generated. Its `knownViolations` field lists accepted
+protected-token violations as JSON-encoded key paths, such as
+`["cloud","reason","1","title"]`. Use a clone with full history: if the recorded
+blob is missing, `locale:check` warns and skips change detection and token
+validation for that file, and `pnpm locale` fails. When translation of an entry file fails,
+its English, locale catalogs and manifest entry keep their previous contents.
+
+Commit the generated English catalog, locale catalogs and manifest together. If
+you edit any of them after generation, run `pnpm locale` again before
+committing.
+
+The website differs from the app in these ways:
+
+- Existing copy stays while its English is unchanged, including intentional
+  empty strings. A new English key keeps a translation supplied in the same
+  change. When English is modified, generation replaces the matching eligible
+  translations, including locale edits made in the same change. The app
+  regenerates every added or modified key.
+- Generation does not repair retained copy with invalid tokens. Fix that copy
+  by hand, or delete an eligible value to regenerate it. Generation stops with
+  "Fix retained copy before generation" unless the leaf path is listed in
+  `knownViolations`. Add accepted exceptions there by hand. Entries apply to
+  every locale for that file; generation retains entries that still violate
+  and drops healed ones.
+- Excluded namespaces are never generated. Missing values stay missing;
+  nonempty copies of the current or previous English are removed so the page
+  falls back to current English. Other excluded translations stay when
+  English changes; legal review of them is a human task.
+- Validation is strict. A translated plural message keeps the English form
+  count or collapses to one form. Matching forms keep their placeholders and
+  markup; a collapsed form keeps every token at its highest English count.
+  Generated copy keeps HTML link attributes and bare or Markdown HTTP(S) URLs
+  exactly. Three existing Chinese contact FAQ links use localized absolute
+  URLs and are listed in `knownViolations`.
+  Authored copy may prefix an internal `href` with the target locale, such as
+  `/zh-CN/pricing/`; the validator does not check that the route exists.
 
 ## Ashby careers integration
 
@@ -186,6 +299,32 @@ can't be accidentally committed. Otherwise the `Release: Website` GitHub
 Actions workflow runs the same step on every manual dispatch and opens a PR
 with the refreshed snapshot.
 
+## Hub sections
+
+The hub has one page per section, linked by the catalogue tabs: `/hub/models/`,
+`/hub/workflows/` and `/hub/apps/`. The workflows and apps pages show the
+showcase until their flag is on. Both are always noindex and left out of the
+sitemap, whatever `launchedWorkflowPages` says (it launches only the
+`/hub/workflows/<slug>/` pages), so neither has a markdown twin. Old
+`/hub/models/?type=workflows` and `?type=apps` links replace themselves with
+the section page in the browser, keeping the other query parameters, once that
+section's flag is on for the visitor; otherwise they stay on the models
+catalogue.
+
+## Hub workflows routing
+
+The website builds the workflow pages listed in `src/config/hub-workflow-names.json` at `/hub/workflows/<name>/`. It publishes `/hub/workflows/manifest.json` (`{ version, defaultOwner, pages, legacyRedirects }`), which comfy-router reads to decide who answers each `/hub/workflows/*` URL. The build validates the manifest and fails if it is invalid.
+
+The router (comfy-router#46) fetches the manifest from the website origin directly, not through comfy.org, so it never depends on its own routing to reach it. It also passes the public `comfy.org/hub/workflows/manifest.json` path straight through to the website, even though `manifest.json` is not in `pages`.
+
+To move more workflows onto the website:
+
+1. Add the pages; `hub-workflow-names.test.ts` fails until you refresh the list with `vitest -u`. The router picks up the new `pages` from the live manifest on the next website deploy.
+2. To redirect an old `/workflows/<slug>/` URL, list it in `legacyRedirects` in `src/config/hub-workflows-routing.ts` (exact paths only, each pointing at a page in the list), then copy the same entry into the router's bundled `src/hub-workflow-manifest.js` and redeploy the router. The router reads only its bundled copy for `/workflows/*`, so the website's entry alone redirects nothing.
+3. Once every workflow has moved, flip `defaultOwner` to `website`. This one is data only: it affects `/hub/workflows/*`, which reads the live manifest.
+
+The website itself never redirects `/workflows/*`; the router does.
+
 ## Models rollout
 
 Models is included in production and preview builds by default. The boolean
@@ -198,12 +337,17 @@ refresh preserves the last confirmed answer for the same identity; a new
 identity never inherits a grant. Disabling it restores the public site:
 
 - The header and homepage retain their existing navigation and model links.
-- `/models` shows the existing Models marketing page.
-- Model render pages show the public marketing content until enabled.
+- `/hub/models/` shows the Models marketing page in place of the catalogue.
+  The old `/models` address redirects there.
+- Router model pages at `/hub/models/<slug>/` render their public content.
+  Workflow pages show the marketing content until enabled.
 - Catalogue and playground markup is absent from public HTML; their components
   and page data load after enablement. Homepage islands still serialize public
-  model and provider summaries. `/models` remains indexable with its marketing content.
-- Render pages stay out of sitemaps and markdown exports. `/models/showcase`
+  model and provider summaries. `/hub/models/` remains indexable with its
+  marketing content.
+- Router model pages are indexable and listed in the sitemap and markdown
+  exports (`launchedModelPages`). Workflow pages stay out until
+  `launchedWorkflowPages` is on. `/models/showcase`
   is the unlisted public copy of the marketing page: noindex and out of the
   sitemap.
 - Once enabled, a neutral loading frame replaces the public content while a
@@ -221,7 +365,7 @@ sign in through the website never join that cohort.
 The website identifies signed-in people with their Firebase UID, matching
 Cloud's PostHog identity. For a verified `comfy.org` or `drip.art` email it
 also sets `comfy_staff: true`; every other account sends nothing beyond the
-UID. Give staff `/login/?returnTo=%2Fmodels%2F` so they can sign in before
+UID. Give staff `/login/?returnTo=%2Fhub%2Fmodels%2F` so they can sign in before
 their Models flag is evaluated. Anyone who signed in before `comfy_staff`
 existed must sign out and back in once. Authentication is available before
 PostHog answers, including when flags are missing or unavailable; no separate
@@ -242,7 +386,10 @@ applies only outside production. The `workshop` PR label is no longer needed.
 `workshop-test` only selects test Cloud; neither label bypasses the PostHog
 visibility flag.
 
-`WORKSHOP_IN_BUILD=0` remains an explicit build exclusion for diagnostics.
+`WORKSHOP_IN_BUILD=0` turns Workshop off: Run, the Models nav tab and the account
+menu stay hidden whatever the PostHog flag says. Except the four noindex
+checkout pages, it never removes or replaces a page; every Models page keeps its
+URL and content.
 `PUBLIC_WORKSHOP_AUTH_FLAG=1` overrides a remote auth disable outside production.
 `PUBLIC_WORKSHOP_ROUTER_RUN=1` enables execution; neither grants Models visibility.
 For local development without PostHog:
@@ -272,10 +419,13 @@ admission controls remain authoritative. Local development also accepts
 `PUBLIC_WORKSHOP_WORKFLOWS_ENABLED=1`.
 
 Workshop apps (Cinematic Studio and Re-shoot) are gated separately by the
-`workshop-apps-enabled` PostHog flag: their pages at `/models/apps/<slug>/`, the
-catalogue's Apps tab, the featured slide on `/models` and a model page's Open in
-Studio link. `/cinematic-studio` redirects to the app pages. Local
-development also accepts `PUBLIC_WORKSHOP_APPS_ENABLED=1`.
+`workshop-apps-enabled` PostHog flag: their pages at `/hub/apps/<slug>/`, the
+`/hub/apps/` page and its tab, the featured slide on `/hub/models/` and a model
+page's Open in Studio link. `/cinematic-studio` and the old
+`/models/apps/<slug>/` addresses redirect to the app pages. The built apps are
+listed in `src/config/hub-app-names.json`; `hub-app-names.test.ts` fails until
+you add or remove the app there too. Local development also accepts
+`PUBLIC_WORKSHOP_APPS_ENABLED=1`.
 
 `src/config/workflow-render.ts` implements the shared workflow request and polling
 helper. Node scripts import `workflow_render` and `workflow_for_model` from
@@ -367,6 +517,106 @@ sitekey in this mapping, so the client widget stays off there.
 The `workshop-release-gate` Astro integration registers the Models routes and
 always removes the retired `/workshop` output, including in enabled builds.
 
+## Authentication
+
+Every account call goes to the Cloud origin that `PUBLIC_WORKSHOP_CLOUD_ENV`
+selects (see [Which Cloud the Workshop talks to](#which-cloud-the-workshop-talks-to)).
+Which identity the header shows is decided once per page load in
+`src/config/workshop-account-source.ts`.
+
+**Flag off (default).** Sign-in is the website's own Firebase login. It is
+exchanged at `${cloud}/api/auth/token` for a workspace-scoped JWT and cached in
+`sessionStorage` (`src/config/workshop-account.ts`). The flag adds one plain
+anonymous `GET /api/features` per page load, read for `web_session_probe`. That
+read sends no cookie and no custom header, so it needs no preflight. The
+session code never loads.
+
+**`unified_web_session` on.** When the probe is `true`, a credentialed
+`GET /api/features` with `X-Comfy-Client` reads `unified_web_session`. Only a
+literal `true` turns it on. If no answer comes within 800 ms, the page keeps the
+Firebase header and never swaps. On the session path:
+
+- Identity comes from `GET ${cloud}/api/auth/session`, read once at boot. The
+  browser attaches the `__Host-comfy_session` cookie because the request goes
+  to the Cloud host with `credentials: 'include'`. The cookie is host-only, so
+  comfy.org itself never receives it. The website runs no heartbeat.
+- The header shows the session account and reads `GET /api/billing/balance` on
+  the cookie, with `X-Comfy-Client` and no `Authorization`. That balance is
+  always the personal workspace's. A 401 hides it. The Buy credits dialog is
+  not mounted.
+- Firebase does not load to answer the header. The session is restored with
+  `POST /api/auth/session` (Firebase ID token as proof) only if this page
+  already loaded a Firebase login. With no session, the Firebase header
+  mounts. A revoked session also signs the local Firebase login out.
+- The website sends no unsafe method on the cookie, so it never needs
+  `X-CSRF-Token`. It never calls `DELETE /api/auth/session`, and a Firebase
+  sign-in on comfy.org does not create the shared session. Sign-in and
+  sign-out on comfy.org are still Firebase's.
+
+**Enterprise SSO (`sso_enabled`).** Email sign-in and sign-up on `/login`
+and `/signup` read Cloud's global `sso_enabled` from the anonymous
+`GET /api/features` once per page load: the read starts when the sign-in
+panel mounts and the first email submit reuses its answer
+(`src/config/workshop-sso.ts`). Only a literal `true` turns it on, and a
+failed read is off. When it is on, the submit first calls
+`POST ${cloud}/api/auth/sso/discover`. An SSO domain leaves for
+`${cloud}/api/auth/sso/start` in a full-page navigation and lands on Cloud's
+`/cloud/user-check`; it does not come back to comfy.org. Any other answer, or
+a discover failure, continues with Firebase. Ingest shows its own
+confirmation page first, because a navigation from comfy.org is same-site,
+not same-origin.
+
+**Not wired yet: Run on the session (F3b).** Model pages, workflows and the
+cinematic studio start the Firebase lifecycle whatever the flag says. A Run
+sends the `/api/auth/token` JWT to the Router as `Authorization: Bearer` with
+`credentials: 'omit'`. The session balance's authorizer rejects any mint, so
+the website never calls `POST /api/auth/token` on the cookie. Moving Run onto
+the session is blocked on the backend. The Router must accept tokens minted
+from the session, and ingest must trust comfy.org for credentialed `POST`s.
+
+CLI, MCP, Desktop, API keys and a localhost frontend keep their tokens. The
+cookie never reaches localhost or a preview host, so there the session read
+finds nothing and the Firebase header mounts. The workflow API's `X-API-Key`
+mode (`src/config/workshop-workflow-api.ts`) is unaffected.
+
+See [ADR-AUTH-SESSION-0037](../../docs/adr/AUTH-SESSION-0037-shared-web-session-on-a-host-only-cookie.md)
+for the decision and
+[`packages/account-core/docs/web-session.md`](../../packages/account-core/docs/web-session.md)
+for the shared building blocks.
+
+## Search indexing
+
+Only the production build (`VERCEL_ENV=production`) can be indexed. Every
+other build (local, CI, Vercel previews) puts
+`<meta name="robots" content="noindex, nofollow">` on every page, so a copy of
+the site never competes with comfy.org. Those builds also drop the canonical
+link and hreflang alternates, so a preview never points its noindex at
+comfy.org. `WEBSITE_INDEXABLE=1` gives a build outside Vercel the production
+head; `pnpm build:e2e` sets it for the e2e and screenshot builds. Pages that are
+noindex on their own stay noindex either way.
+
+The decision is baked into the HTML at build time, so never use Vercel's
+Promote to Production on a preview deployment: it would serve
+`noindex, nofollow` on comfy.org. The `deploy-production` job fails if its
+build has a robots meta on `/`, and `CI: Website Build` fails if a
+non-production build doesn't.
+
+### IndexNow
+
+Every build writes `indexnow-manifest.json`: each sitemap URL mapped to a hash
+of its markdown twin, so header, footer and asset-hash changes don't count, and
+noindex pages are left out. The `deploy-production` job saves the live manifest
+before it deploys, then `pnpm indexnow:submit` sends the added, changed
+and removed URLs to IndexNow (Bing, Yandex, Naver, Seznam, Yep). Google does not
+use IndexNow. The step only warns on failure and never fails the deploy;
+previews never run it. The key lives in `src/config/indexnow.ts` and its file in
+`public/`. To see the payload without sending it:
+
+```bash
+pnpm indexnow:submit --current dist/indexnow-manifest.json \
+  --previous prev.json --previous-status 404 --dry-run
+```
+
 ## HubSpot forms
 
 Pages that collect leads use HubSpot's hosted form embed:
@@ -402,8 +652,10 @@ the hosted script once, and renders the documented embed container.
 
 - `pnpm dev` — Astro dev server
 - `pnpm build` — production build to `dist/`
+- `pnpm build:e2e` — indexable build to `dist/`, the one e2e and screenshots run against
 - `pnpm typecheck` — `astro check`
 - `pnpm test:unit` — Vitest unit tests
-- `pnpm test:e2e` — Playwright E2E tests (requires `pnpm build` first)
+- `pnpm check:router-provider-drift` — compare Router coverage with published sources (requires network access)
+- `pnpm test:e2e` — Playwright E2E tests (requires `pnpm build:e2e` first)
 - `pnpm ashby:refresh-snapshot` — refresh the committed careers snapshot
 - `pnpm cloud-nodes:refresh-snapshot` — refresh the committed cloud nodes snapshot

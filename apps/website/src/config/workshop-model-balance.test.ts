@@ -4,8 +4,8 @@
  * the Firebase balance otherwise.
  */
 import { render, screen } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, readonly, ref } from 'vue'
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed, effectScope, readonly, ref } from 'vue'
 
 import { centsToCredits } from '@comfyorg/shared-frontend-utils/creditsUtil'
 
@@ -25,7 +25,7 @@ import type { WorkshopSession } from './workshop-session-state'
 
 const firebaseEvaluated = vi.hoisted(() => vi.fn())
 
-vi.mock(import('../scripts/posthog'))
+vi.mock(import('@/scripts/posthog'))
 vi.mock(import('./workshop-session-state'))
 vi.mock(import('./workshop-credits'))
 vi.mock(import('./workshop-billing-sdk'))
@@ -36,11 +36,13 @@ vi.mock(import('./workshop-firebase'), async () => {
 })
 
 async function mountBalance({
-  authEnabled = true
+  authEnabled = true,
+  scope = effectScope(true)
 }: {
   authEnabled?: boolean
+  scope?: ReturnType<typeof effectScope>
 } = {}) {
-  const posthog = await import('../scripts/posthog')
+  const posthog = await import('@/scripts/posthog')
   vi.mocked(posthog.useWorkshopAuthFlag).mockReturnValue(
     readonly(ref(authEnabled))
   )
@@ -52,12 +54,20 @@ async function mountBalance({
   })
   const { useWorkshopModelBalance } = await import('./workshop-model-balance')
   const session = ref<WorkshopSession>(credential('personal'))
-  return { balance: useWorkshopModelBalance(session), session }
+  const balance = scope.run(() => useWorkshopModelBalance(session))
+  assert.exists(balance)
+  return { balance, session, credits }
 }
 
 beforeEach(() => {
   vi.resetModules()
   firebaseEvaluated.mockClear()
+})
+
+afterEach(async () => {
+  const { stopWorkshopAccountSource } =
+    await import('./workshop-account-source')
+  stopWorkshopAccountSource()
 })
 
 describe('useWorkshopModelBalance', () => {
@@ -165,7 +175,7 @@ describe('useWorkshopModelBalance', () => {
     const sent = stubCloud({ ...SESSION_FLAGS })
     const { balance } = await mountBalance()
     const { default: HeaderMain } =
-      await import('../components/common/HeaderMain/HeaderMain.vue')
+      await import('@/components/common/HeaderMain/HeaderMain.vue')
     render(HeaderMain, { props: { workshopInBuild: true } })
 
     expect(await screen.findAllByTestId('header-session-credits')).toHaveLength(
@@ -180,5 +190,50 @@ describe('useWorkshopModelBalance', () => {
     expect(sent.filter(({ url }) => url === BALANCE)).toEqual([
       SESSION_BALANCE_READ
     ])
+  })
+
+  it.for([
+    { state: 'session source', answers: SESSION_FLAGS },
+    {
+      state: 'firebase source',
+      answers: { anonymous: { web_session_probe: false } }
+    }
+  ])(
+    '$state: a scope stopped before the source answers binds nothing',
+    async ({ answers }) => {
+      const cloud = Promise.withResolvers<void>()
+      const sent = stubCloud({ ...answers, answered: cloud.promise })
+      const scope = effectScope(true)
+      const { balance, credits } = await mountBalance({ scope })
+
+      scope.stop()
+      cloud.resolve()
+      await vi.dynamicImportSettled()
+      await new Promise((resolve) => setTimeout(resolve))
+
+      expect(sent.map(({ url }) => url)).not.toContain(BALANCE)
+      expect(credits.useWorkshopCredits).not.toHaveBeenCalled()
+      expect(balance.value).toEqual({ status: 'unknown' })
+    }
+  )
+
+  it('stopping the account source ends the cookie session and a restart boots it again', async () => {
+    const sent = stubCloud({ ...SESSION_FLAGS })
+    const { balance } = await mountBalance()
+    await vi.waitFor(() => expect(balance.value.status).toBe('ok'))
+    const { stopWorkshopAccountSource, resolveWorkshopAccountSource } =
+      await import('./workshop-account-source')
+    const { useWorkshopWebSession } =
+      await import('./workshop-web-session-identity')
+    const balanceReads = () => sent.filter(({ url }) => url === BALANCE)
+
+    stopWorkshopAccountSource()
+    window.dispatchEvent(new Event('focus'))
+
+    expect(useWorkshopWebSession().value).toBeUndefined()
+    expect(balanceReads()).toHaveLength(1)
+
+    await expect(resolveWorkshopAccountSource()).resolves.toBe('session')
+    await vi.waitFor(() => expect(balanceReads()).toHaveLength(2))
   })
 })

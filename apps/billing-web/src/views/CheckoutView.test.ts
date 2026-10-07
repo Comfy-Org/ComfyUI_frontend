@@ -1,3 +1,4 @@
+import { datadogRum } from '@datadog/browser-rum'
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { defineComponent, h, nextTick, ref } from 'vue'
@@ -24,12 +25,15 @@ import {
   succeededOperation,
   serverPhasePendingOperation
 } from '@/test/fakeBillingClient'
+import { trackedBillingEvents } from '@/test/trackedBillingEvents'
 import { WORKSPACE_INVITES_KEY } from '@/session/workspaceInvites'
 import CheckoutView from '@/views/CheckoutView.vue'
 
 const ENTRY_QUERY = 'product=comfyui&return_to=comfyui_workspace'
 const ENTRY_QUERY_PATH = `/v1/checkout?${ENTRY_QUERY}`
 const CHECKOUT_PATH = `${ENTRY_QUERY_PATH}&plan=creator_monthly`
+
+vi.mock(import('@datadog/browser-rum'))
 
 /** The values this view and its surface read; a test-family key stands in for a deployment's. */
 vi.mock<unknown>(import('@/config/env'), () => ({
@@ -102,7 +106,10 @@ const formProps = vi.hoisted(() => ({
   value: {} as Record<string, unknown>,
   mounted: false
 }))
-let reportConfirm: (confirmationToken: string) => void = () => {}
+let reportConfirm: (
+  confirmationToken: string,
+  methodType?: string
+) => void = () => {}
 
 const PaymentFormStub = defineComponent({
   name: 'CheckoutPaymentForm',
@@ -118,7 +125,7 @@ const PaymentFormStub = defineComponent({
   setup(props, { emit }) {
     formProps.value = props
     formProps.mounted = true
-    reportConfirm = (token) => emit('confirm', token)
+    reportConfirm = (token, methodType) => emit('confirm', token, methodType)
     return () =>
       h(
         'button',
@@ -569,6 +576,52 @@ describe('CheckoutView', () => {
     expect(challengeMocks.handleNextAction).not.toHaveBeenCalled()
   })
 
+  it('offers no second way to the verification page once this tab is redirecting there', async () => {
+    const assign = stubNavigation()
+    const fake = await renderCheckout()
+    await screen.findByRole('button', { name: 'Pay and subscribe' })
+
+    fake.publishOperation(
+      hostedPendingOperation('https://hooks.stripe.test/redirect/op_1')
+    )
+
+    await waitFor(() => expect(assign).toHaveBeenCalled())
+    expect(
+      screen.queryByRole('button', { name: 'Complete verification' })
+    ).toBeNull()
+  })
+
+  it('offers no second way to the verification page while an Alipay Pay is taking this tab there', async () => {
+    stubNavigation()
+    const fake = await renderCheckout()
+    await screen.findByRole('button', { name: 'Pay and subscribe' })
+    fake.subscribe.mockImplementation(() => new Promise(() => {}))
+
+    reportConfirm('ctoken_1', 'alipay')
+    await waitFor(() => expect(fake.subscribe).toHaveBeenCalledOnce())
+    fake.publishOperation({
+      ...challengedPendingOperation('pi_1_secret'),
+      actionUrl: 'https://hooks.stripe.test/redirect/op_1'
+    })
+
+    await waitFor(() =>
+      expect(challengeMocks.handleNextAction).toHaveBeenCalledWith(
+        'pi_1_secret'
+      )
+    )
+    expect(
+      screen.queryByRole('button', { name: 'Complete verification' })
+    ).toBeNull()
+
+    const backFromAlipay = new Event('pageshow')
+    Object.defineProperty(backFromAlipay, 'persisted', { value: true })
+    window.dispatchEvent(backFromAlipay)
+
+    expect(
+      await screen.findByRole('button', { name: 'Complete verification' })
+    ).toBeInTheDocument()
+  })
+
   it('drives the 3DS challenge in place when the continuation is embedded', async () => {
     const assign = stubNavigation()
     const fake = await renderCheckout()
@@ -589,6 +642,7 @@ describe('CheckoutView', () => {
 
   it('shows the success step and closes back to the product with the outcome', async () => {
     const assign = stubNavigation()
+    const sent = trackedBillingEvents()
     await renderCheckout(CHECKOUT_PATH, {
       subscribe: {
         status: 'ok',
@@ -607,6 +661,16 @@ describe('CheckoutView', () => {
     expect(assign).toHaveBeenCalledExactlyOnceWith(
       'https://testcloud.comfy.org/?billing_result=success&billing_ref=op_9'
     )
+    expect(
+      sent().filter((event) => event.operation === 'web_return')
+    ).toStrictEqual([
+      {
+        operation: 'web_return',
+        stage: 'clicked',
+        outcome: 'pending',
+        control: 'success_close'
+      }
+    ])
   })
 
   it('offers the team invite on a multi-seat success and sends it to the workspace', async () => {
@@ -710,6 +774,10 @@ describe('CheckoutView', () => {
     [
       'authentication_required',
       "We couldn't complete payment verification. Please try again."
+    ],
+    [
+      'payment_not_completed',
+      "We couldn't complete payment verification. Please try again."
     ]
   ] as const)(
     'reports a %s decline as the app does and keeps the confirm usable',
@@ -795,6 +863,25 @@ describe('CheckoutView', () => {
     expect(
       screen.getByText('Processing payment — setting up your workspace...')
     ).toBeInTheDocument()
+  })
+
+  it('releases the confirm once the in-page verification fails, before the server settles', async () => {
+    const fake = await renderCheckout()
+    fake.subscribe.mockReturnValue(new Promise(() => {}))
+    await screen.findByRole('button', { name: 'Pay and subscribe' })
+
+    reportConfirm('ctoken_1')
+    await waitFor(() => expect(formProps.value.isLoading).toBe(true))
+
+    fake.publishOperation(challengedPendingOperation('pi_1_secret'))
+    expect(formProps.value.isLoading).toBe(true)
+
+    fake.publishOperation({
+      ...challengedPendingOperation('pi_1_secret'),
+      challenge: { status: 'failed', clientSecret: 'pi_1_secret' }
+    })
+
+    await waitFor(() => expect(formProps.value.isLoading).toBe(false))
   })
 
   it('announces the processing toast as an alert, as the app does', async () => {
@@ -907,6 +994,95 @@ describe('CheckoutView', () => {
     )
     expect(fake.subscribe.mock.calls[0][0]).not.toHaveProperty(
       'confirmation_token'
+    )
+  })
+
+  describe('cancel payment and try again', () => {
+    const CANCEL = 'Cancel payment and try again'
+
+    function declinedPlanChange(cancelable?: boolean): BillingOperationState {
+      return {
+        ...serverPhasePendingOperation('awaiting_invoice_payment'),
+        authenticationState: 'failed_retryable',
+        declineReason: 'authentication_failed',
+        ...(cancelable === undefined ? {} : { cancelable })
+      }
+    }
+
+    async function renderDeclinedPlanChange(
+      cancelable?: boolean,
+      options: FakeBillingClientOptions = {}
+    ) {
+      const fake = await renderCheckout(CHECKOUT_PATH, {
+        preview: { status: 'ok', value: upgradeQuote() },
+        ...options
+      })
+      await screen.findByRole('button', { name: 'Confirm upgrade' })
+      fake.publishOperation(declinedPlanChange(cancelable))
+      await nextTick()
+      return fake
+    }
+
+    it.for([
+      { cancelable: true, offered: true },
+      { cancelable: false, offered: false },
+      { cancelable: undefined, offered: false }
+    ])(
+      'offers the cancel only when the server says the payment is cancelable ($cancelable)',
+      async ({ cancelable, offered }) => {
+        await renderDeclinedPlanChange(cancelable)
+
+        expect(screen.queryByRole('button', { name: CANCEL }) !== null).toBe(
+          offered
+        )
+      }
+    )
+
+    it('cancels the payment once and frees the confirm when the operation settles', async () => {
+      const fake = await renderDeclinedPlanChange(true)
+      expect(
+        screen.getByRole('button', { name: 'Confirm upgrade' })
+      ).toBeDisabled()
+
+      await userEvent.click(screen.getByRole('button', { name: CANCEL }))
+      expect(fake.cancelOperation).toHaveBeenCalledExactlyOnceWith('op_1')
+
+      fake.publishOperation(failedOperation('authentication_failed'))
+
+      await waitFor(() =>
+        expect(
+          screen.getByRole('button', { name: 'Confirm upgrade' })
+        ).toBeEnabled()
+      )
+      expect(screen.queryByRole('button', { name: CANCEL })).toBeNull()
+    })
+
+    it.for([
+      {
+        answer: { status: 'not_canceled', code: 'PAYMENT_IN_FLIGHT' },
+        shown: "This payment is already processing and can't be canceled."
+      },
+      {
+        answer: { status: 'not_canceled', code: 'NOT_CANCELABLE' },
+        shown: 'This payment can no longer be canceled.'
+      },
+      {
+        answer: {
+          status: 'error',
+          code: 'REQUEST_FAILED',
+          serverMessage: 'Billing is briefly unavailable.'
+        },
+        shown: "We couldn't cancel this payment. Please try again."
+      }
+    ] as const)(
+      'shows our own copy, never the server text, when the cancel fails ($answer.code)',
+      async ({ answer, shown }) => {
+        await renderDeclinedPlanChange(true, { cancelOperation: answer })
+
+        await userEvent.click(screen.getByRole('button', { name: CANCEL }))
+
+        expect(await screen.findByText(shown)).toBeInTheDocument()
+      }
     )
   })
 
@@ -1062,10 +1238,14 @@ describe('CheckoutView', () => {
     expect(assign).not.toHaveBeenCalled()
   })
 
-  it.for(['Back', 'Close'])(
-    'returns to the product, where plans are chosen, on %s',
-    async (action) => {
+  it.for([
+    { action: 'Back', control: 'back' },
+    { action: 'Close', control: 'close' }
+  ])(
+    'returns to the product, where plans are chosen, on $action, and reports it',
+    async ({ action, control }) => {
       const assign = stubNavigation()
+      const sent = trackedBillingEvents()
       await renderCheckout()
       await screen.findByRole('button', { name: 'Pay and subscribe' })
 
@@ -1074,6 +1254,14 @@ describe('CheckoutView', () => {
       expect(assign).toHaveBeenCalledExactlyOnceWith(
         'https://testcloud.comfy.org/'
       )
+      expect(sent()).toStrictEqual([
+        {
+          operation: 'web_return',
+          stage: 'clicked',
+          outcome: 'pending',
+          control
+        }
+      ])
     }
   )
 
@@ -1117,6 +1305,7 @@ describe('CheckoutView', () => {
     })
 
     const assign = stubNavigation()
+    const sent = trackedBillingEvents()
     expect(
       await screen.findByText('There is no active subscription to change.')
     ).toBeInTheDocument()
@@ -1126,6 +1315,14 @@ describe('CheckoutView', () => {
     expect(assign).toHaveBeenCalledExactlyOnceWith(
       'https://testcloud.comfy.org/'
     )
+    expect(sent()).toStrictEqual([
+      {
+        operation: 'web_return',
+        stage: 'clicked',
+        outcome: 'pending',
+        control: 'back'
+      }
+    ])
   })
 
   it('shows the reason the server gave for a refused quote, as the app does', async () => {
@@ -1175,5 +1372,156 @@ describe('CheckoutView', () => {
     reportConfirm('ctoken_1')
 
     expect(await screen.findByRole('alert')).toHaveTextContent(shown)
+  })
+})
+
+/** What the facade sent to the RUM sink for one billing operation, in order. */
+function reportedBillingEvents(operation: string) {
+  return vi
+    .mocked(datadogRum.addAction)
+    .mock.calls.filter(([name]) => name.startsWith(`billing.${operation}.`))
+    .map(([name, context]) => ({ name, context }))
+}
+
+describe('CheckoutView attempt telemetry', () => {
+  const SOURCE_PATH = `${CHECKOUT_PATH}&source=subscribe_now_button`
+  const ATTEMPT = {
+    operation: 'subscription_checkout',
+    tier: 'creator',
+    cycle: 'monthly',
+    checkout_type: 'new',
+    payment_intent_source: 'subscribe_now_button',
+    checkout_ui: 'embedded',
+    billing_client: 'sdk',
+    billing_surface: 'billing_web'
+  }
+
+  beforeEach(() => {
+    workspace.session = undefined
+    workspace.bound = undefined
+    formProps.mounted = false
+    vi.mocked(datadogRum.getInitConfiguration).mockReturnValue({
+      clientToken: 'pub',
+      applicationId: 'app'
+    })
+  })
+
+  it.for<{
+    name: string
+    subscribe: FakeBillingClientOptions['subscribe']
+    terminal: Record<string, unknown>
+  }>([
+    {
+      name: 'a payment the server settled',
+      subscribe: {
+        status: 'ok',
+        value: {
+          phase: 'succeeded',
+          operation: succeededOperation('op_1'),
+          issuedStatus: 'subscribed'
+        }
+      },
+      terminal: {
+        stage: 'succeeded',
+        outcome: 'success',
+        billing_op_id: 'op_1'
+      }
+    },
+    {
+      name: 'a decline',
+      subscribe: {
+        status: 'ok',
+        value: {
+          phase: 'failed',
+          operation: failedOperation('card_declined', 'op_1')
+        }
+      },
+      terminal: {
+        stage: 'failed',
+        outcome: 'failure',
+        failure_category: 'provider_decline',
+        decline_reason: 'card_declined',
+        billing_op_id: 'op_1'
+      }
+    },
+    {
+      name: 'a refusal before any operation exists',
+      subscribe: { status: 'error', code: 'REQUEST_FAILED' },
+      terminal: {
+        stage: 'failed',
+        outcome: 'failure',
+        failure_category: 'network'
+      }
+    }
+  ])('reports $name as one intent, one start and one terminal', async (row) => {
+    await renderCheckout(SOURCE_PATH, { subscribe: row.subscribe })
+    await screen.findByRole('button', { name: 'Pay and subscribe' })
+
+    reportConfirm('ctoken_1')
+
+    await waitFor(() =>
+      expect(reportedBillingEvents('subscription_checkout')).toHaveLength(3)
+    )
+    expect(reportedBillingEvents('subscription_checkout')).toEqual([
+      {
+        name: 'billing.subscription_checkout.intent',
+        context: { ...ATTEMPT, stage: 'intent', outcome: 'pending' }
+      },
+      {
+        name: 'billing.subscription_checkout.started',
+        context: { ...ATTEMPT, stage: 'started', outcome: 'pending' }
+      },
+      {
+        name: `billing.subscription_checkout.${row.terminal.stage}`,
+        context: {
+          ...ATTEMPT,
+          ...row.terminal,
+          duration_ms: expect.any(Number)
+        }
+      }
+    ])
+  })
+
+  it('keeps one attempt open across the reactivation the server demands, and ends it once', async () => {
+    const fake = await renderCheckout(SOURCE_PATH, {
+      preview: { status: 'ok', value: upgradeQuote() },
+      subscribe: {
+        status: 'ok',
+        value: {
+          phase: 'succeeded',
+          operation: succeededOperation('op_1'),
+          issuedStatus: 'subscribed'
+        }
+      }
+    })
+    fake.subscribe.mockResolvedValueOnce({
+      status: 'error',
+      code: 'REACTIVATION_CONFIRMATION_REQUIRED'
+    })
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Confirm upgrade' })
+    )
+    const reactivate = await screen.findByRole('button', {
+      name: 'Confirm & reactivate — $28.00 today'
+    })
+    expect(
+      reportedBillingEvents('subscription_checkout').map(({ name }) => name)
+    ).toEqual([
+      'billing.subscription_checkout.intent',
+      'billing.subscription_checkout.started'
+    ])
+
+    await userEvent.click(screen.getByRole('checkbox'))
+    await userEvent.click(reactivate)
+
+    await waitFor(() =>
+      expect(
+        reportedBillingEvents('subscription_checkout').map(({ name }) => name)
+      ).toEqual([
+        'billing.subscription_checkout.intent',
+        'billing.subscription_checkout.started',
+        'billing.subscription_checkout.succeeded'
+      ])
+    )
   })
 })

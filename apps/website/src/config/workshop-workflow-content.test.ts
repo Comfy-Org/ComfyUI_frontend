@@ -3,9 +3,11 @@ import { join } from 'node:path'
 
 import { assert, describe, expect, it } from 'vitest'
 
-import displayJson from '../content/workshop-display.json'
-import categories from '../content/workshop-workflow-categories.json'
-import { workshopDisplayEntriesSchema } from '../content/workshop-display.schema'
+import { websiteRoot } from '@website/paths'
+import displayJson from '@/content/workshop-display.json'
+import categories from '@/content/workshop-workflow-categories.json'
+import { workshopDisplayEntriesSchema } from '@/content/workshop-display.schema'
+import { modelTitle } from '@/lib/workshop/model-title'
 import { workshopExecutionId } from './models-catalogue'
 import { initialWorkshopPageState } from './workshop-page-state'
 import { urlUploadField, validateForm } from './workshop-playground'
@@ -27,7 +29,7 @@ const source = pages.find((page) => page.slug === 'workflows/change-material')
 if (!source) throw new Error('Missing curated workflow page')
 const page = source
 const workflows = workshopPages.filter((model) => model.routerId === undefined)
-const publicDirectory = join(import.meta.dirname, '../../public')
+const publicDirectory = join(websiteRoot, 'public')
 
 describe('curated workflow pages', () => {
   it.for(workflows)(
@@ -278,4 +280,11 @@ describe('curated workflow pages', () => {
       expect(detail).not.toHaveProperty('routerId')
     }
   )
+})
+
+describe('workshop pages', () => {
+  it('gives every model and workflow page its own title', () => {
+    const titles = workshopPages.map((model) => modelTitle(model))
+    expect(new Set(titles).size).toBe(titles.length)
+  })
 })

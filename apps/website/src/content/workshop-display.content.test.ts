@@ -2,25 +2,24 @@ import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
-import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from '../config/workshop-router-content'
-import { workshopContract } from '../config/workshop-contract-catalog'
-import { schemaForModel } from '../config/workshop-playground'
+import { websiteRoot } from '@website/paths'
+import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from '@/config/workshop-router-content'
+import { workshopContract } from '@/config/workshop-contract-catalog'
+import { schemaForModel } from '@/config/workshop-playground'
 import {
   authoredWorkshopModels,
   routerAliasById,
   routerContentById
-} from '../config/workshop-browse-content'
-import { fieldsForDefinition } from '../config/workshop-form-definition'
+} from '@/config/workshop-browse-content'
+import { fieldsForDefinition } from '@/config/workshop-form-definition'
 import {
   WORKSHOP_USE_CASES,
   workshopDisplayEntriesSchema,
   workshopDisplaySchema
 } from './workshop-display.schema'
 import { workshopModelSchema } from './workshop-models.schema'
-import {
-  appCatalog,
-  workflowCatalog
-} from '../config/workshop-workflow-catalog'
+import { appCatalog, workflowCatalog } from '@/config/workshop-workflow-catalog'
+import { isWorkshopModelDisabled } from '@/config/workshop-model-availability'
 
 const here = import.meta.dirname
 const display = workshopDisplayEntriesSchema.parse(
@@ -45,7 +44,13 @@ const STILL = new Set(['image', 'svg'])
 
 describe('the display overlay against the catalog', () => {
   it.for([
-    { id: 'minimax/hailuo-03', name: 'MiniMax H3 Text-to-Video' },
+    // MiniMax H3 is disabled (awaiting its publish review), so it has no
+    // /hub/models URL row yet.
+    {
+      id: 'minimax/hailuo-03',
+      name: 'MiniMax H3 Text-to-Video',
+      href: undefined
+    },
     {
       id: 'minimax/hailuo-03-regeneration',
       name: 'MiniMax H3 Video Regeneration'
@@ -53,13 +58,14 @@ describe('the display overlay against the catalog', () => {
     {
       id: 'vertexai/gemini-3-pro-image',
       name: 'Nano Banana Pro Text-to-Image',
+      href: '/hub/models/nano-banana-pro-text-to-image/',
       // The first content record for this model is its edit page; the
       // generate page is the one the Router slug resolves to.
       contentName: 'Nano Banana Pro Image Edit'
     }
   ])(
     'preserves Rob’s display name for $id independently of Router eligibility',
-    ({ id, name, contentName }) => {
+    ({ id, name, contentName, href }) => {
       const catalogEntry = catalogById.get(id)
       if (!catalogEntry) throw new Error('Missing renamed model')
       const detail = getRouterWorkshopModelDetail(catalogEntry.slug)
@@ -73,10 +79,19 @@ describe('the display overlay against the catalog', () => {
       const routerId = routerAliasById.get(id)?.routerId ?? id
       expect(detail?.routerId).toBe(routerId)
       expect(detail?.slug.startsWith(`${catalogEntry.slug}--`)).toBe(true)
-      expect(detail?.href).toBe(`/models/${detail?.slug}/`)
+      expect(detail?.href).toBe(href)
       if (detail?.execution) expect(detail.execution.id).toBe(routerId)
     }
   )
+
+  it('pins which href fixtures are disabled', () => {
+    expect(
+      [
+        'minimax--hailuo-03--generate-videos',
+        'vertexai--gemini-3-pro-image--generate-images'
+      ].filter(isWorkshopModelDisabled)
+    ).toEqual(['minimax--hailuo-03--generate-videos'])
+  })
 
   it('falls back to the catalog name when content has no override', () => {
     const entry = catalog.find((model) => {
@@ -268,8 +283,28 @@ describe('the display overlay against the catalog', () => {
     expect(workshopDisplaySchema.safeParse(model).success).toBe(true)
   })
 
+  it.for([
+    { poster: 'https://cdn.test/poster.jpg', valid: true },
+    { poster: 'https://cdn.test/poster.webp?v=2', valid: true },
+    { poster: 'https://cdn.test/clip.mp4', valid: false },
+    { poster: 'https://cdn.test/poster', valid: false }
+  ])(
+    'accepts a poster only when it is a still ($poster)',
+    ({ poster, valid }) => {
+      const entry = display.find((candidate) => candidate.type !== 'APP')
+      const withPoster = {
+        ...entry,
+        media: {
+          ...entry?.media,
+          thumbnail: { url: 'https://cdn.test/clip.mp4', kind: 'video', poster }
+        }
+      }
+      expect(workshopDisplaySchema.safeParse(withPoster).success).toBe(valid)
+    }
+  )
+
   it('finds every site-relative asset in public/', () => {
-    const publicDir = join(here, '..', '..', 'public')
+    const publicDir = join(websiteRoot, 'public')
     const missing = display.flatMap((entry) =>
       [entry.media.thumbnail, ...(entry.media.samples ?? [])]
         .filter((asset) => asset?.url.startsWith('/'))

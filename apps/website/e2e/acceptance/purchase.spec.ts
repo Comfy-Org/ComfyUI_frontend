@@ -7,18 +7,19 @@ import {
 } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
-import { modelCases } from '../../acceptance/cases'
+import { modelCases } from '@website/acceptance/cases'
 import {
   runAndVerify,
   test,
   useOwnInputs,
   waitForBalance
-} from '../../acceptance/fixtures'
+} from '@website/acceptance/fixtures'
 import {
   expectedCharge,
   liveSettings,
   requiredSetting
-} from '../../acceptance/settings'
+} from '@website/acceptance/settings'
+import { hubModelHref } from '@/config/hub-models'
 
 const topupDollars = 10
 
@@ -34,7 +35,7 @@ for (const model of modelCases.filter((model) => model.smoke)) {
     expectedCharge(model.slug, 'own')
     const domain = requiredSetting('WORKSHOP_SIGNUP_EMAIL_DOMAIN')
     const email = z.string().email().parse(`workshop-${randomUUID()}@${domain}`)
-    const path = `/models/${model.slug}/`
+    const path = hubModelHref(model.slug)
     await page.goto(path)
     await useOwnInputs(page, model)
     await page.getByTestId('run-button').click()

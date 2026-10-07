@@ -1,4 +1,4 @@
-import { beforeEach, describe } from 'vitest'
+import { describe } from 'vitest'
 
 import {
   LGraph,
@@ -17,10 +17,6 @@ const mockReportError = vi.hoisted(() => vi.fn())
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
-
-beforeEach(() => {
-  mockReportError.mockClear()
-})
 
 describe('LGraph Serialisation', () => {
   test('can (de)serialise node / group titles', ({ expect, minimalGraph }) => {
@@ -103,6 +99,7 @@ describe('LGraph Serialisation', () => {
         message: 'Graph serialization state mismatch'
       }),
       {
+        surface: 'graph',
         errorType: 'graph_serialization_state_mismatch',
         context: {
           graphId: graph.id,

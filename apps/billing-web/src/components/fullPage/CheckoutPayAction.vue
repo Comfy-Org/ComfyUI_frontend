@@ -9,13 +9,14 @@ import { cn } from '@comfyorg/tailwind-utils'
 import type { InlineOutcome, SubmitPhase } from '@/checkout/checkoutPage'
 import { isChallengeReopenable } from '@/checkout/checkoutPage'
 import { supportLinkFor } from '@/checkout/payVerdict'
+import type { PlanPurchase } from '@/checkout/summaryLedger'
+import CancelPaymentControl from '@/components/fullPage/CancelPaymentControl.vue'
 import InlineOutcomeCard from '@/components/fullPage/InlineOutcomeCard.vue'
 import type { KeepSubscriptionConsent } from '@/components/fullPage/KeepSubscriptionNotice.vue'
 import KeepSubscriptionNotice from '@/components/fullPage/KeepSubscriptionNotice.vue'
 
 /** What the last Pay left, and the consent a plan set to end needs, around the button. */
 export interface PayContext {
-  readonly failure?: string
   readonly outcome?: Exclude<InlineOutcome, { kind: 'reconciling' }>
   readonly consent?: KeepSubscriptionConsent
 }
@@ -24,18 +25,23 @@ const {
   disabled,
   loading = false,
   phase,
-  canCancel = false,
-  failure,
+  locked = false,
+  reopening = false,
   outcome,
-  consent
+  consent,
+  purchase = 'subscribe'
 } = defineProps<
   PayContext & {
+    /** A top-up buys credits once, so it authorizes no recurring charge. */
+    purchase?: PlanPurchase | 'credits'
     disabled: boolean
     loading?: boolean
     /** The submit area's phase; only the visible pay action carries one, so the page has one live region. */
     phase?: SubmitPhase
-    /** Cancel payment renders only once the server can cancel a pending payment. */
-    canCancel?: boolean
+    /** Money is on its way, so the consent it was sent with stands. */
+    locked?: boolean
+    /** The page is re-opening the challenge on its own; offering it too would flash. */
+    reopening?: boolean
   }
 >()
 
@@ -48,9 +54,42 @@ const emit = defineEmits<{
 
 const { t, te } = useI18n()
 
+/** A plan authorizes a charge each period; a top-up authorizes one. */
+const PURCHASE_COPY = {
+  subscribe: {
+    pay: 'checkout.payAndSubscribe',
+    agreement: 'checkout.fullPage.terms.agreement'
+  },
+  upgrade: {
+    pay: 'checkout.fullPage.confirmUpgrade',
+    agreement: 'checkout.fullPage.terms.agreement'
+  },
+  change: {
+    pay: 'checkout.fullPage.confirmChange',
+    agreement: 'checkout.fullPage.terms.agreement'
+  },
+  credits: {
+    pay: 'checkout.fullPage.payForCredits',
+    agreement: 'checkout.fullPage.terms.agreementOnce'
+  }
+} as const
+
+const payLabel = computed(() => t(PURCHASE_COPY[purchase].pay))
+
+const terms = computed(() => ({
+  agreement: t(PURCHASE_COPY[purchase].agreement, {
+    terms: '{terms}',
+    privacy: '{privacy}'
+  }),
+  terms: t('checkout.fullPage.terms.terms'),
+  privacyPolicy: t('checkout.fullPage.terms.privacyPolicy')
+}))
+
 /** Support is for a payment that failed; a notice over a fresh price is not one. */
 const supportLink = computed(() =>
-  outcome !== undefined && 'operationId' in outcome
+  outcome !== undefined &&
+  ('operationId' in outcome ||
+    (outcome.kind === 'processing_error' && 'code' in outcome))
     ? supportLinkFor(outcome)
     : undefined
 )
@@ -83,16 +122,22 @@ const challenge = computed(() =>
   phase?.kind === 'challenge' ? phase.operation : undefined
 )
 
-/** A challenge the page is not showing turns Pay into the one way back to it. */
+const cancel = computed(() =>
+  phase?.kind === 'challenge' ? phase.cancel : undefined
+)
+
+const canceling = computed(() => cancel.value === 'canceling')
+
+/** A challenge the page is not showing, and is not about to, turns Pay into the one way back to it. */
 const reopenable = computed(
-  () => challenge.value !== undefined && isChallengeReopenable(challenge.value)
+  () =>
+    !reopening &&
+    challenge.value !== undefined &&
+    isChallengeReopenable(challenge.value)
 )
 
 const PRIMARY_BUTTON =
   'flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-base-foreground px-4 text-sm font-semibold text-base-background transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-secondary-background focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40'
-
-const SECONDARY_BUTTON =
-  'flex h-10 w-full cursor-pointer items-center justify-center rounded-lg bg-tertiary-background px-4 text-sm font-semibold text-base-foreground hover:bg-tertiary-background-hover focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:outline-none'
 </script>
 
 <template>
@@ -102,16 +147,10 @@ const SECONDARY_BUTTON =
       :key="`${outcome.kind}:${'operationId' in outcome ? outcome.operationId : ''}`"
       :outcome
     />
-    <p
-      v-if="failure"
-      role="alert"
-      class="m-0 text-sm text-destructive-background"
-    >
-      {{ failure }}
-    </p>
     <KeepSubscriptionNotice
       v-if="consent"
       :consent
+      :locked
       @confirm="emit('confirmReactivation', $event)"
     />
     <div class="flex flex-col gap-4">
@@ -132,6 +171,7 @@ const SECONDARY_BUTTON =
       <button
         v-if="reopenable"
         type="button"
+        :disabled="canceling"
         :class="PRIMARY_BUTTON"
         @click="emit('continueVerification')"
       >
@@ -151,17 +191,14 @@ const SECONDARY_BUTTON =
           aria-hidden="true"
         />
         <span :class="cn(loading && 'sr-only')">
-          {{ t('checkout.payAndSubscribe') }}
+          {{ payLabel }}
         </span>
       </button>
-      <button
-        v-if="challenge && canCancel"
-        type="button"
-        :class="SECONDARY_BUTTON"
-        @click="emit('cancel')"
-      >
-        {{ t('checkout.fullPage.phase.cancel') }}
-      </button>
+      <CancelPaymentControl
+        v-if="cancel"
+        :offer="cancel"
+        @cancel="emit('cancel')"
+      />
       <a
         v-if="supportLink"
         :href="supportLink"
@@ -174,16 +211,7 @@ const SECONDARY_BUTTON =
       >
         {{ t('checkout.fullPage.outcome.contactSupport') }}
       </a>
-      <CheckoutTermsNote
-        :copy="{
-          agreement: t('checkout.fullPage.terms.agreement', {
-            terms: '{terms}',
-            privacy: '{privacy}'
-          }),
-          terms: t('checkout.fullPage.terms.terms'),
-          privacyPolicy: t('checkout.fullPage.terms.privacyPolicy')
-        }"
-      />
+      <CheckoutTermsNote :copy="terms" />
     </div>
   </div>
 </template>

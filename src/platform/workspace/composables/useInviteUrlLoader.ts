@@ -2,14 +2,29 @@ import { useToast } from 'primevue/usetoast'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   clearPreservedQuery,
   hydratePreservedQuery,
   mergePreservedQueryIntoQuery
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
+import { reportError } from '@/platform/telemetry/reportError'
+import { useDialogService } from '@/services/dialogService'
+import { useAuthStore } from '@/stores/authStore'
 
+import { WorkspaceApiError } from '../api/workspaceApi'
+import { MEMBERSHIP_MANAGED_BY_DIRECTORY } from '../api/workspaceApiError'
 import { useTeamWorkspaceStore } from '../stores/teamWorkspaceStore'
+
+function isDirectoryManagedRefusal(error: unknown): boolean {
+  return (
+    error instanceof WorkspaceApiError &&
+    error.status === 403 &&
+    error.code === MEMBERSHIP_MANAGED_BY_DIRECTORY &&
+    useFeatureFlags().flags.ssoEnabled
+  )
+}
 
 /**
  * Composable for loading workspace invites from URL query parameters
@@ -26,7 +41,9 @@ export function useInviteUrlLoader() {
   const router = useRouter()
   const { t } = useI18n()
   const toast = useToast()
+  const dialogService = useDialogService()
   const workspaceStore = useTeamWorkspaceStore()
+  const authStore = useAuthStore()
   const INVITE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.INVITE
 
   /**
@@ -75,6 +92,18 @@ export function useInviteUrlLoader() {
       return
     }
 
+    if (authStore.signedInWithSso && authStore.currentUser === null) {
+      toast.add({
+        severity: 'info',
+        summary: t('workspace.inviteSsoUnavailable'),
+        detail: t('workspace.inviteSsoUnavailableDetail'),
+        closable: true
+      })
+      cleanupUrlParams()
+      clearPreservedQuery(INVITE_NAMESPACE)
+      return
+    }
+
     try {
       const result = await workspaceStore.acceptInvite(inviteParam)
 
@@ -94,15 +123,61 @@ export function useInviteUrlLoader() {
         closable: true
       })
     } catch (error) {
-      toast.add({
-        severity: 'error',
-        summary: t('workspace.inviteFailed'),
-        detail: error instanceof Error ? error.message : t('g.unknownError')
-      })
+      await presentAcceptFailure(error, inviteParam)
     } finally {
+      // showDialog resolves immediately, so this clears the preserved token
+      // while a landing dialog is still open — Switch account re-stashes it
+      // itself before signing out.
       cleanupUrlParams()
       clearPreservedQuery(INVITE_NAMESPACE)
     }
+  }
+
+  /**
+   * A parsed `code` marks a genuine API ErrorResponse; infra responses (WAF,
+   * proxy, CDN) carry none and fall through to the toast. On this endpoint
+   * each status has exactly one contract meaning: 404 covers expired /
+   * revoked / rotated-by-resend alike (the BE cannot distinguish them), 403
+   * is an email mismatch.
+   */
+  async function presentAcceptFailure(error: unknown, inviteToken: string) {
+    const status =
+      error instanceof WorkspaceApiError && error.code !== undefined
+        ? error.status
+        : undefined
+    if (isDirectoryManagedRefusal(error)) {
+      toast.add({
+        severity: 'info',
+        summary: t('workspace.inviteDirectoryManaged'),
+        detail: t('workspace.inviteDirectoryManagedDetail'),
+        closable: true
+      })
+      return
+    }
+    try {
+      if (status === 404) {
+        await dialogService.showInviteLinkInvalidDialog()
+        return
+      }
+      if (status === 403) {
+        await dialogService.showInviteWrongAccountDialog({ inviteToken })
+        return
+      }
+    } catch (dialogError) {
+      reportError(dialogError, {
+        errorType: 'error_showing_invite_landing_dialog',
+        surface: 'workspace'
+      })
+    }
+    reportError(error, {
+      errorType: 'error_accepting_workspace_invite',
+      surface: 'workspace'
+    })
+    toast.add({
+      severity: 'error',
+      summary: t('workspace.inviteFailed'),
+      detail: error instanceof Error ? error.message : t('g.unknownError')
+    })
   }
 
   return {

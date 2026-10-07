@@ -34,7 +34,7 @@ function renderPlayer(variant: 'compact' | 'expanded' = 'compact') {
     props: { src: SRC, variant },
     global: globalConfig
   })
-  // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- the media element is hidden and exposes no role
+  // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- the media element is hidden and exposes no role
   const audio = utils.container.querySelector('audio')
   if (!audio) throw new Error('audio element missing')
   return { ...utils, audio }
@@ -133,7 +133,7 @@ describe('WaveAudioPlayer', () => {
     expect(screen.getByRole('button', { name: 'g.skipToEnd' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'g.volume' })).toBeDisabled()
     expect(
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- Reka exposes disabled state as a data attribute on the root
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- Reka exposes disabled state as a data attribute on the root
       container.querySelector('[data-slot="slider"]')
     ).toHaveAttribute('data-disabled')
 

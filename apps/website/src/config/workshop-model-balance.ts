@@ -5,9 +5,9 @@
  * carry none of its code.
  */
 import type { Ref } from 'vue'
-import { computed, shallowRef, watch } from 'vue'
+import { computed, onScopeDispose, shallowRef, watch } from 'vue'
 
-import { useWorkshopAuthFlag } from '../scripts/posthog'
+import { useWorkshopAuthFlag } from '@/scripts/posthog'
 import { resolveWorkshopAccountSource } from './workshop-account-source'
 import { useWorkshopCredits } from './workshop-credits'
 import type { SessionBalanceState } from './workshop-session-balance'
@@ -22,15 +22,18 @@ type BalanceSource = Readonly<Ref<ModelBalance>>
 const UNKNOWN: ModelBalance = { status: 'unknown' }
 
 async function bindSource(
-  session: Readonly<Ref<WorkshopSession | undefined>>
-): Promise<BalanceSource> {
-  if ((await resolveWorkshopAccountSource()) === 'firebase')
-    return useWorkshopCredits().balance
+  session: Readonly<Ref<WorkshopSession | undefined>>,
+  active: () => boolean
+): Promise<BalanceSource | undefined> {
+  const source = await resolveWorkshopAccountSource()
+  if (!active()) return undefined
+  if (source === 'firebase') return useWorkshopCredits().balance
   const [{ useWorkshopSessionBalance }, { useWorkshopWebSession }] =
     await Promise.all([
       import('./workshop-session-balance'),
       import('./workshop-web-session-identity')
     ])
+  if (!active()) return undefined
   const sessionBalance = useWorkshopSessionBalance(useWorkshopWebSession())
   return computed(() =>
     session.value?.workspace.type === 'personal'
@@ -49,12 +52,16 @@ export function useWorkshopModelBalance(
   const authEnabled = useWorkshopAuthFlag()
   const source = shallowRef<BalanceSource>()
   let binding = false
+  let disposed = false
+  onScopeDispose(() => {
+    disposed = true
+  }, true)
   watch(
     authEnabled,
     (enabled) => {
       if (!enabled || binding || typeof window === 'undefined') return
       binding = true
-      void bindSource(session).then((bound) => {
+      void bindSource(session, () => !disposed).then((bound) => {
         source.value = bound
       })
     },

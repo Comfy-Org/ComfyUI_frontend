@@ -123,6 +123,7 @@ describe('useSessionCookie', () => {
     await useSessionCookie().createSession()
 
     expect(mockReportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
+      surface: 'auth',
       errorType: 'session_cookie_creation_failure',
       level: 'warning'
     })
@@ -259,6 +260,7 @@ describe('useSessionCookie', () => {
     await expect(useSessionCookie().deleteSession()).resolves.toBeUndefined()
 
     expect(mockReportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
+      surface: 'auth',
       errorType: 'auth_session_cookie_delete_failed',
       tags: {
         failure_kind: 'caught_unexpected',
@@ -310,6 +312,7 @@ describe('useSessionCookie', () => {
     expect(mockReportError).toHaveBeenCalledWith(
       expect.any(Error),
       expect.objectContaining({
+        surface: 'auth',
         errorType: 'auth_session_cookie_delete_failed',
         context: { had_pending_session_mutation: true }
       })
@@ -329,6 +332,48 @@ describe('useSessionCookie', () => {
     await expect(useSessionCookie().createSessionOrThrow()).rejects.toThrow(
       'session denied'
     )
+  })
+
+  it.for([
+    {
+      name: 'a 403 sso_required',
+      status: 403,
+      code: 'sso_required',
+      sso: true
+    },
+    { name: 'another 403', status: 403, code: 'FORBIDDEN', sso: false },
+    {
+      name: 'a 401 sso_required',
+      status: 401,
+      code: 'sso_required',
+      sso: false
+    }
+  ])(
+    'sessionRequiresSso answers $sso for $name, which still rejects with the server message',
+    async ({ status, code, sso }) => {
+      vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
+        'firebase-id-token'
+      )
+      vi.mocked(globalThis.fetch).mockImplementation(async () =>
+        Response.json({ code, message: 'refused by ingest' }, { status })
+      )
+      const { useSessionCookie } = await loadUseSessionCookie()
+
+      expect(await useSessionCookie().sessionRequiresSso()).toBe(sso)
+      await expect(useSessionCookie().createSessionOrThrow()).rejects.toThrow(
+        'refused by ingest'
+      )
+    }
+  )
+
+  it('sessionRequiresSso is false once the session is created', async () => {
+    vi.mocked(useAuthStore().getIdToken).mockResolvedValue('firebase-id-token')
+    vi.mocked(globalThis.fetch).mockResolvedValue(
+      new Response(null, { status: 204 })
+    )
+    const { useSessionCookie } = await loadUseSessionCookie()
+
+    expect(await useSessionCookie().sessionRequiresSso()).toBe(false)
   })
 })
 

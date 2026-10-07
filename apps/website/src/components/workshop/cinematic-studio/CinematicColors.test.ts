@@ -1,21 +1,9 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { defineComponent, h, ref } from 'vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
-import { sampleImageColors } from '../../../lib/workshop/cinematic-studio/colors'
 import CinematicColors from './CinematicColors.vue'
-
-vi.mock(import('../../../lib/workshop/cinematic-studio/colors'), {
-  spy: true
-})
-
-beforeEach(() => {
-  vi.mocked(sampleImageColors).mockImplementation(async (file: File) => {
-    if (file.name === 'bad.png') throw new Error('Unsupported image')
-    return ['#102030', '#405060']
-  })
-})
 
 function renderColors(start: readonly string[] = [], startMain?: number) {
   const colors = ref<readonly string[]>(start)
@@ -60,26 +48,38 @@ describe('CinematicColors', () => {
     expect(main.value).toBeUndefined()
   })
 
-  it('fills the palette from an image without sending it anywhere', async () => {
-    const { colors, main, user } = renderColors(['#aa0000'], 0)
-    await user.upload(
-      screen.getByTestId('cinematic-colors-sample'),
-      new File(['x'], 'harbor.png', { type: 'image/png' })
-    )
-    expect(colors.value).toEqual(['#102030', '#405060'])
-    expect(main.value).toBeUndefined()
+  it('edits the chosen swatch from the hex field', async () => {
+    const { colors, user } = renderColors(['#aa0000', '#00aa00'])
+    await user.click(screen.getByRole('button', { name: 'Color 2: #00aa00' }))
+    const hex = screen.getByRole('textbox', { name: 'Hex color' })
+    await user.clear(hex)
+    await user.type(hex, '3b1b6e{Enter}')
+    expect(colors.value).toEqual(['#aa0000', '#3b1b6e'])
   })
 
-  it('says so when an image cannot be read', async () => {
+  it('keeps the color when the hex field holds no color', async () => {
     const { colors, user } = renderColors(['#aa0000'])
-    await user.upload(
-      screen.getByTestId('cinematic-colors-sample'),
-      new File(['x'], 'bad.png', { type: 'image/png' })
-    )
-    expect(await screen.findByRole('status')).toHaveTextContent(
-      "Couldn't read colors from that image."
-    )
+    const hex = screen.getByRole('textbox', { name: 'Hex color' })
+    await user.clear(hex)
+    await user.type(hex, 'nope{Enter}')
     expect(colors.value).toEqual(['#aa0000'])
+    expect(hex).toHaveValue('#aa0000')
+  })
+
+  it('moves the shade square from the keyboard and reports its saturation', async () => {
+    const { colors, user } = renderColors(['#808080'])
+    const shade = screen.getByRole('slider', {
+      name: 'Saturation and brightness'
+    })
+    expect(shade).toHaveAttribute('aria-valuemin', '0')
+    expect(shade).toHaveAttribute('aria-valuemax', '100')
+    expect(shade).toHaveAttribute('aria-valuenow', '0')
+
+    shade.focus()
+    await user.keyboard('{ArrowRight}{ArrowRight}')
+
+    expect(shade).toHaveAttribute('aria-valuenow', '4')
+    expect(colors.value[0]).not.toBe('#808080')
   })
 
   it('clears every color', async () => {
