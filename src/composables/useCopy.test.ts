@@ -8,7 +8,7 @@ import {
   vi
 } from 'vitest'
 import { effectScope } from 'vue'
-import { LAST_COPY_ID_KEY, useCopy } from './useCopy'
+import { LAST_KEYBOARD_COPY_ID_KEY, useCopy } from './useCopy'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { fromPartial } from '@total-typescript/shoehorn'
@@ -61,16 +61,17 @@ function selectDocumentText(selectedCharacters: number): void {
   })
 }
 
-function readSerializedClipboardMetadata(dataTransfer: DataTransfer): string {
+function readClipboardPayload(dataTransfer: DataTransfer): unknown {
   const match = dataTransfer
     .getData('text/html')
-    .match(/data-comfy-metadata="([A-Za-z0-9+/=]+)"/)?.[1]
-  expect(match).toBeDefined()
+    .match(
+      /^<meta charset="utf-8"><div><span data-comfy-metadata="([A-Za-z0-9+/=]+)"><\/span><\/div><span style="white-space:pre-wrap;">Text<\/span>$/
+    )?.[1]
   if (!match) throw new Error('Expected clipboard metadata to be written')
 
   const binaryString = atob(match)
   const bytes = Uint8Array.from(binaryString, (char) => char.charCodeAt(0))
-  return new TextDecoder().decode(bytes)
+  return JSON.parse(new TextDecoder().decode(bytes))
 }
 
 describe('useCopy', () => {
@@ -98,24 +99,23 @@ describe('useCopy', () => {
 
     const dataTransfer = copySerializedData(serializedData)
 
-    expect(readSerializedClipboardMetadata(dataTransfer)).toBe(serializedData)
+    expect(readClipboardPayload(dataTransfer)).toEqual({
+      ...JSON.parse(serializedData),
+      copyId: expect.any(String)
+    })
   })
 
   it('tags the copy with the stored copy id outside a secure context', () => {
     vi.stubGlobal('crypto', {
       getRandomValues: crypto.getRandomValues.bind(crypto)
     })
-    onTestFinished(() => {
-      vi.unstubAllGlobals()
-    })
 
     const dataTransfer = copySerializedData('{"nodes":[]}')
 
-    const copyId = dataTransfer
-      .getData('text/html')
-      .match(/data-copy-id="([^"]+)"/)?.[1]
-    expect(copyId).toBeDefined()
-    expect(copyId).toBe(localStorage.getItem(LAST_COPY_ID_KEY))
+    expect(readClipboardPayload(dataTransfer)).toEqual({
+      nodes: [],
+      copyId: localStorage.getItem(LAST_KEYBOARD_COPY_ID_KEY)
+    })
   })
 
   describe('copy on a target the canvas ignores', () => {
