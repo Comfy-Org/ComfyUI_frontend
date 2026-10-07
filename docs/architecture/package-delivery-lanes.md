@@ -42,8 +42,8 @@ These are implementation invariants, not package dials:
 - Every approval is tied to the exact head SHA. A new commit needs a new policy decision.
 - Approval-label provenance is bound to the current workflow event. A non-allowlisted author is
   eligible only on the exact-head `labeled` event from a trusted operator; later events continue
-  only when that same head already has the policy approval. Commit timestamps are never used as a
-  proxy for push order.
+  while that same head has the policy approval and the label remains applied. Removing the label
+  withdraws the approval. Commit timestamps are never used as a proxy for push order.
 - An active human change request blocks the lane. Comments and pending reviews do not count as
   change requests.
 - The credential's GitHub identity must match the identity declared in the policy, and it cannot
