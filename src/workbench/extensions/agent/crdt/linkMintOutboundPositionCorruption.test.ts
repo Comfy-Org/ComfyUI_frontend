@@ -188,6 +188,7 @@ describe('agent CRDT outbound leg: link mint by live position vs. doc order', ()
       isDocBound: () => true,
       enqueue: (operations) => minted.push(...operations),
       getGraph: () => rootGraph,
+      boundWorkflowId: () => 'workflow',
       boundRootGraphId: () => ROOT_GRAPH_ID,
       docInputNames: (nodeId) =>
         readDocSlotNames(doc, String(nodeId), 'inputs'),

@@ -16,11 +16,13 @@ import type {
   PromotedHostWrite,
   WorkflowNode
 } from '@comfyorg/comfy-multi-player'
-import cloneDeep from 'es-toolkit/compat/cloneDeep'
 
 import { liveAutogrowGroupOf } from '@/core/graph/widgets/dynamicWidgets'
 import { registerDocBoundRootGraphProbe } from '@/lib/litegraph/src/docBoundGraphs'
-import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
+import {
+  onGraphIntent,
+  withGraphIntentSource
+} from '@/lib/litegraph/src/graphIntents'
 import type { GraphIntentEvent } from '@/lib/litegraph/src/graphIntents'
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
@@ -57,6 +59,8 @@ export interface DocOpMinterDeps {
   enqueue(operations: GraphOperation[]): void
   /** The live root graph, or null when no workflow is open. */
   getGraph(): LGraph | null
+  /** Stable identity of the semantic document currently bound to the minter. */
+  boundWorkflowId(): string | null
   /**
    * The bound workflow's own stored root graph id, or null when no workflow
    * is bound. Read from the workflow's serialized state rather than the live
@@ -115,7 +119,7 @@ type PendingOpPayload =
   | { kind: 'add_node'; graph: LGraph; node: LGraphNode }
   | { kind: 'op'; operation: GraphOperation }
 
-type PendingOp = PendingOpPayload & { binding: RootGraphId | null }
+type PendingOp = PendingOpPayload & { binding: string | null }
 
 /**
  * Serialized save-format node. `widgets_values` is NAME-KEYED via the node's
@@ -265,13 +269,11 @@ function promotedHostWrite(
   const widgetValueStore = useWidgetValueStore()
   let hostWidgetsValues: unknown[]
   try {
-    hostWidgetsValues = cloneDeep(
-      hostInputs.map((input, index) => {
-        if (index === valueIndex) return event.value
-        const value = widgetValueStore.getWidget(input.widgetId)?.value
-        return isWidgetValue(value) ? value : undefined
-      })
-    )
+    hostWidgetsValues = hostInputs.map((input, index) => {
+      if (index === valueIndex) return event.value
+      const value = widgetValueStore.getWidget(input.widgetId)?.value
+      return isWidgetValue(value) ? value : undefined
+    })
     const json = JSON.stringify(hostWidgetsValues)
     if (new TextEncoder().encode(json).length > WIRE_MAX_BATCH_BYTES) {
       onUnsafeSnapshot()
@@ -490,11 +492,14 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
   let flushScheduled = false
   let detached = false
 
-  function currentBindingIdentity(): RootGraphId | null {
+  function currentBindingIdentity(): string | null {
+    const workflow = deps.boundWorkflowId()
     const bound = deps.boundRootGraphId()
-    if (bound !== null) return bound
+    if (workflow !== null && bound !== null) return `${workflow}\u0000${bound}`
     const graph = deps.getGraph()
-    return graph ? toRootGraphId(graph.rootGraph.id) : null
+    return workflow !== null && graph
+      ? `${workflow}\u0000${toRootGraphId(graph.rootGraph.id)}`
+      : null
   }
 
   function schedule(op: PendingOpPayload): void {
@@ -506,7 +511,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
 
   function materializePending(
     entry: PendingOp,
-    binding: RootGraphId
+    binding: string
   ): GraphOperation | null {
     if (entry.binding !== binding) return null
     if (entry.kind === 'op') return entry.operation
@@ -608,6 +613,13 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       context: Record<string, unknown>,
       budget: Set<string> = reported
     ) => {
+      withGraphIntentSource('agent-remote', () => {
+        if (isWidgetValue(event.previous))
+          useWidgetValueStore().setValue(
+            widgetId(liveRootGraphId, event.nodeId, event.name),
+            event.previous
+          )
+      })
       reportOnce(key, message, errorType, context, budget)
       const now = Date.now()
       const last = lastRefusalNotification.get(key)
@@ -846,9 +858,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
   // node ids from the disjoint range (`idAllocation.ts`).
   const unregisterDocBoundProbe = registerDocBoundRootGraphProbe(() => {
     if (!deps.isEnabled() || !deps.isDocBound()) return null
-    const graph = deps.getGraph()
-    if (!graph) return null
-    return graph.rootGraph.id
+    return deps.boundRootGraphId()
   })
 
   return {

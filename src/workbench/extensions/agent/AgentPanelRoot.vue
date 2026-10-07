@@ -868,6 +868,7 @@ const isBoundWorkflowActive = computed(() => {
     boundOrOpenWorkflowFor(bound)?.path === active.path
   )
 })
+let lastHumanOpsRejectedAt = Number.NEGATIVE_INFINITY
 
 // `rootGraph` is rewritten before `activeWorkflow` changes during a load.
 // Treat that interval as having no graph so neither inbound projection nor
@@ -909,6 +910,9 @@ const {
     },
     onReset: graphActivity.resetWorkflow,
     onHumanOpsRejected() {
+      const now = Date.now()
+      if (now - lastHumanOpsRejectedAt < 5000) return
+      lastHumanOpsRejectedAt = now
       toast.add({
         severity: 'warn',
         summary: t('agent.widgetWriteNotSyncedTitle'),
@@ -953,6 +957,7 @@ const docOpMinter = attachDocOpMinter({
   isDocBound: () => isBoundWorkflowActive.value,
   enqueue: enqueueHumanOperations,
   getGraph: activeRootGraph,
+  boundWorkflowId: () => boundWorkflowId.value,
   boundRootGraphId,
   docInputNames,
   docPromotedWidgets,

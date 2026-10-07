@@ -1331,6 +1331,7 @@ export class ComfyApp {
     useWorkflowService().beforeLoadNewGraph(clean)
     await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
 
+    ChangeTracker.isLoadingGraph = true
     let reset_invalid_values = false
     const missingNodeTypes: MissingNodeType[] = []
     try {
@@ -1488,6 +1489,7 @@ export class ComfyApp {
         'workflow-load',
         workflowNavigationId
       )
+      ChangeTracker.isLoadingGraph = false
       return false
     }
 
@@ -1525,7 +1527,6 @@ export class ComfyApp {
       }
     }
 
-    ChangeTracker.isLoadingGraph = true
     let activatedWorkflow: LoadedComfyWorkflow | undefined
     let reconcileResourceErrors: (() => void) | undefined
     let resourceScanLoadCompleted = false

@@ -950,11 +950,13 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
         const node = nodes.get('1')!
         node.set('widgets', new Y.Map<unknown>([['value', 98]]))
         node.set(OPAQUE_WIDGETS_KEY, [99])
+        node.set('title', 'Fields still apply')
       },
       1
     )
 
     expect(state.instance.widgets[0]?.value).toBe(HOST_INITIAL_VALUE)
+    expect(state.instance.title).toBe('Fields still apply')
     expect(reportError).toHaveBeenCalledWith(
       expect.objectContaining({ message: expect.stringContaining('both') }),
       expect.objectContaining({ errorType: 'agent_graph_node_malformed' })

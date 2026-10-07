@@ -1496,10 +1496,29 @@ describe('useAgentCrdtFollower', () => {
     })
 
     expect(projectionState.revertRejected).not.toHaveBeenCalled()
-    expect(telemetryState.reportError).toHaveBeenCalledWith(
-      expect.any(Error),
-      expect.objectContaining({ errorType: 'agent_crdt_human_ops_skipped' })
+    expect(telemetryState.reportError).not.toHaveBeenCalled()
+    unmount()
+  })
+
+  it('restores a skipped widget register from the canonical document', async () => {
+    const liveGraph = fromPartial<LGraph>({ getNodeById: () => null })
+    const { unmount, enqueue } = mountFollower('wf-1', true, () => liveGraph)
+    enqueue([{ op: 'set_widget', node_id: '2', widget: 'steps', value: 3 }])
+    await Promise.resolve()
+    const [, , ops] = clientState.sendOps.mock.calls[0]
+
+    dispatchFrame('doc_ops_result', {
+      workflowId: 'wf-1',
+      ok: true,
+      applied: [],
+      skipped: [ops[0].op_id]
+    })
+
+    expect(projectionState.revertRejected).toHaveBeenCalledExactlyOnceWith(
+      'wf-1',
+      ops
     )
+    expect(telemetryState.reportError).not.toHaveBeenCalled()
     unmount()
   })
 
@@ -1510,6 +1529,7 @@ describe('useAgentCrdtFollower', () => {
       unmount: () => void
       status: () => AgentCrdtStatus
       ownActor: string
+      ownOpId: string
     }> {
       const { unmount, status, enqueue } = mountFollower(
         'wf-1',
@@ -1519,17 +1539,23 @@ describe('useAgentCrdtFollower', () => {
       enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
       await Promise.resolve()
       const [, , ops] = clientState.sendOps.mock.calls[0]
-      return { unmount, status, ownActor: ops[0].actor }
+      return {
+        unmount,
+        status,
+        ownActor: ops[0].actor,
+        ownOpId: ops[0].op_id
+      }
     }
 
     it('merges the echo of this tab’s own ops without applying it to the graph', async () => {
-      const { unmount, status, ownActor } = await mountAndSendOneOp()
+      const { unmount, status, ownActor, ownOpId } = await mountAndSendOneOp()
       expect(ownActor).toMatch(/^human:anonymous:/)
 
       dispatchFrame('doc_update', {
         workflowId: 'wf-1',
         seq: 42,
         actor: ownActor,
+        opIds: [ownOpId],
         catchUp: false
       })
 
@@ -1542,6 +1568,23 @@ describe('useAgentCrdtFollower', () => {
         applied: 0,
         skipped: 1
       })
+      unmount()
+    })
+
+    it('does not trust an actor match without a locally minted op id', async () => {
+      const { unmount, ownActor } = await mountAndSendOneOp()
+      const remote = {
+        workflowId: 'wf-1',
+        seq: 42,
+        actor: ownActor,
+        opIds: ['peer-op-id'],
+        catchUp: false
+      }
+
+      dispatchFrame('doc_update', remote)
+
+      expect(projectionState.applyFrame).toHaveBeenCalledExactlyOnceWith(remote)
+      expect(projectionState.discardPending).not.toHaveBeenCalled()
       unmount()
     })
 
@@ -1576,6 +1619,7 @@ describe('useAgentCrdtFollower', () => {
         workflowId: 'wf-1',
         seq: 42,
         actor: ownActor,
+        opIds: [firstOps[0].op_id],
         catchUp: false
       })
 
@@ -1605,6 +1649,7 @@ describe('useAgentCrdtFollower', () => {
         workflowId: 'wf-1',
         seq: 42,
         actor: ownActor,
+        opIds: [ops[0].op_id],
         catchUp: false
       }
 

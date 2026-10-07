@@ -58,6 +58,8 @@ export interface OpSenderDeps {
   actor(): string
   /** The follower's last observed doc sequence (stamps `base_version`). */
   baseVersion(): number
+  /** Observe creator-owned identities as soon as they are minted. */
+  onOpsMinted?(ops: readonly Op[], workflowId: string | null): void
   /**
    * Terminal per-batch report: 'acknowledged' carries the host's result;
    * 'unacknowledged' means one resend after silence also drew no result;
@@ -449,9 +451,10 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     return true
   }
 
-  function admit(operations: GraphOperation[]): void {
-    if (operations.length === 0) return
-    const workflowId = deps.workflowId()
+  function mintOperations(
+    operations: GraphOperation[],
+    workflowId: string | null
+  ): Op[] {
     if (workflowId !== lastMintedWorkflowId) {
       lastMintedVersion = -1
       lastMintedWorkflowId = workflowId
@@ -461,9 +464,12 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     const minted = operations.flatMap((operation, index) =>
       mintWireOps([operation], { actor, baseVersion: baseVersion + index })
     )
+    deps.onOpsMinted?.(minted, workflowId)
     lastMintedVersion = baseVersion + minted.length - 1
-    const admissionTarget = admissionTargetOrSettle(minted, workflowId)
-    if (admissionTarget === null) return
+    return minted
+  }
+
+  function installAdmission(minted: Op[], admissionTarget: string): void {
     const admissionEpoch = stateEpoch
     const admissionAbortGeneration = abortGeneration
     // seal() can synchronously re-enter the sender through its settlement
@@ -482,6 +488,15 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     if (open) for (const op of minted) open.ops.push(op)
     else open = { workflowId: admissionTarget, ops: minted }
     stateEpoch++
+  }
+
+  function admit(operations: GraphOperation[]): void {
+    if (operations.length === 0) return
+    const workflowId = deps.workflowId()
+    const minted = mintOperations(operations, workflowId)
+    const admissionTarget = admissionTargetOrSettle(minted, workflowId)
+    if (admissionTarget === null) return
+    installAdmission(minted, admissionTarget)
   }
 
   function sealInterruption(

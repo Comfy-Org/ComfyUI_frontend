@@ -254,6 +254,7 @@ function reportInactiveTrackerCall(method: string, workflowPath: string) {
 export class ChangeTracker {
   static MAX_HISTORY = 50
   private static readonly loadingGraphState = shallowRef(false)
+  private static loadingGraphDepth = 0
   /**
    * Guard flag to prevent captureCanvasState from running during loadGraphData.
    * Between rootGraph.configure() and afterLoadNewGraph(), the rootGraph
@@ -267,7 +268,10 @@ export class ChangeTracker {
   }
 
   static set isLoadingGraph(value: boolean) {
-    this.loadingGraphState.value = value
+    this.loadingGraphDepth = value
+      ? this.loadingGraphDepth + 1
+      : Math.max(0, this.loadingGraphDepth - 1)
+    this.loadingGraphState.value = this.loadingGraphDepth > 0
   }
   /**
    * The active state of the workflow.

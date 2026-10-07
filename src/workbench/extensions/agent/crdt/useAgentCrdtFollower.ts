@@ -272,32 +272,14 @@ function reportRejectedHumanOps(
   )
 }
 
-function reportSkippedHumanOps(
-  workflowId: string | null,
-  ops: readonly Op[],
-  result: OpsResultView
-): void {
-  const skipped = new Set(result.skipped)
-  const skippedOps = ops.filter((op) => skipped.has(op.op_id))
-  reportError(
-    new Error(`The doc host skipped ${skippedOps.length} local edit(s)`),
-    {
-      surface: 'agent',
-      errorType: 'agent_crdt_human_ops_skipped',
-      context: {
-        workflowId,
-        opIds: skippedOps.map((op) => op.op_id),
-        skippedOps: skippedOps.map((op) => op.op)
-      }
-    }
-  )
-}
-
 function definitivelyRejectedOps(outcome: BatchOutcome): readonly Op[] {
   if (outcome.state === 'undeliverable') return outcome.ops
   if (outcome.state !== 'acknowledged') return []
-  const applied = new Set(outcome.result.applied)
-  return outcome.ops.filter((op) => !applied.has(op.op_id))
+  const settled = new Set([
+    ...outcome.result.applied,
+    ...outcome.result.skipped
+  ])
+  return outcome.ops.filter((op) => !settled.has(op.op_id))
 }
 
 function rejectedAddNodeIds(ops: readonly Op[]): NodeId[] {
@@ -424,6 +406,9 @@ function startAgentCrdtFollower(
   // the authenticated actor, while echoes of already-minted anonymous ops
   // remain recognizable for the life of this tab.
   const ownActors = new Set<string>()
+  const ownOpIds = new Set<string>()
+  const opWorkflowIds = new Map<string, string>()
+  const MAX_TRACKED_OWN_OP_IDS = 10_000
   const ownActor = (): string => {
     const actor = `human:${userId() ?? 'anonymous'}:${tabId}`
     ownActors.add(actor)
@@ -448,34 +433,46 @@ function startAgentCrdtFollower(
     return projection.revertRejected(workflowId, ops)
   }
 
-  const revertRejectedOps = (
-    outcome: Extract<BatchOutcome, { state: 'acknowledged' }>
-  ) => {
-    const workflowId = outcome.result.workflowId ?? bridge.subscribedWorkflowId
-    if (outcome.result.failed)
-      reportRejectedHumanOps(workflowId, outcome.ops, outcome.result)
+  const revertRejectedOps = (workflowId: string | null, ops: readonly Op[]) => {
     if (workflowId === null) return
+    if (ops.length === 0) return
+    if (!isCurrentWorkflow(workflowId) || !getGraph()) {
+      pendingRejected.set(workflowId, [
+        ...(pendingRejected.get(workflowId) ?? []),
+        ...ops
+      ])
+      return
+    }
+    reportMaterialized(workflowId, projection.revertRejected(workflowId, ops))
+  }
 
+  const outcomeWorkflowId = (outcome: BatchOutcome): string | null => {
+    if (outcome.state === 'acknowledged' && outcome.result.workflowId)
+      return outcome.result.workflowId
+    for (const op of outcome.ops) {
+      const workflowId = opWorkflowIds.get(op.op_id)
+      if (workflowId) return workflowId
+    }
+    return null
+  }
+
+  const opsToRevert = (outcome: BatchOutcome): readonly Op[] => {
+    if (outcome.state === 'undeliverable') return outcome.ops
+    if (outcome.state !== 'acknowledged') return []
     const settled = new Set([
       ...outcome.result.applied,
       ...outcome.result.skipped
     ])
-    const rejected = outcome.ops.filter((op) => !settled.has(op.op_id))
-    if (rejected.length === 0) return
-    if (!isCurrentWorkflow(workflowId) || !getGraph()) {
-      pendingRejected.set(workflowId, [
-        ...(pendingRejected.get(workflowId) ?? []),
-        ...rejected
-      ])
-      return
-    }
-    reportMaterialized(
-      workflowId,
-      projection.revertRejected(workflowId, rejected)
+    const skipped = new Set(outcome.result.skipped)
+    return outcome.ops.filter(
+      (op) =>
+        !settled.has(op.op_id) ||
+        (op.op === 'set_widget' && skipped.has(op.op_id))
     )
   }
 
   const settleHumanOps = (outcome: BatchOutcome) => {
+    const workflowId = outcomeWorkflowId(outcome)
     if (outcome.state === 'acknowledged') trackAcknowledgedDeletes(outcome)
     recordDevEvent('human_ops_settled', outcome)
     projection.settleLocalWrites(outcome.ops)
@@ -484,14 +481,10 @@ function startAgentCrdtFollower(
       events.onHumanOpsRejected?.({
         addedNodeIds: rejectedAddNodeIds(rejected)
       })
-    if (outcome.state !== 'acknowledged') return
-    if (outcome.result.skipped.length > 0)
-      reportSkippedHumanOps(
-        outcome.result.workflowId ?? bridge.subscribedWorkflowId,
-        outcome.ops,
-        outcome.result
-      )
-    if (!outcome.result.ok) revertRejectedOps(outcome)
+    if (outcome.state === 'acknowledged' && outcome.result.failed)
+      reportRejectedHumanOps(workflowId, outcome.ops, outcome.result)
+    revertRejectedOps(workflowId, opsToRevert(outcome))
+    for (const op of outcome.ops) opWorkflowIds.delete(op.op_id)
   }
 
   const sender = createOpSender({
@@ -512,6 +505,17 @@ function startAgentCrdtFollower(
     tab: tabId,
     actor: ownActor,
     baseVersion: () => bridge.lastSequence,
+    onOpsMinted: (ops, workflowId) => {
+      for (const op of ops) {
+        ownOpIds.add(op.op_id)
+        if (workflowId !== null) opWorkflowIds.set(op.op_id, workflowId)
+      }
+      while (ownOpIds.size > MAX_TRACKED_OWN_OP_IDS) {
+        const oldest = ownOpIds.values().next().value
+        if (oldest === undefined) break
+        ownOpIds.delete(oldest)
+      }
+    },
     onBatchSettled: settleHumanOps
   })
   const coalescer = createOpCoalescer(sender.admit, sender.flush)
@@ -549,12 +553,21 @@ function startAgentCrdtFollower(
    * they can carry this actor as the last writer while replaying state the
    * graph has not seen.
    */
-  const isOwnEcho = (update: ClassifiedDocUpdate): boolean =>
-    !update.catchUp && update.actor !== undefined && ownActors.has(update.actor)
+  const isOwnEcho = (update: ClassifiedDocUpdate): boolean => {
+    const opIds = update.opIds?.filter((id) => id.length > 0) ?? []
+    return (
+      !update.catchUp &&
+      update.actor !== undefined &&
+      ownActors.has(update.actor) &&
+      opIds.length > 0 &&
+      opIds.every((id) => ownOpIds.has(id))
+    )
+  }
   const applyFrame = (
     update: ClassifiedDocUpdate
   ): { created: NodeId[]; nodes: DocNodeDelta } => {
     if (isOwnEcho(update) && getGraph() !== null) {
+      for (const id of update.opIds ?? []) ownOpIds.delete(id)
       const nodes = projection.discardPending(update.workflowId)
       incrementOutcome('skipped')
       return { created: [], nodes }

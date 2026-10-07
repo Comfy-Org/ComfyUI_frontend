@@ -358,40 +358,32 @@ function definitionsMap(doc: Y.Doc): Y.Map<unknown> | null {
   return doc.getMap<unknown>(DEFINITIONS_ROOT)
 }
 
-type StoredDefinition = readonly [string, Y.Map<unknown>]
-
-function storedDefinitions(source: Y.Map<unknown>): StoredDefinition[] {
-  return [...source.entries()].flatMap(([key, value]) =>
-    value instanceof Y.Map ? [[key, value] as const] : []
-  )
-}
-
-function nestedStoredDefinitions(
-  definition: Y.Map<unknown>
-): StoredDefinition[] {
-  const container = definition.get('definitions')
-  if (!(container instanceof Y.Map)) return []
-  const nested = container.get('subgraphs')
-  return nested instanceof Y.Map ? storedDefinitions(nested) : []
-}
+type StoredDefinition = readonly [string, object]
 
 const MAX_INDEXED_DEFINITIONS = 100_000
+const DEFINITION_STRUCTURE_KEYS = new Set(['id', 'definitions'])
+const DEFINITION_CONTAINER_KEYS = new Set(['subgraphs'])
 
 interface DefinitionIndexState {
   root: Y.Map<unknown> | null
   dirty: boolean
   overflow: boolean
-  values: Map<string, Y.Map<unknown> | null>
+  values: Map<string, object | null>
+  structuralTypes: Map<unknown, ReadonlySet<string> | 'all'>
+  layouts: Map<object, DefinitionPromotedLayout | null>
 }
 
 const definitionIndexes = new WeakMap<Y.Doc, DefinitionIndexState>()
 
-function transactionChangedDefinitionRoot(
+function transactionChangedDefinitionIndex(
   transaction: Y.Transaction,
-  root: Y.Map<unknown>
+  state: DefinitionIndexState
 ): boolean {
-  for (const changed of transaction.changedParentTypes.keys()) {
-    if (Object.is(changed, root)) return true
+  for (const [changed, keys] of transaction.changed) {
+    const watched = state.structuralTypes.get(changed)
+    if (watched === 'all') return true
+    if (watched && [...keys].some((key) => key !== null && watched.has(key)))
+      return true
   }
   return false
 }
@@ -403,13 +395,21 @@ function definitionIndexState(doc: Y.Doc): DefinitionIndexState {
     root: definitionsMap(doc),
     dirty: true,
     overflow: false,
-    values: new Map()
+    values: new Map(),
+    structuralTypes: new Map(),
+    layouts: new Map()
   }
   doc.on('afterTransaction', (transaction) => {
     const root = definitionsMap(doc)
+    const definitionTreeChanged =
+      root !== null &&
+      [...transaction.changedParentTypes.keys()].some((changed) =>
+        Object.is(changed, root)
+      )
+    if (root !== state.root || definitionTreeChanged) state.layouts.clear()
     if (
       root !== state.root ||
-      (root && transactionChangedDefinitionRoot(transaction, root))
+      (root && transactionChangedDefinitionIndex(transaction, state))
     ) {
       state.root = root
       state.dirty = true
@@ -420,45 +420,170 @@ function definitionIndexState(doc: Y.Doc): DefinitionIndexState {
 }
 
 function addDefinitionIndexEntry(
-  values: Map<string, Y.Map<unknown> | null>,
+  values: Map<string, object | null>,
   id: string,
-  definition: Y.Map<unknown>
+  definition: object
 ): void {
   const existing = values.get(id)
   if (existing === undefined) values.set(id, definition)
   else if (existing !== definition) values.set(id, null)
 }
 
+function isDefinitionRecord(value: unknown): value is object {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function enqueueDefinition(
+  pending: StoredDefinition[],
+  budget: { remaining: number },
+  storageKey: string,
+  value: unknown,
+  mapValuesMustBeYMaps: boolean
+): boolean {
+  if (--budget.remaining < 0) return false
+  if (!isDefinitionRecord(value)) return true
+  if (mapValuesMustBeYMaps && !(value instanceof Y.Map)) return true
+  pending.push([storageKey, value])
+  return true
+}
+
+function enqueueDefinitionMap(
+  source: Y.Map<unknown>,
+  pending: StoredDefinition[],
+  state: DefinitionIndexState,
+  budget: { remaining: number },
+  mapValuesMustBeYMaps: boolean
+): boolean {
+  state.structuralTypes.set(source, 'all')
+  for (const [key, value] of source.entries()) {
+    if (!enqueueDefinition(pending, budget, key, value, mapValuesMustBeYMaps))
+      return false
+  }
+  return true
+}
+
+function enqueueDefinitionSequence(
+  source: Y.Array<unknown> | unknown[],
+  pending: StoredDefinition[],
+  state: DefinitionIndexState,
+  budget: { remaining: number }
+): boolean {
+  if (source instanceof Y.Array) state.structuralTypes.set(source, 'all')
+  for (let index = 0; index < source.length; index++) {
+    const value = source instanceof Y.Array ? source.get(index) : source[index]
+    const declaredId = readField(value, 'id')
+    const key = typeof declaredId === 'string' ? declaredId : `#${index}`
+    if (!enqueueDefinition(pending, budget, key, value, false)) return false
+  }
+  return true
+}
+
+function enqueueDefinitions(
+  source: unknown,
+  pending: StoredDefinition[],
+  state: DefinitionIndexState,
+  budget: { remaining: number },
+  mapValuesMustBeYMaps = false
+): boolean {
+  if (source instanceof Y.Map)
+    return enqueueDefinitionMap(
+      source,
+      pending,
+      state,
+      budget,
+      mapValuesMustBeYMaps
+    )
+  if (source instanceof Y.Array || Array.isArray(source))
+    return enqueueDefinitionSequence(source, pending, state, budget)
+  return true
+}
+
+function overflowDefinitionIndex(state: DefinitionIndexState): void {
+  state.values.clear()
+  state.overflow = true
+}
+
+function indexDefinition(
+  state: DefinitionIndexState,
+  storageKey: string,
+  definition: object,
+  pending: StoredDefinition[],
+  budget: { remaining: number }
+): boolean {
+  addDefinitionIndexEntry(state.values, storageKey, definition)
+  const declaredId = readField(definition, 'id')
+  if (typeof declaredId === 'string')
+    addDefinitionIndexEntry(state.values, declaredId, definition)
+  if (definition instanceof Y.Map)
+    state.structuralTypes.set(definition, DEFINITION_STRUCTURE_KEYS)
+  const container = readField(definition, 'definitions')
+  if (container instanceof Y.Map)
+    state.structuralTypes.set(container, DEFINITION_CONTAINER_KEYS)
+  return enqueueDefinitions(
+    readField(container, 'subgraphs'),
+    pending,
+    state,
+    budget
+  )
+}
+
 function rebuildDefinitionIndex(state: DefinitionIndexState): void {
   state.dirty = false
   state.overflow = false
   state.values.clear()
+  state.structuralTypes.clear()
   if (!state.root) return
-  const pending = storedDefinitions(state.root)
-  const seen = new Set<Y.Map<unknown>>()
-  while (pending.length > 0) {
-    const [storageKey, definition] = pending.pop()!
-    if (seen.has(definition)) continue
-    if (seen.size >= MAX_INDEXED_DEFINITIONS) {
-      state.values.clear()
-      state.overflow = true
+  const pending: StoredDefinition[] = []
+  const seen = new Set<object>()
+  const budget = { remaining: MAX_INDEXED_DEFINITIONS }
+  try {
+    if (!enqueueDefinitions(state.root, pending, state, budget, true)) {
+      overflowDefinitionIndex(state)
       return
     }
-    seen.add(definition)
-    addDefinitionIndexEntry(state.values, storageKey, definition)
-    const declaredId = definition.get('id')
-    if (typeof declaredId === 'string')
-      addDefinitionIndexEntry(state.values, declaredId, definition)
-    pending.push(...nestedStoredDefinitions(definition))
+    while (pending.length > 0) {
+      const [storageKey, definition] = pending.pop()!
+      if (seen.has(definition)) continue
+      seen.add(definition)
+      if (!indexDefinition(state, storageKey, definition, pending, budget)) {
+        overflowDefinitionIndex(state)
+        return
+      }
+    }
+  } catch {
+    overflowDefinitionIndex(state)
   }
 }
 
 /** Resolve one definition at any nesting depth; duplicate ids are unreadable. */
-function definitionById(doc: Y.Doc, id: string): Y.Map<unknown> | null {
+function definitionById(doc: Y.Doc, id: string): object | null {
   const state = definitionIndexState(doc)
   if (state.dirty) rebuildDefinitionIndex(state)
   if (state.overflow) return null
   return state.values.get(id) ?? null
+}
+
+function cachedDefinitionPromotedLayout(
+  doc: Y.Doc,
+  definition: object
+): DefinitionPromotedLayout | null {
+  const state = definitionIndexState(doc)
+  if (state.layouts.has(definition))
+    return state.layouts.get(definition) ?? null
+  const layout = definitionPromotedLayout(definition)
+  state.layouts.set(definition, layout)
+  return layout
+}
+
+/** Promoted layout read directly from the document definition record. */
+export function readDefinitionPromotedLayout(
+  doc: Y.Doc,
+  definitionId: string
+): DefinitionPromotedLayout | null {
+  const definition = definitionById(doc, definitionId)
+  return definition === null
+    ? null
+    : cachedDefinitionPromotedLayout(doc, definition)
 }
 
 export function allSubgraphDefinitions(
@@ -550,9 +675,8 @@ export function readDocPromotedWidgets(
   }
   const stored = node.get(OPAQUE_WIDGETS_KEY)
   const type = node.get('type')
-  const definition = typeof type === 'string' ? definitionById(doc, type) : null
   const names =
-    definition instanceof Y.Map ? definitionPromotedLayout(definition) : null
+    typeof type === 'string' ? readDefinitionPromotedLayout(doc, type) : null
   return {
     valueCount:
       stored === undefined
@@ -565,7 +689,21 @@ export function readDocPromotedWidgets(
   }
 }
 
-function namedInputs(source: unknown): Array<[string, unknown]> | null {
+const MAX_LAYOUT_RECORDS = 100_000
+
+interface LayoutReadBudget {
+  remaining: number
+}
+
+function consumeLayoutBudget(budget: LayoutReadBudget, count: number): boolean {
+  budget.remaining -= count
+  return budget.remaining >= 0
+}
+
+function namedInputs(
+  source: unknown,
+  budget: LayoutReadBudget
+): Array<[string, unknown]> | null {
   const inputs =
     source instanceof Y.Array
       ? source.toArray()
@@ -573,6 +711,7 @@ function namedInputs(source: unknown): Array<[string, unknown]> | null {
         ? source
         : null
   if (inputs === null) return null
+  if (!consumeLayoutBudget(budget, inputs.length)) return null
   const named: Array<[string, unknown]> = []
   const seen = new Set<string>()
   for (const input of inputs) {
@@ -592,10 +731,17 @@ function strictList(source: unknown): unknown[] | null {
 type StoredRecordLookup = (id: string | number) => unknown
 
 /** Build one lookup per definition read so array-backed peer data stays O(n). */
-function storedRecordLookup(source: unknown): StoredRecordLookup | null {
-  if (source instanceof Y.Map) return (id) => source.get(String(id))
+function storedRecordLookup(
+  source: unknown,
+  budget: LayoutReadBudget
+): StoredRecordLookup | null {
+  if (source instanceof Y.Map) {
+    if (!consumeLayoutBudget(budget, source.size)) return null
+    return (id) => source.get(String(id))
+  }
   const records = strictList(source)
   if (records === null) return null
+  if (!consumeLayoutBudget(budget, records.length)) return null
   const byId = new Map<string, unknown>()
   for (const record of records) {
     const id = readField(record, 'id')
@@ -608,8 +754,10 @@ function storedRecordLookup(source: unknown): StoredRecordLookup | null {
 function linkTargetsWidget(
   links: StoredRecordLookup,
   nodes: StoredRecordLookup,
-  linkId: string | number
+  linkId: string | number,
+  budget: LayoutReadBudget
 ): boolean | null {
+  if (!consumeLayoutBudget(budget, 1)) return null
   const link = links(linkId)
   if (link === undefined) return null
   const targetId = readField(link, 'target_id')
@@ -644,15 +792,17 @@ function widgetMarkerState(widget: unknown): boolean | null {
 function inputTargetsWidget(
   links: StoredRecordLookup,
   nodes: StoredRecordLookup,
-  input: unknown
+  input: unknown,
+  budget: LayoutReadBudget
 ): boolean | null {
   const storedLinkIds = readField(input, 'linkIds')
   if (storedLinkIds === undefined) return false
   const linkIds = strictList(storedLinkIds)
   if (linkIds === null || !linkIds.every(isRecordId)) return null
+  if (!consumeLayoutBudget(budget, linkIds.length)) return null
   let widgetBacked = false
   for (const linkId of linkIds) {
-    const targetsWidget = linkTargetsWidget(links, nodes, linkId)
+    const targetsWidget = linkTargetsWidget(links, nodes, linkId, budget)
     if (targetsWidget === null) return null
     widgetBacked ||= targetsWidget
   }
@@ -667,13 +817,14 @@ export interface DefinitionPromotedLayout {
 export function definitionPromotedLayout(
   definition: unknown
 ): DefinitionPromotedLayout | null {
-  const declared = namedInputs(readField(definition, 'inputs'))
-  const links = storedRecordLookup(readField(definition, 'links'))
-  const nodes = storedRecordLookup(readField(definition, 'nodes'))
+  const budget = { remaining: MAX_LAYOUT_RECORDS }
+  const declared = namedInputs(readField(definition, 'inputs'), budget)
+  const links = storedRecordLookup(readField(definition, 'links'), budget)
+  const nodes = storedRecordLookup(readField(definition, 'nodes'), budget)
   if (declared === null || links === null || nodes === null) return null
   const promoted: string[] = []
   for (const [name, input] of declared) {
-    const targetsWidget = inputTargetsWidget(links, nodes, input)
+    const targetsWidget = inputTargetsWidget(links, nodes, input, budget)
     if (targetsWidget === null) return null
     if (targetsWidget) promoted.push(name)
   }
@@ -699,8 +850,12 @@ export function readDocPromotedWidgetValue(
   const index = promotedNames.indexOf(widget)
   if (index < 0) return undefined
   const stored = nodesMap(doc).get(nodeId)?.get(OPAQUE_WIDGETS_KEY)
-  if (stored instanceof Y.Array) {
-    return index < stored.length ? plain(stored.get(index)) : undefined
+  try {
+    if (stored instanceof Y.Array) {
+      return index < stored.length ? plain(stored.get(index)) : undefined
+    }
+    return Array.isArray(stored) ? plain(stored[index]) : undefined
+  } catch {
+    return undefined
   }
-  return Array.isArray(stored) ? plain(stored[index]) : undefined
 }

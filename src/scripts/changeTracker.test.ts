@@ -207,6 +207,17 @@ describe('ChangeTracker', () => {
     expect(loadingStates).toEqual([true, false])
   })
 
+  it('stays loading until overlapping graph loads both finish', async () => {
+    ChangeTracker.isLoadingGraph = true
+    ChangeTracker.isLoadingGraph = true
+    ChangeTracker.isLoadingGraph = false
+
+    expect(ChangeTracker.isLoadingGraph).toBe(true)
+
+    ChangeTracker.isLoadingGraph = false
+    expect(ChangeTracker.isLoadingGraph).toBe(false)
+  })
+
   describe('undoRedo', () => {
     it.for([
       {
