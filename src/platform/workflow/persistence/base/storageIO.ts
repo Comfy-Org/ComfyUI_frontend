@@ -563,7 +563,7 @@ export function prepareWorkflowWorkspaceTransition(): () => void {
   }
 }
 
-function enterWorkflowLogoutTransition(): void {
+function fenceAndClearWorkflowStorage(): void {
   cancelPendingWorkflowPersistence()
   workflowStorageState = {
     status: 'transitioning',
@@ -582,12 +582,12 @@ function handleSignOutIntent(event: StorageEvent): void {
     event.key === WORKFLOW_SIGN_OUT_INTENT_KEY &&
     event.newValue !== null
   ) {
-    enterWorkflowLogoutTransition()
+    fenceAndClearWorkflowStorage()
   }
 }
 
-export function beginWorkflowLogoutTransition(): void {
-  enterWorkflowLogoutTransition()
+export function prepareWorkflowLogoutTransition(): void {
+  fenceAndClearWorkflowStorage()
   try {
     localStorage.setItem(WORKFLOW_SIGN_OUT_INTENT_KEY, crypto.randomUUID())
     localStorage.removeItem(WORKFLOW_SIGN_OUT_INTENT_KEY)
