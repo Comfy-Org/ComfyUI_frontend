@@ -102,7 +102,7 @@ import type { SpotlightStep } from '@/platform/onboarding/onboardingTours'
 import { useCoachmarkTarget } from '@/platform/onboarding/useCoachmarkTarget'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
-import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
@@ -119,7 +119,7 @@ const { nudgeArmed, tourWasCompleted, dismissNudge } =
 const dialogStore = useDialogStore()
 const settingStore = useSettingStore()
 const sidebarTabStore = useSidebarTabStore()
-const agentNodeSelectionStore = useAgentNodeSelectionStore()
+const canvasStore = useCanvasStore()
 const onboardingTourStore = useOnboardingTourStore()
 const desktopLayout = useBreakpoints(breakpointsTailwind).greaterOrEqual('md')
 const telemetry = useTelemetry()
@@ -194,7 +194,7 @@ watch(
     dialogStore.dialogStack.length === 0 &&
     hasTarget.value &&
     !onboardingTourStore.activeTour &&
-    !agentNodeSelectionStore.isActionBarsHidden &&
+    !canvasStore.isPickingNodes &&
     !sidebarTabStore.activeSidebarTab,
   (screenIsClear) => {
     cancelAppearance()

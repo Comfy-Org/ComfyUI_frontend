@@ -1,4 +1,3 @@
-import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { fromPartial } from '@total-typescript/shoehorn'
@@ -21,6 +20,7 @@ import {
 } from '@/platform/onboarding/onboardingTours'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
@@ -216,10 +216,10 @@ describe('FirstRunTourNudge', () => {
     {
       blocker: 'agent node selection hides the sidebar',
       block: () => {
-        useAgentNodeSelectionStore().isActionBarsHidden = true
+        useCanvasStore().isPickingNodes = true
       },
       clear: () => {
-        useAgentNodeSelectionStore().isActionBarsHidden = false
+        useCanvasStore().isPickingNodes = false
       }
     },
     {
