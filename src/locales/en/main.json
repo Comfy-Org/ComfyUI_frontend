@@ -2722,6 +2722,7 @@
       "storageFailedDetail": "Please try again.",
       "stored": "API Key stored",
       "storedDetail": "Your API Key has been stored successfully",
+      "validationFailed": "The server could not verify this API key (HTTP {status}). Please try again.",
       "cleared": "API Key cleared",
       "clearedDetail": "Your API Key has been cleared successfully",
       "invalid": "Invalid API Key",

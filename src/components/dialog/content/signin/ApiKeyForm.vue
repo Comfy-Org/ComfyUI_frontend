@@ -104,7 +104,7 @@ import { useAuthStore } from '@/stores/authStore'
 
 const authStore = useAuthStore()
 const apiKeyStore = useApiKeyAuthStore()
-const loading = computed(() => authStore.loading)
+const loading = computed(() => authStore.loading || apiKeyStore.isValidating)
 const comfyPlatformBaseUrl = computed(() =>
   configValueOrDefault(
     remoteConfig.value,
@@ -121,8 +121,7 @@ const emit = defineEmits<{
 }>()
 
 const onSubmit = async (event: FormSubmitEvent) => {
-  if (event.valid) {
-    await apiKeyStore.storeApiKey(event.values.apiKey)
+  if (event.valid && (await apiKeyStore.storeApiKey(event.values.apiKey))) {
     emit('success')
   }
 }

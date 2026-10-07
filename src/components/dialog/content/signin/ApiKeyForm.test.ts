@@ -15,6 +15,7 @@ import ApiKeyForm from './ApiKeyForm.vue'
 
 const mockStoreApiKey = vi.fn()
 const mockLoadingRef = ref(false)
+const mockValidatingRef = ref(false)
 
 vi.mock('@/stores/authStore', () => ({
   useAuthStore: vi.fn(() => ({
@@ -26,7 +27,10 @@ vi.mock('@/stores/authStore', () => ({
 
 vi.mock('@/stores/apiKeyAuthStore', () => ({
   useApiKeyAuthStore: vi.fn(() => ({
-    storeApiKey: mockStoreApiKey
+    storeApiKey: mockStoreApiKey,
+    get isValidating() {
+      return mockValidatingRef.value
+    }
   }))
 }))
 
@@ -59,6 +63,7 @@ const i18n = createI18n({
 describe('ApiKeyForm', () => {
   beforeEach(() => {
     mockLoadingRef.value = false
+    mockValidatingRef.value = false
   })
 
   function renderComponent(props: Record<string, unknown> = {}) {
@@ -97,6 +102,45 @@ describe('ApiKeyForm', () => {
     // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const submitButton = container.querySelector('button[type="submit"]')
     expect(submitButton).toBeDisabled()
+  })
+
+  it('disables Save while API-key verification is pending', () => {
+    mockValidatingRef.value = true
+    renderComponent()
+
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled()
+  })
+
+  it.for([false, undefined])(
+    'does not emit success when verification returns %s',
+    async (result) => {
+      mockStoreApiKey.mockResolvedValue(result)
+      const onSuccess = vi.fn()
+      const { user } = renderComponent({ onSuccess })
+
+      await user.type(
+        screen.getByLabelText('API Key'),
+        'comfyui-' + 'a'.repeat(64)
+      )
+      await user.click(screen.getByRole('button', { name: 'Save' }))
+
+      expect(mockStoreApiKey).toHaveBeenCalledOnce()
+      expect(onSuccess).not.toHaveBeenCalled()
+    }
+  )
+
+  it('emits success only after verification succeeds', async () => {
+    mockStoreApiKey.mockResolvedValue(true)
+    const onSuccess = vi.fn()
+    const { user } = renderComponent({ onSuccess })
+
+    await user.type(
+      screen.getByLabelText('API Key'),
+      'comfyui-' + 'a'.repeat(64)
+    )
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+
+    expect(onSuccess).toHaveBeenCalledOnce()
   })
 
   it('displays help text and links correctly', () => {
