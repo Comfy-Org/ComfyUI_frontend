@@ -11,6 +11,7 @@ import {
 } from './billingSdkTestUtils'
 import {
   SettledOperationError,
+  projectCancelOperationResult,
   projectPaymentPortalResult,
   projectSubscribeResult,
   projectSubscriptionResult
@@ -310,4 +311,45 @@ describe('projectPaymentPortalResult', () => {
       message: "We couldn't update your subscription. Please try again."
     })
   })
+})
+
+describe('projectCancelOperationResult', () => {
+  it.for(['canceled', 'cancel_requested'] as const)(
+    'reports a cancel the server took (%s) as done',
+    (status) => {
+      expect(projectCancelOperationResult({ status })).toEqual({
+        status: 'ok',
+        value: undefined
+      })
+    }
+  )
+
+  it.for([
+    {
+      result: { status: 'not_canceled', code: 'PAYMENT_IN_FLIGHT' },
+      message: "This payment is already processing and can't be canceled."
+    },
+    {
+      result: { status: 'not_canceled', code: 'NOT_CANCELABLE' },
+      message: 'This payment can no longer be canceled.'
+    },
+    {
+      result: {
+        status: 'error',
+        code: 'REQUEST_FAILED',
+        httpStatus: 502,
+        serverMessage: 'Billing is briefly unavailable.'
+      },
+      message: "We couldn't cancel this payment. Please try again."
+    }
+  ] as const)(
+    'surfaces a cancel that did not happen in our own copy, never the server text ($result.code)',
+    ({ result, message }) => {
+      const outcome = projectCancelOperationResult(result)
+
+      expect(
+        outcome.status === 'error' ? outcome.error.message : undefined
+      ).toBe(message)
+    }
+  )
 })
