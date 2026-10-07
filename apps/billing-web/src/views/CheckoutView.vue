@@ -95,9 +95,9 @@ const { plans } = usePlans()
 // setup runs, instead of the fallback this ref started with.
 const stripeKey = useBillingWebStripeKey()
 
-const { lifecycle, status } = useBillingClient<'lifecycle' | 'status'>(
-  undefined
-)
+const { lifecycle, status, commands } = useBillingClient<
+  'lifecycle' | 'status' | 'commands'
+>(undefined)
 
 /** A page handed to a hosted step or a method's own site has not been abandoned. */
 const handedToHostedStep = ref(false)
@@ -356,6 +356,33 @@ const operationHoldsConfirm = computed(() => {
     authenticationState.value !== 'requires_action'
   )
 })
+
+/**
+ * Offered only on the server's `cancelable`; the cancel wakes the lifecycle,
+ * whose re-read settles the operation through the failed path above.
+ */
+const paymentCancelable = computed(
+  () => pendingOperation.value?.cancelable === true
+)
+const CANCEL_REFUSAL_COPY = {
+  NOT_CANCELABLE: 'checkout.preview.cancelPaymentNotCancelable',
+  PAYMENT_IN_FLIGHT: 'checkout.preview.cancelPaymentInFlight'
+} as const
+const cancelingPayment = ref(false)
+const cancelPaymentError = ref<string>()
+
+async function cancelPayment() {
+  const operationId = pendingOperation.value?.id
+  if (operationId === undefined || cancelingPayment.value) return
+  cancelingPayment.value = true
+  cancelPaymentError.value = undefined
+  const answer = await commands.cancelOperation(operationId)
+  cancelingPayment.value = false
+  if (answer.status === 'error')
+    cancelPaymentError.value = t('checkout.preview.cancelPaymentFailed')
+  else if (answer.status === 'not_canceled')
+    cancelPaymentError.value = t(CANCEL_REFUSAL_COPY[answer.code])
+}
 
 /** The app keeps a closed progress toast closed until the operation's state changes. */
 const operationToastKey = computed(() =>
@@ -704,6 +731,10 @@ useEventListener(window, 'pagehide', () => {
             :quote-is-current
             :is-applying-promotion-code="applyingPromotionCode"
             :embedded-checkout-enabled="true"
+            :payment-cancelable
+            :canceling-payment
+            :cancel-payment-error
+            @cancel-payment="cancelPayment"
             @confirm="pay({ confirmReactivation: $event })"
             @apply-promotion-code="applyPromotionCode"
             @invalidate-quote="quoteIsCurrent = false"
