@@ -74,6 +74,7 @@
         variant="secondary"
         size="sm"
         class="h-8 min-w-0 flex-1 rounded-md text-xs"
+        :disabled="isBatchActive"
         :aria-describedby="showGatedModelsHint ? gatedHintId : undefined"
         @click="downloadAllModels"
       >
@@ -81,19 +82,29 @@
         <span class="truncate">{{ downloadAllLabel }}</span>
       </Button>
     </div>
+    <p
+      v-if="downloadFeedback"
+      role="status"
+      class="m-0 mt-2 text-xs break-all text-muted-foreground"
+    >
+      {{ downloadFeedback }}
+    </p>
   </div>
 </template>
 
 <script setup lang="ts">
+import { storeToRefs } from 'pinia'
 import { computed, ref, useId, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { MissingModelGroup } from '@/platform/missingModel/types'
-import { isCloud } from '@/platform/distribution/types'
+import { isCloud, isDesktop } from '@/platform/distribution/types'
 import MissingModelRow from '@/platform/missingModel/components/MissingModelRow.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useMissingModelDownload } from '@/platform/missingModel/composables/useMissingModelDownload'
 import { isTrustedHuggingFaceUrl } from '@/platform/missingModel/missingModelDownload'
-import { getDownloadableModels } from '@/platform/missingModel/missingModelViewUtils'
+import { toDownloadableModel } from '@/platform/missingModel/missingModelViewUtils'
+import type { ModelDownloadStatus } from '@/platform/missingModel/modelDownloadApi'
+import { usePortableModelDownloadStore } from '@/platform/missingModel/portableModelDownloadStore'
 import { formatSize } from '@/utils/formatUtil'
 
 interface MissingModelRowEntry {
@@ -125,6 +136,11 @@ const { t } = useI18n()
 const gatedHintId = useId()
 const { downloadMissingModel, fileSizeFor, gatedRepoUrlFor } =
   useMissingModelDownload()
+const portableDownloadStore =
+  !isCloud && !isDesktop ? usePortableModelDownloadStore() : null
+const { state: batchState } = portableDownloadStore
+  ? storeToRefs(portableDownloadStore)
+  : { state: ref(null) }
 
 const sortedModelRows = computed(() =>
   missingModelGroups
@@ -150,7 +166,9 @@ const unsupportedModelRows = computed(() =>
 const downloadableModels = computed(() => {
   if (isCloud) return []
 
-  return getDownloadableModels(missingModelGroups)
+  return sortedModelRows.value.flatMap(
+    (row) => toDownloadableModel(row.model) ?? []
+  )
 })
 
 const gatedModelCount = computed(
@@ -179,6 +197,9 @@ watch(showGatedModelsHint, (isVisible, wasVisible) => {
 })
 
 const downloadAllLabel = computed(() => {
+  if (isBatchActive.value)
+    return t('rightSidePanel.missingModels.downloadBatchInProgress')
+
   const base = t('rightSidePanel.missingModels.downloadAll')
   const total = downloadableModels.value.reduce(
     (sum, model) => sum + (fileSizeFor(model.url) ?? 0),
@@ -187,7 +208,74 @@ const downloadAllLabel = computed(() => {
   return total > 0 ? `${base} (${formatSize(total)})` : base
 })
 
+const isBatchActive = computed(
+  () =>
+    batchState.value?.phase === 'starting' ||
+    batchState.value?.phase === 'running'
+)
+
+const downloadFeedback = computed(() => {
+  const state = batchState.value
+  if (!state || state.phase === 'idle') return ''
+  if (state.phase === 'starting')
+    return t('rightSidePanel.missingModels.downloadBatchStarting')
+  if (state.phase === 'error')
+    return t(
+      state.reason === 'unavailable'
+        ? 'rightSidePanel.missingModels.downloadBatchUnavailable'
+        : 'rightSidePanel.missingModels.downloadBatchFailed'
+    )
+  return state.phase === 'finished'
+    ? finishedDownloadFeedback(state.models)
+    : runningDownloadFeedback(state.models)
+})
+
+function finishedDownloadFeedback(models: ModelDownloadStatus[]) {
+  const completed = models.filter(
+    (model) => model.status === 'completed'
+  ).length
+  const total = models.length
+  const failed = models
+    .filter((model) => model.status === 'failed')
+    .map((model) => model.name)
+  if (failed.length > 0)
+    return t('rightSidePanel.missingModels.downloadBatchPartial', {
+      completed,
+      total,
+      failed: failed.join(', ')
+    })
+  return t('rightSidePanel.missingModels.downloadBatchFinished', {
+    completed,
+    total
+  })
+}
+
+function runningDownloadFeedback(models: ModelDownloadStatus[]) {
+  const completed = models.filter(
+    (model) => model.status === 'completed'
+  ).length
+  const total = models.length
+  const current = models.find((model) => model.status === 'running')
+  if (!current)
+    return t('rightSidePanel.missingModels.downloadBatchQueued', { total })
+
+  const progress = current.bytes_total
+    ? Math.round((current.bytes_downloaded / current.bytes_total) * 100)
+    : null
+  return t(
+    progress === null
+      ? 'rightSidePanel.missingModels.downloadBatchProgress'
+      : 'rightSidePanel.missingModels.downloadBatchProgressPercent',
+    { name: current.name, completed, total, progress }
+  )
+}
+
 function downloadAllModels() {
+  if (portableDownloadStore) {
+    void portableDownloadStore.start(downloadableModels.value)
+    return
+  }
+
   for (const model of downloadableModels.value) {
     downloadMissingModel(model)
   }
