@@ -71,6 +71,51 @@ test.describe('Agent composer asset drop', { tag: '@cloud' }, () => {
     })
   }
 
+  test(
+    'previews a video from the keyboard and cleans it up with its attachment',
+    { tag: '@ui' },
+    async ({ page }) => {
+      const agentPanel = new AgentPanel(page)
+      await agentPanel.open()
+
+      const assets = new AssetsSidebarTab(page)
+      await assets.open()
+      await assets.assetCards.first().dragTo(agentPanel.root)
+
+      const chip = agentPanel.attachmentChip(ASSET_NAME)
+      const trigger = chip.getByRole('button', {
+        name: `Preview ${ASSET_NAME}`
+      })
+      const poster = trigger.getByRole('img', { name: ASSET_NAME })
+      await expect(poster).toBeVisible()
+      await expect(poster).toHaveAttribute('src', /^blob:/)
+
+      await trigger.focus()
+      await page.keyboard.press('Enter')
+
+      const player = page
+        .getByLabel(ASSET_NAME, { exact: true })
+        .and(page.locator('video'))
+      await expect(player).toBeVisible()
+      await expect(player).toHaveAttribute('controls', '')
+      await expect(player).toHaveAttribute('poster', /^blob:/)
+      await expect(player).toBeFocused()
+
+      await page.keyboard.press('Escape')
+      await expect(player).toHaveCount(0)
+      await expect(trigger).toHaveAttribute('aria-expanded', 'false')
+      await expect(trigger).toBeFocused()
+
+      await page.keyboard.press('Enter')
+      await expect(player).toBeVisible()
+      await chip.hover()
+      await chip.getByRole('button', { name: 'Remove' }).click()
+
+      await expect(chip).toHaveCount(0)
+      await expect(player).toHaveCount(0)
+    }
+  )
+
   // A filename is user data and may contain a quote or a backslash, which would
   // break the attribute selector the chip is matched by. Exercised end to end
   // rather than unit-tested, so a regression in the escaping shows up as the
