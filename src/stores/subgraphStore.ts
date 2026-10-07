@@ -179,7 +179,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     }
   }
   const subgraphCache: Record<string, LoadedComfyWorkflow> = {}
-  const { blueprintNodeDefsByName } = useNodeDefStore()
+  const nodeDefStore = useNodeDefStore()
   const canvasStore = useCanvasStore()
   async function fetchSubgraphs() {
     async function loadBlueprint(options: {
@@ -309,8 +309,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       essentials_category: subgraphDefEssentialsCategory,
       ...overrides
     }
-    const nodeDefImpl = new ComfyNodeDefImpl(nodedefv1)
-    blueprintNodeDefsByName.set(name, nodeDefImpl)
+    nodeDefStore.registerBlueprintNodeDef(new ComfyNodeDefImpl(nodedefv1))
     subgraphCache[name] = workflow
   }
   async function publishSubgraph(providedName?: string) {
@@ -348,7 +347,10 @@ export const useSubgraphStore = defineStore('subgraph', () => {
         defaultValue: subgraphNode.title
       }))
     if (!name) return
-    if (blueprintNodeDefsByName.has(name) && !(await confirmOverwrite(name)))
+    if (
+      nodeDefStore.blueprintNodeDefsByName.has(BLUEPRINT_TYPE_PREFIX + name) &&
+      !(await confirmOverwrite(name))
+    )
       //User has chosen not to overwrite.
       return
 
@@ -416,7 +418,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
 
     await subgraphCache[name].delete()
     delete subgraphCache[name]
-    blueprintNodeDefsByName.delete(name)
+    nodeDefStore.removeBlueprintNodeDef(nodeType)
   }
   function isSubgraphBlueprint(
     workflow: unknown
@@ -425,7 +427,9 @@ export const useSubgraphStore = defineStore('subgraph', () => {
   }
 
   function isGlobalBlueprint(name: string): boolean {
-    const nodeDef = blueprintNodeDefsByName.get(name)
+    const nodeDef = nodeDefStore.blueprintNodeDefsByName.get(
+      BLUEPRINT_TYPE_PREFIX + name
+    )
     return nodeDef !== undefined && nodeDef.isGlobal === true
   }
 

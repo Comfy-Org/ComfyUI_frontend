@@ -391,10 +391,19 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
     }
   })
 
-  const blueprintNodeDefsByName = ref<Map<string, ComfyNodeDefImpl>>(new Map())
+  const blueprintNodeDefs = ref<Map<string, ComfyNodeDefImpl>>(new Map())
+  const blueprintNodeDefsByName = computed<
+    ReadonlyMap<string, ComfyNodeDefImpl>
+  >(() => blueprintNodeDefs.value)
+  function registerBlueprintNodeDef(nodeDef: ComfyNodeDefImpl) {
+    blueprintNodeDefs.value.set(nodeDef.name, nodeDef)
+  }
+  function removeBlueprintNodeDef(name: string) {
+    blueprintNodeDefs.value.delete(name)
+  }
   // Blueprints first for discoverability in the node library sidebar
   const nodeDefs = computed(() => [
-    ...blueprintNodeDefsByName.value.values(),
+    ...blueprintNodeDefs.value.values(),
     ...Object.values(nodeDefsByName.value)
   ])
   const nodeDataTypes = computed(() => {
@@ -580,6 +589,8 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
     updateNodeDefs,
     addNodeDef,
     removeNodeDef,
+    registerBlueprintNodeDef,
+    removeBlueprintNodeDef,
     getNodeDefByName,
     fromLGraphNode,
     getInputSpecForWidget,
