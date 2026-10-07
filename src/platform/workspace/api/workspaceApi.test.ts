@@ -350,7 +350,7 @@ describe('workspaceApi', () => {
   })
 
   describe('deployment picking', () => {
-    it('listDeployments() sends GET /workspaces/:id/deployments', async () => {
+    it('listDeployments() sends GET /workspaces/:id/deployments with a 30 second timeout', async () => {
       const data = { items: [], builds_visible: true }
       mockAxiosInstance.get.mockResolvedValue({ data })
 
@@ -358,7 +358,7 @@ describe('workspaceApi', () => {
 
       expect(mockAxiosInstance.get).toHaveBeenCalledWith(
         '/api/workspaces/ws-1/deployments',
-        { headers: AUTH_HEADER }
+        { headers: AUTH_HEADER, timeout: 30_000 }
       )
       expect(result).toEqual(data)
     })
