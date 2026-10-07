@@ -122,6 +122,7 @@
     "tw-animate-css": "catalog:",
     "typescript": "catalog:",
     "undici": "catalog:",
+    "uuid": "catalog:",
     "vitest": "catalog:",
     "vue-component-type-helpers": "catalog:"
   }

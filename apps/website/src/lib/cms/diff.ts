@@ -38,12 +38,7 @@ function child(path: string, key: string) {
     : `${path}[${JSON.stringify(key)}]`
 }
 
-export function fieldDiff(
-  before: unknown,
-  after: unknown,
-  path = '$'
-): FieldChange[] {
-  if (canonical(before) === canonical(after)) return []
+function objectDiff(before: unknown, after: unknown, path: string) {
   if (
     (object(before) || before === undefined) &&
     (object(after) || after === undefined)
@@ -58,6 +53,17 @@ export function fieldDiff(
         fieldDiff(left[key], right[key], child(path, key))
       )
   }
+  return undefined
+}
+
+export function fieldDiff(
+  before: unknown,
+  after: unknown,
+  path = '$'
+): FieldChange[] {
+  if (canonical(before) === canonical(after)) return []
+  const nested = objectDiff(before, after, path)
+  if (nested) return nested
   if (Array.isArray(before) && Array.isArray(after))
     return arrayDiff(before, after, path)
   return [
@@ -75,77 +81,118 @@ export function fieldDiff(
   ]
 }
 
-function arrayDiff(
+function counts(ids: (string | undefined)[]) {
+  const result = new Map<string, number>()
+  for (const id of ids)
+    if (id !== undefined) result.set(id, (result.get(id) ?? 0) + 1)
+  return result
+}
+
+function arrayMatcher(
   before: unknown[],
   after: unknown[],
-  path: string
-): FieldChange[] {
-  const left = before.map(canonical)
-  const right = after.map(canonical)
-  const leftIDs = before.map(identity)
-  const rightIDs = after.map(identity)
-  const counts = (ids: (string | undefined)[]) => {
-    const result = new Map<string, number>()
-    for (const id of ids)
-      if (id !== undefined) result.set(id, (result.get(id) ?? 0) + 1)
-    return result
-  }
+  leftIDs: (string | undefined)[],
+  rightIDs: (string | undefined)[]
+) {
+  const left = before.map(canonical),
+    right = after.map(canonical)
   const leftCounts = counts(leftIDs),
     rightCounts = counts(rightIDs)
-  const matches = (i: number, j: number) =>
+  return (i: number, j: number) =>
     left[i] === right[j] ||
     (leftIDs[i] !== undefined &&
       leftIDs[i] === rightIDs[j] &&
       leftCounts.get(leftIDs[i]) === 1 &&
       rightCounts.get(leftIDs[i]) === 1)
-  if (before.length * after.length > 100_000) {
+}
+
+function alignmentLengths(
+  left: number,
+  right: number,
+  matches: (i: number, j: number) => boolean
+) {
+  const lengths = Array.from(
+    { length: left + 1 },
+    () => new Uint32Array(right + 1)
+  )
+  for (let i = left - 1; i >= 0; i--)
+    for (let j = right - 1; j >= 0; j--)
+      lengths[i][j] = matches(i, j)
+        ? 1 + lengths[i + 1][j + 1]
+        : Math.max(lengths[i + 1][j], lengths[i][j + 1])
+  return lengths
+}
+
+function arrayAnchors(
+  left: number,
+  right: number,
+  matches: (i: number, j: number) => boolean
+) {
+  const lengths = alignmentLengths(left, right, matches)
+  const anchors: [number, number][] = []
+  let i = 0,
+    j = 0
+  while (i < left && j < right) {
+    if (matches(i, j)) anchors.push([i++, j++])
+    else if (lengths[i + 1][j] >= lengths[i][j + 1]) i++
+    else j++
+  }
+  anchors.push([left, right])
+  return anchors
+}
+
+function gapChanges(
+  before: unknown[],
+  after: unknown[],
+  path: string,
+  start: [number, number],
+  end: [number, number],
+  leftIDs: (string | undefined)[],
+  rightIDs: (string | undefined)[]
+) {
+  let [i, j] = start
+  const [endI, endJ] = end
+  const changes: FieldChange[] = []
+  while (i < endI && j < endJ && !leftIDs[i] && !rightIDs[j])
+    changes.push(...fieldDiff(before[i++], after[j], `${path}[${j++}]`))
+  while (i < endI)
+    changes.push({
+      path: `${path}[${i}]`,
+      action: 'removed',
+      before: before[i++]
+    })
+  while (j < endJ)
+    changes.push({ path: `${path}[${j}]`, action: 'added', after: after[j++] })
+  return changes
+}
+
+function arrayDiff(
+  before: unknown[],
+  after: unknown[],
+  path: string
+): FieldChange[] {
+  if (before.length * after.length > 100_000)
     return Array.from(
       { length: Math.max(before.length, after.length) },
       (_, i) => fieldDiff(before[i], after[i], `${path}[${i}]`)
     ).flat()
-  }
-  const lengths = Array.from(
-    { length: before.length + 1 },
-    () => new Uint32Array(after.length + 1)
+  const leftIDs = before.map(identity),
+    rightIDs = after.map(identity)
+  const anchors = arrayAnchors(
+    before.length,
+    after.length,
+    arrayMatcher(before, after, leftIDs, rightIDs)
   )
-  for (let i = before.length - 1; i >= 0; i--)
-    for (let j = after.length - 1; j >= 0; j--)
-      lengths[i][j] = matches(i, j)
-        ? 1 + lengths[i + 1][j + 1]
-        : Math.max(lengths[i + 1][j], lengths[i][j + 1])
-  const anchors: [number, number][] = []
-  let i = 0,
-    j = 0
-  while (i < before.length && j < after.length) {
-    if (matches(i, j)) {
-      anchors.push([i++, j++])
-    } else if (lengths[i + 1][j] >= lengths[i][j + 1]) i++
-    else j++
-  }
-  anchors.push([before.length, after.length])
   const changes: FieldChange[] = []
-  i = 0
-  j = 0
-  for (const [endI, endJ] of anchors) {
-    while (i < endI && j < endJ && !leftIDs[i] && !rightIDs[j]) {
-      changes.push(...fieldDiff(before[i++], after[j], `${path}[${j++}]`))
-    }
-    while (i < endI)
-      changes.push({
-        path: `${path}[${i}]`,
-        action: 'removed',
-        before: before[i++]
-      })
-    while (j < endJ)
-      changes.push({
-        path: `${path}[${j}]`,
-        action: 'added',
-        after: after[j++]
-      })
-    if (endI < before.length && endJ < after.length)
-      changes.push(...fieldDiff(before[endI], after[endJ], `${path}[${endJ}]`))
-    i = endI + 1
-    j = endJ + 1
+  let start: [number, number] = [0, 0]
+  for (const end of anchors) {
+    changes.push(
+      ...gapChanges(before, after, path, start, end, leftIDs, rightIDs)
+    )
+    const [i, j] = end
+    if (i < before.length && j < after.length)
+      changes.push(...fieldDiff(before[i], after[j], `${path}[${j}]`))
+    start = [i + 1, j + 1]
   }
   return changes
 }

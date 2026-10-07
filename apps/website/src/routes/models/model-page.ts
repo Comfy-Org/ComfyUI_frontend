@@ -28,20 +28,46 @@ export function modelOgImage(
     : model.thumbnail?.poster
 }
 
+type PageCatalog = {
+  details: NonNullable<ReturnType<typeof getWorkshopPageDetail>>[]
+  models: WorkshopModel[]
+}
+
+function pageModel(slug: string | undefined, catalog?: PageCatalog) {
+  if (!slug) return undefined
+  return catalog
+    ? catalog.details.find((item) => item.slug === slug)
+    : getWorkshopPageDetail(slug)
+}
+
+function successor(model: WorkshopModel, catalog?: PageCatalog) {
+  if (!model.successorSlug) return undefined
+  return catalog
+    ? catalog.models.find((item) => item.slug === model.successorSlug)
+    : getWorkshopModel(model.successorSlug)
+}
+
+function relatedHeading(
+  model: WorkshopModel,
+  related: WorkshopModel[],
+  t: ReturnType<typeof translationsFor>['t']
+) {
+  const sameProvider =
+    related.length > 0 &&
+    related.every((other) => other.provider === model.provider)
+  const provider = sameProvider ? model.provider : undefined
+  return provider
+    ? t('workshop.model.relatedProvider', { provider })
+    : t('workshop.model.related')
+}
+
 export async function prepareModelPage(
   slug: string | undefined,
   locale: Locale = 'en',
-  catalog?: {
-    details: NonNullable<ReturnType<typeof getWorkshopPageDetail>>[]
-    models: WorkshopModel[]
-  }
+  catalog?: PageCatalog
 ) {
   const { t } = translationsFor(locale)
-  const model = slug
-    ? catalog
-      ? catalog.details.find((item) => item.slug === slug)
-      : getWorkshopPageDetail(slug)
-    : undefined
+  const model = pageModel(slug, catalog)
   if (!model) throw new Error(`Unknown Models route: ${slug ?? '(missing)'}`)
   const { href } = model
   if (!href)
@@ -56,11 +82,6 @@ export async function prepareModelPage(
     )
   )
   const useCase = useCaseFor(model)
-  const relatedProvider =
-    related.length > 0 &&
-    related.every((other) => other.provider === model.provider)
-      ? model.provider
-      : undefined
   const tags = model.capabilities
     .filter((capability) => describesCapability(capability, model))
     .map((capability) => ({
@@ -71,16 +92,8 @@ export async function prepareModelPage(
     kind: 'page' as const,
     model: { ...model, href },
     related,
-    relatedHeading: relatedProvider
-      ? t('workshop.model.relatedProvider', {
-          provider: relatedProvider
-        })
-      : t('workshop.model.related'),
-    successor: model.successorSlug
-      ? catalog
-        ? catalog.models.find((item) => item.slug === model.successorSlug)
-        : getWorkshopModel(model.successorSlug)
-      : undefined,
+    relatedHeading: relatedHeading(model, related, t),
+    successor: successor(model, catalog),
     priceEstimate: await estimateWorkshopNodePrice(
       model,
       model.useCases?.length === 1 ? model.useCases[0] : undefined
