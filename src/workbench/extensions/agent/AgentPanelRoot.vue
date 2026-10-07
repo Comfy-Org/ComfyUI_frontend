@@ -387,8 +387,10 @@ function onCreditTransitionNoticeShown(): void {
       billingIdentity.value
   )
     return
+  const telemetry = useTelemetry()
+  if (!telemetry) return
   agentPanelStore.reportedCreditTransitionNoticeIdentity = billingIdentity.value
-  useTelemetry()?.trackAgentCreditTransitionNotice({ action: 'shown' })
+  telemetry.trackAgentCreditTransitionNotice({ action: 'shown' })
 }
 
 function onStandingPaywallShown(): void {
