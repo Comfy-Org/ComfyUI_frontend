@@ -214,6 +214,17 @@ function isSequence(value: unknown): value is number {
   return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0
 }
 
+function parseSequence(value: unknown): number | null {
+  if (isSequence(value)) return value
+  if (
+    typeof value === 'bigint' &&
+    value >= 0n &&
+    value <= BigInt(Number.MAX_SAFE_INTEGER)
+  )
+    return Number(value)
+  return null
+}
+
 function isValidOpId(value: unknown): value is string {
   return (
     typeof value === 'string' &&
@@ -329,8 +340,9 @@ type ServerFrameParsers = {
 function parseResultMetadata(data: WireData) {
   const code = parseBoundedString(data.code, MAX_ERROR_CODE_LENGTH)
   const message = parseBoundedString(data.message, MAX_ERROR_MESSAGE_LENGTH)
+  const seq = parseSequence(data.seq)
   return {
-    ...(isSequence(data.seq) && { seq: data.seq }),
+    ...(seq !== null && { seq }),
     ...(code !== undefined && { code }),
     ...(message !== undefined && { message })
   }
@@ -343,8 +355,8 @@ function fitsAwarenessBudget(state: Record<string, unknown>): boolean {
 
 const serverFrameParsers: ServerFrameParsers = {
   doc_update: (workflowId, data) => {
-    if (!isSequence(data.seq) || typeof data.update_b64 !== 'string')
-      return null
+    const seq = parseSequence(data.seq)
+    if (seq === null || typeof data.update_b64 !== 'string') return null
     const update = decodeBase64(data.update_b64)
     if (update === null) return null
     if (!isAbsent(data.op_ids) && !isStringArray(data.op_ids)) return null
@@ -353,7 +365,7 @@ const serverFrameParsers: ServerFrameParsers = {
       type: 'doc_update',
       data: {
         workflowId,
-        seq: data.seq,
+        seq,
         update,
         ...(actor !== undefined && { actor }),
         ...(isStringArray(data.op_ids) && { opIds: data.op_ids })
@@ -387,14 +399,16 @@ const serverFrameParsers: ServerFrameParsers = {
   },
   doc_reset: (workflowId, data) => {
     const reset: Partial<Record<keyof DocResetData, unknown>> = data
-    if (!isSequence(reset.seq) || !isSequence(reset.lineage_seq)) return null
+    const seq = parseSequence(reset.seq)
+    const lineageSeq = parseSequence(reset.lineage_seq)
+    if (seq === null || lineageSeq === null) return null
     const actor = parseAdvisoryActor(reset.actor)
     return {
       type: 'doc_reset',
       data: {
         workflowId,
-        seq: reset.seq,
-        lineageSeq: reset.lineage_seq,
+        seq,
+        lineageSeq,
         ...(actor !== undefined && { actor })
       }
     }

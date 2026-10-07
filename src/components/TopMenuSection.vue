@@ -86,7 +86,7 @@
                 />
               </Button>
               <Button
-                v-if="isCloud && flags.workflowSharingEnabled"
+                v-if="isCloud"
                 v-tooltip.bottom="shareTooltipConfig"
                 variant="secondary"
                 size="icon"
@@ -194,7 +194,6 @@ import { useQueueUIStore } from '@/stores/queueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { isCloud } from '@/platform/distribution/types'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   openShareDialog,
   prefetchShareDialog
@@ -214,7 +213,6 @@ const isActionBarsHidden = computed(
 )
 const managerState = useManagerState()
 const managerSurveyDialog = useManagerSurveyDialog()
-const { flags } = useFeatureFlags()
 const { isLoggedIn } = useCurrentUser()
 const { t } = useI18n()
 const { toastErrorHandler } = useErrorHandling()
@@ -244,7 +242,7 @@ const hasDockedButtons = computed(() => {
   if (hasLegacyContent.value) return true
   if (!isIntegratedTabBar.value) return true
   if (managerState.shouldShowExtensionsButton.value) return true
-  if (isCloud && flags.workflowSharingEnabled) return true
+  if (isCloud) return true
   if (!isRightSidePanelOpen.value) return true
   return false
 })

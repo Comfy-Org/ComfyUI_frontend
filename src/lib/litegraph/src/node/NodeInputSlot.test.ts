@@ -30,7 +30,6 @@ describe('NodeInputSlot', () => {
   const originalCallbacks = LiteGraph.onDeprecationWarning
 
   beforeEach(() => {
-    onWarning.mockClear()
     LiteGraph.onDeprecationWarning = [onWarning]
     LiteGraph.alwaysRepeatWarnings = true
   })
