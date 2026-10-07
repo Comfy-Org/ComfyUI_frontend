@@ -192,12 +192,13 @@ const queueMenuTriggerVariant = computed(() =>
     : queueButtonVariant.value
 )
 const queueMenuTriggerVariantClass = {
-  destructive: 'data-[state=open]:bg-destructive-background-hover',
+  destructive:
+    'border-black/20 data-[state=open]:bg-destructive-background-hover',
   inverted: 'data-[state=open]:bg-base-foreground/80',
   secondary: 'text-muted-foreground'
 } satisfies Record<typeof queueMenuTriggerVariant.value, string>
 const queueMenuTriggerClass =
-  'h-full w-6 rounded-l-none rounded-r-lg border-0 border-l border-solid border-base-background/25 p-0'
+  'h-full w-6 rounded-l-none rounded-r-lg border-0 border-l border-solid border-current/25 p-0'
 
 const iconClass = computed(() => {
   if (paymentRecoveryLock) {
