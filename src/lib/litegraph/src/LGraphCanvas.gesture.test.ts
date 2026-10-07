@@ -17,6 +17,7 @@ import {
   pointerEvent,
   selectedTitles
 } from '@/lib/litegraph/src/__fixtures__/canvasHarness'
+import type { Positionable } from '@/lib/litegraph/src/interfaces'
 import type {
   LGraphCanvas,
   LGraphGroup,
@@ -426,14 +427,16 @@ describe('LGraphCanvas pointer gestures', () => {
       ({ modifiers, preselect, emitted }) => {
         const byTitle: Record<string, LGraphNode> = { A: a, B: b }
         canvas.selectItems(preselect.map((title) => byTitle[title]))
-        const reported: string[][] = []
-        canvas.onSelectionChange = () => {
-          reported.push(selectedTitles(canvas))
+        const reported: Positionable[][] = []
+        canvas.onSelectionChange = (selected) => {
+          reported.push(Object.values(selected))
         }
 
         gesture.click(A_BODY, modifiers)
 
-        expect(reported).toEqual(emitted)
+        expect(reported).toEqual(
+          emitted.map((titles) => titles.map((title) => byTitle[title]))
+        )
       }
     )
 

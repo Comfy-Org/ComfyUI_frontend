@@ -1,4 +1,4 @@
-import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { assert, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { effectScope, nextTick } from 'vue'
 
 import {
@@ -9,20 +9,10 @@ import {
 import { LGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
-import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 
 vi.mock(import('@/renderer/core/canvas/useCanvasInteractions'))
-
-vi.mock(
-  import('@/renderer/extensions/vueNodes/composables/useNodeZIndex'),
-  () => {
-    const zIndex: ReturnType<typeof useNodeZIndex> = {
-      bringNodeToFront: vi.fn()
-    }
-    return { useNodeZIndex: () => zIndex }
-  }
-)
 
 describe('useNodeEventHandlers', () => {
   async function setup() {
@@ -36,7 +26,13 @@ describe('useNodeEventHandlers', () => {
     onTestFinished(() => scope.stop())
     const handlers = scope.run(useNodeEventHandlers)
     if (!handlers) throw new Error('handlers require an active scope')
-    return { canvas, first, second, handlers }
+    return { graph, canvas, first, second, handlers }
+  }
+
+  function zIndexOf(graph: LGraph, node: LGraphNode) {
+    const layout = layoutStore.getNodeLayout(graph.rootGraph.id, node.id)
+    assert(layout)
+    return layout.zIndex
   }
 
   function rightClick() {
@@ -55,28 +51,29 @@ describe('useNodeEventHandlers', () => {
   it.for<{
     node: string
     arrange: (canvas: LGraphCanvas, node: LGraphNode) => void
-    raises: number
+    raised: boolean
   }>([
-    { node: 'an unselected node', arrange: () => {}, raises: 1 },
+    { node: 'an unselected node', arrange: () => {}, raised: true },
     {
       node: 'a selected node',
       arrange: (canvas, node) => canvas.select(node),
-      raises: 0
+      raised: false
     },
     {
       node: 'an unselected pinned node',
       arrange: (_, node) => node.pin(true),
-      raises: 0
+      raised: false
     }
   ])(
-    'right click on $node raises it $raises times',
-    async ({ arrange, raises }) => {
-      const { canvas, first, handlers } = await setup()
+    'right click on $node puts it above the other node: $raised',
+    async ({ arrange, raised }) => {
+      const { graph, canvas, first, second, handlers } = await setup()
       arrange(canvas, first)
+      expect(zIndexOf(graph, first)).toBeLessThan(zIndexOf(graph, second))
 
       handlers.handleNodeRightClick(rightClick(), first.id)
 
-      expect(useNodeZIndex().bringNodeToFront).toHaveBeenCalledTimes(raises)
+      expect(zIndexOf(graph, first) > zIndexOf(graph, second)).toBe(raised)
     }
   )
 

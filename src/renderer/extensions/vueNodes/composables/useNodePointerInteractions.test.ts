@@ -13,6 +13,7 @@ import type {
 } from '@/lib/litegraph/src/__fixtures__/canvasHarness'
 import { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 import { LGraph, LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { Positionable } from '@/lib/litegraph/src/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
@@ -157,15 +158,17 @@ describe('useNodePointerInteractions', () => {
         Second: second
       }
       canvas.selectItems(preselect.map((title) => byTitle[title]))
-      const reported: string[][] = []
-      canvas.onSelectionChange = () => {
-        reported.push(selectedTitles(canvas))
+      const reported: Positionable[][] = []
+      canvas.onSelectionChange = (selected) => {
+        reported.push(Object.values(selected))
       }
 
       node.press(10, 10, modifiers)
       node.release(10, 10, modifiers)
 
-      expect(reported).toEqual(emitted)
+      expect(reported).toEqual(
+        emitted.map((titles) => titles.map((title) => byTitle[title]))
+      )
     }
   )
 
