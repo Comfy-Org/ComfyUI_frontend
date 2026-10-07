@@ -380,6 +380,38 @@ test.describe('Models catalog', () => {
     await expect(page.getByTestId('workshop-sections')).toHaveCount(0)
   })
 
+  test('a model page returns to the category tab it was opened from', async ({
+    page
+  }) => {
+    await page.goto('/hub/models/?tab=video')
+    await page
+      .getByTestId('workshop-models-grid')
+      .getByTestId('workshop-model-card')
+      .first()
+      .click()
+
+    const back = page.getByTestId('model-back')
+    await expect(back).toHaveText('Back to Video models')
+    await back.click()
+    await expect(page).toHaveURL(/\/hub\/models\/\?tab=video$/)
+  })
+
+  test('a model page opened from the Hub returns to the Hub', async ({
+    page
+  }) => {
+    await page.goto('/hub/')
+    const result = page
+      .getByTestId('explore-results')
+      .locator('a[href^="/hub/models/"]')
+      .first()
+    await waitForIsland(page, result)
+    await result.click()
+
+    const back = page.getByTestId('model-back')
+    await expect(back).toHaveText('Back to Hub')
+    await expect(back).toHaveAttribute('href', '/hub/')
+  })
+
   test('the search field stays put as the results swap under it', async ({
     page
   }) => {
