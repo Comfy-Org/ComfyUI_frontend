@@ -1,7 +1,8 @@
 import { useEventListener, whenever } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { computed, ref, shallowRef } from 'vue'
+import { computed, ref, shallowRef, watch } from 'vue'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useAppMode } from '@/composables/useAppMode'
 import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
 
@@ -110,6 +111,10 @@ export const useCanvasStore = defineStore('canvas', () => {
   const isInSubgraph = ref(false)
   const isGhostPlacing = ref(false)
   const isPickingNodes = ref(false)
+  const toast = useToast()
+  watch(isPickingNodes, (picking) => {
+    toast.held = picking
+  })
 
   function startNodePicking(): void {
     const currentCanvas = canvas.value
