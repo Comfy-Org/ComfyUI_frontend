@@ -47,6 +47,21 @@ export function useStarterPromptSet() {
   const qaOverride = ref(false)
   let surfaceRendered = false
 
+  const exposeAssignment = () => {
+    if (
+      !surfaceRendered ||
+      renderedSurfaceAssignment.value !== assigned.value ||
+      qaOverride.value ||
+      exposedAssignment.value === assigned.value
+    ) {
+      return
+    }
+    exposedAssignment.value = assigned.value
+    useTelemetry()?.trackAgentStarterPromptExposure({
+      [`$feature/${STARTER_PROMPT_SET_FLAG}`]: assigned.value
+    })
+  }
+
   const assign = () => {
     const resolved = resolveAssignment()
     if (
@@ -73,17 +88,7 @@ export function useStarterPromptSet() {
     ) {
       surfaceRendered = true
     }
-    if (
-      surfaceRendered &&
-      renderedSurfaceAssignment.value === assigned.value &&
-      !qaOverride.value &&
-      exposedAssignment.value !== assigned.value
-    ) {
-      exposedAssignment.value = assigned.value
-      useTelemetry()?.trackAgentStarterPromptExposure({
-        [`$feature/${STARTER_PROMPT_SET_FLAG}`]: assigned.value
-      })
-    }
+    exposeAssignment()
   }
 
   const expose = (renderedAssignment?: StarterPromptAssignment) => {
@@ -99,13 +104,7 @@ export function useStarterPromptSet() {
     assign()
     surfaceRendered = true
     renderedSurfaceAssignment.value = renderedAssignment ?? assigned.value
-    if (renderedSurfaceAssignment.value !== assigned.value) return
-    if (!qaOverride.value && exposedAssignment.value !== assigned.value) {
-      exposedAssignment.value = assigned.value
-      useTelemetry()?.trackAgentStarterPromptExposure({
-        [`$feature/${STARTER_PROMPT_SET_FLAG}`]: assigned.value
-      })
-    }
+    exposeAssignment()
   }
 
   const invalidateSurface = () => {
