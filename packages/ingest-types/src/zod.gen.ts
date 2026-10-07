@@ -3175,6 +3175,7 @@ export const zAgentAskKind = z.enum([
 export const zAgentPostMessageRequest = z.object({
   ask_kinds: z.array(zAgentAskKind).optional(),
   attachments: z.array(z.string()).optional(),
+  client_message_id: z.string().max(128).optional(),
   content: z.string(),
   current_tab: z.string().optional(),
   current_tab_unbound: z.boolean().optional(),
