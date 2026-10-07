@@ -14,6 +14,7 @@ import { z } from 'zod'
 
 import { isRootGraphDocBound } from '@/lib/litegraph/src/docBoundGraphs'
 import { SUBGRAPH_OUTPUT_ID } from '@/lib/litegraph/src/constants'
+import { setNodeWidgetValue } from '@/core/graph/widgets/nodeWidgetValues'
 import {
   emitGraphIntent,
   withGraphIntentSource
@@ -47,7 +48,7 @@ import {
   readSubgraphDefinitions
 } from './agentSubgraphDefinitions'
 import { readDocSlotNames, readDocWidgetValue } from './liveGraphApplier'
-import { mintWireOps } from './opEnvelope'
+import { mintWireOps, WIRE_MAX_BATCH_BYTES } from './opEnvelope'
 
 vi.mock(import('@/platform/telemetry/reportError'))
 
@@ -487,6 +488,32 @@ describe('attachDocOpMinter', () => {
     ])
   })
 
+  it('drops links touching a deferred add whose snapshot fails', async () => {
+    const { source, sink } = seedGraph(graph)
+    sink.disconnectInput(0)
+    await afterFlush()
+    minted.length = 0
+
+    const added = new TestSource()
+    vi.spyOn(added, 'serialize').mockImplementation(() => {
+      throw new Error('snapshot failed')
+    })
+    graph.add(added)
+    added.connect(0, sink, 0)
+    source.widgets![0].value = 21
+    await afterFlush()
+
+    expect(minted).toEqual([
+      {
+        op: 'set_widget',
+        node_id: source.id,
+        widget: 'steps',
+        value: 21,
+        old: 20
+      }
+    ])
+  })
+
   it('keeps command order across one tick and flushes the batch together', async () => {
     const { source, sink } = seedGraph(graph)
     const enqueue = vi.fn((operations: GraphOperation[]) =>
@@ -846,6 +873,21 @@ describe('attachDocOpMinter', () => {
     ])
   })
 
+  it('stops widget callbacks after a synchronous refusal', async () => {
+    const { host, doc } = seedPromotedHost()
+    docPromotedWidgets = () => null
+    const callback = vi.fn()
+    const widget = host.widgets[1]
+    widget.callback = callback
+
+    expect(setNodeWidgetValue(host, widget.name, 'refused')).toBe(true)
+    await afterFlush()
+
+    expect(widget.value).toBe('an interior default')
+    expect(callback).not.toHaveBeenCalled()
+    doc.destroy()
+  })
+
   it('restores an undefined value without unregistering its widget', async () => {
     const { host, doc } = seedPromotedHost()
     const id = host.inputs[1].widgetId
@@ -925,6 +967,62 @@ describe('attachDocOpMinter', () => {
     doc.destroy()
   })
 
+  it('snapshots the selected object value before deferred delivery', async () => {
+    const { host, doc } = seedPromotedHost()
+    const selected = { nested: { value: 'before' } }
+
+    host.widgets[1].value = selected
+    selected.nested.value = 'after'
+    await afterFlush()
+
+    expect(minted[0]).toMatchObject({
+      value: { nested: { value: 'before' } },
+      promoted: {
+        host_widgets_values: [
+          'an interior default',
+          { nested: { value: 'before' } }
+        ]
+      }
+    })
+    doc.destroy()
+  })
+
+  it('omits an unserializable informational old value', async () => {
+    const { source } = seedGraph(graph)
+    const cyclic: Record<string, unknown> = {}
+    cyclic.self = cyclic
+    withGraphIntentSource('load', () => {
+      source.widgets![0].value = cyclic
+    })
+
+    source.widgets![0].value = 'serializable'
+    await afterFlush()
+
+    expect(minted).toEqual([
+      {
+        op: 'set_widget',
+        node_id: source.id,
+        widget: 'steps',
+        value: 'serializable'
+      }
+    ])
+  })
+
+  it('refuses a widget operation that cannot fit after its wire envelope', async () => {
+    const { source } = seedGraph(graph)
+
+    source.widgets![0].value = 'x'.repeat(WIRE_MAX_BATCH_BYTES)
+    await afterFlush()
+
+    expect(minted).toEqual([])
+    expect(source.widgets![0].value).toBe(20)
+    expect(refused).toContainEqual({
+      nodeId: source.id,
+      name: 'steps',
+      reason: 'unsafe_value'
+    })
+  })
+
   it('restores an unserializable sibling before the next promoted write', async () => {
     const { host, doc } = seedPromotedHost()
     const cyclic: Record<string, unknown> = {}
@@ -944,7 +1042,7 @@ describe('attachDocOpMinter', () => {
       })
     ])
     expect(refused).toContainEqual(
-      expect.objectContaining({ reason: 'layout_drift' })
+      expect.objectContaining({ reason: 'unsafe_value' })
     )
     doc.destroy()
   })
@@ -1097,28 +1195,30 @@ describe('attachDocOpMinter', () => {
     doc.destroy()
   })
 
-  it('seeds an unset sibling with its canonical wire value', async () => {
+  it('rejects an unset value that JSON would omit from the required value field', async () => {
     const { host, doc } = seedPromotedHost([])
     host.widgets[0].value = undefined
     await afterFlush()
+    expect(host.widgets[0].value).toBe('an interior default')
+    expect(minted).toEqual([])
+    expect(refused).toContainEqual({
+      nodeId: host.id,
+      name: 'prefix',
+      reason: 'unsafe_value'
+    })
     minted.length = 0
+    refused.length = 0
 
     host.widgets[1].value = 'pasted'
     await afterFlush()
 
     const [write] = minted
     assert(write.op === 'set_widget' && write.path == null)
-    expect(write.promoted?.host_widgets_values).toEqual([null, 'pasted'])
-
-    // Over the wire, where an unset sibling becomes the same `null` a saved
-    // workflow carries for it (`widgetValueNullContract`).
-    const overTheWire = JSON.parse(JSON.stringify(minted)) as GraphOperation[]
-    expect(applyMinted(doc, overTheWire)).toEqual(['applied'])
-    expect(
-      project(doc, CATALOG).nodes.find(
-        (node) => String(node.id) === String(host.id)
-      )?.widgets_values
-    ).toEqual([null, 'pasted'])
+    expect(write.promoted?.host_widgets_values).toEqual([
+      'an interior default',
+      'pasted'
+    ])
+    expect(applyMinted(doc, minted)).toEqual(['applied'])
     doc.destroy()
   })
 
@@ -1135,7 +1235,7 @@ describe('attachDocOpMinter', () => {
     expect(refused).toContainEqual({
       nodeId: host.id,
       name: 'text',
-      reason: 'layout_drift'
+      reason: 'unsafe_value'
     })
     doc.destroy()
   })
@@ -1358,6 +1458,69 @@ describe('attachDocOpMinter', () => {
 
     expect(readDocPromotedWidgets(doc, String(host.id))?.promotedNames).toEqual(
       ['prefix', 'text']
+    )
+    doc.destroy()
+  })
+
+  it('normalizes a shared-text host type before resolving its layout', () => {
+    const { host, doc } = seedPromotedHost()
+    const stored = nodesMap(doc).get(String(host.id))
+    assert.instanceOf(stored, Y.Map)
+    const type = new Y.Text()
+    stored.set('type', type)
+    type.insert(0, host.type)
+
+    expect(readDocPromotedWidgets(doc, String(host.id))?.promotedNames).toEqual(
+      ['prefix', 'text']
+    )
+    doc.destroy()
+  })
+
+  it('charges a shared target input list once while resolving many links', () => {
+    const { host, doc } = seedPromotedHost()
+    const definition = doc.getMap<unknown>('definitions').get(host.type)
+    assert.instanceOf(definition, Y.Map)
+    const nodes = definition.get('nodes')
+    const links = definition.get('links')
+    assert.instanceOf(nodes, Y.Map)
+    assert.instanceOf(links, Y.Map)
+
+    const count = 400
+    const targetId = '99'
+    const target = new Y.Map<unknown>()
+    const targetInputs = new Y.Array<unknown>()
+    target.set('id', Number(targetId))
+    target.set('inputs', targetInputs)
+    targetInputs.push(
+      Array.from({ length: count }, (_, index) => ({
+        name: `target-${index}`,
+        widget: { name: `widget-${index}` }
+      }))
+    )
+    nodes.clear()
+    nodes.set(targetId, target)
+    definition.set('node_order', [targetId])
+    links.clear()
+    const declared = Array.from({ length: count }, (_, index) => {
+      const linkId = String(index + 1)
+      links.set(linkId, {
+        id: index + 1,
+        origin_id: -10,
+        origin_slot: index,
+        target_id: Number(targetId),
+        target_slot: index,
+        type: 'STRING'
+      })
+      return { name: `input-${index}`, linkIds: [index + 1] }
+    })
+    definition.set('inputs', declared)
+    definition.set(
+      'link_order',
+      Array.from({ length: count }, (_, index) => String(index + 1))
+    )
+
+    expect(readDocPromotedWidgets(doc, String(host.id))?.promotedNames).toEqual(
+      declared.map(({ name }) => name)
     )
     doc.destroy()
   })
@@ -2036,6 +2199,20 @@ describe('attachDocOpMinter', () => {
     expect(refused).toEqual([])
     expect(source.widgets![0].value).toBe(20)
     expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('rejects graph commands from another root instance with the same persisted id', async () => {
+    const copiedGraph = new LGraph()
+    copiedGraph.id = graph.id
+
+    copiedGraph.add(new TestSource())
+    await afterFlush()
+
+    expect(minted).toEqual([])
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({ errorType: 'agent_crdt_op_for_unbound_graph' })
+    )
   })
 
   it('refuses a resolved widget write from an unbound root graph', async () => {

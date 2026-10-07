@@ -174,8 +174,14 @@ function withoutNestedDefinitionBookkeeping(source: unknown): unknown {
  * LiteGraph keeps when it normalizes a definition.
  */
 function orderedKeys(register: unknown, map: Y.Map<unknown>): string[] {
-  const order = Array.isArray(register)
-    ? register.filter((key): key is string => typeof key === 'string')
+  const registerValues =
+    register instanceof Y.Array
+      ? register.toArray()
+      : Array.isArray(register)
+        ? register
+        : null
+  const order = registerValues
+    ? registerValues.filter((key): key is string => typeof key === 'string')
     : [...map.keys()].sort()
   return [...new Set(order)].filter((key) => map.has(key))
 }
@@ -318,7 +324,7 @@ function hasSafeNestedDefinitions(value: unknown): boolean {
   )
 }
 
-function isSafeDefinition(value: unknown): boolean {
+function isSafeDefinition(value: unknown): value is ExportedSubgraph {
   return (
     isRecord(value) &&
     typeof value.id === 'string' &&
@@ -348,25 +354,40 @@ function readNestedDefinitions(
       definitions.subgraphs = orderedKeys(
         source.get('subgraph_order'),
         value
-      ).flatMap((id) => {
-        const definition = value.get(id)
-        if (
-          definition instanceof Y.Map &&
-          isExcludedDefinition(definition, excludedDefinitionIds)
-        ) {
-          return []
-        }
-        return [
-          definition instanceof Y.Map
-            ? readDefinition(definition, excludedDefinitionIds)
-            : null
-        ]
-      })
+      ).flatMap((id) =>
+        readNestedDefinition(value.get(id), excludedDefinitionIds)
+      )
+    } else if (
+      key === 'subgraphs' &&
+      (value instanceof Y.Array || Array.isArray(value))
+    ) {
+      definitions.subgraphs = readList(value).flatMap((definition) =>
+        readNestedDefinition(definition, excludedDefinitionIds)
+      )
     } else {
       definitions[key] = plain(value)
     }
   })
   return definitions
+}
+
+function readNestedDefinition(
+  source: unknown,
+  excludedDefinitionIds: ReadonlySet<string>
+): unknown[] {
+  const id = readableString(readField(source, 'id'))
+  if (id !== null && excludedDefinitionIds.has(id)) return []
+  if (source instanceof Y.Map) {
+    const definition = readDefinition(source, excludedDefinitionIds)
+    return [definition]
+  }
+  try {
+    const definition = withoutDefinitionBookkeeping(plain(source))
+    if (!isSafeDefinition(definition)) return [null]
+    return [definition]
+  } catch {
+    return [null]
+  }
 }
 
 function readDefinition(
@@ -750,9 +771,8 @@ export function readDocPromotedWidgets(
     }
   }
   const stored = node.get(OPAQUE_WIDGETS_KEY)
-  const type = node.get('type')
-  const names =
-    typeof type === 'string' ? readDefinitionPromotedLayout(doc, type) : null
+  const type = readableString(node.get('type'))
+  const names = type === null ? null : readDefinitionPromotedLayout(doc, type)
   return {
     valueCount:
       stored === undefined
@@ -769,6 +789,7 @@ const MAX_LAYOUT_RECORDS = 100_000
 
 interface LayoutReadBudget {
   remaining: number
+  chargedInputLists: WeakSet<object>
 }
 
 function consumeLayoutBudget(budget: LayoutReadBudget, count: number): boolean {
@@ -878,7 +899,10 @@ function readTargetInput(
   if (target === undefined) return null
   const inputs = readField(target, 'inputs')
   if (!(inputs instanceof Y.Array) && !Array.isArray(inputs)) return null
-  if (!consumeLayoutBudget(budget, inputs.length)) return null
+  if (!budget.chargedInputLists.has(inputs)) {
+    budget.chargedInputLists.add(inputs)
+    if (!consumeLayoutBudget(budget, inputs.length)) return null
+  }
   if (targetSlot >= inputs.length) return null
   const input =
     inputs instanceof Y.Array ? inputs.get(targetSlot) : inputs[targetSlot]
@@ -926,7 +950,10 @@ export interface DefinitionPromotedLayout {
 export function definitionPromotedLayout(
   definition: unknown
 ): DefinitionPromotedLayout | null {
-  const budget = { remaining: MAX_LAYOUT_RECORDS }
+  const budget: LayoutReadBudget = {
+    remaining: MAX_LAYOUT_RECORDS,
+    chargedInputLists: new WeakSet()
+  }
   const declared = namedInputs(readField(definition, 'inputs'), budget)
   const links = projectedRecordLookup(definition, 'links', LINK_ORDER, budget)
   const nodes = projectedRecordLookup(definition, 'nodes', NODE_ORDER, budget)

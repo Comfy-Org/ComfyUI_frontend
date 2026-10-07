@@ -719,6 +719,11 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
 
     const v = this.type === 'number' ? Number(value) : value
     this.value = v
+    // A synchronous graph-intent listener may reject and restore the write.
+    // In that case the command stops here: mirroring the refused candidate
+    // into properties or extension callbacks would leave the node split from
+    // its canonical store-backed widget state.
+    if (!Object.is(this.value, v)) return
     const property = extensionValue(this.options)?.property
     if (property && node.properties[property] !== undefined) {
       node.setProperty(property, v)

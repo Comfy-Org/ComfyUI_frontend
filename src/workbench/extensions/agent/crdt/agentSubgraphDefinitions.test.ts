@@ -564,6 +564,56 @@ describe('readSubgraphDefinitions', () => {
     expect(projected.links?.map((link) => link.id)).toEqual([5])
   })
 
+  it('honors a Y.Array node order register instead of sorting map keys', () => {
+    const definition = createTestSubgraphData({
+      nodes: [interiorNode(2), interiorNode(10)]
+    })
+    const doc = seed(definition)
+    const stored = storedDefinition(doc, definition.id)
+    const order = new Y.Array<string>()
+    order.push(['2', '10'])
+    stored.set('node_order', order)
+
+    const [projected] = readSubgraphDefinitions(doc)
+
+    expect(projected.nodes?.map((node) => node.id)).toEqual([2, 10])
+  })
+
+  it.for(['plain array', 'Y.Array'] as const)(
+    'sanitizes and excludes nested definitions stored in a $0',
+    (storage) => {
+      const excluded = createTestSubgraphData({
+        id: '00000000-0000-4000-8000-000000000011'
+      })
+      const included = createTestSubgraphData({
+        id: '00000000-0000-4000-8000-000000000012'
+      })
+      const outer = createTestSubgraphData({
+        definitions: { subgraphs: [excluded, included] }
+      })
+      const doc = seed(outer)
+      const stored = storedDefinition(doc, outer.id)
+      const container = stored.get('definitions')
+      assert.instanceOf(container, Y.Map)
+      const storedExcluded = { ...excluded, __definition_digest: 'private' }
+      const storedIncluded = { ...included, __definition_digest: 'private' }
+      if (storage === 'Y.Array') {
+        const sequence = new Y.Array<unknown>()
+        sequence.push([storedExcluded, storedIncluded])
+        container.set('subgraphs', sequence)
+      } else {
+        container.set('subgraphs', [storedExcluded, storedIncluded])
+      }
+
+      const [projected] = readSubgraphDefinitions(doc, new Set([excluded.id]))
+
+      expect(projected.definitions?.subgraphs).toEqual([included])
+      expect(projected.definitions?.subgraphs?.[0]).not.toHaveProperty(
+        '__definition_digest'
+      )
+    }
+  )
+
   it('skips a node whose widgets entry is not a map, as the package does', () => {
     const definition = createTestSubgraphData({
       nodes: [interiorNode(1), interiorNode(2)]

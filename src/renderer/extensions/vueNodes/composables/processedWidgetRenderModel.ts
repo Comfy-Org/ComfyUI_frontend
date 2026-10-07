@@ -233,9 +233,11 @@ function createWidgetUpdateHandler({
 }): (newValue: WidgetValue) => void {
   return (newValue: WidgetValue) => {
     widgetValueStore.setValue(id, newValue)
+    if (!Object.is(widgetValueStore.getWidget(id)?.value, newValue)) return
     if (live) {
       const normalized = normalizeWidgetValue(newValue)
       live.widget.value = normalized
+      if (!Object.is(live.widget.value, normalized)) return
       live.widget.callback?.(normalized, app.canvas, live.node)
       live.node.widgets?.forEach((w) => w.triggerDraw?.())
     }

@@ -89,6 +89,7 @@ export interface DocOpMinterDeps {
       | 'nested_host'
       | 'unpromoted_host_widget'
       | 'unresolvable_owner'
+      | 'unsafe_value'
   }): void
 }
 
@@ -106,21 +107,30 @@ type WidgetRefusalReason =
   | 'nested_host'
   | 'unpromoted_host_widget'
   | 'unresolvable_owner'
+  | 'unsafe_value'
 
 interface MintedWidgetBase {
   op: 'set_widget'
   node_id: NodeId
   widget: string
   value: unknown
-  old: unknown
+  old?: unknown
 }
 
 const REFUSAL_NOTIFICATION_INTERVAL_MS = 5000
+// Identity fields are small today, but leave enough headroom that a semantic
+// op accepted here remains below the transport cap after the sender adds its
+// actor, Lamport stamp and UUID.
+const WIRE_ENVELOPE_RESERVE_BYTES = 64 * 1024
 type PendingOpPayload =
   | { kind: 'add_node'; graph: LGraph; node: LGraphNode }
   | { kind: 'op'; operation: GraphOperation }
 
 type PendingOp = PendingOpPayload & { binding: string | null }
+type MaterializedPending = {
+  entry: PendingOp
+  operation: GraphOperation | null
+}
 
 /**
  * Serialized save-format node. `widgets_values` is NAME-KEYED via the node's
@@ -418,12 +428,18 @@ function routedWidgetOperation(
   onRefused: (reason: WidgetRefusalReason) => void,
   onUnsafeSnapshot: () => void
 ): GraphOperation | null {
+  const value = jsonWireSnapshot(event.value)
+  if (!value.ok) {
+    onUnsafeSnapshot()
+    return null
+  }
+  const previous = jsonWireSnapshot(event.previous)
   const operation = {
     op: 'set_widget',
     node_id: event.nodeId,
     widget: event.name,
-    value: event.value,
-    old: event.previous
+    value: value.value,
+    ...(previous.ok ? { old: previous.value } : {})
   } as const
   if (node === null) {
     onRefused('unresolvable_owner')
@@ -431,23 +447,121 @@ function routedWidgetOperation(
   }
   const owningGraphId = node.graph?.id ?? event.graphId
   if (owningGraphId === rootGraphId) {
-    return topLevelWidgetOperation(
-      operation,
-      node,
-      event,
-      docPromotedWidgets,
-      onOrderDrift,
-      onRefused,
+    return fitWidgetOperation(
+      topLevelWidgetOperation(
+        operation,
+        node,
+        { ...event, value: value.value },
+        docPromotedWidgets,
+        onOrderDrift,
+        onRefused,
+        onUnsafeSnapshot
+      ),
       onUnsafeSnapshot
     )
   }
-  return interiorWidgetOperation(
-    graph,
-    operation,
-    event,
-    node,
-    owningGraphId,
-    onRefused
+  return fitWidgetOperation(
+    interiorWidgetOperation(
+      graph,
+      operation,
+      event,
+      node,
+      owningGraphId,
+      onRefused
+    ),
+    onUnsafeSnapshot
+  )
+}
+
+function fitWidgetOperation(
+  operation: GraphOperation | null,
+  onUnsafeSnapshot: () => void
+): GraphOperation | null {
+  if (operation === null || operationFitsWire(operation)) return operation
+  onUnsafeSnapshot()
+  return null
+}
+
+type WireSnapshot = { ok: true; value: unknown } | { ok: false }
+
+/** Capture the exact JSON value now, before a mutable widget can change it. */
+function jsonWireSnapshot(value: unknown): WireSnapshot {
+  try {
+    const json = (JSON.stringify as (candidate: unknown) => string | undefined)(
+      value
+    )
+    return json === undefined
+      ? { ok: false }
+      : { ok: true, value: JSON.parse(json) as unknown }
+  } catch {
+    return { ok: false }
+  }
+}
+
+function operationFitsWire(operation: GraphOperation): boolean {
+  try {
+    const json = JSON.stringify(operation)
+    return (
+      typeof json === 'string' &&
+      new TextEncoder().encode(json).length <=
+        WIRE_MAX_BATCH_BYTES - WIRE_ENVELOPE_RESERVE_BYTES
+    )
+  } catch {
+    return false
+  }
+}
+
+function failedAddNodeIds(
+  materialized: readonly MaterializedPending[],
+  binding: string
+): Set<WireNodeId> {
+  return new Set(
+    materialized.flatMap(({ entry, operation }) =>
+      entry.binding === binding &&
+      entry.kind === 'add_node' &&
+      operation === null
+        ? [entry.node.id]
+        : []
+    )
+  )
+}
+
+function failedConnectIds(
+  materialized: readonly MaterializedPending[],
+  failedAdds: ReadonlySet<WireNodeId>
+): Set<WireNodeId> {
+  return new Set(
+    materialized.flatMap(({ operation }) =>
+      operation?.op === 'connect' &&
+      (failedAdds.has(operation.from_node) || failedAdds.has(operation.to_node))
+        ? [operation.link_id]
+        : []
+    )
+  )
+}
+
+function survivesFailedAdd(
+  operation: GraphOperation,
+  failedAdds: ReadonlySet<WireNodeId>,
+  failedLinks: ReadonlySet<WireNodeId>
+): boolean {
+  if (operation.op === 'connect') return !failedLinks.has(operation.link_id)
+  if (operation.op !== 'disconnect') return true
+  return (
+    !failedAdds.has(operation.to_node) && !failedLinks.has(operation.link_id)
+  )
+}
+
+function withoutFailedAddDependents(
+  materialized: readonly MaterializedPending[],
+  binding: string
+): GraphOperation[] {
+  const failedAdds = failedAddNodeIds(materialized, binding)
+  const failedLinks = failedConnectIds(materialized, failedAdds)
+  return materialized.flatMap(({ operation }) =>
+    operation && survivesFailedAdd(operation, failedAdds, failedLinks)
+      ? [operation]
+      : []
   )
 }
 
@@ -576,10 +690,11 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     if (detached || !deps.isEnabled() || !deps.isDocBound()) return
     const binding = currentBindingIdentity()
     if (binding === null) return
-    const operations = batch.flatMap((entry) => {
+    const materialized = batch.map((entry) => {
       const operation = materializePending(entry, binding)
-      return operation ? [operation] : []
+      return { entry, operation }
     })
+    const operations = withoutFailedAddDependents(materialized, binding)
     if (operations.length > 0) deps.enqueue(operations)
   }
 
@@ -602,6 +717,16 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     action: string,
     entityId: NodeId | string | number
   ): boolean {
+    const activeRoot = deps.getGraph()?.rootGraph
+    if (activeRoot !== graph.rootGraph) {
+      reportOnce(
+        `${action}:${graph.rootGraph.id}:inactive-instance`,
+        `${action} targets an inactive graph instance; refusing to mint`,
+        'agent_crdt_op_for_unbound_graph',
+        { graphId: graph.rootGraph.id, entityId }
+      )
+      return false
+    }
     const boundRootGraphId = deps.boundRootGraphId()
     const rootGraphId = graph.rootGraph.id
     if (boundRootGraphId !== null && rootGraphId !== boundRootGraphId) {
@@ -706,10 +831,10 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
         ),
       () =>
         refuse(
-          'layout_drift',
+          'unsafe_value',
           `promoted_snapshot:${rootGraphId}:${String(event.nodeId)}`,
-          `Subgraph host ${String(event.nodeId)} has a promoted widget snapshot that cannot be sent safely; refusing to mint`,
-          'agent_crdt_promoted_widget_snapshot_invalid',
+          `Widget ${event.name} on node ${String(event.nodeId)} has a value that cannot be sent safely; refusing to mint`,
+          'agent_crdt_widget_snapshot_invalid',
           { nodeId: event.nodeId, widget: event.name },
           reportedDrift
         )

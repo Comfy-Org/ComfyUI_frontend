@@ -238,8 +238,13 @@ function setWidgetValue(
 ) {
   // Store-backed widgets (interior node widgets and promoted subgraph inputs)
   // are addressed by widgetId; writing there keeps the displayed value in sync.
-  if (widget.widgetId) useWidgetValueStore().setValue(widget.widgetId, value)
+  if (widget.widgetId) {
+    const store = useWidgetValueStore()
+    store.setValue(widget.widgetId, value)
+    if (!Object.is(store.getWidget(widget.widgetId)?.value, value)) return
+  }
   widget.value = value
+  if (!Object.is(widget.value, value)) return
   widget.callback?.(value)
   clearWidgetErrors(widgetNode, widget, value)
   canvasStore.canvas?.setDirty(true, true)

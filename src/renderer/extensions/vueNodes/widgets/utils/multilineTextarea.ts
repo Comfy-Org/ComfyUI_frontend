@@ -155,8 +155,9 @@ export function createPromotedMultilineWidget(
       minNodeSize: [400, 200],
       getValue: readValue,
       setValue: (value: string) => {
-        element.value = value
         widgetStore.setValue(widgetId, value)
+        if (!Object.is(widgetStore.getWidget(widgetId)?.value, value)) return
+        element.value = value
       }
     }
   })
