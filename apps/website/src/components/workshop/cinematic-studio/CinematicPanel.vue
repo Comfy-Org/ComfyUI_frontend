@@ -8,17 +8,17 @@ import type {
   AspectRatio,
   Direction,
   Resolution
-} from '../../../lib/workshop/cinematic-studio/catalog'
-import type { ShotEstimate } from '../../../lib/workshop/cinematic-studio/estimate'
-import type { StudioGate } from '../../../lib/workshop/cinematic-studio/gate'
-import type { Locale } from '../../../i18n/translations'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
-import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
-import { shotAspects } from '../../../lib/workshop/cinematic-studio/models'
-import type { CinematicVideoCapabilities } from '../../../lib/workshop/cinematic-studio/video'
-import { videoTags } from '../../../lib/workshop/cinematic-studio/video'
-import type { ShotBlock } from '../../../composables/useCinematicShot'
-import type { StudioImage } from '../../../lib/workshop/cinematic-studio/take-image'
+} from '@/lib/workshop/cinematic-studio/catalog'
+import type { ShotEstimate } from '@/lib/workshop/cinematic-studio/estimate'
+import type { StudioGate } from '@/lib/workshop/cinematic-studio/gate'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import type { CinematicModel } from '@/lib/workshop/cinematic-studio/models'
+import { shotAspects } from '@/lib/workshop/cinematic-studio/models'
+import type { CinematicVideoCapabilities } from '@/lib/workshop/cinematic-studio/video'
+import { videoTags } from '@/lib/workshop/cinematic-studio/video'
+import type { ShotBlock } from '@/composables/useCinematicShot'
+import type { StudioImage } from '@/lib/workshop/cinematic-studio/take-image'
 import CinematicGenerateAction from './CinematicGenerateAction.vue'
 import CinematicMenu from './CinematicMenu.vue'
 import CinematicOutputControls from './CinematicOutputControls.vue'
@@ -58,6 +58,7 @@ const {
   colors?: readonly string[]
   locale?: Locale
 }>()
+const { t: tc } = translationsFor(locale)
 
 const emit = defineEmits<{
   open: [key: PickerKey]
@@ -85,7 +86,7 @@ const modelOptions = computed(() =>
     id: model.slug,
     label: model.name,
     logo: model.logo,
-    meta: videoTags(model.video, tc('cinematic.video.audioTag', locale))
+    meta: videoTags(model.video, tc('cinematic.video.audioTag'))
   }))
 )
 const model = computed(() =>
@@ -94,7 +95,7 @@ const model = computed(() =>
 const slots = computed(() => referenceSlots(model.value, !!firstFrame.value))
 const files = { cast, firstFrame, lastFrame, video: sourceVideo }
 const blockedNote = computed(() =>
-  blocked ? tc(blocked.key, locale, { model: blocked.model }) : undefined
+  blocked ? tc(blocked.key, { model: blocked.model }) : undefined
 )
 const canGenerate = computed(
   () => gate === 'ready' && scene.value.trim().length > 0 && !blockedNote.value
@@ -105,14 +106,14 @@ const cardClass =
 
 <template>
   <aside
-    :aria-label="tc('cinematic.panel.label', locale)"
+    :aria-label="tc('cinematic.panel.label')"
     class="flex min-w-0 flex-col rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4"
   >
     <header
       class="flex min-h-13 items-center justify-between gap-3 border-b border-transparency-white-t8 py-2 pr-2 pl-5"
     >
       <h2 class="text-sm font-semibold text-primary-warm-white">
-        {{ tc('cinematic.panel.newShot', locale) }}
+        {{ tc('cinematic.panel.newShot') }}
       </h2>
       <slot name="mode" />
     </header>
@@ -120,7 +121,7 @@ const cardClass =
       <CinematicMenu
         v-model="modelSlug"
         :options="modelOptions"
-        :heading="tc('cinematic.model.heading', locale)"
+        :heading="tc('cinematic.model.heading')"
         :show-heading="false"
         side="bottom"
         :trigger-class="cn(cardClass, 'h-11 gap-3 px-3')"
@@ -152,7 +153,7 @@ const cardClass =
           />
         </div>
       </CinematicSceneField>
-      <section :aria-label="tc('cinematic.section.shot', locale)">
+      <section :aria-label="tc('cinematic.section.shot')">
         <CinematicShotList
           :direction
           :colors
@@ -162,7 +163,7 @@ const cardClass =
         />
       </section>
       <section
-        :aria-label="tc('cinematic.section.output', locale)"
+        :aria-label="tc('cinematic.section.output')"
         class="flex flex-col gap-2"
       >
         <CinematicVideoControls

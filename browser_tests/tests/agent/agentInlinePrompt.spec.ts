@@ -140,6 +140,7 @@ test(
     await panel
       .getByRole('button', { name: enMessages.agent.stop, exact: true })
       .click()
+    await panel.getByTestId('user-message-bubble').hover()
     await panel
       .getByRole('button', { name: enMessages.g.edit, exact: true })
       .click()

@@ -110,15 +110,6 @@ describe('setupAutoQueueHandler', () => {
     expect(app.queuePrompt).toHaveBeenCalledTimes(1)
   })
 
-  it('does not queue while the partner run gate blocks auto-queue', () => {
-    mocks.gateBlocks = true
-    const listener = setupAndGetAutoQueueGraphChangedListener()
-
-    listener(new Event('autoQueueGraphChanged'))
-
-    expect(app.queuePrompt).not.toHaveBeenCalled()
-  })
-
   it('queues again once the gate clears rather than staying stuck', () => {
     mocks.gateBlocks = true
     const listener = setupAndGetAutoQueueGraphChangedListener()

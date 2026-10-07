@@ -110,7 +110,7 @@
       </h3>
       <div class="flex gap-2 pt-3">
         <Button
-          v-for="amount in PRESET_AMOUNTS"
+          v-for="amount in TOPUP_AMOUNT_PRESETS_USD"
           :key="amount"
           :autofocus="amount === 50"
           variant="secondary"
@@ -130,7 +130,10 @@
     <!-- Amount (USD) / Credits -->
     <div v-if="step === 'amount'" class="flex gap-2 px-8 pt-8">
       <!-- You Pay -->
-      <div class="flex flex-1 flex-col gap-3" data-testid="top-up-pay-amount">
+      <div
+        class="flex min-w-0 flex-1 flex-col gap-3"
+        data-testid="top-up-pay-amount"
+      >
         <div class="text-sm text-muted-foreground">
           {{ $t('credits.topUp.youPay') }}
         </div>
@@ -155,7 +158,7 @@
       </div>
 
       <!-- You Get -->
-      <div class="flex flex-1 flex-col gap-3">
+      <div class="flex min-w-0 flex-1 flex-col gap-3">
         <div class="text-sm text-muted-foreground">
           {{ $t('credits.topUp.youGet') }}
         </div>
@@ -298,6 +301,11 @@
 </template>
 
 <script setup lang="ts">
+import type { BillingOperationTerminal } from '@comfyorg/account-core/billing'
+import {
+  getTopupAmountPreset,
+  TOPUP_AMOUNT_PRESETS_USD
+} from '@comfyorg/account-core/billing'
 import { useToast } from 'primevue/usetoast'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -313,11 +321,7 @@ import { useExternalLink } from '@/composables/useExternalLink'
 import { useTelemetry } from '@/platform/telemetry'
 import { usePendingTopup } from '@/composables/billing/usePendingTopup'
 import { isCloud } from '@/platform/distribution/types'
-import type {
-  BillingOperationTerminal,
-  CheckoutJourneyPhaseEvent,
-  PaymentIntentSource
-} from '@/platform/telemetry/types'
+import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -335,10 +339,12 @@ import {
   getActiveCheckoutJourney,
   resolveCheckoutAssignment,
   resolveCheckoutJourney,
-  resolveEntrySource,
-  toCheckoutJourneyContext
+  resolveEntrySource
 } from '@/platform/workspace/utils/checkoutJourney'
-import type { CheckoutJourneyRecord } from '@/platform/workspace/utils/checkoutJourney'
+import {
+  trackCheckoutJourneyPhase,
+  useCheckoutJourneyExit
+} from '@/platform/workspace/utils/checkoutJourneyTelemetry'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -360,16 +366,6 @@ const { canTopUp } = useBillingCapabilities()
 
 const workspaceStore = useTeamWorkspaceStore()
 
-function emitTopupJourneyPhase(
-  record: CheckoutJourneyRecord,
-  phase: CheckoutJourneyPhaseEvent
-): void {
-  telemetry?.trackCheckoutJourneyEvent({
-    ...toCheckoutJourneyContext(record),
-    ...phase
-  })
-}
-
 function enterTopupJourney(): void {
   const workspaceId = workspaceStore.activeWorkspaceId
   const ownerUid = useAuthStore().userId
@@ -381,15 +377,17 @@ function enterTopupJourney(): void {
     workspaceId,
     entryFlow: 'topup',
     entrySource,
+    paymentIntentSource: source,
     intent: entrySource,
     assignment: resolveCheckoutAssignment(api.getServerFeatures())
   })
   if (resolved.status === 'blocked' || resolved.resumed) return
 
-  emitTopupJourneyPhase(resolved.record, { phase: 'entered' })
+  trackCheckoutJourneyPhase(resolved.record, { phase: 'entered' })
 }
 
 onMounted(enterTopupJourney)
+useCheckoutJourneyExit()
 const {
   isAddingCredits,
   topupOperation,
@@ -446,7 +444,6 @@ const verifyingBody = computed(() => {
 })
 
 // Constants
-const PRESET_AMOUNTS = [10, 25, 50, 100]
 const MIN_AMOUNT = 5
 const MAX_AMOUNT = 10000
 
@@ -611,13 +608,16 @@ async function handleBuy() {
   loading.value = true
   paymentSubmitted.value = true
   const attemptStartedAt = Date.now()
+  const amountCents = payAmount.value * 100
   try {
     telemetry?.trackApiCreditTopupButtonPurchaseClicked(payAmount.value)
     telemetry?.trackBillingEvent({
       operation: 'topup',
       stage: 'started',
       outcome: 'pending',
-      payment_intent_source: source
+      payment_intent_source: source,
+      amount_cents: amountCents,
+      amount_preset: getTopupAmountPreset(selectedPreset.value)
     })
     telemetry?.trackBillingEvent({
       operation: 'operation',
@@ -628,10 +628,9 @@ async function handleBuy() {
 
     const submittingJourney = getActiveCheckoutJourney()
     if (submittingJourney) {
-      emitTopupJourneyPhase(submittingJourney, { phase: 'submitted' })
+      trackCheckoutJourneyPhase(submittingJourney, { phase: 'submitted' })
     }
 
-    const amountCents = payAmount.value * 100
     const response = await topup(amountCents)
     if (!response) {
       if (isCurrentAttempt()) paymentSubmitted.value = false
@@ -654,7 +653,7 @@ async function handleBuy() {
         response.billing_op_id
       )
       if (linkedJourney) {
-        emitTopupJourneyPhase(linkedJourney, {
+        trackCheckoutJourneyPhase(linkedJourney, {
           phase: 'operation_linked',
           billing_op_id: response.billing_op_id
         })

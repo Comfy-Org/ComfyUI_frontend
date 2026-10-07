@@ -9,6 +9,7 @@ import type {
   GizmoMode
 } from '@/extensions/core/load3d/interfaces'
 import type { PointerNdcSource } from '@/extensions/core/load3d/load3dViewport'
+import { QuadWireframeOverlay } from '@/extensions/core/load3d/quadWireframe/QuadWireframeManager'
 
 const {
   cloneSkinnedMock,
@@ -63,6 +64,7 @@ type GizmoStub = {
 type ModelManagerStub = {
   fitToViewer: ReturnType<typeof vi.fn>
   clearModel: ReturnType<typeof vi.fn>
+  getCurrentBounds: ReturnType<typeof vi.fn>
 }
 
 type CameraManagerStub = {
@@ -75,6 +77,7 @@ type CameraManagerStub = {
 type SceneManagerStub = {
   captureScene: ReturnType<typeof vi.fn>
   dispose: ReturnType<typeof vi.fn>
+  hasSplats: ReturnType<typeof vi.fn>
 }
 
 function makeGizmoStub(): GizmoStub {
@@ -104,7 +107,8 @@ function makeInstance() {
   const gizmo = makeGizmoStub()
   const modelManager: ModelManagerStub = {
     fitToViewer: vi.fn(),
-    clearModel: vi.fn()
+    clearModel: vi.fn(),
+    getCurrentBounds: vi.fn(() => null)
   }
   const cameraManager: CameraManagerStub = {
     toggleCamera: vi.fn(),
@@ -114,7 +118,8 @@ function makeInstance() {
   }
   const sceneManager: SceneManagerStub = {
     captureScene: vi.fn(),
-    dispose: vi.fn()
+    dispose: vi.fn(),
+    hasSplats: vi.fn(() => false)
   }
   const controlsManager = { updateCamera: vi.fn() }
   const viewHelperManager = { recreateViewHelper: vi.fn() }
@@ -138,6 +143,7 @@ function makeInstance() {
     adapterRef: { current: null },
     _loadGeneration: 0,
     loadingPromise: null,
+    thumbnailCaptureQueue: Promise.resolve(),
     forceRender: vi.fn(),
     handleResize: vi.fn(),
     preRenderCallbacks: [],
@@ -378,11 +384,11 @@ describe('Load3d', () => {
           width: 800,
           height: 600,
           state: { clearColor: new THREE.Color(0x000000), clearAlpha: 0 },
+          setViewport,
+          setScissor,
+          setScissorTest,
           renderer: {
             state: { reset: vi.fn() },
-            setViewport,
-            setScissor,
-            setScissorTest,
             setClearColor,
             clear,
             render
@@ -686,7 +692,8 @@ describe('Load3d', () => {
         view: {
           beginRender,
           blit,
-          renderer: { setScissorTest: vi.fn(), state: { reset: vi.fn() } }
+          setScissorTest: vi.fn(),
+          renderer: { state: { reset: vi.fn() } }
         }
       })
 
@@ -1190,20 +1197,22 @@ describe('Load3d', () => {
       })
       const modelGroup = new THREE.Group()
       modelGroup.add(new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1)))
+      const sceneStub = {
+        ...ctx.sceneManager,
+        gridHelper: { visible: true },
+        captureScene: sceneCaptureMock,
+        whenSplatsSorted: vi.fn().mockResolvedValue(undefined)
+      }
       Object.assign(ctx.load3d, {
         cameraManager: cameraStub,
         controlsManager: controlsStub,
-        sceneManager: {
-          ...ctx.sceneManager,
-          gridHelper: { visible: true },
-          captureScene: sceneCaptureMock
-        },
+        sceneManager: sceneStub,
         modelManager: {
           ...ctx.modelManager,
           currentModel: modelGroup
         }
       })
-      return { cameraStub, sceneCaptureMock }
+      return { cameraStub, controlsStub, sceneCaptureMock, sceneStub }
     }
 
     it('rejects thumbnail capture when no model is loaded', async () => {
@@ -1236,6 +1245,82 @@ describe('Load3d', () => {
       await expect(ctx.load3d.captureThumbnail(64, 64)).rejects.toThrow('boom')
       expect(ctx.forceRender).toHaveBeenCalled()
     })
+
+    it('frames the camera and controls target using the adapter-aware bounds, not a naive Box3 of the model', async () => {
+      const { cameraStub, controlsStub } = setupForCapture()
+      // A degenerate model (e.g. a Gaussian splat) whose naive Box3 would be
+      // empty/zero-sized, but whose adapter reports real bounds far away.
+      const adapterBounds = new THREE.Box3(
+        new THREE.Vector3(100, 100, 100),
+        new THREE.Vector3(102, 102, 102)
+      )
+      Object.assign(ctx.load3d, {
+        modelManager: {
+          ...ctx.modelManager,
+          currentModel: new THREE.Group(),
+          getCurrentBounds: vi.fn(() => adapterBounds)
+        }
+      })
+
+      await ctx.load3d.captureThumbnail(64, 64)
+
+      const expectedCenter = adapterBounds.getCenter(new THREE.Vector3())
+      expect(cameraStub.perspectiveCamera.position.x).toBeGreaterThan(90)
+      expect(controlsStub.controls.target.copy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          x: expectedCenter.x,
+          y: expectedCenter.y,
+          z: expectedCenter.z
+        })
+      )
+    })
+
+    it('runs concurrent captures one at a time so each restores the live camera and grid', async () => {
+      const { cameraStub, sceneStub } = setupForCapture()
+      let finishSort = () => {}
+      const whenSplatsSorted =
+        sceneStub.whenSplatsSorted.mockImplementationOnce(
+          () => new Promise<void>((resolve) => (finishSort = resolve))
+        )
+      Object.assign(ctx.load3d, { adapterRef: { current: { kind: 'splat' } } })
+
+      const first = ctx.load3d.captureThumbnail(64, 64)
+      const second = ctx.load3d.captureThumbnail(64, 64)
+      await vi.waitFor(() => expect(whenSplatsSorted).toHaveBeenCalledOnce())
+      expect(cameraStub.getCameraState).toHaveBeenCalledOnce()
+
+      finishSort()
+      await Promise.all([first, second])
+
+      expect(cameraStub.getCameraState).toHaveBeenCalledTimes(2)
+      expect(cameraStub.setCameraState).toHaveBeenCalledTimes(2)
+      expect(sceneStub.gridHelper.visible).toBe(true)
+    })
+
+    it.for([
+      { kind: 'splat', waitsForSort: true },
+      { kind: 'mesh', waitsForSort: false }
+    ])(
+      'waits for splat sorting before capture: $kind -> $waitsForSort',
+      async ({ kind, waitsForSort }) => {
+        const { cameraStub, sceneCaptureMock, sceneStub } = setupForCapture()
+        const { whenSplatsSorted } = sceneStub
+        Object.assign(ctx.load3d, { adapterRef: { current: { kind } } })
+
+        await ctx.load3d.captureThumbnail(64, 64)
+
+        if (!waitsForSort) {
+          expect(whenSplatsSorted).not.toHaveBeenCalled()
+          return
+        }
+        expect(whenSplatsSorted).toHaveBeenCalledWith(
+          cameraStub.perspectiveCamera
+        )
+        expect(whenSplatsSorted.mock.invocationCallOrder[0]).toBeLessThan(
+          sceneCaptureMock.mock.invocationCallOrder[0]
+        )
+      }
+    )
   })
 
   describe('exportModel', () => {
@@ -1244,6 +1329,7 @@ describe('Load3d', () => {
       originalModel?: THREE.Object3D | null
       originalFileName?: string | null
       originalURL?: string | null
+      originalMaterials?: WeakMap<THREE.Mesh, THREE.Material | THREE.Material[]>
     }) {
       Object.assign(ctx.load3d, {
         modelManager: {
@@ -1251,7 +1337,8 @@ describe('Load3d', () => {
           currentModel: overrides.currentModel,
           originalModel: overrides.originalModel ?? null,
           originalFileName: overrides.originalFileName ?? 'cube',
-          originalURL: overrides.originalURL ?? null
+          originalURL: overrides.originalURL ?? null,
+          originalMaterials: overrides.originalMaterials ?? new WeakMap()
         }
       })
     }
@@ -1365,6 +1452,37 @@ describe('Load3d', () => {
       expect(exportedModel.animations).toEqual([clip])
     })
 
+    it('hands the exporter a model without the quad wireframe overlay', async () => {
+      const original = new THREE.MeshStandardMaterial()
+      const mesh = new THREE.Mesh(
+        new THREE.BoxGeometry(),
+        new THREE.MeshBasicMaterial({ visible: false })
+      )
+      const overlay = new QuadWireframeOverlay(new THREE.BufferGeometry())
+      mesh.add(overlay)
+      const model = new THREE.Group().add(mesh)
+      const originalMaterials = new WeakMap<THREE.Mesh, THREE.Material>()
+      originalMaterials.set(mesh, original)
+
+      setupForExport({ currentModel: model, originalMaterials })
+
+      await ctx.load3d.exportModel('glb')
+
+      const [exported] = exportGLBMock.mock.calls[0] as [THREE.Object3D]
+      const exportedMeshes: THREE.Mesh[] = []
+      let overlays = 0
+      exported.traverse((child) => {
+        if (child instanceof THREE.Mesh) exportedMeshes.push(child)
+        if (child instanceof QuadWireframeOverlay) overlays += 1
+      })
+      expect(overlays).toBe(0)
+      expect(exportedMeshes).toHaveLength(1)
+      expect(exportedMeshes[0].material).toBe(original)
+      // The on-screen model keeps its overlay and its wireframe material.
+      expect(mesh.children).toContain(overlay)
+      expect(mesh.material).not.toBe(original)
+    })
+
     it('uses Object3D.clone (not SkeletonUtils) for non-fbx formats', async () => {
       const model = new THREE.Object3D()
       const cloneSpy = vi.spyOn(model, 'clone')
@@ -1474,11 +1592,11 @@ describe('Load3d', () => {
 
       const view = {
         canvas,
+        setViewport: vi.fn(),
+        setScissor: vi.fn(),
+        setScissorTest: vi.fn(),
         renderer: {
           state: { reset: vi.fn() },
-          setViewport: vi.fn(),
-          setScissor: vi.fn(),
-          setScissorTest: vi.fn(),
           setClearColor: vi.fn(),
           clear: vi.fn(),
           render: vi.fn()
@@ -1508,6 +1626,7 @@ describe('Load3d', () => {
           init: vi.fn(),
           scene: new THREE.Scene(),
           renderBackground: vi.fn(),
+          hasSplats: vi.fn(() => false),
           handleResize: vi.fn(),
           dispose: vi.fn()
         },

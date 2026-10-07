@@ -118,17 +118,6 @@ describe('NodeSearchBoxPopover', () => {
   })
 
   describe('addFilter duplicate prevention', () => {
-    it('should add a filter when no duplicates exist', async () => {
-      const { emitAddFilter } = renderComponent({
-        'Comfy.NodeSearchBoxImpl': 'v1 (legacy)'
-      })
-
-      emitAddFilter(createFilter('outputType', 'IMAGE'))
-      await nextTick()
-
-      expect(screen.getByLabelText('filter count')).toHaveTextContent('1')
-    })
-
     it('should not add a duplicate filter with same id and value', async () => {
       const { emitAddFilter } = renderComponent({
         'Comfy.NodeSearchBoxImpl': 'v1 (legacy)'

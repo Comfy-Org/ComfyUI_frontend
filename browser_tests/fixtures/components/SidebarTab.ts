@@ -1,12 +1,16 @@
 import type { Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
+import type { ComfyMouse } from '@e2e/fixtures/ComfyMouse'
 import type { WorkspaceStore } from '@e2e/types/globals'
 import { TestIds } from '@e2e/fixtures/selectors'
 
 export class SidebarTab {
   public readonly tabButton: Locator
   public readonly selectedTabButton: Locator
+  public readonly panelHeader: Locator
+  public readonly closeButton: Locator
+  public readonly panel: Locator
 
   constructor(
     public readonly page: Page,
@@ -16,6 +20,10 @@ export class SidebarTab {
     this.selectedTabButton = this.tabButton.and(
       page.locator('.side-bar-button-selected')
     )
+    const sidebarContent = page.locator('.sidebar-content-container')
+    this.panel = page.getByRole('complementary')
+    this.panelHeader = sidebarContent.locator('.comfy-vue-side-bar-header')
+    this.closeButton = sidebarContent.getByTestId(TestIds.sidebar.closeButton)
   }
 
   async open() {
@@ -27,22 +35,44 @@ export class SidebarTab {
   async close() {
     await this.tabButton.click()
   }
+
+  async resize(comfyMouse: ComfyMouse, deltaX: number, startOffset = 0) {
+    const resizeHandle = this.page.locator(
+      '.side-bar-panel + [role="separator"], [role="separator"]:has(+ .side-bar-panel)'
+    )
+    await expect(resizeHandle).toBeVisible()
+    const box = await resizeHandle.boundingBox()
+    if (!box) throw new Error('Sidebar resize handle has no bounding box')
+    const from = {
+      x: box.x + box.width / 2 + startOffset,
+      y: box.y + box.height / 2
+    }
+    await comfyMouse.dragAndDrop(
+      from,
+      { x: from.x + deltaX, y: from.y },
+      {
+        steps: 10
+      }
+    )
+  }
 }
 
 export class NodeLibrarySidebarTab extends SidebarTab {
+  public readonly bookmarkTree: Locator
+  public readonly newFolderButton: Locator
   public readonly nodeLibrarySearchBoxInput: Locator
   public readonly nodeLibraryTree: Locator
   public readonly nodePreview: Locator
   public readonly tabContainer: Locator
-  public readonly newFolderButton: Locator
 
   constructor(public override readonly page: Page) {
     super(page, 'node-library')
+    this.tabContainer = page.locator('.sidebar-content-container')
+    this.bookmarkTree = page.getByTestId(TestIds.sidebar.nodeLibraryBookmarks)
+    this.newFolderButton = this.tabContainer.locator('.new-folder-button')
     this.nodeLibrarySearchBoxInput = page.getByPlaceholder('Search Nodes...')
     this.nodeLibraryTree = page.getByTestId(TestIds.sidebar.nodeLibrary)
-    this.nodePreview = page.locator('.node-lib-node-preview')
-    this.tabContainer = page.locator('.sidebar-content-container')
-    this.newFolderButton = this.tabContainer.locator('.new-folder-button')
+    this.nodePreview = page.getByTestId(TestIds.tree.itemPreview)
   }
 
   override async open() {
@@ -55,30 +85,34 @@ export class NodeLibrarySidebarTab extends SidebarTab {
     await this.nodeLibraryTree.waitFor({ state: 'hidden' })
   }
 
+  getBookmarkedNode(nodeName: string) {
+    return this.getNode(nodeName).and(this.bookmarkTree.getByRole('treeitem'))
+  }
+
   getFolder(folderName: string) {
-    return this.page.locator(
-      `[data-testid="node-tree-folder"][data-folder-name="${folderName}"]`
-    )
+    return this.getTreeItem(folderName, 'folder')
+  }
+
+  getFolderIcon(folderName: string) {
+    return this.getFolder(folderName)
+      .and(this.bookmarkTree.getByRole('treeitem'))
+      .locator('.tree-explorer-node-icon')
   }
 
   getNode(nodeName: string) {
-    return this.page.locator(
-      `[data-testid="node-tree-leaf"][data-node-name="${nodeName}"]`
+    return this.getTreeItem(nodeName, 'node')
+  }
+
+  getNodeInParentFolder(nodeName: string, folderName: string) {
+    return this.getNode(nodeName).and(
+      this.nodeLibraryTree.locator(`[data-parent-label="${folderName}"]`)
     )
   }
 
-  nodeSelector(nodeName: string): string {
-    return `[data-testid="node-tree-leaf"][data-node-name="${nodeName}"]`
-  }
-
-  folderSelector(folderName: string): string {
-    return `[data-testid="node-tree-folder"][data-folder-name="${folderName}"]`
-  }
-
-  getNodeInFolder(nodeName: string, folderName: string) {
-    return this.getFolder(folderName)
-      .locator('xpath=ancestor::li')
-      .locator(`[data-testid="node-tree-leaf"][data-node-name="${nodeName}"]`)
+  private getTreeItem(label: string, type: 'folder' | 'node') {
+    return this.tabContainer
+      .getByRole('treeitem', { name: label, exact: true })
+      .and(this.tabContainer.locator(`[data-tree-node-type="${type}"]`))
   }
 }
 
@@ -89,6 +123,8 @@ export class NodeLibrarySidebarTabV2 extends SidebarTab {
   public readonly essentialsTab: Locator
   public readonly sortButton: Locator
   public readonly nodePreview: Locator
+  public readonly nodePreviewInputs: Locator
+  public readonly nodePreviewBody: Locator
 
   constructor(public override readonly page: Page) {
     super(page, 'node-library')
@@ -98,6 +134,12 @@ export class NodeLibrarySidebarTabV2 extends SidebarTab {
     this.essentialsTab = this.getTab('Essentials')
     this.sortButton = this.sidebarContent.getByRole('button', { name: 'Sort' })
     this.nodePreview = page.getByTestId(TestIds.sidebar.nodePreviewCard)
+    this.nodePreviewInputs = this.nodePreview.getByTestId(
+      TestIds.sidebar.nodePreviewInputs
+    )
+    this.nodePreviewBody = this.nodePreview.getByTestId(
+      TestIds.sidebar.nodePreviewBody
+    )
   }
 
   getTab(name: string) {
@@ -111,7 +153,11 @@ export class NodeLibrarySidebarTabV2 extends SidebarTab {
   }
 
   getNode(nodeName: string) {
-    return this.sidebarContent.getByRole('treeitem', { name: nodeName }).first()
+    return this.getNodes(nodeName).first()
+  }
+
+  getNodes(nodeName: string) {
+    return this.sidebarContent.getByRole('treeitem', { name: nodeName })
   }
 
   async expandFolder(folderName: string) {
@@ -129,21 +175,22 @@ export class NodeLibrarySidebarTabV2 extends SidebarTab {
 }
 
 export class WorkflowsSidebarTab extends SidebarTab {
-  public readonly root: Locator
   public readonly activeWorkflowLabel: Locator
-  public readonly searchInput: Locator
   public readonly refreshButton: Locator
+  public readonly root: Locator
+  public readonly searchInput: Locator
 
   constructor(public override readonly page: Page) {
     super(page, 'workflows')
     this.root = page.getByTestId(TestIds.sidebar.workflows)
-    this.activeWorkflowLabel = this.root.locator(
-      '.comfyui-workflows-open .p-tree-node-selected .node-label'
-    )
-    this.searchInput = this.root.getByRole('combobox').first()
+    this.activeWorkflowLabel = this.root
+      .locator('.comfyui-workflows-open')
+      .getByRole('treeitem', { selected: true })
+      .locator('.node-label')
     this.refreshButton = this.root.getByTestId(
       TestIds.sidebar.workflowsRefreshButton
     )
+    this.searchInput = this.root.getByRole('combobox').first()
   }
 
   async getOpenedWorkflowNames() {
@@ -182,7 +229,7 @@ export class WorkflowsSidebarTab extends SidebarTab {
   async renameWorkflow(locator: Locator, newName: string) {
     await locator.click({ button: 'right' })
     await this.page
-      .locator('.p-contextmenu-item-content', { hasText: 'Rename' })
+      .getByRole('menuitem', { name: 'Rename', exact: true })
       .click()
     await this.page.keyboard.type(newName)
     await this.page.keyboard.press('Enter')
@@ -200,33 +247,35 @@ export class WorkflowsSidebarTab extends SidebarTab {
   async insertWorkflow(locator: Locator) {
     await locator.click({ button: 'right' })
     await this.page
-      .locator('.p-contextmenu-item-content', { hasText: 'Insert' })
+      .getByRole('menuitem', { name: 'Insert', exact: true })
       .click()
   }
 }
 
 export class ModelLibrarySidebarTab extends SidebarTab {
-  public readonly searchInput: Locator
-  public readonly modelTree: Locator
-  public readonly refreshButton: Locator
-  public readonly loadAllFoldersButton: Locator
   public readonly folderNodes: Locator
   public readonly leafNodes: Locator
+  public readonly loadAllFoldersButton: Locator
   public readonly modelPreview: Locator
+  public readonly modelTree: Locator
+  public readonly refreshButton: Locator
+  public readonly searchInput: Locator
 
   constructor(public override readonly page: Page) {
     super(page, 'model-library')
-    this.searchInput = page.getByPlaceholder('Search Models...')
     this.modelTree = page.locator('.model-lib-tree-explorer')
-    this.refreshButton = page.getByRole('button', { name: 'Refresh' })
+    this.folderNodes = this.modelTree
+      .getByRole('treeitem')
+      .and(this.modelTree.locator('[data-tree-node-type="folder"]'))
+    this.leafNodes = this.modelTree
+      .getByRole('treeitem')
+      .and(this.modelTree.locator('[data-tree-node-type="node"]'))
     this.loadAllFoldersButton = page.getByRole('button', {
       name: 'Load All Folders'
     })
-    this.folderNodes = this.modelTree.locator(
-      '.p-tree-node:not(.p-tree-node-leaf)'
-    )
-    this.leafNodes = this.modelTree.locator('.p-tree-node-leaf')
-    this.modelPreview = page.locator('.model-lib-model-preview')
+    this.modelPreview = page.getByTestId(TestIds.tree.itemPreview)
+    this.refreshButton = page.getByRole('button', { name: 'Refresh' })
+    this.searchInput = page.getByPlaceholder('Search Models...')
   }
 
   override async open() {
@@ -234,30 +283,30 @@ export class ModelLibrarySidebarTab extends SidebarTab {
     await this.modelTree.waitFor({ state: 'visible' })
   }
 
-  getFolderByLabel(label: string) {
-    return this.modelTree
-      .locator('.p-tree-node:not(.p-tree-node-leaf)')
-      .filter({ hasText: label })
+  getFolderByLabel(folderName: string) {
+    return this.folderNodes
+      .and(this.modelTree.getByRole('treeitem', { name: folderName }))
       .first()
   }
 
-  getLeafByLabel(label: string) {
-    return this.modelTree
-      .locator('.p-tree-node-leaf')
-      .filter({ hasText: label })
-      .first()
+  getFolderLeafCount(folderName: string) {
+    return this.getFolderByLabel(folderName).getByTestId(TestIds.tree.leafCount)
   }
 
-  /**
-   * A folder's own row (not the whole subtree). Required for nested folders:
-   * an ancestor `.p-tree-node`'s text contains its descendants' labels, so
-   * `getFolderByLabel` would match — and click — the ancestor instead.
-   */
-  getFolderRowByLabel(label: string) {
-    return this.modelTree
-      .locator('.p-tree-node:not(.p-tree-node-leaf) > .p-tree-node-content')
-      .filter({ hasText: label })
-      .first()
+  getLeafByLabel(leafName: string) {
+    return this.getLeavesByLabel(leafName).first()
+  }
+
+  getLeavesByLabel(leafName: string) {
+    return this.leafNodes.and(
+      this.modelTree.getByRole('treeitem', { name: leafName })
+    )
+  }
+
+  getLeavesInFolder(leafName: string, folderName: string) {
+    return this.getLeavesByLabel(leafName).and(
+      this.modelTree.locator(`[data-parent-label="${folderName}"]`)
+    )
   }
 }
 
@@ -337,9 +386,6 @@ export class AssetsSidebarTab extends SidebarTab {
   // --- Folder view ---
   public readonly backToAssetsButton: Locator
 
-  // --- Panel chrome ---
-  public readonly panelHeader: Locator
-
   // --- Loading ---
   public readonly skeletonLoaders: Locator
 
@@ -398,7 +444,6 @@ export class AssetsSidebarTab extends SidebarTab {
     this.backToAssetsButton = page.getByRole('button', {
       name: 'Back to all assets'
     })
-    this.panelHeader = page.locator('.comfy-vue-side-bar-header')
     this.skeletonLoaders = page.locator(
       '.sidebar-content-container .animate-pulse'
     )
@@ -435,7 +480,7 @@ export class AssetsSidebarTab extends SidebarTab {
   }
 
   contextMenuItem(label: string) {
-    return this.page.locator('.p-contextmenu').getByText(label)
+    return this.page.getByRole('menu').getByRole('menuitem', { name: label })
   }
 
   override async open({ waitForAssets = true } = {}) {
@@ -566,7 +611,7 @@ export class AssetsSidebarTab extends SidebarTab {
     const card = this.getAssetCardByName(name)
     await card.click({ button: 'right' })
     await this.page
-      .locator('.p-contextmenu')
+      .getByRole('menu')
       .waitFor({ state: 'visible', timeout: 3000 })
   }
 

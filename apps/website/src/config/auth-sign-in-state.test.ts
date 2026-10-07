@@ -1,7 +1,7 @@
 import { ENUMERATION_ORACLE } from '@comfyorg/account-core/testing'
 import { describe, expect, it } from 'vitest'
 
-import { t } from '../i18n/translations'
+import { t } from '@/i18n/translations'
 import type { AuthSignInState } from './auth-sign-in-state'
 import { authSignInTransition, signInErrorMessage } from './auth-sign-in-state'
 
@@ -133,6 +133,33 @@ describe('authSignInTransition', () => {
       'a flag flip mid-attempt must leave pending so a later restore is not ignored'
     ).toEqual(idle)
   })
+
+  it('holds an SSO redirect against new attempts and sign-out until the page is restored', () => {
+    const redirecting = authSignInTransition(
+      { step: 'pending', provider: 'email' },
+      { type: 'ssoRedirected' }
+    )
+    expect(redirecting).toEqual({ step: 'redirecting' })
+
+    expect(
+      authSignInTransition(redirecting, {
+        type: 'signInStarted',
+        provider: 'google'
+      }),
+      'a popup started mid-navigation would race the SSO sign-in'
+    ).toBe(redirecting)
+    expect(authSignInTransition(redirecting, { type: 'signedOut' })).toBe(
+      redirecting
+    )
+    expect(
+      authSignInTransition(redirecting, { type: 'signInAbandoned' }),
+      'back from Cloud must give the visitor live controls again'
+    ).toEqual(idle)
+  })
+
+  it('redirects only an attempt that is still pending', () => {
+    expect(authSignInTransition(idle, { type: 'ssoRedirected' })).toBe(idle)
+  })
 })
 
 describe('signInErrorMessage', () => {
@@ -146,67 +173,67 @@ describe('signInErrorMessage', () => {
     [
       'a dismissed popup',
       { code: 'auth/popup-closed-by-user', message: 'x' },
-      t('auth.errors.auth/popup-closed-by-user', 'en')
+      t('auth.errors.auth/popup-closed-by-user', {}, { locale: 'en' })
     ],
     [
       'a cancelled second popup',
       { code: 'auth/cancelled-popup-request', message: 'x' },
-      t('auth.errors.auth/cancelled-popup-request', 'en')
+      t('auth.errors.auth/cancelled-popup-request', {}, { locale: 'en' })
     ],
     [
       'a blocked signup',
       { code: 'auth/internal-error', message: 'SIGNUP_BLOCKED' },
-      t('auth.errors.signupBlocked', 'en')
+      t('auth.errors.signupBlocked', {}, { locale: 'en' })
     ],
     [
       'wrong email credentials',
       { code: 'auth/invalid-credential', message: 'x' },
-      t('auth.errors.auth/invalid-credential', 'en')
+      t('auth.errors.auth/invalid-credential', {}, { locale: 'en' })
     ],
     [
       'an address already registered',
       { code: 'auth/email-already-in-use', message: 'x' },
-      t('auth.errors.auth/email-already-in-use', 'en')
+      t('auth.errors.auth/email-already-in-use', {}, { locale: 'en' })
     ],
     [
       'a throttled visitor',
       { code: 'auth/too-many-requests', message: 'x' },
-      t('auth.errors.auth/too-many-requests', 'en')
+      t('auth.errors.auth/too-many-requests', {}, { locale: 'en' })
     ],
     [
       'an unknown address, collapsed to the neutral invalid-credential line',
       { code: 'auth/user-not-found', message: 'x' },
-      t('auth.errors.auth/invalid-credential', 'en')
+      t('auth.errors.auth/invalid-credential', {}, { locale: 'en' })
     ],
     [
       'a wrong password, collapsed to the neutral invalid-credential line',
       { code: 'auth/wrong-password', message: 'x' },
-      t('auth.errors.auth/invalid-credential', 'en')
+      t('auth.errors.auth/invalid-credential', {}, { locale: 'en' })
     ],
     [
       'a malformed address',
       { code: 'auth/invalid-email', message: 'x' },
-      t('auth.errors.auth/invalid-email', 'en')
+      t('auth.errors.auth/invalid-email', {}, { locale: 'en' })
     ],
     [
       'a network failure',
       { code: 'auth/network-request-failed', message: 'x' },
-      t('auth.errors.auth/network-request-failed', 'en')
+      t('auth.errors.auth/network-request-failed', {}, { locale: 'en' })
     ],
     [
       'an unknown auth code',
       { code: 'auth/some-new-code', message: 'x' },
-      t('auth.errors.generic', 'en')
+      t('auth.errors.generic', {}, { locale: 'en' })
     ],
     [
       'a non-Firebase failure',
       new Error('customers 500'),
-      t('auth.errors.generic', 'en')
+      t('auth.errors.generic', {}, { locale: 'en' })
     ],
     [
       'a non-auth Firebase failure, read as generic',
       { code: 'app/no-app', message: 'x' },
-      t('auth.errors.generic', 'en')
+      t('auth.errors.generic', {}, { locale: 'en' })
     ]
   ] as const)('resolves %s from this host i18n', ([, error, copy]) => {
     expect(
@@ -276,6 +303,6 @@ describe('signInErrorMessage', () => {
         'ja',
         'comfy.org'
       )
-    ).toBe(t('auth.errors.auth/popup-blocked', 'ja'))
+    ).toBe(t('auth.errors.auth/popup-blocked', {}, { locale: 'ja' }))
   })
 })

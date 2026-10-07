@@ -2,8 +2,7 @@
  * `unified_web_session` for a site with no sign-in of its own to ask with.
  * The anonymous `/api/features` document's global `web_session_probe` only
  * decides whether to ask; the answer is the credentialed read's
- * `unified_web_session` (cloud#10689). `web_session_probe` is a backend
- * follow-up to cloud#10689 and not served yet. Every failure is `false`.
+ * `unified_web_session` (cloud#10689). Every failure is `false`.
  */
 
 const DEFAULT_TIMEOUT_MS = 5000
@@ -49,14 +48,25 @@ async function readFeatures(
   }
 }
 
-/** A plain anonymous GET: no cookie, no custom header, so no CORS preflight. */
-export async function readWebSessionProbe(
-  options: FeaturesReadOptions
+/**
+ * A global flag from the anonymous document, true only when it is literally
+ * `true`. A plain GET with no cookie and no custom header, so no CORS
+ * preflight.
+ */
+export async function readAnonymousFeatureFlag(
+  options: FeaturesReadOptions,
+  key: string
 ): Promise<boolean> {
   return readsLiteralTrue(
     await readFeatures(options, { credentials: 'omit' }),
-    'web_session_probe'
+    key
   )
+}
+
+export function readWebSessionProbe(
+  options: FeaturesReadOptions
+): Promise<boolean> {
+  return readAnonymousFeatureFlag(options, 'web_session_probe')
 }
 
 async function probeIsOn(probe: () => Promise<boolean>): Promise<boolean> {
