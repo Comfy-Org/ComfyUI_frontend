@@ -139,6 +139,12 @@ export class AgentPanel {
     )
   }
 
+  attachmentPreviewPlayer(name: string): Locator {
+    return this.page
+      .getByLabel(name, { exact: true })
+      .and(this.page.locator('video, audio'))
+  }
+
   async open(timeout?: number): Promise<Locator> {
     if (await this.root.isVisible()) return this.root
 

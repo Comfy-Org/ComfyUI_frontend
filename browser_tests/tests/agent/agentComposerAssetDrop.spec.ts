@@ -95,9 +95,7 @@ test.describe('Agent composer asset drop', { tag: '@cloud' }, () => {
 
       await trigger.press('Enter')
 
-      const player = page
-        .getByLabel(ASSET_NAME, { exact: true })
-        .and(page.locator('video'))
+      const player = agentPanel.attachmentPreviewPlayer(ASSET_NAME)
       await expect(player).toBeVisible()
       await expect(player).toHaveAttribute('controls', '')
       await expect(player).toHaveAttribute('poster', /^blob:/)
