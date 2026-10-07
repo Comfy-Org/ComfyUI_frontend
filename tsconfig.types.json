@@ -3,10 +3,7 @@
   "compilerOptions": {
     "declaration": true,
     "incremental": false,
-    "noEmit": false,
-    "paths": {
-      "@/*": ["./src/*"]
-    }
+    "noEmit": false
   },
   "include": ["src/**/*.ts", "global.d.ts"],
   "exclude": [
