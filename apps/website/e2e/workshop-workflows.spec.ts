@@ -35,58 +35,45 @@ test('workflow launch groups lead to the existing shared form', async ({
     page.getByRole('heading', { level: 1, name: 'Workflows' })
   ).toBeVisible()
   await expect(page.getByTestId('hub-back')).toHaveAttribute('href', '/hub/')
+  await expect(page.getByRole('navigation', { name: 'Breadcrumb' })).toHaveText(
+    /Hub\s*›\s*Workflows/
+  )
+  await expect(
+    page.getByText('Open one, change any step, make it yours.')
+  ).toBeVisible()
   const catalogue = page.getByTestId('workflow-catalogue')
   await expect(catalogue.getByRole('heading', { level: 2 })).toHaveText([
-    'Turn an image into a video',
-    'Create & edit videos',
-    'Animate characters',
-    'Create product photos & ads',
-    'Upscale & restore',
-    'Edit & clean up photos'
+    'Popular',
+    'Image',
+    'Video'
   ])
-  await expect(catalogue.getByTestId('workshop-model-card')).toHaveCount(30)
+  await expect(
+    catalogue
+      .getByTestId('workflow-shelf-popular')
+      .getByTestId('workshop-model-card')
+  ).toHaveCount(6)
+  await expect(
+    catalogue
+      .getByTestId('workflow-shelf-image')
+      .getByTestId('workshop-model-card')
+  ).toHaveCount(16)
+  await expect(
+    catalogue
+      .getByTestId('workflow-shelf-video')
+      .getByTestId('workshop-model-card')
+  ).toHaveCount(14)
   await expect(catalogue.getByTestId('workshop-sort')).toHaveText('Recommended')
   await expect(catalogue.getByRole('button', { name: /See all/ })).toHaveCount(
     0
   )
-  const highlights = catalogue.getByTestId('featured-pagination')
-  await expect
-    .poll(() =>
-      highlights
-        .getByRole('button')
-        .evaluateAll((buttons) =>
-          buttons.map((button) => button.getAttribute('aria-label'))
-        )
-    )
-    .toEqual([
-      'Turn an image into a video',
-      'Copy movement from a video',
-      'Change a material',
-      'Upscale and restore detail',
-      'Edit a selected region'
-    ])
-  await highlights.getByRole('button', { name: 'Change a material' }).click()
-  await expect(catalogue.getByTestId('featured-slide-link')).toHaveAttribute(
-    'href',
-    '/hub/workflows/change-material/'
-  )
-  await page.getByTestId('browse-all-end').click()
+  await expect(catalogue.getByTestId('featured-pagination')).toHaveCount(0)
+  await expect(page.getByTestId('browse-all-end')).toHaveCount(0)
   await expect(
-    page.getByRole('heading', { level: 2, name: 'All workflows 30' })
-  ).toBeVisible()
-  await expect(
-    page
-      .getByTestId('workflow-search-results')
-      .getByTestId('workshop-model-card')
-  ).toHaveCount(30)
-  await expect(page.getByTestId('section-featured')).toHaveCount(0)
-  await page.getByTestId('workshop-sort').click()
-  await page.getByTestId('sort-name').click()
-  await expect(
-    page.getByTestId('workflow-search-results').getByRole('link').first()
-  ).toHaveAttribute('href', '/hub/workflows/connect-images-with-motion/')
-  await page.getByTestId('section-back').click()
-  await expect(page.getByTestId('workshop-hero')).toBeVisible()
+    catalogue
+      .getByTestId('workflow-shelf-video')
+      .getByRole('link', { name: /Create a video from references/ })
+      .getByTestId('model-media-placeholder')
+  ).toHaveCount(1)
   await page.getByTestId('workshop-search').fill('Change a material')
   await page.getByRole('link', { name: /Change a material/ }).click()
   await expect(

@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { ChevronLeft, ChevronRight } from '@lucide/vue'
-import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
+import { computed, onMounted, ref, useTemplateRef } from 'vue'
 import type { ComponentExposed } from 'vue-component-type-helpers'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -16,9 +15,7 @@ import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import { HUB_TOOLBAR_ID } from '@/scripts/hubToolbar'
 import CardRow from './CardRow.vue'
-import FeaturedBanner from './FeaturedBanner.vue'
 import { CARD_GRID, SHELF_CARD } from '@/lib/workshop/card-layout'
-import { modelSlides } from '@/lib/workshop/featured-slides'
 import type { FilterChip } from './WorkshopFilterChips.vue'
 import WorkshopFilterChips from './WorkshopFilterChips.vue'
 import WorkshopFilterMenu from './WorkshopFilterMenu.vue'
@@ -37,19 +34,16 @@ const {
 }>()
 const { t } = translationsFor(locale)
 
+// The catalogue page binds a browse-all section for every listing; this one
+// lists its rows and its search results with no section of its own to open.
+defineOptions({ inheritAttrs: false })
+
 const query = ref('')
 const selected = ref<string[]>([])
 const runsOn = ref<string[]>([])
 const sort = ref<SortOrder>('popular')
 const filterMenu =
   useTemplateRef<ComponentExposed<typeof WorkshopFilterMenu>>('filterMenu')
-const browseAll = defineModel<boolean>('browseAll', { default: false })
-const emit = defineEmits<{ section: [boolean] }>()
-watch(browseAll, (value) => emit('section', value), { immediate: true })
-watch(browseAll, () => {
-  clear()
-  void nextTick(() => window.scrollTo({ top: 0 }))
-})
 onMounted(() => {
   const params = new URLSearchParams(initialSearch ?? location.search)
   query.value = params.get('q') ?? ''
@@ -122,18 +116,44 @@ const visible = computed(() => {
     : sortWorkshopModels(matching, sort.value)
 })
 const browsing = computed(
-  () =>
-    !query.value.trim() &&
-    !selected.value.length &&
-    !runsOn.value.length &&
-    !browseAll.value
+  () => !query.value.trim() && !selected.value.length && !runsOn.value.length
 )
-const featured = computed(() =>
-  rows.value.flatMap((category) =>
-    category.models.filter((model) => model.categoryHighlight)
-  )
+const POPULAR_LIMIT = 6
+const recommended = (a: WorkflowWorkshopModel, b: WorkflowWorkshopModel) =>
+  (a.recommendedRank ?? Infinity) - (b.recommendedRank ?? Infinity) ||
+  (a.categoryOrder ?? Infinity) - (b.categoryOrder ?? Infinity)
+const ordered = computed(() =>
+  sort.value === 'name'
+    ? sortWorkshopModels(models, 'name')
+    : [...models].sort(recommended)
 )
-const featuredSlides = computed(() => modelSlides(featured.value, locale))
+// Each category's highlight leads, then the rest in recommended order.
+const popular = computed(() =>
+  sort.value === 'name'
+    ? ordered.value
+    : [...ordered.value].sort(
+        (a, b) => Number(!a.categoryHighlight) - Number(!b.categoryHighlight)
+      )
+)
+const shelves = computed(() =>
+  [
+    {
+      id: 'popular',
+      label: t('hubPages.workflows.popular'),
+      models: popular.value.slice(0, POPULAR_LIMIT)
+    },
+    {
+      id: 'image',
+      label: t('hubPages.workflows.image'),
+      models: ordered.value.filter((model) => model.modality === 'image')
+    },
+    {
+      id: 'video',
+      label: t('hubPages.workflows.video'),
+      models: ordered.value.filter((model) => model.modality === 'video')
+    }
+  ].filter((shelf) => shelf.models.length)
+)
 
 // What narrowed the list stays legible next to it, so a reader can take one
 // choice off without reopening the menu that made it.
@@ -165,34 +185,10 @@ function clear() {
   query.value = ''
   clearFilters()
 }
-function leaveSection() {
-  browseAll.value = false
-  clear()
-}
 </script>
 
 <template>
   <section data-testid="workflow-catalogue">
-    <template v-if="browseAll">
-      <button
-        type="button"
-        class="-ml-2.5 inline-flex cursor-pointer items-center gap-1 rounded-lg px-1 text-sm font-medium text-primary-warm-gray opacity-60 transition hover:text-primary-comfy-yellow hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
-        data-testid="section-back"
-        @click="leaveSection"
-      >
-        <ChevronLeft class="size-4" aria-hidden="true" />
-        {{ t('workshop.sections.back') }}
-      </button>
-      <h2
-        class="mt-5 mb-4 scroll-mt-24 text-3xl font-bold text-primary-warm-white sm:text-4xl lg:scroll-mt-32"
-      >
-        {{ t('workshop.catalogue.allWorkflows') }}
-        <span
-          class="text-base font-normal text-primary-warm-gray tabular-nums"
-          >{{ visible.length }}</span
-        >
-      </h2>
-    </template>
     <div
       :id="HUB_TOOLBAR_ID"
       class="sticky top-20 z-30 -mx-1 mb-8 flex flex-wrap items-center gap-3 bg-page px-1 py-4 max-sm:mb-4 max-sm:py-2 lg:top-26"
@@ -228,14 +224,6 @@ function leaveSection() {
       </div>
     </div>
 
-    <FeaturedBanner
-      v-if="browsing && featured.length"
-      :slides="featuredSlides"
-      :locale
-      :autoplay="false"
-      class="mb-10 short:mb-6"
-    />
-
     <WorkshopFilterChips
       :chips
       :locale
@@ -244,43 +232,31 @@ function leaveSection() {
       @emptied="filterMenu?.focus()"
     />
 
-    <div v-if="browsing" class="flex flex-col gap-12">
+    <div v-if="browsing" class="flex flex-col gap-14">
       <section
-        v-for="category in rows"
-        :key="category.id"
-        :aria-labelledby="`workflow-category-${category.id}`"
-        :data-testid="`workflow-category-${category.id}`"
+        v-for="shelf in shelves"
+        :key="shelf.id"
+        :aria-labelledby="`workflow-shelf-${shelf.id}`"
+        :data-testid="`workflow-shelf-${shelf.id}`"
       >
         <CardRow :locale>
           <template #heading>
             <h2
-              :id="`workflow-category-${category.id}`"
+              :id="`workflow-shelf-${shelf.id}`"
               class="text-xl font-medium text-primary-warm-white"
             >
-              {{ category.label }}
+              {{ shelf.label }}
             </h2>
           </template>
           <li
-            v-for="model in category.models"
+            v-for="model in shelf.models"
             :key="model.slug"
             :class="SHELF_CARD"
           >
-            <WorkshopModelCard :model :locale under-heading />
+            <WorkshopModelCard :model :locale />
           </li>
         </CardRow>
       </section>
-      <button
-        type="button"
-        class="group mx-auto mt-12 flex w-fit cursor-pointer items-center justify-center gap-2 rounded-2xl border border-transparency-white-t8 px-8 py-4 text-sm font-medium text-primary-comfy-canvas transition-colors outline-none hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 max-sm:w-full"
-        data-testid="browse-all-end"
-        @click="browseAll = true"
-      >
-        {{ t('workshop.catalogue.browseAllWorkflows') }}
-        <ChevronRight
-          class="size-4 transition-transform group-hover:translate-x-0.5"
-          aria-hidden="true"
-        />
-      </button>
     </div>
 
     <ul

@@ -162,12 +162,10 @@ describe('ModelsCatalogue', () => {
     })
     expect(screen.queryByText('Image model')).toBeNull()
     expect(
-      await screen.findByRole('heading', {
-        name: 'Create product photos & ads'
-      })
+      await screen.findByRole('heading', { level: 2, name: 'Popular' })
     ).toBeVisible()
     expect(
-      screen.getByRole('heading', { name: 'Edit & clean up photos' })
+      screen.getByRole('heading', { level: 2, name: 'Image' })
     ).toBeVisible()
     expect(screen.queryByText(/See all/)).toBeNull()
 
@@ -511,24 +509,13 @@ describe('ModelsCatalogue', () => {
     )
   })
 
-  it('opens all workflows with a count and returns to the use-case groups', async () => {
-    const user = userEvent.setup()
+  it('lists the workflows in rows with no section to open', async () => {
     render(ModelsCatalogue, {
       props: { models: launchModels, section: 'workflows' }
     })
-    await screen.findByRole('heading', { name: 'Create product photos & ads' })
-    await user.click(screen.getByTestId('browse-all-end'))
-    expect(
-      screen.getByRole('heading', { level: 2, name: 'All workflows 2' })
-    ).toBeVisible()
-    expect(screen.queryByRole('heading', { level: 1 })).toBeNull()
-    expect(screen.queryByTestId('workshop-hero')).toBeNull()
-    expect(screen.getByTestId('workflow-search-results')).toBeVisible()
-    await user.click(screen.getByTestId('section-back'))
+    await screen.findByRole('heading', { level: 2, name: 'Popular' })
+    expect(screen.queryByTestId('browse-all-end')).toBeNull()
     expect(screen.getByTestId('workshop-hero')).toBeVisible()
-    expect(
-      screen.getByRole('heading', { name: 'Create product photos & ads' })
-    ).toBeVisible()
   })
 
   it('keeps all models limited to models when workflows are available', async () => {

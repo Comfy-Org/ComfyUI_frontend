@@ -71,9 +71,15 @@ describe('WorkshopAppCard', () => {
       poster: '/media/app.jpg',
       placeholder: 0
     },
+    {
+      thumbnail: { url: '/media/app.mp4', kind: 'video' },
+      media: 'VIDEO',
+      poster: null,
+      placeholder: 1
+    },
     { thumbnail: undefined, media: undefined, poster: null, placeholder: 1 }
   ] as const)(
-    'shows $media artwork, or the initial without any',
+    'shows $media artwork, with the initial wherever no picture is ready',
     ({ thumbnail, media, placeholder, poster }) => {
       render(WorkshopAppCard, { props: { app: { ...app, thumbnail } } })
       const artwork = screen.queryByTestId('model-card-media')
