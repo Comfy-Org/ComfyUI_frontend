@@ -3,10 +3,6 @@ import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import {
-  onGraphIntent,
-  withGraphIntentSource
-} from '@/lib/litegraph/src/graphIntents'
 import type {
   IBaseWidget,
   INumericWidget
@@ -79,34 +75,6 @@ describe('BaseWidget store integration', () => {
     node = new LGraphNode('TestNode')
     node.id = toNodeId(1)
     graph.add(node)
-  })
-
-  it('does not mirror or call hooks when a listener restores the write', () => {
-    const callback = vi.fn()
-    const widget = createTestWidget(node, {
-      callback,
-      options: { min: 0, max: 100, property: 'mirrored' }
-    })
-    node.properties.mirrored = 42
-    widget.setNodeId(node.id)
-    const id = widgetId(graph.id, node.id, widget.name)
-    const detach = onGraphIntent((event) => {
-      if (event.type !== 'set_widget' || event.value !== 73) return
-      withGraphIntentSource('agent-remote', () => store.setValue(id, 42))
-    })
-
-    try {
-      widget.setValue(
-        73,
-        fromPartial({ node, canvas: { graph_mouse: [0, 0] } })
-      )
-    } finally {
-      detach()
-    }
-
-    expect(widget.value).toBe(42)
-    expect(node.properties.mirrored).toBe(42)
-    expect(callback).not.toHaveBeenCalled()
   })
 
   it('draws only the label for a connection-suppressed row', () => {

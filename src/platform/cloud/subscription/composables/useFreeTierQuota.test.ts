@@ -20,9 +20,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 
 vi.mock(import('@/composables/useFeatureFlags'))
 const mockCreditBadges = vi.hoisted<{ value: object[] }>(() => ({ value: [] }))
-vi.mock<unknown>(import('@/scripts/appGraphContext'), () => ({
-  getAppGraphContext: () => ({ isGraphReady: true, rootGraph: {} })
-}))
+vi.mock(import('@/scripts/app'))
 vi.mock<unknown>(import('@/systems/badgeSystem'), () => ({
   graphCreditsBadges: () => mockCreditBadges.value
 }))

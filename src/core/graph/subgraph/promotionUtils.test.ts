@@ -2,8 +2,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import { promotedInputWidget } from '@/core/graph/subgraph/promotedInputWidget'
-import { registerDocBoundRootGraphProbe } from '@/lib/litegraph/src/docBoundGraphs'
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import {
   createTestSubgraph,
@@ -13,7 +12,6 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useLinkStore } from '@/stores/linkStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
@@ -56,7 +54,6 @@ import {
   CANVAS_IMAGE_PREVIEW_WIDGET,
   autoExposeKnownPreviewNodes,
   createPromotedHostWidgetIdLookup,
-  demotePromotedHostInput,
   demoteWidget,
   getPromotableWidgets,
   hasUnpromotedWidgets,
@@ -781,186 +778,6 @@ describe('reorderSubgraphInputsByWidgetOrder', () => {
       'first value'
     ])
   })
-
-  it('reorders every instance of the shared definition', () => {
-    const subgraph = createTestSubgraph()
-    const host = createTestSubgraphNode(subgraph)
-    const firstNode = new LGraphNode('First')
-    const secondNode = new LGraphNode('Second')
-    subgraph.add(firstNode)
-    subgraph.add(secondNode)
-    const firstInput = firstNode.addInput('first', 'STRING')
-    const firstWidget = firstNode.addWidget('text', 'first', '', () => {})
-    firstInput.widget = { name: firstWidget.name }
-    const secondInput = secondNode.addInput('second', 'STRING')
-    const secondWidget = secondNode.addWidget('text', 'second', '', () => {})
-    secondInput.widget = { name: secondWidget.name }
-    promoteValueWidgetViaSubgraphInput(host, firstNode, firstWidget)
-    promoteValueWidgetViaSubgraphInput(host, secondNode, secondWidget)
-    const sibling = createTestSubgraphNode(subgraph)
-    subgraph.rootGraph.add(host)
-    subgraph.rootGraph.add(sibling)
-
-    expect(
-      reorderSubgraphInputsByWidgetOrder(host, [
-        promotedWidgetRef(host, 'second'),
-        promotedWidgetRef(host, 'first')
-      ])
-    ).toBe(true)
-
-    expect(sibling.inputs.map((input) => input.name)).toEqual([
-      'second',
-      'first'
-    ])
-  })
-
-  it('matches stable widget identity when the interior link is stale', () => {
-    const subgraph = createTestSubgraph()
-    const host = createTestSubgraphNode(subgraph)
-    const source = new LGraphNode('Source')
-    subgraph.add(source)
-    const input = source.addInput('first', 'STRING')
-    const sourceWidget = source.addWidget('text', 'first', '', () => {})
-    input.widget = { name: sourceWidget.name }
-    promoteValueWidgetViaSubgraphInput(host, source, sourceWidget)
-    const promoted = promotedWidgetRef(host, 'first')
-    host.inputs[0]._subgraphSlot!.linkIds.length = 0
-
-    expect(reorderSubgraphInputsByWidgetOrder(host, [promoted])).toBe(true)
-  })
-
-  it('warns when an unbound reorder contains an unknown widget', () => {
-    const subgraph = createTestSubgraph()
-    const host = createTestSubgraphNode(subgraph)
-    const addToast = vi.spyOn(useToastStore(), 'add')
-
-    expect(
-      reorderSubgraphInputsByWidgetOrder(host, [
-        { widgetId: widgetId('missing', toNodeId('node'), 'widget') }
-      ])
-    ).toBe(false)
-    expect(addToast).toHaveBeenCalledWith(
-      expect.objectContaining({
-        detail: expect.stringContaining('stale'),
-        severity: 'warn'
-      })
-    )
-  })
-
-  it('warns when a stale promoted host input cannot be removed', () => {
-    const subgraph = createTestSubgraph()
-    const host = createTestSubgraphNode(subgraph)
-    const source = new LGraphNode('Source')
-    subgraph.add(source)
-    const input = source.addInput('first', 'STRING')
-    const sourceWidget = source.addWidget('text', 'first', '', () => {})
-    input.widget = { name: sourceWidget.name }
-    promoteValueWidgetViaSubgraphInput(host, source, sourceWidget)
-    host.inputs[0]._subgraphSlot = undefined
-    const addToast = vi.spyOn(useToastStore(), 'add')
-
-    expect(demotePromotedHostInput(host, host.inputs[0])).toBe(false)
-    expect(addToast).toHaveBeenCalledWith(
-      expect.objectContaining({
-        detail: expect.stringContaining('stale'),
-        severity: 'warn'
-      })
-    )
-  })
-
-  it('refuses to reorder a definition while its root graph is doc-bound', () => {
-    const subgraph = createTestSubgraph()
-    const host = createTestSubgraphNode(subgraph)
-    const firstNode = new LGraphNode('First')
-    const secondNode = new LGraphNode('Second')
-    subgraph.add(firstNode)
-    subgraph.add(secondNode)
-    const firstInput = firstNode.addInput('first', 'STRING')
-    const firstWidget = firstNode.addWidget('text', 'first', '', () => {})
-    firstInput.widget = { name: firstWidget.name }
-    const secondInput = secondNode.addInput('second', 'STRING')
-    const secondWidget = secondNode.addWidget('text', 'second', '', () => {})
-    secondInput.widget = { name: secondWidget.name }
-    promoteValueWidgetViaSubgraphInput(host, firstNode, firstWidget)
-    promoteValueWidgetViaSubgraphInput(host, secondNode, secondWidget)
-    const before = host.inputs.map((input) => input.name)
-    const unregister = registerDocBoundRootGraphProbe(() => host.rootGraph.id)
-
-    try {
-      expect(
-        reorderSubgraphInputsByWidgetOrder(host, [
-          promotedWidgetRef(host, 'second'),
-          promotedWidgetRef(host, 'first')
-        ])
-      ).toBe(false)
-      expect(host.inputs.map((input) => input.name)).toEqual(before)
-    } finally {
-      unregister()
-    }
-  })
-
-  it('accepts a no-op order without warning while its root graph is doc-bound', () => {
-    const subgraph = createTestSubgraph()
-    const host = createTestSubgraphNode(subgraph)
-    const node = new LGraphNode('First')
-    subgraph.add(node)
-    const input = node.addInput('first', 'STRING')
-    const sourceWidget = node.addWidget('text', 'first', '', () => {})
-    input.widget = { name: sourceWidget.name }
-    promoteValueWidgetViaSubgraphInput(host, node, sourceWidget)
-    const addToast = vi.spyOn(useToastStore(), 'add')
-    const unregister = registerDocBoundRootGraphProbe(() => host.rootGraph.id)
-
-    try {
-      expect(
-        reorderSubgraphInputsByWidgetOrder(host, [
-          promotedWidgetRef(host, 'first')
-        ])
-      ).toBe(true)
-      expect(addToast).not.toHaveBeenCalled()
-    } finally {
-      unregister()
-    }
-  })
-
-  it('keeps plain sockets fixed while comparing and reordering promoted inputs', () => {
-    const subgraph = createTestSubgraph({
-      inputs: [{ name: 'plain', type: 'STRING' }]
-    })
-    const host = createTestSubgraphNode(subgraph)
-    const firstNode = new LGraphNode('First')
-    const secondNode = new LGraphNode('Second')
-    subgraph.add(firstNode)
-    subgraph.add(secondNode)
-    const firstInput = firstNode.addInput('first', 'STRING')
-    const firstWidget = firstNode.addWidget('text', 'first', '', () => {})
-    firstInput.widget = { name: firstWidget.name }
-    const secondInput = secondNode.addInput('second', 'STRING')
-    const secondWidget = secondNode.addWidget('text', 'second', '', () => {})
-    secondInput.widget = { name: secondWidget.name }
-    promoteValueWidgetViaSubgraphInput(host, firstNode, firstWidget)
-    promoteValueWidgetViaSubgraphInput(host, secondNode, secondWidget)
-    const first = promotedWidgetRef(host, 'first')
-    const second = promotedWidgetRef(host, 'second')
-    const addToast = vi.spyOn(useToastStore(), 'add')
-    const unregister = registerDocBoundRootGraphProbe(() => host.rootGraph.id)
-
-    try {
-      expect(reorderSubgraphInputsByWidgetOrder(host, [first, second])).toBe(
-        true
-      )
-      expect(addToast).not.toHaveBeenCalled()
-    } finally {
-      unregister()
-    }
-
-    expect(reorderSubgraphInputsByWidgetOrder(host, [second, first])).toBe(true)
-    expect(host.inputs.map((input) => input.name)).toEqual([
-      'plain',
-      'second',
-      'first'
-    ])
-  })
 })
 
 describe('demoteWidget — axiomatic projection retraction', () => {
@@ -985,55 +802,6 @@ describe('demoteWidget — axiomatic projection retraction', () => {
     expect(result.ok).toBe(true)
     return { host, interiorNode, interiorWidget }
   }
-
-  it('refuses promotion and demotion while the root graph is doc-bound', () => {
-    const { host, interiorNode, interiorWidget } = setupPromotedWidget()
-    const existingInput = host.inputs[0]
-    const secondNode = new LGraphNode('Second')
-    host.subgraph.add(secondNode)
-    const secondInput = secondNode.addInput('other', 'STRING')
-    const secondWidget = secondNode.addWidget('text', 'other', '', () => {})
-    secondInput.widget = { name: secondWidget.name }
-    const addToast = vi.spyOn(useToastStore(), 'add')
-    const unregister = registerDocBoundRootGraphProbe(() => host.rootGraph.id)
-
-    try {
-      demoteWidget(interiorNode, interiorWidget, [host])
-      promoteWidget(secondNode, secondWidget, [host])
-      expect(host.inputs).toEqual([existingInput])
-      expect(interiorNode.inputs[0]?.link).not.toBeNull()
-      expect(secondNode.inputs[0]?.link).toBeNull()
-      expect(addToast).toHaveBeenCalledTimes(1)
-    } finally {
-      unregister()
-    }
-  })
-
-  it('refuses every instance when any promotion parent is doc-bound', () => {
-    const subgraph = createTestSubgraph()
-    const boundHost = createTestSubgraphNode(subgraph)
-    const otherRoot = new LGraph()
-    const otherHost = createTestSubgraphNode(subgraph, {
-      parentGraph: otherRoot
-    })
-    const interiorNode = new LGraphNode('TestNode')
-    subgraph.add(interiorNode)
-    const input = interiorNode.addInput('value', 'STRING')
-    const sourceWidget = interiorNode.addWidget('text', 'value', '', () => {})
-    input.widget = { name: sourceWidget.name }
-    const unregister = registerDocBoundRootGraphProbe(
-      () => boundHost.rootGraph.id
-    )
-
-    try {
-      promoteWidget(interiorNode, sourceWidget, [boundHost, otherHost])
-      expect(boundHost.inputs).toHaveLength(0)
-      expect(otherHost.inputs).toHaveLength(0)
-      expect(subgraph.inputs).toHaveLength(0)
-    } finally {
-      unregister()
-    }
-  })
 
   it('drops projection but keeps slot and external link when host slot is externally connected', async () => {
     const { host, interiorNode, interiorWidget } = setupPromotedWidget()
@@ -1071,39 +839,6 @@ describe('demoteWidget — axiomatic projection retraction', () => {
 
     expect(host.subgraph.inputs).toHaveLength(0)
     expect(host.inputs).toHaveLength(0)
-  })
-
-  it('keeps the shared slot when another instance is externally connected', async () => {
-    const { host, interiorNode, interiorWidget } = setupPromotedWidget()
-    const sibling = createTestSubgraphNode(host.subgraph)
-    host.rootGraph.add(host)
-    host.rootGraph.add(sibling)
-    const source = new LGraphNode('External Source')
-    source.addOutput('out', 'STRING')
-    host.rootGraph.add(source)
-    const externalLink = source.connect(0, sibling, 0)
-
-    demoteWidget(interiorNode, interiorWidget, [host])
-    await Promise.resolve()
-
-    expect(host.subgraph.inputs).toHaveLength(1)
-    expect(sibling.inputs[0]?.link).toBe(externalLink?.id)
-    expect(interiorNode.inputs[0]?.link).toBeNull()
-  })
-
-  it('reports failure and preserves registration when input removal is vetoed', () => {
-    const { host } = setupPromotedWidget()
-    const promotedId = host.inputs[0].widgetId
-    host.subgraph.events.addEventListener('removing-input', (event) =>
-      event.preventDefault()
-    )
-
-    expect(demotePromotedHostInput(host, host.inputs[0])).toBe(false)
-
-    expect(host.subgraph.inputs).toHaveLength(1)
-    expect(host.inputs).toHaveLength(1)
-    if (!promotedId) throw new Error('Missing promoted input widgetId')
-    expect(useWidgetValueStore().getWidget(promotedId)).toBeDefined()
   })
 
   it('demotes the second of two promoted widgets sharing a source widget name', () => {

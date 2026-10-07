@@ -267,7 +267,6 @@ import { useAgentComposerStore } from './stores/agent/agentComposerStore'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
 import { attachDocOpMinter } from './crdt/docOpMinter'
 import type { DocOpMinter, DocOpMinterDeps } from './crdt/docOpMinter'
-import { ChangeTracker } from '@/scripts/changeTracker'
 
 const docOpMinterDeps = vi.hoisted(() => ({
   current: null as DocOpMinterDeps | null
@@ -422,7 +421,6 @@ beforeEach(() => {
   Object.assign(appMock.rootGraph, { subgraphs: new Map(), id: undefined })
   appMock.isGraphReady = false
   appMock.canvas = undefined
-  ChangeTracker.isLoadingGraph = false
   docOpMinterDeps.current = null
   vi.mocked(attachDocOpMinter).mockImplementation(stubAttachDocOpMinter)
   vi.mocked(useWorkflowService()).saveWorkflow.mockClear()
@@ -11087,19 +11085,6 @@ describe('AgentPanelRoot workflow binding', () => {
     appMock.isGraphReady = false
 
     expect(docOpMinterDeps.current?.getGraph()).toBeNull()
-  })
-
-  it('wires getGraph() to null while the shared root graph is loading', async () => {
-    makeTab('wf-42')
-    mockMessagesEndpoint('wf-42')
-    await renderAndSend('hello')
-
-    appMock.isGraphReady = true
-    Object.assign(appMock.rootGraph, { id: 'graph-b-loading' })
-    ChangeTracker.isLoadingGraph = true
-    expect(docOpMinterDeps.current?.getGraph()).toBeNull()
-    ChangeTracker.isLoadingGraph = false
-    expect(docOpMinterDeps.current?.getGraph()?.id).toBe('graph-b-loading')
   })
 
   it("reports the bound workflow's own stored root graph id once bound", async () => {

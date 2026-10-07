@@ -12,7 +12,7 @@ import {
   removePendingMissingNodeTypesByNodeId,
   removePendingMissingNodeTypesByType
 } from '@/platform/workflow/core/utils/pendingWarnings'
-import { getAppGraphContext } from '@/scripts/appGraphContext'
+import { app } from '@/scripts/app'
 import type { MissingNodeType } from '@/types/comfy'
 import { getAncestorExecutionIds } from '@/types/nodeIdentification'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
@@ -125,8 +125,7 @@ export const useMissingNodesErrorStore = defineStore(
 
     /** True if the node has a missing node inside it at any nesting depth. */
     function isContainerWithMissingNode(node: LGraphNode): boolean {
-      const app = getAppGraphContext()
-      if (!app?.isGraphReady) return false
+      if (!app.isGraphReady) return false
       const execId = getExecutionIdByNode(app.rootGraph, node)
       if (!execId) return false
       return missingAncestorExecutionIds.value.has(execId)

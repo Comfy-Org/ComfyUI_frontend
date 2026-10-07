@@ -195,35 +195,6 @@ describe('LiveGraphApplier malformed node report', () => {
     onlyReport()
   })
 
-  it('fails closed when a peer value exceeds safe projection depth', () => {
-    const { graph, doc, collector, applier, applyCollected } = setup({
-      nodes: [sinkNode({ name: 'image', type: 'IMAGE', link: null })],
-      links: []
-    })
-    applyCollected()
-    vi.mocked(reportError).mockClear()
-    let deep: Record<string, unknown> = {}
-    for (let depth = 0; depth < 20_000; depth++) deep = { nested: deep }
-    doc.transact(() => {
-      const node = nodesMap(doc).get(String(NODE_ID))
-      node?.set('properties', deep)
-      node?.set('title', 'hostile projection')
-    })
-
-    expect(() =>
-      applier.applyChanges(doc, collector.take(), CONTEXT)
-    ).not.toThrow()
-    expect(graph.getNodeById(toNodeId(NODE_ID))?.title).not.toBe(
-      'hostile projection'
-    )
-    expect(reportError).toHaveBeenCalledWith(
-      expect.objectContaining({
-        message: expect.stringContaining('could not be projected safely')
-      }),
-      expect.objectContaining({ errorType: 'agent_graph_node_malformed' })
-    )
-  })
-
   it('reports again after the node is repaired and malformed a second time', () => {
     const { doc, collector, applier, applyCollected } = setup({
       nodes: [sinkNode({ name: 'image', link: null })],
@@ -255,27 +226,4 @@ describe('LiveGraphApplier malformed node report', () => {
       context: { valueShapes: 'inputs.0.type invalid_union array:0' }
     })
   })
-
-  it.for(['widgets_values', 'widgets_values_named'])(
-    'drops legacy %s before it can reach node.configure',
-    (legacyKey) => {
-      const { graph, doc, collector, applier, applyCollected } = setup({
-        nodes: [sinkNode({ name: 'image', type: 'IMAGE', link: null })],
-        links: []
-      })
-      applyCollected()
-      const live = graph.getNodeById(toNodeId(NODE_ID))
-      expect(live).not.toBeNull()
-
-      doc.transact(() => {
-        const node = nodesMap(doc).get(String(NODE_ID))
-        node?.set(legacyKey, ['peer-controlled'])
-        node?.set('title', 'must not apply')
-      })
-      applier.applyChanges(doc, collector.take(), CONTEXT)
-
-      expect(live?.title).toBe('must not apply')
-      expect(reportError).not.toHaveBeenCalled()
-    }
-  )
 })

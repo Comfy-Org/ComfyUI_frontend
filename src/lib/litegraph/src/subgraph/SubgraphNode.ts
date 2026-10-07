@@ -16,10 +16,6 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { INodeInputSlot, ISlotType } from '@/lib/litegraph/src/litegraph'
 import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
 import { NodeOutputSlot } from '@/lib/litegraph/src/node/NodeOutputSlot'
-import {
-  captureInputLayout,
-  replaceNodeInputs
-} from '@/lib/litegraph/src/node/slotLinks'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 import type { SerializedNodeId } from '@/types/nodeId'
 import type {
@@ -185,37 +181,14 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     )
 
     subgraphEvents.addEventListener(
-      'input-removed',
+      'removing-input',
       (e) => {
-        const widget = e.detail.widget
+        const widget = e.detail.input._widget
         if (widget) this.ensureWidgetRemoved(widget)
 
         this.removeInput(e.detail.index)
         this.invalidatePromotedViews()
         this.setDirtyCanvas(true, true)
-      },
-      { signal }
-    )
-
-    subgraphEvents.addEventListener(
-      'inputs-reordered',
-      (event) => {
-        const byDefinitionId = new Map(
-          this.inputs.flatMap((input) =>
-            input._subgraphSlot
-              ? [[input._subgraphSlot.id, input] as const]
-              : []
-          )
-        )
-        const ordered = event.detail.newOrder.flatMap((id) => {
-          const input = byDefinitionId.get(id)
-          return input ? [input] : []
-        })
-        if (ordered.length !== this.inputs.length) return
-        if (ordered.every((input, index) => this.inputs[index] === input))
-          return
-        replaceNodeInputs(this, captureInputLayout(this), ordered)
-        this.invalidatePromotedViews()
       },
       { signal }
     )
@@ -230,7 +203,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     )
 
     subgraphEvents.addEventListener(
-      'output-removed',
+      'removing-output',
       (e) => {
         this.removeOutput(e.detail.index)
         this.setDirtyCanvas(true, true)

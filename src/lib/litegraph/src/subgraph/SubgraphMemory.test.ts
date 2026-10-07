@@ -37,9 +37,9 @@ describe('SubgraphNode Memory Management', () => {
       // Should have registered listeners for all major events
       const eventTypes = addEventSpy.mock.calls.map((call) => call[0])
       expect(eventTypes).toContain('input-added')
-      expect(eventTypes).toContain('input-removed')
+      expect(eventTypes).toContain('removing-input')
       expect(eventTypes).toContain('output-added')
-      expect(eventTypes).toContain('output-removed')
+      expect(eventTypes).toContain('removing-output')
       expect(eventTypes).toContain('renaming-input')
       expect(eventTypes).toContain('renaming-output')
     })

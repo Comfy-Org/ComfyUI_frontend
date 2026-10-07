@@ -1,15 +1,13 @@
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, onTestFinished, vi } from 'vitest'
-import { defineComponent, nextTick, watch } from 'vue'
-import type { PropType } from 'vue'
+import { describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { registerDocBoundRootGraphProbe } from '@/lib/litegraph/src/docBoundGraphs'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
@@ -46,11 +44,6 @@ const i18n = createI18n({
       g: {
         search: 'Search',
         searchPlaceholder: 'Search'
-      },
-      agent: {
-        widgetWriteNotSyncedTitle: 'This edit could not sync',
-        subgraphReorderNotSyncedDetail: 'Promoted inputs cannot be reordered',
-        subgraphPromotionNotSyncedDetail: 'Promoted inputs cannot be removed'
       }
     }
   }
@@ -114,7 +107,7 @@ describe('SubgraphEditor', () => {
     ).toHaveLength(2)
   })
 
-  function renderTwoPromotedWidgets() {
+  it('updates rendered order when promoted widgets are reordered', async () => {
     const subgraph = createTestSubgraph()
     const host = createTestSubgraphNode(subgraph)
     const firstNode = new LGraphNode('FirstNode')
@@ -133,30 +126,23 @@ describe('SubgraphEditor', () => {
     setCanvasSelection([host])
 
     let listSetter: ((value: PromotedRow[]) => void) | undefined
-    // The real DraggableList moves DOM nodes itself during a drag, so a
-    // refused reorder is only corrected when the editor pushes a fresh array
-    // back down. Counting those pushes is what proves it did.
-    const modelPushes = { count: 0 }
-    const draggableListStub = defineComponent({
-      props: {
-        modelValue: {
-          type: Array as PropType<PromotedRow[]>,
-          required: true
-        }
-      },
+    const draggableListStub = {
+      props: ['modelValue'],
       emits: ['update:modelValue'],
-      setup(props, { emit, slots }) {
+      setup(
+        _: unknown,
+        {
+          emit,
+          slots
+        }: {
+          emit: (event: string, ...args: unknown[]) => void
+          slots: { default?: (props: { dragClass: string }) => unknown }
+        }
+      ) {
         listSetter = (value) => emit('update:modelValue', value)
-        watch(
-          () => props.modelValue,
-          () => {
-            modelPushes.count += 1
-          },
-          { immediate: true }
-        )
         return () => slots.default?.({ dragClass: 'draggable-item' })
       }
-    })
+    }
     render(SubgraphEditor, {
       container: document.body.appendChild(document.createElement('div')),
       global: {
@@ -164,12 +150,15 @@ describe('SubgraphEditor', () => {
         stubs: { DraggableList: draggableListStub }
       }
     })
+    await nextTick()
 
-    const shown = () => screen.getByTestId('subgraph-editor-shown-section')
-    const labels = () =>
-      within(shown())
+    const shown = screen.getByTestId('subgraph-editor-shown-section')
+    expect(
+      within(shown)
         .getAllByTestId('subgraph-widget-label')
         .map((el) => el.textContent.trim())
+    ).toEqual(['first', 'second'])
+
     const rowFor = (sourceNode: LGraphNode) => {
       const input = host.inputs.find((input) => {
         if (!input.widgetId) return false
@@ -183,88 +172,15 @@ describe('SubgraphEditor', () => {
         widget: promotedInputWidget(input)!
       }
     }
-    const reverse = () =>
-      [rowFor(secondNode), rowFor(firstNode)] as PromotedRow[]
-
-    return {
-      host,
-      labels,
-      reverse,
-      modelPushes,
-      setList: (value: PromotedRow[]) => listSetter?.(value)
-    }
-  }
-
-  it('updates rendered order when promoted widgets are reordered', async () => {
-    const { labels, reverse, setList } = renderTwoPromotedWidgets()
+    const reversed = [rowFor(secondNode), rowFor(firstNode)] as PromotedRow[]
+    listSetter?.(reversed)
     await nextTick()
 
-    expect(labels()).toEqual(['first', 'second'])
-
-    setList(reverse())
-    await nextTick()
-
-    expect(labels()).toEqual(['second', 'first'])
-  })
-
-  it('restores the dragged order when the document refuses the reorder', async () => {
-    const { host, labels, reverse, modelPushes, setList } =
-      renderTwoPromotedWidgets()
-    onTestFinished(registerDocBoundRootGraphProbe(() => host.rootGraph.id))
-    await nextTick()
-
-    expect(labels()).toEqual(['first', 'second'])
-    const pushesBefore = modelPushes.count
-
-    setList(reverse())
-    await nextTick()
-
-    expect(host.inputs.map((input) => input.name)).toEqual(['first', 'second'])
-    expect(modelPushes.count).toBe(pushesBefore + 1)
-  })
-
-  it('restores promoted rows when a doc-bound hide-all is refused', async () => {
-    const { host, labels } = renderTwoPromotedWidgets()
-    onTestFinished(registerDocBoundRootGraphProbe(() => host.rootGraph.id))
-    await nextTick()
-
-    const shown = screen.getByTestId('subgraph-editor-shown-section')
-    await userEvent.click(within(shown).getByText('Hide all'))
-    await nextTick()
-
-    expect(host.inputs.map((input) => input.name)).toEqual(['first', 'second'])
-    expect(labels()).toEqual(['first', 'second'])
-  })
-
-  it('hide-all demotes a visible promoted row after its source goes stale', async () => {
-    const { host } = renderTwoPromotedWidgets()
-    await nextTick()
-    const source = host.subgraph.nodes.find(
-      (node) => node.title === 'FirstNode'
-    )!
-    source.removeWidget(source.widgets![0])
-
-    const shown = screen.getByTestId('subgraph-editor-shown-section')
-    await userEvent.click(within(shown).getByText('Hide all'))
-    await nextTick()
-
-    expect(host.inputs).toEqual([])
-  })
-
-  it('visibly refuses a stale-row demotion while doc-bound', async () => {
-    const { host } = renderTwoPromotedWidgets()
-    onTestFinished(registerDocBoundRootGraphProbe(() => host.rootGraph.id))
-    await nextTick()
-    const source = host.subgraph.nodes.find(
-      (node) => node.title === 'FirstNode'
-    )!
-    source.removeWidget(source.widgets![0])
-
-    const shown = screen.getByTestId('subgraph-editor-shown-section')
-    await userEvent.click(within(shown).getByText('Hide all'))
-    await nextTick()
-
-    expect(host.inputs.map((input) => input.name)).toEqual(['first', 'second'])
+    expect(
+      within(shown)
+        .getAllByTestId('subgraph-widget-label')
+        .map((el) => el.textContent.trim())
+    ).toEqual(['second', 'first'])
   })
 
   it('moves a widget to shown when promoted from the hidden section', async () => {

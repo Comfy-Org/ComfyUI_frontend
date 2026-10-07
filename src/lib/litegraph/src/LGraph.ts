@@ -842,7 +842,7 @@ export class LGraph
     if (this.isRootGraph) {
       emitGraphIntent({
         type: 'clear',
-        graph: this,
+        graphId: this.id,
         nodeIds: this._nodes.map((node) => node.id)
       })
     }
@@ -3722,17 +3722,16 @@ export class Subgraph
    * Removes an input slot from the subgraph.
    * @param input The input slot to remove.
    */
-  removeInput(input: SubgraphInput): boolean {
+  removeInput(input: SubgraphInput): void {
     const index = this.inputs.indexOf(input)
     if (index === -1) {
       console.error('Input not found')
-      return false
+      return
     }
 
     const mayContinue = this.events.dispatch('removing-input', { input, index })
-    if (!mayContinue) return false
+    if (!mayContinue) return
 
-    const widget = input._widget
     input.disconnect()
 
     this.inputs.splice(index, 1)
@@ -3741,12 +3740,6 @@ export class Subgraph
     for (let i = index; i < length; i++) {
       this.inputs[i].decrementSlots('inputs')
     }
-    this.events.dispatch('input-removed', {
-      input,
-      index,
-      ...(widget ? { widget } : {})
-    })
-    return true
   }
 
   /**
@@ -3774,7 +3767,6 @@ export class Subgraph
     for (let i = index; i < length; i++) {
       this.outputs[i].decrementSlots('outputs')
     }
-    this.events.dispatch('output-removed', { output, index })
   }
 
   draw(

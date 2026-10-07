@@ -595,7 +595,7 @@ function* indexedLinks<S>(
 export function reorderSubgraphInputs(
   subgraphNode: SubgraphNode,
   orderedIndices: readonly number[]
-): boolean {
+): void {
   const subgraph = subgraphNode.subgraph
 
   const n = subgraph.inputs.length
@@ -604,19 +604,19 @@ export function reorderSubgraphInputs(
       hostInputs: subgraphNode.inputs.length,
       subgraphInputs: n
     })
-    return false
+    return
   }
 
   if (
     orderedIndices.length !== n ||
     new Set(orderedIndices).size !== orderedIndices.length ||
-    orderedIndices.some((i) => !Number.isInteger(i) || i < 0 || i >= n)
+    orderedIndices.some((i) => i < 0 || i >= n)
   ) {
     console.error(
       `reorderSubgraphInputs: orderedIndices must be a permutation of 0..${n - 1}`,
       orderedIndices
     )
-    return false
+    return
   }
 
   const oldOrder = subgraph.inputs.map((i) => i.id)
@@ -631,7 +631,7 @@ export function reorderSubgraphInputs(
     previousInputs,
     orderedHostInputs
   )
-  if (!result.ok) return false
+  if (!result.ok) return
   reorderInPlace(subgraph.inputs, orderedIndices)
   subgraphNode.invalidatePromotedViews()
 
@@ -650,7 +650,6 @@ export function reorderSubgraphInputs(
       newOrder
     })
   }
-  return true
 }
 
 /**

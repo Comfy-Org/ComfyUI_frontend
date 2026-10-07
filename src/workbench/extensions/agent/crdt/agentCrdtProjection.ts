@@ -1,4 +1,3 @@
-import { linksMap, nodesMap } from '@comfyorg/comfy-multi-player'
 import type { Op } from '@comfyorg/comfy-multi-player'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
@@ -162,26 +161,6 @@ export class AgentCrdtProjection {
       actor: 'agent-revert',
       opIds: ops.map((op) => op.op_id)
     })
-  }
-
-  /** Reprojects every canonical register after bounded rollback bookkeeping overflows. */
-  replaceFromDocument(workflowId: string): NodeId[] {
-    const target = this.targets.get(workflowId)
-    if (!target || !this.getGraph()) return []
-    target.collector.discard()
-    const doc = target.follower.doc
-    return this.apply(
-      workflowId,
-      target,
-      {
-        nodes: new Map([...nodesMap(doc).keys()].map((id) => [id, 'update'])),
-        widgets: new Map(),
-        resyncNodes: new Set(),
-        links: new Set(linksMap(doc).keys())
-      },
-      { actor: 'agent-full-reprojection', opIds: [] },
-      'replace'
-    )
   }
 
   /**

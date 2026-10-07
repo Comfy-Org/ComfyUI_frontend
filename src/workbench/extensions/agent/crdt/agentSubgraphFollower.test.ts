@@ -333,138 +333,6 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
     expect(useWidgetValueStore().getWidget(widgetId!)?.value).toBe(42)
   })
 
-  it('keeps host updates flowing across a cosmetic definition edit', () => {
-    const state = startFollower()
-    const vector = Y.encodeStateVector(state.hostDoc)
-    state.hostDoc.transact(() => {
-      const definition = state.hostDoc
-        .getMap<unknown>('definitions')
-        .get(state.instance.type)
-      assert.instanceOf(definition, Y.Map)
-      definition.set('name', 'peer-replaced definition')
-      definition.set('category', 'peer category')
-      definition.set('description', 'peer description')
-      const interiorNodes = definition.get('nodes')
-      assert.instanceOf(interiorNodes, Y.Map)
-      const [interior] = [...interiorNodes.values()]
-      assert.instanceOf(interior, Y.Map)
-      interior.set('pos', [900, 800])
-      nodesMap(state.hostDoc)
-        .get(String(state.instance.id))
-        ?.set(OPAQUE_WIDGETS_KEY, [42])
-    })
-    const update = Y.encodeStateAsUpdate(state.hostDoc, vector)
-    state.follower.applyRemoteUpdate(update)
-    state.adapter.applyFrame({ workflowId: 'workflow', seq: 2, update })
-
-    expect(reportError).not.toHaveBeenCalledWith(
-      expect.any(Error),
-      expect.objectContaining({
-        errorType: 'agent_subgraph_definition_changed'
-      })
-    )
-    expect(state.instance.widgets[0]?.value).toBe(42)
-  })
-
-  it('keeps host updates flowing after the same interior edit reaches live and document state', () => {
-    const state = startFollower()
-    const liveInterior = state.instance.subgraph.nodes[0]
-    const liveWidget = liveInterior.widgets?.[0]
-    assert.exists(liveWidget)
-
-    forwardRaw(
-      state,
-      (nodes) => {
-        liveWidget.value = 77
-        expect(liveWidget.value).toBe(77)
-        const definition = state.hostDoc
-          .getMap<unknown>('definitions')
-          .get(state.instance.type)
-        assert.instanceOf(definition, Y.Map)
-        const interiorNodes = definition.get('nodes')
-        assert.instanceOf(interiorNodes, Y.Map)
-        const [interior] = [...interiorNodes.values()]
-        assert.instanceOf(interior, Y.Map)
-        interior.set(OPAQUE_WIDGETS_KEY, [77])
-        nodes.get('1')!.set(OPAQUE_WIDGETS_KEY, [42])
-      },
-      1
-    )
-
-    expect(reportError).not.toHaveBeenCalledWith(
-      expect.any(Error),
-      expect.objectContaining({
-        errorType: 'agent_subgraph_definition_changed'
-      })
-    )
-    expect(state.instance.widgets[0]?.value).toBe(42)
-  })
-
-  it('fails closed when an interior widget value changes only in the definition', () => {
-    const state = startFollower()
-    const before = state.instance.widgets[0]?.value
-
-    forwardRaw(
-      state,
-      (nodes) => {
-        const definition = state.hostDoc
-          .getMap<unknown>('definitions')
-          .get(state.instance.type)
-        assert.instanceOf(definition, Y.Map)
-        const interiorNodes = definition.get('nodes')
-        assert.instanceOf(interiorNodes, Y.Map)
-        const interior = interiorNodes.get('7')
-        assert.instanceOf(interior, Y.Map)
-        interior.set(OPAQUE_WIDGETS_KEY, [77])
-        nodes.get('1')!.set(OPAQUE_WIDGETS_KEY, [42])
-      },
-      1
-    )
-
-    expect(state.instance.widgets[0]?.value).toBe(before)
-    expect(reportError).toHaveBeenCalledWith(
-      expect.any(Error),
-      expect.objectContaining({
-        errorType: 'agent_subgraph_definition_changed'
-      })
-    )
-  })
-
-  it('checks promoted layout when semantic state reconverges', () => {
-    const state = startFollower({ extraInput: true, promoteExtra: true })
-    const liveInterior = state.instance.subgraph.getNodeById(toNodeId(7))
-    const liveWidget = liveInterior?.widgets?.[0]
-    assert.exists(liveWidget)
-
-    forwardRaw(
-      state,
-      (nodes) => {
-        liveWidget.value = 77
-        const definition = state.hostDoc
-          .getMap<unknown>('definitions')
-          .get(state.instance.type)
-        assert.instanceOf(definition, Y.Map)
-        const interiorNodes = definition.get('nodes')
-        assert.instanceOf(interiorNodes, Y.Map)
-        const interior = interiorNodes.get('7')
-        assert.instanceOf(interior, Y.Map)
-        interior.set(OPAQUE_WIDGETS_KEY, [77])
-        const inputs = definition.get('inputs')
-        assert(Array.isArray(inputs))
-        definition.set('inputs', [...inputs].reverse())
-        nodes.get('1')!.set(OPAQUE_WIDGETS_KEY, [98, 99])
-      },
-      1
-    )
-
-    expect(reportError).toHaveBeenCalledWith(
-      expect.any(Error),
-      expect.objectContaining({
-        errorType: 'agent_subgraph_definition_changed'
-      })
-    )
-  })
-
   it('S1z runs the host widget hooks on an accepted promoted write', () => {
     const state = startFollower()
     const widget = state.instance.widgets[0]
@@ -485,7 +353,7 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
     expect(reportError).not.toHaveBeenCalled()
   })
 
-  it('S1r keeps a host widget canonical when its change hook throws', () => {
+  it('S1r rolls a host widget back when its change hook throws', () => {
     const state = startFollower()
     state.instance.onWidgetChanged = () => {
       throw new Error('extension hook exploded')
@@ -493,13 +361,13 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
 
     deliver(state, hostSetWidget(42), 1)
 
-    expect(state.instance.widgets[0]?.value).toBe(42)
-    expect(storedHostWidgets(state)).toEqual([['value', 42]])
+    expect(state.instance.widgets[0]?.value).toBe(HOST_INITIAL_VALUE)
+    expect(storedHostWidgets(state)).toEqual([['value', HOST_INITIAL_VALUE]])
     expect(reportError).toHaveBeenCalledWith(
       expect.objectContaining({ message: 'extension hook exploded' }),
       expect.objectContaining({
         surface: 'agent',
-        errorType: 'agent_graph_widget_callback_failed'
+        errorType: 'agent_graph_apply_failed'
       })
     )
   })
@@ -1028,10 +896,10 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
     expect(storedHostWidgets(state)).toEqual([['value', 46]])
   })
 
-  it('S1i refuses named storage on a positional subgraph host', () => {
-    // A populated named map is not a valid host representation. Applying it
-    // would poison the node one-way: outbound writes correctly refuse the same
-    // shape because promoted host values are positional.
+  it('S1i keeps promoted names when the host flips back to named storage', () => {
+    // Deleting `__widgets_opaque` and writing a named `widgets` map lands in
+    // the replaced-widget-storage loop, which used to run `reconcileNode` on
+    // the host and reset its live inputs.
     const state = startFollower()
     forwardRaw(
       state,
@@ -1043,124 +911,9 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
       1
     )
 
-    expect(storedHostWidgets(state)).toEqual([['value', HOST_INITIAL_VALUE]])
+    expect(storedHostWidgets(state)).toEqual([['value', 45]])
     expect(state.instance.widgets.map((w) => w.name)).toEqual(['value'])
-    expect(state.instance.widgets[0]?.value).toBe(HOST_INITIAL_VALUE)
-    expect(reportError).toHaveBeenCalledWith(
-      expect.any(Error),
-      expect.objectContaining({ errorType: 'agent_graph_host_widgets_named' })
-    )
-  })
-
-  it('fails closed when a host carries named and opaque widget storage together', () => {
-    const state = startFollower()
-    forwardRaw(
-      state,
-      (nodes) => {
-        const node = nodes.get('1')!
-        node.set('widgets', new Y.Map<unknown>([['value', 98]]))
-        node.set(OPAQUE_WIDGETS_KEY, [99])
-        node.set('title', 'Fields still apply')
-      },
-      1
-    )
-
-    expect(state.instance.widgets[0]?.value).toBe(HOST_INITIAL_VALUE)
-    expect(state.instance.title).toBe('Fields still apply')
-    expect(reportError).toHaveBeenCalledWith(
-      expect.objectContaining({ message: expect.stringContaining('both') }),
-      expect.objectContaining({ errorType: 'agent_graph_node_malformed' })
-    )
-  })
-
-  it('fails closed when document definition order differs from the live host', () => {
-    const state = startFollower({ extraInput: true, promoteExtra: true })
-    const before = state.instance.widgets.map((widget) => widget.value)
-    const vector = Y.encodeStateVector(state.hostDoc)
-    state.hostDoc.transact(() => {
-      const definition = state.hostDoc
-        .getMap<unknown>('definitions')
-        .get(state.instance.type)
-      assert.instanceOf(definition, Y.Map)
-      const inputs = definition.get('inputs')
-      assert(Array.isArray(inputs))
-      definition.set('inputs', [...inputs].reverse())
-      nodesMap(state.hostDoc).get('1')!.set(OPAQUE_WIDGETS_KEY, [98, 99])
-    })
-    const update = Y.encodeStateAsUpdate(state.hostDoc, vector)
-    state.follower.applyRemoteUpdate(update)
-    expect(
-      state.adapter.applyFrame({ workflowId: 'workflow', seq: 2, update })
-    ).not.toBeNull()
-
-    expect(state.instance.widgets.map((widget) => widget.value)).toEqual(before)
-    expect(reportError).toHaveBeenCalledWith(
-      expect.any(Error),
-      expect.objectContaining({
-        errorType: 'agent_subgraph_definition_changed'
-      })
-    )
-  })
-
-  it('fails closed when a definition body changes without changing promotion layout', () => {
-    const state = startFollower()
-    const before = state.instance.widgets[0]?.value
-
-    forwardRaw(
-      state,
-      (nodes) => {
-        const definition = state.hostDoc
-          .getMap<unknown>('definitions')
-          .get(state.instance.type)
-        assert.instanceOf(definition, Y.Map)
-        const interiorNodes = definition.get('nodes')
-        assert.instanceOf(interiorNodes, Y.Map)
-        const [interior] = [...interiorNodes.values()]
-        assert.instanceOf(interior, Y.Map)
-        interior.set('type', 'different-source')
-        nodes.get('1')!.set(OPAQUE_WIDGETS_KEY, [98])
-      },
-      1
-    )
-
-    expect(state.instance.widgets[0]?.value).toBe(before)
-    expect(reportError).toHaveBeenCalledWith(
-      expect.any(Error),
-      expect.objectContaining({
-        errorType: 'agent_subgraph_definition_changed'
-      })
-    )
-  })
-
-  it('keeps a definition conflict latched after the document layout reconverges', () => {
-    const state = startFollower({ extraInput: true, promoteExtra: true })
-    const before = state.instance.widgets.map((widget) => widget.value)
-    const definition = state.hostDoc
-      .getMap<unknown>('definitions')
-      .get(state.instance.type)
-    assert.instanceOf(definition, Y.Map)
-    const inputs = definition.get('inputs')
-    assert(Array.isArray(inputs))
-    const originalInputs = [...inputs]
-
-    forwardRaw(
-      state,
-      (nodes) => {
-        definition.set('inputs', [...originalInputs].reverse())
-        nodes.get('1')!.set(OPAQUE_WIDGETS_KEY, [98, 99])
-      },
-      1
-    )
-    forwardRaw(
-      state,
-      (nodes) => {
-        definition.set('inputs', originalInputs)
-        nodes.get('1')!.set(OPAQUE_WIDGETS_KEY, [77, 88])
-      },
-      2
-    )
-
-    expect(state.instance.widgets.map((widget) => widget.value)).toEqual(before)
+    expect(state.instance.widgets[0]?.value).toBe(45)
   })
 
   it('S1j leaves promoted values unchanged when the opaque array shrinks', () => {
@@ -1212,52 +965,6 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
     forwardRaw(state, retypeNode3AsHost, 1)
 
     expectNode3RebuiltAsHost(state)
-  })
-
-  it('S1j refuses named host storage on the create path', () => {
-    const state = startFollower({ rootWidgetNode: true })
-
-    forwardRaw(
-      state,
-      (nodes) => {
-        retypeNode3AsHost(nodes)
-        const host = nodes.get('3')!
-        host.delete(OPAQUE_WIDGETS_KEY)
-        host.set('widgets', new Y.Map<unknown>([['value', 99]]))
-      },
-      1
-    )
-
-    const rebuilt = state.graph.getNodeById(toNodeId(3))
-    expect(rebuilt).toBeInstanceOf(SubgraphNode)
-    expect(rebuilt?.widgets?.[0]?.value).toBe(INTERIOR_DEFAULT_VALUE)
-    expect(reportError).toHaveBeenCalledWith(
-      expect.any(Error),
-      expect.objectContaining({ errorType: 'agent_graph_host_widgets_named' })
-    )
-  })
-
-  it('accepts an empty named host map as an absent legacy payload', () => {
-    const state = startFollower({ rootWidgetNode: true })
-
-    forwardRaw(
-      state,
-      (nodes) => {
-        retypeNode3AsHost(nodes)
-        const host = nodes.get('3')!
-        host.delete(OPAQUE_WIDGETS_KEY)
-        host.set('widgets', new Y.Map<unknown>())
-      },
-      1
-    )
-
-    const rebuilt = state.graph.getNodeById(toNodeId(3))
-    expect(rebuilt).toBeInstanceOf(SubgraphNode)
-    expect(rebuilt?.widgets?.[0]?.value).toBe(INTERIOR_DEFAULT_VALUE)
-    expect(reportError).not.toHaveBeenCalledWith(
-      expect.any(Error),
-      expect.objectContaining({ errorType: 'agent_graph_host_widgets_named' })
-    )
   })
 
   it('S1u reports drift on a catch-up frame when the definition promotes nothing', () => {

@@ -58,8 +58,6 @@ export interface OpSenderDeps {
   actor(): string
   /** The follower's last observed doc sequence (stamps `base_version`). */
   baseVersion(): number
-  /** Observe creator-owned identities as soon as they are minted. */
-  onOpsMinted?(ops: readonly Op[], workflowId: string | null): void
   /**
    * Terminal per-batch report: 'acknowledged' carries the host's result;
    * 'unacknowledged' means one resend after silence also drew no result;
@@ -495,7 +493,6 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     const minted = operations.flatMap((operation, index) =>
       mintWireOps([operation], { actor, baseVersion: baseVersion + index })
     )
-    deps.onOpsMinted?.(minted, workflowId)
     const admissionTarget = admissionTargetOrSettle(minted, workflowId)
     if (admissionTarget === null) return
     lastMintedVersions.set(admissionTarget, baseVersion + minted.length - 1)

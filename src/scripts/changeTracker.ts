@@ -1,6 +1,5 @@
 import { useDebounceFn } from '@vueuse/core'
 import _ from 'es-toolkit/compat'
-import { shallowRef } from 'vue'
 
 import { assert } from '@/base/assert'
 import { LAYER_EDITOR_DIALOG_KEY } from '@/renderer/extensions/layerEditor/composables/layerEditorDialog'
@@ -253,41 +252,14 @@ function reportInactiveTrackerCall(method: string, workflowPath: string) {
 
 export class ChangeTracker {
   static MAX_HISTORY = 50
-  private static readonly loadingGraphState = shallowRef(false)
-  private static loadingGraphDepth = 0
   /**
    * Guard flag to prevent captureCanvasState from running during loadGraphData.
    * Between rootGraph.configure() and afterLoadNewGraph(), the rootGraph
    * contains the NEW workflow's data while activeWorkflow still points to
    * the OLD workflow. Any captureCanvasState call in that window would
    * serialize the wrong graph into the old workflow's activeState, corrupting it.
-   * The backing ref also lets graph-readiness consumers retry once loading ends.
    */
-  static get isLoadingGraph(): boolean {
-    return this.loadingGraphState.value
-  }
-
-  /**
-   * Own one overlapping graph-load guard. The returned closer is idempotent,
-   * so each async load can release only the depth it acquired.
-   */
-  static beginGraphLoad(): () => void {
-    this.loadingGraphDepth++
-    this.loadingGraphState.value = true
-    let ended = false
-    return () => {
-      if (ended) return
-      ended = true
-      this.loadingGraphDepth = Math.max(0, this.loadingGraphDepth - 1)
-      this.loadingGraphState.value = this.loadingGraphDepth > 0
-    }
-  }
-
-  /** Absolute compatibility control for tests and legacy callers. */
-  static set isLoadingGraph(value: boolean) {
-    this.loadingGraphDepth = value ? 1 : 0
-    this.loadingGraphState.value = value
-  }
+  static isLoadingGraph = false
   /**
    * The active state of the workflow.
    */

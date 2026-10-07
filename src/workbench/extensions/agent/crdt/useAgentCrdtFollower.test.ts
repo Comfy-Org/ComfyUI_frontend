@@ -79,7 +79,6 @@ const projectionState = vi.hoisted(() => {
     revertRejected: vi.fn(
       (_workflowId: string, _ops: readonly Op[]): NodeId[] => []
     ),
-    replaceFromDocument: vi.fn((_workflowId: string): NodeId[] => []),
     replaceOnNextFrame: vi.fn(),
     discardPending: vi.fn((_workflowId: string): DocNodeDelta => NO_NODES),
     noteLocalWrites: vi.fn(),
@@ -136,7 +135,6 @@ vi.mock<unknown>(import('./agentCrdtProjection'), () => ({
     applyFrame = projectionState.applyFrame
     applyCollected = projectionState.applyCollected
     revertRejected = projectionState.revertRejected
-    replaceFromDocument = projectionState.replaceFromDocument
     replaceOnNextFrame = projectionState.replaceOnNextFrame
     discardPending = projectionState.discardPending
     noteLocalWrites = projectionState.noteLocalWrites
@@ -201,8 +199,7 @@ function mountFollower(
   getGraph: () => LGraph | null = () => null,
   events: Parameters<typeof useAgentCrdtFollower>[4] = {},
   applierDeps: Parameters<typeof useAgentCrdtFollower>[5] = {},
-  canvasFor: Parameters<typeof useAgentCrdtFollower>[6] = () => null,
-  userId: () => string | null = () => null
+  canvasFor: Parameters<typeof useAgentCrdtFollower>[6] = () => null
 ): {
   unmount: () => void
   workflowId: Ref<string | null>
@@ -218,7 +215,7 @@ function mountFollower(
     setup() {
       const { status, enqueueHumanOperations } = useAgentCrdtFollower(
         workflowId,
-        userId,
+        () => null,
         isTargetActive,
         getGraph,
         events,
@@ -261,7 +258,6 @@ describe('useAgentCrdtFollower', () => {
       .mockReturnValue(projectionState.applied())
     projectionState.applyCollected.mockReset().mockReturnValue([])
     projectionState.revertRejected.mockReset().mockReturnValue([])
-    projectionState.replaceFromDocument.mockReset().mockReturnValue([])
     projectionState.noteLocalWrites.mockReset()
     projectionState.settleLocalWrites.mockReset()
   })
@@ -1416,8 +1412,7 @@ describe('useAgentCrdtFollower', () => {
   })
 
   it('reverts only the ops the host rejected from a human batch', async () => {
-    const liveGraph = fromPartial<LGraph>({ getNodeById: () => null })
-    const { unmount, enqueue } = mountFollower('wf-1', true, () => liveGraph)
+    const { unmount, enqueue } = mountFollower('wf-1')
     enqueue([
       { op: 'set_widget', node_id: '2', widget: 'steps', value: 3 },
       { op: 'delete_node', node_id: '1', removed_links: [] }
@@ -1451,108 +1446,6 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('defers a rejected-op rollback until its workflow is active again', async () => {
-    const liveGraph = fromPartial<LGraph>({ getNodeById: () => null })
-    const { unmount, enqueue, isTargetActive } = mountFollower(
-      'wf-1',
-      true,
-      () => liveGraph
-    )
-    enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
-    await Promise.resolve()
-    const [, , ops] = clientState.sendOps.mock.calls[0]
-
-    isTargetActive.value = false
-    await nextTick()
-    dispatchFrame('doc_ops_result', {
-      workflowId: 'wf-1',
-      ok: false,
-      applied: [],
-      skipped: [],
-      failed: { index: 0, op_id: ops[0].op_id, code: 'unknown_node' }
-    })
-    expect(projectionState.revertRejected).not.toHaveBeenCalled()
-
-    isTargetActive.value = true
-    await nextTick()
-    expect(projectionState.revertRejected).toHaveBeenCalledExactlyOnceWith(
-      'wf-1',
-      ops
-    )
-    unmount()
-  })
-
-  it('reprojects ops the host validly skipped from an acknowledged batch', async () => {
-    const { unmount, enqueue } = mountFollower('wf-1')
-    enqueue([
-      { op: 'set_widget', node_id: '2', widget: 'steps', value: 3 },
-      { op: 'delete_node', node_id: '1', removed_links: [] }
-    ])
-    await Promise.resolve()
-    const [, , ops] = clientState.sendOps.mock.calls[0]
-
-    dispatchFrame('doc_ops_result', {
-      workflowId: 'wf-1',
-      ok: true,
-      applied: [ops[0].op_id],
-      skipped: [ops[1].op_id]
-    })
-
-    expect(projectionState.revertRejected).not.toHaveBeenCalled()
-    expect(telemetryState.reportError).not.toHaveBeenCalled()
-    unmount()
-  })
-
-  it('restores a skipped widget register from the canonical document', async () => {
-    const liveGraph = fromPartial<LGraph>({ getNodeById: () => null })
-    const { unmount, enqueue } = mountFollower('wf-1', true, () => liveGraph)
-    enqueue([{ op: 'set_widget', node_id: '2', widget: 'steps', value: 3 }])
-    await Promise.resolve()
-    const [, , ops] = clientState.sendOps.mock.calls[0]
-
-    dispatchFrame('doc_ops_result', {
-      workflowId: 'wf-1',
-      ok: true,
-      applied: [],
-      skipped: [ops[0].op_id]
-    })
-
-    expect(projectionState.revertRejected).toHaveBeenCalledExactlyOnceWith(
-      'wf-1',
-      ops
-    )
-    expect(telemetryState.reportError).not.toHaveBeenCalled()
-    unmount()
-  })
-
-  it('restores a skipped node field from the canonical document', async () => {
-    const liveGraph = fromPartial<LGraph>({ getNodeById: () => null })
-    const { unmount, enqueue } = mountFollower('wf-1', true, () => liveGraph)
-    enqueue([
-      {
-        op: 'set_node_field',
-        node_id: '2',
-        field: 'title',
-        value: 'Local title'
-      }
-    ])
-    await Promise.resolve()
-    const [, , ops] = clientState.sendOps.mock.calls[0]
-
-    dispatchFrame('doc_ops_result', {
-      workflowId: 'wf-1',
-      ok: true,
-      applied: [],
-      skipped: [ops[0].op_id]
-    })
-
-    expect(projectionState.revertRejected).toHaveBeenCalledExactlyOnceWith(
-      'wf-1',
-      ops
-    )
-    unmount()
-  })
-
   describe('own-actor echo', () => {
     const liveGraph = fromPartial<LGraph>({ getNodeById: () => null })
 
@@ -1560,7 +1453,6 @@ describe('useAgentCrdtFollower', () => {
       unmount: () => void
       status: () => AgentCrdtStatus
       ownActor: string
-      ownOpId: string
     }> {
       const { unmount, status, enqueue } = mountFollower(
         'wf-1',
@@ -1570,24 +1462,17 @@ describe('useAgentCrdtFollower', () => {
       enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
       await Promise.resolve()
       const [, , ops] = clientState.sendOps.mock.calls[0]
-      return {
-        unmount,
-        status,
-        ownActor: ops[0].actor,
-        ownOpId: ops[0].op_id
-      }
+      return { unmount, status, ownActor: ops[0].actor }
     }
 
     it('merges the echo of this tab’s own ops without applying it to the graph', async () => {
-      const { recordDevEvent } = await import('./devPanelLog')
-      const { unmount, status, ownActor, ownOpId } = await mountAndSendOneOp()
+      const { unmount, status, ownActor } = await mountAndSendOneOp()
       expect(ownActor).toMatch(/^human:anonymous:/)
 
       dispatchFrame('doc_update', {
         workflowId: 'wf-1',
         seq: 42,
         actor: ownActor,
-        opIds: [ownOpId],
         catchUp: false
       })
 
@@ -1600,67 +1485,6 @@ describe('useAgentCrdtFollower', () => {
         applied: 0,
         skipped: 1
       })
-      expect(recordDevEvent).toHaveBeenCalledWith(
-        'doc_update',
-        expect.objectContaining({ echo: true })
-      )
-      unmount()
-    })
-
-    it('does not trust an actor match without a locally minted op id', async () => {
-      const { unmount, ownActor } = await mountAndSendOneOp()
-      const remote = {
-        workflowId: 'wf-1',
-        seq: 42,
-        actor: ownActor,
-        opIds: ['peer-op-id'],
-        catchUp: false
-      }
-
-      dispatchFrame('doc_update', remote)
-
-      expect(projectionState.applyFrame).toHaveBeenCalledExactlyOnceWith(remote)
-      expect(projectionState.discardPending).not.toHaveBeenCalled()
-      unmount()
-    })
-
-    it('recognizes old echoes while new ops adopt resolved identity', async () => {
-      let user: string | null = null
-      const { unmount, enqueue } = mountFollower(
-        'wf-1',
-        true,
-        () => liveGraph,
-        {},
-        {},
-        () => null,
-        () => user
-      )
-      enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
-      await Promise.resolve()
-      const [, , firstOps] = clientState.sendOps.mock.calls[0]
-      const ownActor = firstOps[0].actor
-      user = 'resolved-user'
-      dispatchFrame('doc_ops_result', {
-        workflowId: 'wf-1',
-        ok: true,
-        applied: firstOps.map((op) => op.op_id),
-        skipped: []
-      })
-      enqueue([{ op: 'delete_node', node_id: '2', removed_links: [] }])
-      await Promise.resolve()
-      const [, , secondOps] = clientState.sendOps.mock.calls[1]
-      expect(secondOps[0].actor).toMatch(/^human:resolved-user:/)
-
-      dispatchFrame('doc_update', {
-        workflowId: 'wf-1',
-        seq: 42,
-        actor: ownActor,
-        opIds: [firstOps[0].op_id],
-        catchUp: false
-      })
-
-      expect(projectionState.applyFrame).not.toHaveBeenCalled()
-      expect(projectionState.discardPending).toHaveBeenCalledWith('wf-1')
       unmount()
     })
 
@@ -1685,7 +1509,6 @@ describe('useAgentCrdtFollower', () => {
         workflowId: 'wf-1',
         seq: 42,
         actor: ownActor,
-        opIds: [ops[0].op_id],
         catchUp: false
       }
 
@@ -1901,21 +1724,6 @@ describe('useAgentCrdtFollower', () => {
       expect.any(String),
       [expect.objectContaining({ op: 'delete_node', node_id: '1' })]
     )
-    unmount()
-  })
-
-  it('pins rollback to the desired workflow while subscribe is still pending', async () => {
-    const liveGraph = fromPartial<LGraph>({ getNodeById: () => null })
-    const { enqueue, unmount } = mountFollower('wf-1', true, () => liveGraph)
-    bridge().subscribedWorkflowId = null
-
-    enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
-    await Promise.resolve()
-
-    expect(clientState.sendOps).not.toHaveBeenCalled()
-    expect(projectionState.revertRejected).toHaveBeenCalledWith('wf-1', [
-      expect.objectContaining({ op: 'delete_node', node_id: '1' })
-    ])
     unmount()
   })
 

@@ -130,7 +130,6 @@ describe('a human-added node across a tab switch', () => {
       isDocBound: () => isTargetActive.value,
       enqueue: followerApi.enqueueHumanOperations,
       getGraph: () => graph,
-      boundWorkflowId: () => WORKFLOW_ID,
       boundRootGraphId: () => null,
       docInputNames: followerApi.docInputNames,
       docPromotedWidgets: followerApi.docPromotedWidgets

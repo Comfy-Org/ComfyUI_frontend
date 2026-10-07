@@ -14,7 +14,7 @@ import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { withGraphIntentSource } from '@/lib/litegraph/src/graphIntents'
 import { detachSerialisedLinks } from '@/lib/litegraph/src/linkDeduplication'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { topologicalSortSubgraphs } from '@/lib/litegraph/src/subgraph/subgraphDeduplication'
 import type {
   ExportedSubgraph,
@@ -36,11 +36,6 @@ import type { WidgetValue } from '@/types/simplifiedWidget'
 
 import {
   allSubgraphDefinitions,
-  definitionPromotedLayout,
-  projectCrdtValue,
-  readDefinitionPromotedLayout,
-  readDocPromotedWidgets,
-  readDocPromotedWidgetValue,
   readSubgraphDefinitions
 } from './agentSubgraphDefinitions'
 import type { PlacementRect } from './batchPlacement'
@@ -123,7 +118,6 @@ interface DocNode {
   type: string
   serialised: ISerialisedNode
   widgets: Record<string, unknown> | unknown[] | undefined
-  widgetIssue?: string
 }
 
 interface DocLink {
@@ -140,7 +134,8 @@ interface ApplyWidgetOptions {
 }
 
 function plain(value: unknown): unknown {
-  return projectCrdtValue(value)
+  if (value instanceof Y.Map || value instanceof Y.Array) return value.toJSON()
+  return structuredClone(value)
 }
 
 /**
@@ -261,75 +256,25 @@ function nodeProducer(doc: Y.Doc, id: string): NodeProducer {
   }
 }
 
-function readDocNodeWidgets(
-  source: Y.Map<unknown>,
-  widgetIssue: string | undefined
-): DocNode['widgets'] {
-  if (widgetIssue) return undefined
-  const named = source.get('widgets')
-  if (named instanceof Y.Map) {
-    const projected = plain(named)
-    return typeof projected === 'object' && projected !== null
-      ? (projected as Record<string, unknown>)
-      : undefined
-  }
-  const opaque = plain(source.get(OPAQUE_WIDGETS_KEY))
-  return Array.isArray(opaque) ? opaque : undefined
-}
-
-function isDocNodeStorageKey(key: string): boolean {
-  return (
-    key === 'id' ||
-    key === 'widgets' ||
-    key === OPAQUE_WIDGETS_KEY ||
-    key === 'widgets_values' ||
-    key === 'widgets_values_named'
-  )
-}
-
-function readDocNodeFields(
-  source: Y.Map<unknown>,
-  id: string
-): Record<string, unknown> {
-  const fields: Record<string, unknown> = Object.assign(
-    Object.create(null) as Record<string, unknown>,
-    { id }
-  )
-  for (const [key, value] of source.entries()) {
-    if (key !== '__proto__' && !isDocNodeStorageKey(key))
-      fields[key] = plain(value)
-  }
-  return fields
-}
-
 function readDocNode(
   doc: Y.Doc,
   id: string
 ): DocNode | MalformedDocNode | null {
   const source = nodesMap(doc).get(id)
   if (!(source instanceof Y.Map)) return null
-  const widgetIssue =
-    source.has('widgets') && source.has(OPAQUE_WIDGETS_KEY)
-      ? `node carries both widgets and ${OPAQUE_WIDGETS_KEY}`
-      : undefined
-  let fields: Record<string, unknown>
+
+  const fields: Record<string, unknown> = { id }
   let widgets: DocNode['widgets']
-  try {
-    fields = readDocNodeFields(source, id)
-    widgets = readDocNodeWidgets(source, widgetIssue)
-  } catch {
-    const rawType = source.get('type')
-    return {
-      malformed: 'node fields could not be projected safely',
-      discriminate() {
-        return {
-          classType: typeof rawType === 'string' ? rawType : undefined,
-          valueShapes: 'projection unreadable',
-          producer: nodeProducer(doc, id)
-        }
-      }
+  source.forEach((value, key) => {
+    if (key === 'widgets' && value instanceof Y.Map) {
+      widgets = value.toJSON()
+    } else if (key === OPAQUE_WIDGETS_KEY) {
+      const opaque = plain(value)
+      if (Array.isArray(opaque)) widgets = opaque
+    } else if (key !== 'id') {
+      fields[key] = plain(value)
     }
-  }
+  })
   const parsed = zDocNodeFields.safeParse(fields)
   if (!parsed.success) {
     const { error } = parsed
@@ -362,7 +307,7 @@ function readDocNode(
     order,
     mode
   }
-  return { id, type: serialised.type, serialised, widgets, widgetIssue }
+  return { id, type: serialised.type, serialised, widgets }
 }
 
 function readDocLink(doc: Y.Doc, key: string): DocLink | null {
@@ -402,15 +347,8 @@ export function readDocSlotNames(
   nodeId: string,
   kind: 'inputs' | 'outputs'
 ): readonly (string | undefined)[] | null {
-  const node = nodesMap(doc).get(nodeId)
-  if (!(node instanceof Y.Map)) return null
-  const slots = node.get(kind)
-  let list: unknown
-  try {
-    list = plain(slots)
-  } catch {
-    return null
-  }
+  const slots = nodesMap(doc).get(nodeId)?.get(kind)
+  const list: unknown = slots instanceof Y.Array ? slots.toJSON() : slots
   if (!Array.isArray(list)) return null
   return list.map((entry: unknown) => {
     const name =
@@ -436,18 +374,8 @@ export function readDocWidgetValue(
   nodeId: string,
   widget: string
 ): unknown {
-  const node = nodesMap(doc).get(nodeId)
-  if (!(node instanceof Y.Map)) return undefined
-  if (node.has('widgets') && node.has(OPAQUE_WIDGETS_KEY)) return undefined
-  const widgets = node.get('widgets')
-  if (widgets instanceof Y.Map && widgets.has(widget)) {
-    try {
-      return plain(widgets.get(widget))
-    } catch {
-      return undefined
-    }
-  }
-  return readDocPromotedWidgetValue(doc, nodeId, widget)
+  const widgets = nodesMap(doc).get(nodeId)?.get('widgets')
+  return widgets instanceof Y.Map ? plain(widgets.get(widget)) : undefined
 }
 
 export function docLinksIncident(doc: Y.Doc, nodeId: string): DocLink[] {
@@ -614,140 +542,9 @@ function floorSizeToContent(node: LGraphNode): void {
   node.setSize([Math.max(width, minWidth), Math.max(height, minHeight)])
 }
 
-interface DefinitionState {
-  live: Subgraph
-  semantics: unknown
-  layout: ReturnType<typeof definitionPromotedLayout>
-  conflicted: boolean
-}
-
-function runtimeNodeSemantics(
-  node: NonNullable<ExportedSubgraph['nodes']>[number],
-  reference?: NonNullable<ExportedSubgraph['nodes']>[number],
-  liveNode?: LGraphNode
-): object {
-  const {
-    title: _title,
-    pos: _pos,
-    size: _size,
-    flags: _flags,
-    order: _order,
-    shape: _shape,
-    boxcolor: _boxcolor,
-    color: _color,
-    bgcolor: _bgcolor,
-    showAdvanced: _showAdvanced,
-    widgets_values,
-    widgets_values_named,
-    ...runtime
-  } = node
-  const useNamed = reference
-    ? reference.widgets_values_named !== undefined
-    : widgets_values_named !== undefined
-  const usePositional = reference
-    ? reference.widgets_values !== undefined
-    : !useNamed && widgets_values !== undefined
-  const liveWidgets = liveNode ? serializableWidgets(liveNode) : undefined
-  const semanticNamed = liveWidgets
-    ? Object.fromEntries(
-        liveWidgets.map((widget) => [widget.name, widget.value])
-      )
-    : widgets_values_named
-  const semanticPositional = liveWidgets
-    ? liveWidgets.map((widget) => widget.value)
-    : widgets_values
-  return {
-    ...runtime,
-    ...(useNamed && { widgets_values_named: semanticNamed }),
-    ...(usePositional && { widgets_values: semanticPositional })
-  }
-}
-
-function definitionSemantics(
-  definition: ExportedSubgraph,
-  reference?: ExportedSubgraph,
-  live?: Subgraph
-): unknown {
-  const {
-    name: _name,
-    category: _category,
-    description: _description,
-    revision: _revision,
-    state: _state,
-    groups: _groups,
-    reroutes: _reroutes,
-    floatingLinks: _floatingLinks,
-    extra: _extra,
-    definitions: _definitions,
-    inputNode,
-    outputNode,
-    nodes,
-    subgraphs,
-    links,
-    ...runtime
-  } = definition
-  const referenceNodes = new Map(
-    (reference?.nodes ?? []).map((node) => [String(node.id), node])
-  )
-  const liveNodes = new Map(
-    (live?.nodes ?? []).map((node) => [String(node.id), node])
-  )
-  return {
-    ...runtime,
-    inputNode: { id: inputNode.id },
-    outputNode: { id: outputNode.id },
-    nodes: nodes?.map((node) =>
-      runtimeNodeSemantics(
-        node,
-        referenceNodes.get(String(node.id)),
-        liveNodes.get(String(node.id))
-      )
-    ),
-    subgraphs: subgraphs?.map((node) => runtimeNodeSemantics(node)),
-    links: links?.map(({ parentId: _parentId, ...link }) => link)
-  }
-}
-
-function updateDefinitionConflict(
-  state: DefinitionState,
-  definition: ExportedSubgraph,
-  layout: DefinitionState['layout']
-): boolean {
-  const semantics = definitionSemantics(definition)
-  if (!isEqual(state.semantics, semantics)) {
-    const liveDefinition = state.live.asSerialisable()
-    const liveSemantics = definitionSemantics(
-      liveDefinition,
-      definition,
-      state.live
-    )
-    if (isEqual(liveSemantics, semantics)) {
-      state.semantics = semantics
-      if (isEqual(definitionPromotedLayout(liveDefinition), layout)) {
-        state.layout = layout
-      } else {
-        state.conflicted = true
-      }
-      return state.conflicted
-    }
-    state.semantics = semantics
-    state.conflicted = true
-  }
-  if (state.layout === null) {
-    if (!state.conflicted && layout !== null) state.layout = layout
-    return state.conflicted
-  }
-  state.conflicted ||= layout === null || !isEqual(state.layout, layout)
-  return state.conflicted
-}
-
 export class LiveGraphApplier {
   private readonly deps: LiveGraphApplierDeps
   private readonly reported = new Set<string>()
-  private readonly definitionState = new WeakMap<
-    LGraph,
-    Map<string, DefinitionState>
-  >()
 
   constructor(deps: LiveGraphApplierDeps) {
     this.deps = deps
@@ -766,7 +563,7 @@ export class LiveGraphApplier {
       if (mode === 'replace') this.removeAbsent(graph, doc, context)
       const created: NodeId[] = []
       const touchedNodes = new Set<string>()
-      this.try(context, () => this.registerDefinitions(graph, doc))
+      this.registerDefinitions(graph, doc)
 
       for (const [id, change] of changes.nodes) {
         if (change === 'delete') {
@@ -869,106 +666,26 @@ export class LiveGraphApplier {
 
   private registerDefinitions(graph: LGraph, doc: Y.Doc): void {
     const rootGraph = graph.rootGraph
-    const definitions = allSubgraphDefinitions(
-      readSubgraphDefinitions(doc)
-    ).map((definition) => ({ ...definition, definitions: undefined }))
-    const state = this.definitionStates(rootGraph)
-    const missing = definitions.filter((definition) =>
-      this.observeDefinition(graph, doc, definition, state)
-    )
+    const missing = allSubgraphDefinitions(readSubgraphDefinitions(doc))
+      .map((definition) => ({ ...definition, definitions: undefined }))
+      .filter((definition) => !rootGraph.subgraphs.has(definition.id))
     if (missing.length === 0) return
     const reserved = docRootIds(doc)
     for (const definition of topologicalSortSubgraphs(missing)) {
-      this.registerDefinition(graph, doc, definition, reserved, state)
-    }
-  }
-
-  private definitionStates(rootGraph: LGraph): Map<string, DefinitionState> {
-    const existing = this.definitionState.get(rootGraph)
-    if (existing) return existing
-    const created = new Map<string, DefinitionState>()
-    this.definitionState.set(rootGraph, created)
-    return created
-  }
-
-  /** Returns true when this definition still needs to be registered live. */
-  private observeDefinition(
-    graph: LGraph,
-    doc: Y.Doc,
-    definition: ExportedSubgraph,
-    state: Map<string, DefinitionState>
-  ): boolean {
-    const live = graph.rootGraph.subgraphs.get(definition.id)
-    if (!live) return true
-    const previous = state.get(definition.id)
-    if (previous?.live !== live) {
-      state.set(definition.id, {
-        live,
-        // The document seeded this already-loaded graph. Record that seed as
-        // the baseline: runtime node construction can legitimately expand or
-        // remap the serialised definition before the follower's first frame.
-        semantics: definitionSemantics(definition),
-        layout: readDefinitionPromotedLayout(doc, definition.id),
-        conflicted: false
+      const failure = tryCreateSubgraph(rootGraph, definition, reserved)
+      if (failure === undefined) {
+        this.reported.delete(`definition:${definition.id}`)
+        continue
+      }
+      if (this.reported.has(`definition:${definition.id}`)) continue
+      this.reported.add(`definition:${definition.id}`)
+      reportError(failure, {
+        surface: 'agent',
+        errorType: 'agent_subgraph_definitions_failed',
+        tags: { ...AGENT_APPLY_TAGS, outcome: 'degraded' },
+        context: { graphId: graph.id, definitionId: definition.id }
       })
-      return false
     }
-    const layout = readDefinitionPromotedLayout(doc, definition.id)
-    if (updateDefinitionConflict(previous, definition, layout)) {
-      this.reportOnce(
-        `definition-changed:${definition.id}`,
-        `Document subgraph definition ${definition.id} changed while its live definition remained registered; refusing host updates until the graph reloads`,
-        'agent_subgraph_definition_changed',
-        { graphId: graph.id, definitionId: definition.id }
-      )
-    }
-    return false
-  }
-
-  private registerDefinition(
-    graph: LGraph,
-    doc: Y.Doc,
-    definition: ExportedSubgraph,
-    reserved: { nodeIds: NodeId[]; linkIds: number[] },
-    state: Map<string, DefinitionState>
-  ): void {
-    const failure = tryCreateSubgraph(graph.rootGraph, definition, reserved)
-    if (failure !== undefined) {
-      this.reportDefinitionFailure(graph, definition.id, failure)
-      return
-    }
-    this.reported.delete(`definition:${definition.id}`)
-    const live = graph.rootGraph.subgraphs.get(definition.id)
-    if (live)
-      state.set(definition.id, {
-        live,
-        semantics: definitionSemantics(definition),
-        layout: readDefinitionPromotedLayout(doc, definition.id),
-        conflicted: false
-      })
-  }
-
-  private reportDefinitionFailure(
-    graph: LGraph,
-    definitionId: string,
-    failure: unknown
-  ): void {
-    if (this.reported.has(`definition:${definitionId}`)) return
-    this.reported.add(`definition:${definitionId}`)
-    reportError(failure, {
-      surface: 'agent',
-      errorType: 'agent_subgraph_definitions_failed',
-      tags: { ...AGENT_APPLY_TAGS, outcome: 'degraded' },
-      context: { graphId: graph.id, definitionId }
-    })
-  }
-
-  private hasDefinitionConflict(node: LGraphNode): boolean {
-    return (
-      node.graph !== null &&
-      this.definitionState.get(node.graph.rootGraph)?.get(node.type)
-        ?.conflicted === true
-    )
   }
 
   private deleteNode(graph: LGraph, id: string): void {
@@ -984,24 +701,19 @@ export class LiveGraphApplier {
   ): 'created' | 'recreated' | 'updated' | 'skipped' {
     const docNode = this.readDocNode(doc, id)
     if (!docNode) return 'skipped'
-    const definitionConflicted =
-      this.definitionState.get(graph.rootGraph)?.get(docNode.type)
-        ?.conflicted === true
     const live = graph.getNodeById(toNodeId(id))
     if (live && live.type === docNode.type) {
       this.applyFields(live, docNode)
-      if (!definitionConflicted)
-        this.applyWidgets(live, docNode.widgets, mode, doc)
+      this.applyWidgets(live, docNode.widgets, mode)
       return 'updated'
     }
     if (live) graph.remove(live)
-    this.createNode(graph, doc, docNode, mode)
+    this.createNode(graph, docNode, mode)
     return live ? 'recreated' : 'created'
   }
 
   private createNode(
     graph: LGraph,
-    doc: Y.Doc,
     docNode: DocNode,
     mode: ApplyMode
   ): LGraphNode {
@@ -1040,9 +752,7 @@ export class LiveGraphApplier {
           node,
           docNode.widgets,
           beforeConfigurePromotedIds,
-          mode,
-          doc,
-          docNode.id
+          mode
         )
       } else {
         const constructed = serializableWidgets(node)
@@ -1060,7 +770,7 @@ export class LiveGraphApplier {
           constructedNames
         )
         if (mounted)
-          this.applyWidgets(node, mounted, mode, doc, {
+          this.applyWidgets(node, mounted, mode, {
             documentWidgets: docNode.widgets,
             reportMissing: false
           })
@@ -1088,22 +798,7 @@ export class LiveGraphApplier {
     if (read === null) return null
     const key = `node-shape:${id}`
     if (!('malformed' in read)) {
-      if (read.widgetIssue) {
-        this.reportOnce(
-          key,
-          `Document node ${id} (${read.type}) has unreadable widget storage: ${read.widgetIssue}`,
-          'agent_graph_node_malformed',
-          {
-            nodeId: id,
-            issues: read.widgetIssue,
-            classType: read.type,
-            valueShapes: 'widgets named+opaque',
-            producer: nodeProducer(doc, id)
-          }
-        )
-      } else {
-        this.reported.delete(key)
-      }
+      this.reported.delete(key)
       return read
     }
     if (this.reported.has(key)) return null
@@ -1136,7 +831,7 @@ export class LiveGraphApplier {
     if (!docNode || !node || node.type !== docNode.type) return
     const widgets = docNode.widgets
     if (names === 'all' || Array.isArray(widgets)) {
-      this.applyWidgets(node, widgets, mode, doc)
+      this.applyWidgets(node, widgets, mode)
       return
     }
     if (!widgets) return
@@ -1146,7 +841,6 @@ export class LiveGraphApplier {
         Object.entries(widgets).filter(([name]) => changed(node, name, names))
       ),
       mode,
-      doc,
       { documentWidgets: widgets }
     )
   }
@@ -1161,12 +855,11 @@ export class LiveGraphApplier {
     node: LGraphNode,
     widgets: DocNode['widgets'],
     mode: ApplyMode,
-    doc: Y.Doc,
     options: ApplyWidgetOptions = {}
   ): void {
     if (widgets === undefined) return
     if (node.isSubgraphNode()) {
-      this.applySubgraphWidgets(node, widgets, mode, doc)
+      this.applyHostWidgets(node, widgets, mode)
       return
     }
     const { documentWidgets = widgets, reportMissing = true } = options
@@ -1183,31 +876,6 @@ export class LiveGraphApplier {
       }
       pending = unresolved
     }
-  }
-
-  private applySubgraphWidgets(
-    node: LGraphNode,
-    widgets: NonNullable<DocNode['widgets']>,
-    mode: ApplyMode,
-    doc: Y.Doc
-  ): void {
-    if (this.hasDefinitionConflict(node)) return
-    if (!Array.isArray(widgets)) {
-      if (Object.keys(widgets).length > 0) {
-        this.reportNamedHostWidgets(node, mode)
-      }
-      return
-    }
-    this.applyHostWidgets(node, widgets, mode, doc)
-  }
-
-  private reportNamedHostWidgets(node: LGraphNode, mode: ApplyMode): void {
-    this.reportOnce(
-      `host-widgets-named:${String(node.id)}`,
-      `Subgraph host ${String(node.id)} carries named widget storage; refusing positional host updates`,
-      'agent_graph_host_widgets_named',
-      { nodeId: node.id, mode }
-    )
   }
 
   private applyWidgetRound(
@@ -1260,16 +928,8 @@ export class LiveGraphApplier {
     node: LGraphNode,
     widgets: DocNode['widgets'],
     beforeConfigurePromotedIds: readonly string[],
-    mode: ApplyMode,
-    doc: Y.Doc,
-    docNodeId: string
+    mode: ApplyMode
   ): void {
-    if (widgets !== undefined && !Array.isArray(widgets)) {
-      if (Object.keys(widgets).length > 0) {
-        this.reportNamedHostWidgets(node, mode)
-      }
-      return
-    }
     const afterConfigurePromotedIds = promotedWidgetIds(node)
     if (
       Array.isArray(widgets) &&
@@ -1285,7 +945,7 @@ export class LiveGraphApplier {
       )
       return
     }
-    this.applyHostWidgets(node, widgets, mode, doc, docNodeId)
+    this.applyHostWidgets(node, widgets, mode)
   }
 
   private reportHostWidgetDrift(
@@ -1294,10 +954,8 @@ export class LiveGraphApplier {
     expected: number,
     mode: ApplyMode,
     identity?: {
-      beforeConfigurePromotedIds?: readonly string[]
-      afterConfigurePromotedIds?: readonly string[]
-      docPromotedNames?: readonly string[] | null
-      livePromotedNames?: readonly string[]
+      beforeConfigurePromotedIds: readonly string[]
+      afterConfigurePromotedIds: readonly string[]
     }
   ): void {
     this.reportOnce(
@@ -1311,31 +969,12 @@ export class LiveGraphApplier {
   private applyHostWidgets(
     node: LGraphNode,
     widgets: DocNode['widgets'],
-    mode: ApplyMode,
-    doc: Y.Doc,
-    docNodeId: string = String(node.id)
+    mode: ApplyMode
   ): void {
     const promoted = promotedInputs(node)
-    if (Array.isArray(widgets)) {
-      const identity = promotedLayoutIdentity(
-        doc,
-        docNodeId,
-        promoted,
-        widgets.length
-      )
-      if (!identity.matches) {
-        this.reportHostWidgetDrift(
-          node,
-          widgets.length,
-          promoted.length,
-          mode,
-          {
-            docPromotedNames: identity.docPromotedNames,
-            livePromotedNames: identity.livePromotedNames
-          }
-        )
-        return
-      }
+    if (Array.isArray(widgets) && widgets.length !== promoted.length) {
+      this.reportHostWidgetDrift(node, widgets.length, promoted.length, mode)
+      return
     }
     for (const [name, value] of hostWidgetEntries(promoted, widgets)) {
       if (!isWidgetValue(value)) continue
@@ -1371,51 +1010,15 @@ export class LiveGraphApplier {
   ) {
     if (widget.type === 'button' || Object.is(widget.value, value)) return
     const previous = widget.value
-    this.invokeWidgetHook(node, widget, value, 'widget-property', () =>
-      writeWidgetValue(node, widget, value)
-    )
-    if (!Object.is(widget.value, value)) {
-      restoreWidgetValue(node, widget, previous)
-      this.reportOnce(
-        `widget-write-refused:${String(node.id)}:${widget.name}`,
-        `Widget ${widget.name} on node ${String(node.id)} refused or normalized the canonical value`,
-        'agent_graph_widget_write_refused',
-        { nodeId: node.id, widget: widget.name }
-      )
-      return
-    }
-    this.invokeWidgetHook(node, widget, value, 'widget-callback', () =>
-      widget.callback?.(value, this.deps.getCanvas?.() ?? undefined, node)
-    )
-    this.invokeWidgetHook(node, widget, value, 'widget-changed', () =>
-      node.onWidgetChanged?.(widget.name, value, previous, widget)
-    )
-    node.graph?.incrementVersion()
-  }
-
-  /**
-   * A document register has already been consumed before either hook runs.
-   * Preserve that canonical value and let sibling widgets continue if an
-   * extension hook mutates and then throws; no later delta is guaranteed.
-   */
-  private invokeWidgetHook(
-    node: LGraphNode,
-    widget: IBaseWidget,
-    value: WidgetValue,
-    key: string,
-    invoke: () => void
-  ): void {
+    const rollback = writeWidgetValue(node, widget, value)
     try {
-      invoke()
+      widget.callback?.(value, this.deps.getCanvas?.() ?? undefined, node)
+      node.onWidgetChanged?.(widget.name, value, previous, widget)
     } catch (error) {
-      this.reportOnce(
-        `${key}:${String(node.id)}:${widget.name}`,
-        error instanceof Error ? error.message : String(error),
-        'agent_graph_widget_callback_failed',
-        { nodeId: node.id, widget: widget.name }
-      )
-      restoreWidgetValue(node, widget, value)
+      rollback()
+      throw error
     }
+    node.graph?.incrementVersion()
   }
 
   private applyLinks(
@@ -1601,69 +1204,27 @@ function hostWidgetEntries(
   return Object.entries(widgets ?? {})
 }
 
-function promotedLayoutIdentity(
-  doc: Y.Doc,
-  docNodeId: string,
-  promoted: readonly INodeInputSlot[],
-  valueCount: number
-): {
-  matches: boolean
-  docPromotedNames: readonly string[] | null
-  livePromotedNames: readonly string[]
-} {
-  const docPromotedNames =
-    readDocPromotedWidgets(doc, docNodeId)?.promotedNames ?? null
-  const livePromotedNames = promoted.map((input) => input.name)
-  return {
-    matches:
-      valueCount === livePromotedNames.length &&
-      docPromotedNames !== null &&
-      docPromotedNames.length === livePromotedNames.length &&
-      docPromotedNames.every(
-        (name, index) => name === livePromotedNames[index]
-      ),
-    docPromotedNames,
-    livePromotedNames
-  }
-}
-
-/** Writes a widget value and its mirrored node property. */
+/** Writes a widget value and its mirrored node property; returns the undo. */
 function writeWidgetValue(
   node: LGraphNode,
   widget: IBaseWidget,
   value: WidgetValue
-): void {
+): () => void {
+  const previous = widget.value
   const property = widget.options.property
   if (!property || node.properties[property] === undefined) {
-    assignWidgetValue(widget, value)
-    return
+    widget.value = value
+    return () => {
+      widget.value = previous
+    }
   }
-  assignWidgetValue(widget, value)
-  node.setProperty(property, value)
-}
-
-/** DOM widget setters call their callback; use the underlying setter so hooks run once. */
-function assignWidgetValue(widget: IBaseWidget, value: WidgetValue): void {
-  const setValue = (
-    widget.options as { setValue?: (value: WidgetValue) => void }
-  ).setValue
-  if ('element' in widget && widget.element && setValue) {
-    setValue(value)
-    return
-  }
+  const previousProperty = node.properties[property]
   widget.value = value
-}
-
-/** Restore document state without re-entering extension-owned hooks. */
-function restoreWidgetValue(
-  node: LGraphNode,
-  widget: IBaseWidget,
-  value: WidgetValue
-): void {
-  assignWidgetValue(widget, value)
-  const property = widget.options.property
-  if (property && node.properties[property] !== undefined)
-    node.properties[property] = value
+  node.setProperty(property, value)
+  return () => {
+    widget.value = previous
+    node.setProperty(property, previousProperty)
+  }
 }
 
 function applyAppearance(node: LGraphNode, source: ISerialisedNode): void {

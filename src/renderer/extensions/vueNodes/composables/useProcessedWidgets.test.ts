@@ -778,20 +778,6 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
     expect(useWidgetValueStore().getWidget(id)?.value).toBe(99)
   })
 
-  it('keeps updating the live widget after its store entry disappears', () => {
-    const callback = vi.fn()
-    const id = widgetId(GRAPH_ID, NODE_ID, 'seed')
-    const widget = createMockWidget({ name: 'seed', widgetId: id, callback })
-    registerWidgetState(id, { type: 'combo', value: 0 })
-    const [processed] = processUpdateWidgets([widget])
-    useWidgetValueStore().deleteWidget(id)
-
-    processed.updateHandler(42)
-
-    expect(widget.value).toBe(42)
-    expect(callback).toHaveBeenCalledWith(42, undefined, expect.any(LGraphNode))
-  })
-
   function seedSeedError() {
     useExecutionErrorStore().recordNodeErrors({
       [createNodeExecutionId([NODE_ID])]: {

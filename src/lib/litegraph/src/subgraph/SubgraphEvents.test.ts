@@ -71,10 +71,6 @@ describe('SubgraphEvents - Event Payload Verification', () => {
       })
 
       expect(removingEvents[0].detail.input).toBe(input)
-
-      const removedEvents = capture.getEventsByType('input-removed')
-      expect(removedEvents).toHaveLength(1)
-      expect(removedEvents[0].detail).toEqual({ input, index: 0 })
     }
   )
 
@@ -101,10 +97,6 @@ describe('SubgraphEvents - Event Payload Verification', () => {
       })
 
       expect(removingEvents[0].detail.output).toBe(output)
-
-      const removedEvents = capture.getEventsByType('output-removed')
-      expect(removedEvents).toHaveLength(1)
-      expect(removedEvents[0].detail).toEqual({ output, index: 0 })
     }
   )
 
@@ -391,10 +383,8 @@ describe('SubgraphEvents - Event Cancellation', () => {
       const preventHandler = vi.fn((event: Event) => {
         event.preventDefault()
       })
-      const removedHandler = vi.fn()
 
       emptySubgraph.events.addEventListener('removing-input', preventHandler)
-      emptySubgraph.events.addEventListener('input-removed', removedHandler)
 
       const input = emptySubgraph.addInput('test', 'number')
 
@@ -402,7 +392,6 @@ describe('SubgraphEvents - Event Cancellation', () => {
 
       expect(emptySubgraph.inputs).toContain(input)
       expect(preventHandler).toHaveBeenCalled()
-      expect(removedHandler).not.toHaveBeenCalled()
     }
   )
 

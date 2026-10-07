@@ -60,7 +60,6 @@ import type { NodeReplacement } from '@/platform/nodeReplacement/types'
 import type { NodeExecutionOutput } from '@/platform/remote/comfyui/execution/types'
 import type { NodeError } from '@/platform/remote/comfyui/types'
 import { ComfyApp, app as singletonApp } from './app'
-import { ChangeTracker } from './changeTracker'
 import * as litegraphUtil from '@/utils/litegraphUtil'
 import { createNode, executeWidgetsCallback } from '@/utils/litegraphUtil'
 import { graphToPrompt } from '@/utils/executionUtil'
@@ -350,39 +349,6 @@ describe('ComfyApp', () => {
       })
       return store
     }
-
-    it('scopes the load guard to configuration and its lifecycle hooks', async () => {
-      app.canvasElRef.value = document.createElement('canvas')
-      Reflect.set(app, 'rootGraphInternal', new LGraph())
-      const guarded: Record<string, boolean> = {}
-      mockExtensionService.invokeExtensionsAsync.mockImplementation(
-        async (hook: string) => {
-          guarded[hook] = ChangeTracker.isLoadingGraph
-        }
-      )
-      vi.mocked(runMissingModelPipeline).mockImplementation(async () => {
-        guarded.modelScan = ChangeTracker.isLoadingGraph
-        return { missingModels: [], confirmedCandidates: [] }
-      })
-      vi.spyOn(
-        missingMediaPipeline,
-        'runMissingMediaPipeline'
-      ).mockImplementation(async () => {
-        guarded.mediaScan = ChangeTracker.isLoadingGraph
-      })
-
-      await app.loadGraphData(createWorkflowGraphData(), false, true, null)
-
-      expect(guarded).toMatchObject({
-        beforeLoadGraph: false,
-        beforeConfigureGraph: false,
-        afterConfigureGraph: true,
-        afterLoadGraph: true,
-        modelScan: false,
-        mediaScan: false
-      })
-      expect(ChangeTracker.isLoadingGraph).toBe(false)
-    })
 
     it.for(['immediate', 'deferred', 'unverified', 'skipped'] as const)(
       'retires reloaded resource errors only after successful verification: %s',
@@ -725,7 +691,6 @@ describe('ComfyApp', () => {
     it('closes every beforeLoadGraph when a newer load overtakes an older one', async () => {
       app.canvasElRef.value = document.createElement('canvas')
       Reflect.set(app, 'rootGraphInternal', new LGraph())
-      const cleanGraph = vi.spyOn(app, 'clean')
       let releaseFirstLoad!: () => void
       const firstLoadBlocked = new Promise<void>((resolve) => {
         releaseFirstLoad = resolve
@@ -734,11 +699,10 @@ describe('ComfyApp', () => {
         .calledWith('beforeLoadGraph')
         .thenReturnOnce(firstLoadBlocked)
 
-      const olderLoad = app.loadGraphData(createWorkflowGraphData(), true)
-      await app.loadGraphData(createWorkflowGraphData(), true)
+      const olderLoad = app.loadGraphData(createWorkflowGraphData(), false)
+      await app.loadGraphData(createWorkflowGraphData(), false)
       releaseFirstLoad()
-      await expect(olderLoad).resolves.toBe(false)
-      expect(cleanGraph).toHaveBeenCalledTimes(1)
+      await expect(olderLoad).resolves.toBeUndefined()
 
       const hooks = mockExtensionService.invokeExtensionsAsync.mock.calls.map(
         ([hook]) => hook

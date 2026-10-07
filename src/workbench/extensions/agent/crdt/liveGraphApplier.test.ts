@@ -1115,7 +1115,7 @@ describe('LiveGraphApplier', () => {
     )
   })
 
-  it('keeps the canonical widget and mirrored property when a callback throws', () => {
+  it('restores a widget and its mirrored property when a widget callback throws', () => {
     const { graph, doc, applyCollected, applyEdit } = setup({
       nodes: [sourceNode(1)],
       links: []
@@ -1126,140 +1126,21 @@ describe('LiveGraphApplier', () => {
     if (!node || !widget) throw new Error('node 1 was not created')
     node.properties.steps = 20
     widget.options.property = 'steps'
-    widget.callback = () => {
-      widget.value = 999
-      node.properties.steps = 999
+    node.onWidgetChanged = () => {
       throw new Error('extension hook exploded')
     }
-    node.onWidgetChanged = vi.fn()
 
     applyEdit(() => {
       const widgets = nodesMap(doc).get('1')?.get('widgets')
       if (!(widgets instanceof Y.Map)) throw new Error('named storage')
       widgets.set('steps', 35)
-    })
-
-    expect(widget.value).toBe(35)
-    expect(node.properties.steps).toBe(35)
-    expect(node.onWidgetChanged).toHaveBeenCalled()
-    expect(reportError).toHaveBeenCalledWith(
-      expect.objectContaining({ message: 'extension hook exploded' }),
-      expect.objectContaining({
-        errorType: 'agent_graph_widget_callback_failed'
-      })
-    )
-  })
-
-  it('rejects a normalized DOM widget write without firing its callback', () => {
-    const { graph, doc, applyCollected, applyEdit } = setup({
-      nodes: [sourceNode(1)],
-      links: []
-    })
-    applyCollected()
-    const node = graph.getNodeById(toNodeId(1))
-    const widget = node?.widgets?.[0]
-    if (!node || !widget) throw new Error('node 1 was not created')
-    let stored = widget.value
-    const callback = vi.fn()
-    widget.callback = callback
-    Object.assign(widget, { element: document.createElement('input') })
-    Object.defineProperty(widget, 'value', {
-      configurable: true,
-      get: () => stored,
-      set: (value: number) => {
-        stored = value
-        callback(value)
-      }
-    })
-    ;(widget.options as { setValue?: (value: unknown) => void }).setValue = (
-      value
-    ) => {
-      stored = Math.round(Number(value))
-    }
-
-    applyEdit(() => {
-      const widgets = nodesMap(doc).get('1')?.get('widgets')
-      if (!(widgets instanceof Y.Map)) throw new Error('named storage')
-      widgets.set('steps', 35.5)
     })
 
     expect(widget.value).toBe(20)
-    expect(callback).not.toHaveBeenCalled()
+    expect(node.properties.steps).toBe(20)
     expect(reportError).toHaveBeenCalledWith(
-      expect.any(Error),
-      expect.objectContaining({ errorType: 'agent_graph_widget_write_refused' })
-    )
-  })
-
-  it('fires a DOM widget callback exactly once for an accepted write', () => {
-    const { graph, doc, applyCollected, applyEdit } = setup({
-      nodes: [sourceNode(1)],
-      links: []
-    })
-    applyCollected()
-    const node = graph.getNodeById(toNodeId(1))
-    const widget = node?.widgets?.[0]
-    if (!node || !widget) throw new Error('node 1 was not created')
-    let stored = widget.value
-    const callback = vi.fn()
-    widget.callback = callback
-    Object.assign(widget, { element: document.createElement('input') })
-    Object.defineProperty(widget, 'value', {
-      configurable: true,
-      get: () => stored,
-      set: (value: number) => {
-        stored = value
-        callback(value)
-      }
-    })
-    ;(widget.options as { setValue?: (value: unknown) => void }).setValue = (
-      value
-    ) => {
-      stored = value as typeof stored
-    }
-
-    applyEdit(() => {
-      const widgets = nodesMap(doc).get('1')?.get('widgets')
-      if (!(widgets instanceof Y.Map)) throw new Error('named storage')
-      widgets.set('steps', 35)
-    })
-
-    expect(widget.value).toBe(35)
-    expect(callback).toHaveBeenCalledOnce()
-    expect(callback).toHaveBeenCalledWith(35, undefined, node)
-  })
-
-  it('keeps applying after a mirrored property hook throws', () => {
-    const { graph, doc, applyCollected, applyEdit } = setup({
-      nodes: [sourceNode(1)],
-      links: []
-    })
-    applyCollected()
-    const node = graph.getNodeById(toNodeId(1))
-    const widget = node?.widgets?.[0]
-    if (!node || !widget) throw new Error('node 1 was not created')
-    node.properties.steps = 20
-    widget.options.property = 'steps'
-    node.onPropertyChanged = () => {
-      node.properties.steps = 999
-      throw new Error('property hook exploded')
-    }
-    widget.callback = vi.fn()
-
-    applyEdit(() => {
-      const widgets = nodesMap(doc).get('1')?.get('widgets')
-      if (!(widgets instanceof Y.Map)) throw new Error('named storage')
-      widgets.set('steps', 35)
-    })
-
-    expect(widget.value).toBe(35)
-    expect(node.properties.steps).toBe(35)
-    expect(widget.callback).toHaveBeenCalled()
-    expect(reportError).toHaveBeenCalledWith(
-      expect.objectContaining({ message: 'property hook exploded' }),
-      expect.objectContaining({
-        errorType: 'agent_graph_widget_callback_failed'
-      })
+      expect.objectContaining({ message: 'extension hook exploded' }),
+      expect.objectContaining({ errorType: 'agent_graph_apply_failed' })
     )
   })
 

@@ -207,8 +207,6 @@ export interface AgentCrdtFollowerEvents {
     nodeIds: readonly NodeId[]
   }) => void
   onReset?: (workflowId: string) => void
-  /** Local ops the host definitively declined, including valid LWW skips. */
-  onHumanOpsRejected?: (event: { addedNodeIds: readonly NodeId[] }) => void
   /**
    * PM-1604 / BE-11437: the doc-host classified a resync refusal as
    * permanent (one of `PERMANENT_SUBSCRIBE_REFUSAL_CODES`) — the lifecycle
@@ -270,24 +268,6 @@ function reportRejectedHumanOps(
       }
     }
   )
-}
-
-function definitivelyRejectedOps(outcome: BatchOutcome): readonly Op[] {
-  if (outcome.state === 'undeliverable') return outcome.ops
-  if (outcome.state !== 'acknowledged') return []
-  const settled = new Set([
-    ...outcome.result.applied,
-    ...outcome.result.skipped
-  ])
-  return outcome.ops.filter((op) => !settled.has(op.op_id))
-}
-
-function rejectedAddNodeIds(ops: readonly Op[]): NodeId[] {
-  return ops.flatMap((op) => {
-    if (op.op !== 'add_node') return []
-    const id = parseNodeId(String(op.node_id))
-    return id === null ? [] : [id]
-  })
 }
 
 export function useAgentCrdtFollower(
@@ -402,99 +382,47 @@ function startAgentCrdtFollower(
     }
   )
   const tabId = createUuidv4()
-  // Identity may resolve after this follower starts. New operations must use
-  // the authenticated actor, while echoes of already-minted anonymous ops
-  // remain recognizable for the life of this tab.
-  const ownActors = new Set<string>()
-  const ownOpIds = new Set<string>()
-  const opWorkflowIds = new Map<string, string>()
-  const MAX_TRACKED_OWN_OP_IDS = 10_000
-  const ownActor = (): string => {
-    const actor = `human:${userId() ?? 'anonymous'}:${tabId}`
-    ownActors.add(actor)
-    return actor
-  }
+  const ownActor = (): string => `human:${userId() ?? 'anonymous'}:${tabId}`
+  // Doc node ids whose human delete the host has applied but whose effect
+  // frame has not yet removed them from the doc. Kept pending for the
+  // reconcile so the result-to-effect window cannot resurrect them.
+  const confirmedDeletes = new Set<string>()
   const rejectedOpNotifier = createRejectedOpNotifier()
   const projection = new AgentCrdtProjection(getGraph, applierDeps)
-  const pendingRejected = new Map<string, Op[]>()
-  const pendingFullReprojection = new Set<string>()
-  const MAX_PENDING_REJECTED_OPS = 10_000
 
   const trackAcknowledgedDeletes = (
     outcome: Extract<BatchOutcome, { state: 'acknowledged' }>
   ) => {
+    const applied = new Set(outcome.result.applied)
+    for (const op of outcome.ops) {
+      if (op.op === 'delete_node' && applied.has(op.op_id))
+        confirmedDeletes.add(String(op.node_id))
+    }
     rejectedOpNotifier.notify(outcome.ops, outcome.result)
   }
 
-  const applyPendingRejected = (workflowId: string): NodeId[] => {
-    if (!isTargetActive.value || workflowId !== subscribedWorkflowId.value)
-      return []
-    if (pendingFullReprojection.delete(workflowId)) {
-      pendingRejected.delete(workflowId)
-      return projection.replaceFromDocument(workflowId)
-    }
-    const ops = pendingRejected.get(workflowId)
-    if (!ops || !getGraph()) return []
-    pendingRejected.delete(workflowId)
-    return projection.revertRejected(workflowId, ops)
-  }
-
-  const revertRejectedOps = (workflowId: string | null, ops: readonly Op[]) => {
+  const revertRejectedOps = (
+    outcome: Extract<BatchOutcome, { state: 'acknowledged' }>
+  ) => {
+    const workflowId = outcome.result.workflowId ?? bridge.subscribedWorkflowId
+    if (outcome.result.failed)
+      reportRejectedHumanOps(workflowId, outcome.ops, outcome.result)
     if (workflowId === null) return
-    if (ops.length === 0) return
-    if (!isCurrentWorkflow(workflowId) || !getGraph()) {
-      const pending = [...(pendingRejected.get(workflowId) ?? []), ...ops]
-      if (pending.length > MAX_PENDING_REJECTED_OPS) {
-        pendingRejected.delete(workflowId)
-        pendingFullReprojection.add(workflowId)
-      } else if (!pendingFullReprojection.has(workflowId)) {
-        pendingRejected.set(workflowId, pending)
-      }
-      return
-    }
-    reportMaterialized(workflowId, projection.revertRejected(workflowId, ops))
-  }
 
-  const outcomeWorkflowId = (outcome: BatchOutcome): string | null => {
-    if (outcome.state === 'acknowledged' && outcome.result.workflowId)
-      return outcome.result.workflowId
-    for (const op of outcome.ops) {
-      const workflowId = opWorkflowIds.get(op.op_id)
-      if (workflowId) return workflowId
-    }
-    return null
-  }
-
-  const opsToRevert = (outcome: BatchOutcome): readonly Op[] => {
-    if (outcome.state === 'undeliverable') return outcome.ops
-    if (outcome.state !== 'acknowledged') return []
-    const settled = new Set([
-      ...outcome.result.applied,
-      ...outcome.result.skipped
-    ])
-    const skipped = new Set(outcome.result.skipped)
-    return outcome.ops.filter(
-      (op) =>
-        !settled.has(op.op_id) ||
-        ((op.op === 'set_widget' || op.op === 'set_node_field') &&
-          skipped.has(op.op_id))
+    const applied = new Set(outcome.result.applied)
+    const rejected = outcome.ops.filter((op) => !applied.has(op.op_id))
+    reportMaterialized(
+      workflowId,
+      projection.revertRejected(workflowId, rejected)
     )
   }
 
   const settleHumanOps = (outcome: BatchOutcome) => {
-    const workflowId = outcomeWorkflowId(outcome)
     if (outcome.state === 'acknowledged') trackAcknowledgedDeletes(outcome)
     recordDevEvent('human_ops_settled', outcome)
     projection.settleLocalWrites(outcome.ops)
-    const rejected = definitivelyRejectedOps(outcome)
-    if (rejected.length > 0)
-      events.onHumanOpsRejected?.({
-        addedNodeIds: rejectedAddNodeIds(rejected)
-      })
-    if (outcome.state === 'acknowledged' && outcome.result.failed)
-      reportRejectedHumanOps(workflowId, outcome.ops, outcome.result)
-    revertRejectedOps(workflowId, opsToRevert(outcome))
-    for (const op of outcome.ops) opWorkflowIds.delete(op.op_id)
+    if (outcome.state === 'acknowledged' && !outcome.result.ok)
+      revertRejectedOps(outcome)
   }
 
   const sender = createOpSender({
@@ -515,19 +443,6 @@ function startAgentCrdtFollower(
     tab: tabId,
     actor: ownActor,
     baseVersion: () => bridge.lastSequence,
-    onOpsMinted: (ops, workflowId) => {
-      const outcomeTarget = workflowId ?? subscribedWorkflowId.value
-      for (const op of ops) {
-        ownOpIds.add(op.op_id)
-        if (outcomeTarget !== null) opWorkflowIds.set(op.op_id, outcomeTarget)
-      }
-      while (ownOpIds.size > MAX_TRACKED_OWN_OP_IDS) {
-        const oldest = ownOpIds.values().next().value
-        if (oldest === undefined) break
-        ownOpIds.delete(oldest)
-        opWorkflowIds.delete(oldest)
-      }
-    },
     onBatchSettled: settleHumanOps
   })
   const coalescer = createOpCoalescer(sender.admit, sender.flush)
@@ -546,10 +461,7 @@ function startAgentCrdtFollower(
     )
   }
   const applyCollected = (workflowId: string): void => {
-    reportMaterialized(workflowId, [
-      ...projection.applyCollected(workflowId),
-      ...applyPendingRejected(workflowId)
-    ])
+    reportMaterialized(workflowId, projection.applyCollected(workflowId))
   }
   const incrementOutcome = (
     key: 'received' | 'applied' | 'appliedLive' | 'skipped' | 'reset'
@@ -565,22 +477,12 @@ function startAgentCrdtFollower(
    * they can carry this actor as the last writer while replaying state the
    * graph has not seen.
    */
-  const isOwnEcho = (update: ClassifiedDocUpdate): boolean => {
-    const opIds = update.opIds?.filter((id) => id.length > 0) ?? []
-    return (
-      !update.catchUp &&
-      update.actor !== undefined &&
-      ownActors.has(update.actor) &&
-      opIds.length > 0 &&
-      opIds.every((id) => ownOpIds.has(id))
-    )
-  }
+  const isOwnEcho = (update: ClassifiedDocUpdate): boolean =>
+    !update.catchUp && update.actor === ownActor()
   const applyFrame = (
-    update: ClassifiedDocUpdate,
-    ownEcho: boolean
+    update: ClassifiedDocUpdate
   ): { created: NodeId[]; nodes: DocNodeDelta } => {
-    if (ownEcho && getGraph() !== null) {
-      for (const id of update.opIds ?? []) ownOpIds.delete(id)
+    if (isOwnEcho(update) && getGraph() !== null) {
       const nodes = projection.discardPending(update.workflowId)
       incrementOutcome('skipped')
       return { created: [], nodes }
@@ -666,13 +568,12 @@ function startAgentCrdtFollower(
     lifecycle.onDocumentUpdate()
     updatesApplied.value = bridge.follower.updatesApplied
     lastFrameType.value = event.type
-    const ownEcho = isOwnEcho(update)
-    const { created, nodes } = applyFrame(update, ownEcho)
+    const { created, nodes } = applyFrame(update)
     recordDevEvent('doc_update', {
       workflowId: update.workflowId,
       seq: update.seq,
       actor: update.actor,
-      echo: ownEcho,
+      echo: isOwnEcho(update),
       bytes: update.update instanceof Uint8Array ? update.update.length : null
     })
     if (nodes.added.length > 0 || nodes.removed.length > 0)
@@ -705,8 +606,6 @@ function startAgentCrdtFollower(
         : undefined
     incrementOutcome('reset')
     if (!isCurrentWorkflow(detail?.workflowId)) return
-    pendingRejected.delete(detail.workflowId)
-    pendingFullReprojection.delete(detail.workflowId)
     projection.replaceOnNextFrame(detail.workflowId)
     sender.abortAll()
     events.onReset?.(detail.workflowId)
@@ -736,8 +635,6 @@ function startAgentCrdtFollower(
       workflowId === subscribedWorkflowId.value
     ) {
       updatesApplied.value = 0
-      pendingRejected.delete(workflowId)
-      pendingFullReprojection.delete(workflowId)
       projection.discardPending(workflowId)
       projection.bind(workflowId, bridge.follower)
     }
@@ -753,11 +650,8 @@ function startAgentCrdtFollower(
       event instanceof CustomEvent
         ? (event.detail as { workflowId?: string } | null)
         : null
-    if (detail?.workflowId !== undefined) {
-      pendingRejected.delete(detail.workflowId)
-      pendingFullReprojection.delete(detail.workflowId)
+    if (detail?.workflowId !== undefined)
       projection.discardPending(detail.workflowId)
-    }
     outcomes.value = { ...outcomes.value, errored: outcomes.value.errored + 1 }
     recordDevEvent(
       'schema_error',

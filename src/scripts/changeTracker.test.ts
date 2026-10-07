@@ -3,7 +3,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
-import { markRaw, nextTick, ref, watch } from 'vue'
+import { markRaw, ref } from 'vue'
 
 vi.mock(import('@vueuse/router'), () => ({ useRouteHash: () => ref('') }))
 
@@ -189,45 +189,6 @@ describe('ChangeTracker', () => {
       () => {}
     )
     app.rootGraph.subgraphs.clear()
-  })
-
-  it('notifies graph-readiness consumers when loading ends', async () => {
-    const loadingStates: boolean[] = []
-    const stop = watch(
-      () => ChangeTracker.isLoadingGraph,
-      (loading) => loadingStates.push(loading)
-    )
-    onTestFinished(stop)
-
-    ChangeTracker.isLoadingGraph = true
-    await nextTick()
-    ChangeTracker.isLoadingGraph = false
-    await nextTick()
-
-    expect(loadingStates).toEqual([true, false])
-  })
-
-  it('stays loading until overlapping graph loads both finish', async () => {
-    const endFirst = ChangeTracker.beginGraphLoad()
-    const endSecond = ChangeTracker.beginGraphLoad()
-    endFirst()
-
-    expect(ChangeTracker.isLoadingGraph).toBe(true)
-
-    endSecond()
-    expect(ChangeTracker.isLoadingGraph).toBe(false)
-  })
-
-  it('does not let one load release another load twice', () => {
-    const endFirst = ChangeTracker.beginGraphLoad()
-    const endSecond = ChangeTracker.beginGraphLoad()
-
-    endFirst()
-    endFirst()
-    expect(ChangeTracker.isLoadingGraph).toBe(true)
-
-    endSecond()
-    expect(ChangeTracker.isLoadingGraph).toBe(false)
   })
 
   describe('undoRedo', () => {

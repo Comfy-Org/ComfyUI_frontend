@@ -51,7 +51,6 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import { ChangeTracker } from '@/scripts/changeTracker'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { blankGraph } from '@/scripts/defaultGraph'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -843,18 +842,6 @@ const isBoundWorkflowActive = computed(() => {
     boundOrOpenWorkflowFor(bound)?.path === active.path
   )
 })
-let lastHumanOpsRejectedAt = Number.NEGATIVE_INFINITY
-
-// `rootGraph` is rewritten before `activeWorkflow` changes during a load.
-// Treat that interval as having no graph so neither inbound projection nor
-// outbound minting can apply workflow A's document to workflow B's canvas.
-function activeRootGraph() {
-  return app.isGraphReady &&
-    !ChangeTracker.isLoadingGraph &&
-    !app.isGraphMutating
-    ? app.rootGraph
-    : null
-}
 
 // The CRDT follower is the inbound content channel: subscribes to the
 // session's bound workflow while its tab is active. Suspending the background
@@ -873,7 +860,7 @@ const {
   // `app.isGraphReady` is a plain getter; reading `canvasStore.canvas` (set
   // right after `app.setup()`) makes the follower's graph watch fire once the
   // root graph exists.
-  () => (canvasStore.canvas ? activeRootGraph() : null),
+  () => (canvasStore.canvas && app.isGraphReady ? app.rootGraph : null),
   {
     onMaterialized({ workflowId, nodeIds }) {
       if (app.isGraphReady) {
@@ -886,17 +873,6 @@ const {
       }
     },
     onReset: graphActivity.resetWorkflow,
-    onHumanOpsRejected() {
-      const now = Date.now()
-      if (now - lastHumanOpsRejectedAt < 5000) return
-      lastHumanOpsRejectedAt = now
-      toast.add({
-        severity: 'warn',
-        summary: t('agent.widgetWriteNotSyncedTitle'),
-        detail: t('agent.widgetWriteNotSyncedDetail'),
-        life: 5000
-      })
-    },
     onSyncError: (message, code) =>
       toast.add({
         severity: 'error',
@@ -933,27 +909,15 @@ const docOpMinter = attachDocOpMinter({
   isEnabled: () => agentPanelStore.enabled,
   isDocBound: () => isBoundWorkflowActive.value,
   enqueue: enqueueHumanOperations,
-  getGraph: activeRootGraph,
-  boundWorkflowId: () => boundWorkflowId.value,
+  getGraph: () => (app.isGraphReady ? app.rootGraph : null),
   boundRootGraphId,
   docInputNames,
-  docPromotedWidgets,
-  onWidgetWriteRefused: (write) => {
-    if (write.reason === 'unresolvable_owner') return
-    toast.add({
-      severity: 'warn',
-      summary: t('agent.widgetWriteNotSyncedTitle'),
-      detail: t('agent.widgetWriteNotSyncedDetail'),
-      life: 5000
-    })
-  }
+  docPromotedWidgets
 })
 const restoreOpMinter = attachRestoreOpMinter({
   isEnabled: () => agentPanelStore.enabled,
   isDocBound: () => isBoundWorkflowActive.value,
   enqueue: enqueueHumanOperations,
-  // Restore snapshots deliberately span the graph-load guard: the before
-  // hook reads the old graph and afterConfigureGraph reads the restored one.
   getGraph: () => (app.isGraphReady ? app.rootGraph : null),
   isRestoringState: () =>
     workflowStore.activeWorkflow?.changeTracker?._restoringState === true

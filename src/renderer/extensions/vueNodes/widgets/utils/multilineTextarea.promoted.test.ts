@@ -84,39 +84,6 @@ describe('createPromotedMultilineWidget', () => {
     expect(useWidgetValueStore().getWidget(WIDGET_ID)?.value).toBe('edited')
   })
 
-  it('keeps working as a local widget when its store entry disappears', () => {
-    const widget = promote()
-    const domWidget = widget as unknown as DOMWidget<
-      HTMLTextAreaElement,
-      string
-    >
-    useWidgetValueStore().deleteWidget(WIDGET_ID)
-
-    domWidget.value = 'local fallback'
-
-    expect(domWidget.element.value).toBe('local fallback')
-  })
-
-  it('restores the canonical text when a store-backed write is refused', () => {
-    const widget = promote()
-    const domWidget = widget as unknown as DOMWidget<
-      HTMLTextAreaElement,
-      string
-    >
-    const state = useWidgetValueStore().getWidget(WIDGET_ID)
-    if (!state) throw new Error('Expected registered widget state')
-    Object.defineProperty(state, 'value', {
-      configurable: true,
-      get: () => 'hello',
-      set: () => {}
-    })
-
-    domWidget.value = 'rejected'
-
-    expect(domWidget.element.value).toBe('hello')
-    expect(domWidget.value).toBe('hello')
-  })
-
   it('falls back to the canvas projection for non-DOM widgets', () => {
     const widget = promote(fromAny({ name: 'prompt', type: 'number' }))
     expect(widget).toBeUndefined()

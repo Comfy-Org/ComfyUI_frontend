@@ -82,24 +82,6 @@ describe('subgraphUtils', () => {
       expect(invalidatePromotedViews).not.toHaveBeenCalled()
       consoleError.mockRestore()
     })
-
-    it.for([Number.NaN, 0.5])(
-      'rejects a non-integer permutation index %s before mutating',
-      (invalidIndex) => {
-        const subgraph = createTestSubgraph({
-          inputs: [{ name: 'first', type: 'STRING' }]
-        })
-        const host = createTestSubgraphNode(subgraph)
-        const consoleError = vi
-          .spyOn(console, 'error')
-          .mockImplementation(() => {})
-
-        expect(reorderSubgraphInputs(host, [invalidIndex])).toBe(false)
-        expect(host.inputs.map(({ name }) => name)).toEqual(['first'])
-        expect(subgraph.inputs.map(({ name }) => name)).toEqual(['first'])
-        consoleError.mockRestore()
-      }
-    )
   })
   describe('getDirectSubgraphIds', () => {
     it('should return empty set for graph with no subgraph nodes', () => {

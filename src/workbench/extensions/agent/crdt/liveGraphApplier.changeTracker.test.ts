@@ -269,7 +269,6 @@ describe('LiveGraphApplier with the real change tracker', () => {
       isEnabled: () => true,
       isDocBound: () => true,
       getGraph: () => graph,
-      boundWorkflowId: () => 'workflow',
       boundRootGraphId: () => toRootGraphId(graph.id),
       docInputNames: () => [],
       docPromotedWidgets: () => null,
