@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type {
   RouterWorkshopModel,
@@ -61,25 +61,32 @@ describe('canCompare', () => {
 })
 
 describe('compareRows', () => {
-  it('lists one value per model for every real field', () => {
-    const rows = compareRows(
-      [
-        hosted({
-          provider: 'Kling',
-          modality: 'video',
-          task: 'text-to-video',
-          creditsPerRun: 24
-        }),
-        hosted({ slug: 'mystery', name: 'Mystery' })
-      ],
-      'en'
-    )
-    expect(
-      Object.fromEntries(rows.map((row) => [row.key, row.values]))
-    ).toEqual({
-      provider: ['Kling', '—'],
-      task: ['Text to Video', expect.any(String)],
-      access: ['Run · API', 'Run · API']
-    })
-  })
+  it.for([
+    { run: '1', access: 'Run · API' },
+    { run: undefined, access: 'API' }
+  ] as const)(
+    'lists one value per model for every real field (run opt-in $run)',
+    ({ run, access }) => {
+      vi.stubEnv('PUBLIC_WORKSHOP_ROUTER_RUN', run)
+      const rows = compareRows(
+        [
+          hosted({
+            provider: 'Kling',
+            modality: 'video',
+            task: 'text-to-video',
+            creditsPerRun: 24
+          }),
+          hosted({ slug: 'mystery', name: 'Mystery' })
+        ],
+        'en'
+      )
+      expect(
+        Object.fromEntries(rows.map((row) => [row.key, row.values]))
+      ).toEqual({
+        provider: ['Kling', '—'],
+        task: ['Text to Video', expect.any(String)],
+        access: [access, access]
+      })
+    }
+  )
 })

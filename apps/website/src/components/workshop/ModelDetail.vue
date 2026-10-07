@@ -290,13 +290,7 @@ function captureSnippetCopy(language: SnippetLanguage) {
       properties: { ...modelAnalytics, snippet_language: language }
     })
 }
-const canRunModel = computed(
-  () =>
-    !model.incompleteReason &&
-    import.meta.env.PUBLIC_WORKSHOP_ROUTER_RUN === '1' &&
-    !!model.execution &&
-    !activeExample.value?.fields
-)
+const canRunModel = computed(() => runsHere && !activeExample.value?.fields)
 const flagOffGate = computed(() =>
   workshopEnabledSettled.value ? 'rollingOut' : 'resolving'
 )

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Cloud, Code, Play } from '@lucide/vue'
+import { ArrowUpRight, Cloud, Code, Play } from '@lucide/vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import { WORKSHOP_CLOUD_BASE_URL } from '@/config/workshop-env'
@@ -35,6 +35,21 @@ function jumpTo(event: MouseEvent, section: 'playground' | 'api') {
         {{ t('workshop.model.paths.run') }}
       </Button>
     </li>
+    <li v-if="paths.api">
+      <Button
+        href="#api"
+        variant="ghost"
+        size="sm"
+        :class="secondaryPathClass"
+        data-testid="model-path-api"
+        @click="jumpTo($event, 'api')"
+      >
+        <template #prepend>
+          <Code aria-hidden="true" />
+        </template>
+        {{ t('workshop.model.paths.api') }}
+      </Button>
+    </li>
     <li>
       <Button
         :href="WORKSHOP_CLOUD_BASE_URL"
@@ -49,21 +64,9 @@ function jumpTo(event: MouseEvent, section: 'playground' | 'api') {
           <Cloud aria-hidden="true" />
         </template>
         {{ t('workshop.model.paths.cloud') }}
-      </Button>
-    </li>
-    <li v-if="paths.api">
-      <Button
-        href="#api"
-        variant="ghost"
-        size="sm"
-        :class="secondaryPathClass"
-        data-testid="model-path-api"
-        @click="jumpTo($event, 'api')"
-      >
-        <template #prepend>
-          <Code aria-hidden="true" />
+        <template #append>
+          <ArrowUpRight aria-hidden="true" />
         </template>
-        {{ t('workshop.model.paths.api') }}
       </Button>
     </li>
   </ul>

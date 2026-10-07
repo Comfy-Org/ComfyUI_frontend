@@ -40,6 +40,7 @@ const model: WorkshopModelDetail = {
 
 describe('ModelDetail on the server', () => {
   it('arrives with its playground already rendered, since a browser global read at setup would empty the island', async () => {
+    vi.stubEnv('PUBLIC_WORKSHOP_ROUTER_RUN', '1')
     vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(ref(true)))
     expect(typeof window, 'this file must run without a window').toBe(
       'undefined'
@@ -69,6 +70,7 @@ describe('ModelDetail on the server', () => {
   })
 
   it('arrives with its inputs disabled, since hydration would discard anything typed first', async () => {
+    vi.stubEnv('PUBLIC_WORKSHOP_ROUTER_RUN', '1')
     vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(ref(true)))
 
     const html = await renderToString(
