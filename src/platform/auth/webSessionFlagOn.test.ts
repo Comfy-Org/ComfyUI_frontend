@@ -1,6 +1,15 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import type { User, UserCredential } from 'firebase/auth'
-import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import type { Mock } from 'vitest'
 import { setActivePinia } from 'pinia'
 import { defineComponent, effectScope } from 'vue'
@@ -540,6 +549,10 @@ describe('cloud app on the shared web session (unified_web_session on)', () => {
   })
 
   it('honours an employee ?ff= override on a session-only tab until sign-out', async () => {
+    onTestFinished(() => {
+      window.history.replaceState({}, '', '/')
+      sessionStorage.removeItem('Comfy.FeatureFlagOverride')
+    })
     window.history.replaceState({}, '', '/?ff=onboarding_tour_enabled')
     installServer({ userId: 'user-a', email: 'dev@comfy.org' })
     await refreshRemoteConfig({ useAuth: false })
