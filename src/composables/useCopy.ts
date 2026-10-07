@@ -2,7 +2,6 @@ import { useEventListener } from '@vueuse/core'
 
 import { reportError } from '@/platform/telemetry/reportError'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { createUuidv4 } from '@/utils/uuid'
 import {
   hasTextSelection,
   shouldIgnoreCopyPaste
@@ -11,17 +10,11 @@ import {
 const CANVAS_CLIPBOARD_KEY = 'litegrapheditor_clipboard'
 const CANVAS_CLIPBOARD_ID_KEY = 'litegrapheditor_clipboard_id'
 
-export const LAST_KEYBOARD_COPY_ID_KEY = 'Comfy.Clipboard.LastCopyId'
-
 const clipboardHtmlPattern =
-  /^<meta charset="utf-8"><div><span data-(?:comfy-)?metadata="([A-Za-z0-9+/=]+)"><\/span><\/div><span style="white-space:pre-wrap;">Text<\/span>$/
+  /^(?:<meta charset='utf-8'>|<html>\r?\n<body>\r?\n<!--StartFragment-->)?<meta charset="utf-8"><div><span data-(?:comfy-)?metadata="([A-Za-z0-9+/=]+)"><\/span><\/div><span style="white-space:pre-wrap;">Text<\/span>(?:<!--EndFragment-->\r?\n<\/body>\r?\n<\/html>)?$/
 
 function clipboardHtml(base64Data: string): string {
   return `<meta charset="utf-8"><div><span data-comfy-metadata="${base64Data}"></span></div><span style="white-space:pre-wrap;">Text</span>`
-}
-
-export function readClipboardMetadata(html: string): string | undefined {
-  return html.match(clipboardHtmlPattern)?.[1]
 }
 
 const clipboardByteChunkSize = 0x8000
@@ -48,9 +41,41 @@ function encodeClipboardData(data: string): string {
   return btoa(bytesToBinaryString(new TextEncoder().encode(data)))
 }
 
-export function decodeClipboardData(base64Data: string): unknown {
-  const bytes = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0))
-  return JSON.parse(new TextDecoder().decode(bytes))
+type ClipboardHtmlRead =
+  | { status: 'absent' }
+  | { status: 'unreadable'; error: unknown }
+  | { status: 'read'; payload: unknown }
+
+export function readClipboardHtml(html: string): ClipboardHtmlRead {
+  const base64Data = html.match(clipboardHtmlPattern)?.[1]
+  if (!base64Data) return { status: 'absent' }
+  try {
+    const bytes = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0))
+    return {
+      status: 'read',
+      payload: JSON.parse(new TextDecoder().decode(bytes))
+    }
+  } catch (error) {
+    return { status: 'unreadable', error }
+  }
+}
+
+export function holdsLatestCanvasCopy(html: string): boolean {
+  const read = readClipboardHtml(html)
+  if (read.status !== 'read') return false
+  const { payload } = read
+  if (
+    typeof payload !== 'object' ||
+    payload === null ||
+    !('copyId' in payload) ||
+    typeof payload.copyId !== 'string'
+  )
+    return false
+  try {
+    return payload.copyId === localStorage.getItem(CANVAS_CLIPBOARD_ID_KEY)
+  } catch {
+    return false
+  }
 }
 
 /**
@@ -78,24 +103,21 @@ export const useCopy = () => {
     const canvas = canvasStore.canvas
     if (canvas?.selectedItems) {
       const serializedData = canvas.copyToClipboard()
-      const lastCopyId = createUuidv4()
-      try {
-        localStorage.setItem(LAST_KEYBOARD_COPY_ID_KEY, lastCopyId)
-      } catch (error) {
-        reportError(error, {
-          errorType: 'error_saving_clipboard_copy_id',
-          surface: 'graph'
-        })
-      }
       keyboardCopyId = localStorage.getItem(CANVAS_CLIPBOARD_ID_KEY)
       try {
         const base64Data = encodeClipboardData(
-          JSON.stringify({ ...JSON.parse(serializedData), copyId: lastCopyId })
+          JSON.stringify({
+            ...JSON.parse(serializedData),
+            copyId: keyboardCopyId
+          })
         )
         // clearData doesn't remove images from clipboard
         e.clipboardData?.setData('text/html', clipboardHtml(base64Data))
       } catch (error) {
-        console.error(error)
+        reportError(error, {
+          errorType: 'error_writing_clipboard_metadata',
+          surface: 'graph'
+        })
       }
       e.preventDefault()
       e.stopImmediatePropagation()

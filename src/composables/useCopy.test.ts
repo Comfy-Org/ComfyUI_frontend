@@ -8,7 +8,7 @@ import {
   vi
 } from 'vitest'
 import { effectScope } from 'vue'
-import { LAST_KEYBOARD_COPY_ID_KEY, useCopy } from './useCopy'
+import { useCopy } from './useCopy'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { fromPartial } from '@total-typescript/shoehorn'
@@ -101,20 +101,21 @@ describe('useCopy', () => {
 
     expect(readClipboardPayload(dataTransfer)).toEqual({
       ...JSON.parse(serializedData),
-      copyId: expect.any(String)
+      copyId: null
     })
   })
 
-  it('tags the copy with the stored copy id outside a secure context', () => {
-    vi.stubGlobal('crypto', {
-      getRandomValues: crypto.getRandomValues.bind(crypto)
+  it("tags the copy with litegraph's clipboard id", () => {
+    copyMocks.canvas.copyToClipboard.mockImplementation(() => {
+      localStorage.setItem(canvasClipboardIdKey, 'canvas-copy-1')
+      return '{"nodes":[]}'
     })
 
-    const dataTransfer = copySerializedData('{"nodes":[]}')
+    const dataTransfer = dispatchCopy()
 
     expect(readClipboardPayload(dataTransfer)).toEqual({
       nodes: [],
-      copyId: localStorage.getItem(LAST_KEYBOARD_COPY_ID_KEY)
+      copyId: 'canvas-copy-1'
     })
   })
 
