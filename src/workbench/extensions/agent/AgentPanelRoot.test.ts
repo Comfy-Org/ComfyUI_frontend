@@ -808,6 +808,20 @@ describe('AgentPanelRoot paywall actions', () => {
     openAccountPrecondition.mockClear()
   })
 
+  it('hides the standing credit warning before consent is accepted', async () => {
+    Object.assign(useAgentConsentStore(), { accepted: false })
+    paywallBilling.type = 'workspace'
+    paywallHasFunds.value = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await screen.findByRole('textbox')
+
+    expect(
+      screen.queryByTestId('agent-credits-exhausted-paywall')
+    ).not.toBeInTheDocument()
+    expect(telemetry.trackAgentPaywallShown).not.toHaveBeenCalled()
+  })
+
   it('routes the subscribed owner actions through account preconditions', async () => {
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     useAgentConversationStore().messages.push({
