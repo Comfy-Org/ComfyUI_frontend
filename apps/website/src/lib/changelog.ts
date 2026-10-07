@@ -2,7 +2,7 @@ import { combineAbortSignals, createTimeoutSignal } from '@/utils/abortSignal'
 
 export const CHANGELOG_SOURCE =
   'https://raw.githubusercontent.com/Comfy-Org/docs/main/changelog/index.mdx'
-export const CHANGELOG_DOCS = 'https://docs.comfy.org/changelog/index'
+export const CHANGELOG_DOCS = 'https://docs.comfy.org/changelog'
 export const CHANGELOG_CACHE_KEY = 'comfy-docs-changelog-v1'
 export const CHANGELOG_REFRESH_MS = 5 * 60 * 1000
 const CHANGELOG_CACHE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000

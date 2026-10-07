@@ -19,7 +19,7 @@ describe('ChangelogContent', () => {
     )
     expect(screen.getByRole('link', { name: 'VIEW DOCS' })).toHaveAttribute(
       'href',
-      'https://docs.comfy.org/changelog/index'
+      'https://docs.comfy.org/changelog'
     )
   })
 
