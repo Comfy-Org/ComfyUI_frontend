@@ -1,6 +1,6 @@
-import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { attachKeyboard } from '@/lib/litegraph/src/__fixtures__/canvasHarness'
 import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 
@@ -104,46 +104,43 @@ describe('LGraphCanvas ghost placement auto-pan', () => {
   })
 })
 
-describe('LGraphCanvas ghost placement cancellation via document keydown', () => {
+describe('LGraphCanvas ghost placement cancellation shortcuts', () => {
   let canvas: LGraphCanvas
   let canvasElement: HTMLCanvasElement
   let graph: LGraph
   let node: LGraphNode
+  let keyboard: ReturnType<typeof attachKeyboard>
 
   beforeEach(() => {
     ;({ canvas, canvasElement, graph, node } = createGhostTestHarness())
+    keyboard = attachKeyboard(canvas)
   })
 
   afterEach(() => {
+    keyboard.dispose()
     if (canvas.state.ghostNodeId != null) canvas.finalizeGhostPlacement(false)
     canvasElement.remove()
   })
 
-  it('Escape on document removes the ghost node and clears ghost state', async () => {
+  it('Escape removes the ghost node and clears ghost state', () => {
     canvas.startGhostPlacement(node)
     expect(canvas.state.ghostNodeId).toBe(node.id)
 
-    await userEvent.keyboard('{Escape}')
+    keyboard.press('Escape')
 
     expect(canvas.state.ghostNodeId).toBeNull()
     expect(graph.getNodeById(node.id)).toBeFalsy()
   })
 
-  it('Escape on document stops propagation so window-level keybindings do not fire', async () => {
-    const windowSpy = vi.fn()
-    window.addEventListener('keydown', windowSpy)
-    try {
-      canvas.startGhostPlacement(node)
-      await userEvent.keyboard('{Escape}')
-      expect(windowSpy).not.toHaveBeenCalled()
-    } finally {
-      window.removeEventListener('keydown', windowSpy)
-    }
+  it('Escape claims the key so workspace shortcuts do not also run', () => {
+    canvas.startGhostPlacement(node)
+
+    expect(keyboard.press('Escape').defaultPrevented).toBe(true)
   })
 
-  it('Delete and Backspace also cancel ghost placement', async () => {
+  it('Delete and Backspace also cancel ghost placement', () => {
     canvas.startGhostPlacement(node)
-    await userEvent.keyboard('{Delete}')
+    keyboard.press('Delete')
     expect(canvas.state.ghostNodeId).toBeNull()
     expect(graph.getNodeById(node.id)).toBeFalsy()
 
@@ -151,39 +148,26 @@ describe('LGraphCanvas ghost placement cancellation via document keydown', () =>
     node2.size = [200, 100]
     graph.add(node2)
     canvas.startGhostPlacement(node2)
-    await userEvent.keyboard('{Backspace}')
+    keyboard.press('Backspace')
     expect(canvas.state.ghostNodeId).toBeNull()
     expect(graph.getNodeById(node2.id)).toBeFalsy()
   })
 
-  it('non-cancel keys do not finalize ghost placement', async () => {
+  it('non-cancel keys do not finalize ghost placement', () => {
     canvas.startGhostPlacement(node)
-    const windowSpy = vi.fn()
-    window.addEventListener('keydown', windowSpy)
-    try {
-      await userEvent.keyboard('a')
-      expect(canvas.state.ghostNodeId).toBe(node.id)
-      expect(windowSpy).toHaveBeenCalledTimes(1)
-    } finally {
-      window.removeEventListener('keydown', windowSpy)
-    }
+
+    expect(keyboard.press('a').defaultPrevented).toBe(false)
+    expect(canvas.state.ghostNodeId).toBe(node.id)
   })
 
-  it('keydown listener is removed when ghost placement finalizes', async () => {
+  it('leaves Escape unclaimed once ghost placement finalizes', () => {
     canvas.startGhostPlacement(node)
     canvas.finalizeGhostPlacement(false)
 
-    const windowSpy = vi.fn()
-    window.addEventListener('keydown', windowSpy)
-    try {
-      await userEvent.keyboard('{Escape}')
-      expect(windowSpy).toHaveBeenCalledTimes(1)
-    } finally {
-      window.removeEventListener('keydown', windowSpy)
-    }
+    expect(keyboard.press('Escape').defaultPrevented).toBe(false)
   })
 
-  it('switching the active graph cancels any in-flight ghost', async () => {
+  it('switching the active graph cancels any in-flight ghost', () => {
     canvas.startGhostPlacement(node)
     expect(canvas.state.ghostNodeId).toBe(node.id)
 
@@ -191,19 +175,10 @@ describe('LGraphCanvas ghost placement cancellation via document keydown', () =>
 
     expect(canvas.state.ghostNodeId).toBeNull()
     expect(graph.getNodeById(node.id)).toBeFalsy()
-
-    // Listener should also be gone — Escape should reach the window now
-    const windowSpy = vi.fn()
-    window.addEventListener('keydown', windowSpy)
-    try {
-      await userEvent.keyboard('{Escape}')
-      expect(windowSpy).toHaveBeenCalledTimes(1)
-    } finally {
-      window.removeEventListener('keydown', windowSpy)
-    }
+    expect(keyboard.press('Escape').defaultPrevented).toBe(false)
   })
 
-  it('calling startGhostPlacement again cancels the previous ghost without leaking listeners', async () => {
+  it('calling startGhostPlacement again cancels the previous ghost', () => {
     canvas.startGhostPlacement(node)
 
     const node2 = new LGraphNode('test-2')
@@ -216,18 +191,10 @@ describe('LGraphCanvas ghost placement cancellation via document keydown', () =>
 
     canvas.finalizeGhostPlacement(true)
 
-    const windowSpy = vi.fn()
-    window.addEventListener('keydown', windowSpy)
-    try {
-      await userEvent.keyboard('{Escape}')
-      // If a stale listener leaked, it would have stopPropagation'd this Escape.
-      expect(windowSpy).toHaveBeenCalledTimes(1)
-    } finally {
-      window.removeEventListener('keydown', windowSpy)
-    }
+    expect(keyboard.press('Escape').defaultPrevented).toBe(false)
   })
 
-  it('removes listeners and resets transient drag state when ghostNodeId was already cleared', async () => {
+  it('removes listeners and resets transient drag state when ghostNodeId was already cleared', () => {
     const processMoveSpy = vi.spyOn(canvas, 'processMouseMove')
     canvas.startGhostPlacement(node)
     expect(canvas.isDragging).toBe(true)
@@ -242,15 +209,7 @@ describe('LGraphCanvas ghost placement cancellation via document keydown', () =>
 
     document.dispatchEvent(new MouseEvent('pointermove'))
     expect(processMoveSpy).not.toHaveBeenCalled()
-
-    const windowSpy = vi.fn()
-    window.addEventListener('keydown', windowSpy)
-    try {
-      await userEvent.keyboard('{Escape}')
-      expect(windowSpy).toHaveBeenCalledTimes(1)
-    } finally {
-      window.removeEventListener('keydown', windowSpy)
-    }
+    expect(keyboard.press('Escape').defaultPrevented).toBe(false)
   })
 
   it('does not clobber unrelated drag state when called with no ghost in flight', () => {

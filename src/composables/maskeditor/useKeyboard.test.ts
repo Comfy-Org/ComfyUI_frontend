@@ -1,149 +1,122 @@
+import { zKeybinding } from '@/platform/keybindings/types'
+import { effectScope, markRaw } from 'vue'
+import type { EffectScope } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useKeyboard } from '@/composables/maskeditor/useKeyboard'
-import { useMaskEditorStore } from '@/stores/maskEditorStore'
+import { KeybindingImpl } from '@/platform/keybindings/keybinding'
+import { useKeybindingService } from '@/platform/keybindings/keybindingService'
+import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useDialogStore } from '@/stores/dialogStore'
 
-const dispatchKeyDown = (
-  init: KeyboardEventInit & { key: string }
-): KeyboardEvent => {
-  const event = new KeyboardEvent('keydown', { cancelable: true, ...init })
-  document.dispatchEvent(event)
+import { useKeyboard } from './useKeyboard'
+
+function key(
+  type: 'keydown' | 'keyup',
+  init: KeyboardEventInit = {},
+  target: EventTarget = document.body
+) {
+  const event = new KeyboardEvent(type, {
+    key: ' ',
+    code: 'Space',
+    bubbles: true,
+    cancelable: true,
+    ...init
+  })
+  target.dispatchEvent(event)
   return event
 }
 
-const dispatchKeyUp = (key: string): void => {
-  document.dispatchEvent(new KeyboardEvent('keyup', { key }))
-}
-
-describe('useKeyboard', () => {
+describe('Mask Editor pan shortcut', () => {
+  let scope: EffectScope
   let keyboard: ReturnType<typeof useKeyboard>
+  let disposeDispatcher: () => void
 
   beforeEach(() => {
-    vi.spyOn(useMaskEditorStore().canvasHistory, 'undo').mockImplementation(
-      () => {}
-    )
-    vi.spyOn(useMaskEditorStore().canvasHistory, 'redo').mockImplementation(
-      () => {}
-    )
-    keyboard = useKeyboard()
-    keyboard.addListeners()
+    useSettingStore().settingValues['Comfy.Keybinding.CapturePhase'] = true
+    scope = effectScope()
+    scope.run(() => {
+      keyboard = useKeyboard()
+    })
+    disposeDispatcher = useKeybindingService().install()
+    useDialogStore().showDialog({
+      key: 'global-mask-editor',
+      component: markRaw({ template: '<div />' })
+    })
   })
 
   afterEach(() => {
-    keyboard.removeListeners()
+    scope.stop()
+    disposeDispatcher()
   })
 
-  describe('isKeyDown', () => {
-    it('should return false for keys that have not been pressed', () => {
-      expect(keyboard.isKeyDown('a')).toBe(false)
-    })
-
-    it('should return true after a key is pressed', () => {
-      dispatchKeyDown({ key: 'a' })
-
-      expect(keyboard.isKeyDown('a')).toBe(true)
-    })
-
-    it('should return false after a pressed key is released', () => {
-      dispatchKeyDown({ key: 'a' })
-      dispatchKeyUp('a')
-
-      expect(keyboard.isKeyDown('a')).toBe(false)
-    })
-
-    it('should track multiple keys independently', () => {
-      dispatchKeyDown({ key: 'a' })
-      dispatchKeyDown({ key: 'b' })
-
-      expect(keyboard.isKeyDown('a')).toBe(true)
-      expect(keyboard.isKeyDown('b')).toBe(true)
-
-      dispatchKeyUp('a')
-
-      expect(keyboard.isKeyDown('a')).toBe(false)
-      expect(keyboard.isKeyDown('b')).toBe(true)
-    })
+  it('pans only while its shortcut is held', async () => {
+    expect(key('keydown').defaultPrevented).toBe(true)
+    expect(keyboard.isPanning.value).toBe(true)
+    key('keydown', { repeat: true })
+    key('keyup')
+    await vi.waitFor(() => expect(keyboard.isPanning.value).toBe(false))
   })
 
-  describe('handleKeyDown', () => {
-    it('should not duplicate the same key on repeated keydown events', () => {
-      dispatchKeyDown({ key: 'a' })
-      dispatchKeyDown({ key: 'a' })
-      dispatchKeyDown({ key: 'a' })
-      dispatchKeyUp('a')
+  it('releases panning on blur', async () => {
+    key('keydown')
+    window.dispatchEvent(new Event('blur'))
+    await vi.waitFor(() => expect(keyboard.isPanning.value).toBe(false))
+  })
 
-      expect(keyboard.isKeyDown('a')).toBe(false)
+  it('stops panning when another dialog covers the editor', async () => {
+    key('keydown')
+    useDialogStore().showDialog({
+      key: 'confirm',
+      component: markRaw({ template: '<div />' })
     })
+    await vi.waitFor(() => expect(keyboard.isPanning.value).toBe(false))
+    expect(key('keydown').defaultPrevented).toBe(false)
+  })
 
-    it('should prevent default and blur the active element on space', () => {
-      const input = document.createElement('input')
-      document.body.appendChild(input)
-      input.focus()
-      const blurSpy = vi.spyOn(input, 'blur')
+  it('leaves spaces in an input to native text editing and preserves focus', () => {
+    const input = document.createElement('input')
+    document.body.appendChild(input)
+    input.focus()
+    try {
+      expect(key('keydown', {}, input).defaultPrevented).toBe(false)
+      expect(keyboard.isPanning.value).toBe(false)
+      expect(document.activeElement).toBe(input)
+    } finally {
+      input.remove()
+    }
+  })
 
-      const event = dispatchKeyDown({ key: ' ' })
+  it('does not pan outside the editor or during composition', () => {
+    expect(key('keydown', { isComposing: true }).defaultPrevented).toBe(false)
+    useDialogStore().closeDialog({ key: 'global-mask-editor' })
+    expect(key('keydown').defaultPrevented).toBe(false)
+    expect(keyboard.isPanning.value).toBe(false)
+  })
 
-      expect(event.defaultPrevented).toBe(true)
-      expect(blurSpy).toHaveBeenCalledTimes(1)
-      expect(keyboard.isKeyDown(' ')).toBe(true)
-    })
+  it('releases after disposal and ignores subsequent keypresses', async () => {
+    key('keydown')
+    scope.stop()
+    await vi.waitFor(() => expect(keyboard.isPanning.value).toBe(false))
+    expect(key('keydown').defaultPrevented).toBe(false)
+  })
 
-    it('should not throw when activeElement is null', () => {
-      Object.defineProperty(document, 'activeElement', {
-        value: null,
-        configurable: true
+  it('uses the rebound key for both press and release', async () => {
+    const bindings = useKeybindingStore()
+    const original = bindings.getDefaultKeybindingsByCommandId(
+      'Comfy.MaskEditor.Pan'
+    )[0]
+    bindings.updateSpecificKeybinding(
+      original,
+      new KeybindingImpl({
+        ...zKeybinding.parse(original),
+        combo: { key: 'p' }
       })
-
-      try {
-        expect(() => dispatchKeyDown({ key: ' ' })).not.toThrow()
-      } finally {
-        Reflect.deleteProperty(document, 'activeElement')
-      }
-    })
-
-    it('should leave undo and redo combos to the keybinding dispatcher', () => {
-      const history = useMaskEditorStore().canvasHistory
-      const undo = vi.spyOn(history, 'undo')
-      const redo = vi.spyOn(history, 'redo')
-
-      const event = dispatchKeyDown({ key: 'z', ctrlKey: true })
-      dispatchKeyDown({ key: 'y', ctrlKey: true })
-      dispatchKeyDown({ key: 'Z', ctrlKey: true, shiftKey: true })
-
-      expect(undo).not.toHaveBeenCalled()
-      expect(redo).not.toHaveBeenCalled()
-      expect(event.defaultPrevented).toBe(false)
-    })
-  })
-
-  describe('addListeners', () => {
-    it('should clear all tracked keys when the window loses focus', () => {
-      dispatchKeyDown({ key: 'a' })
-      dispatchKeyDown({ key: 'b' })
-
-      window.dispatchEvent(new Event('blur'))
-
-      expect(keyboard.isKeyDown('a')).toBe(false)
-      expect(keyboard.isKeyDown('b')).toBe(false)
-    })
-  })
-
-  describe('removeListeners', () => {
-    it('should stop responding to keyboard events after removal', () => {
-      keyboard.removeListeners()
-
-      dispatchKeyDown({ key: 'a' })
-
-      expect(keyboard.isKeyDown('a')).toBe(false)
-    })
-
-    it('should stop clearing keys on window blur after removal', () => {
-      dispatchKeyDown({ key: 'a' })
-      keyboard.removeListeners()
-
-      window.dispatchEvent(new Event('blur'))
-
-      expect(keyboard.isKeyDown('a')).toBe(true)
-    })
+    )
+    expect(key('keydown').defaultPrevented).toBe(false)
+    key('keydown', { key: 'p', code: 'KeyP' })
+    expect(keyboard.isPanning.value).toBe(true)
+    key('keyup', { key: 'P', code: 'KeyP', shiftKey: true })
+    await vi.waitFor(() => expect(keyboard.isPanning.value).toBe(false))
   })
 })

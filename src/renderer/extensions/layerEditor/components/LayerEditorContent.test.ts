@@ -178,18 +178,6 @@ describe('LayerEditorContent', () => {
     expect(session.undo).toHaveBeenCalledTimes(2)
   })
 
-  it('handles undo/redo shortcuts wherever focus is in the dialog', async () => {
-    const user = userEvent.setup()
-    renderEditor('compositor')
-    await waitForAutoSaveStart()
-
-    await user.keyboard('{Control>}z{/Control}')
-    expect(session.undo).toHaveBeenCalledTimes(1)
-
-    await user.keyboard('{Control>}{Shift>}z{/Shift}{/Control}')
-    expect(session.redo).toHaveBeenCalledTimes(1)
-  })
-
   it('persists edits and closes the change transaction on unmount', async () => {
     const { unmount } = renderEditor('compositor')
     expect(beforeChange).toHaveBeenCalledTimes(1)

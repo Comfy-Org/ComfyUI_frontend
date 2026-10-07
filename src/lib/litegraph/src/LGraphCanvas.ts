@@ -1,3 +1,7 @@
+import {
+  registerCanvasKeybindings,
+  unregisterCanvasKeybindings
+} from '@/renderer/core/canvas/canvasKeybindings'
 import { default as DOMPurify } from 'dompurify'
 import { cloneDeep, toString } from 'es-toolkit/compat'
 import { toValue } from 'vue'
@@ -580,9 +584,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this._setCursor(cursor)
   }
 
-  private _spaceKeyHeld: { draggingCanvas: boolean; readOnly: boolean } | null =
-    null
-
   // #region Legacy accessors
   /** @deprecated @inheritdoc {@link LGraphCanvasState.readOnly} */
   get read_only(): boolean {
@@ -971,7 +972,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     metaKey: false
   }
   private _ghostPointerHandler: ((e: PointerEvent) => void) | null = null
-  private _ghostKeyHandler: ((e: KeyboardEvent) => void) | null = null
 
   dirty_canvas: boolean = true
   dirty_bgcanvas: boolean = true
@@ -2291,6 +2291,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     // Prevent middle-click paste (PRIMARY clipboard on Linux) - fixes #4464
     canvas.addEventListener('auxclick', this._preventMiddleAuxClick)
 
+    registerCanvasKeybindings(this, () => this._autoPan)
+
     // Keyboard
     this._key_callback = this.processKey.bind(this)
 
@@ -2333,6 +2335,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       canvas.removeEventListener('wheel', this._mousewheel_callback!)
       canvas.removeEventListener('keydown', this._key_callback!, true)
       document.removeEventListener('keyup', this._key_callback!, true)
+      unregisterCanvasKeybindings(this)
       canvas.removeEventListener('contextmenu', this._doNothing)
       canvas.removeEventListener('auxclick', this._preventMiddleAuxClick)
       canvas.removeEventListener('dragenter', this._doReturnTrue)
@@ -3916,19 +3919,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       'pointerleave',
       this._ghostPointerHandler
     )
-
-    // Listen on document so cancellation works even when the canvas isnt focused
-    // e.g. the search dialog just closed.
-    // stopPropagation prevents window-level keybindings (like Comfy.Graph.ExitSubgraph on Escape) from firing alongside the cancel.
-    this._ghostKeyHandler = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape' && e.key !== 'Delete' && e.key !== 'Backspace') {
-        return
-      }
-      this.finalizeGhostPlacement(true)
-      e.stopPropagation()
-      e.preventDefault()
-    }
-    document.addEventListener('keydown', this._ghostKeyHandler, true)
   }
 
   /**
@@ -3936,8 +3926,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    * @param cancelled If true, the node is removed; otherwise it's placed
    */
   finalizeGhostPlacement(cancelled: boolean): void {
-    const ownedGhostState =
-      this._ghostPointerHandler != null || this._ghostKeyHandler != null
+    const ownedGhostState = this._ghostPointerHandler != null
 
     if (this._ghostPointerHandler) {
       document.removeEventListener('pointermove', this._ghostPointerHandler)
@@ -3946,11 +3935,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         this._ghostPointerHandler
       )
       this._ghostPointerHandler = null
-    }
-
-    if (this._ghostKeyHandler) {
-      document.removeEventListener('keydown', this._ghostKeyHandler, true)
-      this._ghostKeyHandler = null
     }
 
     if (ownedGhostState) {
@@ -4150,77 +4134,21 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     return
   }
 
-  /**
-   * process a key event
-   */
+  /** @deprecated Keyboard commands are dispatched by keybindingService. Retained for extension callbacks. */
   processKey(e: KeyboardEvent): void {
     this._shiftDown = e.shiftKey
-
-    if (e.type == 'keyup' && e.key === ' ') {
-      const held = this._spaceKeyHeld
-      this._spaceKeyHeld = null
-      if (held) {
-        this.read_only = held.readOnly
-        this.dragging_canvas = held.draggingCanvas && this.pointer.isDown
-        if (
-          this.pointer.isDown &&
-          (this.isDragging || this.linkConnector.isConnecting)
-        ) {
-          this._autoPan?.updatePointer(this.mouse[0], this.mouse[1])
-          this._autoPan?.start()
-        }
-      }
-    }
-
-    const { graph } = this
-    if (!graph) return
-
-    let block_default = false
-    if (e.target instanceof Element && e.target.localName == 'input') return
-
-    if (e.type == 'keydown') {
-      // TODO: Switch
-      if (e.key === ' ') {
-        // space
-        this._spaceKeyHeld ??= {
-          draggingCanvas: this.dragging_canvas,
-          readOnly: this.read_only
-        }
-        this.read_only = true
-        this._autoPan?.stop()
-        this.dragging_canvas =
-          this.pointer.isDown || !!this.linkConnector.renderLinks.length
-        block_default = true
-      } else if (e.key === 'Escape') {
-        // esc
-        if (this.linkConnector.isConnecting) {
-          this.linkConnector.reset()
-          e.preventDefault()
-          return
-        }
-        this.node_panel?.close()
-        this.options_panel?.close()
-        if (this.node_panel || this.options_panel) block_default = true
-      }
-
-      // TODO
-      if (!this.selectOnly) {
-        for (const node of Object.values(this.selected_nodes)) {
-          node.onKeyDown?.(e)
-        }
-      }
-    } else if (e.type == 'keyup' && !this.selectOnly) {
-      for (const node of Object.values(this.selected_nodes)) {
-        node.onKeyUp?.(e)
-      }
-    }
-
-    // TODO: Do we need to remeasure and recalculate everything on every key down/up?
-    graph.change()
-
-    if (block_default) {
-      e.preventDefault()
-      e.stopImmediatePropagation()
+    if (e.defaultPrevented || !this.graph || this.selectOnly) return
+    const target = e.target
+    if (
+      target instanceof HTMLElement &&
+      (target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target.isContentEditable)
+    )
+      return
+    for (const node of Object.values(this.selected_nodes)) {
+      if (e.type === 'keydown') node.onKeyDown?.(e)
+      else if (e.type === 'keyup') node.onKeyUp?.(e)
     }
   }
   _serializeItems(items?: Iterable<Positionable>): ClipboardItems {
