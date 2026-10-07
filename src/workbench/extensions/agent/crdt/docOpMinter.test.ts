@@ -827,16 +827,7 @@ describe('attachDocOpMinter', () => {
       host.widgets[1].value = 'pasted'
       await afterFlush()
 
-      expect(minted).toEqual([
-        {
-          op: 'set_widget',
-          node_id: host.id,
-          widget: 'text',
-          value: 'pasted',
-          old: 'an interior default'
-        }
-      ])
-      expect(applyMinted(doc, minted)).toEqual(['rejected'])
+      expect(minted).toEqual([])
       expect(reportError).toHaveBeenCalledWith(
         expect.any(Error),
         expect.objectContaining({
@@ -846,6 +837,56 @@ describe('attachDocOpMinter', () => {
       doc.destroy()
     }
   )
+
+  it('drops a drifted host write without poisoning its same-tick batch', async () => {
+    const source = new TestSource()
+    withGraphIntentSource('load', () => graph.add(source))
+    const { host, doc } = seedPromotedHost()
+    docPromotedWidgets = () => ({
+      valueCount: 2,
+      declaredNames: ['text', 'prefix'],
+      promotedNames: ['text', 'prefix']
+    })
+
+    host.widgets[1].value = 'misplaced'
+    source.widgets![0].value = 42
+    await afterFlush()
+
+    expect(minted).toEqual([
+      {
+        op: 'set_widget',
+        node_id: source.id,
+        widget: 'steps',
+        value: 42,
+        old: 20
+      }
+    ])
+    expect(applyMinted(doc, minted)).toEqual(['applied'])
+    doc.destroy()
+  })
+
+  it('drops an unpromoted host widget without poisoning its same-tick batch', async () => {
+    const source = new TestSource()
+    withGraphIntentSource('load', () => graph.add(source))
+    const { host, doc } = seedPromotedHost()
+    const extra = host.addWidget('text', 'extra', 'before', () => {})
+
+    extra.value = 'after'
+    source.widgets![0].value = 42
+    await afterFlush()
+
+    expect(minted).toEqual([
+      {
+        op: 'set_widget',
+        node_id: source.id,
+        widget: 'steps',
+        value: 42,
+        old: 20
+      }
+    ])
+    expect(applyMinted(doc, minted)).toEqual(['applied'])
+    doc.destroy()
+  })
 
   it('seeds an unset sibling exactly as serializing the host would', async () => {
     const { host, doc } = seedPromotedHost([])
@@ -887,7 +928,7 @@ describe('attachDocOpMinter', () => {
       await afterFlush()
     }
 
-    expect(minted).toHaveLength(3)
+    expect(minted).toHaveLength(0)
     expect(
       vi
         .mocked(reportError)

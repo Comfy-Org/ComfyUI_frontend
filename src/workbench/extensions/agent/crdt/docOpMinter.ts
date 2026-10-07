@@ -250,9 +250,8 @@ function promotedHostWrite(
  *   declared order; they are a SUBSEQUENCE of it, since a declared input
  *   fed by a link backs no widget.
  *
- * A refused write keeps its old `opaque_widgets` rejection, which also aborts
- * the remainder of its batch — the same cost every promoted write paid before
- * the promoted form existed, now only on a drifted host.
+ * A refused write is dropped before enqueue so its `opaque_widgets` rejection
+ * cannot abort unrelated operations in the same batch.
  */
 function documentAcceptsLiveIndex(
   doc: DocPromotedWidgets | null,
@@ -295,13 +294,14 @@ function routedWidgetOperation(
   } as const
   const owningGraphId = node?.graph?.id ?? event.graphId
   if (owningGraphId === rootGraphId) {
+    if (!node?.isSubgraphNode()) return operation
     const promoted = promotedHostWrite(
       node,
       event,
       docPromotedWidgets,
       onOrderDrift
     )
-    return promoted ? { ...operation, promoted } : operation
+    return promoted ? { ...operation, promoted } : null
   }
   const subgraphNodePath = findSubgraphNodePathById(graph, owningGraphId)
   if (subgraphNodePath === null || subgraphNodePath.length === 0) {
