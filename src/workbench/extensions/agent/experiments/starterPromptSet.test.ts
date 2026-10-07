@@ -56,7 +56,7 @@ describe('useStarterPromptSet', () => {
     ).not.toHaveBeenCalled()
   })
 
-  it('fails closed to control for missing or unknown assignments', () => {
+  it('fails closed to control for an unknown assignment', () => {
     Reflect.set(remoteConfig.value, STARTER_PROMPT_SET_FLAG, 'unexpected')
     authenticatedRemoteConfigState.value = 'authenticated'
     const { assignment } = useStarterPromptSet()
