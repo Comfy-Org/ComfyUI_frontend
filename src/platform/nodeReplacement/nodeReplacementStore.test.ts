@@ -2,7 +2,7 @@ import type { NodeReplacementResponse } from './types'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { ServerFeatureFlag } from '@/composables/useFeatureFlags'
+import { ServerFeatureFlag } from '@/platform/remoteConfig/serverFeatureFlag'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import { fetchNodeReplacements } from './nodeReplacementService'

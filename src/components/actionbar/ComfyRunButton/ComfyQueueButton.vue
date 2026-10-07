@@ -12,12 +12,11 @@
       size="unset"
       :class="
         cn(
-          'h-full gap-1.5 rounded-lg px-4',
+          'h-full gap-1.5 rounded-l-lg rounded-r-none px-4',
           paymentRecoveryLock ? 'font-medium' : 'font-light'
         )
       "
       data-testid="queue-button"
-      :data-variant="queueButtonVariant"
       @click="queuePrompt"
     >
       <i :class="cn(iconClass, 'size-4')" data-testid="queue-button-icon" />
@@ -27,10 +26,15 @@
     <Menu side="bottom" :side-offset="4" class="min-w-44">
       <template #trigger>
         <Button
-          variant="secondary"
+          :variant="queueMenuTriggerVariant"
           size="unset"
           :disabled="Boolean(paymentRecoveryLock)"
-          :class="queueMenuTriggerClass"
+          :class="
+            cn(
+              queueMenuTriggerClass,
+              queueMenuTriggerVariantClass[queueMenuTriggerVariant]
+            )
+          "
           :aria-label="t('menu.runOptions')"
           data-testid="queue-mode-menu-trigger"
         >
@@ -172,7 +176,7 @@ const queueButtonLabel = computed(() =>
 )
 
 const queueButtonVariant = computed<
-  'destructive' | 'primary' | 'secondary' | 'subscribe'
+  'destructive' | 'inverted' | 'secondary' | 'subscribe'
 >(() =>
   paymentRecoveryLock === 'owner'
     ? 'subscribe'
@@ -180,10 +184,21 @@ const queueButtonVariant = computed<
       ? 'secondary'
       : isStopInstantAction.value
         ? 'destructive'
-        : 'primary'
+        : 'inverted'
 )
+const queueMenuTriggerVariant = computed(() =>
+  queueButtonVariant.value === 'subscribe'
+    ? 'secondary'
+    : queueButtonVariant.value
+)
+const queueMenuTriggerVariantClass = {
+  destructive:
+    'border-black/20 data-[state=open]:bg-destructive-background-hover',
+  inverted: 'data-[state=open]:bg-base-foreground/80',
+  secondary: 'text-muted-foreground'
+} satisfies Record<typeof queueMenuTriggerVariant.value, string>
 const queueMenuTriggerClass =
-  'h-full w-6 rounded-l-none rounded-r-lg border-l border-border-subtle p-0 text-muted-foreground data-[state=open]:bg-secondary-background-hover'
+  'h-full w-6 rounded-l-none rounded-r-lg border-0 border-l border-solid border-current/25 p-0'
 
 const iconClass = computed(() => {
   if (paymentRecoveryLock) {

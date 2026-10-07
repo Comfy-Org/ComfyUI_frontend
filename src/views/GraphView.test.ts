@@ -30,9 +30,6 @@ beforeEach(() => {
   vi.mocked(
     useBottomPanelStore().registerCoreBottomPanelTabs
   ).mockResolvedValue(undefined)
-  vi.mocked(useSidebarTabStore().registerCoreSidebarTabs).mockImplementation(
-    () => {}
-  )
 })
 
 const apiMock = vi.hoisted(() =>
@@ -84,6 +81,10 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
       restoreMenuPosition: vi.fn()
     }
   }
+}))
+
+vi.mock(import('@/composables/sidebarTabs/registerCoreSidebarTabs'), () => ({
+  registerCoreSidebarTabs: vi.fn()
 }))
 
 vi.mock(import('@/composables/useReconnectQueueRefresh'), () => {

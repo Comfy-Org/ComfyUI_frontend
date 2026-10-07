@@ -42,7 +42,7 @@ const templateSelectorDialog = useWorkflowTemplateSelectorDialog()
         <i18n-t keypath="linearMode.welcome.getStarted" tag="span">
           <template #runButton>
             <span
-              class="mx-0.5 inline-flex -translate-y-0.5 transform cursor-default items-center rounded-sm bg-primary-background px-3.5 py-0.5 text-2xs font-medium text-base-foreground"
+              class="mx-0.5 inline-flex -translate-y-0.5 transform cursor-default items-center rounded-sm bg-base-foreground px-3.5 py-0.5 text-2xs font-medium text-base-background"
             >
               {{ t('menu.run') }}
             </span>

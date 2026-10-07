@@ -1078,6 +1078,17 @@ describe('useLayerEditorSession', () => {
   })
 
   describe('background layer', () => {
+    it('has its background before any image loads', () => {
+      const { session } = makeSession()
+
+      expect(session.layers.value.map((n) => n.name)).toEqual(['Background'])
+      expect(session.backgroundLayer.value?.fill).toEqual({
+        type: 'solid',
+        color: '#ffffff'
+      })
+      expect(session.canUndo.value).toBe(false)
+    })
+
     it('creates a locked white fill layer at index 0 on load', async () => {
       const { session } = await loadedSession()
       const bg = session.backgroundLayer.value
