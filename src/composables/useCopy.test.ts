@@ -8,8 +8,12 @@ import {
   vi
 } from 'vitest'
 import { effectScope } from 'vue'
-import { LAST_COPY_ID_KEY, useCopy } from './useCopy'
+import { useCopy } from './useCopy'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import {
+  CANVAS_CLIPBOARD_ID_KEY,
+  CANVAS_CLIPBOARD_KEY
+} from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { fromPartial } from '@total-typescript/shoehorn'
 
@@ -21,8 +25,6 @@ const copyMocks = {
 }
 
 const multiChunkPayloadLength = 0x8000 * 6 + 123
-const canvasClipboardKey = 'litegrapheditor_clipboard'
-const canvasClipboardIdKey = 'litegrapheditor_clipboard_id'
 
 function mountCopy(): void {
   const scope = effectScope()
@@ -61,16 +63,17 @@ function selectDocumentText(selectedCharacters: number): void {
   })
 }
 
-function readSerializedClipboardMetadata(dataTransfer: DataTransfer): string {
+function readClipboardPayload(dataTransfer: DataTransfer): unknown {
   const match = dataTransfer
     .getData('text/html')
-    .match(/data-comfy-metadata="([A-Za-z0-9+/=]+)"/)?.[1]
-  expect(match).toBeDefined()
+    .match(
+      /^<meta charset="utf-8"><div><span data-comfy-metadata="([A-Za-z0-9+/=]+)"><\/span><\/div><span style="white-space:pre-wrap;">Text<\/span>$/
+    )?.[1]
   if (!match) throw new Error('Expected clipboard metadata to be written')
 
   const binaryString = atob(match)
   const bytes = Uint8Array.from(binaryString, (char) => char.charCodeAt(0))
-  return new TextDecoder().decode(bytes)
+  return JSON.parse(new TextDecoder().decode(bytes))
 }
 
 describe('useCopy', () => {
@@ -98,24 +101,23 @@ describe('useCopy', () => {
 
     const dataTransfer = copySerializedData(serializedData)
 
-    expect(readSerializedClipboardMetadata(dataTransfer)).toBe(serializedData)
+    expect(readClipboardPayload(dataTransfer)).toMatchObject(
+      JSON.parse(serializedData)
+    )
   })
 
-  it('tags the copy with the stored copy id outside a secure context', () => {
-    vi.stubGlobal('crypto', {
-      getRandomValues: crypto.getRandomValues.bind(crypto)
-    })
-    onTestFinished(() => {
-      vi.unstubAllGlobals()
+  it("tags the copy with litegraph's clipboard id", () => {
+    copyMocks.canvas.copyToClipboard.mockImplementation(() => {
+      localStorage.setItem(CANVAS_CLIPBOARD_ID_KEY, 'canvas-copy-1')
+      return '{"nodes":[]}'
     })
 
-    const dataTransfer = copySerializedData('{"nodes":[]}')
+    const dataTransfer = dispatchCopy()
 
-    const copyId = dataTransfer
-      .getData('text/html')
-      .match(/data-copy-id="([^"]+)"/)?.[1]
-    expect(copyId).toBeDefined()
-    expect(copyId).toBe(localStorage.getItem(LAST_COPY_ID_KEY))
+    expect(readClipboardPayload(dataTransfer)).toEqual({
+      nodes: [],
+      clipboardId: 'canvas-copy-1'
+    })
   })
 
   describe('copy on a target the canvas ignores', () => {
@@ -124,8 +126,8 @@ describe('useCopy', () => {
     let copyId = 0
 
     function writeCanvasClipboard(serializedData: string): void {
-      localStorage.setItem(canvasClipboardKey, serializedData)
-      localStorage.setItem(canvasClipboardIdKey, String(++copyId))
+      localStorage.setItem(CANVAS_CLIPBOARD_KEY, serializedData)
+      localStorage.setItem(CANVAS_CLIPBOARD_ID_KEY, String(++copyId))
     }
 
     function copyNodeWithKeyboard(): void {
@@ -145,8 +147,8 @@ describe('useCopy', () => {
     beforeEach(() => {
       copyId = 0
       onTestFinished(() => {
-        localStorage.removeItem(canvasClipboardKey)
-        localStorage.removeItem(canvasClipboardIdKey)
+        localStorage.removeItem(CANVAS_CLIPBOARD_KEY)
+        localStorage.removeItem(CANVAS_CLIPBOARD_ID_KEY)
       })
     })
 
@@ -201,7 +203,7 @@ describe('useCopy', () => {
 
         const dataTransfer = dispatchCopy(textarea)
 
-        expect(localStorage.getItem(canvasClipboardKey)).toBe(slotAfter)
+        expect(localStorage.getItem(CANVAS_CLIPBOARD_KEY)).toBe(slotAfter)
         expect(dataTransfer.getData('text/html')).toBe('')
         expect(copyMocks.canvas.copyToClipboard).not.toHaveBeenCalled()
       }
@@ -225,7 +227,7 @@ describe('useCopy', () => {
 
         dispatchCopy(input)
 
-        expect(localStorage.getItem(canvasClipboardKey)).toBeNull()
+        expect(localStorage.getItem(CANVAS_CLIPBOARD_KEY)).toBeNull()
       }
     )
   })
