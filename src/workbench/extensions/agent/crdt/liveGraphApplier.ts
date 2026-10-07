@@ -127,6 +127,11 @@ interface DocLink {
   targetSlot: number
 }
 
+interface ApplyWidgetOptions {
+  documentWidgets?: DocNode['widgets']
+  reportMissing?: boolean
+}
+
 function plain(value: unknown): unknown {
   if (value instanceof Y.Map || value instanceof Y.Array) return value.toJSON()
   return structuredClone(value)
@@ -748,7 +753,10 @@ export class LiveGraphApplier {
           constructedNames
         )
         if (mounted)
-          this.applyWidgets(node, mounted, mode, docNode.widgets, false)
+          this.applyWidgets(node, mounted, mode, {
+            documentWidgets: docNode.widgets,
+            reportMissing: false
+          })
       }
     }
     floorSizeToContent(node)
@@ -816,28 +824,28 @@ export class LiveGraphApplier {
         Object.entries(widgets).filter(([name]) => changed(node, name, names))
       ),
       mode,
-      widgets
+      { documentWidgets: widgets }
     )
   }
 
   /**
-   * `documentWidgets` is the node's whole document map; it differs from
-   * `widgets` only on the partial-frame path, where `widgets` is the changed
-   * subset and overflow-alias precedence still has to be judged against every
-   * key the node carries.
+   * `options.documentWidgets` is the node's whole document map. It differs
+   * from `widgets` on partial frames, where alias precedence still depends on
+   * every key. Creation can suppress reports for unmatched names while still
+   * reporting unresolved overflow aliases.
    */
   private applyWidgets(
     node: LGraphNode,
     widgets: DocNode['widgets'],
     mode: ApplyMode,
-    documentWidgets: DocNode['widgets'] = widgets,
-    reportMissing = true
+    options: ApplyWidgetOptions = {}
   ): void {
     if (widgets === undefined) return
     if (node.isSubgraphNode()) {
       this.applyHostWidgets(node, widgets, mode)
       return
     }
+    const { documentWidgets = widgets, reportMissing = true } = options
     let pending = ordinaryWidgetEntries(node, widgets).filter(isWidgetEntry)
     while (pending.length > 0) {
       const { resolved, unresolved } = this.applyWidgetRound(
