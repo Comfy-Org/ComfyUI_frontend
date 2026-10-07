@@ -9,16 +9,23 @@ import {
 
 const source =
   '<Update label="v1" description="October 5, 2026">\n**New**\n* [Feature](https://docs.comfy.org)\n</Update>'
+const entry = {
+  id: 'v1',
+  label: 'v1',
+  date: 'October 5, 2026',
+  markdown: '**New**\n* [Feature](https://docs.comfy.org)'
+}
 
 describe('docs changelog boundary', () => {
   it('reads release labels, dates and Markdown in source order', () => {
     expect(parseChangelog(`---\ntitle: Changelog\n---\n${source}`)).toEqual([
-      {
-        label: 'v1',
-        date: 'October 5, 2026',
-        markdown: '**New**\n* [Feature](https://docs.comfy.org)'
-      }
+      entry
     ])
+  })
+  it('gives each release an anchor id derived from its label', () => {
+    expect(parseChangelog(source.replace('v1', 'v1.0 Beta'))[0]?.id).toBe(
+      'v1-0-beta'
+    )
   })
   it.for([
     [
@@ -35,7 +42,7 @@ describe('docs changelog boundary', () => {
     ]
   ] as const)('reads release metadata with %s', ([, input]) => {
     expect(parseChangelog(input)).toEqual([
-      { label: 'v1', date: 'October 5, 2026', markdown: '**New**' }
+      { id: 'v1', label: 'v1', date: 'October 5, 2026', markdown: '**New**' }
     ])
   })
   it.for([
@@ -71,16 +78,7 @@ describe('docs changelog boundary', () => {
       readChangelogCache({
         getItem: () => JSON.stringify({ source, checkedAt })
       })
-    ).toEqual({
-      entries: [
-        {
-          label: 'v1',
-          date: 'October 5, 2026',
-          markdown: '**New**\n* [Feature](https://docs.comfy.org)'
-        }
-      ],
-      checkedAt
-    })
+    ).toEqual([entry])
   })
   it.for([
     ['expired', () => ({ source, checkedAt: Date.now() - 604_800_001 })],
@@ -107,16 +105,7 @@ describe('docs changelog boundary', () => {
       setItem: (key: string, value: string) => void stored.set(key, value)
     }
     expect(writeChangelogCache(source, storage)).toBe(true)
-    expect(readChangelogCache(storage)).toEqual({
-      entries: [
-        {
-          label: 'v1',
-          date: 'October 5, 2026',
-          markdown: '**New**\n* [Feature](https://docs.comfy.org)'
-        }
-      ],
-      checkedAt: Date.now()
-    })
+    expect(readChangelogCache(storage)).toEqual([entry])
   })
   it('reports a cache write the browser refuses', () => {
     expect(

@@ -1,63 +1,94 @@
+import type { Locator } from '@playwright/test'
 import { expect } from '@playwright/test'
+
+import { CHANGELOG_SOURCE } from '@/lib/changelog'
 
 import { test } from './fixtures/blockExternalMedia'
 
-const sourceURL =
-  'https://raw.githubusercontent.com/Comfy-Org/docs/main/changelog/index.mdx'
-const release = (label: string) =>
-  `<Update label="${label}" description="October 5, 2026">\n**New features**\n\n${Array.from({ length: 24 }, (_, i) => `* Feature ${i + 1}`).join('\n')}\n</Update>`
+const release = (label: string, extra = '') =>
+  `<Update label="${label}" description="October 5, 2026">\n**New features**\n\n${Array.from({ length: 24 }, (_, i) => `* Feature ${i + 1}`).join('\n')}\n${extra}</Update>`
+
+const longLine = `https://docs.comfy.org/${'unbroken-path-segment-'.repeat(12)}`
+const longCode = `\n\`\`\`\n${'const veryLongIdentifier = 1; '.repeat(12)}\n\`\`\`\n`
+
+async function box(locator: Locator) {
+  const bounds = await locator.boundingBox()
+  if (!bounds) throw new Error('Element has no bounding box')
+  return bounds
+}
 
 test('keeps release metadata pinned within its release on desktop', async ({
   page,
   context
 }) => {
-  await context.route(sourceURL, (route) =>
+  await context.route(CHANGELOG_SOURCE, (route) =>
     route.fulfill({ body: `${release('v1.0')}\n${release('v0.9')}` })
   )
   await page.goto('/changelog')
-  await expect(
-    page.getByRole('heading', { name: 'v1.0', exact: true })
-  ).toBeVisible()
-  const first = page.locator('article').first()
+  const first = page.getByRole('article', { name: 'v1.0' })
+  await expect(first).toBeVisible()
   const metadata = first.getByTestId('release-metadata')
   const notes = first.getByTestId('release-notes')
-  const top = await metadata.boundingBox()
-  const notesTop = await notes.boundingBox()
-  expect(top).not.toBeNull()
-  expect(notesTop).not.toBeNull()
-  expect(Math.abs(top!.y - notesTop!.y)).toBeLessThan(2)
-  await page.evaluate(() =>
-    window.scrollTo(0, document.querySelector('article')!.offsetTop + 200)
-  )
-  await expect
-    .poll(async () => (await metadata.boundingBox())?.y)
-    .toBeCloseTo(144, 0)
-  await page.locator('article').nth(1).scrollIntoViewIfNeeded()
-  const firstBox = await first.boundingBox()
-  const metadataBox = await metadata.boundingBox()
-  expect(metadataBox!.y + metadataBox!.height).toBeLessThanOrEqual(
-    firstBox!.y + firstBox!.height + 1
-  )
+
+  await test.step('aligns the metadata with the first note block', async () => {
+    await expect
+      .poll(async () =>
+        Math.abs((await box(metadata)).y - (await box(notes)).y)
+      )
+      .toBeLessThan(2)
+  })
+
+  await test.step('pins the metadata at its sticky offset while reading', async () => {
+    const stickyTop = await metadata.evaluate((el) =>
+      Number.parseFloat(getComputedStyle(el).top)
+    )
+    await first.evaluate((el) =>
+      window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY + 200)
+    )
+    await expect
+      .poll(async () => Math.abs((await box(metadata)).y - stickyTop))
+      .toBeLessThan(1)
+  })
+
+  await test.step('keeps the metadata inside its release when the next one scrolls in', async () => {
+    await page.getByRole('article', { name: 'v0.9' }).scrollIntoViewIfNeeded()
+    await expect
+      .poll(async () => {
+        const [release, pinned] = await Promise.all([box(first), box(metadata)])
+        return pinned.y + pinned.height - (release.y + release.height)
+      })
+      .toBeLessThanOrEqual(1)
+  })
 })
 
 test('stacks release metadata without horizontal overflow @mobile', async ({
   page,
   context
 }) => {
-  await context.route(sourceURL, (route) =>
-    route.fulfill({ body: release('v1.0') })
+  await context.route(CHANGELOG_SOURCE, (route) =>
+    route.fulfill({ body: release('v1.0', `\n${longLine}\n${longCode}`) })
   )
   await page.goto('/changelog')
-  await expect(
-    page.getByRole('heading', { name: 'v1.0', exact: true })
-  ).toBeVisible()
-  const metadata = page.getByTestId('release-metadata')
-  const bounds = await page.evaluate(() => ({
-    width: innerWidth,
-    scrollWidth: document.documentElement.scrollWidth
-  }))
-  expect(bounds.scrollWidth).toBeLessThanOrEqual(bounds.width)
-  const metadataBox = await metadata.boundingBox()
-  const notesBox = await page.getByTestId('release-notes').boundingBox()
-  expect(notesBox!.y).toBeGreaterThan(metadataBox!.y + metadataBox!.height)
+  const article = page.getByRole('article', { name: 'v1.0' })
+  await expect(article).toBeVisible()
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => document.documentElement.scrollWidth - window.innerWidth
+      )
+    )
+    .toBeLessThanOrEqual(0)
+  const notes = article.getByTestId('release-notes')
+  await expect
+    .poll(() => notes.evaluate((el) => el.scrollWidth - el.clientWidth))
+    .toBeLessThanOrEqual(0)
+  await expect
+    .poll(async () => {
+      const [metadataBox, notesBox] = await Promise.all([
+        box(article.getByTestId('release-metadata')),
+        box(notes)
+      ])
+      return notesBox.y - (metadataBox.y + metadataBox.height)
+    })
+    .toBeGreaterThan(0)
 })

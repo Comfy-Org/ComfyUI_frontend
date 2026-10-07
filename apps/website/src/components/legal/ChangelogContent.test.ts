@@ -79,7 +79,9 @@ describe('ChangelogContent', () => {
       'href',
       'https://docs.comfy.org/'
     )
-    await waitFor(() => expect(screen.queryByRole('status')).toBeNull())
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent(/^$/)
+    )
     expect(
       JSON.parse(localStorage.getItem(CHANGELOG_CACHE_KEY) ?? '{}').source
     ).toBe(source)
@@ -92,7 +94,9 @@ describe('ChangelogContent', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(source)))
     render(ChangelogContent)
     await screen.findByRole('heading', { name: 'v1' })
-    await waitFor(() => expect(screen.queryByRole('status')).toBeNull())
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent(/^$/)
+    )
   })
 
   it('shows an outage, then recovers when retried', async () => {
@@ -111,7 +115,7 @@ describe('ChangelogContent', () => {
     )
   })
 
-  it('labels cached notes during an outage', async () => {
+  it('labels cached notes during an outage in the live region it started with', async () => {
     localStorage.setItem(
       CHANGELOG_CACHE_KEY,
       JSON.stringify({ source, checkedAt: Date.now() })
@@ -119,9 +123,9 @@ describe('ChangelogContent', () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')))
     render(ChangelogContent)
     await screen.findByRole('heading', { name: 'v1' })
-    await waitFor(() =>
-      expect(screen.getByRole('status')).toHaveTextContent('Showing saved')
-    )
+    const status = screen.getByRole('status')
+    await waitFor(() => expect(status).toHaveTextContent('Showing saved'))
+    expect(screen.getByRole('status')).toBe(status)
   })
 
   it('keeps validated saved notes when fresh release anchors are ambiguous', async () => {

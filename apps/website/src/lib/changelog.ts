@@ -1,6 +1,6 @@
 import { combineAbortSignals, createTimeoutSignal } from '@/utils/abortSignal'
 
-const CHANGELOG_SOURCE =
+export const CHANGELOG_SOURCE =
   'https://raw.githubusercontent.com/Comfy-Org/docs/main/changelog/index.mdx'
 export const CHANGELOG_DOCS = 'https://docs.comfy.org/changelog/index'
 export const CHANGELOG_CACHE_KEY = 'comfy-docs-changelog-v1'
@@ -9,12 +9,13 @@ const CHANGELOG_CACHE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000
 const CHANGELOG_TIMEOUT_MS = 10 * 1000
 
 export interface ChangelogEntry {
+  id: string
   label: string
   date: string
   markdown: string
 }
 
-export function releaseId(label: string) {
+function releaseId(label: string) {
   return label.toLowerCase().replace(/[^a-z0-9]+/g, '-')
 }
 
@@ -50,7 +51,7 @@ export function parseChangelog(source: string): ChangelogEntry[] {
     const id = releaseId(label)
     if (releaseIds.has(id)) throw new Error('Ambiguous release label')
     releaseIds.add(id)
-    entries.push({ label, date, markdown: markdown.trim() })
+    entries.push({ id, label, date, markdown: markdown.trim() })
   }
   if (!entries.length || body.replace(updatePattern, '').trim()) {
     throw new Error('Unsupported changelog format')
@@ -74,7 +75,7 @@ export function readChangelogCache(storage?: Pick<Storage, 'getItem'>) {
       Date.now() - raw.checkedAt > CHANGELOG_CACHE_MAX_AGE_MS
     )
       return undefined
-    return { entries: parseChangelog(raw.source), checkedAt: raw.checkedAt }
+    return parseChangelog(raw.source)
   } catch {
     return undefined
   }

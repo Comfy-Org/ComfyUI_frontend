@@ -1,13 +1,13 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { useDocumentVisibility, useIntervalFn } from '@vueuse/core'
-import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import {
   CHANGELOG_DOCS,
   CHANGELOG_REFRESH_MS,
   fetchChangelog,
   readChangelogCache,
-  releaseId,
   writeChangelogCache
 } from '@/lib/changelog'
 import type { ChangelogEntry } from '@/lib/changelog'
@@ -21,6 +21,11 @@ const entries = ref<ChangelogEntry[]>([])
 const loading = ref(false)
 const failed = ref(false)
 const requests = new AbortController()
+const status = computed(() => {
+  if (failed.value)
+    return t(entries.value.length ? 'changelog.saved' : 'changelog.unavailable')
+  return loading.value && !entries.value.length ? t('changelog.loading') : ''
+})
 let initialAnchorHandled = false
 let disposed = false
 let inFlight = false
@@ -35,10 +40,10 @@ async function applyEntries(nextEntries: ChangelogEntry[]) {
   await nextTick()
   if (disposed || initialAnchorHandled) return
   const entry = nextEntries.find(
-    (entry) => `#${releaseId(entry.label)}` === window.location.hash
+    (entry) => `#${entry.id}` === window.location.hash
   )
   if (!entry) return
-  const element = document.getElementById(releaseId(entry.label))
+  const element = document.getElementById(entry.id)
   if (!element) return
   element.scrollIntoView({ block: 'start' })
   initialAnchorHandled = true
@@ -80,7 +85,7 @@ watch(visibility, (state) => {
 
 onMounted(() => {
   const cached = readChangelogCache()
-  if (cached) void applyEntries(cached.entries)
+  if (cached) void applyEntries(cached)
   void refresh()
   if (visibility.value === 'visible') resume()
 })
@@ -97,15 +102,15 @@ onUnmounted(() => {
     }}</BrandButton>
   </div>
   <p
-    v-if="failed || (loading && !entries.length)"
     role="status"
-    class="mx-auto mt-2 max-w-3xl px-4 text-center text-sm text-primary-warm-gray lg:px-0"
+    :class="
+      cn(
+        'mx-auto max-w-3xl px-4 text-center text-sm text-primary-warm-gray lg:px-0',
+        status && 'mt-2'
+      )
+    "
   >
-    <template v-if="failed && entries.length">{{
-      t('changelog.saved')
-    }}</template>
-    <template v-else-if="failed">{{ t('changelog.unavailable') }}</template>
-    <template v-else>{{ t('changelog.loading') }}</template>
+    {{ status }}
   </p>
   <p
     class="mx-auto mt-8 max-w-3xl px-4 text-center text-sm/relaxed text-primary-comfy-canvas lg:px-0"
@@ -125,9 +130,9 @@ onUnmounted(() => {
         >
         <article
           v-for="entry in entries"
-          :id="releaseId(entry.label)"
-          :key="entry.label"
-          :aria-labelledby="`${releaseId(entry.label)}-title`"
+          :id="entry.id"
+          :key="entry.id"
+          :aria-labelledby="`${entry.id}-title`"
           class="mb-16 scroll-mt-24 lg:grid lg:scroll-mt-36 lg:grid-cols-[10rem_minmax(0,1fr)] lg:gap-6"
         >
           <div
@@ -135,7 +140,7 @@ onUnmounted(() => {
             class="mb-6 lg:sticky lg:top-36 lg:mb-0 lg:self-start"
           >
             <h2
-              :id="`${releaseId(entry.label)}-title`"
+              :id="`${entry.id}-title`"
               class="mb-4 text-2xl font-light text-primary-comfy-canvas lg:text-3xl"
             >
               {{ entry.label }}

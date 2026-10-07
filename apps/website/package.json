@@ -85,7 +85,7 @@
     "leaflet": "catalog:",
     "lenis": "catalog:",
     "lottie-web": "catalog:",
-    "marked": "^15.0.11",
+    "marked": "catalog:",
     "parse5": "catalog:",
     "posthog-js": "catalog:",
     "reka-ui": "catalog:",
