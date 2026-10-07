@@ -107,10 +107,10 @@ export async function stopMergeAutomation(
     atOrAfter(entry.enqueuedAt, policyReview.submitted_at)
   ) {
     await github.graphql(
-      `mutation PackageFastLaneDequeue($id: ID!) {
-        dequeuePullRequest(input: { id: $id }) { clientMutationId }
+      `mutation PackageFastLaneDequeue($pullRequestId: ID!) {
+        dequeuePullRequest(input: { id: $pullRequestId }) { clientMutationId }
       }`,
-      { id: entry.id }
+      { pullRequestId: pull.node_id }
     )
   }
 

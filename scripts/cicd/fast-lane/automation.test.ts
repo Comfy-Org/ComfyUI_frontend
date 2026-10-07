@@ -241,6 +241,7 @@ describe('merge automation', () => {
 
     expect(graphql).toHaveBeenCalledTimes(3)
     expect(graphql.mock.calls[1][0]).toContain('dequeuePullRequest')
+    expect(graphql.mock.calls[1][1]).toEqual({ pullRequestId: 'PR_1' })
     expect(graphql.mock.calls[2][0]).toContain('disablePullRequestAutoMerge')
   })
 
