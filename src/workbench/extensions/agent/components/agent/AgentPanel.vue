@@ -354,7 +354,6 @@ function onComposerSend(
 defineExpose({ addAttachment, updateAttachment, removeAttachment })
 </script>
 
-<!-- fallow-ignore-next-line complexity -- this existing panel template only gains starter-prompt callbacks -->
 <template>
   <section
     class="@container flex h-full flex-col overflow-hidden bg-base-background text-base-foreground"
