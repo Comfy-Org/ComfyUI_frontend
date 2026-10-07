@@ -153,7 +153,7 @@ describe('stale-schema reseed wire protocol', () => {
     )
   })
 
-  it('abandons the ambiguous lineage and requests a fresh refusal after conflict', () => {
+  it('keeps the rejected lineage and requests a fresh refusal after conflict', () => {
     const { transport, bridge } = refusedBridge()
     const replacements = vi.fn()
     bridge.addEventListener('follower_replaced', replacements)
@@ -167,12 +167,8 @@ describe('stale-schema reseed wire protocol', () => {
       code: 'conflict'
     })
 
-    expect(bridge.follower).not.toBe(oldFollower)
-    expect(replacements).toHaveBeenCalledWith(
-      expect.objectContaining({
-        detail: { workflowId: 'wf-1', preserveCanvas: false }
-      })
-    )
+    expect(bridge.follower).toBe(oldFollower)
+    expect(replacements).not.toHaveBeenCalled()
     expect(transport.frames('doc_subscribe')).toHaveLength(2)
   })
 

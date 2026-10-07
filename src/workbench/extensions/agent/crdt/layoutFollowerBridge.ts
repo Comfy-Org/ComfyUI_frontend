@@ -519,10 +519,7 @@ export class LayoutFollowerBridge extends EventTarget {
     this.dispatchEvent(new CustomEvent(event.type, { detail: result }))
     if (result.workflowId !== this.desiredWorkflowId) return
     if (!result.ok) {
-      if (result.code === RESEED_CONFLICT) {
-        this.pendingReseedWorkflowId = result.workflowId
-        this.abandonPendingReseed(false)
-      }
+      if (result.code === RESEED_CONFLICT) this.resubscribe()
       return
     }
     this.reseedBlockedUntilConfirmedWorkflowId = result.workflowId
