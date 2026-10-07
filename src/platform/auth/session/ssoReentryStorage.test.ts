@@ -30,14 +30,14 @@ function refuse(
 }
 
 describe(rememberSignedInSession, () => {
-  it.for([
-    ['saml.workos', true],
-    ['oidc.workos', true]
-  ] as const)('keeps a hint for a %s session', ([provider]) => {
-    rememberSignedInSession(user({ signInProvider: provider }))
+  it.for([['saml.workos'], ['oidc.workos']] as const)(
+    'keeps a hint for a %s session',
+    ([provider]) => {
+      rememberSignedInSession(user({ signInProvider: provider }))
 
-    expect(readSsoHint()).toEqual({ email: 'ada@acme.com' })
-  })
+      expect(readSsoHint()).toEqual({ email: 'ada@acme.com' })
+    }
+  )
 
   it.for([
     ['password'],
@@ -74,20 +74,25 @@ describe(rememberSignedInSession, () => {
   it('survives a storage that refuses to clear', () => {
     refuse(localStorage, 'removeItem')
 
-    expect(() => rememberSignedInSession(user())).not.toThrow()
+    expect(() =>
+      rememberSignedInSession(user({ signInProvider: 'google.com' }))
+    ).not.toThrow()
   })
 })
 
 describe(readSsoHint, () => {
+  it('reads null when nothing is stored', () => {
+    expect(readSsoHint()).toBeNull()
+  })
+
   it.for([
-    ['nothing stored', null],
     ['a malformed body', '{not json'],
     ['a non-object body', '"ada@acme.com"'],
     ['an object with no email', '{"name":"Ada"}'],
     ['an empty email', '{"email":""}'],
     ['a non-string email', '{"email":42}']
   ] as const)('reads null for %s', ([, raw]) => {
-    if (raw !== null) localStorage.setItem(HINT_KEY, raw)
+    localStorage.setItem(HINT_KEY, raw)
 
     expect(readSsoHint()).toBeNull()
   })
@@ -116,8 +121,11 @@ describe(forgetSsoHint, () => {
 })
 
 describe(hasRecentSsoReentry, () => {
+  it('reads false when no attempt was recorded', () => {
+    expect(hasRecentSsoReentry(NOW)).toBe(false)
+  })
+
   it.for([
-    { name: 'no attempt recorded', at: undefined, expected: false },
     { name: 'an attempt just now', at: NOW, expected: true },
     {
       name: 'an attempt inside the window',
@@ -135,8 +143,7 @@ describe(hasRecentSsoReentry, () => {
       expected: false
     }
   ])('$name reads $expected', ({ at, expected }) => {
-    if (at !== undefined)
-      sessionStorage.setItem(ATTEMPT_KEY, JSON.stringify(at))
+    sessionStorage.setItem(ATTEMPT_KEY, JSON.stringify(at))
 
     expect(hasRecentSsoReentry(NOW)).toBe(expected)
   })
@@ -186,39 +193,20 @@ describe(markSsoReentry, () => {
 })
 
 /**
- * `sendToSignIn` in src/router.ts redirects only when `markSsoReentry()`
- * returns true, and asks `hasRecentSsoReentry()` whether this tab already
- * tried. Together those two answers are what stops a lapsed SSO tab bouncing
- * between Comfy and the identity provider, so the pairing is pinned here.
+ * How the two records compose. `sendToSignIn` in src/router.ts drives them
+ * together, and webSessionFlagOn.test.ts covers that wiring end to end; these
+ * pin the composition itself, which neither function shows on its own.
  */
-describe('the once-per-tab-per-window redirect guard', () => {
-  it('allows the first redirect and refuses the second inside the window', () => {
+describe('recording an attempt and reading it back', () => {
+  it('marks this window as tried, so a second pass stops redirecting', () => {
     expect(hasRecentSsoReentry(NOW)).toBe(false)
+
     expect(markSsoReentry(NOW)).toBe(true)
 
     expect(hasRecentSsoReentry(NOW + 1)).toBe(true)
-    expect(hasRecentSsoReentry(NOW + ATTEMPT_WINDOW_MS - 1)).toBe(true)
   })
 
-  it('allows a redirect again once the window has passed', () => {
-    markSsoReentry(NOW)
-
-    expect(hasRecentSsoReentry(NOW + ATTEMPT_WINDOW_MS)).toBe(false)
-  })
-
-  it('refuses to redirect at all when the attempt cannot be recorded', () => {
-    refuse(sessionStorage, 'setItem')
-
-    expect(markSsoReentry(NOW)).toBe(false)
-  })
-
-  it('reports a recent attempt when the record cannot be read back', () => {
-    refuse(sessionStorage, 'getItem')
-
-    expect(hasRecentSsoReentry(NOW)).toBe(true)
-  })
-
-  it('keeps the hint and the attempt in separate storages, so a reload still redirects once', () => {
+  it('leaves the hint readable after the tab drops its attempt record', () => {
     rememberSignedInSession(user({ signInProvider: 'saml.workos' }))
     markSsoReentry(NOW)
 
