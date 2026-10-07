@@ -58,6 +58,7 @@ import FirstRunTour from '@/renderer/extensions/firstRunTour/FirstRunTour.vue'
 import GlobalToast from '@/components/toast/GlobalToast.vue'
 import InviteAcceptedToast from '@/platform/workspace/components/toasts/InviteAcceptedToast.vue'
 import RerouteMigrationToast from '@/components/toast/RerouteMigrationToast.vue'
+import { registerCoreSidebarTabs } from '@/composables/sidebarTabs/registerCoreSidebarTabs'
 import { useBrowserTabTitle } from '@/composables/useBrowserTabTitle'
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useQueuePolling } from '@/platform/remote/comfyui/useQueuePolling'
@@ -280,7 +281,7 @@ const coreCommands = useCoreCommands()
 useCommandStore().registerCommands(coreCommands)
 useMenuItemStore().registerCoreMenuCommands()
 useKeybindingService().registerCoreKeybindings()
-useSidebarTabStore().registerCoreSidebarTabs()
+registerCoreSidebarTabs()
 void useBottomPanelStore().registerCoreBottomPanelTabs()
 
 useQueuePolling()
