@@ -178,7 +178,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   const waitingWithoutActionSince = new Map<string, number>()
   const progressToasts = new Map<
     string,
-    { kind: ProgressToastKind; id: ToastId }
+    { id: ToastId; kind: ProgressToastKind }
   >()
   const progressToastsAwaitingFirstRead = new Set<string>()
   const terminalResolvers = new Map<string, TerminalResolver>()

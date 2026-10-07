@@ -16,9 +16,9 @@ import Button from '@/components/ui/button/Button.vue'
 import { useToast } from '@/components/ui/toast/toastStore'
 import type { ToastId } from '@/types/toastId'
 
-const { toastId, onMigrate } = defineProps<{
-  toastId: ToastId
+const { onMigrate, toastId } = defineProps<{
   onMigrate: () => Promise<void>
+  toastId: ToastId
 }>()
 const { t } = useI18n()
 const toast = useToast()

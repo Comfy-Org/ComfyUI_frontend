@@ -21,12 +21,12 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import type { ToastId } from '@/types/toastId'
 import { useWorkspaceSwitch } from '@/platform/workspace/composables/useWorkspaceSwitch'
 
-const { toastId, title, text, workspaceName, workspaceId } = defineProps<{
-  toastId: ToastId
-  title: string
+const { text, title, toastId, workspaceId, workspaceName } = defineProps<{
   text: string
-  workspaceName: string
+  title: string
+  toastId: ToastId
   workspaceId: string
+  workspaceName: string
 }>()
 const { t } = useI18n()
 const toast = useToast()

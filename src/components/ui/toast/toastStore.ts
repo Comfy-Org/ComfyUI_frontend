@@ -11,24 +11,24 @@ type ToastRole = 'alert' | 'status'
 type ToastKind = 'success' | 'error' | 'info' | 'warning' | 'loading'
 
 export interface ToastOptions {
+  closable?: boolean
   description?: string
   duration?: number
-  closable?: boolean
 }
 
 type ToastPlacement = 'stack' | 'dock'
 
 interface CustomToastOptions {
-  duration?: number
   closable?: boolean
-  role?: ToastRole
+  duration?: number
   placement?: ToastPlacement
+  role?: ToastRole
 }
 
 interface ToastBase {
-  id: ToastId
-  duration: number
   closable: boolean
+  duration: number
+  id: ToastId
   role: ToastRole
 }
 
@@ -39,10 +39,10 @@ interface StandardToast extends ToastBase {
 }
 
 interface CustomToast extends ToastBase {
-  kind: 'custom'
   component: Component
-  props?: Record<string, unknown>
+  kind: 'custom'
   placement: ToastPlacement
+  props?: Record<string, unknown>
 }
 
 type Toast = StandardToast | CustomToast

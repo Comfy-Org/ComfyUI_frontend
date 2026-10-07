@@ -133,7 +133,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
   const offeredActions = new Map<string, Set<string>>()
   const progressToasts = new Map<
     string,
-    { kind: ProgressToastKind; id: ToastId }
+    { id: ToastId; kind: ProgressToastKind }
   >()
 
   function sessionPorts(): Pick<
