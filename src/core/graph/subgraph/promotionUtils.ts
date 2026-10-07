@@ -154,7 +154,7 @@ export function reorderSubgraphInputsByWidgetOrder(
   orderedWidgets: readonly Pick<IBaseWidget, 'widgetId'>[]
 ): boolean {
   const remainingIndices = new Set(subgraphNode.inputs.keys())
-  const orderedIndices = orderedWidgets.flatMap((orderedWidget) => {
+  const orderedPromotedIndices = orderedWidgets.flatMap((orderedWidget) => {
     for (const index of remainingIndices) {
       if (isSamePromotedInput(subgraphNode, index, orderedWidget)) {
         remainingIndices.delete(index)
@@ -163,14 +163,23 @@ export function reorderSubgraphInputsByWidgetOrder(
     }
     return []
   })
-
-  for (const index of remainingIndices) orderedIndices.push(index)
+  if (orderedPromotedIndices.length !== orderedWidgets.length) return false
+  const promotedPositions = [...orderedPromotedIndices].sort(
+    (left, right) => left - right
+  )
+  const orderedIndices = subgraphNode.inputs.map((_, index) => index)
+  for (const [position, targetIndex] of promotedPositions.entries()) {
+    orderedIndices[targetIndex] = orderedPromotedIndices[position]
+  }
 
   if (orderedIndices.every((index, position) => index === position)) {
     return true
   }
   if (isRootGraphDocBound(subgraphNode.rootGraph.id)) {
-    warnDocBoundPromotionChange('agent.subgraphReorderNotSyncedDetail')
+    warnDocBoundPromotionChange(
+      subgraphNode.rootGraph.id,
+      'agent.subgraphReorderNotSyncedDetail'
+    )
     return false
   }
 
@@ -178,7 +187,17 @@ export function reorderSubgraphInputsByWidgetOrder(
   return true
 }
 
-function warnDocBoundPromotionChange(detail: string): void {
+const docBoundWarningAt = new Map<string, number>()
+
+function warnDocBoundPromotionChange(
+  rootGraphId: string,
+  detail: string
+): void {
+  const key = `${rootGraphId}:${detail}`
+  const now = Date.now()
+  const last = docBoundWarningAt.get(key)
+  if (last !== undefined && now - last < 5000) return
+  docBoundWarningAt.set(key, now)
   useToastStore().add({
     severity: 'warn',
     summary: t('agent.widgetWriteNotSyncedTitle'),
@@ -188,26 +207,30 @@ function warnDocBoundPromotionChange(detail: string): void {
 }
 
 function mutablePromotionParents(parents: readonly SubgraphNode[]) {
-  const mutable = parents.filter(
-    (parent) => !isRootGraphDocBound(parent.rootGraph.id)
+  const bound = parents.find((parent) =>
+    isRootGraphDocBound(parent.rootGraph.id)
   )
-  if (mutable.length !== parents.length) {
-    warnDocBoundPromotionChange('agent.subgraphPromotionNotSyncedDetail')
+  if (bound) {
+    warnDocBoundPromotionChange(
+      bound.rootGraph.id,
+      'agent.subgraphPromotionNotSyncedDetail'
+    )
+    return []
   }
-  return mutable
+  return [...parents]
 }
 
 function applySubgraphInputOrder(
   subgraphNode: SubgraphNode,
   orderedIndices: readonly number[]
-): void {
+): boolean {
   const widgetValues = subgraphNode.inputs.map((input) => {
     const id = input.widgetId
     if (!id) return undefined
     return useWidgetValueStore().getWidget(id)?.value
   })
 
-  reorderSubgraphInputs(subgraphNode, orderedIndices)
+  if (!reorderSubgraphInputs(subgraphNode, orderedIndices)) return false
   useWidgetValueStore().setNodeWidgetOrder(
     subgraphNode.rootGraph.id,
     subgraphNode.id,
@@ -222,6 +245,7 @@ function applySubgraphInputOrder(
     if (value === undefined || !id) continue
     useWidgetValueStore().setValue(id, value)
   }
+  return true
 }
 
 function isSamePromotedInput(
@@ -491,9 +515,12 @@ export function demoteWidget(
   parents: SubgraphNode[]
 ) {
   const source = toPromotionSource(node, widget)
-  const mutableParents = isPreviewPseudoWidget(widget)
-    ? parents
-    : mutablePromotionParents(parents)
+  const removesPromotedInput = parents.some((parent) =>
+    isLinkedPromotion(parent, source.sourceNodeId, source.sourceWidgetName)
+  )
+  const mutableParents = removesPromotedInput
+    ? mutablePromotionParents(parents)
+    : parents
   if (mutableParents.length === 0) return
   for (const parent of mutableParents) {
     if (demotePromotedInput(parent, source)) continue
@@ -673,6 +700,13 @@ export function autoExposeKnownPreviewNodes(subgraphNode: SubgraphNode): void {
 
 export function promoteRecommendedWidgets(subgraphNode: SubgraphNode) {
   autoExposeKnownPreviewNodes(subgraphNode)
+  if (isRootGraphDocBound(subgraphNode.rootGraph.id)) {
+    warnDocBoundPromotionChange(
+      subgraphNode.rootGraph.id,
+      'agent.subgraphPromotionNotSyncedDetail'
+    )
+    return
+  }
   const interiorNodes = subgraphNode.subgraph.nodes
   const filteredWidgets: WidgetItem[] = interiorNodes
     .flatMap(nodeWidgets)
@@ -692,6 +726,7 @@ export function promoteRecommendedWidgets(subgraphNode: SubgraphNode) {
 }
 
 export function pruneDisconnected(subgraphNode: SubgraphNode) {
+  if (isRootGraphDocBound(subgraphNode.rootGraph.id)) return
   const subgraph = subgraphNode.subgraph
   const removedEntries: PromotedWidgetSource[] = []
 

@@ -382,7 +382,10 @@ function startAgentCrdtFollower(
     }
   )
   const tabId = createUuidv4()
-  const ownActor = (): string => `human:${userId() ?? 'anonymous'}:${tabId}`
+  // Actor identity participates in ordering and own-echo classification.
+  // Keep it stable while this follower lives even if auth resolves mid-flight.
+  const actor = `human:${userId() ?? 'anonymous'}:${tabId}`
+  const ownActor = (): string => actor
   // Doc node ids whose human delete the host has applied but whose effect
   // frame has not yet removed them from the doc. Kept pending for the
   // reconcile so the result-to-effect window cannot resurrect them.
@@ -421,7 +424,10 @@ function startAgentCrdtFollower(
     if (outcome.state === 'acknowledged') trackAcknowledgedDeletes(outcome)
     recordDevEvent('human_ops_settled', outcome)
     projection.settleLocalWrites(outcome.ops)
-    if (outcome.state === 'acknowledged' && !outcome.result.ok)
+    if (
+      outcome.state === 'acknowledged' &&
+      (!outcome.result.ok || outcome.result.skipped.length > 0)
+    )
       revertRejectedOps(outcome)
   }
 

@@ -149,12 +149,14 @@ function updateActivePromotedRows(
   if (currentKeys.size === nextKeys.size) {
     // A refusal raises no `inputs-reordered`, so the listener above never
     // restores the dragged list to the order the graph actually kept.
-    const reordered = reorderSubgraphInputsByWidgetOrder(
+    reorderSubgraphInputsByWidgetOrder(
       node,
       value.map((row) => ({ widgetId: row.widget.widgetId }))
     )
-    if (!reordered) refreshPromotedRows()
   }
+  // Toggle handlers can be refused before the graph emits an input event;
+  // always restore the child-mutated list from the graph-backed source.
+  refreshPromotedRows()
   refreshActiveNodeRendering()
 }
 
@@ -275,12 +277,11 @@ function demoteRow(row: ActiveRow) {
   const subgraphNode = activeNode.value
   if (!subgraphNode) return
   if (row.kind === 'promoted') {
-    const subgraphSlot = row.input._subgraphSlot
-    if (subgraphSlot) {
-      const inputIndex = subgraphNode.inputs.indexOf(row.input)
-      if (subgraphNode.isInputConnected(inputIndex)) subgraphSlot.disconnect()
-      else subgraphNode.subgraph.removeInput(subgraphSlot)
-    }
+    const source = promotedRowSource(row)
+    const sourceWidget = source
+      ? row.node.widgets?.find((widget) => widget.name === source.widgetName)
+      : undefined
+    if (sourceWidget) demoteWidget(row.node, sourceWidget, [subgraphNode])
     refreshActiveNodeRendering()
     return
   }

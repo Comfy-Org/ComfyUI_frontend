@@ -51,6 +51,7 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import { ChangeTracker } from '@/scripts/changeTracker'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { blankGraph } from '@/scripts/defaultGraph'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
@@ -868,6 +869,15 @@ const isBoundWorkflowActive = computed(() => {
   )
 })
 
+// `rootGraph` is rewritten before `activeWorkflow` changes during a load.
+// Treat that interval as having no graph so neither inbound projection nor
+// outbound minting can apply workflow A's document to workflow B's canvas.
+function activeRootGraph() {
+  return app.isGraphReady && !ChangeTracker.isLoadingGraph
+    ? app.rootGraph
+    : null
+}
+
 // The CRDT follower is the inbound content channel: subscribes to the
 // session's bound workflow while its tab is active. Suspending the background
 // subscription makes reopening pull state-vector catch-up only after the
@@ -885,7 +895,7 @@ const {
   // `app.isGraphReady` is a plain getter; reading `canvasStore.canvas` (set
   // right after `app.setup()`) makes the follower's graph watch fire once the
   // root graph exists.
-  () => (canvasStore.canvas && app.isGraphReady ? app.rootGraph : null),
+  () => (canvasStore.canvas ? activeRootGraph() : null),
   {
     onMaterialized({ workflowId, nodeIds }) {
       if (app.isGraphReady) {
@@ -934,7 +944,7 @@ const docOpMinter = attachDocOpMinter({
   isEnabled: () => agentPanelStore.enabled,
   isDocBound: () => isBoundWorkflowActive.value,
   enqueue: enqueueHumanOperations,
-  getGraph: () => (app.isGraphReady ? app.rootGraph : null),
+  getGraph: activeRootGraph,
   boundRootGraphId,
   docInputNames,
   docPromotedWidgets,
@@ -952,7 +962,7 @@ const restoreOpMinter = attachRestoreOpMinter({
   isEnabled: () => agentPanelStore.enabled,
   isDocBound: () => isBoundWorkflowActive.value,
   enqueue: enqueueHumanOperations,
-  getGraph: () => (app.isGraphReady ? app.rootGraph : null),
+  getGraph: activeRootGraph,
   isRestoringState: () =>
     workflowStore.activeWorkflow?.changeTracker?._restoringState === true
 })

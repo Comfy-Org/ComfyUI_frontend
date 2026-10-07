@@ -119,10 +119,9 @@ function handleReorder({
   widgets.splice(toIndex, 0, moved)
 
   if (!reorderSubgraphInputsByWidgetOrder(node, widgets)) {
-    searchedWidgetsList.value = searchWidgets(
-      widgetsList.value,
-      searchQuery.value
-    )
+    // The drag helper moved DOM nodes, not this graph-backed row array. A new
+    // array identity makes Vue render the unchanged graph order back into DOM.
+    searchedWidgetsList.value = [...searchedWidgetsList.value]
     return
   }
   canvasStore.canvas?.setDirty(true, true)

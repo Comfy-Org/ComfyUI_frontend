@@ -16,6 +16,7 @@ import type {
   PromotedHostWrite,
   WorkflowNode
 } from '@comfyorg/comfy-multi-player'
+import cloneDeep from 'es-toolkit/compat/cloneDeep'
 
 import { liveAutogrowGroupOf } from '@/core/graph/widgets/dynamicWidgets'
 import { registerDocBoundRootGraphProbe } from '@/lib/litegraph/src/docBoundGraphs'
@@ -43,6 +44,7 @@ import {
 } from '@/utils/graphTraversalUtil'
 
 import type { GraphOperation } from './graphOperations'
+import { WIRE_MAX_BATCH_BYTES } from './opEnvelope'
 import type { DocPromotedWidgets } from './agentSubgraphDefinitions'
 
 export interface DocOpMinterDeps {
@@ -108,6 +110,7 @@ interface MintedWidgetBase {
 }
 
 const REFUSAL_NOTIFICATION_INTERVAL_MS = 5000
+const ADD_NODE_IN_FLIGHT_MS = 30_000
 
 type PendingOp =
   | { kind: 'add_node'; graph: LGraph; node: LGraphNode }
@@ -233,11 +236,13 @@ function promotedHostWrite(
   node: LGraphNode | null,
   event: IntentOf<'set_widget'>,
   docPromotedWidgets: () => DocPromotedWidgets | null,
+  allowMissingDoc: boolean,
   onOrderDrift: (
     names: readonly string[],
     doc: DocPromotedWidgets | null
   ) => void,
-  onUnpromotedWidget: () => void
+  onUnpromotedWidget: () => void,
+  onUnsafeSnapshot: () => void
 ): PromotedHostWrite | null {
   if (!node?.isSubgraphNode()) return null
   const hostInputs = node.inputs.flatMap((input) =>
@@ -252,20 +257,34 @@ function promotedHostWrite(
   const doc = docPromotedWidgets()
   if (
     new Set(liveNames).size !== liveNames.length ||
-    !documentAcceptsLiveIndex(doc, liveNames)
+    !documentAcceptsLiveIndex(doc, liveNames, allowMissingDoc)
   ) {
     onOrderDrift(liveNames, doc)
     return null
   }
   const widgetValueStore = useWidgetValueStore()
+  let hostWidgetsValues: unknown[]
+  try {
+    hostWidgetsValues = cloneDeep(
+      hostInputs.map((input, index) => {
+        if (index === valueIndex) return event.value
+        const value = widgetValueStore.getWidget(input.widgetId)?.value
+        return isWidgetValue(value) ? value : undefined
+      })
+    )
+    const json = JSON.stringify(hostWidgetsValues)
+    if (new TextEncoder().encode(json).length > WIRE_MAX_BATCH_BYTES) {
+      onUnsafeSnapshot()
+      return null
+    }
+  } catch {
+    onUnsafeSnapshot()
+    return null
+  }
   return {
     value_index: valueIndex,
     instance_path: [String(event.nodeId)],
-    host_widgets_values: hostInputs.map((input, index) => {
-      if (index === valueIndex) return event.value
-      const value = widgetValueStore.getWidget(input.widgetId)?.value
-      return isWidgetValue(value) ? value : undefined
-    })
+    host_widgets_values: hostWidgetsValues
   }
 }
 
@@ -295,9 +314,10 @@ function promotedHostWrite(
  */
 function documentAcceptsLiveIndex(
   doc: DocPromotedWidgets | null,
-  liveNames: readonly string[]
+  liveNames: readonly string[],
+  allowMissingDoc: boolean
 ): boolean {
-  if (doc === null) return false
+  if (doc === null) return allowMissingDoc
   const namesMatch =
     doc.promotedNames != null &&
     doc.promotedNames.length === liveNames.length &&
@@ -311,19 +331,23 @@ function topLevelWidgetOperation(
   node: LGraphNode,
   event: IntentOf<'set_widget'>,
   docPromotedWidgets: () => DocPromotedWidgets | null,
+  allowMissingDoc: boolean,
   onOrderDrift: (
     names: readonly string[],
     doc: DocPromotedWidgets | null
   ) => void,
-  onRefused: (reason: WidgetRefusalReason) => void
+  onRefused: (reason: WidgetRefusalReason) => void,
+  onUnsafeSnapshot: () => void
 ): GraphOperation | null {
   if (!node.isSubgraphNode()) return operation
   const promoted = promotedHostWrite(
     node,
     event,
     docPromotedWidgets,
+    allowMissingDoc,
     onOrderDrift,
-    () => onRefused('unpromoted_host_widget')
+    () => onRefused('unpromoted_host_widget'),
+    onUnsafeSnapshot
   )
   return promoted ? { ...operation, promoted } : null
 }
@@ -363,11 +387,13 @@ function routedWidgetOperation(
   event: IntentOf<'set_widget'>,
   node: LGraphNode | null,
   docPromotedWidgets: () => DocPromotedWidgets | null,
+  allowMissingDoc: boolean,
   onOrderDrift: (
     names: readonly string[],
     doc: DocPromotedWidgets | null
   ) => void,
-  onRefused: (reason: WidgetRefusalReason) => void
+  onRefused: (reason: WidgetRefusalReason) => void,
+  onUnsafeSnapshot: () => void
 ): GraphOperation | null {
   const operation = {
     op: 'set_widget',
@@ -387,8 +413,10 @@ function routedWidgetOperation(
       node,
       event,
       docPromotedWidgets,
+      allowMissingDoc,
       onOrderDrift,
-      onRefused
+      onRefused,
+      onUnsafeSnapshot
     )
   }
   return interiorWidgetOperation(
@@ -457,6 +485,7 @@ function docInputIndex(
 export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
   let pending: PendingOp[] = []
   const pendingAdds = new Map<string, LGraphNode>()
+  const dispatchedAdds = new Map<string, number>()
   const reported = new Set<string>()
   // Budgeted for the minter's whole life, not per flush: this one sits on the
   // keystroke-paced widget path, where a per-flush budget reports every
@@ -503,6 +532,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
         pos: [node.pos[0], node.pos[1]],
         node: snapshot
       })
+      dispatchedAdds.set(nodeKey(graph.id, node.id), Date.now())
     }
     if (operations.length > 0) deps.enqueue(operations)
   }
@@ -550,7 +580,8 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
   }
 
   function mintSetWidget(event: IntentOf<'set_widget'>): void {
-    if (pendingAdds.has(nodeKey(event.graphId, event.nodeId))) return
+    const key = nodeKey(event.graphId, event.nodeId)
+    if (pendingAdds.has(key)) return
     const graph = deps.getGraph()
     if (!graph) return
     const eventGraph = reachableIntentGraph(graph, event.graphId)
@@ -559,6 +590,11 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       : null
     if (!isValueWidgetWrite(owner, event)) return
     const rootGraphId = deps.boundRootGraphId() ?? graph.id
+    const liveRootGraphId = graph.rootGraph.id
+    const dispatchedAt = dispatchedAdds.get(key)
+    const allowMissingDoc =
+      dispatchedAt !== undefined &&
+      Date.now() - dispatchedAt < ADD_NODE_IN_FLIGHT_MS
     const refuse = (
       reason: WidgetRefusalReason,
       key: string,
@@ -581,10 +617,15 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     }
     const operation = routedWidgetOperation(
       graph,
-      rootGraphId,
+      liveRootGraphId,
       event,
       owner,
-      () => deps.docPromotedWidgets(event.nodeId),
+      () => {
+        const doc = deps.docPromotedWidgets(event.nodeId)
+        if (doc !== null) dispatchedAdds.delete(key)
+        return doc
+      },
+      allowMissingDoc,
       (liveNames, doc) =>
         refuse(
           'layout_drift',
@@ -614,9 +655,20 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
             graphId: event.graphId
           },
           reportedDrift
+        ),
+      () =>
+        refuse(
+          'layout_drift',
+          `promoted_snapshot:${rootGraphId}:${String(event.nodeId)}`,
+          `Subgraph host ${String(event.nodeId)} has a promoted widget snapshot that cannot be sent safely; refusing to mint`,
+          'agent_crdt_promoted_widget_snapshot_invalid',
+          { nodeId: event.nodeId, widget: event.name },
+          reportedDrift
         )
     )
-    if (operation) schedule({ kind: 'op', operation })
+    if (operation && isMintableRootScope(graph, 'set_widget', event.nodeId)) {
+      schedule({ kind: 'op', operation })
+    }
   }
 
   function mintSetNodeField(event: IntentOf<'set_node_field'>): void {
@@ -639,6 +691,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
   function mintRemoveNode(event: IntentOf<'remove_node'>): void {
     if (!isMintableRootScope(event.graph, 'node_delete', event.node.id)) return
     const key = nodeKey(event.graph.id, event.node.id)
+    dispatchedAdds.delete(key)
     if (pendingAdds.get(key) === event.node) {
       pendingAdds.delete(key)
       pending = withoutCancelledAdd(pending, event.node.id)
@@ -732,6 +785,9 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
 
   function mintClear(event: IntentOf<'clear'>): void {
     if (event.nodeIds.length === 0) return
+    for (const nodeId of event.nodeIds) {
+      dispatchedAdds.delete(nodeKey(event.graphId, nodeId))
+    }
     const boundRootGraphId = deps.boundRootGraphId()
     if (boundRootGraphId !== null && event.graphId !== boundRootGraphId) {
       reportOnce(
@@ -803,6 +859,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       detached = true
       pending = []
       pendingAdds.clear()
+      dispatchedAdds.clear()
       detachIntents()
       unregisterDocBoundProbe()
     }

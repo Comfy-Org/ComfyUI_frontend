@@ -703,7 +703,10 @@ describe('attachDocOpMinter', () => {
     ])
   })
 
-  function seedPromotedHost(hostWidgetValues?: unknown[]) {
+  function seedPromotedHost(
+    hostWidgetValues?: unknown[],
+    nestDefinition = false
+  ) {
     const subgraph = createTestSubgraph({
       rootGraph: graph,
       inputs: [
@@ -729,6 +732,22 @@ describe('attachDocOpMinter', () => {
       )
       assert.exists(hostNode)
       hostNode.widgets_values = hostWidgetValues
+    }
+    if (nestDefinition) {
+      const definitions = serialized.definitions?.subgraphs
+      assert(definitions?.length === 1)
+      const [inner] = definitions
+      assert.exists(inner)
+      serialized.definitions = {
+        subgraphs: [
+          {
+            ...inner,
+            id: createUuidv4(),
+            name: 'Outer test definition',
+            definitions: { subgraphs: [inner] }
+          }
+        ]
+      }
     }
     const doc = mint(serialized, CATALOG)
     docPromotedWidgets = (nodeId) => readDocPromotedWidgets(doc, String(nodeId))
@@ -781,6 +800,42 @@ describe('attachDocOpMinter', () => {
     doc.destroy()
   })
 
+  it('mints a promoted write while its dispatched add_node is in flight', async () => {
+    const subgraph = createTestSubgraph({
+      rootGraph: graph,
+      inputs: [
+        { name: 'prefix', type: 'STRING' },
+        { name: 'text', type: 'STRING' }
+      ]
+    })
+    graph.subgraphs.set(subgraph.id, subgraph)
+    const host = createTestSubgraphNode(subgraph)
+    withGraphIntentSource('load', () => {
+      for (const index of [0, 1]) {
+        const interior = LiteGraph.createNode('TestPrompt')
+        assert.exists(interior)
+        subgraph.add(interior)
+        subgraph.inputNode.slots[index].connect(interior.inputs[0], interior)
+      }
+    })
+
+    graph.add(host)
+    await afterFlush()
+    expect(minted).toEqual([expect.objectContaining({ op: 'add_node' })])
+    minted.length = 0
+
+    host.widgets[1].value = 'typed before the add echo'
+    await afterFlush()
+
+    expect(minted).toEqual([
+      expect.objectContaining({
+        op: 'set_widget',
+        widget: 'text',
+        promoted: expect.objectContaining({ value_index: 1 })
+      })
+    ])
+  })
+
   it('builds the array from the host values when the document holds none', async () => {
     const { host, doc } = seedPromotedHost([])
 
@@ -802,6 +857,43 @@ describe('attachDocOpMinter', () => {
         (node) => String(node.id) === String(host.id)
       )?.widgets_values
     ).toEqual(['an interior default', 'pasted'])
+    doc.destroy()
+  })
+
+  it('snapshots promoted sibling objects before deferred delivery', async () => {
+    const { host, doc } = seedPromotedHost()
+    const sibling = { nested: { value: 'before' } }
+    host.widgets[0].value = sibling
+    await afterFlush()
+    minted.length = 0
+
+    host.widgets[1].value = 'pasted'
+    sibling.nested.value = 'after'
+    await afterFlush()
+
+    expect(minted[0]).toMatchObject({
+      promoted: {
+        host_widgets_values: [{ nested: { value: 'before' } }, 'pasted']
+      }
+    })
+    doc.destroy()
+  })
+
+  it('refuses a promoted snapshot that cannot serialize to the wire', async () => {
+    const { host, doc } = seedPromotedHost()
+    const cyclic: Record<string, unknown> = {}
+    cyclic.self = cyclic
+    host.widgets[0].value = cyclic
+    await afterFlush()
+    minted.length = 0
+
+    host.widgets[1].value = 'pasted'
+    await afterFlush()
+
+    expect(minted).toEqual([])
+    expect(refused).toContainEqual(
+      expect.objectContaining({ reason: 'layout_drift' })
+    )
     doc.destroy()
   })
 
@@ -1167,6 +1259,7 @@ describe('attachDocOpMinter', () => {
       declaredNames: [],
       promotedNames: null
     })
+    expect(readDocWidgetValue(doc, String(host.id), 'text')).toBeUndefined()
     doc.destroy()
   })
 
@@ -1186,6 +1279,11 @@ describe('attachDocOpMinter', () => {
     stored.set('widgets', new Y.Map<unknown>([['text', 'named']]))
     stored.set(OPAQUE_WIDGETS_KEY, ['opaque-prefix', 'opaque-text'])
 
+    expect(readDocPromotedWidgets(doc, String(host.id))).toEqual({
+      valueCount: null,
+      declaredNames: [],
+      promotedNames: null
+    })
     expect(readDocWidgetValue(doc, String(host.id), 'text')).toBeUndefined()
     doc.destroy()
   })
@@ -1207,6 +1305,33 @@ describe('attachDocOpMinter', () => {
       declaredNames: [],
       promotedNames: null
     })
+    doc.destroy()
+  })
+
+  it('resolves a promoted layout from a nested definition', () => {
+    const { host, doc } = seedPromotedHost(undefined, true)
+
+    expect(readDocPromotedWidgets(doc, String(host.id))).toMatchObject({
+      valueCount: 2,
+      promotedNames: ['prefix', 'text']
+    })
+    doc.destroy()
+  })
+
+  it('fails closed when a definition id occurs at multiple depths', () => {
+    const { host, doc } = seedPromotedHost()
+    const definitions = doc.getMap<unknown>('definitions')
+    const definition = definitions.get(host.type)
+    assert.instanceOf(definition, Y.Map)
+    const nested = new Y.Map<unknown>()
+    nested.set(host.type, definition.clone())
+    const container = new Y.Map<unknown>()
+    container.set('subgraphs', nested)
+    definition.set('definitions', container)
+
+    expect(
+      readDocPromotedWidgets(doc, String(host.id))?.promotedNames
+    ).toBeNull()
     doc.destroy()
   })
 
@@ -1696,6 +1821,22 @@ describe('attachDocOpMinter', () => {
         reason: 'unresolvable_owner'
       }
     ])
+  })
+
+  it('refuses a resolved widget write from an unbound root graph', async () => {
+    const { source } = seedGraph(graph)
+    rootGraphId = toRootGraphId('the-bound-workflow')
+
+    source.widgets![0].value = 21
+    await afterFlush()
+
+    expect(minted).toEqual([])
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'agent_crdt_op_for_unbound_graph'
+      })
+    )
   })
 
   it('mints a set_widget that names a subgraph owner with the subgraph-node path', async () => {

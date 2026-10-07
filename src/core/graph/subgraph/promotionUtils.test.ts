@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { promotedInputWidget } from '@/core/graph/subgraph/promotedInputWidget'
 import { registerDocBoundRootGraphProbe } from '@/lib/litegraph/src/docBoundGraphs'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import {
   createTestSubgraph,
@@ -835,6 +835,45 @@ describe('reorderSubgraphInputsByWidgetOrder', () => {
       unregister()
     }
   })
+
+  it('keeps plain sockets fixed while comparing and reordering promoted inputs', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'plain', type: 'STRING' }]
+    })
+    const host = createTestSubgraphNode(subgraph)
+    const firstNode = new LGraphNode('First')
+    const secondNode = new LGraphNode('Second')
+    subgraph.add(firstNode)
+    subgraph.add(secondNode)
+    const firstInput = firstNode.addInput('first', 'STRING')
+    const firstWidget = firstNode.addWidget('text', 'first', '', () => {})
+    firstInput.widget = { name: firstWidget.name }
+    const secondInput = secondNode.addInput('second', 'STRING')
+    const secondWidget = secondNode.addWidget('text', 'second', '', () => {})
+    secondInput.widget = { name: secondWidget.name }
+    promoteValueWidgetViaSubgraphInput(host, firstNode, firstWidget)
+    promoteValueWidgetViaSubgraphInput(host, secondNode, secondWidget)
+    const first = promotedWidgetRef(host, 'first')
+    const second = promotedWidgetRef(host, 'second')
+    const addToast = vi.spyOn(useToastStore(), 'add')
+    const unregister = registerDocBoundRootGraphProbe(() => host.rootGraph.id)
+
+    try {
+      expect(reorderSubgraphInputsByWidgetOrder(host, [first, second])).toBe(
+        true
+      )
+      expect(addToast).not.toHaveBeenCalled()
+    } finally {
+      unregister()
+    }
+
+    expect(reorderSubgraphInputsByWidgetOrder(host, [second, first])).toBe(true)
+    expect(host.inputs.map((input) => input.name)).toEqual([
+      'plain',
+      'second',
+      'first'
+    ])
+  })
 })
 
 describe('demoteWidget — axiomatic projection retraction', () => {
@@ -868,6 +907,7 @@ describe('demoteWidget — axiomatic projection retraction', () => {
     const secondInput = secondNode.addInput('other', 'STRING')
     const secondWidget = secondNode.addWidget('text', 'other', '', () => {})
     secondInput.widget = { name: secondWidget.name }
+    const addToast = vi.spyOn(useToastStore(), 'add')
     const unregister = registerDocBoundRootGraphProbe(() => host.rootGraph.id)
 
     try {
@@ -876,6 +916,33 @@ describe('demoteWidget — axiomatic projection retraction', () => {
       expect(host.inputs).toEqual([existingInput])
       expect(interiorNode.inputs[0]?.link).not.toBeNull()
       expect(secondNode.inputs[0]?.link).toBeNull()
+      expect(addToast).toHaveBeenCalledTimes(1)
+    } finally {
+      unregister()
+    }
+  })
+
+  it('refuses every instance when any promotion parent is doc-bound', () => {
+    const subgraph = createTestSubgraph()
+    const boundHost = createTestSubgraphNode(subgraph)
+    const otherRoot = new LGraph()
+    const otherHost = createTestSubgraphNode(subgraph, {
+      parentGraph: otherRoot
+    })
+    const interiorNode = new LGraphNode('TestNode')
+    subgraph.add(interiorNode)
+    const input = interiorNode.addInput('value', 'STRING')
+    const sourceWidget = interiorNode.addWidget('text', 'value', '', () => {})
+    input.widget = { name: sourceWidget.name }
+    const unregister = registerDocBoundRootGraphProbe(
+      () => boundHost.rootGraph.id
+    )
+
+    try {
+      promoteWidget(interiorNode, sourceWidget, [boundHost, otherHost])
+      expect(boundHost.inputs).toHaveLength(0)
+      expect(otherHost.inputs).toHaveLength(0)
+      expect(subgraph.inputs).toHaveLength(0)
     } finally {
       unregister()
     }

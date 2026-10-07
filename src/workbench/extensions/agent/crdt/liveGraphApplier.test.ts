@@ -235,7 +235,7 @@ describe('LiveGraphApplier', () => {
     )
   })
 
-  it('restores a widget and its mirrored property when a widget callback throws', () => {
+  it('keeps the canonical widget and mirrored property when a callback throws', () => {
     const { graph, doc, applyCollected, applyEdit } = setup({
       nodes: [sourceNode(1)],
       links: []
@@ -256,8 +256,8 @@ describe('LiveGraphApplier', () => {
       widgets.set('steps', 35)
     })
 
-    expect(widget.value).toBe(20)
-    expect(node.properties.steps).toBe(20)
+    expect(widget.value).toBe(35)
+    expect(node.properties.steps).toBe(35)
     expect(reportError).toHaveBeenCalledWith(
       expect.objectContaining({ message: 'extension hook exploded' }),
       expect.objectContaining({ errorType: 'agent_graph_apply_failed' })

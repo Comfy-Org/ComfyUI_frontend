@@ -333,6 +333,32 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
     expect(useWidgetValueStore().getWidget(widgetId!)?.value).toBe(42)
   })
 
+  it('fails closed when a document replaces a registered definition under the same id', () => {
+    const state = startFollower()
+    const vector = Y.encodeStateVector(state.hostDoc)
+    state.hostDoc.transact(() => {
+      const definition = state.hostDoc
+        .getMap<unknown>('definitions')
+        .get(state.instance.type)
+      assert.instanceOf(definition, Y.Map)
+      definition.set('name', 'peer-replaced definition')
+      nodesMap(state.hostDoc)
+        .get(String(state.instance.id))
+        ?.set(OPAQUE_WIDGETS_KEY, [42])
+    })
+    const update = Y.encodeStateAsUpdate(state.hostDoc, vector)
+    state.follower.applyRemoteUpdate(update)
+    state.adapter.applyFrame({ workflowId: 'workflow', seq: 2, update })
+
+    expect(state.instance.widgets[0]?.value).toBe(HOST_INITIAL_VALUE)
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'agent_subgraph_definition_changed'
+      })
+    )
+  })
+
   it('S1z runs the host widget hooks on an accepted promoted write', () => {
     const state = startFollower()
     const widget = state.instance.widgets[0]
@@ -353,7 +379,7 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
     expect(reportError).not.toHaveBeenCalled()
   })
 
-  it('S1r rolls a host widget back when its change hook throws', () => {
+  it('S1r keeps a host widget canonical when its change hook throws', () => {
     const state = startFollower()
     state.instance.onWidgetChanged = () => {
       throw new Error('extension hook exploded')
@@ -361,8 +387,8 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
 
     deliver(state, hostSetWidget(42), 1)
 
-    expect(state.instance.widgets[0]?.value).toBe(HOST_INITIAL_VALUE)
-    expect(storedHostWidgets(state)).toEqual([['value', HOST_INITIAL_VALUE]])
+    expect(state.instance.widgets[0]?.value).toBe(42)
+    expect(storedHostWidgets(state)).toEqual([['value', 42]])
     expect(reportError).toHaveBeenCalledWith(
       expect.objectContaining({ message: 'extension hook exploded' }),
       expect.objectContaining({
@@ -959,7 +985,7 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
     expect(reportError).toHaveBeenCalledWith(
       expect.any(Error),
       expect.objectContaining({
-        errorType: 'agent_graph_host_widgets_mismatch'
+        errorType: 'agent_subgraph_definition_changed'
       })
     )
   })

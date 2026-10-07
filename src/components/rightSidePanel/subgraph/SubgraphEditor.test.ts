@@ -222,6 +222,19 @@ describe('SubgraphEditor', () => {
     expect(modelPushes.count).toBe(pushesBefore + 1)
   })
 
+  it('restores promoted rows when a doc-bound hide-all is refused', async () => {
+    const { host, labels } = renderTwoPromotedWidgets()
+    onTestFinished(registerDocBoundRootGraphProbe(() => host.rootGraph.id))
+    await nextTick()
+
+    const shown = screen.getByTestId('subgraph-editor-shown-section')
+    await userEvent.click(within(shown).getByText('Hide all'))
+    await nextTick()
+
+    expect(host.inputs.map((input) => input.name)).toEqual(['first', 'second'])
+    expect(labels()).toEqual(['first', 'second'])
+  })
+
   it('moves a widget to shown when promoted from the hidden section', async () => {
     const subgraph = createTestSubgraph()
     const host = createTestSubgraphNode(subgraph)

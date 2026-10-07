@@ -199,7 +199,8 @@ function mountFollower(
   getGraph: () => LGraph | null = () => null,
   events: Parameters<typeof useAgentCrdtFollower>[4] = {},
   applierDeps: Parameters<typeof useAgentCrdtFollower>[5] = {},
-  canvasFor: Parameters<typeof useAgentCrdtFollower>[6] = () => null
+  canvasFor: Parameters<typeof useAgentCrdtFollower>[6] = () => null,
+  userId: () => string | null = () => null
 ): {
   unmount: () => void
   workflowId: Ref<string | null>
@@ -215,7 +216,7 @@ function mountFollower(
     setup() {
       const { status, enqueueHumanOperations } = useAgentCrdtFollower(
         workflowId,
-        () => null,
+        userId,
         isTargetActive,
         getGraph,
         events,
@@ -1446,6 +1447,30 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('reprojects ops the host validly skipped from an acknowledged batch', async () => {
+    const { unmount, enqueue } = mountFollower('wf-1')
+    enqueue([
+      { op: 'set_widget', node_id: '2', widget: 'steps', value: 3 },
+      { op: 'delete_node', node_id: '1', removed_links: [] }
+    ])
+    await Promise.resolve()
+    const [, , ops] = clientState.sendOps.mock.calls[0]
+
+    dispatchFrame('doc_ops_result', {
+      workflowId: 'wf-1',
+      ok: true,
+      applied: [ops[0].op_id],
+      skipped: [ops[1].op_id]
+    })
+
+    expect(projectionState.revertRejected).toHaveBeenCalledExactlyOnceWith(
+      'wf-1',
+      [ops[1]]
+    )
+    expect(telemetryState.reportError).not.toHaveBeenCalled()
+    unmount()
+  })
+
   describe('own-actor echo', () => {
     const liveGraph = fromPartial<LGraph>({ getNodeById: () => null })
 
@@ -1485,6 +1510,35 @@ describe('useAgentCrdtFollower', () => {
         applied: 0,
         skipped: 1
       })
+      unmount()
+    })
+
+    it('keeps its actor stable when user identity resolves before an echo', async () => {
+      let user: string | null = null
+      const { unmount, enqueue } = mountFollower(
+        'wf-1',
+        true,
+        () => liveGraph,
+        {},
+        {},
+        () => null,
+        () => user
+      )
+      enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+      await Promise.resolve()
+      const [, , firstOps] = clientState.sendOps.mock.calls[0]
+      const ownActor = firstOps[0].actor
+      user = 'resolved-user'
+
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 42,
+        actor: ownActor,
+        catchUp: false
+      })
+
+      expect(projectionState.applyFrame).not.toHaveBeenCalled()
+      expect(projectionState.discardPending).toHaveBeenCalledWith('wf-1')
       unmount()
     })
 

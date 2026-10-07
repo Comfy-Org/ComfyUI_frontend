@@ -226,4 +226,27 @@ describe('LiveGraphApplier malformed node report', () => {
       context: { valueShapes: 'inputs.0.type invalid_union array:0' }
     })
   })
+
+  it.for(['widgets_values', 'widgets_values_named'])(
+    'drops legacy %s before it can reach node.configure',
+    (legacyKey) => {
+      const { graph, doc, collector, applier, applyCollected } = setup({
+        nodes: [sinkNode({ name: 'image', type: 'IMAGE', link: null })],
+        links: []
+      })
+      applyCollected()
+      const live = graph.getNodeById(toNodeId(NODE_ID))
+      expect(live).not.toBeNull()
+
+      doc.transact(() => {
+        const node = nodesMap(doc).get(String(NODE_ID))
+        node?.set(legacyKey, ['peer-controlled'])
+        node?.set('title', 'must not apply')
+      })
+      applier.applyChanges(doc, collector.take(), CONTEXT)
+
+      expect(live?.title).toBe('must not apply')
+      expect(reportError).not.toHaveBeenCalled()
+    }
+  )
 })

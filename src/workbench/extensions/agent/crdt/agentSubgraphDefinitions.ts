@@ -339,6 +339,43 @@ function definitionsMap(doc: Y.Doc): Y.Map<unknown> | null {
   return doc.getMap<unknown>(DEFINITIONS_ROOT)
 }
 
+type StoredDefinition = readonly [string, Y.Map<unknown>]
+
+function storedDefinitions(source: Y.Map<unknown>): StoredDefinition[] {
+  return [...source.entries()].flatMap(([key, value]) =>
+    value instanceof Y.Map ? [[key, value] as const] : []
+  )
+}
+
+function nestedStoredDefinitions(
+  definition: Y.Map<unknown>
+): StoredDefinition[] {
+  const container = definition.get('definitions')
+  if (!(container instanceof Y.Map)) return []
+  const nested = container.get('subgraphs')
+  return nested instanceof Y.Map ? storedDefinitions(nested) : []
+}
+
+/** Resolve one definition at any nesting depth; duplicate ids are unreadable. */
+function definitionById(doc: Y.Doc, id: string): Y.Map<unknown> | null {
+  const root = definitionsMap(doc)
+  if (!root) return null
+  const pending = storedDefinitions(root)
+  const seen = new Set<Y.Map<unknown>>()
+  let match: Y.Map<unknown> | null = null
+  while (pending.length > 0) {
+    const [storageKey, definition] = pending.pop()!
+    if (seen.has(definition)) continue
+    seen.add(definition)
+    if (storageKey === id || definition.get('id') === id) {
+      if (match !== null) return null
+      match = definition
+    }
+    pending.push(...nestedStoredDefinitions(definition))
+  }
+  return match
+}
+
 export function allSubgraphDefinitions(
   definitions: readonly ExportedSubgraph[]
 ): ExportedSubgraph[] {
@@ -412,10 +449,12 @@ export function readDocPromotedWidgets(
   if (!(node instanceof Y.Map)) {
     return { valueCount: null, declaredNames: [], promotedNames: null }
   }
+  if (node.has('widgets') && node.has(OPAQUE_WIDGETS_KEY)) {
+    return { valueCount: null, declaredNames: [], promotedNames: null }
+  }
   const stored = node.get(OPAQUE_WIDGETS_KEY)
   const type = node.get('type')
-  const definition =
-    typeof type === 'string' ? definitionsMap(doc)?.get(type) : undefined
+  const definition = typeof type === 'string' ? definitionById(doc, type) : null
   const names =
     definition instanceof Y.Map ? definitionInputNames(definition) : null
   return {
@@ -476,15 +515,15 @@ function linkTargetsWidget(
   linkId: string | number
 ): boolean | null {
   const link = links(linkId)
-  if (link === undefined) return false
+  if (link === undefined) return null
   const targetId = readField(link, 'target_id')
   const targetSlot = readField(link, 'target_slot')
   if (!isRecordId(targetId) || !isSlotIndex(targetSlot)) return null
   const target = nodes(targetId)
-  if (target === undefined) return false
+  if (target === undefined) return null
   const inputs = strictList(readField(target, 'inputs'))
   const input = inputs?.[targetSlot]
-  if (input === undefined) return false
+  if (input === undefined) return null
   const widget = readField(input, 'widget')
   return widgetMarkerState(widget)
 }

@@ -1,8 +1,10 @@
 import { render } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { nextTick, watchEffect } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
+import { registerDocBoundRootGraphProbe } from '@/lib/litegraph/src/docBoundGraphs'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
@@ -24,17 +26,27 @@ const i18n = createI18n({
   messages: { en: { rightSidePanel: { inputs: 'Inputs', inputsNone: 'None' } } }
 })
 
-const captured: { rows: { node: LGraphNode; widget: IBaseWidget }[] } = {
+const captured: {
+  rows: { node: LGraphNode; widget: IBaseWidget }[]
+  reorder?: (fromIndex: number, toIndex: number) => void
+} = {
   rows: []
 }
 
 const SectionWidgetsStub = {
   props: ['widgets', 'node', 'host'],
-  setup(props: Record<string, unknown>) {
-    captured.rows = props.widgets as {
-      node: LGraphNode
-      widget: IBaseWidget
-    }[]
+  setup(
+    props: Record<string, unknown>,
+    { emit }: { emit: (event: string, payload: unknown) => void }
+  ) {
+    watchEffect(() => {
+      captured.rows = props.widgets as {
+        node: LGraphNode
+        widget: IBaseWidget
+      }[]
+    })
+    captured.reorder = (fromIndex, toIndex) =>
+      emit('reorder', { fromIndex, toIndex })
     return () => null
   }
 }
@@ -75,6 +87,7 @@ function renderPanel(node: SubgraphNode) {
 describe('TabSubgraphInputs', () => {
   beforeEach(() => {
     captured.rows = []
+    captured.reorder = undefined
   })
 
   it('lists a subgraph node promoted widget as a store-backed parameter row', () => {
@@ -101,6 +114,31 @@ describe('TabSubgraphInputs', () => {
 
     const seedRow = captured.rows.find((row) => row.widget.name === 'seed')
     expect(seedRow?.widget.value).toBe(7)
+  })
+
+  it('restores the displayed order when a doc-bound reorder is refused', async () => {
+    const { host } = buildHostWithPromotedSeed()
+    const sourceNode = new LGraphNode('Sampler 2')
+    const input = sourceNode.addInput('steps', 'INT')
+    const stepsWidget = sourceNode.addWidget('number', 'steps', 20, () => {})
+    input.widget = { name: stepsWidget.name }
+    host.subgraph.add(sourceNode)
+    promoteValueWidgetViaSubgraphInput(host, sourceNode, stepsWidget)
+    onTestFinished(registerDocBoundRootGraphProbe(() => host.rootGraph.id))
+    renderPanel(host)
+    await nextTick()
+
+    captured.reorder?.(0, 1)
+    await nextTick()
+
+    expect(host.inputs.map((hostInput) => hostInput.name)).toEqual([
+      'seed',
+      'steps'
+    ])
+    expect(captured.rows.map((row) => row.widget.name)).toEqual([
+      'seed',
+      'steps'
+    ])
   })
 
   it('omits promoted widgets hidden by connections or panel visibility', () => {
