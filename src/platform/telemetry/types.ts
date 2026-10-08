@@ -992,7 +992,8 @@ export interface AgentMessageSentMetadata extends Record<string, unknown> {
   starter_prompt_click_id: string | null
   /**
    * Rendered assignment copied from the clicked starter prompt; omitted for
-   * typed sends, QA overrides, unsupported locales, and pre-auth surfaces.
+   * typed sends, QA overrides, unsupported locales, and surfaces rendered
+   * before authenticated config.
    */
   '$feature/agent-starter-prompt-set'?: AgentStarterPromptAssignment
 }
