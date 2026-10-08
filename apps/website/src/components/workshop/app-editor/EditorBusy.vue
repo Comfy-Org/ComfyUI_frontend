@@ -1,5 +1,11 @@
 <script setup lang="ts">
-const { title, detail } = defineProps<{ title: string; detail: string }>()
+const { title, detail, cancelLabel } = defineProps<{
+  title: string
+  detail: string
+  cancelLabel?: string
+}>()
+
+const emit = defineEmits<{ cancel: [] }>()
 </script>
 
 <template>
@@ -18,8 +24,18 @@ const { title, detail } = defineProps<{ title: string; detail: string }>()
         <span class="text-sm font-medium text-primary-warm-white">{{
           title
         }}</span>
-        <span class="text-xs text-primary-warm-gray">{{ detail }}</span>
+        <span class="text-xs text-primary-warm-gray tabular-nums">{{
+          detail
+        }}</span>
       </span>
+      <button
+        v-if="cancelLabel"
+        type="button"
+        class="ml-2 h-7 rounded-full border border-primary-comfy-yellow/60 px-3 text-[11px] font-semibold tracking-wide text-primary-comfy-yellow uppercase transition hover:bg-primary-comfy-yellow/10 focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
+        @click="emit('cancel')"
+      >
+        {{ cancelLabel }}
+      </button>
     </div>
   </div>
 </template>

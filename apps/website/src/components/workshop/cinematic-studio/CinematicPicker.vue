@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { translationsFor } from '@/i18n/translations'
 import { useMediaQuery } from '@vueuse/core'
 
 import type {
@@ -11,7 +12,7 @@ import CinematicGradeImageTile from './CinematicGradeImageTile.vue'
 import CinematicOptionGrid from './CinematicOptionGrid.vue'
 import CinematicPaletteEditor from './CinematicPaletteEditor.vue'
 import CinematicPickerLists from './CinematicPickerLists.vue'
-import CinematicPopover from './CinematicPopover.vue'
+import EditorPopover from '@/components/workshop/app-editor/EditorPopover.vue'
 
 const {
   groups,
@@ -24,6 +25,7 @@ const {
   title: string
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const emit = defineEmits<{
   choose: [part: DirectionPart, id: string]
@@ -64,7 +66,12 @@ const selectedIn = (part: DirectionPart) =>
 </script>
 
 <template>
-  <CinematicPopover :title :locale @close="emit('close')">
+  <EditorPopover
+    :title
+    :close-label="t('cinematic.picker.close')"
+    data-testid="cinematic-picker"
+    @close="emit('close')"
+  >
     <CinematicPickerLists
       v-if="multiple"
       :groups
@@ -107,5 +114,5 @@ const selectedIn = (part: DirectionPart) =>
         </template>
       </CinematicOptionGrid>
     </template>
-  </CinematicPopover>
+  </EditorPopover>
 </template>

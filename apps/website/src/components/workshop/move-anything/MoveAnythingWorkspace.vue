@@ -3,9 +3,10 @@ import { ref, watch } from 'vue'
 
 import type { MoveImage, useMoveAnything } from '@/composables/useMoveAnything'
 import type { Locale } from '@/i18n/translations'
+import { MAX_OBJECTS } from '@/lib/workshop/move-anything/arrange'
 import { mc } from '@/lib/workshop/move-anything/copy'
 import EditorBusy from '@/components/workshop/app-editor/EditorBusy.vue'
-import MoveAnythingHint from './MoveAnythingHint.vue'
+import EditorHint from '@/components/workshop/app-editor/EditorHint.vue'
 import MoveAnythingStage from './MoveAnythingStage.vue'
 
 const {
@@ -18,7 +19,17 @@ const {
   locale?: Locale
 }>()
 
-const { objects, phase, tool, quality, selected } = move
+const { objects, phase, tool, quality, selected, detecting } = move
+const HINTS = {
+  move: 'move.hint.move',
+  smart: 'move.hint.smart',
+  box: 'move.hint.box'
+} as const
+function hint() {
+  if (tool.value === 'move')
+    return selected.value ? HINTS.move : 'move.hint.pick'
+  return move.full.value ? 'move.objects.full' : HINTS[tool.value]
+}
 const touched = ref(false)
 watch([tool, () => image], () => (touched.value = false))
 
@@ -52,16 +63,19 @@ function busyDetail() {
       :objects
       :tool
       :selected
+      :detecting
       :locale
       @select="select"
       @begin="begin"
       @place="move.place"
-      @add="move.add"
+      @pick="move.smartSelect"
+      @box="move.boxSelect"
+      @rename="move.rename"
+      @remove="move.remove"
     >
-      <MoveAnythingHint
-        v-if="!touched && phase.kind === 'arranging'"
-        :tool
-        :locale
+      <EditorHint
+        v-if="!touched && !detecting && phase.kind === 'arranging'"
+        :text="mc(hint(), locale, { max: MAX_OBJECTS })"
       />
     </MoveAnythingStage>
     <EditorBusy
