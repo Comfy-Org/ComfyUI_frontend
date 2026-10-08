@@ -3,7 +3,7 @@
     data-testid="subgraph-breadcrumb"
     :class="
       cn(
-        'subgraph-breadcrumb -mt-3 flex w-auto items-center pt-4 drop-shadow-(--interface-panel-drop-shadow)',
+        'subgraph-breadcrumb flex w-auto items-center drop-shadow-(--interface-panel-drop-shadow)',
         {
           'subgraph-breadcrumb-collapse': collapseTabs,
           'subgraph-breadcrumb-overflow': overflowingTabs
@@ -11,11 +11,9 @@
       )
     "
     :style="{
-      '--p-breadcrumb-gap': `0px`,
-      '--p-breadcrumb-item-margin': `${ITEM_GAP / 2}px`,
-      '--p-breadcrumb-item-min-width': `${MIN_WIDTH}px`,
-      '--p-breadcrumb-item-padding': `${ITEM_PADDING}px`,
-      '--p-breadcrumb-icon-width': `${ICON_WIDTH}px`
+      '--breadcrumb-item-margin': `${ITEM_GAP / 2}px`,
+      '--breadcrumb-item-min-width': `${MIN_WIDTH}px`,
+      '--breadcrumb-item-padding': `${ITEM_PADDING}px`
     }"
   >
     <WorkflowActionsDropdown
@@ -45,7 +43,7 @@
       >
         <template v-for="(item, index) in items" :key="item.key">
           <li
-            class="p-breadcrumb-item hover:text-foreground pointer-events-auto"
+            class="p-breadcrumb-item pointer-events-auto hover:text-base-foreground"
           >
             <SubgraphBreadcrumbItem
               :item
@@ -68,10 +66,10 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import Button from 'primevue/button'
-import type { MenuItem } from 'primevue/menuitem'
 import { computed, onBeforeUnmount, onMounted, onUpdated, ref } from 'vue'
 
 import SubgraphBreadcrumbItem from '@/components/breadcrumb/SubgraphBreadcrumbItem.vue'
+import type { BreadcrumbItem } from '@/components/breadcrumb/SubgraphBreadcrumbItem.vue'
 import WorkflowActionsDropdown from '@/components/common/WorkflowActionsDropdown.vue'
 import { useOverflowObserver } from '@/composables/element/useOverflowObserver'
 import { useTelemetry } from '@/platform/telemetry'
@@ -118,28 +116,30 @@ const home = computed(() => ({
 }))
 
 const items = computed(() => {
-  const items = navigationStore.navigationStack.map<MenuItem>((subgraph) => ({
-    label: subgraph.name,
-    key: `subgraph-${subgraph.id}`,
-    command: () => {
-      useTelemetry()?.trackUiButtonClicked({
-        button_id: 'breadcrumb_subgraph_item_selected',
-        element_group: 'breadcrumb'
-      })
-      const canvas = canvasStore.getCanvas()
-      if (!canvas.graph) throw new TypeError('Canvas has no graph')
+  const items = navigationStore.navigationStack.map<BreadcrumbItem>(
+    (subgraph) => ({
+      label: subgraph.name,
+      key: `subgraph-${subgraph.id}`,
+      command: () => {
+        useTelemetry()?.trackUiButtonClicked({
+          button_id: 'breadcrumb_subgraph_item_selected',
+          element_group: 'breadcrumb'
+        })
+        const canvas = canvasStore.getCanvas()
+        if (!canvas.graph) throw new TypeError('Canvas has no graph')
 
-      canvas.setGraph(subgraph)
-    },
-    updateTitle: (title: string) => {
-      const rootGraph = canvasStore.getCanvas().graph?.rootGraph
-      if (!rootGraph) return
+        canvas.setGraph(subgraph)
+      },
+      updateTitle: (title: string) => {
+        const rootGraph = canvasStore.getCanvas().graph?.rootGraph
+        if (!rootGraph) return
 
-      forEachSubgraphNode(rootGraph, subgraph.id, (node) => {
-        node.title = title
-      })
-    }
-  }))
+        forEachSubgraphNode(rootGraph, subgraph.id, (node) => {
+          node.title = title
+        })
+      }
+    })
+  )
 
   return [home.value, ...items]
 })
@@ -231,7 +231,7 @@ onUpdated(() => {
   align-items: center;
   overflow: hidden;
   height: calc(var(--spacing) * 8);
-  min-width: calc(var(--p-breadcrumb-item-min-width) + 1rem);
+  min-width: calc(var(--breadcrumb-item-min-width) + 1rem);
   border: 1px solid transparent;
   background-color: transparent;
   transition: all 0.2s;
@@ -243,12 +243,12 @@ onUpdated(() => {
   border: 1px solid transparent;
   background-color: transparent;
   display: flex;
-  padding: 0 var(--p-breadcrumb-item-margin);
+  padding: 0 var(--breadcrumb-item-margin);
 }
 
 :deep(.p-breadcrumb-item-link) {
   padding: 0
-    calc(var(--p-breadcrumb-item-margin) + var(--p-breadcrumb-item-padding));
+    calc(var(--breadcrumb-item-margin) + var(--breadcrumb-item-padding));
 }
 
 :deep(.p-breadcrumb-item:hover) {
@@ -258,7 +258,7 @@ onUpdated(() => {
 }
 
 :deep(.p-breadcrumb-item:has(.p-breadcrumb-item-link-icon-visible)) {
-  min-width: calc(var(--p-breadcrumb-item-min-width) + 1rem + 20px);
+  min-width: calc(var(--breadcrumb-item-min-width) + 1rem + 20px);
 }
 
 :deep(.p-breadcrumb-item:first-child) {
@@ -266,7 +266,7 @@ onUpdated(() => {
   flex-shrink: 5000;
 
   .p-breadcrumb-item-link {
-    padding-left: var(--p-breadcrumb-item-padding);
+    padding-left: var(--breadcrumb-item-padding);
   }
 }
 

@@ -25,16 +25,65 @@ async function badgePlacement(row: Locator, label: string) {
 
 const minimaxLabel = 'MiniMax H3'
 const minimaxLabelZh = 'MiniMax H3'
-const minimaxRoute = '/minimax-h3'
-const minimaxRouteZh = '/zh-CN/minimax-h3'
+const minimaxRoute = '/minimax-h3/'
+const minimaxRouteZh = '/zh-CN/minimax-h3/'
 
 const TOP_LEVEL_LABELS = [
-  'Models',
+  'Hub',
   'Products',
   'Pricing',
   'Community',
   'Company'
 ] as const
+
+const RETIRED_BADGE_PANELS = [
+  {
+    section: 'Products',
+    badged: [
+      { label: 'Comfy Agent', href: '/agent/' },
+      { label: 'Developer Platform', href: '/platform/' },
+      { label: 'Comfy Router', href: '/platform/router/' }
+    ],
+    bare: [
+      { label: 'Comfy CLI', href: '/cli/' },
+      { label: 'Managed Builds', href: '/enterprise/managed-builds/' }
+    ]
+  },
+  {
+    section: 'Community',
+    badged: [{ label: 'Events', href: '/events/' }],
+    bare: [
+      { label: 'Affiliates', href: '/affiliates/' },
+      { label: 'Learning', href: '/learning/' }
+    ]
+  }
+] as const
+
+const BADGE_PALETTES = [
+  {
+    link: 'Comfy Agent',
+    label: 'NEW',
+    text: '--color-primary-comfy-ink',
+    fill: '--color-primary-comfy-yellow'
+  }
+] as const
+
+async function expectRetiredBadges(
+  panel: Locator,
+  { badged, bare }: (typeof RETIRED_BADGE_PANELS)[number]
+) {
+  for (const { label, href } of badged) {
+    const link = panel.getByRole('link', { name: label })
+    await expect(link).toHaveAttribute('href', href)
+    await expect(link.getByText('NEW', { exact: true })).toBeVisible()
+  }
+  for (const { label, href } of bare) {
+    const link = panel.getByRole('link', { name: label })
+    await expect(link).toBeVisible()
+    await expect(link).toHaveAttribute('href', href)
+    await expect(link.locator('[data-slot="badge"]')).toHaveCount(0)
+  }
+}
 
 test.describe('Desktop navigation @smoke', () => {
   test.beforeEach(async ({ page }) => {
@@ -67,7 +116,7 @@ test.describe('Desktop navigation @smoke', () => {
 
     await expect(
       desktopLinks
-        .getByRole('link', { name: 'Models' })
+        .getByRole('link', { name: 'Hub' })
         .getByText('NEW', { exact: true })
     ).toBeVisible()
     for (const label of ['Products', 'Community']) {
@@ -122,6 +171,117 @@ test.describe('Desktop dropdown @interaction', () => {
     }
   })
 
+  for (const { reducedMotion, autoplay } of [
+    { reducedMotion: 'no-preference', autoplay: true },
+    { reducedMotion: 'reduce', autoplay: false }
+  ] as const) {
+    test(`Products featured video ${autoplay ? 'autoplays' : 'does not autoplay'} with ${reducedMotion} motion`, async ({
+      page
+    }) => {
+      await page.emulateMedia({ reducedMotion })
+      const nav = page.getByRole('navigation', { name: 'Main navigation' })
+      await nav
+        .getByTestId('desktop-nav-links')
+        .getByRole('button', { name: 'Products' })
+        .hover()
+
+      const card = nav.getByTestId('nav-dropdown').getByRole('link', {
+        name: 'Explore the Gemini Omni 1.1 Flash release'
+      })
+      await expect(card).toHaveAttribute('href', '/gemini-omni/')
+      const video = card.locator('video')
+      await expect(video).toHaveAttribute(
+        'src',
+        'https://media.comfy.org/website/gemini-omni/card-5.webm'
+      )
+      await expect(video).toHaveJSProperty('autoplay', autoplay)
+      await expect(video).toHaveJSProperty('loop', false)
+    })
+  }
+
+  test('Community featured card links to the Product Photography tutorial', async ({
+    page
+  }) => {
+    const nav = page.getByRole('navigation', { name: 'Main navigation' })
+    await nav
+      .getByTestId('desktop-nav-links')
+      .getByRole('button', { name: 'Community' })
+      .hover()
+
+    const card = nav
+      .getByTestId('nav-dropdown')
+      .getByRole('link', { name: 'Watch the Product Photography demo' })
+    await expect(card).toHaveAttribute(
+      'href',
+      '/learning/ads/product-photography/'
+    )
+    await expect(
+      card.getByRole('img', { name: 'Product Photography workflow demo image' })
+    ).toBeVisible()
+  })
+
+  for (const panel of RETIRED_BADGE_PANELS) {
+    test(`${panel.section} dropdown keeps NEW on ${panel.badged.map((b) => b.label).join(', ')} and drops it from the retired entries`, async ({
+      page
+    }) => {
+      const nav = page.getByRole('navigation', { name: 'Main navigation' })
+      const desktopLinks = nav.getByTestId('desktop-nav-links')
+      await desktopLinks.getByRole('button', { name: panel.section }).hover()
+
+      await expectRetiredBadges(nav.getByTestId('nav-dropdown'), panel)
+    })
+  }
+
+  test('NEW badges paint ink on yellow', async ({ page }) => {
+    const nav = page.getByRole('navigation', { name: 'Main navigation' })
+    const desktopLinks = nav.getByTestId('desktop-nav-links')
+    await desktopLinks.getByRole('button', { name: 'Products' }).hover()
+    const dropdown = nav.getByTestId('nav-dropdown')
+
+    for (const { link, label, text, fill } of BADGE_PALETTES) {
+      const badge = dropdown
+        .getByRole('link', { name: link })
+        .getByText(label, { exact: true })
+      await expect(badge).toBeVisible()
+
+      const expected = await page.evaluate(
+        ([textToken, fillToken]) => {
+          const probe = document.createElement('span')
+          document.body.append(probe)
+          const resolve = (name: string) => {
+            probe.style.color = `var(${name})`
+            return getComputedStyle(probe).color
+          }
+          const resolved = {
+            text: resolve(textToken),
+            fill: resolve(fillToken)
+          }
+          probe.remove()
+          return resolved
+        },
+        [text, fill] as const
+      )
+
+      await expect
+        .poll(() =>
+          badge.evaluate((el) => {
+            let host: Element | null = el
+            while (
+              host &&
+              getComputedStyle(host, '::before').backgroundColor ===
+                'rgba(0, 0, 0, 0)'
+            )
+              host = host.parentElement
+            return {
+              text: getComputedStyle(el).color,
+              fill: host && getComputedStyle(host, '::before').backgroundColor
+            }
+          })
+        )
+        .toEqual(expected)
+    }
+  })
+
   test('moving mouse away closes dropdown', async ({ page }) => {
     const nav = page.getByRole('navigation', { name: 'Main navigation' })
     const desktopLinks = nav.getByTestId('desktop-nav-links')
@@ -167,7 +327,7 @@ test.describe('Mobile menu @mobile', () => {
     const menu = page.getByRole('dialog')
     await expect(menu).toBeVisible()
 
-    for (const label of ['Models', 'Products', 'Pricing', 'Community']) {
+    for (const label of ['Hub', 'Products', 'Pricing', 'Community']) {
       await expect(menu.getByText(label, { exact: true }).first()).toBeVisible()
     }
   })
@@ -180,7 +340,7 @@ test.describe('Mobile menu @mobile', () => {
     const menu = page.getByRole('dialog')
 
     await expect(
-      menu.getByRole('link', { name: 'Models' }).getByText('NEW', {
+      menu.getByRole('link', { name: 'Hub' }).getByText('NEW', {
         exact: true
       })
     ).toBeVisible()
@@ -199,6 +359,19 @@ test.describe('Mobile menu @mobile', () => {
       menu.getByRole('link', { name: 'Pricing' }).getByText('NEW')
     ).toHaveCount(0)
   })
+
+  for (const panel of RETIRED_BADGE_PANELS) {
+    test(`${panel.section} drill-down keeps NEW on ${panel.badged.map((b) => b.label).join(', ')} and drops it from the retired entries`, async ({
+      page
+    }) => {
+      await page.getByRole('button', { name: 'Toggle menu' }).click()
+
+      const menu = page.getByRole('dialog')
+      await menu.getByRole('button', { name: panel.section }).click()
+
+      await expectRetiredBadges(menu, panel)
+    })
+  }
 
   test('clicking section with subitems drills down and back works', async ({
     page
@@ -250,7 +423,7 @@ test.describe('Footer @smoke', () => {
     const footer = page.locator('footer')
     await expect(footer).toBeVisible()
 
-    for (const heading of ['Products', 'Resources', 'Company']) {
+    for (const heading of ['Products', 'Features', 'Resources', 'Company']) {
       await expect(
         footer.getByRole('heading', { name: heading }).first()
       ).toBeVisible()

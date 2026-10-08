@@ -23,6 +23,18 @@ const png = Uint8Array.from(
   (character) => character.charCodeAt(0)
 )
 
+// The finished Wavespeed prediction Router returns for wavespeed/seedvr2.
+function prediction(output: string, headers?: HeadersInit) {
+  return Response.json(
+    {
+      code: 200,
+      message: 'success',
+      data: { id: 'prediction-1', status: 'completed', outputs: [output] }
+    },
+    { headers }
+  )
+}
+
 function queueNotEnabled() {
   return Response.json(
     { detail: 'Not enabled', error_type: 'not_enabled' },
@@ -41,7 +53,7 @@ describe('shared Router rendering', () => {
 
     await expect(
       router_render(
-        'vertexai--gemini-3-pro-image--edit-images',
+        'byteplus--seedream-5-pro--edit-images',
         {
           prompt: 'Edit',
           reference_images: [new Blob([png], { type: 'image/png' })]
@@ -78,7 +90,7 @@ describe('shared Router rendering', () => {
         bodies.push(String(init?.body))
         return bodies.length === 1
           ? new Response('Provider unavailable', { status: 502 })
-          : new Response(png, { headers: { 'Content-Type': 'image/png' } })
+          : prediction('https://storage.example/upscaled.png')
       })
     )
     const slug = 'wavespeed--seedvr2-image--edit-images'
@@ -93,6 +105,57 @@ describe('shared Router rendering', () => {
       expect(bodies).toHaveLength(2)
       expect(bodies[1]).toBe(bodies[0])
       expect(result.outputs[0].kind).toBe('image')
+    } finally {
+      releaseRouterOutputs(result.outputs)
+    }
+  })
+
+  it('sends a prepared request again without preparing its inputs a second time', async () => {
+    let grants = 0
+    const bodies: string[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>(async (url, init) => {
+        if (String(url).endsWith('/requests')) return queueNotEnabled()
+        if (String(url).endsWith('/customers/storage')) {
+          grants++
+          return Response.json({
+            upload_url: `https://storage.example/upload-${grants}`,
+            download_url: `https://storage.example/image-${grants}.png`
+          })
+        }
+        if (init?.method === 'PUT') return new Response(null)
+        bodies.push(String(init?.body))
+        return bodies.length === 1
+          ? new Response('Provider unavailable', { status: 502 })
+          : prediction('https://storage.example/upscaled.png')
+      })
+    )
+    const slug = 'wavespeed--seedvr2-image--edit-images'
+    let prepared: RouterRenderOptions['prepared']
+    await expect(
+      router_render(
+        slug,
+        { source_images: [new Blob([png], { type: 'image/png' })] },
+        {
+          token: 'retry-token',
+          idempotencyKey: 'same-take',
+          onPrepared: (ready) => {
+            prepared = ready
+          }
+        }
+      )
+    ).rejects.toMatchObject({ reason: 'provider' })
+
+    const result = await router_render(
+      slug,
+      { source_images: [new Blob([png], { type: 'image/png' })] },
+      { token: 'retry-token', idempotencyKey: 'same-take', prepared }
+    )
+    try {
+      expect(grants).toBe(1)
+      expect(bodies).toHaveLength(2)
+      expect(bodies[1]).toBe(bodies[0])
     } finally {
       releaseRouterOutputs(result.outputs)
     }
@@ -128,11 +191,8 @@ describe('shared Router rendering', () => {
           image: grant.download_url
         })
         expect(headers.get('Idempotency-Key')).toBe('render-once')
-        return new Response(png, {
-          headers: {
-            'Content-Type': 'image/png',
-            'X-Comfy-Request-Id': 'request-123'
-          }
+        return prediction('https://storage.example/upscaled.png', {
+          'X-Comfy-Request-Id': 'request-123'
         })
       })
     )
@@ -144,15 +204,21 @@ describe('shared Router rendering', () => {
     try {
       expect(calls).toHaveLength(3)
       expect(result.requestId).toBe('request-123')
-      expect(result.outputs[0]).toMatchObject({ kind: 'image' })
-      expect(result.outputs[0].url).toMatch(/^blob:/)
+      expect(result.outputs[0]).toMatchObject({
+        kind: 'image',
+        url: 'https://storage.example/upscaled.png'
+      })
     } finally {
       releaseRouterOutputs(result.outputs)
     }
   })
 
-  it('downloads URL inputs and encodes bytes for a Base64 endpoint', async () => {
+  it('downloads URL inputs and uploads them for a Gemini fileData endpoint', async () => {
     const source = 'https://media.example/reference.png'
+    const grant = {
+      upload_url: 'https://storage.example/input-upload',
+      download_url: 'https://storage.example/input.png'
+    }
     const calls: string[] = []
     vi.stubGlobal(
       'fetch',
@@ -163,6 +229,13 @@ describe('shared Router rendering', () => {
           expect(new Headers(init?.headers).has('Authorization')).toBe(false)
           return new Response(png, { headers: { 'Content-Type': 'image/png' } })
         }
+        if (url === `${WORKSHOP_ROUTER_BASE_URL}/customers/storage`)
+          return Response.json(grant)
+        if (url === grant.upload_url) {
+          expect(init?.method).toBe('PUT')
+          expect(new Headers(init?.headers).has('Authorization')).toBe(false)
+          return new Response(null)
+        }
         expect(url).toBe(
           `${WORKSHOP_ROUTER_BASE_URL}/v2/models/vertexai/gemini-3-pro-image`
         )
@@ -172,8 +245,8 @@ describe('shared Router rendering', () => {
               parts: [
                 { text: 'Paint this in watercolor' },
                 {
-                  inlineData: {
-                    data: btoa(String.fromCharCode(...png)),
+                  fileData: {
+                    fileUri: grant.download_url,
                     mimeType: 'image/png'
                   }
                 }
@@ -205,7 +278,7 @@ describe('shared Router rendering', () => {
       { token: 'test-key' }
     )
     try {
-      expect(calls).toHaveLength(2)
+      expect(calls).toHaveLength(4)
       expect(result.outputs[0].kind).toBe('image')
     } finally {
       releaseRouterOutputs(result.outputs)

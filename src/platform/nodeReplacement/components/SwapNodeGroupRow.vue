@@ -40,7 +40,7 @@
             <button
               v-if="hasMultipleNodeTypes"
               type="button"
-              class="focus-visible:ring-ring m-0 inline max-w-full cursor-pointer appearance-none rounded-sm border-0 bg-transparent p-0 text-left text-xs/relaxed font-normal wrap-break-word text-base-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:ring-1 focus-visible:outline-none focus-visible:ring-inset"
+              class="m-0 inline max-w-full cursor-pointer appearance-none rounded-sm border-0 bg-transparent p-0 text-left text-xs/relaxed font-normal wrap-break-word text-base-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none focus-visible:ring-inset"
               :title="group.type"
               :aria-label="titleToggleAriaLabel"
               :aria-expanded="expanded"
@@ -51,7 +51,7 @@
             <button
               v-else-if="primaryLocatableNodeType"
               type="button"
-              class="focus-visible:ring-ring m-0 inline max-w-full cursor-pointer appearance-none rounded-sm border-0 bg-transparent p-0 text-left text-xs/relaxed font-normal wrap-break-word text-base-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:ring-1 focus-visible:outline-none focus-visible:ring-inset"
+              class="m-0 inline max-w-full cursor-pointer appearance-none rounded-sm border-0 bg-transparent p-0 text-left text-xs/relaxed font-normal wrap-break-word text-base-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none focus-visible:ring-inset"
               :title="group.type"
               @click="handleLocateNode(primaryLocatableNodeType)"
             >
@@ -98,9 +98,9 @@
       >
         <i
           aria-hidden="true"
-          class="text-foreground mr-1 icon-[lucide--repeat] size-4 shrink-0"
+          class="mr-1 icon-[lucide--repeat] size-4 shrink-0 text-base-foreground"
         />
-        <span class="text-foreground min-w-0 truncate">
+        <span class="min-w-0 truncate text-base-foreground">
           {{ t('nodeReplacement.replaceNode', 'Replace Node') }}
         </span>
       </Button>
@@ -129,7 +129,7 @@
               <button
                 v-if="isLocatableNodeType(nodeType)"
                 type="button"
-                class="focus-visible:ring-ring m-0 inline max-w-full cursor-pointer appearance-none rounded-sm border-0 bg-transparent p-0 text-left text-xs/relaxed font-normal wrap-break-word text-muted-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:ring-1 focus-visible:outline-none focus-visible:ring-inset"
+                class="m-0 inline max-w-full cursor-pointer appearance-none rounded-sm border-0 bg-transparent p-0 text-left text-xs/relaxed font-normal wrap-break-word text-muted-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none focus-visible:ring-inset"
                 @click="handleLocateNode(nodeType)"
               >
                 {{ getLabel(nodeType) }}
@@ -166,7 +166,7 @@ import { selectionEmphasisClass } from '@/components/rightSidePanel/errors/selec
 import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import TransitionCollapse from '@/components/rightSidePanel/layout/TransitionCollapse.vue'
-import type { MissingNodeType } from '@/types/comfy'
+import type { MissingNodeType } from '@/platform/nodeReplacement/types'
 import type { SwapNodeGroup } from '@/components/rightSidePanel/errors/useErrorGroups'
 
 const { group, highlighted } = defineProps<{

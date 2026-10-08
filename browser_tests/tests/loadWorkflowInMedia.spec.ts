@@ -166,7 +166,7 @@ test.describe(
               els
                 .filter((el) => el.getAttribute('data-node-id') !== id)
                 .map((el) => Number((el as HTMLElement).style.zIndex)),
-            addedNodeId!
+            addedNodeId
           )
 
           expect(newNodeZ).toBeGreaterThan(Math.max(0, ...existingZIndexes))

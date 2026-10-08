@@ -18,8 +18,8 @@
         nodePacks.length > 1 ? $t('manager.updateAll') : $t('manager.update')
       }}</span>
     </Button>
-    <DropdownMenu :entries="updateOptions" align="end">
-      <template #button>
+    <Menu :items="updateOptions" align="end">
+      <template #trigger>
         <Button
           variant="primary"
           :size
@@ -30,7 +30,7 @@
           <TinyChevronIcon />
         </Button>
       </template>
-    </DropdownMenu>
+    </Menu>
   </ButtonGroup>
 </template>
 
@@ -40,9 +40,9 @@ import { useI18n } from 'vue-i18n'
 
 import TinyChevronIcon from '@/components/actionbar/TinyChevronIcon.vue'
 import DotSpinner from '@/components/common/DotSpinner.vue'
-import DropdownMenu from '@/components/common/DropdownMenu.vue'
+import Menu from '@/components/ui/menu/Menu.vue'
 import Button from '@/components/ui/button/Button.vue'
-import type { ButtonVariants } from '@/components/ui/button/button.variants'
+import type { ButtonVariants } from '@comfyorg/design-system/button.variants'
 import ButtonGroup from '@/components/ui/button-group/ButtonGroup.vue'
 import type { components } from '@/types/comfyRegistryTypes'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'

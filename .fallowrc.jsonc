@@ -1,19 +1,39 @@
 {
   "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/v3.24.1/schema.json",
 
-  // Entry points fallow cannot infer. These files are roots (run by package.json
-  // scripts / CI / tool CLIs / Storybook or loaded by Vitest convention), not
-  // imported from the app graph.
+  // Runtime entry points fallow cannot infer.
   "entry": [
-    "src/main.ts",
-    "src/**/__mocks__/**/*.ts",
-    "index.html",
-    "scripts/**/*.{js,ts}",
-    "apps/website/src/scripts/**/*.ts",
     // Astro injects these routes when WORKSHOP_IN_BUILD is enabled.
     "apps/website/src/routes/models/*.{astro,ts}",
-    "**/.storybook/{main,preview}.ts",
-    "packages/ingest-types/openapi-ts.config.ts"
+    "index.html",
+    "src/main.ts"
+  ],
+
+  // Keep tooling and test roots reachable without treating their imports as
+  // production runtime dependencies.
+  "framework": [
+    {
+      "name": "comfyui-support-entry-points",
+      "enablers": ["fallow"],
+      "entryPoints": [
+        "**/.storybook/{main,preview}.ts",
+        "apps/website/src/scripts/**/*.ts",
+        "packages/ingest-types/openapi-ts.config.ts",
+        "scripts/**/*.{js,ts}"
+      ],
+      "entryPointRole": "support"
+    },
+    {
+      "name": "comfyui-test-entry-points",
+      "enablers": ["@playwright/test"],
+      "entryPoints": [
+        "apps/website/src/**/__mocks__/**/*.ts",
+        "browser_tests/global{Setup,Teardown}.ts",
+        "playwright.session.config.ts",
+        "src/**/__mocks__/**/*.ts"
+      ],
+      "entryPointRole": "test"
+    }
   ],
 
   "ignorePatterns": [
@@ -26,13 +46,17 @@
   ],
 
   "ignoreDependencies": [
-    // Iconify icon sets consumed at build time by the iconify tailwind plugin /
-    // importmap, never via a JS import (mirrors knip ignoreDependencies).
+    // Icon sets loaded at build time, never via a JS import: unplugin-icons
+    // for `i-prefix:name` components, design-system's Tailwind plugins for
+    // `icon-[prefix--name]` classes. Only lucide has a dedicated package.
     "@iconify/json",
     "@iconify-json/lucide",
-    // Loaded by config, not imported: oxlint jsPlugin (.oxlintrc.json) and
-    // stylelint customSyntax (.stylelintrc.json) respectively.
+    // Loaded by config, not imported: oxlint jsPlugins (.oxlintrc.json) and
+    // stylelint customSyntax (.stylelintrc.json) respectively. Fallow's oxlint
+    // plugin credits top-level jsPlugins only, not overrides[].jsPlugins.
     "eslint-plugin-playwright",
+    "eslint-plugin-storybook",
+    "eslint-plugin-testing-library",
     "postcss-html",
     // Executed by models-snippets.test.ts inside the generated Node examples.
     "mime-types"
@@ -63,6 +87,9 @@
       "file": "src/scripts/utils.ts",
       "exports": ["applyTextReplacements", "addStylesheet"]
     },
+    // Public re-export of the ui/utils leaf; the comfyAPI shim only sees
+    // declarations in ui.ts.
+    { "file": "src/scripts/ui.ts", "exports": ["$el"] },
     {
       "file": "src/scripts/ui/imagePreview.ts",
       "exports": ["createImageHost"]
@@ -103,6 +130,11 @@
     {
       "file": "apps/website/src/data/gallery.ts",
       "exports": ["getGalleryItemById"]
+    },
+    // Vitest automock: mirrors the real module's exports by design.
+    {
+      "file": "apps/website/src/config/__mocks__/workshop-session-state.ts",
+      "exports": ["*"]
     }
   ],
 
@@ -129,5 +161,7 @@
     "dupesBaseline": ".fallow-baselines/dupes.json"
   },
 
-  "rules": {}
+  "rules": {
+    "dev-dependencies-in-production": "error"
+  }
 }

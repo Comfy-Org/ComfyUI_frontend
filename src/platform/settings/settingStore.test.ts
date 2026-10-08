@@ -11,7 +11,6 @@ import {
 } from '@/platform/settings/settingStore'
 import type { SettingParams, Settings } from '@/platform/settings/types'
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
 
 vi.mock(import('@/platform/telemetry'))
 
@@ -21,17 +20,6 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
     getSettings: vi.fn(),
     storeSetting: vi.fn(),
     storeSettings: vi.fn()
-  }
-}))
-
-// Mock the app
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: {
-    ui: {
-      settings: {
-        dispatchChange: vi.fn()
-      }
-    }
   }
 }))
 
@@ -258,26 +246,6 @@ describe('useSettingStore', () => {
       expect(result).toBe('version-1.21.3-default')
     })
 
-    it('should return latest versioned default when user version is higher', () => {
-      store.settingValues['Comfy.InstalledVersion'] = '1.50.0'
-
-      const setting: SettingParams = {
-        id: 'Comfy.Locale',
-        name: 'Test Setting',
-        type: 'text',
-        defaultValue: 'regular-default',
-        defaultsByInstallVersion: {
-          '1.21.3': 'version-1.21.3-default',
-          '1.40.3': 'version-1.40.3-default'
-        }
-      }
-      store.addSetting(setting)
-
-      const result = store.getDefaultValue('Comfy.Locale')
-      // installedVersion is 1.50.0, so should get 1.40.3 default
-      expect(result).toBe('version-1.40.3-default')
-    })
-
     it('should return regular default when user version is lower than all versioned defaults', () => {
       store.settingValues['Comfy.InstalledVersion'] = '1.10.0'
 
@@ -358,24 +326,6 @@ describe('useSettingStore', () => {
         expect(store.getDefaultValue(setting.id)).toBe(expected)
       }
     )
-
-    it('should handle function-based versioned defaults', () => {
-      const setting: SettingParams = {
-        id: 'Comfy.Locale',
-        name: 'Test Setting',
-        type: 'text',
-        defaultValue: 'regular-default',
-        defaultsByInstallVersion: {
-          '1.21.3': () => 'dynamic-version-1.21.3-default',
-          '1.40.3': () => 'dynamic-version-1.40.3-default'
-        }
-      }
-      store.addSetting(setting)
-
-      const result = store.getDefaultValue('Comfy.Locale')
-      // installedVersion is 1.30.0, so should get 1.21.3 default (executed)
-      expect(result).toBe('dynamic-version-1.21.3-default')
-    })
 
     it('should handle function-based regular defaults with versioned defaults', () => {
       store.settingValues['Comfy.InstalledVersion'] = '1.10.0'
@@ -511,7 +461,8 @@ describe('useSettingStore', () => {
 
     it('should set value and trigger onChange', async () => {
       const onChangeMock = vi.fn()
-      const dispatchChangeMock = vi.mocked(app.ui.settings.dispatchChange)
+      const settingChangedMock = vi.fn()
+      store.onSettingChanged(settingChangedMock)
       const setting: SettingParams = {
         id: 'Comfy.Locale',
         name: 'Comfy.Locale',
@@ -522,21 +473,29 @@ describe('useSettingStore', () => {
       store.addSetting(setting)
       // Adding the new setting should trigger onChange
       expect(onChangeMock).toHaveBeenCalledTimes(1)
-      expect(dispatchChangeMock).toHaveBeenCalledTimes(1)
+      expect(settingChangedMock).toHaveBeenCalledWith({
+        id: 'Comfy.Locale',
+        value: 'default',
+        oldValue: undefined
+      })
 
       await store.set('Comfy.Locale', 'newvalue')
 
       expect(store.get('Comfy.Locale')).toBe('newvalue')
       expect(onChangeMock).toHaveBeenCalledWith('newvalue', 'default')
       expect(onChangeMock).toHaveBeenCalledTimes(2)
-      expect(dispatchChangeMock).toHaveBeenCalledTimes(2)
+      expect(settingChangedMock).toHaveBeenLastCalledWith({
+        id: 'Comfy.Locale',
+        value: 'newvalue',
+        oldValue: 'default'
+      })
       expect(api.storeSetting).toHaveBeenCalledWith('Comfy.Locale', 'newvalue')
 
       // Set a different value, it should trigger onChange
       await store.set('Comfy.Locale', 'differentvalue')
       expect(onChangeMock).toHaveBeenCalledWith('differentvalue', 'newvalue')
       expect(onChangeMock).toHaveBeenCalledTimes(3)
-      expect(dispatchChangeMock).toHaveBeenCalledTimes(3)
+      expect(settingChangedMock).toHaveBeenCalledTimes(3)
       expect(api.storeSetting).toHaveBeenCalledWith(
         'Comfy.Locale',
         'differentvalue'

@@ -1,20 +1,19 @@
 ---
-import BenefitsGrid01 from '../../components/blocks/BenefitsGrid01.vue'
-import BuildConfiguratorSplit01 from '../../components/blocks/BuildConfiguratorSplit01.vue'
-import CardSplitContent02 from '../../components/blocks/CardSplitContent02.vue'
-import CompareTable01 from '../../components/blocks/CompareTable01.vue'
-import CtaBands01 from '../../components/blocks/CtaBands01.vue'
-import FAQSplit01 from '../../components/blocks/FAQSplit01.vue'
-import FeatureRows02 from '../../components/blocks/FeatureRows02.vue'
-import HeroProduct01 from '../../components/blocks/HeroProduct01.vue'
-import StepsCards01 from '../../components/blocks/StepsCards01.vue'
-import IndustriesSection from '../../components/home/IndustriesSection.vue'
-import DistributionsScene from '../../components/product/enterprise/DistributionsScene.vue'
-import Button from '../../components/ui/button/Button.vue'
-import { t } from '../../i18n/translations'
-import BaseLayout from '../../layouts/BaseLayout.astro'
-import ClosingCtaSection from '../../templates/platform/ClosingCtaSection.vue'
-import { absoluteUrl, pageContext } from '../../utils/jsonLd'
+import BenefitsGrid01 from '@/components/blocks/BenefitsGrid01.vue'
+import BuildConfiguratorSplit01 from '@/components/blocks/BuildConfiguratorSplit01.vue'
+import CardSplitContent02 from '@/components/blocks/CardSplitContent02.vue'
+import CompareTable01 from '@/components/blocks/CompareTable01.vue'
+import CtaBands01 from '@/components/blocks/CtaBands01.vue'
+import FAQSplit01 from '@/components/blocks/FAQSplit01.vue'
+import FeatureRows02 from '@/components/blocks/FeatureRows02.vue'
+import HeroProduct01 from '@/components/blocks/HeroProduct01.vue'
+import StepsCards01 from '@/components/blocks/StepsCards01.vue'
+import IndustriesSection from '@/components/home/IndustriesSection.vue'
+import DistributionsScene from '@/components/product/enterprise/DistributionsScene.vue'
+import Button from '@/components/ui/button/Button.vue'
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import ClosingCtaSection from '@/templates/platform/ClosingCtaSection.vue'
+import { absoluteUrl, pageContext } from '@/utils/jsonLd'
 import { buildFaqPageNode } from './_faqMetadata'
 
 const faqs = [
@@ -130,7 +129,6 @@ const faqPage = buildFaqPageNode(url, faqs)
   <HeroProduct01
     headingTag="h1"
     title="MANAGED BUILDS"
-    tag="BETA"
     body="Govern the models, custom nodes, and dependencies your team runs. Create a managed distribution of ComfyUI and deploy the same build anywhere, local or serverless cloud."
     primaryCta={{ label: 'REQUEST DEMO', href: '/contact/' }}
   >
@@ -271,7 +269,7 @@ const faqPage = buildFaqPageNode(url, faqs)
           'Define the model, partner, authentication, release, retention, and export events your organization needs.'
       }
     ]}
-    footnote="DPA and enterprise agreement available. US processing on Google Cloud. 99.5% workflow-execution uptime SLA. SOC 2 Type II audit in progress."
+    footnote="DPA and enterprise agreement available. US processing on Google Cloud. 99.5% workflow-execution uptime SLA. SOC 2 Type II audit complete; report available on request."
   />
 
   <CompareTable01
@@ -284,7 +282,7 @@ const faqPage = buildFaqPageNode(url, faqs)
   <div class="mx-auto flex max-w-9xl justify-center px-6 pb-16 lg:pb-24">
     <Button
       as="a"
-      href="/platform/builder"
+      href="/platform/builder/"
       variant="outline"
       size="lg"
       class="h-12 rounded-full text-sm"
@@ -304,9 +302,8 @@ const faqPage = buildFaqPageNode(url, faqs)
 
   <ClosingCtaSection
     locale="en"
-    heading-after-badge={t(
-      'enterprise.managedBuilds.closing.headingAfterBadge',
-      'en'
+    heading-after-badge={Astro.locals.t(
+      'enterprise.managedBuilds.closing.headingAfterBadge'
     )}
     client:visible
   />

@@ -7,7 +7,12 @@ import type {
   BillingPresentationState,
   PendingBillingOperation
 } from './operationState.js'
-import { reduceBillingOperation, validateActionUrl } from './operationState.js'
+import {
+  BillingOpStatusSchema,
+  reduceBillingOperation,
+  validateActionUrl
+} from './operationState.js'
+import { projectPaymentStep } from './paymentProjection.js'
 
 const SCOPE = { userId: 'uid-1', workspaceId: 'ws-1', role: 'owner' } as const
 
@@ -50,6 +55,27 @@ function polled(
 }
 
 describe('reduceBillingOperation', () => {
+  it.for([
+    {
+      phase: 'awaiting_payment_method',
+      expected: 'https://checkout.example/resumed'
+    },
+    { phase: 'awaiting_invoice_payment', expected: undefined }
+  ] as const)(
+    'keeps a reissued checkout link through a poll that omits it only while it waits on a card ($phase)',
+    ({ phase, expected }) => {
+      const reissued = reduceBillingOperation(pending(), {
+        type: 'action_reissued',
+        actionUrl: 'https://checkout.example/resumed'
+      })
+
+      const next = polled(reissued, { phase })
+
+      expect(next).toMatchObject({ phase: 'pending' })
+      expect((next as PendingBillingOperation).actionUrl).toBe(expected)
+    }
+  )
+
   it('terminalizes on the server verdict and keeps the coded reason only', () => {
     const failed = polled(pending(), {
       status: 'failed',
@@ -186,6 +212,45 @@ describe('reduceBillingOperation', () => {
     ).toBeUndefined()
   })
 
+  it.for(['authentication_failed', 'authentication_required'] as const)(
+    "keeps the server's %s reason on a settled failure",
+    (reason) => {
+      expect(
+        polled(pending(), { status: 'failed', decline_reason: reason })
+      ).toMatchObject({ phase: 'failed', declineReason: reason })
+    }
+  )
+
+  it.for([
+    { latest: true, expected: true },
+    { latest: false, expected: false },
+    { latest: undefined, expected: undefined }
+  ])(
+    "carries only the latest poll's cancelable claim ($latest)",
+    ({ latest, expected }) => {
+      const claimed = polled(pending(), {
+        authentication_state: 'failed_retryable',
+        cancelable: true
+      })
+
+      const next = polled(claimed, {
+        authentication_state: 'failed_retryable',
+        ...(latest === undefined ? {} : { cancelable: latest })
+      })
+
+      expect((next as PendingBillingOperation).cancelable).toBe(expected)
+    }
+  )
+
+  it('reads a retryable failure served without a reason as a generic decline', () => {
+    const failed = polled(pending(), {
+      authentication_state: 'failed_retryable'
+    })
+
+    expect(failed).toMatchObject({ declineReason: 'generic' })
+    expect(projectPaymentStep(failed, 'preview').step).toBe('processing_error')
+  })
+
   it('switches presentation under the same id and restores a failed challenge on rollback', () => {
     const challenged = polled(pending(), {
       authentication_state: 'requires_action',
@@ -293,5 +358,43 @@ describe('BillingOperationIdentity', () => {
         hostedDestination: 'stripe'
       })
     ).toBe('stripe')
+  })
+})
+
+describe('BillingOpStatusSchema charge_breakdown', () => {
+  const wire = (reasonCents: unknown) => ({
+    id: 'op-1',
+    status: 'succeeded',
+    started_at: '2026-09-14T00:00:00.000Z',
+    charge_breakdown: {
+      amount_charged_cents: 900,
+      currency: 'usd',
+      prorated: false,
+      reasons: [
+        {
+          amount_cents: reasonCents,
+          kind: 'promo_code',
+          discount: {
+            kind: 'promotion',
+            code: 'SAVE10',
+            amount_off_cents: 100,
+            duration_in_months: 3
+          }
+        }
+      ]
+    }
+  })
+
+  it('reads every amount as a number', () => {
+    const parsed = BillingOpStatusSchema.parse(wire(100))
+    const breakdown = parsed.charge_breakdown!
+    expect(breakdown.amount_charged_cents).toBe(900)
+    expect(breakdown.reasons[0].amount_cents).toBe(100)
+    expect(breakdown.reasons[0].discount?.amount_off_cents).toBe(100)
+    expect(breakdown.reasons[0].discount?.duration_in_months).toBe(3)
+  })
+
+  it('rejects an amount beyond the safe-integer range', () => {
+    expect(BillingOpStatusSchema.safeParse(wire(2 ** 53)).success).toBe(false)
   })
 })

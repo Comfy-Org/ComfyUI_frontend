@@ -17,8 +17,7 @@ const outputHistoryState = vi.hoisted(() => ({
 }))
 
 const spies = vi.hoisted(() => ({
-  cancelActiveWorkflowJobs: vi.fn(),
-  deleteAssets: vi.fn()
+  cancelActiveWorkflowJobs: vi.fn()
 }))
 
 vi.mock(import('@/composables/useAppMode'))
@@ -37,16 +36,9 @@ vi.mock<unknown>(
   }
 )
 
-vi.mock<unknown>(
-  import('@/platform/assets/composables/useMediaAssetActions'),
-  () => ({
-    useMediaAssetActions: () => ({ deleteAssets: spies.deleteAssets })
-  })
-)
+vi.mock(import('@/platform/assets/composables/useMediaAssetActions'))
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: { rootGraph: { id: 'root' }, loadGraphData: vi.fn() }
-}))
+vi.mock(import('@/scripts/app'))
 
 const i18n = createI18n({
   legacy: false,
@@ -175,7 +167,9 @@ describe('LinearPreview', () => {
     await userEvent
       .setup()
       .click(screen.getByRole('button', { name: 'More Options' }))
-    expect(await screen.findByRole('dialog')).toHaveTextContent('Delete all')
+    expect(
+      await screen.findByRole('menuitem', { name: 'Delete all' })
+    ).toBeInTheDocument()
     expect(screen.getByText('Rerun')).toBeInTheDocument()
     expect(screen.getByText('Reuse Parameters')).toBeInTheDocument()
   })

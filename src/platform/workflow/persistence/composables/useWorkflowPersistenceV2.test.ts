@@ -15,7 +15,7 @@ import { useWorkflowPersistenceV2 } from './useWorkflowPersistenceV2'
 
 const mockToastAdd = vi.fn()
 vi.mock<unknown>(
-  import('primevue'), // eslint-disable-line primevue-removal/no-imports
+  import('primevue'), // oxlint-disable-line comfy/no-primevue-imports
   () => ({
     useToast: () => ({
       add: mockToastAdd
@@ -24,7 +24,7 @@ vi.mock<unknown>(
 )
 
 vi.mock<unknown>(
-  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
+  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
 
   () => ({
     useToast: () => ({
@@ -115,10 +115,6 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return distributionMocks.isCloud
   }
-}))
-
-vi.mock(import('../migration/migrateV1toV2'), () => ({
-  migrateV1toV2: vi.fn()
 }))
 
 type GraphChangedHandler = (() => void) | null

@@ -9,7 +9,7 @@ import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import type { useComfyRegistryService } from '@/services/comfyRegistryService'
-import type { MissingNodeType } from '@/types/comfy'
+import type { MissingNodeType } from '@/platform/nodeReplacement/types'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
@@ -41,18 +41,7 @@ vi.mock(import('@/services/comfyRegistryService'), () => ({
     })
 }))
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: {
-    isGraphReady: true,
-    rootGraph: {
-      serialize: vi.fn(() => ({})),
-      getNodeById: vi.fn()
-    },
-    get rootGraphOrUndefined() {
-      return this.rootGraph
-    }
-  }
-}))
+vi.mock(import('@/scripts/app'))
 
 vi.mock(import('@/utils/graphTraversalUtil'), { spy: true })
 

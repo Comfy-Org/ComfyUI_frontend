@@ -1,9 +1,9 @@
-/* eslint-disable testing-library/no-node-access */
+/* oxlint-disable testing-library/no-node-access */
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
 
-import { stubIntersectionObserver } from '../../test/fakeIntersectionObserver'
+import { stubIntersectionObserver } from '@/test/fakeIntersectionObserver'
 import ProductShowcaseSection from './ProductShowcaseSection.vue'
 
 // The scene players are covered by their own suites; here only the slide

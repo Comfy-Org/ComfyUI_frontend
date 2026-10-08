@@ -11,14 +11,9 @@ import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
 import { unflattenOutputAssets } from '@/platform/assets/composables/media/assetMappers'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
+import { useMediaAssetActions } from '../composables/useMediaAssetActions'
 
-const { downloadAssets } = vi.hoisted(() => ({
-  downloadAssets: vi.fn()
-}))
-
-vi.mock<unknown>(import('../composables/useMediaAssetActions'), () => ({
-  useMediaAssetActions: () => ({ downloadAssets })
-}))
+vi.mock(import('../composables/useMediaAssetActions'))
 
 vi.mock(import('@/composables/useFeatureFlags'))
 
@@ -121,7 +116,7 @@ function dispatchDragStart(
     metaKey: { value: init.metaKey ?? false, configurable: true }
   })
   const cardSelector = `[data-asset-id="${init.assetId ?? 'a'}"]`
-  // eslint-disable-next-line testing-library/no-node-access -- the draggable card intentionally has no interactive role
+  // oxlint-disable-next-line testing-library/no-node-access -- the draggable card intentionally has no interactive role
   container.querySelector(cardSelector)!.dispatchEvent(event)
   return { event, add }
 }
@@ -220,7 +215,7 @@ describe('MediaAssetCard', () => {
       screen.getByRole('button', { name: 'mediaAsset.actions.download' })
     )
 
-    expect(downloadAssets).toHaveBeenCalledWith([asset])
+    expect(useMediaAssetActions().downloadAssets).toHaveBeenCalledWith([asset])
     expect(emitted().select).toBeUndefined()
     expect(emitted()['toggle-selection']).toBeUndefined()
 
@@ -240,7 +235,7 @@ describe('MediaAssetCard', () => {
     })
     const preview = await screen.findByRole('img', { name: 'a.png' })
     const outsideClick = vi.fn()
-    // eslint-disable-next-line testing-library/no-container -- verifies the card's event boundary against its rendered parent
+    // oxlint-disable-next-line testing-library/no-container -- verifies the card's event boundary against its rendered parent
     container.addEventListener('click', outsideClick)
 
     await user.click(preview)
@@ -259,7 +254,7 @@ describe('MediaAssetCard', () => {
       loading: false,
       asset: { ...asset, name: 'model.glb' }
     })
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- verifies the preview event boundary independently of its async media component
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- verifies the preview event boundary independently of its async media component
     const preview = container.querySelector('.aspect-square')!
 
     await user.click(preview)
@@ -281,7 +276,7 @@ describe('MediaAssetCard', () => {
         asset: { ...asset, name: 'clip.mp4' }
       })
       const video = await vi.waitFor(() => {
-        // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
+        // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
         const element = container.querySelector('video')
         expect(element).toBeInTheDocument()
         return element!
@@ -312,7 +307,7 @@ describe('MediaAssetCard', () => {
       showNativeVideoControls: false
     })
     const video = await vi.waitFor(() => {
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
       const element = container.querySelector('video')
       expect(element).toBeInTheDocument()
       return element!
@@ -325,7 +320,7 @@ describe('MediaAssetCard', () => {
     })
 
     await fireEvent.play(video)
-    // eslint-disable-next-line testing-library/no-node-access -- the video hover target has no role
+    // oxlint-disable-next-line testing-library/no-node-access -- the video hover target has no role
     const hoverTarget = video.parentElement!
     await user.hover(hoverTarget)
 
@@ -347,13 +342,13 @@ describe('MediaAssetCard', () => {
       showNativeVideoControls: false
     })
     const video = await vi.waitFor(() => {
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
       const element = container.querySelector('video')
       expect(element).toBeInTheDocument()
       return element!
     })
 
-    // eslint-disable-next-line testing-library/no-node-access -- the video hover target has no role
+    // oxlint-disable-next-line testing-library/no-node-access -- the video hover target has no role
     const hoverTarget = video.parentElement!
     const selectionControl = screen.getByRole('button', {
       name: 'assetBrowser.ariaLabel.assetCard'
