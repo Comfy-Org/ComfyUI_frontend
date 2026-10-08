@@ -93,6 +93,10 @@ async function renderLoginView(
         path: '/oauth/consent',
         name: 'cloud-oauth-consent',
         component: { template: '<div />' }
+      },
+      {
+        path: '/cloud/oauth/consent',
+        redirect: (to) => ({ path: '/oauth/consent', query: to.query })
       }
     ]
   })
@@ -361,7 +365,7 @@ describe('CloudLoginView SSO', () => {
 
       await waitFor(() => expect(assign).toHaveBeenCalledOnce())
       expect(startParams(assign).returnTo).toBe(
-        `/oauth/consent?oauth_request_id=${OAUTH_REQUEST_ID}`
+        `/cloud/oauth/consent?oauth_request_id=${OAUTH_REQUEST_ID}`
       )
     })
 
@@ -374,7 +378,7 @@ describe('CloudLoginView SSO', () => {
 
       await waitFor(() => expect(assign).toHaveBeenCalledOnce())
       expect(startParams(assign).returnTo).toBe(
-        `/oauth/consent?oauth_request_id=${OAUTH_REQUEST_ID}`
+        `/cloud/oauth/consent?oauth_request_id=${OAUTH_REQUEST_ID}`
       )
     })
 
@@ -577,7 +581,7 @@ describe('CloudLoginView Firebase sign-in refused for SSO', () => {
     {
       name: 'returns SSO to a pending OAuth consent before the previous page',
       url: `/cloud/login?previousFullPath=%2Fworkflows&oauth_request_id=${OAUTH_REQUEST_ID}`,
-      returnTo: `/oauth/consent?oauth_request_id=${OAUTH_REQUEST_ID}`
+      returnTo: `/cloud/oauth/consent?oauth_request_id=${OAUTH_REQUEST_ID}`
     }
   ])('with the flag on, $name', async ({ url, returnTo }) => {
     const flags = vi.mocked(useFeatureFlags().flags)

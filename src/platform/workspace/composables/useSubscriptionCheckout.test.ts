@@ -267,6 +267,7 @@ interface SubscriptionRailStub {
   openPaymentPortal?: (
     returnUrl: string
   ) => Promise<SubscriptionRailOutcome<string>>
+  cancelOperation?: (opId: string) => Promise<SubscriptionRailOutcome>
 }
 
 /**
@@ -4097,6 +4098,86 @@ describe('useSubscriptionCheckout', () => {
     })
   })
 
+  describe('cancel payment and try again on the SDK rail', () => {
+    function declinedPlanChange(cancelable: boolean): RailOperation {
+      return {
+        opId: 'op-declined',
+        kind: 'subscription',
+        status: 'pending',
+        workspaceId: 'workspace-1',
+        actionUrl: null,
+        phase: 'awaiting_invoice_payment',
+        authenticationState: 'failed_retryable',
+        isAuthenticating: false,
+        canRetryAuthentication: false,
+        errorMessage: 'Your bank declined the verification.',
+        cancelable
+      }
+    }
+
+    function railHolding(
+      record: RailOperation,
+      cancelOperation: SubscriptionRailStub['cancelOperation'] = vi.fn()
+    ) {
+      mockSubscriptionRail.value = railStub({
+        subscriptionActionOperation: record,
+        getOperation: (opId) => (opId === record.opId ? record : undefined),
+        cancelOperation
+      })
+    }
+
+    it.for([true, false])(
+      'offers the cancel exactly when the server says the payment is cancelable (%s)',
+      async (cancelable) => {
+        railHolding(declinedPlanChange(cancelable))
+
+        const checkout = await setup()
+
+        expect(checkout.paymentCancelable.value).toBe(cancelable)
+      }
+    )
+
+    it('asks the rail to cancel the watched payment once and is busy until it answers', async () => {
+      let answer!: (outcome: SubscriptionRailOutcome) => void
+      const cancelOperation = vi.fn(
+        () =>
+          new Promise<SubscriptionRailOutcome>((resolve) => {
+            answer = resolve
+          })
+      )
+      railHolding(declinedPlanChange(true), cancelOperation)
+      const checkout = await setup()
+
+      const canceling = checkout.cancelPayment()
+      void checkout.cancelPayment()
+
+      expect(checkout.isCancelingPayment.value).toBe(true)
+      answer({ status: 'ok', value: undefined })
+      await canceling
+
+      expect(cancelOperation).toHaveBeenCalledExactlyOnceWith('op-declined')
+      expect(checkout.isCancelingPayment.value).toBe(false)
+      expect(checkout.cancelPaymentError.value).toBeNull()
+    })
+
+    it("shows the server's sentence when the cancel is refused", async () => {
+      railHolding(
+        declinedPlanChange(true),
+        vi.fn(async () => ({
+          status: 'error' as const,
+          error: new Error('This payment is already processing.')
+        }))
+      )
+      const checkout = await setup()
+
+      await checkout.cancelPayment()
+
+      expect(checkout.cancelPaymentError.value).toBe(
+        'This payment is already processing.'
+      )
+    })
+  })
+
   describe('the operation the checkout watches', () => {
     const PARKED: RailOperation = {
       opId: 'op-parked',
@@ -4108,7 +4189,8 @@ describe('useSubscriptionCheckout', () => {
       authenticationState: 'failed_retryable',
       isAuthenticating: false,
       canRetryAuthentication: false,
-      errorMessage: 'Your card was declined.'
+      errorMessage: 'Your card was declined.',
+      cancelable: false
     }
 
     it('reads the lifecycle on the rail, not the store the poller writes', async () => {
@@ -4270,7 +4352,8 @@ describe('useSubscriptionCheckout', () => {
         authenticationState: record.authenticationState,
         isAuthenticating: record.isAuthenticating,
         canRetryAuthentication: record.canRetryAuthentication,
-        errorMessage: record.errorMessage
+        errorMessage: record.errorMessage,
+        cancelable: false
       }
     }
 

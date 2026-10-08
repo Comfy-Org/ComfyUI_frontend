@@ -1771,7 +1771,8 @@
     "wan3": "Wan 3.0",
     "wanAnimate2": "Wan Animate 2",
     "workflows": "工作流",
-    "modelCatalogue": "ComfyUI 模型"
+    "modelCatalogue": "ComfyUI 模型",
+    "changelog": "更新日志"
   },
   "g": {
     "error": "错误",
@@ -4960,5 +4961,18 @@
     "noWebgl": "此预览需要 WebGL2，当前浏览器不支持。",
     "play": "播放",
     "pause": "暂停"
+  },
+  "changelog": {
+    "meta": {
+      "title": "更新日志 - Comfy",
+      "description": "来自 Comfy 文档的 ComfyUI 最新功能、改进和修复。"
+    },
+    "title": "更新日志",
+    "viewDocs": "查看文档",
+    "saved": "正在显示已保存的更新日志。无法加载最新更新。",
+    "unavailable": "无法加载更新日志。",
+    "loading": "正在加载最新更新日志…",
+    "introduction": "ComfyUI 的最新功能、改进和修复，来自 Comfy 文档。",
+    "retry": "重试"
   }
 }

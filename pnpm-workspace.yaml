@@ -16,7 +16,7 @@ catalog:
   '@astrojs/mdx': ^7.0.5
   '@astrojs/sitemap': ^3.7.3
   '@astrojs/vue': ^7.0.2
-  '@comfyorg/comfyui-desktop-bridge-types': 0.3.0
+  '@comfyorg/comfyui-desktop-bridge-types': 0.4.0
   '@comfyorg/comfyui-electron-types': 0.6.2
   '@comfyorg/sdk': 0.2.0
   '@customerio/cdp-analytics-browser': ^0.5.3
@@ -108,6 +108,7 @@ catalog:
   lint-staged: ^16.2.7
   lottie-web: ^5.13.0
   markdown-table: ^3.0.4
+  marked: ^15.0.11
   mediabunny: ^1.53.1
   minisearch: ^7.2.0
   mime-types: 3.0.2
@@ -168,6 +169,7 @@ catalog:
   '@datadog/browser-logs': 6.33.0
   '@comfyorg/comfy-multi-player': 0.3.6
   typescript-native-bridge: 6.0.3-bridge.17.tsgo.7.0.2
+  dependency-cruiser: ^18.5.0
 
 cleanupUnusedCatalogs: true
 
@@ -207,7 +209,7 @@ overrides:
 
 # Transitional - drop each entry once that version is older than the release-age gate.
 minimumReleaseAgeExclude:
-  - '@comfyorg/comfyui-desktop-bridge-types@0.3.0'
+  - '@comfyorg/comfyui-desktop-bridge-types@0.4.0'
   - '@comfyorg/comfy-multi-player@0.3.6'
 
 patchedDependencies:

@@ -1,54 +1,86 @@
 <template>
-  <div
-    class="flex w-full max-w-[400px] flex-col rounded-2xl border border-border-default bg-base-background"
+  <CancellationStepLayout
+    :title="
+      didCancelSucceed
+        ? $t('subscription.cancelFlow.cancelled.title')
+        : $t('subscription.cancelFlow.confirm.title')
+    "
+    :subtitle="didCancelSucceed ? description : undefined"
+    :close-disabled="isClosingBlocked"
+    :on-close="onClose"
   >
-    <!-- Header -->
-    <div
-      class="flex h-12 items-center justify-between border-b border-border-default px-4"
+    <p
+      v-if="isAwaitingStripe"
+      class="m-0 text-sm/5 text-muted-foreground"
+      role="status"
     >
-      <h2 class="m-0 text-sm font-normal text-base-foreground">
-        {{ $t('subscription.cancelDialog.title') }}
-      </h2>
-      <button
-        class="cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none"
-        :aria-label="$t('g.close')"
-        :disabled="isLoading"
+      {{ $t('subscription.cancelDialog.finishOnStripe') }}
+    </p>
+    <template v-else-if="!didCancelSucceed">
+      <p class="m-0 text-sm/5 text-muted-foreground">{{ description }}</p>
+      <p class="m-0 text-sm/5 text-base-foreground">
+        {{
+          $t('subscription.cancelFlow.confirm.loseAccess', {
+            date: formattedEndDate
+          })
+        }}
+      </p>
+      <ul class="m-0 grid list-none grid-cols-2 gap-2 p-0">
+        <li
+          v-for="feature in lostFeatures"
+          :key="feature.key"
+          class="flex flex-col gap-1.5 rounded-[10px] border border-border-subtle bg-secondary-background/50 p-3"
+        >
+          <i
+            :class="cn(feature.icon, 'size-4 text-base-foreground')"
+            aria-hidden="true"
+          />
+          <span class="text-sm text-base-foreground">{{ feature.title }}</span>
+          <span class="text-xs text-muted-foreground">
+            {{ feature.description }}
+          </span>
+        </li>
+      </ul>
+    </template>
+
+    <template #actions>
+      <Button
+        v-if="didCancelSucceed"
+        variant="secondary"
+        size="lg"
+        class="w-24"
         @click="onClose"
       >
-        <i class="pi pi-times size-4" />
-      </button>
-    </div>
-
-    <!-- Body -->
-    <div class="flex flex-col gap-4 p-4">
-      <p class="m-0 text-sm text-muted-foreground">
-        {{ description }}
-      </p>
-    </div>
-
-    <!-- Footer -->
-    <div
-      v-if="isAwaitingStripe"
-      class="flex items-center justify-end gap-4 p-4"
-    >
-      <Button variant="muted-textonly" @click="onClose">
-        {{ $t('g.close') }}
-      </Button>
-    </div>
-    <div v-else class="flex items-center justify-end gap-4 p-4">
-      <Button variant="muted-textonly" :disabled="isLoading" @click="onClose">
-        {{ $t('subscription.cancelDialog.keepSubscription') }}
+        {{ $t('subscription.cancelFlow.done') }}
       </Button>
       <Button
-        variant="destructive"
+        v-else-if="isAwaitingStripe"
+        variant="secondary"
         size="lg"
-        :loading="isLoading"
-        @click="onConfirmCancel"
+        @click="onClose"
       >
-        {{ $t('subscription.cancelDialog.confirmCancel') }}
+        {{ $t('g.close') }}
       </Button>
-    </div>
-  </div>
+      <template v-else>
+        <Button
+          variant="textonly"
+          size="lg"
+          :disabled="isLoading"
+          @click="onClose"
+        >
+          {{ $t('subscription.cancelFlow.keepPlan') }}
+        </Button>
+        <Button
+          variant="destructive"
+          size="lg"
+          :loading="isLoading"
+          @click="onConfirmCancel"
+        >
+          {{ $t('subscription.cancelFlow.confirm.cancelPlan') }}
+        </Button>
+      </template>
+    </template>
+  </CancellationStepLayout>
 </template>
 
 <script setup lang="ts">
@@ -57,10 +89,14 @@ import { useToast } from 'primevue/usetoast'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
 import Button from '@/components/ui/button/Button.vue'
 import type { CancelRail } from '@/composables/billing/types'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
+import CancellationStepLayout from '@/platform/cloud/subscription/components/CancellationStepLayout.vue'
+import { useCancellationPlan } from '@/platform/cloud/subscription/composables/useCancellationPlan'
 import {
   createCancelFlowReporter,
   getSubscriptionCancellationMetadata
@@ -86,7 +122,7 @@ const {
   isScopeCurrent?: () => boolean
 }>()
 
-const { t } = useI18n()
+const { t, n } = useI18n()
 const dialogStore = useDialogStore()
 const toast = useToast()
 const { cancelSubscription, fetchStatus, subscription, tier } =
@@ -94,6 +130,7 @@ const { cancelSubscription, fetchStatus, subscription, tier } =
 const { shouldUseWorkspaceBilling } = useBillingRouting()
 const { canCancel } = useBillingCapabilities()
 const { permissions } = useWorkspaceUI()
+const { planName, creditGrant } = useCancellationPlan()
 const telemetry = useTelemetry()
 
 const isLoading = ref(false)
@@ -144,7 +181,9 @@ onUnmounted(() => {
 })
 
 const formattedEndDate = computed(() => {
-  const date = parseIsoDateSafe(cancelAt ?? subscription.value?.endDate)
+  const date = parseIsoDateSafe(
+    cancelAt ?? subscription.value?.endDate ?? subscription.value?.renewalDate
+  )
   if (!date) return t('subscription.cancelDialog.endOfBillingPeriod')
   return date.toLocaleDateString('en-US', {
     month: 'long',
@@ -154,12 +193,58 @@ const formattedEndDate = computed(() => {
 })
 
 const description = computed(() =>
-  isAwaitingStripe.value
-    ? t('subscription.cancelDialog.finishOnStripe')
-    : t('subscription.cancelDialog.description', {
-        date: formattedEndDate.value
-      })
+  t('subscription.cancelFlow.confirm.description', {
+    plan: planName.value,
+    date: formattedEndDate.value
+  })
 )
+
+function creditsTitle() {
+  const grant = creditGrant.value
+  if (!grant)
+    return t('subscription.cancelFlow.confirm.features.credits.generic')
+  const named = { credits: n(grant.credits) }
+  return grant.cycle === 'yearly'
+    ? t('subscription.cancelFlow.confirm.features.credits.yearly', named)
+    : t('subscription.cancelFlow.confirm.features.credits.monthly', named)
+}
+
+const lostFeatures = computed(() => {
+  return [
+    {
+      key: 'gpus',
+      icon: 'icon-[lucide--cpu]',
+      title: t('subscription.cancelFlow.confirm.features.gpus.title'),
+      description: t(
+        'subscription.cancelFlow.confirm.features.gpus.description'
+      )
+    },
+    {
+      key: 'models',
+      icon: 'icon-[lucide--layers]',
+      title: t('subscription.cancelFlow.confirm.features.models.title'),
+      description: t(
+        'subscription.cancelFlow.confirm.features.models.description'
+      )
+    },
+    {
+      key: 'customNodes',
+      icon: 'icon-[lucide--blocks]',
+      title: t('subscription.cancelFlow.confirm.features.customNodes.title'),
+      description: t(
+        'subscription.cancelFlow.confirm.features.customNodes.description'
+      )
+    },
+    {
+      key: 'credits',
+      icon: 'icon-[lucide--coins]',
+      title: creditsTitle(),
+      description: t(
+        'subscription.cancelFlow.confirm.features.credits.description'
+      )
+    }
+  ]
+})
 
 function completeObservedCancel() {
   if (!cancelObserved || didCancelSucceed.value) return
@@ -168,12 +253,6 @@ function completeObservedCancel() {
   isAwaitingStripe.value = false
   telemetry?.trackSubscriptionCancellation('confirmed', cancellationMetadata())
   cancelReport.confirmed({ operationFollows: false })
-  dialogStore.closeDialog({ key: 'cancel-subscription' })
-  toast.add({
-    severity: 'success',
-    summary: t('subscription.cancelSuccess'),
-    life: 5000
-  })
 }
 
 watch(
@@ -193,8 +272,12 @@ const refreshOnFocus = useThrottleFn(() => {
 }, 10_000)
 useEventListener(defaultWindow, 'focus', () => void refreshOnFocus())
 
+const isClosingBlocked = computed(
+  () => isLoading.value && !didCancelSucceed.value
+)
+
 function onClose() {
-  if (isLoading.value) return
+  if (isClosingBlocked.value) return
   dialogStore.closeDialog({ key: 'cancel-subscription' })
 }
 
@@ -252,12 +335,6 @@ async function finishWorkspaceCancel() {
   } catch {
     // Cancellation already succeeded; stale local subscription status should not report failure.
   }
-  dialogStore.closeDialog({ key: 'cancel-subscription' })
-  toast.add({
-    severity: 'success',
-    summary: t('subscription.cancelSuccess'),
-    life: 5000
-  })
   isLoading.value = false
 }
 

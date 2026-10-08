@@ -1,5 +1,5 @@
 // Shared model-page prose: one source for the HTML page and its markdown twin
-// (/p/supported-models/[slug] and /p/supported-models/[slug].md), so the two
+// (/hub/models/local/[slug] and /hub/models/local/[slug].md), so the two
 // surfaces cannot drift.
 import type { models } from './models'
 

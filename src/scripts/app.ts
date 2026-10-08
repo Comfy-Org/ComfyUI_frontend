@@ -93,6 +93,7 @@ import { useDialogService } from '@/services/dialogService'
 import { useExtensionService } from '@/services/extensionService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useSubgraphService } from '@/services/subgraphService'
+import { isDesktopHostSignedIn } from '@/platform/auth/desktopHost/desktopHostSession'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { createCanvasInteractionMode } from '@/renderer/core/canvas/interaction/canvasInteractionMode'
@@ -109,13 +110,14 @@ import {
 } from '@/types/nodeIdentification'
 import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
 import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
+import type { MissingNodeType } from '@/platform/nodeReplacement/types'
 
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
+import type { ComfyExtension } from '@/types/comfy'
 import type {
   ExtensionManager,
   ToastMessageOptions
@@ -170,7 +172,8 @@ import type { ComfyApi } from './api'
 import { defaultGraph } from './defaultGraph'
 import { importA1111 } from './pnginfo'
 import { applyPromotedWidgetControl } from './promotedWidgetControl'
-import { $el, ComfyUI } from './ui'
+import { ComfyUI } from './ui'
+import { $el } from './ui/utils'
 import { ComfyAppMenu } from './ui/menu/index'
 import { clone } from './utils'
 import type { ComfyWidgets, CustomComfyWidgetConstructor } from './widgets'
@@ -1852,13 +1855,19 @@ export class ComfyApp {
         workspaceGenerationBeforeAuthentication !==
           executionWorkspaceGeneration) &&
       (isCloud || workspaceIdBeforeAuthentication !== null)
-    const comfyOrgApiKey = useApiKeyAuthStore().getApiKey()
+    // Desktop host auth is the only credential while active: a stored
+    // personal key may belong to another account and never rides along.
+    const desktopHostAuth = isDesktopHostSignedIn()
+    const comfyOrgApiKey = desktopHostAuth
+      ? null
+      : useApiKeyAuthStore().getApiKey()
     // An API-key session mints no workspace JWT: the key itself is the
     // execution credential and the server resolves its bound workspace. Only a
     // key-authenticated session may pass without a token — a Firebase session
     // whose token mint failed must still fail closed rather than fall back to
     // a stored key and charge the key's workspace.
     const isApiKeySessionExecution =
+      !desktopHostAuth &&
       !useAuthStore().currentUser &&
       !useAuthStore().sessionOnlyUser &&
       useApiKeyAuthStore().isAuthenticated

@@ -36,6 +36,9 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
     storeUserData: vi.fn(),
     listUserDataFullInfo: vi.fn(),
     getGlobalSubgraphs: vi.fn(),
+    deleteUserData: vi.fn(() =>
+      Promise.resolve(new Response(null, { status: 204 }))
+    ),
     apiURL: vi.fn(),
     addEventListener: vi.fn()
   }
@@ -81,6 +84,12 @@ describe('useSubgraphStore', () => {
     return await store.fetchSubgraphs()
   }
 
+  function userBlueprintNames() {
+    return useNodeDefStore()
+      .nodeDefs.filter((d) => d.category === 'Subgraph Blueprints/User')
+      .map((d) => d.name)
+  }
+
   beforeEach(() => {
     vi.mocked(useDialogService().prompt).mockResolvedValue('testname')
     vi.mocked(useDialogService().confirm).mockResolvedValue(true)
@@ -92,8 +101,7 @@ describe('useSubgraphStore', () => {
     store = useSubgraphStore()
   })
 
-  it('should allow publishing of a subgraph', async () => {
-    //mock canvas to provide a minimal subgraphNode
+  function selectSubgraphNodeToPublish() {
     const subgraph = createTestSubgraph()
     const subgraphNode = createTestSubgraphNode(subgraph)
     const graph = subgraphNode.graph!
@@ -121,18 +129,36 @@ describe('useSubgraphStore', () => {
           size: 2
         })
     } as Response)
-    await mockFetch({ 'testname.json': mockGraph })
-    //Dialogue service already mocked
-    await store.publishSubgraph()
-    expect(api.storeUserData).toHaveBeenCalled()
-  })
+  }
+
+  it.for([
+    { confirmed: true, storeCalls: 1 },
+    { confirmed: false, storeCalls: 0 }
+  ])(
+    'should publish over an existing blueprint only when overwrite is confirmed (confirmed: $confirmed)',
+    async ({ confirmed, storeCalls }) => {
+      selectSubgraphNodeToPublish()
+      vi.mocked(useDialogService().confirm).mockResolvedValue(confirmed)
+      await mockFetch({ 'testname.json': mockGraph })
+      await store.publishSubgraph()
+      expect(useDialogService().confirm).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'overwriteBlueprint',
+          itemList: ['testname']
+        })
+      )
+      expect(api.storeUserData).toHaveBeenCalledTimes(storeCalls)
+    }
+  )
   it('should display published nodes in the node library', async () => {
     await mockFetch({ 'test.json': mockGraph })
-    expect(
-      useNodeDefStore().nodeDefs.filter(
-        (d) => d.category === 'Subgraph Blueprints/User'
-      )
-    ).toHaveLength(1)
+    expect(userBlueprintNames()).toEqual(['SubgraphBlueprint.test'])
+  })
+  it('should remove deleted blueprints from the node library', async () => {
+    await mockFetch({ 'test.json': mockGraph })
+    await store.deleteBlueprint('SubgraphBlueprint.test')
+    expect(api.deleteUserData).toHaveBeenCalledWith('subgraphs/test.json')
+    expect(userBlueprintNames()).toEqual([])
   })
   it('should allow subgraphs to be edited', async () => {
     await mockFetch({ 'test.json': mockGraph })
@@ -273,7 +299,7 @@ describe('useSubgraphStore', () => {
       'Failed to load subgraph blueprint',
       expect.any(Error)
     )
-    expect(store.subgraphBlueprints).toHaveLength(0)
+    expect(useNodeDefStore().blueprintNodeDefsByName.size).toBe(0)
     consoleSpy.mockRestore()
   })
 
@@ -295,7 +321,7 @@ describe('useSubgraphStore', () => {
       'Failed to load subgraph blueprint',
       expect.any(Error)
     )
-    expect(store.subgraphBlueprints).toHaveLength(0)
+    expect(useNodeDefStore().blueprintNodeDefsByName.size).toBe(0)
     consoleSpy.mockRestore()
   })
 
@@ -317,7 +343,7 @@ describe('useSubgraphStore', () => {
       }
     )
     expect(consoleSpy).toHaveBeenCalled()
-    expect(store.subgraphBlueprints).toHaveLength(1)
+    expect(useNodeDefStore().blueprintNodeDefsByName.size).toBe(1)
     consoleSpy.mockRestore()
   })
 

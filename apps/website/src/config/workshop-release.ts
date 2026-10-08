@@ -1,10 +1,14 @@
 import type { WorkshopCloudEnv } from './workshop-cloud-env'
 import { WORKSHOP_CLOUD_ENVS, isWorkshopCloudEnv } from './workshop-cloud-env'
+import { LOCAL_MODELS_PATH } from './local-models'
 import { modelsUrlKind } from './models-url-registry'
 
 export function isWorkshopInBuild(): boolean {
   return process.env.WORKSHOP_IN_BUILD !== '0'
 }
+
+const isLocalModelsRoute = (pathname: string) =>
+  pathname === LOCAL_MODELS_PATH || pathname.startsWith(`${LOCAL_MODELS_PATH}/`)
 
 /** Whether a built pathname is a Workshop page, which stays out of the sitemap. */
 export function isWorkshopRoute(route: string): boolean {
@@ -12,7 +16,9 @@ export function isWorkshopRoute(route: string): boolean {
   const modelsKind = modelsUrlKind(pathname)
   return (
     isLegacyWorkshopRoute(pathname) ||
-    (modelsKind !== undefined && modelsKind !== 'hub') ||
+    (modelsKind !== undefined &&
+      modelsKind !== 'hub' &&
+      !isLocalModelsRoute(pathname)) ||
     pathname === '/cinematic-studio'
   )
 }
