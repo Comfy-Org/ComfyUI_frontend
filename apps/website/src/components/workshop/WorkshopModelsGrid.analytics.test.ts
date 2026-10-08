@@ -1,5 +1,11 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen, waitFor, within } from '@testing-library/vue'
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within
+} from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { SEARCH_SETTLE_MS } from '@/composables/useHubCatalogueTracking'
@@ -86,6 +92,21 @@ describe('WorkshopModelsGrid analytics', () => {
 
     await user.type(await searchbox(), 'kling{Enter}')
 
+    expect(events('hub_search_performed')).toHaveLength(1)
+  })
+
+  it('waits for an input method to finish composing before Enter searches', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    render(WorkshopModelsGrid, { props: { models } })
+    const field = await searchbox()
+    await user.type(field, 'kling')
+
+    // userEvent cannot mark a key press as part of an IME composition.
+    // oxlint-disable-next-line testing-library/prefer-user-event
+    await fireEvent.keyDown(field, { key: 'Enter', isComposing: true })
+    expect(events('hub_search_performed')).toEqual([])
+
+    await user.keyboard('{Enter}')
     expect(events('hub_search_performed')).toHaveLength(1)
   })
 

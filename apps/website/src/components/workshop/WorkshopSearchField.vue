@@ -32,6 +32,10 @@ const { t } = translationsFor(locale)
 
 const query = defineModel<string>({ required: true })
 const emit = defineEmits<{ submit: [] }>()
+
+function submit(event: KeyboardEvent) {
+  if (!event.isComposing) emit('submit')
+}
 const mounted = useMounted()
 const label = computed(() =>
   t(kind === 'models' ? 'workshop.search.label' : 'workshop.hub.search')
@@ -124,7 +128,7 @@ const clearButtonClass =
         :aria-label="label"
         data-testid="workshop-search"
         :class="fieldClass"
-        @keydown.enter="emit('submit')"
+        @keydown.enter="submit"
       />
       <button
         v-if="query"
@@ -162,7 +166,7 @@ const clearButtonClass =
                 :aria-label="label"
                 data-testid="workshop-search-sheet-input"
                 :class="fieldClass"
-                @keydown.enter="emit('submit')"
+                @keydown.enter="submit"
               />
               <button
                 v-if="query"
