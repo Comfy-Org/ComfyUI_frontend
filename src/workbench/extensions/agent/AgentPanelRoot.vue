@@ -135,6 +135,7 @@ import {
 } from './utils/sessionTitle'
 import { useAgentComposerStore } from './stores/agent/agentComposerStore'
 import { useAgentConsentStore } from './stores/agent/agentConsentStore'
+import { isCreditTransitionNoticeOpen } from './stores/agent/creditTransitionNoticeState'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import { useAgentGraphActivityStore } from './stores/agent/agentGraphActivityStore'
 import {
@@ -324,46 +325,34 @@ const billingIdentity = computed(
     `${resolvedUserInfo.value?.id ?? 'anonymous'}:${teamWorkspaceStore.workspaceId ?? 'none'}`
 )
 
-/** Latches are scoped to one user and workspace; switching identity clears them. */
+/**
+ * The exhaustion latch is scoped to one user and workspace, so switching
+ * identity clears it. The credit-transition notice needs no reset here: its
+ * episode carries the identity it belongs to.
+ */
 watch(billingIdentity, () => {
   agentPanelStore.reportedExhaustionIdentity = null
-  agentPanelStore.creditTransitionNoticeIdentity = null
-  agentPanelStore.reportedCreditTransitionNoticeIdentity = null
-  agentPanelStore.dismissedCreditTransitionNoticeIdentity = null
 })
 
-// A false first read cannot prove that this session consumed the gratis balance.
-// Preserve the prior scoped value so the notice represents an observed handoff,
-// while `agentHasFunds` keeps total exhaustion on the existing paywall path.
+// Feeds the notice episode every defined scoped read, and nothing else. The
+// first-read guard, the once-per-episode impression, the refill re-arm and the
+// dismissal all live in the pure transition behind this store action, while
+// `agentHasFunds` keeps total exhaustion on the existing paywall path.
 watch(
   [billingIdentity, agentScopedHasFunds],
   ([identity, scopedHasFunds]) => {
     if (scopedHasFunds === undefined) return
-    const previous = agentPanelStore.agentScopedFundsObservation
-    agentPanelStore.agentScopedFundsObservation = {
-      identity,
-      hasFunds: scopedHasFunds
-    }
-    if (previous === null || previous.identity !== identity) return
-
-    if (scopedHasFunds === true) {
-      agentPanelStore.creditTransitionNoticeIdentity = null
-      agentPanelStore.reportedCreditTransitionNoticeIdentity = null
-      return
-    }
-    if (
-      previous.hasFunds === true &&
-      agentPanelStore.dismissedCreditTransitionNoticeIdentity !== identity
-    ) {
-      agentPanelStore.creditTransitionNoticeIdentity = identity
-    }
+    agentPanelStore.observeAgentScopedFunds(identity, scopedHasFunds)
   },
   { immediate: true }
 )
 
 const showCreditTransitionNotice = computed(
   () =>
-    agentPanelStore.creditTransitionNoticeIdentity === billingIdentity.value &&
+    isCreditTransitionNoticeOpen(
+      agentPanelStore.creditTransitionNotice,
+      billingIdentity.value
+    ) &&
     billingSignalsTrusted.value &&
     agentScopedHasFunds.value === false &&
     agentHasFunds.value === true
@@ -371,20 +360,20 @@ const showCreditTransitionNotice = computed(
 
 function onDismissCreditTransitionNotice(): void {
   useTelemetry()?.trackAgentCreditTransitionNotice({ action: 'dismissed' })
-  agentPanelStore.dismissedCreditTransitionNoticeIdentity =
-    billingIdentity.value
-  agentPanelStore.creditTransitionNoticeIdentity = null
+  agentPanelStore.dismissCreditTransitionNotice(billingIdentity.value)
 }
 
 function onCreditTransitionNoticeShown(): void {
+  const telemetry = useTelemetry()
+  // Claiming before telemetry exists would spend the episode's one impression
+  // on a report nobody receives.
+  if (!telemetry) return
   if (
-    agentPanelStore.reportedCreditTransitionNoticeIdentity ===
-    billingIdentity.value
+    !agentPanelStore.claimCreditTransitionNoticeImpression(
+      billingIdentity.value
+    )
   )
     return
-  const telemetry = useTelemetry()
-  if (!telemetry) return
-  agentPanelStore.reportedCreditTransitionNoticeIdentity = billingIdentity.value
   telemetry.trackAgentCreditTransitionNotice({ action: 'shown' })
 }
 

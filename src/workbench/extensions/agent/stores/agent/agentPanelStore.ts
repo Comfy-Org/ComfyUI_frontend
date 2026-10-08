@@ -16,6 +16,9 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyW
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
 
+import type { CreditTransitionNoticeState } from './creditTransitionNoticeState'
+import { reduceCreditTransitionNotice } from './creditTransitionNoticeState'
+
 const PANEL_MIN_WIDTH = 420
 const PANEL_MAX_WIDTH = 960
 const OPEN_STORAGE_KEY = 'Comfy.AgentPanel.open'
@@ -55,11 +58,6 @@ export type AgentPanelView =
         | { status: 'loading' | 'failed'; id: string }
     }
 
-interface AgentScopedFundsObservation {
-  identity: string
-  hasFunds: boolean
-}
-
 export const useAgentPanelStore = defineStore('agentPanel', () => {
   const enabled = ref(false)
   const consentAccepted = ref(false)
@@ -83,12 +81,12 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
    */
   const reservedWorkspaceWidth = ref(SIDE_TOOLBAR_WIDTH + SIDEBAR_MIN_WIDTH)
   const reportedExhaustionIdentity = ref<string | null>(null)
-  const creditTransitionNoticeIdentity = ref<string | null>(null)
-  const reportedCreditTransitionNoticeIdentity = ref<string | null>(null)
-  const dismissedCreditTransitionNoticeIdentity = ref<string | null>(null)
-  const agentScopedFundsObservation = ref<AgentScopedFundsObservation | null>(
-    null
-  )
+  /**
+   * The credit-transition notice episode for the current billing identity, or
+   * `null` before any scoped balance has been observed. Keyed by identity, so
+   * switching user or workspace invalidates it without an explicit reset.
+   */
+  const creditTransitionNotice = ref<CreditTransitionNoticeState | null>(null)
   const dismissedSelectionSignature = ref<string | null>(null)
   const workflowStore = useWorkflowStore()
   const targetTracking = ref<TargetTracking>({ mode: 'uninitialized' })
@@ -337,6 +335,39 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     if (!maximized.value) draggedWidth.value = PANEL_MIN_WIDTH
   }
 
+  /** Records a defined Agent-scoped funds read against `identity`. */
+  function observeAgentScopedFunds(
+    identity: string,
+    scopedHasFunds: boolean
+  ): void {
+    creditTransitionNotice.value = reduceCreditTransitionNotice(
+      creditTransitionNotice.value,
+      { type: 'scopedRead', identity, scopedHasFunds }
+    )
+  }
+
+  /**
+   * True at most once per armed episode, so the caller reports the impression
+   * exactly once however often the notice remounts. Same contract as
+   * `claimPaywallImpression`: claim first, then report.
+   */
+  function claimCreditTransitionNoticeImpression(identity: string): boolean {
+    const next = reduceCreditTransitionNotice(creditTransitionNotice.value, {
+      type: 'shown',
+      identity
+    })
+    if (next === creditTransitionNotice.value) return false
+    creditTransitionNotice.value = next
+    return true
+  }
+
+  function dismissCreditTransitionNotice(identity: string): void {
+    creditTransitionNotice.value = reduceCreditTransitionNotice(
+      creditTransitionNotice.value,
+      { type: 'dismissed', identity }
+    )
+  }
+
   return {
     enabled,
     consentAccepted,
@@ -348,10 +379,10 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     interruptHistorySelection,
     flagsSettled,
     reportedExhaustionIdentity,
-    creditTransitionNoticeIdentity,
-    reportedCreditTransitionNoticeIdentity,
-    dismissedCreditTransitionNoticeIdentity,
-    agentScopedFundsObservation,
+    creditTransitionNotice,
+    observeAgentScopedFunds,
+    claimCreditTransitionNoticeImpression,
+    dismissCreditTransitionNotice,
     width,
     requestedWidth,
     isOverlay,

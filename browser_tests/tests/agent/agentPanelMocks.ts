@@ -51,6 +51,7 @@ const FUNDED_BILLING_STATUS = {
   max_seats: 1,
   occupied_seats: 1,
   scoped_effective_has_funds: { agent: true },
+  scoped_has_funds: { agent: true },
   scheduled_change: null,
   subscription_duration: 'MONTHLY',
   subscription_status: 'active',
@@ -96,6 +97,19 @@ class AgentBillingFixture {
       ...FUNDED_BILLING_STATUS,
       has_funds: hasFunds,
       scoped_effective_has_funds: { agent: hasFunds }
+    }
+  }
+
+  /**
+   * Exhausts the Agent-scoped grant alone, leaving workspace funding intact,
+   * which is the handoff `app:agent_credit_transition_notice` reports.
+   * `scoped_has_funds` is the grant itself; `scoped_effective_has_funds`
+   * stays true because the workspace balance still funds Agent activity.
+   */
+  setAgentScopedFunds(scopedHasFunds: boolean): void {
+    this.status = {
+      ...FUNDED_BILLING_STATUS,
+      scoped_has_funds: { agent: scopedHasFunds }
     }
   }
 

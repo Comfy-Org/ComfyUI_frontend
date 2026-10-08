@@ -85,3 +85,94 @@ test.describe(
     })
   }
 )
+
+/**
+ * The free Agent grant running out while the workspace balance still funds
+ * Agent activity (PM-2005). Distinct from the lifecycle above: no funding is
+ * gone, so this is deliberately NOT a paywall. The two surfaces trade places —
+ * the FREE-during-BETA notice stops claiming the activity is free, and the
+ * transition notice says what it now draws on.
+ *
+ * The element screenshots are the reviewable artifact for that swap, which no
+ * text assertion conveys: a reviewer can see the copy, the warning accent and
+ * the dismiss affordance without building the state by hand.
+ */
+test.describe(
+  'Agent credit-transition notice',
+  { tag: ['@cloud', '@ui'] },
+  () => {
+    test.use({
+      connectWebSocketToServer: false,
+      initialFeatureFlags: {
+        'agent-free-use-message-placement': 'near-composer',
+        enable_telemetry: true
+      }
+    })
+
+    test('swaps the free-use notice for the workspace-balance notice when the Agent grant runs out', async ({
+      agentPanel,
+      creditsLifecycle,
+      page
+    }) => {
+      const notice = agentPanel.root.getByTestId(
+        'agent-credit-transition-notice'
+      )
+      const freeUseNotice = agentPanel.root.getByRole('note', {
+        name: enMessages.agent.freeUseNoticeLabel
+      })
+      const composerFooter = agentPanel.root.locator('footer')
+
+      await agentPanel.open()
+
+      await test.step('free-use notice while the Agent grant has funds', async () => {
+        await expect(freeUseNotice).toBeVisible()
+        await expect(notice).toHaveCount(0)
+        await expect(freeUseNotice).toHaveScreenshot(
+          'agent-free-use-notice-scoped-funded.png'
+        )
+      })
+
+      await agentPanel.selectWorkflow()
+      // Selecting a workflow leaves the pointer on its chip, whose PrimeVue
+      // tooltip then paints over the notices below and lands in the frame.
+      // It is `.p-tooltip`, not `role="tooltip"`, so waiting on the role
+      // passes while the tooltip is still on screen.
+      await page.mouse.move(0, 0)
+      await expect(page.locator('.p-tooltip')).toHaveCount(0)
+
+      await test.step('exhausting the grant alone shows the transition notice', async () => {
+        await creditsLifecycle.completeTurn('Build a red fox workflow', {
+          fundingState: 'scopedExhausted'
+        })
+
+        await expect(notice).toBeVisible()
+        await expect(notice).toContainText(
+          enMessages.agent.creditTransitionNotice
+        )
+        await expect(notice).toHaveScreenshot(
+          'agent-credit-transition-notice.png'
+        )
+      })
+
+      await test.step('the free-use notice is gone and no paywall replaces it', async () => {
+        await expect(freeUseNotice).toHaveCount(0)
+        await expect(agentPanel.creditsExhaustedPaywall).toHaveCount(0)
+        await expect(agentPanel.sendButton).toBeVisible()
+        await expect(composerFooter).toHaveScreenshot(
+          'agent-composer-free-use-notice-suppressed.png'
+        )
+      })
+
+      await test.step('dismissing it leaves the composer in place', async () => {
+        await notice
+          .getByRole('button', { name: enMessages.agent.dismiss })
+          .click()
+
+        await expect(notice).toHaveCount(0)
+        await expect(freeUseNotice).toHaveCount(0)
+        await expect(agentPanel.creditsExhaustedPaywall).toHaveCount(0)
+        await expect(agentPanel.sendButton).toBeVisible()
+      })
+    })
+  }
+)

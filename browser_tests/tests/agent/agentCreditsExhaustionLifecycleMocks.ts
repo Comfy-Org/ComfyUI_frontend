@@ -9,18 +9,28 @@ import type { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 import { agentTest } from '@e2e/tests/agent/agentPanelMocks'
 
+/**
+ * - `funded` — workspace and Agent-scoped funding both available.
+ * - `exhausted` — no funding at all, which raises the standing paywall.
+ * - `scopedExhausted` — the free Agent-scoped grant alone is gone while the
+ *   workspace balance still funds Agent activity. This is the transition the
+ *   credit notice exists for, and it is not a paywall state.
+ */
+type AgentFundingState = 'funded' | 'exhausted' | 'scopedExhausted'
+
 class AgentCreditsLifecycleFixture {
   constructor(
     private readonly page: Page,
     private readonly agentPanel: AgentPanel,
     private readonly acceptedTurns: AgentTurnAccepted[],
     private readonly ws: WebSocketRoute,
-    private readonly setAgentFunds: (hasFunds: boolean) => void
+    private readonly setAgentFunds: (hasFunds: boolean) => void,
+    private readonly setAgentScopedFunds: (scopedHasFunds: boolean) => void
   ) {}
 
   async completeTurn(
     prompt: string,
-    { fundingState }: { fundingState: 'funded' | 'exhausted' }
+    { fundingState }: { fundingState: AgentFundingState }
   ): Promise<void> {
     const acceptedTurnCount = this.acceptedTurns.length
     await this.agentPanel.sendMessage(prompt)
@@ -33,7 +43,8 @@ class AgentCreditsLifecycleFixture {
     }
 
     await expect(this.agentPanel.stopButton).toBeVisible()
-    this.setAgentFunds(fundingState === 'funded')
+    if (fundingState === 'scopedExhausted') this.setAgentScopedFunds(false)
+    else this.setAgentFunds(fundingState === 'funded')
     const billingRefresh = this.page.waitForResponse(
       (response) =>
         response.request().method() === 'GET' &&
@@ -74,7 +85,8 @@ export const test = base.extend<{
         agentPanel,
         acceptedTurns,
         ws,
-        (hasFunds) => agentBilling.setAgentFunds(hasFunds)
+        (hasFunds) => agentBilling.setAgentFunds(hasFunds),
+        (scopedHasFunds) => agentBilling.setAgentScopedFunds(scopedHasFunds)
       )
     )
   }
