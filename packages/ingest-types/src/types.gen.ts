@@ -11602,11 +11602,13 @@ export type GetNodeInfoData = {
   path?: never
   query?: {
     /**
-     * Also list the caller's own imported models (assets tagged `models`)
-     * in the model dropdown of the directory each one installs under, so
-     * a client that validates widget values against this catalog accepts
-     * a model the user imported. Off by default: the frontend reads
-     * imported models through the asset browser instead.
+     * Also list the models the caller can run that the models config
+     * does not: their own imported models and the public model assets the
+     * asset library shows them (assets tagged `models`), each in the model
+     * dropdown of the directory it installs under, so a client that
+     * validates widget values against this catalog accepts a model that
+     * would run. Off by default: the frontend reads these models through
+     * the asset browser instead.
      *
      */
     include_user_models?: boolean
