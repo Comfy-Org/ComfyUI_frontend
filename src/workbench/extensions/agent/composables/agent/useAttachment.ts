@@ -85,6 +85,26 @@ async function withDeadline<T>(
 let stagedCount = 0
 let fileSourceCount = 0
 const fileSourceKeys = new WeakMap<File, string>()
+const fileFingerprintKeys = new WeakMap<File, Promise<string>>()
+const resolvedFileFingerprintKeys = new WeakMap<File, string>()
+
+function fileMetadataKey(file: File): string {
+  return JSON.stringify([file.name, file.size, file.lastModified, file.type])
+}
+
+async function fingerprintFile(file: File): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', await file.arrayBuffer())
+  const contentHash = Array.from(new Uint8Array(digest), (byte) =>
+    byte.toString(16).padStart(2, '0')
+  ).join('')
+  return `file:${JSON.stringify([
+    file.name,
+    file.size,
+    file.lastModified,
+    file.type,
+    contentHash
+  ])}`
+}
 
 function attachmentMediaKind(file: File): MediaKind {
   if (hasImageType(file)) return 'image'
@@ -121,6 +141,9 @@ export function useAttachment(options: UseAttachmentOptions) {
   const inFlight = new Map<string, AbortController>()
   const cancelled = new Set<string>()
   const waiting: Array<() => void> = []
+  const metadataFingerprints = new Map<string, Promise<string>>()
+  const seenSourceFiles = new WeakSet<File>()
+  let acceptingFiles = true
   let activeUploads = 0
 
   function fileSourceKey(file: File): string {
@@ -128,6 +151,17 @@ export function useAttachment(options: UseAttachmentOptions) {
     if (existing) return existing
     const sourceKey = `file:${++fileSourceCount}`
     fileSourceKeys.set(file, sourceKey)
+    return sourceKey
+  }
+
+  function fileFingerprintKey(file: File): Promise<string> {
+    const existing = fileFingerprintKeys.get(file)
+    if (existing) return existing
+    const sourceKey = fingerprintFile(file).then((key) => {
+      resolvedFileFingerprintKeys.set(file, key)
+      return key
+    })
+    fileFingerprintKeys.set(file, sourceKey)
     return sourceKey
   }
 
@@ -249,6 +283,7 @@ export function useAttachment(options: UseAttachmentOptions) {
   }
 
   function cancelAllUploads(): void {
+    acceptingFiles = false
     for (const id of Array.from(pending)) cancelUpload(id)
   }
 
@@ -295,20 +330,80 @@ export function useAttachment(options: UseAttachmentOptions) {
 
   async function addFiles(files: Iterable<File>): Promise<boolean> {
     const duplicates: string[] = []
-    const staged = [...files]
-      .filter((file) => !isTooLarge(file))
-      .flatMap((file) => {
-        const id = stage(file.name, fileSourceKey(file))
-        if (!id) duplicates.push(file.name)
-        return id ? [{ file, id }] : []
-      })
+    const candidates = [...files].filter((file) => !isTooLarge(file))
+    const staged: Array<{
+      file: File
+      fingerprint: Promise<string>
+      id?: string
+      priorFingerprint?: Promise<string>
+    }> = []
+    for (const file of candidates) {
+      const metadataKey = fileMetadataKey(file)
+      const priorFingerprint = metadataFingerprints.get(metadataKey)
+      const fingerprint = fileFingerprintKey(file)
+      const knownSourceFile = seenSourceFiles.has(file)
+      seenSourceFiles.add(file)
+      if (priorFingerprint && !knownSourceFile) {
+        staged.push({ file, fingerprint, priorFingerprint })
+        continue
+      }
+
+      const id = stage(
+        file.name,
+        resolvedFileFingerprintKeys.get(file) ?? fileSourceKey(file)
+      )
+      if (!id) {
+        duplicates.push(file.name)
+        continue
+      }
+      if (!priorFingerprint) {
+        metadataFingerprints.set(
+          metadataKey,
+          fingerprint.then((sourceKey) => {
+            options.update(id, { sourceKey })
+            return sourceKey
+          })
+        )
+      } else {
+        void fingerprint.then((sourceKey) => {
+          options.update(id, { sourceKey })
+        })
+      }
+      staged.push({ file, id, fingerprint, priorFingerprint })
+    }
     if (duplicates.length) options.onDuplicate?.(duplicates)
+    const fingerprintDuplicates: string[] = []
     let uploaded = 0
     await Promise.all(
-      staged.map(async ({ id, file }) => {
-        if (await uploadStagedFile(id, file)) uploaded += 1
+      staged.map(async ({ id, file, fingerprint, priorFingerprint }) => {
+        if (id) {
+          const upload = uploadStagedFile(id, file)
+          await fingerprint.catch(() => undefined)
+          if (await upload) uploaded += 1
+          return
+        }
+        let sourceKey: string
+        try {
+          await priorFingerprint
+          sourceKey = await fingerprint
+        } catch {
+          if (!acceptingFiles) return
+          const fallbackId = stage(file.name, fileSourceKey(file))
+          if (fallbackId && (await uploadStagedFile(fallbackId, file)))
+            uploaded += 1
+          return
+        }
+        if (!acceptingFiles) return
+        const finalId = stage(file.name, sourceKey)
+        if (!finalId) {
+          fingerprintDuplicates.push(file.name)
+          return
+        }
+        if (await uploadStagedFile(finalId, file)) uploaded += 1
       })
     )
+    if (fingerprintDuplicates.length)
+      options.onDuplicate?.(fingerprintDuplicates)
     if (uploaded > 0) options.onUploaded?.()
     return uploaded > 0
   }

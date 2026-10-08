@@ -3352,9 +3352,11 @@ describe('AgentPanelRoot attach flow', () => {
       )
     ).toHaveLength(1)
     await vi.waitFor(() => expect(uploaded).toEqual(['cat.png', 'dog.png']))
-    expect(useToastStore().messagesToAdd).toEqual([
-      expect.objectContaining({ severity: 'info', detail: notice })
-    ])
+    await vi.waitFor(() =>
+      expect(useToastStore().messagesToAdd).toEqual([
+        expect.objectContaining({ severity: 'info', detail: notice })
+      ])
+    )
     expect(screen.getByRole('group', { name: 'dog.png' })).toBeInTheDocument()
     expect(target).toHaveFocus()
     expect(store.prompt).toEqual({ text: 'Keep this draft', references: [] })

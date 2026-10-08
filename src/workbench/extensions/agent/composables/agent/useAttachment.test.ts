@@ -53,9 +53,11 @@ describe('useAttachment', () => {
     const file = new File(['image'], 'cat.png', { lastModified: 1 })
     const batch = addFiles([file, file, file])
     expect(onDuplicate).toHaveBeenCalledExactlyOnceWith(['cat.png', 'cat.png'])
-    const repeated = addFiles([file])
-    expect(store.attachments).toHaveLength(1)
+    const repeated = addFiles([
+      new File(['image'], 'cat.png', { lastModified: 1 })
+    ])
     await expect(repeated).resolves.toBe(false)
+    expect(store.attachments).toHaveLength(1)
     await expect(batch).resolves.toBe(true)
     expect(upload).toHaveBeenCalledOnce()
     expect(onDuplicate).toHaveBeenLastCalledWith(['cat.png'])
