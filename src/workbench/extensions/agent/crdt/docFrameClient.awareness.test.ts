@@ -16,82 +16,65 @@ function awarenessFrame(state: unknown, expiresAt: unknown = 123) {
 }
 
 describe('awareness frame validation', () => {
-  const withoutState = {
-    type: 'awareness',
-    data: { workflowId: 'wf-1', actor: 'human:user:tab-a', expiresAt: 456 }
-  }
-
-  // The Go server omits an empty state and never sends `state: null`; null
-  // still counts as absent so the frame keeps actor and expires_at (#16653).
-  const rejected = null
   it.for([
     {
-      name: 'an absent state',
-      kind: 'absent',
+      name: 'keeps the frame without a state when state is missing',
       state: undefined,
-      expected: withoutState
+      expected: {
+        type: 'awareness',
+        data: { workflowId: 'wf-1', actor: 'human:user:tab-a', expiresAt: 456 }
+      }
     },
+    // The Go server omits an empty state and never sends `state: null`; null
+    // still counts as absent so the frame keeps actor and expires_at (#16653).
     {
-      name: 'a null state',
-      kind: 'absent',
+      name: 'keeps the frame without a state when state is null',
       state: null,
-      expected: withoutState
+      expected: {
+        type: 'awareness',
+        data: { workflowId: 'wf-1', actor: 'human:user:tab-a', expiresAt: 456 }
+      }
     },
+    { name: 'rejects a string state', state: 'cursor', expected: null },
     {
-      name: 'a string state',
-      kind: 'invalid',
-      state: 'cursor',
-      expected: rejected
-    },
-    {
-      name: 'an array state',
-      kind: 'invalid',
+      name: 'rejects an array state',
       state: ['cursor', 10, 20],
-      expected: rejected
+      expected: null
     },
+    // `{"value":"x…"}` wraps the string in 12 bytes of JSON syntax.
     {
-      name: 'a state of exactly 8 KiB',
-      kind: 'state',
+      name: 'accepts a state whose JSON is exactly 8 KiB',
       state: { value: 'x'.repeat(8 * 1024 - 12) },
       expected: {
         type: 'awareness',
         data: {
-          ...withoutState.data,
-          state: { value: 'x'.repeat(8 * 1024 - 12) }
+          workflowId: 'wf-1',
+          actor: 'human:user:tab-a',
+          state: { value: 'x'.repeat(8 * 1024 - 12) },
+          expiresAt: 456
         }
       }
     },
     {
-      name: 'a state of 8 KiB plus one byte',
-      kind: 'invalid',
+      name: 'rejects a state whose JSON is 8 KiB plus one byte',
       state: { value: 'x'.repeat(8 * 1024 - 11) },
-      expected: rejected
+      expected: null
     },
     {
-      name: 'a valid state',
-      kind: 'state',
+      name: 'passes a valid state through',
       state: { cursor: [10, 20], selection: 'node-1' },
       expected: {
         type: 'awareness',
         data: {
-          ...withoutState.data,
-          state: { cursor: [10, 20], selection: 'node-1' }
+          workflowId: 'wf-1',
+          actor: 'human:user:tab-a',
+          state: { cursor: [10, 20], selection: 'node-1' },
+          expiresAt: 456
         }
       }
     }
-  ])('parses $name as $kind', ({ state, expected }) => {
+  ])('$name', ({ state, expected }) => {
     expect(parseServerDocFrame(awarenessFrame(state, 456))).toEqual(expected)
-  })
-
-  it('accepts state whose JSON encoding is exactly 8 KiB', () => {
-    // `{"value":"x…"}` wraps the string in 12 bytes of JSON syntax.
-    const state = { value: 'x'.repeat(8 * 1024 - 12) }
-    expect(new TextEncoder().encode(JSON.stringify(state)).byteLength).toBe(
-      8 * 1024
-    )
-    expect(parseServerDocFrame(awarenessFrame(state))).toMatchObject({
-      data: { state }
-    })
   })
 
   it('rejects negative expires_at', () => {
@@ -119,22 +102,6 @@ describe('awareness frame validation', () => {
   it('accepts a zero expires_at', () => {
     expect(parseServerDocFrame(awarenessFrame({}, 0))).toMatchObject({
       data: { expiresAt: 0 }
-    })
-  })
-
-  it('accepts a valid awareness frame', () => {
-    expect(
-      parseServerDocFrame(
-        awarenessFrame({ cursor: [10, 20], selection: 'node-1' }, 456)
-      )
-    ).toEqual({
-      type: 'awareness',
-      data: {
-        workflowId: 'wf-1',
-        actor: 'human:user:tab-a',
-        state: { cursor: [10, 20], selection: 'node-1' },
-        expiresAt: 456
-      }
     })
   })
 })
