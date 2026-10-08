@@ -348,10 +348,9 @@ describe('useInviteUrlLoader', () => {
       expect(useTeamWorkspaceStore().acceptInvite).toHaveBeenCalledWith(
         'invalid-token'
       )
-      expect(vi.mocked(useToast().error)).toHaveBeenCalledWith(
-        'Failed to Accept Invite',
-        { description: 'Invalid invite' }
-      )
+      expect(useToast().error).toHaveBeenCalledWith('Failed to Accept Invite', {
+        description: 'Invalid invite'
+      })
     })
 
     it('cleans up URL after processing invite', async () => {
@@ -412,10 +411,9 @@ describe('useInviteUrlLoader', () => {
       expect(useTeamWorkspaceStore().acceptInvite).toHaveBeenCalledWith(
         'any-token-format=='
       )
-      expect(vi.mocked(useToast().error)).toHaveBeenCalledWith(
-        'Failed to Accept Invite',
-        { description: 'Invalid token' }
-      )
+      expect(useToast().error).toHaveBeenCalledWith('Failed to Accept Invite', {
+        description: 'Invalid token'
+      })
     })
 
     it('ignores empty invite param', async () => {

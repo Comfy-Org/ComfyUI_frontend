@@ -96,22 +96,27 @@ it('offers an explicit switch to the latest installable version, including Flagg
 })
 
 it.for([
-  { kind: 'warning' as const, name: 'no eligible release', versions: [] },
-  { kind: 'error' as const, name: 'registry failure', versions: null }
-])('does not install and reports $name', async ({ kind, versions }) => {
-  const service = registry.useComfyRegistryService()
-  vi.spyOn(service, 'getPackVersions').mockResolvedValue(versions)
-  vi.spyOn(registry, 'useComfyRegistryService').mockReturnValue(service)
-  renderButton()
+  { kind: 'warning', name: 'no eligible release', versions: [] },
+  { kind: 'error', name: 'registry failure', versions: null }
+] as const)(
+  'does not install and reports $name',
+  async ({ kind, versions }) => {
+    const service = registry.useComfyRegistryService()
+    vi.spyOn(service, 'getPackVersions').mockResolvedValue(
+      versions && [...versions]
+    )
+    vi.spyOn(registry, 'useComfyRegistryService').mockReturnValue(service)
+    renderButton()
 
-  await userEvent.click(screen.getByRole('button', { name: 'Update' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Update' }))
 
-  await waitFor(() => {
-    expect(useToast().toasts).toEqual([expect.objectContaining({ kind })])
-  })
-  expect(useComfyManagerStore().installPack.call).not.toHaveBeenCalled()
-  expect(screen.getByRole('button', { name: 'Update' })).toBeEnabled()
-})
+    await waitFor(() => {
+      expect(useToast().toasts).toEqual([expect.objectContaining({ kind })])
+    })
+    expect(useComfyManagerStore().installPack.call).not.toHaveBeenCalled()
+    expect(screen.getByRole('button', { name: 'Update' })).toBeEnabled()
+  }
+)
 
 it('does not re-enable disabled packs during a batch switch', async () => {
   const manager = useComfyManagerStore()

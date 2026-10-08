@@ -418,7 +418,7 @@ describe('billingOperationStore', () => {
       const store = useBillingOperationStore()
       void store.startOperation('op-1', 'subscription')
 
-      expect(vi.mocked(useToast().loading)).toHaveBeenCalledWith(
+      expect(useToast().loading).toHaveBeenCalledWith(
         'billingOperation.subscriptionProcessing'
       )
     })
@@ -448,7 +448,7 @@ describe('billingOperationStore', () => {
       const store = useBillingOperationStore()
       void store.startOperation('op-1', 'topup')
 
-      expect(vi.mocked(useToast().loading)).toHaveBeenCalledWith(
+      expect(useToast().loading).toHaveBeenCalledWith(
         'billingOperation.topupProcessing'
       )
     })
@@ -752,7 +752,7 @@ describe('billingOperationStore', () => {
       expect(billing.fetchStatus).not.toHaveBeenCalled()
       expect(billing.fetchBalance).not.toHaveBeenCalled()
 
-      expect(vi.mocked(useToast().success)).toHaveBeenCalledWith(
+      expect(useToast().success).toHaveBeenCalledWith(
         'billingOperation.subscriptionSuccess',
         { duration: 5000 }
       )
@@ -1055,7 +1055,7 @@ describe('billingOperationStore', () => {
 
       await vi.advanceTimersByTimeAsync(0)
 
-      expect(vi.mocked(useToast().success)).toHaveBeenCalledWith(
+      expect(useToast().success).toHaveBeenCalledWith(
         'billingOperation.topupSuccess',
         { duration: 5000 }
       )
@@ -1231,7 +1231,7 @@ describe('billingOperationStore', () => {
       )
       expect(store.hasPendingOperations).toBe(false)
 
-      expect(vi.mocked(useToast().error)).toHaveBeenCalledWith(
+      expect(useToast().error).toHaveBeenCalledWith(
         'billingOperation.subscriptionFailed',
         {
           description: 'billingOperation.subscriptionFailedDetail',
@@ -1447,7 +1447,7 @@ describe('billingOperationStore', () => {
 
       await vi.advanceTimersByTimeAsync(0)
 
-      expect(vi.mocked(useToast().error)).toHaveBeenCalledWith(
+      expect(useToast().error).toHaveBeenCalledWith(
         'billingOperation.topupFailed',
         { description: undefined, duration: 7000 }
       )
@@ -1790,7 +1790,7 @@ describe('billingOperationStore', () => {
         await vi.advanceTimersByTimeAsync(0)
 
         expect(store.getOperation('op-1')?.errorMessage).toBe(detail)
-        expect(vi.mocked(useToast().error)).toHaveBeenCalledWith(summary, {
+        expect(useToast().error).toHaveBeenCalledWith(summary, {
           description: detail,
           duration: 7000
         })
@@ -2946,7 +2946,7 @@ describe('billingOperationStore', () => {
       expect(operation?.status).toBe('timeout')
       expect(store.hasPendingOperations).toBe(false)
 
-      expect(vi.mocked(useToast().error)).toHaveBeenCalledWith(
+      expect(useToast().error).toHaveBeenCalledWith(
         'billingOperation.subscriptionTimeout'
       )
     })
@@ -3044,7 +3044,7 @@ describe('billingOperationStore', () => {
       const store = useBillingOperationStore()
       void store.startOperation('op-1', 'subscription')
 
-      expect(vi.mocked(useToast().loading)).toHaveBeenCalledWith(
+      expect(useToast().loading).toHaveBeenCalledWith(
         'billingOperation.subscriptionProcessing'
       )
 
@@ -3073,10 +3073,10 @@ describe('billingOperationStore', () => {
         'https://verify.example/sensitive-token'
       )
 
-      expect(vi.mocked(useToast().warning)).toHaveBeenCalledWith(
+      expect(useToast().warning).toHaveBeenCalledWith(
         'billingOperation.topupActionRequired'
       )
-      expect(vi.mocked(useToast().loading)).not.toHaveBeenCalledWith(
+      expect(useToast().loading).not.toHaveBeenCalledWith(
         'billingOperation.topupProcessing'
       )
     })
@@ -3099,7 +3099,7 @@ describe('billingOperationStore', () => {
       void store.startOperation('op-1', 'subscription')
       await vi.advanceTimersByTimeAsync(0)
 
-      expect(vi.mocked(useToast().warning)).toHaveBeenCalledWith(
+      expect(useToast().warning).toHaveBeenCalledWith(
         'billingOperation.subscriptionActionRequired'
       )
 
@@ -3341,7 +3341,7 @@ describe('billingOperationStore', () => {
       await vi.advanceTimersByTimeAsync(121_000)
       await vi.runAllTimersAsync()
 
-      expect(vi.mocked(useToast().error)).toHaveBeenCalledWith(
+      expect(useToast().error).toHaveBeenCalledWith(
         'billingOperation.topupTimeout'
       )
     })

@@ -191,7 +191,7 @@ describe('useResubscribe', () => {
     await handleResubscribe()
 
     expect(mockBillingContext().resubscribe).toHaveBeenCalledOnce()
-    expect(vi.mocked(useToast().error)).toHaveBeenCalledWith('g.error', {
+    expect(useToast().error).toHaveBeenCalledWith('g.error', {
       description: 'Resubscribe failed for person@example.com'
     })
     expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({

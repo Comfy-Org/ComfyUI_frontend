@@ -189,7 +189,7 @@ describe('TeamWorkspacesDialogContent', () => {
       await flushPromises()
 
       expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
-      expect(vi.mocked(useToast().error)).toHaveBeenCalledWith(
+      expect(useToast().error).toHaveBeenCalledWith(
         'workspaceSwitcher.failedToSwitch',
         { description: 'Network error' }
       )
@@ -282,7 +282,7 @@ describe('TeamWorkspacesDialogContent', () => {
 
       await typeAndCreate(container, user, 'New Team')
 
-      expect(vi.mocked(useToast().error)).toHaveBeenCalledWith(
+      expect(useToast().error).toHaveBeenCalledWith(
         'workspacePanel.toast.failedToCreateWorkspace',
         { description: 'Limit reached' }
       )
@@ -303,7 +303,7 @@ describe('TeamWorkspacesDialogContent', () => {
       await typeAndCreate(container, user, 'New Team')
 
       expect(workspaceStore.createWorkspace).toHaveBeenCalledWith('New Team')
-      expect(vi.mocked(useToast().error)).toHaveBeenCalledWith(
+      expect(useToast().error).toHaveBeenCalledWith(
         'teamWorkspacesDialog.confirmCallbackFailed',
         { description: 'Setup failed' }
       )

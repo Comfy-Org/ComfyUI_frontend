@@ -715,12 +715,9 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
 
     await waitFor(() =>
-      expect(vi.mocked(useToast().error)).toHaveBeenCalledWith(
-        'Purchase Failed',
-        {
-          description: expect.stringContaining('credit purchase is still open')
-        }
-      )
+      expect(useToast().error).toHaveBeenCalledWith('Purchase Failed', {
+        description: expect.stringContaining('credit purchase is still open')
+      })
     )
   })
 
@@ -963,10 +960,9 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     await waitFor(() =>
       expect(screen.getByRole('button', { name: 'Pay $50.00' })).toBeEnabled()
     )
-    expect(vi.mocked(useToast().error)).toHaveBeenCalledWith(
-      'Purchase Failed',
-      { description: 'Failed to purchase credits: An unknown error occurred' }
-    )
+    expect(useToast().error).toHaveBeenCalledWith('Purchase Failed', {
+      description: 'Failed to purchase credits: An unknown error occurred'
+    })
     expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
       operation: 'topup',
       stage: 'failed',

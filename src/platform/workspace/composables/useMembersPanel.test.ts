@@ -661,7 +661,7 @@ describe('useMembersPanel', () => {
       const panel = await setup()
       await panel.handleResendInvite(createInvite({ id: 'inv-1' }))
       expect(workspaceStore.resendInvite).toHaveBeenCalledWith('inv-1')
-      expect(vi.mocked(useToast().success)).toHaveBeenCalledWith(
+      expect(useToast().success).toHaveBeenCalledWith(
         'workspacePanel.toast.inviteResent',
         { duration: 2000 }
       )
@@ -673,7 +673,7 @@ describe('useMembersPanel', () => {
       )
       const panel = await setup()
       await panel.handleResendInvite(createInvite({ id: 'inv-1' }))
-      expect(vi.mocked(useToast().error)).toHaveBeenCalledWith(
+      expect(useToast().error).toHaveBeenCalledWith(
         'workspacePanel.toast.inviteResendFailed'
       )
     })

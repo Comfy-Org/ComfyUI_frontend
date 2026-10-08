@@ -1,15 +1,15 @@
 import { render, screen } from '@testing-library/vue'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
+import { createI18n } from 'vue-i18n'
 
 import OAuthLayoutView from '@/platform/cloud/onboarding/components/OAuthLayoutView.vue'
-
-vi.mock<unknown>(import('@/components/ui/toast/Toaster.vue'), () => ({
-  default: { template: '<div />' }
-}))
 
 const renderLayout = () =>
   render(OAuthLayoutView, {
     global: {
+      plugins: [
+        createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
+      ],
       stubs: { RouterView: { template: '<div data-testid="route-outlet" />' } }
     }
   })
