@@ -79,7 +79,7 @@
           :class="
             cn(
               'z-3000 overflow-hidden rounded-lg border border-solid border-border-default bg-base-background p-0 text-base-foreground shadow-md',
-              'max-w-(--reka-combobox-content-available-width) min-w-(--reka-combobox-trigger-width)'
+              'max-w-(--reka-combobox-content-available-width) min-w-[min(var(--reka-combobox-trigger-width),var(--reka-combobox-content-available-width))]'
             )
           "
           @keydown.escape.stop="handleOpenChange(false)"
