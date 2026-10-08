@@ -99,6 +99,44 @@ function reshootRunFailure(error: unknown): RunFailure {
   return 'client'
 }
 
+function trackReshootRun(userId: string, workspaceId: string) {
+  const analytics: WorkshopRunAnalytics = {
+    model_slug: RESHOOT_APP_SLUG,
+    page_type: 'app',
+    app_slug: RESHOOT_APP_SLUG,
+    user_id: userId,
+    workspace_id: workspaceId,
+    attempt_id: workshopIdempotencyKey()
+  }
+  const startedAt = Date.now()
+  const finished = () => ({
+    ...analytics,
+    duration_ms: Date.now() - startedAt
+  })
+  captureWorkshopEvent({ name: 'run_started', properties: analytics })
+  return {
+    cancelled: () =>
+      captureWorkshopEvent({
+        name: 'run_finished',
+        properties: { ...finished(), status: 'cancelled' }
+      }),
+    succeeded: () =>
+      captureWorkshopEvent({
+        name: 'run_finished',
+        properties: { ...finished(), status: 'succeeded', output_count: 1 }
+      }),
+    failed: (error: unknown) =>
+      captureWorkshopEvent({
+        name: 'run_finished',
+        properties: {
+          ...finished(),
+          status: 'failed',
+          reason: reshootRunFailure(error)
+        }
+      })
+  }
+}
+
 export type DepthState = 'none' | 'analyzing' | 'ready' | 'failed'
 
 export interface ReshootTake {
@@ -587,20 +625,7 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
     runs.set(id, controller)
     const { signal } = controller
     const { geometry } = read
-    const analytics: WorkshopRunAnalytics = {
-      model_slug: RESHOOT_APP_SLUG,
-      page_type: 'app',
-      app_slug: RESHOOT_APP_SLUG,
-      user_id: startedFor.uid,
-      workspace_id: startedFor.workspace.id,
-      attempt_id: workshopIdempotencyKey()
-    }
-    const startedAt = Date.now()
-    const finished = () => ({
-      ...analytics,
-      duration_ms: Date.now() - startedAt
-    })
-    captureWorkshopEvent({ name: 'run_started', properties: analytics })
+    const run = trackReshootRun(startedFor.uid, startedFor.workspace.id)
     try {
       const job = await runJob(
         transport,
@@ -627,10 +652,7 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
         optional('original-audio')
       ])
       if (signal.aborted) {
-        captureWorkshopEvent({
-          name: 'run_finished',
-          properties: { ...finished(), status: 'cancelled' }
-        })
+        run.cancelled()
         return
       }
       updateTake(id, {
@@ -639,27 +661,14 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
         warpUrl: objectUrl(warp),
         originalUrl: objectUrl(original)
       })
-      captureWorkshopEvent({
-        name: 'run_finished',
-        properties: { ...finished(), status: 'succeeded', output_count: 1 }
-      })
+      run.succeeded()
     } catch (error) {
       if (signal.aborted) {
-        captureWorkshopEvent({
-          name: 'run_finished',
-          properties: { ...finished(), status: 'cancelled' }
-        })
+        run.cancelled()
         return
       }
       updateTake(id, { status: 'failed', note: noteFor(error) })
-      captureWorkshopEvent({
-        name: 'run_finished',
-        properties: {
-          ...finished(),
-          status: 'failed',
-          reason: reshootRunFailure(error)
-        }
-      })
+      run.failed(error)
     } finally {
       runs.delete(id)
       void refreshQuote()
