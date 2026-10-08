@@ -4,11 +4,11 @@ on:
   workflow_dispatch:
     inputs:
       deployment_id:
-        description: 'Immutable Vercel deployment ID captured before the canary deploy'
+        description: 'Immutable Vercel deployment ID to validate or restore (from the transition artifact)'
         required: true
         type: string
       expected_sha:
-        description: 'Source SHA expected at the canonical hostname after rollback'
+        description: 'Source SHA the target deployment must serve in /__build.json'
         required: true
         type: string
       perform_rollback:
@@ -48,6 +48,7 @@ jobs:
         id: verify-target
         env:
           EXPECTED_SHA: ${{ inputs.expected_sha }}
+          PERFORM_ROLLBACK: ${{ inputs.perform_rollback }}
           TARGET_DEPLOYMENT: ${{ inputs.deployment_id }}
         run: |
           if [[ ! "$TARGET_DEPLOYMENT" =~ ^dpl_[A-Za-z0-9]+$ ]]; then
@@ -78,7 +79,7 @@ jobs:
           {
             echo "**Validated rollback target:** $TARGET_DEPLOYMENT"
             echo "**Validated rollback SHA:** $ACTUAL_SHA"
-            echo "**Production mutation requested:** ${{ inputs.perform_rollback }}"
+            echo "**Production mutation requested:** $PERFORM_ROLLBACK"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Roll back to the captured deployment
@@ -148,7 +149,7 @@ jobs:
           echo "actual-sha=$ACTUAL_SHA" >> "$GITHUB_OUTPUT"
           echo "deployment-id=$ALIAS_DEPLOYMENT_ID" >> "$GITHUB_OUTPUT"
           {
-            echo "**Rollback target:** ${{ inputs.deployment_id }}"
+            echo "**Rollback target:** $TARGET_DEPLOYMENT"
             echo "**Verified canonical SHA:** $ACTUAL_SHA"
             echo "**Verified canonical deployment:** $ALIAS_DEPLOYMENT_ID"
           } >> "$GITHUB_STEP_SUMMARY"
