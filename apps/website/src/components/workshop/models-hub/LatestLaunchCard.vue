@@ -28,7 +28,7 @@ const access = computed(() => accessFor(model)[0])
       <WorkshopCardMedia :model />
     </div>
     <div
-      class="pointer-events-none absolute inset-0 bg-linear-to-t from-primary-comfy-ink/75 via-primary-comfy-ink/40 via-50% to-primary-comfy-ink/0 to-85% sm:via-30% sm:to-55%"
+      class="pointer-events-none absolute inset-0 bg-linear-to-t from-black/75 via-black/40 via-50% to-black/0 to-85% sm:via-30% sm:to-55%"
       aria-hidden="true"
     />
     <Badge
