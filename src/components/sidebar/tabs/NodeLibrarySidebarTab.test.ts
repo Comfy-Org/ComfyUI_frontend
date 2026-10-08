@@ -5,9 +5,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useLitegraphService } from '@/services/litegraphService'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { NodeSearchService } from '@/services/nodeSearchService'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { useSubgraphStore } from '@/stores/subgraphStore'
+import { useNodeHelpStore } from '@/stores/workspace/nodeHelpStore'
 import type { TreeExplorerNode, TreeNode } from '@/types/treeExplorerTypes'
 
 import NodeLibrarySidebarTab from './NodeLibrarySidebarTab.vue'
@@ -16,7 +19,6 @@ const {
   captureRoot,
   getRoot,
   resetRoot,
-  mockAddNodeOnGraph,
   mockSearchNode,
   mockOrganizeNodes,
   mockToggleNodeOnEvent
@@ -30,7 +32,6 @@ const {
     resetRoot: () => {
       capturedRoot = null
     },
-    mockAddNodeOnGraph: vi.fn(),
     mockSearchNode: vi.fn(() => []),
     mockOrganizeNodes: vi.fn(
       (): TreeNode => ({
@@ -43,9 +44,7 @@ const {
   }
 })
 
-vi.mock<unknown>(import('@/services/litegraphService'), () => ({
-  useLitegraphService: () => ({ addNodeOnGraph: mockAddNodeOnGraph })
-}))
+vi.mock(import('@/services/litegraphService'))
 
 vi.mock<unknown>(import('@/services/nodeOrganizationService'), () => ({
   DEFAULT_GROUPING_ID: 'group',
@@ -109,6 +108,14 @@ vi.mock<unknown>(import('@/components/searchbox/NodeSearchFilter.vue'), () => ({
   }
 }))
 
+vi.mock<unknown>(import('@/components/common/ImperativePopover.vue'), () => ({
+  default: {
+    name: 'Popover',
+    template: '<div><slot /></div>',
+    methods: { toggle: vi.fn(), hide: vi.fn() }
+  }
+}))
+
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -155,7 +162,47 @@ describe('NodeLibrarySidebarTab', () => {
     expect(leaf?.leaf).toBe(true)
 
     await leaf?.handleClick?.(new MouseEvent('click'))
-    expect(mockAddNodeOnGraph).toHaveBeenCalledWith(mockNode)
+    expect(useLitegraphService().addNodeOnGraph).toHaveBeenCalledWith(mockNode)
+  })
+
+  it('offers delete only on user blueprint rows', async () => {
+    const blueprint = fromPartial<ComfyNodeDefImpl>({
+      name: 'SubgraphBlueprint.Mine',
+      display_name: 'Mine'
+    })
+    vi.mocked(useSubgraphStore().deleteBlueprint).mockResolvedValue(undefined)
+    vi.mocked(useSubgraphStore().isUserBlueprint).mockImplementation(
+      (name) => name === blueprint.name
+    )
+    mockOrganizeNodes.mockReturnValue({
+      key: 'root',
+      label: 'Root',
+      children: [
+        { key: 'blueprint', label: 'Mine', leaf: true, data: blueprint },
+        { key: 'leaf', label: 'Leaf', leaf: true, data: mockNode }
+      ]
+    })
+
+    renderComponent()
+    await nextTick()
+
+    const root = getRoot()
+    const blueprintRow = root.children?.[0]
+    const nodeRow = root.children?.[1]
+    expect(nodeRow?.handleDelete).toBeUndefined()
+    await blueprintRow?.handleDelete?.call(blueprintRow)
+    expect(useSubgraphStore().deleteBlueprint).toHaveBeenCalledWith(
+      blueprint.name
+    )
+  })
+
+  it('closes node help when the panel unmounts', () => {
+    const { unmount } = renderComponent()
+    useNodeHelpStore().openHelp(mockNode)
+
+    unmount()
+
+    expect(useNodeHelpStore().isHelpOpen).toBe(false)
   })
 
   it('adds and removes filters', async () => {

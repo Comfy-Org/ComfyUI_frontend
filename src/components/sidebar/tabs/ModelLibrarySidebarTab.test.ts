@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -32,7 +33,6 @@ const {
   resetRoot,
   captureExpandedKeys,
   getExpandedKeys,
-  mockStartDrag,
   mockToggleNodeOnEvent
 } = vi.hoisted(() => {
   let capturedRoot: TreeExplorerNode | null = null
@@ -49,14 +49,11 @@ const {
       capturedExpandedKeys = keys
     },
     getExpandedKeys: () => capturedExpandedKeys,
-    mockStartDrag: vi.fn(),
     mockToggleNodeOnEvent: vi.fn()
   }
 })
 
-vi.mock<unknown>(import('@/composables/node/useNodeDragToCanvas'), () => ({
-  useNodeDragToCanvas: () => ({ startDrag: mockStartDrag })
-}))
+vi.mock(import('@/composables/node/useNodeDragToCanvas'))
 
 const mockModel = fromPartial<ComfyModelDef>({
   key: 'checkpoints/model.safetensors',
@@ -64,7 +61,8 @@ const mockModel = fromPartial<ComfyModelDef>({
   simplified_file_name: 'model',
   title: 'Model',
   directory: 'checkpoints',
-  searchable: 'checkpoints/model.safetensors'
+  searchable: 'checkpoints/model.safetensors',
+  load: () => Promise.resolve()
 })
 
 vi.mock(import('@/composables/useFeatureFlags'))
@@ -110,10 +108,6 @@ vi.mock<unknown>(import('./SidebarTabTemplate.vue'), () => ({
 
 vi.mock<unknown>(import('./modelLibrary/ElectronDownloadItems.vue'), () => ({
   default: { name: 'ElectronDownloadItems', template: '<div />' }
-}))
-
-vi.mock<unknown>(import('./modelLibrary/ModelTreeLeaf.vue'), () => ({
-  default: { name: 'ModelTreeLeaf', template: '<div />', props: ['node'] }
 }))
 
 const i18n = createI18n({
@@ -168,13 +162,37 @@ describe('ModelLibrarySidebarTab', () => {
     const mockEvent = new MouseEvent('click')
     await modelLeaf?.handleClick?.(mockEvent)
 
-    expect(
-      vi.mocked(useModelToNodeStore().getNodeProvider)
-    ).toHaveBeenCalledWith('checkpoints')
-    expect(mockStartDrag).toHaveBeenCalledWith(mockNodeDef, {
+    expect(useModelToNodeStore().getNodeProvider).toHaveBeenCalledWith(
+      'checkpoints'
+    )
+    expect(useNodeDragToCanvas().startDrag).toHaveBeenCalledWith(mockNodeDef, {
       widgetValues: { ckpt_name: 'model.safetensors' },
       source: 'sidebar_drag'
     })
+  })
+
+  it('loads model metadata once its folder is expanded', async () => {
+    const load = vi.fn()
+    Object.assign(useModelStore(), {
+      models: [
+        fromPartial<ComfyModelDef>({
+          key: 'checkpoints/model.safetensors',
+          directory: 'checkpoints',
+          searchable: 'checkpoints/model.safetensors',
+          load
+        })
+      ]
+    })
+    renderComponent()
+    await nextTick()
+    expect(load).not.toHaveBeenCalled()
+
+    const root = getRoot()
+    const checkpointsFolder = root.children?.[0]
+    getExpandedKeys()[checkpointsFolder?.key ?? ''] = true
+    await nextTick()
+
+    expect(load).toHaveBeenCalledOnce()
   })
 
   it('toggles folder expansion on click', async () => {
@@ -194,7 +212,7 @@ describe('ModelLibrarySidebarTab', () => {
     renderComponent()
     await nextTick()
 
-    expect(vi.mocked(useModelStore().refreshModelFolder)).not.toHaveBeenCalled()
+    expect(useModelStore().refreshModelFolder).not.toHaveBeenCalled()
 
     useAssetDownloadStore().lastCompletedDownload = {
       taskId: 'task-1',
@@ -203,7 +221,7 @@ describe('ModelLibrarySidebarTab', () => {
     }
     await nextTick()
 
-    expect(vi.mocked(useModelStore().refreshModelFolder)).toHaveBeenCalledWith(
+    expect(useModelStore().refreshModelFolder).toHaveBeenCalledWith(
       'checkpoints'
     )
   })
@@ -212,7 +230,7 @@ describe('ModelLibrarySidebarTab', () => {
     renderComponent()
     await nextTick()
 
-    expect(vi.mocked(useModelStore().refreshModelFolder)).not.toHaveBeenCalled()
+    expect(useModelStore().refreshModelFolder).not.toHaveBeenCalled()
   })
 
   describe('search', () => {
@@ -224,7 +242,7 @@ describe('ModelLibrarySidebarTab', () => {
       await user.type(screen.getByRole('combobox'), 'model')
       await vi.advanceTimersByTimeAsync(300)
 
-      expect(vi.mocked(useModelStore().loadModels)).toHaveBeenCalled()
+      expect(useModelStore().loadModels).toHaveBeenCalled()
       const leafLabels = () => {
         const { children: folders = [] } = getRoot()
         return folders.flatMap(({ children: leaves = [] }) =>
@@ -243,7 +261,8 @@ describe('ModelLibrarySidebarTab', () => {
             simplified_file_name: 'model-new',
             title: 'Model New',
             directory: 'checkpoints',
-            searchable: 'checkpoints/model-new.safetensors'
+            searchable: 'checkpoints/model-new.safetensors',
+            load: () => Promise.resolve()
           })
         ]
       })
@@ -292,7 +311,8 @@ describe('ModelLibrarySidebarTab', () => {
               simplified_file_name: `bulk-${i}`,
               title: `bulk-${i}`,
               directory: 'checkpoints',
-              searchable: `checkpoints/bulk-${i}.safetensors`
+              searchable: `checkpoints/bulk-${i}.safetensors`,
+              load: () => Promise.resolve()
             })
           )
         ]
@@ -336,7 +356,8 @@ describe('ModelLibrarySidebarTab', () => {
             simplified_file_name: 'model-late',
             title: 'Model Late',
             directory: 'checkpoints',
-            searchable: 'checkpoints/model-late.safetensors'
+            searchable: 'checkpoints/model-late.safetensors',
+            load: () => Promise.resolve()
           })
         ]
       })
@@ -370,7 +391,8 @@ describe('ModelLibrarySidebarTab', () => {
             simplified_file_name: 'zzz-model',
             title: 'Zzz Model',
             directory: 'checkpoints',
-            searchable: 'checkpoints/zzz-model.safetensors'
+            searchable: 'checkpoints/zzz-model.safetensors',
+            load: () => Promise.resolve()
           })
         ]
       })
@@ -409,7 +431,7 @@ describe('ModelLibrarySidebarTab', () => {
 
       expect(screen.queryByLabelText('g.loadAllFolders')).toBeNull()
       expect(screen.getByLabelText('g.refresh')).toBeInTheDocument()
-      expect(vi.mocked(useModelStore().loadModels)).toHaveBeenCalledTimes(1)
+      expect(useModelStore().loadModels).toHaveBeenCalledTimes(1)
     })
 
     it('legacy mode keeps the load-all button and stays lazy by default', async () => {
@@ -417,7 +439,7 @@ describe('ModelLibrarySidebarTab', () => {
       await nextTick()
 
       expect(screen.getByLabelText('g.loadAllFolders')).toBeInTheDocument()
-      expect(vi.mocked(useModelStore().loadModels)).not.toHaveBeenCalled()
+      expect(useModelStore().loadModels).not.toHaveBeenCalled()
     })
 
     it('legacy mode still honors AutoLoadAll', async () => {
@@ -425,7 +447,7 @@ describe('ModelLibrarySidebarTab', () => {
       renderComponent()
       await nextTick()
 
-      expect(vi.mocked(useModelStore().loadModels)).toHaveBeenCalledTimes(1)
+      expect(useModelStore().loadModels).toHaveBeenCalledTimes(1)
     })
   })
 })

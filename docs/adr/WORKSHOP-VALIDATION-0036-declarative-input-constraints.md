@@ -25,8 +25,9 @@ Use the existing validator rather than per-model validation callbacks or a
 second expression language. Request callbacks continue composing payloads.
 
 Media properties require browser effects: a shared, cancellable metadata
-reader measures video duration before uploads. Each model declares its
-`maxVideoDurationSeconds`; model-specific JavaScript is unnecessary.
+reader measures video duration and dimensions before uploads. Each model
+declares its duration or width bounds; model-specific JavaScript is
+unnecessary.
 Metadata that cannot be read produces an actionable input error, with the
 sanitized exception retained by the existing reporting path.
 

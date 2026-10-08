@@ -33,7 +33,7 @@ function fakeSession(initial: SessionSnapshot = authenticated(credential())) {
     /** Moves the host to a new snapshot and notifies subscribers. */
     moveTo(next: SessionSnapshot) {
       snapshot = next
-      for (const listener of [...listeners]) listener(snapshot)
+      for (const listener of Array.from(listeners)) listener(snapshot)
     }
   }
 }
@@ -44,6 +44,7 @@ const CAPABILITIES = {
   can_downgrade_to_personal: false,
   can_invite_members: false,
   can_reactivate: false,
+  can_revert_scheduled_change: false,
   can_subscribe_self_serve: false,
   can_top_up: true
 }

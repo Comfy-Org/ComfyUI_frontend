@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/vue'
+import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -77,10 +77,10 @@ const toggle = () =>
 
 describe('ReplyAssetGroup', () => {
   beforeEach(() => {
-    isAssetPreviewSupported.mockReset().mockReturnValue(false)
-    findServerPreviewUrl.mockReset().mockResolvedValue(null)
-    findOutputAsset.mockReset().mockResolvedValue(undefined)
-    generateModelThumbnail.mockReset().mockResolvedValue(null)
+    isAssetPreviewSupported.mockReturnValue(false)
+    findServerPreviewUrl.mockResolvedValue(null)
+    findOutputAsset.mockResolvedValue(undefined)
+    generateModelThumbnail.mockResolvedValue(null)
   })
 
   it('T-09 / PM-652 / FE-1326 renders image and video previews inline', () => {
@@ -88,6 +88,27 @@ describe('ReplyAssetGroup', () => {
 
     expect(screen.getByRole('img', { name: 'i1.png' })).toBeInTheDocument()
     expect(screen.getByTestId('reply-video-preview')).toBeInTheDocument()
+  })
+
+  it('marks video previews with a play affordance but leaves other tiles unmarked', () => {
+    renderGroup([image(1), video, model])
+
+    expect(screen.getAllByTestId('reply-video-affordance')).toHaveLength(1)
+    expect(
+      within(screen.getByRole('button', { name: 'clip.mp4' })).getByTestId(
+        'reply-video-affordance'
+      )
+    ).toBeInTheDocument()
+    expect(
+      within(screen.getByRole('button', { name: 'i1.png' })).queryByTestId(
+        'reply-video-affordance'
+      )
+    ).toBeNull()
+    expect(
+      within(screen.getByRole('button', { name: 'mesh.glb' })).queryByTestId(
+        'reply-video-affordance'
+      )
+    ).toBeNull()
   })
 
   it('T-09 / PM-652 / FE-1326 opens inspect view at the clicked visual asset', async () => {
@@ -127,6 +148,19 @@ describe('ReplyAssetGroup', () => {
     expect(card.dataset.src).toBe('https://x/song.mp3')
     expect(card.dataset.title).toBe('song.mp3')
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
+  })
+
+  it('uses the presentation label for audio and 3D titles', async () => {
+    renderGroup([
+      { ...audio, filename: 'upload_song.mp3', label: 'song.mp3' },
+      { ...model, filename: 'asset-hash', label: 'model.glb' }
+    ])
+
+    expect(screen.getByTestId('audio-card').dataset.title).toBe('song.mp3')
+    await userEvent.click(screen.getByRole('button', { name: 'model.glb' }))
+    expect(vi.mocked(useDialogStore().showDialog)).toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'model.glb' })
+    )
   })
 
   it('collapses long audio lists behind Show more', async () => {

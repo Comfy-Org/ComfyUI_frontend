@@ -2,55 +2,69 @@ import type { Locator, Page } from '@playwright/test'
 
 import type { WorkspaceStore } from '@e2e/types/globals'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { comfyExpect as expect } from '@e2e/fixtures/utils/customMatchers'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 
 export class Topbar {
-  private readonly menuLocator: Locator
   private readonly menuTrigger: Locator
   readonly newWorkflowButton: Locator
   readonly workflowTabs: Locator
+  readonly tabs: Locator
   readonly integratedTabBarActions: Locator
-  readonly menuRootList: Locator
+  public readonly menuRoot: Locator
+  readonly workflowOverflowButton: Locator
 
   constructor(public readonly page: Page) {
-    this.menuLocator = page.locator('.comfy-command-menu')
-    this.menuTrigger = page.locator('.comfy-menu-button-wrapper')
-    this.menuRootList = this.menuLocator.getByRole('menubar')
+    this.menuRoot = page.locator('.comfy-command-menu')
+    this.menuTrigger = page.getByTestId('comfy-menu-button')
     this.newWorkflowButton = page.locator('.new-blank-workflow-button')
     this.workflowTabs = page.getByTestId(TestIds.topbar.workflowTabs)
+    this.tabs = this.workflowTabs.getByTestId(TestIds.topbar.workflowTab)
     this.integratedTabBarActions = this.workflowTabs.getByTestId(
       TestIds.topbar.integratedTabBarActions
     )
+    this.workflowOverflowButton = this.workflowTabs.getByRole('button', {
+      name: 'More workflows',
+      exact: true,
+      includeHidden: true
+    })
   }
 
   async getTabNames(): Promise<string[]> {
-    return await this.page
-      .locator('.workflow-tabs .workflow-label')
-      .allInnerTexts()
+    return await this.tabs.locator('.workflow-label').allInnerTexts()
   }
 
   async getActiveTabName(): Promise<string> {
-    return this.page
-      .locator('.workflow-tabs .p-togglebutton-checked')
-      .innerText()
+    return this.getActiveTab().innerText()
   }
 
   /**
    * Get a menu item by its label, optionally within a specific parent container
    */
   getMenuItem(itemLabel: string, parent?: Locator): Locator {
-    if (parent) {
-      return parent.locator(`.p-tieredmenu-item:has-text("${itemLabel}")`)
-    }
-
-    return this.page.locator(`.p-menubar-item-label:text-is("${itemLabel}")`)
+    const menu = parent ?? this.menuRoot
+    const options = { name: itemLabel, exact: true }
+    return menu
+      .getByRole('menuitem', options)
+      .or(menu.getByRole('menuitemcheckbox', options))
+      .or(menu.getByRole('menuitemradio', options))
   }
 
   /**
    * Get the visible submenu (last visible submenu in case of nested menus)
    */
   getVisibleSubmenu(): Locator {
-    return this.page.locator('.p-tieredmenu-submenu:visible').last()
+    return this.page.locator('[role="menu"]:visible').last()
+  }
+
+  async holdMenuItem(itemLabel: string, parent: Locator): Promise<void> {
+    const item = this.getMenuItem(itemLabel, parent)
+    await item.hover()
+    await this.page.mouse.down()
+  }
+
+  async releaseMenuItem(): Promise<void> {
+    await this.page.mouse.up()
   }
 
   /**
@@ -63,29 +77,45 @@ export class Topbar {
   }
 
   getWorkflowTabLabel(tabName: string): Locator {
-    return this.page.locator(
-      `.workflow-tabs .workflow-label:has-text("${tabName}")`
-    )
+    return this.getWorkflowTab(tabName).locator('.workflow-label')
   }
 
   getWorkflowTab(tabName: string): Locator {
-    return this.getWorkflowTabLabel(tabName).locator('..')
+    return this.tabs.filter({
+      has: this.page.getByText(tabName, { exact: true })
+    })
   }
 
   getTab(index: number): Locator {
-    return this.page.locator('.workflow-tabs .p-togglebutton').nth(index)
+    return this.tabs.nth(index)
+  }
+
+  /**
+   * Opens a second, blank workflow tab and returns to the first one — the
+   * lever agent tab-switch specs use to force the agent CRDT follower to
+   * unbind and rebind against the original workflow.
+   */
+  async openBlankTabAndReturn(): Promise<void> {
+    await expect(this.tabs).toHaveCount(1)
+    await this.newWorkflowButton.click()
+    await expect(this.tabs).toHaveCount(2)
+    await expect(this.getTab(1).and(this.getActiveTab())).toBeVisible()
+    await expect(this.page.getByTestId('node-title')).toHaveCount(0)
+    await this.getTab(0).click()
+    await expect(this.getTab(0).and(this.getActiveTab())).toBeVisible()
+    await expect(this.getTab(1).and(this.getActiveTab())).toHaveCount(0)
   }
 
   getActiveTab(): Locator {
-    return this.page.locator(
-      '.workflow-tabs .p-togglebutton.p-togglebutton-checked'
-    )
+    return this.tabs.filter({
+      has: this.page.getByRole('tab', { selected: true })
+    })
   }
 
   async closeWorkflowTab(tabName: string) {
     const tab = this.getWorkflowTab(tabName)
     await tab.hover()
-    await tab.locator('.close-button').click()
+    await tab.getByTestId(TestIds.topbar.closeWorkflowButton).click()
   }
 
   getSaveDialog(): Locator {
@@ -112,48 +142,73 @@ export class Topbar {
     await this.getSaveDialog().fill(workflowName)
     await this.page.keyboard.press('Enter')
 
-    // Wait for workflow service to finish saving
-    await this.page.waitForFunction(
-      () => !(window.app!.extensionManager as WorkspaceStore).workflow.isBusy,
-      undefined,
-      { timeout: 3000 }
-    )
-    // Wait for the dialog to close.
     await this.getSaveDialog().waitFor({ state: 'hidden' })
 
-    // Check if a confirmation dialog appeared (e.g., "Overwrite existing file?")
-    // If so, return early to let the test handle the confirmation
+    if (command === 'Export') return
+
     const confirmationDialog = this.page
       .getByRole('dialog')
       .filter({ hasText: 'Overwrite' })
-    if (await confirmationDialog.isVisible()) {
-      return
-    }
+    await expect
+      .poll(async () => {
+        if (await confirmationDialog.isVisible()) return true
+        return this.page.evaluate(
+          (name) => {
+            const store = (window.app!.extensionManager as WorkspaceStore)
+              .workflow
+            const workflow = store.activeWorkflow
+            return (
+              workflow?.filename === name &&
+              workflow.isPersisted &&
+              !workflow.isModified &&
+              !store.isBusy
+            )
+          },
+          workflowName.replace(/\.json$/, '')
+        )
+      })
+      .toBe(true)
   }
 
   async dismissWorkflowPopover() {
-    await this.page
-      .locator('.workflow-popover-fade')
-      .waitFor({ state: 'hidden', timeout: 5000 })
-      .catch(() => {})
+    await this.page.mouse.move(0, 0)
+    await expect(
+      this.page.locator('.workflow-popover-fade').filter({ visible: true })
+    ).toHaveCount(0)
+  }
+
+  async openWorkflowOverflowMenu() {
+    await this.workflowOverflowButton.focus()
+    await this.workflowOverflowButton.press('Enter')
+    await this.page.getByRole('menu').waitFor({ state: 'visible' })
+  }
+
+  async closeWorkflowOverflowMenu() {
+    await this.page.keyboard.press('Escape')
+    await this.page.getByRole('menu').waitFor({ state: 'hidden' })
+  }
+
+  async getWorkflowOverflowMenuVerticalGap() {
+    const [triggerBox, menuBox] = await Promise.all([
+      this.workflowOverflowButton.boundingBox(),
+      this.page.getByRole('menu').boundingBox()
+    ])
+    if (!triggerBox || !menuBox) throw new Error('Workflow menu is not visible')
+    return menuBox.y - (triggerBox.y + triggerBox.height)
   }
 
   async openTopbarMenu() {
     await this.dismissWorkflowPopover()
-    // If menu is already open, close it first to reset state
-    const isAlreadyOpen = await this.menuLocator.isVisible()
-    if (isAlreadyOpen) {
-      await this.closeTopbarMenu()
-    }
+    if (await this.menuRoot.isVisible()) return this.menuRoot
 
     await this.menuTrigger.click()
-    await this.menuLocator.waitFor({ state: 'visible' })
-    return this.menuLocator
+    await this.menuRoot.waitFor({ state: 'visible' })
+    return this.menuRoot
   }
 
   async closeTopbarMenu() {
     await this.page.keyboard.press('Escape')
-    await this.menuLocator.waitFor({ state: 'hidden' })
+    await this.menuRoot.waitFor({ state: 'hidden' })
   }
 
   /**
@@ -181,12 +236,12 @@ export class Topbar {
   }
 
   async focusMenuItem(itemLabel: string): Promise<void> {
-    await this.menuRootList.focus()
-    const itemCount = await this.menuRootList.getByRole('menuitem').count()
+    const items = this.menuRoot.locator('[role^="menuitem"]')
+    const itemCount = await items.count()
 
     for (let step = 0; step < itemCount; step++) {
-      await this.page.keyboard.press('ArrowDown')
       if ((await this.getFocusedMenuItemLabel()) === itemLabel) return
+      await this.page.keyboard.press('ArrowDown')
     }
 
     throw new Error(
@@ -195,16 +250,12 @@ export class Topbar {
   }
 
   private async getFocusedMenuItemLabel(): Promise<string | null> {
-    const focusedItemId = await this.menuRootList.getAttribute(
-      'aria-activedescendant'
+    const focusedItem = this.menuRoot.locator('[role^="menuitem"]:focus')
+    if ((await focusedItem.count()) === 0) return null
+    return (
+      (await focusedItem.getAttribute('aria-label')) ??
+      (await focusedItem.innerText()).trim()
     )
-    if (!focusedItemId) return null
-
-    const label = this.menuLocator
-      .locator(`#${focusedItemId}`)
-      .locator('.p-menubar-item-label')
-    if ((await label.count()) === 0) return null
-    return (await label.innerText()).trim()
   }
 
   /**
@@ -213,7 +264,12 @@ export class Topbar {
   async openSubmenu(menuItemLabel: string): Promise<Locator> {
     const menuItem = this.getMenuItem(menuItemLabel)
     await menuItem.hover()
-    const submenu = this.getVisibleSubmenu()
+    await expect(menuItem).toHaveAttribute('aria-controls', /.+/)
+    const submenuId = await menuItem.getAttribute('aria-controls')
+    if (!submenuId) {
+      throw new Error(`Menu item "${menuItemLabel}" has no submenu`)
+    }
+    const submenu = this.page.locator(`#${submenuId}`)
     await submenu.waitFor({ state: 'visible' })
     return submenu
   }
@@ -236,8 +292,7 @@ export class Topbar {
   async switchTheme(theme: 'dark' | 'light') {
     const { darkTheme, lightTheme } = await this.getThemeMenuItems()
     const themeItem = theme === 'dark' ? darkTheme : lightTheme
-    const themeLabel = themeItem.locator('.p-menubar-item-label')
-    await themeLabel.click()
+    await themeItem.click()
   }
 
   async triggerTopbarCommand(path: string[]) {
@@ -247,11 +302,8 @@ export class Topbar {
 
     const menu = await this.openTopbarMenu()
     const tabName = path[0]
-    const topLevelMenuItem = this.getMenuItem(tabName)
-    const topLevelMenu = menu
-      .locator('.p-tieredmenu-item')
-      .filter({ has: topLevelMenuItem })
-    await topLevelMenu.waitFor({ state: 'visible' })
+    const topLevelMenuItem = this.getMenuItem(tabName, menu)
+    await topLevelMenuItem.waitFor({ state: 'visible' })
 
     // Handle top-level commands (like "New")
     if (path.length === 1) {
@@ -259,29 +311,21 @@ export class Topbar {
       return
     }
 
-    await topLevelMenu.hover()
-
-    // Hover over top-level menu with retry logic for flaky submenu appearance
-    const submenu = this.getVisibleSubmenu()
+    let submenu: Locator
     try {
-      await submenu.waitFor({ state: 'visible', timeout: 1000 })
+      submenu = await this.openSubmenu(tabName)
     } catch {
-      // Click outside to reset, then reopen menu
       await this.page.locator('body').click({ position: { x: 500, y: 300 } })
-      await this.menuLocator.waitFor({ state: 'hidden', timeout: 1000 })
+      await this.menuRoot.waitFor({ state: 'hidden', timeout: 1000 })
+      await this.menuRoot.waitFor({ state: 'detached', timeout: 1000 })
       await this.menuTrigger.click()
-      await this.menuLocator.waitFor({ state: 'visible' })
-      // Re-hover on top-level menu to trigger submenu
-      await topLevelMenu.hover()
-      await submenu.waitFor({ state: 'visible', timeout: 1000 })
+      await this.menuRoot.waitFor({ state: 'visible' })
+      submenu = await this.openSubmenu(tabName)
     }
 
-    let currentMenu = topLevelMenu
     for (let i = 1; i < path.length; i++) {
       const commandName = path[i]
-      const menuItem = submenu
-        .locator(`.p-tieredmenu-item:has-text("${commandName}")`)
-        .first()
+      const menuItem = this.getMenuItem(commandName, submenu)
       await menuItem.waitFor({ state: 'visible' })
 
       // For the last item, click it
@@ -290,10 +334,13 @@ export class Topbar {
         return
       }
 
-      // Otherwise, hover to open nested submenu
       await menuItem.hover()
-      currentMenu = menuItem
+      const submenuId = await menuItem.getAttribute('aria-controls')
+      if (!submenuId) {
+        throw new Error(`Menu item "${commandName}" has no submenu`)
+      }
+      submenu = this.page.locator(`#${submenuId}`)
+      await submenu.waitFor({ state: 'visible' })
     }
-    await currentMenu.click()
   }
 }

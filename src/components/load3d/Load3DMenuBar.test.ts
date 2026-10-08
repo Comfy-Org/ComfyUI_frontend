@@ -121,11 +121,15 @@ async function openCategoryMenu(user: ReturnType<typeof userEvent.setup>) {
 }
 
 describe('Load3DMenuBar', () => {
-  it('shows scene controls by default', () => {
-    renderMenuBar()
+  it('shows scene controls by default', async () => {
+    const { user } = renderMenuBar()
     expect(
       screen.getByRole('button', { name: 'Show grid' })
     ).toBeInTheDocument()
+    await openCategoryMenu(user)
+    expect(
+      screen.getByRole('button', { name: 'Scene', pressed: true })
+    ).toHaveClass('bg-secondary-background-selected')
   })
 
   it('toggles showGrid on the bound config when the grid button is clicked', async () => {

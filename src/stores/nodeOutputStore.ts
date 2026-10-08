@@ -372,7 +372,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
 
   function discardClosedWorkflowPreviews() {
     const openPaths = new Set(workflowStore.openWorkflows.map((wf) => wf.path))
-    for (const path of [...stashedPreviews.keys()]) {
+    for (const path of Array.from(stashedPreviews.keys())) {
       if (!openPaths.has(path)) discardPreviewsForWorkflow(path)
     }
   }

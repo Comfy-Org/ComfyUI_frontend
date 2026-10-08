@@ -17,6 +17,7 @@ import type {
   WorkflowReference
 } from '../../../types/workflowReference'
 import type { ReplyAsset } from '../../../utils/replyAssets'
+import { isReplyAssetKind } from '../../../utils/replyAssets'
 import { agentMessageText } from '../../../utils/agentMessageText'
 import { workflowReferenceParts } from '../../../utils/workflowReferenceParts'
 import ReplyAssetGroup from './ReplyAssetGroup.vue'
@@ -121,28 +122,30 @@ const splitAttachments = computed(() => {
   const grid: ReplyAsset[] = []
   const plain: UserAttachment[] = []
   for (const item of attachments) {
-    const kind = getMediaTypeFromFilename(item.name)
-    const url =
-      item.previewUrl ??
-      (item.ref
-        ? api.apiURL(
-            `/view?filename=${encodeURIComponent(item.ref)}&type=input`
-          )
-        : undefined)
-    if (
-      url &&
-      (kind === 'image' ||
-        kind === 'video' ||
-        kind === 'audio' ||
-        kind === '3D')
-    ) {
-      grid.push({ url, filename: item.name, kind })
-    } else {
-      plain.push(item)
-    }
+    const asset = gridAsset(item)
+    if (asset) grid.push(asset)
+    else plain.push(item)
   }
   return { grid, plain }
 })
+
+function gridAsset(item: UserAttachment): ReplyAsset | undefined {
+  const kind = item.kind ?? getMediaTypeFromFilename(item.name)
+  if (!isReplyAssetKind(kind)) return undefined
+  const url =
+    item.previewUrl ??
+    (item.ref
+      ? api.apiURL(`/view?filename=${encodeURIComponent(item.ref)}&type=input`)
+      : undefined)
+  if (!url) return undefined
+  const filename = item.ref ?? item.name
+  return {
+    url,
+    filename,
+    kind,
+    label: filename === item.name ? undefined : item.name
+  }
+}
 </script>
 
 <template>
@@ -190,14 +193,14 @@ const splitAttachments = computed(() => {
       v-if="text || workflowReferences.length"
       ref="bubble"
       data-testid="user-message-bubble"
-      class="w-fit max-w-full rounded-lg border border-component-node-border bg-secondary-background px-2.5 py-1.5 text-sm/7 font-normal wrap-break-word whitespace-pre-wrap text-muted-foreground"
+      class="w-fit max-w-full rounded-lg bg-secondary-background px-2.5 py-1.5 text-sm/5 font-normal wrap-break-word whitespace-pre-wrap text-muted-foreground"
     >
       <template v-for="(part, index) in promptParts" :key="index">
         <Tag
           v-if="part.type === 'workflow'"
           interactive
           :label="part.reference.name"
-          class="max-w-64 align-middle"
+          class="-my-0.5 max-w-64 align-middle"
           :aria-label="
             part.reference.unavailable
               ? t('agent.unavailableWorkflowReference', {
@@ -233,7 +236,7 @@ const splitAttachments = computed(() => {
     </div>
     <div
       v-if="readableText"
-      class="flex text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 touch:opacity-100"
+      class="pointer-events-none flex text-muted-foreground opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100 touch:pointer-events-auto touch:opacity-100"
     >
       <AccessibleTooltip
         v-if="editable && (text || workflowReferences.length)"

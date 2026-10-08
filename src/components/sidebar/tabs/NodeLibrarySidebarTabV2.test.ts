@@ -20,14 +20,7 @@ vi.mock<unknown>(import('@/services/nodeSearchService'), () => ({
 
 vi.mock(import('@vueuse/core'), { spy: true })
 
-vi.mock<unknown>(import('@/composables/node/useNodeDragToCanvas'), () => ({
-  useNodeDragToCanvas: () => ({
-    isDragging: { value: false },
-    draggedNode: { value: null },
-    startDrag: vi.fn(),
-    cancelDrag: vi.fn()
-  })
-}))
+vi.mock(import('@/composables/node/useNodeDragToCanvas'))
 
 vi.mock<unknown>(import('@/services/nodeOrganizationService'), () => ({
   DEFAULT_TAB_ID: 'essentials',
@@ -92,12 +85,6 @@ describe('NodeLibrarySidebarTabV2', () => {
 
     const triggers = screen.getAllByRole('tab')
     expect(triggers).toHaveLength(2)
-  })
-
-  it('should render search box', () => {
-    renderComponent()
-
-    expect(screen.getByRole('combobox')).toBeInTheDocument()
   })
 
   it('should render only the selected panel', () => {

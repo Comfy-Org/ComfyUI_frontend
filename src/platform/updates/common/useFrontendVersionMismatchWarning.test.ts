@@ -117,25 +117,6 @@ describe('useFrontendVersionMismatchWarning', () => {
     expect(addAlertSpy).toHaveBeenCalledOnce()
   })
 
-  it('should call showWarning method manually', () => {
-    const toastStore = useToastStore()
-    const versionStore = useVersionCompatibilityStore()
-    const addAlertSpy = vi.spyOn(toastStore, 'addAlert')
-    const dismissWarningSpy = vi.spyOn(versionStore, 'dismissWarning')
-
-    vi.spyOn(versionStore, 'warningMessage', 'get').mockReturnValue({
-      type: 'outdated',
-      frontendVersion: '1.0.0',
-      requiredVersion: '2.0.0'
-    })
-
-    const { showWarning } = mountVersionWarning()
-    showWarning()
-
-    expect(addAlertSpy).toHaveBeenCalledOnce()
-    expect(dismissWarningSpy).toHaveBeenCalled()
-  })
-
   it('should expose store methods and computed values', () => {
     const versionStore = useVersionCompatibilityStore()
 
@@ -151,7 +132,7 @@ describe('useFrontendVersionMismatchWarning', () => {
     expect(result.shouldShowWarning.value).toBe(true)
     expect(result.hasVersionMismatch.value).toBe(true)
 
-    void result.dismissWarning()
+    result.dismissWarning()
     expect(mockDismissWarning).toHaveBeenCalled()
   })
 

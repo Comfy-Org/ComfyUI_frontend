@@ -1,4 +1,4 @@
-import rawAvailability from '../data/workshop-model-availability.json'
+import rawAvailability from '@/data/workshop-model-availability.json'
 import { workshopModelAvailabilitySchema } from './workshop-model-availability-schema'
 
 export const workshopModelAvailability = new Map(
@@ -7,4 +7,9 @@ export const workshopModelAvailability = new Map(
 
 export function isWorkshopModelDisabled(slug: string): boolean {
   return workshopModelAvailability.get(slug)?.disabled === true
+}
+
+/** The PostHog flag a slug is shown behind, if any. */
+export function workshopModelFlag(slug: string): string | undefined {
+  return workshopModelAvailability.get(slug)?.flag
 }

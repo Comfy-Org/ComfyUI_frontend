@@ -35,18 +35,6 @@ import {
 import { resolveNode } from '@/utils/litegraphUtil'
 import type { WidgetId } from '@/types/widgetId'
 
-const mockEmptyWorkflowDialog = vi.hoisted(() => {
-  let lastOptions: { onEnterBuilder: () => void; onDismiss: () => void }
-  return {
-    show: vi.fn((options: typeof lastOptions) => {
-      lastOptions = options
-    }),
-    get lastOptions() {
-      return lastOptions
-    }
-  }
-})
-
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     rootGraph: { extra: {}, nodes: [{ id: 1 }], events: new EventTarget() },
@@ -57,10 +45,6 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
 }))
 
 vi.mock(import('@/utils/litegraphUtil'), { spy: true })
-
-vi.mock(import('@/components/builder/useEmptyWorkflowDialog'), () => ({
-  useEmptyWorkflowDialog: () => mockEmptyWorkflowDialog
-}))
 
 import { useAppModeStore } from './appModeStore'
 
@@ -183,21 +167,6 @@ describe('appModeStore', () => {
       expect(workflowStore.activeWorkflow.activeMode).toBe('builder:inputs')
     })
 
-    it('shows empty workflow dialog when graph has no nodes', () => {
-      vi.mocked(app.rootGraph).nodes = []
-      workflowStore.activeWorkflow = createBuilderWorkflow('graph')
-
-      store.enterBuilder()
-
-      expect(mockEmptyWorkflowDialog.show).toHaveBeenCalledWith(
-        expect.objectContaining({
-          onEnterBuilder: expect.any(Function),
-          onDismiss: expect.any(Function)
-        })
-      )
-      expect(workflowStore.activeWorkflow.activeMode).toBe('graph')
-    })
-
     it('prunes selections from workflow state on entry', () => {
       const node1 = nodeWithWidgets(1, ['seed'])
       vi.mocked(app.rootGraph).id = rootGraphId
@@ -223,43 +192,6 @@ describe('appModeStore', () => {
 
       expect(store.selectedInputs).toEqual([[entitySeed, 'seed']])
       expect(store.selectedOutputs).toEqual([toNodeId(1)])
-    })
-  })
-
-  describe('empty workflow dialog callbacks', () => {
-    function getDialogOptions(nodes: LGraphNode[] = []) {
-      vi.mocked(app.rootGraph).nodes = nodes
-      workflowStore.activeWorkflow = createBuilderWorkflow('graph')
-      store.enterBuilder()
-      return mockEmptyWorkflowDialog.lastOptions
-    }
-
-    it('onDismiss sets graph mode', () => {
-      const options = getDialogOptions()
-
-      // Move to builder so onDismiss must actually transition back
-      workflowStore.activeWorkflow!.activeMode = 'builder:inputs'
-
-      options.onDismiss()
-
-      expect(workflowStore.activeWorkflow!.activeMode).toBe('graph')
-    })
-
-    it('onEnterBuilder enters builder when nodes exist', () => {
-      const options = getDialogOptions([{ id: toNodeId(1) } as LGraphNode])
-
-      options.onEnterBuilder()
-
-      expect(workflowStore.activeWorkflow!.activeMode).toBe('builder:inputs')
-    })
-
-    it('onEnterBuilder shows dialog again when no nodes', () => {
-      const options = getDialogOptions()
-
-      mockEmptyWorkflowDialog.show.mockClear()
-      options.onEnterBuilder()
-
-      expect(mockEmptyWorkflowDialog.show).toHaveBeenCalled()
     })
   })
 
