@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import { fromAny } from '@total-typescript/shoehorn'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import type { Toast } from '@/components/ui/toast/toastStore'
@@ -67,6 +68,22 @@ describe('extension toast API', () => {
     useWorkspaceStore().toast.add(message)
 
     expect(useToast().toasts).toEqual([expect.objectContaining(expected)])
+  })
+
+  it('legacy add logs an unsupported severity instead of throwing', () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    useWorkspaceStore().toast.add(
+      fromAny<ToastMessageOptions, unknown>({
+        severity: 'warning',
+        summary: 'Low disk space'
+      })
+    )
+
+    expect(useToast().toasts).toEqual([])
+    expect(consoleError).toHaveBeenCalledWith(
+      expect.stringContaining('"warning"')
+    )
   })
 
   it('legacy addAlert shows the message as a warning title', () => {

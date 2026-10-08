@@ -23,14 +23,17 @@ import { useQueueSettingsStore } from './queueSettingsStore'
 import { useBottomPanelStore } from './workspace/bottomPanelStore'
 import { useSidebarTabStore } from './workspace/sidebarTabStore'
 
-const legacySeverityKinds = {
-  contrast: 'info',
-  error: 'error',
-  info: 'info',
-  secondary: 'info',
-  success: 'success',
-  warn: 'warning'
-} as const
+const legacySeverityKinds = new Map<
+  ToastMessageOptions['severity'],
+  'error' | 'info' | 'success' | 'warning'
+>([
+  ['contrast', 'info'],
+  ['error', 'error'],
+  ['info', 'info'],
+  ['secondary', 'info'],
+  ['success', 'success'],
+  ['warn', 'warning']
+])
 
 function workspaceStoreSetup() {
   const spinner = ref(false)
@@ -44,7 +47,12 @@ function workspaceStoreSetup() {
   const toastStore = useToast()
   const toast: ToastManager = {
     add: (message: ToastMessageOptions) => {
-      const kind = legacySeverityKinds[message.severity ?? 'info']
+      const severity = message.severity ?? 'info'
+      const kind = legacySeverityKinds.get(severity)
+      if (!kind) {
+        console.error(`toast.add: unsupported severity "${severity}"`)
+        return
+      }
       toastStore[kind](message.summary ?? message.detail ?? '', {
         closable: message.closable,
         description: message.summary === undefined ? undefined : message.detail,

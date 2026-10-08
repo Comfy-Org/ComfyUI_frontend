@@ -79,7 +79,7 @@ export type ToastManager = {
   add(message: ToastMessageOptions): void
   /** @deprecated Use `warning(message)`. */
   addAlert(message: string): void
-  dismiss(id: ToastId): void
+  dismiss(id: ToastId): boolean
   dismissAll(): void
   error(title: string, options?: ToastOptions): ToastId
   info(title: string, options?: ToastOptions): ToastId
