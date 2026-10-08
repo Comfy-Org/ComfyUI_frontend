@@ -1265,7 +1265,6 @@ interface NodeMoveEvent {
 
 // ─── modelsHandle.ts ─────────────────────────────────────────────
 
-/** @knipIgnoreUnusedButUsedByCustomNodes */
 type ModelFolder =
   | 'checkpoints'
   | 'clip'

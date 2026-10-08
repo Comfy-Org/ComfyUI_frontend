@@ -2,7 +2,6 @@ import { api } from '@/scripts/api'
 
 import { ComfyApiError } from './errors'
 
-/** @knipIgnoreUnusedButUsedByCustomNodes */
 export type ModelFolder =
   | 'checkpoints'
   | 'clip'
