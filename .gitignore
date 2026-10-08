@@ -18,6 +18,7 @@ yarn.lock
 .stylelintcache
 .fallow/
 *.tsbuildinfo
+.cache/
 
 node_modules
 .pnpm-store
