@@ -4,7 +4,7 @@ import {
   CANVAS_CLIPBOARD_ID_KEY,
   CANVAS_CLIPBOARD_KEY,
   snapshotCanvasClipboard
-} from './canvasClipboard'
+} from './clipboardStorage'
 
 describe('snapshotCanvasClipboard', () => {
   it('restores a stored slot and its id', () => {

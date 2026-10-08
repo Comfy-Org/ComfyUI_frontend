@@ -4,7 +4,7 @@ import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import {
   CANVAS_CLIPBOARD_KEY,
   snapshotCanvasClipboard
-} from '@/lib/litegraph/src/litegraph'
+} from '@/lib/litegraph/src/canvas/clipboardStorage'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'

@@ -21,14 +21,16 @@ import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import { withGraphIntentSource } from '@/lib/litegraph/src/graphIntents'
 import { createMutationView } from '@/lib/litegraph/src/infrastructure/createMutationView'
 import {
-  CANVAS_CLIPBOARD_KEY,
   inputAsSerialisable,
   LGraph,
   LGraphCanvas,
   LGraphNode,
-  LiteGraph,
-  snapshotCanvasClipboard
+  LiteGraph
 } from '@/lib/litegraph/src/litegraph'
+import {
+  CANVAS_CLIPBOARD_KEY,
+  snapshotCanvasClipboard
+} from '@/lib/litegraph/src/canvas/clipboardStorage'
 import { snapPoint } from '@/lib/litegraph/src/measure'
 import type { ISerialisedGraph, Vector2 } from '@/lib/litegraph/src/litegraph'
 import type {

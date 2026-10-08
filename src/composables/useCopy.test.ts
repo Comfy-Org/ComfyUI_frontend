@@ -13,7 +13,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import {
   CANVAS_CLIPBOARD_ID_KEY,
   CANVAS_CLIPBOARD_KEY
-} from '@/lib/litegraph/src/litegraph'
+} from '@/lib/litegraph/src/canvas/clipboardStorage'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { fromPartial } from '@total-typescript/shoehorn'
 

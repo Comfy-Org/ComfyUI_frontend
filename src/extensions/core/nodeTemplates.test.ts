@@ -4,7 +4,7 @@ import { assert, expect, it, vi } from 'vitest'
 import {
   CANVAS_CLIPBOARD_ID_KEY,
   CANVAS_CLIPBOARD_KEY
-} from '@/lib/litegraph/src/litegraph'
+} from '@/lib/litegraph/src/canvas/clipboardStorage'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { ComfyApi } from '@/scripts/api'

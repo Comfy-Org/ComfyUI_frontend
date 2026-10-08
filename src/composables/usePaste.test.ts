@@ -22,7 +22,7 @@ import { useCopy } from '@/composables/useCopy'
 import {
   CANVAS_CLIPBOARD_ID_KEY,
   CANVAS_CLIPBOARD_KEY
-} from '@/lib/litegraph/src/litegraph'
+} from '@/lib/litegraph/src/canvas/clipboardStorage'
 import { app } from '@/scripts/app'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
