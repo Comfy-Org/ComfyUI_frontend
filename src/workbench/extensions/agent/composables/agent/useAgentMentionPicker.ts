@@ -11,12 +11,14 @@ import type {
 import { transitionMentionPicker } from './mentionPickerState'
 import type { SelectedNode } from './useCanvasSelection'
 import { selectedNodeKey } from './useCanvasSelection'
+import type { ComposerAttachment } from '../../types/composerAttachment'
 
 interface MentionPickerOptions {
   draft: () => string
   editor: () => PromptEditor | null
   selectionTags: () => SelectedNode[]
   workflows: () => WorkflowReferenceOption[]
+  assets: () => ComposerAttachment[]
   nodeReferenceDisabledReason: () => string | undefined
   workflowSelecting: () => boolean
   getMentionNodes: () => SelectedNode[]
@@ -26,21 +28,19 @@ interface MentionPickerOptions {
     to: number
   ) => Promise<boolean>
   pickNode: (node: SelectedNode) => void
+  pickAsset: (asset: ComposerAttachment) => void
   requestWorkflows: () => void
 }
 
 export function useAgentMentionPicker(options: MentionPickerOptions) {
   const { t } = useI18n()
-  const graphNodes = ref<SelectedNode[]>([])
-  function loadMentionNodes(): void {
-    if (options.nodeReferenceDisabledReason()) {
-      graphNodes.value = []
-      return
-    }
-    graphNodes.value = [...options.getMentionNodes()].sort((a, b) =>
-      a.title.localeCompare(b.title)
-    )
-  }
+  const graphNodes = computed(() =>
+    options.nodeReferenceDisabledReason()
+      ? []
+      : [...options.getMentionNodes()].sort((a, b) =>
+          a.title.localeCompare(b.title)
+        )
+  )
 
   const mention = ref<MentionPickerState>({ status: 'closed' })
   const mentionSection = computed(() =>
@@ -57,6 +57,7 @@ export function useAgentMentionPicker(options: MentionPickerOptions) {
     | { kind: 'section'; id: 'nodes' | 'workflows'; label: string }
     | { kind: 'back'; id: 'back'; label: string }
     | { kind: 'node'; id: string; label: string; node: SelectedNode }
+    | { kind: 'asset'; id: string; label: string; asset: ComposerAttachment }
     | {
         kind: 'workflow'
         id: string
@@ -78,9 +79,20 @@ export function useAgentMentionPicker(options: MentionPickerOptions) {
         { kind: 'section', id: 'nodes', label: t('agent.nodes') },
         { kind: 'section', id: 'workflows', label: t('agent.workflows') }
       ]
-      return sections.filter(({ label }) =>
-        label.toLowerCase().includes(search)
-      )
+      return [
+        ...options
+          .assets()
+          .filter((asset) => asset.name.toLowerCase().includes(search))
+          .map(
+            (asset): MentionMatch => ({
+              kind: 'asset',
+              id: asset.id,
+              label: asset.name,
+              asset
+            })
+          ),
+        ...sections.filter(({ label }) => label.toLowerCase().includes(search))
+      ]
     }
 
     const back: MentionMatch = { kind: 'back', id: 'back', label: t('g.back') }
@@ -149,15 +161,6 @@ export function useAgentMentionPicker(options: MentionPickerOptions) {
   }
 
   const graphDupes = computed(() => duplicatedTitles(graphNodes.value))
-  const tagDupes = computed(() => duplicatedTitles(options.selectionTags()))
-
-  watch(
-    () => options.selectionTags(),
-    (tags) => {
-      if (tags.length) loadMentionNodes()
-    },
-    { immediate: true }
-  )
 
   function dispatchMention(event: MentionPickerEvent): void {
     mention.value = transitionMentionPicker(mention.value, event)
@@ -187,7 +190,6 @@ export function useAgentMentionPicker(options: MentionPickerOptions) {
       dispatchMention({ type: 'closed' })
       return
     }
-    if (mention.value.status === 'closed') loadMentionNodes()
     dispatchMention({
       type: 'queryChanged',
       start: at,
@@ -207,11 +209,7 @@ export function useAgentMentionPicker(options: MentionPickerOptions) {
   watch(
     () => options.nodeReferenceDisabledReason(),
     (reason) => {
-      if (!reason) {
-        if (mention.value.status === 'open') loadMentionNodes()
-        return
-      }
-      graphNodes.value = []
+      if (!reason) return
       if (
         mention.value.status === 'open' &&
         mention.value.section === 'nodes'
@@ -225,15 +223,25 @@ export function useAgentMentionPicker(options: MentionPickerOptions) {
     { flush: 'sync' }
   )
 
+  function selectMentionSection(
+    section: Exclude<MentionSection, 'root'>,
+    from: number,
+    to: number
+  ): void {
+    options.editor()?.replaceText(from, to, '')
+    dispatchMention({ type: 'sectionSelected', section })
+    if (section === 'workflows') options.requestWorkflows()
+  }
+
   async function pickMention(match: MentionMatch): Promise<void> {
     const state = mention.value
     if (state.status === 'closed' || isMentionDisabled(match)) return
     if (match.kind === 'section') {
-      options
-        .editor()
-        ?.replaceText(state.start + 1, state.start + 1 + state.query.length, '')
-      dispatchMention({ type: 'sectionSelected', section: match.id })
-      if (match.id === 'workflows') options.requestWorkflows()
+      selectMentionSection(
+        match.id,
+        state.start + 1,
+        state.start + 1 + state.query.length
+      )
       return
     }
     if (match.kind === 'back') {
@@ -254,7 +262,8 @@ export function useAgentMentionPicker(options: MentionPickerOptions) {
     options
       .editor()
       ?.replaceText(state.start, state.start + 1 + state.query.length, '')
-    options.pickNode(match.node)
+    if (match.kind === 'asset') options.pickAsset(match.asset)
+    else options.pickNode(match.node)
     dispatchMention({ type: 'closed' })
     options.editor()?.focus()
   }
@@ -314,7 +323,6 @@ export function useAgentMentionPicker(options: MentionPickerOptions) {
     mentionVisible,
     mentionHasResults,
     graphDupes,
-    tagDupes,
     syncMention,
     pickMention,
     isNodeReferenceDisabled,

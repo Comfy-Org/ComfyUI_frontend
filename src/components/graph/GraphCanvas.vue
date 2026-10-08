@@ -17,9 +17,9 @@
     </template>
     <template v-if="betaMenuEnabled" #side-bar-panel>
       <div
-        :inert="agentNodeSelectionStore.isActive"
+        :inert="canvasStore.isPickingNodes"
         class="sidebar-content-container size-full overflow-x-hidden overflow-y-auto transition-opacity duration-200 ease-in-out"
-        :class="{ 'opacity-0': agentNodeSelectionStore.isActive }"
+        :class="{ 'opacity-0': canvasStore.isPickingNodes }"
       >
         <ExtensionSlot v-if="activeSidebarTab" :extension="activeSidebarTab" />
       </div>
@@ -50,13 +50,13 @@
         v-if="canvasMenuEnabled && !isBuilderMode"
         class="pointer-events-auto"
       />
-      <!-- No node-selection condition here on purpose: entering the mode turns
-           the minimap setting off, so this reacts the same way it does to the
-           user's own toggle - and leaves them free to switch it back on while
-           they pick. -->
       <MiniMap
         v-if="
-          comfyAppReady && minimapEnabled && betaMenuEnabled && !isBuilderMode
+          comfyAppReady &&
+          minimapEnabled &&
+          betaMenuEnabled &&
+          !isBuilderMode &&
+          !canvasStore.isPickingNodes
         "
         class="pointer-events-auto"
       />
@@ -74,7 +74,7 @@
   <TransformPane
     v-if="shouldRenderVueNodes && comfyApp.canvas && comfyAppReady"
     :canvas="comfyApp.canvas"
-    :inert="agentNodeSelectionStore.isActive"
+    :inert="canvasStore.isPickingNodes"
     @wheel.capture="canvasInteractions.forwardEventToCanvas"
     @pointerdown.capture="forwardPointerDownPanEvent"
     @pointerup.capture="forwardPointerUpPanEvent"
@@ -208,7 +208,6 @@ import { useBootstrapStore } from '@/stores/bootstrapStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
@@ -229,10 +228,13 @@ const nodeSearchboxPopoverRef = shallowRef<InstanceType<
   typeof NodeSearchboxPopover
 > | null>(null)
 const settingStore = useSettingStore()
+// Extensions still listen for `<id>.change` events on the legacy dialog.
+settingStore.onSettingChanged(({ id, value, oldValue }) =>
+  comfyApp.ui.settings.dispatchChange(id, value, oldValue)
+)
 const nodeDefStore = useNodeDefStore()
 const workspaceStore = useWorkspaceStore()
 const { isBuilderMode } = useAppMode()
-const agentNodeSelectionStore = useAgentNodeSelectionStore()
 const canvasStore = useCanvasStore()
 const workflowStore = useWorkflowStore()
 const nodeProgressCanvasSync = createNodeProgressCanvasSync(
@@ -264,7 +266,7 @@ const tooltipEnabled = computed(() => settingStore.get('Comfy.EnableTooltips'))
 const selectionToolboxEnabled = computed(
   () =>
     settingStore.get('Comfy.Canvas.SelectionToolbox') &&
-    !agentNodeSelectionStore.isActive
+    !canvasStore.isPickingNodes
 )
 const activeSidebarTab = computed(() => {
   return workspaceStore.sidebarTab.activeSidebarTab

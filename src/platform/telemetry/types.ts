@@ -247,6 +247,14 @@ export type OnboardingTourMetadata =
   | OnboardingTourStepMetadata
   | OnboardingTourNudgeMetadata
 
+export type InAppSurveyStage = 'shown' | 'sent' | 'dismissed'
+
+export interface InAppSurveyEvent {
+  surveyId: string
+  responses?: Record<string, string>
+  properties?: Record<string, string>
+}
+
 export interface SurveyResponsesNormalized extends SurveyResponses {
   industry_normalized?: string
   industry_raw?: string
@@ -1355,6 +1363,7 @@ export interface TelemetryProvider {
 
   // Survey flow events
   trackSurvey?(stage: 'opened' | 'submitted', responses?: SurveyResponses): void
+  trackInAppSurvey?(stage: InAppSurveyStage, event: InAppSurveyEvent): void
 
   // Onboarding coachmark tour events
   trackOnboardingTour?(
@@ -1536,6 +1545,11 @@ export const TelemetryEvents = {
   // Onboarding Survey
   USER_SURVEY_OPENED: 'app:user_survey_opened',
   USER_SURVEY_SUBMITTED: 'app:user_survey_submitted',
+
+  // PostHog API surveys rendered by the app
+  IN_APP_SURVEY_SHOWN: 'survey shown',
+  IN_APP_SURVEY_SENT: 'survey sent',
+  IN_APP_SURVEY_DISMISSED: 'survey dismissed',
 
   // Onboarding Coachmarks
   ONBOARDING_TOUR_NOT_STARTED: 'app:onboarding_tour_not_started',

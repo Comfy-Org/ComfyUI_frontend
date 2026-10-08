@@ -11,7 +11,7 @@ import type { RenderLink } from '@/lib/litegraph/src/canvas/RenderLink'
 import type {
   INodeInputSlot,
   INodeOutputSlot
-} from '@/lib/litegraph/src/interfaces'
+} from '@/lib/litegraph/src/types/slots'
 import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
 import {
   clearCanvasPointerHistory,

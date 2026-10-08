@@ -353,13 +353,12 @@ describe('useTemplateUrlLoader', () => {
   })
 
   it('warns about unsupported mode values but continues loading', async () => {
-    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     mockQueryParams = { template: 'flux_simple', mode: 'unsupported' }
 
     const { loadTemplateFromUrl } = useTemplateUrlLoader()
     await loadTemplateFromUrl()
 
-    expect(consoleSpy).toHaveBeenCalledWith(
+    expect(console.warn).toHaveBeenCalledWith(
       '[useTemplateUrlLoader] Unsupported mode parameter: unsupported. Supported modes: linear'
     )
     expect(mockLoadWorkflowTemplate).toHaveBeenCalledWith(
@@ -367,8 +366,6 @@ describe('useTemplateUrlLoader', () => {
       'default'
     )
     expect(useCanvasStore().linearMode).toBe(false)
-
-    consoleSpy.mockRestore()
   })
 
   it('accepts supported mode parameter: linear', async () => {
@@ -385,19 +382,18 @@ describe('useTemplateUrlLoader', () => {
   })
 
   it('accepts valid format but warns about unsupported modes', async () => {
-    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const unsupportedModes = ['graph', 'mode123', 'my_mode-2']
 
     for (const mode of unsupportedModes) {
       vi.clearAllMocks()
-      consoleSpy.mockClear()
+      vi.mocked(console.warn).mockClear()
       Object.assign(useCanvasStore(), { linearMode: false })
       mockQueryParams = { template: 'flux_simple', mode }
 
       const { loadTemplateFromUrl } = useTemplateUrlLoader()
       await loadTemplateFromUrl()
 
-      expect(consoleSpy).toHaveBeenCalledWith(
+      expect(console.warn).toHaveBeenCalledWith(
         `[useTemplateUrlLoader] Unsupported mode parameter: ${mode}. Supported modes: linear`
       )
       expect(mockLoadWorkflowTemplate).toHaveBeenCalledWith(
@@ -406,7 +402,5 @@ describe('useTemplateUrlLoader', () => {
       )
       expect(useCanvasStore().linearMode).toBe(false)
     }
-
-    consoleSpy.mockRestore()
   })
 })

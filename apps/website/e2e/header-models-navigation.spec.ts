@@ -21,7 +21,7 @@ async function expectNoHorizontalOverflow(page: Page) {
 }
 
 for (const viewport of viewports) {
-  test(`enabled Hub navigation fits at ${viewport.name}`, async ({ page }) => {
+  test(`simplified navigation fits at ${viewport.name}`, async ({ page }) => {
     await page.setViewportSize({ width: viewport.width, height: 900 })
     await page.goto('/')
 
@@ -36,6 +36,12 @@ for (const viewport of viewports) {
       await expect(
         desktopLinks.getByRole('link', { name: 'Hub', exact: true })
       ).toHaveAttribute('href', '/hub/models/')
+      await expect(
+        desktopLinks.getByRole('button', { name: 'Products', exact: true })
+      ).toBeVisible()
+      await expect(
+        desktopLinks.getByRole('button', { name: 'Enterprise', exact: true })
+      ).toBeVisible()
       await expect(menuButton).toBeHidden()
     } else {
       await expect(desktopLinks).toBeHidden()
@@ -47,8 +53,17 @@ for (const viewport of viewports) {
         'href',
         '/hub/models/'
       )
+      await expect(
+        menu.getByRole('button', { name: /^Products\b/ })
+      ).toBeVisible()
+      await expect(
+        menu.getByRole('button', { name: /^Enterprise\b/ })
+      ).toBeVisible()
     }
 
+    await expect(
+      navigation.getByRole('button', { name: /^Models\b/ })
+    ).toHaveCount(0)
     await expectNoHorizontalOverflow(page)
   })
 }
