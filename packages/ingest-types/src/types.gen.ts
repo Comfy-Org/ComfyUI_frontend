@@ -4114,6 +4114,7 @@ export type BillingOpStatusResponse = {
    *
    */
   phase?: 'awaiting_payment_method' | 'awaiting_invoice_payment' | 'in_progress'
+  plan?: BillingOpReceiptPlan
   /**
    * Typed next action for a failed operation. Absent for pending and succeeded operations.
    */
@@ -4136,6 +4137,55 @@ export type BillingOpStatusResponse = {
    *
    */
   status: 'pending' | 'succeeded' | 'failed' | 'reconciliation_needed'
+}
+
+/**
+ * Display only. The plan the operation targets; for a scheduled change,
+ * the plan it switches to at period end. Present for plan changes,
+ * initial subscriptions and resubscribes in every status (pending,
+ * failed and succeeded alike), so a recovered pending operation can be
+ * labelled with its own plan. Absent when the target plan could not be
+ * resolved. Visible to any workspace member who can read the operation.
+ * tier and the price fields are absent when the server cannot describe
+ * the plan, as for the retired seat-based Team plans, whose rows carry a
+ * personal tier and whose price depends on the workspace's seats.
+ *
+ */
+export type BillingOpReceiptPlan = {
+  /**
+   * ISO 4217 currency of price_cents, lowercase (e.g. usd). Present
+   * exactly when price_cents is present.
+   *
+   */
+  currency?: string
+  duration: SubscriptionDuration
+  /**
+   * price_cents divided by 12 and rounded half up to the nearest cent,
+   * as on the subscribe preview's new_plan. Display only. Present
+   * exactly when price_cents is present on an ANNUAL plan.
+   *
+   */
+  monthly_price_cents?: number
+  /**
+   * The plan's recurring price for one billing period, at
+   * team_credit_stop_id for a per-credit Team plan: a whole year for
+   * ANNUAL. The same figure as new_plan.price_cents on the subscribe
+   * preview, before tax, promotions, account balance and proration,
+   * so it is not what the operation charged; amount_charged_cents is.
+   * Present together with currency, and absent when the plan could
+   * not be priced, including the retired seat-based Team plans.
+   *
+   */
+  price_cents?: number
+  slug: string
+  /**
+   * The per-credit Team credit stop the operation targets (e.g.
+   * team_200). Absent for personal plans and for Team plans without a
+   * credit stop.
+   *
+   */
+  team_credit_stop_id?: string
+  tier?: SubscriptionTier
 }
 
 /**

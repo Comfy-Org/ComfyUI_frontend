@@ -4,6 +4,7 @@ import { defineComponent, h, nextTick, ref } from 'vue'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 import type {
+  BillingOperationReceipt,
   BillingOperationState,
   SubscriptionPreview
 } from '@comfyorg/account-core/billing'
@@ -317,7 +318,11 @@ describe('CheckoutView', () => {
   it('keeps a live operation on the plan it was quoted for, paying', async () => {
     const fake = await renderCheckout()
     await screen.findByRole('button', { name: 'Pay and subscribe' })
-    fake.publishOperation(pendingOperation())
+    const inFlight = {
+      ...pendingOperation(),
+      plan: { slug: 'creator_monthly', duration: 'MONTHLY', tier: 'CREATOR' }
+    } as const
+    fake.publishOperation(inFlight)
     await waitFor(() => expect(formProps.value.isLoading).toBe(true))
 
     const next = `/v1/checkout?${ENTRY_QUERY}&plan=creator_annual`
@@ -326,9 +331,9 @@ describe('CheckoutView', () => {
     await nextTick()
 
     // The operation is still running against creator_monthly, so the page
-    // stays on the quote that produced it rather than pricing another plan.
+    // stays on that payment's plan rather than pricing another one.
     expect(fake.previewSubscribe).toHaveBeenCalledTimes(1)
-    expect(screen.getByText('Creator')).toBeInTheDocument()
+    expect(screen.getByText('Creator Monthly')).toBeInTheDocument()
   })
 
   it('still quotes when the lifecycle already carries an operation at mount', async () => {
@@ -762,6 +767,88 @@ describe('CheckoutView', () => {
         'A payment you started earlier is still going through. It has to finish before you can choose a different plan.'
       )
     ).toBeInTheDocument()
+  })
+
+  describe('over a payment recovered on another plan', () => {
+    type ServerPlan = NonNullable<BillingOperationReceipt['plan']>
+
+    const TEAM_MONTHLY: ServerPlan = {
+      slug: 'team_monthly',
+      duration: 'MONTHLY',
+      tier: 'TEAM',
+      price_cents: 66_500,
+      currency: 'usd'
+    }
+
+    function recoveredOn(plan: ServerPlan) {
+      const recovered = {
+        ...challengedPendingOperation('pi_team_secret'),
+        id: 'op_team',
+        plan
+      }
+      return recovered
+    }
+
+    it.for<{
+      name: string
+      plan: ServerPlan
+      summary: string
+    }>([
+      {
+        name: 'its own plan and monthly rate',
+        plan: TEAM_MONTHLY,
+        summary: 'Team Monthly$665.00USD / mo'
+      },
+      {
+        name: 'the per-month figure the server gives an annual plan',
+        plan: {
+          slug: 'pro_annual',
+          duration: 'ANNUAL',
+          tier: 'PRO',
+          price_cents: 48_000,
+          monthly_price_cents: 4_000,
+          currency: 'usd'
+        },
+        summary: 'Pro Yearly$40.00USD / mo'
+      },
+      {
+        name: 'no name or price where the server describes neither',
+        plan: { slug: 'team_seats_legacy', duration: 'MONTHLY' },
+        summary: ''
+      }
+    ])('summarizes it with $name', async ({ plan, summary }) => {
+      await renderCheckout(CHECKOUT_PATH, {
+        recover: { status: 'ok', value: recoveredOn(plan) }
+      })
+
+      const shown = await screen.findByTestId('checkout-operation-plan')
+
+      expect(shown.textContent.replace(/\s+/g, ' ').trim()).toBe(summary)
+      expect(screen.getByRole('main')).not.toHaveTextContent(
+        /Creator|\$28|Total due today/
+      )
+    })
+
+    it("ends on the plan the server says it bought, not the link's", async () => {
+      const fake = await renderCheckout(CHECKOUT_PATH, {
+        recover: { status: 'ok', value: recoveredOn(TEAM_MONTHLY) }
+      })
+      await screen.findByTestId('checkout-operation-plan')
+
+      fake.publishOperation({
+        ...succeededOperation('op_team'),
+        phase: 'succeeded',
+        receipt: { plan: TEAM_MONTHLY }
+      })
+
+      expect(
+        await screen.findByRole('heading', { name: "You're all set" })
+      ).toBeInTheDocument()
+      const plan = screen.getByTestId('checkout-operation-plan')
+      expect(plan).toHaveTextContent('Team Monthly')
+      expect(plan).toHaveTextContent('$665.00')
+      expect(screen.getByRole('main')).not.toHaveTextContent('Creator')
+    })
   })
 
   it('holds the confirm while a recovered invoice payment settles, as the app does', async () => {

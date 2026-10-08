@@ -13,6 +13,7 @@ import {
   isLocked
 } from '@/checkout/checkoutPage'
 import { endingOf } from '@/checkout/endingScreen'
+import { operationPlanLabel } from '@/checkout/operationPlan'
 import type { EndingPlan } from '@/components/fullPage/CheckoutEnding.vue'
 import CheckoutEnding from '@/components/fullPage/CheckoutEnding.vue'
 import type { CheckoutCharge } from '@/components/fullPage/CheckoutPaymentColumn.vue'
@@ -110,6 +111,22 @@ const ending = computed(() => endingOf(page.value))
 
 const locked = computed(() => isLocked(page.value))
 
+/** A payment this page did not send is summarized by the plan the server reports for it. */
+const recoveredPlan = computed(() => {
+  const current = page.value
+  if (current.kind !== 'waiting') return undefined
+  const plan = current.operation.plan
+  return {
+    label:
+      plan &&
+      operationPlanLabel(plan, {
+        t,
+        tierName: (tier) => coded('tier', tier),
+        locale: locale.value
+      })
+  }
+})
+
 /** The server cannot cancel a pending payment yet; the click has nowhere honest to go. */
 function cancelPayment() {}
 
@@ -164,6 +181,7 @@ function viewPlans() {
       <CheckoutSummaryColumn
         v-slot="{ ledger: shown }"
         :ledger
+        :operation-plan="recoveredPlan"
         :locked
         :repricing="promo.busy.value"
         @back="returnToProduct"
