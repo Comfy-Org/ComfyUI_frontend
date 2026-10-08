@@ -11,11 +11,13 @@ on:
       - '.github/workflows/**'
       - '.github/actions/**'
       - '.pinact.yaml'
+      - 'scripts/check-action-versions.ts'
   pull_request:
     paths:
       - '.github/workflows/**'
       - '.github/actions/**'
       - '.pinact.yaml'
+      - 'scripts/check-action-versions.ts'
 
 permissions:
   contents: read
@@ -29,3 +31,14 @@ jobs:
       - uses: suzuki-shunsuke/pinact-action@3d49c6412901042473ffa78becddab1aea46bbea # v1.3.1
         with:
           skip_push: 'true'
+
+  version-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: '.nvmrc'
+
+      - run: node scripts/check-action-versions.ts
