@@ -19,6 +19,48 @@ import { useWidgetStore } from '@/stores/widgetStore'
 const enMessages = cloneDeep(i18n.global.getLocaleMessage('en'))
 const zhMessages = cloneDeep(i18n.global.getLocaleMessage('zh'))
 
+describe('Cloud palette visibility is independent of graph construction', () => {
+  const name = 'TestCloudPaletteNode'
+  const definition: ComfyNodeDefV1 = {
+    name,
+    display_name: name,
+    description: '',
+    category: 'testing',
+    python_module: 'custom_nodes.cloud_registry.exact',
+    output_node: false,
+    input: {},
+    output: ['STRING'],
+    comfy_cloud_palette_visible: false
+  }
+
+  beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
+  afterEach(() => LiteGraph.unregisterNodeType(name))
+
+  it('loads an unpinned node into a graph without putting it in the context menu', async () => {
+    await useLitegraphService().registerNodeDef(name, definition)
+    expect(LiteGraph.registered_node_types[name].skip_list).toBe(true)
+    expect(LiteGraph.createNode(name)?.type).toBe(name)
+    expect(
+      LiteGraph.getNodeTypesInCategory('testing')
+        .filter((node) => !node.skip_list)
+        .some((node) => node.type === name)
+    ).toBe(false)
+    await useLitegraphService().registerNodeDef(name, {
+      ...definition,
+      comfy_cloud_palette_visible: true
+    })
+    expect(LiteGraph.registered_node_types[name].skip_list).toBe(false)
+    expect(
+      LiteGraph.getNodeTypesInCategory('testing')
+        .filter((node) => !node.skip_list)
+        .some((node) => node.type === name)
+    ).toBe(true)
+    await useLitegraphService().registerNodeDef(name, definition)
+    expect(LiteGraph.createNode(name)?.type).toBe(name)
+    expect(LiteGraph.registered_node_types[name].skip_list).toBe(true)
+  })
+})
+
 describe('useLitegraphService().getCanvasCenter', () => {
   it('returns origin when canvas is not yet initialised', () => {
     Reflect.set(app, 'canvas', undefined)

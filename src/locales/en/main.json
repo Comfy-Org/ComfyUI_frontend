@@ -3,7 +3,7 @@
     "thumbnail": "Generated thumbnail for {name}",
     "registry": {
       "title": "Cloud node registry",
-      "description": "Select exact converted pack revisions for this workspace. Pinning does not install nodes or dependencies.",
+      "description": "Pin packs to show their nodes in the editor palette and search. Pins do not control workflow rendering.",
       "search": "Search converted packs or node names",
       "corpus": "{count} revisions · corpus {commit}",
       "revision": "Upstream {commit} · conversion {digest}",
@@ -16,7 +16,7 @@
       "unpinNamed": "Unpin {name}",
       "nodes": "{count} nodes",
       "noMatches": "No matching converted packs",
-      "qualification": "Converted and prepared do not mean every workflow has been tested. Rendering requires a pinned, prepared revision.",
+      "qualification": "Graphs use available V2 nodes whether or not their packs are pinned. Runtime preparation and verification are separate from palette selection.",
       "nodeVersion": "Node API version",
       "apiVersion": "API V{version}",
       "versionUnknown": "Version unknown",

@@ -27,6 +27,20 @@ describe('validateNodeDef', () => {
     expect(validateComfyNodeDef(EXAMPLE_NODE_DEF)).not.toBeNull()
   })
 
+  it('retains Cloud palette visibility without making it mandatory for other backends', () => {
+    expect(
+      validateComfyNodeDef(EXAMPLE_NODE_DEF)?.comfy_cloud_palette_visible
+    ).toBeUndefined()
+    for (const visible of [false, true]) {
+      expect(
+        validateComfyNodeDef({
+          ...EXAMPLE_NODE_DEF,
+          comfy_cloud_palette_visible: visible
+        })?.comfy_cloud_palette_visible
+      ).toBe(visible)
+    }
+  })
+
   describe.for([
     [{ ckpt_name: ['foo', { default: 1 }] }, ['foo', { default: 1 }]],
     [{ ckpt_name: ['foo', { bar: 1 }] }, ['foo', { bar: 1 }]],

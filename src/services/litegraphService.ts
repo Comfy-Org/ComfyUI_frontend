@@ -650,9 +650,11 @@ export const useLitegraphService = () => {
 
     // Set skip_list for dev-only nodes based on current DevMode setting
     // This ensures nodes registered after initial load respect the current setting
-    if (nodeDef.dev_only) {
+    if (nodeDef.dev_only || nodeDef.comfy_cloud_palette_visible !== undefined) {
       const settingStore = useSettingStore()
-      node.skip_list = !settingStore.get('Comfy.DevMode')
+      node.skip_list =
+        nodeDef.comfy_cloud_palette_visible === false ||
+        (!!nodeDef.dev_only && !settingStore.get('Comfy.DevMode'))
     }
   }
 

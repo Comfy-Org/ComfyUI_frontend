@@ -74,6 +74,26 @@ describe('useNodeDefStore', () => {
   })
 
   describe('filter application', () => {
+    it('keeps unpinned Cloud graph definitions while hiding only the palette', () => {
+      const hidden = createMockNodeDef({
+        name: 'CloudNode',
+        python_module: 'custom_nodes.cloud_registry.exact',
+        comfy_cloud_palette_visible: false
+      })
+      store.updateNodeDefs([hidden, createMockNodeDef({ name: 'CoreNode' })])
+      expect(store.nodeDefsByName.CloudNode).toBeDefined()
+      expect(store.visibleNodeDefs.map(({ name }) => name)).toEqual([
+        'CoreNode'
+      ])
+      store.updateNodeDefs([{ ...hidden, comfy_cloud_palette_visible: true }])
+      expect(store.visibleNodeDefs.map(({ name }) => name)).toEqual([
+        'CloudNode'
+      ])
+      store.updateNodeDefs([hidden])
+      expect(store.nodeDefsByName.CloudNode).toBeDefined()
+      expect(store.visibleNodeDefs).toHaveLength(0)
+    })
+
     beforeEach(() => {
       // Clear existing filters for isolated tests
       store.nodeDefFilters.splice(0)

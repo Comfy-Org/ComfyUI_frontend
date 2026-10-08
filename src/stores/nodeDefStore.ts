@@ -43,6 +43,7 @@ export class ComfyNodeDefImpl
   category: string
   readonly main_category?: string
   readonly python_module: string
+  readonly comfy_cloud_palette_visible?: boolean
   readonly help: string
   readonly deprecated: boolean
   readonly experimental: boolean
@@ -159,6 +160,7 @@ export class ComfyNodeDefImpl
     this.category = obj.category
     this.main_category = obj.main_category
     this.python_module = obj.python_module
+    this.comfy_cloud_palette_visible = obj.comfy_cloud_palette_visible
     this.help = obj.help ?? ''
     this.deprecated = obj.deprecated ?? obj.category === ''
     this.experimental =
@@ -368,9 +370,16 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
   // correctly filter dev-only nodes from the right-click context menu
   watchEffect(() => {
     const devModeEnabled = showDevOnly.value
-    for (const nodeType of Object.values(LiteGraph.registered_node_types)) {
-      if (nodeType.nodeData?.dev_only) {
-        nodeType.skip_list = !devModeEnabled
+    for (const [name, nodeType] of Object.entries(
+      LiteGraph.registered_node_types
+    )) {
+      const definition = nodeType.nodeData
+      const paletteVisible =
+        nodeDefsByName.value[name]?.comfy_cloud_palette_visible
+      if (definition?.dev_only || paletteVisible !== undefined) {
+        nodeType.skip_list =
+          paletteVisible === false ||
+          (!!definition?.dev_only && !devModeEnabled)
       }
     }
   })
@@ -407,8 +416,10 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
   })
 
   const visibleNodeDefs = computed(() => {
-    return nodeDefs.value.filter((nodeDef) =>
-      nodeDefFilters.value.every((filter) => filter.predicate(nodeDef))
+    return nodeDefs.value.filter(
+      (nodeDef) =>
+        nodeDef.comfy_cloud_palette_visible !== false &&
+        nodeDefFilters.value.every((filter) => filter.predicate(nodeDef))
     )
   })
   const nodeSearchService = computed(
