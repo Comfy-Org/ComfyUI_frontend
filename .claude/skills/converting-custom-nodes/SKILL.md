@@ -279,6 +279,20 @@ ported.
 in `destroy`: a mounted element owns listeners, timers and observers that node
 removal would otherwise leave running.
 
+**If mounted UI needs image dimensions or textarea value/caret operations** —
+use `comfy.element(name, { nodeId: node.id, widget: mountName })`. `widget` is
+the owning mount's name, not the element alias. Capture that instance's node
+ID; do not use global current-node state. Await scalar reads/operations and
+`listen()`; retain its unsubscribe function. A handle binds to the exact
+element on first use, and removal permanently revokes it. Remount needs a new
+handle. Probe `ui.owned-elements` for availability, not permission. See
+`docs/node-api/reference.md#pack-owned-state-and-elements` for bounds.
+
+Exercise two instances with the same element alias, wrong-widget refusal,
+unsubscribe, and removal/remount without stale-handle retargeting. Distinct
+names alone do not test owner isolation. Keep a forced shared alias in test
+fixtures, not production code; compare native and secure providers separately.
+
 If that DOM widget's `getValue` / `setValue` held an editor document, give the
 mount a `defaultValue` and synchronize through the `MountedValue` passed to
 `render`. Set `serialize: true` and, for frontend-only state, `sendToPrompt:
@@ -548,4 +562,5 @@ that cannot be encoded as a mechanical rule.
 - [ ] Equivalence claim stated and passing on both sources
 - [ ] Fix claim red on the original, green on the converted source
 - [ ] `graphToPrompt` and serialized workflow byte-identical
+- [ ] Mounted UI passes two-instance, repeated-name and removal/remount gates
 - [ ] Anything uncertain escalated rather than guessed
