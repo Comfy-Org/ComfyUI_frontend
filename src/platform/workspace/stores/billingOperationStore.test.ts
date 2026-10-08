@@ -3392,7 +3392,7 @@ describe('billingOperationStore', () => {
         useTeamWorkspaceStore().updateActiveWorkspace
       ).not.toHaveBeenCalled()
       expect(useSettingsDialog().show).not.toHaveBeenCalled()
-      expect(useToastStore().add).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
     })
 
     it.for(['failed', 'reconciliation_needed'] as const)(
@@ -3411,7 +3411,7 @@ describe('billingOperationStore', () => {
         const operation = await terminal
 
         expect(operation.status).toBe(status)
-        expect(useToastStore().add).not.toHaveBeenCalled()
+        expect(useToast().toasts).toEqual([])
       }
     )
 
