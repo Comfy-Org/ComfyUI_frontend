@@ -842,8 +842,14 @@ describe('WorkshopModelsGrid', () => {
       expect(
         within(dialog)
           .getAllByRole('link', { name: /^Try / })
-          .map((link) => link.textContent.trim())
-      ).toEqual(['Try Kling AI', 'Try Seedream'])
+          .map((link) => [
+            link.getAttribute('aria-label'),
+            link.textContent.trim()
+          ])
+      ).toEqual([
+        ['Try Kling AI', 'Try'],
+        ['Try Seedream', 'Try']
+      ])
       expect(within(dialog).getAllByTestId('compare-thumbnail')).toHaveLength(2)
       expect(within(dialog).queryByText('Model page')).toBeNull()
 

@@ -106,9 +106,12 @@ const rows = computed(() => compareRows(models, locale))
                   :href="model.href"
                   variant="outline"
                   class="h-auto min-h-10 w-full text-center whitespace-normal"
+                  :aria-label="
+                    t('workshop.explorer.compare.try', { name: model.name })
+                  "
                   data-testid="compare-model-link"
                 >
-                  {{ t('workshop.explorer.compare.try', { name: model.name }) }}
+                  {{ t('workshop.explorer.compare.tryShort') }}
                 </Button>
               </td>
             </tr>

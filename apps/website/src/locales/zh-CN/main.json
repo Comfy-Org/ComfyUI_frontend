@@ -4616,7 +4616,8 @@
         "provider": "提供方",
         "task": "用途",
         "access": "使用方式",
-        "try": "试用 {name}"
+        "try": "试用 {name}",
+        "tryShort": "试用"
       }
     },
     "modelsHub": {

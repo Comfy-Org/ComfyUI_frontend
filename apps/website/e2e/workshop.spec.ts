@@ -589,9 +589,9 @@ test.describe('Models catalog', () => {
     await expect(dialog).toBeVisible()
     await expect(page).toHaveURL(/#compare$/)
     await expect(dialog.getByTestId('compare-model-link')).toHaveCount(2)
-    await expect(dialog.getByTestId('compare-model-link').first()).toHaveText(
-      /^Try /
-    )
+    const firstTry = dialog.getByTestId('compare-model-link').first()
+    await expect(firstTry).toHaveText('Try')
+    await expect(firstTry).toHaveAccessibleName(/^Try /)
     await expect(dialog.getByTestId('compare-thumbnail')).toHaveCount(2)
 
     await page.keyboard.press('Escape')

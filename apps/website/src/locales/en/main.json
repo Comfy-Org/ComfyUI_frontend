@@ -773,7 +773,8 @@
         "provider": "Provider",
         "task": "What it does",
         "access": "How you use it",
-        "try": "Try {name}"
+        "try": "Try {name}",
+        "tryShort": "Try"
       }
     },
     "modelsHub": {
