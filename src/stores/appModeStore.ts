@@ -2,7 +2,6 @@ import { defineStore } from 'pinia'
 import { ref, computed, watch } from 'vue'
 import { useEventListener } from '@vueuse/core'
 
-import { useEmptyWorkflowDialog } from '@/components/builder/useEmptyWorkflowDialog'
 import { useAppMode } from '@/composables/useAppMode'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type {
@@ -52,7 +51,6 @@ export const useAppModeStore = defineStore('appMode', () => {
   const settingStore = useSettingStore()
   const workflowStore = useWorkflowStore()
   const { mode, setMode, isAppMode, isBuilderMode, isSelectMode } = useAppMode()
-  const emptyWorkflowDialog = useEmptyWorkflowDialog()
 
   const showVueNodeSwitchPopup = ref(false)
 
@@ -277,14 +275,6 @@ export const useAppModeStore = defineStore('appMode', () => {
   })
 
   function enterBuilder() {
-    if (!hasNodes.value) {
-      emptyWorkflowDialog.show({
-        onEnterBuilder: () => enterBuilder(),
-        onDismiss: () => setMode('graph')
-      })
-      return
-    }
-
     resetSelectedToWorkflow()
 
     useSidebarTabStore().activeSidebarTabId = null
