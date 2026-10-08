@@ -308,6 +308,9 @@ function createNodeOutputsMutationView(
   })
 }
 
+/** Max node defs registered concurrently by `registerNodesFromDefs`. */
+const REGISTER_NODE_DEFS_CHUNK_SIZE = 256
+
 export class ComfyApp {
   /**
    * List of entries to queue
@@ -1225,12 +1228,24 @@ export class ComfyApp {
   async registerNodesFromDefs(defs: Record<string, ComfyNodeDefV1>) {
     await useExtensionService().invokeExtensionsAsync('addCustomNodeDefs', defs)
 
-    // Register a node for each definition
-    await Promise.all(
-      Object.keys(defs).map((nodeId) =>
-        this.registerNodeDef(nodeId, defs[nodeId])
+    // Register a node for each definition. Chunked so thousands of defs do not
+    // all have their registration (and extension hooks) in flight at once.
+    // Like the previous single Promise.all, one failed def does not stop the
+    // others from registering, and the first rejection is what gets thrown.
+    const nodeIds = Object.keys(defs)
+    let firstFailure: PromiseRejectedResult | undefined
+    for (let i = 0; i < nodeIds.length; i += REGISTER_NODE_DEFS_CHUNK_SIZE) {
+      const results = await Promise.allSettled(
+        nodeIds
+          .slice(i, i + REGISTER_NODE_DEFS_CHUNK_SIZE)
+          .map((nodeId) => this.registerNodeDef(nodeId, defs[nodeId]))
       )
-    )
+      firstFailure ??= results.find(
+        (result): result is PromiseRejectedResult =>
+          result.status === 'rejected'
+      )
+    }
+    if (firstFailure) throw firstFailure.reason
   }
 
   loadTemplateData(templateData: {
