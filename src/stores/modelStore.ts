@@ -11,6 +11,19 @@ import { api } from '@/scripts/api'
 
 let hasReportedMetadataLoadFailure = false
 
+function reportMetadataLoadFailure(fileName: string, error: unknown) {
+  if (hasReportedMetadataLoadFailure) {
+    console.error('Error loading model metadata', fileName, error)
+    return
+  }
+  hasReportedMetadataLoadFailure = true
+  reportError(error, {
+    errorType: 'model_metadata_load_failure',
+    surface: 'assets',
+    context: { fileName }
+  })
+}
+
 /** (Internal helper) finds a value in a metadata object from any of a list of keys. */
 function _findInMetadata(
   metadata: Record<string, string | null>,
@@ -155,16 +168,7 @@ export class ComfyModelDef {
       this.has_loaded_metadata = true
       this.updateSearchable()
     } catch (error) {
-      if (hasReportedMetadataLoadFailure) {
-        console.error('Error loading model metadata', this.file_name, error)
-        return
-      }
-      hasReportedMetadataLoadFailure = true
-      reportError(error, {
-        errorType: 'model_metadata_load_failure',
-        surface: 'assets',
-        context: { fileName: this.file_name }
-      })
+      reportMetadataLoadFailure(this.file_name, error)
     }
   }
 }
