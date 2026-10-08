@@ -842,6 +842,12 @@ describe('BillingStatusBanner', () => {
           body: 'Your team has used all its credits. Add more credits.'
         },
         {
+          case: 'team, refill date already past',
+          personal: false,
+          renewalDate: inDays(-2),
+          body: 'Your team has used all its credits. Add more credits.'
+        },
+        {
           case: 'team, no refill date',
           personal: false,
           renewalDate: null,

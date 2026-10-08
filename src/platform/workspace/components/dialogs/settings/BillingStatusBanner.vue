@@ -144,21 +144,31 @@ const canManage = computed(() => permissions.value.canManageSubscription)
 const isEnterprisePlan = computed(
   () => subscription.value?.tier === 'ENTERPRISE'
 )
-function longDate(raw: string | null | undefined): string {
+function parseDate(raw: string | null | undefined): Date | null {
   const date = raw ? new Date(raw) : null
-  if (!date || Number.isNaN(date.getTime())) return ''
-  return d(date, { year: 'numeric', month: 'long', day: 'numeric' })
+  return date && !Number.isNaN(date.getTime()) ? date : null
+}
+function longDate(
+  raw: string | null | undefined,
+  { withYear = true }: { withYear?: boolean } = {}
+): string {
+  const date = parseDate(raw)
+  if (!date) return ''
+  return withYear
+    ? d(date, { year: 'numeric', month: 'long', day: 'numeric' })
+    : d(date, { month: 'long', day: 'numeric' })
 }
 // "Or wait until credits refill" is only a real option when the refill is
 // close. A yearly plan refills at renewal, which can be a year away, so past
-// this window the suggestion is dropped. Within it the date never needs a year.
+// this window the suggestion is dropped; a date already past isn't something
+// to wait for either. Within the window the date never needs a year.
 const REFILL_SUGGESTION_WINDOW_MS = 31 * 24 * 60 * 60 * 1000
 const nearRefillDate = computed(() => {
-  const raw = renewalDate.value
-  const date = raw ? new Date(raw) : null
-  if (!date || Number.isNaN(date.getTime())) return ''
-  if (date.getTime() - Date.now() > REFILL_SUGGESTION_WINDOW_MS) return ''
-  return d(date, { month: 'long', day: 'numeric' })
+  const date = parseDate(renewalDate.value)
+  if (!date) return ''
+  const untilRefill = date.getTime() - Date.now()
+  if (untilRefill < 0 || untilRefill > REFILL_SUGGESTION_WINDOW_MS) return ''
+  return longDate(renewalDate.value, { withYear: false })
 })
 const planEndDate = computed(() => longDate(subscription.value?.endDate))
 const planName = computed(() => formatTierName(subscription.value?.tier, false))
