@@ -5403,7 +5403,7 @@ export const zListWorkspaceCustomNodesResponse = z.array(
       .string()
       .regex(/^[0-9a-f]{64}$/)
       .optional(),
-    snapshot: z.string(),
+    snapshot: z.string().optional(),
     uploaded_at: z.string()
   })
 )

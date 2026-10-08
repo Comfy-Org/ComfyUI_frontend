@@ -27,6 +27,22 @@ describe('validateNodeDef', () => {
     expect(validateComfyNodeDef(EXAMPLE_NODE_DEF)).not.toBeNull()
   })
 
+  it('retains an exact Cloud revision through object-info validation', () => {
+    const revision = 'a'.repeat(64)
+    expect(
+      validateComfyNodeDef({
+        ...EXAMPLE_NODE_DEF,
+        comfy_cloud_revision_id: revision
+      })
+    ).toMatchObject({ comfy_cloud_revision_id: revision })
+    expect(
+      validateComfyNodeDef({
+        ...EXAMPLE_NODE_DEF,
+        comfy_cloud_revision_id: 'not-a-content-hash'
+      })
+    ).toBeNull()
+  })
+
   it('retains Cloud palette visibility without making it mandatory for other backends', () => {
     expect(
       validateComfyNodeDef(EXAMPLE_NODE_DEF)?.comfy_cloud_palette_visible

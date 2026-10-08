@@ -289,6 +289,10 @@ export const zComfyNodeDef = z.object({
   output_node: z.boolean(),
   python_module: z.string(),
   comfy_cloud_palette_visible: z.boolean().optional(),
+  comfy_cloud_revision_id: z
+    .string()
+    .regex(/^[0-9a-f]{64}$/)
+    .optional(),
   deprecated: z.boolean().optional(),
   experimental: z.boolean().optional(),
   dev_only: z.boolean().optional(),

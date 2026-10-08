@@ -108,6 +108,35 @@ describe('useCustomNodePacks', () => {
     expect(fetchApi).not.toHaveBeenCalled()
   })
 
+  it('accepts an archive-only publication without a legacy snapshot path', async () => {
+    const id = 'c'.repeat(64)
+    const publicId = 'User_' + 'd'.repeat(24) + '_Echo'
+    fetchApi.mockResolvedValueOnce(
+      jsonResponse([
+        {
+          revision_id: 'mine-x12345678',
+          name: 'Mine',
+          owner: 'account:a',
+          archive: '/private/runtime/mine.zip',
+          uploaded_at: '2026-10-08T08:59:07Z',
+          runtime_revision_id: id,
+          node_types: { Echo: publicId }
+        }
+      ])
+    )
+    const store = useCustomNodePacks()
+    await store.refresh()
+    expect(store.packs.value).toEqual([
+      {
+        revisionId: 'mine-x12345678',
+        name: 'Mine',
+        uploadedAt: '2026-10-08T08:59:07Z',
+        runtimeRevisionId: id,
+        nodeTypes: { Echo: publicId }
+      }
+    ])
+  })
+
   it('posts a pack as multipart without an owner and derives the name from the file', async () => {
     fetchApi
       .mockResolvedValueOnce(jsonResponse({ status: 'accepted' })) // POST

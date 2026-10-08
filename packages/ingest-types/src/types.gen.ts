@@ -15878,7 +15878,12 @@ export type ListWorkspaceCustomNodesResponses = {
      * Exact prepared account-owned revision for graph execution, distinct from the editable archive revision.
      */
     runtime_revision_id?: string
-    snapshot: string
+    /**
+     * Legacy snapshot path; absent for archive-based account publications.
+     *
+     * @deprecated
+     */
+    snapshot?: string
     uploaded_at: string
   }>
 }

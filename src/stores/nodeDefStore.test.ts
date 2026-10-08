@@ -7,6 +7,7 @@ import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { validateComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { NodeDefFilter } from '@/stores/nodeDefStore'
@@ -74,6 +75,20 @@ describe('useNodeDefStore', () => {
   })
 
   describe('filter application', () => {
+    it('keeps the validated publication revision in the real definition store', () => {
+      const revision = 'a'.repeat(64)
+      const definition = validateComfyNodeDef({
+        ...createMockNodeDef(),
+        comfy_cloud_revision_id: revision
+      })
+      expect(definition).not.toBeNull()
+      if (!definition) return
+      store.updateNodeDefs([definition])
+      expect(store.nodeDefsByName.TestNode.comfy_cloud_revision_id).toBe(
+        revision
+      )
+    })
+
     it('keeps unpinned Cloud graph definitions while hiding only the palette', () => {
       const hidden = createMockNodeDef({
         name: 'CloudNode',
