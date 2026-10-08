@@ -21,6 +21,7 @@ export class AgentPanel {
   public readonly workflowPicker: Locator
   public readonly fileInput: Locator
   public readonly composerAssetSection: Locator
+  public readonly scrollAssetsRight: Locator
   public readonly attachmentChips: Locator
   public readonly composer: Locator
   public readonly composerPromptArea: Locator
@@ -64,6 +65,9 @@ export class AgentPanel {
     })
     this.fileInput = this.root.getByTestId('agent-file-input')
     this.composerAssetSection = this.root.getByTestId('composer-asset-section')
+    this.scrollAssetsRight = this.root.getByRole('button', {
+      name: enMessages.g.scrollRight
+    })
     this.attachmentChips = this.root.getByTestId('agent-attachment-chip')
     this.composer = this.root.getByRole('textbox', { name: /^Describe ideas/ })
     this.composerPromptArea = this.root.getByTestId('composer-inline-input')
@@ -86,13 +90,67 @@ export class AgentPanel {
       .getByRole('listitem')
   }
 
+  async scrollAssetsToEnd(): Promise<void> {
+    const count = await this.attachmentChips.count()
+    for (
+      let step = 0;
+      step < count && (await this.scrollAssetsRight.isEnabled());
+      step++
+    ) {
+      const target = await this.composerAssetSection.evaluate((element) =>
+        Math.min(
+          element.scrollWidth - element.clientWidth,
+          element.scrollLeft + element.clientWidth
+        )
+      )
+      await this.scrollAssetsRight.click()
+      await expect
+        .poll(() =>
+          this.composerAssetSection.evaluate((element) => element.scrollLeft)
+        )
+        .toBeCloseTo(target, 0)
+    }
+    await expect(this.scrollAssetsRight).toBeDisabled()
+  }
+
   activityRow(label: string): Locator {
     return this.activityRows.getByText(label, { exact: true })
   }
 
+  assetPreview(name: string): Locator {
+    return this.page.getByRole('dialog', { name, exact: true })
+  }
+
+  previewAssetButton(name: string): Locator {
+    return this.attachmentChip(name).getByRole('button', {
+      name: enMessages.agent.previewAsset.replace('{name}', name),
+      exact: true
+    })
+  }
+
+  async expectAttachmentFullyVisible(name: string): Promise<void> {
+    const tray = this.root.getByRole('region', {
+      name: enMessages.assetBrowser.assets,
+      exact: true
+    })
+    await expect
+      .poll(async () => {
+        const [card, viewport] = await Promise.all([
+          this.attachmentChip(name).boundingBox(),
+          tray.boundingBox()
+        ])
+        return (
+          !!card &&
+          !!viewport &&
+          card.y >= viewport.y &&
+          card.y + card.height <= viewport.y + viewport.height
+        )
+      })
+      .toBe(true)
+  }
+
   /**
-   * The composer attachment carrying `name`. Matches on the chip's own
-   * attribute rather than its text, which truncates at `max-w-32`.
+   * The composer attachment carrying `name`.
    *
    * `name` is a filename and may legitimately contain a quote or backslash, so
    * it is escaped for the double-quoted CSS string rather than interpolated
