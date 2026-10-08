@@ -1,5 +1,10 @@
 {
   "customNodePacks": {
+    "userNodes": {
+      "title": "User Custom Nodes",
+      "description": "Create and edit private V2 node packs owned by your account. Test a draft, then publish its exact revision for use in your workflows.",
+      "search": "Search your custom node packs"
+    },
     "thumbnail": "Generated thumbnail for {name}",
     "registry": {
       "title": "Cloud node registry",

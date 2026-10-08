@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { UploadedNodePack } from './useCustomNodePacks'
 
 const mocks = vi.hoisted(() => ({
   RequestError: class CustomNodeEditorRequestError extends Error {
@@ -12,15 +13,20 @@ const mocks = vi.hoisted(() => ({
   addNodeOnGraph: vi.fn(),
   closeDialog: vi.fn(),
   createSession: vi.fn(),
-  nodeDefsByName: {} as Record<string, { name: string; python_module: string }>,
+  nodeDefsByName: {} as Record<
+    string,
+    { name: string; python_module: string; comfy_cloud_revision_id?: string }
+  >,
   packs: {
-    value: [] as { revisionId: string; name: string; uploadedAt: string }[]
+    value: [] as UploadedNodePack[]
   },
   refresh: vi.fn(),
   refreshNodeDefinitions: vi.fn(),
   showDialog: vi.fn(),
   showEditor: vi.fn(),
-  toast: vi.fn()
+  toast: vi.fn(),
+  registryLoad: vi.fn(),
+  registryPin: vi.fn()
 }))
 
 vi.mock('@/i18n', () => ({
@@ -52,6 +58,12 @@ vi.mock('./useCustomNodeEditorDialog', () => ({
 }))
 vi.mock('./useCustomNodePacks', () => ({
   useCustomNodePacks: () => ({ packs: mocks.packs, refresh: mocks.refresh })
+}))
+vi.mock('./useCloudNodeRegistry', () => ({
+  useCloudNodeRegistry: () => ({
+    load: mocks.registryLoad,
+    setPin: mocks.registryPin
+  })
 }))
 
 vi.mock('./useCustomNodeEditor', () => ({
@@ -104,6 +116,66 @@ describe('useCustomNodeCreateFlow', () => {
     mocks.showDialog.mockReset()
     mocks.showEditor.mockReset()
     mocks.toast.mockReset()
+    mocks.registryLoad.mockReset().mockResolvedValue(true)
+    mocks.registryPin.mockReset().mockResolvedValue(true)
+  })
+
+  it('places only the exact account-owned public node revision and pins its palette', async () => {
+    const publicId = 'User_' + 'a'.repeat(24) + '_CoolBlur'
+    const revisionId = 'b'.repeat(64)
+    mocks.packs.value = [
+      {
+        name: 'Blur Pack',
+        revisionId: 'blur-x12345678',
+        uploadedAt: '',
+        runtimeRevisionId: revisionId,
+        nodeTypes: { CoolBlur: publicId }
+      }
+    ]
+    mocks.nodeDefsByName = {
+      [publicId]: {
+        name: publicId,
+        python_module: `custom_nodes.cloud_registry.${revisionId}`,
+        comfy_cloud_revision_id: revisionId
+      }
+    }
+    answerDialog({ packName: 'Blur Pack', nodeName: 'Cool Blur', prompt: '' })
+    await useCustomNodeCreateFlow().startCreateFlow()
+    await mocks.showEditor.mock.calls[0][1]()
+    expect(mocks.registryPin).toHaveBeenCalledWith(revisionId, true)
+    expect(mocks.addNodeOnGraph).toHaveBeenCalledWith(
+      mocks.nodeDefsByName[publicId]
+    )
+  })
+
+  it('waits past an older definition for the same account node type', async () => {
+    vi.useFakeTimers()
+    try {
+      const publicId = 'User_' + 'a'.repeat(24) + '_CoolBlur'
+      const revisionId = 'b'.repeat(64)
+      mocks.nodeDefsByName = {
+        [publicId]: {
+          name: publicId,
+          python_module: 'custom_nodes.cloud_registry.' + 'c'.repeat(64),
+          comfy_cloud_revision_id: 'c'.repeat(64)
+        }
+      }
+      mocks.refreshNodeDefinitions.mockImplementationOnce(async () => {
+        mocks.nodeDefsByName[publicId].comfy_cloud_revision_id = revisionId
+      })
+      const pending = useCustomNodeCreateFlow().addCreatedNodeToGraph(
+        'session-1',
+        'Cool Blur',
+        'blur-x12345678',
+        { nodeId: publicId, revisionId }
+      )
+      expect(mocks.addNodeOnGraph).not.toHaveBeenCalled()
+      await vi.advanceTimersByTimeAsync(2000)
+      await pending
+      expect(mocks.addNodeOnGraph).toHaveBeenCalledOnce()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('suggests an unused pack name and creates with the chosen names', async () => {

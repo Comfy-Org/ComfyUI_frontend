@@ -30,7 +30,9 @@ export function graphPalettePinPlan(
     )
     if (!candidates.length || candidates.some((revision) => revision.pinned))
       continue
-    const eligible = candidates.filter((revision) => revision.upstream_commit)
+    const eligible = candidates.filter(
+      (revision) => revision.upstream_commit || revision.account_owned
+    )
     const exactId = definition?.python_module.slice(
       'custom_nodes.cloud_registry.'.length
     )

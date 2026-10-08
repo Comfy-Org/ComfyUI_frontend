@@ -1,10 +1,27 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { api } from '@/scripts/api'
+import { reactive } from 'vue'
 
 import { useCustomNodePacks } from './useCustomNodePacks'
 
-const mocks = vi.hoisted(() => ({ reloadNodeDefs: vi.fn() }))
+const mocks = vi.hoisted(() => ({
+  reloadNodeDefs: vi.fn(),
+  auth: { userId: 'account-a' as string | undefined },
+  apiAuth: { currentUser: null as { id: string } | null },
+  workspace: {
+    activeWorkspaceId: 'workspace-a',
+    workspaceTransitionGeneration: 0
+  }
+}))
+vi.mock('@/platform/distribution/types', () => ({ isCloud: true }))
+vi.mock('@/stores/authStore', () => ({ useAuthStore: () => mocks.auth }))
+vi.mock('@/stores/apiKeyAuthStore', () => ({
+  useApiKeyAuthStore: () => mocks.apiAuth
+}))
+vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
+  useTeamWorkspaceStore: () => mocks.workspace
+}))
 
 vi.mock('@/scripts/api', () => ({
   api: { fetchApi: vi.fn() }
@@ -26,6 +43,69 @@ describe('useCustomNodePacks', () => {
   beforeEach(() => {
     fetchApi.mockReset()
     mocks.reloadNodeDefs.mockReset()
+    mocks.auth = reactive({ userId: 'account-a' })
+    mocks.apiAuth = reactive({ currentUser: null })
+    mocks.workspace = reactive({
+      activeWorkspaceId: 'workspace-a',
+      workspaceTransitionGeneration: 0
+    })
+  })
+
+  it('hides cached private packs immediately on account change and ignores a late response', async () => {
+    const row = {
+      revision_id: 'my-pack-x12345678',
+      name: 'Private A',
+      owner: 'account:a',
+      snapshot: '',
+      uploaded_at: ''
+    }
+    fetchApi.mockResolvedValueOnce(jsonResponse([row]))
+    const store = useCustomNodePacks()
+    await store.refresh()
+    expect(store.packs.value[0]?.name).toBe('Private A')
+    let finish: (response: Response) => void = () => undefined
+    fetchApi.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve
+        })
+    )
+    const pending = store.refresh()
+    mocks.auth.userId = 'account-b'
+    expect(store.packs.value).toEqual([])
+    finish(jsonResponse([row]))
+    await pending
+    expect(store.packs.value).toEqual([])
+    fetchApi.mockResolvedValueOnce(jsonResponse([]))
+    await store.refresh()
+    expect(store.packs.value).toEqual([])
+  })
+
+  it('uses the validated API account and retains runtime revision metadata', async () => {
+    mocks.auth.userId = undefined
+    mocks.apiAuth.currentUser = { id: 'api-user-a' }
+    const id = 'a'.repeat(64)
+    fetchApi.mockResolvedValueOnce(
+      jsonResponse([
+        {
+          revision_id: 'mine-x12345678',
+          name: 'Mine',
+          owner: 'account:api-user-a',
+          snapshot: '',
+          uploaded_at: '',
+          runtime_revision_id: id,
+          node_types: { Echo: 'User_' + 'b'.repeat(24) + '_Echo' }
+        }
+      ])
+    )
+    const store = useCustomNodePacks()
+    await store.refresh()
+    expect(store.packs.value[0]?.runtimeRevisionId).toBe(id)
+    mocks.apiAuth.currentUser = null
+    expect(store.packs.value).toEqual([])
+    fetchApi.mockClear()
+    await store.refresh()
+    expect(fetchApi).not.toHaveBeenCalled()
   })
 
   it('posts a pack as multipart without an owner and derives the name from the file', async () => {

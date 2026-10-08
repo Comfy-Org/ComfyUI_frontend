@@ -3,7 +3,7 @@ import type {
   CloudNodeRegistryPinRequest
 } from '@comfyorg/ingest-types'
 import { zCloudNodeRegistry } from '@comfyorg/ingest-types/zod'
-import { computed, shallowRef } from 'vue'
+import { computed, shallowRef, watch } from 'vue'
 
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
@@ -13,6 +13,7 @@ import type { GraphPaletteDefinitions } from '@/platform/customNodes/utils/graph
 import { flattenWorkflowNodes } from '@/platform/workflow/core/utils/workflowFlattening'
 import type { FlattenableWorkflowGraph } from '@/platform/workflow/core/utils/workflowFlattening'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useNodeAccountScope } from './useNodeAccountScope'
 
 type RegistryFailure =
   | { reason: 'http'; status: number }
@@ -32,6 +33,14 @@ type RegistryState =
 
 export function useCloudNodeRegistry() {
   const state = shallowRef<RegistryState>({ phase: 'idle', catalog: null })
+  const identity = useNodeAccountScope()
+  watch(
+    identity.scope,
+    () => {
+      state.value = { phase: 'idle', catalog: null }
+    },
+    { flush: 'sync' }
+  )
   const catalog = computed(() => state.value.catalog)
   const busy = computed(
     () => state.value.phase === 'loading' || state.value.phase === 'saving'
@@ -53,12 +62,16 @@ export function useCloudNodeRegistry() {
     previous: CloudNodeRegistry | null,
     refreshDefinitions = true
   ) => {
+    const request = identity.capture()
+    if (request.scope === null) return false
     try {
       const response = await api.fetchApi(route, options)
+      if (!identity.current(request)) return false
       if (!response.ok) {
         return fail(previous, { reason: 'http', status: response.status })
       }
       const parsed = zCloudNodeRegistry.safeParse(await response.json())
+      if (!identity.current(request)) return false
       if (!parsed.success) {
         return fail(previous, { reason: 'invalidCatalog' }, parsed.error)
       }
@@ -83,16 +96,20 @@ export function useCloudNodeRegistry() {
       try {
         if (refreshDefinitions) await app.reloadNodeDefs()
       } catch (error) {
+        if (!identity.current(request)) return false
         return fail(parsed.data, { reason: 'network' }, error)
       }
+      if (!identity.current(request)) return false
       state.value = { phase: 'ready', catalog: parsed.data }
       return true
     } catch (error) {
+      if (!identity.current(request)) return false
       return fail(previous, { reason: 'network' }, error)
     }
   }
 
   const load = async () => {
+    if (identity.scope.value === null) return false
     if (busy.value) return false
     const previous = state.value.catalog
     state.value = { phase: 'loading', catalog: previous }
@@ -114,7 +131,7 @@ export function useCloudNodeRegistry() {
       pinned &&
       (!revision ||
         revision.node_api_version !== 2 ||
-        !revision.upstream_commit)
+        (!revision.upstream_commit && !revision.account_owned))
     ) {
       return false
     }

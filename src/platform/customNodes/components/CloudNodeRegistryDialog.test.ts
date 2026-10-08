@@ -15,6 +15,13 @@ import CloudNodeRegistryDialog from './CloudNodeRegistryDialog.vue'
 vi.mock('@/scripts/api', () => ({ api: { fetchApi: vi.fn() } }))
 vi.mock('@/scripts/app', () => ({ app: { reloadNodeDefs: vi.fn() } }))
 vi.mock('@/platform/telemetry/reportError', () => ({ reportError: vi.fn() }))
+vi.mock('./CustomNodePacksDialog.vue', () => ({
+  default: {
+    props: { embedded: Boolean, allowUploads: Boolean, query: String },
+    template:
+      '<section aria-label="Account node editor" :data-embedded="embedded" :data-uploads="allowUploads">{{ query }}</section>'
+  }
+}))
 const fetchApi = vi.mocked(api.fetchApi)
 const ready: CloudNodeRegistryRevision = {
   revision_id: 'a'.repeat(64),
@@ -86,6 +93,43 @@ function renderRegistry() {
 describe('Cloud registry manager browsing', () => {
   beforeEach(() => {
     fetchApi.mockResolvedValue(Response.json(catalog))
+  })
+
+  it('opens account authoring inside the browser without registry detail or upload controls', async () => {
+    const user = userEvent.setup()
+    renderRegistry()
+    await user.click(
+      await screen.findByRole('button', { name: 'View Example details' })
+    )
+    await user.click(screen.getByRole('button', { name: 'User Custom Nodes' }))
+    expect(
+      screen.getByRole('region', { name: 'Account node editor' })
+    ).toHaveAttribute('data-embedded', 'true')
+    expect(
+      screen.getByRole('region', { name: 'Account node editor' })
+    ).toHaveAttribute('data-uploads', 'false')
+    expect(
+      screen.queryByRole('combobox', { name: 'Choose exact pack revision' })
+    ).not.toBeInTheDocument()
+    await user.type(
+      screen.getByRole('combobox', { name: 'Search your custom node packs' }),
+      'My pack'
+    )
+    expect(
+      screen.getByRole('region', { name: 'Account node editor' })
+    ).toHaveTextContent('My pack')
+    await user.click(screen.getByRole('button', { name: 'All extensions' }))
+    await user.clear(
+      screen.getByRole('combobox', {
+        name: 'Search converted packs or node names'
+      })
+    )
+    expect(
+      screen.queryByRole('region', { name: 'Account node editor' })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'View Example details' })
+    ).toBeVisible()
   })
 
   it('opens pack details with the pinned version and exposes real-test coverage', async () => {

@@ -17,6 +17,7 @@ import {
   useCustomNodeEditor
 } from './useCustomNodeEditor'
 import { useCustomNodeEditorDialog } from './useCustomNodeEditorDialog'
+import { useCloudNodeRegistry } from './useCloudNodeRegistry'
 import type { UploadedNodePack } from './useCustomNodePacks'
 import { useCustomNodePacks } from './useCustomNodePacks'
 
@@ -48,13 +49,22 @@ const FRONTEND_ONLY_MODULE = 'custom_nodes.frontend_only'
  * in the store as a frontend-only placeholder. Placing that gives a node the
  * backend cannot execute: it runs as a no-op and renders an empty preview.
  */
-function registeredDefinition<T extends { python_module?: string } | undefined>(
+function registeredDefinition<
+  T extends
+    | { python_module?: string; comfy_cloud_revision_id?: string }
+    | undefined
+>(
   definition: T,
-  revisionId?: string
+  revisionId?: string,
+  runtimeRevisionId?: string
 ): T | undefined {
   if (!definition) return undefined
   const module = definition.python_module
   if (!module || module === FRONTEND_ONLY_MODULE) return undefined
+  if (runtimeRevisionId)
+    return definition.comfy_cloud_revision_id === runtimeRevisionId
+      ? definition
+      : undefined
   if (!revisionId) return definition
   return packKeyFromPythonModule(module) === packKeyFromRevisionId(revisionId)
     ? definition
@@ -68,6 +78,7 @@ function registeredDefinition<T extends { python_module?: string } | undefined>(
  */
 function takenNodeClassNames(targetPack?: UploadedNodePack): string[] {
   if (!targetPack) return []
+  if (targetPack.nodeTypes) return Object.keys(targetPack.nodeTypes)
   const packKey = packKeyFromRevisionId(targetPack.revisionId)
   return Object.values(useNodeDefStore().nodeDefsByName)
     .filter((def) => packKeyFromPythonModule(def.python_module) === packKey)
@@ -95,6 +106,7 @@ export function useCustomNodeCreateFlow() {
   const { createSession, refreshNodeDefinitions } = useCustomNodeEditor()
   const editorDialog = useCustomNodeEditorDialog()
   const packsApi = useCustomNodePacks()
+  const registry = useCloudNodeRegistry()
 
   const askForNames = (options: {
     targetPackName?: string
@@ -143,15 +155,17 @@ export function useCustomNodeCreateFlow() {
   const addCreatedNodeToGraph = async (
     sessionId: string,
     nodeName: string,
-    revisionId?: string
+    revisionId?: string,
+    published?: { nodeId: string; revisionId: string }
   ) => {
-    const nodeId = nodeClassNameFor(nodeName)
+    const nodeId = published?.nodeId ?? nodeClassNameFor(nodeName)
     const nodeDefStore = useNodeDefStore()
     const deadline = Date.now() + NODE_REGISTRATION_TIMEOUT_MS
     for (;;) {
       const definition = registeredDefinition(
         nodeDefStore.nodeDefsByName[nodeId],
-        revisionId
+        revisionId,
+        published?.revisionId
       )
       if (definition) {
         useLitegraphService().addNodeOnGraph(definition)
@@ -214,10 +228,40 @@ export function useCustomNodeCreateFlow() {
             const submitted = packsApi.packs.value.find(
               (pack) => pack.name === request.packName
             )
+            const runtimeRevision = submitted?.runtimeRevisionId
+            const publicNode =
+              submitted?.nodeTypes?.[nodeClassNameFor(request.nodeName)]
+            if (runtimeRevision) {
+              if (!publicNode) {
+                reportError(
+                  { code: 'custom_node_publication_identity_missing' },
+                  { errorType: 'custom_node_publication_identity_missing' }
+                )
+                useToastStore().add({
+                  severity: 'warn',
+                  summary: t('customNodePacks.createDialog.nodeNotReady'),
+                  life: 8000
+                })
+                return
+              }
+              if (
+                !(await registry.load()) ||
+                !(await registry.setPin(runtimeRevision, true))
+              ) {
+                useToastStore().add({
+                  severity: 'warn',
+                  summary: t('customNodePacks.registry.failed'),
+                  life: 8000
+                })
+              }
+            }
             await addCreatedNodeToGraph(
               session.id,
               request.nodeName,
-              submitted?.revisionId
+              submitted?.revisionId,
+              runtimeRevision && publicNode
+                ? { nodeId: publicNode, revisionId: runtimeRevision }
+                : undefined
             )
           },
           { initialPrompt: request.prompt }

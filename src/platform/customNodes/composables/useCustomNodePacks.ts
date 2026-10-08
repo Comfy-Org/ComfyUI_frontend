@@ -1,22 +1,22 @@
-import { readonly, ref } from 'vue'
+import type { ListWorkspaceCustomNodesResponses } from '@comfyorg/ingest-types'
+import { zListWorkspaceCustomNodesResponse } from '@comfyorg/ingest-types/zod'
+import { computed, readonly, ref } from 'vue'
 
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import { useNodeAccountScope } from './useNodeAccountScope'
 
 /** A user-uploaded custom node pack, as owned by the current workspace. */
 export interface UploadedNodePack {
   revisionId: string
   name: string
   uploadedAt: string
+  runtimeRevisionId?: string
+  nodeTypes?: Record<string, string>
 }
 
-export interface CustomNodeUploadRecordDto {
-  revision_id: string
-  name: string
-  owner: string
-  snapshot: string
-  uploaded_at: string
-}
+export type CustomNodeUploadRecordDto =
+  ListWorkspaceCustomNodesResponses[200][number]
 
 export class CustomNodePackRequestError extends Error {
   constructor(
@@ -29,6 +29,8 @@ export class CustomNodePackRequestError extends Error {
 }
 
 const packs = ref<UploadedNodePack[]>([])
+const loadedScope = ref<string | null>(null)
+let refreshGeneration = 0
 const isLoading = ref(false)
 const isUploading = ref(false)
 const isDeleting = ref(false)
@@ -37,7 +39,11 @@ const downloadingRevisionId = ref<string | null>(null)
 const toPack = (dto: CustomNodeUploadRecordDto): UploadedNodePack => ({
   revisionId: dto.revision_id,
   name: dto.name,
-  uploadedAt: dto.uploaded_at
+  uploadedAt: dto.uploaded_at,
+  ...(dto.runtime_revision_id
+    ? { runtimeRevisionId: dto.runtime_revision_id }
+    : {}),
+  ...(dto.node_types ? { nodeTypes: dto.node_types } : {})
 })
 
 const packNameFromFile = (filename: string): string =>
@@ -75,21 +81,37 @@ const readError = async (
  * here. Re-uploading a pack of the same name replaces it (a bug-fix release).
  */
 export function useCustomNodePacks() {
+  const { scope, capture, current } = useNodeAccountScope()
+
   const refresh = async (): Promise<void> => {
+    const request = capture()
+    if (request.scope === null) return
+    const generation = ++refreshGeneration
     isLoading.value = true
     try {
       const response = await api.fetchApi('/customnodes', { method: 'GET' })
+      if (!current(request) || generation !== refreshGeneration) return
       if (!response.ok) {
         throw await readError(response)
       }
-      const records = (await response.json()) as CustomNodeUploadRecordDto[]
+      const records = zListWorkspaceCustomNodesResponse.parse(
+        await response.json()
+      )
+      if (!current(request) || generation !== refreshGeneration) return
       packs.value = records.map(toPack)
+      loadedScope.value = request.scope
     } finally {
-      isLoading.value = false
+      if (generation === refreshGeneration) isLoading.value = false
     }
   }
 
   const uploadPack = async (file: File, name?: string): Promise<void> => {
+    const request = capture()
+    if (request.scope === null)
+      throw new CustomNodePackRequestError(
+        'Authenticated account required',
+        401
+      )
     isUploading.value = true
     try {
       const form = new FormData()
@@ -101,34 +123,48 @@ export function useCustomNodePacks() {
         method: 'POST',
         body: form
       })
+      if (!current(request)) return
       if (!response.ok) {
         throw await readError(response)
       }
       await refresh()
-      await app.reloadNodeDefs()
+      if (current(request)) await app.reloadNodeDefs()
     } finally {
       isUploading.value = false
     }
   }
 
   const deletePack = async (name: string): Promise<void> => {
+    const request = capture()
+    if (request.scope === null)
+      throw new CustomNodePackRequestError(
+        'Authenticated account required',
+        401
+      )
     isDeleting.value = true
     try {
       const response = await api.fetchApi(
         `/customnodes?name=${encodeURIComponent(name)}`,
         { method: 'DELETE' }
       )
+      if (!current(request)) return
       if (!response.ok) {
         throw await readError(response)
       }
       await refresh()
-      await app.reloadNodeDefs()
+      if (current(request)) await app.reloadNodeDefs()
     } finally {
       isDeleting.value = false
     }
   }
 
   const downloadPack = async (pack: UploadedNodePack): Promise<void> => {
+    const request = capture()
+    if (request.scope === null)
+      throw new CustomNodePackRequestError(
+        'Authenticated account required',
+        401
+      )
     downloadingRevisionId.value = pack.revisionId
     let objectUrl: string | undefined
     try {
@@ -136,11 +172,14 @@ export function useCustomNodePacks() {
         `/customnodes/${encodeURIComponent(pack.revisionId)}/download`,
         { method: 'GET' }
       )
+      if (!current(request)) return
       if (!response.ok) {
         throw await readError(response)
       }
 
-      objectUrl = URL.createObjectURL(await response.blob())
+      const archive = await response.blob()
+      if (!current(request)) return
+      objectUrl = URL.createObjectURL(archive)
       const link = document.createElement('a')
       link.href = objectUrl
       link.download = packDownloadFilename(pack.name)
@@ -157,7 +196,9 @@ export function useCustomNodePacks() {
   }
 
   return {
-    packs: readonly(packs),
+    packs: computed(() =>
+      loadedScope.value === scope.value ? readonly(packs).value : []
+    ),
     isLoading: readonly(isLoading),
     isUploading: readonly(isUploading),
     isDeleting: readonly(isDeleting),

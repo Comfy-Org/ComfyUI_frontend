@@ -91,6 +91,27 @@ describe('useCloudNodeRegistry', () => {
     })
   })
 
+  it('pins a private account-owned revision without inventing an upstream Git commit', async () => {
+    const catalog = fixture()
+    catalog.revisions[0] = {
+      ...catalog.revisions[0],
+      upstream_commit: '',
+      account_owned: true
+    }
+    fetchApi
+      .mockResolvedValueOnce(Response.json(catalog))
+      .mockResolvedValueOnce(
+        Response.json({
+          ...catalog,
+          revisions: [{ ...catalog.revisions[0], pinned: true }]
+        })
+      )
+    const registry = useCloudNodeRegistry()
+    await registry.load()
+    expect(await registry.setPin('b'.repeat(64), true)).toBe(true)
+    expect(fetchApi).toHaveBeenCalledTimes(2)
+  })
+
   it('refreshes definitions on unpin and retains the persisted pin if refresh fails', async () => {
     fetchApi
       .mockResolvedValueOnce(Response.json(fixture(true)))

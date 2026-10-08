@@ -1,7 +1,13 @@
 <template>
   <BaseModalLayout
     v-model:right-panel-open="isRightPanelOpen"
-    :content-title="$t('manager.discoverCommunityContent')"
+    :content-title="
+      $t(
+        showUserNodes
+          ? 'customNodePacks.userNodes.title'
+          : 'manager.discoverCommunityContent'
+      )
+    "
     :right-panel-title="$t('manager.nodePackInfo')"
   >
     <template #leftPanelHeaderTitle>
@@ -15,17 +21,25 @@
       <SearchInput
         v-model="query"
         :placeholder="$t('manager.searchPlaceholder')"
-        :aria-label="$t('customNodePacks.registry.search')"
+        :aria-label="
+          $t(
+            showUserNodes
+              ? 'customNodePacks.userNodes.search'
+              : 'customNodePacks.registry.search'
+          )
+        "
         :debounce-time="0"
         class="max-w-96 flex-1"
       />
       <SingleSelect
+        v-if="!showUserNodes"
         v-model="version"
         :options="versionOptions"
         :label="$t('customNodePacks.registry.nodeVersion')"
         class="min-w-32"
       />
       <Button
+        v-if="!showUserNodes"
         variant="secondary"
         size="icon"
         :disabled="busy"
@@ -36,7 +50,7 @@
       </Button>
     </template>
     <template #contentFilter>
-      <div class="flex flex-col gap-2 px-6 pb-4">
+      <div v-if="!showUserNodes" class="flex flex-col gap-2 px-6 pb-4">
         <p class="m-0 text-xs text-muted-foreground">
           {{ $t('customNodePacks.registry.description') }}
         </p>
@@ -68,7 +82,18 @@
       </div>
     </template>
     <template #content>
-      <div v-if="!catalog && busy" role="status">
+      <CustomNodePacksDialog
+        v-if="showUserNodes"
+        embedded
+        :allow-uploads="false"
+        :query
+        :revisions="catalog?.revisions ?? []"
+        :pin-busy="busy"
+        :saving-revision="savingRevision"
+        @pin="setPin"
+        @refresh="load"
+      />
+      <div v-else-if="!catalog && busy" role="status">
         {{ $t('customNodePacks.loading') }}
       </div>
       <p v-else-if="catalog && !packs.length" class="text-sm">
@@ -92,13 +117,13 @@
           />
         </template>
       </VirtualGrid>
-      <p class="m-0 pt-3 text-xs text-muted-foreground">
+      <p v-if="!showUserNodes" class="m-0 pt-3 text-xs text-muted-foreground">
         {{ $t('customNodePacks.registry.qualification') }}
       </p>
     </template>
     <template #rightPanel>
       <CloudNodeRegistryInfo
-        v-if="selectedRevision"
+        v-if="selectedRevision && !showUserNodes"
         :revision="selectedRevision"
         :revisions="packRevisions"
         :busy
@@ -128,6 +153,7 @@ import { OnCloseKey } from '@/types/widgetTypes'
 
 import CloudNodeRegistryCard from './CloudNodeRegistryCard.vue'
 import CloudNodeRegistryInfo from './CloudNodeRegistryInfo.vue'
+import CustomNodePacksDialog from './CustomNodePacksDialog.vue'
 
 const { onClose = () => {} } = defineProps<{ onClose?: () => void }>()
 provide(OnCloseKey, onClose)
@@ -135,6 +161,7 @@ const { t } = useI18n()
 const { state, catalog, busy, load, setPin } = useCloudNodeRegistry()
 const query = ref('')
 const filter = ref<string | null>('all')
+const showUserNodes = computed(() => filter.value === 'user')
 const version = ref<string | undefined>('all')
 const sort = ref<string | undefined>('name')
 const selectedRevisionId = ref<string>()
@@ -150,7 +177,7 @@ const packRevisions = computed(
     ) ?? []
 )
 const isRightPanelOpen = computed({
-  get: () => Boolean(selectedRevision.value),
+  get: () => !showUserNodes.value && Boolean(selectedRevision.value),
   set: (value: boolean) => {
     if (!value) selectedRevisionId.value = undefined
   }
@@ -160,15 +187,16 @@ const savingRevision = computed(() =>
 )
 const packs = computed(() =>
   cloudRegistryPacks(
-    catalog.value?.revisions ?? [],
+    catalog.value?.revisions.filter((revision) => !revision.account_owned) ??
+      [],
     filter.value,
     query.value,
     version.value,
     sort.value
   )
 )
-const navItems = computed(() =>
-  (
+const navItems = computed(() => [
+  ...(
     [
       'all',
       'pinned',
@@ -181,8 +209,13 @@ const navItems = computed(() =>
     label: t(`customNodePacks.registry.filters.${id}`),
     icon:
       id === 'verified' ? 'icon-[lucide--badge-check]' : 'icon-[lucide--list]'
-  }))
-)
+  })),
+  {
+    id: 'user',
+    label: t('customNodePacks.userNodes.title'),
+    icon: 'icon-[lucide--user-round-cog]'
+  }
+])
 const versionOptions = computed(() => [
   { value: 'all', name: t('customNodePacks.registry.allVersions') },
   {

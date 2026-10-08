@@ -71,6 +71,12 @@ const i18n = createI18n({
     en: {
       customNodePacks: {
         title: 'Custom node packs',
+        userNodes: {
+          title: 'User Custom Nodes',
+          description: 'Create and edit your private packs',
+          search: 'Search your custom node packs'
+        },
+        registry: { refresh: 'Refresh catalog' },
         description: 'Manage custom nodes',
         create: 'Create',
         createNode: 'Create node',
@@ -135,6 +141,38 @@ describe('CustomNodePacksDialog', () => {
         uploadedAt: '2026-08-28T12:00:00Z'
       }
     ]
+  })
+
+  it('embeds account creation and editing without ZIP upload or a second modal close button', async () => {
+    render(CustomNodePacksDialog, {
+      props: { embedded: true, allowUploads: false },
+      global: { plugins: [i18n] }
+    })
+    expect(
+      screen.getByRole('heading', { name: 'User Custom Nodes' })
+    ).toBeVisible()
+    expect(
+      screen.queryByRole('button', { name: 'Upload node pack' })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Close' })
+    ).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Create' }))
+    expect(mocks.startCreateFlow).toHaveBeenCalled()
+    await openPackMenu()
+    expect(screen.getByRole('menuitem', { name: 'Edit' })).toBeVisible()
+    expect(
+      screen.queryByRole('menuitem', { name: 'Replace' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('filters account-owned pack names using the browser search', () => {
+    render(CustomNodePacksDialog, {
+      props: { embedded: true, allowUploads: false, query: 'another pack' },
+      global: { plugins: [i18n] }
+    })
+    expect(screen.queryByText('Echo Pack')).not.toBeInTheDocument()
+    expect(screen.getByText('No custom packs added')).toBeVisible()
   })
 
   it('starts the shared create flow from Create', async () => {

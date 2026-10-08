@@ -3312,22 +3312,23 @@ export const zCloudNodeRegistryVerification = z.object({
 })
 
 export const zCloudNodeRegistryRevision = z.object({
+  account_owned: z.boolean().readonly().optional(),
+  comfy_verified: z.boolean().readonly().optional(),
+  dependency_profile_sha256: z.string(),
+  manifest_sha256: z.string(),
+  name: z.string(),
   node_api_version: z
     .union([z.literal(1), z.literal(2)])
     .readonly()
     .optional(),
-  comfy_verified: z.boolean().readonly().optional(),
-  verification: zCloudNodeRegistryVerification.nullish(),
-  revision_id: z.string(),
-  name: z.string(),
-  pack_id: z.string(),
-  upstream_commit: z.string(),
-  source_sha256: z.string(),
-  manifest_sha256: z.string(),
-  dependency_profile_sha256: z.string(),
   nodes: z.array(z.string()),
+  pack_id: z.string(),
+  pinned: z.boolean(),
   prepared: z.boolean(),
-  pinned: z.boolean()
+  revision_id: z.string(),
+  source_sha256: z.string(),
+  upstream_commit: z.string(),
+  verification: zCloudNodeRegistryVerification.nullish()
 })
 
 export const zCloudNodeRegistry = z.object({
@@ -5394,9 +5395,14 @@ export const zDeleteWorkspaceCustomNodeQuery = z.object({
  */
 export const zListWorkspaceCustomNodesResponse = z.array(
   z.object({
-    revision_id: z.string(),
     name: z.string(),
+    node_types: z.record(z.string()).optional(),
     owner: z.string(),
+    revision_id: z.string(),
+    runtime_revision_id: z
+      .string()
+      .regex(/^[0-9a-f]{64}$/)
+      .optional(),
     snapshot: z.string(),
     uploaded_at: z.string()
   })

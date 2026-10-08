@@ -5694,27 +5694,31 @@ export type CloudNodeRegistryVerification = {
 
 export type CloudNodeRegistryRevision = {
   /**
-   * Custom-node API generation, distinct from upstream pack version. Frozen converted corpora publish V2 only; V1 conversion requests are not implemented.
+   * Private account-authored source, not an upstream Git revision. Visible only to its authenticated owner.
    */
-  readonly node_api_version?: 1 | 2
+  readonly account_owned?: boolean
   /**
    * Operator-reviewed real execution evidence exists for this exact conversion revision, not merely registration or preparation. See verification for tested coverage.
    */
   readonly comfy_verified?: boolean
-  verification?: CloudNodeRegistryVerification | null
-  revision_id: string
-  name: string
-  pack_id: string
-  upstream_commit: string
-  source_sha256: string
-  manifest_sha256: string
   dependency_profile_sha256: string
+  manifest_sha256: string
+  name: string
+  /**
+   * Custom-node API generation, distinct from upstream pack version. Frozen converted corpora publish V2 only; V1 conversion requests are not implemented.
+   */
+  readonly node_api_version?: 1 | 2
   nodes: Array<string>
+  pack_id: string
+  pinned: boolean
   /**
    * Exact sandbox image and dependency profile are ready; not workflow proof
    */
   prepared: boolean
-  pinned: boolean
+  revision_id: string
+  source_sha256: string
+  upstream_commit: string
+  verification?: CloudNodeRegistryVerification | null
 }
 
 export type CloudNodeRegistryPinRequest = {
@@ -15861,9 +15865,19 @@ export type ListWorkspaceCustomNodesResponses = {
    * Workspace packs
    */
   200: Array<{
-    revision_id: string
     name: string
+    /**
+     * Authenticated publisher's mapping from authored node class names to collision-free public graph types.
+     */
+    node_types?: {
+      [key: string]: string
+    }
     owner: string
+    revision_id: string
+    /**
+     * Exact prepared account-owned revision for graph execution, distinct from the editable archive revision.
+     */
+    runtime_revision_id?: string
     snapshot: string
     uploaded_at: string
   }>

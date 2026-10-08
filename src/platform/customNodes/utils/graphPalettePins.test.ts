@@ -27,6 +27,17 @@ function fixture(): CloudNodeRegistry {
 }
 
 describe('graphPalettePinPlan', () => {
+  it('auto-pins available account-authored graph nodes without upstream Git provenance', () => {
+    const catalog = fixture()
+    catalog.revisions[0] = {
+      ...catalog.revisions[0],
+      upstream_commit: '',
+      account_owned: true
+    }
+    expect(
+      graphPalettePinPlan({ nodes: [{ id: 1, type: 'CustomA' }] }, catalog, {})
+    ).toEqual({ revisionIds: ['b'.repeat(64)], unresolved: [] })
+  })
   it('adds each graph pack once, including muted nodes, without requiring preparation', () => {
     const graph = {
       nodes: [

@@ -3,13 +3,26 @@
     <header class="flex items-start justify-between gap-4">
       <div class="flex flex-col gap-1">
         <h2 class="m-0 text-lg font-medium">
-          {{ $t('customNodePacks.title') }}
+          {{
+            $t(
+              embedded
+                ? 'customNodePacks.userNodes.title'
+                : 'customNodePacks.title'
+            )
+          }}
         </h2>
         <p class="m-0 text-sm text-muted-foreground">
-          {{ $t('customNodePacks.description') }}
+          {{
+            $t(
+              embedded
+                ? 'customNodePacks.userNodes.description'
+                : 'customNodePacks.description'
+            )
+          }}
         </p>
       </div>
       <Button
+        v-if="!embedded"
         variant="secondary"
         size="icon"
         :aria-label="$t('customNodePacks.close')"
@@ -30,6 +43,7 @@
         {{ $t('customNodePacks.create') }}
       </Button>
       <Button
+        v-if="allowUploads"
         variant="secondary"
         :loading="isUploading"
         :disabled="isBusy"
@@ -41,6 +55,15 @@
             ? $t('customNodePacks.uploading')
             : $t('customNodePacks.upload')
         }}
+      </Button>
+      <Button
+        v-if="embedded"
+        variant="secondary"
+        :disabled="isBusy"
+        @click="refreshPacks"
+      >
+        <i class="icon-[lucide--refresh-cw] size-4" />
+        {{ $t('customNodePacks.registry.refresh') }}
       </Button>
     </div>
     <input
@@ -87,7 +110,7 @@
         {{ $t('customNodePacks.loading') }}
       </div>
       <div
-        v-else-if="!packs.length"
+        v-else-if="!visiblePacks.length"
         class="flex items-center justify-center rounded-lg border border-dashed border-border-default px-3 py-8 text-sm text-muted-foreground"
       >
         {{ $t('customNodePacks.empty') }}
@@ -97,7 +120,7 @@
         class="m-0 flex max-h-64 list-none flex-col gap-2 overflow-y-auto p-0"
       >
         <li
-          v-for="pack in packs"
+          v-for="pack in visiblePacks"
           :key="pack.revisionId"
           class="flex flex-col gap-2 rounded-lg border border-border-default px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
         >
@@ -108,6 +131,14 @@
             }}</span>
           </div>
           <div class="flex shrink-0 items-center gap-2">
+            <CloudNodePinButton
+              v-if="privateRevision(pack)"
+              :revision="privateRevision(pack)!"
+              :busy="isBusy || pinBusy"
+              :blocked="false"
+              :saving-revision="savingRevision"
+              @pin="(id, pinned) => emit('pin', id, pinned)"
+            />
             <Popover>
               <PopoverTrigger as-child>
                 <Button
@@ -157,8 +188,9 @@
 </template>
 
 <script setup lang="ts">
+import type { CloudNodeRegistryRevision } from '@comfyorg/ingest-types'
 import { PopoverClose, PopoverTrigger } from 'reka-ui'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -171,8 +203,29 @@ import { useCustomNodePacks } from '@/platform/customNodes/composables/useCustom
 import type { UploadedNodePack } from '@/platform/customNodes/composables/useCustomNodePacks'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import CloudNodePinButton from './CloudNodePinButton.vue'
 
-const { onClose } = defineProps<{ onClose?: () => void }>()
+const {
+  onClose,
+  embedded = false,
+  allowUploads = true,
+  query = '',
+  revisions = [],
+  pinBusy = false,
+  savingRevision
+} = defineProps<{
+  onClose?: () => void
+  embedded?: boolean
+  allowUploads?: boolean
+  query?: string
+  revisions?: CloudNodeRegistryRevision[]
+  pinBusy?: boolean
+  savingRevision?: string
+}>()
+const emit = defineEmits<{
+  pin: [revisionId: string, pinned: boolean]
+  refresh: []
+}>()
 
 const { t } = useI18n()
 const toast = useToastStore()
@@ -191,6 +244,22 @@ const {
   downloadPack
 } = useCustomNodePacks()
 const isStartingEditor = ref(false)
+const privateRevision = (pack: UploadedNodePack) =>
+  revisions.find(
+    (revision) =>
+      revision.account_owned && revision.revision_id === pack.runtimeRevisionId
+  )
+watch(
+  () => packs.value.map((pack) => pack.runtimeRevisionId).join(','),
+  () => {
+    if (embedded) emit('refresh')
+  }
+)
+const visiblePacks = computed(() =>
+  packs.value.filter((pack) =>
+    pack.name.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase())
+  )
+)
 const isBusy = computed(
   () =>
     isUploading.value ||
@@ -203,8 +272,8 @@ const isBusy = computed(
 const fileInput = ref<HTMLInputElement | null>(null)
 const replaceName = ref<string | null>(null)
 
-onMounted(() => {
-  void refresh().catch((error) => {
+const refreshPacks = async () => {
+  await refresh().catch((error) => {
     reportError(error, { errorType: 'custom_node_list_failed' })
     toast.add({
       severity: 'error',
@@ -213,7 +282,10 @@ onMounted(() => {
       life: 8000
     })
   })
-})
+  if (embedded) emit('refresh')
+}
+
+onMounted(() => void refreshPacks())
 
 const pickFile = () => {
   replaceName.value = null
@@ -273,11 +345,15 @@ const packActions = (pack: UploadedNodePack) => [
     icon: 'icon-[lucide--download]',
     run: () => void onDownload(pack)
   },
-  {
-    label: t('customNodePacks.replace'),
-    icon: 'icon-[lucide--upload]',
-    run: () => replacePack(pack.name)
-  },
+  ...(allowUploads
+    ? [
+        {
+          label: t('customNodePacks.replace'),
+          icon: 'icon-[lucide--upload]',
+          run: () => replacePack(pack.name)
+        }
+      ]
+    : []),
   {
     label: t('customNodePacks.delete'),
     icon: 'icon-[lucide--trash-2]',

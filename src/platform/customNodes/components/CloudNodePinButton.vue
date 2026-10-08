@@ -5,7 +5,8 @@
       busy ||
       blocked ||
       (!revision.pinned &&
-        (revision.node_api_version !== 2 || !revision.upstream_commit))
+        (revision.node_api_version !== 2 ||
+          (!revision.upstream_commit && !revision.account_owned)))
     "
     :loading="savingRevision === revision.revision_id"
     :aria-label="
