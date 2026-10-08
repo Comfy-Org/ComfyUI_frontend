@@ -27,13 +27,6 @@ import TopUpCreditsDialogContentWorkspace from './TopUpCreditsDialogContentWorks
 
 const mockFetchBalance = vi.fn()
 const mockFetchStatus = vi.fn()
-const mockManageSubscription = vi.fn<() => Promise<void>>()
-const mockReportError = vi.hoisted(() => vi.fn())
-
-vi.mock('@/platform/telemetry/reportError', () => ({
-  reportError: mockReportError
-}))
-
 vi.mock(import('firebase/auth'), { spy: true })
 const mockTopup =
   vi.fn<(amountCents: number) => Promise<CreateTopupResponse | void>>()
@@ -60,23 +53,6 @@ const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
 
 vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
 
-const mockHasSavedPaymentMethod = vi.hoisted(() => ({
-  ref: undefined as { value: boolean | null } | undefined
-}))
-
-vi.mock(
-  '@/platform/workspace/composables/useHasSavedPaymentMethod',
-  async () => {
-    const { ref } = await import('vue')
-    mockHasSavedPaymentMethod.ref = ref<boolean | null>(null)
-    return {
-      useHasSavedPaymentMethod: () => ({
-        hasSavedPaymentMethod: mockHasSavedPaymentMethod.ref
-      })
-    }
-  }
-)
-
 interface MockTopupOperation {
   opId: string
   status: 'pending' | 'reconciliation_needed'
@@ -98,7 +74,6 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
     fetchBalance: mockFetchBalance,
     fetchStatus: mockFetchStatus,
-    manageSubscription: mockManageSubscription,
     topup: (amountCents: number) => mockTopup(amountCents)
   })
 }))
@@ -221,13 +196,6 @@ function setTopupActionOperation(operation: MockTopupOperation | undefined) {
   mockBillingOperationState.topupActionOperation.value = operation
 }
 
-function setHasSavedPaymentMethod(value: boolean | null) {
-  if (!mockHasSavedPaymentMethod.ref) {
-    throw new Error('Payment method mock not initialized')
-  }
-  mockHasSavedPaymentMethod.ref.value = value
-}
-
 async function clickAddCredits() {
   const user = userEvent.setup()
   await user.click(screen.getByRole('button', { name: 'Add credits' }))
@@ -251,7 +219,6 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     setTopupActionOperation(undefined)
     mockFetchBalance.mockResolvedValue(undefined)
     mockFetchStatus.mockResolvedValue(undefined)
-    setHasSavedPaymentMethod(true)
     mockStartOperation.mockImplementation(() => {
       setIsAddingCredits(true)
       return new Promise(() => {})
@@ -393,71 +360,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(mockTopup).not.toHaveBeenCalled()
   })
 
-  it('shows the saved-card note when a payment method is on file', async () => {
-    renderDialog()
-
-    await clickAddCredits()
-
-    expect(
-      await screen.findByText(
-        'Your saved payment method is charged immediately.'
-      )
-    ).toBeInTheDocument()
-  })
-
-  it('asks for payment details when no payment method is saved', async () => {
-    setHasSavedPaymentMethod(false)
-
-    renderDialog()
-    await clickAddCredits()
-
-    expect(
-      await screen.findByText(
-        "You'll be asked to add a payment method to complete this purchase."
-      )
-    ).toBeInTheDocument()
-  })
-
-  it('opens the billing portal from the no-payment-method note', async () => {
-    setHasSavedPaymentMethod(false)
-    mockManageSubscription.mockResolvedValue(undefined)
-
-    renderDialog()
-    await clickAddCredits()
-
-    await userEvent.click(
-      await screen.findByRole('button', { name: 'Manage billing' })
-    )
-
-    expect(mockManageSubscription).toHaveBeenCalledTimes(1)
-  })
-
-  it('reports and surfaces a billing-portal opening failure', async () => {
-    setHasSavedPaymentMethod(false)
-    const failure = new Error('portal down')
-    mockManageSubscription.mockRejectedValue(failure)
-
-    renderDialog()
-    await clickAddCredits()
-
-    await userEvent.click(
-      await screen.findByRole('button', { name: 'Manage billing' })
-    )
-
-    await waitFor(() =>
-      expect(mockReportError).toHaveBeenCalledWith(failure, {
-        errorType: 'billing_portal_open_failure'
-      })
-    )
-    expect(mockToastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({
-        summary: 'Failed to open the billing portal. Please try again.'
-      })
-    )
-  })
-
   it('explains how to add a payment method when the purchase is refused', async () => {
-    setHasSavedPaymentMethod(false)
     mockTopup.mockRejectedValue(
       new WorkspaceApiError(
         'No default payment method is selected.',
