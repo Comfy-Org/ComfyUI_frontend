@@ -31,10 +31,12 @@ import { recordDevEvent } from './devPanelLog'
 import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import { readCrdtSnapshot } from './crdtSnapshot'
 import { DocFrameClient } from './docFrameClient'
+import { RESEED_CONFLICT, isRetryableReseedCode } from './docFrameCodes'
 import type { GraphOperation } from './graphOperations'
 import type { ClassifiedDocUpdate } from './layoutFollowerBridge'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
 import type { LiveGraphApplierDeps } from './liveGraphApplier'
+import { readDocPromotedWidgets } from './agentSubgraphDefinitions'
 import { readDocSlotNames } from './liveGraphApplier'
 import { createOpCoalescer } from './opCoalescer'
 import { createOpSender } from './opSender'
@@ -177,6 +179,12 @@ function notifyAgentMaterialization(
   )
 }
 
+function hasNodes(
+  canvas: Record<string, unknown> | null
+): canvas is Record<string, unknown> {
+  return Array.isArray(canvas?.nodes) && canvas.nodes.length > 0
+}
+
 export interface AgentCrdtStatus {
   enabled: boolean
   connected: boolean
@@ -225,6 +233,7 @@ function runFollowerTeardown(cleanups: readonly (() => void)[]): void {
       cleanup()
     } catch (error) {
       reportError(error, {
+        surface: 'agent',
         errorType: 'failure_tearing_down_agent_crdt_follower'
       })
     }
@@ -249,6 +258,7 @@ function reportRejectedHumanOps(
       `The doc host rejected ${rejected.length} local edit(s): ${failed?.message ?? 'no diagnostics'}`
     ),
     {
+      surface: 'agent',
       errorType: 'agent_crdt_human_ops_rejected',
       context: {
         workflowId,
@@ -271,7 +281,8 @@ export function useAgentCrdtFollower(
    */
   getGraph: () => LGraph | null = () => null,
   events: AgentCrdtFollowerEvents = {},
-  applierDeps: AgentCrdtApplierDeps = {}
+  applierDeps: AgentCrdtApplierDeps = {},
+  canvasFor: (workflowId: string) => Record<string, unknown> | null = () => null
 ) {
   const productGate = useAgentPanelStore()
   const follower = shallowRef<ReturnType<typeof startAgentCrdtFollower>>()
@@ -310,7 +321,8 @@ export function useAgentCrdtFollower(
           isTargetActive,
           getGraph,
           events,
-          applierDeps
+          applierDeps,
+          canvasFor
         )
       )
     },
@@ -330,7 +342,9 @@ export function useAgentCrdtFollower(
     enqueueHumanOperations: (operations: GraphOperation[]) =>
       follower.value?.enqueueHumanOperations(operations),
     docInputNames: (nodeId: NodeId) =>
-      follower.value?.docInputNames(nodeId) ?? null
+      follower.value?.docInputNames(nodeId) ?? null,
+    docPromotedWidgets: (nodeId: NodeId) =>
+      follower.value?.docPromotedWidgets(nodeId) ?? null
   }
 }
 
@@ -340,7 +354,8 @@ function startAgentCrdtFollower(
   isTargetActive: Ref<boolean>,
   getGraph: () => LGraph | null,
   events: AgentCrdtFollowerEvents,
-  applierDeps: AgentCrdtApplierDeps
+  applierDeps: AgentCrdtApplierDeps,
+  canvasFor: (workflowId: string) => Record<string, unknown> | null
 ) {
   const connected = ref(false)
   const updatesApplied = ref(0)
@@ -481,6 +496,48 @@ function startAgentCrdtFollower(
     }
   }
 
+  function tryReseed(): boolean {
+    const target = subscribedWorkflowId.value
+    if (target === null || !bridge.canReseed(target)) return false
+    const canvas = canvasFor(target)
+    if (!hasNodes(canvas) || !bridge.reseed(target, canvas)) return false
+    recordDevEvent('doc_reseed_sent', { workflowId: target })
+    lifecycle.onSubscribeSent(target)
+    return true
+  }
+  const onReseedResult: EventListener = (event) => {
+    if (!(event instanceof CustomEvent)) return
+    const detail = event.detail as {
+      workflowId?: unknown
+      ok?: unknown
+      code?: unknown
+    } | null
+    if (!isCurrentWorkflow(detail?.workflowId)) return
+    lastFrameType.value = event.type
+    recordDevEvent('doc_reseed_result', detail)
+    const code = typeof detail.code === 'string' ? detail.code : undefined
+    if (detail.ok === true || code === RESEED_CONFLICT) return
+    if (isRetryableReseedCode(code)) lifecycle.onSubscribeRefused(code)
+    else lifecycle.stopProbing()
+  }
+
+  function handleRejectedSubscription(
+    detail: {
+      workflowId?: unknown
+      ok?: unknown
+      code?: unknown
+      message?: unknown
+    } | null
+  ) {
+    const refusal = tryReseed()
+      ? { shouldNotify: false }
+      : handleSubscribeRefusal(detail, lifecycle)
+    releaseHeldOps()
+    sender.abortIfUnbound()
+    if (refusal.shouldNotify)
+      events.onSyncError?.(refusal.message, refusal.code)
+  }
+
   const onSubscribed: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
     if (!isTargetActive.value) return
@@ -497,14 +554,7 @@ function startAgentCrdtFollower(
       lifecycle.onSubscribeConfirmed()
       resumeHeldOpsIfSubscribed()
     } else {
-      const refusal = handleSubscribeRefusal(detail, lifecycle)
-      // FE #16637 residual: a refusal is the earliest signal the sender can
-      // get that its in-flight batch's doc is gone — don't make it wait out
-      // the 10 s result-silence window to notice on its own.
-      releaseHeldOps()
-      sender.abortIfUnbound()
-      if (refusal.shouldNotify)
-        events.onSyncError?.(refusal.message, refusal.code)
+      handleRejectedSubscription(detail)
     }
   }
   const onUpdate: EventListener = (event) => {
@@ -632,7 +682,7 @@ function startAgentCrdtFollower(
     connected.value = false
     lifecycle.onReconnected()
     recordDevEvent('reconnected', null)
-    bridge.resubscribe()
+    bridge.reconnect()
   }
   /**
    * Re-drive subscription intent whenever the socket may have become usable.
@@ -663,6 +713,7 @@ function startAgentCrdtFollower(
   bridge.addEventListener('doc_gap', onGap)
   bridge.addEventListener('doc_stale', onStale)
   bridge.addEventListener('doc_subscribe_sent', onSubscribeSent)
+  bridge.addEventListener('doc_reseed_result', onReseedResult)
   api.addEventListener('reconnected', onReconnected)
   api.addEventListener('status', onSocketActivity)
 
@@ -810,6 +861,7 @@ function startAgentCrdtFollower(
       () => bridge.removeEventListener('doc_gap', onGap),
       () => bridge.removeEventListener('doc_stale', onStale),
       () => bridge.removeEventListener('doc_subscribe_sent', onSubscribeSent),
+      () => bridge.removeEventListener('doc_reseed_result', onReseedResult),
       () => sender.detach(),
       () => rejectedOpNotifier.cancel(),
       () => coalescer.detach(),
@@ -844,6 +896,8 @@ function startAgentCrdtFollower(
       coalescer.enqueue(operations)
     },
     docInputNames: (nodeId: NodeId) =>
-      readDocSlotNames(bridge.follower.doc, String(nodeId), 'inputs')
+      readDocSlotNames(bridge.follower.doc, String(nodeId), 'inputs'),
+    docPromotedWidgets: (nodeId: NodeId) =>
+      readDocPromotedWidgets(bridge.follower.doc, String(nodeId))
   }
 }

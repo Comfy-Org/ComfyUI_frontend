@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import type { Locale } from '../../../i18n/translations'
+import type { Locale } from '@/i18n/translations'
 
-import FAQSection from '../../common/FAQSection.vue'
+import FAQSection from '@/components/common/FAQSection.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 </script>

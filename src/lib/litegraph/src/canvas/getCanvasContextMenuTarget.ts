@@ -12,6 +12,7 @@ import {
   queryRenderedLinkSegmentsAtPoint
 } from './hitTesting'
 import { queryHiddenLinkBadgeAtPoint } from './linkBadgeRenderer'
+import { getVisibleRerouteLink } from './linkVisibility'
 
 interface CanvasContextMenuTarget {
   reroute?: Reroute
@@ -38,10 +39,8 @@ function queryVisibleLinkAtPoint(
       continue
     }
     if (segment instanceof Reroute) {
-      for (const linkId of segment.linkIds) {
-        const link = graph.getLink(linkId)
-        if (link && !isHidden(link)) return { segment, link }
-      }
+      const link = getVisibleRerouteLink(graph, segment)
+      if (link) return { segment, link }
     }
   }
 }

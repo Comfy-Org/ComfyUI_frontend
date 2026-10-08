@@ -2,8 +2,10 @@ import { zPromptRequest } from '@comfyorg/ingest-types/zod'
 import { expect } from '@playwright/test'
 import type { Page, Request } from '@playwright/test'
 
+import { CLOUD_SELF_EMAIL } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import {
   PROMPT_ACCEPTED,
+  SESSION_REVOKED,
   WEB_SESSION_COOKIE,
   WEB_SESSION_CSRF_TOKEN,
   WEB_SESSION_MINT,
@@ -171,6 +173,29 @@ test.describe('Unified web session', { tag: '@cloud' }, () => {
     })
   })
 
+  test('a session revoked elsewhere sends the open tab to the login page when it becomes visible', async ({
+    comfyPage
+  }) => {
+    const page = comfyPage.page
+    await comfyPage.waitForAppReady()
+    expect(page.url()).not.toContain('/cloud/login')
+
+    await page.route('**/api/auth/session', (route) =>
+      route.request().method() === 'GET'
+        ? route.fulfill({
+            status: 401,
+            contentType: 'application/json',
+            body: JSON.stringify(SESSION_REVOKED)
+          })
+        : route.fallback()
+    )
+    await page.evaluate(() =>
+      document.dispatchEvent(new Event('visibilitychange'))
+    )
+
+    await expect(page).toHaveURL(/\/cloud\/login/)
+  })
+
   test('[E2E-03] switching workspace mints nothing until the next Run, which uses the new workspace', async ({
     comfyPage,
     tokenMints
@@ -209,6 +234,40 @@ test.describe('Unified web session', { tag: '@cloud' }, () => {
       expect(tokenMints.map(({ workspace }) => workspace)).toEqual([
         TEAM_WORKSPACE_ID
       ])
+    })
+  })
+
+  test.describe('arrived from the website with no Firebase login', () => {
+    test.use({ firebaseLogin: false })
+
+    test('boots on the session: no login page, the session user, a Run on the cookie, no Firebase traffic', async ({
+      comfyPage,
+      firebaseRequests,
+      credentialedFeatureReads
+    }) => {
+      const page = comfyPage.page
+      await mockPromptAccepted(page)
+      await comfyPage.waitForAppReady()
+      expect(page.url()).not.toContain('/cloud/login')
+
+      await comfyPage.toast.closeToasts()
+      await comfyPage.currentUserPopover.open()
+      await expect(page.getByText(CLOUD_SELF_EMAIL)).toBeVisible()
+      await comfyPage.currentUserPopover.close()
+
+      const promptRequest = page.waitForRequest(isPromptPost)
+      await comfyPage.workflow.loadWorkflow('default')
+      await comfyPage.toast.closeToasts()
+      await comfyPage.runButton.click()
+      const headers = await (await promptRequest).allHeaders()
+
+      expect(headers['x-csrf-token']).toBe(WEB_SESSION_CSRF_TOKEN)
+      expect(headers['authorization']).toBeUndefined()
+      expect(firebaseRequests).toEqual([])
+      expect(credentialedFeatureReads.length).toBeGreaterThan(0)
+      expect(credentialedFeatureReads[0].headers()['x-comfy-client']).toMatch(
+        /^@comfyorg\/account-core\//
+      )
     })
   })
 })

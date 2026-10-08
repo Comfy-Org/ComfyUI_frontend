@@ -1,13 +1,8 @@
-import type { CinematicCopyKey } from '../../../lib/workshop/cinematic-studio/copy'
-import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
+import type { CinematicCopyKey } from '@/lib/workshop/cinematic-studio/copy'
+import type { CinematicModel } from '@/lib/workshop/cinematic-studio/models'
 
 /** A file a shot can take: references for a still, frames or a source clip for a video. */
-export type ReferenceKind =
-  | 'cast'
-  | 'palette'
-  | 'firstFrame'
-  | 'lastFrame'
-  | 'video'
+export type ReferenceKind = 'cast' | 'firstFrame' | 'lastFrame' | 'video'
 
 const IMAGES = 'image/png,image/jpeg,image/webp'
 
@@ -24,11 +19,6 @@ export const REFERENCE_SLOTS: Readonly<
   cast: {
     label: 'cinematic.reference.cast',
     action: 'cinematic.reference.castAction',
-    accept: IMAGES
-  },
-  palette: {
-    label: 'cinematic.reference.palette',
-    action: 'cinematic.reference.paletteAction',
     accept: IMAGES
   },
   firstFrame: {
@@ -53,7 +43,7 @@ export function referenceSlots(
   model: CinematicModel | undefined,
   hasFirstFrame: boolean
 ): readonly ReferenceKind[] {
-  if (model?.mode !== 'video') return ['cast', 'palette']
+  if (model?.mode !== 'video') return ['cast']
   const slots: (ReferenceKind | false)[] = [
     !!model.video?.sourceVideo && 'video',
     !!model.firstFrameSlug && 'firstFrame',

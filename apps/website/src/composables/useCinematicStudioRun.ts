@@ -1,50 +1,50 @@
 import { useMounted } from '@vueuse/core'
 import { computed, onScopeDispose, readonly, shallowRef, watch } from 'vue'
 
-import type { WorkshopModelDetail } from '../config/models-catalogue'
-import { fetchModelsPage } from '../config/models-page-data'
-import type { PreparedRouterRender } from '../config/router-render'
-import { router_render } from '../config/router-render'
-import { refreshWorkshopCredits } from '../config/workshop-credits'
-import { useWorkshopModelBalance } from '../config/workshop-model-balance'
-import { releaseRouterOutputs } from '../config/workshop-response'
+import type { WorkshopModelDetail } from '@/config/models-catalogue'
+import { fetchModelsPage } from '@/config/models-page-data'
+import type { PreparedRouterRender } from '@/config/router-render'
+import { router_render } from '@/config/router-render'
+import { refreshWorkshopCredits } from '@/config/workshop-credits'
+import { useWorkshopModelBalance } from '@/config/workshop-model-balance'
+import { releaseRouterOutputs } from '@/config/workshop-response'
 import {
   WorkshopRouterError,
   workshopRunMayStillSettle
-} from '../config/workshop-router-errors'
-import type { WorkshopSession } from '../config/workshop-session-state'
-import { useWorkshopSession } from '../config/workshop-session-state'
-import { workshopIdempotencyKey } from '../config/workshop-snippets'
-import { createWorkshopUrlUploader } from '../config/workshop-url-upload'
-import type { AspectRatio } from '../lib/workshop/cinematic-studio/catalog'
+} from '@/config/workshop-router-errors'
+import type { WorkshopSession } from '@/config/workshop-session-state'
+import { useWorkshopSession } from '@/config/workshop-session-state'
+import { workshopIdempotencyKey } from '@/config/workshop-snippets'
+import { createWorkshopUrlUploader } from '@/config/workshop-url-upload'
+import type { AspectRatio } from '@/lib/workshop/cinematic-studio/catalog'
 import {
   frameParameters,
   watermarksOff
-} from '../lib/workshop/cinematic-studio/frames'
-import { studioGate } from '../lib/workshop/cinematic-studio/gate'
-import type { CinematicVideoShot } from '../lib/workshop/cinematic-studio/video'
+} from '@/lib/workshop/cinematic-studio/frames'
+import { studioGate } from '@/lib/workshop/cinematic-studio/gate'
+import type { CinematicVideoShot } from '@/lib/workshop/cinematic-studio/video'
 import {
   videoCapabilities,
   videoParameters
-} from '../lib/workshop/cinematic-studio/video'
-import { studioRouterForm } from '../lib/workshop/cinematic-studio/request'
-import type { Reel, ReelEvent } from '../lib/workshop/cinematic-studio/reel'
+} from '@/lib/workshop/cinematic-studio/video'
+import { studioRouterForm } from '@/lib/workshop/cinematic-studio/request'
+import type { Reel, ReelEvent } from '@/lib/workshop/cinematic-studio/reel'
 import {
   EMPTY_REEL,
   isRendering,
   reduceReel
-} from '../lib/workshop/cinematic-studio/reel'
-import { studioAnalytics } from '../lib/workshop/cinematic-studio/analytics'
+} from '@/lib/workshop/cinematic-studio/reel'
+import { studioAnalytics } from '@/lib/workshop/cinematic-studio/analytics'
 import {
   captureWorkshopEvent,
   useWorkshopAuthFlag,
   useWorkshopEnabled
-} from '../scripts/posthog'
-import type { WorkshopRunAnalytics } from '../scripts/workshop-analytics'
+} from '@/scripts/posthog'
+import type { WorkshopRunAnalytics } from '@/scripts/workshop-analytics'
 import {
   workshopFailureAnalytics,
   workshopModelAnalytics
-} from '../scripts/workshop-analytics'
+} from '@/scripts/workshop-analytics'
 
 interface ShotRequest {
   readonly modelSlug: string
@@ -133,15 +133,16 @@ function shotParameters(request: ShotRequest, model: WorkshopModelDetail) {
   }
 }
 
-function takeFailure(id: string, error: unknown): ReelEvent {
+function takeFailure(id: string, runSlug: string, error: unknown): ReelEvent {
   return error instanceof WorkshopRouterError
     ? {
         type: 'takeFailed',
         id,
         reason: error.reason,
-        requestId: error.requestId ?? undefined
+        requestId: error.requestId ?? undefined,
+        runSlug
       }
-    : { type: 'takeFailed', id, reason: 'client' }
+    : { type: 'takeFailed', id, reason: 'client', runSlug }
 }
 
 function mayStillSettle(error: unknown): boolean {
@@ -332,7 +333,7 @@ export function useCinematicStudioRun(
         return
       }
       if (!mayStillSettle(error)) unsettledTakes.delete(fingerprint)
-      dispatch(takeFailure(id, error))
+      dispatch(takeFailure(id, model.slug, error))
       captureWorkshopEvent({
         name: 'run_finished',
         properties: {

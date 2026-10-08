@@ -87,7 +87,6 @@ function renderComponent(props: Record<string, unknown> = {}) {
       plugins: [i18n],
       components: { Button },
       stubs: {
-        SelectButton: { template: '<div />' },
         // Clicking moves the v-model selection to a different stop ($200) so
         // tests can move off the current stop.
         CreditSlider: {
@@ -554,6 +553,48 @@ describe('UnifiedPricingTable team plan CTA', () => {
       screen.getByRole('button', { name: 'Subscribe to Team Yearly' })
     ).toBeTruthy()
   })
+
+  it('uses the billing catalog default team stop for display and checkout', async () => {
+    const user = userEvent.setup()
+    useBillingContext().teamCreditStops = computed(() => ({
+      default_stop_index: 1,
+      stops: [
+        {
+          id: 'stop-320',
+          credits: 67_520,
+          monthly: { list_price_cents: 32_000, price_cents: 30_400 },
+          yearly: { list_price_cents: 32_000, price_cents: 28_800 }
+        },
+        {
+          id: 'stop-640',
+          credits: 135_040,
+          monthly: { list_price_cents: 64_000, price_cents: 60_800 },
+          yearly: { list_price_cents: 64_000, price_cents: 57_600 }
+        }
+      ]
+    }))
+
+    const { emitted } = renderComponent({ initialPlanMode: 'team' })
+
+    expect(screen.getByText('1,620,480')).toBeVisible()
+    await user.click(
+      screen.getByRole('button', { name: 'Subscribe to Team Yearly' })
+    )
+    expect(emitted('subscribeTeam')).toEqual([
+      [
+        {
+          stop: {
+            id: 'stop-640',
+            usd: 640,
+            credits: 135_040,
+            discountedUsd: 576
+          },
+          billingCycle: 'yearly',
+          isChange: false
+        }
+      ]
+    ])
+  })
 })
 
 // Server billing capabilities only resolve on Cloud, so Local/Desktop keeps
@@ -781,17 +822,6 @@ const CATALOG_CARDS = [
   }
 ] as const
 
-const cycleToggleStub = {
-  props: ['options'],
-  emits: ['update:modelValue'],
-  template: `<div><button
-      v-for="option in options"
-      :key="option.value"
-      :data-testid="'cycle-' + option.value"
-      @click="$emit('update:modelValue', option.value)"
-    >{{ option.label }}</button></div>`
-}
-
 function renderWithCycleToggle(
   props: Partial<ComponentProps<typeof UnifiedPricingTable>> = {}
 ) {
@@ -801,7 +831,6 @@ function renderWithCycleToggle(
       plugins: [i18n],
       components: { Button },
       stubs: {
-        SelectButton: cycleToggleStub,
         CreditSlider: { template: '<div />' }
       }
     }
@@ -857,13 +886,16 @@ describe('UnifiedPricingTable credit allotment copy', () => {
     expect(screen.getByText('Generates ~4,560 5s videos*')).toBeTruthy()
   })
 
-  it('states the monthly allotment for personal tiers on the monthly cycle', async () => {
+  it('keeps the monthly personal-tier allotment when Monthly is selected again', async () => {
     const user = userEvent.setup()
     renderWithCycleToggle()
 
-    await user.click(screen.getByRole('button', { name: 'Monthly' }))
+    const monthly = screen.getByRole('button', { name: 'Monthly' })
+    await user.click(monthly)
+    await user.click(monthly)
     await nextTick()
 
+    expect(monthly).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getAllByText('monthly credits')).toHaveLength(3)
     expect(screen.queryAllByText('credits per year')).toHaveLength(0)
     expect(screen.getByText('4,200')).toBeTruthy()

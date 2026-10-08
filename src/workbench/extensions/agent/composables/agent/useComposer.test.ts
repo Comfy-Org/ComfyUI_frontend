@@ -4,7 +4,7 @@ import { useTelemetry } from '@/platform/telemetry'
 
 import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
 import type { AgentStarterPromptAttribution } from '../../utils/starterPrompts'
-import type { ComposerAttachment } from './useComposer'
+import type { ComposerAttachment } from '../../types/composerAttachment'
 import { useComposer } from './useComposer'
 
 vi.mock(import('@/platform/telemetry'))
@@ -13,7 +13,7 @@ assert.exists(telemetryProvider)
 const telemetry = vi.mocked(telemetryProvider)
 
 const CHIP: AgentStarterPromptAttribution = {
-  promptId: 'list_workflows',
+  promptId: 'slot_2',
   promptIndex: 1,
   promptCount: 5,
   promptTextHash: 'deadbeef',
@@ -45,10 +45,8 @@ describe('useComposer', () => {
 
     composer.submit()
 
-    expect(onSend).toHaveBeenCalledWith('make a cat  @[Image: cat.png]', [
-      attachment
-    ])
-    expect(composer.draft.value).toBe('  make a cat   ')
+    expect(onSend).toHaveBeenCalledWith('make a cat', [attachment])
+    expect(composer.draft.value).toBe('  make a cat  ')
     expect(composer.attachments.value).toEqual([attachment])
   })
 
@@ -105,7 +103,7 @@ describe('useComposer', () => {
     expect(composer.canSend.value).toBe(true)
     composer.submit()
 
-    expect(onSend).toHaveBeenCalledWith('@[Image: cat.png]', [
+    expect(onSend).toHaveBeenCalledWith('', [
       { id: 'a1', name: 'cat.png', ref: 'r' }
     ])
   })
@@ -170,7 +168,7 @@ describe('useComposer', () => {
 
     expect(telemetry.trackAgentStarterPromptClicked).toHaveBeenCalledTimes(1)
     expect(telemetry.trackAgentStarterPromptClicked).toHaveBeenCalledWith({
-      prompt_id: 'list_workflows',
+      prompt_id: 'slot_2',
       prompt_index: 1,
       prompt_count: 5,
       prompt_text_hash: 'deadbeef',
@@ -181,7 +179,7 @@ describe('useComposer', () => {
     // The id on the event is the id the send will be attributed with.
     const [[event]] = telemetry.trackAgentStarterPromptClicked.mock.calls
     expect(store.starterPrompt).toEqual({
-      id: 'list_workflows',
+      id: 'slot_2',
       clickId: event.click_id
     })
   })
@@ -192,7 +190,7 @@ describe('useComposer', () => {
     composer.insert('List my saved workflows', CHIP)
     composer.insert('Explain the selected node', {
       ...CHIP,
-      promptId: 'explain_selected_node',
+      promptId: 'slot_4',
       promptIndex: 3
     })
 
@@ -216,7 +214,7 @@ describe('useComposer', () => {
     )
   })
 
-  it('treats a reference-only draft as non-empty for prompt attribution', () => {
+  it('treats an attachment-only draft as non-empty for prompt attribution', () => {
     const { composer } = setup()
     composer.addAttachment({ id: 'a1', name: 'cat.png', ref: 'r' })
 
@@ -233,14 +231,14 @@ describe('useComposer', () => {
     first.addAttachment({ id: 'a1', name: 'cat.png', ref: 'r' })
 
     const { composer: second, onSend } = setup()
-    expect(second.draft.value).toBe('still here ')
+    expect(second.draft.value).toBe('still here')
     expect(second.attachments.value.map((a) => a.id)).toEqual(['a1'])
 
     second.submit()
-    expect(onSend).toHaveBeenCalledWith('still here@[Image: cat.png]', [
+    expect(onSend).toHaveBeenCalledWith('still here', [
       { id: 'a1', name: 'cat.png', ref: 'r' }
     ])
-    expect(first.draft.value).toBe('still here ')
+    expect(first.draft.value).toBe('still here')
     expect(first.attachments.value.map((attachment) => attachment.id)).toEqual([
       'a1'
     ])

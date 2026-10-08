@@ -7,6 +7,7 @@ import { computed, defineComponent, nextTick, ref } from 'vue'
 import type { SubscriptionInfo } from '@/composables/billing/types'
 import { i18n } from '@/i18n'
 import { api } from '@/scripts/api'
+import { WORKSPACE_INSET_RIGHT } from '@/composables/useWorkspaceInset'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { TurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
@@ -19,9 +20,7 @@ import DockedAgentPanel from './DockedAgentPanel.vue'
 vi.mock(import('@/platform/telemetry'))
 vi.mock(import('@/composables/billing/useBillingContext'))
 const billingContext = useBillingContext()
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 const fetchApi = vi.hoisted(() =>
   vi.fn<(route: string, init?: RequestInit) => Promise<Response>>()
@@ -73,6 +72,7 @@ function renderPanel() {
 
 describe('DockedAgentPanel', () => {
   beforeEach(() => {
+    window.innerWidth = 1024
     localStorage.clear()
     fetchApi.mockReset()
     fetchApi.mockResolvedValue(jsonResponse(404, { error: 'not found' }))
@@ -104,6 +104,25 @@ describe('DockedAgentPanel', () => {
     ).toBeTruthy()
   })
 
+  it('keeps the panel usable as an overlay when the dock cannot fit', async () => {
+    const store = openPanel()
+    renderPanel()
+
+    const root = await screen.findByTestId('agent-panel-root-stub')
+    window.innerWidth = 400
+    window.dispatchEvent(new Event('resize'))
+    await nextTick()
+
+    const container = screen.getByTestId('docked-agent-panel')
+    expect(store.isVisible).toBe(true)
+    expect(container.style.width).toBe('400px')
+    expect(
+      document.documentElement.style.getPropertyValue(WORKSPACE_INSET_RIGHT)
+    ).toBe('0px')
+    expect(screen.getByTestId('agent-panel-root-stub')).toBe(root)
+    expect(rootLiveness.maxLive).toBe(1)
+  })
+
   it('restores the server run mode when the panel initializes', async () => {
     fetchApi.mockResolvedValueOnce(
       jsonResponse(200, { mode: 'auto_limited', credit_limit: 25 })
@@ -114,7 +133,10 @@ describe('DockedAgentPanel', () => {
     const runMode = useAgentRunModeStore()
     await vi.waitFor(() => expect(runMode.mode).toBe('auto_limited'))
     expect(runMode.creditLimit).toBe(25)
-    expect(fetchApi).toHaveBeenCalledWith('/agent/run-mode', { method: 'GET' })
+    expect(fetchApi).toHaveBeenCalledWith(
+      '/agent/run-mode',
+      expect.objectContaining({ method: 'GET' })
+    )
   })
 
   it('reports non-404 run mode load failures', async () => {
@@ -124,17 +146,24 @@ describe('DockedAgentPanel', () => {
 
     await vi.waitFor(() =>
       expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+        surface: 'agent',
         errorType: 'agent_run_mode_load_failure'
       })
     )
   })
 
-  it('renders nothing while the panel is closed', () => {
+  it('does not mount the Agent root until the panel opens', async () => {
     const store = openPanel()
     store.isOpen = false
     renderPanel()
 
     expect(screen.queryByTestId('docked-agent-panel')).toBeNull()
+    expect(screen.queryByTestId('agent-panel-root-stub')).toBeNull()
+
+    store.isOpen = true
+    await nextTick()
+
+    expect(await screen.findByTestId('agent-panel-root-stub')).toBeTruthy()
   })
 
   it('renders nothing while the feature is disabled', () => {
@@ -179,6 +208,31 @@ describe('DockedAgentPanel', () => {
     await user.pointer({ coords: { x: 800, y: 10 } })
     expect(store.width).toBe(420)
   })
+
+  it.for(['pointerup', 'pointercancel'] as const)(
+    'stops resizing on document %s',
+    async (terminationEvent) => {
+      window.innerWidth = 1920
+      const store = openPanel()
+      const user = userEvent.setup()
+      renderPanel()
+
+      const handle = screen.getByTestId('agent-panel-resize-handle')
+      handle.setPointerCapture = () => {}
+      await user.pointer({
+        keys: '[MouseLeft>]',
+        target: handle,
+        coords: { x: 800, y: 10 }
+      })
+      await user.pointer({ coords: { x: 750, y: 10 } })
+      expect(store.width).toBe(470)
+
+      await fireEvent(document, new PointerEvent(terminationEvent))
+      await user.pointer({ coords: { x: 700, y: 10 } })
+
+      expect(store.width).toBe(470)
+    }
+  )
 
   it('settles to one live root and the live turn survives both mode switches through rehydration', async () => {
     openPanel()

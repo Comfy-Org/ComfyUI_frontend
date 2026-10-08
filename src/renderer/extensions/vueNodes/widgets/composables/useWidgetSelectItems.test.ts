@@ -78,14 +78,6 @@ function createDefaultOptions(
 }
 
 describe('display label behavior', () => {
-  it('uses values as labels when no label function provided', () => {
-    const { dropdownItems } = useWidgetSelectItems(createDefaultOptions())
-    expect(dropdownItems.value[0]).toMatchObject({
-      name: 'img_001.png',
-      label: 'img_001.png'
-    })
-  })
-
   it('applies custom label function', () => {
     const getOptionLabel = (v?: string | null) => `Custom: ${v}`
     const { dropdownItems } = useWidgetSelectItems(

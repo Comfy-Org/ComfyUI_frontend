@@ -11,14 +11,55 @@
  * so no server or payment-provider text can reach a consumer through this
  * state.
  */
-import type { zBillingOpStatusResponse } from '@comfyorg/ingest-types/zod'
-import type { z } from 'zod'
+import {
+  zBillingOpChargeBreakdown,
+  zBillingOpChargeReason,
+  zBillingOpReceiptPlan,
+  zBillingOpStatusResponse
+} from '@comfyorg/ingest-types/zod'
+import { z } from 'zod'
 
 import type { BillingScope } from './billingScope.js'
+import { SubscriptionDiscountSchema } from './subscriptionDiscount.js'
+import { wireCents } from './wireCents.js'
 
-export type BillingOpStatus = z.infer<typeof zBillingOpStatusResponse>
+const ChargeBreakdownSchema = zBillingOpChargeBreakdown.extend({
+  amount_charged_cents: wireCents,
+  reasons: z.array(
+    zBillingOpChargeReason.extend({
+      amount_cents: wireCents,
+      discount: SubscriptionDiscountSchema.optional()
+    })
+  )
+})
+
+const ReceiptPlanSchema = zBillingOpReceiptPlan.extend({
+  price_cents: wireCents.optional(),
+  monthly_price_cents: wireCents.optional()
+})
+
+export const BillingOpStatusSchema = zBillingOpStatusResponse.extend({
+  amount_charged_cents: wireCents.optional(),
+  credits_added: wireCents.optional(),
+  charge_breakdown: ChargeBreakdownSchema.optional(),
+  plan: ReceiptPlanSchema.optional()
+})
+
+export type BillingOpStatus = z.infer<typeof BillingOpStatusSchema>
+
+export type BillingChargeBreakdown = NonNullable<
+  BillingOpStatus['charge_breakdown']
+>
+export type BillingChargeReason = BillingChargeBreakdown['reasons'][number]
 
 export type BillingOperationKind = 'subscription' | 'topup' | 'cancel'
+
+/**
+ * The plan the server reports an operation is for, in every status of a plan
+ * change, initial subscription or resubscribe. Its tier and prices are absent
+ * when the server cannot describe the plan.
+ */
+export type BillingOperationPlan = NonNullable<BillingOpStatus['plan']>
 
 /**
  * Where the customer completes the operation: the challenge this tab drives
@@ -72,6 +113,13 @@ export type BillingOperationIdentity = BillingPresentationState & {
   readonly observedAt: number
   /** When the attempt began, before the command was issued; telemetry durations count from here. */
   readonly attemptStartedAt: number
+  /**
+   * This tab issued the operation and was still waiting on its outcome when
+   * it adopted it: from its own command, or after a reload or a return from
+   * a provider page. Absent for an operation another tab issued, and for one
+   * this tab already saw succeed.
+   */
+  readonly awaitedHere?: true
 }
 
 /**
@@ -95,8 +143,11 @@ export type PendingBillingOperation = BillingOperationIdentity & {
   /** Set while the customer's last attempt was declined and they may try again. */
   readonly declineReason?: BillingDeclineReason
   readonly recoveryAction?: BillingRecoveryAction
+  /** The server's word on whether cancelling this operation would take effect; absent is no claim. */
+  readonly cancelable?: boolean
   /** True once the operation has ever waited on the customer; widens the poll budget. */
   readonly customerActionSeen: boolean
+  readonly plan?: BillingOperationPlan
 }
 
 export type FailedBillingOperation = BillingOperationIdentity & {
@@ -106,9 +157,27 @@ export type FailedBillingOperation = BillingOperationIdentity & {
   readonly retryable: boolean
 }
 
+/**
+ * What the server reports a succeeded operation did, for display only. Each
+ * fact is absent while the server cannot say it: a charge billed outside a
+ * Stripe invoice, a grant not recorded yet, or an operation that is not a
+ * plan change.
+ */
+export interface BillingOperationReceipt {
+  readonly amountChargedCents?: number
+  readonly chargeBreakdown?: BillingChargeBreakdown
+  readonly creditsAdded?: number
+  readonly plan?: BillingOperationPlan
+}
+
+export type SucceededBillingOperation = BillingOperationIdentity & {
+  readonly phase: 'succeeded'
+  readonly receipt?: BillingOperationReceipt
+}
+
 export type BillingOperationState =
   | PendingBillingOperation
-  | (BillingOperationIdentity & { readonly phase: 'succeeded' })
+  | SucceededBillingOperation
   | FailedBillingOperation
   /** This tab's poll budget ran out; the server may still settle the operation. */
   | (BillingOperationIdentity & { readonly phase: 'timed_out' })
@@ -178,6 +247,7 @@ function identityOf(state: BillingOperationState): BillingOperationIdentity {
     scope: state.scope,
     observedAt: state.observedAt,
     attemptStartedAt: state.attemptStartedAt,
+    ...(state.awaitedHere ? { awaitedHere: true } : {}),
     ...presentationOf(state)
   }
 }
@@ -228,7 +298,7 @@ function terminalFromStatus(
   state: PendingBillingOperation,
   status: BillingOpStatus
 ): BillingOperationState | undefined {
-  if (status.status === 'succeeded') return withPhase(state, 'succeeded')
+  if (status.status === 'succeeded') return succeeded(state, status)
   if (status.status === 'failed') {
     return {
       ...identityOf(state),
@@ -247,6 +317,47 @@ function terminalFromStatus(
     return withPhase(state, 'reconciliation_needed')
   }
   return undefined
+}
+
+function receiptOf(
+  status: BillingOpStatus
+): BillingOperationReceipt | undefined {
+  const receipt: BillingOperationReceipt = {
+    ...(status.amount_charged_cents === undefined
+      ? {}
+      : { amountChargedCents: status.amount_charged_cents }),
+    ...(status.charge_breakdown === undefined
+      ? {}
+      : { chargeBreakdown: status.charge_breakdown }),
+    ...(status.credits_added === undefined
+      ? {}
+      : { creditsAdded: status.credits_added }),
+    ...(status.plan === undefined ? {} : { plan: status.plan })
+  }
+  return Object.keys(receipt).length === 0 ? undefined : receipt
+}
+
+function succeeded(
+  state: BillingOperationState,
+  status: BillingOpStatus
+): SucceededBillingOperation {
+  const receipt = receiptOf(status)
+  return {
+    ...withPhase(state, 'succeeded'),
+    ...(receipt === undefined ? {} : { receipt })
+  }
+}
+
+/**
+ * The charge went through and the server has not recorded its credits yet;
+ * reading the operation again fills them in.
+ */
+export function isGrantLanding(state: BillingOperationState): boolean {
+  return (
+    state.phase === 'succeeded' &&
+    state.receipt?.amountChargedCents !== undefined &&
+    state.receipt.creditsAdded === undefined
+  )
 }
 
 /**
@@ -301,15 +412,18 @@ function reducePending(
     : status.authentication_state
   const actionUrl = nextActionUrl(state, status, authenticationState)
   const declineReason = nextDeclineReason(state, status, authenticationState)
+  const { plan: _previousPlan, ...rest } = state
 
   return {
-    ...state,
+    ...rest,
+    ...(status.plan === undefined ? {} : { plan: status.plan }),
     challenge: nextChallenge(state, status),
     authenticationState,
     actionUrl,
     serverPhase: status.phase,
     declineReason,
     recoveryAction: status.recovery_action,
+    cancelable: status.cancelable,
     customerActionSeen:
       state.customerActionSeen ||
       actionUrl !== undefined ||

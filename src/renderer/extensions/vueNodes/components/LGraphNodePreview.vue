@@ -15,7 +15,7 @@
     </div>
     <div
       class="pointer-events-none flex flex-1 flex-col gap-1 pb-2"
-      :data-testid="`node-body-${nodeData.id}`"
+      data-testid="node-preview-body"
     >
       <NodeSlots :node-data="nodeData" :sync-layout="false" />
 

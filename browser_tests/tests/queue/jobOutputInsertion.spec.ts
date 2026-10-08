@@ -1,6 +1,5 @@
 import { expect } from '@playwright/test'
 
-import { assetRequestIncludesTag } from '@e2e/fixtures/assetApiFixture'
 import { jobOutputInsertionCases } from '@e2e/fixtures/data/jobOutputInsertion'
 import { expectNoErrorUiAfterVerification } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import { jobOutputInsertionTest as test } from '@e2e/fixtures/jobOutputInsertionFixture'
@@ -33,14 +32,6 @@ test.describe(
         const initialLoaderCount = (
           await comfyPage.nodeOps.getNodeRefsByType(scenario.nodeType)
         ).length
-        const assetsVerificationResponse = comfyPage.page.waitForResponse(
-          (response) =>
-            response.request().method().toUpperCase() === 'GET' &&
-            response.status() === 200 &&
-            new URL(response.url()).pathname.endsWith('/api/assets') &&
-            assetRequestIncludesTag(response.url(), 'output')
-        )
-
         await comfyPage.queuePanel.addOutputToCurrentWorkflow(scenario.job.id)
 
         await expect
@@ -51,11 +42,7 @@ test.describe(
           )
           .toBe(initialLoaderCount + 1)
 
-        await expectNoErrorUiAfterVerification(
-          comfyPage,
-          panel,
-          assetsVerificationResponse
-        )
+        await expectNoErrorUiAfterVerification(comfyPage, panel)
       })
     }
   }

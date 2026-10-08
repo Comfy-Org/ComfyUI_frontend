@@ -1,19 +1,39 @@
 import type { AgentMessages, TurnId } from '../../schemas/agentApiSchema'
-import { zPersistedToolCallSummary } from '../../schemas/agentApiSchema'
+import {
+  toTurnId,
+  zPersistedToolCallSummary
+} from '../../schemas/agentApiSchema'
 import type { WorkflowReference } from '../../types/workflowReference'
 import { parseWorkflowReferences } from '../../utils/workflowReferenceText'
 import type { AssistantMessage, ToolPart } from './agentMessageParts'
 import { createAssistantMessage } from './agentMessageParts'
 
+type AttachmentKind = 'image' | 'video' | 'audio'
+
 /**
  * A file attached to a user turn. `ref` is the uploaded input-namespace
- * filename that resolves the preview; on a persisted row this is the only
- * name the server ever saw, so `name` and `ref` are the same string.
+ * filename that resolves the preview. `name` is the label shown to the user;
+ * it falls back to `ref` for legacy/unresolved rows and otherwise comes from
+ * the persisted asset `display_name`.
+ *
+ * `id` and `kind` are the server's own resolution of that name, replayed off
+ * the row's `attachment_refs`. `kind` is what lets a rehydrated attachment be
+ * classified when its name cannot classify itself — a library asset is
+ * attached under its content hash, which carries no extension to read a kind
+ * off. `id` identifies the asset behind that same hash.
  */
 export interface UserAttachment {
   name: string
   previewUrl?: string
   ref?: string
+  id?: string
+  kind?: AttachmentKind
+}
+
+type ParsedAttachmentRef = Pick<UserAttachment, 'id' | 'kind'> & {
+  ref: string
+  key: string
+  displayName?: string
 }
 
 export interface NormalizedAgentTranscript {
@@ -32,33 +52,81 @@ export interface NormalizedAgentTranscript {
   }
 }
 
-function attachmentRefNames(value: unknown): string[] {
+function isNamedAttachment(name: unknown): name is string {
+  return typeof name === 'string' && name.trim() !== ''
+}
+
+function attachmentId(entry: object): Pick<UserAttachment, 'id'> {
+  if (!('id' in entry) || typeof entry.id !== 'string' || entry.id === '')
+    return {}
+  return { id: entry.id }
+}
+
+function attachmentKind(entry: object): Pick<UserAttachment, 'kind'> {
+  if (!('kind' in entry) || !isAttachmentKind(entry.kind)) return {}
+  return { kind: entry.kind }
+}
+
+function attachmentDisplayName(
+  entry: object
+): Pick<ParsedAttachmentRef, 'displayName'> {
+  if (!('display_name' in entry) || !isNamedAttachment(entry.display_name))
+    return {}
+  return { displayName: entry.display_name }
+}
+
+function parseAttachmentRef(entry: unknown): ParsedAttachmentRef | undefined {
+  if (typeof entry !== 'object' || entry === null || !('name' in entry))
+    return undefined
+  if (!isNamedAttachment(entry.name)) return undefined
+
+  return {
+    ref: entry.name,
+    key: entry.name.trim(),
+    ...attachmentId(entry),
+    ...attachmentKind(entry),
+    ...attachmentDisplayName(entry)
+  }
+}
+
+function parseAttachmentRefs(value: unknown): ParsedAttachmentRef[] {
   if (!Array.isArray(value)) return []
-  return (value as unknown[]).flatMap((entry) => {
-    if (typeof entry !== 'object' || entry === null || !('name' in entry))
-      return []
-    const { name } = entry
-    return typeof name === 'string' ? [name] : []
+  const entries: unknown[] = value
+  return entries.flatMap((entry) => {
+    const parsed = parseAttachmentRef(entry)
+    return parsed ? [parsed] : []
   })
 }
 
-/**
- * A persisted user row carries `attachments` (the uploaded input filenames
- * from the original request) and `attachment_refs` (the server's own
- * resolution of those same filenames, as `{name, id?, kind?}`). Either one
- * names the same input-namespace filenames the live send path uses as
- * `SentAttachment.ref`, so either is enough to rebuild the preview grid.
- */
+function isAttachmentKind(value: unknown): value is AttachmentKind {
+  return value === 'image' || value === 'video' || value === 'audio'
+}
+
 function parseUserAttachments(
   content: Record<string, unknown> | undefined
 ): UserAttachment[] | undefined {
-  const names = Array.isArray(content?.attachments)
-    ? content.attachments.filter(
-        (name): name is string => typeof name === 'string'
-      )
-    : attachmentRefNames(content?.attachment_refs)
+  const refs = parseAttachmentRefs(content?.attachment_refs)
+  const resolved = new Map<string, ParsedAttachmentRef>()
+  for (const entry of refs) {
+    if (!resolved.has(entry.key)) resolved.set(entry.key, entry)
+  }
+  const rawAttachments: unknown = content?.attachments
+  let postedNames: string[] | undefined
+  if (Array.isArray(rawAttachments)) {
+    const entries: unknown[] = rawAttachments
+    postedNames = entries.filter(isNamedAttachment)
+  }
+  const names = postedNames ?? refs.map(({ ref }) => ref)
   return names.length > 0
-    ? names.map((name) => ({ name, ref: name }))
+    ? names.map((ref) => {
+        const match = resolved.get(ref.trim())
+        return {
+          name: match?.displayName ?? ref,
+          ref,
+          ...(match?.id ? { id: match.id } : {}),
+          ...(match?.kind ? { kind: match.kind } : {})
+        }
+      })
     : undefined
 }
 
@@ -102,17 +170,12 @@ function parseUserWorkflowReferences(
 }
 
 /**
- * A persisted tool-call status is `pending`/`running` while it was still in
- * flight when the turn ended, and some terminal string otherwise (`ok`,
- * `success`, `error`, `failed`, `cancelled`, `timeout`, ...) — the exact
- * terminal vocabulary is not yet settled between the backend's persisted and
- * live wire formats, so anything other than `pending`/`running` is treated as
- * terminal here.
- *
- * A restored (non-live) row has no transport left to ever settle its tool
- * parts, so a `pending`/`running` status there would otherwise spin forever;
- * only `isLive` (the row is the one actively backed by a live transport —
- * the run_approval mid-ask case) keeps it in `streaming` state.
+ * `zPersistedToolCallSummary` only ever validates a terminal
+ * (`success`/`error`) row — the backend drops a row a dead turn left in
+ * `pending`/`running` before persisting it. `isLive` (the row is backed by a
+ * live transport) is kept only for a call that arrives through the live WebSocket path with a
+ * status this schema doesn't cover; a restored (non-live) row is always
+ * `done`.
  */
 function toolCallPartState(
   status: unknown,
@@ -125,17 +188,15 @@ function toolCallPartState(
 /**
  * `undefined` while the call is still genuinely in progress (matching the
  * live path, which omits `ok` until a terminal status arrives); once the
- * part is in a `done` state, only `ok`/`success` counts as success — every
- * other terminal string, including a restored `pending`/`running` call that
- * had no live transport to finish it, reads as failure rather than being
- * rendered as if it succeeded.
+ * part is in a `done` state, only `success` counts as success — `error`
+ * reads as failure, matching `ToolCallSummary.status`.
  */
 function toolCallOk(
   status: unknown,
   state: ToolPart['state']
 ): boolean | undefined {
   if (state === 'streaming') return undefined
-  return status === 'ok' || status === 'success'
+  return status === 'success'
 }
 
 /**
@@ -143,7 +204,7 @@ function toolCallOk(
  * and maps it onto the same `ToolPart` the live WebSocket path builds from
  * `agent_tool_call` events, so a reloaded transcript renders through the
  * identical work-summary UI as a live turn. `undefined` for anything that
- * doesn't validate (missing `id`/`tool_name`, wrong types, ...).
+ * doesn't validate (missing `id`/`tool_call_id`/`tool_name`, wrong types, ...).
  */
 function parseToolCallEntry(
   entry: unknown,
@@ -152,10 +213,10 @@ function parseToolCallEntry(
   const parsed = zPersistedToolCallSummary.safeParse(entry)
   if (!parsed.success) return undefined
   const {
-    id,
     tool_call_id: toolCallId,
     tool_name: toolName,
     status,
+    skill,
     duration_ms: rawDuration
   } = parsed.data
   const state = toolCallPartState(status, isLive)
@@ -168,14 +229,14 @@ function parseToolCallEntry(
       : undefined
   return {
     type: 'tool',
-    // A live `agent_tool_call` frame keys its update on `tool_call_id`, not
-    // this row's own `id` — prefer it so a restored part matches a live
-    // frame that arrives for it later. Falls back to `id` only for rows
-    // recorded before `tool_call_id` existed.
-    callId: toolCallId ?? id,
+    // A live `agent_tool_call` frame keys its update on `tool_call_id`, so a
+    // restored part uses the same id to match a live frame that arrives for
+    // it later.
+    callId: toolCallId,
     name: toolName,
     state,
     ...(ok !== undefined ? { ok } : {}),
+    ...(skill ? { skill } : {}),
     ...(durationMs !== undefined ? { durationMs } : {})
   }
 }
@@ -202,9 +263,10 @@ function parseToolCalls(
 
 /**
  * Appends a persisted assistant row's tool-call and text parts onto its
- * running message. `isLive` is true only when this row is the one that will
- * be handed a live `AgentEventTransport` (the run_approval mid-ask case), so
- * its still-in-flight tool parts may legitimately stay `streaming`.
+ * running message. `isLive` is true when the row is the one that will be
+ * handed a live `AgentEventTransport` — the row the server still reports as
+ * `streaming` — so its still-in-flight tool parts may legitimately stay
+ * `streaming`.
  *
  * `message.parts` is shared across every assistant row of one turn (via
  * `assistants.get(turnId)` in `recordAssistantRow`), but `parseToolCalls`
@@ -255,26 +317,31 @@ function pendingRunApproval(
 
 /**
  * Applies one persisted assistant row onto its running message: appends any
- * parsed tool-call parts and text part, then, when the row is mid-ask,
- * attaches a `runApproval` part and marks the message still-streaming.
- * Returns the `pending` entry to record when the row is mid-ask, or
- * `undefined` otherwise.
+ * parsed tool-call parts and text part, then, for a row the server still
+ * reports as `streaming`, attaches a `runApproval` part when that row is also
+ * mid-ask. Returns the `pending` entry for a live row, or `undefined` for a
+ * terminal one; `normalizeAgentTranscript` owns `message.streaming` itself.
+ *
+ * PM-1776/PM-1682: `row.status` is the only authority on whether the turn is
+ * still running. Reading a live row as finished unless it carried a
+ * `pending_ask` left every client that hydrates mid-turn — a reopened panel,
+ * a refreshed tab — showing a completed transcript and offering Send for a
+ * thread the server answers with 409.
  */
 function applyAssistantRow(
   row: AgentMessages[number],
   message: AssistantMessage,
   text: string
 ): NormalizedAgentTranscript['pending'] {
-  message.streaming = false
-  const runApproval =
-    row.status === 'streaming' ? pendingRunApproval(row) : undefined
-  appendAssistantContent(message, row, text, runApproval !== undefined)
+  const isLive = row.status === 'streaming'
+  message.streaming = isLive
+  appendAssistantContent(message, row, text, isLive)
 
-  if (!runApproval) return undefined
+  if (!isLive) return undefined
 
-  message.parts.push({ type: 'runApproval', ...runApproval })
-  message.streaming = true
-  return { messageId: row.id as TurnId, message }
+  const runApproval = pendingRunApproval(row)
+  if (runApproval) message.parts.push({ type: 'runApproval', ...runApproval })
+  return { messageId: toTurnId(row.id), message }
 }
 
 /**
@@ -334,10 +401,6 @@ function recordUserRow(
   return update.workflowId
 }
 
-/**
- * Applies an assistant row onto its turn's running message and records it
- * onto `assistants`. Returns the row's `pending` entry, if it is mid-ask.
- */
 function recordAssistantRow(
   row: AgentMessages[number],
   turnId: TurnId,
@@ -350,6 +413,40 @@ function recordAssistantRow(
   return rowPending
 }
 
+/**
+ * Strips the liveness a row's `streaming` status granted a message that turns
+ * out not to be getting a transport. The parts matter as much as the flag,
+ * and both kinds this row could have been granted are settled here because a
+ * transport is the only thing that could have settled either: a still-running
+ * tool call is clamped, and a `runApproval` ask is dropped the way
+ * `agent_ask_resolved` drops it -- left in place it renders an enabled card
+ * whose answer would be posted against a turn that is no longer active.
+ */
+export function settleLiveMessage(message: AssistantMessage): void {
+  message.streaming = false
+  message.parts = message.parts.filter((part) => part.type !== 'runApproval')
+  for (const part of message.parts) {
+    if (part.type !== 'tool' || part.state !== 'streaming') continue
+    part.state = 'done'
+    part.ok ??= false
+  }
+}
+
+/**
+ * The live turn the transcript may restore: only the thread's newest turn can
+ * still be running, and within that turn only its own newest assistant row
+ * decides. A `streaming` row that any later row has moved past — a newer turn's
+ * or its own turn's — is a stale write, and restoring it would hand the
+ * composer a turn nothing will ever settle.
+ */
+function liveTranscriptTurn(
+  pendingByTurn: Map<TurnId, NormalizedAgentTranscript['pending']>,
+  assistants: Map<TurnId, AssistantMessage>
+): NormalizedAgentTranscript['pending'] {
+  const liveTurn = [...assistants.keys()].at(-1)
+  return liveTurn === undefined ? undefined : pendingByTurn.get(liveTurn)
+}
+
 export function normalizeAgentTranscript(
   history: AgentMessages
 ): NormalizedAgentTranscript {
@@ -360,7 +457,7 @@ export function normalizeAgentTranscript(
   const turnOrder: TurnId[] = []
   const seenTurns = new Set<TurnId>()
   const rowIds = new Set<string>()
-  let pending: NormalizedAgentTranscript['pending']
+  const pendingByTurn = new Map<TurnId, NormalizedAgentTranscript['pending']>()
   let latestWorkflowId: string | undefined
 
   for (const row of [...history].sort((a, b) => a.seq - b.seq)) {
@@ -380,14 +477,18 @@ export function normalizeAgentTranscript(
       if (workflowId) latestWorkflowId = workflowId
     }
     if (row.role === 'assistant') {
-      const rowPending = recordAssistantRow(row, turnId, text, assistants)
-      if (rowPending) pending = rowPending
+      pendingByTurn.set(
+        turnId,
+        recordAssistantRow(row, turnId, text, assistants)
+      )
     }
   }
 
+  const live = liveTranscriptTurn(pendingByTurn, assistants)
   const messages = turnOrder.map((turnId) => {
     const message = assistants.get(turnId) ?? createAssistantMessage(turnId)
-    message.streaming = message === pending?.message
+    if (message === live?.message) message.streaming = true
+    else settleLiveMessage(message)
     return message
   })
 
@@ -399,6 +500,6 @@ export function normalizeAgentTranscript(
     latestWorkflowId,
     rowIds,
     assistantTurnIds: new Set(assistants.keys()),
-    pending
+    pending: live
   }
 }

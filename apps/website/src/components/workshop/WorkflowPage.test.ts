@@ -1,10 +1,10 @@
 import { render, screen } from '@testing-library/vue'
 import { assert, describe, expect, it, vi } from 'vitest'
 
-import { workflowDetailsBySlug } from '../../config/workshop-workflow-content'
+import { workflowDetailsBySlug } from '@/config/workshop-workflow-content'
 import WorkflowPage from './WorkflowPage.vue'
 
-vi.mock(import('../../config/workshop-session-state'))
+vi.mock(import('@/config/workshop-session-state'))
 
 const model = workflowDetailsBySlug.get('workflows/remove-background')
 assert(model, 'the catalogue no longer carries the fixture workflow')
@@ -23,9 +23,15 @@ describe('WorkflowPage header', () => {
 
     const shelf = screen.getByTestId('workflow-use-case')
     expect(shelf.textContent.trim()).toBe('Edit images')
-    expect(shelf.getAttribute('href')).toBe(
-      '/models?type=workflows&category=cleanup'
-    )
+    expect(shelf.getAttribute('href')).toBe('/hub/workflows/?category=cleanup')
+  })
+
+  it('leads back to the workflows page', () => {
+    mount()
+
+    expect(
+      screen.getByRole('link', { name: 'Back to workflows' })
+    ).toHaveAttribute('href', '/hub/workflows/')
   })
 
   it('says nothing about a shelf a workflow has none of', () => {

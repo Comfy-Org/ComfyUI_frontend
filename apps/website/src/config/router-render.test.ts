@@ -23,6 +23,18 @@ const png = Uint8Array.from(
   (character) => character.charCodeAt(0)
 )
 
+// The finished Wavespeed prediction Router returns for wavespeed/seedvr2.
+function prediction(output: string, headers?: HeadersInit) {
+  return Response.json(
+    {
+      code: 200,
+      message: 'success',
+      data: { id: 'prediction-1', status: 'completed', outputs: [output] }
+    },
+    { headers }
+  )
+}
+
 function queueNotEnabled() {
   return Response.json(
     { detail: 'Not enabled', error_type: 'not_enabled' },
@@ -78,7 +90,7 @@ describe('shared Router rendering', () => {
         bodies.push(String(init?.body))
         return bodies.length === 1
           ? new Response('Provider unavailable', { status: 502 })
-          : new Response(png, { headers: { 'Content-Type': 'image/png' } })
+          : prediction('https://storage.example/upscaled.png')
       })
     )
     const slug = 'wavespeed--seedvr2-image--edit-images'
@@ -116,7 +128,7 @@ describe('shared Router rendering', () => {
         bodies.push(String(init?.body))
         return bodies.length === 1
           ? new Response('Provider unavailable', { status: 502 })
-          : new Response(png, { headers: { 'Content-Type': 'image/png' } })
+          : prediction('https://storage.example/upscaled.png')
       })
     )
     const slug = 'wavespeed--seedvr2-image--edit-images'
@@ -179,11 +191,8 @@ describe('shared Router rendering', () => {
           image: grant.download_url
         })
         expect(headers.get('Idempotency-Key')).toBe('render-once')
-        return new Response(png, {
-          headers: {
-            'Content-Type': 'image/png',
-            'X-Comfy-Request-Id': 'request-123'
-          }
+        return prediction('https://storage.example/upscaled.png', {
+          'X-Comfy-Request-Id': 'request-123'
         })
       })
     )
@@ -195,8 +204,10 @@ describe('shared Router rendering', () => {
     try {
       expect(calls).toHaveLength(3)
       expect(result.requestId).toBe('request-123')
-      expect(result.outputs[0]).toMatchObject({ kind: 'image' })
-      expect(result.outputs[0].url).toMatch(/^blob:/)
+      expect(result.outputs[0]).toMatchObject({
+        kind: 'image',
+        url: 'https://storage.example/upscaled.png'
+      })
     } finally {
       releaseRouterOutputs(result.outputs)
     }

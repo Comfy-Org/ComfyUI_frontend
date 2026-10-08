@@ -1,12 +1,12 @@
 import { render, screen } from '@testing-library/vue'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
 
-import type { WorkshopModel } from '../../config/models-catalogue'
+import type { WorkshopModel } from '@/config/models-catalogue'
 import {
   setAllIntersecting,
   stubIntersectionObserver
-} from '../../test/fakeIntersectionObserver'
+} from '@/test/fakeIntersectionObserver'
 import WorkshopModelCard from './WorkshopModelCard.vue'
 
 const base: WorkshopModel = {
@@ -21,40 +21,20 @@ const base: WorkshopModel = {
   task: 'image-to-image'
 }
 
+const widthProps = ['clientWidth', 'offsetWidth'] as const
+const nativeWidths = widthProps.map(
+  (name) =>
+    [
+      name,
+      Object.getOwnPropertyDescriptor(HTMLElement.prototype, name)
+    ] as const
+)
+
 describe('WorkshopModelCard', () => {
-  // Every workflow but a couple runs on the shared Cloud endpoint, so a mark
-  // on all of them would mark nothing.
-  const workflow = (slug: string): WorkshopModel => ({
-    slug,
-    name: 'Remove an object from a video',
-    workflowCount: 1,
-    href: `/models/${slug}/`,
-    type: 'CLOUD',
-    workflowId: 'ltx2-obscura-remova',
-    capabilities: [],
-    modality: 'video'
-  })
-
-  it.for([
-    { case: 'a model', model: base },
-    {
-      case: 'a workflow on the shared endpoint',
-      model: workflow('workflows/remove-object')
-    }
-  ])('says nothing about Comfy API for $case', ({ model }) => {
-    render(WorkshopModelCard, { props: { model } })
-
-    expect(screen.queryByTestId('model-card-comfy-api')).toBeNull()
-  })
-
-  it('marks a workflow that runs on its own deployment', () => {
-    render(WorkshopModelCard, {
-      props: { model: workflow('workflows/remove-object-from-video') }
-    })
-
-    expect(screen.getByTestId('model-card-comfy-api')).toHaveTextContent(
-      'Comfy API'
-    )
+  afterEach(() => {
+    for (const [name, descriptor] of nativeWidths)
+      if (descriptor)
+        Object.defineProperty(HTMLElement.prototype, name, descriptor)
   })
 
   it('links the name, provider badge and task to the model page', () => {
@@ -72,7 +52,7 @@ describe('WorkshopModelCard', () => {
     expect(screen.queryByTestId('model-incomplete-badge')).toBeNull()
     expect(screen.getByTestId('model-media-placeholder')).toBeTruthy()
     expect(screen.queryByRole('img', { name: 'Flux' })).toBeNull()
-    expect(screen.queryByLabelText('Flux')).toBeNull()
+    expect(screen.getAllByLabelText('Flux')).toEqual([screen.getByRole('link')])
   })
 
   // The artwork is decorative: the mark says who made this and the heading
@@ -87,9 +67,39 @@ describe('WorkshopModelCard', () => {
       }
     })
     expect(screen.getByRole('link')).toHaveAccessibleName(
-      /^Black Forest Labs Flux Image to Image/
+      'Black Forest Labs Flux Image to Image'
     )
     expect(screen.queryByRole('img', { name: 'Flux' })).toBeNull()
+  })
+
+  it('names the card without its tags and nests no control in the link', async () => {
+    Object.defineProperty(HTMLElement.prototype, 'clientWidth', {
+      configurable: true,
+      get: () => 120
+    })
+    Object.defineProperty(HTMLElement.prototype, 'offsetWidth', {
+      configurable: true,
+      get: () => 100
+    })
+    render(WorkshopModelCard, {
+      props: {
+        model: { ...base, capabilities: ['upscale', 'inpaint', 'controlnet'] }
+      }
+    })
+    await nextTick()
+    await nextTick()
+    expect(screen.getByTestId('tag-overflow')).toBeTruthy()
+    expect(screen.getByRole('link')).toHaveAccessibleName(
+      'Black Forest Labs Flux Image to Image'
+    )
+    expect(screen.queryByRole('button')).toBeNull()
+  })
+
+  it('names a hub card with its kind badge after the provider', () => {
+    render(WorkshopModelCard, { props: { model: base, providerBadge: true } })
+    expect(screen.getByRole('link')).toHaveAccessibleName(
+      'Black Forest Labs Models Flux Image to Image'
+    )
   })
 
   it.for([
@@ -144,7 +154,7 @@ describe('WorkshopModelCard', () => {
       'href',
       base.href
     )
-    expect(screen.queryByLabelText('Flux')).toBeNull()
+    expect(screen.getAllByLabelText('Flux')).toEqual([screen.getByRole('link')])
   })
 
   // Artwork that repeats the name gives a screen reader the model twice. The
@@ -169,7 +179,9 @@ describe('WorkshopModelCard', () => {
       expect(
         screen.getByRole('link', { name: /Black Forest Labs/ })
       ).toBeVisible()
-      expect(screen.queryByLabelText('Flux')).toBeNull()
+      expect(screen.getAllByLabelText('Flux')).toEqual([
+        screen.getByRole('link')
+      ])
       if (kind === 'video')
         expect(screen.getByTestId('model-card-media')).toHaveAttribute(
           'aria-hidden',
@@ -259,5 +271,31 @@ describe('WorkshopModelCard', () => {
   ])('leaves fallback and unlabelled artwork unmarked', (card) => {
     render(WorkshopModelCard, { props: { model: card } })
     expect(screen.queryByTestId('model-thumbnail-label')).toBeNull()
+  })
+
+  it.for([
+    {
+      kind: 'a workflow, whose name is a sentence',
+      model: {
+        type: 'CLOUD',
+        workflowId: 'workflows/upscale-a-video',
+        slug: 'workflows/upscale-a-video',
+        name: 'Upscale a video',
+        href: '/models/workflows/upscale-a-video/',
+        workflowCount: 1,
+        capabilities: [],
+        models: ['Topaz'],
+        modality: 'video'
+      },
+      shown: 'Upscale a video'
+    },
+    {
+      kind: 'a model, whose name repeats its task as a suffix',
+      model: { ...base, name: 'Flux Image-to-Image' },
+      shown: 'Flux'
+    }
+  ] as const)('shows the whole name of $kind', ({ model, shown }) => {
+    render(WorkshopModelCard, { props: { model } })
+    expect(screen.getByTestId('model-card-name').textContent).toBe(shown)
   })
 })

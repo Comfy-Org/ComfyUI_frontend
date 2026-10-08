@@ -5,7 +5,41 @@ import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 import { useAgentComposerStore } from './agentComposerStore'
 
 describe('composer reference ownership', () => {
-  it('updates detached uploads without attaching them until an explicit Undo', () => {
+  it('releases invalidated snapshot previews while retaining the current tray and ignoring repeated invalidation and stale settlement', () => {
+    const store = useAgentComposerStore()
+    const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    const retained = {
+      id: 'retained',
+      name: 'retained.png',
+      ref: 'retained.png',
+      previewUrl: 'blob:retained'
+    }
+    store.addAttachment({
+      id: 'old',
+      name: 'old.png',
+      ref: 'old.png',
+      previewUrl: 'blob:old'
+    })
+    store.addAttachment(retained)
+    const id = store.startSubmission({
+      prompt: store.prompt,
+      attachments: store.attachments,
+      nodes: [],
+      target: createMockLoadedWorkflow({ path: 'workflows/target.json' })
+    })
+    store.restorePrompt({ text: 'New draft', references: [] }, [retained])
+    store.invalidateSubmission()
+    store.invalidateSubmission()
+    store.settleSubmission(id, false)
+    expect(revoke).toHaveBeenCalledExactlyOnceWith('blob:old')
+    expect(store.attachments).toEqual([retained])
+    expect(store.draft).toBe('New draft')
+    expect(store.takeFailedSubmission()).toBeUndefined()
+    expect(store.referenceAttachment('old')).toBe(false)
+    expect(store.referenceAttachment('retained')).toBe(true)
+  })
+
+  it('keeps every asset occurrence and updates all of them after upload', () => {
     const store = useAgentComposerStore()
     store.addAttachment({
       id: 'image',
@@ -13,10 +47,43 @@ describe('composer reference ownership', () => {
       ref: '',
       uploading: true
     })
+    store.referenceAttachment('image')
+    store.referenceAttachment('image')
+    const snapshot = store.prompt
+    expect(snapshot.references).toHaveLength(2)
+
+    store.updateAttachment('image', { ref: 'uploaded.png', uploading: false })
+    store.applyEditorPrompt(snapshot)
+    expect(store.prompt.references).toEqual(
+      snapshot.references.map((reference) => ({
+        ...reference,
+        attachment: {
+          id: 'image',
+          name: 'source.png',
+          ref: 'uploaded.png',
+          uploading: false
+        }
+      }))
+    )
+    expect(store.attachments).toHaveLength(1)
+  })
+
+  it('updates a tray upload without reinserting its deleted inline mention', () => {
+    const store = useAgentComposerStore()
+    store.addAttachment({
+      id: 'image',
+      name: 'source.png',
+      ref: '',
+      uploading: true
+    })
+    store.referenceAttachment('image')
     const snapshot = store.prompt
     store.removeReference('asset:image')
     store.updateAttachment('image', { ref: 'uploaded.png', uploading: false })
-    expect(store.attachments).toEqual([])
+    expect(store.prompt.references).toEqual([])
+    expect(store.attachments).toEqual([
+      { id: 'image', name: 'source.png', ref: 'uploaded.png', uploading: false }
+    ])
     store.applyEditorPrompt(snapshot)
     expect(store.attachments).toEqual([
       { id: 'image', name: 'source.png', ref: 'uploaded.png', uploading: false }
@@ -34,6 +101,7 @@ describe('composer reference ownership', () => {
       uploading: true,
       previewUrl: 'blob:source'
     })
+    store.referenceAttachment('image')
     const snapshot = store.prompt
     store.removeAttachment('image')
     store.updateAttachment('image', { ref: 'too-late.png', uploading: false })
@@ -42,7 +110,7 @@ describe('composer reference ownership', () => {
     expect(revoke).toHaveBeenCalledExactlyOnceWith('blob:source')
   })
 
-  it('retains previews for Undo, then releases only unused previews on unmount', () => {
+  it('retains included previews after inline deletion and unmount', () => {
     const store = useAgentComposerStore()
     const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
     store.addAttachment({
@@ -57,11 +125,83 @@ describe('composer reference ownership', () => {
       ref: 'second.png',
       previewUrl: 'blob:second'
     })
+    store.referenceAttachment('first')
     store.removeReference('asset:first')
     expect(revoke).not.toHaveBeenCalled()
     store.releaseUnusedAssets()
+    expect(revoke).not.toHaveBeenCalled()
+    expect(store.attachments.map(({ id }) => id)).toEqual(['first', 'second'])
+    store.removeAttachment('first')
     expect(revoke).toHaveBeenCalledExactlyOnceWith('blob:first')
-    expect(store.attachments.map(({ id }) => id)).toEqual(['second'])
+  })
+
+  it('releases excluded previews when replacing the tray and rejects late updates', () => {
+    const store = useAgentComposerStore()
+    const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    store.addAttachment({
+      id: 'old',
+      name: 'old.png',
+      ref: 'old.png',
+      previewUrl: 'blob:old'
+    })
+    store.referenceAttachment('old')
+    const oldPrompt = store.prompt
+    store.replaceDraft({
+      text: 'New draft',
+      workflowReferences: [],
+      attachments: [
+        { id: 'new', name: 'new.png', ref: 'new.png', previewUrl: 'blob:new' }
+      ]
+    })
+    expect(revoke).toHaveBeenCalledExactlyOnceWith('blob:old')
+    store.updateAttachment('old', { previewUrl: 'blob:late' })
+    expect(revoke).toHaveBeenLastCalledWith('blob:late')
+    store.applyEditorPrompt({ ...oldPrompt, text: 'Keep typing' })
+    expect(store.prompt).toEqual({ text: 'Keep typing', references: [] })
+    expect(store.attachments.map(({ id }) => id)).toEqual(['new'])
+    expect(revoke).not.toHaveBeenCalledWith('blob:new')
+  })
+
+  it('retains included media until replacement/removal and rejects late object URLs', () => {
+    const store = useAgentComposerStore()
+    const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    store.addAttachment({
+      id: 'video',
+      name: 'clip.mp4',
+      ref: '',
+      mediaUrl: 'blob:video'
+    })
+    store.referenceAttachment('video')
+    store.removeReference('asset:video')
+    store.releaseUnusedAssets()
+    expect(revoke).not.toHaveBeenCalled()
+    store.updateAttachment('video', { mediaUrl: '/clip.mp4', ref: 'clip.mp4' })
+    expect(revoke).toHaveBeenCalledExactlyOnceWith('blob:video')
+    store.updateAttachment('video', { mediaUrl: 'blob:replacement' })
+    store.removeAttachment('video')
+    store.updateAttachment('video', { mediaUrl: 'blob:late' })
+    expect(revoke.mock.calls).toEqual([
+      ['blob:video'],
+      ['blob:replacement'],
+      ['blob:late']
+    ])
+    expect(store.attachments).toEqual([])
+  })
+
+  it('releases a shared blob only after both its image and media uses end', () => {
+    const store = useAgentComposerStore()
+    const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    store.addAttachment({
+      id: 'video',
+      name: 'clip.mp4',
+      ref: '',
+      previewUrl: 'blob:shared',
+      mediaUrl: 'blob:shared'
+    })
+    store.updateAttachment('video', { previewUrl: undefined })
+    expect(revoke).not.toHaveBeenCalled()
+    store.removeAttachment('video')
+    expect(revoke).toHaveBeenCalledExactlyOnceWith('blob:shared')
   })
 
   it('rejects node history from a different target even when node IDs collide', () => {
@@ -173,16 +313,16 @@ describe('composer prompt origin (PM-1474 F11)', () => {
   it('carries the clicked chip beside the origin, and drops it at the same moment', () => {
     const store = useAgentComposerStore()
     expect(store.starterPrompt).toBeNull()
-    store.markSuggestedPrompt({ id: 'find_workflow', clickId: 'click-1' })
+    store.markSuggestedPrompt({ id: 'slot_3', clickId: 'click-1' })
     expect(store.starterPrompt).toEqual({
-      id: 'find_workflow',
+      id: 'slot_3',
       clickId: 'click-1'
     })
 
     // A reword is still that chip's message.
     store.setText('find me an upscaler, but for hands')
     expect(store.starterPrompt).toEqual({
-      id: 'find_workflow',
+      id: 'slot_3',
       clickId: 'click-1'
     })
 
@@ -200,7 +340,7 @@ describe('composer prompt origin (PM-1474 F11)', () => {
   it('drops click attribution when an editor update fully removes the prompt', () => {
     const store = useAgentComposerStore()
     store.setText('Find an upscaling workflow')
-    store.markSuggestedPrompt({ id: 'find_workflow', clickId: 'click-1' })
+    store.markSuggestedPrompt({ id: 'slot_3', clickId: 'click-1' })
 
     store.applyEditorPrompt({ text: '', references: [] })
 
@@ -211,7 +351,7 @@ describe('composer prompt origin (PM-1474 F11)', () => {
   it('keeps click attribution when an editor update rewords the prompt', () => {
     const store = useAgentComposerStore()
     store.setText('Find an upscaling workflow')
-    store.markSuggestedPrompt({ id: 'find_workflow', clickId: 'click-1' })
+    store.markSuggestedPrompt({ id: 'slot_3', clickId: 'click-1' })
 
     store.applyEditorPrompt({
       text: 'Find an upscaling workflow for portraits',
@@ -220,7 +360,7 @@ describe('composer prompt origin (PM-1474 F11)', () => {
 
     expect(store.promptOrigin).toBe('suggestion')
     expect(store.starterPrompt).toEqual({
-      id: 'find_workflow',
+      id: 'slot_3',
       clickId: 'click-1'
     })
   })
@@ -228,7 +368,7 @@ describe('composer prompt origin (PM-1474 F11)', () => {
   it('gives the chip back with the origin when a failed send returns the draft', () => {
     const store = useAgentComposerStore()
     store.setText('Find the best workflow for skin upscaling')
-    store.markSuggestedPrompt({ id: 'find_workflow', clickId: 'click-1' })
+    store.markSuggestedPrompt({ id: 'slot_3', clickId: 'click-1' })
     const id = store.startSubmission({
       prompt: store.prompt,
       attachments: [],
@@ -241,14 +381,14 @@ describe('composer prompt origin (PM-1474 F11)', () => {
 
     expect(store.promptOrigin).toBe('suggestion')
     expect(store.starterPrompt).toEqual({
-      id: 'find_workflow',
+      id: 'slot_3',
       clickId: 'click-1'
     })
   })
 
   it('drops the chip when the prompt is reopened through the edit action instead', () => {
     const store = useAgentComposerStore()
-    store.markSuggestedPrompt({ id: 'find_workflow', clickId: 'click-1' })
+    store.markSuggestedPrompt({ id: 'slot_3', clickId: 'click-1' })
 
     store.replacePrompt({ text: 'the earlier prompt', workflowReferences: [] })
 

@@ -125,6 +125,15 @@ for (const { name, url, island, trigger, opened } of FAQ_PAGES) {
         await triggers.nth(0).click()
         await triggers.nth(1).click()
         await expect(faq.locator(opened)).toHaveCount(2)
+        // The sticky header overlays this capture, so pin the scroll offset.
+        await expect
+          .poll(() =>
+            faq.evaluate((el) => el.getAnimations({ subtree: true }).length)
+          )
+          .toBe(0)
+        await faq.evaluate((el) =>
+          el.scrollIntoView({ block: 'start', behavior: 'instant' })
+        )
 
         await expect(faq).toHaveScreenshot(`${name}-faq-${vp.name}.png`)
       })
@@ -174,6 +183,22 @@ test.describe('About', { tag: '@visual' }, () => {
       await expect(hero).toBeVisible()
       await hero.scrollIntoViewIfNeeded()
       await expect(page).toHaveScreenshot(`about-hero-${vp.name}.png`)
+    })
+  }
+})
+
+test.describe('Customers', { tag: '@visual' }, () => {
+  for (const vp of VIEWPORTS.filter(
+    (v) => v.name === '1-sm' || v.name === '3-lg'
+  )) {
+    test(`hero-${vp.name}`, async ({ page }) => {
+      await page.setViewportSize({ width: vp.width, height: vp.height })
+      await navigateAndSettle(page, '/customers')
+
+      await expect(
+        page.getByRole('heading', { level: 1, name: /creative companies/i })
+      ).toBeVisible()
+      await expect(page).toHaveScreenshot(`customers-hero-${vp.name}.png`)
     })
   }
 })

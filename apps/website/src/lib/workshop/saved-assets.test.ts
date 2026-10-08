@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { SavedGeneration } from '../../config/workshop-generation-assets'
+import type { SavedGeneration } from '@/config/workshop-generation-assets'
 import {
   accessAfterFailure,
   mergeGenerations,

@@ -1,7 +1,7 @@
 <template>
   <div class="extension-panel flex flex-col gap-2">
     <SearchInput
-      v-model="filters['global'].value"
+      v-model="searchQuery"
       :placeholder="$t('g.searchPlaceholder', { subject: $t('g.extensions') })"
     />
     <Message v-if="hasChanges" severity="info" class="max-h-96 overflow-y-auto">
@@ -20,80 +20,118 @@
       </div>
     </Message>
     <div class="mb-3 flex gap-2">
-      <SelectButton
-        v-model="filterType"
-        :options="filterTypes"
-        option-label="label"
-        option-value="value"
-      />
+      <ToggleGroup v-model="filterType" type="single" :allow-empty="false">
+        <ToggleGroupItem
+          v-for="option in filterTypes"
+          :key="option.value"
+          :value="option.value"
+        >
+          {{ option.label }}
+        </ToggleGroupItem>
+      </ToggleGroup>
     </div>
-    <DataTable
-      v-model:selection="selectedExtensions"
-      :value="filteredExtensions"
-      striped-rows
-      size="small"
-      :filters="filters"
-      selection-mode="multiple"
-      data-key="name"
-    >
-      <Column selection-mode="multiple" :frozen="true" style="width: 3rem" />
-      <Column :header="$t('g.extensionName')" sortable field="name">
-        <template #body="slotProps">
-          {{ slotProps.data.name }}
-          <Badge v-if="extensionStore.isCoreExtension(slotProps.data.name)">
-            {{ $t('g.core') }}
-          </Badge>
-          <Badge v-else severity="info">{{ $t('g.custom') }}</Badge>
-        </template>
-      </Column>
-      <Column
-        :pt="{
-          headerCell: 'flex items-center justify-end',
-          bodyCell: 'flex items-center justify-end'
-        }"
-      >
-        <template #header>
-          <Button
-            size="icon"
-            variant="muted-textonly"
-            @click="menu?.show($event)"
-          >
-            <i class="pi pi-ellipsis-h" />
-          </Button>
-          <ContextMenu ref="menu" :model="contextMenuItems" />
-        </template>
-        <template #body="slotProps">
-          <Switch
-            :model-value="editingEnabledExtensions[slotProps.data.name]"
-            :disabled="extensionStore.isExtensionReadOnly(slotProps.data.name)"
-            :aria-label="slotProps.data.name"
-            @update:model-value="
-              (enabled) => setExtensionEnabled(slotProps.data.name, enabled)
-            "
-          />
-        </template>
-      </Column>
-    </DataTable>
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead class="w-12">
+            <Checkbox
+              :model-value="selectAllState"
+              :aria-label="$t('g.selectAll')"
+              @update:model-value="toggleAllVisible"
+            />
+          </TableHead>
+          <TableSortHead v-model:direction="nameSortDirection">
+            {{ $t('g.extensionName') }}
+          </TableSortHead>
+          <TableHead class="w-20 text-right">
+            <Menu :items="extensionActions" align="end">
+              <template #trigger>
+                <Button
+                  size="icon"
+                  variant="muted-textonly"
+                  :aria-label="$t('g.moreOptions')"
+                >
+                  <i class="icon-[lucide--ellipsis]" />
+                </Button>
+              </template>
+            </Menu>
+          </TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        <TableRow
+          v-for="extension in visibleExtensions"
+          :key="extension.name"
+          class="cursor-pointer"
+          :data-state="
+            selectedExtensionNames.has(extension.name) ? 'selected' : undefined
+          "
+          @click="
+            setExtensionSelected(
+              extension.name,
+              !selectedExtensionNames.has(extension.name)
+            )
+          "
+        >
+          <TableCell>
+            <Checkbox
+              :model-value="selectedExtensionNames.has(extension.name)"
+              :aria-label="$t('g.selectItem', { name: extension.name })"
+              @click.stop
+              @update:model-value="
+                (selected) => setExtensionSelected(extension.name, selected)
+              "
+            />
+          </TableCell>
+          <TableCell>
+            {{ extension.name }}
+            <Badge v-if="extensionStore.isCoreExtension(extension.name)">
+              {{ $t('g.core') }}
+            </Badge>
+            <Badge v-else severity="info">{{ $t('g.custom') }}</Badge>
+          </TableCell>
+          <TableCell class="text-right">
+            <Switch
+              :model-value="editingEnabledExtensions[extension.name]"
+              :disabled="extensionStore.isExtensionReadOnly(extension.name)"
+              :aria-label="extension.name"
+              @click.stop
+              @update:model-value="
+                (enabled) => setExtensionEnabled(extension.name, enabled)
+              "
+            />
+          </TableCell>
+        </TableRow>
+      </TableBody>
+    </Table>
   </div>
 </template>
 
 <script setup lang="ts">
-import { FilterMatchMode } from '@primevue/core/api'
-import Column from 'primevue/column'
-import ContextMenu from 'primevue/contextmenu'
-import DataTable from 'primevue/datatable'
-import SelectButton from 'primevue/selectbutton'
+import type { CheckboxCheckedState } from 'reka-ui'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
 import Badge from '@/components/ui/badge/Badge.vue'
+import Button from '@/components/ui/button/Button.vue'
+import Checkbox from '@/components/ui/checkbox/Checkbox.vue'
+import Menu from '@/components/ui/menu/Menu.vue'
+import type { MenuItem } from '@/components/ui/menu/types'
 import Message from '@/components/ui/message/Message.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Switch from '@/components/ui/switch/Switch.vue'
+import Table from '@/components/ui/table/Table.vue'
+import TableBody from '@/components/ui/table/TableBody.vue'
+import TableCell from '@/components/ui/table/TableCell.vue'
+import TableHead from '@/components/ui/table/TableHead.vue'
+import TableHeader from '@/components/ui/table/TableHeader.vue'
+import TableRow from '@/components/ui/table/TableRow.vue'
+import TableSortHead from '@/components/ui/table/TableSortHead.vue'
+import { filterByQuery, sortByText } from '@/components/ui/table/tableUtils'
+import type { TableSortDirection } from '@/components/ui/table/tableUtils'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useExtensionStore } from '@/stores/extensionStore'
-import type { ComfyExtension } from '@/types/comfy'
 
 const { t } = useI18n()
 
@@ -106,11 +144,9 @@ const filterTypes = computed(() =>
   }))
 )
 const filterType = ref<FilterTypeKey>('all')
-const selectedExtensions = ref<ComfyExtension[]>([])
-
-const filters = ref({
-  global: { value: '', matchMode: FilterMatchMode.CONTAINS }
-})
+const selectedExtensionNames = ref(new Set<string>())
+const searchQuery = ref('')
+const nameSortDirection = ref<TableSortDirection | null>(null)
 
 const extensionStore = useExtensionStore()
 const settingStore = useSettingStore()
@@ -132,6 +168,44 @@ const filteredExtensions = computed(() => {
       return extensions
   }
 })
+
+const visibleExtensions = computed(() => {
+  const filtered = filterByQuery(
+    filteredExtensions.value,
+    searchQuery.value,
+    (extension) => [extension.name]
+  )
+  return sortByText(
+    filtered,
+    nameSortDirection.value,
+    (extension) => extension.name
+  )
+})
+
+const selectAllState = computed<CheckboxCheckedState>(() => {
+  const selectedCount = visibleExtensions.value.filter((extension) =>
+    selectedExtensionNames.value.has(extension.name)
+  ).length
+  if (selectedCount === 0) return false
+  return selectedCount === visibleExtensions.value.length
+    ? true
+    : 'indeterminate'
+})
+
+function setExtensionSelected(name: string, selected: CheckboxCheckedState) {
+  const names = new Set(selectedExtensionNames.value)
+  if (selected === true) names.add(name)
+  else names.delete(name)
+  selectedExtensionNames.value = names
+}
+
+function toggleAllVisible(selected: CheckboxCheckedState) {
+  selectedExtensionNames.value = new Set(
+    selected === true
+      ? visibleExtensions.value.map((extension) => extension.name)
+      : []
+  )
+}
 
 onMounted(() => {
   extensionStore.extensions.forEach((ext) => {
@@ -202,15 +276,14 @@ const applyChanges = () => {
   window.location.reload()
 }
 
-const menu = ref<InstanceType<typeof ContextMenu>>()
-const contextMenuItems = computed(() => [
+const extensionActions = computed<MenuItem[]>(() => [
   {
     label: t('g.enableSelected'),
     icon: 'pi pi-check',
     command: async () => {
-      selectedExtensions.value.forEach((ext) => {
-        if (!extensionStore.isExtensionReadOnly(ext.name)) {
-          editingEnabledExtensions.value[ext.name] = true
+      selectedExtensionNames.value.forEach((name) => {
+        if (!extensionStore.isExtensionReadOnly(name)) {
+          editingEnabledExtensions.value[name] = true
         }
       })
       await updateExtensionStatus()
@@ -220,9 +293,9 @@ const contextMenuItems = computed(() => [
     label: t('g.disableSelected'),
     icon: 'pi pi-times',
     command: async () => {
-      selectedExtensions.value.forEach((ext) => {
-        if (!extensionStore.isExtensionReadOnly(ext.name)) {
-          editingEnabledExtensions.value[ext.name] = false
+      selectedExtensionNames.value.forEach((name) => {
+        if (!extensionStore.isExtensionReadOnly(name)) {
+          editingEnabledExtensions.value[name] = false
         }
       })
       await updateExtensionStatus()

@@ -1,12 +1,15 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { reportError } from '@/platform/telemetry/reportError'
-import type { ComposerAttachment } from './useComposer'
+import {
+  AgentApiError,
+  AgentResponseUnreadableError
+} from '../../services/agent/agentRestClient'
+import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
+import type { ComposerAttachment } from '../../types/composerAttachment'
 import { MAX_ATTACHMENT_BYTES, useAttachment } from './useAttachment'
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 function fileOfSize(name: string, size: number, type = 'image/png'): File {
   const file = new File(['x'], name, { type })
@@ -18,7 +21,10 @@ function chipRegistry() {
   const chips: ComposerAttachment[] = []
   return {
     chips,
-    stage: (attachment: ComposerAttachment) => chips.push(attachment),
+    stage: (attachment: ComposerAttachment) => {
+      chips.push(attachment)
+      return true
+    },
     update: (id: string, patch: Partial<ComposerAttachment>) => {
       const index = chips.findIndex((chip) => chip.id === id)
       if (index >= 0) chips[index] = { ...chips[index], ...patch }
@@ -31,9 +37,175 @@ function chipRegistry() {
 }
 
 describe('useAttachment', () => {
-  it('adds previews for picked images but not picked videos', async () => {
-    // A video object URL in an <img> renders as a broken thumbnail, so only
-    // images get a previewUrl.
+  it('deduplicates a file within a batch and across pending drops', async () => {
+    const store = useAgentComposerStore()
+    const upload = vi.fn(async (file: File) => ({ ref: file.name }))
+    const onDuplicate = vi.fn()
+    const { addFiles } = useAttachment({
+      upload,
+      onDuplicate,
+      stage: store.addAttachment,
+      update: store.updateAttachment,
+      remove: store.removeAttachment
+    })
+    const file = new File(['image'], 'cat.png', { lastModified: 1 })
+    const batch = addFiles([file, file, file])
+    expect(onDuplicate).toHaveBeenCalledExactlyOnceWith(['cat.png', 'cat.png'])
+    const repeated = addFiles([
+      new File(['image'], 'cat.png', { lastModified: 1 })
+    ])
+    expect(store.attachments).toHaveLength(1)
+    await expect(repeated).resolves.toBe(false)
+    await expect(batch).resolves.toBe(true)
+    expect(upload).toHaveBeenCalledOnce()
+    expect(onDuplicate).toHaveBeenLastCalledWith(['cat.png'])
+    expect(onDuplicate).toHaveBeenCalledTimes(2)
+  })
+
+  it('ignores a settled duplicate but allows a removed file to be added again', async () => {
+    const store = useAgentComposerStore()
+    const upload = vi.fn(async (file: File) => ({ ref: file.name }))
+    const onDuplicate = vi.fn()
+    const { addFiles } = useAttachment({
+      upload,
+      onDuplicate,
+      stage: store.addAttachment,
+      update: store.updateAttachment,
+      remove: store.removeAttachment
+    })
+    const file = new File(['image'], 'cat.png', { lastModified: 1 })
+    await addFiles([file])
+    expect(onDuplicate).not.toHaveBeenCalled()
+    const original = store.attachments[0]
+    store.referenceAttachment(original.id)
+    store.referenceAttachment(original.id)
+    await expect(addFiles([file])).resolves.toBe(false)
+    expect(store.attachments).toEqual([original])
+    expect(store.prompt.references).toHaveLength(2)
+    store.removeAttachment(original.id)
+    await expect(addFiles([file])).resolves.toBe(true)
+    expect(store.attachments).toHaveLength(1)
+    expect(store.attachments[0].id).not.toBe(original.id)
+    expect(upload).toHaveBeenCalledTimes(2)
+    expect(onDuplicate).toHaveBeenCalledExactlyOnceWith(['cat.png'])
+  })
+
+  it.for([
+    { body: 'different size', lastModified: 1 },
+    { body: 'image', lastModified: 2 }
+  ])(
+    'keeps same-named files with distinct source metadata: %j',
+    async (source) => {
+      const store = useAgentComposerStore()
+      const upload = vi.fn(async (file: File) => ({ ref: file.name }))
+      const { addFiles } = useAttachment({
+        upload,
+        stage: store.addAttachment,
+        update: store.updateAttachment,
+        remove: store.removeAttachment
+      })
+      await addFiles([
+        new File(['image'], 'cat.png', { lastModified: 1 }),
+        new File([source.body], 'cat.png', {
+          lastModified: source.lastModified
+        })
+      ])
+      expect(store.attachments.map(({ name }) => name)).toEqual([
+        'cat.png',
+        'cat.png'
+      ])
+      expect(upload).toHaveBeenCalledTimes(2)
+    }
+  )
+
+  it('allows a failed file upload to be retried', async () => {
+    const store = useAgentComposerStore()
+    const upload = vi.fn(async (file: File) => ({ ref: file.name }))
+    upload.mockRejectedValueOnce(new Error('Upload failed'))
+    const onDuplicate = vi.fn()
+    const { addFiles } = useAttachment({
+      upload,
+      onDuplicate,
+      stage: store.addAttachment,
+      update: store.updateAttachment,
+      remove: store.removeAttachment
+    })
+    const file = new File(['image'], 'cat.png', { lastModified: 1 })
+    await expect(addFiles([file])).resolves.toBe(false)
+    await expect(addFiles([file])).resolves.toBe(true)
+    expect(store.attachments).toHaveLength(1)
+    expect(upload).toHaveBeenCalledTimes(2)
+    expect(onDuplicate).not.toHaveBeenCalled()
+  })
+
+  it('keeps a fresh re-addition after a cancelled upload settles late', async () => {
+    const store = useAgentComposerStore()
+    let resolveOldUpload: (result: { ref: string }) => void = () => {}
+    const oldUpload = new Promise<{ ref: string }>((resolve) => {
+      resolveOldUpload = resolve
+    })
+    const upload = vi.fn(async (file: File) => ({ ref: file.name }))
+    upload.mockReturnValueOnce(oldUpload)
+    const { addFiles, cancelUpload } = useAttachment({
+      upload,
+      stage: store.addAttachment,
+      update: store.updateAttachment,
+      remove: store.removeAttachment
+    })
+    const file = new File(['image'], 'cat.png', { lastModified: 1 })
+    const pending = addFiles([file])
+    const oldId = store.attachments[0].id
+    cancelUpload(oldId)
+    await expect(addFiles([file])).resolves.toBe(true)
+    const replacement = store.attachments[0]
+    expect(replacement.id).not.toBe(oldId)
+    resolveOldUpload({ ref: 'obsolete.png' })
+    await pending
+    expect(store.attachments).toEqual([replacement])
+    expect(replacement.ref).toBe('cat.png')
+  })
+
+  it('keeps same-named deferred files from distinct source URIs', async () => {
+    const store = useAgentComposerStore()
+    const upload = vi.fn(async (file: File) => ({ ref: file.name }))
+    const resolve = async () => new File(['image'], 'cat.png')
+    const { addDeferredFile } = useAttachment({
+      upload,
+      stage: store.addAttachment,
+      update: store.updateAttachment,
+      remove: store.removeAttachment
+    })
+    await Promise.all([
+      addDeferredFile('cat.png', resolve, 'uri:/first'),
+      addDeferredFile('cat.png', resolve, 'uri:/second')
+    ])
+    expect(store.attachments).toHaveLength(2)
+    expect(upload).toHaveBeenCalledTimes(2)
+  })
+
+  it('deduplicates a deferred source while loading and after upload', async () => {
+    const store = useAgentComposerStore()
+    const upload = vi.fn(async (file: File) => ({ ref: file.name }))
+    const resolve = vi.fn(async () => new File(['image'], 'cat.png'))
+    const { addDeferredFile } = useAttachment({
+      upload,
+      stage: store.addAttachment,
+      update: store.updateAttachment,
+      remove: store.removeAttachment
+    })
+    const pending = addDeferredFile('cat.png', resolve, 'uri:/source')
+    const repeated = addDeferredFile('cat.png', resolve, 'uri:/source')
+    expect(store.attachments).toHaveLength(1)
+    await expect(repeated).resolves.toBe('duplicate')
+    await expect(pending).resolves.toBe('uploaded')
+    await expect(
+      addDeferredFile('cat.png', resolve, 'uri:/source')
+    ).resolves.toBe('duplicate')
+    expect(resolve).toHaveBeenCalledOnce()
+    expect(upload).toHaveBeenCalledOnce()
+  })
+
+  it('keeps image preview URLs separate from picked video sources', async () => {
     const upload = vi.fn(async (file: File) => ({ ref: file.name }))
     const registry = chipRegistry()
     const { addFiles } = useAttachment({ upload, ...registry })
@@ -49,6 +221,45 @@ describe('useAttachment', () => {
     expect(previews).toEqual({ 'shot.png': true, 'clip.mp4': false })
     expect(upload).toHaveBeenCalledTimes(2)
   })
+
+  it.for([
+    { name: 'clip.mp4', type: 'video/mp4', mediaKind: 'video' },
+    { name: 'recording', type: 'audio/mpeg', mediaKind: 'audio' }
+  ])(
+    'previews picked $mediaKind while uploading and then uses its server file',
+    async ({ name, type, mediaKind }) => {
+      let resolveUpload: (result: {
+        ref: string
+        url: string
+      }) => void = () => {}
+      const registry = chipRegistry()
+      const { addFiles } = useAttachment({
+        ...registry,
+        upload: () =>
+          new Promise((resolve) => {
+            resolveUpload = resolve
+          })
+      })
+      const pending = addFiles([new File(['media'], name, { type })])
+      expect(registry.chips[0]).toMatchObject({
+        mediaKind,
+        mediaUrl: expect.stringMatching(/^blob:/),
+        uploading: true
+      })
+      expect(registry.chips[0].previewUrl).toBeUndefined()
+      resolveUpload({
+        ref: 'stored-media',
+        url: '/api/view?filename=stored-media&type=input'
+      })
+      await pending
+      expect(registry.chips[0]).toMatchObject({
+        mediaKind,
+        mediaUrl: '/api/view?filename=stored-media&type=input',
+        uploading: false
+      })
+      expect(registry.chips[0].previewUrl).toBeUndefined()
+    }
+  )
 
   it('rejects files over 20MB before staging or uploading', async () => {
     const upload = vi.fn()
@@ -268,11 +479,12 @@ describe('useAttachment', () => {
     const registry = chipRegistry()
     const { addFiles } = useAttachment({ upload, onError, ...registry })
 
-    await addFiles([fileOfSize(privateFilename, 1024)])
+    await addFiles([fileOfSize(privateFilename, 1024, 'image/png')])
 
     expect(registry.chips).toEqual([])
     expect(onError).toHaveBeenCalledOnce()
     expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      surface: 'agent',
       errorType: 'agent_attachment_upload_failed',
       tags: {
         failure_kind: 'caught_unexpected',
@@ -282,7 +494,10 @@ describe('useAttachment', () => {
         integration_target: 'assets',
         feature_flag: 'agent_panel',
         feature_flag_state: 'enabled',
-        project_context: 'agent_composer'
+        project_context: 'agent_composer',
+        upload_failure_cause: 'unknown',
+        file_type: 'image/png',
+        file_size_bytes: 1024
       }
     })
     const reportedError = vi.mocked(reportError).mock.calls[0][0] as Error
@@ -293,6 +508,140 @@ describe('useAttachment', () => {
     )
     expect(`${reportedError.message}\n${reportedError.stack}`).not.toContain(
       privatePath
+    )
+  })
+
+  it.for([
+    {
+      label: 'an API error',
+      cause: new AgentApiError('nope', 503, undefined),
+      expectedCause: 'http_503'
+    },
+    {
+      label: 'an unreadable response',
+      cause: new AgentResponseUnreadableError(new Error('bad json')),
+      expectedCause: 'unreadable_response'
+    },
+    {
+      label: 'an upload error with a timeout-like message',
+      cause: new Error('Timed out after an upstream timeout'),
+      expectedCause: 'unknown'
+    }
+  ])(
+    'tags the upload failure cause for $label',
+    async ({ cause, expectedCause }) => {
+      const upload = vi.fn().mockRejectedValue(cause)
+      const registry = chipRegistry()
+      const { addFiles } = useAttachment({ upload, ...registry })
+
+      await addFiles([fileOfSize('shot.png', 2048, 'image/png')])
+
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          tags: expect.objectContaining({
+            upload_failure_cause: expectedCause,
+            file_type: 'image/png',
+            file_size_bytes: 2048
+          })
+        })
+      )
+    }
+  )
+
+  it.for([
+    { label: 'empty', fileType: '' },
+    { label: 'overlong', fileType: `application/${'x'.repeat(128)}` }
+  ])(
+    'reports a $label browser-provided MIME type as unknown',
+    async ({ fileType }) => {
+      const upload = vi.fn().mockRejectedValue(new Error('upload failed'))
+      const registry = chipRegistry()
+      const { addFiles } = useAttachment({ upload, ...registry })
+
+      await addFiles([fileOfSize('unknown.bin', 128, fileType)])
+
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          tags: expect.objectContaining({
+            file_type: 'unknown',
+            file_size_bytes: 128
+          })
+        })
+      )
+    }
+  )
+
+  it('does not report a path from a constructed MIME parameter', async () => {
+    const privatePath = '/Users/alice/Secret/private.txt'
+    const upload = vi.fn().mockRejectedValue(new Error('upload failed'))
+    const registry = chipRegistry()
+    const { addFiles } = useAttachment({ upload, ...registry })
+
+    await addFiles([
+      fileOfSize('unknown.bin', 128, `text/plain; name="${privatePath}"`)
+    ])
+
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        tags: expect.objectContaining({ file_type: 'unknown' })
+      })
+    )
+    expect(JSON.stringify(vi.mocked(reportError).mock.calls)).not.toContain(
+      privatePath
+    )
+  })
+
+  it('tags an aborted-by-timeout upload with the timeout failure cause', async () => {
+    vi.useFakeTimers()
+    try {
+      const upload = vi.fn(() => new Promise<{ ref: string }>(() => {}))
+      const registry = chipRegistry()
+      const { addFiles } = useAttachment({
+        upload,
+        uploadTimeoutMs: 1000,
+        ...registry
+      })
+
+      const pending = addFiles([fileOfSize('stuck.png', 512, 'image/png')])
+      await vi.advanceTimersByTimeAsync(1000)
+      await pending
+
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          tags: expect.objectContaining({
+            upload_failure_cause: 'timeout',
+            file_type: 'image/png',
+            file_size_bytes: 512
+          })
+        })
+      )
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('tags a non-cancelled AbortError upload with the aborted failure cause', async () => {
+    const upload = vi
+      .fn()
+      .mockRejectedValue(new DOMException('request aborted', 'AbortError'))
+    const registry = chipRegistry()
+    const { addFiles } = useAttachment({ upload, ...registry })
+
+    await addFiles([fileOfSize('shot.png', 512, 'image/png')])
+
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        tags: expect.objectContaining({
+          upload_failure_cause: 'aborted',
+          file_type: 'image/png',
+          file_size_bytes: 512
+        })
+      })
     )
   })
 
@@ -530,11 +879,15 @@ describe('useAttachment', () => {
       expect(upload).not.toHaveBeenCalled()
       expect(onError).toHaveBeenCalledWith('stuck.mp4 could not be uploaded')
       expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+        surface: 'agent',
         errorType: 'agent_attachment_fetch_failed',
         tags: expect.objectContaining({
           feature_area: 'agent',
           integration_target: 'assets',
-          outcome: 'failed'
+          outcome: 'failed',
+          upload_failure_cause: 'timeout',
+          file_type: 'unknown',
+          file_size_bytes: -1
         })
       })
     } finally {

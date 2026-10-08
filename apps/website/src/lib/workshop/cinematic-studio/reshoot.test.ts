@@ -12,10 +12,12 @@ import {
 describe('cameraZone', () => {
   it.for<[number, number, ReshootZone]>([
     [-30, 15, 'green'],
+    [0, -15, 'green'],
     [50, 0, 'yellow'],
-    [0, -15, 'yellow'],
-    [80, 0, 'red'],
-    [0, -25, 'red']
+    [80, 0, 'yellow'],
+    [0, -25, 'yellow'],
+    [0, -40, 'red'],
+    [100, 0, 'red']
   ])(
     'rates azimuth %i° and elevation %i° as %s',
     ([azimuth, elevation, zone]) => {

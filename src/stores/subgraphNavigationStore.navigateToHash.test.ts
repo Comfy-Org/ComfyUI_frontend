@@ -74,9 +74,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => {
   }
 })
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 vi.mock(import('@/services/litegraphService'))
 
@@ -333,6 +331,7 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
         expect.stringContaining('workflow load failed')
       )
       expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+        surface: 'graph',
         errorType: 'workflow_navigation_failure',
         level: 'warning',
         context: { stage: 'recovery' }
