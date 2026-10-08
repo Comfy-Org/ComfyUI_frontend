@@ -39,7 +39,7 @@ const {
 }>()
 
 const slots = useSlots()
-const wide = useMediaQuery('(min-width: 1024px)')
+const wide = useMediaQuery('(min-width: 768px)')
 const floating = () => Boolean(slots.panel && panelLabels)
 const dockOverSheet = () => floating() && !wide.value && !panelDimmed
 const zoom = useEditorZoom(useTemplateRef<HTMLElement>('canvas'))
@@ -61,7 +61,7 @@ const { frame } = zoom
           cn(
             'flex min-h-0 flex-1 touch-none items-start justify-center px-4 pt-16 pb-36 sm:px-8',
             floating() &&
-              'pb-52 lg:pr-6 lg:pb-20 lg:pl-[calc(var(--container-editor-panel)+1.5rem)]',
+              'pb-52 md:pr-6 md:pb-20 md:pl-[calc(var(--container-editor-panel)+1.5rem)]',
             floating() && panelDimmed && 'pb-24'
           )
         "
@@ -100,7 +100,7 @@ const { frame } = zoom
         </div>
         <span class="flex-1" />
         <div class="pointer-events-auto flex items-center gap-2">
-          <AppRepoLink :repo :locale class="max-lg:hidden" />
+          <AppRepoLink :repo :locale class="max-md:hidden" />
           <EditorDownload :file="download" :locale />
         </div>
       </header>
@@ -109,7 +109,7 @@ const { frame } = zoom
           cn(
             'pointer-events-none absolute inset-x-0 bottom-4 flex flex-col items-center gap-2 px-3 lg:pr-44',
             floating() &&
-              'lg:left-[calc(var(--container-editor-panel)+0.75rem)]'
+              'md:left-[calc(var(--container-editor-panel)+0.75rem)]'
           )
         "
       >
