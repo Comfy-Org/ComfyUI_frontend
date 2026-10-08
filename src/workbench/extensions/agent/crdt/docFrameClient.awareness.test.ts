@@ -70,10 +70,13 @@ describe('awareness frame validation', () => {
     {
       name: 'a valid state',
       kind: 'state',
-      state: { selection: 'node-1' },
+      state: { cursor: [10, 20], selection: 'node-1' },
       expected: {
         type: 'awareness',
-        data: { ...withoutState.data, state: { selection: 'node-1' } }
+        data: {
+          ...withoutState.data,
+          state: { cursor: [10, 20], selection: 'node-1' }
+        }
       }
     }
   ])('parses $name as $kind', ({ state, expected }) => {
