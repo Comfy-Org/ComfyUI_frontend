@@ -29,6 +29,7 @@ const minimaxRoute = '/minimax-h3/'
 const minimaxRouteZh = '/zh-CN/minimax-h3/'
 
 const TOP_LEVEL_LABELS = [
+  'Hub',
   'Products',
   'Enterprise',
   'Pricing',
@@ -50,7 +51,10 @@ const RETIRED_BADGE_PANELS = [
   },
   {
     section: 'Company',
-    badged: [{ label: 'Events', href: '/events/' }],
+    badged: [
+      { label: 'Events', href: '/events/' },
+      { label: 'Customer Stories', href: '/customers/' }
+    ],
     bare: [
       { label: 'Affiliates', href: '/affiliates/' },
       { label: 'Learning', href: '/learning/' }
@@ -106,26 +110,17 @@ test.describe('Desktop navigation @smoke', () => {
     }
   })
 
-  test('NEW badge shows on Products only', async ({ page }) => {
+  test('no top-level item carries a NEW badge', async ({ page }) => {
     await page.setViewportSize({ width: 1600, height: 900 })
     const nav = page.getByRole('navigation', { name: 'Main navigation' })
     const desktopLinks = nav.getByTestId('desktop-nav-links')
 
-    await expect(
-      desktopLinks
-        .getByRole('button', { name: 'Products' })
-        .getByText('NEW', { exact: true })
-    ).toBeVisible()
-
-    await expect(
-      desktopLinks.getByRole('button', { name: 'Company' }).getByText('NEW')
-    ).toHaveCount(0)
-    await expect(
-      desktopLinks.getByRole('button', { name: 'Enterprise' }).getByText('NEW')
-    ).toHaveCount(0)
-    await expect(
-      desktopLinks.getByRole('link', { name: 'Pricing' }).getByText('NEW')
-    ).toHaveCount(0)
+    for (const label of TOP_LEVEL_LABELS) {
+      await expect(
+        desktopLinks.getByText(label, { exact: true }).first()
+      ).toBeVisible()
+    }
+    await expect(desktopLinks.getByText('NEW', { exact: true })).toHaveCount(0)
   })
 
   test('CTA buttons are visible', async ({ page }) => {
@@ -156,8 +151,8 @@ test.describe('Desktop dropdown @interaction', () => {
     const dropdown = nav.getByTestId('nav-dropdown')
     for (const item of [
       'Comfy Desktop',
+      'Browse Models',
       'Comfy Cloud',
-      'Supported Models',
       'Comfy Agent',
       'Developer Platform',
       'Managed Builds',
@@ -323,31 +318,18 @@ test.describe('Mobile menu @mobile', () => {
     const menu = page.getByRole('dialog')
     await expect(menu).toBeVisible()
 
-    for (const label of ['Products', 'Enterprise', 'Pricing', 'Company']) {
+    for (const label of TOP_LEVEL_LABELS) {
       await expect(menu.getByText(label, { exact: true }).first()).toBeVisible()
     }
   })
 
-  test('NEW badge shows on Products only', async ({ page }) => {
+  test('no top-level item carries a NEW badge', async ({ page }) => {
     await page.getByRole('button', { name: 'Toggle menu' }).click()
 
     const menu = page.getByRole('dialog')
 
-    await expect(
-      menu.getByRole('button', { name: 'Products' }).getByText('NEW', {
-        exact: true
-      })
-    ).toBeVisible()
-
-    await expect(
-      menu.getByRole('button', { name: 'Company' }).getByText('NEW')
-    ).toHaveCount(0)
-    await expect(
-      menu.getByRole('button', { name: 'Enterprise' }).getByText('NEW')
-    ).toHaveCount(0)
-    await expect(
-      menu.getByRole('link', { name: 'Pricing' }).getByText('NEW')
-    ).toHaveCount(0)
+    await expect(menu.getByRole('button', { name: 'Products' })).toBeVisible()
+    await expect(menu.getByText('NEW', { exact: true })).toHaveCount(0)
   })
 
   for (const panel of RETIRED_BADGE_PANELS) {
@@ -378,29 +360,27 @@ test.describe('Mobile menu @mobile', () => {
     await expect(menu.getByRole('button', { name: 'Products' })).toBeVisible()
   })
 
-  test('NEW badge sits beside the label the same way on top-level and drill-down rows', async ({
+  test('NEW badge sits beside the label the same way on every drill-down row', async ({
     page
   }) => {
     await page.getByRole('button', { name: 'Toggle menu' }).click()
 
     const menu = page.getByRole('dialog')
-    await settleAnimations(menu)
-    const products = menu.getByRole('button', { name: 'Products' })
-    const topLevel = await badgePlacement(products, 'Products')
-
-    await products.click()
+    await menu.getByRole('button', { name: 'Products' }).click()
+    const models = menu.getByRole('link', { name: 'Browse Models' })
     const agent = menu.getByRole('link', { name: 'Comfy Agent' })
     await expect(agent).toBeVisible()
     await settleAnimations(menu)
-    const drillDown = await badgePlacement(agent, 'Comfy Agent')
+    const first = await badgePlacement(models, 'Browse Models')
+    const second = await badgePlacement(agent, 'Comfy Agent')
 
-    expect(topLevel.gap).toBeGreaterThan(0)
-    expect(Math.abs(topLevel.gap - drillDown.gap)).toBeLessThanOrEqual(1)
+    expect(first.gap).toBeGreaterThan(0)
+    expect(Math.abs(first.gap - second.gap)).toBeLessThanOrEqual(1)
     expect(
-      Math.abs(topLevel.centerOffset - drillDown.centerOffset)
+      Math.abs(first.centerOffset - second.centerOffset)
     ).toBeLessThanOrEqual(1)
-    expect(Math.abs(topLevel.width - drillDown.width)).toBeLessThanOrEqual(1)
-    expect(Math.abs(topLevel.height - drillDown.height)).toBeLessThanOrEqual(1)
+    expect(Math.abs(first.width - second.width)).toBeLessThanOrEqual(1)
+    expect(Math.abs(first.height - second.height)).toBeLessThanOrEqual(1)
   })
 })
 

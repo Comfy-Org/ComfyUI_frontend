@@ -12,10 +12,12 @@ async function openMenu() {
 }
 
 describe('HeaderMainMobile', () => {
-  it('offers Products and Enterprise without a top-level Hub item', async () => {
+  it('offers Hub, Products and Enterprise at the top level', async () => {
     await openMenu()
 
-    expect(screen.queryByRole('link', { name: /^Hub\b/i })).toBeNull()
+    expect(
+      screen.getByRole('link', { name: /^Hub\b/i }).getAttribute('href')
+    ).toBe('/hub/models/')
     expect(screen.getByRole('button', { name: /^Products\b/i })).toBeTruthy()
     expect(screen.getByRole('button', { name: /^Enterprise\b/i })).toBeTruthy()
   })
@@ -36,12 +38,11 @@ describe('HeaderMainMobile', () => {
     }
   })
 
-  it('labels a new top-level section with a NEW badge', async () => {
+  it('shows no NEW badge on the top-level sections', async () => {
     await openMenu()
 
-    expect(
-      screen.getByRole('button', { name: /^Products\s*NEW$/i })
-    ).toBeTruthy()
+    expect(screen.getByRole('button', { name: /^Products$/i })).toBeTruthy()
+    expect(screen.queryByText('NEW', { exact: true })).toBeNull()
   })
 
   it('shows the Enterprise links in one section', async () => {

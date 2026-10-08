@@ -6,17 +6,10 @@ import { getMainNavigation } from './mainNavigation'
 
 describe('getMainNavigation', () => {
   it.for(['en', 'zh-CN', 'ja'] as const)(
-    'links Browse Models once, under Products > Create, for %s',
+    'links the Hub catalogue at the top level and under Products > Create, for %s',
     (locale) => {
       const navigation = getMainNavigation(locale)
       const catalogue = getRoutes(locale).workshop
-      const allLinks = navigation.flatMap((item) =>
-        item.columns
-          ? item.columns.flatMap((column) =>
-              column.items.map((entry) => entry.href)
-            )
-          : [item.href]
-      )
       const create = navigation
         .find((item) => item.label === t('nav.products', locale))
         ?.columns?.find(
@@ -24,7 +17,10 @@ describe('getMainNavigation', () => {
         )
 
       expect(catalogue).toBe('/hub/models/')
-      expect(allLinks.filter((href) => href === catalogue)).toHaveLength(1)
+      expect(navigation[0]).toEqual({
+        label: t('nav.workshop', locale),
+        href: catalogue
+      })
       expect(create?.items).toContainEqual({
         label: t('nav.comfyWorkshop', locale),
         href: catalogue,
@@ -33,10 +29,9 @@ describe('getMainNavigation', () => {
     }
   )
 
-  it('does not expose Models or Hub as a top-level navigation item', () => {
+  it('does not expose Models as a top-level navigation item', () => {
     const labels = getMainNavigation('en').map((item) => item.label)
     expect(labels).not.toContain('Models')
-    expect(labels).not.toContain('Hub')
   })
 
   it('organizes Products by Create, Automate, Build, and Resources', () => {
@@ -52,10 +47,16 @@ describe('getMainNavigation', () => {
     ])
     expect(productsItem?.columns?.[0].items.map((item) => item.label)).toEqual([
       'Comfy Desktop',
-      'Comfy Cloud',
-      'Comfy Workflows',
       'Browse Models',
-      'Supported Models'
+      'Comfy Cloud',
+      'Comfy Workflows'
+    ])
+    expect(productsItem?.columns?.[2].items.map((item) => item.label)).toEqual([
+      'Developer Platform',
+      'Comfy API',
+      'Comfy Router',
+      'Builds',
+      'Managed Builds'
     ])
     expect(productsItem?.columns?.[2].items).toContainEqual(
       expect.objectContaining({
@@ -84,6 +85,7 @@ describe('getMainNavigation', () => {
       }
 
       expect(badgeOf(routes.platform)).toBe('new')
+      expect(badgeOf(routes.platformComfyApi)).toBeUndefined()
       expect(badgeOf(routes.platformRouter)).toBe('new')
       expect(badgeOf(routes.managedBuilds)).toBeUndefined()
     }
@@ -93,21 +95,23 @@ describe('getMainNavigation', () => {
     const navigation = getMainNavigation('en')
 
     expect(navigation.map((item) => item.label)).toEqual([
+      'Hub',
       'Products',
       'Enterprise',
       'Pricing',
       'Company'
     ])
-    expect(navigation[1].columns).toHaveLength(1)
-    expect(navigation[1].columns?.[0].header).toBeUndefined()
-    expect(navigation[1].columns?.[0].items.map((item) => item.label)).toEqual([
+    const enterprise = navigation[2]
+    expect(enterprise.columns).toHaveLength(1)
+    expect(enterprise.columns?.[0].header).toBeUndefined()
+    expect(enterprise.columns?.[0].items.map((item) => item.label)).toEqual([
       'Comfy Enterprise',
       'Forward Deployed Creatives',
       'Team Billing',
       'Commercial Licensing',
       'Contact Sales'
     ])
-    expect(navigation[1].featured).toEqual(
+    expect(enterprise.featured).toEqual(
       expect.objectContaining({
         videoSrc: 'https://media.comfy.org/website/minimax-license/hero.mp4',
         cta: expect.objectContaining({

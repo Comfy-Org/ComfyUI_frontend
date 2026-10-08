@@ -5,19 +5,23 @@ import { nextTick } from 'vue'
 import HeaderMainDesktop from './HeaderMainDesktop.vue'
 
 describe('HeaderMainDesktop', () => {
-  it('renders Products and Enterprise without a top-level Hub item', () => {
+  it('renders Hub, Products and Enterprise at the top level', () => {
     render(HeaderMainDesktop)
-    expect(screen.queryByRole('link', { name: /^Hub\b/i })).toBeNull()
+    expect(
+      screen.getByRole('link', { name: /^Hub\b/i }).getAttribute('href')
+    ).toBe('/hub/models/')
     expect(screen.getByRole('button', { name: /products/i })).toBeTruthy()
     expect(screen.getByRole('button', { name: /enterprise/i })).toBeTruthy()
     expect(screen.queryByRole('button', { name: /community/i })).toBeNull()
   })
 
-  it('marks Products active on the Hub page it links to', async () => {
+  it('marks Hub, not Products, active on the Hub page', async () => {
     history.replaceState(null, '', '/hub/models/')
     render(HeaderMainDesktop)
     await nextTick()
+    const hub = screen.getByRole('link', { name: /^Hub\b/i })
     const products = screen.getByRole('button', { name: /products/i })
-    expect(products.getAttribute('data-active')).not.toBeNull()
+    expect(hub.getAttribute('data-active')).not.toBeNull()
+    expect(products.getAttribute('data-active')).toBeNull()
   })
 })

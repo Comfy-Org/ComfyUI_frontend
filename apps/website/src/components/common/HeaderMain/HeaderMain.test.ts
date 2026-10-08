@@ -51,13 +51,15 @@ describe('HeaderMain workshop gating', () => {
     { workshopInBuild: true, enabled: false },
     { workshopInBuild: true, enabled: true }
   ])(
-    'keeps Hub out of the top navigation when workshopInBuild is $workshopInBuild',
+    'keeps Hub in the top navigation when workshopInBuild is $workshopInBuild',
     async ({ workshopInBuild, enabled }) => {
       visibility.value = enabled
       renderHeader(workshopInBuild)
       await nextTick()
 
-      expect(screen.queryByRole('link', { name: /^Hub\b/i })).toBeNull()
+      expect(
+        screen.getByRole('link', { name: /^Hub\b/i }).getAttribute('href')
+      ).toBe('/hub/models/')
       expect(screen.queryByRole('button', { name: /^Models\b/i })).toBeNull()
     }
   )

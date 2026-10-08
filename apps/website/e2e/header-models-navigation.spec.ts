@@ -34,6 +34,9 @@ for (const viewport of viewports) {
     if (viewport.desktopNavigation) {
       await expect(desktopLinks).toBeVisible()
       await expect(
+        desktopLinks.getByRole('link', { name: 'Hub', exact: true })
+      ).toHaveAttribute('href', '/hub/models/')
+      await expect(
         desktopLinks.getByRole('button', { name: 'Products', exact: true })
       ).toBeVisible()
       await expect(
@@ -46,6 +49,10 @@ for (const viewport of viewports) {
       await menuButton.click()
       const menu = page.getByRole('dialog', { name: 'Menu' })
       await expect(menu).toBeVisible()
+      await expect(menu.getByRole('link', { name: /^Hub\b/ })).toHaveAttribute(
+        'href',
+        '/hub/models/'
+      )
       await expect(
         menu.getByRole('button', { name: /^Products\b/ })
       ).toBeVisible()

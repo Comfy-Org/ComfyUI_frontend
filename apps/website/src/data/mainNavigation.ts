@@ -49,8 +49,11 @@ export function getMainNavigation(locale: Locale): NavItem[] {
   const routes = getRoutes(locale)
   return [
     {
+      label: t('nav.workshop', locale),
+      href: routes.workshop
+    },
+    {
       label: t('nav.products', locale),
-      badge: 'new',
       featured: {
         imageSrc: 'https://media.comfy.org/website/gemini-omni/card-5.webp',
         videoSrc: 'https://media.comfy.org/website/gemini-omni/card-5.webm',
@@ -67,17 +70,16 @@ export function getMainNavigation(locale: Locale): NavItem[] {
           header: t('nav.colCreate', locale),
           items: [
             { label: t('nav.comfyLocal', locale), href: routes.download },
-            { label: t('nav.comfyCloud', locale), href: routes.cloud },
-            {
-              label: t('nav.comfyHub', locale),
-              href: externalLinks.workflows
-            },
             {
               label: t('nav.comfyWorkshop', locale),
               href: routes.workshop,
               badge: 'new'
             },
-            { label: t('nav.supportedModels', locale), href: routes.models }
+            { label: t('nav.comfyCloud', locale), href: routes.cloud },
+            {
+              label: t('nav.comfyHub', locale),
+              href: externalLinks.workflows
+            }
           ]
         },
         {
@@ -104,7 +106,7 @@ export function getMainNavigation(locale: Locale): NavItem[] {
               badge: 'new'
             },
             {
-              label: t('nav.serverlessApi', locale),
+              label: t('nav.comfyApi', locale),
               href: routes.platformComfyApi
             },
             {
@@ -223,7 +225,8 @@ export function getMainNavigation(locale: Locale): NavItem[] {
           items: [
             {
               label: t('nav.customerStories', locale),
-              href: routes.customers
+              href: routes.customers,
+              badge: 'new'
             },
             { label: t('nav.launches', locale), href: routes.launches },
             {

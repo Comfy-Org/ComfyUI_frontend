@@ -4247,7 +4247,7 @@ Enterprise`
     en: 'Managed Builds',
     'zh-CN': '托管构建'
   },
-  'nav.serverlessApi': { en: 'Serverless API', 'zh-CN': 'Serverless API' },
+  'nav.comfyApi': { en: 'Comfy API', 'zh-CN': 'Comfy API' },
   'nav.comfySdks': { en: 'Comfy SDKs', 'zh-CN': 'Comfy SDKs' },
   'nav.builds': { en: 'Builds', 'zh-CN': '构建' },
   'nav.teamBilling': { en: 'Team Billing', 'zh-CN': '团队账单' },
