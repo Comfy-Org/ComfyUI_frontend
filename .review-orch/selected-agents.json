@@ -1,0 +1,14 @@
+{
+  "diff_size": "XL",
+  "insertions": 3225,
+  "budget": 24,
+  "selected": ["A1","A2","A3","C1","C3","C4","B3","A5","A9","A11","B4","C2","A4","A7","A10","A13","A16","B1","A6","A8","A12","A14","A15","A17","A18","B2"],
+  "skipped": [],
+  "signals": {
+    "*.vue": true,
+    "*.test.*": true,
+    "*.ts": true,
+    "composables/*": true,
+    "package.json": true
+  }
+}

@@ -1,0 +1,5220 @@
+diff --git a/package.json b/package.json
+index 2748b0cb6..6531d07d6 100644
+--- a/package.json
++++ b/package.json
+@@ -74,6 +74,7 @@
+     "@primevue/themes": "catalog:",
+     "@sentry/vue": "catalog:",
+     "@sparkjsdev/spark": "catalog:",
++    "@tanstack/vue-query": "catalog:",
+     "@tanstack/vue-virtual": "catalog:",
+     "@tiptap/core": "catalog:",
+     "@tiptap/extension-link": "catalog:",
+diff --git a/pnpm-lock.yaml b/pnpm-lock.yaml
+index 3bf369cc1..13cc42c73 100644
+--- a/pnpm-lock.yaml
++++ b/pnpm-lock.yaml
+@@ -108,6 +108,9 @@ catalogs:
+     '@tailwindcss/vite':
+       specifier: ^4.2.0
+       version: 4.2.0
++    '@tanstack/vue-query':
++      specifier: ^5.83.0
++      version: 5.100.9
+     '@tanstack/vue-virtual':
+       specifier: ^3.13.12
+       version: 3.13.12
+@@ -476,6 +479,9 @@ importers:
+       '@sparkjsdev/spark':
+         specifier: 'catalog:'
+         version: 0.1.10
++      '@tanstack/vue-query':
++        specifier: 'catalog:'
++        version: 5.100.9(vue@3.5.13(typescript@5.9.3))
+       '@tanstack/vue-virtual':
+         specifier: 'catalog:'
+         version: 3.13.12(vue@3.5.13(typescript@5.9.3))
+@@ -851,7 +857,7 @@ importers:
+         version: 8.0.5(vite@8.0.0(@types/node@24.10.4)(esbuild@0.27.3)(jiti@2.6.1)(terser@5.39.2)(tsx@4.19.4)(yaml@2.8.2))(vue@3.5.13(typescript@5.9.3))
+       vitest:
+         specifier: 'catalog:'
+-        version: 4.0.16(@opentelemetry/api@1.9.0)(@types/node@24.10.4)(@vitest/ui@4.0.16)(esbuild@0.27.3)(happy-dom@20.0.11)(jiti@2.6.1)(jsdom@27.4.0)(terser@5.39.2)(tsx@4.19.4)(yaml@2.8.2)
++        version: 4.0.16(@opentelemetry/api@1.9.0)(@types/node@24.10.4)(@vitest/ui@4.0.16)(esbuild@0.27.3)(happy-dom@20.0.11)(jiti@2.6.1)(jsdom@27.4.0)(msw@2.14.3(@types/node@24.10.4)(typescript@5.9.3))(terser@5.39.2)(tsx@4.19.4)(yaml@2.8.2)
+       vue-component-type-helpers:
+         specifier: 'catalog:'
+         version: 3.2.6
+@@ -997,7 +1003,7 @@ importers:
+         version: 5.9.3
+       vitest:
+         specifier: 'catalog:'
+-        version: 4.0.16(@opentelemetry/api@1.9.0)(@types/node@25.0.3)(@vitest/ui@4.0.16)(esbuild@0.27.3)(happy-dom@20.0.11)(jiti@2.6.1)(jsdom@27.4.0)(terser@5.39.2)(tsx@4.19.4)(yaml@2.8.2)
++        version: 4.0.16(@opentelemetry/api@1.9.0)(@types/node@25.0.3)(@vitest/ui@4.0.16)(esbuild@0.27.3)(happy-dom@20.0.11)(jiti@2.6.1)(jsdom@27.4.0)(msw@2.14.3(@types/node@25.0.3)(typescript@5.9.3))(terser@5.39.2)(tsx@4.19.4)(yaml@2.8.2)
+ 
+   packages/design-system:
+     dependencies:
+@@ -2651,6 +2657,41 @@ packages:
+     cpu: [x64]
+     os: [win32]
+ 
++  '@inquirer/ansi@2.0.5':
++    resolution: {integrity: sha512-doc2sWgJpbFQ64UflSVd17ibMGDuxO1yKgOgLMwavzESnXjFWJqUeG8saYosqKpHp4kWiM5x1nXvEjbpx90gzw==}
++    engines: {node: '>=23.5.0 || ^22.13.0 || ^21.7.0 || ^20.12.0'}
++
++  '@inquirer/confirm@6.0.12':
++    resolution: {integrity: sha512-h9FgGun3QwVYNj5TWIZZ+slii73bMoBFjPfVIGtnFuL4t8gBiNDV9PcSfIzkuxvgquJKt9nr1QzszpBzTbH8Og==}
++    engines: {node: '>=23.5.0 || ^22.13.0 || ^21.7.0 || ^20.12.0'}
++    peerDependencies:
++      '@types/node': '>=18'
++    peerDependenciesMeta:
++      '@types/node':
++        optional: true
++
++  '@inquirer/core@11.1.9':
++    resolution: {integrity: sha512-BDE4fG22uYh1bGSifcj7JSx119TVYNViMhMu85usp4Fswrzh6M0DV3yld64jA98uOAa2GSQ4Bg4bZRm2d2cwSg==}
++    engines: {node: '>=23.5.0 || ^22.13.0 || ^21.7.0 || ^20.12.0'}
++    peerDependencies:
++      '@types/node': '>=18'
++    peerDependenciesMeta:
++      '@types/node':
++        optional: true
++
++  '@inquirer/figures@2.0.5':
++    resolution: {integrity: sha512-NsSs4kzfm12lNetHwAn3GEuH317IzpwrMCbOuMIVytpjnJ90YYHNwdRgYGuKmVxwuIqSgqk3M5qqQt1cDk0tGQ==}
++    engines: {node: '>=23.5.0 || ^22.13.0 || ^21.7.0 || ^20.12.0'}
++
++  '@inquirer/type@4.0.5':
++    resolution: {integrity: sha512-aetVUNeKNc/VriqXlw1NRSW0zhMBB0W4bNbWRJgzRl/3d0QNDQFfk0GO5SDdtjMZVg6o8ZKEiadd7SCCzoOn5Q==}
++    engines: {node: '>=23.5.0 || ^22.13.0 || ^21.7.0 || ^20.12.0'}
++    peerDependencies:
++      '@types/node': '>=18'
++    peerDependenciesMeta:
++      '@types/node':
++        optional: true
++
+   '@internationalized/date@3.9.0':
+     resolution: {integrity: sha512-yaN3brAnHRD+4KyyOsJyk49XUvj2wtbNACSqg0bz3u8t2VuzhC8Q5dfRnrSxjnnbDb+ienBnkn1TzQfE154vyg==}
+ 
+@@ -2786,6 +2827,10 @@ packages:
+   '@mixpanel/rrweb@2.0.0-alpha.18.2':
+     resolution: {integrity: sha512-J3dVTEu6Z4p8di7y9KKvUooNuBjX97DdG6XGWoPEPi07A9512h9M8MEtvlY3mK0PGfuC0Mz5Pv/Ws6gjGYfKQg==}
+ 
++  '@mswjs/interceptors@0.41.8':
++    resolution: {integrity: sha512-pRLMNKTSGRoLq+KnEB/7OY5vijw1XmcheAAOiv6pj7W1FG32kAGqj1C/RK/cqxRGr1Fh+zBi8sDur8kj3EQv6A==}
++    engines: {node: '>=18'}
++
+   '@napi-rs/wasm-runtime@0.2.12':
+     resolution: {integrity: sha512-ZVWUcfwY4E/yPitQJl481FjFo3K22D6qF0DuFH6Y/nbnE11GY5uguDxZMGXPQ8WQ0128MXQD7TnfHyK4oWoIJQ==}
+ 
+@@ -2927,6 +2972,18 @@ packages:
+   '@one-ini/wasm@0.1.1':
+     resolution: {integrity: sha512-XuySG1E38YScSJoMlqovLru4KTUNSjgVTIjyh7qMX6aNN5HY5Ct5LhRJdxO79JtTzKfzV/bnWpz+zquYrISsvw==}
+ 
++  '@open-draft/deferred-promise@2.2.0':
++    resolution: {integrity: sha512-CecwLWx3rhxVQF6V4bAgPS5t+So2sTbPgAzafKkVizyi7tlwpcFpdFqq+wqF2OwNBmqFuu6tOyouTuxgpMfzmA==}
++
++  '@open-draft/deferred-promise@3.0.0':
++    resolution: {integrity: sha512-XW375UK8/9SqUVNVa6M0yEy8+iTi4QN5VZ7aZuRFQmy76LRwI9wy5F4YIBU6T+eTe2/DNDo8tqu8RHlwLHM6RA==}
++
++  '@open-draft/logger@0.3.0':
++    resolution: {integrity: sha512-X2g45fzhxH238HKO4xbSr7+wBS8Fvw6ixhTDuvLd5mqh6bJJCFAPwU9mPDxbcrRtfxv4u5IHCEH77BmxvXmmxQ==}
++
++  '@open-draft/until@2.1.0':
++    resolution: {integrity: sha512-U69T3ItWHvLwGg5eJ0n3I62nWuE6ilHlmz7zM0npLBRvPRd7e6NYmg54vvRtP5mZG7kZqZCFVdsTWo7BPtBujg==}
++
+   '@opentelemetry/api-logs@0.208.0':
+     resolution: {integrity: sha512-CjruKY9V6NMssL/T1kAFgzosF1v9o6oeN+aX5JB/C/xPNtmgIJqcXHG7fA82Ou1zCpWGl4lROQUKwUNE1pMCyg==}
+     engines: {node: '>=8.0.0'}
+@@ -4197,9 +4254,25 @@ packages:
+     peerDependencies:
+       vite: ^8.0.0
+ 
++  '@tanstack/match-sorter-utils@8.19.4':
++    resolution: {integrity: sha512-Wo1iKt2b9OT7d+YGhvEPD3DXvPv2etTusIMhMUoG7fbhmxcXCtIjJDEygy91Y2JFlwGyjqiBPRozme7UD8hoqg==}
++    engines: {node: '>=12'}
++
++  '@tanstack/query-core@5.100.9':
++    resolution: {integrity: sha512-SJSFw1S8+kQ0+knv/XGfrbocWoAlT7vDKsSImtLx3ZPQmEcR46hkDjLSvynSy25N8Ms4tIEini1FuBd5k7IscQ==}
++
+   '@tanstack/virtual-core@3.13.12':
+     resolution: {integrity: sha512-1YBOJfRHV4sXUmWsFSf5rQor4Ss82G8dQWLRbnk3GA4jeP8hQt1hxXh0tmflpC0dz3VgEv/1+qwPyLeWkQuPFA==}
+ 
++  '@tanstack/vue-query@5.100.9':
++    resolution: {integrity: sha512-wGiv/AirRuITlTDl87zdBRaZIZTejMItUswKgMzzcX/1gfn95iKw2EaCuz7qlX9ceB0DwBj9FqaroLnDoJCecg==}
++    peerDependencies:
++      '@vue/composition-api': ^1.1.2
++      vue: ^2.6.0 || ^3.3.0
++    peerDependenciesMeta:
++      '@vue/composition-api':
++        optional: true
++
+   '@tanstack/vue-virtual@3.13.12':
+     resolution: {integrity: sha512-vhF7kEU9EXWXh+HdAwKJ2m3xaOnTTmgcdXcF2pim8g4GvI7eRrk2YRuV5nUlZnd/NbCIX4/Ja2OZu5EjJL06Ww==}
+     peerDependencies:
+@@ -4505,9 +4578,15 @@ packages:
+   '@types/semver@7.7.0':
+     resolution: {integrity: sha512-k107IF4+Xr7UHjwDc7Cfd6PRQfbdkiRabXGRjo07b4WyPahFBZCZ1sE+BNxYIJPPg73UkfOsVOLwqVc/6ETrIA==}
+ 
++  '@types/set-cookie-parser@2.4.10':
++    resolution: {integrity: sha512-GGmQVGpQWUe5qglJozEjZV/5dyxbOOZ0LHe/lqyWssB88Y4svNfst0uqBVscdDeIKl5Jy5+aPSvy7mI9tYRguw==}
++
+   '@types/stats.js@0.17.3':
+     resolution: {integrity: sha512-pXNfAD3KHOdif9EQXZ9deK82HVNaXP5ZIF5RP2QG6OQFNTaY2YIetfrE9t528vEreGQvEPRDDc8muaoYeK0SxQ==}
+ 
++  '@types/statuses@2.0.6':
++    resolution: {integrity: sha512-xMAgYwceFhRA2zY+XbEA7mxYbA093wdiW8Vu6gZPGWy9cmOyU9XesH1tNcEWsKFd5Vzrqx5T3D38PWx1FIIXkA==}
++
+   '@types/three@0.169.0':
+     resolution: {integrity: sha512-oan7qCgJBt03wIaK+4xPWclYRPG9wzcg7Z2f5T8xYTNEF95kh0t0lklxLLYBDo7gQiGLYzE6iF4ta7nXF2bcsw==}
+ 
+@@ -5599,6 +5678,10 @@ packages:
+     resolution: {integrity: sha512-SroPvNHxUnk+vIW/dOSfNqdy1sPEFkrTk6TUtqLCnBlo3N7TNYYkzzN7uSD6+jVjrdO4+p8nH7JzH6cIvUem6A==}
+     engines: {node: '>=20'}
+ 
++  cli-width@4.1.0:
++    resolution: {integrity: sha512-ouuZd4/dm2Sw5Gmqy6bGyNNNe1qt9RpmxveLSO7KcgsTnU7RXfsw+/bukWGo1abgBiMAic068rclZsO4IWmmxQ==}
++    engines: {node: '>= 12'}
++
+   cliui@8.0.1:
+     resolution: {integrity: sha512-BSeNnyus75C4//NQ9gQt1/csTXyo/8Sb+afLAkzAptFuMsod9HFokGNudZpi/oQV73hnVK+sR+5PVRMd+Dr7YQ==}
+     engines: {node: '>=12'}
+@@ -6449,6 +6532,12 @@ packages:
+   fast-levenshtein@2.0.6:
+     resolution: {integrity: sha512-DCXu6Ifhqcks7TZKY3Hxp3y6qphY5SJZmrWMDrKcERSOXWQdMhU9Ig/PYrzyw/ul9jOIyh0N4M0tbC5hodg8dw==}
+ 
++  fast-string-truncated-width@3.0.3:
++    resolution: {integrity: sha512-0jjjIEL6+0jag3l2XWWizO64/aZVtpiGE3t0Zgqxv0DPuxiMjvB3M24fCyhZUO4KomJQPj3LTSUnDP3GpdwC0g==}
++
++  fast-string-width@3.0.2:
++    resolution: {integrity: sha512-gX8LrtNEI5hq8DVUfRQMbr5lpaS4nMIWV+7XEbXk2b8kiQIizgnlr12B4dA3ZEx3308ze0O4Q1R+cHts8kyUJg==}
++
+   fast-unique-numbers@9.0.22:
+     resolution: {integrity: sha512-dBR+30yHAqBGvOuxxQdnn2lTLHCO6r/9B+M4yF8mNrzr3u1yiF+YVJ6u3GTyPN/VRWqaE1FcscZDdBgVKmrmQQ==}
+     engines: {node: '>=18.2.0'}
+@@ -6456,6 +6545,9 @@ packages:
+   fast-uri@3.1.0:
+     resolution: {integrity: sha512-iPeeDKJSWf4IEOasVVrknXpaBV0IApz/gp7S2bb7Z4Lljbl2MGJRqInZiUrQwV16cpzw/D3S5j5Julj/gT52AA==}
+ 
++  fast-wrap-ansi@0.2.0:
++    resolution: {integrity: sha512-rLV8JHxTyhVmFYhBJuMujcrHqOT2cnO5Zxj37qROj23CP39GXubJRBUFF0z8KFK77Uc0SukZUf7JZhsVEQ6n8w==}
++
+   fastest-levenshtein@1.0.16:
+     resolution: {integrity: sha512-eRnCtTTtGZFpQCwhJiUOuxPQWRXVKYDn0b2PeHfXL6/Zi53SLAzAHfVhVWK2AryC/WH05kGfxhFIPvTF0SXQzg==}
+     engines: {node: '>= 4.9.1'}
+@@ -6732,6 +6824,10 @@ packages:
+   graceful-fs@4.2.11:
+     resolution: {integrity: sha512-RbJ5/jmFcNNCcDV5o9eTnBLJ/HszWV0P73bc+Ff4nS/rJj+YaS6IGyiOL0VoBYX+l1Wrl3k63h/KrH+nhJ0XvQ==}
+ 
++  graphql@16.13.2:
++    resolution: {integrity: sha512-5bJ+nf/UCpAjHM8i06fl7eLyVC9iuNAjm9qzkiu2ZGhM0VscSvS6WDPfAwkdkBuoXGM9FJSbKl6wylMwP9Ktig==}
++    engines: {node: ^12.22.0 || ^14.16.0 || ^16.0.0 || >=17.0.0}
++
+   gray-matter@4.0.3:
+     resolution: {integrity: sha512-5v6yZd4JK3eMI3FqqCouswVqwugaA9r4dNZB1wwcmrD02QkV5H0y7XBQW8QwQqEaZY1pM9aqORSORhJRdNK44Q==}
+     engines: {node: '>=6.0'}
+@@ -6814,6 +6910,9 @@ packages:
+     resolution: {integrity: sha512-F/1DnUGPopORZi0ni+CvrCgHQ5FyEAHRLSApuYWMmrbSwoN2Mn/7k+Gl38gJnR7yyDZk6WLXwiGod1JOWNDKGw==}
+     hasBin: true
+ 
++  headers-polyfill@5.0.1:
++    resolution: {integrity: sha512-1TJ6Fih/b8h5TIcv+1+Hw0PDQWJTKDKzFZzcKOiW1wJza3XoAQlkCuXLbymPYB8+ZQyw8mHvdw560e8zVFIWyA==}
++
+   hookable@5.5.3:
+     resolution: {integrity: sha512-Yc+BQe8SvoXH1643Qez1zqLRmbA5rCL+sSmk6TVos0LWVfNIB7PGncdlId77WzLGSIB5KaWgTaNTs2lNVEI6VQ==}
+ 
+@@ -7070,6 +7169,9 @@ packages:
+     resolution: {integrity: sha512-5KoIu2Ngpyek75jXodFvnafB6DJgr3u8uuK0LEZJjrU19DrMD3EVERaR8sjz8CCGgpZvxPl9SuE1GMVPFHx1mw==}
+     engines: {node: '>= 0.4'}
+ 
++  is-node-process@1.2.0:
++    resolution: {integrity: sha512-Vg4o6/fqPxIjtxgUH5QLJhwZ7gW5diGCVlXpuUfELC62CuxM1iHcRe51f2W1FDy04Ai4KJkagKjx3XaqyfRKXw==}
++
+   is-npm@6.1.0:
+     resolution: {integrity: sha512-O2z4/kNgyjhQwVR1Wpkbfc19JIhggF97NZNCpWTnjH7kVcZMUrnut9XSN7txI7VdyIYk5ZatOq3zvSuWpU8hoA==}
+     engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
+@@ -7915,6 +8017,16 @@ packages:
+   ms@2.1.3:
+     resolution: {integrity: sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==}
+ 
++  msw@2.14.3:
++    resolution: {integrity: sha512-kk8G5cocVlJ4wsKMGZegn2H6XLOEKjbA+nSJE2354e/SRp4mDicCHUYnMXpymzVcVDCs+GUAsmNqSn+yHv4T2A==}
++    engines: {node: '>=18'}
++    hasBin: true
++    peerDependencies:
++      typescript: '>= 4.8.x'
++    peerDependenciesMeta:
++      typescript:
++        optional: true
++
+   muggle-string@0.4.1:
+     resolution: {integrity: sha512-VNTrAak/KhO2i8dqqnqnAHOa3cYBwXEZe9h+D5h/1ZqFSTEFHdM65lR7RoIqq3tBBYavsOXV84NoHXZ0AkPyqQ==}
+ 
+@@ -7922,6 +8034,10 @@ packages:
+     resolution: {integrity: sha512-SsI/exkodHsh+ofCV7An2PZWRaJC7eFVl7gtHQlMWFEDmWtb7cELr/GK32Nhe/6dZQhbr81o+Moswx9aXN3RRg==}
+     engines: {node: '>=18.2.0'}
+ 
++  mute-stream@3.0.0:
++    resolution: {integrity: sha512-dkEJPVvun4FryqBmZ5KhDo0K9iDXAwn08tMLDinNdRBNPcYEDiWYysLcc6k3mjTMlbP9KyylvRpd4wFtwrT9rw==}
++    engines: {node: ^20.17.0 || >=22.9.0}
++
+   nanoid@3.3.11:
+     resolution: {integrity: sha512-N8SpfPUnUp1bK+PMYW8qSWdl9U+wwNWI4QKxOYDy9JAro3WMX7p2OeVRF9v+347pnakNevPmiHhNmZ2HbFA76w==}
+     engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
+@@ -8106,6 +8222,9 @@ packages:
+   orderedmap@2.1.1:
+     resolution: {integrity: sha512-TvAWxi0nDe1j/rtMcWcIj94+Ffe6n7zhow33h40SKxmsmozs6dz/e+EajymfoFcHd7sxNn8yHM8839uixMOV6g==}
+ 
++  outvariant@1.4.3:
++    resolution: {integrity: sha512-+Sl2UErvtsoajRDKCE5/dBz4DIvHXQQnAxtQTF04OJxY0+DyZXSo5P5Bb7XYWOh81syohlYL24hbDwxedPUJCA==}
++
+   own-keys@1.0.1:
+     resolution: {integrity: sha512-qFOyK5PjiWZd+QQIh+1jhdb9LpxTF0qs7Pm8o5QHYZ0M3vKqSqzsZaEB6oWlxZ+q2sJBMI/Ktgd2N5ZwQoRHfg==}
+     engines: {node: '>= 0.4'}
+@@ -8234,6 +8353,9 @@ packages:
+     resolution: {integrity: sha512-3O/iVVsJAPsOnpwWIeD+d6z/7PmqApyQePUtCndjatj/9I5LylHvt5qluFaBT3I5h3r1ejfR056c+FCv+NnNXg==}
+     engines: {node: 18 || 20 || >=22}
+ 
++  path-to-regexp@6.3.0:
++    resolution: {integrity: sha512-Yhpw4T9C6hPpgPeA28us07OJeqZ5EzQTkbfwuhsUg0c237RomFoETJgmp2sa3F/41gfLE6G5cqcYwznmeEeOlQ==}
++
+   path-type@4.0.0:
+     resolution: {integrity: sha512-gDKb8aZMDeD/tZWs9P6+q0J9Mwkdl6xMV8TjnGP3qJVJ06bdMgkbBlLU8IdfOsIsFz2BW1rNVT3XuNEl8zPAvw==}
+     engines: {node: '>=8'}
+@@ -8679,6 +8801,9 @@ packages:
+   remark-stringify@11.0.0:
+     resolution: {integrity: sha512-1OSmLd3awB/t8qdoEOMazZkNsfVTeY4fTsgzcQFdXNq8ToTN4ZGwrMnlda4K6smTFKD+GRV6O48i6Z4iKgPPpw==}
+ 
++  remove-accents@0.5.0:
++    resolution: {integrity: sha512-8g3/Otx1eJaVD12e31UbJj1YzdtVvzH85HV7t+9MJYk/u3XmkOUJ5Ys9wQrf9PCPK8+xn4ymzqYCiZl6QWKn+A==}
++
+   request-light@0.5.8:
+     resolution: {integrity: sha512-3Zjgh+8b5fhRJBQZoy+zbVKpAQGLyka0MPgW3zruTF4dFFJ8Fqcfu9YsAvi/rvdcaTeWG3MkbZv4WKxAn/84Lg==}
+ 
+@@ -8737,6 +8862,9 @@ packages:
+   retext@9.0.0:
+     resolution: {integrity: sha512-sbMDcpHCNjvlheSgMfEcVrZko3cDzdbe1x/e7G66dFp0Ff7Mldvi2uv6JkJQzdRcvLYE8CA8Oe8siQx8ZOgTcA==}
+ 
++  rettime@0.11.11:
++    resolution: {integrity: sha512-ILJRqVWBCTlg9r42fFgwVZx1gnFAcQF8mRoMkbgQfIrjEDf9nbBFDFx00oloOa+Q869FUtaYDXZvEfnecQSCoQ==}
++
+   reusify@1.1.0:
+     resolution: {integrity: sha512-g6QUff04oZpHs0eG5p83rFLhHeV00ug/Yf9nZM6fLeUrPguBTkTQOdpAWWspMh55TZfVQDPaN3NQJfbVRAxdIw==}
+     engines: {iojs: '>=1.0.0', node: '>=0.10.0'}
+@@ -8832,6 +8960,9 @@ packages:
+     engines: {node: '>=10'}
+     hasBin: true
+ 
++  set-cookie-parser@3.1.0:
++    resolution: {integrity: sha512-kjnC1DXBHcxaOaOXBHBeRtltsDG2nUiUni+jP92M9gYdW12rsmx92UsfpH7o5tDRs7I1ZZPSQJQGv3UaRfCiuw==}
++
+   set-function-length@1.2.2:
+     resolution: {integrity: sha512-pgRc4hJ4/sNjWCSS9AmnS40x3bNMDTknHgL5UaMBTMyJnU90EgWh1Rz+MC9eFu4BuN/UwZjKQuY/1v3rM7HMfg==}
+     engines: {node: '>= 0.4'}
+@@ -8965,6 +9096,10 @@ packages:
+   standardized-audio-context@25.3.77:
+     resolution: {integrity: sha512-Ki9zNz6pKcC5Pi+QPjPyVsD9GwJIJWgryji0XL9cAJXMGyn+dPOf6Qik1AHei0+UNVcc4BOCa0hWLBzlwqsW/A==}
+ 
++  statuses@2.0.2:
++    resolution: {integrity: sha512-DvEy55V3DB7uknRo+4iOGT5fP1slR8wQohVdknigZPMpMstaKJQWhwiYBACJE3Ul2pTnATihhBYnRhZQHGBiRw==}
++    engines: {node: '>= 0.8'}
++
+   std-env@3.10.0:
+     resolution: {integrity: sha512-5GS12FdOZNliM5mAOxFRg7Ir0pWz8MdpYm6AY6VPkGpbA7ZzmbzNcBJQ0GPvvyWgcY7QAhCgf9Uy89I03faLkg==}
+ 
+@@ -8984,6 +9119,9 @@ packages:
+   stream-replace-string@2.0.0:
+     resolution: {integrity: sha512-TlnjJ1C0QrmxRNrON00JvaFFlNh5TTG00APw23j74ET7gkQpTASi6/L2fuiav8pzK715HXtUeClpBTw2NPSn6w==}
+ 
++  strict-event-emitter@0.5.1:
++    resolution: {integrity: sha512-vMgjE/GGEPEFnhFub6pa4FmJBRBVOLpIII2hvCZ8Kzb7K0hlHo7mQv6xYrBvCL2LtAIBwFUK8wvuJgTVSQ5MFQ==}
++
+   string-argv@0.3.2:
+     resolution: {integrity: sha512-aqD2Q0144Z+/RqG52NeHEkZauTAUWJO8c6yTftGJKO3Tja5tUgIfmIl6kExvhtxSDP7fXB6DvzkfMpCd/F3G+Q==}
+     engines: {node: '>=0.6.19'}
+@@ -9240,6 +9378,10 @@ packages:
+     resolution: {integrity: sha512-kXuRi1mtaKMrsLUxz3sQYvVl37B0Ns6MzfrtV5DvJceE9bPyspOqk9xxv7XbZWcfLWbFmm997vl83qUWVJA64w==}
+     engines: {node: '>=16'}
+ 
++  tough-cookie@6.0.1:
++    resolution: {integrity: sha512-LktZQb3IeoUWB9lqR5EWTHgW/VTITCXg4D21M+lvybRVdylLrRMnqaIONLVb5mav8vM19m44HIcGq4qASeu2Qw==}
++    engines: {node: '>=16'}
++
+   tr46@0.0.3:
+     resolution: {integrity: sha512-N3WMsuqV66lT30CrXNbEjx4GEwlow3v6rr4mCcv6prnfwhS01rkgyFdjPNBYd9br7LpXV1+Emh01fHnq2Gdgrw==}
+ 
+@@ -9318,6 +9460,10 @@ packages:
+     resolution: {integrity: sha512-JnTrzGu+zPV3aXIUhnyWJj4z/wigMsdYajGLIYakqyOW1nPllzXEJee0QQbHj+CTIQtXGlAjuK0UY+2xTyjVAw==}
+     engines: {node: '>=20'}
+ 
++  type-fest@5.6.0:
++    resolution: {integrity: sha512-8ZiHFm91orbSAe2PSAiSVBVko18pbhbiB3U9GglSzF/zCGkR+rxpHx6sEMCUm4kxY4LjDIUGgCfUMtwfZfjfUA==}
++    engines: {node: '>=20'}
++
+   typed-array-buffer@1.0.3:
+     resolution: {integrity: sha512-nAYYwfY3qnzX30IkA6AQZjVbtK6duGontcQm1WSG1MD94YLqK0515GNApXkoxKOWMusVssAHWLh9SeaoefYFGw==}
+     engines: {node: '>= 0.4'}
+@@ -9574,6 +9720,9 @@ packages:
+       uploadthing:
+         optional: true
+ 
++  until-async@3.0.2:
++    resolution: {integrity: sha512-IiSk4HlzAMqTUseHHe3VhIGyuFmN90zMTpD3Z3y8jeQbzLIq500MVM7Jq2vUAnTKAFPJrqwkzr6PoTcPhGcOiw==}
++
+   update-browserslist-db@1.2.2:
+     resolution: {integrity: sha512-E85pfNzMQ9jpKkA7+TJAi4TJN+tBCuWh5rUcS/sv6cFi+1q9LYDwDI5dpUL0u/73EElyQ8d3TEaeW4sPedBqYA==}
+     hasBin: true
+@@ -9883,8 +10032,8 @@ packages:
+   vue-component-type-helpers@3.2.6:
+     resolution: {integrity: sha512-O02tnvIfOQVmnvoWwuSydwRoHjZVt8UEBR+2p4rT35p8GAy5VTlWP8o5qXfJR/GWCN0nVZoYWsVUvx2jwgdBmQ==}
+ 
+-  vue-component-type-helpers@3.2.7:
+-    resolution: {integrity: sha512-+gPp5YGmhfsj1IN+xUo7y0fb4clfnOiiUA39y07yW1VzCRjzVgwLbtmdWlghh7mXrPsEaYc7rrIir/HT6C8vYQ==}
++  vue-component-type-helpers@3.2.8:
++    resolution: {integrity: sha512-9689efAXhN/EV86plgkL/XFiJSXhGtWPG6JDboZ+QnjlUWUUQrQ0ILKQtw4iQsuwIwu5k6Aw+JnehDe7161e7A==}
+ 
+   vue-demi@0.14.10:
+     resolution: {integrity: sha512-nMZBOwuzabUO0nLgIcc6rycZEebF6eeUfaiQx9+WSk8e29IbLvPU9feI6tqW4kTo3hvoYAJkMh8n8D0fuISphg==}
+@@ -12057,6 +12206,64 @@ snapshots:
+   '@img/sharp-win32-x64@0.34.5':
+     optional: true
+ 
++  '@inquirer/ansi@2.0.5':
++    optional: true
++
++  '@inquirer/confirm@6.0.12(@types/node@24.10.4)':
++    dependencies:
++      '@inquirer/core': 11.1.9(@types/node@24.10.4)
++      '@inquirer/type': 4.0.5(@types/node@24.10.4)
++    optionalDependencies:
++      '@types/node': 24.10.4
++    optional: true
++
++  '@inquirer/confirm@6.0.12(@types/node@25.0.3)':
++    dependencies:
++      '@inquirer/core': 11.1.9(@types/node@25.0.3)
++      '@inquirer/type': 4.0.5(@types/node@25.0.3)
++    optionalDependencies:
++      '@types/node': 25.0.3
++    optional: true
++
++  '@inquirer/core@11.1.9(@types/node@24.10.4)':
++    dependencies:
++      '@inquirer/ansi': 2.0.5
++      '@inquirer/figures': 2.0.5
++      '@inquirer/type': 4.0.5(@types/node@24.10.4)
++      cli-width: 4.1.0
++      fast-wrap-ansi: 0.2.0
++      mute-stream: 3.0.0
++      signal-exit: 4.1.0
++    optionalDependencies:
++      '@types/node': 24.10.4
++    optional: true
++
++  '@inquirer/core@11.1.9(@types/node@25.0.3)':
++    dependencies:
++      '@inquirer/ansi': 2.0.5
++      '@inquirer/figures': 2.0.5
++      '@inquirer/type': 4.0.5(@types/node@25.0.3)
++      cli-width: 4.1.0
++      fast-wrap-ansi: 0.2.0
++      mute-stream: 3.0.0
++      signal-exit: 4.1.0
++    optionalDependencies:
++      '@types/node': 25.0.3
++    optional: true
++
++  '@inquirer/figures@2.0.5':
++    optional: true
++
++  '@inquirer/type@4.0.5(@types/node@24.10.4)':
++    optionalDependencies:
++      '@types/node': 24.10.4
++    optional: true
++
++  '@inquirer/type@4.0.5(@types/node@25.0.3)':
++    optionalDependencies:
++      '@types/node': 25.0.3
++    optional: true
++
+   '@internationalized/date@3.9.0':
+     dependencies:
+       '@swc/helpers': 0.5.17
+@@ -12296,6 +12503,16 @@ snapshots:
+       base64-arraybuffer: 1.0.2
+       mitt: 3.0.1
+ 
++  '@mswjs/interceptors@0.41.8':
++    dependencies:
++      '@open-draft/deferred-promise': 2.2.0
++      '@open-draft/logger': 0.3.0
++      '@open-draft/until': 2.1.0
++      is-node-process: 1.2.0
++      outvariant: 1.4.3
++      strict-event-emitter: 0.5.1
++    optional: true
++
+   '@napi-rs/wasm-runtime@0.2.12':
+     dependencies:
+       '@emnapi/core': 1.8.1
+@@ -12502,7 +12719,7 @@ snapshots:
+       tsconfig-paths: 4.2.0
+       tslib: 2.8.1
+       vite: 8.0.0(@types/node@24.10.4)(esbuild@0.27.3)(jiti@2.6.1)(terser@5.39.2)(tsx@4.19.4)(yaml@2.8.2)
+-      vitest: 4.0.16(@opentelemetry/api@1.9.0)(@types/node@24.10.4)(@vitest/ui@4.0.16)(esbuild@0.27.3)(happy-dom@20.0.11)(jiti@2.6.1)(jsdom@27.4.0)(terser@5.39.2)(tsx@4.19.4)(yaml@2.8.2)
++      vitest: 4.0.16(@opentelemetry/api@1.9.0)(@types/node@24.10.4)(@vitest/ui@4.0.16)(esbuild@0.27.3)(happy-dom@20.0.11)(jiti@2.6.1)(jsdom@27.4.0)(msw@2.14.3(@types/node@24.10.4)(typescript@5.9.3))(terser@5.39.2)(tsx@4.19.4)(yaml@2.8.2)
+     transitivePeerDependencies:
+       - '@babel/traverse'
+       - '@swc-node/register'
+@@ -12522,7 +12739,7 @@ snapshots:
+       tslib: 2.8.1
+     optionalDependencies:
+       vite: 8.0.0(@types/node@24.10.4)(esbuild@0.27.3)(jiti@2.6.1)(terser@5.39.2)(tsx@4.19.4)(yaml@2.8.2)
+-      vitest: 4.0.16(@opentelemetry/api@1.9.0)(@types/node@24.10.4)(@vitest/ui@4.0.16)(esbuild@0.27.3)(happy-dom@20.0.11)(jiti@2.6.1)(jsdom@27.4.0)(terser@5.39.2)(tsx@4.19.4)(yaml@2.8.2)
++      vitest: 4.0.16(@opentelemetry/api@1.9.0)(@types/node@24.10.4)(@vitest/ui@4.0.16)(esbuild@0.27.3)(happy-dom@20.0.11)(jiti@2.6.1)(jsdom@27.4.0)(msw@2.14.3(@types/node@24.10.4)(typescript@5.9.3))(terser@5.39.2)(tsx@4.19.4)(yaml@2.8.2)
+     transitivePeerDependencies:
+       - '@babel/traverse'
+       - '@swc-node/register'
+@@ -12551,6 +12768,21 @@ snapshots:
+ 
+   '@one-ini/wasm@0.1.1': {}
+ 
++  '@open-draft/deferred-promise@2.2.0':
++    optional: true
++
++  '@open-draft/deferred-promise@3.0.0':
++    optional: true
++
++  '@open-draft/logger@0.3.0':
++    dependencies:
++      is-node-process: 1.2.0
++      outvariant: 1.4.3
++    optional: true
++
++  '@open-draft/until@2.1.0':
++    optional: true
++
+   '@opentelemetry/api-logs@0.208.0':
+     dependencies:
+       '@opentelemetry/api': 1.9.0
+@@ -13405,7 +13637,7 @@ snapshots:
+       storybook: 10.2.10(@testing-library/dom@10.4.1)(prettier@3.7.4)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+       type-fest: 2.19.0
+       vue: 3.5.13(typescript@5.9.3)
+-      vue-component-type-helpers: 3.2.7
++      vue-component-type-helpers: 3.2.8
+ 
+   '@swc/helpers@0.5.17':
+     dependencies:
+@@ -13486,8 +13718,22 @@ snapshots:
+       tailwindcss: 4.2.0
+       vite: 8.0.0(@types/node@25.0.3)(esbuild@0.27.3)(jiti@2.6.1)(terser@5.39.2)(tsx@4.19.4)(yaml@2.8.2)
+ 
++  '@tanstack/match-sorter-utils@8.19.4':
++    dependencies:
++      remove-accents: 0.5.0
++
++  '@tanstack/query-core@5.100.9': {}
++
+   '@tanstack/virtual-core@3.13.12': {}
+ 
++  '@tanstack/vue-query@5.100.9(vue@3.5.13(typescript@5.9.3))':
++    dependencies:
++      '@tanstack/match-sorter-utils': 8.19.4
++      '@tanstack/query-core': 5.100.9
++      '@vue/devtools-api': 6.6.4
++      vue: 3.5.13(typescript@5.9.3)
++      vue-demi: 0.14.10(vue@3.5.13(typescript@5.9.3))
++
+   '@tanstack/vue-virtual@3.13.12(vue@3.5.13(typescript@5.9.3))':
+     dependencies:
+       '@tanstack/virtual-core': 3.13.12
+@@ -13832,8 +14078,16 @@ snapshots:
+ 
+   '@types/semver@7.7.0': {}
+ 
++  '@types/set-cookie-parser@2.4.10':
++    dependencies:
++      '@types/node': 25.0.3
++    optional: true
++
+   '@types/stats.js@0.17.3': {}
+ 
++  '@types/statuses@2.0.6':
++    optional: true
++
+   '@types/three@0.169.0':
+     dependencies:
+       '@tweenjs/tween.js': 23.1.3
+@@ -14118,7 +14372,7 @@ snapshots:
+       obug: 2.1.1
+       std-env: 3.10.0
+       tinyrainbow: 3.0.3
+-      vitest: 4.0.16(@opentelemetry/api@1.9.0)(@types/node@24.10.4)(@vitest/ui@4.0.16)(esbuild@0.27.3)(happy-dom@20.0.11)(jiti@2.6.1)(jsdom@27.4.0)(terser@5.39.2)(tsx@4.19.4)(yaml@2.8.2)
++      vitest: 4.0.16(@opentelemetry/api@1.9.0)(@types/node@24.10.4)(@vitest/ui@4.0.16)(esbuild@0.27.3)(happy-dom@20.0.11)(jiti@2.6.1)(jsdom@27.4.0)(msw@2.14.3(@types/node@24.10.4)(typescript@5.9.3))(terser@5.39.2)(tsx@4.19.4)(yaml@2.8.2)
+     transitivePeerDependencies:
+       - supports-color
+ 
+@@ -14139,20 +14393,22 @@ snapshots:
+       chai: 6.2.2
+       tinyrainbow: 3.0.3
+ 
+-  '@vitest/mocker@4.0.16(vite@8.0.0(@types/node@24.10.4)(esbuild@0.27.3)(jiti@2.6.1)(terser@5.39.2)(tsx@4.19.4)(yaml@2.8.2))':
++  '@vitest/mocker@4.0.16(msw@2.14.3(@types/node@24.10.4)(typescript@5.9.3))(vite@8.0.0(@types/node@24.10.4)(esbuild@0.27.3)(jiti@2.6.1)(terser@5.39.2)(tsx@4.19.4)(yaml@2.8.2))':
+     dependencies:
+       '@vitest/spy': 4.0.16
+       estree-walker: 3.0.3
+       magic-string: 0.30.21
+     optionalDependencies:
++      msw: 2.14.3(@types/node@24.10.4)(typescript@5.9.3)
+       vite: 8.0.0(@types/node@24.10.4)(esbuild@0.27.3)(jiti@2.6.1)(terser@5.39.2)(tsx@4.19.4)(yaml@2.8.2)
+ 
+-  '@vitest/mocker@4.0.16(vite@8.0.0(@types/node@25.0.3)(esbuild@0.27.3)(jiti@2.6.1)(terser@5.39.2)(tsx@4.19.4)(yaml@2.8.2))':
++  '@vitest/mocker@4.0.16(msw@2.14.3(@types/node@25.0.3)(typescript@5.9.3))(vite@8.0.0(@types/node@25.0.3)(esbuild@0.27.3)(jiti@2.6.1)(terser@5.39.2)(tsx@4.19.4)(yaml@2.8.2))':
+     dependencies:
+       '@vitest/spy': 4.0.16
+       estree-walker: 3.0.3
+       magic-string: 0.30.21
+     optionalDependencies:
++      msw: 2.14.3(@types/node@25.0.3)(typescript@5.9.3)
+       vite: 8.0.0(@types/node@25.0.3)(esbuild@0.27.3)(jiti@2.6.1)(terser@5.39.2)(tsx@4.19.4)(yaml@2.8.2)
+ 
+   '@vitest/pretty-format@3.2.4':
+@@ -14189,7 +14445,7 @@ snapshots:
+       sirv: 3.0.2
+       tinyglobby: 0.2.15
+       tinyrainbow: 3.0.3
+-      vitest: 4.0.16(@opentelemetry/api@1.9.0)(@types/node@24.10.4)(@vitest/ui@4.0.16)(esbuild@0.27.3)(happy-dom@20.0.11)(jiti@2.6.1)(jsdom@27.4.0)(terser@5.39.2)(tsx@4.19.4)(yaml@2.8.2)
++      vitest: 4.0.16(@opentelemetry/api@1.9.0)(@types/node@25.0.3)(@vitest/ui@4.0.16)(esbuild@0.27.3)(happy-dom@20.0.11)(jiti@2.6.1)(jsdom@27.4.0)(msw@2.14.3(@types/node@25.0.3)(typescript@5.9.3))(terser@5.39.2)(tsx@4.19.4)(yaml@2.8.2)
+ 
+   '@vitest/utils@3.2.4':
+     dependencies:
+@@ -15227,6 +15483,9 @@ snapshots:
+       slice-ansi: 7.1.2
+       string-width: 8.2.0
+ 
++  cli-width@4.1.0:
++    optional: true
++
+   cliui@8.0.1:
+     dependencies:
+       string-width: 4.2.3
+@@ -16229,6 +16488,14 @@ snapshots:
+ 
+   fast-levenshtein@2.0.6: {}
+ 
++  fast-string-truncated-width@3.0.3:
++    optional: true
++
++  fast-string-width@3.0.2:
++    dependencies:
++      fast-string-truncated-width: 3.0.3
++    optional: true
++
+   fast-unique-numbers@9.0.22:
+     dependencies:
+       '@babel/runtime': 7.29.2
+@@ -16236,6 +16503,11 @@ snapshots:
+ 
+   fast-uri@3.1.0: {}
+ 
++  fast-wrap-ansi@0.2.0:
++    dependencies:
++      fast-string-width: 3.0.2
++    optional: true
++
+   fastest-levenshtein@1.0.16: {}
+ 
+   fastq@1.20.1:
+@@ -16552,6 +16824,9 @@ snapshots:
+ 
+   graceful-fs@4.2.11: {}
+ 
++  graphql@16.13.2:
++    optional: true
++
+   gray-matter@4.0.3:
+     dependencies:
+       js-yaml: 3.14.2
+@@ -16697,6 +16972,12 @@ snapshots:
+ 
+   he@1.2.0: {}
+ 
++  headers-polyfill@5.0.1:
++    dependencies:
++      '@types/set-cookie-parser': 2.4.10
++      set-cookie-parser: 3.1.0
++    optional: true
++
+   hookable@5.5.3: {}
+ 
+   hookified@1.14.0: {}
+@@ -16958,6 +17239,9 @@ snapshots:
+   is-negative-zero@2.0.3:
+     optional: true
+ 
++  is-node-process@1.2.0:
++    optional: true
++
+   is-npm@6.1.0: {}
+ 
+   is-number-object@1.1.1:
+@@ -17954,6 +18238,58 @@ snapshots:
+ 
+   ms@2.1.3: {}
+ 
++  msw@2.14.3(@types/node@24.10.4)(typescript@5.9.3):
++    dependencies:
++      '@inquirer/confirm': 6.0.12(@types/node@24.10.4)
++      '@mswjs/interceptors': 0.41.8
++      '@open-draft/deferred-promise': 3.0.0
++      '@types/statuses': 2.0.6
++      cookie: 1.1.1
++      graphql: 16.13.2
++      headers-polyfill: 5.0.1
++      is-node-process: 1.2.0
++      outvariant: 1.4.3
++      path-to-regexp: 6.3.0
++      picocolors: 1.1.1
++      rettime: 0.11.11
++      statuses: 2.0.2
++      strict-event-emitter: 0.5.1
++      tough-cookie: 6.0.1
++      type-fest: 5.6.0
++      until-async: 3.0.2
++      yargs: 17.7.2
++    optionalDependencies:
++      typescript: 5.9.3
++    transitivePeerDependencies:
++      - '@types/node'
++    optional: true
++
++  msw@2.14.3(@types/node@25.0.3)(typescript@5.9.3):
++    dependencies:
++      '@inquirer/confirm': 6.0.12(@types/node@25.0.3)
++      '@mswjs/interceptors': 0.41.8
++      '@open-draft/deferred-promise': 3.0.0
++      '@types/statuses': 2.0.6
++      cookie: 1.1.1
++      graphql: 16.13.2
++      headers-polyfill: 5.0.1
++      is-node-process: 1.2.0
++      outvariant: 1.4.3
++      path-to-regexp: 6.3.0
++      picocolors: 1.1.1
++      rettime: 0.11.11
++      statuses: 2.0.2
++      strict-event-emitter: 0.5.1
++      tough-cookie: 6.0.1
++      type-fest: 5.6.0
++      until-async: 3.0.2
++      yargs: 17.7.2
++    optionalDependencies:
++      typescript: 5.9.3
++    transitivePeerDependencies:
++      - '@types/node'
++    optional: true
++
+   muggle-string@0.4.1: {}
+ 
+   multi-buffer-data-view@6.0.22:
+@@ -17961,6 +18297,9 @@ snapshots:
+       '@babel/runtime': 7.29.2
+       tslib: 2.8.1
+ 
++  mute-stream@3.0.0:
++    optional: true
++
+   nanoid@3.3.11: {}
+ 
+   nanoid@5.1.5: {}
+@@ -18206,6 +18545,9 @@ snapshots:
+ 
+   orderedmap@2.1.1: {}
+ 
++  outvariant@1.4.3:
++    optional: true
++
+   own-keys@1.0.1:
+     dependencies:
+       get-intrinsic: 1.3.0
+@@ -18415,6 +18757,9 @@ snapshots:
+       lru-cache: 11.2.6
+       minipass: 7.1.3
+ 
++  path-to-regexp@6.3.0:
++    optional: true
++
+   path-type@4.0.0: {}
+ 
+   pathe@0.2.0: {}
+@@ -19016,6 +19361,8 @@ snapshots:
+       mdast-util-to-markdown: 2.1.2
+       unified: 11.0.5
+ 
++  remove-accents@0.5.0: {}
++
+   request-light@0.5.8: {}
+ 
+   request-light@0.7.0: {}
+@@ -19078,6 +19425,9 @@ snapshots:
+       retext-stringify: 4.0.0
+       unified: 11.0.5
+ 
++  rettime@0.11.11:
++    optional: true
++
+   reusify@1.1.0: {}
+ 
+   rfdc@1.4.1: {}
+@@ -19200,6 +19550,9 @@ snapshots:
+ 
+   semver@7.7.4: {}
+ 
++  set-cookie-parser@3.1.0:
++    optional: true
++
+   set-function-length@1.2.2:
+     dependencies:
+       define-data-property: 1.1.4
+@@ -19381,6 +19734,9 @@ snapshots:
+       automation-events: 7.1.11
+       tslib: 2.8.1
+ 
++  statuses@2.0.2:
++    optional: true
++
+   std-env@3.10.0: {}
+ 
+   stop-iteration-iterator@1.1.0:
+@@ -19413,6 +19769,9 @@ snapshots:
+ 
+   stream-replace-string@2.0.0: {}
+ 
++  strict-event-emitter@0.5.1:
++    optional: true
++
+   string-argv@0.3.2: {}
+ 
+   string-width@4.2.3:
+@@ -19714,6 +20073,11 @@ snapshots:
+     dependencies:
+       tldts: 7.0.19
+ 
++  tough-cookie@6.0.1:
++    dependencies:
++      tldts: 7.0.19
++    optional: true
++
+   tr46@0.0.3: {}
+ 
+   tr46@6.0.0:
+@@ -19782,6 +20146,11 @@ snapshots:
+     dependencies:
+       tagged-tag: 1.0.0
+ 
++  type-fest@5.6.0:
++    dependencies:
++      tagged-tag: 1.0.0
++    optional: true
++
+   typed-array-buffer@1.0.3:
+     dependencies:
+       call-bound: 1.0.4
+@@ -20045,6 +20414,9 @@ snapshots:
+       ofetch: 1.5.1
+       ufo: 1.6.3
+ 
++  until-async@3.0.2:
++    optional: true
++
+   update-browserslist-db@1.2.2(browserslist@4.28.1):
+     dependencies:
+       browserslist: 4.28.1
+@@ -20334,10 +20706,10 @@ snapshots:
+     optionalDependencies:
+       vite: 8.0.0(@types/node@25.0.3)(esbuild@0.27.3)(jiti@2.6.1)(terser@5.39.2)(tsx@4.19.4)(yaml@2.8.2)
+ 
+-  vitest@4.0.16(@opentelemetry/api@1.9.0)(@types/node@24.10.4)(@vitest/ui@4.0.16)(esbuild@0.27.3)(happy-dom@20.0.11)(jiti@2.6.1)(jsdom@27.4.0)(terser@5.39.2)(tsx@4.19.4)(yaml@2.8.2):
++  vitest@4.0.16(@opentelemetry/api@1.9.0)(@types/node@24.10.4)(@vitest/ui@4.0.16)(esbuild@0.27.3)(happy-dom@20.0.11)(jiti@2.6.1)(jsdom@27.4.0)(msw@2.14.3(@types/node@24.10.4)(typescript@5.9.3))(terser@5.39.2)(tsx@4.19.4)(yaml@2.8.2):
+     dependencies:
+       '@vitest/expect': 4.0.16
+-      '@vitest/mocker': 4.0.16(vite@8.0.0(@types/node@24.10.4)(esbuild@0.27.3)(jiti@2.6.1)(terser@5.39.2)(tsx@4.19.4)(yaml@2.8.2))
++      '@vitest/mocker': 4.0.16(msw@2.14.3(@types/node@24.10.4)(typescript@5.9.3))(vite@8.0.0(@types/node@24.10.4)(esbuild@0.27.3)(jiti@2.6.1)(terser@5.39.2)(tsx@4.19.4)(yaml@2.8.2))
+       '@vitest/pretty-format': 4.0.16
+       '@vitest/runner': 4.0.16
+       '@vitest/snapshot': 4.0.16
+@@ -20376,10 +20748,10 @@ snapshots:
+       - tsx
+       - yaml
+ 
+-  vitest@4.0.16(@opentelemetry/api@1.9.0)(@types/node@25.0.3)(@vitest/ui@4.0.16)(esbuild@0.27.3)(happy-dom@20.0.11)(jiti@2.6.1)(jsdom@27.4.0)(terser@5.39.2)(tsx@4.19.4)(yaml@2.8.2):
++  vitest@4.0.16(@opentelemetry/api@1.9.0)(@types/node@25.0.3)(@vitest/ui@4.0.16)(esbuild@0.27.3)(happy-dom@20.0.11)(jiti@2.6.1)(jsdom@27.4.0)(msw@2.14.3(@types/node@25.0.3)(typescript@5.9.3))(terser@5.39.2)(tsx@4.19.4)(yaml@2.8.2):
+     dependencies:
+       '@vitest/expect': 4.0.16
+-      '@vitest/mocker': 4.0.16(vite@8.0.0(@types/node@25.0.3)(esbuild@0.27.3)(jiti@2.6.1)(terser@5.39.2)(tsx@4.19.4)(yaml@2.8.2))
++      '@vitest/mocker': 4.0.16(msw@2.14.3(@types/node@25.0.3)(typescript@5.9.3))(vite@8.0.0(@types/node@25.0.3)(esbuild@0.27.3)(jiti@2.6.1)(terser@5.39.2)(tsx@4.19.4)(yaml@2.8.2))
+       '@vitest/pretty-format': 4.0.16
+       '@vitest/runner': 4.0.16
+       '@vitest/snapshot': 4.0.16
+@@ -20530,7 +20902,7 @@ snapshots:
+ 
+   vue-component-type-helpers@3.2.6: {}
+ 
+-  vue-component-type-helpers@3.2.7: {}
++  vue-component-type-helpers@3.2.8: {}
+ 
+   vue-demi@0.14.10(vue@3.5.13(typescript@5.9.3)):
+     dependencies:
+diff --git a/pnpm-workspace.yaml b/pnpm-workspace.yaml
+index 2059d90ab..8b6336e32 100644
+--- a/pnpm-workspace.yaml
++++ b/pnpm-workspace.yaml
+@@ -37,6 +37,7 @@ catalog:
+   '@storybook/vue3': ^10.2.10
+   '@storybook/vue3-vite': ^10.2.10
+   '@tailwindcss/vite': ^4.2.0
++  '@tanstack/vue-query': ^5.83.0
+   '@tanstack/vue-virtual': ^3.13.12
+   '@testing-library/jest-dom': ^6.9.1
+   '@testing-library/user-event': ^14.6.1
+diff --git a/src/base/remote/diagnostics.ts b/src/base/remote/diagnostics.ts
+new file mode 100644
+index 000000000..2e37c1e74
+--- /dev/null
++++ b/src/base/remote/diagnostics.ts
+@@ -0,0 +1,32 @@
++import axios from 'axios'
++
++const PAYLOAD_KEY_SAMPLE = 10
++
++export function summarizeError(err: unknown): Record<string, unknown> {
++  if (axios.isAxiosError(err)) {
++    return {
++      message: err.message,
++      code: err.code,
++      status: err.response?.status
++    }
++  }
++  if (err instanceof Error) {
++    return { message: err.message, name: err.name }
++  }
++  return { message: String(err) }
++}
++
++export function summarizePayload(data: unknown): Record<string, unknown> {
++  if (data === null) return { type: 'null' }
++  if (data === undefined) return { type: 'undefined' }
++  if (Array.isArray(data)) return { type: 'array', length: data.length }
++  if (typeof data === 'object') {
++    const keys = Object.keys(data as Record<string, unknown>)
++    return {
++      type: 'object',
++      keys: keys.slice(0, PAYLOAD_KEY_SAMPLE),
++      keyCount: keys.length
++    }
++  }
++  return { type: typeof data }
++}
+diff --git a/src/base/remote/itemSchema.property.test.ts b/src/base/remote/itemSchema.property.test.ts
+new file mode 100644
+index 000000000..7d59aea8a
+--- /dev/null
++++ b/src/base/remote/itemSchema.property.test.ts
+@@ -0,0 +1,49 @@
++import * as fc from 'fast-check'
++import { describe, expect, it } from 'vitest'
++
++import { mapToDropdownItem } from '@/base/remote/itemSchema'
++
++describe('mapToDropdownItem property tests', () => {
++  it('mapping is total and stable for arbitrary string fields', () => {
++    fc.assert(
++      fc.property(
++        fc.record({
++          id: fc.string(),
++          name: fc.string()
++        }),
++        (raw) => {
++          const schema = {
++            value_field: 'id',
++            label_field: 'name',
++            preview_type: 'image' as const
++          }
++          const a = mapToDropdownItem(raw, schema)
++          const b = mapToDropdownItem(raw, schema)
++          expect(a).toEqual(b)
++          expect(typeof a.id).toBe('string')
++          expect(typeof a.name).toBe('string')
++        }
++      )
++    )
++  })
++
++  it('id is non-empty when value_field is present in raw', () => {
++    fc.assert(
++      fc.property(
++        fc.record({
++          id: fc.string({ minLength: 1 }),
++          name: fc.string()
++        }),
++        (raw) => {
++          const schema = {
++            value_field: 'id',
++            label_field: 'name',
++            preview_type: 'image' as const
++          }
++          const item = mapToDropdownItem(raw, schema)
++          expect(item.id.length).toBeGreaterThan(0)
++        }
++      )
++    )
++  })
++})
+diff --git a/src/base/remote/itemSchema.test.ts b/src/base/remote/itemSchema.test.ts
+new file mode 100644
+index 000000000..fd5d9cfff
+--- /dev/null
++++ b/src/base/remote/itemSchema.test.ts
+@@ -0,0 +1,354 @@
++import { describe, expect, it } from 'vitest'
++
++import {
++  buildSearchText,
++  displayName,
++  extractItems,
++  getByPath,
++  mapToDropdownItem,
++  resolveLabel
++} from '@/base/remote/itemSchema'
++
++describe('getByPath', () => {
++  it('returns a top-level value for a plain key', () => {
++    expect(getByPath({ name: 'Alice' }, 'name')).toBe('Alice')
++  })
++
++  it('traverses nested objects via dot-path', () => {
++    expect(getByPath({ profile: { name: 'Alice' } }, 'profile.name')).toBe(
++      'Alice'
++    )
++  })
++
++  it('treats numeric segments as array indices', () => {
++    expect(getByPath({ items: ['a', 'b', 'c'] }, 'items.1')).toBe('b')
++  })
++
++  it('combines nested objects and array indices', () => {
++    const obj = { data: { results: [{ id: 'x' }, { id: 'y' }] } }
++    expect(getByPath(obj, 'data.results.1.id')).toBe('y')
++  })
++
++  it('returns undefined for a missing top-level key', () => {
++    expect(getByPath({ a: 1 }, 'b')).toBeUndefined()
++  })
++
++  it('returns undefined when traversing past a null segment', () => {
++    expect(getByPath({ a: null }, 'a.b')).toBeUndefined()
++  })
++
++  it('returns undefined when the root is null', () => {
++    expect(getByPath(null, 'a')).toBeUndefined()
++  })
++
++  it('returns undefined when the root is undefined', () => {
++    expect(getByPath(undefined, 'a')).toBeUndefined()
++  })
++
++  it('returns undefined for an out-of-bounds array index', () => {
++    expect(getByPath({ items: ['a'] }, 'items.5')).toBeUndefined()
++  })
++})
++
++describe('resolveLabel', () => {
++  it('resolves a plain dot-path to its value', () => {
++    expect(resolveLabel('name', { name: 'Alice' })).toBe('Alice')
++  })
++
++  it('resolves a nested dot-path without placeholders', () => {
++    expect(resolveLabel('profile.name', { profile: { name: 'Alice' } })).toBe(
++      'Alice'
++    )
++  })
++
++  it('substitutes a single {field} placeholder', () => {
++    expect(resolveLabel('Name: {name}', { name: 'Alice' })).toBe('Name: Alice')
++  })
++
++  it('substitutes multiple placeholders', () => {
++    expect(
++      resolveLabel('{first} {last}', { first: 'Alice', last: 'Liddell' })
++    ).toBe('Alice Liddell')
++  })
++
++  it('substitutes placeholders with dot-paths', () => {
++    expect(
++      resolveLabel('{profile.name} ({profile.age})', {
++        profile: { name: 'Alice', age: 30 }
++      })
++    ).toBe('Alice (30)')
++  })
++
++  it('replaces missing placeholder fields with an empty string', () => {
++    expect(resolveLabel('{name} - {missing}', { name: 'Alice' })).toBe(
++      'Alice - '
++    )
++  })
++
++  it('returns an empty string when a plain path resolves to undefined', () => {
++    expect(resolveLabel('missing', { a: 1 })).toBe('')
++  })
++
++  it('coerces numeric values to strings', () => {
++    expect(resolveLabel('{count}', { count: 5 })).toBe('5')
++  })
++})
++
++describe('mapToDropdownItem', () => {
++  it('maps required fields to id and name', () => {
++    const item = mapToDropdownItem(
++      { voice_id: 'v1', label: 'Roger' },
++      { value_field: 'voice_id', label_field: 'label', preview_type: 'image' }
++    )
++
++    expect(item).toEqual({
++      id: 'v1',
++      name: 'Roger',
++      description: undefined,
++      preview_url: undefined
++    })
++  })
++
++  it('includes description when description_field is set', () => {
++    const item = mapToDropdownItem(
++      { id: 'v1', label: 'Roger', desc: 'Laid-back American male' },
++      {
++        value_field: 'id',
++        label_field: 'label',
++        description_field: 'desc',
++        preview_type: 'image'
++      }
++    )
++
++    expect(item.description).toBe('Laid-back American male')
++  })
++
++  it('includes preview_url when preview_url_field is set', () => {
++    const item = mapToDropdownItem(
++      { id: 'v1', label: 'Roger', sample: 'https://example.com/a.mp3' },
++      {
++        value_field: 'id',
++        label_field: 'label',
++        preview_url_field: 'sample',
++        preview_type: 'audio'
++      }
++    )
++
++    expect(item.preview_url).toBe('https://example.com/a.mp3')
++  })
++
++  it('resolves label_field templates with placeholders', () => {
++    const item = mapToDropdownItem(
++      { id: 'v1', first: 'Alice', last: 'Liddell' },
++      {
++        value_field: 'id',
++        label_field: '{first} {last}',
++        preview_type: 'image'
++      }
++    )
++
++    expect(item.name).toBe('Alice Liddell')
++  })
++
++  it('resolves dot-path fields for nested data', () => {
++    const item = mapToDropdownItem(
++      { task_result: { elements: [{ element_id: 'e1', name: 'Elem' }] } },
++      {
++        value_field: 'task_result.elements.0.element_id',
++        label_field: 'task_result.elements.0.name',
++        preview_type: 'image'
++      }
++    )
++
++    expect(item.id).toBe('e1')
++    expect(item.name).toBe('Elem')
++  })
++
++  it('stringifies non-string value_field', () => {
++    const item = mapToDropdownItem(
++      { id: 42, label: 'Answer' },
++      { value_field: 'id', label_field: 'label', preview_type: 'image' }
++    )
++
++    expect(item.id).toBe('42')
++  })
++
++  it('returns an empty string id when value_field is missing', () => {
++    const item = mapToDropdownItem(
++      { label: 'Orphan' },
++      { value_field: 'id', label_field: 'label', preview_type: 'image' }
++    )
++
++    expect(item.id).toBe('')
++  })
++})
++
++describe('extractItems', () => {
++  it('returns the full response when responseKey is undefined', () => {
++    expect(extractItems([1, 2, 3])).toEqual([1, 2, 3])
++  })
++
++  it('extracts items from a top-level key', () => {
++    expect(
++      extractItems({ voices: [{ id: 'a' }, { id: 'b' }] }, 'voices')
++    ).toEqual([{ id: 'a' }, { id: 'b' }])
++  })
++
++  it('extracts items via a dot-path', () => {
++    expect(extractItems({ data: { items: [1, 2] } }, 'data.items')).toEqual([
++      1, 2
++    ])
++  })
++
++  it('returns an empty array for a valid empty list', () => {
++    expect(extractItems([])).toEqual([])
++  })
++
++  it('returns null when the path does not exist', () => {
++    expect(extractItems({ a: 1 }, 'nonexistent')).toBeNull()
++  })
++
++  it('returns null when the path resolves to a non-array', () => {
++    expect(
++      extractItems({ data: { items: 'not an array' } }, 'data.items')
++    ).toBeNull()
++  })
++
++  it('returns null when the full response is not an array', () => {
++    expect(extractItems({ not: 'array' })).toBeNull()
++  })
++
++  it('returns null when response is null', () => {
++    expect(extractItems(null)).toBeNull()
++  })
++})
++
++describe('buildSearchText', () => {
++  it('joins multiple fields with a space', () => {
++    expect(buildSearchText({ a: 'Hello', b: 'World' }, ['a', 'b'])).toBe(
++      'hello world'
++    )
++  })
++
++  it('lowercases the result', () => {
++    expect(buildSearchText({ name: 'ALICE' }, ['name'])).toBe('alice')
++  })
++
++  it('drops missing fields', () => {
++    expect(buildSearchText({ name: 'Alice' }, ['name', 'missing'])).toBe(
++      'alice'
++    )
++  })
++
++  it('supports dot-path fields', () => {
++    expect(
++      buildSearchText({ profile: { name: 'Alice', age: 30 } }, [
++        'profile.name',
++        'profile.age'
++      ])
++    ).toBe('alice 30')
++  })
++
++  it('returns an empty string when all fields are missing', () => {
++    expect(buildSearchText({ name: 'Alice' }, ['missing'])).toBe('')
++  })
++})
++
++describe('mapToDropdownItem preview_url normalization', () => {
++  const baseSchema = {
++    value_field: 'id',
++    label_field: 'name',
++    preview_url_field: 'thumb',
++    preview_type: 'image' as const
++  }
++
++  it('preserves absolute https URLs', () => {
++    const item = mapToDropdownItem(
++      { id: 'a', name: 'A', thumb: 'https://cdn.example.com/a.png' },
++      baseSchema,
++      { previewBaseUrl: 'https://api.comfy.org' }
++    )
++    expect(item.preview_url).toBe('https://cdn.example.com/a.png')
++  })
++
++  it('preserves protocol-relative URLs', () => {
++    const item = mapToDropdownItem(
++      { id: 'a', name: 'A', thumb: '//cdn.example.com/a.png' },
++      baseSchema,
++      { previewBaseUrl: 'https://api.comfy.org' }
++    )
++    expect(item.preview_url).toBe('//cdn.example.com/a.png')
++  })
++
++  it('preserves data: URIs', () => {
++    const item = mapToDropdownItem(
++      { id: 'a', name: 'A', thumb: 'data:image/png;base64,AAA' },
++      baseSchema,
++      { previewBaseUrl: 'https://api.comfy.org' }
++    )
++    expect(item.preview_url).toBe('data:image/png;base64,AAA')
++  })
++
++  it('preserves blob: URLs', () => {
++    const item = mapToDropdownItem(
++      { id: 'a', name: 'A', thumb: 'blob:https://app/abc' },
++      baseSchema,
++      { previewBaseUrl: 'https://api.comfy.org' }
++    )
++    expect(item.preview_url).toBe('blob:https://app/abc')
++  })
++
++  it('joins relative paths against the previewBaseUrl', () => {
++    const item = mapToDropdownItem(
++      { id: 'a', name: 'A', thumb: '/voices/1/preview.png' },
++      baseSchema,
++      { previewBaseUrl: 'https://api.comfy.org' }
++    )
++    expect(item.preview_url).toBe('https://api.comfy.org/voices/1/preview.png')
++  })
++
++  it('adds a leading slash when relative path lacks one', () => {
++    const item = mapToDropdownItem(
++      { id: 'a', name: 'A', thumb: 'voices/1/preview.png' },
++      baseSchema,
++      { previewBaseUrl: 'https://api.comfy.org' }
++    )
++    expect(item.preview_url).toBe('https://api.comfy.org/voices/1/preview.png')
++  })
++
++  it('strips trailing slashes from previewBaseUrl', () => {
++    const item = mapToDropdownItem(
++      { id: 'a', name: 'A', thumb: '/x.png' },
++      baseSchema,
++      { previewBaseUrl: 'https://api.comfy.org/' }
++    )
++    expect(item.preview_url).toBe('https://api.comfy.org/x.png')
++  })
++
++  it('returns relative path unchanged when no previewBaseUrl is provided', () => {
++    const item = mapToDropdownItem(
++      { id: 'a', name: 'A', thumb: '/x.png' },
++      baseSchema
++    )
++    expect(item.preview_url).toBe('/x.png')
++  })
++
++  it('returns undefined when preview_url_field is unset', () => {
++    const item = mapToDropdownItem(
++      { id: 'a', name: 'A' },
++      { value_field: 'id', label_field: 'name', preview_type: 'image' },
++      { previewBaseUrl: 'https://api.comfy.org' }
++    )
++    expect(item.preview_url).toBeUndefined()
++  })
++})
++
++describe('displayName', () => {
++  it('returns name when present', () => {
++    expect(displayName({ id: 'abc', name: 'Cool Asset' })).toBe('Cool Asset')
++  })
++
++  it('falls back to id when name is empty string', () => {
++    expect(displayName({ id: 'abc-123', name: '' })).toBe('abc-123')
++  })
++})
+diff --git a/src/base/remote/itemSchema.ts b/src/base/remote/itemSchema.ts
+new file mode 100644
+index 000000000..8ad996608
+--- /dev/null
++++ b/src/base/remote/itemSchema.ts
+@@ -0,0 +1,91 @@
++import type { RemoteItemSchema } from '@/schemas/nodeDefSchema'
++
++export interface DropdownItemShape {
++  id: string
++  name: string
++  description?: string
++  preview_url?: string
++}
++
++/**
++ * User-facing label for a dropdown item. Falls back to id when name
++ * is missing or empty, so trigger/list rows never render blank.
++ */
++export function displayName(item: DropdownItemShape): string {
++  return item.name || item.id
++}
++
++export function getByPath(obj: unknown, path: string): unknown {
++  return path.split('.').reduce((acc: unknown, key: string) => {
++    if (acc == null) return undefined
++    const idx = Number(key)
++    if (Number.isInteger(idx) && idx >= 0 && Array.isArray(acc)) return acc[idx]
++    return (acc as Record<string, unknown>)[key]
++  }, obj)
++}
++
++export function resolveLabel(template: string, item: unknown): string {
++  if (!template.includes('{')) {
++    return String(getByPath(item, template) ?? '')
++  }
++  return template.replace(/\{([^}]+)\}/g, (_, path: string) =>
++    String(getByPath(item, path) ?? '')
++  )
++}
++
++const ABSOLUTE_URL_REGEX = /^([a-z][a-z0-9+.-]*:)?\/\//i
++const DATA_URL_PREFIX = 'data:'
++const BLOB_URL_PREFIX = 'blob:'
++
++function resolvePreviewUrl(
++  raw: string | undefined,
++  baseUrl?: string
++): string | undefined {
++  if (!raw) return undefined
++  const lowered = raw.toLowerCase()
++  if (
++    ABSOLUTE_URL_REGEX.test(raw) ||
++    lowered.startsWith(DATA_URL_PREFIX) ||
++    lowered.startsWith(BLOB_URL_PREFIX)
++  ) {
++    return raw
++  }
++  if (!baseUrl) return raw
++  const normalizedBase = baseUrl.replace(/\/+$/, '')
++  const normalizedPath = raw.startsWith('/') ? raw : `/${raw}`
++  return normalizedBase + normalizedPath
++}
++
++export function mapToDropdownItem(
++  raw: unknown,
++  schema: RemoteItemSchema,
++  options: { previewBaseUrl?: string } = {}
++): DropdownItemShape {
++  const previewRaw = schema.preview_url_field
++    ? String(getByPath(raw, schema.preview_url_field) ?? '')
++    : undefined
++  return {
++    id: String(getByPath(raw, schema.value_field) ?? ''),
++    name: resolveLabel(schema.label_field, raw),
++    description: schema.description_field
++      ? resolveLabel(schema.description_field, raw)
++      : undefined,
++    preview_url: resolvePreviewUrl(previewRaw, options.previewBaseUrl)
++  }
++}
++
++export function extractItems(
++  response: unknown,
++  responseKey?: string
++): unknown[] | null {
++  const data = responseKey ? getByPath(response, responseKey) : response
++  return Array.isArray(data) ? data : null
++}
++
++export function buildSearchText(raw: unknown, searchFields: string[]): string {
++  return searchFields
++    .map((field) => String(getByPath(raw, field) ?? ''))
++    .filter(Boolean)
++    .join(' ')
++    .toLowerCase()
++}
+diff --git a/src/base/remote/retry.ts b/src/base/remote/retry.ts
+new file mode 100644
+index 000000000..0a6c2ef54
+--- /dev/null
++++ b/src/base/remote/retry.ts
+@@ -0,0 +1,17 @@
++import axios from 'axios'
++
++const BACKOFF_BASE_MS = 1000
++const BACKOFF_CAP_MS = 16000
++
++export function getBackoff(retryCount: number): number {
++  return Math.min(BACKOFF_BASE_MS * Math.pow(2, retryCount), BACKOFF_CAP_MS)
++}
++
++export function isRetriableError(err: unknown): boolean {
++  if (!axios.isAxiosError(err)) return true
++  if (err.code === 'ERR_CANCELED') return false
++  const status = err.response?.status
++  if (status == null) return true
++  if (status >= 500) return true
++  return status === 408 || status === 429
++}
+diff --git a/src/base/remote/retryAndDiagnostics.test.ts b/src/base/remote/retryAndDiagnostics.test.ts
+new file mode 100644
+index 000000000..a13ef926d
+--- /dev/null
++++ b/src/base/remote/retryAndDiagnostics.test.ts
+@@ -0,0 +1,187 @@
++import { AxiosError, AxiosHeaders } from 'axios'
++import { describe, expect, it } from 'vitest'
++
++import { getBackoff, isRetriableError } from '@/base/remote/retry'
++import { summarizeError, summarizePayload } from '@/base/remote/diagnostics'
++
++describe('getBackoff', () => {
++  it('grows exponentially from 1s', () => {
++    expect(getBackoff(1)).toBe(2000)
++    expect(getBackoff(2)).toBe(4000)
++    expect(getBackoff(3)).toBe(8000)
++    expect(getBackoff(4)).toBe(16000)
++  })
++
++  it('caps at 16s for higher attempt counts', () => {
++    expect(getBackoff(5)).toBe(16000)
++    expect(getBackoff(10)).toBe(16000)
++    expect(getBackoff(100)).toBe(16000)
++  })
++})
++
++describe('isRetriableError', () => {
++  function axiosErrorWithStatus(status: number): AxiosError {
++    return new AxiosError(
++      `HTTP ${status}`,
++      'ERR_BAD_RESPONSE',
++      undefined,
++      undefined,
++      {
++        status,
++        statusText: '',
++        headers: {},
++        config: { headers: new AxiosHeaders() },
++        data: null
++      }
++    )
++  }
++
++  it('retries non-axios errors (e.g. unexpected throws)', () => {
++    expect(isRetriableError(new Error('boom'))).toBe(true)
++    expect(isRetriableError('string error')).toBe(true)
++    expect(isRetriableError(undefined)).toBe(true)
++  })
++
++  it('retries axios errors with no response (network failures)', () => {
++    const err = new AxiosError('Network Error', 'ERR_NETWORK')
++    expect(isRetriableError(err)).toBe(true)
++  })
++
++  it('retries 5xx responses', () => {
++    expect(isRetriableError(axiosErrorWithStatus(500))).toBe(true)
++    expect(isRetriableError(axiosErrorWithStatus(502))).toBe(true)
++    expect(isRetriableError(axiosErrorWithStatus(503))).toBe(true)
++  })
++
++  it('retries 408 (request timeout) and 429 (too many requests)', () => {
++    expect(isRetriableError(axiosErrorWithStatus(408))).toBe(true)
++    expect(isRetriableError(axiosErrorWithStatus(429))).toBe(true)
++  })
++
++  it('does not retry other 4xx responses', () => {
++    expect(isRetriableError(axiosErrorWithStatus(400))).toBe(false)
++    expect(isRetriableError(axiosErrorWithStatus(401))).toBe(false)
++    expect(isRetriableError(axiosErrorWithStatus(403))).toBe(false)
++    expect(isRetriableError(axiosErrorWithStatus(404))).toBe(false)
++  })
++})
++
++describe('summarizeError', () => {
++  it('extracts message, code and status from an axios error', () => {
++    const err = new AxiosError(
++      'Request failed',
++      'ERR_BAD_RESPONSE',
++      undefined,
++      undefined,
++      {
++        status: 500,
++        statusText: '',
++        headers: {},
++        config: { headers: new AxiosHeaders() },
++        data: null
++      }
++    )
++    expect(summarizeError(err)).toEqual({
++      message: 'Request failed',
++      code: 'ERR_BAD_RESPONSE',
++      status: 500
++    })
++  })
++
++  it('does not include axios config, headers, request or response data', () => {
++    const authedConfig = {
++      url: '/voices',
++      method: 'get',
++      headers: new AxiosHeaders({ Authorization: 'Bearer SECRET-TOKEN-123' })
++    }
++    const err = new AxiosError(
++      'Request failed',
++      'ERR_BAD_RESPONSE',
++      authedConfig,
++      undefined,
++      {
++        status: 500,
++        statusText: '',
++        headers: { 'set-cookie': ['session=PRIVATE'] },
++        config: authedConfig,
++        data: { user_email: 'private@example.com' }
++      }
++    )
++    const summary = summarizeError(err)
++
++    expect(JSON.stringify(summary)).not.toContain('SECRET-TOKEN-123')
++    expect(JSON.stringify(summary)).not.toContain('PRIVATE')
++    expect(JSON.stringify(summary)).not.toContain('private@example.com')
++    expect(summary).not.toHaveProperty('config')
++    expect(summary).not.toHaveProperty('request')
++    expect(summary).not.toHaveProperty('response')
++  })
++
++  it('reports an axios network error with no response as undefined status', () => {
++    const err = new AxiosError('Network Error', 'ERR_NETWORK')
++    expect(summarizeError(err)).toEqual({
++      message: 'Network Error',
++      code: 'ERR_NETWORK',
++      status: undefined
++    })
++  })
++
++  it('summarizes a plain Error using its name and message', () => {
++    expect(summarizeError(new TypeError('boom'))).toEqual({
++      message: 'boom',
++      name: 'TypeError'
++    })
++  })
++
++  it('coerces non-Error throwables to a message string', () => {
++    expect(summarizeError('oops')).toEqual({ message: 'oops' })
++    expect(summarizeError(42)).toEqual({ message: '42' })
++    expect(summarizeError(null)).toEqual({ message: 'null' })
++    expect(summarizeError(undefined)).toEqual({ message: 'undefined' })
++  })
++})
++
++describe('summarizePayload', () => {
++  it('reports array length without exposing values', () => {
++    expect(
++      summarizePayload([{ secret: 'a' }, { secret: 'b' }, { secret: 'c' }])
++    ).toEqual({
++      type: 'array',
++      length: 3
++    })
++  })
++
++  it('reports object keys without exposing values', () => {
++    expect(
++      summarizePayload({ user_email: 'private@example.com', voices: ['x'] })
++    ).toEqual({
++      type: 'object',
++      keys: ['user_email', 'voices'],
++      keyCount: 2
++    })
++  })
++
++  it('caps the keys sample at 10 but reports the full key count', () => {
++    const big: Record<string, number> = {}
++    for (let i = 0; i < 25; i++) big[`k${i}`] = i
++    const summary = summarizePayload(big) as {
++      type: string
++      keys: string[]
++      keyCount: number
++    }
++    expect(summary.type).toBe('object')
++    expect(summary.keys).toHaveLength(10)
++    expect(summary.keyCount).toBe(25)
++  })
++
++  it('distinguishes null and undefined', () => {
++    expect(summarizePayload(null)).toEqual({ type: 'null' })
++    expect(summarizePayload(undefined)).toEqual({ type: 'undefined' })
++  })
++
++  it('reports primitive types without their value', () => {
++    expect(summarizePayload('hello')).toEqual({ type: 'string' })
++    expect(summarizePayload(123)).toEqual({ type: 'number' })
++    expect(summarizePayload(true)).toEqual({ type: 'boolean' })
++  })
++})
+diff --git a/src/locales/en/main.json b/src/locales/en/main.json
+index 882b61245..eb3bc8574 100644
+--- a/src/locales/en/main.json
++++ b/src/locales/en/main.json
+@@ -2700,6 +2700,19 @@
+       "placeholderUnknown": "Select media...",
+       "maxSelectionReached": "Maximum selection limit reached"
+     },
++    "remoteCombo": {
++      "loading": "Loading...",
++      "loadFailed": "Failed to load options",
++      "noResults": "No results found",
++      "refresh": "Refresh options",
++      "selectAriaLabel": "Select {field}",
++      "searchAriaLabel": "Search {field}",
++      "layoutSwitcherAriaLabel": "Layout switcher",
++      "layoutList": "List view",
++      "layoutGrid": "Grid view",
++      "playAudioPreview": "Play audio preview",
++      "pauseAudioPreview": "Pause audio preview"
++    },
+     "valueControl": {
+       "header": {
+         "prefix": "Automatically update the value",
+diff --git a/src/main.ts b/src/main.ts
+index a32242468..04a999b2d 100644
+--- a/src/main.ts
++++ b/src/main.ts
+@@ -1,6 +1,7 @@
+ import { definePreset } from '@primevue/themes'
+ import Aura from '@primevue/themes/aura'
+ import * as Sentry from '@sentry/vue'
++import { VueQueryPlugin } from '@tanstack/vue-query'
+ import { initializeApp } from 'firebase/app'
+ import { createPinia } from 'pinia'
+ import 'primeicons/primeicons.css'
+@@ -11,6 +12,8 @@ import Tooltip from 'primevue/tooltip'
+ import { createApp } from 'vue'
+ import { VueFire, VueFireAuth } from 'vuefire'
+ 
++import { createAppQueryClient } from '@/platform/remote/queryClient'
++
+ import { getFirebaseConfig } from '@/config/firebase'
+ import {
+   configValueOrDefault,
+@@ -82,7 +85,9 @@ Sentry.init({
+       })
+ })
+ app.directive('tooltip', Tooltip)
++const queryClient = createAppQueryClient()
+ app
++  .use(VueQueryPlugin, { queryClient })
+   .use(router)
+   .use(PrimeVue, {
+     theme: {
+diff --git a/src/platform/remote/composables/useRemoteOptions.test.ts b/src/platform/remote/composables/useRemoteOptions.test.ts
+new file mode 100644
+index 000000000..e4ee52e6e
+--- /dev/null
++++ b/src/platform/remote/composables/useRemoteOptions.test.ts
+@@ -0,0 +1,128 @@
++import { createTestingPinia } from '@pinia/testing'
++import { QueryClient, VueQueryPlugin } from '@tanstack/vue-query'
++import type * as AxiosModule from 'axios'
++import { describe, expect, it, vi } from 'vitest'
++import { createApp, effectScope, h } from 'vue'
++
++import { useRemoteOptions } from '@/platform/remote/composables/useRemoteOptions'
++import { remoteOptionKeys } from '@/platform/remote/queryKeys'
++import type { RemoteRequestDescriptor } from '@/platform/remote/schema/remoteRequestSchema'
++
++vi.mock('axios', async (importOriginal) => {
++  const actual = await importOriginal<typeof AxiosModule>()
++  return {
++    ...actual,
++    default: { ...actual.default, get: vi.fn() }
++  }
++})
++
++vi.mock('@/platform/workspace/stores/workspaceAuthStore', () => ({
++  useWorkspaceAuthStore: () => ({ currentWorkspace: null })
++}))
++vi.mock('@/stores/authStore', () => ({
++  useAuthStore: () => ({
++    userId: 'u1',
++    getAuthHeader: vi.fn(() => Promise.resolve(null))
++  })
++}))
++
++function createTestQueryClient() {
++  return new QueryClient({
++    defaultOptions: { queries: { retry: false, gcTime: 0 } }
++  })
++}
++
++function withSetup<T>(setup: () => T): { result: T; cleanup: () => void } {
++  let result!: T
++  const queryClient = createTestQueryClient()
++  const app = createApp({
++    setup() {
++      result = setup()
++      return () => h('div')
++    }
++  })
++  app.use(createTestingPinia({ createSpy: vi.fn }))
++  app.use(VueQueryPlugin, { queryClient })
++  const container = document.createElement('div')
++  app.mount(container)
++  return {
++    result,
++    cleanup: () => {
++      app.unmount()
++    }
++  }
++}
++
++const desc: RemoteRequestDescriptor = {
++  client: 'comfyApi',
++  route: '/test'
++}
++
++describe('useRemoteOptions', () => {
++  it('builds a stable, scope-aware query key', () => {
++    const key = remoteOptionKeys.byRoute(desc, {
++      userId: 'u1',
++      workspaceId: 'w1'
++    })
++    expect(key).toContain('comfyApi')
++    expect(key).toContain('/test')
++    expect(key).toContain('u1')
++    expect(key).toContain('w1')
++  })
++
++  it('partitions by route', () => {
++    const a = remoteOptionKeys.byRoute(
++      { client: 'comfyApi', route: '/a' },
++      { userId: 'u1', workspaceId: null }
++    )
++    const b = remoteOptionKeys.byRoute(
++      { client: 'comfyApi', route: '/b' },
++      { userId: 'u1', workspaceId: null }
++    )
++    expect(JSON.stringify(a)).not.toBe(JSON.stringify(b))
++  })
++
++  it('partitions by workspaceId', () => {
++    const a = remoteOptionKeys.byRoute(desc, {
++      userId: 'u1',
++      workspaceId: 'w1'
++    })
++    const b = remoteOptionKeys.byRoute(desc, {
++      userId: 'u1',
++      workspaceId: 'w2'
++    })
++    expect(JSON.stringify(a)).not.toBe(JSON.stringify(b))
++  })
++
++  it('partitions anonymous from api-key sessions even when userId/workspaceId match', () => {
++    const anon = remoteOptionKeys.byRoute(desc, {
++      userId: null,
++      workspaceId: null,
++      apiKeyBucket: 'anon'
++    })
++    const apikey = remoteOptionKeys.byRoute(desc, {
++      userId: null,
++      workspaceId: null,
++      apiKeyBucket: 'apikey'
++    })
++    expect(JSON.stringify(anon)).not.toBe(JSON.stringify(apikey))
++  })
++
++  it('returns disabled state when descriptor is null', async () => {
++    const scope = effectScope()
++    let result!: ReturnType<typeof useRemoteOptions>
++    let cleanup = () => {}
++    scope.run(() => {
++      const mounted = withSetup(() =>
++        useRemoteOptions({
++          descriptor: null
++        })
++      )
++      result = mounted.result
++      cleanup = mounted.cleanup
++    })
++    expect(result.isLoading.value).toBe(false)
++    cleanup()
++    scope.stop()
++  })
++})
+diff --git a/src/platform/remote/composables/useRemoteOptions.ts b/src/platform/remote/composables/useRemoteOptions.ts
+new file mode 100644
+index 000000000..3c70b6e70
+--- /dev/null
++++ b/src/platform/remote/composables/useRemoteOptions.ts
+@@ -0,0 +1,132 @@
++import { useQuery, useQueryClient } from '@tanstack/vue-query'
++import axios from 'axios'
++import { computed, toValue } from 'vue'
++import type { ComputedRef, MaybeRefOrGetter } from 'vue'
++
++import { isRetriableError } from '@/base/remote/retry'
++import { getComfyApiBaseUrl } from '@/config/comfyApi'
++import { remoteOptionKeys } from '@/platform/remote/queryKeys'
++import type {
++  RemoteAuthScope,
++  RemoteRequestDescriptor
++} from '@/platform/remote/schema/remoteRequestSchema'
++import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
++import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
++import { useAuthStore } from '@/stores/authStore'
++
++const DEFAULT_TIMEOUT_MS = 30_000
++const DEFAULT_MAX_RETRIES = 3
++
++function resolveUrl(
++  descriptor: RemoteRequestDescriptor,
++  baseUrl: string
++): string {
++  if (descriptor.client === 'comfyApi') {
++    return baseUrl + descriptor.route
++  }
++  return descriptor.route
++}
++
++async function executeRemoteRequest(
++  descriptor: RemoteRequestDescriptor,
++  signal: AbortSignal
++): Promise<unknown> {
++  let headers: Record<string, string> | undefined
++  if (descriptor.client === 'comfyApi') {
++    const authStore = useAuthStore()
++    const authHeader = await authStore.getAuthHeader()
++    headers = authHeader ? { ...authHeader } : undefined
++  }
++  const url = resolveUrl(descriptor, getComfyApiBaseUrl())
++  const response = await axios.get(url, {
++    params: descriptor.params,
++    timeout: descriptor.timeout ?? DEFAULT_TIMEOUT_MS,
++    signal,
++    ...(headers ? { headers } : {})
++  })
++  return response.data
++}
++
++interface UseRemoteOptionsResult<T> {
++  data: ComputedRef<T | undefined>
++  rawData: ComputedRef<unknown>
++  isLoading: ComputedRef<boolean>
++  isFetching: ComputedRef<boolean>
++  error: ComputedRef<Error | null>
++  refetch: () => Promise<unknown>
++  invalidate: () => Promise<void>
++}
++
++interface UseRemoteOptionsArgs<T> {
++  descriptor: MaybeRefOrGetter<RemoteRequestDescriptor | null | undefined>
++  enabled?: MaybeRefOrGetter<boolean>
++  select?: (raw: unknown) => T
++}
++
++export function useRemoteOptions<T = unknown>(
++  args: UseRemoteOptionsArgs<T>
++): UseRemoteOptionsResult<T> {
++  const queryClient = useQueryClient()
++  const authStore = useAuthStore()
++  const workspaceStore = useWorkspaceAuthStore()
++  const apiKeyStore = useApiKeyAuthStore()
++
++  const scope = computed<RemoteAuthScope>(() => ({
++    userId: authStore.userId ?? null,
++    workspaceId: workspaceStore.currentWorkspace?.id ?? null,
++    apiKeyBucket: apiKeyStore.getApiKey() ? 'apikey' : 'anon'
++  }))
++
++  const queryKey = computed(() => {
++    const descriptor = toValue(args.descriptor)
++    if (!descriptor) {
++      return [...remoteOptionKeys.all(), 'disabled'] as const
++    }
++    return remoteOptionKeys.byRoute(descriptor, scope.value)
++  })
++
++  const enabled = computed(() => {
++    const userEnabled = toValue(args.enabled)
++    const hasDescriptor = !!toValue(args.descriptor)
++    return hasDescriptor && (userEnabled === undefined || userEnabled)
++  })
++
++  const query = useQuery({
++    queryKey,
++    enabled,
++    queryFn: async ({ signal }) => {
++      const descriptor = toValue(args.descriptor)
++      if (!descriptor) {
++        throw new Error('useRemoteOptions: descriptor is required')
++      }
++      return executeRemoteRequest(descriptor, signal)
++    },
++    retry: (failureCount, error) => {
++      const descriptor = toValue(args.descriptor)
++      const max = descriptor?.maxRetries ?? DEFAULT_MAX_RETRIES
++      return failureCount < max && isRetriableError(error)
++    },
++    staleTime: computed(() => toValue(args.descriptor)?.ttl ?? 0)
++  })
++
++  const data = computed<T | undefined>(() => {
++    const raw = query.data.value
++    if (raw === undefined) return undefined
++    if (args.select) return args.select(raw)
++    return raw as T
++  })
++
++  const invalidate = async () => {
++    await queryClient.invalidateQueries({ queryKey: queryKey.value })
++  }
++
++  return {
++    data,
++    rawData: computed(() => query.data.value),
++    isLoading: computed(() => query.isLoading.value),
++    isFetching: computed(() => query.isFetching.value),
++    error: computed(() => query.error.value),
++    refetch: () => query.refetch(),
++    invalidate
++  }
++}
+diff --git a/src/platform/remote/queryClient.ts b/src/platform/remote/queryClient.ts
+new file mode 100644
+index 000000000..aba1565a7
+--- /dev/null
++++ b/src/platform/remote/queryClient.ts
+@@ -0,0 +1,43 @@
++import { QueryClient } from '@tanstack/vue-query'
++
++import { isRetriableError } from '@/base/remote/retry'
++
++const DEFAULT_GC_TIME_MS = 5 * 60_000
++const DEFAULT_RETRY_COUNT = 3
++
++let appQueryClient: QueryClient | undefined
++
++/**
++ * Create the application-wide TanStack Query client.
++ *
++ * Defaults are tuned for remote-option dropdowns and similar widget data:
++ * - `staleTime: 0` so refresh buttons always re-fetch
++ * - `gcTime` bounded so a session's footprint stays small (no LRU yet)
++ * - `retry` driven by {@link isRetriableError} from `base/remote/retry`
++ * - `refetchOnWindowFocus: false` to avoid surprise re-fetches mid-edit
++ *
++ * QueryClient lifetime is bound to the Vue app instance; auth-state changes
++ * tear down the authenticated layout subtree (see master plan §8), so the
++ * cache is naturally evicted without manual `queryClient.clear()` calls.
++ */
++export function createAppQueryClient(): QueryClient {
++  appQueryClient = new QueryClient({
++    defaultOptions: {
++      queries: {
++        staleTime: 0,
++        gcTime: DEFAULT_GC_TIME_MS,
++        retry: (failureCount, error) =>
++          failureCount < DEFAULT_RETRY_COUNT && isRetriableError(error),
++        refetchOnWindowFocus: false
++      }
++    }
++  })
++  return appQueryClient
++}
++
++export function getAppQueryClient(): QueryClient {
++  if (!appQueryClient) {
++    appQueryClient = createAppQueryClient()
++  }
++  return appQueryClient
++}
+diff --git a/src/platform/remote/queryKeys.ts b/src/platform/remote/queryKeys.ts
+new file mode 100644
+index 000000000..2855b00d4
+--- /dev/null
++++ b/src/platform/remote/queryKeys.ts
+@@ -0,0 +1,26 @@
++import type {
++  RemoteAuthScope,
++  RemoteRequestDescriptor
++} from '@/platform/remote/schema/remoteRequestSchema'
++
++function sortedParams(
++  params?: Record<string, string>
++): Array<[string, string]> {
++  if (!params) return []
++  return Object.entries(params).sort(([a], [b]) => a.localeCompare(b))
++}
++
++export const remoteOptionKeys = {
++  all: () => ['remote-options'] as const,
++  byRoute: (descriptor: RemoteRequestDescriptor, scope: RemoteAuthScope) =>
++    [
++      ...remoteOptionKeys.all(),
++      descriptor.client,
++      descriptor.route,
++      descriptor.responseKey ?? '',
++      sortedParams(descriptor.params),
++      scope.workspaceId ?? null,
++      scope.userId ?? null,
++      scope.apiKeyBucket ?? null
++    ] as const
++}
+diff --git a/src/platform/remote/schema/remoteRequestSchema.ts b/src/platform/remote/schema/remoteRequestSchema.ts
+new file mode 100644
+index 000000000..58d186ec5
+--- /dev/null
++++ b/src/platform/remote/schema/remoteRequestSchema.ts
+@@ -0,0 +1,19 @@
++export type RemoteRequestClient = 'comfyApi'
++
++export interface RemoteRequestDescriptor {
++  client: RemoteRequestClient
++  route: string
++  params?: Record<string, string>
++  responseKey?: string
++  ttl?: number
++  timeout?: number
++  maxRetries?: number
++}
++
++export type RemoteAuthBucket = 'apikey' | 'anon'
++
++export interface RemoteAuthScope {
++  userId?: string | null
++  workspaceId?: string | null
++  apiKeyBucket?: RemoteAuthBucket | null
++}
+diff --git a/src/renderer/extensions/vueNodes/widgets/adapters/comboAdapter.test.ts b/src/renderer/extensions/vueNodes/widgets/adapters/comboAdapter.test.ts
+new file mode 100644
+index 000000000..809e1c44d
+--- /dev/null
++++ b/src/renderer/extensions/vueNodes/widgets/adapters/comboAdapter.test.ts
+@@ -0,0 +1,70 @@
++import { describe, expect, it } from 'vitest'
++
++import { comboAdapter } from '@/renderer/extensions/vueNodes/widgets/adapters/comboAdapter'
++import type { ComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
++
++function makeSpec(overrides: Partial<ComboInputSpec> = {}): ComboInputSpec {
++  return {
++    name: 'field',
++    type: 'COMBO',
++    isOptional: false,
++    ...overrides
++  } as ComboInputSpec
++}
++
++describe('comboAdapter.canHandle', () => {
++  it('returns true for combo input specs', () => {
++    expect(comboAdapter.canHandle(makeSpec())).toBe(true)
++  })
++})
++
++describe('comboAdapter.extractProps', () => {
++  it('returns kind=unknown when no upload flags set', () => {
++    expect(comboAdapter.extractProps(makeSpec()).assetKind).toBe('unknown')
++  })
++
++  it('detects video', () => {
++    expect(
++      comboAdapter.extractProps(makeSpec({ video_upload: true })).assetKind
++    ).toBe('video')
++  })
++
++  it('detects image (image_upload)', () => {
++    expect(
++      comboAdapter.extractProps(makeSpec({ image_upload: true })).assetKind
++    ).toBe('image')
++  })
++
++  it('detects image (animated_image_upload)', () => {
++    expect(
++      comboAdapter.extractProps(makeSpec({ animated_image_upload: true }))
++        .assetKind
++    ).toBe('image')
++  })
++
++  it('detects audio', () => {
++    expect(
++      comboAdapter.extractProps(makeSpec({ audio_upload: true })).assetKind
++    ).toBe('audio')
++  })
++
++  it('detects mesh and forces uploadFolder=input', () => {
++    const props = comboAdapter.extractProps(makeSpec({ mesh_upload: true }))
++    expect(props.assetKind).toBe('mesh')
++    expect(props.uploadFolder).toBe('input')
++  })
++
++  it('respects image_folder for non-mesh', () => {
++    const props = comboAdapter.extractProps(
++      makeSpec({ image_upload: true, image_folder: 'output' })
++    )
++    expect(props.uploadFolder).toBe('output')
++  })
++
++  it('flags allowUpload when any *_upload is true', () => {
++    expect(
++      comboAdapter.extractProps(makeSpec({ image_upload: true })).allowUpload
++    ).toBe(true)
++    expect(comboAdapter.extractProps(makeSpec()).allowUpload).toBe(false)
++  })
++})
+diff --git a/src/renderer/extensions/vueNodes/widgets/adapters/comboAdapter.ts b/src/renderer/extensions/vueNodes/widgets/adapters/comboAdapter.ts
+new file mode 100644
+index 000000000..45191e3a9
+--- /dev/null
++++ b/src/renderer/extensions/vueNodes/widgets/adapters/comboAdapter.ts
+@@ -0,0 +1,31 @@
++import type { ComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
++import { isComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
++import type { AssetKind } from '@/types/widgetTypes'
++
++import type { SpecAdapter, SpecAdapterProps } from './specAdapter'
++
++function deriveAssetKind(spec: ComboInputSpec): AssetKind {
++  if (spec.video_upload) return 'video'
++  if (spec.image_upload || spec.animated_image_upload) return 'image'
++  if (spec.audio_upload) return 'audio'
++  if (spec.mesh_upload) return 'mesh'
++  return 'unknown'
++}
++
++export const comboAdapter: SpecAdapter<ComboInputSpec> = {
++  canHandle: isComboInputSpec,
++  extractProps: (spec): SpecAdapterProps => {
++    const allowUpload =
++      spec.image_upload === true ||
++      spec.animated_image_upload === true ||
++      spec.video_upload === true ||
++      spec.audio_upload === true ||
++      spec.mesh_upload === true
++    return {
++      assetKind: deriveAssetKind(spec),
++      allowUpload,
++      uploadFolder: spec.mesh_upload ? 'input' : spec.image_folder,
++      uploadSubfolder: spec.upload_subfolder
++    }
++  }
++}
+diff --git a/src/renderer/extensions/vueNodes/widgets/adapters/specAdapter.ts b/src/renderer/extensions/vueNodes/widgets/adapters/specAdapter.ts
+new file mode 100644
+index 000000000..9492f1177
+--- /dev/null
++++ b/src/renderer/extensions/vueNodes/widgets/adapters/specAdapter.ts
+@@ -0,0 +1,18 @@
++import type { Component } from 'vue'
++
++import type { ResultItemType } from '@/schemas/apiSchema'
++import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
++import type { AssetKind } from '@/types/widgetTypes'
++
++export interface SpecAdapterProps {
++  assetKind?: AssetKind
++  allowUpload?: boolean
++  uploadFolder?: ResultItemType
++  uploadSubfolder?: string
++}
++
++export interface SpecAdapter<T extends InputSpec> {
++  canHandle: (spec: InputSpec) => spec is T
++  extractProps: (spec: T) => SpecAdapterProps
++  component?: Component
++}
+diff --git a/src/renderer/extensions/vueNodes/widgets/components/RemoteCombo/Content.vue b/src/renderer/extensions/vueNodes/widgets/components/RemoteCombo/Content.vue
+new file mode 100644
+index 000000000..08778e0e9
+--- /dev/null
++++ b/src/renderer/extensions/vueNodes/widgets/components/RemoteCombo/Content.vue
+@@ -0,0 +1,25 @@
++<script setup lang="ts">
++import { ComboboxContent, ComboboxPortal } from 'reka-ui'
++
++import { cn } from '@comfyorg/tailwind-utils'
++
++import { contentVariants } from './remoteCombo.variants'
++
++defineProps<{
++  class?: string
++}>()
++</script>
++
++<template>
++  <ComboboxPortal>
++    <ComboboxContent
++      position="popper"
++      :side-offset="4"
++      align="start"
++      :class="cn(contentVariants(), $props.class)"
++      data-testid="remote-combo-content"
++    >
++      <slot />
++    </ComboboxContent>
++  </ComboboxPortal>
++</template>
+diff --git a/src/renderer/extensions/vueNodes/widgets/components/RemoteCombo/Empty.vue b/src/renderer/extensions/vueNodes/widgets/components/RemoteCombo/Empty.vue
+new file mode 100644
+index 000000000..4925826c5
+--- /dev/null
++++ b/src/renderer/extensions/vueNodes/widgets/components/RemoteCombo/Empty.vue
+@@ -0,0 +1,18 @@
++<script setup lang="ts">
++import { ComboboxEmpty } from 'reka-ui'
++import { useI18n } from 'vue-i18n'
++
++const { t } = useI18n()
++</script>
++
++<template>
++  <ComboboxEmpty
++    class="p-3 text-center text-xs text-muted-foreground"
++    aria-live="polite"
++    data-testid="remote-combo-empty"
++  >
++    <slot>
++      {{ t('widgets.remoteCombo.noResults') }}
++    </slot>
++  </ComboboxEmpty>
++</template>
+diff --git a/src/renderer/extensions/vueNodes/widgets/components/RemoteCombo/Error.vue b/src/renderer/extensions/vueNodes/widgets/components/RemoteCombo/Error.vue
+new file mode 100644
+index 000000000..a097346d9
+--- /dev/null
++++ b/src/renderer/extensions/vueNodes/widgets/components/RemoteCombo/Error.vue
+@@ -0,0 +1,29 @@
++<script setup lang="ts">
++import { inject } from 'vue'
++
++defineProps<{
++  message?: string
++}>()
++
++import { RemoteComboKey } from './state'
++
++const ctx = inject(RemoteComboKey)
++if (!ctx) {
++  throw new Error('RemoteCombo.Error must be used inside RemoteCombo.Root')
++}
++</script>
++
++<template>
++  <div
++    class="flex items-center gap-2 rounded-sm bg-destructive-background/10 px-3 py-2 text-xs text-base-foreground"
++    role="alert"
++    aria-live="assertive"
++    data-testid="remote-combo-error"
++  >
++    <i
++      class="icon-[lucide--alert-circle] size-4 shrink-0 text-destructive-background"
++      aria-hidden="true"
++    />
++    <span class="flex-1">{{ message ?? ctx.errorMessage.value }}</span>
++  </div>
++</template>
+diff --git a/src/renderer/extensions/vueNodes/widgets/components/RemoteCombo/Item.preview.test.ts b/src/renderer/extensions/vueNodes/widgets/components/RemoteCombo/Item.preview.test.ts
+new file mode 100644
+index 000000000..dd3a4d4fb
+--- /dev/null
++++ b/src/renderer/extensions/vueNodes/widgets/components/RemoteCombo/Item.preview.test.ts
+@@ -0,0 +1,93 @@
++import { render, screen } from '@testing-library/vue'
++import { describe, expect, it } from 'vitest'
++import { ComboboxRoot } from 'reka-ui'
++import { computed, defineComponent, h, provide, ref } from 'vue'
++import { createI18n } from 'vue-i18n'
++
++import type { DropdownItemShape } from '@/base/remote/itemSchema'
++
++import Item from './Item.vue'
++import { RemoteComboKey } from './state'
++import type { RemoteComboContext, RemoteComboPreviewType } from './state'
++
++const i18n = createI18n({
++  legacy: false,
++  locale: 'en',
++  messages: {
++    en: {
++      widgets: {
++        remoteCombo: {
++          playAudioPreview: 'Play audio preview',
++          pauseAudioPreview: 'Pause audio preview'
++        }
++      }
++    }
++  }
++})
++
++function makeCtx(previewType: RemoteComboPreviewType): RemoteComboContext {
++  return {
++    isOpen: ref(true),
++    searchQuery: ref(''),
++    selectedValue: ref<string | undefined>(undefined),
++    items: computed(() => []),
++    filteredItems: computed(() => []),
++    isLoading: computed(() => false),
++    isFetching: computed(() => false),
++    errorMessage: computed(() => null),
++    refresh: async () => {},
++    select: () => {},
++    fieldLabel: computed(() => 'field'),
++    previewType: computed(() => previewType)
++  }
++}
++
++function renderItemInOpenCombobox(
++  item: DropdownItemShape,
++  previewType: RemoteComboPreviewType
++) {
++  const Host = defineComponent({
++    setup() {
++      provide(RemoteComboKey, makeCtx(previewType))
++      return () =>
++        h(
++          ComboboxRoot,
++          { open: true, modelValue: undefined },
++          {
++            default: () => h(Item, { item, index: 0 })
++          }
++        )
++    }
++  })
++  return render(Host, { global: { plugins: [i18n] } })
++}
++
++describe('RemoteCombo.Item preview rendering', () => {
++  it('renders an <img> for image preview_type with preview_url', () => {
++    renderItemInOpenCombobox(
++      {
++        id: '1',
++        name: 'Picture',
++        preview_url: 'https://cdn.example.com/p.png'
++      },
++      'image'
++    )
++    const img = screen.getByRole('img', { name: /picture/i })
++    expect(img).toHaveAttribute('src', 'https://cdn.example.com/p.png')
++  })
++
++  it('renders an audio play button for audio preview_type with preview_url', () => {
++    renderItemInOpenCombobox(
++      { id: '1', name: 'Voice', preview_url: 'https://cdn.example.com/a.mp3' },
++      'audio'
++    )
++    expect(
++      screen.getByRole('button', { name: /play audio preview/i })
++    ).toBeInTheDocument()
++  })
++
++  it('omits preview element when preview_url is missing', () => {
++    renderItemInOpenCombobox({ id: '1', name: 'NoPreview' }, 'image')
++    expect(screen.queryByRole('img')).toBeNull()
++  })
++})
+diff --git a/src/renderer/extensions/vueNodes/widgets/components/RemoteCombo/Item.vue b/src/renderer/extensions/vueNodes/widgets/components/RemoteCombo/Item.vue
+new file mode 100644
+index 000000000..eccafc921
+--- /dev/null
++++ b/src/renderer/extensions/vueNodes/widgets/components/RemoteCombo/Item.vue
+@@ -0,0 +1,129 @@
++<script setup lang="ts">
++import { ComboboxItem, ComboboxItemIndicator } from 'reka-ui'
++import { computed, inject, ref, useTemplateRef } from 'vue'
++import { useI18n } from 'vue-i18n'
++
++import { cn } from '@comfyorg/tailwind-utils'
++
++import { displayName } from '@/base/remote/itemSchema'
++import type { DropdownItemShape } from '@/base/remote/itemSchema'
++
++import { itemVariants } from './remoteCombo.variants'
++import type { ItemVariants } from './remoteCombo.variants'
++import { RemoteComboKey } from './state'
++
++const props = defineProps<{
++  item: DropdownItemShape
++  index: number
++  layout?: ItemVariants['layout']
++  class?: string
++}>()
++
++const ctx = inject(RemoteComboKey)
++if (!ctx) {
++  throw new Error('RemoteCombo.Item must be used inside RemoteCombo.Root')
++}
++
++const { t } = useI18n()
++
++const isSelected = computed(() => ctx.selectedValue.value === props.item.id)
++const hasPreview = computed(() => !!props.item.preview_url)
++const label = computed(() => displayName(props.item))
++
++const audioEl = useTemplateRef<HTMLAudioElement>('audioEl')
++const isPlaying = ref(false)
++
++function toggleAudio() {
++  const el = audioEl.value
++  if (!el) return
++  if (el.paused) {
++    void el.play().then(() => {
++      isPlaying.value = true
++    })
++  } else {
++    el.pause()
++    isPlaying.value = false
++  }
++}
++
++function handleAudioEnded() {
++  isPlaying.value = false
++}
++</script>
++
++<template>
++  <ComboboxItem
++    :value="item.id"
++    :class="cn(itemVariants({ layout: props.layout }), props.class)"
++    :data-testid="`remote-combo-item-${index}`"
++    @select="ctx.select(item.id)"
++  >
++    <slot :item="item" :index="index" :is-selected="isSelected">
++      <template v-if="hasPreview && ctx.previewType.value === 'image'">
++        <img
++          :src="item.preview_url"
++          :alt="label"
++          class="size-10 shrink-0 rounded-sm object-cover"
++          loading="lazy"
++          decoding="async"
++        />
++      </template>
++      <template v-else-if="hasPreview && ctx.previewType.value === 'video'">
++        <video
++          :src="item.preview_url"
++          :aria-label="label"
++          class="size-10 shrink-0 rounded-sm object-cover"
++          preload="metadata"
++          muted
++          playsinline
++        />
++      </template>
++      <template v-else-if="hasPreview && ctx.previewType.value === 'audio'">
++        <button
++          type="button"
++          class="focus-visible:ring-ring flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary-background-hover text-base-foreground hover:bg-secondary-background-selected focus-visible:ring-1 focus-visible:outline-none"
++          :aria-label="
++            isPlaying
++              ? t('widgets.remoteCombo.pauseAudioPreview')
++              : t('widgets.remoteCombo.playAudioPreview')
++          "
++          :aria-pressed="isPlaying"
++          @click.stop="toggleAudio"
++          @pointerdown.stop
++        >
++          <i
++            :class="
++              cn(
++                'size-4',
++                isPlaying ? 'icon-[lucide--pause]' : 'icon-[lucide--play]'
++              )
++            "
++            aria-hidden="true"
++          />
++          <audio
++            ref="audioEl"
++            :src="item.preview_url"
++            preload="none"
++            class="sr-only"
++            @ended="handleAudioEnded"
++          />
++        </button>
++      </template>
++      <div class="flex flex-1 flex-col gap-0.5 overflow-hidden">
++        <span class="truncate">{{ label }}</span>
++        <span
++          v-if="item.description"
++          class="truncate text-[10px] text-muted-foreground"
++        >
++          {{ item.description }}
++        </span>
++      </div>
++    </slot>
++    <ComboboxItemIndicator>
++      <i
++        class="icon-[lucide--check] size-4 text-primary-background"
++        aria-hidden="true"
++      />
++    </ComboboxItemIndicator>
++  </ComboboxItem>
++</template>
+diff --git a/src/renderer/extensions/vueNodes/widgets/components/RemoteCombo/LayoutSwitcher.vue b/src/renderer/extensions/vueNodes/widgets/components/RemoteCombo/LayoutSwitcher.vue
+new file mode 100644
+index 000000000..771d19753
+--- /dev/null
++++ b/src/renderer/extensions/vueNodes/widgets/components/RemoteCombo/LayoutSwitcher.vue
+@@ -0,0 +1,54 @@
++<script setup lang="ts">
++import { useI18n } from 'vue-i18n'
++
++import { cn } from '@comfyorg/tailwind-utils'
++
++import Button from '@/components/ui/button/Button.vue'
++import type { LayoutMode } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
++
++const props = defineProps<{
++  layout?: LayoutMode
++}>()
++
++const layoutMode = defineModel<LayoutMode>('layout', { default: 'list' })
++
++void props
++
++const { t } = useI18n()
++
++function setLayout(mode: LayoutMode) {
++  layoutMode.value = mode
++}
++</script>
++
++<template>
++  <div
++    class="flex items-center gap-1"
++    role="group"
++    :aria-label="t('widgets.remoteCombo.layoutSwitcherAriaLabel')"
++    data-testid="remote-combo-layout-switcher"
++  >
++    <Button
++      variant="textonly"
++      size="icon-sm"
++      type="button"
++      :aria-label="t('widgets.remoteCombo.layoutList')"
++      :aria-pressed="layoutMode === 'list'"
++      :class="cn(layoutMode === 'list' && 'bg-secondary-background-selected')"
++      @click.stop="setLayout('list')"
++    >
++      <i class="icon-[lucide--list] size-4" aria-hidden="true" />
++    </Button>
++    <Button
++      variant="textonly"
++      size="icon-sm"
++      type="button"
++      :aria-label="t('widgets.remoteCombo.layoutGrid')"
++      :aria-pressed="layoutMode === 'grid'"
++      :class="cn(layoutMode === 'grid' && 'bg-secondary-background-selected')"
++      @click.stop="setLayout('grid')"
++    >
++      <i class="icon-[lucide--grid-2x2] size-4" aria-hidden="true" />
++    </Button>
++  </div>
++</template>
+diff --git a/src/renderer/extensions/vueNodes/widgets/components/RemoteCombo/List.vue b/src/renderer/extensions/vueNodes/widgets/components/RemoteCombo/List.vue
+new file mode 100644
+index 000000000..c1894d3fc
+--- /dev/null
++++ b/src/renderer/extensions/vueNodes/widgets/components/RemoteCombo/List.vue
+@@ -0,0 +1,20 @@
++<script setup lang="ts">
++import { ComboboxViewport } from 'reka-ui'
++
++import { cn } from '@comfyorg/tailwind-utils'
++
++import { listVariants } from './remoteCombo.variants'
++
++defineProps<{
++  class?: string
++}>()
++</script>
++
++<template>
++  <ComboboxViewport
++    :class="cn(listVariants(), $props.class)"
++    data-testid="remote-combo-list"
++  >
++    <slot />
++  </ComboboxViewport>
++</template>
+diff --git a/src/renderer/extensions/vueNodes/widgets/components/RemoteCombo/Loading.vue b/src/renderer/extensions/vueNodes/widgets/components/RemoteCombo/Loading.vue
+new file mode 100644
+index 000000000..39589b9cb
+--- /dev/null
++++ b/src/renderer/extensions/vueNodes/widgets/components/RemoteCombo/Loading.vue
+@@ -0,0 +1,21 @@
++<script setup lang="ts">
++import { useI18n } from 'vue-i18n'
++
++const { t } = useI18n()
++</script>
++
++<template>
++  <div
++    class="flex items-center justify-center gap-2 p-3 text-xs text-muted-foreground"
++    role="status"
++    aria-live="polite"
++    aria-busy="true"
++    data-testid="remote-combo-loading"
++  >
++    <i
++      class="icon-[lucide--loader-circle] size-4 animate-spin text-primary-background"
++      aria-hidden="true"
++    />
++    <span>{{ t('widgets.remoteCombo.loading') }}</span>
++  </div>
++</template>
+diff --git a/src/renderer/extensions/vueNodes/widgets/components/RemoteCombo/Refresh.vue b/src/renderer/extensions/vueNodes/widgets/components/RemoteCombo/Refresh.vue
+new file mode 100644
+index 000000000..240de441a
+--- /dev/null
++++ b/src/renderer/extensions/vueNodes/widgets/components/RemoteCombo/Refresh.vue
+@@ -0,0 +1,56 @@
++<script setup lang="ts">
++import { inject } from 'vue'
++import { useI18n } from 'vue-i18n'
++
++import { cn } from '@comfyorg/tailwind-utils'
++
++import Button from '@/components/ui/button/Button.vue'
++
++import { RemoteComboKey } from './state'
++import type { RemoteComboContext } from './state'
++
++const props = defineProps<{
++  class?: string
++  context?: RemoteComboContext
++  disabled?: boolean
++}>()
++
++const injected = inject(RemoteComboKey, null)
++const resolved = props.context ?? injected
++if (!resolved) {
++  throw new Error(
++    'RemoteCombo.Refresh requires a RemoteComboContext (provide via Root or pass as prop)'
++  )
++}
++const ctx = resolved
++
++const { t } = useI18n()
++
++async function handleClick() {
++  await ctx.refresh()
++}
++</script>
++
++<template>
++  <Button
++    variant="textonly"
++    size="icon"
++    type="button"
++    :disabled="props.disabled"
++    :aria-label="t('widgets.remoteCombo.refresh')"
++    :title="t('widgets.remoteCombo.refresh')"
++    :class="cn('shrink-0', props.class)"
++    data-testid="remote-combo-refresh"
++    @click.stop="handleClick"
++  >
++    <i
++      :class="
++        cn(
++          'icon-[lucide--rotate-cw] size-4',
++          ctx.isFetching.value && 'animate-spin'
++        )
++      "
++      aria-hidden="true"
++    />
++  </Button>
++</template>
+diff --git a/src/renderer/extensions/vueNodes/widgets/components/RemoteCombo/RemoteCombo.stories.ts b/src/renderer/extensions/vueNodes/widgets/components/RemoteCombo/RemoteCombo.stories.ts
+new file mode 100644
+index 000000000..9b0eb6a8e
+--- /dev/null
++++ b/src/renderer/extensions/vueNodes/widgets/components/RemoteCombo/RemoteCombo.stories.ts
+@@ -0,0 +1,164 @@
++import type { Meta, StoryObj } from '@storybook/vue3-vite'
++import { ref, computed } from 'vue'
++import type { Ref } from 'vue'
++
++import type { DropdownItemShape } from '@/base/remote/itemSchema'
++
++import Content from './Content.vue'
++import Empty from './Empty.vue'
++import ErrorAtom from './Error.vue'
++import Item from './Item.vue'
++import LayoutSwitcher from './LayoutSwitcher.vue'
++import List from './List.vue'
++import Loading from './Loading.vue'
++import Refresh from './Refresh.vue'
++import Root from './Root.vue'
++import Search from './Search.vue'
++import Trigger from './Trigger.vue'
++import type { RemoteComboContext } from './state'
++
++const sampleItems: DropdownItemShape[] = [
++  { id: 'voice-1', name: 'Aria', description: 'Soft, warm female voice' },
++  { id: 'voice-2', name: 'Roger', description: 'Deep, narrator male voice' },
++  { id: 'voice-3', name: 'Sarah', description: 'Bright, youthful' },
++  { id: 'voice-4', name: 'Charlie', description: 'Calm, professional' },
++  { id: 'voice-5', name: 'George', description: 'Casual, friendly' }
++]
++
++interface StoryArgs {
++  isLoading: boolean
++  hasError: boolean
++  items: DropdownItemShape[]
++  selected?: string
++}
++
++function makeContext(args: StoryArgs): RemoteComboContext {
++  const isOpen = ref(false)
++  const searchQuery = ref('')
++  const selectedValue = ref(args.selected) as Ref<string | undefined>
++  const items = computed(() => args.items)
++  const filteredItems = computed(() =>
++    searchQuery.value
++      ? items.value.filter((it) =>
++          it.name.toLowerCase().includes(searchQuery.value.toLowerCase())
++        )
++      : items.value
++  )
++  return {
++    isOpen,
++    searchQuery,
++    selectedValue,
++    items,
++    filteredItems,
++    isLoading: computed(() => args.isLoading),
++    isFetching: computed(() => args.isLoading),
++    errorMessage: computed(() =>
++      args.hasError ? 'Failed to load options' : null
++    ),
++    refresh: async () => {},
++    select: (id) => {
++      selectedValue.value = id
++      isOpen.value = false
++    },
++    fieldLabel: computed(() => 'voice'),
++    previewType: computed(() => 'image' as const)
++  }
++}
++
++const meta: Meta<StoryArgs> = {
++  title: 'Widgets/RemoteCombo',
++  argTypes: {
++    isLoading: { control: 'boolean' },
++    hasError: { control: 'boolean' }
++  },
++  args: {
++    isLoading: false,
++    hasError: false,
++    items: sampleItems,
++    selected: undefined
++  },
++  parameters: {
++    docs: {
++      description: {
++        component:
++          'Atomized remote-populated combo widget. Compose Root → Trigger + Content (Search, List/Item, Loading, Empty, Error) and an optional Refresh sibling.'
++      }
++    }
++  }
++}
++
++export default meta
++type Story = StoryObj<StoryArgs>
++
++const renderTemplate = (args: StoryArgs) => ({
++  components: {
++    Root,
++    Trigger,
++    Content,
++    Search,
++    List,
++    Item,
++    Empty,
++    Loading,
++    ErrorAtom,
++    Refresh,
++    LayoutSwitcher
++  },
++  setup() {
++    const ctx = makeContext(args)
++    return { ctx, args }
++  },
++  template: `
++    <div class="flex w-72 items-center gap-1">
++      <Root :context="ctx" class="min-w-0 flex-1">
++        <Trigger class="min-w-0 flex-1" />
++        <Content>
++          <Search />
++          <Loading v-if="args.isLoading" />
++          <ErrorAtom v-else-if="args.hasError" />
++          <List v-else>
++            <Item v-for="(item, index) in ctx.filteredItems.value" :key="item.id" :item="item" :index="index" />
++            <Empty v-if="ctx.filteredItems.value.length === 0" />
++          </List>
++        </Content>
++      </Root>
++      <Refresh :context="ctx" />
++    </div>
++  `
++})
++
++export const Default: Story = {
++  render: renderTemplate
++}
++
++export const LoadingState: Story = {
++  args: { isLoading: true, items: [] },
++  render: renderTemplate
++}
++
++export const ErrorState: Story = {
++  args: { hasError: true, items: [] },
++  render: renderTemplate
++}
++
++export const EmptyState: Story = {
++  args: { items: [] },
++  render: renderTemplate
++}
++
++export const WithSelection: Story = {
++  args: { selected: 'voice-2' },
++  render: renderTemplate
++}
++
++export const KeyboardA11y: Story = {
++  parameters: {
++    docs: {
++      description: {
++        story:
++          'Tab to focus trigger; Enter/Space opens; Arrow keys navigate; Enter selects; Escape closes. Demonstrates the reka-ui Combobox keyboard contract.'
++      }
++    }
++  },
++  render: renderTemplate
++}
+diff --git a/src/renderer/extensions/vueNodes/widgets/components/RemoteCombo/Root.vue b/src/renderer/extensions/vueNodes/widgets/components/RemoteCombo/Root.vue
+new file mode 100644
+index 000000000..8d766f994
+--- /dev/null
++++ b/src/renderer/extensions/vueNodes/widgets/components/RemoteCombo/Root.vue
+@@ -0,0 +1,40 @@
++<script setup lang="ts">
++import { ComboboxRoot } from 'reka-ui'
++import { provide } from 'vue'
++
++import { RemoteComboKey } from './state'
++import type { RemoteComboContext } from './state'
++
++const props = defineProps<{
++  context: RemoteComboContext
++  multiple?: boolean
++  disabled?: boolean
++}>()
++
++const ctx = props.context
++provide(RemoteComboKey, ctx)
++
++function onOpenChange(value: boolean) {
++  ctx.isOpen.value = value
++}
++
++function onSearchChange(value: string) {
++  ctx.searchQuery.value = value
++}
++</script>
++
++<template>
++  <ComboboxRoot
++    :open="ctx.isOpen.value"
++    :search-term="ctx.searchQuery.value"
++    :multiple="multiple"
++    :disabled="disabled"
++    ignore-filter
++    :reset-search-term-on-select="false"
++    data-testid="remote-combo-root"
++    @update:open="onOpenChange"
++    @update:search-term="onSearchChange"
++  >
++    <slot />
++  </ComboboxRoot>
++</template>
+diff --git a/src/renderer/extensions/vueNodes/widgets/components/RemoteCombo/Search.vue b/src/renderer/extensions/vueNodes/widgets/components/RemoteCombo/Search.vue
+new file mode 100644
+index 000000000..ec605504b
+--- /dev/null
++++ b/src/renderer/extensions/vueNodes/widgets/components/RemoteCombo/Search.vue
+@@ -0,0 +1,44 @@
++<script setup lang="ts">
++import { ComboboxInput } from 'reka-ui'
++import { inject } from 'vue'
++import { useI18n } from 'vue-i18n'
++
++import { cn } from '@comfyorg/tailwind-utils'
++
++import { searchVariants } from './remoteCombo.variants'
++import { RemoteComboKey } from './state'
++
++defineProps<{
++  placeholder?: string
++}>()
++
++const ctx = inject(RemoteComboKey)
++if (!ctx) {
++  throw new Error('RemoteCombo.Search must be used inside RemoteCombo.Root')
++}
++
++const { t } = useI18n()
++
++const emptyDisplayValue = () => ''
++</script>
++
++<template>
++  <div :class="cn(searchVariants())">
++    <i
++      class="icon-[lucide--search] size-4 shrink-0 text-muted-foreground"
++      aria-hidden="true"
++    />
++    <ComboboxInput
++      v-model="ctx.searchQuery.value"
++      :display-value="emptyDisplayValue"
++      :placeholder="placeholder ?? t('g.search')"
++      class="w-full border-none bg-transparent text-xs text-base-foreground outline-none placeholder:text-muted-foreground"
++      :aria-label="
++        t('widgets.remoteCombo.searchAriaLabel', {
++          field: ctx.fieldLabel.value
++        })
++      "
++      data-testid="remote-combo-search-input"
++    />
++  </div>
++</template>
+diff --git a/src/renderer/extensions/vueNodes/widgets/components/RemoteCombo/Trigger.vue b/src/renderer/extensions/vueNodes/widgets/components/RemoteCombo/Trigger.vue
+new file mode 100644
+index 000000000..c39fdd428
+--- /dev/null
++++ b/src/renderer/extensions/vueNodes/widgets/components/RemoteCombo/Trigger.vue
+@@ -0,0 +1,80 @@
++<script setup lang="ts">
++import { ComboboxAnchor, ComboboxTrigger } from 'reka-ui'
++import { computed, inject } from 'vue'
++import { useI18n } from 'vue-i18n'
++
++import { cn } from '@comfyorg/tailwind-utils'
++
++import { displayName } from '@/base/remote/itemSchema'
++
++import { triggerVariants } from './remoteCombo.variants'
++import type { TriggerVariants } from './remoteCombo.variants'
++import { RemoteComboKey } from './state'
++
++const props = defineProps<{
++  size?: TriggerVariants['size']
++  variant?: TriggerVariants['variant']
++  border?: TriggerVariants['border']
++  class?: string
++  placeholder?: string
++  disabled?: boolean
++}>()
++
++const ctx = inject(RemoteComboKey)
++if (!ctx) {
++  throw new Error('RemoteCombo.Trigger must be used inside RemoteCombo.Root')
++}
++
++const { t } = useI18n()
++
++const displayLabel = computed(() => {
++  if (ctx.isLoading.value) return t('widgets.remoteCombo.loading')
++  if (ctx.errorMessage.value) return ctx.errorMessage.value
++  const id = ctx.selectedValue.value
++  if (!id) return props.placeholder ?? t('widgets.uploadSelect.placeholder')
++  const item = ctx.items.value.find((i) => i.id === id)
++  return item ? displayName(item) : id
++})
++
++const computedBorder = computed<TriggerVariants['border']>(() => {
++  if (props.border) return props.border
++  if (ctx.errorMessage.value) return 'invalid'
++  if (ctx.isOpen.value) return 'active'
++  return 'none'
++})
++</script>
++
++<template>
++  <ComboboxAnchor as-child>
++    <ComboboxTrigger
++      :class="
++        cn(
++          triggerVariants({
++            size: props.size,
++            variant: props.variant,
++            border: computedBorder
++          }),
++          props.class
++        )
++      "
++      :aria-label="
++        t('widgets.remoteCombo.selectAriaLabel', {
++          field: ctx.fieldLabel.value
++        })
++      "
++      :disabled="
++        props.disabled || ctx.isLoading.value || !!ctx.errorMessage.value
++      "
++      :aria-disabled="
++        props.disabled || ctx.isLoading.value || !!ctx.errorMessage.value
++      "
++      data-testid="remote-combo-trigger"
++    >
++      <span class="truncate">{{ displayLabel }}</span>
++      <i
++        class="icon-[lucide--chevron-down] size-4 shrink-0 text-muted-foreground"
++        aria-hidden="true"
++      />
++    </ComboboxTrigger>
++  </ComboboxAnchor>
++</template>
+diff --git a/src/renderer/extensions/vueNodes/widgets/components/RemoteCombo/remoteCombo.variants.ts b/src/renderer/extensions/vueNodes/widgets/components/RemoteCombo/remoteCombo.variants.ts
+new file mode 100644
+index 000000000..e44f9251d
+--- /dev/null
++++ b/src/renderer/extensions/vueNodes/widgets/components/RemoteCombo/remoteCombo.variants.ts
+@@ -0,0 +1,61 @@
++import type { VariantProps } from 'cva'
++import { cva } from 'cva'
++
++export const triggerVariants = cva({
++  base: 'relative inline-flex w-full items-center justify-between gap-2 cursor-pointer select-none rounded-md border border-border-default bg-secondary-background text-base-foreground transition-colors hover:bg-secondary-background-hover focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50 disabled:pointer-events-none',
++  variants: {
++    size: {
++      sm: 'h-6 px-2 text-xs',
++      md: 'h-8 px-3 text-xs',
++      lg: 'h-10 px-4 text-sm'
++    },
++    variant: {
++      secondary: 'bg-secondary-background hover:bg-secondary-background-hover',
++      primary:
++        'bg-primary-background text-base-foreground hover:bg-primary-background-hover',
++      destructive:
++        'bg-destructive-background text-base-foreground hover:bg-destructive-background-hover',
++      textonly:
++        'border-transparent bg-transparent hover:bg-secondary-background-hover'
++    },
++    border: {
++      none: '',
++      active: 'border-node-component-border',
++      invalid: 'border-destructive-background'
++    }
++  },
++  defaultVariants: {
++    size: 'md',
++    variant: 'secondary',
++    border: 'none'
++  }
++})
++
++export type TriggerVariants = VariantProps<typeof triggerVariants>
++
++export const contentVariants = cva({
++  base: 'z-50 min-w-(--reka-combobox-trigger-width) overflow-hidden rounded-md border border-border-default bg-base-background text-base-foreground shadow-md data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=top]:slide-in-from-bottom-2'
++})
++
++export const itemVariants = cva({
++  base: 'relative flex cursor-pointer select-none items-center gap-2 px-2 py-1.5 text-xs text-base-foreground outline-none transition-colors hover:bg-secondary-background-hover data-highlighted:bg-secondary-background-selected data-[state=checked]:bg-secondary-background-selected data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
++  variants: {
++    layout: {
++      single: 'rounded-sm',
++      multi: 'gap-2 rounded-sm'
++    }
++  },
++  defaultVariants: {
++    layout: 'single'
++  }
++})
++
++export type ItemVariants = VariantProps<typeof itemVariants>
++
++export const searchVariants = cva({
++  base: 'flex w-full items-center gap-2 border-b border-border-default px-3 py-1.5'
++})
++
++export const listVariants = cva({
++  base: 'flex max-h-[16rem] flex-col gap-0 overflow-y-auto p-1 text-xs scrollbar-custom'
++})
+diff --git a/src/renderer/extensions/vueNodes/widgets/components/RemoteCombo/state.ts b/src/renderer/extensions/vueNodes/widgets/components/RemoteCombo/state.ts
+new file mode 100644
+index 000000000..a7e7d047c
+--- /dev/null
++++ b/src/renderer/extensions/vueNodes/widgets/components/RemoteCombo/state.ts
+@@ -0,0 +1,23 @@
++import type { ComputedRef, InjectionKey, Ref } from 'vue'
++
++import type { DropdownItemShape } from '@/base/remote/itemSchema'
++
++export type RemoteComboPreviewType = 'image' | 'video' | 'audio'
++
++export interface RemoteComboContext {
++  isOpen: Ref<boolean>
++  searchQuery: Ref<string>
++  selectedValue: Ref<string | undefined>
++  items: ComputedRef<DropdownItemShape[]>
++  filteredItems: ComputedRef<DropdownItemShape[]>
++  isLoading: ComputedRef<boolean>
++  isFetching: ComputedRef<boolean>
++  errorMessage: ComputedRef<string | null>
++  refresh: () => Promise<void>
++  select: (id: string) => void
++  fieldLabel: ComputedRef<string>
++  previewType: ComputedRef<RemoteComboPreviewType>
++}
++
++export const RemoteComboKey: InjectionKey<RemoteComboContext> =
++  Symbol('RemoteComboContext')
+diff --git a/src/renderer/extensions/vueNodes/widgets/components/RichComboWidget.test.ts b/src/renderer/extensions/vueNodes/widgets/components/RichComboWidget.test.ts
+new file mode 100644
+index 000000000..8571af84b
+--- /dev/null
++++ b/src/renderer/extensions/vueNodes/widgets/components/RichComboWidget.test.ts
+@@ -0,0 +1,187 @@
++import { createTestingPinia } from '@pinia/testing'
++import { QueryClient, VueQueryPlugin } from '@tanstack/vue-query'
++import { render, screen, waitFor } from '@testing-library/vue'
++import axios from 'axios'
++import type * as AxiosModule from 'axios'
++import { beforeEach, describe, expect, it, vi } from 'vitest'
++import { createI18n } from 'vue-i18n'
++
++import RichComboWidget from '@/renderer/extensions/vueNodes/widgets/components/RichComboWidget.vue'
++import type { ComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
++import type {
++  RemoteComboConfig,
++  RemoteItemSchema
++} from '@/schemas/nodeDefSchema'
++import type { SimplifiedWidget } from '@/types/simplifiedWidget'
++
++import { createMockWidget } from './widgetTestUtils'
++
++vi.mock('axios', async (importOriginal) => {
++  const actual = await importOriginal<typeof AxiosModule>()
++  return {
++    ...actual,
++    default: { ...actual.default, get: vi.fn() }
++  }
++})
++
++vi.mock('@/platform/workspace/stores/workspaceAuthStore', () => ({
++  useWorkspaceAuthStore: () => ({ currentWorkspace: null })
++}))
++vi.mock('@/stores/authStore', () => ({
++  useAuthStore: () => ({
++    userId: undefined,
++    getAuthHeader: vi.fn(() => Promise.resolve(null))
++  })
++}))
++
++const i18n = createI18n({
++  legacy: false,
++  locale: 'en',
++  messages: {
++    en: {
++      widgets: {
++        remoteCombo: {
++          loading: 'Loading...',
++          loadFailed: 'Failed to load options',
++          noResults: 'No results found',
++          refresh: 'Refresh options',
++          selectAriaLabel: 'Select {field}',
++          searchAriaLabel: 'Search {field}',
++          layoutSwitcherAriaLabel: 'Layout switcher',
++          layoutList: 'List view',
++          layoutGrid: 'Grid view'
++        },
++        uploadSelect: { placeholder: 'Select...' }
++      },
++      g: { search: 'Search' }
++    }
++  }
++})
++
++function makeWidget(
++  spec: ComboInputSpec,
++  value: string | undefined = undefined
++): SimplifiedWidget<string | undefined> {
++  return createMockWidget({
++    name: 'remote_field',
++    type: 'combo',
++    value,
++    spec
++  }) as SimplifiedWidget<string | undefined>
++}
++
++const itemSchema: RemoteItemSchema = {
++  value_field: 'id',
++  label_field: 'name',
++  preview_type: 'image'
++}
++
++function makeRemoteCombo(
++  overrides: Partial<RemoteComboConfig> = {}
++): ComboInputSpec {
++  return {
++    name: 'remote_field',
++    type: 'COMBO',
++    isOptional: false,
++    remote_combo: {
++      route: '/test/options',
++      item_schema: itemSchema,
++      ...overrides
++    }
++  }
++}
++
++function renderWithProviders(
++  component: typeof RichComboWidget,
++  props: { widget: SimplifiedWidget<string | undefined> }
++) {
++  const queryClient = new QueryClient({
++    defaultOptions: { queries: { retry: false } }
++  })
++  return render(component, {
++    global: {
++      plugins: [
++        i18n,
++        createTestingPinia({ createSpy: vi.fn }),
++        [VueQueryPlugin, { queryClient }]
++      ]
++    },
++    props
++  })
++}
++
++beforeEach(() => {
++  vi.mocked(axios.get).mockReset()
++})
++
++describe('RichComboWidget', () => {
++  it('renders trigger with placeholder when no selection and no items loaded', async () => {
++    vi.mocked(axios.get).mockResolvedValueOnce({ data: [], status: 200 })
++    const widget = makeWidget(makeRemoteCombo())
++    renderWithProviders(RichComboWidget, { widget })
++    expect(screen.getByTestId('remote-combo-trigger')).toBeInTheDocument()
++  })
++
++  it('shows loading state while fetching', async () => {
++    let resolveResp: (value: unknown) => void = () => {}
++    vi.mocked(axios.get).mockImplementationOnce(
++      () =>
++        new Promise((resolve) => {
++          resolveResp = (data) => resolve({ data, status: 200 } as never)
++        })
++    )
++    const widget = makeWidget(makeRemoteCombo())
++    renderWithProviders(RichComboWidget, { widget })
++    const trigger = await screen.findByTestId('remote-combo-trigger')
++    expect(trigger).toHaveTextContent(/loading/i)
++    expect(trigger).toHaveAttribute('aria-disabled', 'true')
++    resolveResp([])
++  })
++
++  it('auto_select="first" selects first item when value is empty', async () => {
++    vi.mocked(axios.get).mockResolvedValueOnce({
++      data: [
++        { id: 'one', name: 'One' },
++        { id: 'two', name: 'Two' }
++      ],
++      status: 200
++    })
++    const widget = makeWidget(makeRemoteCombo({ auto_select: 'first' }))
++    const { emitted } = renderWithProviders(RichComboWidget, { widget })
++    await waitFor(() => {
++      const events = emitted<unknown[]>('update:modelValue')
++      expect(events?.[0]?.[0]).toBe('one')
++    })
++  })
++
++  it('auto_select="last" selects last item when value is empty', async () => {
++    vi.mocked(axios.get).mockResolvedValueOnce({
++      data: [
++        { id: 'a', name: 'A' },
++        { id: 'b', name: 'B' },
++        { id: 'c', name: 'C' }
++      ],
++      status: 200
++    })
++    const widget = makeWidget(makeRemoteCombo({ auto_select: 'last' }))
++    const { emitted } = renderWithProviders(RichComboWidget, { widget })
++    await waitFor(() => {
++      const events = emitted<unknown[]>('update:modelValue')
++      expect(events?.[0]?.[0]).toBe('c')
++    })
++  })
++
++  it('renders refresh button when refresh_button is undefined', () => {
++    vi.mocked(axios.get).mockResolvedValueOnce({ data: [], status: 200 })
++    const widget = makeWidget(makeRemoteCombo())
++    renderWithProviders(RichComboWidget, { widget })
++    expect(screen.getByTestId('remote-combo-refresh')).toBeInTheDocument()
++  })
++
++  it('hides refresh button when refresh_button is false', () => {
++    vi.mocked(axios.get).mockResolvedValueOnce({ data: [], status: 200 })
++    const widget = makeWidget(makeRemoteCombo({ refresh_button: false }))
++    renderWithProviders(RichComboWidget, { widget })
++    expect(screen.queryByTestId('remote-combo-refresh')).toBeNull()
++  })
++})
+diff --git a/src/renderer/extensions/vueNodes/widgets/components/RichComboWidget.vue b/src/renderer/extensions/vueNodes/widgets/components/RichComboWidget.vue
+new file mode 100644
+index 000000000..1ce888d69
+--- /dev/null
++++ b/src/renderer/extensions/vueNodes/widgets/components/RichComboWidget.vue
+@@ -0,0 +1,102 @@
++<script setup lang="ts">
++import { computed } from 'vue'
++
++import { isComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
++import type { RemoteComboConfig } from '@/schemas/nodeDefSchema'
++import type { SimplifiedWidget } from '@/types/simplifiedWidget'
++
++import RemoteComboContent from './RemoteCombo/Content.vue'
++import RemoteComboEmpty from './RemoteCombo/Empty.vue'
++import RemoteComboError from './RemoteCombo/Error.vue'
++import RemoteComboItem from './RemoteCombo/Item.vue'
++import RemoteComboList from './RemoteCombo/List.vue'
++import RemoteComboLoading from './RemoteCombo/Loading.vue'
++import RemoteComboRefresh from './RemoteCombo/Refresh.vue'
++import RemoteComboRoot from './RemoteCombo/Root.vue'
++import RemoteComboSearch from './RemoteCombo/Search.vue'
++import RemoteComboTrigger from './RemoteCombo/Trigger.vue'
++import type { RemoteComboContext } from './RemoteCombo/state'
++import { useRemoteCombo } from '../composables/useRemoteCombo'
++
++const { widget } = defineProps<{
++  widget: SimplifiedWidget<string | undefined>
++}>()
++
++const modelValue = defineModel<string | undefined>()
++
++const comboSpec = computed(() => {
++  if (widget.spec && isComboInputSpec(widget.spec)) {
++    return widget.spec
++  }
++  return undefined
++})
++
++const remoteConfig = computed<RemoteComboConfig | undefined>(
++  () => comboSpec.value?.remote_combo
++)
++
++const fieldLabel = computed(() => widget.label ?? widget.name)
++
++const combo = useRemoteCombo({
++  config: remoteConfig,
++  modelValue,
++  fieldLabel
++})
++
++const context: RemoteComboContext = {
++  isOpen: combo.isOpen,
++  searchQuery: combo.searchQuery,
++  selectedValue: combo.selectedValue,
++  items: combo.items,
++  filteredItems: combo.filteredItems,
++  isLoading: combo.isLoading,
++  isFetching: combo.isFetching,
++  errorMessage: combo.errorMessage,
++  refresh: combo.refresh,
++  select: combo.select,
++  fieldLabel: combo.fieldLabel,
++  previewType: combo.previewType
++}
++
++const showRefreshButton = computed(
++  () => !!remoteConfig.value && remoteConfig.value.refresh_button !== false
++)
++
++const isDisabled = computed(() => widget.options?.disabled === true)
++</script>
++
++<template>
++  <div
++    class="flex w-full min-w-0 items-center gap-1"
++    @pointerdown.stop
++    @pointermove.stop
++    @pointerup.stop
++  >
++    <RemoteComboRoot
++      :context="context"
++      :disabled="isDisabled"
++      class="min-w-0 flex-1"
++    >
++      <RemoteComboTrigger :disabled="isDisabled" class="min-w-0 flex-1" />
++      <RemoteComboContent>
++        <RemoteComboSearch />
++        <RemoteComboLoading v-if="combo.isLoading.value" />
++        <RemoteComboError v-else-if="combo.errorMessage.value" />
++        <RemoteComboList v-else>
++          <RemoteComboItem
++            v-for="(item, index) in combo.filteredItems.value"
++            :key="item.id"
++            :item
++            :index
++          />
++          <RemoteComboEmpty v-if="combo.filteredItems.value.length === 0" />
++        </RemoteComboList>
++      </RemoteComboContent>
++    </RemoteComboRoot>
++    <RemoteComboRefresh
++      v-if="showRefreshButton"
++      :context="context"
++      :disabled="isDisabled"
++    />
++  </div>
++</template>
+diff --git a/src/renderer/extensions/vueNodes/widgets/components/WidgetSelect.vue b/src/renderer/extensions/vueNodes/widgets/components/WidgetSelect.vue
+index 42e9e9da4..93bc1ad0f 100644
+--- a/src/renderer/extensions/vueNodes/widgets/components/WidgetSelect.vue
++++ b/src/renderer/extensions/vueNodes/widgets/components/WidgetSelect.vue
+@@ -1,6 +1,7 @@
+ <template>
++  <RichComboWidget v-if="hasRemoteCombo" v-model="modelValue" :widget />
+   <WidgetSelectDropdown
+-    v-if="isDropdownUIWidget"
++    v-else-if="isDropdownUIWidget"
+     v-model="modelValue"
+     :widget
+     :node-type="widget.nodeType ?? nodeType"
+@@ -24,6 +25,7 @@
+ import { computed } from 'vue'
+ 
+ import { assetService } from '@/platform/assets/services/assetService'
++import RichComboWidget from '@/renderer/extensions/vueNodes/widgets/components/RichComboWidget.vue'
+ import WidgetSelectDefault from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelectDefault.vue'
+ import WidgetSelectDropdown from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelectDropdown.vue'
+ import WidgetWithControl from '@/renderer/extensions/vueNodes/widgets/components/WidgetWithControl.vue'
+@@ -53,6 +55,8 @@ const comboSpec = computed<ComboInputSpec | undefined>(() => {
+   return undefined
+ })
+ 
++const hasRemoteCombo = computed(() => !!comboSpec.value?.remote_combo)
++
+ const specDescriptor = computed<{
+   kind: AssetKind
+   allowUpload: boolean
+diff --git a/src/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdown.vue b/src/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdown.vue
+index 9a5041b97..7fbe082a1 100644
+--- a/src/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdown.vue
++++ b/src/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdown.vue
+@@ -33,6 +33,8 @@ interface Props {
+   accept?: string
+   filterOptions?: FilterOption[]
+   sortOptions?: SortOption[]
++  showSort?: boolean
++  showLayoutSwitcher?: boolean
+   showOwnershipFilter?: boolean
+   ownershipOptions?: OwnershipFilterOption[]
+   showBaseModelFilter?: boolean
+@@ -59,6 +61,8 @@ const {
+   accept,
+   filterOptions = [],
+   sortOptions = getDefaultSortOptions(),
++  showSort = true,
++  showLayoutSwitcher = true,
+   showOwnershipFilter,
+   ownershipOptions,
+   showBaseModelFilter,
+@@ -229,6 +233,8 @@ function handleSelection(item: FormDropdownItem, index: number) {
+         v-model:base-model-selected="baseModelSelected"
+         :filter-options
+         :sort-options
++        :show-sort
++        :show-layout-switcher
+         :show-ownership-filter
+         :ownership-options
+         :show-base-model-filter
+diff --git a/src/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdownInput.vue b/src/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdownInput.vue
+index 2079d2d8d..c06cc1396 100644
+--- a/src/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdownInput.vue
++++ b/src/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdownInput.vue
+@@ -68,7 +68,11 @@ const theButtonStyle = computed(() =>
+           {{ placeholder }}
+         </span>
+         <span v-else>
+-          {{ selectedItems.map((item) => item.label ?? item.name).join(', ') }}
++          {{
++            selectedItems
++              .map((item) => item.label || item.name || item.id)
++              .join(', ')
++          }}
+         </span>
+       </span>
+       <i
+diff --git a/src/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdownMenu.vue b/src/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdownMenu.vue
+index 1ee7cccc4..b980fa644 100644
+--- a/src/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdownMenu.vue
++++ b/src/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdownMenu.vue
+@@ -20,6 +20,8 @@ interface Props {
+   isSelected: (item: FormDropdownItem, index: number) => boolean
+   filterOptions: FilterOption[]
+   sortOptions: SortOption[]
++  showSort?: boolean
++  showLayoutSwitcher?: boolean
+   showOwnershipFilter?: boolean
+   ownershipOptions?: OwnershipFilterOption[]
+   showBaseModelFilter?: boolean
+@@ -31,6 +33,8 @@ const {
+   isSelected,
+   filterOptions,
+   sortOptions,
++  showSort = true,
++  showLayoutSwitcher = true,
+   showOwnershipFilter,
+   ownershipOptions,
+   showBaseModelFilter,
+@@ -112,6 +116,8 @@ const virtualItems = computed<VirtualDropdownItem[]>(() =>
+       v-model:ownership-selected="ownershipSelected"
+       v-model:base-model-selected="baseModelSelected"
+       :sort-options
++      :show-sort
++      :show-layout-switcher
+       :show-ownership-filter
+       :ownership-options
+       :show-base-model-filter
+@@ -145,6 +151,7 @@ const virtualItems = computed<VirtualDropdownItem[]>(() =>
+           :preview-url="item.preview_url ?? ''"
+           :name="item.name"
+           :label="item.label"
++          :description="item.description"
+           :layout="layoutMode"
+           @click="emit('item-click', item, index)"
+         />
+diff --git a/src/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdownMenuActions.vue b/src/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdownMenuActions.vue
+index d9ed13661..ffce1c979 100644
+--- a/src/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdownMenuActions.vue
++++ b/src/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdownMenuActions.vue
+@@ -16,8 +16,10 @@ import type { LayoutMode, SortOption } from './types'
+ 
+ const { t } = useI18n()
+ 
+-defineProps<{
++const { showSort = true, showLayoutSwitcher = true } = defineProps<{
+   sortOptions: SortOption[]
++  showSort?: boolean
++  showLayoutSwitcher?: boolean
+   showOwnershipFilter?: boolean
+   ownershipOptions?: OwnershipFilterOption[]
+   showBaseModelFilter?: boolean
+@@ -112,6 +114,7 @@ function toggleBaseModelSelection(item: FilterOption) {
+     />
+ 
+     <Button
++      v-if="showSort"
+       ref="sortTriggerRef"
+       :aria-label="t('assetBrowser.sortBy')"
+       :title="t('assetBrowser.sortBy')"
+@@ -132,6 +135,7 @@ function toggleBaseModelSelection(item: FilterOption) {
+       <i class="icon-[lucide--arrow-up-down] size-4" />
+     </Button>
+     <Popover
++      v-if="showSort"
+       ref="sortPopoverRef"
+       :dismissable="true"
+       :close-on-escape="true"
+@@ -306,6 +310,7 @@ function toggleBaseModelSelection(item: FilterOption) {
+     </Popover>
+ 
+     <div
++      v-if="showLayoutSwitcher"
+       :class="
+         cn(
+           actionButtonStyle,
+diff --git a/src/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdownMenuItem.vue b/src/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdownMenuItem.vue
+index 827e9ab78..dc0b030b5 100644
+--- a/src/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdownMenuItem.vue
++++ b/src/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdownMenuItem.vue
+@@ -28,11 +28,15 @@ const assetKind = inject(AssetKindKey)
+ 
+ const isVideo = computed(() => assetKind?.value === 'video')
+ const isMesh = computed(() => assetKind?.value === 'mesh')
++const isAudio = computed(() => assetKind?.value === 'audio')
+ 
+ const mediaContainerRef = ref<HTMLElement>()
+ const resolvedMeshPreview = ref<string | null>(null)
+ const meshPreviewAttempted = ref(false)
+ 
++const audioRef = ref<HTMLAudioElement | null>(null)
++const isPlayingAudio = ref(false)
++
+ function toLookupName(name: string): string {
+   const stripped = name.replace(/ \[output\]$/, '')
+   const slash = stripped.lastIndexOf('/')
+@@ -68,6 +72,17 @@ function handleClick() {
+   emit('click', props.index)
+ }
+ 
++function toggleAudioPreview(event: Event) {
++  event.stopPropagation()
++  const audio = audioRef.value
++  if (!audio) return
++  if (audio.paused) {
++    void audio.play().catch(() => {})
++  } else {
++    audio.pause()
++  }
++}
++
+ function handleImageLoad(event: Event) {
+   emit('mediaLoad', event)
+   if (!event.target || !(event.target instanceof HTMLImageElement)) return
+@@ -148,6 +163,35 @@ function handleVideoLoad(event: Event) {
+         muted
+         @loadeddata="handleVideoLoad"
+       />
++      <button
++        v-else-if="previewUrl && isAudio"
++        type="button"
++        :aria-label="
++          isPlayingAudio
++            ? t('widgets.remoteCombo.pauseAudioPreview')
++            : t('widgets.remoteCombo.playAudioPreview')
++        "
++        :aria-pressed="isPlayingAudio"
++        class="flex size-full cursor-pointer items-center justify-center bg-component-node-widget-background hover:bg-component-node-widget-background-hovered"
++        @click.stop="toggleAudioPreview"
++      >
++        <audio
++          ref="audioRef"
++          :src="previewUrl"
++          preload="none"
++          @play="isPlayingAudio = true"
++          @pause="isPlayingAudio = false"
++          @ended="isPlayingAudio = false"
++        />
++        <i
++          :class="
++            cn(
++              'text-secondary size-5',
++              isPlayingAudio ? 'icon-[lucide--pause]' : 'icon-[lucide--play]'
++            )
++          "
++        />
++      </button>
+       <img
+         v-else-if="displayedPreviewUrl"
+         :src="displayedPreviewUrl"
+@@ -193,6 +237,13 @@ function handleVideoLoad(event: Event) {
+       >
+         {{ label ?? name }}
+       </span>
++      <!-- Description -->
++      <span
++        v-if="description && layout !== 'grid'"
++        class="text-secondary line-clamp-1 block overflow-hidden text-xs"
++      >
++        {{ description }}
++      </span>
+       <!-- Meta Data -->
+       <span v-if="actualDimensions" class="text-secondary block text-xs">
+         {{ actualDimensions }}
+diff --git a/src/renderer/extensions/vueNodes/widgets/components/form/dropdown/types.ts b/src/renderer/extensions/vueNodes/widgets/components/form/dropdown/types.ts
+index e4f4678d7..43f0db17e 100644
+--- a/src/renderer/extensions/vueNodes/widgets/components/form/dropdown/types.ts
++++ b/src/renderer/extensions/vueNodes/widgets/components/form/dropdown/types.ts
+@@ -12,7 +12,9 @@ export interface FormDropdownItem {
+   name: string
+   /** Original/alternate label (e.g., original filename) */
+   label?: string
+-  /** Preview image/video URL */
++  /** Short description shown below the name in list view */
++  description?: string
++  /** Preview image/video/audio URL */
+   preview_url?: string
+   /** Whether the item is immutable (public model) - used for ownership filtering */
+   is_immutable?: boolean
+@@ -47,6 +49,7 @@ export interface FormDropdownMenuItemProps {
+   previewUrl: string
+   name: string
+   label?: string
++  description?: string
+   layout?: LayoutMode
+ }
+ 
+diff --git a/src/renderer/extensions/vueNodes/widgets/composables/useRemoteCombo.ts b/src/renderer/extensions/vueNodes/widgets/composables/useRemoteCombo.ts
+new file mode 100644
+index 000000000..74d6ec40a
+--- /dev/null
++++ b/src/renderer/extensions/vueNodes/widgets/composables/useRemoteCombo.ts
+@@ -0,0 +1,163 @@
++import { computed, ref, toValue, watch } from 'vue'
++import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
++import { useI18n } from 'vue-i18n'
++
++import {
++  buildSearchText,
++  extractItems,
++  getByPath,
++  mapToDropdownItem
++} from '@/base/remote/itemSchema'
++import type { DropdownItemShape } from '@/base/remote/itemSchema'
++import { getComfyApiBaseUrl } from '@/config/comfyApi'
++import { useRemoteOptions } from '@/platform/remote/composables/useRemoteOptions'
++import type { RemoteRequestDescriptor } from '@/platform/remote/schema/remoteRequestSchema'
++import type { RemoteComboConfig } from '@/schemas/nodeDefSchema'
++
++import type { RemoteComboPreviewType } from '../components/RemoteCombo/state'
++
++interface UseRemoteComboArgs {
++  config: MaybeRefOrGetter<RemoteComboConfig | undefined | null>
++  modelValue: Ref<string | undefined>
++  fieldLabel?: MaybeRefOrGetter<string>
++  enabled?: MaybeRefOrGetter<boolean>
++}
++
++interface UseRemoteComboResult {
++  isOpen: Ref<boolean>
++  searchQuery: Ref<string>
++  items: ComputedRef<DropdownItemShape[]>
++  filteredItems: ComputedRef<DropdownItemShape[]>
++  isLoading: ComputedRef<boolean>
++  isFetching: ComputedRef<boolean>
++  errorMessage: ComputedRef<string | null>
++  refresh: () => Promise<void>
++  select: (id: string) => void
++  selectedValue: Ref<string | undefined>
++  fieldLabel: ComputedRef<string>
++  previewType: ComputedRef<RemoteComboPreviewType>
++}
++
++export function useRemoteCombo(args: UseRemoteComboArgs): UseRemoteComboResult {
++  const { t } = useI18n()
++  const isOpen = ref(false)
++  const searchQuery = ref('')
++
++  const descriptor = computed<RemoteRequestDescriptor | null>(() => {
++    const config = toValue(args.config)
++    if (!config) return null
++    return {
++      client: 'comfyApi',
++      route: config.route,
++      responseKey: config.response_key,
++      ttl: config.refresh,
++      timeout: config.timeout,
++      maxRetries: config.max_retries
++    }
++  })
++
++  const { rawData, isLoading, isFetching, error, refetch } = useRemoteOptions({
++    descriptor,
++    enabled: args.enabled
++  })
++
++  const rawItems = computed<unknown[]>(() => {
++    const data = rawData.value
++    const config = toValue(args.config)
++    if (data === undefined) return []
++    const items = extractItems(data, config?.response_key)
++    return items ?? []
++  })
++
++  const items = computed<DropdownItemShape[]>(() => {
++    const config = toValue(args.config)
++    const schema = config?.item_schema
++    if (schema) {
++      const previewBaseUrl = getComfyApiBaseUrl()
++      return rawItems.value.map((raw) =>
++        mapToDropdownItem(raw, schema, { previewBaseUrl })
++      )
++    }
++    return rawItems.value.map((raw) => {
++      const val = String(raw ?? '')
++      return { id: val, name: val }
++    })
++  })
++
++  const searchIndex = computed(() => {
++    const config = toValue(args.config)
++    const schema = config?.item_schema
++    const fields = schema?.search_fields
++    if (!schema || !fields?.length) return new Map<string, string>()
++    const index = new Map<string, string>()
++    for (const raw of rawItems.value) {
++      const id = String(getByPath(raw, schema.value_field) ?? '')
++      const text = buildSearchText(raw, fields)
++      if (text) index.set(id, text)
++    }
++    return index
++  })
++
++  const filteredItems = computed<DropdownItemShape[]>(() => {
++    const q = searchQuery.value.trim().toLowerCase()
++    if (!q) return items.value
++    return items.value.filter((item) => {
++      const text = searchIndex.value.get(item.id) ?? item.name.toLowerCase()
++      return text.includes(q)
++    })
++  })
++
++  const errorMessage = computed<string | null>(() => {
++    if (!error.value) return null
++    return t('widgets.remoteCombo.loadFailed')
++  })
++
++  const fieldLabel = computed(() => toValue(args.fieldLabel) ?? '')
++  const previewType = computed<RemoteComboPreviewType>(
++    () => toValue(args.config)?.item_schema?.preview_type ?? 'image'
++  )
++
++  function applyAutoSelect(config: RemoteComboConfig) {
++    if (args.modelValue.value) return
++    const list = items.value
++    if (list.length === 0) return
++    if (config.auto_select === 'first') {
++      args.modelValue.value = list[0].id
++    } else if (config.auto_select === 'last') {
++      args.modelValue.value = list[list.length - 1].id
++    }
++  }
++
++  watch(
++    items,
++    () => {
++      const config = toValue(args.config)
++      if (config) applyAutoSelect(config)
++    },
++    { immediate: true }
++  )
++
++  async function refresh() {
++    await refetch()
++  }
++
++  function select(id: string) {
++    args.modelValue.value = id
++    isOpen.value = false
++  }
++
++  return {
++    isOpen,
++    searchQuery,
++    items,
++    filteredItems,
++    isLoading,
++    isFetching,
++    errorMessage,
++    refresh,
++    select,
++    selectedValue: args.modelValue,
++    fieldLabel,
++    previewType
++  }
++}
+diff --git a/src/renderer/extensions/vueNodes/widgets/composables/useRemoteWidget.test.ts b/src/renderer/extensions/vueNodes/widgets/composables/useRemoteWidget.test.ts
+deleted file mode 100644
+index 06e2abac3..000000000
+--- a/src/renderer/extensions/vueNodes/widgets/composables/useRemoteWidget.test.ts
++++ /dev/null
+@@ -1,753 +0,0 @@
+-import axios from 'axios'
+-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+-
+-import type { IWidget } from '@/lib/litegraph/src/litegraph'
+-import { api } from '@/scripts/api'
+-import { useRemoteWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useRemoteWidget'
+-import type { RemoteWidgetConfig } from '@/schemas/nodeDefSchema'
+-import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
+-
+-function createMockWidget(overrides: Partial<IWidget> = {}): IWidget {
+-  return {
+-    name: 'test_widget',
+-    type: 'text',
+-    value: '',
+-    options: {},
+-    ...overrides
+-  } as Partial<IWidget> as IWidget
+-}
+-
+-const mockCloudAuth = vi.hoisted(() => ({
+-  isCloud: false,
+-  authHeader: null as { Authorization: string } | null
+-}))
+-
+-vi.mock('axios', async (importOriginal) => {
+-  const actual = await importOriginal<typeof axios>()
+-  return {
+-    default: {
+-      ...actual,
+-      get: vi.fn()
+-    }
+-  }
+-})
+-
+-vi.mock('@/platform/distribution/types', () => ({
+-  get isCloud() {
+-    return mockCloudAuth.isCloud
+-  }
+-}))
+-
+-vi.mock('@/stores/authStore', async () => {
+-  return {
+-    useAuthStore: vi.fn(() => ({
+-      getAuthHeader: vi.fn(() => Promise.resolve(mockCloudAuth.authHeader))
+-    }))
+-  }
+-})
+-
+-vi.mock('@/platform/settings/settingStore', async () => {
+-  return {
+-    useSettingStore: () => ({
+-      settings: {}
+-    })
+-  }
+-})
+-
+-const FIRST_BACKOFF = 1000 // backoff is 1s on first retry
+-const DEFAULT_VALUE = 'Loading...'
+-
+-function createMockConfig(overrides = {}): RemoteWidgetConfig {
+-  return {
+-    route: `/api/test/${Date.now()}${Math.random().toString(36).substring(2, 15)}`,
+-    refresh: 0,
+-    ...overrides
+-  }
+-}
+-
+-const createMockOptions = (inputOverrides = {}) => ({
+-  remoteConfig: createMockConfig(inputOverrides),
+-  defaultValue: DEFAULT_VALUE,
+-  node: createMockLGraphNode({
+-    addWidget: vi.fn(() => createMockWidget()),
+-    onRemoved: undefined
+-  }),
+-  widget: createMockWidget()
+-})
+-
+-function mockAxiosResponse(data: unknown, status = 200) {
+-  vi.mocked(axios.get).mockResolvedValueOnce({ data, status })
+-}
+-
+-function mockAxiosError(error: Error | string) {
+-  const err = error instanceof Error ? error : new Error(error)
+-  vi.mocked(axios.get).mockRejectedValueOnce(err)
+-}
+-
+-function createHookWithData(data: unknown, inputOverrides = {}) {
+-  mockAxiosResponse(data)
+-  const hook = useRemoteWidget(createMockOptions(inputOverrides))
+-  return hook
+-}
+-
+-async function setupHookWithResponse(data: unknown, inputOverrides = {}) {
+-  const hook = createHookWithData(data, inputOverrides)
+-  const result = await getResolvedValue(hook)
+-  return { hook, result }
+-}
+-
+-async function getResolvedValue(hook: ReturnType<typeof useRemoteWidget>) {
+-  // Create a promise that resolves when the fetch is complete
+-  const responsePromise = new Promise<void>((resolve) => {
+-    hook.getValue(() => resolve())
+-  })
+-  await responsePromise
+-  return hook.getCachedValue()
+-}
+-
+-describe('useRemoteWidget', () => {
+-  beforeEach(() => {
+-    vi.clearAllMocks()
+-    // Reset mocks
+-    vi.mocked(axios.get).mockReset()
+-    // Reset cache between tests
+-    vi.spyOn(Map.prototype, 'get').mockClear()
+-    vi.spyOn(Map.prototype, 'set').mockClear()
+-    vi.spyOn(Map.prototype, 'delete').mockClear()
+-  })
+-
+-  afterEach(() => {
+-    vi.clearAllMocks()
+-  })
+-
+-  describe('initialization', () => {
+-    it('should create hook with default values', () => {
+-      const hook = useRemoteWidget(createMockOptions())
+-      expect(hook.getCachedValue()).toBeUndefined()
+-      expect(hook.getValue()).toBe('Loading...')
+-    })
+-
+-    it('should generate consistent cache keys', () => {
+-      const options = createMockOptions()
+-      const hook1 = useRemoteWidget(options)
+-      const hook2 = useRemoteWidget(options)
+-      expect(hook1.cacheKey).toBe(hook2.cacheKey)
+-    })
+-
+-    it('should handle query params in cache key', () => {
+-      const hook1 = useRemoteWidget(
+-        createMockOptions({ query_params: { a: 1 } })
+-      )
+-      const hook2 = useRemoteWidget(
+-        createMockOptions({ query_params: { a: 2 } })
+-      )
+-      expect(hook1.cacheKey).not.toBe(hook2.cacheKey)
+-    })
+-  })
+-
+-  describe('fetchOptions', () => {
+-    it('should fetch data successfully', async () => {
+-      const mockData = ['optionA', 'optionB']
+-      const { hook, result } = await setupHookWithResponse(mockData)
+-      expect(result).toEqual(mockData)
+-      expect(vi.mocked(axios.get)).toHaveBeenCalledWith(
+-        hook.cacheKey.split(';')[0], // Get the route part from cache key
+-        expect.any(Object)
+-      )
+-    })
+-
+-    it('should use response_key if provided', async () => {
+-      const mockResponse = { items: ['optionB', 'optionA', 'optionC'] }
+-      const { result } = await setupHookWithResponse(mockResponse, {
+-        response_key: 'items'
+-      })
+-      expect(result).toEqual(mockResponse.items)
+-    })
+-
+-    it('should cache successful responses', async () => {
+-      const mockData = ['optionA', 'optionB', 'optionC', 'optionD']
+-      const { hook } = await setupHookWithResponse(mockData)
+-      const entry = hook.getCacheEntry()
+-
+-      expect(entry?.data).toEqual(mockData)
+-      expect(entry?.error).toBeNull()
+-    })
+-
+-    it('should handle fetch errors', async () => {
+-      const error = new Error('Network error')
+-      mockAxiosError(error)
+-
+-      const { hook } = await setupHookWithResponse([])
+-
+-      const entry = hook.getCacheEntry()
+-      expect(entry?.error).toBeTruthy()
+-      expect(entry?.lastErrorTime).toBeDefined()
+-    })
+-
+-    it('should handle empty array responses', async () => {
+-      const { result } = await setupHookWithResponse([])
+-      expect(result).toEqual([])
+-    })
+-
+-    it('should handle malformed response data', async () => {
+-      const hook = useRemoteWidget(createMockOptions())
+-
+-      mockAxiosResponse(null)
+-      const data1 = hook.getValue()
+-
+-      mockAxiosResponse(undefined)
+-      const data2 = hook.getValue()
+-
+-      expect(data1).toBe(DEFAULT_VALUE)
+-      expect(data2).toBe(DEFAULT_VALUE)
+-    })
+-
+-    it('should handle non-200 status codes', async () => {
+-      mockAxiosError('Request failed with status code 404')
+-
+-      const { hook } = await setupHookWithResponse([])
+-      const entry = hook.getCacheEntry()
+-      expect(entry?.error?.message).toBe('Request failed with status code 404')
+-    })
+-  })
+-
+-  describe('refresh behavior', () => {
+-    beforeEach(() => {
+-      vi.useFakeTimers()
+-    })
+-
+-    afterEach(() => {
+-      vi.useRealTimers()
+-      vi.clearAllMocks()
+-    })
+-
+-    describe('permanent widgets (no refresh)', () => {
+-      it('permanent widgets should not attempt fetch after initialization', async () => {
+-        const mockData = ['data that is permanent after initialization']
+-        const { hook } = await setupHookWithResponse(mockData)
+-
+-        await getResolvedValue(hook)
+-        await getResolvedValue(hook)
+-
+-        expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(1)
+-      })
+-
+-      it('permanent widgets should re-fetch if refreshValue is called', async () => {
+-        const mockData = ['data that is permanent after initialization']
+-        const { hook } = await setupHookWithResponse(mockData)
+-
+-        await getResolvedValue(hook)
+-        expect(hook.getCachedValue()).toEqual(mockData)
+-
+-        const refreshedData = ['data that user forced to be fetched']
+-        mockAxiosResponse(refreshedData)
+-
+-        hook.refreshValue()
+-
+-        // Wait for cache to update with refreshed data
+-        await vi.waitFor(() => {
+-          expect(hook.getCachedValue()).toEqual(refreshedData)
+-        })
+-
+-        expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(2)
+-      })
+-
+-      it('permanent widgets should still retry if request fails', async () => {
+-        mockAxiosError('Network error')
+-
+-        const hook = useRemoteWidget(createMockOptions())
+-        await getResolvedValue(hook)
+-        expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(1)
+-
+-        vi.setSystemTime(Date.now() + FIRST_BACKOFF)
+-        const secondData = await getResolvedValue(hook)
+-        expect(secondData).toBe('Loading...')
+-        expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(2)
+-      })
+-
+-      it('should treat empty refresh field as permanent', async () => {
+-        const { hook } = await setupHookWithResponse(['data that is permanent'])
+-
+-        await getResolvedValue(hook)
+-        await getResolvedValue(hook)
+-
+-        expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(1)
+-      })
+-    })
+-
+-    it('should refresh when data is stale', async () => {
+-      const refresh = 256
+-      const mockData1 = ['option1']
+-      const mockData2 = ['option2']
+-
+-      const { hook } = await setupHookWithResponse(mockData1, { refresh })
+-      mockAxiosResponse(mockData2)
+-
+-      vi.setSystemTime(Date.now() + refresh)
+-      const newData = await getResolvedValue(hook)
+-
+-      expect(newData).toEqual(mockData2)
+-      expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(2)
+-    })
+-
+-    it('should not refresh when data is not stale', async () => {
+-      const { hook } = await setupHookWithResponse(['option1'], {
+-        refresh: 512
+-      })
+-
+-      vi.setSystemTime(Date.now() + 128)
+-      await getResolvedValue(hook)
+-
+-      expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(1)
+-    })
+-
+-    it('should use backoff instead of refresh after error', async () => {
+-      const refresh = 4096
+-      const { hook } = await setupHookWithResponse(['first success'], {
+-        refresh
+-      })
+-
+-      mockAxiosError('Network error')
+-      vi.setSystemTime(Date.now() + refresh)
+-      await getResolvedValue(hook)
+-      expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(2)
+-
+-      mockAxiosResponse(['second success'])
+-      vi.setSystemTime(Date.now() + FIRST_BACKOFF)
+-      const thirdData = await getResolvedValue(hook)
+-      expect(thirdData).toEqual(['second success'])
+-      expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(3)
+-    })
+-
+-    it('should use last valid value after error', async () => {
+-      const refresh = 4096
+-      const { hook } = await setupHookWithResponse(['a valid value'], {
+-        refresh
+-      })
+-
+-      mockAxiosError('Network error')
+-      vi.setSystemTime(Date.now() + refresh)
+-      const secondData = await getResolvedValue(hook)
+-
+-      expect(secondData).toEqual(['a valid value'])
+-      expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(2)
+-    })
+-  })
+-
+-  describe('error handling and backoff', () => {
+-    beforeEach(() => {
+-      vi.useFakeTimers()
+-    })
+-
+-    afterEach(() => {
+-      vi.useRealTimers()
+-    })
+-
+-    it('should implement exponential backoff on errors', async () => {
+-      mockAxiosError('Network error')
+-
+-      const hook = useRemoteWidget(createMockOptions())
+-      await getResolvedValue(hook)
+-      const entry1 = hook.getCacheEntry()
+-      expect(entry1?.error).toBeTruthy()
+-
+-      await getResolvedValue(hook)
+-      expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(1)
+-
+-      vi.setSystemTime(Date.now() + 500)
+-      await getResolvedValue(hook)
+-      expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(1) // Still backing off
+-
+-      vi.setSystemTime(Date.now() + 3000)
+-      await getResolvedValue(hook)
+-      expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(2)
+-      expect(entry1?.data).toBeDefined()
+-    })
+-
+-    it('should reset error state on successful fetch', async () => {
+-      mockAxiosError('Network error')
+-      const hook = useRemoteWidget(createMockOptions())
+-      const firstData = await getResolvedValue(hook)
+-      expect(firstData).toBe('Loading...')
+-
+-      vi.setSystemTime(Date.now() + 3000)
+-      mockAxiosResponse(['option1'])
+-      const secondData = await getResolvedValue(hook)
+-      expect(secondData).toEqual(['option1'])
+-
+-      const entry = hook.getCacheEntry()
+-      expect(entry?.error).toBeNull()
+-      expect(entry?.retryCount).toBe(0)
+-    })
+-
+-    it('should save successful data after backoff', async () => {
+-      mockAxiosError('Network error')
+-      const hook = useRemoteWidget(createMockOptions())
+-      await getResolvedValue(hook)
+-      const entry1 = hook.getCacheEntry()
+-      expect(entry1?.error).toBeTruthy()
+-
+-      vi.setSystemTime(Date.now() + 3000)
+-      mockAxiosResponse(['success after backoff'])
+-      const secondData = await getResolvedValue(hook)
+-      expect(secondData).toEqual(['success after backoff'])
+-
+-      const entry2 = hook.getCacheEntry()
+-      expect(entry2?.error).toBeNull()
+-      expect(entry2?.retryCount).toBe(0)
+-    })
+-
+-    it('should save successful data after multiple backoffs', async () => {
+-      mockAxiosError('Network error')
+-      mockAxiosError('Network error')
+-      mockAxiosError('Network error')
+-      const hook = useRemoteWidget(createMockOptions())
+-      await getResolvedValue(hook)
+-      const entry1 = hook.getCacheEntry()
+-      expect(entry1?.error).toBeTruthy()
+-
+-      vi.setSystemTime(Date.now() + 3000)
+-      const secondData = await getResolvedValue(hook)
+-      expect(secondData).toBe('Loading...')
+-      expect(entry1?.error).toBeDefined()
+-
+-      vi.setSystemTime(Date.now() + 9000)
+-      const thirdData = await getResolvedValue(hook)
+-      expect(thirdData).toBe('Loading...')
+-      expect(entry1?.error).toBeDefined()
+-
+-      vi.setSystemTime(Date.now() + 120_000)
+-      mockAxiosResponse(['success after multiple backoffs'])
+-      const fourthData = await getResolvedValue(hook)
+-      expect(fourthData).toEqual(['success after multiple backoffs'])
+-
+-      const entry2 = hook.getCacheEntry()
+-      expect(entry2?.error).toBeNull()
+-      expect(entry2?.retryCount).toBe(0)
+-    })
+-  })
+-
+-  describe('cache management', () => {
+-    it('should clear cache entries', async () => {
+-      const { hook } = await setupHookWithResponse(['to be cleared'])
+-      expect(hook.getCachedValue()).toBeDefined()
+-
+-      hook.refreshValue()
+-      expect(hook.getCachedValue()).toBe(DEFAULT_VALUE)
+-    })
+-
+-    it('should prevent duplicate in-flight requests', async () => {
+-      const mockData = ['non-duplicate']
+-      mockAxiosResponse(mockData)
+-
+-      const hook = useRemoteWidget(createMockOptions())
+-
+-      // Start two concurrent getValue calls
+-      const promise1 = new Promise<void>((resolve) => {
+-        hook.getValue(() => resolve())
+-      })
+-      const promise2 = new Promise<void>((resolve) => {
+-        hook.getValue(() => resolve())
+-      })
+-
+-      // Wait for both e
+-      await Promise.all([promise1, promise2])
+-
+-      // Both should see the same cached data
+-      expect(hook.getCachedValue()).toEqual(mockData)
+-      // Only one axios call should have been made
+-      expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(1)
+-    })
+-  })
+-
+-  describe('concurrent access and multiple instances', () => {
+-    it('should handle concurrent hook instances with same route', async () => {
+-      mockAxiosResponse(['shared data'])
+-      const options = createMockOptions()
+-      const hook1 = useRemoteWidget(options)
+-      const hook2 = useRemoteWidget(options)
+-
+-      // Since they have the same route, only one request will be made
+-      await Promise.race([getResolvedValue(hook1), getResolvedValue(hook2)])
+-
+-      const data1 = hook1.getValue()
+-      const data2 = hook2.getValue()
+-
+-      expect(data1).toEqual(['shared data'])
+-      expect(data2).toEqual(['shared data'])
+-      expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(1)
+-      expect(hook1.getCachedValue()).toBe(hook2.getCachedValue())
+-    })
+-
+-    it('should use shared cache across multiple hooks', async () => {
+-      mockAxiosResponse(['shared data'])
+-      const options = createMockOptions()
+-      const hook1 = useRemoteWidget(options)
+-      const hook2 = useRemoteWidget(options)
+-      const hook3 = useRemoteWidget(options)
+-      const hook4 = useRemoteWidget(options)
+-
+-      const data1 = await getResolvedValue(hook1)
+-      const data2 = await getResolvedValue(hook2)
+-      const data3 = await getResolvedValue(hook3)
+-      const data4 = await getResolvedValue(hook4)
+-
+-      expect(data1).toEqual(['shared data'])
+-      expect(data2).toBe(data1)
+-      expect(data3).toBe(data1)
+-      expect(data4).toBe(data1)
+-      expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(1)
+-      expect(hook1.getCachedValue()).toBe(hook2.getCachedValue())
+-      expect(hook2.getCachedValue()).toBe(hook3.getCachedValue())
+-      expect(hook3.getCachedValue()).toBe(hook4.getCachedValue())
+-    })
+-
+-    it('should handle rapid cache clearing during fetch', async () => {
+-      let resolvePromise: (value: { data: unknown; status?: number }) => void
+-      const delayedPromise = new Promise<{ data: unknown; status?: number }>(
+-        (resolve) => {
+-          resolvePromise = resolve
+-        }
+-      )
+-
+-      vi.mocked(axios.get).mockImplementationOnce(() => delayedPromise)
+-
+-      const hook = useRemoteWidget(createMockOptions())
+-      hook.getValue()
+-      hook.refreshValue()
+-
+-      resolvePromise!({ data: ['delayed data'] })
+-      const data = await getResolvedValue(hook)
+-
+-      // The value should be the default value because the refreshValue
+-      // clears the cache and the fetch is aborted
+-      expect(data).toEqual(DEFAULT_VALUE)
+-      expect(hook.getCachedValue()).toBe(DEFAULT_VALUE)
+-    })
+-
+-    it('should handle widget destroyed during fetch', async () => {
+-      let resolvePromise: (value: { data: unknown; status?: number }) => void
+-      const delayedPromise = new Promise<{ data: unknown; status?: number }>(
+-        (resolve) => {
+-          resolvePromise = resolve
+-        }
+-      )
+-
+-      vi.mocked(axios.get).mockImplementationOnce(() => delayedPromise)
+-
+-      let hook: ReturnType<typeof useRemoteWidget> | null =
+-        useRemoteWidget(createMockOptions())
+-      const fetchPromise = hook.getValue()
+-
+-      hook = null
+-
+-      resolvePromise!({ data: ['delayed data'] })
+-      await fetchPromise
+-
+-      expect(hook).toBeNull()
+-      hook = useRemoteWidget(createMockOptions())
+-
+-      const data2 = await getResolvedValue(hook)
+-      expect(data2).toEqual(DEFAULT_VALUE)
+-    })
+-  })
+-
+-  describe('cloud distribution authentication', () => {
+-    describe('when distribution is cloud', () => {
+-      describe('when authenticated', () => {
+-        it('passes Firebase authentication token in request headers', async () => {
+-          const mockData = ['authenticated data']
+-          mockCloudAuth.authHeader = null
+-          mockCloudAuth.isCloud = true
+-          mockCloudAuth.authHeader = { Authorization: 'Bearer test-token' }
+-          mockAxiosResponse(mockData)
+-
+-          const hook = useRemoteWidget(createMockOptions())
+-          await getResolvedValue(hook)
+-
+-          expect(vi.mocked(axios.get)).toHaveBeenCalledWith(
+-            expect.any(String),
+-            expect.objectContaining({
+-              headers: { Authorization: 'Bearer test-token' }
+-            })
+-          )
+-        })
+-      })
+-    })
+-
+-    describe('when distribution is not cloud', () => {
+-      it('bypasses authentication for non-cloud environments', async () => {
+-        const mockData = ['non-cloud data']
+-        mockCloudAuth.isCloud = false
+-        mockAxiosResponse(mockData)
+-
+-        const hook = useRemoteWidget(createMockOptions())
+-        await getResolvedValue(hook)
+-
+-        const axiosCall = vi.mocked(axios.get).mock.calls[0][1]
+-        expect(axiosCall).not.toHaveProperty('headers')
+-      })
+-    })
+-  })
+-
+-  describe('auto-refresh on task completion', () => {
+-    it('should add auto-refresh toggle widget', () => {
+-      const mockNode = createMockLGraphNode({
+-        addWidget: vi.fn(),
+-        widgets: []
+-      })
+-      const mockWidget = createMockWidget({
+-        refresh: vi.fn()
+-      })
+-
+-      useRemoteWidget({
+-        remoteConfig: createMockConfig(),
+-        defaultValue: DEFAULT_VALUE,
+-        node: mockNode,
+-        widget: mockWidget
+-      })
+-
+-      // Should add auto-refresh toggle widget
+-      expect(mockNode.addWidget).toHaveBeenCalledWith(
+-        'toggle',
+-        'Auto-refresh after generation',
+-        false,
+-        expect.any(Function),
+-        {
+-          serialize: false
+-        }
+-      )
+-    })
+-
+-    it('should register event listener when enabled', async () => {
+-      const addEventListenerSpy = vi.spyOn(api, 'addEventListener')
+-
+-      const mockNode = createMockLGraphNode({
+-        addWidget: vi.fn(),
+-        widgets: []
+-      })
+-      const mockWidget = createMockWidget({
+-        refresh: vi.fn()
+-      })
+-
+-      useRemoteWidget({
+-        remoteConfig: createMockConfig(),
+-        defaultValue: DEFAULT_VALUE,
+-        node: mockNode,
+-        widget: mockWidget
+-      })
+-
+-      // Event listener should be registered immediately
+-      expect(addEventListenerSpy).toHaveBeenCalledWith(
+-        'execution_success',
+-        expect.any(Function)
+-      )
+-    })
+-
+-    it('should refresh widget when workflow completes successfully', async () => {
+-      let executionSuccessHandler: (() => void) | undefined
+-
+-      vi.spyOn(api, 'addEventListener').mockImplementation((event, handler) => {
+-        if (event === 'execution_success') {
+-          executionSuccessHandler = handler as () => void
+-        }
+-      })
+-
+-      const mockNode = createMockLGraphNode({
+-        addWidget: vi.fn(),
+-        widgets: []
+-      })
+-      const mockWidget = createMockWidget({})
+-
+-      useRemoteWidget({
+-        remoteConfig: createMockConfig(),
+-        defaultValue: DEFAULT_VALUE,
+-        node: mockNode,
+-        widget: mockWidget
+-      })
+-
+-      // Spy on the refresh function that was added by useRemoteWidget
+-      const refreshSpy = vi.spyOn(mockWidget, 'refresh')
+-
+-      // Get the toggle callback and enable auto-refresh
+-      const addWidgetMock = mockNode.addWidget as ReturnType<typeof vi.fn>
+-      const toggleCallback = addWidgetMock.mock.calls.find(
+-        (call: unknown[]) => call[0] === 'toggle'
+-      )?.[3]
+-      toggleCallback?.(true)
+-
+-      // Simulate workflow completion
+-      executionSuccessHandler?.()
+-
+-      expect(refreshSpy).toHaveBeenCalled()
+-    })
+-
+-    it('should not refresh when toggle is disabled', async () => {
+-      let executionSuccessHandler: (() => void) | undefined
+-
+-      vi.spyOn(api, 'addEventListener').mockImplementation((event, handler) => {
+-        if (event === 'execution_success') {
+-          executionSuccessHandler = handler as () => void
+-        }
+-      })
+-
+-      const mockNode = createMockLGraphNode({
+-        addWidget: vi.fn(),
+-        widgets: []
+-      })
+-      const mockWidget = createMockWidget({})
+-
+-      useRemoteWidget({
+-        remoteConfig: createMockConfig(),
+-        defaultValue: DEFAULT_VALUE,
+-        node: mockNode,
+-        widget: mockWidget
+-      })
+-
+-      // Spy on the refresh function that was added by useRemoteWidget
+-      const refreshSpy = vi.spyOn(mockWidget, 'refresh')
+-
+-      // Toggle is disabled by default
+-      // Simulate workflow completion
+-      executionSuccessHandler?.()
+-
+-      expect(refreshSpy).not.toHaveBeenCalled()
+-    })
+-
+-    it('should cleanup event listener on node removal', async () => {
+-      let executionSuccessHandler: (() => void) | undefined
+-
+-      vi.spyOn(api, 'addEventListener').mockImplementation((event, handler) => {
+-        if (event === 'execution_success') {
+-          executionSuccessHandler = handler as () => void
+-        }
+-      })
+-
+-      const removeEventListenerSpy = vi.spyOn(api, 'removeEventListener')
+-
+-      const mockNode = createMockLGraphNode({
+-        addWidget: vi.fn(),
+-        widgets: [],
+-        onRemoved: undefined
+-      })
+-      const mockWidget = createMockWidget({
+-        refresh: vi.fn()
+-      })
+-
+-      useRemoteWidget({
+-        remoteConfig: createMockConfig(),
+-        defaultValue: DEFAULT_VALUE,
+-        node: mockNode,
+-        widget: mockWidget
+-      })
+-
+-      // Simulate node removal
+-      mockNode.onRemoved?.()
+-
+-      expect(removeEventListenerSpy).toHaveBeenCalledWith(
+-        'execution_success',
+-        executionSuccessHandler
+-      )
+-    })
+-  })
+-})
+diff --git a/src/renderer/extensions/vueNodes/widgets/composables/useRemoteWidget.ts b/src/renderer/extensions/vueNodes/widgets/composables/useRemoteWidget.ts
+index 6006ded3d..c1317d68f 100644
+--- a/src/renderer/extensions/vueNodes/widgets/composables/useRemoteWidget.ts
++++ b/src/renderer/extensions/vueNodes/widgets/composables/useRemoteWidget.ts
+@@ -1,26 +1,20 @@
+ import axios from 'axios'
+ 
++import { isRetriableError } from '@/base/remote/retry'
+ import { useChainCallback } from '@/composables/functional/useChainCallback'
+ import type { IWidget, LGraphNode } from '@/lib/litegraph/src/litegraph'
+ import { isCloud } from '@/platform/distribution/types'
++import { getAppQueryClient } from '@/platform/remote/queryClient'
++import { remoteOptionKeys } from '@/platform/remote/queryKeys'
++import type { RemoteRequestDescriptor } from '@/platform/remote/schema/remoteRequestSchema'
+ import type { RemoteWidgetConfig } from '@/schemas/nodeDefSchema'
+ import { api } from '@/scripts/api'
++import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
+ import { useAuthStore } from '@/stores/authStore'
+ 
+ const MAX_RETRIES = 5
+ const TIMEOUT = 4096
+ 
+-interface CacheEntry<T> {
+-  data: T
+-  timestamp?: number
+-  error?: Error | null
+-  fetchPromise?: Promise<T>
+-  controller?: AbortController
+-  lastErrorTime?: number
+-  retryCount?: number
+-  failed?: boolean
+-}
+-
+ async function getAuthHeaders() {
+   if (isCloud) {
+     const authStore = useAuthStore()
+@@ -32,57 +26,32 @@ async function getAuthHeaders() {
+   return {}
+ }
+ 
+-const dataCache = new Map<string, CacheEntry<unknown>>()
+-
+-const createCacheKey = (config: RemoteWidgetConfig): string => {
+-  const { route, query_params = {}, refresh = 0 } = config
+-
+-  const paramsKey = Object.entries(query_params)
+-    .sort(([a], [b]) => a.localeCompare(b))
+-    .map(([k, v]) => `${k}=${v}`)
+-    .join('&')
+-
+-  return [route, `r=${refresh}`, paramsKey].join(';')
+-}
+-
+-const getBackoff = (retryCount: number) =>
+-  Math.min(1000 * Math.pow(2, retryCount), 512)
+-
+-const isInitialized = (entry: CacheEntry<unknown> | undefined) =>
+-  entry?.data !== undefined &&
+-  entry?.timestamp !== undefined &&
+-  entry.timestamp > 0
+-
+-const isStale = (entry: CacheEntry<unknown> | undefined, ttl: number) =>
+-  entry?.timestamp && Date.now() - entry.timestamp >= ttl
+-
+-const isFetching = (entry: CacheEntry<unknown> | undefined) =>
+-  entry?.fetchPromise !== undefined
+-
+-const isFailed = (entry: CacheEntry<unknown> | undefined) =>
+-  entry?.failed === true
+-
+-const isBackingOff = (entry: CacheEntry<unknown> | undefined) =>
+-  entry?.error &&
+-  entry?.lastErrorTime &&
+-  Date.now() - entry.lastErrorTime < getBackoff(entry.retryCount || 0)
+-
+-const fetchData = async (
+-  config: RemoteWidgetConfig,
+-  controller: AbortController
+-) => {
+-  const { route, response_key, query_params, timeout = TIMEOUT } = config
+-
++const createDescriptor = (
++  config: RemoteWidgetConfig
++): RemoteRequestDescriptor => ({
++  client: 'comfyApi',
++  route: config.route,
++  params: config.query_params,
++  responseKey: config.response_key,
++  ttl: config.refresh,
++  timeout: config.timeout ?? TIMEOUT,
++  maxRetries: config.max_retries ?? MAX_RETRIES
++})
++
++async function fetchRemoteWidgetData(
++  descriptor: RemoteRequestDescriptor,
++  signal: AbortSignal
++): Promise<unknown> {
+   const authHeaders = await getAuthHeaders()
+-
+-  const res = await axios.get(route, {
+-    params: query_params,
+-    signal: controller.signal,
+-    timeout,
++  const res = await axios.get(descriptor.route, {
++    params: descriptor.params,
++    signal,
++    timeout: descriptor.timeout,
+     ...authHeaders
+   })
+-
+-  return response_key ? res.data[response_key] : res.data
++  return descriptor.responseKey
++    ? (res.data as Record<string, unknown>)[descriptor.responseKey]
++    : res.data
+ }
+ 
+ export function useRemoteWidget<
+@@ -94,42 +63,39 @@ export function useRemoteWidget<
+   widget: IWidget
+ }) {
+   const { remoteConfig, defaultValue, node, widget } = options
+-  const { refresh = 0, max_retries = MAX_RETRIES } = remoteConfig
+-  const isPermanent = refresh <= 0
+-  const cacheKey = createCacheKey(remoteConfig)
++  const descriptor = createDescriptor(remoteConfig)
++  const queryClient = getAppQueryClient()
++  const getQueryKey = () =>
++    remoteOptionKeys.byRoute(descriptor, {
++      userId: useAuthStore().userId ?? null,
++      workspaceId: null,
++      apiKeyBucket: useApiKeyAuthStore().getApiKey() ? 'apikey' : 'anon'
++    })
++
+   let isLoaded = false
+   let refreshQueued = false
++  let cachedValue: T | undefined
+ 
+-  const setSuccess = (entry: CacheEntry<T>, data: T) => {
+-    entry.retryCount = 0
+-    entry.lastErrorTime = 0
+-    entry.error = null
+-    entry.timestamp = Date.now()
+-    entry.data = data ?? defaultValue
+-  }
+-
+-  const setError = (entry: CacheEntry<T>, error: Error | unknown) => {
+-    entry.retryCount = (entry.retryCount || 0) + 1
+-    entry.lastErrorTime = Date.now()
+-    entry.error = error instanceof Error ? error : new Error(String(error))
+-    entry.data ??= defaultValue
+-    entry.fetchPromise = undefined
+-    if (entry.retryCount >= max_retries) {
+-      setFailed(entry)
++  const fetchValue = async (): Promise<T> => {
++    try {
++      const data = await queryClient.fetchQuery({
++        queryKey: getQueryKey(),
++        queryFn: ({ signal }) => fetchRemoteWidgetData(descriptor, signal),
++        staleTime: remoteConfig.refresh,
++        retry: (failureCount, error) =>
++          failureCount < (remoteConfig.max_retries ?? MAX_RETRIES) &&
++          isRetriableError(error)
++      })
++      cachedValue = (data ?? defaultValue) as T
++      return cachedValue
++    } catch (err) {
++      const message = err instanceof Error ? err.message : 'Unknown error'
++      console.warn('Remote widget fetch failed:', message)
++      cachedValue = (cachedValue ?? defaultValue) as T
++      return cachedValue
+     }
+   }
+ 
+-  const setFailed = (entry: CacheEntry<T>) => {
+-    dataCache.set(cacheKey, {
+-      data: entry.data ?? defaultValue,
+-      failed: true
+-    })
+-  }
+-
+-  const isFirstLoad = () => {
+-    return !isLoaded && isInitialized(dataCache.get(cacheKey))
+-  }
+-
+   const onFirstLoad = (data: T | T[]) => {
+     isLoaded = true
+     const nextValue =
+@@ -139,85 +105,37 @@ export function useRemoteWidget<
+     node.graph?.setDirtyCanvas(true)
+   }
+ 
+-  const fetchValue = async () => {
+-    const entry = dataCache.get(cacheKey)
+-
+-    if (isFailed(entry)) return entry!.data as T
+-
+-    const isValid =
+-      isInitialized(entry) && (isPermanent || !isStale(entry, refresh))
+-    if (isValid || isBackingOff(entry) || isFetching(entry))
+-      return entry!.data as T
+-
+-    const currentEntry: CacheEntry<T> = (entry as
+-      | CacheEntry<T>
+-      | undefined) || { data: defaultValue }
+-    dataCache.set(cacheKey, currentEntry)
+-
+-    try {
+-      currentEntry.controller = new AbortController()
+-      currentEntry.fetchPromise = fetchData(
+-        remoteConfig,
+-        currentEntry.controller
+-      )
+-      const data = await currentEntry.fetchPromise
+-
+-      setSuccess(currentEntry, data)
+-      return currentEntry.data
+-    } catch (err) {
+-      setError(currentEntry, err)
+-      return currentEntry.data
+-    } finally {
+-      currentEntry.fetchPromise = undefined
+-      currentEntry.controller = undefined
+-    }
+-  }
+-
+   const onRefresh = () => {
+-    if (remoteConfig.control_after_refresh) {
+-      const data = getCachedValue()
+-      if (!Array.isArray(data)) return // control_after_refresh is only supported for array values
+-
+-      switch (remoteConfig.control_after_refresh) {
+-        case 'first':
+-          widget.value = data[0] ?? defaultValue
+-          break
+-        case 'last':
+-          widget.value = data.at(-1) ?? defaultValue
+-          break
+-      }
+-      widget.callback?.(widget.value)
+-      node.graph?.setDirtyCanvas(true)
++    if (!remoteConfig.control_after_refresh) return
++    const data = cachedValue
++    if (!Array.isArray(data)) return
++
++    switch (remoteConfig.control_after_refresh) {
++      case 'first':
++        widget.value = data[0] ?? defaultValue
++        break
++      case 'last':
++        widget.value = data.at(-1) ?? defaultValue
++        break
+     }
++    widget.callback?.(widget.value)
++    node.graph?.setDirtyCanvas(true)
+   }
+ 
+-  /**
+-   * Clear the widget's cached value, forcing a refresh on next access (e.g., a new render)
+-   */
+-  const clearCachedValue = () => {
+-    const entry = dataCache.get(cacheKey)
+-    if (!entry) return
+-    if (entry.fetchPromise) entry.controller?.abort() // Abort in-flight request
+-    dataCache.delete(cacheKey)
+-  }
+-
+-  /**
+-   * Get the cached value of the widget without starting a new fetch.
+-   * @returns the most recently computed value of the widget.
+-   */
+-  function getCachedValue() {
+-    return dataCache.get(cacheKey)?.data as T
++  function getCachedValue(): T {
++    if (cachedValue !== undefined) return cachedValue
++    const fromQuery = queryClient.getQueryData<T>(getQueryKey())
++    if (fromQuery !== undefined) {
++      cachedValue = fromQuery
++      return fromQuery
++    }
++    return defaultValue
+   }
+ 
+-  /**
+-   * Getter of the remote property of the widget (e.g., options.values, value, etc.).
+-   * Starts the fetch process then returns the cached value immediately.
+-   * @returns the most recent value of the widget.
+-   */
+   function getValue(onFulfilled?: () => void) {
+     void fetchValue()
+       .then((data) => {
+-        if (isFirstLoad()) onFirstLoad(data)
++        if (!isLoaded) onFirstLoad(data)
+         if (refreshQueued && data !== defaultValue) {
+           onRefresh()
+           refreshQueued = false
+@@ -230,36 +148,26 @@ export function useRemoteWidget<
+     return getCachedValue() ?? defaultValue
+   }
+ 
+-  /**
+-   * Force the widget to refresh its value
+-   */
+   widget.refresh = function () {
+     refreshQueued = true
+-    clearCachedValue()
+-    getValue()
++    void queryClient.invalidateQueries({ queryKey: getQueryKey() }).then(() => {
++      getValue()
++    })
+   }
+ 
+-  /**
+-   * Add a refresh button to the node that, when clicked, will force the widget to refresh
+-   */
+   function addRefreshButton() {
+     node.addWidget('button', 'refresh', 'refresh', widget.refresh)
+   }
+ 
+-  /**
+-   * Add auto-refresh toggle widget and execution success listener
+-   */
+   function addAutoRefreshToggle() {
+     let autoRefreshEnabled = false
+ 
+-    // Handler for execution success
+     const handleExecutionSuccess = () => {
+       if (autoRefreshEnabled && widget.refresh) {
+         widget.refresh()
+       }
+     }
+ 
+-    // Add toggle widget
+     const autoRefreshWidget = node.addWidget(
+       'toggle',
+       'Auto-refresh after generation',
+@@ -272,10 +180,8 @@ export function useRemoteWidget<
+       }
+     )
+ 
+-    // Register event listener
+     api.addEventListener('execution_success', handleExecutionSuccess)
+ 
+-    // Cleanup on node removal
+     node.onRemoved = useChainCallback(node.onRemoved, function () {
+       api.removeEventListener('execution_success', handleExecutionSuccess)
+     })
+@@ -283,7 +189,6 @@ export function useRemoteWidget<
+     return autoRefreshWidget
+   }
+ 
+-  // Always add auto-refresh toggle for remote widgets
+   addAutoRefreshToggle()
+ 
+   return {
+@@ -291,8 +196,6 @@ export function useRemoteWidget<
+     getValue,
+     refreshValue: widget.refresh,
+     addRefreshButton,
+-    getCacheEntry: () => dataCache.get(cacheKey),
+-
+-    cacheKey
++    getQueryKey
+   }
+ }
+diff --git a/src/schemas/comboInputOptions.xor.test.ts b/src/schemas/comboInputOptions.xor.test.ts
+new file mode 100644
+index 000000000..674c432d8
+--- /dev/null
++++ b/src/schemas/comboInputOptions.xor.test.ts
+@@ -0,0 +1,41 @@
++import { describe, expect, it } from 'vitest'
++
++import { zComboInputOptionsValidated } from '@/schemas/nodeDefSchema'
++
++describe('zComboInputOptionsValidated XOR enforcement', () => {
++  const remote = {
++    route: '/legacy'
++  }
++  const remote_combo = {
++    route: '/rich',
++    item_schema: { value_field: 'id', label_field: 'name' }
++  }
++
++  it('accepts options without remote or remote_combo', () => {
++    const result = zComboInputOptionsValidated.safeParse({})
++    expect(result.success).toBe(true)
++  })
++
++  it('accepts options with only remote', () => {
++    const result = zComboInputOptionsValidated.safeParse({ remote })
++    expect(result.success).toBe(true)
++  })
++
++  it('accepts options with only remote_combo', () => {
++    const result = zComboInputOptionsValidated.safeParse({ remote_combo })
++    expect(result.success).toBe(true)
++  })
++
++  it('rejects options with both remote and remote_combo', () => {
++    const result = zComboInputOptionsValidated.safeParse({
++      remote,
++      remote_combo
++    })
++    expect(result.success).toBe(false)
++    if (!result.success) {
++      expect(result.error.issues[0]?.message).toContain(
++        'Combo input cannot specify both'
++      )
++    }
++  })
++})
+diff --git a/src/schemas/nodeDefSchema.ts b/src/schemas/nodeDefSchema.ts
+index 14135ab12..4cfe89148 100644
+--- a/src/schemas/nodeDefSchema.ts
++++ b/src/schemas/nodeDefSchema.ts
+@@ -5,6 +5,11 @@ import { resultItemType } from '@/schemas/apiSchema'
+ import { CONTROL_OPTIONS } from '@/types/simplifiedWidget'
+ 
+ const zComboOption = z.union([z.string(), z.number()])
++
++/**
++ * Plain remote combo config — feeds a standard combo dropdown from a remote endpoint.
++ * Handled by `useRemoteWidget` + `WidgetSelectDropdown`.
++ */
+ const zRemoteWidgetConfig = z.object({
+   route: z.string().url().or(z.string().startsWith('/')),
+   refresh: z.number().gte(128).safe().or(z.number().lte(0).safe()).optional(),
+@@ -15,6 +20,32 @@ const zRemoteWidgetConfig = z.object({
+   timeout: z.number().gte(0).optional(),
+   max_retries: z.number().gte(0).optional()
+ })
++
++const zRemoteItemSchema = z.object({
++  value_field: z.string(),
++  label_field: z.string(),
++  preview_url_field: z.string().optional(),
++  preview_type: z.enum(['image', 'video', 'audio']).default('image'),
++  description_field: z.string().optional(),
++  search_fields: z.array(z.string()).optional()
++})
++
++/**
++ * Rich remote combo config — feeds `RichComboWidget` with item previews, search, and filtering.
++ * Requires `item_schema`. Vue-nodes only. Routes are always relative paths and resolve against
++ * the comfy-api base URL with auth headers injected. The endpoint returns the full items array
++ * in a single response.
++ */
++const zRemoteComboConfig = z.object({
++  route: z.string().startsWith('/'),
++  item_schema: zRemoteItemSchema,
++  refresh_button: z.boolean().optional(),
++  auto_select: z.enum(['first', 'last']).optional(),
++  refresh: z.number().gte(128).safe().or(z.number().lte(0).safe()).optional(),
++  response_key: z.string().optional(),
++  timeout: z.number().gte(0).optional(),
++  max_retries: z.number().gte(0).optional()
++})
+ const zMultiSelectOption = z.object({
+   placeholder: z.string().optional(),
+   chip: z.boolean().optional()
+@@ -96,10 +127,20 @@ export const zComboInputOptions = zBaseInputOptions.extend({
+   animated_image_upload: z.boolean().optional(),
+   options: z.array(zComboOption).optional(),
+   remote: zRemoteWidgetConfig.optional(),
++  remote_combo: zRemoteComboConfig.optional(),
+   /** Whether the widget is a multi-select widget. */
+   multi_select: zMultiSelectOption.optional()
+ })
+ 
++export const zComboInputOptionsValidated = zComboInputOptions.refine(
++  (opts) => !(opts.remote && opts.remote_combo),
++  {
++    message:
++      'Combo input cannot specify both `remote` and `remote_combo`; pick one.',
++    path: ['remote_combo']
++  }
++)
++
+ const zIntInputSpec = z.tuple([z.literal('INT'), zIntInputOptions.optional()])
+ const zFloatInputSpec = z.tuple([
+   z.literal('FLOAT'),
+@@ -352,7 +393,9 @@ export const zMatchTypeOptions = z.object({
+ export type ComfyInputsSpec = z.infer<typeof zComfyInputsSpec>
+ export type ComfyOutputTypesSpec = z.infer<typeof zComfyOutputTypesSpec>
+ export type ComfyNodeDef = z.infer<typeof zComfyNodeDef>
++export type RemoteItemSchema = z.infer<typeof zRemoteItemSchema>
+ export type RemoteWidgetConfig = z.infer<typeof zRemoteWidgetConfig>
++export type RemoteComboConfig = z.infer<typeof zRemoteComboConfig>
+ 
+ export type ComboInputOptions = z.infer<typeof zComboInputOptions>
+ export type NumericInputOptions = z.infer<typeof zNumericInputOptions>
+diff --git a/src/schemas/nodeDefSchema.validation.test.ts b/src/schemas/nodeDefSchema.validation.test.ts
+index 707eabd3e..1613fd769 100644
+--- a/src/schemas/nodeDefSchema.validation.test.ts
++++ b/src/schemas/nodeDefSchema.validation.test.ts
+@@ -71,4 +71,66 @@ describe('validateNodeDef', () => {
+       })
+     }
+   )
++
++  describe('remote_combo route validation', () => {
++    const buildNodeDef = (remoteCombo: object): unknown => ({
++      ...EXAMPLE_NODE_DEF,
++      input: {
++        required: {
++          voice: ['COMBO', { remote_combo: remoteCombo }]
++        }
++      }
++    })
++
++    const baseRemoteCombo = {
++      item_schema: { value_field: 'id', label_field: 'name' }
++    }
++
++    it('accepts a relative route', () => {
++      expect(
++        validateComfyNodeDef(
++          buildNodeDef({
++            ...baseRemoteCombo,
++            route: '/voices'
++          })
++        )
++      ).not.toBeNull()
++    })
++
++    it('rejects an absolute http URL', () => {
++      expect(
++        validateComfyNodeDef(
++          buildNodeDef({
++            ...baseRemoteCombo,
++            route: 'http://api.example.com/voices'
++          }),
++          () => {}
++        )
++      ).toBeNull()
++    })
++
++    it('rejects an absolute https URL', () => {
++      expect(
++        validateComfyNodeDef(
++          buildNodeDef({
++            ...baseRemoteCombo,
++            route: 'https://api.example.com/voices'
++          }),
++          () => {}
++        )
++      ).toBeNull()
++    })
++
++    it('rejects a route with no leading slash', () => {
++      expect(
++        validateComfyNodeDef(
++          buildNodeDef({
++            ...baseRemoteCombo,
++            route: 'voices'
++          }),
++          () => {}
++        )
++      ).toBeNull()
++    })
++  })
+ })
