@@ -36,7 +36,10 @@ import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { openHostedBillingTab } from '@/platform/workspace/billing/openHostedBillingTab'
 import { registerRefreshOnReturn } from '@/platform/workspace/billing/refreshOnReturn'
 import type { SettledSubscribeResponse } from '@/platform/workspace/billing/sdk/subscriptionOperationView'
-import { SettledOperationError } from '@/platform/workspace/billing/sdk/subscriptionOperationView'
+import {
+  SettledOperationError,
+  billingClientOf
+} from '@/platform/workspace/billing/sdk/subscriptionOperationView'
 import { readOnRail } from '@/platform/workspace/composables/readOnRail'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useBillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
@@ -285,6 +288,32 @@ export function useSubscriptionCheckout(
       operation.authenticationState !== 'requires_action'
     )
   })
+  // Only the SDK rail carries the server's `cancelable` and the command that
+  // acts on it. A successful cancel wakes the lifecycle, whose re-read settles
+  // the operation through the existing failed path.
+  const cancelablePaymentId = computed(() => {
+    const opId = activeCheckoutOperation.value?.opId
+    return opId && subscriptionRail?.getOperation(opId)?.cancelable
+      ? opId
+      : null
+  })
+  const paymentCancelable = computed(() => cancelablePaymentId.value !== null)
+  const isCancelingPayment = ref(false)
+  const cancelPaymentError = ref<string | null>(null)
+
+  async function cancelPayment() {
+    const opId = cancelablePaymentId.value
+    if (!opId || !subscriptionRail || isCancelingPayment.value) return
+    isCancelingPayment.value = true
+    cancelPaymentError.value = null
+    const outcome = await subscriptionRail.cancelOperation(opId)
+    isCancelingPayment.value = false
+    if (outcome.status === 'error')
+      cancelPaymentError.value = outcome.error.message
+    else if (outcome.status === 'unavailable')
+      cancelPaymentError.value = t('billingOperation.cancelPaymentFailed')
+  }
+
   // The lock is owned by one attempt at a time. An attempt that releases early
   // (see advanceToSuccessOnOperation) still runs its own finally afterwards, by
   // which point a newer attempt may hold the lock — releasing on a bare boolean
@@ -1483,6 +1512,7 @@ export function useSubscriptionCheckout(
       stage: 'started',
       outcome: 'pending',
       operation_type: 'subscription',
+      billing_client: billingClientOf(useSubscriptionRail()),
       tier: context.tier,
       cycle: context.cycle,
       checkout_type: context.checkoutType,
@@ -1521,6 +1551,7 @@ export function useSubscriptionCheckout(
       stage: 'failed',
       outcome: 'failure',
       operation_type: 'subscription',
+      billing_client: billingClientOf(useSubscriptionRail()),
       tier: context.tier,
       cycle: context.cycle,
       checkout_type: context.checkoutType,
@@ -1573,6 +1604,7 @@ export function useSubscriptionCheckout(
             stage: 'succeeded',
             outcome: 'success',
             operation_type: 'subscription',
+            billing_client: billingClientOf(useSubscriptionRail()),
             tier: context.tier,
             cycle: context.cycle,
             checkout_type: context.checkoutType,
@@ -1976,6 +2008,10 @@ export function useSubscriptionCheckout(
     reconciliationOperationId,
     parkedCheckoutRecovery,
     isPolling,
+    paymentCancelable,
+    isCancelingPayment,
+    cancelPaymentError,
+    cancelPayment,
     isTeamCheckout,
     previewVariant,
     handleSubscribeClick,

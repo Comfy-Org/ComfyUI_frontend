@@ -110,7 +110,6 @@ describe('useSessionCookie', () => {
   })
 
   it('reports a swallowed createSession failure as session_cookie_creation_failure', async () => {
-    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     vi.mocked(useAuthStore().getIdToken).mockResolvedValue('firebase-id-token')
     vi.mocked(globalThis.fetch).mockResolvedValue(
       new Response(JSON.stringify({ message: 'session denied' }), {
@@ -127,7 +126,7 @@ describe('useSessionCookie', () => {
       errorType: 'session_cookie_creation_failure',
       level: 'warning'
     })
-    expect(consoleWarn).not.toHaveBeenCalled()
+    expect(console.warn).not.toHaveBeenCalled()
   })
 
   it('serializes strict session creation after the previous user response', async () => {
@@ -248,7 +247,6 @@ describe('useSessionCookie', () => {
   })
 
   it('reports a failed session deletion as auth_session_cookie_delete_failed and still resolves', async () => {
-    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     vi.mocked(globalThis.fetch).mockResolvedValue(
       new Response(JSON.stringify({ message: 'cookie for user-a@x.test' }), {
         status: 500,
@@ -271,7 +269,7 @@ describe('useSessionCookie', () => {
       context: { had_pending_session_mutation: false },
       level: 'error'
     })
-    expect(consoleWarn).not.toHaveBeenCalled()
+    expect(console.warn).not.toHaveBeenCalled()
   })
 
   it('keeps the server message out of the reported deletion failure', async () => {
@@ -332,6 +330,48 @@ describe('useSessionCookie', () => {
     await expect(useSessionCookie().createSessionOrThrow()).rejects.toThrow(
       'session denied'
     )
+  })
+
+  it.for([
+    {
+      name: 'a 403 sso_required',
+      status: 403,
+      code: 'sso_required',
+      sso: true
+    },
+    { name: 'another 403', status: 403, code: 'FORBIDDEN', sso: false },
+    {
+      name: 'a 401 sso_required',
+      status: 401,
+      code: 'sso_required',
+      sso: false
+    }
+  ])(
+    'sessionRequiresSso answers $sso for $name, which still rejects with the server message',
+    async ({ status, code, sso }) => {
+      vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
+        'firebase-id-token'
+      )
+      vi.mocked(globalThis.fetch).mockImplementation(async () =>
+        Response.json({ code, message: 'refused by ingest' }, { status })
+      )
+      const { useSessionCookie } = await loadUseSessionCookie()
+
+      expect(await useSessionCookie().sessionRequiresSso()).toBe(sso)
+      await expect(useSessionCookie().createSessionOrThrow()).rejects.toThrow(
+        'refused by ingest'
+      )
+    }
+  )
+
+  it('sessionRequiresSso is false once the session is created', async () => {
+    vi.mocked(useAuthStore().getIdToken).mockResolvedValue('firebase-id-token')
+    vi.mocked(globalThis.fetch).mockResolvedValue(
+      new Response(null, { status: 204 })
+    )
+    const { useSessionCookie } = await loadUseSessionCookie()
+
+    expect(await useSessionCookie().sessionRequiresSso()).toBe(false)
   })
 })
 

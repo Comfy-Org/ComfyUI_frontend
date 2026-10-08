@@ -48,8 +48,7 @@ import {
   isParked,
   needsConsent,
   railAcceptsPay,
-  reduceCheckoutPage,
-  settledPlanSource
+  reduceCheckoutPage
 } from '@/checkout/checkoutPage'
 import { methodKindOf } from '@/checkout/checkoutJourney'
 import { endingOf } from '@/checkout/endingScreen'
@@ -603,46 +602,11 @@ export function useFullPageCheckout() {
     (awaiting) => (awaiting ? recheck.resume() : recheck.pause())
   )
 
-  /**
-   * A settled payment this page did not price names the plan the catalog
-   * lists for its receipt, or for a returned one without a receipt plan, the
-   * plan the status now reports; never the fresh quote.
-   */
-  async function readSettledPlan(receiptSlug: string | undefined) {
-    const [slug, catalog] = await Promise.all([
-      receiptSlug ?? statusPlanSlug(),
-      plans.read()
-    ])
-    const listed =
-      slug !== undefined && catalog.status === 'ok'
-        ? catalog.value.data.plans.find((plan) => plan.slug === slug)
-        : undefined
-    if (!listed) return
-    const { tier, duration, price_cents } = listed
-    dispatch({
-      type: 'settledPlanRead',
-      plan: { tier, duration, price_cents }
-    })
-  }
-
-  async function statusPlanSlug() {
-    const read = await status.read()
-    return read.status === 'ok' ? read.value.status.plan_slug : undefined
-  }
-
   /** A finished checkout has no code left to re-apply. */
   watch(
     () => page.value.kind === 'terminal',
     (finished) => {
       if (finished) promoMemory.keep(undefined)
-    }
-  )
-
-  watch(
-    () => settledPlanSource(page.value)?.key,
-    () => {
-      const source = settledPlanSource(page.value)
-      if (source !== undefined) void readSettledPlan(source.receiptSlug)
     }
   )
 

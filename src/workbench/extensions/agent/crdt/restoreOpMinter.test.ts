@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
@@ -186,8 +186,6 @@ describe('attachRestoreOpMinter', () => {
   })
 
   it('skips the whole diff, including real changes, when a present node cannot serialize', () => {
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
-
     restoreThrough(() => {
       source.widgets![0].value = 'b.png'
       sink.serialize = () => {
@@ -196,20 +194,19 @@ describe('attachRestoreOpMinter', () => {
     })
 
     expect(minted).toEqual([])
-    expect(error).toHaveBeenCalledWith(
+    expect(console.error).toHaveBeenCalledWith(
       expect.stringContaining('could not serialize every present node'),
       [String(sink.id)]
     )
   })
 
   it('surfaces a link removed without its node instead of dropping it silently', () => {
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     const linkId = sink.inputs[0].link
 
     restoreThrough(() => sink.disconnectInput(0))
 
     expect(minted).toEqual([])
-    expect(error).toHaveBeenCalledWith(
+    expect(console.error).toHaveBeenCalledWith(
       expect.stringContaining('removed link without its node'),
       String(linkId)
     )

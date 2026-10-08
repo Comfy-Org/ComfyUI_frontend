@@ -4,6 +4,7 @@ import { initializeAuth } from 'firebase/auth'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
+import { webSessionUser } from '@/platform/auth/session/webSessionUser'
 import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 
 const mockDistribution = vi.hoisted(() => ({
@@ -35,6 +36,7 @@ describe('getSessionOverride', () => {
   beforeEach(() => {
     mockDistribution.isCloud = true
     mockCurrentUser.value = COMFY_EMPLOYEE
+    webSessionUser.value = undefined
     vi.mocked(initializeAuth).mockReturnValue(resolvedAuth)
     firebaseIdentity.initialize()
   })
@@ -64,16 +66,16 @@ describe('getSessionOverride', () => {
   })
 
   it('applies every flag in a repeated query param', () => {
-    visit('/?ff=workflow_sharing_enabled&ff=signup_turnstile:shadow')
+    visit('/?ff=user_secrets_enabled&ff=signup_turnstile:shadow')
 
-    expect(getSessionOverride('workflow_sharing_enabled')).toBe(true)
+    expect(getSessionOverride('user_secrets_enabled')).toBe(true)
     expect(getSessionOverride('signup_turnstile')).toBe('shadow')
   })
 
   it('returns undefined for a flag nobody requested', () => {
     visit('/?ff=onboarding_tour_enabled')
 
-    expect(getSessionOverride('workflow_sharing_enabled')).toBeUndefined()
+    expect(getSessionOverride('user_secrets_enabled')).toBeUndefined()
   })
 
   it('survives navigation away from the ?ff= URL', () => {
@@ -142,13 +144,11 @@ describe('getSessionOverride', () => {
     })
 
     it('never logs the submitted value, which may carry a pasted secret', () => {
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-      const log = vi.spyOn(console, 'log').mockImplementation(() => {})
       visit('/?ff=some_flag:sk-live-not-a-real-secret')
 
       expect(getSessionOverride('some_flag')).toBe('sk-live-not-a-real-secret')
-      expect(warn).not.toHaveBeenCalled()
-      expect(log).not.toHaveBeenCalled()
+      expect(console.warn).not.toHaveBeenCalled()
+      expect(console.log).not.toHaveBeenCalled()
     })
 
     it('discards a hand-written storage payload that is not an object', () => {
@@ -217,6 +217,23 @@ describe('getSessionOverride', () => {
       mockCurrentUser.value = COMFY_EMPLOYEE
       expect(getSessionOverride('onboarding_tour_enabled')).toBe(true)
     })
+
+    it.for([
+      { email: 'dev@comfy.org', emailVerified: true, applies: true },
+      { email: 'dev@comfy.org', emailVerified: false, applies: false },
+      { email: 'dev@notcomfy.org', emailVerified: true, applies: false }
+    ])(
+      'reads the web session user when Firebase has none: $email verified=$emailVerified',
+      ({ email, emailVerified, applies }) => {
+        mockCurrentUser.value = null
+        webSessionUser.value = { id: 'uid-1', email, emailVerified }
+        visit('/?ff=onboarding_tour_enabled')
+
+        expect(getSessionOverride('onboarding_tour_enabled')).toBe(
+          applies ? true : undefined
+        )
+      }
+    )
 
     it('accepts a verified address regardless of case', () => {
       mockCurrentUser.value = { email: 'Dev@Comfy.org', emailVerified: true }

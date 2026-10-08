@@ -60,6 +60,15 @@ export function capabilitiesWith(
   }
 }
 
+/** The plan the server reports on an operation for the Pro Monthly link, as it does in every status. */
+export const PRO_MONTHLY_OP_PLAN = {
+  slug: 'pro_monthly',
+  duration: 'MONTHLY',
+  tier: 'PRO',
+  price_cents: 5000,
+  currency: 'usd'
+} as const satisfies NonNullable<BillingOpStatusResponse['plan']>
+
 export function succeededOperation(id: string): BillingOpStatusResponse {
   const now = new Date().toISOString()
   return { id, status: 'succeeded', started_at: now, completed_at: now }
@@ -188,6 +197,8 @@ export function defaultScenario(): CloudScenario {
       cost_next_period_cents: 5000,
       credits_today_cents: 10_000,
       credits_next_period_cents: 10_000,
+      credits_today: 21_100,
+      credits_next_period: 21_100,
       amount_due_cents: 5000,
       quote_id: 'quote_e2e',
       quote_version: 1,
@@ -253,6 +264,8 @@ export function switchToYearly(scenario: CloudScenario): void {
     renewal_amount_cents: 26_880,
     credits_today_cents: 82_800,
     credits_next_period_cents: 82_800,
+    credits_today: 174_708,
+    credits_next_period: 174_708,
     current_plan: {
       slug: monthly.slug,
       tier: monthly.tier,

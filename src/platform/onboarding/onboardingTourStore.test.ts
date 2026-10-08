@@ -101,7 +101,6 @@ describe('onboardingTourStore', () => {
     appendedTargets.forEach((el) => el.remove())
     appendedTargets.length = 0
     setViewport({ width: 1024, height: 768 })
-    trackOnboardingTour.mockClear()
   })
 
   /** Register one laid-out element for a coach id, so its step resolves at once. */
@@ -777,7 +776,6 @@ describe('onboardingTourStore', () => {
         target.onEnter = original
       })
       target.onEnter = () => Promise.reject(new Error('framing blew up'))
-      vi.spyOn(console, 'error').mockImplementation(() => {})
 
       const store = mountStore()
       store.replayTour('appMode')
@@ -843,7 +841,6 @@ describe('onboardingTourStore', () => {
       registerAppModeTargets()
       const { entered, attempts } = suspendOnEnter('inputs')
       const store = mountStore()
-      vi.spyOn(console, 'error').mockImplementation(() => {})
       store.replayTour('appMode')
       await nextTick()
       store.next()

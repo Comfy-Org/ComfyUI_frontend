@@ -1,6 +1,6 @@
 import type { ComfyApp } from '@/scripts/app'
 
-import { $el } from '../../ui'
+import { $el } from '../utils'
 import { ComfyButtonGroup } from '../components/buttonGroup'
 import './menu.css'
 

@@ -1,7 +1,13 @@
 import { defineStore } from 'pinia'
-import { computed, ref, shallowRef } from 'vue'
+import { computed, ref, shallowRef, watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import {
+  desktopHostUser,
+  isDesktopHostSignedIn,
+  requestDesktopHostWorkspaceSwitch
+} from '@/platform/auth/desktopHost/desktopHostSession'
 import { isCloud } from '@/platform/distribution/types'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { clearPreservedQuery } from '@/platform/navigation/preservedQueryManager'
@@ -23,6 +29,7 @@ import type {
   WorkspaceWithRole
 } from '../api/workspaceApi'
 import { WorkspaceApiError, workspaceApi } from '../api/workspaceApi'
+import { NoWorkspaceAccessError } from '../api/workspaceApiError'
 
 export interface WorkspaceMember {
   id: string
@@ -161,6 +168,7 @@ const MAX_INIT_RETRIES = 3
 const BASE_RETRY_DELAY_MS = 1000
 
 export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
+  const { flags } = useFeatureFlags()
   const initState = ref<InitState>('uninitialized')
   const workspaces = shallowRef<WorkspaceState[]>([])
   const mutableActiveWorkspaceId = ref<string | null>(null)
@@ -326,6 +334,24 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
         // server. There is no discovery, switching, or token exchange for it:
         // the server echoes the binding back and the key itself authenticates
         // workspace-scoped calls.
+        // Desktop owns a host session's workspace: list what the account can
+        // reach and follow the workspace Desktop's session is scoped to.
+        if (isDesktopHostSignedIn()) {
+          const response = await workspaceApi.list()
+          if (isStaleIdentity(generation)) return
+          workspaces.value = sortWorkspaces(
+            response.workspaces.map(createWorkspaceState)
+          )
+          const hostWorkspaceId = desktopHostUser.value?.workspaceId
+          if (!workspaces.value.some((w) => w.id === hostWorkspaceId)) {
+            throw new NoWorkspaceAccessError('Desktop workspace not available')
+          }
+          mutableActiveWorkspaceId.value = hostWorkspaceId ?? null
+          initState.value = 'ready'
+          isFetchingWorkspaces.value = false
+          return
+        }
+
         if (isApiKeySession) {
           const current = await workspaceApi.getCurrentWorkspace()
           if (isStaleIdentity(generation)) return
@@ -353,7 +379,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
           )
 
           if (workspaces.value.length === 0) {
-            throw new Error('No workspaces available')
+            throw new NoWorkspaceAccessError('No workspaces available')
           }
 
           // Verify session workspace exists in fetched list
@@ -395,7 +421,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
         )
 
         if (workspaces.value.length === 0) {
-          throw new Error('No workspaces available')
+          throw new NoWorkspaceAccessError('No workspaces available')
         }
 
         // 3. Determine target workspace (priority: localStorage > personal)
@@ -425,8 +451,10 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
         return
       } catch (e) {
         if (isStaleIdentity(generation)) return
+        // With SSO off, ingest's 403 keeps today's retries.
         const isNoWorkspacesError =
-          e instanceof Error && e.message === 'No workspaces available'
+          e instanceof NoWorkspaceAccessError &&
+          (e.status === undefined || flags.ssoEnabled)
         // A definitive 4xx on the credential lookup cannot be repaired by
         // resending the same key; retries stay reserved for transient
         // failures (network, 408/429, 5xx).
@@ -558,9 +586,15 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
       if (isStaleIdentity(generation)) return
 
       if (!isCloud) {
-        await workspaceAuthStore.switchWorkspace(workspaceId)
+        const switched = isDesktopHostSignedIn()
+          ? await requestDesktopHostWorkspaceSwitch(workspaceId)
+          : await workspaceAuthStore
+              .switchWorkspace(workspaceId)
+              .then(
+                () => workspaceAuthStore.currentWorkspace?.id === workspaceId
+              )
         if (isStaleIdentity(generation)) return
-        if (workspaceAuthStore.currentWorkspace?.id !== workspaceId) {
+        if (!switched) {
           throw new Error('Workspace authentication did not switch')
         }
         mutableActiveWorkspaceId.value = workspaceId
@@ -666,13 +700,12 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
       if (isStaleIdentity(generation)) return
 
       if (targetId === activeWorkspaceId.value) {
-        // Deleted active workspace - go to personal
-        const personal = personalWorkspace.value
+        // Sorted personal-first, so this is personal or the next team.
+        const fallback = workspaces.value.find((w) => w.id !== targetId)
         prepareWorkflowWorkspaceTransition()
         workspaceAuthStore.clearWorkspaceContext()
-        if (personal) {
-          setLastWorkspaceId(personal.id)
-        }
+        if (fallback) setLastWorkspaceId(fallback.id)
+        else clearLastWorkspaceId()
         window.location.reload()
         // Code after this won't run (page reloads)
       } else {
@@ -1017,6 +1050,47 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     const workspaceAuthStore = useWorkspaceAuthStore()
     workspaceAuthStore.destroy()
   }
+
+  // A switch made in Desktop (its chooser, or another view) re-scopes this
+  // view's credential. The tab drops its old scope at once and takes the new
+  // workspace only once the account's list confirms it.
+  async function followDesktopHostWorkspace(
+    hostWorkspaceId: string
+  ): Promise<void> {
+    const generation = identityGeneration
+    mutableActiveWorkspaceId.value = null
+    const isListed = () =>
+      workspaces.value.some((w) => w.id === hostWorkspaceId)
+    if (!isListed()) {
+      await refreshWorkspaces().catch((error: unknown) =>
+        reportError(error, {
+          errorType: 'error_refreshing_workspaces_for_desktop_host',
+          surface: 'workspace'
+        })
+      )
+      if (
+        isStaleIdentity(generation) ||
+        desktopHostUser.value?.workspaceId !== hostWorkspaceId
+      ) {
+        return
+      }
+    }
+    if (isListed()) mutableActiveWorkspaceId.value = hostWorkspaceId
+  }
+
+  watch(
+    () => desktopHostUser.value?.workspaceId,
+    (hostWorkspaceId) => {
+      if (
+        !hostWorkspaceId ||
+        initState.value !== 'ready' ||
+        hostWorkspaceId === mutableActiveWorkspaceId.value
+      ) {
+        return
+      }
+      void followDesktopHostWorkspace(hostWorkspaceId)
+    }
+  )
 
   function resetForIdentityChange(): void {
     identityGeneration++
