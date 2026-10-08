@@ -175,6 +175,7 @@ describe('attachDocOpMinter', () => {
   let docInputNames: DocOpMinterDeps['docInputNames']
   let docPromotedWidgets: DocOpMinterDeps['docPromotedWidgets']
   let docPopulated: boolean
+  let docIdentity: object
   let refused: Parameters<
     NonNullable<DocOpMinterDeps['onWidgetWriteRefused']>
   >[0][]
@@ -188,6 +189,7 @@ describe('attachDocOpMinter', () => {
     docInputNames = () => null
     docPromotedWidgets = () => null
     docPopulated = true
+    docIdentity = {}
     refused = []
     minter = attachDocOpMinter({
       isEnabled: () => enabled,
@@ -198,6 +200,7 @@ describe('attachDocOpMinter', () => {
       docInputNames: (nodeId) => docInputNames(nodeId),
       docPromotedWidgets: (nodeId) => docPromotedWidgets(nodeId),
       isDocPopulated: () => docPopulated,
+      docIdentity: () => docIdentity,
       onWidgetWriteRefused: (write) => refused.push(write)
     })
   })
@@ -488,7 +491,8 @@ describe('attachDocOpMinter', () => {
       boundRootGraphId: () => rootGraphId,
       docInputNames: () => null,
       docPromotedWidgets: () => null,
-      isDocPopulated: () => true
+      isDocPopulated: () => true,
+      docIdentity: () => null
     })
 
     const added = new TestSink()
@@ -1035,6 +1039,35 @@ describe('attachDocOpMinter', () => {
       expect.objectContaining({ op: 'set_widget', node_id: host.id })
     ])
     expect(refused).toEqual([])
+  })
+
+  it('refuses a host it added once its document has been replaced', async () => {
+    const subgraph = createTestSubgraph({
+      rootGraph: graph,
+      inputs: [{ name: 'text', type: 'STRING' }]
+    })
+    graph.subgraphs.set(subgraph.id, subgraph)
+    withGraphIntentSource('load', () => {
+      const interior = LiteGraph.createNode('TestPrompt')
+      assert.exists(interior)
+      subgraph.add(interior)
+      subgraph.inputNode.slots[0].connect(interior.inputs[0], interior)
+    })
+    docPromotedWidgets = () => null
+    docPopulated = false
+    const host = createTestSubgraphNode(subgraph)
+    graph.add(host)
+    await afterFlush()
+    minted.length = 0
+
+    docIdentity = {}
+    host.widgets[0].value = 'typed before the new catch-up'
+    await afterFlush()
+
+    expect(minted).toEqual([])
+    expect(refused).toEqual([
+      { nodeId: host.id, name: 'text', reason: 'doc_not_synced' }
+    ])
   })
 
   it('still mints for a host the populated document does not hold yet', async () => {

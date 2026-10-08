@@ -346,7 +346,8 @@ export function useAgentCrdtFollower(
       follower.value?.docInputNames(nodeId) ?? null,
     docPromotedWidgets: (nodeId: NodeId) =>
       follower.value?.docPromotedWidgets(nodeId) ?? null,
-    isDocPopulated: () => follower.value?.isDocPopulated() ?? false
+    isDocPopulated: () => follower.value?.isDocPopulated() ?? false,
+    docIdentity: () => follower.value?.docIdentity() ?? null
   }
 }
 
@@ -901,6 +902,7 @@ function startAgentCrdtFollower(
       readDocSlotNames(bridge.follower.doc, String(nodeId), 'inputs'),
     docPromotedWidgets: (nodeId: NodeId) =>
       readDocPromotedWidgets(bridge.follower.doc, String(nodeId)),
-    isDocPopulated: () => nodesMap(bridge.follower.doc).size > 0
+    isDocPopulated: () => nodesMap(bridge.follower.doc).size > 0,
+    docIdentity: (): object => bridge.follower.doc
   }
 }

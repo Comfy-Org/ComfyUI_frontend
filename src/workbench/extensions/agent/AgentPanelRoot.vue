@@ -853,7 +853,8 @@ const {
   enqueueHumanOperations,
   docInputNames,
   docPromotedWidgets,
-  isDocPopulated
+  isDocPopulated,
+  docIdentity
 } = useAgentCrdtFollower(
   boundWorkflowId,
   () => resolvedUserInfo.value?.id ?? null,
@@ -915,6 +916,7 @@ const docOpMinter = attachDocOpMinter({
   docInputNames,
   docPromotedWidgets,
   isDocPopulated,
+  docIdentity,
   onWidgetWriteRefused: () =>
     toast.add({
       severity: 'error',

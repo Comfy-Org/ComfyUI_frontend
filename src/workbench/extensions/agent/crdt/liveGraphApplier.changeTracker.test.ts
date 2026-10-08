@@ -273,6 +273,7 @@ describe('LiveGraphApplier with the real change tracker', () => {
       docInputNames: () => [],
       docPromotedWidgets: () => null,
       isDocPopulated: () => true,
+      docIdentity: () => null,
       enqueue
     })
     onTestFinished(() => minter.detach())

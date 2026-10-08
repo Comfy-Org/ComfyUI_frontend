@@ -74,11 +74,13 @@ export interface DocOpMinterDeps {
   docPromotedWidgets(nodeId: NodeId): DocPromotedWidgets | null
   /**
    * Whether the bound document holds any node yet. False right after binding,
-   * before the subscribe catch-up lands, when an absent node says nothing.
-   * Also false for a genuinely empty workflow, so a host added to one is
-   * refused until its own `add_node` echo lands.
+   * before the subscribe catch-up lands, when an absent node says nothing. A
+   * host this tab already sent an `add_node` for into the same document is
+   * still writable then.
    */
   isDocPopulated(): boolean
+  /** Identity of the follower document; changes when it is replaced. */
+  docIdentity(): object | null
   /** A local promoted widget edit was refused and never reached the document. */
   onWidgetWriteRefused?(write: {
     nodeId: NodeId
@@ -412,8 +414,9 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
   let pending: PendingOp[] = []
   const pendingAdds = new Map<string, LGraphNode>()
   // Hosts whose `add_node` this minter sent while the document was still
-  // empty: the sender's FIFO delivers that add before any later write to it.
-  const mintedAdds = new Set<string>()
+  // empty, keyed to that document: the sender's FIFO delivers the add before
+  // any later write to it, but a replaced document owes it nothing.
+  const mintedAdds = new Map<string, object>()
   const reported = new Set<string>()
   // Budgeted for the minter's whole life, not per flush: this one sits on the
   // keystroke-paced widget path, where a per-flush budget reports every
@@ -453,8 +456,9 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
         )
         continue
       }
-      if (deps.isDocPopulated()) mintedAdds.clear()
-      else mintedAdds.add(nodeKey(graph.id, node.id))
+      const docIdentity = deps.docIdentity()
+      if (deps.isDocPopulated() || docIdentity === null) mintedAdds.clear()
+      else mintedAdds.set(nodeKey(graph.id, node.id), docIdentity)
       operations.push({
         op: 'add_node',
         node_id: node.id,
@@ -524,7 +528,13 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       owner,
       () => deps.docPromotedWidgets(event.nodeId),
       () => deps.isDocPopulated(),
-      () => mintedAdds.has(nodeKey(event.graphId, event.nodeId)),
+      () => {
+        const identity = deps.docIdentity()
+        return (
+          identity !== null &&
+          mintedAdds.get(nodeKey(event.graphId, event.nodeId)) === identity
+        )
+      },
       (reason, liveNames, doc) => {
         reportRefusal(rootGraphId, event, reason, liveNames, doc)
         notifyRefusal(rootGraphId, event, reason)
