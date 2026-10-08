@@ -93,7 +93,8 @@ export const crdtTest = baseTest.extend<CrdtFixtures>({
         layoutChanges: () => () => {},
         localActorPrefix: 'user-',
         getGraph: () => graph,
-        boundRootGraphId: () => graphScopeOf(graph).rootGraphId
+        boundRootGraphId: () => graphScopeOf(graph).rootGraphId,
+        docPromotedWidgets: () => null
       })
       cleanups.push(() => wiring.detach())
       let sequence = 0

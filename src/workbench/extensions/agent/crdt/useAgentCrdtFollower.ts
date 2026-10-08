@@ -22,6 +22,7 @@ import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/ag
 import type { MaterializableGraph } from './agentNodeMaterializer'
 import { reconcileAgentAdapters } from './agentNodeMaterializer'
 import {
+  readDocPromotedWidgets,
   readSubgraphDefinitionIds,
   readSubgraphDefinitions
 } from './agentSubgraphDefinitions'
@@ -396,7 +397,9 @@ export function useAgentCrdtFollower(
         schemaError: null
       }),
     enqueueHumanOperations: (operations: GraphOperation[]) =>
-      follower.value?.enqueueHumanOperations(operations)
+      follower.value?.enqueueHumanOperations(operations),
+    docPromotedWidgets: (nodeId: NodeId) =>
+      follower.value?.docPromotedWidgets(nodeId) ?? null
   }
 }
 
@@ -1243,6 +1246,8 @@ function startAgentCrdtFollower(
       if (pendingReseed !== null)
         pendingReseed.heldOperations.push(...operations)
       else coalescer.enqueue(operations)
-    }
+    },
+    docPromotedWidgets: (nodeId: NodeId) =>
+      readDocPromotedWidgets(bridge.follower.doc, String(nodeId))
   }
 }

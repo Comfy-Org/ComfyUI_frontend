@@ -872,7 +872,8 @@ describe('reconcileAgentAdapters', () => {
         layoutChanges: (listener) => layoutStore.onChange(listener),
         localActorPrefix: 'user-',
         getGraph: () => graph,
-        boundRootGraphId: () => toRootGraphId(graph.id)
+        boundRootGraphId: () => toRootGraphId(graph.id),
+        docPromotedWidgets: () => null
       })
     })
 

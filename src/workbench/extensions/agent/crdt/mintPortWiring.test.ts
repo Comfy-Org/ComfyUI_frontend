@@ -104,7 +104,8 @@ describe('attachMintPortWiring', () => {
       },
       localActorPrefix: 'user-',
       getGraph: () => graph,
-      boundRootGraphId: () => toRootGraphId(ROOT_ID)
+      boundRootGraphId: () => toRootGraphId(ROOT_ID),
+      docPromotedWidgets: () => null
     })
   })
 
