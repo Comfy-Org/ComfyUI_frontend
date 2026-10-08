@@ -7,8 +7,18 @@ export function redactTelemetryUrls(text: string): string {
 }
 
 const MAX_REDACTABLE_TEXT_LENGTH = 16_384
-const SPACED_QUERY_URL_PATTERN =
-  /(?:\/[A-Za-z0-9._~%/-]+|(?<![A-Za-z0-9._~%/-])[A-Za-z0-9_~%-]+(?:[./][A-Za-z0-9._~%-]+)*)\?[^\n"'<>]*\s[^\n"'<>]*&[A-Za-z0-9_~%-]+=[^\n"'<>]*/gi
+const ABSOLUTE_URL_START = /(?:https?:)?\/\/[^\s"'<>?#]+/.source
+const ROOT_RELATIVE_URL_START =
+  /(?<!\d)\/(?!\/|https?:\/\/)(?:[A-Za-z._~%-]|\d(?:[A-Za-z0-9._~%-]|(?=[?#]))|(?=[?#]))[A-Za-z0-9._~%/-]*/
+    .source
+const RELATIVE_URL_START =
+  /(?<![A-Za-z0-9._~%/-])(?!\d+\/\d+[?#])[A-Za-z0-9_~%-]+(?:[./][A-Za-z0-9._~%-]+)*/
+    .source
+const URL_START = `(?:${ABSOLUTE_URL_START}|${ROOT_RELATIVE_URL_START}|${RELATIVE_URL_START})`
+const SPACED_QUERY_URL_PATTERN = new RegExp(
+  `${URL_START}\\?[^\\n"'<>]*\\s[^\\n"'<>]*&[A-Za-z0-9_~%-]+=[^\\n"'<>]*`,
+  'gi'
+)
 
 /**
  * The root-relative alternative starts at a non-digit, or at a digit followed
@@ -16,8 +26,10 @@ const SPACED_QUERY_URL_PATTERN =
  * redacted while leaving a bare fraction such as `1/2?x` as ordinary text, so
  * non-URL messages keep their Sentry grouping.
  */
-const URL_TOKEN_PATTERN =
-  /(?:https?:)?\/\/[^\s"'<>]+|(?<!\d)\/(?!\/|https?:\/\/)(?:[A-Za-z._~%-]|\d(?:[A-Za-z0-9._~%-]|(?=[?#]))|(?=[?#]))[^\s"'<>]*|(?<![A-Za-z0-9._~%/-])(?!\d+\/\d+[?#])[A-Za-z0-9_~%-]+(?:[./][A-Za-z0-9._~%-]+)*(?:\?[^\s"'<>]*=[^\s"'<>]*|#[^\s"'<>]+)/gi
+const URL_TOKEN_PATTERN = new RegExp(
+  `(?:${ABSOLUTE_URL_START}|${ROOT_RELATIVE_URL_START})[^\\s"'<>]*|${RELATIVE_URL_START}(?:\\?[^\\s"'<>]*=[^\\s"'<>]*|#[^\\s"'<>]+)`,
+  'gi'
+)
 
 function redactUrlToken(token: string): string {
   let redacted = ''

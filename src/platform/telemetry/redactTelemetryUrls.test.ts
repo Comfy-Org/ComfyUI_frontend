@@ -157,6 +157,10 @@ describe('redactTelemetryUrls', () => {
 
   describe.for([
     { kind: 'a fraction with a query suffix', text: 'ratio 1/2?token=secret' },
+    {
+      kind: 'a fraction with a spaced query suffix',
+      text: 'ratio 1/2?x=a b&y=c'
+    },
     { kind: 'a progress fraction', text: 'progress 3/4 done' },
     { kind: 'a route with an id', text: 'GET /api/jobs/42 -> 500' },
     { kind: 'a route with no query', text: '/api/userdata/workflows' },
