@@ -12,6 +12,7 @@
     "architecture:check": "tsx tools/architecture/src/cli.ts --check",
     "architecture:update": "tsx tools/architecture/src/cli.ts --update",
     "adr:check": "tsx scripts/check-adrs.ts",
+    "build:dist": "vite build --config vite.config.mts",
     "build:cloud": "cross-env DISTRIBUTION=cloud vite build --config vite.config.mts",
     "build:desktop-dist": "cross-env DISTRIBUTION=desktop vite build --config vite.config.mts",
     "build-storybook": "storybook build",
