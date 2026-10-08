@@ -24,7 +24,9 @@ function requestMethod(input: FetchArgs[0], init: FetchArgs[1]): string {
 
 function urlMatches(pattern: string | RegExp | undefined, url: string) {
   if (pattern === undefined) return true
-  return typeof pattern === 'string' ? pattern === url : pattern.test(url)
+  return typeof pattern === 'string'
+    ? pattern === url
+    : url.search(pattern) >= 0
 }
 
 function routeMatches(route: FetchRoute, ...[input, init]: FetchArgs) {
@@ -77,6 +79,6 @@ export function fetchRequests(route: FetchRoute = {}): FetchRequest[] {
       headers: new Headers(
         init?.headers ?? (input instanceof Request ? input.headers : undefined)
       ),
-      body: init?.body
+      body: init?.body ?? (input instanceof Request ? input.body : undefined)
     }))
 }

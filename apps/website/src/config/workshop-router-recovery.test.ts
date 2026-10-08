@@ -77,10 +77,16 @@ describe('Router delivery failures', () => {
       expect(rendered.outputs[0].url).toBe('https://media.example/result.png')
       expect(rendered.requestId).toBe('replay-request')
       expect(fetch).toHaveBeenCalledTimes(2)
-      for (const { headers, body } of fetchRequests()) {
-        expect(headers.get('Idempotency-Key')).toBe('original-logical-run')
-        expect(body).toBe('{"prompt":"Private prompt"}')
+      const replay = {
+        idempotencyKey: 'original-logical-run',
+        body: '{"prompt":"Private prompt"}'
       }
+      expect(
+        fetchRequests().map(({ headers, body }) => ({
+          idempotencyKey: headers.get('Idempotency-Key'),
+          body
+        }))
+      ).toEqual([replay, replay])
     }
   )
 

@@ -110,21 +110,32 @@ describe('example source images', () => {
     })
     expect(downloads).toEqual(hasPinnedCompanion ? [sources[1]] : [])
     expect(uploaded).toEqual(hasPinnedCompanion ? [sources[1]] : [])
-    expect(fetch).toHaveBeenCalledTimes(hasPinnedCompanion ? 3 : 0)
-    let uploadIndex = 0
-    for (const [url, init] of vi.mocked(fetch).mock.calls) {
-      if (init?.method === 'POST')
-        expect(String(url)).toMatch(/\/customers\/storage$/)
-      else if (init?.method === 'PUT') {
-        expect(String(url)).toBe(
-          `https://storage.example/upload-${++uploadIndex}`
-        )
-        expect(init.body).toMatchObject({ type: 'image/png' })
-      } else {
-        expect(init?.credentials).toBe('omit')
-        expect(sources).toContain(String(url))
-      }
-    }
+    expect(
+      vi.mocked(fetch).mock.calls.map(([url, init]) => ({
+        url: String(url),
+        method: init?.method,
+        credentials: init?.credentials,
+        body: init?.body
+      }))
+    ).toEqual(
+      hasPinnedCompanion
+        ? [
+            { url: sources[1], credentials: 'omit' },
+            {
+              url: expect.stringMatching(/\/customers\/storage$/),
+              method: 'POST',
+              credentials: 'omit',
+              body: expect.any(String)
+            },
+            {
+              url: 'https://storage.example/upload-1',
+              method: 'PUT',
+              credentials: 'omit',
+              body: expect.objectContaining({ type: 'image/png' })
+            }
+          ]
+        : []
+    )
   })
   it('preserves all reference images in a native multi-image request, not filenames or URLs as Base64', async () => {
     const page = getRouterWorkshopModelDetail(

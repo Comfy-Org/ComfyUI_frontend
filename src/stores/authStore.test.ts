@@ -1716,24 +1716,19 @@ describe('useAuthStore', () => {
       })
     })
 
-    it('should handle different checkout tier formats', async () => {
-      const tiers = [
-        'standard',
-        'creator',
-        'pro',
-        'standard-yearly',
-        'creator-yearly',
-        'pro-yearly'
-      ] as const
+    it.for([
+      'standard',
+      'creator',
+      'pro',
+      'standard-yearly',
+      'creator-yearly',
+      'pro-yearly'
+    ] as const)('sends the %s checkout tier format', async (tier) => {
+      await store.accessBillingPortal(tier)
 
-      for (const tier of tiers) {
-        vi.mocked(fetch).mockClear()
-        await store.accessBillingPortal(tier)
-
-        expect(JSON.parse(String(fetchRequests(BILLING_URL)[0].body))).toEqual({
-          target_tier: tier
-        })
-      }
+      expect(JSON.parse(String(fetchRequests(BILLING_URL)[0].body))).toEqual({
+        target_tier: tier
+      })
     })
 
     it('should throw error when API returns error response', async () => {

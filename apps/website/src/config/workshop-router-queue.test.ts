@@ -285,12 +285,20 @@ describe('queued Router delivery', () => {
   it('resubmits an interrupted submit with the identical key and body', async () => {
     stubFetch(new TypeError('Failed to fetch'), admitted(), result())
     await settle(runWorkshopRouter(options()))
-    const submits = fetchRequests().slice(0, 2)
-    for (const { url, headers, body } of submits) {
-      expect(url).toBe(SUBMIT_URL)
-      expect(headers.get('Idempotency-Key')).toBe('logical-run')
-      expect(body).toBe('{"prompt":"Private prompt"}')
+    const submit = {
+      url: SUBMIT_URL,
+      idempotencyKey: 'logical-run',
+      body: '{"prompt":"Private prompt"}'
     }
+    expect(
+      fetchRequests()
+        .slice(0, 2)
+        .map(({ url, headers, body }) => ({
+          url,
+          idempotencyKey: headers.get('Idempotency-Key'),
+          body
+        }))
+    ).toEqual([submit, submit])
   })
 
   it('reads the result again when its body is cut off, without resubmitting', async () => {

@@ -49,6 +49,14 @@ describe('respondToFetch', () => {
     expect(await (await fetch(TOKEN_URL)).json()).toEqual({ attempt: 'retry' })
   })
 
+  it('matches every request against a global pattern', async () => {
+    respondToFetch(/\/auth\/token$/g, () => new Response('ok'))
+
+    expect(await (await fetch(TOKEN_URL)).text()).toBe('ok')
+    expect(await (await fetch(TOKEN_URL)).text()).toBe('ok')
+    expect(fetchRequests(/\/auth\/token$/g)).toHaveLength(2)
+  })
+
   it('matches URL and Request inputs by their href', async () => {
     respondToFetch(TOKEN_URL, () => new Response('ok'))
 
@@ -58,6 +66,16 @@ describe('respondToFetch', () => {
 })
 
 describe('fetchRequests', () => {
+  it('reports the body of a Request sent without init', async () => {
+    respondToFetch({}, () => new Response(null, { status: 204 }))
+
+    await fetch(new Request(TOKEN_URL, { method: 'POST', body: 'payload' }))
+
+    const [request] = fetchRequests(TOKEN_URL)
+    expect(request.method).toBe('POST')
+    expect(await new Response(request.body).text()).toBe('payload')
+  })
+
   it('reports the URL, method, headers, and body of matching requests', async () => {
     respondToFetch({}, () => new Response(null, { status: 204 }))
 
