@@ -11,6 +11,7 @@ describe('isEslintFile', () => {
     ['src/components/ui/button/button.variants.ts', true],
     ['apps/website/src/components/ui/button/index.ts', true],
     ['packages/tailwind-utils/src/index.ts', true],
+    ['packages/comfy-multi-player/src/index.ts', false],
     ['src/stores/appStore.test.ts', false],
     ['src/types/globals.d.ts', false],
     ['scripts/lint-unstaged.ts', false],

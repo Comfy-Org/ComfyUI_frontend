@@ -33,6 +33,17 @@ const config: KnipConfig = {
     'packages/billing-contract': {
       project: ['src/**/*.ts']
     },
+    'packages/comfy-multi-player': {
+      entry: ['scripts/*.mjs', 'examples/**/*.mjs', 'test/types/*.negative.ts'],
+      project: [
+        'src/**/*.ts',
+        'test/**/*.ts',
+        'scripts/*.mjs',
+        'bench/**/*.ts'
+      ],
+      ignoreDependencies: ['dependency-cruiser'],
+      ignoreIssues: { 'src/limits.ts': ['duplicates'] }
+    },
     'packages/design-system': {
       project: ['src/**/*.{css,js,ts}']
     },

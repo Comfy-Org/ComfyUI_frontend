@@ -1,0 +1,254 @@
+# Changelog
+
+All notable changes to `@comfyorg/comfy-multi-player` are documented in this file.
+
+The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
+this package uses semantic versioning.
+
+## Unreleased
+
+## 0.3.10 - 2026-10-04
+
+### Fixed
+
+- Refuse legacy widget overflow identities at or above the one-million-slot
+  allocation ceiling on both mint and projection, including occurrence-encoded
+  storage keys. This prevents caller-supplied workflows from allocating
+  unbounded placeholder arrays and prevents mint from accepting a document
+  that projection would then refuse. The ceiling is checked after decoding the
+  storage identity so the two legs interpret every reachable spelling the same
+  way (#272, BE-17528).
+
+## 0.3.9 - 2026-10-04
+
+### Added
+
+- Let a producer declare one node instance's ordered serializable-widget
+  identity in `widgets_values_form` (schema Amendment A24). A node that
+  declares one is decomposed, addressed by `(widget, widget_occurrence)` and
+  projected back in its original serialization shape through that declaration
+  with no catalog lookup — so an uncatalogued class becomes writable instead of
+  rejected `opaque_widgets`, two same-named widgets stay independently
+  addressable where a class-level `widget_order` cannot describe them, and
+  every serialized key the declaration does not name round-trips verbatim and
+  cannot be clobbered by a widget write. The declaration is closed to
+  `{order}`, a malformed one is refused rather than ignored, and a node that
+  carries none behaves exactly as before. `SCHEMA_VERSION` is unchanged at v5:
+  the reserved `__widgets_form` key is reachable only on a node that opted in,
+  so no earlier v5 document can contain it. One pre-existing path stays
+  narrower than the rest: `insert_workflow` strips every `__`-prefixed key at
+  every depth, so a serializer's own `__`-prefixed data key inside
+  `widgets_values` does not survive that path, while the same node minted,
+  added or written through `set_widget` keeps it (#273).
+- Export `WIDGET_FORM_FIELD`, `WIDGET_FORM_KEY`, `WidgetValuesForm` and
+  `WidgetFormShape` so a producer and a catalog-less follower do not hardcode
+  the names. Interpreting a declaration stays package-private (#273).
+
+### Fixed
+
+- Derive a numeric id for an `insert_workflow` group instead of the string
+  derived id every other remapped kind gets, at the root and inside
+  `definitions.subgraphs[].groups`. The frontend's workflow schema declares
+  `groups[].id` as a number and refuses the whole workflow when one is a
+  string, so an insert carrying groups projected a workflow the canvas
+  rejected, after which the canvas kept its own copy of the graph and stopped
+  taking the document's projection. A document that already stores the string
+  form reads back through the same fold, so it projects the number a fresh
+  insert derives and `project` → `mint` → `project` stays a fixed point; only
+  that derived form is coerced, and a workflow's own string group id, a numeric
+  one and an absent one are untouched. Link ids are unchanged (#264).
+
+## 0.3.8 - 2026-10-03
+
+### Added
+
+- Address duplicate widget names by zero-based occurrence so each occurrence
+  has an independent stored value and LWW target. Schema v5 fails closed on
+  older layouts, which the host re-mints from source rather than migrating in
+  place (#266).
+
+### Fixed
+
+- Keep an existing `widgets_values_named` passthrough value coherent when
+  `set_widget` changes the final occurrence of that name, including top-level,
+  subgraph-interior, and promoted-host writes. Earlier duplicate occurrences
+  remain independent, and missing or unresolvable name registers are not
+  invented (#269).
+
+## 0.3.7 - 2026-09-26
+
+### Added
+
+- Consume every option of a dynamic combo from the catalog's `dynamic_combos`
+  map, so option sub-widgets (including nested dynamic combos and options other
+  than the default) can be named, validated, minted, written and projected.
+  Writes to a child of an inactive option are accepted, and a selector write
+  changes no stored values: option defaults are applied at read time, so the
+  result does not depend on the order ops arrive in (#240).
+
+### Changed
+
+- `project(mint(w, catalog), catalog)` now fills the selected option's
+  defaults for sub-widget slots `w` does not carry, matching how the frontend
+  loads such a node. Schema section 7 defines `canonical(w)` accordingly (#240).
+
+### Fixed
+
+- A legacy overflow slot (`_extra_N`) keeps projecting after a selector write
+  instead of making the node unprojectable; the selected option's child takes
+  that position while it is active (#240).
+- `applyConnect` rejects a non-string `grow.inputcount.widget` before any slot
+  growth, so a refused op leaves the document unchanged (#240).
+
+## 0.3.6 - 2026-09-23
+
+### Added
+
+- Support `add_node` inside a subgraph definition via a non-empty instance
+  `path`, with path-scoped LWW identity, deterministic interior node ordering,
+  shared-definition protection, and explicit missing-container rejection.
+
+### Fixed
+
+- Resolve a definition's own interior node `type` (and `properties.proxyWidgets`
+  interior-id references) against its sibling scope when the nested-children
+  scope has no match, so a subgraph instance nested inside another subgraph's
+  own type — the flat-sibling shape litegraph's real serializer
+  (`LGraph.asSerialisable()` / `findUsedSubgraphIds()`) actually emits — now
+  remaps correctly instead of leaving the raw blueprint id un-remapped and
+  falling back to a plain, widget-less node in ComfyUI_frontend's materializer
+  (#253).
+
+## 0.3.5 - 2026-09-23
+
+### Fixed
+
+- Declared `structuredClone` as an ambient global in `src/global.d.ts` instead
+  of relying on a consumer's resolved `@types/node` version or the `"DOM"`
+  lib. TypeScript only knows about `structuredClone`'s type via
+  `lib.dom.d.ts`/`lib.webworker.d.ts`, or via `@types/node`'s `web-globals`
+  module, which only later `@types/node` releases ship. A toolchain that
+  resolves an older `@types/node` with no `"DOM"` in `lib` (this package's own
+  `tsconfig.json` has `lib: ["ES2022"]`) hit `TS2304: Cannot find name
+  'structuredClone'` across `applier.ts`, `project.ts`, `mint.ts`,
+  `compact.ts`, and `doc.ts`, even though the function is present at runtime
+  in Node >=17 and every evergreen browser. The declaration coexists with
+  `@types/node`'s own when a newer version is resolved, and does not add
+  `"DOM"` to `lib`, which would conflict with this package's `check:purity`
+  guard against DOM globals leaking into the Node-side build.
+
+## 0.3.4 - 2026-09-23
+
+### Fixed
+
+- Mint genuine numeric link IDs for `insert_workflow` instead of folding them
+  into strings. Link IDs are now derived purely from immutable operation
+  content (`op_id`, graph scope, and raw link ID) via SHA-256 folded into the
+  full JavaScript safe-integer range, matching the branded-number `LinkId`
+  type ComfyUI_frontend expects and removing the reproducible collisions the
+  prior 32-bit string-folding workaround produced (ADR-033).
+
+### Changed
+
+- `insert_workflow` link-ID derivation no longer reads document state or
+  retries against already-present IDs, so replicas applying colliding
+  operations in different arrival orders still assign the same ID.
+
+## 0.3.3 - 2026-09-22
+
+### Fixed
+
+- Keep nodes inserted by `insert_workflow` editable and remap promoted-widget
+  references to their renamed interior nodes, preserving reserved IO sentinels.
+- Measure benchmark apply operations against fresh documents rather than
+  already-applied operations.
+
+### Added
+
+- Typed per-field node metadata operations with independent conflict ordering.
+- `readApplied()` for inspecting the applied-operation ledger.
+- `compact()` for creating a fresh document lineage while retaining conflict
+  stamps, node incarnations, link state and clock reservations. Hosts still own
+  replica cutover; publishing this helper does not enable compaction in consumers.
+- Regression coverage for duplicate-create convergence and CLI-created Note
+  nodes, plus a document-growth benchmark matrix.
+
+## 0.3.2 - 2026-09-21
+
+### Fixed
+
+- Republishes the 0.3.1 release, which never reached npm: the tag was never
+  pushed, so the version bump landed on `main` without a corresponding package
+  publish. 0.3.2 carries the same `insert_workflow` fix as 0.3.1 (see below)
+  and is published through the new label-gated release automation.
+
+## 0.3.1 - 2026-09-21
+
+### Fixed
+
+- Fixed `insert_workflow` remap dropping a pasted subgraph definition's
+  promoted-input and exposed-output `linkIds`. The synthetic IO node
+  sentinels a promoted input resolves against were being treated as missing
+  nodes during dangling-link dropping, so every sentinel-fed link was
+  discarded and the promoted widget silently stopped being recognized after
+  an insert.
+
+## 0.3.0 - 2026-09-19
+
+### Changed
+
+- Breaking: advances the published package from document schema 2 to schema 4.
+  Durable link state lives in `__link_state`, and Lamport reservations now live
+  in `__clock_reservations`, separate from the winning write-target stamps
+  returned by `readStamps()`.
+- Old document layouts are refused without mutation. `migrate()` validates the
+  current layout; it does not upgrade or relabel schemas 1–3. Hosts must
+  re-mint source workflows into a new lineage and settle or discard old pending
+  queues before a coordinated consumer cutover. Publication alone does not
+  authorize that cutover or establish frontend rollout sign-off.
+
+### Added
+
+- Added the standalone `insert_workflow` op for atomic workflow-template
+  insertion. The applier derives every carried node, link, group, and
+  definition ID from the operation ID and graph scope, avoiding allocation
+  against mutable document state.
+- Recovered standalone link, definition, scoped interior-connect, operation
+  inspection, and checked public operation-type surfaces.
+
+### Fixed
+
+- Hardened stamp admission, opaque-widget projection, hostile snapshot keys,
+  definition identities, interior link preservation, and draft-07 event-schema
+  compatibility.
+- Restored standalone package gates and release retry verification. Existing
+  npm versions are reused only when artifact integrity and verified provenance
+  match the tagged source; different bytes must use a new version.
+
+## 0.2.0 - 2026-08-30
+
+### Changed
+
+- Breaking: replaced the 0.1.0 `ApplyResult` shape with ADR-007's ordered,
+  discriminated per-op `outcomes` records and renamed `version` to `ops_seen`.
+- Added ADR-008's caller-owned event sink contract so hosts can receive
+  structured cmp events without a package-global registry or telemetry
+  dependency.
+- Exported the agent event schema surface from `src/index.ts`, including
+  `AGENT_EVENT_JSON_SCHEMA`, `CMP_EVENT_SCHEMA_VERSION`, and event types.
+- Added the ADR-011 replay-never-wipe reconnect contract to the 0.2.0 surface:
+  reconnects continue from document state and state-vector delta replay instead
+  of replacing follower documents during ordinary catch-up.
+- Added ADR-021's `DocDerivedLamportClockStore`, deriving Lamport floors from
+  the caller-owned document's committed `__stamps` ledger rather than package
+  process state.
+
+## 0.1.0 - 2026-08-13
+
+### Added
+
+- Initial op-based CRDT applier for Comfy workflow graph edits.
+- Stamp-based conflict identity and idempotent op replay keyed by `op_id`.
+- Catalog SHA binding at mint time for deterministic widget projection.
+- Read-only snapshot and projection surfaces for consumers that need workflow
+  JSON without direct document mutation.

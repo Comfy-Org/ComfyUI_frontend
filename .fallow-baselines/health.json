@@ -598,6 +598,234 @@
         "count": 1
       }
     },
+    "packages/comfy-multi-player/bench/apply-project.bench.ts": {
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "packages/comfy-multi-player/eslint.config.mjs": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "packages/comfy-multi-player/scripts/bench-read.mjs": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 2
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "packages/comfy-multi-player/scripts/check-import-graph.mjs": {
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "packages/comfy-multi-player/scripts/check-pins.mjs": {
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 2
+      }
+    },
+    "packages/comfy-multi-player/scripts/check-purity.mjs": {
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "packages/comfy-multi-player/scripts/gen-coderabbit-config.mjs": {
+      "crap_high": {
+        "count": 2
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "packages/comfy-multi-player/scripts/growth-matrix.mjs": {
+      "complexity_high": {
+        "count": 1
+      }
+    },
+    "packages/comfy-multi-player/scripts/release-retry.mjs": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 3
+      },
+      "crap_high": {
+        "count": 3
+      }
+    },
+    "packages/comfy-multi-player/scripts/verify-corpus.mjs": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "packages/comfy-multi-player/scripts/verify-package.mjs": {
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "packages/comfy-multi-player/src/applier.ts": {
+      "complexity_critical": {
+        "count": 2
+      },
+      "complexity_high": {
+        "count": 5
+      },
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 2
+      },
+      "crap_high": {
+        "count": 13
+      },
+      "crap_moderate": {
+        "count": 18
+      }
+    },
+    "packages/comfy-multi-player/src/collab-trace.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 2
+      },
+      "crap_moderate": {
+        "count": 4
+      }
+    },
+    "packages/comfy-multi-player/src/doc.ts": {
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "packages/comfy-multi-player/src/limits.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "packages/comfy-multi-player/src/mint.ts": {
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "packages/comfy-multi-player/src/project.ts": {
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "packages/comfy-multi-player/src/read.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "packages/comfy-multi-player/src/remap.ts": {
+      "crap_moderate": {
+        "count": 3
+      }
+    },
+    "packages/comfy-multi-player/test/ci-release-contract.test.ts": {
+      "crap_high": {
+        "count": 2
+      }
+    },
+    "packages/comfy-multi-player/test/convergence.test.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "packages/comfy-multi-player/test/dochost-driver.test.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "packages/comfy-multi-player/test/encoding-survival.regression.test.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "packages/comfy-multi-player/test/event-schema-drift.test.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "packages/comfy-multi-player/test/lint-contract.test.ts": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "packages/comfy-multi-player/test/nested-encoding-loss.regression.test.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "packages/comfy-multi-player/test/permutation/connect-delete-equivalence.permutation.test.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "packages/comfy-multi-player/test/permutation/duplicate-link-id.permutation.test.ts": {
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "packages/comfy-multi-player/test/permutation/full-op-pool.permutation.test.ts": {
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 3
+      }
+    },
+    "packages/comfy-multi-player/test/permutation/lifecycle-continuation.permutation.test.ts": {
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
     "packages/design-system/src/css/iconifyDynamicPlugin.ts": {
       "crap_high": {
         "count": 1
@@ -3712,6 +3940,13 @@
     "apps/website/src/components/ui/button-mask/ButtonMask.vue:circular dependency",
     "browser_tests/fixtures/components/QueuePanel.ts:circular dependency",
     "scripts/cicd/resolve-comfyui-release.ts:complexity",
-    "scripts/perf-report.ts:complexity"
+    "scripts/perf-report.ts:complexity",
+    "packages/comfy-multi-player/test/apply-result-helpers.ts:high impact",
+    "packages/comfy-multi-player/src/mint.ts:high impact",
+    "packages/comfy-multi-player/scripts/verify-package.mjs:untested risk",
+    "packages/comfy-multi-player/test/ci-release-contract.test.ts:untested risk",
+    "packages/comfy-multi-player/scripts/release-retry.mjs:untested risk",
+    "packages/comfy-multi-player/src/collab-trace.ts:untested risk",
+    "packages/comfy-multi-player/test/permutation/full-op-pool.permutation.test.ts:untested risk"
   ]
 }
