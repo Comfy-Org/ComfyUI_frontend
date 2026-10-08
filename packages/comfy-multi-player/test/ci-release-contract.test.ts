@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parse } from "yaml";
@@ -142,6 +143,12 @@ const loadYaml = (relative: string) => parse(readRepo(relative)) as unknown;
 const section = (markdown: string, heading: string) => markdown.split(`${heading}\n`)[1]?.split("\n## ")[0];
 
 describe("monorepo package ownership", () => {
+  it("keeps website assertions and jest-dom augmentations on one Vitest instance", () => {
+    const website = createRequire(join(repoRoot, "apps/website/package.json"));
+    const matchers = createRequire(website.resolve("@testing-library/jest-dom/vitest"));
+    expect(website.resolve("vitest")).toBe(matchers.resolve("vitest"));
+  });
+
   it("routes README development to the frontend workspace with pnpm", () => {
     const develop = section(readPackage("README.md"), "## Develop");
     expect(develop).toBeDefined();
