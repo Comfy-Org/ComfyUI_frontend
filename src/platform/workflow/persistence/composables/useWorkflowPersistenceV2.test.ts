@@ -5,6 +5,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp, defineComponent, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  createWidgetHandles,
+  subscribeAsyncWidgetSerialization
+} from '@/platform/nodeApi/widgetHandle'
+import { app as comfyApp } from '@/scripts/app'
+
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { StorageKeys } from '../base/storageKeys'
@@ -158,6 +165,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
       serialize: () => mocks.serializeMock()
     },
     rootGraph: {
+      nodes: [],
       serialize: () => mocks.serializeMock()
     },
     loadGraphData: (...args: unknown[]) => mocks.loadGraphDataMock(...args),
@@ -683,6 +691,121 @@ describe('useWorkflowPersistenceV2', () => {
 
         await expect(initializeWorkflow()).resolves.toBe('url-intent')
         expect(loadBlankWorkflowMock).toHaveBeenCalled()
+      }
+    )
+  })
+
+  describe('worker-projected drafts', () => {
+    let previousGraph: PropertyDescriptor | undefined
+    const stops: Array<() => void> = []
+
+    beforeEach(() => {
+      previousGraph = Object.getOwnPropertyDescriptor(comfyApp, 'rootGraph')
+    })
+
+    afterEach(() => {
+      for (const stop of stops.splice(0)) stop()
+      if (previousGraph)
+        Object.defineProperty(comfyApp, 'rootGraph', previousGraph)
+      else Reflect.deleteProperty(comfyApp, 'rootGraph')
+    })
+
+    async function draftWidget() {
+      const graph = new LGraph()
+      const node = new LGraphNode('Test', 'Test')
+      node.serialize_widgets = true
+      graph.add(node)
+      const widget = node.addWidget(
+        'string',
+        'tags',
+        'live',
+        () => undefined,
+        {}
+      )
+      const handle = createWidgetHandles(() => graph).handleFor(
+        String(node.id),
+        'tags'
+      )
+      Object.defineProperty(comfyApp, 'rootGraph', {
+        value: graph,
+        configurable: true,
+        writable: true
+      })
+      const workflowStore = useWorkflowStore()
+      const workflow = await workflowStore
+        .createTemporary('WorkerDraft.json')
+        .load()
+      workflowStore.activeWorkflow = workflow
+      mountWorkflowPersistence()
+      await nextTick()
+      return { workflow, widget, handle }
+    }
+
+    it('persists the fresh workflow projection without changing the editing value', async () => {
+      const { workflow, widget, handle } = await draftWidget()
+      stops.push(
+        subscribeAsyncWidgetSerialization(
+          handle,
+          async ({ context, value }) => {
+            await Promise.resolve()
+            return { changed: true, value: `${context}:${value}` }
+          }
+        )
+      )
+      widget.value = 'edited'
+      mocks.state.graphChangedHandler?.()
+      window.dispatchEvent(new PageTransitionEvent('pagehide'))
+      await vi.runAllTimersAsync()
+
+      const stored = useWorkflowDraftStoreV2().getDraft(workflow.path)
+      expect(stored).toBeDefined()
+      expect(JSON.parse(stored!.data).nodes[0].widgets_values).toEqual([
+        'workflow:edited'
+      ])
+      expect(widget.value).toBe('edited')
+    })
+
+    it.for(['session', 'path', 'logout', 'dispose'] as const)(
+      'drops an in-flight projection after %s changes its owner',
+      async (change) => {
+        const { workflow, handle } = await draftWidget()
+        const started = createDeferred()
+        const release = createDeferred()
+        const finished = createDeferred()
+        stops.push(
+          subscribeAsyncWidgetSerialization(handle, async () => {
+            started.resolve()
+            await release.promise
+            finished.resolve()
+            return { changed: true, value: 'late-projection' }
+          })
+        )
+        const save = vi.spyOn(useWorkflowDraftStoreV2(), 'saveDraft')
+        mocks.state.graphChangedHandler?.()
+        window.dispatchEvent(new PageTransitionEvent('pagehide'))
+        await started.promise
+
+        const changes = {
+          session: () => {
+            workflow.sessionId = null
+          },
+          path: () => {
+            workflow.path = 'workflows/renamed.json'
+          },
+          logout: () => currentUserMocks.onUserLogout.mock.calls[0][0](),
+          dispose: () => {
+            const mounted = mountedApps.pop()
+            expect(mounted).toBeDefined()
+            mounted!.app.unmount()
+            mounted!.container.remove()
+          }
+        }
+        changes[change]()
+        release.resolve()
+        await finished.promise
+        await vi.runAllTimersAsync()
+
+        expect(save).not.toHaveBeenCalled()
       }
     )
   })

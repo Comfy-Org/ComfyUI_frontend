@@ -110,6 +110,8 @@ interface HandleCommon {
 // ─── comfyApi.ts ─────────────────────────────────────────────────
 
 interface Comfy {
+  /** Available in the Secure Nodes worker realm, for caller-owned UI only. */
+  element(name: string): OwnedElementHandle
   /**
    * `major.minor`. Prefer `supports()` over comparing this — a capability
    * survives being backported or reordered across minors; a version comparison
@@ -487,6 +489,7 @@ interface ConnectionChangeEvent {
   readonly side: 'input' | 'output'
   readonly index: number
   readonly connected: boolean
+  readonly reconstructing: boolean
   /**
    * The node at the other end, or `undefined` on a disconnect.
    *
@@ -1262,6 +1265,7 @@ interface NodeMoveEvent {
 
 // ─── modelsHandle.ts ─────────────────────────────────────────────
 
+/** @knipIgnoreUnusedButUsedByCustomNodes */
 type ModelFolder =
   | 'checkpoints'
   | 'clip'
@@ -1269,12 +1273,15 @@ type ModelFolder =
   | 'controlnet'
   | 'diffusion_models'
   | 'embeddings'
+  | 'ipadapter'
   | 'loras'
   | 'text_encoders'
   | 'unet'
   | 'upscale_models'
   | 'vae'
+  | 'vae_approx'
 
+/** @knipIgnoreUnusedButUsedByCustomNodes */
 type ModelSidecarSuffix = '.md' | '.txt'
 
 interface ModelsHandle {
@@ -1552,6 +1559,73 @@ interface NodeHandle extends HandleCommon {
   readonly widgets: WidgetCollection
   snapshot(): Readonly<NodeSnapshot> | undefined
   remove(): void
+}
+
+// ─── ownedElementHandle.ts ───────────────────────────────────────
+
+/** Scalar operations on a keyed element in the caller's mounted UI.
+ * The secure provider enforces the mounted tag's allowlist and ownership.
+ * No DOM node is returned; removed elements reject until remounted.
+ */
+interface OwnedElementHandle {
+  get(
+    property:
+      | 'currentTime'
+      | 'duration'
+      | 'videoWidth'
+      | 'videoHeight'
+      | 'readyState'
+      | 'volume'
+      | 'naturalWidth'
+      | 'naturalHeight'
+      | 'width'
+      | 'height'
+      | 'selectionStart'
+      | 'selectionEnd'
+      | 'scrollTop'
+  ): Promise<number>
+  get(property: 'paused' | 'ended' | 'muted' | 'complete'): Promise<boolean>
+  get(property: 'value'): Promise<string>
+  set(
+    property:
+      | 'currentTime'
+      | 'volume'
+      | 'playbackRate'
+      | 'width'
+      | 'height'
+      | 'scrollTop',
+    value: number
+  ): Promise<void>
+  set(property: 'muted' | 'loop', value: boolean): Promise<void>
+  set(property: 'value' | 'src' | 'alt', value: string): Promise<void>
+  invoke(
+    method: 'play' | 'pause' | 'load' | 'focus' | 'select' | 'click'
+  ): Promise<void>
+  invoke(
+    method: 'setSelectionRange',
+    start: number,
+    end: number,
+    direction?: 'forward' | 'backward' | 'none'
+  ): Promise<void>
+  listen(
+    event:
+      | 'timeupdate'
+      | 'loadedmetadata'
+      | 'loadeddata'
+      | 'play'
+      | 'pause'
+      | 'ended'
+      | 'seeked'
+      | 'error'
+      | 'load'
+      | 'input'
+      | 'change',
+    listener: (detail: {
+      readonly currentTime?: number
+      readonly duration?: number
+      readonly value?: string
+    }) => void
+  ): Promise<void>
 }
 
 // ─── queueHandle.ts ──────────────────────────────────────────────

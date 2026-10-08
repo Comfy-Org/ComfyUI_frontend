@@ -115,6 +115,7 @@ const localNodeId = computed(() =>
 )
 
 const showMarkdown = computed<boolean>(() => {
+  if (widget.type === 'progressText') return false
   const graphId = canvasStore.canvas?.graph?.rootGraph.id
   if (!graphId || localNodeId.value === null) return false
   return (

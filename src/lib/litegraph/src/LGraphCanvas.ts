@@ -68,6 +68,7 @@ import {
 import { isOverNodeInput, isOverNodeOutput } from './canvas/measureSlots'
 import { strokeShape } from './draw'
 import { defineDeprecatedProperty } from './utils/feedback'
+import { beginReconstruction } from './utils/graphReconstruction'
 import {
   cachedMeasureText,
   clearTextMeasureCache
@@ -4340,9 +4341,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
   pasteFromClipboard(options: IPasteFromClipboardOptions = {}): void {
     this.emitBeforeChange()
+    const endReconstruction = beginReconstruction(this.graph)
     try {
       this._pasteFromClipboard(options)
     } finally {
+      endReconstruction()
       this.emitAfterChange()
     }
   }

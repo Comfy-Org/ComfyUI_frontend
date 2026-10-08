@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { api } from '@/scripts/api'
 
 import { ComfyApiError } from './errors'
+import type { ModelFolder } from './modelsHandle'
 import { createModelsApi } from './modelsHandle'
 
 describe('model catalogue access', () => {
@@ -70,4 +71,33 @@ describe('model catalogue access', () => {
       models.readSidecar('loras', 'styles/a.safetensors', '.md')
     ).rejects.toThrow(/invalid response/)
   })
+
+  it.for<ModelFolder>(['ipadapter', 'vae_approx'])(
+    'reads the registered %s catalogue and its sidecars',
+    async (folder) => {
+      vi.mocked(api.fetchApi)
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify(['components/model.safetensors']))
+        )
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify({ content: 'Model documentation' }))
+        )
+
+      const models = createModelsApi()
+      await expect(models.list(folder)).resolves.toEqual([
+        'components/model.safetensors'
+      ])
+      await expect(
+        models.readSidecar(folder, 'components/model.safetensors', '.md')
+      ).resolves.toBe('Model documentation')
+      expect(api.fetchApi).toHaveBeenNthCalledWith(
+        1,
+        `/secure-nodes/models/${folder}`
+      )
+      expect(api.fetchApi).toHaveBeenNthCalledWith(
+        2,
+        `/secure-nodes/model-sidecar/${folder}?name=components%2Fmodel.safetensors&suffix=.md`
+      )
+    }
+  )
 })

@@ -22,6 +22,12 @@ import { createHandleFactory } from './closedProxy'
 import type { HandleCommon } from './closedProxy'
 import { ComfyApiError } from './errors'
 import { isEmbeddingWorkflow } from './serializeContext'
+import {
+  preparedWidgetValue,
+  registerAsyncWidgetSerializer,
+  serializeWidgetAsync
+} from './asyncWidgetSerialization'
+import type { AsyncWidgetSerializer } from './asyncWidgetSerialization'
 import { constructDeclaredWidget } from './widgetTypes'
 import { subscribeWidgetTextInteraction } from './widgetTextInteraction'
 import type { WidgetTextInteractionEvent } from './widgetTextInteraction'
@@ -219,6 +225,20 @@ export interface WidgetSerializeEvent {
 
 export type Unsubscribe = () => void
 
+const asyncSerializationSubscribers = new WeakMap<
+  WidgetHandle,
+  (listener: AsyncWidgetSerializer) => Unsubscribe
+>()
+
+export function subscribeAsyncWidgetSerialization(
+  widget: WidgetHandle,
+  listener: AsyncWidgetSerializer
+): Unsubscribe {
+  const subscribe = asyncSerializationSubscribers.get(widget)
+  if (!subscribe) throw new ComfyApiError('Unknown widget serialization handle')
+  return subscribe(listener)
+}
+
 /** `nodeId` and widget name, joined by a character neither may contain. */
 const SEP = '\0'
 const compositeKey = (nodeId: string, name: string) => `${nodeId}${SEP}${name}`
@@ -265,11 +285,8 @@ export function createWidgetHandles(
         linked: (w, id): readonly WidgetHandle[] => {
           const [nodeId] = id.split(SEP)
           return Object.freeze(
-            (w.linkedWidgets ?? []).map(
-              (linked) =>
-                factory.handleFor(
-                  compositeKey(nodeId, linked.name)
-                ) as WidgetHandle
+            (w.linkedWidgets ?? []).map((linked) =>
+              handleFor(nodeId, linked.name)
             )
           )
         },
@@ -517,18 +534,41 @@ export function createWidgetHandles(
     const original = w.serializeValue
     w.serializeValue = async function (this: unknown, node, index) {
       const base = original
-        ? ((await original.apply(this as never, [node, index] as never)) as
+        ? (original.apply(this as never, [node, index] as never) as
             | WidgetValue
-            | undefined)
+            | Promise<WidgetValue>)
         : w.value
-      return serializedValue(w, 'prompt', base)
+      return serializeWidgetAsync(
+        w,
+        'prompt',
+        Promise.resolve(base).then((value) =>
+          serializedValue(w, 'prompt', value)
+        )
+      )
     } as IBaseWidget['serializeValue']
     w.serializeWorkflowValue = () =>
-      serializedValue(
-        w,
-        isEmbeddingWorkflow() ? 'embedded' : 'workflow',
-        w.value
+      preparedWidgetValue(w, () =>
+        serializedValue(
+          w,
+          isEmbeddingWorkflow() ? 'embedded' : 'workflow',
+          w.value
+        )
       )
+  }
+
+  function handleFor(nodeId: string, name: string): WidgetHandle {
+    const handle = factory.handleFor(compositeKey(nodeId, name)) as WidgetHandle
+    asyncSerializationSubscribers.set(handle, (listener) => {
+      const widget = findWidget(resolveNode(nodeId), name)
+      if (!widget) throw new ComfyApiError(`No widget named '${name}'`)
+      ensureSerializeBridge(widget)
+      return registerAsyncWidgetSerializer(
+        widget,
+        listener,
+        () => findWidget(resolveNode(nodeId), name) === widget
+      )
+    })
+    return handle
   }
 
   /** Removes a widget and keeps the store's render order in step. */
@@ -544,12 +584,11 @@ export function createWidgetHandles(
 
   return {
     removeWidget,
-    handleFor: (nodeId: string, name: string) =>
-      factory.handleFor(compositeKey(nodeId, name)) as WidgetHandle,
+    handleFor,
     liveHandleFor: (nodeId: string, name: string) =>
-      factory.liveHandleFor(compositeKey(nodeId, name)) as
-        | WidgetHandle
-        | undefined,
+      factory.liveHandleFor(compositeKey(nodeId, name))
+        ? handleFor(nodeId, name)
+        : undefined,
     prune: () => factory.prune(),
     get cacheSize() {
       return factory.cacheSize

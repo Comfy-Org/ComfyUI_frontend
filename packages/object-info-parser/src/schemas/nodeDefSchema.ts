@@ -10,6 +10,58 @@ const CONTROL_OPTIONS = [
 const RESULT_ITEM_TYPE = z.enum(['input', 'output', 'temp'])
 
 const zComboOption = z.union([z.string(), z.number()])
+export const zRemoteStaticOptions = z.unknown().transform((values, context) => {
+  if (!Array.isArray(values) || values.length > 4096) {
+    context.addIssue({
+      code: 'custom',
+      message: 'Options must be a list of at most 4096 strings'
+    })
+    return z.NEVER
+  }
+  const result: string[] = []
+  let total = 0
+  for (const value of values) {
+    if (typeof value !== 'string' || value.length > 1024) {
+      context.addIssue({
+        code: 'custom',
+        message: 'Options must contain bounded strings'
+      })
+      return z.NEVER
+    }
+    let size: number
+    try {
+      encodeURIComponent(value)
+      size = new TextEncoder().encode(value).length
+    } catch {
+      context.addIssue({
+        code: 'custom',
+        message: 'Options must be valid UTF-8'
+      })
+      return z.NEVER
+    }
+    total += size
+    if (
+      size > 1024 ||
+      total > 1024 * 1024 ||
+      [...value].some(
+        (character) =>
+          character.charCodeAt(0) < 32 || character.charCodeAt(0) === 127
+      )
+    ) {
+      context.addIssue({
+        code: 'custom',
+        message: 'Options exceed their string or byte bounds'
+      })
+      return z.NEVER
+    }
+    result.push(value)
+  }
+  return result
+})
+export const zRemoteLiveOptions = zRemoteStaticOptions.refine(
+  (options) => options.every((value) => value.length > 0),
+  'Live options must contain nonempty strings'
+)
 const zRemoteWidgetConfig = z.object({
   route: z.string().url().or(z.string().startsWith('/')),
   refresh: z.number().gte(128).safe().or(z.number().lte(0).safe()).optional(),
@@ -17,6 +69,8 @@ const zRemoteWidgetConfig = z.object({
   query_params: z.record(z.string(), z.string()).optional(),
   refresh_button: z.boolean().optional(),
   control_after_refresh: z.enum(['first', 'last']).optional(),
+  initial_selection: z.enum(['first', 'last']).optional(),
+  static_options: zRemoteStaticOptions.optional(),
   timeout: z.number().gte(0).optional(),
   max_retries: z.number().gte(0).optional()
 })

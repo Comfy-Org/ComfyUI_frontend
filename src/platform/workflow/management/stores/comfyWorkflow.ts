@@ -1,4 +1,4 @@
-import { markRaw } from 'vue'
+import { markRaw, toRaw } from 'vue'
 
 import { t } from '@/i18n'
 import { createUuidv4 } from '@/utils/uuid'
@@ -13,6 +13,8 @@ import type { SerializedNodeId } from '@/types/nodeId'
 import type { AppMode } from '@/utils/appMode'
 import type { WidgetId } from '@/types/widgetId'
 import { generateUUID } from '@/utils/formatUtil'
+import { serializeWorkflow } from '@/platform/nodeApi/asyncWidgetSerialization'
+import { ComfyApiError } from '@/platform/nodeApi/errors'
 
 export interface InputWidgetConfig {
   height?: number
@@ -192,7 +194,7 @@ export class ComfyWorkflow extends UserFile {
     const { useWorkflowDraftStoreV2 } =
       await import('@/platform/workflow/persistence/stores/workflowDraftStoreV2')
     const draftStore = useWorkflowDraftStoreV2()
-    this.content = JSON.stringify(this.activeState)
+    this.content = await serializedSaveContent(this)
     // Force save to ensure the content is updated in remote storage incase
     // the isModified state is screwed by changeTracker.
     const ret = await super.save({ force: true })
@@ -211,7 +213,7 @@ export class ComfyWorkflow extends UserFile {
     const { useWorkflowDraftStoreV2 } =
       await import('@/platform/workflow/persistence/stores/workflowDraftStoreV2')
     const draftStore = useWorkflowDraftStoreV2()
-    this.content = JSON.stringify(this.activeState)
+    this.content = await serializedSaveContent(this)
     const result = await super.saveAs(path)
     draftStore.removeDraft(path)
     return result
@@ -225,6 +227,28 @@ export class ComfyWorkflow extends UserFile {
       defaultValue: this.filename
     })
   }
+}
+
+async function serializedSaveContent(workflow: ComfyWorkflow): Promise<string> {
+  const { useWorkflowStore } = await import('./workflowStore')
+  const { app } = await import('@/scripts/app')
+  const store = useWorkflowStore()
+  if (toRaw(store.activeWorkflow) !== toRaw(workflow) || !app.isGraphReady) {
+    return JSON.stringify(workflow.activeState)
+  }
+  const graph = app.rootGraph
+  const session = workflow.sessionId
+  const path = workflow.path
+  const state = await serializeWorkflow(graph)
+  if (
+    toRaw(store.activeWorkflow) !== toRaw(workflow) ||
+    workflow.sessionId !== session ||
+    workflow.path !== path ||
+    app.rootGraph !== graph
+  ) {
+    throw new ComfyApiError('Workflow changed while preparing its saved values')
+  }
+  return JSON.stringify(state)
 }
 
 export interface LoadedComfyWorkflow extends ComfyWorkflow {

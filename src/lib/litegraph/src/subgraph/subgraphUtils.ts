@@ -24,6 +24,7 @@ import type {
 } from '@/lib/litegraph/src/interfaces'
 import { LiteGraph, createUuidv4 } from '@/lib/litegraph/src/litegraph'
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
+import { beginReconstruction } from '@/lib/litegraph/src/utils/graphReconstruction'
 import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
 import type {
   ISerialisedNode,
@@ -235,8 +236,13 @@ export function multiClone(nodes: Iterable<LGraphNode>): ISerialisedNode[] {
     }
 
     // Must be cloned; litegraph "serialize" is mostly shallow clone
-    newNode.configure(data)
-    clonedNodes.push(newNode.serialize())
+    const endReconstruction = beginReconstruction(newNode)
+    try {
+      newNode.configure(data)
+      clonedNodes.push(newNode.serialize())
+    } finally {
+      endReconstruction()
+    }
   }
 
   return clonedNodes

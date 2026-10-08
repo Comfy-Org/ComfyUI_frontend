@@ -36,8 +36,93 @@ import type { AppMode } from '@/utils/appMode'
 import { isValidUuid } from '@/utils/formatUtil'
 import { zeroUuid } from '@/utils/uuid'
 import { t } from '@/i18n'
+import * as downloadUtil from '@/base/common/downloadUtil'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  createWidgetHandles,
+  subscribeAsyncWidgetSerialization
+} from '@/platform/nodeApi/widgetHandle'
+import { graphToPrompt } from '@/utils/executionUtil'
 
 vi.mock(import('firebase/auth'), { spy: true })
+
+describe('exported widget serialization destinations', () => {
+  let previousGraph: PropertyDescriptor | undefined
+  let previousPrompt: PropertyDescriptor | undefined
+
+  beforeEach(() => {
+    previousGraph = Object.getOwnPropertyDescriptor(app, 'rootGraph')
+    previousPrompt = Object.getOwnPropertyDescriptor(app, 'graphToPrompt')
+  })
+
+  afterEach(() => {
+    if (previousGraph) Object.defineProperty(app, 'rootGraph', previousGraph)
+    else Reflect.deleteProperty(app, 'rootGraph')
+    if (previousPrompt)
+      Object.defineProperty(app, 'graphToPrompt', previousPrompt)
+    else Reflect.deleteProperty(app, 'graphToPrompt')
+  })
+
+  function widgetGraph() {
+    const graph = new LGraph()
+    const node = new LGraphNode('Test', 'Test')
+    node.comfyClass = 'Test'
+    node.serialize_widgets = true
+    graph.add(node)
+    const widget = node.addWidget('string', 'tags', 'live', () => undefined, {})
+    const handle = createWidgetHandles(() => graph).handleFor(
+      String(node.id),
+      'tags'
+    )
+    Object.defineProperty(app, 'rootGraph', {
+      value: graph,
+      configurable: true,
+      writable: true
+    })
+    Object.defineProperty(app, 'graphToPrompt', {
+      value: () => graphToPrompt(graph),
+      configurable: true,
+      writable: true
+    })
+    return { graph, node, widget, handle }
+  }
+
+  it('exports a saved workflow using workflow rather than embedded values', async () => {
+    const { widget, handle } = widgetGraph()
+    subscribeAsyncWidgetSerialization(handle, async ({ context }) => {
+      await Promise.resolve()
+      return { changed: true, value: context }
+    })
+    const downloaded = vi
+      .spyOn(downloadUtil, 'downloadBlob')
+      .mockImplementation(() => {})
+
+    await useWorkflowService().exportWorkflow('saved.json', 'workflow')
+    const blob = downloaded.mock.calls[0][1]
+    expect(JSON.parse(await blob.text()).nodes[0].widgets_values).toEqual([
+      'workflow'
+    ])
+    expect(widget.value).toBe('live')
+  })
+
+  it('exports API inputs using prompt values', async () => {
+    const { node, widget, handle } = widgetGraph()
+    subscribeAsyncWidgetSerialization(handle, async ({ context }) => ({
+      changed: true,
+      value: context
+    }))
+    const downloaded = vi
+      .spyOn(downloadUtil, 'downloadBlob')
+      .mockImplementation(() => {})
+
+    await useWorkflowService().exportWorkflow('api.json', 'output')
+    const blob = downloaded.mock.calls[0][1]
+    expect(JSON.parse(await blob.text())[String(node.id)].inputs.tags).toBe(
+      'prompt'
+    )
+    expect(widget.value).toBe('live')
+  })
+})
 
 beforeEach(() => {
   vi.mocked(setPersistence).mockResolvedValue(undefined)

@@ -18,6 +18,7 @@
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { extensionValue } from '@/lib/litegraph/src/utils/extensionValue'
+import { isReconstructing } from '@/lib/litegraph/src/utils/graphReconstruction'
 import { reportError } from '@/platform/telemetry/reportError'
 import { getLinkTypeColor } from '@/utils/litegraphUtil'
 import { st } from '@/i18n'
@@ -116,6 +117,7 @@ export interface ConnectionChangeEvent {
   readonly side: 'input' | 'output'
   readonly index: number
   readonly connected: boolean
+  readonly reconstructing: boolean
   /**
    * The node at the other end, or `undefined` on a disconnect.
    *
@@ -1721,6 +1723,10 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
             side: input ? 'input' : 'output',
             index,
             connected,
+            reconstructing:
+              isReconstructing(node) ||
+              isReconstructing(node.graph) ||
+              isReconstructing(node.graph?.rootGraph),
             peerNodeId: peer ? String(peer.id) : undefined,
             peerIndex: peer?.slot
           })

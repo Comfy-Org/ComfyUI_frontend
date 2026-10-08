@@ -1,4 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
+import axios from 'axios'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
@@ -27,6 +28,7 @@ function createMockAssetItem(overrides: Partial<AssetItem> = {}): AssetItem {
 }
 
 const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
+vi.mock(import('axios'), { spy: true })
 
 vi.mock(import('@/scripts/widgets'), () => ({
   addValueControlWidgets: vi.fn()
@@ -127,6 +129,65 @@ beforeEach(() => {
 })
 
 describe('useComboWidget', () => {
+  it('keeps the blank selection in a hydrated optional-image combo', async () => {
+    const widget = useComboWidget()(
+      createMockNode(),
+      createMockInputSpec({
+        name: 'optionalImage',
+        options: [''],
+        default: '',
+        remote: {
+          route: '/secure-nodes/assets/input?kind=image',
+          static_options: [''],
+          initial_selection: 'first'
+        }
+      })
+    )
+    vi.mocked(axios.get).mockResolvedValueOnce({ data: ['live.png'] })
+    expect(widget.options.values).toEqual([''])
+    await vi.waitFor(() =>
+      expect(widget.options.values).toEqual(['', 'live.png'])
+    )
+    expect(widget.value).toBe('')
+  })
+
+  it('presents static/live remote choices through the actual combo getter and refresh', async () => {
+    const constructor = useComboWidget()
+    const node = createMockNode()
+    const widget = constructor(
+      node,
+      createMockInputSpec({
+        name: 'wildcard',
+        options: ['animals.txt', 'poses.txt'],
+        default: 'animals.txt',
+        remote: {
+          route:
+            '/secure-nodes/text-files/input?prefix=chibi-wildcards/&suffix=.txt',
+          static_options: ['animals.txt', 'poses.txt'],
+          control_after_refresh: 'last'
+        }
+      })
+    )
+    vi.mocked(axios.get).mockResolvedValueOnce({
+      data: ['chibi-wildcards/live.txt']
+    })
+    expect(widget.options.values).toEqual(['animals.txt', 'poses.txt'])
+    await vi.waitFor(() =>
+      expect(widget.options.values).toEqual([
+        'animals.txt',
+        'poses.txt',
+        'chibi-wildcards/live.txt'
+      ])
+    )
+    expect(widget.value).toBe('animals.txt')
+    vi.mocked(axios.get).mockResolvedValueOnce({ data: [] })
+    if (!('refresh' in widget) || typeof widget.refresh !== 'function')
+      throw new Error('Remote combo has no refresh')
+    widget.refresh()
+    await vi.waitFor(() => expect(widget.value).toBe('poses.txt'))
+    expect(widget.options.values).toEqual(['animals.txt', 'poses.txt'])
+  })
+
   beforeEach(() => {
     vi.mocked(useAssetsStore().getInputName).mockImplementation(
       (hash: string) => hash

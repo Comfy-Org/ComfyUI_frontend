@@ -25,6 +25,10 @@ describe('comfy API root', () => {
 
   const api = () => createComfyApi(() => graph)
 
+  it('does not expose host DOM elements without the secure provider', () => {
+    expect(() => api().element('host-document')).toThrow(/worker realm/)
+  })
+
   it('reports a version independent of the app version', () => {
     expect(api().version).toBe(NODE_API_VERSION)
     expect(api().version).toMatch(/^\d+\.\d+$/)

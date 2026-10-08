@@ -23,6 +23,41 @@ const EXAMPLE_NODE_DEF: ComfyNodeDef = {
 }
 
 describe('validateNodeDef', () => {
+  it('retains an explicitly blank static remote default', () => {
+    const remote = {
+      route: '/secure-nodes/assets/input?kind=image',
+      static_options: [''],
+      initial_selection: 'first'
+    }
+    const parsed = validateComfyNodeDef({
+      ...EXAMPLE_NODE_DEF,
+      input: {
+        required: { image: [['', 'live.png'], { default: '', remote }] }
+      }
+    })
+    expect(parsed?.input?.required?.image).toEqual([
+      ['', 'live.png'],
+      { default: '', remote }
+    ])
+  })
+
+  it('retains static remote choices and selection policy during object-info parsing', () => {
+    const remote = {
+      route:
+        '/secure-nodes/text-files/input?prefix=chibi-wildcards/&suffix=.txt',
+      static_options: ['animals.txt', '雪.txt'],
+      initial_selection: 'first'
+    }
+    const parsed = validateComfyNodeDef({
+      ...EXAMPLE_NODE_DEF,
+      input: { required: { choice: [['animals.txt'], { remote }] } }
+    })
+    expect(parsed?.input?.required?.choice).toEqual([
+      ['animals.txt'],
+      { remote }
+    ])
+  })
+
   it('accepts a valid node definition', () => {
     expect(validateComfyNodeDef(EXAMPLE_NODE_DEF)).not.toBeNull()
   })

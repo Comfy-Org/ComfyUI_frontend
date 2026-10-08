@@ -525,8 +525,8 @@ describe('defs.extend', () => {
       node.onConnectionsChange?.(1, 0, true, undefined, slot)
       node.onConnectionsChange?.(2, 3, false, undefined, slot)
       expect(events).toEqual([
-        { side: 'input', index: 0, connected: true },
-        { side: 'output', index: 3, connected: false }
+        { side: 'input', index: 0, connected: true, reconstructing: false },
+        { side: 'output', index: 3, connected: false, reconstructing: false }
       ])
     })
 

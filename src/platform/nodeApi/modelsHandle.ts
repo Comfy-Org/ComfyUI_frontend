@@ -2,6 +2,7 @@ import { api } from '@/scripts/api'
 
 import { ComfyApiError } from './errors'
 
+/** @knipIgnoreUnusedButUsedByCustomNodes */
 export type ModelFolder =
   | 'checkpoints'
   | 'clip'
@@ -9,11 +10,13 @@ export type ModelFolder =
   | 'controlnet'
   | 'diffusion_models'
   | 'embeddings'
+  | 'ipadapter'
   | 'loras'
   | 'text_encoders'
   | 'unet'
   | 'upscale_models'
   | 'vae'
+  | 'vae_approx'
 
 const MODEL_FOLDERS: readonly ModelFolder[] = [
   'checkpoints',
@@ -22,13 +25,16 @@ const MODEL_FOLDERS: readonly ModelFolder[] = [
   'controlnet',
   'diffusion_models',
   'embeddings',
+  'ipadapter',
   'loras',
   'text_encoders',
   'unet',
   'upscale_models',
-  'vae'
+  'vae',
+  'vae_approx'
 ]
 
+/** @knipIgnoreUnusedButUsedByCustomNodes */
 export type ModelSidecarSuffix = '.md' | '.txt'
 
 export interface ModelsHandle {

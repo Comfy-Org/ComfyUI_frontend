@@ -170,7 +170,7 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
     'markdown',
     {
       component: WidgetMarkdown,
-      aliases: ['MARKDOWN', 'progressText'],
+      aliases: ['MARKDOWN'],
       essential: false
     }
   ],
@@ -178,7 +178,7 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
     'textPreview',
     {
       component: WidgetTextPreview,
-      aliases: ['TEXT_PREVIEW'],
+      aliases: ['TEXT_PREVIEW', 'progressText'],
       essential: false
     }
   ],

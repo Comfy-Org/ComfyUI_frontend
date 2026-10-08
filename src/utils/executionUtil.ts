@@ -2,7 +2,10 @@ import {
   frontendResolverMap,
   frontendSupplierMap
 } from '@/platform/nodeApi/defsRegistry'
-import { whileEmbeddingWorkflow } from '@/platform/nodeApi/serializeContext'
+import {
+  captureWidgetSerializationEpoch,
+  serializeWorkflow
+} from '@/platform/nodeApi/asyncWidgetSerialization'
 import {
   resolveFrontendNodesAsync,
   resolveSuppliedInputsAsync
@@ -120,7 +123,12 @@ export const graphToPrompt = async (
   // This copy travels with the prompt as `extra_pnginfo` and is what lands in
   // the output image — a different destination from a saved file, though the
   // same call builds it.
-  const workflow = whileEmbeddingWorkflow(() => graph.serialize({ sortNodes }))
+  const assertEpoch = captureWidgetSerializationEpoch(graph)
+  const workflow = await serializeWorkflow(graph, {
+    sortNodes,
+    context: 'embedded'
+  })
+  assertEpoch()
 
   // Remove localized_name from the workflow
   for (const node of workflow.nodes) {
@@ -184,11 +192,13 @@ export const graphToPrompt = async (
       scope,
       frontendResolverMap()
     )
+    assertEpoch()
     const scopeSupplied = await resolveSuppliedInputsAsync(
       scope,
       frontendSupplierMap(),
       scopeResolutions
     )
+    assertEpoch()
     for (const [slot, source] of scopeResolutions) {
       resolutions.set(prefix + slot, inScope(prefix, source))
     }
@@ -219,9 +229,11 @@ export const graphToPrompt = async (
       for (const [i, widget] of widgets.entries()) {
         if (!widget.name || widget.options.serialize === false) continue
 
+        assertEpoch()
         const widgetValue = widget.serializeValue
           ? await widget.serializeValue(node, i)
           : widget.value
+        assertEpoch()
         // By default, Array values are reserved to represent node connections.
         // We need to wrap the array as an object to avoid the misinterpretation
         // of the array as a node connection.
@@ -313,5 +325,6 @@ export const graphToPrompt = async (
     }
   }
 
+  assertEpoch()
   return { workflow: workflow as ComfyWorkflowJSON, output }
 }

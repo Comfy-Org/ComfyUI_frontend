@@ -101,6 +101,164 @@ beforeEach(() => {
 })
 
 describe('useRemoteWidget', () => {
+  describe('static catalogue union', () => {
+    it('preserves an explicit blank through hydration, refresh and shared raw caching', async () => {
+      const route = createMockConfig().route
+      const options = createMockOptions({
+        route,
+        static_options: [''],
+        initial_selection: 'first',
+        control_after_refresh: 'first'
+      })
+      const hook = useRemoteWidget(options)
+      mockAxiosResponse(['live.png'])
+      expect(await getResolvedValue(hook)).toEqual(['', 'live.png'])
+      expect(options.widget.value).toBe('')
+      expect(hook.getCacheEntry()?.data).toEqual(['live.png'])
+      const plain = useRemoteWidget(createMockOptions({ route }))
+      expect(await getResolvedValue(plain)).toEqual(['live.png'])
+      options.widget.value = 'live.png'
+      mockAxiosResponse([])
+      hook.refreshValue()
+      await vi.waitFor(() => expect(options.widget.value).toBe(''))
+      expect(hook.getCachedValue()).toEqual([''])
+      expect(hook.getCacheEntry()?.data).toEqual([])
+      mockAxiosResponse([''])
+      hook.refreshValue()
+      await vi.waitFor(() =>
+        expect(hook.getCacheEntry()?.error).toBeInstanceOf(Error)
+      )
+      expect(hook.getCachedValue()).toEqual([''])
+      expect(hook.getCacheEntry()?.timestamp).toBeUndefined()
+    })
+
+    it('keeps bundled order/default and merges unique live names', async () => {
+      const options = createMockOptions({
+        static_options: ['animals.txt', 'poses.txt', '雪.txt']
+      })
+      mockAxiosResponse([
+        'poses.txt',
+        'chibi-wildcards/animals.txt',
+        'z.txt',
+        'z.txt'
+      ])
+      const hook = useRemoteWidget(options)
+      expect(await getResolvedValue(hook)).toEqual([
+        'animals.txt',
+        'poses.txt',
+        '雪.txt',
+        'chibi-wildcards/animals.txt',
+        'z.txt'
+      ])
+      expect(options.widget.value).toBe('animals.txt')
+      expect(hook.getCacheEntry()?.data).toEqual([
+        'poses.txt',
+        'chibi-wildcards/animals.txt',
+        'z.txt',
+        'z.txt'
+      ])
+    })
+
+    it('shares only raw responses between widgets with different static lists', async () => {
+      const route = createMockConfig().route
+      const a = useRemoteWidget(
+        createMockOptions({ route, static_options: ['a.txt'] })
+      )
+      mockAxiosResponse(['live.txt'])
+      expect(await getResolvedValue(a)).toEqual(['a.txt', 'live.txt'])
+      const b = useRemoteWidget(
+        createMockOptions({ route, static_options: ['b.txt'] })
+      )
+      expect(await getResolvedValue(b)).toEqual(['b.txt', 'live.txt'])
+      expect(a.getCachedValue()).toEqual(['a.txt', 'live.txt'])
+      expect(a.getCacheEntry()).toBe(b.getCacheEntry())
+    })
+
+    it('drops deleted authored names on refresh and selects from the merged list', async () => {
+      const options = createMockOptions({
+        static_options: ['animals.txt'],
+        control_after_refresh: 'last'
+      })
+      const hook = useRemoteWidget(options)
+      mockAxiosResponse([
+        'chibi-wildcards/deleted.txt',
+        'chibi-wildcards/current.txt'
+      ])
+      await getResolvedValue(hook)
+      mockAxiosResponse(['chibi-wildcards/current.txt'])
+      hook.refreshValue()
+      await vi.waitFor(() =>
+        expect(options.widget.value).toBe('chibi-wildcards/current.txt')
+      )
+      expect(hook.getCachedValue()).toEqual([
+        'animals.txt',
+        'chibi-wildcards/current.txt'
+      ])
+      mockAxiosResponse([])
+      hook.refreshValue()
+      await vi.waitFor(() => expect(options.widget.value).toBe('animals.txt'))
+      expect(hook.getCachedValue()).toEqual(['animals.txt'])
+    })
+
+    it.for(
+      [null, [1], [''], ['x'.repeat(1025)], Array(4097).fill('x')].map(
+        (data) => ({ data })
+      )
+    )(
+      'rejects malformed live responses without admitting their options: $data',
+      async ({ data }) => {
+        const hook = useRemoteWidget(
+          createMockOptions({ static_options: ['bundled.txt'] })
+        )
+        mockAxiosResponse(data)
+        expect(await getResolvedValue(hook)).toEqual(['bundled.txt'])
+        expect(hook.getCacheEntry()?.error).toBeInstanceOf(Error)
+        expect(hook.getCacheEntry()?.timestamp).toBeUndefined()
+      }
+    )
+
+    it.for(
+      [['\u0000'], ['\ud800'], ['雪'.repeat(342)], Array(4097).fill('x')].map(
+        (static_options) => ({ static_options })
+      )
+    )(
+      'rejects invalid static options before fetching: $static_options',
+      ({ static_options }) => {
+        expect(() =>
+          useRemoteWidget(createMockOptions({ static_options }))
+        ).toThrow()
+      }
+    )
+
+    it('accepts bounded empty and Unicode catalogues but rejects a combined overflow', async () => {
+      const empty = createHookWithData([], { static_options: [] })
+      expect(await getResolvedValue(empty)).toEqual([])
+      const unicode = createHookWithData(['雪.txt'], {
+        static_options: ['a.txt']
+      })
+      expect(await getResolvedValue(unicode)).toEqual(['a.txt', '雪.txt'])
+      const large = useRemoteWidget(
+        createMockOptions({
+          static_options: Array.from({ length: 4096 }, (_, i) => `${i}.txt`)
+        })
+      )
+      mockAxiosResponse(['additional.txt'])
+      await getResolvedValue(large)
+      expect(large.getCacheEntry()?.error).toBeInstanceOf(Error)
+      expect(large.getCacheEntry()?.timestamp).toBeUndefined()
+    })
+
+    it('retains only static choices when a shared raw cache contains malformed data', async () => {
+      const route = createMockConfig().route
+      const old = createHookWithData([1], { route })
+      expect(await getResolvedValue(old)).toEqual([1])
+      const hook = useRemoteWidget(
+        createMockOptions({ route, static_options: ['safe.txt'] })
+      )
+      expect(await getResolvedValue(hook)).toEqual(['safe.txt'])
+    })
+  })
+
   describe('initialization', () => {
     it('should create hook with default values', () => {
       const hook = useRemoteWidget(createMockOptions())

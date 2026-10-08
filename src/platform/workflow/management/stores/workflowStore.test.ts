@@ -1,8 +1,13 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { nextTick } from 'vue'
 
-import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { Subgraph } from '@/lib/litegraph/src/litegraph'
+import {
+  createWidgetHandles,
+  subscribeAsyncWidgetSerialization
+} from '@/platform/nodeApi/widgetHandle'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
@@ -838,6 +843,128 @@ describe('useWorkflowStore', () => {
         JSON.stringify(workflow.changeTracker.activeState)
       )
       expect(newWorkflow.isModified).toBe(false)
+    })
+  })
+
+  describe('active widget serialization', () => {
+    let previousGraph: PropertyDescriptor | undefined
+    let previousReadiness: PropertyDescriptor | undefined
+
+    beforeEach(() => {
+      previousGraph = Object.getOwnPropertyDescriptor(comfyApp, 'rootGraph')
+      previousReadiness = Object.getOwnPropertyDescriptor(
+        comfyApp,
+        'isGraphReady'
+      )
+    })
+
+    afterEach(() => {
+      if (previousGraph)
+        Object.defineProperty(comfyApp, 'rootGraph', previousGraph)
+      else Reflect.deleteProperty(comfyApp, 'rootGraph')
+      if (previousReadiness)
+        Object.defineProperty(comfyApp, 'isGraphReady', previousReadiness)
+      else Reflect.deleteProperty(comfyApp, 'isGraphReady')
+    })
+
+    async function activeWidget() {
+      const graph = new LGraph()
+      const node = new LGraphNode('Test', 'Test')
+      node.serialize_widgets = true
+      graph.add(node)
+      const widget = node.addWidget(
+        'string',
+        'tags',
+        'live',
+        () => undefined,
+        {}
+      )
+      const handle = createWidgetHandles(() => graph).handleFor(
+        String(node.id),
+        'tags'
+      )
+      Object.defineProperty(comfyApp, 'rootGraph', {
+        value: graph,
+        configurable: true,
+        writable: true
+      })
+      Object.defineProperty(comfyApp, 'isGraphReady', {
+        value: true,
+        configurable: true,
+        writable: true
+      })
+      const workflow = new ComfyWorkflow({
+        path: 'workflows/async.json',
+        modified: 0,
+        size: 2
+      })
+      workflow.changeTracker = createMockChangeTracker({ workflow })
+      workflow.sessionId = 'active-save-session'
+      vi.mocked(api.storeUserData).mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            path: workflow.path,
+            modified: 0,
+            size: 2
+          }),
+          { status: 200 }
+        )
+      )
+      await store.openWorkflow(workflow)
+      return { workflow, widget, handle }
+    }
+
+    it('persists an awaited workflow projection while preserving the editing value', async () => {
+      const { workflow, widget, handle } = await activeWidget()
+      subscribeAsyncWidgetSerialization(handle, async ({ context, value }) => {
+        await Promise.resolve()
+        return { changed: true, value: `${context}:${value}` }
+      })
+
+      await workflow.save()
+      expect(JSON.parse(workflow.content!).nodes[0].widgets_values).toEqual([
+        'workflow:live'
+      ])
+      expect(widget.value).toBe('live')
+    })
+
+    it('applies the workflow destination to save-as', async () => {
+      const { workflow, widget, handle } = await activeWidget()
+      subscribeAsyncWidgetSerialization(handle, async ({ context }) => ({
+        changed: true,
+        value: context
+      }))
+
+      const saved = await workflow.saveAs('workflows/copy.json')
+      expect(JSON.parse(saved.content!).nodes[0].widgets_values).toEqual([
+        'workflow'
+      ])
+      expect(widget.value).toBe('live')
+    })
+
+    it('does not write user data when a worker projection fails', async () => {
+      const { workflow, handle } = await activeWidget()
+      subscribeAsyncWidgetSerialization(handle, async () => {
+        throw new Error('worker refused save')
+      })
+
+      await expect(workflow.save()).rejects.toThrow('worker refused save')
+      expect(api.storeUserData).not.toHaveBeenCalled()
+      expect(workflow.changeTracker?.reset).not.toHaveBeenCalled()
+    })
+
+    it('does not write a projection after its active session is replaced', async () => {
+      const { workflow, handle } = await activeWidget()
+      subscribeAsyncWidgetSerialization(handle, async () => {
+        workflow.sessionId = null
+        return { changed: true, value: 'stale' }
+      })
+
+      await expect(workflow.save()).rejects.toThrow(
+        'Workflow changed while preparing its saved values'
+      )
+      expect(api.storeUserData).not.toHaveBeenCalled()
+      expect(workflow.changeTracker?.reset).not.toHaveBeenCalled()
     })
   })
 

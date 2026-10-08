@@ -6,6 +6,7 @@ import userEvent from '@testing-library/user-event'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
+import { defineComponent, h } from 'vue'
 
 import type { NodeOutputWith, ResultItem } from '@/schemas/apiSchema'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -17,6 +18,7 @@ import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { widgetId } from '@/types/widgetId'
 
 import WidgetTextPreview from './WidgetTextPreview.vue'
+import { getComponent } from '../registry/widgetRegistry'
 
 const GRAPH_ID = 'graph-1'
 const NODE_ID = toNodeId('7')
@@ -62,7 +64,7 @@ function createTestI18n() {
 
 function renderPreview(
   text: string,
-  opts: { markdown?: boolean; file?: SavedFile } = {}
+  opts: { markdown?: boolean; file?: SavedFile; progress?: boolean } = {}
 ) {
   const pinia = getActivePinia()!
 
@@ -82,16 +84,25 @@ function renderPreview(
     >({ files: [opts.file] })
   }
 
-  return render(WidgetTextPreview, {
-    props: {
-      widget: fromPartial<SimplifiedWidget<string>>({
-        name: 'preview_text',
-        type: 'textPreview',
-        options: {}
-      }),
-      nodeId: NODE_ID,
-      modelValue: text
-    },
+  const type = opts.progress ? 'progressText' : 'textPreview'
+  const component = opts.progress ? getComponent(type) : WidgetTextPreview
+  if (!component) throw new Error('Missing text preview component')
+  const Preview = defineComponent({
+    inheritAttrs: false,
+    setup: () => () =>
+      h('div', [
+        h(component, {
+          widget: fromPartial<SimplifiedWidget<string>>({
+            name: 'preview_text',
+            type,
+            options: {}
+          }),
+          nodeId: NODE_ID,
+          modelValue: text
+        })
+      ])
+  })
+  return render(Preview, {
     global: { plugins: [pinia, createTestI18n()] }
   })
 }
@@ -101,6 +112,18 @@ beforeEach(() => {
 })
 
 describe('WidgetTextPreview', () => {
+  it('keeps progress text literal and read-only even with markdown mode enabled', async () => {
+    const text =
+      '# Title\n![remote](https://example.com/image.png)\n<img src="https://example.com/image.png">'
+    renderPreview(text, { progress: true, markdown: true })
+
+    const textbox = await screen.findByRole('textbox')
+    expect(textbox).toHaveValue(text)
+    expect(textbox).toHaveAttribute('readonly')
+    expect(screen.queryByRole('heading')).not.toBeInTheDocument()
+    expect(screen.queryByRole('img')).not.toBeInTheDocument()
+  })
+
   it('renders plaintext in a textarea by default', () => {
     renderPreview('# not rendered')
 

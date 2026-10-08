@@ -16,6 +16,31 @@ Only `comfy` is a runtime entry point. The named interfaces and type aliases
 below describe arguments, return values, callbacks, and snapshots reached from
 that object; they are not additional global services.
 
+## Pack-owned state and elements
+
+`StorageHandle` keeps text under logical names such as `MyPack.presets/one`.
+With the secure provider, frontend `comfy.storage` and Python `ctx.storage`
+share the same host-selected account and sealed pack namespace. Names are at
+most 128 UTF-8 bytes; values are at most 1 MiB. Frontend `list('MyPack.presets')`
+lists children, while Python `list('MyPack.presets/')` matches a prefix.
+Missing values are `undefined` in JavaScript and `None` in Python. The default
+unsandboxed frontend uses user-data storage; it does not imply Python sharing.
+
+Python's data-only large-object methods hold temporary tensor/data snapshots,
+not live models or executable objects. The host supplies or refuses requested
+retention; the current default policy is one hour. Managed model loading remains
+separate. The core Python contract is `comfy_api/latest/_sdk_public.pyi`, with
+machine-readable signatures in `comfy_api/latest/api-spec.json`.
+
+`OwnedElementHandle` is reached through `comfy.element(name)` in the Secure
+Nodes worker realm. It reads bounded scalar state and invokes allowlisted
+operations on this pack's mounted, keyed elements. It never returns a DOM node
+or looks up the host document. The mounted tag determines permitted operations;
+removal revokes access. In the unsandboxed host this accessor reports that the
+secure provider is required; local render callbacks already receive their DOM
+container. Textareas admit at most 262144 UTF-16 units and 1 MiB UTF-8; selection
+indices are bounded and use native clamping.
+
 ## Entry point
 
 ```js
@@ -178,15 +203,15 @@ over `NodeDef`, or `{ category: string | RegExp }`.
 
 ### Definition callback payloads
 
-| Type                    | Fields and behavior                                                       |
-| ----------------------- | ------------------------------------------------------------------------- |
-| `NodeCreatedEvent`      | `restored`, `loading`                                                     |
-| `ExecutionResult`       | `images`, `text`, and passthrough `raw`                                   |
-| `PreviewFrame`          | `blob`, temporary object `url`                                            |
-| `ConnectionChangeEvent` | `side`, `index`, `connected`, optional `peerNodeId`, optional `peerIndex` |
-| `PropertyChangeEvent`   | `name`, `value`, `previous`, `setValue(value)`, `reject()`                |
-| `BeforeConnectEvent`    | `side`, `index`, optional `peerNodeId`, `peerIndex`, and `peerType`       |
-| `UnplacedLinkEvent`     | `side`, `peerNodeId`, `peerIndex`, `type`, `replaceExisting`              |
+| Type                    | Fields and behavior                                                                         |
+| ----------------------- | ------------------------------------------------------------------------------------------- |
+| `NodeCreatedEvent`      | `restored`, `loading`                                                                       |
+| `ExecutionResult`       | `images`, `text`, and passthrough `raw`                                                     |
+| `PreviewFrame`          | `blob`, temporary object `url`                                                              |
+| `ConnectionChangeEvent` | `side`, `index`, `connected`, `reconstructing`, optional `peerNodeId`, optional `peerIndex` |
+| `PropertyChangeEvent`   | `name`, `value`, `previous`, `setValue(value)`, `reject()`                                  |
+| `BeforeConnectEvent`    | `side`, `index`, optional `peerNodeId`, `peerIndex`, and `peerType`                         |
+| `UnplacedLinkEvent`     | `side`, `peerNodeId`, `peerIndex`, `type`, `replaceExisting`                                |
 
 `NodeMenuItem` has a string or node-dependent `label`, optional `when`,
 optional `run`, optional one-level `items`, and optional numeric `order`.
@@ -557,8 +582,9 @@ See [Execution and resolution](./execution.md#frontend-only-nodes).
 | `readSidecar` | `(folder: ModelFolder, modelName: string, suffix: ModelSidecarSuffix) => Promise<string \| undefined>` |
 
 `ModelFolder` is the closed union `checkpoints`, `clip`, `clip_vision`,
-`controlnet`, `diffusion_models`, `loras`, `text_encoders`, `unet`,
-`upscale_models`, and `vae`. `ModelSidecarSuffix` is `.md` or `.txt`.
+`controlnet`, `diffusion_models`, `embeddings`, `ipadapter`, `loras`,
+`text_encoders`, `unet`, `upscale_models`, `vae`, and `vae_approx`.
+`ModelSidecarSuffix` is `.md` or `.txt`.
 
 ### `SettingsHandle`
 

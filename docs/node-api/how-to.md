@@ -385,7 +385,8 @@ still run.
 
 ```js
 comfy.defs.extend('MyPack/MultiImage', (definition) => {
-  definition.onConnectionsChanged((node) => {
+  definition.onConnectionsChanged((node, event) => {
+    if (event.reconstructing) return
     const last = node.inputs.at(node.inputs.length - 1)
     if (last?.isConnected) {
       node.inputs.add(`image_${node.inputs.length + 1}`, 'IMAGE')

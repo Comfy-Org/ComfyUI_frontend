@@ -206,6 +206,13 @@ Use `NodeDefBuilder` or `NodeDefinition` callbacks for individual instances:
 state. `NodeCreatedEvent.loading` distinguishes workflow load from paste or
 duplication.
 
+`ConnectionChangeEvent.reconstructing` is captured by the host when it emits the
+connection event. It is true during graph configuration, clipboard restoration
+and subgraph conversion, including configuration of detached conversion clones.
+Dynamic-slot handlers should skip edits for these events to retain saved slot
+layouts. The flag remains true when a worker receives the event later; ordinary
+edits in another graph remain false. It grants no additional graph authority.
+
 ## Cleanup and ownership
 
 Registrations and subscriptions commonly return `Unsubscribe`:

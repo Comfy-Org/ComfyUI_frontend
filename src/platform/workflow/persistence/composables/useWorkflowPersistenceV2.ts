@@ -11,11 +11,15 @@
 import { debounce } from 'es-toolkit'
 import { useToast } from 'primevue'
 import { tryOnScopeDispose, whenever } from '@vueuse/core'
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, ref, unref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import {
+  hasAsyncWidgetSerializers,
+  serializeWorkflow
+} from '@/platform/nodeApi/asyncWidgetSerialization'
 import {
   hydratePreservedQuery,
   mergePreservedQueryIntoQuery
@@ -23,6 +27,7 @@ import {
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import {
@@ -61,6 +66,7 @@ export function useWorkflowPersistenceV2() {
   const { onUserLogout, onUserResolved } = useCurrentUser()
   const teamWorkspaceStore = useTeamWorkspaceStore()
   let stopWorkspaceReadinessWatcher: (() => void) | undefined
+  let persistenceGeneration = 0
 
   function stopPendingWorkspaceReadinessWatcher(): void {
     stopWorkspaceReadinessWatcher?.()
@@ -97,12 +103,38 @@ export function useWorkflowPersistenceV2() {
     }
   })
 
-  const persistCurrentWorkflow = () => {
-    if (!workflowPersistenceEnabled.value) return
+  const persistCurrentWorkflow = async () => {
+    if (!unref(workflowPersistenceEnabled)) return
     const activeWorkflow = workflowStore.activeWorkflow
     if (!activeWorkflow) return
 
-    const graphData = comfyApp.rootGraph.serialize()
+    const graph = comfyApp.rootGraph
+    const session = activeWorkflow.sessionId
+    const path = activeWorkflow.path
+    const generation = persistenceGeneration
+    const workspace = teamWorkspaceStore.activeWorkspaceId
+    let graphData
+    try {
+      graphData = hasAsyncWidgetSerializers(graph)
+        ? await serializeWorkflow(graph)
+        : graph.serialize()
+    } catch (error) {
+      reportError(error, {
+        errorType: 'error_serializing_workflow_draft',
+        level: 'warning'
+      })
+      return
+    }
+    if (
+      generation !== persistenceGeneration ||
+      !workflowPersistenceEnabled.value ||
+      workflowStore.activeWorkflow !== activeWorkflow ||
+      activeWorkflow.sessionId !== session ||
+      activeWorkflow.path !== path ||
+      comfyApp.rootGraph !== graph ||
+      teamWorkspaceStore.activeWorkspaceId !== workspace
+    )
+      return
     const workflowJson = JSON.stringify(graphData)
     const workflowPath = activeWorkflow.path
 
@@ -148,6 +180,7 @@ export function useWorkflowPersistenceV2() {
   window.addEventListener('pagehide', flushPendingPersistence)
 
   onUserLogout(() => {
+    persistenceGeneration++
     if (!isCloud) return
     stopPendingWorkspaceReadinessWatcher()
     debouncedPersist.cancel()
@@ -304,7 +337,7 @@ export function useWorkflowPersistenceV2() {
       // Flush any pending persistence from the previous workflow
       debouncedPersist.flush()
       // Persist the new workflow immediately
-      persistCurrentWorkflow()
+      void persistCurrentWorkflow()
     }
   )
 
@@ -313,6 +346,7 @@ export function useWorkflowPersistenceV2() {
 
   // Clean up event listener when component unmounts
   tryOnScopeDispose(() => {
+    persistenceGeneration++
     api.removeEventListener('graphChanged', debouncedPersist)
     window.removeEventListener('pagehide', flushPendingPersistence)
     unregisterPersistenceFlush()

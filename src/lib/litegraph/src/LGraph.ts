@@ -85,6 +85,7 @@ import {
   beginNamedValuesShadowDiffLoad,
   endNamedValuesShadowDiffLoad
 } from './utils/namedValuesShadowDiffTelemetry'
+import { beginReconstruction } from './utils/graphReconstruction'
 
 import type { DragAndScaleState } from './DragAndScale'
 import { LGraphCanvas } from './LGraphCanvas'
@@ -2133,9 +2134,11 @@ export class LGraph
     this.beforeChange()
     this.canvasAction((c) => c.emitBeforeChange())
 
+    const endReconstruction = beginReconstruction(this)
     try {
       return this._convertToSubgraphImpl(items)
     } finally {
+      endReconstruction()
       // Mark state change complete for proper undo support
       this.afterChange()
       this.canvasAction((c) => c.emitAfterChange())
@@ -2994,6 +2997,7 @@ export class LGraph
       return false
     }
 
+    const endReconstruction = beginReconstruction(this)
     beginNamedValuesShadowDiffLoad()
     try {
       // TODO: Finish typing configure()
@@ -3329,8 +3333,12 @@ export class LGraph
       this.setDirtyCanvas(true, true)
       return error
     } finally {
-      endNamedValuesShadowDiffLoad()
-      this.events.dispatch('configured')
+      try {
+        endNamedValuesShadowDiffLoad()
+        this.events.dispatch('configured')
+      } finally {
+        endReconstruction()
+      }
     }
   }
 

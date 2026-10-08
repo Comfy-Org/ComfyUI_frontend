@@ -4,6 +4,10 @@ import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { IWidget, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { isCloud } from '@/platform/distribution/types'
 import type { RemoteWidgetConfig } from '@/schemas/nodeDefSchema'
+import {
+  zRemoteLiveOptions,
+  zRemoteStaticOptions
+} from '@/schemas/nodeDefSchema'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -85,22 +89,29 @@ const fetchData = async (
   return response_key ? res.data[response_key] : res.data
 }
 
-export function useRemoteWidget<
-  T extends string | number | boolean | object
->(options: {
+export function useRemoteWidget(options: {
   remoteConfig: RemoteWidgetConfig
-  defaultValue: T
+  defaultValue: string | number | boolean | object
   node: LGraphNode
   widget: IWidget
 }) {
   const { remoteConfig, defaultValue, node, widget } = options
   const { refresh = 0, max_retries = MAX_RETRIES } = remoteConfig
+  const staticOptions =
+    remoteConfig.static_options === undefined
+      ? undefined
+      : zRemoteStaticOptions.parse(remoteConfig.static_options)
+  const presentOptions = (data: unknown) => {
+    if (staticOptions === undefined) return data
+    const live = zRemoteLiveOptions.parse(data)
+    return zRemoteStaticOptions.parse([...new Set([...staticOptions, ...live])])
+  }
   const isPermanent = refresh <= 0
   const cacheKey = createCacheKey(remoteConfig)
   let isLoaded = false
   let refreshQueued = false
 
-  const setSuccess = (entry: CacheEntry<T>, data: T) => {
+  const setSuccess = (entry: CacheEntry<unknown>, data: unknown) => {
     entry.retryCount = 0
     entry.lastErrorTime = 0
     entry.error = null
@@ -108,7 +119,7 @@ export function useRemoteWidget<
     entry.data = data
   }
 
-  const setError = (entry: CacheEntry<T>, error: Error | unknown) => {
+  const setError = (entry: CacheEntry<unknown>, error: unknown) => {
     entry.retryCount = (entry.retryCount || 0) + 1
     entry.lastErrorTime = Date.now()
     entry.error = error instanceof Error ? error : new Error(String(error))
@@ -118,7 +129,7 @@ export function useRemoteWidget<
     }
   }
 
-  const setFailed = (entry: CacheEntry<T>) => {
+  const setFailed = (entry: CacheEntry<unknown>) => {
     dataCache.set(cacheKey, {
       data: entry.data,
       failed: true
@@ -129,10 +140,14 @@ export function useRemoteWidget<
     return !isLoaded && isInitialized(dataCache.get(cacheKey))
   }
 
-  const onFirstLoad = (data: T | T[]) => {
+  const onFirstLoad = (data: unknown) => {
     isLoaded = true
     const nextValue =
-      Array.isArray(data) && data.length > 0 ? data[0] : undefined
+      Array.isArray(data) && data.length > 0
+        ? remoteConfig.initial_selection === 'last'
+          ? data.at(-1)
+          : data[0]
+        : undefined
     widget.value = nextValue ?? (Array.isArray(data) ? defaultValue : data)
     widget.callback?.(widget.value)
     node.graph?.setDirtyCanvas(true)
@@ -141,16 +156,22 @@ export function useRemoteWidget<
   const fetchValue = async () => {
     const entry = dataCache.get(cacheKey)
 
-    if (isFailed(entry)) return entry!.data as T
+    if (isFailed(entry)) return entry!.data
 
     const isValid =
       isInitialized(entry) && (isPermanent || !isStale(entry, refresh))
-    if (isValid || isBackingOff(entry) || isFetching(entry))
-      return entry!.data as T
+    if (isValid || isBackingOff(entry) || isFetching(entry)) {
+      if (entry && isInitialized(entry)) {
+        try {
+          presentOptions(entry.data)
+        } catch (error) {
+          setError(entry, error)
+        }
+      }
+      return entry!.data
+    }
 
-    const currentEntry: CacheEntry<T> = (entry as
-      | CacheEntry<T>
-      | undefined) || { data: defaultValue }
+    const currentEntry: CacheEntry<unknown> = entry || { data: defaultValue }
     dataCache.set(cacheKey, currentEntry)
 
     try {
@@ -160,7 +181,7 @@ export function useRemoteWidget<
         currentEntry.controller
       )
       const data = await currentEntry.fetchPromise
-
+      presentOptions(data)
       setSuccess(currentEntry, data)
       return currentEntry.data
     } catch (err) {
@@ -205,7 +226,18 @@ export function useRemoteWidget<
    * @returns the most recently computed value of the widget.
    */
   function getCachedValue() {
-    return dataCache.get(cacheKey)?.data as T
+    const entry = dataCache.get(cacheKey)
+    if (staticOptions !== undefined) {
+      if (isInitialized(entry)) {
+        try {
+          return presentOptions(entry?.data)
+        } catch {
+          return staticOptions
+        }
+      }
+      return staticOptions
+    }
+    return entry?.data
   }
 
   /**
@@ -216,7 +248,7 @@ export function useRemoteWidget<
   function getValue(onFulfilled?: () => void) {
     void fetchValue()
       .then((data) => {
-        if (isFirstLoad()) onFirstLoad(data)
+        if (isFirstLoad()) onFirstLoad(getCachedValue())
         if (refreshQueued && data !== defaultValue) {
           onRefresh()
           refreshQueued = false

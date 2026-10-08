@@ -2,8 +2,13 @@ import { toRaw } from 'vue'
 
 import { downloadBlob } from '@/base/common/downloadUtil'
 import { t } from '@/i18n'
-import type { Point, SerialisableGraph } from '@/lib/litegraph/src/litegraph'
+import type {
+  ISerialisedGraph,
+  Point,
+  SerialisableGraph
+} from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { serializeWorkflow } from '@/platform/nodeApi/asyncWidgetSerialization'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import {
   normalizePendingWarnings,
@@ -205,7 +210,7 @@ export const useWorkflowService = () => {
    * Adds scale and offset from litegraph canvas to the workflow JSON.
    * @param workflow The workflow to add the view restore data to
    */
-  function addViewRestore(workflow: ComfyWorkflowJSON) {
+  function addViewRestore(workflow: Pick<ISerialisedGraph, 'extra'>) {
     if (!settingStore.get('Comfy.EnableWorkflowViewRestore')) return
 
     const { offset, scale } = app.canvas.ds
@@ -228,10 +233,16 @@ export const useWorkflowService = () => {
     if (workflow?.path) {
       filename = workflow.filename
     }
-    const p = await app.graphToPrompt()
-
-    addViewRestore(p.workflow)
-    const json = JSON.stringify(p[promptProperty], null, 2)
+    let json: string
+    if (promptProperty === 'workflow') {
+      const data = await serializeWorkflow(app.rootGraph, {
+        sortNodes: settingStore.get('Comfy.Workflow.SortNodeIdOnSave')
+      })
+      addViewRestore(data)
+      json = JSON.stringify(data, null, 2)
+    } else {
+      json = JSON.stringify((await app.graphToPrompt()).output, null, 2)
+    }
     const blob = new Blob([json], { type: 'application/json' })
     const file = await getFilename(filename)
     if (!file) return
