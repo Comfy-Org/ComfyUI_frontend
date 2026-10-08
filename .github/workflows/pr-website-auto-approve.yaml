@@ -1,10 +1,8 @@
 # Run the website package's configured delivery lane.
 #
-# Security boundary:
-# - pull_request_target, workflow_run, and status load this workflow from the
-#   default branch. Automation and policy are checked out from the protected
-#   default branch; pull request code is never executed.
-# - Eligibility rules: docs/architecture/package-delivery-lanes.md.
+# Security boundary: pull_request_target and workflow_run load this workflow,
+# the policy, and the engine from the default branch; pull request code is
+# never executed. Eligibility rules: docs/architecture/package-delivery-lanes.md.
 name: 'PR: Website Fast Lane'
 
 on:
@@ -23,53 +21,15 @@ on:
       - 'CI: Tests E2E'
       - 'CI: Website E2E'
     types: [completed]
-  status:
 
 permissions:
   contents: read
-  pull-requests: read
 
 jobs:
-  resolve:
-    if: github.event_name != 'workflow_run' || github.event.workflow_run.event == 'pull_request'
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    outputs:
-      pull-request-number: ${{ steps.pull-request.outputs.result }}
-    steps:
-      - name: Resolve the pull request for this event
-        id: pull-request
-        uses: actions/github-script@v9
-        with:
-          result-encoding: string
-          script: |
-            if (context.payload.pull_request) {
-              return String(context.payload.pull_request.number)
-            }
-            const sha = context.payload.sha ?? context.payload.workflow_run?.head_sha
-            const { data: pulls } = await github.rest.repos.listPullRequestsAssociatedWithCommit({
-              ...context.repo,
-              commit_sha: sha,
-            })
-            const repository = `${context.repo.owner}/${context.repo.repo}`.toLowerCase()
-            const matches = pulls.filter((pull) =>
-              pull.state === 'open' &&
-              pull.head.sha === sha &&
-              pull.head.repo?.full_name.toLowerCase() === repository &&
-              pull.base.ref === context.payload.repository.default_branch &&
-              pull.base.repo.full_name.toLowerCase() === repository
-            )
-            if (matches.length !== 1) {
-              core.info(`Expected one open same-repository pull request for ${sha}; found ${matches.length}.`)
-              return ''
-            }
-            return String(matches[0].number)
-
   fast-lane:
-    needs: resolve
-    if: needs.resolve.outputs.pull-request-number != ''
+    if: github.event.pull_request || github.event.workflow_run.pull_requests[0]
     concurrency:
-      group: website-fast-lane-${{ needs.resolve.outputs.pull-request-number }}
+      group: website-fast-lane-${{ github.event.pull_request.number || github.event.workflow_run.pull_requests[0].number }}
       cancel-in-progress: false
     environment: website-approval
     runs-on: ubuntu-latest
@@ -82,7 +42,6 @@ jobs:
           persist-credentials: false
           sparse-checkout: |
             .nvmrc
-            .github/fast-lanes/website.json
             tools/cicd/fast-lane
 
       - uses: actions/setup-node@v6
@@ -91,13 +50,13 @@ jobs:
 
       - name: Approve, queue, or withdraw the website pull request
         env:
-          FAST_LANE_CONFIG: .github/fast-lanes/website.json
+          FAST_LANE: website
           FAST_LANE_TOKEN: ${{ secrets.WEBSITE_APPROVAL_TOKEN }}
           FAST_LANE_DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
           FAST_LANE_EVENT_ACTION: ${{ github.event.action }}
           FAST_LANE_EVENT_ACTOR: ${{ github.triggering_actor }}
           FAST_LANE_EVENT_LABEL: ${{ github.event.label.name }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.event.sha || github.event.workflow_run.head_sha }}
-          PR_NUMBER: ${{ needs.resolve.outputs.pull-request-number }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.event.workflow_run.head_sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number || github.event.workflow_run.pull_requests[0].number }}
         run: node tools/cicd/fast-lane/src/run.ts

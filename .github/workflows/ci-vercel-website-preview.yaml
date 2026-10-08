@@ -25,8 +25,8 @@ env:
   VERCEL_SCOPE: comfyui
 
 concurrency:
-  group: ${{ github.event_name != 'pull_request' && 'website-production' || format('{0}-{1}', github.workflow, github.ref) }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   deploy-preview:
@@ -40,8 +40,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Install pnpm
         uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
@@ -56,11 +54,6 @@ jobs:
 
       - name: Pull Vercel environment information
         run: vercel pull --yes --environment=preview
-
-      - name: Write preview build identity
-        env:
-          BUILD_SHA: ${{ github.event.pull_request.head.sha }}
-        run: scripts/cicd/website-deployment.sh write-build-identity "$BUILD_SHA"
 
       - name: Build project artifacts
         env:
@@ -106,14 +99,6 @@ jobs:
             --meta githubPrId="$GIT_PR_ID" \
             --meta githubRepo="$GIT_REPO")
           echo "url=$URL" >> "$GITHUB_OUTPUT"
-
-      - name: Verify immutable preview identity
-        env:
-          DEPLOY_URL: ${{ steps.deploy.outputs.url }}
-          EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
-        run: |
-          scripts/cicd/website-deployment.sh verify-identity \
-            --host "$DEPLOY_URL" --sha "$EXPECTED_SHA" --attempts 30 --interval 5
 
       - name: Alias deployment to stable PR hostname
         id: alias-set
@@ -161,6 +146,9 @@ jobs:
   deploy-production:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
+    environment:
+      name: website-production
+      url: ${{ steps.deploy.outputs.url }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -178,18 +166,6 @@ jobs:
 
       - name: Pull Vercel environment information
         run: vercel pull --yes --environment=production
-
-      - name: Capture the current production deployment
-        id: previous-production
-        run: |
-          PREVIOUS_DEPLOYMENT_ID=$(scripts/cicd/website-deployment.sh alias-deployment-id)
-          PREVIOUS_DEPLOYMENT_URL=$(scripts/cicd/website-deployment.sh deployment "$PREVIOUS_DEPLOYMENT_ID" url)
-          PREVIOUS_SHA=$(scripts/cicd/website-deployment.sh marker-sha "$PREVIOUS_DEPLOYMENT_URL") || true
-          echo "deployment-id=$PREVIOUS_DEPLOYMENT_ID" >> "$GITHUB_OUTPUT"
-          echo "sha=${PREVIOUS_SHA:-unavailable}" >> "$GITHUB_OUTPUT"
-
-      - name: Write production build identity
-        run: scripts/cicd/website-deployment.sh write-build-identity "$GITHUB_SHA"
 
       - name: Verify WEBSITE_CLOUD_API_KEY is present for production build
         env:
@@ -233,88 +209,9 @@ jobs:
 
       - name: Deploy project artifacts to Vercel
         id: deploy
-        env:
-          GIT_COMMIT_SHA: ${{ github.sha }}
-          GIT_REPO: ${{ github.repository }}
         run: |
-          URL=$(vercel deploy --prebuilt --prod --skip-domain --archive=tgz \
-            --meta githubCommitSha="$GIT_COMMIT_SHA" \
-            --meta githubRepo="$GIT_REPO" \
-            --meta githubRunId="$GITHUB_RUN_ID")
+          URL=$(vercel deploy --prebuilt --prod --archive=tgz)
           echo "url=$URL" >> "$GITHUB_OUTPUT"
-
-      - name: Capture staged deployment identity
-        id: deployed-production
-        env:
-          DEPLOY_URL: ${{ steps.deploy.outputs.url }}
-        run: |
-          DEPLOYMENT_HOST=${DEPLOY_URL#https://}
-          if [[ ! "$DEPLOYMENT_HOST" =~ ^[A-Za-z0-9.-]+\.vercel\.app$ ]]; then
-            echo "::error::Unexpected immutable deployment URL: $DEPLOY_URL"
-            exit 1
-          fi
-          DEPLOYED_DEPLOYMENT_ID=$(scripts/cicd/website-deployment.sh deployment "$DEPLOYMENT_HOST" id)
-          echo "deployment-id=$DEPLOYED_DEPLOYMENT_ID" >> "$GITHUB_OUTPUT"
-
-      - name: Verify staged production identity
-        env:
-          DEPLOY_URL: ${{ steps.deploy.outputs.url }}
-        timeout-minutes: 12
-        run: |
-          scripts/cicd/website-deployment.sh verify-identity \
-            --host "$DEPLOY_URL" --sha "$GITHUB_SHA" --this-run --attempts 30 --interval 5
-
-      - name: Retain production transition evidence
-        env:
-          DEPLOY_URL: ${{ steps.deploy.outputs.url }}
-          DEPLOYED_DEPLOYMENT_ID: ${{ steps.deployed-production.outputs.deployment-id }}
-          PREVIOUS_DEPLOYMENT_ID: ${{ steps.previous-production.outputs.deployment-id }}
-          PREVIOUS_SHA: ${{ steps.previous-production.outputs.sha }}
-          DEPLOYED_SHA: ${{ github.sha }}
-        run: |
-          mkdir -p temp/website-production-transition
-          jq -n \
-            --arg previousDeploymentId "$PREVIOUS_DEPLOYMENT_ID" \
-            --arg previousSha "$PREVIOUS_SHA" \
-            --arg deployedDeploymentId "$DEPLOYED_DEPLOYMENT_ID" \
-            --arg deploymentUrl "$DEPLOY_URL" \
-            --arg deployedSha "$DEPLOYED_SHA" \
-            --arg runId "$GITHUB_RUN_ID" \
-            '{previousDeploymentId: $previousDeploymentId, previousSha: $previousSha, deployedDeploymentId: $deployedDeploymentId, deploymentUrl: $deploymentUrl, deployedSha: $deployedSha, runId: $runId}' \
-            > temp/website-production-transition/transition.json
-          {
-            echo "**Production:** $DEPLOY_URL"
-            echo "**Deployment ID:** $DEPLOYED_DEPLOYMENT_ID"
-            echo "**Deployed SHA:** $DEPLOYED_SHA"
-            echo "**Previous deployment:** $PREVIOUS_DEPLOYMENT_ID"
-            echo "**Previous SHA:** $PREVIOUS_SHA"
-          } >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Upload production transition evidence
-        uses: actions/upload-artifact@v6
-        with:
-          name: website-production-transition
-          path: temp/website-production-transition/transition.json
-          retention-days: 7
-          if-no-files-found: error
-
-      - name: Promote the staged deployment to production
-        env:
-          DEPLOY_URL: ${{ steps.deploy.outputs.url }}
-        run: |
-          vercel promote "$DEPLOY_URL" \
-            --timeout=10m \
-            --non-interactive \
-            --scope="$VERCEL_SCOPE"
-
-      - name: Verify canonical production identity
-        env:
-          EXPECTED_DEPLOYMENT_ID: ${{ steps.deployed-production.outputs.deployment-id }}
-        timeout-minutes: 12
-        run: |
-          scripts/cicd/website-deployment.sh verify-identity \
-            --canonical-deployment "$EXPECTED_DEPLOYMENT_ID" --sha "$GITHUB_SHA" --this-run \
-            --attempts 60 --interval 10
 
       - name: Notify IndexNow of changed pages
         continue-on-error: true

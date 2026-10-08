@@ -43,7 +43,6 @@
     "knip": "knip --cache",
     "lint:fix:no-cache": "pnpm oxlint --fix && eslint --concurrency auto --fix",
     "lint:fix:ci": "pnpm lint:fix --cache-strategy content",
-    "lint:fix:website": "stylelint --cache --cache-strategy content --fix 'apps/website/**/*.{css,vue}' && oxlint apps/website --type-aware --fix && eslint apps/website --cache --cache-strategy content --concurrency auto --fix && pnpm --filter @comfyorg/website format",
     "lint:fix": "pnpm oxlint --fix && eslint --cache --concurrency auto --fix",
     "lint:no-cache": "pnpm exec stylelint '{apps,packages,src}/**/*.{css,vue}' && pnpm oxlint && eslint --concurrency auto",
     "lint:unstaged:fix": "tsx scripts/lint-unstaged.ts --fix",

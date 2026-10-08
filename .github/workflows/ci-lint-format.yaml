@@ -1,8 +1,7 @@
 # Description: Linting and code formatting validation for pull requests.
 # Work is split across parallel jobs so wall time is the slowest job rather
-# than the sum. The `lint` job runs the fixers, scoped to apps/website when
-# every changed file is there; every fixer exits non-zero when unfixable
-# problems remain, so no second verify-only lint pass runs.
+# than the sum. The `lint` job runs the fixers; every fixer exits non-zero
+# when unfixable problems remain, so no second verify-only lint pass runs.
 name: 'CI: Lint Format'
 
 on:
@@ -24,20 +23,7 @@ env:
     packages/*/node_modules/.cache/tsbuildinfo
 
 jobs:
-  changes:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: read
-    outputs:
-      website-only: ${{ steps.changes.outputs.website-only-changes }}
-    steps:
-      - uses: actions/checkout@v7
-      - id: changes
-        uses: ./.github/actions/changes-filter
-
   lint:
-    needs: changes
     runs-on: ubuntu-latest
     steps:
       - name: Checkout PR
@@ -61,20 +47,13 @@ jobs:
           path: ${{ env.LINT_CACHE_PATHS }}
 
       - name: Run ESLint with auto-fix
-        if: needs.changes.outputs.website-only != 'true'
         run: pnpm lint:fix:ci
 
       - name: Run Stylelint with auto-fix
-        if: needs.changes.outputs.website-only != 'true'
         run: pnpm stylelint:fix
 
       - name: Run oxfmt with auto-format
-        if: needs.changes.outputs.website-only != 'true'
         run: pnpm -r --include-workspace-root format
-
-      - name: Run website lint and format fixes
-        if: needs.changes.outputs.website-only == 'true'
-        run: pnpm lint:fix:website
 
       - name: Check for changes
         id: verify-changed-files
@@ -131,8 +110,6 @@ jobs:
           path: ${{ env.LINT_CACHE_PATHS }}
 
   typecheck:
-    needs: changes
-    if: needs.changes.outputs.website-only != 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout PR
@@ -159,8 +136,6 @@ jobs:
           path: ${{ env.TYPECHECK_CACHE_PATHS }}
 
   typecheck-aux:
-    needs: changes
-    if: needs.changes.outputs.website-only != 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout PR
@@ -187,8 +162,6 @@ jobs:
           path: ${{ env.TYPECHECK_CACHE_PATHS }}
 
   repo-checks:
-    needs: changes
-    if: needs.changes.outputs.website-only != 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout PR
@@ -204,20 +177,3 @@ jobs:
 
       - name: Verify knip, locale integrity and ADR index
         uses: ./.github/actions/repo-checks
-
-  website-checks:
-    needs: changes
-    if: needs.changes.outputs.website-only == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-          filter: blob:none
-      - uses: ./.github/actions/setup-frontend
-      - name: Typecheck website
-        run: pnpm typecheck:website
-      - name: Verify website repository integrity
-        run: |
-          pnpm knip --workspace apps/website
-          pnpm --filter @comfyorg/website locale:check
