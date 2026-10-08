@@ -16,6 +16,15 @@ import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useWidgetStore } from '@/stores/widgetStore'
 
+const distribution = vi.hoisted(() => ({ cloud: false }))
+
+vi.mock('@/platform/distribution/types', async (importOriginal) => ({
+  ...(await importOriginal()),
+  get isCloud() {
+    return distribution.cloud
+  }
+}))
+
 const enMessages = cloneDeep(i18n.global.getLocaleMessage('en'))
 const zhMessages = cloneDeep(i18n.global.getLocaleMessage('zh'))
 
@@ -58,6 +67,126 @@ describe('Cloud palette visibility is independent of graph construction', () => 
     await useLitegraphService().registerNodeDef(name, definition)
     expect(LiteGraph.createNode(name)?.type).toBe(name)
     expect(LiteGraph.registered_node_types[name].skip_list).toBe(true)
+  })
+})
+
+describe('Cloud custom-node outline in the classic canvas', () => {
+  const name = 'TestCloudOutlineNode'
+  const definition: ComfyNodeDefV1 = {
+    name,
+    display_name: name,
+    description: '',
+    category: 'testing',
+    python_module: 'custom_nodes.cloud_registry.exact',
+    output_node: false,
+    input: {},
+    output: ['STRING'],
+    comfy_cloud_palette_visible: false
+  }
+
+  beforeEach(() => {
+    distribution.cloud = true
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    document.documentElement.style.setProperty('--secure-outline', '#b8813a')
+  })
+
+  afterEach(() => {
+    distribution.cloud = false
+    document.documentElement.style.removeProperty('--secure-outline')
+    LiteGraph.unregisterNodeType(name)
+  })
+
+  it('outlines a custom node even when its pack is unpinned', async () => {
+    await useLitegraphService().registerNodeDef(name, definition)
+    const node = LiteGraph.createNode(name)!
+    const outline = node.strokeStyles.cloudCustom
+
+    expect(outline?.call(node)).toEqual({
+      color: '#b8813a',
+      lineWidth: 2,
+      padding: 1
+    })
+    expect(LiteGraph.registered_node_types[name].skip_list).toBe(true)
+  })
+
+  it.for([
+    'nodes',
+    'comfy_extras.demo',
+    'comfy_api_nodes.demo',
+    'blueprint.demo',
+    ''
+  ])(
+    'does not outline a core, blueprint or unknown node from %s',
+    async (python_module) => {
+      await useLitegraphService().registerNodeDef(name, {
+        ...definition,
+        python_module
+      })
+      const node = LiteGraph.createNode(name)!
+
+      expect(node.strokeStyles.cloudCustom?.call(node)).toBeUndefined()
+    }
+  )
+
+  it('does not change local custom-node styling', async () => {
+    distribution.cloud = false
+    await useLitegraphService().registerNodeDef(name, definition)
+    const node = LiteGraph.createNode(name)!
+
+    expect(node.strokeStyles.cloudCustom?.call(node)).toBeUndefined()
+  })
+
+  it('follows the existing theme token without changing node colors or flags', async () => {
+    await useLitegraphService().registerNodeDef(name, definition)
+    const node = LiteGraph.createNode(name)!
+    node.color = '#334455'
+    node.bgcolor = '#223344'
+    node.flags.collapsed = true
+
+    document.documentElement.style.setProperty('--secure-outline', '#cf9648')
+
+    expect(node.strokeStyles.cloudCustom?.call(node)?.color).toBe('#cf9648')
+    expect(node.color).toBe('#334455')
+    expect(node.bgcolor).toBe('#223344')
+    expect(node.flags.collapsed).toBe(true)
+  })
+
+  it('uses the canvas theme when it differs from the document theme', async () => {
+    const canvas = document.createElement('canvas')
+    canvas.style.setProperty('--secure-outline', '#cf9648')
+    document.body.append(canvas)
+    Reflect.set(app, 'canvas', { canvas })
+
+    try {
+      await useLitegraphService().registerNodeDef(name, definition)
+      const node = LiteGraph.createNode(name)!
+
+      expect(node.strokeStyles.cloudCustom?.call(node)?.color).toBe('#cf9648')
+      canvas.style.setProperty('--secure-outline', '#b8813a')
+      expect(node.strokeStyles.cloudCustom?.call(node)?.color).toBe('#b8813a')
+    } finally {
+      canvas.remove()
+      Reflect.set(app, 'canvas', undefined)
+    }
+  })
+
+  it('retains distinct error and selection strokes alongside the custom-node accent', async () => {
+    await useLitegraphService().registerNodeDef(name, definition)
+    const node = LiteGraph.createNode(name)!
+    node.has_errors = true
+    node.selected = true
+
+    expect(node.strokeStyles.cloudCustom?.call(node)).toEqual({
+      color: '#b8813a',
+      lineWidth: 2,
+      padding: 1
+    })
+    expect(node.strokeStyles.error.call(node)).toEqual({
+      color: LiteGraph.NODE_ERROR_COLOUR,
+      lineWidth: 10,
+      padding: 12
+    })
+    expect(node.strokeStyles.selected.call(node)?.padding).toBe(20)
   })
 })
 

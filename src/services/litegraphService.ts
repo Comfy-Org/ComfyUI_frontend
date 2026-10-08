@@ -40,6 +40,7 @@ import type {
 } from '@/lib/litegraph/src/types/serialisation'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
+import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -189,6 +190,9 @@ export const useLitegraphService = () => {
   const toastStore = useToastStore()
   const widgetStore = useWidgetStore()
   const canvasStore = useCanvasStore()
+  const secureOutlineStyle = isCloud
+    ? getComputedStyle(app.canvas?.canvas ?? document.documentElement)
+    : undefined
   const { toggleSelectedNodesMode } = useSelectedLiteGraphItems()
   const subgraphPseudoWidgetCache = new WeakMap<
     SubgraphNode,
@@ -251,6 +255,17 @@ export const useLitegraphService = () => {
    * @internal Setup stroke styles for the node under various conditions.
    */
   function setupStrokeStyles(node: LGraphNode) {
+    node.strokeStyles['cloudCustom'] = function (this: LGraphNode) {
+      if (
+        !isCloud ||
+        !this.constructor.nodeData?.python_module.startsWith('custom_nodes.')
+      )
+        return
+      const color = secureOutlineStyle
+        ?.getPropertyValue('--secure-outline')
+        .trim()
+      if (color) return { color, lineWidth: 2, padding: 1 }
+    }
     node.strokeStyles['running'] = function (this: LGraphNode) {
       const nodeLocatorId = useWorkflowStore().nodeIdToNodeLocatorId(this.id)
       const state =
