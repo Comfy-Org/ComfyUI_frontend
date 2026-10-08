@@ -9,7 +9,7 @@ interface UploadedTempFile {
 }
 
 type TempFileUpload =
-  | { file: UploadedTempFile; ok: true }
+  | { ok: true; file: UploadedTempFile }
   | { ok: false; reason: string }
 
 export async function uploadTempFile(

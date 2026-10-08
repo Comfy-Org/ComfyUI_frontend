@@ -13,7 +13,6 @@ import { computed, ref } from 'vue'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useToast } from '@/components/ui/toast/toastStore'
-import type { ToastId } from '@/types/toastId'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
@@ -30,7 +29,10 @@ import type {
   BillingDeclineReason,
   BillingRecoveryAction
 } from '@/platform/workspace/api/workspaceApi'
-import type { ProgressToastKind } from '@/platform/workspace/billing/customerAttention'
+import type {
+  ProgressToast,
+  ProgressToastKind
+} from '@/platform/workspace/billing/customerAttention'
 import {
   isBlockedOnCustomerPhase,
   isParkedCheckout,
@@ -177,10 +179,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   const timeouts = new Map<string, ReturnType<typeof setTimeout>>()
   const intervals = new Map<string, number>()
   const waitingWithoutActionSince = new Map<string, number>()
-  const progressToasts = new Map<
-    string,
-    { id: ToastId; kind: ProgressToastKind }
-  >()
+  const progressToasts = new Map<string, ProgressToast>()
   const progressToastsAwaitingFirstRead = new Set<string>()
   const terminalResolvers = new Map<string, TerminalResolver>()
   const terminalPromises = new Map<string, Promise<BillingOperation>>()

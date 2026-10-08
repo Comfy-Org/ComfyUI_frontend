@@ -28,7 +28,6 @@ import { until, useEventListener } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, shallowRef } from 'vue'
 
-import type { ToastId } from '@/types/toastId'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -48,7 +47,10 @@ import type {
   SavedPaymentMethod
 } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApiUrl } from '@/platform/workspace/api/workspaceApiUrl'
-import type { ProgressToastKind } from '@/platform/workspace/billing/customerAttention'
+import type {
+  ProgressToast,
+  ProgressToastKind
+} from '@/platform/workspace/billing/customerAttention'
 import {
   isParkedCheckout,
   needsCustomerAttention,
@@ -131,10 +133,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
   const callerStarted = new Set<BillingOperationKind>()
   const drivenChallenges = new Set<string>()
   const offeredActions = new Map<string, Set<string>>()
-  const progressToasts = new Map<
-    string,
-    { id: ToastId; kind: ProgressToastKind }
-  >()
+  const progressToasts = new Map<string, ProgressToast>()
 
   function sessionPorts(): Pick<
     BillingSdkOptions,
