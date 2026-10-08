@@ -539,7 +539,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     PendingAskObservation
   >()
   const recoveryThreadMissingCounts = new Map<string, number>()
-  const automaticRecoveryReruns = new Map<string, number>()
   /**
    * Asks recovery must not re-deliver: one it already restored, one a frame
    * has delivered, and any the user has answered or the server has resolved.
@@ -597,15 +596,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   function pruneRecoveryLedgers(): void {
-    for (const ledger of [
-      recoveryThreadMissingCounts,
-      automaticRecoveryReruns
-    ]) {
-      while (ledger.size > MAX_DELIVERED_ASKS) {
-        const oldest = ledger.keys().next().value
-        if (oldest === undefined) break
-        ledger.delete(oldest)
-      }
+    while (recoveryThreadMissingCounts.size > MAX_DELIVERED_ASKS) {
+      const oldest = recoveryThreadMissingCounts.keys().next().value
+      if (oldest === undefined) break
+      recoveryThreadMissingCounts.delete(oldest)
     }
   }
 
@@ -967,7 +961,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     recoveringTurns.clear()
     recoveryPendingAskObservations.clear()
     recoveryThreadMissingCounts.clear()
-    automaticRecoveryReruns.clear()
     clearLateAskReports()
     const stoppedGeneration = ownedGeneration
     queueMicrotask(() => {
@@ -1978,12 +1971,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
   async function reconcileTurn(
     turn: LiveTurn,
     cause: RecoveryCause,
-    automaticRerun = false
+    isAutomaticRerun = false
   ): Promise<void> {
     observeSkillTurn(turn)
     const key = recoveryKey(turn)
     if (deferToRunningRecovery(key, cause)) return
-    if (!automaticRerun) automaticRecoveryReruns.delete(key)
     const recovery = new AbortController()
     const state = {
       controller: recovery,
@@ -2004,13 +1996,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
         ownedGeneration,
         recovery.signal
       )
-      if (needsRerun && (automaticRecoveryReruns.get(key) ?? 0) < 1) {
-        automaticRecoveryReruns.delete(key)
-        automaticRecoveryReruns.set(key, 1)
-        pruneRecoveryLedgers()
+      if (needsRerun && !isAutomaticRerun) {
         state.rerun = true
         state.automaticRerun = true
-      } else if (!needsRerun) automaticRecoveryReruns.delete(key)
+      }
     } catch (error) {
       // `onStatus` floats this job (`void reconcileTurn(turn)`), so a rethrow
       // would land as an `unhandledrejection` the session never sees. Abort is
@@ -2080,7 +2069,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
       if (settleFinishedTurn(turn, outcome)) {
         recoveryPendingAskObservations.delete(key)
         recoveryThreadMissingCounts.delete(key)
-        automaticRecoveryReruns.delete(key)
         return false
       }
       if (outcome.kind !== 'streaming') {
@@ -2385,7 +2373,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     skillTurnUsage.delete(recoveryKey(turn))
     recoveryPendingAskObservations.delete(recoveryKey(turn))
     recoveryThreadMissingCounts.delete(recoveryKey(turn))
-    automaticRecoveryReruns.delete(recoveryKey(turn))
     clearLateAskReports(turn.threadId)
     if (conversationStore.threadId !== turn.threadId) {
       conversationStore.settleTurn(turn, undefined)
