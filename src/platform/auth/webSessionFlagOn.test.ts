@@ -979,7 +979,7 @@ describe('cloud API requests on the shared web session', () => {
     }
   )
 
-  it('workspace_access_denied drops the selection and is never replayed', async () => {
+  it('workspace_access_denied drops the selection, is never replayed, and never falls back to Personal while the reload is held', async () => {
     const ingest = await bootOnSession()
     vi.spyOn(window.location, 'reload').mockImplementation(() => {})
     const workspaceAuth = useWorkspaceAuthStore()
@@ -988,7 +988,7 @@ describe('cloud API requests on the shared web session', () => {
     ingest.refusals.push('workspace_access_denied')
 
     const response = await postPrompt()
-    await api.fetchApi('/queue')
+    await postPrompt()
 
     expect(response.status).toBe(403)
     expect(workspaceAuth.currentWorkspace).toBeNull()
@@ -998,7 +998,11 @@ describe('cloud API requests on the shared web session', () => {
         ...PROMPT_HEADERS,
         'x-csrf-token': 'csrf-1'
       }),
-      sessionRequest('GET', '/api/queue', { 'comfy-user': '' })
+      sessionRequest('POST', '/api/prompt', {
+        'x-comfy-workspace-id': 'ws-team',
+        ...PROMPT_HEADERS,
+        'x-csrf-token': 'csrf-1'
+      })
     ])
   })
 
