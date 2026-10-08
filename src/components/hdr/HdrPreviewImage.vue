@@ -11,33 +11,26 @@
   </div>
 </template>
 
-<script lang="ts">
-const resolvedPreviews = new Map<string, string>()
-</script>
-
 <script setup lang="ts">
-import { computedAsync } from '@vueuse/core'
-import { toValue } from 'vue'
+import { computed, toValue } from 'vue'
 
-import {
-  findServerPreviewUrl,
-  isAssetPreviewSupported
-} from '@/platform/assets/utils/assetPreviewUtil'
-import { useAssetsStore } from '@/stores/assetsStore'
+import { useAssetsQuery } from '@/platform/assets/composables/useAssetsQuery'
+import { isAssetPreviewSupported } from '@/platform/assets/utils/assetPreviewUtil'
+import { getGeneratedPreviewUrl } from '@/platform/assets/utils/assetUrlUtil'
 
 const { filename } = defineProps<{ filename: string | undefined }>()
 
-const assetsStore = useAssetsStore()
+const assetLists = isAssetPreviewSupported()
+  ? [
+      useAssetsQuery({ tags_any: ['input'] }),
+      useAssetsQuery({ tags_any: ['output', 'temp'] })
+    ]
+  : []
 
-const previewUrl = computedAsync(async () => {
-  void toValue(assetsStore.inputAssets.items)
-  void toValue(assetsStore.outputAssets.items)
-  if (!filename || !isAssetPreviewSupported()) return ''
-  const cached = resolvedPreviews.get(filename)
-  if (cached) return cached
-
-  const url = await findServerPreviewUrl(filename)
-  if (url) resolvedPreviews.set(filename, url)
-  return url ?? ''
-}, '')
+const previewUrl = computed(() => {
+  const asset = assetLists
+    .flatMap((list) => toValue(list.items))
+    .find(({ hash, name }) => hash === filename || name === filename)
+  return asset ? getGeneratedPreviewUrl(asset) : ''
+})
 </script>

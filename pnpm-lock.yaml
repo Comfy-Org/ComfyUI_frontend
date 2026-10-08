@@ -565,7 +565,7 @@ importers:
         version: 2.2.500
       '@monogrid/gainmap-js':
         specifier: 'catalog:'
-        version: 3.4.0(three@0.184.0)
+        version: 3.4.0(three@0.186.1)
       '@primeuix/utils':
         specifier: 'catalog:'
         version: 0.3.2
@@ -11868,10 +11868,10 @@ snapshots:
       base64-arraybuffer: 1.0.2
       mitt: 3.0.1
 
-  '@monogrid/gainmap-js@3.4.0(three@0.184.0)':
+  '@monogrid/gainmap-js@3.4.0(three@0.186.1)':
     dependencies:
       promise-worker-transferable: 1.0.4
-      three: 0.184.0
+      three: 0.186.1
 
   '@napi-rs/wasm-runtime@1.2.3(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)':
     dependencies:

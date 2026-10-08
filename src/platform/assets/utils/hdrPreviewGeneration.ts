@@ -65,7 +65,11 @@ export function generatePreviewsForNewAssets(list: PagedList<AssetItem>) {
       for (const asset of items) {
         if (handledIds.has(asset.id)) continue
         if (Date.parse(asset.created_at) <= newestPreexisting) continue
-        if (asset.preview_id || !isHdrImageFilename(asset.name)) continue
+        if (
+          (asset.preview_id && asset.preview_id !== asset.id) ||
+          !isHdrImageFilename(asset.name)
+        )
+          continue
         handledIds.add(asset.id)
         void generatePreview(asset, list)
       }

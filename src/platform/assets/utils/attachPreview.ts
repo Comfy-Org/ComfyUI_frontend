@@ -1,4 +1,5 @@
 import { assetService } from '@/platform/assets/services/assetService'
+import { isCloud } from '@/platform/distribution/types'
 
 export async function attachPreview(
   asset: { id: string; name: string },
@@ -9,7 +10,7 @@ export async function attachPreview(
   const uploaded = await assetService.uploadAssetFromBase64({
     data: await blobToDataUrl(blob),
     name: previewFilename,
-    tags: ['preview'],
+    tags: [isCloud ? 'preview' : 'output'],
     user_metadata: { filename: previewFilename }
   })
 
