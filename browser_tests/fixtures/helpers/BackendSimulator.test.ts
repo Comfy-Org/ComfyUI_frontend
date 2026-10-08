@@ -1,4 +1,5 @@
 import type { WebSocketRoute } from '@playwright/test'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
@@ -22,12 +23,12 @@ const SEEDS = [0, 1, 3, 7, 42, 99, 12345]
 
 function harness() {
   const sent: SentFrame[] = []
-  const ws = {
+  const ws = fromPartial<WebSocketRoute>({
     send: (message: string | Buffer) => {
       if (typeof message === 'string') sent.push(JSON.parse(message))
     }
-  } as unknown as WebSocketRoute
-  const execution = new ExecutionHelper({} as unknown as ComfyPage, ws)
+  })
+  const execution = new ExecutionHelper(fromPartial<ComfyPage>({}), ws)
   return { sent, simulator: new BackendSimulator(execution), execution }
 }
 
@@ -186,48 +187,6 @@ describe('BackendSimulator frame scripting', () => {
     expect(sent.map((frame) => frame.data.workflow_id)).toEqual([undefined])
   })
 
-  it('drops a frame the backend never sent', () => {
-    const { sent, simulator } = harness()
-    const prompt = simulator.prompt('job-a', { workflowId: 'wf-a' })
-    const script = [
-      prompt.start(),
-      prompt.progress('1', 1, 4),
-      prompt.success()
-    ]
-
-    simulator.play(dropFrames(script, 'wf-a:execution_success'))
-
-    expect(sent.map((frame) => frame.type)).toEqual([
-      'execution_start',
-      'progress'
-    ])
-  })
-
-  it('drops one job of two prompts sharing a workflow id', () => {
-    const { sent, simulator } = harness()
-    const first = simulator.prompt('job-a', { workflowId: 'wf-a' })
-    const second = simulator.prompt('job-b', { workflowId: 'wf-a' })
-    const script = [
-      first.start(),
-      second.start(),
-      first.success(),
-      second.success()
-    ]
-
-    simulator.play(
-      dropFrames(script, {
-        label: 'wf-a:execution_success',
-        jobId: 'job-a'
-      })
-    )
-
-    expect(sent.map((frame) => [frame.type, frame.data.prompt_id])).toEqual([
-      ['execution_start', 'job-a'],
-      ['execution_start', 'job-b'],
-      ['execution_success', 'job-b']
-    ])
-  })
-
   it('duplicates a frame', () => {
     const { sent, simulator } = harness()
     const prompt = simulator.prompt('job-a', { workflowId: 'wf-a' })
@@ -243,25 +202,6 @@ describe('BackendSimulator frame scripting', () => {
       'execution_start',
       'execution_success',
       'execution_success'
-    ])
-  })
-
-  it('duplicates one job of two prompts sharing a workflow id', () => {
-    const { sent, simulator } = harness()
-    const first = simulator.prompt('job-a', { workflowId: 'wf-a' })
-    const second = simulator.prompt('job-b', { workflowId: 'wf-a' })
-
-    simulator.play(
-      duplicateFrames([first.success(), second.success()], {
-        label: 'wf-a:execution_success',
-        jobId: 'job-b'
-      })
-    )
-
-    expect(sent.map((frame) => frame.data.prompt_id)).toEqual([
-      'job-a',
-      'job-b',
-      'job-b'
     ])
   })
 
@@ -281,96 +221,6 @@ describe('BackendSimulator frame scripting', () => {
     ])
   })
 
-  it('swaps one job of two prompts sharing a workflow id', () => {
-    const { sent, simulator } = harness()
-    const first = simulator.prompt('job-a', { workflowId: 'wf-a' })
-    const second = simulator.prompt('job-b', { workflowId: 'wf-a' })
-    const script = [
-      first.start(),
-      second.start(),
-      first.success(),
-      second.success()
-    ]
-
-    // job-a terminates before job-b is even announced.
-    simulator.play(
-      swapFrames(
-        script,
-        { label: 'wf-a:execution_start', jobId: 'job-b' },
-        { label: 'wf-a:execution_success', jobId: 'job-a' }
-      )
-    )
-
-    expect(sent.map((frame) => [frame.type, frame.data.prompt_id])).toEqual([
-      ['execution_start', 'job-a'],
-      ['execution_success', 'job-a'],
-      ['execution_start', 'job-b'],
-      ['execution_success', 'job-b']
-    ])
-  })
-
-  it('drops one of a prompt’s two frames of the same event', () => {
-    const { sent, simulator } = harness()
-    const prompt = simulator.prompt('job-a', { workflowId: 'wf-a' })
-    // One prompt, two `progress` frames — what any script using both
-    // `progress()` and `nodeRunning()` produces. `label` + `jobId` cannot tell
-    // them apart, so "the backend dropped the second progress frame" (the shape
-    // behind progress stuck after a run) needs the occurrence selector.
-    const script = [
-      prompt.start(),
-      prompt.progress('1', 1, 4),
-      ...prompt.nodeRunning('1', 2, 4),
-      prompt.success()
-    ]
-
-    simulator.play(
-      dropFrames(script, { label: 'wf-a:progress', occurrence: 2 })
-    )
-
-    expect(sent.map((frame) => [frame.type, frame.data.value])).toEqual([
-      ['execution_start', undefined],
-      ['progress', 1],
-      ['progress_state', undefined],
-      ['execution_success', undefined]
-    ])
-  })
-
-  it('duplicates one of a prompt’s two frames of the same event', () => {
-    const { sent, simulator } = harness()
-    const prompt = simulator.prompt('job-a', { workflowId: 'wf-a' })
-    const script = [prompt.progress('1', 1, 4), prompt.progress('1', 2, 4)]
-
-    simulator.play(
-      duplicateFrames(script, { label: 'wf-a:progress', occurrence: 1 })
-    )
-
-    expect(sent.map((frame) => frame.data.value)).toEqual([1, 1, 2])
-  })
-
-  it('swaps one of a prompt’s two frames of the same event', () => {
-    const { sent, simulator } = harness()
-    const prompt = simulator.prompt('job-a', { workflowId: 'wf-a' })
-    const script = [
-      prompt.progress('1', 1, 4),
-      prompt.progress('1', 2, 4),
-      prompt.success()
-    ]
-
-    simulator.play(
-      swapFrames(
-        script,
-        { label: 'wf-a:progress', occurrence: 2 },
-        'wf-a:execution_success'
-      )
-    )
-
-    expect(sent.map((frame) => [frame.type, frame.data.value])).toEqual([
-      ['progress', 1],
-      ['execution_success', undefined],
-      ['progress', 2]
-    ])
-  })
-
   it('points an ambiguous swap at the selector that can resolve it', () => {
     const { simulator } = harness()
     const prompt = simulator.prompt('job-a', { workflowId: 'wf-a' })
@@ -384,19 +234,6 @@ describe('BackendSimulator frame scripting', () => {
     expect(() =>
       swapFrames(script, 'wf-a:progress', 'wf-a:progress_state')
     ).toThrow(/occurrence/)
-  })
-
-  it('throws rather than silently applying no fault for a missing occurrence', () => {
-    const { simulator } = harness()
-    const prompt = simulator.prompt('job-a', { workflowId: 'wf-a' })
-    const script = [prompt.progress('1', 1, 4)]
-
-    expect(() =>
-      dropFrames(script, { label: 'wf-a:progress', occurrence: 2 })
-    ).toThrow(/not in the script/)
-    expect(() =>
-      dropFrames(script, { label: 'wf-a:progress', occurrence: 0 })
-    ).toThrow(/positive integer/)
   })
 
   it('throws rather than silently skipping an unknown swap target', () => {
@@ -442,12 +279,9 @@ describe('BackendSimulator frame scripting', () => {
     expect(() => dropFrames(script, 'wf-a:execution_success')).toThrow(
       /not in the script/
     )
-    expect(() =>
-      duplicateFrames(script, {
-        label: 'wf-a:execution_start',
-        jobId: 'job-zzz'
-      })
-    ).toThrow(/not in the script/)
+    expect(() => duplicateFrames(script, 'wf-a:progress')).toThrow(
+      /not in the script/
+    )
   })
 })
 
@@ -474,12 +308,12 @@ describe('BackendSimulator frame granularity', () => {
     // selector and would make `interleave` schedule fewer units than it emits.
     // Counts raw sends, so the binary `latentPreview` is included.
     let sends = 0
-    const ws = {
+    const ws = fromPartial<WebSocketRoute>({
       send: () => {
         sends++
       }
-    } as unknown as WebSocketRoute
-    const execution = new ExecutionHelper({} as unknown as ComfyPage, ws)
+    })
+    const execution = new ExecutionHelper(fromPartial<ComfyPage>({}), ws)
     const simulator = new BackendSimulator(execution)
     const script = everyFrame(simulator)
 

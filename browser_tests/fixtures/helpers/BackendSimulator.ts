@@ -18,59 +18,23 @@ export interface Frame {
 }
 
 /**
- * Which frames a fault applies to. A bare string keeps the workflow-wide
- * selection every script already uses; add `jobId` to reach one prompt when
- * several share a workflow id, and `occurrence` to reach one frame when a
- * single prompt sends the same event more than once.
- *
- * `occurrence` is 1-based and counts within whatever `label` (+ `jobId`) already
- * matched, so `{ label: 'wf-a:progress', occurrence: 2 }` is "the second
- * progress frame" — the shape behind *progress stuck after a run*, which needs
- * one of several identical events to go missing. Without it `label` + `jobId`
- * cannot tell two `progress` frames of one prompt apart, and one prompt sends
- * two of them as soon as a script uses both `progress()` and `nodeRunning()`.
+ * Which frames a fault applies to: the label a {@link Frame} carries, which is
+ * `<workflow or job>:<event>`. A label can match several frames, and every
+ * match is faulted, so a bare label spanning two prompts injects a wider fault
+ * than a test naming one frame probably means.
  */
-export type FrameSelector =
-  | string
-  | { label: string; jobId?: string; occurrence?: number }
+export type FrameSelector = string
 
 function describeSelector(selector: FrameSelector): string {
-  if (typeof selector === 'string') return selector
-  const qualifiers = [
-    selector.jobId === undefined ? undefined : `job ${selector.jobId}`,
-    selector.occurrence === undefined
-      ? undefined
-      : `occurrence ${selector.occurrence}`
-  ].filter((part) => part !== undefined)
-  return qualifiers.length === 0
-    ? selector.label
-    : `${selector.label} (${qualifiers.join(', ')})`
-}
-
-function matchesLabelAndJob(frame: Frame, selector: FrameSelector): boolean {
-  if (typeof selector === 'string') return frame.label === selector
-  if (frame.label !== selector.label) return false
-  return selector.jobId === undefined || frame.jobId === selector.jobId
+  return selector
 }
 
 function indicesOf(frames: Frame[], selector: FrameSelector): number[] {
   const found: number[] = []
   frames.forEach((frame, index) => {
-    if (matchesLabelAndJob(frame, selector)) found.push(index)
+    if (frame.label === selector) found.push(index)
   })
-  if (typeof selector === 'string' || selector.occurrence === undefined) {
-    return found
-  }
-  if (selector.occurrence < 1 || !Number.isInteger(selector.occurrence)) {
-    throw new Error(
-      `occurrence must be a positive integer, got ${selector.occurrence}`
-    )
-  }
-  // `.at` rather than an index, so an occurrence past the end is `undefined`
-  // and falls through to `requireMatches` instead of being a hole in the array.
-  // The positive-integer check above is what keeps this from wrapping.
-  const picked = found.at(selector.occurrence - 1)
-  return picked === undefined ? [] : [picked]
+  return found
 }
 
 /**
@@ -232,6 +196,13 @@ export class BackendSimulator {
  * drop one prompt's frame while a concurrent prompt of the same workflow keeps
  * its own.
  */
+
+/**
+ * Remove selected frames, as a backend that never sent them would.
+ *
+ * Every match is dropped, so a bare label spanning two prompts injects a wider
+ * fault than a test naming one frame probably means.
+ */
 export function dropFrames(frames: Frame[], selector: FrameSelector): Frame[] {
   const drop = new Set(requireMatches(frames, selector, 'dropFrames'))
   return frames.filter((_, index) => !drop.has(index))
@@ -240,9 +211,8 @@ export function dropFrames(frames: Frame[], selector: FrameSelector): Frame[] {
 /**
  * Send selected frames twice, as a retrying or reconnecting backend does.
  *
- * Plural like {@link dropFrames}: every match is duplicated, so a bare label
- * matching two prompts injects a wider fault than a test naming one frame
- * probably means. Narrow it with `jobId`/`occurrence` when that matters.
+ * Every match is duplicated, so a bare label matching two prompts injects a
+ * wider fault than a test naming one frame probably means.
  */
 export function duplicateFrames(
   frames: Frame[],

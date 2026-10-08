@@ -104,9 +104,8 @@ interface QueuePromptRequestBody {
    * server never interprets the contents. Omitted when the workflow has no id.
    *
    * Three limits of the echo, so a reader does not assume more than the server
-   * gives (verified against ComfyUI#16763 at `52463316ca`, which adds this
-   * field and is **not yet merged** — a server without it ignores the field
-   * rather than rejecting the prompt):
+   * gives. Added by ComfyUI#16763, merged 2026-10-06; an older server ignores
+   * the field rather than rejecting the prompt:
    *
    * - Only JSON frames whose `data` object carries a `prompt_id` are stamped.
    *   `status` and `logs` have none, and binary preview frames are not objects,
