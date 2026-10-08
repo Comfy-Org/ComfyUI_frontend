@@ -7,6 +7,8 @@ import { translationsFor } from '@/i18n/translations'
 import { CARD_GRID, SHELF_CARD } from '@/lib/workshop/card-layout'
 import type { CatalogueApp } from '@/lib/workshop/catalogue-apps'
 import { ac } from '@/lib/workshop/catalogue-apps'
+import { captureHubItemClick } from '@/scripts/hub-analytics'
+import type { HubItemSource } from '@/scripts/workshop-analytics'
 import { HUB_TOOLBAR_ID } from '@/scripts/hubToolbar'
 import CardRow from './CardRow.vue'
 import WorkshopAppCard from './WorkshopAppCard.vue'
@@ -26,6 +28,14 @@ watch(browseAll, () => void nextTick(() => window.scrollTo({ top: 0 })))
 
 const shelf = computed(() => apps.slice(0, ROW_LIMIT))
 const hasMore = computed(() => apps.length > ROW_LIMIT)
+
+function openApp(app: CatalogueApp, source: HubItemSource, position: number) {
+  if (app.href)
+    captureHubItemClick(
+      { kind: 'app', slug: app.key },
+      { surface: 'apps', source, position }
+    )
+}
 </script>
 
 <template>
@@ -64,8 +74,8 @@ const hasMore = computed(() => apps.length > ROW_LIMIT)
       :aria-label="ac('apps', locale)"
       data-testid="app-search-results"
     >
-      <li v-for="app in apps" :key="app.key">
-        <WorkshopAppCard :app />
+      <li v-for="(app, index) in apps" :key="app.key">
+        <WorkshopAppCard :app @click="openApp(app, 'results_grid', index)" />
       </li>
     </ul>
 
@@ -80,8 +90,8 @@ const hasMore = computed(() => apps.length > ROW_LIMIT)
               {{ ac('apps', locale) }}
             </h2>
           </template>
-          <li v-for="app in shelf" :key="app.key" :class="SHELF_CARD">
-            <WorkshopAppCard :app />
+          <li v-for="(app, index) in shelf" :key="app.key" :class="SHELF_CARD">
+            <WorkshopAppCard :app @click="openApp(app, 'app_row', index)" />
           </li>
         </CardRow>
       </section>

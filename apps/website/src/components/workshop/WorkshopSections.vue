@@ -19,6 +19,7 @@ import { translationsFor } from '@/i18n/translations'
 import { groupModels } from '@/config/model-family'
 import { SHELF_CARD } from '@/lib/workshop/card-layout'
 import { rememberShelfOnClick } from '@/lib/workshop/shelf-memory'
+import { captureHubItemClick, hubItemOf } from '@/scripts/hub-analytics'
 import CardRow from './CardRow.vue'
 import WorkshopModelCard from './WorkshopModelCard.vue'
 
@@ -86,9 +87,20 @@ const unplaced = computed(() =>
 function rememberModel(
   shelf: UseCase | 'all' | 'other',
   model: WorkshopModel,
-  event: MouseEvent
+  event: MouseEvent,
+  position: number
 ) {
-  if (model.href) rememberShelfOnClick(shelf, model.href, event)
+  if (!model.href) return
+  captureHubItemClick(hubItemOf(model), {
+    surface: 'models',
+    position,
+    ...(shelf === 'other'
+      ? { source: 'other_formats_row' }
+      : shelf === 'all'
+        ? { source: 'unplaced_grid' }
+        : { source: 'use_case_row', row: shelf })
+  })
+  rememberShelfOnClick(shelf, model.href, event)
 }
 </script>
 
@@ -133,14 +145,16 @@ function rememberModel(
         </template>
 
         <li
-          v-for="family in section.shown"
+          v-for="(family, index) in section.shown"
           :key="family.key"
           :class="SHELF_CARD"
         >
           <WorkshopModelCard
             :model="family.latest"
             :locale
-            @click="rememberModel(section.useCase, family.latest, $event)"
+            @click="
+              rememberModel(section.useCase, family.latest, $event, index)
+            "
           />
         </li>
       </CardRow>
@@ -188,14 +202,14 @@ function rememberModel(
         </template>
 
         <li
-          v-for="family in otherFormats.slice(0, ROW_LIMIT)"
+          v-for="(family, index) in otherFormats.slice(0, ROW_LIMIT)"
           :key="family.key"
           :class="SHELF_CARD"
         >
           <WorkshopModelCard
             :model="family.latest"
             :locale
-            @click="rememberModel('other', family.latest, $event)"
+            @click="rememberModel('other', family.latest, $event, index)"
           />
         </li>
       </CardRow>
@@ -218,11 +232,11 @@ function rememberModel(
       <ul
         class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
       >
-        <li v-for="family in unplaced" :key="family.key">
+        <li v-for="(family, index) in unplaced" :key="family.key">
           <WorkshopModelCard
             :model="family.latest"
             :locale
-            @click="rememberModel('all', family.latest, $event)"
+            @click="rememberModel('all', family.latest, $event, index)"
           />
         </li>
       </ul>
