@@ -4,7 +4,7 @@ import { ref } from 'vue'
 import ToggleGroup from './ToggleGroup.vue'
 import ToggleGroupItem from './ToggleGroupItem.vue'
 
-const meta = {
+const meta: Meta<typeof ToggleGroup> = {
   title: 'Components/ToggleGroup',
   component: ToggleGroup,
   tags: ['autodocs'],
@@ -25,7 +25,7 @@ const meta = {
     },
     'onUpdate:modelValue': { action: 'update:modelValue' }
   }
-} satisfies Meta<typeof ToggleGroup>
+}
 
 export default meta
 type Story = StoryObj<typeof meta>
@@ -110,8 +110,8 @@ export const BooleanToggle: Story = {
           type="single"
           class="w-48 border border-border-default rounded-lg p-1"
         >
-          <ToggleGroupItem value="off" size="sm">Outside</ToggleGroupItem>
-          <ToggleGroupItem value="on" size="sm">Inside</ToggleGroupItem>
+          <ToggleGroupItem value="off" size="sm" class="flex-1">Outside</ToggleGroupItem>
+          <ToggleGroupItem value="on" size="sm" class="flex-1">Inside</ToggleGroupItem>
         </ToggleGroup>
         <div class="text-sm">Value: {{ value === 'on' ? true : false }}</div>
       </div>
@@ -133,10 +133,14 @@ export const LongLabels: Story = {
         <ToggleGroup
           v-model="value"
           type="single"
-          class="border border-border-default rounded-lg p-1"
+          class="w-full border border-border-default rounded-lg p-1"
         >
-          <ToggleGroupItem value="option1" size="sm">Very Long Label One</ToggleGroupItem>
-          <ToggleGroupItem value="option2" size="sm">Another Long Label</ToggleGroupItem>
+          <ToggleGroupItem value="option1" size="sm" class="flex-1">
+            <span class="min-w-0 truncate">Very Long Option Label One</span>
+          </ToggleGroupItem>
+          <ToggleGroupItem value="option2" size="sm" class="flex-1">
+            <span class="min-w-0 truncate">Another Extra Long Option Label</span>
+          </ToggleGroupItem>
         </ToggleGroup>
       </div>
     `

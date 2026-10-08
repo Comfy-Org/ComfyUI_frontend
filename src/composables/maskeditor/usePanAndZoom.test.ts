@@ -1,41 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { usePanAndZoom } from '@/composables/maskeditor/usePanAndZoom'
+import { useMaskEditorStore } from '@/stores/maskEditorStore'
 
-interface IMockStore {
-  canvasContainer: HTMLElement | null
-  maskCanvas: HTMLCanvasElement | null
-  rgbCanvas: HTMLCanvasElement | null
-  isPanning: boolean
-  brushVisible: boolean
-  displayZoomRatio: number
-  resetZoomTrigger: number
-  canvasHistory: { undo: ReturnType<typeof vi.fn> }
-  setCursorPoint: ReturnType<typeof vi.fn>
-  setPanOffset: ReturnType<typeof vi.fn>
-  setZoomRatio: ReturnType<typeof vi.fn>
-}
-
-const { mockStore } = vi.hoisted(() => {
-  const mockStore: IMockStore = {
-    canvasContainer: null,
-    maskCanvas: null,
-    rgbCanvas: null,
-    isPanning: false,
-    brushVisible: true,
-    displayZoomRatio: 1,
-    resetZoomTrigger: 0,
-    canvasHistory: { undo: vi.fn() },
-    setCursorPoint: vi.fn(),
-    setPanOffset: vi.fn(),
-    setZoomRatio: vi.fn()
-  }
-  return { mockStore }
-})
-
-vi.mock('@/stores/maskEditorStore', () => ({
-  useMaskEditorStore: vi.fn(() => mockStore)
-}))
+let mockStore: ReturnType<typeof useMaskEditorStore>
 
 function createMockElement(width = 1200, height = 800): HTMLElement {
   return {
@@ -58,6 +26,7 @@ function createMockCanvas(width: number, height: number): HTMLCanvasElement {
   return {
     width,
     height,
+    getContext: vi.fn().mockImplementation(() => null),
     clientWidth: width,
     clientHeight: height,
     style: {} as CSSStyleDeclaration,
@@ -82,7 +51,7 @@ function createTouchList(...points: { x: number; y: number }[]): TouchList {
   return Object.assign(touches, {
     length: touches.length,
     item: (i: number) => touches[i]
-  }) as unknown as TouchList
+  })
 }
 
 function createTouchEvent(touches: TouchList): TouchEvent {
@@ -98,7 +67,7 @@ async function initComposable() {
   const root = createMockElement()
   const container = createMockElement()
   const canvas = createMockCanvas(800, 600)
-  mockStore.canvasContainer = container as unknown as HTMLElement
+  mockStore.canvasContainer = container
   mockStore.maskCanvas = canvas
   await pz.initializeCanvasPanZoom(img, root)
   vi.clearAllMocks()
@@ -107,6 +76,8 @@ async function initComposable() {
 
 describe('usePanAndZoom', () => {
   beforeEach(() => {
+    mockStore = useMaskEditorStore()
+    vi.spyOn(mockStore.canvasHistory, 'undo').mockImplementation(() => {})
     mockStore.canvasContainer = null
     mockStore.maskCanvas = null
     mockStore.rgbCanvas = null
@@ -120,7 +91,7 @@ describe('usePanAndZoom', () => {
     it('sets zoom and pan on the store', async () => {
       const pz = usePanAndZoom()
       const container = createMockElement()
-      mockStore.canvasContainer = container as unknown as HTMLElement
+      mockStore.canvasContainer = container
 
       await pz.initializeCanvasPanZoom(
         createMockImage(800, 600),
@@ -136,7 +107,7 @@ describe('usePanAndZoom', () => {
 
     it('accounts for panel widths via setPanOffset', async () => {
       const pz = usePanAndZoom()
-      mockStore.canvasContainer = createMockElement() as unknown as HTMLElement
+      mockStore.canvasContainer = createMockElement()
 
       const toolPanel = createMockElement()
       vi.spyOn(toolPanel, 'getBoundingClientRect').mockReturnValue({
@@ -161,7 +132,7 @@ describe('usePanAndZoom', () => {
     it('syncs rgbCanvas dimensions when they differ', async () => {
       const pz = usePanAndZoom()
       const rgbCanvas = createMockCanvas(400, 300)
-      mockStore.canvasContainer = createMockElement() as unknown as HTMLElement
+      mockStore.canvasContainer = createMockElement()
       mockStore.rgbCanvas = rgbCanvas
 
       await pz.initializeCanvasPanZoom(
@@ -193,18 +164,21 @@ describe('usePanAndZoom', () => {
       expect(mockStore.setPanOffset).toHaveBeenCalled()
     })
 
-    it('throws if move called without start', async () => {
+    it('ignores move called without start', async () => {
       const pz = usePanAndZoom()
-      await expect(
-        pz.handlePanMove({ clientX: 0, clientY: 0 } as PointerEvent)
-      ).rejects.toThrow('mouseDownPoint is null')
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+      await pz.handlePanMove({ clientX: 0, clientY: 0 } as PointerEvent)
+
+      expect(consoleSpy).toHaveBeenCalledWith('mouseDownPoint is null')
+      expect(mockStore.setPanOffset).not.toHaveBeenCalled()
     })
   })
 
   describe('zoom', () => {
     it('zooms in with negative deltaY and updates store', async () => {
       const { pz } = await initComposable()
-      const initialZoom = vi.mocked(mockStore.setZoomRatio).mock.calls[0]?.[0]
+      const initialZoom = mockStore.zoomRatio
 
       await pz.zoom({
         clientX: 400,
@@ -213,7 +187,7 @@ describe('usePanAndZoom', () => {
       } as WheelEvent)
 
       const zoomValue = vi.mocked(mockStore.setZoomRatio).mock.calls[0][0]
-      expect(zoomValue).toBeGreaterThan(initialZoom ?? 0)
+      expect(zoomValue).toBeGreaterThan(initialZoom)
     })
 
     it('zooms out with positive deltaY producing smaller zoom', async () => {
@@ -249,7 +223,7 @@ describe('usePanAndZoom', () => {
         } as WheelEvent)
       }
 
-      const calls = mockStore.setZoomRatio.mock.calls
+      const calls = vi.mocked(mockStore.setZoomRatio).mock.calls
       expect(calls[calls.length - 1][0]).toBeGreaterThanOrEqual(0.2)
     })
 
@@ -264,14 +238,14 @@ describe('usePanAndZoom', () => {
         } as WheelEvent)
       }
 
-      const calls = mockStore.setZoomRatio.mock.calls
+      const calls = vi.mocked(mockStore.setZoomRatio).mock.calls
       expect(calls[calls.length - 1][0]).toBeLessThanOrEqual(10)
     })
 
     it('returns early when maskCanvas is null', async () => {
       const pz = usePanAndZoom()
       const container = createMockElement()
-      mockStore.canvasContainer = container as unknown as HTMLElement
+      mockStore.canvasContainer = container
       mockStore.maskCanvas = null
       await pz.initializeCanvasPanZoom(
         createMockImage(800, 600),

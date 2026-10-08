@@ -1,58 +1,113 @@
 <template>
   <div class="flex min-h-0 flex-1 flex-col">
-    <div
-      class="mb-4 flex w-full flex-col gap-3 @2xl:flex-row @2xl:items-center @2xl:gap-9"
+    <Teleport
+      defer
+      to="#settings-header-controls"
+      :disabled="!isHeaderCollapsed"
     >
-      <div class="flex min-w-0 flex-1 items-center gap-2">
-        <Button
-          v-for="tab in tabs"
-          :key="tab.key"
-          :variant="activeView === tab.key ? 'secondary' : 'muted-textonly'"
-          size="lg"
-          @click="setView(tab.key)"
-        >
-          {{ tab.label }}
-        </Button>
+      <div
+        :class="
+          cn(
+            'flex w-full gap-3',
+            isHeaderCollapsed
+              ? 'min-w-0 flex-1 flex-row items-center gap-9'
+              : 'mb-4 flex-col @2xl:flex-row @2xl:items-center @2xl:gap-9'
+          )
+        "
+      >
+        <div class="flex min-w-0 flex-1 items-center gap-2">
+          <Button
+            v-for="tab in tabs"
+            :key="tab.key"
+            :variant="activeView === tab.key ? 'secondary' : 'muted-textonly'"
+            size="lg"
+            @click="activeView = tab.key"
+          >
+            {{ tab.label }}
+          </Button>
+        </div>
       </div>
-      <SearchInput
-        v-if="activeView === 'activity'"
-        v-model="searchQuery"
-        :placeholder="$t('g.search')"
-        size="lg"
-        class="w-full @2xl:w-64"
-      />
-    </div>
+    </Teleport>
 
-    <SubscriptionPanelContentWorkspace v-if="activeView === 'overview'" />
-    <WorkspaceActivityContent v-else :search="searchQuery" />
+    <template v-if="activeView === 'overview'">
+      <SubscriptionPanelContentWorkspace v-if="isCloud" />
+      <div
+        v-else
+        class="flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto"
+        @scroll="handlePanelScroll"
+      >
+        <CreditsPanel embedded />
+        <SubscriptionFooterLinks
+          class="mt-auto shrink-0"
+          :show-invoice-history="false"
+          :show-usage-activity="false"
+        />
+      </div>
+    </template>
+    <WorkspaceInvoicesContent v-else-if="activeView === 'invoices'" />
+    <UsageLogsTable v-else ref="usageLogsTable" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { useSettingsHeaderCollapse } from '@/platform/settings/composables/useSettingsHeaderCollapse'
+import { cn } from '@comfyorg/tailwind-utils'
+import { computed, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import CreditsPanel from '@/components/dialog/content/setting/CreditsPanel.vue'
+import UsageLogsTable from '@/components/dialog/content/setting/UsageLogsTable.vue'
 import Button from '@/components/ui/button/Button.vue'
-import SearchInput from '@/components/ui/search-input/SearchInput.vue'
+import SubscriptionFooterLinks from '@/platform/cloud/subscription/components/SubscriptionFooterLinks.vue'
+import { isCloud } from '@/platform/distribution/types'
 import SubscriptionPanelContentWorkspace from '@/platform/workspace/components/SubscriptionPanelContentWorkspace.vue'
-import WorkspaceActivityContent from '@/platform/workspace/components/dialogs/settings/WorkspaceActivityContent.vue'
+import WorkspaceInvoicesContent from '@/platform/workspace/components/dialogs/settings/WorkspaceInvoicesContent.vue'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
-type View = 'overview' | 'activity'
+type View = 'overview' | 'activity' | 'invoices'
+
+const { isHeaderCollapsed, handlePanelScroll, resetHeaderCollapse } =
+  useSettingsHeaderCollapse()
 
 const { t } = useI18n()
+const { permissions } = useWorkspaceUI()
 
-// The owner-only Invoices tab is added by FE-1245, which owns the
-// next-invoice banner + Stripe portal link that fill it.
+// Invoices covers a workspace-wide charge, so it is billing-manager only, and
+// the upcoming amount and Stripe portal only exist on cloud.
+const canSeeInvoices = computed(
+  () => isCloud && permissions.value.canManageSubscription
+)
+
 const tabs = computed<{ key: View; label: string }[]>(() => [
   { key: 'overview', label: t('workspacePanel.planCredits.tabs.overview') },
-  { key: 'activity', label: t('workspacePanel.planCredits.tabs.activity') }
+  { key: 'activity', label: t('workspacePanel.planCredits.tabs.activity') },
+  ...(canSeeInvoices.value
+    ? [
+        {
+          key: 'invoices' as const,
+          label: t('workspacePanel.planCredits.tabs.invoices')
+        }
+      ]
+    : [])
 ])
 
 const activeView = ref<View>('overview')
-const searchQuery = ref('')
 
-function setView(view: View) {
-  activeView.value = view
-  searchQuery.value = ''
-}
+// Switching workspaces can drop the billing-manager role while the dialog
+// stays open; leaving Invoices selected would keep the panel rendered after
+// its tab disappeared.
+watch(canSeeInvoices, (allowed) => {
+  if (!allowed && activeView.value === 'invoices') activeView.value = 'overview'
+})
+
+// Each view owns a different scroller, so a collapsed header would otherwise
+// survive the switch and sit above content at scrollTop 0.
+watch(activeView, resetHeaderCollapse)
+
+const usageLogsTable = useTemplateRef('usageLogsTable')
+watch(usageLogsTable, (table) => {
+  table?.refresh().catch(() => {
+    console.error('Error refreshing usage logs')
+  })
+})
 </script>

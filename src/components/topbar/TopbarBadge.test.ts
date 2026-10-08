@@ -1,5 +1,4 @@
 import { render, screen } from '@testing-library/vue'
-import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
 import Tooltip from 'primevue/tooltip'
 import { describe, expect, it } from 'vitest'
@@ -28,7 +27,6 @@ describe('TopbarBadge', () => {
     badge: Partial<TopbarBadgeType> = {},
     displayMode: 'full' | 'compact' | 'icon-only' = 'full'
   ) {
-    const user = userEvent.setup()
     const result = render(TopbarBadge, {
       global: {
         plugins: [PrimeVue, i18n],
@@ -39,7 +37,7 @@ describe('TopbarBadge', () => {
         displayMode
       }
     })
-    return { ...result, user }
+    return result
   }
 
   describe('full display mode', () => {
@@ -86,17 +84,31 @@ describe('TopbarBadge', () => {
       expect(screen.queryByText('Hidden Text')).not.toBeInTheDocument()
     })
 
-    it('reveals full text when clicked', async () => {
-      const { user } = renderTopbarBadge(
-        {
-          text: 'Full Text',
-          label: 'ALERT'
-        },
+    it('names a label-less trigger from its full text', () => {
+      renderTopbarBadge({ text: 'Comfy Cloud', label: undefined }, 'compact')
+
+      const trigger = screen.getByRole('button', { name: 'Comfy Cloud' })
+      expect(trigger).toHaveAccessibleName('Comfy Cloud')
+    })
+
+    it('includes its visible label in the trigger name', () => {
+      renderTopbarBadge(
+        { text: 'Hidden Text', label: 'BETA', icon: 'pi pi-cloud' },
         'compact'
       )
-      expect(screen.queryByText('Full Text')).not.toBeInTheDocument()
-      await user.click(screen.getByText('ALERT'))
-      expect(await screen.findByText('Full Text')).toBeInTheDocument()
+
+      expect(screen.getByRole('button', { name: 'BETA' })).toHaveAccessibleName(
+        'BETA'
+      )
+    })
+
+    it('renders a fallback dot when its label is contained in the text', () => {
+      renderTopbarBadge(
+        { text: 'Preview Environment', label: 'PREVIEW', icon: undefined },
+        'compact'
+      )
+
+      expect(screen.getByTestId('badge-dot')).toBeInTheDocument()
     })
   })
 
@@ -113,6 +125,13 @@ describe('TopbarBadge', () => {
       expect(screen.getByTestId('badge-icon')).toHaveClass('pi-cloud')
       expect(screen.queryByText('BETA')).not.toBeInTheDocument()
       expect(screen.queryByText('Hidden Text')).not.toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: 'Hidden Text' })
+      ).toBeInTheDocument()
+      expect(screen.getByTestId('badge-icon')).toHaveAttribute(
+        'aria-hidden',
+        'true'
+      )
     })
 
     it('renders label when no icon provided', () => {
@@ -138,7 +157,6 @@ describe('TopbarBadge', () => {
         },
         'full'
       )
-      expect(screen.getByText('ERROR')).toHaveClass('bg-danger-100')
       expect(screen.getByText('Error Message')).toHaveClass('text-danger-100')
     })
 
@@ -151,7 +169,6 @@ describe('TopbarBadge', () => {
         },
         'full'
       )
-      expect(screen.getByText('WARN')).toHaveClass('bg-gold-600')
       expect(screen.getByText('Warning Message')).toHaveClass(
         'text-warning-background'
       )
@@ -178,6 +195,37 @@ describe('TopbarBadge', () => {
         },
         'full'
       )
+      expect(screen.getByTestId('badge-icon')).toHaveClass(
+        'icon-[lucide--triangle-alert]'
+      )
+    })
+  })
+
+  describe('a label the text already carries', () => {
+    it.for([
+      ['WARN', 'Warning Message'],
+      ['PREVIEW', 'Preview Environment'],
+      ['PREVIEW', '(PREVIEW) Environment']
+    ])('drops %s beside its own text', ([label, text]) => {
+      renderTopbarBadge({ text, label }, 'full')
+
+      expect(screen.queryByText(label)).not.toBeInTheDocument()
+      expect(screen.getByText(text)).toBeInTheDocument()
+    })
+
+    it('keeps a label that adds something the text does not say', () => {
+      renderTopbarBadge({ text: 'Comfy Cloud', label: 'BETA' }, 'full')
+
+      expect(screen.getByText('BETA')).toBeInTheDocument()
+    })
+
+    it('drops the PREVIEW label in compact mode while keeping the warning icon', () => {
+      renderTopbarBadge(
+        { text: 'Preview Environment', label: 'PREVIEW', variant: 'warning' },
+        'compact'
+      )
+
+      expect(screen.queryByText('PREVIEW')).not.toBeInTheDocument()
       expect(screen.getByTestId('badge-icon')).toHaveClass(
         'icon-[lucide--triangle-alert]'
       )

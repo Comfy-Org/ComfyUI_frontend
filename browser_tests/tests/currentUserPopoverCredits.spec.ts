@@ -7,6 +7,7 @@ import type {
 } from '@/platform/workspace/api/workspaceApi'
 import type { WorkspaceTokenResponse } from '@/platform/workspace/stores/workspaceAuthStore'
 import type { operations } from '@/types/comfyRegistryTypes'
+import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
 import { workspace } from '@e2e/fixtures/utils/workspaceMocks'
@@ -54,6 +55,7 @@ const mockBillingStatus: BillingStatusResponse = {
   max_seats: 1,
   occupied_seats: 1,
   team_credit_stop: null,
+  scheduled_change: null,
   subscription_status: 'canceled',
   subscription_tier: 'PRO',
   subscription_duration: 'MONTHLY',
@@ -113,6 +115,19 @@ const test = comfyPageFixture.extend({
     )
 
     // The popover sources its data from the workspace billing endpoints.
+    await page.route('**/api/billing/capabilities', (route) => {
+      if (route.request().method() !== 'GET') return route.fallback()
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(
+          createWorkspaceBillingCapabilities(
+            mockListWorkspacesResponse.workspaces[0]
+          )
+        )
+      })
+    })
+
     await page.route('**/api/billing/status', (route) =>
       route.fulfill({
         status: 200,
@@ -185,6 +200,12 @@ test.describe('Current user popover credits row', { tag: '@cloud' }, () => {
       await expect(page.getByTestId('dialog-overlay')).toBeHidden()
 
       await page.getByRole('button', { name: 'Current user' }).click()
+
+      const workspaceSelector = page.getByTestId('workspace-switcher-trigger')
+      await expect(workspaceSelector).toBeVisible()
+      await expect(workspaceSelector).toHaveScreenshot(
+        'workspace-selector-menu-item.png'
+      )
 
       const managePlan = page.getByRole('button', { name: 'Manage plan' })
       await expect(managePlan).toBeVisible()

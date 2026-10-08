@@ -1,0 +1,60 @@
+import { expect } from '@playwright/test'
+
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { openWorkflowFromSidebar } from '@e2e/fixtures/utils/builderTestUtils'
+
+const WIDGET_NAME = '__proto__'
+const TYPED_VALUE = 'survives the reload'
+
+test.describe(
+  'widget named __proto__',
+  { tag: ['@canvas', '@widget', '@vue-nodes'] },
+  () => {
+    test.use({
+      initialSettings: { 'Comfy.Workflow.NamedValuesRestore': true }
+    })
+
+    let workflowName = ''
+
+    test.afterEach(async ({ comfyPage }) => {
+      if (workflowName) await comfyPage.workflow.deleteWorkflow(workflowName)
+    })
+
+    test('keeps its value after saving, closing and reopening', async ({
+      comfyPage
+    }, testInfo) => {
+      workflowName = `proto-named-widget-${testInfo.parallelIndex}-${testInfo.retry}-${Date.now()}`
+
+      await comfyPage.nodeOps.clearGraph()
+      await comfyPage.page.evaluate((widgetName) => {
+        const nodeType =
+          window.LiteGraph!.registered_node_types['DevToolsNodeWithOutputList']
+        const onNodeCreated = nodeType.prototype.onNodeCreated
+        nodeType.prototype.onNodeCreated = function (...args) {
+          onNodeCreated?.apply(this, args)
+          this.serialize_widgets = true
+          this.addWidget('string', widgetName, 'construction default', () => {})
+        }
+      }, WIDGET_NAME)
+
+      const nodeId = await comfyPage.searchBoxV2.addNodeAndGetId(
+        'Node With Output List'
+      )
+      await expect(comfyPage.vueNodes.getNodeLocator(nodeId)).toBeVisible()
+
+      const widget = comfyPage.vueNodes
+        .getWidgetRowByLabel('Node With Output List', WIDGET_NAME)
+        .getByRole('textbox')
+
+      await widget.fill(TYPED_VALUE)
+      await widget.blur()
+      await comfyPage.menu.topbar.saveWorkflowAs(workflowName)
+
+      await comfyPage.workflow.newBlankWorkflow()
+      await comfyPage.menu.topbar.closeWorkflowTab(workflowName)
+      await openWorkflowFromSidebar(comfyPage, workflowName)
+
+      await expect(widget).toHaveValue(TYPED_VALUE)
+    })
+  }
+)

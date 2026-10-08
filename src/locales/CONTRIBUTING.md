@@ -119,10 +119,10 @@ re-queued for translation, so corrupted strings heal on the next run. Results
 persist per entry file: a failure translating one file does not discard the
 completed, validated work of the others — those are written and their manifest
 entries advance, and only the failed files retry on the next run. Runs that
-would delete an implausibly large share of a file's keys abort that file
-without writing — that usually means `collect-i18n` observed a partial app;
-rerun with `--allow-prune` (or the `allow_prune` input on the manual workflow
-dispatch) only after confirming the English sources are complete.
+prune keys report each affected file's exact deleted-key count. The release PR
+diff and review approve those deletions; there is no separate size-based bypass.
+Source-manifest, translation, and protected-token integrity failures remain hard
+failures.
 `pnpm locale:check` runs offline in CI: it reports pending work and fails on
 protected-token violations that are not already queued for retranslation
 because the English source changed. The manifest's `knownViolations` field
@@ -131,6 +131,13 @@ and drops them, and any corruption introduced beyond the baseline fails the
 check immediately. oxfmt ignores `src/locales/**/*.json` — the pipeline is the
 sole writer of those bytes, which keeps the manifest's recorded blob hashes
 valid.
+
+The same pipeline also translates the website catalogs in
+`apps/website/src/locales/`, with its own manifest and `--target website`
+configuration. The website keeps existing translations whose English did not
+change and never generates its excluded namespaces, which cover legal documents
+and the MiniMax license page. See the website's
+[localization instructions](../../apps/website/README.md#generating-translations).
 
 ### Manual Translation Updates
 

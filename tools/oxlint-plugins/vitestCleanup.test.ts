@@ -151,6 +151,22 @@ afterAll(() => vi.unstubAllGlobals())
 suiteSetup(() => vitest.stubGlobal('suite', true))
 beforeAll(() => vi.spyOn(console, 'log'))
 Vitest.beforeAll(() => Vitest.vi.stubGlobal('suite', true))
+
+beforeEach(() => {
+  vi.useRealTimers()
+  vi.clearAllTimers()
+})
+afterEach(() => {
+  vi.useRealTimers()
+  vi.clearAllTimers()
+})
+
+afterAll(() => {
+  vi.useFakeTimers()
+  setTimeout(() => undefined, 1)
+  vi.clearAllTimers()
+  vi.useRealTimers()
+})
 `
 
 const unrelatedFixture = `const vi = {
@@ -168,10 +184,165 @@ vi.spyOn()
 vi.stubGlobal()
 `
 
-function expectReportsAt(output: string, lines: readonly number[]) {
+const liteGraphFixture = `import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  it,
+  onTestFinished,
+  suite
+} from 'vitest'
+import { LiteGraph as Graph } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph as RelativeGraph } from './litegraph'
+
+Graph.registerNodeType('module', class {})
+RelativeGraph.registerNodeType('relative-module', class {})
+beforeAll(() => Graph.registerNodeType('suite', class {}))
+beforeEach(() => Graph.registerNodeType('test', class {}))
+describe('collection registration', () => {
+  Graph.registerNodeType('describe', class {})
+})
+suite('collection registration alias', () => {
+  Graph.registerNodeType('suite-alias', class {})
+})
+describe.sequential('modified collection registration', () => {
+  Graph.registerNodeType('describe-sequential', class {})
+})
+suite.concurrent('modified collection registration alias', () => {
+  Graph.registerNodeType('suite-concurrent', class {})
+})
+describe.each([1])('parameterized collection registration', () => {
+  Graph.registerNodeType('describe-each', class {})
+})
+suite.each([1])('parameterized collection registration alias', () => {
+  Graph.registerNodeType('suite-each', class {})
+})
+describe.for([1])('parameterized collection registration', () => {
+  Graph.registerNodeType('describe-for', class {})
+})
+suite.for([1])('parameterized collection registration alias', () => {
+  Graph.registerNodeType('suite-for', class {})
+})
+describe.skipIf(true)('conditional collection registration', () => {
+  Graph.registerNodeType('describe-skip-if', class {})
+})
+suite.runIf(true)('conditional collection registration alias', () => {
+  Graph.registerNodeType('suite-run-if', class {})
+})
+describe.skipIf(true).sequential('modified conditional registration', () => {
+  Graph.registerNodeType('describe-skip-if-sequential', class {})
+})
+suite.runIf(true).concurrent('modified conditional registration alias', () => {
+  Graph.registerNodeType('suite-run-if-concurrent', class {})
+})
+
+afterAll(() => Graph.unregisterNodeType('suite'))
+afterEach(() => Graph.clearRegisteredTypes())
+onTestFinished(() => Graph.unregisterNodeType('finished'))
+it('allows per-test registration', () => {
+  Graph.registerNodeType('inline', class {})
+  Graph.unregisterNodeType('inline')
+  Graph.clearRegisteredTypes()
+})
+
+const LiteGraph = {
+  registerNodeType() {},
+  unregisterNodeType() {},
+  clearRegisteredTypes() {}
+}
+LiteGraph.registerNodeType()
+LiteGraph.unregisterNodeType()
+LiteGraph.clearRegisteredTypes()
+`
+
+const mockInstanceFixture = `import { afterAll, afterEach, beforeAll, beforeEach, describe, it, vi } from 'vitest'
+
+const mock = vi.fn()
+const other = vi.fn()
+
+afterEach(() => mock.mockRestore())
+afterAll(() => {
+  mock.mockClear()
+})
+beforeAll(() => vi.mocked(mock).mockReset())
+describe('leading cleanup', () => {
+  beforeEach(() => {
+    other.mockClear()
+    mock.mockReset().mockReturnValue(2)
+    render()
+    other.mockClear()
+  })
+})
+describe('concise optional cleanup', () => {
+  beforeEach(() => mock?.mockClear())
+})
+describe('concise cleanup', () => {
+  beforeEach(() => mock.mockClear())
+})
+describe('reset after configuration', () => {
+  beforeEach(() => {
+    mock.mockReturnValue(1)
+    mock.mockReset()
+  })
+})
+describe('restore after configuration', () => {
+  beforeEach(() => {
+    mock.mockReturnValue(1)
+    mock.mockRestore()
+  })
+})
+describe('nested setup', () => {
+  beforeEach(() => {
+    if (globalThis.location) {
+      render()
+      mock.mockClear()
+    }
+  })
+})
+describe('earlier hook in the same suite', () => {
+  beforeEach(() => render())
+  beforeEach(() => mock.mockClear())
+})
+describe('outer hook', () => {
+  beforeEach(() => render())
+  describe('inner suite', () => {
+    beforeEach(() => mock.mockClear())
+  })
+})
+describe('later hook in the same suite', () => {
+  beforeEach(() => mock.mockClear())
+  beforeEach(() => render())
+})
+describe('setup in the same expression', () => {
+  beforeEach(() => {
+    render() && mock.mockClear()
+  })
+})
+describe('concise setup in the same expression', () => {
+  beforeEach(() => render() && mock.mockClear())
+})
+it('allows per-mock cleanup in tests', () => {
+  mock.mockClear()
+  mock.mockReset()
+  mock.mockRestore()
+})
+afterEach(() => {
+  const helper = () => mock.mockClear()
+  helper()
+})
+function render() {}
+`
+
+function expectReportsAt(
+  output: string,
+  lines: readonly number[],
+  file = 'invalid.test.ts'
+) {
   const plainOutput = stripVTControlCharacters(output)
   for (const line of lines) {
-    expect(plainOutput).toContain(`invalid.test.ts:${line}:`)
+    expect(plainOutput).toContain(`${file}:${line}:`)
   }
 }
 
@@ -182,6 +353,11 @@ describe('Vitest cleanup rules', () => {
   beforeAll(() => {
     workDir = mkdtempSync(path.join(tmpdir(), 'comfy-vitest-cleanup-'))
     writeFileSync(path.join(workDir, 'invalid.test.ts'), invalidFixture)
+    writeFileSync(path.join(workDir, 'litegraph.test.ts'), liteGraphFixture)
+    writeFileSync(
+      path.join(workDir, 'mock-instance.test.ts'),
+      mockInstanceFixture
+    )
     writeFileSync(path.join(workDir, 'unrelated.test.ts'), unrelatedFixture)
     writeFileSync(path.join(workDir, 'playwright.spec.ts'), invalidFixture)
     writeFileSync(
@@ -193,6 +369,8 @@ describe('Vitest cleanup rules', () => {
             files: ['**/*.test.ts'],
             rules: {
               'comfy/no-module-scope-vitest-mocks': 'warn',
+              'comfy/no-persistent-litegraph-registration': 'warn',
+              'comfy/no-redundant-litegraph-cleanup': 'warn',
               'comfy/no-redundant-vitest-cleanup': 'warn'
             }
           }
@@ -207,6 +385,8 @@ describe('Vitest cleanup rules', () => {
         '--config',
         path.join(workDir, '.oxlintrc.json'),
         'invalid.test.ts',
+        'litegraph.test.ts',
+        'mock-instance.test.ts',
         'unrelated.test.ts',
         'playwright.spec.ts'
       ],
@@ -238,6 +418,15 @@ describe('Vitest cleanup rules', () => {
     }
   })
 
+  it('reports timer cleanup in afterEach but allows setup and afterAll cleanup', () => {
+    expectReportsAt(output, [145, 146])
+    const plainOutput = stripVTControlCharacters(output)
+    expect(plainOutput).not.toContain('invalid.test.ts:141:')
+    expect(plainOutput).not.toContain('invalid.test.ts:142:')
+    expect(plainOutput).not.toContain('invalid.test.ts:152:')
+    expect(plainOutput).not.toContain('invalid.test.ts:153:')
+  })
+
   it('handles aliases, namespaces, concise callbacks, and nested control flow', () => {
     expectReportsAt(
       output,
@@ -250,6 +439,27 @@ describe('Vitest cleanup rules', () => {
 
   it('reports stubs and spies installed at module scope or in beforeAll', () => {
     expectReportsAt(output, [73, 74, 75, 76, 77, 80, 131, 136, 137, 138])
+  })
+
+  it('reports per-mock cleanup in hooks unless beforeEach setup ran first', () => {
+    expect(output.match(/resets and restores every mock/g)).toHaveLength(8)
+    expectReportsAt(
+      output,
+      [6, 8, 10, 13, 14, 20, 23, 56],
+      'mock-instance.test.ts'
+    )
+  })
+
+  it('reports persistent LiteGraph registrations and redundant cleanup', () => {
+    expect(
+      output.match(/Register LiteGraph node types in beforeEach or a test/g)
+    ).toHaveLength(15)
+    expect(
+      output.match(/LiteGraph\.unregisterNodeType\(\) is redundant/g)
+    ).toHaveLength(2)
+    expect(
+      output.match(/LiteGraph\.clearRegisteredTypes\(\) is redundant/g)
+    ).toHaveLength(1)
   })
 
   it('ignores unrelated names, nested helpers, test bodies, and Playwright specs', () => {

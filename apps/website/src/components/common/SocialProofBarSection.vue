@@ -18,13 +18,13 @@ const mobileRow2Logos = logos.slice(6)
 </script>
 
 <template>
-  <section class="overflow-hidden py-12">
+  <section class="overflow-hidden py-8 md:py-12">
     <!-- Single row on desktop -->
     <div data-testid="social-proof-desktop" class="hidden w-max gap-2 md:flex">
       <div
         v-for="copy in 2"
         :key="copy"
-        class="animate-marquee flex shrink-0 items-center gap-2"
+        class="flex shrink-0 animate-marquee items-center gap-2"
         style="--marquee-gap: 0.5rem"
         :aria-hidden="copy === 2 ? 'true' : undefined"
       >
@@ -41,20 +41,20 @@ const mobileRow2Logos = logos.slice(6)
     <!-- Two rows on mobile -->
     <div
       data-testid="social-proof-mobile"
-      class="flex flex-col gap-8 md:hidden"
+      class="flex flex-col gap-6 md:hidden"
     >
       <div class="flex w-max gap-8">
         <div
           v-for="copy in 2"
           :key="copy"
-          class="animate-marquee flex shrink-0 items-center gap-8"
+          class="flex shrink-0 animate-marquee items-center gap-8"
           style="--marquee-gap: 2rem"
           :aria-hidden="copy === 2 ? 'true' : undefined"
         >
           <div
             v-for="logo in mobileRow1Logos"
             :key="logo"
-            class="flex h-14 w-40 shrink-0 items-center justify-center"
+            class="flex h-10 w-40 shrink-0 items-center justify-center"
           >
             <img :src="`/icons/clients/${logo}.svg`" :alt="logo" />
           </div>
@@ -64,14 +64,14 @@ const mobileRow2Logos = logos.slice(6)
         <div
           v-for="copy in 2"
           :key="copy"
-          class="animate-marquee-reverse flex shrink-0 items-center gap-8"
+          class="flex shrink-0 animate-marquee-reverse items-center gap-8"
           style="--marquee-gap: 2rem"
           :aria-hidden="copy === 2 ? 'true' : undefined"
         >
           <div
             v-for="logo in mobileRow2Logos"
             :key="logo"
-            class="flex h-14 w-40 shrink-0 items-center justify-center"
+            class="flex h-10 w-40 shrink-0 items-center justify-center"
           >
             <img :src="`/icons/clients/${logo}.svg`" :alt="logo" />
           </div>

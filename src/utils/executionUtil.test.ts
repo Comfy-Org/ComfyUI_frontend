@@ -1,15 +1,18 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import type { CurveData } from '@/components/curve/types'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 import { graphToPrompt } from './executionUtil'
 
-function addNode(graph: LGraph, comfyClass: string) {
+function addNode(
+  graph: LGraph,
+  comfyClass: string,
+  properties: Record<string, unknown> = {}
+) {
   const node = new LGraphNode(comfyClass)
   node.comfyClass = comfyClass
+  Object.assign(node.properties, properties)
   graph.add(node)
   return node
 }
@@ -30,10 +33,6 @@ async function promptInputs(graph: LGraph, node: LGraphNode) {
 }
 
 describe('graphToPrompt widget serialization', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('tags curve widget values with the CURVE type marker', async () => {
     const graph = new LGraph()
     const node = addNode(graph, 'CurveEditor')
@@ -78,4 +77,93 @@ describe('graphToPrompt widget serialization', () => {
 
     expect(await promptInputs(graph, node)).toEqual({ seed: 42 })
   })
+
+  it('sends a null widget value through to the prompt', async () => {
+    const graph = new LGraph()
+    const node = addNode(graph, 'KSampler')
+    const widget = node.addWidget(
+      'text',
+      'prompt',
+      'hello',
+      () => undefined,
+      {}
+    )
+    widget.value = null
+
+    const inputs = await promptInputs(graph, node)
+
+    expect(inputs).toHaveProperty('prompt')
+    expect(inputs.prompt).toBeNull()
+  })
+
+  it('omits a null widget value when options.serialize is false', async () => {
+    // Control arm for the test above: the prompt path filters on
+    // `options.serialize`, not on nullness.
+    const graph = new LGraph()
+    const node = addNode(graph, 'KSampler')
+    const widget = node.addWidget('text', 'prompt', 'hello', () => undefined, {
+      serialize: false
+    })
+    widget.value = null
+
+    expect(await promptInputs(graph, node)).not.toHaveProperty('prompt')
+  })
+})
+
+describe('graphToPrompt _meta pack identity', () => {
+  it('carries cnr_id and ver from node properties', async () => {
+    const graph = new LGraph()
+    const packNode = addNode(graph, 'PackNode', {
+      cnr_id: 'some-pack',
+      ver: '1.2.0'
+    })
+    const auxNode = addNode(graph, 'AuxNode', { aux_id: 'aux/pack' })
+    const bareNode = addNode(graph, 'BareNode')
+
+    const { output } = await graphToPrompt(graph)
+
+    expect(output[String(packNode.id)]._meta).toEqual({
+      title: 'PackNode',
+      cnr_id: 'some-pack',
+      ver: '1.2.0'
+    })
+    expect(output[String(auxNode.id)]._meta).toEqual({
+      title: 'AuxNode',
+      aux_id: 'aux/pack'
+    })
+    expect(output[String(bareNode.id)]._meta).toEqual({ title: 'BareNode' })
+  })
+
+  it('omits non-string pack identity properties', async () => {
+    const graph = new LGraph()
+    const node = addNode(graph, 'InvalidIdentityNode', {
+      cnr_id: {},
+      aux_id: [],
+      ver: 123
+    })
+
+    const { output } = await graphToPrompt(graph)
+
+    expect(output[String(node.id)]._meta).toEqual({
+      title: 'InvalidIdentityNode'
+    })
+  })
+
+  it.for([123, ''])(
+    'preserves aux_id separately when cnr_id is %j',
+    async (cnrId) => {
+      const graph = new LGraph()
+      const node = addNode(graph, 'FallbackIdentityNode', {
+        cnr_id: cnrId,
+        aux_id: 'aux/pack'
+      })
+
+      const { output } = await graphToPrompt(graph)
+
+      expect(output[String(node.id)]._meta).toEqual({
+        title: 'FallbackIdentityNode',
+        aux_id: 'aux/pack'
+      })
+    }
+  )
 })

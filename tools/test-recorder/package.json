@@ -1,0 +1,20 @@
+{
+  "name": "@comfyorg/test-recorder",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Interactive CLI for recording and transforming Playwright browser tests",
+  "type": "module",
+  "scripts": {
+    "format": "oxfmt --write",
+    "format:check": "oxfmt --check",
+    "typecheck": "tsx ../../scripts/vue-tsc-native.ts --noEmit"
+  },
+  "dependencies": {
+    "@clack/prompts": "^1.7.0",
+    "picocolors": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "typescript": "catalog:"
+  }
+}

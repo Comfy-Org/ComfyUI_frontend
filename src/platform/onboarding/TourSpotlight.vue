@@ -70,6 +70,7 @@
         :aria-modal="!step.interactive"
         :aria-labelledby="titleId"
         :aria-describedby="`${subtitleId} ${bodyId}`"
+        :aria-busy="!stepSettled"
         tabindex="-1"
         :class="
           cn(
@@ -83,12 +84,12 @@
         :style="cardStyle"
       >
         <i
-          v-if="cursorEdgeClass"
+          v-if="cursorClass"
           data-testid="coach-cursor"
           :class="
             cn(
               'absolute icon-[lucide--mouse-pointer-2] size-4 text-base-foreground drop-shadow-md',
-              cursorEdgeClass
+              cursorClass
             )
           "
           aria-hidden="true"
@@ -173,6 +174,7 @@ import {
   VIEWPORT_MARGIN,
   CARD_GLIDE_MS,
   clampSpotlightRect,
+  cursorEdgeClass,
   hitRegionPath,
   noTargetCardLeft
 } from './coachmarkLayout'
@@ -190,7 +192,8 @@ const {
   backLabel,
   countedStepIdx,
   countedStepsTotal,
-  waitingForTarget
+  waitingForTarget,
+  stepSettled
 } = defineProps<{
   step: SpotlightStep
   title: string
@@ -203,6 +206,7 @@ const {
   countedStepIdx: number
   countedStepsTotal: number
   waitingForTarget: boolean
+  stepSettled: boolean
 }>()
 
 const emit = defineEmits<{
@@ -343,24 +347,7 @@ const cardStyle = computed(() => {
   return { ...floatingStyles.value, width, maxWidth, opacity }
 })
 
-/** Floats the cursor in the gap on the card edge facing the target. */
-const CURSOR_EDGE_CLASS = {
-  top: '-top-7 left-1/2 -translate-x-1/2 rotate-45',
-  bottom: '-bottom-7 left-1/2 -translate-x-1/2 -rotate-[135deg]',
-  left: '-left-7 top-1/2 -translate-y-1/2 -rotate-45',
-  right: '-right-7 top-1/2 -translate-y-1/2 rotate-[135deg]'
-} as const
-
-const TARGET_FACING_EDGE = {
-  top: 'bottom',
-  bottom: 'top',
-  left: 'right',
-  right: 'left'
-} as const
-
-const cursorEdgeClass = computed(() => {
-  if (!step.cursor || !hasTarget.value) return ''
-  const side = placement.value.split('-')[0] as keyof typeof TARGET_FACING_EDGE
-  return CURSOR_EDGE_CLASS[TARGET_FACING_EDGE[side]]
-})
+const cursorClass = computed(() =>
+  step.cursor && hasTarget.value ? cursorEdgeClass(placement.value) : ''
+)
 </script>

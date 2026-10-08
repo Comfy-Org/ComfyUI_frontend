@@ -1,8 +1,9 @@
 ﻿import { BufferSource } from 'mediabunny'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { api } from '@/scripts/api'
 import {
   clearVideoMetadataCache,
   extractVideoMetadata,
@@ -10,11 +11,13 @@ import {
   snapToStandardFrameRate
 } from '@/utils/videoMetadataUtil'
 
-vi.mock('@/scripts/api', () => ({
-  api: {
-    apiURL: (path: string) => `http://localhost:8188/api${path}`
-  }
-}))
+vi.mock(import('@/scripts/api'))
+
+beforeEach(() => {
+  vi.mocked(api.apiURL).mockImplementation(
+    (path) => `http://localhost:8188/api${path}`
+  )
+})
 
 function bufferSource(bytes: Uint8Array) {
   return new BufferSource(bytes)
@@ -101,10 +104,6 @@ describe('snapToStandardFrameRate', () => {
 describe('fetchVideoMetadata url gating', () => {
   beforeEach(() => {
     clearVideoMetadataCache()
-  })
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
   })
 
   it('extracts metadata from a trusted view url', async () => {

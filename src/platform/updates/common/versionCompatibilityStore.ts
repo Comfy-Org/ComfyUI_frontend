@@ -38,11 +38,10 @@ export const useVersionCompatibilityStore = defineStore(
 
     const frontendVersion = computed(() => config.app_version)
     const backendVersion = computed(
-      () => systemStatsStore.systemStats?.system?.comfyui_version ?? ''
+      () => systemStatsStore.systemStats?.system.comfyui_version ?? ''
     )
     const requiredFrontendVersion = computed(
-      () =>
-        systemStatsStore.systemStats?.system?.required_frontend_version ?? ''
+      () => systemStatsStore.systemStats?.system.required_frontend_version ?? ''
     )
 
     const isFrontendOutdated = computed(() => {
@@ -58,7 +57,7 @@ export const useVersionCompatibilityStore = defineStore(
 
     const outdatedComfyPackages = computed<OutdatedComfyPackage[]>(() => {
       const packages =
-        systemStatsStore.systemStats?.system?.comfy_package_versions ?? []
+        systemStatsStore.systemStats?.system.comfy_package_versions ?? []
       const out: OutdatedComfyPackage[] = []
       for (const pkg of packages) {
         if (pkg.name === FRONTEND_PACKAGE_NAME) continue

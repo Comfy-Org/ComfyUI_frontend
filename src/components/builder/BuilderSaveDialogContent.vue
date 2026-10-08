@@ -5,15 +5,17 @@
     </template>
 
     <div class="flex flex-col gap-2">
-      <label :for="inputId" class="text-sm text-muted-foreground">
-        {{ $t('builderToolbar.filename') }}
-      </label>
+      <DialogDescription as-child>
+        <label :for="inputId" class="text-sm text-muted-foreground">
+          {{ $t('builderToolbar.filename') }}
+        </label>
+      </DialogDescription>
       <input
         :id="inputId"
         v-model="filename"
         autofocus
         type="text"
-        class="focus-visible:ring-ring flex h-10 min-h-8 items-center self-stretch rounded-lg border-none bg-secondary-background pl-4 text-sm text-base-foreground"
+        class="flex h-10 min-h-8 items-center self-stretch rounded-lg border-none bg-secondary-background pl-4 text-sm text-base-foreground focus-visible:ring-border-default"
         @keydown.enter="
           filename.trim() && emit('save', filename.trim(), openAsApp)
         "
@@ -50,6 +52,7 @@
 import { ref, useId } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
+import DialogDescription from '@/components/ui/dialog/DialogDescription.vue'
 
 import BuilderDialog from './BuilderDialog.vue'
 import ViewTypeRadioGroup from './ViewTypeRadioGroup.vue'

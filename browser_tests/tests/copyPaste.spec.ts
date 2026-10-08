@@ -4,9 +4,7 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
 
-test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-})
+test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 
 test.describe(
   'Pinned node copy and paste',
@@ -22,7 +20,6 @@ test.describe(
 
     test('lands at the cursor', async ({ comfyPage }) => {
       const [node] = await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
-      if (!node) throw new Error('KSampler node not found')
       await node.centerOnNode()
       await node.clickContextMenuOption('Pin')
       await comfyPage.contextMenu.waitForHidden()
@@ -157,6 +154,81 @@ test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
     await comfyPage.page.mouse.up()
     await comfyPage.page.keyboard.up('Alt')
     await expect(comfyPage.canvas).toHaveScreenshot('drag-copy-copied-node.png')
+  })
+
+  test('Repeated pastes never reuse node instances or IDs', async ({
+    comfyPage
+  }) => {
+    await expect
+      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+      .toBeGreaterThan(1)
+    const initialCount = await comfyPage.nodeOps.getGraphNodesCount()
+
+    await comfyPage.canvas.click()
+    await comfyPage.keyboard.selectAll()
+    await comfyPage.page.mouse.move(10, 10)
+    await comfyPage.clipboard.copy()
+
+    const pasteCount = 5
+    for (let i = 0; i < pasteCount; i++) {
+      await comfyPage.clipboard.paste()
+      await expect
+        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+        .toBe(initialCount * (i + 2))
+    }
+
+    const uniqueCounts = await comfyPage.page.evaluate(() => {
+      const nodes = window.app!.graph.nodes
+      return {
+        instances: new Set(nodes).size,
+        ids: new Set(nodes.map((node) => node.id)).size
+      }
+    })
+    const expectedNodeCount = initialCount * (pasteCount + 1)
+    expect(uniqueCounts).toEqual({
+      instances: expectedNodeCount,
+      ids: expectedNodeCount
+    })
+  })
+
+  test('Sparse clipboard widget values keep their original indices', async ({
+    comfyPage
+  }) => {
+    const originalNodes = await comfyPage.nodeOps.getNodeRefsByType('KSampler')
+    const originalIds = new Set(originalNodes.map(({ id }) => id))
+
+    await comfyPage.page.evaluate(() => {
+      const node = window
+        .app!.graph.serialize()
+        .nodes.find(({ type }) => type === 'KSampler')
+      if (!node) throw new Error('KSampler node not found')
+      const clipboardNode = {
+        ...node,
+        widgets_values: { 0: 123, 2: 47, length: 3 }
+      }
+      const encoded = btoa(JSON.stringify({ nodes: [clipboardNode] }))
+      const dataTransfer = new DataTransfer()
+      dataTransfer.setData(
+        'text/html',
+        `<meta charset="utf-8"><div><span data-comfy-metadata="${encoded}"></span></div><span style="white-space:pre-wrap;">Text</span>`
+      )
+      document.dispatchEvent(
+        new ClipboardEvent('paste', {
+          clipboardData: dataTransfer,
+          bubbles: true,
+          cancelable: true
+        })
+      )
+    })
+
+    await expect
+      .poll(async () => {
+        const nodes = await comfyPage.nodeOps.getNodeRefsByType('KSampler')
+        const pasted = nodes.find(({ id }) => !originalIds.has(id))
+        if (!pasted) return undefined
+        return await (await pasted.getWidget(2)).getValue()
+      })
+      .toBe(47)
   })
 
   test('Can undo paste multiple nodes as single action', async ({

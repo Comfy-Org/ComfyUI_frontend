@@ -1,0 +1,34 @@
+<script setup lang="ts">
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import { externalLinks } from '@/config/routes'
+import BrandButton from '@/components/common/BrandButton.vue'
+import HeroHeadline from './HeroHeadline.vue'
+import HeroGraph from './HeroGraph.vue'
+import HeroMobileFlow from './HeroMobileFlow.vue'
+
+const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
+</script>
+
+<template>
+  <section
+    class="mx-auto flex max-w-9xl flex-col items-center px-6 pt-6 pb-16 lg:px-10 2xl:max-w-none"
+  >
+    <div class="hidden w-full md:block">
+      <HeroGraph :locale />
+    </div>
+
+    <div class="flex w-full flex-col items-center gap-6 md:hidden">
+      <HeroHeadline :locale class="text-3xl" />
+      <HeroMobileFlow />
+      <BrandButton
+        :href="externalLinks.cloudCta('hero_get_started_free')"
+        variant="outline"
+        class="font-bold uppercase"
+      >
+        {{ t('hero.getStartedFree') }}
+      </BrandButton>
+    </div>
+  </section>
+</template>

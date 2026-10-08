@@ -10,17 +10,19 @@ import type {
   IBaseWidget,
   IStringWidget
 } from '@/lib/litegraph/src/types/widgets'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import {
   getResourceURL,
   splitFilePath
 } from '@/renderer/extensions/vueNodes/widgets/utils/audioUtils'
-import type { NodeExecutionOutput } from '@/schemas/apiSchema'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { NodeExecutionOutput } from '@/platform/remote/comfyui/execution/types'
+import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
 import type { DOMWidget } from '@/scripts/domWidget'
 import { useAudioService } from '@/services/audioService'
-import { type NodeLocatorId } from '@/types'
+import type { NodeLocatorId } from '@/types'
 import { widgetId } from '@/types/widgetId'
+import { toError } from '@/utils/errorUtil'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 import { api } from '../../scripts/api'
@@ -36,6 +38,11 @@ function updateUIWidget(
   audioUIWidget.callback?.(url)
   if (url) audioUIWidget.element.classList.remove('empty-audio-widget')
   else audioUIWidget.element.classList.add('empty-audio-widget')
+}
+
+function appendWidgetValue(widget: IStringWidget, path: string) {
+  const values = widget.options.values
+  if (values && !values.includes(path)) values.push(path)
 }
 
 async function uploadFile(
@@ -57,16 +64,11 @@ async function uploadFile(
     })
 
     if (resp.status === 200) {
-      const data = await resp.json()
+      const data: { name: string; subfolder?: string } = await resp.json()
       // Add the file to the dropdown list and update the widget value
-      let path = data.name
-      if (data.subfolder) path = data.subfolder + '/' + path
+      const path = data.subfolder ? `${data.subfolder}/${data.name}` : data.name
 
-      // @ts-expect-error fixme ts strict error
-      if (!audioWidget.options.values.includes(path)) {
-        // @ts-expect-error fixme ts strict error
-        audioWidget.options.values.push(path)
-      }
+      appendWidgetValue(audioWidget, path)
 
       if (updateNode) {
         const oldValue = audioWidget.value
@@ -86,8 +88,7 @@ async function uploadFile(
       return false
     }
   } catch (error) {
-    // @ts-expect-error fixme ts strict error
-    useToastStore().addAlert(error)
+    useToastStore().addAlert(toError(error).message)
     return false
   }
 }
@@ -100,7 +101,9 @@ app.registerExtension({
     nodeType: typeof LGraphNode,
     nodeData: ComfyNodeDef
   ) {
+    const comfyClass = nodeType.prototype.comfyClass
     if (
+      comfyClass &&
       [
         'LoadAudio',
         'SaveAudio',
@@ -108,13 +111,11 @@ app.registerExtension({
         'SaveAudioMP3',
         'SaveAudioOpus',
         'SaveAudioAdvanced'
-      ].includes(
-        // @ts-expect-error fixme ts strict error
-        nodeType.prototype.comfyClass
-      )
+      ].includes(comfyClass)
     ) {
-      // @ts-expect-error fixme ts strict error
-      nodeData.input.required.audioUI = ['AUDIO_UI', {}]
+      const input = (nodeData.input ??= {})
+      const required = (input.required ??= {})
+      required.audioUI = ['AUDIO_UI', {}]
     }
   },
   getCustomWidgets() {
@@ -152,14 +153,16 @@ app.registerExtension({
           }
         }
 
-        audioUIWidget.options.getValue = () =>
-          (useWidgetValueStore().getWidget(
+        audioUIWidget.options.getValue = () => {
+          const value = useWidgetValueStore().getWidget(
             widgetId(
               resolveNodeRootGraphId(node, app.rootGraph.id),
               node.id,
               inputName
             )
-          )?.value as string) ?? ''
+          )?.value
+          return typeof value === 'string' ? value : ''
+        }
         audioUIWidget.options.setValue = (v) => {
           const graphId = resolveNodeRootGraphId(node, app.rootGraph.id)
           const widgetState = useWidgetValueStore().getWidget(
@@ -201,29 +204,33 @@ app.registerExtension({
     _nodeType: typeof LGraphNode,
     nodeData: ComfyNodeDef
   ) {
-    if (nodeData?.input?.required?.audio?.[1]?.audio_upload === true) {
-      nodeData.input.required.upload = ['AUDIOUPLOAD', {}]
+    const required: Partial<Record<string, InputSpec>> | undefined =
+      nodeData.input?.required
+    if (required?.audio?.[1]?.audio_upload === true) {
+      required.upload = ['AUDIOUPLOAD', {}]
     }
   },
   getCustomWidgets() {
     return {
       AUDIOUPLOAD(node, inputName: string) {
         // The widget that allows user to select file.
-        // @ts-expect-error fixme ts strict error
-        const audioWidget = node.widgets.find(
+        const audioWidget = node.widgets?.find(
           (w) => w.name === 'audio'
         ) as IStringWidget
-        // @ts-expect-error fixme ts strict error
-        const audioUIWidget = node.widgets.find(
+        const audioUIWidget = node.widgets?.find(
           (w) => w.name === 'audioUI'
         ) as unknown as DOMWidget<HTMLAudioElement, string>
 
         const onAudioWidgetUpdate = () => {
+          const value = audioWidget.value
+          const values = audioWidget.options.values
+          const isEmptySentinel =
+            value === 'none' && values?.length === 1 && values[0] === value
           updateUIWidget(
             audioUIWidget,
-            api.apiURL(
-              getResourceURL(...splitFilePath(audioWidget.value ?? ''))
-            )
+            value && !isEmptySentinel
+              ? api.apiURL(getResourceURL(...splitFilePath(value)))
+              : ''
           )
         }
         // Initially load default audio file to audioUIWidget.
@@ -234,13 +241,12 @@ app.registerExtension({
         // Load saved audio file widget values if restoring from workflow
         const onGraphConfigured = node.onGraphConfigured
         node.onGraphConfigured = function () {
-          // @ts-expect-error fixme ts strict error
-          onGraphConfigured?.apply(this, arguments)
+          onGraphConfigured?.call(this)
           onAudioWidgetUpdate()
         }
 
         const handleUpload = async (files: File[]) => {
-          if (!files?.length) return files
+          if (!files.length) return files
 
           if (node.isUploading) {
             useToastStore().addAlert(t('g.uploadAlreadyInProgress'))
@@ -281,7 +287,10 @@ app.registerExtension({
           inputName,
           '',
           openFileSelection,
-          { serialize: false, canvasOnly: true }
+          {
+            serialize: false,
+            surfaces: { canvas: 'shown', vueNode: 'never', panel: 'never' }
+          }
         )
         uploadWidget.label = t('g.choose_file_to_upload')
 
@@ -315,7 +324,6 @@ app.registerExtension({
         audio.setAttribute('name', 'media')
         const audioUIWidget: DOMWidget<HTMLAudioElement, string> =
           node.addDOMWidget(inputName, /* name=*/ 'audioUI', audio)
-        audioUIWidget.options.canvasOnly = false
 
         let mediaRecorder: MediaRecorder | null = null
         let isRecording = false
@@ -325,6 +333,36 @@ app.registerExtension({
 
         let stopPromise: Promise<void> | null = null
         let stopResolve: (() => void) | null = null
+
+        const handleRecordingStartFailure = (error: unknown) => {
+          reportError(error, {
+            surface: 'assets',
+            errorType: 'failure_starting_audio_recorder',
+            tags: {
+              failure_kind: 'caught_unexpected',
+              feature_area: 'assets',
+              operation: 'execute',
+              outcome: 'recovered'
+            },
+            level: 'error'
+          })
+          useToastStore().addAlert(t('g.recordingFailedToStart'))
+
+          if (mediaRecorder) {
+            try {
+              mediaRecorder.stop()
+            } catch {
+              // A recorder that never started throws on stop; recovery continues.
+            }
+          }
+          mediaRecorder = null
+          useAudioService().stopAllTracks(currentStream)
+          currentStream = null
+          isRecording = false
+          if (recordWidget) {
+            recordWidget.label = t('g.startRecording')
+          }
+        }
 
         audioUIWidget.serializeValue = async () => {
           if (isRecording && mediaRecorder) {
@@ -354,91 +392,94 @@ app.registerExtension({
           inputName,
           '',
           async () => {
-            if (!isRecording) {
-              try {
-                currentStream = await navigator.mediaDevices.getUserMedia({
-                  audio: true
-                })
+            if (isRecording) {
+              mediaRecorder?.stop()
+              return
+            }
 
-                mediaRecorder = new ExtendableMediaRecorder(currentStream, {
-                  mimeType: 'audio/wav'
-                }) as unknown as MediaRecorder
-
-                audioChunks = []
-
-                mediaRecorder.ondataavailable = (event) => {
-                  audioChunks.push(event.data)
-                }
-
-                mediaRecorder.onstop = async () => {
-                  const audioBlob = new Blob(audioChunks, { type: 'audio/wav' })
-
-                  useAudioService().stopAllTracks(currentStream)
-
-                  if (
-                    audioUIWidget.element.src &&
-                    audioUIWidget.element.src.startsWith('blob:')
-                  ) {
-                    URL.revokeObjectURL(audioUIWidget.element.src)
-                  }
-
-                  updateUIWidget(audioUIWidget, URL.createObjectURL(audioBlob))
-
-                  isRecording = false
-
-                  if (recordWidget) {
-                    recordWidget.label = t('g.startRecording')
-                  }
-
-                  if (stopResolve) {
-                    stopResolve()
-                    stopResolve = null
-                    stopPromise = null
-                  }
-                }
-
-                mediaRecorder.onerror = (event) => {
-                  console.error('MediaRecorder error:', event)
-                  useAudioService().stopAllTracks(currentStream)
-                  isRecording = false
-
-                  if (recordWidget) {
-                    recordWidget.label = t('g.startRecording')
-                  }
-
-                  if (stopResolve) {
-                    stopResolve()
-                    stopResolve = null
-                    stopPromise = null
-                  }
-                }
-
-                mediaRecorder.start()
-                isRecording = true
-                if (recordWidget) {
-                  recordWidget.label = t('g.stopRecording')
-                }
-              } catch (err) {
+            try {
+              currentStream = await navigator.mediaDevices.getUserMedia({
+                audio: true
+              })
+            } catch (err) {
+              if (
+                err instanceof DOMException &&
+                err.name === 'NotAllowedError'
+              ) {
                 console.error('Error accessing microphone:', err)
                 useToastStore().addAlert(t('g.micPermissionDenied'))
-
-                if (mediaRecorder) {
-                  try {
-                    mediaRecorder.stop()
-                  } catch {}
-                }
                 useAudioService().stopAllTracks(currentStream)
                 currentStream = null
+              } else {
+                handleRecordingStartFailure(err)
+              }
+              return
+            }
+
+            try {
+              mediaRecorder = new ExtendableMediaRecorder(currentStream, {
+                mimeType: 'audio/wav'
+              }) as unknown as MediaRecorder
+
+              audioChunks = []
+
+              mediaRecorder.ondataavailable = (event) => {
+                audioChunks.push(event.data)
+              }
+
+              mediaRecorder.onstop = async () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/wav' })
+
+                useAudioService().stopAllTracks(currentStream)
+
+                if (
+                  audioUIWidget.element.src &&
+                  audioUIWidget.element.src.startsWith('blob:')
+                ) {
+                  URL.revokeObjectURL(audioUIWidget.element.src)
+                }
+
+                updateUIWidget(audioUIWidget, URL.createObjectURL(audioBlob))
+
                 isRecording = false
+
                 if (recordWidget) {
                   recordWidget.label = t('g.startRecording')
                 }
+
+                if (stopResolve) {
+                  stopResolve()
+                  stopResolve = null
+                  stopPromise = null
+                }
               }
-            } else if (mediaRecorder && isRecording) {
-              mediaRecorder.stop()
+
+              mediaRecorder.onerror = (event) => {
+                console.error('MediaRecorder error:', event)
+                useAudioService().stopAllTracks(currentStream)
+                isRecording = false
+
+                if (recordWidget) {
+                  recordWidget.label = t('g.startRecording')
+                }
+
+                if (stopResolve) {
+                  stopResolve()
+                  stopResolve = null
+                  stopPromise = null
+                }
+              }
+
+              mediaRecorder.start()
+              isRecording = true
+              if (recordWidget) {
+                recordWidget.label = t('g.stopRecording')
+              }
+            } catch (err) {
+              handleRecordingStartFailure(err)
             }
           },
-          { serialize: false, canvasOnly: false }
+          { serialize: false }
         )
 
         recordWidget.label = t('g.startRecording')
@@ -451,7 +492,7 @@ app.registerExtension({
             mediaRecorder.stop()
           }
           useAudioService().stopAllTracks(currentStream)
-          if (audioUIWidget.element.src?.startsWith('blob:')) {
+          if (audioUIWidget.element.src.startsWith('blob:')) {
             URL.revokeObjectURL(audioUIWidget.element.src)
           }
           originalOnRemoved?.call(this)

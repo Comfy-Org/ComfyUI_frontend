@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -30,6 +30,10 @@ const flushPromises = () =>
   new Promise<void>((resolve) => setTimeout(resolve, 0))
 
 describe('WidgetSelectDefault', () => {
+  beforeEach(() => {
+    vi.useRealTimers()
+  })
+
   const createWidget = (
     values: unknown,
     options: Record<string, unknown> = {}
@@ -37,7 +41,7 @@ describe('WidgetSelectDefault', () => {
     name: 'test_combo',
     type: 'combo',
     value: undefined,
-    options: { values, ...options } as SimplifiedWidget['options']
+    options: { values, ...options }
   })
 
   function renderComponent(
@@ -72,7 +76,7 @@ describe('WidgetSelectDefault', () => {
   }
 
   const optionLabels = () =>
-    screen.queryAllByRole('option').map((option) => option.textContent?.trim())
+    screen.queryAllByRole('option').map((option) => option.textContent.trim())
 
   async function expectHighlightedOption(name: string) {
     await waitFor(() => {
@@ -311,7 +315,7 @@ describe('WidgetSelectDefault', () => {
 
         // user-event does not model the raw viewport pointerdown that triggers
         // this Reka focus-outside interaction.
-        // eslint-disable-next-line testing-library/prefer-user-event
+        // oxlint-disable-next-line testing-library/prefer-user-event
         await fireEvent.pointerDown(viewport)
         outsideButton.focus()
         await fireEvent.focusIn(outsideButton)
@@ -361,7 +365,7 @@ describe('WidgetSelectDefault', () => {
 
       const trigger = screen.getByTestId('widget-select-default-trigger')
       expect(trigger).not.toHaveAttribute('aria-invalid')
-      expect(trigger.textContent?.trim()).toBe('')
+      expect(trigger.textContent.trim()).toBe('')
     })
 
     it('selects the first option when the value is undefined', () => {
@@ -379,7 +383,7 @@ describe('WidgetSelectDefault', () => {
 
       const options = screen.getAllByRole('option')
       expect(options).toHaveLength(2)
-      expect(options.map((option) => option.textContent?.trim())).toEqual(
+      expect(options.map((option) => option.textContent.trim())).toEqual(
         expect.arrayContaining(['a', 'b'])
       )
       for (const option of options) {
@@ -418,6 +422,17 @@ describe('WidgetSelectDefault', () => {
       const trigger = screen.getByTestId('widget-select-default-trigger')
       expect(trigger).not.toHaveAttribute('aria-invalid')
       expect(trigger).toHaveTextContent('5')
+    })
+
+    it('does not mark a placeholder combo widget invalid before its real options load', () => {
+      // A combo widget whose options have not loaded yet has
+      // `options: {}` (no `values` key at all). A value that will be a
+      // legitimate option once they arrive should not flash the invalid
+      // ring in the meantime.
+      renderComponent(createWidget(undefined), 'sdxl.safetensors')
+
+      const trigger = screen.getByTestId('widget-select-default-trigger')
+      expect(trigger).not.toHaveAttribute('aria-invalid')
     })
 
     it('disables the trigger when widget options are disabled', () => {

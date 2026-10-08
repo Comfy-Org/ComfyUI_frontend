@@ -43,18 +43,18 @@
       </PopoverTrigger>
       <PopoverContent
         :side-offset="8"
-        class="z-1700 flex w-auto min-w-20 flex-col border-border-default p-1"
+        :class="cn(menuContentClass, 'z-1700 flex w-auto min-w-20 flex-col')"
         :style="zoomContentStyle"
       >
         <button
           v-for="item in zoomItems"
           :key="item.label"
-          :class="zoomItemClass"
+          :class="menuButtonClass"
           @click="applyZoom(item.ratio)"
         >
           {{ item.label }}
         </button>
-        <button :class="zoomItemClass" @click="applyZoom(null)">
+        <button :class="menuButtonClass" @click="applyZoom(null)">
           {{ t('layerEditor.fitView') }}
         </button>
       </PopoverContent>
@@ -98,6 +98,10 @@ import { useI18n } from 'vue-i18n'
 
 import Popover from '@/components/ui/popover/Popover.vue'
 import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
+import {
+  menuContentClass,
+  menuButtonClass
+} from '@/components/ui/menu/menuStyles'
 import ToggleGroup from '@/components/ui/toggle-group/ToggleGroup.vue'
 import ToggleGroupItem from '@/components/ui/toggle-group/ToggleGroupItem.vue'
 import { useLayerEditorExport } from '@/renderer/extensions/layerEditor/composables/useLayerEditorExport'
@@ -120,9 +124,6 @@ const zoomItems = [
   { label: '100%', ratio: 1 },
   { label: '200%', ratio: 2 }
 ]
-
-const zoomItemClass =
-  'cursor-pointer rounded-md border-0 bg-transparent px-2 py-1 text-left text-xs text-base-foreground hover:bg-secondary-background-hover'
 
 function onPointerModeChange(value: AcceptableValue | AcceptableValue[]): void {
   if (value === 'pointer' || value === 'hand') session.setPointerMode(value)

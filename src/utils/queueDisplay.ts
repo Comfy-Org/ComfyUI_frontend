@@ -1,4 +1,6 @@
 import type { TaskItemImpl } from '@/stores/queueStore'
+import { resultItemUrl } from '@/utils/resultItemUrl'
+import { isImageResult } from '@/utils/resultItem'
 import type { JobState } from '@/types/queue'
 import { formatDuration } from '@/utils/formatUtil'
 import { clampPercentInt, formatPercent0 } from '@/utils/numberUtil'
@@ -43,7 +45,7 @@ export const iconForJobState = (state: JobState): string => {
 
 const buildTitle = (task: TaskItemImpl, t: (k: string) => string): string => {
   const prefix = t('g.job')
-  const shortId = String(task.jobId ?? '').split('-')[0]
+  const shortId = task.jobId.split('-')[0]
   const idx = task.job.priority
   if (typeof idx === 'number') return `${prefix} #${idx}`
   if (shortId) return `${prefix} ${shortId}`
@@ -56,7 +58,7 @@ const buildQueuedTime = (
   formatClockTimeFn: (ts: number, locale: string) => string
 ): string => {
   const ts = task.createTime
-  return ts !== undefined ? formatClockTimeFn(ts, locale) : ''
+  return formatClockTimeFn(ts, locale)
 }
 
 export const buildJobDisplay = (
@@ -124,7 +126,8 @@ export const buildJobDisplay = (
   if (state === 'completed') {
     const time = task.executionTimeInSeconds
     const preview = task.previewOutput
-    const iconImageUrl = preview && preview.isImage ? preview.url : undefined
+    const iconImageUrl =
+      preview && isImageResult(preview) ? resultItemUrl(preview) : undefined
 
     // Cloud shows "Completed in Xh Ym Zs", non-cloud shows filename
     const primary = ctx.isCloud
@@ -143,18 +146,10 @@ export const buildJobDisplay = (
       showClear: false
     }
   }
-  if (state === 'failed') {
-    return {
-      iconName: iconForJobState(state),
-      primary: ctx.t('g.failed'),
-      secondary: ctx.t('g.failed'),
-      showClear: true
-    }
-  }
   return {
     iconName: iconForJobState(state),
-    primary: buildTitle(task, ctx.t),
-    secondary: '',
+    primary: ctx.t('g.failed'),
+    secondary: ctx.t('g.failed'),
     showClear: true
   }
 }

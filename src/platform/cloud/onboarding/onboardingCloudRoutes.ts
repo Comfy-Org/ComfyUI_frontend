@@ -119,13 +119,19 @@ export const cloudOnboardingRoutes: RouteRecordRaw[] = [
         component: () =>
           import('@/platform/cloud/onboarding/CloudAuthTimeoutView.vue'),
         props: true
-      },
+      }
+    ]
+  },
+  {
+    path: '/cloud/subscribe',
+    component: () => import('@/views/layouts/LayoutDefault.vue'),
+    meta: { requiresAuth: true },
+    children: [
       {
-        path: 'subscribe',
+        path: '',
         name: 'cloud-subscribe',
         component: () =>
-          import('@/platform/cloud/onboarding/CloudSubscriptionRedirectView.vue'),
-        meta: { requiresAuth: true }
+          import('@/platform/cloud/onboarding/CloudSubscriptionRedirectView.vue')
       }
     ]
   },
@@ -146,7 +152,8 @@ export const cloudOnboardingRoutes: RouteRecordRaw[] = [
     // the old consent path with `?oauth_request_id=...`; the route moved to
     // `/oauth/consent`. Redirect the old path (query preserved) so the browser
     // authorize flow works before the backend `frontendConsentPath` is updated.
-    // Remove once BE-4146 lands the backend path change.
+    // SSO's returnTo lands here too, since the server only serves this path as
+    // a page. Remove once BE-4146 serves `/oauth/consent`.
     path: '/cloud/oauth/consent',
     redirect: (to) => ({ path: '/oauth/consent', query: to.query })
   },

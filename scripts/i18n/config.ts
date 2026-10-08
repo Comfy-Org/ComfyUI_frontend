@@ -1,31 +1,29 @@
+import { websiteTranslationConfig } from '@comfyorg/website/translation-config'
+import type { Reasoning } from 'openai/resources/shared'
+
 export interface OutputLocale {
   code: string
   name: string
   guidance?: string
 }
 
-export type ReasoningEffort =
-  | 'none'
-  | 'low'
-  | 'medium'
-  | 'high'
-  | 'xhigh'
-  | 'max'
-
 export interface TranslationPipelineConfig {
-  entry: string
   output: string
+  strictProtectedTokens: boolean
   model: string
-  reasoningEffort: ReasoningEffort
+  reasoningEffort: NonNullable<Reasoning['effort']>
   maxItemsPerRequest: number
   maxSourceCharsPerRequest: number
-  localeConcurrency: number
+  maxTruncationSplitDepth: number
+  localeFileConcurrency: number
   requestConcurrency: number
   maxTranslationRounds: number
-  pruneCountFloor: number
-  pruneRatioLimit: number
+  translationContext: string
   glossary: string
   outputLocales: OutputLocale[]
+  existingCopy:
+    | { kind: 'regenerate' }
+    | { kind: 'preserve'; excludedKeyPrefixes: readonly string[] }
 }
 
 const glossary = `Keep these names untranslated: flux, photomaker, clip, vae, cfg, stable audio, stable cascade, stable zero, controlnet, lora, HiDream, Civitai, Hugging Face.
@@ -45,18 +43,28 @@ Hebrew is a right-to-left (RTL) language. Keep all interpolation placeholders ({
 Preferred glossary: node = צומת (plural צמתים), workflow = תהליך עבודה, queue = תור, canvas = קנבס, widget = פקד, subgraph = תת-גרף, prompt = פרומפט/הנחיה (per context), bypass = עקיפה, mute = השתקה.
 Keep widely-recognized technical terms in English (Latin script): API, GPU, CUDA, VAE, CLIP, LoRA, ControlNet, Civitai, Hugging Face, Nodes 2.0, etc.`
 
-export const translationPipelineConfig: TranslationPipelineConfig = {
-  entry: 'src/locales/en',
-  output: 'src/locales',
+const germanGuidance = `Use formal German (Sie-Form) consistently for a professional tone throughout the UI. Never mix Sie and du.
+Keep widely-recognized technical terms in English rather than inventing German equivalents, as German creative and developer software does: Node, Workflow, Prompt, Queue, Canvas, Widget, Subgraph, Seed, Sampler, Checkpoint, LoRA, VAE, CLIP, ControlNet.
+German compounds are written closed, not spaced: "Bildgenerierung", not "Bild Generierung". Where a compound joins an English technical term to a German noun, hyphenate: "Node-Editor", "Workflow-Vorlage".
+Prefer the imperative for button labels ("Speichern", "Abbrechen") and avoid the infinitive-with-zu form, which reads like documentation rather than an interface.`
+
+const generationDefaults = {
   model: 'gpt-5.6-terra',
   reasoningEffort: 'high',
   maxItemsPerRequest: 40,
   maxSourceCharsPerRequest: 6000,
-  localeConcurrency: 3,
+  maxTruncationSplitDepth: 3,
+  localeFileConcurrency: 3,
   requestConcurrency: 2,
-  maxTranslationRounds: 3,
-  pruneCountFloor: 25,
-  pruneRatioLimit: 0.02,
+  maxTranslationRounds: 3
+} as const
+
+const appTranslationConfig: TranslationPipelineConfig = {
+  ...generationDefaults,
+  output: 'src/locales',
+  strictProtectedTokens: false,
+  existingCopy: { kind: 'regenerate' },
+  translationContext: 'ComfyUI, a node-based generative AI application',
   glossary,
   outputLocales: [
     {
@@ -79,6 +87,12 @@ export const translationPipelineConfig: TranslationPipelineConfig = {
     { code: 'pt-BR', name: 'Brazilian Portuguese' },
     { code: 'fa', name: 'Persian', guidance: persianGuidance },
     { code: 'he', name: 'Hebrew', guidance: hebrewGuidance },
-    { code: 'it', name: 'Italian' }
+    { code: 'it', name: 'Italian' },
+    { code: 'de', name: 'German', guidance: germanGuidance }
   ]
 }
+
+export const translationTargets = {
+  app: appTranslationConfig,
+  website: { ...generationDefaults, ...websiteTranslationConfig }
+} as const satisfies Record<string, TranslationPipelineConfig>

@@ -117,11 +117,28 @@ async function confirmRedemption(
 ): Promise<boolean> {
   if (state.approvedUserUid === uid) return true
   const confirmed = await useDialogService().confirm({
+    key: 'global-desktop-login-confirm',
     title: t('desktopLogin.confirmSummary'),
     message: t('desktopLogin.confirmMessage')
   })
   if (confirmed !== true) return false
   state.approvedUserUid = uid
+  return true
+}
+
+function settledForSsoSession(
+  code: string,
+  state: CodeRedemptionState
+): boolean {
+  const auth = useAuthStore()
+  if (auth.currentUser !== null || !auth.signedInWithSso) return false
+  settle(code, state)
+  useToastStore().add({
+    severity: 'warn',
+    summary: t('desktopLogin.ssoUnavailableSummary'),
+    detail: t('desktopLogin.ssoUnavailableDetail'),
+    life: 8000
+  })
   return true
 }
 
@@ -132,6 +149,8 @@ async function redeemCode(code: string): Promise<void> {
     clearStashIfHolds(code)
     return
   }
+
+  if (settledForSsoSession(code, state)) return
 
   // No session yet (e.g. code captured on the login page): keep the stash and
   // let a post-login trigger redeem it.
@@ -215,6 +234,11 @@ async function redeemCode(code: string): Promise<void> {
   // A 401 usually means a stale cached id token; mint a fresh one on retry.
   if (response.status === 401) state.forceTokenRefresh = true
   handleTransientFailure(code, state, `status ${response.status}`)
+}
+
+export function hasPendingDesktopLoginCode(): boolean {
+  const code = getPreservedQueryParam(NAMESPACE, DESKTOP_LOGIN_CODE_KEY)
+  return code !== undefined && DESKTOP_LOGIN_CODE_PATTERN.test(code)
 }
 
 async function redeemPendingDesktopLoginCode(): Promise<void> {
