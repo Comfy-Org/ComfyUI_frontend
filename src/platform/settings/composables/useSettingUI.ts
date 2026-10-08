@@ -6,15 +6,15 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
-import { isAuthenticatedConfigLoaded } from '@/platform/remoteConfig/remoteConfig'
 import {
   getSettingInfo,
   useSettingStore
 } from '@/platform/settings/settingStore'
-import type { SettingTreeNode } from '@/platform/settings/settingStore'
+import type { SettingTreeNode } from '@/platform/settings/composables/useSettingSearch'
 import type { SettingPanelType, SettingParams } from '@/platform/settings/types'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { usePartnerNodeGovernanceStore } from '@/platform/workspace/stores/partnerNodeGovernanceStore'
+import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 import type { NavGroupData } from '@/types/navTypes'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { buildTree } from '@/utils/treeUtil'
@@ -33,8 +33,8 @@ const CATEGORY_ICONS: Record<string, string> = {
   Other: 'icon-[lucide--ellipsis]',
   PlanCredits: 'icon-[lucide--receipt-text]',
   secrets: 'icon-[lucide--key-round]',
+  'skill-packs': 'icon-[lucide--book-open-text]',
   'server-config': 'icon-[lucide--server]',
-  subscription: 'icon-[lucide--credit-card]',
   user: 'icon-[lucide--user]',
   workspace: 'icon-[lucide--building-2]',
   'workspace-allowlist': 'icon-[comfy--ai-model]',
@@ -60,6 +60,7 @@ export function useSettingUI(
   const { shouldRenderVueNodes } = useVueFeatureFlags()
   const { workspaceRole } = useWorkspaceUI()
   const governanceStore = usePartnerNodeGovernanceStore()
+  const skillPacksStore = useSkillPacksStore()
 
   const settingRoot = computed<SettingTreeNode>(() => {
     const root = buildTree(
@@ -150,18 +151,6 @@ export function useSettingUI(
     )
   }
 
-  const workspacePanel: SettingPanelItem = {
-    node: {
-      key: 'workspace',
-      label: 'Workspace',
-      children: []
-    },
-    component: defineAsyncComponent(
-      () =>
-        import('@/platform/workspace/components/dialogs/settings/WorkspacePanelContent.vue')
-    )
-  }
-
   const workspaceSettingsPanelComponent = defineAsyncComponent(
     () =>
       import('@/platform/workspace/components/dialogs/settings/WorkspaceSettingsPanelContent.vue')
@@ -197,23 +186,20 @@ export function useSettingUI(
     props: { section: 'allowlist' }
   }
 
-  const shouldShowWorkspacePanel = computed(() => isCloud && isLoggedIn.value)
+  const shouldShowWorkspacePanel = computed(() => isLoggedIn.value)
   const shouldShowWorkspaceAllowlist = computed(
     () =>
+      isCloud &&
       shouldShowWorkspacePanel.value &&
       flags.partnerNodeGovernanceEnabled &&
       workspaceRole.value === 'owner'
   )
 
-  const billingControlsEnabled = computed(
-    () => isAuthenticatedConfigLoaded.value && flags.billingControlEnabled
-  )
-
   const visibleWorkspacePanels = computed<SettingPanelItem[]>(() => {
     if (!shouldShowWorkspacePanel.value) return []
-    const workspacePanels = billingControlsEnabled.value
+    const workspacePanels = isCloud
       ? [planCreditsPanel, membersPanel]
-      : [workspacePanel]
+      : [planCreditsPanel]
     return shouldShowWorkspaceAllowlist.value
       ? [...workspacePanels, allowlistPanel]
       : workspacePanels
@@ -232,6 +218,22 @@ export function useSettingUI(
 
   const shouldShowSecretsPanel = computed(
     () => flags.userSecretsEnabled && isLoggedIn.value
+  )
+
+  const skillPacksPanel: SettingPanelItem = {
+    node: {
+      key: 'skill-packs',
+      label: 'SkillPacks',
+      children: []
+    },
+    component: defineAsyncComponent(
+      () => import('@/platform/skills/components/SkillPacksPanel.vue')
+    )
+  }
+
+  // Both cohort flags plus a runtime check that the routes have not 404'd.
+  const shouldShowSkillPacksPanel = computed(
+    () => skillPacksStore.enabled && isLoggedIn.value
   )
 
   const keybindingPanel: SettingPanelItem = {
@@ -267,18 +269,17 @@ export function useSettingUI(
     )
   }
 
-  const panels = computed<SettingPanelItem[]>(() =>
-    [
-      aboutPanel,
-      creditsPanel,
-      userPanel,
-      ...visibleWorkspacePanels.value,
-      keybindingPanel,
-      extensionPanel,
-      ...(isDesktop ? [serverConfigPanel] : []),
-      ...(shouldShowSecretsPanel.value ? [secretsPanel] : [])
-    ].filter((panel) => panel !== null && panel.component)
-  )
+  const panels = computed<SettingPanelItem[]>(() => [
+    aboutPanel,
+    creditsPanel,
+    userPanel,
+    ...visibleWorkspacePanels.value,
+    keybindingPanel,
+    extensionPanel,
+    ...(isDesktop ? [serverConfigPanel] : []),
+    ...(shouldShowSecretsPanel.value ? [secretsPanel] : []),
+    ...(shouldShowSkillPacksPanel.value ? [skillPacksPanel] : [])
+  ])
 
   /**
    * The default category to show when the dialog is opened.
@@ -289,12 +290,16 @@ export function useSettingUI(
         const found = group.children?.find((node) => node.key === defaultPanel)
         if (found) return found
       }
+      const hiddenPanel = panels.value.find(
+        (panel) => panel.node.key === defaultPanel
+      )
+      if (hiddenPanel) return translateCategory(hiddenPanel.node)
       return settingCategories.value[0]
     }
 
     if (scrollToSettingId) {
-      const setting = settingStore.settingsById[scrollToSettingId]
-      if (setting) {
+      if (Object.hasOwn(settingStore.settingsById, scrollToSettingId)) {
+        const setting = settingStore.settingsById[scrollToSettingId]
         const { category } = getSettingInfo(setting)
         const found = settingCategories.value.find((c) => c.label === category)
         if (found) return found
@@ -312,24 +317,14 @@ export function useSettingUI(
     )
   })
 
-  // Cloud workspace sidebar structure
   const workspaceMenuTreeNodes = computed<SettingTreeNode[]>(() => [
-    // Workspace settings
     translateCategory({
       key: 'workspace',
       label: 'Workspace',
-      children: [
-        ...visibleWorkspacePanels.value.map((panel) => panel.node),
-        // The legacy per-account Credits panel is redundant once the workspace
-        // Plan & Credits panel is present, which now owns the credit balance.
-        ...(!billingControlsEnabled.value &&
-        isLoggedIn.value &&
-        !(isCloud && window.__CONFIG__?.subscription_required)
-          ? [creditsPanel.node]
-          : [])
-      ].map(translateCategory)
+      children: visibleWorkspacePanels.value
+        .map((panel) => panel.node)
+        .map(translateCategory)
     }),
-    // General settings - Profile + all core settings + special panels
     translateCategory({
       key: 'general',
       label: 'General',
@@ -339,6 +334,9 @@ export function useSettingUI(
         ...(shouldShowSecretsPanel.value
           ? [translateCategory(secretsPanel.node)]
           : []),
+        ...(shouldShowSkillPacksPanel.value
+          ? [translateCategory(skillPacksPanel.node)]
+          : []),
         ...coreSettingCategories.value.slice(1).map(translateCategory),
         translateCategory(keybindingPanel.node),
         translateCategory(extensionPanel.node),
@@ -346,7 +344,6 @@ export function useSettingUI(
         ...(isDesktop ? [translateCategory(serverConfigPanel.node)] : [])
       ]
     }),
-    // Custom node settings (only shown if custom nodes have registered settings)
     ...(customNodeSettingCategories.value.length > 0
       ? [
           translateCategory({
@@ -358,43 +355,7 @@ export function useSettingUI(
       : [])
   ])
 
-  // OSS legacy sidebar structure
-  const legacyMenuTreeNodes = computed<SettingTreeNode[]>(() => [
-    // Account settings - show different panels based on distribution and auth state
-    {
-      key: 'account',
-      label: 'Account',
-      children: [
-        userPanel.node,
-        ...(shouldShowSecretsPanel.value ? [secretsPanel.node] : []),
-        ...(isLoggedIn.value &&
-        !(isCloud && window.__CONFIG__?.subscription_required)
-          ? [creditsPanel.node]
-          : [])
-      ].map(translateCategory)
-    },
-    // Normal settings stored in the settingStore
-    {
-      key: 'settings',
-      label: 'Application Settings',
-      children: settingCategories.value.map(translateCategory)
-    },
-    // Special settings such as about, keybinding, extension, server-config
-    {
-      key: 'specialSettings',
-      label: 'Special Settings',
-      children: [
-        keybindingPanel.node,
-        extensionPanel.node,
-        aboutPanel.node,
-        ...(isDesktop ? [serverConfigPanel.node] : [])
-      ].map(translateCategory)
-    }
-  ])
-
-  const groupedMenuTreeNodes = computed<SettingTreeNode[]>(() =>
-    isCloud ? workspaceMenuTreeNodes.value : legacyMenuTreeNodes.value
-  )
+  const groupedMenuTreeNodes = workspaceMenuTreeNodes
 
   const navGroups = computed<NavGroupData[]>(() =>
     groupedMenuTreeNodes.value
@@ -409,11 +370,9 @@ export function useSettingUI(
             (child as SettingTreeNode & { translatedLabel?: string })
               .translatedLabel ?? child.label,
           icon:
-            child.key === 'workspace' && billingControlsEnabled.value
+            child.key === 'workspace'
               ? CATEGORY_ICONS.PlanCredits
-              : (CATEGORY_ICONS[child.key] ??
-                CATEGORY_ICONS[child.label] ??
-                'icon-[lucide--plug]'),
+              : (CATEGORY_ICONS[child.key] ?? CATEGORY_ICONS[child.label]),
           ...(child.key === 'workspace-allowlist' &&
           governanceStore.status === 'ineligible' &&
           governanceStore.providers.length > 0
@@ -437,6 +396,7 @@ export function useSettingUI(
 
   onMounted(() => {
     activeCategory.value = defaultCategory.value
+    void skillPacksStore.startFlagGate()
   })
 
   return {

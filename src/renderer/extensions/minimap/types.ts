@@ -3,12 +3,16 @@
  */
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type { NodeId } from '@/types/nodeId'
+import type { NodeLocatorId } from '@/types/nodeIdentification'
+
+import type { ResolvedMinimapNodeDecoration } from '@/platform/canvas/minimapDecorationRegistry'
 
 /**
  * Minimal interface for what the minimap needs from the canvas
  */
 export interface MinimapCanvas {
   canvas: HTMLCanvasElement
+  dpr: number
   ds: {
     scale: number
     offset: [number, number]
@@ -28,7 +32,21 @@ export interface MinimapRenderContext {
   settings: MinimapRenderSettings
   width: number
   height: number
+  decorations?: readonly ResolvedMinimapNodeDecoration[]
+  nodeProgressStates?: MinimapNodeProgressStates
+  now?: number
 }
+
+export type MinimapNodeExecutionState =
+  | 'pending'
+  | 'running'
+  | 'finished'
+  | 'error'
+
+export type MinimapNodeProgressStates = Record<
+  NodeLocatorId,
+  { state: MinimapNodeExecutionState }
+>
 
 interface MinimapRenderSettings {
   nodeColors: boolean
@@ -80,7 +98,7 @@ export interface MinimapNodeData {
   bgcolor?: string
   mode?: number
   hasErrors?: boolean
-  executionState?: 'pending' | 'running' | 'finished' | 'error' | null
+  executionState?: MinimapNodeExecutionState | null
 }
 
 /**
@@ -102,16 +120,4 @@ export interface MinimapGroupData {
   width: number
   height: number
   color?: string
-}
-
-/**
- * Interface for minimap data sources (Dependency Inversion Principle)
- */
-export interface IMinimapDataSource {
-  getNodes(): MinimapNodeData[]
-  getLinks(): MinimapLinkData[]
-  getGroups(): MinimapGroupData[]
-  getBounds(): MinimapBounds
-  getNodeCount(): number
-  hasData(): boolean
 }

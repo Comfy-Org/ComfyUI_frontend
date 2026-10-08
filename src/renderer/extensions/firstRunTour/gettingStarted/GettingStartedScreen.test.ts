@@ -1,33 +1,36 @@
+import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
+import { getActivePinia } from 'pinia'
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
+
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import type { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
+import { useDialogStore } from '@/stores/dialogStore'
 
 import { CURATED_TEMPLATE_IDS, FALLBACK_TEMPLATE_IDS } from './tutorialCards'
 
 const mocks = vi.hoisted(() => ({
   dismiss: vi.fn(),
-  beginTour: vi.fn(),
-  loadTemplate: vi.fn(),
-  loadCatalog: vi.fn(),
-  isLoaded: true,
-  toastAdd: vi.fn(),
-  loadingTemplateId: { value: null as string | null },
-  catalog: [] as { name: string }[]
+  dismissIntoTour: vi.fn(),
+  loadTemplate:
+    vi.fn<ReturnType<typeof useTemplateWorkflows>['loadWorkflowTemplate']>(),
+
+  loadingTemplateId: { value: null as string | null }
 }))
 
-vi.mock('./firstRunEntry', () => ({
-  useFirstRunEntry: () => ({ dismissGettingStarted: mocks.dismiss })
+vi.mock<unknown>(import('./firstRunEntry'), () => ({
+  useFirstRunEntry: () => ({
+    dismissGettingStarted: mocks.dismiss,
+    dismissIntoFirstRunTour: mocks.dismissIntoTour
+  })
 }))
 
-vi.mock('../tour/useFirstRunTourController', () => ({
-  useFirstRunTourController: () => ({ beginTour: mocks.beginTour })
-}))
-
-vi.mock(
-  '@/platform/workflow/templates/composables/useTemplateWorkflows',
+vi.mock<unknown>(
+  import('@/platform/workflow/templates/composables/useTemplateWorkflows'),
   async () => {
     const { ref } = await import('vue')
     mocks.loadingTemplateId = ref<string | null>(null)
@@ -42,46 +45,56 @@ vi.mock(
   }
 )
 
-vi.mock(
-  '@/platform/workflow/templates/repositories/workflowTemplatesStore',
-  () => ({
-    useWorkflowTemplatesStore: () => ({
-      get isLoaded() {
-        return mocks.isLoaded
-      },
-      get enhancedTemplates() {
-        return mocks.catalog
-      },
-      loadWorkflowTemplates: mocks.loadCatalog,
-      getTemplateByName: (name: string) =>
-        mocks.catalog.find((template) => template.name === name)
-    })
-  })
-)
-
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: () => ({ add: mocks.toastAdd })
-}))
-
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
   messages: { en: enMessages }
 })
 
-async function renderScreen() {
+const FocusScopeStub = {
+  props: ['trapped', 'asChild', 'loop'],
+  template:
+    '<div data-testid="focus-scope-stub" :data-trapped="trapped"><slot /></div>'
+}
+
+async function renderScreen({
+  stubFocusScope = false,
+  withOpenDialog = false
+} = {}) {
+  const pinia = getActivePinia()!
+  if (withOpenDialog) {
+    useDialogStore().showDialog({ component: { template: '<div />' } })
+  }
   const { default: GettingStartedScreen } =
     await import('./GettingStartedScreen.vue')
-  return render(GettingStartedScreen, { global: { plugins: [i18n] } })
+  return render(GettingStartedScreen, {
+    global: {
+      plugins: [i18n, pinia],
+      stubs: stubFocusScope ? { FocusScope: FocusScopeStub } : {}
+    }
+  })
 }
+
+beforeEach(() => {
+  vi.mocked(useWorkflowTemplatesStore().getTemplateByName).mockImplementation(
+    (name) =>
+      useWorkflowTemplatesStore().enhancedTemplates.find(
+        (template) => template.name === name
+      )
+  )
+})
 
 describe('GettingStartedScreen', () => {
   beforeEach(() => {
-    mocks.isLoaded = true
-    mocks.catalog = CURATED_TEMPLATE_IDS.map((name) => ({ name }))
-    mocks.loadTemplate.mockResolvedValue(true)
-    mocks.loadCatalog.mockResolvedValue(undefined)
-    mocks.beginTour.mockResolvedValue(true)
+    useWorkflowTemplatesStore().isLoaded = true
+    Object.assign(useWorkflowTemplatesStore(), {
+      enhancedTemplates: CURATED_TEMPLATE_IDS.map((name) => ({ name }))
+    })
+    mocks.loadTemplate.mockResolvedValue('loaded')
+    vi.mocked(
+      useWorkflowTemplatesStore().loadWorkflowTemplates
+    ).mockResolvedValue(undefined)
+    mocks.dismissIntoTour.mockResolvedValue(undefined)
     mocks.loadingTemplateId.value = null
   })
 
@@ -102,8 +115,8 @@ describe('GettingStartedScreen', () => {
         'default'
       )
     )
-    expect(mocks.beginTour).toHaveBeenCalledWith(CURATED_TEMPLATE_IDS[0])
-    expect(mocks.dismiss).toHaveBeenCalled()
+    expect(mocks.dismissIntoTour).toHaveBeenCalledWith(CURATED_TEMPLATE_IDS[0])
+    expect(mocks.dismiss).not.toHaveBeenCalled()
   })
 
   it('ignores a second pick while one is still loading', async () => {
@@ -120,30 +133,16 @@ describe('GettingStartedScreen', () => {
     ).not.toHaveBeenCalled()
   })
 
-  it('leaves the user on the loaded graph when the template has no tour', async () => {
-    mocks.beginTour.mockResolvedValue(false)
-    await renderScreen()
-
-    await pickFirstTemplate()
-
-    await waitFor(() => expect(mocks.beginTour).toHaveBeenCalled())
-    expect(
-      mocks.dismiss,
-      'the graph is loaded and usable, so the takeover must not strand the user on it'
-    ).toHaveBeenCalled()
-  })
-
   it('keeps the click handler from rejecting when the tour cannot start', async () => {
-    mocks.beginTour.mockRejectedValue(new Error('tour unavailable'))
+    mocks.dismissIntoTour.mockRejectedValue(new Error('tour unavailable'))
     const rejections: unknown[] = []
     const onRejection = (reason: unknown) => rejections.push(reason)
     process.on('unhandledRejection', onRejection)
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     await renderScreen()
 
     await pickFirstTemplate()
 
-    await waitFor(() => expect(mocks.beginTour).toHaveBeenCalled())
+    await waitFor(() => expect(mocks.dismissIntoTour).toHaveBeenCalled())
     await new Promise((resolve) => setImmediate(resolve))
     process.off('unhandledRejection', onRejection)
 
@@ -155,13 +154,15 @@ describe('GettingStartedScreen', () => {
 
   describe('grid', () => {
     it('fills from the catalog when no curated template survived a package skew', async () => {
-      mocks.catalog = [
-        { name: 'skew-a' },
-        { name: 'skew-b' },
-        { name: 'skew-c' },
-        { name: 'skew-d' },
-        { name: 'skew-e' }
-      ]
+      Object.assign(useWorkflowTemplatesStore(), {
+        enhancedTemplates: [
+          { name: 'skew-a' },
+          { name: 'skew-b' },
+          { name: 'skew-c' },
+          { name: 'skew-d' },
+          { name: 'skew-e' }
+        ]
+      })
 
       await renderScreen()
 
@@ -172,11 +173,13 @@ describe('GettingStartedScreen', () => {
     })
 
     it('keeps curated templates ahead of the ones it backfills', async () => {
-      mocks.catalog = [
-        { name: 'catalog-filler' },
-        { name: FALLBACK_TEMPLATE_IDS[0] },
-        { name: CURATED_TEMPLATE_IDS[1] }
-      ]
+      Object.assign(useWorkflowTemplatesStore(), {
+        enhancedTemplates: [
+          { name: 'catalog-filler' },
+          { name: FALLBACK_TEMPLATE_IDS[0] },
+          { name: CURATED_TEMPLATE_IDS[1] }
+        ]
+      })
 
       await renderScreen()
 
@@ -219,23 +222,77 @@ describe('GettingStartedScreen', () => {
     })
   })
 
-  describe('failures', () => {
-    it('surfaces a failed template load and keeps the screen up to retry', async () => {
-      mocks.loadTemplate.mockResolvedValue(false)
+  describe('dialog arbitration', () => {
+    it('takes focus and modal semantics when it mounts with no dialog open', async () => {
       await renderScreen()
+      await nextTick()
 
-      await pickFirstTemplate()
-
-      await waitFor(() => expect(mocks.toastAdd).toHaveBeenCalled())
-      expect(
-        mocks.dismiss,
-        'A failed load must not dismiss the screen; the user would be left on a bare canvas'
-      ).not.toHaveBeenCalled()
-      expect(screen.getByText(enMessages.gettingStarted.retry)).toBeTruthy()
+      const takeover = screen.getByRole('dialog')
+      expect(takeover).toHaveFocus()
+      expect(takeover.getAttribute('aria-modal')).toBe('true')
     })
 
+    it('leaves focus and modality with a dialog that was open before it mounted', async () => {
+      await renderScreen({ withOpenDialog: true })
+      await nextTick()
+
+      const takeover = screen.getByRole('dialog')
+      expect(
+        takeover,
+        'stealing focus on mount would pull the user out of the open dialog (desktop sign-in approval)'
+      ).not.toHaveFocus()
+      expect(takeover.getAttribute('aria-modal')).toBe('false')
+    })
+
+    it('releases its focus trap while a dialog is open and re-arms after', async () => {
+      await renderScreen({ stubFocusScope: true })
+      const dialogStore = useDialogStore()
+      const trapped = () =>
+        screen.getByTestId('focus-scope-stub').getAttribute('data-trapped')
+
+      expect(trapped()).toBe('true')
+
+      const dialog = dialogStore.showDialog({
+        component: { template: '<div />' }
+      })
+      await nextTick()
+      expect(
+        trapped(),
+        'a trapped takeover under an open dialog (desktop sign-in approval, invite links) makes the dialog unreachable'
+      ).toBe('false')
+
+      dialogStore.closeDialog({ key: dialog.key })
+      await nextTick()
+      expect(
+        trapped(),
+        'the takeover must re-arm once the dialog stack empties'
+      ).toBe('true')
+    })
+  })
+
+  describe('failures', () => {
+    it.for(['not-started', 'graph-failed'] as const)(
+      'surfaces a %s template load and keeps the screen up to retry',
+      async (result) => {
+        mocks.loadTemplate.mockResolvedValue(result)
+        await renderScreen()
+
+        await pickFirstTemplate()
+
+        expect(
+          await screen.findByText(enMessages.gettingStarted.templateFailed)
+        ).toBeVisible()
+        expect(
+          mocks.dismissIntoTour,
+          'A failed load must not dismiss the screen; the user would be left on a bare canvas'
+        ).not.toHaveBeenCalled()
+        expect(mocks.dismiss).not.toHaveBeenCalled()
+        expect(screen.getByText(enMessages.gettingStarted.retry)).toBeTruthy()
+      }
+    )
+
     it('retries a catalog load that resolved without loading anything', async () => {
-      mocks.isLoaded = false
+      useWorkflowTemplatesStore().isLoaded = false
       await renderScreen()
 
       const retry = await screen.findByTestId(
@@ -245,14 +302,16 @@ describe('GettingStartedScreen', () => {
           timeout: 1000
         }
       )
-      mocks.loadCatalog.mockImplementation(() => {
-        mocks.isLoaded = true
+      vi.mocked(
+        useWorkflowTemplatesStore().loadWorkflowTemplates
+      ).mockImplementation(() => {
+        useWorkflowTemplatesStore().isLoaded = true
         return Promise.resolve(undefined)
       })
       await userEvent.click(retry)
 
       expect(
-        mocks.loadCatalog,
+        vi.mocked(useWorkflowTemplatesStore().loadWorkflowTemplates),
         'The store swallows fetch errors and resolves with isLoaded false, so a failed catalog must be detected without a rejection'
       ).toHaveBeenCalledTimes(2)
       await waitFor(() =>

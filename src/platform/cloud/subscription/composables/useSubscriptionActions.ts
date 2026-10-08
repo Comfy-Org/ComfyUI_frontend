@@ -1,7 +1,10 @@
 import { onMounted, ref } from 'vue'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
+import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/utils/paymentIntentSource'
 import { useDialogService } from '@/services/dialogService'
 import { useCommandStore } from '@/stores/commandStore'
 
@@ -13,6 +16,7 @@ export function useSubscriptionActions() {
   const commandStore = useCommandStore()
   const telemetry = useTelemetry()
   const { fetchBalance, fetchStatus } = useBillingContext()
+  const { wrapWithErrorHandlingAsync, toastErrorHandler } = useErrorHandling()
 
   const isLoadingSupport = ref(false)
 
@@ -24,11 +28,23 @@ export function useSubscriptionActions() {
     telemetry?.trackAddApiCreditButtonClicked({
       source: 'settings_billing_panel'
     })
-    void dialogService.showTopUpCreditsDialog()
+    void dialogService.showTopUpCreditsDialog({
+      source: paymentIntentSourceForAddCreditsClick('settings_billing_panel')
+    })
   }
 
-  const handleMessageSupport = async () => {
-    try {
+  // A user who cannot reach support cannot tell us that they cannot reach
+  // support, so this failure has to report itself.
+  const reportSupportFailure = (error: unknown) => {
+    reportError(error, {
+      surface: 'billing',
+      errorType: 'contact_support_failed'
+    })
+    toastErrorHandler(error)
+  }
+
+  const handleMessageSupport = wrapWithErrorHandlingAsync(
+    async () => {
       isLoadingSupport.value = true
       telemetry?.trackHelpResourceClicked({
         resource_type: 'help_feedback',
@@ -36,12 +52,12 @@ export function useSubscriptionActions() {
         source: 'subscription'
       })
       await commandStore.execute('Comfy.ContactSupport')
-    } catch (error) {
-      console.error('[useSubscriptionActions] Error contacting support:', error)
-    } finally {
+    },
+    reportSupportFailure,
+    () => {
       isLoadingSupport.value = false
     }
-  }
+  )
 
   const handleRefresh = async () => {
     try {

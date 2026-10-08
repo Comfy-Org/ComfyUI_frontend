@@ -2,7 +2,12 @@ import { describe, expect, it } from 'vitest'
 
 import type { EvaluableBanner } from './banner'
 
-import { createBannerVersion, evaluateBannerVisibility } from './banner'
+import {
+  createBannerVersion,
+  evaluateBannerVisibility,
+  firstVisibleBanner,
+  toClosedBanners
+} from './banner'
 
 const base: EvaluableBanner = {
   isActive: true,
@@ -76,6 +81,26 @@ describe('evaluateBannerVisibility', () => {
   })
 })
 
+describe('firstVisibleBanner', () => {
+  const sitewide: EvaluableBanner = { ...base }
+  const expired: EvaluableBanner = { ...base, endsAt: '2026-07-01T00:00:00Z' }
+  const running: EvaluableBanner = { ...base, endsAt: '2026-07-10T00:00:00Z' }
+
+  it('prefers the page banner while its window is open', () => {
+    expect(firstVisibleBanner([running, sitewide], ctx)).toBe(running)
+  })
+
+  it('falls back to the sitewide banner once the page banner has ended', () => {
+    expect(firstVisibleBanner([expired, sitewide], ctx)).toBe(sitewide)
+  })
+
+  it('returns nothing when no banner is visible', () => {
+    expect(
+      firstVisibleBanner([expired, { ...sitewide, isActive: false }], ctx)
+    ).toBeUndefined()
+  })
+})
+
 describe('createBannerVersion', () => {
   const content = {
     id: 'announcement',
@@ -105,5 +130,29 @@ describe('createBannerVersion', () => {
     expect(createBannerVersion(content, 'en')).not.toBe(
       createBannerVersion(content, 'zh-CN')
     )
+  })
+})
+
+describe('toClosedBanners', () => {
+  it('keeps boolean entries', () => {
+    expect(toClosedBanners({ promo_en_v1: true, promo_en_v2: false })).toEqual({
+      promo_en_v1: true,
+      promo_en_v2: false
+    })
+  })
+
+  it.for([
+    { label: 'null', parsed: null },
+    { label: 'an array', parsed: ['promo_en_v1'] },
+    { label: 'a string', parsed: 'promo_en_v1' },
+    { label: 'a number', parsed: 7 }
+  ])('returns an empty record for $label', ({ parsed }) => {
+    expect(toClosedBanners(parsed)).toEqual({})
+  })
+
+  it('drops non-boolean values rather than trusting them', () => {
+    expect(
+      toClosedBanners({ kept: true, dropped: 'yes', alsoDropped: { a: 1 } })
+    ).toEqual({ kept: true })
   })
 })

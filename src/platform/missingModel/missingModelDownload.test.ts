@@ -1,49 +1,66 @@
+import { reportError } from '@/platform/telemetry/reportError'
+import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
+import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   clearMetadataCache,
+  dispatchModelDownload,
   downloadModel,
   fetchModelMetadata,
+  fetchModelMetadataWithStatus,
   isModelDownloadable,
   isTrustedHuggingFaceUrl,
   openGatedRepoPage,
   toBrowsableUrl
 } from './missingModelDownload'
 
-const { fetchMock, mockIsDesktop, mockSidebarTabStore, mockStartDownload } =
-  vi.hoisted(() => ({
-    fetchMock: vi.fn(),
-    mockIsDesktop: { value: false },
-    mockSidebarTabStore: { activeSidebarTabId: null as string | null },
-    mockStartDownload: vi.fn()
-  }))
+const { fetchMock, mockIsDesktop, mockStartDownload } = vi.hoisted(() => ({
+  fetchMock: vi.fn(),
+  mockIsDesktop: { value: false },
+  mockStartDownload: vi.fn()
+}))
 
-vi.mock('@/platform/distribution/types', () => ({
-  get isDesktop() {
-    return mockIsDesktop.value
+vi.mock(import('@/platform/telemetry/reportError'))
+
+vi.mock(
+  import('@/platform/distribution/types'),
+  () =>
+    ({
+      DISTRIBUTION: 'localhost',
+      isCloud: false,
+      get isDesktop() {
+        return mockIsDesktop.value
+      },
+      isNightly: false
+    }) as const
+)
+
+function downloadableModel(): Parameters<typeof dispatchModelDownload>[0] {
+  return {
+    name: 'model.safetensors',
+    url: 'https://huggingface.co/org/model/resolve/main/model.safetensors',
+    directory: 'checkpoints'
   }
-}))
-
-vi.mock('@/stores/electronDownloadStore', () => ({
-  useElectronDownloadStore: () => ({
-    start: mockStartDownload
-  })
-}))
-
-vi.mock('@/stores/workspace/sidebarTabStore', () => ({
-  useSidebarTabStore: () => mockSidebarTabStore
-}))
-
+}
 beforeEach(() => {
+  mockIsDesktop.value = false
   vi.stubGlobal('fetch', fetchMock)
   clearMetadataCache()
+  delete window.__comfyDesktop2Remote
   delete window.__comfyDesktop2
+})
+
+beforeEach(() => {
+  vi.mocked(useElectronDownloadStore().start).mockImplementation(
+    mockStartDownload
+  )
 })
 
 describe('fetchModelMetadata', () => {
   beforeEach(() => {
     mockIsDesktop.value = false
-    mockSidebarTabStore.activeSidebarTabId = null
+    useSidebarTabStore().activeSidebarTabId = null
   })
 
   it('fetches file size via HEAD for non-Civitai URLs', async () => {
@@ -295,12 +312,128 @@ describe('fetchModelMetadata', () => {
   })
 })
 
+describe('fetchModelMetadataWithStatus', () => {
+  const emptyMetadata = { fileSize: null, gatedRepoUrl: null }
+
+  it('forwards a caller cancellation signal to the active request', async () => {
+    const controller = new AbortController()
+    const url =
+      'https://huggingface.co/org/model/resolve/main/cancelled.safetensors'
+    fetchMock.mockResolvedValueOnce(new Response())
+    await fetchModelMetadataWithStatus(url, { signal: controller.signal })
+
+    expect(fetchMock).toHaveBeenCalledWith(url, {
+      method: 'HEAD',
+      signal: controller.signal
+    })
+  })
+
+  it.for([
+    {
+      name: 'a non-OK response',
+      slug: 'not-found',
+      prepare: () =>
+        fetchMock.mockResolvedValueOnce(new Response(null, { status: 404 }))
+    },
+    {
+      name: 'a network error',
+      slug: 'network',
+      prepare: () =>
+        fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'))
+    }
+  ])('reports $name for an allowed URL as failed', async (testCase) => {
+    testCase.prepare()
+
+    await expect(
+      fetchModelMetadataWithStatus(
+        `https://huggingface.co/org/model/resolve/main/${testCase.slug}.safetensors`
+      )
+    ).resolves.toEqual({ metadata: emptyMetadata, resolution: 'failed' })
+  })
+
+  it.for([
+    {
+      name: 'gated proof',
+      url: 'https://huggingface.co/bfl/FLUX.1/resolve/main/gated.safetensors',
+      response: () =>
+        new Response(null, {
+          status: 403,
+          headers: { 'x-error-code': 'GatedRepo' }
+        }),
+      metadata: {
+        fileSize: null,
+        gatedRepoUrl: 'https://huggingface.co/bfl/FLUX.1'
+      }
+    },
+    {
+      name: 'a successful response without size',
+      url: 'https://huggingface.co/org/model/resolve/main/no-size.safetensors',
+      response: () => new Response(),
+      metadata: emptyMetadata
+    }
+  ])('reports $name as resolved', async (testCase) => {
+    fetchMock.mockResolvedValueOnce(testCase.response())
+
+    await expect(fetchModelMetadataWithStatus(testCase.url)).resolves.toEqual({
+      metadata: testCase.metadata,
+      resolution: 'resolved'
+    })
+  })
+
+  it.for([
+    {
+      url: 'https://example.com/model.safetensors',
+      resolution: 'resolved'
+    },
+    {
+      url: 'https://civitai.com/api/v1/models/123',
+      resolution: 'failed'
+    }
+  ] as const)(
+    'reports $url as $resolution without a request',
+    async ({ url, resolution }) => {
+      await expect(fetchModelMetadataWithStatus(url)).resolves.toEqual({
+        metadata: emptyMetadata,
+        resolution
+      })
+      expect(fetchMock).not.toHaveBeenCalled()
+    }
+  )
+
+  it('shares one inflight request and cache with the legacy metadata API', async () => {
+    const url =
+      'https://huggingface.co/org/model/resolve/main/shared-outcome.safetensors'
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      headers: new Headers({ 'content-length': '2048' })
+    })
+
+    const [outcome, legacyMetadata] = await Promise.all([
+      fetchModelMetadataWithStatus(url),
+      fetchModelMetadata(url)
+    ])
+
+    expect(outcome).toEqual({
+      metadata: { fileSize: 2048, gatedRepoUrl: null },
+      resolution: 'resolved'
+    })
+    expect(legacyMetadata).toEqual({
+      fileSize: 2048,
+      gatedRepoUrl: null
+    })
+    await expect(fetchModelMetadataWithStatus(url)).resolves.toEqual(outcome)
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+})
+
 describe('isTrustedHuggingFaceUrl', () => {
   it.for([
     { url: 'https://huggingface.co/org/model', expected: true },
     { url: 'http://huggingface.co/org/model', expected: false },
     { url: 'https://huggingface.co:8443/org/model', expected: false },
     { url: 'https://huggingface.co.evil.com/org/model', expected: false },
+    { url: 'https://huggingface.co@evil.example/org/model', expected: false },
+    { url: 'https://user:pass@huggingface.co/org/model', expected: true },
     { url: 'javascript:alert(1)', expected: false }
   ] as const)('returns $expected for $url', ({ url, expected }) => {
     expect(isTrustedHuggingFaceUrl(url)).toBe(expected)
@@ -465,10 +598,105 @@ describe('isModelDownloadable', () => {
   })
 })
 
+describe('dispatchModelDownload', () => {
+  beforeEach(() => {
+    mockIsDesktop.value = false
+    useSidebarTabStore().activeSidebarTabId = null
+  })
+
+  it('classifies a missing legacy Electron directory path without dispatching', () => {
+    mockIsDesktop.value = true
+
+    const outcome = dispatchModelDownload(downloadableModel(), {})
+
+    expect(outcome).toEqual({
+      status: 'not-dispatched',
+      reason: 'missing-directory-path'
+    })
+    expect(useSidebarTabStore().activeSidebarTabId).toBeNull()
+    expect(mockStartDownload).not.toHaveBeenCalled()
+  })
+
+  it('keeps a legacy row download in the current modal when reveal is disabled', () => {
+    mockIsDesktop.value = true
+
+    const outcome = dispatchModelDownload(
+      downloadableModel(),
+      { checkpoints: ['/models/checkpoints'] },
+      { revealLegacyDownload: false }
+    )
+
+    expect(outcome).toMatchObject({
+      status: 'host-requested',
+      host: 'electron'
+    })
+    expect(useSidebarTabStore().activeSidebarTabId).toBeNull()
+    expect(mockStartDownload).toHaveBeenCalledOnce()
+  })
+
+  it('preserves a false Desktop2 host result without interpreting it', async () => {
+    const desktopDownloadModel = vi.fn().mockResolvedValue(false)
+    window.__comfyDesktop2 = {
+      isRemote: () => false,
+      downloadModel: desktopDownloadModel
+    }
+
+    const outcome = dispatchModelDownload(downloadableModel(), {})
+
+    expect(outcome).toMatchObject({
+      status: 'host-requested',
+      host: 'desktop2'
+    })
+    if (outcome.status !== 'host-requested') {
+      throw new Error('Expected a Desktop2 host request')
+    }
+    await expect(outcome.hostResult).resolves.toBe(false)
+    expect(mockStartDownload).not.toHaveBeenCalled()
+  })
+
+  it('exposes a Desktop2 rejection through the host result', async () => {
+    const bridgeError = new Error('Desktop2 bridge rejected')
+    window.__comfyDesktop2 = {
+      isRemote: () => false,
+      downloadModel: vi.fn().mockRejectedValue(bridgeError)
+    }
+
+    const outcome = dispatchModelDownload(downloadableModel(), {})
+
+    expect(outcome).toMatchObject({
+      status: 'host-requested',
+      host: 'desktop2'
+    })
+    if (outcome.status !== 'host-requested') {
+      throw new Error('Expected a Desktop2 host request')
+    }
+    await expect(outcome.hostResult).rejects.toBe(bridgeError)
+  })
+
+  it('exposes an Electron rejection through the host result', async () => {
+    const electronError = new Error('Electron download rejected')
+    mockIsDesktop.value = true
+    mockStartDownload.mockRejectedValueOnce(electronError)
+
+    const outcome = dispatchModelDownload(downloadableModel(), {
+      checkpoints: ['/models/checkpoints']
+    })
+
+    expect(outcome).toMatchObject({
+      status: 'host-requested',
+      host: 'electron'
+    })
+    if (outcome.status !== 'host-requested') {
+      throw new Error('Expected an Electron host request')
+    }
+    await expect(outcome.hostResult).rejects.toBe(electronError)
+  })
+})
+
 describe('downloadModel', () => {
   beforeEach(() => {
     mockIsDesktop.value = false
-    mockSidebarTabStore.activeSidebarTabId = null
+    useSidebarTabStore().activeSidebarTabId = null
   })
 
   it.for([
@@ -549,7 +777,7 @@ describe('downloadModel', () => {
 
   it('does not dispatch blocked localhost URLs through Electron', () => {
     mockIsDesktop.value = true
-    mockSidebarTabStore.activeSidebarTabId = 'node-library'
+    useSidebarTabStore().activeSidebarTabId = 'node-library'
 
     downloadModel(
       {
@@ -561,7 +789,7 @@ describe('downloadModel', () => {
     )
 
     expect(mockStartDownload).not.toHaveBeenCalled()
-    expect(mockSidebarTabStore.activeSidebarTabId).toBe('node-library')
+    expect(useSidebarTabStore().activeSidebarTabId).toBe('node-library')
   })
 
   it('uses the Desktop2 bridge directly instead of the browser fallback', () => {
@@ -596,11 +824,52 @@ describe('downloadModel', () => {
     expect(mockStartDownload).not.toHaveBeenCalled()
   })
 
+  it.for([
+    {
+      install: 'local',
+      remoteFlag: undefined,
+      expectedDesktopCalls: 1,
+      expectedBrowserCalls: 0
+    },
+    {
+      install: 'remote',
+      remoteFlag: true,
+      expectedDesktopCalls: 0,
+      expectedBrowserCalls: 1
+    }
+  ])(
+    'routes a $install install on Desktop builds without isRemote',
+    ({ remoteFlag, expectedDesktopCalls, expectedBrowserCalls }) => {
+      const anchorClick = vi
+        .spyOn(HTMLAnchorElement.prototype, 'click')
+        .mockImplementation(() => {})
+      const desktopDownloadModel = vi
+        .fn<
+          (url: string, filename: string, directory: string) => Promise<boolean>
+        >()
+        .mockResolvedValue(true)
+      if (remoteFlag !== undefined) window.__comfyDesktop2Remote = remoteFlag
+      window.__comfyDesktop2 = { downloadModel: desktopDownloadModel }
+
+      downloadModel(
+        {
+          name: 'model.safetensors',
+          url: 'https://huggingface.co/org/model/resolve/main/model.safetensors',
+          directory: 'checkpoints'
+        },
+        { checkpoints: ['/models/checkpoints'] }
+      )
+
+      expect(desktopDownloadModel).toHaveBeenCalledTimes(expectedDesktopCalls)
+      expect(anchorClick).toHaveBeenCalledTimes(expectedBrowserCalls)
+      expect(mockStartDownload).not.toHaveBeenCalled()
+    }
+  )
+
   it('logs Desktop2 bridge failures without falling back to browser download', async () => {
     const anchorClick = vi
       .spyOn(HTMLAnchorElement.prototype, 'click')
       .mockImplementation(() => {})
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     const bridgeError = new Error('bridge failed')
     const desktopDownloadModel = vi
       .fn<
@@ -622,10 +891,11 @@ describe('downloadModel', () => {
     )
 
     await vi.waitFor(() => {
-      expect(consoleError).toHaveBeenCalledWith(
-        'Failed to start Desktop2 model download:',
-        bridgeError
-      )
+      expect(reportError).toHaveBeenCalledWith(bridgeError, {
+        surface: 'platform',
+        errorType: 'error_starting_model_download',
+        tags: { host: 'desktop2' }
+      })
     })
     expect(anchorClick).not.toHaveBeenCalled()
     expect(mockStartDownload).not.toHaveBeenCalled()
@@ -635,7 +905,6 @@ describe('downloadModel', () => {
     const anchorClick = vi
       .spyOn(HTMLAnchorElement.prototype, 'click')
       .mockImplementation(() => {})
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     const bridgeError = new Error('bridge failed before returning a promise')
     const desktopDownloadModel = vi
       .fn<
@@ -659,10 +928,11 @@ describe('downloadModel', () => {
     )
 
     await vi.waitFor(() => {
-      expect(consoleError).toHaveBeenCalledWith(
-        'Failed to start Desktop2 model download:',
-        bridgeError
-      )
+      expect(reportError).toHaveBeenCalledWith(bridgeError, {
+        surface: 'platform',
+        errorType: 'error_starting_model_download',
+        tags: { host: 'desktop2' }
+      })
     })
     expect(anchorClick).not.toHaveBeenCalled()
     expect(mockStartDownload).not.toHaveBeenCalled()
@@ -707,11 +977,49 @@ describe('downloadModel', () => {
       { checkpoints: ['/models/checkpoints'] }
     )
 
-    expect(mockSidebarTabStore.activeSidebarTabId).toBe('model-library')
+    expect(useSidebarTabStore().activeSidebarTabId).toBe('model-library')
     expect(mockStartDownload).toHaveBeenCalledWith({
       url: 'https://huggingface.co/org/model/resolve/main/model.safetensors',
       savePath: '/models/checkpoints',
       filename: 'model.safetensors'
+    })
+  })
+
+  it('handles rejected legacy Electron downloads without surfacing the rejection', async () => {
+    mockIsDesktop.value = true
+    const rejection = new Error('Electron download rejected')
+    mockStartDownload.mockRejectedValueOnce(rejection)
+
+    const result = downloadModel(downloadableModel(), {
+      checkpoints: ['/models/checkpoints']
+    })
+
+    expect(result).toBeUndefined()
+    await vi.waitFor(() => {
+      expect(reportError).toHaveBeenCalledWith(rejection, {
+        surface: 'platform',
+        errorType: 'error_starting_model_download',
+        tags: { host: 'electron' }
+      })
+    })
+  })
+
+  it('handles synchronous legacy Electron dispatch failures', () => {
+    mockIsDesktop.value = true
+    const failure = new Error('Electron dispatch failed')
+    mockStartDownload.mockImplementationOnce(() => {
+      throw failure
+    })
+
+    expect(() =>
+      downloadModel(downloadableModel(), {
+        checkpoints: ['/models/checkpoints']
+      })
+    ).not.toThrow()
+    expect(reportError).toHaveBeenCalledWith(failure, {
+      surface: 'platform',
+      errorType: 'error_starting_model_download',
+      tags: { host: 'electron' }
     })
   })
 })

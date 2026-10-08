@@ -6,6 +6,8 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 import { WidgetSelectDropdownFixture } from '@e2e/fixtures/components/WidgetSelectDropdown'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { assetPath } from '@e2e/fixtures/utils/paths'
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
   test.describe('media selection', { tag: '@widget' }, () => {
@@ -61,6 +63,105 @@ test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
         comfyPage.page.getByTestId(TestIds.errors.videoLoadError).count()
       )
       .toBeGreaterThan(0)
+  })
+
+  test('uploads an EXR image', async ({ comfyPage, comfyFiles }) => {
+    await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
+
+    const [loadImageNode] =
+      await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
+    const imageWidget = await loadImageNode.getWidgetByName('image')
+    const node = comfyPage.vueNodes.getNodeByTitle('Load Image')
+    const filename = 'test_upload_image.exr'
+    const uploadResponse = comfyPage.page.waitForResponse(
+      (response) =>
+        response.url().includes('/upload/image') && response.status() === 200
+    )
+
+    await node.locator('input[type="file"]').setInputFiles(assetPath(filename))
+    comfyFiles.deleteAfterTest({ filename, type: 'input' })
+    await uploadResponse
+
+    await expect.poll(() => imageWidget.getValue()).toBe(filename)
+    await expect(
+      node.getByRole('button', { name: filename, exact: true })
+    ).toBeVisible()
+    await expect(node.getByTestId(TestIds.errors.imageLoadError)).toBeHidden()
+  })
+
+  test('rejects an extensionless video and still uploads a valid one', async ({
+    comfyPage
+  }) => {
+    await comfyPage.menu.topbar.newWorkflowButton.click()
+    await comfyPage.nextFrame()
+    await comfyPage.searchBoxV2.addNode('Load Video')
+
+    const [loadVideoNode] =
+      await comfyPage.nodeOps.getNodeRefsByType('LoadVideo')
+    expect(loadVideoNode, 'Load Video node was added').toBeDefined()
+    const videoWidget = await loadVideoNode.getWidgetByName('file')
+    const rejectionToasts = comfyPage.page.getByText(
+      enMessages.g.videoFilenameExtensionRequired,
+      { exact: true }
+    )
+    let uploadRequests = 0
+    await comfyPage.page.route('**/upload/image', async (route) => {
+      uploadRequests += 1
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ name: 'clip.mp4' })
+      })
+    })
+
+    await test.step('show feedback for a rejected canvas paste', async () => {
+      await comfyPage.canvas.focus()
+      await loadVideoNode.click('title')
+      await comfyPage.page.evaluate(() => {
+        const dataTransfer = new DataTransfer()
+        dataTransfer.items.add(
+          new File(['video'], 'extensionless', { type: 'video/mp4' })
+        )
+        document.activeElement?.dispatchEvent(
+          new ClipboardEvent('paste', {
+            clipboardData: dataTransfer,
+            bubbles: true,
+            cancelable: true
+          })
+        )
+      })
+
+      await expect(rejectionToasts).toHaveCount(1)
+      await expect(rejectionToasts.first()).toBeVisible()
+      expect(uploadRequests).toBe(0)
+    })
+
+    const fileInput = comfyPage.vueNodes
+      .getNodeByTitle('Load Video')
+      .locator('input[type="file"]')
+
+    await test.step('reject the extensionless video with actionable feedback', async () => {
+      await fileInput.setInputFiles({
+        name: 'extensionless',
+        mimeType: 'video/mp4',
+        buffer: Buffer.from('video')
+      })
+
+      await expect(rejectionToasts).toHaveCount(2)
+      await expect(rejectionToasts.last()).toBeVisible()
+      expect(uploadRequests).toBe(0)
+    })
+
+    await test.step('upload a valid video through the same control', async () => {
+      await fileInput.setInputFiles({
+        name: 'clip.mp4',
+        mimeType: 'video/mp4',
+        buffer: Buffer.from('video')
+      })
+
+      await expect.poll(() => videoWidget.getValue()).toBe('clip.mp4')
+      expect(uploadRequests).toBe(1)
+    })
   })
 
   test('shows a spinner during upload', async ({ comfyPage }) => {

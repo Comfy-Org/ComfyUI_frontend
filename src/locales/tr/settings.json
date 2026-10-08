@@ -84,6 +84,10 @@
   "Comfy_EnableWorkflowViewRestore": {
     "name": "İş akışlarında tuval konumunu ve yakınlaştırma seviyesini kaydet ve geri yükle"
   },
+  "Comfy_ErrorSystem_ShowMissingModels": {
+    "name": "Sorunlar sekmesinde eksik modelleri göster",
+    "tooltip": "Devre dışı bırakıldığında, bulunamayan model dosyaları sorunlar sekmesinde listelenmez ve düğümleri vurgulanmaz."
+  },
   "Comfy_Execution_PreviewMethod": {
     "name": "Canlı önizleme yöntemi",
     "options": {
@@ -335,10 +339,6 @@
     "name": "Sürüm güncellemelerini göster",
     "tooltip": "Yeni modeller ve önemli yeni özellikler için güncellemeleri göster."
   },
-  "Comfy_Pointer_ClickBufferTime": {
-    "name": "İşaretçi tıklama kayma gecikmesi",
-    "tooltip": "Bir işaretçi düğmesine bastıktan sonra, bu, işaretçi hareketinin göz ardı edilebileceği maksimum süredir (milisaniye cinsinden).\n\nTıklarken işaretçi hareket ettirilirse nesnelerin istemeden dürtülmesini önlemeye yardımcı olur."
-  },
   "Comfy_Pointer_ClickDrift": {
     "name": "İşaretçi tıklama kayması (maksimum mesafe)",
     "tooltip": "İşaretçi bir düğmeyi basılı tutarken bu mesafeden daha fazla hareket ederse, bu sürükleme olarak kabul edilir (tıklama yerine).\n\nTıklarken işaretçi hareket ettirilirse nesnelerin istemeden dürtülmesini önlemeye yardımcı olur."
@@ -367,8 +367,8 @@
     "tooltip": "Kayan iş kuyruğu panelini, Varlıklar yan paneline gömülü eşdeğer bir iş kuyruğu ile değiştirir. Kayan panel düzenine dönmek için bunu devre dışı bırakabilirsiniz."
   },
   "Comfy_RightSidePanel_ShowErrorsTab": {
-    "name": "Hatalar sekmesini yan panelde göster",
-    "tooltip": "Etkinleştirildiğinde, iş akışı yürütme hatalarını hızlıca görmek için sağ yan panelde bir hatalar sekmesi görüntülenir."
+    "name": "Yan panelde sorunlar sekmesini göster",
+    "tooltip": "Etkinleştirildiğinde, ayarlanması gereken engelleyici hataları ve eksik kaynakları göstermek için Sorunlar sekmesi sağ yan panelde görüntülenir."
   },
   "Comfy_Sidebar_Location": {
     "name": "Kenar çubuğu konumu",
@@ -461,8 +461,13 @@
   "Comfy_Workflow_Persist": {
     "name": "İş akışı durumunu koru ve sayfayı (yeniden) yüklediğinde geri yükle"
   },
-  "Comfy_Workflow_ShowMissingModelsWarning": {
-    "name": "Eksik model uyarısını göster"
+  "Comfy_Workflow_ShowMissingMediaWarning": {
+    "name": "Sorunlar sekmesinde eksik medyayı göster",
+    "tooltip": "Devre dışı bırakıldığında, bulunamayan giriş görüntüleri, videoları ve ses dosyaları sorunlar sekmesinde listelenmez ve düğümleri vurgulanmaz."
+  },
+  "Comfy_Workflow_ShowMissingNodesWarning": {
+    "name": "Sorunlar sekmesinde eksik düğümleri göster",
+    "tooltip": "Devre dışı bırakıldığında, eksik düğüm paketleri sorunlar sekmesinde listelenmez ve düğümleri vurgulanmaz. İş akışı, yüklenene kadar yine de çalıştırılamaz."
   },
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "İş akışını kaydederken düğüm kimliklerini sırala"

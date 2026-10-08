@@ -34,8 +34,7 @@ describe('link ownership error surface', () => {
     upstream.addOutput('image', 'COMBO')
     graph.add(upstream)
 
-    const node = new LGraphNode('LoadImage')
-    node.type = 'LoadImage'
+    const node = new LGraphNode('LoadImage', 'LoadImage')
     const input = node.addInput('image', 'COMBO')
     const widget = node.addWidget(
       'combo',
@@ -46,7 +45,7 @@ describe('link ownership error surface', () => {
     )
     input.widget = { name: widget.name }
     graph.add(node)
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    vi.spyOn(app, 'rootGraphOrUndefined', 'get').mockReturnValue(graph)
 
     installErrorClearingHooks(graph)
 
@@ -83,8 +82,7 @@ describe('link ownership while a workflow loads', () => {
 
   it('keeps cached candidates while a workflow load clears the old graph', () => {
     const graph = new LGraph()
-    const node = new LGraphNode('LoadImage')
-    node.type = 'LoadImage'
+    const node = new LGraphNode('LoadImage', 'LoadImage')
     const input = node.addInput('image', 'COMBO')
     const widget = node.addWidget(
       'combo',
@@ -95,7 +93,7 @@ describe('link ownership while a workflow loads', () => {
     )
     input.widget = { name: widget.name }
     graph.add(node)
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    vi.spyOn(app, 'rootGraphOrUndefined', 'get').mockReturnValue(graph)
 
     installErrorClearingHooks(graph)
 
@@ -116,8 +114,7 @@ describe('link ownership while a workflow loads', () => {
     upstream.addOutput('image', 'COMBO')
     graph.add(upstream)
 
-    const node = new LGraphNode('LoadImage')
-    node.type = 'LoadImage'
+    const node = new LGraphNode('LoadImage', 'LoadImage')
     const input = node.addInput('image', 'COMBO')
     const widget = node.addWidget(
       'combo',
@@ -128,7 +125,7 @@ describe('link ownership while a workflow loads', () => {
     )
     input.widget = { name: widget.name }
     graph.add(node)
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    vi.spyOn(app, 'rootGraphOrUndefined', 'get').mockReturnValue(graph)
 
     installErrorClearingHooks(graph)
 
@@ -152,6 +149,10 @@ describe('promotion listener lifecycle', () => {
     vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(false)
   })
 
+  /** Lets a removal's own deferred reconcile land before the test seeds. */
+  const flushRemovalReconcile = () =>
+    new Promise((resolve) => setTimeout(resolve, 0))
+
   /** A candidate for a node that does not exist, so any reconcile drops it. */
   function seedStaleCandidate() {
     const mediaStore = useMissingMediaStore()
@@ -169,7 +170,7 @@ describe('promotion listener lifecycle', () => {
       rootGraph.add(host)
       return host
     })
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
+    vi.spyOn(app, 'rootGraphOrUndefined', 'get').mockReturnValue(rootGraph)
     return { subgraph, rootGraph, hosts }
   }
 
@@ -181,6 +182,7 @@ describe('promotion listener lifecycle', () => {
     } = createSharedDefinitionGraph([65])
     installErrorClearingHooks(rootGraph)
     rootGraph.remove(host)
+    await flushRemovalReconcile()
 
     const mediaStore = seedStaleCandidate()
     subgraph.events.dispatch('widget-promoted', {
@@ -206,6 +208,7 @@ describe('promotion listener lifecycle', () => {
     // already in the graph, so hosts counted at install time arrive again.
     rootGraph.onNodeAdded?.(host)
     rootGraph.remove(host)
+    await flushRemovalReconcile()
 
     const mediaStore = seedStaleCandidate()
     subgraph.events.dispatch('widget-promoted', {
@@ -225,6 +228,7 @@ describe('promotion listener lifecycle', () => {
     } = createSharedDefinitionGraph([65, 66])
     installErrorClearingHooks(rootGraph)
     rootGraph.remove(first)
+    await flushRemovalReconcile()
 
     const mediaStore = seedStaleCandidate()
     subgraph.events.dispatch('widget-promoted', {
@@ -248,9 +252,8 @@ describe('promoted widget promotion error surface moves with ownership', () => {
     const host = createTestSubgraphNode(subgraph, { id: 65 })
     rootGraph.add(host)
 
-    const leafNode = new LGraphNode('LoadImage')
+    const leafNode = new LGraphNode('LoadImage', 'LoadImage')
     leafNode.id = toNodeId(42)
-    leafNode.type = 'LoadImage'
     const leafInput = leafNode.addInput('image', 'COMBO')
     const leafWidget = leafNode.addWidget(
       'combo',
@@ -262,7 +265,7 @@ describe('promoted widget promotion error surface moves with ownership', () => {
     leafInput.widget = { name: leafWidget.name }
     subgraph.add(leafNode)
 
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
+    vi.spyOn(app, 'rootGraphOrUndefined', 'get').mockReturnValue(rootGraph)
     return { subgraph, rootGraph, host, leafNode, leafWidget }
   }
 
@@ -330,9 +333,8 @@ describe('promoted widget demotion error clearing', () => {
     const host = createTestSubgraphNode(subgraph, { id: 65 })
     rootGraph.add(host)
 
-    const leafNode = new LGraphNode('LoadImage')
+    const leafNode = new LGraphNode('LoadImage', 'LoadImage')
     leafNode.id = toNodeId(42)
-    leafNode.type = 'LoadImage'
     const leafInput = leafNode.addInput('image', 'COMBO')
     const leafWidget = leafNode.addWidget(
       'combo',
@@ -348,7 +350,7 @@ describe('promoted widget demotion error clearing', () => {
       promoteValueWidgetViaSubgraphInput(host, leafNode, leafWidget).ok
     ).toBe(true)
     expect(host.widgets).toHaveLength(1)
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
+    vi.spyOn(app, 'rootGraphOrUndefined', 'get').mockReturnValue(rootGraph)
     installErrorClearingHooks(subgraph)
 
     const mediaStore = useMissingMediaStore()

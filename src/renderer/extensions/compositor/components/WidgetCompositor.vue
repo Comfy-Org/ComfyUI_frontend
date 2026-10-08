@@ -93,7 +93,7 @@ const outputUrl = ref<string | null>(null)
 
 const litegraphNode = computed(() => {
   if (!nodeId || !app.canvas.graph) return null
-  return app.canvas.graph.getNodeById(nodeId)
+  return app.canvas.graph.getNodeById(nodeId) ?? null
 })
 
 function updateOutputUrl(): void {
@@ -125,7 +125,7 @@ const dimensionsLabel = computed(() =>
 
 const canOpen = computed(() => {
   const node = litegraphNode.value
-  return node !== null && hasCompositorLayers(node)
+  return !!node && hasCompositorLayers(node)
 })
 
 function onPreviewLoad(event: Event): void {

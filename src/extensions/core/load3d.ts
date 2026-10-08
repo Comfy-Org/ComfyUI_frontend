@@ -2,15 +2,17 @@ import { nextTick } from 'vue'
 
 import Load3D from '@/components/load3d/Load3D.vue'
 import Load3DViewerContent from '@/components/load3d/Load3dViewerContent.vue'
+import { LOAD3D_VIEWER_DIALOG_PROPS } from '@/components/load3d/load3dViewerDialog'
 import {
-  type Load3dCachedOutput,
   getLoad3dOutputCache,
+  getLoad3dSceneRevision,
   isLoad3dSceneDirty,
   markLoad3dSceneDirty,
   nodeToLoad3dMap,
   setLoad3dOutputCache,
   useLoad3d
 } from '@/composables/useLoad3d'
+import type { Load3dCachedOutput } from '@/composables/useLoad3d'
 import { createExportMenuItems } from '@/extensions/core/load3d/exportMenuHelper'
 import type {
   CameraConfig,
@@ -25,23 +27,33 @@ import {
   SUPPORTED_EXTENSIONS_ACCEPT
 } from '@/extensions/core/load3d/constants'
 import { snapshotLoad3dState } from '@/extensions/core/load3d/load3dSerialize'
+import type { Model3DOutput } from '@/extensions/core/load3d/model3dOutput'
+import { readModel3DOutput } from '@/extensions/core/load3d/model3dOutput'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
-import type { IStringWidget } from '@/lib/litegraph/src/types/widgets'
+import type {
+  INumericWidget,
+  IStringWidget
+} from '@/lib/litegraph/src/types/widgets'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import type { NodeExecutionOutput, NodeOutputWith } from '@/schemas/apiSchema'
+import type {
+  NodeExecutionOutput,
+  NodeOutputWith
+} from '@/platform/remote/comfyui/execution/types'
+import { reportError } from '@/platform/telemetry/reportError'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 type Matrix = number[][]
+
+/** Extra captures allowed when the scene changes mid-capture. */
+const MAX_STALE_CAPTURE_RETRIES = 2
+
 type Load3dPreviewOutput = NodeOutputWith<{
   result?: [string?, CameraState?, string?, Matrix?, Matrix?]
-}>
-type Preview3DAdvancedOutput = NodeOutputWith<{
-  result?: [string?, CameraState?, Model3DInfo?]
 }>
 import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { api } from '@/scripts/api'
@@ -66,7 +78,7 @@ const inputSpecPreview3D: CustomInputSpec = {
 }
 
 async function handleModelUpload(files: FileList, node: LGraphNode) {
-  if (!files?.length) return
+  if (!files.length) return
 
   const modelWidget = node.widgets?.find((w) => w.name === 'model_file') as
     | IStringWidget
@@ -93,17 +105,17 @@ async function handleModelUpload(files: FileList, node: LGraphNode) {
       )
     )
 
-    useLoad3d(node).waitForLoad3d((load3d) => {
+    useLoad3d(node).waitForLoad3d(async (load3d) => {
       try {
-        load3d.loadModel(modelUrl)
-      } catch (error) {
+        await load3d.loadModel(modelUrl)
+      } catch {
         useToastStore().addAlert(t('toastMessages.failedToLoadModel'))
       }
     })
 
     if (uploadPath && modelWidget) {
-      if (!modelWidget.options?.values?.includes(uploadPath)) {
-        modelWidget.options?.values?.push(uploadPath)
+      if (!modelWidget.options.values?.includes(uploadPath)) {
+        modelWidget.options.values?.push(uploadPath)
       }
 
       modelWidget.value = uploadPath
@@ -117,7 +129,7 @@ async function handleModelUpload(files: FileList, node: LGraphNode) {
 }
 
 async function handleResourcesUpload(files: FileList, node: LGraphNode) {
-  if (!files?.length) return
+  if (!files.length) return
 
   try {
     const resourceFolder = (node.properties['Resource Folder'] as string) || ''
@@ -256,14 +268,13 @@ useExtensionService().registerExtension({
       label: 'Open 3D Viewer (Beta) for Selected Node',
       function: () => {
         const selectedNodes = app.canvas.selected_nodes
-        if (!selectedNodes || Object.keys(selectedNodes).length !== 1) return
+        if (Object.keys(selectedNodes).length !== 1) return
 
         const selectedNode = selectedNodes[Object.keys(selectedNodes)[0]]
 
         if (!isLoad3dNode(selectedNode)) return
 
         ComfyApp.copyToClipspace(selectedNode)
-        // @ts-expect-error clipspace_return_node is an extension property added at runtime
         ComfyApp.clipspace_return_node = selectedNode
 
         const props = { node: selectedNode }
@@ -274,11 +285,7 @@ useExtensionService().registerExtension({
           component: Load3DViewerContent,
           props: props,
           dialogComponentProps: {
-            renderer: 'reka',
-            size: 'full',
-            contentClass:
-              'w-[80vw] max-w-[80vw] sm:max-w-[80vw] h-[80vh] max-h-[80vh]',
-            maximizable: true,
+            ...LOAD3D_VIEWER_DIALOG_PROPS,
             onClose: async () => {
               await useLoad3dService().handleViewerClose(props.node)
             }
@@ -384,8 +391,12 @@ useExtensionService().registerExtension({
 
     useLoad3d(node).onLoad3dReady((load3d) => {
       const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
-      const width = node.widgets?.find((w) => w.name === 'width')
-      const height = node.widgets?.find((w) => w.name === 'height')
+      const width = node.widgets?.find(
+        (w): w is INumericWidget => w.name === 'width' && w.type === 'number'
+      )
+      const height = node.widgets?.find(
+        (w): w is INumericWidget => w.name === 'height' && w.type === 'number'
+      )
       if (!modelWidget || !width || !height) return
 
       const cameraConfig = node.properties['Camera Config'] as
@@ -418,54 +429,75 @@ useExtensionService().registerExtension({
             return null
           }
 
-          if (!isLoad3dSceneDirty(node)) {
-            const cached = getLoad3dOutputCache(node)
-            if (cached) return cached
-          }
+          for (let attempt = 0; ; attempt++) {
+            if (!isLoad3dSceneDirty(node)) {
+              const cached = getLoad3dOutputCache(node)
+              if (cached) return cached
+            }
 
-          const { camera_info, model_3d_info } = snapshotLoad3dState(
-            node,
-            currentLoad3d
-          )
+            const sceneRevision = getLoad3dSceneRevision(node)
 
-          const {
-            scene: imageData,
-            mask: maskData,
-            normal: normalData
-          } = await currentLoad3d.captureScene(
-            width.value as number,
-            height.value as number
-          )
+            // A model swap (user or agent) may still be loading. Capture the
+            // scene the queue will actually run, not the one being replaced.
+            await currentLoad3d.whenLoadIdle()
 
-          const [data, dataMask, dataNormal] = await Promise.all([
-            Load3dUtils.uploadTempImage(imageData, 'scene'),
-            Load3dUtils.uploadTempImage(maskData, 'scene_mask'),
-            Load3dUtils.uploadTempImage(normalData, 'scene_normal')
-          ])
+            const { camera_info, model_3d_info } = snapshotLoad3dState(
+              node,
+              currentLoad3d
+            )
 
-          currentLoad3d.handleResize()
+            const {
+              scene: imageData,
+              mask: maskData,
+              normal: normalData
+            } = await currentLoad3d.captureScene(
+              width.value as number,
+              height.value as number
+            )
 
-          const returnVal: Load3dCachedOutput = {
-            image: `threed/${data.name} [temp]`,
-            mask: `threed/${dataMask.name} [temp]`,
-            normal: `threed/${dataNormal.name} [temp]`,
-            camera_info,
-            recording: '',
-            model_3d_info
-          }
-
-          const recordingData = currentLoad3d.getRecordingData()
-
-          if (recordingData) {
-            const [recording] = await Promise.all([
-              Load3dUtils.uploadTempImage(recordingData, 'recording', 'mp4')
+            const [data, dataMask, dataNormal] = await Promise.all([
+              Load3dUtils.uploadTempImage(imageData, 'scene'),
+              Load3dUtils.uploadTempImage(maskData, 'scene_mask'),
+              Load3dUtils.uploadTempImage(normalData, 'scene_normal')
             ])
-            returnVal.recording = `threed/${recording.name} [temp]`
+
+            currentLoad3d.handleResize()
+
+            const returnVal: Load3dCachedOutput = {
+              image: `threed/${data.name} [temp]`,
+              mask: `threed/${dataMask.name} [temp]`,
+              normal: `threed/${dataNormal.name} [temp]`,
+              camera_info,
+              recording: '',
+              model_3d_info
+            }
+
+            const recordingData = currentLoad3d.getRecordingData()
+
+            if (recordingData) {
+              const recording = await Load3dUtils.uploadTempImage(
+                recordingData,
+                'recording',
+                'mp4'
+              )
+              returnVal.recording = `threed/${recording.name} [temp]`
+            }
+
+            if (setLoad3dOutputCache(node, returnVal, sceneRevision)) {
+              return returnVal
+            }
+
+            if (attempt >= MAX_STALE_CAPTURE_RETRIES) {
+              reportError(
+                new Error('Load3D scene did not stabilize during capture'),
+                {
+                  surface: 'assets',
+                  errorType: 'error_capturing_load3d_scene_unstable'
+                }
+              )
+              return null
+            }
           }
-
-          setLoad3dOutputCache(node, returnVal)
-
-          return returnVal
         }
       }
     })
@@ -505,7 +537,7 @@ function applyPreview3DOutput(
       silentOnNotFound: true
     })
 
-    if (bgImagePath) load3d.setBackgroundImage(bgImagePath)
+    if (bgImagePath) void load3d.setBackgroundImage(bgImagePath)
 
     if (extrinsics && intrinsics) {
       const targetGeneration = load3d.currentLoadGeneration
@@ -533,8 +565,9 @@ useExtensionService().registerExtension({
     nodeData: ComfyNodeDef
   ) {
     if ('Preview3D' === nodeData.name) {
-      // @ts-expect-error InputSpec is not typed correctly
-      nodeData.input.required.image = ['PREVIEW_3D']
+      const input = (nodeData.input ??= {})
+      const required = (input.required ??= {})
+      required.image = ['PREVIEW_3D']
     }
   },
 
@@ -641,9 +674,10 @@ useExtensionService().registerExtension({
           const extrinsics = result?.[3]
           const intrinsics = result?.[4]
 
-          modelWidget.value = filePath?.replaceAll('\\', '/')
+          const modelFilePath = filePath?.replaceAll('\\', '/')
+          modelWidget.value = modelFilePath
 
-          node.properties['Last Time Model File'] = modelWidget.value
+          node.properties['Last Time Model File'] = modelFilePath
 
           const settings = {
             loadFolder: 'output',
@@ -655,9 +689,7 @@ useExtensionService().registerExtension({
 
           config.configure(settings)
 
-          if (bgImagePath) {
-            load3d.setBackgroundImage(bgImagePath)
-          }
+          if (bgImagePath) void load3d.setBackgroundImage(bgImagePath)
 
           if (filePath && extrinsics && intrinsics) {
             // configure(settings) above triggered loadModel for this
@@ -688,23 +720,21 @@ useExtensionService().registerExtension({
 function applyPreview3DAdvancedResult(
   node: LGraphNode,
   load3d: Load3d,
-  result: NonNullable<Preview3DAdvancedOutput['result']>,
+  reported: Model3DOutput,
   loadFolder: LoadFolder,
   comfyClass: string
 ): void {
-  const filePath = result[0]
-  if (!filePath) return
-
-  const normalizedPath = filePath.replaceAll('\\', '/')
+  const normalizedPath = reported.filePath.replaceAll('\\', '/')
+  const folder = reported.folder ?? loadFolder
   node.properties['Last Time Model File'] = normalizedPath
+  node.properties['Last Time Model Folder'] = folder
 
   const config = new Load3DConfiguration(load3d, node.properties)
-  config.configureForSaveMesh(loadFolder, normalizedPath, {
+  config.configureForSaveMesh(folder, normalizedPath, {
     silentOnNotFound: true
   })
 
-  const cameraState = result[1]
-  const modelTransform = result[2]?.[0]
+  const { cameraState, modelTransform } = reported
   if (!cameraState && !modelTransform) return
 
   const targetGeneration = load3d.currentLoadGeneration
@@ -735,8 +765,8 @@ function createPreview3DAdvancedExtension(
       nodeOutputs: Record<NodeLocatorId, NodeExecutionOutput>
     ) {
       for (const [locatorId, output] of Object.entries(nodeOutputs)) {
-        const result = (output as Preview3DAdvancedOutput).result
-        if (!result?.[0]) continue
+        const reported = readModel3DOutput(output)
+        if (!reported) continue
 
         const node = getNodeByLocatorId(app.rootGraph, locatorId)
         if (!node || node.constructor.comfyClass !== comfyClass) continue
@@ -745,7 +775,7 @@ function createPreview3DAdvancedExtension(
           applyPreview3DAdvancedResult(
             node,
             load3d,
-            result,
+            reported,
             loadFolder,
             comfyClass
           )
@@ -780,8 +810,14 @@ function createPreview3DAdvancedExtension(
         const lastTimeModelFile = node.properties['Last Time Model File']
         if (!lastTimeModelFile) return
 
+        const lastTimeModelFolder = node.properties['Last Time Model Folder']
+        const folder =
+          lastTimeModelFolder === 'temp' || lastTimeModelFolder === 'output'
+            ? lastTimeModelFolder
+            : loadFolder
+
         const config = new Load3DConfiguration(load3d, node.properties)
-        config.configureForSaveMesh(loadFolder, lastTimeModelFile as string, {
+        config.configureForSaveMesh(folder, lastTimeModelFile as string, {
           silentOnNotFound: true
         })
 
@@ -843,7 +879,8 @@ function createPreview3DAdvancedExtension(
             cameraType: currentLoad3d.getCurrentCameraType(),
             fov: currentLoad3d.cameraManager.perspectiveCamera.fov
           }
-          cameraConfig.state = currentLoad3d.getCameraState()
+          const cameraState = currentLoad3d.getCameraState()
+          cameraConfig.state = cameraState
           node.properties['Camera Config'] = cameraConfig
 
           const modelInfo = currentLoad3d.getModelInfo()
@@ -853,17 +890,17 @@ function createPreview3DAdvancedExtension(
             image: '',
             mask: '',
             normal: '',
-            camera_info: cameraConfig.state || null,
+            camera_info: cameraState,
             recording: '',
             model_3d_info
           }
         }
 
-        node.onExecuted = function (output: Preview3DAdvancedOutput) {
+        node.onExecuted = function (output: NodeExecutionOutput) {
           onExecuted?.call(this, output)
 
-          const result = output.result
-          if (!result?.[0]) {
+          const reported = readModel3DOutput(output)
+          if (!reported) {
             const msg = t('toastMessages.unableToGetModelFilePath')
             console.error(msg)
             useToastStore().addAlert(msg)
@@ -873,7 +910,7 @@ function createPreview3DAdvancedExtension(
           applyPreview3DAdvancedResult(
             node,
             resolveLoad3d(),
-            result,
+            reported,
             loadFolder,
             comfyClass
           )

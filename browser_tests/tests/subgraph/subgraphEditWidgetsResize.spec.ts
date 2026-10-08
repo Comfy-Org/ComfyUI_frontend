@@ -14,8 +14,9 @@ test.describe(
     }
   },
   () => {
+    test.use({ initialSettings: { 'Comfy.Canvas.SelectionToolbox': true } })
+
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.Canvas.SelectionToolbox', true)
       await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
     })
 
@@ -33,6 +34,22 @@ test.describe(
       const sizeAfter = await nodeRef.getSize()
       expect(sizeAfter.width).toBeCloseTo(size.width, 0)
       expect(sizeAfter.height).toBeCloseTo(size.height, 0)
+    })
+
+    test('opens an interior widget context menu', async ({ comfyPage }) => {
+      await comfyPage.vueNodes.enterSubgraph()
+      const widget = comfyPage.vueNodes
+        .getNodeByTitle('KSampler')
+        .getByLabel('steps', { exact: true })
+
+      await widget.click({ button: 'right' })
+
+      await expect(
+        comfyPage.page.getByRole('menuitem', {
+          name: 'Promote Widget: steps',
+          exact: true
+        })
+      ).toBeVisible()
     })
 
     test('retains a manual resize when an interior widget is promoted', async ({

@@ -1,8 +1,8 @@
 <template>
-  <div class="pointer-events-none absolute inset-0 flex flex-col">
+  <div class="flex size-full flex-col">
     <div
       ref="topBarRef"
-      class="pointer-events-auto flex h-10 items-center gap-1 bg-interface-menu-surface px-2"
+      class="flex h-10 shrink-0 items-center gap-1 bg-interface-menu-surface px-2"
       @wheel.stop
     >
       <Popover v-model:open="categoryMenuOpen">
@@ -23,7 +23,7 @@
           side="bottom"
           align="start"
           :side-offset="8"
-          :class="panelClass"
+          :class="menuPanelClass"
         >
           <button
             v-for="c in categoryDefs"
@@ -31,11 +31,11 @@
             type="button"
             :class="
               cn(
-                rowClass,
-                'gap-2',
-                activeCategory === c.key && 'bg-button-active-surface'
+                menuButtonClass,
+                activeCategory === c.key && selectedMenuButtonClass
               )
             "
+            :aria-pressed="activeCategory === c.key"
             @click="selectCategory(c.key)"
           >
             <i :class="cn(c.icon, 'size-4')" />
@@ -90,14 +90,28 @@
       />
     </div>
 
-    <div
-      :class="
-        cn('flex-1', isRecording && 'border-2 border-node-component-executing')
-      "
+    <div class="relative min-h-0 flex-1 overflow-hidden">
+      <slot />
+      <div
+        v-if="isRecording"
+        class="pointer-events-none absolute inset-0 border-2 border-node-component-executing"
+      />
+    </div>
+
+    <AnimationMenuStrip
+      v-if="animations.length > 0"
+      v-model:playing="playing"
+      v-model:selected-speed="selectedSpeed"
+      v-model:selected-animation="selectedAnimation"
+      v-model:animation-progress="animationProgress"
+      :animations="animations"
+      :animation-duration="animationDuration"
+      :compact
+      @seek="emit('seek', $event)"
     />
 
     <div
-      class="pointer-events-auto flex h-10 items-center justify-between gap-1 bg-interface-menu-surface px-2"
+      class="flex h-10 shrink-0 items-center justify-between gap-1 bg-interface-menu-surface px-2"
       @wheel.stop
     >
       <div class="flex items-center gap-1">
@@ -153,13 +167,13 @@
             side="top"
             align="end"
             :side-offset="8"
-            :class="panelClass"
+            :class="menuPanelClass"
           >
             <button
               v-for="format in exportFormats"
               :key="format.value"
               type="button"
-              :class="rowClass"
+              :class="menuButtonClass"
               @click="onExport(format.value)"
             >
               {{ format.label }}
@@ -177,6 +191,7 @@ import { PopoverTrigger } from 'reka-ui'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import AnimationMenuStrip from '@/components/load3d/menubar/AnimationMenuStrip.vue'
 import CameraMenuGroup from '@/components/load3d/menubar/CameraMenuGroup.vue'
 import GizmoMenuGroup from '@/components/load3d/menubar/GizmoMenuGroup.vue'
 import HdriMenuGroup from '@/components/load3d/menubar/HdriMenuGroup.vue'
@@ -184,8 +199,7 @@ import LightMenuGroup from '@/components/load3d/menubar/LightMenuGroup.vue'
 import {
   chipClass,
   iconBtnClass,
-  panelClass,
-  rowClass,
+  menuPanelClass,
   tip
 } from '@/components/load3d/menubar/menuBarStyles'
 import ModelMenuGroup from '@/components/load3d/menubar/ModelMenuGroup.vue'
@@ -195,9 +209,14 @@ import { usePopoverExclusivity } from '@/components/load3d/menubar/usePopoverExc
 import ViewerControls from '@/components/load3d/controls/ViewerControls.vue'
 import Popover from '@/components/ui/popover/Popover.vue'
 import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
+import {
+  menuButtonClass,
+  selectedMenuButtonClass
+} from '@/components/ui/menu/menuStyles'
 import { getExportFormatOptions } from '@/extensions/core/load3d/constants'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type {
+  AnimationItem,
   CameraConfig,
   GizmoMode,
   LightConfig,
@@ -208,6 +227,8 @@ import type {
 import { cn } from '@comfyorg/tailwind-utils'
 
 const {
+  animations = [],
+  animationDuration = 0,
   canUseLighting = true,
   canUseHdri = true,
   canUseGizmo = true,
@@ -222,6 +243,8 @@ const {
   hasSkeleton = false,
   sourceFormat = null
 } = defineProps<{
+  animations?: AnimationItem[]
+  animationDuration?: number
   canUseLighting?: boolean
   canUseHdri?: boolean
   canUseGizmo?: boolean
@@ -244,8 +267,13 @@ const lightConfig = defineModel<LightConfig>('lightConfig')
 const isRecording = defineModel<boolean>('isRecording')
 const hasRecording = defineModel<boolean>('hasRecording')
 const recordingDuration = defineModel<number>('recordingDuration')
+const playing = defineModel<boolean>('playing')
+const selectedSpeed = defineModel<number>('selectedSpeed')
+const selectedAnimation = defineModel<number>('selectedAnimation')
+const animationProgress = defineModel<number>('animationProgress')
 
 const emit = defineEmits<{
+  (e: 'seek', progress: number): void
   (e: 'updateBackgroundImage', file: File | null): void
   (e: 'updateHdriFile', file: File | null): void
   (e: 'exportModel', format: string): void

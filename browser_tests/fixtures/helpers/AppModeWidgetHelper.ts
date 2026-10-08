@@ -79,12 +79,9 @@ export class AppModeWidgetHelper {
   async runAndCapturePrompt(): Promise<
     Record<string, { inputs: Record<string, unknown> }>
   > {
-    let promptBody: Record<string, { inputs: Record<string, unknown> }> | null =
-      null
     await this.page.route(
       '**/api/prompt',
-      async (route, req) => {
-        promptBody = req.postDataJSON().prompt
+      async (route) => {
         await route.fulfill({
           status: 200,
           body: JSON.stringify({
@@ -99,9 +96,8 @@ export class AppModeWidgetHelper {
 
     const responsePromise = this.page.waitForResponse('**/api/prompt')
     await this.comfyPage.appMode.runButton.click()
-    await responsePromise
+    const response = await responsePromise
 
-    if (!promptBody) throw new Error('No prompt payload captured')
-    return promptBody
+    return response.request().postDataJSON().prompt
   }
 }

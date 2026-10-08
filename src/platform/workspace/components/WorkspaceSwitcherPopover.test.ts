@@ -1,23 +1,23 @@
-import { createTestingPinia } from '@pinia/testing'
+import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
+
+import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import WorkspaceSwitcherPopover from './WorkspaceSwitcherPopover.vue'
 
-vi.mock('@/platform/workspace/composables/useWorkspaceSwitch', () => ({
+vi.mock(import('@/platform/workspace/composables/useWorkspaceSwitch'), () => ({
   useWorkspaceSwitch: () => ({ switchWorkspace: vi.fn() })
 }))
 
-const billingMocks = vi.hoisted(() => ({
-  subscription: {
-    value: null as { tier: string; duration: string } | null
-  }
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
-  useBillingContext: () => ({ subscription: billingMocks.subscription })
-}))
+const distributionMocks = vi.hoisted(() => ({ isCloud: true }))
+
+vi.mock(import('@/platform/distribution/types'), () => distributionMocks)
 
 const LONG_WORKSPACE_NAME =
   'Quantum Renaissance Collective for Hyperdimensional Latent Diffusion Research and Experimental Workflow Engineering'
@@ -31,6 +31,9 @@ const i18n = createI18n({
         personal: 'Personal',
         roleOwner: 'Owner',
         roleMember: 'Member',
+        scopeCaption: 'Workspaces only affect which credits you use.',
+        scopeTooltip:
+          'Runs that use partner nodes spend credits from this workspace. Unlike on Cloud, every workspace saves to your usual output folder.',
         createWorkspace: 'Create a team workspace',
         maxWorkspacesReached:
           'You can only own 10 workspaces. Delete one to create a new one.'
@@ -44,7 +47,14 @@ const i18n = createI18n({
   }
 })
 
-function createWorkspaceState(overrides: Record<string, unknown>) {
+type WorkspaceState = ReturnType<
+  typeof useTeamWorkspaceStore
+>['workspaces'][number]
+
+function createWorkspaceState(
+  overrides: Pick<WorkspaceState, 'id' | 'name' | 'type' | 'role'> &
+    Partial<WorkspaceState>
+): WorkspaceState {
   return {
     created_at: '2026-01-01T00:00:00Z',
     joined_at: '2026-01-01T00:00:00Z',
@@ -53,6 +63,8 @@ function createWorkspaceState(overrides: Record<string, unknown>) {
     subscriptionTier: null,
     members: [],
     pendingInvites: [],
+    membersLoaded: true,
+    pendingInvitesLoaded: true,
     ...overrides
   }
 }
@@ -60,37 +72,33 @@ function createWorkspaceState(overrides: Record<string, unknown>) {
 function renderComponent(
   overrides: {
     activeWorkspaceId?: string
-    workspaces?: Record<string, unknown>[]
+    workspaces?: WorkspaceState[]
   } = {}
 ) {
+  const store: ReturnType<typeof useTeamWorkspaceStore> & {
+    activeWorkspaceId: string | null
+  } = useTeamWorkspaceStore()
+  store.activeWorkspaceId = overrides.activeWorkspaceId ?? 'ws-personal'
+  store.$patch({
+    isFetchingWorkspaces: false,
+    workspaces: overrides.workspaces ?? [
+      createWorkspaceState({
+        id: 'ws-personal',
+        name: 'Personal Workspace',
+        type: 'personal',
+        role: 'owner'
+      }),
+      createWorkspaceState({
+        id: 'ws-team-long',
+        name: LONG_WORKSPACE_NAME,
+        type: 'team',
+        role: 'member'
+      })
+    ]
+  })
   return render(WorkspaceSwitcherPopover, {
     global: {
-      plugins: [
-        createTestingPinia({
-          createSpy: vi.fn,
-          initialState: {
-            teamWorkspace: {
-              activeWorkspaceId: overrides.activeWorkspaceId ?? 'ws-personal',
-              isFetchingWorkspaces: false,
-              workspaces: overrides.workspaces ?? [
-                createWorkspaceState({
-                  id: 'ws-personal',
-                  name: 'Personal Workspace',
-                  type: 'personal',
-                  role: 'owner'
-                }),
-                createWorkspaceState({
-                  id: 'ws-team-long',
-                  name: LONG_WORKSPACE_NAME,
-                  type: 'team',
-                  role: 'member'
-                })
-              ]
-            }
-          }
-        }),
-        i18n
-      ],
+      plugins: [getActivePinia()!, i18n],
       stubs: {
         WorkspaceProfilePic: true
       }
@@ -99,8 +107,21 @@ function renderComponent(
 }
 
 describe('WorkspaceSwitcherPopover', () => {
+  it('shows the credits-scope caption off cloud', () => {
+    distributionMocks.isCloud = false
+    renderComponent()
+    expect(
+      screen.getByText('Workspaces only affect which credits you use.')
+    ).toBeInTheDocument()
+
+    distributionMocks.isCloud = true
+  })
+
   beforeEach(() => {
-    billingMocks.subscription.value = null
+    const billingContext = useBillingContext()
+    billingContext.subscription = computed(() => null)
+    vi.mocked(useBillingContext).mockReturnValue(billingContext)
+    distributionMocks.isCloud = true
   })
 
   it.for([
@@ -167,7 +188,18 @@ describe('WorkspaceSwitcherPopover', () => {
   })
 
   it('does not render a tier badge on team workspace rows', () => {
-    billingMocks.subscription.value = { tier: 'PRO', duration: 'MONTHLY' }
+    useBillingContext().subscription = computed(() => ({
+      isActive: true,
+      tier: 'PRO',
+      duration: 'MONTHLY',
+      planSlug: null,
+      scheduledChange: null,
+      renewalDate: null,
+      endDate: null,
+      isCancelled: false,
+      hasFunds: true,
+      agentHasFunds: true
+    }))
 
     renderComponent({
       activeWorkspaceId: 'ws-team',
@@ -238,5 +270,14 @@ describe('WorkspaceSwitcherPopover', () => {
 
     const createWorkspaceButton = screen.getByText('Create a team workspace')
     expect(list).not.toContainElement(createWorkspaceButton)
+  })
+
+  it('hides the create-workspace footer on non-cloud distributions', () => {
+    distributionMocks.isCloud = false
+
+    renderComponent()
+
+    expect(screen.queryByText('Create a team workspace')).toBeNull()
+    expect(screen.queryByText(/You can only own 10 workspaces/)).toBeNull()
   })
 })

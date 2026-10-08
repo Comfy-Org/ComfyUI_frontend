@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-08-15T00:35:53.352Z",
+  "fetchedAt": "2026-09-25T21:51:44.469Z",
   "packs": [
     {
       "id": "basic_data_handling",
@@ -12,11 +12,11 @@
         "id": "stablellama",
         "name": "StableLlama"
       },
-      "downloads": 220203,
-      "githubStars": 47,
-      "latestVersion": "1.6.0",
+      "downloads": 243725,
+      "githubStars": 50,
+      "latestVersion": "2.1.0",
       "license": "{\"file\": \"LICENSE\"}",
-      "lastUpdated": "2026-07-17T09:05:58.654988Z",
+      "lastUpdated": "2026-09-18T22:20:54.325467Z",
       "supportedOs": ["OS Independent"],
       "supportedAccelerators": [],
       "nodes": [
@@ -1571,6 +1571,52 @@
       ]
     },
     {
+      "id": "comfy-workflow-io-nodes",
+      "displayName": "comfy-workflow-io-nodes",
+      "nodes": [
+        {
+          "name": "WorkflowIOBoolInput",
+          "displayName": "Workflow IO Bool Input",
+          "category": "Workflow IO/Inputs"
+        },
+        {
+          "name": "WorkflowIOEnumInput",
+          "displayName": "Workflow IO Enum Input",
+          "category": "Workflow IO/Inputs"
+        },
+        {
+          "name": "WorkflowIOFloatInput",
+          "displayName": "Workflow IO Float Input",
+          "category": "Workflow IO/Inputs"
+        },
+        {
+          "name": "WorkflowIOImageInput",
+          "displayName": "Workflow IO Image Input",
+          "category": "Workflow IO/Inputs"
+        },
+        {
+          "name": "WorkflowIOIntInput",
+          "displayName": "Workflow IO Int Input",
+          "category": "Workflow IO/Inputs"
+        },
+        {
+          "name": "WorkflowIOSeedInput",
+          "displayName": "Workflow IO Seed Input",
+          "category": "Workflow IO/Inputs"
+        },
+        {
+          "name": "WorkflowIOTextInput",
+          "displayName": "Workflow IO Text Input",
+          "category": "Workflow IO/Inputs"
+        },
+        {
+          "name": "WorkflowIOVideoInput",
+          "displayName": "Workflow IO Video Input",
+          "category": "Workflow IO/Inputs"
+        }
+      ]
+    },
+    {
       "id": "ComfyQR",
       "displayName": "ComfyQR",
       "nodes": [
@@ -1752,8 +1798,8 @@
         "id": "matteo",
         "name": "Matteo"
       },
-      "downloads": 2843350,
-      "githubStars": 1158,
+      "downloads": 3000483,
+      "githubStars": 1192,
       "latestVersion": "1.1.0",
       "license": "{\"file\": \"LICENSE\"}",
       "lastUpdated": "2024-08-07T19:06:12.812021Z",
@@ -2206,8 +2252,8 @@
         "id": "ryuukeisyou",
         "name": "Ryuukeisyou"
       },
-      "downloads": 82781,
-      "githubStars": 194,
+      "downloads": 86518,
+      "githubStars": 195,
       "latestVersion": "1.0.5",
       "license": "{\"file\": \"LICENSE\"}",
       "lastUpdated": "2025-02-04T15:58:27.82363Z",
@@ -2554,12 +2600,6 @@
           "category": "🏵️Fill Nodes/Utility"
         },
         {
-          "name": "FL_PathAnimator",
-          "displayName": "FL Path Animator",
-          "category": "🎨 FL Path Animator",
-          "description": "\nCreates animated shapes that follow user-drawn paths.\nOpen the path editor to draw trajectories on a reference image, then shapes will follow these paths over time.\nOutputs WAN ATI-compatible coordinate strings with proper 121-point resampling for stable video generation.\n"
-        },
-        {
           "name": "FL_PathTypeChecker",
           "displayName": "FL Path Type Checker",
           "category": "🏵️Fill Nodes/Utility"
@@ -2663,8 +2703,8 @@
         "id": "matteo",
         "name": "Matteo"
       },
-      "downloads": 1457662,
-      "githubStars": 6097,
+      "downloads": 1540730,
+      "githubStars": 6136,
       "latestVersion": "2.0.0",
       "license": "GPL-3.0 license",
       "lastUpdated": "2024-06-05T06:57:13.485481Z",
@@ -2892,8 +2932,8 @@
         "id": "chflame163",
         "name": "chflame163"
       },
-      "downloads": 2027873,
-      "githubStars": 3123,
+      "downloads": 2150901,
+      "githubStars": 3166,
       "latestVersion": "2.0.40",
       "license": "{\"text\": \"MIT License\"}",
       "lastUpdated": "2026-08-01T03:16:40.664133Z",
@@ -3008,8 +3048,8 @@
         "id": "chflame163",
         "name": "chflame163"
       },
-      "downloads": 173135,
-      "githubStars": 697,
+      "downloads": 195204,
+      "githubStars": 712,
       "latestVersion": "2.0.38",
       "license": "{\"text\": \"MIT License\"}",
       "lastUpdated": "2026-04-08T04:28:28.060712Z",
@@ -3614,8 +3654,8 @@
         "id": "steudio",
         "name": ""
       },
-      "downloads": 71415,
-      "githubStars": 147,
+      "downloads": 79698,
+      "githubStars": 148,
       "latestVersion": "2.0.5",
       "license": "{\"file\": \"LICENSE.txt\"}",
       "lastUpdated": "2025-05-22T23:05:40.260032Z",
@@ -3706,8 +3746,8 @@
         "id": "ssit",
         "name": "ssit"
       },
-      "downloads": 1732848,
-      "githubStars": 1534,
+      "downloads": 1827047,
+      "githubStars": 1565,
       "latestVersion": "1.7.2",
       "license": "{\"file\": \"LICENSE\"}",
       "lastUpdated": "2026-03-28T03:04:53.321587Z",
@@ -3750,8 +3790,8 @@
         "id": "kosinkadink",
         "name": "Kosinkadink"
       },
-      "downloads": 685104,
-      "githubStars": 994,
+      "downloads": 714723,
+      "githubStars": 1011,
       "latestVersion": "1.6.0",
       "license": "{\"file\": \"LICENSE\"}",
       "lastUpdated": "2026-07-28T11:39:49.072754Z",
@@ -3780,8 +3820,8 @@
         "id": "kosinkadink",
         "name": "Kosinkadink"
       },
-      "downloads": 590572,
-      "githubStars": 3519,
+      "downloads": 625748,
+      "githubStars": 3540,
       "latestVersion": "1.5.7",
       "license": "{\"file\": \"LICENSE\"}",
       "lastUpdated": "2026-03-30T01:39:45.498846Z",
@@ -3857,8 +3897,8 @@
         "id": "kijai",
         "name": "Kijai"
       },
-      "downloads": 132541,
-      "githubStars": 1548,
+      "downloads": 136725,
+      "githubStars": 1549,
       "latestVersion": "1.5.1",
       "license": "{\"file\": \"LICENSE\"}",
       "lastUpdated": "2025-01-14T12:40:17.490211Z",
@@ -4105,8 +4145,8 @@
         "id": "erosdiffusion",
         "name": "ErosDiffusion"
       },
-      "downloads": 146074,
-      "githubStars": 634,
+      "downloads": 154543,
+      "githubStars": 632,
       "latestVersion": "4.0.3",
       "license": "{\"text\": \"MIT License\"}",
       "lastUpdated": "2026-07-15T20:30:49.389351Z",
@@ -4133,6 +4173,35 @@
           "name": "CompositorTransformsOutV3",
           "displayName": "💜 Compositor Transforms Output (V3)",
           "category": "image"
+        }
+      ]
+    },
+    {
+      "id": "comfyui-fl-path-animator",
+      "registryId": "comfyui-fl-path-animator",
+      "displayName": "FL Path Animator",
+      "description": "Interactive path animator with visual editor for creating animated shapes that follow user-drawn paths. WAN ATI compatible for stable video generation.",
+      "iconUrl": "https://avatars.githubusercontent.com/u/55672949",
+      "repoUrl": "https://github.com/filliptm/ComfyUI_FL-Path-Animator.git",
+      "publisher": {
+        "id": "machinedelusions",
+        "name": "Machine Delusions"
+      },
+      "downloads": 9611,
+      "githubStars": 12,
+      "latestVersion": "1.0.7",
+      "license": "{\"file\": \"LICENSE.txt\"}",
+      "lastUpdated": "2026-04-25T22:42:44.490697Z",
+      "supportedOs": [],
+      "supportedAccelerators": [],
+      "nodes": [
+        {
+          "name": "FL_PathAnimator",
+          "displayName": "FL_PathAnimator",
+          "category": "🎨 FL Path Animator",
+          "description": "\nCreates animated shapes that follow user-drawn paths.\nOpen the path editor to draw trajectories on a reference image, then shapes will follow these paths over time.\nOutputs WAN ATI-compatible coordinate strings with proper 121-point resampling for stable video generation.\n",
+          "deprecated": false,
+          "experimental": false
         }
       ]
     },
@@ -4205,8 +4274,8 @@
         "id": "fannovel16",
         "name": "Fannovel16"
       },
-      "downloads": 1785410,
-      "githubStars": 1061,
+      "downloads": 1889612,
+      "githubStars": 1075,
       "latestVersion": "1.0.11",
       "license": "{\"file\": \"LICENSE\"}",
       "lastUpdated": "2026-03-22T18:01:45.009428Z",
@@ -4358,8 +4427,8 @@
         "id": "drltdata",
         "name": "Dr.Lt.Data"
       },
-      "downloads": 3203657,
-      "githubStars": 3252,
+      "downloads": 3414939,
+      "githubStars": 3317,
       "latestVersion": "8.28.3",
       "license": "{\"file\": \"LICENSE.txt\"}",
       "lastUpdated": "2026-04-19T17:08:04.993918Z",
@@ -5757,11 +5826,11 @@
         "id": "makadi",
         "name": "Makadi"
       },
-      "downloads": 107498,
-      "githubStars": 237,
-      "latestVersion": "0.6.5",
+      "downloads": 117074,
+      "githubStars": 239,
+      "latestVersion": "0.7.8",
       "license": "{\"file\": \"LICENSE\"}",
-      "lastUpdated": "2025-10-10T14:25:31.328991Z",
+      "lastUpdated": "2026-09-07T18:32:20.905251Z",
       "supportedOs": [],
       "supportedAccelerators": [],
       "nodes": [
@@ -6129,8 +6198,8 @@
         "id": "theupsider",
         "name": "theupsider"
       },
-      "downloads": 313055,
-      "githubStars": 234,
+      "downloads": 330501,
+      "githubStars": 233,
       "latestVersion": "1.0.0",
       "license": "MIT",
       "lastUpdated": "2024-07-01T09:22:45.758509Z",
@@ -6313,8 +6382,8 @@
         "id": "kijai",
         "name": "Kijai"
       },
-      "downloads": 401637,
-      "githubStars": 242,
+      "downloads": 432150,
+      "githubStars": 256,
       "latestVersion": "1.0.2",
       "license": "{\"file\": \"LICENSE\"}",
       "lastUpdated": "2026-01-30T22:11:43.194459Z",
@@ -6347,7 +6416,7 @@
         "id": "xuanyu",
         "name": "XuanYu"
       },
-      "downloads": 2517,
+      "downloads": 3678,
       "githubStars": 6,
       "latestVersion": "1.1.0",
       "license": "{\"file\": \"LICENSE\"}",
@@ -6406,7 +6475,7 @@
         "id": "meet-ai",
         "name": "遇见AI"
       },
-      "downloads": 5105,
+      "downloads": 5538,
       "githubStars": 5,
       "latestVersion": "1.0.4",
       "license": "{\"file\": \"LICENSE\"}",
@@ -6441,54 +6510,25 @@
       "id": "ComfyUI-QwenVL",
       "registryId": "ComfyUI-QwenVL",
       "displayName": "ComfyUI-QwenVL",
-      "description": "ComfyUI-QwenVL custom node: Integrates the Qwen-VL series, including Qwen2.5-VL and the latest Qwen3-VL, with GGUF support for advanced multimodal AI in text generation, image understanding, and video analysis.",
+      "description": "ComfyUI-QwenVL custom node: Integrates the Qwen-VL series, including Qwen2.5-VL, Qwen3-VL, Qwen3.5-VL, Qwen3.6-VL (MoE), and Qwen3.8-VL, with GGUF support for advanced multimodal AI in text generation, image understanding, and video analysis.",
+      "iconUrl": "https://raw.githubusercontent.com/1038lab/ComfyUI-QwenVL/main/assets/QwenVL.svg",
       "repoUrl": "https://github.com/1038lab/ComfyUI-QwenVL",
       "publisher": {
         "id": "ailab",
         "name": "AILab"
       },
-      "downloads": 397100,
-      "githubStars": 834,
-      "latestVersion": "2.1.1",
+      "downloads": 447942,
+      "githubStars": 894,
+      "latestVersion": "2.2.0",
       "license": "{\"file\": \"LICENSE\"}",
-      "lastUpdated": "2026-02-08T22:53:46.099968Z",
+      "lastUpdated": "2026-08-20T17:43:58.916069Z",
       "supportedOs": [],
       "supportedAccelerators": [],
       "nodes": [
         {
-          "name": "AILab_QwenVL",
-          "displayName": "AILab_QwenVL",
-          "category": "🧪AILab/QwenVL",
-          "deprecated": false,
-          "experimental": false
-        },
-        {
-          "name": "AILab_QwenVL_Advanced",
-          "displayName": "AILab_QwenVL_Advanced",
-          "category": "🧪AILab/QwenVL",
-          "deprecated": false,
-          "experimental": false
-        },
-        {
-          "name": "AILab_QwenVL_GGUF",
-          "displayName": "AILab_QwenVL_GGUF",
-          "category": "🧪AILab/QwenVL",
-          "deprecated": false,
-          "experimental": false
-        },
-        {
-          "name": "AILab_QwenVL_GGUF_Advanced",
-          "displayName": "AILab_QwenVL_GGUF_Advanced",
-          "category": "🧪AILab/QwenVL",
-          "deprecated": false,
-          "experimental": false
-        },
-        {
           "name": "AILab_QwenVL_PromptEnhancer",
-          "displayName": "AILab_QwenVL_PromptEnhancer",
-          "category": "🧪AILab/QwenVL",
-          "deprecated": false,
-          "experimental": false
+          "displayName": "QwenVL Prompt Enhancer",
+          "category": "🧪AILab/QwenVL"
         }
       ]
     },
@@ -6502,8 +6542,8 @@
         "id": "ailab",
         "name": "AILab"
       },
-      "downloads": 830015,
-      "githubStars": 2066,
+      "downloads": 895363,
+      "githubStars": 2125,
       "latestVersion": "3.1.0",
       "license": "{\"file\": \"LICENSE\"}",
       "lastUpdated": "2026-07-21T22:33:58.273141Z",
@@ -6568,8 +6608,8 @@
         "id": "pznodes",
         "name": "pozzettiandrea"
       },
-      "downloads": 65558,
-      "githubStars": 563,
+      "downloads": 75259,
+      "githubStars": 573,
       "latestVersion": "0.1.21",
       "license": "{\"file\": \"LICENSE\"}",
       "lastUpdated": "2026-05-19T10:39:52.517642Z",
@@ -6658,7 +6698,7 @@
         "id": "kijai",
         "name": "Kijai"
       },
-      "downloads": 79835,
+      "downloads": 87077,
       "githubStars": 322,
       "latestVersion": "1.0.2",
       "license": "{\"file\": \"LICENSE\"}",
@@ -6765,7 +6805,7 @@
         "id": "systms-ai",
         "name": "systms"
       },
-      "downloads": 1225,
+      "downloads": 2291,
       "githubStars": 0,
       "latestVersion": "1.0.0",
       "license": "{\"file\": \"LICENSE\"}",
@@ -6966,8 +7006,8 @@
         "id": "kosinkadink",
         "name": "Kosinkadink"
       },
-      "downloads": 3260051,
-      "githubStars": 1760,
+      "downloads": 3485175,
+      "githubStars": 1854,
       "latestVersion": "1.7.9",
       "license": "{\"file\": \"LICENSE\"}",
       "lastUpdated": "2025-12-17T22:23:57.624918Z",
@@ -7306,7 +7346,7 @@
         "id": "kijai",
         "name": "Kijai"
       },
-      "downloads": 237949,
+      "downloads": 253531,
       "githubStars": 545,
       "latestVersion": "1.0.3",
       "license": "{\"file\": \"LICENSE\"}",
@@ -7332,8 +7372,8 @@
         "id": "kijai",
         "name": "Kijai"
       },
-      "downloads": 1900814,
-      "githubStars": 6660,
+      "downloads": 1975466,
+      "githubStars": 6710,
       "latestVersion": "1.4.7",
       "license": "{\"file\": \"LICENSE\"}",
       "lastUpdated": "2026-02-01T23:44:07.720927Z",
@@ -7776,7 +7816,7 @@
         "id": "hellorob",
         "name": "hellorob"
       },
-      "downloads": 1628,
+      "downloads": 2679,
       "githubStars": 1,
       "latestVersion": "1.0.1",
       "license": "{\"file\": \"LICENSE\"}",
@@ -7871,8 +7911,8 @@
         "id": "fxtdstudios",
         "name": "FXTD STUDIOS"
       },
-      "downloads": 5814,
-      "githubStars": 240,
+      "downloads": 6830,
+      "githubStars": 246,
       "latestVersion": "2.3.3",
       "license": "{\"file\": \"LICENSE\"}",
       "lastUpdated": "2026-04-01T21:53:16.986121Z",
@@ -8914,6 +8954,44 @@
       ]
     },
     {
+      "id": "timeslice-nodes",
+      "registryId": "timeslice-nodes",
+      "displayName": "TimeSlice Nodes",
+      "description": "Temporal slit-scan / time-displacement effects for ComfyUI — angled, animated and dual-source slicing on a shared engine.",
+      "repoUrl": "https://github.com/systms-ai/TimeSlice-Nodes",
+      "publisher": {
+        "id": "systms-ai",
+        "name": "systms"
+      },
+      "downloads": 1440,
+      "githubStars": 84,
+      "latestVersion": "1.0.0",
+      "license": "{\"file\": \"LICENSE\"}",
+      "lastUpdated": "2026-06-15T18:46:25.452477Z",
+      "supportedOs": [],
+      "supportedAccelerators": [],
+      "nodes": [
+        {
+          "name": "TimeSliceDual",
+          "displayName": "TimeSlice Dual",
+          "category": "Systms/effects",
+          "description": "Dual-source angled slit-scan. Interleaves slices from two clips, each with its own time offset. Great for transitions and split-reality looks."
+        },
+        {
+          "name": "TimeSliceEffect",
+          "displayName": "TimeSlice Effect",
+          "category": "Systms/effects",
+          "description": "Angled temporal slit-scan. Splits frames into slices offset in time, with cascade shaping and start->end animation."
+        },
+        {
+          "name": "TimeSliceWave",
+          "displayName": "TimeSlice Wave",
+          "category": "Systms/effects",
+          "description": "Angled animated slit-scan with sinusoidal time displacement that ripples across the frame, creating an undulating temporal wave."
+        }
+      ]
+    },
+    {
       "id": "wanvaceadvanced",
       "registryId": "wanvaceadvanced",
       "displayName": "ComfyUI-WanVaceAdvanced",
@@ -8923,8 +9001,8 @@
         "id": "drozbay",
         "name": "drozbay"
       },
-      "downloads": 27062,
-      "githubStars": 93,
+      "downloads": 30053,
+      "githubStars": 97,
       "latestVersion": "1.5.1",
       "license": "{\"file\": \"LICENSE\"}",
       "lastUpdated": "2026-02-10T15:55:08.222036Z",
@@ -8947,17 +9025,22 @@
     {
       "id": "was-node-suite-comfyui",
       "registryId": "was-node-suite-comfyui",
-      "displayName": "WAS Node Suite",
+      "displayName": "WAS Node Suite v3",
+      "description": "WAS-NS reborn; Tools for image processing, filters, masking, text, logic, numbers, latents, files, 3D scenes, and animation.",
+      "bannerUrl": "https://raw.githubusercontent.com/WASasquatch/was-node-suite-comfyui/main/was-node-suite-banner.jpg",
+      "iconUrl": "https://raw.githubusercontent.com/WASasquatch/was-node-suite-comfyui/main/was-node-suite-icon.png",
       "repoUrl": "https://github.com/WASasquatch/was-node-suite-comfyui",
       "publisher": {
         "id": "was",
         "name": "WAS"
       },
-      "downloads": 1106665,
-      "githubStars": 1814,
+      "downloads": 1154191,
+      "githubStars": 1852,
       "latestVersion": "1.0.1",
       "license": "{\"file\": \"LICENSE\"}",
       "lastUpdated": "2024-08-01T05:28:23.655235Z",
+      "supportedOs": [],
+      "supportedAccelerators": [],
       "nodes": [
         {
           "name": "Blend Latents",
@@ -10491,8 +10574,8 @@
         "id": "whatdreamscost",
         "name": "WhatDreamsCost"
       },
-      "downloads": 77280,
-      "githubStars": 1951,
+      "downloads": 102043,
+      "githubStars": 2058,
       "latestVersion": "2.0.5",
       "license": "{\"file\": \"LICENSE\"}",
       "lastUpdated": "2026-07-13T01:47:52.785041Z",

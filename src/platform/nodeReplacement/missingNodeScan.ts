@@ -4,7 +4,7 @@ import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
-import type { MissingNodeType } from '@/types/comfy'
+import type { MissingNodeType } from '@/platform/nodeReplacement/types'
 import {
   collectAllNodes,
   getExecutionIdByNode
@@ -25,7 +25,7 @@ function scanMissingNodes(rootGraph: LGraph): MissingNodeType[] {
     )
       continue
 
-    const originalType = node.last_serialization?.type ?? node.type ?? 'Unknown'
+    const originalType = node.last_serialization?.type ?? node.type
 
     if (originalType in LiteGraph.registered_node_types) continue
 

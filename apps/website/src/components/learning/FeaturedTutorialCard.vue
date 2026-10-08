@@ -1,33 +1,34 @@
 <script setup lang="ts">
 // The prominent featured banner at the top of the learning directory: a large
 // poster with the play overlay beside the title, tags, and a try-workflow CTA.
-import type { LearningTutorial } from '../../data/learningTutorials'
-import type { Locale } from '../../i18n/translations'
+import type { LearningTutorial } from '@/data/learningTutorials'
+import type { Locale } from '@/i18n/translations'
 
-import { categoryLabelKeys, tutorialPath } from '../../data/learningTutorials'
-import { localizeHref } from '../../config/routes'
-import { t } from '../../i18n/translations'
-import Badge from '../ui/badge/Badge.vue'
-import ButtonPill from '../ui/button-pill/ButtonPill.vue'
-import PlayOverlay from '../blocks/PlayOverlay.vue'
+import { categoryLabelKeys, tutorialPath } from '@/data/learningTutorials'
+import { localizeHref } from '@/config/routes'
+import { translationsFor } from '@/i18n/translations'
+import Badge from '@/components/ui/badge/Badge.vue'
+import ButtonPill from '@/components/ui/button-pill/ButtonPill.vue'
+import PlayOverlay from '@/components/blocks/PlayOverlay.vue'
 
 const { tutorial, locale = 'en' } = defineProps<{
   tutorial: LearningTutorial
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 </script>
 
 <template>
   <article
-    class="bg-transparency-white-t4 rounded-4.5xl grid items-center gap-6 p-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:gap-10 lg:p-8"
+    class="grid items-center gap-6 rounded-4.5xl bg-transparency-white-t4 p-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:gap-10 lg:p-8"
   >
     <div class="flex flex-col gap-4">
       <div class="flex items-center gap-3">
         <Badge variant="accent">
-          {{ t('learning.featuredBadge', locale) }}
+          {{ t('learning.featuredBadge') }}
         </Badge>
         <Badge variant="category">
-          {{ t(categoryLabelKeys[tutorial.category], locale) }}
+          {{ t(categoryLabelKeys[tutorial.category]) }}
         </Badge>
       </div>
       <h2
@@ -37,12 +38,12 @@ const { tutorial, locale = 'en' } = defineProps<{
           :href="localizeHref(tutorialPath(tutorial), locale)"
           class="text-left hover:underline"
         >
-          {{ tutorial.title[locale] }}
+          {{ tutorial.title[locale] || tutorial.title.en }}
         </a>
       </h2>
       <ul class="flex flex-wrap gap-2">
         <li v-for="tag in tutorial.tags" :key="tag">
-          <Badge variant="subtle">{{ t(tag, locale) }}</Badge>
+          <Badge variant="subtle">{{ t(tag) }}</Badge>
         </li>
       </ul>
       <div v-if="tutorial.href">
@@ -56,7 +57,7 @@ const { tutorial, locale = 'en' } = defineProps<{
           size="default"
           class="ps-0"
         >
-          {{ t('cta.tryWorkflow', locale) }}
+          {{ t(tutorial.ctaLabelKey ?? 'cta.tryWorkflow') }}
         </ButtonPill>
       </div>
     </div>
@@ -64,7 +65,7 @@ const { tutorial, locale = 'en' } = defineProps<{
     <a
       :href="localizeHref(tutorialPath(tutorial), locale)"
       class="group relative block aspect-video overflow-hidden rounded-3xl"
-      :aria-label="`${t('player.play', locale)} ${tutorial.title[locale]}`"
+      :aria-label="`${t('player.play')} ${tutorial.title[locale] || tutorial.title.en}`"
     >
       <img :src="tutorial.poster" alt="" class="size-full object-cover" />
       <PlayOverlay class="text-white" />

@@ -7,7 +7,9 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useExecutionStore } from '@/stores/executionStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 
-const DEFAULT_TITLE = 'ComfyUI'
+// Capture the initial title injected by Vite (e.g. for SEO on cloud.comfy.org)
+const DEFAULT_TITLE =
+  typeof document !== 'undefined' && document.title ? document.title : 'ComfyUI'
 const TITLE_SUFFIX = ' - ComfyUI'
 
 export const useBrowserTabTitle = () => {

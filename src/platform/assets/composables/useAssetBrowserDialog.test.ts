@@ -1,21 +1,22 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
+import {
+  registerAssetBrowserModalComponent,
+  useAssetBrowserDialog
+} from '@/platform/assets/composables/useAssetBrowserDialog'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type { AssetBrowserModalProps } from '@/platform/assets/types/assetBrowserModalProps'
 import { useDialogStore } from '@/stores/dialogStore'
 
-vi.mock('@/stores/dialogStore')
+vi.mock(import('@/i18n'))
 
-vi.mock('@/i18n', () => ({
-  t: (key: string, params?: Record<string, string>) => {
-    if (params) {
-      return `${key}:${JSON.stringify(params)}`
-    }
-    return key
-  }
-}))
+const AssetBrowserModalStub = { name: 'AssetBrowserModalStub' }
+
+beforeEach(() => {
+  registerAssetBrowserModalComponent(AssetBrowserModalStub)
+})
 
 function createMockAsset(overrides: Partial<AssetItem> = {}): AssetItem {
   return fromPartial({
@@ -32,12 +33,15 @@ function createMockAsset(overrides: Partial<AssetItem> = {}): AssetItem {
 }
 
 function setupDialogMocks() {
-  const mockShowDialog = vi.fn()
-  const mockCloseDialog = vi.fn()
-  vi.mocked(useDialogStore, { partial: true }).mockReturnValue({
-    showDialog: mockShowDialog,
-    closeDialog: mockCloseDialog
-  })
+  const dialogStore = useDialogStore()
+  const showDialog: (
+    options: Omit<Parameters<typeof dialogStore.showDialog>[0], 'props'> & {
+      props: AssetBrowserModalProps &
+        Required<Pick<AssetBrowserModalProps, 'onSelect' | 'onClose'>>
+    }
+  ) => ReturnType<typeof dialogStore.showDialog> = dialogStore.showDialog
+  const mockShowDialog = vi.mocked(showDialog)
+  const mockCloseDialog = vi.mocked(dialogStore.closeDialog)
 
   return { mockShowDialog, mockCloseDialog }
 }
@@ -106,6 +110,7 @@ describe('useAssetBrowserDialog', () => {
       expect(mockShowDialog).toHaveBeenCalledWith(
         expect.objectContaining({
           key: 'global-asset-browser',
+          component: AssetBrowserModalStub,
           props: expect.objectContaining({
             showLeftPanel: true,
             assetType: 'models'

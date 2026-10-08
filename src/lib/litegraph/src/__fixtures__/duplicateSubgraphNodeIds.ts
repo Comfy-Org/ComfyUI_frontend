@@ -152,7 +152,7 @@ export const duplicateSubgraphNodeIds = {
         ],
         links: [
           {
-            id: 2,
+            id: 1,
             origin_id: 3,
             origin_slot: 0,
             target_id: 37,

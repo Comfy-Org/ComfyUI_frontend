@@ -2,6 +2,16 @@ import { z } from 'zod'
 import type { SafeParseReturnType } from 'zod'
 import { fromZodError } from 'zod-validation-error'
 import type { RendererType } from '@/lib/litegraph/src/LGraph'
+import type {
+  ClipboardItems,
+  ExportedSubgraph
+} from '@/lib/litegraph/src/types/serialisation'
+import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
+import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
+import { parseLinkId, toLinkId } from '@/types/linkId'
+import type { LinkPresentation } from '@/types/linkPresentation'
+import type { NodeProperty } from '@/types/nodeState'
+import { toRerouteId } from '@/types/rerouteId'
 
 const zRendererType = z.enum([
   'LG',
@@ -47,12 +57,25 @@ const zVector2 = z.union([
 ])
 
 // Definition of an AI model file used in the workflow.
-const zModelFile = z.object({
+export const zModelFile = z.object({
   name: z.string(),
   url: z.string().url(),
   hash: z.string().optional(),
   hash_type: z.string().optional(),
   directory: z.string()
+})
+
+/**
+ * A node's declared model entry. Only `name` is required - the shape a
+ * workflow must declare to pass validation is `zModelFile`, and a workflow
+ * that failed it still loads.
+ */
+export const zDeclaredModelFile = z.object({
+  name: z.string(),
+  url: z.string().optional(),
+  hash: z.string().optional(),
+  hash_type: z.string().optional(),
+  directory: z.string().optional()
 })
 
 const zGraphState = z
@@ -81,6 +104,13 @@ const zComfyLinkExtension = z
   })
   .passthrough()
 
+const zLinkPresentationFields = {
+  hidden: z.boolean().optional(),
+  label: z.string().optional()
+} satisfies { [K in keyof LinkPresentation]-?: z.ZodType<LinkPresentation[K]> }
+
+const zComfyLinkPresentation = z.object(zLinkPresentationFields).passthrough()
+
 const zComfyLinkObject = z
   .object({
     id: z.number(),
@@ -89,7 +119,8 @@ const zComfyLinkObject = z
     target_id: zNodeId,
     target_slot: zSlotIndex,
     type: zDataType,
-    parentId: z.number().optional()
+    parentId: z.number().optional(),
+    ...zLinkPresentationFields
   })
   .passthrough()
 
@@ -200,6 +231,15 @@ const zVersion = z.union([
   z.literal('unknown')
 ])
 
+const zNodeProperty = z.union([
+  z.string(),
+  z.number(),
+  z.boolean(),
+  z.null(),
+  z.record(z.unknown()),
+  z.array(z.unknown())
+]) satisfies z.ZodType<NodeProperty>
+
 const zProperties = z
   .object({
     ['Node name for S&R']: z.string().optional(),
@@ -208,11 +248,58 @@ const zProperties = z
     ver: zVersion.optional(),
     models: z.array(zModelFile).optional()
   })
-  .passthrough()
+  .catchall(zNodeProperty.optional())
 
-const zWidgetValues = z.union([z.array(z.any()), z.record(z.any())])
+const zWidgetValue: z.ZodType<TWidgetValue> = z.custom(isWidgetValue)
+const zWidgetValues: z.ZodType<TWidgetValue[] | Record<string, TWidgetValue>> =
+  z.union([z.array(zWidgetValue), z.record(zWidgetValue)])
+const MAX_CLIPBOARD_WIDGET_VALUES = 10_000
 
-const zComfyNode = z
+function hasSupportedClipboardWidgetValuesLength(
+  values: z.output<typeof zWidgetValues> | undefined
+): boolean {
+  if (!values || Array.isArray(values)) return true
+  return (
+    typeof values.length !== 'number' ||
+    values.length <= MAX_CLIPBOARD_WIDGET_VALUES
+  )
+}
+
+function isArrayLikeLength(value: TWidgetValue): value is number {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0
+}
+
+function normalizeClipboardWidgetValues(
+  values: z.output<typeof zWidgetValues> | undefined
+): TWidgetValue[] | undefined {
+  if (!values || Array.isArray(values)) return values
+  const length = values.length
+  if (!isArrayLikeLength(length)) return []
+  const normalized: TWidgetValue[] = []
+  normalized.length = length
+  for (const [key, value] of Object.entries(values)) {
+    const index = Number(key)
+    if (Number.isInteger(index) && index >= 0 && index < length)
+      normalized[index] = value
+  }
+  return normalized
+}
+
+function normalizeClipboardNodeWidgets<
+  T extends { widgets_values?: z.output<typeof zWidgetValues> }
+>(node: T) {
+  const values = node.widgets_values
+  if (values && !Array.isArray(values) && typeof values.length !== 'number') {
+    return {
+      ...node,
+      widgets_values: undefined,
+      widgets_values_named: { ...values }
+    }
+  }
+  return { ...node, widgets_values: normalizeClipboardWidgetValues(values) }
+}
+
+export const zComfyNode = z
   .object({
     id: zNodeId,
     type: z.string(),
@@ -286,6 +373,14 @@ const zExtra = z
     ds: zDS.optional(),
     frontendVersion: z.string().optional(),
     linkExtensions: z.array(zComfyLinkExtension).optional(),
+    linkPresentation: z
+      .record(
+        z.string().refine((value) => parseLinkId(value) !== undefined, {
+          message: 'Expected a canonical integer link ID'
+        }),
+        zComfyLinkPresentation
+      )
+      .optional(),
     reroutes: z.array(zReroute).optional(),
     workflowRendererVersion: zRendererType.optional(),
     BlueprintDescription: z.string().optional(),
@@ -399,8 +494,7 @@ export const zComfyWorkflow1 = zBaseExportableGraph
               SubgraphDefinitionBase<ComfyWorkflow1BaseOutput>,
               z.ZodTypeDef,
               SubgraphDefinitionBase<ComfyWorkflow1BaseInput>
-            >,
-            'many'
+            >
           > => z.array(zSubgraphDefinition)
         )
       })
@@ -486,8 +580,7 @@ const zSubgraphDefinition = zComfyWorkflow1
               SubgraphDefinitionBase<ComfyWorkflow1BaseInput>,
               z.ZodTypeDef,
               SubgraphDefinitionBase<ComfyWorkflow1BaseInput>
-            >,
-            'many'
+            >
           > => zSubgraphDefinition.array()
         )
       })
@@ -495,7 +588,109 @@ const zSubgraphDefinition = zComfyWorkflow1
   })
   .passthrough()
 
+const zClipboardNode = zComfyNode
+  .refine(
+    (node) => hasSupportedClipboardWidgetValuesLength(node.widgets_values),
+    {
+      path: ['widgets_values'],
+      message: 'Clipboard widget values length is too large'
+    }
+  )
+  .transform(normalizeClipboardNodeWidgets)
+
+const zClipboardSubgraphInstance = zSubgraphInstance
+  .refine(
+    (node) => hasSupportedClipboardWidgetValuesLength(node.widgets_values),
+    {
+      path: ['widgets_values'],
+      message: 'Clipboard widget values length is too large'
+    }
+  )
+  .transform(normalizeClipboardNodeWidgets)
+
+const zClipboardGroup = zGroup.transform((group) => ({
+  ...group,
+  id: group.id ?? -1
+}))
+const zClipboardReroute = zReroute.transform((reroute) => ({
+  ...reroute,
+  linkIds: reroute.linkIds ?? []
+}))
+
+interface ClipboardSubgraphInput extends Omit<
+  z.input<typeof zSubgraphDefinition>,
+  'groups' | 'nodes' | 'reroutes' | 'subgraphs' | 'definitions'
+> {
+  groups?: z.input<typeof zClipboardGroup>[]
+  nodes: z.input<typeof zClipboardNode>[]
+  reroutes?: z.input<typeof zClipboardReroute>[]
+  subgraphs?: z.input<typeof zClipboardSubgraphInstance>[]
+  definitions?: { subgraphs: ClipboardSubgraphInput[] }
+}
+
+const zClipboardSubgraphDefinition: z.ZodType<
+  ExportedSubgraph,
+  z.ZodTypeDef,
+  ClipboardSubgraphInput
+> = zSubgraphDefinition
+  .extend({
+    groups: z.array(zClipboardGroup).optional(),
+    nodes: z.array(zClipboardNode),
+    reroutes: z.array(zClipboardReroute).optional(),
+    subgraphs: z.array(zClipboardSubgraphInstance).optional(),
+    definitions: z
+      .object({
+        subgraphs: z.lazy(() => z.array(zClipboardSubgraphDefinition))
+      })
+      .optional()
+  })
+  .transform(({ config, extra, ...subgraph }) => {
+    const normalizedExtra = extra
+      ? {
+          ...extra,
+          reroutes: extra.reroutes?.map((reroute) => ({
+            ...reroute,
+            linkIds: reroute.linkIds ?? []
+          })),
+          linkExtensions: extra.linkExtensions?.map((link) => ({
+            ...link,
+            id: toLinkId(link.id),
+            parentId: toRerouteId(link.parentId)
+          }))
+        }
+      : undefined
+    return {
+      ...subgraph,
+      config: config ?? undefined,
+      extra: normalizedExtra
+    }
+  })
+
+const zClipboardItemsSchema = z
+  .object({
+    nodes: z.array(zClipboardNode).optional(),
+    groups: z.array(zClipboardGroup).optional(),
+    reroutes: z.array(zClipboardReroute).optional(),
+    links: z.array(zComfyLinkObject).optional(),
+    subgraphs: z.array(zClipboardSubgraphDefinition).optional()
+  })
+  .refine(
+    (items) =>
+      items.nodes !== undefined ||
+      items.groups !== undefined ||
+      items.reroutes !== undefined ||
+      items.links !== undefined ||
+      items.subgraphs !== undefined
+  )
+
+export const zClipboardItems: z.ZodType<
+  ClipboardItems,
+  z.ZodTypeDef,
+  z.input<typeof zClipboardItemsSchema>
+> = zClipboardItemsSchema
+
 export type ModelFile = z.infer<typeof zModelFile>
+export type DeclaredModelFile = z.infer<typeof zDeclaredModelFile>
 export type ComfyLinkObject = z.infer<typeof zComfyLinkObject>
 export type ComfyNode = z.infer<typeof zComfyNode>
 export type Reroute = z.infer<typeof zReroute>
@@ -503,6 +698,28 @@ export type WorkflowJSON04 = z.infer<typeof zComfyWorkflow>
 export type ComfyWorkflowJSON = z.infer<
   typeof zComfyWorkflow | typeof zComfyWorkflow1
 >
+
+/**
+ * The minimum a node must carry for `LGraph.configure` to instantiate it:
+ * it calls `LiteGraph.createNode(type)` and assigns `id`.
+ */
+const zLegacyLoadableNode = z
+  .object({
+    id: zNodeId,
+    type: z.string()
+  })
+  .passthrough()
+
+export const zLegacyLoadableWorkflow = z
+  .object({
+    version: z.number(),
+    nodes: z.array(zLegacyLoadableNode),
+    links: z.array(z.unknown()).optional(),
+    last_node_id: zNodeId.optional(),
+    last_link_id: z.number().optional()
+  })
+  .passthrough()
+export type LegacyLoadableWorkflow = z.infer<typeof zLegacyLoadableWorkflow>
 
 const zWorkflowVersion = z.object({
   version: z.number()
@@ -545,13 +762,15 @@ const zNodeInputValue = z.union([
   z.tuple([zNodeId, zSlotIndex])
 ])
 
+export const zNodePackMetadata = zProperties
+  .pick({ cnr_id: true, aux_id: true, ver: true })
+  .strip()
+
 const zNodeData = z.object({
   inputs: z.record(zNodeInputName, zNodeInputValue),
   class_type: z.string(),
-  _meta: z.object({
-    title: z.string()
-  })
+  _meta: zNodePackMetadata.extend({ title: z.string() }).optional()
 })
 
-const zComfyApiWorkflow = z.record(zNodeId, zNodeData)
+export const zComfyApiWorkflow = z.record(zNodeId, zNodeData)
 export type ComfyApiWorkflow = z.infer<typeof zComfyApiWorkflow>

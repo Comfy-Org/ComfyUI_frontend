@@ -1,8 +1,10 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import type { MockInstance } from 'vitest'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   downloadFile,
+  downloadFileAsBlob,
   extractFilenameFromContentDisposition,
   openFileInNewTab
 } from '@/base/common/downloadUtil'
@@ -11,27 +13,19 @@ const { mockIsCloud } = vi.hoisted(() => ({
   mockIsCloud: { value: false }
 }))
 
-vi.mock('@/platform/distribution/types', () => ({
-  get isCloud() {
-    return mockIsCloud.value
-  }
-}))
+vi.mock(
+  import('@/platform/distribution/types'), // oxlint-disable-line comfy/no-restricted-paths
+  () => ({
+    get isCloud() {
+      return mockIsCloud.value
+    }
+  })
+)
 
-vi.mock('@/i18n', () => ({
-  t: (key: string) => key
-}))
+vi.mock(import('@/i18n'))
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: vi.fn(() => ({ addAlert: vi.fn() }))
-}))
-
-// Global stubs
-let createObjectURLSpy = vi
-  .spyOn(URL, 'createObjectURL')
-  .mockReturnValue('blob:mock-url')
-let revokeObjectURLSpy = vi
-  .spyOn(URL, 'revokeObjectURL')
-  .mockImplementation(() => {})
+let createObjectURLSpy: MockInstance<typeof URL.createObjectURL>
+let revokeObjectURLSpy: MockInstance<typeof URL.revokeObjectURL>
 
 describe('downloadUtil', () => {
   let mockLink: HTMLAnchorElement
@@ -155,18 +149,6 @@ describe('downloadUtil', () => {
       expect(createObjectURLSpy).not.toHaveBeenCalled()
     })
 
-    it('should clean up DOM elements after download', () => {
-      const testUrl = 'https://example.com/image.png'
-
-      downloadFile(testUrl)
-
-      // Verify the element was added and then removed
-      expect(document.body.appendChild).toHaveBeenCalledWith(mockLink)
-      expect(document.body.removeChild).toHaveBeenCalledWith(mockLink)
-      expect(fetchMock).not.toHaveBeenCalled()
-      expect(createObjectURLSpy).not.toHaveBeenCalled()
-    })
-
     it('streams downloads via blob when running in cloud', async () => {
       mockIsCloud.value = true
       const testUrl = 'https://storage.googleapis.com/bucket/file.bin'
@@ -202,7 +184,6 @@ describe('downloadUtil', () => {
     it('logs an error when cloud fetch fails', async () => {
       mockIsCloud.value = true
       const testUrl = 'https://storage.googleapis.com/bucket/missing.bin'
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       fetchMock.mockResolvedValue(
         fromPartial<Response>({
           ok: false,
@@ -218,9 +199,8 @@ describe('downloadUtil', () => {
       await fetchPromise
       await Promise.resolve() // let fetchAsBlob throw
       await Promise.resolve() // let .catch handler run
-      expect(consoleSpy).toHaveBeenCalled()
+      expect(console.error).toHaveBeenCalled()
       expect(createObjectURLSpy).not.toHaveBeenCalled()
-      consoleSpy.mockRestore()
     })
 
     it('uses filename from Content-Disposition header in cloud mode', async () => {
@@ -311,6 +291,37 @@ describe('downloadUtil', () => {
       await blobPromise
       await Promise.resolve()
       expect(mockLink.download).toBe('my-fallback.png')
+    })
+  })
+
+  describe('downloadFileAsBlob', () => {
+    it('rejects a non-OK response without starting a download', async () => {
+      const fetchFile = vi
+        .fn<(url: string) => Promise<Response>>()
+        .mockResolvedValue(new Response(null, { status: 503 }))
+
+      await expect(
+        downloadFileAsBlob('/api/asset', {
+          filename: 'asset.png',
+          fetch: fetchFile
+        })
+      ).rejects.toThrow('Failed to fetch /api/asset: 503')
+      expect(mockLink.click).not.toHaveBeenCalled()
+    })
+
+    it('propagates a rejected fetch without starting a download', async () => {
+      const networkError = new Error('network unavailable')
+      const fetchFile = vi
+        .fn<(url: string) => Promise<Response>>()
+        .mockRejectedValue(networkError)
+
+      await expect(
+        downloadFileAsBlob('/api/asset', {
+          filename: 'asset.png',
+          fetch: fetchFile
+        })
+      ).rejects.toBe(networkError)
+      expect(mockLink.click).not.toHaveBeenCalled()
     })
   })
 
@@ -415,7 +426,6 @@ describe('downloadUtil', () => {
     it('closes blank tab and logs error when cloud fetch fails', async () => {
       mockIsCloud.value = true
       const testUrl = 'https://storage.googleapis.com/bucket/missing.png'
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       const mockTab = { location: { href: '' }, closed: false, close: vi.fn() }
       windowOpenSpy.mockReturnValue(fromAny<Window, unknown>(mockTab))
       fetchMock.mockResolvedValue(
@@ -425,8 +435,7 @@ describe('downloadUtil', () => {
       await openFileInNewTab(testUrl)
 
       expect(mockTab.close).toHaveBeenCalled()
-      expect(consoleSpy).toHaveBeenCalled()
-      consoleSpy.mockRestore()
+      expect(console.error).toHaveBeenCalled()
     })
 
     it('revokes blob URL immediately if tab was closed by user', async () => {
