@@ -9,7 +9,7 @@ const meta: Meta<typeof Button> = {
   tags: ['autodocs'],
   decorators: [
     () => ({
-      template: '<div class="bg-primary-comfy-ink p-12"><story /></div>'
+      template: '<div class="bg-page p-12"><story /></div>'
     })
   ],
   argTypes: {
