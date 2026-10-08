@@ -3,6 +3,7 @@ import type { Page, Route } from '@playwright/test'
 import type {
   AgentRunMode,
   AgentThreadListResponse,
+  Asset,
   GlobalSetting,
   ListAssetsResponse,
   WorkflowListResponse
@@ -29,6 +30,7 @@ import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
+import { transparentPng } from '@e2e/fixtures/utils/viewFileMocks'
 import type { WorkspaceStore } from '@e2e/types/globals'
 
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
@@ -112,6 +114,42 @@ async function mockAgentBoot(
   await page.route('**://t.comfy.org/**', (r) =>
     r.fulfill(jsonRoute({ status: 1 }))
   )
+}
+
+export async function mockReplyAssetPreviews(page: Page): Promise<string[]> {
+  const lookedUp: string[] = []
+  await page.route('**/api/assets**', (route: Route) => {
+    const url = new URL(route.request().url())
+    if (url.pathname.endsWith('/content')) {
+      return route.fulfill({ contentType: 'image/png', body: transparentPng })
+    }
+    const name =
+      url.searchParams.get('hash') ?? url.searchParams.get('name_contains')
+    if (!name) {
+      const response = {
+        assets: [],
+        total: 0,
+        has_more: false
+      } satisfies ListAssetsResponse
+      return route.fulfill(jsonRoute(response))
+    }
+    if (/^mesh-\d+\.glb$/.test(name)) lookedUp.push(name)
+    const asset = {
+      id: `asset-${name}`,
+      name,
+      hash: name,
+      preview_id: `preview-${name}`,
+      created_at: '2026-10-01T00:00:00Z',
+      updated_at: '2026-10-01T00:00:00Z'
+    } satisfies Asset
+    const response = {
+      assets: [asset],
+      total: 1,
+      has_more: false
+    } satisfies ListAssetsResponse
+    return route.fulfill(jsonRoute(response))
+  })
+  return lookedUp
 }
 
 export async function mockAgentTurnApi(
