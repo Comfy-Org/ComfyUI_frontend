@@ -3,20 +3,24 @@ import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it } from 'vitest'
 
-const { cachePublishPrefill, getCachedPrefill, useComfyHubPublishWizard } =
-  await import('./useComfyHubPublishWizard')
+const {
+  cachePublishPrefill,
+  getCachedPrefill,
+  mergePrefill,
+  useComfyHubPublishWizard
+} = await import('./useComfyHubPublishWizard')
 
 describe('useComfyHubPublishWizard', () => {
   beforeEach(() => {
     useWorkflowStore().activeWorkflow = fromPartial<LoadedComfyWorkflow>({
-      filename: 'my-workflow.json'
+      filename: 'my-workflow'
     })
   })
 
   describe('createDefaultFormData', () => {
     it('initialises name from active workflow filename', () => {
       const { formData } = useComfyHubPublishWizard()
-      expect(formData.value.name).toBe('my-workflow.json')
+      expect(formData.value.name).toBe('my-workflow')
     })
 
     it('defaults name to empty string when no active workflow', () => {
@@ -154,6 +158,17 @@ describe('useComfyHubPublishWizard', () => {
       expect(formData.value.name).toBe('New title')
     })
 
+    it('restores the Hub title after the workflow is renamed mid-session', () => {
+      const { applyPrefill, formData } = useComfyHubPublishWizard()
+      useWorkflowStore().activeWorkflow = fromPartial<LoadedComfyWorkflow>({
+        filename: 'renamed-workflow'
+      })
+
+      applyPrefill({ name: 'Published title' })
+
+      expect(formData.value.name).toBe('Published title')
+    })
+
     it('restores the existing thumbnail URL into the form', () => {
       const { applyPrefill, formData } = useComfyHubPublishWizard()
       applyPrefill({ thumbnailUrl: 'https://cdn.example.com/thumb.png' })
@@ -252,5 +267,27 @@ describe('useComfyHubPublishWizard', () => {
     expect(getCachedPrefill('workflows/cache-title.json')).toEqual(
       expect.objectContaining({ name: 'Published title' })
     )
+  })
+
+  describe('mergePrefill', () => {
+    it('fills fields the server omitted from the cached prefill', () => {
+      const merged = mergePrefill(
+        { name: 'Cached title', description: 'Cached description' },
+        { name: 'Server title' }
+      )
+
+      expect(merged).toEqual({
+        name: 'Server title',
+        description: 'Cached description'
+      })
+    })
+
+    it('returns whichever side is present when the other is null', () => {
+      const prefill = { name: 'Only side' }
+
+      expect(mergePrefill(null, prefill)).toBe(prefill)
+      expect(mergePrefill(prefill, null)).toBe(prefill)
+      expect(mergePrefill(null, null)).toBeNull()
+    })
   })
 })

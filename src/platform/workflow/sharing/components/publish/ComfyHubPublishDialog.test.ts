@@ -1,3 +1,8 @@
+import {
+  useComfyHubPublishWizard,
+  cachePublishPrefill,
+  getCachedPrefill
+} from '@/platform/workflow/sharing/composables/useComfyHubPublishWizard'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { fromPartial } from '@total-typescript/shoehorn'
@@ -45,43 +50,9 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(
+vi.mock(
   import('@/platform/workflow/sharing/composables/useComfyHubPublishWizard'),
-  () => {
-    mockFormDataHolder.value = {
-      name: '',
-      description: '',
-      tags: [],
-      models: [],
-      customNodes: [],
-      thumbnailType: 'image',
-      thumbnailFile: null,
-      thumbnailUrl: null,
-      existingThumbnailType: null,
-      comparisonBeforeFile: null,
-      comparisonAfterFile: null,
-      comparisonAfterUrl: null,
-      exampleImages: [],
-      tutorialUrl: '',
-      metadata: {}
-    }
-    return {
-      useComfyHubPublishWizard: () => ({
-        currentStep: ref('finish'),
-        formData: ref(mockFormDataHolder.value),
-        isFirstStep: ref(false),
-        isLastStep: ref(true),
-        goToStep: mockGoToStep,
-        goNext: mockGoNext,
-        goBack: mockGoBack,
-        openProfileCreationStep: mockOpenProfileCreationStep,
-        closeProfileCreationStep: mockCloseProfileCreationStep,
-        applyPrefill: mockApplyPrefill
-      }),
-      cachePublishPrefill: mockCachePublishPrefill,
-      getCachedPrefill: mockGetCachedPrefill
-    }
-  }
+  { spy: true }
 )
 
 vi.mock(
@@ -142,16 +113,48 @@ describe('ComfyHubPublishDialog', () => {
   const onClose = vi.fn()
 
   beforeEach(() => {
+    mockFormDataHolder.value = {
+      name: '',
+      description: '',
+      tags: [],
+      models: [],
+      customNodes: [],
+      thumbnailType: 'image',
+      thumbnailFile: null,
+      thumbnailUrl: null,
+      existingThumbnailType: null,
+      comparisonBeforeFile: null,
+      comparisonAfterFile: null,
+      comparisonAfterUrl: null,
+      exampleImages: [],
+      tutorialUrl: '',
+      metadata: {}
+    }
+    vi.mocked(useComfyHubPublishWizard).mockReturnValue(
+      fromPartial<ReturnType<typeof useComfyHubPublishWizard>>({
+        currentStep: ref('finish'),
+        formData: ref(mockFormDataHolder.value),
+        isFirstStep: ref(false),
+        isLastStep: ref(true),
+        goToStep: mockGoToStep,
+        goNext: mockGoNext,
+        goBack: mockGoBack,
+        openProfileCreationStep: mockOpenProfileCreationStep,
+        closeProfileCreationStep: mockCloseProfileCreationStep,
+        applyPrefill: mockApplyPrefill
+      })
+    )
+    vi.mocked(cachePublishPrefill).mockImplementation(mockCachePublishPrefill)
+    vi.mocked(getCachedPrefill).mockImplementation(mockGetCachedPrefill)
     setActiveWorkflow({
       path: 'workflows/test.json',
-      filename: 'test.json',
+      filename: 'test',
       directory: 'workflows',
       isTemporary: false,
       isModified: false
     })
     mockFetchProfile.mockResolvedValue(null)
     mockSubmitToComfyHub.mockResolvedValue(undefined)
-    if (mockFormDataHolder.value) mockFormDataHolder.value.name = ''
     mockGetCachedPrefill.mockReturnValue(null)
     mockGetPublishStatus.mockResolvedValue({
       isPublished: false,
@@ -374,6 +377,30 @@ describe('ComfyHubPublishDialog', () => {
     })
   })
 
+  it('fills gaps in the server prefill from the cached prefill', async () => {
+    mockGetCachedPrefill.mockReturnValue({
+      name: 'Cached title',
+      description: 'Cached description',
+      tags: ['art']
+    })
+    mockGetPublishStatus.mockResolvedValue({
+      isPublished: true,
+      shareId: 'abc123',
+      shareUrl: 'http://localhost/?share=abc123',
+      publishedAt: new Date(),
+      prefill: { name: 'Published title' }
+    })
+
+    renderComponent()
+    await flushPromises()
+
+    expect(mockApplyPrefill).toHaveBeenCalledWith({
+      name: 'Published title',
+      description: 'Cached description',
+      tags: ['art']
+    })
+  })
+
   it('does not apply prefill when workflow is not published', async () => {
     renderComponent()
     await flushPromises()
@@ -425,7 +452,7 @@ describe('ComfyHubPublishDialog', () => {
     mockGetPublishStatus.mockClear()
     setActiveWorkflow({
       path: 'workflows/renamed.json',
-      filename: 'renamed.json',
+      filename: 'renamed',
       directory: 'workflows',
       isTemporary: false,
       isModified: false
@@ -443,7 +470,7 @@ describe('ComfyHubPublishDialog', () => {
     mockGetPublishStatus.mockClear()
     setActiveWorkflow({
       path: 'workflows/test.json',
-      filename: 'test.json',
+      filename: 'test',
       directory: 'workflows',
       isTemporary: false,
       isModified: true
@@ -477,7 +504,7 @@ describe('ComfyHubPublishDialog', () => {
 
     setActiveWorkflow({
       path: 'workflows/renamed.json',
-      filename: 'renamed.json',
+      filename: 'renamed',
       directory: 'workflows',
       isTemporary: false,
       isModified: false

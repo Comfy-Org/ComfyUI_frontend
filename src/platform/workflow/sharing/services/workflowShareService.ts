@@ -1,9 +1,7 @@
 import type {
-  HubWorkflowDetail,
   ImportPublishedAssetsRequest,
   AssetInfo
 } from '@comfyorg/ingest-types'
-import { zGetHubWorkflowResponse } from '@comfyorg/ingest-types/zod'
 
 import type {
   PublishPrefill,
@@ -14,7 +12,9 @@ import type {
 import { useAssetsStore } from '@/stores/assetsStore'
 import type { ThumbnailType } from '@/platform/workflow/sharing/types/comfyHubTypes'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { HubWorkflowPrefillResponse } from '@/platform/workflow/sharing/schemas/shareSchemas'
 import {
+  zHubWorkflowPrefillResponse,
   zPublishRecordResponse,
   zSharedWorkflowResponse
 } from '@/platform/workflow/sharing/schemas/shareSchemas'
@@ -44,10 +44,12 @@ function mapApiThumbnailType(
   return value
 }
 
-function extractPrefill(fields: HubWorkflowDetail): PublishPrefill | null {
+function extractPrefill(
+  fields: HubWorkflowPrefillResponse
+): PublishPrefill | null {
   const name = fields.name
   const description = fields.description
-  const tags = fields.tags?.map((tag) => tag.display_name)
+  const tags = fields.tags
   const models = fields.models?.map((model) => model.name)
   const customNodes = fields.custom_nodes?.map((node) => node.name)
   const thumbnailType = mapApiThumbnailType(fields.thumbnail_type)
@@ -92,8 +94,11 @@ function extractPrefill(fields: HubWorkflowDetail): PublishPrefill | null {
 }
 
 function decodeHubWorkflowPrefill(payload: unknown): PublishPrefill | null {
-  const result = zGetHubWorkflowResponse.safeParse(payload)
-  if (!result.success) return null
+  const result = zHubWorkflowPrefillResponse.safeParse(payload)
+  if (!result.success) {
+    console.warn('Hub workflow details failed validation:', result.error)
+    return null
+  }
   return extractPrefill(result.data)
 }
 

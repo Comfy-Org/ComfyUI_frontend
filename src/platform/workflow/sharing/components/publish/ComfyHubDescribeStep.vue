@@ -5,12 +5,12 @@
   >
     <label class="flex flex-col gap-2">
       <span class="text-sm text-base-foreground">
-        {{ $t('comfyHubPublish.workflowName') }}
+        {{ $t('comfyHubPublish.hubTitle') }}
       </span>
       <Input
         data-testid="publish-name-input"
         :model-value="name"
-        :placeholder="$t('comfyHubPublish.workflowNamePlaceholder')"
+        :placeholder="$t('comfyHubPublish.hubTitlePlaceholder')"
         @update:model-value="$emit('update:name', String($event))"
       />
     </label>
