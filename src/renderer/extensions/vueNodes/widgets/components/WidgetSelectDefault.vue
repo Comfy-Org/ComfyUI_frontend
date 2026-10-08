@@ -2,7 +2,8 @@
   <WidgetLayoutField :widget>
     <ComboboxRoot
       :open="isOpen"
-      :model-value="comboboxValue"
+      :model-value="selectedOption ?? null"
+      by="value"
       :disabled
       ignore-filter
       selection-behavior="replace"
@@ -51,7 +52,7 @@
             aria-hidden="true"
             :disabled
             class="flex h-full w-6 shrink-0 cursor-pointer items-center justify-center border-none bg-transparent outline-none disabled:cursor-default"
-            @click="handleOpenChange(true)"
+            @click="handleOpenChange(!isOpen)"
           >
             <i
               :class="
@@ -78,7 +79,7 @@
           :class="
             cn(
               'z-3000 overflow-hidden rounded-lg border border-solid border-border-default bg-base-background p-0 text-base-foreground shadow-md',
-              'min-w-(--reka-combobox-trigger-width)'
+              'max-w-(--reka-combobox-content-available-width) min-w-(--reka-combobox-trigger-width)'
             )
           "
           @keydown.escape.stop="handleOpenChange(false)"
@@ -106,35 +107,47 @@
           <div
             data-testid="widget-select-default-viewport"
             role="presentation"
-            class="flex max-h-56 min-w-full scrollbar-thin scrollbar-thumb-alpha-smoke-500-50 scrollbar-track-transparent scrollbar-gutter-stable flex-col gap-1 overflow-y-auto p-1 text-xs"
+            class="max-h-56 min-w-full scrollbar-thin scrollbar-thumb-alpha-smoke-500-50 scrollbar-track-transparent scrollbar-gutter-stable overflow-y-auto p-1 text-xs"
             :style="viewportStyle"
             @pointerdown.capture.self="handleViewportPointerDown"
           >
-            <ComboboxItem
-              v-for="option in filteredOptions"
-              :key="option.key"
-              :value="option.comboboxValue"
-              :text-value="option.label"
-              :class="
-                cn(
-                  'relative flex min-h-7 cursor-pointer items-center justify-between gap-3 rounded-sm p-2 outline-none select-none',
-                  'hover:bg-secondary-background data-highlighted:bg-secondary-background',
-                  'data-[state=checked]:bg-primary-background/20 data-[state=checked]:hover:bg-primary-background/20 data-[state=checked]:data-highlighted:bg-primary-background/30'
-                )
-              "
+            <div
+              aria-hidden="true"
+              class="invisible flex h-0 gap-3 overflow-hidden px-2"
             >
-              <span class="truncate">
-                {{ option.label }}
-              </span>
-              <ComboboxItemIndicator
-                class="flex shrink-0 items-center justify-center"
+              <span class="whitespace-nowrap">{{ longestLabel }}</span>
+              <span class="size-3.5 shrink-0" />
+            </div>
+            <ComboboxVirtualizer
+              v-slot="{ option }"
+              :options="filteredOptions"
+              :estimate-size="32"
+              :text-content="(option) => option.label"
+            >
+              <ComboboxItem
+                :value="option"
+                :text-value="option.label"
+                :class="
+                  cn(
+                    'flex h-8 w-full cursor-pointer items-center justify-between gap-3 rounded-sm p-2 outline-none select-none',
+                    'hover:bg-secondary-background data-highlighted:bg-secondary-background',
+                    'data-[state=checked]:bg-primary-background/20 data-[state=checked]:hover:bg-primary-background/20 data-[state=checked]:data-highlighted:bg-primary-background/30'
+                  )
+                "
               >
-                <i
-                  class="icon-[lucide--check] size-3.5 text-base-foreground"
-                  aria-hidden="true"
-                />
-              </ComboboxItemIndicator>
-            </ComboboxItem>
+                <span class="truncate">
+                  {{ option.label }}
+                </span>
+                <ComboboxItemIndicator
+                  class="flex shrink-0 items-center justify-center"
+                >
+                  <i
+                    class="icon-[lucide--check] size-3.5 text-base-foreground"
+                    aria-hidden="true"
+                  />
+                </ComboboxItemIndicator>
+              </ComboboxItem>
+            </ComboboxVirtualizer>
 
             <div
               v-if="filteredOptions.length === 0"
@@ -160,7 +173,8 @@ import {
   ComboboxItemIndicator,
   ComboboxPortal,
   ComboboxRoot,
-  ComboboxTrigger
+  ComboboxTrigger,
+  ComboboxVirtualizer
 } from 'reka-ui'
 import { computed, ref } from 'vue'
 import type { CSSProperties } from 'vue'
@@ -179,8 +193,6 @@ interface Props {
 }
 
 interface SelectOption {
-  comboboxValue: string
-  key: string
   label: string
   rawValue: NonNullable<WidgetValue>
   value: string
@@ -192,22 +204,7 @@ type SelectWidgetOptions = NonNullable<Props['widget']['options']> & {
 
 const { widget } = defineProps<Props>()
 
-// Reka reserves an empty string value for clearing the combobox. Encode values
-// internally so custom-node combo options can still use '' like PrimeVue/legacy.
-const COMBOBOX_VALUE_PREFIX = 'widget-select-value:'
 const MAX_VISIBLE_OPTIONS = 7
-
-function toComboboxValue(value: string) {
-  return `${COMBOBOX_VALUE_PREFIX}${value}`
-}
-
-function fromComboboxValue(value: string | undefined) {
-  if (value === undefined || !value.startsWith(COMBOBOX_VALUE_PREFIX)) {
-    return undefined
-  }
-
-  return value.slice(COMBOBOX_VALUE_PREFIX.length)
-}
 
 function resolveRawValues(values: unknown): unknown[] {
   try {
@@ -295,9 +292,7 @@ const normalizedOptions = computed<SelectOption[]>(() => {
   void optionsRefreshKey.value
 
   return resolveValues(widgetOptions.value?.values).map(
-    ({ rawValue, value }, index) => ({
-      comboboxValue: toComboboxValue(value),
-      key: `${value}-${index}`,
+    ({ rawValue, value }) => ({
       label: getOptionLabel(value),
       rawValue,
       value
@@ -336,7 +331,12 @@ const selectedOption = computed(() =>
   )
 )
 
-const comboboxValue = computed(() => selectedOption.value?.comboboxValue ?? '')
+const longestLabel = computed(() =>
+  normalizedOptions.value.reduce(
+    (longest, { label }) => (label.length > longest.length ? label : longest),
+    ''
+  )
+)
 
 const isInvalid = computed(
   () =>
@@ -352,11 +352,7 @@ const selectedLabel = computed(() => {
   return ''
 })
 
-function selectOption(rekaValue: string | undefined) {
-  const value = fromComboboxValue(rekaValue)
-  const option = normalizedOptions.value.find(
-    (option) => option.value === value
-  )
+function selectOption(option: SelectOption | null) {
   if (!option) return
 
   modelValue.value = option.rawValue

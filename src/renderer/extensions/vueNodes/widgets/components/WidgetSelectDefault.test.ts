@@ -21,6 +21,21 @@ const i18n = createI18n({
   }
 })
 
+const ComboboxVirtualizerStub = defineComponent({
+  name: 'ComboboxVirtualizer',
+  props: {
+    options: Array,
+    estimateSize: Number,
+    textContent: Function
+  },
+  setup(props, { slots }) {
+    return () =>
+      (props.options ?? []).flatMap(
+        (option) => slots.default?.({ option }) ?? []
+      )
+  }
+})
+
 const WidgetLayoutFieldStub = defineComponent({
   name: 'WidgetLayoutField',
   template: '<div class="relative"><slot /></div>'
@@ -61,6 +76,7 @@ describe('WidgetSelectDefault', () => {
       global: {
         plugins: [i18n],
         stubs: {
+          ComboboxVirtualizer: ComboboxVirtualizerStub,
           WidgetLayoutField: WidgetLayoutFieldStub
         }
       }
