@@ -56,6 +56,22 @@ interface CloudOverrides {
   readonly credentialedFeaturesDelayMs?: number
 }
 
+async function answerFeatures(
+  init: RequestInit,
+  credentialedDelayMs = 0
+): Promise<Response> {
+  const credentialed = init.credentials === 'include'
+  if (credentialed && credentialedDelayMs > 0)
+    await new Promise((resolve) => setTimeout(resolve, credentialedDelayMs))
+  return new Response(
+    JSON.stringify(
+      credentialed
+        ? { unified_web_session: true }
+        : { web_session_probe: true, firebase_config: FIREBASE_CONFIG }
+    )
+  )
+}
+
 function stubCloud(state: FakeWebSessionState, overrides: CloudOverrides = {}) {
   const endpoint = createFakeWebSessionEndpoint({ state })
   const sent: { path: string; workspace: string | null }[] = []
@@ -65,22 +81,8 @@ function stubCloud(state: FakeWebSessionState, overrides: CloudOverrides = {}) {
       const { pathname } = new URL(String(input))
       const workspace = new Headers(init.headers).get('X-Comfy-Workspace-ID')
       sent.push({ path: pathname, workspace })
-      if (pathname === '/api/features') {
-        if (
-          init.credentials === 'include' &&
-          overrides.credentialedFeaturesDelayMs
-        )
-          await new Promise((resolve) =>
-            setTimeout(resolve, overrides.credentialedFeaturesDelayMs)
-          )
-        return new Response(
-          JSON.stringify(
-            init.credentials === 'include'
-              ? { unified_web_session: true }
-              : { web_session_probe: true, firebase_config: FIREBASE_CONFIG }
-          )
-        )
-      }
+      if (pathname === '/api/features')
+        return answerFeatures(init, overrides.credentialedFeaturesDelayMs)
       if (pathname === '/api/workspaces/current' && overrides.workspace) {
         return overrides.workspace()
       }
