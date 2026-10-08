@@ -2400,6 +2400,25 @@ describe('useTeamWorkspaceStore', () => {
       expect(store.activeWorkspaceId).toBeNull()
     })
 
+    it('reports a failed refresh and keeps no active workspace', async () => {
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+      const failure = new Error('list failed')
+      mockWorkspaceApi.list.mockRejectedValue(failure)
+
+      pushHostState(hostOn(mockMemberWorkspace.id))
+
+      await vi.waitFor(() =>
+        expect(reportError).toHaveBeenCalledWith(
+          failure,
+          expect.objectContaining({
+            errorType: 'error_refreshing_workspaces_for_desktop_host'
+          })
+        )
+      )
+      expect(store.activeWorkspaceId).toBeNull()
+    })
+
     it('follows a switch made in Desktop', async () => {
       mockWorkspaceApi.list.mockResolvedValue({
         workspaces: [
