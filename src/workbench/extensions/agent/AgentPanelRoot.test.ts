@@ -2124,6 +2124,14 @@ function fileOfSize(name: string, size: number, type: string): File {
   return file
 }
 
+async function clearTrayAsset(name: string): Promise<void> {
+  await userEvent.click(
+    await screen.findByRole('button', {
+      name: i18n.global.t('agent.removeAsset', { name })
+    })
+  )
+}
+
 function assetPanelDrag(
   displayName: string | null,
   overrides: Partial<AssetItem> = {}
@@ -3142,6 +3150,72 @@ describe('AgentPanelRoot attach flow', () => {
     await vi.waitFor(() => expect(uploaded).toEqual(['a.png', 'b.png']))
     await vi.waitFor(() => expect(refresh).toHaveBeenCalledTimes(2))
   })
+
+  it('uploads a re-attached file again after its Imported asset is deleted', async () => {
+    const uploaded = stubUploadFetch()
+    renderWithSelectedTarget()
+    await nextTick()
+    const refresh = vi
+      .spyOn(useAssetsStore().inputAssets, 'loadNew')
+      .mockResolvedValue(undefined)
+    const textbox = screen.getByRole('textbox')
+    const file = new File(['x'], 'cat.png', { type: 'image/png' })
+
+    dispatchDrag(textbox, 'drop', { files: [file] })
+    await vi.waitFor(() => expect(refresh).toHaveBeenCalledTimes(1))
+    await clearTrayAsset('cat.png')
+    dispatchDrag(textbox, 'drop', { files: [file] })
+    await vi.waitFor(() => expect(refresh).toHaveBeenCalledTimes(2))
+    expect(uploaded).toEqual(['cat.png'])
+
+    await clearTrayAsset('cat.png')
+    useAssetsStore().setAssetDeleting('imported-cat', true)
+    await nextTick()
+    useAssetsStore().setAssetDeleting('imported-cat', false)
+    dispatchDrag(textbox, 'drop', { files: [file] })
+
+    await vi.waitFor(() => expect(uploaded).toEqual(['cat.png', 'cat.png']))
+  })
+
+  it.for([
+    { change: 'account', account: 'account-b', workspace: 'workspace-a' },
+    { change: 'workspace', account: 'account-a', workspace: 'workspace-b' }
+  ])(
+    'uploads a re-attached file again after the $change changes under a retained composer',
+    async ({ account, workspace }) => {
+      const accountId = ref('account-a')
+      useCurrentUser().resolvedUserInfo = computed(() => ({
+        id: accountId.value
+      }))
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspaceId: 'workspace-a'
+      })
+      const uploaded = stubUploadFetch()
+      renderWithSelectedTarget()
+      await nextTick()
+      const refresh = vi
+        .spyOn(useAssetsStore().inputAssets, 'loadNew')
+        .mockResolvedValue(undefined)
+      const textbox = screen.getByRole('textbox')
+      const file = new File(['x'], 'cat.png', { type: 'image/png' })
+
+      dispatchDrag(textbox, 'drop', { files: [file] })
+      await vi.waitFor(() => expect(refresh).toHaveBeenCalledTimes(1))
+      await clearTrayAsset('cat.png')
+      dispatchDrag(textbox, 'drop', { files: [file] })
+      await vi.waitFor(() => expect(refresh).toHaveBeenCalledTimes(2))
+      expect(uploaded).toEqual(['cat.png'])
+
+      await clearTrayAsset('cat.png')
+      accountId.value = account
+      Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: workspace })
+      await nextTick()
+      dispatchDrag(textbox, 'drop', { files: [file] })
+
+      await vi.waitFor(() => expect(uploaded).toEqual(['cat.png', 'cat.png']))
+      expect(screen.getByRole('textbox')).toBe(textbox)
+    }
+  )
 
   it('keeps a removed tray upload retired after completion and stale editor history', async () => {
     const signals: AbortSignal[] = []

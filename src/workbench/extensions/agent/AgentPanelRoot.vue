@@ -1671,6 +1671,15 @@ const attachment = useAttachment({
   remove: composerStore.removeAttachment
 })
 
+watch(
+  [
+    () => resolvedUserInfo.value?.id,
+    () => workspaceStore.activeWorkspaceId,
+    () => assetsStore.deletingAssetIds.size
+  ],
+  attachment.forgetUploads
+)
+
 function notifyDuplicateAttachments(names: string[]): void {
   toast.add({
     severity: 'info',

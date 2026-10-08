@@ -17,6 +17,12 @@ function fileOfSize(name: string, size: number, type = 'image/png'): File {
   return file
 }
 
+function identicalFile(name: string, size: number, type = 'image/png'): File {
+  const file = new File(['x'], name, { type, lastModified: 0 })
+  Object.defineProperty(file, 'size', { value: size })
+  return file
+}
+
 function chipRegistry() {
   const chips: ComposerAttachment[] = []
   return {
@@ -86,7 +92,8 @@ describe('useAttachment', () => {
     await expect(addFiles([file])).resolves.toBe(true)
     expect(store.attachments).toHaveLength(1)
     expect(store.attachments[0].id).not.toBe(original.id)
-    expect(upload).toHaveBeenCalledTimes(2)
+    expect(store.attachments[0].ref).toBe('cat.png')
+    expect(upload).toHaveBeenCalledOnce()
     expect(onDuplicate).toHaveBeenCalledExactlyOnceWith(['cat.png'])
   })
 
@@ -408,6 +415,135 @@ describe('useAttachment', () => {
     })
   })
 
+  it('reuses the prior upload when the same file is attached again', async () => {
+    const upload = vi.fn(async (file: File) => ({
+      ref: `uploaded_${file.name}`
+    }))
+    const registry = chipRegistry()
+    const { addFiles } = useAttachment({ upload, ...registry })
+
+    await addFiles([identicalFile('cat.png', 1024)])
+    await addFiles([identicalFile('cat.png', 1024)])
+
+    expect(upload).toHaveBeenCalledOnce()
+    expect(registry.chips.map(({ ref }) => ref)).toEqual([
+      'uploaded_cat.png',
+      'uploaded_cat.png'
+    ])
+  })
+
+  it('uploads again when the same name and size carry different content', async () => {
+    const upload = vi.fn(async (file: File) => ({
+      ref: `uploaded_${file.name}`
+    }))
+    const registry = chipRegistry()
+    const { addFiles } = useAttachment({ upload, ...registry })
+
+    await addFiles([identicalFile('cat.png', 1024)])
+    const edited = identicalFile('cat.png', 1024)
+    Object.defineProperty(edited, 'lastModified', { value: 1 })
+    await addFiles([edited])
+
+    expect(upload).toHaveBeenCalledTimes(2)
+  })
+
+  it('uploads distinct bytes even when all file metadata matches', async () => {
+    const upload = vi
+      .fn<(file: File) => Promise<{ ref: string }>>()
+      .mockResolvedValueOnce({ ref: 'first.png' })
+      .mockResolvedValueOnce({ ref: 'second.png' })
+    const registry = chipRegistry()
+    const { addFiles } = useAttachment({ upload, ...registry })
+
+    await addFiles([
+      new File(['cat-a'], 'cat.png', { lastModified: 0, type: 'image/png' })
+    ])
+    await addFiles([
+      new File(['cat-b'], 'cat.png', { lastModified: 0, type: 'image/png' })
+    ])
+
+    expect(upload).toHaveBeenCalledTimes(2)
+    expect(registry.chips.map(({ ref }) => ref)).toEqual([
+      'first.png',
+      'second.png'
+    ])
+  })
+
+  it('uploads the same file again once completed uploads are forgotten', async () => {
+    const upload = vi.fn(async (file: File) => ({
+      ref: `uploaded_${file.name}`
+    }))
+    const registry = chipRegistry()
+    const { addFiles, forgetUploads } = useAttachment({ upload, ...registry })
+
+    await addFiles([identicalFile('cat.png', 1024)])
+    forgetUploads()
+    await addFiles([identicalFile('cat.png', 1024)])
+
+    expect(upload).toHaveBeenCalledTimes(2)
+  })
+
+  it('does not reuse a cached upload forgotten while its hash is pending', async () => {
+    const upload = vi
+      .fn<(file: File) => Promise<{ ref: string }>>()
+      .mockResolvedValueOnce({ ref: 'uploaded_before.png' })
+      .mockResolvedValueOnce({ ref: 'uploaded_after.png' })
+    const registry = chipRegistry()
+    const { addFiles, forgetUploads } = useAttachment({ upload, ...registry })
+
+    await addFiles([identicalFile('cat.png', 1024)])
+    const matchingFile = identicalFile('cat.png', 1024)
+    const matchingBytes = await matchingFile.arrayBuffer()
+    let finishHash: (bytes: ArrayBuffer) => void = () => {}
+    const arrayBuffer = vi
+      .spyOn(matchingFile, 'arrayBuffer')
+      .mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            finishHash = resolve
+          })
+      )
+
+    const pending = addFiles([matchingFile])
+    expect(arrayBuffer).toHaveBeenCalledOnce()
+    forgetUploads()
+    finishHash(matchingBytes)
+    await pending
+
+    expect(upload).toHaveBeenCalledTimes(2)
+    expect(registry.chips.map(({ ref }) => ref)).toEqual([
+      'uploaded_before.png',
+      'uploaded_after.png'
+    ])
+  })
+
+  it('does not reuse an upload that finished after uploads were forgotten', async () => {
+    let finishFirst: (result: { ref: string }) => void = () => {}
+    const upload = vi
+      .fn<(file: File) => Promise<{ ref: string }>>()
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            finishFirst = resolve
+          })
+      )
+      .mockResolvedValue({ ref: 'uploaded_again.png' })
+    const registry = chipRegistry()
+    const { addFiles, forgetUploads } = useAttachment({ upload, ...registry })
+
+    const first = addFiles([identicalFile('cat.png', 1024)])
+    forgetUploads()
+    finishFirst({ ref: 'uploaded_before.png' })
+    await first
+    await addFiles([identicalFile('cat.png', 1024)])
+
+    expect(upload).toHaveBeenCalledTimes(2)
+    expect(registry.chips.map(({ ref }) => ref)).toEqual([
+      'uploaded_before.png',
+      'uploaded_again.png'
+    ])
+  })
+
   it('stages a deferred file before its source resolves', async () => {
     let resolveFile: (file: File | undefined) => void = () => {}
     const resolve = vi.fn(
@@ -710,7 +846,10 @@ describe('useAttachment', () => {
       return { ref: file.name }
     })
     const registry = chipRegistry()
-    const { addFiles, addDeferredFile } = useAttachment({ upload, ...registry })
+    const { addFiles, addDeferredFile } = useAttachment({
+      upload,
+      ...registry
+    })
 
     const first = addFiles(['a', 'b', 'c'].map((name) => fileOfSize(name, 1)))
     const second = addFiles(['d', 'e', 'f'].map((name) => fileOfSize(name, 1)))
