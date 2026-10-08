@@ -687,7 +687,7 @@ describe('ComfyApp', () => {
       ])
     })
 
-    it('closes every beforeLoadGraph when a newer load overtakes an older one', async () => {
+    it('does not broadcast a superseded load as an error', async () => {
       app.canvasElRef.value = document.createElement('canvas')
       Reflect.set(app, 'rootGraphInternal', new LGraph())
       let releaseFirstLoad!: () => void
@@ -701,16 +701,16 @@ describe('ComfyApp', () => {
       const olderLoad = app.loadGraphData(createWorkflowGraphData(), false)
       await app.loadGraphData(createWorkflowGraphData(), false)
       releaseFirstLoad()
-      await expect(olderLoad).resolves.toBeUndefined()
+      await expect(olderLoad).resolves.toBe(false)
 
       const hooks = mockExtensionService.invokeExtensionsAsync.mock.calls.map(
         ([hook]) => hook
       )
-      const opened = hooks.filter((hook) => hook === 'beforeLoadGraph')
-      const closed = hooks.filter(
-        (hook) => hook === 'afterConfigureGraph' || hook === 'onGraphLoadError'
-      )
-      expect(closed).toHaveLength(opened.length)
+      expect(hooks.filter((hook) => hook === 'beforeLoadGraph')).toHaveLength(2)
+      expect(
+        hooks.filter((hook) => hook === 'afterConfigureGraph')
+      ).toHaveLength(1)
+      expect(hooks).not.toContain('onGraphLoadError')
     })
 
     it('does not destroy the newer committed graph when a superseded load resumes', async () => {
@@ -732,7 +732,7 @@ describe('ComfyApp', () => {
       setGraph.mockClear()
       clean.mockClear()
       releaseOlderLoad()
-      await expect(olderLoad).resolves.toBeUndefined()
+      await expect(olderLoad).resolves.toBe(false)
 
       expect(setGraph).not.toHaveBeenCalled()
       expect(clean).not.toHaveBeenCalled()
@@ -752,7 +752,7 @@ describe('ComfyApp', () => {
       const olderLoad = app.loadGraphData(createWorkflowGraphData(), false)
       await app.loadGraphData(createWorkflowGraphData(), false)
       releaseOlderLoad()
-      await expect(olderLoad).resolves.toBeUndefined()
+      await expect(olderLoad).resolves.toBe(false)
 
       expect(mockWorkflowService.afterLoadNewGraph).toHaveBeenCalledOnce()
     })
@@ -855,7 +855,7 @@ describe('ComfyApp', () => {
       )
       await app.loadGraphData(createWorkflowGraphData(), false)
       releaseOlderLoad()
-      await expect(olderLoad).resolves.toBeUndefined()
+      await expect(olderLoad).resolves.toBe(false)
 
       expect(runMissingModelPipeline).toHaveBeenCalledOnce()
     })
@@ -888,7 +888,7 @@ describe('ComfyApp', () => {
       await app.loadGraphData(createWorkflowGraphData(), false)
       configure.mockClear()
       releaseOlderLoad()
-      await expect(olderLoad).resolves.toBeUndefined()
+      await expect(olderLoad).resolves.toBe(false)
 
       expect(configure).not.toHaveBeenCalled()
     })
@@ -2902,6 +2902,54 @@ describe('ComfyApp', () => {
       return node
     }
 
+    it('reports a rejected workflow activation from loadGraphData', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      mockWorkflowService.afterLoadNewGraph.mockResolvedValueOnce(false)
+
+      await expect(
+        app.loadGraphData(createWorkflowGraphData(), false)
+      ).resolves.toBe(false)
+      expect(
+        mockExtensionService.invokeExtensionsAsync
+      ).not.toHaveBeenCalledWith('afterLoadGraph')
+    })
+
+    it('stops an API JSON import when workflow activation is rejected', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      mockWorkflowService.afterLoadNewGraph.mockResolvedValueOnce(false)
+
+      await app.loadApiJson({}, 'rejected.json')
+
+      expect(
+        mockExtensionService.invokeExtensionsAsync
+      ).not.toHaveBeenCalledWith('afterLoadGraph')
+    })
+
+    it('stops an A1111 import when workflow activation is rejected', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
+        parameters: 'positive\nNegative prompt: negative\nSteps: 20'
+      })
+      mockImportA1111.mockImplementation(
+        async (_graph, _parameters, beforeGraphClear) => {
+          await beforeGraphClear?.()
+          return 'imported'
+        }
+      )
+      mockWorkflowService.afterLoadNewGraph.mockResolvedValueOnce(false)
+
+      await app.handleFile(createTestFile('a1111.png', 'image/png'))
+
+      expect(
+        mockExtensionService.invokeExtensionsAsync
+      ).not.toHaveBeenCalledWith('afterLoadGraph')
+    })
+
     it('does not let a superseded API JSON import erase the newer graph', async () => {
       app.canvasElRef.value = document.createElement('canvas')
       const graph = new LGraph()
@@ -2984,6 +3032,56 @@ describe('ComfyApp', () => {
       await apiImport
 
       expect(graph.nodes).toHaveLength(0)
+    })
+
+    it('restarts API JSON construction after an older load commits during preparation', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      const clean = vi.spyOn(app, 'clean')
+      let releaseOlderLoad!: () => void
+      const olderLoadBlocked = new Promise<void>((resolve) => {
+        releaseOlderLoad = resolve
+      })
+      vi.when(mockExtensionService.invokeExtensionsAsync)
+        .calledWith(
+          'beforeConfigureGraph',
+          expect.anything(),
+          expect.anything()
+        )
+        .thenReturnOnce(olderLoadBlocked)
+
+      const olderLoad = app.loadGraphData(createWorkflowGraphData(), true)
+      await vi.waitFor(() =>
+        expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+          'beforeConfigureGraph',
+          expect.anything(),
+          expect.anything()
+        )
+      )
+
+      let releaseReplacements!: () => void
+      const replacementsBlocked = new Promise<void>((resolve) => {
+        releaseReplacements = resolve
+      })
+      vi.spyOn(useNodeReplacementStore(), 'load').mockReturnValueOnce(
+        replacementsBlocked
+      )
+      const apiImport = app.loadApiJson(
+        { '1': { class_type: 'KSampler', inputs: {} } },
+        'newer.json'
+      )
+      await vi.waitFor(() => expect(clean).toHaveBeenCalledTimes(2))
+
+      releaseOlderLoad()
+      await olderLoad
+      releaseReplacements()
+      await apiImport
+
+      expect(clean).toHaveBeenCalledTimes(3)
+      expect(graph.nodes).toHaveLength(1)
+      expect(graph.nodes[0].type).toBe('KSampler')
     })
 
     it('does not bind a superseded API JSON import’s workflow to the newer graph', async () => {

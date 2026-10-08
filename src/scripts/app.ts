@@ -1318,12 +1318,8 @@ export class ComfyApp {
     )
   }
 
-  private async rejectSupersededGraphLoad(): Promise<undefined> {
-    await useExtensionService().invokeExtensionsAsync(
-      'onGraphLoadError',
-      new DOMException('Graph load superseded by a newer load', 'AbortError')
-    )
-    return undefined
+  private rejectSupersededGraphLoad(): false {
+    return false
   }
 
   async loadGraphData(
@@ -1407,6 +1403,9 @@ export class ComfyApp {
         // If the validation failed, use the original graph data.
         // Ideally we should not block users from loading the workflow.
         graphData = validatedGraphData ?? graphData
+      }
+      if (!this.ownsGraphLoad(loadId)) {
+        return this.rejectSupersededGraphLoad()
       }
       // Only show the reroute migration warning if the workflow does not have native
       // reroutes. Merging reroute network has great complexity, and it is not supported
@@ -1510,6 +1509,7 @@ export class ComfyApp {
       // below. Left unhandled, that would both reject silently and leak any
       // suppression/loading-state a `beforeLoadGraph` listener opened for
       // this load, since nothing ever notifies it the load ended.
+      if (!this.ownsGraphLoad(loadId)) return this.rejectSupersededGraphLoad()
       await this.reportGraphLoadFailure(error)
       void useSubgraphNavigationStore().updateHash(
         'workflow-load',
@@ -1613,6 +1613,9 @@ export class ComfyApp {
           }
         }
       } catch (error) {
+        if (!this.ownsGraphLoad(loadId)) {
+          return this.rejectSupersededGraphLoad()
+        }
         await this.reportGraphLoadFailure(error)
         // Resolves rather than throws: the close/replacement guards read this outcome.
         return false
@@ -2201,6 +2204,7 @@ export class ComfyApp {
     }
   ) {
     const fileName = file.name.replace(/\.\w+$/, '') // Strip file extension
+    const loadId = ++this.graphLoadSequence
     const workflowData = await getWorkflowDataFromFile(file)
     const { workflow, prompt, parameters, templates } = workflowData ?? {}
 
@@ -2305,7 +2309,6 @@ export class ComfyApp {
 
     // Use parameters strictly as the final fallback
     if (parameters && typeof parameters === 'string') {
-      const loadId = ++this.graphLoadSequence
       let outcome: A1111ImportOutcome
       try {
         outcome = await importA1111(this.rootGraph, parameters, async () => {
@@ -2545,6 +2548,9 @@ export class ComfyApp {
       await this.rejectSupersededGraphLoad()
       return
     }
+    this.canvas.setGraph(this.rootGraph)
+    withGraphIntentSource('load', () => this.clean())
+    this.commitGraphLoad(loadId)
     withGraphIntentSource('load', () => {
       for (const id of ids) {
         const data = apiData[id]
@@ -2714,8 +2720,6 @@ export class ComfyApp {
       }
       app.rootGraph.arrange()
     })
-
-    this.commitGraphLoad(loadId)
 
     // Intentionally no beforeConfigureGraph: API JSON builds nodes directly
     // and never passes a ComfyWorkflowJSON through the configure stage.

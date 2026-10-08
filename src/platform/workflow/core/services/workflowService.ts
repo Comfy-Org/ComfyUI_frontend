@@ -725,6 +725,10 @@ export const useWorkflowService = () => {
     options: { isCurrent?: () => boolean } = {}
   ): Promise<boolean> => {
     const workflowStore = useWorkspaceStore().workflow
+    const openCurrentWorkflow = (workflow: ComfyWorkflow) =>
+      options.isCurrent
+        ? workflowStore.openWorkflow(workflow, options)
+        : workflowStore.openWorkflow(workflow)
     const { isAppMode } = useAppMode()
     const wasAppMode = isAppMode.value
     const rootGraphId = adoptRootGraphId(workflowData)
@@ -772,8 +776,7 @@ export const useWorkflowService = () => {
           ((existingWorkflow.isPersisted && !existingWorkflow.isLoaded) ||
             isSameActiveWorkflowLoad)
         ) {
-          const loadedWorkflow =
-            await workflowStore.openWorkflow(existingWorkflow)
+          const loadedWorkflow = await openCurrentWorkflow(existingWorkflow)
           if (options.isCurrent?.() === false) return false
           activateRunErrors(loadedWorkflow)
           if (loadedWorkflow.initialMode === undefined) {
@@ -809,13 +812,13 @@ export const useWorkflowService = () => {
         tempWorkflow.shareId = shareId
       }
       trackIfEnteringApp(tempWorkflow)
-      const loadedWorkflow = await workflowStore.openWorkflow(tempWorkflow)
+      const loadedWorkflow = await openCurrentWorkflow(tempWorkflow)
       if (options.isCurrent?.() === false) return false
       activateRunErrors(loadedWorkflow)
       return true
     }
 
-    const loadedWorkflow = await workflowStore.openWorkflow(value)
+    const loadedWorkflow = await openCurrentWorkflow(value)
     if (options.isCurrent?.() === false) return false
     activateRunErrors(loadedWorkflow)
     if (shareId) {

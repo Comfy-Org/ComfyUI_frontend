@@ -204,14 +204,17 @@ export const useWorkflowStore = defineStore('workflow', () => {
    * @param workflow The workflow to open.
    */
   const openWorkflow = async (
-    workflow: ComfyWorkflow
+    workflow: ComfyWorkflow,
+    options: { isCurrent?: () => boolean } = {}
   ): Promise<LoadedComfyWorkflow> => {
+    if (options.isCurrent?.() === false) return workflow as LoadedComfyWorkflow
     if (isActive(workflow)) return workflow as LoadedComfyWorkflow
 
+    const loadedWorkflow = await workflow.load()
+    if (options.isCurrent?.() === false) return loadedWorkflow
     if (!openWorkflowPaths.value.includes(workflow.path)) {
       openWorkflowPaths.value.push(workflow.path)
     }
-    const loadedWorkflow = await workflow.load()
     activeWorkflow.value = loadedWorkflow
     comfyApp.canvas.bg_tint = loadedWorkflow.tintCanvasBg
 
