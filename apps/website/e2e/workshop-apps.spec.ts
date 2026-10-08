@@ -410,6 +410,7 @@ async function relightFromPanel(page: Page) {
 }
 
 for (const { width, panel } of [
+  { width: 768, panel: 280 },
   { width: 1280, panel: 280 },
   { width: 1920, panel: 307.2 },
   { width: 2400, panel: 340 }
