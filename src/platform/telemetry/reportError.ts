@@ -11,6 +11,8 @@ import { getFrontendBucket } from '@/platform/telemetry/initDatadogRum'
 import { isHostTelemetryEnabled } from '@/platform/telemetry/hostTelemetryEnabled'
 import { toError } from '@/utils/errorUtil'
 
+import { redactTelemetryValues } from './redactTelemetryUrls'
+
 export type Surface =
   | 'agent'
   | 'billing'
@@ -197,10 +199,11 @@ function dispatchToDatadog(
   level: ReportErrorOptions['level']
 ): boolean {
   try {
+    const redactedCause = redactTelemetryValues({ cause: error.cause })?.cause
     const datadogError = Object.assign(
-      new Error(error.message, { cause: error.cause }),
+      new Error(error.message),
       error,
-      { name: errorType, stack: error.stack }
+      { name: errorType, stack: error.stack, cause: redactedCause }
     )
     datadogRum.addError(datadogError, {
       ...context,
