@@ -10,6 +10,8 @@ import { isCloud } from '@/platform/distribution/types'
 import { isHostTelemetryEnabled } from '@/platform/telemetry/hostTelemetryEnabled'
 import { toError } from '@/utils/errorUtil'
 
+import { redactTelemetryValues } from './redactTelemetryUrls'
+
 export type Surface =
   | 'agent'
   | 'billing'
@@ -162,6 +164,15 @@ function dispatchToDesktop(
   }
 }
 
+function createDatadogError(error: Error, errorType: string): Error {
+  const redactedCause = redactTelemetryValues({ cause: error.cause })?.cause
+  return Object.assign(new Error(error.message), error, {
+    name: errorType,
+    stack: error.stack,
+    cause: redactedCause
+  })
+}
+
 function dispatch(
   error: Error,
   options: ReportErrorOptions,
@@ -196,11 +207,7 @@ function dispatch(
     }
     if (datadogLive) {
       try {
-        const datadogError = Object.assign(
-          new Error(error.message, { cause: error.cause }),
-          error,
-          { name: errorType, stack: error.stack }
-        )
+        const datadogError = createDatadogError(error, errorType)
         datadogRum.addError(datadogError, {
           ...context,
           ...tags,
