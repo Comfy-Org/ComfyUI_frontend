@@ -776,7 +776,6 @@ describe('onboardingTourStore', () => {
         target.onEnter = original
       })
       target.onEnter = () => Promise.reject(new Error('framing blew up'))
-      vi.spyOn(console, 'error').mockImplementation(() => {})
 
       const store = mountStore()
       store.replayTour('appMode')
@@ -842,7 +841,6 @@ describe('onboardingTourStore', () => {
       registerAppModeTargets()
       const { entered, attempts } = suspendOnEnter('inputs')
       const store = mountStore()
-      vi.spyOn(console, 'error').mockImplementation(() => {})
       store.replayTour('appMode')
       await nextTick()
       store.next()

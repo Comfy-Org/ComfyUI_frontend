@@ -411,7 +411,6 @@ describe('SceneManager', () => {
     })
 
     it('on load failure, emits loading-end and falls back to a color background', async () => {
-      vi.spyOn(console, 'error').mockImplementation(() => {})
       vi.mocked(Load3dUtils.splitFilePath).mockReturnValue(['', 'bg.png'])
       vi.mocked(Load3dUtils.getResourceURL).mockReturnValue('/api/bg')
       mockTextureLoad.mockImplementation(

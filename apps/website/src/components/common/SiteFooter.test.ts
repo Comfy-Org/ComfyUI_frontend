@@ -6,6 +6,27 @@ import SiteFooter from './SiteFooter.vue'
 
 describe('SiteFooter', () => {
   it.for([
+    ['en', 'Changelog', 'Resources'],
+    ['zh-CN', '更新日志', '资源'],
+    ['ja', 'Changelog', 'Resources']
+  ] as const)(
+    'links the live changelog last in footer Resources (%s)',
+    ([locale, name, resources]) => {
+      render(SiteFooter, { props: { locale } })
+      const links = screen.getAllByRole('link', { name })
+      expect(links.map((link) => link.getAttribute('href'))).toEqual(
+        Array(links.length).fill('/changelog/')
+      )
+      const columns = screen.getAllByRole('navigation', { name: resources })
+      expect(
+        columns.map((column) =>
+          within(column).getAllByRole('link').at(-1)?.textContent.trim()
+        )
+      ).toEqual(Array(columns.length).fill(name))
+    }
+  )
+
+  it.for([
     ['en', 'ComfyUI Models'],
     ['zh-CN', 'ComfyUI 模型'],
     ['ja', 'ComfyUI Models']

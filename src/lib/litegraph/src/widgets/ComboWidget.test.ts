@@ -862,9 +862,6 @@ describe('ComboWidget', () => {
           const mockGetOptionLabel = vi.fn().mockImplementation(function () {
             throw new Error('Formatting failed')
           })
-          const consoleErrorSpy = vi
-            .spyOn(console, 'error')
-            .mockImplementation(() => {})
 
           widget = new ComboWidget(
             createMockWidgetConfig({
@@ -880,7 +877,7 @@ describe('ComboWidget', () => {
 
           Reflect.set(widget, 'value', value)
           expect(widget._displayValue).toBe(expected)
-          expect(consoleErrorSpy).toHaveBeenCalledWith(
+          expect(console.error).toHaveBeenCalledWith(
             'Failed to map value:',
             expect.any(Error)
           )
@@ -1238,10 +1235,6 @@ describe('ComboWidget', () => {
         node.pos = [50, 50]
         node.size = [200, 30]
 
-        const consoleErrorSpy = vi
-          .spyOn(console, 'error')
-          .mockImplementation(() => {})
-
         const mockAddItem = vi.fn()
         const mockContextMenu = vi
           .fn<typeof LiteGraph.ContextMenu>()
@@ -1271,12 +1264,10 @@ describe('ComboWidget', () => {
             className: 'dark'
           })
         )
-        expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect(console.error).toHaveBeenCalledWith(
           'Failed to map value:',
           expect.any(Error)
         )
-
-        consoleErrorSpy.mockRestore()
       })
 
       it('should show hash values in dropdown when getOptionLabel not provided', () => {
@@ -1347,13 +1338,10 @@ describe('ComboWidget', () => {
       const mockEvent = { canvasX: 150 } as CanvasPointerEvent
       node.pos = [50, 50]
       node.size = [200, 30]
-      const consoleError = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
 
       widget.onClick({ e: mockEvent, node, canvas: mockCanvas })
 
-      expect(consoleError).toHaveBeenCalledWith(
+      expect(console.error).toHaveBeenCalledWith(
         '[ComboWidget]: values is required'
       )
       expect(widget.value).toBe('test')

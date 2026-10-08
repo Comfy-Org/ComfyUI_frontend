@@ -320,7 +320,9 @@ function start() {
           </div>
         </form>
       </section>
-      <div class="space-y-4 lg:sticky lg:top-24 lg:col-span-7 lg:self-start">
+      <div
+        class="min-w-0 space-y-4 lg:sticky lg:top-24 lg:col-span-7 lg:self-start"
+      >
         <WorkflowResults
           :key="selectedRunId"
           :model="model"

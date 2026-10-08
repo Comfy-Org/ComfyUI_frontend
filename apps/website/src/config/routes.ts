@@ -9,6 +9,7 @@ import type { AppWorkshopModel } from './models-catalogue'
 
 const baseRoutes = {
   home: '/',
+  changelog: '/changelog/',
   download: '/download/',
   cloud: '/cloud/',
   pricing: '/pricing/',
@@ -96,7 +97,11 @@ type Routes = Readonly<Record<RouteKey, string>>
 // built from a single English-language caption track — a "translated" watch
 // page would either duplicate the English video under a Chinese path or lie
 // about having Chinese captions, so these are intentionally English-only.
+//
+// changelog: renders the English Comfy docs changelog in the browser. No
+// localized page reads the translated docs sources yet.
 const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
+  'changelog',
   'affiliates',
   'affiliateTerms',
   'termsOfService',

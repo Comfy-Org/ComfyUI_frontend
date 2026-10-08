@@ -5,11 +5,11 @@ import {
   hasCompositorLayers
 } from '@/renderer/extensions/compositor/composables/useCompositorLayers'
 import {
-  LAYER_EDITOR_DIALOG_KEY,
   LayerEditorDialogContent,
   LayerEditorDialogHeader,
   layerEditorDialogProps
 } from '@/renderer/extensions/layerEditor/composables/layerEditorDialog'
+import { LAYER_EDITOR_DIALOG_KEY } from '@/renderer/extensions/layerEditor/layerEditorDialogKey'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDialogStore } from '@/stores/dialogStore'

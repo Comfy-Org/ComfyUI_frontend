@@ -2688,7 +2688,8 @@
     "nanoBanana": "Nano Banana 2.1",
     "cloudNodes": "Comfy Cloud Nodes",
     "modelCatalogue": "ComfyUI Models",
-    "social": "Follow Comfy"
+    "social": "Follow Comfy",
+    "changelog": "Changelog"
   },
   "privacy": {
     "intro": {
@@ -5809,5 +5810,18 @@
       "getApiKey": "Get an API key",
       "apiDocs": "API docs"
     }
+  },
+  "changelog": {
+    "meta": {
+      "title": "Changelog - Comfy",
+      "description": "The latest ComfyUI features, improvements, and fixes from Comfy docs."
+    },
+    "title": "Changelog",
+    "viewDocs": "VIEW DOCS",
+    "saved": "Showing saved release notes. The latest updates could not be loaded.",
+    "unavailable": "Release notes could not be loaded.",
+    "loading": "Loading the latest release notes…",
+    "introduction": "The latest ComfyUI features, improvements, and fixes, updated from Comfy docs.",
+    "retry": "Try again"
   }
 }
