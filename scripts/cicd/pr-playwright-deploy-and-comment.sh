@@ -48,8 +48,8 @@ fi
 
 WORKFLOW_RESULT=${WORKFLOW_RESULT:-success}
 if [ "$STATUS" = "completed" ] && [ -n "${SOURCE_RUN_ID:-}" ]; then
-    jobs=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID/jobs" --paginate --slurp)
-    WORKFLOW_RESULT=$(echo "$jobs" | jq -r '
+    if jobs=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID/jobs?per_page=100" --paginate --slurp); then
+        WORKFLOW_RESULT=$(echo "$jobs" | jq -r '
         [.[].jobs[]] as $jobs |
         [$jobs[] | select(.name == "e2e-status" or .name == "setup-desktop-cloud" or (.name | startswith("merge-reports (")) or (.name | startswith("playwright-tests")))] as $e2e |
         [$jobs[] | select(.name | startswith("merge-reports ("))] as $merges |
@@ -58,7 +58,10 @@ if [ "$STATUS" = "completed" ] && [ -n "${SOURCE_RUN_ID:-}" ]; then
             and ($merges | length) > 0
             and all($merges[]; .conclusion == "success") then "success"
         else "failure" end
-    ')
+        ') || WORKFLOW_RESULT=unknown
+    else
+        WORKFLOW_RESULT=unknown
+    fi
 fi
 
 # Configuration
@@ -324,7 +327,7 @@ else
     # Generate compact single-line comment (omit standalone marker when writing
     # to SUMMARY_FILE — the upsert action adds its own section delimiters).
     result_note=""
-    if [ "$WORKFLOW_RESULT" != "success" ]; then
+    if [ "$WORKFLOW_RESULT" = "cancelled" ] || { [ "$WORKFLOW_RESULT" != "success" ] && [ "$total_failed" -eq 0 ]; }; then
         result_note="E2E ${WORKFLOW_RESULT} · "
     fi
     if [ -n "${SUMMARY_FILE:-}" ]; then
@@ -334,7 +337,7 @@ else
 ## 🎭 Playwright: $status_icon ${result_note}${total_passed} passed, $total_failed failed$flaky_note"
     fi
 
-    if [ "$WORKFLOW_RESULT" != "success" ]; then
+    if [ -n "$result_note" ]; then
         comment="$comment
 
 E2E result: ${WORKFLOW_RESULT}. Test counts include only available reports."

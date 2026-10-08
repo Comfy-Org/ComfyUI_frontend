@@ -12,49 +12,54 @@ import { join, resolve } from 'node:path'
 import { expect, it } from 'vitest'
 
 it.for([
-  [
-    'success',
-    'success',
-    'success',
-    'success',
-    'success',
-    '✅ 12 passed, 0 failed'
-  ],
-  [
-    'build failure',
-    'failure',
-    'skipped',
-    'skipped',
-    'success',
-    '❌ E2E failure · 12 passed, 0 failed'
-  ],
-  [
-    'merge failure',
-    'success',
-    'failure',
-    'success',
-    'success',
-    '❌ E2E failure · 12 passed, 0 failed'
-  ],
-  [
-    'cancellation',
-    'failure',
-    'skipped',
-    'cancelled',
-    'success',
-    '❌ E2E cancelled · 12 passed, 0 failed'
-  ],
-  [
-    'unrelated unit failure',
-    'success',
-    'success',
-    'success',
-    'failure',
-    '✅ 12 passed, 0 failed'
-  ]
+  { name: 'success', headline: '✅ 12 passed, 0 failed' },
+  {
+    name: 'build failure',
+    summaryResult: 'failure',
+    mergeResult: 'skipped',
+    testResult: 'skipped',
+    headline: '❌ E2E failure · 12 passed, 0 failed'
+  },
+  {
+    name: 'merge failure',
+    mergeResult: 'failure',
+    headline: '❌ E2E failure · 12 passed, 0 failed'
+  },
+  {
+    name: 'cancellation',
+    summaryResult: 'failure',
+    mergeResult: 'skipped',
+    testResult: 'cancelled',
+    headline: '❌ E2E cancelled · 12 passed, 0 failed'
+  },
+  {
+    name: 'unrelated unit failure',
+    unitResult: 'failure',
+    headline: '✅ 12 passed, 0 failed'
+  },
+  {
+    name: 'API failure',
+    apiExitCode: 1,
+    headline: '❌ E2E unknown · 12 passed, 0 failed'
+  },
+  {
+    name: 'test failure',
+    summaryResult: 'failure',
+    testResult: 'failure',
+    failed: 3,
+    headline: '❌ 12 passed, 3 failed'
+  }
 ])(
-  'reports %s from source E2E jobs when only passing Chromium results exist',
-  ([_name, summaryResult, mergeResult, testResult, unitResult, headline]) => {
+  'reports $name from source E2E jobs',
+  ({
+    summaryResult = 'success',
+    mergeResult = 'success',
+    testResult = 'success',
+    unitResult = 'success',
+    apiExitCode = 0,
+    failed = 0,
+    headline
+  }) => {
     const root = mkdtempSync(join(tmpdir(), 'playwright-comment-'))
     try {
       const bin = join(root, 'bin')
@@ -67,11 +72,20 @@ it.for([
         '#!/bin/sh\necho https://report.pages.dev\n',
         { mode: 0o755 }
       )
+      const countsFile = join(root, 'counts.json')
       writeFileSync(
-        join(bin, 'tsx'),
-        '#!/bin/sh\necho \'{"passed":12,"failed":0,"flaky":0,"skipped":0,"total":12}\'\n',
-        { mode: 0o755 }
+        countsFile,
+        JSON.stringify({
+          passed: 12,
+          failed,
+          flaky: 0,
+          skipped: 0,
+          total: 12 + failed
+        })
       )
+      writeFileSync(join(bin, 'tsx'), '#!/bin/sh\ncat "$COUNTS_FILE"\n', {
+        mode: 0o755
+      })
       const jobsFile = join(root, 'jobs.json')
       writeFileSync(
         jobsFile,
@@ -94,9 +108,13 @@ it.for([
           }
         ])
       )
-      writeFileSync(join(bin, 'gh'), '#!/bin/sh\ncat "$JOBS_FILE"\n', {
-        mode: 0o755
-      })
+      writeFileSync(
+        join(bin, 'gh'),
+        '#!/bin/sh\ncat "$JOBS_FILE"\nexit "$API_EXIT_CODE"\n',
+        {
+          mode: 0o755
+        }
+      )
       const summary = join(root, 'summary.md')
       const execution = spawnSync(
         'bash',
@@ -117,14 +135,18 @@ it.for([
             CLOUDFLARE_ACCOUNT_ID: 'test-account',
             SUMMARY_FILE: summary,
             SOURCE_RUN_ID: '123',
-            JOBS_FILE: jobsFile
+            JOBS_FILE: jobsFile,
+            COUNTS_FILE: countsFile,
+            API_EXIT_CODE: String(apiExitCode)
           }
         }
       )
       expect(execution).toMatchObject({ status: 0 })
-      expect(readFileSync(summary, 'utf8')).toContain(
-        `## 🎭 Playwright: ${headline}`
-      )
+      const markdown = readFileSync(summary, 'utf8')
+      expect(markdown).toContain(`## 🎭 Playwright: ${headline}`)
+      expect(
+        markdown.includes('Test counts include only available reports.')
+      ).toBe(headline.includes('E2E '))
     } finally {
       rmSync(root, { recursive: true, force: true })
     }

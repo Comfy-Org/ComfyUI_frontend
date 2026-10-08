@@ -328,12 +328,6 @@ it.for([
         needs: { 'setup-desktop-cloud': { result } }
       })
     )
-    expect(decisions).toEqual([
-      expected,
-      expected,
-      expected,
-      expected,
-      expected
-    ])
+    expect(new Set(decisions)).toEqual(new Set([expected]))
   }
 )
