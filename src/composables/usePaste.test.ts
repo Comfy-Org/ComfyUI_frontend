@@ -887,12 +887,12 @@ describe('usePaste', () => {
       paste(otherApp)
 
       expect(mockCanvas.pasteFromClipboard).not.toHaveBeenCalled()
-      expect(useToastStore().add).toHaveBeenCalledWith(
+      expect(useToast().toasts).toEqual([
         expect.objectContaining({
-          severity: 'info',
-          summary: 'Nothing to paste into this node'
+          kind: 'info',
+          title: 'Nothing to paste into this node'
         })
-      )
+      ])
     })
 
     it('runs the default paste only for the latest copy', () => {
@@ -937,7 +937,7 @@ describe('usePaste', () => {
         paste(clipboardData)
 
         expect(mockCanvas.pasteFromClipboard).toHaveBeenCalledOnce()
-        expect(useToastStore().add).not.toHaveBeenCalled()
+        expect(useToast().toasts).toEqual([])
       }
     )
   })
