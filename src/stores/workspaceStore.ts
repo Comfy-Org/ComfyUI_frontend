@@ -2,13 +2,17 @@ import { useMagicKeys } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { createExtensionToastManager } from '@/platform/extensions/extensionToastManager'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { Settings } from '@/platform/settings/types'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useDialogService } from '@/services/dialogService'
-import type { SidebarTabExtension } from '@/types/extensionTypes'
+import type {
+  SidebarTabExtension,
+  ToastManager,
+  ToastMessageOptions
+} from '@/types/extensionTypes'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 
 import { useApiKeyAuthStore } from './apiKeyAuthStore'
@@ -19,6 +23,15 @@ import { useQueueSettingsStore } from './queueSettingsStore'
 import { useBottomPanelStore } from './workspace/bottomPanelStore'
 import { useSidebarTabStore } from './workspace/sidebarTabStore'
 
+const legacySeverityKinds = {
+  contrast: 'info',
+  error: 'error',
+  info: 'info',
+  secondary: 'info',
+  success: 'success',
+  warn: 'warning'
+} as const
+
 function workspaceStoreSetup() {
   const spinner = ref(false)
   const { shift: shiftDown } = useMagicKeys()
@@ -28,7 +41,25 @@ function workspaceStoreSetup() {
    */
   const focusMode = ref(false)
 
-  const toast = createExtensionToastManager()
+  const toastStore = useToast()
+  const toast: ToastManager = {
+    add: (message: ToastMessageOptions) => {
+      const kind = legacySeverityKinds[message.severity ?? 'info']
+      toastStore[kind](message.summary ?? message.detail ?? '', {
+        closable: message.closable,
+        description: message.summary === undefined ? undefined : message.detail,
+        duration: message.life || undefined
+      })
+    },
+    addAlert: (message) => toastStore.warning(message),
+    dismiss: toastStore.dismiss,
+    dismissAll: toastStore.dismissAll,
+    error: toastStore.error,
+    info: toastStore.info,
+    loading: toastStore.loading,
+    success: toastStore.success,
+    warning: toastStore.warning
+  }
   const queueSettings = computed(() => useQueueSettingsStore())
   const command = computed(() => ({
     commands: useCommandStore().commands,

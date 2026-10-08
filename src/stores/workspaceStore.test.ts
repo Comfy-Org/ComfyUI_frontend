@@ -1,47 +1,52 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { useToast } from '@/components/ui/toast/toastStore'
+import type { Toast } from '@/components/ui/toast/toastStore'
 import type { ToastMessageOptions } from '@/types/extensionTypes'
 
-import { createExtensionToastManager } from './extensionToastManager'
+import { useWorkspaceStore } from './workspaceStore'
 
-describe('createExtensionToastManager', () => {
-  it.for<{
-    expected: Record<string, unknown>
-    message: ToastMessageOptions
-    name: string
-  }>([
+vi.mock(import('firebase/auth'))
+
+interface LegacyToastCase {
+  expected: Partial<Toast>
+  message: ToastMessageOptions
+  name: string
+}
+
+describe('extension toast API', () => {
+  it.for<LegacyToastCase>([
     {
       name: 'maps warn severity, summary, detail and life',
       message: {
-        severity: 'warn',
-        summary: 'Update available',
         detail: 'Restart to apply',
-        life: 3000
+        life: 3000,
+        severity: 'warn',
+        summary: 'Update available'
       },
       expected: {
-        kind: 'warning',
-        title: 'Update available',
+        closable: true,
         description: 'Restart to apply',
         duration: 3000,
-        closable: true
+        kind: 'warning',
+        title: 'Update available'
       }
     },
     {
       name: 'uses detail as the title when summary is missing',
-      message: { severity: 'error', detail: 'Copy failed', closable: false },
+      message: { closable: false, detail: 'Copy failed', severity: 'error' },
       expected: {
-        kind: 'error',
-        title: 'Copy failed',
+        closable: false,
         description: undefined,
         duration: Number.POSITIVE_INFINITY,
-        closable: false
+        kind: 'error',
+        title: 'Copy failed'
       }
     },
     {
       name: 'keeps a zero life on screen until dismissed',
-      message: { severity: 'error', summary: 'Sync failed', life: 0 },
-      expected: { kind: 'error', duration: Number.POSITIVE_INFINITY }
+      message: { life: 0, severity: 'error', summary: 'Sync failed' },
+      expected: { duration: Number.POSITIVE_INFINITY, kind: 'error' }
     },
     {
       name: 'defaults a missing severity to info',
@@ -58,20 +63,20 @@ describe('createExtensionToastManager', () => {
       message: { severity: 'success', summary: 'Installed' },
       expected: { kind: 'success', title: 'Installed' }
     }
-  ])('legacy add $name', ({ message, expected }) => {
-    createExtensionToastManager().add(message)
+  ])('legacy add $name', ({ expected, message }) => {
+    useWorkspaceStore().toast.add(message)
 
     expect(useToast().toasts).toEqual([expect.objectContaining(expected)])
   })
 
   it('legacy addAlert shows the message as a warning title', () => {
-    createExtensionToastManager().addAlert('Missing model')
+    useWorkspaceStore().toast.addAlert('Missing model')
 
     expect(useToast().toasts).toEqual([
       expect.objectContaining({
+        description: undefined,
         kind: 'warning',
-        title: 'Missing model',
-        description: undefined
+        title: 'Missing model'
       })
     ])
   })
@@ -79,7 +84,7 @@ describe('createExtensionToastManager', () => {
   it.for(['error', 'info', 'loading', 'success', 'warning'] as const)(
     'creates and dismisses a %s toast through the id-based API',
     (kind) => {
-      const toast = createExtensionToastManager()
+      const { toast } = useWorkspaceStore()
       const id = toast[kind]('Uploading', { description: 'model.safetensors' })
 
       expect(useToast().toasts).toEqual([
