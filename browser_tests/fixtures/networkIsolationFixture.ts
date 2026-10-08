@@ -2,7 +2,10 @@ import type { APIRequestContext } from '@playwright/test'
 import { expect, test as base } from '@playwright/test'
 import { config as dotenvConfig } from 'dotenv'
 
+import type { components } from '@comfyorg/registry-types'
+
 import { HERO_SLIDES } from '@/platform/cloud/onboarding/constants/heroSlides'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import type { LiveCloudBillingConfig } from '@e2e/fixtures/utils/liveCloudBillingConfig'
 import { installLiveCloudBillingRouting } from '@e2e/fixtures/utils/liveCloudBillingContext'
 import {
@@ -12,6 +15,8 @@ import {
 } from '@e2e/fixtures/utils/liveCloudBillingPolicy'
 import type { NetworkPolicy } from '@e2e/fixtures/utils/networkPolicy'
 import { assetPath } from '@e2e/fixtures/utils/paths'
+
+type ReleaseNote = components['schemas']['ReleaseNote']
 
 dotenvConfig()
 
@@ -172,6 +177,16 @@ export const networkIsolationFixture = base.extend<{
         route.fulfill({ path: assetPath('video/video-preview-portrait.webm') })
       )
     }
+    await context.route(
+      (url) =>
+        (url.origin === 'https://api.comfy.org' ||
+          url.origin === 'https://stagingapi.comfy.org') &&
+        url.pathname === '/releases',
+      (route) =>
+        route.request().method() === 'GET'
+          ? route.fulfill(jsonRoute([] satisfies ReleaseNote[]))
+          : route.fallback()
+    )
     await context.route(
       'https://{api,stagingapi}.comfy.org/comfy-nodes/*/node',
       (route) => route.fulfill({ status: 404, body: '' })
