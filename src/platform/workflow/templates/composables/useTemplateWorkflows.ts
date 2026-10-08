@@ -2,7 +2,7 @@ import { computed, onScopeDispose, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useToast } from '@/components/ui/toast/toastStore'
-import type { ToastId } from '@/types/toastId'
+import { createToastId } from '@/types/toastId'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useSurveyFeatureTracking } from '@/platform/surveys/useSurveyFeatureTracking'
@@ -210,7 +210,7 @@ export function useTemplateWorkflows() {
     signal: AbortSignal
   ) {
     const toast = useToast()
-    let progressToastId: ToastId | undefined
+    const progressToastId = createToastId()
     let preparedJson: ComfyWorkflowJSON | LegacyLoadableWorkflow = workflow
     const errors: unknown[] = []
     try {
@@ -220,7 +220,9 @@ export function useTemplateWorkflows() {
         signal,
         useSettingStore().get('Comfy.Workflow.NamedValuesRestore'),
         () => {
-          progressToastId = toast.loading(t('templateWorkflows.preparingMedia'))
+          toast.loading(t('templateWorkflows.preparingMedia'), {
+            id: progressToastId
+          })
         }
       )
       errors.push(...result.errors)
@@ -234,7 +236,7 @@ export function useTemplateWorkflows() {
       signal.throwIfAborted()
       errors.push(error)
     } finally {
-      if (progressToastId !== undefined) toast.dismiss(progressToastId)
+      toast.dismiss(progressToastId)
     }
     if (errors.length) {
       reportError(

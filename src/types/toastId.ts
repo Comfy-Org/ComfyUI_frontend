@@ -1,5 +1,8 @@
 export type ToastId = number & { readonly __brand: 'ToastId' }
 
-export function toToastId(value: number): ToastId {
-  return value as ToastId
+let lastToastId = 0
+
+export function createToastId(): ToastId {
+  lastToastId += 1
+  return lastToastId as ToastId
 }

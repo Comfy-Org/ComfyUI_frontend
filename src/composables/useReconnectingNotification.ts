@@ -3,7 +3,7 @@ import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useToast } from '@/components/ui/toast/toastStore'
-import type { ToastId } from '@/types/toastId'
+import { createToastId } from '@/types/toastId'
 import { useSettingStore } from '@/platform/settings/settingStore'
 
 const RECONNECT_TOAST_DELAY_MS = 2000
@@ -17,11 +17,11 @@ export function useReconnectingNotification() {
   const settingStore = useSettingStore()
 
   const toastDelayMs = ref(RECONNECT_TOAST_DELAY_MS)
-  let reconnectingToastId: ToastId | undefined
+  const reconnectingToastId = createToastId()
 
   const { start, stop, isPending } = useTimeoutFn(
     () => {
-      reconnectingToastId ??= toast.error(t('g.reconnecting'))
+      toast.error(t('g.reconnecting'), { id: reconnectingToastId })
     },
     toastDelayMs,
     { immediate: false }
@@ -53,10 +53,8 @@ export function useReconnectingNotification() {
   function onReconnected() {
     stop()
 
-    if (reconnectingToastId !== undefined) {
-      toast.dismiss(reconnectingToastId)
+    if (toast.dismiss(reconnectingToastId)) {
       toast.success(t('g.reconnected'), { duration: 2000 })
-      reconnectingToastId = undefined
     }
   }
 

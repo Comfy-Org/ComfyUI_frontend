@@ -60,6 +60,7 @@ export interface ToastOptions {
   closable?: boolean
   description?: string
   duration?: number
+  id?: ToastId
 }
 
 /**

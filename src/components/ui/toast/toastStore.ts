@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
-import { toToastId } from '@/types/toastId'
+import { createToastId } from '@/types/toastId'
 import type { ToastId } from '@/types/toastId'
 import type { ToastAction, ToastOptions } from '@/types/extensionTypes'
 
@@ -20,12 +20,11 @@ export interface Toast {
 export const useToast = defineStore('toast', () => {
   const toasts = ref<Toast[]>([])
   const held = ref(false)
-  let nextId = 1
 
   function add(kind: ToastKind, title: string, options: ToastOptions = {}) {
-    const id = toToastId(nextId++)
+    const id = options.id ?? createToastId()
     toasts.value = [
-      ...toasts.value,
+      ...toasts.value.filter((toast) => toast.id !== id),
       {
         action: options.action,
         closable: options.closable ?? true,
@@ -59,8 +58,11 @@ export const useToast = defineStore('toast', () => {
     return add('loading', title, options)
   }
 
-  function dismiss(id: ToastId) {
-    toasts.value = toasts.value.filter((toast) => toast.id !== id)
+  function dismiss(id: ToastId): boolean {
+    const remaining = toasts.value.filter((toast) => toast.id !== id)
+    const removed = remaining.length < toasts.value.length
+    toasts.value = remaining
+    return removed
   }
 
   function dismissAll() {
