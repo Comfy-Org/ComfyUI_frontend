@@ -737,7 +737,6 @@ test('keeps each workflow path on one line and offers more like it', async ({
 
   const paths = page.getByTestId('workflow-paths').getByRole('link')
   await expect(paths).toHaveText([
-    'Run here',
     /Try in Comfy Cloud/,
     'Download workflow',
     'API'

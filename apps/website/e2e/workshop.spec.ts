@@ -738,42 +738,25 @@ test.describe('Models catalog', () => {
 })
 
 test.describe('Model playground', () => {
-  test('keeps a long prompt whole instead of scrolling it out of sight', async ({
+  test('holds the prompt at five lines, scrolls the rest and lets the reader drag it taller', async ({
     page
   }) => {
     await page.goto(MODEL_PATH)
     const prompt = page.getByTestId('field-prompt')
+    const height = () => prompt.evaluate((box) => box.clientHeight)
     const hidden = () =>
       prompt.evaluate((box) => box.scrollHeight - box.clientHeight)
-    const height = () => prompt.evaluate((box) => box.clientHeight)
+
+    await prompt.fill('One line.')
+    const fiveLines = await height()
 
     await prompt.fill(
       Array.from({ length: 12 }, (_, line) => `Line ${line + 1}.`).join('\n')
     )
-    await expect.poll(hidden).toBeLessThanOrEqual(1)
-    const tall = await height()
-
-    await prompt.fill('One line.')
-    await expect.poll(height).toBeLessThan(tall)
-    await expect.poll(hidden).toBeLessThanOrEqual(1)
-  })
-
-  test('keeps a long prompt whole when the layout narrows under it', async ({
-    page
-  }) => {
-    await page.goto(MODEL_PATH)
-    const prompt = page.getByTestId('field-prompt')
-    const hidden = () =>
-      prompt.evaluate((box) => box.scrollHeight - box.clientHeight)
-
-    await prompt.fill(
-      'A slow push-in on a glass teapot lit from behind by a low winter sun, steam rising and catching the light while the room around it stays in shadow, the reflections on the table kept sharp and the background soft, with no people, no text and no logos anywhere in the frame.'
-    )
-    await expect.poll(hidden).toBeLessThanOrEqual(1)
-
-    await page.setViewportSize({ width: 380, height: 900 })
-
-    await expect.poll(hidden).toBeLessThanOrEqual(1)
+    await expect.poll(height).toBe(fiveLines)
+    await expect.poll(hidden).toBeGreaterThan(1)
+    await expect(prompt).toHaveCSS('resize', 'vertical')
+    await expect(prompt).toHaveCSS('overflow-y', 'auto')
   })
 
   test('stops the prompt box short of swallowing the window', async ({
