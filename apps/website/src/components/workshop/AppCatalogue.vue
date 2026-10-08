@@ -11,6 +11,7 @@ import { captureHubItemClick } from '@/scripts/hub-analytics'
 import type { HubItemSource } from '@/scripts/workshop-analytics'
 import { HUB_TOOLBAR_ID } from '@/scripts/hubToolbar'
 import CardRow from './CardRow.vue'
+import HubRowSeen from './HubRowSeen.vue'
 import WorkshopAppCard from './WorkshopAppCard.vue'
 
 const ROW_LIMIT = 8
@@ -94,6 +95,13 @@ function openApp(app: CatalogueApp, source: HubItemSource, position: number) {
             <WorkshopAppCard :app @click="openApp(app, 'app_row', index)" />
           </li>
         </CardRow>
+        <HubRowSeen
+          :view="{
+            surface: 'apps',
+            source: 'app_row',
+            slugs: shelf.map((app) => app.key)
+          }"
+        />
       </section>
       <button
         v-if="hasMore"

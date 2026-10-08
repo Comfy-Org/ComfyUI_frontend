@@ -16,8 +16,13 @@ import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import { HUB_TOOLBAR_ID } from '@/scripts/hubToolbar'
 import { useHubCatalogueTracking } from '@/composables/useHubCatalogueTracking'
-import { captureHubItemClick, hubItemOf } from '@/scripts/hub-analytics'
+import {
+  captureHubItemClick,
+  hubActiveQuery,
+  hubItemOf
+} from '@/scripts/hub-analytics'
 import CardRow from './CardRow.vue'
+import HubRowSeen from './HubRowSeen.vue'
 import FeaturedBanner from './FeaturedBanner.vue'
 import type { FeaturedSlide } from './FeaturedBanner.vue'
 import { CARD_GRID, SHELF_CARD } from '@/lib/workshop/card-layout'
@@ -83,7 +88,9 @@ function openWorkflow(model: WorkshopModel, position: number, row?: string) {
   captureHubItemClick(hubItemOf(model), {
     surface: 'workflows',
     position,
-    ...(row ? { source: 'category_row', row } : { source: 'results_grid' })
+    ...(row
+      ? { source: 'category_row', row }
+      : { source: 'results_grid', ...hubActiveQuery(query.value) })
   })
 }
 
@@ -312,6 +319,14 @@ function leaveSection() {
             />
           </li>
         </CardRow>
+        <HubRowSeen
+          :view="{
+            surface: 'workflows',
+            source: 'category_row',
+            row: category.id,
+            slugs: category.models.map((model) => model.slug)
+          }"
+        />
       </section>
       <button
         type="button"

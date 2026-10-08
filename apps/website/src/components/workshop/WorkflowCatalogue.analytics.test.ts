@@ -159,7 +159,7 @@ describe('WorkflowCatalogue analytics', () => {
     ])
   })
 
-  it('reports a workflow opened from the search results', async () => {
+  it('reports a workflow opened from the search results with the search', async () => {
     const user = userEvent.setup()
     render(WorkflowCatalogue, { props: { models } })
     await user.type(await searchbox(), 'o')
@@ -173,7 +173,8 @@ describe('WorkflowCatalogue analytics', () => {
           kind: 'workflow',
           slug: 'workflows/restore',
           source: 'results_grid',
-          position: 2
+          position: 2,
+          query: 'o'
         }
       }
     ])

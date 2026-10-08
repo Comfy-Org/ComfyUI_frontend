@@ -197,4 +197,28 @@ describe('WorkshopModelsGrid analytics', () => {
       }
     ])
   })
+
+  it('reports the search a result was opened under', async () => {
+    const user = userEvent.setup()
+    render(WorkshopModelsGrid, { props: { models } })
+
+    await user.type(await searchbox(), ' Flux {Enter}')
+    await user.click(
+      within(screen.getByTestId('workshop-models-grid')).getByRole('link')
+    )
+
+    expect(events('hub_item_clicked')).toEqual([
+      {
+        name: 'hub_item_clicked',
+        properties: {
+          surface: 'models',
+          kind: 'model',
+          slug: 'flux',
+          source: 'results_grid',
+          position: 0,
+          query: 'flux'
+        }
+      }
+    ])
+  })
 })

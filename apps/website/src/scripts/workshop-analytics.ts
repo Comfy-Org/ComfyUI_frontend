@@ -210,6 +210,17 @@ export type WorkshopAnalyticsEvent =
         source: HubItemSource
         position: number
         row?: string
+        query?: string
+      }
+    }
+  | {
+      name: 'hub_row_viewed'
+      properties: {
+        surface: HubSurface
+        source: HubItemSource
+        row?: string
+        item_count: number
+        slugs: string[]
       }
     }
   | {

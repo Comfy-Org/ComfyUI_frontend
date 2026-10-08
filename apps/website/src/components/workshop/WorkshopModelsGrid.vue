@@ -32,7 +32,11 @@ import { translationsFor } from '@/i18n/translations'
 import { HUB_TOOLBAR_ID } from '@/scripts/hubToolbar'
 import { rememberShelfOnClick } from '@/lib/workshop/shelf-memory'
 import { useHubCatalogueTracking } from '@/composables/useHubCatalogueTracking'
-import { captureHubItemClick, hubItemOf } from '@/scripts/hub-analytics'
+import {
+  captureHubItemClick,
+  hubActiveQuery,
+  hubItemOf
+} from '@/scripts/hub-analytics'
 import type { FeaturedSlide } from './FeaturedBanner.vue'
 import { openedUseCases, shelfOf } from '@/lib/workshop/shelf-use-cases'
 import { sectionTitleKeyFor } from '@/lib/workshop/section-title'
@@ -235,7 +239,8 @@ function openResult(model: WorkshopModel, position: number, event: MouseEvent) {
     captureHubItemClick(hubItemOf(model), {
       surface: 'models',
       source: 'results_grid',
-      position
+      position,
+      ...hubActiveQuery(query.value)
     })
   rememberModel(model, event)
 }

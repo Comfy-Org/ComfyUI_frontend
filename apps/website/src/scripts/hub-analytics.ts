@@ -20,6 +20,14 @@ interface HubPlacement {
   source: HubItemSource
   position: number
   row?: string
+  query?: string
+}
+
+export interface HubRowView {
+  surface: HubSurface
+  source: HubItemSource
+  row?: string
+  slugs: string[]
 }
 
 /** Mirrors the app's `app:search_query`: trimmed and capped, full length kept. */
@@ -29,6 +37,12 @@ export function hubSearchQuery(raw: string) {
     query: trimmed.toLowerCase().slice(0, MAX_QUERY_CHARS),
     query_length: trimmed.length
   }
+}
+
+/** The search a result was clicked under, so searches that led nowhere show. */
+export function hubActiveQuery(raw: string): { query?: string } {
+  const { query } = hubSearchQuery(raw)
+  return query ? { query } : {}
 }
 
 export function hubFilterValue(value: string | readonly string[]): string {
@@ -65,5 +79,12 @@ export function captureHubFilterChange(
   captureWorkshopEvent({
     name: 'hub_filter_changed',
     properties: { surface, filter, value, previous_value: previousValue }
+  })
+}
+
+export function captureHubRowView({ slugs, ...row }: HubRowView) {
+  captureWorkshopEvent({
+    name: 'hub_row_viewed',
+    properties: { ...row, item_count: slugs.length, slugs }
   })
 }

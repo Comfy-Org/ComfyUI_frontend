@@ -6,6 +6,10 @@ import type { WorkshopModel } from '@/config/models-catalogue'
 import { SHELF_STORAGE_KEY } from '@/lib/workshop/shelf-memory'
 import { useCaseLabelKey } from '@/lib/workshop/use-case-label'
 import { captureWorkshopEvent } from '@/scripts/posthog'
+import {
+  setAllIntersecting,
+  stubIntersectionObserver
+} from '@/test/fakeIntersectionObserver'
 import WorkshopSections from './WorkshopSections.vue'
 
 vi.mock(import('@/scripts/posthog'))
@@ -83,4 +87,47 @@ describe('WorkshopSections analytics', () => {
       expect(captureWorkshopEvent).toHaveBeenLastCalledWith(expected)
     }
   )
+
+  it('reports each row a visitor scrolls to, with the cards it holds', async () => {
+    stubIntersectionObserver()
+    render(WorkshopSections, { props: { models, labelKey: useCaseLabelKey } })
+
+    await setAllIntersecting(true)
+
+    expect(
+      vi
+        .mocked(captureWorkshopEvent)
+        .mock.calls.map(([event]) => event)
+        .filter((event) => event.name === 'hub_row_viewed')
+    ).toEqual([
+      {
+        name: 'hub_row_viewed',
+        properties: {
+          surface: 'models',
+          source: 'use_case_row',
+          row: 'generate-videos',
+          item_count: 2,
+          slugs: ['a', 'b']
+        }
+      },
+      {
+        name: 'hub_row_viewed',
+        properties: {
+          surface: 'models',
+          source: 'other_formats_row',
+          item_count: 1,
+          slugs: ['voice']
+        }
+      },
+      {
+        name: 'hub_row_viewed',
+        properties: {
+          surface: 'models',
+          source: 'unplaced_grid',
+          item_count: 1,
+          slugs: ['mystery']
+        }
+      }
+    ])
+  })
 })

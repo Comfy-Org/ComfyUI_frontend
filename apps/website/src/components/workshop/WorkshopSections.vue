@@ -21,6 +21,7 @@ import { SHELF_CARD } from '@/lib/workshop/card-layout'
 import { rememberShelfOnClick } from '@/lib/workshop/shelf-memory'
 import { captureHubItemClick, hubItemOf } from '@/scripts/hub-analytics'
 import CardRow from './CardRow.vue'
+import HubRowSeen from './HubRowSeen.vue'
 import WorkshopModelCard from './WorkshopModelCard.vue'
 
 const ROW_LIMIT = 8
@@ -158,6 +159,14 @@ function rememberModel(
           />
         </li>
       </CardRow>
+      <HubRowSeen
+        :view="{
+          surface: 'models',
+          source: 'use_case_row',
+          row: section.useCase,
+          slugs: section.shown.map((family) => family.latest.slug)
+        }"
+      />
     </section>
 
     <section
@@ -213,6 +222,15 @@ function rememberModel(
           />
         </li>
       </CardRow>
+      <HubRowSeen
+        :view="{
+          surface: 'models',
+          source: 'other_formats_row',
+          slugs: otherFormats
+            .slice(0, ROW_LIMIT)
+            .map((family) => family.latest.slug)
+        }"
+      />
     </section>
 
     <section
@@ -240,6 +258,13 @@ function rememberModel(
           />
         </li>
       </ul>
+      <HubRowSeen
+        :view="{
+          surface: 'models',
+          source: 'unplaced_grid',
+          slugs: unplaced.map((family) => family.latest.slug)
+        }"
+      />
     </section>
   </div>
 </template>
