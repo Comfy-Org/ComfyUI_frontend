@@ -295,13 +295,13 @@ shows `message` as the warning title, like `warning(message)`. `remove()` and
 `add()` maps the PrimeVue message fields onto the new API and ignores every
 other field:
 
-| `add()` field | New API                                                                                                                                           |
-| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `severity`    | kind: `warn` → `warning`; `success`, `error` unchanged; `info`, `secondary`, `contrast` → `info`; any other value logs an error and shows nothing |
-| `summary`     | `title` (`detail` becomes the title when `summary` is missing)                                                                                    |
-| `detail`      | `description`                                                                                                                                     |
-| `life`        | `duration` in ms; `0` or unset keeps the toast open                                                                                               |
-| `closable`    | `closable`                                                                                                                                        |
+| `add()` field | New API                                                                                                                                                                                    |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `severity`    | kind: `warn` → `warning` (`warning` also works but is deprecated); `success`, `error` unchanged; `info`, `secondary`, `contrast` → `info`; any other value logs an error and shows nothing |
+| `summary`     | `title` (`detail` becomes the title when `summary` is missing)                                                                                                                             |
+| `detail`      | `description`                                                                                                                                                                              |
+| `life`        | `duration` in ms; `0` or unset keeps the toast open                                                                                                                                        |
+| `closable`    | `closable`                                                                                                                                                                                 |
 
 </details>
 

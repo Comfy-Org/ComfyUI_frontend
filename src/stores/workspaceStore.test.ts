@@ -3,11 +3,13 @@ import { fromAny } from '@total-typescript/shoehorn'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import type { Toast } from '@/components/ui/toast/toastStore'
+import { reportError } from '@/platform/telemetry/reportError'
 import type { ToastMessageOptions } from '@/types/extensionTypes'
 
 import { useWorkspaceStore } from './workspaceStore'
 
 vi.mock(import('firebase/auth'))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 interface LegacyToastCase {
   expected: Partial<Toast>
@@ -70,17 +72,38 @@ describe('extension toast API', () => {
     expect(useToast().toasts).toEqual([expect.objectContaining(expected)])
   })
 
+  it('legacy add shows a warning severity as a warning and reports it once', () => {
+    const { toast } = useWorkspaceStore()
+    const message = fromAny<ToastMessageOptions, unknown>({
+      severity: 'warning',
+      summary: 'Low disk space'
+    })
+
+    toast.add(message)
+    toast.add(message)
+
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({ kind: 'warning', title: 'Low disk space' }),
+      expect.objectContaining({ kind: 'warning', title: 'Low disk space' })
+    ])
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
+      surface: 'platform',
+      errorType: 'deprecated_toast_warning_severity',
+      level: 'warning'
+    })
+  })
+
   it('legacy add logs an unsupported severity instead of throwing', () => {
     useWorkspaceStore().toast.add(
       fromAny<ToastMessageOptions, unknown>({
-        severity: 'warning',
+        severity: 'danger',
         summary: 'Low disk space'
       })
     )
 
     expect(useToast().toasts).toEqual([])
     expect(console.error).toHaveBeenCalledWith(
-      expect.stringContaining('"warning"')
+      expect.stringContaining('"danger"')
     )
   })
 

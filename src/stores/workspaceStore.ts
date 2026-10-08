@@ -4,6 +4,7 @@ import { computed, ref } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { Settings } from '@/platform/settings/types'
 import { useColorPaletteService } from '@/services/colorPaletteService'
@@ -24,7 +25,7 @@ import { useBottomPanelStore } from './workspace/bottomPanelStore'
 import { useSidebarTabStore } from './workspace/sidebarTabStore'
 
 const legacySeverityKinds = new Map<
-  ToastMessageOptions['severity'],
+  string,
   'error' | 'info' | 'success' | 'warning'
 >([
   ['contrast', 'info'],
@@ -32,7 +33,8 @@ const legacySeverityKinds = new Map<
   ['info', 'info'],
   ['secondary', 'info'],
   ['success', 'success'],
-  ['warn', 'warning']
+  ['warn', 'warning'],
+  ['warning', 'warning']
 ])
 
 function workspaceStoreSetup() {
@@ -45,9 +47,20 @@ function workspaceStoreSetup() {
   const focusMode = ref(false)
 
   const toastStore = useToast()
+  let reportedWarningSeverity = false
+  function reportWarningSeverity() {
+    if (reportedWarningSeverity) return
+    reportedWarningSeverity = true
+    reportError(new Error('toast.add received severity "warning"'), {
+      surface: 'platform',
+      errorType: 'deprecated_toast_warning_severity',
+      level: 'warning'
+    })
+  }
   const toast: ToastManager = {
     add: (message: ToastMessageOptions) => {
-      const severity = message.severity ?? 'info'
+      const severity: string = message.severity ?? 'info'
+      if (severity === 'warning') reportWarningSeverity()
       const kind = legacySeverityKinds.get(severity)
       if (!kind) {
         console.error(`toast.add: unsupported severity "${severity}"`)
