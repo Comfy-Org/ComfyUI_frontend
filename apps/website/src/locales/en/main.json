@@ -1562,7 +1562,7 @@
       "importModels": "Import your own models",
       "longRuntime": "Longer workflow runtime (up to 1 hr)",
       "inviteMembers": "Invite members",
-      "inviteMembersUpTo50": "Invite members up to 50",
+      "inviteMembersUpTo50": "Invite up to 50 members",
       "concurrentWorkflows": "Members can run workflows concurrently",
       "sharedCreditPool": "Shared credit pool for all members",
       "roleBasedPermissions": "Role-based permissions"
