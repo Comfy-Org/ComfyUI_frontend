@@ -2,7 +2,7 @@ import { useDialogService } from '@/services/dialogService'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, effectScope } from 'vue'
+import { computed, effectScope, nextTick } from 'vue'
 
 import { SessionTokenError } from '@comfyorg/account-core/sessionTokenMint'
 
@@ -222,7 +222,6 @@ const statusReadPaths = [
 global.fetch = vi.fn()
 
 beforeEach(() => {
-  vi.mocked(webSessionResourceHeader).mockReset()
   vi.mocked(webSessionResourceHeader).mockResolvedValue(undefined)
   useErrorHandling().wrapWithErrorHandlingAsync =
     (action, errorHandler) =>
@@ -642,6 +641,30 @@ describe('useSubscription', () => {
       expect(
         useTeamWorkspaceStore().setWorkspaceBillingRail
       ).toHaveBeenCalledWith('workspace-456', 'legacy_stripe')
+    })
+
+    it('drops the previous workspace renewal invoice link on a workspace switch', async () => {
+      mockGetBillingStatus.mockResolvedValue({
+        is_active: false,
+        has_funds: false,
+        billing_status: 'payment_failed',
+        renewal_invoice: {
+          hosted_invoice_url: 'https://invoice.stripe.com/i/old',
+          amount_due: 100,
+          currency: 'usd'
+        }
+      })
+      const { subscriptionStatus, fetchStatus } = useSubscriptionWithScope()
+      await fetchStatus()
+      expect(subscriptionStatus.value?.renewal_invoice).toBeDefined()
+
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspaceId: 'workspace-456'
+      })
+      await nextTick()
+
+      expect(subscriptionStatus.value?.renewal_invoice).toBeUndefined()
+      expect(subscriptionStatus.value?.billing_status).toBe('payment_failed')
     })
 
     it('coalesces concurrent callers into one fetch', async () => {
@@ -2723,6 +2746,23 @@ describe('useSubscription', () => {
       expect(useAuthActions().accessBillingPortalDirect).toHaveBeenCalled()
     })
 
+    it('passes the cancel option to the portal only when asked', async () => {
+      const { manageSubscription, handleInvoiceHistory } =
+        useSubscriptionWithScope()
+      const open = vi.mocked(useAuthActions().accessBillingPortalDirect)
+
+      await manageSubscription({ cancelSubscription: true })
+      expect(open).toHaveBeenLastCalledWith(undefined, {
+        cancelSubscription: true
+      })
+
+      await manageSubscription()
+      expect(open).toHaveBeenLastCalledWith(undefined, undefined)
+
+      await handleInvoiceHistory()
+      expect(open).toHaveBeenLastCalledWith(undefined, undefined)
+    })
+
     describe('portal telemetry', () => {
       type PortalAction = 'manageSubscription' | 'handleInvoiceHistory'
 
@@ -2736,10 +2776,6 @@ describe('useSubscription', () => {
         window.dispatchEvent(new Event('blur'))
         window.dispatchEvent(new Event('focus'))
       }
-
-      beforeEach(() => {
-        mockTelemetry.trackBillingEvent.mockClear()
-      })
 
       it.for<{ action: PortalAction; target: string }>([
         { action: 'manageSubscription', target: 'manage_subscription' },

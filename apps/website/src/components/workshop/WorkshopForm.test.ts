@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest'
 import type {
   WorkshopDetailModel,
   WorkshopFormValues
-} from '../../config/workshop-detail'
+} from '@/config/workshop-detail'
 import WorkshopForm from './WorkshopForm.vue'
 
 const model = {

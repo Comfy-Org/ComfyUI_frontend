@@ -4,13 +4,13 @@ import { ChevronRight } from '@lucide/vue'
 import { useMediaQuery, useMounted } from '@vueuse/core'
 import { computed } from 'vue'
 
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '@/i18n/translations'
 import type { ModelLaunchHero } from './types'
 
-import ProductHeroBadge from '../../components/common/ProductHeroBadge.vue'
-import VideoPlayer from '../../components/common/VideoPlayer.vue'
-import Badge from '../../components/ui/badge/Badge.vue'
-import { translationsFor } from '../../i18n/translations'
+import ProductHeroBadge from '@/components/common/ProductHeroBadge.vue'
+import VideoPlayer from '@/components/common/VideoPlayer.vue'
+import Badge from '@/components/ui/badge/Badge.vue'
+import { translationsFor } from '@/i18n/translations'
 import ModelLaunchHeroCtaButtons from './ModelLaunchHeroCtaButtons.vue'
 import ModelLaunchHeroLogoMask from './ModelLaunchHeroLogoMask.vue'
 
@@ -292,8 +292,19 @@ const isContentFirst = hero.layout === 'content-first'
       </component>
 
       <p
+        v-if="hero.mobileDescriptionKey"
+        class="mt-6 text-base/relaxed font-light text-primary-comfy-canvas md:hidden"
+      >
+        {{ t(hero.mobileDescriptionKey) }}
+      </p>
+      <p
         v-if="hero.descriptionKey"
-        class="mt-6 text-base/relaxed font-light text-primary-comfy-canvas lg:text-lg/relaxed"
+        :class="
+          cn(
+            'mt-6 text-base/relaxed font-light text-primary-comfy-canvas lg:text-lg/relaxed',
+            hero.mobileDescriptionKey && 'hidden md:block'
+          )
+        "
       >
         {{ t(hero.descriptionKey) }}
       </p>
@@ -307,13 +318,14 @@ const isContentFirst = hero.layout === 'content-first'
 
       <div
         v-if="hero.badgeKeys?.length"
-        class="mt-6 flex flex-wrap items-center justify-center gap-3"
+        class="mt-6 flex flex-wrap items-center justify-center gap-2 md:gap-3"
       >
         <Badge
           v-for="badgeKey in hero.badgeKeys"
           :key="badgeKey"
           data-testid="model-launch-hero-badge"
           variant="subtle"
+          class="px-2 text-[11px] md:px-4 md:text-xs"
         >
           {{ t(badgeKey) }}
         </Badge>

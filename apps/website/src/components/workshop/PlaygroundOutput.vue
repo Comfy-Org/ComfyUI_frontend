@@ -14,16 +14,16 @@ import { DialogContent, DialogPortal, DialogRoot, DialogTitle } from 'reka-ui'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
-import VideoPlayer from '../common/VideoPlayer.vue'
+import VideoPlayer from '@/components/common/VideoPlayer.vue'
 import OutputTransport from './OutputTransport.vue'
-import type { Modality } from '../../config/models-catalogue'
-import type { RunOutput, RunRecord, RunState } from '../../config/workshop-run'
-import { formatElapsed, isExpired } from '../../config/workshop-run'
-import { downloadOutput } from '../../config/workshop-output-download'
-import { failureLabelKey } from '../../lib/workshop/failure-label'
-import { outputLabels } from '../../lib/workshop/output-labels'
-import type { Locale, TranslationKey } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
+import type { Modality } from '@/config/models-catalogue'
+import type { RunOutput, RunRecord, RunState } from '@/config/workshop-run'
+import { formatElapsed, isExpired } from '@/config/workshop-run'
+import { downloadOutput } from '@/config/workshop-output-download'
+import { failureLabelKey } from '@/lib/workshop/failure-label'
+import { outputLabels } from '@/lib/workshop/output-labels'
+import type { Locale, TranslationKey } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 
 const {
   state,
@@ -484,6 +484,7 @@ const earlierClass = (active: boolean) =>
             :src="currentUrl"
             :alt="shown.alt ?? t('workshop.output.title')"
             class="size-full object-contain"
+            fetchpriority="high"
             @load="emit('delivery', currentUrl, 'succeeded')"
             @error="emit('delivery', currentUrl, 'failed')"
           />
