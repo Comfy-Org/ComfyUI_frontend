@@ -4354,6 +4354,36 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(conversationStore.liveTurns()).toHaveLength(1)
   })
 
+  it('(g47) each reconnect gets one bounded follow-up recovery pass', async () => {
+    vi.useFakeTimers()
+    try {
+      const getMessages = vi.fn(async (): Promise<AgentMessages> => {
+        throw new AgentApiError('temporary failure', 500, undefined)
+      })
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({
+        rest: fakeRest({ getMessages }),
+        events: source
+      })
+      session.start({ restore: false })
+      status(true)
+      await session.sendMessage('go')
+      emit(delta('msg-1', 'partial'))
+
+      status(false)
+      status(true)
+      await vi.advanceTimersByTimeAsync(64_000)
+      expect(getMessages).toHaveBeenCalledTimes(12)
+
+      status(false)
+      status(true)
+      await vi.advanceTimersByTimeAsync(64_000)
+      expect(getMessages).toHaveBeenCalledTimes(24)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   // PM-1738. A turn parked on a run approval stays `streaming` for as long as
   // the user takes to answer, so the drop that swallowed its `agent_ask` frame
   // leaves the server waiting on a card the panel never drew. Recovery already
