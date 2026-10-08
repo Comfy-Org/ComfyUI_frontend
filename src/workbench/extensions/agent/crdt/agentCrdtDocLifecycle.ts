@@ -308,7 +308,8 @@ export class AgentCrdtDocLifecycle {
 
   onDocumentUpdate(): void {
     this.usedCatchUpGrace = false
-    if (this.staleProbeTimer !== null) this.armStaleProbe()
+    if (this.staleProbeTimer === null) return
+    this.armStaleProbe()
     this.refreshPersistedDocId()
   }
 
