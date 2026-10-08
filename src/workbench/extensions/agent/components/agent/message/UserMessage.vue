@@ -251,7 +251,7 @@ function gridAsset(item: UserAttachment): ReplyAsset | undefined {
     </div>
     <div
       v-if="readableText"
-      class="flex text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 touch:opacity-100"
+      class="pointer-events-none flex text-muted-foreground opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100 touch:pointer-events-auto touch:opacity-100"
     >
       <AccessibleTooltip
         v-if="editable && (text || workflowReferences.length || skillReference)"

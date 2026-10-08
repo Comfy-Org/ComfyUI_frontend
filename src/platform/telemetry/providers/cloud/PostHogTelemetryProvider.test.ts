@@ -26,7 +26,7 @@ const hoisted = vi.hoisted(() => {
   const mockPeopleSet = vi.fn()
   const mockPeopleSetOnce = vi.fn()
   const mockRegister = vi.fn()
-  const mockReset = vi.fn()
+  const mockPosthogReset = vi.fn()
   const executionContext = {
     is_template: true,
     workflow_name: 'image_qwen_image_edit_2509',
@@ -54,7 +54,7 @@ const hoisted = vi.hoisted(() => {
     mockPeopleSet,
     mockPeopleSetOnce,
     mockRegister,
-    mockReset,
+    mockPosthogReset,
     executionContext,
     agentPanelOpen: false,
     refs,
@@ -65,7 +65,7 @@ const hoisted = vi.hoisted(() => {
         identify: mockIdentify,
         register: mockRegister,
         people: { set: mockPeopleSet, set_once: mockPeopleSetOnce },
-        reset: mockReset
+        reset: mockPosthogReset
       }
     }
   }
@@ -424,6 +424,35 @@ describe('PostHogTelemetryProvider', () => {
         TelemetryEvents.USER_SIGN_UP_OPENED,
         {}
       )
+    })
+
+    it('captures in-app survey events in the shape PostHog surveys read', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackInAppSurvey('shown', { surveyId: 'survey-1' })
+      provider.trackInAppSurvey('sent', {
+        surveyId: 'survey-1',
+        responses: { 'question-1': 'Too expensive' },
+        properties: { outcome: 'keep_plan' }
+      })
+      provider.trackInAppSurvey('dismissed', {
+        surveyId: 'survey-1',
+        properties: { outcome: 'closed' }
+      })
+
+      expect(hoisted.mockCapture.mock.calls).toEqual([
+        ['survey shown', { $survey_id: 'survey-1' }],
+        [
+          'survey sent',
+          {
+            $survey_id: 'survey-1',
+            '$survey_response_question-1': 'Too expensive',
+            outcome: 'keep_plan'
+          }
+        ],
+        ['survey dismissed', { $survey_id: 'survey-1', outcome: 'closed' }]
+      ])
     })
 
     it('captures auth events with metadata', async () => {
@@ -1669,14 +1698,14 @@ describe('PostHogTelemetryProvider', () => {
       const callback = vi.mocked(useCurrentUser().onUserLogout).mock.calls[0][0]
       callback()
 
-      expect(hoisted.mockReset).toHaveBeenCalledWith(true)
+      expect(hoisted.mockPosthogReset).toHaveBeenCalledWith(true)
     })
 
     it('does not register the watcher before init resolves', () => {
       createProvider()
 
       expect(useCurrentUser().onUserLogout).not.toHaveBeenCalled()
-      expect(hoisted.mockReset).not.toHaveBeenCalled()
+      expect(hoisted.mockPosthogReset).not.toHaveBeenCalled()
     })
   })
 

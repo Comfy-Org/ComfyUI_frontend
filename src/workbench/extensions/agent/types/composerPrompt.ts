@@ -1,6 +1,6 @@
 import type { SelectedNode } from '../composables/agent/useCanvasSelection'
 import { selectedNodeKey } from '../composables/agent/useCanvasSelection'
-import type { ComposerAttachment } from '../composables/agent/useComposer'
+import type { ComposerAttachment } from './composerAttachment'
 import type { WorkflowReference } from './workflowReference'
 import type { SkillReference } from './skillReference'
 

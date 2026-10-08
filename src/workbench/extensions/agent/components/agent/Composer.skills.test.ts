@@ -45,7 +45,7 @@ function mount(props: ComponentProps<typeof Composer> = {}) {
   vi.spyOn(skills, 'startFlagGate').mockResolvedValue()
   const view = render(Composer, {
     props: { hasWorkflowTarget: true, ...props },
-    global: { plugins: [i18n] }
+    global: { plugins: [i18n], directives: { tooltip: () => {} } }
   })
   return { ...view, skills, composer: useAgentComposerStore() }
 }
@@ -201,6 +201,7 @@ describe('Composer skill selection', () => {
   it('replaces the previous skill in one undo step while preserving other references', async () => {
     const { composer } = mount()
     composer.addAttachment({ id: 'asset', name: 'image.png', ref: 'image.png' })
+    composer.referenceAttachment('asset')
     await type('/land')
     await userEvent.keyboard('{Enter}')
     await userEvent.keyboard('/por{Enter}')

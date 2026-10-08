@@ -621,7 +621,9 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     })
     expect((await uploadResponse).ok()).toBe(true)
     await expect(
-      panel.getByTestId('composer-asset-section').getByText('movie.mp4')
+      panel
+        .getByTestId('composer-asset-section')
+        .getByRole('group', { name: 'movie.mp4' })
     ).toBeVisible()
     await expect.poll(() => uploadCount).toBe(1)
 
@@ -633,9 +635,9 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await expect(
       page.getByText('too-large.mp4 is larger than 24 MB')
     ).toBeVisible()
-    await expect(panel.getByText('too-large.mp4', { exact: true })).toHaveCount(
-      0
-    )
+    await expect(
+      panel.getByRole('group', { name: 'too-large.mp4' })
+    ).toHaveCount(0)
     await expect.poll(() => uploadCount).toBe(1)
   })
 
@@ -688,6 +690,15 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     pushEvent(await getWebSocket(), MESSAGE_DONE_EVENT)
     const editButton = panel.getByRole('button', { name: enMessages.g.edit })
     await expect(editButton).toHaveCount(1)
+    await expect(editButton).toHaveCSS('pointer-events', 'none')
+
+    await editButton.focus()
+    await expect(editButton).toHaveCSS('pointer-events', 'auto')
+    await composer.focus()
+    await expect(editButton).toHaveCSS('pointer-events', 'none')
+
+    await panel.getByText(originalPrompt, { exact: true }).last().hover()
+    await expect(editButton).toHaveCSS('pointer-events', 'auto')
     await editButton.click()
 
     await expect(composer).toHaveText(originalPrompt)

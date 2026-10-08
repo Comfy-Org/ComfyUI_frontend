@@ -906,7 +906,6 @@ describe('useCoreCommands', () => {
     })
 
     it('shows an error toast when the asset cannot start a drag', async () => {
-      vi.spyOn(console, 'error').mockImplementation(() => {})
       mockStartModelNodeDrag.mockReturnValue({
         code: 'NO_PROVIDER',
         message: 'No node provider registered',

@@ -1,5 +1,6 @@
 import { app, ComfyApp } from '../../scripts/app'
-import { $el, ComfyDialog } from '../../scripts/ui'
+import { ComfyDialog } from '../../scripts/ui'
+import { $el } from '../../scripts/ui/utils'
 
 class ClipspaceDialog extends ComfyDialog {
   static items: Array<

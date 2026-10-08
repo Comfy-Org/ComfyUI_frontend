@@ -98,6 +98,31 @@ describe('inline prompt', () => {
     }
   )
 
+  it.for(['video', 'audio'] as const)(
+    'retains $mediaKind preview metadata when round-tripping inline assets',
+    (mediaKind) => {
+      const draft: ComposerPrompt = {
+        text: 'Inspect ',
+        references: [
+          {
+            kind: 'asset',
+            textOffset: 8,
+            attachment: {
+              id: 'media',
+              name: 'Renamed media',
+              ref: 'stored-file',
+              mediaKind,
+              mediaUrl: 'blob:media',
+              previewUrl: '/poster.png',
+              uploading: true
+            }
+          }
+        ]
+      }
+      expect(promptDraft(promptDocument(draft))).toEqual(draft)
+    }
+  )
+
   it('restores references before, between and after text, including adjacent tokens', () => {
     const draft: ComposerPrompt = {
       text: 'before 😀\nafter',
