@@ -2,10 +2,10 @@ import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 
-import { buildSnippet } from '../../config/models-snippets'
-import { workshopContract } from '../../config/workshop-contract-catalog'
-import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
-import { initialWorkshopPageState } from '../../config/workshop-page-state'
+import { buildSnippet } from '@/config/models-snippets'
+import { workshopContract } from '@/config/workshop-contract-catalog'
+import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from '@/config/workshop-router-content'
+import { initialWorkshopPageState } from '@/config/workshop-page-state'
 import ApiTab from './ApiTab.vue'
 
 const routerId = 'bfl/flux-2-pro'
@@ -13,6 +13,21 @@ const contract = workshopContract(routerId)
 const values = { prompt: 'a capybara', seed: 5 }
 
 describe('ApiTab', () => {
+  it('reports the snippet language it copies and Get API key clicks', async () => {
+    const visitor = userEvent.setup()
+    const { emitted } = render(ApiTab, { props: { contract, values } })
+    await visitor.click(await screen.findByRole('tab', { name: 'cURL' }))
+    await visitor.click(screen.getByRole('button', { name: 'Copy snippet' }))
+    const getKey = screen.getByRole('link', { name: 'Get API key' })
+    getKey.addEventListener('click', (event) => event.preventDefault(), {
+      once: true
+    })
+    await visitor.click(getKey)
+
+    expect(emitted('copy')).toEqual([['curl']])
+    expect(emitted('getKey')).toEqual([[]])
+  })
+
   it('reuses one file setup for repeated positions in a multi-file input', async () => {
     const visitor = userEvent.setup()
     const model = getRouterWorkshopModelDetail(
@@ -45,9 +60,7 @@ describe('ApiTab', () => {
   it('prepares SDK asset examples without uploading or reading private files while browsing tabs', async () => {
     const visitor = userEvent.setup()
     const file = new File(['private'], 'photo.png', { type: 'image/png' })
-    const network = vi.fn()
     const read = vi.spyOn(file, 'arrayBuffer')
-    vi.stubGlobal('fetch', network)
     render(ApiTab, {
       props: {
         contract: workshopContract('wavespeed/seedvr2'),
@@ -69,7 +82,7 @@ describe('ApiTab', () => {
     await visitor.click(screen.getByTestId('snippet-curl'))
     expect(snippet.textContent).not.toContain('"image":')
     expect(snippet.textContent).toContain('This request may be incomplete')
-    expect(network).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
     expect(read).not.toHaveBeenCalled()
   })
 
@@ -109,6 +122,50 @@ describe('ApiTab', () => {
       )
     )
     expect(screen.queryByRole('button', { name: 'Copy snippet' })).toBeNull()
+  })
+
+  it('names the endpoint and the key beside the snippet, and the files only when the code reads them locally', async () => {
+    const file = new File(['pixels'], 'reference.webp', { type: 'image/webp' })
+    const { rerender } = render(ApiTab, {
+      props: { contract, values }
+    })
+    const facts = screen.getByTestId('api-facts')
+    expect(facts.textContent).toContain(`POST /v2/models/${routerId}`)
+    expect(facts.textContent).toContain('COMFY_API_KEY')
+    expect(facts.textContent).not.toContain('Your files')
+
+    const model = getRouterWorkshopModelDetail(
+      'byteplus--seedream-4-5--edit-images'
+    )
+    if (!model) throw new Error('Missing model')
+    await rerender({
+      contract: model.execution,
+      values: {
+        ...initialWorkshopPageState(model).values,
+        images: [{ file, name: file.name, type: file.type, size: file.size }]
+      }
+    })
+    await waitFor(() => expect(facts.textContent).toContain('Your files'))
+
+    await userEvent.click(screen.getByTestId('snippet-curl'))
+    expect(facts.textContent).not.toContain('Your files')
+    await userEvent.click(screen.getByTestId('snippet-typescript'))
+    expect(facts.textContent).toContain('Your files')
+
+    const fromUrl = getRouterWorkshopModelDetail(
+      'bfl--flux-2-max--generate-images'
+    )
+    if (!fromUrl) throw new Error('Missing model')
+    await rerender({
+      contract: fromUrl.execution,
+      values: initialWorkshopPageState(fromUrl).values
+    })
+    await waitFor(() =>
+      expect(screen.getByTestId('snippet').textContent).toContain(
+        'https://cdn.jsdelivr.net/gh/Comfy-Org/workflow_templates@'
+      )
+    )
+    expect(facts.textContent).not.toContain('Your files')
   })
 
   it('uses local file examples for Base64 inputs without exposing embedded bytes', async () => {
@@ -167,10 +224,6 @@ describe('ApiTab', () => {
     async ({ slug, source }) => {
       const model = getRouterWorkshopModelDetail(slug)
       if (!model) throw new Error('Missing model')
-      const network = vi.fn(() =>
-        Promise.reject(new Error('API browsing must not fetch media'))
-      )
-      vi.stubGlobal('fetch', network)
       render(ApiTab, {
         props: {
           contract: model.execution,
@@ -180,7 +233,7 @@ describe('ApiTab', () => {
       const snippet = await screen.findByTestId('snippet')
       expect(snippet.textContent).toContain(source)
       expect(snippet.textContent).not.toContain('Path(')
-      expect(network).not.toHaveBeenCalled()
+      expect(fetch).not.toHaveBeenCalled()
     }
   )
 

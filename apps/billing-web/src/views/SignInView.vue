@@ -5,17 +5,23 @@ import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
 import type { SessionErrorCode } from '@comfyorg/account-core/session'
+import { buildReturnUrl } from '@comfyorg/billing-contract'
 import SocialAuthButtons from '@comfyorg/account-ui/auth/SocialAuthButtons'
 
 import { safeReturnTo } from '@/auth/returnTo'
 import { useSignInController } from '@/auth/useSignInController'
+import SessionFailureAction from '@/components/auth/SessionFailureAction.vue'
 import SignInEmailForm from '@/components/auth/SignInEmailForm.vue'
 import { useHostedCopy } from '@/composables/useHostedCopy'
+import { BILLING_WEB_ENV } from '@/config/env'
+import { useBillingEntry } from '@/entry/billingEntry'
+import { billingWebSignInPort } from '@/session/billingWebAuth'
 
 const { t } = useI18n()
 const { coded } = useHostedCopy()
 const route = useRoute()
 const router = useRouter()
+const { entry } = useBillingEntry()
 
 const {
   state,
@@ -29,8 +35,9 @@ const {
   retryMint,
   retryAvailability
 } = useSignInController(() => {
+  if (route.name !== 'sign-in') return
   void router.replace(safeReturnTo(route.query.returnTo))
-})
+}, billingWebSignInPort())
 
 const showEmailForm = ref(false)
 const emailForm = ref<InstanceType<typeof SignInEmailForm>>()
@@ -50,7 +57,19 @@ async function showEmail(show: boolean): Promise<void> {
 // `isSecureContext` is absent in some runtimes; only an explicit false is insecure.
 const secureContext = window.isSecureContext ?? true
 
+const sessionFailed = computed(
+  () => state.value.step === 'signedIn' && state.value.mintFailed === true
+)
+/** Signed in on the shared session, but refused this workspace: no sign-in to offer. */
+const sessionOnly = computed(() => sessionFailed.value && !available.value)
+
+const form = computed(() => {
+  if (sessionOnly.value) return undefined
+  return showEmailForm.value ? 'email' : 'social'
+})
+
 const noticeKey = computed(() => {
+  if (sessionOnly.value) return undefined
   if (!available.value) return 'auth.signIn.unavailable'
   return secureContext ? undefined : 'auth.signIn.insecureContextWarning'
 })
@@ -60,24 +79,49 @@ const progressKey = computed(() =>
     : 'auth.signIn.signingIn'
 )
 const blocked = computed(() => busy.value || !available.value)
-const sessionFailed = computed(
-  () => state.value.step === 'signedIn' && state.value.mintFailed === true
-)
 /**
  * Only a workspace the server named as inaccessible gets its own copy: a
  * malformed or expired Firebase token is not about the workspace at all, and
  * the generic retry prompt is the better line for it, not `hosted.failure`'s
  * catch-all "something went wrong".
  */
-const WORKSPACE_REFUSAL_CODES: readonly SessionErrorCode[] = [
-  'ACCESS_DENIED',
-  'WORKSPACE_NOT_FOUND'
-]
-const sessionErrorMessage = computed(() => {
+const WORKSPACE_REFUSAL_COPY: Readonly<
+  Partial<Record<SessionErrorCode, SessionErrorCode>>
+> = {
+  ACCESS_DENIED: 'ACCESS_DENIED',
+  SSO_REQUIRED: 'ACCESS_DENIED',
+  WORKSPACE_NOT_FOUND: 'WORKSPACE_NOT_FOUND'
+}
+const refusalCopy = computed(() => {
   const code = sessionFailureCode.value
-  return code !== undefined && WORKSPACE_REFUSAL_CODES.includes(code)
-    ? coded('failure', code)
+  return code === undefined ? undefined : WORKSPACE_REFUSAL_COPY[code]
+})
+const sessionErrorMessage = computed(() =>
+  refusalCopy.value
+    ? coded('failure', refusalCopy.value)
     : t('auth.signIn.sessionError')
+)
+
+/**
+ * Retrying mints for the same refused workspace, so a refusal sends the
+ * customer back to the product to pick another one. The refused workspace is
+ * left off the link, and never swapped for the personal one.
+ */
+const appReturnLink = computed(() => {
+  const arrival = entry.value
+  if (!refusalCopy.value || !arrival) return undefined
+  const url = buildReturnUrl({
+    target: arrival.returnTo,
+    environment: BILLING_WEB_ENV,
+    workspace: undefined
+  })
+  if (!url) return undefined
+  return {
+    href: url.href,
+    label: t('hosted.returnTo', {
+      product: coded('product', arrival.product)
+    })
+  }
 })
 
 const linkButtonClass =
@@ -109,7 +153,7 @@ const alertClass = 'rounded-lg bg-base-background p-3 text-sm'
         {{ t(noticeKey) }}
       </div>
       <button
-        v-if="!available"
+        v-if="noticeKey === 'auth.signIn.unavailable'"
         type="button"
         :class="linkButtonClass"
         @click="retryAvailability"
@@ -118,7 +162,7 @@ const alertClass = 'rounded-lg bg-base-background p-3 text-sm'
       </button>
 
       <div class="mt-8 flex flex-col gap-4">
-        <template v-if="!showEmailForm">
+        <template v-if="form === 'social'">
           <!-- `contents` keeps both provider buttons as items of this flex column. -->
           <div ref="providerGroup" class="contents">
             <SocialAuthButtons
@@ -140,7 +184,7 @@ const alertClass = 'rounded-lg bg-base-background p-3 text-sm'
           </button>
         </template>
 
-        <template v-else>
+        <template v-else-if="form === 'email'">
           <SignInEmailForm
             ref="emailForm"
             :loading="busy"
@@ -179,9 +223,11 @@ const alertClass = 'rounded-lg bg-base-background p-3 text-sm'
           >
             {{ sessionErrorMessage }}
           </div>
-          <button type="button" :class="linkButtonClass" @click="retryMint">
-            {{ t('auth.signIn.retry') }}
-          </button>
+          <SessionFailureAction
+            :class="linkButtonClass"
+            :return-link="appReturnLink"
+            @retry="retryMint"
+          />
         </template>
       </div>
     </section>

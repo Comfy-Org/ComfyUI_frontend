@@ -54,6 +54,8 @@ vi.mock<unknown>(import('posthog-js'), () => ({
     capture: vi.fn(),
     identify: vi.fn(),
     register: vi.fn(),
+    unregister: vi.fn(),
+    get_property: vi.fn(),
     people: { set: vi.fn(), set_once: vi.fn() },
     reset: vi.fn()
   }
@@ -119,7 +121,6 @@ describe('telemetry providers wait for Pinia before touching stores', () => {
   afterEach(() => {
     markStoresReady()
     hoisted.customerIoRegistration.rejection = null
-    hoisted.reportError.mockClear()
     delete (window as { __CONFIG__?: unknown }).__CONFIG__
   })
 
@@ -182,6 +183,7 @@ describe('telemetry providers wait for Pinia before touching stores', () => {
 
     expect(hoisted.onUserResolved).not.toHaveBeenCalled()
     expect(hoisted.reportError).toHaveBeenCalledWith(registrationError, {
+      surface: 'platform',
       errorType: 'customerio_in_app_plugin_registration_failure'
     })
   })

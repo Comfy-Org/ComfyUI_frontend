@@ -1,6 +1,6 @@
 import { toGroupId } from '@/types/groupId'
 import { graphScopeOf } from '@/types/graphScopeId'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { NodeLifecycleEvent } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
@@ -57,7 +57,7 @@ import {
 } from './__fixtures__/duplicateLinks'
 import { duplicateSubgraphNodeIds } from './__fixtures__/duplicateSubgraphNodeIds'
 import { nestedSubgraphProxyWidgets } from './__fixtures__/nestedSubgraphProxyWidgets'
-import { nodeIdSpaceExhausted } from './__fixtures__/nodeIdSpaceExhausted'
+import { nodeIdsFromReservedMintRange } from './__fixtures__/nodeIdsFromReservedMintRange'
 import { uniqueSubgraphNodeIds } from './__fixtures__/uniqueSubgraphNodeIds'
 import { test } from './__fixtures__/testExtensions'
 
@@ -353,10 +353,6 @@ describe('LGraph', () => {
       return { ownerGraph, node, otherGraph, impostor }
     }
 
-    beforeEach(() => {
-      vi.spyOn(console, 'error').mockImplementation(() => {})
-    })
-
     describe('in DEV', () => {
       beforeEach(() => {
         vi.stubEnv('DEV', true)
@@ -431,12 +427,11 @@ describe('LGraph', () => {
     })
   })
 
-  test('can be instantiated', ({ expect }) => {
-    // @ts-expect-error Intentional - extra holds any / all consumer data that should be serialised
-    const graph = new LGraph({ extra: 'TestGraph' })
+  test('can be instantiated', ({ expect, minimalSerialisableGraph }) => {
+    const extra = { consumerData: 'TestGraph' }
+    const graph = new LGraph({ ...minimalSerialisableGraph, extra })
     expect(graph).toBeInstanceOf(LGraph)
-    expect(graph.extra).toBe('TestGraph')
-    expect(graph.extra).toBe('TestGraph')
+    expect(graph.extra).toEqual(extra)
   })
 
   test('is exactly the same type', ({ expect }) => {
@@ -494,7 +489,7 @@ describe('LGraph', () => {
 })
 
 describe('node id minting for a graph that shares its id space', () => {
-  /** Stands in for the agent panel's probe (`mintPortWiring.ts`). */
+  /** Stands in for the agent panel's probe (`docOpMinter.ts`). */
   function bindRootGraph(rootGraphId: string): () => void {
     return registerDocBoundRootGraphProbe(() => rootGraphId)
   }
@@ -599,7 +594,6 @@ describe('Floating Links / Reroutes', () => {
       -1
     )
     const collision = LLink.create(incumbent)
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     graph.addFloatingLink(incumbent)
 
     const result = graph.addFloatingLink(collision)
@@ -608,7 +602,7 @@ describe('Floating Links / Reroutes', () => {
     expect(collision.id).toBe(toLinkId(7))
     expect(graph.floatingLinks.size).toBe(1)
     expect(graph.floatingLinks.get(toLinkId(7))).toBe(incumbent)
-    expect(consoleError).toHaveBeenCalledOnce()
+    expect(console.error).toHaveBeenCalledOnce()
   })
 
   test('removing a rejected floating link preserves the incumbent', () => {
@@ -622,7 +616,6 @@ describe('Floating Links / Reroutes', () => {
       -1
     )
     const collision = LLink.create(incumbent)
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     graph.addFloatingLink(incumbent)
     graph.addFloatingLink(collision)
 
@@ -934,6 +927,7 @@ describe('Store-driven serialization parity', () => {
         message: 'Graph serialization state mismatch'
       }),
       {
+        surface: 'graph',
         errorType: 'graph_serialization_state_mismatch',
         context: {
           graphId: graph.id,
@@ -949,10 +943,8 @@ describe('Store-driven serialization parity', () => {
     const graph = createGraph(new DummyNode())
     const before = graph.asSerialisable()
 
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
-
     expect(graph.configure(before, true)).toBe(false)
-    expect(error).toHaveBeenCalledWith(
+    expect(console.error).toHaveBeenCalledWith(
       'Cannot additively configure a populated graph'
     )
     expect(graph.asSerialisable()).toEqual(before)
@@ -1133,24 +1125,6 @@ describe('node:before-removed event', () => {
     expect(events[0].node).toBe(node)
     expect(events[0].graphAtDispatch).toBe(graph)
     expect(node.graph).toBeNull()
-  })
-
-  it('identifies the successor when preserving same-id canonical state', () => {
-    const graph = new LGraph()
-    const node = new LGraphNode('test')
-    graph.add(node)
-    const successor = new LGraphNode('test')
-    successor.id = node.id
-    graph._nodes.push(successor)
-    graph._nodes_by_id[node.id] = successor
-
-    const beforeRemoved = vi.fn()
-    graph.events.addEventListener('node:before-removed', beforeRemoved)
-
-    graph.remove(node, { preserveCanonicalState: true })
-
-    expect(beforeRemoved).toHaveBeenCalledOnce()
-    expect(beforeRemoved.mock.calls[0][0].detail).toEqual({ node, successor })
   })
 
   it('does not fire node:before-removed for a node not in the graph', () => {
@@ -2200,6 +2174,62 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
     )
   })
 
+  it('keeps reserved ids out of a directly created definition', () => {
+    const graph = new LGraph()
+    const definition = createTestSubgraphData({
+      nodes: [
+        {
+          id: 1,
+          type: 'dummy',
+          pos: [0, 0],
+          size: [100, 100],
+          flags: {},
+          order: 0,
+          mode: 0,
+          inputs: [],
+          outputs: [{ name: 'out', type: 'INT', links: [1] }],
+          properties: {}
+        },
+        {
+          id: 2,
+          type: 'dummy',
+          pos: [200, 0],
+          size: [100, 100],
+          flags: {},
+          order: 1,
+          mode: 0,
+          inputs: [{ name: 'in', type: 'INT', link: 1 }],
+          outputs: [],
+          properties: {}
+        }
+      ],
+      links: [
+        {
+          id: toLinkId(1),
+          origin_id: 1,
+          origin_slot: 0,
+          target_id: 2,
+          target_slot: 0,
+          type: 'INT'
+        }
+      ]
+    })
+
+    const [created] = graph.createSubgraphs([definition], {
+      nodeIds: [toNodeId(2)],
+      linkIds: [1, 2]
+    })
+
+    expect(created.nodes.map((node) => node.id)).toContain(toNodeId(1))
+    expect(created.nodes.map((node) => node.id)).not.toContain(toNodeId(2))
+    expect([...created.links.keys()]).toHaveLength(1)
+    expect([...created.links.keys()]).not.toContain(toLinkId(1))
+    expect([...created.links.keys()]).not.toContain(toLinkId(2))
+    const [link] = created.links.values()
+    expect(link.origin_id).toBe(toNodeId(1))
+    expect(link.target_id).toBe(created.nodes[1].id)
+  })
+
   it('keeps the first duplicate subgraph definition during creation', () => {
     const graph = new LGraph()
     const id = createUuidv4()
@@ -2320,17 +2350,18 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
     it('warns when configuring a host with legacy proxyWidgets and no migration hook is wired', () => {
       const previous = LGraph.proxyWidgetMigrationFlush
       LGraph.proxyWidgetMigrationFlush = undefined
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
       try {
         const graph = new LGraph()
         serialized.id = graph.id
         graph.configure(serialized)
 
-        const migrationCall = warn.mock.calls.find(
-          (call) =>
-            typeof call[0] === 'string' &&
-            call[0].includes('Legacy proxyWidgets were not migrated')
-        )
+        const migrationCall = vi
+          .mocked(console.warn)
+          .mock.calls.find(
+            (call) =>
+              typeof call[0] === 'string' &&
+              call[0].includes('Legacy proxyWidgets were not migrated')
+          )
         expect(migrationCall).toBeDefined()
         if (!migrationCall)
           throw new Error('Expected proxy widget migration warning')
@@ -2342,16 +2373,37 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
         )
       } finally {
         LGraph.proxyWidgetMigrationFlush = previous
-        warn.mockRestore()
+        vi.mocked(console.warn).mockRestore()
       }
     })
   })
 
-  it('throws when node ID space is exhausted', () => {
+  it('remaps duplicate subgraph IDs when a reserved-range mint has raised the counters', () => {
+    const graph = new LGraph()
+    const observedNodeId = 4_462_758_126_524_329
+    const observedLinkId = toLinkId(7_729_209_487_955_825)
+
     expect(() => {
-      const graph = new LGraph()
-      graph.configure(structuredClone(nodeIdSpaceExhausted))
-    }).toThrow('Node ID space exhausted')
+      graph.configure(structuredClone(nodeIdsFromReservedMintRange))
+    }).not.toThrow()
+
+    expect(nodeIdSet(graph, SUBGRAPH_B)).toEqual(
+      new Set([
+        toNodeId(observedNodeId + 2),
+        toNodeId(observedNodeId + 3),
+        toNodeId(observedNodeId + 4)
+      ])
+    )
+    expect(graph.state.lastNodeId).toBe(observedNodeId + 4)
+
+    expect(nodeIdSet(graph, SUBGRAPH_A)).toEqual(
+      new Set([toNodeId(3), toNodeId(8), toNodeId(37)])
+    )
+
+    const subgraphB = graph.subgraphs.get(SUBGRAPH_B)
+    assert.exists(subgraphB)
+    expect([...subgraphB.links.keys()]).toEqual([toLinkId(observedLinkId + 1)])
+    expect(graph.state.lastLinkId).toBe(toLinkId(observedLinkId + 1))
   })
 
   it('is a no-op when subgraph node IDs are already unique', () => {
@@ -2396,7 +2448,6 @@ describe('Zero UUID handling in configure', () => {
   })
 
   it('creates a subgraph exposing IO without warning', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const graph = new LGraph()
 
     graph.createSubgraph(
@@ -2405,7 +2456,7 @@ describe('Zero UUID handling in configure', () => {
       })
     )
 
-    expect(warn).not.toHaveBeenCalled()
+    expect(console.warn).not.toHaveBeenCalled()
   })
 })
 
@@ -2564,7 +2615,6 @@ describe('node layout registration', () => {
     graph.add(node)
     await Promise.resolve()
 
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     const stop = layoutStore.onGeometryChange(() => {
       node.pos = [500, 600]
       throw new Error('listener failure')

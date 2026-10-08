@@ -9,6 +9,7 @@ import {
 } from '@/platform/keybindings/escapeOverride'
 import { KeyComboImpl } from '@/platform/keybindings/keyCombo'
 import { KeybindingImpl } from '@/platform/keybindings/keybinding'
+import { registerCoreKeybindingCommands } from '@/platform/keybindings/__fixtures__/registerCoreKeybindingCommands'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useCommandStore } from '@/stores/commandStore'
@@ -49,6 +50,7 @@ describe('keybindingService - Escape key handling', () => {
     const dialogStore = useDialogStore()
     dialogStore.dialogStack.length = 0
 
+    registerCoreKeybindingCommands()
     keybindingService = useKeybindingService()
     keybindingService.registerCoreKeybindings()
   })
@@ -124,8 +126,8 @@ describe('keybindingService - Escape key handling', () => {
     expect(useCommandStore().execute).not.toHaveBeenCalled()
   })
 
-  it.for(['menu', 'menubar'])(
-    'should leave Escape events from role=%s to the menu',
+  it.for(['menu', 'menubar', 'dialog'])(
+    'should leave Escape events from role=%s to the overlay',
     async (role) => {
       const menu = document.createElement('div')
       menu.setAttribute('role', role)
@@ -190,8 +192,11 @@ describe('keybindingService - Escape key handling', () => {
       const override = vi.fn().mockReturnValue(true)
       registerEscapeOverride(override)
 
-      const keybindingStore = useKeybindingStore()
-      keybindingStore.addDefaultKeybinding(
+      useCommandStore().registerCommand({
+        id: 'Test.BareF9',
+        function: () => {}
+      })
+      useKeybindingStore().addDefaultKeybinding(
         new KeybindingImpl({ commandId: 'Test.BareF9', combo: { key: 'F9' } })
       )
 

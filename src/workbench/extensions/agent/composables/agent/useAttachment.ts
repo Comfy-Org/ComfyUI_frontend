@@ -1,19 +1,41 @@
 import { i18n } from '@/i18n'
 import { reportError } from '@/platform/telemetry/reportError'
-import { hasImageType } from '@/utils/eventUtils'
-import { formatSize } from '@/utils/formatUtil'
-import type { ComposerAttachment } from './useComposer'
+import { hasAudioType, hasImageType, hasVideoType } from '@/utils/eventUtils'
+import { formatSize, getMediaTypeFromFilename } from '@/utils/formatUtil'
+import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
+import {
+  AgentApiError,
+  AgentResponseUnreadableError
+} from '../../services/agent/agentRestClient'
+import type { ComposerAttachment } from '../../types/composerAttachment'
 
 export const MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024
 const UPLOAD_HANDSHAKE_TIMEOUT_MS = 30 * 1000
 const UPLOAD_FLOOR_BYTES_PER_SECOND = 64 * 1024
 const DEFERRED_FETCH_TIMEOUT_MS = 60 * 1000
 const MAX_CONCURRENT_UPLOADS = 3
+const MAX_TELEMETRY_FILE_TYPE_LENGTH = 128
+const MIME_TYPE_PATTERN =
+  /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+\/[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/
+
+class DeadlineExceededError extends Error {
+  constructor(timeoutMs: number) {
+    super(`Timed out after ${timeoutMs}ms`)
+    this.name = 'DeadlineExceededError'
+  }
+}
 
 interface UploadResult {
   ref: string
   url?: string
 }
+
+type DeferredFileResult =
+  | 'uploaded'
+  | 'unsupported'
+  | 'cancelled'
+  | 'failed'
+  | 'duplicate'
 
 export interface UseAttachmentOptions {
   upload: (file: File, signal: AbortSignal) => Promise<UploadResult>
@@ -21,7 +43,8 @@ export interface UseAttachmentOptions {
   maxBytes?: (file: File) => number
   onError?: (message: string) => void
   onUploaded?: () => void
-  stage: (attachment: ComposerAttachment) => void
+  onDuplicate?: (names: string[]) => void
+  stage: (attachment: ComposerAttachment) => boolean
   update: (id: string, patch: Partial<ComposerAttachment>) => void
   remove: (id: string) => void
 }
@@ -35,6 +58,11 @@ function uploadDeadlineMs(file: File): number {
   )
 }
 
+function telemetryFileType(type: string | undefined): string {
+  if (!type || type.length > MAX_TELEMETRY_FILE_TYPE_LENGTH) return 'unknown'
+  return MIME_TYPE_PATTERN.test(type) ? type : 'unknown'
+}
+
 async function withDeadline<T>(
   work: Promise<T>,
   timeoutMs: number,
@@ -44,7 +72,7 @@ async function withDeadline<T>(
   const expiry = new Promise<never>((_resolve, reject) => {
     timer = setTimeout(() => {
       onExpire?.()
-      reject(new Error(`Timed out after ${timeoutMs}ms`))
+      reject(new DeadlineExceededError(timeoutMs))
     }, timeoutMs)
   })
   try {
@@ -56,17 +84,70 @@ async function withDeadline<T>(
 
 let stagedCount = 0
 
+function fileUploadKey(file: File): string {
+  return `${file.name}:${file.size}:${file.lastModified}`
+}
+
+async function fileContentHash(file: File): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', await file.arrayBuffer())
+  return Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('')
+}
+
+function attachmentMediaKind(file: File): MediaKind {
+  if (hasImageType(file)) return 'image'
+  if (hasVideoType(file)) return 'video'
+  if (hasAudioType(file)) return 'audio'
+  return getMediaTypeFromFilename(file.name)
+}
+
+function localPreview(
+  file: File,
+  kind: MediaKind
+): Pick<ComposerAttachment, 'previewUrl' | 'mediaUrl'> {
+  const playable = kind === 'video' || kind === 'audio'
+  const url =
+    kind === 'image' || playable ? URL.createObjectURL(file) : undefined
+  return {
+    previewUrl: kind === 'image' ? url : undefined,
+    mediaUrl: playable ? url : undefined
+  }
+}
+
+function uploadedPreview(
+  kind: MediaKind,
+  url?: string
+): Partial<ComposerAttachment> {
+  if (!url) return {}
+  if (kind === 'audio' || kind === 'video') return { mediaUrl: url }
+  if (kind === 'image') return { previewUrl: url }
+  return {}
+}
+
 export function useAttachment(options: UseAttachmentOptions) {
   const pending = new Set<string>()
   const inFlight = new Map<string, AbortController>()
   const cancelled = new Set<string>()
   const waiting: Array<() => void> = []
+  const uploaded = new Map<string, Map<string, UploadResult>>()
+  const contentHashes = new WeakMap<File, Promise<string>>()
+  let uploadGeneration = 0
   let activeUploads = 0
 
-  function stage(name: string): string {
+  function contentHashFor(file: File): Promise<string> {
+    const cached = contentHashes.get(file)
+    if (cached) return cached
+    const hash = fileContentHash(file)
+    contentHashes.set(file, hash)
+    return hash
+  }
+
+  function stage(name: string, sourceKey?: string): string | undefined {
     const id = `upload-${++stagedCount}:${name}`
+    if (!options.stage({ id, name, ref: '', uploading: true, sourceKey }))
+      return undefined
     pending.add(id)
-    options.stage({ id, name, ref: '', uploading: true })
     return id
   }
 
@@ -89,9 +170,30 @@ export function useAttachment(options: UseAttachmentOptions) {
     return true
   }
 
-  function failAttachment(id: string, name: string, errorType: string) {
+  // The file's declared size/type and the failure's shape (status code,
+  // timeout, abort) are safe, bounded context. The caught error's own
+  // message/stack are not reported: they can carry a local file path (e.g. a
+  // dropped file's full source path), which is why this always reports a
+  // fresh synthetic Error rather than the original cause.
+  function uploadFailureCause(cause: unknown): string {
+    if (cause instanceof AgentApiError) return `http_${cause.status}`
+    if (cause instanceof AgentResponseUnreadableError)
+      return 'unreadable_response'
+    if (cause instanceof DeadlineExceededError) return 'timeout'
+    if (cause instanceof DOMException && cause.name === 'AbortError')
+      return 'aborted'
+    return 'unknown'
+  }
+
+  function failAttachment(
+    id: string,
+    file: { name: string; size?: number; type?: string },
+    errorType: string,
+    cause: unknown
+  ) {
     return (): undefined => {
       reportError(new Error('Agent attachment upload failed'), {
+        surface: 'agent',
         errorType,
         tags: {
           failure_kind: 'caught_unexpected',
@@ -101,13 +203,51 @@ export function useAttachment(options: UseAttachmentOptions) {
           integration_target: 'assets',
           feature_flag: 'agent_panel',
           feature_flag_state: 'enabled',
-          project_context: 'agent_composer'
+          project_context: 'agent_composer',
+          upload_failure_cause: uploadFailureCause(cause),
+          file_type: telemetryFileType(file.type),
+          file_size_bytes: file.size ?? -1
         }
       })
-      options.onError?.(i18n.global.t('agent.attachmentUploadFailed', { name }))
+      options.onError?.(
+        i18n.global.t('agent.attachmentUploadFailed', { name: file.name })
+      )
       options.remove(id)
       return undefined
     }
+  }
+
+  async function resolveUpload(id: string, file: File): Promise<UploadResult> {
+    const key = fileUploadKey(file)
+    const contentHash = contentHashFor(file)
+    if (uploaded.has(key)) {
+      const hash = await contentHash
+      const cachedResult = uploaded.get(key)?.get(hash)
+      if (cancelled.has(id)) throw new DOMException('Aborted', 'AbortError')
+      if (cachedResult) return cachedResult
+    }
+
+    const generation = uploadGeneration
+    const controller = new AbortController()
+    inFlight.set(id, controller)
+    const result = await withDeadline(
+      options.upload(file, controller.signal),
+      options.uploadTimeoutMs ?? uploadDeadlineMs(file),
+      () => controller.abort()
+    )
+    const hash = await contentHash
+    if (cancelled.has(id)) throw new DOMException('Aborted', 'AbortError')
+    if (generation === uploadGeneration) {
+      const cachedResults = uploaded.get(key) ?? new Map<string, UploadResult>()
+      cachedResults.set(hash, result)
+      uploaded.set(key, cachedResults)
+    }
+    return result
+  }
+
+  function forgetUploads(): void {
+    uploaded.clear()
+    uploadGeneration += 1
   }
 
   async function uploadStagedFile(id: string, file: File): Promise<boolean> {
@@ -116,26 +256,22 @@ export function useAttachment(options: UseAttachmentOptions) {
     else activeUploads += 1
     try {
       if (cancelled.has(id)) return false
+      const mediaKind = attachmentMediaKind(file)
       options.update(id, {
         name: file.name,
-        previewUrl: hasImageType(file) ? URL.createObjectURL(file) : undefined
+        mediaKind,
+        ...localPreview(file, mediaKind)
       })
-      const controller = new AbortController()
-      inFlight.set(id, controller)
-      const result = await withDeadline(
-        options.upload(file, controller.signal),
-        options.uploadTimeoutMs ?? uploadDeadlineMs(file),
-        () => controller.abort()
-      )
+      const result = await resolveUpload(id, file)
       options.update(id, {
         ref: result.ref,
-        ...(result.url ? { previewUrl: result.url } : {}),
+        ...uploadedPreview(mediaKind, result.url),
         uploading: false
       })
       return true
-    } catch {
+    } catch (cause) {
       if (!cancelled.has(id))
-        failAttachment(id, file.name, 'agent_attachment_upload_failed')()
+        failAttachment(id, file, 'agent_attachment_upload_failed', cause)()
       return false
     } finally {
       settle(id)
@@ -156,11 +292,11 @@ export function useAttachment(options: UseAttachmentOptions) {
     for (const id of Array.from(pending)) cancelUpload(id)
   }
 
-  async function addDeferredFile(
+  async function uploadDeferredFile(
+    id: string,
     name: string,
     resolve: () => Promise<File | undefined>
-  ): Promise<'uploaded' | 'unsupported' | 'cancelled' | 'failed'> {
-    const id = stage(name)
+  ): Promise<DeferredFileResult> {
     try {
       const file = await withDeadline(resolve(), DEFERRED_FETCH_TIMEOUT_MS)
       if (cancelled.has(id)) return 'cancelled'
@@ -175,19 +311,39 @@ export function useAttachment(options: UseAttachmentOptions) {
       if (!(await uploadStagedFile(id, file))) return 'failed'
       options.onUploaded?.()
       return 'uploaded'
-    } catch {
+    } catch (cause) {
       if (cancelled.has(id)) return 'cancelled'
-      failAttachment(id, name, 'agent_attachment_fetch_failed')()
+      failAttachment(id, { name }, 'agent_attachment_fetch_failed', cause)()
       return 'failed'
     } finally {
       settle(id)
     }
   }
 
-  async function addFiles(files: Iterable<File>): Promise<void> {
+  async function addDeferredFile(
+    name: string,
+    resolve: () => Promise<File | undefined>,
+    sourceKey?: string
+  ): Promise<DeferredFileResult> {
+    const id = stage(name, sourceKey)
+    if (!id) {
+      options.onDuplicate?.([name])
+      return 'duplicate'
+    }
+    return uploadDeferredFile(id, name, resolve)
+  }
+
+  async function addFiles(files: Iterable<File>): Promise<boolean> {
+    const duplicates: string[] = []
     const staged = [...files]
       .filter((file) => !isTooLarge(file))
-      .map((file) => ({ file, id: stage(file.name) }))
+      .flatMap((file) => {
+        const sourceKey = `file:${JSON.stringify([file.name, file.size, file.lastModified, file.type])}`
+        const id = stage(file.name, sourceKey)
+        if (!id) duplicates.push(file.name)
+        return id ? [{ file, id }] : []
+      })
+    if (duplicates.length) options.onDuplicate?.(duplicates)
     let uploaded = 0
     await Promise.all(
       staged.map(async ({ id, file }) => {
@@ -195,7 +351,14 @@ export function useAttachment(options: UseAttachmentOptions) {
       })
     )
     if (uploaded > 0) options.onUploaded?.()
+    return uploaded > 0
   }
 
-  return { addDeferredFile, addFiles, cancelUpload, cancelAllUploads }
+  return {
+    addDeferredFile,
+    addFiles,
+    cancelUpload,
+    cancelAllUploads,
+    forgetUploads
+  }
 }

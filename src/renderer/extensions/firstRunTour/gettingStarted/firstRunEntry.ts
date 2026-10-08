@@ -4,7 +4,7 @@ import {
   until,
   useBreakpoints
 } from '@vueuse/core'
-import { readonly, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
@@ -26,21 +26,89 @@ import { useFirstRunTourController } from '../tour/useFirstRunTourController'
 
 const STARTUP_DECISION_TIMEOUT_MS = 60_000
 
+type FirstRunScreenState =
+  | { phase: 'released' }
+  | { phase: 'visible' }
+  | { phase: 'handoff'; handoffs: ReadonlySet<symbol> }
+
+type FirstRunScreenEvent =
+  | { type: 'shown' }
+  | { type: 'dismissed' }
+  | { type: 'released' }
+  | { type: 'handoffStarted'; ownership: symbol }
+  | { type: 'handoffFinished'; ownership: symbol }
+
+function finishFirstRunHandoff(
+  state: FirstRunScreenState,
+  ownership: symbol
+): FirstRunScreenState {
+  if (state.phase !== 'handoff' || !state.handoffs.has(ownership)) return state
+  const handoffs = new Set(state.handoffs)
+  handoffs.delete(ownership)
+  return handoffs.size === 0
+    ? { phase: 'released' }
+    : { phase: 'handoff', handoffs }
+}
+
+function transitionFirstRunScreen(
+  state: FirstRunScreenState,
+  event: FirstRunScreenEvent
+): FirstRunScreenState {
+  switch (event.type) {
+    case 'shown':
+      return { phase: 'visible' }
+    case 'dismissed':
+      return state.phase === 'visible' ? { phase: 'released' } : state
+    case 'released':
+      return { phase: 'released' }
+    case 'handoffStarted':
+      return {
+        phase: 'handoff',
+        handoffs: new Set([
+          ...(state.phase === 'handoff' ? state.handoffs : []),
+          event.ownership
+        ])
+      }
+    case 'handoffFinished':
+      return finishFirstRunHandoff(state, event.ownership)
+  }
+}
+
 export const useFirstRunEntry = createSharedComposable(() => {
   const authStore = useAuthStore()
   const settingStore = useSettingStore()
-  const gettingStartedVisible = ref(false)
+  const firstRunScreen = ref<FirstRunScreenState>({ phase: 'released' })
   const startupDecided = ref(false)
-  const firstRunTookScreen = ref(false)
+  let authGeneration = 0
   const isDesktopWidth =
     useBreakpoints(breakpointsTailwind).greaterOrEqual('md')
+
+  const gettingStartedVisible = computed(
+    () => firstRunScreen.value.phase === 'visible'
+  )
+  const firstRunHoldsScreen = computed(
+    () => firstRunScreen.value.phase !== 'released'
+  )
+
+  function dispatchFirstRunScreen(event: FirstRunScreenEvent): void {
+    firstRunScreen.value = transitionFirstRunScreen(firstRunScreen.value, event)
+  }
 
   watch(
     () => authStore.userId,
     (userId, previousUserId) => {
       if (previousUserId === undefined || userId === previousUserId) return
-      gettingStartedVisible.value = false
-      firstRunTookScreen.value = false
+      authGeneration++
+      dispatchFirstRunScreen({ type: 'released' })
+      void useFirstRunTourController()
+        .cancelPendingStart()
+        .catch((error) =>
+          reportError(error, {
+            surface: 'platform',
+            errorType: 'failure_restoring_first_run_renderer_setting',
+            level: 'warning'
+          })
+        )
       const tourStore = useOnboardingTourStore()
       if (tourStore.activeTour === 'firstRun') tourStore.postpone()
     },
@@ -94,9 +162,8 @@ export const useFirstRunEntry = createSharedComposable(() => {
     }
 
     if (decision === 'getting-started') {
-      gettingStartedVisible.value = true
+      dispatchFirstRunScreen({ type: 'shown' })
       consumeFirstRunReplayRequest(authStore.userId)
-      firstRunTookScreen.value = true
       return
     }
 
@@ -118,7 +185,6 @@ export const useFirstRunEntry = createSharedComposable(() => {
         () => authStore.userId !== ownerId
       )
       if (!started) return
-      firstRunTookScreen.value = true
       consumeFirstRunReplayRequest(ownerId)
       await markTutorialCompleted()
     } finally {
@@ -156,6 +222,7 @@ export const useFirstRunEntry = createSharedComposable(() => {
       await settingStore.set('Comfy.TutorialCompleted', true)
     } catch (error) {
       reportError(error, {
+        surface: 'platform',
         errorType: 'failure_writing_tutorial_completed_setting',
         level: 'warning'
       })
@@ -163,16 +230,35 @@ export const useFirstRunEntry = createSharedComposable(() => {
   }
 
   async function dismissGettingStarted() {
-    gettingStartedVisible.value = false
+    dispatchFirstRunScreen({ type: 'dismissed' })
     await markTutorialCompleted()
   }
 
+  async function dismissIntoFirstRunTour(templateId: string): Promise<void> {
+    const ownerId = authStore.userId
+    const ownerGeneration = authGeneration
+    const ownership = Symbol('first-run-tour-handoff')
+    dispatchFirstRunScreen({ type: 'handoffStarted', ownership })
+    try {
+      await dismissGettingStarted()
+      if (authStore.userId !== ownerId || authGeneration !== ownerGeneration)
+        return
+      await useFirstRunTourController().beginTour(
+        templateId,
+        () => authStore.userId !== ownerId || authGeneration !== ownerGeneration
+      )
+    } finally {
+      dispatchFirstRunScreen({ type: 'handoffFinished', ownership })
+    }
+  }
+
   return {
-    gettingStartedVisible: readonly(gettingStartedVisible),
-    firstRunTookScreen: readonly(firstRunTookScreen),
+    gettingStartedVisible,
+    firstRunHoldsScreen,
     whenStartupDecided,
     handleStartupOutcome,
     handleUrlWorkflow,
-    dismissGettingStarted
+    dismissGettingStarted,
+    dismissIntoFirstRunTour
   }
 })

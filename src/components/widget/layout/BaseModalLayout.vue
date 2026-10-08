@@ -31,11 +31,8 @@
       </nav>
 
       <div class="flex flex-col overflow-hidden bg-base-background">
-        <header
-          v-if="$slots.header"
-          class="flex h-18 w-full items-center justify-between gap-2 px-6"
-        >
-          <div class="flex min-w-0 flex-1 gap-2">
+        <header v-if="$slots.header" :class="headerClass">
+          <div :class="headerContentClass">
             <Button
               v-if="!notMobile && !showLeftPanel"
               size="lg"
@@ -78,7 +75,11 @@
           >
             {{ contentTitle }}
           </h2>
-          <div :class="contentContainerClass">
+          <div
+            ref="contentContainer"
+            data-testid="base-modal-content"
+            :class="contentContainerClass"
+          >
             <slot name="content" />
           </div>
         </main>
@@ -140,7 +141,7 @@ import { computed, inject, ref, useSlots, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import type { ButtonVariants } from '@/components/ui/button/button.variants'
+import type { ButtonVariants } from '@comfyorg/design-system/button.variants'
 import { OnCloseKey } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -150,11 +151,13 @@ const SIZE_CLASSES = {
   sm: 'h-[80vh] w-[90vw] max-w-[960px]',
   md: 'h-[80vh] w-[90vw] max-w-[1400px]',
   lg: 'h-[80vh] w-[90vw] max-w-[1280px] aspect-[20/13] min-[1450px]:max-w-[1724px]',
-  full: 'h-full w-full max-w-[1400px] 2xl:max-w-[1600px]'
+  full: 'h-full w-full max-w-[1400px] 2xl:max-w-[1600px]',
+  panel: 'size-full'
 } as const
 
 type ModalSize = keyof typeof SIZE_CLASSES
 type ContentPadding = 'default' | 'compact' | 'none'
+type HeaderPadding = 'default' | 'symmetric'
 
 const {
   contentTitle,
@@ -162,6 +165,7 @@ const {
   size = 'lg',
   leftPanelWidth = '14rem',
   contentPadding = 'default',
+  headerPadding = 'default',
   closeButtonVariant
 } = defineProps<{
   contentTitle: string
@@ -169,6 +173,7 @@ const {
   size?: ModalSize
   leftPanelWidth?: string
   contentPadding?: ContentPadding
+  headerPadding?: HeaderPadding
   closeButtonVariant?: ButtonVariants['variant']
 }>()
 
@@ -191,6 +196,7 @@ const notMobile = breakpoints.greater('md')
 
 const isLeftPanelOpen = ref<boolean>(true)
 const mobileMenuOpen = ref<boolean>(false)
+const contentContainer = ref<HTMLElement | null>(null)
 
 watch(notMobile, (isDesktop) => {
   if (!isDesktop) {
@@ -204,6 +210,20 @@ const showLeftPanel = computed(() => {
     : mobileMenuOpen.value
   return shouldShow
 })
+
+const headerClass = computed(() =>
+  cn(
+    'flex w-full items-center justify-between gap-2',
+    headerPadding === 'symmetric' ? 'px-6 py-5' : 'h-18 px-6'
+  )
+)
+
+const headerContentClass = computed(() =>
+  cn(
+    'flex min-w-0 flex-1 gap-2',
+    headerPadding === 'symmetric' && 'min-h-10 items-center'
+  )
+)
 
 const contentContainerClass = computed(() =>
   cn(
@@ -247,4 +267,11 @@ function handleEscape(event: KeyboardEvent) {
     isRightPanelOpen.value = false
   }
 }
+
+defineExpose({
+  getContentScrollTop: () => contentContainer.value?.scrollTop ?? 0,
+  setContentScrollTop: (scrollTop: number) => {
+    if (contentContainer.value) contentContainer.value.scrollTop = scrollTop
+  }
+})
 </script>

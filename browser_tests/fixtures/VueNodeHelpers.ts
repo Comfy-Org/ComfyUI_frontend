@@ -3,6 +3,7 @@
  */
 import type { Locator, Page } from '@playwright/test'
 
+import { WidgetSelectDefaultFixture } from '@e2e/fixtures/components/WidgetSelectDefault'
 import { SettingsHelper } from '@e2e/fixtures/helpers/SettingsHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { comfyExpect as expect } from '@e2e/fixtures/utils/customMatchers'
@@ -182,6 +183,23 @@ export class VueNodeHelpers {
   }
 
   /**
+   * Rename a node via its canvas title editor: double-click the title to
+   * start editing, fill in the new text, then press Enter to commit it
+   * (blurring the input, which is what `EditableText` treats as confirm).
+   *
+   * The `delay` matches the canvas double-clicks elsewhere in this suite: a
+   * zero-delay synthetic dblclick on a canvas surface is a documented flake
+   * source, since the two downs can land inside one frame.
+   */
+  async renameNode(nodeId: string, newTitle: string): Promise<void> {
+    const title = this.getNodeLocator(nodeId).getByTestId('node-title')
+    await title.dblclick({ delay: 5 })
+    const input = title.getByTestId('node-title-input')
+    await input.fill(newTitle)
+    await input.press('Enter')
+  }
+
+  /**
    * Delete selected Vue nodes using Backspace key
    */
   async deleteSelectedWithBackspace(): Promise<void> {
@@ -276,11 +294,10 @@ export class VueNodeHelpers {
     widgetName: string,
     optionName: string
   ): Promise<void> {
-    const node = this.getNodeByTitle(nodeTitle)
-    await node.getByRole('combobox', { name: widgetName, exact: true }).click()
-    await this.page
-      .getByRole('option', { name: optionName, exact: true })
-      .click()
+    await new WidgetSelectDefaultFixture(
+      this.getNodeByTitle(nodeTitle),
+      widgetName
+    ).selectOption(optionName)
   }
 
   /**
@@ -293,6 +310,13 @@ export class VueNodeHelpers {
       incrementButton: widget.getByTestId(TestIds.widgets.increment),
       valueControl: widget.getByTestId(TestIds.widgets.valueControl)
     }
+  }
+
+  async setInputNumberValue(widget: Locator, value: string): Promise<void> {
+    const { input } = this.getInputNumberControls(widget)
+    await input.fill(value)
+    await input.blur()
+    await expect(input).toHaveValue(value)
   }
 
   /**

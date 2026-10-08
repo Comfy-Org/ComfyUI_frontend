@@ -22,6 +22,8 @@ interface RestrictionRecord {
   readonly reviewed: `${number}-${number}-${number}`
 }
 
+type Reviewed = RestrictionRecord['reviewed']
+
 const RESTRICTIONS: Readonly<Record<string, RestrictionRecord>> = {
   // The video takes the first frame's aspect ratio, and a last frame shaped
   // differently is stretched to fit it.
@@ -37,6 +39,30 @@ const RESTRICTIONS: Readonly<Record<string, RestrictionRecord>> = {
 
 export function frameRatioRule(slug: string): FrameRatioRule | undefined {
   return RESTRICTIONS[slug]?.frameRatio
+}
+
+// Input images and videos showing a realistic human face, photoreal AI faces
+// included, are refused. The Router reports it only as a content policy block.
+const REAL_FACE_REFUSALS: {
+  readonly pages: ReadonlySet<string>
+  readonly source: string
+  readonly reviewed: Reviewed
+} = {
+  pages: new Set([
+    'byteplus--seedance-2-5-edit-video--edit-videos',
+    'byteplus--seedance-2-5-first-last-frame--animate-images',
+    'byteplus--seedance-2-5-reference--generate-videos',
+    'byteplus--seedance-2-fast-first-last-frame--animate-images',
+    'byteplus--seedance-2-fast-reference--generate-videos',
+    'byteplus--seedance-2-image-to-video--animate-images',
+    'byteplus--seedance-2-reference--generate-videos'
+  ]),
+  source: 'https://docs.byteplus.com/en/docs/ModelArk/2608626',
+  reviewed: '2026-09-30'
+}
+
+export function refusesRealFaces(slug: string): boolean {
+  return REAL_FACE_REFUSALS.pages.has(slug)
 }
 
 /**

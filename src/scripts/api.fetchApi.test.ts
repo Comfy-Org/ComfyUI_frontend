@@ -3,27 +3,19 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
+import { provideWebSessionRequests } from '@/platform/auth/session/webSessionFetch'
+import type { WebSessionRequests } from '@/platform/auth/session/webSessionFetch'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
-import type { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@/platform/telemetry'
 import { useAuthStore } from '@/stores/authStore'
 
-const { addBreadcrumb, trackFetchTimeout, trackUnifiedAuthRetry } = vi.hoisted(
-  () => ({
-    addBreadcrumb: vi.fn(),
-    trackFetchTimeout: vi.fn(),
-    trackUnifiedAuthRetry: vi.fn()
-  })
-)
+const { addBreadcrumb } = vi.hoisted(() => ({
+  addBreadcrumb: vi.fn()
+}))
 
 vi.mock(import('@sentry/vue'), () => ({ addBreadcrumb }))
 
-vi.mock(import('@/platform/telemetry'), () => ({
-  useTelemetry: () =>
-    fromPartial<ReturnType<typeof useTelemetry>>({
-      trackFetchTimeout,
-      trackUnifiedAuthRetry
-    })
-}))
+vi.mock(import('@/platform/telemetry'))
 
 // Only the unified-remint regression suite below flips this to `true`; every
 // other test in this file runs the (unaffected) non-cloud path.
@@ -70,22 +62,48 @@ const fetchTimeoutRejection = {
 
 describe('api.fetchApi', () => {
   beforeEach(() => {
-    vi.stubGlobal('fetch', vi.fn())
+    mockDistribution.isCloud = false
     // Reset api state
     api.user = 'test-user'
   })
 
   describe('header handling', () => {
+    it('reports that no auth header was attached off-cloud', async () => {
+      vi.mocked(global.fetch).mockResolvedValue(new Response())
+      const onAuthHeader = vi.fn()
+
+      await api.fetchApi('/test', { onAuthHeader })
+
+      expect(onAuthHeader).toHaveBeenCalledExactlyOnceWith(false)
+      expect(vi.mocked(global.fetch).mock.calls[0][1]).not.toHaveProperty(
+        'onAuthHeader'
+      )
+    })
+
+    it('reports when a cloud auth header was attached', async () => {
+      mockDistribution.isCloud = true
+      vi.spyOn(firebaseIdentity, 'onUserChanged').mockReturnValue(() => {})
+      vi.spyOn(firebaseIdentity, 'onTokenChanged').mockReturnValue(() => {})
+      useAuthStore().isInitialized = true
+      vi.mocked(useAuthStore().getAuthHeader).mockResolvedValue({
+        Authorization: 'Bearer tokenA'
+      })
+      vi.mocked(global.fetch).mockResolvedValue(new Response())
+      const onAuthHeader = vi.fn()
+
+      await api.fetchApi('/test', { onAuthHeader })
+
+      expect(onAuthHeader).toHaveBeenCalledExactlyOnceWith(true)
+    })
+
     it('should add Comfy-User header with plain object headers', async () => {
-      const mockFetch = vi
-        .mocked(global.fetch)
-        .mockResolvedValue(new Response())
+      vi.mocked(global.fetch).mockResolvedValue(new Response())
 
       await api.fetchApi('/test', {
         headers: {}
       })
 
-      expect(mockFetch).toHaveBeenCalledWith(
+      expect(global.fetch).toHaveBeenCalledWith(
         expect.stringContaining('/test'),
         expect.objectContaining({
           headers: {
@@ -96,35 +114,29 @@ describe('api.fetchApi', () => {
     })
 
     it('should add Comfy-User header with Headers instance', async () => {
-      const mockFetch = vi
-        .mocked(global.fetch)
-        .mockResolvedValue(new Response())
+      vi.mocked(global.fetch).mockResolvedValue(new Response())
       const headers = new Headers()
 
       await api.fetchApi('/test', { headers })
 
-      expect(mockFetch).toHaveBeenCalled()
-      const callHeaders = mockFetch.mock.calls[0][1]?.headers
+      expect(global.fetch).toHaveBeenCalled()
+      const callHeaders = vi.mocked(global.fetch).mock.calls[0][1]?.headers
       expect(callHeaders).toEqual(headers)
     })
 
     it('should add Comfy-User header with array headers', async () => {
-      const mockFetch = vi
-        .mocked(global.fetch)
-        .mockResolvedValue(new Response())
+      vi.mocked(global.fetch).mockResolvedValue(new Response())
       const headers: [string, string][] = []
 
       await api.fetchApi('/test', { headers })
 
-      expect(mockFetch).toHaveBeenCalled()
-      const callHeaders = mockFetch.mock.calls[0][1]?.headers
+      expect(global.fetch).toHaveBeenCalled()
+      const callHeaders = vi.mocked(global.fetch).mock.calls[0][1]?.headers
       expect(callHeaders).toContainEqual(['Comfy-User', 'test-user'])
     })
 
     it('should preserve existing headers when adding Comfy-User', async () => {
-      const mockFetch = vi
-        .mocked(global.fetch)
-        .mockResolvedValue(new Response())
+      vi.mocked(global.fetch).mockResolvedValue(new Response())
 
       await api.fetchApi('/test', {
         headers: {
@@ -133,7 +145,7 @@ describe('api.fetchApi', () => {
         }
       })
 
-      expect(mockFetch).toHaveBeenCalledWith(
+      expect(global.fetch).toHaveBeenCalledWith(
         expect.stringContaining('/test'),
         expect.objectContaining({
           headers: {
@@ -146,9 +158,7 @@ describe('api.fetchApi', () => {
     })
 
     it('should not allow developer-specified headers to be overridden by options', async () => {
-      const mockFetch = vi
-        .mocked(global.fetch)
-        .mockResolvedValue(new Response())
+      vi.mocked(global.fetch).mockResolvedValue(new Response())
 
       await api.fetchApi('/test', {
         headers: {
@@ -156,7 +166,7 @@ describe('api.fetchApi', () => {
         }
       })
 
-      expect(mockFetch).toHaveBeenCalledWith(
+      expect(global.fetch).toHaveBeenCalledWith(
         expect.stringContaining('/test'),
         expect.objectContaining({
           headers: {
@@ -167,15 +177,181 @@ describe('api.fetchApi', () => {
     })
   })
 
+  // PM-1802: the auth-rejection diagnostic is only worth anything if the
+  // scheme it names is the scheme the request actually used. These are
+  // integration tests on purpose - the agentRestClient tests invoke
+  // `onAuthScheme` by hand, so they cannot falsify what fetchApi reports.
+  describe('onAuthScheme (PM-1802)', () => {
+    function signInOnCloud() {
+      mockDistribution.isCloud = true
+      vi.spyOn(firebaseIdentity, 'onUserChanged').mockReturnValue(() => {})
+      vi.spyOn(firebaseIdentity, 'onTokenChanged').mockReturnValue(() => {})
+      useAuthStore().isInitialized = true
+    }
+
+    afterEach(() => {
+      mockDistribution.isCloud = false
+    })
+
+    it('reports none off-cloud, where no auth scheme is used at all', async () => {
+      vi.mocked(global.fetch).mockResolvedValue(new Response())
+      const onAuthScheme = vi.fn()
+
+      await api.fetchApi('/test', { onAuthScheme })
+
+      expect(onAuthScheme).toHaveBeenCalledExactlyOnceWith('none')
+    })
+
+    it('reports web-session when the request goes out on the session', async () => {
+      signInOnCloud()
+      const send = vi.fn().mockResolvedValue(new Response())
+      const release = provideWebSessionRequests(
+        fromPartial<WebSessionRequests>({
+          scope: async () => ({ session: fromPartial({}), epoch: 1 }),
+          send
+        })
+      )
+      const onAuthScheme = vi.fn()
+
+      try {
+        await api.fetchApi('/test', { onAuthScheme })
+      } finally {
+        release()
+      }
+
+      expect(onAuthScheme).toHaveBeenCalledExactlyOnceWith('web-session')
+      expect(send).toHaveBeenCalledOnce()
+    })
+
+    it('reports cloud-auth-header when a header was attached', async () => {
+      signInOnCloud()
+      vi.mocked(useAuthStore().getAuthHeader).mockResolvedValue({
+        Authorization: 'Bearer tokenA'
+      })
+      vi.mocked(global.fetch).mockResolvedValue(new Response())
+      const onAuthScheme = vi.fn()
+
+      await api.fetchApi('/test', { onAuthScheme })
+
+      expect(onAuthScheme).toHaveBeenCalledExactlyOnceWith('cloud-auth-header')
+      expect(vi.mocked(global.fetch).mock.calls[0][1]?.headers).toMatchObject({
+        Authorization: 'Bearer tokenA'
+      })
+    })
+
+    // The case the alert is about, and the one the first implementation got
+    // wrong: `addCloudAuthHeader` attaches nothing when auth is unavailable,
+    // so announcing `cloud-auth-header` for taking this branch misidentified
+    // an unauthenticated request as an authenticated one.
+    it('reports none when the cloud auth header was unavailable', async () => {
+      signInOnCloud()
+      vi.mocked(useAuthStore().getAuthHeader).mockResolvedValue(null)
+      vi.mocked(global.fetch).mockResolvedValue(new Response())
+      const onAuthScheme = vi.fn()
+      const onAuthHeader = vi.fn()
+
+      await api.fetchApi('/test', { onAuthScheme, onAuthHeader })
+
+      expect(onAuthScheme).toHaveBeenCalledExactlyOnceWith('none')
+      // Agrees with the existing boolean rather than contradicting it.
+      expect(onAuthHeader).toHaveBeenCalledExactlyOnceWith(false)
+      expect(
+        vi.mocked(global.fetch).mock.calls[0][1]?.headers
+      ).not.toHaveProperty('Authorization')
+    })
+
+    it('reports none when getting the cloud auth header throws', async () => {
+      signInOnCloud()
+      vi.mocked(useAuthStore().getAuthHeader).mockRejectedValue(
+        new Error('auth store unavailable')
+      )
+      vi.mocked(global.fetch).mockResolvedValue(new Response())
+      const onAuthScheme = vi.fn()
+
+      await api.fetchApi('/test', { onAuthScheme })
+
+      expect(onAuthScheme).toHaveBeenCalledExactlyOnceWith('none')
+    })
+
+    it('is not broken by a throwing onAuthCredential callback', async () => {
+      signInOnCloud()
+      vi.mocked(useAuthStore().getAuthHeader).mockResolvedValue({
+        Authorization: 'Bearer tokenA'
+      })
+      vi.mocked(global.fetch).mockResolvedValue(new Response('ok'))
+
+      const response = await api.fetchApi('/test', {
+        onAuthCredential: () => {
+          throw new Error('callback bug')
+        }
+      })
+
+      expect(await response.text()).toBe('ok')
+      expect(vi.mocked(global.fetch).mock.calls[0][1]?.headers).toMatchObject({
+        Authorization: 'Bearer tokenA'
+      })
+    })
+
+    it('reports the credential kind each auth path sent', async () => {
+      vi.mocked(global.fetch).mockResolvedValue(new Response())
+      const offCloud = vi.fn()
+      await api.fetchApi('/test', { onAuthCredential: offCloud })
+
+      signInOnCloud()
+      const getAuthHeader = vi.mocked(useAuthStore().getAuthHeader)
+      const bearer = vi.fn()
+      getAuthHeader.mockResolvedValueOnce({ Authorization: 'Bearer tokenA' })
+      await api.fetchApi('/test', { onAuthCredential: bearer })
+      const apiKey = vi.fn()
+      getAuthHeader.mockResolvedValueOnce({ 'X-API-KEY': 'key' })
+      await api.fetchApi('/test', { onAuthCredential: apiKey })
+      const missing = vi.fn()
+      getAuthHeader.mockResolvedValueOnce(null)
+      await api.fetchApi('/test', { onAuthCredential: missing })
+      const session = vi.fn()
+      const release = provideWebSessionRequests(
+        fromPartial<WebSessionRequests>({
+          scope: async () => ({ session: fromPartial({}), epoch: 1 }),
+          send: vi.fn().mockResolvedValue(new Response())
+        })
+      )
+      try {
+        await api.fetchApi('/test', { onAuthCredential: session })
+      } finally {
+        release()
+      }
+
+      expect(
+        [offCloud, bearer, apiKey, missing, session].map(
+          (callback) => callback.mock.calls
+        )
+      ).toEqual([
+        [['none']],
+        [['bearer']],
+        [['api-key']],
+        [['none']],
+        [['session-cookie']]
+      ])
+    })
+
+    it('is not forwarded to fetch as a request option', async () => {
+      vi.mocked(global.fetch).mockResolvedValue(new Response())
+
+      await api.fetchApi('/test', { onAuthScheme: vi.fn() })
+
+      expect(vi.mocked(global.fetch).mock.calls[0][1]).not.toHaveProperty(
+        'onAuthScheme'
+      )
+    })
+  })
+
   describe('default options', () => {
     it('should set cache to no-cache by default', async () => {
-      const mockFetch = vi
-        .mocked(global.fetch)
-        .mockResolvedValue(new Response())
+      vi.mocked(global.fetch).mockResolvedValue(new Response())
 
       await api.fetchApi('/test')
 
-      expect(mockFetch).toHaveBeenCalledWith(
+      expect(global.fetch).toHaveBeenCalledWith(
         expect.any(String),
         expect.objectContaining({
           cache: 'no-cache'
@@ -184,13 +360,11 @@ describe('api.fetchApi', () => {
     })
 
     it('should include required headers even when no headers option is provided', async () => {
-      const mockFetch = vi
-        .mocked(global.fetch)
-        .mockResolvedValue(new Response())
+      vi.mocked(global.fetch).mockResolvedValue(new Response())
 
       await api.fetchApi('/test')
 
-      expect(mockFetch).toHaveBeenCalledWith(
+      expect(global.fetch).toHaveBeenCalledWith(
         expect.any(String),
         expect.objectContaining({
           headers: expect.objectContaining({
@@ -201,13 +375,11 @@ describe('api.fetchApi', () => {
     })
 
     it('should not override existing cache option', async () => {
-      const mockFetch = vi
-        .mocked(global.fetch)
-        .mockResolvedValue(new Response())
+      vi.mocked(global.fetch).mockResolvedValue(new Response())
 
       await api.fetchApi('/test', { cache: 'force-cache' })
 
-      expect(mockFetch).toHaveBeenCalledWith(
+      expect(global.fetch).toHaveBeenCalledWith(
         expect.any(String),
         expect.objectContaining({
           cache: 'force-cache'
@@ -218,13 +390,11 @@ describe('api.fetchApi', () => {
 
   describe('URL construction', () => {
     it('should use apiURL for route construction', async () => {
-      const mockFetch = vi
-        .mocked(global.fetch)
-        .mockResolvedValue(new Response())
+      vi.mocked(global.fetch).mockResolvedValue(new Response())
 
       await api.fetchApi('/test/route')
 
-      expect(mockFetch).toHaveBeenCalledWith(
+      expect(global.fetch).toHaveBeenCalledWith(
         expect.stringContaining('/api/test/route'),
         expect.any(Object)
       )
@@ -247,11 +417,13 @@ describe('api.fetchApi', () => {
       await vi.advanceTimersByTimeAsync(60_000)
 
       expect(await settled).toMatchObject([fetchTimeoutRejection])
-      expect(trackFetchTimeout).toHaveBeenCalledExactlyOnceWith({
-        route: '/userdata/:resource',
-        method: 'POST',
-        timeout_ms: 60_000
-      })
+      expect(useTelemetry()?.trackFetchTimeout).toHaveBeenCalledExactlyOnceWith(
+        {
+          route: '/userdata/:resource',
+          method: 'POST',
+          timeout_ms: 60_000
+        }
+      )
       expect(addBreadcrumb).toHaveBeenCalledExactlyOnceWith({
         category: 'fetch',
         message: 'Timeout on POST /userdata/:resource',
@@ -268,11 +440,13 @@ describe('api.fetchApi', () => {
       await vi.advanceTimersByTimeAsync(60_000)
 
       expect(await settled).toMatchObject([fetchTimeoutRejection])
-      expect(trackFetchTimeout).toHaveBeenCalledExactlyOnceWith({
-        route: '/other',
-        method: 'GET',
-        timeout_ms: 60_000
-      })
+      expect(useTelemetry()?.trackFetchTimeout).toHaveBeenCalledExactlyOnceWith(
+        {
+          route: '/other',
+          method: 'GET',
+          timeout_ms: 60_000
+        }
+      )
     })
 
     it('normalizes the video metadata endpoint', async () => {
@@ -283,11 +457,13 @@ describe('api.fetchApi', () => {
       await vi.advanceTimersByTimeAsync(60_000)
 
       expect(await settled).toMatchObject([fetchTimeoutRejection])
-      expect(trackFetchTimeout).toHaveBeenCalledExactlyOnceWith({
-        route: '/video_metadata',
-        method: 'GET',
-        timeout_ms: 60_000
-      })
+      expect(useTelemetry()?.trackFetchTimeout).toHaveBeenCalledExactlyOnceWith(
+        {
+          route: '/video_metadata',
+          method: 'GET',
+          timeout_ms: 60_000
+        }
+      )
     })
 
     it('uses a caller-owned 120 second timeout', async () => {
@@ -299,15 +475,17 @@ describe('api.fetchApi', () => {
       const settled = Promise.allSettled([request])
       await vi.advanceTimersByTimeAsync(60_000)
 
-      expect(trackFetchTimeout).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackFetchTimeout).not.toHaveBeenCalled()
 
       await vi.advanceTimersByTimeAsync(60_000)
       expect(await settled).toMatchObject([fetchTimeoutRejection])
-      expect(trackFetchTimeout).toHaveBeenCalledExactlyOnceWith({
-        route: '/upload/:resource',
-        method: 'GET',
-        timeout_ms: 120_000
-      })
+      expect(useTelemetry()?.trackFetchTimeout).toHaveBeenCalledExactlyOnceWith(
+        {
+          route: '/upload/:resource',
+          method: 'GET',
+          timeout_ms: 120_000
+        }
+      )
     })
 
     it('applies the default timeout alongside caller cancellation', async () => {
@@ -319,11 +497,13 @@ describe('api.fetchApi', () => {
       await vi.advanceTimersByTimeAsync(60_000)
 
       expect(await settled).toMatchObject([fetchTimeoutRejection])
-      expect(trackFetchTimeout).toHaveBeenCalledExactlyOnceWith({
-        route: '/assets',
-        method: 'GET',
-        timeout_ms: 60_000
-      })
+      expect(useTelemetry()?.trackFetchTimeout).toHaveBeenCalledExactlyOnceWith(
+        {
+          route: '/assets',
+          method: 'GET',
+          timeout_ms: 60_000
+        }
+      )
     })
 
     it('preserves caller cancellation without timeout telemetry', async () => {
@@ -334,7 +514,7 @@ describe('api.fetchApi', () => {
       controller.abort()
 
       await expect(request).rejects.toMatchObject({ name: 'AbortError' })
-      expect(trackFetchTimeout).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackFetchTimeout).not.toHaveBeenCalled()
       expect(addBreadcrumb).not.toHaveBeenCalled()
     })
 
@@ -417,7 +597,7 @@ describe('api.fetchApi', () => {
         { status: 'fulfilled', value: { status: 200 } }
       ])
       expect(fetchCall).toBe(2)
-      expect(trackFetchTimeout).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackFetchTimeout).not.toHaveBeenCalled()
       expect(addBreadcrumb).not.toHaveBeenCalled()
     })
   })

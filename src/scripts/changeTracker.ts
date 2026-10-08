@@ -2,7 +2,7 @@ import { useDebounceFn } from '@vueuse/core'
 import _ from 'es-toolkit/compat'
 
 import { assert } from '@/base/assert'
-import { LAYER_EDITOR_DIALOG_KEY } from '@/renderer/extensions/layerEditor/composables/layerEditorDialog'
+import { LAYER_EDITOR_DIALOG_KEY } from '@/renderer/extensions/layerEditor/layerEditorDialogKey'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/litegraph'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
@@ -531,33 +531,37 @@ export class ChangeTracker {
         // If the mask editor is opened, we don't want to trigger on key events
         const comfyApp = app.constructor as typeof ComfyApp
         if (comfyApp.maskeditor_is_opended?.()) return
+
+        const activeEl = document.activeElement
+        if (
+          !isAutoQueueOnChange() &&
+          (activeEl?.tagName === 'INPUT' ||
+            activeEl?.tagName === 'TEXTAREA' ||
+            (activeEl instanceof HTMLElement && activeEl.isContentEditable))
+        ) {
+          // Text editors own their history. Bail out before the document-wide
+          // modal probes, whose cost otherwise scales with transcript size.
+          return
+        }
         if (isModalOpen(dialogStore.dialogStack.length)) return
 
         // The layer editor has its own session-local undo history
         if (useDialogStore().isDialogOpen(LAYER_EDITOR_DIALOG_KEY)) return
 
-        const activeEl = document.activeElement
+        keyIgnored =
+          e.key === 'Control' ||
+          e.key === 'Shift' ||
+          e.key === 'Alt' ||
+          e.key === 'Meta'
+        if (keyIgnored) return
+
         const selectOnlyAtKeydown = isSelectOnly(app.canvas)
         requestAnimationFrame(async () => {
           let bindInputEl: Element | null = null
           // If we are auto queue in change mode then we do want to trigger on inputs
-          if (!app.ui.autoQueueEnabled || app.ui.autoQueueMode === 'instant') {
-            if (
-              activeEl?.tagName === 'INPUT' ||
-              (activeEl && 'type' in activeEl && activeEl.type === 'textarea')
-            ) {
-              // Ignore events on inputs, they have their native history
-              return
-            }
+          if (!isAutoQueueOnChange()) {
             bindInputEl = activeEl
           }
-
-          keyIgnored =
-            e.key === 'Control' ||
-            e.key === 'Shift' ||
-            e.key === 'Alt' ||
-            e.key === 'Meta'
-          if (keyIgnored) return
 
           const changeTracker = getCurrentChangeTracker()
           if (!changeTracker) return

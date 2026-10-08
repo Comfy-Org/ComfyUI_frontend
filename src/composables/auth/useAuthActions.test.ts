@@ -34,7 +34,7 @@ const mockToastErrorHandler = vi.hoisted(() => vi.fn())
 
 const mockStartPendingTopup = vi.hoisted(() => vi.fn())
 const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
-const mockClearAllWorkflowStorage = vi.hoisted(() => vi.fn())
+const mockClearAllWorkspaceStorage = vi.hoisted(() => vi.fn())
 const mockPrepareWorkflowLogoutTransition = vi.hoisted(() => vi.fn())
 
 const authErrorMessages: Record<string, string> = enLocale.auth.errors
@@ -70,7 +70,7 @@ vi.mock<unknown>(import('@/composables/billing/usePendingTopup'), () => ({
 }))
 
 vi.mock(import('@/platform/workflow/persistence/base/storageIO'), () => ({
-  clearAllWorkflowStorage: mockClearAllWorkflowStorage,
+  clearAllWorkspaceStorage: mockClearAllWorkspaceStorage,
   prepareWorkflowLogoutTransition: mockPrepareWorkflowLogoutTransition
 }))
 
@@ -137,7 +137,7 @@ describe('useAuthActions.purchaseCreditsDirect', () => {
   })
 
   it('starts top-up tracking before opening Stripe checkout', async () => {
-    const open = vi.spyOn(window, 'open').mockImplementation(() => null)
+    const open = vi.spyOn(window, 'open').mockImplementation(() => window)
     const { purchaseCreditsDirect } = useAuthActions()
 
     await purchaseCreditsDirect(25)
@@ -192,7 +192,7 @@ describe('useAuthActions.logout', () => {
     expect(useDialogService().confirm).not.toHaveBeenCalled()
     expect(useWorkflowService().saveWorkflow).not.toHaveBeenCalled()
     expect(mockAuthStore.logout).toHaveBeenCalledTimes(1)
-    expect(mockClearAllWorkflowStorage).not.toHaveBeenCalled()
+    expect(mockClearAllWorkspaceStorage).not.toHaveBeenCalled()
   })
 
   it('logs out without prompting when no workflows are modified', async () => {
@@ -214,7 +214,7 @@ describe('useAuthActions.logout', () => {
     await logout()
 
     expect(mockPrepareWorkflowLogoutTransition).toHaveBeenCalledOnce()
-    expect(mockClearAllWorkflowStorage).toHaveBeenCalledExactlyOnceWith()
+    expect(mockClearAllWorkspaceStorage).toHaveBeenCalledExactlyOnceWith()
     expect(
       vi.mocked(mockAuthStore.logout).mock.invocationCallOrder[0]
     ).toBeLessThan(
@@ -222,9 +222,9 @@ describe('useAuthActions.logout', () => {
     )
     expect(
       mockPrepareWorkflowLogoutTransition.mock.invocationCallOrder[0]
-    ).toBeLessThan(mockClearAllWorkflowStorage.mock.invocationCallOrder[0])
+    ).toBeLessThan(mockClearAllWorkspaceStorage.mock.invocationCallOrder[0])
     expect(
-      mockClearAllWorkflowStorage.mock.invocationCallOrder[0]
+      mockClearAllWorkspaceStorage.mock.invocationCallOrder[0]
     ).toBeLessThan(navigationSpy.mock.invocationCallOrder[0])
   })
 
@@ -237,7 +237,7 @@ describe('useAuthActions.logout', () => {
     await logout()
 
     expect(mockPrepareWorkflowLogoutTransition).not.toHaveBeenCalled()
-    expect(mockClearAllWorkflowStorage).not.toHaveBeenCalled()
+    expect(mockClearAllWorkspaceStorage).not.toHaveBeenCalled()
   })
 
   it('cancels sign-out when the dialog is dismissed (null)', async () => {
@@ -327,6 +327,50 @@ describe('useAuthActions.logout', () => {
     ).toBeLessThan(
       vi.mocked(useWorkflowService().saveWorkflow).mock.invocationCallOrder[1]
     )
+  })
+
+  it.for([
+    { name: 'the prompt is dismissed', answer: null, runsHook: false },
+    { name: 'a workflow save is cancelled', answer: true, runsHook: false },
+    { name: 'the user signs out anyway', answer: false, runsHook: true }
+  ])(
+    'beforeSignOut runs only once unsaved work is settled: $name',
+    async ({ answer, runsHook }) => {
+      Object.assign(mockWorkflowStore, {
+        modifiedWorkflows: [makeWorkflow('a.json')]
+      })
+      vi.mocked(useDialogService().confirm).mockResolvedValueOnce(answer)
+      vi.mocked(useWorkflowService().saveWorkflow).mockResolvedValueOnce(false)
+      const beforeSignOut = vi.fn(async () => true)
+      const { logout } = useAuthActions()
+
+      await logout({ beforeSignOut })
+
+      expect(beforeSignOut).toHaveBeenCalledTimes(runsHook ? 1 : 0)
+      expect(mockAuthStore.logout).toHaveBeenCalledTimes(runsHook ? 1 : 0)
+    }
+  )
+
+  it('signs out after beforeSignOut allows it', async () => {
+    const beforeSignOut = vi.fn(async () => true)
+    const { logout } = useAuthActions()
+
+    await logout({ beforeSignOut })
+
+    expect(mockAuthStore.logout).toHaveBeenCalledOnce()
+    expect(beforeSignOut.mock.invocationCallOrder[0]).toBeLessThan(
+      vi.mocked(mockAuthStore.logout).mock.invocationCallOrder[0]
+    )
+  })
+
+  it('keeps the user signed in when beforeSignOut refuses', async () => {
+    const { logout } = useAuthActions()
+
+    await logout({ beforeSignOut: async () => false })
+
+    expect(mockAuthStore.logout).not.toHaveBeenCalled()
+    expect(mockClearAllWorkspaceStorage).not.toHaveBeenCalled()
+    expect(mockToastStore.add).not.toHaveBeenCalled()
   })
 
   it('passes denyLabel "Sign out anyway" to the dialog', async () => {

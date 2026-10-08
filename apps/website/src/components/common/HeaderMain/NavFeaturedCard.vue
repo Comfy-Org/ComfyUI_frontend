@@ -1,9 +1,23 @@
 <script setup lang="ts">
+import PlayOverlay from '@/components/blocks/PlayOverlay.vue'
 import ButtonPill from '@/components/ui/button-pill/ButtonPill.vue'
 
-import type { NavFeatured } from '../../../data/mainNavigation'
+import { prefersReducedMotion } from '@/composables/useReducedMotion'
+import type { NavFeatured } from '@/data/mainNavigation'
 
 defineProps<{ featured: NavFeatured }>()
+
+const WCAG_AUTOPLAY_LIMIT_SECONDS = 5
+const MAX_TIMEUPDATE_INTERVAL_SECONDS = 0.25
+
+function pauseBeforeAutoplayLimit({ currentTarget }: Event) {
+  if (
+    currentTarget instanceof HTMLVideoElement &&
+    currentTarget.currentTime >=
+      WCAG_AUTOPLAY_LIMIT_SECONDS - MAX_TIMEUPDATE_INTERVAL_SECONDS
+  )
+    currentTarget.pause()
+}
 </script>
 
 <template>
@@ -13,15 +27,35 @@ defineProps<{ featured: NavFeatured }>()
       :aria-label="featured.cta.ariaLabel"
       class="group/pill-trigger relative block"
     >
-      <img
-        class="aspect-4/3 w-62 max-w-none rounded-xl"
-        :src="featured.imageSrc"
-        :alt="featured.imageAlt ?? ''"
+      <video
+        v-if="featured.videoSrc"
+        class="aspect-4/3 w-62 max-w-none rounded-xl object-cover"
+        :src="featured.videoSrc"
+        :poster="featured.imageSrc"
+        :aria-label="featured.imageAlt"
         width="744"
         height="558"
-        loading="lazy"
-        decoding="async"
+        :autoplay="!prefersReducedMotion()"
+        muted
+        playsinline
+        @timeupdate="pauseBeforeAutoplayLimit"
       />
+      <span v-else class="relative block w-62">
+        <img
+          class="aspect-4/3 w-62 max-w-none rounded-xl object-cover"
+          :src="featured.imageSrc"
+          :alt="featured.imageAlt ?? ''"
+          width="744"
+          height="558"
+          loading="lazy"
+          decoding="async"
+        />
+        <PlayOverlay
+          v-if="featured.showPlayOverlay"
+          size="nav"
+          class="text-white"
+        />
+      </span>
       <p class="mt-4 font-extrabold uppercase">
         {{ featured.title }}
       </p>

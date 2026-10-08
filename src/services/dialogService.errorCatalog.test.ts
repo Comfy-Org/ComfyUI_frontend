@@ -22,7 +22,7 @@ import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 import { useDialogService } from './dialogService'
 
 vi.mock(import('@/platform/telemetry'))
-// eslint-disable-next-line primevue-removal/no-imports
+// oxlint-disable-next-line comfy/no-primevue-imports
 vi.mock(import('primevue/usetoast'), () => ({
   useToast: () => ({
     add: vi.fn(),
@@ -32,7 +32,7 @@ vi.mock(import('primevue/usetoast'), () => ({
   })
 }))
 vi.mock(import('@/composables/useCopyToClipboard'), () => ({
-  useCopyToClipboard: () => ({ copyToClipboard: vi.fn(async () => {}) })
+  useCopyToClipboard: () => ({ copyToClipboard: vi.fn(async () => true) })
 }))
 vi.mock(import('@/composables/billing/useBillingContext'))
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))

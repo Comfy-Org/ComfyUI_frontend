@@ -1539,6 +1539,15 @@ describe('graphTraversalUtil', () => {
         expect(executionIds).toEqual(['789', '456', '123']) // DFS processes in LIFO order
       })
 
+      it('should keep a colon-bearing root node ID whole', () => {
+        const graph = createMockGraph([])
+        const node = createMockNode('insert:op-123:root:node:29', { graph })
+
+        const executionIds = getExecutionIdsForSelectedNodes([node])
+
+        expect(executionIds).toEqual(['insert:op-123:root:node:29'])
+      })
+
       it('should expand subgraph nodes to include all children', () => {
         const graph = createMockGraph([])
         const subNodes = [createMockNode('10'), createMockNode('11')]

@@ -1,7 +1,7 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import axios from 'axios'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, h } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -61,7 +61,7 @@ vi.mock<unknown>(
 vi.mock(import('@/workbench/extensions/manager/composables/useManagerState'))
 
 vi.mock<unknown>(
-  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
+  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
 
   () => ({
     useToast: () => ({ add: addToast })
@@ -100,10 +100,6 @@ describe('HelpCenterMenuContent feedback item', () => {
     distribution.isDesktop = false
     distribution.isNightly = false
     openSpy = vi.spyOn(window, 'open').mockReturnValue(null)
-  })
-
-  afterEach(() => {
-    openSpy.mockRestore()
   })
 
   it('opens the Typeform survey tagged with help-center source on Cloud', async () => {
@@ -154,10 +150,6 @@ describe('HelpCenterMenuContent system status item', () => {
     distribution.isDesktop = false
     distribution.isNightly = false
     openSpy = vi.spyOn(window, 'open').mockReturnValue(null)
-  })
-
-  afterEach(() => {
-    openSpy.mockRestore()
   })
 
   it('opens the status page on Cloud', async () => {

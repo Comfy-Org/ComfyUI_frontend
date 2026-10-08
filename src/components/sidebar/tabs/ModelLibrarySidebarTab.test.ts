@@ -61,7 +61,8 @@ const mockModel = fromPartial<ComfyModelDef>({
   simplified_file_name: 'model',
   title: 'Model',
   directory: 'checkpoints',
-  searchable: 'checkpoints/model.safetensors'
+  searchable: 'checkpoints/model.safetensors',
+  load: () => Promise.resolve()
 })
 
 vi.mock(import('@/composables/useFeatureFlags'))
@@ -107,10 +108,6 @@ vi.mock<unknown>(import('./SidebarTabTemplate.vue'), () => ({
 
 vi.mock<unknown>(import('./modelLibrary/ElectronDownloadItems.vue'), () => ({
   default: { name: 'ElectronDownloadItems', template: '<div />' }
-}))
-
-vi.mock<unknown>(import('./modelLibrary/ModelTreeLeaf.vue'), () => ({
-  default: { name: 'ModelTreeLeaf', template: '<div />', props: ['node'] }
 }))
 
 const i18n = createI18n({
@@ -172,6 +169,30 @@ describe('ModelLibrarySidebarTab', () => {
       widgetValues: { ckpt_name: 'model.safetensors' },
       source: 'sidebar_drag'
     })
+  })
+
+  it('loads model metadata once its folder is expanded', async () => {
+    const load = vi.fn()
+    Object.assign(useModelStore(), {
+      models: [
+        fromPartial<ComfyModelDef>({
+          key: 'checkpoints/model.safetensors',
+          directory: 'checkpoints',
+          searchable: 'checkpoints/model.safetensors',
+          load
+        })
+      ]
+    })
+    renderComponent()
+    await nextTick()
+    expect(load).not.toHaveBeenCalled()
+
+    const root = getRoot()
+    const checkpointsFolder = root.children?.[0]
+    getExpandedKeys()[checkpointsFolder?.key ?? ''] = true
+    await nextTick()
+
+    expect(load).toHaveBeenCalledOnce()
   })
 
   it('toggles folder expansion on click', async () => {
@@ -240,7 +261,8 @@ describe('ModelLibrarySidebarTab', () => {
             simplified_file_name: 'model-new',
             title: 'Model New',
             directory: 'checkpoints',
-            searchable: 'checkpoints/model-new.safetensors'
+            searchable: 'checkpoints/model-new.safetensors',
+            load: () => Promise.resolve()
           })
         ]
       })
@@ -289,7 +311,8 @@ describe('ModelLibrarySidebarTab', () => {
               simplified_file_name: `bulk-${i}`,
               title: `bulk-${i}`,
               directory: 'checkpoints',
-              searchable: `checkpoints/bulk-${i}.safetensors`
+              searchable: `checkpoints/bulk-${i}.safetensors`,
+              load: () => Promise.resolve()
             })
           )
         ]
@@ -333,7 +356,8 @@ describe('ModelLibrarySidebarTab', () => {
             simplified_file_name: 'model-late',
             title: 'Model Late',
             directory: 'checkpoints',
-            searchable: 'checkpoints/model-late.safetensors'
+            searchable: 'checkpoints/model-late.safetensors',
+            load: () => Promise.resolve()
           })
         ]
       })
@@ -367,7 +391,8 @@ describe('ModelLibrarySidebarTab', () => {
             simplified_file_name: 'zzz-model',
             title: 'Zzz Model',
             directory: 'checkpoints',
-            searchable: 'checkpoints/zzz-model.safetensors'
+            searchable: 'checkpoints/zzz-model.safetensors',
+            load: () => Promise.resolve()
           })
         ]
       })
@@ -380,7 +405,6 @@ describe('ModelLibrarySidebarTab', () => {
 
   describe('asset mode', () => {
     it('surfaces an error toast when the eager load fails on mount', async () => {
-      const error = vi.spyOn(console, 'error').mockImplementation(() => {})
       vi.mocked(useFeatureFlags().flags).assetsEnabled = true
       vi.mocked(useModelStore().loadModels).mockRejectedValueOnce(
         new Error('walk failed')
@@ -396,7 +420,6 @@ describe('ModelLibrarySidebarTab', () => {
           detail: 'sideToolbar.modelLibraryLoadFailed'
         })
       )
-      error.mockRestore()
     })
 
     it('hides the load-all button and eager-loads models on mount', async () => {

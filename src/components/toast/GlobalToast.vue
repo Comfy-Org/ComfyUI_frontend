@@ -22,6 +22,27 @@
       </div>
     </template>
   </Toast>
+  <!-- A toast whose action needs a real click, e.g. reopening a popup a
+       browser silently blocked when it was first opened after an await. -->
+  <Toast group="payment-recovery" position="top-right">
+    <template #message="slotProps">
+      <div class="flex w-full items-center justify-between gap-2">
+        <div class="flex flex-col justify-start">
+          <div class="text-base">{{ slotProps.message.summary }}</div>
+          <div class="mt-1 text-sm text-base-foreground">
+            {{ slotProps.message.detail.text }}
+          </div>
+        </div>
+        <Button
+          size="md"
+          variant="inverted"
+          @click="slotProps.message.detail.onAction()"
+        >
+          {{ slotProps.message.detail.actionLabel }}
+        </Button>
+      </div>
+    </template>
+  </Toast>
 </template>
 
 <script setup lang="ts">
@@ -30,12 +51,13 @@ import type { ToastMessageOptions } from 'primevue/toast'
 import { useToast } from 'primevue/usetoast'
 import { toRaw, watch } from 'vue'
 
+import Button from '@/components/ui/button/Button.vue'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 const toast = useToast()
 const toastStore = useToastStore()
-const agentNodeSelectionStore = useAgentNodeSelectionStore()
+const canvasStore = useCanvasStore()
 
 /**
  * Messages raised while node selection mode is active. The mode hides the whole
@@ -54,7 +76,7 @@ watch(
     }
 
     newMessages.forEach((message) => {
-      if (agentNodeSelectionStore.isActive) {
+      if (canvasStore.isPickingNodes) {
         deferredMessages.push(message)
       } else {
         toast.add(message)
@@ -66,7 +88,7 @@ watch(
 )
 
 watch(
-  () => agentNodeSelectionStore.isActive,
+  () => canvasStore.isPickingNodes,
   (active) => {
     if (active) return
     deferredMessages.splice(0).forEach((message) => {

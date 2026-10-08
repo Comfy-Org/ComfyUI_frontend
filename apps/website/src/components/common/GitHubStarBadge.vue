@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { externalLinks } from '../../config/routes'
+import { externalLinks } from '@/config/routes'
 import NodeBadge from './NodeBadge.vue'
 
 const { stars } = defineProps<{

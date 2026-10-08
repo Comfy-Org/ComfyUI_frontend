@@ -1,5 +1,7 @@
 import path from 'node:path'
 
+import { isEslintFile } from './scripts/eslintScope.ts'
+
 // lint-staged calls this config once per concurrent chunk in one process.
 // Claim each fixed-scope command once so only its first matching chunk runs it.
 const claimed = new Set<string>()
@@ -68,11 +70,20 @@ function lintCommands(
       'pnpm exec oxlint --type-aware --no-error-on-unmatched-pattern --fix'
     ),
     ...commandsWithFiles(
-      [...codeFiles, ...astroFiles],
-      'pnpm exec eslint --cache --cache-strategy content --concurrency auto --fix --no-warn-ignored'
+      [...codeFiles, ...astroFiles].filter(isEslintFile),
+      `pnpm exec eslint --cache --concurrency auto --fix --no-warn-ignored ${skipCanonicalClasses}`
     )
   ]
 }
+
+// enforce-canonical-classes pays a ~4.5 s Tailwind warm-up in every ESLint
+// process; the CI lint job runs it with --fix and commits the result instead.
+// Reporting unused directives must stay off, or --fix would strip the
+// directives that silence the rule in the full run.
+const skipCanonicalClasses = [
+  "--rule 'better-tailwindcss/enforce-canonical-classes: off'",
+  '--report-unused-disable-directives-severity off'
+].join(' ')
 
 // Directories outside the root program, each with its own tsconfig.
 const standaloneTypecheckScripts = {
