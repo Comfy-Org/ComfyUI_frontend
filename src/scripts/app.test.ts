@@ -3688,9 +3688,7 @@ describe('ComfyApp', () => {
       ['an invalid structure', '[]'],
       ['invalid JSON', '{invalid']
     ])('shows one error for %s', async ([, workflow]) => {
-      const consoleError = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
+      const consoleError = vi.mocked(console.error)
       vi.mocked(getWorkflowDataFromFile).mockResolvedValue({ workflow })
 
       await app.handleFile(createTestFile('broken.json', 'application/json'))

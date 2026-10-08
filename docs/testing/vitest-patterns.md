@@ -146,9 +146,26 @@ Because cleanup runs before every test, module-scope `vi.stubGlobal()` and
 ```typescript
 beforeEach(() => {
   vi.stubGlobal('fetch', fetchMock)
-  vi.spyOn(console, 'error').mockImplementation(() => {})
+  vi.spyOn(Date, 'now').mockReturnValue(0)
 })
 ```
+
+### Console output
+
+`vitest.console.setup.ts` spies on `console.debug`, `error`, `info`, `log`,
+and `warn` before every test, and every configuration sets
+`silent: 'passed-only'`, so console output appears only for failing tests.
+Do not spy on these methods again; `comfy/no-redundant-console-spy` reports
+it. Use `vi.mocked()` to assert on calls or replace the implementation:
+
+```typescript
+expect(vi.mocked(console.warn)).toHaveBeenCalledWith('deprecated')
+vi.mocked(console.log).mockImplementation((line) => lines.push(line))
+```
+
+The spies record calls made from `beforeEach` hooks too. Assert on the call
+you care about rather than the total call count. Run with `--silent=false` to
+see output from passing tests.
 
 Module-scope mock declarations remain appropriate. When a default
 implementation must survive automatic reset, pass it directly to `vi.fn()`:

@@ -270,7 +270,7 @@ describe('Composer', () => {
   })
 
   it('renders without vue-i18n message compilation errors', async () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleError = vi.mocked(console.error)
     mount({ canAttach: true, canOpenAssets: true })
 
     // The menu strings only compile once reka mounts the lazy menu content.

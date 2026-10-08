@@ -82,7 +82,7 @@ describe('SubgraphEdgeCases - Invalid States', () => {
       typeof subgraph.removeInput
     >[0]
 
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleError = vi.mocked(console.error)
 
     subgraph.removeInput(fakeInput)
 
@@ -100,7 +100,7 @@ describe('SubgraphEdgeCases - Invalid States', () => {
       typeof subgraph.removeOutput
     >[0]
 
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleError = vi.mocked(console.error)
 
     subgraph.removeOutput(fakeOutput)
 

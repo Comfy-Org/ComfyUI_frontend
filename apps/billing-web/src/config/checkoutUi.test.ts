@@ -243,7 +243,7 @@ describe('awaitCheckoutUiVariant', () => {
   )
 
   it('rejects a bare-string dev override and asks the server', async () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const warn = vi.mocked(console.warn)
     localStorage.setItem('ff:billing_web_checkout_ui', 'full_page')
     fetchMock.mockResolvedValue(answerFlag('embedded'))
     const { awaitCheckoutUiVariant } = await freshCheckoutUi()

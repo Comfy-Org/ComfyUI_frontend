@@ -144,8 +144,8 @@ describe('getSessionOverride', () => {
     })
 
     it('never logs the submitted value, which may carry a pasted secret', () => {
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-      const log = vi.spyOn(console, 'log').mockImplementation(() => {})
+      const warn = vi.mocked(console.warn)
+      const log = vi.mocked(console.log)
       visit('/?ff=some_flag:sk-live-not-a-real-secret')
 
       expect(getSessionOverride('some_flag')).toBe('sk-live-not-a-real-secret')

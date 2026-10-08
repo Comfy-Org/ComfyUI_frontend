@@ -154,7 +154,7 @@ describe('useCameraAngle', () => {
     ViewportMock.mockImplementationOnce(() => {
       throw new Error('webgl unavailable')
     })
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleError = vi.mocked(console.error)
     const camera = useCameraAngle(nodeRef(makeNode(DEFAULT_WIDGETS)))
 
     expect(() => camera.initialize(document.createElement('div'))).not.toThrow()

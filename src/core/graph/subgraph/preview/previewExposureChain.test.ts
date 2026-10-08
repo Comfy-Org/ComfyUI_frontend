@@ -47,7 +47,7 @@ describe(resolvePreviewExposureChain, () => {
   let warnSpy: ReturnType<typeof vi.spyOn>
 
   beforeEach(() => {
-    warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    warnSpy = vi.mocked(console.warn)
   })
 
   it('returns undefined when the named exposure is not on the starting host', () => {

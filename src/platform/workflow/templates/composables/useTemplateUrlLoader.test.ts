@@ -353,7 +353,7 @@ describe('useTemplateUrlLoader', () => {
   })
 
   it('warns about unsupported mode values but continues loading', async () => {
-    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const consoleSpy = vi.mocked(console.warn)
     mockQueryParams = { template: 'flux_simple', mode: 'unsupported' }
 
     const { loadTemplateFromUrl } = useTemplateUrlLoader()
@@ -385,7 +385,7 @@ describe('useTemplateUrlLoader', () => {
   })
 
   it('accepts valid format but warns about unsupported modes', async () => {
-    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const consoleSpy = vi.mocked(console.warn)
     const unsupportedModes = ['graph', 'mode123', 'my_mode-2']
 
     for (const mode of unsupportedModes) {

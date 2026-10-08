@@ -239,7 +239,7 @@ describe('getWidgetIdForNode', () => {
   })
 
   it('maps every widget when one duplicate cannot be renamed', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const warn = vi.mocked(console.warn)
     const node = fakeNode(42)
     const first = {
       name: 'shared',
@@ -275,7 +275,7 @@ describe('getWidgetIdForNode', () => {
   })
 
   it('maps repeated widget object references only once', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const warn = vi.mocked(console.warn)
     const node = fakeNode(42)
     const first = {
       name: 'shared',

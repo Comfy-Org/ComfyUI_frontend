@@ -6,7 +6,7 @@ describe('assert', () => {
   let consoleErrorSpy: ReturnType<typeof vi.spyOn>
 
   beforeEach(() => {
-    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    consoleErrorSpy = vi.mocked(console.error)
   })
 
   afterEach(() => {

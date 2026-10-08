@@ -113,7 +113,7 @@ describe('useCameraInfo', () => {
     ViewportMock.mockImplementationOnce(() => {
       throw new Error('webgl unavailable')
     })
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleError = vi.mocked(console.error)
     const camera = useCameraInfo(nodeRef(makeNode({ mode: 'orbit' })))
 
     expect(() => camera.initialize(document.createElement('div'))).not.toThrow()

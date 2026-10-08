@@ -1126,7 +1126,7 @@ describe('useRemoteWidget', () => {
 
     it('handles errors thrown by the completion callback', async () => {
       const error = new Error('completion callback failed')
-      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const errorSpy = vi.mocked(console.error)
       const hook = createHookWithData(['option1'])
 
       hook.getValue(() => {

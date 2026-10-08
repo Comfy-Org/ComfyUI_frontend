@@ -5,7 +5,7 @@ import { ComfyApi } from '@/scripts/api'
 describe('ComfyApi event listener error isolation', () => {
   it('does not let a throwing listener abort dispatch to other listeners', () => {
     const api = new ComfyApi()
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const warn = vi.mocked(console.warn)
     const calls: string[] = []
 
     api.addEventListener('reconnected', () => {
@@ -36,7 +36,7 @@ describe('ComfyApi event listener error isolation', () => {
 
   it('guards async listener rejections and logs the error object', async () => {
     const api = new ComfyApi()
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const warn = vi.mocked(console.warn)
     const err = new Error('async boom')
 
     api.addEventListener('reconnected', () => Promise.reject(err))
@@ -48,7 +48,7 @@ describe('ComfyApi event listener error isolation', () => {
 
   it('guards bare PromiseLike thenables (no .catch method) without throwing', async () => {
     const api = new ComfyApi()
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const warn = vi.mocked(console.warn)
     const err = new Error('thenable boom')
 
     api.addEventListener('reconnected', () => ({
@@ -77,8 +77,7 @@ describe('ComfyApi event listener error isolation', () => {
 
   it('logs at warn, not error (RUM collects console.error by default)', () => {
     const api = new ComfyApi()
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const error = vi.mocked(console.error)
 
     api.addEventListener('reconnected', () => {
       throw new Error('boom')

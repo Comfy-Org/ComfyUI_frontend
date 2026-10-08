@@ -27,7 +27,7 @@ describe('extensionStore', () => {
 
     it('warns when registering a disabled extension but still installs it', () => {
       const store = useExtensionStore()
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const warnSpy = vi.mocked(console.warn)
       try {
         store.loadDisabledExtensionNames(['disabled.ext'])
         store.registerExtension({ name: 'disabled.ext' })

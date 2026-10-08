@@ -87,7 +87,7 @@ describe('usePartnerNodesInGraph', () => {
   })
 
   it('returns empty without touching rootGraph before the graph is ready', () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleError = vi.mocked(console.error)
 
     const { partnerNodes, hasPartnerNodes } = setup()
     expect(partnerNodes.value).toEqual([])

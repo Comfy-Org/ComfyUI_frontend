@@ -56,7 +56,7 @@ describe('MixpanelTelemetryProvider — without configured token', () => {
   })
 
   it('warns and disables itself when no mixpanel_token is configured', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const warn = vi.mocked(console.warn)
 
     try {
       const provider = new MixpanelTelemetryProvider()

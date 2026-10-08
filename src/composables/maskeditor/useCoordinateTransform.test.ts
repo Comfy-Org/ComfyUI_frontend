@@ -165,7 +165,7 @@ describe('useCoordinateTransform', () => {
     })
 
     it('should return zero point and warn when pointerZone is missing', () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const warnSpy = vi.mocked(console.warn)
 
       mockStore.canvasContainer = createElementWithRect({})
       mockStore.maskCanvas = createCanvasWithRect({}, 100, 100)
@@ -181,7 +181,7 @@ describe('useCoordinateTransform', () => {
     })
 
     it('should return zero point when canvasContainer is missing', () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const warnSpy = vi.mocked(console.warn)
 
       mockStore.pointerZone = createElementWithRect({})
       mockStore.maskCanvas = createCanvasWithRect({}, 100, 100)
@@ -195,7 +195,7 @@ describe('useCoordinateTransform', () => {
     })
 
     it('should return zero point when maskCanvas is missing', () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const warnSpy = vi.mocked(console.warn)
 
       mockStore.pointerZone = createElementWithRect({})
       mockStore.canvasContainer = createElementWithRect({})
@@ -318,7 +318,7 @@ describe('useCoordinateTransform', () => {
     })
 
     it('should return zero point and warn when pointerZone is missing', () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const warnSpy = vi.mocked(console.warn)
 
       mockStore.canvasContainer = createElementWithRect({})
       mockStore.maskCanvas = createCanvasWithRect({}, 100, 100)
@@ -334,7 +334,7 @@ describe('useCoordinateTransform', () => {
     })
 
     it('should return zero point when canvasContainer is missing', () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const warnSpy = vi.mocked(console.warn)
 
       mockStore.pointerZone = createElementWithRect({})
       mockStore.maskCanvas = createCanvasWithRect({}, 100, 100)
@@ -348,7 +348,7 @@ describe('useCoordinateTransform', () => {
     })
 
     it('should return zero point when maskCanvas is missing', () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const warnSpy = vi.mocked(console.warn)
 
       mockStore.pointerZone = createElementWithRect({})
       mockStore.canvasContainer = createElementWithRect({})

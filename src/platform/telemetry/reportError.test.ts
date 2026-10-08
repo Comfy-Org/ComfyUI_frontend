@@ -289,7 +289,7 @@ describe('reportError', () => {
   })
 
   it('does not throw out of flushErrorReports when the sink probe throws', async () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleError = vi.mocked(console.error)
     sentryLive(false)
     datadogLive(false)
     const { reportError, flushErrorReports } = await loadReportError()
@@ -542,7 +542,7 @@ describe('reportError', () => {
   })
 
   it('writes the failure to the console so callers need no second sink', async () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleError = vi.mocked(console.error)
     const { reportError } = await loadReportError()
     const error = new Error('listener failed')
 
@@ -558,8 +558,8 @@ describe('reportError', () => {
   })
 
   it('logs a warning-level report through console.warn', async () => {
-    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleWarn = vi.mocked(console.warn)
+    const consoleError = vi.mocked(console.error)
     const { reportError } = await loadReportError()
 
     reportError(new Error('cookie denied'), {
@@ -576,7 +576,7 @@ describe('reportError', () => {
   })
 
   it('skips the console line for a caller that already logged', async () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleError = vi.mocked(console.error)
     const { reportError } = await loadReportError()
 
     reportError(new Error('[Assertion failed]: graph must exist'), {
@@ -590,7 +590,7 @@ describe('reportError', () => {
   })
 
   it('logs a buffered report once, when it is raised', async () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleError = vi.mocked(console.error)
     sentryLive(false)
     datadogLive(false)
     const { reportError, flushErrorReports } = await loadReportError()
@@ -621,7 +621,7 @@ describe('reportError', () => {
   })
 
   it('delivers a report that re-enters through a sink once, then accepts the next report', async () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleError = vi.mocked(console.error)
     const { reportError } = await loadReportError()
     const nested = new Error('Graph serialization state mismatch')
     captureException.mockImplementationOnce(() => {
@@ -653,8 +653,8 @@ describe('reportError', () => {
   })
 
   it('skips the console line for a suppressed re-entrant report that opted out', async () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
-    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const consoleError = vi.mocked(console.error)
+    const consoleWarn = vi.mocked(console.warn)
     const { reportError } = await loadReportError()
     captureException.mockImplementationOnce(() => {
       reportError(new Error('nested'), {
@@ -675,8 +675,8 @@ describe('reportError', () => {
   })
 
   it('logs a suppressed warning-level re-entrant report through console.warn', async () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
-    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const consoleError = vi.mocked(console.error)
+    const consoleWarn = vi.mocked(console.warn)
     const { reportError } = await loadReportError()
     const nested = new Error('nested')
     captureException.mockImplementationOnce(() => {

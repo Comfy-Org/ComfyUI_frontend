@@ -918,7 +918,7 @@ it('opens the runtime error dialog with details when the Issues tab is disabled'
 
 describe('before the root graph exists', () => {
   it('resolves the execution error locator without touching app.rootGraph', () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleError = vi.mocked(console.error)
     const store = useExecutionErrorStore()
     store.recordExecutionError({
       prompt_id: 'test',

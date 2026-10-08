@@ -228,7 +228,7 @@ describe('MaskEditorContent', () => {
 
   describe('init error', () => {
     it('should close the dialog and log when loader.loadFromNode rejects', async () => {
-      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const errorSpy = vi.mocked(console.error)
       mockMaskEditorLoader.loadFromNode.mockRejectedValueOnce(
         new Error('load failed')
       )
@@ -246,7 +246,7 @@ describe('MaskEditorContent', () => {
     })
 
     it('should close the dialog and log when initializeCanvasPanZoom rejects', async () => {
-      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const errorSpy = vi.mocked(console.error)
       mockPanZoom.initializeCanvasPanZoom.mockRejectedValueOnce(
         new Error('panzoom failed')
       )

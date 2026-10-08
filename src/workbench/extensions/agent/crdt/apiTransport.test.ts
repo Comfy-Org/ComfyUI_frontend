@@ -71,7 +71,7 @@ describe('createLoggedTransport.send', () => {
   it('redacts outbound frame content in both console and stored events', () => {
     setCrdtDebugEnabled(true)
     setCrdtLogLevel('trace')
-    const debug = vi.spyOn(console, 'debug').mockImplementation(() => {})
+    const debug = vi.mocked(console.debug)
     const sensitiveFrame = JSON.stringify({
       type: 'doc_ops',
       token: 'secret-token',

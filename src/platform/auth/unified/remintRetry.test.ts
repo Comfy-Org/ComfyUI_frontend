@@ -242,7 +242,7 @@ describe('fetchWithUnifiedRemint', () => {
   })
 
   it('reports an unexpected re-mint throw as auth_unified_remint_unexpected and keeps the 401 fallback', async () => {
-    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const consoleWarn = vi.mocked(console.warn)
     const thrown = new TypeError('Failed to fetch dynamically imported module')
     mockFetch.mockResolvedValueOnce(unauthorized)
     vi.mocked(useWorkspaceAuthStore().remintUnifiedOnce).mockRejectedValue(

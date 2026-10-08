@@ -281,7 +281,7 @@ describe('appModeStore', () => {
         id === toNodeId(1) ? node1 : null
       )
 
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const warnSpy = vi.mocked(console.warn)
       store.loadSelections({
         inputs: [
           [1, 'prompt'],
@@ -444,7 +444,7 @@ describe('appModeStore', () => {
 
   describe('loadSelections app-config warning', () => {
     it('warns when non-empty linearData resolves to nothing', () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const warnSpy = vi.mocked(console.warn)
       vi.mocked(app.rootGraph).id = rootGraphId
       vi.mocked(app.rootGraph).nodes = [nodeWithWidgets(1, ['seed'])]
       vi.mocked(app.rootGraph).getNodeById = vi.fn(() => null)
@@ -463,7 +463,7 @@ describe('appModeStore', () => {
 
     it('does not warn when the config resolves', () => {
       const node1 = nodeWithWidgets(1, ['seed'])
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const warnSpy = vi.mocked(console.warn)
       vi.mocked(app.rootGraph).id = rootGraphId
       vi.mocked(app.rootGraph).nodes = [node1]
       vi.mocked(app.rootGraph).getNodeById = vi.fn((id) =>
@@ -484,7 +484,7 @@ describe('appModeStore', () => {
 
     it('does not warn when only inputs resolve (partial resolution is success)', () => {
       const node1 = nodeWithWidgets(1, ['seed'])
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const warnSpy = vi.mocked(console.warn)
       vi.mocked(app.rootGraph).id = rootGraphId
       vi.mocked(app.rootGraph).nodes = [node1]
       vi.mocked(app.rootGraph).getNodeById = vi.fn((id) =>
@@ -507,7 +507,7 @@ describe('appModeStore', () => {
 
     it('does not warn when only outputs resolve (partial resolution is success)', () => {
       const node1 = nodeWithWidgets(1, ['seed'])
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const warnSpy = vi.mocked(console.warn)
       vi.mocked(app.rootGraph).id = rootGraphId
       vi.mocked(app.rootGraph).nodes = [node1]
       vi.mocked(app.rootGraph).getNodeById = vi.fn((id) =>
@@ -529,7 +529,7 @@ describe('appModeStore', () => {
     })
 
     it('does not warn for empty config', () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const warnSpy = vi.mocked(console.warn)
       vi.mocked(app.rootGraph).nodes = [nodeWithWidgets(1, ['seed'])]
 
       store.loadSelections({})
@@ -539,7 +539,7 @@ describe('appModeStore', () => {
     })
 
     it('does not warn while a graph is still loading', () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const warnSpy = vi.mocked(console.warn)
       ChangeTracker.isLoadingGraph = true
       vi.mocked(app.rootGraph).id = rootGraphId
       vi.mocked(app.rootGraph).nodes = [nodeWithWidgets(1, ['seed'])]
@@ -556,7 +556,7 @@ describe('appModeStore', () => {
     })
 
     it('does not warn when the graph has no nodes', () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const warnSpy = vi.mocked(console.warn)
       vi.mocked(app.rootGraph).id = rootGraphId
       vi.mocked(app.rootGraph).nodes = []
       vi.mocked(app.rootGraph).getNodeById = vi.fn(() => null)
@@ -1053,7 +1053,7 @@ describe('appModeStore', () => {
     })
 
     it('warns and drops a tuple whose target widget no longer resolves', () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const warnSpy = vi.mocked(console.warn)
       vi.mocked(app.rootGraph).id = rootGraphId
       vi.mocked(app.rootGraph).nodes = []
       vi.mocked(app.rootGraph).getNodeById = vi.fn(() => null)
@@ -1075,7 +1075,7 @@ describe('appModeStore', () => {
     })
 
     it('migrates legacy `hostLocator:subgraphInputName` tuples to entity-id form', () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const warnSpy = vi.mocked(console.warn)
 
       const hostId = 5
       const hostLocator = `${rootGraphId}:${hostId}`

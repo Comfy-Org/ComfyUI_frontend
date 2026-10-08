@@ -87,9 +87,7 @@ describe('display label behavior', () => {
   })
 
   it('falls back to value on label function error', () => {
-    const consoleWarnSpy = vi
-      .spyOn(console, 'warn')
-      .mockImplementation(() => {})
+    const consoleWarnSpy = vi.mocked(console.warn)
     const getOptionLabel = (v?: string | null) => {
       if (v === 'photo_abc.jpg') throw new Error('fail')
       return `Labeled: ${v}`
@@ -599,9 +597,7 @@ describe('useWidgetSelectItems', () => {
     })
 
     it('falls back to preview when resolver rejects', async () => {
-      const consoleWarnSpy = vi
-        .spyOn(console, 'warn')
-        .mockImplementation(() => {})
+      const consoleWarnSpy = vi.mocked(console.warn)
 
       mockMediaAssets.items.value = [
         makeMultiOutputAsset('job-fail', 'preview.png', '1', 3)

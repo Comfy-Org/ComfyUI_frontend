@@ -70,7 +70,7 @@ describe('useErrorReport', () => {
     await until(() => store.isInitialized).toBe(true)
     store.systemStats = null
     store.isLoading = false
-    warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    warnSpy = vi.mocked(console.warn)
   })
 
   it('returns early without enrichment when the card has no runtime errors', async () => {

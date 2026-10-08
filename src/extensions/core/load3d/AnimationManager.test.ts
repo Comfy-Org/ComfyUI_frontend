@@ -100,7 +100,7 @@ describe('AnimationManager', () => {
 
   describe('updateSelectedAnimation', () => {
     it('warns and does nothing when called before any setup', () => {
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const warn = vi.mocked(console.warn)
 
       manager.updateSelectedAnimation(0)
 
@@ -110,7 +110,7 @@ describe('AnimationManager', () => {
     })
 
     it('warns when the index is out of bounds', () => {
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const warn = vi.mocked(console.warn)
       manager.setupModelAnimations(
         makeAnimatedModel([makeClip('only', 1)]),
         null
@@ -159,7 +159,7 @@ describe('AnimationManager', () => {
 
   describe('toggleAnimation', () => {
     it('warns and is a no-op when there is no animation loaded', () => {
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const warn = vi.mocked(console.warn)
 
       manager.toggleAnimation(true)
 

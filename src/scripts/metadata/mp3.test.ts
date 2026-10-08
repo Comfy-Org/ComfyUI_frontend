@@ -29,7 +29,6 @@ describe('MP3 metadata', () => {
   })
 
   it('returns undefined fields when file has no embedded metadata', async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     const file = new File([new Uint8Array(16)], 'empty.mp3', {
       type: 'audio/mpeg'
     })
@@ -42,7 +41,7 @@ describe('MP3 metadata', () => {
   })
 
   it('does not log an invalid signature for a valid MP3 sync header', async () => {
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const errorSpy = vi.mocked(console.error)
     const buf = new Uint8Array(16)
     buf[0] = 0xff
     buf[1] = 0xfb
@@ -54,7 +53,7 @@ describe('MP3 metadata', () => {
   })
 
   it('does not log an invalid signature for a valid ID3v2 header', async () => {
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const errorSpy = vi.mocked(console.error)
     const buf = new Uint8Array(16)
     buf[0] = 0x49
     buf[1] = 0x44
@@ -77,7 +76,6 @@ describe('MP3 metadata', () => {
   })
 
   it('extracts metadata that spans the 4096-byte page boundary', async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     const metadata =
       `prompt\0${JSON.stringify(EXPECTED_PROMPT)}\0` +
       `workflow\0${JSON.stringify(EXPECTED_WORKFLOW)}\0`
@@ -98,7 +96,7 @@ describe('MP3 metadata', () => {
   })
 
   it('logs and skips when embedded JSON is malformed', async () => {
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const errorSpy = vi.mocked(console.error)
     const metadata = `prompt\0{not json}\0workflow\0{also bad}\0`
     const buf = new Uint8Array(64 + metadata.length)
     buf[0] = 0xff

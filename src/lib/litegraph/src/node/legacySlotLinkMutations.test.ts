@@ -205,7 +205,7 @@ describe('comfyui-promptchain indexed slot replacement', () => {
   })
 
   it('keeps the input layout when the endpoint batch is rejected', () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleError = vi.mocked(console.error)
 
     const forced = autogrowChain(4, [0, 1, 2])
     const layoutBefore = forced.target.inputs.map((input) => input.name)

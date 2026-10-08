@@ -30,7 +30,7 @@ describe('commandStore', () => {
 
     it('warns on duplicate registration and overwrites with new function', async () => {
       const store = useCommandStore()
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const warnSpy = vi.mocked(console.warn)
 
       const originalFn = vi.fn()
       const replacementFn = vi.fn()

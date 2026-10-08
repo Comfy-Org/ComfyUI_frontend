@@ -11,7 +11,7 @@ describe('crdtLog', () => {
   })
 
   it('keeps warnings visible when the debug instrument is opted out', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const warn = vi.mocked(console.warn)
     setCrdtDebugEnabled(false)
 
     wireLog.warn('schema_error', 'schema rejected')

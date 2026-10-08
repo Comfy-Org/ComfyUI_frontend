@@ -111,7 +111,7 @@ describe('firebaseIdentity', () => {
     } = await loadFresh()
     vi.mocked(initializeApp).mockReturnValue(defaultApp)
     vi.mocked(initializeAuth).mockReturnValue(fromPartial<Auth>({}))
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleError = vi.mocked(console.error)
     remoteConfigState.value = 'error'
     remoteConfig.value = {}
 

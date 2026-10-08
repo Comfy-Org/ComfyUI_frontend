@@ -263,7 +263,7 @@ describe('slotLinks', () => {
     assignments.set(target.inputs[0], stale)
     const onConnectionsChange = vi.fn()
     target.onConnectionsChange = onConnectionsChange
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleError = vi.mocked(console.error)
 
     expect(
       replaceNodeInputs(target, previous, [target.inputs[0]], assignments)

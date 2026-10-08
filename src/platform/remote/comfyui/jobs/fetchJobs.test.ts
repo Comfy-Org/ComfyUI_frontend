@@ -371,7 +371,7 @@ describe('fetchJobs', () => {
     })
 
     it('returns undefined for invalid workflow and logs warning', async () => {
-      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const consoleSpy = vi.mocked(console.warn)
       const jobDetail = {
         ...createMockJob('job1', 'completed'),
         workflow: {
@@ -677,9 +677,7 @@ describe('fetchJobs', () => {
     })
 
     it('returns empty array and logs the status on non-ok response', async () => {
-      const consoleWarnSpy = vi
-        .spyOn(console, 'warn')
-        .mockImplementation(() => {})
+      const consoleWarnSpy = vi.mocked(console.warn)
       const mockFetch = vi.fn().mockResolvedValue({ ok: false, status: 404 })
 
       const { assets, complete } = await fetchJobAssets(mockFetch, 'job1')
@@ -725,7 +723,7 @@ describe('fetchJobs', () => {
     })
 
     it('returns empty array on error', async () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const consoleSpy = vi.mocked(console.error)
       const mockFetch = vi.fn().mockRejectedValue(new Error('Network error'))
 
       const { assets, complete } = await fetchJobAssets(mockFetch, 'job1')
@@ -736,9 +734,7 @@ describe('fetchJobs', () => {
     })
 
     it('stops at the page cap when the server always reports has_more', async () => {
-      const consoleWarnSpy = vi
-        .spyOn(console, 'warn')
-        .mockImplementation(() => {})
+      const consoleWarnSpy = vi.mocked(console.warn)
       const mockFetch = vi.fn().mockImplementation((url: string) => {
         const offset = Number(
           new URL(url, 'http://x').searchParams.get('offset')
@@ -769,9 +765,7 @@ describe('fetchJobs', () => {
     })
 
     it('reports incomplete when a later page fails mid-pagination', async () => {
-      const consoleWarnSpy = vi
-        .spyOn(console, 'warn')
-        .mockImplementation(() => {})
+      const consoleWarnSpy = vi.mocked(console.warn)
       const mockFetch = vi
         .fn()
         .mockResolvedValueOnce({
@@ -796,9 +790,7 @@ describe('fetchJobs', () => {
     })
 
     it('warns when has_more is true but the page is empty', async () => {
-      const consoleWarnSpy = vi
-        .spyOn(console, 'warn')
-        .mockImplementation(() => {})
+      const consoleWarnSpy = vi.mocked(console.warn)
       const mockFetch = vi.fn().mockResolvedValue({
         ok: true,
         json: () => Promise.resolve(createAssetsResponse('job1', [], true, 0))

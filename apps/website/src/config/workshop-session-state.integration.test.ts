@@ -178,7 +178,7 @@ describe('useWorkshopSession over the real session client', () => {
     vi.mocked(identifyWorkshopUser).mockImplementationOnce(() => {
       throw new Error('identify exploded')
     })
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const errorSpy = vi.mocked(console.error)
     const { expires_at, ...cached } = mintBody('jwt-cached')
     sessionStorage.setItem(
       STORAGE_KEY,

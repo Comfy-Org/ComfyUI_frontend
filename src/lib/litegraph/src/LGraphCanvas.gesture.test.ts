@@ -980,7 +980,7 @@ describe('LGraphCanvas pointer gestures', () => {
     })
 
     it('unbinding still unbinds when drag finalization throws', () => {
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const warn = vi.mocked(console.warn)
       canvas.onNodeMoved = () => {
         throw new Error('finalization failed')
       }

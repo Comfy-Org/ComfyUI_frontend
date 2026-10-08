@@ -862,9 +862,7 @@ describe('ComboWidget', () => {
           const mockGetOptionLabel = vi.fn().mockImplementation(function () {
             throw new Error('Formatting failed')
           })
-          const consoleErrorSpy = vi
-            .spyOn(console, 'error')
-            .mockImplementation(() => {})
+          const consoleErrorSpy = vi.mocked(console.error)
 
           widget = new ComboWidget(
             createMockWidgetConfig({
@@ -1238,9 +1236,7 @@ describe('ComboWidget', () => {
         node.pos = [50, 50]
         node.size = [200, 30]
 
-        const consoleErrorSpy = vi
-          .spyOn(console, 'error')
-          .mockImplementation(() => {})
+        const consoleErrorSpy = vi.mocked(console.error)
 
         const mockAddItem = vi.fn()
         const mockContextMenu = vi
@@ -1347,9 +1343,7 @@ describe('ComboWidget', () => {
       const mockEvent = { canvasX: 150 } as CanvasPointerEvent
       node.pos = [50, 50]
       node.size = [200, 30]
-      const consoleError = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
+      const consoleError = vi.mocked(console.error)
 
       widget.onClick({ e: mockEvent, node, canvas: mockCanvas })
 

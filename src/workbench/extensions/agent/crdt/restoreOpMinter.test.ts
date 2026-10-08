@@ -167,7 +167,7 @@ describe('attachRestoreOpMinter', () => {
   })
 
   it('skips the whole diff, including real changes, when a present node cannot serialize', () => {
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const error = vi.mocked(console.error)
 
     restoreThrough(() => {
       source.widgets![0].value = 'b.png'
@@ -184,7 +184,7 @@ describe('attachRestoreOpMinter', () => {
   })
 
   it('surfaces a link removed without its node instead of dropping it silently', () => {
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const error = vi.mocked(console.error)
     const linkId = sink.inputs[0].link
 
     restoreThrough(() => sink.disconnectInput(0))

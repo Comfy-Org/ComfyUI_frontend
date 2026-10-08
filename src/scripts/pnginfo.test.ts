@@ -110,7 +110,6 @@ function exifChunk(
 
 describe('getWebpMetadata', () => {
   it('returns empty when the file is not a valid WEBP', async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     const file = new File([new Uint8Array(12)], 'fake.webp')
 
     const metadata = await getWebpMetadata(file)
@@ -252,7 +251,6 @@ describe('importA1111', () => {
     'positive\nSteps: 20, Sampler: Euler, CFG scale: 7, Seed: 1, Size: 512x512, Model: model.safetensors'
 
   function mockAvailableCoreNodes(graph: LGraph) {
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
     vi.spyOn(graph, 'arrange').mockImplementation(() => {})
     vi.spyOn(LiteGraph, 'createNode').mockImplementation((type) => {
       const node = new LGraphNode(type, type)
@@ -309,7 +307,7 @@ describe('importA1111', () => {
     const graph = new LGraph()
     const clear = vi.spyOn(graph, 'clear')
     const beforeGraphClear = vi.fn()
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleError = vi.mocked(console.error)
     vi.mocked(api.getEmbeddings).mockRejectedValue(
       new TypeError('Failed to fetch')
     )

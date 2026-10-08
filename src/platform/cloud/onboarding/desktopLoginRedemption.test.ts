@@ -98,7 +98,6 @@ describe('installDesktopLoginRedemption', () => {
     useDialogService = (await import('@/services/dialogService'))
       .useDialogService
     vi.stubGlobal('fetch', mockFetch)
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
     vi.mocked(useDialogService().confirm).mockResolvedValue(true)
     mockUserGetIdToken.mockResolvedValue('firebase-id-token')
     mockAuthStore = useAuthStore()
@@ -443,7 +442,7 @@ describe('installDesktopLoginRedemption', () => {
   })
 
   it('contains an unexpected internal error instead of rejecting', async () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleError = vi.mocked(console.error)
     const { trigger, seedStash } = await setup()
     seedStash(VALID_CODE)
     vi.mocked(useDialogService().confirm).mockRejectedValue(

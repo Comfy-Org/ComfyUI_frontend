@@ -249,9 +249,7 @@ describe('LinkConnector SubgraphInput connection validation', () => {
       const movingLink = new MovingOutputLink(subgraph, link)
 
       // Mock console.warn to verify it's called
-      const consoleWarnSpy = vi
-        .spyOn(console, 'warn')
-        .mockImplementation(() => {})
+      const consoleWarnSpy = vi.mocked(console.warn)
 
       // Add the link to the connector
       connector.renderLinks.push(movingLink)

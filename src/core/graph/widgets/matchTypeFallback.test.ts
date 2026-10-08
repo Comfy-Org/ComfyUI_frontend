@@ -17,7 +17,7 @@ describe('malformed COMFY_MATCHTYPE_V3 spec', () => {
     const graph = new LGraph()
     const node = testNode()
     graph.add(node)
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const warn = vi.mocked(console.warn)
 
     const malformed: InputSpec = [
       'COMFY_MATCHTYPE_V3',

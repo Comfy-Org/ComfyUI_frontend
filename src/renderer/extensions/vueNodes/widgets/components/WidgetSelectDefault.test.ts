@@ -126,9 +126,7 @@ describe('WidgetSelectDefault', () => {
       const values = vi.fn(() => {
         throw error
       })
-      const consoleError = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
+      const consoleError = vi.mocked(console.error)
 
       try {
         const { user } = renderComponent(createWidget(values))

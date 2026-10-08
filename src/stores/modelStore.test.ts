@@ -650,7 +650,7 @@ describe('useModelStore', () => {
     })
 
     it('logs instead of rejecting when the post-scan reload fails', async () => {
-      const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const error = vi.mocked(console.error)
       enableMocks(true)
       store = useModelStore()
       await store.loadModels()

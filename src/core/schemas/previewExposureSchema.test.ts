@@ -31,7 +31,7 @@ describe(parsePreviewExposures, () => {
   })
 
   it('returns empty array for undefined', () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const warnSpy = vi.mocked(console.warn)
 
     expect(parsePreviewExposures(undefined)).toEqual([])
 

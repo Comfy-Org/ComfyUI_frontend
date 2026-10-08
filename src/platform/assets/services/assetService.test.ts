@@ -207,7 +207,7 @@ describe(assetService.getAssetMetadata, () => {
 
 describe(assetService.uploadAssetFromUrl, () => {
   it('rejects when the upload response is invalid', async () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleSpy = vi.mocked(console.error)
     fetchApiMock.mockResolvedValueOnce(buildResponse({ id: 'missing-name' }))
 
     await expect(
@@ -221,7 +221,7 @@ describe(assetService.uploadAssetFromUrl, () => {
   })
 
   it('rejects when upload response lacks created_new', async () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleSpy = vi.mocked(console.error)
     fetchApiMock.mockResolvedValueOnce(
       buildResponse(validAsset({ id: 'uploaded-input', tags: ['input'] }))
     )
@@ -266,7 +266,7 @@ describe(assetService.uploadAssetFromBase64, () => {
   })
 
   it('rejects when the upload response is invalid', async () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleSpy = vi.mocked(console.error)
     const fetchSpy = vi
       .spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce(new Response('hello'))
@@ -284,7 +284,7 @@ describe(assetService.uploadAssetFromBase64, () => {
   })
 
   it('rejects upload responses with a non-boolean created_new', async () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleSpy = vi.mocked(console.error)
     const fetchSpy = vi
       .spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce(new Response('hello'))
@@ -485,7 +485,7 @@ describe(assetService.getAssetModels, () => {
   })
 
   it('drops uncategorized model assets with a warning', async () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const warn = vi.mocked(console.warn)
     fetchApiMock.mockResolvedValueOnce(
       buildAssetListResponse([
         validAsset({
@@ -511,7 +511,7 @@ describe(assetService.getAssetModels, () => {
   })
 
   it('maps loader_path and drops unloadable assets without one', async () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const warn = vi.mocked(console.warn)
     fetchApiMock.mockResolvedValueOnce(
       buildAssetListResponse([
         validAsset({
@@ -544,7 +544,7 @@ describe(assetService.getAssetModels, () => {
   })
 
   it('drops assets whose loader path is traversal-shaped', async () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const warn = vi.mocked(console.warn)
     fetchApiMock.mockResolvedValueOnce(
       buildAssetListResponse([
         validAsset({
@@ -1023,7 +1023,7 @@ describe(assetService.getAllAssetsByTag, () => {
   })
 
   it('caps a runaway cursor walk at the batch backstop', async () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const warn = vi.mocked(console.warn)
     let page = 0
     fetchApiMock.mockImplementation(() =>
       Promise.resolve(

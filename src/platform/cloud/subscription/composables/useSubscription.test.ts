@@ -2549,9 +2549,7 @@ describe('useSubscription', () => {
     })
 
     it('waits on a web session until the workspace is selected', async () => {
-      const consoleError = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
+      const consoleError = vi.mocked(console.error)
       Object.assign(useAuthStore(), { sessionUser: SESSION_USER })
       mockIsLoggedIn.value = true
 
@@ -2591,7 +2589,6 @@ describe('useSubscription', () => {
           resolveRead = resolve
         })
       )
-      vi.spyOn(console, 'error').mockImplementation(() => {})
       Object.assign(useAuthStore(), { sessionUser: SESSION_USER })
       mockIsLoggedIn.value = true
 

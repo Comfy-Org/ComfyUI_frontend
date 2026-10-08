@@ -1779,9 +1779,7 @@ describe('useLoad3d', () => {
     })
 
     it('isolates a throwing callback so subsequent callbacks and event wiring still run', async () => {
-      const consoleErrorSpy = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
+      const consoleErrorSpy = vi.mocked(console.error)
 
       const composable = useLoad3d(mockNode)
       const throwing = vi.fn(() => {
@@ -1806,9 +1804,7 @@ describe('useLoad3d', () => {
     })
 
     it('isolates a throwing callback in the synchronous already-mounted path', async () => {
-      const consoleErrorSpy = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
+      const consoleErrorSpy = vi.mocked(console.error)
 
       const composable = useLoad3d(mockNode)
       await composable.initializeLoad3d(document.createElement('div'))

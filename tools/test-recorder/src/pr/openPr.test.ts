@@ -123,7 +123,7 @@ describe('openPr', () => {
         success: false,
         error: 'not a branch'
       })
-      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+      const logSpy = vi.mocked(console.log)
 
       await openPr({
         testFilePath: 'browser_tests/tests/foo.spec.ts',

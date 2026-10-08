@@ -272,7 +272,7 @@ describe('GlobalDialog Reka parity with PrimeVue', () => {
   })
 
   it('opens the save dialog with an accessible name and description', async () => {
-    const warn = vi.spyOn(console, 'warn')
+    const warn = vi.mocked(console.warn)
     mountDialog()
     const store = useDialogStore()
 

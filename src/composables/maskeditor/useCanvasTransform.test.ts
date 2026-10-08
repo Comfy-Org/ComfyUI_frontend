@@ -202,9 +202,7 @@ describe('useCanvasTransform', () => {
     })
 
     it('should log error when canvas contexts not ready', async () => {
-      const consoleErrorSpy = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
+      const consoleErrorSpy = vi.mocked(console.error)
       mockStore.maskCanvas = null
 
       const transform = useCanvasTransform()
@@ -571,9 +569,7 @@ describe('useCanvasTransform', () => {
     })
 
     it('should log error when canvas contexts not ready', async () => {
-      const consoleErrorSpy = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
+      const consoleErrorSpy = vi.mocked(console.error)
       mockStore.maskCanvas = null
 
       const transform = useCanvasTransform()

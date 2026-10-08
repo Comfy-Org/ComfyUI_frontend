@@ -21,7 +21,6 @@ describe('contextMenuCompat', () => {
     })
 
     // Clear console warnings
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
   })
 
   afterEach(() => {
@@ -44,7 +43,7 @@ describe('contextMenuCompat', () => {
 
     it('should detect monkey patches and warn', () => {
       const methodName = 'getCanvasMenuOptions'
-      const warnSpy = vi.spyOn(console, 'warn')
+      const warnSpy = vi.mocked(console.warn)
 
       // Install compatibility layer
       legacyMenuCompat.install(LGraphCanvas.prototype, methodName)
@@ -79,7 +78,7 @@ describe('contextMenuCompat', () => {
 
     it('should only warn once per unique function', () => {
       const methodName = 'getCanvasMenuOptions'
-      const warnSpy = vi.spyOn(console, 'warn')
+      const warnSpy = vi.mocked(console.warn)
 
       legacyMenuCompat.install(LGraphCanvas.prototype, methodName)
       legacyMenuCompat.setCurrentExtension('test.extension')
@@ -150,7 +149,7 @@ describe('contextMenuCompat', () => {
     })
 
     it('should detect replaced items as additions and warn about removed items', () => {
-      const warnSpy = vi.spyOn(console, 'warn')
+      const warnSpy = vi.mocked(console.warn)
 
       // Monkey-patch that replaces items with different ones (same count)
       // With set-based diffing, these are detected as new items since they're different references
@@ -176,7 +175,7 @@ describe('contextMenuCompat', () => {
     })
 
     it('should handle errors gracefully', () => {
-      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const errorSpy = vi.mocked(console.error)
 
       // Monkey-patch that throws error
       LGraphCanvas.prototype.getCanvasMenuOptions = function () {

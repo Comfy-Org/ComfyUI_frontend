@@ -110,7 +110,7 @@ describe('useSessionCookie', () => {
   })
 
   it('reports a swallowed createSession failure as session_cookie_creation_failure', async () => {
-    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const consoleWarn = vi.mocked(console.warn)
     vi.mocked(useAuthStore().getIdToken).mockResolvedValue('firebase-id-token')
     vi.mocked(globalThis.fetch).mockResolvedValue(
       new Response(JSON.stringify({ message: 'session denied' }), {
@@ -248,7 +248,7 @@ describe('useSessionCookie', () => {
   })
 
   it('reports a failed session deletion as auth_session_cookie_delete_failed and still resolves', async () => {
-    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const consoleWarn = vi.mocked(console.warn)
     vi.mocked(globalThis.fetch).mockResolvedValue(
       new Response(JSON.stringify({ message: 'cookie for user-a@x.test' }), {
         status: 500,

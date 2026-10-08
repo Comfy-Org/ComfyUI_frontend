@@ -353,10 +353,6 @@ describe('LGraph', () => {
       return { ownerGraph, node, otherGraph, impostor }
     }
 
-    beforeEach(() => {
-      vi.spyOn(console, 'error').mockImplementation(() => {})
-    })
-
     describe('in DEV', () => {
       beforeEach(() => {
         vi.stubEnv('DEV', true)
@@ -598,7 +594,7 @@ describe('Floating Links / Reroutes', () => {
       -1
     )
     const collision = LLink.create(incumbent)
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleError = vi.mocked(console.error)
     graph.addFloatingLink(incumbent)
 
     const result = graph.addFloatingLink(collision)
@@ -621,7 +617,6 @@ describe('Floating Links / Reroutes', () => {
       -1
     )
     const collision = LLink.create(incumbent)
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     graph.addFloatingLink(incumbent)
     graph.addFloatingLink(collision)
 
@@ -949,7 +944,7 @@ describe('Store-driven serialization parity', () => {
     const graph = createGraph(new DummyNode())
     const before = graph.asSerialisable()
 
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const error = vi.mocked(console.error)
 
     expect(graph.configure(before, true)).toBe(false)
     expect(error).toHaveBeenCalledWith(
@@ -2358,7 +2353,7 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
     it('warns when configuring a host with legacy proxyWidgets and no migration hook is wired', () => {
       const previous = LGraph.proxyWidgetMigrationFlush
       LGraph.proxyWidgetMigrationFlush = undefined
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const warn = vi.mocked(console.warn)
       try {
         const graph = new LGraph()
         serialized.id = graph.id
@@ -2455,7 +2450,7 @@ describe('Zero UUID handling in configure', () => {
   })
 
   it('creates a subgraph exposing IO without warning', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const warn = vi.mocked(console.warn)
     const graph = new LGraph()
 
     graph.createSubgraph(
@@ -2623,7 +2618,6 @@ describe('node layout registration', () => {
     graph.add(node)
     await Promise.resolve()
 
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     const stop = layoutStore.onGeometryChange(() => {
       node.pos = [500, 600]
       throw new Error('listener failure')

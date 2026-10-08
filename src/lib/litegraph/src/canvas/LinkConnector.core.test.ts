@@ -151,9 +151,7 @@ describe('LinkConnector', () => {
       network
     }) => {
       connector.state.connectingTo = 'input'
-      const consoleError = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
+      const consoleError = vi.mocked(console.error)
 
       connector.moveInputLink(
         network,
@@ -196,9 +194,7 @@ describe('LinkConnector', () => {
       network
     }) => {
       connector.state.connectingTo = 'output'
-      const consoleError = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
+      const consoleError = vi.mocked(console.error)
 
       connector.moveOutputLink(
         network,

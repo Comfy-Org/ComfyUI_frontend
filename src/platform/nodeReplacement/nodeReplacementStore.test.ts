@@ -201,9 +201,7 @@ describe('useNodeReplacementStore', () => {
     })
 
     it('should log error but not throw when fetch fails', async () => {
-      const consoleErrorSpy = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
+      const consoleErrorSpy = vi.mocked(console.error)
       const error = new Error('Network error')
       vi.mocked(fetchNodeReplacements).mockRejectedValue(error)
       store = createStore()

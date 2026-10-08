@@ -31,9 +31,7 @@ describe('subgraphUtils', () => {
       })
       const host = createTestSubgraphNode(subgraph)
       host.inputs.pop()
-      const consoleError = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
+      const consoleError = vi.mocked(console.error)
 
       reorderSubgraphInputs(host, [1, 0])
 
@@ -67,9 +65,7 @@ describe('subgraphUtils', () => {
         error: { code: 'occupied-target', message: 'Target is occupied' }
       })
       const invalidatePromotedViews = vi.spyOn(host, 'invalidatePromotedViews')
-      const consoleError = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
+      const consoleError = vi.mocked(console.error)
 
       reorderSubgraphInputs(host, [1, 0])
 

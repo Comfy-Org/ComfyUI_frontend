@@ -184,7 +184,7 @@ describe('downloadUtil', () => {
     it('logs an error when cloud fetch fails', async () => {
       mockIsCloud.value = true
       const testUrl = 'https://storage.googleapis.com/bucket/missing.bin'
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const consoleSpy = vi.mocked(console.error)
       fetchMock.mockResolvedValue(
         fromPartial<Response>({
           ok: false,
@@ -428,7 +428,7 @@ describe('downloadUtil', () => {
     it('closes blank tab and logs error when cloud fetch fails', async () => {
       mockIsCloud.value = true
       const testUrl = 'https://storage.googleapis.com/bucket/missing.png'
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const consoleSpy = vi.mocked(console.error)
       const mockTab = { location: { href: '' }, closed: false, close: vi.fn() }
       windowOpenSpy.mockReturnValue(fromAny<Window, unknown>(mockTab))
       fetchMock.mockResolvedValue(

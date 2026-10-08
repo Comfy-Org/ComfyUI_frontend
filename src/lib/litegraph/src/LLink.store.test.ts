@@ -31,7 +31,6 @@ describe('LLink ↔ linkStore integration', () => {
       UNASSIGNED_NODE_ID,
       -1
     )
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     graph.addFloatingLink(link)
     const registeredState = link._state
 
@@ -53,7 +52,7 @@ describe('LLink ↔ linkStore integration', () => {
       UNASSIGNED_NODE_ID,
       -1
     )
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const error = vi.mocked(console.error)
 
     graph.links.set(toLinkId(2), link)
 
@@ -91,7 +90,6 @@ describe('LLink ↔ linkStore integration', () => {
       toNodeId(2),
       0
     )
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     useLinkStore().registerLink(graphScopeOf(graph), incumbent._state)
 
     graph._addLink(collision)
@@ -110,7 +108,6 @@ describe('LLink ↔ linkStore integration', () => {
     graph.add(inputNode)
     outputNode.onConnectionsChange = vi.fn()
     inputNode.onConnectionsChange = vi.fn()
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     useLinkStore().registerLink(
       {
         ...graphScopeOf(graph),
@@ -311,7 +308,6 @@ describe('LLink ↔ linkStore integration', () => {
     graph.add(b)
 
     const link = a.connect(0, b, 0)!
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     link.target_slot = 1
 
     unregisterLinkTopology(link)
@@ -548,7 +544,7 @@ describe('LLink ↔ linkStore integration', () => {
     const first = firstSource.connect(0, target, 0)!
     secondSource.connect(0, target, 1)
 
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const error = vi.mocked(console.error)
     expect(() => {
       first.target_slot = 1
     }).not.toThrow()
@@ -577,7 +573,6 @@ describe('LLink ↔ linkStore integration', () => {
     blocker.addOutput('out', 'INT')
     graph.add(blocker)
     blocker.connect(0, secondTarget, 0)
-    vi.spyOn(console, 'error').mockImplementation(() => {})
 
     moving.target_id = secondTarget.id
     expect(moving.target_id).toBe(firstTarget.id)

@@ -124,7 +124,7 @@ describe('TopBarHeader', () => {
     ] as const)(
       'should swallow and log errors from %s',
       async ([label, method, expectedMsg]) => {
-        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+        const errorSpy = vi.mocked(console.error)
         mockCanvasTransform[method].mockRejectedValueOnce(new Error('boom'))
         const user = userEvent.setup()
         renderHeader()
@@ -195,7 +195,7 @@ describe('TopBarHeader', () => {
     })
 
     it('should restore brush + button state and log on save failure', async () => {
-      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const errorSpy = vi.mocked(console.error)
       mockSaver.save.mockRejectedValueOnce(new Error('save failed'))
       const user = userEvent.setup()
       renderHeader()

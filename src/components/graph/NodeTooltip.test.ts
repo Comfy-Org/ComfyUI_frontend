@@ -191,7 +191,7 @@ describe('NodeTooltip', () => {
   })
 
   it('shows input slot JSON tooltips without i18n placeholder errors', async () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleError = vi.mocked(console.error)
     vi.mocked(mockIsOverNodeInput).mockReturnValue(0)
 
     await renderAndHoverCanvas()
@@ -201,7 +201,7 @@ describe('NodeTooltip', () => {
   })
 
   it('shows output slot JSON tooltips without i18n placeholder errors', async () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleError = vi.mocked(console.error)
     vi.mocked(mockIsOverNodeOutput).mockReturnValue(0)
 
     await renderAndHoverCanvas()
@@ -211,7 +211,7 @@ describe('NodeTooltip', () => {
   })
 
   it('shows widget JSON tooltips without i18n placeholder errors', async () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleError = vi.mocked(console.error)
     vi.mocked(mockCanvas.getWidgetAtCursor).mockReturnValue({
       name: 'positive_coords'
     })

@@ -89,7 +89,7 @@ describe('normalizeConfiguredTopology with conflicting origins (#15577)', () => 
   })
 
   it('warns when a link is dropped in favour of a different origin', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const warn = vi.mocked(console.warn)
 
     configureConflictingOrigins()
 
@@ -178,7 +178,6 @@ describe('normalizeConfiguredTopology presentation sidecar', () => {
   })
 
   it('drops a losing entry when the survivor already carries presentation', () => {
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
     const data = fromPartial<SerialisableGraph>({
       links: [
         {
@@ -212,7 +211,6 @@ describe('normalizeConfiguredTopology presentation sidecar', () => {
   it.for([false, true])(
     'keeps default survivor presentation across competing origins (reversed: %s)',
     (reversed) => {
-      vi.spyOn(console, 'warn').mockImplementation(() => {})
       const links: SerialisedLLinkArray[] = [
         [1, 10, 0, 2, 0, 'number'],
         [3, 10, 0, 2, 0, 'number'],
@@ -242,7 +240,6 @@ describe('normalizeConfiguredTopology presentation sidecar', () => {
   )
 
   it('preserves presentation when competing links reuse the survivor id', () => {
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
     const data = fromPartial<ISerialisedGraph>({
       version: 0.4,
       links: [

@@ -146,7 +146,7 @@ describe('useOutputStacks', () => {
 
   it('does not expand when resolving children throws', async () => {
     const parent = createAsset({ id: 'parent', name: 'parent.png' })
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const errorSpy = vi.mocked(console.error)
 
     vi.mocked(resolveOutputAssetItems).mockRejectedValue(
       new Error('resolve failed')

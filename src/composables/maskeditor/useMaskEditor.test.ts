@@ -38,7 +38,7 @@ describe('useMaskEditor', () => {
 
   beforeEach(() => {
     mockDialogStore = useDialogStore()
-    errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    errorSpy = vi.mocked(console.error)
   })
 
   describe('openMaskEditor', () => {

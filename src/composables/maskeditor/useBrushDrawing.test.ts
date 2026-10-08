@@ -181,7 +181,7 @@ describe('startDrawing', () => {
 describe('startDrawing error handling', () => {
   it('catches initShape errors and resets drawing state', async () => {
     mockStoreDef.maskCtx = null
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleSpy = vi.mocked(console.error)
     const { startDrawing } = setup()
     await startDrawing(makePointerEvent(50, 50))
     expect(consoleSpy).toHaveBeenCalledWith(

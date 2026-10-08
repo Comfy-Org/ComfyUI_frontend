@@ -44,7 +44,7 @@ describe('ComfyUI file input', () => {
       files: { value: [file], configurable: true },
       value: { value: 'a1111.png', writable: true, configurable: true }
     })
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleError = vi.mocked(console.error)
 
     fileInput.dispatchEvent(new Event('change'))
 

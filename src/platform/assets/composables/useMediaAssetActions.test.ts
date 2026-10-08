@@ -555,7 +555,7 @@ describe('useMediaAssetActions', () => {
       })
       mockExtractApiPromptFromAsset.mockResolvedValue(apiPrompt)
       mockLoadApiJson.mockRejectedValueOnce(new Error('boom'))
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const consoleSpy = vi.mocked(console.error)
       const actions = useMediaAssetActions()
 
       await actions.openWorkflow(createMockAsset())
@@ -574,7 +574,7 @@ describe('useMediaAssetActions', () => {
       mockExtractApiPromptFromAsset.mockRejectedValueOnce(
         new Error('network down')
       )
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const consoleSpy = vi.mocked(console.error)
       const actions = useMediaAssetActions()
 
       await actions.openWorkflow(createMockAsset())

@@ -91,7 +91,7 @@ describe('useAssetsQuery loadMore transient failure retry', () => {
   it.for(transientFailures)(
     'retains rows and retries the same cursor after $name',
     async ({ fail, reason }) => {
-      const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const error = vi.mocked(console.error)
       const list = await createList(`retry-${reason}`, ['newest'], {
         hasMore: true,
         nextCursor: 'page-2'
@@ -147,7 +147,7 @@ describe('useAssetsQuery malformed response', () => {
   it.for(malformedResponses)(
     'terminates pagination after $name',
     async ({ response, reason }) => {
-      const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const error = vi.mocked(console.error)
       const list = await createList(`malformed-${reason}`, ['newest'], {
         hasMore: true,
         nextCursor: 'page-2'

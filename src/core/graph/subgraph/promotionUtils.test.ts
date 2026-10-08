@@ -195,7 +195,7 @@ describe('pruneDisconnected', () => {
       hostInput.widgetId = keptWidgetId
     }
 
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const warnSpy = vi.mocked(console.warn)
 
     pruneDisconnected(subgraphNode)
 

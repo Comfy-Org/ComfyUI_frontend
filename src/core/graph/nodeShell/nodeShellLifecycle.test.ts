@@ -19,7 +19,7 @@ describe('node shell registration', () => {
     graph.add(first)
     const duplicate = new LGraphNode('duplicate')
     duplicate.id = first.id
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const warn = vi.mocked(console.warn)
 
     graph.add(duplicate)
 

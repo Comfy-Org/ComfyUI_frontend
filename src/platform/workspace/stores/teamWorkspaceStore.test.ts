@@ -666,9 +666,7 @@ describe('useTeamWorkspaceStore', () => {
       )
 
       const firstSwitch = store.switchWorkspace(mockTeamWorkspace.id)
-      const consoleError = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
+      const consoleError = vi.mocked(console.error)
       await store.switchWorkspace(mockMemberWorkspace.id)
       finishSwitch()
       await firstSwitch
@@ -1786,9 +1784,7 @@ describe('useTeamWorkspaceStore', () => {
     })
 
     it('logs a failed request and retries on the next call', async () => {
-      const consoleError = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
+      const consoleError = vi.mocked(console.error)
       mockWorkspaceApi.listMembers.mockRejectedValueOnce(new Error('boom'))
       const store = await activateTeamWorkspace()
 
@@ -2214,9 +2210,7 @@ describe('useTeamWorkspaceStore', () => {
       await store.fetchPendingInvites()
 
       const first = store.resendInvite('inv-1')
-      const consoleError = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
+      const consoleError = vi.mocked(console.error)
       const duplicateResult = await store.resendInvite('inv-1')
       expect(consoleError).toHaveBeenCalledWith(
         'Invite resend already in progress'

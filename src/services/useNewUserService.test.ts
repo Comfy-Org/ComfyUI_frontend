@@ -262,7 +262,7 @@ describe('useNewUserService', () => {
       const mockCallback = vi
         .fn()
         .mockRejectedValue(new Error('Callback error'))
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const consoleSpy = vi.mocked(console.error)
 
       useSettingStore().settingValues = {}
       useSettingStore().settingValues['Comfy.TutorialCompleted'] = undefined
@@ -341,7 +341,7 @@ describe('useNewUserService', () => {
 
     it('should handle callback errors during initialization', async () => {
       const mockCallback = vi.fn().mockRejectedValue(new Error('Init error'))
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const consoleSpy = vi.mocked(console.error)
 
       await service.registerInitCallback(mockCallback)
 

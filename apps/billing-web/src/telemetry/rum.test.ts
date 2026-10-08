@@ -206,8 +206,6 @@ describe('billingWebRumBeforeSend', () => {
 
 describe('reportBillingWebError', () => {
   it('reports the failure without the cause chain RUM cannot scrub', () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
-
     reportBillingWebError(
       new Error('Card declined', {
         cause: new Error('Declined for ada@example.com')
@@ -221,7 +219,6 @@ describe('reportBillingWebError', () => {
   })
 
   it('reports the failure to RUM under its type, tagged with the billing web surface', () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     const failure = new Error('Card declined')
 
     reportBillingWebError(failure, {
@@ -245,7 +242,7 @@ describe('reportBillingWebError', () => {
   })
 
   it('logs the failure once, and RUM drops that console copy', () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleError = vi.mocked(console.error)
 
     reportBillingWebError(new Error('Card declined'), {
       errorType: 'failure_confirming_checkout'
@@ -262,7 +259,7 @@ describe('reportBillingWebError', () => {
   })
 
   it('logs only the redacted message, not the cause chain RUM would collect from the console', () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleError = vi.mocked(console.error)
 
     reportBillingWebError(
       new Error(
@@ -279,7 +276,6 @@ describe('reportBillingWebError', () => {
   })
 
   it('never throws into the billing flow when RUM itself fails', () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     vi.mocked(datadogRum.addError).mockImplementation(() => {
       throw new Error('RUM unavailable')
     })

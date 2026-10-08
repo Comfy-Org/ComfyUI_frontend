@@ -82,7 +82,7 @@ describe('useNodeTooltips', () => {
   })
 
   it('reads JSON examples in node metadata without i18n placeholder errors', () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleError = vi.mocked(console.error)
     const { getInputSlotTooltip } = useNodeTooltips('SAM3_Detect')
 
     expect(getInputSlotTooltip('positive_coords')).toBe(jsonTooltip)
@@ -90,7 +90,7 @@ describe('useNodeTooltips', () => {
   })
 
   it('reads input-based widget tooltips without i18n placeholder errors', () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleError = vi.mocked(console.error)
     const { getWidgetTooltip } = useNodeTooltips('SAM3_Detect')
 
     expect(getWidgetTooltip(positiveCoordsWidget)).toBe(jsonTooltip)
@@ -106,7 +106,7 @@ describe('useNodeTooltips', () => {
   })
 
   it('reads output slot tooltips without i18n placeholder errors', () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleError = vi.mocked(console.error)
     const { getOutputSlotTooltip } = useNodeTooltips('SAM3_Detect')
 
     expect(getOutputSlotTooltip(0)).toBe(jsonTooltip)

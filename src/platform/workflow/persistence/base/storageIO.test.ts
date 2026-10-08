@@ -421,9 +421,7 @@ describe('storageIO', () => {
         'Storage unavailable',
         'SecurityError'
       )
-      const consoleWarnSpy = vi
-        .spyOn(console, 'warn')
-        .mockImplementation(() => {})
+      const consoleWarnSpy = vi.mocked(console.warn)
       const unregisterFailedFlush =
         isolatedStorageIO.registerWorkflowPersistenceFlush(() => {
           throw flushError

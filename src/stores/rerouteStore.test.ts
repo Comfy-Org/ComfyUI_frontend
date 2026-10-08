@@ -48,7 +48,7 @@ function link(id: number, targetSlot: number, parentId?: number): LinkTopology {
 describe('useRerouteStore', () => {
   it('refuses to overwrite a registration held by a different chain', () => {
     const store = useRerouteStore()
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const error = vi.mocked(console.error)
     const owner = store.registerReroute(graphA, chain(1))
     assert(owner)
 

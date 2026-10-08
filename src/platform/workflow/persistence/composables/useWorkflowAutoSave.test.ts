@@ -143,9 +143,7 @@ describe('useWorkflowAutoSave', () => {
       activeWorkflow: { isModified: true, isPersisted: true }
     })
 
-    const consoleErrorSpy = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => {})
+    const consoleErrorSpy = vi.mocked(console.error)
 
     try {
       render({

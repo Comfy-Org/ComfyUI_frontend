@@ -166,7 +166,7 @@ describe('usePanAndZoom', () => {
 
     it('ignores move called without start', async () => {
       const pz = usePanAndZoom()
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const consoleSpy = vi.mocked(console.error)
 
       await pz.handlePanMove({ clientX: 0, clientY: 0 } as PointerEvent)
 
@@ -287,9 +287,7 @@ describe('usePanAndZoom', () => {
 
   describe('invalidatePanZoom', () => {
     it('warns and returns early when image is missing', async () => {
-      const consoleWarnSpy = vi
-        .spyOn(console, 'warn')
-        .mockImplementation(() => {})
+      const consoleWarnSpy = vi.mocked(console.warn)
 
       try {
         const pz = usePanAndZoom()

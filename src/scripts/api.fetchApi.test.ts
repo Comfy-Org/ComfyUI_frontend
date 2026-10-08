@@ -276,7 +276,6 @@ describe('api.fetchApi', () => {
 
     it('is not broken by a throwing onAuthCredential callback', async () => {
       signInOnCloud()
-      vi.spyOn(console, 'warn').mockImplementation(() => {})
       vi.mocked(useAuthStore().getAuthHeader).mockResolvedValue({
         Authorization: 'Bearer tokenA'
       })

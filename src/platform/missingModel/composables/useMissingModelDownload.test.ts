@@ -115,7 +115,7 @@ describe('useMissingModelDownload', () => {
 
   it('falls back when the Desktop bridge rejects the access page', async () => {
     const error = new Error('Desktop bridge unavailable')
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleError = vi.mocked(console.error)
     window.__comfyDesktop2 = {
       isRemote: () => false,
       openModelAccessPage: vi.fn().mockRejectedValue(error)

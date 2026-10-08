@@ -39,7 +39,6 @@ describe('OGG/Opus metadata', () => {
   })
 
   it('returns undefined fields for non-OGG data', async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     const file = new File([new Uint8Array(16)], 'fake.ogg', {
       type: 'audio/ogg'
     })
@@ -66,7 +65,7 @@ describe('OGG/Opus metadata', () => {
   })
 
   it('logs and skips when embedded JSON is malformed', async () => {
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const errorSpy = vi.mocked(console.error)
     const metadata = `prompt={not json}\0workflow={also bad}\0`
     const oggs = new TextEncoder().encode('OggS\0')
     const buf = new Uint8Array(128)

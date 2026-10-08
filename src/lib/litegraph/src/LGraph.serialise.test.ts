@@ -422,7 +422,7 @@ describe('LGraph Serialisation', () => {
     const node = new LGraphNode('Extended')
     const cyclic: Record<string, unknown> = {}
     cyclic.self = cyclic
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const warn = vi.mocked(console.warn)
     node.onSerialize = (data) => {
       Object.assign(data, { cyclic })
     }

@@ -12,7 +12,7 @@ describe('keybindingService - registerUserKeybindings', () => {
   beforeEach(() => {
     useSettingStore().settingValues['Comfy.Keybinding.NewBindings'] = []
     useSettingStore().settingValues['Comfy.Keybinding.UnsetBindings'] = []
-    warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    warnSpy = vi.mocked(console.warn)
   })
 
   it('does not warn when unset binding targets a command that no longer exists', () => {

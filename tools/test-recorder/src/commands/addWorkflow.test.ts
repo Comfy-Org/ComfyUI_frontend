@@ -29,8 +29,8 @@ describe('runAddWorkflow', () => {
     const sourcePath = join(projectRoot, 'example.json')
     writeFileSync(sourcePath, '{"nodes":[]}')
     findProjectRoot.mockReturnValue(projectRoot)
-    const log = vi.spyOn(console, 'log').mockImplementation(() => undefined)
-    const error = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    const log = vi.mocked(console.log)
+    const error = vi.mocked(console.error)
 
     runAddWorkflow(sourcePath)
 

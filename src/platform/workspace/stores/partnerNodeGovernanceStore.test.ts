@@ -233,7 +233,7 @@ describe('partnerNodeGovernanceStore', () => {
     await store.loadPolicy()
 
     expect(store.isSaving).toBe(true)
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleError = vi.mocked(console.error)
     await store.setProviderEnabled('openai', false)
     expect(consoleError).toHaveBeenCalledWith(
       'Provider policy save already in progress'
@@ -273,7 +273,7 @@ describe('partnerNodeGovernanceStore', () => {
     await vi.waitFor(() => expect(store?.status).toBe('unconfigured'))
 
     expect(store.isSaving).toBe(true)
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleError = vi.mocked(console.error)
     await store.setProviderEnabled('openai', false)
     expect(consoleError).toHaveBeenCalledWith(
       'Provider policy save already in progress'

@@ -284,7 +284,7 @@ describe('useSubgraphStore', () => {
   })
 
   it('should handle global blueprint with empty data gracefully', async () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleSpy = vi.mocked(console.error)
     await mockFetch(
       {},
       {
@@ -304,7 +304,7 @@ describe('useSubgraphStore', () => {
   })
 
   it('should handle global blueprint with rejected data promise gracefully', async () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleSpy = vi.mocked(console.error)
     await mockFetch(
       {},
       {
@@ -326,7 +326,7 @@ describe('useSubgraphStore', () => {
   })
 
   it('should load valid global blueprints even when others fail', async () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleSpy = vi.mocked(console.error)
     await mockFetch(
       {},
       {

@@ -39,7 +39,7 @@ describe(parseProxyWidgetErrorQuarantine, () => {
   })
 
   it('returns empty array for undefined without warning', () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const warnSpy = vi.mocked(console.warn)
 
     expect(parseProxyWidgetErrorQuarantine(undefined)).toEqual([])
 

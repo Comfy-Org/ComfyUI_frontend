@@ -104,7 +104,7 @@ describe('crossview dev proxy', () => {
         )
       )
     )
-    const logged = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const logged = vi.mocked(console.error)
     const server = createServer(
       handler({ target: 'https://deployment.example', key: 'key' })
     )

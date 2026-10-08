@@ -43,7 +43,7 @@ describe('registerBadgeRowsProvider', () => {
   })
 
   it('keeps the installed provider when a conflicting registration fails', () => {
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const error = vi.mocked(console.error)
     register(firstProvider)
     const disposeConflict = register(secondProvider)
     disposeConflict()

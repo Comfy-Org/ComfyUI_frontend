@@ -15,7 +15,7 @@ describe('asset load error reporting', () => {
   let consoleError: MockInstance<typeof console.error>
 
   beforeEach(() => {
-    consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    consoleError = vi.mocked(console.error)
   })
 
   describe('on cloud, where a sink exists', () => {

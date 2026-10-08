@@ -823,7 +823,7 @@ describe('useSubscriptionDialog', () => {
     })
 
     it('reopens pricing table on dialog rejection', async () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const consoleSpy = vi.mocked(console.error)
       mockShowTeamWorkspacesDialog.mockRejectedValue(new Error('dialog error'))
 
       const { startTeamWorkspaceUpgradeFlow } = useSubscriptionDialog()

@@ -29,7 +29,7 @@ describe('ensureUniqueWidgetNames', () => {
   })
 
   it('logs and leaves all names unchanged when a duplicate cannot be renamed', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const warn = vi.mocked(console.warn)
     const widgets = [{ name: 'seed' }, Object.freeze({ name: 'seed' })]
 
     expect(ensureUniqueWidgetNames(widgets)).toBe(false)

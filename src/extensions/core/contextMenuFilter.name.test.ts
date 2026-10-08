@@ -12,7 +12,7 @@ import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
  */
 describe('Context Menu Extension Name in Warnings', () => {
   it('should include extension name in deprecation warning', () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const warnSpy = vi.mocked(console.warn)
 
     // Install compatibility layer
     legacyMenuCompat.install(LGraphCanvas.prototype, 'getCanvasMenuOptions')
@@ -44,7 +44,7 @@ describe('Context Menu Extension Name in Warnings', () => {
   })
 
   it('should include extension name for node menu patches', () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const warnSpy = vi.mocked(console.warn)
 
     // Install compatibility layer
     legacyMenuCompat.install(LGraphCanvas.prototype, 'getNodeMenuOptions')

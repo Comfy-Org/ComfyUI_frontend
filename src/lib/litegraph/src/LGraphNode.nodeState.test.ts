@@ -204,7 +204,7 @@ describe('LGraphNode node-data adoption', () => {
     const { node } = addNodeToSubgraph()
     const registeredState = node._state
     const registeredId = node.id
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const warn = vi.mocked(console.warn)
 
     node.id = node.id
     node.id = toNodeId(9999)

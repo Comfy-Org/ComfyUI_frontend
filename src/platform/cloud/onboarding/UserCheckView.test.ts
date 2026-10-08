@@ -17,7 +17,7 @@ vi.mock(import('@/platform/cloud/onboarding/auth'), () => ({
 describe('UserCheckView', () => {
   it('renders bootstrap state without unresolved component warnings', () => {
     vi.mocked(useFeatureFlags().flags).onboardingSurveyEnabled = true
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const warn = vi.mocked(console.warn)
 
     render(UserCheckView, {
       global: {

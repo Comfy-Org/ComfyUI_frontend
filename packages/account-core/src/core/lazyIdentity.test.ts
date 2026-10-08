@@ -345,7 +345,7 @@ describe('createLazyIdentity', () => {
       Promise.reject(new Error('chunk failed'))
     )
     const port = createLazyIdentity(load)
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const warn = vi.mocked(console.warn)
     port.onUserChanged(() => {
       throw new Error('listener failed')
     })

@@ -1557,8 +1557,6 @@ describe('useWorkspaceAuthStore', () => {
           sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE)
         ).toBe(JSON.stringify(mockWorkspaceWithRole))
       })
-      vi.spyOn(console, 'error').mockImplementation(() => {})
-      vi.spyOn(console, 'warn').mockImplementation(() => {})
 
       const refreshPromise = store.refreshToken()
       await vi.advanceTimersByTimeAsync(1000)
@@ -1602,12 +1600,8 @@ describe('useWorkspaceAuthStore', () => {
         text: () => Promise.resolve(JSON.stringify({ message: 'Server error' }))
       })
 
-      const consoleErrorSpy = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
-      const consoleWarnSpy = vi
-        .spyOn(console, 'warn')
-        .mockImplementation(() => {})
+      const consoleErrorSpy = vi.mocked(console.error)
+      const consoleWarnSpy = vi.mocked(console.warn)
 
       const refreshPromise = store.refreshToken()
 
@@ -1736,9 +1730,7 @@ describe('useWorkspaceAuthStore', () => {
           Promise.resolve(JSON.stringify({ message: 'Invalid token' }))
       })
 
-      const consoleErrorSpy = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
+      const consoleErrorSpy = vi.mocked(console.error)
 
       await store.refreshToken()
 
@@ -1774,7 +1766,6 @@ describe('useWorkspaceAuthStore', () => {
               )
             )
         )
-        vi.spyOn(console, 'error').mockImplementation(() => {})
 
         const store = useWorkspaceAuthStore()
         const { currentWorkspace } = storeToRefs(store)
@@ -2141,9 +2132,7 @@ describe('useWorkspaceAuthStore', () => {
         clear: originalSessionStorage.clear.bind(originalSessionStorage)
       } satisfies Storage
       vi.stubGlobal('sessionStorage', throwingSessionStorage)
-      const consoleWarnSpy = vi
-        .spyOn(console, 'warn')
-        .mockImplementation(() => {})
+      const consoleWarnSpy = vi.mocked(console.warn)
 
       try {
         const store = useWorkspaceAuthStore()

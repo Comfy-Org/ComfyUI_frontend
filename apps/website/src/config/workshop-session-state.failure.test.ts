@@ -70,7 +70,7 @@ describe('useWorkshopSession initialization failure', () => {
     vi.mocked(workshopIdentity.activate).mockRejectedValueOnce(
       new Error('activate exploded')
     )
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const errorSpy = vi.mocked(console.error)
     const sessionModule = await import('./workshop-session-state')
 
     sessionModule.useWorkshopSession()
@@ -110,7 +110,7 @@ describe('useWorkshopSession initialization failure', () => {
     vi.mocked(subscribeAuthRefreshTelemetry).mockImplementation(() => {
       throw new Error('telemetry exploded')
     })
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const errorSpy = vi.mocked(console.error)
     const sessionModule = await import('./workshop-session-state')
 
     const session = sessionModule.useWorkshopSession()

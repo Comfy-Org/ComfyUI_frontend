@@ -19,6 +19,16 @@ const REDUNDANT_LITEGRAPH_CLEANUP_METHODS = new Set([
   'unregisterNodeType'
 ])
 
+const GLOBALLY_SPIED_CONSOLE_METHODS = new Set([
+  'debug',
+  'error',
+  'info',
+  'log',
+  'warn'
+])
+const CONSOLE_GLOBAL = new Set(['console'])
+const CONSOLE_OWNERS = new Set(['globalThis', 'window'])
+
 const MODULE_SCOPE_MOCK_METHODS = new Set(['spyOn', 'stubGlobal'])
 const PARTIAL_MOCK_METHODS = new Set(['doMock', 'mock'])
 const AFTER_EACH_IMPORTS = new Set(['afterEach'])
@@ -619,6 +629,59 @@ export const noModuleScopeVitestMocks = {
         context.report({
           node,
           message: `Install vi.${methodName}() in beforeEach or a test because automatic Vitest cleanup removes earlier mock installations before assertions run.`
+        })
+      }
+    }
+  }
+}
+
+function isGlobalIdentifier(
+  context: RuleContext,
+  expression: Expression,
+  names: ReadonlySet<string>
+): boolean {
+  const identifier = asIdentifier(expression)
+  return (
+    identifier !== undefined &&
+    names.has(identifier.name) &&
+    !resolvedVariable(context, identifier)?.defs.length
+  )
+}
+
+function isGlobalConsole(context: RuleContext, expression: Expression) {
+  if (isGlobalIdentifier(context, expression, CONSOLE_GLOBAL)) {
+    return true
+  }
+  const member = asMemberExpression(expression)
+  return (
+    member !== undefined &&
+    staticMemberName(member) === 'console' &&
+    isGlobalIdentifier(context, member.object, CONSOLE_OWNERS)
+  )
+}
+
+export const noRedundantConsoleSpy = {
+  create(context: RuleContext) {
+    return {
+      CallExpression(node: CallExpression) {
+        if (
+          vitestMethodName(context, node) !== 'spyOn' ||
+          node.arguments.length < 2
+        ) {
+          return
+        }
+        const [target, method] = node.arguments
+        const methodName = staticModuleName(method)
+        if (
+          !methodName ||
+          !GLOBALLY_SPIED_CONSOLE_METHODS.has(methodName) ||
+          !isGlobalConsole(context, target)
+        ) {
+          return
+        }
+        context.report({
+          node,
+          message: `console.${methodName} is already spied before every test by vitest.console.setup.ts, and output from passing tests is silenced. Use vi.mocked(console.${methodName}) to assert on it or replace its implementation.`
         })
       }
     }

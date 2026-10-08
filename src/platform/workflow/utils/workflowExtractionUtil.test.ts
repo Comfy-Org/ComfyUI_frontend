@@ -125,7 +125,7 @@ describe('extractWorkflowFromAsset', () => {
   })
 
   it('swallows errors during extraction and logs them', async () => {
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const errorSpy = vi.mocked(console.error)
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network down')))
 
     const result = await extractWorkflowFromAsset(makeAsset())

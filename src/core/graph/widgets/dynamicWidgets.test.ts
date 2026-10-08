@@ -534,7 +534,7 @@ describe('Autogrow', () => {
         ok: false,
         error: { code: 'occupied-target', message: 'Target is occupied' }
       })
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleError = vi.mocked(console.error)
 
     node.disconnectInput(1)
     const inputNames = node.inputs.map(({ name }) => name)

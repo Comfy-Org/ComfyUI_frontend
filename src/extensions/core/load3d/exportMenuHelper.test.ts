@@ -121,7 +121,7 @@ describe('createExportMenuItems', () => {
   )
 
   it('shows an alert toast and logs when exportModel rejects', async () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleError = vi.mocked(console.error)
     const exportModel = vi.fn().mockRejectedValue(new Error('boom'))
     const items = createExportMenuItems(makeLoad3d(exportModel))
     ;(items[1]!.callback as (...args: unknown[]) => void)(

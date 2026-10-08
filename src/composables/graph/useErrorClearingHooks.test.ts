@@ -627,7 +627,7 @@ describe('installErrorClearingHooks lifecycle', () => {
         resolveVerification = resolve
       })
     })
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const warn = vi.mocked(console.warn)
     installErrorClearingHooks(graph)
 
     const node = new LGraphNode('CheckpointLoaderSimple')

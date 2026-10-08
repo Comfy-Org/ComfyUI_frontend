@@ -463,9 +463,7 @@ describe('InviteMemberDialogContent', () => {
       vi.mocked(useTeamWorkspaceStore().fetchPendingInvites)
         .mockResolvedValueOnce([])
         .mockRejectedValue(new Error('nope'))
-      const consoleError = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
+      const consoleError = vi.mocked(console.error)
       const { user } = renderDialog()
 
       await inviteAndConfirm(user, 'a@b.com{Enter}')

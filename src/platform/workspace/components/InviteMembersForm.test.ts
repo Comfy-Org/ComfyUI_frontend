@@ -142,7 +142,7 @@ describe('InviteMembersForm', () => {
 
   it('completes submission when the billing refresh fails', async () => {
     const refreshError = new Error('refresh failed')
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleError = vi.mocked(console.error)
     const { user, emitted } = renderForm()
     vi.mocked(useBillingContext().fetchStatus).mockRejectedValueOnce(
       refreshError
@@ -167,7 +167,7 @@ describe('InviteMembersForm', () => {
     vi.mocked(
       useTeamWorkspaceStore().fetchPendingInvites
     ).mockRejectedValueOnce(refreshError)
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleError = vi.mocked(console.error)
     const { user, emitted } = renderForm()
 
     await user.type(emailInput(), 'stale@example.com{Enter}')
