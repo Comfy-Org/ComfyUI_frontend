@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
+import Badge from '@/components/ui/badge/Badge.vue'
 import IconApps from '@/components/hub/IconApps.vue'
 import IconModel from '@/components/hub/IconModel.vue'
 import IconWorkflow from '@/components/hub/IconWorkflow.vue'
@@ -14,22 +15,22 @@ const { kind, locale = 'en' } = defineProps<{
 }>()
 const { t } = translationsFor(locale)
 
-// The same surface each kind's door on the Hub wears.
+// Each kind's door colour, let through over the cover like the maker mark.
 const KINDS = {
   app: {
     label: 'workshop.explore.kindApp',
     icon: IconApps,
-    surface: 'bg-cobalt-800'
+    surface: 'bg-cobalt-800/70'
   },
   workflow: {
     label: 'workshop.explore.workflowPill',
     icon: IconWorkflow,
-    surface: 'bg-primary-comfy-plum'
+    surface: 'bg-primary-comfy-plum/70'
   },
   model: {
     label: 'workshop.explore.kindModel',
     icon: IconModel,
-    surface: 'bg-illustration-forest'
+    surface: 'bg-illustration-forest/70'
   }
 } as const satisfies Record<
   ExploreKind,
@@ -38,17 +39,19 @@ const KINDS = {
 </script>
 
 <template>
-  <span
+  <Badge
     :class="
       cn(
-        'pointer-events-none absolute top-3 left-3 z-10 inline-flex items-center gap-1 rounded-lg px-2 py-1 text-2xs/none font-semibold tracking-wider text-primary-warm-white uppercase',
+        'pointer-events-none absolute top-3 left-3 z-10 font-semibold tracking-wider text-primary-warm-white uppercase backdrop-blur-md',
         KINDS[kind].surface
       )
     "
     data-testid="explore-kind"
     :data-kind="kind"
   >
-    <component :is="KINDS[kind].icon" class="size-3 shrink-0" />
+    <template #prepend>
+      <component :is="KINDS[kind].icon" class="size-3 shrink-0" />
+    </template>
     {{ t(KINDS[kind].label) }}
-  </span>
+  </Badge>
 </template>
