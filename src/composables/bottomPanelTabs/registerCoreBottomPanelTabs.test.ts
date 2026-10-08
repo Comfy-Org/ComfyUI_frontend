@@ -32,12 +32,7 @@ vi.mock(import('@/composables/bottomPanelTabs/useTerminalTabs'), () => ({
 vi.mock(import('@/platform/telemetry/reportError'))
 
 const distribution = vi.hoisted(() => ({ isDesktop: false }))
-
-vi.mock(import('@/platform/distribution/types'), () => ({
-  get isDesktop() {
-    return distribution.isDesktop
-  }
-}))
+vi.mock(import('@/platform/distribution/types'), () => distribution)
 
 const shortcutTabIds = ['shortcuts-essentials', 'shortcuts-view-controls']
 

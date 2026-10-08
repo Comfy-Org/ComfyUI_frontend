@@ -10,19 +10,19 @@ export async function registerCoreBottomPanelTabs() {
     bottomPanelStore.registerBottomPanelTab(tab)
   }
 
-  if (__DISTRIBUTION__ !== 'cloud') {
-    try {
-      const { useLogsTerminalTab, useCommandTerminalTab } =
-        await import('@/composables/bottomPanelTabs/useTerminalTabs')
-      bottomPanelStore.registerBottomPanelTab(useLogsTerminalTab())
-      if (isDesktop) {
-        bottomPanelStore.registerBottomPanelTab(useCommandTerminalTab())
-      }
-    } catch (error) {
-      reportError(error, {
-        errorType: 'error_loading_terminal_tabs',
-        surface: 'platform'
-      })
+  if (__DISTRIBUTION__ === 'cloud') return
+
+  try {
+    const { useLogsTerminalTab, useCommandTerminalTab } =
+      await import('@/composables/bottomPanelTabs/useTerminalTabs')
+    bottomPanelStore.registerBottomPanelTab(useLogsTerminalTab())
+    if (isDesktop) {
+      bottomPanelStore.registerBottomPanelTab(useCommandTerminalTab())
     }
+  } catch (error) {
+    reportError(error, {
+      errorType: 'error_loading_terminal_tabs',
+      surface: 'platform'
+    })
   }
 }
