@@ -56,6 +56,12 @@ const QUARTER_STEP_INPUT_SPEC: InputSpec = {
   step: 0.25
 }
 
+// `false` is how a definition declares that it does not round.
+const UNROUNDED_INPUT_SPEC: InputSpec = {
+  ...PRIMITIVE_FLOAT_INPUT_SPEC,
+  round: false
+}
+
 // A declared step of zero would leave the stepper buttons inert.
 const ZERO_STEP_INPUT_SPEC: InputSpec = {
   ...PRIMITIVE_FLOAT_INPUT_SPEC,
@@ -66,6 +72,7 @@ const TEST_PRIMITIVE_FLOAT_TYPE = 'test/PrimitiveFloatNumericOptions'
 const TEST_PRIMITIVE_INT_TYPE = 'test/PrimitiveIntNumericOptions'
 const TEST_QUARTER_STEP_FLOAT_TYPE = 'test/QuarterStepFloatNumericOptions'
 const TEST_ZERO_STEP_FLOAT_TYPE = 'test/ZeroStepFloatNumericOptions'
+const TEST_UNROUNDED_FLOAT_TYPE = 'test/UnroundedFloatNumericOptions'
 
 class TestPrimitiveFloatNode extends LGraphNode {
   static override title = 'Float'
@@ -111,6 +118,17 @@ class TestZeroStepFloatNode extends LGraphNode {
   }
 }
 
+class TestUnroundedFloatNode extends LGraphNode {
+  static override title = 'Float'
+
+  constructor() {
+    super('PrimitiveFloat')
+    this.comfyClass = 'PrimitiveFloat'
+    this.addOutput('FLOAT', 'FLOAT')
+    useFloatWidget()(this, UNROUNDED_INPUT_SPEC)
+  }
+}
+
 function stubSettings(overrides: Partial<Settings>) {
   const settingStore = useSettingStore(getActivePinia())
   vi.spyOn(settingStore, 'get').mockImplementation(
@@ -150,6 +168,11 @@ describe('Primitive numeric widget options', () => {
       { name: 'PrimitiveFloat' } as ComfyNodeDef,
       app
     )
+    await extension.beforeRegisterNodeDef?.(
+      TestUnroundedFloatNode,
+      { name: 'PrimitiveFloat' } as ComfyNodeDef,
+      app
+    )
   })
 
   beforeEach(() => {
@@ -163,6 +186,10 @@ describe('Primitive numeric widget options', () => {
       TestQuarterStepFloatNode
     )
     LiteGraph.registerNodeType(TEST_ZERO_STEP_FLOAT_TYPE, TestZeroStepFloatNode)
+    LiteGraph.registerNodeType(
+      TEST_UNROUNDED_FLOAT_TYPE,
+      TestUnroundedFloatNode
+    )
   })
 
   describe('PrimitiveFloat', () => {
@@ -208,6 +235,16 @@ describe('Primitive numeric widget options', () => {
 
       expect(widget.options.round).toBeUndefined()
       expect(widget.options.step2).toBe(0.001)
+    })
+
+    it('keeps rounding off when precision is set on a node declared not to round', () => {
+      stubSettings({ 'Comfy.DisableFloatRounding': true })
+      const { node, widget } = createNode(TEST_UNROUNDED_FLOAT_TYPE)
+
+      node.properties.precision = 3
+
+      onFloatValueChange.call(widget, 0.123456)
+      expect(widget.value).toBe(0.123456)
     })
 
     it('preserves a round of zero configured on the node', () => {

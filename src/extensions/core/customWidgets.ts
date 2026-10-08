@@ -267,6 +267,7 @@ function onCustomFloatCreated(this: LGraphNode) {
 
   const defaultPrecision = usablePrecision(valueWidget.options.precision) ?? 1
   const declaredRound = valueWidget.options.round
+  const declaresRounding = (usableNumber(declaredRound) ?? 0) > 0
 
   const nodePrecision = () => usablePrecision(this.properties.precision)
   const precision = () => nodePrecision() ?? defaultPrecision
@@ -280,10 +281,10 @@ function onCustomFloatCreated(this: LGraphNode) {
   // also carries the global `Comfy.FloatRoundingPrecision`, which must not.
   const stepForPrecision = () =>
     nodePrecision() !== undefined ? lastDecimalPlace() : declaredStep
-  // `Comfy.DisableFloatRounding` leaves `declaredRound` undefined; node
+  // `Comfy.DisableFloatRounding` leaves `declaredRound` unset or `false`; node
   // precision refines the granularity but must not switch rounding back on.
   const roundForPrecision = () =>
-    declaredRound !== undefined && nodePrecision() !== undefined
+    declaresRounding && nodePrecision() !== undefined
       ? lastDecimalPlace()
       : declaredRound
 
