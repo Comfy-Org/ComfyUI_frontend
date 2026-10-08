@@ -131,7 +131,11 @@ for (const { reducedMotion, paused } of [
     page,
     context
   }) => {
-    await mockFlags(context, { apps: true, workflows: false })
+    await mockFlags(context, {
+      apps: true,
+      workflows: false,
+      moveAnything: false
+    })
     await page.emulateMedia({ reducedMotion })
     const posters: string[] = []
     page.on('requestfinished', (request) => {
@@ -166,7 +170,11 @@ test('decodes a frame of each hub app card video while it plays', async ({
   page,
   context
 }) => {
-  await mockFlags(context, { apps: true, workflows: false })
+  await mockFlags(context, {
+    apps: true,
+    workflows: false,
+    moveAnything: false
+  })
   await page.goto('/hub/apps/')
 
   const artwork = page.getByTestId('app-shelf').getByTestId('model-card-media')
