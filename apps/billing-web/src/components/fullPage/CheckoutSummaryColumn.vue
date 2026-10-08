@@ -3,15 +3,20 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
+import type { OperationPlanLabel } from '@/checkout/operationPlan'
 import type { SummaryLedger } from '@/checkout/summaryLedger'
+import OperationPlanSummary from '@/components/OperationPlanSummary.vue'
 import CheckoutLedger from '@/components/fullPage/summary/CheckoutLedger.vue'
 
 const {
   ledger,
+  operationPlan,
   locked = false,
   repricing = false
 } = defineProps<{
   ledger?: SummaryLedger
+  /** Money in flight this page did not send, summarized by the plan the server reports for it. */
+  operationPlan?: { readonly label?: OperationPlanLabel }
   /** Money on its way: the back arrow goes with the rest of the page. */
   locked?: boolean
   /** A promo re-quote is in flight, so the total on screen is not final. */
@@ -28,21 +33,28 @@ const SKELETON_BAR =
 
 <template>
   <section
-    class="flex bg-base-background lg:w-1/2 lg:justify-end"
+    class="flex justify-center bg-base-background lg:w-1/2 lg:justify-end"
     :aria-label="t('checkout.fullPage.summary.label')"
-    :aria-busy="ledger === undefined || repricing"
+    :aria-busy="
+      (ledger === undefined && operationPlan === undefined) || repricing
+    "
   >
-    <div class="flex w-full flex-col px-6 py-12 lg:max-w-lg lg:px-16">
-      <div class="relative flex h-5 items-center">
+    <div class="flex w-full max-w-lg flex-col px-6 py-12 lg:px-16">
+      <div class="relative flex h-5 items-center max-lg:h-10">
         <button
           v-if="!locked"
           type="button"
           :aria-label="t('checkout.back')"
-          class="absolute -left-10 flex size-8 cursor-pointer items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary-background hover:text-base-foreground focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:outline-none max-lg:static max-lg:mr-2"
+          class="absolute -left-10 flex size-8 cursor-pointer items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary-background hover:text-base-foreground focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:outline-none max-lg:static max-lg:mr-2 max-lg:size-10"
           @click="emit('back')"
         >
           <i class="icon-[lucide--arrow-left] size-4" aria-hidden="true" />
         </button>
+        <span
+          v-else
+          class="mr-2 size-10 shrink-0 lg:hidden"
+          aria-hidden="true"
+        />
         <i
           class="icon-[comfy--comfy-logo] h-5 w-18 text-brand-yellow"
           role="img"
@@ -50,7 +62,12 @@ const SKELETON_BAR =
         />
       </div>
 
-      <CheckoutLedger v-if="ledger" :ledger>
+      <OperationPlanSummary
+        v-if="operationPlan"
+        class="mt-16"
+        :recovered="operationPlan"
+      />
+      <CheckoutLedger v-else-if="ledger" :ledger>
         <slot :ledger />
       </CheckoutLedger>
       <template v-else>

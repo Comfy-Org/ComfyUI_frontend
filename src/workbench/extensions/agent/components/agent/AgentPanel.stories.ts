@@ -44,9 +44,21 @@ export const WithHistory: Story = {
   args: {
     sessionId: 'portrait',
     historyGroups: {
-      current: [{ id: 'portrait', title: 'Portrait lighting', updatedAt: 0 }],
+      current: [
+        {
+          id: 'portrait',
+          title: 'Portrait lighting',
+          updatedAt: 0,
+          titleSource: 'server'
+        }
+      ],
       today: [
-        { id: 'upscale', title: 'Upscale a product photo', updatedAt: 0 }
+        {
+          id: 'upscale',
+          title: 'Upscale a product photo',
+          updatedAt: 0,
+          titleSource: 'server'
+        }
       ],
       yesterday: [],
       earlier: []
@@ -84,4 +96,34 @@ export const ChipStates: Story = {
       }
     ]
   }
+}
+
+/**
+ * DES-1221 / FE-3142. One notice, five arms, and nothing else moves: the
+ * starter prompts and the composer placeholder are identical in every cell, so
+ * placement is the only variable between them.
+ */
+export const FreeUseControl: Story = {
+  name: 'DES-1221 a / control',
+  args: { freeUsePlacement: 'control' }
+}
+
+export const FreeUseTopBanner: Story = {
+  name: 'DES-1221 b / top banner',
+  args: { freeUsePlacement: 'top-banner' }
+}
+
+export const FreeUseNearComposer: Story = {
+  name: 'DES-1221 c / near composer',
+  args: { freeUsePlacement: 'near-composer' }
+}
+
+export const FreeUseAboveInput: Story = {
+  name: 'DES-1221 d / above input',
+  args: { freeUsePlacement: 'above-input' }
+}
+
+export const FreeUseInsideInput: Story = {
+  name: 'DES-1221 e / inside input',
+  args: { freeUsePlacement: 'inside-input' }
 }

@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type {
   ContextMenuDivElement,
   IContextMenuValue
-} from '@/lib/litegraph/src/interfaces'
+} from '@/lib/litegraph/src/types/contextMenu'
 import type {
   LGraph,
   LGraphCanvas,
@@ -73,7 +73,6 @@ const BASE_GROUP_ITEMS: (string | null)[] = [
 ]
 
 beforeEach(() => {
-  graphChange.mockClear()
   vi.mocked(useSettingStore().get).mockReturnValue(10)
 })
 

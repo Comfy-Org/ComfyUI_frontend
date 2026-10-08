@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import { effectScope } from 'vue'
 
 import { useFeatureUsageTracker } from './useFeatureUsageTracker'
 
@@ -79,6 +80,100 @@ describe('useFeatureUsageTracker', () => {
 
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
     expect(stored['persisted-feature']?.useCount).toBe(1)
+  })
+
+  it('persists before its owning scope is disposed', () => {
+    const scope = effectScope()
+
+    scope.run(() => {
+      useFeatureUsageTracker('disposed-feature').trackUsage()
+    })
+    scope.stop()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored['disposed-feature']?.useCount).toBe(1)
+  })
+
+  it('persists when tracked after its owning scope is disposed', () => {
+    const scope = effectScope()
+    let trackUsage = () => {}
+
+    scope.run(() => {
+      trackUsage = useFeatureUsageTracker('late-feature').trackUsage
+    })
+    scope.stop()
+    trackUsage()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored['late-feature']?.useCount).toBe(1)
+  })
+
+  it('does not interrupt callers when storage is unavailable', () => {
+    const { trackUsage, useCount } = useFeatureUsageTracker(
+      'unavailable-storage'
+    )
+    vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new DOMException('Storage quota exceeded', 'QuotaExceededError')
+    })
+
+    expect(trackUsage).not.toThrow()
+    expect(useCount.value).toBe(1)
+  })
+
+  it('preserves in-memory increments when storage recovers', () => {
+    const { trackUsage, useCount } =
+      useFeatureUsageTracker('recovering-storage')
+
+    trackUsage()
+    const setItem = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new DOMException('Storage quota exceeded', 'QuotaExceededError')
+    })
+    trackUsage()
+    setItem.mockRestore()
+    trackUsage()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored['recovering-storage']?.useCount).toBe(3)
+    expect(useCount.value).toBe(3)
+  })
+
+  it('preserves intervening usage when tracked after scope disposal', () => {
+    const scope = effectScope()
+    let trackDisposedFeature = () => {}
+
+    scope.run(() => {
+      trackDisposedFeature =
+        useFeatureUsageTracker('disposed-feature').trackUsage
+    })
+    scope.stop()
+
+    const liveFeature = useFeatureUsageTracker('live-feature')
+    liveFeature.trackUsage()
+    trackDisposedFeature()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored['disposed-feature']?.useCount).toBe(1)
+    expect(stored['live-feature']?.useCount).toBe(1)
+    expect(liveFeature.useCount.value).toBe(1)
+  })
+
+  it('increments the latest count when the same feature changed after disposal', () => {
+    const scope = effectScope()
+    let trackDisposedFeature = () => {}
+
+    scope.run(() => {
+      trackDisposedFeature = useFeatureUsageTracker('shared-feature').trackUsage
+    })
+    scope.stop()
+
+    const liveFeature = useFeatureUsageTracker('shared-feature')
+    liveFeature.trackUsage()
+    liveFeature.trackUsage()
+    trackDisposedFeature()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored['shared-feature']?.useCount).toBe(3)
+    expect(liveFeature.useCount.value).toBe(3)
   })
 
   it('loads existing data from localStorage', () => {

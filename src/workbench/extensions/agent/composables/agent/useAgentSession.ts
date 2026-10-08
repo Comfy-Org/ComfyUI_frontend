@@ -31,7 +31,8 @@ import {
   parseAgentWsEvent,
   toTurnId,
   zAgentAdmissionError,
-  zDisownedWorkflowError
+  zDisownedWorkflowError,
+  zTurnInProgressError
 } from '../../schemas/agentApiSchema'
 import {
   AgentApiError,
@@ -176,7 +177,7 @@ const TURN_RECOVERY_DELAYS_MS = [0, 1000, 2000, 4000, 8000, 16000]
 const TURN_RECOVERY_DEADLINE_MS = 60_000
 
 type TurnOutcome =
-  | { kind: 'terminal'; parts: AssistantMessage['parts'] }
+  | { kind: 'terminal'; parts: AssistantMessage['parts'] | undefined }
   | { kind: 'thread-missing' }
   | { kind: 'streaming' }
   | { kind: 'error'; message: string }
@@ -209,6 +210,23 @@ function mergeAdjacentTextParts(
   return merged
 }
 
+function terminalRecoveryParts(
+  rows: AgentMessages
+): AssistantMessage['parts'] | undefined {
+  const parts = mergeAdjacentTextParts(
+    normalizeAgentTranscript(rows).messages[0]?.parts ?? []
+  )
+  if (parts.length > 0) return parts
+  if (rows.every((row) => row.status !== 'error')) return undefined
+  return [
+    {
+      type: 'notice',
+      level: 'error',
+      text: i18n.global.t('agent.recoveredTurnFailed')
+    }
+  ]
+}
+
 /**
  * The status source reports its current state synchronously on subscribe
  * (see agentEventSource.onStatus), so the first callback is a snapshot, not a
@@ -238,6 +256,11 @@ export function isRetryableRequestFailure(
   accepted: boolean
 ): boolean {
   if (accepted) return false
+  if (
+    error instanceof ZodError ||
+    error instanceof AgentResponseUnreadableError
+  )
+    return false
   if (error instanceof AgentApiError)
     return !NON_RETRYABLE_REQUEST_STATUSES.has(error.status)
   return true
@@ -337,6 +360,13 @@ function disownsWorkflow(error: unknown): boolean {
     error.status === 403 &&
     zDisownedWorkflowError.safeParse(error.body).success
   )
+}
+
+function parseTurnInProgress(error: unknown) {
+  if (!(error instanceof AgentApiError) || error.status !== 409)
+    return undefined
+  const parsed = zTurnInProgressError.safeParse(error.body)
+  return parsed.success ? parsed.data : undefined
 }
 
 export function useAgentSession(deps: AgentSessionDeps) {
@@ -801,7 +831,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     attachments?: SentAttachment[],
     tags?: SentTag[],
     workflowReferences?: WorkflowReference[],
-    selectionWorkflowId?: () => string | undefined
+    selectionWorkflowId?: () => string | undefined,
+    clientMessageId?: string
   ): Promise<AgentTurnAccepted> {
     const input = buildPostInput(
       threadId,
@@ -811,7 +842,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
       attachments,
       tags,
       workflowReferences,
-      selectionWorkflowId
+      selectionWorkflowId,
+      clientMessageId
     )
     if (wfContext?.id === undefined) return rest.postMessage(threadId, input)
     return rest.postMessage(threadId, { ...input, workflowId: wfContext.id })
@@ -825,7 +857,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     attachments?: SentAttachment[],
     tags?: SentTag[],
     workflowReferences?: WorkflowReference[],
-    selectionWorkflowId?: () => string | undefined
+    selectionWorkflowId?: () => string | undefined,
+    clientMessageId?: string
   ): PostMessageInput {
     const draft = workflow?.draft?.(origin)
     const unboundTarget = isUnboundTarget(wfContext, boundWorkflowId.value)
@@ -842,6 +875,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
       ),
       selection: selectedNodes(tags, selectedWorkflowId),
       attachments: attachments?.map((attachment) => attachment.ref),
+      // Carried through untouched so the server can echo it onto
+      // agent_turn_started: it is the same id this send reports on its own
+      // app:agent_message_sent event, and the only value that can appear on both
+      // sides of the message -> turn step.
+      clientMessageId,
       ...buildTargetFields(threadId, wfContext, draft, unboundTarget)
     }
   }
@@ -971,6 +1009,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     conversationStore.startTurn(turnId)
     readyThreadId.value = ack.thread_id
     recordTurnStarted(turnId, startsThread)
+    stopPendingActiveTurn()
+  }
+
+  function stopPendingActiveTurn(): void {
     const pendingStop = consumeStopPendingAck()
     if (pendingStop !== null) void stopTurn(pendingStop.method)
   }
@@ -978,7 +1020,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
   function recordSendError(
     error: unknown,
     text: string,
-    accepted: boolean
+    accepted: boolean,
+    reattached: boolean
   ): void {
     const admission = parseAdmissionError(error)
     if (admission?.reason === 'no_funds') {
@@ -1000,16 +1043,13 @@ export function useAgentSession(deps: AgentSessionDeps) {
       )
       return
     }
-    const message =
-      error instanceof AgentApiError
-        ? error.message
-        : error instanceof Error
-          ? error.message
-          : String(error)
+    const message = error instanceof Error ? error.message : String(error)
     conversationStore.recordFailedSend(
       nextLocalErrorId(),
       text,
-      `${i18n.global.t('agent.sendFailed')}: ${message}`
+      reattached
+        ? i18n.global.t('agent.sendTurnInProgress')
+        : `${i18n.global.t('agent.sendFailed')}: ${message}`
     )
     const turnAccepted = accepted || isUnreadableAckFailure(error)
     reportError(error, {
@@ -1022,6 +1062,18 @@ export function useAgentSession(deps: AgentSessionDeps) {
       'inline_notice',
       { retryable: isRetryableRequestFailure(error, turnAccepted) }
     )
+  }
+
+  function recordCurrentSendError(
+    error: unknown,
+    text: string,
+    accepted: boolean,
+    reattached: boolean,
+    threadAtSend: string
+  ): void {
+    if (threadAtSend !== 'new' && conversationStore.threadId !== threadAtSend)
+      return
+    recordSendError(error, text, accepted, reattached)
   }
 
   /**
@@ -1046,12 +1098,42 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (rememberedWorkflowId === sent.id) rememberedWorkflowId = null
   }
 
+  async function reattachRefusedTurn(
+    error: unknown,
+    threadAtSend: string,
+    generation: number
+  ): Promise<boolean> {
+    const conflict = parseTurnInProgress(error)
+    if (conflict === undefined || threadAtSend === 'new') return false
+    const reattachGeneration = ++refusedTurnReattachGeneration
+    const isCurrentReattachment = () =>
+      reattachGeneration === refusedTurnReattachGeneration &&
+      generation === loadGeneration &&
+      ownedGeneration === sessionGeneration &&
+      conversationStore.threadId === threadAtSend
+    await Promise.race([
+      hydrateFromServer(threadAtSend, isCurrentReattachment),
+      new Promise<void>((resolve) => setTimeout(resolve, RECONCILE_TIMEOUT_MS))
+    ])
+    const activeTurnId = conversationStore.activeTurnId
+    const adoptedActiveTurn =
+      isCurrentReattachment() &&
+      activeTurnId !== null &&
+      (conflict.active_message_id === undefined ||
+        activeTurnId === conflict.active_message_id)
+    if (reattachGeneration === refusedTurnReattachGeneration)
+      refusedTurnReattachGeneration++
+    if (adoptedActiveTurn) stopPendingActiveTurn()
+    return adoptedActiveTurn
+  }
+
   async function performSend(
     text: string,
     attachments?: SentAttachment[],
     tags?: SentTag[],
     workflowReferences?: WorkflowReference[],
-    selectionWorkflowId?: () => string | undefined
+    selectionWorkflowId?: () => string | undefined,
+    clientMessageId?: string
   ): Promise<boolean> {
     const generation = loadGeneration
     const threadAtSend = conversationStore.threadId ?? 'new'
@@ -1077,7 +1159,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
         attachments,
         tags,
         workflowReferences,
-        selectionWorkflowId
+        selectionWorkflowId,
+        clientMessageId
       )
       accepted = true
       if (generation !== loadGeneration) return false
@@ -1089,7 +1172,13 @@ export function useAgentSession(deps: AgentSessionDeps) {
       // moved on still has to release, or the dead id survives the reload.
       releaseDisownedWorkflow(sentContext, error)
       if (generation !== loadGeneration) return false
-      recordSendError(error, text, accepted)
+      const reattached = await reattachRefusedTurn(
+        error,
+        threadAtSend,
+        generation
+      )
+      if (generation !== loadGeneration) return false
+      recordCurrentSendError(error, text, accepted, reattached, threadAtSend)
       return false
     }
   }
@@ -1107,7 +1196,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     attachments?: SentAttachment[],
     tags?: SentTag[],
     workflowReferences?: WorkflowReference[],
-    selectionWorkflowId?: () => string | undefined
+    selectionWorkflowId?: () => string | undefined,
+    clientMessageId?: string
   ): Promise<boolean> {
     if (sending.value) {
       conversationStore.recordFailedSend(
@@ -1122,13 +1212,16 @@ export function useAgentSession(deps: AgentSessionDeps) {
     sendInFlight = true
     stopPendingAck = null
     try {
-      return await performSend(
+      const sent = await performSend(
         text,
         attachments,
         tags,
         workflowReferences,
-        selectionWorkflowId
+        selectionWorkflowId,
+        clientMessageId
       )
+      if (!sent) stopPendingAck = null
+      return sent
     } finally {
       sending.value = false
       sendInFlight = false
@@ -1407,6 +1500,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   let loadGeneration = 0
+  let refusedTurnReattachGeneration = 0
 
   function newChat(
     source?: Exclude<AgentSessionThreadStartSource, 'first_open'>
@@ -1647,7 +1741,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         })
     } finally {
       clearTimeout(deadline)
-      recoveringTurns.delete(key)
+      if (recoveringTurns.get(key) === recovery) recoveringTurns.delete(key)
     }
   }
 
@@ -1732,10 +1826,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
         .sort((a, b) => a.seq - b.seq)
       if (rows.some((row) => !isTerminalTurnStatus(row.status)))
         return { kind: 'streaming' }
-      const parts = mergeAdjacentTextParts(
-        normalizeAgentTranscript(rows).messages[0]?.parts ?? []
-      )
-      return { kind: 'terminal', parts }
+      return {
+        kind: 'terminal',
+        parts: terminalRecoveryParts(rows)
+      }
     } catch (error) {
       if (signal.aborted) throw error
       return turnOutcomeFromError(error)

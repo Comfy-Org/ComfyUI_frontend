@@ -63,6 +63,10 @@
     "disabled": true,
     "reason": "Untested: the model tester verifies image, video and audio output only."
   },
+  "minimax--hailuo-03--generate-videos": {
+    "disabled": true,
+    "reason": "Router now authors the MiniMax H3 input schema, but this page has no /hub/models URL yet; publishing it is a separate review."
+  },
   "openai--gpt-image-2--edit-images": {
     "disabled": true,
     "reason": "The Router route exposes image generation only and rejects edit media; the first curated source also exceeds the example-media limit."

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { ref } from 'vue'
 
-import type { PackNode } from '../data/cloudNodes'
+import type { PackNode } from '@/data/cloudNodes'
 
 import { useNodesByCategory } from './useNodesByCategory'
 

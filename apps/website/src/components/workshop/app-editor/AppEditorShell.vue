@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ChevronLeft } from '@lucide/vue'
 
-import { getRoutes } from '../../../config/routes'
-import type { Locale } from '../../../i18n/translations'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import { getRoutes } from '@/config/routes'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import AppRepoLink from '../cinematic-studio/AppRepoLink.vue'
 
 const {
@@ -19,6 +19,7 @@ const {
   showDock?: boolean
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 </script>
 
 <template>
@@ -31,7 +32,7 @@ const {
     >
       <a
         :href="getRoutes(locale).hubApps"
-        :aria-label="tc('cinematic.backToApps', locale)"
+        :aria-label="t('cinematic.backToApps')"
         data-testid="apps-back"
         class="flex size-9 items-center justify-center rounded-lg text-primary-warm-gray transition hover:text-primary-comfy-yellow focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
       >
@@ -44,7 +45,7 @@ const {
       <span
         class="rounded-full border border-transparency-white-t20 px-1.5 font-mono text-[9px] tracking-wider text-primary-comfy-canvas uppercase"
       >
-        {{ tc('cinematic.beta', locale) }}
+        {{ t('cinematic.beta') }}
       </span>
       <span class="flex-1" />
       <AppRepoLink :repo :locale class="max-sm:hidden" />

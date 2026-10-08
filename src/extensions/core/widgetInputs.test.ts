@@ -253,6 +253,16 @@ describe('PrimitiveNode', () => {
     expect(primitive.widgets?.[0].type).toBe('custom_widget')
   })
 
+  it('rejects an array slot type when no widget describes its construction', () => {
+    const primitive = new PrimitiveNode('Primitive')
+    const target = new LGraphNode('Target')
+    target.addInput('seed', ['INT'])
+
+    expect(primitive.onConnectOutput(0, '*', target.inputs[0], target, 0)).toBe(
+      false
+    )
+  })
+
   it('restores its serialized value through the reroute lifecycle', async () => {
     await widgetInputsExtension.registerCustomNodes?.(app)
     localStorage.setItem('Comfy.RerouteNode.DefaultVisibility', 'true')
@@ -467,7 +477,6 @@ describe('mergeIfValid', () => {
 
 describe('convertToInput', () => {
   it('warns and resolves the input slot hosting the widget', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const node = new LGraphNode('Target')
     node.addInput('seed', 'INT')
     node.addInput('steps', 'INT')
@@ -477,7 +486,7 @@ describe('convertToInput', () => {
       'steps'
     )
     expect(convertToInput(node, fromPartial({ name: 'seed' }))).toBeUndefined()
-    expect(warn).toHaveBeenCalledWith(
+    expect(console.warn).toHaveBeenCalledWith(
       expect.stringContaining('remove call to convertToInput')
     )
   })

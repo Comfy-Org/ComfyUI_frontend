@@ -151,12 +151,12 @@ describe('Vue Node - Subgraph Functionality', () => {
     await nextTick()
 
     const parentListener = vi.fn()
-    // eslint-disable-next-line testing-library/no-container
+    // oxlint-disable-next-line testing-library/no-container
     container.addEventListener('click', parentListener)
 
     const subgraphButton = screen.getByTestId('subgraph-enter-button')
 
-    // eslint-disable-next-line testing-library/prefer-user-event
+    // oxlint-disable-next-line testing-library/prefer-user-event
     await fireEvent.click(subgraphButton)
 
     expect(parentListener).not.toHaveBeenCalled()

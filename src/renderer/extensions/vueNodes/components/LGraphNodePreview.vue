@@ -15,7 +15,7 @@
     </div>
     <div
       class="pointer-events-none flex flex-1 flex-col gap-1 pb-2"
-      :data-testid="`node-body-${nodeData.id}`"
+      data-testid="node-preview-body"
     >
       <NodeSlots :node-data="nodeData" :sync-layout="false" />
 
@@ -37,7 +37,7 @@ import { computed } from 'vue'
 import type {
   INodeInputSlot,
   INodeOutputSlot
-} from '@/lib/litegraph/src/interfaces'
+} from '@/lib/litegraph/src/types/slots'
 import { LGraphEventMode, RenderShape } from '@/lib/litegraph/src/litegraph'
 import NodeHeader from '@/renderer/extensions/vueNodes/components/NodeHeader.vue'
 import NodeSlots from '@/renderer/extensions/vueNodes/components/NodeSlots.vue'

@@ -1,17 +1,17 @@
-import { dimensions } from '../../../config/router-parameter-options'
-import type { RouterRenderParameters } from '../../../config/router-parameters'
+import { dimensions } from '@/config/router-parameter-options'
+import type { RouterRenderParameters } from '@/config/router-parameters'
 import {
   createRouterParameters,
   routerParameterMappings
-} from '../../../config/router-parameters'
-import type { WorkshopContract } from '../../../config/workshop-contract'
-import { formForContract } from '../../../config/workshop-contract'
-import type { FieldSchema } from '../../../config/workshop-playground'
+} from '@/config/router-parameters'
+import type { WorkshopContract } from '@/config/workshop-contract'
+import { formForContract } from '@/config/workshop-contract'
+import type { FieldSchema } from '@/config/workshop-playground'
 import {
   defaultValues,
   schemaForModel,
   urlUploadField
-} from '../../../config/workshop-playground'
+} from '@/config/workshop-playground'
 import { ASPECT_RATIOS } from './catalog'
 import type { AspectRatio } from './catalog'
 
