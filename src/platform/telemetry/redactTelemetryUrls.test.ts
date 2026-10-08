@@ -148,6 +148,11 @@ describe('redactTelemetryUrls', () => {
       kind: 'query value containing a space',
       input: 'GET /api/view?filename=my file.png&token=SECRET',
       expected: 'GET /api/view'
+    },
+    {
+      kind: 'bare token with a spaced query value',
+      input: 'callback?f=a b&token=SECRET',
+      expected: 'callback'
     }
   ])('$kind', ({ input, expected }) => {
     it('redacts URL metadata', () => {
