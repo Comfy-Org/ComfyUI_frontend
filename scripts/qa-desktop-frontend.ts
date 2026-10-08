@@ -5,6 +5,7 @@
  *   pnpm qa:desktop-frontend use <pr-number|branch> [--install <id|name>] [--dev]
  *   pnpm qa:desktop-frontend reset [--install <id|name>] [--dev]
  *   pnpm qa:desktop-frontend list [--dev]
+ *   pnpm qa:desktop-frontend id [--dev]   (installation id for the ops-flag allowlist)
  *
  * Quit the install in Desktop before `use`/`reset`; launch it again afterwards.
  * `--dev` targets a Desktop dev build (`comfyui-desktop-2`) instead of the app.
@@ -12,7 +13,7 @@
 import { execFileSync } from 'node:child_process'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { parseArgs } from 'node:util'
 
 import {
@@ -172,6 +173,17 @@ function main(): void {
     return
   }
 
+  if (command === 'id') {
+    const idFile = join(dirname(file), 'device-id.txt')
+    if (!existsSync(idFile)) {
+      throw new Error(
+        `No installation id at ${idFile}. Launch Comfy Desktop once first.`
+      )
+    }
+    console.log(readFileSync(idFile, 'utf8').trim())
+    return
+  }
+
   if (command === 'use' && ref) {
     const { sha, label } = resolveCommit(ref)
     const dir = download(findBuild(sha), sha, label)
@@ -195,7 +207,7 @@ function main(): void {
   }
 
   console.log(
-    'Usage: pnpm qa:desktop-frontend use <pr|branch> | reset | list  [--install <id|name>] [--dev]'
+    'Usage: pnpm qa:desktop-frontend use <pr|branch> | reset | list | id  [--install <id|name>] [--dev]'
   )
   process.exitCode = 1
 }
