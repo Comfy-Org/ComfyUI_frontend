@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  headSha,
+  lane,
+  operatorLabelEvent,
+  outsider,
+  policyApproval,
+  pullRequest,
+  repository
+} from './__fixtures__/lane.ts'
+import {
   activePolicyApprovals,
   changedPaths,
   eligibilityFailure,
@@ -9,67 +18,14 @@ import {
   isAuthorizedLabelEvent,
   isInsideLane,
   isPolicyApprovalForHead,
-  POLICY_REVIEW_PREFIX,
   policyReviewFloor
 } from './policy.ts'
-import type {
-  FastLaneConfig,
-  LabelEvent,
-  PullRequest,
-  PullRequestReview
-} from './types.ts'
+import type { LabelEvent, PullRequest, PullRequestReview } from './types.ts'
 
-const policyBody = `${POLICY_REVIEW_PREFIX} Lane: website.`
-
-const lane: FastLaneConfig = {
-  schemaVersion: 1,
-  id: 'website',
-  pathPrefixes: ['apps/website/'],
-  approval: {
-    identity: 'christian-byrne',
-    trustedAuthors: ['bertfy'],
-    approvalLabel: 'website-fast-lane:approve',
-    trustedLabelers: ['drjkl'],
-    holdLabel: 'website-fast-lane:hold'
-  },
-  merge: { mode: 'automatic', method: 'SQUASH' }
-}
-
-const operatorLabelEvent: LabelEvent = {
-  actor: 'drjkl',
-  label: 'website-fast-lane:approve'
-}
-
-const headApproval: PullRequestReview = {
-  state: 'APPROVED',
-  commit_id: 'head-sha',
-  body: policyBody,
-  user: { login: 'christian-byrne' }
-}
-
-function eligiblePull(overrides: Partial<PullRequest> = {}): PullRequest {
-  return {
-    state: 'open',
-    draft: false,
-    user: { login: 'bertfy' },
-    labels: [],
-    head: {
-      sha: 'head-sha',
-      repo: { full_name: 'Comfy-Org/ComfyUI_frontend' }
-    },
-    base: {
-      ref: 'main',
-      repo: { full_name: 'Comfy-Org/ComfyUI_frontend' }
-    },
-    ...overrides
-  }
-}
+const headApproval = policyApproval()
 
 function outsiderPull(labels: string[]): PullRequest {
-  return eligiblePull({
-    user: { login: 'someone-else' },
-    labels: labels.map((name) => ({ name }))
-  })
+  return pullRequest(outsider(labels))
 }
 
 function failure(
@@ -83,7 +39,7 @@ function failure(
     pull,
     reviews,
     lane,
-    repository: 'Comfy-Org/ComfyUI_frontend',
+    repository,
     defaultBranch: 'main',
     labelEvent
   })
@@ -171,7 +127,7 @@ describe('approval label events', () => {
 
 describe('eligibility', () => {
   it.for([
-    { name: 'a trusted author', pull: eligiblePull() },
+    { name: 'a trusted author', pull: pullRequest() },
     {
       name: 'a non-allowlisted author on the operator label event',
       pull: outsiderPull(['website-fast-lane:approve']),
@@ -189,37 +145,41 @@ describe('eligibility', () => {
   it.for([
     {
       name: 'draft',
-      pull: eligiblePull({ draft: true }),
+      pull: pullRequest({ draft: true }),
       message: 'not open and ready'
     },
     {
       name: 'closed pull request',
-      pull: eligiblePull({ state: 'closed' }),
+      pull: pullRequest({ state: 'closed' }),
       message: 'not open and ready'
     },
     {
       name: 'other base',
-      pull: eligiblePull({
+      pull: pullRequest({
         base: {
           ref: 'release',
-          repo: { full_name: 'Comfy-Org/ComfyUI_frontend' }
+          repo: { full_name: repository }
         }
       }),
       message: 'applies only to main'
     },
     {
+      name: 'base in another repository',
+      pull: pullRequest({
+        base: { ref: 'main', repo: { full_name: 'bertfy/ComfyUI_frontend' } }
+      }),
+      message: 'applies only to main'
+    },
+    {
       name: 'fork',
-      pull: eligiblePull({
-        head: {
-          sha: 'head-sha',
-          repo: { full_name: 'bertfy/ComfyUI_frontend' }
-        }
+      pull: pullRequest({
+        head: { sha: headSha, repo: { full_name: 'bertfy/ComfyUI_frontend' } }
       }),
       message: 'fork pull requests'
     },
     {
       name: 'pull request authored by the approval identity',
-      pull: eligiblePull({ user: { login: 'Christian-Byrne' } }),
+      pull: pullRequest({ user: { login: 'Christian-Byrne' } }),
       message: 'cannot approve its own pull request'
     },
     {
@@ -240,12 +200,12 @@ describe('eligibility', () => {
     },
     {
       name: 'hold label',
-      pull: eligiblePull({ labels: [{ name: 'website-fast-lane:hold' }] }),
+      pull: pullRequest({ labels: [{ name: 'website-fast-lane:hold' }] }),
       message: 'hold is applied'
     },
     {
       name: 'human change request',
-      pull: eligiblePull(),
+      pull: pullRequest(),
       reviews: [
         { state: 'CHANGES_REQUESTED', user: { login: 'DrJKL', type: 'User' } }
       ],
@@ -318,9 +278,9 @@ describe('policy reviews', () => {
   ])(
     'treats $name as the head policy approval: $expected',
     ({ review, expected }) => {
-      expect(
-        isPolicyApprovalForHead(review, 'christian-byrne', 'head-sha')
-      ).toBe(expected)
+      expect(isPolicyApprovalForHead(review, 'christian-byrne', headSha)).toBe(
+        expected
+      )
     }
   )
 

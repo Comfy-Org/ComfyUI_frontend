@@ -1,7 +1,16 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import {
+  floorTime,
+  headSha,
+  lane,
+  operatorLabelEvent,
+  outsider,
+  policyApproval,
+  pullRequest,
+  repository
+} from './__fixtures__/lane.ts'
 import { runFastLane, stopMergeAutomation } from './automation.ts'
-import { POLICY_REVIEW_PREFIX } from './policy.ts'
 import type {
   GitHubClient,
   MergeAutomationState,
@@ -11,9 +20,6 @@ import type {
   RuntimeConfig
 } from './types.ts'
 
-const headSha = '0123456789abcdef0123456789abcdef01234567'
-const policyBody = `${POLICY_REVIEW_PREFIX} Lane: website.`
-const floorTime = '2026-10-06T10:00:00Z'
 const afterFloor = '2026-10-06T10:01:00Z'
 const beforeFloor = '2026-10-06T09:59:00Z'
 
@@ -31,55 +37,21 @@ interface FakeOptions {
 
 function runtimeConfig(overrides: Partial<RuntimeConfig> = {}): RuntimeConfig {
   return {
-    repository: 'Comfy-Org/ComfyUI_frontend',
+    repository,
     pullRequestNumber: 42,
     eventHeadSha: headSha,
     defaultBranch: 'main',
-    lane: {
-      schemaVersion: 1,
-      id: 'website',
-      pathPrefixes: ['apps/website/'],
-      approval: {
-        identity: 'christian-byrne',
-        trustedAuthors: ['bertfy'],
-        approvalLabel: 'website-fast-lane:approve',
-        trustedLabelers: ['drjkl'],
-        holdLabel: 'website-fast-lane:hold'
-      },
-      merge: { mode: 'automatic', method: 'MERGE' }
-    },
+    lane,
     ...overrides
-  }
-}
-
-function policyApproval(
-  id: number,
-  commitId = headSha,
-  submittedAt = floorTime
-): PullRequestReview {
-  return {
-    id,
-    state: 'APPROVED',
-    commit_id: commitId,
-    body: policyBody,
-    submitted_at: submittedAt,
-    user: { login: 'christian-byrne' }
   }
 }
 
 function fakeGitHub(options: FakeOptions = {}) {
   const writes: Write[] = []
-  const pull: PullRequest = {
-    state: 'open',
-    draft: false,
-    node_id: 'PR_1',
+  const pull = pullRequest({
     changed_files: options.files?.length ?? 1,
-    user: { login: 'bertfy' },
-    labels: [],
-    head: { sha: headSha, repo: { full_name: 'Comfy-Org/ComfyUI_frontend' } },
-    base: { ref: 'main', repo: { full_name: 'Comfy-Org/ComfyUI_frontend' } },
     ...options.pull
-  }
+  })
   const reviews = [...(options.reviews ?? [])]
   const files = options.files ?? [
     { filename: 'apps/website/src/pages/index.astro' }
@@ -93,10 +65,12 @@ function fakeGitHub(options: FakeOptions = {}) {
       if (init.method === 'POST') {
         const body: PullRequestReview = JSON.parse(String(init.body))
         writes.push([`POST ${path}`, body])
-        const created = {
-          ...policyApproval(900, body.commit_id, afterFloor),
+        const created = policyApproval({
+          id: 900,
+          commit_id: body.commit_id,
+          submitted_at: afterFloor,
           body: body.body
-        }
+        })
         reviews.push(created)
         return created
       }
@@ -137,7 +111,7 @@ const approvalPost: Write = [
 ]
 const enableAutoMerge: Write = [
   'PackageFastLaneEnableAutoMerge',
-  { pullRequestId: 'PR_1', expectedHeadOid: headSha, mergeMethod: 'MERGE' }
+  { pullRequestId: 'PR_1', expectedHeadOid: headSha, mergeMethod: 'SQUASH' }
 ]
 const disableAutoMerge: Write = [
   'PackageFastLaneDisableAutoMerge',
@@ -169,20 +143,13 @@ describe('runFastLane', () => {
     },
     {
       name: 'a non-allowlisted author on the operator label event',
-      options: {
-        pull: {
-          user: { login: 'someone-else' },
-          labels: [{ name: 'website-fast-lane:approve' }]
-        }
-      },
-      config: {
-        labelEvent: { actor: 'drjkl', label: 'website-fast-lane:approve' }
-      },
+      options: { pull: outsider(['website-fast-lane:approve']) },
+      config: { labelEvent: operatorLabelEvent },
       writes: [approvalPost, enableAutoMerge]
     },
     {
       name: 'a head that already has the policy approval',
-      options: { reviews: [policyApproval(1)] },
+      options: { reviews: [policyApproval({ id: 1 })] },
       config: {},
       writes: [enableAutoMerge]
     },
@@ -203,8 +170,8 @@ describe('runFastLane', () => {
       options: {},
       config: {
         lane: {
-          ...runtimeConfig().lane,
-          merge: { mode: 'manual', method: 'MERGE' }
+          ...lane,
+          merge: { mode: 'manual', method: 'SQUASH' }
         }
       },
       writes: [approvalPost]
@@ -256,18 +223,13 @@ describe('runFastLane', () => {
     },
     {
       name: 'a non-allowlisted author whose labeled run was replaced',
-      options: {
-        pull: {
-          user: { login: 'someone-else' },
-          labels: [{ name: 'website-fast-lane:approve' }]
-        }
-      }
+      options: { pull: outsider(['website-fast-lane:approve']) }
     },
     {
       name: 'a run for a head that has since advanced',
       options: {
         pull: { head: { sha: 'f'.repeat(40) } },
-        reviews: [policyApproval(1, 'f'.repeat(40))],
+        reviews: [policyApproval({ id: 1, commit_id: 'f'.repeat(40) })],
         mergeState: armedByLane
       }
     }
@@ -284,8 +246,8 @@ describe('runFastLane', () => {
 
   it('withdraws approval and merge state when the approval label is removed', async () => {
     const fake = fakeGitHub({
-      pull: { user: { login: 'someone-else' }, labels: [] },
-      reviews: [policyApproval(1)],
+      pull: outsider([]),
+      reviews: [policyApproval({ id: 1 })],
       mergeState: armedByLane
     })
 
@@ -306,7 +268,10 @@ describe('runFastLane', () => {
   it('withdraws every policy approval on hold even when merge teardown fails', async () => {
     const fake = fakeGitHub({
       pull: { labels: [{ name: 'website-fast-lane:hold' }] },
-      reviews: [policyApproval(122, 'old-head'), policyApproval(123)],
+      reviews: [
+        policyApproval({ id: 122, commit_id: 'old-head' }),
+        policyApproval({ id: 123 })
+      ],
       mergeState: armedByLane,
       failingMutations: ['PackageFastLaneDisableAutoMerge']
     })

@@ -17,7 +17,8 @@ const action = z
           id: z.string(),
           if: z.string().optional(),
           run: z.string().optional(),
-          env: z.object({ EVALUATE: z.string() }).optional()
+          env: z.object({ EVALUATE: z.string() }).optional(),
+          with: z.object({ filters: z.string() }).optional()
         })
       )
     })
@@ -175,50 +176,33 @@ it.for([
 it.for([
   {
     name: 'website-only pull request',
-    relevant: {
-      relevant: 'false',
-      unit: 'false',
-      e2e: 'false',
-      source: 'false',
-      outside_website: 'false'
-    },
-    filter: { app_website: 'true', deps: 'false' },
+    outsideWebsite: 'false',
     expected: true
   },
   {
     name: 'website plus docs pull request',
-    relevant: {
-      relevant: 'false',
-      unit: 'false',
-      e2e: 'false',
-      source: 'false',
-      outside_website: 'true'
-    },
-    filter: { app_website: 'true', deps: 'false' },
+    outsideWebsite: 'true',
     expected: false
   }
-])('classifies a $name', ({ relevant, filter, expected }) => {
+])('classifies a $name', ({ outsideWebsite, expected }) => {
+  const relevant = {
+    relevant: 'false',
+    unit: 'false',
+    e2e: 'false',
+    source: 'false',
+    outside_website: outsideWebsite
+  }
+  const filter = { app_website: 'true', deps: 'false' }
+
   expect(
     selectChecks('pull_request', relevant, filter)['website-only-changes']
   ).toBe(expected)
 })
 
 it('classifies website-only paths with the fast-lane path policy', () => {
-  const relevantFilters = z
-    .object({
-      runs: z.object({
-        steps: z.array(
-          z.object({
-            id: z.string(),
-            with: z.object({ filters: z.string() }).optional()
-          })
-        )
-      })
-    })
-    .parse(
-      parse(readFileSync('.github/actions/changes-filter/action.yaml', 'utf8'))
-    )
-    .runs.steps.find((step) => step.id === 'relevant')?.with?.filters
+  const relevantFilters = action.runs.steps.find(
+    (step) => step.id === 'relevant'
+  )?.with?.filters
   assert.exists(relevantFilters)
   const lane = z
     .object({ pathPrefixes: z.array(z.string()) })

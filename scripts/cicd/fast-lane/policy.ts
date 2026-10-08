@@ -4,6 +4,7 @@ import type {
   PullRequest,
   PullRequestFile,
   PullRequestReview,
+  RepositoryRef,
   SubmittedReview
 } from './types.ts'
 
@@ -73,7 +74,10 @@ function hasLabel(pull: PullRequest, expected: string): boolean {
   )
 }
 
-function isLogin(user: { login?: string } | undefined, login: string): boolean {
+export function isLogin(
+  user: { login?: string } | undefined,
+  login: string
+): boolean {
   return user?.login?.toLowerCase() === login
 }
 
@@ -107,22 +111,11 @@ export function hasActiveHumanChangeRequest(
   return [...latestState.values()].includes('CHANGES_REQUESTED')
 }
 
-export function isSameRepository(
-  pull: PullRequest,
+function isRepository(
+  repo: RepositoryRef | null | undefined,
   repository: string
 ): boolean {
-  return pull.head?.repo?.full_name?.toLowerCase() === repository.toLowerCase()
-}
-
-export function targetsDefaultBranch(
-  pull: PullRequest,
-  repository: string,
-  defaultBranch: string
-): boolean {
-  return (
-    pull.base?.repo?.full_name?.toLowerCase() === repository.toLowerCase() &&
-    pull.base.ref === defaultBranch
-  )
+  return repo?.full_name?.toLowerCase() === repository.toLowerCase()
 }
 
 export function isPolicyReview(
@@ -215,10 +208,13 @@ export function eligibilityFailure(
   if (pull.state !== 'open' || pull.draft) {
     return 'the pull request is not open and ready for review.'
   }
-  if (!targetsDefaultBranch(pull, repository, defaultBranch)) {
+  if (
+    !isRepository(pull.base?.repo, repository) ||
+    pull.base?.ref !== defaultBranch
+  ) {
     return `the ${lane.id} fast lane applies only to ${defaultBranch}.`
   }
-  if (!isSameRepository(pull, repository)) {
+  if (!isRepository(pull.head?.repo, repository)) {
     return `the ${lane.id} fast lane does not apply to fork pull requests.`
   }
   const authorization = authorizationFailure(context)

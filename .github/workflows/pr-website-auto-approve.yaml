@@ -4,9 +4,7 @@
 # - pull_request_target, workflow_run, and status load this workflow from the
 #   default branch. Automation and policy are checked out from the protected
 #   default branch; pull request code is never executed.
-# - the script rejects other base branches and forks, re-fetches the live PR,
-#   verifies the exact head SHA, requires every changed path to be under
-#   apps/website/**, and verifies the PAT owner.
+# - Eligibility rules: docs/architecture/package-delivery-lanes.md.
 name: 'PR: Website Fast Lane'
 
 on:

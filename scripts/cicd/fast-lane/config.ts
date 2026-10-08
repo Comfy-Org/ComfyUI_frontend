@@ -37,16 +37,12 @@ function stringArray(
   ) {
     throw new Error(`${context}.${key} must be an array of non-empty strings`)
   }
-  return [...new Set(value.map((item) => item.trim()))]
+  return value.map((item) => item.trim())
 }
 
 function record(value: unknown, context: string): Record<string, unknown> {
   if (!isRecord(value)) throw new Error(`${context} must be an object`)
   return value
-}
-
-function normalizeLogins(logins: string[]): string[] {
-  return [...new Set(logins.map((login) => login.toLowerCase()))]
 }
 
 export function parseFastLaneConfig(value: unknown): FastLaneConfig {
@@ -56,6 +52,15 @@ export function parseFastLaneConfig(value: unknown): FastLaneConfig {
   }
 
   const approval = record(root.approval, 'fast lane config.approval')
+  const approvalName = (key: string) =>
+    requiredString(approval, key, 'fast lane config.approval').toLowerCase()
+  const approvalLogins = (key: string) => [
+    ...new Set(
+      stringArray(approval, key, 'fast lane config.approval', {
+        allowEmpty: true
+      }).map((login) => login.toLowerCase())
+    )
+  ]
   const merge = record(root.merge, 'fast lane config.merge')
   const mode = requiredString(merge, 'mode', 'fast lane config.merge')
   const method = requiredString(merge, 'method', 'fast lane config.merge')
@@ -86,31 +91,11 @@ export function parseFastLaneConfig(value: unknown): FastLaneConfig {
     id: requiredString(root, 'id', 'fast lane config'),
     pathPrefixes,
     approval: {
-      identity: requiredString(
-        approval,
-        'identity',
-        'fast lane config.approval'
-      ).toLowerCase(),
-      trustedAuthors: normalizeLogins(
-        stringArray(approval, 'trustedAuthors', 'fast lane config.approval', {
-          allowEmpty: true
-        })
-      ),
-      approvalLabel: requiredString(
-        approval,
-        'approvalLabel',
-        'fast lane config.approval'
-      ).toLowerCase(),
-      trustedLabelers: normalizeLogins(
-        stringArray(approval, 'trustedLabelers', 'fast lane config.approval', {
-          allowEmpty: true
-        })
-      ),
-      holdLabel: requiredString(
-        approval,
-        'holdLabel',
-        'fast lane config.approval'
-      ).toLowerCase()
+      identity: approvalName('identity'),
+      trustedAuthors: approvalLogins('trustedAuthors'),
+      approvalLabel: approvalName('approvalLabel'),
+      trustedLabelers: approvalLogins('trustedLabelers'),
+      holdLabel: approvalName('holdLabel')
     },
     merge: { mode, method }
   }

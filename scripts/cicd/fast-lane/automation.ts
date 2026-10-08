@@ -2,6 +2,7 @@ import { isRecord } from './github.ts'
 import {
   activePolicyApprovals,
   eligibilityFailure,
+  isLogin,
   isPolicyApprovalForHead,
   pathFailure,
   policyReviewFloor,
@@ -61,13 +62,6 @@ function mergeState(value: unknown): MergeAutomationState {
   return node
 }
 
-function actorMatches(
-  actor: { login?: string } | undefined,
-  identity: string
-): boolean {
-  return actor?.login?.toLowerCase() === identity
-}
-
 function atOrAfter(value: string | undefined, floor: string): boolean {
   if (!value) return false
   return Date.parse(value) >= Date.parse(floor)
@@ -75,11 +69,29 @@ function atOrAfter(value: string | undefined, floor: string): boolean {
 
 async function readMergeState(
   github: GitHubClient,
-  pullRequestId: string
+  pull: PullRequest
 ): Promise<MergeAutomationState> {
+  if (!pull.node_id) throw new Error('the pull request node id is required')
   return mergeState(
-    await github.graphql(MERGE_AUTOMATION_STATE, { pullRequestId })
+    await github.graphql(MERGE_AUTOMATION_STATE, {
+      pullRequestId: pull.node_id
+    })
   )
+}
+
+async function attemptAll(
+  tasks: (() => Promise<unknown>)[],
+  message: string
+): Promise<void> {
+  const errors: unknown[] = []
+  for (const task of tasks) {
+    try {
+      await task()
+    } catch (error) {
+      errors.push(error)
+    }
+  }
+  if (errors.length > 0) throw new AggregateError(errors, message)
 }
 
 export async function stopMergeAutomation(
@@ -89,52 +101,45 @@ export async function stopMergeAutomation(
   floor: SubmittedReview | undefined
 ): Promise<void> {
   if (!floor) return
-  if (!pull.node_id) {
-    throw new Error('the pull request node id is required to stop automation')
-  }
+  const { id, mergeQueueEntry, autoMergeRequest } = await readMergeState(
+    github,
+    pull
+  )
+  const ownedSinceFloor = (
+    actor: { login?: string } | undefined,
+    at: string | undefined
+  ) => isLogin(actor, identity) && atOrAfter(at, floor.submitted_at)
 
-  const state = await readMergeState(github, pull.node_id)
-  const errors: unknown[] = []
-  const entry = state.mergeQueueEntry
-  if (
-    entry?.id &&
-    actorMatches(entry.enqueuer, identity) &&
-    atOrAfter(entry.enqueuedAt, floor.submitted_at)
-  ) {
-    try {
-      await github.graphql(
-        `mutation PackageFastLaneDequeue($pullRequestId: ID!) {
-          dequeuePullRequest(input: { id: $pullRequestId }) { clientMutationId }
-        }`,
-        { pullRequestId: pull.node_id }
-      )
-    } catch (error) {
-      errors.push(error)
-    }
-  }
+  const dequeue = () =>
+    github.graphql(
+      `mutation PackageFastLaneDequeue($pullRequestId: ID!) {
+        dequeuePullRequest(input: { id: $pullRequestId }) { clientMutationId }
+      }`,
+      { pullRequestId: id }
+    )
+  const disableAutoMerge = () =>
+    github.graphql(
+      `mutation PackageFastLaneDisableAutoMerge($pullRequestId: ID!) {
+        disablePullRequestAutoMerge(input: { pullRequestId: $pullRequestId }) {
+          clientMutationId
+        }
+      }`,
+      { pullRequestId: id }
+    )
 
-  const autoMerge = state.autoMergeRequest
-  if (
-    autoMerge &&
-    actorMatches(autoMerge.enabledBy, identity) &&
-    atOrAfter(autoMerge.enabledAt, floor.submitted_at)
-  ) {
-    try {
-      await github.graphql(
-        `mutation PackageFastLaneDisableAutoMerge($pullRequestId: ID!) {
-          disablePullRequestAutoMerge(input: { pullRequestId: $pullRequestId }) {
-            clientMutationId
-          }
-        }`,
-        { pullRequestId: pull.node_id }
-      )
-    } catch (error) {
-      errors.push(error)
-    }
-  }
-  if (errors.length > 0) {
-    throw new AggregateError(errors, 'failed to stop all merge automation')
-  }
+  await attemptAll(
+    [
+      ...(mergeQueueEntry?.id &&
+      ownedSinceFloor(mergeQueueEntry.enqueuer, mergeQueueEntry.enqueuedAt)
+        ? [dequeue]
+        : []),
+      ...(autoMergeRequest &&
+      ownedSinceFloor(autoMergeRequest.enabledBy, autoMergeRequest.enabledAt)
+        ? [disableAutoMerge]
+        : [])
+    ],
+    'failed to stop all merge automation'
+  )
 }
 
 export async function armMergeAutomation(
@@ -144,12 +149,9 @@ export async function armMergeAutomation(
   summary: Summary
 ): Promise<void> {
   if (config.lane.merge.mode === 'manual') return
-  if (!pull.node_id) {
-    throw new Error('the pull request node id is required to merge')
-  }
 
   const headSha = config.eventHeadSha
-  const state = await readMergeState(github, pull.node_id)
+  const state = await readMergeState(github, pull)
   if (state.headRefOid !== headSha) {
     summary('Skipped: the pull request head advanced before merge automation.')
     return
@@ -170,7 +172,7 @@ export async function armMergeAutomation(
           jump: false
         }) { clientMutationId }
       }`,
-      { pullRequestId: pull.node_id, expectedHeadOid: headSha }
+      { pullRequestId: state.id, expectedHeadOid: headSha }
     )
     summary(`Entered the native merge queue for ${shortSha(headSha)}.`)
     return
@@ -193,7 +195,7 @@ export async function armMergeAutomation(
       }) { clientMutationId }
     }`,
     {
-      pullRequestId: pull.node_id,
+      pullRequestId: state.id,
       expectedHeadOid: headSha,
       mergeMethod: config.lane.merge.method
     }
@@ -228,30 +230,22 @@ async function withdraw(
   summary: Summary
 ): Promise<void> {
   const identity = config.lane.approval.identity
-  const errors: unknown[] = []
-  try {
-    await stopMergeAutomation(
-      github,
-      pull,
-      identity,
-      policyReviewFloor(reviews, identity)
-    )
-  } catch (error) {
-    errors.push(error)
-  }
-  for (const approval of activePolicyApprovals(reviews, identity)) {
-    try {
-      await dismissApproval(github, config.pullRequestNumber, approval, reason)
-    } catch (error) {
-      errors.push(error)
-    }
-  }
-  if (errors.length > 0) {
-    throw new AggregateError(
-      errors,
-      'failed to complete fast-lane compensation'
-    )
-  }
+  await attemptAll(
+    [
+      () =>
+        stopMergeAutomation(
+          github,
+          pull,
+          identity,
+          policyReviewFloor(reviews, identity)
+        ),
+      ...activePolicyApprovals(reviews, identity).map(
+        (approval) => () =>
+          dismissApproval(github, config.pullRequestNumber, approval, reason)
+      )
+    ],
+    'failed to complete fast-lane compensation'
+  )
   summary(`Skipped: ${reason}`)
 }
 
@@ -296,10 +290,13 @@ async function assertIdentity(
   expectedIdentity: string
 ): Promise<void> {
   const response = await github.request('https://api.github.com/user')
-  const login = isRecord(response) ? response.login : undefined
-  if (typeof login !== 'string' || login.toLowerCase() !== expectedIdentity) {
+  const login =
+    isRecord(response) && typeof response.login === 'string'
+      ? response.login
+      : undefined
+  if (!isLogin({ login }, expectedIdentity)) {
     throw new Error(
-      `FAST_LANE_TOKEN belongs to ${String(login ?? 'an unknown account')}, expected ${expectedIdentity}`
+      `FAST_LANE_TOKEN belongs to ${login ?? 'an unknown account'}, expected ${expectedIdentity}`
     )
   }
 }

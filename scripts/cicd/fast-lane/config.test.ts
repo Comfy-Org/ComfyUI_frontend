@@ -2,22 +2,8 @@ import { readFileSync } from 'node:fs'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { lane, operatorLabelEvent } from './__fixtures__/lane.ts'
 import { loadRuntimeConfig, parseFastLaneConfig } from './config.ts'
-import type { FastLaneConfig } from './types.ts'
-
-const lane: FastLaneConfig = {
-  schemaVersion: 1,
-  id: 'website',
-  pathPrefixes: ['apps/website/'],
-  approval: {
-    identity: 'christian-byrne',
-    trustedAuthors: ['bertfy'],
-    approvalLabel: 'website-fast-lane:approve',
-    trustedLabelers: ['drjkl'],
-    holdLabel: 'website-fast-lane:hold'
-  },
-  merge: { mode: 'automatic', method: 'SQUASH' }
-}
 
 describe('lane configuration', () => {
   it('normalizes logins while preserving the reviewed path policy', () => {
@@ -96,7 +82,7 @@ describe('runtime configuration', () => {
       name: 'an operator label event',
       eventName: 'pull_request_target',
       action: 'labeled',
-      expected: { actor: 'drjkl', label: 'website-fast-lane:approve' }
+      expected: operatorLabelEvent
     },
     {
       name: 'an unlabeled event',
