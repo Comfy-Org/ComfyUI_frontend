@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process'
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { runInNewContext } from 'node:vm'
 
 import { describe, expect, it } from 'vitest'
@@ -10,7 +10,7 @@ const stepSchema = z.object({
   run: z.string().optional(),
   if: z.string().optional(),
   uses: z.string().optional(),
-  env: z.record(z.string(), z.string()).optional(),
+  env: z.record(z.string(), z.unknown()).optional(),
   with: z.record(z.string(), z.unknown()).optional()
 })
 
@@ -39,6 +39,17 @@ function workflow(file: string) {
 
 const pipeline = workflow('ci-tests-e2e.yaml')
 
+function evaluateBoolean(expression: string, context: object) {
+  return z
+    .boolean()
+    .parse(
+      runInNewContext(
+        expression.slice(3, -2).replace(/\.([a-zA-Z_][\w-]*)/g, '["$1"]'),
+        context
+      )
+    )
+}
+
 function uploadedArtifacts(steps: z.infer<typeof stepSchema>[]): unknown[] {
   return steps.flatMap((step) => {
     if (step.uses?.startsWith('actions/upload-artifact@'))
@@ -46,7 +57,12 @@ function uploadedArtifacts(steps: z.infer<typeof stepSchema>[]): unknown[] {
     if (step.uses?.startsWith('./.github/actions/'))
       return uploadedArtifacts(
         actionSchema.parse(
-          parse(readFileSync(`${step.uses}/action.yaml`, 'utf8'))
+          parse(
+            readFileSync(
+              `${step.uses}/action.${existsSync(`${step.uses}/action.yaml`) ? 'yaml' : 'yml'}`,
+              'utf8'
+            )
+          )
         ).runs.steps
       )
     return []
@@ -249,15 +265,25 @@ describe('candidate prerequisites', () => {
   })
 
   it.for([
-    ['playwright-tests-cloud-sharded', 'frontend-dist-cloud'],
-    ['playwright-tests', 'frontend-dist-desktop'],
-    ['playwright-tests', 'frontend-dist-cloud']
-  ])(
-    '%s overrides a skipped ancestor only after %s is uploaded',
-    ([job, artifact]) => {
-      expect(pipeline.jobs[job].if).toContain(
-        `needs.${uploader(artifact)}.result == 'success'`
-      )
+    ['playwright-tests-cloud-sharded', 'success', true],
+    ['playwright-tests-cloud-sharded', 'failure', false],
+    ['playwright-tests-cloud-sharded', 'skipped', false],
+    ['playwright-tests', 'success', true],
+    ['playwright-tests', 'failure', false],
+    ['playwright-tests', 'skipped', false]
+  ] satisfies [string, string, boolean][])(
+    '%s runs after a %s distribution build: %s',
+    ([job, result, expected]) => {
+      expect(
+        evaluateBoolean(pipeline.jobs[job].if ?? '', {
+          cancelled: () => false,
+          needs: {
+            preflight: { result: 'success' },
+            'setup-desktop-cloud': { result },
+            changes: { outputs: { 'should-run': 'true' } }
+          }
+        })
+      ).toBe(expected)
     }
   )
 
@@ -275,16 +301,16 @@ describe('candidate prerequisites', () => {
 })
 
 it.for([
-  ['ci-tests-e2e.yaml', 'deploy-and-comment', '${{ needs.e2e-status.result }}'],
+  ['ci-tests-e2e.yaml', 'deploy-and-comment', '${{ github.run_id }}'],
   [
     'ci-tests-e2e-forks.yaml',
     'deploy-and-comment-forked-pr',
-    '${{ github.event.workflow_run.conclusion }}'
+    '${{ github.event.workflow_run.id }}'
   ]
-])('%s passes its verdict to the report renderer', ([file, job, result]) => {
+])('%s uses the source run for its report verdict', ([file, job, result]) => {
   expect(
     workflow(file).jobs[job].steps?.find((step) => step.env?.SUMMARY_FILE)?.env
-      ?.WORKFLOW_RESULT
+      ?.SOURCE_RUN_ID
   ).toBe(result)
 })
 
@@ -297,15 +323,10 @@ it.for([
   'merges %s reports after a %s distribution build: %s',
   ([project, result, expected]) => {
     const decisions = pipeline.jobs['merge-reports'].steps?.map((step) =>
-      runInNewContext(
-        (step.if ?? '${{ true }}')
-          .slice(3, -2)
-          .replace(/\.([a-zA-Z_][\w-]*)/g, '["$1"]'),
-        {
-          matrix: { project },
-          needs: { 'setup-desktop-cloud': { result } }
-        }
-      )
+      evaluateBoolean(step.if ?? '${{ true }}', {
+        matrix: { project },
+        needs: { 'setup-desktop-cloud': { result } }
+      })
     )
     expect(decisions).toEqual([
       expected,

@@ -47,6 +47,7 @@ describe('CI runtime ownership', () => {
     ['CI: Tests E2E', 'setup-desktop-cloud', 'e2e-distribution-build'],
     ['CI: Tests E2E', 'playwright-tests (1, chromium)', 'e2e-test'],
     ['CI: Tests E2E', 'playwright-tests-chromium-sharded (1, 16)', 'e2e-test'],
+    ['CI: Tests E2E', 'playwright-tests-cloud-sharded (1, 8)', 'e2e-test'],
     [
       'CI: Playwright Videos',
       'playwright-video-new-tests (chromium, 1, 2)',

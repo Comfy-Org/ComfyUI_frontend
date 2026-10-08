@@ -12,12 +12,49 @@ import { join, resolve } from 'node:path'
 import { expect, it } from 'vitest'
 
 it.for([
-  ['success', '✅ 12 passed, 0 failed'],
-  ['failure', '❌ Workflow failure · 12 passed, 0 failed'],
-  ['cancelled', '❌ Workflow cancelled · 12 passed, 0 failed']
+  [
+    'success',
+    'success',
+    'success',
+    'success',
+    'success',
+    '✅ 12 passed, 0 failed'
+  ],
+  [
+    'build failure',
+    'failure',
+    'skipped',
+    'skipped',
+    'success',
+    '❌ E2E failure · 12 passed, 0 failed'
+  ],
+  [
+    'merge failure',
+    'success',
+    'failure',
+    'success',
+    'success',
+    '❌ E2E failure · 12 passed, 0 failed'
+  ],
+  [
+    'cancellation',
+    'failure',
+    'skipped',
+    'cancelled',
+    'success',
+    '❌ E2E cancelled · 12 passed, 0 failed'
+  ],
+  [
+    'unrelated unit failure',
+    'success',
+    'success',
+    'success',
+    'failure',
+    '✅ 12 passed, 0 failed'
+  ]
 ])(
-  'reports %s even when only passing Chromium results exist',
-  ([result, headline]) => {
+  'reports %s from source E2E jobs when only passing Chromium results exist',
+  ([_name, summaryResult, mergeResult, testResult, unitResult, headline]) => {
     const root = mkdtempSync(join(tmpdir(), 'playwright-comment-'))
     try {
       const bin = join(root, 'bin')
@@ -35,6 +72,31 @@ it.for([
         '#!/bin/sh\necho \'{"passed":12,"failed":0,"flaky":0,"skipped":0,"total":12}\'\n',
         { mode: 0o755 }
       )
+      const jobsFile = join(root, 'jobs.json')
+      writeFileSync(
+        jobsFile,
+        JSON.stringify([
+          {
+            jobs: [
+              { name: 'e2e-status', conclusion: summaryResult },
+              {
+                name: 'playwright-tests-chromium-sharded (1, 16)',
+                conclusion: testResult
+              },
+              { name: 'unit / test', conclusion: unitResult }
+            ]
+          },
+          {
+            jobs: [
+              { name: 'merge-reports (chromium)', conclusion: mergeResult },
+              { name: 'merge-reports (cloud)', conclusion: mergeResult }
+            ]
+          }
+        ])
+      )
+      writeFileSync(join(bin, 'gh'), '#!/bin/sh\ncat "$JOBS_FILE"\n', {
+        mode: 0o755
+      })
       const summary = join(root, 'summary.md')
       const execution = spawnSync(
         'bash',
@@ -54,7 +116,8 @@ it.for([
             CLOUDFLARE_API_TOKEN: 'test-token',
             CLOUDFLARE_ACCOUNT_ID: 'test-account',
             SUMMARY_FILE: summary,
-            WORKFLOW_RESULT: result
+            SOURCE_RUN_ID: '123',
+            JOBS_FILE: jobsFile
           }
         }
       )

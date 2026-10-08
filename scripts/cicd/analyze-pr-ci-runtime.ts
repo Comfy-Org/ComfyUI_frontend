@@ -125,7 +125,7 @@ export function classify(
     [/^CI: Tests E2E$/, /^setup-desktop-cloud$/, 'e2e-distribution-build'],
     [
       /^CI: Tests E2E$/,
-      /^playwright-tests(-chromium-sharded)?( \(|$)/,
+      /^playwright-tests(-(chromium|cloud)-sharded)?( \(|$)/,
       'e2e-test'
     ],
     [/^CI: Playwright Videos$/, /./, 'e2e-video'],
