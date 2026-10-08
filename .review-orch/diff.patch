@@ -1,0 +1,536 @@
+diff --git a/global.d.ts b/global.d.ts
+index 1cb98374f..292664c37 100644
+--- a/global.d.ts
++++ b/global.d.ts
+@@ -41,6 +41,24 @@ interface GtagFunction {
+   (...args: unknown[]): void
+ }
+ 
++type SyftDataTraits = Record<string, string | number | null | undefined>
++
++interface SyftDataPendingFetch {
++  args: unknown[]
++  resolve: (value: unknown) => void
++  reject: (reason?: unknown) => void
++}
++
++interface SyftDataClient {
++  identify(email: string, traits?: SyftDataTraits): void
++  signup(email: string, traits?: SyftDataTraits): void
++  track(event: string, traits?: SyftDataTraits): void
++  page(...args: unknown[]): void
++  q?: unknown[][]
++  fi?: SyftDataPendingFetch[]
++  fetchID?: (...args: unknown[]) => Promise<unknown>
++}
++
+ interface Window {
+   __CONFIG__: {
+     gtm_container_id?: string
+@@ -78,6 +96,8 @@ interface Window {
+   }
+   dataLayer?: Array<Record<string, unknown>>
+   gtag?: GtagFunction
++  syft?: SyftDataClient
++  syftc?: { sourceId: string }
+   ire_o?: string
+   ire?: ImpactQueueFunction
+   rewardful?: RewardfulQueueFunction
+diff --git a/src/platform/remoteConfig/types.ts b/src/platform/remoteConfig/types.ts
+index aa7874a87..6932dd5dc 100644
+--- a/src/platform/remoteConfig/types.ts
++++ b/src/platform/remoteConfig/types.ts
+@@ -82,6 +82,7 @@ export type RemoteConfig = {
+   posthog_project_token?: string
+   posthog_api_host?: string
+   posthog_config?: Partial<PostHogConfig>
++  syftdata_source_id?: string
+   customer_io?: {
+     write_key?: string
+     site_id?: string
+diff --git a/src/platform/telemetry/initTelemetry.ts b/src/platform/telemetry/initTelemetry.ts
+index ad730b4c5..942d97833 100644
+--- a/src/platform/telemetry/initTelemetry.ts
++++ b/src/platform/telemetry/initTelemetry.ts
+@@ -27,6 +27,7 @@ export async function initTelemetry(): Promise<void> {
+       { ImpactTelemetryProvider },
+       { PostHogTelemetryProvider },
+       { ClickHouseTelemetryProvider },
++      { SyftTelemetryProvider },
+       { CustomerIoTelemetryProvider }
+     ] = await Promise.all([
+       import('./TelemetryRegistry'),
+@@ -35,6 +36,7 @@ export async function initTelemetry(): Promise<void> {
+       import('./providers/cloud/ImpactTelemetryProvider'),
+       import('./providers/cloud/PostHogTelemetryProvider'),
+       import('./providers/cloud/ClickHouseTelemetryProvider'),
++      import('./providers/cloud/SyftTelemetryProvider'),
+       import('./providers/cloud/CustomerIoTelemetryProvider')
+     ])
+ 
+@@ -44,6 +46,7 @@ export async function initTelemetry(): Promise<void> {
+     registry.registerProvider(new ImpactTelemetryProvider())
+     registry.registerProvider(new PostHogTelemetryProvider())
+     registry.registerProvider(new ClickHouseTelemetryProvider())
++    registry.registerProvider(new SyftTelemetryProvider())
+     registry.registerProvider(new CustomerIoTelemetryProvider())
+ 
+     setTelemetryRegistry(registry)
+diff --git a/src/platform/telemetry/providers/cloud/GtmTelemetryProvider.ts b/src/platform/telemetry/providers/cloud/GtmTelemetryProvider.ts
+index d69305e94..befb1cc6e 100644
+--- a/src/platform/telemetry/providers/cloud/GtmTelemetryProvider.ts
++++ b/src/platform/telemetry/providers/cloud/GtmTelemetryProvider.ts
+@@ -1,3 +1,5 @@
++import { normalizeEmail } from '@/platform/telemetry/utils/normalizeEmail'
++
+ import type {
+   AuthMetadata,
+   BeginCheckoutMetadata,
+@@ -138,16 +140,11 @@ export class GtmTelemetryProvider implements TelemetryProvider {
+   }
+ 
+   trackAuth(metadata: AuthMetadata): void {
++    const normalizedEmail = normalizeEmail(metadata.email)
+     const payload = {
+       method: metadata.method,
+       ...(metadata.user_id ? { user_id: metadata.user_id } : {}),
+-      ...(metadata.email
+-        ? {
+-            user_data: {
+-              email: metadata.email.trim().toLowerCase()
+-            }
+-          }
+-        : {})
++      ...(normalizedEmail ? { user_data: { email: normalizedEmail } } : {})
+     }
+ 
+     this.pushEvent(metadata.is_new_user ? 'sign_up' : 'login', payload)
+diff --git a/src/platform/telemetry/providers/cloud/ImpactTelemetryProvider.ts b/src/platform/telemetry/providers/cloud/ImpactTelemetryProvider.ts
+index a03c60bf4..2fe7dd1d7 100644
+--- a/src/platform/telemetry/providers/cloud/ImpactTelemetryProvider.ts
++++ b/src/platform/telemetry/providers/cloud/ImpactTelemetryProvider.ts
+@@ -1,4 +1,5 @@
+ import { captureCheckoutAttributionFromSearch } from '@/platform/telemetry/utils/checkoutAttribution'
++import { normalizeEmail } from '@/platform/telemetry/utils/normalizeEmail'
+ import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
+ import { useAuthStore } from '@/stores/authStore'
+ 
+@@ -85,7 +86,7 @@ export class ImpactTelemetryProvider implements TelemetryProvider {
+     if (typeof window === 'undefined') return
+ 
+     const { customerId, customerEmail } = this.resolveCustomerIdentity()
+-    const normalizedEmail = customerEmail.trim().toLowerCase()
++    const normalizedEmail = normalizeEmail(customerEmail)
+     // Impact's Identify spec requires customerEmail to be sent as a SHA1 hash.
+     const hashedEmail = normalizedEmail
+       ? await this.hashSha1(normalizedEmail)
+diff --git a/src/platform/telemetry/providers/cloud/SyftTelemetryProvider.test.ts b/src/platform/telemetry/providers/cloud/SyftTelemetryProvider.test.ts
+new file mode 100644
+index 000000000..2dd069b1d
+--- /dev/null
++++ b/src/platform/telemetry/providers/cloud/SyftTelemetryProvider.test.ts
+@@ -0,0 +1,263 @@
++import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
++
++const mockCurrentUser = vi.hoisted(() => ({
++  userEmail: { value: undefined as string | undefined },
++  useCurrentUser: vi.fn()
++}))
++
++const mockRemoteConfig = vi.hoisted(() => ({
++  value: {} as { syftdata_source_id?: string }
++}))
++
++vi.mock('@/composables/auth/useCurrentUser', () => ({
++  useCurrentUser: mockCurrentUser.useCurrentUser
++}))
++
++vi.mock('@/platform/remoteConfig/remoteConfig', () => ({
++  remoteConfig: mockRemoteConfig
++}))
++
++const SYFT_SRC = 'https://cdn.sy-d.io/syftnext/syft.umd.js'
++
++async function importProvider() {
++  const { SyftTelemetryProvider } =
++    await import('@/platform/telemetry/providers/cloud/SyftTelemetryProvider')
++  return SyftTelemetryProvider
++}
++
++function installSyftSpy(): SyftDataClient {
++  const syft = {
++    identify: vi.fn(),
++    signup: vi.fn(),
++    track: vi.fn(),
++    page: vi.fn()
++  } satisfies SyftDataClient
++
++  window.syft = syft
++  return syft
++}
++
++function mockScriptAppend() {
++  return vi
++    .spyOn(document.head, 'appendChild')
++    .mockImplementation(<T extends Node>(node: T) => node)
++}
++
++describe('SyftTelemetryProvider', () => {
++  beforeEach(() => {
++    vi.resetModules()
++    vi.clearAllMocks()
++    document.head.innerHTML = ''
++    window.__CONFIG__ = {}
++    mockRemoteConfig.value = {}
++    window.syft = undefined
++    window.syftc = undefined
++    mockCurrentUser.userEmail.value = undefined
++    mockCurrentUser.useCurrentUser.mockReturnValue({
++      userEmail: mockCurrentUser.userEmail
++    })
++    vi.spyOn(console, 'warn').mockImplementation(() => undefined)
++  })
++
++  afterEach(() => {
++    vi.restoreAllMocks()
++  })
++
++  it('loads the Syft SDK once when a source id is configured', async () => {
++    mockRemoteConfig.value = { syftdata_source_id: 'src-123' }
++    const appendChild = mockScriptAppend()
++    const SyftTelemetryProvider = await importProvider()
++
++    new SyftTelemetryProvider()
++
++    expect(appendChild).toHaveBeenCalledTimes(1)
++    const appended = appendChild.mock.calls[0]?.[0]
++    if (!(appended instanceof HTMLScriptElement)) {
++      throw new Error('Expected Syft script to be appended')
++    }
++
++    expect(window.syftc).toEqual({ sourceId: 'src-123' })
++    expect(window.syft?.q).toEqual([])
++    expect(appended.src).toBe(SYFT_SRC)
++  })
++
++  it('clears the stub after SDK load failure so later calls can retry', async () => {
++    mockRemoteConfig.value = { syftdata_source_id: 'src-123' }
++    const appendChild = mockScriptAppend()
++    const SyftTelemetryProvider = await importProvider()
++    const provider = new SyftTelemetryProvider()
++
++    const failedScript = appendChild.mock.calls[0]?.[0]
++    if (!(failedScript instanceof HTMLScriptElement)) {
++      throw new Error('Expected Syft script to be appended')
++    }
++
++    failedScript.dispatchEvent(new Event('error'))
++    await Promise.resolve()
++
++    expect(window.syft).toBeUndefined()
++
++    provider.trackAuth({
++      email: 'retry@example.com',
++      is_new_user: false,
++      method: 'email'
++    })
++
++    expect(appendChild).toHaveBeenCalledTimes(2)
++    expect(window.syft?.q).toContainEqual([
++      'identify',
++      'retry@example.com',
++      { source: 'login', method: 'email' }
++    ])
++  })
++
++  it('re-identifies via trackUserLoggedIn after SDK load failure', async () => {
++    mockRemoteConfig.value = { syftdata_source_id: 'src-123' }
++    const appendChild = mockScriptAppend()
++    mockCurrentUser.userEmail.value = 'restored@example.com'
++    const SyftTelemetryProvider = await importProvider()
++    const provider = new SyftTelemetryProvider()
++
++    provider.trackUserLoggedIn()
++
++    const failedScript = appendChild.mock.calls[0]?.[0]
++    if (!(failedScript instanceof HTMLScriptElement)) {
++      throw new Error('Expected Syft script to be appended')
++    }
++    failedScript.dispatchEvent(new Event('error'))
++    await Promise.resolve()
++
++    expect(window.syft).toBeUndefined()
++
++    provider.trackUserLoggedIn()
++
++    expect(appendChild).toHaveBeenCalledTimes(2)
++    expect(window.syft?.q).toContainEqual([
++      'identify',
++      'restored@example.com',
++      { source: 'login' }
++    ])
++  })
++
++  it('does not touch the current user store during construction', async () => {
++    mockRemoteConfig.value = { syftdata_source_id: 'src-123' }
++    mockScriptAppend()
++    const SyftTelemetryProvider = await importProvider()
++
++    new SyftTelemetryProvider()
++
++    expect(mockCurrentUser.useCurrentUser).not.toHaveBeenCalled()
++  })
++
++  it('preserves an existing GTM-loaded Syft client and script', async () => {
++    mockRemoteConfig.value = { syftdata_source_id: 'src-123' }
++    const syft = installSyftSpy()
++    const appendChild = mockScriptAppend()
++    const SyftTelemetryProvider = await importProvider()
++
++    new SyftTelemetryProvider()
++
++    expect(window.syft).toBe(syft)
++    expect(appendChild).not.toHaveBeenCalled()
++  })
++
++  it('identifies new auth users with signup source and normalized email', async () => {
++    mockRemoteConfig.value = { syftdata_source_id: 'src-123' }
++    mockScriptAppend()
++    const SyftTelemetryProvider = await importProvider()
++
++    new SyftTelemetryProvider().trackAuth({
++      email: ' New@Example.COM ',
++      is_new_user: true,
++      method: 'google'
++    })
++
++    expect(window.syft?.q).toContainEqual([
++      'identify',
++      'new@example.com',
++      { source: 'signup', method: 'google' }
++    ])
++  })
++
++  it('identifies returning auth users with login source', async () => {
++    const syft = installSyftSpy()
++    const SyftTelemetryProvider = await importProvider()
++
++    new SyftTelemetryProvider().trackAuth({
++      email: 'back@example.com',
++      is_new_user: false,
++      method: 'github'
++    })
++
++    expect(syft.identify).toHaveBeenCalledWith('back@example.com', {
++      source: 'login',
++      method: 'github'
++    })
++    expect(syft.signup).not.toHaveBeenCalled()
++  })
++
++  it('defaults unknown auth state to login source', async () => {
++    const syft = installSyftSpy()
++    const SyftTelemetryProvider = await importProvider()
++
++    new SyftTelemetryProvider().trackAuth({
++      email: 'unknown@example.com',
++      method: 'email'
++    })
++
++    expect(syft.identify).toHaveBeenCalledWith('unknown@example.com', {
++      source: 'login',
++      method: 'email'
++    })
++  })
++
++  it('skips auth tracking when email is unavailable', async () => {
++    const syft = installSyftSpy()
++    const SyftTelemetryProvider = await importProvider()
++
++    new SyftTelemetryProvider().trackAuth({
++      is_new_user: true,
++      method: 'email'
++    })
++
++    expect(syft.identify).not.toHaveBeenCalled()
++    expect(syft.signup).not.toHaveBeenCalled()
++  })
++
++  it('identifies restored sessions from the current user store', async () => {
++    mockRemoteConfig.value = { syftdata_source_id: 'src-123' }
++    mockScriptAppend()
++    mockCurrentUser.userEmail.value = 'Restored@Example.com'
++    const SyftTelemetryProvider = await importProvider()
++
++    new SyftTelemetryProvider().trackUserLoggedIn()
++
++    expect(mockCurrentUser.useCurrentUser).toHaveBeenCalled()
++    expect(window.syft?.q).toContainEqual([
++      'identify',
++      'restored@example.com',
++      { source: 'login' }
++    ])
++  })
++
++  it('does not immediately re-identify the same email after auth tracking', async () => {
++    const syft = installSyftSpy()
++    mockCurrentUser.userEmail.value = 'new@example.com'
++    const SyftTelemetryProvider = await importProvider()
++    const provider = new SyftTelemetryProvider()
++
++    provider.trackAuth({
++      email: 'new@example.com',
++      is_new_user: true,
++      method: 'google'
++    })
++    provider.trackUserLoggedIn()
++
++    expect(syft.identify).toHaveBeenCalledTimes(1)
++    expect(syft.identify).toHaveBeenCalledWith('new@example.com', {
++      source: 'signup',
++      method: 'google'
++    })
++    expect(syft.signup).not.toHaveBeenCalled()
++  })
++})
+diff --git a/src/platform/telemetry/providers/cloud/SyftTelemetryProvider.ts b/src/platform/telemetry/providers/cloud/SyftTelemetryProvider.ts
+new file mode 100644
+index 000000000..de52c8d05
+--- /dev/null
++++ b/src/platform/telemetry/providers/cloud/SyftTelemetryProvider.ts
+@@ -0,0 +1,105 @@
++import { useCurrentUser } from '@/composables/auth/useCurrentUser'
++import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
++import { normalizeEmail } from '@/platform/telemetry/utils/normalizeEmail'
++import { createScriptLoader } from '@/utils/loadExternalScript'
++
++import type { AuthMetadata, AuthMethod, TelemetryProvider } from '../../types'
++
++const SYFT_SRC = 'https://cdn.sy-d.io/syftnext/syft.umd.js'
++
++let currentStub: SyftDataClient | null = null
++let lastIdentifiedEmail: string | null = null
++
++const loadSyftSdk = createScriptLoader<SyftDataClient>(SYFT_SRC, () =>
++  window.syft && window.syft !== currentStub ? window.syft : null
++)
++
++function createTraits(
++  source: 'signup' | 'login',
++  method?: AuthMethod
++): SyftDataTraits {
++  return method ? { source, method } : { source }
++}
++
++function createSyftStub(): SyftDataClient {
++  const q: unknown[][] = []
++  const fi: SyftDataPendingFetch[] = []
++
++  function enqueue(method: string) {
++    return (...args: unknown[]) => {
++      q.push([method, ...args])
++    }
++  }
++
++  function fetchID(...args: unknown[]): Promise<unknown> {
++    return new Promise((resolve, reject) => {
++      fi.push({ args, resolve, reject })
++    })
++  }
++
++  return {
++    q,
++    fi,
++    fetchID,
++    identify: enqueue('identify'),
++    signup: enqueue('signup'),
++    track: enqueue('track'),
++    page: enqueue('page')
++  }
++}
++
++function bootstrapSyftClient(): SyftDataClient | null {
++  const sourceId = remoteConfig.value.syftdata_source_id
++  if (!sourceId) return window.syft ?? null
++
++  window.syftc = { sourceId }
++  if (window.syft) return window.syft
++
++  const stub = createSyftStub()
++  currentStub = stub
++  window.syft = stub
++
++  loadSyftSdk().catch((error: unknown) => {
++    if (window.syft === stub) {
++      delete window.syft
++      lastIdentifiedEmail = null
++    }
++    if (currentStub === stub) {
++      currentStub = null
++    }
++    console.warn('[Syft] SDK failed to load', error)
++  })
++
++  return window.syft
++}
++
++function identifyUser(email: string, traits: SyftDataTraits): void {
++  const syft = bootstrapSyftClient()
++  if (!syft) return
++
++  syft.identify(email, traits)
++  lastIdentifiedEmail = email
++}
++
++export class SyftTelemetryProvider implements TelemetryProvider {
++  constructor() {
++    bootstrapSyftClient()
++  }
++
++  trackAuth({ email, is_new_user, method }: AuthMetadata): void {
++    const normalizedEmail = normalizeEmail(email)
++    if (!normalizedEmail) return
++
++    identifyUser(
++      normalizedEmail,
++      createTraits(is_new_user ? 'signup' : 'login', method)
++    )
++  }
++
++  trackUserLoggedIn(): void {
++    const normalizedEmail = normalizeEmail(useCurrentUser().userEmail.value)
++    if (!normalizedEmail || normalizedEmail === lastIdentifiedEmail) return
++
++    identifyUser(normalizedEmail, createTraits('login'))
++  }
++}
+diff --git a/src/platform/telemetry/types.ts b/src/platform/telemetry/types.ts
+index fc5942cab..e3c6cf73e 100644
+--- a/src/platform/telemetry/types.ts
++++ b/src/platform/telemetry/types.ts
+@@ -18,11 +18,13 @@ import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscript
+ import type { AuditLog } from '@/services/customerEventsService'
+ import type { AppMode } from '@/utils/appMode'
+ 
++export type AuthMethod = 'email' | 'google' | 'github'
++
+ /**
+  * Authentication metadata for sign-up tracking
+  */
+ export interface AuthMetadata {
+-  method?: 'email' | 'google' | 'github'
++  method?: AuthMethod
+   is_new_user?: boolean
+   user_id?: string
+   email?: string
+diff --git a/src/platform/telemetry/utils/normalizeEmail.ts b/src/platform/telemetry/utils/normalizeEmail.ts
+new file mode 100644
+index 000000000..c5558fc3d
+--- /dev/null
++++ b/src/platform/telemetry/utils/normalizeEmail.ts
+@@ -0,0 +1,5 @@
++export function normalizeEmail(
++  email: string | null | undefined
++): string | null {
++  return email?.trim().toLowerCase() || null
++}

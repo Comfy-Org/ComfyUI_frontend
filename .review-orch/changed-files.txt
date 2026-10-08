@@ -1,0 +1,9 @@
+global.d.ts
+src/platform/remoteConfig/types.ts
+src/platform/telemetry/initTelemetry.ts
+src/platform/telemetry/providers/cloud/GtmTelemetryProvider.ts
+src/platform/telemetry/providers/cloud/ImpactTelemetryProvider.ts
+src/platform/telemetry/providers/cloud/SyftTelemetryProvider.test.ts
+src/platform/telemetry/providers/cloud/SyftTelemetryProvider.ts
+src/platform/telemetry/types.ts
+src/platform/telemetry/utils/normalizeEmail.ts

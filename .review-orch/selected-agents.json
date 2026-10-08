@@ -1,0 +1,18 @@
+{
+  "diff_size": "large",
+  "insertions": 406,
+  "budget": 14,
+  "selected": ["A1", "A2", "C1", "A3", "A5", "A11", "A4", "A7", "A10", "A13", "A16", "A6", "A14", "A17"],
+  "skipped_deps_group": ["B1", "B2", "B3", "B4"],
+  "skipped_irrelevant": ["A8", "A9", "A12", "A15", "A18", "C2", "C3", "C4"],
+  "signals": {
+    "*token*/*credential*/auth+email PII to 3rd party": "A3",
+    "global.d.ts globals + types.ts": "A11",
+    "SDK load failure recovery / stub eviction": "A10",
+    "*.test.* (263-line test file)": "A7",
+    "lazy-load + reactive ref": ["A4", "A14"],
+    "dynamic script injection": "A13",
+    "dedup/derivable state": ["A16", "A17"],
+    "provider pattern": ["A5", "A6"]
+  }
+}
