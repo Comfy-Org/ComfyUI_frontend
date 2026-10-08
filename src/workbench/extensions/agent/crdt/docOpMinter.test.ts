@@ -1306,24 +1306,24 @@ describe('attachDocOpMinter', () => {
       name: 'live true and stored false',
       liveSerialize: true,
       storedSerialize: false,
-      mints: true
+      expectedOps: ['set_widget', 'set_widget']
     },
     {
       name: 'live undefined and stored false',
       liveSerialize: undefined,
       storedSerialize: false,
-      mints: false
+      expectedOps: []
     },
     {
       name: 'live false and stored true',
       liveSerialize: false,
       storedSerialize: true,
-      mints: false
+      expectedOps: []
     }
   ])('reports $name once across separate writes', async ({
     liveSerialize,
     storedSerialize,
-    mints
+    expectedOps
   }) => {
     const { source } = seedGraph(graph)
     const widget = source.widgets![0]
@@ -1353,9 +1353,7 @@ describe('attachDocOpMinter', () => {
     })
     await afterFlush()
 
-    expect(minted.map(({ op }) => op)).toEqual(
-      mints ? ['set_widget', 'set_widget'] : []
-    )
+    expect(minted.map(({ op }) => op)).toEqual(expectedOps)
     const reports = vi
       .mocked(reportError)
       .mock.calls.filter(
@@ -1404,6 +1402,41 @@ describe('attachDocOpMinter', () => {
       widget: 'steps',
       liveSerialize: null,
       storedSerialize: false
+    })
+  })
+
+  it('reports a live serialize:false widget omitted by add-node serialization', async () => {
+    const source = new TestSource()
+    graph.add(source)
+    const widget = source.widgets![0]
+    const stored = useWidgetValueStore().getWidget(
+      widgetId(graph.id, source.id, widget.name)
+    )
+    assert.exists(stored)
+    stored.serialize = true
+    widget.serialize = false
+
+    await afterFlush()
+
+    expect(minted).toEqual([
+      expect.objectContaining({
+        op: 'add_node',
+        node: expect.objectContaining({ widgets_values: {} })
+      })
+    ])
+    const reports = vi
+      .mocked(reportError)
+      .mock.calls.filter(
+        ([, metadata]) =>
+          metadata.errorType === 'agent_crdt_widget_serialize_drift'
+      )
+    expect(reports).toHaveLength(1)
+    expect(reports[0]?.[1].context).toEqual({
+      graphId: graph.id,
+      nodeId: source.id,
+      widget: 'steps',
+      liveSerialize: false,
+      storedSerialize: true
     })
   })
 

@@ -127,15 +127,29 @@ export function wireNodeSnapshot(
     ...rest
   } = wireSerialized
   const snapshot = { ...rest, flags } satisfies WorkflowNode
+
+  // serialize() omits widgets marked serialize:false from its named payload.
+  // Inspect the live widgets first so those omissions still report drift.
+  const rootGraphId = node.graph?.rootGraph.id
+  if (rootGraphId && onSerializeDrift) {
+    const widgetValueStore = useWidgetValueStore()
+    for (const widget of node.widgets ?? []) {
+      const stored = widgetValueStore.getWidget(
+        widgetId(rootGraphId, node.id, widget.name)
+      )
+      if (stored && widget.serialize !== stored.serialize)
+        onSerializeDrift(widget.name, widget.serialize, stored.serialize)
+    }
+  }
+
   return named && !node.isVirtualNode
-    ? { ...snapshot, widgets_values: valueWidgetsOnly(node, named, onSerializeDrift) }
+    ? { ...snapshot, widgets_values: valueWidgetsOnly(node, named) }
     : snapshot
 }
 
 function valueWidgetsOnly(
   node: LGraphNode,
-  named: object,
-  onSerializeDrift?: SerializeDriftReporter
+  named: object
 ): Record<string, unknown> {
   const filtered: Record<string, unknown> = {}
   const rootGraphId = node.graph?.rootGraph.id
@@ -145,12 +159,7 @@ function valueWidgetsOnly(
     const stored = rootGraphId
       ? widgetValueStore.getWidget(widgetId(rootGraphId, node.id, name))
       : undefined
-    if (
-      isValueWidget(widget, stored, (liveSerialize, storedSerialize) =>
-        onSerializeDrift?.(name, liveSerialize, storedSerialize)
-      )
-    )
-      filtered[name] = value
+    if (isValueWidget(widget, stored)) filtered[name] = value
   }
   return filtered
 }
