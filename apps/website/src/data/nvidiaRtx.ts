@@ -8,7 +8,9 @@ import { externalLinks } from '../config/routes'
 
 const nvidiaRtxLinks = {
   download: 'https://comfy.org/download/',
-  guide: 'https://docs.comfy.org/installation/desktop/windows',
+  github: 'https://github.com/Comfy-Org/Nvidia_RTX_Nodes_ComfyUI',
+  // Swap for the Comfy Cloud workflow that chains all three nodes once it
+  // exists; until then the CTA lands on the generic cloud entry point.
   cloud: externalLinks.cloudCta('nvidia_rtx')
 } as const
 
@@ -58,7 +60,7 @@ const beforeAfter: ModelLaunchBeforeAfter = {
     },
     {
       id: 'true-hdr',
-      label: { en: 'TrueHDR', 'zh-CN': 'TrueHDR' },
+      label: { en: 'True HDR', 'zh-CN': 'True HDR' },
       caption: {
         en: 'SDR in, HDR out. Best viewed on an HDR display.',
         'zh-CN': '输入 SDR，输出 HDR。建议在 HDR 显示器上观看。'
@@ -89,11 +91,11 @@ export const nvidiaRtxPage: ModelLaunchPage = {
     ],
     primaryCta: {
       labelKey: 'nvidiaRtx.hero.primaryCta',
-      href: nvidiaRtxLinks.download
+      href: nvidiaRtxLinks.cloud
     },
     secondaryCta: {
       labelKey: 'nvidiaRtx.hero.secondaryCta',
-      href: nvidiaRtxLinks.guide,
+      href: nvidiaRtxLinks.github,
       target: '_blank'
     }
   },
@@ -113,8 +115,8 @@ export const nvidiaRtxPage: ModelLaunchPage = {
         tier: 'free',
         note: localNote,
         description: {
-          en: 'Iterate on a look as many times as you like, with every run on your own GPU.',
-          'zh-CN': '反复打磨画面风格，每一次运行都在你自己的 GPU 上完成。'
+          en: 'Upscale low-resolution footage up to 4× with Super Resolution.',
+          'zh-CN': '使用超分辨率将低分辨率素材放大最高 4 倍。'
         },
         media: media.vaporwave,
         href: nvidiaRtxLinks.download
@@ -128,8 +130,8 @@ export const nvidiaRtxPage: ModelLaunchPage = {
         tier: 'free',
         note: localNote,
         description: {
-          en: 'Batch dozens of variations overnight without watching a meter.',
-          'zh-CN': '通宵批量生成数十个变体，无需担心用量计费。'
+          en: 'Multiply frame rate up to 16× with Frame Generation for smooth slow motion.',
+          'zh-CN': '使用帧生成将帧率提升最高 16 倍，获得流畅的慢动作。'
         },
         media: media.aliens,
         href: nvidiaRtxLinks.download
@@ -143,8 +145,8 @@ export const nvidiaRtxPage: ModelLaunchPage = {
         tier: 'free',
         note: localNote,
         description: {
-          en: 'Stack LoRAs, ControlNets, and upscalers in one graph on your desktop.',
-          'zh-CN': '在桌面上的同一图形中叠加 LoRA、ControlNet 与放大模型。'
+          en: 'Convert SDR footage to HDR in a single node with True HDR.',
+          'zh-CN': '使用 True HDR，一个节点即可将 SDR 素材转换为 HDR。'
         },
         media: media.goldfish,
         href: nvidiaRtxLinks.download
@@ -158,8 +160,8 @@ export const nvidiaRtxPage: ModelLaunchPage = {
         tier: 'free',
         note: localNote,
         description: {
-          en: 'Keep client assets and unreleased work on your own machine.',
-          'zh-CN': '客户素材与未发布作品始终留在你自己的电脑上。'
+          en: 'Chain all three nodes in one workflow and run it on your RTX GPU.',
+          'zh-CN': '在同一工作流中串联三个节点，并在你的 RTX GPU 上运行。'
         },
         media: media.engine,
         href: nvidiaRtxLinks.download
@@ -173,8 +175,8 @@ export const nvidiaRtxPage: ModelLaunchPage = {
         tier: 'free',
         note: localNote,
         description: {
-          en: 'Turn a still into motion with open video models running on RTX.',
-          'zh-CN': '借助在 RTX 上运行的开源视频模型，让静帧动起来。'
+          en: 'Drop the nodes into any existing ComfyUI video workflow.',
+          'zh-CN': '将这些节点加入任何现有的 ComfyUI 视频工作流。'
         },
         media: media.canyon,
         href: nvidiaRtxLinks.download
@@ -188,8 +190,8 @@ export const nvidiaRtxPage: ModelLaunchPage = {
         tier: 'free',
         note: localNote,
         description: {
-          en: 'Fine-tune a style and reuse it across every shot in a project.',
-          'zh-CN': '微调一种风格，并在项目的每个镜头中复用。'
+          en: 'Open source, so you can inspect, fork, and extend every node.',
+          'zh-CN': '完全开源，每个节点都可以查看、复刻与扩展。'
         },
         media: media.horizon,
         href: nvidiaRtxLinks.download
@@ -204,19 +206,19 @@ export const nvidiaRtxPage: ModelLaunchPage = {
         id: 'download',
         title: { en: 'Download Comfy Desktop', 'zh-CN': '下载 Comfy Desktop' },
         description: {
-          en: 'The Windows app sets up ComfyUI for your RTX GPU.',
-          'zh-CN': 'Windows 应用会为你的 RTX GPU 配置好 ComfyUI。'
+          en: 'The desktop app sets up ComfyUI for you on your computer.',
+          'zh-CN': '桌面应用会在你的电脑上为你配置好 ComfyUI。'
         }
       },
       {
-        id: 'open-template',
+        id: 'install-nodes',
         title: {
-          en: 'Open the RTX Video template',
-          'zh-CN': '打开 RTX Video 模板'
+          en: 'Install the ComfyUI Nvidia VFX Nodes',
+          'zh-CN': '安装 ComfyUI Nvidia VFX 节点'
         },
         description: {
-          en: 'Super Resolution, Frame Generation, and TrueHDR, already wired together.',
-          'zh-CN': '超分辨率、帧生成与 TrueHDR，已经串联就绪。'
+          en: 'Open the example workflows from the custom node.',
+          'zh-CN': '打开自定义节点附带的示例工作流。'
         }
       },
       {
@@ -237,61 +239,38 @@ export const nvidiaRtxPage: ModelLaunchPage = {
     headingKey: 'nvidiaRtx.faq.heading',
     items: [
       {
-        id: 'which-gpus',
+        id: 'any-gpu',
         question: {
-          en: 'Which NVIDIA GPUs can run ComfyUI?',
-          'zh-CN': '哪些 NVIDIA GPU 可以运行 ComfyUI？'
+          en: 'Can the Nvidia VFX nodes run on any GPU?',
+          'zh-CN': 'Nvidia VFX 节点可以在任何 GPU 上运行吗？'
         },
         answer: {
-          en: 'ComfyUI runs on NVIDIA GeForce RTX and NVIDIA RTX professional GPUs. More VRAM lets you run larger models and higher resolutions; lighter quantized models are available for cards with less memory.',
+          en: "No. The nvidia-vfx library requires an Nvidia GPU powered by Nvidia's proprietary technology.",
           'zh-CN':
-            'ComfyUI 可在 NVIDIA GeForce RTX 与 NVIDIA RTX 专业级 GPU 上运行。显存越大，可运行的模型与分辨率越高；显存较小的显卡也可使用更轻量的量化模型。'
+            '不可以。nvidia-vfx 库需要由 Nvidia 专有技术驱动的 Nvidia GPU。'
         }
       },
       {
-        id: 'is-it-free',
+        id: 'open-source',
         question: {
-          en: 'Is running ComfyUI locally free?',
-          'zh-CN': '在本地运行 ComfyUI 免费吗？'
+          en: 'Are the nodes open source?',
+          'zh-CN': '这些节点是开源的吗？'
         },
         answer: {
-          en: 'Yes. ComfyUI is open source, and open models run on your own hardware at no cost. Partner Nodes for hosted models such as Veo or Kling use credits.',
+          en: `Yes. All three nodes are published on [GitHub](${nvidiaRtxLinks.github}) and install as a ComfyUI custom node.`,
+          'zh-CN': `是的。三个节点均已发布在 [GitHub](${nvidiaRtxLinks.github}) 上，可作为 ComfyUI 自定义节点安装。`
+        }
+      },
+      {
+        id: 'example-workflows',
+        question: {
+          en: 'Where do I find example workflows?',
+          'zh-CN': '哪里可以找到示例工作流？'
+        },
+        answer: {
+          en: 'The custom node ships with example workflows for each node. Open them from ComfyUI after installing.',
           'zh-CN':
-            '是的。ComfyUI 是开源软件，开源模型在你自己的硬件上免费运行。调用 Veo、Kling 等托管模型的合作伙伴节点需要消耗积分。'
-        }
-      },
-      {
-        id: 'how-to-start',
-        question: {
-          en: 'How do I get started on an RTX PC?',
-          'zh-CN': '如何在 RTX 电脑上开始使用？'
-        },
-        answer: {
-          en: `[Download ComfyUI](${nvidiaRtxLinks.download}), open the template browser, and pick a workflow. ComfyUI downloads the models it needs and runs them on your GPU.`,
-          'zh-CN': `[下载 ComfyUI](${nvidiaRtxLinks.download})，打开模板浏览器并选择一个工作流。ComfyUI 会下载所需模型，并在你的 GPU 上运行。`
-        }
-      },
-      {
-        id: 'privacy',
-        question: {
-          en: 'Do my files leave my computer?',
-          'zh-CN': '我的文件会离开我的电脑吗？'
-        },
-        answer: {
-          en: 'Not when you run open models locally. Prompts, inputs, and outputs stay on your machine unless you choose to use a Partner Node or Comfy Cloud.',
-          'zh-CN':
-            '在本地运行开源模型时不会。除非你选择使用合作伙伴节点或 Comfy Cloud，否则提示词、输入与输出都保留在你的电脑上。'
-        }
-      },
-      {
-        id: 'local-or-cloud',
-        question: {
-          en: 'Should I run locally or on Comfy Cloud?',
-          'zh-CN': '我应该在本地运行还是使用 Comfy Cloud？'
-        },
-        answer: {
-          en: `Both run the same workflows. Run locally on RTX when you want full control and unlimited iterations; use [Comfy Cloud](${nvidiaRtxLinks.cloud}) when a job needs more VRAM than your card has.`,
-          'zh-CN': `两者运行的是相同的工作流。想要完全掌控并无限次迭代时，在 RTX 上本地运行；当任务所需显存超出显卡容量时，使用 [Comfy Cloud](${nvidiaRtxLinks.cloud})。`
+            '自定义节点附带每个节点的示例工作流。安装后即可在 ComfyUI 中打开。'
         }
       }
     ]
