@@ -158,17 +158,30 @@ function longDate(
     ? d(date, { year: 'numeric', month: 'long', day: 'numeric' })
     : d(date, { month: 'long', day: 'numeric' })
 }
-// "Or wait until credits refill" is only a real option when the refill is
-// close. A yearly plan refills at renewal, which can be a year away, so past
-// this window the suggestion is dropped; a date already past isn't something
-// to wait for either. Within the window the date never needs a year.
-const REFILL_SUGGESTION_WINDOW_MS = 31 * 24 * 60 * 60 * 1000
-const nearRefillDate = computed(() => {
+// "Or wait until credits refill" depends on the plan's cadence, which the
+// server states as `duration`. A monthly plan (and Founders Edition, a fixed
+// monthly grant with no duration) refills every cycle, so the suggestion always
+// holds and its date drops the year. An annual plan is granted the year up
+// front and refills at renewal, so the suggestion only holds within a month of
+// it, and its date keeps the year (DES-1088). With no known cadence, or a date
+// that has already passed, there is nothing to tell the user to wait for.
+const ANNUAL_REFILL_SUGGESTION_WINDOW_MS = 31 * 24 * 60 * 60 * 1000
+const refillSuggestionDate = computed(() => {
   const date = parseDate(renewalDate.value)
   if (!date) return ''
   const untilRefill = date.getTime() - Date.now()
-  if (untilRefill <= 0 || untilRefill > REFILL_SUGGESTION_WINDOW_MS) return ''
-  return longDate(renewalDate.value, { withYear: false })
+  if (untilRefill <= 0) return ''
+  const sub = subscription.value
+  const refillsMonthly =
+    sub?.duration === 'MONTHLY' ||
+    (!sub?.duration && sub?.tier === 'FOUNDERS_EDITION')
+  if (refillsMonthly) return longDate(renewalDate.value, { withYear: false })
+  if (
+    sub?.duration === 'ANNUAL' &&
+    untilRefill <= ANNUAL_REFILL_SUGGESTION_WINDOW_MS
+  )
+    return longDate(renewalDate.value)
+  return ''
 })
 const planEndDate = computed(() => longDate(subscription.value?.endDate))
 const planName = computed(() => formatTierName(subscription.value?.tier, false))
@@ -294,7 +307,9 @@ const planEndedView = (): BannerView => {
 }
 
 const outOfCreditsBody = (key: string, noDateKey: string): string =>
-  nearRefillDate.value ? t(key, { date: nearRefillDate.value }) : t(noDateKey)
+  refillSuggestionDate.value
+    ? t(key, { date: refillSuggestionDate.value })
+    : t(noDateKey)
 
 // An owner who cannot top up only reaches this once the plan has ended, which
 // the plan ended notice covers, so that case shows nothing.
