@@ -2469,8 +2469,10 @@
     "wan3": "Wan 3.0",
     "chatgptImage25": "ChatGPT Images 2.5",
     "qwenImage21": "Qwen-Image 2.1",
+    "nanoBanana": "Nano Banana 2.1",
     "cloudNodes": "Comfy Cloud Nodes",
-    "modelCatalogue": "ComfyUI Models"
+    "modelCatalogue": "ComfyUI Models",
+    "changelog": "Changelog"
   },
   "privacy": {
     "intro": {
@@ -4064,6 +4066,57 @@
       "highlightCta": "GET STARTED"
     }
   },
+  "nanoBanana": {
+    "meta": {
+      "title": "Nano Banana on Comfy: Generate and Edit Images",
+      "description": "Run Nano Banana in ComfyUI. Generate images from text, edit existing visuals, and direct results with reference images in a repeatable workflow."
+    },
+    "breadcrumb": {
+      "model": "Nano Banana",
+      "updated": "Updated October 2026"
+    },
+    "hero": {
+      "title": "Nano Banana 2.1 is here",
+      "description": "Google's newest Gemini image model, now in Comfy. Give it a prompt and references, and it returns an image at up to 4K. It works anywhere Nano Banana 2 does, with a new thinking level and a lower price.",
+      "tagTextToImage": "Text to Image",
+      "tagImageEditing": "Image Editing",
+      "tagPartnerNode": "Partner Node",
+      "primaryCta": "RUN NANO BANANA 2.1",
+      "secondaryCta": "READ THE GUIDE"
+    },
+    "showcase": {
+      "photography": {
+        "heading": "Shot like it happened.",
+        "description": "Realistic light and detail for the scenes you've only pictured."
+      },
+      "design": {
+        "heading": "One idea, every style.",
+        "description": "Iterate your designs in any style you want."
+      },
+      "advertising": {
+        "heading": "From brief to campaign.",
+        "description": "Advertising for any industry, with crisp detail and type that reads."
+      }
+    },
+    "pricing": {
+      "banner": {
+        "title": "Start Comfy Cloud for free. Upgrade when you're ready.",
+        "subtitle": "5 free runs on real GPUs — no credit card required.",
+        "cta": "TRY FREE"
+      }
+    },
+    "faq": {
+      "heading": "Q&A"
+    },
+    "runOptions": {
+      "heading": "One engine, every way to run it",
+      "subtitle": "Build workflows in the browser today. Batch campaigns with the API, or connect image generation to the rest of your creative pipeline.",
+      "cta": "LEARN MORE"
+    },
+    "reviews": {
+      "heading": "4+ million Comfy creators say"
+    }
+  },
   "qwenImage21": {
     "meta": {
       "title": "Qwen-Image 2.1 on Comfy: Open-Weight Image Generation and Editing",
@@ -5515,5 +5568,18 @@
     "noWebgl": "This preview needs WebGL2, which this browser does not offer.",
     "play": "Play",
     "pause": "Pause"
+  },
+  "changelog": {
+    "meta": {
+      "title": "Changelog - Comfy",
+      "description": "The latest ComfyUI features, improvements, and fixes from Comfy docs."
+    },
+    "title": "Changelog",
+    "viewDocs": "VIEW DOCS",
+    "saved": "Showing saved release notes. The latest updates could not be loaded.",
+    "unavailable": "Release notes could not be loaded.",
+    "loading": "Loading the latest release notes…",
+    "introduction": "The latest ComfyUI features, improvements, and fixes, updated from Comfy docs.",
+    "retry": "Try again"
   }
 }

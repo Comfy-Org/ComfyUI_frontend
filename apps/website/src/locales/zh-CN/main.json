@@ -1755,6 +1755,7 @@
     "minimaxLicense": "MiniMax 商业许可",
     "minimaxMusic3": "MiniMax Music 3",
     "models": "模型",
+    "nanoBanana": "Nano Banana 2.1",
     "press": "媒体",
     "privacyPolicy": "隐私政策",
     "products": "产品",
@@ -1770,7 +1771,8 @@
     "wan3": "Wan 3.0",
     "wanAnimate2": "Wan Animate 2",
     "workflows": "工作流",
-    "modelCatalogue": "ComfyUI 模型"
+    "modelCatalogue": "ComfyUI 模型",
+    "changelog": "更新日志"
   },
   "g": {
     "error": "错误",
@@ -3505,6 +3507,57 @@
     },
     "subheading": "掌控每个模型、每个节点、每个步骤、每个输出。"
   },
+  "nanoBanana": {
+    "meta": {
+      "title": "Comfy 上的 Nano Banana：生成与编辑图像",
+      "description": "在 ComfyUI 中运行 Nano Banana。通过文字生成图像、编辑现有视觉内容，并使用参考图像在可复用工作流中引导结果。"
+    },
+    "breadcrumb": {
+      "model": "Nano Banana",
+      "updated": "更新于 2026 年 10 月"
+    },
+    "hero": {
+      "title": "Nano Banana 2.1 来了",
+      "description": "Google 最新的 Gemini 图像模型，现已登陆 Comfy。给它一个提示词和参考图，它就能返回最高 4K 分辨率的图像。它可以在 Nano Banana 2 适用的任何地方使用，并新增思考等级，价格更低。",
+      "tagTextToImage": "文生图",
+      "tagImageEditing": "图像编辑",
+      "tagPartnerNode": "合作伙伴节点",
+      "primaryCta": "运行 Nano Banana 2.1",
+      "secondaryCta": "查看教程"
+    },
+    "showcase": {
+      "photography": {
+        "heading": "如实拍摄。",
+        "description": "为你脑海中的场景，呈现真实的光影与细节。"
+      },
+      "design": {
+        "heading": "一个创意，所有风格。",
+        "description": "以你想要的任意风格迭代设计。"
+      },
+      "advertising": {
+        "heading": "从创意简报到完整广告活动。",
+        "description": "适用于任何行业的广告，细节清晰，文字可读。"
+      }
+    },
+    "pricing": {
+      "banner": {
+        "title": "免费开始使用 Comfy Cloud，准备好了再升级。",
+        "subtitle": "在真实 GPU 上免费运行 5 次 — 无需信用卡。",
+        "cta": "免费试用"
+      }
+    },
+    "faq": {
+      "heading": "问答"
+    },
+    "runOptions": {
+      "heading": "同一引擎，多种运行方式",
+      "subtitle": "今天就在浏览器中搭建工作流。用 API 批量制作，或将图像生成接入完整创意流程。",
+      "cta": "了解更多"
+    },
+    "reviews": {
+      "heading": "超过 400 万 Comfy 创作者这样说"
+    }
+  },
   "qwenImage21": {
     "announcement": {
       "breadcrumb": {
@@ -4908,5 +4961,18 @@
     "noWebgl": "此预览需要 WebGL2，当前浏览器不支持。",
     "play": "播放",
     "pause": "暂停"
+  },
+  "changelog": {
+    "meta": {
+      "title": "更新日志 - Comfy",
+      "description": "来自 Comfy 文档的 ComfyUI 最新功能、改进和修复。"
+    },
+    "title": "更新日志",
+    "viewDocs": "查看文档",
+    "saved": "正在显示已保存的更新日志。无法加载最新更新。",
+    "unavailable": "无法加载更新日志。",
+    "loading": "正在加载最新更新日志…",
+    "introduction": "ComfyUI 的最新功能、改进和修复，来自 Comfy 文档。",
+    "retry": "重试"
   }
 }

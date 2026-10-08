@@ -1,6 +1,7 @@
 import { whenever } from '@vueuse/core'
 import { computed, watch } from 'vue'
 
+import { desktopHostUser } from '@/platform/auth/desktopHost/desktopHostSession'
 import { isCloud } from '@/platform/distribution/types'
 import { signOutWorkflowStorage } from '@/platform/workflow/persistence/base/storageIO'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
@@ -27,7 +28,8 @@ export const useCurrentUser = () => {
     () =>
       apiKeyStore.isAuthenticated &&
       authStore.currentUser === null &&
-      !sessionUser.value
+      !sessionUser.value &&
+      !desktopHostUser.value
   )
   const isLoggedIn = computed(
     () => isApiKeyLogin.value || authStore.isAuthenticated
@@ -57,6 +59,7 @@ export const useCurrentUser = () => {
   }
 
   const userDisplayName = computed(() => {
+    if (desktopHostUser.value) return desktopHostUser.value.email
     if (isApiKeyLogin.value) {
       return apiKeyStore.currentUser?.name
     }
