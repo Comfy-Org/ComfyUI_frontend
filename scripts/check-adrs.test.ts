@@ -1,9 +1,14 @@
+import { execFileSync } from 'node:child_process'
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, test } from 'vitest'
 
-import { findLegacyAdrReferences, validateAdrDirectory } from './check-adrs'
+import {
+  checkLegacyReferences,
+  findLegacyAdrReferences,
+  validateAdrDirectory
+} from './check-adrs'
 
 const temporaryDirectories: string[] = []
 
@@ -32,6 +37,23 @@ afterEach(() => {
 })
 
 describe('validateAdrDirectory', () => {
+  test('preserves imported ADR identifiers without exempting other packages', () => {
+    const directory = createFixture()
+    execFileSync('git', ['init', '--quiet', directory])
+    const imported = join(directory, 'packages/comfy-multi-player/docs')
+    mkdirSync(imported, { recursive: true })
+    const reference = ['ADR-', '0005'].join('')
+    writeFileSync(join(imported, 'decision.md'), reference)
+    expect(() => checkLegacyReferences(directory)).not.toThrow()
+
+    const sibling = join(directory, 'packages/comfy-multi-player-next')
+    mkdirSync(sibling)
+    writeFileSync(join(sibling, 'decision.md'), reference)
+    expect(() => checkLegacyReferences(directory)).toThrow(
+      `packages/comfy-multi-player-next/decision.md:1:${reference}`
+    )
+  })
+
   test('accepts identifier-based ADRs with a matching index', () => {
     expect(() => validateAdrDirectory(createFixture())).not.toThrow()
   })

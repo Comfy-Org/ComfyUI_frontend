@@ -6,7 +6,11 @@ export const templateFiles = ['**/*.vue', '**/*.astro', '**/*.astro/*.{js,ts}']
 
 // better-tailwindcss also reads class strings from cn()/cva() calls in .ts.
 export const tailwindScriptFiles = ['{src,apps,packages}/**/*.ts']
-export const tailwindScriptIgnores = ['**/*.test.ts', '**/*.d.ts']
+export const tailwindScriptIgnores = [
+  '**/*.test.ts',
+  '**/*.d.ts',
+  'packages/comfy-multi-player/**'
+]
 
 const matchesAny = (fileName: string, patterns: string[]) =>
   patterns.some((pattern) => path.matchesGlob(fileName, pattern))

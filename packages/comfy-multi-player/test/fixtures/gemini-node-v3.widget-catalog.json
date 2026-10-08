@@ -1,0 +1,127 @@
+{
+  "widget_order": [
+    "model",
+    "model.prompt",
+    "model.video_processing",
+    "model.thinking_level",
+    "model.max_output_tokens",
+    "model.seed",
+    "control_after_generate",
+    "model.system_prompt"
+  ],
+  "dynamic_combos": {
+    "model": {
+      "default": "Gemini 3.8 Flash",
+      "options": {
+        "Gemini 3.8 Flash": {
+          "widgets": [
+            "model.prompt",
+            "model.video_processing",
+            "model.thinking_level",
+            "model.max_output_tokens",
+            "model.seed",
+            "control_after_generate",
+            "model.system_prompt"
+          ],
+          "defaults": {
+            "model.prompt": "",
+            "model.video_processing": "static",
+            "model.thinking_level": "MEDIUM",
+            "model.max_output_tokens": 32768,
+            "model.seed": 42,
+            "control_after_generate": "fixed",
+            "model.system_prompt": ""
+          }
+        },
+        "Gemini 3.7 Flash": {
+          "widgets": [
+            "model.prompt",
+            "model.thinking_level",
+            "model.temperature",
+            "model.top_p",
+            "model.max_output_tokens",
+            "model.seed",
+            "control_after_generate",
+            "model.system_prompt"
+          ],
+          "defaults": {
+            "model.prompt": "",
+            "model.thinking_level": "MEDIUM",
+            "model.temperature": 1.0,
+            "model.top_p": 0.95,
+            "model.max_output_tokens": 32768,
+            "model.seed": 42,
+            "control_after_generate": "fixed",
+            "model.system_prompt": ""
+          }
+        },
+        "Gemini 3.5 Flash": {
+          "widgets": [
+            "model.prompt",
+            "model.thinking_level",
+            "model.temperature",
+            "model.top_p",
+            "model.max_output_tokens",
+            "model.seed",
+            "control_after_generate",
+            "model.system_prompt"
+          ],
+          "defaults": {
+            "model.prompt": "",
+            "model.thinking_level": "MEDIUM",
+            "model.temperature": 1.0,
+            "model.top_p": 0.95,
+            "model.max_output_tokens": 32768,
+            "model.seed": 42,
+            "control_after_generate": "fixed",
+            "model.system_prompt": ""
+          }
+        },
+        "Gemini 3.1 Pro": {
+          "widgets": [
+            "model.prompt",
+            "model.thinking_level",
+            "model.temperature",
+            "model.top_p",
+            "model.max_output_tokens",
+            "model.seed",
+            "control_after_generate",
+            "model.system_prompt"
+          ],
+          "defaults": {
+            "model.prompt": "",
+            "model.thinking_level": "HIGH",
+            "model.temperature": 1.0,
+            "model.top_p": 0.95,
+            "model.max_output_tokens": 32768,
+            "model.seed": 42,
+            "control_after_generate": "fixed",
+            "model.system_prompt": ""
+          }
+        },
+        "Gemini 3.1 Flash-Lite": {
+          "widgets": [
+            "model.prompt",
+            "model.thinking_level",
+            "model.temperature",
+            "model.top_p",
+            "model.max_output_tokens",
+            "model.seed",
+            "control_after_generate",
+            "model.system_prompt"
+          ],
+          "defaults": {
+            "model.prompt": "",
+            "model.thinking_level": "LOW",
+            "model.temperature": 1.0,
+            "model.top_p": 0.95,
+            "model.max_output_tokens": 32768,
+            "model.seed": 42,
+            "control_after_generate": "fixed",
+            "model.system_prompt": ""
+          }
+        }
+      }
+    }
+  }
+}
