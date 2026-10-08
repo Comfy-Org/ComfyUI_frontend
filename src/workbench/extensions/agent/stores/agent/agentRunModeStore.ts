@@ -104,9 +104,18 @@ export const useAgentRunModeStore = defineStore('agentRunMode', () => {
 
   async function load(): Promise<void> {
     const revision = saveRevision
+    const appliedRevision = appliedSaveRevision
     try {
       const serverPreference = await api.getRunMode()
-      if (revision === saveRevision) apply(serverPreference)
+      // BOTH counters. A save that starts before this load and then parks on
+      // the send gate does not bump saveRevision again while it waits, so the
+      // revision check alone still matches when its PUT lands first — and
+      // this GET, taken before that write, would put the old mode back while
+      // the server enforces the new one. The gate widens that window from one
+      // PUT round trip to the length of a send, which is what makes it worth
+      // closing here.
+      if (revision === saveRevision && appliedRevision === appliedSaveRevision)
+        apply(serverPreference)
     } catch (error) {
       if (!(error instanceof AgentApiError && error.status === 404)) throw error
       localPreference()
@@ -145,9 +154,7 @@ export const useAgentRunModeStore = defineStore('agentRunMode', () => {
       // back-to-back second save to supersede this one before it reaches the
       // revision check below, so the first never sends its PUT.
       const sendGate = useAgentSendGateStore()
-      if (sendGate.isSending) {
-        await until(() => sendGate.isSending).toBe(false, { flush: 'sync' })
-      }
+      if (sendGate.isSending) await until(() => sendGate.isSending).toBe(false)
       // A second pick can park on the same gate (two popover instances, or
       // one remounted mid-write) and both wake on the same release, so their
       // PUTs would race and the server would keep whichever landed last.

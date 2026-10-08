@@ -358,6 +358,36 @@ describe('agentRunModeStore', () => {
     expect(store.mode).toBe('ask_approval')
   })
 
+  // A save that parks on the gate does not bump saveRevision again while it
+  // waits, so load()'s revision check alone still matches when the PUT lands
+  // first — and a GET taken before that write would put the old mode back
+  // while the server enforces the new one. The hold widens that window from
+  // one PUT round trip to the length of a send.
+  it('does not let a load started during the hold undo the saved mode', async () => {
+    let resolveGet!: (response: Response) => void
+    vi.mocked(api.fetchApi).mockImplementation((_route, init) => {
+      if (init?.method === 'GET')
+        return new Promise<Response>((resolve) => {
+          resolveGet = resolve
+        })
+      return Promise.resolve(jsonResponse(200, JSON.parse(String(init?.body))))
+    })
+    const releaseSend = useAgentSendGateStore().begin()
+    const store = useAgentRunModeStore()
+
+    const save = store.save('auto_limited', 40)
+    const load = store.load()
+    await nextTick()
+    releaseSend()
+    await save
+
+    resolveGet(jsonResponse(200, { mode: 'ask_approval', credit_limit: null }))
+    await load
+
+    expect(store.mode).toBe('auto_limited')
+    expect(store.creditLimit).toBe(40)
+  })
+
   // Two picks can park on one hold (two popover instances, or one remounted
   // mid-write) and both wake on the same release, so without the superseded-
   // revision check both PUTs go out and the server keeps whichever landed

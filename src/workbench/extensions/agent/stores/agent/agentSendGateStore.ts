@@ -74,6 +74,14 @@ export const MAX_HOLD_MS =
  * user, so a second tab's write is ordered against its own sends and can
  * still overtake this one's — closing that needs the ordering point to move
  * to the server, which is where the mode is pinned.
+ *
+ * And a hold ends on ANY settle, including a client-side abort: a headers
+ * timeout or a network error releases it, which does not prove the server
+ * discarded a request it may already have queued. Unresolved deliberately —
+ * it turns on whether cloud cancels on client disconnect, which needs an
+ * experiment against the service rather than a reading of this file, and
+ * holding on every ambiguous failure would change behaviour for every failed
+ * send.
  */
 export const useAgentSendGateStore = defineStore('agentSendGate', () => {
   const inFlight = ref(0)
