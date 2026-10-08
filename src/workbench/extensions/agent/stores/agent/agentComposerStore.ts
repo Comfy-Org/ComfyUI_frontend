@@ -302,6 +302,11 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
   function addAttachment(attachment: ComposerAttachment): boolean {
     if (assetsById.has(attachment.id) || retiredAssets.has(attachment.id))
       return false
+    if (
+      attachment.sourceKey &&
+      attachments.value.some((item) => item.sourceKey === attachment.sourceKey)
+    )
+      return false
     assetsById.set(attachment.id, { ...attachment })
     attachmentIds.value = [...attachmentIds.value, attachment.id]
     ++revision

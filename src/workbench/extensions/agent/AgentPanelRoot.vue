@@ -1831,6 +1831,7 @@ async function attachDroppedAsset(event: DragEvent): Promise<boolean> {
     return false
   }
 
+  const sourceKey = asset.ref ? `asset:${asset.ref}` : `uri:${asset.uri}`
   if (asset.ref && asset.kind !== 'other') {
     if (composerStore.attachments.some((item) => item.ref === asset.ref))
       return false
@@ -1838,14 +1839,19 @@ async function attachDroppedAsset(event: DragEvent): Promise<boolean> {
       id: `asset:${crypto.randomUUID()}`,
       name: asset.name,
       ref: asset.ref,
+      sourceKey,
       previewUrl: asset.previewUrl
     })
   }
 
-  const result = await attachment.addDeferredFile(asset.name, async () => {
-    const file = await fetchDroppedAsset(asset)
-    return file && isAgentAttachable(file) ? file : undefined
-  })
+  const result = await attachment.addDeferredFile(
+    asset.name,
+    async () => {
+      const file = await fetchDroppedAsset(asset)
+      return file && isAgentAttachable(file) ? file : undefined
+    },
+    sourceKey
+  )
   if (result === 'unsupported')
     toast.add({
       severity: 'warn',
