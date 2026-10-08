@@ -1,12 +1,12 @@
 const palettes = [
-  { base: '#772f3c', accent: '#bc4d5a', glow: '#e8a196' },
-  { base: '#244c81', accent: '#3e79b8', glow: '#9abedb' },
-  { base: '#255e49', accent: '#3b8b66', glow: '#a2c4a0' },
-  { base: '#845126', accent: '#bd803b', glow: '#e3ba75' },
-  { base: '#583c7b', accent: '#8660ad', glow: '#bd9bce' },
-  { base: '#235d69', accent: '#38889b', glow: '#99c3c8' },
-  { base: '#753f61', accent: '#af658a', glow: '#d8a5bf' },
-  { base: '#716027', accent: '#a68a3c', glow: '#d5c180' }
+  { base: '#be123c', accent: '#f43f5e', glow: '#fda4af' },
+  { base: '#1d4ed8', accent: '#3b82f6', glow: '#93c5fd' },
+  { base: '#047857', accent: '#10b981', glow: '#6ee7b7' },
+  { base: '#b45309', accent: '#f59e0b', glow: '#fcd34d' },
+  { base: '#6d28d9', accent: '#8b5cf6', glow: '#c4b5fd' },
+  { base: '#0f766e', accent: '#14b8a6', glow: '#5eead4' },
+  { base: '#0e7490', accent: '#06b6d4', glow: '#67e8f9' },
+  { base: '#c2410c', accent: '#f97316', glow: '#fdba74' }
 ] as const
 
 const topics = [
@@ -41,7 +41,7 @@ export function createNodePackThumbnail(identity: string, name = identity) {
 
   return {
     palette: palettes[hash % palettes.length],
-    foreground: '#f3ede2',
+    foreground: '#f8fafc',
     background: hash & 8 ? ('solid' as const) : ('gradient' as const),
     motif: motifs[(hash >>> 4) % motifs.length],
     icon: topics.find(([, pattern]) => pattern.test(label))?.[0] ?? 'network',
