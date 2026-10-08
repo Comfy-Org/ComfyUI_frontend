@@ -275,7 +275,7 @@ beforeEach(() => {
     ['GET', CAPABILITIES_ROUTE, { status: 200, body: CAPABILITIES }],
     ['GET', PAYMENT_METHODS_ROUTE, { status: 200, body: PAYMENT_METHODS }]
   ])
-  vi.stubGlobal('fetch', server.fetchImpl)
+  vi.mocked(fetch).mockImplementation(server.fetchImpl)
   const session = useWorkspaceAuthStore().getUnifiedSessionClient()
   vi.spyOn(session, 'getSnapshot').mockReturnValue(SNAPSHOT)
   vi.spyOn(session, 'ensureFresh').mockResolvedValue({

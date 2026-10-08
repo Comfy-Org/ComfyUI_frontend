@@ -40,6 +40,7 @@
     "./firebaseAuthError": "./src/firebaseAuthError.ts",
     "./provisioning": "./src/provisioning.ts",
     "./redirect": "./src/redirect.ts",
+    "./sso": "./src/sso.ts",
     "./workspaceLink": "./src/workspaceLink.ts",
     "./telemetry": "./src/telemetry.ts",
     "./webviewDetection": "./src/webviewDetection.ts",
@@ -119,6 +120,10 @@
         "types": "./dist/redirect.d.ts",
         "import": "./dist/redirect.js"
       },
+      "./sso": {
+        "types": "./dist/sso.d.ts",
+        "import": "./dist/sso.js"
+      },
       "./workspaceLink": {
         "types": "./dist/workspaceLink.d.ts",
         "import": "./dist/workspaceLink.js"
@@ -151,6 +156,7 @@
     "@comfyorg/ingest-types": "workspace:^"
   },
   "devDependencies": {
+    "@comfyorg/test-utils": "workspace:*",
     "@types/node": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "firebase": "catalog:",

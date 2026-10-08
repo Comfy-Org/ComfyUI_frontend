@@ -54,17 +54,19 @@ export async function openErrorsTab(comfyPage: ComfyPage) {
 export async function expectNoErrorUiAfterVerification(
   comfyPage: ComfyPage,
   panel: PropertiesPanelHelper,
-  verificationResponse: Promise<Response>,
+  verificationResponse?: Promise<Response>,
   observationMs = 2_000
 ): Promise<void> {
   const overlay = comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
-  const readiness = await Promise.race([
-    verificationResponse.then(() => 'verification' as const),
-    overlay.waitFor({ state: 'visible' }).then(() => 'error-ui' as const),
-    panel.errorsTab
-      .waitFor({ state: 'visible' })
-      .then(() => 'error-ui' as const)
-  ])
+  const readiness =
+    verificationResponse &&
+    (await Promise.race([
+      verificationResponse.then(() => 'verification' as const),
+      overlay.waitFor({ state: 'visible' }).then(() => 'error-ui' as const),
+      panel.errorsTab
+        .waitFor({ state: 'visible' })
+        .then(() => 'error-ui' as const)
+    ]))
   let sawErrorUi = readiness === 'error-ui'
   const startedAt = Date.now()
 

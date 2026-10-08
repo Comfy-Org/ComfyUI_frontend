@@ -262,11 +262,13 @@ vi.mock<unknown>(
 /** The reads the checkout takes off the rail, as the store answers them. */
 interface SubscriptionRailStub {
   subscriptionActionUrl: string | null
+  subscriptionRouteAvailable: boolean
   subscriptionActionOperation?: RailOperation
   getOperation: (opId: string) => RailOperation | undefined
   openPaymentPortal?: (
     returnUrl: string
   ) => Promise<SubscriptionRailOutcome<string>>
+  cancelOperation?: (opId: string) => Promise<SubscriptionRailOutcome>
 }
 
 /**
@@ -279,6 +281,7 @@ function railStub(
 ): SubscriptionRailStub {
   return {
     subscriptionActionUrl: null,
+    subscriptionRouteAvailable: true,
     getOperation: () => undefined,
     ...overrides
   }
@@ -565,13 +568,9 @@ describe('useSubscriptionCheckout', () => {
   }
 
   beforeEach(() => {
-    mockSubscribe.mockReset()
-    mockPreviewSubscribe.mockReset()
-    mockFetchPlans.mockReset()
-    mockFetchStatus.mockReset().mockResolvedValue(undefined)
+    mockFetchStatus.mockResolvedValue(undefined)
     vi.mocked(useBillingOperationStore().startOperation).mockReset()
-    mockListSavedPaymentMethods.mockReset()
-    mockOpenHostedBillingTab.mockReset().mockReturnValue(false)
+    mockOpenHostedBillingTab.mockReturnValue(false)
     railState.rail = null
     Object.assign(useBillingOperationStore(), {
       subscriptionActionOperation: undefined
@@ -3350,12 +3349,59 @@ describe('useSubscriptionCheckout', () => {
         stage: 'started',
         outcome: 'pending',
         operation_type: 'subscription',
+        billing_client: 'legacy',
         tier: 'team',
         cycle: 'monthly',
         checkout_type: 'new',
         payment_intent_source: undefined
       })
     })
+
+    it.for([
+      { rail: 'off', routes: true, billingClient: 'legacy' },
+      { rail: 'on', routes: true, billingClient: 'sdk' },
+      { rail: 'on', routes: false, billingClient: 'legacy' }
+    ] as const)(
+      'names the $billingClient client on its own start and success while the rail is $rail (routes served: $routes)',
+      async ({ rail, routes, billingClient }) => {
+        mockSubscriptionRail.value =
+          rail === 'on'
+            ? railStub({ subscriptionRouteAvailable: routes })
+            : null
+        const checkout = await setup()
+        await checkout.handleSubscribeTeamClick({
+          stop: {
+            id: 'team_700',
+            usd: 700,
+            credits: 147_700,
+            discountedUsd: 665
+          },
+          billingCycle: 'monthly'
+        })
+        mockSubscribe.mockResolvedValueOnce({
+          status: 'subscribed',
+          billing_op_id: 'op-team-1'
+        })
+
+        await checkout.handleTeamSubscribe()
+
+        const operationEvents = (
+          vi.mocked(useTelemetry()?.trackBillingEvent)?.mock.calls ?? []
+        )
+          .map(([event]) => event)
+          .filter((event) => event.operation === 'operation')
+        expect(operationEvents).toEqual([
+          expect.objectContaining({
+            stage: 'started',
+            billing_client: billingClient
+          }),
+          expect.objectContaining({
+            stage: 'succeeded',
+            billing_client: billingClient
+          })
+        ])
+      }
+    )
 
     it('subscribes with the team plan slug, stop id and billing cycle', async () => {
       const checkout = await setup()
@@ -4101,6 +4147,86 @@ describe('useSubscriptionCheckout', () => {
     })
   })
 
+  describe('cancel payment and try again on the SDK rail', () => {
+    function declinedPlanChange(cancelable: boolean): RailOperation {
+      return {
+        opId: 'op-declined',
+        kind: 'subscription',
+        status: 'pending',
+        workspaceId: 'workspace-1',
+        actionUrl: null,
+        phase: 'awaiting_invoice_payment',
+        authenticationState: 'failed_retryable',
+        isAuthenticating: false,
+        canRetryAuthentication: false,
+        errorMessage: 'Your bank declined the verification.',
+        cancelable
+      }
+    }
+
+    function railHolding(
+      record: RailOperation,
+      cancelOperation: SubscriptionRailStub['cancelOperation'] = vi.fn()
+    ) {
+      mockSubscriptionRail.value = railStub({
+        subscriptionActionOperation: record,
+        getOperation: (opId) => (opId === record.opId ? record : undefined),
+        cancelOperation
+      })
+    }
+
+    it.for([true, false])(
+      'offers the cancel exactly when the server says the payment is cancelable (%s)',
+      async (cancelable) => {
+        railHolding(declinedPlanChange(cancelable))
+
+        const checkout = await setup()
+
+        expect(checkout.paymentCancelable.value).toBe(cancelable)
+      }
+    )
+
+    it('asks the rail to cancel the watched payment once and is busy until it answers', async () => {
+      let answer!: (outcome: SubscriptionRailOutcome) => void
+      const cancelOperation = vi.fn(
+        () =>
+          new Promise<SubscriptionRailOutcome>((resolve) => {
+            answer = resolve
+          })
+      )
+      railHolding(declinedPlanChange(true), cancelOperation)
+      const checkout = await setup()
+
+      const canceling = checkout.cancelPayment()
+      void checkout.cancelPayment()
+
+      expect(checkout.isCancelingPayment.value).toBe(true)
+      answer({ status: 'ok', value: undefined })
+      await canceling
+
+      expect(cancelOperation).toHaveBeenCalledExactlyOnceWith('op-declined')
+      expect(checkout.isCancelingPayment.value).toBe(false)
+      expect(checkout.cancelPaymentError.value).toBeNull()
+    })
+
+    it("shows the server's sentence when the cancel is refused", async () => {
+      railHolding(
+        declinedPlanChange(true),
+        vi.fn(async () => ({
+          status: 'error' as const,
+          error: new Error('This payment is already processing.')
+        }))
+      )
+      const checkout = await setup()
+
+      await checkout.cancelPayment()
+
+      expect(checkout.cancelPaymentError.value).toBe(
+        'This payment is already processing.'
+      )
+    })
+  })
+
   describe('the operation the checkout watches', () => {
     const PARKED: RailOperation = {
       opId: 'op-parked',
@@ -4112,7 +4238,8 @@ describe('useSubscriptionCheckout', () => {
       authenticationState: 'failed_retryable',
       isAuthenticating: false,
       canRetryAuthentication: false,
-      errorMessage: 'Your card was declined.'
+      errorMessage: 'Your card was declined.',
+      cancelable: false
     }
 
     it('reads the lifecycle on the rail, not the store the poller writes', async () => {
@@ -4274,7 +4401,8 @@ describe('useSubscriptionCheckout', () => {
         authenticationState: record.authenticationState,
         isAuthenticating: record.isAuthenticating,
         canRetryAuthentication: record.canRetryAuthentication,
-        errorMessage: record.errorMessage
+        errorMessage: record.errorMessage,
+        cancelable: false
       }
     }
 
@@ -4677,6 +4805,7 @@ describe('useSubscriptionCheckout', () => {
         stage: 'started',
         outcome: 'pending',
         operation_type: 'subscription',
+        billing_client: 'legacy',
         tier: 'standard',
         cycle: 'yearly',
         checkout_type: 'new',

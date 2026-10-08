@@ -33,7 +33,7 @@ async function navigateAndSettle(page: Page, url: string) {
   await expect(
     page
       .getByTestId('desktop-nav-links')
-      .getByRole('link', { name: 'Hub', includeHidden: true })
+      .getByRole('button', { name: 'Products', includeHidden: true })
   ).toBeAttached()
   await waitForPpFormulaLight(page)
 }
@@ -183,6 +183,22 @@ test.describe('About', { tag: '@visual' }, () => {
       await expect(hero).toBeVisible()
       await hero.scrollIntoViewIfNeeded()
       await expect(page).toHaveScreenshot(`about-hero-${vp.name}.png`)
+    })
+  }
+})
+
+test.describe('Customers', { tag: '@visual' }, () => {
+  for (const vp of VIEWPORTS.filter(
+    (v) => v.name === '1-sm' || v.name === '3-lg'
+  )) {
+    test(`hero-${vp.name}`, async ({ page }) => {
+      await page.setViewportSize({ width: vp.width, height: vp.height })
+      await navigateAndSettle(page, '/customers')
+
+      await expect(
+        page.getByRole('heading', { level: 1, name: /creative companies/i })
+      ).toBeVisible()
+      await expect(page).toHaveScreenshot(`customers-hero-${vp.name}.png`)
     })
   }
 })

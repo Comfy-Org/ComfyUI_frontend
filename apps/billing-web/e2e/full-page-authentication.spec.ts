@@ -10,6 +10,7 @@ import type { BillingOpStatusResponse } from '@comfyorg/ingest-types'
 import type { MockCloud } from './fixtures/cloud'
 import { PORTAL_URL } from './fixtures/env'
 import {
+  PRO_MONTHLY_OP_PLAN,
   challengeRequiredOperation,
   pendingOperation,
   succeededOperation
@@ -165,6 +166,26 @@ test('145-4584 → 342-4767: Pay walks Phase A, locked with nothing charged, int
     page.getByRole('heading', { name: "You're all set" })
   ).toBeVisible()
   expect(subscribeRequests(cloud)).toHaveLength(1)
+})
+
+test('on a phone, Phase A hides the back arrow without moving the logo', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  cloud.scenario.paymentMethods = []
+  scriptOperation(cloud)
+  await holdChallenge(page)
+  await signIn(CHECKOUT)
+  const logo = page.getByRole('img', { name: 'Comfy' })
+  const before = await logo.boundingBox()
+
+  await payButton(page).click()
+
+  await expect(footnote(page)).toHaveText(PHASE_A)
+  await expect(backArrow(page)).toBeHidden()
+  expect(await logo.boundingBox()).toEqual(before)
 })
 
 test('a card Pay shows only the spinner while the server is still confirming it, never Phase B before the challenge', async ({
@@ -442,7 +463,7 @@ test('447-6886: a redirect method shows the pre-money line, never Phase B, and l
   })
 })
 
-test('coming back from Alipay after its own payment went through is Success, naming the plan the server now lists', async ({
+test('coming back from Alipay after its own payment went through is Success, naming the plan the server reports for it', async ({
   page,
   cloud,
   signIn
@@ -459,7 +480,7 @@ test('coming back from Alipay after its own payment went through is Success, nam
   await payButton(page).click()
   await expect(page).toHaveURL(PORTAL_URL)
 
-  moveOperation(succeededOperation(OPERATION))
+  moveOperation({ ...succeededOperation(OPERATION), plan: PRO_MONTHLY_OP_PLAN })
   cloud.scenario.status = {
     ...cloud.scenario.status,
     plan_slug: 'pro_monthly',

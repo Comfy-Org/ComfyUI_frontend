@@ -2,8 +2,8 @@ import { toValue } from 'vue'
 import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { ServerFeatureFlag } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
+import { ServerFeatureFlag } from '@/platform/remoteConfig/serverFeatureFlag'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { FormDropdownItem } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
@@ -11,6 +11,7 @@ import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
 import { api } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { isExtensionlessVideo } from '@/utils/mediaUploadUtil'
 
 const BYTES_PER_MB = 1024 * 1024
 
@@ -101,6 +102,10 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
   const handleFilesUpdate = wrapWithErrorHandlingAsync(
     async (files: File[]) => {
       if (files.length === 0) return
+      if (files.some(isExtensionlessVideo)) {
+        toastStore.addAlert(t('g.videoFilenameExtensionRequired'))
+        return
+      }
 
       const uploadedPaths = await uploadFiles(files)
 

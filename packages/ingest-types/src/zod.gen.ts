@@ -203,6 +203,7 @@ export const zWebSessionResponse = z.object({
   absolute_expires_at: z.string().datetime(),
   csrf_token: z.string(),
   expires_at: z.string().datetime(),
+  has_personal_workspace: z.boolean(),
   user: zWebSessionUser
 })
 
@@ -249,13 +250,22 @@ export const zUserDataResponseFull = z.object({
   size: z.number().int().optional()
 })
 
+/**
+ * Current remaining balance, mirroring /billing/balance. Every amount is CENTS of `currency`; the `*_micros` names are a misnomer kept for wire compatibility.
+ */
 export const zUsageBalance = z.object({
+  amount_cents: z.number().optional(),
   amount_micros: z.number().optional(),
+  cloud_credit_balance_cents: z.number().optional(),
   cloud_credit_balance_micros: z.number().optional(),
   currency: z.string().optional(),
+  prepaid_balance_cents: z.number().optional(),
   prepaid_balance_micros: z.number().optional()
 })
 
+/**
+ * Mixed units, deliberately. `spend_micros` here (and `cost_micros` on UsageBucket / UsageBreakdownRow) is genuinely MICROS -- 1/1,000,000 of the currency unit -- because it comes from Metronome's usage figures. The `balance` breakdown below is CENTS, and its `*_micros` names are a misnomer; use its `*_cents` fields.
+ */
 export const zUsageSummary = z.object({
   balance: zUsageBalance.optional(),
   spend_micros: z.number()
@@ -819,6 +829,11 @@ export const zSavedPaymentMethod = z.object({
   type: z.string()
 })
 
+export const zSsoDiscoverResponse = z.object({
+  organization_name: z.string().optional(),
+  sso: z.boolean()
+})
+
 /**
  * Response after signing out of all devices
  */
@@ -839,6 +854,44 @@ export const zRevertScheduledChangeResponse = z.object({
  */
 export const zRevertScheduledChangeRequest = z.object({
   idempotency_key: z.string().optional()
+})
+
+/**
+ * Present only when the session's arm is an offer. Terms come from the server catalog.
+ */
+export const zRetentionOffer = z.object({
+  duration_in_months: z.number().int().lte(9007199254740991),
+  id: z.string(),
+  percent_off: z.number().int().lte(9007199254740991)
+})
+
+export const zRetentionFlowSubscription = z.object({
+  currency: z.string(),
+  period_end: z.number().int().lte(9007199254740991),
+  quantity: z.number().int().lte(9007199254740991),
+  unit_amount: z.number().int().lte(9007199254740991)
+})
+
+export const zRetentionFlowResponse = z.object({
+  experiment_variant: z.string().optional(),
+  expires_at: z.number().int().lte(9007199254740991),
+  offer: zRetentionOffer.optional(),
+  session_id: z.string().uuid(),
+  subscription: zRetentionFlowSubscription
+})
+
+export const zRetentionFlowEventRequest = z.object({
+  event: z.enum(['flow_opened', 'offer_shown']),
+  session_id: z.string().uuid()
+})
+
+export const zRetentionAcceptance = z.object({
+  billing_op_id: z.string(),
+  status: z.enum(['pending', 'succeeded'])
+})
+
+export const zRetentionAcceptRequest = z.object({
+  session_id: z.string().uuid()
 })
 
 /**
@@ -1403,7 +1456,8 @@ export const zOAuthRegisterError = z.object({
 export const zErrorResponse = z.object({
   code: z.string(),
   details: z.record(z.unknown()).optional(),
-  message: z.string()
+  message: z.string(),
+  organization_id: z.string().optional()
 })
 
 /**
@@ -1518,6 +1572,7 @@ export const zMember = z.object({
   id: z.string(),
   is_original_owner: z.boolean(),
   joined_at: z.string().datetime(),
+  managed_by_directory: z.boolean().optional(),
   name: z.string(),
   role: z.enum(['owner', 'member'])
 })
@@ -2636,14 +2691,40 @@ export const zBillingPlansResponse = z.object({
 
 /**
  * Display only. The plan the operation targets; for a scheduled change,
- * the plan it switches to at period end. Present only for succeeded
- * plan changes, initial subscriptions and resubscribes. Visible to any
- * workspace member who can read the operation.
+ * the plan it switches to at period end. Present for plan changes,
+ * initial subscriptions and resubscribes in every status (pending,
+ * failed and succeeded alike), so a recovered pending operation can be
+ * labelled with its own plan. Absent when the target plan could not be
+ * resolved. Visible to any workspace member who can read the operation.
+ * tier and the price fields are absent when the server cannot describe
+ * the plan, as for the retired seat-based Team plans, whose rows carry a
+ * personal tier and whose price depends on the workspace's seats.
  *
  */
 export const zBillingOpReceiptPlan = z.object({
+  currency: z.string().optional(),
   duration: zSubscriptionDuration,
-  slug: z.string()
+  monthly_price_cents: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  price_cents: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  slug: z.string(),
+  team_credit_stop_id: z.string().optional(),
+  tier: zSubscriptionTier.optional()
 })
 
 /**
@@ -2715,6 +2796,7 @@ export const zBillingOpStatusResponse = z.object({
       'reconciliation_needed'
     ])
     .optional(),
+  cancelable: z.boolean().optional(),
   charge_breakdown: zBillingOpChargeBreakdown.optional(),
   completed_at: z.string().datetime().optional(),
   credits_added: z.coerce
@@ -2916,15 +2998,40 @@ export const zBillingCapabilitiesResponse = z.object({
 })
 
 /**
- * Current credit balance and usage details for a workspace.
+ * Current credit balance and usage details for a workspace. Every amount here is CENTS of `currency`. The `*_micros` fields are a misnamed legacy set kept for wire compatibility; the `*_cents` fields beside them carry the identical values under honest names. `amount_micros` stays required and `amount_cents` is optional so existing strict clients are unaffected.
  */
 export const zBillingBalanceResponse = z.object({
+  amount_cents: z.number().optional(),
   amount_micros: z.number(),
+  cloud_credit_balance_cents: z.number().optional(),
   cloud_credit_balance_micros: z.number().optional(),
   currency: z.string(),
+  effective_balance_authoritative: z.boolean().optional(),
+  effective_balance_cents: z.number().optional(),
   effective_balance_micros: z.number().optional(),
+  pending_charges_cents: z.number().optional(),
   pending_charges_micros: z.number().optional(),
+  prepaid_balance_cents: z.number().optional(),
   prepaid_balance_micros: z.number().optional()
+})
+
+export const zAuthenticateResponse = z.object({
+  expires_in: z.number().int().optional(),
+  method: z.enum(['sso', 'password', 'session', 'firebase']),
+  organization_name: z.string().optional(),
+  start_url: z.string().optional()
+})
+
+export const zAuthenticateRequest = z.object({
+  email: z.string().max(320),
+  password: z.string().max(4096).optional()
+})
+
+export const zAuthenticateRefusal = z.object({
+  code: z.string(),
+  message: z.string(),
+  organization_id: z.string().optional(),
+  start_url: z.string().optional()
 })
 
 /**
@@ -3087,10 +3194,31 @@ export const zAgentRunMode = z.object({
 })
 
 /**
+ * The `context` of a `run_approval` ask. Ids and a display name, never the user's prose.
+ */
+export const zAgentRunApprovalContext = z.object({
+  workflow_id: z.string(),
+  workflow_name: z.string().optional()
+})
+
+/**
+ * Which card renders an ask. `ask_user` is the generic prompt raised by the ask_user tool. `run_approval` is the run consent card raised when the caller's ask_approval run mode gates a run: exactly the Run and Cancel options, never free text. `paused` is the admission pause card: one Resume option, never free text. `delete_approval` is the delete consent card for nodes the user made: exactly the Delete and Keep options, never free text. The same value is the agent_ask event's `kind`, the message list's `pending_ask.kind`, and an entry of `ask_kinds` on the message POST.
+ */
+export const zAgentAskKind = z.enum([
+  'ask_user',
+  'run_approval',
+  'paused',
+  'delete_approval'
+])
+
+/**
  * A user turn posted to the agent.
  */
 export const zAgentPostMessageRequest = z.object({
+  ask_kinds: z.array(zAgentAskKind).optional(),
   attachments: z.array(z.string()).optional(),
+  client_id: z.string().optional(),
+  client_message_id: z.string().max(128).optional(),
   content: z.string(),
   current_tab: z.string().optional(),
   current_tab_unbound: z.boolean().optional(),
@@ -3119,20 +3247,117 @@ export const zAgentPostMessageRequest = z.object({
     .optional()
 })
 
+export const zAgentAskOption = z.object({
+  description: z.string().optional(),
+  id: z.string(),
+  label: z.string()
+})
+
 /**
- * An unanswered ask attached to its assistant message, so a reload rehydrates the prompt from the ROW rather than from the agent_ask WebSocket event the client missed. Present only while the ask is pending; answer it via POST /agent/threads/{id}/asks/{ask_id}/answer.
+ * The fields every pending ask carries, whatever its kind.
  */
-export const zAgentPendingAsk = z.object({
+export const zAgentPendingAskBase = z.object({
   allow_other: z.boolean(),
   ask_id: z.string(),
-  context: z.record(z.unknown()).optional(),
-  kind: z.enum(['ask_user', 'run_approval']),
+  kind: zAgentAskKind,
   max_selections: z.number().int(),
   message_id: z.string(),
   min_selections: z.number().int(),
-  options: z.array(z.record(z.unknown())),
+  options: z.array(zAgentAskOption),
   prompt: z.string()
 })
+
+/**
+ * A pending `run_approval` consent card.
+ */
+export const zAgentPendingRunApproval = zAgentPendingAskBase.and(
+  z.object({
+    context: zAgentRunApprovalContext,
+    kind: z.enum(['run_approval'])
+  })
+)
+
+/**
+ * The `context` of a `paused` ask.
+ */
+export const zAgentPausedContext = z.object({
+  message: z.string(),
+  reason: z.string(),
+  recheck_after_seconds: z.number().int()
+})
+
+/**
+ * A pending `paused` admission card.
+ */
+export const zAgentPendingPaused = zAgentPendingAskBase.and(
+  z.object({
+    context: zAgentPausedContext,
+    kind: z.enum(['paused'])
+  })
+)
+
+/**
+ * One node a `delete_approval` ask names, read from the turn's workflow.
+ */
+export const zAgentAskNodeRef = z.object({
+  id: z.string(),
+  title: z.string().optional(),
+  type: z.string().optional()
+})
+
+/**
+ * The `context` of a `delete_approval` ask: the user-made nodes the agent's delete would remove. The server always lists at least one node, and lists at most 50; any more are counted in `hidden_node_count`, so the card can say how many it did not list.
+ */
+export const zAgentDeleteApprovalContext = z.object({
+  action: z.enum(['delete_nodes']),
+  hidden_node_count: z.number().int().gte(1).optional(),
+  nodes: z.array(zAgentAskNodeRef).min(1).max(50)
+})
+
+/**
+ * A pending `delete_approval` consent card.
+ */
+export const zAgentPendingDeleteApproval = zAgentPendingAskBase.and(
+  z.object({
+    context: zAgentDeleteApprovalContext,
+    kind: z.enum(['delete_approval'])
+  })
+)
+
+/**
+ * A pending `ask_user` prompt. It carries no context.
+ */
+export const zAgentPendingAskUser = zAgentPendingAskBase.and(
+  z.object({
+    kind: z.enum(['ask_user'])
+  })
+)
+
+/**
+ * An unanswered ask attached to its assistant message, so a reload rehydrates the prompt from the ROW rather than from the agent_ask WebSocket event the client missed. Present only while the ask is pending; answer it via POST /agent/threads/{id}/asks/{ask_id}/answer. Discriminated on `kind`: narrowing on it gives the kind's `context` schema. The agent_ask WebSocket event's `data` is this same shape plus `thread_id`.
+ */
+export const zAgentPendingAsk = z.union([
+  z
+    .object({
+      kind: z.literal('ask_user')
+    })
+    .and(zAgentPendingAskUser),
+  z
+    .object({
+      kind: z.literal('run_approval')
+    })
+    .and(zAgentPendingRunApproval),
+  z
+    .object({
+      kind: z.literal('paused')
+    })
+    .and(zAgentPendingPaused),
+  z
+    .object({
+      kind: z.literal('delete_approval')
+    })
+    .and(zAgentPendingDeleteApproval)
+])
 
 /**
  * A persisted message in an agent thread.
@@ -3151,6 +3376,14 @@ export const zAgentMessage = z.object({
   thread_id: z.string(),
   turn_id: z.string(),
   workflow_id: z.string().optional()
+})
+
+/**
+ * The (workspace, user) the agent service attributes the caller's requests to.
+ */
+export const zAgentIdentity = z.object({
+  user_id: z.string(),
+  workspace_id: z.string()
 })
 
 /**
@@ -3185,6 +3418,61 @@ export const zAgentCancelAccepted = z.object({
 })
 
 /**
+ * How an ask left pending, as stored on the ask row. `answered` means an answer was committed and delivered to the turn; `cancelled` means the turn ended, was stopped, or could not take the answer; `expired` means the ask timed out. There is no "unknown" status: when an answer request fails with a 5xx the client does not know the outcome and should wait for agent_ask_resolved or refetch the thread.
+ */
+export const zAgentAskStatus = z.enum(['answered', 'cancelled', 'expired'])
+
+/**
+ * The `data` of an agent_ask_resolved WebSocket event: the outcome the server committed to the ask row. Every open tab gets the same frame, including tabs that did not send the answer, so a client reads the answer that won from here and never infers it from what it sent.
+ */
+export const zAgentAskResolvedData = z.object({
+  ask_id: z.string(),
+  message_id: z.string(),
+  other_text: z.string().optional(),
+  selected: z.array(z.string()).nullable(),
+  status: zAgentAskStatus,
+  thread_id: z.string()
+})
+
+/**
+ * Server-to-client agent_ask_resolved frame on /ws. An ask left pending.
+ */
+export const zAgentAskResolvedFrame = z.object({
+  data: zAgentAskResolvedData,
+  type: z.enum(['agent_ask_resolved'])
+})
+
+/**
+ * Server-to-client agent_ask frame on /ws. A turn is parked on this ask.
+ */
+export const zAgentAskFrame = z.object({
+  data: zAgentPendingAsk.and(
+    z.object({
+      thread_id: z.string()
+    })
+  ),
+  type: z.enum(['agent_ask'])
+})
+
+/**
+ * The ask frames the server sends on /ws, discriminated on `type`.
+ */
+export const zAgentAskServerFrame = z.union([
+  zAgentAskFrame,
+  zAgentAskResolvedFrame
+])
+
+/**
+ * 409 from the answer route: the ask is no longer pending, or its turn is gone so the answer can never be delivered. `status`, `selected` and `other_text` report the outcome stored on the ask row when the server knows it, with the same rules as the agent_ask_resolved event.
+ */
+export const zAgentAskConflict = z.object({
+  error: z.string(),
+  other_text: z.string().optional(),
+  selected: z.array(z.string()).nullish(),
+  status: zAgentAskStatus.optional()
+})
+
+/**
  * The user's answer to a pending ask_user prompt. `selected` holds the chosen option ids; a permission gate answers with one id (e.g. the Approve/Deny option). `other_text` carries a free-text answer when the ask set allow_other.
  */
 export const zAgentAnswerRequest = z.object({
@@ -3193,9 +3481,11 @@ export const zAgentAnswerRequest = z.object({
 })
 
 /**
- * Acknowledgement that an ask answer was accepted. The parked turn resumes and its continuation streams over the WebSocket.
+ * Acknowledgement that the ask is answered and the parked turn was woken; its continuation streams over the WebSocket. `selected` and `other_text` are the answer committed to the ask row. The first answer wins: when an earlier request already committed one (a retry, or another tab), this carries THAT answer, not the request body, so compare it with what you sent before showing it as the user's choice.
  */
 export const zAgentAnswerAccepted = z.object({
+  other_text: z.string().optional(),
+  selected: z.array(z.string()),
   status: z.enum(['answered'])
 })
 
@@ -3332,6 +3622,16 @@ export const zAgentGetDraftQuery = z.object({
  * Current draft snapshot
  */
 export const zAgentGetDraftResponse = zAgentDraftSnapshot
+
+export const zGetAgentEventsQuery = z.object({
+  token: z.string().optional(),
+  workspace_id: z.string().optional()
+})
+
+/**
+ * The caller's agent identity.
+ */
+export const zAgentGetIdentityResponse = zAgentIdentity
 
 export const zAgentLlmAdmitBody = z.object({
   message_id: z.string().optional(),
@@ -3705,6 +4005,13 @@ export const zGetAssetTagHistogramQuery = z.object({
  */
 export const zGetAssetTagHistogramResponse = zAssetTagHistogramResponse
 
+export const zAuthenticateBody = zAuthenticateRequest
+
+/**
+ * Where the email signs in, or a signed-in session
+ */
+export const zAuthenticateResponse2 = zAuthenticateResponse
+
 export const zCreateDesktopLoginCodeBody = zDesktopLoginCodeCreateRequest
 
 /**
@@ -3746,6 +4053,15 @@ export const zCreateSessionResponse2 = zCreateSessionResponse
  * Every session ended
  */
 export const zRevokeAllSessionsResponse2 = zRevokeAllSessionsResponse
+
+export const zDiscoverSsoBody = z.object({
+  email: z.string().max(320)
+})
+
+/**
+ * Whether the email's domain belongs to an SSO organization
+ */
+export const zDiscoverSsoResponse = zSsoDiscoverResponse
 
 export const zExchangeTokenBody = zExchangeTokenRequest
 
@@ -3839,6 +4155,25 @@ export const zPreviewSubscribeBody = zPreviewSubscribeRequest
  * Subscription preview
  */
 export const zPreviewSubscribeResponse2 = zPreviewSubscribeResponse
+
+export const zAcceptRetentionOfferBody = zRetentionAcceptRequest
+
+/**
+ * Success
+ */
+export const zAcceptRetentionOfferResponse = zRetentionAcceptance
+
+export const zRecordRetentionFlowEventBody = zRetentionFlowEventRequest
+
+/**
+ * Success
+ */
+export const zRecordRetentionFlowEventResponse = z.void()
+
+/**
+ * Success
+ */
+export const zPrepareRetentionFlowResponse = zRetentionFlowResponse
 
 /**
  * Billing status
@@ -3957,6 +4292,10 @@ export const zGetFeaturesResponse = z.object({
       'inside-input'
     ])
     .default('control'),
+  'agent-starter-prompt-set': z
+    .enum(['control', 'test'])
+    .optional()
+    .default('control'),
   billing_web_url: z.string().optional(),
   can_run_partner_nodes: z.boolean().optional(),
   free_tier_balance: z
@@ -3974,6 +4313,7 @@ export const zGetFeaturesResponse = z.object({
     .optional(),
   max_upload_size: z.number().int().optional(),
   new_free_tier_subscriptions: z.boolean().optional(),
+  sso_enabled: z.boolean().optional(),
   stripe_publishable_key: z.string().optional(),
   supports_preview_metadata: z.boolean().optional(),
   web_session_probe: z.boolean().optional()
@@ -4283,6 +4623,10 @@ export const zGetLegacyModelsByFolderPath = z.object({
  * Success - Node replacement mappings
  */
 export const zGetNodeReplacementsResponse = z.record(z.unknown())
+
+export const zGetNodeInfoQuery = z.object({
+  include_user_models: z.boolean().optional().default(false)
+})
 
 /**
  * Success

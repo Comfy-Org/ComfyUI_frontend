@@ -50,15 +50,9 @@ Real caption text.`
 
 describe('fetchTranscript', () => {
   it('parses the response body into transcript paragraphs', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({
-        ok: true,
-        text: () =>
-          Promise.resolve(
-            'WEBVTT\n\n00:00:00.000 --> 00:00:02.000\nHello there.'
-          )
-      })
+    vi.mocked(fetch).mockImplementation(
+      async () =>
+        new Response('WEBVTT\n\n00:00:00.000 --> 00:00:02.000\nHello there.')
     )
     expect(await fetchTranscript('https://example.com/video.vtt')).toEqual([
       'Hello there.'
@@ -66,12 +60,14 @@ describe('fetchTranscript', () => {
   })
 
   it('returns an empty array instead of throwing on a failed response', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false }))
+    vi.mocked(fetch).mockImplementation(
+      async () => new Response(null, { status: 500 })
+    )
     expect(await fetchTranscript('https://example.com/video.vtt')).toEqual([])
   })
 
   it('returns an empty array instead of throwing when the fetch itself rejects', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network down')))
+    vi.mocked(fetch).mockRejectedValue(new Error('network down'))
     expect(await fetchTranscript('https://example.com/video.vtt')).toEqual([])
   })
 })

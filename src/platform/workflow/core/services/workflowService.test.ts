@@ -35,6 +35,7 @@ import { app } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { useAppMode } from '@/composables/useAppMode'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
 import type { AppMode } from '@/utils/appMode'
 import { isValidUuid } from '@/utils/formatUtil'
@@ -98,12 +99,14 @@ vi.mock(import('@/base/common/downloadUtil'), () => ({
 
 vi.mock(import('@/scripts/app'))
 
+const storeThumbnailMock = vi.hoisted(() => vi.fn())
+
 vi.mock<unknown>(
   import('@/renderer/core/thumbnail/useWorkflowThumbnail'), // oxlint-disable-line comfy/no-restricted-paths
 
   () => ({
     useWorkflowThumbnail: () => ({
-      storeThumbnail: vi.fn(),
+      storeThumbnail: storeThumbnailMock,
       getThumbnail: vi.fn()
     })
   })
@@ -308,6 +311,33 @@ describe('useWorkflowService', () => {
       ).toHaveBeenCalledWith(true)
     })
 
+    it('stores a thumbnail of the active subgraph', () => {
+      const activeWorkflow = createModeTestWorkflow()
+      const subgraph = createTestSubgraph()
+      workflowStore.activeWorkflow = activeWorkflow
+      workflowStore.activeSubgraph = subgraph
+
+      useWorkflowService().beforeLoadNewGraph()
+
+      expect(storeThumbnailMock).toHaveBeenCalledExactlyOnceWith(
+        activeWorkflow,
+        subgraph
+      )
+    })
+
+    it('stores a thumbnail of the canvas graph when no subgraph is active', () => {
+      const activeWorkflow = createModeTestWorkflow()
+      workflowStore.activeWorkflow = activeWorkflow
+      workflowStore.activeSubgraph = undefined
+
+      useWorkflowService().beforeLoadNewGraph()
+
+      expect(storeThumbnailMock).toHaveBeenCalledExactlyOnceWith(
+        activeWorkflow,
+        app.canvas.graph
+      )
+    })
+
     it('should cache missingModelCandidates and missingMediaCandidates to activeWorkflow.pendingWarnings', () => {
       const activeWorkflow = createModeTestWorkflow({
         path: 'workflows/test.json'
@@ -415,9 +445,6 @@ describe('useWorkflowService', () => {
         return key === 'Comfy.Workflow.Persist'
       })
       const addToastSpy = vi.spyOn(useToastStore(), 'add')
-      const consoleErrorSpy = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
       const error = new Error('storage unavailable')
       vi.mocked(useWorkflowDraftStoreV2().saveDraft).mockImplementation(() => {
         throw error
@@ -430,7 +457,7 @@ describe('useWorkflowService', () => {
       try {
         useWorkflowService().beforeLoadNewGraph()
 
-        expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect(console.error).toHaveBeenCalledWith(
           'Failed to persist active workflow draft',
           error
         )
@@ -442,7 +469,7 @@ describe('useWorkflowService', () => {
           })
         )
       } finally {
-        consoleErrorSpy.mockRestore()
+        vi.mocked(console.error).mockRestore()
       }
     })
   })
@@ -696,9 +723,6 @@ describe('useWorkflowService', () => {
       const storeClose = vi.spyOn(workflowStore, 'closeWorkflow')
       const error = new Error('replacement load failed')
       vi.mocked(app.loadGraphData).mockRejectedValueOnce(error)
-      const consoleError = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => undefined)
 
       await expect(
         useWorkflowService().closeWorkflow(closing, { warnIfUnsaved: false })
@@ -708,7 +732,6 @@ describe('useWorkflowService', () => {
       // close must keep its draft.
       expect(storeClose).not.toHaveBeenCalled()
       expect(useWorkflowDraftStoreV2().removeDraft).not.toHaveBeenCalled()
-      consoleError.mockRestore()
     })
 
     it('keeps the tab and draft when the replacement load reports failure', async () => {
