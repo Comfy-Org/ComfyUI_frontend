@@ -10,6 +10,7 @@ const mockIsFreeTier = ref(true)
 const mockAvailable = ref(3)
 
 vi.mock(import('@/composables/billing/useBillingContext'))
+vi.mock(import('@/composables/billing/useSubscriptionPaywall'))
 
 vi.mock<unknown>(
   import('@/platform/cloud/subscription/composables/useFreeTierQuota'),

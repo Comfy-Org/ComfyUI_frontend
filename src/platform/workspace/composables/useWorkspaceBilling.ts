@@ -17,8 +17,6 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
 import { useBillingPlans } from '@/platform/cloud/subscription/composables/useBillingPlans'
-import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
-import type { SubscriptionDialogOptions } from '@/composables/billing/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
@@ -831,19 +829,6 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     }
   }
 
-  const subscriptionDialog = useSubscriptionDialog()
-
-  async function requireActiveSubscription(): Promise<void> {
-    await fetchStatus()
-    if (!canAccessSubscriptionFeatures.value) {
-      subscriptionDialog.show({ reason: 'subscription_required' })
-    }
-  }
-
-  function showSubscriptionDialog(options?: SubscriptionDialogOptions): void {
-    subscriptionDialog.show(options)
-  }
-
   return {
     // State
     isInitialized,
@@ -876,8 +861,6 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     cancelSubscription,
     resubscribe,
     topup,
-    fetchPlans,
-    requireActiveSubscription,
-    showSubscriptionDialog
+    fetchPlans
   }
 }

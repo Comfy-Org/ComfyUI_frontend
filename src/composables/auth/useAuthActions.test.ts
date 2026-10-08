@@ -7,7 +7,6 @@ import { AuthErrorCodes } from 'firebase/auth'
 import type { UserCredential } from 'firebase/auth'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed } from 'vue'
 
 import { useTelemetry } from '@/platform/telemetry'
 
@@ -18,7 +17,6 @@ import enLocale from '@/locales/en/main.json'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { presentSsoRequired } from '@/platform/auth/sso/ssoRequired'
 
 vi.mock(import('firebase/auth'), { spy: true })
@@ -82,8 +80,6 @@ vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
 vi.mock(import('@/services/dialogService'))
 
-vi.mock(import('@/composables/billing/useBillingContext'))
-
 vi.mock(import('@/composables/useErrorHandling'))
 
 function makeWorkflow(path: string): ModifiedWorkflow {
@@ -115,10 +111,6 @@ beforeEach(() => {
     const code = translationKey.replace('auth.errors.', '')
     return code in authErrorMessages ? translationKey : String(fallback)
   })
-  const billingContext = useBillingContext()
-  vi.mocked(useBillingContext).mockReturnValue(billingContext)
-  billingContext.canAccessSubscriptionFeatures = computed(() => false)
-  billingContext.isFreeTier = computed(() => true)
   stubFirebaseAuthHarness()
   mockAuthStore = useAuthStore()
   mockWorkflowStore = useWorkflowStore()
@@ -135,10 +127,6 @@ beforeEach(() => {
 })
 
 describe('useAuthActions.purchaseCreditsDirect', () => {
-  beforeEach(() => {
-    useBillingContext().canAccessSubscriptionFeatures = computed(() => true)
-  })
-
   it('starts top-up tracking before opening Stripe checkout', async () => {
     const open = vi.spyOn(window, 'open').mockImplementation(() => window)
     const { purchaseCreditsDirect } = useAuthActions()

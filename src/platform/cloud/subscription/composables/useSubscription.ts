@@ -18,7 +18,6 @@ import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError as reportTelemetryError } from '@/platform/telemetry/reportError'
 import { createBillingPortalReporter } from '@/platform/telemetry/utils/billingPortalTelemetry'
-import type { SubscriptionDialogOptions } from '@/composables/billing/types'
 import type {
   CheckoutAttributionMetadata,
   ResubscribeClickMetadata,
@@ -38,7 +37,6 @@ import {
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { platformLink } from '@/platform/workspace/utils/platformLink'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
-import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 import { toTierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type { operations } from '@/types/comfyRegistryTypes'
@@ -117,7 +115,6 @@ function useSubscriptionInternal() {
     return subscriptionStatus.value?.is_active ?? false
   })
   const { reportError, accessBillingPortalDirect } = useAuthActions()
-  const { showSubscriptionRequiredDialog } = useBillingDialogs()
 
   const authStore = useAuthStore()
   const workspaceStore = useTeamWorkspaceStore()
@@ -566,10 +563,6 @@ function useSubscriptionInternal() {
 
   const subscribe = wrapWithErrorHandlingAsync(subscribeDirect, reportError)
 
-  const showSubscriptionDialog = (options?: SubscriptionDialogOptions) => {
-    void showSubscriptionRequiredDialog(options)
-  }
-
   /**
    * Whether cloud subscription mode is enabled (cloud distribution with subscription_required config).
    */
@@ -609,14 +602,6 @@ function useSubscriptionInternal() {
       throw new PaymentPopupBlockedError(t('subscription.billingTabBlocked'))
     }
     startCancellationWatcher()
-  }
-
-  const requireActiveSubscription = async (): Promise<void> => {
-    await fetchSubscriptionStatus()
-
-    if (!canAccessSubscriptionFeatures.value) {
-      showSubscriptionDialog({ reason: 'subscription_required' })
-    }
   }
 
   const handleViewUsageHistory = () => {
@@ -1138,9 +1123,7 @@ function useSubscriptionInternal() {
     subscribeDirect,
     fetchStatus,
     fetchStatusDirect: fetchSubscriptionStatus,
-    showSubscriptionDialog,
     manageSubscription,
-    requireActiveSubscription,
     handleViewUsageHistory,
     handleLearnMore,
     handleInvoiceHistory
