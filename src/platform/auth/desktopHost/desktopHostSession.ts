@@ -122,3 +122,23 @@ export async function requestDesktopHostSignOut(): Promise<boolean> {
   if (next && bridge === current && revision === before) apply(next)
   return desktopHostUser.value === null
 }
+
+/** True when this Desktop can re-scope its session to another workspace. */
+export function canDesktopHostSwitchWorkspace(): boolean {
+  return isDesktopHostSignedIn() && bridge?.switchWorkspace !== undefined
+}
+
+/**
+ * Asks Desktop to re-scope its session to `workspaceId`, which may run browser
+ * consent. Resolves true once the session is on that workspace.
+ */
+export async function requestDesktopHostWorkspaceSwitch(
+  workspaceId: string
+): Promise<boolean> {
+  const current = bridge
+  if (!current?.switchWorkspace || !isDesktopHostSignedIn()) return false
+  const before = revision
+  const next = await current.switchWorkspace(workspaceId).catch(() => undefined)
+  if (next && bridge === current && revision === before) apply(next)
+  return desktopHostUser.value?.workspaceId === workspaceId
+}

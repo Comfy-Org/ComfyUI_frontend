@@ -274,6 +274,27 @@ export const useAuthStore = defineStore('auth', () => {
       resetAccountState(previousUserId, nextUserId)
   )
 
+  // Off Cloud, nothing else loads a host account's workspaces before the
+  // account menu needs them, including a Desktop sign-in that predates this
+  // store. A store already loaded for the Firebase or API-key account is
+  // dropped first, since Desktop now owns the credential.
+  watch(
+    () => desktopHostUser.value?.id ?? null,
+    (userId, previousUserId) => {
+      if (userId === null || isCloud) return
+      const teamWorkspaceStore = useTeamWorkspaceStore()
+      if (
+        previousUserId == null &&
+        teamWorkspaceStore.initState !== 'uninitialized'
+      ) {
+        useWorkspaceAuthStore().clearWorkspaceContext()
+        teamWorkspaceStore.resetForIdentityChange()
+      }
+      teamWorkspaceStore.initialize().catch(() => undefined)
+    },
+    { immediate: true }
+  )
+
   // Listen for token refresh events
   firebaseIdentity.onTokenChanged((user) => {
     if (user && isCloud) {
