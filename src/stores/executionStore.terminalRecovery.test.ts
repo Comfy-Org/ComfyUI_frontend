@@ -295,4 +295,45 @@ describe('executionStore terminal-job recovery', () => {
     // returns early once it is gone, so order is the whole point here.
     expect(mockRemoveTextPreview).toHaveBeenCalled()
   })
+
+  it('releases a background job records when it ends in an error', () => {
+    const jobId = 'job-bg-error'
+    store.registerJobWorkflowIdMapping(jobId, WORKFLOW_B_ID)
+    store.storeJob({
+      nodes: ['1'],
+      id: jobId,
+      promptOutput: { '1': { inputs: {}, class_type: 'TestNode' } },
+      workflow: workflowB,
+      mode: 'graph'
+    })
+    fire('execution_start', {
+      prompt_id: jobId,
+      workflow_id: WORKFLOW_B_ID,
+      timestamp: 1
+    })
+    fire('progress_state', {
+      prompt_id: jobId,
+      workflow_id: WORKFLOW_B_ID,
+      nodes: { '1': runningNode(jobId, '1') }
+    })
+    expect(store.nodeProgressStatesByJob[jobId]).toBeDefined()
+
+    // A is in front, so this error belongs to a background tab. It is still a
+    // finished job, so its own records have to go, like the success path.
+    fire('execution_error', {
+      prompt_id: jobId,
+      workflow_id: WORKFLOW_B_ID,
+      node_id: '1',
+      node_type: 'TestNode',
+      exception_type: 'RuntimeError',
+      exception_message: 'boom',
+      traceback: [],
+      executed: [],
+      current_inputs: {},
+      current_outputs: {}
+    })
+
+    expect(store.nodeProgressStatesByJob[jobId]).toBeUndefined()
+    expect(store.queuedJobs[jobId]).toBeUndefined()
+  })
 })

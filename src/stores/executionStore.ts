@@ -924,8 +924,12 @@ export const useExecutionStore = defineStore('execution', () => {
     clearInitializationByJobId(detail.prompt_id)
     // Only the active workflow's error resets the shared execution state; the
     // dialog is already scoped by the run error key inside showExecutionError.
-    if (!messageMatchesActiveWorkflow(detail.prompt_id, detail.workflow_id))
+    // A background job is still finished, so release its own records either way
+    // or they survive the session, same as the success and interrupt paths.
+    if (!messageMatchesActiveWorkflow(detail.prompt_id, detail.workflow_id)) {
+      releaseFinishedJobRecords(detail.prompt_id)
       return
+    }
 
     resetExecutionState(detail.prompt_id)
   }
@@ -955,8 +959,10 @@ export const useExecutionStore = defineStore('execution', () => {
       return false
 
     clearInitializationByJobId(detail.prompt_id)
-    if (!messageMatchesActiveWorkflow(detail.prompt_id, detail.workflow_id))
+    if (!messageMatchesActiveWorkflow(detail.prompt_id, detail.workflow_id)) {
+      releaseFinishedJobRecords(detail.prompt_id)
       return true
+    }
 
     resetExecutionState(detail.prompt_id)
     executionErrorStore.recordPromptError(
@@ -980,8 +986,10 @@ export const useExecutionStore = defineStore('execution', () => {
     if (!result) return false
 
     clearInitializationByJobId(detail.prompt_id)
-    if (!messageMatchesActiveWorkflow(detail.prompt_id, detail.workflow_id))
+    if (!messageMatchesActiveWorkflow(detail.prompt_id, detail.workflow_id)) {
+      releaseFinishedJobRecords(detail.prompt_id)
       return true
+    }
 
     resetExecutionState(detail.prompt_id)
 
@@ -1135,6 +1143,15 @@ export const useExecutionStore = defineStore('execution', () => {
       nodeProgressStates.value =
         nodeProgressStatesByJob.value[matchedJobId] ?? {}
       executionIdToLocatorCache.clear()
+      // handleExecutionStart deliberately does not adopt a job whose tab is in
+      // the background, so nothing had adopted it by the time the user came
+      // back: the tab showed node progress while isIdle stayed true, which left
+      // the title and overlay reading idle and made handleExecuted drop the
+      // completion frames. Per-job progress still existing means the job has
+      // not reached a terminal frame, so it is the one this tab should show.
+      if (activeJobId.value !== matchedJobId) {
+        activeJobId.value = matchedJobId
+      }
       if (_executingNodeProgress.value?.prompt_id !== matchedJobId) {
         _executingNodeProgress.value = null
       }

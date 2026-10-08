@@ -1168,4 +1168,64 @@ describe('executionStore workflow gating', () => {
       )
     })
   })
+
+  /**
+   * Reported by review on #20045. handleExecutionStart deliberately does not
+   * adopt activeJobId for a job whose tab is in the background, so that a
+   * background run cannot steal the visible tab's execution UI. But nothing
+   * adopted it on the way back either, so a tab could show node progress while
+   * isIdle stayed true: the title, favicon and overlay read idle, and
+   * handleExecuted dropped completion frames at `if (!activeJob.value) return`.
+   * Reachable by the second prompt of a batch, or anything queued behind
+   * another job while the user is on a different tab.
+   */
+  describe('returning to a tab whose job started in the background', () => {
+    it('adopts the job so the tab is not both running and idle', async () => {
+      useWorkflowStore().activeWorkflow = workflowA
+      queueJobFrom('job-a', workflowA)
+
+      useWorkflowStore().activeWorkflow = workflowB
+      await nextTick()
+
+      fire('execution_start', {
+        prompt_id: 'job-a',
+        workflow_id: WORKFLOW_A_ID,
+        timestamp: 1
+      })
+      fire('progress_state', {
+        prompt_id: 'job-a',
+        workflow_id: WORKFLOW_A_ID,
+        nodes: { '1': nodeState('job-a', '1', 'running', 3) }
+      })
+      expect(store.activeJobId, 'B must not adopt A job').toBeNull()
+
+      useWorkflowStore().activeWorkflow = workflowA
+      await nextTick()
+
+      expect(store.nodeProgressStates['1']?.state).toBe('running')
+      expect(store.activeJobId).toBe('job-a')
+      expect(store.isIdle).toBe(false)
+    })
+
+    it('does not adopt a job belonging to a different tab', async () => {
+      useWorkflowStore().activeWorkflow = workflowA
+      queueJobFrom('job-b', workflowB)
+      fire('execution_start', {
+        prompt_id: 'job-b',
+        workflow_id: WORKFLOW_B_ID,
+        timestamp: 1
+      })
+      fire('progress_state', {
+        prompt_id: 'job-b',
+        workflow_id: WORKFLOW_B_ID,
+        nodes: { '1': nodeState('job-b', '1', 'running', 3) }
+      })
+
+      useWorkflowStore().activeWorkflow = workflowA
+      await nextTick()
+
+      expect(store.activeJobId).toBeNull()
+      expect(store.isIdle).toBe(true)
+    })
+  })
 })
