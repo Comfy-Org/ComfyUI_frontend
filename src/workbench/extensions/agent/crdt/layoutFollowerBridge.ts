@@ -99,13 +99,12 @@ export class LayoutFollowerBridge extends EventTarget {
    * again — see {@link onDocUpdate}.
    */
   private schemaError: FollowerSchemaError | null = null
-  /**
-   * Highest doc seq APPLIED since the last subscribe left the transport;
-   * `null` until the first post-subscribe update, so catch-up re-baselines
-   * instead of being compared across a resubscribe. See the gap detector in
-   * {@link onDocUpdate}.
-   */
+  /** Highest doc seq applied to the current follower document. */
   private lastSeq: number | null = null
+  /** Highest doc seq applied since the current subscribe frame was sent. */
+  private attemptLastSeq: number | null = null
+  /** Highest contiguous server seq proven to exist in the follower document. */
+  private integratedSeq: number | null = null
   /**
    * The host's seq at the moment it acknowledged the current subscribe
    * (`doc_subscribed.seq`); `null` until that ack lands. It is NOT an applied
@@ -116,7 +115,6 @@ export class LayoutFollowerBridge extends EventTarget {
    * update has been applied.
    */
   private ackSeq: number | null = null
-  private preSubscribeSeq: number | null = null
   private subscribeAcknowledged = false
   private subscribeBaselineIntegrated = false
   /**
@@ -236,10 +234,7 @@ export class LayoutFollowerBridge extends EventTarget {
       trySend(() => this.client.subscribe(desired, this.follower.stateVector()))
     ) {
       this.sentWorkflowId = desired
-      this.preSubscribeSeq = this.isSubscribeBaselineIntegrated
-        ? (this.lastSeq ?? this.ackSeq)
-        : null
-      this.lastSeq = null
+      this.attemptLastSeq = null
       this.ackSeq = null
       this.catchUpPending = false
       this.subscribeAcknowledged = false
@@ -354,10 +349,8 @@ export class LayoutFollowerBridge extends EventTarget {
     if (this.rejectSequenceGap(update)) return
     if (this.lastSeq === null || update.seq > this.lastSeq)
       this.lastSeq = update.seq
-    if (isCatchUp) {
-      this.catchUpPending = false
-      this.subscribeBaselineIntegrated = true
-    }
+    if (this.attemptLastSeq === null || update.seq > this.attemptLastSeq)
+      this.attemptLastSeq = update.seq
 
     // Merge every same-lineage, in-order frame — even one arriving after a
     // schema-gate failure. Yjs merge is monotonic and a Y.Map key is
@@ -365,6 +358,7 @@ export class LayoutFollowerBridge extends EventTarget {
     // `meta.schema_version` that an earlier one broke (e.g. a repair); never
     // merging while latched would make that repair permanently unreachable.
     this.follower.applyRemoteUpdate(update.update)
+    this.recordIntegratedSequence(update.seq, isCatchUp)
 
     // KA-11 read-time gate, re-checked on every merge rather than only the
     // first: the frame must merge before its schema can be checked, but
@@ -400,7 +394,11 @@ export class LayoutFollowerBridge extends EventTarget {
   }
 
   private rejectSequenceGap(update: DocUpdate): boolean {
-    const baseline = this.lastSeq ?? this.ackSeq
+    const acknowledgedBaseline =
+      this.subscribeAcknowledged && this.ackSeq !== null
+        ? Math.max(this.attemptLastSeq ?? 0, this.ackSeq)
+        : this.attemptLastSeq
+    const baseline = acknowledgedBaseline
     if (baseline === null || update.seq <= baseline + 1) return false
     this.dispatchEvent(
       new CustomEvent('doc_gap', {
@@ -456,8 +454,9 @@ export class LayoutFollowerBridge extends EventTarget {
     this.followerDoc = new FollowerDoc()
     this.schemaError = null
     this.lastSeq = null
+    this.attemptLastSeq = null
+    this.integratedSeq = null
     this.ackSeq = null
-    this.preSubscribeSeq = null
     this.catchUpPending = false
     this.subscribeAcknowledged = false
     this.subscribeBaselineIntegrated = false
@@ -499,18 +498,52 @@ export class LayoutFollowerBridge extends EventTarget {
     } else {
       this.subscribeAcknowledged = false
       this.subscribeBaselineIntegrated = false
+      this.ackSeq = null
+      this.catchUpPending = false
       this.sentWorkflowId = null
     }
     this.dispatchEvent(new CustomEvent(event.type, { detail: event.detail }))
   }
 
   private acceptSubscribeBaseline(seq: number | undefined): void {
-    this.ackSeq = seq ?? null
+    this.ackSeq = seq ?? 0
     this.subscribeAcknowledged = true
-    const integratedSeq = this.lastSeq ?? this.preSubscribeSeq
     this.subscribeBaselineIntegrated =
-      this.ackSeq === null || this.ackSeq === 0 || integratedSeq === this.ackSeq
-    this.catchUpPending = this.ackSeq !== null
+      this.ackSeq > 0 &&
+      this.integratedSeq !== null &&
+      this.integratedSeq >= this.ackSeq
+    this.catchUpPending = this.ackSeq > 0
+  }
+
+  private recordIntegratedSequence(seq: number, isCatchUp: boolean): void {
+    if (isCatchUp) {
+      this.recordCatchUpSequence(seq)
+    } else if (this.isNextIntegratedSequence(seq)) {
+      this.integratedSeq = seq
+    }
+    this.subscribeBaselineIntegrated = this.hasIntegratedSubscribeBaseline()
+  }
+
+  private recordCatchUpSequence(seq: number): void {
+    this.catchUpPending = false
+    this.integratedSeq = Math.max(this.integratedSeq ?? 0, this.lastSeq ?? seq)
+  }
+
+  private isNextIntegratedSequence(seq: number): boolean {
+    return (
+      (this.integratedSeq !== null && seq === this.integratedSeq + 1) ||
+      (this.subscribeAcknowledged && this.ackSeq === 0 && seq === 1)
+    )
+  }
+
+  private hasIntegratedSubscribeBaseline(): boolean {
+    return (
+      this.subscribeAcknowledged &&
+      this.ackSeq !== null &&
+      this.integratedSeq !== null &&
+      this.integratedSeq > 0 &&
+      this.integratedSeq >= this.ackSeq
+    )
   }
 
   private readonly onDocReseedResult: EventListener = (event) => {

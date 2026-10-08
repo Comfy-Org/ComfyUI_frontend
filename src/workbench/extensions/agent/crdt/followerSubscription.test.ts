@@ -977,6 +977,137 @@ describe('subscribe catch-up state', () => {
     expect(bridge.isSubscribeBaselineIntegrated).toBe(true)
   })
 
+  it('keeps contiguous live progress when it overtakes a resubscribe ack', () => {
+    const { transport, bridge } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 1
+    })
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 1)
+    )
+
+    bridge.resubscribe()
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 2)
+    )
+    expect(bridge.isSubscribeBaselineIntegrated).toBe(false)
+
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 1
+    })
+
+    expect(bridge.isSubscribeBaselineIntegrated).toBe(true)
+    expect(bridge.lastSequence).toBe(2)
+  })
+
+  it('retains integrated evidence across repeated resubscribe attempts', () => {
+    const { transport, bridge } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 1
+    })
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 1)
+    )
+
+    bridge.resubscribe()
+    bridge.resubscribe()
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 1
+    })
+
+    expect(bridge.isSubscribeBaselineIntegrated).toBe(true)
+  })
+
+  it('retains integrated evidence when a resubscribe is refused and retried', () => {
+    const { transport, bridge } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 1
+    })
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 1)
+    )
+
+    bridge.resubscribe()
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: false,
+      reason: 'not_found'
+    })
+    bridge.reconcile()
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 1
+    })
+
+    expect(bridge.isSubscribeBaselineIntegrated).toBe(true)
+  })
+
+  it('keeps a gap resubscribe closed until its catch-up frame lands', () => {
+    const { transport, bridge } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 1
+    })
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 1)
+    )
+
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 3)
+    )
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 3)
+    )
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 3
+    })
+    expect(bridge.isSubscribeBaselineIntegrated).toBe(false)
+
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 3)
+    )
+    expect(bridge.isSubscribeBaselineIntegrated).toBe(true)
+  })
+
   it('keeps a resubscribe closed when the prior baseline never integrated', () => {
     const { transport, bridge } = wire()
     transport.open = true
@@ -1066,7 +1197,7 @@ describe('subscribe catch-up state', () => {
     expect(bridge.isSubscribeBaselineIntegrated).toBe(true)
   })
 
-  it('treats an empty baseline-zero acknowledgement as integrated', () => {
+  it('keeps a baseline-zero acknowledgement closed until the document arrives', () => {
     const { transport, bridge } = wire()
     transport.open = true
     bridge.subscribe(WORKFLOW_ID)
@@ -1077,6 +1208,12 @@ describe('subscribe catch-up state', () => {
       ok: true
     })
 
+    expect(bridge.isSubscribeBaselineIntegrated).toBe(false)
+
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 1)
+    )
     expect(bridge.isSubscribeBaselineIntegrated).toBe(true)
   })
 })
