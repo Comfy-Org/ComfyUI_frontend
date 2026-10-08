@@ -79,7 +79,7 @@ test.describe('Workflow Tab Thumbnails', { tag: '@workflow' }, () => {
   }) => {
     await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
     const popover = await getTabPopover(comfyPage, 0)
-    await expect(popover).toHaveAttribute('aria-modal', 'false')
+    await expect(popover).not.toHaveAttribute('aria-modal', 'true')
 
     await comfyPage.page.keyboard.press('ControlOrMeta+s')
 

@@ -13,19 +13,17 @@ class ComfyNodeSearchFilterSelectionPanel {
   }
 
   async selectFilterType(filterType: string) {
-    await this.page
-      .locator(
-        `.filter-type-select .p-togglebutton-label:has-text("${filterType}")`
-      )
+    await this.root
+      .getByRole('button', { name: filterType, exact: true })
       .click()
   }
 
   async selectFilterValue(filterValue: string) {
-    await this.page.locator('.filter-value-select .p-select-dropdown').click()
+    await this.root
+      .getByRole('button', { name: 'Single-select dropdown' })
+      .click()
     await this.page
-      .locator(
-        `.p-select-overlay .p-select-list .p-select-option-label:text-is("${filterValue}")`
-      )
+      .getByRole('option', { name: filterValue, exact: true })
       .click()
   }
 
@@ -38,7 +36,8 @@ class ComfyNodeSearchFilterSelectionPanel {
 
 export class ComfyNodeSearchBox {
   public readonly input: Locator
-  public readonly dropdown: Locator
+  public readonly resultsListbox: Locator
+  public readonly resultOptions: Locator
   public readonly filterButton: Locator
   public readonly filterChips: Locator
   public readonly filterSelectionPanel: ComfyNodeSearchFilterSelectionPanel
@@ -47,15 +46,12 @@ export class ComfyNodeSearchBox {
     this.input = page.locator(
       '.comfy-vue-node-search-container input[type="text"]'
     )
-    this.dropdown = page.locator(
-      '.comfy-vue-node-search-container .p-autocomplete-list'
-    )
+    this.resultsListbox = page.getByRole('listbox')
+    this.resultOptions = this.resultsListbox.getByRole('option')
     this.filterButton = page.locator(
       '.comfy-vue-node-search-container .filter-button'
     )
-    this.filterChips = page.locator(
-      '.comfy-vue-node-search-container .p-autocomplete-chip-item'
-    )
+    this.filterChips = page.getByTestId('node-search-filter-chip')
     this.filterSelectionPanel = new ComfyNodeSearchFilterSelectionPanel(page)
   }
 
@@ -65,14 +61,32 @@ export class ComfyNodeSearchBox {
   ) {
     await this.input.waitFor({ state: 'visible' })
     await this.input.fill(nodeName)
-    await this.dropdown.waitFor({ state: 'visible' })
+    await this.resultsListbox.waitFor({ state: 'visible' })
 
     const nodeOption = options?.exact
-      ? this.dropdown.locator(`li[aria-label="${nodeName}"]`).first()
-      : this.dropdown.locator('li').nth(options?.suggestionIndex ?? 0)
+      ? this.resultsListbox
+          .getByRole('option', { name: nodeName, exact: true })
+          .first()
+      : this.resultsListbox
+          .getByRole('option')
+          .nth(options?.suggestionIndex ?? 0)
 
     await expect(nodeOption).toBeVisible()
     await nodeOption.click()
+  }
+
+  async typeQuery(query: string) {
+    await this.input.waitFor({ state: 'visible' })
+    await this.input.press('ControlOrMeta+A')
+    await this.input.pressSequentially(query)
+  }
+
+  async waitForFirstResult(name: string) {
+    await expect(this.resultOptions.first()).toHaveAccessibleName(name)
+  }
+
+  async submitSelectedResult() {
+    await this.input.press('Enter')
   }
 
   async addFilter(filterValue: string, filterType: string) {
@@ -91,6 +105,6 @@ export class ComfyNodeSearchBox {
    * Returns a locator for a search result containing the specified text.
    */
   findResult(text: string): Locator {
-    return this.dropdown.locator('li').filter({ hasText: text })
+    return this.resultsListbox.getByRole('option').filter({ hasText: text })
   }
 }

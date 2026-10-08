@@ -45,7 +45,12 @@ import { isFloatingTopology } from '@/types/linkTopology'
 import { toRerouteId } from '@/types/rerouteId'
 import { graphScopeOf, toRootGraphId } from '@/types/graphScopeId'
 import {
+  collectReservedGroupIds,
+  collectReservedLinkIds,
+  collectReservedNodeIds,
+  collectReservedRerouteIds,
   createLGraphState,
+  linkIdReservations,
   mintGroupId,
   mintLinkId,
   mintNodeId,
@@ -53,9 +58,14 @@ import {
   observeGroupId,
   observeLinkId,
   observeNodeId,
-  observeRerouteId
+  observeRerouteId,
+  rerouteIdReservations
 } from './idAllocation'
-import type { LGraphState, NodeIdMintMode } from './idAllocation'
+import type {
+  LGraphState,
+  NodeIdMintMode,
+  ReservedIdIndex
+} from './idAllocation'
 import { isRootGraphDocBound } from './docBoundGraphs'
 import {
   collectingSeveredLinks,
@@ -63,12 +73,16 @@ import {
   withGraphIntentSource
 } from './graphIntents'
 import { inputHasLink, outputHasLinks, outputLinks } from './node/slotLinks'
-import { normalizeWidgetsView } from './node/widgetsView'
+import {
+  captureWidgetRestorationSlots,
+  normalizeWidgetsView
+} from './node/widgetsView'
 import { clearNodeOwnedStoreState } from '@/stores/clearNodeOwnedStoreState'
 import { useEntityIdStore } from '@/stores/entityIdStore'
 import { useExecutionOrderStore } from '@/stores/executionOrderStore'
 import { useGraphMetadataStore } from '@/stores/graphMetadataStore'
 import { rekeyGraphId } from '@/stores/rekeyGraphId'
+import { toGroupId } from '@/types/groupId'
 import {
   UNASSIGNED_NODE_ID,
   compareNodeIds,
@@ -181,16 +195,15 @@ import type {
   SerialisableReroute
 } from './types/serialisation'
 import { getAllNestedItems } from './utils/collections'
+import type { GraphCanonicalField } from './extensionPersistence'
 import {
   extensionConfigureView,
   GRAPH_CANONICAL_FIELDS,
   hydrateExtensionPayload,
+  isGraphCanonicalField,
   runExtensionSerializeHook
 } from './extensionPersistence'
 import {
-  collectReservedGroupIds,
-  collectReservedLinkIds,
-  collectReservedRerouteIds,
   normalizeSubgraphDefinitions,
   topologicalSortSubgraphs
 } from './subgraph/subgraphDeduplication'
@@ -204,6 +217,26 @@ const validTriggerActions = new Set<LGraphTriggerAction>(LGraphTriggerActions)
 
 function isLGraphTriggerAction(action: string): action is LGraphTriggerAction {
   return validTriggerActions.has(action as LGraphTriggerAction)
+}
+
+function nodeStatusArray<T>(): T[] & Partial<Record<NodeId, T>> {
+  return [] as unknown as T[] & Partial<Record<NodeId, T>>
+}
+
+function executionPriority(node: LGraphNode): number {
+  return node.constructor.priority || node.priority || 0
+}
+
+/** Copies serialised fields that {@link LGraph.configure} does not handle explicitly. */
+function copyUnhandledCanonicalFields(
+  target: Partial<Record<GraphCanonicalField, unknown>>,
+  source: Partial<Record<GraphCanonicalField, unknown>>
+): void {
+  for (const key in source) {
+    if (LGraph.ConfigureProperties.has(key) || !isGraphCanonicalField(key))
+      continue
+    target[key] = source[key]
+  }
 }
 
 export type RendererType = 'LG' | 'Vue' | 'Vue-corrected'
@@ -243,6 +276,8 @@ export interface GraphAddOptions {
 
 /** Options for {@link LGraph.remove} method. */
 export interface GraphRemoveOptions {
+  /** Remove an item even when it normally opts out via `ignore_remove`. */
+  force?: boolean
   /** Keep the subgraph definitions the node references; the caller re-creates the node elsewhere in the same root graph. */
   preserveSubgraphDefinitions?: boolean
 }
@@ -268,6 +303,14 @@ function getRuntimeRootGraph(graph: LGraph): LGraph | undefined {
 
 function runtimeOptional<T>(value: T): T | undefined {
   return value
+}
+
+function groupIdReservations(rootGraph: LGraph): ReservedIdIndex {
+  return {
+    has: (id) =>
+      layoutStore.getGroupLayout(rootGraph.id, toGroupId(id)) != null,
+    collect: () => collectReservedGroupIds(rootGraph)
+  }
 }
 
 function fireNodeRemovalLifecycle(node: LGraphNode): void {
@@ -637,7 +680,7 @@ export class LGraph
   last_update_time: number = 0
   starttime: number = 0
   catch_errors: boolean = true
-  execution_timer_id?: number | null
+  execution_timer_id?: ReturnType<typeof setInterval> | number | null
   errors_in_execution?: boolean
   /** @deprecated Unused */
   execution_time!: number
@@ -657,9 +700,9 @@ export class LGraph
     ).config = value
   }
   vars: Dictionary<unknown> = {}
-  nodes_executing: boolean[] = []
-  nodes_actioning: (string | boolean)[] = []
-  nodes_executedAction: string[] = []
+  nodes_executing = nodeStatusArray<boolean>()
+  nodes_actioning = nodeStatusArray<string | boolean>()
+  nodes_executedAction = nodeStatusArray<string>()
   get extra(): LGraphExtra {
     return useGraphMetadataStore().get(
       getRuntimeRootGraph(this)?.id ?? this.id,
@@ -734,9 +777,6 @@ export class LGraph
   on_change?(graph: LGraph): void
   onSerialize?(data: ISerialisedGraph | SerialisableGraph): void
   onConfigure?(data: ISerialisedGraph | SerialisableGraph): void
-
-  // @ts-expect-error - Private property type needs fixing
-  private _input_nodes?: LGraphNode[]
 
   /**
    * See {@link LGraph}
@@ -874,9 +914,9 @@ export class LGraph
 
     this.catch_errors = true
 
-    this.nodes_executing = []
-    this.nodes_actioning = []
-    this.nodes_executedAction = []
+    this.nodes_executing = nodeStatusArray<boolean>()
+    this.nodes_actioning = nodeStatusArray<string | boolean>()
+    this.nodes_executedAction = nodeStatusArray<string>()
 
     // notify canvas to redraw
     this.change()
@@ -958,7 +998,6 @@ export class LGraph
       on_frame()
     } else {
       // execute every 'interval' ms
-      // @ts-expect-error - Timer ID type mismatch needs fixing
       this.execution_timer_id = setInterval(() => {
         // execute
         this.runStep(1, !this.catch_errors)
@@ -1045,9 +1084,9 @@ export class LGraph
     this.iteration += 1
     this.elapsed_time = (now - this.last_update_time) * 0.001
     this.last_update_time = now
-    this.nodes_executing = []
-    this.nodes_actioning = []
-    this.nodes_executedAction = []
+    this.nodes_executing = nodeStatusArray<boolean>()
+    this.nodes_actioning = nodeStatusArray<string | boolean>()
+    this.nodes_executedAction = nodeStatusArray<string>()
   }
 
   /**
@@ -1162,10 +1201,8 @@ export class LGraph
 
     // sort now by priority
     L.sort(function (A, B) {
-      // @ts-expect-error ctor props
-      const Ap = A.constructor.priority || A.priority || 0
-      // @ts-expect-error ctor props
-      const Bp = B.constructor.priority || B.priority || 0
+      const Ap = executionPriority(A)
+      const Bp = executionPriority(B)
       // if same priority, sort by order
 
       return Ap == Bp
@@ -1285,18 +1322,14 @@ export class LGraph
     const nodes = this._nodes_in_order
 
     for (const node of nodes) {
-      // @ts-expect-error deprecated
-      if (!node[eventname] || node.mode != mode) continue
+      const handler = (node as unknown as Record<string, unknown>)[eventname]
+      if (typeof handler !== 'function' || node.mode != mode) continue
       if (params === undefined) {
-        // @ts-expect-error deprecated
-        node[eventname]()
+        handler.call(node)
       } else if (params.constructor === Array) {
-        // @ts-expect-error deprecated
-        // oxlint-disable-next-line prefer-spread
-        node[eventname].apply(node, params)
+        handler.apply(node, params)
       } else {
-        // @ts-expect-error deprecated
-        node[eventname](params)
+        handler.call(node, params)
       }
     }
   }
@@ -1380,7 +1413,7 @@ export class LGraph
         groupId === -1 ||
         layoutStore.getGroupLayout(this.rootGraph.id, groupId)
       ) {
-        node.id = mintGroupId(state)
+        node.id = mintGroupId(state, groupIdReservations(this.rootGraph))
       }
       observeGroupId(state, node.id)
 
@@ -1409,10 +1442,23 @@ export class LGraph
       throw 'LiteGraph: max number of nodes in a graph reached'
     }
 
+    const reservedNodeIds: ReservedIdIndex = {
+      has: (candidate) =>
+        [this.rootGraph, ...this.rootGraph.subgraphs.values()].some(
+          (owner) => owner.getNodeById(toNodeId(candidate)) != null
+        ),
+      collect: () =>
+        new Set(
+          [...collectReservedNodeIds(this.rootGraph)]
+            .map(Number)
+            .filter(Number.isSafeInteger)
+        )
+    }
+
     // give him an id
     if (node.id === UNASSIGNED_NODE_ID) {
       const mintMode = nodeIdMintModeFor(this)
-      node.id = mintNodeId(state, mintMode)
+      node.id = mintNodeId(state, mintMode, reservedNodeIds)
     } else {
       observeNodeId(state, node.id)
     }
@@ -1427,7 +1473,7 @@ export class LGraph
     node.graph = this
 
     attachNodeToStores(this, node, () =>
-      mintNodeId(state, nodeIdMintModeFor(this))
+      mintNodeId(state, nodeIdMintModeFor(this), reservedNodeIds)
     )
 
     this._nodes.push(node)
@@ -1505,7 +1551,7 @@ export class LGraph
       return
     }
     // cannot be removed
-    if (node.ignore_remove) {
+    if (node.ignore_remove && !options.force) {
       console.warn('LiteGraph: node cannot be removed', node)
       return
     }
@@ -1555,37 +1601,39 @@ export class LGraph
       this.releaseSubgraphs(findReleasableSubgraphs(this.rootGraph, node))
     }
 
-    // callback
-    node.onRemoved?.()
-    clearNodeOwnedStoreState(node)
+    try {
+      node.onRemoved?.()
+    } finally {
+      const order = node.order
+      try {
+        clearNodeOwnedStoreState(node)
+        useExecutionOrderStore().remove(graphScopeOf(this), node.id)
+        detachNodeFromStores(this, node)
+        detachNodeLayout(node)
 
-    const order = node.order
-    useExecutionOrderStore().remove(graphScopeOf(this), node.id)
-    detachNodeFromStores(this, node)
-    detachNodeLayout(node)
+        const { list_of_graphcanvas } = this
+        if (list_of_graphcanvas) {
+          for (const canvas of list_of_graphcanvas) {
+            delete canvas.selected_nodes[node.id]
+            canvas.deselect(node)
+          }
+        }
+        useSelectionStore().apply(graphScopeOf(this), {
+          type: 'selection.remove',
+          key: toSelectableKey('node', node.id)
+        })
+      } finally {
+        node.graph = null
+        node.order = order
+        this.incrementVersion()
 
-    node.graph = null
-    node.order = order
-    this.incrementVersion()
+        const pos = this._nodes.indexOf(node)
+        if (pos != -1) this._nodes.splice(pos, 1)
 
-    const { list_of_graphcanvas } = this
-    if (list_of_graphcanvas) {
-      for (const canvas of list_of_graphcanvas) {
-        delete canvas.selected_nodes[node.id]
-        canvas.deselect(node)
+        if (this._nodes_by_id[node.id] === node) {
+          delete this._nodes_by_id[node.id]
+        }
       }
-    }
-    useSelectionStore().apply(graphScopeOf(this), {
-      type: 'selection.remove',
-      key: toSelectableKey('node', node.id)
-    })
-
-    // remove from containers
-    const pos = this._nodes.indexOf(node)
-    if (pos != -1) this._nodes.splice(pos, 1)
-
-    if (this._nodes_by_id[node.id] === node) {
-      delete this._nodes_by_id[node.id]
     }
     this.onNodeRemoved?.(node)
     this.events.dispatch('node:removed', { node })
@@ -1819,19 +1867,13 @@ export class LGraph
   /** @todo Clean up - never implemented. */
   triggerInput(name: string, value: unknown): void {
     const nodes = this.findNodesByTitle(name)
-    for (const node of nodes) {
-      // @ts-expect-error - onTrigger method may not exist on all node types
-      node.onTrigger(value)
-    }
+    for (const node of nodes) node.onTrigger?.(value)
   }
 
   /** @todo Clean up - never implemented. */
   setCallback(name: string, func?: () => void): void {
     const nodes = this.findNodesByTitle(name)
-    for (const node of nodes) {
-      // @ts-expect-error - setTrigger method may not exist on all node types
-      node.setTrigger(func)
-    }
+    for (const node of nodes) node.setTrigger?.(func)
   }
 
   // used for undo, called before any change is made to the graph
@@ -1872,7 +1914,7 @@ export class LGraph
 
   addFloatingLink(link: LLink): LLink | undefined {
     if (link.id === -1) {
-      link.id = mintLinkId(this.state)
+      link.id = mintLinkId(this.state, linkIdReservations(this.rootGraph))
     }
 
     if (!registerLinkTopology(this, link)) return
@@ -1981,7 +2023,9 @@ export class LGraph
     floating
   }: OptionalProps<SerialisableReroute, 'id'>): Reroute | undefined {
     const rerouteId =
-      id === undefined ? mintRerouteId(this.state) : toRerouteId(id)
+      id === undefined
+        ? mintRerouteId(this.state, rerouteIdReservations(this.rootGraph))
+        : toRerouteId(id)
     observeRerouteId(this.state, rerouteId)
 
     const existingReroute = this.reroutes.get(rerouteId)
@@ -2126,7 +2170,7 @@ export class LGraph
   ): Subgraph[] {
     if (!data.length) return []
 
-    const nodeIds = this.collectReservedNodeIds()
+    const nodeIds = collectReservedNodeIds(this.rootGraph)
     for (const id of reserved.nodeIds ?? []) nodeIds.add(id)
     const linkIds = collectReservedLinkIds(this.rootGraph)
     for (const id of reserved.linkIds ?? []) linkIds.add(id)
@@ -2143,27 +2187,27 @@ export class LGraph
     return this.createNormalizedSubgraphs(normalized)
   }
 
-  private collectReservedNodeIds(
-    rootNodes: ISerialisedNode[] = []
-  ): Set<NodeId> {
-    const reserved = new Set<NodeId>()
-    for (const owner of [
-      this.rootGraph,
-      ...this.rootGraph.subgraphs.values()
-    ]) {
-      for (const node of owner.nodes) reserved.add(node.id)
-    }
-    for (const node of rootNodes) reserved.add(toNodeId(node.id))
-    return reserved
-  }
-
   private createNormalizedSubgraphs(data: ExportedSubgraph[]): Subgraph[] {
     const subgraphs = data.map((definition) =>
       this.createNormalizedSubgraph(definition)
     )
-    for (const definition of topologicalSortSubgraphs(data))
-      this.subgraphs.get(definition.id)?.configure(definition)
-    return subgraphs
+    try {
+      for (const definition of topologicalSortSubgraphs(data))
+        this.subgraphs.get(definition.id)?.configure(definition)
+      return subgraphs
+    } catch (error) {
+      try {
+        this.releaseSubgraphs(subgraphs)
+      } catch (cleanupError) {
+        const combinedError = new AggregateError(
+          [error, cleanupError],
+          'Subgraph configuration and rollback both failed'
+        )
+        combinedError.cause = error
+        throw combinedError
+      }
+      throw error
+    }
   }
 
   private createNormalizedSubgraph(normalized: ExportedSubgraph): Subgraph {
@@ -2715,7 +2759,10 @@ export class LGraph
     // Shared definitions may survive, so unpacked groups need fresh layout
     // ids, like the reroutes below.
     for (const groupInfo of groups) {
-      const groupId = mintGroupId(this.rootGraph.state)
+      const groupId = mintGroupId(
+        this.rootGraph.state,
+        groupIdReservations(this.rootGraph)
+      )
       groupInfo.id = groupId
       const group = new LGraphGroup(groupInfo.title, groupId)
       this.add(group, true)
@@ -2805,7 +2852,10 @@ export class LGraph
     const rerouteIdMap = new Map<RerouteId, RerouteId>()
     const oldReroutes = subgraphNode.subgraph.reroutes
     for (const reroute of oldReroutes.values()) {
-      const migratedId = mintRerouteId(this.state)
+      const migratedId = mintRerouteId(
+        this.state,
+        rerouteIdReservations(this.rootGraph)
+      )
       const migratedReroute = this.setReroute({
         id: migratedId,
         pos: [reroute.pos[0] + offsetX, reroute.pos[1] + offsetY],
@@ -3152,20 +3202,13 @@ export class LGraph
             const runtimeLastNodeId = runtimeOptional(lastNodeId)
             const runtimeLastRerouteId = runtimeOptional(lastRerouteId)
             if (runtimeLastGroupId != null)
-              state.lastGroupId = Math.max(
-                state.lastGroupId,
-                runtimeLastGroupId
-              )
+              observeGroupId(state, toGroupId(runtimeLastGroupId))
             if (runtimeLastLinkId != null)
-              state.lastLinkId = toLinkId(
-                Math.max(state.lastLinkId, runtimeLastLinkId)
-              )
+              observeLinkId(state, toLinkId(runtimeLastLinkId))
             if (runtimeLastNodeId != null)
-              state.lastNodeId = Math.max(state.lastNodeId, runtimeLastNodeId)
+              observeNodeId(state, toNodeId(runtimeLastNodeId))
             if (runtimeLastRerouteId != null)
-              state.lastRerouteId = toRerouteId(
-                Math.max(state.lastRerouteId, runtimeLastRerouteId)
-              )
+              observeRerouteId(state, toRerouteId(runtimeLastRerouteId))
           }
 
           // Links
@@ -3194,17 +3237,7 @@ export class LGraph
 
         const nodesData = data.nodes
 
-        // copy all stored fields
-        for (const i in data) {
-          if (
-            LGraph.ConfigureProperties.has(i) ||
-            !GRAPH_CANONICAL_FIELDS.has(i)
-          )
-            continue
-
-          // @ts-expect-error #574 Legacy property assignment
-          this[i] = data[i]
-        }
+        copyUnhandledCanonicalFields(this, data)
 
         // Normalize cloned subgraph definitions before configuring them.
         const subgraphs = data.definitions?.subgraphs
@@ -3214,7 +3247,7 @@ export class LGraph
             ? normalizeSubgraphDefinitions(
                 subgraphs,
                 {
-                  nodeIds: this.collectReservedNodeIds(nodesData),
+                  nodeIds: collectReservedNodeIds(this.rootGraph, nodesData),
                   groupIds: collectReservedGroupIds(this, data.groups),
                   linkIds: collectReservedLinkIds(this, data.floatingLinks),
                   rerouteIds: collectReservedRerouteIds(this)
@@ -3270,6 +3303,7 @@ export class LGraph
             const requestedId = toNodeId(n_info.id)
             node.id = requestedId
             // add before configure, otherwise configure cannot create links
+            captureWidgetRestorationSlots(node)
             this.add(node, true)
             if (node.id !== requestedId) {
               recordUnambiguousRemint(

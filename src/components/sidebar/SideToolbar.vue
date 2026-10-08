@@ -96,7 +96,6 @@ import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useUserStore } from '@/stores/userStore'
@@ -132,7 +131,6 @@ const settingStore = useSettingStore()
 const userStore = useUserStore()
 const commandStore = useCommandStore()
 const canvasStore = useCanvasStore()
-const agentNodeSelectionStore = useAgentNodeSelectionStore()
 const sideToolbarRef = ref<HTMLElement>()
 const topToolbarRef = ref<HTMLElement>()
 const bottomToolbarRef = ref<HTMLElement>()
@@ -159,7 +157,7 @@ const tabs = computed(() => {
     : all
 })
 const selectedTab = computed(() => workspaceStore.sidebarTab.activeSidebarTab)
-const isHidden = computed(() => agentNodeSelectionStore.isActionBarsHidden)
+const isHidden = computed(() => canvasStore.isPickingNodes)
 
 /**
  * Handle sidebar tab icon click.
@@ -338,13 +336,6 @@ onMounted(() => {
 <style scoped>
 .connected-sidebar {
   padding: var(--sidebar-padding) 0;
-  background-color: var(--comfy-menu-bg);
-}
-
-.overflowing-sidebar :deep(.comfy-menu-button-wrapper) {
-  position: sticky;
-  top: 0;
-  z-index: 1;
   background-color: var(--comfy-menu-bg);
 }
 </style>

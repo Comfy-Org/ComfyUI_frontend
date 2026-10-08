@@ -2,7 +2,6 @@
   "unused_files": [],
   "unused_exports": [
     "apps/website/src/components/ui/button-mask/index.ts:ButtonMask",
-    "src/composables/billing/useNextInvoice.ts:useNextInvoice",
     "src/extensions/core/groupNode.ts:GroupNodeHandler"
   ],
   "unused_types": [
@@ -56,7 +55,11 @@
     "src/platform/cloud/subscription/composables/useSubscriptionDialog.ts->src/services/dialogService.ts",
     "src/platform/missingMedia/missingMediaStore.ts->src/scripts/app.ts",
     "src/platform/missingModel/missingModelStore.ts->src/scripts/app.ts",
-    "src/platform/settings/settingStore.ts->src/scripts/app.ts",
+    "src/platform/cloud/subscription/composables/useFreeTierQuota.ts->src/scripts/app.ts",
+    "src/platform/nodeReplacement/missingNodesErrorStore.ts->src/scripts/app.ts",
+    "src/scripts/app.ts->src/scripts/changeTracker.ts",
+    "src/scripts/app.ts->src/scripts/ui.ts",
+    "src/scripts/app.ts->src/services/extensionService.ts",
     "src/platform/telemetry/utils/getExecutionContext.ts->src/scripts/app.ts",
     "src/platform/workflow/core/services/workflowService.ts->src/scripts/app.ts",
     "src/platform/workflow/core/services/workflowService.ts->src/stores/subgraphNavigationStore.ts",

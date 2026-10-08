@@ -1,13 +1,13 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import { t } from '../../i18n/translations'
+import { t } from '@/i18n/translations'
 import ProductCardsSection from './ProductCardsSection.vue'
 
 const products = ['local', 'cloud', 'platform', 'enterprise'] as const
 
 const titleOf = (product: (typeof products)[number]) =>
-  t(`products.${product}.title`, 'en')
+  t(`products.${product}.title`, {}, { locale: 'en' })
 
 describe('ProductCardsSection', () => {
   it('shows all four products by default', () => {

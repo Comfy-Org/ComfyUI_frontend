@@ -231,7 +231,13 @@ guard.
 - Remote edits get undo, `isModified`, extension callbacks
   (`onAdded`, `onRemoved`, `onConnectionsChange`, `onConfigure`,
   `onWidgetChanged`), autogrow, and slot realignment without follower code,
-  because they run the same code a human edit runs.
+  because they run the same code a human edit runs. One exception, found in
+  production: a dynamic input slot the host grew (`connect` with a `grow`
+  payload) has no live counterpart, and autogrow is driven by
+  `onConnectionsChange` on a slot that already exists, so there is no connect
+  to trigger it and the link resolved to slot `-1`. The applier grows the
+  group itself before connecting (`growAutogrowInput`), the read-leg mirror of
+  the grow op `docOpMinter.mintConnect` already mints on the write leg.
 - Litegraph and the stores carry no agent-specific hooks; the agent extension
   is deletable without touching them.
 - One shared apply/render path means shared fixes and tests protect all four
@@ -284,6 +290,26 @@ path:
    never encoded as a Yjs update or merged into the shared doc.
 4. **Echo-attribution guard** — the own-actor drop at the follower entry plus
    `agent-remote` provenance on everything the applier writes.
+
+## Amendment (2026-09-26): re-minting a document the host refuses as stale-schema
+
+One narrow exception applies to "the follower never sends the whole graph." If
+the host cannot read a stored document because it uses an older schema, and the
+subscribe advertised `supports_reseed`, the host refuses with
+`stale_schema_reseed_required`. The follower may answer each refusal once with a
+`doc_reseed` frame containing the bound tab's serialized canvas (the same
+content a prompt posts as its draft).
+
+This is recovery rather than a whole-graph edit: the host rechecks the document,
+compare-and-swaps the exact refused sequence, remains the only Yjs writer, and
+announces a new lineage for ordinary catch-up. The on-screen canvas is required
+because the server projection can lag human edits. `LayoutFollowerBridge.reseed`
+enforces that the refusal matches the current workflow and can be answered only
+once. A retryable reseed result permits another answer only to a fresh refusal
+produced by the bounded subscribe backoff. After a successful or conflicting
+reseed resets the lineage, another refusal cannot be answered until the
+replacement subscription is confirmed, the transport reconnects, or the user
+retargets. All other whole-graph sends remain rejected.
 
 ## Product gate and developer diagnostics (amended 2026-09-12)
 

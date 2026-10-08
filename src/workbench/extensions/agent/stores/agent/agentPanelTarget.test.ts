@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useAgentPanelStore } from './agentPanelStore'
 
@@ -47,6 +47,198 @@ describe('Agent target tab lifetime', () => {
     await nextTick()
     expect(panel.selectedWorkflow?.path).toBe('workflows/renamed.json')
   })
+})
+
+type TargetSetup = Awaited<ReturnType<typeof setup>>
+
+function saveTarget(target: ComfyWorkflow): void {
+  target.size = 1
+  vi.spyOn(target, 'delete').mockResolvedValue()
+}
+
+function deferDelete(target: ComfyWorkflow): () => void {
+  let finishDelete = () => {}
+  vi.spyOn(target, 'delete').mockImplementation(
+    () =>
+      new Promise<void>((resolve) => {
+        finishDelete = resolve
+      })
+  )
+  return () => finishDelete()
+}
+
+describe('Agent target deletion', () => {
+  it.for([
+    {
+      event: 'deleting the saved target after its tab closes',
+      act: async ({ workflows, target }: TargetSetup) => {
+        saveTarget(target)
+        await workflows.closeWorkflow(target)
+        await nextTick()
+        await workflows.deleteWorkflow(target)
+      },
+      unavailable: true,
+      selected: undefined
+    },
+    {
+      event: 'deleting the saved target while its tab is open',
+      act: async ({ workflows, target }: TargetSetup) => {
+        saveTarget(target)
+        await workflows.deleteWorkflow(target)
+      },
+      unavailable: true,
+      selected: undefined
+    },
+    {
+      event: 'deleting an unsaved target, which only closes it',
+      act: async ({ workflows, target }: TargetSetup) =>
+        workflows.deleteWorkflow(target),
+      unavailable: false,
+      selected: undefined
+    },
+    {
+      event: 'deleting a saved workflow at a closed unsaved target path',
+      act: async ({ workflows, target }: TargetSetup) => {
+        await workflows.closeWorkflow(target)
+        await nextTick()
+        const successor = workflows.createTemporary('a.json')
+        expect(successor.path).toBe(target.path)
+        saveTarget(successor)
+        await workflows.deleteWorkflow(successor)
+      },
+      unavailable: false,
+      selected: undefined
+    },
+    {
+      event: 'renaming, then deleting, the closed saved target',
+      act: async ({ workflows, target }: TargetSetup) => {
+        saveTarget(target)
+        vi.spyOn(target, 'rename').mockImplementation(async (path) => {
+          target.path = path
+          return target
+        })
+        await workflows.closeWorkflow(target)
+        await nextTick()
+        await workflows.renameWorkflow(target, 'workflows/renamed.json')
+        await workflows.deleteWorkflow(target)
+      },
+      unavailable: true,
+      selected: undefined
+    },
+    {
+      event: 'deleting a closed saved target after it is reopened',
+      act: async ({ workflows, target }: TargetSetup) => {
+        saveTarget(target)
+        await workflows.closeWorkflow(target)
+        await nextTick()
+        workflows.openWorkflowsInBackground({ right: [target.path] })
+        await nextTick()
+        await workflows.deleteWorkflow(target)
+      },
+      unavailable: false,
+      selected: undefined
+    },
+    {
+      event: 'deleting the saved target after the chat cleared it mid-delete',
+      act: async ({ workflows, panel, target }: TargetSetup) => {
+        saveTarget(target)
+        const finishDelete = deferDelete(target)
+        const deleting = workflows.deleteWorkflow(target)
+        panel.setWorkflowTarget(null)
+        finishDelete()
+        await deleting
+      },
+      unavailable: false,
+      selected: undefined
+    },
+    {
+      event: 'deleting the saved target while a restoring chat commits it',
+      act: async ({ workflows, panel, target }: TargetSetup) => {
+        saveTarget(target)
+        const finishDelete = deferDelete(target)
+        panel.beginWorkflowRestoration()
+        const deleting = workflows.deleteWorkflow(target)
+        panel.setWorkflowTarget(target)
+        finishDelete()
+        await deleting
+      },
+      unavailable: true,
+      selected: undefined
+    },
+    {
+      event: 'only closing the target',
+      act: async ({ workflows, target }: TargetSetup) =>
+        workflows.closeWorkflow(target),
+      unavailable: false,
+      selected: undefined
+    },
+    {
+      event: 'deleting another workflow',
+      act: async ({ workflows, other }: TargetSetup) => {
+        await workflows.closeWorkflow(other)
+        await nextTick()
+        await workflows.deleteWorkflow(other)
+      },
+      unavailable: false,
+      selected: 'workflows/a.json'
+    },
+    {
+      event: 'deleting the visible workflow a fresh chat follows',
+      act: async ({ workflows, panel, target, other }: TargetSetup) => {
+        panel.startFollowingVisibleWorkflow()
+        workflows.activeWorkflow = target
+        await nextTick()
+        workflows.activeWorkflow = other
+        await workflows.closeWorkflow(target)
+        await nextTick()
+        await workflows.deleteWorkflow(target)
+      },
+      unavailable: false,
+      selected: 'workflows/b.json'
+    },
+    {
+      event: 'deleting the old target after choosing another',
+      act: async ({ workflows, panel, target, other }: TargetSetup) => {
+        await workflows.closeWorkflow(target)
+        await nextTick()
+        panel.setWorkflowTarget(other)
+        await workflows.deleteWorkflow(target)
+      },
+      unavailable: false,
+      selected: 'workflows/b.json'
+    }
+  ])(
+    '$event: unavailable=$unavailable',
+    async ({ act, unavailable, selected }) => {
+      const context = await setup()
+      await nextTick()
+
+      await act(context)
+      await nextTick()
+
+      expect(context.panel.targetUnavailable).toBe(unavailable)
+      expect(context.panel.selectedWorkflow?.path).toBe(selected)
+    }
+  )
+
+  it.for([
+    { kind: 'temporary', prepare: (_target: ComfyWorkflow) => {} },
+    { kind: 'saved', prepare: saveTarget }
+  ])(
+    'keeps no workflow object once a $kind target closes',
+    async ({ prepare }) => {
+      const { workflows, panel, target } = await setup()
+      prepare(target)
+      await nextTick()
+
+      await workflows.closeWorkflow(target)
+      await nextTick()
+
+      expect(Object.values(panel.targetTracking)).not.toContainEqual(
+        expect.any(ComfyWorkflow)
+      )
+    }
+  )
 })
 
 describe('Agent target tracking policy', () => {

@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { defineComponent, h } from 'vue'
 
-import { BANNER_STORAGE_KEY } from '../utils/banner'
+import { BANNER_STORAGE_KEY } from '@/utils/banner'
 import { useBannerDismissal } from './useBannerDismissal'
 
 const VERSION = 'announcement_en_v1'

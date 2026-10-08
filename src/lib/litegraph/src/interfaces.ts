@@ -298,11 +298,11 @@ export type Direction = 'top' | 'bottom' | 'left' | 'right'
 export type CompassCorners = 'NE' | 'SE' | 'SW' | 'NW'
 
 /**
- * A string that represents a specific data / slot type, e.g. `STRING`.
+ * A value that represents a specific data / slot type, e.g. `STRING`.
  *
- * Can be comma-delimited to specify multiple allowed types, e.g. `STRING,INT`.
+ * Multiple allowed types may be comma-delimited or stored as an array.
  */
-export type ISlotType = number | string
+export type ISlotType = number | string | string[]
 
 export interface INodeSlot extends HasBoundingRect {
   /**
@@ -332,6 +332,7 @@ export interface INodeSlot extends HasBoundingRect {
   locked?: boolean
   nameLocked?: boolean
   pos?: Point
+  slot_index?: SlotIndex
   /** @remarks Automatically calculated; not included in serialisation. */
   boundingRect: ReadOnlyRect
   /**
@@ -378,6 +379,13 @@ export interface INodeInputSlot extends INodeSlot {
    * Internal use only; API is not finalised and may change at any time.
    */
   _widget?: IBaseWidget
+
+  /**
+   * Internal use only. Set while a promoted widget's demotion is deferred by
+   * a microtask, so a same-tick reconnect (a rewire) can cancel it instead
+   * of the widget being torn down and immediately rebuilt.
+   */
+  _pendingDemotionToken?: symbol
 }
 
 export interface IWidgetInputSlot extends INodeInputSlot {
@@ -393,7 +401,6 @@ export interface INodeOutputSlot extends INodeSlot {
    */
   links?: LinkId[] | null
   _data?: unknown
-  slot_index?: SlotIndex
 }
 
 /** Options for {@link LiteGraphGlobal.createNode}. Shallow-copied onto the new node. */
@@ -538,7 +545,9 @@ export interface PanelWidgetOptions {
   label?: string
   type?: string
   widget?: string
-  values?: Array<string | IContextMenuValue | null>
+  values?:
+    | Array<string | IContextMenuValue | null>
+    | Record<string, TWidgetValue>
   callback?: PanelWidgetCallback
 }
 
