@@ -4,11 +4,13 @@ import { computed, useTemplateRef } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { TrimLimits, TrimRange } from '@/lib/workshop/video-trim/range'
+import type { TrimGrip, TrimTimeline } from '@/lib/workshop/video-trim/track'
 import {
-  trimEndTo,
-  trimSlideTo,
-  trimStartTo
-} from '@/lib/workshop/video-trim/range'
+  dragOffset,
+  moveGrip,
+  nudgedTime,
+  timeAtPointer
+} from '@/lib/workshop/video-trim/track'
 
 /**
  * A filmstrip timeline with a selected range: two handles to resize it, the
@@ -46,8 +48,6 @@ const emit = defineEmits<{
 }>()
 
 const HANDLE_PX = 16
-const KEY_STEP = 0.1
-const KEY_STEP_LARGE = 1
 const CONTENT = `(100% - ${HANDLE_PX * 2}px)`
 
 const track = useTemplateRef<HTMLElement>('track')
@@ -66,42 +66,36 @@ const afterStyle = computed(() => ({
   width: `calc(${1 - share(range.value.end)} * ${CONTENT} + ${HANDLE_PX}px)`
 }))
 
-function timeAt(clientX: number): number {
-  const box = track.value?.getBoundingClientRect()
-  const width = (box?.width ?? 0) - HANDLE_PX * 2
-  if (!box || width <= 0) return 0
-  const along = (clientX - box.left - HANDLE_PX) / width
-  return Math.min(1, Math.max(0, along)) * duration
-}
+const timeline = (): TrimTimeline => ({
+  range: range.value,
+  playhead: playhead.value,
+  duration,
+  limits
+})
+const timeAt = (clientX: number) =>
+  timeAtPointer(
+    clientX,
+    track.value?.getBoundingClientRect(),
+    HANDLE_PX,
+    duration
+  )
 
-type Grip = 'start' | 'end' | 'slide' | 'scrub'
-let drag: { grip: Grip; offset: number } | undefined
+let drag: { grip: TrimGrip; offset: number } | undefined
 
 // The models update on the next tick, so what is emitted comes from the value
 // just worked out, not from one read back.
-function apply(grip: Grip, time: number) {
-  if (grip === 'scrub') {
-    const at = Math.min(range.value.end, Math.max(range.value.start, time))
-    playhead.value = at
-    emit('seek', at)
-    return
-  }
-  const next =
-    grip === 'start'
-      ? trimStartTo(range.value, time, duration, limits)
-      : grip === 'end'
-        ? trimEndTo(range.value, time, duration, limits)
-        : trimSlideTo(range.value, time, duration)
-  range.value = next
-  emit('seek', grip === 'end' ? next.end : next.start)
+function apply(grip: TrimGrip, time: number) {
+  const move = moveGrip(grip, timeline(), time)
+  if (move.range) range.value = move.range
+  if (move.playhead !== undefined) playhead.value = move.playhead
+  emit('seek', move.seek)
 }
 
-function grab(event: PointerEvent, grip: Grip) {
+function grab(event: PointerEvent, grip: TrimGrip) {
   if (disabled || !(event.currentTarget instanceof HTMLElement)) return
   event.currentTarget.setPointerCapture(event.pointerId)
   const at = timeAt(event.clientX)
-  // a slide keeps the point that was grabbed under the pointer
-  drag = { grip, offset: grip === 'slide' ? at - range.value.start : 0 }
+  drag = { grip, offset: dragOffset(grip, at, range.value) }
   if (grip === 'scrub') apply(grip, at)
 }
 
@@ -113,22 +107,12 @@ function release() {
   drag = undefined
 }
 
-function nudge(event: KeyboardEvent, grip: Grip) {
-  const direction =
-    event.key === 'ArrowRight' || event.key === 'ArrowUp'
-      ? 1
-      : event.key === 'ArrowLeft' || event.key === 'ArrowDown'
-        ? -1
-        : 0
-  if (!direction || disabled) return
+function nudge(event: KeyboardEvent, grip: Exclude<TrimGrip, 'slide'>) {
+  if (disabled) return
+  const to = nudgedTime(grip, timeline(), event.key, event.shiftKey)
+  if (to === undefined) return
   event.preventDefault()
-  const from =
-    grip === 'start'
-      ? range.value.start
-      : grip === 'end'
-        ? range.value.end
-        : playhead.value
-  apply(grip, from + direction * (event.shiftKey ? KEY_STEP_LARGE : KEY_STEP))
+  apply(grip, to)
 }
 
 const handleClass =

@@ -21,6 +21,7 @@ import {
   tooShortToTrim,
   trimLength
 } from '@/lib/workshop/video-trim/range'
+import { clock, loopedTime, playFrom } from '@/lib/workshop/video-trim/track'
 import VideoTrimTrack from './VideoTrimTrack.vue'
 
 /** What Confirm hands back: the part to keep, and what was read of the video. */
@@ -114,41 +115,32 @@ function seek(time: number) {
   if (player.value) player.value.currentTime = time
 }
 
+function pause(video: HTMLVideoElement) {
+  playing.value = false
+  video.pause()
+}
+async function play(video: HTMLVideoElement) {
+  const from = playFrom(playhead.value, range.value)
+  if (from !== undefined) video.currentTime = from
+  playing.value = true
+  await video.play().catch(() => (playing.value = false))
+}
 async function toggle() {
   const video = player.value
   if (!video || !canConfirm.value) return
-  if (playing.value) {
-    playing.value = false
-    video.pause()
-    return
-  }
-  if (playhead.value >= range.value.end - 0.05)
-    video.currentTime = range.value.start
-  playing.value = true
-  try {
-    await video.play()
-  } catch {
-    playing.value = false
-  }
+  if (playing.value) pause(video)
+  else await play(video)
 }
 
 // While it plays, the part that is kept loops, so its join can be judged.
 useRafFn(() => {
   const video = player.value
   if (!video || !playing.value) return
-  if (video.currentTime >= range.value.end || video.ended)
-    video.currentTime = range.value.start
-  playhead.value = Math.min(
-    range.value.end,
-    Math.max(range.value.start, video.currentTime)
-  )
+  const loop = loopedTime(video.currentTime, video.ended, range.value)
+  if (loop.seekTo !== undefined) video.currentTime = loop.seekTo
+  playhead.value = loop.playhead
 })
 
-function clock(seconds: number): string {
-  const whole = Math.max(0, seconds)
-  const minutes = Math.floor(whole / 60)
-  return `${minutes}:${(whole - minutes * 60).toFixed(1).padStart(4, '0')}`
-}
 const labels = computed(() => ({
   start: t('workshop.videoTrim.start'),
   end: t('workshop.videoTrim.end'),

@@ -1,65 +1,41 @@
 import { useMounted, useObjectUrl } from '@vueuse/core'
 import { computed, onScopeDispose, ref, shallowRef, watch } from 'vue'
 
+import type { VideoTrim } from '@/components/workshop/video-trim/VideoTrimDialog.vue'
 import { refreshWorkshopCredits } from '@/config/workshop-credits'
 import { useWorkshopSession } from '@/config/workshop-session-state'
-import { workshopIdempotencyKey } from '@/config/workshop-snippets'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
-import type { StudioGate } from '@/lib/workshop/cinematic-studio/gate'
-import { studioGate } from '@/lib/workshop/cinematic-studio/gate'
-import {
-  failureNote,
-  quoteNote
-} from '@/lib/workshop/cinematic-studio/reshoot-engine/notes'
-import type { ReshootRunPhase } from '@/lib/workshop/cinematic-studio/reshoot-engine/run'
-import {
-  downloadOutput,
-  runJob
-} from '@/lib/workshop/cinematic-studio/reshoot-engine/run'
+import { quoteNote } from '@/lib/workshop/cinematic-studio/reshoot-engine/notes'
 import type { ReshootQuote } from '@/lib/workshop/cinematic-studio/reshoot-engine/transport'
 import { ReshootError } from '@/lib/workshop/cinematic-studio/reshoot-engine/transport'
-import type { VideoTrim } from '@/components/workshop/video-trim/VideoTrimDialog.vue'
-import type { SwapWindow, SwapSize } from '@/lib/workshop/openjutsu/clip'
+import type { SwapSize, SwapWindow } from '@/lib/workshop/openjutsu/clip'
 import {
   resultSize,
   swapCanvas,
   swapSeconds
 } from '@/lib/workshop/openjutsu/clip'
+import type { SwapOutcome } from '@/lib/workshop/openjutsu/run-report'
+import { swapRunReport } from '@/lib/workshop/openjutsu/run-report'
+import type { SwapJob } from '@/lib/workshop/openjutsu/run-swap'
+import { runSwap, uploadOnce } from '@/lib/workshop/openjutsu/run-swap'
+import {
+  canSwap,
+  missingInput,
+  quoteFailure,
+  quoteRefusesCredit,
+  swapFailureNote,
+  swapFailureReason,
+  swapGate
+} from '@/lib/workshop/openjutsu/swap-rules'
 import {
   OPENJUTSU_NO_ACCOUNT,
   OPENJUTSU_SAMPLE_MODE,
   openjutsuTransport
 } from '@/lib/workshop/openjutsu/transport-config'
-import { resolveSeed, swapWorkflow } from '@/lib/workshop/openjutsu/workflow'
-import { captureWorkshopEvent, useWorkshopAuthFlag } from '@/scripts/posthog'
-import type { WorkshopRunAnalytics } from '@/scripts/workshop-analytics'
-
-const OPENJUTSU_APP_SLUG = 'apps/openjutsu'
-
-/** Waits before asking for the price again after a failed quote. */
-const QUOTE_RETRY_MS = [5_000, 15_000, 30_000, 60_000]
-/** Quote failures that waiting cannot fix: no such app, or signed out. */
-const QUOTE_FINAL = new Set(['not_found', 'unauthorized', 'app_unavailable'])
-const UNAVAILABLE = new Set(['app_unavailable', 'not_found'])
-
-type SwapPhase = 'uploading' | ReshootRunPhase | 'fetching'
-
-export interface SwapTake {
-  readonly id: string
-  readonly n: number
-  /** Who was replaced, as typed. */
-  readonly target: string
-  readonly window: SwapWindow
-  /** Seconds of result asked for. */
-  readonly seconds: number
-  readonly size: SwapSize
-  readonly seed: number
-  readonly status: 'rendering' | 'done' | 'cancelled' | 'failed'
-  readonly phase?: SwapPhase
-  readonly url?: string
-  readonly note?: string
-}
+import type { SwapTake } from '@/lib/workshop/openjutsu/take'
+import { resolveSeed } from '@/lib/workshop/openjutsu/workflow'
+import { useWorkshopAuthFlag } from '@/scripts/posthog'
 
 /**
  * The Openjutsu app's state and its one metered run: a clip, a character
@@ -168,35 +144,41 @@ export function useOpenjutsu({ locale = 'en' }: { locale?: Locale } = {}) {
   let quoteFailures = 0
 
   const signedIn = () => OPENJUTSU_NO_ACCOUNT || !!session.value
+  /** The backend to ask for a price, when there is one and someone to ask as. */
+  const quoteSource = () => (signedIn() ? transport : undefined)
+
+  function quoteArrived(next: ReshootQuote | undefined) {
+    quote.value = next
+    quoteSettled.value = true
+    quoteFailed.value = false
+    quoteFailures = 0
+    unavailable.value = false
+  }
+  /** A failed quote: the price is unknown, so ask again unless waiting cannot help. */
+  function quoteFailedWith(error: unknown) {
+    const failure = quoteFailure(error, quoteFailures)
+    quote.value = undefined
+    quoteSettled.value = false
+    if (failure.unavailable) unavailable.value = true
+    quoteFailed.value = failure.retryInMs !== undefined
+    if (failure.retryInMs === undefined) return
+    quoteFailures += 1
+    quoteRetry = setTimeout(() => void refreshQuote(), failure.retryInMs)
+  }
   async function refreshQuote() {
     const request = ++quoteRequest
     clearTimeout(quoteRetry)
-    if (!transport || !signedIn()) {
+    const source = quoteSource()
+    if (!source) {
       quote.value = undefined
       quoteSettled.value = false
       return
     }
-    try {
-      const next = await transport.quote()
-      if (request !== quoteRequest) return
-      quote.value = next
-      quoteSettled.value = true
-      quoteFailed.value = false
-      quoteFailures = 0
-      unavailable.value = false
-    } catch (error) {
-      if (request !== quoteRequest) return
-      const code = error instanceof ReshootError ? error.code : ''
-      quote.value = undefined
-      quoteSettled.value = false
-      if (UNAVAILABLE.has(code)) unavailable.value = true
-      quoteFailed.value = !QUOTE_FINAL.has(code)
-      if (!quoteFailed.value) return
-      const delay =
-        QUOTE_RETRY_MS[Math.min(quoteFailures, QUOTE_RETRY_MS.length - 1)]
-      quoteFailures += 1
-      quoteRetry = setTimeout(() => void refreshQuote(), delay)
-    }
+    const answer = await source.quote().then(
+      (next) => () => quoteArrived(next),
+      (error: unknown) => () => quoteFailedWith(error)
+    )
+    if (request === quoteRequest) answer()
   }
   watch(
     () => [mounted.value, session.value?.workspace.id] as const,
@@ -206,41 +188,39 @@ export function useOpenjutsu({ locale = 'en' }: { locale?: Locale } = {}) {
     { immediate: true }
   )
 
-  const quoteRefusesCredit = computed(
-    () =>
-      !rendering.value && quote.value?.blocked_reason === 'insufficient_credits'
+  const refusesCredit = computed(() =>
+    quoteRefusesCredit(rendering.value, quote.value)
   )
-  const gate = computed<StudioGate>(() => {
-    if (OPENJUTSU_NO_ACCOUNT && !unavailable.value)
-      return !mounted.value
-        ? 'pending'
-        : quoteRefusesCredit.value
-          ? 'noCredits'
-          : 'ready'
-    return studioGate({
-      runEnabled: !unavailable.value,
-      modelRunnable: true,
+  const gate = computed(() =>
+    swapGate({
+      noAccount: OPENJUTSU_NO_ACCOUNT,
+      unavailable: unavailable.value,
       mounted: mounted.value,
-      authAvailable: authEnabled.value && !sessionFailure.value,
-      sessionSettled: settled.value && !(user.value && !session.value),
+      authEnabled: authEnabled.value,
+      sessionFailed: !!sessionFailure.value,
+      sessionSettled: settled.value,
+      hasUser: !!user.value,
+      hasSession: !!session.value,
       role: session.value?.role,
-      credits: quoteRefusesCredit.value ? 0 : undefined
+      refusesCredit: refusesCredit.value
     })
-  })
+  )
   /** What is still missing before Generate, in the order the panel asks. */
-  const missing = computed(() => {
-    if (!video.value || !trim.value) return 'video'
-    if (!character.value) return 'character'
-    if (!target.value.trim()) return 'target'
-    return undefined
-  })
-  const canGenerate = computed(
-    () =>
-      gate.value === 'ready' &&
-      missing.value === undefined &&
-      !rendering.value &&
-      quoteSettled.value &&
-      quote.value?.next_run !== 'blocked'
+  const missing = computed(() =>
+    missingInput({
+      video: !!video.value && !!trim.value,
+      character: !!character.value,
+      target: target.value
+    })
+  )
+  const canGenerate = computed(() =>
+    canSwap({
+      gate: gate.value,
+      missing: missing.value,
+      rendering: rendering.value,
+      quoteSettled: quoteSettled.value,
+      quote: quote.value
+    })
   )
   const priceNote = computed(() => {
     if (quote.value)
@@ -251,145 +231,116 @@ export function useOpenjutsu({ locale = 'en' }: { locale?: Locale } = {}) {
     return quoteFailed.value ? t('reshoot.quote.failed') : undefined
   })
 
-  function noteFor(error: unknown): string {
-    const code = error instanceof ReshootError ? error.code : ''
-    if (code === 'insufficient_credits')
-      return t(
-        session.value?.role === 'member'
-          ? 'workshop.error.memberNoCredits'
-          : 'workshop.error.noCreditsCloud',
-        { workspace: session.value?.workspace.name ?? '' }
-      )
-    if (UNAVAILABLE.has(code)) return t('openjutsu.unavailable')
-    if (code === 'unauthorized') return t('openjutsu.signIn')
-    if (code === 'job_failed') return t('openjutsu.error.swap')
-    return failureNote(error, locale, quote.value?.price_credits)
-  }
+  const noteFor = (error: unknown) =>
+    swapFailureNote(error, {
+      locale,
+      role: session.value?.role,
+      workspace: session.value?.workspace.name,
+      price: quote.value?.price_credits
+    })
 
   // --- the run
-  const uploads = new WeakMap<File, Promise<string>>()
+  const backend = transport && { transport, upload: uploadOnce(transport) }
   const runs = new Map<string, AbortController>()
   const objectUrls: string[] = []
 
-  /** Bytes already sent keep their name, so a retake uploads nothing twice. */
-  function uploaded(file: File, signal: AbortSignal): Promise<string> {
-    if (!transport) return Promise.reject(new ReshootError('app_unavailable'))
-    const known = uploads.get(file)
-    if (known) return known
-    const sending = transport.upload(file, signal)
-    uploads.set(file, sending)
-    sending.catch(() => uploads.delete(file))
-    return sending
+  /**
+   * Everything the next run uses, read at once: edits made while it renders
+   * belong to the next take, and a blank seed is drawn once, here.
+   */
+  function nextJob(): SwapJob | undefined {
+    const clip = video.value
+    const image = character.value
+    const read = trim.value
+    if (!clip || !image || !read) return undefined
+    const canvasSize = swapCanvas(read.width, read.height, size.value)
+    return {
+      video: clip,
+      character: image,
+      request: {
+        target: target.value.trim(),
+        start: read.start,
+        seconds: swapSeconds(read.end - read.start),
+        canvas: canvasSize,
+        result: resultSize(read.width, read.height, canvasSize),
+        seed: resolveSeed(seed.value)
+      }
+    }
+  }
+
+  /** Adds the take a job will fill, shows it, and hands back how to stop it. */
+  function openTake(job: SwapJob, chosenSeconds: number) {
+    const take: SwapTake = {
+      id: crypto.randomUUID(),
+      n: takes.value.length + 1,
+      target: job.request.target,
+      window: { start: job.request.start, seconds: chosenSeconds },
+      seconds: job.request.seconds,
+      size: size.value,
+      seed: job.request.seed,
+      status: 'rendering',
+      phase: 'uploading'
+    }
+    takes.value = [...takes.value, take]
+    selected.value = take.id
+    const controller = new AbortController()
+    runs.set(take.id, controller)
+    return { id: take.id, signal: controller.signal }
+  }
+
+  /** A finished run: its video becomes the take's result. */
+  function takeDone(id: string, result: Blob): SwapOutcome {
+    const url = URL.createObjectURL(result)
+    objectUrls.push(url)
+    updateTake(id, { status: 'done', phase: undefined, url })
+    return { status: 'succeeded', output_count: 1 }
+  }
+  function takeFailed(id: string, error: unknown): SwapOutcome {
+    updateTake(id, {
+      status: 'failed',
+      phase: undefined,
+      note: noteFor(error)
+    })
+    return { status: 'failed', reason: swapFailureReason(error) }
+  }
+
+  function afterRun(id: string, hadAccount: boolean) {
+    runs.delete(id)
+    void refreshQuote()
+    if (hadAccount) void refreshWorkshopCredits({ force: true })
+  }
+
+  /** Runs one job into a new take, on whichever backend the page has. */
+  async function runTake(via: NonNullable<typeof backend>, job: SwapJob) {
+    const chosen = range.value?.seconds ?? job.request.seconds
+    const take = openTake(job, chosen)
+    const startedFor = session.value
+    const report = swapRunReport(startedFor)
+    report.started()
+    // A stopped run is cancelled whichever way it ended; `cancel` has already
+    // marked its take.
+    const settle = (outcome: () => SwapOutcome) =>
+      report.finished(take.signal.aborted ? { status: 'cancelled' } : outcome())
+    try {
+      const result = await runSwap(
+        via.transport,
+        via.upload,
+        job,
+        (phase) => updateTake(take.id, { phase }),
+        take.signal
+      )
+      settle(() => takeDone(take.id, result))
+    } catch (error) {
+      settle(() => takeFailed(take.id, error))
+    } finally {
+      afterRun(take.id, startedFor !== undefined)
+    }
   }
 
   async function generate() {
-    const clip = video.value
-    const image = character.value
-    const shape = canvas.value
-    const saved = savedSize.value
-    const length = partSeconds.value
-    const part = range.value
-    if (
-      !transport ||
-      !canGenerate.value ||
-      !clip ||
-      !image ||
-      !shape ||
-      !saved ||
-      !length ||
-      !part
-    )
-      return
-    // Everything the run uses is read now: edits made while it renders belong
-    // to the next take, and a blank seed is drawn once, here.
-    const request = {
-      target: target.value.trim(),
-      window: part,
-      seconds: length,
-      size: size.value,
-      seed: resolveSeed(seed.value)
-    }
-    const id = crypto.randomUUID()
-    const n = takes.value.length + 1
-    takes.value = [
-      ...takes.value,
-      { id, n, ...request, status: 'rendering', phase: 'uploading' }
-    ]
-    selected.value = id
-    const controller = new AbortController()
-    runs.set(id, controller)
-    const { signal } = controller
-    const startedFor = session.value
-    const analytics: WorkshopRunAnalytics | undefined = startedFor && {
-      model_slug: OPENJUTSU_APP_SLUG,
-      page_type: 'app',
-      app_slug: OPENJUTSU_APP_SLUG,
-      user_id: startedFor.uid,
-      workspace_id: startedFor.workspace.id,
-      attempt_id: workshopIdempotencyKey()
-    }
-    const startedAt = Date.now()
-    const finish = (
-      outcome:
-        | { status: 'succeeded'; output_count: number }
-        | { status: 'cancelled' }
-        | { status: 'failed'; reason: 'provider' | 'client' }
-    ) => {
-      if (analytics)
-        captureWorkshopEvent({
-          name: 'run_finished',
-          properties: {
-            ...analytics,
-            duration_ms: Date.now() - startedAt,
-            ...outcome
-          }
-        })
-    }
-    if (analytics)
-      captureWorkshopEvent({ name: 'run_started', properties: analytics })
-    try {
-      const [videoName, characterName] = await Promise.all([
-        uploaded(clip, signal),
-        uploaded(image, signal)
-      ])
-      const job = await runJob(
-        transport,
-        swapWorkflow({
-          video: videoName,
-          character: characterName,
-          target: request.target,
-          start: request.window.start,
-          seconds: request.seconds,
-          canvas: shape,
-          result: saved,
-          seed: request.seed
-        }),
-        (phase) => updateTake(id, { phase }),
-        signal
-      )
-      updateTake(id, { phase: 'fetching' })
-      const result = await downloadOutput(transport, job, 'result', signal)
-      if (signal.aborted) return finish({ status: 'cancelled' })
-      const url = URL.createObjectURL(result)
-      objectUrls.push(url)
-      updateTake(id, { status: 'done', phase: undefined, url })
-      finish({ status: 'succeeded', output_count: 1 })
-    } catch (error) {
-      if (signal.aborted) return finish({ status: 'cancelled' })
-      updateTake(id, {
-        status: 'failed',
-        phase: undefined,
-        note: noteFor(error)
-      })
-      finish({
-        status: 'failed',
-        reason: error instanceof ReshootError ? 'provider' : 'client'
-      })
-    } finally {
-      runs.delete(id)
-      void refreshQuote()
-      if (startedFor) void refreshWorkshopCredits({ force: true })
-    }
+    const job = nextJob()
+    if (!backend || !canGenerate.value || !job) return
+    await runTake(backend, job)
   }
 
   function cancel() {
