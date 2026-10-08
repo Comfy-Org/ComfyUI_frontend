@@ -85,8 +85,9 @@ export function observedDocCounter(doc: Y.Doc): number | undefined {
     // root; reject sequence content before getMap can hide it in a map view.
     if (root._start !== null) throw new TypeError(`${name} root contains non-map content`);
     const ledger = doc.getMap<unknown>(name); // throws for a different concrete Y type
+    const metadataPrefixes = name === ROOT_STAMPS ? ['["grow_request",', '["interior_route",'] : [];
     ledger.forEach((value, key) => {
-      if (name === ROOT_STAMPS && (key.startsWith('["grow_request",') || key.startsWith('["interior_route",'))) return;
+      if (metadataPrefixes.some((prefix) => key.startsWith(prefix))) return;
       if (!Array.isArray(value) || value.length !== 3 || typeof value[1] !== "string" ||
           typeof value[2] !== "string" || value[2].length === 0) {
         throw new TypeError(`${name} contains a malformed stamp tuple`);
