@@ -21,5 +21,6 @@ const locales = [...new Set<Locale>([DEFAULT_LOCALE, locale])]
     crossorigin
     href={catalogUrls[code]}
     data-locale-catalog={code}
+    transition:persist={`locale-catalog-${code}`}
   />
 ))}

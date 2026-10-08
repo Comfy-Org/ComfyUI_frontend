@@ -162,18 +162,24 @@ describe('htmlToTwin', () => {
     expect(noMain.body).toBe('# Pack\n\nNodes.')
   })
 
-  it('reads a page that preloads a fetched resource without loading it', async () => {
+  it.for([
+    { name: 'a catalog preload', body: '' },
+    {
+      name: 'a catalog preload with the analytics iframe',
+      body: '<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-NP9JM6K7"></iframe></noscript>'
+    }
+  ])('reads $name without network requests', async ({ body }) => {
     const request = vi.spyOn(https, 'request').mockImplementation(() => {
       throw new Error('Markdown extraction attempted an outbound request')
     })
     try {
       const page = htmlToTwin(
-        '<html><head><link rel="preload" as="fetch" crossorigin href="/_website/main.json"></head><body><main><p>x</p></main></body></html>',
+        `<html><head><link rel="preload" as="fetch" crossorigin href="/_website/main.json"></head><body>${body}<main><p>x</p></main></body></html>`,
         'https://comfy.org/x/'
       )
       await new Promise<void>((resolve) => setImmediate(resolve))
       expect(page.body).toBe('x')
-      expect(request).not.toHaveBeenCalled()
+      expect(request.mock.calls.length).toBe(0)
     } finally {
       request.mockRestore()
     }

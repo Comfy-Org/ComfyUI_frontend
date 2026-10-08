@@ -65,6 +65,45 @@ test.describe('Locale catalogs', () => {
     })
   }
 
+  test('reuses the catalog preload when navigating within a language', async ({
+    page
+  }) => {
+    const catalogRequests: string[] = []
+    page.on('request', (request) => {
+      if (/\/_website\/main\.[^/]+\.json$/.test(request.url()))
+        catalogRequests.push(request.url())
+    })
+    await page.goto('/')
+    const cliLink = page
+      .getByRole('contentinfo')
+      .getByRole('link', { name: 'Comfy CLI', exact: true })
+    await waitForIsland(page, cliLink)
+    const initialRequests = [...catalogRequests]
+
+    await cliLink.click()
+    await expect(page).toHaveURL(/\/cli\/$/)
+    await waitForIsland(page, cliLink)
+
+    expect(catalogRequests).toEqual(initialRequests)
+  })
+
+  test('retains only the incoming language catalog links', async ({ page }) => {
+    await page.goto('/zh-CN/')
+    const japaneseLink = page
+      .getByRole('contentinfo')
+      .getByRole('link', { name: '日本語', exact: true })
+    await waitForIsland(page, japaneseLink)
+    await japaneseLink.click()
+    await expect(page).toHaveURL(/\/ja\/$/)
+    await waitForIsland(page, japaneseLink)
+
+    await expect(page.locator('link[data-locale-catalog="en"]')).toHaveCount(1)
+    await expect(page.locator('link[data-locale-catalog="ja"]')).toHaveCount(1)
+    await expect(page.locator('link[data-locale-catalog="zh-CN"]')).toHaveCount(
+      0
+    )
+  })
+
   test('switching language before the locale module starts keeps the new page interactive', async ({
     page,
     context

@@ -289,6 +289,7 @@ export function htmlToTwin(html: string, fallbackCanonical: string): TwinPage {
     settings: {
       disableJavaScriptEvaluation: true,
       disableJavaScriptFileLoading: true,
+      disableIframePageLoading: true,
       disableCSSFileLoading: true
     }
   })
