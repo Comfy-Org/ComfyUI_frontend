@@ -50,6 +50,86 @@ test.describe('Locale catalogs', () => {
     })
   }
 
+  test('switching language before the first catalog loads keeps the new page interactive', async ({
+    page,
+    context
+  }) => {
+    const releaseCatalogs = Promise.withResolvers<void>()
+    const errors: string[] = []
+    page.on('console', (message) => {
+      if (
+        /catalog|setup function|hydration|t is not a function/i.test(
+          message.text()
+        )
+      )
+        errors.push(message.text())
+    })
+    page.on('pageerror', (error) => errors.push(error.message))
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.addInitScript(() => {
+      const fetch = window.fetch.bind(window)
+      window.fetch = (...args) => {
+        const [resource] = args
+        if (
+          typeof resource === 'string' &&
+          /\/main\.[^/]+\.json$/.test(resource)
+        )
+          document.documentElement.dataset.catalogRequested = 'true'
+        return fetch(...args)
+      }
+    })
+    await context.route(/\/_website\/main\.[^/]+\.json$/, async (route) => {
+      await releaseCatalogs.promise
+      await route.continue()
+    })
+
+    try {
+      await page.goto('/cli/', { waitUntil: 'commit' })
+      await expect(page.locator('html')).toHaveAttribute(
+        'data-catalog-requested',
+        'true'
+      )
+      const targetPage = page.waitForResponse(/\/zh-CN\/cli\/$/)
+      const switchLanguage = page
+        .getByRole('contentinfo')
+        .getByRole('link', { name: '简体中文' })
+        .click()
+      await targetPage
+      releaseCatalogs.resolve()
+      await switchLanguage
+
+      await expect(page).toHaveURL(/\/zh-CN\/cli\/$/)
+      const menuButton = page.getByRole('button', { name: '切换菜单' })
+      await expect(menuButton).toBeVisible()
+      await waitForIsland(page, menuButton)
+      await menuButton.click()
+      await expect(page.getByRole('dialog', { name: '菜单' })).toBeVisible()
+      expect(errors).toEqual([])
+    } finally {
+      releaseCatalogs.resolve()
+    }
+  })
+
+  test('a failed initial catalog request recovers through the bundled catalog', async ({
+    page,
+    context
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await context.route(/\/_website\/main\.[^/]+\.json$/, (route) =>
+      route.fulfill({
+        status: 503,
+        contentType: 'application/json',
+        body: '{}'
+      })
+    )
+
+    await page.goto('/zh-CN/cli/')
+    const menuButton = page.getByRole('button', { name: '切换菜单' })
+    await waitForIsland(page, menuButton)
+    await menuButton.click()
+    await expect(page.getByRole('dialog', { name: '菜单' })).toBeVisible()
+  })
+
   for (const { failure, status, body } of [
     { failure: 'an HTTP error', status: 503, body: '{}' },
     { failure: 'an invalid catalog', status: 200, body: '{"invalid":42}' }

@@ -161,12 +161,11 @@ describe('htmlToTwin', () => {
     expect(noMain.body).toBe('# Pack\n\nNodes.')
   })
 
-  it('reads a page that preloads a fetched resource without loading it', async () => {
+  it('reads a page that preloads a fetched resource without loading it', () => {
     const page = htmlToTwin(
       '<html><head><link rel="preload" as="fetch" crossorigin href="/_website/main.json"></head><body><main><p>x</p></main></body></html>',
       'https://comfy.org/x/'
     )
-    await new Promise((resolve) => setTimeout(resolve, 0))
     expect(page.body).toBe('x')
   })
 

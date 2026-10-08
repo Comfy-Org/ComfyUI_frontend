@@ -62,7 +62,8 @@ those catalogs in the layout `<head>` so they download in parallel with the
 page, and a client-side navigation into another locale loads that catalog
 before the page swaps. A component in the browser can render English or its
 page's locale; calling `translationsFor` with any other locale throws. A new
-layout that hosts islands should include `LocaleCatalogPreloads`.
+layout that hosts islands should include `LocaleCatalogPreloads`. If an initial
+catalog request fails, the browser retries with its bundled catalog chunk.
 
 `main.json` is the catalog for each locale. Keep feature copy grouped under a
 nested feature key.

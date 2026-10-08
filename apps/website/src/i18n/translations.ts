@@ -99,16 +99,6 @@ function loadLocale(locale: Locale, page?: Document): Promise<void> {
 const pageDocument =
   typeof window !== 'undefined' && import.meta.env.PROD ? document : undefined
 
-const initialLocales = new Set<Locale>(
-  pageDocument
-    ? [DEFAULT_LOCALE, resolveLocale(pageDocument.documentElement.lang)]
-    : LOCALE_CODES
-)
-
-await Promise.all(
-  [...initialLocales].map((locale) => loadLocale(locale, pageDocument))
-)
-
 if (pageDocument) {
   pageDocument.addEventListener('astro:before-preparation', (event) => {
     const loadDocument = event.loader
@@ -126,6 +116,23 @@ if (pageDocument) {
       }
     }
   })
+}
+
+const initialLocales = new Set<Locale>(
+  pageDocument
+    ? [DEFAULT_LOCALE, resolveLocale(pageDocument.documentElement.lang)]
+    : LOCALE_CODES
+)
+
+await Promise.all(
+  [...initialLocales].map((locale) =>
+    loadLocale(locale, pageDocument).catch(() => loadLocale(locale))
+  )
+)
+
+if (pageDocument) {
+  const locale = resolveLocale(pageDocument.documentElement.lang)
+  await loadLocale(locale, pageDocument).catch(() => loadLocale(locale))
 }
 
 export function translationsFor(locale: Locale) {
