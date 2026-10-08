@@ -190,24 +190,25 @@ export const siteRedirects: readonly SiteRedirect[] = [
   },
   { source: '/zh-CN/terms-of-service', destination: '/terms-of-service/' },
   // Parked, not deleted: the pages live on as src/pages/_gallery.astro and _launches.astro.
+  // /gallery goes to Customer Stories and /launches to Events, the closest live pages.
   {
     source: '/gallery',
-    destination: '/',
+    destination: '/customers/',
     temporaryBecause: 'parked, may return'
   },
   {
     source: '/launches',
-    destination: '/',
+    destination: '/events/',
     temporaryBecause: 'parked, may return'
   },
   {
     source: '/zh-CN/gallery',
-    destination: '/zh-CN/',
+    destination: '/zh-CN/customers/',
     temporaryBecause: 'parked, may return'
   },
   {
     source: '/zh-CN/launches',
-    destination: '/zh-CN/',
+    destination: '/zh-CN/events/',
     temporaryBecause: 'parked, may return'
   },
   { source: '/api', destination: '/platform/' },

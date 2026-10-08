@@ -209,42 +209,42 @@
     },
     {
       "source": "/gallery",
-      "destination": "/",
+      "destination": "/customers/",
       "permanent": false
     },
     {
       "source": "/gallery/",
-      "destination": "/",
+      "destination": "/customers/",
       "permanent": false
     },
     {
       "source": "/launches",
-      "destination": "/",
+      "destination": "/events/",
       "permanent": false
     },
     {
       "source": "/launches/",
-      "destination": "/",
+      "destination": "/events/",
       "permanent": false
     },
     {
       "source": "/zh-CN/gallery",
-      "destination": "/zh-CN/",
+      "destination": "/zh-CN/customers/",
       "permanent": false
     },
     {
       "source": "/zh-CN/gallery/",
-      "destination": "/zh-CN/",
+      "destination": "/zh-CN/customers/",
       "permanent": false
     },
     {
       "source": "/zh-CN/launches",
-      "destination": "/zh-CN/",
+      "destination": "/zh-CN/events/",
       "permanent": false
     },
     {
       "source": "/zh-CN/launches/",
-      "destination": "/zh-CN/",
+      "destination": "/zh-CN/events/",
       "permanent": false
     },
     {
