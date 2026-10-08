@@ -50,6 +50,17 @@ describe('ProductShowcaseSection', () => {
     expect(screen.queryByText(/App mode|Community Workflows/i)).toBeNull()
   })
 
+  it('links the selected Comfy Agent card to its product page', async () => {
+    renderSection()
+
+    screen.getByRole('heading', { name: 'Comfy Agent' }).click()
+    await nextTick()
+
+    expect(
+      screen.getByRole('link', { name: /Comfy Agent/ }).getAttribute('href')
+    ).toBe('/agent/')
+  })
+
   it.for([
     ['Comfy Agent', AGENT_VIDEO],
     ['Comfy API', API_VIDEO]

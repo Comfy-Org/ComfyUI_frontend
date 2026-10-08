@@ -3,6 +3,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { useIntersectionObserver } from '@vueuse/core'
 import { ref, useTemplateRef } from 'vue'
 
+import { getRoutes } from '@/config/routes'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import NodeBadge from '@/components/common/NodeBadge.vue'
@@ -11,10 +12,12 @@ import LottieScene from './LottieScene.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const { t } = translationsFor(locale)
+const routes = getRoutes(locale)
 
 interface Feature {
   title: string
   description: string
+  href?: string
   lottie?: string
   video?: { src: string; poster?: string }
 }
@@ -30,6 +33,7 @@ const features: Feature[] = [
   {
     title: t('showcase.feature2.title'),
     description: t('showcase.feature2.description'),
+    href: routes.agent,
     // Same demo as the Comfy Agent page's featured video.
     video: {
       src: 'https://media.comfy.org/website/comfy-agent/andidea-animation-ensub-1080p.mp4',
@@ -187,8 +191,10 @@ useIntersectionObserver(sectionRef, ([entry]) => {
               class="hidden self-center lg:block"
               aria-hidden="true"
             />
-            <button
-              type="button"
+            <component
+              :is="activeIndex === i && feature.href ? 'a' : 'button'"
+              :href="activeIndex === i ? feature.href : undefined"
+              :type="activeIndex === i && feature.href ? undefined : 'button'"
               :class="
                 cn(
                   'w-full cursor-pointer rounded-5xl p-8 text-left transition-colors duration-300',
@@ -240,7 +246,7 @@ useIntersectionObserver(sectionRef, ([entry]) => {
                   </p>
                 </div>
               </div>
-            </button>
+            </component>
           </div>
         </template>
       </div>
