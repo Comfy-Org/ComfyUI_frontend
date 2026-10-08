@@ -587,6 +587,54 @@ describe('useAgentCrdtFollower', () => {
     expect(telemetryState.reportError).not.toHaveBeenCalled()
   })
 
+  it('keeps the reseed-attempt budget across inactive transitions', async () => {
+    const { isTargetActive, unmount } = mountFollower(
+      'wf-1',
+      true,
+      () => null,
+      {},
+      () => ({ nodes: [] })
+    )
+    bridge().canReseed.mockReturnValue(true)
+    bridge().reseed.mockReturnValue('sent')
+
+    for (let attempt = 0; attempt < 6; attempt++) {
+      dispatchFrame('doc_subscribed', {
+        workflowId: 'wf-1',
+        ok: false,
+        code: 'stale_schema_reseed_required',
+        expectedSeq: attempt
+      })
+      dispatchFrame('doc_reseed_result', {
+        workflowId: 'wf-1',
+        ok: false,
+        code: 'retry'
+      })
+      isTargetActive.value = false
+      await nextTick()
+      isTargetActive.value = true
+      await nextTick()
+    }
+
+    dispatchFrame('doc_subscribed', {
+      workflowId: 'wf-1',
+      ok: false,
+      code: 'stale_schema_reseed_required',
+      expectedSeq: 6
+    })
+
+    expect(bridge().reseed).toHaveBeenCalledTimes(6)
+    expect(telemetryState.reportError).toHaveBeenCalledExactlyOnceWith(
+      expect.any(Error),
+      {
+        errorType: 'failure_reseeding_agent_cloud_workflow',
+        level: 'warning',
+        tags: { feature_area: 'agent', operation: 'sync', outcome: 'gave_up' }
+      }
+    )
+    unmount()
+  })
+
   it('does not construct a follower when the product gate is disabled', () => {
     useAgentPanelStore().enabled = false
     const { status, unmount } = mountFollower('wf-1')

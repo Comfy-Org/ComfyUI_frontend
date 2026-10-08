@@ -5,6 +5,8 @@ import { reportError } from '@/platform/telemetry/reportError'
 export const DOC_PROTOCOL_VERSION = 1
 /** Keep this encoded-field cap aligned with cloud's `MaxDocFrameB64Len`. */
 const MAX_DOC_UPDATE_B64_LENGTH = 8 << 20
+/** Keep this inline JSON-field cap aligned with cloud's `MaxDocReseedWorkflowBytes`. */
+const MAX_DOC_RESEED_WORKFLOW_BYTES = 2 << 20
 const MAX_WORKFLOW_ID_LENGTH = 128
 const MAX_ACTOR_LENGTH = 256
 const MAX_AWARENESS_STATE_BYTES = 8 << 10
@@ -478,6 +480,9 @@ export class DocFrameClient extends EventTarget {
     }
     let frame: string
     try {
+      const workflowJson = JSON.stringify(workflow)
+      if (utf8.encode(workflowJson).length > MAX_DOC_RESEED_WORKFLOW_BYTES)
+        return 'too_large'
       frame = JSON.stringify({ type: 'doc_reseed', data })
     } catch {
       return 'serialization_failed'
