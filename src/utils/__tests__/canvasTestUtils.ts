@@ -57,6 +57,7 @@ export function createMockCanvasRenderingContext2D(
     clip: vi.fn(),
     clearRect: vi.fn(),
     setTransform: vi.fn(),
+    resetTransform: vi.fn(),
     roundRect: vi.fn(),
     getTransform: vi.fn(
       () => ({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }) as DOMMatrix
@@ -72,6 +73,14 @@ export function createMockCanvasRenderingContext2D(
     ...overrides
   }
   return partial as CanvasRenderingContext2D
+}
+
+export function stubCanvasGetContext(): void {
+  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(
+    function (this: HTMLCanvasElement, _contextId) {
+      return createMockCanvasRenderingContext2D({ canvas: this })
+    } as HTMLCanvasElement['getContext']
+  )
 }
 
 /**

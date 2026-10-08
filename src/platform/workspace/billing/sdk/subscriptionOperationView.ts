@@ -9,6 +9,7 @@
  */
 import type {
   BillingTelemetryFailure,
+  CancelOperationResult,
   PaymentPortalResult,
   PreviewSubscribeInput,
   PreviewSubscribeResult,
@@ -104,6 +105,8 @@ export interface SubscriptionRail {
   openPaymentPortal: (
     returnUrl: string
   ) => Promise<SubscriptionRailOutcome<string>>
+  /** Asks the server to drop a pending payment it reported `cancelable`. */
+  cancelOperation: (opId: string) => Promise<SubscriptionRailOutcome>
 }
 
 const UNAVAILABLE = { status: 'unavailable' } as const
@@ -241,4 +244,33 @@ export function projectPaymentPortalResult(
 ): SubscriptionRailOutcome<string> {
   if (result.status === 'error') return projectFailure(result)
   return { status: 'ok', value: result.value.url }
+}
+
+const CANCEL_REFUSAL_COPY = {
+  NOT_CANCELABLE: 'billingOperation.cancelPaymentNotCancelable',
+  PAYMENT_IN_FLIGHT: 'billingOperation.cancelPaymentInFlight'
+} as const
+
+/**
+ * A cancel the server took is done: the lifecycle it woke re-reads the
+ * operation and settles it. Anything else reads as our own copy; the
+ * server's text stays diagnostic.
+ */
+export function projectCancelOperationResult(
+  result: CancelOperationResult
+): SubscriptionRailOutcome {
+  if (result.status !== 'not_canceled' && result.status !== 'error')
+    return { status: 'ok', value: undefined }
+  return {
+    status: 'error',
+    error: new WorkspaceApiError(
+      t(
+        result.status === 'not_canceled'
+          ? CANCEL_REFUSAL_COPY[result.code]
+          : 'billingOperation.cancelPaymentFailed'
+      ),
+      'httpStatus' in result ? result.httpStatus : undefined,
+      result.code
+    )
+  }
 }

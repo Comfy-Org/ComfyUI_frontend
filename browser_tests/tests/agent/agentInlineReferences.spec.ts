@@ -2,12 +2,15 @@ import { expect } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { WorkflowsSidebarTab } from '@e2e/fixtures/components/SidebarTab'
+import { Topbar } from '@e2e/fixtures/components/Topbar'
 import {
   inlineReferencesTest as test,
   referenceNode,
   referenceWorkflow
 } from '@e2e/fixtures/agentInlineReferencesFixture'
 import { assetPath } from '@e2e/fixtures/utils/paths'
+import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 
 test.use({
   connectWebSocketToServer: false,
@@ -138,5 +141,82 @@ test(
     await expect(
       panel.getByRole('button', { name: enMessages.agent.switchWorkflow })
     ).toHaveText('Unsaved Workflow (2)')
+  }
+)
+
+test(
+  'keeps a node reference through workflow rename, reload, and panel remount without selecting the canvas node',
+  { tag: ['@cloud', '@canvas', '@node', '@ui', '@vue-nodes'] },
+  async ({ page, workflowSelection }) => {
+    // Source: https://github.com/Comfy-Org/ComfyUI_frontend/pull/20172#discussion_r4204941442
+    await page.locator('#comfy-file-input').setInputFiles({
+      name: 'Portrait study.json',
+      mimeType: 'application/json',
+      buffer: Buffer.from(JSON.stringify(referenceWorkflow))
+    })
+    const panel = new AgentPanel(page)
+    const editor = (await panel.open()).getByRole('textbox')
+    await panel.workflowPicker.click()
+    await page.getByRole('menuitemradio', { name: /Portrait study/ }).click()
+    await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
+    workflowSelection.finishSave(true)
+
+    await editor.fill('Inspect @')
+    await panel.root
+      .getByRole('menuitem', { name: enMessages.agent.nodes, exact: true })
+      .click()
+    await panel.root.getByRole('menuitem', { name: /Color balance/ }).click()
+    await expect(
+      panel.root.getByRole('button', {
+        name: 'Remove Color balance #12 reference'
+      })
+    ).toBeVisible()
+
+    const workflowsTab = new WorkflowsSidebarTab(page)
+    await workflowsTab.open()
+    await workflowsTab.renameWorkflow(
+      workflowsTab.getPersistedItem('Portrait study'),
+      'Portrait renamed'
+    )
+    await expect(panel.workflowPicker).toHaveText('Portrait renamed')
+    await expect(
+      panel.root.getByRole('button', {
+        name: 'Remove Color balance #12 reference'
+      })
+    ).toBeVisible()
+    await workflowsTab.close()
+
+    await panel.close()
+    const vueNodes = new VueNodeHelpers(page)
+    await vueNodes.renameNode('12', 'Portrait color balance')
+    await expect(
+      vueNodes.getNodeLocator('12').getByTestId('node-title')
+    ).toHaveText('Portrait color balance')
+    await vueNodes
+      .getNodeLocator('12')
+      .getByTestId('node-title')
+      .click({ modifiers: ['Control'] })
+    await expect(vueNodes.selectedNodes).toHaveCount(0)
+
+    const topbar = new Topbar(page)
+    await topbar.getWorkflowTab('Unsaved Workflow').click()
+    await expect(
+      topbar.getWorkflowTab('Unsaved Workflow').and(topbar.getActiveTab())
+    ).toBeVisible()
+    await topbar.getWorkflowTab('Portrait renamed').click()
+    await expect(
+      topbar.getWorkflowTab('Portrait renamed').and(topbar.getActiveTab())
+    ).toBeVisible()
+    await expect(
+      vueNodes.getNodeLocator('12').getByTestId('node-title')
+    ).toHaveText('Portrait color balance')
+
+    await expect(vueNodes.selectedNodes).toHaveCount(0)
+    await panel.open()
+    await expect(
+      panel.root.getByRole('button', {
+        name: 'Remove Portrait color balance #12 reference'
+      })
+    ).toBeVisible()
   }
 )
