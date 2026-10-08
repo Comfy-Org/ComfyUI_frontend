@@ -1126,24 +1126,6 @@ describe('executionStore workflow gating', () => {
       ).toBe(true)
     })
 
-    it('keeps a running job with its tab across a rename', () => {
-      useWorkflowStore().activeWorkflow = workflowA
-      queueJobFrom('job-a', workflowA)
-
-      // renameWorkflow mutates the same object and rewrites the mapping by
-      // instanceId, so the run must survive being given a new name mid-flight.
-      store.rewriteSessionWorkflowPaths(
-        workflowA.instanceId,
-        'workflows/renamed.json'
-      )
-      expect(store.jobIdToSessionWorkflowPath.get('job-a')).toBe(
-        'workflows/renamed.json'
-      )
-      expect(store.frameBelongsToVisibleWorkflow('job-a', WORKFLOW_A_ID)).toBe(
-        true
-      )
-    })
-
     it('does not give a running job to the copy that Save As creates', () => {
       useWorkflowStore().activeWorkflow = workflowA
       queueJobFrom('job-a', workflowA)

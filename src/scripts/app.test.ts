@@ -3060,6 +3060,57 @@ describe('ComfyApp', () => {
       expect(executionErrorStore.isErrorOverlayOpen).toBe(false)
     })
 
+    it('does not apply a background run output to the visible workflow', async () => {
+      // The gate in the `executed` listener. Outputs are keyed by a locator
+      // resolved against the visible graph, so without it a job finishing in
+      // another tab writes its result onto the same-numbered node in front.
+      // Spying on the writer rather than reading nodeOutputs, because the
+      // fixture graph has no nodes and the locator would never resolve.
+      const workflowA = markLoaded(
+        new ComfyWorkflow({ path: 'workflows/a.json', modified: 0, size: 0 })
+      )
+      const workflowB = markLoaded(
+        new ComfyWorkflow({ path: 'workflows/b.json', modified: 0, size: 0 })
+      )
+      workflowA.changeTracker.activeState = workflowGraphData(workflowAId)
+      workflowB.changeTracker.activeState = workflowGraphData(workflowBId)
+      useWorkflowStore().activeWorkflow = workflowA
+
+      const executionStore = useExecutionStore()
+      executionStore.storeJob({
+        nodes: ['1'],
+        id: 'job-b',
+        promptOutput: {},
+        workflow: workflowB,
+        mode: 'graph'
+      })
+
+      const setOutputs = vi.spyOn(
+        useNodeOutputStore(),
+        'setNodeOutputsByExecutionId'
+      )
+      const addEventListener = vi.spyOn(api, 'addEventListener')
+      Reflect.apply(Reflect.get(app, 'addApiUpdateHandlers'), app, [])
+      const executedHandler = addEventListener.mock.calls.find(
+        ([event]) => event === 'executed'
+      )?.[1] as EventListener | undefined
+      expect(executedHandler).toBeTypeOf('function')
+
+      executedHandler?.(
+        new CustomEvent('executed', {
+          detail: {
+            prompt_id: 'job-b',
+            workflow_id: workflowBId,
+            node: '1',
+            display_node: '1',
+            output: { images: [{ filename: 'from-b.png', type: 'output' }] }
+          }
+        })
+      )
+
+      expect(setOutputs).not.toHaveBeenCalled()
+    })
+
     it('restores the failed run state when returning to a workflow tab', async () => {
       const workflowService = await useRealWorkflowService()
       const graph = new LGraph()

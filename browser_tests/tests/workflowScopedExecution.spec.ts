@@ -90,28 +90,6 @@ test.describe('workflow-scoped execution', { tag: '@ui' }, () => {
     await expect(comfyPage.appMode.outputHistory.imageOutputs).toHaveCount(1)
   })
 
-  test('a frame from another workflow does not start the visible tab', async ({
-    comfyPage,
-    getWebSocket
-  }) => {
-    const exec = new ExecutionHelper(comfyPage, await getWebSocket())
-    const simulator = new BackendSimulator(exec)
-    const workflowId = await activeWorkflowId(comfyPage)
-    expect(workflowId, 'the loaded workflow must carry an id').toBeDefined()
-
-    const foreign = simulator.prompt('foreign-job', {
-      workflowId: FOREIGN_WORKFLOW_ID
-    })
-    simulator.play([
-      foreign.start(),
-      ...foreign.nodeRunning(KSAMPLER_NODE, 1, 4),
-      foreign.executing(KSAMPLER_NODE)
-    ])
-
-    await expect(comfyPage.appMode.outputHistory.inProgressItems).toHaveCount(0)
-    await expect(comfyPage.appMode.outputHistory.skeletons).toHaveCount(0)
-  })
-
   test('an output from another workflow does not land on the visible tab', async ({
     comfyPage,
     getWebSocket

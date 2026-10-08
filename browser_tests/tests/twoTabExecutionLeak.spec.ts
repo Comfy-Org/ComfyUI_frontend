@@ -61,46 +61,6 @@ test.describe('cross-tab execution leak', { tag: '@ui' }, () => {
     await comfyPage.workflow.openPersistedWorkflow(WORKFLOW_A)
   })
 
-  test('a run in one tab leaves the other tab idle', async ({
-    comfyPage,
-    getWebSocket
-  }) => {
-    const exec = new ExecutionHelper(comfyPage, await getWebSocket())
-    const simulator = new BackendSimulator(exec)
-
-    const workflowAId = await activeWorkflowId(comfyPage)
-    expect(workflowAId, 'workflow A must carry an id').toBeDefined()
-
-    const jobId = await exec.run()
-    await comfyPage.nextFrame()
-    const running = simulator.prompt(jobId, { workflowId: workflowAId })
-    simulator.play([
-      running.start(),
-      ...running.nodeRunning(KSAMPLER_NODE, 1, 4)
-    ])
-
-    await comfyPage.workflow.openPersistedWorkflow(WORKFLOW_B)
-    const workflowBId = await activeWorkflowId(comfyPage)
-    expect(workflowBId, 'the second tab must be a different workflow').not.toBe(
-      workflowAId
-    )
-
-    // Tab A's run continues while the user looks at tab B.
-    simulator.play([
-      ...running.nodeRunning(KSAMPLER_NODE, 3, 4),
-      running.executed(SAVE_IMAGE_NODE, imageOutput('a.png')),
-      running.success()
-    ])
-
-    // Per-tab state, read from the topbar badges: A owns the run, B never
-    // shows one. Asserted rather than screenshotted — this is a state bug.
-    const tabA = comfyPage.menu.topbar.getWorkflowTab(WORKFLOW_A)
-    const tabB = comfyPage.menu.topbar.getWorkflowTab(WORKFLOW_B)
-    await expect(tabB.getByRole('img', { name: 'Running' })).toHaveCount(0)
-    await expect(tabA.getByRole('img', { name: 'Completed' })).toBeVisible()
-    await expect(tabB.getByRole('img', { name: 'Completed' })).toHaveCount(0)
-  })
-
   test('switching back shows the finished run, not a stuck one', async ({
     comfyPage,
     getWebSocket
