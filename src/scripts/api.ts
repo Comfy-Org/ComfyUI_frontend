@@ -640,7 +640,7 @@ export class ComfyApi extends EventTarget {
 
   /**
    * Waits for Firebase auth to be initialized before proceeding.
-   * Includes 10-second timeout to prevent infinite hanging.
+   * Bounded by AUTH_INIT_TIMEOUT_MS to prevent infinite hanging.
    */
   private async waitForAuthInitialization(): Promise<void> {
     if (isCloud) {
@@ -656,7 +656,9 @@ export class ComfyApi extends EventTarget {
           promiseTimeout(AUTH_INIT_TIMEOUT_MS)
         ])
       } catch {
-        console.warn('Firebase auth initialization timeout after 10 seconds')
+        console.warn(
+          `Firebase auth initialization timeout after ${AUTH_INIT_TIMEOUT_MS / 1000} seconds`
+        )
       }
     }
   }
