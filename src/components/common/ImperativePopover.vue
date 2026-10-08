@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { useEventListener } from '@vueuse/core'
 import {
+  PopoverAnchor,
   PopoverContent,
   PopoverPortal,
-  PopoverRoot,
-  PopoverTrigger
+  PopoverRoot
 } from 'reka-ui'
 import type { FocusOutsideEvent, PointerDownOutsideEvent } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
@@ -43,7 +43,6 @@ const emit = defineEmits<{
 const open = ref(false)
 const anchor = ref<HTMLElement>()
 const focusTarget = ref<HTMLElement>()
-const anchorRect = ref({ left: 0, top: 0, width: 0, height: 0 })
 const content = ref<InstanceType<typeof PopoverContent>>()
 const contentStyle = useModalLiftedZIndex(open)
 const returnFocusOnClose = ref(false)
@@ -76,13 +75,6 @@ function show(event: Event, target?: EventTarget | null) {
       : eventTarget
   returnFocusOnClose.value = !openedByHover
   anchor.value = eventTarget
-  const rect = eventTarget.getBoundingClientRect()
-  anchorRect.value = {
-    left: rect.left,
-    top: rect.top,
-    width: rect.width,
-    height: rect.height
-  }
   const request = ++showRequest
   void nextTick(() => {
     if (request === showRequest) setOpen(true)
@@ -146,20 +138,7 @@ defineExpose({ show, hide, toggle, container: content, open })
 
 <template>
   <PopoverRoot :open @update:open="onOpenChange">
-    <PopoverTrigger as-child>
-      <button
-        type="button"
-        tabindex="-1"
-        aria-hidden="true"
-        class="pointer-events-none fixed opacity-0"
-        :style="{
-          left: `${anchorRect.left}px`,
-          top: `${anchorRect.top}px`,
-          width: `${anchorRect.width}px`,
-          height: `${anchorRect.height}px`
-        }"
-      />
-    </PopoverTrigger>
+    <PopoverAnchor as="template" :reference="anchor" />
     <PopoverPortal>
       <PopoverContent
         ref="content"
