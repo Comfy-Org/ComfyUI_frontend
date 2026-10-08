@@ -156,6 +156,7 @@
     "@comfyorg/ingest-types": "workspace:^"
   },
   "devDependencies": {
+    "@comfyorg/test-utils": "workspace:*",
     "@types/node": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "firebase": "catalog:",

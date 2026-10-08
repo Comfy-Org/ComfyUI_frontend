@@ -54,6 +54,8 @@ vi.mock<unknown>(import('posthog-js'), () => ({
     capture: vi.fn(),
     identify: vi.fn(),
     register: vi.fn(),
+    unregister: vi.fn(),
+    get_property: vi.fn(),
     people: { set: vi.fn(), set_once: vi.fn() },
     reset: vi.fn()
   }

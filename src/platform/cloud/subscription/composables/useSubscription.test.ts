@@ -218,9 +218,6 @@ const statusReadPaths = [
   }
 ]
 
-// Mock fetch
-global.fetch = vi.fn()
-
 beforeEach(() => {
   vi.mocked(webSessionResourceHeader).mockResolvedValue(undefined)
   useErrorHandling().wrapWithErrorHandlingAsync =

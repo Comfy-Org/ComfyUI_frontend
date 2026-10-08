@@ -22,7 +22,7 @@ defineProps<{
   >
     <p
       v-if="column.header"
-      class="font-formula text-xs font-medium text-primary-warm-gray"
+      class="font-formula text-xs font-medium text-primary-warm-gray uppercase"
       :class="layout === 'row' ? '' : 'pl-2'"
     >
       {{ column.header }}
