@@ -4,6 +4,7 @@
     "registry": {
       "title": "Cloud node registry",
       "description": "Pin packs to show their nodes in the editor palette and search. Pins do not control workflow rendering.",
+      "autoPinIncomplete": "Some workflow packs could not be pinned automatically. Open Custom Nodes to choose their exact revisions. Graph loading and rendering do not require palette pins.",
       "search": "Search converted packs or node names",
       "corpus": "{count} revisions · corpus {commit}",
       "revision": "Upstream {commit} · conversion {digest}",

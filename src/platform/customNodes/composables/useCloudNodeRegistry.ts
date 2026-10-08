@@ -8,6 +8,11 @@ import { computed, shallowRef } from 'vue'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { reportError } from '@/platform/telemetry/reportError'
+import { graphPalettePinPlan } from '@/platform/customNodes/utils/graphPalettePins'
+import type { GraphPaletteDefinitions } from '@/platform/customNodes/utils/graphPalettePins'
+import { flattenWorkflowNodes } from '@/platform/workflow/core/utils/workflowFlattening'
+import type { FlattenableWorkflowGraph } from '@/platform/workflow/core/utils/workflowFlattening'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 type RegistryFailure =
   | { reason: 'http'; status: number }
@@ -45,7 +50,8 @@ export function useCloudNodeRegistry() {
   const requestCatalog = async (
     route: string,
     options: RequestInit,
-    previous: CloudNodeRegistry | null
+    previous: CloudNodeRegistry | null,
+    refreshDefinitions = true
   ) => {
     try {
       const response = await api.fetchApi(route, options)
@@ -75,7 +81,7 @@ export function useCloudNodeRegistry() {
         return fail(previous, { reason: 'invalidCatalog' })
       }
       try {
-        await app.reloadNodeDefs()
+        if (refreshDefinitions) await app.reloadNodeDefs()
       } catch (error) {
         return fail(parsed.data, { reason: 'network' }, error)
       }
@@ -93,7 +99,12 @@ export function useCloudNodeRegistry() {
     return requestCatalog('/customnodes/registry', { method: 'GET' }, previous)
   }
 
-  const setPin = async (revisionId: string, pinned: boolean) => {
+  const setPin = async (
+    revisionId: string,
+    pinned: boolean,
+    refreshDefinitions = true,
+    signal?: AbortSignal
+  ) => {
     if (state.value.phase !== 'ready') return false
     const previous = state.value.catalog
     const revision = previous.revisions.find(
@@ -117,11 +128,76 @@ export function useCloudNodeRegistry() {
       {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
+        body: JSON.stringify(body),
+        ...(signal ? { signal } : {})
       },
-      previous
+      previous,
+      refreshDefinitions
     )
   }
 
-  return { state, catalog, busy, load, setPin }
+  const autoPinGraphPacks = async (
+    graph: FlattenableWorkflowGraph,
+    definitions: GraphPaletteDefinitions
+  ) => {
+    const types = new Set(flattenWorkflowNodes(graph).map((node) => node.type))
+    if (
+      ![...types].some(
+        (type) =>
+          !definitions[type] ||
+          definitions[type].python_module.startsWith(
+            'custom_nodes.cloud_registry.'
+          )
+      )
+    )
+      return true
+    if (busy.value) return false
+    const workspaceStore = useTeamWorkspaceStore()
+    const workspaceId = workspaceStore.activeWorkspaceId
+    const generation = workspaceStore.workspaceTransitionGeneration
+    const signal = AbortSignal.timeout(10_000)
+    const previous = state.value.catalog
+    state.value = { phase: 'loading', catalog: previous }
+    if (
+      !(await requestCatalog(
+        '/customnodes/registry',
+        { method: 'GET', signal },
+        previous,
+        false
+      ))
+    )
+      return false
+    const current = state.value.catalog
+    if (!current) return false
+    const plan = graphPalettePinPlan(graph, current, definitions)
+    let complete = plan.unresolved.length === 0
+    let changed = false
+    for (const id of plan.revisionIds) {
+      if (
+        workspaceStore.activeWorkspaceId !== workspaceId ||
+        workspaceStore.workspaceTransitionGeneration !== generation
+      )
+        return false
+      if (!(await setPin(id, true, false, signal))) {
+        complete = false
+        break
+      }
+      changed = true
+    }
+    if (
+      changed ||
+      [...types].some(
+        (type) => definitions[type]?.comfy_cloud_palette_visible === false
+      )
+    ) {
+      try {
+        await app.reloadNodeDefs()
+      } catch (error) {
+        return fail(state.value.catalog, { reason: 'network' }, error)
+      }
+    }
+    return complete
+  }
+
+  return { state, catalog, busy, load, setPin, autoPinGraphPacks }
 }

@@ -68,7 +68,9 @@ const {
   mockWorkspaceWorkflow,
   mockRefreshMissingModelPipeline,
   mockImportA1111,
-  mockWorkflowService
+  mockWorkflowService,
+  mockAutoPinGraphPacks,
+  mockDistribution
 } = vi.hoisted(() => ({
   mockApiKeyAuthStore: {
     getApiKey: vi.fn(),
@@ -117,6 +119,8 @@ const {
   },
   mockRefreshMissingModelPipeline: vi.fn(),
   mockImportA1111: vi.fn<typeof importA1111>(),
+  mockAutoPinGraphPacks: vi.fn(),
+  mockDistribution: { isCloud: false },
   mockWorkflowService: {
     beforeLoadNewGraph: vi.fn<WorkflowService['beforeLoadNewGraph']>(),
     afterLoadNewGraph: vi.fn<WorkflowService['afterLoadNewGraph']>(),
@@ -186,6 +190,19 @@ vi.mock('@/extensions/core/load3d/Load3dUtils', () => ({
 vi.mock('@/platform/updates/common/toastStore', () => ({
   useToastStore: vi.fn(() => mockToastStore)
 }))
+
+vi.mock('@/platform/customNodes/composables/useCloudNodeRegistry', () => ({
+  useCloudNodeRegistry: () => ({ autoPinGraphPacks: mockAutoPinGraphPacks })
+}))
+
+vi.mock('@/platform/distribution/types', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/platform/distribution/types')>()),
+  get isCloud() {
+    return mockDistribution.isCloud
+  }
+}))
+
+vi.mock('@/platform/telemetry/reportError', () => ({ reportError: vi.fn() }))
 
 vi.mock('@/services/extensionService', () => ({
   useExtensionService: vi.fn(() => mockExtensionService)
@@ -313,12 +330,83 @@ describe('ComfyApp', () => {
     vi.mocked(extractFilesFromDragEvent).mockResolvedValue([])
     mockImportA1111.mockResolvedValue('imported')
     mockWorkflowService.afterLoadNewGraph.mockResolvedValue()
+    mockAutoPinGraphPacks.mockResolvedValue(true)
+    mockDistribution.isCloud = false
     mockSettingStore.get.mockImplementation((key: string) =>
       key === 'Comfy.RightSidePanel.ShowErrorsTab' ? true : undefined
     )
   })
 
   describe('loadGraphData', () => {
+    it('auto-pins before configuring a Cloud graph and keeps graph loading usable after a pin failure', async () => {
+      mockDistribution.isCloud = true
+      app.canvasElRef.value = document.createElement('canvas')
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      const configure = vi.spyOn(graph, 'configure')
+      mockAutoPinGraphPacks.mockImplementation(async () => {
+        expect(configure).not.toHaveBeenCalled()
+        return false
+      })
+      const source = createWorkflowGraphData()
+      expect(await app.loadGraphData(source)).toBe(true)
+      expect(mockAutoPinGraphPacks).toHaveBeenCalledWith(
+        source,
+        expect.any(Object)
+      )
+      expect(configure).toHaveBeenCalledOnce()
+      expect(mockToastStore.addAlert).toHaveBeenCalledWith(
+        t('customNodePacks.registry.autoPinIncomplete')
+      )
+    })
+
+    it('continues loading when automatic palette work unexpectedly throws', async () => {
+      mockDistribution.isCloud = true
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      mockAutoPinGraphPacks.mockRejectedValueOnce(
+        new Error('Palette refresh unavailable')
+      )
+      expect(await app.loadGraphData(createWorkflowGraphData())).toBe(true)
+      expect(mockToastStore.addAlert).toHaveBeenCalledOnce()
+    })
+
+    it('does not auto-pin or call the Cloud registry in local installations', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      expect(await app.loadGraphData(createWorkflowGraphData())).toBe(true)
+      expect(mockAutoPinGraphPacks).not.toHaveBeenCalled()
+    })
+
+    it('auto-pins API-format imports before creating their graph nodes', async () => {
+      mockDistribution.isCloud = true
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      Reflect.set(singletonApp, 'rootGraphInternal', new LGraph())
+      const create = vi
+        .spyOn(LiteGraph, 'createNode')
+        .mockImplementation((type) => new LGraphNode(type))
+      mockAutoPinGraphPacks.mockImplementation(async () => {
+        expect(create).not.toHaveBeenCalled()
+        return true
+      })
+      await app.loadApiJson(
+        {
+          '1': {
+            class_type: 'ExampleNode',
+            inputs: {},
+            _meta: { title: 'Example' }
+          }
+        },
+        'example.json'
+      )
+      expect(mockAutoPinGraphPacks).toHaveBeenCalledWith(
+        { nodes: [{ id: '1', type: 'ExampleNode' }] },
+        expect.any(Object)
+      )
+      expect(create).toHaveBeenCalledWith('ExampleNode')
+    })
+
     it('forwards clean and navigation intent to workflow navigation', async () => {
       app.canvasElRef.value = document.createElement('canvas')
       Reflect.set(app, 'rootGraphInternal', new LGraph())

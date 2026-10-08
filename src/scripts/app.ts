@@ -37,6 +37,7 @@ import { isCloud } from '@/platform/distribution/types'
 import { pruneCloudNodeTypes } from '@/platform/customNodes/utils/pruneCloudNodeTypes'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 import { installNodeAddedTelemetry } from '@/platform/telemetry/nodeAdded/installNodeAddedTelemetry'
 import { normalizeExecutionTriggerSource } from '@/platform/telemetry/types'
 import { getExecutionContext } from '@/platform/telemetry/utils/getExecutionContext'
@@ -64,7 +65,10 @@ import {
   collectSubgraphDefinitions,
   buildSubgraphExecutionPaths
 } from '@/platform/workflow/core/utils/workflowFlattening'
-import type { FlattenableWorkflowNode } from '@/platform/workflow/core/utils/workflowFlattening'
+import type {
+  FlattenableWorkflowNode,
+  FlattenableWorkflowGraph
+} from '@/platform/workflow/core/utils/workflowFlattening'
 import type {
   ExecutionErrorWsMessage,
   NodeError,
@@ -298,6 +302,24 @@ function createNodeOutputsMutationView(
       return deleted
     }
   })
+}
+
+async function autoPinLoadedGraph(graphData: FlattenableWorkflowGraph) {
+  if (!isCloud) return
+  let pinned = false
+  try {
+    const { useCloudNodeRegistry } =
+      await import('@/platform/customNodes/composables/useCloudNodeRegistry')
+    pinned = await useCloudNodeRegistry().autoPinGraphPacks(
+      graphData,
+      useNodeDefStore().nodeDefsByName
+    )
+  } catch (error) {
+    reportError(error, { errorType: 'cloud_graph_palette_pin_failed' })
+  }
+  if (!pinned) {
+    useToastStore().addAlert(t('customNodePacks.registry.autoPinIncomplete'))
+  }
 }
 
 export class ComfyApp {
@@ -1382,6 +1404,7 @@ export class ComfyApp {
         severity: 'warn'
       })
     }
+    await autoPinLoadedGraph(graphData)
     useSubgraphService().loadSubgraphs(graphData)
 
     const missingNodeTypes: MissingNodeType[] = []
@@ -2371,6 +2394,9 @@ export class ComfyApp {
     this.clean()
 
     const ids = Object.keys(apiData)
+    await autoPinLoadedGraph({
+      nodes: ids.map((id) => ({ id, type: apiData[id].class_type }))
+    })
     // Export (API) flattens subgraph nodes to ids like "194:45". At the root
     // graph a colon reads as an execution-id path: Locate walks into node
     // 194's subgraph and finds nothing, and deleting an unrelated node 194
