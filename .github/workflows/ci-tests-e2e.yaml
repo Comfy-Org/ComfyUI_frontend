@@ -88,6 +88,20 @@ jobs:
           path: dist/
           retention-days: 1
 
+  # Separate from setup so the chromium shards, which only need frontend-dist,
+  # don't wait for these builds.
+  setup-desktop-cloud:
+    needs: changes
+    if: ${{ needs.changes.outputs.should-run == 'true' }}
+    runs-on: ubuntu-latest
+    env:
+      EXPECTED_FRONTEND_COMMIT: ${{ github.sha }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
       - name: Build and verify desktop Assets default
         run: |
           pnpm build:desktop-dist
@@ -230,8 +244,8 @@ jobs:
   # Sharded cloud tests: the cloud project alone ran longer than any chromium
   # shard, so it was the critical path of every merge-group entry.
   playwright-tests-cloud-sharded:
-    needs: [changes, setup, preflight]
-    if: ${{ !cancelled() && needs.preflight.result == 'success' && needs.changes.outputs.should-run == 'true' }}
+    needs: [changes, preflight, setup-desktop-cloud]
+    if: ${{ !cancelled() && needs.preflight.result == 'success' && needs.setup-desktop-cloud.result == 'success' && needs.changes.outputs.should-run == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     container:
@@ -281,8 +295,8 @@ jobs:
   playwright-tests:
     # Ideally, each shard runs test in 6 minutes, but allow up to 30 minutes
     timeout-minutes: 30
-    needs: [changes, setup, preflight]
-    if: ${{ !cancelled() && needs.preflight.result == 'success' && needs.changes.outputs.should-run == 'true' }}
+    needs: [changes, setup, preflight, setup-desktop-cloud]
+    if: ${{ !cancelled() && needs.preflight.result == 'success' && needs.setup-desktop-cloud.result == 'success' && needs.changes.outputs.should-run == 'true' }}
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/comfy-org/comfyui-ci-container:0.0.27
@@ -403,6 +417,7 @@ jobs:
       [
         changes,
         preflight,
+        setup-desktop-cloud,
         playwright-tests-chromium-sharded,
         playwright-tests-cloud-sharded,
         playwright-tests
@@ -414,14 +429,16 @@ jobs:
           PREFLIGHT: ${{ needs.preflight.result }}
           CHANGES: ${{ needs.changes.result }}
           SHOULD_RUN: ${{ needs.changes.outputs.should-run }}
+          DESKTOP_CLOUD_BUILD: ${{ needs.setup-desktop-cloud.result }}
           SHARDED: ${{ needs.playwright-tests-chromium-sharded.result }}
           CLOUD: ${{ needs.playwright-tests-cloud-sharded.result }}
           BROWSERS: ${{ needs.playwright-tests.result }}
         run: |
-          echo "changes=$CHANGES should_run=$SHOULD_RUN sharded=$SHARDED cloud=$CLOUD browsers=$BROWSERS"
+          echo "changes=$CHANGES should_run=$SHOULD_RUN desktop_cloud_build=$DESKTOP_CLOUD_BUILD sharded=$SHARDED cloud=$CLOUD browsers=$BROWSERS"
           [[ "$PREFLIGHT" != "success" ]] && echo "CI prerequisites did not pass ($PREFLIGHT)" && exit 1
           [[ "$CHANGES" != "success" ]] && echo "changes gate did not complete ($CHANGES)" && exit 1
           [[ "$SHOULD_RUN" != "true" ]] && echo "E2E skipped" && exit 0
+          [[ "$DESKTOP_CLOUD_BUILD" != "success" ]] && echo "Desktop and cloud builds did not pass ($DESKTOP_CLOUD_BUILD)" && exit 1
           [[ "$SHARDED" == "failure" || "$CLOUD" == "failure" || "$BROWSERS" == "failure" ]] && echo "E2E failed" && exit 1
           [[ "$SHARDED" == "cancelled" || "$CLOUD" == "cancelled" || "$BROWSERS" == "cancelled" ]] && echo "E2E cancelled, not failed" && exit 1
           [[ "$SHARDED" != "success" || "$CLOUD" != "success" || "$BROWSERS" != "success" ]] && echo "E2E failed" && exit 1

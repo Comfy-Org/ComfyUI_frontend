@@ -120,7 +120,7 @@ export function classify(
     [/^CI: Lint Format$/, /^repo-checks( \(|$)/, 'repo-checks'],
     [/^CI: Fallow$/, /^fallow( \(|$)/, 'fallow'],
     [/^CI: Tests Unit$/, /^test( \(|$)/, 'unit'],
-    [/^CI: Tests E2E$/, /^setup$/, 'e2e-build'],
+    [/^CI: Tests E2E$/, /^setup(-desktop-cloud)?$/, 'e2e-build'],
     [
       /^CI: Tests E2E$/,
       /^playwright-tests(-chromium-sharded)?( \(|$)/,

@@ -5,6 +5,12 @@ import { describe, expect, it } from 'vitest'
 import { parse } from 'yaml'
 import { z } from 'zod'
 
+const stepSchema = z.object({
+  run: z.string().optional(),
+  uses: z.string().optional(),
+  with: z.record(z.string(), z.unknown()).optional()
+})
+
 const workflowSchema = z.object({
   on: z.record(z.string(), z.unknown()),
   jobs: z.record(
@@ -13,17 +19,13 @@ const workflowSchema = z.object({
       needs: z.union([z.string(), z.array(z.string())]).optional(),
       if: z.string().optional(),
       uses: z.string().optional(),
-      steps: z
-        .array(
-          z.object({
-            run: z.string().optional(),
-            uses: z.string().optional(),
-            with: z.record(z.string(), z.unknown()).optional()
-          })
-        )
-        .optional()
+      steps: z.array(stepSchema).optional()
     })
   )
+})
+
+const actionSchema = z.object({
+  runs: z.object({ steps: z.array(stepSchema).default([]) })
 })
 
 function workflow(file: string) {
@@ -33,6 +35,32 @@ function workflow(file: string) {
 }
 
 const pipeline = workflow('ci-tests-e2e.yaml')
+
+function uploadedArtifacts(steps: z.infer<typeof stepSchema>[]): unknown[] {
+  return steps.flatMap((step) => {
+    if (step.uses?.startsWith('actions/upload-artifact@'))
+      return [step.with?.name]
+    if (step.uses?.startsWith('./.github/actions/'))
+      return uploadedArtifacts(
+        actionSchema.parse(
+          parse(readFileSync(`${step.uses}/action.yaml`, 'utf8'))
+        ).runs.steps
+      )
+    return []
+  })
+}
+
+function uploader(artifact: string) {
+  return Object.keys(pipeline.jobs).find((job) =>
+    uploadedArtifacts(pipeline.jobs[job].steps ?? []).includes(artifact)
+  )
+}
+
+function ancestors(job: string): string[] {
+  return [pipeline.jobs[job].needs ?? []]
+    .flat()
+    .flatMap((parent) => [parent, ...ancestors(parent)])
+}
 
 it.for([
   ['ci-tests-e2e.yaml', 'merge-reports'],
@@ -121,6 +149,7 @@ describe('candidate prerequisites', () => {
         PREFLIGHT: 'skipped',
         CHANGES: 'success',
         SHOULD_RUN: 'false',
+        DESKTOP_CLOUD_BUILD: 'skipped',
         SHARDED: 'skipped',
         BROWSERS: 'skipped',
         VIDEO: 'skipped'
@@ -133,6 +162,7 @@ describe('candidate prerequisites', () => {
         PREFLIGHT: 'success',
         CHANGES: 'success',
         SHOULD_RUN: 'false',
+        DESKTOP_CLOUD_BUILD: 'skipped',
         SHARDED: 'skipped',
         BROWSERS: 'skipped',
         VIDEO: 'skipped'
@@ -147,22 +177,26 @@ describe('candidate prerequisites', () => {
   )
 
   it.for([
-    ['success', 0],
-    ['failure', 1],
-    ['cancelled', 1],
-    ['skipped', 1]
-  ] satisfies [string, number][])(
-    'cloud shards ending with %s produce E2E exit status %s',
-    ([cloud, expected]) => {
+    ['CLOUD', 'success', 0],
+    ['CLOUD', 'failure', 1],
+    ['CLOUD', 'cancelled', 1],
+    ['CLOUD', 'skipped', 1],
+    ['DESKTOP_CLOUD_BUILD', 'failure', 1],
+    ['DESKTOP_CLOUD_BUILD', 'cancelled', 1],
+    ['DESKTOP_CLOUD_BUILD', 'skipped', 1]
+  ] satisfies [string, string, number][])(
+    '%s ending with %s produces E2E exit status %s',
+    ([need, result, expected]) => {
       expect(
         verdict('e2e-status', {
           PREFLIGHT: 'success',
           CHANGES: 'success',
           SHOULD_RUN: 'true',
+          DESKTOP_CLOUD_BUILD: 'success',
           SHARDED: 'success',
-          CLOUD: cloud,
+          CLOUD: 'success',
           BROWSERS: 'success',
-          VIDEO: 'skipped'
+          [need]: result
         })
       ).toBe(expected)
     }
@@ -190,6 +224,41 @@ describe('candidate prerequisites', () => {
       /^\$\{\{\s*!cancelled\(\)\s*&&\s*needs\.preflight\.result == 'success'\s*&&/
     )
   })
+
+  it.for([
+    'preflight',
+    'unit',
+    'ecosystem',
+    'playwright-tests-chromium-sharded'
+  ])('%s waits for the localhost build but not desktop or cloud', (job) => {
+    const waitsFor = ancestors(job)
+    expect(waitsFor).toContain(uploader('frontend-dist'))
+    expect(waitsFor).not.toContain(uploader('frontend-dist-desktop'))
+    expect(waitsFor).not.toContain(uploader('frontend-dist-cloud'))
+  })
+
+  it.for([
+    ['playwright-tests-chromium-sharded', 'frontend-dist'],
+    ['playwright-tests-cloud-sharded', 'frontend-dist-cloud'],
+    ['playwright-tests', 'frontend-dist'],
+    ['playwright-tests', 'frontend-dist-desktop'],
+    ['playwright-tests', 'frontend-dist-cloud']
+  ])('%s waits for the job that uploads %s', ([job, artifact]) => {
+    expect(ancestors(job)).toContain(uploader(artifact))
+  })
+
+  it.for([
+    ['playwright-tests-cloud-sharded', 'frontend-dist-cloud'],
+    ['playwright-tests', 'frontend-dist-desktop'],
+    ['playwright-tests', 'frontend-dist-cloud']
+  ])(
+    '%s overrides a skipped ancestor only after %s is uploaded',
+    ([job, artifact]) => {
+      expect(pipeline.jobs[job].if).toContain(
+        `needs.${uploader(artifact)}.result == 'success'`
+      )
+    }
+  )
 
   it.for(['lint-pr', 'lint-queue', 'fallow', 'unit', 'ecosystem'])(
     '%s is called in the same run without a duplicate candidate trigger',
