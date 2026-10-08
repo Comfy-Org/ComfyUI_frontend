@@ -22,7 +22,7 @@ export interface UseAttachmentOptions {
   maxBytes?: (file: File) => number
   onError?: (message: string) => void
   onUploaded?: () => void
-  stage: (attachment: ComposerAttachment) => void
+  stage: (attachment: ComposerAttachment) => boolean
   update: (id: string, patch: Partial<ComposerAttachment>) => void
   remove: (id: string) => void
 }
@@ -94,10 +94,11 @@ export function useAttachment(options: UseAttachmentOptions) {
   const waiting: Array<() => void> = []
   let activeUploads = 0
 
-  function stage(name: string): string {
+  function stage(name: string, sourceKey?: string): string | undefined {
     const id = `upload-${++stagedCount}:${name}`
+    if (!options.stage({ id, name, ref: '', uploading: true, sourceKey }))
+      return undefined
     pending.add(id)
-    options.stage({ id, name, ref: '', uploading: true })
     return id
   }
 
@@ -192,9 +193,13 @@ export function useAttachment(options: UseAttachmentOptions) {
 
   async function addDeferredFile(
     name: string,
-    resolve: () => Promise<File | undefined>
-  ): Promise<'uploaded' | 'unsupported' | 'cancelled' | 'failed'> {
-    const id = stage(name)
+    resolve: () => Promise<File | undefined>,
+    sourceKey?: string
+  ): Promise<
+    'uploaded' | 'unsupported' | 'cancelled' | 'failed' | 'duplicate'
+  > {
+    const id = stage(name, sourceKey)
+    if (!id) return 'duplicate'
     try {
       const file = await withDeadline(resolve(), DEFERRED_FETCH_TIMEOUT_MS)
       if (cancelled.has(id)) return 'cancelled'
@@ -221,7 +226,11 @@ export function useAttachment(options: UseAttachmentOptions) {
   async function addFiles(files: Iterable<File>): Promise<boolean> {
     const staged = [...files]
       .filter((file) => !isTooLarge(file))
-      .map((file) => ({ file, id: stage(file.name) }))
+      .flatMap((file) => {
+        const sourceKey = `file:${JSON.stringify([file.name, file.size, file.lastModified, file.type])}`
+        const id = stage(file.name, sourceKey)
+        return id ? [{ file, id }] : []
+      })
     let uploaded = 0
     await Promise.all(
       staged.map(async ({ id, file }) => {

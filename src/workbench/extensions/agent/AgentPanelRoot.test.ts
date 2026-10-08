@@ -2480,6 +2480,38 @@ describe('AgentPanelRoot attach flow', () => {
     }
   )
 
+  it('deduplicates an assets-panel item that needs fetching to identify its media type', async () => {
+    const data = assetPanelDrag('Recording.mp3', { name: 'recording' })
+    expect(
+      JSON.parse(data.getData('application/x-comfy-asset-info'))
+    ).toMatchObject({ media_kind: 'other' })
+    const source = data.getData('text/uri-list')
+    const fetched: string[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>(async (input, init) => {
+        if (String(input) === source) {
+          fetched.push(source)
+          return new Response(new Blob(['audio'], { type: 'audio/mpeg' }))
+        }
+        if (init?.method === 'POST') return json(200, { name: 'recording.mp3' })
+        if (String(input).includes('/assets'))
+          return json(200, { assets: [], total: 0, has_more: false })
+        return json(200, agentThreadList())
+      })
+    )
+    renderWithSelectedTarget()
+    await nextTick()
+    const store = useAgentComposerStore()
+    const target = screen.getByRole('textbox')
+    dispatchDrag(target, 'drop', data)
+    await vi.waitFor(() => expect(store.attachments[0]?.uploading).toBe(false))
+    dispatchDrag(target, 'drop', data)
+    await nextTick()
+    expect(store.attachments).toHaveLength(1)
+    expect(fetched).toEqual([source])
+  })
+
   it('allows a removed library asset to be explicitly dropped again while retaining retirement of its old identity', async () => {
     stubUploadFetch()
     renderWithSelectedTarget()
@@ -3514,6 +3546,37 @@ describe('AgentPanelRoot attach flow', () => {
         { name: 'cat.png' }
       )
     ).toBeInTheDocument()
+  })
+
+  it('keeps one tray item when the same local file is dropped again', async () => {
+    const uploaded = stubUploadFetch()
+    renderWithSelectedTarget()
+    await nextTick()
+    const store = useAgentComposerStore()
+    store.setText('Keep this draft')
+    const target = screen.getByRole('textbox')
+    dispatchDrag(target, 'drop', {
+      files: [
+        new File(['image'], 'cat.png', { type: 'image/png', lastModified: 1 })
+      ]
+    })
+    await vi.waitFor(() => expect(store.attachments[0]?.uploading).toBe(false))
+    dispatchDrag(target, 'drop', {
+      files: [
+        new File(['image'], 'cat.png', { type: 'image/png', lastModified: 1 })
+      ]
+    })
+    await nextTick()
+    expect(
+      within(screen.getByTestId('composer-asset-section')).getAllByRole(
+        'group',
+        {
+          name: 'cat.png'
+        }
+      )
+    ).toHaveLength(1)
+    expect(uploaded).toEqual(['cat.png'])
+    expect(store.prompt).toEqual({ text: 'Keep this draft', references: [] })
   })
 
   it('attaches only the assets out of a mixed drop', async () => {

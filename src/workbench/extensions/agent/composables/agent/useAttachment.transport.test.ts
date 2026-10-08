@@ -29,7 +29,10 @@ it('keeps a 4 MiB upload alive past 60 seconds and aborts it at 94 seconds', asy
       const result = await client.uploadImage(file, file.name, uploadSignal)
       return { ref: result.name ?? file.name }
     },
-    stage: (chip) => chips.set(chip.id, chip),
+    stage: (chip) => {
+      chips.set(chip.id, chip)
+      return true
+    },
     update: (id, patch) => {
       const chip = chips.get(id)
       assert.exists(chip)
