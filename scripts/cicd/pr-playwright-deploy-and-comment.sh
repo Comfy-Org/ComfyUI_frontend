@@ -46,8 +46,9 @@ if [ "$STATUS" = "completed" ]; then
     : "${CLOUDFLARE_ACCOUNT_ID:?CLOUDFLARE_ACCOUNT_ID is required for deployment}"
 fi
 
-WORKFLOW_RESULT=${WORKFLOW_RESULT:-success}
-if [ "$STATUS" = "completed" ] && [ -n "${SOURCE_RUN_ID:-}" ]; then
+WORKFLOW_RESULT=unknown
+if [ "$STATUS" = "completed" ]; then
+    : "${SOURCE_RUN_ID:?SOURCE_RUN_ID is required for completed reports}"
     if jobs=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID/jobs?per_page=100" --paginate --slurp); then
         WORKFLOW_RESULT=$(echo "$jobs" | jq -r '
         [.[].jobs[]] as $jobs |
@@ -310,7 +311,9 @@ else
     unset IFS
     
     # Determine overall status (flaky tests are treated as passing)
-    if [ "$WORKFLOW_RESULT" != "success" ] || [ $total_failed -gt 0 ]; then
+    if [ "$WORKFLOW_RESULT" = "unknown" ] && [ "$total_failed" -eq 0 ]; then
+        status_icon="⚠️"
+    elif [ "$WORKFLOW_RESULT" != "success" ] || [ $total_failed -gt 0 ]; then
         status_icon="❌"
     elif [ $total_tests -gt 0 ]; then
         status_icon="✅"
@@ -340,7 +343,7 @@ else
     if [ -n "$result_note" ]; then
         comment="$comment
 
-E2E result: ${WORKFLOW_RESULT}. Test counts include only available reports."
+Counted reports: ${BROWSERS// /, }. [Full E2E run](https://github.com/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID)."
     fi
 
     # Extract and display failed tests from all browsers (flaky tests are treated as passing)

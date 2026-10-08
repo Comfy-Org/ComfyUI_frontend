@@ -40,7 +40,7 @@ it.for([
   {
     name: 'API failure',
     apiExitCode: 1,
-    headline: '❌ E2E unknown · 12 passed, 0 failed'
+    headline: '⚠️ E2E unknown · 12 passed, 0 failed'
   },
   {
     name: 'test failure',
@@ -144,11 +144,35 @@ it.for([
       expect(execution).toMatchObject({ status: 0 })
       const markdown = readFileSync(summary, 'utf8')
       expect(markdown).toContain(`## 🎭 Playwright: ${headline}`)
-      expect(
-        markdown.includes('Test counts include only available reports.')
-      ).toBe(headline.includes('E2E '))
+      expect(markdown.includes('Counted reports:')).toBe(
+        headline.includes('E2E ')
+      )
     } finally {
       rmSync(root, { recursive: true, force: true })
     }
   }
 )
+
+it('requires the source run for completed reports', () => {
+  const execution = spawnSync(
+    'bash',
+    [
+      resolve('scripts/cicd/pr-playwright-deploy-and-comment.sh'),
+      '20528',
+      'branch',
+      'completed'
+    ],
+    {
+      encoding: 'utf8',
+      env: {
+        PATH: process.env.PATH,
+        GITHUB_TOKEN: 'test-token',
+        GITHUB_REPOSITORY: 'Comfy-Org/ComfyUI_frontend',
+        CLOUDFLARE_API_TOKEN: 'test-token',
+        CLOUDFLARE_ACCOUNT_ID: 'test-account'
+      }
+    }
+  )
+  expect(execution.status).toBe(1)
+  expect(execution.stderr).toContain('SOURCE_RUN_ID is required')
+})
