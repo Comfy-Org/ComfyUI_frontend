@@ -83,6 +83,8 @@ async function withDeadline<T>(
 }
 
 let stagedCount = 0
+let fileSourceCount = 0
+const fileSourceKeys = new WeakMap<File, string>()
 
 function attachmentMediaKind(file: File): MediaKind {
   if (hasImageType(file)) return 'image'
@@ -120,6 +122,14 @@ export function useAttachment(options: UseAttachmentOptions) {
   const cancelled = new Set<string>()
   const waiting: Array<() => void> = []
   let activeUploads = 0
+
+  function fileSourceKey(file: File): string {
+    const existing = fileSourceKeys.get(file)
+    if (existing) return existing
+    const sourceKey = `file:${++fileSourceCount}`
+    fileSourceKeys.set(file, sourceKey)
+    return sourceKey
+  }
 
   function stage(name: string, sourceKey?: string): string | undefined {
     const id = `upload-${++stagedCount}:${name}`
@@ -288,8 +298,7 @@ export function useAttachment(options: UseAttachmentOptions) {
     const staged = [...files]
       .filter((file) => !isTooLarge(file))
       .flatMap((file) => {
-        const sourceKey = `file:${JSON.stringify([file.name, file.size, file.lastModified, file.type])}`
-        const id = stage(file.name, sourceKey)
+        const id = stage(file.name, fileSourceKey(file))
         if (!id) duplicates.push(file.name)
         return id ? [{ file, id }] : []
       })

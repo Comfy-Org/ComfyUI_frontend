@@ -53,15 +53,33 @@ describe('useAttachment', () => {
     const file = new File(['image'], 'cat.png', { lastModified: 1 })
     const batch = addFiles([file, file, file])
     expect(onDuplicate).toHaveBeenCalledExactlyOnceWith(['cat.png', 'cat.png'])
-    const repeated = addFiles([
-      new File(['image'], 'cat.png', { lastModified: 1 })
-    ])
+    const repeated = addFiles([file])
     expect(store.attachments).toHaveLength(1)
     await expect(repeated).resolves.toBe(false)
     await expect(batch).resolves.toBe(true)
     expect(upload).toHaveBeenCalledOnce()
     expect(onDuplicate).toHaveBeenLastCalledWith(['cat.png'])
     expect(onDuplicate).toHaveBeenCalledTimes(2)
+  })
+
+  it('keeps distinct files whose metadata collides', async () => {
+    const store = useAgentComposerStore()
+    const upload = vi.fn(async (file: File) => ({ ref: file.name }))
+    const { addFiles } = useAttachment({
+      upload,
+      stage: store.addAttachment,
+      update: store.updateAttachment,
+      remove: store.removeAttachment
+    })
+    const metadata = { lastModified: 1, type: 'image/png' }
+
+    await addFiles([
+      new File(['red'], 'collision.png', metadata),
+      new File(['blu'], 'collision.png', metadata)
+    ])
+
+    expect(store.attachments).toHaveLength(2)
+    expect(upload).toHaveBeenCalledTimes(2)
   })
 
   it('ignores a settled duplicate but allows a removed file to be added again', async () => {
