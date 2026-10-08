@@ -63,7 +63,7 @@ export const useComfyManagerService = () => {
     formatFallback: (context, message) => `${context} failed: ${message}`,
     statusMessages: { 404: 'Could not connect to ComfyUI-Manager' },
     responseFallback: ({ context, status, dataMessage }) =>
-      dataMessage ?? `${context} failed with status ${status}`
+      dataMessage || `${context} failed with status ${status}`
   })
 
   const {

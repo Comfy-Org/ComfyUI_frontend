@@ -47,7 +47,7 @@ export const useCustomerEventsService = () => {
   const mapError = createDefaultErrorMapper({
     formatFallback: (context, message) => `${context} failed: ${message}`,
     responseFallback: ({ context, status, dataMessage }) =>
-      dataMessage ?? `${context} failed with status ${status}`
+      dataMessage || `${context} failed with status ${status}`
   })
 
   const { error, executeRequest } = useApiRequest({

@@ -5,7 +5,7 @@ import { createDefaultErrorMapper } from '@/composables/apiErrorMapper'
 
 function axiosErrorWithResponse(
   status: number,
-  data?: { message?: string },
+  data?: { message?: unknown },
   message = 'Request failed'
 ) {
   const config = { headers: new AxiosHeaders() }
@@ -85,10 +85,23 @@ describe('createDefaultErrorMapper', () => {
     ).toBe('Not found: pack 42')
   })
 
-  it('calls a function status entry with undefined when the body has no message', () => {
-    expect(mapError(axiosErrorWithResponse(404, {}), 'ctx')).toBe(
+  it.for([
+    { label: 'no message', data: {} },
+    { label: 'an empty message', data: { message: '' } },
+    { label: 'a non-string message', data: { message: { nested: true } } }
+  ])('uses the status entry default when the body has $label', ({ data }) => {
+    expect(mapError(axiosErrorWithResponse(404, data), 'ctx')).toBe(
       'Not found: Resource not found'
     )
+  })
+
+  it('drops a non-string body message before the response fallback', () => {
+    expect(
+      mapError(
+        axiosErrorWithResponse(500, { message: 42 }, 'Request failed'),
+        'Failed to load'
+      )
+    ).toBe('Failed to load [500]: Request failed')
   })
 
   it('falls back for a status with no route-specific or table entry', () => {

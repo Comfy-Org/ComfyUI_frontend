@@ -33,7 +33,7 @@ export function createDefaultErrorMapper({
   responseFallback
 }: DefaultErrorMapperOptions): ApiErrorMapper {
   return (err, context, routeSpecificErrors) => {
-    if (!axios.isAxiosError<{ message?: string }>(err))
+    if (!axios.isAxiosError<{ message?: unknown }>(err))
       return formatFallback(
         context,
         err instanceof Error
@@ -44,7 +44,8 @@ export function createDefaultErrorMapper({
     if (!err.response) return formatFallback(context, err.message)
 
     const { status, data } = err.response
-    const dataMessage = data?.message
+    const dataMessage =
+      typeof data?.message === 'string' ? data.message : undefined
 
     if (routeSpecificErrors?.[status]) return routeSpecificErrors[status]
 
