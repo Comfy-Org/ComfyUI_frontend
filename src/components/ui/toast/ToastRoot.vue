@@ -17,7 +17,7 @@ const forwarded = useForwardPropsEmits(restProps, emits)
     v-bind="forwarded"
     :class="
       cn(
-        'pointer-events-auto relative flex w-full items-start gap-3 rounded-lg border border-border-default bg-base-background p-4 text-base-foreground shadow-lg',
+        'pointer-events-auto relative grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-x-3 rounded-lg border border-border-default bg-base-background p-4 text-base-foreground shadow-lg',
         className
       )
     "

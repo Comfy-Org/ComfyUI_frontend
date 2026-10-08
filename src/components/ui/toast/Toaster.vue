@@ -98,25 +98,27 @@ const icons = {
       @update:open="updateToastOpen(item.id, $event)"
     >
       <i
-        :class="cn(icons[item.kind], 'mt-0.5 size-5 shrink-0')"
+        :class="cn(icons[item.kind], 'col-start-1 row-start-1 size-5')"
         aria-hidden="true"
       />
-      <div class="min-w-0 flex-1">
-        <ToastTitle>{{ item.title }}</ToastTitle>
-        <ToastDescription v-if="item.description">
-          {{ item.description }}
-        </ToastDescription>
-      </div>
+      <ToastTitle class="col-start-2 row-start-1">{{ item.title }}</ToastTitle>
+      <ToastClose
+        v-if="item.closable"
+        class="col-start-3 row-start-1"
+        data-testid="toast-close"
+      />
+      <ToastDescription v-if="item.description" class="col-start-2 row-start-2">
+        {{ item.description }}
+      </ToastDescription>
       <Button
         v-if="item.action"
-        class="shrink-0 self-center"
+        class="col-span-2 col-start-2 row-start-3 mt-3 justify-self-end"
         size="md"
-        variant="inverted"
+        variant="secondary"
         @click="item.action.onClick()"
       >
         {{ item.action.label }}
       </Button>
-      <ToastClose v-if="item.closable" data-testid="toast-close" />
     </ToastRoot>
     <ToastViewport
       :label="
