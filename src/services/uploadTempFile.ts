@@ -1,15 +1,11 @@
+import type { UploadImageResponse } from '@comfyorg/ingest-types'
+
 import { useToast } from '@/components/ui/toast/toastStore'
 import { t } from '@/i18n'
 import { api } from '@/scripts/api'
 
-interface UploadedTempFile {
-  name: string
-  subfolder?: string
-  type?: string
-}
-
 type TempFileUpload =
-  | { ok: true; file: UploadedTempFile }
+  | { ok: true; file: UploadImageResponse }
   | { ok: false; reason: string }
 
 export async function uploadTempFile(
