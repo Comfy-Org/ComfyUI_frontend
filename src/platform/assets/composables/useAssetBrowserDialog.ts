@@ -34,11 +34,6 @@ const ASSET_BROWSER_DIALOG_PROPS = {
 
 let assetBrowserModalComponent: Component<AssetBrowserModalProps> | undefined
 
-/**
- * `AssetBrowserModal.vue` pulls in the asset grid, model info panel, upload
- * flow, and their stores, so the composable cannot import it without an import
- * cycle. The app shell registers it.
- */
 export function registerAssetBrowserModalComponent(
   component: Component<AssetBrowserModalProps>
 ) {
