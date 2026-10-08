@@ -44,7 +44,7 @@ function tabNames() {
 afterEach(() => happyWindow.happyDOM.setViewport({ width: 1024 }))
 
 describe('ModelTabs', () => {
-  it('offers every category as a tab on one list, grouped Type, Task, Access', () => {
+  it('offers every category as a tab on one list, with Task and Access headed and the types first', () => {
     renderTabs()
     const list = screen.getByRole('tablist', { name: 'Model categories' })
     expect(list).toHaveAttribute('aria-orientation', 'vertical')
@@ -62,8 +62,9 @@ describe('ModelTabs', () => {
     ])
     expect(screen.getByRole('tab', { name: 'Partner nodes' })).toBeTruthy()
     expect(
-      ['Type', 'Task', 'Access'].map((title) => screen.getByText(title))
-    ).toHaveLength(3)
+      ['Task', 'Access'].map((title) => screen.getByText(title))
+    ).toHaveLength(2)
+    expect(screen.queryByText('Type')).toBeNull()
     for (const tab of screen.getAllByRole('tab')) {
       expect(list).toContainElement(tab)
       expect(tab).toHaveAttribute('aria-controls', 'panel')

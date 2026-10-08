@@ -98,12 +98,13 @@ function onKeydown(event: KeyboardEvent) {
       @keydown="onKeydown"
     >
       <div
-        v-for="group in groups"
+        v-for="(group, index) in groups"
         :key="group.titleKey"
         role="none"
         class="contents lg:flex lg:flex-col lg:gap-0.5"
       >
         <span
+          v-if="index > 0"
           aria-hidden="true"
           class="px-3 pb-2 text-xs font-bold tracking-wider text-primary-warm-gray uppercase max-lg:hidden"
         >
