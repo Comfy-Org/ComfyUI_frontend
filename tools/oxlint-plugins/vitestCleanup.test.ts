@@ -380,6 +380,7 @@ it('reports every way of replacing the shared fetch mock', () => {
   globalThis.fetch = vi.fn()
   window.fetch = vi.fn()
   global.fetch = vi.fn()
+  fetch = vi.fn()
 })
 
 it('allows configuring the shared mock and other globals', () => {
@@ -395,6 +396,12 @@ it('allows a shadowed global owner', () => {
   const window = { fetch() {} }
   window.fetch = vi.fn()
   vi.spyOn(window, 'fetch')
+})
+
+it('allows assigning a local named fetch', () => {
+  let fetch = () => undefined
+  fetch = () => undefined
+  void fetch
 })
 `
 
@@ -539,10 +546,10 @@ describe('Vitest cleanup rules', () => {
   })
 
   it('reports replacing the shared fetch mock anywhere in a test file', () => {
-    expectReportsAt(output, [5, 6, 10, 11, 12, 13, 14], 'fetch.test.ts')
+    expectReportsAt(output, [5, 6, 10, 11, 12, 13, 14, 15], 'fetch.test.ts')
     expect(
       stripVTControlCharacters(output).match(/fetch\.test\.ts:\d+:/g)
-    ).toHaveLength(7)
+    ).toHaveLength(8)
   })
 
   it('ignores unrelated names, nested helpers, test bodies, and Playwright specs', () => {

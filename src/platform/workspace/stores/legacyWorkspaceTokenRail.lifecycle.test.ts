@@ -339,7 +339,7 @@ describe('ensureWorkspaceToken', () => {
     'backs off a failed recovery: retrying $retry makes $mints mint(s)',
     async ({ after, mints }) => {
       const { rail } = createRail()
-      vi.mocked(fetch).mockResolvedValue(failedResponse(500))
+      vi.mocked(fetch).mockImplementation(async () => failedResponse(500))
 
       await expect(
         rail.ensureWorkspaceToken('workspace-123')
@@ -554,7 +554,7 @@ describe('refreshToken', () => {
   it('retries repeated 500s on a doubling backoff, then keeps the held token', async () => {
     const { rail, deps } = createRail()
     await rail.switchLegacyWorkspace('workspace-123')
-    vi.mocked(fetch).mockResolvedValue(failedResponse(500))
+    vi.mocked(fetch).mockImplementation(async () => failedResponse(500))
 
     const refreshing = rail.refreshToken()
     await vi.advanceTimersByTimeAsync(999)
@@ -596,7 +596,7 @@ describe('refreshToken', () => {
     async ({ clockAdvanceMs, uid }) => {
       const { rail, deps, identity } = createRail()
       await rail.switchLegacyWorkspace('workspace-123')
-      vi.mocked(fetch).mockResolvedValue(failedResponse(500))
+      vi.mocked(fetch).mockImplementation(async () => failedResponse(500))
       vi.setSystemTime(Date.now() + clockAdvanceMs)
       identity.uid = uid
 
@@ -628,7 +628,7 @@ describe('refreshToken', () => {
   it('caps scheduled refresh retries and ends the session at expiry', async () => {
     const { rail, deps } = createRail()
     await rail.switchLegacyWorkspace('workspace-123')
-    vi.mocked(fetch).mockResolvedValue(failedResponse(500))
+    vi.mocked(fetch).mockImplementation(async () => failedResponse(500))
 
     const refreshing = rail.refreshToken()
     await vi.advanceTimersByTimeAsync(60_000)

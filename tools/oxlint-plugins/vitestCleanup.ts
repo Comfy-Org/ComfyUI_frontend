@@ -28,6 +28,7 @@ const GLOBALLY_SPIED_CONSOLE_METHODS = new Set([
 ])
 const CONSOLE_GLOBAL = new Set(['console'])
 const CONSOLE_OWNERS = new Set(['globalThis', 'window'])
+const FETCH_GLOBAL = new Set(['fetch'])
 const FETCH_OWNERS = new Set(['global', 'globalThis', 'window'])
 
 const MODULE_SCOPE_MOCK_METHODS = new Set(['spyOn', 'stubGlobal'])
@@ -698,6 +699,7 @@ const FETCH_STUB_MESSAGE =
   'fetch is already a mock from vitest.network.setup.ts that blocks real requests by default, and the automatic reset restores that guard. Configure it with vi.mocked(fetch) instead.'
 
 function isGlobalFetch(context: RuleContext, expression: Expression) {
+  if (isGlobalIdentifier(context, expression, FETCH_GLOBAL)) return true
   const member = asMemberExpression(expression)
   return (
     member !== undefined &&
