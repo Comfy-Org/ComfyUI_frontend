@@ -322,12 +322,8 @@ describe('useWorkspaceAuthStore', () => {
       vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
         'firebase-token-xyz'
       )
-      vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue({
-          ok: true,
-          json: () => Promise.resolve(mockTokenResponse)
-        })
+      vi.mocked(fetch).mockImplementation(async () =>
+        Response.json(mockTokenResponse)
       )
 
       const store = useWorkspaceAuthStore()
@@ -355,7 +351,7 @@ describe('useWorkspaceAuthStore', () => {
         ok: true,
         json: () => Promise.resolve(mockTokenResponse)
       })
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
       const switchPromise = store.switchWorkspace('workspace-123')
@@ -373,7 +369,7 @@ describe('useWorkspaceAuthStore', () => {
     it('does not exchange a workspace token when session creation fails', async () => {
       mockEnsureSessionCookie.mockRejectedValue(new Error('session denied'))
       const mockFetch = vi.fn()
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
 
@@ -386,23 +382,17 @@ describe('useWorkspaceAuthStore', () => {
 
     it('discards a token exchange that resolves after the user changes', async () => {
       vi.mocked(useAuthStore().getIdToken).mockResolvedValue('firebase-token-a')
-      let resolveResponse: (value: unknown) => void = () => {}
-      vi.stubGlobal(
-        'fetch',
-        vi.fn().mockReturnValue(
-          new Promise((resolve) => {
-            resolveResponse = resolve
-          })
-        )
+      let resolveResponse: (value: Response) => void = () => {}
+      vi.mocked(fetch).mockReturnValue(
+        new Promise<Response>((resolve) => {
+          resolveResponse = resolve
+        })
       )
 
       const store = useWorkspaceAuthStore()
       const switchPromise = store.switchWorkspace('workspace-123')
       mockCurrentUser.value = { uid: 'user-b' }
-      resolveResponse({
-        ok: true,
-        json: () => Promise.resolve(mockTokenResponse)
-      })
+      resolveResponse(Response.json(mockTokenResponse))
 
       await switchPromise
 
@@ -414,12 +404,8 @@ describe('useWorkspaceAuthStore', () => {
       vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
         'firebase-token-xyz'
       )
-      vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue({
-          ok: true,
-          json: () => Promise.resolve(mockTokenResponse)
-        })
+      vi.mocked(fetch).mockImplementation(async () =>
+        Response.json(mockTokenResponse)
       )
 
       const store = useWorkspaceAuthStore()
@@ -464,7 +450,7 @@ describe('useWorkspaceAuthStore', () => {
               workspace: { ...mockWorkspace, id: 'workspace-b' }
             })
         })
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
       await store.switchWorkspace('workspace-a')
@@ -490,11 +476,11 @@ describe('useWorkspaceAuthStore', () => {
       vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
         'firebase-token-xyz'
       )
-      let resolveResponse: (value: unknown) => void
-      const responsePromise = new Promise((resolve) => {
+      let resolveResponse: (value: Response) => void
+      const responsePromise = new Promise<Response>((resolve) => {
         resolveResponse = resolve
       })
-      vi.stubGlobal('fetch', vi.fn().mockReturnValue(responsePromise))
+      vi.mocked(fetch).mockReturnValue(responsePromise)
 
       const store = useWorkspaceAuthStore()
       const { isLoading } = storeToRefs(store)
@@ -502,10 +488,7 @@ describe('useWorkspaceAuthStore', () => {
       const switchPromise = store.switchWorkspace('workspace-123')
       expect(isLoading.value).toBe(true)
 
-      resolveResponse!({
-        ok: true,
-        json: () => Promise.resolve(mockTokenResponse)
-      })
+      resolveResponse!(Response.json(mockTokenResponse))
       await switchPromise
 
       expect(isLoading.value).toBe(false)
@@ -527,7 +510,7 @@ describe('useWorkspaceAuthStore', () => {
         .fn()
         .mockReturnValueOnce(firstSwitchResponse)
         .mockReturnValueOnce(secondSwitchResponse)
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
       const { isLoading } = storeToRefs(store)
@@ -576,15 +559,12 @@ describe('useWorkspaceAuthStore', () => {
       vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
         'firebase-token-xyz'
       )
-      vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue({
-          ok: false,
-          status: 403,
-          statusText: 'Forbidden',
-          text: () =>
-            Promise.resolve(JSON.stringify({ message: 'Access denied' }))
-        })
+      vi.mocked(fetch).mockImplementation(
+        async () =>
+          new Response(JSON.stringify({ message: 'Access denied' }), {
+            status: 403,
+            statusText: 'Forbidden'
+          })
       )
 
       const store = useWorkspaceAuthStore()
@@ -602,15 +582,12 @@ describe('useWorkspaceAuthStore', () => {
       vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
         'firebase-token-xyz'
       )
-      vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue({
-          ok: false,
-          status: 404,
-          statusText: 'Not Found',
-          text: () =>
-            Promise.resolve(JSON.stringify({ message: 'Workspace not found' }))
-        })
+      vi.mocked(fetch).mockImplementation(
+        async () =>
+          new Response(JSON.stringify({ message: 'Workspace not found' }), {
+            status: 404,
+            statusText: 'Not Found'
+          })
       )
 
       const store = useWorkspaceAuthStore()
@@ -630,15 +607,12 @@ describe('useWorkspaceAuthStore', () => {
       vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
         'firebase-token-xyz'
       )
-      vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue({
-          ok: false,
-          status: 401,
-          statusText: 'Unauthorized',
-          text: () =>
-            Promise.resolve(JSON.stringify({ message: 'Invalid token' }))
-        })
+      vi.mocked(fetch).mockImplementation(
+        async () =>
+          new Response(JSON.stringify({ message: 'Invalid token' }), {
+            status: 401,
+            statusText: 'Unauthorized'
+          })
       )
 
       const store = useWorkspaceAuthStore()
@@ -658,15 +632,12 @@ describe('useWorkspaceAuthStore', () => {
       vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
         'firebase-token-xyz'
       )
-      vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue({
-          ok: false,
-          status: 500,
-          statusText: 'Internal Server Error',
-          text: () =>
-            Promise.resolve(JSON.stringify({ message: 'Server error' }))
-        })
+      vi.mocked(fetch).mockImplementation(
+        async () =>
+          new Response(JSON.stringify({ message: 'Server error' }), {
+            status: 500,
+            statusText: 'Internal Server Error'
+          })
       )
 
       const store = useWorkspaceAuthStore()
@@ -693,7 +664,7 @@ describe('useWorkspaceAuthStore', () => {
         ok: true,
         json: () => Promise.resolve(mockTokenResponse)
       })
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
 
@@ -718,12 +689,8 @@ describe('useWorkspaceAuthStore', () => {
       vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
         'firebase-token-xyz'
       )
-      vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue({
-          ok: true,
-          json: () => Promise.resolve(mockTokenResponse)
-        })
+      vi.mocked(fetch).mockImplementation(async () =>
+        Response.json(mockTokenResponse)
       )
 
       const store = useWorkspaceAuthStore()
@@ -770,7 +737,7 @@ describe('useWorkspaceAuthStore', () => {
         ok: true,
         json: () => Promise.resolve(mockTokenResponse)
       })
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
       const { currentWorkspace, workspaceToken, isAuthenticated, error } =
@@ -826,12 +793,8 @@ describe('useWorkspaceAuthStore', () => {
       vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
         'firebase-token-xyz'
       )
-      vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue({
-          ok: true,
-          json: () => Promise.resolve(mockTokenResponse)
-        })
+      vi.mocked(fetch).mockImplementation(async () =>
+        Response.json(mockTokenResponse)
       )
 
       const store = useWorkspaceAuthStore()
@@ -854,7 +817,7 @@ describe('useWorkspaceAuthStore', () => {
         ok: true,
         json: () => Promise.resolve(mockTokenResponse)
       })
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
       await store.switchWorkspace('workspace-123')
@@ -884,7 +847,7 @@ describe('useWorkspaceAuthStore', () => {
               token: 'workspace-token-b'
             })
         })
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
       await store.switchWorkspace('workspace-123')
@@ -900,12 +863,8 @@ describe('useWorkspaceAuthStore', () => {
       vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
         'firebase-token-xyz'
       )
-      vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue({
-          ok: true,
-          json: () => Promise.resolve(mockTokenResponse)
-        })
+      vi.mocked(fetch).mockImplementation(async () =>
+        Response.json(mockTokenResponse)
       )
 
       const store = useWorkspaceAuthStore()
@@ -923,7 +882,7 @@ describe('useWorkspaceAuthStore', () => {
         ok: true,
         json: () => Promise.resolve(mockTokenResponse)
       })
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
 
@@ -946,17 +905,14 @@ describe('useWorkspaceAuthStore', () => {
         resolveResponse = resolve
       })
       const mockFetch = vi.fn().mockReturnValue(responsePromise)
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
 
       const switchPromise = store.switchWorkspace('workspace-123')
       const ensurePromise = store.ensureWorkspaceAuthHeader('workspace-123')
 
-      resolveResponse({
-        ok: true,
-        json: () => Promise.resolve(mockTokenResponse)
-      })
+      resolveResponse(Response.json(mockTokenResponse))
       await switchPromise
       const header = await ensurePromise
 
@@ -984,7 +940,7 @@ describe('useWorkspaceAuthStore', () => {
               token: 'workspace-token-b'
             })
         })
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
       const previousHeader = store.ensureWorkspaceAuthHeader('workspace-123')
@@ -1013,14 +969,8 @@ describe('useWorkspaceAuthStore', () => {
       vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
         'firebase-token-xyz'
       )
-      vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue({
-          ok: false,
-          status: 500,
-          statusText: 'Internal Server Error',
-          json: () => Promise.resolve({})
-        })
+      vi.mocked(fetch).mockImplementation(async () =>
+        Response.json({}, { status: 500, statusText: 'Internal Server Error' })
       )
 
       const store = useWorkspaceAuthStore()
@@ -1055,7 +1005,7 @@ describe('useWorkspaceAuthStore', () => {
           text: () =>
             Promise.resolve(JSON.stringify({ message: 'Access denied' }))
         })
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
       const { currentWorkspace } = storeToRefs(store)
@@ -1083,21 +1033,14 @@ describe('useWorkspaceAuthStore', () => {
         vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
           'firebase-token-xyz'
         )
-        vi.stubGlobal(
-          'fetch',
-          vi
-            .fn()
-            .mockResolvedValueOnce({
-              ok: true,
-              json: () => Promise.resolve(mockTokenResponse)
-            })
-            .mockResolvedValue(
-              Response.json(
-                { code: 'sso_required', message: 'use SSO' },
-                { status: 403 }
-              )
+        vi.mocked(fetch)
+          .mockResolvedValueOnce(Response.json(mockTokenResponse))
+          .mockImplementation(async () =>
+            Response.json(
+              { code: 'sso_required', message: 'use SSO' },
+              { status: 403 }
             )
-        )
+          )
 
         const store = useWorkspaceAuthStore()
         const { currentWorkspace } = storeToRefs(store)
@@ -1124,16 +1067,11 @@ describe('useWorkspaceAuthStore', () => {
       vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
         'firebase-token-xyz'
       )
-      vi.stubGlobal(
-        'fetch',
-        vi
-          .fn()
-          .mockResolvedValue(
-            Response.json(
-              { code: 'sso_required', message: 'use SSO' },
-              { status: 403 }
-            )
-          )
+      vi.mocked(fetch).mockImplementation(async () =>
+        Response.json(
+          { code: 'sso_required', message: 'use SSO' },
+          { status: 403 }
+        )
       )
 
       const store = useWorkspaceAuthStore()
@@ -1156,7 +1094,7 @@ describe('useWorkspaceAuthStore', () => {
         statusText: 'Internal Server Error',
         json: () => Promise.resolve({})
       })
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
 
@@ -1172,15 +1110,12 @@ describe('useWorkspaceAuthStore', () => {
       vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
         'firebase-token-xyz'
       )
-      vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue({
-          ok: false,
-          status: 403,
-          statusText: 'Forbidden',
-          text: () =>
-            Promise.resolve(JSON.stringify({ message: 'Access denied' }))
-        })
+      vi.mocked(fetch).mockImplementation(
+        async () =>
+          new Response(JSON.stringify({ message: 'Access denied' }), {
+            status: 403,
+            statusText: 'Forbidden'
+          })
       )
 
       const store = useWorkspaceAuthStore()
@@ -1197,14 +1132,11 @@ describe('useWorkspaceAuthStore', () => {
       vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
         'firebase-token-xyz'
       )
-      vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue({
-          ok: false,
-          status: 401,
-          statusText: 'Unauthorized',
-          json: () => Promise.resolve({ message: 'Invalid token' })
-        })
+      vi.mocked(fetch).mockImplementation(async () =>
+        Response.json(
+          { message: 'Invalid token' },
+          { status: 401, statusText: 'Unauthorized' }
+        )
       )
 
       const store = useWorkspaceAuthStore()
@@ -1221,12 +1153,8 @@ describe('useWorkspaceAuthStore', () => {
       vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
         'firebase-token-xyz'
       )
-      vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue({
-          ok: true,
-          json: () => Promise.resolve(mockTokenResponse)
-        })
+      vi.mocked(fetch).mockImplementation(async () =>
+        Response.json(mockTokenResponse)
       )
 
       const store = useWorkspaceAuthStore()
@@ -1262,7 +1190,7 @@ describe('useWorkspaceAuthStore', () => {
           ok: true,
           json: () => Promise.resolve(mockTokenResponse)
         })
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
 
@@ -1297,7 +1225,7 @@ describe('useWorkspaceAuthStore', () => {
             })
         })
       })
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
 
@@ -1334,7 +1262,7 @@ describe('useWorkspaceAuthStore', () => {
             })
         })
       })
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
       const switchPromise = store.switchWorkspace('workspace-other')
@@ -1361,7 +1289,7 @@ describe('useWorkspaceAuthStore', () => {
         ok: true,
         json: () => Promise.resolve(tokenResponseWithFutureExpiry)
       })
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
 
@@ -1402,7 +1330,7 @@ describe('useWorkspaceAuthStore', () => {
           text: () =>
             Promise.resolve(JSON.stringify({ message: 'Access denied' }))
         })
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
       const { currentWorkspace, workspaceToken } = storeToRefs(store)
@@ -1443,7 +1371,7 @@ describe('useWorkspaceAuthStore', () => {
   describe('refreshToken', () => {
     it('does nothing when no current workspace', async () => {
       const mockFetch = vi.fn()
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
 
@@ -1460,7 +1388,7 @@ describe('useWorkspaceAuthStore', () => {
         ok: true,
         json: () => Promise.resolve(mockTokenResponse)
       })
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
       const { workspaceToken } = storeToRefs(store)
@@ -1488,12 +1416,8 @@ describe('useWorkspaceAuthStore', () => {
       vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
         'firebase-token-xyz'
       )
-      vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue({
-          ok: true,
-          json: () => Promise.resolve(mockTokenResponse)
-        })
+      vi.mocked(fetch).mockImplementation(async () =>
+        Response.json(mockTokenResponse)
       )
 
       const store = useWorkspaceAuthStore()
@@ -1540,7 +1464,7 @@ describe('useWorkspaceAuthStore', () => {
             expires_at: new Date(expiresAt).toISOString()
           })
       })
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
       await store.switchWorkspace('workspace-123')
@@ -1583,7 +1507,7 @@ describe('useWorkspaceAuthStore', () => {
         ok: true,
         json: () => Promise.resolve(mockTokenResponse)
       })
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
       const { currentWorkspace, workspaceToken, error } = storeToRefs(store)
@@ -1671,7 +1595,7 @@ describe('useWorkspaceAuthStore', () => {
         ok: true,
         json: () => Promise.resolve(mockTokenResponse)
       })
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
       await store.switchWorkspace('workspace-123')
@@ -1709,7 +1633,7 @@ describe('useWorkspaceAuthStore', () => {
         ok: true,
         json: () => Promise.resolve(mockTokenResponse)
       })
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
       const { currentWorkspace } = storeToRefs(store)
@@ -1743,21 +1667,14 @@ describe('useWorkspaceAuthStore', () => {
         vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
           'firebase-token-xyz'
         )
-        vi.stubGlobal(
-          'fetch',
-          vi
-            .fn()
-            .mockResolvedValueOnce({
-              ok: true,
-              json: () => Promise.resolve(mockTokenResponse)
-            })
-            .mockResolvedValue(
-              Response.json(
-                { code: 'sso_required', message: 'use SSO' },
-                { status: 403 }
-              )
+        vi.mocked(fetch)
+          .mockResolvedValueOnce(Response.json(mockTokenResponse))
+          .mockImplementation(async () =>
+            Response.json(
+              { code: 'sso_required', message: 'use SSO' },
+              { status: 403 }
             )
-        )
+          )
 
         const store = useWorkspaceAuthStore()
         const { currentWorkspace } = storeToRefs(store)
@@ -1783,7 +1700,7 @@ describe('useWorkspaceAuthStore', () => {
         ok: true,
         json: () => Promise.resolve(mockTokenResponse)
       })
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
       const { currentWorkspace, workspaceToken } = storeToRefs(store)
@@ -1840,7 +1757,7 @@ describe('useWorkspaceAuthStore', () => {
         ok: true,
         json: () => Promise.resolve(mockTokenResponse)
       })
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
       const { currentWorkspace, workspaceToken } = storeToRefs(store)
@@ -1903,7 +1820,7 @@ describe('useWorkspaceAuthStore', () => {
         ok: true,
         json: () => Promise.resolve(mockTokenResponse)
       })
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
       const { currentWorkspace, workspaceToken } = storeToRefs(store)
@@ -1983,7 +1900,7 @@ describe('useWorkspaceAuthStore', () => {
         ok: true,
         json: () => Promise.resolve(mockTokenResponse)
       })
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
       const { currentWorkspace, workspaceToken } = storeToRefs(store)
@@ -2052,7 +1969,7 @@ describe('useWorkspaceAuthStore', () => {
         ok: true,
         json: () => Promise.resolve(mockTokenResponse)
       })
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
       const { currentWorkspace, workspaceToken, error } = storeToRefs(store)
@@ -2098,12 +2015,8 @@ describe('useWorkspaceAuthStore', () => {
       vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
         'firebase-token-xyz'
       )
-      vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue({
-          ok: true,
-          json: () => Promise.resolve(mockTokenResponse)
-        })
+      vi.mocked(fetch).mockImplementation(async () =>
+        Response.json(mockTokenResponse)
       )
 
       const originalSessionStorage = globalThis.sessionStorage
@@ -2147,16 +2060,11 @@ describe('useWorkspaceAuthStore', () => {
       vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
         'firebase-token-xyz'
       )
-      vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue({
-          ok: true,
-          json: () =>
-            Promise.resolve({
-              token: 'token-only',
-              // missing expires_at, workspace, role, permissions
-              role: 'owner'
-            })
+      vi.mocked(fetch).mockImplementation(async () =>
+        Response.json({
+          token: 'token-only',
+          // missing expires_at, workspace, role, permissions
+          role: 'owner'
         })
       )
 
@@ -2195,7 +2103,7 @@ describe('useWorkspaceAuthStore', () => {
         'firebase-token-xyz'
       )
       const mockFetch = vi.fn()
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
       const { unifiedToken } = storeToRefs(store)
@@ -2218,12 +2126,8 @@ describe('useWorkspaceAuthStore', () => {
       vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
         'firebase-token-xyz'
       )
-      vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue({
-          ok: true,
-          json: () => Promise.resolve(personalTokenResponse)
-        })
+      vi.mocked(fetch).mockImplementation(async () =>
+        Response.json(personalTokenResponse)
       )
 
       const store = useWorkspaceAuthStore()
@@ -2241,7 +2145,7 @@ describe('useWorkspaceAuthStore', () => {
         ok: true,
         json: () => Promise.resolve(personalTokenResponse)
       })
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
       const { unifiedToken, workspaceToken } = storeToRefs(store)
@@ -2278,12 +2182,8 @@ describe('useWorkspaceAuthStore', () => {
       vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
         'firebase-token-xyz'
       )
-      vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue({
-          ok: true,
-          json: () => Promise.resolve(personalTokenResponse)
-        })
+      vi.mocked(fetch).mockImplementation(async () =>
+        Response.json(personalTokenResponse)
       )
 
       const store = useWorkspaceAuthStore()
@@ -2310,7 +2210,7 @@ describe('useWorkspaceAuthStore', () => {
         ok: true,
         json: () => Promise.resolve(personalTokenResponse)
       })
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
       const { unifiedToken } = storeToRefs(store)
@@ -2334,7 +2234,7 @@ describe('useWorkspaceAuthStore', () => {
         ok: true,
         json: () => Promise.resolve(personalTokenResponse)
       })
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
 
@@ -2360,7 +2260,7 @@ describe('useWorkspaceAuthStore', () => {
           json: () =>
             Promise.resolve({ ...personalTokenResponse, token: 'unified-b' })
         })
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
       await store.mintAtLogin()
@@ -2386,7 +2286,7 @@ describe('useWorkspaceAuthStore', () => {
             expires_at: new Date(Date.now() + expiresInMs).toISOString()
           })
       })
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
 
@@ -2406,12 +2306,8 @@ describe('useWorkspaceAuthStore', () => {
       vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
         'firebase-token-xyz'
       )
-      vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue({
-          ok: true,
-          json: () => Promise.resolve(personalTokenResponse)
-        })
+      vi.mocked(fetch).mockImplementation(async () =>
+        Response.json(personalTokenResponse)
       )
 
       const store = useWorkspaceAuthStore()
@@ -2428,7 +2324,7 @@ describe('useWorkspaceAuthStore', () => {
         ok: true,
         json: () => Promise.resolve(mockTokenResponse)
       })
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
       await store.switchWorkspace('workspace-123')
@@ -2453,23 +2349,14 @@ describe('useWorkspaceAuthStore', () => {
         ...mockWorkspaceWithRole,
         id: 'workspace-456'
       }
-      vi.stubGlobal(
-        'fetch',
-        vi
-          .fn()
-          .mockResolvedValueOnce({
-            ok: true,
-            json: () => Promise.resolve(mockTokenResponse)
+      vi.mocked(fetch)
+        .mockResolvedValueOnce(Response.json(mockTokenResponse))
+        .mockResolvedValueOnce(
+          Response.json({
+            ...mockTokenResponse,
+            workspace: secondWorkspace
           })
-          .mockResolvedValueOnce({
-            ok: true,
-            json: () =>
-              Promise.resolve({
-                ...mockTokenResponse,
-                workspace: secondWorkspace
-              })
-          })
-      )
+        )
 
       const store = useWorkspaceAuthStore()
       await store.switchWorkspace('workspace-123')
@@ -2517,7 +2404,7 @@ describe('useWorkspaceAuthStore', () => {
               workspace: { ...mockWorkspace, id: 'workspace-b' }
             })
         })
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
       await store.switchWorkspace('workspace-a')
@@ -2546,7 +2433,7 @@ describe('useWorkspaceAuthStore', () => {
           ok: true,
           json: () => Promise.resolve(personalTokenResponse)
         })
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
       await expect(store.switchWorkspace('workspace-revoked')).rejects.toThrow()
@@ -2579,7 +2466,7 @@ describe('useWorkspaceAuthStore', () => {
           ok: true,
           json: () => Promise.resolve(mockTokenResponse)
         })
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
       const switching = store.switchWorkspace('workspace-123')
@@ -2625,7 +2512,7 @@ describe('useWorkspaceAuthStore', () => {
             resolveWorkspaceB = resolve
           })
         )
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
       await store.switchWorkspace('workspace-a')
@@ -2667,7 +2554,7 @@ describe('useWorkspaceAuthStore', () => {
           statusText: 'Internal Server Error',
           json: () => Promise.resolve({ message: 'try again' })
         })
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
       await store.switchWorkspace('workspace-123')
@@ -2685,15 +2572,10 @@ describe('useWorkspaceAuthStore', () => {
         'firebase-token-xyz'
       )
       const expiresInMs = 3600 * 1000
-      vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue({
-          ok: true,
-          json: () =>
-            Promise.resolve({
-              ...personalTokenResponse,
-              expires_at: new Date(Date.now() + expiresInMs).toISOString()
-            })
+      vi.mocked(fetch).mockImplementation(async () =>
+        Response.json({
+          ...personalTokenResponse,
+          expires_at: new Date(Date.now() + expiresInMs).toISOString()
         })
       )
 
@@ -2710,12 +2592,8 @@ describe('useWorkspaceAuthStore', () => {
       vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
         'firebase-token-xyz'
       )
-      vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue({
-          ok: true,
-          json: () => Promise.resolve(personalTokenResponse)
-        })
+      vi.mocked(fetch).mockImplementation(async () =>
+        Response.json(personalTokenResponse)
       )
 
       const store = useWorkspaceAuthStore()
@@ -2744,7 +2622,7 @@ describe('useWorkspaceAuthStore', () => {
           text: () =>
             Promise.resolve(JSON.stringify({ message: 'Invalid token' }))
         })
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
       const { currentWorkspace, unifiedToken } = storeToRefs(store)
@@ -2790,7 +2668,7 @@ describe('useWorkspaceAuthStore', () => {
           statusText: 'Internal Server Error',
           text: () => Promise.resolve(JSON.stringify({ message: 'try again' }))
         })
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
       const { unifiedToken } = storeToRefs(store)
@@ -2810,7 +2688,7 @@ describe('useWorkspaceAuthStore', () => {
         'firebase-token-xyz'
       )
       const mockFetch = vi.fn()
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
 
@@ -2835,7 +2713,7 @@ describe('useWorkspaceAuthStore', () => {
           json: () =>
             Promise.resolve({ ...personalTokenResponse, token: 'unified-b' })
         })
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
       await store.mintAtLogin()
@@ -2873,7 +2751,7 @@ describe('useWorkspaceAuthStore', () => {
               expires_at: new Date(base + 10 * 3600 * 1000).toISOString()
             })
         })
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
       await store.mintAtLogin()
@@ -2900,7 +2778,7 @@ describe('useWorkspaceAuthStore', () => {
           resolveResponse = resolve
         })
       )
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
       const mintPromise = store.mintAtLogin()
@@ -2926,7 +2804,7 @@ describe('useWorkspaceAuthStore', () => {
         ok: true,
         json: () => Promise.resolve(personalTokenResponse)
       })
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
       const { unifiedToken } = storeToRefs(store)
@@ -2972,7 +2850,7 @@ describe('useWorkspaceAuthStore', () => {
           json: () =>
             Promise.resolve({ ...personalTokenResponse, token: 'winner-token' })
         })
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
       await store.mintAtLogin()
@@ -2994,7 +2872,7 @@ describe('useWorkspaceAuthStore', () => {
         ok: true,
         json: () => Promise.resolve(personalTokenResponse)
       })
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
       const { unifiedToken } = storeToRefs(store)
@@ -3020,7 +2898,7 @@ describe('useWorkspaceAuthStore', () => {
         ok: true,
         json: () => Promise.resolve(personalTokenResponse)
       })
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
       await store.mintAtLogin()
@@ -3054,7 +2932,7 @@ describe('useWorkspaceAuthStore', () => {
         ok: true,
         json: () => Promise.resolve(personalTokenResponse)
       })
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
       await store.mintAtLogin()
@@ -3098,7 +2976,7 @@ describe('useWorkspaceAuthStore', () => {
             expires_at: new Date(Date.now() + expiresInMs).toISOString()
           })
       })
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
       const { unifiedToken } = storeToRefs(store)
@@ -3139,7 +3017,7 @@ describe('useWorkspaceAuthStore', () => {
         ok: true,
         json: () => Promise.resolve(personalTokenResponse)
       })
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
       vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
         'firebase-token-xyz'
       )
@@ -3176,7 +3054,7 @@ describe('useWorkspaceAuthStore', () => {
         ok: true,
         json: () => Promise.resolve(personalTokenResponse)
       })
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
       vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
         'firebase-token-xyz'
       )
@@ -3222,7 +3100,7 @@ describe('useWorkspaceAuthStore', () => {
         'firebase-token-xyz'
       )
       const mockFetch = vi.fn()
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
       const { unifiedToken } = storeToRefs(store)
@@ -3279,7 +3157,7 @@ describe('useWorkspaceAuthStore', () => {
             statusText,
             text: () => Promise.resolve(JSON.stringify({ message: statusText }))
           })
-        vi.stubGlobal('fetch', mockFetch)
+        vi.mocked(fetch).mockImplementation(mockFetch)
 
         const store = useWorkspaceAuthStore()
         const { unifiedToken } = storeToRefs(store)
@@ -3328,25 +3206,19 @@ describe('useWorkspaceAuthStore', () => {
           'firebase-token-xyz'
         )
         const expiresInMs = 3600 * 1000
-        vi.stubGlobal(
-          'fetch',
-          vi
-            .fn()
-            .mockResolvedValueOnce({
-              ok: true,
-              json: () =>
-                Promise.resolve({
-                  ...personalTokenResponse,
-                  expires_at: new Date(Date.now() + expiresInMs).toISOString()
-                })
+        vi.mocked(fetch)
+          .mockResolvedValueOnce(
+            Response.json({
+              ...personalTokenResponse,
+              expires_at: new Date(Date.now() + expiresInMs).toISOString()
             })
-            .mockResolvedValue(
-              Response.json(
-                { code: 'sso_required', message: 'use SSO' },
-                { status: 403 }
-              )
+          )
+          .mockImplementation(async () =>
+            Response.json(
+              { code: 'sso_required', message: 'use SSO' },
+              { status: 403 }
             )
-        )
+          )
 
         const store = useWorkspaceAuthStore()
         const { unifiedToken } = storeToRefs(store)
@@ -3387,7 +3259,7 @@ describe('useWorkspaceAuthStore', () => {
             expires_at: new Date(Date.now() + expiresInMs).toISOString()
           })
       })
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
       const { unifiedToken } = storeToRefs(store)
@@ -3410,15 +3282,10 @@ describe('useWorkspaceAuthStore', () => {
         'firebase-token-xyz'
       )
       const expiresInMs = 3600 * 1000
-      vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue({
-          ok: true,
-          json: () =>
-            Promise.resolve({
-              ...personalTokenResponse,
-              expires_at: new Date(Date.now() + expiresInMs).toISOString()
-            })
+      vi.mocked(fetch).mockImplementation(async () =>
+        Response.json({
+          ...personalTokenResponse,
+          expires_at: new Date(Date.now() + expiresInMs).toISOString()
         })
       )
 
@@ -3451,7 +3318,7 @@ describe('useWorkspaceAuthStore', () => {
           statusText: 'Internal Server Error',
           text: () => Promise.resolve(JSON.stringify({ message: 'try again' }))
         })
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
       const { unifiedToken } = storeToRefs(store)
@@ -3488,7 +3355,7 @@ describe('useWorkspaceAuthStore', () => {
           text: () => Promise.resolve(JSON.stringify({ message: 'try again' }))
         })
         .mockImplementation(() => Promise.resolve(okResponse()))
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
       const { unifiedToken } = storeToRefs(store)
@@ -3546,7 +3413,7 @@ describe('useWorkspaceAuthStore', () => {
           Promise.resolve(okResponse('unified-token-2'))
         )
         .mockResolvedValue(transientFailure)
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
       await store.mintAtLogin()
@@ -3591,7 +3458,7 @@ describe('useWorkspaceAuthStore', () => {
           statusText: 'Internal Server Error',
           text: () => Promise.resolve(JSON.stringify({ message: 'try again' }))
         })
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
       const { unifiedToken } = storeToRefs(store)
@@ -3646,7 +3513,7 @@ describe('useWorkspaceAuthStore', () => {
         ok: true,
         json: () => Promise.resolve(personalTokenResponse)
       })
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
       await store.mintAtLogin()
@@ -3676,7 +3543,7 @@ describe('useWorkspaceAuthStore', () => {
             expires_at: new Date(Date.now() + expiresInMs).toISOString()
           })
       })
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
       const { unifiedToken } = storeToRefs(store)
@@ -3728,7 +3595,7 @@ describe('useWorkspaceAuthStore', () => {
             })
         })
       )
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
       const { unifiedToken } = storeToRefs(store)
@@ -3782,7 +3649,7 @@ describe('useWorkspaceAuthStore', () => {
         .mockImplementation((_url, init) =>
           Promise.resolve(okResponse('workspace-token-b', init))
         )
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
 
@@ -3816,7 +3683,7 @@ describe('useWorkspaceAuthStore', () => {
         text: () =>
           Promise.resolve(JSON.stringify({ message: 'Invalid token' }))
       })
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
       const { unifiedToken } = storeToRefs(store)
@@ -3839,14 +3706,11 @@ describe('useWorkspaceAuthStore', () => {
         'firebase-token-xyz'
       )
       // Even with a backend that would reject, the OFF lifecycle stays inert.
-      vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue({
-          ok: false,
-          status: 403,
-          statusText: 'Forbidden',
-          json: () => Promise.resolve({ message: 'Access denied' })
-        })
+      vi.mocked(fetch).mockImplementation(async () =>
+        Response.json(
+          { message: 'Access denied' },
+          { status: 403, statusText: 'Forbidden' }
+        )
       )
 
       const store = useWorkspaceAuthStore()
@@ -3873,7 +3737,7 @@ describe('useWorkspaceAuthStore', () => {
             expires_at: new Date(Date.now() + expiresInMs).toISOString()
           })
       })
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
       const { workspaceToken } = storeToRefs(store)
@@ -3904,7 +3768,7 @@ describe('useWorkspaceAuthStore', () => {
             expires_at: new Date(Date.now() + expiresInMs).toISOString()
           })
       })
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
       const { workspaceToken } = storeToRefs(store)
@@ -3933,7 +3797,7 @@ describe('useWorkspaceAuthStore', () => {
             expires_at: new Date(Date.now() + 3600 * 1000).toISOString()
           })
       })
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
       const { workspaceToken, currentWorkspace } = storeToRefs(store)
@@ -3957,7 +3821,7 @@ describe('useWorkspaceAuthStore', () => {
         ok: true,
         json: () => Promise.resolve(mockTokenResponse)
       })
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
       await store.switchWorkspace('workspace-123')
@@ -3984,7 +3848,7 @@ describe('useWorkspaceAuthStore', () => {
             expires_at: new Date(Date.now() + 3600 * 1000).toISOString()
           })
       })
-      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(fetch).mockImplementation(mockFetch)
 
       const store = useWorkspaceAuthStore()
       Object.assign(useTeamWorkspaceStore(), {
@@ -4028,7 +3892,7 @@ describe('useWorkspaceAuthStore constructed before authStore', () => {
           permissions: ['owner:*']
         })
     })
-    vi.stubGlobal('fetch', mockFetch)
+    vi.mocked(fetch).mockImplementation(mockFetch)
 
     const store = useWorkspaceAuthStore()
     const { unifiedToken } = storeToRefs(store)

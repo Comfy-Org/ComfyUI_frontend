@@ -97,7 +97,7 @@ describe('installDesktopLoginRedemption', () => {
     vi.resetModules()
     useDialogService = (await import('@/services/dialogService'))
       .useDialogService
-    vi.stubGlobal('fetch', mockFetch)
+    vi.mocked(fetch).mockImplementation(mockFetch)
     vi.mocked(useDialogService().confirm).mockResolvedValue(true)
     mockUserGetIdToken.mockResolvedValue('firebase-id-token')
     mockAuthStore = useAuthStore()

@@ -76,9 +76,8 @@ const FIXTURE = {
 }
 
 function stubFetchWith(body: unknown) {
-  const fetchMock = vi.fn(async () => ({ json: async () => body }))
-  vi.stubGlobal('fetch', fetchMock)
-  return fetchMock
+  vi.mocked(fetch).mockImplementation(async () => Response.json(body))
+  return vi.mocked(fetch)
 }
 
 async function mountScene(props: { src: string; active?: boolean }) {
@@ -217,10 +216,9 @@ describe('VideoMaskScene', () => {
 
   it('retries the descriptor fetch after a failure', async () => {
     const fetchMock = vi
-      .fn()
+      .mocked(fetch)
       .mockRejectedValueOnce(new Error('offline'))
-      .mockResolvedValue({ json: async () => FIXTURE })
-    vi.stubGlobal('fetch', fetchMock)
+      .mockImplementation(async () => Response.json(FIXTURE))
 
     const { root } = await mountScene({ src: '/animations/x/scene.json' })
     await setAllIntersecting(true)

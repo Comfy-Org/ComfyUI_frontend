@@ -39,7 +39,7 @@ describe('Router delivery failures', () => {
         { status: 402, headers: { 'X-Comfy-Request-Id': 'rejected-request' } }
       )
     )
-    vi.stubGlobal('fetch', calls)
+    vi.mocked(fetch).mockImplementation(calls)
     await expect(runSynchronousWorkshopRouter(options())).rejects.toMatchObject(
       {
         reason: 'noCredits',
@@ -74,7 +74,7 @@ describe('Router delivery failures', () => {
           )
         )
       calls.mockResolvedValueOnce(result())
-      vi.stubGlobal('fetch', calls)
+      vi.mocked(fetch).mockImplementation(calls)
       const rendered = await runSynchronousWorkshopRouter(options())
       expect(rendered.outputs[0].url).toBe('https://media.example/result.png')
       expect(rendered.requestId).toBe('replay-request')
@@ -92,7 +92,7 @@ describe('Router delivery failures', () => {
     const calls = vi
       .fn<typeof fetch>()
       .mockRejectedValue(new TypeError('Failed to fetch'))
-    vi.stubGlobal('fetch', calls)
+    vi.mocked(fetch).mockImplementation(calls)
     await expect(runSynchronousWorkshopRouter(options())).rejects.toMatchObject(
       {
         reason: 'network',
@@ -111,7 +111,7 @@ describe('Router delivery failures', () => {
         }
       })
     )
-    vi.stubGlobal('fetch', calls)
+    vi.mocked(fetch).mockImplementation(calls)
     await expect(runSynchronousWorkshopRouter(options())).rejects.toMatchObject(
       {
         reason: 'response',
@@ -144,7 +144,7 @@ describe('Router delivery failures', () => {
           }
         })
       )
-      vi.stubGlobal('fetch', calls)
+      vi.mocked(fetch).mockImplementation(calls)
       await expect(
         runSynchronousWorkshopRouter(options())
       ).rejects.toMatchObject({

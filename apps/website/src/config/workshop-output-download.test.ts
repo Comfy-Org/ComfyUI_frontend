@@ -48,7 +48,7 @@ describe('downloadOutput', () => {
   it('downloads Cloud Storage output through an attachment URL without fetching it', async () => {
     const clicks = recordClicks()
     const fetch = vi.fn<typeof globalThis.fetch>()
-    vi.stubGlobal('fetch', fetch)
+    vi.mocked(globalThis.fetch).mockImplementation(fetch)
 
     await downloadOutput(signed, 'grok.mp4')
 
@@ -80,7 +80,7 @@ describe('downloadOutput', () => {
         { headers: { 'Content-Type': 'video/mp4' } }
       )
     )
-    vi.stubGlobal('fetch', fetch)
+    vi.mocked(globalThis.fetch).mockImplementation(fetch)
     vi.spyOn(URL, 'createObjectURL').mockReturnValue(
       'blob:https://comfy.org/output'
     )
@@ -115,7 +115,7 @@ describe('downloadOutput', () => {
       const clicks = recordClicks()
       const response = Promise.withResolvers<Response>()
       const fetch = vi.fn<typeof globalThis.fetch>(() => response.promise)
-      vi.stubGlobal('fetch', fetch)
+      vi.mocked(globalThis.fetch).mockImplementation(fetch)
       const open = vi.spyOn(window, 'open').mockReturnValue(null)
       const blob = vi.spyOn(URL, 'createObjectURL')
       const result = downloadOutput(
@@ -154,7 +154,7 @@ describe('downloadOutput', () => {
           )
         })
     )
-    vi.stubGlobal('fetch', fetch)
+    vi.mocked(globalThis.fetch).mockImplementation(fetch)
     const result = downloadOutput('https://cdn.example.com/a.png', 'a.png')
     await vi.advanceTimersByTimeAsync(3_999)
     expect(open).not.toHaveBeenCalled()
@@ -173,8 +173,7 @@ describe('downloadOutput', () => {
   it('reports a late body failure without navigating away from the Models page', async () => {
     vi.useFakeTimers()
     const body = Promise.withResolvers<void>()
-    vi.stubGlobal(
-      'fetch',
+    vi.mocked(globalThis.fetch).mockImplementation(
       vi.fn<typeof globalThis.fetch>().mockResolvedValue(
         new Response(
           new ReadableStream({
@@ -202,7 +201,7 @@ describe('downloadOutput', () => {
     async (url) => {
       const clicks = recordClicks()
       const fetch = vi.fn<typeof globalThis.fetch>()
-      vi.stubGlobal('fetch', fetch)
+      vi.mocked(globalThis.fetch).mockImplementation(fetch)
       const open = vi.spyOn(window, 'open')
       await downloadOutput(url, 'output.png')
       expect(clicks).toEqual([

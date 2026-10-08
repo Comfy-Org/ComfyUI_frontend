@@ -926,7 +926,9 @@ describe('resolveFirebaseIdentity', () => {
   }
 
   it('resolves a ready, initialized identity from a well-formed /api/features response', async () => {
-    vi.stubGlobal('fetch', jsonFetch({ firebase_config: VALID_CONFIG }))
+    vi.mocked(fetch).mockImplementation(
+      jsonFetch({ firebase_config: VALID_CONFIG })
+    )
     const { resolveFirebaseIdentity } = await import('./index.js')
 
     const identity = await resolveFirebaseIdentity({
@@ -965,7 +967,7 @@ describe('resolveFirebaseIdentity', () => {
   ] as const)(
     'settles no identity, never a rejection, on %s',
     async ([label, makeFetch]) => {
-      vi.stubGlobal('fetch', makeFetch())
+      vi.mocked(fetch).mockImplementation(makeFetch())
       const { resolveFirebaseIdentity } = await import('./index.js')
 
       await expect(
@@ -979,14 +981,14 @@ describe('resolveFirebaseIdentity', () => {
 
   it('settles no identity when the fetch outruns the timeout', async () => {
     const fetchImpl = vi.fn(
-      (_url: string, init?: RequestInit) =>
+      (_url: RequestInfo | URL, init?: RequestInit) =>
         new Promise<Response>((_resolve, reject) => {
           init?.signal?.addEventListener('abort', () => {
             reject(new DOMException('The operation was aborted', 'AbortError'))
           })
         })
     )
-    vi.stubGlobal('fetch', fetchImpl)
+    vi.mocked(fetch).mockImplementation(fetchImpl)
     const { resolveFirebaseIdentity } = await import('./index.js')
 
     const result = resolveFirebaseIdentity({
@@ -1006,7 +1008,9 @@ describe('resolveFirebaseIdentity', () => {
       name: 'bad-init',
       options: { apiKey: 'other', projectId: 'other-project' }
     })
-    vi.stubGlobal('fetch', jsonFetch({ firebase_config: VALID_CONFIG }))
+    vi.mocked(fetch).mockImplementation(
+      jsonFetch({ firebase_config: VALID_CONFIG })
+    )
     const { resolveFirebaseIdentity } = await import('./index.js')
 
     await expect(
@@ -1019,7 +1023,7 @@ describe('resolveFirebaseIdentity', () => {
 
   it('fetches once and shares the resolved identity across concurrent callers with the same pair', async () => {
     const fetchImpl = jsonFetch({ firebase_config: VALID_CONFIG })
-    vi.stubGlobal('fetch', fetchImpl)
+    vi.mocked(fetch).mockImplementation(fetchImpl)
     const { resolveFirebaseIdentity } = await import('./index.js')
     const options = {
       cloudBaseUrl: 'https://cloud.example',
@@ -1036,7 +1040,9 @@ describe('resolveFirebaseIdentity', () => {
   })
 
   it('keys memoization by cloudBaseUrl: two origins under the same app name do not share a result', async () => {
-    const fetchImpl = vi.fn(async (url: string) => {
+    const fetchImpl = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input)
+
       const projectId = new URL(url).hostname
       return new Response(
         JSON.stringify({
@@ -1045,7 +1051,7 @@ describe('resolveFirebaseIdentity', () => {
         { status: 200 }
       )
     })
-    vi.stubGlobal('fetch', fetchImpl)
+    vi.mocked(fetch).mockImplementation(fetchImpl)
     const { resolveFirebaseIdentity } = await import('./index.js')
 
     const [fromOne, fromTwo] = await Promise.all([
@@ -1072,7 +1078,7 @@ describe('resolveFirebaseIdentity', () => {
           status: 200
         })
       )
-    vi.stubGlobal('fetch', fetchImpl)
+    vi.mocked(fetch).mockImplementation(fetchImpl)
     const { resolveFirebaseIdentity } = await import('./index.js')
     const options = {
       cloudBaseUrl: 'https://cloud.example',
@@ -1090,7 +1096,7 @@ describe('resolveFirebaseIdentity', () => {
   it('shares one in-flight fetch even when it will end in failure', async () => {
     const response = deferred<Response>()
     const fetchImpl = vi.fn<typeof fetch>(() => response.promise)
-    vi.stubGlobal('fetch', fetchImpl)
+    vi.mocked(fetch).mockImplementation(fetchImpl)
     const { resolveFirebaseIdentity } = await import('./index.js')
     const options = {
       cloudBaseUrl: 'https://cloud.example',
@@ -1109,7 +1115,7 @@ describe('resolveFirebaseIdentity', () => {
 
   it('keeps a successful resolution cached: a later call does not re-fetch', async () => {
     const fetchImpl = jsonFetch({ firebase_config: VALID_CONFIG })
-    vi.stubGlobal('fetch', fetchImpl)
+    vi.mocked(fetch).mockImplementation(fetchImpl)
     const { resolveFirebaseIdentity } = await import('./index.js')
     const options = {
       cloudBaseUrl: 'https://cloud.example',
@@ -1130,7 +1136,9 @@ describe('resolveStripePublishableKey', () => {
   }
 
   it('resolves the key from a well-formed /api/features response', async () => {
-    vi.stubGlobal('fetch', jsonFetch({ stripe_publishable_key: 'pk_live_123' }))
+    vi.mocked(fetch).mockImplementation(
+      jsonFetch({ stripe_publishable_key: 'pk_live_123' })
+    )
     const { resolveStripePublishableKey } = await import('./index.js')
 
     await expect(
@@ -1139,7 +1147,7 @@ describe('resolveStripePublishableKey', () => {
   })
 
   it('settles undefined, never a rejection, when the server has no key configured', async () => {
-    vi.stubGlobal('fetch', jsonFetch({}))
+    vi.mocked(fetch).mockImplementation(jsonFetch({}))
     const { resolveStripePublishableKey } = await import('./index.js')
 
     await expect(
@@ -1157,7 +1165,7 @@ describe('resolveStripePublishableKey', () => {
       },
       stripe_publishable_key: 'pk_live_123'
     })
-    vi.stubGlobal('fetch', fetchImpl)
+    vi.mocked(fetch).mockImplementation(fetchImpl)
     const { resolveFirebaseIdentity, resolveStripePublishableKey } =
       await import('./index.js')
     const options = {
@@ -1192,7 +1200,7 @@ describe('resolveStripePublishableKey', () => {
           { status: 200 }
         )
       )
-    vi.stubGlobal('fetch', fetchImpl)
+    vi.mocked(fetch).mockImplementation(fetchImpl)
     const { resolveFirebaseIdentity, resolveStripePublishableKey } =
       await import('./index.js')
     const options = { cloudBaseUrl: 'https://cloud.example' }
@@ -1218,7 +1226,7 @@ describe('resolveStripePublishableKey', () => {
           { status: 200 }
         )
       )
-    vi.stubGlobal('fetch', fetchImpl)
+    vi.mocked(fetch).mockImplementation(fetchImpl)
     const { resolveStripePublishableKey } = await import('./index.js')
     const options = { cloudBaseUrl: 'https://cloud.example' }
 
@@ -1233,7 +1241,7 @@ describe('resolveStripePublishableKey', () => {
   it('shares one in-flight fetch across concurrent callers on the same pair', async () => {
     const response = deferred<Response>()
     const fetchImpl = vi.fn<typeof fetch>(() => response.promise)
-    vi.stubGlobal('fetch', fetchImpl)
+    vi.mocked(fetch).mockImplementation(fetchImpl)
     const { resolveStripePublishableKey } = await import('./index.js')
     const options = { cloudBaseUrl: 'https://cloud.example' }
 
@@ -1253,7 +1261,7 @@ describe('resolveStripePublishableKey', () => {
 
   it('keeps a successful features fetch cached: a later call does not re-fetch', async () => {
     const fetchImpl = jsonFetch({ stripe_publishable_key: 'pk_live_123' })
-    vi.stubGlobal('fetch', fetchImpl)
+    vi.mocked(fetch).mockImplementation(fetchImpl)
     const { resolveStripePublishableKey } = await import('./index.js')
     const options = { cloudBaseUrl: 'https://cloud.example' }
 
@@ -1285,7 +1293,7 @@ describe('resolveWebSessionProbe', () => {
     'reads $body from the fetch resolveStripePublishableKey already shares',
     async ({ body, expected }) => {
       const fetchImpl = jsonFetch(body)
-      vi.stubGlobal('fetch', fetchImpl)
+      vi.mocked(fetch).mockImplementation(fetchImpl)
       const { resolveStripePublishableKey, resolveWebSessionProbe } =
         await import('./index.js')
       const options = { cloudBaseUrl: 'https://probe.example', timeoutMs: 4000 }
@@ -1314,7 +1322,7 @@ describe('resolveCloudTelemetryConfig', () => {
           })
         )
     )
-    vi.stubGlobal('fetch', fetchImpl)
+    vi.mocked(fetch).mockImplementation(fetchImpl)
     const { resolveStripePublishableKey, resolveCloudTelemetryConfig } =
       await import('./index.js')
     const options = {

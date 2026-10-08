@@ -3,12 +3,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 describe('eventUtils', () => {
   describe('extractFilesFromDragEvent', () => {
-    let fetchSpy: ReturnType<typeof vi.fn>
+    const fetchSpy = vi.mocked(fetch)
 
-    beforeEach(() => {
-      fetchSpy = vi.fn()
-      vi.stubGlobal('fetch', fetchSpy)
-    })
+    beforeEach(() => {})
 
     it('should return empty array when no dataTransfer', async () => {
       const actual = await extractFilesFromDragEvent(new FakeDragEvent('drop'))

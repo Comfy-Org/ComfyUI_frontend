@@ -503,41 +503,40 @@ function agentThreadList(
 function stubHistoryWithWorkflowListing(
   listingStatus: number | Promise<number>
 ): void {
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async (url: string) => {
-      if (url.includes('/messages'))
-        return json(200, [
-          {
-            id: 'history-user',
-            thread_id: 'th-history',
-            seq: 1,
-            role: 'user',
-            status: 'complete',
-            turn_id: 'history-turn',
-            workflow_id: 'wf-gone',
-            content: { text: 'Historical prompt' }
-          }
-        ] satisfies AgentMessages)
-      if (url.includes('/agent/threads'))
-        return json(
-          200,
-          agentThreadList([
-            agentThread({
-              id: 'th-history',
-              title: 'Earlier chat',
-              last_message_at: '2026-09-01T00:00:00Z'
-            })
-          ])
-        )
-      if (url.includes('/workflows'))
-        return json(await listingStatus, {
-          data: [],
-          pagination: { offset: 0, limit: 100, total: 0, has_more: false }
-        })
-      return json(200, {})
-    })
-  )
+  vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+    const url = String(input)
+
+    if (url.includes('/messages'))
+      return json(200, [
+        {
+          id: 'history-user',
+          thread_id: 'th-history',
+          seq: 1,
+          role: 'user',
+          status: 'complete',
+          turn_id: 'history-turn',
+          workflow_id: 'wf-gone',
+          content: { text: 'Historical prompt' }
+        }
+      ] satisfies AgentMessages)
+    if (url.includes('/agent/threads'))
+      return json(
+        200,
+        agentThreadList([
+          agentThread({
+            id: 'th-history',
+            title: 'Earlier chat',
+            last_message_at: '2026-09-01T00:00:00Z'
+          })
+        ])
+      )
+    if (url.includes('/workflows'))
+      return json(await listingStatus, {
+        data: [],
+        pagination: { offset: 0, limit: 100, total: 0, has_more: false }
+      })
+    return json(200, {})
+  })
 }
 
 function ack(workflowId: string, messageId = 'm-1') {
@@ -600,9 +599,8 @@ function addTab(
 describe('AgentPanelRoot first-use experience', () => {
   beforeEach(() => {
     ws.clear()
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => json(200, agentThreadList()))
+    vi.mocked(fetch).mockImplementation(async () =>
+      json(200, agentThreadList())
     )
   })
 
@@ -1648,14 +1646,15 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
 
   it('allows a new turn while the standing card is visible', async () => {
     const messageBodies: unknown[] = []
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (url: string, init?: RequestInit) => {
+    vi.mocked(fetch).mockImplementation(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input)
+
         if (url.endsWith('/api/agent/threads'))
           return json(200, agentThreadList())
         messageBodies.push(JSON.parse(String(init?.body)))
         return json(202, { thread_id: 'th-1', message_id: 'm-1' })
-      })
+      }
     )
     paywallHasFunds.value = false
     workflowStore.activeWorkflow = addTab('workflows/current.json')
@@ -2062,15 +2061,12 @@ describe('AgentPanelRoot session notices', () => {
 
   it('surfaces a session error notice via the host error modal, not a toast', async () => {
     executionErrors.showErrorOverlay.mockClear()
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(
-        async () =>
-          new Response('{"threads":[]}', {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' }
-          })
-      )
+    vi.mocked(fetch).mockImplementation(
+      async () =>
+        new Response('{"threads":[]}', {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        })
     )
     renderWithSelectedTarget()
     const toast = useToastStore()
@@ -2376,9 +2372,8 @@ async function expectLaterClickCannotRestoreAccumulatedNodes(
 // Records what actually reached the upload endpoint, so an exclusion can be
 // asserted on the request rather than on a chip that has not rendered yet.
 function stubUploadFetch(uploaded: string[] = [], status = 200): string[] {
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+  vi.mocked(fetch).mockImplementation(
+    async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input)
       if (!url.includes('/upload/')) return json(200, agentThreadList())
       const body = init?.body
@@ -2389,7 +2384,7 @@ function stubUploadFetch(uploaded: string[] = [], status = 200): string[] {
       return status === 200
         ? json(200, { name: 'uploaded', subfolder: '', type: 'input' })
         : json(status, {})
-    })
+    }
   )
   return uploaded
 }
@@ -2613,21 +2608,25 @@ describe('AgentPanelRoot attach flow', () => {
 
   it('uploads a picked file, stages its ref, and forwards it on the next send', async () => {
     const messageBodies: unknown[] = []
-    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
-      if (url.endsWith('/api/upload/image')) {
-        return new Response(
-          JSON.stringify({
-            name: 'uploaded_cat.png',
-            subfolder: '',
-            type: 'input'
-          }),
-          { status: 200, headers: { 'Content-Type': 'application/json' } }
-        )
+    const fetchMock = vi.fn(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input)
+
+        if (url.endsWith('/api/upload/image')) {
+          return new Response(
+            JSON.stringify({
+              name: 'uploaded_cat.png',
+              subfolder: '',
+              type: 'input'
+            }),
+            { status: 200, headers: { 'Content-Type': 'application/json' } }
+          )
+        }
+        messageBodies.push(JSON.parse(String(init?.body)))
+        return json(202, { thread_id: 'th-1', message_id: 'm-1' })
       }
-      messageBodies.push(JSON.parse(String(init?.body)))
-      return json(202, { thread_id: 'th-1', message_id: 'm-1' })
-    })
-    vi.stubGlobal('fetch', fetchMock)
+    )
+    vi.mocked(fetch).mockImplementation(fetchMock)
 
     renderWithSelectedTarget()
 
@@ -2683,14 +2682,13 @@ describe('AgentPanelRoot attach flow', () => {
   // nothing else breaks, so neither side's own test would catch it - only this one.
   it('posts the same client_message_id it reports, so message and turn can be joined', async () => {
     const messageBodies: Record<string, unknown>[] = []
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (_url: string, init?: RequestInit) => {
+    vi.mocked(fetch).mockImplementation(
+      async (_url: RequestInfo | URL, init?: RequestInit) => {
         messageBodies.push(
           JSON.parse(String(init?.body)) as Record<string, unknown>
         )
         return json(202, { thread_id: 'th-1', message_id: 'm-1' })
-      })
+      }
     )
 
     renderWithSelectedTarget()
@@ -2715,15 +2713,16 @@ describe('AgentPanelRoot attach flow', () => {
 
   it('uses the submitted filename when the upload response omits a name', async () => {
     const messageBodies: unknown[] = []
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (url: string, init?: RequestInit) => {
+    vi.mocked(fetch).mockImplementation(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input)
+
         if (url.endsWith('/api/upload/image')) {
           return json(200, { subfolder: '', type: 'input' })
         }
         messageBodies.push(JSON.parse(String(init?.body)))
         return json(202, { thread_id: 'th-1', message_id: 'm-1' })
-      })
+      }
     )
 
     renderWithSelectedTarget()
@@ -3223,14 +3222,13 @@ describe('AgentPanelRoot attach flow', () => {
     const upload = new Promise<Response>((resolve) => {
       finishUpload = resolve
     })
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    vi.mocked(fetch).mockImplementation(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
         if (!String(input).includes('/upload/'))
           return json(200, agentThreadList())
         if (init?.signal) signals.push(init.signal)
         return upload
-      })
+      }
     )
     renderWithSelectedTarget()
     await nextTick()
@@ -3374,9 +3372,8 @@ describe('AgentPanelRoot attach flow', () => {
       // PM-116: MediaAssetCard.dragStart sets asset-info + text/uri-list on the
       // transfer and never a File, so the panel must claim and fetch the URI.
       const messageBodies: unknown[] = []
-      vi.stubGlobal(
-        'fetch',
-        vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      vi.mocked(fetch).mockImplementation(
+        async (input: RequestInfo | URL, init?: RequestInit) => {
           const url = String(input)
           if (url.includes('/api/view'))
             return new Response(new Blob(['asset']), {
@@ -3399,7 +3396,7 @@ describe('AgentPanelRoot attach flow', () => {
             status: 200,
             headers: { 'Content-Type': 'application/json' }
           })
-        })
+        }
       )
       renderWithSelectedTarget()
       await nextTick()
@@ -3463,7 +3460,7 @@ describe('AgentPanelRoot attach flow', () => {
           })
         }
       )
-      vi.stubGlobal('fetch', fetchSpy)
+      vi.mocked(fetch).mockImplementation(fetchSpy)
       renderWithSelectedTarget()
       await nextTick()
       telemetry.trackAgentAttachButtonClicked.mockClear()
@@ -3522,29 +3519,26 @@ describe('AgentPanelRoot attach flow', () => {
 
   it('shows an uploading chip while a Media-card URI is still loading', async () => {
     let resolveAsset: (response: Response) => void = () => {}
-    vi.stubGlobal(
-      'fetch',
-      vi.fn((input: RequestInfo | URL) => {
-        const url = String(input)
-        if (url.includes('/api/view'))
-          return new Promise<Response>((resolve) => {
-            resolveAsset = resolve
-          })
-        if (url.endsWith('/api/upload/image'))
-          return Promise.resolve(
-            new Response(JSON.stringify({ name: 'uploaded_gen.png' }), {
-              status: 200,
-              headers: { 'Content-Type': 'application/json' }
-            })
-          )
+    vi.mocked(fetch).mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('/api/view'))
+        return new Promise<Response>((resolve) => {
+          resolveAsset = resolve
+        })
+      if (url.endsWith('/api/upload/image'))
         return Promise.resolve(
-          new Response('{"threads":[]}', {
+          new Response(JSON.stringify({ name: 'uploaded_gen.png' }), {
             status: 200,
             headers: { 'Content-Type': 'application/json' }
           })
         )
-      })
-    )
+      return Promise.resolve(
+        new Response('{"threads":[]}', {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        })
+      )
+    })
     renderWithSelectedTarget()
     await nextTick()
     const target = screen.getByRole('textbox')
@@ -3576,22 +3570,19 @@ describe('AgentPanelRoot attach flow', () => {
   })
 
   it('does not warn after closing the panel during a deferred asset fetch', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn<typeof fetch>((input) => {
-        const url = String(input)
-        if (url.includes('/api/view')) return new Promise(() => {})
-        if (url.includes('/assets'))
-          return Promise.resolve(
-            json(200, { assets: [], total: 0, has_more: false })
-          )
-        if (url.includes('/workflows'))
-          return Promise.resolve(
-            json(200, { data: [], total: 0, has_more: false })
-          )
-        return Promise.resolve(json(200, agentThreadList()))
-      })
-    )
+    vi.mocked(fetch).mockImplementation((input) => {
+      const url = String(input)
+      if (url.includes('/api/view')) return new Promise(() => {})
+      if (url.includes('/assets'))
+        return Promise.resolve(
+          json(200, { assets: [], total: 0, has_more: false })
+        )
+      if (url.includes('/workflows'))
+        return Promise.resolve(
+          json(200, { data: [], total: 0, has_more: false })
+        )
+      return Promise.resolve(json(200, agentThreadList()))
+    })
     const { unmount } = renderWithSelectedTarget()
     await nextTick()
     const toast = useToastStore()
@@ -3727,26 +3718,23 @@ describe('AgentPanelRoot attach flow', () => {
     async (outcome) => {
       let resolveAsset: (response: Response) => void = () => {}
       let rejectAsset: (error: Error) => void = () => {}
-      vi.stubGlobal(
-        'fetch',
-        vi.fn((input: RequestInfo | URL) => {
-          const url = String(input)
-          if (url.includes('/api/view'))
-            return new Promise<Response>((resolve, reject) => {
-              resolveAsset = resolve
-              rejectAsset = reject
+      vi.mocked(fetch).mockImplementation((input: RequestInfo | URL) => {
+        const url = String(input)
+        if (url.includes('/api/view'))
+          return new Promise<Response>((resolve, reject) => {
+            resolveAsset = resolve
+            rejectAsset = reject
+          })
+        if (url.endsWith('/api/upload/image'))
+          return Promise.resolve(
+            json(200, {
+              name: 'uploaded_gen.png',
+              subfolder: '',
+              type: 'input'
             })
-          if (url.endsWith('/api/upload/image'))
-            return Promise.resolve(
-              json(200, {
-                name: 'uploaded_gen.png',
-                subfolder: '',
-                type: 'input'
-              })
-            )
-          return Promise.resolve(json(200, agentThreadList()))
-        })
-      )
+          )
+        return Promise.resolve(json(200, agentThreadList()))
+      })
       renderWithSelectedTarget()
       await nextTick()
       telemetry.trackAgentAttachButtonClicked.mockClear()
@@ -3792,9 +3780,8 @@ describe('AgentPanelRoot attach flow', () => {
   ])(
     'emits $expectedEvents drop event(s) when uploads of $files are rejected except any good one',
     async ({ files, expectedEvents }) => {
-      vi.stubGlobal(
-        'fetch',
-        vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      vi.mocked(fetch).mockImplementation(
+        async (input: RequestInfo | URL, init?: RequestInit) => {
           const url = String(input)
           if (!url.includes('/upload/')) return json(200, agentThreadList())
           const body = init?.body
@@ -3806,7 +3793,7 @@ describe('AgentPanelRoot attach flow', () => {
             subfolder: '',
             type: 'input'
           })
-        })
+        }
       )
       renderWithSelectedTarget()
       await nextTick()
@@ -3849,7 +3836,9 @@ describe('AgentPanelRoot attach flow', () => {
 
   it('shows an uploading chip and blocks send until the upload settles', async () => {
     let settleUpload: () => void = () => {}
-    const fetchMock = vi.fn(async (url: string) => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input)
+
       if (url.endsWith('/api/upload/image')) {
         await new Promise<void>((resolve) => {
           settleUpload = resolve
@@ -3865,7 +3854,7 @@ describe('AgentPanelRoot attach flow', () => {
       }
       return json(202, { thread_id: 'th-1', message_id: 'm-1' })
     })
-    vi.stubGlobal('fetch', fetchMock)
+    vi.mocked(fetch).mockImplementation(fetchMock)
 
     renderWithSelectedTarget()
 
@@ -3899,9 +3888,10 @@ describe('AgentPanelRoot attach flow', () => {
 
   it('renders the attachment on the turn that sent it, not earlier turns', async () => {
     let acks = 0
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (url: string, init?: RequestInit) => {
+    vi.mocked(fetch).mockImplementation(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input)
+
         if (url.endsWith('/api/upload/image')) {
           return new Response(
             JSON.stringify({
@@ -3917,7 +3907,7 @@ describe('AgentPanelRoot attach flow', () => {
           return json(202, { thread_id: 'th-1', message_id: `m-${acks}` })
         }
         return json(200, agentThreadList())
-      })
+      }
     )
 
     await renderAndSend('first message')
@@ -3948,39 +3938,38 @@ describe('AgentPanelRoot attach flow', () => {
     executionErrors.showErrorOverlay.mockClear()
     const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
     let failUpload: () => void = () => {}
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (url: string) => {
-        if (url.endsWith('/api/agent/run-mode')) {
-          return new Response('{"error":"not found"}', {
-            status: 404,
-            headers: { 'Content-Type': 'application/json' }
-          })
-        }
-        if (url.includes('/api/workflows')) {
-          return json(200, {
-            data: [],
-            pagination: { offset: 0, limit: 100, total: 0, has_more: false }
-          })
-        }
-        if (url.includes('/api/assets')) {
-          return json(200, { assets: [], total: 0, has_more: false })
-        }
-        if (url.endsWith('/api/upload/image')) {
-          await new Promise<void>((resolve) => {
-            failUpload = resolve
-          })
-          return new Response('{"error":"disk full"}', {
-            status: 500,
-            headers: { 'Content-Type': 'application/json' }
-          })
-        }
-        return new Response('{"threads":[]}', {
-          status: 200,
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input)
+
+      if (url.endsWith('/api/agent/run-mode')) {
+        return new Response('{"error":"not found"}', {
+          status: 404,
           headers: { 'Content-Type': 'application/json' }
         })
+      }
+      if (url.includes('/api/workflows')) {
+        return json(200, {
+          data: [],
+          pagination: { offset: 0, limit: 100, total: 0, has_more: false }
+        })
+      }
+      if (url.includes('/api/assets')) {
+        return json(200, { assets: [], total: 0, has_more: false })
+      }
+      if (url.endsWith('/api/upload/image')) {
+        await new Promise<void>((resolve) => {
+          failUpload = resolve
+        })
+        return new Response('{"error":"disk full"}', {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        })
+      }
+      return new Response('{"threads":[]}', {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
       })
-    )
+    })
 
     const agentPanelStore = useAgentPanelStore()
     agentPanelStore.enabled = true
@@ -4063,25 +4052,24 @@ describe('AgentPanelRoot attach flow', () => {
 
   it('keeps a durable tray preview through inline deletion, Undo and unmount', async () => {
     const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (url: string) => {
-        if (url.endsWith('/api/upload/image')) {
-          return new Response(
-            JSON.stringify({
-              name: 'uploaded_cat.png',
-              subfolder: '',
-              type: 'input'
-            }),
-            { status: 200, headers: { 'Content-Type': 'application/json' } }
-          )
-        }
-        return new Response('{"threads":[]}', {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' }
-        })
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input)
+
+      if (url.endsWith('/api/upload/image')) {
+        return new Response(
+          JSON.stringify({
+            name: 'uploaded_cat.png',
+            subfolder: '',
+            type: 'input'
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        )
+      }
+      return new Response('{"threads":[]}', {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
       })
-    )
+    })
 
     const view = renderWithSelectedTarget()
 
@@ -4137,14 +4125,15 @@ describe('AgentPanelRoot canvas draft on send', () => {
 
   it('sends the active tab activeState as draft.content (PM-813/ecw-128)', async () => {
     const messageBodies: unknown[] = []
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (url: string, init?: RequestInit) => {
+    vi.mocked(fetch).mockImplementation(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input)
+
         if (url.endsWith('/api/agent/threads'))
           return json(200, agentThreadList())
         messageBodies.push(JSON.parse(String(init?.body)))
         return json(202, { thread_id: 'th-1', message_id: 'm-1' })
-      })
+      }
     )
     const activeState = fromPartial<ComfyWorkflowJSON>({
       nodes: [
@@ -4176,14 +4165,15 @@ describe('AgentPanelRoot canvas draft on send', () => {
 
   it('does not send or clear the prompt when there is no selected target', async () => {
     const messageBodies: unknown[] = []
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (url: string, init?: RequestInit) => {
+    vi.mocked(fetch).mockImplementation(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input)
+
         if (url.endsWith('/api/agent/threads'))
           return json(200, agentThreadList())
         messageBodies.push(JSON.parse(String(init?.body)))
         return json(202, { thread_id: 'th-1', message_id: 'm-1' })
-      })
+      }
     )
     workflowStore.activeWorkflow = null
 
@@ -4205,28 +4195,26 @@ describe('AgentPanelRoot history', () => {
   })
 
   async function renderWithActiveThread(): Promise<void> {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (url: string) =>
-        url.endsWith('/api/agent/threads')
-          ? new Response(
-              JSON.stringify(
-                agentThreadList([
-                  agentThread({
-                    id: 'th-active',
-                    title: 'build a duck',
-                    last_message_at: '2026-07-07T10:00:00Z'
-                  })
-                ])
-              ),
-              { status: 200, headers: { 'Content-Type': 'application/json' } }
-            )
-          : new Response('[]', {
-              status: 200,
-              headers: { 'Content-Type': 'application/json' }
-            })
-      )
-    )
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      return url.endsWith('/api/agent/threads')
+        ? new Response(
+            JSON.stringify(
+              agentThreadList([
+                agentThread({
+                  id: 'th-active',
+                  title: 'build a duck',
+                  last_message_at: '2026-07-07T10:00:00Z'
+                })
+              ])
+            ),
+            { status: 200, headers: { 'Content-Type': 'application/json' } }
+          )
+        : new Response('[]', {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' }
+          })
+    })
     useAgentConversationStore().setThreadId('th-active')
     renderWithSelectedTarget()
     await vi.waitFor(() =>
@@ -4423,7 +4411,9 @@ describe('AgentPanelRoot history', () => {
   })
 
   it('populates Chat History from the server thread list on mount', async () => {
-    const fetchMock = vi.fn(async (url: string) => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input)
+
       if (url.endsWith('/api/agent/threads')) {
         return new Response(
           JSON.stringify(
@@ -4449,7 +4439,7 @@ describe('AgentPanelRoot history', () => {
         headers: { 'Content-Type': 'application/json' }
       })
     })
-    vi.stubGlobal('fetch', fetchMock)
+    vi.mocked(fetch).mockImplementation(fetchMock)
 
     renderWithSelectedTarget()
 
@@ -4467,36 +4457,35 @@ describe('AgentPanelRoot history', () => {
 
   describe('history row title for the active chat', () => {
     function stubActiveThread(serverTitle: string): void {
-      vi.stubGlobal(
-        'fetch',
-        vi.fn(async (url: string) => {
-          if (url.endsWith('/api/agent/threads'))
-            return json(
-              200,
-              agentThreadList([
-                agentThread({
-                  id: 'th-active',
-                  title: serverTitle,
-                  preview: 'delete everything on this canvas',
-                  last_message_at: '2026-07-07T10:00:00Z'
-                })
-              ])
-            )
-          if (url.includes('/messages'))
-            return json(200, [
-              {
-                id: 'active-user',
-                thread_id: 'th-active',
-                seq: 1,
-                role: 'user',
-                status: 'complete',
-                turn_id: 'active-turn',
-                content: { text: 'Clear entire canvas' }
-              }
+      vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+        const url = String(input)
+
+        if (url.endsWith('/api/agent/threads'))
+          return json(
+            200,
+            agentThreadList([
+              agentThread({
+                id: 'th-active',
+                title: serverTitle,
+                preview: 'delete everything on this canvas',
+                last_message_at: '2026-07-07T10:00:00Z'
+              })
             ])
-          return json(200, [])
-        })
-      )
+          )
+        if (url.includes('/messages'))
+          return json(200, [
+            {
+              id: 'active-user',
+              thread_id: 'th-active',
+              seq: 1,
+              role: 'user',
+              status: 'complete',
+              turn_id: 'active-turn',
+              content: { text: 'Clear entire canvas' }
+            }
+          ])
+        return json(200, [])
+      })
       useAgentConversationStore().setThreadId('th-active')
     }
 
@@ -4545,9 +4534,8 @@ describe('AgentPanelRoot history', () => {
   it('surfaces a thread-list failure via the host error modal', async () => {
     executionErrors.showErrorOverlay.mockClear()
     telemetry.trackAgentError.mockClear()
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => new Response('{}', { status: 500 }))
+    vi.mocked(fetch).mockImplementation(
+      async () => new Response('{}', { status: 500 })
     )
 
     renderWithSelectedTarget()
@@ -4571,20 +4559,18 @@ describe('AgentPanelRoot history', () => {
   })
 
   it('marks the restored thread as the current session', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (url: string) =>
-        url.endsWith('/api/agent/threads')
-          ? new Response('{"threads":[]}', {
-              status: 200,
-              headers: { 'Content-Type': 'application/json' }
-            })
-          : new Response('[]', {
-              status: 200,
-              headers: { 'Content-Type': 'application/json' }
-            })
-      )
-    )
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      return url.endsWith('/api/agent/threads')
+        ? new Response('{"threads":[]}', {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' }
+          })
+        : new Response('[]', {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' }
+          })
+    })
     const convo = useAgentConversationStore()
     convo.setThreadId('th-active')
     renderWithSelectedTarget()
@@ -4603,25 +4589,23 @@ describe('AgentPanelRoot transcript copy', () => {
   it.for(['current', 'pending'])(
     'copies only the current transcript when the loaded transcript is %s',
     async (loaded) => {
-      vi.stubGlobal(
-        'fetch',
-        vi.fn(async (url: string) =>
-          url.endsWith('/api/agent/threads')
-            ? new Response(
-                JSON.stringify(
-                  agentThreadList([
-                    agentThread({
-                      id: 'th-1',
-                      title: 'make a cat',
-                      last_message_at: '2026-07-07T10:00:00Z'
-                    })
-                  ])
-                ),
-                { status: 200, headers: { 'Content-Type': 'application/json' } }
-              )
-            : new Response('[]', { status: 200 })
-        )
-      )
+      vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+        const url = String(input)
+        return url.endsWith('/api/agent/threads')
+          ? new Response(
+              JSON.stringify(
+                agentThreadList([
+                  agentThread({
+                    id: 'th-1',
+                    title: 'make a cat',
+                    last_message_at: '2026-07-07T10:00:00Z'
+                  })
+                ])
+              ),
+              { status: 200, headers: { 'Content-Type': 'application/json' } }
+            )
+          : new Response('[]', { status: 200 })
+      })
 
       renderWithSelectedTarget()
       const convo = useAgentConversationStore()
@@ -4853,23 +4837,27 @@ describe('AgentPanelRoot run approval telemetry', () => {
     const answerResponse = new Promise<Response>((resolve) => {
       resolveAnswer = resolve
     })
-    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
-      if (url.includes('/asks/') && init?.method === 'POST')
-        return answerResponse
-      if (url.includes('/agent/threads')) return json(200, agentThreadList())
-      if (url.includes('/workflows'))
-        return json(200, {
-          data: [],
-          pagination: {
-            offset: 0,
-            limit: 100,
-            total: 0,
-            has_more: false
-          }
-        })
-      return json(200, {})
-    })
-    vi.stubGlobal('fetch', fetchMock)
+    const fetchMock = vi.fn(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input)
+
+        if (url.includes('/asks/') && init?.method === 'POST')
+          return answerResponse
+        if (url.includes('/agent/threads')) return json(200, agentThreadList())
+        if (url.includes('/workflows'))
+          return json(200, {
+            data: [],
+            pagination: {
+              offset: 0,
+              limit: 100,
+              total: 0,
+              has_more: false
+            }
+          })
+        return json(200, {})
+      }
+    )
+    vi.mocked(fetch).mockImplementation(fetchMock)
     telemetry.trackAgentRunApprovalShown.mockClear()
     telemetry.trackAgentRunApprovalResolved.mockClear()
     let currentTime = 1_000
@@ -4939,7 +4927,8 @@ describe('AgentPanelRoot run approval telemetry', () => {
     await vi.waitFor(() =>
       expect(
         fetchMock.mock.calls.filter(
-          ([url, init]) => url.includes('/asks/') && init?.method === 'POST'
+          ([url, init]) =>
+            String(url).includes('/asks/') && init?.method === 'POST'
         )
       ).toHaveLength(1)
     )
@@ -4960,7 +4949,8 @@ describe('AgentPanelRoot run approval telemetry', () => {
     )
     expect(
       fetchMock.mock.calls.filter(
-        ([url, init]) => url.includes('/asks/') && init?.method === 'POST'
+        ([url, init]) =>
+          String(url).includes('/asks/') && init?.method === 'POST'
       )
     ).toHaveLength(1)
     now.mockRestore()
@@ -5005,11 +4995,13 @@ describe('AgentPanelRoot lifecycle', () => {
     workflowStore.activeWorkflow = tab
     useAgentWorkflowTabBindingStore().bind('wf-42', tab.path)
     const urls: string[] = []
-    const fetchMock = vi.fn(async (url: string) => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input)
+
       urls.push(url)
       return json(202, { thread_id: 'th-1', message_id: 'm-1' })
     })
-    vi.stubGlobal('fetch', fetchMock)
+    vi.mocked(fetch).mockImplementation(fetchMock)
 
     const { unmount } = renderWithSelectedTarget()
 
@@ -5499,9 +5491,10 @@ describe('AgentPanelRoot workflow binding', () => {
     const bodies: unknown[] = []
     const resolveAckWorkflowId =
       typeof ackWorkflowId === 'function' ? ackWorkflowId : () => ackWorkflowId
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (url: string, init?: RequestInit) => {
+    vi.mocked(fetch).mockImplementation(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input)
+
         if (url.includes('/messages') && init?.method === 'POST') {
           bodies.push(JSON.parse(String(init.body)))
           return json(202, ack(resolveAckWorkflowId(), `m-${bodies.length}`))
@@ -5529,7 +5522,7 @@ describe('AgentPanelRoot workflow binding', () => {
           })
         }
         return new Response('{}', { status: 200 })
-      })
+      }
     )
     return bodies
   }
@@ -5540,15 +5533,16 @@ describe('AgentPanelRoot workflow binding', () => {
     const delayedHistory = new Promise<Response>((resolve) => {
       resolveHistory = resolve
     })
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (url: string, init?: RequestInit) => {
+    vi.mocked(fetch).mockImplementation(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input)
+
         if (url.includes('/messages') && init?.method === 'POST')
           return json(202, ack('wf-42'))
         if (url.includes('/messages')) return delayedHistory
         if (url.includes('/agent/threads')) return json(200, agentThreadList())
         return new Response('{}', { status: 200 })
-      })
+      }
     )
 
     const first = renderWithSelectedTarget()
@@ -6505,9 +6499,10 @@ describe('AgentPanelRoot workflow binding', () => {
           content: { text: 'Earlier portrait request' }
         }
       ]
-      vi.stubGlobal(
-        'fetch',
-        vi.fn(async (url: string, init?: RequestInit) => {
+      vi.mocked(fetch).mockImplementation(
+        async (input: RequestInfo | URL, init?: RequestInit) => {
+          const url = String(input)
+
           if (url.includes('/messages') && init?.method === 'POST') {
             bodies.push(JSON.parse(String(init.body)))
             return json(202, ack('wf-portrait'))
@@ -6541,7 +6536,7 @@ describe('AgentPanelRoot workflow binding', () => {
               })
             ])
           )
-        })
+        }
       )
       useAgentConversationStore().setThreadId(previousThread)
       renderWithSelectedTarget()
@@ -6615,40 +6610,39 @@ describe('AgentPanelRoot workflow binding', () => {
       })
       const openWorkflow = vi.mocked(useWorkflowService().openWorkflow)
       openWorkflow.mockReturnValueOnce(opening)
-      vi.stubGlobal(
-        'fetch',
-        vi.fn(async (url: string) => {
-          if (url.includes('/th-current/messages')) return json(200, [])
-          if (url.includes('/messages'))
-            return json(200, [
-              {
-                id: 'history-user',
-                thread_id: 'th-history',
-                seq: 1,
-                role: 'user',
-                status: 'complete',
-                turn_id: 'history-turn',
-                workflow_id: 'wf-portrait',
-                content: { text: 'Earlier portrait request' }
-              }
-            ])
-          if (url.includes('/workflows'))
-            return json(200, {
-              data: [{ id: 'wf-portrait', name: 'portrait' }],
-              pagination: { offset: 0, limit: 100, total: 1, has_more: false }
+      vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+        const url = String(input)
+
+        if (url.includes('/th-current/messages')) return json(200, [])
+        if (url.includes('/messages'))
+          return json(200, [
+            {
+              id: 'history-user',
+              thread_id: 'th-history',
+              seq: 1,
+              role: 'user',
+              status: 'complete',
+              turn_id: 'history-turn',
+              workflow_id: 'wf-portrait',
+              content: { text: 'Earlier portrait request' }
+            }
+          ])
+        if (url.includes('/workflows'))
+          return json(200, {
+            data: [{ id: 'wf-portrait', name: 'portrait' }],
+            pagination: { offset: 0, limit: 100, total: 1, has_more: false }
+          })
+        return json(
+          200,
+          agentThreadList([
+            agentThread({
+              id: 'th-history',
+              title: 'Portrait chat',
+              last_message_at: '2026-09-25T00:00:00Z'
             })
-          return json(
-            200,
-            agentThreadList([
-              agentThread({
-                id: 'th-history',
-                title: 'Portrait chat',
-                last_message_at: '2026-09-25T00:00:00Z'
-              })
-            ])
-          )
-        })
-      )
+          ])
+        )
+      })
       const first = renderWithSelectedTarget()
       await userEvent.click(
         screen.getByRole('button', { name: 'Show chat history' })
@@ -6713,56 +6707,55 @@ describe('AgentPanelRoot workflow binding', () => {
       makeTab('wf-current')
       useAgentConversationStore().setThreadId('th-current')
       localStorage.setItem(StorageKeys.agentThread('personal'), 'th-current')
-      vi.stubGlobal(
-        'fetch',
-        vi.fn(async (url: string) => {
-          if (url.includes('/th-failed/messages'))
-            return json(status, [
-              {
-                id: 'failed-user',
-                thread_id: 'th-failed',
-                seq: 1,
-                role: 'user',
-                status: 'complete',
-                turn_id: 'failed-turn',
-                workflow_id: 'wf-unavailable',
-                content: { text: 'Failed request' }
-              }
-            ] satisfies AgentMessages)
-          if (url.includes('/messages'))
-            return json(200, [
-              {
-                id: 'current-user',
-                thread_id: 'th-current',
-                seq: 1,
-                role: 'user',
-                status: 'complete',
-                turn_id: 'current-turn',
-                content: { text: 'Current request' }
-              }
-            ])
-          if (url.includes('/workflows'))
-            return json(listingStatus, {
-              data: [],
-              pagination: { offset: 0, limit: 100, total: 0, has_more: false }
+      vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+        const url = String(input)
+
+        if (url.includes('/th-failed/messages'))
+          return json(status, [
+            {
+              id: 'failed-user',
+              thread_id: 'th-failed',
+              seq: 1,
+              role: 'user',
+              status: 'complete',
+              turn_id: 'failed-turn',
+              workflow_id: 'wf-unavailable',
+              content: { text: 'Failed request' }
+            }
+          ] satisfies AgentMessages)
+        if (url.includes('/messages'))
+          return json(200, [
+            {
+              id: 'current-user',
+              thread_id: 'th-current',
+              seq: 1,
+              role: 'user',
+              status: 'complete',
+              turn_id: 'current-turn',
+              content: { text: 'Current request' }
+            }
+          ])
+        if (url.includes('/workflows'))
+          return json(listingStatus, {
+            data: [],
+            pagination: { offset: 0, limit: 100, total: 0, has_more: false }
+          })
+        return json(
+          200,
+          agentThreadList([
+            agentThread({
+              id: 'th-current',
+              title: 'Current chat',
+              last_message_at: '2026-09-25T01:00:00Z'
+            }),
+            agentThread({
+              id: 'th-failed',
+              title: 'Failed chat',
+              last_message_at: '2026-09-25T00:00:00Z'
             })
-          return json(
-            200,
-            agentThreadList([
-              agentThread({
-                id: 'th-current',
-                title: 'Current chat',
-                last_message_at: '2026-09-25T01:00:00Z'
-              }),
-              agentThread({
-                id: 'th-failed',
-                title: 'Failed chat',
-                last_message_at: '2026-09-25T00:00:00Z'
-              })
-            ])
-          )
-        })
-      )
+          ])
+        )
+      })
       const first = renderWithSelectedTarget()
       await screen.findAllByText('Current request')
       await userEvent.click(
@@ -6840,9 +6833,10 @@ describe('AgentPanelRoot workflow binding', () => {
         content: { text: 'Earlier request' }
       }
     ]
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (url: string, init?: RequestInit) => {
+    vi.mocked(fetch).mockImplementation(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input)
+
         if (url.includes('/messages') && init?.method === 'POST') {
           bodies.push(JSON.parse(String(init.body)))
           return json(202, ack('wf-minted'))
@@ -6854,7 +6848,7 @@ describe('AgentPanelRoot workflow binding', () => {
             pagination: { offset: 0, limit: 100, total: 1, has_more: false }
           })
         return json(200, agentThreadList())
-      })
+      }
     )
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
@@ -6878,30 +6872,29 @@ describe('AgentPanelRoot workflow binding', () => {
       const old = addTab('workflows/old.json')
       useAgentWorkflowTabBindingStore().bind('wf-old', old.path)
       useAgentConversationStore().setThreadId('th-1')
-      vi.stubGlobal(
-        'fetch',
-        vi.fn(async (url: string) => {
-          if (url.includes('/messages'))
-            return json(200, [
-              {
-                id: 'row',
-                thread_id: 'th-1',
-                seq: 1,
-                role: 'user',
-                status: 'complete',
-                turn_id: 'turn',
-                workflow_id: restoredId,
-                content: { text: 'Restored prompt' }
-              }
-            ])
-          if (url.includes('/workflows'))
-            return json(200, {
-              data: [],
-              pagination: { offset: 0, limit: 100, total: 0, has_more: false }
-            })
-          return json(200, agentThreadList())
-        })
-      )
+      vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+        const url = String(input)
+
+        if (url.includes('/messages'))
+          return json(200, [
+            {
+              id: 'row',
+              thread_id: 'th-1',
+              seq: 1,
+              role: 'user',
+              status: 'complete',
+              turn_id: 'turn',
+              workflow_id: restoredId,
+              content: { text: 'Restored prompt' }
+            }
+          ])
+        if (url.includes('/workflows'))
+          return json(200, {
+            data: [],
+            pagination: { offset: 0, limit: 100, total: 0, has_more: false }
+          })
+        return json(200, agentThreadList())
+      })
       renderWithSelectedTarget()
       await screen.findAllByText('Restored prompt')
       await nextTick()
@@ -6925,45 +6918,44 @@ describe('AgentPanelRoot workflow binding', () => {
       const pendingHistory = new Promise<void>((resolve) => {
         finishHistory = resolve
       })
-      vi.stubGlobal(
-        'fetch',
-        vi.fn(async (url: string) => {
-          if (url.includes('/messages')) {
-            const read = ++reads
-            if (read === 2) await pendingHistory
-            const messages: AgentMessages = [
-              {
-                id: 'row',
-                thread_id: 'th-1',
-                seq: 1,
-                role: 'user',
-                status: 'complete',
-                turn_id: 'turn',
-                workflow_id: 'wf-old',
-                content: { text: `History loaded ${read}` }
-              }
-            ]
-            return json(200, messages)
-          }
-          if (url.includes('/assets'))
-            return json(200, { assets: [], total: 0, has_more: false })
-          if (url.includes('/workflows'))
-            return json(200, {
-              data: [{ id: 'wf-old', name: 'old' }],
-              pagination: { offset: 0, limit: 100, total: 1, has_more: false }
+      vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+        const url = String(input)
+
+        if (url.includes('/messages')) {
+          const read = ++reads
+          if (read === 2) await pendingHistory
+          const messages: AgentMessages = [
+            {
+              id: 'row',
+              thread_id: 'th-1',
+              seq: 1,
+              role: 'user',
+              status: 'complete',
+              turn_id: 'turn',
+              workflow_id: 'wf-old',
+              content: { text: `History loaded ${read}` }
+            }
+          ]
+          return json(200, messages)
+        }
+        if (url.includes('/assets'))
+          return json(200, { assets: [], total: 0, has_more: false })
+        if (url.includes('/workflows'))
+          return json(200, {
+            data: [{ id: 'wf-old', name: 'old' }],
+            pagination: { offset: 0, limit: 100, total: 1, has_more: false }
+          })
+        return json(
+          200,
+          agentThreadList([
+            agentThread({
+              id: 'th-1',
+              title: 'Earlier chat',
+              last_message_at: '2026-09-01T00:00:00Z'
             })
-          return json(
-            200,
-            agentThreadList([
-              agentThread({
-                id: 'th-1',
-                title: 'Earlier chat',
-                last_message_at: '2026-09-01T00:00:00Z'
-              })
-            ])
-          )
-        })
-      )
+          ])
+        )
+      })
       const first = render(AgentPanelRoot, { global: { plugins: [i18n] } })
       const selector = () =>
         screen.getByRole('button', {
@@ -7100,24 +7092,23 @@ describe('AgentPanelRoot workflow binding', () => {
     telemetry.trackAgentError.mockClear()
     makeTab('wf-42')
     localStorage.setItem(StorageKeys.agentThread('personal'), 'th-history')
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (url: string) => {
-        if (url.includes('/messages')) return json(500, { error: 'down' })
-        if (url.includes('/agent/threads'))
-          return json(
-            200,
-            agentThreadList([
-              agentThread({
-                id: 'th-history',
-                title: 'Earlier chat',
-                last_message_at: '2026-09-01T00:00:00Z'
-              })
-            ])
-          )
-        return json(200, {})
-      })
-    )
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input)
+
+      if (url.includes('/messages')) return json(500, { error: 'down' })
+      if (url.includes('/agent/threads'))
+        return json(
+          200,
+          agentThreadList([
+            agentThread({
+              id: 'th-history',
+              title: 'Earlier chat',
+              last_message_at: '2026-09-01T00:00:00Z'
+            })
+          ])
+        )
+      return json(200, {})
+    })
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
     await vi.waitFor(() =>
@@ -7165,43 +7156,42 @@ describe('AgentPanelRoot workflow binding', () => {
       makeTab('wf-42')
       const other = addTab('workflows/history-target.json')
       useAgentWorkflowTabBindingStore().bind('wf-history', other.path)
-      vi.stubGlobal(
-        'fetch',
-        vi.fn(async (url: string) => {
-          if (url.includes('/messages'))
-            return json(200, [
-              {
-                id: 'history-user',
-                thread_id: 'th-history',
-                seq: 1,
-                role: 'user',
-                status: 'complete',
-                turn_id: 'history-turn',
-                ...(outcome === 'missing-id'
-                  ? {}
-                  : { workflow_id: 'wf-history' }),
-                content: { text: 'Historical prompt' }
-              }
+      vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+        const url = String(input)
+
+        if (url.includes('/messages'))
+          return json(200, [
+            {
+              id: 'history-user',
+              thread_id: 'th-history',
+              seq: 1,
+              role: 'user',
+              status: 'complete',
+              turn_id: 'history-turn',
+              ...(outcome === 'missing-id'
+                ? {}
+                : { workflow_id: 'wf-history' }),
+              content: { text: 'Historical prompt' }
+            }
+          ])
+        if (url.includes('/agent/threads'))
+          return json(
+            200,
+            agentThreadList([
+              agentThread({
+                id: 'th-history',
+                title: 'Earlier chat',
+                last_message_at: '2026-09-01T00:00:00Z'
+              })
             ])
-          if (url.includes('/agent/threads'))
-            return json(
-              200,
-              agentThreadList([
-                agentThread({
-                  id: 'th-history',
-                  title: 'Earlier chat',
-                  last_message_at: '2026-09-01T00:00:00Z'
-                })
-              ])
-            )
-          if (url.includes('/workflows'))
-            return json(200, {
-              data: [{ id: 'wf-history', name: 'history-target' }],
-              pagination: { offset: 0, limit: 100, total: 1, has_more: false }
-            })
-          return json(200, {})
-        })
-      )
+          )
+        if (url.includes('/workflows'))
+          return json(200, {
+            data: [{ id: 'wf-history', name: 'history-target' }],
+            pagination: { offset: 0, limit: 100, total: 1, has_more: false }
+          })
+        return json(200, {})
+      })
       if (outcome === 'false')
         vi.mocked(useWorkflowService()).openWorkflow.mockResolvedValueOnce(
           false
@@ -7586,22 +7576,20 @@ describe('AgentPanelRoot workflow binding', () => {
         finishLookup = resolve
       })
       let lookupCount = 0
-      vi.stubGlobal(
-        'fetch',
-        vi.fn(async (url: string) => {
-          if (url.includes('/workflows')) {
-            lookupCount++
-            await pendingLookup
-            return json(200, {
-              data: [{ id: 'wf-other', name: 'other' }],
-              pagination: { offset: 0, limit: 100, total: 1, has_more: false }
-            })
-          }
-          if (url.includes('/agent/threads'))
-            return json(200, agentThreadList())
-          return json(200, {})
-        })
-      )
+      vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+        const url = String(input)
+
+        if (url.includes('/workflows')) {
+          lookupCount++
+          await pendingLookup
+          return json(200, {
+            data: [{ id: 'wf-other', name: 'other' }],
+            pagination: { offset: 0, limit: 100, total: 1, has_more: false }
+          })
+        }
+        if (url.includes('/agent/threads')) return json(200, agentThreadList())
+        return json(200, {})
+      })
       renderWithSelectedTarget()
       await vi.waitFor(() => expect(lookupCount).toBe(1))
       try {
@@ -7803,19 +7791,18 @@ describe('AgentPanelRoot workflow binding', () => {
   it('holds the creating flag for 500 ms before an unbound agent tab materializes', async () => {
     makeTab('wf-42')
     let resolveLookup: ((response: Response) => void) | undefined
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (url: string) => {
-        if (url.includes('/messages')) return json(202, ack('wf-42', 'm-1'))
-        if (url.includes('/agent/threads')) return json(200, agentThreadList())
-        if (url.includes('workflow_id=wf-new')) {
-          return new Promise<Response>((resolve) => {
-            resolveLookup = resolve
-          })
-        }
-        return new Response('{}', { status: 200 })
-      })
-    )
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input)
+
+      if (url.includes('/messages')) return json(202, ack('wf-42', 'm-1'))
+      if (url.includes('/agent/threads')) return json(200, agentThreadList())
+      if (url.includes('workflow_id=wf-new')) {
+        return new Promise<Response>((resolve) => {
+          resolveLookup = resolve
+        })
+      }
+      return new Response('{}', { status: 200 })
+    })
 
     vi.useFakeTimers({ shouldAdvanceTime: true })
     await renderAndSend('work here')
@@ -7848,19 +7835,18 @@ describe('AgentPanelRoot workflow binding', () => {
   it('lowers the creating flag when a newer focus event supersedes the fetch', async () => {
     const bound = makeTab('wf-42')
     let resolveLookup: ((response: Response) => void) | undefined
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (url: string) => {
-        if (url.includes('/messages')) return json(202, ack('wf-42', 'm-1'))
-        if (url.includes('/agent/threads')) return json(200, agentThreadList())
-        if (url.includes('workflow_id=wf-new')) {
-          return new Promise<Response>((resolve) => {
-            resolveLookup = resolve
-          })
-        }
-        return new Response('{}', { status: 200 })
-      })
-    )
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input)
+
+      if (url.includes('/messages')) return json(202, ack('wf-42', 'm-1'))
+      if (url.includes('/agent/threads')) return json(200, agentThreadList())
+      if (url.includes('workflow_id=wf-new')) {
+        return new Promise<Response>((resolve) => {
+          resolveLookup = resolve
+        })
+      }
+      return new Response('{}', { status: 200 })
+    })
 
     await renderAndSend('work here')
     vi.useFakeTimers()
@@ -7887,17 +7873,16 @@ describe('AgentPanelRoot workflow binding', () => {
   it('pins the spinner to the tab that sent the turn, not the tab active at ack', async () => {
     makeTab('wf-42')
     const other = addTab('workflows/other.json')
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (url: string) => {
-        if (url.includes('/messages')) {
-          workflowStore.activeWorkflow = other
-          return json(202, ack('wf-42', 'm-1'))
-        }
-        if (url.includes('/agent/threads')) return json(200, agentThreadList())
-        return new Response('{}', { status: 200 })
-      })
-    )
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input)
+
+      if (url.includes('/messages')) {
+        workflowStore.activeWorkflow = other
+        return json(202, ack('wf-42', 'm-1'))
+      }
+      if (url.includes('/agent/threads')) return json(200, agentThreadList())
+      return new Response('{}', { status: 200 })
+    })
 
     await renderAndSend('add an upscaler')
 
@@ -7995,14 +7980,13 @@ describe('AgentPanelRoot workflow binding', () => {
     const other = addTab('workflows/other.json')
     useAgentWorkflowTabBindingStore().bind('wf-other', other.path)
     workflowStore.activeWorkflow = other
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (url: string) => {
-        if (url.includes('/messages')) return json(200, [])
-        if (url.includes('/agent/threads')) return json(200, agentThreadList())
-        return new Response('{}', { status: 200 })
-      })
-    )
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input)
+
+      if (url.includes('/messages')) return json(200, [])
+      if (url.includes('/agent/threads')) return json(200, agentThreadList())
+      return new Response('{}', { status: 200 })
+    })
 
     renderWithSelectedTarget()
     await vi.waitFor(() =>
@@ -8242,9 +8226,10 @@ describe('AgentPanelRoot workflow binding', () => {
       }
     ]
     const bodies: unknown[] = []
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (url: string, init?: RequestInit) => {
+    vi.mocked(fetch).mockImplementation(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input)
+
         if (url.includes('/messages') && init?.method === 'POST') {
           bodies.push(JSON.parse(String(init.body)))
           return json(202, ack(staleWorkflowId))
@@ -8259,7 +8244,7 @@ describe('AgentPanelRoot workflow binding', () => {
             pagination: { offset: 0, limit: 100, total: 0, has_more: false }
           })
         return json(200, agentThreadList())
-      })
+      }
     )
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
@@ -8933,9 +8918,10 @@ describe('AgentPanelRoot workflow binding', () => {
     makeTab()
     const bodies: unknown[] = []
     let workflowsCalls = 0
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (url: string, init?: RequestInit) => {
+    vi.mocked(fetch).mockImplementation(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input)
+
         if (url.includes('/messages') && init?.method === 'POST') {
           bodies.push(JSON.parse(String(init.body)))
           return new Response(JSON.stringify(ack('wf-cloud-current', 'm-1')), {
@@ -8963,7 +8949,7 @@ describe('AgentPanelRoot workflow binding', () => {
           )
         }
         return new Response('{}', { status: 200 })
-      })
+      }
     )
 
     await startVueNodeSelection()
@@ -9014,9 +9000,10 @@ describe('AgentPanelRoot workflow binding', () => {
   it('falls back to bindings when the cloud index request fails', async () => {
     makeTab('wf-42')
     const bodies: unknown[] = []
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (url: string, init?: RequestInit) => {
+    vi.mocked(fetch).mockImplementation(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input)
+
         if (url.includes('/messages') && init?.method === 'POST') {
           bodies.push(JSON.parse(String(init.body)))
           return new Response(JSON.stringify(ack('wf-42', 'm-1')), {
@@ -9028,7 +9015,7 @@ describe('AgentPanelRoot workflow binding', () => {
           return json(500, { error: 'internal server error' })
         }
         return new Response('{}', { status: 200 })
-      })
+      }
     )
 
     await renderAndSend('first message')
@@ -9042,9 +9029,10 @@ describe('AgentPanelRoot workflow binding', () => {
   it('does not adopt a minted workflow when a saved tab cloud lookup fails', async () => {
     const tab = makeTab()
     const bodies: unknown[] = []
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (url: string, init?: RequestInit) => {
+    vi.mocked(fetch).mockImplementation(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input)
+
         if (url.includes('/messages') && init?.method === 'POST') {
           bodies.push(JSON.parse(String(init.body)))
           return json(202, ack('wf-fresh'))
@@ -9052,7 +9040,7 @@ describe('AgentPanelRoot workflow binding', () => {
         if (url.includes('/workflows')) return json(500, { error: 'failed' })
         if (url.includes('/agent/threads')) return json(200, agentThreadList())
         return json(200, [])
-      })
+      }
     )
 
     await renderAndSend('first message')
@@ -9068,9 +9056,10 @@ describe('AgentPanelRoot workflow binding', () => {
     const tab = makeTab()
     const bodies: unknown[] = []
     let workflowRequests = 0
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (url: string, init?: RequestInit) => {
+    vi.mocked(fetch).mockImplementation(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input)
+
         if (url.includes('/messages') && init?.method === 'POST') {
           bodies.push(JSON.parse(String(init.body)))
           return json(202, ack('wf-fresh'))
@@ -9086,7 +9075,7 @@ describe('AgentPanelRoot workflow binding', () => {
         }
         if (url.includes('/agent/threads')) return json(200, agentThreadList())
         return json(200, [])
-      })
+      }
     )
 
     renderWithSelectedTarget()
@@ -9970,9 +9959,10 @@ describe('AgentPanelRoot workflow binding', () => {
       nodes: [{ id: 1, type: 'LoadImage' }]
     })
     const posted: { threadId: string; body: Record<string, unknown> }[] = []
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (url: string, init?: RequestInit) => {
+    vi.mocked(fetch).mockImplementation(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input)
+
         if (url.includes('/messages') && init?.method === 'POST') {
           posted.push({
             threadId: url.split('/threads/')[1].split('/')[0],
@@ -9989,7 +9979,7 @@ describe('AgentPanelRoot workflow binding', () => {
             pagination: { offset: 0, limit: 100, total: 1, has_more: false }
           })
         return new Response('{}', { status: 200 })
-      })
+      }
     )
 
     await renderAndSend('build a duck')
@@ -10185,29 +10175,28 @@ describe('AgentPanelRoot workflow binding', () => {
       resolveInitial = resolve
     })
     let workflowRequestCount = 0
-    vi.stubGlobal(
-      'fetch',
-      vi.fn((url: string) => {
-        if (url.includes('/workflows')) {
-          workflowRequestCount++
-          if (workflowRequestCount === 1) return initialWorkflowResponse
-          return Promise.resolve(
-            json(200, {
-              data: [{ id: 'wf-video', name: 'video_minimax_h3_i2v' }],
-              pagination: {
-                offset: 0,
-                limit: 100,
-                total: 1,
-                has_more: false
-              }
-            })
-          )
-        }
-        if (url.includes('/agent/threads'))
-          return Promise.resolve(json(200, agentThreadList()))
-        return Promise.resolve(new Response('{}', { status: 200 }))
-      })
-    )
+    vi.mocked(fetch).mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input)
+
+      if (url.includes('/workflows')) {
+        workflowRequestCount++
+        if (workflowRequestCount === 1) return initialWorkflowResponse
+        return Promise.resolve(
+          json(200, {
+            data: [{ id: 'wf-video', name: 'video_minimax_h3_i2v' }],
+            pagination: {
+              offset: 0,
+              limit: 100,
+              total: 1,
+              has_more: false
+            }
+          })
+        )
+      }
+      if (url.includes('/agent/threads'))
+        return Promise.resolve(json(200, agentThreadList()))
+      return Promise.resolve(new Response('{}', { status: 200 }))
+    })
 
     renderWithSelectedTarget()
     await userEvent.click(screen.getByRole('textbox'))
@@ -10243,9 +10232,10 @@ describe('AgentPanelRoot workflow binding', () => {
     })
     appMock.graph.nodes = [{ id: 1 }]
     const bodies: unknown[] = []
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (url: string, init?: RequestInit) => {
+    vi.mocked(fetch).mockImplementation(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input)
+
         if (!url.includes('/messages'))
           return new Response('{}', { status: 200 })
         const body = JSON.parse(String(init?.body)) as Record<string, unknown>
@@ -10257,7 +10247,7 @@ describe('AgentPanelRoot workflow binding', () => {
           status: 202,
           headers: { 'Content-Type': 'application/json' }
         })
-      })
+      }
     )
 
     await renderAndSend('build a graph')
@@ -10326,9 +10316,10 @@ describe('AgentPanelRoot workflow binding', () => {
     const origin = makeTab()
     Object.assign(origin, { isTemporary: true })
     const background = addTab('workflows/background.json')
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (url: string, init?: RequestInit) => {
+    vi.mocked(fetch).mockImplementation(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input)
+
         if (url.includes('/messages') && init?.method === 'POST') {
           workflowStore.activeWorkflow = background
           return json(202, ack('wf-fresh', 'm-1'))
@@ -10345,7 +10336,7 @@ describe('AgentPanelRoot workflow binding', () => {
             }
           })
         return new Response('{}', { status: 200 })
-      })
+      }
     )
 
     await renderAndSend('build a graph')
@@ -10473,9 +10464,10 @@ describe('AgentPanelRoot workflow binding', () => {
       const response = new Promise<Response>((resolve) => {
         finishSend = resolve
       })
-      vi.stubGlobal(
-        'fetch',
-        vi.fn(async (url: string, init?: RequestInit) => {
+      vi.mocked(fetch).mockImplementation(
+        async (input: RequestInfo | URL, init?: RequestInit) => {
+          const url = String(input)
+
           if (url.endsWith('/cancel')) {
             cancellations.push(url)
             return json(200, {})
@@ -10504,7 +10496,7 @@ describe('AgentPanelRoot workflow binding', () => {
               pagination: { offset: 0, limit: 100, total: 0, has_more: false }
             })
           return json(200, {})
-        })
+        }
       )
       setupNodeSelectionCanvas()
       const first = renderWithSelectedTarget()
@@ -10618,9 +10610,10 @@ describe('AgentPanelRoot workflow binding', () => {
     const bodies: Record<string, unknown>[] = []
     let workflowRequests = 0
     let releasePreparation: () => void = () => undefined
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (url: string, init?: RequestInit) => {
+    vi.mocked(fetch).mockImplementation(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input)
+
         if (url.includes('/messages') && init?.method === 'POST') {
           bodies.push(JSON.parse(String(init.body)) as Record<string, unknown>)
           return json(202, ack('wf-fresh', 'm-1'))
@@ -10639,7 +10632,7 @@ describe('AgentPanelRoot workflow binding', () => {
           })
         }
         return new Response('{}', { status: 200 })
-      })
+      }
     )
 
     renderWithSelectedTarget()

@@ -40,7 +40,7 @@ describe('listWorkspaces', () => {
         status: 200
       })
     )
-    vi.stubGlobal('fetch', fetchWorkspaces)
+    vi.mocked(fetch).mockImplementation(fetchWorkspaces)
 
     await expect(listWorkspaces('workspace-jwt')).resolves.toEqual([workspace])
     const [target, init] = fetchWorkspaces.mock.calls[0]
@@ -59,7 +59,9 @@ describe('listWorkspaces', () => {
       new Response(JSON.stringify({ workspaces: [{ id: 1 }] }), { status: 200 })
     ]
   ] as const)('rejects %s', async ([, response]) => {
-    vi.stubGlobal('fetch', vi.fn<typeof fetch>().mockResolvedValue(response))
+    vi.mocked(fetch).mockImplementation(
+      vi.fn<typeof fetch>().mockResolvedValue(response)
+    )
 
     await expect(listWorkspaces('workspace-jwt')).rejects.toThrow(
       'Workspace list response malformed'
@@ -67,8 +69,7 @@ describe('listWorkspaces', () => {
   })
 
   it('rejects a non-success response before parsing it', async () => {
-    vi.stubGlobal(
-      'fetch',
+    vi.mocked(fetch).mockImplementation(
       vi.fn<typeof fetch>().mockResolvedValue(new Response('', { status: 503 }))
     )
 
@@ -79,7 +80,7 @@ describe('listWorkspaces', () => {
 
   it('composes and honors a caller-provided abort signal', async () => {
     const fetchWorkspaces = fetchUntilAborted()
-    vi.stubGlobal('fetch', fetchWorkspaces)
+    vi.mocked(fetch).mockImplementation(fetchWorkspaces)
     const controller = new AbortController()
     const reason = new DOMException('Caller stopped', 'AbortError')
 
@@ -100,7 +101,7 @@ describe('listWorkspaces', () => {
     const timeoutSpy = vi
       .spyOn(AbortSignal, 'timeout')
       .mockReturnValue(timeout.signal)
-    vi.stubGlobal('fetch', fetchUntilAborted())
+    vi.mocked(fetch).mockImplementation(fetchUntilAborted())
     const reason = new DOMException('Timed out', 'TimeoutError')
 
     const pending = listWorkspaces('workspace-jwt', { timeoutMs: 25 })

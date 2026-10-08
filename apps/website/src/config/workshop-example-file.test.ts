@@ -89,7 +89,7 @@ describe('example source images', () => {
         headers: { 'Content-Type': 'image/png' }
       })
     })
-    vi.stubGlobal('fetch', transport)
+    vi.mocked(fetch).mockImplementation(transport)
     const uploader = createWorkshopUrlUploader()
     const body = await prepareWorkshopRouterInput(
       page.execution,
@@ -132,7 +132,7 @@ describe('example source images', () => {
       'bfl--flux-2-max--generate-images'
     )
     if (!page?.execution) throw new Error('Missing BFL page')
-    const fetchImage = vi.spyOn(globalThis, 'fetch').mockImplementation(
+    const fetchImage = vi.mocked(fetch).mockImplementation(
       async (url) =>
         new Response(String(url), {
           headers: { 'Content-Type': 'image/png' }
@@ -179,7 +179,7 @@ describe('example source images', () => {
     )
     if (!page?.execution) throw new Error('Missing Veo page')
     const fetchImage = vi
-      .spyOn(globalThis, 'fetch')
+      .mocked(fetch)
       .mockImplementation(
         async (url) =>
           new Response(
@@ -223,7 +223,7 @@ describe('example source images', () => {
 
   it('loads an extensionless media URL using its response content type', async () => {
     const source = 'https://example.com/media?id=123'
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+    vi.mocked(fetch).mockResolvedValue(
       new Response('image bytes', {
         headers: { 'Content-Type': 'image/png' }
       })
@@ -283,7 +283,7 @@ describe('example source images', () => {
   ])(
     'rejects invalid or oversized media before encoding: $reason',
     async ({ response, error, source = 'https://example.com/source.png' }) => {
-      vi.spyOn(globalThis, 'fetch').mockImplementation(async () => response())
+      vi.mocked(fetch).mockImplementation(async () => response())
       const value = workshopExampleFile(source)
       if (!value) throw new Error('Missing example')
       await expect(
@@ -293,7 +293,7 @@ describe('example source images', () => {
   )
 
   it('does not fetch invalid schemes, credentialed URLs, or after cancellation', async () => {
-    const fetchImage = vi.spyOn(globalThis, 'fetch')
+    const fetchImage = vi.mocked(fetch)
     for (const url of [
       'file:///source.png',
       'javascript:alert(1)',

@@ -63,7 +63,7 @@ describe('useSignInController identity availability, real account-core resolutio
           { status: 200 }
         )
       )
-    vi.stubGlobal('fetch', fetchImpl)
+    vi.mocked(fetch).mockImplementation(fetchImpl)
 
     const controller = useSignInController(() => undefined)
     await vi.waitFor(() => expect(fetchImpl).toHaveBeenCalledTimes(1))

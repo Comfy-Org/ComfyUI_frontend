@@ -12,7 +12,7 @@ describe('preflightAgent', () => {
     const fetchMock = vi
       .fn<typeof fetch>()
       .mockResolvedValue(new Response(null, { status: 200 }))
-    vi.stubGlobal('fetch', fetchMock)
+    vi.mocked(fetch).mockImplementation(fetchMock)
     const options = parseOptions([
       '--cloud-repo',
       '/tmp/cloud',
@@ -39,8 +39,7 @@ describe('preflightAgent', () => {
   })
 
   it('rejects a launch without model credentials', async () => {
-    vi.stubGlobal(
-      'fetch',
+    vi.mocked(fetch).mockImplementation(
       vi
         .fn<typeof fetch>()
         .mockResolvedValue(new Response(null, { status: 200 }))

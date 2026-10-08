@@ -245,7 +245,7 @@ const discoverReplies = (body: unknown, status = 200) => {
         headers: { 'Content-Type': 'application/json' }
       })
   )
-  vi.stubGlobal('fetch', fetchMock)
+  vi.mocked(fetch).mockImplementation(fetchMock)
   return fetchMock
 }
 
@@ -484,7 +484,7 @@ describe('CloudLoginView SSO', () => {
             )
           )
       )
-      vi.stubGlobal('fetch', fetchMock)
+      vi.mocked(fetch).mockImplementation(fetchMock)
       await renderLoginView()
 
       await continueWithSso('ada@acme.com')
@@ -538,9 +538,8 @@ describe('CloudLoginView Firebase sign-in refused for SSO', () => {
     vi.mocked(useAuthActions().signInWithEmail).mockResolvedValueOnce(
       fromPartial<UserCredential>({})
     )
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => Response.json({ sso: false }))
+    vi.mocked(fetch).mockImplementation(async () =>
+      Response.json({ sso: false })
     )
     const user = userEvent.setup()
     await user.click(

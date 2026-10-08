@@ -62,7 +62,7 @@ describe('ApiTab', () => {
     const file = new File(['private'], 'photo.png', { type: 'image/png' })
     const network = vi.fn()
     const read = vi.spyOn(file, 'arrayBuffer')
-    vi.stubGlobal('fetch', network)
+    vi.mocked(fetch).mockImplementation(network)
     render(ApiTab, {
       props: {
         contract: workshopContract('wavespeed/seedvr2'),
@@ -229,7 +229,7 @@ describe('ApiTab', () => {
       const network = vi.fn(() =>
         Promise.reject(new Error('API browsing must not fetch media'))
       )
-      vi.stubGlobal('fetch', network)
+      vi.mocked(fetch).mockImplementation(network)
       render(ApiTab, {
         props: {
           contract: model.execution,

@@ -51,7 +51,7 @@ describe('Models page entry', () => {
     const fetchData = vi
       .fn<typeof fetch>()
       .mockResolvedValue(Response.json(await prepareModelPage(slug)))
-    vi.stubGlobal('fetch', fetchData)
+    vi.mocked(fetch).mockImplementation(fetchData)
     enabled.value = true
     render(ModelsPage, {
       props: { slug },
@@ -128,8 +128,7 @@ describe('Models page entry', () => {
   ] as const)(
     'keeps the $section section and its heading behind its flag',
     async ({ section, catalogue, turnOn }) => {
-      vi.stubGlobal(
-        'fetch',
+      vi.mocked(fetch).mockImplementation(
         vi.fn<typeof fetch>().mockResolvedValue(Response.json(workshopPages))
       )
       enabled.value = true
@@ -180,7 +179,7 @@ describe('Models page entry', () => {
       fetchData = vi
         .fn<typeof fetch>()
         .mockResolvedValue(Response.json(workshopModels))
-      vi.stubGlobal('fetch', fetchData)
+      vi.mocked(fetch).mockImplementation(fetchData)
       enabled.value = true
     })
 
@@ -372,8 +371,7 @@ describe('Models page entry', () => {
 
   it('gives the hub heading and the tabs to a category, and takes them back', async () => {
     const user = userEvent.setup()
-    vi.stubGlobal(
-      'fetch',
+    vi.mocked(fetch).mockImplementation(
       vi.fn<typeof fetch>().mockResolvedValue(Response.json(workshopPages))
     )
     enabled.value = true
@@ -408,7 +406,7 @@ describe('Models page entry', () => {
     const fetchData = vi
       .fn<typeof fetch>()
       .mockImplementation(async () => Response.json(workshopPages))
-    vi.stubGlobal('fetch', fetchData)
+    vi.mocked(fetch).mockImplementation(fetchData)
     enabled.value = true
     workflowsEnabled.value = true
     appsEnabled.value = true
@@ -455,7 +453,7 @@ describe('Models page entry', () => {
 
   it('keeps a workflow page behind its gate while the workshop flag is off', async () => {
     const fetchData = vi.fn<typeof fetch>()
-    vi.stubGlobal('fetch', fetchData)
+    vi.mocked(fetch).mockImplementation(fetchData)
     workflowsEnabled.value = true
     render(ModelsPage, {
       props: { slug: 'workflows/change-material' },
@@ -468,8 +466,7 @@ describe('Models page entry', () => {
   })
 
   it('adds workflows to a loaded catalogue when their flag answers late', async () => {
-    vi.stubGlobal(
-      'fetch',
+    vi.mocked(fetch).mockImplementation(
       vi.fn<typeof fetch>().mockResolvedValue(Response.json(workshopPages))
     )
     render(ModelsPage)
@@ -492,7 +489,7 @@ describe('Models page entry', () => {
       const fetchData = vi
         .fn<typeof fetch>()
         .mockResolvedValue(Response.json(slug ? modelPage : workshopModels))
-      vi.stubGlobal('fetch', fetchData)
+      vi.mocked(fetch).mockImplementation(fetchData)
       enabled.value = flag === 'on'
       settled.value = flag !== 'unanswered'
       render(ModelsPage, { props: { slug } })

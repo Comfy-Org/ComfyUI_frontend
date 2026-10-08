@@ -27,7 +27,7 @@ describe('URL upload transport', () => {
       expect(init?.body).toBe(file)
       return new Response(null, { status: 200 })
     })
-    vi.stubGlobal('fetch', requests)
+    vi.mocked(fetch).mockImplementation(requests)
     expect(
       await createWorkshopUrlUploader()(
         file,
@@ -46,7 +46,7 @@ describe('URL upload transport', () => {
       .mockRejectedValueOnce(
         new TypeError(`Failed to fetch ${grant.upload_url}`)
       )
-    vi.stubGlobal('fetch', requests)
+    vi.mocked(fetch).mockImplementation(requests)
     const error = await createWorkshopUrlUploader()(
       new File(['image'], 'image.png'),
       'token',
@@ -83,7 +83,7 @@ describe('URL upload transport', () => {
       expect(new Uint8Array(await init.body.arrayBuffer())).toEqual(bytes)
       return new Response(null, { status: 200 })
     })
-    vi.stubGlobal('fetch', requests)
+    vi.mocked(fetch).mockImplementation(requests)
     const upload = createWorkshopUrlUploader()
     const signal = new AbortController().signal
     expect(
@@ -116,7 +116,7 @@ describe('URL upload transport', () => {
       .mockResolvedValueOnce(new Response(null, { status: 200 }))
       .mockResolvedValueOnce(Response.json(grant))
       .mockResolvedValueOnce(new Response(null, { status: 200 }))
-    vi.stubGlobal('fetch', requests)
+    vi.mocked(fetch).mockImplementation(requests)
     const upload = createWorkshopUrlUploader()
     const file = new File(['image'], 'image.png', { type: 'image/png' })
     const signal = new AbortController().signal
@@ -147,7 +147,7 @@ describe('URL upload transport', () => {
           })
         : new Response(null, { status: 200 })
     )
-    vi.stubGlobal('fetch', requests)
+    vi.mocked(fetch).mockImplementation(requests)
     const upload = createWorkshopUrlUploader()
     const file = new File(['image'], 'image.png')
     const signal = new AbortController().signal
@@ -164,7 +164,7 @@ describe('URL upload transport', () => {
     const requests = vi
       .fn<typeof fetch>()
       .mockResolvedValue(Response.json({ ...grant, expires_at: 'invalid' }))
-    vi.stubGlobal('fetch', requests)
+    vi.mocked(fetch).mockImplementation(requests)
     await expect(
       createWorkshopUrlUploader()(
         new File(['private'], 'image.png'),
@@ -182,7 +182,7 @@ describe('URL upload transport', () => {
       .mockResolvedValue(
         Response.json({ ...grant, expires_at: '2000-01-01T00:00:00Z' })
       )
-    vi.stubGlobal('fetch', requests)
+    vi.mocked(fetch).mockImplementation(requests)
     await expect(
       createWorkshopUrlUploader()(
         new File(['private'], 'image.png'),
@@ -211,7 +211,7 @@ describe('URL upload transport', () => {
       const requests = vi
         .fn<typeof fetch>()
         .mockResolvedValue(Response.json(response))
-      vi.stubGlobal('fetch', requests)
+      vi.mocked(fetch).mockImplementation(requests)
       await expect(
         createWorkshopUrlUploader()(
           new File(['private'], 'image.png'),
@@ -230,7 +230,7 @@ describe('URL upload transport', () => {
       controller.abort()
       return Response.json(grant)
     })
-    vi.stubGlobal('fetch', requests)
+    vi.mocked(fetch).mockImplementation(requests)
     await expect(
       createWorkshopUrlUploader()(
         new File(['private'], 'image.png'),
@@ -250,7 +250,7 @@ describe('URL upload transport', () => {
       timeout.abort(new DOMException('Upload timed out', 'TimeoutError'))
       return new Response(null, { status: 200 })
     })
-    vi.stubGlobal('fetch', requests)
+    vi.mocked(fetch).mockImplementation(requests)
     const upload = createWorkshopUrlUploader()
     const file = new File(['private'], 'image.png')
     const signal = new AbortController().signal

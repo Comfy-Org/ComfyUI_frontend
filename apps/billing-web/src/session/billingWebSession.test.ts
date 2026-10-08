@@ -79,7 +79,7 @@ beforeEach(() => {
 
 describe('useBillingWebSession', () => {
   it('starts pending, before the identity has answered', async () => {
-    vi.stubGlobal('fetch', hungFetch())
+    vi.mocked(fetch).mockImplementation(hungFetch())
 
     const { projection } = await freshSession()
 
@@ -91,7 +91,7 @@ describe('useBillingWebSession', () => {
   })
 
   it('settles signed out when the deployment has no identity configuration', async () => {
-    vi.stubGlobal('fetch', hungFetch())
+    vi.mocked(fetch).mockImplementation(hungFetch())
 
     const { projection } = await freshSession({ configured: false })
 
@@ -124,7 +124,7 @@ describe('useBillingWebSession', () => {
       { phase: 'authenticated', uid: 'uid-1', hasSession: true }
     ]
   ] as const)('projects %s', async ([, user, makeFetch, expected]) => {
-    vi.stubGlobal('fetch', makeFetch())
+    vi.mocked(fetch).mockImplementation(makeFetch())
     const { client, projection } = await freshSession()
 
     h.deliver?.(user)
@@ -138,7 +138,7 @@ describe('useBillingWebSession', () => {
   })
 
   it('reports the same phase to the router guard', async () => {
-    vi.stubGlobal('fetch', mintedFetch())
+    vi.mocked(fetch).mockImplementation(mintedFetch())
     const { client, phase, projection } = await freshSession()
     const user = signedInUser()
 
@@ -152,14 +152,11 @@ describe('useBillingWebSession', () => {
 
 describe('a refused mint', () => {
   it('surfaces the failure instead of falling back to a personal session', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn<typeof fetch>(
-        async () =>
-          new Response(JSON.stringify({ error: 'not a member' }), {
-            status: 403
-          })
-      )
+    vi.mocked(fetch).mockImplementation(
+      async () =>
+        new Response(JSON.stringify({ error: 'not a member' }), {
+          status: 403
+        })
     )
     const { client, session } = await freshSession()
     const user = signedInUser()
@@ -176,7 +173,7 @@ describe('a refused mint', () => {
 describe('the credential cache', () => {
   it('writes the minted credential once and serves it back without a second mint', async () => {
     const mint = mintedFetch()
-    vi.stubGlobal('fetch', mint)
+    vi.mocked(fetch).mockImplementation(mint)
     const { client, projection } = await freshSession()
     const user = signedInUser()
     h.deliver?.(user)
@@ -209,7 +206,7 @@ describe('the credential cache', () => {
         throw new Error('storage disabled')
       }
     })
-    vi.stubGlobal('fetch', mintedFetch())
+    vi.mocked(fetch).mockImplementation(mintedFetch())
     const { client } = await freshSession()
 
     const result = await client.ensureFresh(signedInUser())

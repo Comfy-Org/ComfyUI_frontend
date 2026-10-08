@@ -36,7 +36,7 @@ function generation(over: Partial<SavedGeneration> = {}): SavedGeneration {
 function stubFetch(...responses: Response[]) {
   const calls = vi.fn<typeof fetch>()
   for (const response of responses) calls.mockResolvedValueOnce(response)
-  vi.stubGlobal('fetch', calls)
+  vi.mocked(fetch).mockImplementation(calls)
   return calls
 }
 

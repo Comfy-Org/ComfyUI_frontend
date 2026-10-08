@@ -159,7 +159,7 @@ describe('useNodeDragAndDrop', () => {
   })
 
   it('does not fetch the page for a non-file drop without a uri', async () => {
-    const fetchSpy = vi.spyOn(globalThis, 'fetch')
+    const fetchSpy = vi.mocked(fetch)
     const node = createNode()
     useNodeDragAndDrop(node, { onDrop: vi.fn().mockResolvedValue([]) })
 
@@ -173,7 +173,7 @@ describe('useNodeDragAndDrop', () => {
 
   it('onDragDrop handles same-origin uri drops', async () => {
     const onDrop = vi.fn().mockResolvedValue([])
-    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+    const fetchSpy = vi.mocked(fetch).mockResolvedValue(
       fromAny<Response, unknown>({
         ok: true,
         blob: vi
@@ -199,7 +199,7 @@ describe('useNodeDragAndDrop', () => {
 
   it('onDragDrop names a fetched asset-card file after its asset-info filename', async () => {
     const onDrop = vi.fn().mockResolvedValue([])
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+    vi.mocked(fetch).mockResolvedValue(
       fromAny<Response, unknown>({
         ok: true,
         blob: vi
@@ -226,7 +226,7 @@ describe('useNodeDragAndDrop', () => {
   it('onDragDrop returns false for cross-origin uri drops', async () => {
     const node = createNode()
     const onDrop = vi.fn().mockResolvedValue([])
-    const fetchSpy = vi.spyOn(globalThis, 'fetch')
+    const fetchSpy = vi.mocked(fetch)
     useNodeDragAndDrop(node, { onDrop })
 
     const result = await node.onDragDrop?.(
@@ -243,7 +243,7 @@ describe('useNodeDragAndDrop', () => {
 
   it('onDragDrop returns false when uri fetch throws', async () => {
     const onDrop = vi.fn().mockResolvedValue([])
-    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('network'))
+    vi.mocked(fetch).mockRejectedValue(new Error('network'))
     const uri = `${location.origin}/api/file?filename=uri.png`
 
     const node = createNode()
@@ -262,7 +262,7 @@ describe('useNodeDragAndDrop', () => {
     const uri = `${location.origin}/api/file?filename=uri.jpg`
 
     const nodeA = createNode()
-    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+    vi.mocked(fetch).mockResolvedValueOnce(
       fromAny<Response, unknown>({ ok: false })
     )
     useNodeDragAndDrop(nodeA, { onDrop })
@@ -272,7 +272,7 @@ describe('useNodeDragAndDrop', () => {
     expect(badResponseResult).toBe(false)
 
     const nodeB = createNode()
-    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+    vi.mocked(fetch).mockResolvedValueOnce(
       fromAny<Response, unknown>({
         ok: true,
         blob: vi

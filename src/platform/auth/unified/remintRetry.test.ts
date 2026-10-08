@@ -2,7 +2,7 @@ import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuth
 import { stubAccountIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
 import type { AxiosAdapter } from 'axios'
 import axios, { AxiosError } from 'axios'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -36,12 +36,10 @@ beforeEach(() => {
 describe('fetchWithUnifiedRemint', () => {
   const ok = { status: 200 } as Response
   const unauthorized = { status: 401 } as Response
-  let mockFetch: ReturnType<typeof vi.fn>
+  const mockFetch = vi.mocked(fetch)
 
   beforeEach(() => {
     vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
-    mockFetch = vi.fn()
-    vi.stubGlobal('fetch', mockFetch)
   })
 
   it('re-mints once and retries with the fresh token on a 401 (AC1)', async () => {
@@ -65,7 +63,7 @@ describe('fetchWithUnifiedRemint', () => {
       'tokenA'
     )
 
-    const retryHeaders = new Headers(mockFetch.mock.calls[1][1].headers)
+    const retryHeaders = new Headers(mockFetch.mock.calls[1][1]?.headers)
     expect(retryHeaders.get('Authorization')).toBe('Bearer tokenB')
     expect(retryHeaders.get('Comfy-User')).toBe('u1')
     expect(
@@ -173,7 +171,7 @@ describe('fetchWithUnifiedRemint', () => {
     expect(useWorkspaceAuthStore().remintUnifiedOnce).toHaveBeenCalledWith(
       'tokenA'
     )
-    const retryHeaders = new Headers(mockFetch.mock.calls[1][1].headers)
+    const retryHeaders = new Headers(mockFetch.mock.calls[1][1]?.headers)
     expect(retryHeaders.get('Authorization')).toBe('Bearer tokenB')
   })
 
@@ -185,11 +183,13 @@ describe('fetchWithUnifiedRemint', () => {
       headers: { Authorization: 'Bearer tokenA' as const }
     })
     mockFetch
-      .mockImplementationOnce(async (input: Request) => {
+      .mockImplementationOnce(async (input) => {
+        assert.instanceOf(input, Request)
         expect(await input.text()).toBe(body)
         return unauthorized
       })
-      .mockImplementationOnce(async (input: Request) => {
+      .mockImplementationOnce(async (input) => {
+        assert.instanceOf(input, Request)
         expect(input).not.toBe(request)
         expect(await input.text()).toBe(body)
         return ok
@@ -202,7 +202,7 @@ describe('fetchWithUnifiedRemint', () => {
 
     expect(result).toBe(ok)
     expect(mockFetch).toHaveBeenCalledTimes(2)
-    const retryHeaders = new Headers(mockFetch.mock.calls[1][1].headers)
+    const retryHeaders = new Headers(mockFetch.mock.calls[1][1]?.headers)
     expect(retryHeaders.get('Authorization')).toBe('Bearer tokenB')
   })
 
@@ -346,7 +346,7 @@ describe('fetchWithUnifiedRemint', () => {
     expect(clearInitialTimeout).toHaveBeenCalledTimes(1)
     expect(createSignal).toHaveBeenCalledTimes(1)
     expect(clearInitialTimeout).toHaveBeenCalledBefore(createSignal)
-    const retrySignal = mockFetch.mock.calls[1][1].signal
+    const retrySignal = mockFetch.mock.calls[1][1]?.signal
     expect(retrySignal).toBe(freshController.signal)
     expect(retrySignal).not.toBe(originalController.signal)
   })
@@ -403,6 +403,7 @@ describe('fetchWithUnifiedRemint', () => {
       )
 
       const retryInit = mockFetch.mock.calls[1][1]
+      assert.exists(retryInit)
       expect(retryInit.method).toBe('POST')
       expect(retryInit.body).toBe(body)
       const retryHeaders = new Headers(retryInit.headers)
@@ -646,9 +647,8 @@ describe('an SSO refusal at the cloud request seams', () => {
     'fetch returns the 403 $body.code as is; the SSO screen shows: $shown (sso_enabled $ssoEnabled)',
     async ({ ssoEnabled, body, shown }) => {
       vi.mocked(useFeatureFlags().flags).ssoEnabled = ssoEnabled
-      vi.stubGlobal(
-        'fetch',
-        vi.fn(async () => Response.json(body, { status: 403 }))
+      vi.mocked(fetch).mockImplementation(async () =>
+        Response.json(body, { status: 403 })
       )
 
       const response = await fetchWithUnifiedRemint('https://cloud/x', {}, true)
@@ -713,9 +713,8 @@ describe('an SSO refusal at the cloud request seams', () => {
     })
 
     it('fetch still returns the 403 and reports the failure', async () => {
-      vi.stubGlobal(
-        'fetch',
-        vi.fn(async () => Response.json(SSO_REFUSAL, { status: 403 }))
+      vi.mocked(fetch).mockImplementation(async () =>
+        Response.json(SSO_REFUSAL, { status: 403 })
       )
 
       const response = await fetchWithUnifiedRemint('https://cloud/x', {}, true)

@@ -91,7 +91,7 @@ function sentShape(sent: readonly SentRequest[]) {
 describe('billing-web unified_web_session reader', () => {
   it('main sends one anonymous /api/features read', async () => {
     const { sent, fetchImpl } = recordingFetch(ANONYMOUS_DOCUMENT, {})
-    vi.stubGlobal('fetch', fetchImpl)
+    vi.mocked(fetch).mockImplementation(fetchImpl)
     const { main } = await loadMainConfig()
 
     await main()
@@ -142,7 +142,7 @@ describe('billing-web unified_web_session reader', () => {
         { ...ANONYMOUS_DOCUMENT, ...probe },
         perUser
       )
-      vi.stubGlobal('fetch', fetchImpl)
+      vi.mocked(fetch).mockImplementation(fetchImpl)
       const { main, readBillingWebUnifiedWebSession } = await loadMainConfig()
 
       const [, first, second] = await Promise.all([
@@ -157,12 +157,9 @@ describe('billing-web unified_web_session reader', () => {
   )
 
   it('is off, and never throws, when the anonymous read fails', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn<typeof fetch>(async () => {
-        throw new TypeError('Failed to fetch')
-      })
-    )
+    vi.mocked(fetch).mockImplementation(async () => {
+      throw new TypeError('Failed to fetch')
+    })
     const { readBillingWebUnifiedWebSession } = await loadMainConfig()
 
     await expect(readBillingWebUnifiedWebSession()).resolves.toBe(false)

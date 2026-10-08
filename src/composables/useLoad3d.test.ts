@@ -1517,17 +1517,10 @@ describe('useLoad3d', () => {
   })
 
   describe('modelReady event handler (thumbnail capture)', () => {
-    let originalFetch: typeof globalThis.fetch
-
     beforeEach(() => {
-      originalFetch = globalThis.fetch
-      globalThis.fetch = vi.fn().mockResolvedValue({
-        blob: () => Promise.resolve(new Blob(['x'], { type: 'image/png' }))
-      })
-    })
-
-    afterEach(() => {
-      globalThis.fetch = originalFetch
+      vi.mocked(fetch).mockImplementation(
+        async () => new Response(new Blob(['x'], { type: 'image/png' }))
+      )
     })
 
     async function getModelReadyHandler() {

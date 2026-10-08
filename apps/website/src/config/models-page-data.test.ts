@@ -13,7 +13,7 @@ const preparedPage = page
 const { fetchData } = vi.hoisted(() => ({ fetchData: vi.fn<typeof fetch>() }))
 
 beforeEach(() => {
-  vi.stubGlobal('fetch', fetchData)
+  vi.mocked(fetch).mockImplementation(fetchData)
 })
 
 it('restores the model form from its per-page execution contract', async () => {

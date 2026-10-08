@@ -90,7 +90,7 @@ describe('useNodeHelpContent', () => {
   const mockFetch = vi.fn()
 
   beforeEach(() => {
-    vi.stubGlobal('fetch', mockFetch)
+    vi.mocked(fetch).mockImplementation(mockFetch)
   })
 
   it('should generate correct baseUrl for core nodes', async () => {

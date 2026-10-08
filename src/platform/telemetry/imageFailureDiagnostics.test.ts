@@ -18,7 +18,7 @@ describe('describeImageLoadFailure', () => {
   })
 
   it('reports the status the img error event withheld', async () => {
-    vi.stubGlobal('fetch', respondWith(401))
+    vi.mocked(fetch).mockImplementation(respondWith(401))
 
     const result = await describeImageLoadFailure(
       `${ORIGIN}/api/view?filename=a.png&type=output`
@@ -29,7 +29,7 @@ describe('describeImageLoadFailure', () => {
   })
 
   it('separates a missing output from a missing template', async () => {
-    vi.stubGlobal('fetch', respondWith(404))
+    vi.mocked(fetch).mockImplementation(respondWith(404))
 
     const output = await describeImageLoadFailure(
       `${ORIGIN}/api/view?type=output&filename=${'a'.repeat(64)}.png`
@@ -52,7 +52,7 @@ describe('describeImageLoadFailure', () => {
 
   it('probes with credentials, or it would manufacture the 401 it measures', async () => {
     const fetchSpy = respondWith(200)
-    vi.stubGlobal('fetch', fetchSpy)
+    vi.mocked(fetch).mockImplementation(fetchSpy)
 
     await describeImageLoadFailure(`${ORIGIN}/api/view?filename=a.png`)
 
@@ -66,7 +66,7 @@ describe('describeImageLoadFailure', () => {
   })
 
   it('records a network failure as an outcome rather than throwing', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('offline')))
+    vi.mocked(fetch).mockRejectedValue(new TypeError('offline'))
 
     const result = await describeImageLoadFailure(
       `${ORIGIN}/api/view?filename=a.png`
@@ -78,7 +78,7 @@ describe('describeImageLoadFailure', () => {
 
   it('caps probes so a node retrying one missing file cannot amplify', async () => {
     const fetchSpy = respondWith(404)
-    vi.stubGlobal('fetch', fetchSpy)
+    vi.mocked(fetch).mockImplementation(fetchSpy)
 
     const results = []
     for (let i = 0; i < 25; i++) {
@@ -95,7 +95,7 @@ describe('describeImageLoadFailure', () => {
 
   it('does not probe cross-origin urls, which would report our own opacity', async () => {
     const fetchSpy = respondWith(200)
-    vi.stubGlobal('fetch', fetchSpy)
+    vi.mocked(fetch).mockImplementation(fetchSpy)
 
     const result = await describeImageLoadFailure(
       'https://cdn.example.com/a.png'
@@ -108,7 +108,7 @@ describe('describeImageLoadFailure', () => {
 
   it('reports an unparseable src instead of fabricating url shape fields', async () => {
     const fetchSpy = respondWith(200)
-    vi.stubGlobal('fetch', fetchSpy)
+    vi.mocked(fetch).mockImplementation(fetchSpy)
 
     const result = await describeImageLoadFailure('')
 
@@ -117,11 +117,10 @@ describe('describeImageLoadFailure', () => {
   })
 
   it('reports a redirect as a redirect, not as our own status', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi
-        .fn()
-        .mockResolvedValue({ status: 0, type: 'opaqueredirect', body: null })
+    vi.mocked(fetch).mockResolvedValue(
+      Object.defineProperty(new Response(null), 'type', {
+        value: 'opaqueredirect'
+      })
     )
 
     const result = await describeImageLoadFailure(
@@ -134,7 +133,7 @@ describe('describeImageLoadFailure', () => {
 
   it('does not follow redirects — a signed storage URL answers on its own terms', async () => {
     const fetchSpy = respondWith(200)
-    vi.stubGlobal('fetch', fetchSpy)
+    vi.mocked(fetch).mockImplementation(fetchSpy)
 
     await describeImageLoadFailure(`${ORIGIN}/api/view?filename=a.png`)
 
@@ -145,13 +144,16 @@ describe('describeImageLoadFailure', () => {
   })
 
   it('survives a body cancel that rejects, rather than raising an unhandled rejection', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({
-        status: 404,
-        type: 'basic',
-        body: { cancel: () => Promise.reject(new TypeError('already errored')) }
-      })
+    vi.mocked(fetch).mockImplementation(
+      async () =>
+        new Response(
+          new ReadableStream({
+            cancel() {
+              throw new TypeError('already errored')
+            }
+          }),
+          { status: 404 }
+        )
     )
 
     const result = await describeImageLoadFailure(
@@ -164,7 +166,7 @@ describe('describeImageLoadFailure', () => {
   it('emits the report rather than holding it for a probe while the page unloads', async () => {
     // A probe that never settles: without the unload race this await hangs and
     // the failure is never reported.
-    vi.stubGlobal('fetch', vi.fn().mockReturnValue(new Promise(() => {})))
+    vi.mocked(fetch).mockReturnValue(new Promise(() => {}))
 
     const pending = describeImageLoadFailure(
       `${ORIGIN}/api/view?filename=a.png`
@@ -178,7 +180,7 @@ describe('describeImageLoadFailure', () => {
   })
 
   it('drops the unload listener once the race settles, on every failure', async () => {
-    vi.stubGlobal('fetch', respondWith(404))
+    vi.mocked(fetch).mockImplementation(respondWith(404))
     // Observes registration without replacing it, so the listeners under test
     // are the real ones the DOM holds — a mocked implementation would register
     // nothing and the teardown assertion below would pass vacuously.
@@ -199,7 +201,7 @@ describe('describeImageLoadFailure', () => {
   })
 
   it('carries page age, the field that distinguishes auth expiry from a 404', async () => {
-    vi.stubGlobal('fetch', respondWith(401))
+    vi.mocked(fetch).mockImplementation(respondWith(401))
     vi.spyOn(performance, 'now').mockReturnValue(7_500_000)
 
     const result = await describeImageLoadFailure(

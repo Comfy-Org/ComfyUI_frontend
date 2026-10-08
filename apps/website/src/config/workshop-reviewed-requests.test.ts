@@ -287,7 +287,7 @@ describe('reviewed model request regressions', () => {
         headers: { 'Content-Type': 'image/png' }
       })
     )
-    vi.stubGlobal('fetch', fetcher)
+    vi.mocked(fetch).mockImplementation(fetcher)
     try {
       const body = await prepareWorkshopRouterInput(
         contract,

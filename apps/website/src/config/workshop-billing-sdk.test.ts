@@ -64,7 +64,7 @@ function stubCloudFetch() {
         : new Response(JSON.stringify(body))
     )
   })
-  vi.stubGlobal('fetch', fetchCloud)
+  vi.mocked(fetch).mockImplementation(fetchCloud)
   return fetchCloud
 }
 

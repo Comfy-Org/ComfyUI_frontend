@@ -167,7 +167,7 @@ describe('CinematicStudio', () => {
     vi.mocked(router_render)
       .mockReset()
       .mockRejectedValue(new WorkshopRouterError('client'))
-    vi.stubGlobal('fetch', fetchData)
+    vi.mocked(fetch).mockImplementation(fetchData)
     fetchData.mockImplementation(servePageData)
     window.history.replaceState(null, '', '/hub/apps/cinematic-studio/')
   })

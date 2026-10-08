@@ -7,7 +7,7 @@ function stubFetch(response: Partial<Response> | Error) {
     response instanceof Error
       ? vi.fn().mockRejectedValue(response)
       : vi.fn().mockResolvedValue(response)
-  vi.stubGlobal('fetch', mock)
+  vi.mocked(fetch).mockImplementation(mock)
   return mock
 }
 

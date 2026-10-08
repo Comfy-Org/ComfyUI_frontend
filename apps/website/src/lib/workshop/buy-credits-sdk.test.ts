@@ -27,7 +27,7 @@ function stubLegacyCheckout() {
     .mockImplementation(() =>
       Promise.resolve(new Response(JSON.stringify(legacySession)))
     )
-  vi.stubGlobal('fetch', fetchCheckout)
+  vi.mocked(fetch).mockImplementation(fetchCheckout)
   return fetchCheckout
 }
 

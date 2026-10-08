@@ -47,7 +47,7 @@ it.for([
       .mockImplementation(async () =>
         Response.json(slug ? modelPage : workshopModels)
       )
-    vi.stubGlobal('fetch', fetchMock)
+    vi.mocked(fetch).mockImplementation(fetchMock)
     render(ModelsPage, { props: { slug } })
 
     expect(await screen.findByTestId('models-load-error')).toBeTruthy()

@@ -37,22 +37,19 @@ function makeDeps(): LegacyWorkspaceTokenRailDeps {
 }
 
 describe('createLegacyWorkspaceTokenRail', () => {
-  let mockFetch: ReturnType<typeof vi.fn>
+  const mockFetch = vi.mocked(fetch)
 
   beforeEach(() => {
     vi.useFakeTimers({ shouldAdvanceTime: false })
-    mockFetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () =>
-        Promise.resolve({
-          token: 'workspace-token-abc',
-          expires_at: new Date(Date.now() + expiresInMs).toISOString(),
-          workspace: { id: workspace.id, name: workspace.name, type: 'team' },
-          role: 'owner',
-          permissions: ['owner:*']
-        })
-    })
-    vi.stubGlobal('fetch', mockFetch)
+    mockFetch.mockImplementation(async () =>
+      Response.json({
+        token: 'workspace-token-abc',
+        expires_at: new Date(Date.now() + expiresInMs).toISOString(),
+        workspace: { id: workspace.id, name: workspace.name, type: 'team' },
+        role: 'owner',
+        permissions: ['owner:*']
+      })
+    )
   })
 
   it('mints through the identity token and persists the workspace identity', async () => {

@@ -67,7 +67,7 @@ function stubFetch(...responses: (Response | Error)[]) {
   for (const response of responses)
     if (response instanceof Error) calls.mockRejectedValueOnce(response)
     else calls.mockResolvedValueOnce(response)
-  vi.stubGlobal('fetch', calls)
+  vi.mocked(fetch).mockImplementation(calls)
   return calls
 }
 
@@ -172,7 +172,7 @@ describe('queued Router delivery', () => {
       controller.abort()
       throw controller.signal.reason
     })
-    vi.stubGlobal('fetch', calls)
+    vi.mocked(fetch).mockImplementation(calls)
     await expect(
       settle(runWorkshopRouter(options(controller.signal)))
     ).rejects.toMatchObject({ name: 'AbortError' })
@@ -186,7 +186,7 @@ describe('queued Router delivery', () => {
       controller.abort(WORKSHOP_LEAVE_RUNNING)
       throw controller.signal.reason
     })
-    vi.stubGlobal('fetch', calls)
+    vi.mocked(fetch).mockImplementation(calls)
     await expect(
       settle(runWorkshopRouter(options(controller.signal)))
     ).rejects.toMatchObject({ name: 'AbortError' })
@@ -331,7 +331,7 @@ describe('queued Router delivery', () => {
       .fn<typeof fetch>()
       .mockResolvedValueOnce(admitted())
       .mockRejectedValue(new TypeError('Failed to fetch'))
-    vi.stubGlobal('fetch', calls)
+    vi.mocked(fetch).mockImplementation(calls)
     await expect(settle(runWorkshopRouter(options()))).rejects.toMatchObject({
       reason: 'network',
       requestId: REQUEST_ID,
@@ -618,7 +618,7 @@ describe('queued Router delivery', () => {
       controller.abort()
       throw controller.signal.reason
     })
-    vi.stubGlobal('fetch', calls)
+    vi.mocked(fetch).mockImplementation(calls)
     const tokens = ['submit-token', 'poll-token']
     await expect(
       settle(

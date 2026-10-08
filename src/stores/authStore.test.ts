@@ -142,7 +142,7 @@ describe('useAuthStore', () => {
 
   beforeEach(async () => {
     mockResetSocket = vi.spyOn(api, 'resetSocket').mockResolvedValue(undefined)
-    vi.stubGlobal('fetch', mockFetch)
+    vi.mocked(fetch).mockImplementation(mockFetch)
     clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.SHARE_AUTH)
 
     // Setup dialog service mock
@@ -2694,7 +2694,7 @@ describe('useAuthStore in local/desktop distribution', () => {
     mockDistributionTypes.isDesktop = false
     mockDistributionTypes.DISTRIBUTION = 'localhost'
 
-    vi.stubGlobal('fetch', mockFetch)
+    vi.mocked(fetch).mockImplementation(mockFetch)
 
     vi.mocked(firebaseAuth.initializeAuth).mockReturnValue(mockAuth)
 
@@ -3041,7 +3041,7 @@ describe('store construction order', () => {
   }
 
   beforeEach(() => {
-    vi.stubGlobal('fetch', mockFetch)
+    vi.mocked(fetch).mockImplementation(mockFetch)
     vi.mocked(useDialogService, { partial: true }).mockReturnValue({
       showErrorDialog: vi.fn()
     })

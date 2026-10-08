@@ -68,7 +68,7 @@ const PLANLESS_BOUNCE = {
 beforeEach(() => {
   sessionStorage.clear()
   vi.resetModules()
-  vi.stubGlobal('fetch', fetchMock)
+  vi.mocked(fetch).mockImplementation(fetchMock)
   fetchMock.mockReset()
   h.bind.mockReset()
   h.track.mockReset()

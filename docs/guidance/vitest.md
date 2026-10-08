@@ -165,13 +165,26 @@ has finished. Vitest then reports the late `console.error` as an unhandled
 error - `Closing rpc while "onUserConsoleLog" was pending` - against whichever
 file happened to be running, and fails the run with every test passing.
 
-If you hit the guard, mock the module that issues the request. Stubbing `fetch`
-also works and replaces the guard for that test, but do it in a `beforeEach` or
-inside the test body. A `vi.stubGlobal` at module scope does stay in place by
-default, but nothing owns restoring it: any `vi.unstubAllGlobals()` - a cleanup
-hook, another test tidying up after itself, or enabling the `unstubGlobals`
-config option - drops it and puts the real `fetch` back without failing
-anything.
+If you hit the guard, mock the module that issues the request, or configure
+the global `fetch`. The guard is a `vi.fn`, so `mockReset` puts it back before
+every test. Configure it with `vi.mocked(fetch)` in a `beforeEach` or the test,
+and return real `Response` objects:
+
+```ts
+vi.mocked(fetch).mockResolvedValue(Response.json({ ok: true }))
+vi.mocked(fetch).mockImplementation(async (input) =>
+  String(input).endsWith('/missing')
+    ? new Response(null, { status: 404 })
+    : Response.json({})
+)
+```
+
+A `Response` body can be read once. When several requests share a response,
+use `mockImplementation` to build a fresh one per call. Do not replace `fetch`
+with `vi.stubGlobal`, `vi.spyOn(globalThis, 'fetch')`, or assignment;
+`comfy/no-redundant-fetch-stub` reports it. To wrap the current fake, capture
+`vi.mocked(fetch).getMockImplementation()` instead of `fetch` itself, which is
+the same mock and would call itself.
 
 ## Component Testing
 

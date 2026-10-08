@@ -23,7 +23,7 @@ describe('createTopUpCheckout', () => {
         { status: 200 }
       )
     )
-    vi.stubGlobal('fetch', fetchCheckout)
+    vi.mocked(fetch).mockImplementation(fetchCheckout)
 
     await expect(createTopUpCheckout(options)).resolves.toEqual({
       url: 'https://checkout.stripe.com/c/pay_1',
@@ -53,9 +53,8 @@ describe('createTopUpCheckout', () => {
   })
 
   it('accepts the Comfy custom checkout domain', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue(
+    vi.mocked(fetch).mockImplementation(
+      async () =>
         new Response(
           JSON.stringify({
             checkout_url: 'https://checkout.comfy.org/c/pay_1',
@@ -63,7 +62,6 @@ describe('createTopUpCheckout', () => {
           }),
           { status: 200 }
         )
-      )
     )
 
     await expect(createTopUpCheckout(options)).resolves.toEqual({
@@ -81,7 +79,7 @@ describe('createTopUpCheckout', () => {
         { status: 200 }
       )
     )
-    vi.stubGlobal('fetch', fetchCheckout)
+    vi.mocked(fetch).mockImplementation(fetchCheckout)
     vi.stubGlobal('window', undefined)
 
     await createTopUpCheckout(options)
@@ -101,7 +99,7 @@ describe('createTopUpCheckout', () => {
         { status: 200 }
       )
     )
-    vi.stubGlobal('fetch', fetchCheckout)
+    vi.mocked(fetch).mockImplementation(fetchCheckout)
 
     await createTopUpCheckout({ ...options, locale: 'zh-CN' })
 
@@ -123,13 +121,11 @@ describe('createTopUpCheckout', () => {
     'https://user@checkout.stripe.com/c/pay_1',
     'https://checkout.stripe.com:444/c/pay_1'
   ])('rejects an unsafe checkout URL: %s', async (checkoutUrl) => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue(
+    vi.mocked(fetch).mockImplementation(
+      async () =>
         new Response(JSON.stringify({ checkout_url: checkoutUrl }), {
           status: 200
         })
-      )
     )
 
     await expect(createTopUpCheckout(options)).rejects.toMatchObject({
@@ -150,7 +146,7 @@ describe('createTopUpCheckout', () => {
           { status: 200 }
         )
       )
-    vi.stubGlobal('fetch', fetchCheckout)
+    vi.mocked(fetch).mockImplementation(fetchCheckout)
 
     await expect(createTopUpCheckout(options)).resolves.toEqual({
       url: 'https://checkout.stripe.com/c/pay_2'
@@ -178,25 +174,20 @@ describe('createTopUpCheckout', () => {
     const fetchCheckout = vi
       .fn()
       .mockResolvedValueOnce(new Response('', { status }))
-    vi.stubGlobal('fetch', fetchCheckout)
+    vi.mocked(fetch).mockImplementation(fetchCheckout)
 
     await expect(createTopUpCheckout(options)).rejects.toMatchObject({ status })
     expect(fetchCheckout).toHaveBeenCalledOnce()
   })
 
   it('preserves the API error code for rollout decisions', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi
-        .fn()
-        .mockImplementation(() =>
-          Promise.resolve(
-            new Response(
-              JSON.stringify({ code: 'NOT_FOUND', message: 'Not found' }),
-              { status: 404 }
-            )
-          )
+    vi.mocked(fetch).mockImplementation(() =>
+      Promise.resolve(
+        new Response(
+          JSON.stringify({ code: 'NOT_FOUND', message: 'Not found' }),
+          { status: 404 }
         )
+      )
     )
 
     const result = createTopUpCheckout(options)
@@ -216,7 +207,7 @@ describe('createTopUpCheckout', () => {
           { status: 401 }
         )
       )
-    vi.stubGlobal('fetch', fetchCheckout)
+    vi.mocked(fetch).mockImplementation(fetchCheckout)
 
     const result = createTopUpCheckout(options)
     await expect(result).rejects.toBeInstanceOf(TopUpCheckoutError)
@@ -231,13 +222,8 @@ describe('createTopUpCheckout', () => {
   })
 
   it('does not infer a rollout code from an empty 404', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi
-        .fn()
-        .mockImplementation(() =>
-          Promise.resolve(new Response('', { status: 404 }))
-        )
+    vi.mocked(fetch).mockImplementation(() =>
+      Promise.resolve(new Response('', { status: 404 }))
     )
 
     await expect(createTopUpCheckout(options)).rejects.toMatchObject({

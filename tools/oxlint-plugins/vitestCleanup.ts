@@ -28,6 +28,7 @@ const GLOBALLY_SPIED_CONSOLE_METHODS = new Set([
 ])
 const CONSOLE_GLOBAL = new Set(['console'])
 const CONSOLE_OWNERS = new Set(['globalThis', 'window'])
+const FETCH_OWNERS = new Set(['global', 'globalThis', 'window'])
 
 const MODULE_SCOPE_MOCK_METHODS = new Set(['spyOn', 'stubGlobal'])
 const PARTIAL_MOCK_METHODS = new Set(['doMock', 'mock'])
@@ -104,6 +105,11 @@ type Expression =
   | TemplateLiteral
   | MemberExpression
   | ChainExpression
+
+interface AssignmentExpression extends Node {
+  readonly type: 'AssignmentExpression'
+  readonly left: Expression
+}
 
 interface CallExpression extends Node {
   readonly type: 'CallExpression'
@@ -683,6 +689,44 @@ export const noRedundantConsoleSpy = {
           node,
           message: `console.${methodName} is already spied before every test by vitest.console.setup.ts, and output from passing tests is silenced. Assert with expect(console.${methodName}) and replace its implementation with vi.mocked(console.${methodName}).`
         })
+      }
+    }
+  }
+}
+
+const FETCH_STUB_MESSAGE =
+  'fetch is already a mock from vitest.network.setup.ts that blocks real requests by default, and the automatic reset restores that guard. Configure it with vi.mocked(fetch) instead.'
+
+function isGlobalFetch(context: RuleContext, expression: Expression) {
+  const member = asMemberExpression(expression)
+  return (
+    member !== undefined &&
+    staticMemberName(member) === 'fetch' &&
+    isGlobalIdentifier(context, member.object, FETCH_OWNERS)
+  )
+}
+
+export const noRedundantFetchStub = {
+  create(context: RuleContext) {
+    return {
+      AssignmentExpression(node: AssignmentExpression) {
+        if (isGlobalFetch(context, node.left)) {
+          context.report({ node, message: FETCH_STUB_MESSAGE })
+        }
+      },
+      CallExpression(node: CallExpression) {
+        const methodName = vitestMethodName(context, node)
+        if (node.arguments.length < 2) return
+        const [target, property] = node.arguments
+        const stubsFetch =
+          methodName === 'stubGlobal' && staticModuleName(target) === 'fetch'
+        const spiesOnFetch =
+          methodName === 'spyOn' &&
+          isGlobalIdentifier(context, target, FETCH_OWNERS) &&
+          staticModuleName(property) === 'fetch'
+        if (stubsFetch || spiesOnFetch) {
+          context.report({ node, message: FETCH_STUB_MESSAGE })
+        }
       }
     }
   }

@@ -33,7 +33,7 @@ const graphJson = () =>
   ) as unknown
 
 function servingGraph(answer: () => Promise<Response>) {
-  vi.stubGlobal('fetch', vi.fn(answer))
+  vi.mocked(fetch).mockImplementation(answer)
 }
 
 // Nothing here reaches the network: a test that says nothing about the graph

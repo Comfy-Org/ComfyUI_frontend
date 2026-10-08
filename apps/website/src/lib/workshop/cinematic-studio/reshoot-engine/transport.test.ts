@@ -25,7 +25,7 @@ const output = { id: 'out-1', asset_id: 'asset-1', filename: 'result.mp4' }
 function serve(
   response = () => Response.json({ id: 'job 1', status: 'queued' })
 ) {
-  vi.stubGlobal('fetch', fetchMock)
+  vi.mocked(fetch).mockImplementation(fetchMock)
   fetchMock.mockImplementation(async () => response())
 }
 
@@ -130,7 +130,7 @@ describe('Re-shoot transports', () => {
   })
 
   it('falls back to the proxy route when the signed URL cannot be read', async () => {
-    vi.stubGlobal('fetch', fetchMock)
+    vi.mocked(fetch).mockImplementation(fetchMock)
     fetchMock
       .mockRejectedValueOnce(new TypeError('Failed to fetch'))
       .mockResolvedValueOnce(new Response('bytes'))

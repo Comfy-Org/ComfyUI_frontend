@@ -93,7 +93,7 @@ function fixture(model = authoredWorkflow()) {
     async () => 'canonical-image.webp'
   )
   const fetch = vi.fn<typeof globalThis.fetch>()
-  vi.stubGlobal('fetch', fetch)
+  vi.mocked(globalThis.fetch).mockImplementation(fetch)
   const scope = callerScope(owner)
   const view = mountWorkflow(model, scope)
   return { ...view, model, owner, current, session, fetch, scope }
@@ -677,7 +677,7 @@ describe('workflow page caller lifecycle', () => {
     const fetch = vi
       .fn<typeof globalThis.fetch>()
       .mockResolvedValueOnce(Response.json(finished()))
-    vi.stubGlobal('fetch', fetch)
+    vi.mocked(globalThis.fetch).mockImplementation(fetch)
     const restored = mountWorkflow(model, scope)
     await waitFor(() =>
       expect(restored.workflow.state.value.phase).toBe('settled')

@@ -275,7 +275,7 @@ describe('CloudSignupView SSO', () => {
           headers: { 'Content-Type': 'application/json' }
         })
     )
-    vi.stubGlobal('fetch', fetchMock)
+    vi.mocked(fetch).mockImplementation(fetchMock)
     return fetchMock
   }
 

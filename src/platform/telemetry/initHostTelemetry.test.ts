@@ -9,7 +9,7 @@ const fetchMock = vi.fn()
 
 describe('initHostTelemetry', () => {
   beforeEach(() => {
-    vi.stubGlobal('fetch', fetchMock)
+    vi.mocked(fetch).mockImplementation(fetchMock)
   })
 
   afterEach(() => {

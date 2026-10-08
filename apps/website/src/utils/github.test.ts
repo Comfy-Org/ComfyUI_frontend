@@ -18,7 +18,7 @@ describe('fetchGitHubStars', () => {
 
   it('uses the build-time override without calling GitHub', async () => {
     process.env.WEBSITE_GITHUB_STARS_OVERRIDE = '110000'
-    const fetchMock = vi.spyOn(globalThis, 'fetch')
+    const fetchMock = vi.mocked(fetch)
 
     await expect(fetchGitHubStars('Comfy-Org', 'ComfyUI')).resolves.toBe(110000)
     expect(fetchMock).not.toHaveBeenCalled()

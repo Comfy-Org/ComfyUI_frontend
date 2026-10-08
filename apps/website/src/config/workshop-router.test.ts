@@ -120,7 +120,7 @@ describe('native Router requests', () => {
       const fetch = vi
         .fn()
         .mockResolvedValue(Response.json(contract.output.schema.example))
-      vi.stubGlobal('fetch', fetch)
+      vi.mocked(globalThis.fetch).mockImplementation(fetch)
       const result = await runSynchronousWorkshopRouter({
         contract,
         body,
@@ -306,17 +306,21 @@ describe('native Router requests', () => {
 
   it('calls /v2/models with the workspace bearer, keeps the request ID and reads native output', async () => {
     const requests: Request[] = []
-    vi.stubGlobal('fetch', async (url: string, init: RequestInit) => {
-      requests.push(new Request(url, init))
-      return Response.json(
-        {
-          id: 'provider-job',
-          status: 'Ready',
-          result: { sample: 'https://assets.example/result.jpg' }
-        },
-        { headers: { 'X-Comfy-Request-Id': 'request-123' } }
-      )
-    })
+    vi.mocked(globalThis.fetch).mockImplementation(
+      async (input: RequestInfo | URL, init: RequestInit = {}) => {
+        const url = String(input)
+
+        requests.push(new Request(url, init))
+        return Response.json(
+          {
+            id: 'provider-job',
+            status: 'Ready',
+            result: { sample: 'https://assets.example/result.jpg' }
+          },
+          { headers: { 'X-Comfy-Request-Id': 'request-123' } }
+        )
+      }
+    )
     const result = await runSynchronousWorkshopRouter({
       contract: contractFor('bfl/flux-2-pro'),
       body: { prompt: 'Test', seed: 42 },
@@ -341,18 +345,15 @@ describe('native Router requests', () => {
 
   it('preserves caller cancellation while a Router request is pending', async () => {
     const controller = new AbortController()
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(
-        (_url: string | URL | Request, init?: RequestInit) =>
-          new Promise<Response>((_resolve, reject) => {
-            init?.signal?.addEventListener(
-              'abort',
-              () => reject(init.signal?.reason),
-              { once: true }
-            )
-          })
-      )
+    vi.mocked(globalThis.fetch).mockImplementation(
+      (_url: string | URL | Request, init?: RequestInit) =>
+        new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener(
+            'abort',
+            () => reject(init.signal?.reason),
+            { once: true }
+          )
+        })
     )
     const request = runSynchronousWorkshopRouter({
       contract: contractFor('bfl/flux-2-pro'),
@@ -370,18 +371,15 @@ describe('native Router requests', () => {
 
   it('stops a Router request after the run timeout', async () => {
     vi.useFakeTimers()
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(
-        (_url: string | URL | Request, init?: RequestInit) =>
-          new Promise<Response>((_resolve, reject) => {
-            init?.signal?.addEventListener(
-              'abort',
-              () => reject(init.signal?.reason),
-              { once: true }
-            )
-          })
-      )
+    vi.mocked(globalThis.fetch).mockImplementation(
+      (_url: string | URL | Request, init?: RequestInit) =>
+        new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener(
+            'abort',
+            () => reject(init.signal?.reason),
+            { once: true }
+          )
+        })
     )
     await Promise.all([
       expect(
@@ -419,7 +417,7 @@ describe('native Router requests', () => {
     expect(read).not.toHaveBeenCalled()
 
     const fetch = vi.fn()
-    vi.stubGlobal('fetch', fetch)
+    vi.mocked(globalThis.fetch).mockImplementation(fetch)
     await expect(
       runSynchronousWorkshopRouter({
         contract: contractFor('bfl/flux-2-pro'),
@@ -454,7 +452,7 @@ describe('native Router requests', () => {
           }
         })
       )
-      vi.stubGlobal('fetch', requests)
+      vi.mocked(globalThis.fetch).mockImplementation(requests)
       await expect(
         runSynchronousWorkshopRouter({
           contract: contractFor('bfl/flux-2-pro'),
@@ -475,8 +473,7 @@ describe('native Router requests', () => {
   ])(
     'classifies a $status whose body alone names $errorType',
     async ({ status, errorType, reason }) => {
-      vi.stubGlobal(
-        'fetch',
+      vi.mocked(globalThis.fetch).mockImplementation(
         vi
           .fn<typeof fetch>()
           .mockResolvedValue(
@@ -543,7 +540,7 @@ describe('native Router requests', () => {
           }
         })
       )
-      vi.stubGlobal('fetch', requests)
+      vi.mocked(globalThis.fetch).mockImplementation(requests)
 
       await expect(
         runSynchronousWorkshopRouter({
@@ -575,7 +572,7 @@ describe('native Router requests', () => {
         }
       )
     )
-    vi.stubGlobal('fetch', requests)
+    vi.mocked(globalThis.fetch).mockImplementation(requests)
 
     await expect(
       runSynchronousWorkshopRouter({
@@ -597,8 +594,7 @@ describe('native Router requests', () => {
   ] as const)(
     'keeps the status classification for a %i response with policy text',
     async ([status, reason]) => {
-      vi.stubGlobal(
-        'fetch',
+      vi.mocked(globalThis.fetch).mockImplementation(
         vi.fn<typeof fetch>().mockResolvedValue(
           Response.json(
             {
@@ -630,8 +626,7 @@ describe('native Router requests', () => {
       padding: 'x'.repeat(20_000)
     })
   ])('does not classify an incomplete or non-JSON error body', async (body) => {
-    vi.stubGlobal(
-      'fetch',
+    vi.mocked(globalThis.fetch).mockImplementation(
       vi.fn<typeof fetch>().mockResolvedValue(
         new Response(body, {
           status: 502,
@@ -658,7 +653,7 @@ describe('native Router requests', () => {
         headers: { 'X-Comfy-Request-Id': 'failed-request' }
       })
     )
-    vi.stubGlobal('fetch', fetch)
+    vi.mocked(globalThis.fetch).mockImplementation(fetch)
     await expect(
       runSynchronousWorkshopRouter({
         contract: contractFor('bfl/flux-2-pro'),
@@ -693,12 +688,16 @@ describe('native Router requests', () => {
         { headers: { 'X-Comfy-Request-Id': 'collected' } }
       )
     ]
-    vi.stubGlobal('fetch', async (url: string, init: RequestInit) => {
-      requests.push(new Request(url, init))
-      const response = responses.shift()
-      if (!response) throw new Error('Unexpected Router request')
-      return response
-    })
+    vi.mocked(globalThis.fetch).mockImplementation(
+      async (input: RequestInfo | URL, init: RequestInit = {}) => {
+        const url = String(input)
+
+        requests.push(new Request(url, init))
+        const response = responses.shift()
+        if (!response) throw new Error('Unexpected Router request')
+        return response
+      }
+    )
     const result = await runSynchronousWorkshopRouter({
       contract: contractFor('bfl/flux-2-pro'),
       body: { prompt: 'Test', seed: 42 },
@@ -732,7 +731,7 @@ describe('native Router requests', () => {
           }
         })
     )
-    vi.stubGlobal('fetch', fetch)
+    vi.mocked(globalThis.fetch).mockImplementation(fetch)
     await expect(
       runSynchronousWorkshopRouter({
         contract: contractFor('bfl/flux-2-pro'),
@@ -753,7 +752,7 @@ describe('native Router requests', () => {
           headers: { 'X-Comfy-Error-Type': 'provider_timeout' }
         })
     )
-    vi.stubGlobal('fetch', fetch)
+    vi.mocked(globalThis.fetch).mockImplementation(fetch)
     await expect(
       runSynchronousWorkshopRouter({
         contract: contractFor('bfl/flux-2-pro'),
@@ -780,7 +779,7 @@ describe('native Router requests', () => {
           result: { sample: 'https://assets.example/b.jpg' }
         })
       )
-    vi.stubGlobal('fetch', fetch)
+    vi.mocked(globalThis.fetch).mockImplementation(fetch)
     const request = runSynchronousWorkshopRouter({
       contract: contractFor('bfl/flux-2-pro'),
       body: { prompt: 'Test' },
@@ -823,7 +822,7 @@ describe('native Router requests', () => {
           result: { sample: 'https://assets.example/late.jpg' }
         })
       )
-    vi.stubGlobal('fetch', fetch)
+    vi.mocked(globalThis.fetch).mockImplementation(fetch)
     const request = runSynchronousWorkshopRouter({
       contract: contractFor('bfl/flux-2-pro'),
       body: { prompt: 'Test' },
@@ -875,7 +874,7 @@ describe('native Router requests', () => {
         )
       )
     })
-    vi.stubGlobal('fetch', fetch)
+    vi.mocked(globalThis.fetch).mockImplementation(fetch)
     const request = runSynchronousWorkshopRouter({
       contract: contractFor('bfl/flux-2-pro'),
       body: { prompt: 'Test' },
@@ -919,7 +918,7 @@ describe('native Router requests', () => {
             result: { sample: 'https://assets.example/b.jpg' }
           })
         )
-      vi.stubGlobal('fetch', fetch)
+      vi.mocked(globalThis.fetch).mockImplementation(fetch)
       const request = runSynchronousWorkshopRouter({
         contract: contractFor('bfl/flux-2-pro'),
         body: { prompt: 'Test' },
@@ -951,7 +950,7 @@ describe('native Router requests', () => {
           headers: { 'Retry-After': advice }
         })
       )
-      vi.stubGlobal('fetch', fetch)
+      vi.mocked(globalThis.fetch).mockImplementation(fetch)
       await expect(
         runSynchronousWorkshopRouter({
           contract: contractFor('bfl/flux-2-pro'),
@@ -972,7 +971,7 @@ describe('native Router requests', () => {
       .mockResolvedValue(
         new Response(null, { status: 409, headers: { 'Retry-After': '10' } })
       )
-    vi.stubGlobal('fetch', fetch)
+    vi.mocked(globalThis.fetch).mockImplementation(fetch)
     const controller = new AbortController()
     const request = runSynchronousWorkshopRouter({
       contract: contractFor('bfl/flux-2-pro'),
@@ -1020,7 +1019,7 @@ describe('native Router requests', () => {
           init?.signal?.addEventListener('abort', abort, { once: true })
         })
     )
-    vi.stubGlobal('fetch', fetch)
+    vi.mocked(globalThis.fetch).mockImplementation(fetch)
     const request = runSynchronousWorkshopRouter({
       contract: contractFor('bfl/flux-2-pro'),
       body: { prompt: 'Test' },
@@ -1052,7 +1051,7 @@ describe('native Router requests', () => {
     const fetch = vi
       .fn<typeof globalThis.fetch>()
       .mockResolvedValue(new Response(null, { status: 409 }))
-    vi.stubGlobal('fetch', fetch)
+    vi.mocked(globalThis.fetch).mockImplementation(fetch)
     await expect(
       runSynchronousWorkshopRouter({
         contract: contractFor('bfl/flux-2-pro'),
@@ -1070,7 +1069,9 @@ describe('native Router requests', () => {
       { status: 'Error' },
       { status: 'Ready', result: { sample: 'javascript:alert(1)' } }
     ]) {
-      vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json(data)))
+      vi.mocked(globalThis.fetch).mockImplementation(async () =>
+        Response.json(data)
+      )
       await expect(
         runSynchronousWorkshopRouter({
           contract: contractFor('bfl/flux-2-pro'),

@@ -18,7 +18,7 @@ const settlementOf = <T>(promise: Promise<T>) =>
 const fetchMock = vi.fn()
 
 beforeEach(() => {
-  vi.stubGlobal('fetch', fetchMock)
+  vi.mocked(fetch).mockImplementation(fetchMock)
   vi.stubGlobal('navigator', { language: 'en-US' })
   fetchMock.mockReset()
 })

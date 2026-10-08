@@ -16,7 +16,7 @@ it.for([
   'importing %s starts no timer, listener, channel, or request',
   async (specifier) => {
     const fetchSpy = vi.fn<typeof fetch>()
-    vi.stubGlobal('fetch', fetchSpy)
+    vi.mocked(fetch).mockImplementation(fetchSpy)
     const channelSpy = vi.fn()
     vi.stubGlobal('BroadcastChannel', channelSpy)
     const setTimeoutSpy = vi.spyOn(globalThis, 'setTimeout')

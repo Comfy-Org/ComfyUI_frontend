@@ -170,7 +170,7 @@ describe('useWorkshopSessionBalance', () => {
 
   async function mountWith(response: () => Response) {
     const { sent, fetchImpl } = recordingFetch(response)
-    vi.stubGlobal('fetch', fetchImpl)
+    vi.mocked(fetch).mockImplementation(fetchImpl)
     const { useWorkshopSessionBalance } =
       await import('./workshop-session-balance')
     const balance = useWorkshopSessionBalance(shallowRef(SESSION))
@@ -218,7 +218,7 @@ describe('useWorkshopSessionBalance', () => {
 
   it('reads once the session is published after mount', async () => {
     const { sent, fetchImpl } = recordingFetch(() => answer(200, BALANCE_BODY))
-    vi.stubGlobal('fetch', fetchImpl)
+    vi.mocked(fetch).mockImplementation(fetchImpl)
     const session = shallowRef<WebSession>()
     const balance = await mountOn(session)
 
@@ -231,8 +231,7 @@ describe('useWorkshopSessionBalance', () => {
   })
 
   it('clears the balance on sign-out', async () => {
-    vi.stubGlobal(
-      'fetch',
+    vi.mocked(fetch).mockImplementation(
       recordingFetch(() => answer(200, BALANCE_BODY)).fetchImpl
     )
     const session = shallowRef<WebSession | undefined>(SESSION)
@@ -250,8 +249,7 @@ describe('useWorkshopSessionBalance', () => {
       answer(401, { code: 'session_expired' }),
       answer(200, BALANCE_BODY)
     ]
-    vi.stubGlobal(
-      'fetch',
+    vi.mocked(fetch).mockImplementation(
       recordingFetch(() => answers.shift() ?? answer(500, {})).fetchImpl
     )
     const session = shallowRef<WebSession | undefined>(SESSION)
@@ -269,14 +267,11 @@ describe('useWorkshopSessionBalance', () => {
 
   it('never shows a read that resolves after the account changed', async () => {
     const pending: ((response: Response) => void)[] = []
-    vi.stubGlobal(
-      'fetch',
-      vi.fn<typeof fetch>(
-        () =>
-          new Promise<Response>((resolve) => {
-            pending.push(resolve)
-          })
-      )
+    vi.mocked(fetch).mockImplementation(
+      () =>
+        new Promise<Response>((resolve) => {
+          pending.push(resolve)
+        })
     )
     const session = shallowRef<WebSession | undefined>(SESSION)
     const balance = await mountOn(session)
@@ -296,14 +291,11 @@ describe('useWorkshopSessionBalance', () => {
 
   it('ignores a read from before the same account signed out and back in', async () => {
     const pending: ((response: Response) => void)[] = []
-    vi.stubGlobal(
-      'fetch',
-      vi.fn<typeof fetch>(
-        () =>
-          new Promise<Response>((resolve) => {
-            pending.push(resolve)
-          })
-      )
+    vi.mocked(fetch).mockImplementation(
+      () =>
+        new Promise<Response>((resolve) => {
+          pending.push(resolve)
+        })
     )
     const session = shallowRef<WebSession | undefined>(SESSION)
     const balance = await mountOn(session)
@@ -329,7 +321,7 @@ describe('useWorkshopSessionBalance', () => {
 
   it('keeps the balance when the same account republishes its session', async () => {
     const { sent, fetchImpl } = recordingFetch(() => answer(200, BALANCE_BODY))
-    vi.stubGlobal('fetch', fetchImpl)
+    vi.mocked(fetch).mockImplementation(fetchImpl)
     const session = shallowRef<WebSession | undefined>(SESSION)
     const balance = await mountOn(session)
     await vi.waitFor(() => expect(balance.value.status).toBe('ok'))

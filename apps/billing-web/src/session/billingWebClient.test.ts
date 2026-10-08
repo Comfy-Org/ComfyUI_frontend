@@ -157,16 +157,15 @@ function stubBillingRoutes(operation: Record<string, unknown>) {
       ...operation
     }
   }
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async (url: string) => {
-      const body = answers[new URL(url).pathname]
-      return new Response(JSON.stringify(body ?? {}), {
-        status: body === undefined ? 404 : 200,
-        headers: { 'Content-Type': 'application/json' }
-      })
+  vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+    const url = String(input)
+
+    const body = answers[new URL(url).pathname]
+    return new Response(JSON.stringify(body ?? {}), {
+      status: body === undefined ? 404 : 200,
+      headers: { 'Content-Type': 'application/json' }
     })
-  )
+  })
 }
 
 function authenticatedSession(): BillingSession {

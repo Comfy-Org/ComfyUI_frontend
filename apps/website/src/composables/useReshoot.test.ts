@@ -63,9 +63,8 @@ beforeEach(() => {
   vi.mocked(reshootTransport).mockReturnValue(transport)
   vi.mocked(readGeometry).mockResolvedValue(fakeGeometry())
   vi.mocked(clipSecondsOf).mockReset()
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async () => new Response(new Blob(['clip'], { type: 'video/mp4' })))
+  vi.mocked(fetch).mockImplementation(
+    async () => new Response(new Blob(['clip'], { type: 'video/mp4' }))
   )
   signIn()
 })
@@ -229,7 +228,7 @@ describe('useReshoot', () => {
     const fetchMock = vi.fn(
       async () => new Response('missing', { status: 404 })
     )
-    vi.stubGlobal('fetch', fetchMock)
+    vi.mocked(fetch).mockImplementation(fetchMock)
     const reshoot = start()
 
     reshoot.pick()

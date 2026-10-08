@@ -366,6 +366,38 @@ it('allows a shadowed console', () => {
 })
 `
 
+const fetchFixture = `import { beforeEach, it, vi as vitest } from 'vitest'
+import * as Vitest from 'vitest'
+
+beforeEach(() => {
+  vi.stubGlobal('fetch', vi.fn())
+  vi.spyOn(globalThis, 'fetch')
+})
+
+it('reports every way of replacing the shared fetch mock', () => {
+  vitest.stubGlobal(\`fetch\`, vi.fn())
+  Vitest.vi.spyOn(window, 'fetch')
+  globalThis.fetch = vi.fn()
+  window.fetch = vi.fn()
+  global.fetch = vi.fn()
+})
+
+it('allows configuring the shared mock and other globals', () => {
+  vi.mocked(fetch).mockResolvedValue(new Response('ok'))
+  vi.stubGlobal('location', undefined)
+  vi.spyOn(globalThis, 'setTimeout')
+  const client = { fetch() {} }
+  client.fetch = vi.fn()
+  vi.spyOn(client, 'fetch')
+})
+
+it('allows a shadowed global owner', () => {
+  const window = { fetch() {} }
+  window.fetch = vi.fn()
+  vi.spyOn(window, 'fetch')
+})
+`
+
 function expectReportsAt(
   output: string,
   lines: readonly number[],
@@ -385,6 +417,7 @@ describe('Vitest cleanup rules', () => {
     workDir = mkdtempSync(path.join(tmpdir(), 'comfy-vitest-cleanup-'))
     writeFileSync(path.join(workDir, 'invalid.test.ts'), invalidFixture)
     writeFileSync(path.join(workDir, 'console.test.ts'), consoleFixture)
+    writeFileSync(path.join(workDir, 'fetch.test.ts'), fetchFixture)
     writeFileSync(path.join(workDir, 'litegraph.test.ts'), liteGraphFixture)
     writeFileSync(
       path.join(workDir, 'mock-instance.test.ts'),
@@ -403,6 +436,7 @@ describe('Vitest cleanup rules', () => {
               'comfy/no-module-scope-vitest-mocks': 'warn',
               'comfy/no-persistent-litegraph-registration': 'warn',
               'comfy/no-redundant-console-spy': 'warn',
+              'comfy/no-redundant-fetch-stub': 'warn',
               'comfy/no-redundant-litegraph-cleanup': 'warn',
               'comfy/no-redundant-vitest-cleanup': 'warn'
             }
@@ -419,6 +453,7 @@ describe('Vitest cleanup rules', () => {
         path.join(workDir, '.oxlintrc.json'),
         'invalid.test.ts',
         'console.test.ts',
+        'fetch.test.ts',
         'litegraph.test.ts',
         'mock-instance.test.ts',
         'unrelated.test.ts',
@@ -500,6 +535,13 @@ describe('Vitest cleanup rules', () => {
     expectReportsAt(output, [5, 6, 10, 11, 12, 13, 14], 'console.test.ts')
     expect(
       stripVTControlCharacters(output).match(/console\.test\.ts:\d+:/g)
+    ).toHaveLength(7)
+  })
+
+  it('reports replacing the shared fetch mock anywhere in a test file', () => {
+    expectReportsAt(output, [5, 6, 10, 11, 12, 13, 14], 'fetch.test.ts')
+    expect(
+      stripVTControlCharacters(output).match(/fetch\.test\.ts:\d+:/g)
     ).toHaveLength(7)
   })
 

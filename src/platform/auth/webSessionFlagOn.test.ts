@@ -341,26 +341,23 @@ function installServer(
     })
   }
 
-  vi.stubGlobal(
-    'fetch',
-    vi.fn<typeof fetch>(async (input, init) => {
-      const url = new URL(String(input), location.href)
-      const method = (init?.method ?? 'GET').toUpperCase()
-      if (url.pathname === '/api/features') return answerFeatures(init)
-      if (url.pathname === '/api/auth/sessions/revoke-all') {
-        return answerRevokeAll(init)
-      }
-      if (url.pathname !== '/api/auth/session') {
-        return jsonResponse({ id: 'customer-1' }, 201)
-      }
-      server.requests.push({
-        method,
-        authorization: new Headers(init?.headers).get('authorization'),
-        credentials: init?.credentials ?? null
-      })
-      return answerSession(method)
+  vi.mocked(fetch).mockImplementation(async (input, init) => {
+    const url = new URL(String(input), location.href)
+    const method = (init?.method ?? 'GET').toUpperCase()
+    if (url.pathname === '/api/features') return answerFeatures(init)
+    if (url.pathname === '/api/auth/sessions/revoke-all') {
+      return answerRevokeAll(init)
+    }
+    if (url.pathname !== '/api/auth/session') {
+      return jsonResponse({ id: 'customer-1' }, 201)
+    }
+    server.requests.push({
+      method,
+      authorization: new Headers(init?.headers).get('authorization'),
+      credentials: init?.credentials ?? null
     })
-  )
+    return answerSession(method)
+  })
   return server
 }
 
@@ -814,21 +811,18 @@ function installIngest(features: Record<string, boolean> = {}) {
     return respondBilling(request) ?? jsonResponse({})
   }
 
-  vi.stubGlobal(
-    'fetch',
-    vi.fn<typeof fetch>(async (input, init) => {
-      const request = recordApiRequest(input, init)
-      if (request.path === '/api/features') {
-        return jsonResponse({ unified_web_session: true, ...features })
-      }
-      ingest.requests.push(request)
-      if (request.path === '/api/auth/token' && ingest.mintGate) {
-        ingest.heldMints += 1
-        await ingest.mintGate
-      }
-      return respond(request, init?.body)
-    })
-  )
+  vi.mocked(fetch).mockImplementation(async (input, init) => {
+    const request = recordApiRequest(input, init)
+    if (request.path === '/api/features') {
+      return jsonResponse({ unified_web_session: true, ...features })
+    }
+    ingest.requests.push(request)
+    if (request.path === '/api/auth/token' && ingest.mintGate) {
+      ingest.heldMints += 1
+      await ingest.mintGate
+    }
+    return respond(request, init?.body)
+  })
   return ingest
 }
 
@@ -2502,7 +2496,8 @@ describe.for([{ unified: false }, { unified: true }])(
     it('discards a late balance response after the Firebase credential changes', async () => {
       const { authStore } = await bootSessionOnly()
       identity.signIn(USER_A)
-      const sessionFetch = fetch
+      const sessionFetch = vi.mocked(fetch).getMockImplementation()
+      assert.exists(sessionFetch)
       let signalBalanceRequested: () => void = () => {}
       const balanceRequested = new Promise<void>((resolve) => {
         signalBalanceRequested = resolve
@@ -2511,30 +2506,27 @@ describe.for([{ unified: false }, { unified: true }])(
       const balance = new Promise((resolve) => {
         resolveBalance = resolve
       })
-      vi.stubGlobal(
-        'fetch',
-        vi.fn<typeof fetch>(async (input, init) => {
-          const url = new URL(String(input), location.href)
-          if (url.pathname === '/api/auth/token') {
-            return jsonResponse({
-              token: 'session-jwt-1',
-              expires_at: new Date(Date.now() + TEN_MINUTES_MS).toISOString(),
-              workspace: {
-                id: 'ws-personal',
-                name: 'Personal',
-                type: 'personal'
-              },
-              role: 'owner',
-              permissions: []
-            })
-          }
-          if (url.pathname === '/customers/balance') {
-            signalBalanceRequested()
-            return fromPartial<Response>({ ok: true, json: () => balance })
-          }
-          return sessionFetch(input, init)
-        })
-      )
+      vi.mocked(fetch).mockImplementation(async (input, init) => {
+        const url = new URL(String(input), location.href)
+        if (url.pathname === '/api/auth/token') {
+          return jsonResponse({
+            token: 'session-jwt-1',
+            expires_at: new Date(Date.now() + TEN_MINUTES_MS).toISOString(),
+            workspace: {
+              id: 'ws-personal',
+              name: 'Personal',
+              type: 'personal'
+            },
+            role: 'owner',
+            permissions: []
+          })
+        }
+        if (url.pathname === '/customers/balance') {
+          signalBalanceRequested()
+          return fromPartial<Response>({ ok: true, json: () => balance })
+        }
+        return sessionFetch(input, init)
+      })
 
       const pending = authStore.fetchBalance()
       await balanceRequested
@@ -2805,9 +2797,9 @@ describe.for([{ unified: false }, { unified: true }])(
         await install('revoked')
         identity.resolve(null)
         await expect(enterApp()).resolves.toBe('/cloud/login')
-        const fetchNow = fetch
-        vi.stubGlobal(
-          'fetch',
+        const fetchNow = vi.mocked(fetch).getMockImplementation()
+        assert.exists(fetchNow)
+        vi.mocked(fetch).mockImplementation(
           async (input: RequestInfo | URL, init?: RequestInit) => {
             if (
               init?.method === 'POST' &&
@@ -2846,9 +2838,9 @@ describe.for([{ unified: false }, { unified: true }])(
       it('lets a public route through while the session read never answers', async () => {
         await install({ userId: 'user-a' })
         identity.resolve(null)
-        const fetchNow = fetch
-        vi.stubGlobal(
-          'fetch',
+        const fetchNow = vi.mocked(fetch).getMockImplementation()
+        assert.exists(fetchNow)
+        vi.mocked(fetch).mockImplementation(
           (input: RequestInfo | URL, init?: RequestInit) =>
             String(input).includes('/auth/session')
               ? new Promise<Response>(() => {})
@@ -3528,10 +3520,10 @@ describe('an SSO account with no Firebase login (sso_enabled)', () => {
 
     it('is not stored once the session moves to another account', async () => {
       const server = await bootSessionOnlyTab(true)
-      const fetchNow = fetch
+      const fetchNow = vi.mocked(fetch).getMockImplementation()
+      assert.exists(fetchNow)
       let releaseSettings: () => void = () => {}
-      vi.stubGlobal(
-        'fetch',
+      vi.mocked(fetch).mockImplementation(
         async (input: RequestInfo | URL, init?: RequestInit) => {
           if (String(input).includes('/settings')) {
             await new Promise<void>((resolve) => (releaseSettings = resolve))

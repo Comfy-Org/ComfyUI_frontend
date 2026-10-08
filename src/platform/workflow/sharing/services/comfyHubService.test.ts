@@ -25,7 +25,7 @@ function mockUploadResponse(ok = true, status = 200): Response {
 
 describe('useComfyHubService', () => {
   beforeEach(() => {
-    vi.stubGlobal('fetch', mockGlobalFetch)
+    vi.mocked(fetch).mockImplementation(mockGlobalFetch)
   })
 
   it('requests upload url and returns token payload', async () => {

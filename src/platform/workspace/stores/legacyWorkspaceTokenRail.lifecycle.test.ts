@@ -37,27 +37,21 @@ function tokenResponse(
   overrides: Record<string, unknown> = {},
   workspaceId = workspace.id
 ) {
-  return {
-    ok: true,
-    json: () =>
-      Promise.resolve({
-        token: `token-${workspaceId}`,
-        expires_at: new Date(Date.now() + expiresInMs).toISOString(),
-        workspace: { id: workspaceId, name: workspace.name, type: 'team' },
-        role: 'owner',
-        permissions: ['owner:*'],
-        ...overrides
-      })
-  }
+  return Response.json({
+    token: `token-${workspaceId}`,
+    expires_at: new Date(Date.now() + expiresInMs).toISOString(),
+    workspace: { id: workspaceId, name: workspace.name, type: 'team' },
+    role: 'owner',
+    permissions: ['owner:*'],
+    ...overrides
+  })
 }
 
 function failedResponse(status: number) {
-  return {
-    ok: false,
+  return new Response(JSON.stringify({ message: 'nope' }), {
     status,
-    statusText: `HTTP ${status}`,
-    text: () => Promise.resolve(JSON.stringify({ message: 'nope' }))
-  }
+    statusText: `HTTP ${status}`
+  })
 }
 
 function createRail() {
@@ -111,18 +105,17 @@ function seedSession(
   }
 }
 
-let mockFetch: ReturnType<typeof vi.fn>
+const mockFetch = vi.mocked(fetch)
 
 beforeEach(() => {
   vi.useFakeTimers({ shouldAdvanceTime: false })
   vi.spyOn(Math, 'random').mockReturnValue(0)
   mockDistributionTypes.isCloud = true
   mockEnsureSessionCookie.mockResolvedValue(undefined)
-  mockFetch = vi.fn((_url: string, init: { body: string }) => {
-    const { workspace_id: workspaceId } = JSON.parse(init.body)
+  mockFetch.mockImplementation((_url, init) => {
+    const { workspace_id: workspaceId } = JSON.parse(String(init?.body))
     return Promise.resolve(tokenResponse({}, workspaceId))
   })
-  vi.stubGlobal('fetch', mockFetch)
 })
 
 describe('minting a workspace token', () => {
@@ -173,7 +166,7 @@ describe('minting a workspace token', () => {
       failure: 'a body that fails the schema',
       uid: 'user-a',
       idToken: 'firebase-token',
-      response: () => ({ ok: true, json: () => Promise.resolve({ token: 1 }) }),
+      response: () => Response.json({ token: 1 }),
       code: 'TOKEN_EXCHANGE_FAILED'
     },
     {
@@ -203,9 +196,9 @@ describe('minting a workspace token', () => {
 
   it('discards a mint that lands after the user changes and settles loading', async () => {
     const { rail, deps, identity } = createRail()
-    let deliverToken: (value: unknown) => void = () => {}
+    let deliverToken: (value: Response) => void = () => {}
     mockFetch.mockReturnValue(
-      new Promise((resolve) => {
+      new Promise<Response>((resolve) => {
         deliverToken = resolve
       })
     )
@@ -457,9 +450,9 @@ describe('ensureWorkspaceToken', () => {
 
   it('collapses concurrent callers onto the in-flight mint', async () => {
     const { rail } = createRail()
-    let deliverToken: (value: unknown) => void = () => {}
+    let deliverToken: (value: Response) => void = () => {}
     mockFetch.mockReturnValueOnce(
-      new Promise((resolve) => {
+      new Promise<Response>((resolve) => {
         deliverToken = resolve
       })
     )

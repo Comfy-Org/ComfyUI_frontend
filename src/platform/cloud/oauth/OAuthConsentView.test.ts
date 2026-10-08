@@ -109,7 +109,7 @@ describe('OAuthConsentView', () => {
     const fetchMock = vi.fn<typeof fetch>(
       async () => new Response(JSON.stringify(challenge), { status: 200 })
     )
-    vi.stubGlobal('fetch', fetchMock)
+    vi.mocked(fetch).mockImplementation(fetchMock)
     const router = createRouter({
       history: createMemoryHistory(),
       routes: [{ path: '/oauth/consent', component: OAuthConsentView }]

@@ -263,7 +263,7 @@ describe(assetService.uploadAssetFromBase64, () => {
 
   it('rejects when the upload response is invalid', async () => {
     const fetchSpy = vi
-      .spyOn(globalThis, 'fetch')
+      .mocked(fetch)
       .mockResolvedValueOnce(new Response('hello'))
     fetchApiMock.mockResolvedValueOnce(buildResponse({ id: 'missing-name' }))
 
@@ -279,7 +279,7 @@ describe(assetService.uploadAssetFromBase64, () => {
 
   it('rejects upload responses with a non-boolean created_new', async () => {
     const fetchSpy = vi
-      .spyOn(globalThis, 'fetch')
+      .mocked(fetch)
       .mockResolvedValueOnce(new Response('hello'))
     fetchApiMock.mockResolvedValueOnce(
       buildResponse({

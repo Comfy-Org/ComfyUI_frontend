@@ -29,7 +29,7 @@ const upload = vi.fn<WorkshopUrlEncoder>()
 beforeEach(() => {
   network.mockRejectedValue(new Error('Validation must not access the network'))
   upload.mockRejectedValue(new Error('Validation must not upload inputs'))
-  vi.stubGlobal('fetch', network)
+  vi.mocked(fetch).mockImplementation(network)
 })
 
 describe('published model validation grid', () => {

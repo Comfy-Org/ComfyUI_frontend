@@ -60,7 +60,7 @@ beforeEach(() => {
   h.uid = 'uid-1'
   h.ensureFresh.mockResolvedValue(minted())
   localStorage.clear()
-  vi.stubGlobal('fetch', fetchMock)
+  vi.mocked(fetch).mockImplementation(fetchMock)
 })
 
 async function freshCheckoutUi() {

@@ -101,9 +101,8 @@ describe('signUpWorkshopWithEmail rollback reporting', () => {
     h.createUserWithEmail.mockResolvedValue({
       user: { delete: deleteFn, getIdToken: async () => 'jwt' }
     })
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => new Response(null, { status: 500 }))
+    vi.mocked(fetch).mockImplementation(
+      async () => new Response(null, { status: 500 })
     )
   }
 
@@ -171,9 +170,8 @@ describe('social sign-in provisioning boundary', () => {
   })
 
   it('wraps a provisioning failure with the signed-in user and the original cause', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => new Response(null, { status: 500 }))
+    vi.mocked(fetch).mockImplementation(
+      async () => new Response(null, { status: 500 })
     )
 
     const failure = await provisionWorkshopCustomer({

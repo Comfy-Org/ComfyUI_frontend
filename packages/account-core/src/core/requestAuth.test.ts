@@ -240,7 +240,7 @@ describe('createRequestAuthorizer', () => {
     'authorizes an API key on $target $method with its header alone',
     async ({ target, method }) => {
       const getWorkspaceToken = vi.fn(async () => 'jwt')
-      const fetchSpy = vi.spyOn(globalThis, 'fetch')
+      const fetchSpy = vi.mocked(fetch)
       const authorizeWithSpies = createRequestAuthorizer({ getWorkspaceToken })
 
       const result = await authorizeWithSpies(API_KEY, {

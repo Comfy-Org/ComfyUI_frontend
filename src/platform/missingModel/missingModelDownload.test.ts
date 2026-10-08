@@ -45,7 +45,7 @@ function downloadableModel(): Parameters<typeof dispatchModelDownload>[0] {
 }
 beforeEach(() => {
   mockIsDesktop.value = false
-  vi.stubGlobal('fetch', fetchMock)
+  vi.mocked(fetch).mockImplementation(fetchMock)
   clearMetadataCache()
   delete window.__comfyDesktop2Remote
   delete window.__comfyDesktop2

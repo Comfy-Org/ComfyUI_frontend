@@ -16,7 +16,7 @@ describe('initDatadogRum', () => {
   beforeEach(() => {
     fetchMock.mockResolvedValue(new Response(null, { status: 503 }))
     vi.mocked(datadogRum.getInitConfiguration).mockReturnValue(undefined)
-    vi.stubGlobal('fetch', fetchMock)
+    vi.mocked(fetch).mockImplementation(fetchMock)
   })
 
   it.for([

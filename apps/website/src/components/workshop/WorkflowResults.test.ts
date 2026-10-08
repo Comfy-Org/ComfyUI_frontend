@@ -114,7 +114,7 @@ describe('WorkflowResults', () => {
       const download = vi
         .fn<typeof globalThis.fetch>()
         .mockResolvedValue(new Response(null, { status: 404 }))
-      vi.stubGlobal('fetch', download)
+      vi.mocked(globalThis.fetch).mockImplementation(download)
       const open = vi.spyOn(window, 'open').mockReturnValue(null)
       const preview = screen.getByRole('img', { name: 'Output' })
       const original = preview.getAttribute('src')
@@ -159,8 +159,7 @@ describe('WorkflowResults', () => {
 
   it('keeps the direct download fallback when the browser cannot fetch the media', async () => {
     const f = await mountResult()
-    vi.stubGlobal(
-      'fetch',
+    vi.mocked(globalThis.fetch).mockImplementation(
       vi
         .fn<typeof globalThis.fetch>()
         .mockRejectedValue(new TypeError('Failed to fetch'))

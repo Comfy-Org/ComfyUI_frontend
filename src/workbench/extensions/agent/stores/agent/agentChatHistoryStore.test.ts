@@ -188,7 +188,7 @@ describe('useAgentChatHistoryStore', () => {
   })
 
   it('removes a session with no server request', () => {
-    const fetchSpy = vi.spyOn(globalThis, 'fetch')
+    const fetchSpy = vi.mocked(fetch)
     const store = useAgentChatHistoryStore()
     store.replaceAll([session('a', 1)])
 

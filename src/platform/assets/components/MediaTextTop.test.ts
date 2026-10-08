@@ -21,7 +21,7 @@ describe('MediaTextTop', () => {
       ok: true,
       text: () => Promise.resolve('hello world')
     })
-    vi.stubGlobal('fetch', fetchMock)
+    vi.mocked(fetch).mockImplementation(fetchMock)
 
     render(MediaTextTop, { props: { asset: makeAsset() } })
 
@@ -34,7 +34,7 @@ describe('MediaTextTop', () => {
       ok: true,
       text: () => Promise.resolve('preview text')
     })
-    vi.stubGlobal('fetch', fetchMock)
+    vi.mocked(fetch).mockImplementation(fetchMock)
 
     render(MediaTextTop, {
       props: {

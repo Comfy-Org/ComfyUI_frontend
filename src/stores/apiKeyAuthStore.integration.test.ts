@@ -28,7 +28,7 @@ vi.mock(import('@/services/dialogService'))
 describe('API key authentication initialization', () => {
   beforeEach(() => {
     localStorage.clear()
-    vi.stubGlobal('fetch', mockFetch)
+    vi.mocked(fetch).mockImplementation(mockFetch)
     mockFetch.mockResolvedValue({
       ok: true,
       statusText: 'OK',

@@ -166,7 +166,7 @@ describe('MediaLightbox', () => {
     const fetchMock = vi.fn(() =>
       Promise.resolve(new Response(null, { status: 503 }))
     )
-    vi.stubGlobal('fetch', fetchMock)
+    vi.mocked(fetch).mockImplementation(fetchMock)
 
     const { user } = renderGallery(
       {

@@ -435,7 +435,7 @@ describe('use-case input contracts', () => {
         headers: { 'Content-Type': 'image/png' }
       })
     })
-    vi.stubGlobal('fetch', transport)
+    vi.mocked(fetch).mockImplementation(transport)
     const uploader = createWorkshopUrlUploader()
     const upload = (file: File, signal: AbortSignal) =>
       uploader(file, 'token', 'owner:workspace', signal)

@@ -36,7 +36,7 @@ function storage() {
       headers: { 'Content-Type': 'image/png' }
     })
   })
-  vi.stubGlobal('fetch', requests)
+  vi.mocked(fetch).mockImplementation(requests)
   const uploader = createWorkshopUrlUploader()
   return {
     requests,
@@ -291,7 +291,7 @@ describe('Wan 3 source URL rehosting', () => {
       controller.abort()
       return new Response('image', { headers: { 'Content-Type': 'image/png' } })
     })
-    vi.stubGlobal('fetch', requests)
+    vi.mocked(fetch).mockImplementation(requests)
     await expect(
       router_render(
         model.slug,

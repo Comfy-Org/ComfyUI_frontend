@@ -29,7 +29,7 @@ let revokeObjectURLSpy: MockInstance<typeof URL.revokeObjectURL>
 
 describe('downloadUtil', () => {
   let mockLink: HTMLAnchorElement
-  let fetchMock: ReturnType<typeof vi.fn>
+  const fetchMock = vi.mocked(fetch)
 
   beforeEach(() => {
     createObjectURLSpy = vi
@@ -39,8 +39,6 @@ describe('downloadUtil', () => {
       .spyOn(URL, 'revokeObjectURL')
       .mockImplementation(() => {})
     mockIsCloud.value = false
-    fetchMock = vi.fn()
-    vi.stubGlobal('fetch', fetchMock)
     createObjectURLSpy.mockClear().mockReturnValue('blob:mock-url')
     revokeObjectURLSpy.mockClear().mockImplementation(() => {})
     // Create a mock anchor element

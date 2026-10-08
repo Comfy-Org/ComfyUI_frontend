@@ -1025,7 +1025,7 @@ describe('ModelDetail', () => {
       }
       throw new Error('Unexpected request')
     })
-    vi.stubGlobal('fetch', fetch)
+    vi.mocked(globalThis.fetch).mockImplementation(fetch)
     const model = getRouterWorkshopModelDetail(
       'vertexai--gemini-nano-banana-2--edit-images'
     )
@@ -1206,7 +1206,7 @@ describe('ModelDetail', () => {
           })
         : new Response(null, { status: 200 })
     )
-    vi.stubGlobal('fetch', uploads)
+    vi.mocked(globalThis.fetch).mockImplementation(uploads)
     vi.mocked(runWorkshopRouter).mockRejectedValue(
       new WorkshopRouterError('network')
     )
@@ -1241,8 +1241,7 @@ describe('ModelDetail', () => {
 
   it('shows an upload error and never calls paid generation if storage fails', async () => {
     auth.session.value = credential
-    vi.stubGlobal(
-      'fetch',
+    vi.mocked(globalThis.fetch).mockImplementation(
       vi.fn<typeof fetch>().mockRejectedValue(new TypeError('Failed to fetch'))
     )
     const model = getRouterWorkshopModelDetail('wavespeed--seedvr2')
@@ -1268,13 +1267,10 @@ describe('ModelDetail', () => {
     auth.session.value = credential
     const pending = Promise.withResolvers<Response>()
     let uploadSignal: AbortSignal | null | undefined
-    vi.stubGlobal(
-      'fetch',
-      vi.fn<typeof fetch>(async (_, init) => {
-        uploadSignal = init?.signal
-        return pending.promise
-      })
-    )
+    vi.mocked(globalThis.fetch).mockImplementation(async (_, init) => {
+      uploadSignal = init?.signal
+      return pending.promise
+    })
     const model = getRouterWorkshopModelDetail('wavespeed--seedvr2')
     if (!model) throw new Error('Missing Wavespeed model')
     await mountDetail({ model })

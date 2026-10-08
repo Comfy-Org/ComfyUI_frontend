@@ -101,7 +101,7 @@ function stubCheckout(
     .mockImplementation(() =>
       Promise.resolve(new Response(JSON.stringify(body), { status }))
     )
-  vi.stubGlobal('fetch', fetchCheckout)
+  vi.mocked(fetch).mockImplementation(fetchCheckout)
   return fetchCheckout
 }
 
@@ -744,9 +744,8 @@ describe('BuyCreditsDialog', () => {
   it('does not treat an untyped 404 as a rollout miss', async () => {
     const user = userEvent.setup()
     const tab = claimTab()
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue(new Response('', { status: 404 }))
+    vi.mocked(fetch).mockImplementation(
+      async () => new Response('', { status: 404 })
     )
     renderOpenDialog()
 
@@ -942,7 +941,7 @@ describe('BuyCreditsDialog', () => {
           resolveCheckout = resolve
         })
     )
-    vi.stubGlobal('fetch', fetchCheckout)
+    vi.mocked(fetch).mockImplementation(fetchCheckout)
     const { isOpen } = renderControlledDialog()
 
     await user.click(await screen.findByTestId('buy-credits-continue'))

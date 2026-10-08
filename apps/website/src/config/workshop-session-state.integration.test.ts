@@ -77,7 +77,7 @@ beforeEach(async () => {
 
 describe('useWorkshopSession over the real session client', () => {
   it('stays unsettled until Firebase delivers, then publishes minting and authenticated', async () => {
-    vi.stubGlobal('fetch', okFetch())
+    vi.mocked(fetch).mockImplementation(okFetch())
     const { session, phases } = await boot(true)
     await vi.waitFor(() => expect(deliver).toBeDefined())
     expect(
@@ -93,7 +93,7 @@ describe('useWorkshopSession over the real session client', () => {
   })
 
   it('re-enters pending across flag off then on without a signed-out frame', async () => {
-    vi.stubGlobal('fetch', okFetch())
+    vi.mocked(fetch).mockImplementation(okFetch())
     const { session, flag, phases } = await boot(true)
     await firebaseAnswers(user)
     await vi.waitFor(() => expect(session.signedIn.value).toBe(true))
@@ -129,7 +129,7 @@ describe('useWorkshopSession over the real session client', () => {
             )
         })
     )
-    vi.stubGlobal('fetch', fetchSpy)
+    vi.mocked(fetch).mockImplementation(fetchSpy)
     const { session, flag, phases, client } = await boot(true)
     await firebaseAnswers(user)
     await vi.waitFor(() => expect(fetchSpy).toHaveBeenCalledOnce())
@@ -151,7 +151,7 @@ describe('useWorkshopSession over the real session client', () => {
 
   it('installs nothing when the flag turns off before the first Firebase answer lands', async () => {
     const fetchSpy = okFetch()
-    vi.stubGlobal('fetch', fetchSpy)
+    vi.mocked(fetch).mockImplementation(fetchSpy)
     const { session, flag, phases, client } = await boot(true)
     await vi.waitFor(() => expect(deliver).toBeDefined())
 
@@ -188,7 +188,7 @@ describe('useWorkshopSession over the real session client', () => {
       })
     )
     const fetchSpy = okFetch()
-    vi.stubGlobal('fetch', fetchSpy)
+    vi.mocked(fetch).mockImplementation(fetchSpy)
     await boot(true)
 
     await firebaseAnswers(user)
