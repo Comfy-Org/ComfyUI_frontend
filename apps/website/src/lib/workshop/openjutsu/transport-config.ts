@@ -12,6 +12,17 @@ import { sampleScenario, sampleTransport } from './sample-transport'
 export const OPENJUTSU_SAMPLE_MODE =
   WORKSHOP_LOCAL_DEV && import.meta.env.PUBLIC_OPENJUTSU_SAMPLE === '1'
 
+/** `astro dev` only: a local proxy in front of Openjutsu's own deployment. */
+const DEV_PROXY = WORKSHOP_LOCAL_DEV
+  ? import.meta.env.PUBLIC_OPENJUTSU_PROXY
+  : undefined
+
+/**
+ * `astro dev` only: runs that need no account. The page answers itself, or a
+ * local proxy holds the key and nothing is metered.
+ */
+export const OPENJUTSU_NO_ACCOUNT = OPENJUTSU_SAMPLE_MODE || !!DEV_PROXY
+
 /**
  * The app proxy for this Cloud family. In `astro dev` only,
  * `PUBLIC_OPENJUTSU_SAMPLE=1` answers from the page itself and
@@ -23,8 +34,7 @@ export function openjutsuTransport(
 ): ReshootTransport | undefined {
   if (OPENJUTSU_SAMPLE_MODE)
     return sampleTransport(() => sampleScenario(location.search))
-  const devProxy = import.meta.env.PUBLIC_OPENJUTSU_PROXY
-  if (WORKSHOP_LOCAL_DEV && devProxy) return devProxyTransport(devProxy)
+  if (DEV_PROXY) return devProxyTransport(DEV_PROXY)
   return WORKSHOP_OPENJUTSU_PROXY_ID
     ? appProxyTransport(WORKSHOP_OPENJUTSU_PROXY_ID, token)
     : undefined

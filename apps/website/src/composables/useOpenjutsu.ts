@@ -20,13 +20,14 @@ import {
 import type { ReshootQuote } from '@/lib/workshop/cinematic-studio/reshoot-engine/transport'
 import { ReshootError } from '@/lib/workshop/cinematic-studio/reshoot-engine/transport'
 import type { VideoTrim } from '@/components/workshop/video-trim/VideoTrimDialog.vue'
-import type { SwapWindow,SwapSize } from '@/lib/workshop/openjutsu/clip'
+import type { SwapWindow, SwapSize } from '@/lib/workshop/openjutsu/clip'
 import {
   resultSize,
   swapCanvas,
   swapSeconds
 } from '@/lib/workshop/openjutsu/clip'
 import {
+  OPENJUTSU_NO_ACCOUNT,
   OPENJUTSU_SAMPLE_MODE,
   openjutsuTransport
 } from '@/lib/workshop/openjutsu/transport-config'
@@ -166,7 +167,7 @@ export function useOpenjutsu({ locale = 'en' }: { locale?: Locale } = {}) {
   let quoteRetry: ReturnType<typeof setTimeout> | undefined
   let quoteFailures = 0
 
-  const signedIn = () => OPENJUTSU_SAMPLE_MODE || !!session.value
+  const signedIn = () => OPENJUTSU_NO_ACCOUNT || !!session.value
   async function refreshQuote() {
     const request = ++quoteRequest
     clearTimeout(quoteRetry)
@@ -210,7 +211,7 @@ export function useOpenjutsu({ locale = 'en' }: { locale?: Locale } = {}) {
       !rendering.value && quote.value?.blocked_reason === 'insufficient_credits'
   )
   const gate = computed<StudioGate>(() => {
-    if (OPENJUTSU_SAMPLE_MODE && !unavailable.value)
+    if (OPENJUTSU_NO_ACCOUNT && !unavailable.value)
       return !mounted.value
         ? 'pending'
         : quoteRefusesCredit.value
