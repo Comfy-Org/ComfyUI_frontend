@@ -789,8 +789,13 @@ export const useExecutionStore = defineStore('execution', () => {
     jobId: JobId,
     messageWorkflowId: string | undefined
   ): boolean {
+    // Must list every map messageMatchesActiveWorkflow consults, or the two
+    // disagree about the same frame: the instance is that resolver's first and
+    // strongest leg, and leaving it out here made a frame resolvable by one
+    // rule and unresolvable by the other.
     return (
       Boolean(messageWorkflowId) ||
+      jobIdToWorkflowInstanceId.has(jobId) ||
       jobIdToWorkflowId.value.has(jobId) ||
       jobIdToSessionWorkflowPath.value.has(jobId)
     )
@@ -1252,6 +1257,11 @@ export const useExecutionStore = defineStore('execution', () => {
     }
     jobIdToWorkflow.delete(jobId)
     useJobPreviewStore().clearPreview(jobId)
+    // This runs for a job whose tab is not in front, so activeJobId naming it
+    // is stale: the gated terminal branches return early and the gated
+    // `executing: null` is dropped, which left the actionbar, favicon and title
+    // non-idle with nothing running until the next queue poll evicted it.
+    if (activeJobId.value === jobId) activeJobId.value = null
   }
 
   function resetExecutionState(jobIdParam?: JobId | null) {
