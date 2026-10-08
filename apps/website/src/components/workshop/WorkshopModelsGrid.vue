@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ChevronLeft } from '@lucide/vue'
+import { ChevronLeft, ChevronRight } from '@lucide/vue'
 import { cn } from '@comfyorg/tailwind-utils'
 import {
   computed,
@@ -293,15 +293,18 @@ watch(browseAll, (on) => on && resetFilters())
           @open="openSection"
         />
 
-        <Button
-          variant="outline"
-          size="lg"
-          class="mx-auto mt-12 max-sm:w-full"
+        <button
+          type="button"
+          class="group mx-auto mt-12 flex w-fit cursor-pointer items-center justify-center gap-2 rounded-2xl border border-transparency-white-t8 px-8 py-4 text-sm font-medium text-primary-comfy-canvas transition-colors outline-none hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 max-sm:w-full"
           data-testid="browse-all-end"
           @click="browseAll = true"
         >
           {{ t('workshop.sections.browseAll') }}
-        </Button>
+          <ChevronRight
+            class="size-4 transition-transform group-hover:translate-x-0.5"
+            aria-hidden="true"
+          />
+        </button>
       </template>
 
       <template v-else>
