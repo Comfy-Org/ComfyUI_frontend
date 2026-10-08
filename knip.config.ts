@@ -81,7 +81,9 @@ const config: KnipConfig = {
     // Agent review check config, not part of the build
     '.agents/checks/eslint.strict.config.js',
     // Devtools extensions, included dynamically
-    'tools/devtools/web/**'
+    'tools/devtools/web/**',
+    // Static report page, loaded by script tags in its index.html
+    'tools/depcruise/**'
   ],
   vite: {
     config: ['vite?(.*).config.mts']

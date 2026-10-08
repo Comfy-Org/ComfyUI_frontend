@@ -41,6 +41,8 @@
     "public/**",
     // Devtools browser-extension artifacts, loaded dynamically (mirrors knip).
     "tools/devtools/**",
+    // Static report page and its generator scripts, outside the app graph (mirrors knip).
+    "tools/depcruise/**",
     // Storybook-only mocks, reached through Storybook's vite alias, not the prod graph.
     "src/storybook/mocks/**"
   ],
