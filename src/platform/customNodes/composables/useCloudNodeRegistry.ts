@@ -6,6 +6,7 @@ import { zCloudNodeRegistry } from '@comfyorg/ingest-types/zod'
 import { computed, shallowRef } from 'vue'
 
 import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
 import { reportError } from '@/platform/telemetry/reportError'
 
 type RegistryFailure =
@@ -72,6 +73,11 @@ export function useCloudNodeRegistry() {
         })
       ) {
         return fail(previous, { reason: 'invalidCatalog' })
+      }
+      try {
+        await app.reloadNodeDefs()
+      } catch (error) {
+        return fail(parsed.data, { reason: 'network' }, error)
       }
       state.value = { phase: 'ready', catalog: parsed.data }
       return true

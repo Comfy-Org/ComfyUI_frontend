@@ -2,10 +2,12 @@ import type { CloudNodeRegistry } from '@comfyorg/ingest-types'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
 
 import { useCloudNodeRegistry } from './useCloudNodeRegistry'
 
 vi.mock('@/scripts/api', () => ({ api: { fetchApi: vi.fn() } }))
+vi.mock('@/scripts/app', () => ({ app: { reloadNodeDefs: vi.fn() } }))
 vi.mock('@/platform/telemetry/reportError', () => ({ reportError: vi.fn() }))
 const fetchApi = vi.mocked(api.fetchApi)
 
@@ -31,7 +33,10 @@ const fixture = (pinned = false, prepared = true): CloudNodeRegistry => ({
 })
 
 describe('useCloudNodeRegistry', () => {
-  beforeEach(() => fetchApi.mockReset())
+  beforeEach(() => {
+    fetchApi.mockReset()
+    vi.mocked(app.reloadNodeDefs).mockReset().mockResolvedValue()
+  })
 
   it('loads the Cloud V2 catalog with validated generated types', async () => {
     fetchApi.mockResolvedValueOnce(Response.json(fixture()))
@@ -61,6 +66,7 @@ describe('useCloudNodeRegistry', () => {
     ])
     expect(fetchApi).toHaveBeenCalledTimes(2)
     expect(registry.catalog.value?.revisions[0].pinned).toBe(true)
+    expect(app.reloadNodeDefs).toHaveBeenCalledTimes(2)
   })
 
   it('keeps pinned and prepared as distinct states', async () => {
@@ -74,6 +80,21 @@ describe('useCloudNodeRegistry', () => {
       pinned: true,
       prepared: false
     })
+  })
+
+  it('refreshes definitions on unpin and retains the persisted pin if refresh fails', async () => {
+    fetchApi
+      .mockResolvedValueOnce(Response.json(fixture(true)))
+      .mockResolvedValueOnce(Response.json(fixture(false)))
+    const registry = useCloudNodeRegistry()
+    await registry.load()
+    vi.mocked(app.reloadNodeDefs).mockRejectedValueOnce(
+      new Error('Unavailable')
+    )
+    expect(await registry.setPin('b'.repeat(64), false)).toBe(false)
+    expect(registry.catalog.value?.revisions[0].pinned).toBe(false)
+    expect(registry.state.value.phase).toBe('error')
+    expect(app.reloadNodeDefs).toHaveBeenCalledTimes(2)
   })
 
   it('does not optimistically claim a rejected pin', async () => {

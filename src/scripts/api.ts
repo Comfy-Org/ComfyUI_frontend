@@ -1068,6 +1068,8 @@ export class ComfyApi extends EventTarget {
    */
   async getNodeDefs(): Promise<Record<string, ComfyNodeDef>> {
     const resp = await this.fetchApi('/object_info', { cache: 'no-store' })
+    if (!resp.ok)
+      throw new Error(`Node definitions unavailable (${resp.status})`)
     return await resp.json()
   }
 

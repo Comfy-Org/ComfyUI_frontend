@@ -13,6 +13,7 @@ import { api } from '@/scripts/api'
 import CloudNodeRegistryDialog from './CloudNodeRegistryDialog.vue'
 
 vi.mock('@/scripts/api', () => ({ api: { fetchApi: vi.fn() } }))
+vi.mock('@/scripts/app', () => ({ app: { reloadNodeDefs: vi.fn() } }))
 vi.mock('@/platform/telemetry/reportError', () => ({ reportError: vi.fn() }))
 const fetchApi = vi.mocked(api.fetchApi)
 const ready: CloudNodeRegistryRevision = {

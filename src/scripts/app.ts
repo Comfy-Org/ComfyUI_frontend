@@ -34,6 +34,7 @@ import { installComfyApi } from '@/platform/nodeApi/comfyApi'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
 import { isCloud } from '@/platform/distribution/types'
+import { pruneCloudNodeTypes } from '@/platform/customNodes/utils/pruneCloudNodeTypes'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { installNodeAddedTelemetry } from '@/platform/telemetry/nodeAdded/installNodeAddedTelemetry'
@@ -1227,6 +1228,7 @@ export class ComfyApp {
   }
 
   async registerNodesFromDefs(defs: Record<string, ComfyNodeDefV1>) {
+    pruneCloudNodeTypes(useNodeDefStore().nodeDefs, defs)
     await useExtensionService().invokeExtensionsAsync('addCustomNodeDefs', defs)
 
     // Register a node for each definition
@@ -2552,9 +2554,12 @@ export class ComfyApp {
    */
   async reloadNodeDefs() {
     const defs = await this.getNodeDefs()
-    for (const nodeId in defs) {
-      this.registerNodeDef(nodeId, defs[nodeId])
-    }
+    pruneCloudNodeTypes(useNodeDefStore().nodeDefs, defs)
+    await Promise.all(
+      Object.entries(defs).map(([nodeId, def]) =>
+        this.registerNodeDef(nodeId, def)
+      )
+    )
     // Refresh combo widgets in all nodes including those in subgraphs
     const nodeOutputStore = useNodeOutputStore()
     forEachNode(this.rootGraph, (node) => {
