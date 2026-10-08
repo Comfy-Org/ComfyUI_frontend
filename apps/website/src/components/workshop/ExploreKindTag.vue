@@ -41,7 +41,7 @@ const KINDS = {
   <span
     :class="
       cn(
-        'inline-flex h-6 shrink-0 items-center gap-1 rounded-full px-2.5 text-2xs/none font-semibold tracking-wider text-primary-warm-white uppercase',
+        'pointer-events-none absolute top-3 left-3 z-10 inline-flex items-center gap-1 rounded-lg px-2 py-1 text-2xs/none font-semibold tracking-wider text-primary-warm-white uppercase',
         KINDS[kind].surface
       )
     "

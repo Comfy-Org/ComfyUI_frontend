@@ -26,7 +26,7 @@ describe('ExploreResultCard', () => {
       })
 
       expect(screen.getByRole('link')).toHaveTextContent(
-        /^\s*Relight\s*Workflow\s*Edit images\s*$/
+        /^\s*Workflow\s*Relight\s*Edit images\s*$/
       )
       expect(
         screen.queryAllByAltText('').map((img) => img.getAttribute('src'))
@@ -47,14 +47,12 @@ describe('ExploreResultCard', () => {
       }
     })
 
-    expect(
-      within(screen.getByTestId('explore-pills')).getByTestId('explore-kind')
-    ).toHaveTextContent('Model')
+    const pills = within(screen.getByTestId('explore-pills'))
+    expect(pills.queryByTestId('explore-kind')).toBeNull()
+    expect(screen.getByTestId('explore-kind')).toHaveTextContent('Model')
     expect(screen.getByTestId('explore-source')).toHaveTextContent('Beeble')
     expect(
-      within(screen.getByTestId('explore-pills'))
-        .getAllByText(/./)
-        .map((pill) => pill.textContent.trim())
+      pills.getAllByText(/./).map((pill) => pill.textContent.trim())
     ).toEqual(expect.arrayContaining(['Edit images', 'Run', 'API']))
   })
 

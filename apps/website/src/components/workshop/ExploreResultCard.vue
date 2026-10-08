@@ -9,6 +9,7 @@ import type { ModelAccess } from '@/lib/workshop/explorer/model-access'
 import type { ExploreKind } from '@/lib/workshop/explore-search'
 import ModelAccessBadges from './explorer/ModelAccessBadges.vue'
 import ExploreKindTag from './ExploreKindTag.vue'
+import WorkshopCardMark from './WorkshopCardMark.vue'
 import WorkshopCardMedia from './WorkshopCardMedia.vue'
 
 const {
@@ -18,6 +19,7 @@ const {
   name,
   model,
   source,
+  logo = null,
   pills = [],
   access = [],
   locale = 'en'
@@ -31,6 +33,7 @@ const {
   model?: Pick<WorkshopModel, 'name' | 'thumbnail'>
   /** Who makes it or what it runs on, chipped over the artwork. */
   source?: string
+  logo?: string | null
   pills?: readonly string[]
   access?: readonly ModelAccess[]
   locale?: Locale
@@ -41,7 +44,7 @@ const linkAttrs = computed(() => {
   return newTab ? { href, target: '_blank', rel: 'noopener' } : { href }
 })
 
-const hasTags = computed(() => Boolean(kind || pills.length || access.length))
+const hasTags = computed(() => Boolean(pills.length || access.length))
 </script>
 
 <template>
@@ -61,13 +64,13 @@ const hasTags = computed(() => Boolean(kind || pills.length || access.length))
     <span class="relative block aspect-4/3 overflow-hidden rounded-2xl">
       <WorkshopCardMedia v-if="model" :model />
       <span v-else class="block size-full bg-hub-surface-hover" />
-      <span
+      <ExploreKindTag v-if="kind" :kind :locale />
+      <WorkshopCardMark
         v-if="source"
-        class="pointer-events-none absolute right-3 bottom-3 z-10 max-w-7/10 truncate rounded-lg bg-black/45 px-2 py-1 text-2xs font-semibold text-white backdrop-blur-md"
+        :label="source"
+        :logo
         data-testid="explore-source"
-      >
-        {{ source }}
-      </span>
+      />
     </span>
     <span class="flex min-w-0 flex-col gap-2.5 px-3">
       <span class="truncate text-sm font-medium text-content-bright">
@@ -78,7 +81,6 @@ const hasTags = computed(() => Boolean(kind || pills.length || access.length))
         class="flex min-w-0 flex-wrap items-center gap-1.5"
         data-testid="explore-pills"
       >
-        <ExploreKindTag v-if="kind" :kind :locale />
         <Badge v-for="pill in pills" :key="pill" variant="subtle">
           {{ pill }}
         </Badge>

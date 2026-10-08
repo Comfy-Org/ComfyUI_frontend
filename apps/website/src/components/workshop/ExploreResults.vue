@@ -6,6 +6,7 @@ import type { WorkshopModel } from '@/config/models-catalogue'
 import { useCaseFor } from '@/config/models-catalogue'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
+import { getLogoPath } from '@/lib/hub/model-logos'
 import { SHELF_CARD } from '@/lib/workshop/card-layout'
 import { accessFor } from '@/lib/workshop/explorer/model-access'
 import type { ExploreCount, ExploreEntry } from '@/lib/workshop/explore-search'
@@ -43,6 +44,17 @@ function sourceOf(model: WorkshopModel): string | undefined {
   return model.provider
 }
 
+function logoOf(model: WorkshopModel): string | null {
+  const workflowModel =
+    model.type === 'CLOUD' || model.type === 'SERVERLESS'
+      ? model.models?.[0]
+      : undefined
+  return (
+    getLogoPath(workflowModel ?? model.provider ?? '') ??
+    getLogoPath(model.name)
+  )
+}
+
 function nameOf(model: WorkshopModel): string {
   return model.workflowId
     ? model.name
@@ -73,6 +85,7 @@ function keyOf(entry: ExploreEntry): string {
           :name="entry.app.name"
           :model="entry.app"
           :source="t('workshop.card.comfyApp')"
+          :logo="getLogoPath(entry.app.name)"
           :pills="[
             t(entry.app.href ? 'hubPages.apps.open' : 'hubPages.apps.soon')
           ]"
@@ -85,6 +98,7 @@ function keyOf(entry: ExploreEntry): string {
           :name="nameOf(entry.model)"
           :model="entry.model"
           :source="sourceOf(entry.model)"
+          :logo="logoOf(entry.model)"
           :pills="useCaseLabel(entry.model)"
           :access="accessFor(entry.model)"
           :locale
