@@ -49,11 +49,9 @@ import { useFreeUsePlacement } from './experiments/freeUsePlacement'
 setupInlinePromptEditorDom()
 
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
-import type {
-  Subgraph,
-  LGraph,
-  LGraphNode
-} from '@/lib/litegraph/src/litegraph'
+import type { Subgraph } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
 
@@ -70,7 +68,12 @@ import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAssetsStore } from '@/stores/assetsStore'
-import { createTestDragAndScale } from '@/utils/__tests__/canvasTestUtils'
+import {
+  createMockCanvasRenderingContext2D,
+  createTestDragAndScale
+} from '@/utils/__tests__/canvasTestUtils'
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { startAssetDrag } from '@/platform/assets/utils/assetDragUtil'
 import { getFilenameDetails } from '@/utils/formatUtil'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -2105,6 +2108,39 @@ function fileOfSize(name: string, size: number, type: string): File {
   return file
 }
 
+function assetPanelDrag(
+  displayName: string | null,
+  overrides: Partial<AssetItem> = {}
+) {
+  const asset = {
+    id: 'library-source',
+    name: 'library.png',
+    hash: 'stored-library.png',
+    display_name: displayName,
+    tags: ['input'],
+    created_at: '2026-10-03T00:00:00Z',
+    updated_at: '2026-10-03T00:00:00Z',
+    ...overrides
+  } satisfies AssetItem
+  const values = new Map<string, string>()
+  const dataTransfer = {
+    get types() {
+      return [...values.keys()]
+    },
+    getData: (type: string) => values.get(type) ?? '',
+    setData: (type: string, value: string) => {
+      values.set(type, value)
+    }
+  } as unknown as DataTransfer
+  const event = new Event('dragstart', { cancelable: true }) as DragEvent
+  Object.defineProperty(event, 'dataTransfer', { value: dataTransfer })
+  startAssetDrag(event, asset)
+  return {
+    types: Array.from(dataTransfer.types),
+    getData: (type: string) => dataTransfer.getData(type)
+  }
+}
+
 // DES-527 replaced the paperclip and @ buttons with a single + menu, so every
 // attach or node-mention gesture now starts by opening it.
 async function openAddMenu(): Promise<void> {
@@ -2154,6 +2190,7 @@ function setupNodeSelectionCanvas() {
     selectItems,
     deselect,
     deselectAll,
+    setDirty: vi.fn(),
     animateToBounds: vi.fn(),
     multi_select: false,
     allow_dragnodes: true,
@@ -2178,6 +2215,46 @@ function setupNodeSelectionCanvas() {
 }
 
 const SUBGRAPH_UUID = '12345678-1234-1234-1234-123456789abc'
+
+function syncFakeSelection(): void {
+  canvasStore.updateSelectedItems()
+}
+
+function setupOwnedSelectionCanvas() {
+  const rootGraph = new LGraph()
+  const subgraph = createTestSubgraph({ rootGraph, id: SUBGRAPH_UUID })
+  rootGraph.subgraphs.set(subgraph.id, subgraph)
+  const rootNode = new LGraphNode('Root node')
+  rootNode.id = toNodeId(3)
+  rootGraph.add(rootNode)
+  const subgraphNode = new LGraphNode('KSampler')
+  subgraphNode.id = toNodeId(12)
+  subgraph.add(subgraphNode)
+
+  const canvasElement = document.createElement('canvas')
+  canvasElement.getContext = vi
+    .fn()
+    .mockReturnValue(createMockCanvasRenderingContext2D())
+  canvasElement.getBoundingClientRect = vi
+    .fn()
+    .mockReturnValue({ left: 0, top: 0, width: 800, height: 600 })
+  const canvas = new LGraphCanvas(canvasElement, rootGraph, {
+    skip_render: true
+  })
+  canvas.onSelectionChange = () => syncFakeSelection()
+
+  appMock.graph.nodes = rootGraph.nodes
+  Object.assign(appMock.rootGraph, { subgraphs: rootGraph.subgraphs })
+  appMock.canvas = canvas as unknown as typeof appMock.canvas
+  canvasStore.canvas = canvas
+  viewGraph(canvas, subgraph)
+  return { canvas, rootGraph, subgraph, rootNode, subgraphNode }
+}
+
+function viewGraph(canvas: LGraphCanvas, graph: LGraph): void {
+  canvas.setGraph(graph)
+  canvasStore.currentGraph = graph
+}
 
 function nestSelectionCanvasInSubgraph(
   state: ReturnType<typeof setupNodeSelectionCanvas>
@@ -2309,6 +2386,215 @@ describe('AgentPanelRoot attach flow', () => {
     useAgentWorkflowTabBindingStore().bind('wf-42', tab.path)
   })
 
+  it.for([
+    { displayName: null, label: 'library.png' },
+    { displayName: 'My library image', label: 'My library image' }
+  ])(
+    'stages an assets-panel drop with display name $displayName from the real producer payload',
+    async ({ displayName, label }) => {
+      const uploaded = stubUploadFetch()
+      renderWithSelectedTarget()
+      const store = useAgentComposerStore()
+      store.setText('Keep this draft')
+      await nextTick()
+      const target = screen.getByRole('button', {
+        name: i18n.global.t('agent.close')
+      })
+      const data = assetPanelDrag(displayName)
+
+      expect(dispatchDrag(target, 'dragover', data)).toBe(true)
+      expect(dispatchDrag(target, 'drop', data)).toBe(true)
+      expect(
+        within(await screen.findByTestId('composer-asset-section')).getByRole(
+          'group',
+          { name: label }
+        )
+      ).toBeInTheDocument()
+      expect(store.attachments).toEqual([
+        expect.objectContaining({
+          name: label,
+          ref: 'stored-library.png',
+          previewUrl: 'http://localhost:3000/api/assets/library-source/content'
+        })
+      ])
+      expect(store.prompt).toEqual({ text: 'Keep this draft', references: [] })
+      expect(uploaded).toEqual([])
+    }
+  )
+
+  it.for([
+    {
+      filename: 'clip.mp4',
+      label: 'My clip',
+      kind: 'video',
+      previewId: 'poster',
+      previewUrl: 'http://localhost:3000/api/assets/poster/content',
+      indicatorLabel: 'My clip',
+      indicatorSource: 'http://localhost:3000/api/assets/poster/content'
+    },
+    {
+      filename: 'song.mp3',
+      label: 'My recording',
+      kind: 'audio',
+      previewId: undefined,
+      previewUrl: undefined,
+      indicatorLabel: 'Audio',
+      indicatorSource: null
+    }
+  ])(
+    'preserves playable $kind metadata from the assets panel through the chat tray',
+    async ({
+      filename,
+      label,
+      kind,
+      previewId,
+      previewUrl,
+      indicatorLabel,
+      indicatorSource
+    }) => {
+      const uploaded = stubUploadFetch()
+      renderWithSelectedTarget()
+      const store = useAgentComposerStore()
+      store.setText('Keep typing')
+      await nextTick()
+      const data = assetPanelDrag(label, {
+        name: filename,
+        hash: `stored-${filename}`,
+        preview_id: previewId
+      })
+      expect(dispatchDrag(screen.getByRole('textbox'), 'drop', data)).toBe(true)
+      const trayItem = await screen.findByRole('group', { name: label })
+      expect(store.attachments).toEqual([
+        expect.objectContaining({
+          name: label,
+          mediaKind: kind,
+          previewUrl,
+          mediaUrl:
+            'http://localhost:3000/api/assets/library-source/content?disposition=inline'
+        })
+      ])
+      expect(
+        within(trayItem)
+          .getByRole('img', { name: indicatorLabel })
+          .getAttribute('src')
+      ).toBe(indicatorSource)
+      expect(store.prompt).toEqual({ text: 'Keep typing', references: [] })
+      expect(uploaded).toEqual([])
+    }
+  )
+
+  it('deduplicates an assets-panel item that needs fetching to identify its media type', async () => {
+    const data = assetPanelDrag('Recording.mp3', { name: 'recording' })
+    expect(
+      JSON.parse(data.getData('application/x-comfy-asset-info'))
+    ).toMatchObject({ media_kind: 'other' })
+    const source = data.getData('text/uri-list')
+    const fetched: string[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>(async (input, init) => {
+        if (String(input) === source) {
+          fetched.push(source)
+          return new Response(new Blob(['audio'], { type: 'audio/mpeg' }))
+        }
+        if (init?.method === 'POST') return json(200, { name: 'recording.mp3' })
+        if (String(input).includes('/assets'))
+          return json(200, { assets: [], total: 0, has_more: false })
+        return json(200, agentThreadList())
+      })
+    )
+    renderWithSelectedTarget()
+    await nextTick()
+    const store = useAgentComposerStore()
+    const target = screen.getByRole('textbox')
+    dispatchDrag(target, 'drop', data)
+    await vi.waitFor(() => expect(store.attachments[0]?.uploading).toBe(false))
+    dispatchDrag(target, 'drop', data)
+    await nextTick()
+    expect(store.attachments).toHaveLength(1)
+    expect(fetched).toEqual([source])
+    expect(useToastStore().messagesToAdd).toEqual([
+      expect.objectContaining({
+        severity: 'info',
+        detail: 'Recording.mp3 is already in the asset tray'
+      })
+    ])
+  })
+
+  it('allows a removed library asset to be explicitly dropped again while retaining retirement of its old identity', async () => {
+    stubUploadFetch()
+    renderWithSelectedTarget()
+    await nextTick()
+    const store = useAgentComposerStore()
+    const target = screen.getByRole('textbox')
+    const data = assetPanelDrag('library.png')
+    expect(dispatchDrag(target, 'drop', data)).toBe(true)
+    const trayItem = await screen.findByRole('group', { name: 'library.png' })
+    const oldAttachment = store.attachments[0]
+    assert.exists(oldAttachment)
+    store.referenceAttachment(oldAttachment.id)
+    const oldPrompt = store.prompt
+    await userEvent.hover(trayItem)
+    await userEvent.click(
+      within(trayItem).getByRole('button', {
+        name: i18n.global.t('agent.removeAsset', { name: 'library.png' })
+      })
+    )
+    expect(store.attachments).toEqual([])
+
+    expect(dispatchDrag(target, 'drop', data)).toBe(true)
+    await screen.findByRole('group', { name: 'library.png' })
+    const newAttachment = store.attachments[0]
+    assert.exists(newAttachment)
+    expect(newAttachment.id).not.toBe(oldAttachment.id)
+    store.updateAttachment(oldAttachment.id, { ref: 'too-late.png' })
+    store.applyEditorPrompt(oldPrompt)
+    expect(store.attachments).toEqual([newAttachment])
+    expect(newAttachment.ref).toBe('stored-library.png')
+    expect(store.prompt.references).toEqual([])
+    expect(useToastStore().messagesToAdd).toEqual([])
+    expect(dispatchDrag(target, 'drop', data)).toBe(true)
+    expect(store.attachments).toHaveLength(1)
+    expect(useToastStore().messagesToAdd).toEqual([
+      expect.objectContaining({
+        severity: 'info',
+        detail: 'library.png is already in the asset tray'
+      })
+    ])
+  })
+
+  it('allows the same library asset to be dropped into a new draft after sending', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) =>
+        init?.method === 'POST'
+          ? json(202, { thread_id: 'th-1', message_id: 'm-1' })
+          : json(200, agentThreadList())
+      )
+    )
+    renderWithSelectedTarget()
+    await nextTick()
+    const store = useAgentComposerStore()
+    const target = screen.getByRole('textbox')
+    const data = assetPanelDrag('library.png')
+    expect(dispatchDrag(target, 'drop', data)).toBe(true)
+    await screen.findByRole('group', { name: 'library.png' })
+    const previousId = store.attachments[0]?.id
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    expect(store.attachments).toEqual([])
+
+    expect(dispatchDrag(target, 'drop', data)).toBe(true)
+    await screen.findByRole('group', { name: 'library.png' })
+    expect(store.attachments).toEqual([
+      expect.objectContaining({
+        name: 'library.png',
+        ref: 'stored-library.png'
+      })
+    ])
+    expect(store.attachments[0]?.id).not.toBe(previousId)
+    expect(store.prompt.references).toEqual([])
+  })
+
   it('uploads a picked file, stages its ref, and forwards it on the next send', async () => {
     const messageBodies: unknown[] = []
     const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
@@ -2344,8 +2630,9 @@ describe('AgentPanelRoot attach flow', () => {
     await userEvent.upload(input, file)
 
     expect(
-      within(await screen.findByTestId('composer-asset-section')).getByText(
-        'cat.png'
+      within(await screen.findByTestId('composer-asset-section')).getByRole(
+        'group',
+        { name: 'cat.png' }
       )
     ).toBeInTheDocument()
 
@@ -2354,7 +2641,7 @@ describe('AgentPanelRoot attach flow', () => {
 
     expect(messageBodies).toHaveLength(1)
     expect(messageBodies[0]).toMatchObject({
-      content: 'make it pop@[Image: cat.png]',
+      content: 'make it pop',
       attachments: ['uploaded_cat.png']
     })
     expect(telemetry.trackAgentMessageSent).toHaveBeenCalledWith({
@@ -2461,8 +2748,9 @@ describe('AgentPanelRoot attach flow', () => {
     )
 
     expect(
-      within(await screen.findByTestId('composer-asset-section')).getByText(
-        'movie.mp4'
+      within(await screen.findByTestId('composer-asset-section')).getByRole(
+        'group',
+        { name: 'movie.mp4' }
       )
     ).toBeInTheDocument()
     await vi.waitFor(() => expect(uploaded).toEqual(['movie.mp4']))
@@ -2544,7 +2832,9 @@ describe('AgentPanelRoot attach flow', () => {
         detail: 'movie.mp4 is larger than 24 MB'
       })
     )
-    expect(screen.queryByText('movie.mp4')).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('group', { name: 'movie.mp4' })
+    ).not.toBeInTheDocument()
     expect(telemetry.trackAgentAttachButtonClicked).not.toHaveBeenCalled()
   })
 
@@ -2558,8 +2848,9 @@ describe('AgentPanelRoot attach flow', () => {
     dispatchDrag(screen.getByRole('textbox'), 'drop', { files: [image] })
 
     expect(
-      within(await screen.findByTestId('composer-asset-section')).getByText(
-        'huge.png'
+      within(await screen.findByTestId('composer-asset-section')).getByRole(
+        'group',
+        { name: 'huge.png' }
       )
     ).toBeInTheDocument()
     await vi.waitFor(() => expect(uploaded).toEqual(['huge.png']))
@@ -2577,8 +2868,9 @@ describe('AgentPanelRoot attach flow', () => {
     ).toBe(true)
 
     expect(
-      within(await screen.findByTestId('composer-asset-section')).getByText(
-        'movie.mp4'
+      within(await screen.findByTestId('composer-asset-section')).getByRole(
+        'group',
+        { name: 'movie.mp4' }
       )
     ).toBeInTheDocument()
     await vi.waitFor(() => expect(uploaded).toEqual(['movie.mp4']))
@@ -2609,8 +2901,9 @@ describe('AgentPanelRoot attach flow', () => {
     ).toBe(true)
 
     expect(
-      within(await screen.findByTestId('composer-asset-section')).getByText(
-        name
+      within(await screen.findByTestId('composer-asset-section')).getByRole(
+        'group',
+        { name: name }
       )
     ).toBeInTheDocument()
     await vi.waitFor(() => expect(uploaded).toEqual([name]))
@@ -2741,7 +3034,7 @@ describe('AgentPanelRoot attach flow', () => {
     await vi.waitFor(() => expect(refresh).toHaveBeenCalledTimes(2))
   })
 
-  it('lets a removed upload finish without reattaching until Undo', async () => {
+  it('keeps a removed tray upload retired after completion and stale editor history', async () => {
     const signals: AbortSignal[] = []
     let finishUpload: (response: Response) => void = () => {}
     const upload = new Promise<Response>((resolve) => {
@@ -2770,7 +3063,9 @@ describe('AgentPanelRoot attach flow', () => {
     const prompt = composer.prompt
 
     await userEvent.click(
-      await screen.findByRole('button', { name: i18n.global.t('agent.remove') })
+      await screen.findByRole('button', {
+        name: i18n.global.t('agent.removeAsset', { name: 'cat.png' })
+      })
     )
 
     expect(signals[0].aborted).toBe(false)
@@ -2780,13 +3075,7 @@ describe('AgentPanelRoot attach flow', () => {
     await vi.waitFor(() => expect(refresh).toHaveBeenCalledOnce())
     expect(composer.attachments).toEqual([])
     composer.applyEditorPrompt(prompt)
-    expect(composer.attachments).toEqual([
-      expect.objectContaining({
-        name: 'cat.png',
-        ref: 'uploaded-cat.png',
-        uploading: false
-      })
-    ])
+    expect(composer.attachments).toEqual([])
   })
 
   it('uses the server limit for audio rejection copy', async () => {
@@ -2822,26 +3111,58 @@ describe('AgentPanelRoot attach flow', () => {
     )
   })
 
-  it('shows the asset drop target during a trusted drag and clears it on leave', async () => {
-    stubUploadFetch()
-    renderWithSelectedTarget()
-    await nextTick()
-    const target = screen.getByRole('textbox')
-    const data = {
-      types: ['application/x-comfy-asset-info', 'text/uri-list']
+  it.for([
+    { tray: 'empty', attachments: [] },
+    {
+      tray: 'with an asset',
+      attachments: [{ id: 'kept', name: 'kept.png', ref: 'kept.png' }]
     }
+  ])(
+    'shows panel-wide drop feedback across child transitions while preserving the composer (tray=$tray)',
+    async ({ attachments }) => {
+      stubUploadFetch()
+      renderWithSelectedTarget()
+      const store = useAgentComposerStore()
+      store.replaceDraft({
+        text: 'Keep this draft',
+        workflowReferences: [],
+        attachments
+      })
+      await nextTick()
+      const prompt = store.prompt
+      const header = screen.getByRole('button', {
+        name: i18n.global.t('agent.close')
+      })
+      const composer = screen.getByTestId('composer-input-box')
+      const data = {
+        types: ['application/x-comfy-asset-info', 'text/uri-list']
+      }
+      expect(screen.queryByRole('status')).not.toBeInTheDocument()
 
-    dispatchDrag(target, 'dragenter', data)
-    await nextTick()
+      dispatchDrag(header, 'dragenter', data)
+      await nextTick()
 
-    const dropTarget = screen.getByRole('status')
-    expect(dropTarget).toHaveTextContent('Drag and drop assets here')
+      const dropTarget = screen.getByRole('status')
+      expect(dropTarget).toHaveTextContent('Drag and drop assets here')
+      expect(composer).not.toContainElement(dropTarget)
+      expect(screen.getByRole('textbox')).toHaveTextContent('Keep this draft')
+      expect(store.prompt).toEqual(prompt)
+      expect(screen.queryAllByRole('group', { name: 'kept.png' })).toHaveLength(
+        attachments.length
+      )
 
-    dispatchDrag(dropTarget, 'dragleave', data)
-    await nextTick()
+      dispatchDrag(composer, 'dragenter', data)
+      dispatchDrag(header, 'dragleave', data)
+      await nextTick()
+      expect(screen.getByRole('status')).toBe(dropTarget)
 
-    expect(screen.queryByRole('status')).not.toBeInTheDocument()
-  })
+      dispatchDrag(composer, 'dragleave', data)
+      await nextTick()
+      expect(screen.queryByRole('status')).not.toBeInTheDocument()
+      expect(store.prompt).toEqual(prompt)
+      expect(store.attachments).toEqual(attachments)
+    }
+  )
 
   it('rejects URI-only drags without showing or claiming the asset target', async () => {
     const uploaded = stubUploadFetch()
@@ -2921,8 +3242,9 @@ describe('AgentPanelRoot attach flow', () => {
       expect(dropTarget).not.toBeInTheDocument()
 
       expect(
-        within(await screen.findByTestId('composer-asset-section')).getByText(
-          filename
+        within(await screen.findByTestId('composer-asset-section')).getByRole(
+          'group',
+          { name: filename }
         )
       ).toBeInTheDocument()
 
@@ -2931,7 +3253,7 @@ describe('AgentPanelRoot attach flow', () => {
 
       expect(messageBodies).toHaveLength(1)
       expect(messageBodies[0]).toMatchObject({
-        content: `describe this@[${mime === 'image/png' ? 'Image' : 'Video'}: ${filename}]`,
+        content: 'describe this',
         attachments: [`uploaded_${filename}`]
       })
     }
@@ -2981,13 +3303,15 @@ describe('AgentPanelRoot attach flow', () => {
       expect(dispatchDrag(target, 'drop', dragData)).toBe(true)
       expect(dispatchDrag(target, 'drop', dragData)).toBe(true)
       expect(
-        within(await screen.findByTestId('composer-asset-section')).getByText(
-          filename
+        within(await screen.findByTestId('composer-asset-section')).getByRole(
+          'group',
+          { name: filename }
         )
       ).toBeInTheDocument()
       expect(
-        within(screen.getByTestId('composer-asset-section')).getAllByText(
-          filename
+        within(screen.getByTestId('composer-asset-section')).getAllByRole(
+          'group',
+          { name: filename }
         )
       ).toHaveLength(1)
       expect(
@@ -3050,8 +3374,9 @@ describe('AgentPanelRoot attach flow', () => {
 
     expect(dispatchDrag(target, 'drop', dragData)).toBe(true)
     expect(
-      within(await screen.findByTestId('composer-asset-section')).getByText(
-        'gen.png'
+      within(await screen.findByTestId('composer-asset-section')).getByRole(
+        'group',
+        { name: 'gen.png' }
       )
     ).toBeInTheDocument()
     expect(
@@ -3115,21 +3440,75 @@ describe('AgentPanelRoot attach flow', () => {
     stubUploadFetch()
     renderWithSelectedTarget()
     await nextTick()
-    const target = screen.getByRole('textbox')
+    const target = screen.getByRole('button', {
+      name: i18n.global.t('agent.close')
+    })
 
     const workflow = new File(['{}'], 'flow.json', {
       type: 'application/json'
     })
     expect(dispatchDrag(target, 'drop', { files: [workflow] })).toBe(false)
-    expect(screen.queryByText('flow.json')).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('group', { name: 'flow.json' })
+    ).not.toBeInTheDocument()
 
     const asset = new File(['x'], 'cat.png', { type: 'image/png' })
     expect(dispatchDrag(target, 'drop', { files: [asset] })).toBe(true)
     expect(
-      within(await screen.findByTestId('composer-asset-section')).getByText(
-        'cat.png'
+      within(await screen.findByTestId('composer-asset-section')).getByRole(
+        'group',
+        { name: 'cat.png' }
       )
     ).toBeInTheDocument()
+  })
+
+  it.for([
+    { copies: 1, notice: 'cat.png is already in the asset tray' },
+    { copies: 2, notice: 'Skipped 2 duplicate assets' }
+  ])('reports $copies skipped files once', async ({ copies, notice }) => {
+    const uploaded = stubUploadFetch()
+    renderWithSelectedTarget()
+    await nextTick()
+    const store = useAgentComposerStore()
+    store.setText('Keep this draft')
+    const target = screen.getByRole('textbox')
+    await userEvent.click(target)
+    dispatchDrag(target, 'drop', {
+      files: [
+        new File(['image'], 'cat.png', { type: 'image/png', lastModified: 1 })
+      ]
+    })
+    await vi.waitFor(() => expect(store.attachments[0]?.uploading).toBe(false))
+    expect(useToastStore().messagesToAdd).toEqual([])
+    dispatchDrag(target, 'drop', {
+      files: [
+        ...Array.from(
+          { length: copies },
+          () =>
+            new File(['image'], 'cat.png', {
+              type: 'image/png',
+              lastModified: 1
+            })
+        ),
+        new File(['another image'], 'dog.png', { type: 'image/png' })
+      ]
+    })
+    await nextTick()
+    expect(
+      within(screen.getByTestId('composer-asset-section')).getAllByRole(
+        'group',
+        {
+          name: 'cat.png'
+        }
+      )
+    ).toHaveLength(1)
+    await vi.waitFor(() => expect(uploaded).toEqual(['cat.png', 'dog.png']))
+    expect(useToastStore().messagesToAdd).toEqual([
+      expect.objectContaining({ severity: 'info', detail: notice })
+    ])
+    expect(screen.getByRole('group', { name: 'dog.png' })).toBeInTheDocument()
+    expect(target).toHaveFocus()
+    expect(store.prompt).toEqual({ text: 'Keep this draft', references: [] })
   })
 
   it('attaches only the assets out of a mixed drop', async () => {
@@ -3148,8 +3527,9 @@ describe('AgentPanelRoot attach flow', () => {
     dispatchDrag(screen.getByRole('textbox'), 'drop', { files })
 
     expect(
-      within(await screen.findByTestId('composer-asset-section')).getByText(
-        'cat.png'
+      within(await screen.findByTestId('composer-asset-section')).getByRole(
+        'group',
+        { name: 'cat.png' }
       )
     ).toBeInTheDocument()
     await vi.waitFor(() => expect(uploaded).toEqual(['cat.png']))
@@ -3203,7 +3583,9 @@ describe('AgentPanelRoot attach flow', () => {
 
       if (outcome === 'cancelled') {
         await userEvent.click(
-          screen.getByRole('button', { name: i18n.global.t('agent.remove') })
+          screen.getByRole('button', {
+            name: i18n.global.t('agent.removeAsset', { name: 'gen.png' })
+          })
         )
         resolveAsset(new Response(new Blob(['asset'], { type: 'image/png' })))
       } else {
@@ -3252,7 +3634,9 @@ describe('AgentPanelRoot attach flow', () => {
 
       // The rejected upload's chip leaves; only a committed one stays settled.
       await vi.waitFor(() =>
-        expect(screen.queryByText('bad.png')).not.toBeInTheDocument()
+        expect(
+          screen.queryByRole('group', { name: 'bad.png' })
+        ).not.toBeInTheDocument()
       )
       await vi.waitFor(() =>
         expect(
@@ -3265,8 +3649,9 @@ describe('AgentPanelRoot attach flow', () => {
         expect(telemetry.trackAgentAttachButtonClicked).not.toHaveBeenCalled()
       } else {
         expect(
-          within(screen.getByTestId('composer-asset-section')).getByText(
-            'good.png'
+          within(screen.getByTestId('composer-asset-section')).getByRole(
+            'group',
+            { name: 'good.png' }
           )
         ).toBeInTheDocument()
         await vi.waitFor(() =>
@@ -3307,8 +3692,9 @@ describe('AgentPanelRoot attach flow', () => {
     )
 
     expect(
-      within(await screen.findByTestId('composer-asset-section')).getByText(
-        'cat.png'
+      within(await screen.findByTestId('composer-asset-section')).getByRole(
+        'group',
+        { name: 'cat.png' }
       )
     ).toBeInTheDocument()
     expect(
@@ -3358,8 +3744,9 @@ describe('AgentPanelRoot attach flow', () => {
       screen.getByTestId<HTMLInputElement>('agent-file-input'),
       file
     )
-    within(await screen.findByTestId('composer-asset-section')).getByText(
-      'cat.png'
+    within(await screen.findByTestId('composer-asset-section')).getByRole(
+      'group',
+      { name: 'cat.png' }
     )
     await sendFromComposer('second message')
 
@@ -3403,8 +3790,9 @@ describe('AgentPanelRoot attach flow', () => {
       file
     )
     expect(
-      within(await screen.findByTestId('composer-asset-section')).getByText(
-        'cat.png'
+      within(await screen.findByTestId('composer-asset-section')).getByRole(
+        'group',
+        { name: 'cat.png' }
       )
     ).toBeInTheDocument()
 
@@ -3412,7 +3800,9 @@ describe('AgentPanelRoot attach flow', () => {
     vi.mocked(reportError).mockClear()
     failUpload()
     await vi.waitFor(() =>
-      expect(screen.queryByText('cat.png')).not.toBeInTheDocument()
+      expect(
+        screen.queryByRole('group', { name: 'cat.png' })
+      ).not.toBeInTheDocument()
     )
     expect(revoke).toHaveBeenCalledTimes(1)
     // A rejected file is the user's to fix; raising the server-error overlay
@@ -3445,7 +3835,7 @@ describe('AgentPanelRoot attach flow', () => {
     revoke.mockRestore()
   })
 
-  it('keeps a dismissed durable preview available for Undo until the editor unmounts', async () => {
+  it('keeps a durable tray preview through inline deletion, Undo and unmount', async () => {
     const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
     vi.stubGlobal(
       'fetch',
@@ -3475,7 +3865,9 @@ describe('AgentPanelRoot attach flow', () => {
       file
     )
     const assetSection = await screen.findByTestId('composer-asset-section')
-    expect(within(assetSection).getByText('cat.png')).toBeInTheDocument()
+    expect(
+      within(assetSection).getByRole('group', { name: 'cat.png' })
+    ).toBeInTheDocument()
     await waitFor(() =>
       expect(
         within(assetSection).getByRole('img', { name: 'cat.png' })
@@ -3483,10 +3875,17 @@ describe('AgentPanelRoot attach flow', () => {
     )
     expect(revoke).toHaveBeenCalledExactlyOnceWith('blob:mock-url')
 
-    await userEvent.click(
-      screen.getByRole('button', { name: i18n.global.t('agent.remove') })
-    )
-    expect(screen.queryByText('cat.png')).not.toBeInTheDocument()
+    const composer = useAgentComposerStore()
+    composer.referenceAttachment(composer.attachments[0].id)
+    await screen.findByTestId('asset-reference-chip')
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.keyboard('{Control>}a{/Control}{Backspace}')
+    expect(screen.queryByTestId('asset-reference-chip')).not.toBeInTheDocument()
+    expect(
+      within(screen.getByTestId('composer-asset-section')).getByRole('group', {
+        name: 'cat.png'
+      })
+    ).toBeVisible()
     screen.getByRole('textbox').focus()
     await userEvent.keyboard('{Control>}z{/Control}')
     expect(
@@ -3495,6 +3894,9 @@ describe('AgentPanelRoot attach flow', () => {
         { name: 'cat.png' }
       )
     ).toHaveAttribute('src', '/api/view?filename=uploaded_cat.png&type=input')
+    expect(screen.getByTestId('asset-reference-chip')).toHaveTextContent(
+      'cat.png'
+    )
     expect(revoke).toHaveBeenCalledExactlyOnceWith('blob:mock-url')
     view.unmount()
     expect(revoke).toHaveBeenCalledTimes(1)
@@ -9537,21 +9939,105 @@ describe('AgentPanelRoot workflow binding', () => {
 
   it.for([
     ...[
-      'untouched',
-      'new-draft',
-      'cleared-draft',
-      'removed-reference',
-      'removed-attachment',
-      'new-chat',
-      'history'
-    ].flatMap((nextAction) =>
-      ['mounted', 'reopened'].map((panel) => ({ nextAction, panel }))
+      {
+        nextAction: 'untouched',
+        expectedDraft: '',
+        act: () => Promise.resolve()
+      },
+      {
+        nextAction: 'new-draft',
+        expectedDraft: 'New input',
+        act: async (textbox: HTMLElement) => {
+          await userEvent.click(textbox)
+          await userEvent.paste('New input')
+        }
+      },
+      {
+        nextAction: 'cleared-draft',
+        expectedDraft: '',
+        act: async (textbox: HTMLElement) => {
+          await userEvent.click(textbox)
+          await userEvent.paste('New input')
+          await userEvent.clear(textbox)
+        }
+      },
+      {
+        nextAction: 'removed-reference',
+        expectedDraft: '',
+        act: async () => {
+          await userEvent.click(
+            screen.getByRole('button', {
+              name: i18n.global.t('agent.addToPrompt')
+            })
+          )
+          await userEvent.click(
+            screen.getByRole('menuitem', { name: 'Workflows' })
+          )
+          await userEvent.click(
+            await screen.findByRole('menuitem', { name: 'reference' })
+          )
+          await userEvent.click(
+            screen.getByRole('button', { name: 'Remove reference reference' })
+          )
+        }
+      },
+      {
+        nextAction: 'removed-attachment',
+        expectedDraft: '',
+        act: async () => {
+          useAgentComposerStore().addAttachment({
+            id: 'upload-2',
+            name: 'new.png',
+            ref: 'new.png'
+          })
+          await userEvent.click(
+            await screen.findByRole('button', {
+              name: i18n.global.t('agent.removeAsset', { name: 'new.png' })
+            })
+          )
+        }
+      },
+      {
+        nextAction: 'new-chat',
+        expectedDraft: '',
+        act: async () => {
+          await userEvent.click(
+            screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+          )
+        }
+      },
+      {
+        nextAction: 'history',
+        expectedDraft: '',
+        act: async () => {
+          await userEvent.click(
+            screen.getByRole('button', {
+              name: i18n.global.t('agent.showChatHistory')
+            })
+          )
+          await userEvent.click(await screen.findByText('Earlier chat'))
+        }
+      }
+    ].flatMap((scenario) =>
+      ['mounted', 'reopened'].map((panel) => ({ ...scenario, panel }))
     ),
-    { nextAction: 'untouched', panel: 'closed' },
-    { nextAction: 'stop', panel: 'reopened' }
+    {
+      nextAction: 'untouched',
+      panel: 'closed',
+      expectedDraft: '',
+      act: () => Promise.resolve()
+    },
+    {
+      nextAction: 'stop',
+      panel: 'reopened',
+      expectedDraft: '',
+      act: async () => {
+        await userEvent.click(screen.getByRole('button', { name: 'Stop' }))
+      }
+    }
   ])(
     'settles a submission without losing composer intent: $nextAction ($panel)',
-    async ({ nextAction, panel }) => {
+    async ({ nextAction, panel, expectedDraft, act }) => {
       setupWorkflowContext({
         targetId: 'wf-42',
         references: [
@@ -9600,21 +10086,28 @@ describe('AgentPanelRoot workflow binding', () => {
       setupNodeSelectionCanvas()
       const first = renderWithSelectedTarget()
       useAgentPanelStore().isOpen = true
-      await openMentionPicker()
-      await userEvent.click(await screen.findByText('KSampler'))
       let textbox = screen.getByRole('textbox')
-      await userEvent.type(textbox, '  Compare @')
-      await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
-      await userEvent.click(
-        await screen.findByRole('menuitem', { name: 'reference' })
-      )
       const composer = useAgentComposerStore()
-      composer.addAttachment({
-        id: 'upload-1',
-        name: 'cat.png',
-        ref: 'uploaded_cat.png'
+      composer.replaceDraft({
+        text: 'Compare  Keep this draft ',
+        workflowReferences: [
+          { id: 'wf-reference', name: 'reference', textOffset: 8 }
+        ],
+        attachments: [
+          {
+            id: 'upload-1',
+            name: 'cat.png',
+            ref: 'uploaded_cat.png'
+          }
+        ]
       })
-      await userEvent.keyboard('  Keep this draft  ')
+      composer.setNodes([{ id: '12', title: 'KSampler' }])
+      composer.setInsertionPoint({
+        textOffset: composer.draft.length,
+        referenceIndex: composer.prompt.references.length
+      })
+      composer.referenceAttachment('upload-1')
+      const originalDraft = composer.draft
       const originalReferences = [...composer.workflowReferences]
       await userEvent.click(screen.getByRole('button', { name: 'Send' }))
       await vi.waitFor(() => expect(bodies).toHaveLength(1))
@@ -9633,53 +10126,8 @@ describe('AgentPanelRoot workflow binding', () => {
         textbox = screen.getByRole('textbox')
         expect(screen.getByRole('button', { name: 'Stop' })).toBeVisible()
       }
-      if (nextAction === 'new-draft' || nextAction === 'cleared-draft')
-        await userEvent.type(textbox, 'New input')
-      if (nextAction === 'cleared-draft') await userEvent.clear(textbox)
-      if (nextAction === 'removed-reference') {
-        await userEvent.click(
-          screen.getByRole('button', {
-            name: i18n.global.t('agent.addToPrompt')
-          })
-        )
-        await userEvent.click(
-          screen.getByRole('menuitem', { name: 'Workflows' })
-        )
-        await userEvent.click(
-          await screen.findByRole('menuitem', { name: 'reference' })
-        )
-        await userEvent.click(
-          screen.getByRole('button', { name: 'Remove reference reference' })
-        )
-      }
-      if (nextAction === 'removed-attachment') {
-        composer.addAttachment({
-          id: 'upload-2',
-          name: 'new.png',
-          ref: 'new.png'
-        })
-        await userEvent.click(
-          await screen.findByRole('button', {
-            name: i18n.global.t('agent.remove')
-          })
-        )
-      }
-      if (nextAction === 'new-chat')
-        await userEvent.click(
-          screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
-        )
-      if (nextAction === 'history') {
-        await userEvent.click(
-          screen.getByRole('button', {
-            name: i18n.global.t('agent.showChatHistory')
-          })
-        )
-        await userEvent.click(await screen.findByText('Earlier chat'))
-      }
-      if (nextAction === 'stop') {
-        await userEvent.click(screen.getByRole('button', { name: 'Stop' }))
-        expect(cancellations).toHaveLength(0)
-      }
+      await act(textbox)
+      expect(cancellations).toHaveLength(0)
       finishSend(
         nextAction === 'stop'
           ? json(202, ack('wf-42', 'm-stopped'))
@@ -9702,9 +10150,7 @@ describe('AgentPanelRoot workflow binding', () => {
         expect(screen.queryByRole('button', { name: 'Stop' })).toBeNull()
       )
       if (nextAction === 'untouched') {
-        expect(useAgentComposerStore().draft).toBe(
-          '   Compare     Keep this draft  '
-        )
+        expect(useAgentComposerStore().draft).toBe(originalDraft)
         expect(composer.workflowReferences).toEqual(originalReferences)
         expect(composer.attachments).toMatchObject([
           { ref: 'uploaded_cat.png' }
@@ -9720,7 +10166,7 @@ describe('AgentPanelRoot workflow binding', () => {
         expect(bodies[1]).toMatchObject({
           workflow_id: 'wf-42',
           content:
-            '@[Node: KSampler #12]   Compare [reference](workflow://wf-reference) @[Image: cat.png]   Keep this draft',
+            '@[Node: KSampler #12] Compare [reference](workflow://wf-reference) Keep this draft @[Image: cat.png]',
           selection: { node_ids: ['12'] },
           attachments: ['uploaded_cat.png'],
           workflow_references: [
@@ -9728,9 +10174,7 @@ describe('AgentPanelRoot workflow binding', () => {
           ]
         })
       } else {
-        expect(useAgentComposerStore().draft).toBe(
-          nextAction === 'new-draft' ? 'New input' : ''
-        )
+        expect(useAgentComposerStore().draft).toBe(expectedDraft)
         expect(composer.attachments).toEqual([])
         expect(
           screen.queryByRole('button', { name: 'Open reference' })
@@ -9872,6 +10316,33 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(canvasStore.selectedItems).toEqual([state.nodes[0]])
   })
 
+  it.for([1, 2])(
+    'redraws the canvas after removing an inline node from %i selected nodes',
+    async (count) => {
+      makeTab()
+      mockMessagesEndpoint('wf-42')
+      const state = setupNodeSelectionCanvas()
+      renderWithSelectedTarget()
+      useAgentPanelStore().isOpen = true
+      await enterNodeSelectionMode()
+      const selected = [state.nodes[1], state.nodes[0]].slice(0, count)
+      state.selectItems(selected)
+      canvasStore.updateSelectedItems()
+      await nextTick()
+      state.canvas.setDirty.mockClear()
+
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Remove KSampler #12 reference' })
+      )
+
+      expect(
+        screen.queryByRole('button', { name: 'Remove KSampler #12 reference' })
+      ).toBeNull()
+      expect([...state.selectedItems]).toEqual(selected.slice(1))
+      expect(state.canvas.setDirty).toHaveBeenCalledWith(true)
+    }
+  )
+
   it('does not expose a canvas-focus action on a reference chip', async () => {
     makeTab()
     setupNodeSelectionCanvas()
@@ -9927,6 +10398,50 @@ describe('AgentPanelRoot workflow binding', () => {
     )
     expect(state.deselect).not.toHaveBeenCalled()
     expect([...state.selectedItems]).toEqual([rootTwin])
+  })
+
+  it('updates the open node picker when the viewed graph changes without editing the prompt', async () => {
+    makeTab('wf-42')
+    const state = setupOwnedSelectionCanvas()
+    renderWithSelectedTarget()
+    useAgentPanelStore().isOpen = true
+    await openMentionPicker()
+    expect(screen.getByRole('menuitem', { name: 'KSampler' })).toBeVisible()
+    const prompt = useAgentComposerStore().prompt
+
+    viewGraph(state.canvas, state.rootGraph)
+
+    expect(
+      await screen.findByRole('menuitem', { name: 'Root node' })
+    ).toBeVisible()
+    expect(screen.queryByRole('menuitem', { name: 'KSampler' })).toBeNull()
+    expect(useAgentComposerStore().prompt).toEqual(prompt)
+    expect(useAgentComposerStore().nodes).toEqual([])
+  })
+
+  it('lists target nodes loaded after opening the reference menu', async () => {
+    makeTab('wf-42')
+    const state = setupNodeSelectionCanvas()
+    showRootGraph(state)
+    renderWithSelectedTarget()
+    useAgentPanelStore().isOpen = true
+
+    const textbox = screen.getByRole('textbox')
+    await userEvent.click(textbox)
+    await userEvent.paste('Use @')
+    showRootGraph(state, state.nodes)
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Nodes' }))
+
+    expect(screen.getByRole('menuitem', { name: 'VAE Decode' })).toBeVisible()
+    await userEvent.click(screen.getByRole('menuitem', { name: 'KSampler' }))
+    expect(useAgentComposerStore().nodes).toEqual([
+      { id: '12', locatorId: '12', title: 'KSampler' }
+    ])
+    await userEvent.paste('next')
+    expect(useAgentComposerStore().draft).toBe('Use  next')
+    expect(screen.getByTestId('node-reference-chip')).toHaveTextContent(
+      'KSampler'
+    )
   })
 
   it('excludes referenced nodes from the mention picker', async () => {

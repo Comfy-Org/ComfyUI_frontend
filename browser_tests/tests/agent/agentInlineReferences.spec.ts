@@ -16,7 +16,7 @@ test.use({
 })
 
 test(
-  'keeps inline node and asset removal synchronized with the upper rows and Undo',
+  'keeps asset attachments in the tray while inline references follow prompt editing and Undo',
   { tag: ['@cloud', '@ui'] },
   async ({ page, workflowSelection, assetUpload }) => {
     await page.locator('#comfy-file-input').setInputFiles({
@@ -44,39 +44,50 @@ test(
     await panel
       .getByTestId('agent-file-input')
       .setInputFiles(assetPath('test_upload_image.png'))
-    const text = 'Adjust Color balance #12 to match test_upload_image.png '
-    await expect(editor).toHaveText(text)
+    const tray = panel.getByTestId('composer-asset-section')
+    await expect(
+      tray.getByRole('group', { name: 'test_upload_image.png' })
+    ).toBeVisible()
+    await expect(tray).not.toContainText('test_upload_image.png')
+    await expect(editor).toHaveText('Adjust Color balance #12 to match ')
+    await expect(panel.getByTestId('composer-node-section')).toHaveCount(0)
     await expect(
       panel.getByRole('button', { name: enMessages.agent.send, exact: true })
     ).toBeDisabled()
+    await editor.pressSequentially('@test_upload')
     await panel
-      .getByTestId('composer-asset-section')
-      .getByRole('button', { name: enMessages.agent.remove, exact: true })
+      .getByRole('menuitem', { name: 'test_upload_image.png', exact: true })
       .click()
-    assetUpload.finish()
-    await expect(editor.getByTestId('asset-reference-chip')).toHaveCount(0)
-    await editor.press('ControlOrMeta+z')
+    const text = 'Adjust Color balance #12 to match test_upload_image.png '
     await expect(editor).toHaveText(text)
+    assetUpload.finish()
     await expect(
       panel.getByRole('button', { name: enMessages.agent.send, exact: true })
     ).toBeEnabled()
+    await editor.press('Backspace')
+    await editor.press('Backspace')
+    await expect(editor.getByTestId('asset-reference-chip')).toHaveCount(0)
+    await expect(
+      tray.getByRole('group', { name: 'test_upload_image.png' })
+    ).toBeVisible()
+    await editor.press('ControlOrMeta+z')
+    await expect(editor.getByTestId('asset-reference-chip')).toHaveCount(1)
+    await editor.getByTestId('node-reference-chip').hover()
     await panel
       .getByRole('button', { name: 'Remove Color balance #12 reference' })
       .click()
-    await expect(editor).toHaveText('Adjust  to match test_upload_image.png ')
+    await expect(editor.getByTestId('node-reference-chip')).toHaveCount(0)
     await expect(panel.getByTestId('composer-node-section')).toHaveCount(0)
     await editor.press('ControlOrMeta+z')
-    await expect(editor).toHaveText(text)
-    await expect(panel.getByTestId('composer-node-section')).toHaveText(
-      'Color balance'
-    )
+    await expect(editor.getByTestId('node-reference-chip')).toHaveCount(1)
+    await expect(panel.getByTestId('composer-node-section')).toHaveCount(0)
 
     await editor.press('ControlOrMeta+a')
     await editor.press('ControlOrMeta+c')
     await expect
       .poll(() => page.evaluate(() => navigator.clipboard.readText()))
       .toBe(
-        'Adjust @[Node: Color balance #12] to match @[Image: test_upload_image.png] '
+        'Adjust @[Node: Color balance #12] to match @[Image: test_upload_image.png]'
       )
     await editor.press('ArrowRight')
     await page
@@ -94,15 +105,37 @@ test(
     await expect.poll(() => workflowSelection.savedPaths.length).toBe(2)
     workflowSelection.finishSave(true)
     await expect(editor.getByTestId('node-reference-chip')).toHaveCount(0)
+    await editor.pressSequentially(' @')
+    await panel
+      .getByRole('menuitem', { name: enMessages.agent.nodes, exact: true })
+      .click()
+    await expect(
+      panel.getByText(enMessages.agent.noNodesToReference, { exact: true })
+    ).toBeVisible()
+    await expect(
+      panel.getByRole('menuitem', { name: /Color balance/ })
+    ).toHaveCount(0)
+    await editor.press('Escape')
     await editor.press('ControlOrMeta+a')
     await editor.press('Backspace')
     await editor.press('ControlOrMeta+v')
     await expect(editor).toHaveText(
-      'Adjust @[Node: Color balance #12] to match @[Image: test_upload_image.png] '
+      'Adjust @[Node: Color balance #12] to match @[Image: test_upload_image.png]'
     )
     await expect(editor.getByTestId('node-reference-chip')).toHaveCount(0)
     await expect(editor.getByTestId('asset-reference-chip')).toHaveCount(0)
     await expect(panel.getByTestId('composer-node-section')).toHaveCount(0)
+    await expect(
+      tray.getByRole('group', { name: 'test_upload_image.png' })
+    ).toBeVisible()
+    await tray.getByRole('group', { name: 'test_upload_image.png' }).hover()
+    await panel
+      .getByTestId('composer-asset-section')
+      .getByRole('button', {
+        name: 'Remove test_upload_image.png',
+        exact: true
+      })
+      .click()
     await expect(panel.getByTestId('composer-asset-section')).toHaveCount(0)
     await expect(
       panel.getByRole('button', { name: enMessages.agent.switchWorkflow })

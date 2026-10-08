@@ -7,6 +7,7 @@ import type {
 } from '@comfyorg/ingest-types'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 // `main` reads this from `@/platform/remote/comfyui/types`, which does not
 // exist on this branch; `@/schemas/apiSchema` is where it lives here, matching
@@ -18,6 +19,8 @@ import { cloudAppFixture, waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { nextFrame } from '@e2e/fixtures/utils/timing'
+import type { WorkspaceStore } from '@e2e/types/globals'
 
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 
@@ -179,4 +182,23 @@ export async function bootAgentApp(
   await bootCloud(page)
   await page.goto(APP_URL)
   await waitForCloudApp(page)
+}
+
+/** Replace the boot tab's graph while retaining its active workflow identity. */
+export async function loadIntoBootWorkflow(
+  page: Page,
+  json: ComfyWorkflowJSON
+): Promise<void> {
+  await page.waitForFunction(() => {
+    const workspace = window.app?.extensionManager as WorkspaceStore | undefined
+    return workspace?.workflow.activeWorkflow != null
+  })
+  await page.evaluate(async (json) => {
+    const activeWorkflow = (window.app!.extensionManager as WorkspaceStore)
+      .workflow.activeWorkflow!
+    await window.app!.loadGraphData(json, true, true, activeWorkflow)
+    if (json.nodes.length > 0)
+      await window.app!.extensionManager.command.execute('Comfy.Canvas.FitView')
+  }, json)
+  await nextFrame(page)
 }
