@@ -8,6 +8,7 @@ import {
   chunkItems,
   createOpenAiTranslator,
   createRequestCounter,
+  createTranslationRun,
   mapWithConcurrency,
   translateLocaleItems
 } from './translate'
@@ -367,12 +368,12 @@ describe('createOpenAiTranslator', () => {
         Parameters<typeof createOpenAiTranslator>[0],
         | 'maxTruncationSplitDepth'
         | 'onUsage'
-        | 'requestConcurrency'
         | 'translationContext'
         | 'glossary'
       >
-    > = {}
+    > & { requestConcurrency?: number } = {}
   ) {
+    const { requestConcurrency = 2, ...translatorOptions } = overrides
     let calls = 0
     const requestBodies: string[] = []
     const requestUrls: string[] = []
@@ -391,19 +392,26 @@ describe('createOpenAiTranslator', () => {
       }
       return response
     }
-    const translate = createOpenAiTranslator({
+    const translator = createOpenAiTranslator({
       apiKey: 'key',
       model: 'test-model',
-      requestConcurrency: 1,
       reasoningEffort: 'low',
       translationContext: 'a test application',
       glossary: '',
       strictProtectedTokens: false,
       maxTruncationSplitDepth: 3,
       fetchFn,
-      ...overrides
+      ...translatorOptions
     })
-    return { translate, callCount: () => calls, requestBodies, requestUrls }
+    const translate = (locale: OutputLocale, items: TranslationItem[]) =>
+      translator(locale, items, createTranslationRun(requestConcurrency))
+    return {
+      translate,
+      translator,
+      callCount: () => calls,
+      requestBodies,
+      requestUrls
+    }
   }
 
   it('splits a truncated batch and scopes each half to its own items', async () => {
@@ -443,43 +451,64 @@ describe('createOpenAiTranslator', () => {
       return () => vi.useRealTimers()
     })
 
-    it.for([1, 2])(
-      'uses available split capacity without exceeding %i live requests',
-      async (requestConcurrency) => {
+    it.for([
+      { requestConcurrency: 1, itemCount: 2 },
+      { requestConcurrency: 2, itemCount: 2 },
+      { requestConcurrency: 2, itemCount: 4 }
+    ])(
+      'uses available split capacity without exceeding $requestConcurrency live requests for $itemCount items',
+      async ({ requestConcurrency, itemCount }) => {
         const pending = deferred<void>()
+        const runItems = [
+          ...items,
+          { ...items[0], id: '3', context: 'main.json: extra greeting' },
+          { ...items[1], id: '4', context: 'main.json: extra farewell' }
+        ].slice(0, itemCount)
         let activeRequests = 0
         let peakRequests = 0
-        const { translate } = translatorFor(
-          async (body, call) => {
-            if (call === 1) return response('{"1": "Bonj', truncated)
+        const { translator } = translatorFor(
+          async (body) => {
+            const requested = runItems.filter((item) =>
+              body.includes(item.context)
+            )
+            if (requested.length > 1) return response('{"1": "Bonj', truncated)
             activeRequests++
             peakRequests = Math.max(peakRequests, activeRequests)
             await pending.promise
             activeRequests--
-            return body.includes('main.json: greeting')
-              ? response('{"1": "Bonjour {name}"}')
-              : response('{"2": "Au revoir {name}"}')
+            return response(
+              JSON.stringify(
+                Object.fromEntries(
+                  requested.map((item) => [item.id, 'Bonjour {name}'])
+                )
+              )
+            )
           },
           { requestConcurrency }
         )
-        const result = translate(locale, items)
+        const result = translateLocaleItems(locale, runItems, translator, {
+          ...translationConfig,
+          requestConcurrency
+        })
 
         await vi.advanceTimersByTimeAsync(0)
         expect(activeRequests).toBe(requestConcurrency)
         pending.resolve()
-        await expect(result).resolves.toEqual({
-          '1': 'Bonjour {name}',
-          '2': 'Au revoir {name}'
-        })
+        await expect(result).resolves.toEqual(
+          new Map(runItems.map((item) => [item.id, 'Bonjour {name}']))
+        )
         expect(peakRequests).toBe(requestConcurrency)
       }
     )
 
     it('does not send a queued split after an authentication failure', async () => {
-      const { translate, callCount } = translatorFor([
-        response('{"1": "Bonj', truncated),
-        new Response('bad key', { status: 401 })
-      ])
+      const { translate, callCount } = translatorFor(
+        [
+          response('{"1": "Bonj', truncated),
+          new Response('bad key', { status: 401 })
+        ],
+        { requestConcurrency: 1 }
+      )
 
       await expect(translate(locale, items)).rejects.toMatchObject({
         status: 401
@@ -500,7 +529,10 @@ describe('createOpenAiTranslator', () => {
         },
         { requestConcurrency: 2 }
       )
-      const result = translate(locale, [...items, { ...items[0], id: '3' }])
+      const result = translate(locale, [
+        ...items,
+        { ...items[0], id: '3', context: 'main.json: extra' }
+      ])
       const rejection = result.catch((error: unknown) => {
         events.push('rejected')
         return error
@@ -513,6 +545,22 @@ describe('createOpenAiTranslator', () => {
       await expect(rejection).resolves.toMatchObject({ status: 401 })
       expect(events).toEqual(['settled', 'rejected'])
       expect(callCount()).toBe(3)
+    })
+
+    it('reuses the transport for an independent run after a request fails', async () => {
+      const { translate, callCount } = translatorFor([
+        new Response('bad key', { status: 401 }),
+        response('{"1":"Bonjour {name}","2":"Au revoir {name}"}')
+      ])
+
+      await expect(translate(locale, items)).rejects.toMatchObject({
+        status: 401
+      })
+      await expect(translate(locale, items)).resolves.toEqual({
+        '1': 'Bonjour {name}',
+        '2': 'Au revoir {name}'
+      })
+      expect(callCount()).toBe(2)
     })
   })
 

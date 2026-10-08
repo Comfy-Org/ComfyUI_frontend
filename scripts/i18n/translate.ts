@@ -25,8 +25,20 @@ type PromptConfig = Pick<
 
 export type TranslateBatch = (
   locale: OutputLocale,
-  items: TranslationItem[]
+  items: TranslationItem[],
+  run: TranslationRun
 ) => Promise<Record<string, string>>
+
+export interface TranslationRun {
+  requests: Semaphore
+  failure?: { reason: unknown }
+}
+
+export function createTranslationRun(
+  requestConcurrency: number
+): TranslationRun {
+  return { requests: new Semaphore(requestConcurrency) }
+}
 
 const defaultRequestTimeoutMs = 120_000
 const maxNetworkRetries = 3
@@ -286,7 +298,6 @@ function parseTranslationOutput(
 interface OpenAiTranslatorOptions extends PromptConfig {
   apiKey: string
   model: string
-  requestConcurrency: number
   reasoningEffort: TranslationPipelineConfig['reasoningEffort']
   maxTruncationSplitDepth: number
   fetchFn?: typeof fetch
@@ -303,23 +314,21 @@ export function createOpenAiTranslator(
     timeout: options.requestTimeoutMs ?? defaultRequestTimeoutMs,
     maxRetries: maxNetworkRetries
   })
-  const requests = new Semaphore(options.requestConcurrency)
-  let firstFailure: { reason: unknown } | undefined
-
   async function requestTranslation(
     locale: OutputLocale,
     items: TranslationItem[],
-    schema: z.ZodType<Record<string, string>>
+    schema: z.ZodType<Record<string, string>>,
+    run: TranslationRun
   ): Promise<TranslationAttempt> {
-    await requests.acquire()
+    await run.requests.acquire()
     try {
-      if (firstFailure) throw firstFailure.reason
+      if (run.failure) throw run.failure.reason
       return await sendTranslation(locale, items, schema)
     } catch (error) {
-      firstFailure ??= { reason: error }
+      run.failure ??= { reason: error }
       throw error
     } finally {
-      requests.release()
+      run.requests.release()
     }
   }
 
@@ -358,7 +367,8 @@ export function createOpenAiTranslator(
   async function translateBatch(
     locale: OutputLocale,
     items: TranslationItem[],
-    splitDepth: number
+    splitDepth: number,
+    run: TranslationRun
   ): Promise<Record<string, string>> {
     if (items.length === 0) return {}
     const schema = z
@@ -366,7 +376,7 @@ export function createOpenAiTranslator(
       .strict()
     let deferralReason = 'the request was not attempted'
     for (let attempt = 0; attempt <= maxResponseRetries; attempt++) {
-      const result = await requestTranslation(locale, items, schema)
+      const result = await requestTranslation(locale, items, schema, run)
       if (result.status === 'translated') return result.translations
       if (result.status !== 'truncated') {
         deferralReason = result.reason
@@ -383,7 +393,7 @@ export function createOpenAiTranslator(
       }
       const settled = await Promise.allSettled(
         splitTruncatedBatch(items).map((chunk) =>
-          translateBatch(locale, chunk, splitDepth + 1)
+          translateBatch(locale, chunk, splitDepth + 1, run)
         )
       )
       return Object.fromEntries(
@@ -399,7 +409,7 @@ export function createOpenAiTranslator(
     return {}
   }
 
-  return (locale, items) => translateBatch(locale, items, 0)
+  return (locale, items, run) => translateBatch(locale, items, 0, run)
 }
 
 export async function translateLocaleItems(
@@ -416,6 +426,7 @@ export async function translateLocaleItems(
   >
 ): Promise<Map<string, string>> {
   const results = new Map<string, string>()
+  const run = createTranslationRun(config.requestConcurrency)
   let remaining = [...items]
 
   for (
@@ -433,7 +444,7 @@ export async function translateLocaleItems(
       config.requestConcurrency,
       async (chunk) => {
         const requested = new Set(chunk.map((item) => item.id))
-        const response = await translateBatch(locale, chunk)
+        const response = await translateBatch(locale, chunk, run)
         return Object.entries(response).filter(([id]) => requested.has(id))
       }
     )

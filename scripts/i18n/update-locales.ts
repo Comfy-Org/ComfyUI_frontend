@@ -555,14 +555,13 @@ async function translateStates(
     )
   const usages: (ResponseUsage | undefined)[] = []
   const counter = createRequestCounter()
-  const createFileTranslator = () =>
+  const translator =
     translateBatch ??
     (apiKey
       ? createOpenAiTranslator({
           apiKey,
           fetchFn: counter.fetch,
           model: config.model,
-          requestConcurrency: config.requestConcurrency,
           reasoningEffort: config.reasoningEffort,
           translationContext: config.translationContext,
           glossary: config.glossary,
@@ -582,7 +581,7 @@ async function translateStates(
           ? await translateLocaleItems(
               state.locale,
               translation.items,
-              createFileTranslator(),
+              translator,
               config
             )
           : new Map<string, string>()

@@ -389,10 +389,12 @@ describe('failure isolation', () => {
   it('writes later files after an OpenAI request fails in an earlier file', async () => {
     const repo = createTwoFileRepo({ ...config, localeFileConcurrency: 1 })
     const before = repo.readTree()
+    const requests: string[] = []
     vi.stubEnv('OPENAI_API_KEY', 'test-key')
     const fetchFn: typeof fetch = async (_input, init) => {
       if (typeof init?.body !== 'string')
         throw new Error('expected a JSON request body')
+      requests.push(init.body)
       const failed = init.body.includes('a.json:')
       const body = failed
         ? { error: { message: 'invalid input', type: 'invalid_request_error' } }
@@ -416,9 +418,13 @@ describe('failure isolation', () => {
     }
     vi.stubGlobal('fetch', fetchFn)
 
-    await expect(repo.run(false)).rejects.toThrow(
+    const result = repo.run(false)
+    await expect(result).rejects.toThrow(
       'Translation failed for 2 locale files'
     )
+    await expect(result).rejects.toThrow('zh-CN/a.json: 400 invalid input')
+    await expect(result).rejects.toThrow('ja/a.json: 400 invalid input')
+    expect(requests).toHaveLength(4)
 
     const after = repo.readTree()
     expect(aFiles.map((file) => after[file])).toEqual(
