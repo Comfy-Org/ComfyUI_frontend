@@ -22,7 +22,10 @@ const meta: Meta<typeof Button> = {
         'secondaryOutline',
         'ghost',
         'link',
-        'underlineLink'
+        'underlineLink',
+        'inline',
+        'nav',
+        'navMuted'
       ]
     },
     size: {
