@@ -1,7 +1,7 @@
 // @vitest-environment node
 
 import { execFileSync } from 'node:child_process'
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { fileURLToPath, URL } from 'node:url'
@@ -426,6 +426,36 @@ it('allows vi.mocked where its type is needed', () => {
 })
 `
 
+const mockedInExpectAutofixFixture = `import { expect, it, vi } from 'vitest'
+
+const store = { save: vi.fn() }
+const active: typeof store | undefined = undefined
+const fallback = { save: vi.fn() }
+
+it('passes each subject to expect without vi.mocked', () => {
+  expect(vi.mocked(store.save)).toHaveBeenCalled()
+  expect(vi.mocked(store).save).toHaveBeenCalled()
+  expect(vi.mocked(active ?? fallback)).toBe(fallback)
+  expect(vi.mocked(active ?? fallback).save).toHaveBeenCalled()
+  expect(vi.mocked(store.save).mock.calls).toEqual([])
+})
+`
+
+const mockedInExpectAutofixed = `import { expect, it, vi } from 'vitest'
+
+const store = { save: vi.fn() }
+const active: typeof store | undefined = undefined
+const fallback = { save: vi.fn() }
+
+it('passes each subject to expect without vi.mocked', () => {
+  expect(store.save).toHaveBeenCalled()
+  expect(store.save).toHaveBeenCalled()
+  expect(active ?? fallback).toBe(fallback)
+  expect((active ?? fallback).save).toHaveBeenCalled()
+  expect(vi.mocked(store.save).mock.calls).toEqual([])
+})
+`
+
 function expectReportsAt(
   output: string,
   lines: readonly number[],
@@ -440,6 +470,7 @@ function expectReportsAt(
 describe('Vitest cleanup rules', () => {
   let workDir: string
   let output: string
+  let autofixed: string
 
   beforeAll(() => {
     workDir = mkdtempSync(path.join(tmpdir(), 'comfy-vitest-cleanup-'))
@@ -450,6 +481,10 @@ describe('Vitest cleanup rules', () => {
       mockedInExpectFixture
     )
     writeFileSync(path.join(workDir, 'fetch.test.ts'), fetchFixture)
+    writeFileSync(
+      path.join(workDir, 'mocked-in-expect-autofix.test.ts'),
+      mockedInExpectAutofixFixture
+    )
     writeFileSync(path.join(workDir, 'litegraph.test.ts'), liteGraphFixture)
     writeFileSync(
       path.join(workDir, 'mock-instance.test.ts'),
@@ -499,6 +534,22 @@ describe('Vitest cleanup rules', () => {
         stdio: ['ignore', 'pipe', 'pipe'],
         timeout: 30_000
       }
+    )
+
+    execFileSync(
+      process.execPath,
+      [
+        oxlintEntry,
+        '--config',
+        path.join(workDir, '.oxlintrc.json'),
+        '--fix',
+        'mocked-in-expect-autofix.test.ts'
+      ],
+      { cwd: workDir, stdio: 'ignore', timeout: 30_000 }
+    )
+    autofixed = readFileSync(
+      path.join(workDir, 'mocked-in-expect-autofix.test.ts'),
+      'utf8'
     )
   })
 
@@ -584,6 +635,10 @@ describe('Vitest cleanup rules', () => {
     expect(
       stripVTControlCharacters(output).match(/mocked-in-expect\.test\.ts:\d+:/g)
     ).toHaveLength(4)
+  })
+
+  it('fixes vi.mocked subjects and keeps the precedence of member chains', () => {
+    expect(autofixed).toBe(mockedInExpectAutofixed)
   })
 
   it('ignores unrelated names, nested helpers, test bodies, and Playwright specs', () => {
