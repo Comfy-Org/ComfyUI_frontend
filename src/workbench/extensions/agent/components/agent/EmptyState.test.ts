@@ -149,6 +149,31 @@ describe('EmptyState', () => {
     }
   )
 
+  it('keeps translated treatment copy outside the experiment population', async () => {
+    const previousLocale = i18n.global.locale.value
+    const translatedTreatmentExists = vi
+      .spyOn(i18n.global, 'te')
+      .mockReturnValue(true)
+    i18n.global.locale.value = 'zh'
+    distribution.isCloud = true
+    try {
+      const { emitted } = render(EmptyState, {
+        props: { assignment: 'test', attributeExperiment: true },
+        global: { plugins: [i18n] }
+      })
+
+      expect(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.suggestedPrompts.cloud.0')
+        })
+      ).toBeVisible()
+      expect(emitted()).not.toHaveProperty('rendered')
+    } finally {
+      i18n.global.locale.value = previousLocale
+      translatedTreatmentExists.mockRestore()
+    }
+  })
+
   it('omits experiment attribution for a QA-rendered treatment', async () => {
     distribution.isCloud = true
     const user = userEvent.setup()

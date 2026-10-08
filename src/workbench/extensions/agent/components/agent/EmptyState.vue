@@ -32,7 +32,10 @@ const promptKey = isCloud
   : 'agent.suggestedPrompts.local'
 const treatmentPromptKey = 'agent.suggestedPrompts.treatment.cloud'
 const hasTreatmentCopy = computed(
-  () => isCloud && te(`${treatmentPromptKey}.0`, locale.value)
+  () =>
+    isCloud &&
+    locale.value === FALLBACK_LOCALE &&
+    te(`${treatmentPromptKey}.0`, locale.value)
 )
 const renderedAssignment: AgentStarterPromptAssignment =
   assignment === 'test' && hasTreatmentCopy.value ? 'test' : 'control'
