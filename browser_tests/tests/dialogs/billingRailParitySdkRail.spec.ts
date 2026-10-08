@@ -592,8 +592,7 @@ test.describe('Billing rail parity', { tag: '@cloud' }, () => {
 
     const cancelDialog = new CancelSubscriptionDialog(page)
     await cancelDialog.open(ACTIVE_STANDARD.renewal_date)
-    await cancelDialog.confirmCancelButton.click()
-    await expect(cancelDialog.root).toBeHidden()
+    await cancelDialog.confirmCancel()
 
     const panel = await openPlanAndCredits(page)
     await expect(panel.getByText(/Ends on/)).toBeVisible()

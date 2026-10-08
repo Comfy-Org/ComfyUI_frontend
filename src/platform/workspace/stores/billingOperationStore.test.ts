@@ -3343,6 +3343,74 @@ describe('billingOperationStore', () => {
     })
   })
 
+  describe('retention operations', () => {
+    it('leaves the refresh and the outcome to the offer dialog', async () => {
+      const billing = mockBillingContext()
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'succeeded',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      const terminal = store.startOperation('op-1', 'retention')
+
+      await vi.advanceTimersByTimeAsync(0)
+      const operation = await terminal
+
+      expect(operation.status).toBe('succeeded')
+      expect(billing.fetchStatus).not.toHaveBeenCalled()
+      expect(
+        useTeamWorkspaceStore().updateActiveWorkspace
+      ).not.toHaveBeenCalled()
+      expect(useSettingsDialog().show).not.toHaveBeenCalled()
+      expect(useToastStore().add).not.toHaveBeenCalled()
+    })
+
+    it.for(['failed', 'reconciliation_needed'] as const)(
+      'leaves a %s outcome to the offer dialog',
+      async (status) => {
+        vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+          id: 'op-1',
+          status,
+          started_at: new Date().toISOString()
+        })
+
+        const store = useBillingOperationStore()
+        const terminal = store.startOperation('op-1', 'retention')
+
+        await vi.advanceTimersByTimeAsync(0)
+        const operation = await terminal
+
+        expect(operation.status).toBe(status)
+        expect(useToastStore().add).not.toHaveBeenCalled()
+      }
+    )
+
+    it('polls only while its launch workspace is active', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'pending',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-1', 'retention', {
+        workspaceId: 'workspace-2'
+      })
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(workspaceApi.getBillingOpStatus).not.toHaveBeenCalled()
+
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspaceId: 'workspace-2'
+      })
+      await vi.advanceTimersByTimeAsync(5_000)
+
+      expect(workspaceApi.getBillingOpStatus).toHaveBeenCalledWith('op-1')
+    })
+  })
+
   describe('cancel operations', () => {
     it('does not show a processing toast for cancel operations', () => {
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
