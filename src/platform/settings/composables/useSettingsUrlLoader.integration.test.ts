@@ -14,11 +14,14 @@ let testRouter: Router
 
 const mockShowSettings = vi.hoisted(() => vi.fn())
 
-vi.mock('@/platform/settings/composables/useSettingsDialog', () => ({
-  useSettingsDialog: () => ({
-    show: mockShowSettings
+vi.mock<unknown>(
+  import('@/platform/settings/composables/useSettingsDialog'),
+  () => ({
+    useSettingsDialog: () => ({
+      show: mockShowSettings
+    })
   })
-}))
+)
 
 function createAppLikeRouter(): Router {
   const router = createRouter({

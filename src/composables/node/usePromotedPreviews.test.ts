@@ -27,7 +27,7 @@ type MockNodeOutputStore = Pick<
   | 'getNodePreviewImagesByExecutionId'
 >
 
-vi.mock('@/stores/nodeOutputStore', () => {
+vi.mock<unknown>(import('@/stores/nodeOutputStore'), () => {
   const store: MockNodeOutputStore = {
     nodeOutputs: reactive<MockNodeOutputStore['nodeOutputs']>({}),
     nodePreviewImages: reactive<MockNodeOutputStore['nodePreviewImages']>({}),

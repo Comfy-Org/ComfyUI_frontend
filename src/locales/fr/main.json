@@ -13,21 +13,21 @@
     "shareTooltip": "Partager le workflow"
   },
   "agent": {
-    "addFromAssets": "Ajouter depuis le panneau des ressources",
-    "addNodesFromGraph": "Ajouter des nœuds depuis le graphe",
+    "addFromAssets": "Glissez une ressource depuis le panneau des ressources",
+    "addNodesFromGraph": "Mentionner des nœuds du graphe",
     "addPromptToSend": "Ajouter un prompt à envoyer",
     "addToPrompt": "Ajouter au prompt",
     "alpha": "ALPHA",
     "askComfyAgent": "Demander à Comfy Agent",
     "assetNotAttachable": "Il est possible de joindre des images, vidéos, fichiers audio, modèles 3D et fichiers texte",
     "attach": "Joindre un fichier",
-    "attachFiles": "Joindre des images ou des fichiers",
+    "attachFiles": "Téléverser des images ou des fichiers",
     "attachmentTooLarge": "{name} dépasse {limit}",
     "attachmentUploadFailed": "Impossible d’importer {name}",
     "backToPreviousChat": "Retour à la discussion précédente",
     "caption": "L’agent IA peut faire des erreurs",
     "captionExpanded": "L’agent IA peut faire des erreurs. Vérifiez votre réponse.",
-    "changeWorkflowForChat": "Modifier le workflow de cette discussion",
+    "changeWorkflowForChat": "Modifier le workflow que l’agent peut modifier",
     "chatOptions": "Options de discussion",
     "chooseWorkflow": "Choisir un workflow",
     "chooseWorkflowForChat": "Choisir un workflow pour cette conversation",
@@ -69,13 +69,13 @@
     "noNodesToMention": "Aucun nœud dans ce workflow",
     "nodeSelection": {
       "bannerSubtitle": "Sélectionnez un ou plusieurs nœuds à ajouter comme référence",
-      "bannerTitle": "Ajouter des nœuds depuis le graphe",
+      "bannerTitle": "Mentionner des nœuds du graphe",
       "exit": "Quitter le mode",
       "selectNode": "Sélectionner un nœud"
     },
     "notHelpful": "Pas utile",
     "openWorkflowTab": "Ouvrir {name}",
-    "placeholder": "Décrivez vos idées, {'@'} pour référencer,\najoutez des nœuds depuis le graphe ou faites glisser des ressources",
+    "placeholder": "Décrivez vos idées, {'@'} pour référencer,\nmentionnez des nœuds du graphe ou glissez des ressources",
     "ranToolCalls": "A exécuté {count} appel d’outil | A exécuté {count} appels d’outil",
     "ranToolCallsTimed": "A exécuté {count} appel d’outil pendant {seconds} secondes | A exécuté {count} appels d’outil pendant {seconds} secondes",
     "remove": "Supprimer",
@@ -4420,6 +4420,10 @@
       "ownerDescription": "Mettez à jour votre méthode de paiement pour réactiver l'abonnement de l'espace de travail et exécuter des workflows.",
       "ownerRunLabel": "Mettre à jour le paiement pour exécuter",
       "ownerRunTooltip": "Mettez à jour le paiement pour réactiver cet abonnement",
+      "paymentFailedMemberDescription": "Demandez au propriétaire de votre espace de travail de mettre à jour le moyen de paiement de l’espace de travail.",
+      "paymentFailedMemberTitle": "Le paiement de cet espace de travail a échoué",
+      "paymentFailedOwnerDescription": "Mettez à jour votre moyen de paiement pour continuer à exécuter des workflows.",
+      "paymentFailedOwnerTitle": "Votre paiement a échoué",
       "title": "Abonnement en pause"
     },
     "perMonth": "USD / mois",
@@ -4959,6 +4963,16 @@
       "linkToGlobalSeed": "Valeur globale",
       "randomize": "Valeur aléatoire",
       "randomizeDesc": "Mélange la valeur aléatoirement après chaque génération"
+    },
+    "vueOnly": {
+      "Chart": "Graphique",
+      "Compositor": "Compositeur",
+      "Fileupload": "Téléversement de fichier",
+      "Galleria": "Galerie",
+      "ImageCompare": "Comparaison d’images",
+      "Markdown": "Markdown",
+      "MultiSelect": "Sélection multiple",
+      "SelectButton": "Bouton de sélection"
     }
   },
   "workflowService": {
@@ -5025,6 +5039,10 @@
         "body": "L'abonnement de cet espace de travail est en pause. Mettez à jour le paiement pour reprendre.",
         "memberBody": "L'abonnement de cet espace de travail est en pause. Les administrateurs de votre espace de travail doivent mettre à jour le mode de paiement.",
         "title": "Abonnement en pause"
+      },
+      "planChange": {
+        "body": "Votre forfait actuel reste actif jusque-là.",
+        "title": "Votre forfait passe à {plan} le {date}"
       },
       "updatePayment": "Mettre à jour le paiement",
       "warning": {

@@ -14,19 +14,19 @@ const mockToastStore = vi.hoisted(() => ({
   addAlert: vi.fn()
 }))
 
-vi.mock('extendable-media-recorder', () => ({
+vi.mock(import('extendable-media-recorder'), () => ({
   register: mockRegister
 }))
 
-vi.mock('extendable-media-recorder-wav-encoder', () => ({
+vi.mock(import('extendable-media-recorder-wav-encoder'), () => ({
   connect: mockConnect
 }))
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: mockApi
 }))
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
+vi.mock<unknown>(import('@/platform/updates/common/toastStore'), () => ({
   useToastStore: vi.fn(() => mockToastStore)
 }))
 

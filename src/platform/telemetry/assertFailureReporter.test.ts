@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mockReportError = vi.hoisted(() => vi.fn())
-vi.mock('./reportError', () => ({
+vi.mock(import('./reportError'), () => ({
   reportError: mockReportError
 }))
 
@@ -24,7 +24,7 @@ describe('reportAssertFailure', () => {
       expect.objectContaining({
         message: '[Assertion failed]: graph must exist'
       }),
-      { errorType: 'invariant_assert' }
+      { errorType: 'invariant_assert', logToConsole: false }
     )
   })
 

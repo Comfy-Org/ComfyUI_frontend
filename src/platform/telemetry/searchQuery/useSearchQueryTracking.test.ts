@@ -6,7 +6,7 @@ const hoisted = vi.hoisted(() => ({
   trackSearchQuery: vi.fn()
 }))
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({ trackSearchQuery: hoisted.trackSearchQuery })
 }))
 

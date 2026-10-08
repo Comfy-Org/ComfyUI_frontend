@@ -25,7 +25,7 @@ const upstreamHolder = vi.hoisted(() => ({
   ref: null as { value: unknown } | null
 }))
 
-vi.mock('@/composables/useUpstreamValue', async () => {
+vi.mock<unknown>(import('@/composables/useUpstreamValue'), async () => {
   const { ref } = await import('vue')
   return {
     useUpstreamValue: () => {
@@ -40,7 +40,7 @@ const outputsHolder = vi.hoisted(() => ({
   nodeOutputs: {} as Record<string, unknown>
 }))
 
-vi.mock('@/stores/nodeOutputStore', () => ({
+vi.mock<unknown>(import('@/stores/nodeOutputStore'), () => ({
   useNodeOutputStore: () => outputsHolder
 }))
 

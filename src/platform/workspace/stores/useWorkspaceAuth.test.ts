@@ -28,9 +28,9 @@ const mockTeamWorkspaceState = vi.hoisted(() => ({
   activeWorkspaceId: null as string | null
 }))
 
-vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
+vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
 
-vi.mock('@/stores/authStore', () => ({
+vi.mock<unknown>(import('@/stores/authStore'), () => ({
   useAuthStore: () => ({
     getIdToken: mockGetIdToken,
     notifyTokenRefreshed: mockNotifyTokenRefreshed,
@@ -40,54 +40,57 @@ vi.mock('@/stores/authStore', () => ({
   })
 }))
 
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => ({
-    forgetRevokedActiveWorkspace: mockForgetRevokedActiveWorkspace,
-    get activeWorkspaceId() {
-      return mockTeamWorkspaceState.activeWorkspaceId
-    }
+vi.mock<unknown>(
+  import('@/platform/workspace/stores/teamWorkspaceStore'),
+  () => ({
+    useTeamWorkspaceStore: () => ({
+      forgetRevokedActiveWorkspace: mockForgetRevokedActiveWorkspace,
+      get activeWorkspaceId() {
+        return mockTeamWorkspaceState.activeWorkspaceId
+      }
+    })
   })
-}))
+)
 
-vi.mock('@/platform/workflow/persistence/base/storageIO', () => ({
+vi.mock(import('@/platform/workflow/persistence/base/storageIO'), () => ({
   prepareWorkflowWorkspaceTransition: mockPrepareWorkflowWorkspaceTransition
 }))
 
-vi.mock('@/platform/auth/session/useSessionCookie', () => ({
+vi.mock<unknown>(import('@/platform/auth/session/useSessionCookie'), () => ({
   useSessionCookie: () => ({
     ensureSessionCookie: mockEnsureSessionCookie
   })
 }))
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
     trackUnifiedAuthRefresh: mockTrackUnifiedAuthRefresh
   })
 }))
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
+vi.mock<unknown>(import('@/platform/updates/common/toastStore'), () => ({
   useToastStore: () => ({
     add: mockToastAdd
   })
 }))
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     apiURL: (route: string) => `https://api.example.com/api${route}`
   }
 }))
 
-vi.mock('@/platform/workspace/api/workspaceApiUrl', () => ({
+vi.mock(import('@/platform/workspace/api/workspaceApiUrl'), () => ({
   workspaceApiUrl: (route: string) => `https://api.example.com/api${route}`
 }))
 
-vi.mock('@/i18n', () => ({
+vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key
 }))
 
 const mockUnifiedCloudAuthEnabled = vi.hoisted(() => ({ value: false }))
 
-vi.mock('@/composables/useFeatureFlags', () => ({
+vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: () => ({
     flags: {
       get unifiedCloudAuthEnabled() {

@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useQueuePolling } from '@/platform/remote/comfyui/useQueuePolling'
 
-vi.mock('@/stores/queueStore', () => {
+vi.mock<unknown>(import('@/stores/queueStore'), () => {
   const state = reactive({
     activeJobsCount: 0,
     isLoading: false,

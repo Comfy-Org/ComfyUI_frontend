@@ -11,7 +11,7 @@ import { attachGroupLayout } from '@/renderer/core/layout/operations/graphLayout
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { RENDER_SCALE_FACTOR } from '@/renderer/core/layout/transform/graphRenderTransform'
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { canvas: undefined }
 }))
 

@@ -27,7 +27,7 @@ const mockData = vi.hoisted(() => ({
   setShowConflictRedDot: (_value: boolean) => {}
 }))
 
-vi.mock('@/composables/auth/useCurrentUser', () => ({
+vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   useCurrentUser: () => {
     return {
       isLoggedIn: computed(() => mockData.isLoggedIn)
@@ -35,19 +35,20 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
   }
 }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false,
   isNightly: false
 }))
 
-vi.mock('@/platform/updates/common/releaseStore', () => ({
+vi.mock<unknown>(import('@/platform/updates/common/releaseStore'), () => ({
   useReleaseStore: () => ({
     shouldShowRedDot: computed(() => true)
   })
 }))
 
-vi.mock(
-  '@/workbench/extensions/manager/composables/useConflictAcknowledgment',
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/composables/useConflictAcknowledgment'),
+
   () => {
     const shouldShowConflictRedDot = ref(false)
     mockData.setShowConflictRedDot = (value: boolean) => {
@@ -62,21 +63,25 @@ vi.mock(
   }
 )
 
-vi.mock('@/workbench/extensions/manager/composables/useManagerState', () => ({
-  useManagerState: () => ({
-    shouldShowManagerButtons: computed(() => true),
-    openManager: vi.fn()
-  })
-}))
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/composables/useManagerState'),
 
-vi.mock('@/stores/authStore', () => ({
+  () => ({
+    useManagerState: () => ({
+      shouldShowManagerButtons: computed(() => true),
+      openManager: vi.fn()
+    })
+  })
+)
+
+vi.mock<unknown>(import('@/stores/authStore'), () => ({
   useAuthStore: vi.fn(() => ({
     currentUser: null,
     loading: false
   }))
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     menu: {
       element: document.createElement('div')
@@ -86,7 +91,7 @@ vi.mock('@/scripts/app', () => ({
 
 const mockTrackUiButtonClicked = vi.hoisted(() => vi.fn())
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
     trackUiButtonClicked: mockTrackUiButtonClicked
   })

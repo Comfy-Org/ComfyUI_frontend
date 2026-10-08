@@ -37,7 +37,7 @@ const {
   }
 })
 
-vi.mock('@/stores/dialogStore', () => ({
+vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
   useDialogStore: () => ({
     showDialog,
     closeDialog,
@@ -46,19 +46,19 @@ vi.mock('@/stores/dialogStore', () => ({
   })
 }))
 
-vi.mock('@/i18n', () => ({
+vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key
 }))
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({ trackEvent: vi.fn() })
 }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
 }))
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
     canAccessSubscriptionFeatures: { value: true },
     isFreeTier: { value: false },
@@ -66,23 +66,26 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   })
 }))
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
+vi.mock<unknown>(import('@/platform/updates/common/toastStore'), () => ({
   useToastStore: () => ({ add: toastAdd })
 }))
 
-vi.mock('@/platform/workspace/composables/useDowngradeToPersonal', () => ({
-  useDowngradeToPersonal: () => ({
-    hasOtherMembers,
-    refreshMembers,
-    previewDowngrade,
-    downgradeToPersonal
-  }),
-  ReactivationConfirmationRequiredError,
-  ReactivationAmountChangedError
-}))
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useDowngradeToPersonal'),
+  () => ({
+    useDowngradeToPersonal: () => ({
+      hasOtherMembers,
+      refreshMembers,
+      previewDowngrade,
+      downgradeToPersonal
+    }),
+    ReactivationConfirmationRequiredError,
+    ReactivationAmountChangedError
+  })
+)
 
-vi.mock(
-  '@/platform/workspace/components/dialogs/DowngradeRemoveMembersDialogContent.vue',
+vi.mock<unknown>(
+  import('@/platform/workspace/components/dialogs/DowngradeRemoveMembersDialogContent.vue'),
   () => ({ default: { name: 'DowngradeRemoveMembersDialogContent' } })
 )
 

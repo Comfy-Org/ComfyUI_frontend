@@ -1,7 +1,7 @@
 import { nextTick } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 
-vi.mock('@/platform/assets/composables/media/assetMappers')
+vi.mock(import('@/platform/assets/composables/media/assetMappers'))
 
 import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
 import { useAssetsSidebarBadgeStore } from '@/stores/workspace/assetsSidebarBadgeStore'

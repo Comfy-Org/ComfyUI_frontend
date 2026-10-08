@@ -18,7 +18,7 @@ Object.defineProperty(window, 'localStorage', {
   writable: true
 })
 
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: () => mockSettingStore
 }))
 

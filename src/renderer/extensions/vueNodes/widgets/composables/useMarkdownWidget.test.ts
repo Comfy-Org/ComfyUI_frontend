@@ -1,6 +1,5 @@
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
-import type * as Litegraph from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { DOMWidget } from '@/scripts/domWidget'
@@ -15,22 +14,18 @@ const { canvasMock } = vi.hoisted(() => ({
   }
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { rootGraph: { id: 'root' }, canvas: canvasMock }
 }))
-vi.mock('@/lib/litegraph/src/litegraph', async (importOriginal) => {
-  const actual = await importOriginal<typeof Litegraph>()
-  return { ...actual, resolveNodeRootGraphId: vi.fn(() => 'root') }
-})
-vi.mock('@/stores/widgetValueStore', () => ({
+vi.mock<unknown>(import('@/stores/widgetValueStore'), () => ({
   useWidgetValueStore: () => ({ getWidget: () => undefined })
 }))
 
-function createMarkdownWidget(node: LGraphNode) {
+function createMarkdownWidget(node: LGraphNode, defaultValue = '') {
   const inputSpec: InputSpec = {
     type: 'MARKDOWN',
     name: 'note',
-    default: ''
+    default: defaultValue
   }
   return useMarkdownWidget()(node, inputSpec) as DOMWidget<HTMLElement, string>
 }
@@ -60,6 +55,18 @@ describe('useMarkdownWidget', () => {
     textarea.dispatchEvent(new Event('input', { bubbles: true }))
     textarea.dispatchEvent(new Event('change', { bubbles: true }))
     expect(callback).toHaveBeenCalledTimes(2)
+  })
+
+  it('renders Markdown links and tables', () => {
+    const node = createMockDOMWidgetNode()
+    const widget = createMarkdownWidget(
+      node,
+      '[Comfy](https://www.comfy.org)\n\n| Name |\n| --- |\n| Comfy |'
+    )
+    onTestFinished(() => widget.onRemove?.())
+
+    expect(widget.element.querySelector('a')?.textContent).toBe('Comfy')
+    expect(widget.element.querySelector('table')?.textContent).toContain('Name')
   })
 
   it('toggles editing on dblclick/blur and stops keydown propagation', () => {

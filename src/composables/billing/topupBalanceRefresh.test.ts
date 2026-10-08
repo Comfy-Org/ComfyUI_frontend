@@ -8,7 +8,7 @@ const mockBalance = {
   value: { amount_micros: 1_000 } as { amount_micros: number } | null
 }
 
-vi.mock('@/stores/authStore', () => ({
+vi.mock<unknown>(import('@/stores/authStore'), () => ({
   useAuthStore: () => ({
     get balance() {
       return mockBalance.value

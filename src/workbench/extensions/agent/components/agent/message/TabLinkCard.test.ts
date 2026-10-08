@@ -25,30 +25,36 @@ const mocks = vi.hoisted(() => ({
   openWorkflows: [] as unknown[]
 }))
 
-vi.mock('../../../composables/agent/useAgentTargetNavigation', () => ({
+vi.mock(import('../../../composables/agent/useAgentTargetNavigation'), () => ({
   useAgentTargetNavigation: () => ({ navigate: mocks.navigate })
 }))
 
-vi.mock('@/scripts/api', () => ({ api: mocks.api }))
+vi.mock<unknown>(import('@/scripts/api'), () => ({ api: mocks.api }))
 
-vi.mock('@/platform/telemetry/reportError', () => ({
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mocks.reportError
 }))
 
-vi.mock('@/platform/workflow/core/services/workflowService', () => ({
-  useWorkflowService: () => ({ openWorkflow: mocks.openWorkflow })
-}))
-
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => ({
-    get openWorkflows() {
-      return mocks.openWorkflows
-    },
-    get activeWorkflow() {
-      return mocks.activeWorkflow
-    }
+vi.mock<unknown>(
+  import('@/platform/workflow/core/services/workflowService'),
+  () => ({
+    useWorkflowService: () => ({ openWorkflow: mocks.openWorkflow })
   })
-}))
+)
+
+vi.mock<unknown>(
+  import('@/platform/workflow/management/stores/workflowStore'),
+  () => ({
+    useWorkflowStore: () => ({
+      get openWorkflows() {
+        return mocks.openWorkflows
+      },
+      get activeWorkflow() {
+        return mocks.activeWorkflow
+      }
+    })
+  })
+)
 
 const { useAgentWorkflowTabBindingStore } =
   await import('../../../stores/agent/agentWorkflowTabBindingStore')

@@ -31,13 +31,13 @@ const storeState = vi.hoisted(() => {
   }
 })
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     getLogs: mocks.getLogs
   }
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     rootGraph: {
       serialize: mocks.serialize
@@ -45,11 +45,11 @@ vi.mock('@/scripts/app', () => ({
   }
 }))
 
-vi.mock('@/utils/errorReportUtil', () => ({
+vi.mock(import('@/utils/errorReportUtil'), () => ({
   generateErrorReport: mocks.generateErrorReport
 }))
 
-vi.mock('@/stores/systemStatsStore', async () => {
+vi.mock<unknown>(import('@/stores/systemStatsStore'), async () => {
   const { ref: vueRef } = await import('vue')
   const systemStatsRef = vueRef<unknown>(null)
   const isLoadingRef = vueRef(false)

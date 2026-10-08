@@ -5,7 +5,7 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 
 import CloudSignupView from '@/platform/cloud/onboarding/CloudSignupView.vue'
 
-vi.mock('@/composables/auth/useAuthActions', () => ({
+vi.mock<unknown>(import('@/composables/auth/useAuthActions'), () => ({
   useAuthActions: () => ({
     signInWithGoogle: vi.fn(),
     signInWithGithub: vi.fn(),
@@ -13,12 +13,19 @@ vi.mock('@/composables/auth/useAuthActions', () => ({
   })
 }))
 
-vi.mock('@/platform/cloud/onboarding/composables/usePostAuthRedirect', () => ({
-  usePostAuthRedirect: () => ({ onAuthSuccess: vi.fn() })
-}))
+vi.mock(
+  import('@/platform/cloud/onboarding/composables/usePostAuthRedirect'),
+  () => ({
+    usePostAuthRedirect: () => ({ onAuthSuccess: vi.fn() })
+  })
+)
 
-vi.mock('@/base/webviewDetection', () => ({ isEmbeddedWebView: () => false }))
-vi.mock('@/platform/telemetry', () => ({ useTelemetry: () => undefined }))
+vi.mock(import('@/base/webviewDetection'), () => ({
+  isEmbeddedWebView: () => false
+}))
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
+  useTelemetry: () => undefined
+}))
 
 const inChina = vi.hoisted(() => ({
   value: false,
@@ -39,13 +46,13 @@ const inChina = vi.hoisted(() => ({
     this.pending = Promise.reject(error)
   }
 }))
-vi.mock('@/utils/networkUtil', () => ({
+vi.mock(import('@/utils/networkUtil'), () => ({
   isInChina: () => inChina.pending ?? Promise.resolve(inChina.value)
 }))
 
 const freeTier = vi.hoisted(() => ({ value: false }))
-vi.mock(
-  '@/platform/cloud/onboarding/composables/useFreeTierOnboarding',
+vi.mock<unknown>(
+  import('@/platform/cloud/onboarding/composables/useFreeTierOnboarding'),
   () => ({
     useFreeTierOnboarding: () => ({
       isFreeTierEnabled: { value: freeTier.value }

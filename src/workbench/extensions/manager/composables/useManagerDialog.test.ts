@@ -9,7 +9,7 @@ import { describe, expect, it, vi } from 'vitest'
 const showDialog = vi.hoisted(() => vi.fn())
 const closeDialog = vi.hoisted(() => vi.fn())
 
-vi.mock('@/stores/dialogStore', () => ({
+vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
   useDialogStore: () => ({ showDialog, closeDialog })
 }))
 

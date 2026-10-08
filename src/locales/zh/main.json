@@ -13,21 +13,21 @@
     "shareTooltip": "分享工作流"
   },
   "agent": {
-    "addFromAssets": "从资源面板添加",
-    "addNodesFromGraph": "从画布添加节点",
+    "addFromAssets": "从资源面板拖入资源",
+    "addNodesFromGraph": "提及画布中的节点",
     "addPromptToSend": "添加要发送的提示词",
     "addToPrompt": "添加到提示词",
     "alpha": "ALPHA",
     "askComfyAgent": "询问 Comfy Agent",
     "assetNotAttachable": "可附加图像、视频、音频、3D 模型和文本文件",
     "attach": "附加文件",
-    "attachFiles": "附加图像或文件",
+    "attachFiles": "上传图像或文件",
     "attachmentTooLarge": "{name} 大于 {limit}",
     "attachmentUploadFailed": "无法上传 {name}",
     "backToPreviousChat": "返回上一个聊天",
     "caption": "AI 智能体可能会出错",
     "captionExpanded": "AI 智能体可能会出错。请仔细检查回复。",
-    "changeWorkflowForChat": "更改此聊天的工作流",
+    "changeWorkflowForChat": "更改代理可编辑的工作流",
     "chatOptions": "聊天选项",
     "chooseWorkflow": "选择工作流",
     "chooseWorkflowForChat": "为此聊天选择工作流",
@@ -69,13 +69,13 @@
     "noNodesToMention": "此工作流中没有节点",
     "nodeSelection": {
       "bannerSubtitle": "选择一个或多个节点作为参考添加",
-      "bannerTitle": "从画布添加节点",
+      "bannerTitle": "提及画布中的节点",
       "exit": "退出模式",
       "selectNode": "选择节点"
     },
     "notHelpful": "没有帮助",
     "openWorkflowTab": "打开 {name}",
-    "placeholder": "描述你的想法，使用 {'@'} 引用，\n从画布添加节点或拖入资源",
+    "placeholder": "描述想法，使用 {'@'} 引用，\n提及画布中的节点或拖入资源",
     "ranToolCalls": "已运行 {count} 次工具调用 | 已运行 {count} 次工具调用",
     "ranToolCallsTimed": "已运行 {count} 次工具调用，耗时 {seconds} 秒 | 已运行 {count} 次工具调用，耗时 {seconds} 秒",
     "remove": "移除",
@@ -4420,6 +4420,10 @@
       "ownerDescription": "请更新您的支付方式以恢复工作区订阅并运行工作流。",
       "ownerRunLabel": "更新支付后运行",
       "ownerRunTooltip": "更新支付方式以恢复此订阅",
+      "paymentFailedMemberDescription": "请让您的工作区所有者更新工作区的付款方式。",
+      "paymentFailedMemberTitle": "此工作区的付款未成功",
+      "paymentFailedOwnerDescription": "更新您的付款方式，以继续运行工作流。",
+      "paymentFailedOwnerTitle": "您的付款未成功",
       "title": "订阅已暂停"
     },
     "perMonth": "美元 / 月",
@@ -4959,6 +4963,16 @@
       "linkToGlobalSeed": "全局值",
       "randomize": "随机值",
       "randomizeDesc": "每次运行后随机化该值"
+    },
+    "vueOnly": {
+      "Chart": "图表",
+      "Compositor": "合成器",
+      "Fileupload": "文件上传",
+      "Galleria": "图库",
+      "ImageCompare": "图像对比",
+      "Markdown": "Markdown",
+      "MultiSelect": "多选",
+      "SelectButton": "选择按钮"
     }
   },
   "workflowService": {
@@ -5025,6 +5039,10 @@
         "body": "此工作区的订阅已暂停。请更新付款方式以恢复。",
         "memberBody": "此工作区的订阅已暂停。工作区管理员需要更新付款方式。",
         "title": "订阅已暂停"
+      },
+      "planChange": {
+        "body": "您当前的套餐将在此之前保持有效。",
+        "title": "您的套餐将于 {date} 变更为 {plan}"
       },
       "updatePayment": "更新付款方式",
       "warning": {

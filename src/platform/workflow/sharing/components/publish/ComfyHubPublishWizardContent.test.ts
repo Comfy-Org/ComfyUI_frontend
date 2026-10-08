@@ -15,8 +15,8 @@ const mockProfile = ref<{ username: string; name?: string } | null>({
   name: 'Test User'
 })
 
-vi.mock(
-  '@/platform/workflow/sharing/composables/useComfyHubProfileGate',
+vi.mock<unknown>(
+  import('@/platform/workflow/sharing/composables/useComfyHubProfileGate'),
   () => ({
     useComfyHubProfileGate: () => ({
       checkProfile: mockCheckProfile,
@@ -27,7 +27,7 @@ vi.mock(
   })
 )
 
-vi.mock('@/composables/useErrorHandling', () => ({
+vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
   useErrorHandling: () => ({
     toastErrorHandler: mockToastErrorHandler
   })
@@ -37,7 +37,7 @@ const mockFlags = vi.hoisted(() => ({
   comfyHubProfileGateEnabled: true
 }))
 
-vi.mock('@/composables/useFeatureFlags', () => ({
+vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: () => ({
     flags: mockFlags
   })

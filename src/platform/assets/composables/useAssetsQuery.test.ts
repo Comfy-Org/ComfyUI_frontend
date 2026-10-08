@@ -13,7 +13,7 @@ import { api } from '@/scripts/api'
 // pagination-dedup assertions no longer match current `doLoadMore`/`loadNew`
 // behavior on `main` (no overlap dedup, no updated knownIds mid-walk) and would
 // need separate, unrelated fixes to re-add; out of scope for this row.
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: { fetchApi: vi.fn() }
 }))
 

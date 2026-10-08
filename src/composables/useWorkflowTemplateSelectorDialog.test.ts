@@ -16,24 +16,24 @@ const mockTelemetry = vi.hoisted(() => ({
   trackTemplateLibraryOpened: vi.fn()
 }))
 
-vi.mock('@/services/dialogService', () => ({
+vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => mockDialogService
 }))
 
-vi.mock('@/stores/dialogStore', () => ({
+vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
   useDialogStore: () => mockDialogStore
 }))
 
-vi.mock('@/services/useNewUserService', () => ({
+vi.mock<unknown>(import('@/services/useNewUserService'), () => ({
   useNewUserService: () => mockNewUserService
 }))
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => mockTelemetry
 }))
 
-vi.mock(
-  '@/components/custom/widget/WorkflowTemplateSelectorDialog.vue',
+vi.mock<unknown>(
+  import('@/components/custom/widget/WorkflowTemplateSelectorDialog.vue'),
   () => ({
     default: { name: 'MockWorkflowTemplateSelectorDialog' }
   })

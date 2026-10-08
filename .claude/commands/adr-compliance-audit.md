@@ -12,8 +12,8 @@ Audit the current changes (or a specified PR) for compliance with Architecture D
 Read these documents for context:
 
 ```
-docs/adr/LAYOUT-crdt-layout-intent-and-local-measurement.md
-docs/adr/ECS-entity-component-system.md
+docs/adr/CRDT-LAYOUT-0003-crdt-layout-intent-and-local-measurement.md
+docs/adr/ECS-0008-entity-component-system.md
 docs/architecture/ecs-target-architecture.md
 docs/architecture/ecs-migration-plan.md
 docs/architecture/appendix-critical-analysis.md

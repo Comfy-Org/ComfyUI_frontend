@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
 
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useExternalLink } from '@/composables/useExternalLink'
@@ -16,23 +15,14 @@ import { fromPartial } from '@total-typescript/shoehorn'
 const mockRunMintPortsIntentionalClear = vi.hoisted(() =>
   vi.fn(<T>(clear: () => T): T => clear())
 )
-vi.mock('@/workbench/extensions/agent/crdt/mintPortWiring', () => ({
-  runMintPortsIntentionalClear: mockRunMintPortsIntentionalClear
-}))
+vi.mock<unknown>(
+  import('@/workbench/extensions/agent/crdt/mintPortWiring'),
+  () => ({
+    runMintPortsIntentionalClear: mockRunMintPortsIntentionalClear
+  })
+)
 
-// Mock vue-i18n for useExternalLink
-const mockLocale = ref('en')
-vi.mock('vue-i18n', async () => {
-  const actual = await vi.importActual('vue-i18n')
-  return {
-    ...actual,
-    useI18n: vi.fn(() => ({
-      locale: mockLocale
-    }))
-  }
-})
-
-vi.mock('@/scripts/app', () => {
+vi.mock<unknown>(import('@/scripts/app'), () => {
   const mockGraphClear = vi.fn()
   const mockDs = {
     scale: 1,
@@ -73,7 +63,7 @@ vi.mock('@/scripts/app', () => {
   }
 })
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     dispatchCustomEvent: vi.fn(),
     apiURL: vi.fn(() => 'http://localhost:8188'),
@@ -84,7 +74,7 @@ vi.mock('@/scripts/api', () => ({
 }))
 
 const mockModelStoreRefresh = vi.fn().mockResolvedValue(undefined)
-vi.mock('@/stores/modelStore', async (importOriginal) => {
+vi.mock<unknown>(import('@/stores/modelStore'), async (importOriginal) => {
   const actual = await importOriginal<typeof ModelStoreModule>()
   return {
     ...actual,
@@ -93,7 +83,7 @@ vi.mock('@/stores/modelStore', async (importOriginal) => {
 })
 
 const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
-vi.mock('@/platform/distribution/types', async (importOriginal) => ({
+vi.mock(import('@/platform/distribution/types'), async (importOriginal) => ({
   ...(await importOriginal<typeof DistributionModule>()),
   get isCloud() {
     return mockDistributionState.isCloud
@@ -103,44 +93,47 @@ vi.mock('@/platform/distribution/types', async (importOriginal) => ({
 const mockMissingModelStoreRefresh = vi.hoisted(() =>
   vi.fn().mockResolvedValue(undefined)
 )
-vi.mock('@/platform/missingModel/missingModelStore', () => ({
+vi.mock<unknown>(import('@/platform/missingModel/missingModelStore'), () => ({
   useMissingModelStore: () => ({
     refreshMissingModels: mockMissingModelStoreRefresh
   })
 }))
 
-vi.mock('@/platform/settings/settingStore')
+vi.mock(import('@/platform/settings/settingStore'))
 
-vi.mock('@/stores/authStore', () => ({
+vi.mock<unknown>(import('@/stores/authStore'), () => ({
   useAuthStore: vi.fn(() => ({}))
 }))
 
-vi.mock('firebase/auth', () => ({
+vi.mock<unknown>(import('firebase/auth'), () => ({
   setPersistence: vi.fn(),
   browserLocalPersistence: {},
   onAuthStateChanged: vi.fn()
 }))
 
-vi.mock('@/platform/workflow/core/services/workflowService', () => ({
-  useWorkflowService: vi.fn(() => ({}))
-}))
+vi.mock<unknown>(
+  import('@/platform/workflow/core/services/workflowService'),
+  () => ({
+    useWorkflowService: vi.fn(() => ({}))
+  })
+)
 
 const mockDialogService = vi.hoisted(() => ({
   prompt: vi.fn()
 }))
-vi.mock('@/services/dialogService', () => ({
+vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: vi.fn(() => mockDialogService)
 }))
 
 const mockResetView = vi.hoisted(() => vi.fn())
-vi.mock('@/services/litegraphService', () => ({
+vi.mock<unknown>(import('@/services/litegraphService'), () => ({
   useLitegraphService: vi.fn(() => ({
     resetView: mockResetView
   }))
 }))
 
 const mockTrackHelpResourceClicked = vi.hoisted(() => vi.fn())
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: vi.fn(() => ({
     trackHelpResourceClicked: mockTrackHelpResourceClicked,
     trackRunButton: vi.fn(),
@@ -150,31 +143,37 @@ vi.mock('@/platform/telemetry', () => ({
 
 const mockShowAbout = vi.hoisted(() => vi.fn())
 const mockShowSettings = vi.hoisted(() => vi.fn())
-vi.mock('@/platform/settings/composables/useSettingsDialog', () => ({
-  useSettingsDialog: vi.fn(() => ({
-    show: mockShowSettings,
-    showAbout: mockShowAbout
-  }))
-}))
+vi.mock<unknown>(
+  import('@/platform/settings/composables/useSettingsDialog'),
+  () => ({
+    useSettingsDialog: vi.fn(() => ({
+      show: mockShowSettings,
+      showAbout: mockShowAbout
+    }))
+  })
+)
 
-vi.mock('@/stores/executionStore', () => ({
+vi.mock<unknown>(import('@/stores/executionStore'), () => ({
   useExecutionStore: vi.fn(() => ({}))
 }))
 
 const mockToastAdd = vi.hoisted(() => vi.fn())
-vi.mock('@/platform/updates/common/toastStore', () => ({
+vi.mock<unknown>(import('@/platform/updates/common/toastStore'), () => ({
   useToastStore: vi.fn(() => ({ add: mockToastAdd }))
 }))
 
 const mockAssetBrowse = vi.hoisted(() =>
   vi.fn<(options: { onAssetSelected?: (asset: AssetItem) => void }) => void>()
 )
-vi.mock('@/platform/assets/composables/useAssetBrowserDialog', () => ({
-  useAssetBrowserDialog: vi.fn(() => ({ browse: mockAssetBrowse }))
-}))
+vi.mock<unknown>(
+  import('@/platform/assets/composables/useAssetBrowserDialog'),
+  () => ({
+    useAssetBrowserDialog: vi.fn(() => ({ browse: mockAssetBrowse }))
+  })
+)
 
 const mockStartModelNodeDrag = vi.hoisted(() => vi.fn())
-vi.mock('@/composables/node/startModelNodeDragFromAsset', () => ({
+vi.mock(import('@/composables/node/startModelNodeDragFromAsset'), () => ({
   startModelNodeDragFromAsset: mockStartModelNodeDrag
 }))
 
@@ -186,45 +185,55 @@ const mockWorkflowStore = vi.hoisted(() => ({
     changeTracker: mockChangeTracker
   }
 }))
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: vi.fn(() => mockWorkflowStore)
-}))
+vi.mock<unknown>(
+  import('@/platform/workflow/management/stores/workflowStore'),
+  () => ({
+    useWorkflowStore: vi.fn(() => mockWorkflowStore)
+  })
+)
 
-vi.mock('@/stores/subgraphStore', () => ({
+vi.mock<unknown>(import('@/stores/subgraphStore'), () => ({
   useSubgraphStore: vi.fn(() => ({}))
 }))
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: vi.fn(() => ({
-    getCanvas: () => app.canvas,
-    canvas: app.canvas
-  })),
-  useTitleEditorStore: vi.fn(() => ({
-    titleEditorTarget: null
-  }))
-}))
+vi.mock<unknown>(
+  import('@/renderer/core/canvas/canvasStore'),
 
-vi.mock('@/stores/workspace/colorPaletteStore', () => ({
+  () => ({
+    useCanvasStore: vi.fn(() => ({
+      getCanvas: () => app.canvas,
+      canvas: app.canvas
+    })),
+    useTitleEditorStore: vi.fn(() => ({
+      titleEditorTarget: null
+    }))
+  })
+)
+
+vi.mock<unknown>(import('@/stores/workspace/colorPaletteStore'), () => ({
   useColorPaletteStore: vi.fn(() => ({}))
 }))
 
-vi.mock('@/composables/auth/useAuthActions', () => ({
+vi.mock<unknown>(import('@/composables/auth/useAuthActions'), () => ({
   useAuthActions: vi.fn(() => ({}))
 }))
 
-vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
-  useSubscription: vi.fn(() => ({
-    canAccessSubscriptionFeatures: vi.fn().mockReturnValue(true),
-    showSubscriptionDialog: vi.fn()
-  }))
-}))
+vi.mock<unknown>(
+  import('@/platform/cloud/subscription/composables/useSubscription'),
+  () => ({
+    useSubscription: vi.fn(() => ({
+      canAccessSubscriptionFeatures: vi.fn().mockReturnValue(true),
+      showSubscriptionDialog: vi.fn()
+    }))
+  })
+)
 
 const mockBillingState = vi.hoisted(() => ({
   canAccessSubscriptionFeatures: true,
   subscriptionTier: null as string | null,
   showSubscriptionDialog: vi.fn()
 }))
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: vi.fn(() => ({
     canAccessSubscriptionFeatures: {
       get value() {
@@ -242,7 +251,7 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   }))
 }))
 
-vi.mock('@/stores/queueSettingsStore', () => ({
+vi.mock<unknown>(import('@/stores/queueSettingsStore'), () => ({
   useQueueSettingsStore: vi.fn(() => ({ batchCount: 1 }))
 }))
 

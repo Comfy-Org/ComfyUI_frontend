@@ -16,19 +16,22 @@ const { mockWorkspaceRole } = vi.hoisted(() => {
   }
 })
 
-vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
-  useWorkspaceUI: () => ({
-    workspaceRole: mockWorkspaceRole
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useWorkspaceUI'),
+  () => ({
+    useWorkspaceUI: () => ({
+      workspaceRole: mockWorkspaceRole
+    })
   })
-}))
+)
 
-vi.mock('@/composables/auth/useCurrentUser', () => ({
+vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   useCurrentUser: () => ({
     resolvedUserInfo: { value: { id: 'user-ada' } }
   })
 }))
 
-vi.mock('@/config/comfyApi', () => ({
+vi.mock(import('@/config/comfyApi'), () => ({
   getComfyPlatformBaseUrl: () => 'https://platform.test'
 }))
 

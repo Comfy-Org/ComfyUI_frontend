@@ -58,6 +58,9 @@ const routes = getRoutes(locale)
         </div>
 
         <div class="mt-8 flex flex-col items-start gap-3 sm:flex-row lg:mt-0">
+          <BrandButton :href="routes.customerVideoBlackMath" variant="solid">
+            {{ t('caseStudy.watchStory', locale) }}
+          </BrandButton>
           <BrandButton :href="routes.customers" variant="outline">
             {{ t('caseStudy.seeAll', locale) }}
           </BrandButton>

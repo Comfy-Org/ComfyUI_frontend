@@ -31,15 +31,18 @@ function graph(id: string) {
   }
 }
 
-vi.mock('@/lib/litegraph/src/litegraph', () => ({
+vi.mock<unknown>(import('@/lib/litegraph/src/litegraph'), () => ({
   LiteGraph: { NODE_TITLE_HEIGHT: TITLE_HEIGHT }
 }))
-vi.mock('@/renderer/core/layout/transform/useTransformState', async () => {
-  const { reactive } = await import('vue')
-  state.camera = reactive({ x: 0, y: 0, z: 1 })
-  return { useTransformState: () => ({ camera: state.camera }) }
-})
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+vi.mock<unknown>(
+  import('@/renderer/core/layout/transform/useTransformState'),
+  async () => {
+    const { reactive } = await import('vue')
+    state.camera = reactive({ x: 0, y: 0, z: 1 })
+    return { useTransformState: () => ({ camera: state.camera }) }
+  }
+)
+vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
   useCanvasStore: () => ({
     canvas: { canvas: document.createElement('canvas') },
     get currentGraph() {
@@ -47,19 +50,22 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
     }
   })
 }))
-vi.mock('@/renderer/core/layout/store/layoutStore', async () => {
-  const { shallowRef } = await import('vue')
-  state.layout = shallowRef<unknown>(null)
-  return {
-    layoutStore: {
-      getNodeLayoutRef: (graphId: unknown, nodeId: unknown) => {
-        state.layoutReads(graphId, nodeId)
-        return state.layout
+vi.mock<unknown>(
+  import('@/renderer/core/layout/store/layoutStore'),
+  async () => {
+    const { shallowRef } = await import('vue')
+    state.layout = shallowRef<unknown>(null)
+    return {
+      layoutStore: {
+        getNodeLayoutRef: (graphId: unknown, nodeId: unknown) => {
+          state.layoutReads(graphId, nodeId)
+          return state.layout
+        }
       }
     }
   }
-})
-vi.mock('@vueuse/core', async (importOriginal) => {
+)
+vi.mock<unknown>(import('@vueuse/core'), async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>()
   const { computed, onScopeDispose } = await import('vue')
   return {

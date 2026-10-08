@@ -9,7 +9,8 @@ import { toNodeId } from '@/types/nodeId'
 const IMAGE_COMPARE_NODE_ID = toNodeId(1)
 
 test.describe('Image Compare', { tag: ['@widget', '@vue-nodes'] }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
+  test.beforeEach(async ({ page, comfyPage }) => {
+    await page.route('http://127.0.0.1:1/broken*.png', (route) => route.abort())
     await comfyPage.workflow.loadWorkflow('widgets/image_compare_widget')
   })
 

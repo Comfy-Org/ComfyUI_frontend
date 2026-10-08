@@ -16,7 +16,7 @@ import ApiKeyForm from './ApiKeyForm.vue'
 const mockStoreApiKey = vi.fn()
 const mockLoadingRef = ref(false)
 
-vi.mock('@/stores/authStore', () => ({
+vi.mock<unknown>(import('@/stores/authStore'), () => ({
   useAuthStore: vi.fn(() => ({
     get loading() {
       return mockLoadingRef.value
@@ -24,7 +24,7 @@ vi.mock('@/stores/authStore', () => ({
   }))
 }))
 
-vi.mock('@/stores/apiKeyAuthStore', () => ({
+vi.mock<unknown>(import('@/stores/apiKeyAuthStore'), () => ({
   useApiKeyAuthStore: vi.fn(() => ({
     storeApiKey: mockStoreApiKey
   }))

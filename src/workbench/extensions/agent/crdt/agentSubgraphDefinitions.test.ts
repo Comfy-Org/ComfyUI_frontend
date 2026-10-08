@@ -6,7 +6,10 @@ import * as Y from 'yjs'
 import { createTestSubgraphData } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
 
-import { readSubgraphDefinitions } from './agentSubgraphDefinitions'
+import {
+  readSubgraphDefinitionIds,
+  readSubgraphDefinitions
+} from './agentSubgraphDefinitions'
 
 const CATALOG: WidgetCatalog = {
   types: {
@@ -136,6 +139,16 @@ describe('readSubgraphDefinitions', () => {
     const [projected] = readSubgraphDefinitions(seed(outer))
 
     expect(projected.definitions).toEqual({ subgraphs: [inner] })
+  })
+
+  it('projects top-level and nested definition ids without reading bodies', () => {
+    const inner = createTestSubgraphData({ nodes: [interiorNode(1)] as never })
+    const outer = createTestSubgraphData({
+      nodes: [interiorNode(2, inner.id)] as never,
+      definitions: { subgraphs: [inner] }
+    })
+
+    expect(readSubgraphDefinitionIds(seed(outer))).toEqual([outer.id, inner.id])
   })
 
   it('skips definition and node entries that are not records', () => {

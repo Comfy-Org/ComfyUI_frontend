@@ -10,7 +10,7 @@ import { withNodeAddSource } from './nodeAddSource'
 
 const trackNodeAdded = vi.fn()
 
-vi.mock('..', () => ({
+vi.mock<unknown>(import('..'), () => ({
   useTelemetry: () => ({ trackNodeAdded })
 }))
 

@@ -840,7 +840,7 @@ test.describe('Image Crop', { tag: ['@widget', '@vue-nodes'] }, () => {
             await route.abort('failed')
             return
           }
-          await route.continue()
+          await route.fallback()
         })
         try {
           failExamplePng = true
@@ -1207,13 +1207,13 @@ test.describe('Image Crop', { tag: ['@widget', '@vue-nodes'] }, () => {
         await comfyPage.page.route('**/api/view**', async (route) => {
           const url = route.request().url()
           if (!url.includes('example.png')) {
-            await route.continue()
+            await route.fallback()
             return
           }
           await new Promise<void>((resolve) => {
             setTimeout(resolve, 500)
           })
-          await route.continue()
+          await route.fallback()
         })
 
         try {

@@ -14,7 +14,7 @@ import { nodeBadges } from './badgeSystem'
 let displayPrice = '$disconnected'
 const getNodeDisplayPrice = vi.fn(() => displayPrice)
 
-vi.mock('@/composables/node/useNodePricing', () => {
+vi.mock<unknown>(import('@/composables/node/useNodePricing'), () => {
   return {
     useNodePricing: () => ({
       getNodeDisplayPrice,
@@ -27,7 +27,7 @@ vi.mock('@/composables/node/useNodePricing', () => {
   }
 })
 
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: () => ({
     get: (key: string) =>
       key === 'Comfy.NodeBadge.ShowApiPricing' ? true : undefined

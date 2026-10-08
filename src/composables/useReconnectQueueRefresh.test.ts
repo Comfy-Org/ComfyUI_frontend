@@ -16,7 +16,7 @@ function makeJob(id: string, status: JobListItem['status']): JobListItem {
   }
 }
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     getQueue: vi.fn(),
     getHistory: vi.fn(),

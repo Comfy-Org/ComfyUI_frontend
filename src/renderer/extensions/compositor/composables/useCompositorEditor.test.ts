@@ -1,4 +1,7 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { App } from 'vue'
+import { createApp, defineComponent } from 'vue'
+import { createI18n } from 'vue-i18n'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { toNodeId } from '@/types/nodeId'
@@ -14,18 +17,40 @@ const { showDialog, toastAdd } = vi.hoisted(() => ({
   toastAdd: vi.fn()
 }))
 
-vi.mock('@/stores/dialogStore', () => ({
+vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
   useDialogStore: () => ({ showDialog })
 }))
-vi.mock('@/platform/updates/common/toastStore', () => ({
+vi.mock<unknown>(import('@/platform/updates/common/toastStore'), () => ({
   useToastStore: () => ({ add: toastAdd })
 }))
-vi.mock('vue-i18n', async () => {
-  const actual = await vi.importActual('vue-i18n')
-  return {
-    ...actual,
-    useI18n: () => ({ t: (key: string) => key })
-  }
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: {} },
+  missingWarn: false,
+  fallbackWarn: false
+})
+const apps: App[] = []
+
+function renderCompositorEditor() {
+  let editor: ReturnType<typeof useCompositorEditor> | undefined
+  const app = createApp(
+    defineComponent({
+      setup() {
+        editor = useCompositorEditor()
+        return () => null
+      }
+    })
+  )
+  app.use(i18n)
+  app.mount(document.createElement('div'))
+  apps.push(app)
+  if (!editor) throw new Error('Compositor editor not initialized')
+  return editor
+}
+
+afterEach(() => {
+  for (const app of apps.splice(0)) app.unmount()
 })
 
 describe('useCompositorEditor', () => {
@@ -36,7 +61,7 @@ describe('useCompositorEditor', () => {
   })
 
   it('shows a toast and keeps the dialog closed without cached layers', () => {
-    useCompositorEditor().openCompositorEditor(node)
+    renderCompositorEditor().openCompositorEditor(node)
 
     expect(toastAdd).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -52,7 +77,7 @@ describe('useCompositorEditor', () => {
       { filename: 'a.png', subfolder: '', type: 'temp' }
     ])
 
-    useCompositorEditor().openCompositorEditor(node)
+    renderCompositorEditor().openCompositorEditor(node)
 
     expect(toastAdd).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -70,7 +95,7 @@ describe('useCompositorEditor', () => {
       ['hash-a']
     )
 
-    useCompositorEditor().openCompositorEditor(node)
+    renderCompositorEditor().openCompositorEditor(node)
 
     expect(toastAdd).not.toHaveBeenCalled()
     expect(showDialog).toHaveBeenCalledWith(

@@ -17,7 +17,7 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 let mockedTopBarWidth: Ref<number>
 
-vi.mock('@vueuse/core', () => ({
+vi.mock<unknown>(import('@vueuse/core'), () => ({
   createSharedComposable: (composable: () => unknown) => composable,
   useDocumentVisibility: () => ref('visible'),
   useElementSize: () => ({ width: mockedTopBarWidth, height: ref(40) }),

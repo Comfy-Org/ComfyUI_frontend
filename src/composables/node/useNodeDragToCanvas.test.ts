@@ -27,23 +27,23 @@ const {
   }
 })
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
   useCanvasStore: vi.fn(() => ({
     canvas: mockCanvas
   }))
 }))
 
-vi.mock('@/services/litegraphService', () => ({
+vi.mock<unknown>(import('@/services/litegraphService'), () => ({
   useLitegraphService: vi.fn(() => ({
     addNodeOnGraph: mockAddNodeOnGraph
   }))
 }))
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
+vi.mock<unknown>(import('@/platform/updates/common/toastStore'), () => ({
   useToastStore: vi.fn(() => ({ add: mockToastAdd }))
 }))
 
-vi.mock('@/i18n', () => ({ t: (key: string) => key }))
+vi.mock(import('@/i18n'), () => ({ t: (key: string) => key }))
 
 describe('useNodeDragToCanvas', () => {
   let useNodeDragToCanvas: typeof UseNodeDragToCanvasType

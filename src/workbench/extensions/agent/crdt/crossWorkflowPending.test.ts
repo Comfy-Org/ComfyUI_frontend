@@ -85,7 +85,7 @@ const apiState = vi.hoisted(() => {
   }
 })
 
-vi.mock('./layoutFollowerBridge', () => ({
+vi.mock<unknown>(import('./layoutFollowerBridge'), () => ({
   LayoutFollowerBridge: class {
     constructor() {
       const bridge = new bridgeState.FakeBridge()
@@ -95,14 +95,14 @@ vi.mock('./layoutFollowerBridge', () => ({
   }
 }))
 
-vi.mock('./docFrameClient', () => ({
+vi.mock<unknown>(import('./docFrameClient'), () => ({
   DocFrameClient: class {
     destroy = clientState.destroy
     sendOps = clientState.sendOps
   }
 }))
 
-vi.mock('./ecsFollowerAdapter', () => ({
+vi.mock<unknown>(import('./ecsFollowerAdapter'), () => ({
   EcsFollowerAdapter: class {
     bind = adapterState.bind
     unbind = adapterState.unbind
@@ -113,12 +113,14 @@ vi.mock('./ecsFollowerAdapter', () => ({
   }
 }))
 
-vi.mock('./devPanelLog', () => ({
+vi.mock(import('./devPanelLog'), () => ({
   recordDevEvent: devLogState.recordDevEvent
 }))
 
-vi.mock('@/scripts/api', () => ({ api: apiState.api }))
-vi.mock('@/scripts/app', () => ({ app: { graph: null, canvas: null } }))
+vi.mock<unknown>(import('@/scripts/api'), () => ({ api: apiState.api }))
+vi.mock<unknown>(import('@/scripts/app'), () => ({
+  app: { graph: null, canvas: null }
+}))
 
 import { useAgentCrdtFollower } from './useAgentCrdtFollower'
 import type { AgentCrdtStatus } from './useAgentCrdtFollower'
@@ -277,7 +279,7 @@ describe('R-73 cross-workflow pending operation characterization', () => {
     expect(operationBId).not.toBe(operationAId)
   })
 
-  it('documents an anonymous workflow A result settling workflow B in flight', async () => {
+  it('does not settle workflow B from an anonymous workflow A result', async () => {
     const { workflowId, enqueue } = mountFollower('wf-a')
 
     enqueue([deleteNode('a-inflight')])
@@ -302,6 +304,19 @@ describe('R-73 cross-workflow pending operation characterization', () => {
       skipped: []
     })
 
+    expect(
+      devLogState.recordDevEvent.mock.calls.filter(
+        ([event]) => event === 'human_ops_settled'
+      )
+    ).toHaveLength(1)
+
+    dispatchOpsResult({
+      workflowId: 'wf-b',
+      ok: false,
+      applied: [],
+      skipped: []
+    })
+
     const settlements = devLogState.recordDevEvent.mock.calls.filter(
       ([event]) => event === 'human_ops_settled'
     )
@@ -309,7 +324,7 @@ describe('R-73 cross-workflow pending operation characterization', () => {
     expect(settlements[1][1]).toMatchObject({
       state: 'acknowledged',
       ops: [expect.objectContaining({ op_id: operationBId })],
-      result: { ok: false, applied: [], skipped: [] }
+      result: { workflowId: 'wf-b', ok: false, applied: [], skipped: [] }
     })
   })
 })

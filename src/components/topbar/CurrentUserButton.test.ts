@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createPinia } from 'pinia'
 import { defineComponent, h, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -17,12 +18,12 @@ const mockTeamWorkspaceStore = vi.hoisted(() => ({
 const mockIsCloud = vi.hoisted(() => ({ value: false }))
 
 // Mock all firebase modules
-vi.mock('firebase/app', () => ({
+vi.mock(import('firebase/app'), () => ({
   initializeApp: vi.fn(),
   getApp: vi.fn()
 }))
 
-vi.mock('firebase/auth', () => ({
+vi.mock<unknown>(import('firebase/auth'), () => ({
   getAuth: vi.fn(),
   setPersistence: vi.fn(),
   browserLocalPersistence: {},
@@ -31,24 +32,35 @@ vi.mock('firebase/auth', () => ({
   signOut: vi.fn()
 }))
 
-// Mock pinia
-vi.mock('pinia', () => ({
-  storeToRefs: vi.fn((store: Record<string, unknown>) => store)
-}))
+vi.mock<unknown>(
+  import('@/platform/workspace/stores/teamWorkspaceStore'),
+  async () => {
+    const { defineStore } = await import('pinia')
+    const { computed } = await import('vue')
 
-// Mock the useTeamWorkspaceStore
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: vi.fn(() => mockTeamWorkspaceStore)
-}))
+    return {
+      useTeamWorkspaceStore: defineStore('teamWorkspace', () => ({
+        workspaceName: computed(
+          () => mockTeamWorkspaceStore.workspaceName.value
+        ),
+        initState: computed(() => mockTeamWorkspaceStore.initState.value),
+        isInPersonalWorkspace: computed(
+          () => mockTeamWorkspaceStore.isInPersonalWorkspace.value
+        ),
+        activeWorkspace: computed(() => null)
+      }))
+    }
+  }
+)
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockIsCloud.value
   }
 }))
 
 // Mock the useCurrentUser composable
-vi.mock('@/composables/auth/useCurrentUser', () => ({
+vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   useCurrentUser: vi.fn(() => ({
     isLoggedIn: true,
     userPhotoUrl: 'https://example.com/avatar.jpg',
@@ -58,7 +70,7 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
 }))
 
 // Mock the UserAvatar component
-vi.mock('@/components/common/UserAvatar.vue', () => ({
+vi.mock<unknown>(import('@/components/common/UserAvatar.vue'), () => ({
   default: {
     name: 'UserAvatarMock',
     render() {
@@ -68,14 +80,17 @@ vi.mock('@/components/common/UserAvatar.vue', () => ({
 }))
 
 // Mock the WorkspaceProfilePic component
-vi.mock('@/platform/workspace/components/WorkspaceProfilePic.vue', () => ({
-  default: {
-    name: 'WorkspaceProfilePicMock',
-    render() {
-      return h('div', 'WorkspaceProfilePic')
+vi.mock<unknown>(
+  import('@/platform/workspace/components/WorkspaceProfilePic.vue'),
+  () => ({
+    default: {
+      name: 'WorkspaceProfilePicMock',
+      render() {
+        return h('div', 'WorkspaceProfilePic')
+      }
     }
-  }
-}))
+  })
+)
 
 const CurrentUserPopoverWorkspaceStub = defineComponent({
   name: 'CurrentUserPopoverWorkspace',
@@ -92,7 +107,7 @@ const CurrentUserPopoverWorkspaceStub = defineComponent({
 })
 
 // Mock the CurrentUserPopoverLegacy component
-vi.mock('./CurrentUserPopoverLegacy.vue', () => ({
+vi.mock(import('./CurrentUserPopoverLegacy.vue'), () => ({
   default: defineComponent({
     name: 'CurrentUserPopoverLegacyMock',
     emits: ['close'],
@@ -131,7 +146,7 @@ describe('CurrentUserButton', () => {
 
     const result = render(CurrentUserButton, {
       global: {
-        plugins: [i18n],
+        plugins: [i18n, createPinia()],
         stubs: {
           CurrentUserPopoverWorkspace: CurrentUserPopoverWorkspaceStub,
           Popover: defineComponent({

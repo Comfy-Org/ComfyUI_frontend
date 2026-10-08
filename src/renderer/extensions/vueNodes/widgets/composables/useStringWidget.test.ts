@@ -1,6 +1,5 @@
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
-import type * as Litegraph from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { DOMWidget } from '@/scripts/domWidget'
@@ -16,13 +15,9 @@ const { canvasMock } = vi.hoisted(() => ({
   }
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { rootGraph: { id: 'root' }, canvas: canvasMock }
 }))
-vi.mock('@/lib/litegraph/src/litegraph', async (importOriginal) => {
-  const actual = await importOriginal<typeof Litegraph>()
-  return { ...actual, resolveNodeRootGraphId: vi.fn(() => 'root') }
-})
 const { widgetStoreMock } = vi.hoisted(() => {
   const map = new Map<
     string,
@@ -45,10 +40,10 @@ const { widgetStoreMock } = vi.hoisted(() => {
     }
   }
 })
-vi.mock('@/stores/widgetValueStore', () => ({
+vi.mock<unknown>(import('@/stores/widgetValueStore'), () => ({
   useWidgetValueStore: () => widgetStoreMock
 }))
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: () => ({ get: () => false })
 }))
 

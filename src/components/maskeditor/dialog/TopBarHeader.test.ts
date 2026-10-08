@@ -40,27 +40,27 @@ const mockSaver = vi.hoisted(() => ({
   save: vi.fn().mockResolvedValue(undefined)
 }))
 
-vi.mock('@/stores/maskEditorStore', () => ({
+vi.mock<unknown>(import('@/stores/maskEditorStore'), () => ({
   useMaskEditorStore: () => mockStore
 }))
 
-vi.mock('@/stores/dialogStore', () => ({
+vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
   useDialogStore: () => mockDialogStore
 }))
 
-vi.mock('@/composables/maskeditor/useCanvasTools', () => ({
+vi.mock<unknown>(import('@/composables/maskeditor/useCanvasTools'), () => ({
   useCanvasTools: () => mockCanvasTools
 }))
 
-vi.mock('@/composables/maskeditor/useCanvasTransform', () => ({
+vi.mock(import('@/composables/maskeditor/useCanvasTransform'), () => ({
   useCanvasTransform: () => mockCanvasTransform
 }))
 
-vi.mock('@/composables/maskeditor/useMaskEditorSaver', () => ({
+vi.mock(import('@/composables/maskeditor/useMaskEditorSaver'), () => ({
   useMaskEditorSaver: () => mockSaver
 }))
 
-vi.mock('@/components/ui/button/Button.vue', () => ({
+vi.mock<unknown>(import('@/components/ui/button/Button.vue'), () => ({
   default: {
     name: 'ButtonStub',
     props: ['variant', 'disabled'],

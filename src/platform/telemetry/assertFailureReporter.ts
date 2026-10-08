@@ -16,6 +16,7 @@ export function reportAssertFailure(message: string): void {
   reportedMessages.add(message)
 
   reportError(new Error(message), {
-    errorType: 'invariant_assert'
+    errorType: 'invariant_assert',
+    logToConsole: false
   })
 }

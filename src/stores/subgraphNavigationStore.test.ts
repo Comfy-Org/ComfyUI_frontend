@@ -51,7 +51,7 @@ function applyRouteTarget(target: VueRouter.RouteLocationRaw): void {
   routeHash.value = getRouteTargetHash(target)
 }
 
-vi.mock('@/scripts/app', () => {
+vi.mock<unknown>(import('@/scripts/app'), () => {
   const mockCanvas = {
     graph: null,
     subgraph: null,
@@ -83,17 +83,21 @@ vi.mock('@/scripts/app', () => {
   }
 })
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({
-    getCanvas: () => app.canvas
-  })
-}))
+vi.mock<unknown>(
+  import('@/renderer/core/canvas/canvasStore'),
 
-vi.mock('@/utils/graphTraversalUtil', () => ({
+  () => ({
+    useCanvasStore: () => ({
+      getCanvas: () => app.canvas
+    })
+  })
+)
+
+vi.mock(import('@/utils/graphTraversalUtil'), () => ({
   findSubgraphPathById: vi.fn()
 }))
-vi.mock('@vueuse/router', () => ({ useRouteHash: () => routeHash }))
-vi.mock('vue-router', () => ({
+vi.mock(import('@vueuse/router'), () => ({ useRouteHash: () => routeHash }))
+vi.mock<unknown>(import('vue-router'), () => ({
   NavigationFailureType: { cancelled: 8, duplicated: 16 },
   isNavigationFailure: vi.fn(() => false),
   useRouter: () => ({
@@ -102,9 +106,12 @@ vi.mock('vue-router', () => ({
     options: { history: routerHistory }
   })
 }))
-vi.mock('@/platform/workflow/core/services/workflowService', () => ({
-  useWorkflowService: () => ({ openWorkflow: mockOpenWorkflow })
-}))
+vi.mock<unknown>(
+  import('@/platform/workflow/core/services/workflowService'),
+  () => ({
+    useWorkflowService: () => ({ openWorkflow: mockOpenWorkflow })
+  })
+)
 
 describe('useSubgraphNavigationStore', () => {
   let pinia: ReturnType<typeof createTestingPinia>

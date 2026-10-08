@@ -6,14 +6,14 @@ import type { TWidgetValue } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
     trackNamedValuesShadowDiffMismatch: vi.fn(),
     trackNamedValuesShadowDiffSummary: vi.fn()
   })
 }))
 
-vi.mock('@/platform/nodeReplacement/cnrIdUtil', () => ({
+vi.mock(import('@/platform/nodeReplacement/cnrIdUtil'), () => ({
   getCnrIdFromNode: () => undefined
 }))
 

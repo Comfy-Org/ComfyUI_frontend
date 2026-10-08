@@ -87,7 +87,7 @@ test.describe('Advanced Widget Visibility', { tag: '@vue-nodes' }, () => {
     await expect(widgets).toHaveCount(2)
   })
 
-  test('should keep connected advanced widgets visible when advanced inputs are hidden', async ({
+  test('should suppress connected advanced widgets regardless of the advanced toggle', async ({
     comfyPage
   }) => {
     const node = getNode(comfyPage)
@@ -122,9 +122,16 @@ test.describe('Advanced Widget Visibility', { tag: '@vue-nodes' }, () => {
       )
       .not.toBeNull()
 
+    // Once connected, only the standalone socket row carries the accessible
+    // name: the input control is suppressed regardless of the advanced toggle.
+    await expect(maxShiftWidget).toHaveCount(1)
+    await expect(maxShiftWidget.locator('input')).toHaveCount(0)
+    await expect(maxShiftWidget.getByTestId('slot-dot')).toBeVisible()
     await node.getByText(HIDE_ADVANCED_INPUTS).click()
 
-    await expect(maxShiftWidget).toBeVisible()
+    await expect(maxShiftWidget).toHaveCount(1)
+    await expect(maxShiftWidget.locator('input')).toHaveCount(0)
+    await expect(maxShiftWidget.getByTestId('slot-dot')).toBeVisible()
     await expect(baseShiftWidget).toBeHidden()
   })
 

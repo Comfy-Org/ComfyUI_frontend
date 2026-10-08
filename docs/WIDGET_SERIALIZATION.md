@@ -20,7 +20,7 @@ These correspond to the two data formats in `ComfyMetadata` embedded in output f
 ## Gotchas
 
 - `addWidget('combo', name, value, cb, { serialize: false })` puts `serialize` into `widget.options`, **not** onto `widget` directly. These are different properties consumed by different systems.
-- `LGraphNode.serialize()` checks `widget.serialize === false` (line 967). It does **not** check `widget.options.serialize`. A widget with `options.serialize = false` is still included in `widgets_values`.
+- `LGraphNode.serialize()` checks `widget.serialize === false` (in `serialiseWidgetValues()`). It does **not** check `widget.options.serialize`. A widget with `options.serialize = false` is still included in `widgets_values`.
 - `LGraphNode.serialize()` only writes `widgets_values` if `this.widgets` is truthy. Nodes that create widgets dynamically (like `PrimitiveNode`) will have no `widgets_values` in serialized output if serialized before widget creation — even if `this.widgets_values` exists on the instance from a prior `configure()` call.
 - `widget.options.serialize` is typed as `IWidgetOptions.serialize` — both properties share the name `serialize` but live at different levels of the widget object.
 
@@ -30,19 +30,21 @@ These correspond to the two data formats in `ComfyMetadata` embedded in output f
 
 ### The clone→serialize gap
 
-`LGraphCanvas._serializeItems()` copies nodes via `item.clone()?.serialize()` (line 3911). For PrimitiveNode this fails:
+`LGraphCanvas._serializeItems()` copies nodes via `item.clone()?.serialize()`. For PrimitiveNode this fails:
 
 1. `clone()` calls `this.serialize()` on the **original** node (which has widgets, so `widgets_values` is captured correctly).
 2. `clone()` creates a **fresh** PrimitiveNode via `LiteGraph.createNode()` and calls `configure(data)` on it — this stores `widgets_values` on the instance.
-3. But the fresh PrimitiveNode has no `this.widgets` (widgets are created only on connection), so when `serialize()` is called on the clone, `LGraphNode.serialize()` skips the `widgets_values` block entirely (line 964: `if (widgets && this.serialize_widgets)`).
+3. But the fresh PrimitiveNode has no `this.widgets` (widgets are created only on connection), so when `serialize()` is called on the clone, `LGraphNode.serialize()` skips the `widgets_values` block entirely (`if (widgets?.length && this.serialize_widgets)`).
 
 Result: `widgets_values` is silently dropped from the clipboard data.
 
 ### Why seed survives but control_after_generate doesn't
 
-When the pasted PrimitiveNode reconnects to the pasted target node, `_createWidget()` copies `theirWidget.value` from the target (line 254). This restores the **primary** widget value (e.g., `seed`).
+When the pasted PrimitiveNode reconnects to the pasted target node, `_createWidget()` copies `theirWidget.value` from the target. This restores the **primary** widget value (e.g., `seed`).
 
-But `control_after_generate` is a **secondary** widget created by `addValueControlWidgets()`, which reads its initial value from `this.widgets_values?.[1]` (line 263). That value was lost during clone→serialize, so it falls back to `'fixed'` (line 265).
+But `control_after_generate` is a **secondary** widget, created by `_createWidget()` calling `addValueControlWidgets(this, widget, 'fixed', ...)` — a hardcoded `'fixed'`, because the serialized value that would have supplied it was lost during clone→serialize.
+
+`PrimitiveNode` does keep a `controlValues` array that preserves secondary widget values across a disconnect/reconnect, but it is deleted on a 15ms timer and lives only on the in-memory instance, so it does not survive the clipboard round trip.
 
 See [ADR-WIDGET-SERIALIZATION-0006](adr/WIDGET-SERIALIZATION-0006-preserve-primitive-widget-values-across-copy-and-paste.md) for proposed fixes and design tradeoffs.
 

@@ -1,5 +1,5 @@
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { ResultItemImpl } from '@/stores/queueStore'
+import type { AugmentedResultItem } from '@/utils/resultItem'
 
 /**
  * Metadata for output assets from queue store
@@ -13,7 +13,7 @@ export interface OutputAssetMetadata extends Record<string, unknown> {
   format?: string
   workflow?: ComfyWorkflowJSON
   outputCount?: number
-  allOutputs?: ResultItemImpl[]
+  allOutputs?: AugmentedResultItem[]
 }
 
 /**

@@ -21,30 +21,36 @@ const mockSwitchWorkspace = vi.fn()
 let pinia: ReturnType<typeof createTestingPinia>
 let workspaceStore: ReturnType<typeof useTeamWorkspaceStore>
 
-vi.mock('primevue/usetoast', () => ({
-  useToast: () => ({
-    add: mockToastAdd
+vi.mock<unknown>(
+  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
+  () => ({
+    useToast: () => ({
+      add: mockToastAdd
+    })
   })
-}))
+)
 
-vi.mock('@/stores/dialogStore', () => ({
+vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
   useDialogStore: () => ({
     closeDialog: mockCloseDialog
   })
 }))
 
-vi.mock('@/platform/workspace/composables/useWorkspaceSwitch', () => ({
+vi.mock(import('@/platform/workspace/composables/useWorkspaceSwitch'), () => ({
   useWorkspaceSwitch: () => ({
     switchWorkspace: mockSwitchWorkspace
   })
 }))
 
-vi.mock('@/platform/workspace/composables/useWorkspaceTierLabel', () => ({
-  useWorkspaceTierLabel: () => ({
-    getTierLabel: (w: { subscriptionTier: string | null }) =>
-      w.subscriptionTier === 'PRO' ? 'Pro' : null
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useWorkspaceTierLabel'),
+  () => ({
+    useWorkspaceTierLabel: () => ({
+      getTierLabel: (w: { subscriptionTier: string | null }) =>
+        w.subscriptionTier === 'PRO' ? 'Pro' : null
+    })
   })
-}))
+)
 
 const i18n = createI18n({
   legacy: false,

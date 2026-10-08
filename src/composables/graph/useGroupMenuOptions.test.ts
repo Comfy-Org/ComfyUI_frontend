@@ -9,7 +9,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 // canvasStore transitively imports the app singleton; stub it so the real
 // ComfyApp module never loads during these unit tests.
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { canvas: { selected_nodes: null } }
 }))
 

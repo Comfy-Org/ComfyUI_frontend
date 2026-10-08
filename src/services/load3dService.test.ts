@@ -12,15 +12,15 @@ const { nodeMap, useLoad3dViewerMock, skeletonCloneMock } = vi.hoisted(() => ({
   skeletonCloneMock: vi.fn()
 }))
 
-vi.mock('@/composables/useLoad3d', () => ({
+vi.mock(import('@/composables/useLoad3d'), () => ({
   nodeToLoad3dMap: nodeMap
 }))
 
-vi.mock('@/composables/useLoad3dViewer', () => ({
+vi.mock(import('@/composables/useLoad3dViewer'), () => ({
   useLoad3dViewer: useLoad3dViewerMock
 }))
 
-vi.mock('three/examples/jsm/utils/SkeletonUtils', () => ({
+vi.mock(import('three/examples/jsm/utils/SkeletonUtils'), () => ({
   clone: skeletonCloneMock
 }))
 

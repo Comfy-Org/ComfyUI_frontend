@@ -7,7 +7,7 @@ const mockAuthState = {
   loading: false,
   tokenRefreshTrigger: 0
 }
-vi.mock('@/stores/authStore', () => ({
+vi.mock<unknown>(import('@/stores/authStore'), () => ({
   useAuthStore: () => mockAuthState
 }))
 
@@ -15,11 +15,11 @@ const mockApiKeyState = {
   isAuthenticated: false,
   currentUser: null as { id: string; email?: string; name?: string } | null
 }
-vi.mock('@/stores/apiKeyAuthStore', () => ({
+vi.mock<unknown>(import('@/stores/apiKeyAuthStore'), () => ({
   useApiKeyAuthStore: () => mockApiKeyState
 }))
 
-vi.mock('@/stores/commandStore', () => ({
+vi.mock<unknown>(import('@/stores/commandStore'), () => ({
   useCommandStore: () => ({ execute: vi.fn() })
 }))
 

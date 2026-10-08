@@ -10,7 +10,7 @@ import type { OAuthConsentChallenge } from '@/platform/cloud/oauth/oauthApi'
 
 const submitOAuthConsentDecision = vi.hoisted(() => vi.fn())
 
-vi.mock('@/platform/cloud/oauth/oauthApi', async (importOriginal) => ({
+vi.mock(import('@/platform/cloud/oauth/oauthApi'), async (importOriginal) => ({
   ...(await importOriginal<typeof oauthApi>()),
   submitOAuthConsentDecision
 }))

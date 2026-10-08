@@ -14,13 +14,16 @@ const { canvasInteractionsMock, nodeOutputStoreMock } = vi.hoisted(() => ({
   }
 }))
 
-vi.mock('@/renderer/core/canvas/useCanvasInteractions', () => ({
-  useCanvasInteractions: () => canvasInteractionsMock
-}))
-vi.mock('@/stores/nodeOutputStore', () => ({
+vi.mock<unknown>(
+  import('@/renderer/core/canvas/useCanvasInteractions'),
+  () => ({
+    useCanvasInteractions: () => canvasInteractionsMock
+  })
+)
+vi.mock<unknown>(import('@/stores/nodeOutputStore'), () => ({
   useNodeOutputStore: () => nodeOutputStoreMock
 }))
-vi.mock('@/utils/imageUtil', () => ({
+vi.mock(import('@/utils/imageUtil'), () => ({
   fitDimensionsToNodeWidth: () => ({ minHeight: 256, minWidth: 256 })
 }))
 

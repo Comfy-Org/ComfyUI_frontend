@@ -8,7 +8,7 @@ import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 const dialogStack = vi.hoisted(() => [] as unknown[])
 
-vi.mock('@/stores/dialogStore', () => ({
+vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
   useDialogStore: () => ({ dialogStack })
 }))
 
@@ -24,7 +24,7 @@ const settings = vi.hoisted(() => {
   }
 })
 
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: () => settings
 }))
 

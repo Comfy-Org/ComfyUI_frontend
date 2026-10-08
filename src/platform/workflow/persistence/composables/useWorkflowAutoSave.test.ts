@@ -5,20 +5,23 @@ import { useWorkflowService } from '@/platform/workflow/core/services/workflowSe
 import { useWorkflowAutoSave } from '@/platform/workflow/persistence/composables/useWorkflowAutoSave'
 import { api } from '@/scripts/api'
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     addEventListener: vi.fn(),
     removeEventListener: vi.fn()
   }
 }))
 
-vi.mock('@/platform/workflow/core/services/workflowService', () => ({
-  useWorkflowService: vi.fn(() => ({
-    saveWorkflow: vi.fn()
-  }))
-}))
+vi.mock<unknown>(
+  import('@/platform/workflow/core/services/workflowService'),
+  () => ({
+    useWorkflowService: vi.fn(() => ({
+      saveWorkflow: vi.fn()
+    }))
+  })
+)
 
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: vi.fn(() => ({
     get: vi.fn((key) => {
       if (key === 'Comfy.Workflow.AutoSave') return mockAutoSaveSetting
@@ -28,11 +31,14 @@ vi.mock('@/platform/settings/settingStore', () => ({
   }))
 }))
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: vi.fn(() => ({
-    activeWorkflow: mockActiveWorkflow
-  }))
-}))
+vi.mock<unknown>(
+  import('@/platform/workflow/management/stores/workflowStore'),
+  () => ({
+    useWorkflowStore: vi.fn(() => ({
+      activeWorkflow: mockActiveWorkflow
+    }))
+  })
+)
 
 let mockAutoSaveSetting: string = 'off'
 let mockAutoSaveDelay: number = 1000

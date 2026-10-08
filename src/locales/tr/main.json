@@ -13,21 +13,21 @@
     "shareTooltip": "İş akışını paylaş"
   },
   "agent": {
-    "addFromAssets": "Varlıklar panelinden ekle",
-    "addNodesFromGraph": "Graftan düğüm ekle",
+    "addFromAssets": "Varlık panelinden varlık sürükleyip bırakın",
+    "addNodesFromGraph": "Graftaki düğümlerden bahsedin",
     "addPromptToSend": "Göndermek için istem ekle",
     "addToPrompt": "İsteme ekle",
     "alpha": "ALFA",
     "askComfyAgent": "Comfy Agent'e sor",
     "assetNotAttachable": "Görüntüler, videolar, sesler, 3D modeller ve metin dosyaları eklenebilir",
     "attach": "Dosya ekle",
-    "attachFiles": "Görüntü veya dosya ekle",
+    "attachFiles": "Görüntü veya dosya yükleyin",
     "attachmentTooLarge": "{name}, {limit} değerinden daha büyük",
     "attachmentUploadFailed": "{name} yüklenemedi",
     "backToPreviousChat": "Önceki sohbete dön",
     "caption": "Yapay zekâ aracısı hata yapabilir",
     "captionExpanded": "Yapay zekâ aracısı hata yapabilir. Yanıtınızı iki kez kontrol edin.",
-    "changeWorkflowForChat": "Bu sohbetin iş akışını değiştir",
+    "changeWorkflowForChat": "Ajanın düzenleyebileceği iş akışını değiştirin",
     "chatOptions": "Sohbet seçenekleri",
     "chooseWorkflow": "Bir iş akışı seçin",
     "chooseWorkflowForChat": "Bu sohbet için bir iş akışı seçin",
@@ -69,13 +69,13 @@
     "noNodesToMention": "Bu iş akışında düğüm yok",
     "nodeSelection": {
       "bannerSubtitle": "Referans olarak eklemek için bir veya daha fazla düğüm seçin",
-      "bannerTitle": "Graftan düğüm ekle",
+      "bannerTitle": "Graftaki düğümlerden bahsedin",
       "exit": "Moddan çık",
       "selectNode": "Düğüm seç"
     },
     "notHelpful": "Yararlı değil",
     "openWorkflowTab": "{name} öğesini aç",
-    "placeholder": "Fikirleri açıklayın, referans vermek için {'@'} kullanın,\ngraftan düğüm ekleyin veya varlıkları sürükleyip bırakın",
+    "placeholder": "Fikirleri açıklayın, referans vermek için {'@'} kullanın,\ngraftaki düğümlerden bahsedin veya varlıkları sürükleyip bırakın",
     "ranToolCalls": "{count} araç çağrısı çalıştırıldı | {count} araç çağrısı çalıştırıldı",
     "ranToolCallsTimed": "{seconds} saniye boyunca {count} araç çağrısı çalıştırıldı | {seconds} saniye boyunca {count} araç çağrısı çalıştırıldı",
     "remove": "Kaldır",
@@ -4420,6 +4420,10 @@
       "ownerDescription": "Çalışma alanının aboneliğini geri yüklemek ve çalışma akışlarını çalıştırmak için ödeme yöntemini güncelleyin.",
       "ownerRunLabel": "Çalıştırmak için ödemeyi güncelle",
       "ownerRunTooltip": "Bu aboneliği geri yüklemek için ödemeyi güncelleyin",
+      "paymentFailedMemberDescription": "Çalışma alanı sahibinden çalışma alanının ödeme yöntemini güncellemesini isteyin.",
+      "paymentFailedMemberTitle": "Bu çalışma alanının ödemesi gerçekleştirilemedi",
+      "paymentFailedOwnerDescription": "İş akışlarını çalıştırmaya devam etmek için ödeme yönteminizi güncelleyin.",
+      "paymentFailedOwnerTitle": "Ödemeniz gerçekleştirilemedi",
       "title": "Abonelik duraklatıldı"
     },
     "perMonth": "USD / ay",
@@ -4959,6 +4963,16 @@
       "linkToGlobalSeed": "Global Değer",
       "randomize": "Değeri Rastgele Yap",
       "randomizeDesc": "Her üretimden sonra değeri rastgele değiştirir"
+    },
+    "vueOnly": {
+      "Chart": "Grafik",
+      "Compositor": "Kompozitör",
+      "Fileupload": "Dosya yükleme",
+      "Galleria": "Galeri",
+      "ImageCompare": "Görüntü karşılaştırma",
+      "Markdown": "Markdown",
+      "MultiSelect": "Çoklu seçim",
+      "SelectButton": "Seçim düğmesi"
     }
   },
   "workflowService": {
@@ -5025,6 +5039,10 @@
         "body": "Bu çalışma alanının aboneliği duraklatıldı. Devam etmek için ödemeyi güncelleyin.",
         "memberBody": "Bu çalışma alanının aboneliği duraklatıldı. Çalışma alanı yöneticilerinizin ödeme yöntemini güncellemesi gerekiyor.",
         "title": "Abonelik duraklatıldı"
+      },
+      "planChange": {
+        "body": "Mevcut planınız o tarihe kadar etkin kalır.",
+        "title": "Planınız {date} tarihinde {plan} olarak değişecek"
       },
       "updatePayment": "Ödemeyi güncelle",
       "warning": {

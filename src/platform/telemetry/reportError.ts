@@ -5,16 +5,28 @@ import { captureException, isEnabled as isSentryEnabled } from '@sentry/vue'
 
 import { toError } from '@/utils/errorUtil'
 
+/**
+ * Marks the console line `reportError()` writes for every report. RUM collects
+ * `console.error` on its own, so `datadogRumBeforeSend` matches on this to drop
+ * the untagged console copy of a failure it already received tagged.
+ */
+export const REPORTED_ERROR_PREFIX = '[Reported error]: '
+
 export interface ReportErrorOptions {
   /**
    * Stable machine-readable slug for this failure mode. Lands as the
-   * `error_type` Sentry tag and the `error_type` RUM context field, so the
-   * same query works against either console.
+   * native RUM `error.type`, the `error_type` Sentry tag, and the legacy
+   * `error_type` RUM context field.
    */
   errorType: string
   tags?: Record<string, string | number | boolean | undefined>
   context?: Record<string, unknown>
   level?: 'warning' | 'error'
+  /**
+   * Opt out of the console line for callers that already wrote one — only
+   * `assert()`, which logs before any reporter is registered.
+   */
+  logToConsole?: boolean
 }
 
 interface PendingReport {
@@ -55,7 +67,12 @@ function dispatch(error: Error, options: ReportErrorOptions): boolean {
     })
   }
   if (datadogLive) {
-    datadogRum.addError(error, {
+    const datadogError = Object.assign(
+      new Error(error.message, { cause: error.cause }),
+      error,
+      { name: errorType, stack: error.stack }
+    )
+    datadogRum.addError(datadogError, {
       ...context,
       ...tags,
       error_type: errorType,
@@ -96,10 +113,19 @@ export function flushErrorReports(): void {
  * `workspace_auth_gate_initialization_failure` stayed invisible on every
  * Datadog dashboard while it was firing in production.
  *
+ * Also writes the failure to the console, so callers never pair this with a
+ * `console.error` of their own: Sentry is off in DEV, RUM only comes up behind
+ * `initTelemetry()`, and a caller that forgot the pair went silent on dev and
+ * self-hosted installs.
+ *
  * Never throws — a failing error reporter must not become a second failure.
  */
 export function reportError(cause: unknown, options: ReportErrorOptions): void {
   try {
+    if (options.logToConsole !== false) {
+      const log = options.level === 'warning' ? console.warn : console.error
+      log(`${REPORTED_ERROR_PREFIX}${options.errorType}`, cause)
+    }
     flushErrorReports()
 
     const error = toError(cause)

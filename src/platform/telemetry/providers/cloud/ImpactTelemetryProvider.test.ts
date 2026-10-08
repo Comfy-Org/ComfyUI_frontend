@@ -30,15 +30,15 @@ const {
   }
 }))
 
-vi.mock('@/platform/telemetry/utils/checkoutAttribution', () => ({
+vi.mock(import('@/platform/telemetry/utils/checkoutAttribution'), () => ({
   captureCheckoutAttributionFromSearch: mockCaptureCheckoutAttributionFromSearch
 }))
 
-vi.mock('@/stores/apiKeyAuthStore', () => ({
+vi.mock<unknown>(import('@/stores/apiKeyAuthStore'), () => ({
   useApiKeyAuthStore: mockUseApiKeyAuthStore
 }))
 
-vi.mock('@/stores/authStore', () => ({
+vi.mock<unknown>(import('@/stores/authStore'), () => ({
   useAuthStore: mockUseAuthStore
 }))
 

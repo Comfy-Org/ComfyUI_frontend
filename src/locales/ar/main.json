@@ -13,21 +13,21 @@
     "shareTooltip": "مشاركة سير العمل"
   },
   "agent": {
-    "addFromAssets": "إضافة من لوحة الأصول",
-    "addNodesFromGraph": "إضافة عقد من الرسم البياني",
+    "addFromAssets": "اسحب أصلاً من لوحة الأصول",
+    "addNodesFromGraph": "اذكر العُقد من الرسم البياني",
     "addPromptToSend": "أضف مطالبة لإرسالها",
     "addToPrompt": "إضافة إلى المطالبة",
     "alpha": "ألفا",
     "askComfyAgent": "اسأل Comfy Agent",
     "assetNotAttachable": "يمكن إرفاق الصور والفيديو والصوت ونماذج 3D والملفات النصية",
     "attach": "إرفاق ملف",
-    "attachFiles": "إرفاق صور أو ملفات",
+    "attachFiles": "ارفع صورًا أو ملفات",
     "attachmentTooLarge": "حجم {name} أكبر من {limit}",
     "attachmentUploadFailed": "تعذر تحميل {name}",
     "backToPreviousChat": "العودة إلى المحادثة السابقة",
     "caption": "قد يرتكب وكيل الذكاء الاصطناعي أخطاءً",
     "captionExpanded": "قد يرتكب وكيل الذكاء الاصطناعي أخطاءً. تحقق من ردك مرة أخرى.",
-    "changeWorkflowForChat": "تغيير سير العمل لهذه المحادثة",
+    "changeWorkflowForChat": "غيّر سير العمل الذي يمكن للوكيل تعديله",
     "chatOptions": "خيارات المحادثة",
     "chooseWorkflow": "اختر سير عمل",
     "chooseWorkflowForChat": "اختر سير عمل لهذه الدردشة",
@@ -69,13 +69,13 @@
     "noNodesToMention": "لا توجد عُقد في سير العمل هذا",
     "nodeSelection": {
       "bannerSubtitle": "حدد عقدة واحدة أو عدة عقد لإضافتها كمرجع",
-      "bannerTitle": "إضافة عقد من الرسم البياني",
+      "bannerTitle": "اذكر العُقد من الرسم البياني",
       "exit": "الخروج من الوضع",
       "selectNode": "تحديد عقدة"
     },
     "notHelpful": "غير مفيد",
     "openWorkflowTab": "فتح {name}",
-    "placeholder": "صِف أفكارك، {'@'} للإشارة،\nأضف عقدًا من الرسم البياني أو اسحب الأصول وأفلتها",
+    "placeholder": "صف الأفكار، استخدم {'@'} للإشارة،\nاذكر العُقد من الرسم البياني أو اسحب الأصول إلى الداخل",
     "ranToolCalls": "تم تشغيل {count} استدعاء للأداة | تم تشغيل {count} استدعاءات للأداة",
     "ranToolCallsTimed": "تم تشغيل {count} استدعاء للأداة لمدة {seconds} ثانية | تم تشغيل {count} استدعاءات للأداة لمدة {seconds} ثانية",
     "remove": "إزالة",
@@ -4420,6 +4420,10 @@
       "ownerDescription": "قم بتحديث طريقة الدفع لاستعادة اشتراك مساحة العمل وتشغيل سير العمل.",
       "ownerRunLabel": "حدّث الدفع للتشغيل",
       "ownerRunTooltip": "حدّث الدفع لاستعادة هذا الاشتراك",
+      "paymentFailedMemberDescription": "اطلب من مالك مساحة العمل تحديث طريقة الدفع الخاصة بها.",
+      "paymentFailedMemberTitle": "تعذّر إتمام دفعة مساحة العمل هذه",
+      "paymentFailedOwnerDescription": "حدّث طريقة الدفع لمواصلة تشغيل مهام سير العمل.",
+      "paymentFailedOwnerTitle": "تعذّر إتمام دفعتك",
       "title": "تم إيقاف الاشتراك مؤقتًا"
     },
     "perMonth": "دولار أمريكي / شهر",
@@ -4959,6 +4963,16 @@
       "linkToGlobalSeed": "القيمة العامة",
       "randomize": "توليد قيمة عشوائية",
       "randomizeDesc": "يتم خلط القيمة عشوائيًا بعد كل توليد"
+    },
+    "vueOnly": {
+      "Chart": "مخطط",
+      "Compositor": "المُركِّب",
+      "Fileupload": "رفع ملف",
+      "Galleria": "معرض",
+      "ImageCompare": "مقارنة الصور",
+      "Markdown": "Markdown",
+      "MultiSelect": "تحديد متعدد",
+      "SelectButton": "زر التحديد"
     }
   },
   "workflowService": {
@@ -5025,6 +5039,10 @@
         "body": "تم إيقاف اشتراك هذه المساحة workspace مؤقتًا. يرجى تحديث الدفع للاستمرار.",
         "memberBody": "تم إيقاف اشتراك هذه المساحة workspace مؤقتًا. يجب على مسؤولي المساحة تحديث طريقة الدفع.",
         "title": "تم إيقاف الاشتراك مؤقتًا"
+      },
+      "planChange": {
+        "body": "تظل خطتك الحالية نشطة حتى ذلك الحين.",
+        "title": "تتغير خطتك إلى {plan} في {date}"
       },
       "updatePayment": "تحديث الدفع",
       "warning": {

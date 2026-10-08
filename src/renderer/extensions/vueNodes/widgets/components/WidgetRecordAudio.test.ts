@@ -25,21 +25,21 @@ const appMock = vi.hoisted(() => ({
 }))
 const isDOMWidgetMock = vi.hoisted(() => vi.fn(() => false))
 
-vi.mock('../composables/audio/useAudioRecorder', () => ({
+vi.mock(import('../composables/audio/useAudioRecorder'), () => ({
   useAudioRecorder: useAudioRecorderMock
 }))
 
-vi.mock('../composables/audio/useAudioPlayback', () => ({
+vi.mock(import('../composables/audio/useAudioPlayback'), () => ({
   useAudioPlayback: useAudioPlaybackMock
 }))
 
-vi.mock('../composables/audio/useAudioWaveform', () => ({
+vi.mock(import('../composables/audio/useAudioWaveform'), () => ({
   useAudioWaveform: useAudioWaveformMock
 }))
 
-vi.mock('@/scripts/app', () => appMock)
+vi.mock<unknown>(import('@/scripts/app'), () => appMock)
 
-vi.mock('@/scripts/domWidget', () => ({
+vi.mock<unknown>(import('@/scripts/domWidget'), () => ({
   isDOMWidget: isDOMWidgetMock
 }))
 

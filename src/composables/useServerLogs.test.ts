@@ -7,7 +7,7 @@ import { useServerLogs } from '@/composables/useServerLogs'
 import type { LogsWsMessage } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     subscribeLogs: vi.fn(),
     addEventListener: vi.fn(),
@@ -15,7 +15,7 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
-vi.mock('@vueuse/core', () => ({
+vi.mock(import('@vueuse/core'), () => ({
   useEventListener: vi.fn().mockReturnValue(vi.fn())
 }))
 

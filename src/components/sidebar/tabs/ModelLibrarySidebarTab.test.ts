@@ -54,16 +54,16 @@ const {
   }
 })
 
-vi.mock('@/composables/node/useNodeDragToCanvas', () => ({
+vi.mock<unknown>(import('@/composables/node/useNodeDragToCanvas'), () => ({
   useNodeDragToCanvas: () => ({ startDrag: mockStartDrag })
 }))
 
 const mockToastAdd = vi.hoisted(() => vi.fn())
-vi.mock('@/platform/updates/common/toastStore', () => ({
+vi.mock<unknown>(import('@/platform/updates/common/toastStore'), () => ({
   useToastStore: () => ({ add: mockToastAdd })
 }))
 
-vi.mock('@/stores/modelToNodeStore', () => ({
+vi.mock<unknown>(import('@/stores/modelToNodeStore'), () => ({
   useModelToNodeStore: () => ({ getNodeProvider: mockGetNodeProvider })
 }))
 
@@ -76,7 +76,7 @@ const mockModel = fromPartial<ComfyModelDef>({
   searchable: 'checkpoints/model.safetensors'
 })
 
-vi.mock('@/stores/modelStore', async () => {
+vi.mock<unknown>(import('@/stores/modelStore'), async () => {
   const { reactive } = await import('vue')
   const models = reactive<ComfyModelDef[]>([])
   modelsState.push = (model: unknown) => {
@@ -103,7 +103,7 @@ vi.mock('@/stores/modelStore', async () => {
   }
 })
 
-vi.mock('@/stores/assetDownloadStore', async () => {
+vi.mock<unknown>(import('@/stores/assetDownloadStore'), async () => {
   const { ref } = await import('vue')
   const lastCompletedDownload = ref<{
     taskId: string
@@ -122,7 +122,7 @@ vi.mock('@/stores/assetDownloadStore', async () => {
   }
 })
 
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: () => ({
     get: vi.fn((key: string) => {
       if (key === 'Comfy.ModelLibrary.NameFormat') return 'filename'
@@ -136,14 +136,14 @@ vi.mock('@/platform/settings/settingStore', () => ({
 }))
 
 const mockExpandNode = vi.hoisted(() => vi.fn())
-vi.mock('@/composables/useTreeExpansion', () => ({
+vi.mock<unknown>(import('@/composables/useTreeExpansion'), () => ({
   useTreeExpansion: () => ({
     expandNode: mockExpandNode,
     toggleNodeOnEvent: mockToggleNodeOnEvent
   })
 }))
 
-vi.mock('@/components/common/TreeExplorer.vue', async () => {
+vi.mock<unknown>(import('@/components/common/TreeExplorer.vue'), async () => {
   const { watchEffect } = await import('vue')
   return {
     default: {
@@ -163,47 +163,50 @@ vi.mock('@/components/common/TreeExplorer.vue', async () => {
   }
 })
 
-vi.mock('@/components/ui/search-input/SearchInput.vue', () => ({
-  default: {
-    name: 'SearchInput',
-    template:
-      '<input data-testid="search-input" @input="onInput" />' +
-      '<input data-testid="search-input-raw" @input="onRawInput" />',
-    props: ['modelValue', 'placeholder'],
-    emits: ['update:modelValue', 'search'],
-    setup(
-      _props: unknown,
-      {
-        emit,
-        expose
-      }: {
-        emit: (event: 'update:modelValue' | 'search', value: string) => void
-        expose: (exposed: Record<string, unknown>) => void
-      }
-    ) {
-      expose({ focus: vi.fn() })
-      return {
-        onInput: (event: Event) => {
-          const value = (event.target as HTMLInputElement).value
-          emit('update:modelValue', value)
-          emit('search', value)
-        },
-        // A keystroke the real SearchInput has not yet debounced into a
-        // `search` emit: only the model value updates.
-        onRawInput: (event: Event) => {
-          const value = (event.target as HTMLInputElement).value
-          emit('update:modelValue', value)
+vi.mock<unknown>(
+  import('@/components/ui/search-input/SearchInput.vue'),
+  () => ({
+    default: {
+      name: 'SearchInput',
+      template:
+        '<input data-testid="search-input" @input="onInput" />' +
+        '<input data-testid="search-input-raw" @input="onRawInput" />',
+      props: ['modelValue', 'placeholder'],
+      emits: ['update:modelValue', 'search'],
+      setup(
+        _props: unknown,
+        {
+          emit,
+          expose
+        }: {
+          emit: (event: 'update:modelValue' | 'search', value: string) => void
+          expose: (exposed: Record<string, unknown>) => void
+        }
+      ) {
+        expose({ focus: vi.fn() })
+        return {
+          onInput: (event: Event) => {
+            const value = (event.target as HTMLInputElement).value
+            emit('update:modelValue', value)
+            emit('search', value)
+          },
+          // A keystroke the real SearchInput has not yet debounced into a
+          // `search` emit: only the model value updates.
+          onRawInput: (event: Event) => {
+            const value = (event.target as HTMLInputElement).value
+            emit('update:modelValue', value)
+          }
         }
       }
     }
-  }
-}))
+  })
+)
 
-vi.mock('./SidebarTopArea.vue', () => ({
+vi.mock<unknown>(import('./SidebarTopArea.vue'), () => ({
   default: { name: 'SidebarTopArea', template: '<div><slot /></div>' }
 }))
 
-vi.mock('./SidebarTabTemplate.vue', () => ({
+vi.mock<unknown>(import('./SidebarTabTemplate.vue'), () => ({
   default: {
     name: 'SidebarTabTemplate',
     template:
@@ -211,11 +214,11 @@ vi.mock('./SidebarTabTemplate.vue', () => ({
   }
 }))
 
-vi.mock('./modelLibrary/ElectronDownloadItems.vue', () => ({
+vi.mock<unknown>(import('./modelLibrary/ElectronDownloadItems.vue'), () => ({
   default: { name: 'ElectronDownloadItems', template: '<div />' }
 }))
 
-vi.mock('./modelLibrary/ModelTreeLeaf.vue', () => ({
+vi.mock<unknown>(import('./modelLibrary/ModelTreeLeaf.vue'), () => ({
   default: { name: 'ModelTreeLeaf', template: '<div />', props: ['node'] }
 }))
 

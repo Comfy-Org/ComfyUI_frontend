@@ -1,11 +1,33 @@
 // @vitest-environment jsdom
 // dompurify is inert under happy-dom — see the tripwire note in
 // vitest.setup.ts (capricorn86/happy-dom#2182, FE-1189).
+import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, ref } from 'vue'
+import { defineComponent, nextTick, ref } from 'vue'
+import { createI18n } from 'vue-i18n'
 
-import { useNodeHelpContent } from '@/composables/useNodeHelpContent'
+import { useNodeHelpContent as useNodeHelpContentComposable } from '@/composables/useNodeHelpContent'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: {} }
+})
+
+function useNodeHelpContent(
+  ...args: Parameters<typeof useNodeHelpContentComposable>
+) {
+  let composable!: ReturnType<typeof useNodeHelpContentComposable>
+  const Wrapper = defineComponent({
+    setup() {
+      composable = useNodeHelpContentComposable(...args)
+      return () => null
+    }
+  })
+  render(Wrapper, { global: { plugins: [i18n] } })
+  return composable
+}
 
 async function flushPromises() {
   await new Promise((r) => setTimeout(r, 0))
@@ -34,19 +56,13 @@ function createMockNode(
   } as ComfyNodeDefImpl
 }
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     fileURL: vi.fn((url) => url)
   }
 }))
 
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    locale: ref('en')
-  })
-}))
-
-vi.mock('@/types/nodeSource', () => ({
+vi.mock<unknown>(import('@/types/nodeSource'), () => ({
   NodeSourceType: {
     Core: 'core',
     CustomNodes: 'custom_nodes'

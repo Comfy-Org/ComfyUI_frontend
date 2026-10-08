@@ -5,11 +5,12 @@ import { ref } from 'vue'
 
 import { mergeCustomNodesI18n } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { api } from '@/scripts/api'
 
 import { useBootstrapStore } from './bootstrapStore'
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     init: vi.fn().mockResolvedValue(undefined),
     getNodeDefs: vi.fn().mockResolvedValue({ TestNode: { name: 'TestNode' } }),
@@ -18,17 +19,17 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
-vi.mock('@/i18n', () => ({
+vi.mock(import('@/i18n'), () => ({
   mergeCustomNodesI18n: vi.fn()
 }))
 
 const mockIsSettingsReady = ref(false)
+const mockSettingLoad = vi.hoisted(() => vi.fn(() => Promise.resolve()))
+const mockWorkflowLoad = vi.hoisted(() => vi.fn(() => Promise.resolve()))
 
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: vi.fn(() => ({
-    load: vi.fn(() => {
-      mockIsSettingsReady.value = true
-    }),
+    load: mockSettingLoad,
     get isReady() {
       return mockIsSettingsReady.value
     },
@@ -37,15 +38,18 @@ vi.mock('@/platform/settings/settingStore', () => ({
   }))
 }))
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: vi.fn(() => ({
-    loadWorkflows: vi.fn(),
-    syncWorkflows: vi.fn().mockResolvedValue(undefined)
-  }))
-}))
+vi.mock<unknown>(
+  import('@/platform/workflow/management/stores/workflowStore'),
+  () => ({
+    useWorkflowStore: vi.fn(() => ({
+      loadWorkflows: mockWorkflowLoad,
+      syncWorkflows: vi.fn().mockResolvedValue(undefined)
+    }))
+  })
+)
 
 const mockNeedsLogin = ref(false)
-vi.mock('@/stores/userStore', () => ({
+vi.mock<unknown>(import('@/stores/userStore'), () => ({
   useUserStore: vi.fn(() => ({
     initialize: vi.fn().mockResolvedValue(undefined),
     needsLogin: mockNeedsLogin
@@ -54,7 +58,7 @@ vi.mock('@/stores/userStore', () => ({
 
 const mockIsAuthInitialized = ref(false)
 const mockIsAuthAuthenticated = ref(false)
-vi.mock('@/stores/authStore', () => ({
+vi.mock<unknown>(import('@/stores/authStore'), () => ({
   useAuthStore: vi.fn(() => ({
     isInitialized: mockIsAuthInitialized,
     isAuthenticated: mockIsAuthAuthenticated
@@ -64,11 +68,15 @@ vi.mock('@/stores/authStore', () => ({
 const mockDistributionTypes = vi.hoisted(() => ({
   isCloud: false
 }))
-vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
+vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
 
 const mockReportError = vi.hoisted(() => vi.fn())
-vi.mock('@/platform/telemetry/reportError', () => ({
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError
+}))
+
+vi.mock(import('@sentry/vue'), () => ({
+  addBreadcrumb: vi.fn()
 }))
 
 function requestFailure(status: number) {
@@ -84,6 +92,11 @@ describe('bootstrapStore', () => {
     mockIsAuthAuthenticated.value = false
     mockNeedsLogin.value = false
     mockDistributionTypes.isCloud = false
+    mockSettingLoad.mockImplementation(() => {
+      mockIsSettingsReady.value = true
+      return Promise.resolve()
+    })
+    mockWorkflowLoad.mockResolvedValue(undefined)
   })
 
   it('initializes with all flags false', () => {
@@ -102,6 +115,25 @@ describe('bootstrapStore', () => {
       expect(settingStore.isReady).toBe(true)
       expect(store.isI18nReady).toBe(true)
     })
+  })
+
+  it('records both store phases when their loads reject', async () => {
+    mockSettingLoad.mockRejectedValueOnce(new Error('settings failed'))
+    mockWorkflowLoad.mockRejectedValueOnce(new Error('workflows failed'))
+    const milestone = vi.spyOn(bootstrapTracer, 'milestone')
+    const previousPhaseCount = bootstrapTracer.summary().length
+    const store = useBootstrapStore()
+
+    await expect(store.startStoreBootstrap()).resolves.toBeUndefined()
+
+    await vi.waitFor(() => {
+      expect(milestone).toHaveBeenCalledWith('stores-ready')
+      expect(store.isI18nReady).toBe(true)
+    })
+    const phaseRows = bootstrapTracer.summary().slice(previousPhaseCount)
+    expect(phaseRows.map((row) => row.name)).toEqual(
+      expect.arrayContaining(['bootstrap/settings', 'bootstrap/workflows'])
+    )
   })
 
   describe('custom node translations', () => {
@@ -184,6 +216,9 @@ describe('bootstrapStore', () => {
 
     it('gives up after a second timeout, reports it, and continues bootstrap unauthenticated', async () => {
       vi.useFakeTimers()
+      const consoleError = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {})
       try {
         const store = useBootstrapStore()
         const settingStore = useSettingStore()
@@ -197,6 +232,7 @@ describe('bootstrapStore', () => {
         expect(mockReportError).toHaveBeenCalledWith(expect.anything(), {
           errorType: 'bootstrap_auth_wait_timeout'
         })
+        expect(consoleError).not.toHaveBeenCalled()
         // Bootstrap must not stay stuck: stores load even when Firebase never fires.
         expect(settingStore.isReady).toBe(true)
       } finally {

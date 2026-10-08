@@ -10,18 +10,22 @@ import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 
 import { markDeletedAssetsAsMissingMedia } from './markDeletedAssetsAsMissingMedia'
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: true
 }))
 
 const mockScanNodeMediaCandidates = vi.hoisted(() => vi.fn())
-vi.mock('@/platform/missingMedia/missingMediaScan', () => ({
+vi.mock(import('@/platform/missingMedia/missingMediaScan'), () => ({
   scanNodeMediaCandidates: mockScanNodeMediaCandidates
 }))
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({ currentGraph: null })
-}))
+vi.mock<unknown>(
+  import('@/renderer/core/canvas/canvasStore'), // eslint-disable-line import-x/no-restricted-paths
+
+  () => ({
+    useCanvasStore: () => ({ currentGraph: null })
+  })
+)
 
 function makeGraph(nodes: unknown[]): LGraph {
   return { nodes } as unknown as LGraph

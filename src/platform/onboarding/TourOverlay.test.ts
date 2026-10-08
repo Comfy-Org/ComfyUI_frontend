@@ -11,7 +11,9 @@ import TourOverlay from './TourOverlay.vue'
 import type { CoachStep } from './onboardingTours'
 import { useOnboardingTourStore } from './onboardingTourStore'
 
-vi.mock('./onboardingTourStore', () => ({ useOnboardingTourStore: vi.fn() }))
+vi.mock<unknown>(import('./onboardingTourStore'), () => ({
+  useOnboardingTourStore: vi.fn()
+}))
 
 function makeTourState() {
   return {
@@ -33,7 +35,7 @@ function makeTourState() {
 }
 
 // Stubbed so the suite covers only TourOverlay's branching and intent wiring.
-vi.mock('./TourSpotlight.vue', () => ({
+vi.mock(import('./TourSpotlight.vue'), () => ({
   default: defineComponent({
     emits: ['advance', 'back', 'skip'],
     setup(_, { emit }) {

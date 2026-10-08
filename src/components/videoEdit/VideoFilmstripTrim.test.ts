@@ -11,7 +11,7 @@ const { activeHandle } = vi.hoisted(() => {
   }
 })
 
-vi.mock('@/composables/useRangeEditor', () => ({
+vi.mock<unknown>(import('@/composables/useRangeEditor'), () => ({
   useRangeEditor: () => ({
     startDrag: vi.fn(),
     activeHandle

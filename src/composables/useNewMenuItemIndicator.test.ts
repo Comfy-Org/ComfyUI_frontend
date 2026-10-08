@@ -8,7 +8,7 @@ const mockSettingStore = vi.hoisted(() => ({
   set: vi.fn()
 }))
 
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: vi.fn(() => mockSettingStore)
 }))
 

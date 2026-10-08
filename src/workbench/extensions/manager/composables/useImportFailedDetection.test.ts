@@ -7,33 +7,30 @@ const mockIsPackInstalled = vi.fn()
 const mockGetConflictsForPackageByID = vi.fn()
 const mockShow = vi.fn()
 
-vi.mock('@/workbench/extensions/manager/stores/comfyManagerStore', () => ({
-  useComfyManagerStore: () => ({
-    isPackInstalled: mockIsPackInstalled
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/stores/comfyManagerStore'),
+  () => ({
+    useComfyManagerStore: () => ({
+      isPackInstalled: mockIsPackInstalled
+    })
   })
-}))
-vi.mock('@/workbench/extensions/manager/stores/conflictDetectionStore', () => ({
-  useConflictDetectionStore: () => ({
-    getConflictsForPackageByID: mockGetConflictsForPackageByID
+)
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/stores/conflictDetectionStore'),
+  () => ({
+    useConflictDetectionStore: () => ({
+      getConflictsForPackageByID: mockGetConflictsForPackageByID
+    })
   })
-}))
-vi.mock(
-  '@/workbench/extensions/manager/composables/useImportFailedNodeDialog',
+)
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/composables/useImportFailedNodeDialog'),
   () => ({
     useImportFailedNodeDialog: () => ({
       show: mockShow
     })
   })
 )
-vi.mock('vue-i18n', async () => {
-  const actual = await vi.importActual('vue-i18n')
-  return {
-    ...actual,
-    useI18n: () => ({
-      t: vi.fn((key: string) => key)
-    })
-  }
-})
 
 describe('useImportFailedDetection', () => {
   it('should return false for importFailed when package is not installed', () => {

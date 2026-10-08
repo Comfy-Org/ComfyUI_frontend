@@ -55,3 +55,24 @@ jobs:
       # catches a cluster that points at a page the build never produced.
       - name: Check hreflang clusters
         run: pnpm --filter @comfyorg/website check:hreflang
+
+      # The build above is the development shape: Workshop included. Preview
+      # and production build the other shape, and nothing else here exercises
+      # it -- so a fault on the exclusion path reaches a deploy untested. It
+      # already happened once: the gate threw at astro:build:done while still
+      # emitting every page, so page counts looked right and the build failed.
+      #
+      # Hence both halves of the assertion. The directory must be gone AND the
+      # build must succeed.
+      - name: Build the release shape, with Workshop excluded
+        env:
+          WEBSITE_ASHBY_API_KEY: ${{ secrets.WEBSITE_ASHBY_API_KEY }}
+          WEBSITE_ASHBY_JOB_BOARD_NAME: ${{ secrets.WEBSITE_ASHBY_JOB_BOARD_NAME }}
+          WORKSHOP_IN_BUILD: '0'
+        run: |
+          pnpm --filter @comfyorg/website build
+          if [ -d apps/website/dist/workshop ]; then
+            echo "::error title=Workshop leaked into a release build::apps/website/dist/workshop exists with WORKSHOP_IN_BUILD=0. Workshop is unreleased and must not deploy. See apps/website/src/integrations/workshop-release-gate.ts."
+            exit 1
+          fi
+          echo "Release build has no Workshop output."

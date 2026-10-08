@@ -19,7 +19,7 @@ const i18n = createI18n({
 const mockShouldUseAssetBrowser = vi.hoisted(() => vi.fn(() => false))
 const mockIsAssetAPIEnabled = vi.hoisted(() => vi.fn(() => false))
 
-vi.mock('@/platform/assets/services/assetService', () => ({
+vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
   assetService: {
     shouldUseAssetBrowser: mockShouldUseAssetBrowser,
     isAssetAPIEnabled: mockIsAssetAPIEnabled

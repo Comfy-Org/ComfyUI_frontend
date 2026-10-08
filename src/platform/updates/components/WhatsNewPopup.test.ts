@@ -6,7 +6,9 @@ import userEvent from '@testing-library/user-event'
 import Button from '@/components/ui/button/Button.vue'
 import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createI18n } from 'vue-i18n'
 
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { ReleaseNote } from '../common/releaseService'
 import WhatsNewPopup from './WhatsNewPopup.vue'
 
@@ -17,8 +19,13 @@ const mockTranslations: Record<string, string> = {
   'whatsNewPopup.learnMore': 'Learn More',
   'whatsNewPopup.noReleaseNotes': 'No release notes available'
 }
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: enMessages }
+})
 
-vi.mock('@/i18n', () => ({
+vi.mock<unknown>(import('@/i18n'), () => ({
   i18n: {
     global: {
       locale: {
@@ -34,20 +41,11 @@ vi.mock('@/i18n', () => ({
   d: (date: Date) => date.toLocaleDateString()
 }))
 
-vi.mock('vue-i18n', () => ({
-  useI18n: vi.fn(() => ({
-    locale: { value: 'en' },
-    t: vi.fn((key: string) => {
-      return mockTranslations[key] || key
-    })
-  }))
-}))
-
-vi.mock('@/utils/formatUtil', () => ({
+vi.mock(import('@/utils/formatUtil'), () => ({
   formatVersionAnchor: vi.fn((version: string) => version.replace(/\./g, ''))
 }))
 
-vi.mock('@/utils/markdownRendererUtil', () => ({
+vi.mock(import('@/utils/markdownRendererUtil'), () => ({
   renderMarkdownToHtml: vi.fn((content: string) => `<div>${content}</div>`)
 }))
 
@@ -60,7 +58,7 @@ const mockReleaseStore = {
   fetchReleases: vi.fn()
 }
 
-vi.mock('../common/releaseStore', () => ({
+vi.mock<unknown>(import('../common/releaseStore'), () => ({
   useReleaseStore: vi.fn(() => mockReleaseStore)
 }))
 
@@ -68,13 +66,8 @@ describe('WhatsNewPopup', () => {
   const renderComponent = (props = {}) => {
     return render(WhatsNewPopup, {
       global: {
-        plugins: [PrimeVue],
+        plugins: [PrimeVue, i18n],
         components: { Button },
-        mocks: {
-          $t: (key: string) => {
-            return mockTranslations[key] || key
-          }
-        },
         stubs: {
           'i-lucide-x': true,
           'i-lucide-external-link': true

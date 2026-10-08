@@ -12,6 +12,34 @@ describe('errorResponseFromBody', () => {
     expect(errorResponseFromBody(body, 'fallback')).toEqual(body)
   })
 
+  it('unwraps the nested billing error envelope', () => {
+    // The workspace billing service writes { error: { code, message, ... } }
+    // (cloud billing_write.go errorEnvelope); its extra fields
+    // (blocking_op_id) are not part of the canonical shape and are dropped.
+    expect(
+      errorResponseFromBody(
+        {
+          error: {
+            code: 'SUBSCRIPTION_CHANGE_IN_PROGRESS',
+            message: 'a subscription change is already in progress',
+            blocking_op_id: 'op-1'
+          }
+        },
+        'fallback'
+      )
+    ).toEqual({
+      code: 'SUBSCRIPTION_CHANGE_IN_PROGRESS',
+      message: 'a subscription change is already in progress'
+    })
+  })
+
+  it('falls back on an error envelope that is not an object', () => {
+    expect(errorResponseFromBody({ error: 'boom' }, 'fallback')).toEqual({
+      code: 'UNKNOWN_ERROR',
+      message: 'fallback'
+    })
+  })
+
   it('passes through a canonical body without details', () => {
     const result = errorResponseFromBody(
       { code: 'NOT_FOUND', message: 'Asset not found' },

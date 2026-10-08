@@ -13,21 +13,21 @@
     "shareTooltip": "اشتراک‌گذاری گردش‌کار"
   },
   "agent": {
-    "addFromAssets": "افزودن از پنل دارایی‌ها",
-    "addNodesFromGraph": "افزودن گره‌ها از گراف",
+    "addFromAssets": "asset را از پنل asset بکشید و رها کنید",
+    "addNodesFromGraph": "به nodeهای نمودار اشاره کنید",
     "addPromptToSend": "افزودن یک prompt برای ارسال",
     "addToPrompt": "افزودن به پرامپت",
     "alpha": "آلفا",
     "askComfyAgent": "از Comfy Agent بپرسید",
     "assetNotAttachable": "می‌توان تصاویر، ویدیو، صدا، مدل‌های سه‌بعدی و فایل‌های متنی را پیوست کرد",
     "attach": "پیوست کردن فایل",
-    "attachFiles": "پیوست کردن تصویر یا فایل",
+    "attachFiles": "تصاویر یا فایل‌ها را بارگذاری کنید",
     "attachmentTooLarge": "{name} بزرگ‌تر از {limit} است",
     "attachmentUploadFailed": "{name} بارگذاری نشد",
     "backToPreviousChat": "بازگشت به گفتگوی قبلی",
     "caption": "عامل هوش مصنوعی ممکن است اشتباه کند",
     "captionExpanded": "عامل هوش مصنوعی ممکن است اشتباه کند. پاسخ خود را دوباره بررسی کنید.",
-    "changeWorkflowForChat": "تغییر workflow برای این گفتگو",
+    "changeWorkflowForChat": "workflowی را که agent می‌تواند ویرایش کند تغییر دهید",
     "chatOptions": "گزینه‌های گفتگو",
     "chooseWorkflow": "انتخاب یک workflow",
     "chooseWorkflowForChat": "انتخاب یک workflow برای این گفت‌وگو",
@@ -69,13 +69,13 @@
     "noNodesToMention": "هیچ nodeی در این workflow نیست",
     "nodeSelection": {
       "bannerSubtitle": "برای افزودن به‌عنوان مرجع، یک یا چند گره را انتخاب کنید",
-      "bannerTitle": "افزودن گره‌ها از گراف",
+      "bannerTitle": "به nodeهای نمودار اشاره کنید",
       "exit": "خروج از حالت",
       "selectNode": "انتخاب گره"
     },
     "notHelpful": "غیرمفید",
     "openWorkflowTab": "باز کردن {name}",
-    "placeholder": "ایده‌ها را شرح دهید، {'@'} برای ارجاع،\nگره‌ها را از گراف اضافه کنید یا دارایی‌ها را بکشید و رها کنید",
+    "placeholder": "ایده‌ها را توضیح دهید، {'@'} برای ارجاع،\nبه nodeهای نمودار اشاره کنید یا assetها را بکشید و رها کنید",
     "ranToolCalls": "{count} فراخوانی ابزار اجرا شد | {count} فراخوانی ابزار اجرا شد",
     "ranToolCallsTimed": "{count} فراخوانی ابزار به‌مدت {seconds} ثانیه اجرا شد | {count} فراخوانی ابزار به‌مدت {seconds} ثانیه اجرا شد",
     "remove": "حذف",
@@ -4420,6 +4420,10 @@
       "ownerDescription": "روش پرداخت خود را به‌روزرسانی کنید تا اشتراک workspace بازیابی شده و workflowها اجرا شوند.",
       "ownerRunLabel": "برای اجرا، پرداخت را به‌روزرسانی کنید",
       "ownerRunTooltip": "برای بازیابی این اشتراک، پرداخت را به‌روزرسانی کنید",
+      "paymentFailedMemberDescription": "از مالک workspace بخواهید روش پرداخت آن را به‌روزرسانی کند.",
+      "paymentFailedMemberTitle": "پرداخت این workspace انجام نشد",
+      "paymentFailedOwnerDescription": "روش پرداخت خود را به‌روزرسانی کنید تا workflowها همچنان اجرا شوند.",
+      "paymentFailedOwnerTitle": "پرداخت شما انجام نشد",
       "title": "اشتراک متوقف شده است"
     },
     "perMonth": "/ ماه",
@@ -4959,6 +4963,16 @@
       "linkToGlobalSeed": "مقدار سراسری",
       "randomize": "تصادفی‌سازی مقدار",
       "randomizeDesc": "مقدار را پس از هر تولید به صورت تصادفی تغییر می‌دهد"
+    },
+    "vueOnly": {
+      "Chart": "نمودار",
+      "Compositor": "کامپوزیتور",
+      "Fileupload": "بارگذاری فایل",
+      "Galleria": "گالری",
+      "ImageCompare": "مقایسه تصویر",
+      "Markdown": "Markdown",
+      "MultiSelect": "انتخاب چندگانه",
+      "SelectButton": "دکمه انتخاب"
     }
   },
   "workflowService": {
@@ -5025,6 +5039,10 @@
         "body": "اشتراک این ورک‌اسپیس متوقف شده است. برای ادامه، پرداخت را به‌روزرسانی کنید.",
         "memberBody": "اشتراک این ورک‌اسپیس متوقف شده است. مدیران ورک‌اسپیس باید روش پرداخت را به‌روزرسانی کنند.",
         "title": "اشتراک متوقف شده است"
+      },
+      "planChange": {
+        "body": "طرح فعلی شما تا آن زمان فعال می‌ماند.",
+        "title": "طرح شما در {date} به {plan} تغییر می‌کند"
       },
       "updatePayment": "به‌روزرسانی پرداخت",
       "warning": {

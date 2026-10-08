@@ -2,10 +2,10 @@ import { describe, expect, it, vi } from 'vitest'
 
 const { showDialog } = vi.hoisted(() => ({ showDialog: vi.fn() }))
 
-vi.mock('@/stores/dialogStore', () => ({
+vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
   useDialogStore: () => ({ showDialog })
 }))
-vi.mock('@/i18n', () => ({ t: (key: string) => key }))
+vi.mock(import('@/i18n'), () => ({ t: (key: string) => key }))
 
 import { openHdrViewer } from './hdrViewerService'
 

@@ -20,23 +20,26 @@ const state = vi.hoisted(() => ({
   executionContextError: null as Error | null
 }))
 
-vi.mock('@/composables/useAppMode', () => ({
+vi.mock<unknown>(import('@/composables/useAppMode'), () => ({
   useAppMode: () => ({
     mode: state.mode,
     isAppMode: state.isAppMode
   })
 }))
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => state.telemetry
 }))
 
-vi.mock('@/platform/telemetry/utils/getExecutionContext', () => ({
-  getExecutionContext: () => {
-    if (state.executionContextError) throw state.executionContextError
-    return state.executionContext
-  }
-}))
+vi.mock<unknown>(
+  import('@/platform/telemetry/utils/getExecutionContext'),
+  () => ({
+    getExecutionContext: () => {
+      if (state.executionContextError) throw state.executionContextError
+      return state.executionContext
+    }
+  })
+)
 
 import {
   getRunButtonTelemetryProperties,

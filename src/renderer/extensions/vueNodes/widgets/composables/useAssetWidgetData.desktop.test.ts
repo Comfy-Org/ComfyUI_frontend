@@ -3,14 +3,14 @@ import { ref } from 'vue'
 
 import { useAssetWidgetData } from '@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData'
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
 }))
 
 const mockUpdateModelsForNodeType = vi.fn()
 const mockGetCategoryForNodeType = vi.fn()
 
-vi.mock('@/stores/assetsStore', () => ({
+vi.mock<unknown>(import('@/stores/assetsStore'), () => ({
   useAssetsStore: () => ({
     getAssets: () => [],
     isModelLoading: () => false,
@@ -20,7 +20,7 @@ vi.mock('@/stores/assetsStore', () => ({
   })
 }))
 
-vi.mock('@/stores/modelToNodeStore', () => ({
+vi.mock<unknown>(import('@/stores/modelToNodeStore'), () => ({
   useModelToNodeStore: () => ({
     getCategoryForNodeType: mockGetCategoryForNodeType
   })

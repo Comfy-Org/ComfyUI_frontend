@@ -25,13 +25,13 @@ const mocks = vi.hoisted(() => ({
   } satisfies ExecutionContext
 }))
 
-vi.mock('@sentry/vue', () => ({
+vi.mock(import('@sentry/vue'), () => ({
   addBreadcrumb: mocks.addBreadcrumb,
   setContext: mocks.setContext,
   setUser: mocks.setUser
 }))
 
-vi.mock('@/composables/auth/useCurrentUser', () => ({
+vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   useCurrentUser: () => ({
     onUserLogout: mocks.onUserLogout,
     resolvedUserInfo: {
@@ -44,15 +44,18 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
   })
 }))
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => ({
-    activeWorkflow: {
-      isModified: mocks.workflowIsModified
-    }
+vi.mock<unknown>(
+  import('@/platform/workflow/management/stores/workflowStore'),
+  () => ({
+    useWorkflowStore: () => ({
+      activeWorkflow: {
+        isModified: mocks.workflowIsModified
+      }
+    })
   })
-}))
+)
 
-vi.mock('../../utils/getExecutionContext', () => ({
+vi.mock(import('../../utils/getExecutionContext'), () => ({
   getExecutionContext: () => mocks.executionContext
 }))
 

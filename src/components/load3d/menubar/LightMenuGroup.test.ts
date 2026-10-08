@@ -13,7 +13,7 @@ const settingValues: Record<string, number> = {
   'Comfy.Load3D.LightAdjustmentIncrement': 0.1
 }
 
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: () => ({ get: (key: string) => settingValues[key] })
 }))
 

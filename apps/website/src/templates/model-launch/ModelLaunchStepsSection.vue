@@ -69,6 +69,11 @@ const descriptionParts = (step: ModelLaunchSteps['items'][number]) =>
               class="text-primary-comfy-yellow underline underline-offset-2 transition-opacity hover:opacity-70"
               >{{ part.label ?? part.value }}</a
             >
+            <strong
+              v-else-if="part.type === 'strong'"
+              class="font-semibold text-primary-warm-white"
+              >{{ part.value }}</strong
+            >
             <template v-else>{{ part.value }}</template>
           </template>
         </p>

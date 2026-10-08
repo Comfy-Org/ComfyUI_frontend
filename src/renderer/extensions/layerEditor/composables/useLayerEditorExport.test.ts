@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import type { App } from 'vue'
+import { createApp, defineComponent, ref } from 'vue'
+import { createI18n } from 'vue-i18n'
 
 import type { Psd } from 'ag-psd'
 
@@ -21,14 +23,36 @@ const { writePsd, downloadBlob, toastAdd } = vi.hoisted(() => ({
   toastAdd: vi.fn()
 }))
 
-vi.mock('ag-psd', () => ({ writePsd }))
-vi.mock('@/base/common/downloadUtil', () => ({ downloadBlob }))
-vi.mock('@/platform/updates/common/toastStore', () => ({
+vi.mock(import('ag-psd'), () => ({ writePsd }))
+vi.mock(import('@/base/common/downloadUtil'), () => ({ downloadBlob }))
+vi.mock<unknown>(import('@/platform/updates/common/toastStore'), () => ({
   useToastStore: () => ({ add: toastAdd })
 }))
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({ t: (key: string) => key })
-}))
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: {} },
+  missingWarn: false,
+  fallbackWarn: false
+})
+const apps: App[] = []
+
+function renderLayerEditorExport(session: LayerEditorSession) {
+  let layerEditorExport: ReturnType<typeof useLayerEditorExport> | undefined
+  const app = createApp(
+    defineComponent({
+      setup() {
+        layerEditorExport = useLayerEditorExport(session)
+        return () => null
+      }
+    })
+  )
+  app.use(i18n)
+  app.mount(document.createElement('div'))
+  apps.push(app)
+  if (!layerEditorExport) throw new Error('Layer editor export not initialized')
+  return layerEditorExport
+}
 
 function stubContext(canvas: HTMLCanvasElement): CanvasRenderingContext2D {
   const noop = () => {}
@@ -64,6 +88,7 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  for (const app of apps.splice(0)) app.unmount()
   HTMLCanvasElement.prototype.getContext = origGetContext
 })
 
@@ -154,7 +179,7 @@ describe('useLayerEditorExport', () => {
       rasterNode('a', 'Background', 1, 'normal'),
       rasterNode('b', 'Overlay', 0.5, 'multiply')
     ])
-    const { exporting, exportPsd } = useLayerEditorExport(session)
+    const { exporting, exportPsd } = renderLayerEditorExport(session)
 
     await exportPsd()
 
@@ -189,7 +214,7 @@ describe('useLayerEditorExport', () => {
       throw new Error('boom')
     })
     const session = makeSession([rasterNode('a', 'Background', 1, 'normal')])
-    const { exporting, exportPsd } = useLayerEditorExport(session)
+    const { exporting, exportPsd } = renderLayerEditorExport(session)
 
     await exportPsd()
 
@@ -209,7 +234,7 @@ describe('useLayerEditorExport', () => {
       [rasterNode('a', 'Background', 1, 'normal')],
       false
     )
-    const { exportPsd } = useLayerEditorExport(session)
+    const { exportPsd } = renderLayerEditorExport(session)
 
     await exportPsd()
 

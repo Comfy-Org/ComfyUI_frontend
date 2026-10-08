@@ -21,7 +21,7 @@ import { imageCropLoadingAfterUrlChange, useImageCrop } from './useImageCrop'
 
 const resizeObserverCallbacks: Array<() => void> = []
 
-vi.mock('@vueuse/core', () => ({
+vi.mock<unknown>(import('@vueuse/core'), () => ({
   useResizeObserver: (_target: unknown, cb: () => void) => {
     resizeObserverCallbacks.push(cb)
     return { stop: vi.fn() }
@@ -31,7 +31,7 @@ vi.mock('@vueuse/core', () => ({
 const mockResolveNode = vi.hoisted(() =>
   vi.fn<(id: NodeId) => LGraphNode | null>()
 )
-vi.mock('@/utils/litegraphUtil', () => ({
+vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
   resolveNode: (id: NodeId) => mockResolveNode(id)
 }))
 
@@ -47,21 +47,25 @@ type MockOutputStore = {
 
 const useNodeOutputStoreMock = vi.hoisted(() => vi.fn<() => MockOutputStore>())
 
-vi.mock('@/stores/nodeOutputStore', () => ({
+vi.mock<unknown>(import('@/stores/nodeOutputStore'), () => ({
   useNodeOutputStore: () => useNodeOutputStoreMock()
 }))
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({
-    canvas: {
-      graph: {
-        rootGraph: { id: 'test-graph' }
-      }
-    }
-  })
-}))
+vi.mock<unknown>(
+  import('@/renderer/core/canvas/canvasStore'),
 
-vi.mock('@/stores/widgetValueStore', () => ({
+  () => ({
+    useCanvasStore: () => ({
+      canvas: {
+        graph: {
+          rootGraph: { id: 'test-graph' }
+        }
+      }
+    })
+  })
+)
+
+vi.mock<unknown>(import('@/stores/widgetValueStore'), () => ({
   useWidgetValueStore: () => ({
     getNodeWidgets: vi.fn(() => [])
   })

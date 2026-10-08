@@ -45,8 +45,6 @@ export type AssetContext = z.infer<typeof zAssetContextSchema>
 interface MediaAssetProviderValue {
   asset: Ref<AssetMeta | undefined>
   context: Ref<AssetContext>
-  isVideoPlaying: Ref<boolean>
-  showVideoControls: Ref<boolean>
 }
 
 export const MediaAssetKey: InjectionKey<MediaAssetProviderValue> =

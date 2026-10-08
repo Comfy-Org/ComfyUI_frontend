@@ -12,7 +12,7 @@ const flushPromises = () => new Promise((resolve) => setTimeout(resolve, 0))
 let mockQuery: Record<string, unknown> = {}
 const mockRouterPush = vi.fn()
 
-vi.mock('vue-router', () => ({
+vi.mock<unknown>(import('vue-router'), () => ({
   useRoute: () => ({
     query: mockQuery
   }),
@@ -27,11 +27,11 @@ const authActionMocks = vi.hoisted(() => ({
   accessBillingPortal: vi.fn()
 }))
 
-vi.mock('@/composables/auth/useAuthActions', () => ({
+vi.mock<unknown>(import('@/composables/auth/useAuthActions'), () => ({
   useAuthActions: () => authActionMocks
 }))
 
-vi.mock('@/composables/useErrorHandling', () => ({
+vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
   useErrorHandling: () => ({
     wrapWithErrorHandlingAsync:
       <T extends (...args: never[]) => unknown>(fn: T) =>
@@ -49,13 +49,13 @@ const subscriptionMocks = vi.hoisted(() => ({
   manageSubscription: vi.fn()
 }))
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => subscriptionMocks
 }))
 
 const mockShowPricingTable = vi.hoisted(() => vi.fn())
-vi.mock(
-  '@/platform/cloud/subscription/composables/useSubscriptionDialog',
+vi.mock<unknown>(
+  import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
   () => ({
     useSubscriptionDialog: () => ({ showPricingTable: mockShowPricingTable })
   })
@@ -66,12 +66,15 @@ const legacyCheckoutMocks = vi.hoisted(() => ({
   performTeamSubscriptionCheckout: vi.fn()
 }))
 
-vi.mock('@/platform/cloud/subscription/utils/subscriptionCheckoutUtil', () => ({
-  performSubscriptionCheckout: legacyCheckoutMocks.performSubscriptionCheckout
-}))
+vi.mock(
+  import('@/platform/cloud/subscription/utils/subscriptionCheckoutUtil'),
+  () => ({
+    performSubscriptionCheckout: legacyCheckoutMocks.performSubscriptionCheckout
+  })
+)
 
 vi.mock(
-  '@/platform/cloud/subscription/utils/teamSubscriptionCheckoutUtil',
+  import('@/platform/cloud/subscription/utils/teamSubscriptionCheckoutUtil'),
   () => ({
     performTeamSubscriptionCheckout:
       legacyCheckoutMocks.performTeamSubscriptionCheckout

@@ -32,6 +32,7 @@ import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useF
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
+import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { installNodeAddedTelemetry } from '@/platform/telemetry/nodeAdded/installNodeAddedTelemetry'
 import { normalizeExecutionTriggerSource } from '@/platform/telemetry/types'
 import { getExecutionContext } from '@/platform/telemetry/utils/getExecutionContext'
@@ -976,7 +977,9 @@ export class ComfyApp {
     await useWorkspaceStore().workflow.syncWorkflows()
     //Doesn't need to block. Blueprints will load async
     void useSubgraphStore().fetchSubgraphs()
-    await useExtensionService().loadExtensions()
+    await bootstrapTracer.settle('bootstrap/extensions-load', () =>
+      useExtensionService().loadExtensions()
+    )
 
     this.addProcessKeyHandler()
     this.addConfigureHandler()
@@ -1071,12 +1074,17 @@ export class ComfyApp {
       }
     })
 
-    await useExtensionService().invokeExtensionsAsync('init')
+    await bootstrapTracer.settle('bootstrap/extensions-init', () =>
+      useExtensionService().invokeExtensionsAsync('init')
+    )
+
     await this.registerNodes()
 
     this.addDropHandler()
 
-    await useExtensionService().invokeExtensionsAsync('setup')
+    await bootstrapTracer.settle('bootstrap/extensions-setup', () =>
+      useExtensionService().invokeExtensionsAsync('setup')
+    )
 
     this.positionConversion = useCanvasPositionConversion(
       this.canvasContainer,
@@ -1178,10 +1186,14 @@ export class ComfyApp {
    * Registers nodes with the graph
    */
   async registerNodes() {
-    // Load node definitions from the backend
-    const defs = await this.getNodeDefs()
-    await this.registerNodesFromDefs(defs)
-    await useExtensionService().invokeExtensionsAsync('registerCustomNodes')
+    const defs = await bootstrapTracer.settle('bootstrap/object-info', () =>
+      this.getNodeDefs()
+    )
+
+    await bootstrapTracer.settle('bootstrap/extensions', async () => {
+      await this.registerNodesFromDefs(defs)
+      await useExtensionService().invokeExtensionsAsync('registerCustomNodes')
+    })
     if (this.vueAppReady) {
       this.updateVueAppNodeDefs(defs)
     }

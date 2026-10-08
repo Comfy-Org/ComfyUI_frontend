@@ -11,7 +11,7 @@ const hoisted = vi.hoisted(() => ({
   nodeDefsByName: {} as Record<string, { display_name?: string }>
 }))
 
-vi.mock('@/stores/nodeDefStore', () => ({
+vi.mock<unknown>(import('@/stores/nodeDefStore'), () => ({
   useNodeDefStore: () => ({ nodeDefsByName: hoisted.nodeDefsByName })
 }))
 
@@ -19,7 +19,7 @@ const buildDocsUrl = vi.hoisted(() =>
   vi.fn((path: string) => `https://docs.comfy.org${path}`)
 )
 
-vi.mock('@/composables/useExternalLink', () => ({
+vi.mock<unknown>(import('@/composables/useExternalLink'), () => ({
   useExternalLink: () => ({ buildDocsUrl })
 }))
 

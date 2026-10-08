@@ -84,6 +84,7 @@ const LEGACY_ACTIVE_STANDARD_STATUS = {
   has_funds: true,
   renewal_date: '2099-02-20T00:00:00Z',
   team_credit_stop: null,
+  scheduled_change: null,
   max_seats: 1,
   occupied_seats: 1,
   billing_rail: 'legacy_stripe'

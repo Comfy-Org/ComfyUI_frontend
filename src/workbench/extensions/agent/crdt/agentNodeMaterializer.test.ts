@@ -50,7 +50,7 @@ import type { GraphOperation } from './graphOperations'
 import { attachMintPortWiring } from './mintPortWiring'
 import type { MintPortWiring } from './mintPortWiring'
 
-vi.mock('@/platform/telemetry/reportError', () => ({
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: vi.fn()
 }))
 

@@ -35,6 +35,7 @@ const staticKeys: TranslationKey[] = [
   'cloudNodesLaunch.models.subtitle',
   'cloudNodesLaunch.models.footnote',
   'cloudNodesLaunch.models.footnoteLink',
+  'cloudNodesLaunch.models.nodeCount',
   'cloudNodesLaunch.howItWorks.heading',
   'cloudNodesLaunch.howItWorks.subheading',
   'cloudNodesLaunch.why.heading',

@@ -22,31 +22,31 @@ const {
   }
 })
 
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: () => ({
     get: mockGetSetting
   })
 }))
 
-vi.mock('@/stores/commandStore', () => ({
+vi.mock<unknown>(import('@/stores/commandStore'), () => ({
   useCommandStore: () => ({
     registerCommand: mockRegisterCommand,
     commands: commandStoreCommands
   })
 }))
 
-vi.mock('@/stores/menuItemStore', () => ({
+vi.mock<unknown>(import('@/stores/menuItemStore'), () => ({
   useMenuItemStore: () => ({
     registerCommands: mockRegisterCommands
   })
 }))
 
-vi.mock('@/i18n', () => ({
+vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key,
   te: () => false
 }))
 
-vi.mock('@/composables/sidebarTabs/useAssetsSidebarTab', () => ({
+vi.mock(import('@/composables/sidebarTabs/useAssetsSidebarTab'), () => ({
   useAssetsSidebarTab: () => ({
     id: 'assets',
     title: 'assets',
@@ -55,7 +55,7 @@ vi.mock('@/composables/sidebarTabs/useAssetsSidebarTab', () => ({
   })
 }))
 
-vi.mock('@/composables/sidebarTabs/useJobHistorySidebarTab', () => ({
+vi.mock(import('@/composables/sidebarTabs/useJobHistorySidebarTab'), () => ({
   useJobHistorySidebarTab: () => ({
     id: 'job-history',
     title: 'job-history',
@@ -64,7 +64,7 @@ vi.mock('@/composables/sidebarTabs/useJobHistorySidebarTab', () => ({
   })
 }))
 
-vi.mock('@/composables/sidebarTabs/useNodeLibrarySidebarTab', () => ({
+vi.mock(import('@/composables/sidebarTabs/useNodeLibrarySidebarTab'), () => ({
   useNodeLibrarySidebarTab: () => ({
     id: 'node-library',
     title: 'node-library',
@@ -73,7 +73,7 @@ vi.mock('@/composables/sidebarTabs/useNodeLibrarySidebarTab', () => ({
   })
 }))
 
-vi.mock('@/composables/sidebarTabs/useModelLibrarySidebarTab', () => ({
+vi.mock(import('@/composables/sidebarTabs/useModelLibrarySidebarTab'), () => ({
   useModelLibrarySidebarTab: () => ({
     id: 'model-library',
     title: 'model-library',
@@ -83,7 +83,7 @@ vi.mock('@/composables/sidebarTabs/useModelLibrarySidebarTab', () => ({
 }))
 
 vi.mock(
-  '@/platform/workflow/management/composables/useWorkflowsSidebarTab',
+  import('@/platform/workflow/management/composables/useWorkflowsSidebarTab'),
   () => ({
     useWorkflowsSidebarTab: () => ({
       id: 'workflows',
@@ -94,14 +94,17 @@ vi.mock(
   })
 )
 
-vi.mock('@/platform/workflow/management/composables/useAppsSidebarTab', () => ({
-  useAppsSidebarTab: () => ({
-    id: 'apps',
-    title: 'apps',
-    type: 'vue',
-    component: {}
+vi.mock(
+  import('@/platform/workflow/management/composables/useAppsSidebarTab'),
+  () => ({
+    useAppsSidebarTab: () => ({
+      id: 'apps',
+      title: 'apps',
+      type: 'vue',
+      component: {}
+    })
   })
-}))
+)
 
 describe('useSidebarTabStore', () => {
   beforeEach(() => {

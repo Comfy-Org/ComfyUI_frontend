@@ -1,6 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import type * as VueUse from '@vueuse/core'
-import type * as Pinia from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import type { Ref } from 'vue'
@@ -46,12 +45,7 @@ const testState = vi.hoisted(() => {
   }
 })
 
-vi.mock('pinia', async (importOriginal) => ({
-  ...(await importOriginal<typeof Pinia>()),
-  storeToRefs: <T>(store: T) => store
-}))
-
-vi.mock('@/renderer/core/canvas/useAutoPan', () => ({
+vi.mock<unknown>(import('@/renderer/core/canvas/useAutoPan'), () => ({
   AutoPanController: class {
     updatePointer = vi.fn()
     start = vi.fn()
@@ -63,7 +57,7 @@ vi.mock('@/renderer/core/canvas/useAutoPan', () => ({
   }
 }))
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
   useCanvasStore: () => ({
     rootGraphId: ROOT_GRAPH_ID,
     selectedNodeIds: testState.selectedNodeIds,
@@ -83,11 +77,14 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   })
 }))
 
-vi.mock('@/renderer/core/layout/operations/layoutMutations', () => ({
-  useLayoutMutations: () => testState.mutationFns
-}))
+vi.mock<unknown>(
+  import('@/renderer/core/layout/operations/layoutMutations'),
+  () => ({
+    useLayoutMutations: () => testState.mutationFns
+  })
+)
 
-vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
+vi.mock<unknown>(import('@/renderer/core/layout/store/layoutStore'), () => ({
   layoutStore: {
     getNodeLayout: (_rootGraphId: string, nodeId: string) =>
       testState.nodeLayouts.get(nodeId) ?? null,
@@ -95,26 +92,35 @@ vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
   }
 }))
 
-vi.mock('@/renderer/extensions/vueNodes/composables/useNodeSnap', () => ({
-  useNodeSnap: () => testState.nodeSnap
-}))
-
-vi.mock('@/renderer/extensions/vueNodes/composables/useShiftKeySync', () => ({
-  useShiftKeySync: () => ({
-    trackShiftKey: () => () => {}
+vi.mock<unknown>(
+  import('@/renderer/extensions/vueNodes/composables/useNodeSnap'),
+  () => ({
+    useNodeSnap: () => testState.nodeSnap
   })
-}))
+)
 
-vi.mock('@/renderer/core/layout/transform/useTransformState', () => ({
-  useTransformState: () => ({
-    screenToCanvas: ({ x, y }: { x: number; y: number }) => ({
-      x: x / (testState.mockDs.scale || 1) - testState.mockDs.offset[0],
-      y: y / (testState.mockDs.scale || 1) - testState.mockDs.offset[1]
+vi.mock(
+  import('@/renderer/extensions/vueNodes/composables/useShiftKeySync'),
+  () => ({
+    useShiftKeySync: () => ({
+      trackShiftKey: () => () => {}
     })
   })
-}))
+)
 
-vi.mock('@vueuse/core', async (importOriginal) => ({
+vi.mock<unknown>(
+  import('@/renderer/core/layout/transform/useTransformState'),
+  () => ({
+    useTransformState: () => ({
+      screenToCanvas: ({ x, y }: { x: number; y: number }) => ({
+        x: x / (testState.mockDs.scale || 1) - testState.mockDs.offset[0],
+        y: y / (testState.mockDs.scale || 1) - testState.mockDs.offset[1]
+      })
+    })
+  })
+)
+
+vi.mock<unknown>(import('@vueuse/core'), async (importOriginal) => ({
   ...(await importOriginal<typeof VueUse>()),
   createSharedComposable: (fn: () => unknown) => fn,
   whenever: vi.fn()

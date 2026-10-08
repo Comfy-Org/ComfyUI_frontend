@@ -27,7 +27,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 
 import type { AssetMeta } from '../schemas/mediaAssetSchema'
 
@@ -36,11 +36,6 @@ import VideoPlayOverlay from './VideoPlayOverlay.vue'
 const { asset, showNativeControls = true } = defineProps<{
   asset: AssetMeta
   showNativeControls?: boolean
-}>()
-
-const emit = defineEmits<{
-  videoPlayingStateChanged: [isPlaying: boolean]
-  videoControlsChanged: [showControls: boolean]
 }>()
 
 const videoElement = ref<HTMLVideoElement | null>(null)
@@ -52,22 +47,12 @@ const shouldShowControls = computed(
   () => showNativeControls && isPlaying.value && isHovered.value
 )
 
-watch(shouldShowControls, (controlsVisible) => {
-  emit('videoControlsChanged', controlsVisible)
-})
-
-onMounted(() => {
-  emit('videoControlsChanged', shouldShowControls.value)
-})
-
 const onVideoPlay = () => {
   isPlaying.value = true
-  emit('videoPlayingStateChanged', true)
 }
 
 const onVideoPause = () => {
   isPlaying.value = false
-  emit('videoPlayingStateChanged', false)
 }
 
 async function onVideoClick(event: MouseEvent) {

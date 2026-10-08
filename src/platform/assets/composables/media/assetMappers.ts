@@ -4,8 +4,9 @@ import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataS
 import type { AssetContext } from '@/platform/assets/schemas/mediaAssetSchema'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { api } from '@/scripts/api'
-import type { ResultItemInit, TaskItemImpl } from '@/stores/queueStore'
-import { ResultItemImpl } from '@/stores/queueStore'
+import type { TaskItemImpl } from '@/stores/queueStore'
+import type { AugmentedResultItem } from '@/utils/resultItem'
+import { resultItemPreviewUrl, resultItemUrl } from '@/utils/resultItemUrl'
 import {
   getMediaTypeFromFilename,
   isPreviewableMediaType
@@ -31,7 +32,7 @@ export function getAssetType(tags?: string[]): AssetContext['type'] {
  */
 export function mapTaskOutputToAssetItem(
   taskItem: TaskItemImpl,
-  output: ResultItemImpl
+  output: AugmentedResultItem
 ): AssetItem {
   const metadata: OutputAssetMetadata = {
     jobId: taskItem.jobId,
@@ -54,8 +55,8 @@ export function mapTaskOutputToAssetItem(
     created_at: executionTime,
     updated_at: executionTime,
     tags: ['output'],
-    thumbnail_url: output.previewUrl,
-    preview_url: output.url,
+    thumbnail_url: resultItemPreviewUrl(output),
+    preview_url: resultItemUrl(output),
     user_metadata: metadata
   }
 }
@@ -69,28 +70,10 @@ const byCreatedAtDesc = (a: AssetItem, b: AssetItem): number =>
 const byIsTemp = (a: AssetItem, b: AssetItem): number =>
   Number(b.tags.includes('temp')) - Number(a.tags.includes('temp'))
 
-function flatAssetToResultItem(asset: AssetItem): ResultItemImpl {
-  class AssetResultItem extends ResultItemImpl {
-    private readonly _url: string
-    private readonly _previewUrl: string
-
-    constructor(asset: AssetItem, init: ResultItemInit) {
-      super(init)
-      this._url = asset.preview_url ?? ''
-      this._previewUrl = asset.thumbnail_url ?? this._url
-    }
-
-    override get url(): string {
-      return this._url
-    }
-
-    override get previewUrl(): string {
-      return this._previewUrl
-    }
-  }
-
+function flatAssetToResultItem(asset: AssetItem): AugmentedResultItem {
   const metadata = getOutputAssetMetadata(asset.user_metadata)
-  return new AssetResultItem(asset, {
+  const url = asset.preview_url ?? ''
+  return {
     assetId: asset.id,
     display_name: asset.display_name ?? undefined,
     filename: asset.name,
@@ -98,8 +81,10 @@ function flatAssetToResultItem(asset: AssetItem): ResultItemImpl {
     mediaType: getMediaTypeFromFilename(asset.name),
     nodeId: metadata?.nodeId ?? '',
     subfolder: metadata?.subfolder ?? '',
-    type: asset.tags.includes('temp') ? 'temp' : 'output'
-  })
+    type: asset.tags.includes('temp') ? 'temp' : 'output',
+    url,
+    previewUrl: asset.thumbnail_url ?? url
+  }
 }
 
 /**

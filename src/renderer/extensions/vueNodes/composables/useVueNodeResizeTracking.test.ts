@@ -67,7 +67,7 @@ const testState = vi.hoisted(() => {
   }
 })
 
-vi.mock('@vueuse/core', () => ({
+vi.mock(import('@vueuse/core'), () => ({
   useDocumentVisibility: () => {
     const visibility = ref<'visible' | 'hidden'>('visible')
     testState.visibility = visibility
@@ -76,7 +76,7 @@ vi.mock('@vueuse/core', () => ({
   createSharedComposable: <T>(fn: T) => fn
 }))
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
   useCanvasStore: () => ({
     linearMode: testState.linearMode,
     rootGraphId: testState.rootGraphId,
@@ -84,13 +84,16 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   })
 }))
 
-vi.mock('@/composables/element/useCanvasPositionConversion', () => ({
-  useSharedCanvasPositionConversion: () => ({
-    clientPosToCanvasPos: ([x, y]: [number, number]) => [x, y]
+vi.mock<unknown>(
+  import('@/composables/element/useCanvasPositionConversion'),
+  () => ({
+    useSharedCanvasPositionConversion: () => ({
+      clientPosToCanvasPos: ([x, y]: [number, number]) => [x, y]
+    })
   })
-}))
+)
 
-vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
+vi.mock<unknown>(import('@/renderer/core/layout/store/layoutStore'), () => ({
   layoutStore: {
     reportContentSize: testState.reportContentSize,
     contentSizeOf: (rootGraphId: UUID, nodeId: NodeId) =>
@@ -100,7 +103,7 @@ vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
   }
 }))
 
-vi.mock('@/renderer/core/layout/slots/syncSlotOffsets', () => ({
+vi.mock(import('@/renderer/core/layout/slots/syncSlotOffsets'), () => ({
   syncSlotOffsets: (
     _element: HTMLElement,
     _rootGraphId: UUID,

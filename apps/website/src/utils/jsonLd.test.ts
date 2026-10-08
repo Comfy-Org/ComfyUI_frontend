@@ -17,7 +17,8 @@ import {
   organizationId,
   pageContext,
   productNode,
-  softwareApplicationNode
+  softwareApplicationNode,
+  videoObjectNode
 } from './jsonLd'
 
 const siteUrl = 'https://comfy.org'
@@ -281,6 +282,29 @@ describe('buildPageGraph', () => {
     for (const reference of references) {
       expect(defined.has(reference)).toBe(true)
     }
+  })
+})
+
+describe('videoObjectNode', () => {
+  const base = {
+    siteUrl,
+    id: `${siteUrl}/x/#video`,
+    pageUrl: `${siteUrl}/x/`,
+    name: 'A video',
+    description: 'A description',
+    thumbnailUrl: `${siteUrl}/poster.webp`,
+    locale: 'en' as const
+  }
+
+  it('includes duration when given an ISO 8601 value', () => {
+    const node = videoObjectNode({ ...base, duration: 'PT4M32S' })
+    expect(node.duration).toBe('PT4M32S')
+  })
+
+  it('omits duration and uploadDate rather than defaulting them', () => {
+    const node = videoObjectNode(base)
+    expect(node.duration).toBeUndefined()
+    expect(node.uploadDate).toBeUndefined()
   })
 })
 

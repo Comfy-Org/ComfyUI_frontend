@@ -19,7 +19,7 @@ const viewState = vi.hoisted(() => ({
   displayViewMode: 'graph' as ViewMode
 }))
 
-vi.mock('@/stores/appModeStore', async () => {
+vi.mock<unknown>(import('@/stores/appModeStore'), async () => {
   const { computed, reactive } = await import('vue')
   return {
     useAppModeStore: () =>
@@ -30,26 +30,26 @@ vi.mock('@/stores/appModeStore', async () => {
   }
 })
 
-vi.mock('@/stores/commandStore', () => ({
+vi.mock<unknown>(import('@/stores/commandStore'), () => ({
   useCommandStore: () => ({ execute: spies.execute, commands: [] })
 }))
 
-vi.mock('@/platform/keybindings/keybindingStore', () => ({
+vi.mock<unknown>(import('@/platform/keybindings/keybindingStore'), () => ({
   useKeybindingStore: () => ({
     getKeybindingByCommandId: () => ({ combo: { toString: () => 'Ctrl+L' } })
   })
 }))
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({ trackUiButtonClicked: spies.trackUiButtonClicked })
 }))
 
-vi.mock('@/composables/useWorkflowActionsMenu', async () => {
+vi.mock<unknown>(import('@/composables/useWorkflowActionsMenu'), async () => {
   const { ref } = await import('vue')
   return { useWorkflowActionsMenu: () => ({ menuItems: ref([]) }) }
 })
 
-vi.mock('@/composables/useNewMenuItemIndicator', async () => {
+vi.mock<unknown>(import('@/composables/useNewMenuItemIndicator'), async () => {
   const { ref } = await import('vue')
   return {
     useNewMenuItemIndicator: () => ({

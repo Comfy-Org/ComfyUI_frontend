@@ -8,12 +8,16 @@ const {
   title,
   image,
   href,
-  locale = 'en'
+  locale = 'en',
+  ctaLabel
 } = defineProps<{
   title: string
   image: string
   href: string
   locale?: Locale
+  /** CTA label under the title; defaults to the written-story "VIEW ARTICLE"
+   * wording so existing callers are unaffected. */
+  ctaLabel?: string
 }>()
 </script>
 
@@ -50,7 +54,10 @@ const {
           <span
             class="ppformula-text-center text-sm font-semibold tracking-wider text-primary-comfy-canvas uppercase"
           >
-            {{ t('customers.story.viewArticle' as TranslationKey, locale) }}
+            {{
+              ctaLabel ??
+              t('customers.story.viewArticle' as TranslationKey, locale)
+            }}
           </span>
         </a>
       </div>

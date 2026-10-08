@@ -11,7 +11,7 @@ const mocks = vi.hoisted(() => ({
   openGatedRepoPage: vi.fn<typeof MissingModelDownload.openGatedRepoPage>()
 }))
 
-vi.mock('@/platform/missingModel/missingModelDownload', () => ({
+vi.mock(import('@/platform/missingModel/missingModelDownload'), () => ({
   downloadModel: mocks.downloadModel,
   fetchModelMetadata: mocks.fetchModelMetadata,
   isTrustedHuggingFaceUrl: mocks.isTrustedHuggingFaceUrl,

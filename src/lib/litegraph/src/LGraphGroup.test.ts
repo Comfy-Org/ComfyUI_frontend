@@ -19,7 +19,7 @@ import { createUuidv4 } from '@/utils/uuid'
 
 import { test } from './__fixtures__/testExtensions'
 
-vi.mock('@/utils/colorUtil', async (importOriginal) => {
+vi.mock(import('@/utils/colorUtil'), async (importOriginal) => {
   const actual = await importOriginal<typeof colorUtil>()
   return { ...actual, readableTextColor: vi.fn(actual.readableTextColor) }
 })

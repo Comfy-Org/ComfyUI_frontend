@@ -34,7 +34,7 @@ const holder = vi.hoisted(() => ({
   api: null as ApiMocks | null
 }))
 
-vi.mock('@/composables/useCameraInfo', async () => {
+vi.mock<unknown>(import('@/composables/useCameraInfo'), async () => {
   const { ref } = await import('vue')
   const modeRef = ref('orbit')
   const api = {
@@ -51,7 +51,7 @@ vi.mock('@/composables/useCameraInfo', async () => {
   return { useCameraInfo: () => ({ ...api, mode: modeRef }) }
 })
 
-vi.mock('@vueuse/core', () => ({
+vi.mock<unknown>(import('@vueuse/core'), () => ({
   createSharedComposable: (composable: () => unknown) => composable,
   useDocumentVisibility: () => ref('visible'),
   useElementSize: () => ({ width: ref(600), height: ref(400) }),

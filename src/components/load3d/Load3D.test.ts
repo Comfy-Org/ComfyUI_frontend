@@ -61,15 +61,15 @@ function buildLoad3dStub() {
   }
 }
 
-vi.mock('@/composables/useLoad3d', () => ({
+vi.mock<unknown>(import('@/composables/useLoad3d'), () => ({
   useLoad3d: () => load3dState.current
 }))
 
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: () => ({ get: settingGetMock })
 }))
 
-vi.mock('@/utils/litegraphUtil', () => ({
+vi.mock(import('@/utils/litegraphUtil'), () => ({
   resolveNode: resolveNodeMock
 }))
 
