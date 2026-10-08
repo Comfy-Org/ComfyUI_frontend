@@ -526,7 +526,10 @@ describe('useAgentCrdtFollower', () => {
     expect(clientState.sendOps).toHaveBeenCalledExactlyOnceWith(
       'wf-1',
       expect.any(String),
-      [expect.objectContaining({ node_id: 'after-failure' })]
+      [
+        expect.objectContaining({ node_id: 'held' }),
+        expect.objectContaining({ node_id: 'after-failure' })
+      ]
     )
   })
   it('replays post-snapshot edits after the same workflow tab is reactivated', async () => {
@@ -632,6 +635,20 @@ describe('useAgentCrdtFollower', () => {
         tags: { feature_area: 'agent', operation: 'sync', outcome: 'gave_up' }
       }
     )
+
+    isTargetActive.value = false
+    await nextTick()
+    isTargetActive.value = true
+    await nextTick()
+    dispatchFrame('doc_subscribed', {
+      workflowId: 'wf-1',
+      ok: false,
+      code: 'stale_schema_reseed_required',
+      expectedSeq: 7
+    })
+
+    expect(bridge().reseed).toHaveBeenCalledTimes(6)
+    expect(telemetryState.reportError).toHaveBeenCalledTimes(1)
     unmount()
   })
 

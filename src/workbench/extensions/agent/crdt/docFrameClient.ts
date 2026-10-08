@@ -472,24 +472,22 @@ export class DocFrameClient extends EventTarget {
     expectedSeq: number,
     workflow: Record<string, unknown>
   ): DocReseedSendResult {
-    const data = {
-      v: DOC_PROTOCOL_VERSION,
-      workflow_id: workflowId,
-      expected_seq: expectedSeq,
-      workflow
-    }
     let frame: string
     try {
       const workflowJson = JSON.stringify(workflow)
+      if (workflowJson.length > MAX_DOC_RESEED_WORKFLOW_BYTES)
+        return 'too_large'
       if (utf8.encode(workflowJson).length > MAX_DOC_RESEED_WORKFLOW_BYTES)
         return 'too_large'
-      frame = JSON.stringify({ type: 'doc_reseed', data })
+      const metadataJson = JSON.stringify({
+        v: DOC_PROTOCOL_VERSION,
+        workflow_id: workflowId,
+        expected_seq: expectedSeq
+      })
+      frame = `{"type":"doc_reseed","data":${metadataJson.slice(0, -1)},"workflow":${workflowJson}}}`
     } catch {
       return 'serialization_failed'
     }
-    if (frame.length > MAX_DOC_UPDATE_B64_LENGTH) return 'too_large'
-    if (utf8.encode(frame).length > MAX_DOC_UPDATE_B64_LENGTH)
-      return 'too_large'
     return this.transport.send(frame) ? 'sent' : 'unavailable'
   }
 

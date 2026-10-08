@@ -610,7 +610,9 @@ function startAgentCrdtFollower(
     clearSubscribeRetry()
     clearSubscribeAckTimer()
     subscribeGaveUp = true
+    const heldOperations = pendingReseed?.heldOperations ?? []
     pendingReseed = null
+    if (heldOperations.length > 0) coalescer.enqueue(heldOperations)
     connected.value = false
     reportError(new Error(`agent document reseed stopped: ${reason}`), {
       errorType: 'failure_reseeding_agent_cloud_workflow',
@@ -758,6 +760,7 @@ function startAgentCrdtFollower(
   const onSubscribed: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
     if (!isTargetActive.value) return
+    if (subscribeGaveUp) return
     const ok = event.detail?.ok === true
     connected.value = ok
     lastFrameType.value = event.type
@@ -1135,8 +1138,8 @@ function startAgentCrdtFollower(
       const workflowChanged = previous === undefined || next !== previous[0]
       clearSubscribeAckTimer()
       clearSubscribeRetry()
-      subscribeGaveUp = false
       if (workflowChanged) {
+        subscribeGaveUp = false
         reseedAttempts = 0
         pendingReseed = null
       }

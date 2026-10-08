@@ -123,6 +123,23 @@ describe('stale-schema reseed wire protocol', () => {
     expect(oversized.transport.frames('doc_reseed')).toHaveLength(0)
   })
 
+  it('measures and sends the same workflow serialization', () => {
+    let serializations = 0
+    const workflow = {
+      toJSON() {
+        serializations += 1
+        return { value: serializations === 1 ? 'measured' : 'changed' }
+      }
+    }
+    const { transport, bridge } = refusedBridge()
+
+    expect(bridge.reseed('wf-1', workflow)).toBe('sent')
+    expect(serializations).toBe(1)
+    expect(transport.frames('doc_reseed')).toEqual([
+      expect.objectContaining({ workflow: { value: 'measured' } })
+    ])
+  })
+
   it('reports serialization failures separately from oversized frames', () => {
     const circular = refusedBridge()
     const workflow: Record<string, unknown> = {}
