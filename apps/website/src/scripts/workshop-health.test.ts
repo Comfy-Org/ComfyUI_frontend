@@ -119,7 +119,7 @@ describe('Workshop health', () => {
       type: 'concurrency'
     },
     { reason: 'network' as const, expected: 'failure', type: 'network' },
-    { reason: 'rateLimit' as const, expected: 'excluded', type: 'rateLimit' }
+    { reason: 'rateLimit' as const, expected: 'failure', type: 'rateLimit' }
   ])(
     'classifies $reason separately for service paging',
     ({ reason, expected, type }) => {
@@ -179,6 +179,20 @@ describe('Workshop health', () => {
       expected: 'excluded'
     },
     {
+      name: 'Router HTTP 429 without a rate-limit type',
+      failure: { reason: 'rateLimit', http_status: 429 },
+      expected: 'failure'
+    },
+    {
+      name: 'Router HTTP 429 from a provider error',
+      failure: {
+        reason: 'rateLimit',
+        http_status: 429,
+        router_error_type: 'provider_error'
+      },
+      expected: 'failure'
+    },
+    {
       name: 'storage upload forbidden',
       failure: {
         reason: 'upload',
@@ -202,26 +216,27 @@ describe('Workshop health', () => {
   })
 
   it('excludes a workflow queue refusal while keeping its attribution', () => {
-    expect(
-      workshopHealthLog({
-        name: 'run_finished',
-        properties: {
-          ...run,
-          page_type: 'workflow',
-          status: 'failed',
-          duration_ms: 10,
-          reason: 'rateLimit',
-          workflow_error_code: 'rate_limited',
-          http_status: 429
-        }
-      })
-    ).toMatchObject({
+    const record = workshopHealthLog({
+      name: 'run_finished',
+      properties: {
+        ...run,
+        page_type: 'workflow',
+        status: 'failed',
+        duration_ms: 10,
+        reason: 'rateLimit',
+        workflow_error_code: 'rate_limited',
+        http_status: 429
+      }
+    })
+
+    expect(record).toMatchObject({
       service_health: 'excluded',
       reason: 'rateLimit',
       failure_type: 'rateLimit',
       workflow_error_code: 'rate_limited',
       http_status: 429
     })
+    expect(JSON.stringify(record)).not.toMatch(/private-user|private-workspace/)
   })
 
   it('does not call an HTTP 200 a delivered image', () => {
