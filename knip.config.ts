@@ -50,12 +50,10 @@ const config: KnipConfig = {
     },
     'apps/website': {
       // Models pages are registered by the release-gate integration.
-      // Parked pages (underscore-prefixed, e.g. _gallery.astro) are skipped by
-      // Astro but kept as entries so the code they use is not reported unused.
       entry: [
         'src/scripts/**/*.ts',
         'src/routes/models/*.{astro,ts}',
-        'src/pages/**/_*.astro'
+        'src/pages/{,zh-CN/}_{gallery,launches}.astro'
       ],
       // Executed by models-snippets.test.ts inside the generated Node examples.
       ignoreDependencies: ['mime-types']

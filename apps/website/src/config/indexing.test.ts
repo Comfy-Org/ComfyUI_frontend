@@ -281,7 +281,9 @@ const astroFiles = (dir: string): string[] =>
   readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const full = join(dir, entry.name)
     if (entry.isDirectory()) return astroFiles(full)
-    return entry.name.endsWith('.astro') ? [full] : []
+    return entry.name.endsWith('.astro') && !entry.name.startsWith('_')
+      ? [full]
+      : []
   })
 
 const pageRoute = (file: string) =>

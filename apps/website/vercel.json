@@ -218,13 +218,8 @@
       "permanent": false
     },
     {
-      "source": "/launches",
-      "destination": "/events/",
-      "permanent": false
-    },
-    {
-      "source": "/launches/",
-      "destination": "/events/",
+      "source": "/gallery.md",
+      "destination": "/customers.md",
       "permanent": false
     },
     {
@@ -238,6 +233,26 @@
       "permanent": false
     },
     {
+      "source": "/zh-CN/gallery.md",
+      "destination": "/zh-CN/customers.md",
+      "permanent": false
+    },
+    {
+      "source": "/launches",
+      "destination": "/events/",
+      "permanent": false
+    },
+    {
+      "source": "/launches/",
+      "destination": "/events/",
+      "permanent": false
+    },
+    {
+      "source": "/launches.md",
+      "destination": "/events.md",
+      "permanent": false
+    },
+    {
       "source": "/zh-CN/launches",
       "destination": "/zh-CN/events/",
       "permanent": false
@@ -245,6 +260,11 @@
     {
       "source": "/zh-CN/launches/",
       "destination": "/zh-CN/events/",
+      "permanent": false
+    },
+    {
+      "source": "/zh-CN/launches.md",
+      "destination": "/zh-CN/events.md",
       "permanent": false
     },
     {

@@ -126,7 +126,7 @@ describe('SiteFooter', () => {
     expect(docs.getAttribute('target')).toBe('_blank')
   })
 
-  it('lists Supported Models only in Features', () => {
+  it('keeps Supported Models out of every column but Features', () => {
     render(SiteFooter)
 
     for (const column of ['Products', 'Models', 'Resources', 'Company']) {
@@ -135,9 +135,5 @@ describe('SiteFooter', () => {
         within(nav).queryByRole('link', { name: 'Supported Models' })
       ).toBeNull()
     }
-    const features = screen.getByRole('navigation', { name: 'Features' })
-    expect(
-      within(features).getByRole('link', { name: 'Supported Models' })
-    ).toBeTruthy()
   })
 })

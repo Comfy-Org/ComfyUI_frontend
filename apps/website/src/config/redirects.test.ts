@@ -27,7 +27,9 @@ const astroFiles = (dir: string): string[] =>
   readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const full = join(dir, entry.name)
     if (entry.isDirectory()) return astroFiles(full)
-    return entry.name.endsWith('.astro') ? [full] : []
+    return entry.name.endsWith('.astro') && !entry.name.startsWith('_')
+      ? [full]
+      : []
   })
 
 const builtPages = new Set([
@@ -199,12 +201,16 @@ describe('generated Vercel rules', () => {
       '/zh-CN/minimax/',
       '/gallery',
       '/gallery/',
-      '/launches',
-      '/launches/',
+      '/gallery.md',
       '/zh-CN/gallery',
       '/zh-CN/gallery/',
+      '/zh-CN/gallery.md',
+      '/launches',
+      '/launches/',
+      '/launches.md',
       '/zh-CN/launches',
-      '/zh-CN/launches/'
+      '/zh-CN/launches/',
+      '/zh-CN/launches.md'
     ])
   })
 
@@ -222,6 +228,27 @@ describe('generated Vercel rules', () => {
   )
 })
 
+describe('the parked pages', () => {
+  it.for([
+    ['/gallery', '/customers/'],
+    ['/zh-CN/gallery', '/zh-CN/customers/'],
+    ['/launches', '/events/'],
+    ['/zh-CN/launches', '/zh-CN/events/'],
+    ['/gallery.md', '/customers.md'],
+    ['/zh-CN/gallery.md', '/zh-CN/customers.md'],
+    ['/launches.md', '/events.md'],
+    ['/zh-CN/launches.md', '/zh-CN/events.md']
+  ])('sends %s to %s with a 307', ([source, destination]) => {
+    expect(siteRedirects.find((row) => row.source === source)).toMatchObject({
+      destination,
+      temporaryBecause: expect.any(String)
+    })
+    expect(
+      toVercelRedirects(siteRedirects).find((row) => row.source === source)
+    ).toMatchObject({ destination, permanent: false })
+  })
+})
+
 describe('Astro redirects', () => {
   it('cover every internal row whose slash form redirects, except retired addresses', () => {
     const isRetiredAddress = (source: string) =>
@@ -237,11 +264,11 @@ describe('Astro redirects', () => {
           ({ source, destination, slashFormIsPageBecause }) =>
             isInternalDestination(destination) &&
             slashFormIsPageBecause === undefined &&
+            !/\.(md|txt)$/.test(source) &&
             !isRetiredAddress(source)
         )
         .map(({ source }) => source)
     )
-    expect(Object.keys(astroRedirects)).toHaveLength(22)
     expect(astroRedirects['/minimax']).toEqual({
       status: 307,
       destination: '/minimax-h3/'
@@ -250,6 +277,7 @@ describe('Astro redirects', () => {
       status: 307,
       destination: '/zh-CN/minimax-h3/'
     })
+    expect(astroRedirects['/gallery.md']).toBeUndefined()
     expect(astroRedirects['/career']).toEqual({
       status: 308,
       destination: '/careers/'
