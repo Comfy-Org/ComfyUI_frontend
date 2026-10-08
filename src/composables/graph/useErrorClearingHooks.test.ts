@@ -914,7 +914,7 @@ describe('installErrorClearingHooks lifecycle', () => {
     graph.remove(node)
 
     expect(store.hasPendingAddedNodeErrorScan(graph, executionId)).toBe(false)
-    expect(verifySpy.mock.calls[0][1].signal?.aborted).toBe(true)
+    expect(verifySpy.mock.calls[0][1]?.signal?.aborted).toBe(true)
 
     resolveVerification()
     await vi.waitFor(() => expect(candidate.isMissing).toBe(true))

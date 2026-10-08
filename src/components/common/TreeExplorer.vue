@@ -1,51 +1,84 @@
 <template>
-  <Tree
+  <UiTree
     v-bind="$attrs"
-    v-model:expanded-keys="expandedKeys"
-    v-model:selection-keys="selectionKeys"
-    class="tree-explorer bg-transparent px-2 py-0"
-    :class="props.class"
-    :value="renderedRoot.children"
-    selection-mode="single"
-    :pt="{
-      nodeLabel: 'tree-explorer-node-label',
-      nodeContent: ({ context }) => ({
-        class: 'group/tree-node',
-        onClick: (e: MouseEvent) =>
-          onNodeContentClick(e, context.node as RenderedTreeExplorerNode<T>),
-        onContextmenu: (e: MouseEvent) =>
-          handleContextMenu(e, context.node as RenderedTreeExplorerNode<T>)
-      }),
-      nodeToggleButton: () => ({
-        onClick: (e: MouseEvent) => {
-          e.stopImmediatePropagation()
-        }
-      })
-    }"
+    v-model:expanded="expandedNodeKeys"
+    v-model:selected="selectedNode"
+    :class="cn('tree-explorer px-2', className)"
+    :items="renderedRoot.children ?? []"
+    :get-key="(node) => node.key"
+    :get-children="(node) => (node.leaf ? undefined : (node.children ?? []))"
   >
-    <template #folder="{ node }">
-      <slot name="folder" :node="node">
-        <TreeExplorerTreeNode :node="node" />
-      </slot>
+    <template #default="{ flattenItems }">
+      <UiTreeItem
+        v-for="item in flattenItems"
+        v-slot="{ isHovered }"
+        :key="item._id"
+        class="tree-explorer-item"
+        :value="item.value"
+        :level="item.level"
+        :aria-label="item.value.label"
+        :data-parent-label="item.parentItem?.label"
+        :data-tree-node-type="item.value.type"
+        @select="preventUnboundSelection"
+        @click="onNodeContentClick($event, item.value)"
+        @contextmenu="handleContextMenu($event, item.value)"
+      >
+        <span class="relative size-4 shrink-0">
+          <i
+            :class="
+              cn(
+                item.value.icon,
+                'tree-explorer-node-icon size-4 text-muted-foreground'
+              )
+            "
+            :style="{ color: item.value.iconColor }"
+          />
+          <span
+            v-if="item.value.iconImage"
+            data-testid="tree-node-icon-image"
+            class="absolute inset-0 rounded-xs bg-cover bg-center"
+            :style="{ backgroundImage: `url(${item.value.iconImage})` }"
+          />
+        </span>
+        <div class="flex min-w-0 flex-1 items-center">
+          <slot
+            v-if="item.value.type === 'folder'"
+            name="folder"
+            :node="item.value"
+          >
+            <TreeExplorerTreeNode :node="item.value" />
+          </slot>
+          <slot v-else name="node" :node="item.value">
+            <TreeExplorerTreeNode :node="item.value" />
+          </slot>
+        </div>
+        <div
+          v-if="isHovered && item.value.leaf && $slots.preview"
+          ref="preview"
+          data-testid="tree-item-preview"
+          class="pointer-events-none fixed z-1001"
+          :style="previewStyle"
+        >
+          <slot name="preview" :node="item.value" />
+        </div>
+      </UiTreeItem>
     </template>
-    <template #node="{ node }">
-      <slot name="node" :node="node">
-        <TreeExplorerTreeNode :node="node" />
-      </slot>
-    </template>
-  </Tree>
+  </UiTree>
   <ContextMenu ref="menu" :model="menuItems" />
 </template>
 <script setup lang="ts" generic="T">
-import ContextMenu from 'primevue/contextmenu'
-import type { MenuItem, MenuItemCommandEvent } from 'primevue/menuitem'
-import Tree from 'primevue/tree'
-import { computed, provide, ref, shallowRef } from 'vue'
+import { useElementBounding, useElementSize, useWindowSize } from '@vueuse/core'
+import { computed, provide, ref, shallowRef, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
+import ContextMenu from '@/components/ui/menu/ContextMenu.vue'
+import type { MenuItem, MenuItemCommandEvent } from '@/components/ui/menu/types'
+import UiTree from '@/components/ui/tree/Tree.vue'
+import UiTreeItem from '@/components/ui/tree/TreeItem.vue'
 import { useTreeFolderOperations } from '@/composables/tree/useTreeFolderOperations'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import {
   InjectKeyExpandedKeys,
   InjectKeyHandleEditLabelFunction
@@ -55,6 +88,7 @@ import type {
   TreeExplorerNode
 } from '@/types/treeExplorerTypes'
 import { combineTrees, findNodeByKey } from '@/utils/treeUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 defineOptions({
   inheritAttrs: false
@@ -68,7 +102,11 @@ const selectionKeys = defineModel<Record<string, boolean>>('selectionKeys')
 // Tracks whether the caller has set the selectionKeys model.
 const storeSelectionKeys = selectionKeys.value !== undefined
 
-const props = defineProps<{
+function preventUnboundSelection(event: Event) {
+  if (!storeSelectionKeys) event.preventDefault()
+}
+
+const { root, class: className } = defineProps<{
   root: TreeExplorerNode<T>
   class?: string
 }>()
@@ -85,15 +123,37 @@ const {
   addFolderCommand
 } = useTreeFolderOperations<T>(
   /* expandNode */ (node: TreeExplorerNode<T>) => {
-    expandedKeys.value[node.key] = true
+    expandedKeys.value = { ...expandedKeys.value, [node.key]: true }
   }
 )
 
 const renderedRoot = computed<RenderedTreeExplorerNode<T>>(() => {
-  const renderedRoot = fillNodeInfo(props.root)
+  const renderedRoot = fillNodeInfo(root)
   return newFolderNode.value
     ? combineTrees(renderedRoot, newFolderNode.value)
     : renderedRoot
+})
+const expandedNodeKeys = computed({
+  get: () =>
+    Object.entries(expandedKeys.value)
+      .filter(([, expanded]) => expanded)
+      .map(([key]) => key),
+  set: (keys: string[]) => {
+    expandedKeys.value = Object.fromEntries(keys.map((key) => [key, true]))
+  }
+})
+const selectedNode = computed({
+  get: () => {
+    const key = Object.keys(selectionKeys.value ?? {}).find(
+      (key) => selectionKeys.value?.[key]
+    )
+    return key
+      ? (findNodeByKey(renderedRoot.value, key) ?? undefined)
+      : undefined
+  },
+  set: (node: RenderedTreeExplorerNode<T> | undefined) => {
+    selectionKeys.value = node ? { [node.key]: true } : {}
+  }
 })
 const getTreeNodeIcon = (node: TreeExplorerNode<T>) => {
   if (node.getIcon) {
@@ -121,6 +181,8 @@ const fillNodeInfo = (
   return {
     ...node,
     icon: getTreeNodeIcon(node),
+    iconColor: node.getIconColor?.(),
+    iconImage: node.getIconImage?.(),
     children,
     type: node.leaf ? 'node' : 'folder',
     totalLeaves,
@@ -132,12 +194,7 @@ const onNodeContentClick = async (
   e: MouseEvent,
   node: RenderedTreeExplorerNode<T>
 ) => {
-  if (!storeSelectionKeys) {
-    selectionKeys.value = {}
-  }
-  if (node.handleClick) {
-    await node.handleClick(e)
-  }
+  await node.handleClick?.(e)
   emit('nodeClick', node, e)
 }
 const menu = ref<InstanceType<typeof ContextMenu> | null>(null)
@@ -181,6 +238,7 @@ const deleteCommand = async (node: RenderedTreeExplorerNode<T>) => {
   await node.handleDelete?.()
   emit('nodeDelete', node)
 }
+
 const menuItems = computed<MenuItem[]>(() => {
   const node = menuTargetNode.value
   return [
@@ -203,18 +261,17 @@ const menuItems = computed<MenuItem[]>(() => {
           await deleteCommand(node)
         }
       },
-      visible: node?.handleDelete !== undefined,
-      isAsync: true // The delete command can be async
+      visible: node?.handleDelete !== undefined
     },
     ...extraMenuItems.value
-  ].map((menuItem: MenuItem) => ({
-    ...menuItem,
-    command: menuItem.command
-      ? wrapCommandWithErrorHandler(menuItem.command, {
-          isAsync: menuItem.isAsync ?? false
-        })
-      : undefined
-  }))
+  ].map((menuItem: MenuItem) =>
+    menuItem.command
+      ? {
+          ...menuItem,
+          command: wrapCommandWithErrorHandler(menuItem.command)
+        }
+      : menuItem
+  )
 })
 
 const handleContextMenu = (
@@ -229,17 +286,38 @@ const handleContextMenu = (
 }
 
 const wrapCommandWithErrorHandler = (
-  command: (event: MenuItemCommandEvent) => void,
-  { isAsync = false }: { isAsync: boolean }
+  command: (event: MenuItemCommandEvent) => unknown
 ) => {
   const node = menuTargetNode.value
-  return isAsync
-    ? errorHandling.wrapWithErrorHandlingAsync(
-        command as (event: MenuItemCommandEvent) => Promise<void>,
-        node?.handleError
-      )
-    : errorHandling.wrapWithErrorHandling(command, node?.handleError)
+  return errorHandling.wrapWithErrorHandlingAsync(command, node?.handleError)
 }
+
+const PREVIEW_GAP = 16
+
+const previews = useTemplateRef<HTMLElement[]>('preview')
+const previewElement = computed(() => previews.value?.[0])
+const previewRow = useElementBounding(() =>
+  previewElement.value?.closest<HTMLElement>('[role="treeitem"]')
+)
+const previewSize = useElementSize(previewElement, undefined, {
+  box: 'border-box'
+})
+const { height: windowHeight } = useWindowSize()
+const settingStore = useSettingStore()
+const previewStyle = computed(() => {
+  const top = Math.max(
+    0,
+    Math.min(
+      previewRow.top.value,
+      windowHeight.value - previewSize.height.value - PREVIEW_GAP
+    )
+  )
+  const left =
+    settingStore.get('Comfy.Sidebar.Location') === 'right'
+      ? previewRow.left.value - previewSize.width.value - PREVIEW_GAP
+      : previewRow.right.value + PREVIEW_GAP
+  return { top: `${top}px`, left: `${left}px` }
+})
 
 defineExpose({
   /**
@@ -254,33 +332,3 @@ defineExpose({
   }
 })
 </script>
-
-<style scoped>
-:deep(.tree-explorer-node-label) {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  margin-left: var(--p-tree-node-gap);
-  flex-grow: 1;
-}
-
-/*
- * The following styles are necessary to avoid layout shift when dragging nodes over folders.
- * By setting the position to relative on the parent and using an absolutely positioned pseudo-element,
- * we can create a visual indicator for the drop target without affecting the layout of other elements.
- */
-:deep(.p-tree-node-content:has(.tree-folder)) {
-  position: relative;
-}
-
-:deep(.p-tree-node-content:has(.tree-folder.can-drop))::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  border: 1px solid var(--p-content-color);
-  pointer-events: none;
-}
-</style>

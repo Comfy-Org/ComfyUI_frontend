@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import type { Take } from '../../../lib/workshop/cinematic-studio/reel'
+import type { Take } from '@/lib/workshop/cinematic-studio/reel'
 import CinematicTakeProgress from './CinematicTakeProgress.vue'
 
 const renderingTake = (): Take => ({

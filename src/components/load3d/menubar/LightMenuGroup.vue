@@ -15,7 +15,7 @@
       side="bottom"
       align="start"
       :side-offset="8"
-      :class="cn(panelClass, 'w-56')"
+      :class="cn(formPanelClass, 'w-56')"
     >
       <div class="flex flex-col gap-2 p-1">
         <span class="text-sm text-base-foreground">{{
@@ -43,7 +43,7 @@ import { useI18n } from 'vue-i18n'
 
 import {
   actionClass,
-  panelClass,
+  formPanelClass,
   tip
 } from '@/components/load3d/menubar/menuBarStyles'
 import { usePopoverExclusivity } from '@/components/load3d/menubar/usePopoverExclusivity'

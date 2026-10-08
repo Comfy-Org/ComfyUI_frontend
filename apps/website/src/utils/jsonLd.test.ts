@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { externalLinks } from '../config/routes'
-import { t } from '../i18n/translations'
+import { externalLinks } from '@/config/routes'
+import { t } from '@/i18n/translations'
 import { escapeJsonLd } from './escapeJsonLd'
 import type { JsonLdGraph } from './jsonLd'
 import {

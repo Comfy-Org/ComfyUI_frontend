@@ -3,14 +3,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { readonly, ref, nextTick } from 'vue'
 import type { Ref } from 'vue'
 
-import type { WorkshopBrowseModel } from '../../config/workshop'
+import type { WorkshopBrowseModel } from '@/config/workshop'
 import {
   useWorkshopEnabled,
   useWorkshopEnabledSettled
-} from '../../scripts/posthog'
+} from '@/scripts/posthog'
 import WorkshopSection from './WorkshopSection.vue'
 
-vi.mock(import('../../scripts/posthog'))
+vi.mock(import('@/scripts/posthog'))
 
 let enabled: Ref<boolean>
 let settled: Ref<boolean>

@@ -274,6 +274,68 @@ describe('api.fetchApi', () => {
       expect(onAuthScheme).toHaveBeenCalledExactlyOnceWith('none')
     })
 
+    it('is not broken by a throwing onAuthCredential callback', async () => {
+      signInOnCloud()
+      vi.spyOn(console, 'warn').mockImplementation(() => {})
+      vi.mocked(useAuthStore().getAuthHeader).mockResolvedValue({
+        Authorization: 'Bearer tokenA'
+      })
+      vi.mocked(global.fetch).mockResolvedValue(new Response('ok'))
+
+      const response = await api.fetchApi('/test', {
+        onAuthCredential: () => {
+          throw new Error('callback bug')
+        }
+      })
+
+      expect(await response.text()).toBe('ok')
+      expect(vi.mocked(global.fetch).mock.calls[0][1]?.headers).toMatchObject({
+        Authorization: 'Bearer tokenA'
+      })
+    })
+
+    it('reports the credential kind each auth path sent', async () => {
+      vi.mocked(global.fetch).mockResolvedValue(new Response())
+      const offCloud = vi.fn()
+      await api.fetchApi('/test', { onAuthCredential: offCloud })
+
+      signInOnCloud()
+      const getAuthHeader = vi.mocked(useAuthStore().getAuthHeader)
+      const bearer = vi.fn()
+      getAuthHeader.mockResolvedValueOnce({ Authorization: 'Bearer tokenA' })
+      await api.fetchApi('/test', { onAuthCredential: bearer })
+      const apiKey = vi.fn()
+      getAuthHeader.mockResolvedValueOnce({ 'X-API-KEY': 'key' })
+      await api.fetchApi('/test', { onAuthCredential: apiKey })
+      const missing = vi.fn()
+      getAuthHeader.mockResolvedValueOnce(null)
+      await api.fetchApi('/test', { onAuthCredential: missing })
+      const session = vi.fn()
+      const release = provideWebSessionRequests(
+        fromPartial<WebSessionRequests>({
+          scope: async () => ({ session: fromPartial({}), epoch: 1 }),
+          send: vi.fn().mockResolvedValue(new Response())
+        })
+      )
+      try {
+        await api.fetchApi('/test', { onAuthCredential: session })
+      } finally {
+        release()
+      }
+
+      expect(
+        [offCloud, bearer, apiKey, missing, session].map(
+          (callback) => callback.mock.calls
+        )
+      ).toEqual([
+        [['none']],
+        [['bearer']],
+        [['api-key']],
+        [['none']],
+        [['session-cookie']]
+      ])
+    })
+
     it('is not forwarded to fetch as a request option', async () => {
       vi.mocked(global.fetch).mockResolvedValue(new Response())
 

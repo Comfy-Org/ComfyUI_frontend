@@ -2,7 +2,8 @@
   "extends": "astro/tsconfigs/strict",
   "compilerOptions": {
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@website/*": ["./*"]
     },
     "noUnusedLocals": true,
     "noUnusedParameters": true,
@@ -15,10 +16,12 @@
   "include": [
     ".astro/types.d.ts",
     "src/**/*",
+    "src/**/*.vue",
     "e2e/**/*",
     "acceptance/**/*",
     "scripts/**/*",
     "astro.config.ts",
+    "paths.ts",
     "playwright.config.ts",
     "playwright.acceptance.config.ts",
     "vitest.config.ts"

@@ -1,8 +1,8 @@
 import { expect } from '@playwright/test'
 
-import { externalLinks, getRoutes } from '../src/config/routes'
-import { flux3Page } from '../src/data/flux3'
-import { t } from '../src/i18n/translations'
+import { externalLinks, getRoutes } from '@/config/routes'
+import { flux3Page } from '@/data/flux3'
+import { t } from '@/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
 
 const PATH = '/flux-3'
@@ -12,7 +12,7 @@ const RUN_OPTIONS_HEADING = t('flux3.runOptions.heading', {}, { locale: 'en' })
 const CTA_HEADING = t('flux3.cta.heading', {}, { locale: 'en' })
 const FAQ_COUNT = flux3Page.faq?.items.length ?? 0
 const CARD_COUNT = flux3Page.gallery?.cards.length ?? 0
-const MODELS_ROUTE = getRoutes('en').models
+const MODELS_ROUTE = getRoutes('en').workshop
 
 test.describe('Flux 3 page @smoke', () => {
   test.beforeEach(async ({ page }) => {
@@ -41,7 +41,7 @@ test.describe('Flux 3 page @smoke', () => {
     const modelsCrumb = page
       .getByRole('navigation', { name: 'Breadcrumb' })
       .getByRole('link', {
-        name: t('models.breadcrumb.models', {}, { locale: 'en' })
+        name: t('workshop.model.breadcrumb', {}, { locale: 'en' })
       })
     await expect(modelsCrumb).toHaveAttribute('href', MODELS_ROUTE)
   })

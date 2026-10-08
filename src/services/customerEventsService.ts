@@ -192,6 +192,11 @@ export const useCustomerEventsService = () => {
     const authStore = useAuthStore()
     const requestOwner = authStore.currentUserIdentity()
     const requestId = ++latestRequestId
+    if (!authStore.hasPersonalWorkspace) {
+      isLoading.value = false
+      error.value = t('toastMessages.noPersonalWorkspace')
+      return null
+    }
     isLoading.value = true
     error.value = null
 

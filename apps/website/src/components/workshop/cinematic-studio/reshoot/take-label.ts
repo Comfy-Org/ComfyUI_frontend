@@ -1,6 +1,6 @@
-import type { ReshootTake } from '../../../../composables/useReshoot'
-import type { Locale } from '../../../../i18n/translations'
-import { translationsFor } from '../../../../i18n/translations'
+import type { ReshootTake } from '@/composables/useReshoot'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 
 export function takeLabel(take: ReshootTake, locale: Locale): string {
   const { t } = translationsFor(locale)
