@@ -21,6 +21,10 @@ import {
   fetchWithUnifiedRemint,
   shouldRemintCloudRequest
 } from '@/platform/auth/unified/remintRetry'
+import {
+  AUTH_INIT_TIMEOUT_MS,
+  FETCH_RESPONSE_HEADERS_TIMEOUT_MS
+} from '@/scripts/apiTimeouts'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 import type {
@@ -138,8 +142,6 @@ interface QueuePromptRequestBody {
   front?: boolean
   number?: number
 }
-
-const FETCH_RESPONSE_HEADERS_TIMEOUT_MS = 60_000
 
 interface FetchApiOptions extends RequestInit {
   timeoutMs?: number | null
@@ -555,7 +557,7 @@ export class ComfyApi extends EventTarget {
       try {
         await Promise.race([
           until(isInitialized).toBe(true),
-          promiseTimeout(10000)
+          promiseTimeout(AUTH_INIT_TIMEOUT_MS)
         ])
       } catch {
         console.warn('Firebase auth initialization timeout after 10 seconds')

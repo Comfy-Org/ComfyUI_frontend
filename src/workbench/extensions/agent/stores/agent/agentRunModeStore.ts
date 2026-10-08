@@ -22,21 +22,6 @@ const DEFAULT_CREDIT_LIMIT = 300
 const PREFERENCE_STORAGE_KEY = 'Comfy.Agent.RunModePreference'
 const LEGACY_MODE_STORAGE_KEY = 'Comfy.Agent.RunMode'
 const LEGACY_CREDIT_LIMIT_STORAGE_KEY = 'Comfy.Agent.RunCreditLimit'
-/**
- * Defence in depth behind the gate's own MAX_HOLD_MS, which is shorter: a
- * send that never settles is released there, so this should not fire. It
- * exists for the case the gate itself is wrong.
- */
-const SEND_WAIT_TIMEOUT_MS = 180_000
-
-class AgentSendWaitTimeoutError extends Error {
-  constructor(message: string) {
-    super(message)
-    // Without this every pipeline that groups by error name files the
-    // timeout this class exists to make legible under plain 'Error'.
-    this.name = 'AgentSendWaitTimeoutError'
-  }
-}
 
 function migrateLegacyPreference(): void {
   const storedPreference = localStorage.getItem(PREFERENCE_STORAGE_KEY)
@@ -77,37 +62,6 @@ function migrateLegacyPreference(): void {
     localStorage.removeItem(LEGACY_MODE_STORAGE_KEY)
     localStorage.removeItem(LEGACY_CREDIT_LIMIT_STORAGE_KEY)
   }
-}
-
-/**
- * Resolves once no message is still on its way to the server. The server pins
- * a turn's run mode when that turn's POST ARRIVES, not when the user pressed
- * send, so a mode written while the composer already looks sent overtakes the
- * message and re-authorizes it (PM-1660).
- *
- * REJECTS rather than waits forever if the send never settles. A send is only
- * bounded as far as its response HEADERS (api.ts clears its timer when those
- * arrive, not when the body does), so a stalled body would otherwise leave
- * every later write pending and the popover disabled until a reload. Failing
- * is the safe direction on a spend gate: the user is told to retry, and no
- * mode is written behind a message whose turn may still be unstarted.
- */
-function sendInFlight(): Promise<unknown> | undefined {
-  const sendGate = useAgentSendGateStore()
-  if (!sendGate.isSending) return
-  return until(() => sendGate.isSending)
-    .toBe(false, {
-      flush: 'sync',
-      timeout: SEND_WAIT_TIMEOUT_MS,
-      throwOnTimeout: true
-    })
-    .catch(() => {
-      // until() rejects with the bare string 'Timeout', which reads as
-      // nothing in the error consoles the popover reports to.
-      throw new AgentSendWaitTimeoutError(
-        'timed out waiting for a message already sent'
-      )
-    })
 }
 
 export const useAgentRunModeStore = defineStore('agentRunMode', () => {
@@ -178,8 +132,22 @@ export const useAgentRunModeStore = defineStore('agentRunMode', () => {
     // Composer.test.ts, 'blocks a second pick while the write is in flight').
     // Waiting for a send in flight widens that window; it does not change it.
     try {
-      const held = sendInFlight()
-      if (held !== undefined) await held
+      // The server pins a turn's run mode when that turn's POST ARRIVES, not
+      // when the user pressed send, so a mode written while the composer
+      // already looks sent overtakes the message and re-authorizes it
+      // (PM-1660). Bounded by the gate's own MAX_HOLD_MS and nothing else: a
+      // second timeout here could only fire while overlapping sends were
+      // legitimately holding the gate, and firing meant rejecting the user's
+      // change behind an error toast with the mode left as it was.
+      //
+      // The `isSending` check is load-bearing, not an optimisation: awaiting
+      // unconditionally adds a microtask, and that is enough for a
+      // back-to-back second save to supersede this one before it reaches the
+      // revision check below, so the first never sends its PUT.
+      const sendGate = useAgentSendGateStore()
+      if (sendGate.isSending) {
+        await until(() => sendGate.isSending).toBe(false, { flush: 'sync' })
+      }
       // A second pick can park on the same gate (two popover instances, or
       // one remounted mid-write) and both wake on the same release, so their
       // PUTs would race and the server would keep whichever landed last.

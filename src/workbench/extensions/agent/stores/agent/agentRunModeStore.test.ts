@@ -336,59 +336,49 @@ describe('agentRunModeStore', () => {
   })
 
   // A send is only bounded as far as its response HEADERS, so a stalled body
-  // would hold the gate for the page's lifetime. Timing out the waiter alone
-  // only turned "hang forever" into "spin, then fail" on every later save,
-  // leaving the control unusable until a reload; the hold has to end.
+  // would hold the gate for the page's lifetime. The gate's own backstop is
+  // the only thing that ends such a hold, so this is what keeps the control
+  // usable without a reload. The assertion on isSending comes BEFORE the
+  // await: a missing backstop then fails here rather than by test timeout.
   it('recovers the run-mode control from a send that never settles', async () => {
-    vi.useFakeTimers()
-    try {
-      vi.mocked(api.fetchApi).mockResolvedValue(
-        jsonResponse(200, { mode: 'ask_approval', credit_limit: null })
-      )
-      const sendGate = useAgentSendGateStore()
-      sendGate.begin()
-      const store = useAgentRunModeStore()
-
-      const save = store.save('ask_approval', null)
-      await vi.advanceTimersByTimeAsync(150_000)
-      await save
-
-      expect(sendGate.isSending).toBe(false)
-      expect(vi.mocked(api.fetchApi)).toHaveBeenCalledOnce()
-      expect(store.mode).toBe('ask_approval')
-    } finally {
-      vi.useRealTimers()
-    }
-  })
-
-  // The release belongs to one hold: a stray extra call must not drive the
-  // count negative, which would read as "no send in flight" through a live
-  // one and silently reopen the ordering hole.
-  it('ignores a release called more than once', () => {
-    const sendGate = useAgentSendGateStore()
-    const release = sendGate.begin()
-
-    release()
-    release()
-
-    expect(sendGate.isSending).toBe(false)
-    // Released rather than left hanging: begin() arms a real backstop timer,
-    // and this case runs on real ones.
-    const secondRelease = sendGate.begin()
-    expect(sendGate.isSending).toBe(true)
-    secondRelease()
-  })
-
-  it('saves straight away when no send is in flight', async () => {
     vi.mocked(api.fetchApi).mockResolvedValue(
       jsonResponse(200, { mode: 'ask_approval', credit_limit: null })
     )
+    const sendGate = useAgentSendGateStore()
+    sendGate.begin()
     const store = useAgentRunModeStore()
 
-    await store.save('ask_approval', null)
+    const save = store.save('ask_approval', null)
+    await vi.runAllTimersAsync()
 
-    expect(vi.mocked(api.fetchApi)).toHaveBeenCalledOnce()
+    expect(sendGate.isSending).toBe(false)
+    await save
     expect(store.mode).toBe('ask_approval')
+  })
+
+  // Two picks can park on one hold (two popover instances, or one remounted
+  // mid-write) and both wake on the same release, so without the superseded-
+  // revision check both PUTs go out and the server keeps whichever landed
+  // last — which is not necessarily the mode the user picked last.
+  it('sends only the latest of two picks parked on one send', async () => {
+    vi.mocked(api.fetchApi).mockImplementation(async (_route, init) =>
+      jsonResponse(200, JSON.parse(String(init?.body)))
+    )
+    const releaseSend = useAgentSendGateStore().begin()
+    const store = useAgentRunModeStore()
+
+    const first = store.save('auto', null)
+    const second = store.save('auto_limited', 40)
+    await nextTick()
+    releaseSend()
+    await Promise.all([first, second])
+
+    expect(
+      vi
+        .mocked(api.fetchApi)
+        .mock.calls.map(([, init]) => JSON.parse(String(init?.body)))
+    ).toEqual([{ mode: 'auto_limited', credit_limit: 40 }])
+    expect(store.mode).toBe('auto_limited')
   })
 
   it('surfaces non-404 failures without changing the saved preference', async () => {
