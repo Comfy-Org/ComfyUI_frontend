@@ -220,9 +220,9 @@ export function useAttachment(options: UseAttachmentOptions) {
   async function resolveUpload(id: string, file: File): Promise<UploadResult> {
     const key = fileUploadKey(file)
     const contentHash = contentHashFor(file)
-    const cached = uploaded.get(key)
-    if (cached) {
-      const cachedResult = cached.get(await contentHash)
+    if (uploaded.has(key)) {
+      const hash = await contentHash
+      const cachedResult = uploaded.get(key)?.get(hash)
       if (cancelled.has(id)) throw new DOMException('Aborted', 'AbortError')
       if (cachedResult) return cachedResult
     }

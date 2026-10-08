@@ -483,6 +483,40 @@ describe('useAttachment', () => {
     expect(upload).toHaveBeenCalledTimes(2)
   })
 
+  it('does not reuse a cached upload forgotten while its hash is pending', async () => {
+    const upload = vi
+      .fn<(file: File) => Promise<{ ref: string }>>()
+      .mockResolvedValueOnce({ ref: 'uploaded_before.png' })
+      .mockResolvedValueOnce({ ref: 'uploaded_after.png' })
+    const registry = chipRegistry()
+    const { addFiles, forgetUploads } = useAttachment({ upload, ...registry })
+
+    await addFiles([identicalFile('cat.png', 1024)])
+    const matchingFile = identicalFile('cat.png', 1024)
+    const matchingBytes = await matchingFile.arrayBuffer()
+    let finishHash: (bytes: ArrayBuffer) => void = () => {}
+    const arrayBuffer = vi
+      .spyOn(matchingFile, 'arrayBuffer')
+      .mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            finishHash = resolve
+          })
+      )
+
+    const pending = addFiles([matchingFile])
+    expect(arrayBuffer).toHaveBeenCalledOnce()
+    forgetUploads()
+    finishHash(matchingBytes)
+    await pending
+
+    expect(upload).toHaveBeenCalledTimes(2)
+    expect(registry.chips.map(({ ref }) => ref)).toEqual([
+      'uploaded_before.png',
+      'uploaded_after.png'
+    ])
+  })
+
   it('does not reuse an upload that finished after uploads were forgotten', async () => {
     let finishFirst: (result: { ref: string }) => void = () => {}
     const upload = vi
