@@ -11,8 +11,8 @@ The graph is `src/lib/workshop/openjutsu/swap.api.json`, filled in by
 
 ## What it does
 
-One job: swap one person in a 3 to 14.4 second part of a clip for the character
-in one image, keep the scene, and put the clip's own sound back on the result.
+One job: swap one person in a chosen 5 to 15 second part of a video for the
+character in one image, keep the scene, and put the clip's own sound back on the result.
 
 ## Sources
 
@@ -39,30 +39,30 @@ under a name this graph is then given**.
 
 ## Settings and why
 
-| Setting             | Value                                                                | Why                                                                                   |
-| ------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| Sampler / scheduler | `res_multistep` / `simple`                                           | The LoRA author's default.                                                            |
-| Steps               | 20                                                                   | The author's default. The reference Space uses 28, and Character Swap passed at 28.   |
-| Turbo LoRA          | off                                                                  | The card says none is required; its Turbo result was an experiment.                   |
-| Frame rate          | 24 fps                                                               | H3's rate. The graph resamples other rates rather than changing speed.                |
-| Length              | `17k + 5` frames, 73 to 345                                          | H3's grid. 73 is the LoRA's training length; 362 would pass 15 s.                     |
-| Canvas              | nearest of 1344x768, 768x1344, 768x768, 1024x768, 768x1024, 1536x672 | The LoRA's 768 short edge, matched to the source shape so the shot is not recomposed. |
-| `ref_image_size`    | `match`                                                              | The example's value. `max` may hold identity better and costs time.                   |
-| Reference order     | image, then video                                                    | The order the LoRA was trained with.                                                  |
-| Prompt              | the card's example wording                                           | See `swapPrompt`. The card warns that pushing expressions can suppress the swap.      |
-| Sound               | source audio, trimmed to the same part                               | The card's own later reviews did this. H3's generated audio drifted.                  |
+| Setting             | Value                                                                | Why                                                                                                                                                 |
+| ------------------- | -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Sampler / scheduler | `res_multistep` / `simple`                                           | The LoRA author's default.                                                                                                                          |
+| Steps               | 20                                                                   | The author's default. The reference Space uses 28, and Character Swap passed at 28.                                                                 |
+| Turbo LoRA          | off                                                                  | The card says none is required; its Turbo result was an experiment.                                                                                 |
+| Frame rate          | 24 fps                                                               | H3's rate. The graph resamples other rates rather than changing speed.                                                                              |
+| Length              | `17k + 5` frames, 107 to 345                                         | H3's grid. The run takes the most frames that fit the chosen part (4.5 to 14.4 s), so it is never longer than the part; 362 frames would pass 15 s. |
+| Canvas              | nearest of 1344x768, 768x1344, 768x768, 1024x768, 768x1024, 1536x672 | The LoRA's 768 short edge, matched to the source shape so the shot is not recomposed.                                                               |
+| `ref_image_size`    | `match`                                                              | The example's value. `max` may hold identity better and costs time.                                                                                 |
+| Reference order     | image, then video                                                    | The order the LoRA was trained with.                                                                                                                |
+| Prompt              | the card's example wording                                           | See `swapPrompt`. The card warns that pushing expressions can suppress the swap.                                                                    |
+| Sound               | source audio, trimmed to the same part                               | The card's own later reviews did this. H3's generated audio drifted.                                                                                |
 
 ## App inputs to graph inputs
 
-| App input              | Graph input                                      |
-| ---------------------- | ------------------------------------------------ |
-| Video                  | `video.file`                                     |
-| Character image        | `character.image`                                |
-| Who to replace         | `136.prompt`, through `swapPrompt`               |
-| Start of the part      | `trim.start_time` (seconds)                      |
-| Length of the part     | `frames.value`; the trim length is `frames / 24` |
-| Canvas                 | `136.width`, `136.height`                        |
-| Seed (blank draws one) | `129.noise_seed`                                 |
+| App input                        | Graph input                                                            |
+| -------------------------------- | ---------------------------------------------------------------------- |
+| Video                            | `video.file`                                                           |
+| Character image                  | `character.image`                                                      |
+| Who to replace                   | `136.prompt`, through `swapPrompt`                                     |
+| Start of the part (trim dialog)  | `trim.start_time` (seconds)                                            |
+| Length of the part (trim dialog) | `frames.value`, through `gridFrames`; the trim length is `frames / 24` |
+| Canvas                           | `136.width`, `136.height`                                              |
+| Seed (blank draws one)           | `129.noise_seed`                                                       |
 
 Output: node `out` saves `openjutsu/result_*.mp4` (H.264). `LoadVideo` also
 emits a preview of the input under node `video`; the app takes the file whose

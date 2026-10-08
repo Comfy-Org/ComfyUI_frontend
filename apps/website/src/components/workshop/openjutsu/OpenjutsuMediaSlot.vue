@@ -4,7 +4,7 @@ import { ref, useId } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-const { kind, src, name, detail, heading, drop, hint, change, rejected } =
+const { kind, src, name, detail, heading, drop, hint, change, edit } =
   defineProps<{
     kind: 'video' | 'image'
     /** The chosen file's object URL; without one the slot asks for a file. */
@@ -15,11 +15,11 @@ const { kind, src, name, detail, heading, drop, hint, change, rejected } =
     drop: string
     hint: string
     change: string
-    /** Why the last file offered was turned away. */
-    rejected?: string
+    /** A second action on the chosen file, such as Trim; omitted when there is none. */
+    edit?: string
   }>()
 
-const emit = defineEmits<{ pick: [file: File] }>()
+const emit = defineEmits<{ pick: [file: File]; edit: [] }>()
 
 const over = ref(false)
 const headingId = useId()
@@ -74,6 +74,15 @@ function dropped(event: DragEvent) {
           {{ detail }}
         </span>
       </span>
+      <button
+        v-if="edit"
+        type="button"
+        class="flex h-8 shrink-0 cursor-pointer items-center rounded-full bg-transparency-white-t8 px-3 text-xs text-primary-comfy-canvas outline-none hover:text-primary-warm-white focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50"
+        :data-testid="`openjutsu-${kind}-edit`"
+        @click="emit('edit')"
+      >
+        {{ edit }}
+      </button>
       <label
         class="flex h-8 shrink-0 cursor-pointer items-center rounded-full bg-transparency-white-t8 px-3 text-xs text-primary-comfy-canvas focus-within:ring-2 focus-within:ring-primary-comfy-yellow/50 hover:text-primary-warm-white"
       >
@@ -121,13 +130,5 @@ function dropped(event: DragEvent) {
         @change="choose"
       />
     </label>
-    <p
-      v-if="rejected"
-      role="alert"
-      class="px-1 text-xs/relaxed text-destructive-light"
-      :data-testid="`openjutsu-${kind}-rejected`"
-    >
-      {{ rejected }}
-    </p>
   </section>
 </template>

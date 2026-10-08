@@ -5,6 +5,7 @@ import {
   Film,
   LoaderCircle,
   RotateCcw,
+  Scissors,
   Sparkles
 } from '@lucide/vue'
 import { computed, ref, watch } from 'vue'
@@ -17,7 +18,6 @@ import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import type { SwapWindow } from '@/lib/workshop/openjutsu/clip'
 import { FPS } from '@/lib/workshop/openjutsu/clip'
-import OpenjutsuTrim from './OpenjutsuTrim.vue'
 
 const {
   videoUrl,
@@ -33,7 +33,7 @@ const {
 } = defineProps<{
   videoUrl?: string
   clipSeconds?: number
-  range: SwapWindow
+  range?: SwapWindow
   frames?: number
   takes: readonly SwapTake[]
   selected: string
@@ -47,7 +47,7 @@ const { t } = translationsFor(locale)
 
 const emit = defineEmits<{
   select: [id: string]
-  change: [range: SwapWindow]
+  trim: []
   cancel: []
   reuse: [id: string]
 }>()
@@ -70,7 +70,10 @@ watch(
 
 /** The window the player loops: the trim while editing, a take's own after. */
 const shown = computed<SwapWindow | undefined>(() => {
-  if (!current) return frames ? { ...range, seconds: frames / FPS } : undefined
+  if (!current)
+    return range && frames
+      ? { start: range.start, seconds: frames / FPS }
+      : undefined
   return current.url && compare.value === 'result'
     ? undefined
     : { start: current.window.start, seconds: current.frames / FPS }
@@ -206,14 +209,26 @@ const outlineClass =
         </div>
       </div>
 
-      <OpenjutsuTrim
-        v-if="!current && clipSeconds !== undefined && frames !== undefined"
-        :range
-        :clip-seconds="clipSeconds"
-        :frames
-        :locale
-        @change="emit('change', $event)"
-      />
+      <div
+        v-if="!current && shown && clipSeconds !== undefined"
+        class="flex flex-wrap items-center justify-between gap-3"
+        data-testid="openjutsu-part"
+      >
+        <p class="text-sm text-primary-comfy-canvas">
+          {{
+            t('openjutsu.trim.summary', {
+              from: shown.start.toFixed(1),
+              to: (shown.start + shown.seconds).toFixed(1),
+              seconds: shown.seconds.toFixed(1),
+              total: clipSeconds.toFixed(1)
+            })
+          }}
+        </p>
+        <button type="button" :class="outlineClass" @click="emit('trim')">
+          <Scissors class="size-3.5" aria-hidden="true" />
+          {{ t('openjutsu.trim.edit') }}
+        </button>
+      </div>
 
       <div
         v-else-if="current?.status === 'done' && current.url"

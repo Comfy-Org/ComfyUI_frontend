@@ -19,15 +19,9 @@ import {
 } from '@/lib/workshop/cinematic-studio/reshoot-engine/run'
 import type { ReshootQuote } from '@/lib/workshop/cinematic-studio/reshoot-engine/transport'
 import { ReshootError } from '@/lib/workshop/cinematic-studio/reshoot-engine/transport'
-import type { ClipFacts, SwapWindow } from '@/lib/workshop/openjutsu/clip'
-import {
-  clipFactsOf,
-  clipFits,
-  defaultWindow,
-  fitWindow,
-  gridFrames,
-  pickCanvas
-} from '@/lib/workshop/openjutsu/clip'
+import type { VideoTrim } from '@/components/workshop/video-trim/VideoTrimDialog.vue'
+import type { SwapWindow } from '@/lib/workshop/openjutsu/clip'
+import { gridFrames, pickCanvas } from '@/lib/workshop/openjutsu/clip'
 import {
   OPENJUTSU_SAMPLE_MODE,
   openjutsuTransport
@@ -81,58 +75,53 @@ export function useOpenjutsu({ locale = 'en' }: { locale?: Locale } = {}) {
     return credential.session.token
   })
 
-  // --- the two inputs. A clip is checked before it is taken; see `takeVideo`.
+  // --- the two inputs. A video becomes the one in use only once its part to
+  // swap is confirmed in the trim dialog; until then the earlier one stays.
   const video = shallowRef<File>()
   const videoUrl = useObjectUrl(video)
-  const facts = shallowRef<ClipFacts>()
+  /** What the trim dialog read of the video in use, with the part chosen. */
+  const trim = shallowRef<VideoTrim>()
+  /** The file the trim dialog is showing: a new pick, or the one in use. */
+  const trimming = shallowRef<File>()
+  const trimOpen = ref(false)
   const character = shallowRef<File>()
   const characterUrl = useObjectUrl(character)
   const target = ref('')
   /** A fixed seed, or none: then every take draws its own. */
   const seed = ref<number>()
-  const range = ref<SwapWindow>({ start: 0, seconds: 0 })
 
-  watch(videoUrl, async (url) => {
-    facts.value = undefined
-    if (!url) return
-    const read = await clipFactsOf(url)
-    if (url !== videoUrl.value) return
-    facts.value = read
-    if (read) range.value = defaultWindow(read.seconds)
-  })
+  const clipSeconds = computed(() => trim.value?.duration)
+  const range = computed<SwapWindow | undefined>(
+    () =>
+      trim.value && {
+        start: trim.value.start,
+        seconds: trim.value.end - trim.value.start
+      }
+  )
+  const frames = computed(() => range.value && gridFrames(range.value.seconds))
+  const canvas = computed(
+    () => trim.value && pickCanvas(trim.value.width, trim.value.height)
+  )
 
-  const clipSeconds = computed(() => facts.value?.seconds)
-  const frames = computed(() =>
-    facts.value ? gridFrames(range.value.seconds) : undefined
-  )
-  const canvas = computed(() =>
-    facts.value ? pickCanvas(facts.value.width, facts.value.height) : undefined
-  )
-  function setWindow(next: SwapWindow) {
-    if (facts.value) range.value = fitWindow(next, facts.value.seconds)
+  function takeVideo(file: File) {
+    trimming.value = file
+    trimOpen.value = true
   }
-
-  /** Why the last chosen file was turned away; the clip in use stays. */
-  const videoRejected = ref<string>()
-  async function takeVideo(file: File) {
-    const url = URL.createObjectURL(file)
-    const read = await clipFactsOf(url)
-    URL.revokeObjectURL(url)
-    if (!read) {
-      videoRejected.value = t('openjutsu.video.unreadable', { name: file.name })
-      return
-    }
-    if (!clipFits(read.seconds)) {
-      videoRejected.value = t('openjutsu.video.length', {
-        name: file.name,
-        seconds: read.seconds.toFixed(1)
-      })
-      return
-    }
-    videoRejected.value = undefined
-    video.value = file
+  /** Reopens the trim dialog on the video in use, at the part chosen. */
+  function editTrim() {
+    if (video.value) takeVideo(video.value)
+  }
+  function confirmTrim(next: VideoTrim) {
+    video.value = trimming.value
+    trim.value = next
     selected.value = 'source'
   }
+  /** The part to reopen the dialog on: only the video in use has one. */
+  const trimInitial = computed(() =>
+    trimming.value === video.value && trim.value
+      ? { start: trim.value.start, end: trim.value.end }
+      : undefined
+  )
   function takeCharacter(file: File) {
     character.value = file
   }
@@ -224,7 +213,7 @@ export function useOpenjutsu({ locale = 'en' }: { locale?: Locale } = {}) {
   })
   /** What is still missing before Generate, in the order the panel asks. */
   const missing = computed(() => {
-    if (!video.value || !facts.value) return 'video'
+    if (!video.value || !trim.value) return 'video'
     if (!character.value) return 'character'
     if (!target.value.trim()) return 'target'
     return undefined
@@ -282,20 +271,22 @@ export function useOpenjutsu({ locale = 'en' }: { locale?: Locale } = {}) {
     const image = character.value
     const shape = canvas.value
     const length = frames.value
+    const part = range.value
     if (
       !transport ||
       !canGenerate.value ||
       !clip ||
       !image ||
       !shape ||
-      !length
+      !length ||
+      !part
     )
       return
     // Everything the run uses is read now: edits made while it renders belong
     // to the next take, and a blank seed is drawn once, here.
     const request = {
       target: target.value.trim(),
-      window: { ...range.value },
+      window: part,
       frames: length,
       seed: resolveSeed(seed.value)
     }
@@ -390,12 +381,11 @@ export function useOpenjutsu({ locale = 'en' }: { locale?: Locale } = {}) {
     )
   }
 
-  /** Puts a take's own settings back, ready to run again or adjust. */
+  /** Puts a take's own words and seed back, ready to run again or adjust. */
   function reuse(id: string) {
     const take = takes.value.find((entry) => entry.id === id)
     if (!take) return
     target.value = take.target
-    setWindow(take.window)
     seed.value = take.seed
     selected.value = 'source'
   }
@@ -411,7 +401,6 @@ export function useOpenjutsu({ locale = 'en' }: { locale?: Locale } = {}) {
     sample: OPENJUTSU_SAMPLE_MODE,
     video,
     videoUrl,
-    videoRejected,
     clipSeconds,
     character,
     characterUrl,
@@ -430,9 +419,13 @@ export function useOpenjutsu({ locale = 'en' }: { locale?: Locale } = {}) {
     priceNote,
     unavailable,
     session,
+    trimming,
+    trimOpen,
+    trimInitial,
     takeVideo,
+    editTrim,
+    confirmTrim,
     takeCharacter,
-    setWindow,
     generate,
     cancel,
     reuse

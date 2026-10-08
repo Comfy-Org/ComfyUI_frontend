@@ -655,7 +655,22 @@
       "notSaved": "This generation could not be saved to your assets. The result is still on the page until it expires.",
       "cancelError": "Could not request cancellation. Your generation may still be running."
     },
-    "cinematic": {}
+    "cinematic": {},
+    "videoTrim": {
+      "title": "Trim video",
+      "description": "Choose the part to use. It can be {min} to {max} seconds long.",
+      "play": "Play the selected part",
+      "pause": "Pause",
+      "start": "Start of the part to keep",
+      "end": "End of the part to keep",
+      "seek": "Seek within the selected part",
+      "selected": "{from} – {to} · {seconds} s of {total} s",
+      "tooShort": "This video is {seconds} s long. It needs to be at least {min} s.",
+      "unreadable": "This video could not be read. Try an MP4.",
+      "reading": "Reading the video",
+      "confirm": "Confirm",
+      "cancel": "Cancel"
+    }
   },
   "auth": {
     "signIn": {
@@ -5582,10 +5597,8 @@
     "video": {
       "heading": "Video",
       "drop": "Add the video to edit",
-      "hint": "5–15 seconds. One continuous shot works best.",
-      "detail": "{seconds} s · swapping {used} s",
-      "length": "{name} is {seconds} s long. Use a video between 5 and 15 seconds.",
-      "unreadable": "{name} could not be read as a video. Try an MP4."
+      "hint": "Any length. You pick 5–15 seconds of it; one continuous shot works best.",
+      "detail": "{seconds} s · swapping {used} s"
     },
     "character": {
       "heading": "New character",
@@ -5600,13 +5613,8 @@
       "help": "The swap follows this description, not a click on the picture. Say what sets the person apart: clothing, position, hair."
     },
     "trim": {
-      "label": "Part to swap",
-      "readout": "{from} – {to} s · {seconds} s",
-      "start": "Start of the part to swap",
-      "length": "Length of the part to swap",
-      "seconds": "{seconds} s",
-      "help": "Drag to move it. Pull the right edge to lengthen it.",
-      "long": "Longer parts can drift in framing and timing. Around 5 seconds is steadiest."
+      "edit": "Trim",
+      "summary": "Swapping {from} – {to} s ({seconds} s of {total} s)"
     },
     "needs": {
       "video": "Add a video to start",
@@ -5635,7 +5643,7 @@
     },
     "empty": {
       "title": "Your swapped video plays here",
-      "hint": "Add a 5 to 15 second video and one character image."
+      "hint": "Add a video, pick 5 to 15 seconds of it, and add one character image."
     },
     "error": {
       "swap": "The swap did not finish. Try again, or try a shorter part."

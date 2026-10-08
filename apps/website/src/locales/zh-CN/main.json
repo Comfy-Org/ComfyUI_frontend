@@ -4474,7 +4474,22 @@
       "notSaved": "这次生成未能保存到你的素材。结果在过期前仍然留在页面上。",
       "cancelError": "无法请求取消。生成可能仍在进行。"
     },
-    "cinematic": {}
+    "cinematic": {},
+    "videoTrim": {
+      "title": "裁剪视频",
+      "description": "选择要使用的片段，长度可为 {min} 到 {max} 秒。",
+      "play": "播放所选片段",
+      "pause": "暂停",
+      "start": "保留片段的起点",
+      "end": "保留片段的终点",
+      "seek": "在所选片段内定位",
+      "selected": "{from} – {to} · 共 {total} 秒中的 {seconds} 秒",
+      "tooShort": "该视频时长为 {seconds} 秒，至少需要 {min} 秒。",
+      "unreadable": "无法读取该视频。请尝试 MP4。",
+      "reading": "正在读取视频",
+      "confirm": "确认",
+      "cancel": "取消"
+    }
   },
   "cinematic": {
     "ux": {
@@ -4975,10 +4990,8 @@
     "video": {
       "heading": "视频",
       "drop": "添加要编辑的视频",
-      "hint": "5–15 秒，单个连续镜头效果最好。",
-      "detail": "{seconds} 秒 · 替换其中 {used} 秒",
-      "length": "{name} 时长为 {seconds} 秒。请使用 5 到 15 秒的视频。",
-      "unreadable": "无法将 {name} 读取为视频。请尝试 MP4。"
+      "hint": "长度不限。从中选取 5–15 秒；单个连续镜头效果最好。",
+      "detail": "{seconds} 秒 · 替换其中 {used} 秒"
     },
     "character": {
       "heading": "新角色",
@@ -4993,13 +5006,8 @@
       "help": "替换依据这段描述，而不是在画面上点选。请说明此人的特征：衣着、位置、发型。"
     },
     "trim": {
-      "label": "要替换的片段",
-      "readout": "{from} – {to} 秒 · {seconds} 秒",
-      "start": "替换片段的起点",
-      "length": "替换片段的长度",
-      "seconds": "{seconds} 秒",
-      "help": "拖动可移动片段，拉动右侧边缘可延长。",
-      "long": "片段越长，构图和节奏越容易偏移。5 秒左右最稳定。"
+      "edit": "裁剪",
+      "summary": "替换 {from} – {to} 秒（共 {total} 秒中的 {seconds} 秒）"
     },
     "needs": {
       "video": "先添加一段视频",
@@ -5028,7 +5036,7 @@
     },
     "empty": {
       "title": "替换后的视频将在这里播放",
-      "hint": "添加一段 5 到 15 秒的视频和一张角色图片。"
+      "hint": "添加视频并从中选取 5 到 15 秒，再添加一张角色图片。"
     },
     "error": {
       "swap": "替换未完成。请重试，或换一个更短的片段。"

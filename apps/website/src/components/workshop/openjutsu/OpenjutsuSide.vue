@@ -14,7 +14,6 @@ import OpenjutsuMediaSlot from './OpenjutsuMediaSlot.vue'
 const {
   videoUrl,
   videoName,
-  videoRejected,
   clipSeconds,
   frames,
   characterUrl,
@@ -29,7 +28,6 @@ const {
 } = defineProps<{
   videoUrl?: string
   videoName?: string
-  videoRejected?: string
   clipSeconds?: number
   frames?: number
   characterUrl?: string
@@ -48,6 +46,7 @@ const { t } = translationsFor(locale)
 const emit = defineEmits<{
   video: [file: File]
   character: [file: File]
+  trim: []
   generate: []
 }>()
 
@@ -100,8 +99,9 @@ const footnote = computed(() => {
         :drop="t('openjutsu.video.drop')"
         :hint="t('openjutsu.video.hint')"
         :change="t('reshoot.clip.change')"
-        :rejected="videoRejected"
+        :edit="t('openjutsu.trim.edit')"
         @pick="emit('video', $event)"
+        @edit="emit('trim')"
       />
       <OpenjutsuMediaSlot
         kind="image"

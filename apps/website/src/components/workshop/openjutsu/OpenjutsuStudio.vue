@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import RunLeaveDialog from '@/components/workshop/RunLeaveDialog.vue'
+import VideoTrimDialog from '@/components/workshop/video-trim/VideoTrimDialog.vue'
 import AppsBackLink from '@/components/workshop/cinematic-studio/AppsBackLink.vue'
 import { useCinematicLeaveGuard } from '@/composables/useCinematicLeaveGuard'
 import { useOpenjutsu } from '@/composables/useOpenjutsu'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
+import { SWAP_TRIM_LIMITS } from '@/lib/workshop/openjutsu/clip'
 import OpenjutsuSide from './OpenjutsuSide.vue'
 import OpenjutsuStage from './OpenjutsuStage.vue'
 
@@ -16,7 +18,6 @@ const {
   sample,
   video,
   videoUrl,
-  videoRejected,
   clipSeconds,
   character,
   characterUrl,
@@ -32,7 +33,10 @@ const {
   missing,
   canGenerate,
   priceNote,
-  session
+  session,
+  trimming,
+  trimOpen,
+  trimInitial
 } = swap
 
 const { leavingTo, leave, stay } = useCinematicLeaveGuard(
@@ -75,7 +79,6 @@ const { leavingTo, leave, stay } = useCinematicLeaveGuard(
         v-model:seed="seed"
         :video-url="videoUrl"
         :video-name="video?.name"
-        :video-rejected="videoRejected"
         :clip-seconds="clipSeconds"
         :frames
         :character-url="characterUrl"
@@ -89,6 +92,7 @@ const { leavingTo, leave, stay } = useCinematicLeaveGuard(
         :locale
         @video="swap.takeVideo"
         @character="swap.takeCharacter"
+        @trim="swap.editTrim"
         @generate="swap.generate"
       />
       <OpenjutsuStage
@@ -104,11 +108,19 @@ const { leavingTo, leave, stay } = useCinematicLeaveGuard(
         :locale
         class="lg:pt-2"
         @select="selected = $event"
-        @change="swap.setWindow"
+        @trim="swap.editTrim"
         @cancel="swap.cancel"
         @reuse="swap.reuse"
       />
     </div>
+    <VideoTrimDialog
+      v-model:open="trimOpen"
+      :file="trimming"
+      :limits="SWAP_TRIM_LIMITS"
+      :initial="trimInitial"
+      :locale
+      @confirm="swap.confirmTrim"
+    />
     <RunLeaveDialog
       :open="leavingTo !== undefined"
       :locale
