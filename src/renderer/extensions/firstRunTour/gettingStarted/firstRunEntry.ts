@@ -91,8 +91,8 @@ export const useFirstRunEntry = createSharedComposable(() => {
   const isDesktopWidth =
     useBreakpoints(breakpointsTailwind).greaterOrEqual('md')
 
-  const gettingStartedVisible = computed(
-    () => dialogStore.isDialogOpen(GETTING_STARTED_DIALOG_KEY)
+  const gettingStartedVisible = computed(() =>
+    dialogStore.isDialogOpen(GETTING_STARTED_DIALOG_KEY)
   )
   const firstRunHoldsScreen = computed(
     () => firstRunScreen.value.phase !== 'released'

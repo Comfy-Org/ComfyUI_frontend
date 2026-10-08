@@ -548,6 +548,7 @@ describe('useFirstRunEntry', () => {
       Object.assign(useAuthStore(), { userId: 'account-b' })
 
       expect(entry.gettingStartedVisible.value).toBe(false)
+      expect(useSettingStore().set).not.toHaveBeenCalled()
     })
   })
 
