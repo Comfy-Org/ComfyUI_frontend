@@ -911,6 +911,28 @@ describe('useDowngradeToPersonal', () => {
       ])
     })
 
+    it('names the client that runs the downgrade on its own operation events', async () => {
+      mockMembers.value = teamWithOwnerAnd('m1')
+      const { downgradeToPersonal } = useDowngradeToPersonal({
+        paymentIntentSource: 'team_members_panel'
+      })
+
+      await downgradeToPersonal('founder-monthly')
+
+      const trackBillingEvent = useTelemetry()?.trackBillingEvent
+      if (!trackBillingEvent) throw new Error('telemetry not mocked')
+      expect(
+        vi
+          .mocked(trackBillingEvent)
+          .mock.calls.map(([event]) => event)
+          .filter((event) => event.operation === 'operation')
+          .map((event) => [event.stage, event.billing_client])
+      ).toEqual([
+        ['started', 'legacy'],
+        ['succeeded', 'legacy']
+      ])
+    })
+
     it('reports the surface on the events of a downgrade that fails', async () => {
       mockMembers.value = teamWithOwnerAnd('m1')
       mockPreviewSubscribe.mockRejectedValue('boom')
