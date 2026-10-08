@@ -30,7 +30,8 @@ block the lane.
 Each website preview and production build writes a cache-disabled `/__build.json` with the
 repository, exact source SHA, workflow run, attempt, and build time. Deployment verifies the
 immutable Vercel URL before accepting canonical `comfy.org` promotion and saves the previous and
-new deployment IDs and SHAs as a short-lived transition artifact.
+new deployment IDs and SHAs as a short-lived transition artifact. Both deployment workflows use
+`scripts/cicd/website-deployment.sh` for the build identity, Vercel lookups, and identity checks.
 
 `validation-website-rollback.yaml` accepts an immutable deployment ID and expected SHA. Its default
 mode validates the target and marker without changing production. With `perform_rollback` enabled,

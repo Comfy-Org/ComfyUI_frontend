@@ -45,7 +45,6 @@ jobs:
         run: vercel pull --yes --environment=production
 
       - name: Verify the captured deployment
-        id: verify-target
         env:
           EXPECTED_SHA: ${{ inputs.expected_sha }}
           PERFORM_ROLLBACK: ${{ inputs.perform_rollback }}
@@ -59,26 +58,11 @@ jobs:
             echo "::error::Expected SHA must be a full lowercase Git commit SHA"
             exit 1
           fi
-          DEPLOYMENT=$(curl -fsS --retry 3 \
-            -H "Authorization: Bearer $VERCEL_TOKEN" \
-            "https://api.vercel.com/v13/deployments/$TARGET_DEPLOYMENT?teamId=$VERCEL_ORG_ID")
-          TARGET_URL=$(jq -er \
-            --arg deploymentId "$TARGET_DEPLOYMENT" \
-            --arg projectId "$VERCEL_PROJECT_ID" \
-            'select(.id == $deploymentId and (.projectId // .project.id) == $projectId) | .url' \
-            <<< "$DEPLOYMENT")
-          ACTUAL_SHA=$(curl -fsS \
-            -H 'Cache-Control: no-cache' \
-            "https://$TARGET_URL/__build.json?preflight=$GITHUB_RUN_ID" |
-            jq -er '.sha')
-          if [[ "$ACTUAL_SHA" != "$EXPECTED_SHA" ]]; then
-            echo "::error::Deployment $TARGET_DEPLOYMENT serves $ACTUAL_SHA, expected $EXPECTED_SHA"
-            exit 1
-          fi
-          echo "actual-sha=$ACTUAL_SHA" >> "$GITHUB_OUTPUT"
+          TARGET_URL=$(scripts/cicd/website-deployment.sh deployment "$TARGET_DEPLOYMENT" url)
+          scripts/cicd/website-deployment.sh verify-identity --host "$TARGET_URL" --sha "$EXPECTED_SHA"
           {
             echo "**Validated rollback target:** $TARGET_DEPLOYMENT"
-            echo "**Validated rollback SHA:** $ACTUAL_SHA"
+            echo "**Validated rollback SHA:** $EXPECTED_SHA"
             echo "**Production mutation requested:** $PERFORM_ROLLBACK"
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -93,31 +77,14 @@ jobs:
             --scope="$VERCEL_SCOPE"
 
       - name: Verify rollback at the canonical hostname
-        id: verify-canonical
         if: inputs.perform_rollback
         env:
           EXPECTED_SHA: ${{ inputs.expected_sha }}
           TARGET_DEPLOYMENT: ${{ inputs.deployment_id }}
         run: |
-          for attempt in {1..60}; do
-            ACTUAL_SHA=$(curl -fsS \
-              -H 'Cache-Control: no-cache' \
-              "https://comfy.org/__build.json?rollback=$GITHUB_RUN_ID-$attempt" |
-              jq -r '.sha // empty') || true
-            ALIAS_DEPLOYMENT_ID=$(curl -fsS --retry 3 \
-              -H "Authorization: Bearer $VERCEL_TOKEN" \
-              "https://api.vercel.com/v4/aliases/comfy.org?projectId=$VERCEL_PROJECT_ID&teamId=$VERCEL_ORG_ID" |
-              jq -r '.deploymentId // empty') || true
-            if [[ "$ACTUAL_SHA" == "$EXPECTED_SHA" && "$ALIAS_DEPLOYMENT_ID" == "$TARGET_DEPLOYMENT" ]]; then
-              curl -fsS -o /dev/null https://comfy.org/
-              echo "actual-sha=$ACTUAL_SHA" >> "$GITHUB_OUTPUT"
-              echo "deployment-id=$ALIAS_DEPLOYMENT_ID" >> "$GITHUB_OUTPUT"
-              exit 0
-            fi
-            sleep 10
-          done
-          echo "::error::Canonical production did not return to expected SHA $EXPECTED_SHA"
-          exit 1
+          scripts/cicd/website-deployment.sh verify-identity \
+            --canonical-deployment "$TARGET_DEPLOYMENT" --sha "$EXPECTED_SHA" \
+            --attempts 60 --interval 10
 
       - name: Preserve the rolled-back deployment and resume automatic promotion
         if: inputs.perform_rollback
@@ -130,57 +97,32 @@ jobs:
             --scope="$VERCEL_SCOPE"
 
       - name: Verify post-rollback promotion state
-        id: verify-promotion
         if: inputs.perform_rollback
         env:
           EXPECTED_SHA: ${{ inputs.expected_sha }}
           TARGET_DEPLOYMENT: ${{ inputs.deployment_id }}
         run: |
-          ACTUAL_SHA=$(curl -fsS \
-            -H 'Cache-Control: no-cache' \
-            "https://comfy.org/__build.json?promote=$GITHUB_RUN_ID" |
-            jq -r '.sha // empty')
-          ALIAS_DEPLOYMENT_ID=$(curl -fsS --retry 3 \
-            -H "Authorization: Bearer $VERCEL_TOKEN" \
-            "https://api.vercel.com/v4/aliases/comfy.org?projectId=$VERCEL_PROJECT_ID&teamId=$VERCEL_ORG_ID" |
-            jq -er '.deploymentId')
-          test "$ACTUAL_SHA" = "$EXPECTED_SHA"
-          test "$ALIAS_DEPLOYMENT_ID" = "$TARGET_DEPLOYMENT"
-          echo "actual-sha=$ACTUAL_SHA" >> "$GITHUB_OUTPUT"
-          echo "deployment-id=$ALIAS_DEPLOYMENT_ID" >> "$GITHUB_OUTPUT"
-          {
-            echo "**Rollback target:** $TARGET_DEPLOYMENT"
-            echo "**Verified canonical SHA:** $ACTUAL_SHA"
-            echo "**Verified canonical deployment:** $ALIAS_DEPLOYMENT_ID"
-          } >> "$GITHUB_STEP_SUMMARY"
+          scripts/cicd/website-deployment.sh verify-identity \
+            --canonical-deployment "$TARGET_DEPLOYMENT" --sha "$EXPECTED_SHA"
+          echo "**Verified canonical deployment:** $TARGET_DEPLOYMENT at $EXPECTED_SHA" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Retain rollback evidence
         env:
           EXPECTED_SHA: ${{ inputs.expected_sha }}
           PERFORM_ROLLBACK: ${{ inputs.perform_rollback }}
-          POST_PROMOTION_DEPLOYMENT_ID: ${{ steps.verify-promotion.outputs.deployment-id }}
-          POST_PROMOTION_SHA: ${{ steps.verify-promotion.outputs.actual-sha }}
-          ROLLBACK_DEPLOYMENT_ID: ${{ steps.verify-canonical.outputs.deployment-id }}
-          ROLLBACK_SHA: ${{ steps.verify-canonical.outputs.actual-sha }}
           TARGET_DEPLOYMENT: ${{ inputs.deployment_id }}
-          TARGET_VERIFIED_SHA: ${{ steps.verify-target.outputs.actual-sha }}
         run: |
           mkdir -p temp/website-rollback-result
           jq -n \
             --arg targetDeploymentId "$TARGET_DEPLOYMENT" \
             --arg expectedSha "$EXPECTED_SHA" \
-            --arg targetVerifiedSha "$TARGET_VERIFIED_SHA" \
-            --arg rollbackCanonicalSha "$ROLLBACK_SHA" \
-            --arg rollbackCanonicalDeploymentId "$ROLLBACK_DEPLOYMENT_ID" \
-            --arg postPromotionCanonicalSha "$POST_PROMOTION_SHA" \
-            --arg postPromotionCanonicalDeploymentId "$POST_PROMOTION_DEPLOYMENT_ID" \
+            --argjson performRollback "$PERFORM_ROLLBACK" \
             --arg runId "$GITHUB_RUN_ID" \
             --arg runAttempt "$GITHUB_RUN_ATTEMPT" \
             --arg workflowSha "$GITHUB_SHA" \
             --arg actor "$GITHUB_ACTOR" \
             --arg verifiedAt "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-            --argjson performRollback "$PERFORM_ROLLBACK" \
-            '{targetDeploymentId: $targetDeploymentId, expectedSha: $expectedSha, targetVerifiedSha: $targetVerifiedSha, performRollback: $performRollback, rollbackCanonicalSha: $rollbackCanonicalSha, rollbackCanonicalDeploymentId: $rollbackCanonicalDeploymentId, postPromotionCanonicalSha: $postPromotionCanonicalSha, postPromotionCanonicalDeploymentId: $postPromotionCanonicalDeploymentId, runId: $runId, runAttempt: $runAttempt, workflowSha: $workflowSha, actor: $actor, verifiedAt: $verifiedAt}' \
+            '{$targetDeploymentId, $expectedSha, $performRollback, $runId, $runAttempt, $workflowSha, $actor, $verifiedAt}' \
             > temp/website-rollback-result/result.json
 
       - name: Upload rollback evidence

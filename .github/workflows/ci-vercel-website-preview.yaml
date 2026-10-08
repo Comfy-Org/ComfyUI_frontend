@@ -59,19 +59,8 @@ jobs:
 
       - name: Write preview build identity
         env:
-          BUILD_REPOSITORY: ${{ github.repository }}
           BUILD_SHA: ${{ github.event.pull_request.head.sha }}
-          BUILD_RUN_ID: ${{ github.run_id }}
-          BUILD_RUN_ATTEMPT: ${{ github.run_attempt }}
-        run: |
-          jq -n \
-            --arg repository "$BUILD_REPOSITORY" \
-            --arg sha "$BUILD_SHA" \
-            --arg runId "$BUILD_RUN_ID" \
-            --arg runAttempt "$BUILD_RUN_ATTEMPT" \
-            --arg builtAt "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-            '{repository: $repository, sha: $sha, runId: $runId, runAttempt: $runAttempt, builtAt: $builtAt}' \
-            > apps/website/public/__build.json
+        run: scripts/cicd/website-deployment.sh write-build-identity "$BUILD_SHA"
 
       - name: Build project artifacts
         env:
@@ -123,18 +112,8 @@ jobs:
           DEPLOY_URL: ${{ steps.deploy.outputs.url }}
           EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          for attempt in {1..30}; do
-            ACTUAL_SHA=$(curl -fsS \
-              -H 'Cache-Control: no-cache' \
-              "$DEPLOY_URL/__build.json?run=$GITHUB_RUN_ID-$attempt" |
-              jq -r '.sha // empty') || true
-            if [[ "$ACTUAL_SHA" == "$EXPECTED_SHA" ]]; then
-              exit 0
-            fi
-            sleep 5
-          done
-          echo "::error::Immutable preview did not serve expected SHA $EXPECTED_SHA"
-          exit 1
+          scripts/cicd/website-deployment.sh verify-identity \
+            --host "$DEPLOY_URL" --sha "$EXPECTED_SHA" --attempts 30 --interval 5
 
       - name: Alias deployment to stable PR hostname
         id: alias-set
@@ -203,40 +182,14 @@ jobs:
       - name: Capture the current production deployment
         id: previous-production
         run: |
-          ALIAS=$(curl -fsS --retry 3 \
-            -H "Authorization: Bearer $VERCEL_TOKEN" \
-            "https://api.vercel.com/v4/aliases/comfy.org?projectId=$VERCEL_PROJECT_ID&teamId=$VERCEL_ORG_ID")
-          PREVIOUS_DEPLOYMENT_ID=$(jq -er '.deploymentId' <<< "$ALIAS")
-          DEPLOYMENT=$(curl -fsS --retry 3 \
-            -H "Authorization: Bearer $VERCEL_TOKEN" \
-            "https://api.vercel.com/v13/deployments/$PREVIOUS_DEPLOYMENT_ID?teamId=$VERCEL_ORG_ID")
-          PREVIOUS_DEPLOYMENT_URL=$(jq -er \
-            --arg deploymentId "$PREVIOUS_DEPLOYMENT_ID" \
-            --arg projectId "$VERCEL_PROJECT_ID" \
-            'select(.id == $deploymentId and (.projectId // .project.id) == $projectId) | .url' \
-            <<< "$DEPLOYMENT")
-          PREVIOUS_SHA=$(curl -fsS \
-            -H 'Cache-Control: no-cache' \
-            "https://$PREVIOUS_DEPLOYMENT_URL/__build.json?before=$GITHUB_RUN_ID" |
-            jq -r '.sha // empty') || true
+          PREVIOUS_DEPLOYMENT_ID=$(scripts/cicd/website-deployment.sh alias-deployment-id)
+          PREVIOUS_DEPLOYMENT_URL=$(scripts/cicd/website-deployment.sh deployment "$PREVIOUS_DEPLOYMENT_ID" url)
+          PREVIOUS_SHA=$(scripts/cicd/website-deployment.sh marker-sha "$PREVIOUS_DEPLOYMENT_URL") || true
           echo "deployment-id=$PREVIOUS_DEPLOYMENT_ID" >> "$GITHUB_OUTPUT"
           echo "sha=${PREVIOUS_SHA:-unavailable}" >> "$GITHUB_OUTPUT"
 
       - name: Write production build identity
-        env:
-          BUILD_REPOSITORY: ${{ github.repository }}
-          BUILD_SHA: ${{ github.sha }}
-          BUILD_RUN_ID: ${{ github.run_id }}
-          BUILD_RUN_ATTEMPT: ${{ github.run_attempt }}
-        run: |
-          jq -n \
-            --arg repository "$BUILD_REPOSITORY" \
-            --arg sha "$BUILD_SHA" \
-            --arg runId "$BUILD_RUN_ID" \
-            --arg runAttempt "$BUILD_RUN_ATTEMPT" \
-            --arg builtAt "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-            '{repository: $repository, sha: $sha, runId: $runId, runAttempt: $runAttempt, builtAt: $builtAt}' \
-            > apps/website/public/__build.json
+        run: scripts/cicd/website-deployment.sh write-build-identity "$GITHUB_SHA"
 
       - name: Verify WEBSITE_CLOUD_API_KEY is present for production build
         env:
@@ -300,39 +253,16 @@ jobs:
             echo "::error::Unexpected immutable deployment URL: $DEPLOY_URL"
             exit 1
           fi
-          DEPLOYMENT=$(curl -fsS --retry 3 \
-            -H "Authorization: Bearer $VERCEL_TOKEN" \
-            "https://api.vercel.com/v13/deployments/$DEPLOYMENT_HOST?teamId=$VERCEL_ORG_ID")
-          DEPLOYED_DEPLOYMENT_ID=$(jq -er \
-            --arg projectId "$VERCEL_PROJECT_ID" \
-            'select((.projectId // .project.id) == $projectId) | .id' \
-            <<< "$DEPLOYMENT")
+          DEPLOYED_DEPLOYMENT_ID=$(scripts/cicd/website-deployment.sh deployment "$DEPLOYMENT_HOST" id)
           echo "deployment-id=$DEPLOYED_DEPLOYMENT_ID" >> "$GITHUB_OUTPUT"
 
       - name: Verify staged production identity
         env:
           DEPLOY_URL: ${{ steps.deploy.outputs.url }}
-          EXPECTED_RUN_ATTEMPT: ${{ github.run_attempt }}
-          EXPECTED_RUN_ID: ${{ github.run_id }}
-          EXPECTED_SHA: ${{ github.sha }}
         timeout-minutes: 12
         run: |
-          for attempt in {1..30}; do
-            if MARKER=$(curl -fsS \
-              -H 'Cache-Control: no-cache' \
-              "${DEPLOY_URL%/}/__build.json?staged=$GITHUB_RUN_ID-$attempt") &&
-              jq -e \
-                --arg sha "$EXPECTED_SHA" \
-                --arg runId "$EXPECTED_RUN_ID" \
-                --arg runAttempt "$EXPECTED_RUN_ATTEMPT" \
-                '.sha == $sha and .runId == $runId and .runAttempt == $runAttempt' \
-                <<< "$MARKER" >/dev/null; then
-              exit 0
-            fi
-            sleep 5
-          done
-          echo "::error::Staged deployment did not serve expected build identity"
-          exit 1
+          scripts/cicd/website-deployment.sh verify-identity \
+            --host "$DEPLOY_URL" --sha "$GITHUB_SHA" --this-run --attempts 30 --interval 5
 
       - name: Retain production transition evidence
         env:
@@ -380,33 +310,12 @@ jobs:
       - name: Verify canonical production identity
         env:
           EXPECTED_DEPLOYMENT_ID: ${{ steps.deployed-production.outputs.deployment-id }}
-          EXPECTED_RUN_ATTEMPT: ${{ github.run_attempt }}
-          EXPECTED_RUN_ID: ${{ github.run_id }}
-          EXPECTED_SHA: ${{ github.sha }}
         timeout-minutes: 12
         run: |
-          for attempt in {1..60}; do
-            MARKER=$(curl -fsS \
-              -H 'Cache-Control: no-cache' \
-              "https://comfy.org/__build.json?promoted=$GITHUB_RUN_ID-$attempt") || MARKER='{}'
-            ALIAS_DEPLOYMENT_ID=$(curl -fsS --retry 3 \
-              -H "Authorization: Bearer $VERCEL_TOKEN" \
-              "https://api.vercel.com/v4/aliases/comfy.org?projectId=$VERCEL_PROJECT_ID&teamId=$VERCEL_ORG_ID" |
-              jq -r '.deploymentId // empty') || true
-            if jq -e \
-              --arg sha "$EXPECTED_SHA" \
-                --arg runId "$EXPECTED_RUN_ID" \
-                --arg runAttempt "$EXPECTED_RUN_ATTEMPT" \
-                '.sha == $sha and .runId == $runId and .runAttempt == $runAttempt' \
-              <<< "$MARKER" >/dev/null &&
-              [[ "$ALIAS_DEPLOYMENT_ID" == "$EXPECTED_DEPLOYMENT_ID" ]]; then
-              curl -fsS -o /dev/null https://comfy.org/
-              exit 0
-            fi
-            sleep 10
-          done
-          echo "::error::Canonical production did not serve the promoted deployment identity"
-          exit 1
+          scripts/cicd/website-deployment.sh verify-identity \
+            --canonical-deployment "$EXPECTED_DEPLOYMENT_ID" --sha "$GITHUB_SHA" --this-run \
+            --attempts 60 --interval 10
+
       - name: Notify IndexNow of changed pages
         continue-on-error: true
         timeout-minutes: 5
