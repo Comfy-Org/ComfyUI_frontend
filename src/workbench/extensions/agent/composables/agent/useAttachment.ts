@@ -2,6 +2,10 @@ import { i18n } from '@/i18n'
 import { reportError } from '@/platform/telemetry/reportError'
 import { DroppedAssetTooLargeError, hasImageType } from '@/utils/eventUtils'
 import { formatSize } from '@/utils/formatUtil'
+import {
+  AgentApiError,
+  AgentResponseUnreadableError
+} from '../../services/agent/agentRestClient'
 import type { ComposerAttachment } from './useComposer'
 
 export const MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024
@@ -9,6 +13,9 @@ const UPLOAD_HANDSHAKE_TIMEOUT_MS = 60 * 1000
 const UPLOAD_FLOOR_BYTES_PER_SECOND = 64 * 1024
 const MAX_CONCURRENT_UPLOADS = 3
 export const MAX_ATTACHMENT_BATCH_SIZE = 100
+const MAX_TELEMETRY_FILE_TYPE_LENGTH = 128
+const MIME_TYPE_PATTERN =
+  /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+\/[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/
 
 class AttachmentDeadlineError extends Error {
   constructor(timeoutMs: number) {
@@ -42,6 +49,11 @@ function transferDeadlineMs(bytes: number): number {
   return (
     UPLOAD_HANDSHAKE_TIMEOUT_MS + (bytes / UPLOAD_FLOOR_BYTES_PER_SECOND) * 1000
   )
+}
+
+function telemetryFileType(type: string | undefined): string {
+  if (!type || type.length > MAX_TELEMETRY_FILE_TYPE_LENGTH) return 'unknown'
+  return MIME_TYPE_PATTERN.test(type) ? type : 'unknown'
 }
 
 async function withDeadline<T>(
@@ -98,9 +110,24 @@ export function useAttachment(options: UseAttachmentOptions) {
     return true
   }
 
+  // The file's declared size/type and the failure's shape (status code,
+  // timeout, abort) are safe, bounded context. The caught error's own
+  // message/stack are not reported: they can carry a local file path (e.g. a
+  // dropped file's full source path), which is why this always reports a
+  // fresh synthetic Error rather than the original cause.
+  function uploadFailureCause(cause: unknown): string {
+    if (cause instanceof AgentApiError) return `http_${cause.status}`
+    if (cause instanceof AgentResponseUnreadableError)
+      return 'unreadable_response'
+    if (cause instanceof AttachmentDeadlineError) return 'timeout'
+    if (cause instanceof DOMException && cause.name === 'AbortError')
+      return 'aborted'
+    return 'unknown'
+  }
+
   function failAttachment(
     id: string,
-    name: string,
+    file: { name: string; size?: number; type?: string },
     errorType: string,
     cause: unknown
   ) {
@@ -111,7 +138,7 @@ export function useAttachment(options: UseAttachmentOptions) {
           : cause instanceof Error && cause.name === 'AbortError'
             ? 'aborted'
             : 'transport'
-      reportError(new Error('Agent attachment operation failed', { cause }), {
+      reportError(new Error('Agent attachment upload failed'), {
         errorType,
         tags: {
           failure_kind: 'caught_unexpected',
@@ -122,10 +149,15 @@ export function useAttachment(options: UseAttachmentOptions) {
           feature_flag: 'agent_panel',
           feature_flag_state: 'enabled',
           project_context: 'agent_composer',
-          failure_reason: failureReason
+          failure_reason: failureReason,
+          upload_failure_cause: uploadFailureCause(cause),
+          file_type: telemetryFileType(file.type),
+          file_size_bytes: file.size ?? -1
         }
       })
-      options.onError?.(i18n.global.t('agent.attachmentUploadFailed', { name }))
+      options.onError?.(
+        i18n.global.t('agent.attachmentUploadFailed', { name: file.name })
+      )
       options.remove(id)
       return undefined
     }
@@ -171,12 +203,12 @@ export function useAttachment(options: UseAttachmentOptions) {
         uploading: false
       })
       return 'uploaded'
-    } catch (error) {
+    } catch (cause) {
       if (cancelled.has(id) || (options.isPresent && !options.isPresent(id))) {
         options.remove(id)
         return 'cancelled'
       }
-      failAttachment(id, file.name, 'agent_attachment_upload_failed', error)()
+      failAttachment(id, file, 'agent_attachment_upload_failed', cause)()
       return 'failed'
     } finally {
       settle(id)
@@ -241,22 +273,22 @@ export function useAttachment(options: UseAttachmentOptions) {
       if (outcome !== 'uploaded') return outcome
       options.onUploaded?.()
       return 'uploaded'
-    } catch (error) {
+    } catch (cause) {
       if (cancelled.has(id) || (options.isPresent && !options.isPresent(id))) {
         options.remove(id)
         return 'cancelled'
       }
-      if (error instanceof DroppedAssetTooLargeError) {
+      if (cause instanceof DroppedAssetTooLargeError) {
         options.onError?.(
           i18n.global.t('agent.attachmentTooLarge', {
             name,
-            limit: formatSize(error.maxBytes)
+            limit: formatSize(cause.maxBytes)
           })
         )
         options.remove(id)
         return 'failed'
       }
-      failAttachment(id, name, 'agent_attachment_fetch_failed', error)()
+      failAttachment(id, { name }, 'agent_attachment_fetch_failed', cause)()
       return 'failed'
     } finally {
       settle(id)
