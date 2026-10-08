@@ -3,7 +3,7 @@ import { useEventListener } from '@vueuse/core'
 import { parseClipboardHtml } from '@/composables/useCopy'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
-import { CANVAS_CLIPBOARD_ID_KEY } from '@/lib/litegraph/src/litegraph'
+import { CANVAS_CLIPBOARD_KEY } from '@/lib/litegraph/src/canvas/clipboardStorage'
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { zClipboardItems } from '@/platform/workflow/validation/schemas/workflowSchema'
@@ -71,15 +71,8 @@ function pasteClipboardItems(data: DataTransfer): boolean {
 function holdsLatestCanvasCopy(html: string): boolean {
   const parsed = parseClipboardHtml(html)
   if (parsed.status !== 'read') return false
-  const { payload } = parsed
   try {
-    return (
-      typeof payload === 'object' &&
-      payload !== null &&
-      'clipboardId' in payload &&
-      typeof payload.clipboardId === 'string' &&
-      payload.clipboardId === localStorage.getItem(CANVAS_CLIPBOARD_ID_KEY)
-    )
+    return parsed.text === localStorage.getItem(CANVAS_CLIPBOARD_KEY)
   } catch {
     return false
   }

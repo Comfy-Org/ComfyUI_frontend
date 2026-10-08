@@ -21,13 +21,11 @@ import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import { withGraphIntentSource } from '@/lib/litegraph/src/graphIntents'
 import { createMutationView } from '@/lib/litegraph/src/infrastructure/createMutationView'
 import {
-  CANVAS_CLIPBOARD_KEY,
   inputAsSerialisable,
   LGraph,
   LGraphCanvas,
   LGraphNode,
-  LiteGraph,
-  snapshotCanvasClipboard
+  LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import { snapPoint } from '@/lib/litegraph/src/measure'
 import type { ISerialisedGraph, Vector2 } from '@/lib/litegraph/src/litegraph'
@@ -1240,41 +1238,40 @@ export class ComfyApp {
       return
     }
 
-    const restoreCanvasClipboard = snapshotCanvasClipboard()
-    try {
-      for (const template of templateData.templates) {
-        if (!template.data) {
-          continue
-        }
+    const old = localStorage.getItem('litegrapheditor_clipboard')
 
-        // Check for old clipboard format
-        const data = parseJsonWithNonFinite<{ reroutes?: unknown }>(
-          template.data
-        )
-        if (!data.reroutes) {
-          deserialiseAndCreate(template.data, app.canvas)
-        } else {
-          localStorage.setItem(CANVAS_CLIPBOARD_KEY, template.data)
-          app.canvas.pasteFromClipboard()
-        }
+    for (const template of templateData.templates) {
+      if (!template.data) {
+        continue
+      }
 
-        // Move mouse position down to paste the next template below
-        let maxY: number | undefined
+      // Check for old clipboard format
+      const data = parseJsonWithNonFinite<{ reroutes?: unknown }>(template.data)
+      if (!data.reroutes) {
+        deserialiseAndCreate(template.data, app.canvas)
+      } else {
+        localStorage.setItem('litegrapheditor_clipboard', template.data)
+        app.canvas.pasteFromClipboard()
+      }
 
-        for (const i in app.canvas.selected_nodes) {
-          const node = app.canvas.selected_nodes[i]
-          const nodeBottom = node.pos[1] + node.size[1]
-          if (maxY === undefined || nodeBottom > maxY) {
-            maxY = nodeBottom
-          }
-        }
+      // Move mouse position down to paste the next template below
+      let maxY: number | undefined
 
-        if (maxY !== undefined) {
-          app.canvas.graph_mouse[1] = maxY + 50
+      for (const i in app.canvas.selected_nodes) {
+        const node = app.canvas.selected_nodes[i]
+        const nodeBottom = node.pos[1] + node.size[1]
+        if (maxY === undefined || nodeBottom > maxY) {
+          maxY = nodeBottom
         }
       }
-    } finally {
-      restoreCanvasClipboard()
+
+      if (maxY !== undefined) {
+        app.canvas.graph_mouse[1] = maxY + 50
+      }
+    }
+
+    if (old !== null) {
+      localStorage.setItem('litegrapheditor_clipboard', old)
     }
   }
 
