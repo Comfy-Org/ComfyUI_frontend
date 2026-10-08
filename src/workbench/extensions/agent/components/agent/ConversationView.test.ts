@@ -87,6 +87,10 @@ function mountHarness() {
   return { store: useAgentConversationStore(), ...utils }
 }
 
+function dispatchResize(): void {
+  resizeCallbacks.forEach((callback) => callback())
+}
+
 describe('ConversationView', () => {
   beforeEach(() => {
     vi.mocked(useIntersectionObserver).mockImplementation(
@@ -209,7 +213,7 @@ describe('ConversationView', () => {
     await userEvent.click(summary)
     expect(summary).toHaveAttribute('aria-expanded', 'true')
     height = 1_200
-    resizeCallbacks.forEach((callback) => callback())
+    dispatchResize()
     await nextTick()
     expect(scrollTo).not.toHaveBeenCalled()
     expect(scroll.scrollTop).toBe(500)
@@ -217,7 +221,7 @@ describe('ConversationView', () => {
     await userEvent.click(summary)
     expect(summary).toHaveAttribute('aria-expanded', 'false')
     height = 1_000
-    resizeCallbacks.forEach((callback) => callback())
+    dispatchResize()
     await nextTick()
     expect(scrollTo).not.toHaveBeenCalled()
     expect(scroll.scrollTop).toBe(500)
@@ -225,33 +229,42 @@ describe('ConversationView', () => {
     await userEvent.click(summary)
     expect(summary).toHaveAttribute('aria-expanded', 'true')
     height = 2_000
-    resizeCallbacks.forEach((callback) => callback())
+    dispatchResize()
     await nextTick()
     expect(scrollTo).not.toHaveBeenCalled()
     expect(scroll.scrollTop).toBe(500)
+
+    await fireEvent.wheel(scroll)
+    scroll.scrollTop = 1_500
+    await fireEvent.scroll(scroll)
+    expect(scroll.scrollTop).toBe(1_500)
 
     await userEvent.click(summary)
     expect(summary).toHaveAttribute('aria-expanded', 'false')
     height = 1_000
-    resizeCallbacks.forEach((callback) => callback())
+    scroll.scrollTop = 500
+    dispatchResize()
+    await fireEvent.scroll(scroll)
     await nextTick()
     expect(scrollTo).not.toHaveBeenCalled()
     expect(scroll.scrollTop).toBe(500)
 
-    await fireEvent.scroll(scroll)
+    const nextTurn = toTurnId('msg-2')
+    store.recordUser(nextTurn, 'make another cat')
+    store.startTurn(nextTurn)
+    store.ingest(delta('msg-2', 'More content'))
+    await nextTick()
+    await nextTick()
+    expect(screen.getByText('More content')).toBeInTheDocument()
     height = 1_200
-    resizeCallbacks.forEach((callback) => callback())
+    dispatchResize()
     expect(scrollTo).not.toHaveBeenCalled()
-
-    store.ingest(delta('msg-1', 'More content'))
-    await nextTick()
-    await nextTick()
-    expect(scrollTo).not.toHaveBeenCalled()
+    expect(scroll.scrollTop).toBe(500)
 
     await userEvent.click(screen.getByRole('button', { name: 'Latest' }))
     scrollTo.mockClear()
     height = 1_200
-    resizeCallbacks.forEach((callback) => callback())
+    dispatchResize()
     expect(scrollTo).toHaveBeenCalled()
 
     await userEvent.click(summary)
@@ -260,7 +273,7 @@ describe('ConversationView', () => {
     scroll.scrollTop = 700
     await fireEvent.scroll(scroll)
     height = 1_400
-    resizeCallbacks.forEach((callback) => callback())
+    dispatchResize()
     expect(scrollTo).toHaveBeenCalledWith({ top: 900, behavior: 'instant' })
   })
 
@@ -301,14 +314,14 @@ describe('ConversationView', () => {
       clientHeight: { value: 500 }
     })
     await nextTick()
-    for (const callback of resizeCallbacks) callback()
-    for (const callback of resizeCallbacks) callback()
+    dispatchResize()
+    dispatchResize()
     scrollHeight = 1_200
     scrollTop = 490
     await userEvent.pointer([{ target: scrollContainer, keys: '[MouseLeft>]' }])
     await fireEvent.scroll(scrollContainer)
     scrollTo.mockClear()
-    for (const callback of resizeCallbacks) callback()
+    dispatchResize()
 
     store.ingest(delta('msg-1', 'Here is a cat'))
     await nextTick()
