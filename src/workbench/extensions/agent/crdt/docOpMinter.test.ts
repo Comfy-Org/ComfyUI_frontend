@@ -2,7 +2,16 @@ import { readFileSync } from 'node:fs'
 import { applyOps, mint, project } from '@comfyorg/comfy-multi-player'
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import { z } from 'zod'
 
 import { isRootGraphDocBound } from '@/lib/litegraph/src/docBoundGraphs'
@@ -1120,12 +1129,22 @@ describe('attachDocOpMinter', () => {
       promotedNames: ['text', 'prefix']
     })
 
+    vi.useFakeTimers({ toFake: ['Date'] })
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
+
     host.widgets[1].value = 'p'
     await afterFlush()
     host.widgets[1].value = 'pa'
     await afterFlush()
-
     expect(refused).toHaveLength(1)
+
+    vi.advanceTimersByTime(10_000)
+    host.widgets[1].value = 'past the window'
+    await afterFlush()
+
+    expect(refused).toHaveLength(2)
     doc.destroy()
   })
 

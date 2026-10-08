@@ -604,8 +604,10 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
   ): void {
     const key = `${rootGraphId}:${String(event.nodeId)}:${event.name}`
     const now = Date.now()
-    const last = lastRefusalNotice.get(key)
-    if (last !== undefined && now - last < REFUSAL_NOTICE_INTERVAL_MS) return
+    for (const [noticed, at] of lastRefusalNotice)
+      if (now - at >= REFUSAL_NOTICE_INTERVAL_MS)
+        lastRefusalNotice.delete(noticed)
+    if (lastRefusalNotice.has(key)) return
     lastRefusalNotice.set(key, now)
     deps.onWidgetWriteRefused?.({
       nodeId: event.nodeId,
