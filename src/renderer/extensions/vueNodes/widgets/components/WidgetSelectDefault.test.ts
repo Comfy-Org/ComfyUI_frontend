@@ -32,6 +32,7 @@ const flushPromises = () =>
 describe('WidgetSelectDefault', () => {
   beforeEach(() => {
     vi.useRealTimers()
+    vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(1000)
   })
 
   const createWidget = (
@@ -126,9 +127,6 @@ describe('WidgetSelectDefault', () => {
       const values = vi.fn(() => {
         throw error
       })
-      const consoleError = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
 
       try {
         const { user } = renderComponent(createWidget(values))
@@ -137,12 +135,12 @@ describe('WidgetSelectDefault', () => {
 
         expect(optionLabels()).toEqual([])
         expect(screen.getByRole('status')).toHaveTextContent('No results found')
-        expect(consoleError).toHaveBeenCalledWith(
+        expect(console.error).toHaveBeenCalledWith(
           '[WidgetSelectDefault] Failed to resolve options',
           error
         )
       } finally {
-        consoleError.mockRestore()
+        vi.mocked(console.error).mockRestore()
       }
     })
 

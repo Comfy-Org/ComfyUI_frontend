@@ -181,7 +181,6 @@ describe('PendingInvitesList', () => {
       value: vi.fn().mockReturnValue(false),
       configurable: true
     })
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     renderComponent([createInvite({ token: 'tok-9' })])
 
     const trigger = screen.getByRole('button', { name: 'g.moreOptions' })

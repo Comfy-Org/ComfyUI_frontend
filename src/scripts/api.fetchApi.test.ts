@@ -62,7 +62,6 @@ const fetchTimeoutRejection = {
 
 describe('api.fetchApi', () => {
   beforeEach(() => {
-    vi.stubGlobal('fetch', vi.fn())
     mockDistribution.isCloud = false
     // Reset api state
     api.user = 'test-user'
@@ -276,7 +275,6 @@ describe('api.fetchApi', () => {
 
     it('is not broken by a throwing onAuthCredential callback', async () => {
       signInOnCloud()
-      vi.spyOn(console, 'warn').mockImplementation(() => {})
       vi.mocked(useAuthStore().getAuthHeader).mockResolvedValue({
         Authorization: 'Bearer tokenA'
       })

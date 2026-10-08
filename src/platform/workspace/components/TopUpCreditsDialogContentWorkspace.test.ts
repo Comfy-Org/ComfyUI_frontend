@@ -256,7 +256,8 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       operation: 'operation',
       stage: 'started',
       outcome: 'pending',
-      operation_type: 'topup'
+      operation_type: 'topup',
+      billing_client: 'legacy'
     })
   })
 
@@ -964,7 +965,6 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     vi.mocked(useBillingOperationStore().startOperation).mockRejectedValue(
       error
     )
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     renderDialog()
     await clickAddCredits()
@@ -986,8 +986,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       failure_category: 'unknown',
       duration_ms: expect.any(Number)
     })
-    expect(consoleError).toHaveBeenCalledWith('Purchase failed')
-    consoleError.mockRestore()
+    expect(console.error).toHaveBeenCalledWith('Purchase failed')
   })
 
   it('refreshes both balance and status after a completed top-up', async () => {
@@ -1014,6 +1013,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       stage: 'succeeded',
       outcome: 'success',
       operation_type: 'topup',
+      billing_client: 'legacy',
       billing_op_id: 'op-1',
       duration_ms: expect.any(Number)
     })
@@ -1192,6 +1192,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       stage: 'failed',
       outcome: 'failure',
       operation_type: 'topup',
+      billing_client: 'legacy',
       billing_op_id: 'op-1',
       failure_category: 'provider_decline',
       duration_ms: expect.any(Number)
@@ -1345,7 +1346,6 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
           result
         )
         vi.mocked(useFeatureFlags().flags).billingSdkTopupRailEnabled = true
-        vi.spyOn(console, 'error').mockImplementation(() => {})
 
         renderDialog()
         await clickAddCredits()
@@ -1364,6 +1364,12 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
           { stage: 'started' },
           topupTerminal
         ])
+        expect(
+          vi
+            .mocked(useTelemetry()!.trackBillingEvent)
+            .mock.calls.filter(([event]) => event.operation === 'operation')
+            .map(([event]) => event.billing_client)
+        ).toEqual(['sdk', 'sdk'])
       }
     )
   })

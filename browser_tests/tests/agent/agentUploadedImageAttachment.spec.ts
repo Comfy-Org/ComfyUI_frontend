@@ -47,7 +47,12 @@ test(
     await panel
       .getByTestId('agent-file-input')
       .setInputFiles(assetPath('image32x32.webp'))
-    await expect(panel.getByTestId('asset-reference-chip')).toHaveCount(1)
+    await expect(
+      panel
+        .getByTestId('composer-asset-section')
+        .getByRole('group', { name: 'image32x32.webp', exact: true })
+    ).toBeVisible()
+    await expect(panel.getByTestId('asset-reference-chip')).toHaveCount(0)
     await panel
       .getByRole('textbox', { name: /^Describe ideas/ })
       .pressSequentially('use this upload')

@@ -398,6 +398,8 @@
       "rules": {
         "comfy/no-module-scope-vitest-mocks": "error",
         "comfy/no-persistent-litegraph-registration": "error",
+        "comfy/no-redundant-console-spy": "error",
+        "comfy/no-redundant-fetch-stub": "error",
         "comfy/no-redundant-litegraph-cleanup": "error",
         "comfy/no-redundant-vitest-cleanup": "error",
         "no-restricted-properties": [
