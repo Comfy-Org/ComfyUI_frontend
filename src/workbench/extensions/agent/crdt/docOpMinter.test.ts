@@ -1041,6 +1041,34 @@ describe('attachDocOpMinter', () => {
     expect(refused).toEqual([])
   })
 
+  it('mints for a host it added before its document emptied', async () => {
+    const subgraph = createTestSubgraph({
+      rootGraph: graph,
+      inputs: [{ name: 'text', type: 'STRING' }]
+    })
+    graph.subgraphs.set(subgraph.id, subgraph)
+    withGraphIntentSource('load', () => {
+      const interior = LiteGraph.createNode('TestPrompt')
+      assert.exists(interior)
+      subgraph.add(interior)
+      subgraph.inputNode.slots[0].connect(interior.inputs[0], interior)
+    })
+    docPromotedWidgets = () => null
+    const host = createTestSubgraphNode(subgraph)
+    graph.add(host)
+    await afterFlush()
+    minted.length = 0
+
+    docPopulated = false
+    host.widgets[0].value = 'typed after a delete echo emptied the doc'
+    await afterFlush()
+
+    expect(minted).toEqual([
+      expect.objectContaining({ op: 'set_widget', node_id: host.id })
+    ])
+    expect(refused).toEqual([])
+  })
+
   it('refuses a host it added once its document has been replaced', async () => {
     const subgraph = createTestSubgraph({
       rootGraph: graph,

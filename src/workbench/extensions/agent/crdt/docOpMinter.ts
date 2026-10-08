@@ -413,9 +413,9 @@ function docInputIndex(
 export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
   let pending: PendingOp[] = []
   const pendingAdds = new Map<string, LGraphNode>()
-  // Hosts whose `add_node` this minter sent while the document was still
-  // empty, keyed to that document: the sender's FIFO delivers the add before
-  // any later write to it, but a replaced document owes it nothing.
+  // Hosts whose `add_node` this minter sent, keyed to the follower document it
+  // was sent against: the sender's FIFO delivers the add before any later
+  // write to it, but a replaced document owes it nothing.
   const mintedAdds = new Map<string, object>()
   const reported = new Set<string>()
   // Budgeted for the minter's whole life, not per flush: this one sits on the
@@ -457,8 +457,11 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
         continue
       }
       const docIdentity = deps.docIdentity()
-      if (deps.isDocPopulated() || docIdentity === null) mintedAdds.clear()
-      else mintedAdds.set(nodeKey(graph.id, node.id), docIdentity)
+      if (docIdentity !== null) {
+        for (const [key, identity] of mintedAdds)
+          if (identity !== docIdentity) mintedAdds.delete(key)
+        mintedAdds.set(nodeKey(graph.id, node.id), docIdentity)
+      }
       operations.push({
         op: 'add_node',
         node_id: node.id,
