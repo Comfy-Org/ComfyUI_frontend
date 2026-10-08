@@ -10,6 +10,7 @@ import {
   mockWorkflowPersistence
 } from '@e2e/fixtures/agentPanelFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { agentReplayNodeDefs } from '@e2e/fixtures/data/agentReplayNodeDefs'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
@@ -44,9 +45,13 @@ test.describe(
         agentPanel.root.getByRole('menuitem', { name: 'KSampler', exact: true })
       ).toBeVisible()
       await agentPanel.composer.press('Escape')
+      await agentPanel.composer.press('Backspace')
       await vueNodes.renameNode('3', 'Color grade')
       await nextFrame(page)
-      await agentPanel.composer.fill('Keep this draft @')
+      await expect(
+        vueNodes.getNodeLocator('3').getByTestId('node-title')
+      ).toHaveText('Color grade')
+      await agentPanel.composer.pressSequentially('@')
       await agentPanel.root
         .getByRole('menuitem', { name: enMessages.agent.nodes, exact: true })
         .click()
@@ -60,9 +65,11 @@ test.describe(
         agentPanel.root.getByRole('menuitem', { name: 'KSampler', exact: true })
       ).toHaveCount(0)
       await agentPanel.composer.press('Escape')
+      await agentPanel.composer.press('Backspace')
       await vueNodes.deleteNode('3')
       await nextFrame(page)
-      await agentPanel.composer.fill('Keep this draft @')
+      await expect(vueNodes.getNodeLocator('3')).toHaveCount(0)
+      await agentPanel.composer.pressSequentially('@')
       await agentPanel.root
         .getByRole('menuitem', { name: enMessages.agent.nodes, exact: true })
         .click()
@@ -78,10 +85,14 @@ test.describe(
         })
       ).toHaveCount(0)
       await agentPanel.composer.press('Escape')
-      await page.locator('#graph-canvas').focus()
-      await page.keyboard.press('ControlOrMeta+z')
+      await agentPanel.composer.press('Backspace')
+      await new Topbar(page).triggerTopbarCommand(['Edit', 'Undo'])
       await nextFrame(page)
-      await agentPanel.composer.fill('Keep this draft @')
+      await expect(
+        vueNodes.getNodeLocator('3').getByTestId('node-title')
+      ).toHaveText('Color grade')
+      await expect(agentPanel.composer).toHaveText('Keep this draft ')
+      await agentPanel.composer.pressSequentially('@')
       await agentPanel.root
         .getByRole('menuitem', { name: enMessages.agent.nodes, exact: true })
         .click()
