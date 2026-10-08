@@ -163,10 +163,7 @@ describe('MediaLightbox', () => {
   })
 
   it('keeps failed text media actionable until the viewer closes', async () => {
-    const fetchMock = vi.fn(() =>
-      Promise.resolve(new Response(null, { status: 503 }))
-    )
-    vi.stubGlobal('fetch', fetchMock)
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(null, { status: 503 }))
 
     const { user } = renderGallery(
       {
@@ -183,7 +180,7 @@ describe('MediaLightbox', () => {
     )
 
     expect(await screen.findByText('Text failed to load')).toBeInTheDocument()
-    expect(fetchMock).toHaveBeenCalledWith('/api/view?filename=failed.txt')
+    expect(fetch).toHaveBeenCalledWith('/api/view?filename=failed.txt')
 
     await user.click(screen.getByLabelText('Close'))
 

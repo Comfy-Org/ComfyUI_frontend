@@ -627,7 +627,6 @@ describe('useRemoteWidget', () => {
     beforeEach(() => {
       scope = sessionScope
       send = vi.fn<(url: string, init: RequestInit) => Promise<Response>>()
-      vi.stubGlobal('fetch', vi.fn())
     })
 
     afterEach(() => {

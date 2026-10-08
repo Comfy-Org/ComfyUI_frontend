@@ -145,7 +145,7 @@ Because cleanup runs before every test, module-scope `vi.stubGlobal()` and
 
 ```typescript
 beforeEach(() => {
-  vi.stubGlobal('fetch', fetchMock)
+  vi.stubGlobal('ResizeObserver', ResizeObserverStub)
   vi.spyOn(Date, 'now').mockReturnValue(0)
 })
 ```
@@ -172,7 +172,7 @@ Module-scope mock declarations remain appropriate. When a default
 implementation must survive automatic reset, pass it directly to `vi.fn()`:
 
 ```typescript
-const fetchMock = vi.fn(async () => ({ ok: true }))
+const loadSettings = vi.fn(async () => ({ theme: 'dark' }))
 ```
 
 ### Module mocks with vi.mock()
