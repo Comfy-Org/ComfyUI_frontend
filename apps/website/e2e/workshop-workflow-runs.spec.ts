@@ -372,6 +372,35 @@ test('a Cloud credit refusal opens Add credits without retrying', async ({
   ).toHaveLength(1)
 })
 
+for (const { status, message } of [
+  { status: 503, message: 'This model is temporarily unavailable.' },
+  {
+    status: 403,
+    message:
+      'An input upload is incomplete or no longer available. Check your files and try again.'
+  }
+]) {
+  test(`a ${status} input upload stops the run before submission`, async ({
+    page,
+    context,
+    modelsAccount
+  }) => {
+    const cloud = await setup(context)
+    await context.route('**' + uploadPath, (route) =>
+      route.fulfill({ status, body: '' })
+    )
+
+    await signInAndSubmit(page, modelsAccount)
+
+    await expect(
+      page.getByRole('alert').filter({ hasText: message })
+    ).toBeVisible()
+    expect(
+      cloud.commands.filter((command) => command.path === '/api/prompt')
+    ).toHaveLength(0)
+  })
+}
+
 test('workflow cancellation survives disabled admission and hides on sign-out', async ({
   page,
   context,
