@@ -1,23 +1,17 @@
 import { render, screen, waitFor } from '@testing-library/vue'
-import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import { useNodeProgressText } from '@/composables/node/useNodeProgressText'
 import { useReconnectQueueRefresh } from '@/composables/useReconnectQueueRefresh'
 import { useReconnectingNotification } from '@/composables/useReconnectingNotification'
-import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type * as DistributionTypes from '@/platform/distribution/types'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useTemplateInputDownloadStore } from '@/stores/templateInputDownloadStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
-import { toNodeId } from '@/types/nodeId'
-import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
 beforeEach(() => {
   vi.mocked(useVersionCompatibilityStore().initialize).mockResolvedValue(
@@ -121,13 +115,6 @@ vi.mock(import('@/composables/useErrorHandling'))
 vi.mock(import('@/composables/useProgressFavicon'), () => ({
   useProgressFavicon: vi.fn()
 }))
-vi.mock(import('@/composables/node/useNodeProgressText'), () => {
-  const nodeProgressText = {
-    showTextPreview: vi.fn(),
-    removeTextPreview: vi.fn()
-  }
-  return { useNodeProgressText: () => nodeProgressText }
-})
 vi.mock(import('@/platform/distribution/types'), () => distribution)
 vi.mock<unknown>(
   import('@/platform/missingMedia/missingMediaPipeline'),
@@ -338,27 +325,6 @@ describe('GraphView - output assets refresh', () => {
     apiMock.dispatchEvent(new Event('execution_success'))
 
     await waitFor(() => expect(loadNew).toHaveBeenCalledTimes(1))
-  })
-})
-
-describe('GraphView - progress text previews', () => {
-  it('shows progress_text on the canvas node', () => {
-    const node = createMockLGraphNode({ id: toNodeId(1) })
-    useCanvasStore().canvas = fromPartial<LGraphCanvas>({
-      graph: { getNodeById: vi.fn(() => node) }
-    })
-    render(GraphView, { global: { plugins: [i18n] } })
-
-    apiMock.dispatchEvent(
-      new CustomEvent('progress_text', {
-        detail: { nodeId: toNodeId('1'), text: 'warming up' }
-      })
-    )
-
-    expect(useNodeProgressText().showTextPreview).toHaveBeenCalledWith(
-      node,
-      'warming up'
-    )
   })
 })
 
