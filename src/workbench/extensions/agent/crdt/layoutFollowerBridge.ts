@@ -1,13 +1,16 @@
+import { assert } from '@/base/assert'
 import { reportError } from '@/platform/telemetry/reportError'
 
 import type {
   DocFrameClient,
   DocOp,
+  DocReseedResult,
   DocReset,
   DocSubscribed,
   DocUpdate
 } from './docFrameClient'
 import { wireLog } from './crdtLog'
+import { RESEED_CONFLICT, STALE_SCHEMA_RESEED_REQUIRED } from './docFrameCodes'
 import { FollowerDoc } from './followerDoc'
 import { FollowerSchemaError, assertReadableSchema } from './schemaGuard'
 
@@ -28,6 +31,7 @@ function trySend(send: () => boolean): boolean {
     return send()
   } catch (error) {
     reportError(error, {
+      surface: 'agent',
       errorType: 'failure_sending_agent_doc_frame',
       logToConsole: false,
       tags: {
@@ -88,7 +92,12 @@ export class LayoutFollowerBridge extends EventTarget {
    * never on the first successful open.
    */
   private sentWorkflowId: string | null = null
-  /** Set once a merged doc failed the KA-11 read gate; never rendered after. */
+  /**
+   * The most recent KA-11 read-gate failure, while the merged doc is still
+   * unreadable. Cleared by a lineage break ({@link dropDocForNewLineage}) or
+   * by a later same-lineage frame that merges and leaves the doc readable
+   * again — see {@link onDocUpdate}.
+   */
   private schemaError: FollowerSchemaError | null = null
   /**
    * Highest doc seq APPLIED since the last subscribe left the transport;
@@ -119,6 +128,9 @@ export class LayoutFollowerBridge extends EventTarget {
    * harmless). It never moves {@link lastSeq} backwards.
    */
   private catchUpPending = false
+  private pendingReseedWorkflowId: string | null = null
+  private reseedToken: { workflowId: string; expectedSeq: number } | null = null
+  private reseedBlockedUntilConfirmedWorkflowId: string | null = null
 
   constructor(private readonly client: DocFrameClient) {
     super()
@@ -126,6 +138,7 @@ export class LayoutFollowerBridge extends EventTarget {
     client.addEventListener('doc_reset', this.onDocReset)
     client.addEventListener('doc_subscribed', this.onDocSubscribed)
     client.addEventListener('doc_ops_result', this.forwardFrame)
+    client.addEventListener('doc_reseed_result', this.onDocReseedResult)
   }
 
   /** The semantic doc this bridge currently follows. */
@@ -174,6 +187,10 @@ export class LayoutFollowerBridge extends EventTarget {
    */
   subscribe(workflowId: string): void {
     const lineage = this.lineageWorkflowId
+    if (this.desiredWorkflowId !== workflowId) {
+      this.reseedBlockedUntilConfirmedWorkflowId = null
+      this.reseedToken = null
+    }
     this.lineageWorkflowId = workflowId
     this.desiredWorkflowId = workflowId
     if (lineage !== null && lineage !== workflowId) {
@@ -224,9 +241,45 @@ export class LayoutFollowerBridge extends EventTarget {
     this.reconcile()
   }
 
+  reconnect(): void {
+    this.reseedBlockedUntilConfirmedWorkflowId = null
+    this.reseedToken = null
+    this.resubscribe()
+  }
+
   unsubscribe(): void {
     this.desiredWorkflowId = null
     this.reconcile()
+  }
+
+  reseed(workflowId: string, workflow: Record<string, unknown>): boolean {
+    const expectedSeq = this.reseedSequenceFor(workflowId)
+    if (expectedSeq === null) {
+      assert(
+        false,
+        'followers send a whole canvas only to answer a current stale-schema refusal — see ADR-CRDT-FOLLOWER-0025',
+        { workflowId }
+      )
+      return false
+    }
+    this.reseedToken = null
+    if (!trySend(() => this.client.reseed(workflowId, expectedSeq, workflow)))
+      return false
+    this.pendingReseedWorkflowId = workflowId
+    return true
+  }
+
+  canReseed(workflowId: string): boolean {
+    return this.reseedSequenceFor(workflowId) !== null
+  }
+
+  private reseedSequenceFor(workflowId: string): number | null {
+    const token = this.reseedToken
+    return token?.workflowId === workflowId &&
+      workflowId === this.desiredWorkflowId &&
+      workflowId !== this.reseedBlockedUntilConfirmedWorkflowId
+      ? token.expectedSeq
+      : null
   }
 
   sendHumanOps(tab: string, ops: DocOp[]): void {
@@ -249,6 +302,10 @@ export class LayoutFollowerBridge extends EventTarget {
       this.client.removeEventListener('doc_reset', this.onDocReset)
       this.client.removeEventListener('doc_subscribed', this.onDocSubscribed)
       this.client.removeEventListener('doc_ops_result', this.forwardFrame)
+      this.client.removeEventListener(
+        'doc_reseed_result',
+        this.onDocReseedResult
+      )
       this.desiredWorkflowId = null
       this.sentWorkflowId = null
       this.followerDoc.destroy()
@@ -259,11 +316,6 @@ export class LayoutFollowerBridge extends EventTarget {
     if (!(event instanceof CustomEvent)) return
     const update = event.detail as DocUpdate
     if (update.workflowId !== this.sentWorkflowId) return
-
-    // The first incompatible frame is already in the Y.Doc. Same-lineage
-    // updates cannot remove those CRDT bytes, so keep the read gate latched
-    // until an explicit doc_reset replaces the lineage.
-    if (this.schemaError !== null) return
 
     // A stale/duplicate frame cannot advance the replica. Ignoring it also
     // prevents a replayed Yjs frame from spuriously re-running ECS effects.
@@ -287,13 +339,23 @@ export class LayoutFollowerBridge extends EventTarget {
     if (this.lastSeq === null || update.seq > this.lastSeq)
       this.lastSeq = update.seq
     if (isCatchUp) this.catchUpPending = false
+
+    // Merge every same-lineage, in-order frame — even one arriving after a
+    // schema-gate failure. Yjs merge is monotonic and a Y.Map key is
+    // last-writer-wins, so a later frame CAN restore a readable
+    // `meta.schema_version` that an earlier one broke (e.g. a repair); never
+    // merging while latched would make that repair permanently unreachable.
     this.follower.applyRemoteUpdate(update.update)
 
-    // KA-11 read-time gate. The frame must merge before its schema can be
-    // checked, but nothing downstream may READ a doc whose declared schema
-    // this build was not written against. Failing closed here, before the
-    // frame is re-dispatched, is what keeps a v2 doc from being half-projected
-    // onto the canvas by a v1 reader.
+    // KA-11 read-time gate, re-checked on every merge rather than only the
+    // first: the frame must merge before its schema can be checked, but
+    // nothing downstream may READ a doc whose declared schema this build was
+    // not written against. Failing closed here, before the frame is
+    // re-dispatched, is what keeps a v2 doc from being half-projected onto
+    // the canvas by a v1 reader. Re-checking every time — instead of
+    // latching forever on the first failure — lets a later same-lineage
+    // frame that restores a readable version un-latch the gate and resume
+    // projecting.
     if (!this.isReadableUpdate(update)) return
 
     const classifiedUpdate: ClassifiedDocUpdate = {
@@ -337,6 +399,7 @@ export class LayoutFollowerBridge extends EventTarget {
   private isReadableUpdate(update: DocUpdate): boolean {
     try {
       assertReadableSchema(this.follower.doc)
+      this.schemaError = null
       return true
     } catch (error) {
       if (!(error instanceof FollowerSchemaError)) throw error
@@ -395,11 +458,43 @@ export class LayoutFollowerBridge extends EventTarget {
     if (!(event instanceof CustomEvent)) return
     const subscribed = event.detail as DocSubscribed
     if (subscribed.workflowId !== this.sentWorkflowId) return
+    this.reseedToken =
+      subscribed.workflowId !== this.reseedBlockedUntilConfirmedWorkflowId &&
+      !subscribed.ok &&
+      subscribed.code === STALE_SCHEMA_RESEED_REQUIRED &&
+      subscribed.expectedSeq
+        ? {
+            workflowId: subscribed.workflowId,
+            expectedSeq: subscribed.expectedSeq
+          }
+        : null
     if (subscribed.ok) {
+      this.reseedBlockedUntilConfirmedWorkflowId = null
       this.ackSeq = subscribed.seq ?? null
       this.catchUpPending = this.ackSeq !== null
     } else this.sentWorkflowId = null
     this.dispatchEvent(new CustomEvent(event.type, { detail: event.detail }))
+  }
+
+  private readonly onDocReseedResult: EventListener = (event) => {
+    if (!(event instanceof CustomEvent)) return
+    const result = event.detail as DocReseedResult
+    if (result.workflowId !== this.pendingReseedWorkflowId) return
+    this.pendingReseedWorkflowId = null
+    this.dispatchEvent(new CustomEvent(event.type, { detail: result }))
+    if (result.workflowId !== this.desiredWorkflowId) return
+    if (!result.ok && result.code !== RESEED_CONFLICT) return
+    this.reseedBlockedUntilConfirmedWorkflowId = result.workflowId
+    const reset: DocReset = {
+      workflowId: result.workflowId,
+      seq: result.seq ?? 0,
+      lineageSeq: result.seq ?? 0,
+      actor: 'system:client-seed'
+    }
+    this.dispatchEvent(new CustomEvent('doc_reset', { detail: reset }))
+    this.dropDocForNewLineage()
+    this.resubscribe()
+    this.dispatchEvent(new CustomEvent('follower_replaced', { detail: reset }))
   }
 
   private readonly forwardFrame: EventListener = (event) => {

@@ -85,8 +85,6 @@ export interface IWidgetOptions<TValues = unknown> {
   disabled?: boolean
   useGrouping?: boolean
   placeholder?: string
-  showThumbnails?: boolean
-  showItemNavigators?: boolean
   hidden?: boolean
 }
 
@@ -491,6 +489,7 @@ export interface IBaseWidget<
   name: string
   options: TOptions
   syncLiveVisibilityOptions?(): void
+  syncLiveDisabled?(): void
 
   label?: string
   /** Widget type (see {@link TWidgetType}) */

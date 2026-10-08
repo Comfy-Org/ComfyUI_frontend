@@ -2,7 +2,7 @@ import userEvent from '@testing-library/user-event'
 import { fireEvent, render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type * as DownloadUrlModule from '../../../composables/useDownloadUrl'
+import type * as DownloadUrlModule from '@/composables/useDownloadUrl'
 import MobileDownloadEmailForm from './MobileDownloadEmailForm.vue'
 
 const hoisted = vi.hoisted(() => ({
@@ -12,7 +12,7 @@ const hoisted = vi.hoisted(() => ({
   mockSubmit: vi.fn().mockResolvedValue(undefined)
 }))
 
-vi.mock(import('../../../scripts/customerio'), () => ({
+vi.mock(import('@/scripts/customerio'), () => ({
   get isDownloadLinkRequestEnabled() {
     return hoisted.isEnabled
   },
@@ -25,7 +25,7 @@ type DownloadUrlMock = Pick<
   'isMobileUa'
 >
 
-vi.mock(import('../../../composables/useDownloadUrl'), async () => {
+vi.mock(import('@/composables/useDownloadUrl'), async () => {
   const { computed } = await import('vue')
   const useDownloadUrl = (): DownloadUrlMock => ({
     isMobileUa: computed(() => hoisted.isMobileUa)
@@ -183,7 +183,7 @@ describe('MobileDownloadEmailForm', () => {
     expect(successRegion.textContent).toMatch(
       /link is sent to someone@example\.com/i
     )
-    // eslint-disable-next-line testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-node-access
     expect(document.activeElement).toBe(successRegion)
   })
 

@@ -2,6 +2,7 @@ import type { Model } from './models'
 import type { WorkshopFormDefinition } from './workshop-form-definition'
 import type { WorkshopContract } from './workshop-contract'
 import type { WorkshopInputDefinition } from './workshop-input-definition'
+import type { WorkshopWorkflowDefinition } from './workshop-workflow-definition'
 import { OTHER_FORMAT_USE_CASES } from './workshop-sections'
 
 export const MODALITIES = ['image', 'video', 'audio', '3d', 'text'] as const
@@ -101,6 +102,7 @@ export interface GeneratedExample {
   readonly node?: { readonly id: string; readonly displayName: string }
   readonly fields?: readonly GeneratedField[]
   readonly values: WorkshopExampleValues
+  readonly prompt?: string
 }
 
 export interface GeneratedModel {
@@ -114,13 +116,11 @@ export interface GeneratedModel {
   readonly examples: readonly GeneratedExample[]
 }
 
-export interface WorkshopModel {
+interface WorkshopPresentation {
   readonly slug: string
   readonly name: string
   readonly workflowCount: number
   readonly recommendedRank?: number
-  readonly href: string
-  readonly routerId: string
   readonly incompleteReason?: 'missing-input-schema'
   readonly provider?: string
   readonly modality?: Modality
@@ -134,20 +134,81 @@ export interface WorkshopModel {
   readonly thumbnail?: {
     readonly url: string
     readonly kind: 'image' | 'video' | 'audio'
+    readonly poster?: string
   }
   readonly useCases?: readonly UseCase[]
   readonly summary?: string
   readonly status?: ModelStatus
   readonly successorSlug?: string
+  /** PostHog flag this entry is shown behind (workshop-model-availability.json). */
+  readonly flag?: string
 }
 
-export interface WorkshopModelDetail extends WorkshopModel {
+export type RouterWorkshopModel = WorkshopPresentation & {
+  readonly type?: 'MODEL'
+  /** Absent for a disabled model: it has no built page to link to. */
+  readonly href?: string
+  readonly routerId: string
+  readonly workflowId?: never
+}
+
+export type WorkflowWorkshopModel = WorkshopPresentation & {
+  readonly href: string
+  readonly categoryLabel?: { readonly en: string; readonly 'zh-CN': string }
+  readonly categoryOrder?: number
+  readonly categoryHighlight?: boolean
+  readonly type: 'CLOUD' | 'SERVERLESS'
+  readonly workflowId: string
+  readonly routerId?: never
+  readonly category?: string
+  readonly models?: readonly string[]
+  readonly author?: string
+}
+
+export type AppWorkshopModel = WorkshopPresentation & {
+  readonly type: 'APP'
+  readonly href: string
+  /** Which app page runs it: see `WorkshopAppEntry.app`. */
+  readonly appId: 'studio' | 'reshoot'
+  readonly routerId?: never
+  readonly workflowId?: never
+}
+
+export type WorkshopModel =
+  | RouterWorkshopModel
+  | WorkflowWorkshopModel
+  | AppWorkshopModel
+
+interface WorkshopDetailPresentation {
   readonly nodeDisplayName?: string
   readonly form?: WorkshopFormDefinition
-  readonly execution?: WorkshopContract
   readonly fields: readonly GeneratedField[]
   readonly defaults: WorkshopExampleValues
   readonly examples: readonly GeneratedExample[]
+}
+
+export type RouterWorkshopModelDetail = WorkshopDetailPresentation &
+  RouterWorkshopModel & {
+    readonly execution?: WorkshopContract
+    readonly workflow?: never
+  }
+
+export type WorkflowWorkshopModelDetail = WorkshopDetailPresentation &
+  WorkflowWorkshopModel & {
+    readonly execution?: never
+    readonly workflow: WorkshopWorkflowDefinition
+  }
+
+export type WorkshopModelDetail =
+  | RouterWorkshopModelDetail
+  | WorkflowWorkshopModelDetail
+
+export function isWorkflowSlug(slug: string): boolean {
+  return slug.startsWith('workflows/')
+}
+
+export function workshopExecutionId(model: WorkshopModel): string {
+  return model.routerId ?? model.workflowId ?? model.slug
 }
 
 // makes it image/video/audio-to-X, anything else is text-to-X.
@@ -422,6 +483,9 @@ function searchText(model: WorkshopModel): string {
   return [
     model.name,
     model.provider ?? '',
+    ...(model.type === 'CLOUD' || model.type === 'SERVERLESS'
+      ? [model.category ?? '', model.author ?? '', ...(model.models ?? [])]
+      : []),
     ...useCasesFor(model).map((value) => value.replaceAll('-', ' ')),
     ...model.capabilities,
     modalityOf(model),

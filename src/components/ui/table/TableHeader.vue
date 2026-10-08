@@ -1,6 +1,6 @@
 <template>
   <thead
-    :class="cn('[&_tr]:border-b [&_tr]:border-interface-stroke/60', className)"
+    :class="cn('[&_tr]:border-b [&_tr]:border-border-subtle/60', className)"
   >
     <slot />
   </thead>

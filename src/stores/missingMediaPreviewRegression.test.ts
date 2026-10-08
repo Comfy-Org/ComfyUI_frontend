@@ -1,26 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 
-const mockApp = vi.hoisted(() => ({
-  isGraphReady: true,
-  nodePreviewImages: {},
-  nodeOutputs: {},
-  rootGraph: { nodes: [], _nodes: [] } as unknown as LGraph
-}))
-vi.mock<unknown>(import('@/scripts/app'), () => ({ app: mockApp }))
+vi.mock(import('@/scripts/app'))
 
 vi.mock(import('@/utils/graphTraversalUtil'), { spy: true })
-const mockGetNodeByExecutionId = vi.mocked(getNodeByExecutionId)
 
-vi.mock(import('@/i18n'), () => ({
-  st: vi.fn((_key: string, fallback: string) => fallback)
-}))
+vi.mock(import('@/i18n'))
 
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: false }))
 
@@ -42,15 +33,13 @@ function makeNodeWithPreview(id: number): LGraphNode {
 
 describe('FE-230 regression — workflow-load missing-media flagging must not wipe node previews', () => {
   beforeEach(() => {
-    mockApp.isGraphReady = true
-    mockApp.rootGraph = { nodes: [], _nodes: [] } as unknown as LGraph
     useSettingStore().settingValues['Comfy.RightSidePanel.ShowErrorsTab'] =
       false
   })
 
   it('does not clear node.imgs when verification flags a Load Image as missing on workflow load (e.g. mask-editor saved value)', async () => {
     const node = makeNodeWithPreview(42)
-    mockGetNodeByExecutionId.mockReturnValue(node)
+    vi.mocked(getNodeByExecutionId).mockReturnValue(node)
 
     useExecutionErrorStore()
     const missingMediaStore = useMissingMediaStore()

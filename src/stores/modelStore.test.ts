@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, reactive, ref } from 'vue'
+import { reactive, watch } from 'vue'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { assetService } from '@/platform/assets/services/assetService'
 import type * as DistributionTypes from '@/platform/distribution/types'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
-import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import { api } from '@/scripts/api'
 import {
   ResourceState,
@@ -20,16 +20,7 @@ const mockDistribution = vi.hoisted(
 
 vi.mock(import('@/platform/distribution/types'), () => mockDistribution)
 
-const remoteConfigHolder = await vi.hoisted(async () => {
-  const { ref } = await import('vue')
-  return { current: ref<RemoteConfig>({}) }
-})
-
-vi.mock(import('@/platform/remoteConfig/remoteConfig'), () => ({
-  get remoteConfig() {
-    return remoteConfigHolder.current
-  }
-}))
+vi.mock(import('@/platform/remoteConfig/remoteConfig'))
 
 const featureState = vi.hoisted(() => ({
   serverFeatures: {} as Record<string, unknown>
@@ -110,7 +101,7 @@ describe('useModelStore', () => {
   beforeEach(async () => {
     mockDistribution.isCloud = false
     featureState.serverFeatures = reactive({ assets: false })
-    remoteConfigHolder.current = ref({})
+    remoteConfig.value = {}
   })
 
   it('should load models', async () => {
@@ -211,6 +202,20 @@ describe('useModelStore', () => {
   })
 
   describe('refresh', () => {
+    it('preserves loaded models when the same source fails to refresh', async () => {
+      enableMocks(true)
+      store = useModelStore()
+      await store.loadModels()
+      const models = store.models
+      vi.mocked(assetService.getAssetModels).mockRejectedValue(
+        new Error('assets unavailable')
+      )
+
+      await expect(store.refresh()).rejects.toThrow('assets unavailable')
+
+      expect(store.models).toEqual(models)
+    })
+
     it('re-loads only folders that were previously loaded', async () => {
       enableMocks()
       store = useModelStore()
@@ -396,6 +401,70 @@ describe('useModelStore', () => {
     expect(api.getModels).toHaveBeenCalledWith('vae')
   })
 
+  it('preserves models opened while a deferred startup folder load is pending', async () => {
+    enableMocks(true)
+    store = useModelStore()
+    await store.loadModelFolders()
+    let resolveFolders!: (
+      folders: Awaited<ReturnType<typeof api.getModelFolders>>
+    ) => void
+    vi.mocked(api.getModelFolders).mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveFolders = resolve
+      })
+    )
+    const startupLoad = store.loadModelFolders()
+
+    await store.getLoadedModelFolder('checkpoints')
+    resolveFolders([
+      { name: 'checkpoints', folders: ['/path/to/checkpoints'] },
+      { name: 'vae', folders: ['/path/to/vae'] }
+    ])
+    await startupLoad
+
+    expect(store.models.map((model) => model.file_name)).toEqual([
+      'sdxl.safetensors',
+      'sdv15.safetensors',
+      'noinfo.safetensors'
+    ])
+  })
+
+  it('preserves a folder opened while replacement contents load', async () => {
+    enableMocks(true)
+    store = useModelStore()
+    await store.loadModelFolders()
+    await store.getLoadedModelFolder('checkpoints')
+
+    let resolveReplacement!: (
+      models: Awaited<ReturnType<typeof assetService.getAssetModels>>
+    ) => void
+    vi.mocked(assetService.getAssetModels).mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveReplacement = resolve
+      })
+    )
+    const rebuild = store.loadModelFolders()
+    await vi.waitFor(() => {
+      expect(assetService.getAssetModels).toHaveBeenCalledTimes(2)
+    })
+
+    vi.mocked(assetService.getAssetModels).mockResolvedValue([
+      { name: 'vae.safetensors', pathIndex: 0 }
+    ])
+    await store.getLoadedModelFolder('vae')
+    expect(store.models.map((model) => model.key)).toContain(
+      'vae/vae.safetensors'
+    )
+
+    resolveReplacement([{ name: 'fresh.safetensors', pathIndex: 0 }])
+    await rebuild
+
+    expect(store.models.map((model) => model.key)).toEqual([
+      'checkpoints/fresh.safetensors',
+      'vae/vae.safetensors'
+    ])
+  })
+
   describe('refreshModelFolder races', () => {
     it('keeps the newer refresh when an older one for the same folder finishes last', async () => {
       enableMocks()
@@ -457,10 +526,11 @@ describe('useModelStore', () => {
       resolveContents([{ name: 'stale.safetensors', pathIndex: 0 }])
       await refresh
 
-      const entry = store.modelFolders.find(
-        (f) => f.directory === 'checkpoints'
-      )!
-      expect(entry.state).toBe(ResourceState.Uninitialized)
+      expect(store.models.map((model) => model.file_name)).toEqual([
+        'sdxl.safetensors',
+        'sdv15.safetensors',
+        'noinfo.safetensors'
+      ])
     })
 
     it('does not resurrect a stale folder over a fresher structure', async () => {
@@ -600,6 +670,37 @@ describe('useModelStore', () => {
   })
 
   describe('assets capability change', () => {
+    it.for([
+      { name: 'empty', models: [] },
+      {
+        name: 'populated',
+        models: [{ name: 'legacy.safetensors', pathIndex: 0 }]
+      }
+    ])(
+      'keeps $name legacy folders retryable when switching to assets fails',
+      async ({ models }) => {
+        enableMocks(false)
+        vi.mocked(api.getModels).mockResolvedValue(models)
+        vi.mocked(assetService.getAssetModels).mockRejectedValue(
+          new Error('assets unavailable')
+        )
+        store = useModelStore()
+        await store.loadModels()
+
+        featureState.serverFeatures.assets = true
+        await vi.advanceTimersByTimeAsync(1000)
+
+        expect(
+          store.visibleModelFolders.map((folder) => folder.directory)
+        ).toEqual(['checkpoints', 'vae'])
+        vi.mocked(assetService.getAssetModels).mockResolvedValue([
+          { name: 'recovered.safetensors', pathIndex: 0 }
+        ])
+        const folder = await store.getLoadedModelFolder('checkpoints')
+        expect(Object.keys(folder!.models)).toEqual(['0/recovered.safetensors'])
+      }
+    )
+
     it('rebuilds the library when a late handshake turns the capability on', async () => {
       enableMocks(false)
       vi.mocked(assetService.getAssetModels).mockResolvedValue([
@@ -652,6 +753,36 @@ describe('useModelStore', () => {
     })
   })
 
+  describe('capability handshake', () => {
+    it('reloads once for both flags and re-loads the folders an eager load started', async () => {
+      vi.useFakeTimers()
+      enableMocks(false)
+      store = useModelStore()
+      await store.loadModelFolders()
+      const { flags } = useFeatureFlags()
+      const eagerLoads: Promise<unknown>[] = []
+      watch(
+        () => flags.assetsEnabled,
+        (enabled) => {
+          if (enabled) eagerLoads.push(store.loadModels())
+        }
+      )
+
+      featureState.serverFeatures.assets = true
+      remoteConfig.value = { supports_model_type_tags: true }
+      await vi.advanceTimersByTimeAsync(1000)
+      await Promise.all(eagerLoads)
+
+      expect(api.getModelFolders).toHaveBeenCalledTimes(2)
+      expect(store.modelFolders.map((folder) => folder.state)).toStrictEqual([
+        ResourceState.Loaded,
+        ResourceState.Loaded
+      ])
+      expect(assetService.getAssetModels).toHaveBeenCalledWith('checkpoints')
+      expect(assetService.getAssetModels).toHaveBeenCalledWith('vae')
+    })
+  })
+
   describe('model-type capability change', () => {
     it('rebuilds the library when the capability turns on', async () => {
       enableMocks(true)
@@ -687,21 +818,6 @@ describe('useModelStore', () => {
         expect(assetService.getAssetModels).toHaveBeenCalledTimes(2)
       })
       expect(assetService.invalidateModelBuckets).toHaveBeenCalled()
-    })
-
-    it('does not reload on the legacy listing path', async () => {
-      enableMocks(false)
-      store = useModelStore()
-      await store.loadModelFolders()
-      await store.getLoadedModelFolder('checkpoints')
-      expect(api.getModelFolders).toHaveBeenCalledTimes(1)
-
-      remoteConfig.value = { supports_model_type_tags: true }
-
-      await nextTick()
-      await nextTick()
-      expect(api.getModelFolders).toHaveBeenCalledTimes(1)
-      expect(assetService.invalidateModelBuckets).not.toHaveBeenCalled()
     })
   })
 

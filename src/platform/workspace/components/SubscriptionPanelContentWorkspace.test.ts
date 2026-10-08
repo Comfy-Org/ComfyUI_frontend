@@ -1,8 +1,9 @@
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useDialogService } from '@/services/dialogService'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { getActivePinia } from 'pinia'
-import { computed, ref, toRef } from 'vue'
+import { computed, nextTick, ref, toRef } from 'vue'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { render, screen } from '@testing-library/vue'
@@ -20,16 +21,31 @@ import type {
   TeamCreditStops,
   TeamCreditStopSummary
 } from '@/platform/workspace/api/workspaceApi'
+import type { BillingBannerKind } from '@/platform/workspace/composables/useBillingBanner'
 
 import SubscriptionPanelContentWorkspace from './SubscriptionPanelContentWorkspace.vue'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 const mockDistributionState = vi.hoisted(() => ({ isCloud: true }))
-
-vi.mock<unknown>(import('@/composables/billing/useBillingRouting'), () => ({
-  useBillingRouting: () => ({
-    shouldUseWorkspaceBilling: mockShouldUseWorkspaceBilling
-  })
+const mockBillingBanner = vi.hoisted(() => ({
+  kind: null as BillingBannerKind | null
 }))
+
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useBillingBanner'),
+  async () => {
+    const { computed } = await import('vue')
+    return {
+      useBillingBanner: () => ({
+        kind: computed(() => mockBillingBanner.kind),
+        audience: computed(() => null),
+        dismiss: vi.fn()
+      })
+    }
+  }
+)
+
+vi.mock(import('@/composables/billing/useBillingRouting'))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
@@ -71,7 +87,7 @@ const teamCreditStops: TeamCreditStops = {
 const mockSubscriptionStatus = ref<BillingSubscriptionStatus>('active')
 const mockBillingStatus = ref<BillingStatus>('paid')
 const mockBillingType = ref<BillingType>('workspace')
-const mockSubscriptionDuration = ref<'MONTHLY' | 'ANNUAL'>('MONTHLY')
+const mockSubscriptionDuration = ref<'MONTHLY' | 'ANNUAL' | null>('MONTHLY')
 const mockRenewalDate = ref<string | null>(RENEWAL_DATE_ISO)
 const mockEndDate = ref<string | null>(END_DATE_ISO)
 const mockScheduledChange = ref<SubscriptionInfo['scheduledChange']>(null)
@@ -159,7 +175,8 @@ const mockSubscription = computed<SubscriptionInfo | null>(() =>
         renewalDate: mockRenewalDate.value,
         endDate: mockEndDate.value,
         isCancelled: mockSubscriptionStatus.value === 'canceled',
-        hasFunds: true
+        hasFunds: true,
+        agentHasFunds: true
       }
     : null
 )
@@ -185,51 +202,18 @@ const mockIsDeleteDisabled = computed(
     !(mockSubscription.value?.isCancelled ?? false)
 )
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useWorkspaceUI'),
-  () => ({
-    useWorkspaceUI: () => ({
-      permissions: computed(() => ({
-        canManageSubscription: mockCanManageSubscription.value,
-        canManageSubscriptionLifecycle:
-          mockCanManageSubscriptionLifecycle.value,
-        canLeaveWorkspace: mockCanLeaveWorkspace.value
-      })),
-      canReactivatePlan: mockCanReactivatePlan,
-      canOpenPricingSurface: mockCanOpenPricingSurface,
-      uiConfig: computed(() => mockUiConfig.value),
-      isInPersonalWorkspace: toRef(
-        useTeamWorkspaceStore(),
-        'isInPersonalWorkspace'
-      ),
-      canAccessSubscriptionFeatures: computed(
-        () => mockIsActiveSubscription.value
-      ),
-      isSubscriptionCancelled: mockIsSubscriptionCancelled,
-      isTeamPlanCancelled: mockIsTeamPlanCancelled,
-      isDeleteDisabled: mockIsDeleteDisabled,
-      deleteDisabledTooltipKey: computed(() =>
-        mockIsDeleteDisabled.value
-          ? mockUiConfig.value.workspaceMenuDisabledTooltip
-          : null
-      )
-    })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
 vi.mock(import('@/services/dialogService'))
 
-vi.mock<unknown>(
-  import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
-  () => ({
-    useSubscriptionDialog: () => ({ showPricingTable: vi.fn() })
-  })
+vi.mock(
+  import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
 )
 
 vi.mock<unknown>(
-  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
+  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
   () => ({
     useToast: () => ({ add: vi.fn() })
   })
@@ -258,12 +242,6 @@ const StatusBadgeStub = {
   template: '<span :data-severity="severity">{{ label }}</span>'
 }
 
-const DropdownMenuStub = {
-  props: ['entries'],
-  template:
-    '<div data-testid="plan-menu"><slot name="button" /><button v-for="item in (entries || []).filter((e) => !e.separator)" :key="item.label" type="button" :disabled="item.disabled" @click="item.command?.({})">{{ item.label }}</button></div>'
-}
-
 function renderComponent({ stubFooter = true } = {}) {
   return render(SubscriptionPanelContentWorkspace, {
     global: {
@@ -274,8 +252,7 @@ function renderComponent({ stubFooter = true } = {}) {
         ...(stubFooter
           ? { SubscriptionFooterLinks: SubscriptionFooterLinksStub }
           : {}),
-        StatusBadge: StatusBadgeStub,
-        DropdownMenu: DropdownMenuStub
+        StatusBadge: StatusBadgeStub
       }
     }
   })
@@ -284,26 +261,69 @@ function renderComponent({ stubFooter = true } = {}) {
 describe('SubscriptionPanelContentWorkspace', () => {
   beforeEach(() => {
     const billing = useBillingContext()
-    Object.assign(billing, {
-      type: computed(() => mockBillingType.value),
-      canAccessSubscriptionFeatures: computed(
-        () => mockIsActiveSubscription.value
-      ),
-      isFreeTier: computed(() => mockSubscriptionTier.value === 'FREE'),
-      billingStatus: computed(() => mockBillingStatus.value),
-      subscriptionStatus: computed(() => mockSubscriptionStatus.value),
-      isTeamPlan: mockIsTeamPlan,
-      subscription: mockSubscription,
-      plans: computed(() => mockPlans.value),
-      teamCreditStops: computed(() => mockTeamCreditStops.value),
-      currentTeamCreditStop: computed(() => mockCurrentTeamCreditStop.value),
-      isLoading: mockIsLoading,
-      error: mockError
-    })
+    billing.type = computed(() => mockBillingType.value)
+    billing.canAccessSubscriptionFeatures = computed(
+      () => mockIsActiveSubscription.value
+    )
+    billing.isFreeTier = computed(() => mockSubscriptionTier.value === 'FREE')
+    billing.billingStatus = computed(() => mockBillingStatus.value)
+    billing.subscriptionStatus = computed(() => mockSubscriptionStatus.value)
+    billing.isTeamPlan = mockIsTeamPlan
+    billing.subscription = mockSubscription
+    billing.plans = computed(() => mockPlans.value)
+    billing.teamCreditStops = computed(() => mockTeamCreditStops.value)
+    billing.currentTeamCreditStop = computed(
+      () => mockCurrentTeamCreditStop.value
+    )
+    billing.isLoading = mockIsLoading
+    billing.error = mockError
     vi.mocked(billing.getMaxSeats).mockReturnValue(5)
     vi.mocked(useBillingContext).mockReturnValue(billing)
-
+    const billingRouting = vi.mocked(useBillingRouting())
+    billingRouting.shouldUseWorkspaceBilling = computed(
+      () => mockShouldUseWorkspaceBilling.value
+    )
+    const workspaceUI = vi.mocked(useWorkspaceUI())
+    const defaultPermissions = workspaceUI.permissions.value
+    workspaceUI.permissions = computed(() => ({
+      ...defaultPermissions,
+      canManageSubscription: mockCanManageSubscription.value,
+      canManageSubscriptionLifecycle: mockCanManageSubscriptionLifecycle.value,
+      canLeaveWorkspace: mockCanLeaveWorkspace.value
+    }))
+    workspaceUI.canReactivatePlan = computed(() => mockCanReactivatePlan.value)
+    workspaceUI.canOpenPricingSurface = computed(
+      () => mockCanOpenPricingSurface.value
+    )
+    const defaultUiConfig = workspaceUI.uiConfig.value
+    workspaceUI.uiConfig = computed(() => ({
+      ...defaultUiConfig,
+      ...mockUiConfig.value
+    }))
+    const isInPersonalWorkspace = toRef(
+      useTeamWorkspaceStore(),
+      'isInPersonalWorkspace'
+    )
+    workspaceUI.isInPersonalWorkspace = computed(
+      () => isInPersonalWorkspace.value
+    )
+    workspaceUI.canAccessSubscriptionFeatures = computed(
+      () => mockIsActiveSubscription.value
+    )
+    workspaceUI.isSubscriptionCancelled = computed(
+      () => mockIsSubscriptionCancelled.value
+    )
+    workspaceUI.isTeamPlanCancelled = computed(
+      () => mockIsTeamPlanCancelled.value
+    )
+    workspaceUI.isDeleteDisabled = computed(() => mockIsDeleteDisabled.value)
+    workspaceUI.deleteDisabledTooltipKey = computed(() =>
+      mockIsDeleteDisabled.value
+        ? mockUiConfig.value.workspaceMenuDisabledTooltip
+        : null
+    )
     mockDistributionState.isCloud = true
+    mockBillingBanner.kind = null
     mockSubscriptionStatus.value = 'active'
     mockBillingStatus.value = 'paid'
     mockBillingType.value = 'workspace'
@@ -457,7 +477,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
       renderComponent()
 
       expect(
-        screen.queryByRole('button', { name: /reactivate/i })
+        screen.queryByRole('button', { name: /resume subscription/i })
       ).not.toBeInTheDocument()
     })
 
@@ -469,7 +489,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
 
       expect(screen.getByText('Enterprise')).toBeInTheDocument()
       expect(
-        screen.queryByRole('button', { name: /subscribe|reactivate/i })
+        screen.queryByRole('button', { name: /subscribe|resume subscription/i })
       ).not.toBeInTheDocument()
     })
 
@@ -507,14 +527,163 @@ describe('SubscriptionPanelContentWorkspace', () => {
       ).not.toBeInTheDocument()
     })
 
-    it('keeps the cancelled badge while an Enterprise plan still runs', () => {
-      useEnterprisePlan()
-      mockSubscriptionStatus.value = 'canceled'
-      renderComponent()
+    // FE-2035: an Enterprise end date is an agreed ending set through sales,
+    // often months ahead. It must never borrow the self-serve cancelled
+    // treatment.
+    describe('end-dated Enterprise plan still running', () => {
+      const NOW = new Date('2026-09-03T12:00:00Z')
+      const DAY = 24 * 60 * 60 * 1000
 
-      expect(screen.getByText('Canceled')).toBeInTheDocument()
-      expect(screen.queryByText('Inactive')).not.toBeInTheDocument()
-      expect(screen.getByTestId('subscription-state-card')).toBeInTheDocument()
+      // The project vitest setup fakes timers for every test, so pinning the
+      // clock is just a setSystemTime away.
+      beforeEach(() => {
+        vi.setSystemTime(NOW)
+        useEnterprisePlan()
+        mockSubscriptionStatus.value = 'canceled'
+      })
+
+      function endInDays(days: number): string {
+        const iso = new Date(NOW.getTime() + days * DAY).toISOString()
+        mockEndDate.value = iso
+        return iso
+      }
+
+      it('renders as a plainly active plan outside the ending notice window', () => {
+        endInDays(30)
+        renderComponent()
+
+        expect(screen.getByText('Enterprise')).toBeInTheDocument()
+        expect(screen.queryByText('Canceled')).not.toBeInTheDocument()
+        expect(screen.queryByText('Inactive')).not.toBeInTheDocument()
+        expect(
+          screen.queryByTestId('subscription-state-card')
+        ).not.toBeInTheDocument()
+        expect(screen.queryByText(/^Ends on/)).not.toBeInTheDocument()
+        // Deliberately no date row at all: Enterprise contracts are billed
+        // yearly upfront and an end-dated one will not renew, so "Renews on"
+        // would be a false claim (decided with Sonam).
+        expect(screen.queryByText(/^Renews on/)).not.toBeInTheDocument()
+      })
+
+      it('keeps the quiet treatment inside the window, with only the end date line', () => {
+        const iso = endInDays(10)
+        renderComponent()
+
+        expect(screen.queryByText('Canceled')).not.toBeInTheDocument()
+        expect(
+          screen.queryByTestId('subscription-state-card')
+        ).not.toBeInTheDocument()
+        expect(
+          screen.getByText(`Ends on ${formatPanelDate(iso)}`)
+        ).toBeInTheDocument()
+      })
+
+      // The capability alone decides Reactivate — the server closes it for
+      // sales-managed tiers (hideLifecycleCapabilities), and the client adds
+      // no guard of its own on top (settled with the reviewer on #16934).
+      it('hides Reactivate while the capability resolves false', () => {
+        endInDays(10)
+        mockCanReactivatePlan.value = false
+        renderComponent()
+
+        expect(
+          screen.queryByRole('button', { name: /resume subscription/i })
+        ).not.toBeInTheDocument()
+      })
+
+      it('follows the capability if it ever resolves true', () => {
+        endInDays(10)
+        mockCanReactivatePlan.value = true
+        renderComponent()
+
+        expect(
+          screen.getByRole('button', { name: /resume subscription/i })
+        ).toBeInTheDocument()
+      })
+
+      it('names what stopped once the plan has ended (FE-2886)', () => {
+        endInDays(-5)
+        mockSubscriptionStatus.value = 'ended'
+        renderComponent()
+
+        expect(
+          screen.getByText(
+            "You can't run workflows or add new members. Contact sales to restore access."
+          )
+        ).toBeInTheDocument()
+      })
+
+      it('keeps the subtitle away while the plan still runs', () => {
+        endInDays(30)
+        renderComponent()
+
+        expect(
+          screen.queryByText(
+            "You can't run workflows or add new members. Contact sales to restore access."
+          )
+        ).not.toBeInTheDocument()
+      })
+
+      it('falls back to the stock cancelled treatment without an end date', () => {
+        mockEndDate.value = null
+        renderComponent()
+
+        expect(screen.getByText('Canceled')).toBeInTheDocument()
+        expect(
+          screen.getByTestId('subscription-state-card')
+        ).toBeInTheDocument()
+      })
+
+      it('falls back to the stock cancelled treatment on an unreadable end date', () => {
+        mockEndDate.value = 'not-a-date'
+        renderComponent()
+
+        expect(screen.getByText('Canceled')).toBeInTheDocument()
+        expect(
+          screen.getByTestId('subscription-state-card')
+        ).toBeInTheDocument()
+      })
+
+      it('restores the normal presentation when the end date clears between polls', async () => {
+        const iso = endInDays(10)
+        renderComponent()
+
+        expect(
+          screen.getByText(`Ends on ${formatPanelDate(iso)}`)
+        ).toBeInTheDocument()
+
+        // A webhook outage or reordering can clear cancel_at, flipping the
+        // workspace back to plainly active with a renewal date. Nothing is
+        // latched, so the presentation must follow the data.
+        mockSubscriptionStatus.value = 'active'
+        mockEndDate.value = null
+        mockRenewalDate.value = RENEWAL_DATE_ISO
+        await nextTick()
+
+        expect(
+          screen.getByText(`Renews on ${formatPanelDate(RENEWAL_DATE_ISO)}`)
+        ).toBeInTheDocument()
+        expect(screen.queryByText(/^Ends on/)).not.toBeInTheDocument()
+        expect(screen.queryByText('Canceled')).not.toBeInTheDocument()
+        expect(
+          screen.queryByTestId('subscription-state-card')
+        ).not.toBeInTheDocument()
+      })
+
+      it('leaves a cancelled unrecognized tier on the stock treatment too', () => {
+        mockSubscriptionTier.value = runtimeTier('GALACTIC')
+        mockPlanSlug.value = 'galactic_monthly'
+        endInDays(30)
+        renderComponent()
+
+        expect(screen.getByText('Canceled')).toBeInTheDocument()
+        expect(
+          screen.getByTestId('subscription-state-card')
+        ).toBeInTheDocument()
+        expect(
+          screen.getByText(`Ends on ${formatPanelDate(mockEndDate.value!)}`)
+        ).toBeInTheDocument()
+      })
     })
 
     it('renders an unrecognized tier as Current plan without catalog content', () => {
@@ -592,6 +761,24 @@ describe('SubscriptionPanelContentWorkspace', () => {
     // team_2500 yearly.price_cents 200000 -> $2,000, labelled per month.
     expect(screen.getByText('$2,000')).toBeInTheDocument()
     expect(screen.getByText('USD / mo')).toBeInTheDocument()
+  })
+
+  it('omits the price when the subscription duration is unknown', () => {
+    mockSubscriptionDuration.value = null
+    mockCurrentTeamCreditStop.value = {
+      id: 'team_2500',
+      credits_monthly: 527500,
+      stop_usd: 2500
+    }
+    renderComponent()
+
+    expect(screen.queryByText('$2,250')).not.toBeInTheDocument()
+    expect(screen.queryByText('$2,000')).not.toBeInTheDocument()
+    expect(screen.queryByText('USD / mo')).not.toBeInTheDocument()
+    expect(screen.getByText('Team')).toBeInTheDocument()
+    expect(
+      screen.getByText(`Renews on ${formatPanelDate(RENEWAL_DATE_ISO)}`)
+    ).toBeInTheDocument()
   })
 
   it('falls back to the per-member tier price until stops resolve', () => {
@@ -673,7 +860,8 @@ describe('SubscriptionPanelContentWorkspace', () => {
     expect(useBillingContext().manageSubscription).toHaveBeenCalledTimes(2)
   })
 
-  it('keeps a Personal workspace Team-plan member view read-only', () => {
+  it('keeps a Personal workspace Team-plan member view read-only', async () => {
+    const user = userEvent.setup()
     Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: true })
     mockCanManageSubscription.value = false
     mockCanManageSubscriptionLifecycle.value = false
@@ -693,17 +881,18 @@ describe('SubscriptionPanelContentWorkspace', () => {
     expect(
       screen.queryByRole('button', { name: 'Change plan' })
     ).not.toBeInTheDocument()
-    expect(
-      screen.queryByRole('button', { name: 'Edit workspace details' })
-    ).not.toBeInTheDocument()
-    expect(
-      screen.getByRole('button', { name: 'Leave Workspace' })
-    ).toBeInTheDocument()
     expect(screen.getByText('Invite members')).toBeInTheDocument()
     expect(screen.getByTestId('subscription-footer-links')).toHaveAttribute(
       'data-show-invoice-history',
       'false'
     )
+    await user.click(screen.getByRole('button', { name: 'More Options' }))
+    expect(
+      screen.queryByRole('menuitem', { name: 'Edit workspace details' })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('menuitem', { name: 'Leave Workspace' })
+    ).toBeInTheDocument()
   })
 
   it('uses Team-plan change copy in a Personal workspace', () => {
@@ -753,7 +942,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
       })
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: 'Subscribe Now' })
+      screen.getByRole('button', { name: 'Subscribe' })
     ).toBeInTheDocument()
     expect(
       screen.queryByRole('heading', { name: 'Standard' })
@@ -865,7 +1054,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     ).toBeInTheDocument()
     expect(
       screen.getByText(
-        'Reactivate your team plan to add more members and run workflows'
+        'Reactivate your Team plan to add more members and run workflows'
       )
     ).toBeInTheDocument()
     expect(
@@ -906,6 +1095,24 @@ describe('SubscriptionPanelContentWorkspace', () => {
     })
     expect(useBillingContext().resubscribe).not.toHaveBeenCalled()
   })
+
+  it.for([
+    { kind: null, showsCard: true },
+    { kind: 'ending', showsCard: false },
+    { kind: 'outOfCredits', showsCard: true },
+    { kind: 'planChange', showsCard: true }
+  ] as const)(
+    'lets the ending banner replace the canceled card (banner: $kind)',
+    ({ kind, showsCard }) => {
+      mockSubscriptionStatus.value = 'canceled'
+      mockBillingBanner.kind = kind
+      renderComponent()
+
+      expect(screen.queryByTestId('subscription-state-card') !== null).toBe(
+        showsCard
+      )
+    }
+  )
 
   it('keeps ended Team credits inactive when self-serve capabilities are unavailable', () => {
     mockSubscriptionStatus.value = 'canceled'
@@ -960,7 +1167,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
       screen.getByRole('button', { name: 'Resume subscription' })
     ).toBeInTheDocument()
     expect(
-      screen.queryByRole('button', { name: 'Subscribe Now' })
+      screen.queryByRole('button', { name: 'Subscribe' })
     ).not.toBeInTheDocument()
   })
 
@@ -991,7 +1198,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
       screen.getByText('This workspace is not on a subscription')
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: 'Subscribe Now' })
+      screen.getByRole('button', { name: 'Subscribe' })
     ).toBeInTheDocument()
     expect(screen.getByTestId('credits-tile')).toHaveAttribute(
       'data-zero-state',
@@ -1013,7 +1220,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
       screen.queryByText('This workspace is not on a subscription')
     ).not.toBeInTheDocument()
     expect(
-      screen.queryByRole('button', { name: 'Subscribe Now' })
+      screen.queryByRole('button', { name: 'Subscribe' })
     ).not.toBeInTheDocument()
     expect(screen.getByTestId('credits-tile')).toHaveAttribute(
       'data-zero-state',
@@ -1046,7 +1253,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     expect(useBillingContext().initialize).toHaveBeenCalledOnce()
   })
 
-  it('hides Subscribe Now when the server denies self-serve to a client-side owner', () => {
+  it('hides Subscribe when the server denies self-serve to a client-side owner', () => {
     mockIsActiveSubscription.value = false
     Object.assign(useTeamWorkspaceStore(), { isWorkspaceSubscribed: false })
     mockHasSubscription.value = false
@@ -1055,7 +1262,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     renderComponent()
 
     expect(
-      screen.queryByRole('button', { name: 'Subscribe Now' })
+      screen.queryByRole('button', { name: 'Subscribe' })
     ).not.toBeInTheDocument()
   })
 
@@ -1075,7 +1282,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
       screen.getByText('Contact the workspace owner to subscribe')
     ).toBeInTheDocument()
     expect(
-      screen.queryByRole('button', { name: 'Subscribe Now' })
+      screen.queryByRole('button', { name: 'Subscribe' })
     ).not.toBeInTheDocument()
     expect(screen.getByTestId('credits-tile')).toHaveAttribute(
       'data-zero-state',
@@ -1153,20 +1360,22 @@ describe('SubscriptionPanelContentWorkspace', () => {
     mockCanLeaveWorkspace.value = false
     renderComponent()
 
+    await user.click(screen.getByRole('button', { name: 'More Options' }))
     expect(
-      screen.queryByRole('button', { name: 'Cancel plan' })
+      screen.queryByRole('menuitem', { name: 'Cancel plan' })
     ).not.toBeInTheDocument()
     expect(
-      screen.queryByRole('button', { name: 'Delete Workspace' })
+      screen.queryByRole('menuitem', { name: 'Delete Workspace' })
     ).not.toBeInTheDocument()
 
     await user.click(
-      screen.getByRole('button', { name: 'Edit workspace details' })
+      screen.getByRole('menuitem', { name: 'Edit workspace details' })
     )
     expect(useDialogService().showEditWorkspaceDialog).toHaveBeenCalledOnce()
   })
 
-  it('offers a subscribed personal workspace Edit and Cancel without Delete', () => {
+  it('offers a subscribed personal workspace Edit and Cancel without Delete', async () => {
+    const user = userEvent.setup()
     Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: true })
     mockIsActiveSubscription.value = true
     mockHasSubscription.value = true
@@ -1175,17 +1384,18 @@ describe('SubscriptionPanelContentWorkspace', () => {
     mockCanLeaveWorkspace.value = false
     renderComponent()
 
+    await user.click(screen.getByRole('button', { name: 'More Options' }))
     expect(
-      screen.getByRole('button', { name: 'Edit workspace details' })
+      screen.getByRole('menuitem', { name: 'Edit workspace details' })
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: 'Cancel plan' })
+      screen.getByRole('menuitem', { name: 'Cancel plan' })
     ).toBeInTheDocument()
     expect(
-      screen.queryByRole('button', { name: 'Delete Workspace' })
+      screen.queryByRole('menuitem', { name: 'Delete Workspace' })
     ).not.toBeInTheDocument()
     expect(
-      screen.queryByRole('button', { name: 'Leave Workspace' })
+      screen.queryByRole('menuitem', { name: 'Leave Workspace' })
     ).not.toBeInTheDocument()
   })
 
@@ -1247,7 +1457,8 @@ describe('SubscriptionPanelContentWorkspace', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('offers members only Leave Workspace in the menu', () => {
+  it('offers members only Leave Workspace in the menu', async () => {
+    const user = userEvent.setup()
     mockCanManageSubscription.value = false
     mockCanManageSubscriptionLifecycle.value = false
     useBillingCapabilities().canCancel = computed(() => false)
@@ -1257,17 +1468,18 @@ describe('SubscriptionPanelContentWorkspace', () => {
     mockUiConfig.value = memberUiConfig
     renderComponent()
 
+    await user.click(screen.getByRole('button', { name: 'More Options' }))
     expect(
-      screen.getByRole('button', { name: 'Leave Workspace' })
+      screen.getByRole('menuitem', { name: 'Leave Workspace' })
     ).toBeInTheDocument()
     expect(
-      screen.queryByRole('button', { name: 'Cancel plan' })
+      screen.queryByRole('menuitem', { name: 'Cancel plan' })
     ).not.toBeInTheDocument()
     expect(
-      screen.queryByRole('button', { name: 'Edit workspace details' })
+      screen.queryByRole('menuitem', { name: 'Edit workspace details' })
     ).not.toBeInTheDocument()
     expect(
-      screen.queryByRole('button', { name: 'Delete Workspace' })
+      screen.queryByRole('menuitem', { name: 'Delete Workspace' })
     ).not.toBeInTheDocument()
   })
 
@@ -1282,7 +1494,8 @@ describe('SubscriptionPanelContentWorkspace', () => {
     mockUiConfig.value = memberUiConfig
     renderComponent()
 
-    await user.click(screen.getByRole('button', { name: 'Leave Workspace' }))
+    await user.click(screen.getByRole('button', { name: 'More Options' }))
+    await user.click(screen.getByRole('menuitem', { name: 'Leave Workspace' }))
     expect(useDialogService().showLeaveWorkspaceDialog).toHaveBeenCalledOnce()
   })
 
@@ -1290,28 +1503,31 @@ describe('SubscriptionPanelContentWorkspace', () => {
     const user = userEvent.setup()
     renderComponent()
 
+    await user.click(screen.getByRole('button', { name: 'More Options' }))
     expect(
-      screen.getByRole('button', { name: 'Edit workspace details' })
+      screen.getByRole('menuitem', { name: 'Edit workspace details' })
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: 'Leave Workspace' })
+      screen.getByRole('menuitem', { name: 'Leave Workspace' })
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: 'Delete Workspace' })
-    ).toBeDisabled()
+      screen.getByRole('menuitem', { name: 'Delete Workspace' })
+    ).toHaveAttribute('aria-disabled', 'true')
 
-    await user.click(screen.getByRole('button', { name: 'Cancel plan' }))
+    await user.click(screen.getByRole('menuitem', { name: 'Cancel plan' }))
     expect(useDialogService().showCancelSubscriptionFlow).toHaveBeenCalledWith(
       END_DATE_ISO
     )
   })
 
-  it('enables Delete for any additional workspace owner once the plan is cancelled', () => {
+  it('enables Delete for any additional workspace owner once the plan is cancelled', async () => {
+    const user = userEvent.setup()
     mockSubscriptionStatus.value = 'canceled'
     renderComponent()
 
+    await user.click(screen.getByRole('button', { name: 'More Options' }))
     expect(
-      screen.getByRole('button', { name: 'Delete Workspace' })
-    ).toBeEnabled()
+      screen.getByRole('menuitem', { name: 'Delete Workspace' })
+    ).not.toHaveAttribute('aria-disabled', 'true')
   })
 })

@@ -23,6 +23,11 @@ runs:
         # flag says billing_web, which no deployment default does.
         # browser_tests/tests/dialogs/hostedBillingDestination.spec.ts pins it.
         VITE_BILLING_WEB_URL: 'https://billing-web.example'
+        # A placeholder so embedded checkout is reachable at all: without a key
+        # the app never loads Stripe.js. Only reached when a spec turns on
+        # embedded_checked_enabled and stubs js.stripe.com, which
+        # browser_tests/tests/dialogs/embeddedCheckoutSdkRail.spec.ts does.
+        VITE_STRIPE_PUBLISHABLE_KEY: 'pk_test_e2e_placeholder'
 
     - name: Verify cloud frontend
       shell: bash

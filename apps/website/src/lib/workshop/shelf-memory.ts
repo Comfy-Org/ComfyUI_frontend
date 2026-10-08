@@ -1,5 +1,5 @@
-import type { UseCase } from '../../config/models-catalogue'
-import { USE_CASES } from '../../config/models-catalogue'
+import type { UseCase } from '@/config/models-catalogue'
+import { USE_CASES } from '@/config/models-catalogue'
 
 export type Shelf = UseCase | 'all' | 'other'
 
@@ -20,6 +20,24 @@ export function rememberShelf(shelf: Shelf, modelHref: string): void {
     // A browser that refuses storage still browses; it just starts each page
     // from the whole catalogue.
   }
+}
+
+// A middle, modified or right click opens the model somewhere else, and the
+// visitor stays on the shelf they are standing on.
+export function rememberShelfOnClick(
+  shelf: Shelf,
+  modelHref: string,
+  event: MouseEvent
+): void {
+  if (
+    event.button !== 0 ||
+    event.metaKey ||
+    event.ctrlKey ||
+    event.shiftKey ||
+    event.altKey
+  )
+    return
+  rememberShelf(shelf, modelHref)
 }
 
 // The intent belongs to one navigation. Matching the destination prevents an

@@ -7,6 +7,7 @@ import type { Auth, User, UserCredential } from 'firebase/auth'
 import * as firebaseAuth from 'firebase/auth'
 import type { Mock } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import { useTelemetry } from '@/platform/telemetry'
 
@@ -17,6 +18,10 @@ import {
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import {
+  isSurveyReplayRequested,
+  requestOnboardingReplay
+} from '@/platform/onboarding/onboardingReplay'
+import {
   cachedLegacyBillingMigrationEnabled,
   remoteConfig,
   remoteConfigState
@@ -26,6 +31,12 @@ import { useDialogService } from '@/services/dialogService'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { api } from '@/scripts/api'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
+import type { DesktopHostAuthState } from '@/platform/auth/desktopHost/desktopHostAuthBridge'
+import {
+  startDesktopHostSession,
+  stopDesktopHostSession
+} from '@/platform/auth/desktopHost/desktopHostSession'
+import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import type { IdentityObserver } from '@/utils/__tests__/stubAccountIdentityPort'
 import { replayIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
 
@@ -81,7 +92,8 @@ const mockFetchBalanceResponse = {
 
 const mockAddCreditsResponse = {
   ok: true,
-  statusText: 'OK'
+  statusText: 'OK',
+  json: () => Promise.resolve({ checkout_url: 'https://stripe.test/checkout' })
 }
 
 const mockAccessBillingPortalResponse = {
@@ -90,6 +102,15 @@ const mockAccessBillingPortalResponse = {
   json: () =>
     Promise.resolve({ billing_portal_url: 'https://billing.stripe.com/test' })
 }
+
+// A failed API response shaped so parseErrorResponse can extract `message`
+// from the JSON body via `.text()` (the real Response contract).
+const mockErrorResponse = (status: number, message: string) => ({
+  ok: false,
+  status,
+  statusText: 'Error',
+  text: () => Promise.resolve(JSON.stringify({ message }))
+})
 
 vi.mock(import('firebase/auth'))
 
@@ -231,7 +252,7 @@ describe('useAuthStore', () => {
 
     try {
       await store.login('test@example.com', 'wrong-password')
-    } catch (e) {
+    } catch {
       // Error expected
     }
 
@@ -271,6 +292,35 @@ describe('useAuthStore', () => {
 
       expect(await pending).toBeNull()
       expect(store.balance).toBeNull()
+    })
+  })
+
+  describe('fetchBalance', () => {
+    it('returns null when the customer record is not found (404)', async () => {
+      mockFetch.mockImplementation((url: string) =>
+        url.endsWith('/customers/balance')
+          ? Promise.resolve({ ok: false, status: 404, statusText: 'Not Found' })
+          : Promise.reject(new Error('Unexpected API call'))
+      )
+
+      const result = await store.fetchBalance()
+
+      expect(result).toBeNull()
+    })
+
+    it('throws with the parsed error message on a non-404 failure', async () => {
+      mockFetch.mockImplementation((url: string) =>
+        url.endsWith('/customers/balance')
+          ? Promise.resolve(mockErrorResponse(500, 'Balance service down'))
+          : Promise.reject(new Error('Unexpected API call'))
+      )
+
+      await expect(store.fetchBalance()).rejects.toMatchObject({
+        name: 'AuthStoreError',
+        message: i18n.global.t('toastMessages.failedToFetchBalance', {
+          error: 'Balance service down'
+        })
+      })
     })
   })
 
@@ -931,6 +981,20 @@ describe('useAuthStore', () => {
       // Verify the loading state is reset
       expect(store.loading).toBe(false)
     })
+
+    it('throws instead of creating a customer when the ID token is unavailable right after sign-in', async () => {
+      const mockUserCredential = { user: mockUser }
+      vi.mocked(firebaseAuth.signInWithEmailAndPassword).mockResolvedValue(
+        mockUserCredential as Partial<UserCredential> as UserCredential
+      )
+      mockUser.getIdToken.mockResolvedValueOnce(undefined)
+
+      await expect(store.login('test@example.com', 'password')).rejects.toThrow(
+        i18n.global.t('toastMessages.userNotAuthenticated')
+      )
+
+      expect(customerRequestBody()).toBeUndefined()
+    })
   })
 
   describe('register', () => {
@@ -1074,6 +1138,7 @@ describe('useAuthStore', () => {
         mockReportError,
         'a silently orphaned account bricks every retry with email-already-in-use and nobody learns'
       ).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
+        surface: 'auth',
         errorType: 'auth_signup_rollback_failed'
       })
     })
@@ -1130,6 +1195,31 @@ describe('useAuthStore', () => {
     })
   })
 
+  describe('sendPasswordReset', () => {
+    it('delegates to Firebase with the given email', async () => {
+      vi.mocked(firebaseAuth.sendPasswordResetEmail).mockResolvedValue(
+        undefined
+      )
+
+      await store.sendPasswordReset('test@example.com')
+
+      expect(firebaseAuth.sendPasswordResetEmail).toHaveBeenCalledWith(
+        mockAuth,
+        'test@example.com'
+      )
+    })
+
+    it('propagates errors from Firebase', async () => {
+      vi.mocked(firebaseAuth.sendPasswordResetEmail).mockRejectedValue(
+        new Error('user not found')
+      )
+
+      await expect(
+        store.sendPasswordReset('missing@example.com')
+      ).rejects.toThrow('user not found')
+    })
+  })
+
   describe('getIdToken', () => {
     it('should return the user ID token', async () => {
       // FIX 2: Reset the mock and set a specific return value
@@ -1170,6 +1260,30 @@ describe('useAuthStore', () => {
       resolveToken('old-user-token')
 
       await expect(tokenPromise).resolves.toBeUndefined()
+    })
+
+    it('discards an error from a token request that rejects after the account changes', async () => {
+      let rejectToken: (error: unknown) => void = () => {}
+      mockUser.getIdToken.mockReturnValueOnce(
+        new Promise((_, reject) => {
+          rejectToken = reject
+        })
+      )
+      const tokenPromise = store.getIdToken()
+      const nextUser = {
+        ...mockUser,
+        uid: 'different-user-id',
+        getIdToken: vi.fn().mockResolvedValue('different-user-token')
+      } as MockUser
+
+      authStateCallback(nextUser)
+      rejectToken(
+        new FirebaseError(firebaseAuth.AuthErrorCodes.USER_DISABLED, 'stale')
+      )
+
+      await expect(tokenPromise).resolves.toBeUndefined()
+      const dialogService = useDialogService()
+      expect(dialogService.showErrorDialog).not.toHaveBeenCalled()
     })
 
     it('should return null for token after login and logout sequence', async () => {
@@ -1415,6 +1529,43 @@ describe('useAuthStore', () => {
         )
         expect(store.loading).toBe(false)
       })
+    })
+
+    describe('finishing a closed popup’s late result', () => {
+      const credential = {
+        user: mockUser
+      } as Partial<UserCredential> as UserCredential
+
+      it.for(['loginWithGoogle', 'loginWithGithub'] as const)(
+        '%s finishes the handed-over credential without opening another popup',
+        async (method) => {
+          const result = await store[method]({
+            resumed: Promise.resolve(credential)
+          })
+
+          expect(result).toBe(credential)
+          expect(firebaseAuth.signInWithPopup).not.toHaveBeenCalled()
+          expect(customerRequestBody()).toEqual({ signup_source: 'cloud' })
+          expect(useTelemetry()?.trackAuth).toHaveBeenCalledOnce()
+        }
+      )
+
+      it.for([
+        ['loginWithGoogle', 'signInWithGoogle'],
+        ['loginWithGithub', 'signInWithGitHub']
+      ] as const)(
+        '%s hands the popup options to the identity',
+        async ([method, identityMethod]) => {
+          const signIn = vi
+            .spyOn(firebaseIdentity, identityMethod)
+            .mockResolvedValue(credential)
+          const popup = { onResumed: vi.fn(), keepLateResult: () => true }
+
+          await store[method]({ popup })
+
+          expect(signIn).toHaveBeenCalledWith(popup)
+        }
+      )
     })
 
     describe('loginWithGithub', () => {
@@ -1692,6 +1843,24 @@ describe('useAuthStore', () => {
       })
     })
 
+    it('sends cancel_subscription only when requested, and never with a target tier', async () => {
+      const bodyOf = () =>
+        mockFetch.mock.calls
+          .filter((call) => (call[0] as string).endsWith('/customers/billing'))
+          .map((call) => call[1]?.body as string | undefined)
+          .at(-1)
+
+      await store.accessBillingPortal(undefined, { cancelSubscription: true })
+      expect(JSON.parse(bodyOf()!)).toEqual({ cancel_subscription: true })
+
+      await expect(
+        store.accessBillingPortal('creator', { cancelSubscription: true })
+      ).rejects.toThrow(/target tier/)
+
+      await store.accessBillingPortal(undefined, { cancelSubscription: false })
+      expect(bodyOf()).toBeUndefined()
+    })
+
     it('should include target_tier in request body when targetTier provided', async () => {
       await store.accessBillingPortal('creator')
 
@@ -1736,6 +1905,84 @@ describe('useAuthStore', () => {
       )
 
       await expect(store.accessBillingPortal()).rejects.toThrow()
+    })
+
+    it('surfaces the parsed error message on a failed response', async () => {
+      mockFetch.mockImplementationOnce(() =>
+        Promise.resolve(mockErrorResponse(503, 'Billing portal unavailable'))
+      )
+
+      await expect(store.accessBillingPortal()).rejects.toMatchObject({
+        name: 'AuthStoreError',
+        message: i18n.global.t('toastMessages.failedToAccessBillingPortal', {
+          error: 'Billing portal unavailable'
+        })
+      })
+    })
+
+    it('throws when no authentication method is available', async () => {
+      authStateCallback(null)
+      vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue(null)
+
+      await expect(store.accessBillingPortal()).rejects.toMatchObject({
+        name: 'AuthStoreError',
+        message: i18n.global.t('toastMessages.userNotAuthenticated')
+      })
+    })
+  })
+
+  describe('addCredits / initiateCreditPurchase', () => {
+    it('throws when no authentication method is available', async () => {
+      authStateCallback(null)
+      vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue(null)
+
+      await expect(
+        store.initiateCreditPurchase({
+          amount_micros: 5_000_000,
+          currency: 'usd'
+        })
+      ).rejects.toMatchObject({
+        name: 'AuthStoreError',
+        message: i18n.global.t('toastMessages.userNotAuthenticated')
+      })
+    })
+
+    it('surfaces the parsed error message on a failed response', async () => {
+      mockFetch.mockImplementation((url: string) =>
+        url.endsWith('/customers/credit')
+          ? Promise.resolve(mockErrorResponse(402, 'Card declined'))
+          : Promise.resolve(mockCreateCustomerResponse)
+      )
+
+      await expect(
+        store.initiateCreditPurchase({
+          amount_micros: 5_000_000,
+          currency: 'usd'
+        })
+      ).rejects.toMatchObject({
+        name: 'AuthStoreError',
+        message: i18n.global.t('toastMessages.failedToInitiateCreditPurchase', {
+          error: 'Card declined'
+        }),
+        status: 402
+      })
+    })
+
+    it('skips the customer pre-flight once a customer is known to exist', async () => {
+      await store.createCustomer()
+      mockFetch.mockClear()
+      mockFetch.mockImplementation((url: string) =>
+        url.endsWith('/customers/credit')
+          ? Promise.resolve(mockAddCreditsResponse)
+          : Promise.reject(new Error('Unexpected API call'))
+      )
+
+      await store.initiateCreditPurchase({
+        amount_micros: 5_000_000,
+        currency: 'usd'
+      })
+
+      expect(customerRequestBody()).toBeUndefined()
     })
   })
 
@@ -1854,6 +2101,70 @@ describe('useAuthStore', () => {
       const error = await store.createCustomer().catch((e: unknown) => e)
       expect(error).toBeInstanceOf(AuthStoreError)
       expect((error as AuthStoreError).status).toBe(422)
+    })
+
+    it('throws when the response is ok but carries no customer id', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({})
+      })
+
+      await expect(store.createCustomer()).rejects.toMatchObject({
+        name: 'AuthStoreError',
+        message: i18n.global.t('toastMessages.failedToCreateCustomer', {
+          error: 'No customer ID returned'
+        })
+      })
+    })
+
+    it('rejects a customer record created before an A->B Firebase identity switch', async () => {
+      let signalCustomerRequested: () => void = () => {}
+      const customerRequested = new Promise<void>((resolve) => {
+        signalCustomerRequested = resolve
+      })
+      let resolveJson: (value: unknown) => void = () => {}
+      const customerJson = new Promise((resolve) => {
+        resolveJson = resolve
+      })
+      mockFetch.mockImplementation((url: string) => {
+        if (url.endsWith('/customers')) {
+          signalCustomerRequested()
+          return Promise.resolve({
+            ok: true,
+            statusText: 'OK',
+            json: () => customerJson
+          })
+        }
+        return Promise.reject(new Error('Unexpected API call'))
+      })
+
+      // The auth header is resolved for account A; only the response body
+      // (fetched below) races the A->B switch.
+      const createPromise = store.createCustomer()
+      await customerRequested
+      authStateCallback({ ...mockUser, uid: 'different-user-id' })
+      resolveJson({ id: 'test-customer-id' })
+
+      await expect(createPromise).rejects.toMatchObject({
+        name: 'AuthStoreError',
+        message: i18n.global.t('toastMessages.userNotAuthenticated')
+      })
+
+      // A subsequent credit pre-flight must still provision a customer for
+      // this (different) identity rather than trusting the stale flag.
+      mockFetch.mockClear()
+      mockFetch.mockImplementation((url: string) =>
+        url.endsWith('/customers/credit')
+          ? Promise.resolve(mockAddCreditsResponse)
+          : Promise.resolve(mockCreateCustomerResponse)
+      )
+
+      await store.initiateCreditPurchase({
+        amount_micros: 5_000_000,
+        currency: 'usd'
+      })
+
+      expect(customerRequestBody()).toEqual({ signup_source: 'cloud' })
     })
   })
 
@@ -2018,6 +2329,38 @@ describe('useAuthStore', () => {
 
       const response = await store.fetchWithCustomerRecovery(
         'https://api.test/foo/customers/bar'
+      )
+
+      expect(response.status).toBe(409)
+      expect(countCustomerPosts()).toBe(0)
+    })
+
+    it('does not treat an unparsable URL as a customer endpoint', async () => {
+      mockFetch.mockImplementation(() =>
+        Promise.resolve(makeConflictResponse())
+      )
+
+      const response = await store.fetchWithCustomerRecovery('http://')
+
+      expect(response.status).toBe(409)
+      expect(countCustomerPosts()).toBe(0)
+    })
+
+    it('passes through a 409 whose body cannot be parsed without provisioning', async () => {
+      mockFetch.mockImplementation(() =>
+        Promise.resolve({
+          ok: false,
+          status: 409,
+          statusText: 'Conflict',
+          json: () => Promise.reject(new Error('invalid json')),
+          clone: () => ({
+            json: () => Promise.reject(new Error('invalid json'))
+          })
+        })
+      )
+
+      const response = await store.fetchWithCustomerRecovery(
+        'https://api.test/customers/balance'
       )
 
       expect(response.status).toBe(409)
@@ -2248,6 +2591,14 @@ describe('useAuthStore', () => {
       expect(mockResetSocket).toHaveBeenCalledTimes(1)
     })
 
+    it('clears an onboarding replay on a direct account switch', () => {
+      requestOnboardingReplay(mockUser.uid)
+
+      authStateCallback(accountB)
+
+      expect(isSurveyReplayRequested(mockUser.uid)).toBe(false)
+    })
+
     it('discards a remote config response from the previous account', async () => {
       let resolveAccountA: ((response: Response) => void) | undefined
       let accountASignal: AbortSignal | undefined
@@ -2256,15 +2607,17 @@ describe('useAuthStore', () => {
           (_route, options) =>
             new Promise<Response>((resolve) => {
               accountASignal = options?.signal ?? undefined
+              options?.onAuthHeader?.(true)
               resolveAccountA = resolve
             })
         )
-        .mockResolvedValueOnce(
-          new Response(
+        .mockImplementationOnce(async (_route, options) => {
+          options?.onAuthHeader?.(true)
+          return new Response(
             JSON.stringify({ legacy_billing_migration_enabled: false }),
             { status: 200 }
           )
-        )
+        })
 
       const accountARefresh = refreshRemoteConfig()
       await vi.waitFor(() => expect(api.fetchApi).toHaveBeenCalledTimes(1))
@@ -2422,6 +2775,189 @@ describe('useAuthStore in local/desktop distribution', () => {
       mintSpy,
       'mintAtLogin is gated on isCloud; local/desktop has no Cloud workspace JWT to mint'
     ).not.toHaveBeenCalled()
+  })
+
+  describe('with the Desktop host session', () => {
+    const hostBridge = (state: DesktopHostAuthState) => {
+      const listeners = new Set<(next: DesktopHostAuthState) => void>()
+      return {
+        getState: vi.fn(async () => state),
+        getWorkspaceToken: vi.fn(
+          async (_workspaceId: string): Promise<string | null> => 'host-token'
+        ),
+        requestSignIn: vi.fn(async () => state),
+        signOut: vi.fn(
+          async (): Promise<DesktopHostAuthState> => ({ status: 'signed_out' })
+        ),
+        onChanged: vi.fn((listener: (next: DesktopHostAuthState) => void) => {
+          listeners.add(listener)
+          return () => listeners.delete(listener)
+        }),
+        push: (next: DesktopHostAuthState) =>
+          listeners.forEach((listener) => listener(next))
+      }
+    }
+
+    beforeEach(() => {
+      vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue({
+        'X-API-KEY': 'stored-key'
+      })
+    })
+
+    afterEach(() => stopDesktopHostSession())
+
+    it('uses the Desktop account over the Firebase user and stored API key', async () => {
+      const bridge = hostBridge({
+        status: 'signed_in',
+        userId: 'host-user',
+        email: 'host@example.com',
+        workspaceId: 'ws-host'
+      })
+      await startDesktopHostSession(bridge)
+
+      expect(store.isAuthenticated).toBe(true)
+      expect(store.userId).toBe('host-user')
+      expect(store.userEmail).toBe('host@example.com')
+      await expect(store.getWorkspaceAuthToken()).resolves.toBe('host-token')
+      await expect(store.getAuthToken()).resolves.toBe('host-token')
+      const hostHeader = { Authorization: 'Bearer host-token' }
+      await expect(store.getAuthHeader()).resolves.toEqual(hostHeader)
+      await expect(store.getUserAuthHeader()).resolves.toEqual(hostHeader)
+      await expect(store.getWorkspaceAuthHeader()).resolves.toEqual(hostHeader)
+      expect(bridge.getWorkspaceToken).toHaveBeenCalledWith('ws-host')
+      expect(mockUser.getIdToken).not.toHaveBeenCalled()
+    })
+
+    it('has no workspace credential when no workspace is known', async () => {
+      const bridge = hostBridge({ status: 'signed_in', userId: 'host-user' })
+      await startDesktopHostSession(bridge)
+
+      await expect(store.getWorkspaceAuthToken()).resolves.toBeUndefined()
+      await expect(store.getAuthToken()).resolves.toBeUndefined()
+      await expect(store.getWorkspaceAuthHeader()).resolves.toBeNull()
+      expect(bridge.getWorkspaceToken).not.toHaveBeenCalled()
+    })
+
+    it('keeps the existing sign-in while no Desktop account is signed in', async () => {
+      const bridge = hostBridge({ status: 'signed_out' })
+      await startDesktopHostSession(bridge)
+
+      expect(store.isAuthenticated).toBe(true)
+      expect(store.userId).toBe('local-user-id')
+      await expect(store.getAuthToken()).resolves.toBe('mock-id-token')
+      expect(bridge.getWorkspaceToken).not.toHaveBeenCalled()
+    })
+
+    it('drops a token fetched for a workspace the tab switched away from', async () => {
+      const bridge = hostBridge({ status: 'signed_in', userId: 'host-user' })
+      let release: (token: string) => void = () => {}
+      bridge.getWorkspaceToken.mockReturnValueOnce(
+        new Promise((resolve) => {
+          release = resolve
+        })
+      )
+      await startDesktopHostSession(bridge)
+      Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-a' })
+
+      const fetching = store.getWorkspaceAuthToken()
+      Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-b' })
+      release('token-for-a')
+
+      await expect(fetching).resolves.toBeUndefined()
+    })
+
+    it.for([
+      { name: 'matches', hostWorkspace: 'ws-a', expected: 'host-token' },
+      { name: 'differs', hostWorkspace: 'ws-b', expected: undefined }
+    ])(
+      'uses the Desktop token for this tab only when its workspace $name',
+      async ({ hostWorkspace, expected }) => {
+        const bridge = hostBridge({ status: 'signed_in', userId: 'host-user' })
+        bridge.getWorkspaceToken.mockImplementation(async (workspaceId) =>
+          workspaceId === hostWorkspace ? 'host-token' : null
+        )
+        await startDesktopHostSession(bridge)
+        Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-a' })
+
+        await expect(store.getWorkspaceAuthToken()).resolves.toBe(expected)
+        await expect(store.getWorkspaceAuthHeader()).resolves.toEqual(
+          expected ? { Authorization: `Bearer ${expected}` } : null
+        )
+        expect(bridge.getWorkspaceToken).toHaveBeenCalledWith('ws-a')
+      }
+    )
+
+    it('drops the previous account state when Desktop switches accounts', async () => {
+      const bridge = hostBridge({ status: 'signed_in', userId: 'host-a' })
+      await startDesktopHostSession(bridge)
+      const resetTeams = vi.spyOn(
+        useTeamWorkspaceStore(),
+        'resetForIdentityChange'
+      )
+      const clearWorkspace = vi.spyOn(
+        useWorkspaceAuthStore(),
+        'clearWorkspaceContext'
+      )
+      store.balance = fromPartial<NonNullable<typeof store.balance>>({
+        amount_micros: 5
+      })
+
+      bridge.push({ status: 'signed_in', userId: 'host-b' })
+      await nextTick()
+
+      expect(store.userId).toBe('host-b')
+      expect(resetTeams).toHaveBeenCalledOnce()
+      expect(clearWorkspace).toHaveBeenCalledOnce()
+      expect(store.balance).toBeNull()
+    })
+
+    it('signs Desktop out on logout and drops an earlier stored API key', async () => {
+      const apiKeyStore = useApiKeyAuthStore()
+      let storedKey: string | null = 'stored-key'
+      vi.mocked(apiKeyStore.getApiKey).mockImplementation(() => storedKey)
+      vi.mocked(apiKeyStore.clearStoredApiKey).mockImplementation(async () => {
+        storedKey = null
+      })
+      const bridge = hostBridge({ status: 'signed_in', userId: 'host-user' })
+      await startDesktopHostSession(bridge)
+
+      await store.logout()
+
+      expect(bridge.signOut).toHaveBeenCalledOnce()
+      expect(store.userId).not.toBe('host-user')
+      expect(apiKeyStore.clearStoredApiKey).toHaveBeenCalledOnce()
+      expect(apiKeyStore.getApiKey()).toBeNull()
+    })
+
+    it('keeps the stored API key on a logout that was not a Desktop host one', async () => {
+      const apiKeyStore = useApiKeyAuthStore()
+      vi.mocked(apiKeyStore.getApiKey).mockReturnValue('stored-key')
+      await startDesktopHostSession(hostBridge({ status: 'signed_out' }))
+
+      await store.logout()
+
+      expect(apiKeyStore.clearStoredApiKey).not.toHaveBeenCalled()
+    })
+
+    it('reports a failed logout when Desktop keeps its session', async () => {
+      const signedIn: DesktopHostAuthState = {
+        status: 'signed_in',
+        userId: 'host-user'
+      }
+      const bridge = hostBridge(signedIn)
+      bridge.signOut.mockResolvedValue(signedIn)
+      await startDesktopHostSession(bridge)
+
+      await expect(store.logout()).rejects.toBeInstanceOf(AuthStoreError)
+      expect(store.isAuthenticated).toBe(true)
+    })
+
+    it('keeps the Firebase user when Desktop does not share its session', async () => {
+      await startDesktopHostSession(hostBridge({ status: 'disabled' }))
+
+      expect(store.userId).toBe('local-user-id')
+      await expect(store.getAuthToken()).resolves.toBe('mock-id-token')
+    })
   })
 })
 
