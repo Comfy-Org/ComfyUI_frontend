@@ -2851,7 +2851,7 @@ describe('AgentPanelRoot attach flow', () => {
         await vi.waitFor(() =>
           expect(
             telemetry.trackAgentAttachButtonClicked
-          ).toHaveBeenCalledExactlyOnceWith({ method: 'drag_drop' })
+          ).toHaveBeenCalledExactlyOnceWith()
         )
       }
     }
