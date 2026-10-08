@@ -1,4 +1,9 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
+
 import { expect } from '@playwright/test'
+
+import { websiteRoot } from '@website/paths'
 
 import en from '@/locales/en/main.json' with { type: 'json' }
 import ja from '@/locales/ja/main.json' with { type: 'json' }
@@ -23,41 +28,42 @@ test.describe('Locale catalogs', () => {
     test(`${path} downloads only the ${loaded.join(' and ')} catalogs`, async ({
       page
     }) => {
-      await page.addInitScript(() =>
-        performance.setResourceTimingBufferSize(10_000)
-      )
+      const assetRequests: string[] = []
+      page.on('request', (request) => assetRequests.push(request.url()))
       await page.goto(path)
       await expectIslandHydrated(
         page,
         page.getByRole('navigation', { name: 'Main navigation' })
       )
 
-      const downloaded = await page.evaluate(async (copies) => {
-        const sources = await Promise.all(
-          [
-            ...new Set(
-              performance
-                .getEntriesByType('resource')
-                .map((entry) => entry.name)
-            )
-          ]
+      const downloaded = await page.evaluate(
+        async ({ copies, requests }) => {
+          const assets = requests
             .map((name) => new URL(name))
             .filter(
               (url) =>
                 url.origin === location.origin &&
                 /^\/_website\/.*\.(js|json)$/.test(url.pathname)
             )
-            .map(async (url) => ({
-              path: url.pathname,
-              source: await (await fetch(url)).text()
+          const sources = await Promise.all(
+            [...new Set(assets.map((url) => url.href))].map(async (href) => ({
+              href,
+              source: await (await fetch(href)).text()
             }))
-        )
-        return Object.entries(copies).flatMap(([locale, copy]) =>
-          sources
-            .filter(({ source }) => source.includes(copy))
-            .map(({ path }) => ({ locale, path }))
-        )
-      }, copyOnlyIn)
+          )
+          return Object.entries(copies).flatMap(([locale, copy]) =>
+            assets
+              .filter((url) =>
+                sources.some(
+                  ({ href, source }) =>
+                    href === url.href && source.includes(copy)
+                )
+              )
+              .map((url) => ({ locale, path: url.pathname }))
+          )
+        },
+        { copies: copyOnlyIn, requests: [...assetRequests] }
+      )
       expect(
         downloaded.map(({ locale }) => locale),
         JSON.stringify(downloaded)
@@ -88,11 +94,17 @@ test.describe('Locale catalogs', () => {
   })
 
   test('retains only the incoming language catalog links', async ({ page }) => {
+    const catalogRequests: string[] = []
+    page.on('request', (request) => {
+      if (/\/_website\/main\.[^/]+\.json$/.test(request.url()))
+        catalogRequests.push(request.url())
+    })
     await page.goto('/zh-CN/')
     const japaneseLink = page
       .getByRole('contentinfo')
       .getByRole('link', { name: '日本語', exact: true })
     await waitForIsland(page, japaneseLink)
+    const initialRequestCount = catalogRequests.length
     await japaneseLink.click()
     await expect(page).toHaveURL(/\/ja\/$/)
     await waitForIsland(page, japaneseLink)
@@ -102,6 +114,80 @@ test.describe('Locale catalogs', () => {
     await expect(page.locator('link[data-locale-catalog="zh-CN"]')).toHaveCount(
       0
     )
+    expect(catalogRequests.slice(initialRequestCount)).toHaveLength(1)
+  })
+
+  test('replaces a persisted catalog link when the incoming build changes its URL', async ({
+    page,
+    context
+  }) => {
+    await page.goto('/')
+    const englishCatalog = page.locator('link[data-locale-catalog="en"]')
+    const previousHref = await englishCatalog.getAttribute('href')
+    if (!previousHref) throw new Error('Expected an English catalog URL')
+    const nextHref = `${previousHref}?revision=next`
+    const html = readFileSync(
+      join(websiteRoot, 'dist/cli/index.html'),
+      'utf8'
+    ).replaceAll(previousHref, nextHref)
+    await context.route('**/cli/', (route) =>
+      route.fulfill({ contentType: 'text/html', body: html })
+    )
+    const cliLink = page
+      .getByRole('contentinfo')
+      .getByRole('link', { name: 'Comfy CLI', exact: true })
+    await waitForIsland(page, cliLink)
+    await cliLink.click()
+    await expect(page).toHaveURL(/\/cli\/$/)
+    await waitForIsland(page, cliLink)
+    await expect(englishCatalog).toHaveAttribute('href', nextHref)
+    await expect(englishCatalog).toHaveCount(1)
+  })
+
+  test('a stalled earlier catalog does not block a later language switch', async ({
+    page,
+    context
+  }) => {
+    const catalogRequested = Promise.withResolvers<void>()
+    const releaseCatalog = Promise.withResolvers<void>()
+    const fullNavigations: string[] = []
+    page.on('request', (request) => {
+      if (request.isNavigationRequest())
+        fullNavigations.push(new URL(request.url()).pathname)
+    })
+    await page.goto('/')
+    const footer = page.getByRole('contentinfo')
+    const chineseLink = footer.getByRole('link', {
+      name: '简体中文',
+      exact: true
+    })
+    const japaneseLink = footer.getByRole('link', {
+      name: '日本語',
+      exact: true
+    })
+    await waitForIsland(page, chineseLink)
+    await context.route(
+      /\/_website\/main\.[^/]+\.json$/,
+      async (route) => {
+        catalogRequested.resolve()
+        await releaseCatalog.promise
+        await route.continue()
+      },
+      { times: 1 }
+    )
+    try {
+      await chineseLink.click()
+      await catalogRequested.promise
+      await japaneseLink.click()
+      await expect(page).toHaveURL(/\/ja\/$/)
+      await waitForIsland(page, chineseLink)
+      await chineseLink.click()
+      await expect(page).toHaveURL(/\/zh-CN\/$/)
+      await waitForIsland(page, chineseLink)
+      expect(fullNavigations).toEqual(['/'])
+    } finally {
+      releaseCatalog.resolve()
+    }
   })
 
   test('switching language before the locale module starts keeps the new page interactive', async ({
@@ -252,28 +338,119 @@ test.describe('Locale catalogs', () => {
     }
   })
 
-  test('a failed initial catalog request recovers through the bundled catalog', async ({
+  for (const { failure, path, status, button, dialog } of [
+    {
+      failure: 'an HTTP error',
+      path: '/zh-CN/cli/',
+      status: 503,
+      button: '切换菜单',
+      dialog: '菜单'
+    },
+    {
+      failure: 'empty English',
+      path: '/cli/',
+      status: 200,
+      button: 'Toggle menu',
+      dialog: 'Menu'
+    },
+    {
+      failure: 'empty active',
+      path: '/zh-CN/cli/',
+      status: 200,
+      button: '切换菜单',
+      dialog: '菜单'
+    }
+  ]) {
+    test(`${failure} initial catalog recovers through the bundled catalog`, async ({
+      page,
+      context
+    }) => {
+      await page.setViewportSize({ width: 390, height: 844 })
+      await context.route(/\/_website\/main\.[^/]+\.json$/, (route) =>
+        route.fulfill({
+          status,
+          contentType: 'application/json',
+          body: '{}'
+        })
+      )
+
+      await page.goto(path)
+      const menuButton = page.getByRole('button', { name: button })
+      await waitForIsland(page, menuButton)
+      await menuButton.click()
+      await expect(
+        page.getByRole('dialog', { name: dialog, exact: true })
+      ).toBeVisible()
+    })
+  }
+
+  test('a stalled initial catalog recovers through the bundled catalog', async ({
     page,
     context
   }) => {
+    const releaseCatalogs = Promise.withResolvers<void>()
     await page.setViewportSize({ width: 390, height: 844 })
-    await context.route(/\/_website\/main\.[^/]+\.json$/, (route) =>
-      route.fulfill({
-        status: 503,
-        contentType: 'application/json',
-        body: '{}'
-      })
-    )
+    await context.route(/\/_website\/main\.[^/]+\.json$/, async (route) => {
+      await releaseCatalogs.promise
+      await route.continue()
+    })
+    try {
+      await page.goto('/zh-CN/cli/', { waitUntil: 'commit' })
+      const menuButton = page.getByRole('button', { name: '切换菜单' })
+      await expect(async () => {
+        await expectIslandHydrated(page, menuButton)
+      }).toPass({ timeout: 15_000 })
+      await menuButton.click()
+      await expect(
+        page.getByRole('dialog', { name: '菜单', exact: true })
+      ).toBeVisible()
+    } finally {
+      releaseCatalogs.resolve()
+    }
+  })
 
-    await page.goto('/zh-CN/cli/')
-    const menuButton = page.getByRole('button', { name: '切换菜单' })
-    await waitForIsland(page, menuButton)
-    await menuButton.click()
-    await expect(page.getByRole('dialog', { name: '菜单' })).toBeVisible()
+  test('a timed-out navigation catalog recovers through a full-page retry', async ({
+    page,
+    context
+  }) => {
+    const releaseCatalog = Promise.withResolvers<void>()
+    const fullNavigations: string[] = []
+    page.on('request', (request) => {
+      if (request.isNavigationRequest())
+        fullNavigations.push(new URL(request.url()).pathname)
+    })
+    await page.goto('/cli/')
+    const chineseLink = page
+      .getByRole('contentinfo')
+      .getByRole('link', { name: '简体中文', exact: true })
+    await waitForIsland(page, chineseLink)
+    await context.route(
+      /\/_website\/main\.[^/]+\.json$/,
+      async (route) => {
+        await releaseCatalog.promise
+        await route.continue()
+      },
+      { times: 1 }
+    )
+    try {
+      await chineseLink.click()
+      await expect(page).toHaveURL(/\/zh-CN\/cli\/$/, { timeout: 15_000 })
+      await waitForIsland(page, chineseLink)
+      expect(fullNavigations).toEqual(['/cli/', '/zh-CN/cli/'])
+      await expect(
+        page
+          .getByRole('contentinfo')
+          .getByRole('link', { name: '工作流', exact: true })
+          .first()
+      ).toBeVisible()
+    } finally {
+      releaseCatalog.resolve()
+    }
   })
 
   for (const { failure, status, body } of [
     { failure: 'an HTTP error', status: 503, body: '{}' },
+    { failure: 'an empty catalog', status: 200, body: '{}' },
     { failure: 'an invalid catalog', status: 200, body: '{"invalid":42}' }
   ]) {
     test(`recovers from ${failure} during a language switch`, async ({

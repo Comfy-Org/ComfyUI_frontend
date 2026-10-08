@@ -2,6 +2,7 @@ import { createI18n } from 'vue-i18n'
 
 import { DEFAULT_LOCALE, LOCALE_CODES, resolveLocale } from '@/config/locales'
 import type { Locale } from '@/config/locales'
+import { combineAbortSignals, createTimeoutSignal } from '@/utils/abortSignal'
 
 const catalogLoaders = {
   en: () => import('@/locales/en/main.json', { with: { type: 'json' } }),
@@ -54,20 +55,24 @@ function isMessageTree(value: unknown): value is MessageTree {
 
 async function fetchDeclaredCatalog(
   page: Document,
-  locale: Locale
+  locale: Locale,
+  signal?: AbortSignal
 ): Promise<MessageTree | undefined> {
   const href = page
     .querySelector(`link[data-locale-catalog="${locale}"]`)
     ?.getAttribute('href')
   if (!href) return undefined
-  const response = await fetch(href)
+  const timeout = createTimeoutSignal(10_000)
+  const response = await fetch(href, {
+    signal: signal ? combineAbortSignals([signal, timeout]) : timeout
+  })
   if (!response.ok) {
     throw new Error(
       `The ${locale} catalog at ${href} returned ${response.status}`
     )
   }
   const catalog: unknown = await response.json()
-  if (!isMessageTree(catalog)) {
+  if (!isMessageTree(catalog) || Object.keys(catalog).length === 0) {
     throw new Error(`The ${locale} catalog at ${href} is not a message catalog`)
   }
   return catalog
@@ -76,8 +81,14 @@ async function fetchDeclaredCatalog(
 const loadedLocales = new Set<Locale>()
 const localeLoads = new Map<Locale, Promise<void>>()
 
-async function addCatalog(locale: Locale, page?: Document): Promise<void> {
-  const declared = page ? await fetchDeclaredCatalog(page, locale) : undefined
+async function addCatalog(
+  locale: Locale,
+  page?: Document,
+  signal?: AbortSignal
+): Promise<void> {
+  const declared = page
+    ? await fetchDeclaredCatalog(page, locale, signal)
+    : undefined
   const catalog = declared ?? (await catalogLoaders[locale]()).default
   for (const composer of Object.values(composers)) {
     composer.setLocaleMessage(locale, catalog)
@@ -85,10 +96,14 @@ async function addCatalog(locale: Locale, page?: Document): Promise<void> {
   loadedLocales.add(locale)
 }
 
-function loadLocale(locale: Locale, page?: Document): Promise<void> {
+function loadLocale(
+  locale: Locale,
+  page?: Document,
+  signal?: AbortSignal
+): Promise<void> {
   const load =
     localeLoads.get(locale) ??
-    addCatalog(locale, page).catch((error: unknown) => {
+    addCatalog(locale, page, signal).catch((error: unknown) => {
       localeLoads.delete(locale)
       throw error
     })
@@ -116,8 +131,15 @@ if (pageDocument) {
   await loadLocale(locale, pageDocument).catch(() => loadLocale(locale))
 }
 
-export function loadPageLocale(page: Document): Promise<void> {
-  return loadLocale(resolveLocale(page.documentElement.lang), page)
+export async function loadPageLocale(
+  page: Document,
+  signal?: AbortSignal
+): Promise<void> {
+  const locale = resolveLocale(page.documentElement.lang)
+  await loadLocale(locale, page, signal)
+  page
+    .querySelector(`link[data-locale-catalog="${locale}"]`)
+    ?.removeAttribute('rel')
 }
 
 export function translationsFor(locale: Locale) {

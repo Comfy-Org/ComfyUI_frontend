@@ -65,7 +65,11 @@ page's locale; calling `translationsFor` with any other locale throws. A new
 layout that hosts islands should include `LocaleCatalogPreloads`. `BaseLayout`
 registers catalog preparation before `ClientRouter`, so navigation also waits
 when it starts before the island modules load. If an initial catalog request
-fails, the browser retries with its bundled catalog chunk.
+fails or exceeds ten seconds, the browser retries with its bundled catalog
+chunk. Failed navigation loads use a full-page retry; a superseded navigation
+cancels its catalog fetch. Catalog links persist only when their locale and
+build URL match, and navigation consumes each catalog without repeating its
+preload request.
 
 `main.json` is the catalog for each locale. Keep feature copy grouped under a
 nested feature key.
