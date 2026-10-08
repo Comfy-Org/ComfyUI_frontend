@@ -198,7 +198,7 @@ describe('useExecutionStore - NodeLocatorId conversions', () => {
       const result = store.nodeLocatorIdToExecutionId(locatorId)
 
       expect(
-        vi.mocked(useWorkflowStore().nodeLocatorIdToNodeExecutionId)
+        useWorkflowStore().nodeLocatorIdToNodeExecutionId
       ).toHaveBeenCalledWith(locatorId)
       expect(result).toBe(mockExecutionId)
     })
@@ -1372,9 +1372,9 @@ describe('useExecutionStore - progress_text startup guard', () => {
       fireProgressText({ nodeId: toNodeId('1:2'), text: 'warming up' })
     ).not.toThrow()
 
-    expect(
-      vi.mocked(useWorkflowStore().executionIdToCurrentId)
-    ).toHaveBeenCalledWith('1:2')
+    expect(useWorkflowStore().executionIdToCurrentId).toHaveBeenCalledWith(
+      '1:2'
+    )
     expect(mockShowTextPreview).not.toHaveBeenCalled()
   })
 })

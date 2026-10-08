@@ -52,14 +52,14 @@ describe('useCompositorEditor', () => {
   it('shows a toast and keeps the dialog closed without cached layers', () => {
     mountComposable().openCompositorEditor(node)
 
-    expect(vi.mocked(useToastStore().add)).toHaveBeenCalledWith(
+    expect(useToastStore().add).toHaveBeenCalledWith(
       expect.objectContaining({
         severity: 'info',
         summary: 'Layer editor',
         detail: 'Run the workflow first'
       })
     )
-    expect(vi.mocked(useDialogStore().showDialog)).not.toHaveBeenCalled()
+    expect(useDialogStore().showDialog).not.toHaveBeenCalled()
   })
 
   it('shows a toast when layers are cached without a fingerprint', () => {
@@ -69,14 +69,14 @@ describe('useCompositorEditor', () => {
 
     mountComposable().openCompositorEditor(node)
 
-    expect(vi.mocked(useToastStore().add)).toHaveBeenCalledWith(
+    expect(useToastStore().add).toHaveBeenCalledWith(
       expect.objectContaining({
         severity: 'info',
         summary: 'Layer editor',
         detail: 'Run the workflow first'
       })
     )
-    expect(vi.mocked(useDialogStore().showDialog)).not.toHaveBeenCalled()
+    expect(useDialogStore().showDialog).not.toHaveBeenCalled()
   })
 
   it('opens the layer editor in compositor mode when layers are cached', () => {
@@ -88,8 +88,8 @@ describe('useCompositorEditor', () => {
 
     mountComposable().openCompositorEditor(node)
 
-    expect(vi.mocked(useToastStore().add)).not.toHaveBeenCalled()
-    expect(vi.mocked(useDialogStore().showDialog)).toHaveBeenCalledWith(
+    expect(useToastStore().add).not.toHaveBeenCalled()
+    expect(useDialogStore().showDialog).toHaveBeenCalledWith(
       expect.objectContaining({
         key: 'global-layer-editor',
         props: { node, mode: 'compositor' }

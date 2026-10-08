@@ -2267,7 +2267,7 @@ describe('useTeamWorkspaceStore', () => {
       const result = await store.acceptInvite('invite-token')
 
       expect(mockWorkspaceApi.list).toHaveBeenCalledTimes(1)
-      expect(vi.mocked(reportError)).toHaveBeenCalledWith(
+      expect(reportError).toHaveBeenCalledWith(
         expect.objectContaining({ status: 503 }),
         expect.objectContaining({
           errorType: 'error_refreshing_workspaces_after_invite_accept'

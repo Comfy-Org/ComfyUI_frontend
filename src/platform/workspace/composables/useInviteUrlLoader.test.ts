@@ -185,9 +185,7 @@ describe('useInviteUrlLoader', () => {
       const { loadInviteFromUrl } = useInviteUrlLoader()
       await loadInviteFromUrl()
 
-      expect(
-        vi.mocked(useDialogService().showInviteLinkInvalidDialog)
-      ).toHaveBeenCalled()
+      expect(useDialogService().showInviteLinkInvalidDialog).toHaveBeenCalled()
       expect(mockToastAdd).not.toHaveBeenCalled()
       expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
     })
@@ -206,10 +204,10 @@ describe('useInviteUrlLoader', () => {
       await loadInviteFromUrl()
 
       expect(
-        vi.mocked(useDialogService().showInviteLinkInvalidDialog)
+        useDialogService().showInviteLinkInvalidDialog
       ).not.toHaveBeenCalled()
       expect(
-        vi.mocked(useDialogService().showInviteWrongAccountDialog)
+        useDialogService().showInviteWrongAccountDialog
       ).toHaveBeenCalledWith({ inviteToken: 'other-account-token' })
       expect(mockToastAdd).not.toHaveBeenCalled()
     })
@@ -254,7 +252,7 @@ describe('useInviteUrlLoader', () => {
       await loadInviteFromUrl()
 
       expect(
-        vi.mocked(useDialogService().showInviteWrongAccountDialog)
+        useDialogService().showInviteWrongAccountDialog
       ).toHaveBeenCalledTimes(wrongAccountDialogs)
       expect(mockToastAdd.mock.calls).toEqual(toasts)
       expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
@@ -272,7 +270,7 @@ describe('useInviteUrlLoader', () => {
       await loadInviteFromUrl()
 
       expect(
-        vi.mocked(useDialogService().showInviteLinkInvalidDialog)
+        useDialogService().showInviteLinkInvalidDialog
       ).not.toHaveBeenCalled()
       expect(mockToastAdd).toHaveBeenCalledWith(
         expect.objectContaining({ severity: 'error' })

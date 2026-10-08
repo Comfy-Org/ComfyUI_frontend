@@ -1668,7 +1668,7 @@ describe('comfy-api calls on the shared web session', () => {
 
     await webSessionResourceHeader().catch(() => undefined)
 
-    expect(vi.mocked(reportError)).toHaveBeenCalledTimes(reported ? 1 : 0)
+    expect(reportError).toHaveBeenCalledTimes(reported ? 1 : 0)
   })
 
   it('mints again once the cached token is within a minute of expiry', async () => {

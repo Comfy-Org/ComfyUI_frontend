@@ -2879,7 +2879,7 @@ describe('useAgentSession (v1 composition root)', () => {
       expect(conversation.activeTurnId).toBe('msg-2')
       expect(session.isStreaming.value).toBe(true)
       expect(session.notices.value).toEqual([])
-      expect(vi.mocked(reportError)).not.toHaveBeenCalledWith(
+      expect(reportError).not.toHaveBeenCalledWith(
         expect.anything(),
         expect.objectContaining({ errorType: 'agent_cancel_turn_failed' })
       )

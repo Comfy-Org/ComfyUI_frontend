@@ -208,7 +208,7 @@ describe('useLayerEditorExport', () => {
     expect(blob).toBeInstanceOf(Blob)
     expect(exporting.value).toBe(false)
     expect(session.requestRender).toHaveBeenCalled()
-    expect(vi.mocked(useToastStore().add)).not.toHaveBeenCalled()
+    expect(useToastStore().add).not.toHaveBeenCalled()
   })
 
   it('shows an error toast when writing fails', async () => {
@@ -221,7 +221,7 @@ describe('useLayerEditorExport', () => {
     await exportPsd()
 
     expect(downloadBlob).not.toHaveBeenCalled()
-    expect(vi.mocked(useToastStore().add)).toHaveBeenCalledWith(
+    expect(useToastStore().add).toHaveBeenCalledWith(
       expect.objectContaining({
         severity: 'error',
         detail: 'layerEditor.exportPsdFailed'

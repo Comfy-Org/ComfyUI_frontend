@@ -129,7 +129,7 @@ describe('PendingInvitesList', () => {
     expect(writeText).toHaveBeenCalledWith(
       `${window.location.origin}/?invite=tok-9`
     )
-    expect(vi.mocked(useToastStore().add)).toHaveBeenCalledWith(
+    expect(useToastStore().add).toHaveBeenCalledWith(
       expect.objectContaining({
         severity: 'success',
         summary: 'workspacePanel.inviteLinks.copiedToast'
@@ -194,7 +194,7 @@ describe('PendingInvitesList', () => {
     expect(writeText).toHaveBeenCalledWith(
       `${window.location.origin}/?invite=tok-9`
     )
-    expect(vi.mocked(useToastStore().add)).toHaveBeenCalledWith(
+    expect(useToastStore().add).toHaveBeenCalledWith(
       expect.objectContaining({
         severity: 'error',
         summary: 'workspacePanel.inviteLinks.copyFailedToast'

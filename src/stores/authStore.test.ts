@@ -447,9 +447,7 @@ describe('useAuthStore', () => {
           })
         })
       )
-      expect(
-        vi.mocked(useApiKeyAuthStore().getAuthHeader)
-      ).not.toHaveBeenCalled()
+      expect(useApiKeyAuthStore().getAuthHeader).not.toHaveBeenCalled()
     })
 
     it('initiateCreditPurchase sends the stored API key when no Firebase user exists', async () => {
@@ -1903,9 +1901,7 @@ describe('useAuthStore', () => {
       })
 
       await expect(store.createCustomer()).rejects.toThrow()
-      expect(
-        vi.mocked(useApiKeyAuthStore().getAuthHeader)
-      ).not.toHaveBeenCalled()
+      expect(useApiKeyAuthStore().getAuthHeader).not.toHaveBeenCalled()
       expect(fetch).not.toHaveBeenCalled()
     })
 

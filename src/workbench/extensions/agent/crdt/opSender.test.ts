@@ -1952,14 +1952,14 @@ describe('createOpSender', () => {
     expect(() => sender.enqueue([addNode(1)])).not.toThrow()
 
     expect(sent).toHaveLength(0)
-    expect(vi.mocked(reportError)).toHaveBeenCalledExactlyOnceWith(
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
       new Error('frame serialization failed'),
       expect.objectContaining({ errorType: 'failure_sending_agent_human_ops' })
     )
 
     vi.advanceTimersByTime(1_500)
 
-    expect(vi.mocked(reportError)).toHaveBeenCalledTimes(1)
+    expect(reportError).toHaveBeenCalledTimes(1)
 
     transportThrows = false
     vi.advanceTimersByTime(500)
@@ -2015,13 +2015,13 @@ describe('createOpSender', () => {
 
     sender.enqueue([addNode(1)])
 
-    expect(vi.mocked(reportError)).not.toHaveBeenCalled()
+    expect(reportError).not.toHaveBeenCalled()
 
     transportThrows = true
     vi.advanceTimersByTime(1_500)
 
     expect(sent).toHaveLength(0)
-    expect(vi.mocked(reportError)).toHaveBeenCalledTimes(1)
+    expect(reportError).toHaveBeenCalledTimes(1)
 
     transportThrows = false
     transportUp = true
@@ -2038,7 +2038,7 @@ describe('createOpSender', () => {
     // resend reports from an unarmed flag and pins nothing.
     transportThrows = true
     sender.enqueue([addNode(1)])
-    expect(vi.mocked(reportError)).toHaveBeenCalledTimes(1)
+    expect(reportError).toHaveBeenCalledTimes(1)
 
     transportThrows = false
     vi.advanceTimersByTime(500)
@@ -2047,20 +2047,20 @@ describe('createOpSender', () => {
     transportThrows = true
     vi.advanceTimersByTime(10_000)
 
-    expect(vi.mocked(reportError)).toHaveBeenCalledTimes(2)
+    expect(reportError).toHaveBeenCalledTimes(2)
   })
 
   it('does not report again when resume continues the delivery suspend parked', () => {
     transportThrows = true
     sender.enqueue([addNode(1)])
-    expect(vi.mocked(reportError)).toHaveBeenCalledTimes(1)
+    expect(reportError).toHaveBeenCalledTimes(1)
 
     sender.suspend()
     vi.advanceTimersByTime(500)
     sender.resume()
 
     expect(sent).toHaveLength(0)
-    expect(vi.mocked(reportError)).toHaveBeenCalledTimes(1)
+    expect(reportError).toHaveBeenCalledTimes(1)
   })
 
   it('never settles a batch with a result whose ops it does not own', () => {

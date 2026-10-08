@@ -103,7 +103,7 @@ describe('useCompositorPsdDownload', () => {
     )
     expect(session.dispose).toHaveBeenCalledTimes(1)
     expect(exporting.value).toBe(false)
-    expect(vi.mocked(useToastStore().add)).not.toHaveBeenCalled()
+    expect(useToastStore().add).not.toHaveBeenCalled()
   })
 
   it('reports an error and still disposes when WebGL is unavailable', async () => {
@@ -115,7 +115,7 @@ describe('useCompositorPsdDownload', () => {
     await downloadPsd(node)
 
     expect(downloadBlob).not.toHaveBeenCalled()
-    expect(vi.mocked(useToastStore().add)).toHaveBeenCalledWith(
+    expect(useToastStore().add).toHaveBeenCalledWith(
       expect.objectContaining({
         severity: 'error',
         detail: 'layerEditor.webglUnavailable'
@@ -135,7 +135,7 @@ describe('useCompositorPsdDownload', () => {
 
     expect(buildSessionPsdBlob).not.toHaveBeenCalled()
     expect(downloadBlob).not.toHaveBeenCalled()
-    expect(vi.mocked(useToastStore().add)).toHaveBeenCalledTimes(1)
+    expect(useToastStore().add).toHaveBeenCalledTimes(1)
     expect(session.dispose).toHaveBeenCalledTimes(1)
   })
 
@@ -149,7 +149,7 @@ describe('useCompositorPsdDownload', () => {
     await downloadPsd(node)
 
     expect(downloadBlob).not.toHaveBeenCalled()
-    expect(vi.mocked(useToastStore().add)).toHaveBeenCalledTimes(1)
+    expect(useToastStore().add).toHaveBeenCalledTimes(1)
     expect(session.dispose).toHaveBeenCalledTimes(1)
     expect(exporting.value).toBe(false)
   })
@@ -162,7 +162,7 @@ describe('useCompositorPsdDownload', () => {
     await downloadPsd(node)
 
     expect(downloadBlob).not.toHaveBeenCalled()
-    expect(vi.mocked(useToastStore().add)).toHaveBeenCalledTimes(1)
+    expect(useToastStore().add).toHaveBeenCalledTimes(1)
     expect(exporting.value).toBe(false)
   })
 

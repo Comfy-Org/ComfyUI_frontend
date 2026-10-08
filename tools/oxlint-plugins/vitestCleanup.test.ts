@@ -405,6 +405,27 @@ it('allows assigning a local named fetch', () => {
 })
 `
 
+const mockedInExpectFixture = `import { expect, it, vi } from 'vitest'
+import * as Vitest from 'vitest'
+
+const store = { save: vi.fn() }
+
+it('reports vi.mocked as the direct subject of expect', () => {
+  expect(vi.mocked(store.save)).toHaveBeenCalled()
+  expect(vi.mocked(console.warn)).not.toHaveBeenCalled()
+  expect.soft(Vitest.vi.mocked(store.save)).toHaveBeenCalledOnce()
+  expect(vi.mocked(store).save).toHaveBeenCalled()
+})
+
+it('allows vi.mocked where its type is needed', () => {
+  expect(vi.mocked(store.save).mock.calls).toEqual([])
+  expect(vi.mocked(store).save.mock.calls).toEqual([])
+  expect(store.save).toHaveBeenCalled()
+  vi.mocked(store.save).mockReturnValue(undefined)
+  expect([vi.mocked(store.save)]).toHaveLength(1)
+})
+`
+
 function expectReportsAt(
   output: string,
   lines: readonly number[],
@@ -424,6 +445,10 @@ describe('Vitest cleanup rules', () => {
     workDir = mkdtempSync(path.join(tmpdir(), 'comfy-vitest-cleanup-'))
     writeFileSync(path.join(workDir, 'invalid.test.ts'), invalidFixture)
     writeFileSync(path.join(workDir, 'console.test.ts'), consoleFixture)
+    writeFileSync(
+      path.join(workDir, 'mocked-in-expect.test.ts'),
+      mockedInExpectFixture
+    )
     writeFileSync(path.join(workDir, 'fetch.test.ts'), fetchFixture)
     writeFileSync(path.join(workDir, 'litegraph.test.ts'), liteGraphFixture)
     writeFileSync(
@@ -440,6 +465,7 @@ describe('Vitest cleanup rules', () => {
           {
             files: ['**/*.test.ts'],
             rules: {
+              'comfy/no-mocked-in-expect': 'warn',
               'comfy/no-module-scope-vitest-mocks': 'warn',
               'comfy/no-persistent-litegraph-registration': 'warn',
               'comfy/no-redundant-console-spy': 'warn',
@@ -460,6 +486,7 @@ describe('Vitest cleanup rules', () => {
         path.join(workDir, '.oxlintrc.json'),
         'invalid.test.ts',
         'console.test.ts',
+        'mocked-in-expect.test.ts',
         'fetch.test.ts',
         'litegraph.test.ts',
         'mock-instance.test.ts',
@@ -550,6 +577,13 @@ describe('Vitest cleanup rules', () => {
     expect(
       stripVTControlCharacters(output).match(/fetch\.test\.ts:\d+:/g)
     ).toHaveLength(8)
+  })
+
+  it('reports vi.mocked only as the direct subject of expect', () => {
+    expectReportsAt(output, [7, 8, 9, 10], 'mocked-in-expect.test.ts')
+    expect(
+      stripVTControlCharacters(output).match(/mocked-in-expect\.test\.ts:\d+:/g)
+    ).toHaveLength(4)
   })
 
   it('ignores unrelated names, nested helpers, test bodies, and Playwright specs', () => {
