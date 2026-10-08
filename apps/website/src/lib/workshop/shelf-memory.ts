@@ -3,7 +3,7 @@ import { USE_CASES } from '@/config/models-catalogue'
 
 export type Shelf = UseCase | 'all' | 'other'
 
-const KEY = 'comfy-models-shelf'
+export const SHELF_STORAGE_KEY = 'comfy-models-shelf'
 
 interface ShelfReturn {
   readonly shelf: Shelf
@@ -15,7 +15,10 @@ interface ShelfReturn {
 export function rememberShelf(shelf: Shelf, modelHref: string): void {
   try {
     const modelPath = new URL(modelHref, window.location.origin).pathname
-    sessionStorage.setItem(KEY, JSON.stringify({ shelf, modelPath }))
+    sessionStorage.setItem(
+      SHELF_STORAGE_KEY,
+      JSON.stringify({ shelf, modelPath })
+    )
   } catch {
     // A browser that refuses storage still browses; it just starts each page
     // from the whole catalogue.
@@ -45,8 +48,8 @@ export function rememberShelfOnClick(
 // an unrelated later visit from reusing it.
 export function lastShelf(modelPath: string): Shelf | undefined {
   try {
-    const stored = sessionStorage.getItem(KEY)
-    sessionStorage.removeItem(KEY)
+    const stored = sessionStorage.getItem(SHELF_STORAGE_KEY)
+    sessionStorage.removeItem(SHELF_STORAGE_KEY)
     if (!stored) return undefined
     const parsed: unknown = JSON.parse(stored)
     if (!isShelfReturn(parsed) || parsed.modelPath !== modelPath)

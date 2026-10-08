@@ -3,13 +3,14 @@ import { render, screen, within } from '@testing-library/vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { WorkshopModel } from '@/config/models-catalogue'
+import { SHELF_STORAGE_KEY } from '@/lib/workshop/shelf-memory'
 import { useCaseLabelKey } from '@/lib/workshop/use-case-label'
 import { captureWorkshopEvent } from '@/scripts/posthog'
 import WorkshopSections from './WorkshopSections.vue'
 
 vi.mock(import('@/scripts/posthog'))
 
-afterEach(() => sessionStorage.clear())
+afterEach(() => sessionStorage.removeItem(SHELF_STORAGE_KEY))
 
 function model(
   slug: string,
