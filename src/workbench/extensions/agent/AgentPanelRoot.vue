@@ -920,6 +920,10 @@ const restoreOpMinter = attachRestoreOpMinter({
   isDocBound: () => isBoundWorkflowActive.value,
   enqueue: enqueueHumanOperations,
   getGraph: () => (app.isGraphReady ? app.rootGraph : null),
+  docInputNames: (nodeId) => {
+    const parsed = parseNodeId(nodeId)
+    return parsed === null ? null : docInputNames(parsed)
+  },
   isRestoringState: () =>
     workflowStore.activeWorkflow?.changeTracker?._restoringState === true
 })

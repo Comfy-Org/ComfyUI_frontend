@@ -22,7 +22,7 @@ defineProps<{ column: NavColumn; layout?: 'column' | 'row' }>()
     v-else-if="column.header"
     :class="
       cn(
-        'font-formula text-xs font-medium text-primary-warm-gray',
+        'font-formula text-xs font-medium text-primary-warm-gray uppercase',
         layout !== 'row' && 'pl-2'
       )
     "
