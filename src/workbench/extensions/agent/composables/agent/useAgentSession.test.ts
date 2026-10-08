@@ -4915,7 +4915,7 @@ describe('useAgentSession (v1 composition root)', () => {
     }
   })
 
-  it('(g42) an open approval keeps the turn live despite a newer terminal row', async () => {
+  it('(g42) a newer terminal row retires an older pending approval', async () => {
     vi.useFakeTimers()
     try {
       const rest = fakeRest({
@@ -4941,8 +4941,8 @@ describe('useAgentSession (v1 composition root)', () => {
       status(true)
       await vi.advanceTimersByTimeAsync(0)
 
-      expect(session.isStreaming.value).toBe(true)
-      expect(approvalParts(session)).toHaveLength(1)
+      expect(session.isStreaming.value).toBe(false)
+      expect(approvalParts(session)).toHaveLength(0)
     } finally {
       vi.useRealTimers()
     }

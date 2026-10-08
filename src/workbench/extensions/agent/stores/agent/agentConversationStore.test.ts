@@ -894,6 +894,7 @@ describe('useAgentConversationStore', () => {
     store.retireAsk('turn-1:call-1')
 
     store.hydrate(parkedTranscript)
+    store.hydrate(parkedTranscript)
 
     expect(
       store.messages.some((message) =>

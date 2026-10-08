@@ -235,10 +235,11 @@ function mergeAdjacentTextParts(
 }
 
 function terminalRecoveryParts(
-  rows: AgentMessages
+  rows: AgentMessages,
+  isAskUnavailable: (askId: string) => boolean
 ): AssistantMessage['parts'] | undefined {
   const parts = mergeAdjacentTextParts(
-    normalizeAgentTranscript(rows).messages[0]?.parts ?? []
+    normalizeAgentTranscript(rows, isAskUnavailable).messages[0]?.parts ?? []
   )
   if (parts.length > 0) return parts
   if (rows.every((row) => row.status !== 'error')) return undefined
@@ -526,6 +527,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     cause: RecoveryCause
     rerun: boolean
     rerunCause: RecoveryCause
+    automaticRerun: boolean
   }
   const recoveringTurns = new Map<string, RunningRecovery>()
   interface PendingAskObservation {
@@ -586,6 +588,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const previous = recoveryThreadMissingCounts.get(key) ?? 0
     if (outcome.kind === 'thread-missing') {
       const consecutive = previous + 1
+      recoveryThreadMissingCounts.delete(key)
       recoveryThreadMissingCounts.set(key, consecutive)
       return consecutive
     }
@@ -1735,11 +1738,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
   function newChat(
     source?: Exclude<AgentSessionThreadStartSource, 'first_open'>
   ): void {
-    if (conversationStore.threadId !== null)
-      clearLateAskReports(conversationStore.threadId)
-    recoveryPendingAskObservations.clear()
-    recoveryThreadMissingCounts.clear()
-    automaticRecoveryReruns.clear()
     readyThreadId.value = null
     loadGeneration++
     promptEditState.value = { phase: 'idle' }
@@ -1763,11 +1761,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     threadId: string,
     isNavigationCurrent: () => boolean = () => true
   ): Promise<boolean> {
-    if (conversationStore.threadId !== null)
-      clearLateAskReports(conversationStore.threadId)
-    recoveryPendingAskObservations.clear()
-    recoveryThreadMissingCounts.clear()
-    automaticRecoveryReruns.clear()
     readyThreadId.value = null
     const generation = ++loadGeneration
     promptEditState.value = { phase: 'idle' }
@@ -1984,17 +1977,20 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   async function reconcileTurn(
     turn: LiveTurn,
-    cause: RecoveryCause
+    cause: RecoveryCause,
+    automaticRerun = false
   ): Promise<void> {
     observeSkillTurn(turn)
     const key = recoveryKey(turn)
     if (deferToRunningRecovery(key, cause)) return
+    if (!automaticRerun) automaticRecoveryReruns.delete(key)
     const recovery = new AbortController()
     const state = {
       controller: recovery,
       cause,
       rerun: false,
-      rerunCause: cause
+      rerunCause: cause,
+      automaticRerun: false
     }
     recoveringTurns.set(key, state)
     const deadline = setTimeout(
@@ -2009,9 +2005,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
         recovery.signal
       )
       if (needsRerun && (automaticRecoveryReruns.get(key) ?? 0) < 1) {
+        automaticRecoveryReruns.delete(key)
         automaticRecoveryReruns.set(key, 1)
         pruneRecoveryLedgers()
         state.rerun = true
+        state.automaticRerun = true
       } else if (!needsRerun) automaticRecoveryReruns.delete(key)
     } catch (error) {
       // `onStatus` floats this job (`void reconcileTurn(turn)`), so a rethrow
@@ -2054,7 +2052,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (recoveringTurns.get(key)?.controller !== recovery) return
     recoveringTurns.delete(key)
     if (state.rerun && isTurnLive(turn, ownedGeneration))
-      void reconcileTurn(turn, state.rerunCause)
+      void reconcileTurn(turn, state.rerunCause, state.automaticRerun)
   }
 
   async function recoverTurn(
@@ -2238,7 +2236,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
     if (
       deliveredAsks.has(askId) &&
-      (!conversationStore.isApprovalShown(turn, askId) ||
+      (conversationStore.isApprovalShown(turn, askId) ||
         conversationStore.submittedAskSelection(askId) !== undefined)
     ) {
       withdrawLateAskReport(event.data.thread_id, askId)
@@ -2368,19 +2366,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
               !isTerminalTurnStatus(row.status) && row.pending_ask !== undefined
           )?.pending_ask
         }
-      const openPendingAsk = rows.findLast(
-        (row) =>
-          !isTerminalTurnStatus(row.status) &&
-          row.pending_ask !== undefined &&
-          conversationStore.submittedAskSelection(row.pending_ask.ask_id) ===
-            undefined &&
-          !conversationStore.isAskRetired(row.pending_ask.ask_id, turn.threadId)
-      )?.pending_ask
-      if (openPendingAsk !== undefined)
-        return { kind: 'streaming', pendingAsk: openPendingAsk }
       return {
         kind: 'terminal',
-        parts: terminalRecoveryParts(rows)
+        parts: terminalRecoveryParts(
+          rows,
+          (askId) =>
+            conversationStore.isAskRetired(askId, turn.threadId) ||
+            conversationStore.submittedAskSelection(askId) !== undefined
+        )
       }
     } catch (error) {
       if (signal.aborted) throw error

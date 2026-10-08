@@ -1163,14 +1163,15 @@ export const useAgentConversationStore = defineStore(
      * raised the card is left exactly as the transcript describes it.
      */
     function dropResolvedAsks(
-      transcript: ReturnType<typeof normalizeAgentTranscript>
+      transcript: ReturnType<typeof normalizeAgentTranscript>,
+      history: AgentMessages
     ): void {
       const retired = retiredAsksFor()
       const named = new Set(
-        transcript.messages.flatMap((message) =>
-          message.parts.flatMap((part) =>
-            part.type === 'runApproval' ? [part.askId] : []
-          )
+        history.flatMap((row) =>
+          row.pending_ask?.kind === 'run_approval'
+            ? [row.pending_ask.ask_id]
+            : []
         )
       )
       for (const askId of retired) if (!named.has(askId)) retired.delete(askId)
@@ -1184,14 +1185,16 @@ export const useAgentConversationStore = defineStore(
       if (activeSlot.value) rememberDepartedActiveTurn('no-live-turn')
       disposeActiveAndSettledTransports()
       clearActive()
-      const transcript = normalizeAgentTranscript(history, (askId) =>
-        isAskRetired(askId)
+      const transcript = normalizeAgentTranscript(
+        history,
+        (askId) =>
+          isAskRetired(askId) || submittedAskSelection(askId) !== undefined
       )
       // Only the card is retired, never the turn: answering it is what lets
       // the turn RESUME, so it is still live and still needs a transport, or
       // every frame of the rest of it is dropped and the row stays "Working…"
       // with nothing able to settle it.
-      dropResolvedAsks(transcript)
+      dropResolvedAsks(transcript, history)
       messages.value = transcript.messages
       resolvedPaywallIds.value = new Set()
       userTexts.value = transcript.userTexts
