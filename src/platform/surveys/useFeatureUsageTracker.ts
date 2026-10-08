@@ -10,6 +10,7 @@ interface FeatureUsage {
 type FeatureUsageRecord = Partial<Record<string, FeatureUsage>>
 
 const STORAGE_KEY = 'Comfy.FeatureUsage'
+const pendingUsage = new Map<string, FeatureUsage>()
 
 function latestUsage(
   storedUsage: FeatureUsage | undefined,
@@ -33,9 +34,21 @@ function incrementUsage(
   }
 }
 
+function applyPendingUsage(usageData: FeatureUsageRecord) {
+  return {
+    ...usageData,
+    ...Object.fromEntries(
+      [...pendingUsage].map(([featureId, usage]) => [
+        featureId,
+        latestUsage(usageData[featureId], usage)
+      ])
+    )
+  }
+}
+
 function persistUsageData(
   featureId: string,
-  currentUsage: FeatureUsage | undefined,
+  currentUsageData: FeatureUsageRecord,
   now: number
 ) {
   try {
@@ -43,16 +56,18 @@ function persistUsageData(
     const storedUsageData = oldValue
       ? (JSON.parse(oldValue) as FeatureUsageRecord)
       : {}
+    const mergedUsageData = applyPendingUsage(storedUsageData)
     const usageData = {
-      ...storedUsageData,
+      ...mergedUsageData,
       [featureId]: incrementUsage(
-        latestUsage(storedUsageData[featureId], currentUsage),
+        latestUsage(mergedUsageData[featureId], currentUsageData[featureId]),
         now
       )
     }
     const newValue = JSON.stringify(usageData)
 
     localStorage.setItem(STORAGE_KEY, newValue)
+    pendingUsage.clear()
     window.dispatchEvent(
       new StorageEvent('storage', {
         key: STORAGE_KEY,
@@ -79,16 +94,28 @@ export function useFeatureUsageTracker(featureId: string) {
 
   function trackUsage() {
     const now = Date.now()
-    const existing = usageData.value[featureId]
+    const currentUsageData = usageData.value
+    const existing = currentUsageData[featureId]
 
-    usageData.value = persistUsageData(featureId, existing, now) ?? {
-      ...usageData.value,
+    const persistedUsageData = persistUsageData(
+      featureId,
+      currentUsageData,
+      now
+    )
+    const nextUsageData = persistedUsageData ?? {
+      ...currentUsageData,
       [featureId]: incrementUsage(existing, now)
     }
+    if (!persistedUsageData) {
+      const nextUsage = nextUsageData[featureId]
+      if (nextUsage) pendingUsage.set(featureId, nextUsage)
+    }
+    usageData.value = nextUsageData
   }
 
   function reset() {
     delete usageData.value[featureId]
+    pendingUsage.delete(featureId)
   }
 
   return {
