@@ -118,18 +118,25 @@ describe('ConversationView', () => {
     resizeCallbacks.length = 0
   })
 
-  it.for(['live', 'history'])(
-    'renders and edits the skill from a %s message alongside a workflow reference',
-    async (source) => {
-      const store = useAgentConversationStore()
-      const marker =
-        '[Use the saved skill /portrait](skill://portrait?description=Use%20defaults)'
-      if (source === 'live') {
+  it.for<{
+    source: string
+    arrange: (
+      store: ReturnType<typeof useAgentConversationStore>,
+      marker: string
+    ) => void
+  }>([
+    {
+      source: 'live',
+      arrange: (store, marker) => {
         store.recordUser(T, `${marker} render it`, undefined, undefined, [
           { id: 'wf', name: 'Reference', textOffset: marker.length }
         ])
         store.startTurn(T)
-      } else {
+      }
+    },
+    {
+      source: 'history',
+      arrange: (store, marker) =>
         store.hydrate([
           {
             id: 'row',
@@ -144,7 +151,14 @@ describe('ConversationView', () => {
             }
           }
         ])
-      }
+    }
+  ])(
+    'renders and edits the skill from a $source message alongside a workflow reference',
+    async ({ arrange }) => {
+      const store = useAgentConversationStore()
+      const marker =
+        '[Use the saved skill /portrait](skill://portrait?description=Use%20defaults)'
+      arrange(store, marker)
       const view = render(ConversationView, {
         props: { entries: store.entries, editableTurnId: T },
         global: { plugins: [i18n] }

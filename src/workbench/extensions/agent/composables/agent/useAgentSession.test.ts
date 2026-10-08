@@ -379,32 +379,28 @@ describe('useAgentSession (v1 composition root)', () => {
     telemetry.trackAgentStopClicked.mockClear()
   })
 
-  it.for([
-    'reference',
-    'load_skill',
-    'cancel',
-    'error',
-    'background',
-    'unrelated'
-  ] as const)(
-    'refreshes saved skills once after a live %s turn ends',
-    async (kind) => {
-      const skills = useSkillPacksStore()
-      skills.flagsEnabled = true
-      vi.mocked(listSkillPacks).mockResolvedValue([])
-      await skills.refreshPacks()
-      const { source, emit } = fakeEvents()
-      const session = useAgentSession({ rest: fakeRest(), events: source })
-      session.start()
-      await session.sendMessage(
-        kind !== 'load_skill' && kind !== 'unrelated'
-          ? serializeSkillReference({
-              name: 'portrait',
-              description: 'Original'
-            })
-          : 'ordinary text'
-      )
-      if (kind === 'load_skill')
+  it.for<{
+    kind: string
+    content: string
+    duringTurn: (turn: {
+      session: ReturnType<typeof useAgentSession>
+      emit: (raw: unknown) => void
+    }) => void | Promise<void>
+    firstEndEvent: unknown
+  }>([
+    {
+      kind: 'reference',
+      content: serializeSkillReference({
+        name: 'portrait',
+        description: 'Original'
+      }),
+      duringTurn: ({ emit }) => emitDeltaBurst(emit, 3),
+      firstEndEvent: done('msg-1')
+    },
+    {
+      kind: 'load_skill',
+      content: 'ordinary text',
+      duringTurn: ({ emit }) => {
         emit(
           wire({
             type: 'agent_tool_call',
@@ -417,21 +413,84 @@ describe('useAgentSession (v1 composition root)', () => {
             }
           })
         )
-      emitDeltaBurst(emit, 3)
-      if (kind === 'cancel') await session.stopTurn()
-      if (kind === 'background') session.newChat()
+        emitDeltaBurst(emit, 3)
+      },
+      firstEndEvent: done('msg-1')
+    },
+    {
+      kind: 'cancel',
+      content: serializeSkillReference({
+        name: 'portrait',
+        description: 'Original'
+      }),
+      duringTurn: async ({ session, emit }) => {
+        emitDeltaBurst(emit, 3)
+        await session.stopTurn()
+      },
+      firstEndEvent: done('msg-1')
+    },
+    {
+      kind: 'error',
+      content: serializeSkillReference({
+        name: 'portrait',
+        description: 'Original'
+      }),
+      duringTurn: ({ emit }) => emitDeltaBurst(emit, 3),
+      firstEndEvent: {
+        type: 'agent_message_done',
+        data: { message_id: 'msg-1' }
+      }
+    },
+    {
+      kind: 'background',
+      content: serializeSkillReference({
+        name: 'portrait',
+        description: 'Original'
+      }),
+      duringTurn: ({ session, emit }) => {
+        emitDeltaBurst(emit, 3)
+        session.newChat()
+      },
+      firstEndEvent: done('msg-1')
+    }
+  ])(
+    'refreshes saved skills once after a live $kind turn ends',
+    async ({ content, duringTurn, firstEndEvent }) => {
+      const skills = useSkillPacksStore()
+      skills.flagsEnabled = true
+      vi.mocked(listSkillPacks).mockResolvedValue([])
+      await skills.refreshPacks()
+      const { source, emit } = fakeEvents()
+      const session = useAgentSession({ rest: fakeRest(), events: source })
+      session.start()
+      await session.sendMessage(content)
+      await duringTurn({ session, emit })
       expect(listSkillPacks).toHaveBeenCalledOnce()
-      emit(
-        kind === 'error'
-          ? { type: 'agent_message_done', data: { message_id: 'msg-1' } }
-          : done('msg-1')
-      )
+      emit(firstEndEvent)
       emit(done('msg-1'))
       await Promise.resolve()
-      expect(listSkillPacks).toHaveBeenCalledTimes(kind === 'unrelated' ? 1 : 2)
+      expect(listSkillPacks).toHaveBeenCalledTimes(2)
       session.stop()
     }
   )
+
+  it('does not refresh saved skills after a live turn without a skill reference or load_skill call ends', async () => {
+    const skills = useSkillPacksStore()
+    skills.flagsEnabled = true
+    vi.mocked(listSkillPacks).mockResolvedValue([])
+    await skills.refreshPacks()
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest: fakeRest(), events: source })
+    session.start()
+    await session.sendMessage('ordinary text')
+    emitDeltaBurst(emit, 3)
+    expect(listSkillPacks).toHaveBeenCalledOnce()
+    emit(done('msg-1'))
+    emit(done('msg-1'))
+    await Promise.resolve()
+    expect(listSkillPacks).toHaveBeenCalledOnce()
+    session.stop()
+  })
 
   it('refreshes a referenced turn recovered as failed only once', async () => {
     const skills = useSkillPacksStore()
@@ -4370,17 +4429,36 @@ describe('useAgentSession (v1 composition root)', () => {
     })
   })
 
-  it.for(['accepted', 'failed'])(
-    'uses existing message content for skill invocation and retains its display when the send is %s',
-    async (outcome) => {
-      const rest = fakeRest()
-      if (outcome === 'failed')
-        vi.mocked(rest.postMessage).mockRejectedValue(new Error('Unavailable'))
+  it.for<{
+    outcome: string
+    postMessage: AgentRestClient['postMessage']
+    accepted: boolean
+  }>([
+    {
+      outcome: 'accepted',
+      postMessage: async () => ({
+        thread_id: 'th-1',
+        message_id: 'msg-1',
+        workflow_id: 'wf-1'
+      }),
+      accepted: true
+    },
+    {
+      outcome: 'failed',
+      postMessage: async () => {
+        throw new Error('Unavailable')
+      },
+      accepted: false
+    }
+  ])(
+    'uses existing message content for skill invocation and retains its display when the send is $outcome',
+    async ({ postMessage, accepted }) => {
+      const rest = fakeRest({ postMessage: vi.fn(postMessage) })
       const session = useAgentSession({ rest, events: fakeEvents().source })
       session.start()
       const content =
         '[Use the saved skill /portrait](skill://portrait?description=Use%20defaults) render it'
-      expect(await session.sendMessage(content)).toBe(outcome === 'accepted')
+      expect(await session.sendMessage(content)).toBe(accepted)
       expect(vi.mocked(rest.postMessage).mock.calls[0][1]).toEqual({
         content,
         workflowReferences: [],

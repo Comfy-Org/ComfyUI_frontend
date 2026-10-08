@@ -80,9 +80,25 @@ describe('skillPacksStore', () => {
     }
   )
 
-  it.for(['upsert', 'remove'] as const)(
-    'keeps a confirmed catalog confirmed when a local %s supersedes a refresh',
-    async (change) => {
+  it.for<{
+    change: string
+    apply: (store: ReturnType<typeof useSkillPacksStore>) => void
+    expected: string[]
+  }>([
+    {
+      change: 'upsert',
+      apply: (store) =>
+        store.upsertPack(makePack({ id: 'pack-2', name: 'created' })),
+      expected: ['created', 'my-pack']
+    },
+    {
+      change: 'remove',
+      apply: (store) => store.removePack('my-pack'),
+      expected: []
+    }
+  ])(
+    'keeps a confirmed catalog confirmed when a local $change supersedes a refresh',
+    async ({ apply, expected }) => {
       const store = useSkillPacksStore()
       store.flagsEnabled = true
       vi.mocked(listSkillPacks).mockResolvedValueOnce([makePack()])
@@ -90,16 +106,12 @@ describe('skillPacksStore', () => {
       const pending = deferredCatalog()
       vi.mocked(listSkillPacks).mockReturnValueOnce(pending.promise)
       const refresh = store.refreshPacks()
-      if (change === 'upsert')
-        store.upsertPack(makePack({ id: 'pack-2', name: 'created' }))
-      else store.removePack('my-pack')
+      apply(store)
       pending.resolve([makePack({ id: 'pack-3', name: 'stale' })])
       await refresh
       expect(store.catalogConfirmed).toBe(true)
       expect(store.loading).toBe(false)
-      expect(store.packs.map((pack) => pack.name)).toEqual(
-        change === 'upsert' ? ['created', 'my-pack'] : []
-      )
+      expect(store.packs.map((pack) => pack.name)).toEqual(expected)
     }
   )
 

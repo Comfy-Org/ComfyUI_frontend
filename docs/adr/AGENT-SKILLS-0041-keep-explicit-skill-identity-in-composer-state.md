@@ -64,7 +64,7 @@ skill does not erase the requested name or block Send; the backend owns runtime
 resolution. Availability is never stored in Undo/history. Failed sends restore
 the untouched semantic draft through the existing submission owner.
 
-## Alternatives considered
+Alternatives considered:
 
 - Parse ordinary typed `/name` on send: conflates text with explicit selection.
 - Bind references to catalog IDs: contradicts runtime behavior, because
@@ -81,9 +81,18 @@ the untouched semantic draft through the existing submission owner.
 
 ## Consequences
 
-Selection identity survives editor history and remains distinct from readable
-text. Shared catalog loading needs generation and scope guards, and snapshots
-need cross-kind ordering metadata. Named-skill invocation remains model-mediated:
-selection expresses the user's request, without guaranteeing a `load_skill`
-call. The message-content format also restores inline presentation when editing
-history without sending instruction bodies or modifying generated API types.
+### Positive
+
+- Selection identity survives editor history and remains distinct from readable
+  text.
+- The message-content format restores inline presentation when editing history
+  without sending instruction bodies or modifying generated API types.
+- Availability matches what the backend can actually load by name.
+
+### Negative
+
+- Shared catalog loading needs generation and scope guards, and snapshots need
+  cross-kind ordering metadata.
+- Named-skill invocation remains model-mediated: selection expresses the user's
+  request without guaranteeing a `load_skill` call.
+- A deleted skill recreated under the same name is treated as the same skill.

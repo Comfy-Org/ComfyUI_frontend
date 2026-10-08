@@ -1,5 +1,6 @@
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import type { UserEvent } from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
@@ -26,6 +27,8 @@ vi.mock(import('@/scripts/api'))
 vi.mock(import('@/platform/telemetry'))
 vi.mock(import('@/platform/skills/api/skillsApi'), { spy: true })
 vi.mock(import('@/platform/telemetry/reportError'))
+
+type SkillPacksStore = ReturnType<typeof useSkillPacksStore>
 
 function pack(name: string, description: string): SkillPack {
   return {
@@ -96,9 +99,24 @@ describe('Composer skill selection', () => {
     expect(listSkillPacks).toHaveBeenCalledTimes(2)
   })
 
-  it.for(['removed', 'reordered'])(
-    'keeps keyboard selection usable when the highlighted cached skill is %s by refresh',
-    async (change) => {
+  it.for([
+    {
+      change: 'removed',
+      refreshed: [pack('created-by-agent', 'New skill')],
+      picked: '/created-by-agent'
+    },
+    {
+      change: 'reordered',
+      refreshed: [
+        pack('created-by-agent', 'New skill'),
+        pack('landscape', 'Landscape'),
+        pack('portrait', 'Portrait')
+      ],
+      picked: '/portrait'
+    }
+  ])(
+    'keeps keyboard selection usable when the highlighted cached skill is $change by refresh',
+    async ({ refreshed, picked }) => {
       let resolve: (packs: SkillPack[]) => void = () => {}
       const pending = new Promise<SkillPack[]>((settle) => {
         resolve = settle
@@ -107,21 +125,10 @@ describe('Composer skill selection', () => {
       mount()
       await type('/')
       await userEvent.keyboard('{ArrowDown}{ArrowDown}')
-      const created = pack('created-by-agent', 'New skill')
-      resolve(
-        change === 'removed'
-          ? [created]
-          : [
-              created,
-              pack('landscape', 'Landscape'),
-              pack('portrait', 'Portrait')
-            ]
-      )
+      resolve(refreshed)
       await screen.findByRole('menuitem', { name: 'created-by-agent' })
       await userEvent.keyboard('{Enter}')
-      expect(screen.getByTestId('skill-reference')).toHaveTextContent(
-        change === 'removed' ? '/created-by-agent' : '/portrait'
-      )
+      expect(screen.getByTestId('skill-reference')).toHaveTextContent(picked)
     }
   )
   it('keeps an @ workflow search containing a slash open', async () => {
@@ -278,8 +285,11 @@ describe('Composer skill selection', () => {
     await type('/')
     await waitFor(() => expect(view.skills.loading).toBe(false))
     const menu = screen.getByRole('menu', { name: 'Skills' })
-    for (const row of within(menu).getAllByRole('menuitem'))
-      expect(row).toHaveAttribute('data-active', 'false')
+    expect(
+      within(menu)
+        .getAllByRole('menuitem')
+        .map((row) => row.getAttribute('data-active'))
+    ).toEqual(['false', 'false'])
     expect(screen.getByRole('textbox')).not.toHaveAttribute(
       'aria-activedescendant'
     )
@@ -502,58 +512,89 @@ describe('Composer skill selection', () => {
     expect(screen.getByTestId('skill-reference')).toHaveTextContent('/portrait')
   })
 
-  it.for(['present', 'undone', 'scope-changed'] as const)(
-    'resolves cold-cache plain paste metadata safely when the reference is %s',
-    async (state) => {
-      let resolve: (packs: SkillPack[]) => void = () => {}
-      const pending = new Promise<SkillPack[]>((settle) => {
-        resolve = settle
-      })
-      vi.mocked(listSkillPacks).mockReturnValueOnce(pending)
-      const { composer, skills } = mount()
-      skills.packs = []
-      skills.hasLoaded = false
-      skills.catalogConfirmed = false
-      await type('Before ')
-      await userEvent.paste('/portrait  colors')
-      expect(composer.prompt.references[0]).toMatchObject({ description: '' })
-      expect(screen.getByTestId('skill-reference')).not.toHaveAttribute(
-        'aria-description'
-      )
-      if (state === 'undone') await userEvent.keyboard('{Control>}z{/Control}')
-      if (state === 'scope-changed') {
-        Object.assign(useTeamWorkspaceStore(), { workspaceId: 'new-workspace' })
-        await nextTick()
-      }
-      resolve([pack('portrait', 'Fresh description')])
-      await waitFor(() => expect(skills.loading).toBe(false))
-      if (state !== 'present') {
-        expect(composer.prompt.references).toEqual([])
-        expect(composer.prompt.text).toBe(
-          state === 'undone' ? 'Before ' : 'Before   colors'
-        )
-        if (state === 'scope-changed') {
-          await userEvent.keyboard('{Control>}z{/Control}')
-          expect(composer.prompt.references).toEqual([])
-          return
-        }
-        await userEvent.keyboard('{Control>}{Shift>}z{/Shift}{/Control}')
-      }
-      await waitFor(() =>
-        expect(composer.prompt.references[0]).toMatchObject({
-          name: 'portrait',
-          description: 'Fresh description',
-          scope: skills.scope
-        })
-      )
-      await userEvent.keyboard('{Control>}z{/Control}')
-      expect(composer.prompt).toEqual({ text: 'Before ', references: [] })
-      await userEvent.keyboard('{Control>}{Shift>}z{/Shift}{/Control}')
+  async function pastePortraitWhileCatalogIsCold() {
+    let resolve: (packs: SkillPack[]) => void = () => {}
+    const pending = new Promise<SkillPack[]>((settle) => {
+      resolve = settle
+    })
+    vi.mocked(listSkillPacks).mockReturnValueOnce(pending)
+    const view = mount()
+    view.skills.packs = []
+    view.skills.hasLoaded = false
+    view.skills.catalogConfirmed = false
+    await type('Before ')
+    await userEvent.paste('/portrait  colors')
+    return { ...view, resolve }
+  }
+
+  it('resolves cold-cache plain paste metadata when the reference is present', async () => {
+    const { composer, skills, resolve } =
+      await pastePortraitWhileCatalogIsCold()
+    expect(composer.prompt.references[0]).toMatchObject({ description: '' })
+    expect(screen.getByTestId('skill-reference')).not.toHaveAttribute(
+      'aria-description'
+    )
+    resolve([pack('portrait', 'Fresh description')])
+    await waitFor(() => expect(skills.loading).toBe(false))
+    await waitFor(() =>
       expect(composer.prompt.references[0]).toMatchObject({
-        description: 'Fresh description'
+        name: 'portrait',
+        description: 'Fresh description',
+        scope: skills.scope
       })
-    }
-  )
+    )
+    await userEvent.keyboard('{Control>}z{/Control}')
+    expect(composer.prompt).toEqual({ text: 'Before ', references: [] })
+    await userEvent.keyboard('{Control>}{Shift>}z{/Shift}{/Control}')
+    expect(composer.prompt.references[0]).toMatchObject({
+      description: 'Fresh description'
+    })
+  })
+
+  it('resolves cold-cache plain paste metadata on redo when the reference was undone', async () => {
+    const { composer, skills, resolve } =
+      await pastePortraitWhileCatalogIsCold()
+    expect(composer.prompt.references[0]).toMatchObject({ description: '' })
+    expect(screen.getByTestId('skill-reference')).not.toHaveAttribute(
+      'aria-description'
+    )
+    await userEvent.keyboard('{Control>}z{/Control}')
+    resolve([pack('portrait', 'Fresh description')])
+    await waitFor(() => expect(skills.loading).toBe(false))
+    expect(composer.prompt.references).toEqual([])
+    expect(composer.prompt.text).toBe('Before ')
+    await userEvent.keyboard('{Control>}{Shift>}z{/Shift}{/Control}')
+    await waitFor(() =>
+      expect(composer.prompt.references[0]).toMatchObject({
+        name: 'portrait',
+        description: 'Fresh description',
+        scope: skills.scope
+      })
+    )
+    await userEvent.keyboard('{Control>}z{/Control}')
+    expect(composer.prompt).toEqual({ text: 'Before ', references: [] })
+    await userEvent.keyboard('{Control>}{Shift>}z{/Shift}{/Control}')
+    expect(composer.prompt.references[0]).toMatchObject({
+      description: 'Fresh description'
+    })
+  })
+
+  it('drops a cold-cache plain pasted reference, even on undo, when the scope changes before the catalog resolves', async () => {
+    const { composer, skills, resolve } =
+      await pastePortraitWhileCatalogIsCold()
+    expect(composer.prompt.references[0]).toMatchObject({ description: '' })
+    expect(screen.getByTestId('skill-reference')).not.toHaveAttribute(
+      'aria-description'
+    )
+    Object.assign(useTeamWorkspaceStore(), { workspaceId: 'new-workspace' })
+    await nextTick()
+    resolve([pack('portrait', 'Fresh description')])
+    await waitFor(() => expect(skills.loading).toBe(false))
+    expect(composer.prompt.references).toEqual([])
+    expect(composer.prompt.text).toBe('Before   colors')
+    await userEvent.keyboard('{Control>}z{/Control}')
+    expect(composer.prompt.references).toEqual([])
+  })
 
   it('keeps a rich pasted skill hovering its own copied description through remount', async () => {
     const first = mount()
@@ -666,75 +707,106 @@ describe('Composer skill selection', () => {
     )
   })
 
+  it('hovers a plain pasted skill with its resolved catalog description and claims availability only once confirmed', async () => {
+    const { skills } = mount()
+    skills.catalogConfirmed = false
+    let resolve: (packs: SkillPack[]) => void = () => {}
+    vi.mocked(listSkillPacks).mockReturnValueOnce(
+      new Promise<SkillPack[]>((settle) => {
+        resolve = settle
+      })
+    )
+    const clipboard = new DataTransfer()
+    const copied = userMessageClipboard({
+      text: ' colors',
+      skillReference: {
+        name: 'portrait',
+        description: 'Copied description',
+        textOffset: 0
+      }
+    })
+    clipboard.setData('text/plain', copied.text)
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste(clipboard)
+    let skill = screen.getByTestId('skill-reference')
+    expect(skill).toHaveClass('text-warning-background')
+    expect(skill).not.toHaveAttribute('aria-description')
+    await userEvent.hover(skill)
+    await waitFor(() => expect(skill).toHaveAttribute('data-state', 'open'))
+    expect(screen.queryByRole('tooltip')).toBeNull()
+    await userEvent.unhover(skill)
+    resolve([pack('portrait', 'Catalog description')])
+    await waitFor(() => expect(skills.catalogConfirmed).toBe(true))
+    skill = screen.getByTestId('skill-reference')
+    await userEvent.hover(skill)
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(
+      /^Catalog description$/
+    )
+    expect(skill).toHaveClass('text-warning-background')
+    vi.mocked(listSkillPacks).mockResolvedValueOnce([])
+    await skills.refreshPacks()
+    await waitFor(() => expect(skill).toHaveClass('text-muted-foreground'))
+    expect(skill).toHaveAccessibleDescription('Not available')
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(
+      /^Not available$/
+    )
+  })
+
+  it('hovers a rich pasted skill with its copied description and claims availability only once confirmed', async () => {
+    const { skills } = mount()
+    skills.catalogConfirmed = false
+    let resolve: (packs: SkillPack[]) => void = () => {}
+    vi.mocked(listSkillPacks).mockReturnValueOnce(
+      new Promise<SkillPack[]>((settle) => {
+        resolve = settle
+      })
+    )
+    const clipboard = new DataTransfer()
+    const copied = userMessageClipboard({
+      text: ' colors',
+      skillReference: {
+        name: 'portrait',
+        description: 'Copied description',
+        textOffset: 0
+      }
+    })
+    clipboard.setData('text/plain', copied.text)
+    clipboard.setData('text/html', copied.html)
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste(clipboard)
+    let skill = screen.getByTestId('skill-reference')
+    expect(skill).toHaveClass('text-warning-background')
+    expect(skill).not.toHaveAttribute('aria-description')
+    await userEvent.hover(skill)
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(
+      'Copied description'
+    )
+    await userEvent.unhover(skill)
+    resolve([pack('portrait', 'Catalog description')])
+    await waitFor(() => expect(skills.catalogConfirmed).toBe(true))
+    skill = screen.getByTestId('skill-reference')
+    await userEvent.hover(skill)
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(
+      /^Copied description$/
+    )
+    expect(skill).toHaveClass('text-warning-background')
+    vi.mocked(listSkillPacks).mockResolvedValueOnce([])
+    await skills.refreshPacks()
+    await waitFor(() => expect(skill).toHaveClass('text-muted-foreground'))
+    expect(skill).toHaveAccessibleDescription('Not available')
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(
+      /^Not available$/
+    )
+  })
+
   it.for([
-    { format: 'plain', checking: undefined, confirmed: 'Catalog description' },
+    {
+      format: 'plain',
+      paste: (user: UserEvent) => user.paste('/portrait next')
+    },
     {
       format: 'rich',
-      checking: 'Copied description',
-      confirmed: 'Copied description'
-    }
-  ] as const)(
-    'hovers a $format pasted skill with its own description and claims availability only once confirmed',
-    async ({ format, checking, confirmed }) => {
-      const { skills } = mount()
-      skills.catalogConfirmed = false
-      let resolve: (packs: SkillPack[]) => void = () => {}
-      vi.mocked(listSkillPacks).mockReturnValueOnce(
-        new Promise<SkillPack[]>((settle) => {
-          resolve = settle
-        })
-      )
-      const clipboard = new DataTransfer()
-      const copied = userMessageClipboard({
-        text: ' colors',
-        skillReference: {
-          name: 'portrait',
-          description: 'Copied description',
-          textOffset: 0
-        }
-      })
-      clipboard.setData('text/plain', copied.text)
-      if (format === 'rich') clipboard.setData('text/html', copied.html)
-      await userEvent.click(screen.getByRole('textbox'))
-      await userEvent.paste(clipboard)
-      let skill = screen.getByTestId('skill-reference')
-      expect(skill).toHaveClass('text-warning-background')
-      expect(skill).not.toHaveAttribute('aria-description')
-      await userEvent.hover(skill)
-      if (checking)
-        expect(await screen.findByRole('tooltip')).toHaveTextContent(checking)
-      else {
-        await waitFor(() => expect(skill).toHaveAttribute('data-state', 'open'))
-        expect(screen.queryByRole('tooltip')).toBeNull()
-      }
-      await userEvent.unhover(skill)
-      resolve([pack('portrait', 'Catalog description')])
-      await waitFor(() => expect(skills.catalogConfirmed).toBe(true))
-      skill = screen.getByTestId('skill-reference')
-      await userEvent.hover(skill)
-      expect(await screen.findByRole('tooltip')).toHaveTextContent(
-        new RegExp(`^${confirmed}$`)
-      )
-      expect(skill).toHaveClass('text-warning-background')
-      vi.mocked(listSkillPacks).mockResolvedValueOnce([])
-      await skills.refreshPacks()
-      await waitFor(() => expect(skill).toHaveClass('text-muted-foreground'))
-      expect(skill).toHaveAccessibleDescription('Not available')
-      expect(await screen.findByRole('tooltip')).toHaveTextContent(
-        /^Not available$/
-      )
-    }
-  )
-
-  it.for(['plain', 'rich'] as const)(
-    'keeps %s pasted skills as text when the feature is disabled',
-    async (format) => {
-      const { composer, skills } = mount()
-      skills.flagsEnabled = false
-      const user = userEvent.setup()
-      await user.click(screen.getByRole('textbox'))
-      if (format === 'plain') await user.paste('/portrait next')
-      else {
+      paste: (user: UserEvent) => {
         const copied = userMessageClipboard({
           text: ' next',
           skillReference: {
@@ -746,8 +818,17 @@ describe('Composer skill selection', () => {
         const clipboard = new DataTransfer()
         clipboard.setData('text/plain', copied.text)
         clipboard.setData('text/html', copied.html)
-        await user.paste(clipboard)
+        return user.paste(clipboard)
       }
+    }
+  ])(
+    'keeps $format pasted skills as text when the feature is disabled',
+    async ({ paste }) => {
+      const { composer, skills } = mount()
+      skills.flagsEnabled = false
+      const user = userEvent.setup()
+      await user.click(screen.getByRole('textbox'))
+      await paste(user)
       expect(composer.prompt).toEqual({
         text: '/portrait next',
         references: []
@@ -779,18 +860,27 @@ describe('Composer skill selection', () => {
     expect(composer.prompt.text).toBe('\t/landscape\n')
   })
 
-  it.for(['missing', 'failed'] as const)(
-    'preserves a plain pasted skill and enabled sending with a %s catalog',
-    async (state) => {
+  it.for([
+    {
+      catalog: 'missing',
+      arrangeCatalog: () => vi.mocked(listSkillPacks).mockResolvedValueOnce([]),
+      colorClass: 'text-muted-foreground'
+    },
+    {
+      catalog: 'failed',
+      arrangeCatalog: () =>
+        vi
+          .mocked(listSkillPacks)
+          .mockRejectedValueOnce(new SkillPacksApiError('Unavailable', 503)),
+      colorClass: 'text-warning-background'
+    }
+  ])(
+    'preserves a plain pasted skill and enabled sending with a $catalog catalog',
+    async ({ arrangeCatalog, colorClass }) => {
       const { composer, skills, emitted } = mount()
       skills.packs = []
       skills.catalogConfirmed = false
-      if (state === 'missing')
-        vi.mocked(listSkillPacks).mockResolvedValueOnce([])
-      else
-        vi.mocked(listSkillPacks).mockRejectedValueOnce(
-          new SkillPacksApiError('Unavailable', 503)
-        )
+      arrangeCatalog()
       await userEvent.click(screen.getByRole('textbox'))
       await userEvent.paste(
         '/artistic-sketch-from-photo can you update the skill so that it also includes colors, and not just B&W'
@@ -805,11 +895,7 @@ describe('Composer skill selection', () => {
         ' can you update the skill so that it also includes colors, and not just B&W'
       )
       const selected = screen.getByTestId('skill-reference')
-      expect(selected).toHaveClass(
-        state === 'missing'
-          ? 'text-muted-foreground'
-          : 'text-warning-background'
-      )
+      expect(selected).toHaveClass(colorClass)
       expect(screen.getByRole('button', { name: 'Send' })).toBeEnabled()
       await userEvent.click(screen.getByRole('button', { name: 'Send' }))
       expect(emitted().send).toEqual([
@@ -965,42 +1051,54 @@ describe('Composer skill selection', () => {
     expect(composer.prompt).toEqual(original)
   })
 
-  it.for(['background', 'foreground', 'scope'] as const)(
-    'sends the selected name through %s catalog changes',
-    async (state) => {
+  it('removes the selected skill and disables sending when the workspace scope changes', async () => {
+    const { composer, emitted } = mount()
+    await type('/por')
+    await userEvent.keyboard('{Enter}')
+    expect(screen.getByTestId('skill-reference')).toHaveTextContent(
+      /^\/portrait$/
+    )
+    Object.assign(useTeamWorkspaceStore(), {
+      workspaceId: 'another-workspace'
+    })
+    await nextTick()
+    expect(screen.queryByTestId('skill-reference')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled()
+    expect(composer.prompt.references).toEqual([])
+    expect(emitted().send).toBeUndefined()
+  })
+
+  it.for([
+    {
+      refresh: 'background',
+      startRefresh: (skills: SkillPacksStore) =>
+        skills.refreshPacksInBackground()
+    },
+    {
+      refresh: 'foreground',
+      startRefresh: (skills: SkillPacksStore) => skills.refreshPacks()
+    }
+  ])(
+    'sends the selected name through a failed $refresh catalog refresh',
+    async ({ startRefresh }) => {
       const { skills, composer, emitted } = mount()
       await type('/por')
       await userEvent.keyboard('{Enter}')
       const original = structuredClone(composer.prompt)
       const skill = screen.getByTestId('skill-reference')
       expect(skill).toHaveTextContent(/^\/portrait$/)
-      if (state === 'scope') {
-        Object.assign(useTeamWorkspaceStore(), {
-          workspaceId: 'another-workspace'
+      let reject: (error: Error) => void = () => {}
+      vi.mocked(listSkillPacks).mockReturnValueOnce(
+        new Promise<SkillPack[]>((_resolve, fail) => {
+          reject = fail
         })
-        await nextTick()
-        expect(screen.queryByTestId('skill-reference')).toBeNull()
-        expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled()
-        expect(composer.prompt.references).toEqual([])
-        expect(emitted().send).toBeUndefined()
-        return
-      } else {
-        let reject: (error: Error) => void = () => {}
-        vi.mocked(listSkillPacks).mockReturnValueOnce(
-          new Promise<SkillPack[]>((_resolve, fail) => {
-            reject = fail
-          })
-        )
-        const pending =
-          state === 'background'
-            ? skills.refreshPacksInBackground()
-            : skills.refreshPacks()
-        await nextTick()
-        expect(skill).toHaveTextContent(/^\/portrait$/)
-        expect(skill).not.toHaveAttribute('aria-description')
-        reject(new SkillPacksApiError('Failed', 503))
-        await pending
-      }
+      )
+      const pending = startRefresh(skills)
+      await nextTick()
+      expect(skill).toHaveTextContent(/^\/portrait$/)
+      expect(skill).not.toHaveAttribute('aria-description')
+      reject(new SkillPacksApiError('Failed', 503))
+      await pending
       expect(skill).toHaveTextContent(/^\/portrait$/)
       expect(skill).not.toHaveAttribute('aria-description')
       await userEvent.click(screen.getByRole('button', { name: 'Send' }))
@@ -1064,14 +1162,22 @@ describe('Composer skill selection', () => {
     })
   })
 
-  it.for(['deleted', 'unavailable'])(
-    'preserves the requested name when the selected catalog entry becomes %s',
-    async (state) => {
+  it.for([
+    {
+      change: 'deleted',
+      changeCatalog: (skills: SkillPacksStore) => skills.removePack('portrait')
+    },
+    {
+      change: 'unavailable',
+      changeCatalog: (skills: SkillPacksStore) => skills.markUnavailable()
+    }
+  ])(
+    'preserves the requested name when the selected catalog entry becomes $change',
+    async ({ changeCatalog }) => {
       const { emitted, skills } = mount()
       await type('/por')
       await userEvent.keyboard('{Enter}')
-      if (state === 'deleted') skills.removePack('portrait')
-      else skills.markUnavailable()
+      changeCatalog(skills)
       await userEvent.click(screen.getByRole('button', { name: 'Send' }))
       expect(emitted().send).toEqual([
         [
@@ -1120,16 +1226,7 @@ describe('Composer skill selection', () => {
     expect(screen.queryByTestId('skill-reference')).toBeNull()
   })
 
-  type CatalogState =
-    | 'uninitialized'
-    | 'loading'
-    | 'failed'
-    | 'disabled'
-    | 'unavailable'
-
-  async function removeSelectedSkillWithCatalog(
-    state: CatalogState
-  ): Promise<() => Promise<void>> {
+  async function selectPortraitThenDeleteIt() {
     const { skills } = mount()
     await type('/por')
     await userEvent.keyboard('{Enter}')
@@ -1139,40 +1236,33 @@ describe('Composer skill selection', () => {
         'text-muted-foreground'
       )
     )
-    let finishRefresh = async () => {}
-    if (state === 'uninitialized') {
-      skills.markUnavailable()
-      skills.routesAvailable = true
-    }
-    if (state === 'loading') {
-      let resolve: (packs: SkillPack[]) => void = () => {}
-      vi.mocked(listSkillPacks).mockReturnValueOnce(
-        new Promise<SkillPack[]>((settle) => {
-          resolve = settle
-        })
-      )
-      const pending = skills.refreshPacks()
-      finishRefresh = async () => {
-        resolve([])
-        await pending
-      }
-    }
-    if (state === 'failed') {
-      vi.mocked(listSkillPacks).mockRejectedValueOnce(
-        new SkillPacksApiError('unavailable', 503)
-      )
-      await skills.refreshPacks()
-    }
-    if (state === 'disabled') skills.flagsEnabled = false
-    if (state === 'unavailable') skills.markUnavailable()
-    await nextTick()
-    return finishRefresh
+    return skills
   }
 
-  it.for(['uninitialized', 'disabled', 'unavailable'] as const)(
-    'shows a selected skill normally without an availability claim when the catalog is %s',
-    async (state) => {
-      const finishRefresh = await removeSelectedSkillWithCatalog(state)
+  it.for([
+    {
+      catalog: 'uninitialized',
+      arrangeCatalog: (skills: SkillPacksStore) => {
+        skills.markUnavailable()
+        skills.routesAvailable = true
+      }
+    },
+    {
+      catalog: 'disabled',
+      arrangeCatalog: (skills: SkillPacksStore) => {
+        skills.flagsEnabled = false
+      }
+    },
+    {
+      catalog: 'unavailable',
+      arrangeCatalog: (skills: SkillPacksStore) => skills.markUnavailable()
+    }
+  ])(
+    'shows a selected skill normally without an availability claim when the catalog is $catalog',
+    async ({ arrangeCatalog }) => {
+      const skills = await selectPortraitThenDeleteIt()
+      arrangeCatalog(skills)
+      await nextTick()
       const skill = screen.getByTestId('skill-reference')
       expect(skill).toHaveClass('text-warning-background')
       expect(skill).not.toHaveAttribute('aria-description')
@@ -1181,62 +1271,93 @@ describe('Composer skill selection', () => {
         /^Compose a portrait\s+Keep the subject recognizable$/
       )
       expect(screen.getByRole('button', { name: 'Send' })).toBeEnabled()
-      await finishRefresh()
     }
   )
 
-  it.for(['loading', 'failed'] as const)(
-    'keeps a confirmed-unavailable selected skill marked while the catalog is %s',
-    async (state) => {
-      const finishRefresh = await removeSelectedSkillWithCatalog(state)
-      const skill = screen.getByTestId('skill-reference')
-      expect(skill).toHaveClass('text-muted-foreground')
-      expect(skill).toHaveAccessibleDescription('Not available')
-      expect(screen.getByRole('button', { name: 'Send' })).toBeEnabled()
-      await finishRefresh()
-    }
-  )
+  it('keeps a confirmed-unavailable selected skill marked while the catalog is loading', async () => {
+    const skills = await selectPortraitThenDeleteIt()
+    let resolve: (packs: SkillPack[]) => void = () => {}
+    vi.mocked(listSkillPacks).mockReturnValueOnce(
+      new Promise<SkillPack[]>((settle) => {
+        resolve = settle
+      })
+    )
+    const pending = skills.refreshPacks()
+    await nextTick()
+    const skill = screen.getByTestId('skill-reference')
+    expect(skill).toHaveClass('text-muted-foreground')
+    expect(skill).toHaveAccessibleDescription('Not available')
+    expect(screen.getByRole('button', { name: 'Send' })).toBeEnabled()
+    resolve([])
+    await pending
+  })
 
-  it.for(['present', 'absent'] as const)(
-    'shows a restored reference normally while checking and resolves it after a complete %s catalog',
-    async (result) => {
-      const { skills, composer } = mount()
-      skills.catalogConfirmed = false
-      let resolve: (packs: SkillPack[]) => void = () => {}
-      vi.mocked(listSkillPacks).mockReturnValueOnce(
-        new Promise<SkillPack[]>((settle) => {
-          resolve = settle
-        })
-      )
-      composer.replacePrompt({
-        text: ' colors',
-        workflowReferences: [],
-        skillReference: {
-          name: 'portrait',
-          description: 'Original',
-          textOffset: 0
-        }
+  it('keeps a confirmed-unavailable selected skill marked when the catalog refresh fails', async () => {
+    const skills = await selectPortraitThenDeleteIt()
+    vi.mocked(listSkillPacks).mockRejectedValueOnce(
+      new SkillPacksApiError('unavailable', 503)
+    )
+    await skills.refreshPacks()
+    await nextTick()
+    const skill = screen.getByTestId('skill-reference')
+    expect(skill).toHaveClass('text-muted-foreground')
+    expect(skill).toHaveAccessibleDescription('Not available')
+    expect(screen.getByRole('button', { name: 'Send' })).toBeEnabled()
+  })
+
+  async function restorePortraitWhileCatalogChecks() {
+    const { skills, composer } = mount()
+    skills.catalogConfirmed = false
+    let resolve: (packs: SkillPack[]) => void = () => {}
+    vi.mocked(listSkillPacks).mockReturnValueOnce(
+      new Promise<SkillPack[]>((settle) => {
+        resolve = settle
       })
-      await waitFor(() => expect(skills.loading).toBe(true))
-      const skill = screen.getByTestId('skill-reference')
-      expect(skill).toHaveClass('text-warning-background', 'underline')
-      expect(skill).not.toHaveAttribute('aria-description')
-      expect(screen.getByRole('button', { name: 'Send' })).toBeEnabled()
-      resolve(result === 'present' ? [pack('portrait', 'Current')] : [])
-      await waitFor(() => expect(skills.loading).toBe(false))
-      expect(skill).toHaveClass(
-        result === 'present'
-          ? 'text-warning-background'
-          : 'text-muted-foreground'
-      )
-      if (result === 'present')
-        expect(skill).not.toHaveAttribute('aria-description')
-      else expect(skill).toHaveAccessibleDescription('Not available')
-      expect(composer.prompt.references[0]).toMatchObject({
-        description: 'Original'
-      })
-    }
-  )
+    )
+    composer.replacePrompt({
+      text: ' colors',
+      workflowReferences: [],
+      skillReference: {
+        name: 'portrait',
+        description: 'Original',
+        textOffset: 0
+      }
+    })
+    await waitFor(() => expect(skills.loading).toBe(true))
+    return { skills, composer, resolve }
+  }
+
+  it('shows a restored reference normally while checking and keeps it available, with its own description, once a complete catalog has it', async () => {
+    const { skills, composer, resolve } =
+      await restorePortraitWhileCatalogChecks()
+    const skill = screen.getByTestId('skill-reference')
+    expect(skill).toHaveClass('text-warning-background', 'underline')
+    expect(skill).not.toHaveAttribute('aria-description')
+    expect(screen.getByRole('button', { name: 'Send' })).toBeEnabled()
+    resolve([pack('portrait', 'Current')])
+    await waitFor(() => expect(skills.loading).toBe(false))
+    expect(skill).toHaveClass('text-warning-background')
+    expect(skill).not.toHaveAttribute('aria-description')
+    expect(composer.prompt.references[0]).toMatchObject({
+      description: 'Original'
+    })
+  })
+
+  it('shows a restored reference normally while checking and marks it unavailable, with its own description, once a complete catalog lacks it', async () => {
+    const { skills, composer, resolve } =
+      await restorePortraitWhileCatalogChecks()
+    const skill = screen.getByTestId('skill-reference')
+    expect(skill).toHaveClass('text-warning-background', 'underline')
+    expect(skill).not.toHaveAttribute('aria-description')
+    expect(screen.getByRole('button', { name: 'Send' })).toBeEnabled()
+    resolve([])
+    await waitFor(() => expect(skills.loading).toBe(false))
+    expect(skill).toHaveClass('text-muted-foreground')
+    expect(skill).toHaveAccessibleDescription('Not available')
+    expect(composer.prompt.references[0]).toMatchObject({
+      description: 'Original'
+    })
+  })
 
   it('keeps an available selection normal during refresh', async () => {
     const { skills } = mount()
@@ -1350,10 +1471,10 @@ describe('Composer skill selection', () => {
     const draftSkill = within(screen.getByRole('textbox')).getByTestId(
       'skill-reference'
     )
-    for (const skill of [draftSkill, historicalSkill]) {
-      expect(skill).toHaveClass('text-warning-background')
-      expect(skill).not.toHaveAttribute('aria-description')
-    }
+    expect(draftSkill).toHaveClass('text-warning-background')
+    expect(draftSkill).not.toHaveAttribute('aria-description')
+    expect(historicalSkill).toHaveClass('text-warning-background')
+    expect(historicalSkill).not.toHaveAttribute('aria-description')
     resolve([])
     await waitFor(() => expect(skills.loading).toBe(false))
     expect(draftSkill).toHaveAccessibleDescription('Not available')

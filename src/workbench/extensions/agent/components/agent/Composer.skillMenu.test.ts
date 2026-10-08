@@ -5,7 +5,8 @@ import {
   within
 } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { UserEvent } from '@testing-library/user-event'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { i18n } from '@/i18n'
 import { listSkillPacks } from '@/platform/skills/api/skillsApi'
@@ -139,12 +140,20 @@ describe('Composer skill menu description', () => {
     expect(skillRow('portrait')).toHaveAttribute('data-active', 'false')
   })
 
-  it.for(['keyboard', 'mouse'] as const)(
-    'moves the description to the row activated by %s after the delay',
-    async (input) => {
+  it.for([
+    {
+      input: 'keyboard',
+      activateLandscape: (user: UserEvent) => user.keyboard('{ArrowUp}')
+    },
+    {
+      input: 'mouse',
+      activateLandscape: (user: UserEvent) => user.hover(skillRow('landscape'))
+    }
+  ])(
+    'moves the description to the row activated by $input after the delay',
+    async ({ activateLandscape }) => {
       const { user } = await describePortrait()
-      if (input === 'keyboard') await user.keyboard('{ArrowUp}')
-      else await user.hover(skillRow('landscape'))
+      await activateLandscape(user)
       expect(shownDescription(PORTRAIT)).toBeNull()
       expect(shownDescription(LANDSCAPE)).toBeNull()
 
@@ -170,7 +179,7 @@ describe('Composer skill menu description', () => {
     await user.hover(skillRow('portrait'))
     await elapse(DESCRIPTION_DELAY_MS)
     const description = shownDescription(PORTRAIT)
-    if (!description) throw new Error('description is not shown')
+    assert.exists(description)
 
     await user.hover(description)
     await elapse(HOVER_CLOSE_DELAY_MS * 2)
@@ -189,8 +198,10 @@ describe('Composer skill menu description', () => {
     const text = document
       .createTreeWalker(textbox, NodeFilter.SHOW_TEXT)
       .nextNode()
-    if (!text) throw new Error('draft text is not rendered')
-    document.getSelection()?.collapse(text, '/po'.length)
+    assert.exists(text)
+    const selection = document.getSelection()
+    assert.exists(selection)
+    selection.collapse(text, '/po'.length)
     document.dispatchEvent(new Event('selectionchange'))
     await elapse(DESCRIPTION_DELAY_MS * 2)
     expect(skillRow('portrait')).toHaveAttribute('data-active', 'true')
@@ -201,21 +212,30 @@ describe('Composer skill menu description', () => {
     expect(shownDescription(PORTRAIT)).toBeVisible()
   })
 
-  it.for(['the pointer leaves it', 'another row is hovered'] as const)(
-    'returns focus to the prompt when a focused description closes because %s',
-    async (cause) => {
+  it.for([
+    {
+      cause: 'the pointer leaves it',
+      closeDescription: async (user: UserEvent, description: HTMLElement) => {
+        await user.unhover(description)
+        await elapse(HOVER_CLOSE_DELAY_MS)
+      }
+    },
+    {
+      cause: 'another row is hovered',
+      closeDescription: (user: UserEvent) => user.hover(skillRow('landscape'))
+    }
+  ])(
+    'returns focus to the prompt when a focused description closes because $cause',
+    async ({ closeDescription }) => {
       const { user } = await openMenu('/')
       await user.hover(skillRow('portrait'))
       await elapse(DESCRIPTION_DELAY_MS)
       const description = shownDescription(PORTRAIT)
-      if (!description) throw new Error('description is not shown')
+      assert.exists(description)
       await user.click(description)
       expect(description).toHaveFocus()
 
-      if (cause === 'the pointer leaves it') {
-        await user.unhover(description)
-        await elapse(HOVER_CLOSE_DELAY_MS)
-      } else await user.hover(skillRow('landscape'))
+      await closeDescription(user, description)
       expect(shownDescription(PORTRAIT)).toBeNull()
       expect(screen.getByRole('textbox')).toHaveFocus()
       expect(screen.getByRole('menu', { name: 'Skills' })).toBeVisible()
@@ -225,19 +245,27 @@ describe('Composer skill menu description', () => {
   it('closes the menu when focus moves from the description to another composer control', async () => {
     const { user } = await describePortrait()
     const description = shownDescription(PORTRAIT)
-    if (!description) throw new Error('description is not shown')
+    assert.exists(description)
     await user.click(description)
     await user.click(screen.getByRole('button', { name: 'Add to prompt' }))
     expect(screen.queryByRole('menu', { name: 'Skills' })).toBeNull()
     expect(shownDescription(PORTRAIT)).toBeNull()
   })
 
-  it.for(['Escape', 'focus leaving the composer'] as const)(
-    'hides the description on %s and keeps it hidden',
-    async (action) => {
+  it.for([
+    {
+      action: 'Escape',
+      dismiss: (user: UserEvent) => user.keyboard('{Escape}')
+    },
+    {
+      action: 'focus leaving the composer',
+      dismiss: (user: UserEvent) => user.click(document.body)
+    }
+  ])(
+    'hides the description on $action and keeps it hidden',
+    async ({ dismiss }) => {
       const { user } = await describePortrait()
-      if (action === 'Escape') await user.keyboard('{Escape}')
-      else await user.click(document.body)
+      await dismiss(user)
       expect(shownDescription(PORTRAIT)).toBeNull()
       await elapse(DESCRIPTION_DELAY_MS * 2)
       expect(shownDescription(PORTRAIT)).toBeNull()
@@ -248,7 +276,7 @@ describe('Composer skill menu description', () => {
   it('lets the description be focused for selection without closing the menu or changing the draft', async () => {
     const { user, composer } = await describePortrait()
     const description = shownDescription(PORTRAIT)
-    if (!description) throw new Error('description is not shown')
+    assert.exists(description)
     await user.click(description)
     expect(description).toHaveFocus()
     expect(shownDescription(PORTRAIT)).toBeVisible()
@@ -267,7 +295,10 @@ describe('Composer skill menu description', () => {
   it('does not describe rows in the @ menu', async () => {
     await openMenu('@')
     await elapse(DESCRIPTION_DELAY_MS)
-    for (const row of screen.getAllByRole('menuitem'))
-      expect(row).not.toHaveAttribute('aria-describedby')
+    expect(
+      screen
+        .getAllByRole('menuitem')
+        .filter((row) => row.hasAttribute('aria-describedby'))
+    ).toEqual([])
   })
 })

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope } from 'vue'
 
 import { useSkillMenuDescription } from './useSkillMenuDescription'
@@ -13,7 +13,7 @@ describe('useSkillMenuDescription', () => {
     const description = scope.run(() =>
       useSkillMenuDescription(() => undefined)
     )
-    if (!description) throw new Error('composable did not run')
+    assert.exists(description)
     description.requestDescription('hover')
     description.leaveDescription()
     expect(vi.getTimerCount()).toBe(1)

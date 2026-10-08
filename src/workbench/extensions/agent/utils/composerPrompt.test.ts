@@ -75,40 +75,53 @@ describe('composer prompt boundaries', () => {
     expect(snapshot.skillReference).not.toHaveProperty('resolvePastedName')
   })
 
-  it.for(['skill-first', 'workflow-first'])(
-    'preserves adjacent cross-kind order through render, edit and draft restoration: %s',
-    (order) => {
-      const skill = {
-        kind: 'skill' as const,
-        name: 'portrait',
-        description: 'Use defaults',
-        scope: 'scope',
-        textOffset: 0
-      }
-      const workflow = {
-        kind: 'workflow' as const,
-        id: 'workflow',
-        name: 'Reference',
-        textOffset: 0
-      }
-      const references =
-        order === 'skill-first' ? [skill, workflow] : [workflow, skill]
+  it.for<{
+    order: string
+    references: ComposerPrompt['references']
+    rendered: string
+    kinds: ComposerPrompt['references'][number]['kind'][]
+  }>([
+    {
+      order: 'skill-first',
+      references: [
+        {
+          kind: 'skill',
+          name: 'portrait',
+          description: 'Use defaults',
+          scope: 'scope',
+          textOffset: 0
+        },
+        { kind: 'workflow', id: 'workflow', name: 'Reference', textOffset: 0 }
+      ],
+      rendered: '/portrait@[Workflow: Reference]',
+      kinds: ['skill', 'workflow']
+    },
+    {
+      order: 'workflow-first',
+      references: [
+        { kind: 'workflow', id: 'workflow', name: 'Reference', textOffset: 0 },
+        {
+          kind: 'skill',
+          name: 'portrait',
+          description: 'Use defaults',
+          scope: 'scope',
+          textOffset: 0
+        }
+      ],
+      rendered: '@[Workflow: Reference]/portrait',
+      kinds: ['workflow', 'skill']
+    }
+  ])(
+    'preserves adjacent cross-kind order through render, edit and draft restoration: $order',
+    ({ references, rendered, kinds }) => {
       const snapshot = composerPromptForSend({ text: '', references })
-      expect(agentMessageText(snapshot)).toBe(
-        order === 'skill-first'
-          ? '/portrait@[Workflow: Reference]'
-          : '@[Workflow: Reference]/portrait'
-      )
+      expect(agentMessageText(snapshot)).toBe(rendered)
       const store = useAgentComposerStore()
       store.setSkillScope('scope')
       store.replacePrompt(snapshot)
-      expect(store.prompt.references.map((item) => item.kind)).toEqual(
-        references.map((item) => item.kind)
-      )
+      expect(store.prompt.references.map((item) => item.kind)).toEqual(kinds)
       store.replaceDraft({ ...snapshot, attachments: [] })
-      expect(store.prompt.references.map((item) => item.kind)).toEqual(
-        references.map((item) => item.kind)
-      )
+      expect(store.prompt.references.map((item) => item.kind)).toEqual(kinds)
     }
   )
   it('retains skill identity and its adjusted position without expanding it to ordinary prompt text', () => {

@@ -1,6 +1,7 @@
 import userEvent from '@testing-library/user-event'
+import type { UserEvent } from '@testing-library/user-event'
 import { render, screen, waitFor, within } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
@@ -237,9 +238,75 @@ describe('sent message workflow clipboard', () => {
     ).toBeVisible()
   })
 
-  it.for(['button', 'selection'] as const)(
-    'copies a deleted skill through %s and preserves its description and adjacent workflows on resend',
-    async (operation) => {
+  it.for<{
+    operation: string
+    copy: (
+      user: UserEvent
+    ) => Promise<{ copiedText: string; pasteData: DataTransfer | undefined }>
+    copiedText: string
+    editorText: string
+    contentBefore: string
+    contentAfter: string
+    markerOffset: number
+  }>([
+    {
+      operation: 'button',
+      copy: async (user) => {
+        await user.click(
+          screen.getByRole('button', { name: i18n.global.t('agent.copy') })
+        )
+        return {
+          copiedText: await navigator.clipboard.readText(),
+          pasteData: undefined
+        }
+      },
+      copiedText: 'Before /portrait.v2@[Workflow: Reference B] after',
+      editorText: 'Before /portrait.v2Reference B after',
+      contentBefore: 'Before ',
+      contentAfter: ' after',
+      markerOffset: 7
+    },
+    {
+      operation: 'selection',
+      copy: async (user) => {
+        await user.tab()
+        const label = document
+          .createTreeWalker(
+            screen.getByTestId('skill-reference'),
+            NodeFilter.SHOW_TEXT
+          )
+          .nextNode()
+        assert.exists(label)
+        const range = document.createRange()
+        range.setStart(label, 3)
+        range.setEndAfter(
+          screen.getByRole('button', { name: 'Open Reference B' })
+        )
+        document.getSelection()?.removeAllRanges()
+        document.getSelection()?.addRange(range)
+        const clipboard = await user.copy()
+        assert.exists(clipboard)
+        return {
+          copiedText: clipboard.getData('text/plain'),
+          pasteData: clipboard
+        }
+      },
+      copiedText: '/portrait.v2@[Workflow: Reference B]',
+      editorText: '/portrait.v2Reference B',
+      contentBefore: '',
+      contentAfter: '',
+      markerOffset: 0
+    }
+  ])(
+    'copies a deleted skill through $operation and preserves its description and adjacent workflows on resend',
+    async ({
+      copy,
+      copiedText,
+      editorText,
+      contentBefore,
+      contentAfter,
+      markerOffset
+    }) => {
       const user = userEvent.setup()
       render(UserMessage, {
         props: {
@@ -256,42 +323,15 @@ describe('sent message workflow clipboard', () => {
         },
         global: { plugins: [i18n] }
       })
-      let clipboard: DataTransfer | undefined
-      if (operation === 'button') {
-        await user.click(
-          screen.getByRole('button', { name: i18n.global.t('agent.copy') })
-        )
-        expect(await navigator.clipboard.readText()).toBe(
-          'Before /portrait.v2@[Workflow: Reference B] after'
-        )
-      } else {
-        await user.tab()
-        const label = document
-          .createTreeWalker(
-            screen.getByTestId('skill-reference'),
-            NodeFilter.SHOW_TEXT
-          )
-          .nextNode()
-        if (!label) throw new Error('Expected skill label text')
-        const range = document.createRange()
-        range.setStart(label, 3)
-        range.setEndAfter(
-          screen.getByRole('button', { name: 'Open Reference B' })
-        )
-        document.getSelection()?.removeAllRanges()
-        document.getSelection()?.addRange(range)
-        clipboard = await user.copy()
-        expect(clipboard?.getData('text/plain')).toBe(
-          '/portrait.v2@[Workflow: Reference B]'
-        )
-      }
+      const copied = await copy(user)
+      expect(copied.copiedText).toBe(copiedText)
       const skills = useSkillPacksStore()
       skills.flagsEnabled = true
       vi.spyOn(skills, 'startFlagGate').mockResolvedValue()
       vi.mocked(listSkillPacks).mockResolvedValue([])
       const { store, editor, onSend } = renderComposer()
       await user.click(editor)
-      await user.paste(clipboard)
+      await user.paste(copied.pasteData)
       await waitFor(() => expect(skills.catalogConfirmed).toBe(true))
       const selected = store.prompt.references.find(
         (item) => item.kind === 'skill'
@@ -305,11 +345,7 @@ describe('sent message workflow clipboard', () => {
         'skill',
         'workflow'
       ])
-      expect(editor).toHaveTextContent(
-        operation === 'button'
-          ? 'Before /portrait.v2Reference B after'
-          : '/portrait.v2Reference B'
-      )
+      expect(editor).toHaveTextContent(editorText)
       expect(within(editor).getByTestId('skill-reference')).toHaveClass(
         'text-muted-foreground'
       )
@@ -317,13 +353,13 @@ describe('sent message workflow clipboard', () => {
       const marker =
         '[Use the saved skill /portrait.v2](skill://portrait.v2?description=Original%0ADescription)'
       expect(onSend).toHaveBeenCalledExactlyOnceWith(
-        operation === 'button' ? `Before ${marker} after` : marker,
+        `${contentBefore}${marker}${contentAfter}`,
         [],
         [
           {
             id: 'workflow-B',
             name: 'Reference B',
-            textOffset: marker.length + (operation === 'button' ? 7 : 0)
+            textOffset: markerOffset + marker.length
           }
         ]
       )
