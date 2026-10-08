@@ -49,7 +49,7 @@ const {
   modelsUnit = 'models',
   pinnedLabel = 'pinned',
   moreOptionsLabel = 'more options',
-  showOptionDetails = true,
+  showOptionDetails = false,
   class: className
 } = defineProps<{
   heading: string

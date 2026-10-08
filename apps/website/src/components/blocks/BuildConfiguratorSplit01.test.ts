@@ -86,12 +86,6 @@ describe('BuildConfiguratorSplit01', () => {
     ).toBeTruthy()
   })
 
-  it('shows a more-options hint after each chip group', () => {
-    render(BuildConfiguratorSplit01, { props: baseProps })
-
-    expect(screen.getAllByText('more options')).toHaveLength(4)
-  })
-
   it('keeps selections interactive without the optional details', async () => {
     render(BuildConfiguratorSplit01, {
       props: { ...baseProps, showOptionDetails: false }
@@ -152,6 +146,9 @@ describe('BuildConfiguratorSplit01', () => {
     )
     await userEvent.click(screen.getByRole('button', { name: 'Wan 3.0' }))
     expect(summaryText()).toContain('2 nodes · 2 models')
+    expect(
+      screen.getByRole('button', { name: 'ControlNet Aux' })
+    ).toHaveAttribute('aria-pressed', 'true')
 
     await userEvent.click(
       screen.getByRole('button', { name: 'ComfyUI-Manager' })

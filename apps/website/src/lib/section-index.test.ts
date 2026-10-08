@@ -101,22 +101,22 @@ describe('writeFullText', () => {
     expect(full).not.toContain('# 404')
   })
 
-  it('leaves the supported-models directory to its own catalog', async () => {
+  it('leaves the model files directory to its own catalog', async () => {
     const root = await seed()
-    await mkdir(join(root, 'p', 'supported-models'), { recursive: true })
+    await mkdir(join(root, 'hub', 'models', 'local'), { recursive: true })
     await writeFile(
-      join(root, 'p', 'supported-models.md'),
+      join(root, 'hub', 'models', 'local.md'),
       twin('Supported Models', 'Directory.', '# Supported Models')
     )
     await writeFile(
-      join(root, 'p', 'supported-models', 'flux.md'),
+      join(root, 'hub', 'models', 'local', 'flux.md'),
       twin('Flux in ComfyUI', 'Model.', '# Flux in ComfyUI')
     )
 
     await writeFullText(root, [
       ...twins,
-      '/p/supported-models.md',
-      '/p/supported-models/flux.md'
+      '/hub/models/local.md',
+      '/hub/models/local/flux.md'
     ])
 
     const full = await readFile(join(root, 'llms-full.txt'), 'utf8')
