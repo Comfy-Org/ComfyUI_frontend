@@ -185,6 +185,85 @@ describe('ConversationView', () => {
     expect(scrollTo).toHaveBeenCalled()
   })
 
+  it('keeps completed trace toggles anchored until the user returns to Latest', async () => {
+    const { store } = mountHarness()
+    store.recordUser(T, 'make a cat')
+    store.startTurn(T)
+    store.ingest(thinking('msg-1', 'pondering'))
+    store.ingest(delta('msg-1', 'Here is a cat'))
+    store.ingest(done('msg-1'))
+    await nextTick()
+    await nextTick()
+
+    const scroll = screen.getByTestId('agent-conversation-scroll')
+    let height = 1_000
+    Object.defineProperties(scroll, {
+      scrollHeight: { get: () => height },
+      scrollTop: { value: 500, writable: true },
+      clientHeight: { value: 500 }
+    })
+    const scrollTo = vi.fn()
+    Element.prototype.scrollTo = scrollTo
+    const summary = screen.getByRole('button', { name: /^worked/i })
+
+    await userEvent.click(summary)
+    expect(summary).toHaveAttribute('aria-expanded', 'true')
+    height = 1_200
+    resizeCallbacks.forEach((callback) => callback())
+    await nextTick()
+    expect(scrollTo).not.toHaveBeenCalled()
+    expect(scroll.scrollTop).toBe(500)
+
+    await userEvent.click(summary)
+    expect(summary).toHaveAttribute('aria-expanded', 'false')
+    height = 1_000
+    resizeCallbacks.forEach((callback) => callback())
+    await nextTick()
+    expect(scrollTo).not.toHaveBeenCalled()
+    expect(scroll.scrollTop).toBe(500)
+
+    await userEvent.click(summary)
+    expect(summary).toHaveAttribute('aria-expanded', 'true')
+    height = 2_000
+    resizeCallbacks.forEach((callback) => callback())
+    await nextTick()
+    expect(scrollTo).not.toHaveBeenCalled()
+    expect(scroll.scrollTop).toBe(500)
+
+    await userEvent.click(summary)
+    expect(summary).toHaveAttribute('aria-expanded', 'false')
+    height = 1_000
+    resizeCallbacks.forEach((callback) => callback())
+    await nextTick()
+    expect(scrollTo).not.toHaveBeenCalled()
+    expect(scroll.scrollTop).toBe(500)
+
+    await fireEvent.scroll(scroll)
+    height = 1_200
+    resizeCallbacks.forEach((callback) => callback())
+    expect(scrollTo).not.toHaveBeenCalled()
+
+    store.ingest(delta('msg-1', 'More content'))
+    await nextTick()
+    await nextTick()
+    expect(scrollTo).not.toHaveBeenCalled()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Latest' }))
+    scrollTo.mockClear()
+    height = 1_200
+    resizeCallbacks.forEach((callback) => callback())
+    expect(scrollTo).toHaveBeenCalled()
+
+    await userEvent.click(summary)
+    scrollTo.mockClear()
+    await fireEvent.wheel(scroll)
+    scroll.scrollTop = 700
+    await fireEvent.scroll(scroll)
+    height = 1_400
+    resizeCallbacks.forEach((callback) => callback())
+    expect(scrollTo).toHaveBeenCalledWith({ top: 900, behavior: 'instant' })
+  })
+
   it('starts a restored conversation at the latest message', async () => {
     const assistant = assistantMessage({
       parts: [{ type: 'text', text: 'latest reply', state: 'done' }]
