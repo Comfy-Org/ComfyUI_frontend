@@ -122,7 +122,7 @@
       "video": ["video", 0],
       "start_time": 0,
       "duration": 5,
-      "strict_duration": true
+      "strict_duration": false
     }
   },
   "components": {
