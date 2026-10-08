@@ -1,28 +1,39 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import {
-  activePolicyApprovals,
-  approveCurrentHead,
-  armMergeAutomation,
-  policyReviewFloor,
-  runFastLane,
-  stopMergeAutomation
-} from './automation.ts'
+import { runFastLane, stopMergeAutomation } from './automation.ts'
+import { POLICY_REVIEW_PREFIX } from './policy.ts'
 import type {
   GitHubClient,
+  MergeAutomationState,
   PullRequest,
-  ResolvedRuntimeConfig
+  PullRequestFile,
+  PullRequestReview,
+  RuntimeConfig
 } from './types.ts'
 
 const headSha = '0123456789abcdef0123456789abcdef01234567'
+const policyBody = `${POLICY_REVIEW_PREFIX} Lane: website.`
+const floorTime = '2026-10-06T10:00:00Z'
+const afterFloor = '2026-10-06T10:01:00Z'
+const beforeFloor = '2026-10-06T09:59:00Z'
 
-function runtimeConfig(): ResolvedRuntimeConfig {
+type Write = [operation: string, payload: unknown]
+
+interface FakeOptions {
+  viewer?: string
+  pull?: Partial<PullRequest>
+  reviews?: PullRequestReview[]
+  files?: PullRequestFile[]
+  mergeState?: Omit<MergeAutomationState, 'id'>
+  failingMutations?: string[]
+  failDismissals?: boolean
+}
+
+function runtimeConfig(overrides: Partial<RuntimeConfig> = {}): RuntimeConfig {
   return {
-    token: 'not-used-by-tests',
     repository: 'Comfy-Org/ComfyUI_frontend',
     pullRequestNumber: 42,
     eventHeadSha: headSha,
-    eventName: 'pull_request_target',
     defaultBranch: 'main',
     lane: {
       schemaVersion: 1,
@@ -35,378 +46,390 @@ function runtimeConfig(): ResolvedRuntimeConfig {
         trustedLabelers: ['drjkl'],
         holdLabel: 'website-fast-lane:hold'
       },
-      merge: { mode: 'automatic', method: 'SQUASH' }
-    }
+      merge: { mode: 'automatic', method: 'MERGE' }
+    },
+    ...overrides
   }
 }
 
-function pull(): PullRequest {
-  return { node_id: 'PR_1', head: { sha: headSha } }
+function policyApproval(
+  id: number,
+  commitId = headSha,
+  submittedAt = floorTime
+): PullRequestReview {
+  return {
+    id,
+    state: 'APPROVED',
+    commit_id: commitId,
+    body: policyBody,
+    submitted_at: submittedAt,
+    user: { login: 'christian-byrne' }
+  }
 }
 
-function unusedRequest(): Promise<never> {
-  return Promise.reject(new Error('request was not expected'))
-}
+function fakeGitHub(options: FakeOptions = {}) {
+  const writes: Write[] = []
+  const pull: PullRequest = {
+    state: 'open',
+    draft: false,
+    node_id: 'PR_1',
+    changed_files: options.files?.length ?? 1,
+    user: { login: 'bertfy' },
+    labels: [],
+    head: { sha: headSha, repo: { full_name: 'Comfy-Org/ComfyUI_frontend' } },
+    base: { ref: 'main', repo: { full_name: 'Comfy-Org/ComfyUI_frontend' } },
+    ...options.pull
+  }
+  const reviews = [...(options.reviews ?? [])]
+  const files = options.files ?? [
+    { filename: 'apps/website/src/pages/index.astro' }
+  ]
 
-function unusedPaginate(): Promise<never> {
-  return Promise.reject(new Error('pagination was not expected'))
-}
-
-describe('approval lifecycle', () => {
-  it('selects active policy approvals across current and stale heads', () => {
-    const policyBody =
-      '[Package fast lane] Policy-only approval. Lane: website.'
-    expect(
-      activePolicyApprovals(
-        [
-          {
-            id: 1,
-            state: 'APPROVED',
-            commit_id: 'old-head',
-            body: policyBody,
-            user: { login: 'christian-byrne' }
-          },
-          {
-            id: 2,
-            state: 'APPROVED',
-            commit_id: headSha,
-            body: policyBody,
-            user: { login: 'christian-byrne' }
-          },
-          {
-            id: 3,
-            state: 'DISMISSED',
-            body: policyBody,
-            user: { login: 'christian-byrne' }
-          }
-        ],
-        'christian-byrne'
-      ).map((review) => review.id)
-    ).toEqual([1, 2])
-  })
-
-  it('withdraws a new approval when post-approval verification fails', async () => {
-    const verificationError = new Error('verification unavailable')
-    const calls: { path: string; method: string }[] = []
-    const github: GitHubClient = {
-      async request(path, options = {}) {
-        calls.push({ path, method: options.method ?? 'GET' })
-        if (options.method === 'POST') return { id: 123 }
-        if (options.method === 'PUT') return null
-        throw verificationError
-      },
-      async paginate() {
-        throw new Error('pagination should not follow a failed pull request')
-      },
-      graphql: unusedRequest
-    }
-
-    await expect(
-      approveCurrentHead(github, runtimeConfig(), [], vi.fn())
-    ).rejects.toBe(verificationError)
-    expect(calls).toEqual([
-      { path: '/pulls/42/reviews', method: 'POST' },
-      { path: '/pulls/42', method: 'GET' },
-      { path: '/pulls/42/reviews/123/dismissals', method: 'PUT' }
-    ])
-  })
-
-  it('withdraws an existing policy approval on hold even when merge teardown fails', async () => {
-    const dismissals: string[] = []
-    const github: GitHubClient = {
-      async request(path, options = {}) {
-        if (path === 'https://api.github.com/user') {
-          return { login: 'christian-byrne' }
+  const github: GitHubClient = {
+    async request(path, init = {}) {
+      if (path === 'https://api.github.com/user') {
+        return { login: options.viewer ?? 'christian-byrne' }
+      }
+      if (init.method === 'POST') {
+        const body: PullRequestReview = JSON.parse(String(init.body))
+        writes.push([`POST ${path}`, body])
+        const created = {
+          ...policyApproval(900, body.commit_id, afterFloor),
+          body: body.body
         }
-        if (options.method === 'PUT') {
-          dismissals.push(path)
-          return null
-        }
+        reviews.push(created)
+        return created
+      }
+      if (init.method === 'PUT') {
+        writes.push([`PUT ${path}`, JSON.parse(String(init.body))])
+        if (options.failDismissals) throw new Error('dismissal rejected')
+        return null
+      }
+      return pull
+    },
+    async paginate(path) {
+      return path.endsWith('/files') ? files : reviews
+    },
+    async graphql(query, variables) {
+      const operation = /(?:query|mutation) (\w+)/.exec(query)?.[1] ?? ''
+      if (operation === 'PackageFastLaneMergeState') {
         return {
-          state: 'open',
-          node_id: 'PR_1',
-          user: { login: 'bertfy' },
-          labels: [{ name: 'website-fast-lane:hold' }],
-          head: {
-            sha: headSha,
-            repo: { full_name: 'Comfy-Org/ComfyUI_frontend' }
-          },
-          base: {
-            ref: 'main',
-            repo: { full_name: 'Comfy-Org/ComfyUI_frontend' }
+          node: {
+            id: 'PR_1',
+            headRefOid: pull.head?.sha,
+            ...options.mergeState
           }
         }
-      },
-      async paginate() {
-        return [
-          {
-            id: 123,
-            state: 'APPROVED',
-            commit_id: headSha,
-            body: '[Package fast lane] Policy-only approval. Lane: website.',
-            submitted_at: '2026-10-06T10:00:00Z',
-            user: { login: 'christian-byrne' }
-          }
-        ]
-      },
-      graphql: () => Promise.reject(new Error('merge state unavailable'))
+      }
+      writes.push([operation, variables])
+      if (options.failingMutations?.includes(operation)) {
+        throw new Error(`${operation} failed`)
+      }
+      return {}
     }
+  }
+  return { github, writes }
+}
 
-    await expect(runFastLane(github, runtimeConfig(), vi.fn())).rejects.toThrow(
-      'failed to complete fast-lane compensation'
-    )
-    expect(dismissals).toEqual(['/pulls/42/reviews/123/dismissals'])
+const approvalPost: Write = [
+  'POST /pulls/42/reviews',
+  expect.objectContaining({ event: 'APPROVE', commit_id: headSha })
+]
+const enableAutoMerge: Write = [
+  'PackageFastLaneEnableAutoMerge',
+  { pullRequestId: 'PR_1', expectedHeadOid: headSha, mergeMethod: 'MERGE' }
+]
+const disableAutoMerge: Write = [
+  'PackageFastLaneDisableAutoMerge',
+  { pullRequestId: 'PR_1' }
+]
+const dequeue: Write = ['PackageFastLaneDequeue', { pullRequestId: 'PR_1' }]
+
+function dismissal(id: number): Write {
+  return [
+    `PUT /pulls/42/reviews/${id}/dismissals`,
+    { message: expect.stringContaining('Fast-lane approval withdrawn') }
+  ]
+}
+
+const armedByLane = {
+  autoMergeRequest: {
+    enabledAt: afterFloor,
+    enabledBy: { login: 'christian-byrne' }
+  }
+}
+
+describe('runFastLane', () => {
+  it.for([
+    {
+      name: 'a trusted author',
+      options: {},
+      config: {},
+      writes: [approvalPost, enableAutoMerge]
+    },
+    {
+      name: 'a non-allowlisted author on the operator label event',
+      options: {
+        pull: {
+          user: { login: 'someone-else' },
+          labels: [{ name: 'website-fast-lane:approve' }]
+        }
+      },
+      config: {
+        labelEvent: { actor: 'drjkl', label: 'website-fast-lane:approve' }
+      },
+      writes: [approvalPost, enableAutoMerge]
+    },
+    {
+      name: 'a head that already has the policy approval',
+      options: { reviews: [policyApproval(1)] },
+      config: {},
+      writes: [enableAutoMerge]
+    },
+    {
+      name: 'a clean head',
+      options: { mergeState: { mergeStateStatus: 'CLEAN' } },
+      config: {},
+      writes: [
+        approvalPost,
+        [
+          'PackageFastLaneEnqueue',
+          { pullRequestId: 'PR_1', expectedHeadOid: headSha }
+        ]
+      ]
+    },
+    {
+      name: 'a manual lane',
+      options: {},
+      config: {
+        lane: {
+          ...runtimeConfig().lane,
+          merge: { mode: 'manual', method: 'MERGE' }
+        }
+      },
+      writes: [approvalPost]
+    },
+    {
+      name: 'a head that advanced before arming',
+      options: { mergeState: { headRefOid: 'f'.repeat(40) } },
+      config: {},
+      writes: [approvalPost]
+    }
+  ] satisfies {
+    name: string
+    options: FakeOptions
+    config: Partial<RuntimeConfig>
+    writes: Write[]
+  }[])('approves and arms $name', async ({ options, config, writes }) => {
+    const fake = fakeGitHub(options)
+
+    await runFastLane(fake.github, runtimeConfig(config), vi.fn())
+
+    expect(fake.writes).toEqual(writes)
   })
 
-  it('does not create a second approval for the same identity and head', async () => {
-    const summary = vi.fn()
-    const github: GitHubClient = {
-      request: unusedRequest,
-      paginate: unusedPaginate,
-      graphql: unusedRequest
+  it.for([
+    {
+      name: 'a mixed-path change',
+      options: {
+        files: [
+          { filename: 'apps/website/src/pages/index.astro' },
+          { filename: 'src/main.ts' }
+        ]
+      }
+    },
+    {
+      name: 'a truncated changed-file list',
+      options: { pull: { changed_files: 2 } }
+    },
+    {
+      name: 'an active human change request',
+      options: {
+        reviews: [
+          { state: 'CHANGES_REQUESTED', user: { login: 'DrJKL', type: 'User' } }
+        ]
+      }
+    },
+    {
+      name: 'a pull request authored by the approval identity',
+      options: { pull: { user: { login: 'christian-byrne' } } }
+    },
+    {
+      name: 'a non-allowlisted author whose labeled run was replaced',
+      options: {
+        pull: {
+          user: { login: 'someone-else' },
+          labels: [{ name: 'website-fast-lane:approve' }]
+        }
+      }
+    },
+    {
+      name: 'a run for a head that has since advanced',
+      options: {
+        pull: { head: { sha: 'f'.repeat(40) } },
+        reviews: [policyApproval(1, 'f'.repeat(40))],
+        mergeState: armedByLane
+      }
     }
+  ] satisfies { name: string; options: FakeOptions }[])(
+    'writes nothing for $name',
+    async ({ options }) => {
+      const fake = fakeGitHub(options)
+
+      await runFastLane(fake.github, runtimeConfig(), vi.fn())
+
+      expect(fake.writes).toEqual([])
+    }
+  )
+
+  it('withdraws approval and merge state when the approval label is removed', async () => {
+    const fake = fakeGitHub({
+      pull: { user: { login: 'someone-else' }, labels: [] },
+      reviews: [policyApproval(1)],
+      mergeState: armedByLane
+    })
+
+    await runFastLane(fake.github, runtimeConfig(), vi.fn())
+
+    expect(fake.writes).toEqual([disableAutoMerge, dismissal(1)])
+  })
+
+  it('rejects a token that belongs to another account before writing', async () => {
+    const fake = fakeGitHub({ viewer: 'someone-else' })
+
     await expect(
-      approveCurrentHead(
-        github,
-        runtimeConfig(),
-        [
-          {
-            state: 'APPROVED',
-            commit_id: headSha,
-            body: '[Package fast lane] Policy-only approval. Lane: website.',
-            user: { login: 'christian-byrne' }
-          }
-        ],
-        summary
-      )
-    ).resolves.toBe(true)
-    expect(summary).toHaveBeenCalledWith(
-      `Already approved ${headSha.slice(0, 12)} as @christian-byrne.`
-    )
+      runFastLane(fake.github, runtimeConfig(), vi.fn())
+    ).rejects.toThrow('FAST_LANE_TOKEN belongs to someone-else')
+    expect(fake.writes).toEqual([])
+  })
+
+  it('withdraws every policy approval on hold even when merge teardown fails', async () => {
+    const fake = fakeGitHub({
+      pull: { labels: [{ name: 'website-fast-lane:hold' }] },
+      reviews: [policyApproval(122, 'old-head'), policyApproval(123)],
+      mergeState: armedByLane,
+      failingMutations: ['PackageFastLaneDisableAutoMerge']
+    })
+    const summary = vi.fn()
+
+    await expect(
+      runFastLane(fake.github, runtimeConfig(), summary)
+    ).rejects.toThrow('failed to complete fast-lane compensation')
+    expect(fake.writes).toEqual([
+      disableAutoMerge,
+      dismissal(122),
+      dismissal(123)
+    ])
+    expect(summary).not.toHaveBeenCalled()
+  })
+
+  it('withdraws its approval once when arming fails', async () => {
+    const fake = fakeGitHub({
+      failingMutations: ['PackageFastLaneEnableAutoMerge']
+    })
+
+    await expect(
+      runFastLane(fake.github, runtimeConfig(), vi.fn())
+    ).rejects.toThrow('PackageFastLaneEnableAutoMerge failed')
+    expect(fake.writes).toEqual([approvalPost, enableAutoMerge, dismissal(900)])
   })
 })
 
-describe('merge automation', () => {
-  it('uses the earliest policy review as the automation ownership floor', () => {
-    expect(
-      policyReviewFloor(
-        [
-          {
-            state: 'APPROVED',
-            body: '[Package fast lane] Policy-only approval. Later head.',
-            submitted_at: '2026-10-06T10:03:00Z',
-            user: { login: 'christian-byrne' }
-          },
-          {
-            state: 'DISMISSED',
-            body: '[Package fast lane] Policy-only approval. Earlier head.',
-            submitted_at: '2026-10-06T10:00:00Z',
-            user: { login: 'christian-byrne' }
-          }
-        ],
-        'christian-byrne'
-      )?.submitted_at
-    ).toBe('2026-10-06T10:00:00Z')
-  })
-
-  it('arms native auto-merge for the exact head and configured method', async () => {
-    const graphql = vi
-      .fn<GitHubClient['graphql']>()
-      .mockResolvedValueOnce({
-        node: {
-          id: 'PR_1',
-          headRefOid: headSha,
-          mergeStateStatus: 'BLOCKED',
-          autoMergeRequest: null,
-          mergeQueueEntry: null
+describe('stopMergeAutomation', () => {
+  it.for([
+    {
+      name: 'queue entry and auto-merge created by the lane after its floor',
+      mergeState: {
+        ...armedByLane,
+        mergeQueueEntry: {
+          id: 'MQE_1',
+          enqueuedAt: afterFloor,
+          enqueuer: { login: 'christian-byrne' }
         }
-      })
-      .mockResolvedValueOnce({
-        enablePullRequestAutoMerge: { clientMutationId: null }
-      })
-    const github: GitHubClient = {
-      request: unusedRequest,
-      paginate: unusedPaginate,
-      graphql
-    }
-
-    await armMergeAutomation(github, pull(), headSha, runtimeConfig(), vi.fn())
-
-    expect(graphql).toHaveBeenCalledTimes(2)
-    expect(graphql.mock.calls[1][0]).toContain('enablePullRequestAutoMerge')
-    expect(graphql.mock.calls[1][1]).toEqual({
-      pullRequestId: 'PR_1',
-      expectedHeadOid: headSha,
-      mergeMethod: 'SQUASH'
-    })
-  })
-
-  it('enqueues a clean exact head without queue jumping', async () => {
-    const graphql = vi
-      .fn<GitHubClient['graphql']>()
-      .mockResolvedValueOnce({
-        node: {
-          id: 'PR_1',
-          headRefOid: headSha,
-          mergeStateStatus: 'CLEAN',
-          autoMergeRequest: null,
-          mergeQueueEntry: null
+      },
+      writes: [dequeue, disableAutoMerge]
+    },
+    {
+      name: 'a queue entry by another account',
+      mergeState: {
+        ...armedByLane,
+        mergeQueueEntry: {
+          id: 'MQE_1',
+          enqueuedAt: afterFloor,
+          enqueuer: { login: 'drjkl' }
         }
-      })
-      .mockResolvedValueOnce({
-        enqueuePullRequest: { clientMutationId: null }
-      })
-    const github: GitHubClient = {
-      request: unusedRequest,
-      paginate: unusedPaginate,
-      graphql
-    }
-
-    await armMergeAutomation(github, pull(), headSha, runtimeConfig(), vi.fn())
-
-    expect(graphql.mock.calls[1][0]).toContain('jump: false')
-    expect(graphql.mock.calls[1][1]).toEqual({
-      pullRequestId: 'PR_1',
-      expectedHeadOid: headSha
-    })
-  })
-
-  it('does not arm a head that advanced after policy approval', async () => {
-    const advancedSha = 'abcdef0123456789abcdef0123456789abcdef01'
-    const graphql = vi.fn<GitHubClient['graphql']>().mockResolvedValueOnce({
-      node: {
-        id: 'PR_1',
-        headRefOid: advancedSha,
-        mergeStateStatus: 'CLEAN',
-        autoMergeRequest: null,
-        mergeQueueEntry: null
-      }
-    })
-    const github: GitHubClient = {
-      request: unusedRequest,
-      paginate: unusedPaginate,
-      graphql
-    }
-
-    await expect(
-      armMergeAutomation(
-        github,
-        { node_id: 'PR_1', head: { sha: advancedSha } },
-        headSha,
-        runtimeConfig(),
-        vi.fn()
-      )
-    ).rejects.toThrow('head advanced')
-    expect(graphql).toHaveBeenCalledTimes(1)
-  })
-
-  it('does not mutate merge state in a manual lane', async () => {
-    const config = runtimeConfig()
-    config.lane.merge.mode = 'manual'
-    const graphql = vi.fn<GitHubClient['graphql']>()
-    const github: GitHubClient = {
-      request: unusedRequest,
-      paginate: unusedPaginate,
-      graphql
-    }
-
-    await armMergeAutomation(github, pull(), headSha, config, vi.fn())
-
-    expect(graphql).not.toHaveBeenCalled()
-  })
-
-  it('withdraws only merge state created by the policy identity after its review', async () => {
-    const graphql = vi
-      .fn<GitHubClient['graphql']>()
-      .mockResolvedValueOnce({
-        node: {
-          id: 'PR_1',
-          headRefOid: headSha,
-          autoMergeRequest: {
-            enabledAt: '2026-10-06T10:01:00Z',
-            enabledBy: { login: 'christian-byrne' }
-          },
-          mergeQueueEntry: {
-            id: 'MQE_1',
-            enqueuedAt: '2026-10-06T10:02:00Z',
-            enqueuer: { login: 'christian-byrne' }
-          }
+      },
+      writes: [disableAutoMerge]
+    },
+    {
+      name: 'a queue entry from before the floor',
+      mergeState: {
+        mergeQueueEntry: {
+          id: 'MQE_1',
+          enqueuedAt: beforeFloor,
+          enqueuer: { login: 'christian-byrne' }
         }
-      })
-      .mockResolvedValue({})
-    const github: GitHubClient = {
-      request: unusedRequest,
-      paginate: unusedPaginate,
-      graphql
-    }
-
-    await stopMergeAutomation(github, pull(), 'christian-byrne', {
-      submitted_at: '2026-10-06T10:00:00Z'
-    })
-
-    expect(graphql).toHaveBeenCalledTimes(3)
-    expect(graphql.mock.calls[1][0]).toContain('dequeuePullRequest')
-    expect(graphql.mock.calls[1][1]).toEqual({ pullRequestId: 'PR_1' })
-    expect(graphql.mock.calls[2][0]).toContain('disablePullRequestAutoMerge')
-  })
-
-  it('leaves pre-existing merge state alone', async () => {
-    const graphql = vi.fn<GitHubClient['graphql']>().mockResolvedValueOnce({
-      node: {
-        id: 'PR_1',
-        headRefOid: headSha,
+      },
+      writes: []
+    },
+    {
+      name: 'auto-merge enabled by another account',
+      mergeState: {
         autoMergeRequest: {
-          enabledAt: '2026-10-06T09:59:00Z',
+          enabledAt: afterFloor,
+          enabledBy: { login: 'drjkl' }
+        }
+      },
+      writes: []
+    },
+    {
+      name: 'auto-merge enabled before the floor',
+      mergeState: {
+        autoMergeRequest: {
+          enabledAt: beforeFloor,
           enabledBy: { login: 'christian-byrne' }
-        },
-        mergeQueueEntry: null
-      }
-    })
-    const github: GitHubClient = {
-      request: unusedRequest,
-      paginate: unusedPaginate,
-      graphql
+        }
+      },
+      writes: []
     }
+  ] satisfies {
+    name: string
+    mergeState: Omit<MergeAutomationState, 'id'>
+    writes: Write[]
+  }[])(
+    'withdraws only lane-owned state for $name',
+    async ({ mergeState, writes }) => {
+      const fake = fakeGitHub({ mergeState })
 
-    await stopMergeAutomation(github, pull(), 'christian-byrne', {
-      submitted_at: '2026-10-06T10:00:00Z'
-    })
+      await stopMergeAutomation(
+        fake.github,
+        { node_id: 'PR_1' },
+        'christian-byrne',
+        { submitted_at: floorTime }
+      )
 
-    expect(graphql).toHaveBeenCalledTimes(1)
-  })
+      expect(fake.writes).toEqual(writes)
+    }
+  )
 
   it('still disables auto-merge when dequeue fails', async () => {
-    const graphql = vi
-      .fn<GitHubClient['graphql']>()
-      .mockResolvedValueOnce({
-        node: {
-          id: 'PR_1',
-          headRefOid: headSha,
-          autoMergeRequest: {
-            enabledAt: '2026-10-06T10:01:00Z',
-            enabledBy: { login: 'christian-byrne' }
-          },
-          mergeQueueEntry: {
-            id: 'MQE_1',
-            enqueuedAt: '2026-10-06T10:02:00Z',
-            enqueuer: { login: 'christian-byrne' }
-          }
+    const fake = fakeGitHub({
+      mergeState: {
+        ...armedByLane,
+        mergeQueueEntry: {
+          id: 'MQE_1',
+          enqueuedAt: afterFloor,
+          enqueuer: { login: 'christian-byrne' }
         }
-      })
-      .mockRejectedValueOnce(new Error('already dequeued'))
-      .mockResolvedValueOnce({})
-    const github: GitHubClient = {
-      request: unusedRequest,
-      paginate: unusedPaginate,
-      graphql
-    }
+      },
+      failingMutations: ['PackageFastLaneDequeue']
+    })
 
     await expect(
-      stopMergeAutomation(github, pull(), 'christian-byrne', {
-        submitted_at: '2026-10-06T10:00:00Z'
+      stopMergeAutomation(fake.github, { node_id: 'PR_1' }, 'christian-byrne', {
+        submitted_at: floorTime
       })
     ).rejects.toThrow('failed to stop all merge automation')
-    expect(graphql).toHaveBeenCalledTimes(3)
-    expect(graphql.mock.calls[2][0]).toContain('disablePullRequestAutoMerge')
+    expect(fake.writes).toEqual([dequeue, disableAutoMerge])
   })
 })

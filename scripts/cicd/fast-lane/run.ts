@@ -3,7 +3,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { runFastLane } from './automation.ts'
-import { loadRuntimeConfig } from './config.ts'
+import { loadRuntimeConfig, requiredEnv } from './config.ts'
 import { createGitHubClient } from './github.ts'
 
 function summary(message: string): void {
@@ -14,7 +14,10 @@ function summary(message: string): void {
 
 export async function main(): Promise<void> {
   const config = loadRuntimeConfig()
-  const github = createGitHubClient(config.token, config.repository)
+  const github = createGitHubClient(
+    requiredEnv('FAST_LANE_TOKEN'),
+    config.repository
+  )
   await runFastLane(github, config, summary)
 }
 
@@ -22,9 +25,5 @@ if (
   process.argv[1] &&
   fileURLToPath(import.meta.url) === path.resolve(process.argv[1])
 ) {
-  main().catch((error: unknown) => {
-    const message = error instanceof Error ? error.stack : String(error)
-    process.stderr.write(`${message}\n`)
-    process.exitCode = 1
-  })
+  await main()
 }

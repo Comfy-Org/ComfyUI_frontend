@@ -22,8 +22,6 @@ on:
       - unlabeled
   workflow_run:
     workflows:
-      - 'CI: Lint Format'
-      - 'CI: Tests Unit'
       - 'CI: Tests E2E'
       - 'CI: Website E2E'
     types: [completed]
@@ -31,82 +29,49 @@ on:
 
 permissions:
   contents: read
-  issues: read
   pull-requests: read
 
 jobs:
-  approve:
-    if: github.event_name == 'pull_request_target'
-    concurrency:
-      group: website-fast-lane-${{ github.event.pull_request.number }}
-      cancel-in-progress: false
-    environment: website-approval
+  resolve:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.event == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    steps:
-      - name: Checkout trusted base automation
-        uses: actions/checkout@v7
-        with:
-          ref: refs/heads/${{ github.event.repository.default_branch }}
-          persist-credentials: false
-          sparse-checkout: |
-            .nvmrc
-            .github/fast-lanes/website.json
-            scripts/cicd/fast-lane
-
-      - uses: actions/setup-node@v6
-        with:
-          node-version-file: .nvmrc
-
-      - name: Approve and queue eligible website pull request
-        env:
-          FAST_LANE_CONFIG: .github/fast-lanes/website.json
-          FAST_LANE_TOKEN: ${{ secrets.WEBSITE_APPROVAL_TOKEN }}
-          FAST_LANE_BASE_REF: ${{ github.event.repository.default_branch }}
-          FAST_LANE_EVENT_ACTION: ${{ github.event.action }}
-          FAST_LANE_EVENT_ACTOR: ${{ github.triggering_actor }}
-          FAST_LANE_EVENT_LABEL: ${{ github.event.label.name }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: node --experimental-strip-types scripts/cicd/fast-lane/run.ts
-
-  resolve-reconcile-pull-request:
-    if: github.event_name == 'status' || (github.event_name == 'workflow_run' && github.event.workflow_run.event == 'pull_request')
-    runs-on: ubuntu-latest
     outputs:
       pull-request-number: ${{ steps.pull-request.outputs.result }}
     steps:
-      - name: Resolve the exact open pull request
+      - name: Resolve the pull request for this event
         id: pull-request
         uses: actions/github-script@v9
         with:
           result-encoding: string
           script: |
+            if (context.payload.pull_request) {
+              return String(context.payload.pull_request.number)
+            }
             const sha = context.payload.sha ?? context.payload.workflow_run?.head_sha
             const { data: pulls } = await github.rest.repos.listPullRequestsAssociatedWithCommit({
               ...context.repo,
               commit_sha: sha,
             })
-            const repository = `${context.repo.owner}/${context.repo.repo}`
+            const repository = `${context.repo.owner}/${context.repo.repo}`.toLowerCase()
             const matches = pulls.filter((pull) =>
               pull.state === 'open' &&
               pull.head.sha === sha &&
-              pull.head.repo?.full_name === repository &&
+              pull.head.repo?.full_name.toLowerCase() === repository &&
               pull.base.ref === context.payload.repository.default_branch &&
-              pull.base.repo.full_name === repository
+              pull.base.repo.full_name.toLowerCase() === repository
             )
             if (matches.length !== 1) {
-              core.notice(`Expected one open same-repository pull request for ${sha}; found ${matches.length}.`)
+              core.info(`Expected one open same-repository pull request for ${sha}; found ${matches.length}.`)
               return ''
             }
             return String(matches[0].number)
 
-  reconcile-after-check:
-    needs: resolve-reconcile-pull-request
-    if: needs.resolve-reconcile-pull-request.outputs.pull-request-number != ''
+  fast-lane:
+    needs: resolve
+    if: needs.resolve.outputs.pull-request-number != ''
     concurrency:
-      group: website-fast-lane-${{ needs.resolve-reconcile-pull-request.outputs.pull-request-number }}
+      group: website-fast-lane-${{ needs.resolve.outputs.pull-request-number }}
       cancel-in-progress: false
     environment: website-approval
     runs-on: ubuntu-latest
@@ -126,14 +91,15 @@ jobs:
         with:
           node-version-file: .nvmrc
 
-      - name: Reconcile approval and native queue state
+      - name: Approve, queue, or withdraw the website pull request
         env:
           FAST_LANE_CONFIG: .github/fast-lanes/website.json
           FAST_LANE_TOKEN: ${{ secrets.WEBSITE_APPROVAL_TOKEN }}
-          FAST_LANE_BASE_REF: ${{ github.event.repository.default_branch }}
+          FAST_LANE_DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
           FAST_LANE_EVENT_ACTION: ${{ github.event.action }}
-          FAST_LANE_EVENT_ACTOR: ${{ github.actor }}
+          FAST_LANE_EVENT_ACTOR: ${{ github.triggering_actor }}
           FAST_LANE_EVENT_LABEL: ${{ github.event.label.name }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-          PR_HEAD_SHA: ${{ github.event.sha || github.event.workflow_run.head_sha }}
-        run: node --experimental-strip-types scripts/cicd/fast-lane/run.ts
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.event.sha || github.event.workflow_run.head_sha }}
+          PR_NUMBER: ${{ needs.resolve.outputs.pull-request-number }}
+        run: node scripts/cicd/fast-lane/run.ts

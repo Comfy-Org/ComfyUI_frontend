@@ -1,9 +1,15 @@
 import fs from 'node:fs'
 
-import type { FastLaneConfig, RuntimeConfig } from './types.ts'
+import { isRecord } from './github.ts'
+import { MERGE_METHODS, MERGE_MODES } from './types.ts'
+import type { FastLaneConfig, LabelEvent, RuntimeConfig } from './types.ts'
 
-const MERGE_METHODS = new Set(['MERGE', 'REBASE', 'SQUASH'])
-const MERGE_MODES = new Set(['automatic', 'manual'])
+function isOneOf<T extends string>(
+  values: readonly T[],
+  value: string
+): value is T {
+  return values.some((candidate) => candidate === value)
+}
 
 function requiredString(
   record: Record<string, unknown>,
@@ -35,10 +41,8 @@ function stringArray(
 }
 
 function record(value: unknown, context: string): Record<string, unknown> {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    throw new Error(`${context} must be an object`)
-  }
-  return value as Record<string, unknown>
+  if (!isRecord(value)) throw new Error(`${context} must be an object`)
+  return value
 }
 
 function normalizeLogins(logins: string[]): string[] {
@@ -55,10 +59,10 @@ export function parseFastLaneConfig(value: unknown): FastLaneConfig {
   const merge = record(root.merge, 'fast lane config.merge')
   const mode = requiredString(merge, 'mode', 'fast lane config.merge')
   const method = requiredString(merge, 'method', 'fast lane config.merge')
-  if (!MERGE_MODES.has(mode)) {
+  if (!isOneOf(MERGE_MODES, mode)) {
     throw new Error('fast lane config.merge.mode must be automatic or manual')
   }
-  if (!MERGE_METHODS.has(method)) {
+  if (!isOneOf(MERGE_METHODS, method)) {
     throw new Error(
       'fast lane config.merge.method must be MERGE, REBASE, or SQUASH'
     )
@@ -108,31 +112,36 @@ export function parseFastLaneConfig(value: unknown): FastLaneConfig {
         'fast lane config.approval'
       ).toLowerCase()
     },
-    merge: {
-      mode: mode as FastLaneConfig['merge']['mode'],
-      method: method as FastLaneConfig['merge']['method']
-    }
+    merge: { mode, method }
   }
 }
 
-function requiredEnv(name: string): string {
+export function requiredEnv(name: string): string {
   const value = process.env[name]?.trim()
   if (!value) throw new Error(`${name} is required`)
   return value
 }
 
-function optionalEnv(name: string): string | undefined {
-  return process.env[name]?.trim() || undefined
-}
-
-function optionalPositiveIntegerEnv(name: string): number | undefined {
-  const value = process.env[name]?.trim()
-  if (!value) return
-  const parsed = Number(value)
+function positiveIntegerEnv(name: string): number {
+  const parsed = Number(requiredEnv(name))
   if (!Number.isSafeInteger(parsed) || parsed <= 0) {
     throw new Error(`${name} must be a positive integer`)
   }
   return parsed
+}
+
+function labelEventEnv(): LabelEvent | undefined {
+  const actor = process.env.FAST_LANE_EVENT_ACTOR?.trim()
+  const label = process.env.FAST_LANE_EVENT_LABEL?.trim()
+  if (
+    process.env.GITHUB_EVENT_NAME !== 'pull_request_target' ||
+    process.env.FAST_LANE_EVENT_ACTION !== 'labeled' ||
+    !actor ||
+    !label
+  ) {
+    return
+  }
+  return { actor: actor.toLowerCase(), label: label.toLowerCase() }
 }
 
 export function loadRuntimeConfig(): RuntimeConfig {
@@ -147,15 +156,11 @@ export function loadRuntimeConfig(): RuntimeConfig {
   }
 
   return {
-    token: requiredEnv('FAST_LANE_TOKEN'),
     repository: requiredEnv('GITHUB_REPOSITORY'),
-    pullRequestNumber: optionalPositiveIntegerEnv('PR_NUMBER'),
+    pullRequestNumber: positiveIntegerEnv('PR_NUMBER'),
     eventHeadSha: requiredEnv('PR_HEAD_SHA'),
-    eventName: requiredEnv('GITHUB_EVENT_NAME'),
-    eventAction: optionalEnv('FAST_LANE_EVENT_ACTION'),
-    eventActor: optionalEnv('FAST_LANE_EVENT_ACTOR'),
-    eventLabel: optionalEnv('FAST_LANE_EVENT_LABEL'),
-    defaultBranch: requiredEnv('FAST_LANE_BASE_REF'),
+    labelEvent: labelEventEnv(),
+    defaultBranch: requiredEnv('FAST_LANE_DEFAULT_BRANCH'),
     lane: parseFastLaneConfig(parsed)
   }
 }

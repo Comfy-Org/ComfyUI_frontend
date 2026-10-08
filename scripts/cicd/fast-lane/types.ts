@@ -1,3 +1,6 @@
+export const MERGE_MODES = ['automatic', 'manual'] as const
+export const MERGE_METHODS = ['MERGE', 'REBASE', 'SQUASH'] as const
+
 export interface FastLaneConfig {
   schemaVersion: 1
   id: string
@@ -10,8 +13,8 @@ export interface FastLaneConfig {
     holdLabel: string
   }
   merge: {
-    mode: 'automatic' | 'manual'
-    method: 'MERGE' | 'REBASE' | 'SQUASH'
+    mode: (typeof MERGE_MODES)[number]
+    method: (typeof MERGE_METHODS)[number]
   }
 }
 
@@ -46,6 +49,8 @@ export interface PullRequestReview {
   user?: { login?: string; type?: string }
 }
 
+export type SubmittedReview = PullRequestReview & { submitted_at: string }
+
 export interface GitHubClient {
   request(path: string, options?: RequestInit): Promise<unknown>
   paginate(path: string): Promise<unknown[]>
@@ -68,21 +73,18 @@ export interface MergeAutomationState {
   } | null
 }
 
-export interface RuntimeConfig {
-  token: string
-  repository: string
-  pullRequestNumber?: number
-  eventHeadSha: string
-  eventName: string
-  eventAction?: string
-  eventActor?: string
-  eventLabel?: string
-  defaultBranch: string
-  lane: FastLaneConfig
+export interface LabelEvent {
+  actor: string
+  label: string
 }
 
-export interface ResolvedRuntimeConfig extends RuntimeConfig {
+export interface RuntimeConfig {
+  repository: string
   pullRequestNumber: number
+  eventHeadSha: string
+  labelEvent?: LabelEvent
+  defaultBranch: string
+  lane: FastLaneConfig
 }
 
 export type Summary = (message: string) => void

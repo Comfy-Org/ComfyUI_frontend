@@ -202,3 +202,31 @@ it.for([
     selectChecks('pull_request', relevant, filter)['website-only-changes']
   ).toBe(expected)
 })
+
+it('classifies website-only paths with the fast-lane path policy', () => {
+  const relevantFilters = z
+    .object({
+      runs: z.object({
+        steps: z.array(
+          z.object({
+            id: z.string(),
+            with: z.object({ filters: z.string() }).optional()
+          })
+        )
+      })
+    })
+    .parse(
+      parse(readFileSync('.github/actions/changes-filter/action.yaml', 'utf8'))
+    )
+    .runs.steps.find((step) => step.id === 'relevant')?.with?.filters
+  assert.exists(relevantFilters)
+  const lane = z
+    .object({ pathPrefixes: z.array(z.string()) })
+    .parse(JSON.parse(readFileSync('.github/fast-lanes/website.json', 'utf8')))
+
+  expect(
+    z
+      .object({ outside_website: z.array(z.string()) })
+      .parse(parse(relevantFilters)).outside_website
+  ).toEqual(['**', ...lane.pathPrefixes.map((prefix) => `!${prefix}**`)])
+})

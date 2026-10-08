@@ -4,10 +4,16 @@ const API_VERSION = '2022-11-28'
 const PAGE_SIZE = 100
 const GRAPHQL_URL = 'https://api.github.com/graphql'
 
+export function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
 function apiUrl(root: string, requestPath: string): string {
-  return requestPath.startsWith('https://')
-    ? requestPath
-    : `${root}${requestPath}`
+  if (!requestPath.startsWith('https://')) return `${root}${requestPath}`
+  if (new URL(requestPath).origin !== 'https://api.github.com') {
+    throw new Error(`Refusing to send credentials to ${requestPath}`)
+  }
+  return requestPath
 }
 
 async function assertSuccessful(
@@ -27,29 +33,18 @@ function arrayPage(value: unknown, requestPath: string): unknown[] {
   throw new Error(`GitHub API ${requestPath} did not return an array`)
 }
 
-interface GraphqlEnvelope {
-  data?: unknown
-  errors?: { message?: string }[]
-}
-
-function graphqlEnvelope(value: unknown): GraphqlEnvelope {
-  if (typeof value !== 'object' || value === null) {
+function graphqlData(value: unknown): unknown {
+  if (!isRecord(value)) {
     throw new Error('GitHub GraphQL returned an invalid response')
   }
-  return value
-}
-
-function graphqlErrorMessage(error: { message?: string }): string {
-  return error.message ?? 'unknown error'
-}
-
-function graphqlData(value: unknown): unknown {
-  const envelope = graphqlEnvelope(value)
-  const errors = envelope.errors ?? []
-  if (errors.length === 0) return envelope.data
-  throw new Error(
-    `GitHub GraphQL failed: ${errors.map(graphqlErrorMessage).join('; ')}`
+  const errors = Array.isArray(value.errors) ? value.errors : []
+  if (errors.length === 0) return value.data
+  const messages = errors.map((error) =>
+    isRecord(error) && typeof error.message === 'string'
+      ? error.message
+      : 'unknown error'
   )
+  throw new Error(`GitHub GraphQL failed: ${messages.join('; ')}`)
 }
 
 export function createGitHubClient(
