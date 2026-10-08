@@ -8,9 +8,11 @@
  * eighteen, and twelve files were punted against API that already existed.
  * Types cannot drift: they are the thing being described.
  */
+import { execFileSync } from 'node:child_process'
 import { readFileSync, readdirSync, realpathSync } from 'node:fs'
 import { join, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import process from 'node:process'
+import { URL, fileURLToPath } from 'node:url'
 import ts from 'typescript'
 
 import { reachableDeclarationNames } from './gen_api_surface.mjs'
@@ -78,7 +80,7 @@ export function buildApiDts(directory = sourceDirectory()) {
     )
   }
 
-  return (
+  const source =
     `/**\n` +
     ` * The published ComfyUI custom-node API — the complete surface.\n` +
     ` *\n` +
@@ -98,6 +100,16 @@ export function buildApiDts(directory = sourceDirectory()) {
     `declare module '*/comfy/api/v2.js' {\n` +
     `  export const comfy: Comfy\n` +
     `}\n`
+  return execFileSync(
+    process.execPath,
+    [
+      fileURLToPath(
+        new URL('./bin/oxfmt', import.meta.resolve('oxfmt/package.json'))
+      ),
+      '--stdin-filepath=comfy-api.d.ts',
+      '--config=' + resolve(directory, '../../../.oxfmtrc.json')
+    ],
+    { input: source, encoding: 'utf8' }
   )
 }
 

@@ -179,6 +179,7 @@ export const missing = comfy.graph.noSuchMember()
     try {
       mkdirSync(resolve(checkout, 'scripts'), { recursive: true })
       mkdirSync(resolve(checkout, 'src/platform'), { recursive: true })
+      cpSync('.oxfmtrc.json', resolve(checkout, '.oxfmtrc.json'))
       cpSync('scripts/node-api', resolve(checkout, 'scripts/node-api'), {
         recursive: true
       })
