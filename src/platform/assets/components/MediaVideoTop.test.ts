@@ -217,8 +217,8 @@ describe('MediaVideoTop', () => {
   )
 
   describe('click propagation while native controls are showing', () => {
-    const containerRect = { top: 100, bottom: 300, height: 200 }
-    const hoverScaledVideoRect = { top: 95, bottom: 305, height: 210 }
+    const containerRect = new DOMRect(0, 100, 320, 200)
+    const hoverScaledVideoRect = new DOMRect(-8, 95, 336, 210)
 
     async function renderPlayingHoveredVideo() {
       const user = userEvent.setup()
@@ -235,10 +235,10 @@ describe('MediaVideoTop', () => {
       vi.spyOn(
         HTMLDivElement.prototype,
         'getBoundingClientRect'
-      ).mockReturnValue(fromPartial(containerRect))
+      ).mockReturnValue(containerRect)
       const video = screen.getByLabelText<HTMLVideoElement>('clip.mp4')
       vi.spyOn(video, 'getBoundingClientRect').mockReturnValue(
-        fromPartial(hoverScaledVideoRect)
+        hoverScaledVideoRect
       )
 
       await fireEvent.play(video)
@@ -259,21 +259,21 @@ describe('MediaVideoTop', () => {
     }
 
     it.for([
-      { case: 'the control strip', clientY: 290, reachesCard: false },
+      { case: 'the control strip', clientY: 290, expectedCardClicks: 0 },
       {
         case: 'the strip above the scaled video rect',
         clientY: 240,
-        reachesCard: false
+        expectedCardClicks: 0
       },
-      { case: 'the video body', clientY: 200, reachesCard: true }
+      { case: 'the video body', clientY: 200, expectedCardClicks: 1 }
     ])(
-      'modifier-click on $case reaches the card: $reachesCard',
-      async ({ clientY, reachesCard }) => {
+      'modifier-click on $case reaches the card $expectedCardClicks times',
+      async ({ clientY, expectedCardClicks }) => {
         const { onCardClick, metaClickAt } = await renderPlayingHoveredVideo()
 
         await metaClickAt(clientY)
 
-        expect(onCardClick).toHaveBeenCalledTimes(reachesCard ? 1 : 0)
+        expect(onCardClick).toHaveBeenCalledTimes(expectedCardClicks)
       }
     )
 
@@ -282,7 +282,7 @@ describe('MediaVideoTop', () => {
       vi.spyOn(
         HTMLDivElement.prototype,
         'getBoundingClientRect'
-      ).mockReturnValue(fromPartial({ top: 100, bottom: 100, height: 0 }))
+      ).mockReturnValue(new DOMRect(0, 100, 320, 0))
 
       await metaClickAt(100)
 
