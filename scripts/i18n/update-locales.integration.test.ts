@@ -369,8 +369,8 @@ describe('updateLocales generation', () => {
 })
 
 describe('failure isolation', () => {
-  function createTwoFileRepo() {
-    const repo = createCatalogRepo()
+  function createTwoFileRepo(target: TranslationPipelineConfig = config) {
+    const repo = createCatalogRepo(target)
     repo.recordEnglish(
       { 'a.json': { alpha: 'Alpha' }, 'b.json': { gamma: 'Gamma' } },
       { 'a.json': ['["alpha"]'] }
@@ -385,6 +385,54 @@ describe('failure isolation', () => {
   }
 
   const aFiles = ['en/a.json', 'ja/a.json', 'zh-CN/a.json']
+
+  it('writes later files after an OpenAI request fails in an earlier file', async () => {
+    const repo = createTwoFileRepo({ ...config, localeFileConcurrency: 1 })
+    const before = repo.readTree()
+    vi.stubEnv('OPENAI_API_KEY', 'test-key')
+    const fetchFn: typeof fetch = async (_input, init) => {
+      if (typeof init?.body !== 'string')
+        throw new Error('expected a JSON request body')
+      const failed = init.body.includes('a.json:')
+      const body = failed
+        ? { error: { message: 'invalid input', type: 'invalid_request_error' } }
+        : {
+            status: 'completed',
+            error: null,
+            incomplete_details: null,
+            output: [
+              {
+                type: 'message',
+                content: [
+                  { type: 'output_text', text: '{"1":"translated Delta"}' }
+                ]
+              }
+            ]
+          }
+      return new Response(JSON.stringify(body), {
+        status: failed ? 400 : 200,
+        headers: { 'content-type': 'application/json' }
+      })
+    }
+    vi.stubGlobal('fetch', fetchFn)
+
+    await expect(repo.run(false)).rejects.toThrow(
+      'Translation failed for 2 locale files'
+    )
+
+    const after = repo.readTree()
+    expect(aFiles.map((file) => after[file])).toEqual(
+      aFiles.map((file) => before[file])
+    )
+    expect(repo.readCatalog('ja/b.json')).toEqual({
+      delta: 'translated Delta',
+      gamma: 'ガンマ'
+    })
+    expect(repo.readCatalog('zh-CN/b.json')).toEqual({
+      delta: 'translated Delta',
+      gamma: '伽马'
+    })
+  })
 
   it.for([
     {
