@@ -164,7 +164,6 @@ describe('useCameraAngle', () => {
           'Failed to initialize Camera Angle viewer. Try reloading the page.'
       })
     )
-
   })
 
   it('writes viewport interaction results back into the widgets', () => {

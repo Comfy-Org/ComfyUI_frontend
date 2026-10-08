@@ -123,7 +123,6 @@ describe('useCameraInfo', () => {
           'Failed to initialize Camera Info viewer. Try reloading the page.'
       })
     ])
-
   })
 
   it('forwards toolbar actions to the viewport', () => {
