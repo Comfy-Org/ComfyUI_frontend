@@ -21,7 +21,7 @@ import type {
 } from './useAgentWorkflowResolver'
 
 type RestorationOutcome =
-  | { outcome: 'open'; target: ComfyWorkflow | null }
+  | { outcome: 'open'; target: ComfyWorkflow | null; allowUnresolved?: boolean }
   | { outcome: 'deleted' }
   | { outcome: 'superseded' }
 
@@ -33,6 +33,7 @@ function restorationOutcomeFor(
     case 'gone':
       return { outcome: 'deleted' }
     case 'live':
+      return { outcome: 'open', target, allowUnresolved: true }
     case 'unknown':
       return { outcome: 'open', target }
   }
@@ -236,11 +237,6 @@ export function useAgentWorkflowSelection({
     if (!workflowSelection.value) void refreshCloudWorkflowIds()
   }
 
-  /**
-   * A complete listing that omits the id is conclusive only when nothing local
-   * owns it. With a local owner, `GET /api/workflows/{id}` decides, because the
-   * listing hides version-less drafts.
-   */
   async function resolveRestorationTarget(
     workflowId: string,
     isCurrent: () => boolean
@@ -250,8 +246,11 @@ export function useAgentWorkflowSelection({
     const target =
       boundOrOpenWorkflowFor(workflowId) ?? storedWorkflowFor(workflowId)
     if (!listed || !cloudListingOmits(workflowId))
-      return { outcome: 'open', target }
-    if (target === null) return { outcome: 'deleted' }
+      return {
+        outcome: 'open',
+        target,
+        allowUnresolved: listed && resolver.cloudListingContains(workflowId)
+      }
     const lifecycle = await cloudWorkflowLifecycle(workflowId)
     if (!isCurrent()) return { outcome: 'superseded' }
     return restorationOutcomeFor(
@@ -283,13 +282,19 @@ export function useAgentWorkflowSelection({
       panelStore.markWorkflowTargetUnavailable()
       return true
     }
-    return openRestoredWorkflow(resolved.target, workflowId, isCurrent)
+    return openRestoredWorkflow(
+      resolved.target,
+      workflowId,
+      isCurrent,
+      resolved.allowUnresolved
+    )
   }
 
   async function openRestoredWorkflow(
     target: ComfyWorkflow | null,
     workflowId: string,
-    isCurrent: () => boolean
+    isCurrent: () => boolean,
+    allowUnresolved = false
   ): Promise<boolean> {
     try {
       if (target === null) {
@@ -299,6 +304,7 @@ export function useAgentWorkflowSelection({
       }
       if (target === null) {
         panelStore.setWorkflowTarget(null)
+        if (allowUnresolved) return true
         warnRestoreFailed()
         return false
       }
