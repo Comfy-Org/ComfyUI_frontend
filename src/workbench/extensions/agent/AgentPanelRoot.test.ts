@@ -2522,10 +2522,10 @@ describe('AgentPanelRoot attach flow', () => {
     await nextTick()
     expect(store.attachments).toHaveLength(1)
     expect(fetchRequests(source)).toHaveLength(1)
-    expect(useToastStore().messagesToAdd).toEqual([
+    expect(useToast().toasts).toEqual([
       expect.objectContaining({
-        severity: 'info',
-        detail: 'Recording.mp3 is already in the asset tray'
+        kind: 'info',
+        title: 'Recording.mp3 is already in the asset tray'
       })
     ])
   })
@@ -2561,13 +2561,13 @@ describe('AgentPanelRoot attach flow', () => {
     expect(store.attachments).toEqual([newAttachment])
     expect(newAttachment.ref).toBe('stored-library.png')
     expect(store.prompt.references).toEqual([])
-    expect(useToastStore().messagesToAdd).toEqual([])
+    expect(useToast().toasts).toEqual([])
     expect(dispatchDrag(target, 'drop', data)).toBe(true)
     expect(store.attachments).toHaveLength(1)
-    expect(useToastStore().messagesToAdd).toEqual([
+    expect(useToast().toasts).toEqual([
       expect.objectContaining({
-        severity: 'info',
-        detail: 'library.png is already in the asset tray'
+        kind: 'info',
+        title: 'library.png is already in the asset tray'
       })
     ])
   })
@@ -3642,7 +3642,7 @@ describe('AgentPanelRoot attach flow', () => {
       ]
     })
     await vi.waitFor(() => expect(store.attachments[0]?.uploading).toBe(false))
-    expect(useToastStore().messagesToAdd).toEqual([])
+    expect(useToast().toasts).toEqual([])
     dispatchDrag(target, 'drop', {
       files: [
         ...Array.from(
@@ -3666,8 +3666,8 @@ describe('AgentPanelRoot attach flow', () => {
       )
     ).toHaveLength(1)
     await vi.waitFor(() => expect(uploaded).toEqual(['cat.png', 'dog.png']))
-    expect(useToastStore().messagesToAdd).toEqual([
-      expect.objectContaining({ severity: 'info', detail: notice })
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({ kind: 'info', title: notice })
     ])
     expect(screen.getByRole('group', { name: 'dog.png' })).toBeInTheDocument()
     expect(target).toHaveFocus()
