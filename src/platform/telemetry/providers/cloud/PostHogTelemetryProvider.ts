@@ -150,8 +150,6 @@ interface DesktopEntryAttribution {
   source: 'url' | 'persisted'
 }
 
-// Stamped via before_send rather than posthog.register() so the axes
-// survive the posthog.reset(true) on logout, which wipes super properties.
 function stampPlatformAxes(event: CaptureResult | null): CaptureResult | null {
   if (!event) return null
   event.properties.client = window.__comfyDesktop2 ? 'desktop' : 'web'
@@ -167,13 +165,13 @@ function readDesktopEntryAttribution(
   if (!isDesktopEntry && posthog.get_property('source_app') !== 'desktop') {
     return null
   }
-  const props: DesktopEntryProps = { source_app: 'desktop' }
   const deviceId: unknown = isDesktopEntry
     ? params.get('desktop_device_id')
     : posthog.get_property('desktop_device_id')
-  if (typeof deviceId === 'string' && deviceId) {
-    props.desktop_device_id = deviceId
-  }
+  const props: DesktopEntryProps =
+    typeof deviceId === 'string' && deviceId
+      ? { source_app: 'desktop', desktop_device_id: deviceId }
+      : { source_app: 'desktop' }
   return { props, source: isDesktopEntry ? 'url' : 'persisted' }
 }
 

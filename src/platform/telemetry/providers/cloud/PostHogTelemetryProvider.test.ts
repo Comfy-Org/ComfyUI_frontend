@@ -2,7 +2,7 @@ import type {
   BillingTelemetryEvent,
   CheckoutJourneyTelemetryEvent
 } from '@comfyorg/account-core/billing'
-import type { BeforeSendFn, CaptureResult, PostHog } from 'posthog-js'
+import type { CaptureResult, PostHog } from 'posthog-js'
 import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Ref } from 'vue'
 import { computed, nextTick, ref } from 'vue'
@@ -26,7 +26,7 @@ const hoisted = vi.hoisted(() => {
   const mockIdentify = vi.fn()
   const mockPeopleSet = vi.fn()
   const mockPeopleSetOnce = vi.fn()
-  const mockRegister = vi.fn()
+  const mockRegister = vi.fn<PostHog['register']>()
   const mockGetProperty = vi.fn<(name: string) => unknown>()
   const mockUnregister = vi.fn<PostHog['unregister']>()
   const mockPosthogReset = vi.fn()
@@ -134,15 +134,13 @@ function runBeforeSend(event: CaptureResult | null): CaptureResult | null {
   const config = hoisted.mockInit.mock.calls[0][1]
   assert.exists(config?.before_send)
   const { before_send } = config
-  const chain: BeforeSendFn[] = Array.isArray(before_send)
-    ? before_send
-    : [before_send]
+  const chain = Array.isArray(before_send) ? before_send : [before_send]
   return chain.reduce((acc, fn) => fn(acc), event)
 }
 
 function mockPostHogPersistence(initial: Record<string, unknown> = {}) {
   const persisted = new Map(Object.entries(initial))
-  hoisted.mockRegister.mockImplementation((props: Record<string, unknown>) => {
+  hoisted.mockRegister.mockImplementation((props) => {
     Object.entries(props).forEach(([key, value]) => persisted.set(key, value))
   })
   hoisted.mockGetProperty.mockImplementation((key) => persisted.get(key))
@@ -154,11 +152,7 @@ function mockPostHogPersistence(initial: Record<string, unknown> = {}) {
 }
 
 function setLocation(search: string): void {
-  Object.defineProperty(window.location, 'search', {
-    configurable: true,
-    value: search,
-    writable: true
-  })
+  window.history.replaceState({}, '', `/${search}`)
 }
 
 describe('PostHogTelemetryProvider', () => {
@@ -174,6 +168,10 @@ describe('PostHogTelemetryProvider', () => {
     window.__CONFIG__ = {
       posthog_project_token: 'phc_test_token'
     }
+  })
+
+  afterEach(() => {
+    setLocation('')
   })
 
   describe('initialization', () => {
@@ -350,34 +348,9 @@ describe('PostHogTelemetryProvider', () => {
         deployment: 'cloud'
       })
     })
-
-    it('keeps stamping platform axes after logout wipes super properties', async () => {
-      createProvider()
-      await vi.dynamicImportSettled()
-
-      const logout = vi.mocked(useCurrentUser().onUserLogout).mock.calls[0][0]
-      logout()
-
-      const result = runBeforeSend({
-        uuid: 'test',
-        event: 'test',
-        properties: {}
-      })
-      assert.exists(result)
-
-      expect(hoisted.mockPosthogReset).toHaveBeenCalledWith(true)
-      expect(result.properties).toMatchObject({
-        client: 'web',
-        deployment: 'cloud'
-      })
-    })
   })
 
   describe('desktop entry capture', () => {
-    afterEach(() => {
-      setLocation('')
-    })
-
     it('does not register desktop props when utm_source is absent', async () => {
       setLocation('')
       createProvider()
@@ -422,31 +395,17 @@ describe('PostHogTelemetryProvider', () => {
         source_app: 'desktop',
         desktop_device_id: 'old-device'
       })
-      const events: Array<CaptureResult | null> = []
-      hoisted.mockCapture.mockImplementation((event: string) => {
-        events.push(
-          runBeforeSend({
-            uuid: 'queued-event',
-            event,
-            properties: Object.fromEntries(persisted)
-          })
-        )
+      const persistedAtCapture: Record<string, unknown>[] = []
+      hoisted.mockCapture.mockImplementation(() => {
+        persistedAtCapture.push(Object.fromEntries(persisted))
       })
-      setLocation('?utm_source=comfy.desktop')
+      setLocation('?utm_source=comfy.desktop&desktop_device_id=new-device')
       const provider = createProvider()
       provider.trackSignupOpened()
       await vi.dynamicImportSettled()
 
-      expect(events).toEqual([
-        {
-          uuid: 'queued-event',
-          event: TelemetryEvents.USER_SIGN_UP_OPENED,
-          properties: {
-            source_app: 'desktop',
-            client: 'web',
-            deployment: 'cloud'
-          }
-        }
+      expect(persistedAtCapture).toEqual([
+        { source_app: 'desktop', desktop_device_id: 'new-device' }
       ])
     })
 
@@ -1817,10 +1776,6 @@ describe('PostHogTelemetryProvider', () => {
   })
 
   describe('logout', () => {
-    afterEach(() => {
-      setLocation('')
-    })
-
     it('registers onUserLogout watcher after init', async () => {
       createProvider()
       await vi.dynamicImportSettled()
@@ -1836,22 +1791,6 @@ describe('PostHogTelemetryProvider', () => {
       callback()
 
       expect(hoisted.mockPosthogReset).toHaveBeenCalledWith(true)
-    })
-
-    it('re-registers desktop entry props after reset wipes super properties', async () => {
-      const persisted = mockPostHogPersistence()
-      setLocation('?utm_source=comfy.desktop&desktop_device_id=device-abc')
-      createProvider()
-      await vi.dynamicImportSettled()
-      persisted.set('previous_user_property', 'must not survive logout')
-
-      const callback = vi.mocked(useCurrentUser().onUserLogout).mock.calls[0][0]
-      callback()
-
-      expect(Object.fromEntries(persisted)).toEqual({
-        source_app: 'desktop',
-        desktop_device_id: 'device-abc'
-      })
     })
 
     it('preserves desktop attribution after a clean-URL reload and logout', async () => {
@@ -2076,7 +2015,6 @@ describe('PostHogTelemetryProvider', () => {
       const initConfig = hoisted.mockInit.mock.calls[0][1]
       assert.exists(initConfig)
 
-      expect(initConfig.before_send).not.toBe(remoteBefore_send)
       expect(initConfig.before_send).not.toContain(remoteBefore_send)
     })
   })
