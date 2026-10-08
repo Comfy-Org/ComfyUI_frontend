@@ -28,6 +28,11 @@ test.describe('Top-up without a saved payment method', () => {
 
   test('explains a refused purchase', async ({ comfyPage }) => {
     const page = comfyPage.page
+    const paymentMethodReads: string[] = []
+    await page.route('**/api/billing/payment-methods', (route) => {
+      paymentMethodReads.push(route.request().url())
+      return route.fulfill({ json: [] })
+    })
     await page.route('**/api/billing/topup', (route) =>
       route.fulfill({
         status: 400,
@@ -45,6 +50,7 @@ test.describe('Top-up without a saved payment method', () => {
       .getByRole('button', { name: 'Add credits', exact: true })
       .click()
 
+    expect(paymentMethodReads).toHaveLength(0)
     await topUpDialog.root.getByRole('button', { name: 'Pay $50.00' }).click()
 
     await expect(

@@ -44,6 +44,7 @@ interface Rails {
 
 const RAILS_OFF: Rails = { subscription: false, topup: false }
 const SUBSCRIPTION_RAIL_ONLY: Rails = { subscription: true, topup: false }
+const TOPUP_RAIL_ONLY: Rails = { subscription: false, topup: true }
 
 const OPERATION_ID = 'op-e2e-parity'
 const PORTAL_URL = 'https://billing.example/portal'
@@ -151,6 +152,7 @@ interface BillingServer {
 
 interface ParityRoutes {
   readonly server: BillingServer
+  readonly paymentMethodRequests: Request[]
   readonly topupRequests: Request[]
   readonly subscribeRequests: Request[]
   readonly previewRequests: Request[]
@@ -182,6 +184,7 @@ async function setupParity(
     balanceMicros: OPENING_BALANCE_MICROS
   }
   const routes = {
+    paymentMethodRequests: [] as Request[],
     topupRequests: [] as Request[],
     subscribeRequests: [] as Request[],
     previewRequests: [] as Request[],
@@ -256,9 +259,10 @@ async function setupParity(
   await page.route('**/api/billing/plans', (route) =>
     route.fulfill(jsonRoute(PLAN_CATALOG))
   )
-  await page.route('**/api/billing/payment-methods', (route) =>
-    route.fulfill(jsonRoute(paymentMethods))
-  )
+  await page.route('**/api/billing/payment-methods', (route) => {
+    routes.paymentMethodRequests.push(route.request())
+    return route.fulfill(jsonRoute(paymentMethods))
+  })
   await page.route('**/api/billing/preview-subscribe', (route) => {
     routes.previewRequests.push(route.request())
     return route.fulfill(jsonRoute(UPGRADE_QUOTE))
@@ -458,6 +462,31 @@ async function topUpThenUpgrade(page: Page): Promise<Locator> {
 }
 
 test.describe('Billing rail parity', { tag: '@cloud' }, () => {
+  test.describe('opening a usable top-up confirmation', () => {
+    for (const { name, rails } of [
+      { name: 'legacy', rails: RAILS_OFF },
+      { name: 'SDK', rails: TOPUP_RAIL_ONLY }
+    ]) {
+      test(`does not fetch saved payment methods on the ${name} rail`, async ({
+        page
+      }) => {
+        const routes = await setupParity(page, { rails })
+        await bootApp(page)
+
+        const dialog = new TopUpCreditsDialog(page)
+        await dialog.open()
+        await dialog.root
+          .getByRole('button', { name: 'Add credits', exact: true })
+          .click()
+
+        await expect(
+          dialog.root.getByRole('button', { name: 'Pay $50.00' })
+        ).toBeVisible()
+        expect(routes.paymentMethodRequests).toHaveLength(0)
+      })
+    }
+  })
+
   test.describe('with only the subscription rail on', () => {
     test('buys credits on the legacy transport and refreshes the balance', async ({
       page
