@@ -5,6 +5,8 @@ import { reportError } from '@/platform/telemetry/reportError'
 export const DOC_PROTOCOL_VERSION = 1
 /** Keep this encoded-field cap aligned with cloud's `MaxDocFrameB64Len`. */
 const MAX_DOC_UPDATE_B64_LENGTH = 8 << 20
+/** Keep this inline JSON-field cap aligned with cloud's `MaxDocReseedWorkflowBytes`. */
+const MAX_DOC_RESEED_WORKFLOW_BYTES = 2 << 20
 const MAX_WORKFLOW_ID_LENGTH = 128
 const MAX_ACTOR_LENGTH = 256
 const MAX_AWARENESS_STATE_BYTES = 8 << 10
@@ -470,21 +472,22 @@ export class DocFrameClient extends EventTarget {
     expectedSeq: number,
     workflow: Record<string, unknown>
   ): DocReseedSendResult {
-    const data = {
-      v: DOC_PROTOCOL_VERSION,
-      workflow_id: workflowId,
-      expected_seq: expectedSeq,
-      workflow
-    }
     let frame: string
     try {
-      frame = JSON.stringify({ type: 'doc_reseed', data })
+      const workflowJson = JSON.stringify(workflow)
+      if (workflowJson.length > MAX_DOC_RESEED_WORKFLOW_BYTES)
+        return 'too_large'
+      if (utf8.encode(workflowJson).length > MAX_DOC_RESEED_WORKFLOW_BYTES)
+        return 'too_large'
+      const metadataJson = JSON.stringify({
+        v: DOC_PROTOCOL_VERSION,
+        workflow_id: workflowId,
+        expected_seq: expectedSeq
+      })
+      frame = `{"type":"doc_reseed","data":${metadataJson.slice(0, -1)},"workflow":${workflowJson}}}`
     } catch {
       return 'serialization_failed'
     }
-    if (frame.length > MAX_DOC_UPDATE_B64_LENGTH) return 'too_large'
-    if (utf8.encode(frame).length > MAX_DOC_UPDATE_B64_LENGTH)
-      return 'too_large'
     return this.transport.send(frame) ? 'sent' : 'unavailable'
   }
 

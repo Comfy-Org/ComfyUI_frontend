@@ -95,24 +95,49 @@ describe('stale-schema reseed wire protocol', () => {
     ])
   })
 
-  it('accepts an empty canvas and rejects an oversized one', () => {
+  it('accepts an empty canvas and rejects an oversized workflow field', () => {
     const empty = refusedBridge()
     expect(empty.bridge.reseed('wf-1', { nodes: [] })).toBe('sent')
 
     const oversized = refusedBridge()
     expect(
-      oversized.bridge.reseed('wf-1', { value: 'x'.repeat((8 << 20) + 1) })
+      oversized.bridge.reseed('wf-1', { value: 'x'.repeat((2 << 20) + 1) })
     ).toBe('too_large')
     expect(oversized.transport.frames('doc_reseed')).toHaveLength(0)
   })
 
-  it('counts the complete UTF-8 frame against the transport limit', () => {
-    const multibyte = refusedBridge()
+  it('enforces the backend workflow-field byte boundary for UTF-8 JSON', () => {
+    const limit = 2 << 20
+    const wrapperBytes = new TextEncoder().encode('{"value":""}').length
+    const remaining = limit - wrapperBytes
+    const exactValue =
+      '界'.repeat(Math.floor(remaining / 3)) + 'x'.repeat(remaining % 3)
+    const exact = refusedBridge()
+    const oversized = refusedBridge()
 
-    expect(
-      multibyte.bridge.reseed('wf-1', { value: '界'.repeat(3_000_000) })
-    ).toBe('too_large')
-    expect(multibyte.transport.frames('doc_reseed')).toHaveLength(0)
+    expect(exact.bridge.reseed('wf-1', { value: exactValue })).toBe('sent')
+    expect(exact.transport.frames('doc_reseed')).toHaveLength(1)
+    expect(oversized.bridge.reseed('wf-1', { value: `${exactValue}界` })).toBe(
+      'too_large'
+    )
+    expect(oversized.transport.frames('doc_reseed')).toHaveLength(0)
+  })
+
+  it('measures and sends the same workflow serialization', () => {
+    let serializations = 0
+    const workflow = {
+      toJSON() {
+        serializations += 1
+        return { value: serializations === 1 ? 'measured' : 'changed' }
+      }
+    }
+    const { transport, bridge } = refusedBridge()
+
+    expect(bridge.reseed('wf-1', workflow)).toBe('sent')
+    expect(serializations).toBe(1)
+    expect(transport.frames('doc_reseed')).toEqual([
+      expect.objectContaining({ workflow: { value: 'measured' } })
+    ])
   })
 
   it('reports serialization failures separately from oversized frames', () => {
