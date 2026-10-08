@@ -8,6 +8,10 @@
       :key-combo="keybindings[0].combo"
       :is-modified="isModified"
     />
+    <KeybindingScope
+      v-if="keybindings.length === 1"
+      :binding="keybindings[0]"
+    />
     <template v-if="keybindings.length >= 2">
       <span
         class="hidden text-muted-foreground @[16rem]/keybindings:inline"
@@ -56,6 +60,7 @@ import { useI18n } from 'vue-i18n'
 import type { KeybindingImpl } from '@/platform/keybindings/keybinding'
 
 import KeyComboDisplay from './KeyComboDisplay.vue'
+import KeybindingScope from './KeybindingScope.vue'
 
 const { keybindings, isModified = false } = defineProps<{
   keybindings: KeybindingImpl[]
