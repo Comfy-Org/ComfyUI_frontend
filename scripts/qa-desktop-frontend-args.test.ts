@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest'
 
 import {
   pickBuildRun,
+  pickEnv,
   pickInstall,
   splitLaunchArgs,
   withFrontendRoot,
+  withLaunchArg,
   withoutFrontendOverride
 } from './qa-desktop-frontend-args'
 
@@ -126,5 +128,44 @@ describe('pickBuildRun', () => {
     }
   ])('explains when $name', ({ runs, message }) => {
     expect(() => pickBuildRun(runs, sha, hint)).toThrow(message)
+  })
+})
+
+describe('withLaunchArg', () => {
+  it.for([
+    {
+      name: 'adds a missing flag',
+      args: '--enable-manager',
+      expected: '--enable-manager --comfy-api-base https://a.test'
+    },
+    {
+      name: 'replaces a spaced value',
+      args: '--comfy-api-base https://old.test --listen',
+      expected: '--listen --comfy-api-base https://a.test'
+    },
+    {
+      name: 'replaces an = value',
+      args: '--comfy-api-base=https://old.test --listen',
+      expected: '--listen --comfy-api-base https://a.test'
+    }
+  ])('$name', ({ args, expected }) => {
+    expect(withLaunchArg(args, '--comfy-api-base', 'https://a.test')).toBe(
+      expected
+    )
+  })
+})
+
+describe('pickEnv', () => {
+  it('builds staging against the staging Cloud API', () => {
+    expect(pickEnv('staging')).toMatchObject({
+      apiBase: 'https://stagingapi.comfy.org',
+      buildEnv: {
+        VITE_STAGING_CLOUD_BASE_URL: 'https://stagingcloud.comfy.org'
+      }
+    })
+  })
+
+  it('names the valid environments for an unknown one', () => {
+    expect(() => pickEnv('prod')).toThrow(/staging, testcloud/)
   })
 })
