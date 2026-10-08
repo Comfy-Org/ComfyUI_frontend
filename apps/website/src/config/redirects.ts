@@ -286,9 +286,8 @@ export function toVercelRedirects(
  * e2e suite see the redirects; on Vercel the `vercel.json` rule answers first.
  * Astro cannot redirect off-site, and a stub for `/x` is the same file as a
  * page at `/x/`, so those rows live in `vercel.json` only, as do `.md` and
- * `.txt` file addresses. The retired
- * /models and /p/supported-models addresses are left out too, so the build
- * ships no stub pages under them.
+ * `.txt` file addresses. The retired /models and /p/supported-models
+ * addresses are left out too, so the build ships no stub pages under them.
  */
 export const astroRedirects: Record<string, RedirectConfig> =
   Object.fromEntries(

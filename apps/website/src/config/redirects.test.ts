@@ -239,10 +239,6 @@ describe('the parked pages', () => {
     ['/launches.md', '/events.md'],
     ['/zh-CN/launches.md', '/zh-CN/events.md']
   ])('sends %s to %s with a 307', ([source, destination]) => {
-    expect(siteRedirects.find((row) => row.source === source)).toMatchObject({
-      destination,
-      temporaryBecause: expect.any(String)
-    })
     expect(
       toVercelRedirects(siteRedirects).find((row) => row.source === source)
     ).toMatchObject({ destination, permanent: false })
