@@ -8,13 +8,14 @@
       <h2 class="m-0 text-sm font-normal text-base-foreground">
         {{ t('auth.sso.required.title') }}
       </h2>
-      <button
-        class="cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none"
+      <Button
+        size="icon"
+        variant="muted-textonly"
         :aria-label="t('g.close')"
         @click="dismiss"
       >
         <i class="icon-[lucide--x] size-4" />
-      </button>
+      </Button>
     </div>
 
     <p class="m-0 p-4 text-sm text-muted-foreground">
