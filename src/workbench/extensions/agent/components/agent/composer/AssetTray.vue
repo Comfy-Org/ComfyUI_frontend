@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { usePreferredReducedMotion, useScroll } from '@vueuse/core'
-import { computed, onMounted, useTemplateRef } from 'vue'
+import { computed, onMounted, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -8,6 +8,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { useOverflowObserver } from '@/composables/element/useOverflowObserver'
 
 import type { ComposerAttachment } from '../../../types/composerAttachment'
+import type { AssetPreviewMode } from '../../../types/assetPreview'
 import AttachmentChip from './AttachmentChip.vue'
 
 const { attachments, highlightedIds = [] } = defineProps<{
@@ -16,6 +17,10 @@ const { attachments, highlightedIds = [] } = defineProps<{
 }>()
 const emit = defineEmits<{ remove: [id: string] }>()
 const { t } = useI18n()
+const activePreview = ref<{
+  id: string
+  mode: Exclude<AssetPreviewMode, 'closed'>
+}>()
 const scrollContainer = useTemplateRef<HTMLElement>('scrollContainer')
 const reducedMotion = usePreferredReducedMotion()
 const { x, arrivedState, measure } = useScroll(scrollContainer, {
@@ -28,6 +33,15 @@ const { isOverflowing, checkOverflow } = useOverflowObserver(scrollContainer, {
 onMounted(checkOverflow)
 const hasMoreLeft = computed(() => isOverflowing.value && !arrivedState.left)
 const hasMoreRight = computed(() => isOverflowing.value && !arrivedState.right)
+
+function updatePreview(id: string, mode: AssetPreviewMode): void {
+  if (
+    (mode === 'closed' || mode === 'dismissed') &&
+    activePreview.value?.id !== id
+  )
+    return
+  activePreview.value = mode === 'closed' ? undefined : { id, mode }
+}
 
 function scrollPage(direction: -1 | 1): void {
   const element = scrollContainer.value
@@ -67,6 +81,10 @@ function scrollPage(direction: -1 | 1): void {
         :media-kind="item.mediaKind"
         :uploading="item.uploading"
         :highlighted="highlightedIds.includes(item.id)"
+        :preview-mode="
+          activePreview?.id === item.id ? activePreview.mode : 'closed'
+        "
+        @update:preview-mode="updatePreview(item.id, $event)"
         @remove="emit('remove', item.id)"
       />
     </div>

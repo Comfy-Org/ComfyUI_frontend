@@ -5,6 +5,7 @@ import TagRemoveButton from '@/components/chip/TagRemoveButton.vue'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 
+import type { AssetPreviewMode } from '../../../types/assetPreview'
 import AssetHoverPreview from './AssetHoverPreview.vue'
 import AssetThumbnail from './AssetThumbnail.vue'
 
@@ -24,6 +25,9 @@ const {
   highlighted?: boolean
 }>()
 const emit = defineEmits<{ remove: [] }>()
+const previewMode = defineModel<AssetPreviewMode>('previewMode', {
+  default: 'closed'
+})
 
 const kind = computed(() => mediaKind ?? getMediaTypeFromFilename(name))
 </script>
@@ -37,7 +41,13 @@ const kind = computed(() => mediaKind ?? getMediaTypeFromFilename(name))
     :aria-label="name"
     class="group/attachment relative flex size-20 shrink-0 items-center justify-center rounded-lg p-1 data-highlighted:ring-2 data-highlighted:ring-base-foreground data-highlighted:ring-inset"
   >
-    <AssetHoverPreview :name :preview-url :media-url :media-kind>
+    <AssetHoverPreview
+      v-model:mode="previewMode"
+      :name
+      :preview-url
+      :media-url
+      :media-kind
+    >
       <AssetThumbnail
         :name
         :preview-url

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useElementHover } from '@vueuse/core'
 import { PopoverAnchor } from 'reka-ui'
-import { computed, ref, useId, useTemplateRef, watch } from 'vue'
+import { computed, onBeforeUnmount, useId, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { ComponentInstance } from 'vue'
 
@@ -13,6 +13,7 @@ import Popover from '@/components/ui/popover/Popover.vue'
 import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
 import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+import type { AssetPreviewMode } from '../../../types/assetPreview'
 
 const { name, previewUrl, mediaUrl, mediaKind } = defineProps<{
   name: string
@@ -27,7 +28,7 @@ const playableKind = computed(() =>
 )
 const player =
   useTemplateRef<ComponentInstance<typeof AssetMediaPreview>>('player')
-const mode = ref<'closed' | 'hover' | 'interactive' | 'dismissed'>('closed')
+const mode = defineModel<AssetPreviewMode>('mode', { default: 'closed' })
 const open = computed(
   () => mode.value === 'hover' || mode.value === 'interactive'
 )
@@ -51,9 +52,13 @@ watch(
     if (mode.value === 'interactive') return
     if (mode.value === 'dismissed' && (onTrigger || onContent || pointerInside))
       return
+    if (mode.value === 'closed' && !(onTrigger && pointerInside)) return
     mode.value = onTrigger || onContent ? 'hover' : 'closed'
   }
 )
+onBeforeUnmount(() => {
+  mode.value = 'closed'
+})
 
 function focusPreview(): void {
   if (player.value) player.value.focus()
