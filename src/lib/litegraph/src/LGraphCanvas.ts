@@ -107,34 +107,39 @@ import { Rectangle } from './infrastructure/Rectangle'
 import type {
   CanvasColour,
   ColorOption,
-  ConnectingLink,
-  ContextMenuDivElement,
   DefaultConnectionColors,
   Dictionary,
   Direction,
-  IBoundaryNodes,
   IColorable,
-  IContextMenuOptions,
-  IContextMenuValue,
-  INodeInputSlot,
-  INodeOutputSlot,
   INodeSlot,
-  INodeSlotContextItem,
   ISlotType,
   LinkSegment,
-  NewNodePosition,
   NullableProperties,
-  Panel,
-  PanelButton,
-  PanelWidget,
-  PanelWidgetCallback,
-  PanelWidgetOptions,
   Point,
   Positionable,
   ReadOnlyRect,
   Rect,
   Size
 } from './interfaces'
+import type {
+  ConnectingLink,
+  INodeInputSlot,
+  INodeOutputSlot,
+  INodeSlotContextItem
+} from './types/slots'
+import type {
+  ContextMenuDivElement,
+  IContextMenuOptions,
+  IContextMenuValue
+} from './types/contextMenu'
+import type { IBoundaryNodes, NewNodePosition } from './utils/arrange'
+import type {
+  Panel,
+  PanelButton,
+  PanelWidget,
+  PanelWidgetCallback,
+  PanelWidgetOptions
+} from './types/panel'
 import { LiteGraph } from './litegraph'
 import {
   containsRect,
