@@ -2,7 +2,7 @@ import { applyTextReplacements as _applyTextReplacements } from '@/utils/searchA
 
 import { api } from './api'
 import type { ComfyApp } from './app'
-import { $el } from './ui'
+import { $el } from './ui/utils'
 
 export function clone<T>(obj: T): T {
   try {
@@ -76,15 +76,12 @@ export function prop<T>(
     name: string
   ) => void
 ): T {
-  // @ts-expect-error fixme ts strict error
-  let currentValue
+  let currentValue: T
   Object.defineProperty(target, name, {
     get() {
-      // @ts-expect-error fixme ts strict error
       return currentValue
     },
     set(newValue) {
-      // @ts-expect-error fixme ts strict error
       const prevValue = currentValue
       currentValue = newValue
       onChanged?.(currentValue, prevValue, target, name)

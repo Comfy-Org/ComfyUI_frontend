@@ -118,6 +118,65 @@ test('lists both apps on the hub apps page, on /hub/apps/ pages', async ({
   ).toHaveCount(0)
 })
 
+const APP_MEDIA = 'https://media.comfy.org/website/workshop/apps'
+
+for (const { reducedMotion, paused } of [
+  { reducedMotion: 'no-preference', paused: false },
+  { reducedMotion: 'reduce', paused: true }
+] as const) {
+  test(`loads each hub app card's poster and keeps its video thumbnail ${paused ? 'held still' : 'playing'} with ${reducedMotion} motion`, async ({
+    page,
+    context
+  }) => {
+    await mockFlags(context, { apps: true, workflows: false })
+    await page.emulateMedia({ reducedMotion })
+    const posters: string[] = []
+    page.on('requestfinished', (request) => {
+      if (request.url().endsWith('/poster.jpg')) posters.push(request.url())
+    })
+    await page.goto('/hub/apps/')
+
+    const artwork = page
+      .getByTestId('app-shelf')
+      .getByTestId('model-card-media')
+    await expect(artwork).toHaveCount(2)
+    await expect(artwork.nth(0)).toHaveAttribute(
+      'src',
+      `${APP_MEDIA}/cinematic-studio/thumbnail-480.mp4`
+    )
+    await expect(artwork.nth(1)).toHaveAttribute(
+      'src',
+      `${APP_MEDIA}/reshoot/thumbnail-480.mp4`
+    )
+    await expect
+      .poll(() => posters.toSorted())
+      .toEqual([
+        `${APP_MEDIA}/cinematic-studio/poster.jpg`,
+        `${APP_MEDIA}/reshoot/poster.jpg`
+      ])
+    await expect(artwork.nth(0)).toHaveJSProperty('paused', paused)
+    await expect(artwork.nth(1)).toHaveJSProperty('paused', paused)
+  })
+}
+
+test('decodes a frame of each hub app card video while it plays', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, { apps: true, workflows: false })
+  await page.goto('/hub/apps/')
+
+  const artwork = page.getByTestId('app-shelf').getByTestId('model-card-media')
+  await expect(artwork).toHaveCount(2)
+  await expect
+    .poll(() =>
+      artwork.evaluateAll((videos: HTMLVideoElement[]) =>
+        videos.map((video) => video.videoWidth > 0 && video.readyState >= 2)
+      )
+    )
+    .toEqual([true, true])
+})
+
 test('hides Re-shoot from the hub apps page and closes its page while its flag is off', async ({
   page,
   context
@@ -153,6 +212,20 @@ test('sends an old catalogue link for the Apps tab to the hub apps page', async 
   await page.goto('/hub/models/?type=apps&q=studio#top')
   await expect(page).toHaveURL('/hub/apps/?q=studio#top')
   await expect(page.getByTestId('app-shelf')).toBeVisible()
+})
+
+test('keeps an old catalogue link for the Apps tab on the models catalogue while the apps flag is off', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, { apps: false, workflows: true })
+  await page.goto('/hub/models/?type=apps')
+  await expect(
+    page.getByRole('searchbox', {
+      name: 'Search models, providers, and categories'
+    })
+  ).toBeVisible()
+  await expect(page).toHaveURL('/hub/models/?type=apps')
 })
 
 test('shows the showcase instead of the hub apps page while the apps flag is off', async ({
@@ -337,5 +410,49 @@ test('makes a Cinematic Studio grade palette from an uploaded image', async ({
     'Your palette'
   )
   await page.getByRole('button', { name: 'Edit palette' }).click()
-  await expect(page.getByLabel(/^Color 1: #/)).toBeVisible()
+  await page.getByLabel(/^Color 1: #/).click()
+  const hex = page.getByRole('textbox', { name: 'Hex color' })
+  await hex.fill('#3b1b6e')
+  await hex.press('Enter')
+  await expect(page.getByLabel('Color 1: #3b1b6e')).toBeVisible()
+  await expect(page.getByRole('button', { name: /^Grade/ })).toContainText(
+    'Your palette'
+  )
+})
+
+test('offers the starting frame beside the Cinematic Studio scene in video mode', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, { apps: true, workflows: false })
+  await page.goto('/hub/apps/cinematic-studio/')
+
+  await page.getByRole('button', { name: 'Video', exact: true }).click()
+
+  await expect(
+    page.getByRole('button', { name: 'Add a starting frame' })
+  ).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'References' })).toHaveCount(0)
+})
+
+test('@mobile keeps the Cinematic Studio camera badges to one line and the camera sheet steady across tabs', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, { apps: true, workflows: false })
+  await page.goto('/hub/apps/cinematic-studio/')
+
+  const specs = page.getByTestId('camera-specs')
+  await expect(specs.getByText('+2', { exact: true })).toBeVisible()
+  await expect(specs.getByText('50mm', { exact: true })).toBeHidden()
+  expect((await specs.boundingBox())?.height).toBeLessThan(32)
+
+  await page.getByRole('button', { name: /^Camera/ }).click()
+  const sheet = page.getByRole('dialog', { name: 'Camera' })
+  const heights = []
+  for (const tab of ['Body', 'Lens', 'Focal length', 'Aperture']) {
+    await sheet.getByRole('button', { name: tab, exact: true }).click()
+    heights.push((await sheet.boundingBox())?.height)
+  }
+  expect(new Set(heights).size).toBe(1)
 })

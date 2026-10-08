@@ -10,7 +10,7 @@ import type {
 import { centsToCredits } from '@comfyorg/shared-frontend-utils/creditsUtil'
 
 import { test } from './fixtures/modelsAccount'
-import { hubWorkflowHref } from '../src/config/hub-models'
+import { hubWorkflowHref } from '@/config/hub-models'
 
 const workflowId = 'workflows/remove-background'
 // `character-turnaround` is the simplest workflow carrying a `randomize` seed:
@@ -28,8 +28,9 @@ const creditRefusal = {
   status: 429,
   json: {
     error: {
-      type: 'PAYMENT_REQUIRED',
-      message: 'Insufficient credits to queue workflows'
+      type: 'FREE_TIER_EXHAUSTED',
+      message:
+        "You've used all your free generations. Upgrade to keep creating."
     }
   }
 }
@@ -334,7 +335,7 @@ test('the credit chip shows a charge Cloud books after the run finishes', async 
   await expect(chip).toHaveAccessibleName(showing(483_200))
 })
 
-test('a Cloud credit refusal turns Run into Add credits', async ({
+test('a Cloud credit refusal opens Add credits without retrying', async ({
   page,
   context,
   modelsAccount
@@ -354,11 +355,18 @@ test('a Cloud credit refusal turns Run into Add credits', async ({
   await signInAndSubmit(page, modelsAccount)
 
   const primary = page.getByTestId('workflow-run')
+  const dialog = page.getByTestId('buy-credits-dialog')
+  await expect(dialog).toBeVisible()
   await expect(primary).toHaveText('Add credits')
   await expect(primary).toHaveAttribute('data-gate', 'noCredits')
   await expect(page.getByRole('button', { name: 'Run' })).toHaveCount(0)
+  await page.getByTestId('buy-credits-cancel').click()
+  await expect(dialog).toHaveCount(0)
+  await page.getByRole('tab', { name: 'Details' }).click()
+  await page.getByRole('tab', { name: 'Playground' }).click()
+  await expect(dialog).toHaveCount(0)
   await primary.click()
-  await expect(page.getByRole('dialog')).toBeVisible()
+  await expect(dialog).toBeVisible()
   expect(
     cloud.commands.filter((command) => command.path === '/api/prompt')
   ).toHaveLength(1)

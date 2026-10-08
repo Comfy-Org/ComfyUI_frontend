@@ -2,7 +2,7 @@ import userEvent from '@testing-library/user-event'
 import { render, screen, within } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import type { CatalogueApp } from '../../lib/workshop/catalogue-apps'
+import type { CatalogueApp } from '@/lib/workshop/catalogue-apps'
 import AppCatalogue from './AppCatalogue.vue'
 
 function appsOf(count: number): CatalogueApp[] {
@@ -37,9 +37,10 @@ describe('AppCatalogue', () => {
     const { emitted } = render(AppCatalogue, { props: { apps: appsOf(9) } })
 
     await user.click(screen.getByRole('button', { name: /Browse all apps/ }))
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
-      'All apps 9'
-    )
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'All apps 9' })
+    ).toBeVisible()
+    expect(screen.queryByRole('heading', { level: 1 })).toBeNull()
     expect(
       within(screen.getByTestId('app-search-results')).getAllByRole('link')
     ).toHaveLength(9)

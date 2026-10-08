@@ -2,29 +2,30 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { readGeometry } from '../../../../lib/workshop/cinematic-studio/reshoot-engine/cvgeo'
+import { readGeometry } from '@/lib/workshop/cinematic-studio/reshoot-engine/cvgeo'
 import {
   fakeGeometry,
   fakeTransport,
   signIn
-} from '../../../../lib/workshop/cinematic-studio/reshoot-engine/__fixtures__/reshootFakes'
-import { ReshootError } from '../../../../lib/workshop/cinematic-studio/reshoot-engine/transport'
-import { reshootTransport } from '../../../../lib/workshop/cinematic-studio/reshoot-engine/transport-config'
-import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
-import { RESHOOT_LIMITS } from '../../../../lib/workshop/cinematic-studio/reshoot-limits'
+} from '@/lib/workshop/cinematic-studio/reshoot-engine/__fixtures__/reshootFakes'
+import { ReshootError } from '@/lib/workshop/cinematic-studio/reshoot-engine/transport'
+import { reshootTransport } from '@/lib/workshop/cinematic-studio/reshoot-engine/transport-config'
+import { RESHOOT_LIMITS } from '@/lib/workshop/cinematic-studio/reshoot-limits'
+import { translationsFor } from '@/i18n/translations'
 import ReshootStudio from './ReshootStudio.vue'
 
-vi.mock(import('../../../../config/workshop-session-state'))
-vi.mock(import('../../../../config/workshop-credits'))
-vi.mock(import('../../../../scripts/posthog'))
+const { t: rc } = translationsFor('en')
+
+vi.mock(import('@/config/workshop-session-state'))
+vi.mock(import('@/config/workshop-credits'))
+vi.mock(import('@/scripts/posthog'))
 vi.mock(
-  import('../../../../lib/workshop/cinematic-studio/reshoot-engine/transport-config'),
+  import('@/lib/workshop/cinematic-studio/reshoot-engine/transport-config'),
   () => ({ reshootTransport: vi.fn() })
 )
-vi.mock(
-  import('../../../../lib/workshop/cinematic-studio/reshoot-engine/cvgeo'),
-  () => ({ readGeometry: vi.fn() })
-)
+vi.mock(import('@/lib/workshop/cinematic-studio/reshoot-engine/cvgeo'), () => ({
+  readGeometry: vi.fn()
+}))
 
 function setup() {
   render(ReshootStudio)

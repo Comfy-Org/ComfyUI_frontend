@@ -2,6 +2,8 @@ import * as THREE from 'three'
 import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { ViewHelper } from 'three/examples/jsm/helpers/ViewHelper'
 
+import type { RendererView } from '@/renderer/three/RendererView'
+
 import type {
   CameraState,
   EventManagerInterface,
@@ -43,18 +45,18 @@ export class ViewHelperManager implements ViewHelperManagerInterface {
 
   init(): void {}
 
-  render(renderer: THREE.WebGLRenderer, size: number): void {
+  render(view: RendererView, size: number): void {
     const helper = this.viewHelper
     if (!helper) return
 
     helper.quaternion.copy(this.getActiveCamera().quaternion).invert()
     helper.updateMatrixWorld()
 
-    renderer.clearDepth()
-    renderer.getViewport(this.savedViewport)
-    renderer.setViewport(0, 0, size, size)
-    renderer.render(helper, this.helperCamera)
-    renderer.setViewport(this.savedViewport)
+    view.renderer.clearDepth()
+    const { x, y, z, w } = view.getViewport(this.savedViewport)
+    view.setViewport(0, 0, size, size)
+    view.renderer.render(helper, this.helperCamera)
+    view.setViewport(x, y, z, w)
   }
 
   dispose(): void {

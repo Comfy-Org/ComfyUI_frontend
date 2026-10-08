@@ -1,21 +1,21 @@
 <script setup lang="ts">
+import { translationsFor } from '@/i18n/translations'
 import { LoaderCircle, Minus, Move3d, Plus } from '@lucide/vue'
 import { computed, ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { DepthState } from '../../../../composables/useReshoot'
-import type { ReshootCamera } from '../../../../lib/workshop/cinematic-studio/reshoot'
+import type { DepthState } from '@/composables/useReshoot'
+import type { ReshootCamera } from '@/lib/workshop/cinematic-studio/reshoot'
 import {
   cameraZone,
   clampAxis,
   viewTransform
-} from '../../../../lib/workshop/cinematic-studio/reshoot'
-import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
-import type { ReshootRunPhase } from '../../../../lib/workshop/cinematic-studio/reshoot-engine/run'
-import type { Locale } from '../../../../i18n/translations'
-import type { Pose } from '../../../../lib/workshop/cinematic-studio/reshoot-engine/camera'
-import type { Geometry } from '../../../../lib/workshop/cinematic-studio/reshoot-engine/cvgeo'
+} from '@/lib/workshop/cinematic-studio/reshoot'
+import type { ReshootRunPhase } from '@/lib/workshop/cinematic-studio/reshoot-engine/run'
+import type { Locale } from '@/i18n/translations'
+import type { Pose } from '@/lib/workshop/cinematic-studio/reshoot-engine/camera'
+import type { Geometry } from '@/lib/workshop/cinematic-studio/reshoot-engine/cvgeo'
 import ReshootWarp from './ReshootWarp.vue'
 import ReshootZone from './ReshootZone.vue'
 
@@ -48,6 +48,7 @@ const {
   generated?: boolean
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const noWebgl = ref(false)
 const live = computed(
@@ -61,21 +62,17 @@ const transform = computed(() =>
   ready.value && !live.value ? viewTransform(camera) : undefined
 )
 const analyzing = computed(() =>
-  rc(
+  t(
     stage === 'starting'
       ? 'reshoot.stage.starting'
       : stage === 'queued'
         ? 'reshoot.stage.queued'
-        : 'reshoot.analyzing',
-    locale
+        : 'reshoot.analyzing'
   )
 )
 
 const frameLabel = computed(() =>
-  rc(
-    live.value ? 'reshoot.frameLabel.preview' : 'reshoot.frameLabel.original',
-    locale
-  )
+  t(live.value ? 'reshoot.frameLabel.preview' : 'reshoot.frameLabel.original')
 )
 
 const dragFrom = ref<{ x: number; y: number; tilts: boolean }>()
@@ -166,7 +163,7 @@ const DOLLY_BUTTONS = [
     >
       {{ frameLabel }}
       <span v-if="!generated" class="text-primary-warm-gray">
-        · {{ rc('reshoot.frameLabel.nothingYet', locale) }}
+        · {{ t('reshoot.frameLabel.nothingYet') }}
       </span>
     </p>
     <div
@@ -182,7 +179,7 @@ const DOLLY_BUTTONS = [
         {{ analyzing }}
       </span>
       <span class="text-xs text-primary-warm-gray">
-        {{ rc('reshoot.pending.depthTime', locale) }}
+        {{ t('reshoot.pending.depthTime') }}
       </span>
     </div>
     <p
@@ -201,10 +198,10 @@ const DOLLY_BUTTONS = [
       >
         <Move3d class="size-3.5 shrink-0" aria-hidden="true" />
         <span class="truncate pointer-coarse:hidden">
-          {{ rc('reshoot.dragHint', locale) }}
+          {{ t('reshoot.dragHint.label') }}
         </span>
         <span class="hidden truncate pointer-coarse:inline">
-          {{ rc('reshoot.dragHint.touch', locale) }}
+          {{ t('reshoot.dragHint.touch') }}
         </span>
       </span>
       <span
@@ -223,7 +220,7 @@ const DOLLY_BUTTONS = [
         v-for="{ step, label, icon } in DOLLY_BUTTONS"
         :key="label"
         type="button"
-        :aria-label="rc(label, locale)"
+        :aria-label="t(label)"
         class="grid size-9 place-items-center rounded-full bg-primary-comfy-ink/80 text-primary-warm-white"
         @pointerdown.stop
         @click="dolly(step)"

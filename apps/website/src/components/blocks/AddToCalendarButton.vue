@@ -9,17 +9,17 @@ import {
 } from 'reka-ui'
 import { computed } from 'vue'
 
-import type { ButtonVariants } from '../ui/button'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
-import type { CalendarEvent } from '../../utils/calendar'
+import type { ButtonVariants } from '@/components/ui/button'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import type { CalendarEvent } from '@/utils/calendar'
 import {
   toGoogleCalendarUrl,
   toIcsDataUri,
   toOutlookCalendarUrl
-} from '../../utils/calendar'
-import { resolveRel } from '../../utils/cta'
-import Button from '../ui/button/Button.vue'
+} from '@/utils/calendar'
+import { resolveRel } from '@/utils/cta'
+import Button from '@/components/ui/button/Button.vue'
 
 const {
   event,
@@ -34,12 +34,13 @@ const {
    * cover a body teleport. */
   portalDisabled?: boolean
 }>()
+const { t } = translationsFor(locale)
 
 const labels = computed(() => ({
-  trigger: t('events.calendar.addToCalendar', locale),
-  google: t('events.calendar.google', locale),
-  apple: t('events.calendar.apple', locale),
-  outlook: t('events.calendar.outlook', locale)
+  trigger: t('events.calendar.addToCalendar'),
+  google: t('events.calendar.google'),
+  apple: t('events.calendar.apple'),
+  outlook: t('events.calendar.outlook')
 }))
 
 const externalRel = resolveRel({ target: '_blank' })

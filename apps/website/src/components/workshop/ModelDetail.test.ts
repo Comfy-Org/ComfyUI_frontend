@@ -25,57 +25,56 @@ import type {
   SessionResult
 } from '@comfyorg/account-core/session'
 
-import type { WorkshopModelDetail } from '../../config/models-catalogue'
-import type { Locale } from '../../i18n/translations'
-import { subscribeToWorkshopBuyCredits } from '../../config/workshop-buy-credits'
+import type { WorkshopModelDetail } from '@/config/models-catalogue'
+import type { Locale } from '@/i18n/translations'
+import { subscribeToWorkshopBuyCredits } from '@/config/workshop-buy-credits'
 import {
   runWorkshopRouter,
   WORKSHOP_LEAVE_RUNNING
-} from '../../config/workshop-router-queue'
-import { WorkshopRouterError } from '../../config/workshop-router-errors'
-import { workshopContract } from '../../config/workshop-contract-catalog'
-import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
-import { refreshWorkshopCredits } from '../../config/workshop-credits'
-import { useWorkshopModelBalance } from '../../config/workshop-model-balance'
-import { stopWorkshopAccountSource } from '../../config/workshop-account-source'
+} from '@/config/workshop-router-queue'
+import { WorkshopRouterError } from '@/config/workshop-router-errors'
+import { workshopContract } from '@/config/workshop-contract-catalog'
+import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from '@/config/workshop-router-content'
+import { refreshWorkshopCredits } from '@/config/workshop-credits'
+import { useWorkshopModelBalance } from '@/config/workshop-model-balance'
+import { stopWorkshopAccountSource } from '@/config/workshop-account-source'
 import {
   stopWorkshopSession,
   useWorkshopSession
-} from '../../config/workshop-session-state'
-import * as draftStorage from '../../config/workshop-draft-storage'
+} from '@/config/workshop-session-state'
+import * as draftStorage from '@/config/workshop-draft-storage'
 import {
   cancelWorkshopRun,
   workshopRunInFlight
-} from '../../config/workshop-run-state'
+} from '@/config/workshop-run-state'
 import {
   captureWorkshopEvent,
   useWorkshopAuthFlag,
   useWorkshopEnabled,
-  useWorkshopEnabledSettled,
-  useWorkshopAppsEnabled
-} from '../../scripts/posthog'
+  useWorkshopEnabledSettled
+} from '@/scripts/posthog'
 import ModelDetail from './ModelDetail.vue'
 import WorkshopGate from './WorkshopGate.vue'
-import { listWorkshopGenerations } from '../../config/workshop-generation-assets'
-import { WORKSHOP_ASSETS_URL } from '../../config/workshop-env'
-import { workshopHealthLog } from '../../scripts/workshop-health'
+import { listWorkshopGenerations } from '@/config/workshop-generation-assets'
+import { WORKSHOP_ASSETS_URL } from '@/config/workshop-env'
+import { workshopHealthLog } from '@/scripts/workshop-health'
 
-vi.mock(import('../../config/workshop-session-state'))
-vi.mock(import('../../scripts/posthog'))
+vi.mock(import('@/config/workshop-session-state'))
+vi.mock(import('@/scripts/posthog'))
 
-vi.mock(import('../../config/workshop-router-queue'), { spy: true })
+vi.mock(import('@/config/workshop-router-queue'), { spy: true })
 
-vi.mock(import('../../config/workshop-generation-assets'), { spy: true })
+vi.mock(import('@/config/workshop-generation-assets'), { spy: true })
 
-vi.mock(import('../../config/workshop-output-download'), () => ({
+vi.mock(import('@/config/workshop-output-download'), () => ({
   downloadOutput: vi.fn().mockResolvedValue(true)
 }))
 
-vi.mock(import('../../config/workshop-credits'))
-vi.mock(import('../../config/workshop-model-balance'), () => ({
+vi.mock(import('@/config/workshop-credits'))
+vi.mock(import('@/config/workshop-model-balance'), () => ({
   useWorkshopModelBalance: vi.fn()
 }))
-vi.mock(import('../../config/workshop-account-source'))
+vi.mock(import('@/config/workshop-account-source'))
 
 const auth = {
   session: ref<AccountCredential>(),
@@ -471,27 +470,6 @@ describe('ModelDetail', () => {
     expect(link.getAttribute('target')).toBe('_blank')
     expect(link.getAttribute('rel')).toBe('noopener noreferrer')
   })
-
-  it.for([
-    { studio: true, offered: true },
-    { studio: false, offered: false }
-  ])(
-    'offers Cinematic Studio on a studio model only inside the staff rollout: $studio',
-    async ({ studio, offered }) => {
-      vi.mocked(useWorkshopAppsEnabled).mockReturnValue(computed(() => studio))
-      await mountDetail({
-        model: { ...model, slug: 'bfl--flux-2-pro--generate-images' }
-      })
-
-      const link = screen.queryByTestId('model-studio-link')
-      expect(link !== null).toBe(offered)
-      if (offered)
-        expect(link).toHaveAttribute(
-          'href',
-          '/hub/apps/cinematic-studio/?model=bfl--flux-2-pro--generate-images'
-        )
-    }
-  )
 
   it('does not offer a generic docs link for an undocumented provider', async () => {
     await mountDetail()

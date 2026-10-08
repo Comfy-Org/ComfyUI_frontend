@@ -1,17 +1,17 @@
-import type { RouterRenderParameters } from '../src/config/router-parameters'
+import type { RouterRenderParameters } from '@/config/router-parameters'
 import {
   createRouterParameters,
   routerParameterMappings
-} from '../src/config/router-parameters'
-import type { RouterRenderOptions } from '../src/config/router-render'
+} from '@/config/router-parameters'
+import type { RouterRenderOptions } from '@/config/router-render'
 import {
   prepareModelRouterRender,
   resolveModelRouterRender,
   router_render as render
-} from '../src/config/router-render'
-import { initialWorkshopPageState } from '../src/config/workshop-page-state'
-import { getRouterWorkshopModelDetail } from '../src/config/workshop-router-content'
-import { WorkshopRouterError } from '../src/config/workshop-router-errors'
+} from '@/config/router-render'
+import { initialWorkshopPageState } from '@/config/workshop-page-state'
+import { getRouterWorkshopModelDetail } from '@/config/workshop-router-content'
+import { WorkshopRouterError } from '@/config/workshop-router-errors'
 
 export function createRouterRenderHelpers(
   lookupModel = getRouterWorkshopModelDetail

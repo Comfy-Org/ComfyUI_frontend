@@ -12,10 +12,11 @@ function readInset(): string {
 
 const scopes: ReturnType<typeof effectScope>[] = []
 
-function runInScope(widthPx: () => number): void {
+function runInScope(widthPx: () => number): ReturnType<typeof effectScope> {
   const scope = effectScope()
   scopes.push(scope)
   scope.run(() => useWorkspaceInsetRight(widthPx))
+  return scope
 }
 
 afterEach(() => {
@@ -59,6 +60,28 @@ describe('useWorkspaceInsetRight', () => {
     width.value = 960
     await nextTick()
 
-    expect(readInset()).toBe('420px')
+    expect(readInset()).toBe('')
+  })
+
+  it('keeps the incoming inset when an overlapping host unmounts', async () => {
+    const outgoingWidth = ref(420)
+    const outgoing = runInScope(() => outgoingWidth.value)
+    runInScope(() => 960)
+
+    outgoingWidth.value = 0
+    await nextTick()
+    expect(readInset()).toBe('960px')
+
+    outgoing.stop()
+    await nextTick()
+
+    expect(readInset()).toBe('960px')
+  })
+
+  it('keeps the widest active inset regardless of publisher order', () => {
+    runInScope(() => 960)
+    runInScope(() => 0)
+
+    expect(readInset()).toBe('960px')
   })
 })

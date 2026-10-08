@@ -5,12 +5,12 @@ import { computed, ref, toValue, watch } from 'vue'
 import type {
   Allowance,
   ReshootLimitKind
-} from '../lib/workshop/cinematic-studio/reshoot-limits'
+} from '@/lib/workshop/cinematic-studio/reshoot-limits'
 import {
   RESHOOT_LIMITS,
   allowance,
   pruneRuns
-} from '../lib/workshop/cinematic-studio/reshoot-limits'
+} from '@/lib/workshop/cinematic-studio/reshoot-limits'
 
 const storageKey = (kind: ReshootLimitKind, owner: string) =>
   `comfy.reshoot.runs.${kind}.${owner}`

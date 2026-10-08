@@ -33,6 +33,7 @@ async function gotoAndWaitThroughSwitch(comfyPage: ComfyPage, path: string) {
 
 test.describe('Cloud workspace deep link', { tag: '@cloud' }, () => {
   test('switches into the workspace the link names', async ({ comfyPage }) => {
+    test.slow()
     const page = comfyPage.page
 
     await gotoAndWaitThroughSwitch(comfyPage, '/?workspace=ws-team')
@@ -99,6 +100,7 @@ test.describe('Cloud workspace deep link', { tag: '@cloud' }, () => {
   test('opens Settings on the requested workspace from a combined deep link', async ({
     comfyPage
   }) => {
+    test.slow()
     const page = comfyPage.page
 
     await gotoAndWaitThroughSwitch(

@@ -1,4 +1,4 @@
-import type { WorkshopModelEntry } from '../content/workshop-models.schema'
+import type { WorkshopModelEntry } from '@/content/workshop-models.schema'
 import type { WorkshopCatalogField } from './workshop-fields'
 import { deriveWorkshopFields } from './workshop-fields'
 

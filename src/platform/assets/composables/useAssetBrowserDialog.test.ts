@@ -1,14 +1,22 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 
-import { describe, expect, it, vi } from 'vitest'
-import type { ComponentProps } from 'vue-component-type-helpers'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
-import type AssetBrowserModal from '@/platform/assets/components/AssetBrowserModal.vue'
+import {
+  registerAssetBrowserModalComponent,
+  useAssetBrowserDialog
+} from '@/platform/assets/composables/useAssetBrowserDialog'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type { AssetBrowserModalProps } from '@/platform/assets/types/assetBrowserModalProps'
 import { useDialogStore } from '@/stores/dialogStore'
 
 vi.mock(import('@/i18n'))
+
+const AssetBrowserModalStub = { name: 'AssetBrowserModalStub' }
+
+beforeEach(() => {
+  registerAssetBrowserModalComponent(AssetBrowserModalStub)
+})
 
 function createMockAsset(overrides: Partial<AssetItem> = {}): AssetItem {
   return fromPartial({
@@ -26,10 +34,10 @@ function createMockAsset(overrides: Partial<AssetItem> = {}): AssetItem {
 
 function setupDialogMocks() {
   const dialogStore = useDialogStore()
-  type BrowserProps = ComponentProps<typeof AssetBrowserModal>
   const showDialog: (
     options: Omit<Parameters<typeof dialogStore.showDialog>[0], 'props'> & {
-      props: BrowserProps & Required<Pick<BrowserProps, 'onSelect' | 'onClose'>>
+      props: AssetBrowserModalProps &
+        Required<Pick<AssetBrowserModalProps, 'onSelect' | 'onClose'>>
     }
   ) => ReturnType<typeof dialogStore.showDialog> = dialogStore.showDialog
   const mockShowDialog = vi.mocked(showDialog)
@@ -102,6 +110,7 @@ describe('useAssetBrowserDialog', () => {
       expect(mockShowDialog).toHaveBeenCalledWith(
         expect.objectContaining({
           key: 'global-asset-browser',
+          component: AssetBrowserModalStub,
           props: expect.objectContaining({
             showLeftPanel: true,
             assetType: 'models'

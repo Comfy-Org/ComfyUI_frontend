@@ -1,15 +1,15 @@
 <script setup lang="ts">
+import { translationsFor } from '@/i18n/translations'
 import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { DepthState } from '../../../../composables/useReshoot'
+import type { DepthState } from '@/composables/useReshoot'
 import type {
   CameraKey,
   ReshootCamera
-} from '../../../../lib/workshop/cinematic-studio/reshoot'
-import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
-import type { Locale } from '../../../../i18n/translations'
+} from '@/lib/workshop/cinematic-studio/reshoot'
+import type { Locale } from '@/i18n/translations'
 import ReshootAimPending from './ReshootAimPending.vue'
 import ReshootAimRig from './ReshootAimRig.vue'
 import ReshootDisclosure from './ReshootDisclosure.vue'
@@ -31,6 +31,7 @@ const {
   reason?: string
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const emit = defineEmits<{
   aim: [patch: Partial<ReshootCamera>]
@@ -63,7 +64,7 @@ const pending = computed(() => (depth === 'ready' ? undefined : depth))
         :locale
         @aim="emit('aim', $event)"
       />
-      <ReshootDisclosure :label="rc('reshoot.section.move', locale)">
+      <ReshootDisclosure :label="t('reshoot.section.move')">
         <ReshootMoveControls
           v-model:frame="frame"
           :keys

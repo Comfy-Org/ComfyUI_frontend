@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { translationsFor } from '@/i18n/translations'
 import {
   CircleAlert,
   CircleCheck,
@@ -11,9 +12,8 @@ import { computed } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
-import type { DepthState } from '../../../../composables/useReshoot'
-import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
-import type { Locale } from '../../../../i18n/translations'
+import type { DepthState } from '@/composables/useReshoot'
+import type { Locale } from '@/i18n/translations'
 
 const {
   depth,
@@ -25,6 +25,7 @@ const {
   reason?: string
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const emit = defineEmits<{ retry: [] }>()
 
@@ -32,20 +33,20 @@ const depthStep = computed(() => {
   if (depth === 'analyzing')
     return {
       icon: LoaderCircle,
-      title: rc('reshoot.pending.depth', locale),
-      detail: rc('reshoot.pending.depthTime', locale),
+      title: t('reshoot.pending.depth'),
+      detail: t('reshoot.pending.depthTime'),
       iconClass: 'text-primary-comfy-yellow motion-safe:animate-spin'
     }
   if (depth === 'failed')
     return {
       icon: CircleAlert,
-      title: rc('reshoot.pending.depthFailed', locale),
+      title: t('reshoot.pending.depthFailed'),
       detail: reason,
       iconClass: 'text-primary-warm-white'
     }
   return {
     icon: CirclePause,
-    title: rc('reshoot.pending.depthWaiting', locale),
+    title: t('reshoot.pending.depthWaiting'),
     detail: reason,
     iconClass: 'text-primary-warm-gray'
   }
@@ -63,7 +64,7 @@ const depthStep = computed(() => {
         aria-hidden="true"
       />
       <span class="text-sm text-primary-comfy-canvas">
-        {{ rc('reshoot.pending.clip', locale) }}
+        {{ t('reshoot.pending.clip') }}
       </span>
     </li>
     <li
@@ -94,7 +95,7 @@ const depthStep = computed(() => {
           data-testid="reshoot-analyze"
           @click="emit('retry')"
         >
-          {{ rc('reshoot.tryAgain', locale) }}
+          {{ t('reshoot.tryAgain') }}
         </Button>
       </span>
     </li>
@@ -105,10 +106,10 @@ const depthStep = computed(() => {
       />
       <span class="flex flex-col gap-1">
         <span class="text-sm text-primary-comfy-canvas">
-          {{ rc('reshoot.pending.aim', locale) }}
+          {{ t('reshoot.pending.aim') }}
         </span>
         <span class="text-xs/relaxed text-primary-warm-gray">
-          {{ rc('reshoot.pending.aimHint', locale) }}
+          {{ t('reshoot.pending.aimHint') }}
         </span>
       </span>
     </li>

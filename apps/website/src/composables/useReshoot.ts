@@ -1,66 +1,69 @@
 import { useMounted, useObjectUrl } from '@vueuse/core'
 import { computed, onScopeDispose, reactive, ref, shallowRef, watch } from 'vue'
 
-import { refreshWorkshopCredits } from '../config/workshop-credits'
-import { useWorkshopSession } from '../config/workshop-session-state'
-import type { Locale } from '../i18n/translations'
-import { t } from '../i18n/translations'
-import { studioGate } from '../lib/workshop/cinematic-studio/gate'
+import { refreshWorkshopCredits } from '@/config/workshop-credits'
+import { useWorkshopSession } from '@/config/workshop-session-state'
+import type { RunFailure } from '@/config/workshop-run'
+import { workshopIdempotencyKey } from '@/config/workshop-snippets'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import { RESHOOT_APP_SLUG } from '@/lib/workshop/cinematic-studio/analytics'
+import { studioGate } from '@/lib/workshop/cinematic-studio/gate'
 import type {
   CameraKey,
   ReshootAspect,
   ReshootCamera,
   ReshootMotion,
   ReshootSize
-} from '../lib/workshop/cinematic-studio/reshoot'
+} from '@/lib/workshop/cinematic-studio/reshoot'
 import {
   DEFAULT_CAMERA,
   RESHOOT_EXAMPLE,
   clipFits,
   withKey
-} from '../lib/workshop/cinematic-studio/reshoot'
-import { clipSecondsOf } from '../lib/workshop/cinematic-studio/reshoot-clip'
-import { rc } from '../lib/workshop/cinematic-studio/reshoot-copy'
+} from '@/lib/workshop/cinematic-studio/reshoot'
+import { clipSecondsOf } from '@/lib/workshop/cinematic-studio/reshoot-clip'
 import type {
   Pose,
   Vec3
-} from '../lib/workshop/cinematic-studio/reshoot-engine/camera'
+} from '@/lib/workshop/cinematic-studio/reshoot-engine/camera'
 import {
   estimatePivot,
   focalPx
-} from '../lib/workshop/cinematic-studio/reshoot-engine/camera'
+} from '@/lib/workshop/cinematic-studio/reshoot-engine/camera'
 import {
   cameraAt,
   keyIndexAt,
   roundCamera
-} from '../lib/workshop/cinematic-studio/reshoot-path'
-import type { Geometry } from '../lib/workshop/cinematic-studio/reshoot-engine/cvgeo'
-import { readGeometry } from '../lib/workshop/cinematic-studio/reshoot-engine/cvgeo'
-import type { ReshootRun } from '../lib/workshop/cinematic-studio/reshoot-engine/notes'
+} from '@/lib/workshop/cinematic-studio/reshoot-path'
+import type { Geometry } from '@/lib/workshop/cinematic-studio/reshoot-engine/cvgeo'
+import { readGeometry } from '@/lib/workshop/cinematic-studio/reshoot-engine/cvgeo'
+import type { ReshootRun } from '@/lib/workshop/cinematic-studio/reshoot-engine/notes'
 import {
   failureNote,
   quoteNote,
   relativeTime,
   runPrice
-} from '../lib/workshop/cinematic-studio/reshoot-engine/notes'
-import type { ReshootRunPhase } from '../lib/workshop/cinematic-studio/reshoot-engine/run'
+} from '@/lib/workshop/cinematic-studio/reshoot-engine/notes'
+import type { ReshootRunPhase } from '@/lib/workshop/cinematic-studio/reshoot-engine/run'
 import {
   downloadOutput,
   runJob
-} from '../lib/workshop/cinematic-studio/reshoot-engine/run'
+} from '@/lib/workshop/cinematic-studio/reshoot-engine/run'
 import type {
   ReshootQuote,
   ReshootTransport
-} from '../lib/workshop/cinematic-studio/reshoot-engine/transport'
-import { ReshootError } from '../lib/workshop/cinematic-studio/reshoot-engine/transport'
-import { reshootTransport } from '../lib/workshop/cinematic-studio/reshoot-engine/transport-config'
-import type { ReshootClip } from '../lib/workshop/cinematic-studio/reshoot-engine/workflow'
+} from '@/lib/workshop/cinematic-studio/reshoot-engine/transport'
+import { ReshootError } from '@/lib/workshop/cinematic-studio/reshoot-engine/transport'
+import { reshootTransport } from '@/lib/workshop/cinematic-studio/reshoot-engine/transport-config'
+import type { ReshootClip } from '@/lib/workshop/cinematic-studio/reshoot-engine/workflow'
 import {
   analyzeWorkflow,
   generateSeconds,
   generateWorkflow
-} from '../lib/workshop/cinematic-studio/reshoot-engine/workflow'
-import { useWorkshopAuthFlag } from '../scripts/posthog'
+} from '@/lib/workshop/cinematic-studio/reshoot-engine/workflow'
+import { captureWorkshopEvent, useWorkshopAuthFlag } from '@/scripts/posthog'
+import type { WorkshopRunAnalytics } from '@/scripts/workshop-analytics'
 import { useReshootAllowance } from './useReshootAllowance'
 
 /** Waits before asking for the price again after a failed quote. */
@@ -77,6 +80,24 @@ const MAX_SECONDS = 15
 
 /** The code a depth read gets when this person's hourly ceiling is reached. */
 const DEPTH_LIMIT = 'reshoot_depth_limit'
+
+/** A run failure's app-proxy code, mapped to the shared analytics reasons. */
+const RESHOOT_FAILURE_REASONS: Readonly<Record<string, RunFailure>> = {
+  insufficient_credits: 'noCredits',
+  unauthorized: 'unavailable',
+  not_found: 'unavailable',
+  app_unavailable: 'unavailable',
+  deployment_not_ready: 'unavailable',
+  rate_limited: 'rateLimit',
+  queue_full: 'concurrency',
+  concurrent_run_limit: 'concurrency'
+}
+
+function reshootRunFailure(error: unknown): RunFailure {
+  if (error instanceof ReshootError)
+    return RESHOOT_FAILURE_REASONS[error.code] ?? 'provider'
+  return 'client'
+}
 
 export type DepthState = 'none' | 'analyzing' | 'ready' | 'failed'
 
@@ -128,6 +149,7 @@ const EXAMPLE_TAKE: ReshootTake = {
  * the metered run, priced by the app proxy's quote.
  */
 export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
+  const { t } = translationsFor(locale)
   const { user, session, sessionFailure, settled, ensureFresh } =
     useWorkshopSession()
   const authEnabled = useWorkshopAuthFlag()
@@ -211,7 +233,7 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
   const clipError = computed(() => {
     const s = clipSeconds.value
     return upload.value && s !== undefined && Number.isFinite(s) && !clipFits(s)
-      ? rc('reshoot.clipLength', locale, { seconds: s.toFixed(1) })
+      ? t('reshoot.clipLength', { seconds: s.toFixed(1) })
       : undefined
   })
 
@@ -288,25 +310,25 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
   const quoteFailed = ref(false)
   const priceNote = computed(() => {
     if (quote.value) return quoteNote(quote.value, locale, run.value)
-    return quoteFailed.value ? rc('reshoot.quote.failed', locale) : undefined
+    return quoteFailed.value ? t('reshoot.quote.failed') : undefined
   })
   const secondsUntil = (at?: number) =>
     at === undefined
-      ? rc('reshoot.quote.later', locale)
+      ? t('reshoot.quote.later')
       : relativeTime(Math.max(0, (at - Date.now()) / 1000), locale)
   /** What this person may still generate this hour, said before a refusal. */
   const limitNote = computed(() => {
     const { left, runs, nextAt } = takeAllowance.allowance.value
     return left > 0
-      ? rc('reshoot.limit.left', locale, { left, runs })
-      : rc('reshoot.limit.none', locale, { when: secondsUntil(nextAt) })
+      ? t('reshoot.limit.left', { left, runs })
+      : t('reshoot.limit.none', { when: secondsUntil(nextAt) })
   })
   /** Why the viewport cannot show a read scene, if it cannot. */
   const notice = computed(() => {
     if (!picked.value) return undefined
-    if (unavailable.value) return rc('reshoot.unavailable', locale)
+    if (unavailable.value) return t('reshoot.unavailable')
     if (scene.value.phase === 'failed') return scene.value.note
-    if (gate.value === 'signedOut') return rc('reshoot.signIn', locale)
+    if (gate.value === 'signedOut') return t('reshoot.signIn')
     return undefined
   })
   const stage = computed(() =>
@@ -355,15 +377,12 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
       session.value?.role === 'member'
         ? 'workshop.error.memberNoCredits'
         : 'workshop.error.noCreditsCloud'
-    return t(key, locale).replace(
-      '{workspace}',
-      session.value?.workspace.name ?? ''
-    )
+    return t(key, { workspace: session.value?.workspace.name ?? '' })
   }
 
   function noteFor(error: unknown): string {
     if (error instanceof ReshootError && error.code === DEPTH_LIMIT)
-      return rc('reshoot.limit.depth', locale, {
+      return t('reshoot.limit.depth', {
         when: secondsUntil(depthAllowance.allowance.value.nextAt)
       })
     if (error instanceof ReshootError && error.code === 'insufficient_credits')
@@ -540,7 +559,14 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
 
   async function generate() {
     const read = scene.value
-    if (!canGenerate.value || !transport || read.phase !== 'ready') return
+    const startedFor = session.value
+    if (
+      !canGenerate.value ||
+      !transport ||
+      read.phase !== 'ready' ||
+      !startedFor
+    )
+      return
     const n = takes.value.length
     const id = `take-${n}`
     const still = stillCamera()
@@ -561,6 +587,20 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
     runs.set(id, controller)
     const { signal } = controller
     const { geometry } = read
+    const analytics: WorkshopRunAnalytics = {
+      model_slug: RESHOOT_APP_SLUG,
+      page_type: 'app',
+      app_slug: RESHOOT_APP_SLUG,
+      user_id: startedFor.uid,
+      workspace_id: startedFor.workspace.id,
+      attempt_id: workshopIdempotencyKey()
+    }
+    const startedAt = Date.now()
+    const finished = () => ({
+      ...analytics,
+      duration_ms: Date.now() - startedAt
+    })
+    captureWorkshopEvent({ name: 'run_started', properties: analytics })
     try {
       const job = await runJob(
         transport,
@@ -586,16 +626,40 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
         optional('warp'),
         optional('original-audio')
       ])
-      if (signal.aborted) return
+      if (signal.aborted) {
+        captureWorkshopEvent({
+          name: 'run_finished',
+          properties: { ...finished(), status: 'cancelled' }
+        })
+        return
+      }
       updateTake(id, {
         status: 'done',
         url: objectUrl(video),
         warpUrl: objectUrl(warp),
         originalUrl: objectUrl(original)
       })
+      captureWorkshopEvent({
+        name: 'run_finished',
+        properties: { ...finished(), status: 'succeeded', output_count: 1 }
+      })
     } catch (error) {
-      if (!signal.aborted)
-        updateTake(id, { status: 'failed', note: noteFor(error) })
+      if (signal.aborted) {
+        captureWorkshopEvent({
+          name: 'run_finished',
+          properties: { ...finished(), status: 'cancelled' }
+        })
+        return
+      }
+      updateTake(id, { status: 'failed', note: noteFor(error) })
+      captureWorkshopEvent({
+        name: 'run_finished',
+        properties: {
+          ...finished(),
+          status: 'failed',
+          reason: reshootRunFailure(error)
+        }
+      })
     } finally {
       runs.delete(id)
       void refreshQuote()

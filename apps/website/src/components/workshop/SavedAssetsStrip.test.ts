@@ -8,14 +8,14 @@ import {
   GenerationAccessError,
   getWorkshopGeneration,
   listWorkshopGenerations
-} from '../../config/workshop-generation-assets'
-import type { SavedGeneration } from '../../config/workshop-generation-assets'
-import { WORKSHOP_ASSETS_URL } from '../../config/workshop-env'
-import { downloadOutput } from '../../config/workshop-output-download'
+} from '@/config/workshop-generation-assets'
+import type { SavedGeneration } from '@/config/workshop-generation-assets'
+import { WORKSHOP_ASSETS_URL } from '@/config/workshop-env'
+import { downloadOutput } from '@/config/workshop-output-download'
 import SavedAssetsStrip from './SavedAssetsStrip.vue'
 
-vi.mock(import('../../config/workshop-generation-assets'), { spy: true })
-vi.mock(import('../../config/workshop-output-download'), { spy: true })
+vi.mock(import('@/config/workshop-generation-assets'), { spy: true })
+vi.mock(import('@/config/workshop-output-download'), { spy: true })
 
 const assetId = '932cad6b-c94f-4e83-bffa-84be407b0440'
 const running: SavedGeneration = {

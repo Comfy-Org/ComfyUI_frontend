@@ -272,7 +272,6 @@ describe('GlobalDialog Reka parity with PrimeVue', () => {
   })
 
   it('opens the save dialog with an accessible name and description', async () => {
-    const warn = vi.spyOn(console, 'warn')
     mountDialog()
     const store = useDialogStore()
 
@@ -290,7 +289,7 @@ describe('GlobalDialog Reka parity with PrimeVue', () => {
     const dialog = await screen.findByRole('dialog', { name: 'Save as' })
     expect(dialog).toHaveAccessibleDescription('Filename')
     expect(screen.getByLabelText('Filename')).toHaveFocus()
-    expect(warn).not.toHaveBeenCalled()
+    expect(console.warn).not.toHaveBeenCalled()
   })
 
   it('closes the dialog on Escape by default', async () => {
@@ -346,13 +345,13 @@ describe('GlobalDialog Reka parity with PrimeVue', () => {
 
     await screen.findByRole('dialog')
 
-    // eslint-disable-next-line testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-node-access
     const header = screen.getByText('Section classes').parentElement
     expect(header?.classList.contains('p-2')).toBe(true)
     // twMerge drops the default header padding in favor of headerClass
     expect(header?.classList.contains('px-4')).toBe(false)
 
-    // eslint-disable-next-line testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-node-access
     const body = screen.getByTestId('body').parentElement
     expect(body?.classList.contains('p-0')).toBe(true)
     expect(body?.classList.contains('px-4')).toBe(false)
@@ -596,7 +595,8 @@ describe('shouldPreventRekaDismiss', () => {
     'p-popover',
     'p-autocomplete-overlay',
     'p-overlay-mask',
-    'p-dialog'
+    'p-dialog',
+    'p-toast-message'
   ])('prevents dismiss when target is inside %s', (className) => {
     const overlay = document.createElement('div')
     overlay.className = className
@@ -615,6 +615,18 @@ describe('shouldPreventRekaDismiss', () => {
     const event = makeEvent(document.body)
     onRekaPointerDownOutside({ dismissableMask: undefined }, event)
     expect(event.defaultPrevented).toBe(false)
+  })
+
+  it('allows dismiss from the empty space beside a toast message', () => {
+    const container = document.createElement('div')
+    container.className = 'p-toast'
+    document.body.appendChild(container)
+
+    const event = makeEvent(container)
+    onRekaPointerDownOutside({ dismissableMask: undefined }, event)
+
+    expect(event.defaultPrevented).toBe(false)
+    container.remove()
   })
 
   it('prevents dismiss when the dialog is not the top-most (stacked)', () => {
@@ -639,7 +651,7 @@ describe('shouldPreventRekaDismiss', () => {
     expect(event.defaultPrevented).toBe(true)
   })
 
-  it.for(['p-dialog', 'p-select-overlay', 'p-toast'])(
+  it.for(['p-dialog', 'p-select-overlay', 'p-toast-message'])(
     'focus-outside on a sibling %s portal does not dismiss the parent',
     (className) => {
       const overlay = document.createElement('div')

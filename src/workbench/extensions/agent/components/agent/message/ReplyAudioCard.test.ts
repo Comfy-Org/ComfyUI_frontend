@@ -9,9 +9,7 @@ import { api } from '@/scripts/api'
 import type { ReplyAsset } from '../../../utils/replyAssets'
 import ReplyAudioCard from './ReplyAudioCard.vue'
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 vi.mock(import('@/scripts/api'))
 
@@ -50,9 +48,7 @@ describe('ReplyAudioCard', () => {
 
   beforeEach(() => {
     vi.mocked(api.apiURL).mockImplementation((route) => `http://x/api${route}`)
-    vi.mocked(api.fetchApi)
-      .mockReset()
-      .mockResolvedValue(new Response(new Blob(['x'])))
+    vi.mocked(api.fetchApi).mockResolvedValue(new Response(new Blob(['x'])))
     vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:mock')
     vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
     anchorClick = vi

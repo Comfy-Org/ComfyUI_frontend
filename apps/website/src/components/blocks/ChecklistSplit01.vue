@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import GlassCard from '../common/GlassCard.vue'
-import CheckIcon from '../icons/CheckIcon.vue'
+import GlassCard from '@/components/common/GlassCard.vue'
+import CheckIcon from '@/components/icons/CheckIcon.vue'
 
 type Criterion = { id: string; label: string }
 

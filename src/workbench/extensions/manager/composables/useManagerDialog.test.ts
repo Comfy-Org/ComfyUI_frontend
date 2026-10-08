@@ -1,7 +1,7 @@
 /**
  * Manager dialog migration regression net: `useManagerDialog().show()` must
  * route through the Reka renderer at the legacy Manager dimensions (1724px
- * max-width × 80vh, expanding at 3000px). Catches accidental reverts of the
+ * wide × 80vh, expanding at 3000px). Catches accidental reverts of the
  * Phase 4 renderer flip.
  */
 import { describe, expect, it, vi } from 'vitest'
@@ -17,11 +17,13 @@ describe('useManagerDialog', () => {
     expect(args.key).toBe('global-manager')
     expect(args.dialogComponentProps!.renderer).toBe('reka')
     expect(args.dialogComponentProps!.size).toBe('full')
-    expect(args.dialogComponentProps!.contentClass).toContain('max-w-[1724px]')
+    expect(args.dialogComponentProps!.contentClass).toContain(
+      'w-[min(90vw,1724px)]'
+    )
     expect(args.dialogComponentProps!.contentClass).toContain('h-[80vh]')
     expect(args.dialogComponentProps!.contentClass).toContain('max-h-[1026px]')
     expect(args.dialogComponentProps!.contentClass).toContain(
-      'min-[3000px]:max-w-[2200px]'
+      'min-[3000px]:w-[min(90vw,2200px)]'
     )
   })
 

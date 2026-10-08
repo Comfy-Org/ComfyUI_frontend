@@ -1,9 +1,8 @@
 import { isProductionBuild } from './build-env'
-import { HUB_WORKFLOWS_PATH, hubAppHref, hubAppSlugs } from './hub-models'
+import { hubAppHref, hubAppSlugs } from './hub-models'
 import { LOCALE_CODES, LOCALES } from './locales'
 import type { ModelPageLaunch } from './model-page-launch'
 import { launchedModelPages, launchedWorkflowPages } from './model-page-launch'
-import { models } from './models'
 import { modelsUrlKind, modelsUrlPaths } from './models-url-registry'
 import { workshopModels } from './workshop-browse-content'
 import { isLegacyWorkshopRoute, isWorkshopRoute } from './workshop-release'
@@ -14,6 +13,7 @@ const PLACEHOLDER_PATHNAMES = ['/case-studies', '/videos', '/demos'] as const
 const ALL_LOCALE_PREFIXES = LOCALE_CODES.map((locale) => LOCALES[locale].prefix)
 
 export const NOINDEX_ROUTES = [
+  '/changelog',
   ...PAYMENT_STATUSES.map((status) => `/payment/${status}`),
   '/individual-submission',
   '/booking-confirmation',
@@ -28,6 +28,7 @@ export const NOINDEX_ROUTES = [
   '/privacy-policy',
   '/terms-of-service',
   '/platform/serverless-animation',
+  '/nano-banana',
   ...PLACEHOLDER_PATHNAMES
 ] as const
 
@@ -39,16 +40,6 @@ const NOINDEX_PATHNAMES = new Set([
   // the older /comfy-agent preview route stays out of the index.
   '/comfy-agent'
 ])
-
-const MODEL_REDIRECT_PATHNAMES = new Set(
-  models
-    .filter((model) => model.canonicalSlug !== undefined)
-    .flatMap((model) =>
-      ALL_LOCALE_PREFIXES.map(
-        (prefix) => `${prefix}/p/supported-models/${model.slug}`
-      )
-    )
-)
 
 function normalizePathname(pathname: string): string {
   return pathname.replace(/\/$/, '')
@@ -109,10 +100,6 @@ export function isIndexableModelPage(
 ): boolean {
   const kind = modelsUrlKind(pathname)
   if (kind === 'workflow') return workflowsLaunched
-  if (kind === 'section')
-    return (
-      normalizePathname(pathname) === HUB_WORKFLOWS_PATH && workflowsLaunched
-    )
   if (kind !== 'model') return false
   const routerId = routerIdByModelPage.get(normalizePathname(pathname))
   return (
@@ -129,7 +116,6 @@ export function isExcludedFromSitemap(
   return (
     isNoindexPathname(pathname) ||
     isLegacyWorkshopRoute(pathname) ||
-    MODEL_REDIRECT_PATHNAMES.has(pathname) ||
     (isWorkshopRoute(pathname) &&
       !isIndexableModelPage(pathname, launched, workflowsLaunched))
   )

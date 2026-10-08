@@ -53,6 +53,11 @@ export const WORKSHOP_CREDITS_URL = new URL(
   WORKSHOP_CLOUD_BASE_URL
 ).href
 
+export const WORKSHOP_SUBSCRIPTION_URL = new URL(
+  '/?pricing=1',
+  WORKSHOP_CLOUD_BASE_URL
+).href
+
 /** Where "see all" sends a reader whose assets outgrew the strip. Cloud owns
  * the full library; the website only ever shows the most recent few. The
  * param opens Cloud's Assets panel — see `useAssetsUrlLoader` in the app. */
