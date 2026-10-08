@@ -5651,6 +5651,13 @@
     "sample": {
       "banner": "Sample mode: this page is answering itself. No model runs and nothing is charged.",
       "result": "Sample result: this is your own clip handed back unchanged, to show where a real swap will appear."
+    },
+    "size": {
+      "label": "Quality",
+      "768p": "768p · sharper",
+      "480p": "480p · faster",
+      "saved": "Saves at {width}×{height}, the same shape as your video.",
+      "shape": "The result always keeps your video's shape."
     }
   }
 }

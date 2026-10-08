@@ -10,6 +10,7 @@ const request = {
   start: 2.5,
   seconds: 5,
   canvas: { width: 768, height: 1344 },
+  result: { width: 756, height: 1344 },
   seed: 42
 }
 
@@ -35,6 +36,11 @@ describe('swapWorkflow', () => {
   it('cuts the result back to the chosen length before saving', () => {
     expect(graph.cut.inputs).toMatchObject({ start_time: 0, duration: 5 })
     expect(graph.out.inputs.video).toEqual(['cut', 0])
+  })
+
+  it('saves the result in the source shape, whatever the canvas', () => {
+    expect(graph.fit.inputs).toMatchObject({ width: 756, height: 1344 })
+    expect(graph['130'].inputs.images).toEqual(['fit', 0])
   })
 
   it('sizes the canvas and seeds the run', () => {

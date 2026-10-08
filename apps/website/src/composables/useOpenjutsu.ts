@@ -20,8 +20,12 @@ import {
 import type { ReshootQuote } from '@/lib/workshop/cinematic-studio/reshoot-engine/transport'
 import { ReshootError } from '@/lib/workshop/cinematic-studio/reshoot-engine/transport'
 import type { VideoTrim } from '@/components/workshop/video-trim/VideoTrimDialog.vue'
-import type { SwapWindow } from '@/lib/workshop/openjutsu/clip'
-import { pickCanvas, swapSeconds } from '@/lib/workshop/openjutsu/clip'
+import type { SwapWindow,SwapSize } from '@/lib/workshop/openjutsu/clip'
+import {
+  resultSize,
+  swapCanvas,
+  swapSeconds
+} from '@/lib/workshop/openjutsu/clip'
 import {
   OPENJUTSU_SAMPLE_MODE,
   openjutsuTransport
@@ -48,6 +52,7 @@ export interface SwapTake {
   readonly window: SwapWindow
   /** Seconds of result asked for. */
   readonly seconds: number
+  readonly size: SwapSize
   readonly seed: number
   readonly status: 'rendering' | 'done' | 'cancelled' | 'failed'
   readonly phase?: SwapPhase
@@ -99,8 +104,18 @@ export function useOpenjutsu({ locale = 'en' }: { locale?: Locale } = {}) {
   const partSeconds = computed(
     () => range.value && swapSeconds(range.value.seconds)
   )
+  /** The quality of the next run; a sharper one costs more. */
+  const size = ref<SwapSize>('768p')
   const canvas = computed(
-    () => trim.value && pickCanvas(trim.value.width, trim.value.height)
+    () =>
+      trim.value && swapCanvas(trim.value.width, trim.value.height, size.value)
+  )
+  /** The saved frame: the source's own shape, never a different one. */
+  const savedSize = computed(
+    () =>
+      trim.value &&
+      canvas.value &&
+      resultSize(trim.value.width, trim.value.height, canvas.value)
   )
 
   function takeVideo(file: File) {
@@ -229,7 +244,7 @@ export function useOpenjutsu({ locale = 'en' }: { locale?: Locale } = {}) {
   const priceNote = computed(() => {
     if (quote.value)
       return quoteNote(quote.value, locale, {
-        size: '768p',
+        size: size.value,
         seconds: partSeconds.value
       })
     return quoteFailed.value ? t('reshoot.quote.failed') : undefined
@@ -270,6 +285,7 @@ export function useOpenjutsu({ locale = 'en' }: { locale?: Locale } = {}) {
     const clip = video.value
     const image = character.value
     const shape = canvas.value
+    const saved = savedSize.value
     const length = partSeconds.value
     const part = range.value
     if (
@@ -278,6 +294,7 @@ export function useOpenjutsu({ locale = 'en' }: { locale?: Locale } = {}) {
       !clip ||
       !image ||
       !shape ||
+      !saved ||
       !length ||
       !part
     )
@@ -288,6 +305,7 @@ export function useOpenjutsu({ locale = 'en' }: { locale?: Locale } = {}) {
       target: target.value.trim(),
       window: part,
       seconds: length,
+      size: size.value,
       seed: resolveSeed(seed.value)
     }
     const id = crypto.randomUUID()
@@ -342,6 +360,7 @@ export function useOpenjutsu({ locale = 'en' }: { locale?: Locale } = {}) {
           start: request.window.start,
           seconds: request.seconds,
           canvas: shape,
+          result: saved,
           seed: request.seed
         }),
         (phase) => updateTake(id, { phase }),
@@ -408,7 +427,8 @@ export function useOpenjutsu({ locale = 'en' }: { locale?: Locale } = {}) {
     seed,
     range,
     partSeconds,
-    canvas,
+    size,
+    savedSize,
     takes,
     selected,
     current,

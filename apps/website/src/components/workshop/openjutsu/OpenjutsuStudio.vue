@@ -23,6 +23,8 @@ const {
   characterUrl,
   target,
   seed,
+  size,
+  savedSize,
   range,
   partSeconds,
   takes,
@@ -77,6 +79,8 @@ const { leavingTo, leave, stay } = useCinematicLeaveGuard(
       <OpenjutsuSide
         v-model:target="target"
         v-model:seed="seed"
+        v-model:size="size"
+        :saved-size="savedSize"
         :video-url="videoUrl"
         :video-name="video?.name"
         :clip-seconds="clipSeconds"

@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
 import Button from '@/components/ui/button/Button.vue'
 import InfoTooltip from '@/components/ui/tooltip/InfoTooltip.vue'
 import CinematicGenerateAction from '@/components/workshop/cinematic-studio/CinematicGenerateAction.vue'
@@ -8,6 +10,8 @@ import ReshootDisclosure from '@/components/workshop/cinematic-studio/reshoot/Re
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import type { StudioGate } from '@/lib/workshop/cinematic-studio/gate'
+import type { SwapCanvas, SwapSize } from '@/lib/workshop/openjutsu/clip'
+import { SWAP_SIZES } from '@/lib/workshop/openjutsu/clip'
 import OpenjutsuMediaSlot from './OpenjutsuMediaSlot.vue'
 
 const {
@@ -15,6 +19,7 @@ const {
   videoName,
   clipSeconds,
   partSeconds,
+  savedSize,
   characterUrl,
   characterName,
   missing,
@@ -29,6 +34,8 @@ const {
   videoName?: string
   clipSeconds?: number
   partSeconds?: number
+  /** The frame the result is saved at, once a video is chosen. */
+  savedSize?: SwapCanvas
   characterUrl?: string
   characterName?: string
   /** The first thing still needed before a run, if any. */
@@ -51,6 +58,7 @@ const emit = defineEmits<{
 
 const target = defineModel<string>('target', { required: true })
 const seed = defineModel<number | undefined>('seed')
+const size = defineModel<SwapSize>('size', { required: true })
 /** Empty is random; a number, whole and not negative, is a fixed seed. */
 const seedText = computed({
   get: () => (seed.value === undefined ? '' : String(seed.value)),
@@ -141,6 +149,52 @@ const footnote = computed(() => {
           class="text-xs/relaxed text-primary-warm-gray"
         >
           {{ t('openjutsu.target.hint') }}
+        </p>
+      </div>
+      <div class="flex flex-col gap-2">
+        <p
+          id="openjutsu-size-label"
+          class="text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase"
+        >
+          {{ t('openjutsu.size.label') }}
+        </p>
+        <div
+          role="radiogroup"
+          aria-labelledby="openjutsu-size-label"
+          class="grid grid-cols-2 gap-1 rounded-xl bg-transparency-white-t4 p-1 ring-1 ring-transparency-white-t8 ring-inset"
+        >
+          <button
+            v-for="option in SWAP_SIZES"
+            :key="option"
+            type="button"
+            role="radio"
+            :aria-checked="size === option"
+            :class="
+              cn(
+                'flex h-10 cursor-pointer flex-col items-center justify-center rounded-lg text-xs font-semibold transition-colors outline-none focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/60',
+                size === option
+                  ? 'bg-primary-warm-white text-primary-comfy-ink'
+                  : 'text-primary-comfy-canvas hover:bg-transparency-white-t8 hover:text-primary-warm-white'
+              )
+            "
+            :data-testid="`openjutsu-size-${option}`"
+            @click="size = option"
+          >
+            {{ t(`openjutsu.size.${option}`) }}
+          </button>
+        </div>
+        <p
+          class="text-xs/relaxed text-primary-warm-gray"
+          data-testid="openjutsu-saved-size"
+        >
+          {{
+            savedSize
+              ? t('openjutsu.size.saved', {
+                  width: savedSize.width,
+                  height: savedSize.height
+                })
+              : t('openjutsu.size.shape')
+          }}
         </p>
       </div>
       <ReshootDisclosure :label="t('reshoot.advanced.label')">

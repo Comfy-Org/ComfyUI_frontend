@@ -20,7 +20,10 @@ export interface SwapRequest {
   readonly start: number
   /** Seconds of the clip to swap, and of the result; see `swapSeconds`. */
   readonly seconds: number
+  /** What H3 generates on; see `swapCanvas`. */
   readonly canvas: SwapCanvas
+  /** What is saved, in the source's own shape; see `resultSize`. */
+  readonly result: SwapCanvas
   readonly seed: number
 }
 
@@ -66,5 +69,6 @@ export function swapWorkflow(request: SwapRequest): Graph {
     width: request.canvas.width,
     height: request.canvas.height
   })
+  Object.assign(graph.fit.inputs, request.result)
   return graph
 }

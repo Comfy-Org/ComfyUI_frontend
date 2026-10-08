@@ -71,7 +71,7 @@
       "bit_depth": 8,
       "color_space": "sRGB",
       "codec": "none",
-      "images": ["decode", 0],
+      "images": ["fit", 0],
       "audio": ["components", 1]
     }
   },
@@ -169,6 +169,16 @@
       "start_time": 0,
       "duration": 5,
       "strict_duration": false
+    }
+  },
+  "fit": {
+    "class_type": "ImageScale",
+    "inputs": {
+      "image": ["decode", 0],
+      "upscale_method": "lanczos",
+      "width": 1344,
+      "height": 756,
+      "crop": "disabled"
     }
   }
 }

@@ -57,6 +57,10 @@ strict). Warm-up jobs (1 s at 768x768) took 100 to 128 s from cold.
   r10 to r12 used the current one. The sampling work is the same.
 
 Inputs, graphs, per-run records and videos are outside the repo, in
-`~/comfyvibe/projects/comfy_workshop/openjutsu/bench/`.
+`~/comfyvibe/projects/comfy_workshop/openjutsu/bench/` (start with its README;
+run names here are the ones under `raw/`).
+
+Since these runs the app gained a 480p option and a final resize to the
+source's exact shape. Neither changes the sampling work measured here.
 
 No price or free-run allowance is proposed here yet.
