@@ -160,10 +160,14 @@ test.describe('Product showcase accordion @interaction', () => {
     await page.goto('/')
   })
 
+  // The active tab renders as a link and inactive tabs as buttons.
   const featureTab = (page: Page, name: string) =>
-    page.getByRole('button').filter({
-      has: page.getByRole('heading', { level: 3, name, exact: true })
-    })
+    page
+      .getByRole('button')
+      .or(page.getByRole('link'))
+      .filter({
+        has: page.getByRole('heading', { level: 3, name, exact: true })
+      })
 
   test('first feature is active by default', async ({ page }) => {
     await expect(
@@ -200,7 +204,7 @@ test.describe('Product showcase accordion @interaction', () => {
     await expect(thirdFeature.getByText(/with one API/)).toBeVisible()
     // The CSS-hidden desktop copy is also in the DOM; target the mobile one.
     await expect(
-      page.locator('video[src$="comfy-api-product-demo.mp4"]:visible')
+      page.locator('video[src$="homepage-api-cut-04.mp4"]:visible')
     ).toBeVisible()
   })
 })

@@ -31,7 +31,11 @@ test('homepage animation preserves navigation and footer typography @interaction
   await products.press('Escape')
 
   await page
-    .getByRole('button', { name: /Full Control with Nodes/ })
+    .getByRole('heading', {
+      level: 3,
+      name: 'Full Control with Nodes',
+      exact: true
+    })
     .scrollIntoViewIfNeeded()
   await expect(page.getByText('CANNY EDGE', { exact: true })).toBeAttached()
   await page.evaluate(() => document.fonts.ready)
