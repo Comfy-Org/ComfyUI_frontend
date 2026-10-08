@@ -1,13 +1,9 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { checkBackend } from './backend'
 import { checkPlatform, detectPlatform } from './platform'
 
 describe('checkBackend', () => {
-  beforeEach(() => {
-    vi.spyOn(console, 'log').mockImplementation(() => {})
-  })
-
   it('passes when the backend is running multi-user', async () => {
     vi.stubGlobal('fetch', (input: string | URL) =>
       Promise.resolve(
@@ -90,7 +86,6 @@ describe('detectPlatform', () => {
   })
 
   it('always reports the operating system as satisfied', () => {
-    vi.spyOn(console, 'log').mockImplementation(() => {})
     expect(checkPlatform().ok).toBe(true)
   })
 })

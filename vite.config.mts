@@ -873,7 +873,11 @@ export default defineConfig({
         extends: true,
         test: {
           name: 'frontend',
-          setupFiles: ['./vitest.timer.setup.ts', './vitest.setup.ts'],
+          setupFiles: [
+            './vitest.console.setup.ts',
+            './vitest.timer.setup.ts',
+            './vitest.setup.ts'
+          ],
           exclude: ISOLATED_STORE_TESTS,
           include: [
             'src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
@@ -887,7 +891,10 @@ export default defineConfig({
         test: {
           name: 'isolated-stores',
           environment: 'node',
-          setupFiles: ['./vitest.network.setup.ts'],
+          setupFiles: [
+            './vitest.console.setup.ts',
+            './vitest.network.setup.ts'
+          ],
           include: ISOLATED_STORE_TESTS
         }
       },
@@ -896,7 +903,10 @@ export default defineConfig({
         test: {
           name: 'tooling',
           environment: 'node',
-          setupFiles: ['./vitest.network.setup.ts'],
+          setupFiles: [
+            './vitest.console.setup.ts',
+            './vitest.network.setup.ts'
+          ],
           exclude: FRONTEND_SCRIPT_TESTS,
           include: [
             'scripts/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',

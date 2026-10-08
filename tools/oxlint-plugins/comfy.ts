@@ -33,6 +33,7 @@ import type {
   noImportActual as NoImportActual,
   noModuleScopeVitestMocks as NoModuleScopeVitestMocks,
   noPersistentLiteGraphRegistration as NoPersistentLiteGraphRegistration,
+  noRedundantConsoleSpy as NoRedundantConsoleSpy,
   noRedundantLiteGraphCleanup as NoRedundantLiteGraphCleanup,
   noRedundantVitestCleanup as NoRedundantVitestCleanup
 } from './vitestCleanup'
@@ -100,12 +101,14 @@ const {
   noImportActual,
   noModuleScopeVitestMocks,
   noPersistentLiteGraphRegistration,
+  noRedundantConsoleSpy,
   noRedundantLiteGraphCleanup,
   noRedundantVitestCleanup
 } = requireFrom('./vitestCleanup.ts') as {
   noImportActual: typeof NoImportActual
   noModuleScopeVitestMocks: typeof NoModuleScopeVitestMocks
   noPersistentLiteGraphRegistration: typeof NoPersistentLiteGraphRegistration
+  noRedundantConsoleSpy: typeof NoRedundantConsoleSpy
   noRedundantLiteGraphCleanup: typeof NoRedundantLiteGraphCleanup
   noRedundantVitestCleanup: typeof NoRedundantVitestCleanup
 }
@@ -134,6 +137,7 @@ export default {
     'no-primevue-imports': noPrimeVueImports,
     'no-render-in-watch-effect': noRenderInWatchEffect,
     'no-statically-disabled-test': noStaticallyDisabledTest,
+    'no-redundant-console-spy': noRedundantConsoleSpy,
     'no-redundant-litegraph-cleanup': noRedundantLiteGraphCleanup,
     'no-redundant-vitest-cleanup': noRedundantVitestCleanup,
     'no-relative-packages': noRelativePackages,
