@@ -4,6 +4,7 @@ import { applyOps, DocDerivedLamportClockStore, freezeLamportEnvelope, MAX_LAMPO
   mint, migrate, observedDocCounter, observeLamport, persistLamportTick, project, readStamps,
   SCHEMA_VERSION, tickLamport, validateLamportCounter, type LamportClockStore } from "../src/index.js";
 import { loadCatalog } from "./helpers.js";
+import type { Op } from "../src/index.js";
 
 const catalog = loadCatalog();
 const identity = { workflow_id: "w", lineage_id: "l", producer_id: "agent:clock" };
@@ -73,6 +74,37 @@ describe("creator-owned Lamport counter", () => {
     const identity = { workflow_id: "w", lineage_id: "l", producer_id: "agent:clock" };
     await expect(persistLamportTick(store, identity, [], { requireSeed: true })).resolves.toBe(13);
     expect(await persistLamportTick(new DocDerivedLamportClockStore(mint({ nodes: [], links: [] }, catalog)), identity, [4])).toBe(5);
+  });
+
+  it.each([
+    {
+      op: {
+        op: "connect", op_id: "a".repeat(32), actor: "agent:grow", base_version: 4,
+        stamp: [4, "agent:grow"], link_id: 100, from_node: 2, from_slot: 0,
+        to_node: 1, to_slot: null, link_type: "MODEL",
+        grow: { name: "images.image0", type: "MODEL" },
+      },
+      next: 5,
+    },
+    {
+      op: {
+        op: "delete_node", op_id: "d".repeat(32), actor: "agent:delete", base_version: 6,
+        stamp: [6, "agent:delete"], node_id: 3, removed_links: [],
+      },
+      next: 7,
+    },
+  ] satisfies { op: Op; next: number }[])("ticks after $op.op metadata survives a snapshot", async ({ op, next }) => {
+    const doc = mint({
+      nodes: [
+        { id: 1, type: "KSampler", inputs: [], outputs: [] },
+        { id: 2, type: "CheckpointLoaderSimple", outputs: [{ name: "MODEL", type: "MODEL", links: [] }] },
+        { id: 3, type: "12345678-1234-4123-8123-123456789abc" },
+      ],
+      links: [],
+      definitions: { subgraphs: [{ id: "12345678-1234-4123-8123-123456789abc", nodes: [], links: [] }] },
+    }, catalog);
+    expect(applyOps(doc, [op], catalog).outcomes[0]?.outcome).toBe("applied");
+    await expect(persistLamportTick(new DocDerivedLamportClockStore(replicaOf(doc)), identity, [])).resolves.toBe(next);
   });
 
   it("serializes concurrent producers and commits the counter to the document", async () => {

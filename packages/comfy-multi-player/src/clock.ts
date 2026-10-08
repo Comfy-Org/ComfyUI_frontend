@@ -86,6 +86,7 @@ export function observedDocCounter(doc: Y.Doc): number | undefined {
     if (root._start !== null) throw new TypeError(`${name} root contains non-map content`);
     const ledger = doc.getMap<unknown>(name); // throws for a different concrete Y type
     ledger.forEach((value, key) => {
+      if (name === ROOT_STAMPS && (key.startsWith('["grow_request",') || key.startsWith('["interior_route",'))) return;
       if (!Array.isArray(value) || value.length !== 3 || typeof value[1] !== "string" ||
           typeof value[2] !== "string" || value[2].length === 0) {
         throw new TypeError(`${name} contains a malformed stamp tuple`);
