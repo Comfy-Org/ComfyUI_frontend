@@ -8,7 +8,7 @@ import {
 } from '@/renderer/extensions/vueNodes/widgets/composables/useIntWidget'
 
 vi.mock(import('@/scripts/app'))
-vi.mock(import('@/scripts/valueControlWidgets'), () => ({
+vi.mock(import('@/core/graph/widgets/valueControlWidgets'), () => ({
   addValueControlWidget: vi.fn()
 }))
 

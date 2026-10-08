@@ -4,7 +4,7 @@ import type { INumericWidget } from '@/lib/litegraph/src/types/widgets'
 import { _for_testing } from '@/renderer/extensions/vueNodes/widgets/composables/useFloatWidget'
 
 vi.mock(import('@/scripts/app'))
-vi.mock(import('@/scripts/valueControlWidgets'), () => ({
+vi.mock(import('@/core/graph/widgets/valueControlWidgets'), () => ({
   addValueControlWidgets: vi.fn()
 }))
 

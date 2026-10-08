@@ -6,7 +6,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { isFloatInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
-import { addValueControlWidget } from '@/scripts/valueControlWidgets'
+import { addValueControlWidget } from '@/core/graph/widgets/valueControlWidgets'
 import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
 
 function onFloatValueChange(this: INumericWidget, v: number) {
