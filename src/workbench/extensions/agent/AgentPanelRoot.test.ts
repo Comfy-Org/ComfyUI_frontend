@@ -2501,19 +2501,16 @@ describe('AgentPanelRoot attach flow', () => {
       JSON.parse(data.getData('application/x-comfy-asset-info'))
     ).toMatchObject({ media_kind: 'other' })
     const source = data.getData('text/uri-list')
-    const fetched: string[] = []
-    vi.stubGlobal(
-      'fetch',
-      vi.fn<typeof fetch>(async (input, init) => {
-        if (String(input) === source) {
-          fetched.push(source)
-          return new Response(new Blob(['audio'], { type: 'audio/mpeg' }))
-        }
-        if (init?.method === 'POST') return json(200, { name: 'recording.mp3' })
-        if (String(input).includes('/assets'))
-          return json(200, { assets: [], total: 0, has_more: false })
-        return json(200, agentThreadList())
-      })
+    respondToFetch({}, () => json(200, agentThreadList()))
+    respondToFetch(/\/assets/, () =>
+      json(200, { assets: [], total: 0, has_more: false })
+    )
+    respondToFetch({ method: 'POST' }, () =>
+      json(200, { name: 'recording.mp3' })
+    )
+    respondToFetch(
+      source,
+      () => new Response(new Blob(['audio'], { type: 'audio/mpeg' }))
     )
     renderWithSelectedTarget()
     await nextTick()
@@ -2524,7 +2521,7 @@ describe('AgentPanelRoot attach flow', () => {
     dispatchDrag(target, 'drop', data)
     await nextTick()
     expect(store.attachments).toHaveLength(1)
-    expect(fetched).toEqual([source])
+    expect(fetchRequests(source)).toHaveLength(1)
     expect(useToastStore().messagesToAdd).toEqual([
       expect.objectContaining({
         severity: 'info',
@@ -2576,13 +2573,9 @@ describe('AgentPanelRoot attach flow', () => {
   })
 
   it('allows the same library asset to be dropped into a new draft after sending', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) =>
-        init?.method === 'POST'
-          ? json(202, { thread_id: 'th-1', message_id: 'm-1' })
-          : json(200, agentThreadList())
-      )
+    respondToFetch({}, () => json(200, agentThreadList()))
+    respondToFetch({ method: 'POST' }, () =>
+      json(202, { thread_id: 'th-1', message_id: 'm-1' })
     )
     renderWithSelectedTarget()
     await nextTick()
