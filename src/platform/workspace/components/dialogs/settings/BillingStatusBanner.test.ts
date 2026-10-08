@@ -825,58 +825,97 @@ describe('BillingStatusBanner', () => {
       it.for([
         {
           case: 'team, refill in 10 days',
-          personal: false,
+          workspaceType: 'team',
+          isTeamPlan: true,
+          tier: 'TEAM',
           renewalDate: inDays(10),
           body: 'Your team has used all its credits. Add more credits or wait until credits refill on October 18.'
         },
         {
           case: 'team, refill in 20 days',
-          personal: false,
+          workspaceType: 'team',
+          isTeamPlan: true,
+          tier: 'TEAM',
           renewalDate: inDays(20),
           body: 'Your team has used all its credits. Add more credits or wait until credits refill on October 28.'
         },
         {
+          case: 'team, refill in exactly 31 days',
+          workspaceType: 'team',
+          isTeamPlan: true,
+          tier: 'TEAM',
+          renewalDate: inDays(31),
+          body: 'Your team has used all its credits. Add more credits or wait until credits refill on November 8.'
+        },
+        {
+          case: 'team, refill just past 31 days',
+          workspaceType: 'team',
+          isTeamPlan: true,
+          tier: 'TEAM',
+          renewalDate: new Date(
+            NOW.getTime() + 31 * DAY + 60 * 60 * 1000
+          ).toISOString(),
+          body: 'Your team has used all its credits. Add more credits.'
+        },
+        {
           case: 'team, refill in 5 months',
-          personal: false,
+          workspaceType: 'team',
+          isTeamPlan: true,
+          tier: 'TEAM',
           renewalDate: inDays(150),
           body: 'Your team has used all its credits. Add more credits.'
         },
         {
           case: 'team, refill date already past',
-          personal: false,
+          workspaceType: 'team',
+          isTeamPlan: true,
+          tier: 'TEAM',
           renewalDate: inDays(-2),
           body: 'Your team has used all its credits. Add more credits.'
         },
         {
           case: 'team, no refill date',
-          personal: false,
+          workspaceType: 'team',
+          isTeamPlan: true,
+          tier: 'TEAM',
           renewalDate: null,
           body: 'Your team has used all its credits. Add more credits.'
         },
         {
           case: 'personal, refill in 10 days',
-          personal: true,
+          workspaceType: 'personal',
+          isTeamPlan: false,
+          tier: 'PRO',
           renewalDate: inDays(10),
           body: "You've used all your credits. Add more credits or wait until credits refill on October 18."
         },
         {
           case: 'personal, refill in 5 months',
-          personal: true,
+          workspaceType: 'personal',
+          isTeamPlan: false,
+          tier: 'PRO',
           renewalDate: inDays(150),
           body: "You've used all your credits. Add more credits."
         },
         {
           case: 'personal, no refill date',
-          personal: true,
+          workspaceType: 'personal',
+          isTeamPlan: false,
+          tier: 'PRO',
           renewalDate: null,
           body: "You've used all your credits. Add more credits."
         }
-      ])(
+      ] as const)(
         'words out of credits for the owner ($case)',
-        async ({ personal, renewalDate, body }) => {
-          if (personal) personalPlan()
+        async ({ workspaceType, isTeamPlan, tier, renewalDate, body }) => {
+          state.workspaceType = workspaceType
+          state.isTeamPlan = isTeamPlan
           state.renewalDate = renewalDate
-          state.subscription = { ...state.subscription!, hasFunds: false }
+          state.subscription = {
+            ...state.subscription!,
+            tier,
+            hasFunds: false
+          }
           renderBanner()
 
           expect(screen.getByRole('status')).toHaveTextContent(body)

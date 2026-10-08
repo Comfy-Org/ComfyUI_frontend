@@ -167,7 +167,7 @@ const nearRefillDate = computed(() => {
   const date = parseDate(renewalDate.value)
   if (!date) return ''
   const untilRefill = date.getTime() - Date.now()
-  if (untilRefill < 0 || untilRefill > REFILL_SUGGESTION_WINDOW_MS) return ''
+  if (untilRefill <= 0 || untilRefill > REFILL_SUGGESTION_WINDOW_MS) return ''
   return longDate(renewalDate.value, { withYear: false })
 })
 const planEndDate = computed(() => longDate(subscription.value?.endDate))
