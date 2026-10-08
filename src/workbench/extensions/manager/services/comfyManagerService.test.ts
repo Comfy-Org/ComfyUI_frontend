@@ -283,30 +283,36 @@ describe('useComfyManagerService', () => {
       )
     })
 
-    it('returns null when the task queues but the queue fails to start', async () => {
-      mockAxiosInstance.post.mockImplementation((url: string) =>
-        url === 'manager/queue/start'
-          ? Promise.reject({ response: { status: 500, data: {} } })
-          : Promise.resolve({ data: { queued: true } })
-      )
-      vi.mocked(axios.isAxiosError).mockReturnValue(true)
+    it.for([
+      { label: 'no message', data: {} },
+      { label: 'an empty message', data: { message: '' } }
+    ])(
+      'returns null when the queue fails to start with $label',
+      async ({ data }) => {
+        mockAxiosInstance.post.mockImplementation((url: string) =>
+          url === 'manager/queue/start'
+            ? Promise.reject({ response: { status: 500, data } })
+            : Promise.resolve({ data: { queued: true } })
+        )
+        vi.mocked(axios.isAxiosError).mockReturnValue(true)
 
-      const result = await service.installPack({
-        id: 'pack',
-        version: '1.0.0',
-        selected_version: '1.0.0',
-        mode: 'remote',
-        channel: 'default'
-      })
+        const result = await service.installPack({
+          id: 'pack',
+          version: '1.0.0',
+          selected_version: '1.0.0',
+          mode: 'remote',
+          channel: 'default'
+        })
 
-      expect(result).toBeNull()
-      expect(service.error.value).toBe(
-        'Starting ComfyUI-Manager job queue failed with status 500'
-      )
-      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
-        errorType: 'manager_queue_start_failed'
-      })
-    })
+        expect(result).toBeNull()
+        expect(service.error.value).toBe(
+          'Starting ComfyUI-Manager job queue failed with status 500'
+        )
+        expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+          errorType: 'manager_queue_start_failed'
+        })
+      }
+    )
 
     it('does not blame the queue start for a concurrent request failure', async () => {
       mockAxiosInstance.post.mockImplementation((url: string) =>
