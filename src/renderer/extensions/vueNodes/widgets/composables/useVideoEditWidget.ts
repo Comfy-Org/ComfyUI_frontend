@@ -27,7 +27,6 @@ export const useVideoEditWidget = (): ComfyWidgetConstructorV2 => {
     const options: IWidgetVideoEditOptions = {
       features,
       serialize: true,
-      canvasOnly: false,
       hideInPanel: true
     }
 

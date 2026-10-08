@@ -1,22 +1,20 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro'
-import FormSection from '../../components/contact/FormSection.vue'
-import SocialProofBarSection from '../../components/common/SocialProofBarSection.vue'
-import FAQSplit01 from '../../components/blocks/FAQSplit01.vue'
-import { contactFaqs } from '../../data/contactFaq'
-import { t } from '../../i18n/translations'
-import { faqAnswerPlainText } from '../../utils/faqAnswer'
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import FormSection from '@/components/contact/FormSection.vue'
+import FAQSplit01 from '@/components/blocks/FAQSplit01.vue'
+import { contactFaqs } from '@/data/contactFaq'
+import { faqAnswerPlainText } from '@/utils/faqAnswer'
 import {
   absoluteUrl,
   faqPageNode,
   organizationId,
-  pageContext,
-} from '../../utils/jsonLd'
+  pageContext
+} from '@/utils/jsonLd'
 
 const { siteUrl, locale, url } = pageContext(
   Astro.site,
   Astro.url.pathname,
-  Astro.currentLocale,
+  Astro.currentLocale
 )
 
 const faqs = contactFaqs(locale)
@@ -24,8 +22,8 @@ const faqPage = faqPageNode(
   url,
   faqs.map((faq) => ({
     question: faq.question,
-    answer: faqAnswerPlainText(faq.answer),
-  })),
+    answer: faqAnswerPlainText(faq.answer)
+  }))
 )
 ---
 
@@ -36,18 +34,17 @@ const faqPage = faqPageNode(
   mainEntityId={organizationId(siteUrl)}
   breadcrumbs={[
     {
-      name: t('breadcrumb.home', locale),
-      url: absoluteUrl(Astro.site, '/zh-CN'),
+      name: Astro.locals.t('breadcrumb.home'),
+      url: absoluteUrl(Astro.site, '/zh-CN')
     },
-    { name: t('breadcrumb.contact', locale) },
+    { name: Astro.locals.t('breadcrumb.contact') }
   ]}
   extraJsonLd={[faqPage]}
 >
   <FormSection locale="zh-CN" client:load />
   <FAQSplit01
     client:visible
-    heading={t('contact.faq.heading', locale)}
+    heading={Astro.locals.t('contact.faq.heading')}
     faqs={faqs}
   />
-  <SocialProofBarSection />
 </BaseLayout>

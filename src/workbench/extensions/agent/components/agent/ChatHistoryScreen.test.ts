@@ -1,9 +1,12 @@
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { i18n } from '@/i18n'
-import type { HistoryGroups } from '../../stores/agent/agentChatHistoryStore'
+import type {
+  ChatSession,
+  HistoryGroups
+} from '../../stores/agent/agentChatHistoryStore'
 
 import ChatHistoryScreen from './ChatHistoryScreen.vue'
 
@@ -14,16 +17,18 @@ const emptyGroups: HistoryGroups = {
   earlier: []
 }
 
-const originalSession = {
+const originalSession: ChatSession = {
   id: 'thread-1',
   title: 'Original title',
-  updatedAt: 1
+  updatedAt: 1,
+  titleSource: 'server'
 }
 
-const secondSession = {
+const secondSession: ChatSession = {
   id: 'thread-2',
   title: 'Second title',
-  updatedAt: 2
+  updatedAt: 2,
+  titleSource: 'server'
 }
 
 const bucketLabels = /^(Current|Today|Yesterday|Earlier)$/
@@ -68,6 +73,7 @@ async function openRename(
 
 describe('ChatHistoryScreen', () => {
   beforeEach(() => {
+    vi.useRealTimers()
     i18n.global.locale.value = 'en'
   })
 
@@ -109,10 +115,23 @@ describe('ChatHistoryScreen', () => {
 
   it('orders populated bucket labels current, today, yesterday, earlier', () => {
     renderScreen({
-      current: [{ id: 'thread-c', title: 'Alpha', updatedAt: 4 }],
-      today: [{ id: 'thread-t', title: 'Bravo', updatedAt: 3 }],
-      yesterday: [{ id: 'thread-y', title: 'Charlie', updatedAt: 2 }],
-      earlier: [{ id: 'thread-e', title: 'Delta', updatedAt: 1 }]
+      current: [
+        { id: 'thread-c', title: 'Alpha', updatedAt: 4, titleSource: 'server' }
+      ],
+      today: [
+        { id: 'thread-t', title: 'Bravo', updatedAt: 3, titleSource: 'server' }
+      ],
+      yesterday: [
+        {
+          id: 'thread-y',
+          title: 'Charlie',
+          updatedAt: 2,
+          titleSource: 'server'
+        }
+      ],
+      earlier: [
+        { id: 'thread-e', title: 'Delta', updatedAt: 1, titleSource: 'server' }
+      ]
     })
 
     expect(renderedBucketLabels()).toEqual([

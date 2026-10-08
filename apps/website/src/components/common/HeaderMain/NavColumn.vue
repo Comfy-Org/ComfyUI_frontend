@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import NavigationMenuLink from '@/components/ui/navigation-menu/NavigationMenuLink.vue'
 
-import { isHrefActive } from '../../../composables/useCurrentPath'
-import type { NavColumn } from '../../../data/mainNavigation'
-import type { Locale } from '../../../i18n/translations'
+import { isHrefActive } from '@/composables/useCurrentPath'
+import type { NavColumn } from '@/data/mainNavigation'
+import type { Locale } from '@/i18n/translations'
 import NavLinkContent from './NavLinkContent.vue'
 
 defineProps<{ column: NavColumn; locale: Locale; currentPath: string }>()
@@ -11,7 +11,7 @@ defineProps<{ column: NavColumn; locale: Locale; currentPath: string }>()
 
 <template>
   <li class="flex flex-col space-y-4">
-    <p class="font-formula text-primary-warm-gray pl-2 text-sm font-medium">
+    <p class="pl-2 font-formula text-sm font-medium text-primary-warm-gray">
       {{ column.header }}
     </p>
     <ul class="flex flex-col">

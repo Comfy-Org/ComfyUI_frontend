@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ErrorRecoveryStrategy } from '@/composables/useErrorHandling'
@@ -11,7 +9,6 @@ describe('useErrorHandling', () => {
   let errorHandler: ReturnType<typeof useErrorHandling>
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia())
     errorHandler = useErrorHandling()
   })
 
@@ -362,15 +359,6 @@ describe('useErrorHandling', () => {
     })
 
     describe('backward compatibility', () => {
-      it('should work without recovery strategies parameter', async () => {
-        const action = vi.fn(async () => 'success')
-        const wrapped = errorHandler.wrapWithErrorHandlingAsync(action)
-
-        const result = await wrapped()
-
-        expect(result).toBe('success')
-      })
-
       it('should work with empty recovery strategies array', async () => {
         const testError = new Error('test error')
         const action = vi.fn(async () => {

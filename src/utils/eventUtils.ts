@@ -7,6 +7,7 @@ export interface DroppedAsset {
   ref?: string
   kind?: MediaKind
   previewUrl?: string
+  mediaUrl?: string
 }
 
 export function getDroppedAsset(
@@ -18,7 +19,7 @@ export function getDroppedAsset(
   const match = [...dataTransfer.types].find((type) =>
     validTypes.includes(type)
   )
-  const uri = match && dataTransfer.getData(match)?.split('\n')?.[0]
+  const uri = match && dataTransfer.getData(match).split('\n')[0]
   const ref = asset?.attachment_ref
 
   return uri || ref
@@ -27,7 +28,8 @@ export function getDroppedAsset(
         uri,
         ref,
         kind: asset?.media_kind,
-        previewUrl: asset?.preview_url
+        previewUrl: asset?.preview_url,
+        mediaUrl: asset?.media_url
       }
     : undefined
 }
@@ -39,6 +41,7 @@ export async function fetchDroppedAsset({
   if (!uri) return undefined
   try {
     const response = await fetch(uri)
+    if (!response.ok) return undefined
     const blob = await response.blob()
     return new File([blob], name, { type: blob.type })
   } catch {

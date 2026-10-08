@@ -1,11 +1,21 @@
 import { describe, expect, it } from 'vitest'
 
-import { AGENT_ATTACH_ACCEPT, isAgentAttachable } from './attachableFiles'
+import {
+  AGENT_ATTACH_ACCEPT,
+  attachableClipboardFiles,
+  isAgentAttachable
+} from './attachableFiles'
 
 /* Dragged files often carry no MIME (glb, md) or a generic one, so the
    predicate must hold with an empty type. */
 function fileNamed(name: string): File {
   return new File(['x'], name, { type: '' })
+}
+
+function clipboardOf(...files: File[]): DataTransfer {
+  const clipboard = new DataTransfer()
+  for (const file of files) clipboard.items.add(file)
+  return clipboard
 }
 
 describe('isAgentAttachable', () => {
@@ -34,17 +44,55 @@ describe('isAgentAttachable', () => {
   })
 
   it('names every approved extension in the picker accept list', () => {
-    for (const extension of [
-      '.mp4',
-      '.m4a',
-      '.mov',
-      '.mp3',
-      '.wav',
-      '.glb',
-      '.md',
-      '.txt'
-    ]) {
-      expect(AGENT_ATTACH_ACCEPT).toContain(extension)
-    }
+    const accepted = AGENT_ATTACH_ACCEPT.split(',')
+
+    expect(new Set(accepted)).toEqual(
+      new Set([
+        'image/*',
+        'video/*',
+        'audio/*',
+        '.mp4',
+        '.m4a',
+        '.mov',
+        '.mp3',
+        '.wav',
+        '.glb',
+        '.md',
+        '.txt',
+        '.json',
+        'application/json'
+      ])
+    )
+    expect(accepted).toHaveLength(13)
+  })
+
+  it('rejects .json despite it being in the picker accept list, so a dropped workflow file still falls through to the graph loader', () => {
+    expect(isAgentAttachable(fileNamed('workflow.json'))).toBe(false)
+  })
+})
+
+describe('attachableClipboardFiles', () => {
+  /* Chromium hands a pasted screenshot over as image.png; the name, not the
+     MIME type, is what the attachable check reads. */
+  it('takes the screenshot a clipboard carries', () => {
+    const screenshot = new File(['x'], 'image.png', { type: 'image/png' })
+    expect(attachableClipboardFiles(clipboardOf(screenshot))).toEqual([
+      screenshot
+    ])
+  })
+
+  it('drops clipboard files the composer cannot attach', () => {
+    expect(
+      attachableClipboardFiles(
+        clipboardOf(
+          new File(['x'], 'archive.zip', { type: 'application/zip' }),
+          new File(['x'], 'workflow.json', { type: 'application/json' })
+        )
+      )
+    ).toEqual([])
+  })
+
+  it('is empty for a text-only clipboard, leaving the paste to the editor', () => {
+    expect(attachableClipboardFiles(clipboardOf())).toEqual([])
   })
 })

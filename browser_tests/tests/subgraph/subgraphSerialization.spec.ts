@@ -46,14 +46,13 @@ async function getPrimitiveFanoutSnapshot(
   return comfyPage.page.evaluate((id) => {
     const graph = window.app!.canvas.graph!
     const hostNode = graph.getNodeById(id)
-    if (!hostNode?.isSubgraphNode?.()) {
+    if (!hostNode?.isSubgraphNode()) {
       throw new Error(`Host node ${id} is not a SubgraphNode`)
     }
 
-    const [primitiveNode] = hostNode.subgraph.findNodesByType(
-      'PrimitiveNode',
-      []
-    )
+    const primitiveNode = hostNode.subgraph
+      .findNodesByType('PrimitiveNode', [])
+      .at(0)
     const primitiveOriginLinkCount = [
       ...hostNode.subgraph.links.values()
     ].filter((link) => link.origin_id === primitiveNode?.id).length
@@ -63,8 +62,8 @@ async function getPrimitiveFanoutSnapshot(
     )
 
     return {
-      hostWidgetNames: (hostNode.widgets ?? []).map((widget) => widget.name),
-      hostWidgetValues: (hostNode.widgets ?? []).map((widget) => ({
+      hostWidgetNames: hostNode.widgets.map((widget) => widget.name),
+      hostWidgetValues: hostNode.widgets.map((widget) => ({
         name: widget.name,
         sourceNodeId:
           'sourceNodeId' in widget && typeof widget.sourceNodeId === 'string'
@@ -80,7 +79,7 @@ async function getPrimitiveFanoutSnapshot(
       interiorWidgetValues: hostNode.subgraph._nodes.flatMap((node) =>
         (node.widgets ?? []).map((widget) => widget.value)
       ),
-      primitiveOutputLinks: primitiveNode?.outputs?.[0]?.links ?? null,
+      primitiveOutputLinks: primitiveNode?.outputs.at(0)?.links ?? null,
       primitiveOriginLinkCount,
       serializedProperties: serializedNode?.properties ?? {}
     }
@@ -94,7 +93,7 @@ async function getSerializedSubgraphNodeProperties(
   return comfyPage.page.evaluate((id) => {
     const serialized = window.app!.graph.serialize()
     const node = serialized.nodes.find(
-      (candidate) => String(candidate.id) === String(id)
+      (candidate) => String(candidate.id) === id
     )
     return node?.properties ?? {}
   }, hostNodeId)
@@ -117,7 +116,7 @@ async function expectPromotedWidgetsToResolveToInteriorNodes(
 
       return ids.map((id) => {
         const interiorNode = hostNode.subgraph.getNodeById(id)
-        return interiorNode !== null && interiorNode !== undefined
+        return interiorNode != null
       })
     },
     [hostNodeId, interiorNodeIds] as const
@@ -412,20 +411,7 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
   })
 
   test.describe('Legacy And Round-Trip Coverage', () => {
-    let previousUseNewMenu: unknown
-
-    test.beforeEach(async ({ comfyPage }) => {
-      previousUseNewMenu =
-        await comfyPage.settings.getSetting('Comfy.UseNewMenu')
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-    })
-
-    test.afterEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting(
-        'Comfy.UseNewMenu',
-        previousUseNewMenu
-      )
-    })
+    test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 
     test('Legacy -1 proxyWidgets entries are hydrated to concrete interior node IDs', async ({
       comfyPage

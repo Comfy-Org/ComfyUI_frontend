@@ -32,7 +32,7 @@ function createDefaultCropState() {
   }
 }
 
-vi.mock('@/composables/useImageCrop', async () => {
+vi.mock<unknown>(import('@/composables/useImageCrop'), async () => {
   return {
     ASPECT_RATIOS: {
       '1:1': 1,
@@ -52,7 +52,7 @@ const upstreamHolder = vi.hoisted(() => ({
   ref: null as Ref<unknown> | null
 }))
 
-vi.mock('@/composables/useUpstreamValue', async () => {
+vi.mock<unknown>(import('@/composables/useUpstreamValue'), async () => {
   const { ref } = await import('vue')
   return {
     useUpstreamValue: () => {
@@ -82,16 +82,6 @@ const i18n = createI18n({
       boundingBox: { x: 'X', y: 'Y', width: 'Width', height: 'Height' }
     }
   }
-})
-
-const ButtonStub = defineComponent({
-  name: 'Button',
-  inheritAttrs: false,
-  template: '<button v-bind="$attrs" type="button"><slot /></button>'
-})
-
-const Passthrough = defineComponent({
-  template: '<div><slot /></div>'
 })
 
 const WidgetBoundingBoxStub = defineComponent({
@@ -144,12 +134,6 @@ function renderWidget(
     global: {
       plugins: [i18n],
       stubs: {
-        Button: ButtonStub,
-        Select: Passthrough,
-        SelectContent: Passthrough,
-        SelectTrigger: Passthrough,
-        SelectValue: Passthrough,
-        SelectItem: Passthrough,
         WidgetBoundingBox: WidgetBoundingBoxStub
       }
     }

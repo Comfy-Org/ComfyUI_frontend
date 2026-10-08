@@ -8,7 +8,6 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAuthStore } from '@/stores/authStore'
 import type { ApiKeyAuthHeader } from '@/types/authTypes'
 import type { operations } from '@/types/comfyRegistryTypes'
-import { reportError } from '@/platform/telemetry/reportError'
 
 type ComfyApiUser =
   operations['createCustomer']['responses']['201']['content']['application/json']
@@ -29,7 +28,6 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
       .createCustomer()
       .catch((err) => {
         console.error(err)
-        reportError(err, { errorType: 'api_key_customer_creation_failure' })
         return
       })
     if (apiKey.value !== watchedApiKey) return
@@ -56,7 +54,7 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
     { immediate: true }
   )
 
-  const showErrorToast = (error: unknown) => {
+  const reportError = (error: unknown) => {
     if (error instanceof Error && error.message === 'STORAGE_FAILED') {
       toastStore.add({
         severity: 'error',
@@ -77,7 +75,7 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
       life: 5000
     })
     return true
-  }, showErrorToast)
+  }, reportError)
 
   const clearStoredApiKey = wrapWithErrorHandlingAsync(async () => {
     apiKey.value = null
@@ -88,7 +86,7 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
       life: 5000
     })
     return true
-  }, showErrorToast)
+  }, reportError)
 
   const getApiKey = () => apiKey.value
 

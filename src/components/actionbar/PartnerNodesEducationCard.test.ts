@@ -1,7 +1,7 @@
+import { useDialogService } from '@/services/dialogService'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import { setActivePinia } from 'pinia'
-import { createTestingPinia } from '@pinia/testing'
+import { getActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -9,26 +9,32 @@ import { createI18n } from 'vue-i18n'
 import * as runGateModule from '@/composables/billing/usePartnerNodesRunGate'
 import * as partnerNodesInGraphModule from '@/composables/node/usePartnerNodesInGraph'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { reportError } from '@/platform/telemetry/reportError'
+import { api } from '@/scripts/api'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { usePartnerNodesEducationStore } from '@/platform/workflow/templates/stores/partnerNodesEducationStore'
 
 import PartnerNodesEducationCard from './PartnerNodesEducationCard.vue'
 
-vi.mock('@/composables/node/usePartnerNodesInGraph', async () => {
-  const { computed, ref } = await import('vue')
-  const hasNodes = ref(true)
-  return {
-    usePartnerNodesInGraph: () => ({
-      hasPartnerNodes: computed(() => hasNodes.value)
-    }),
-    __setHasPartnerNodes: (value: boolean) => {
-      hasNodes.value = value
+vi.mock<unknown>(
+  import('@/composables/node/usePartnerNodesInGraph'),
+  async () => {
+    const { computed, ref } = await import('vue')
+    const hasNodes = ref(true)
+    return {
+      usePartnerNodesInGraph: () => ({
+        hasPartnerNodes: computed(() => hasNodes.value)
+      }),
+      __setHasPartnerNodes: (value: boolean) => {
+        hasNodes.value = value
+      }
     }
   }
-})
+)
 
-vi.mock('@/composables/billing/usePartnerNodesRunGate', async () => {
+vi.mock(import('@/composables/billing/usePartnerNodesRunGate'), async () => {
   const { computed, ref } = await import('vue')
   const gate = ref<'sign-in' | 'none'>('none')
   return {
@@ -44,10 +50,8 @@ vi.mock('@/composables/billing/usePartnerNodesRunGate', async () => {
   }
 })
 
-const showApiNodesSignInDialog = vi.fn()
-vi.mock('@/services/dialogService', () => ({
-  useDialogService: () => ({ showApiNodesSignInDialog })
-}))
+vi.mock(import('@/services/dialogService'))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 const { __setHasPartnerNodes } =
   partnerNodesInGraphModule as typeof partnerNodesInGraphModule & {
@@ -67,11 +71,9 @@ const copy = enMessages.partnerNodesEducation
 
 const CARD_TESTID = 'partner-nodes-education-card'
 
-let pinia: ReturnType<typeof createTestingPinia>
-
 function renderCard() {
   return render(PartnerNodesEducationCard, {
-    global: { plugins: [pinia, i18n] }
+    global: { plugins: [getActivePinia()!, i18n] }
   })
 }
 
@@ -87,11 +89,9 @@ function loadPaidTemplate(workflowKey: string) {
 
 describe('PartnerNodesEducationCard', () => {
   beforeEach(() => {
-    pinia = createTestingPinia({ stubActions: false })
-    setActivePinia(pinia)
     __setHasPartnerNodes(true)
     __setGate('none')
-    showApiNodesSignInDialog.mockClear()
+    vi.spyOn(api, 'storeSetting').mockResolvedValue(new Response())
   })
 
   it('stays hidden until a paid template load requests it', () => {
@@ -115,6 +115,66 @@ describe('PartnerNodesEducationCard', () => {
 
     await userEvent.click(screen.getByTestId('partner-nodes-education-dismiss'))
     expect(screen.queryByTestId(CARD_TESTID)).not.toBeInTheDocument()
+  })
+
+  it('stays closed on later paid template loads once the user closes it', async () => {
+    renderCard()
+    loadPaidTemplate('paid-wf')
+    await nextTick()
+
+    await userEvent.click(screen.getByTestId('partner-nodes-education-dismiss'))
+    expect(api.storeSetting).toHaveBeenCalledWith(
+      'Comfy.PartnerNodesEducation.Dismissed',
+      true
+    )
+    loadPaidTemplate('another-paid-wf')
+    await nextTick()
+    expect(screen.queryByTestId(CARD_TESTID)).not.toBeInTheDocument()
+  })
+
+  it('stays closed for the session and reports when saving the dismissal fails', async () => {
+    vi.mocked(api.storeSetting).mockRejectedValue(new Error('offline'))
+    renderCard()
+    loadPaidTemplate('paid-wf')
+    await nextTick()
+
+    await userEvent.click(screen.getByTestId('partner-nodes-education-dismiss'))
+    loadPaidTemplate('another-paid-wf')
+    await nextTick()
+    expect(screen.queryByTestId(CARD_TESTID)).not.toBeInTheDocument()
+    await vi.waitFor(() =>
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'partner_nodes_education_dismiss_save_failed'
+        })
+      )
+    )
+  })
+
+  it('stays hidden for a user who closed it in an earlier session', async () => {
+    useSettingStore().settingValues['Comfy.PartnerNodesEducation.Dismissed'] =
+      true
+    renderCard()
+
+    loadPaidTemplate('paid-wf')
+    await nextTick()
+    expect(screen.queryByTestId(CARD_TESTID)).not.toBeInTheDocument()
+  })
+
+  it('still shows on the next paid template load after a workflow switch retired it', async () => {
+    renderCard()
+    loadPaidTemplate('paid-wf')
+    await nextTick()
+    setActiveWorkflow('other-wf')
+    await nextTick()
+
+    loadPaidTemplate('another-paid-wf')
+    await nextTick()
+    expect(
+      screen.getByTestId(CARD_TESTID),
+      'only an explicit close may suppress the card for good'
+    ).toBeInTheDocument()
   })
 
   it('survives partner nodes registering after the request (template load)', async () => {
@@ -213,7 +273,9 @@ describe('PartnerNodesEducationCard', () => {
     await nextTick()
 
     await userEvent.click(screen.getByTestId('partner-nodes-education-sign-in'))
-    expect(showApiNodesSignInDialog).toHaveBeenCalledWith(['Kling'])
+    expect(useDialogService().showApiNodesSignInDialog).toHaveBeenCalledWith([
+      'Kling'
+    ])
   })
 
   it('gives each audio toggle a distinct, side-specific accessible name', async () => {

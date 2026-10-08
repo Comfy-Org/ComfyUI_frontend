@@ -4,15 +4,14 @@ import type { Route } from '@playwright/test'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { openErrorsTab } from '@e2e/fixtures/helpers/ErrorsTabHelper'
-import type { UserDataFullInfo } from '@/schemas/apiSchema'
+import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 
 test.describe('Workflows sidebar', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting(
-      'Comfy.Workflow.WorkflowTabsPosition',
-      'Sidebar'
-    )
+  test.use({
+    initialSettings: { 'Comfy.Workflow.WorkflowTabsPosition': 'Sidebar' }
+  })
 
+  test.beforeEach(async ({ comfyPage }) => {
     // Open the sidebar
     const tab = comfyPage.menu.workflowsTab
     await tab.open()
@@ -20,6 +19,30 @@ test.describe('Workflows sidebar', () => {
 
   test.afterEach(async ({ comfyPage }) => {
     await comfyPage.workflow.setupWorkflowsDirectory({})
+  })
+
+  test('draws each section divider as a single 1px line', async ({
+    comfyPage
+  }) => {
+    const separators = comfyPage.menu.workflowsTab.root.getByRole('separator')
+    await expect(separators).toHaveCount(2)
+
+    const borderWidths = await Promise.all(
+      (await separators.all()).map((separator) =>
+        separator.evaluate((element) => {
+          const style = getComputedStyle(element)
+          return [
+            style.borderTopWidth,
+            style.borderRightWidth,
+            style.borderBottomWidth,
+            style.borderLeftWidth
+          ]
+        })
+      )
+    )
+
+    const singleTopLine = ['1px', '0px', '0px', '0px']
+    expect(borderWidths).toEqual([singleTopLine, singleTopLine])
   })
 
   test('Can create new blank workflow', async ({ comfyPage }) => {
@@ -231,7 +254,9 @@ test.describe('Workflows sidebar', () => {
     })
 
     await comfyPage.settings.setSetting('Comfy.Locale', 'zh')
-    await comfyPage.setup()
+    await expect(
+      comfyPage.page.getByRole('button', { name: '运行', exact: true })
+    ).toBeVisible()
 
     // Compare the exported workflow with the original
     delete downloadedContent.id
@@ -415,6 +440,28 @@ test.describe('Workflows sidebar', () => {
       .poll(() => workflowsTab.getOpenedWorkflowNames())
       .toEqual(['*Unsaved Workflow', '*workflow1 (Copy)'])
   })
+
+  test(
+    'suppresses the native context menu on a saved workflow',
+    { tag: '@ui' },
+    async ({ comfyPage }) => {
+      await comfyPage.workflow.setupWorkflowsDirectory({
+        'workflow1.json': 'default.json'
+      })
+      const tab = comfyPage.menu.workflowsTab
+      await tab.open()
+
+      const event = await comfyPage.contextMenu.dispatchFor(
+        tab.getPersistedItem('workflow1')
+      )
+
+      expect(event.defaultPrevented).toBe(true)
+      await comfyPage.contextMenu.clickMenuItemExact('Duplicate')
+      await expect
+        .poll(() => tab.getOpenedWorkflowNames())
+        .toEqual(['*Unsaved Workflow', '*workflow1 (Copy)'])
+    }
+  )
 
   test('Can drop workflow from workflows sidebar', async ({ comfyPage }) => {
     await comfyPage.workflow.setupWorkflowsDirectory({

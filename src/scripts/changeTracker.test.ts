@@ -1,4 +1,11 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { markRaw, ref } from 'vue'
+
+vi.mock(import('@vueuse/router'), () => ({ useRouteHash: () => ref('') }))
 
 import {
   createNestedSubgraphs,
@@ -8,77 +15,27 @@ import {
   resetSubgraphFixtureState
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { Subgraph } from '@/lib/litegraph/src/LGraph'
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyApi } from '@/scripts/api'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 
 const mockAssert = vi.hoisted(() => vi.fn())
 
-vi.mock('@/base/assert', () => ({
+vi.mock(import('@/base/assert'), () => ({
   assert: mockAssert
 }))
 
-const mockNodeOutputStore = vi.hoisted(() => ({
-  snapshotOutputs: vi.fn(() => ({})),
-  restoreOutputs: vi.fn()
-}))
+vi.mock(import('@/scripts/app'))
 
-const mockSubgraphNavigationStore = vi.hoisted(() => ({
-  exportState: vi.fn(() => []),
-  restoreState: vi.fn()
-}))
-
-const mockWorkflowStore = vi.hoisted(() => ({
-  activeWorkflow: null as { changeTracker: unknown } | null,
-  getWorkflowByPath: vi.fn()
-}))
-
-vi.mock('@/scripts/app', () => ({
-  app: {
-    graph: {},
-    rootGraph: {
-      serialize: vi.fn(() => ({
-        nodes: [],
-        links: [],
-        groups: [],
-        extra: {},
-        config: {},
-        version: 0.4,
-        last_node_id: 0,
-        last_link_id: 0
-      }))
-    },
-    loadGraphData: vi.fn(() => Promise.resolve()),
-    canvas: {
-      ds: { scale: 1, offset: [0, 0] }
-    },
-    ui: {
-      autoQueueEnabled: false,
-      autoQueueMode: 'instant'
-    }
-  }
-}))
-
-vi.mock('@/scripts/api', () => ({
-  api: {
+vi.mock(import('@/scripts/api'), () => ({
+  api: fromPartial<ComfyApi>({
     dispatchCustomEvent: vi.fn(),
     addEventListener: vi.fn(),
     removeEventListener: vi.fn()
-  }
-}))
-
-vi.mock('@/stores/nodeOutputStore', () => ({
-  useNodeOutputStore: vi.fn(() => mockNodeOutputStore)
-}))
-
-vi.mock('@/stores/subgraphNavigationStore', () => ({
-  useSubgraphNavigationStore: vi.fn(() => mockSubgraphNavigationStore)
-}))
-
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  ComfyWorkflow: class {},
-  useWorkflowStore: vi.fn(() => mockWorkflowStore)
+  })
 }))
 
 import { app } from '@/scripts/app'
@@ -121,13 +78,15 @@ function createTracker(initialState?: ComfyWorkflowJSON): ChangeTracker {
   const workflow = {
     path: `/test/workflow-${++workflowPathCounter}.json`
   } as never
-  const tracker = new ChangeTracker(workflow, state)
-  mockWorkflowStore.activeWorkflow = { changeTracker: tracker }
+  const tracker = markRaw(new ChangeTracker(workflow, state))
+  useWorkflowStore().activeWorkflow = fromPartial({
+    changeTracker: tracker
+  })
   return tracker
 }
 
 function mockCanvasState(state: ComfyWorkflowJSON) {
-  vi.mocked(app.rootGraph.serialize).mockReturnValue(state as never)
+  vi.spyOn(app.rootGraph, 'serialize').mockReturnValue(state as never)
 }
 
 function dispatchedEventNames() {
@@ -219,21 +178,253 @@ describe('ChangeTracker', () => {
     nodeIdCounter = 0
     ChangeTracker.isLoadingGraph = false
     ChangeTracker.resetCheckStateWarningForTest()
-    mockWorkflowStore.activeWorkflow = null
-    mockWorkflowStore.getWorkflowByPath.mockReturnValue(null)
+    useWorkflowStore().activeWorkflow = null
+    vi.mocked(useWorkflowStore().getWorkflowByPath).mockReturnValue(null)
     mockCanvasState(createState())
     useQueueSettingsStore().mode = 'change'
     app.ui.autoQueueEnabled = false
     app.ui.autoQueueMode = 'instant'
+    vi.mocked(useSubgraphNavigationStore().exportState).mockReturnValue([])
+    vi.mocked(useSubgraphNavigationStore().restoreState).mockImplementation(
+      () => {}
+    )
+    app.rootGraph.subgraphs.clear()
+  })
+
+  describe('undoRedo', () => {
+    it.for([
+      {
+        key: 'z',
+        shiftKey: false,
+        history: 'undo',
+        selectOnly: false,
+        calls: 1
+      },
+      {
+        key: 'z',
+        shiftKey: false,
+        history: 'undo',
+        selectOnly: true,
+        calls: 0
+      },
+      { key: 'z', shiftKey: true, history: 'redo', selectOnly: true, calls: 0 },
+      { key: 'y', shiftKey: false, history: 'redo', selectOnly: true, calls: 0 }
+    ] as const)(
+      'Ctrl+$key shift=$shiftKey with selectOnly=$selectOnly consumes the key and runs $history $calls times',
+      async ({ key, shiftKey, history, selectOnly, calls }) => {
+        const tracker = createTracker()
+        const run = vi.spyOn(tracker, history).mockResolvedValue()
+        app.canvas.selectOnly = selectOnly
+        onTestFinished(() => {
+          app.canvas.selectOnly = false
+        })
+
+        const handled = await tracker.undoRedo(
+          new KeyboardEvent('keydown', { key, ctrlKey: true, shiftKey })
+        )
+
+        expect(handled).toBe(true)
+        expect(run).toHaveBeenCalledTimes(calls)
+      }
+    )
+
+    it.for([
+      { key: 'a', ctrlKey: true, shiftKey: false, altKey: false },
+      { key: 'z', ctrlKey: false, shiftKey: false, altKey: false },
+      { key: 'z', ctrlKey: true, shiftKey: false, altKey: true },
+      { key: 'y', ctrlKey: true, shiftKey: true, altKey: false }
+    ])(
+      '$key ctrl=$ctrlKey shift=$shiftKey alt=$altKey is not a history shortcut',
+      async ({ key, ctrlKey, shiftKey, altKey }) => {
+        const tracker = createTracker()
+        const undo = vi.spyOn(tracker, 'undo').mockResolvedValue()
+        const redo = vi.spyOn(tracker, 'redo').mockResolvedValue()
+
+        const handled = await tracker.undoRedo(
+          new KeyboardEvent('keydown', { key, ctrlKey, shiftKey, altKey })
+        )
+
+        expect(handled).toBeUndefined()
+        expect(undo).not.toHaveBeenCalled()
+        expect(redo).not.toHaveBeenCalled()
+      }
+    )
+
+    it.for([
+      { selectOnlyAtKeydown: true, selectOnlyAtFrame: false, undoCalls: 0 },
+      { selectOnlyAtKeydown: false, selectOnlyAtFrame: true, undoCalls: 1 }
+    ])(
+      'Ctrl+Z with selectOnly=$selectOnlyAtKeydown at keydown and $selectOnlyAtFrame at the frame undoes $undoCalls times',
+      async ({ selectOnlyAtKeydown, selectOnlyAtFrame, undoCalls }) => {
+        const tracker = createTracker()
+        const undo = vi.spyOn(tracker, 'undo').mockResolvedValue()
+        const frames: FrameRequestCallback[] = []
+        vi.spyOn(window, 'requestAnimationFrame').mockImplementation((frame) =>
+          frames.push(frame)
+        )
+        const addEventListener = vi
+          .spyOn(window, 'addEventListener')
+          .mockImplementation(() => {})
+        ChangeTracker.init()
+        const keydown = addEventListener.mock.calls.find(
+          ([type]) => type === 'keydown'
+        )?.[1]
+        if (typeof keydown !== 'function')
+          throw new Error('keydown listener missing')
+        onTestFinished(() => {
+          app.canvas.selectOnly = false
+        })
+
+        app.canvas.selectOnly = selectOnlyAtKeydown
+        keydown(new KeyboardEvent('keydown', { key: 'z', ctrlKey: true }))
+        app.canvas.selectOnly = selectOnlyAtFrame
+        expect(frames).toHaveLength(1)
+        await frames[0](0)
+
+        expect(undo).toHaveBeenCalledTimes(undoCalls)
+      }
+    )
+
+    describe('modifier release around history shortcuts', () => {
+      let events: EventTarget
+      let frames: FrameRequestCallback[]
+
+      beforeEach(() => {
+        events = new EventTarget()
+        frames = []
+        vi.spyOn(window, 'addEventListener').mockImplementation(
+          (type, listener, options) =>
+            events.addEventListener(type, listener, options)
+        )
+        vi.spyOn(window, 'requestAnimationFrame').mockImplementation((frame) =>
+          frames.push(frame)
+        )
+        ChangeTracker.init()
+      })
+
+      it.for([
+        { key: 'y', shiftKey: false, queue: 'redoQueue' },
+        { key: 'z', shiftKey: true, queue: 'redoQueue' },
+        { key: 'z', shiftKey: false, queue: 'undoQueue' }
+      ] as const)(
+        'Ctrl+$key shift=$shiftKey restores history when released before the next frame',
+        async ({ key, shiftKey, queue }) => {
+          const tracker = createTracker(createState(1))
+          const target = createState(2)
+          tracker[queue].push(target)
+          mockCanvasState(createState(3))
+
+          events.dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'Control', ctrlKey: true })
+          )
+          await Promise.all(frames.splice(0).map((frame) => frame(0)))
+          events.dispatchEvent(
+            new KeyboardEvent('keydown', { key, ctrlKey: true, shiftKey })
+          )
+          events.dispatchEvent(
+            new KeyboardEvent('keyup', { key, ctrlKey: true, shiftKey })
+          )
+          events.dispatchEvent(new KeyboardEvent('keyup', { key: 'Control' }))
+          await Promise.all(frames.splice(0).map((frame) => frame(0)))
+
+          expect(tracker.activeState).toEqual(target)
+        }
+      )
+
+      it('captures changes when a bare modifier is released within one frame', () => {
+        const tracker = createTracker(createState(1))
+        const changed = createState(2)
+        mockCanvasState(changed)
+
+        events.dispatchEvent(
+          new KeyboardEvent('keydown', { key: 'Control', ctrlKey: true })
+        )
+        events.dispatchEvent(new KeyboardEvent('keyup', { key: 'Control' }))
+
+        expect(tracker.activeState).toEqual(changed)
+      })
+    })
+
+    it.for([
+      { editor: 'INPUT', createElement: () => document.createElement('input') },
+      {
+        editor: 'TEXTAREA',
+        createElement: () => document.createElement('textarea')
+      },
+      {
+        editor: 'contenteditable',
+        createElement: () => {
+          const element = document.createElement('div')
+          Object.defineProperty(element, 'isContentEditable', { value: true })
+          return element
+        }
+      }
+    ])(
+      'leaves $editor history to the editor without scanning modals',
+      ({ createElement }) => {
+        vi.spyOn(document, 'activeElement', 'get').mockReturnValue(
+          createElement()
+        )
+        useQueueSettingsStore().mode = 'disabled'
+        const querySelectorAll = vi.spyOn(document, 'querySelectorAll')
+        const frames: FrameRequestCallback[] = []
+        vi.spyOn(window, 'requestAnimationFrame').mockImplementation((frame) =>
+          frames.push(frame)
+        )
+        const addEventListener = vi
+          .spyOn(window, 'addEventListener')
+          .mockImplementation(() => {})
+        ChangeTracker.init()
+        const keydown = addEventListener.mock.calls.find(
+          ([type]) => type === 'keydown'
+        )?.[1]
+        if (typeof keydown !== 'function')
+          throw new Error('keydown listener missing')
+
+        keydown(new KeyboardEvent('keydown', { key: 'a' }))
+
+        expect(querySelectorAll).not.toHaveBeenCalled()
+        expect(frames).toHaveLength(0)
+      }
+    )
+
+    it('captures editor changes when store-backed auto-queue uses change mode', async () => {
+      const editor = document.createElement('input')
+      vi.spyOn(document, 'activeElement', 'get').mockReturnValue(editor)
+      useQueueSettingsStore().mode = 'change'
+      app.ui.autoQueueEnabled = false
+      const tracker = createTracker(createState(1))
+      mockCanvasState(createState(2))
+      const frames: FrameRequestCallback[] = []
+      vi.spyOn(window, 'requestAnimationFrame').mockImplementation((frame) =>
+        frames.push(frame)
+      )
+      const addEventListener = vi
+        .spyOn(window, 'addEventListener')
+        .mockImplementation(() => {})
+      ChangeTracker.init()
+      const keydown = addEventListener.mock.calls.find(
+        ([type]) => type === 'keydown'
+      )?.[1]
+      if (typeof keydown !== 'function')
+        throw new Error('keydown listener missing')
+
+      keydown(new KeyboardEvent('keydown', { key: 'a' }))
+      expect(frames).toHaveLength(1)
+      await frames[0](0)
+
+      expect(dispatchedEventNames()).toContain('autoQueueGraphChanged')
+      expect(tracker.activeState.nodes).toHaveLength(2)
+    })
   })
 
   describe('captureCanvasState', () => {
     describe('guards', () => {
-      it('is a no-op when app.graph is falsy', () => {
+      it('is a no-op when the graph is not ready', () => {
         const tracker = createTracker()
         const original = tracker.activeState
 
-        const spy = vi.spyOn(app, 'graph', 'get').mockReturnValue(null as never)
+        const spy = vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(false)
         tracker.captureCanvasState()
         spy.mockRestore()
 
@@ -270,7 +461,9 @@ describe('ChangeTracker', () => {
 
       it('is a no-op and calls assert when called on inactive tracker', () => {
         const tracker = createTracker()
-        mockWorkflowStore.activeWorkflow = { changeTracker: {} }
+        useWorkflowStore().activeWorkflow = fromPartial({
+          changeTracker: {}
+        })
 
         tracker.captureCanvasState()
 
@@ -452,7 +645,9 @@ describe('ChangeTracker', () => {
         {
           name: 'tracker becomes inactive',
           blockSquash: () => {
-            mockWorkflowStore.activeWorkflow = { changeTracker: {} }
+            useWorkflowStore().activeWorkflow = fromPartial({
+              changeTracker: {}
+            })
           }
         },
         {
@@ -489,6 +684,23 @@ describe('ChangeTracker', () => {
         tracker.captureCanvasState()
 
         expect(tracker.undoQueue).toHaveLength(0)
+      })
+
+      it('does not push when only the recomputed node execution order differs', () => {
+        const initial = createState(2)
+        const tracker = createTracker(initial)
+        const reordered = structuredClone(initial)
+        reordered.nodes[0].order = 1
+        reordered.nodes[1].order = 0
+        mockCanvasState(reordered)
+
+        tracker.captureCanvasState()
+
+        expect(tracker.undoQueue).toHaveLength(0)
+        expect(api.dispatchCustomEvent).not.toHaveBeenCalledWith(
+          'graphChanged',
+          expect.anything()
+        )
       })
 
       it.for([
@@ -713,7 +925,6 @@ describe('ChangeTracker', () => {
           node.id = String(node.id)
         }
         const initialLink = initial.links[0]
-        if (!initialLink) throw new Error('link missing')
         initialLink[1] = String(initialLink[1])
         initialLink[3] = String(initialLink[3])
         changed.nodes[0].pos = [40, 50]
@@ -913,7 +1124,6 @@ describe('ChangeTracker', () => {
         const tracker = createTracker(initial)
         const changed = structuredClone(initial)
         const interior = getSubgraphDefinition(changed).nodes[0]
-        if (!interior) throw new Error('interior node missing')
         interior.pos = [40, 50]
         interior.size = [200, 100]
         mockCanvasState(changed)
@@ -932,7 +1142,6 @@ describe('ChangeTracker', () => {
         const tracker = createTracker(initial)
         const changed = structuredClone(initial)
         const interior = getSubgraphDefinition(changed).nodes[0]
-        if (!interior) throw new Error('interior node missing')
         interior.widgets_values = [2]
         mockCanvasState(changed)
 
@@ -968,12 +1177,10 @@ describe('ChangeTracker', () => {
           throw new Error('nested subgraph definitions missing')
         }
         const [leaf] = rootDefinitions.splice(leafIndex, 1)
-        if (!leaf) throw new Error('nested leaf definition missing')
         parent.definitions = { subgraphs: [leaf] }
         const initialLeaf = findSubgraphDefinition(initial, leafId)
         if (!initialLeaf) throw new Error('nested leaf definition missing')
         const initialLeafNode = initialLeaf.nodes[0]
-        if (!initialLeafNode) throw new Error('nested leaf node missing')
         initialLeafNode.widgets_values = [1]
         const tracker = createTracker(initial)
 
@@ -981,7 +1188,6 @@ describe('ChangeTracker', () => {
         const changedLeaf = findSubgraphDefinition(changed, leafId)
         if (!changedLeaf) throw new Error('nested leaf definition missing')
         const changedLeafNode = changedLeaf.nodes[0]
-        if (!changedLeafNode) throw new Error('nested leaf node missing')
         changedLeafNode.widgets_values = [2]
         mockCanvasState(changed)
 
@@ -996,7 +1202,6 @@ describe('ChangeTracker', () => {
         const initial = await createSubgraphState()
         const changed = structuredClone(initial)
         const interior = getSubgraphDefinition(changed).nodes[0]
-        if (!interior) throw new Error('interior node missing')
         interior.widgets_values = [2]
         omitOptionalSubgraphCollections(initial)
         omitOptionalSubgraphCollections(changed)
@@ -1186,8 +1391,8 @@ describe('ChangeTracker', () => {
       tracker.deactivate()
 
       expect(tracker.activeState).toEqual(changed)
-      expect(mockNodeOutputStore.snapshotOutputs).toHaveBeenCalled()
-      expect(mockSubgraphNavigationStore.exportState).toHaveBeenCalled()
+      expect(useNodeOutputStore().snapshotOutputs).toHaveBeenCalled()
+      expect(useSubgraphNavigationStore().exportState).toHaveBeenCalled()
     })
 
     it('skips captureCanvasState but still calls store during undo/redo', () => {
@@ -1197,21 +1402,85 @@ describe('ChangeTracker', () => {
       tracker.deactivate()
 
       expect(app.rootGraph.serialize).not.toHaveBeenCalled()
-      expect(mockNodeOutputStore.snapshotOutputs).toHaveBeenCalled()
+      expect(useNodeOutputStore().snapshotOutputs).toHaveBeenCalled()
     })
 
     it('is a full no-op and calls assert when called on inactive tracker', () => {
       const tracker = createTracker()
-      mockWorkflowStore.activeWorkflow = { changeTracker: {} }
+      useWorkflowStore().activeWorkflow = fromPartial({
+        changeTracker: {}
+      })
 
       tracker.deactivate()
 
       expect(app.rootGraph.serialize).not.toHaveBeenCalled()
-      expect(mockNodeOutputStore.snapshotOutputs).not.toHaveBeenCalled()
+      expect(useNodeOutputStore().snapshotOutputs).not.toHaveBeenCalled()
       expect(mockAssert).toHaveBeenCalledWith(
         false,
         'ChangeTracker.deactivate() called on inactive tracker'
       )
+    })
+  })
+
+  describe('restore', () => {
+    function deactivateWithNavigation(navigation: string[]) {
+      const tracker = createTracker(createState(1))
+      vi.mocked(useSubgraphNavigationStore().exportState).mockReturnValue(
+        navigation
+      )
+      tracker.deactivate()
+      return tracker
+    }
+
+    it('reopens the deepest subgraph the undone state still contains', () => {
+      const survivor = fromPartial<Subgraph>({ id: 'outer' })
+      app.rootGraph.subgraphs.set('outer', survivor)
+      const tracker = deactivateWithNavigation(['outer', 'inner', 'innermost'])
+      let restoredNavigation: string[] | undefined
+      vi.mocked(useSubgraphNavigationStore().restoreState).mockImplementation(
+        (navigation) => {
+          restoredNavigation = [...navigation]
+        }
+      )
+
+      tracker.restore()
+
+      expect(restoredNavigation).toEqual(['outer'])
+      expect(app.canvas.setGraph).toHaveBeenCalledWith(survivor)
+    })
+
+    it('reopens the deepest of multiple surviving ancestors', () => {
+      const outer = fromPartial<Subgraph>({ id: 'outer' })
+      const inner = fromPartial<Subgraph>({ id: 'inner' })
+      app.rootGraph.subgraphs.set('outer', outer)
+      app.rootGraph.subgraphs.set('inner', inner)
+      const tracker = deactivateWithNavigation(['outer', 'inner', 'innermost'])
+      let restoredNavigation: string[] | undefined
+      vi.mocked(useSubgraphNavigationStore().restoreState).mockImplementation(
+        (navigation) => {
+          restoredNavigation = [...navigation]
+        }
+      )
+
+      tracker.restore()
+
+      expect(restoredNavigation).toEqual(['outer', 'inner'])
+      expect(app.canvas.setGraph).toHaveBeenCalledWith(inner)
+    })
+
+    it('returns to the root graph when the undone state removed every ancestor', () => {
+      const tracker = deactivateWithNavigation(['outer', 'inner'])
+      let restoredNavigation: string[] | undefined
+      vi.mocked(useSubgraphNavigationStore().restoreState).mockImplementation(
+        (navigation) => {
+          restoredNavigation = [...navigation]
+        }
+      )
+
+      tracker.restore()
+
+      expect(restoredNavigation).toEqual([])
+      expect(app.canvas.setGraph).toHaveBeenCalledWith(app.rootGraph)
     })
   })
 
@@ -1229,7 +1498,9 @@ describe('ChangeTracker', () => {
     it('is a no-op when tracker is inactive', () => {
       const tracker = createTracker()
       const original = tracker.activeState
-      mockWorkflowStore.activeWorkflow = { changeTracker: {} }
+      useWorkflowStore().activeWorkflow = fromPartial({
+        changeTracker: {}
+      })
 
       tracker.prepareForSave()
 
@@ -1240,7 +1511,6 @@ describe('ChangeTracker', () => {
 
   describe('checkState (deprecated)', () => {
     it('captures each state and warns once across repeated calls', () => {
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
       const tracker = createTracker(createState(1))
       const firstChanged = createState(2)
       mockCanvasState(firstChanged)
@@ -1254,10 +1524,15 @@ describe('ChangeTracker', () => {
       tracker.checkState()
 
       expect(tracker.activeState).toEqual(secondChanged)
-      expect(warn).toHaveBeenCalledOnce()
-      expect(warn).toHaveBeenCalledWith(
-        'checkState() is deprecated — use captureCanvasState() instead.'
-      )
+      expect(
+        vi
+          .mocked(console.warn)
+          .mock.calls.filter(
+            ([message]) =>
+              message ===
+              'checkState() is deprecated — use captureCanvasState() instead.'
+          )
+      ).toHaveLength(1)
     })
   })
 
@@ -1282,11 +1557,11 @@ describe('ChangeTracker', () => {
       return modal
     }
 
-    it.each([
+    it.for<[string, () => HTMLElement]>([
       ['a reka dialog', createRekaDialog],
       ['a native dialog', createNativeDialog],
       ['a legacy comfy modal', createLegacyComfyModal]
-    ])('does not undo while %s is open', async (_kind, createModal) => {
+    ])('does not undo while %s is open', async ([, createModal]) => {
       const previousState = createState(1)
       const currentState = createState(2)
       const tracker = createTracker(currentState)

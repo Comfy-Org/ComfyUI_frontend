@@ -1,7 +1,8 @@
 <template>
   <div
     v-if="imageUrls.length > 0"
-    class="image-preview group relative flex size-full min-h-55 min-w-16 flex-col justify-center px-2"
+    class="image-preview group relative flex size-full min-w-16 flex-col justify-center px-2"
+    :style="{ minHeight: `${IMAGE_PREVIEW_CONTENT_MIN_HEIGHT}px` }"
     @keydown="handleKeyDown"
   >
     <!-- Grid View -->
@@ -16,7 +17,7 @@
         v-for="(url, index) in gridImageUrls"
         :key="index"
         size="unset"
-        class="ring-ring overflow-hidden rounded-none p-0 hover:ring-1 focus-visible:ring-2"
+        class="overflow-hidden rounded-none p-0 ring-border-default hover:ring-1 focus-visible:ring-2"
         :aria-label="
           $t('g.viewImageOfTotal', {
             index: index + 1,
@@ -41,6 +42,19 @@
           <span class="text-xs">{{ $t('hdrViewer.hdrImage') }}</span>
         </div>
       </Button>
+      <div
+        v-if="canExportOutputs"
+        class="invisible absolute top-2 right-2 group-focus-within:visible group-hover:visible"
+      >
+        <button
+          :class="actionButtonClass"
+          :title="$t('g.downloadImages')"
+          :aria-label="$t('g.downloadImages')"
+          @click="handleExportOutputs"
+        >
+          <i class="icon-[lucide--folder-down] size-4" />
+        </button>
+      </div>
     </div>
 
     <!-- Gallery View (Image Wrapper) -->
@@ -214,7 +228,9 @@ import { downloadFile } from '@/base/common/downloadUtil'
 import Button from '@/components/ui/button/Button.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
+import { useNodeOutputsExport } from '@/platform/assets/composables/useNodeOutputsExport'
 import { useTelemetry } from '@/platform/telemetry'
+import { describeImageLoadFailure } from '@/platform/telemetry/imageFailureDiagnostics'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { openHdrViewer } from '@/services/hdrViewerService'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -223,6 +239,8 @@ import { isHdrImageUrl } from '@/utils/hdrFormatUtil'
 import { getGridThumbnailUrl } from '@/utils/imageUtil'
 import { resolveNode } from '@/utils/litegraphUtil'
 import { cn } from '@comfyorg/tailwind-utils'
+
+import { IMAGE_PREVIEW_CONTENT_MIN_HEIGHT } from './imagePreviewLayout'
 
 interface ImagePreviewProps {
   /** Array of image URLs to display */
@@ -236,6 +254,7 @@ const { imageUrls, nodeId } = defineProps<ImagePreviewProps>()
 const { t } = useI18n()
 const maskEditor = useMaskEditor()
 const nodeOutputStore = useNodeOutputStore()
+const { hasMultipleOutputs, showOutputsExportDialog } = useNodeOutputsExport()
 const toastStore = useToastStore()
 
 const actionButtonClass =
@@ -272,6 +291,10 @@ const currentImageUrl = computed(() => imageUrls[currentIndex.value] ?? '')
 const currentImageIsHdr = computed(() => isHdrImageUrl(currentImageUrl.value))
 const gridImageUrls = computed(() => imageUrls.map(getGridThumbnailUrl))
 const hasMultipleImages = computed(() => imageUrls.length > 1)
+const canExportOutputs = computed(() => {
+  const node = nodeId ? resolveNode(nodeId) : undefined
+  return !!node && hasMultipleOutputs(node)
+})
 const imageAltText = computed(() =>
   t('g.viewImageOfTotal', {
     index: currentIndex.value + 1,
@@ -336,8 +359,14 @@ function handleImageError() {
   stopDelayedLoader()
   showLoader.value = false
   imageError.value = true
-  useTelemetry()?.trackImageLoadFailed({ source: 'node_image_preview' })
   actualDimensions.value = null
+
+  // The error UI is already up; the diagnostic probe runs behind it so a slow
+  // or hanging re-request never delays what the user sees.
+  const failedUrl = currentImageUrl.value
+  void describeImageLoadFailure(failedUrl).then((metadata) => {
+    useTelemetry()?.trackImageLoadFailed(metadata)
+  })
 }
 
 function handleEditMask() {
@@ -366,6 +395,13 @@ function handleDownload() {
       detail: t('g.failedToDownloadImage')
     })
   }
+}
+
+function handleExportOutputs() {
+  if (!nodeId) return
+  const node = resolveNode(nodeId)
+  if (!node) return
+  showOutputsExportDialog(node)
 }
 
 function setCurrentIndex(index: number) {

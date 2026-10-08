@@ -19,7 +19,7 @@
       <PopoverTrigger as-child>
         <button
           v-tooltip.top="tip(t('load3d.menuBar.videoRecordingTooltip'))"
-          class="focus-visible:ring-ring flex items-center gap-1.5 rounded-md border-0 bg-transparent px-1 py-0.5 text-sm text-base-foreground transition-colors outline-none hover:bg-button-hover-surface focus-visible:ring-1"
+          class="flex items-center gap-1.5 rounded-md border-0 bg-transparent px-1 py-0.5 text-sm text-base-foreground transition-colors outline-none hover:bg-button-hover-surface focus-visible:ring-1 focus-visible:ring-border-default"
           type="button"
           :aria-label="t('load3d.menuBar.videoRecordingTooltip')"
           data-testid="load3d-recording-duration"
@@ -32,11 +32,11 @@
         side="bottom"
         align="start"
         :side-offset="8"
-        :class="panelClass"
+        :class="menuPanelClass"
       >
         <button
           type="button"
-          :class="cn(rowClass, 'gap-2')"
+          :class="menuButtonClass"
           @click="downloadRecording"
         >
           <i class="icon-[lucide--download] size-4" />
@@ -44,17 +44,13 @@
         </button>
         <button
           type="button"
-          :class="cn(rowClass, 'gap-2')"
+          :class="menuButtonClass"
           @click="startNewRecording"
         >
           <i class="icon-[lucide--video] size-4" />
           {{ t('load3d.menuBar.startNewRecording') }}
         </button>
-        <button
-          type="button"
-          :class="cn(rowClass, 'gap-2')"
-          @click="deleteRecording"
-        >
+        <button type="button" :class="menuButtonClass" @click="deleteRecording">
           <i class="icon-[lucide--trash-2] size-4" />
           {{ t('load3d.menuBar.deleteRecording') }}
         </button>
@@ -62,7 +58,7 @@
     </Popover>
     <button
       v-tooltip.top="tip(t('load3d.menuBar.deleteRecording'))"
-      class="focus-visible:ring-ring flex size-6 items-center justify-center rounded-md border-0 bg-transparent text-base-foreground transition-colors outline-none hover:bg-button-hover-surface focus-visible:ring-1"
+      class="flex size-6 items-center justify-center rounded-md border-0 bg-transparent text-base-foreground transition-colors outline-none hover:bg-button-hover-surface focus-visible:ring-1 focus-visible:ring-border-default"
       type="button"
       :aria-label="t('load3d.menuBar.deleteRecording')"
       @click="emit('clearRecording')"
@@ -90,14 +86,13 @@ import { useI18n } from 'vue-i18n'
 
 import {
   chipClass,
-  panelClass,
-  rowClass,
+  menuPanelClass,
   tip
 } from '@/components/load3d/menubar/menuBarStyles'
 import { usePopoverExclusivity } from '@/components/load3d/menubar/usePopoverExclusivity'
 import Popover from '@/components/ui/popover/Popover.vue'
 import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
-import { cn } from '@comfyorg/tailwind-utils'
+import { menuButtonClass } from '@/components/ui/menu/menuStyles'
 
 const { compact = false } = defineProps<{
   compact?: boolean

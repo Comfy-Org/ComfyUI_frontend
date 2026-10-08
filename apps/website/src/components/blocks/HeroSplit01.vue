@@ -3,13 +3,13 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import type { HTMLAttributes } from 'vue'
 
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
-import Badge from '../ui/badge/Badge.vue'
-import BrandButton from '../common/BrandButton.vue'
-import ProductHeroBadge from '../common/ProductHeroBadge.vue'
-import VideoPlayer from '../common/VideoPlayer.vue'
-import CheckIcon from '../icons/CheckIcon.vue'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import Badge from '@/components/ui/badge/Badge.vue'
+import BrandButton from '@/components/common/BrandButton.vue'
+import ProductHeroBadge from '@/components/common/ProductHeroBadge.vue'
+import VideoPlayer from '@/components/common/VideoPlayer.vue'
+import CheckIcon from '@/components/icons/CheckIcon.vue'
 
 type Cta = {
   label: string
@@ -60,7 +60,7 @@ const {
 } = defineProps<{
   locale?: Locale
   class?: HTMLAttributes['class']
-  badgeText: string
+  badgeText?: string
   badgeLogoSrc?: string
   badgeLogoAlt?: string
   badgeShowLogo?: boolean
@@ -91,20 +91,21 @@ const {
   ctaWrapperClass?: HTMLAttributes['class']
   beta?: boolean
 }>()
+const { t } = translationsFor(locale)
 </script>
 
 <template>
   <section
     :class="
       cn(
-        'max-w-9xl relative mx-auto flex flex-col items-center gap-12 px-6 pt-20 pb-16 md:pt-28 md:pb-24 lg:items-center lg:gap-16 lg:px-16',
+        'relative mx-auto flex max-w-9xl flex-col items-center gap-12 px-6 pt-20 pb-16 md:pt-28 md:pb-24 lg:items-center lg:gap-16 lg:px-16',
         imagePosition === 'right' ? 'lg:flex-row' : 'lg:flex-row-reverse',
         className
       )
     "
   >
     <div class="w-full lg:flex-1">
-      <div class="flex items-center gap-3">
+      <div v-if="badgeText || $slots.badge" class="flex items-center gap-3">
         <slot name="badge">
           <ProductHeroBadge
             :text="badgeText"
@@ -113,7 +114,7 @@ const {
             :show-logo="badgeShowLogo"
           />
           <Badge v-if="beta" variant="accent" size="xs">
-            {{ t('nav.badgeBeta', locale) }}
+            {{ t('nav.badgeBeta') }}
           </Badge>
         </slot>
       </div>
@@ -155,7 +156,7 @@ const {
           :key="feature"
           class="flex items-start gap-3 text-base text-primary-comfy-canvas"
         >
-          <CheckIcon class="text-primary-comfy-yellow mt-1 size-5 shrink-0" />
+          <CheckIcon class="mt-1 size-5 shrink-0 text-primary-comfy-yellow" />
           {{ feature }}
         </li>
       </ul>

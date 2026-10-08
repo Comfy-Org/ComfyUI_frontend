@@ -41,14 +41,6 @@ async function runOnBackgroundTab(
 }
 
 test.describe('Workflow tab status indicator', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting(
-      'Comfy.Workflow.WorkflowTabsPosition',
-      'Topbar'
-    )
-    await comfyPage.setup()
-  })
-
   test('replaces the running indicator with completed when the job finishes', async ({
     comfyPage,
     getWebSocket

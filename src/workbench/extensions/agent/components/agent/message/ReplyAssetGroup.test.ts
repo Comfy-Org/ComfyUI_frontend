@@ -1,16 +1,12 @@
-import { render, screen, waitFor } from '@testing-library/vue'
+import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { i18n } from '@/i18n'
+import { useDialogStore } from '@/stores/dialogStore'
 
 import type { ReplyAsset } from '../../../utils/replyAssets'
 import ReplyAssetGroup from './ReplyAssetGroup.vue'
-
-const showDialog = vi.hoisted(() => vi.fn())
-vi.mock('@/stores/dialogStore', () => ({
-  useDialogStore: () => ({ showDialog })
-}))
 
 const isAssetPreviewSupported = vi.hoisted(() => vi.fn(() => false))
 const findServerPreviewUrl = vi.hoisted(() =>
@@ -19,7 +15,7 @@ const findServerPreviewUrl = vi.hoisted(() =>
 const findOutputAsset = vi.hoisted(() =>
   vi.fn(async (): Promise<{ name: string } | undefined> => undefined)
 )
-vi.mock('@/platform/assets/utils/assetPreviewUtil', () => ({
+vi.mock<unknown>(import('@/platform/assets/utils/assetPreviewUtil'), () => ({
   isAssetPreviewSupported,
   findServerPreviewUrl,
   findOutputAsset
@@ -28,7 +24,7 @@ vi.mock('@/platform/assets/utils/assetPreviewUtil', () => ({
 const generateModelThumbnail = vi.hoisted(() =>
   vi.fn(async (): Promise<string | null> => null)
 )
-vi.mock('@/components/load3d/modelThumbnail', () => ({
+vi.mock(import('@/components/load3d/modelThumbnail'), () => ({
   generateModelThumbnail
 }))
 
@@ -81,11 +77,10 @@ const toggle = () =>
 
 describe('ReplyAssetGroup', () => {
   beforeEach(() => {
-    showDialog.mockClear()
-    isAssetPreviewSupported.mockReset().mockReturnValue(false)
-    findServerPreviewUrl.mockReset().mockResolvedValue(null)
-    findOutputAsset.mockReset().mockResolvedValue(undefined)
-    generateModelThumbnail.mockReset().mockResolvedValue(null)
+    isAssetPreviewSupported.mockReturnValue(false)
+    findServerPreviewUrl.mockResolvedValue(null)
+    findOutputAsset.mockResolvedValue(undefined)
+    generateModelThumbnail.mockResolvedValue(null)
   })
 
   it('T-09 / PM-652 / FE-1326 renders image and video previews inline', () => {
@@ -93,6 +88,27 @@ describe('ReplyAssetGroup', () => {
 
     expect(screen.getByRole('img', { name: 'i1.png' })).toBeInTheDocument()
     expect(screen.getByTestId('reply-video-preview')).toBeInTheDocument()
+  })
+
+  it('marks video previews with a play affordance but leaves other tiles unmarked', () => {
+    renderGroup([image(1), video, model])
+
+    expect(screen.getAllByTestId('reply-video-affordance')).toHaveLength(1)
+    expect(
+      within(screen.getByRole('button', { name: 'clip.mp4' })).getByTestId(
+        'reply-video-affordance'
+      )
+    ).toBeInTheDocument()
+    expect(
+      within(screen.getByRole('button', { name: 'i1.png' })).queryByTestId(
+        'reply-video-affordance'
+      )
+    ).toBeNull()
+    expect(
+      within(screen.getByRole('button', { name: 'mesh.glb' })).queryByTestId(
+        'reply-video-affordance'
+      )
+    ).toBeNull()
   })
 
   it('T-09 / PM-652 / FE-1326 opens inspect view at the clicked visual asset', async () => {
@@ -134,6 +150,19 @@ describe('ReplyAssetGroup', () => {
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
   })
 
+  it('uses the presentation label for audio and 3D titles', async () => {
+    renderGroup([
+      { ...audio, filename: 'upload_song.mp3', label: 'song.mp3' },
+      { ...model, filename: 'asset-hash', label: 'model.glb' }
+    ])
+
+    expect(screen.getByTestId('audio-card').dataset.title).toBe('song.mp3')
+    await userEvent.click(screen.getByRole('button', { name: 'model.glb' }))
+    expect(vi.mocked(useDialogStore().showDialog)).toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'model.glb' })
+    )
+  })
+
   it('collapses long audio lists behind Show more', async () => {
     renderGroup(
       Array.from({ length: 6 }, (_, n) => ({
@@ -154,7 +183,7 @@ describe('ReplyAssetGroup', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'mesh.glb' }))
 
-    expect(showDialog).toHaveBeenCalledWith(
+    expect(vi.mocked(useDialogStore().showDialog)).toHaveBeenCalledWith(
       expect.objectContaining({
         key: 'asset-3d-viewer',
         title: 'mesh.glb',
@@ -225,8 +254,10 @@ describe('ReplyAssetGroup', () => {
     await userEvent.click(screen.getByRole('button', { name: 'mesh.glb' }))
 
     findServerPreviewUrl.mockResolvedValue('https://x/mesh_preview.png')
-    const dialog = showDialog.mock.calls.at(-1)?.[0]
-    dialog.dialogComponentProps.onClose()
+    const dialog = vi.mocked(useDialogStore().showDialog).mock.calls.at(-1)?.[0]
+    const onClose = dialog?.dialogComponentProps?.onClose
+    expect(onClose).toBeTypeOf('function')
+    onClose!()
 
     const thumb = await screen.findByRole('img', { name: 'mesh.glb' })
     expect(thumb).toHaveAttribute('src', 'https://x/mesh_preview.png')
@@ -242,7 +273,7 @@ describe('ReplyAssetGroup', () => {
     )
     await userEvent.click(screen.getByRole('button', { name: 'mesh.glb' }))
 
-    expect(showDialog).toHaveBeenCalledWith(
+    expect(vi.mocked(useDialogStore().showDialog)).toHaveBeenCalledWith(
       expect.objectContaining({ title: '3d/ComfyUI_00001_.glb' })
     )
   })

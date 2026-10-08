@@ -1,4 +1,16 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useWorkspaceStore } from '@/stores/workspaceStore'
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
+import { effectScope } from 'vue'
+import type { EffectScope } from 'vue'
 import type {
   LGraphCanvas,
   LGraph,
@@ -6,13 +18,10 @@ import type {
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
-import {
-  createNode,
-  isAudioNode,
-  isImageNode,
-  isVideoNode
-} from '@/utils/litegraphUtil'
+import { createNode } from '@/utils/litegraphUtil'
+import { shouldIgnoreCopyPaste } from '@/workbench/eventHelpers'
 import {
   cloneDataTransfer,
   pasteAudioNode,
@@ -21,8 +30,10 @@ import {
   pasteImageNodes,
   pasteVideoNode,
   pasteVideoNodes,
-  usePaste
+  usePaste as usePasteImpl
 } from './usePaste'
+
+vi.mock(import('firebase/auth'))
 
 function createMockNode(): LGraphNode {
   return createMockLGraphNode({
@@ -59,6 +70,33 @@ function createDataTransfer(files: File[] = []): DataTransfer {
   return dataTransfer
 }
 
+function pastedClipboard(kind: 'workflow JSON' | 'an image'): DataTransfer {
+  if (kind === 'an image') return createDataTransfer([createImageFile()])
+  const dataTransfer = new DataTransfer()
+  dataTransfer.setData(
+    'text/plain',
+    JSON.stringify({ version: '1.0', nodes: [], extra: {} })
+  )
+  return dataTransfer
+}
+
+function clipboardHtml(data: unknown, attribute = 'data-comfy-metadata') {
+  const encoded = btoa(JSON.stringify(data))
+  return `<meta charset="utf-8"><div><span ${attribute}="${encoded}"></span></div><span style="white-space:pre-wrap;">Text</span>`
+}
+
+function mountRichTextEditor() {
+  const editor = document.createElement('div')
+  editor.contentEditable = 'true'
+  const paragraph = editor.appendChild(document.createElement('p'))
+  const chip = paragraph.appendChild(document.createElement('span'))
+  chip.contentEditable = 'false'
+  const chipLabel = chip.appendChild(document.createElement('span'))
+  chipLabel.textContent = 'KSampler #5'
+  document.body.append(editor)
+  return { editor, paragraph, chipLabel }
+}
+
 const mockCanvas = {
   current_node: null as LGraphNode | null,
   graph: {
@@ -70,56 +108,33 @@ const mockCanvas = {
   _deserializeItems: vi.fn()
 } as Partial<LGraphCanvas> as LGraphCanvas
 
-const mockCanvasStore = {
-  canvas: mockCanvas,
-  getCanvas: vi.fn(() => mockCanvas)
+let mockCanvasStore: ReturnType<typeof useCanvasStore>
+
+let mockWorkspaceStore: ReturnType<typeof useWorkspaceStore>
+let scope: EffectScope
+
+function usePaste() {
+  scope.run(usePasteImpl)
 }
 
-const mockWorkspaceStore = {
-  shiftDown: false
-}
+afterEach(() => scope.stop())
 
-vi.mock('@vueuse/core', () => ({
-  useEventListener: vi.fn((target, event, handler) => {
-    target.addEventListener(event, handler)
-    return () => target.removeEventListener(event, handler)
-  })
-}))
+beforeEach(() => {
+  scope = effectScope()
+  mockWorkspaceStore = useWorkspaceStore()
+  mockCanvasStore = useCanvasStore()
+  mockCanvasStore.canvas = mockCanvas
+})
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => mockCanvasStore
-}))
+vi.mock(import('@/scripts/app'))
 
-vi.mock('@/stores/workspaceStore', () => ({
-  useWorkspaceStore: () => mockWorkspaceStore
-}))
+vi.mock(import('@/utils/litegraphUtil'), { spy: true })
 
-vi.mock('@/scripts/app', () => ({
-  app: {
-    loadGraphData: vi.fn()
-  }
-}))
-
-vi.mock('@/lib/litegraph/src/litegraph', async (importOriginal) => ({
-  ...(await importOriginal()),
-  LiteGraph: {
-    createNode: vi.fn()
-  }
-}))
-
-vi.mock('@/utils/litegraphUtil', () => ({
-  createNode: vi.fn(),
-  isAudioNode: vi.fn(),
-  isImageNode: vi.fn(),
-  isVideoNode: vi.fn()
-}))
-
-vi.mock('@/workbench/eventHelpers', () => ({
-  shouldIgnoreCopyPaste: vi.fn()
-}))
+vi.mock(import('@/workbench/eventHelpers'), { spy: true })
 
 describe('pasteImageNode', () => {
   beforeEach(() => {
+    vi.mocked(createNode).mockImplementation(vi.fn())
     vi.mocked(mockCanvas.graph!.add).mockImplementation(
       (node: LGraphNode | LGraphGroup | null) => node as LGraphNode
     )
@@ -392,7 +407,7 @@ describe('pasteVideoNodes', () => {
 describe('usePaste', () => {
   beforeEach(() => {
     mockCanvas.current_node = null
-    mockWorkspaceStore.shiftDown = false
+    Object.assign(mockWorkspaceStore, { shiftDown: false })
     vi.mocked(mockCanvas.graph!.add).mockImplementation(
       (node: LGraphNode | LGraphGroup | null) => node as LGraphNode
     )
@@ -439,7 +454,7 @@ describe('usePaste', () => {
       pasteFiles: vi.fn()
     })
     mockCanvas.current_node = mockNode
-    vi.mocked(isAudioNode).mockReturnValue(true)
+    mockNode.previewMediaType = 'audio'
 
     usePaste()
 
@@ -478,7 +493,7 @@ describe('usePaste', () => {
       pasteFiles: vi.fn()
     })
     mockCanvas.current_node = mockNode
-    vi.mocked(isVideoNode).mockReturnValue(true)
+    mockNode.previewMediaType = 'video'
 
     usePaste()
 
@@ -492,6 +507,52 @@ describe('usePaste', () => {
       expect(mockNode.pasteFile).toHaveBeenCalledWith(file)
     })
   })
+
+  it.for([
+    { clipboard: 'workflow JSON', target: 'editor' },
+    { clipboard: 'workflow JSON', target: 'paragraph' },
+    { clipboard: 'an image', target: 'paragraph' }
+  ] as const)(
+    'pasting $clipboard into a contenteditable $target leaves the graph alone',
+    ({ clipboard, target }) => {
+      const editor = mountRichTextEditor()
+      usePaste()
+
+      editor[target].dispatchEvent(
+        new ClipboardEvent('paste', {
+          bubbles: true,
+          clipboardData: pastedClipboard(clipboard)
+        })
+      )
+
+      expect(app.loadGraphData).not.toHaveBeenCalled()
+      expect(mockCanvas.pasteFromClipboard).not.toHaveBeenCalled()
+      expect(createNode).not.toHaveBeenCalled()
+    }
+  )
+
+  // A caret can land inside an uneditable reference chip, which then becomes
+  // the paste target even though the editor still handles the paste.
+  it.for(['workflow JSON', 'an image'] as const)(
+    'leaves the graph alone when the editor claims %s pasted inside a chip',
+    (clipboard) => {
+      const editor = mountRichTextEditor()
+      editor.editor.addEventListener('paste', (event) => event.preventDefault())
+      usePaste()
+
+      editor.chipLabel.dispatchEvent(
+        new ClipboardEvent('paste', {
+          bubbles: true,
+          cancelable: true,
+          clipboardData: pastedClipboard(clipboard)
+        })
+      )
+
+      expect(app.loadGraphData).not.toHaveBeenCalled()
+      expect(mockCanvas.pasteFromClipboard).not.toHaveBeenCalled()
+      expect(createNode).not.toHaveBeenCalled()
+    }
+  )
 
   it('should handle workflow JSON paste', async () => {
     const workflow = { version: '1.0', nodes: [], extra: {} }
@@ -509,8 +570,78 @@ describe('usePaste', () => {
     })
   })
 
+  it.for([
+    { version: '1.0', extra: {} },
+    { version: '1.0', nodes: [] },
+    { version: '1.0', nodes: {}, extra: {} }
+  ])('does not load malformed workflow JSON', async (workflow) => {
+    usePaste()
+    const dataTransfer = new DataTransfer()
+    dataTransfer.setData('text/plain', JSON.stringify(workflow))
+
+    document.dispatchEvent(
+      new ClipboardEvent('paste', { clipboardData: dataTransfer })
+    )
+
+    await vi.waitFor(() => {
+      expect(app.loadGraphData).not.toHaveBeenCalled()
+      expect(mockCanvas.pasteFromClipboard).toHaveBeenCalled()
+    })
+  })
+
+  it('preserves text input paste for malformed workflow JSON', async () => {
+    vi.mocked(shouldIgnoreCopyPaste).mockReturnValue(false)
+    usePaste()
+    const input = document.createElement('input')
+    input.type = 'text'
+    document.body.append(input)
+    const dataTransfer = new DataTransfer()
+    dataTransfer.setData('text/plain', JSON.stringify({ version: '1.0' }))
+
+    input.dispatchEvent(
+      new ClipboardEvent('paste', {
+        bubbles: true,
+        clipboardData: dataTransfer
+      })
+    )
+
+    await vi.waitFor(() => {
+      expect(app.loadGraphData).not.toHaveBeenCalled()
+      expect(mockCanvas.pasteFromClipboard).not.toHaveBeenCalled()
+    })
+  })
+
+  it.for([
+    { clipboard: 'node JSON', collaborator: 'pasteFromClipboard' },
+    { clipboard: 'an image', collaborator: 'createNode' }
+  ] as const)(
+    'pasting $clipboard while the canvas is select-only never reaches $collaborator',
+    ({ clipboard, collaborator }) => {
+      mockCanvas.selectOnly = true
+      onTestFinished(() => {
+        mockCanvas.selectOnly = false
+      })
+      const collaborators = {
+        pasteFromClipboard: mockCanvas.pasteFromClipboard,
+        createNode
+      }
+      usePaste()
+      const dataTransfer =
+        clipboard === 'an image'
+          ? createDataTransfer([createImageFile()])
+          : new DataTransfer()
+      if (clipboard === 'node JSON') dataTransfer.setData('text/plain', '{}')
+
+      document.dispatchEvent(
+        new ClipboardEvent('paste', { clipboardData: dataTransfer })
+      )
+
+      expect(collaborators[collaborator]).not.toHaveBeenCalled()
+    }
+  )
+
   it('should ignore paste when shift is down', () => {
-    mockWorkspaceStore.shiftDown = true
+    Object.assign(mockWorkspaceStore, { shiftDown: true })
 
     usePaste()
 
@@ -529,7 +660,7 @@ describe('usePaste', () => {
       pasteFiles: vi.fn()
     })
     mockCanvas.current_node = mockNode
-    vi.mocked(isImageNode).mockReturnValue(true)
+    mockNode.previewMediaType = 'image'
 
     usePaste()
 
@@ -554,9 +685,14 @@ describe('usePaste', () => {
   })
 
   it('should handle clipboard items with metadata', async () => {
-    const data = { test: 'data' }
-    const encoded = btoa(JSON.stringify(data))
-    const html = `<div data-metadata="${encoded}"></div>`
+    const data = {
+      nodes: [],
+      groups: [],
+      reroutes: [],
+      links: [],
+      subgraphs: []
+    }
+    const html = clipboardHtml(data)
 
     usePaste()
 
@@ -574,6 +710,130 @@ describe('usePaste', () => {
     })
   })
 
+  it('accepts validated legacy data-metadata clipboard items', async () => {
+    const data = { nodes: [] }
+    const html = clipboardHtml(data, 'data-metadata')
+
+    usePaste()
+
+    const dataTransfer = new DataTransfer()
+    dataTransfer.setData('text/html', html)
+    dataTransfer.setData('text/plain', 'some text')
+
+    const event = new ClipboardEvent('paste', { clipboardData: dataTransfer })
+    document.dispatchEvent(event)
+
+    await vi.waitFor(() => {
+      expect(mockCanvas._deserializeItems).toHaveBeenCalledWith(
+        data,
+        expect.any(Object)
+      )
+    })
+  })
+
+  it('does not treat metadata embedded in arbitrary HTML as a Comfy clipboard', async () => {
+    const encoded = btoa(JSON.stringify({ nodes: [] }))
+    const html = `<article><span data-comfy-metadata="${encoded}"></span></article>`
+
+    usePaste()
+    const dataTransfer = new DataTransfer()
+    dataTransfer.setData('text/html', html)
+    document.dispatchEvent(
+      new ClipboardEvent('paste', { clipboardData: dataTransfer })
+    )
+
+    await vi.waitFor(() => {
+      expect(mockCanvas._deserializeItems).not.toHaveBeenCalled()
+      expect(mockCanvas.pasteFromClipboard).toHaveBeenCalled()
+    })
+  })
+
+  it.for([
+    { name: 'null payload', data: null },
+    { name: 'empty object', data: {} },
+    { name: 'malformed node', data: { nodes: [{ type: 'KSampler' }] } },
+    { name: 'malformed group', data: { groups: [{ id: 1 }] } },
+    { name: 'malformed reroute', data: { reroutes: [{ id: 1 }] } },
+    { name: 'malformed link', data: { links: [{ id: 1 }] } },
+    { name: 'malformed subgraph', data: { subgraphs: [{ id: 'invalid' }] } }
+  ])(
+    'rejects malformed Comfy metadata without stale fallback: $name',
+    async ({ data }) => {
+      const html = clipboardHtml(data)
+
+      usePaste()
+
+      const dataTransfer = new DataTransfer()
+      dataTransfer.setData('text/html', html)
+      dataTransfer.setData('text/plain', 'some text')
+
+      document.dispatchEvent(
+        new ClipboardEvent('paste', { clipboardData: dataTransfer })
+      )
+
+      await vi.waitFor(() => {
+        expect(mockCanvas._deserializeItems).not.toHaveBeenCalled()
+        expect(mockCanvas.pasteFromClipboard).not.toHaveBeenCalled()
+        expect(useToastStore().add).toHaveBeenCalledWith(
+          expect.objectContaining({ severity: 'error' })
+        )
+      })
+    }
+  )
+
+  it('rejects invalid Comfy JSON without stale fallback', async () => {
+    const html = `<meta charset="utf-8"><div><span data-comfy-metadata="${btoa('{')}"></span></div><span style="white-space:pre-wrap;">Text</span>`
+
+    usePaste()
+
+    const dataTransfer = new DataTransfer()
+    dataTransfer.setData('text/html', html)
+    dataTransfer.setData('text/plain', 'some text')
+
+    document.dispatchEvent(
+      new ClipboardEvent('paste', { clipboardData: dataTransfer })
+    )
+
+    await vi.waitFor(() => {
+      expect(mockCanvas._deserializeItems).not.toHaveBeenCalled()
+      expect(mockCanvas.pasteFromClipboard).not.toHaveBeenCalled()
+      expect(useToastStore().add).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'error' })
+      )
+    })
+  })
+
+  it('should toast a deserialization error without falling back', async () => {
+    const deserializeError = new Error('Paste failed')
+    vi.mocked(mockCanvas._deserializeItems).mockImplementation(() => {
+      throw deserializeError
+    })
+    const data = {
+      nodes: [],
+      groups: [],
+      reroutes: [],
+      links: [],
+      subgraphs: []
+    }
+    const html = clipboardHtml(data)
+
+    usePaste()
+
+    const dataTransfer = new DataTransfer()
+    dataTransfer.setData('text/html', html)
+    dataTransfer.setData('text/plain', 'some text')
+
+    const event = new ClipboardEvent('paste', { clipboardData: dataTransfer })
+    document.dispatchEvent(event)
+
+    await vi.waitFor(() => {
+      expect(useToastStore().add).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'error' })
+      )
+      expect(mockCanvas.pasteFromClipboard).not.toHaveBeenCalled()
+    })
+  })
+
   it('should skip node metadata paste when a media node is selected', async () => {
     const mockNode = createMockLGraphNode({
       is_selected: true,
@@ -581,13 +841,12 @@ describe('usePaste', () => {
       pasteFiles: vi.fn()
     })
     mockCanvas.current_node = mockNode
-    vi.mocked(isImageNode).mockReturnValue(true)
+    mockNode.previewMediaType = 'image'
 
     usePaste()
 
     const nodeData = { nodes: [{ type: 'KSampler' }] }
-    const encoded = btoa(JSON.stringify(nodeData))
-    const html = `<div data-metadata="${encoded}"></div>`
+    const html = clipboardHtml(nodeData)
 
     const dataTransfer = new DataTransfer()
     dataTransfer.setData('text/html', html)
@@ -615,15 +874,13 @@ describe('cloneDataTransfer', () => {
     expect(cloned.getData('text/html')).toBe('<p>test html</p>')
   })
 
-  it('should clone files', () => {
+  it('should preserve file identities', () => {
     const file1 = createImageFile('test1.png')
     const file2 = createImageFile('test2.jpg', 'image/jpeg')
     const original = createDataTransfer([file1, file2])
 
     const cloned = cloneDataTransfer(original)
 
-    // Files are added from both .files and .items, causing duplicates
-    expect(cloned.files.length).toBeGreaterThanOrEqual(2)
     expect(Array.from(cloned.files)).toContain(file1)
     expect(Array.from(cloned.files)).toContain(file2)
   })
@@ -656,8 +913,6 @@ describe('cloneDataTransfer', () => {
     const cloned = cloneDataTransfer(original)
 
     expect(cloned.getData('text/plain')).toBe('test')
-    // Files are added from both .files and .items
-    expect(cloned.files.length).toBeGreaterThanOrEqual(1)
     expect(Array.from(cloned.files)).toContain(file)
   })
 })

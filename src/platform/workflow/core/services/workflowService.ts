@@ -22,7 +22,7 @@ import {
 } from '@/platform/workflow/management/stores/workflowStore'
 import { useTelemetry } from '@/platform/telemetry'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-// eslint-disable-next-line import-x/no-restricted-paths
+// oxlint-disable-next-line comfy/no-restricted-paths
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { app } from '@/scripts/app'
 import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
@@ -45,7 +45,7 @@ import {
 } from '@/utils/formatUtil'
 import type { AppMode } from '@/utils/appMode'
 import type { UUID } from '@/utils/uuid'
-import { ensureNonZeroUuid } from '@/utils/uuid'
+import { ensureNonZeroUuid, zeroUuid } from '@/utils/uuid'
 
 function linearModeToAppMode(linearMode: unknown): AppMode | null {
   if (typeof linearMode !== 'boolean') return null
@@ -54,18 +54,22 @@ function linearModeToAppMode(linearMode: unknown): AppMode | null {
 
 /**
  * Returns the root graph id to scope run errors by, minting one when the graph
- * carries the zero id. `loadApiJson` and `importA1111` populate the root graph
- * without `configure()`, so every such import would otherwise share the zero
- * id's bucket and lose it once a reload generated a real id. The id is written
- * back into `workflowData` so the state this load persists reloads under the
- * same key.
+ * carries the zero id. Every caller passes `rootGraph.serialize()` as
+ * `workflowData`, and `app.clean()` mints a fresh root id before `loadApiJson`
+ * and `importA1111` populate the graph, so the zero id only survives here when
+ * something upstream skipped both. The id is written back into `workflowData`
+ * only in that zero-id case, so a `configure()`-based load (where
+ * `rootGraph.id` already came from `workflowData.id`) can never have this
+ * rewrite the incoming workflow's identity to a stale graph's id.
  */
 function adoptRootGraphId(workflowData: ComfyWorkflowJSON): UUID | null {
   if (!app.isGraphReady) return null
 
   const rootGraph = app.rootGraph
-  workflowData.id = ensureNonZeroUuid(rootGraph)
-  return workflowData.id
+  if (rootGraph.id === zeroUuid) {
+    workflowData.id = ensureNonZeroUuid(rootGraph)
+  }
+  return rootGraph.id
 }
 
 // TRANSITIONAL (decision log D14): deletable when ECS scopes workflow
@@ -79,6 +83,26 @@ const closingWorkflowCounts = new Map<ComfyWorkflow, number>()
 /** The registry key: raw instance, so reactive proxies and raw references agree. */
 function closingKey(workflow: ComfyWorkflow): ComfyWorkflow {
   return toRaw(workflow)
+}
+
+/**
+ * The id to fall back to when incoming workflow data carries none.
+ *
+ * Deliberately takes `ComfyWorkflow` rather than `LoadedComfyWorkflow`:
+ * `LoadedComfyWorkflow` declares `activeState` non-null, but it is produced by
+ * an unchecked `this as this & LoadedComfyWorkflow` cast over a getter that
+ * still returns `this.changeTracker?.activeState ?? null`. Reading through the
+ * nullable base contract is what makes the optional chain honest rather than
+ * redundant. Returning `undefined` is safe: `ensureWorkflowId` generates a
+ * fresh UUID for an absent or invalid fallback.
+ *
+ * Without this, activation threw `TypeError: Cannot read properties of null
+ * (reading 'id')` (SEN-5, Sentry CLOUD-FRONTEND-PROD-1MB) — and it threw even
+ * when the incoming data already had a valid id, because the argument is
+ * evaluated before `ensureWorkflowId` can ignore it.
+ */
+function activeStateFallbackId(workflow: ComfyWorkflow): string | undefined {
+  return workflow.activeState?.id
 }
 
 /** @internal Test-only: clears the module-level load queue between tests. */
@@ -108,8 +132,10 @@ function queueWorkflowLoad<T>(
   const settledResult = result
     .catch((error) => {
       // Keep fire-and-forget load failures observable.
-      console.error('[workflowService] queued workflow load failed', error)
-      reportError(error, { errorType: 'workflow_load_failure' })
+      reportError(error, {
+        surface: 'graph',
+        errorType: 'workflow_load_failure'
+      })
       return undefined
     })
     .finally(() => {
@@ -252,7 +278,7 @@ export const useWorkflowService = () => {
     const existingWorkflow = workflowStore.getWorkflowByPath(newPath)
 
     const isSelfOverwrite =
-      existingWorkflow?.path === workflow.path && !existingWorkflow?.isTemporary
+      existingWorkflow?.path === workflow.path && !existingWorkflow.isTemporary
 
     if (existingWorkflow && !existingWorkflow.isTemporary) {
       if ((await confirmOverwrite(newPath)) !== true) return false
@@ -278,7 +304,6 @@ export const useWorkflowService = () => {
       }
 
       if (options.isApp !== undefined) {
-        app.rootGraph.extra ??= {}
         app.rootGraph.extra.linearMode = isApp
         target.initialMode = isApp ? 'app' : 'graph'
       }
@@ -356,9 +381,9 @@ export const useWorkflowService = () => {
    * Open a workflow in the current workspace
    * @param workflow The workflow to open
    * @param options The options for opening the workflow
-   * @returns false when the graph load reported failure (the error
-   * dialog was shown and the workflow never painted) or when the open
-   * was skipped because the workflow is mid-close; true otherwise
+   * @returns false when the graph load reported failure (the error dialog was
+   * shown and the workflow never painted) or when the open was skipped because
+   * the workflow is mid-close; true otherwise
    */
   /**
    * A failed replacement load leaves the shared root graph cleaned or
@@ -369,8 +394,9 @@ export const useWorkflowService = () => {
    * standing.
    */
   const restoreRetainedWorkflow = async (failed: ComfyWorkflow) => {
-    const retained = workflowStore.activeWorkflow
+    const retained = getActiveWorkflow()
     if (!retained || retained.path === failed.path || !retained.isLoaded) return
+
     await app.loadGraphData(
       toRaw(retained.activeState) as ComfyWorkflowJSON,
       /* clean=*/ true,
@@ -384,10 +410,32 @@ export const useWorkflowService = () => {
     )
   }
 
+  function getActiveWorkflow(): ComfyWorkflow | null {
+    return workflowStore.activeWorkflow
+  }
+
+  // A superseded open leaves the workflow as it found it. A saved file drops
+  // what it fetched, including a draft's modified mark, so a later save cannot
+  // write an empty graph; a temporary one has no remote copy to refetch, so it
+  // keeps its content, as closing it does.
+  function discardSupersededLoad(
+    workflow: ComfyWorkflow,
+    wasModified: boolean
+  ): void {
+    if (workflow.isTemporary) return
+    workflow.unload()
+    workflow.isModified = wasModified
+  }
+
   const openWorkflow = (
     workflow: ComfyWorkflow,
-    options: { force?: boolean; navigationIntentId?: number } = {}
+    options: {
+      force?: boolean
+      navigationIntentId?: number
+      isCurrent?: () => boolean
+    } = {}
   ): Promise<boolean> => {
+    if (options.isCurrent?.() === false) return Promise.resolve(false)
     if (closingWorkflowCounts.has(closingKey(workflow)))
       return Promise.resolve(false)
     if (
@@ -403,9 +451,19 @@ export const useWorkflowService = () => {
       useSubgraphNavigationStore().beginWorkflowNavigation()
     return queueWorkflowLoad(async () => {
       try {
+        if (options.isCurrent?.() === false) {
+          useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
+          return false
+        }
         const loadFromRemote = !workflow.isLoaded
+        const wasModified = workflow.isModified
         if (loadFromRemote) {
           await workflow.load()
+        }
+        if (options.isCurrent?.() === false) {
+          if (loadFromRemote) discardSupersededLoad(workflow, wasModified)
+          useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
+          return false
         }
 
         const loaded = await app.loadGraphData(
@@ -546,7 +604,12 @@ export const useWorkflowService = () => {
   }
 
   const renameWorkflow = async (workflow: ComfyWorkflow, newPath: string) => {
+    const oldPath = workflow.path
+    const graphId = workflow.activeState?.id
     await workflowStore.renameWorkflow(workflow, newPath)
+    if (graphId) {
+      useExecutionErrorStore().moveRunErrors(graphId, oldPath, workflow.path)
+    }
   }
 
   /**
@@ -604,7 +667,7 @@ export const useWorkflowService = () => {
     const workflowStore = useWorkspaceStore().workflow
     const activeWorkflow = workflowStore.activeWorkflow
     if (activeWorkflow) {
-      activeWorkflow.changeTracker?.deactivate()
+      activeWorkflow.changeTracker.deactivate()
       persistActiveWorkflowDraft(activeWorkflow)
       // Cache missing model/media/node state for restore on tab switch.
       // Always overwrite to reflect the current store state (e.g. after
@@ -622,7 +685,10 @@ export const useWorkflowService = () => {
       useNodeOutputStore().stashPreviewsForWorkflow(activeWorkflow.path)
 
       // Capture thumbnail before loading new graph
-      void workflowThumbnail.storeThumbnail(activeWorkflow)
+      void workflowThumbnail.storeThumbnail(
+        activeWorkflow,
+        workflowStore.activeSubgraph || app.canvasOrUndefined?.graph
+      )
       domWidgetStore.clear()
 
       // Save subgraph viewport before the canvas gets overwritten
@@ -713,7 +779,7 @@ export const useWorkflowService = () => {
             // is the authoritative saved state.
             loadedWorkflow.initialMode =
               linearModeToAppMode(
-                loadedWorkflow.initialState?.extra?.linearMode
+                loadedWorkflow.initialState.extra?.linearMode
               ) ?? freshLoadMode
             trackIfEnteringApp(loadedWorkflow)
           }
@@ -722,7 +788,10 @@ export const useWorkflowService = () => {
           }
           loadedWorkflow.legacyId ??= getLegacyWorkflowId(workflowData.id)
           loadedWorkflow.changeTracker.reset(
-            ensureWorkflowId(workflowData, loadedWorkflow.activeState?.id)
+            ensureWorkflowId(
+              workflowData,
+              activeStateFallbackId(loadedWorkflow)
+            )
           )
           loadedWorkflow.changeTracker.restore()
           return
@@ -754,7 +823,7 @@ export const useWorkflowService = () => {
     }
     loadedWorkflow.legacyId ??= getLegacyWorkflowId(workflowData.id)
     loadedWorkflow.changeTracker.reset(
-      ensureWorkflowId(workflowData, loadedWorkflow.activeState?.id)
+      ensureWorkflowId(workflowData, activeStateFallbackId(loadedWorkflow))
     )
     loadedWorkflow.changeTracker.restore()
   }
@@ -766,14 +835,38 @@ export const useWorkflowService = () => {
     workflow: ComfyWorkflow,
     options: { position?: Point } = {}
   ) => {
+    const canvas = app.canvas
+    const graph = canvas.graph
     const loadedWorkflow = await workflow.load()
+    if (app.canvas !== canvas || canvas.graph !== graph) {
+      const replacementKind = app.canvas !== canvas ? 'canvas' : 'graph'
+      reportError(
+        new Error(
+          'insertWorkflow aborted: canvas or graph was replaced while the workflow loaded'
+        ),
+        {
+          surface: 'graph',
+          errorType: 'workflow_insert_aborted_canvas_changed',
+          level: 'warning',
+          tags: {
+            failure_kind: 'degraded',
+            feature_area: 'workflow',
+            operation: 'insert',
+            outcome: 'degraded',
+            assert_mode: 'soft'
+          },
+          context: { replacement_kind: replacementKind }
+        }
+      )
+      return
+    }
     const workflowJSON = toRaw(loadedWorkflow.initialState)
     // unknown conversion: ComfyWorkflowJSON is stricter than LiteGraph's
     // serialisation schema.
     const items = workflowToClipboardItems(
       workflowJSON as unknown as SerialisableGraph
     )
-    app.canvas._deserializeItems(items, options)
+    canvas._deserializeItems(items, options)
   }
 
   const loadNextOpenedWorkflow = async () => {

@@ -1,7 +1,7 @@
-import type { MenuItem } from 'primevue/menuitem'
 import { shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import type { MenuItem } from '@/components/ui/menu/types'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 
 /**
@@ -28,7 +28,7 @@ export function useTreeFolderOperations<T>(
 
     try {
       // Call the handleAddFolder method with the new folder name
-      await addFolderTargetNode.value?.handleAddFolder?.(newName)
+      await addFolderTargetNode.value.handleAddFolder?.(newName)
     } finally {
       newFolderNode.value = null
       addFolderTargetNode.value = null
@@ -65,8 +65,7 @@ export function useTreeFolderOperations<T>(
       command: () => {
         if (targetNode) addFolderCommand(targetNode)
       },
-      visible: !!targetNode && !targetNode.leaf && !!targetNode.handleAddFolder,
-      isAsync: false
+      visible: !!targetNode && !targetNode.leaf && !!targetNode.handleAddFolder
     }
   }
 

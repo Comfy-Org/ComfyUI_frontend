@@ -5,21 +5,19 @@ import { nextTick } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { i18n, mergeCustomNodesI18n } from '@/i18n'
-import type * as LiteGraphModule from '@/lib/litegraph/src/litegraph'
+import {
+  isOverNodeInput,
+  isOverNodeOutput
+} from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import type { Settings } from '@/schemas/apiSchema'
+import type { Settings } from '@/platform/settings/types'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 import NodeTooltip from './NodeTooltip.vue'
 
 const enMessages = cloneDeep(i18n.global.getLocaleMessage('en'))
-type HitTest = (
-  node: MockNode,
-  x: number,
-  y: number,
-  offset: [number, number]
-) => number
+type HitTest = typeof isOverNodeInput
 
 interface MockWidget {
   name: string
@@ -60,22 +58,15 @@ const mockCanvas = vi.hoisted(
   })
 )
 
-vi.mock('@/lib/litegraph/src/litegraph', async (importOriginal) => {
-  const actual = await importOriginal<typeof LiteGraphModule>()
-  return {
-    ...actual,
-    isOverNodeInput: mockIsOverNodeInput,
-    isOverNodeOutput: mockIsOverNodeOutput
-  }
-})
+vi.mock(import('@/lib/litegraph/src/litegraph'), { spy: true })
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     canvas: mockCanvas
   }
 }))
 
-vi.mock('@/scripts/domWidget', () => ({
+vi.mock<unknown>(import('@/scripts/domWidget'), () => ({
   isDOMWidget: mockIsDOMWidget
 }))
 
@@ -154,6 +145,8 @@ async function renderAndHoverCanvas() {
 
 describe('NodeTooltip', () => {
   beforeEach(() => {
+    vi.mocked(isOverNodeInput).mockImplementation(mockIsOverNodeInput)
+    vi.mocked(isOverNodeOutput).mockImplementation(mockIsOverNodeOutput)
     vi.spyOn(useSettingStore(), 'get').mockImplementation(
       <K extends keyof Settings>(key: K): Settings[K] => {
         switch (key) {
@@ -198,27 +191,24 @@ describe('NodeTooltip', () => {
   })
 
   it('shows input slot JSON tooltips without i18n placeholder errors', async () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     vi.mocked(mockIsOverNodeInput).mockReturnValue(0)
 
     await renderAndHoverCanvas()
 
     expect(screen.getByText(jsonTooltip)).toBeInTheDocument()
-    expect(consoleError).not.toHaveBeenCalled()
+    expect(console.error).not.toHaveBeenCalled()
   })
 
   it('shows output slot JSON tooltips without i18n placeholder errors', async () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     vi.mocked(mockIsOverNodeOutput).mockReturnValue(0)
 
     await renderAndHoverCanvas()
 
     expect(screen.getByText(jsonTooltip)).toBeInTheDocument()
-    expect(consoleError).not.toHaveBeenCalled()
+    expect(console.error).not.toHaveBeenCalled()
   })
 
   it('shows widget JSON tooltips without i18n placeholder errors', async () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     vi.mocked(mockCanvas.getWidgetAtCursor).mockReturnValue({
       name: 'positive_coords'
     })
@@ -226,7 +216,7 @@ describe('NodeTooltip', () => {
     await renderAndHoverCanvas()
 
     expect(screen.getByText(jsonTooltip)).toBeInTheDocument()
-    expect(consoleError).not.toHaveBeenCalled()
+    expect(console.error).not.toHaveBeenCalled()
   })
 
   describe('when the bundled snapshot has gone stale', () => {

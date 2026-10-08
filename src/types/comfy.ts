@@ -3,20 +3,20 @@ import type {
   Positionable
 } from '@/lib/litegraph/src/interfaces'
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { NodeReplacement } from '@/platform/nodeReplacement/types'
+import type { MissingNodeType } from '@/platform/nodeReplacement/types'
 import type { SettingParams } from '@/platform/settings/types'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { Keybinding } from '@/platform/keybindings/types'
-import type { NodeExecutionOutput } from '@/schemas/apiSchema'
+import type { NodeExecutionOutput } from '@/platform/remote/comfyui/execution/types'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { ComfyApp } from '@/scripts/app'
-import type { ComfyWidgetConstructor } from '@/scripts/widgets'
+import type { CustomComfyWidgetConstructor } from '@/scripts/widgets'
 import type { ComfyCommand } from '@/stores/commandStore'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import type { AuthUserInfo } from '@/types/authTypes'
 import type { BottomPanelExtension } from '@/types/extensionTypes'
 
-type Widgets = Record<string, ComfyWidgetConstructor>
+type Widgets = Record<string, CustomComfyWidgetConstructor>
 
 export interface AboutPageBadge {
   label: string
@@ -86,22 +86,6 @@ export interface ActionBarButton {
    */
   onClick: () => void
 }
-
-export type MissingNodeType =
-  | string
-  // Primarily used by group nodes.
-  | {
-      type: string
-      nodeId?: string | number
-      cnrId?: string
-      hint?: string
-      action?: {
-        text: string
-        callback: () => void
-      }
-      isReplaceable?: boolean
-      replacement?: NodeReplacement
-    }
 
 export interface ComfyExtension {
   /**
@@ -279,7 +263,7 @@ export interface ComfyExtension {
   onAuthUserLogout?(): Promise<void> | void
 
   onNodeOutputsUpdated?(
-    nodeOutputs: Record<NodeLocatorId, NodeExecutionOutput>
+    nodeOutputs: Partial<Record<NodeLocatorId, NodeExecutionOutput>>
   ): void
 
   [key: string]: unknown

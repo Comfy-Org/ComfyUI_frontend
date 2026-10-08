@@ -1,0 +1,235 @@
+<script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
+import { computed, nextTick, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useRoute, useRouter } from 'vue-router'
+
+import type { SessionErrorCode } from '@comfyorg/account-core/session'
+import { buildReturnUrl } from '@comfyorg/billing-contract'
+import SocialAuthButtons from '@comfyorg/account-ui/auth/SocialAuthButtons'
+
+import { safeReturnTo } from '@/auth/returnTo'
+import { useSignInController } from '@/auth/useSignInController'
+import SessionFailureAction from '@/components/auth/SessionFailureAction.vue'
+import SignInEmailForm from '@/components/auth/SignInEmailForm.vue'
+import { useHostedCopy } from '@/composables/useHostedCopy'
+import { BILLING_WEB_ENV } from '@/config/env'
+import { useBillingEntry } from '@/entry/billingEntry'
+import { billingWebSignInPort } from '@/session/billingWebAuth'
+
+const { t } = useI18n()
+const { coded } = useHostedCopy()
+const route = useRoute()
+const router = useRouter()
+const { entry } = useBillingEntry()
+
+const {
+  state,
+  busy,
+  leaving,
+  errorMessage,
+  sessionFailureCode,
+  available,
+  signInWith,
+  submitEmail,
+  retryMint,
+  retryAvailability
+} = useSignInController(() => {
+  if (route.name !== 'sign-in') return
+  void router.replace(safeReturnTo(route.query.returnTo))
+}, billingWebSignInPort())
+
+const showEmailForm = ref(false)
+const emailForm = ref<InstanceType<typeof SignInEmailForm>>()
+const providerGroup = ref<HTMLDivElement>()
+
+/**
+ * The block that held focus unmounts, so focus would fall to the document
+ * body and make a keyboard user traverse the page again to reach the form.
+ */
+async function showEmail(show: boolean): Promise<void> {
+  showEmailForm.value = show
+  await nextTick()
+  if (show) emailForm.value?.focus()
+  else providerGroup.value?.querySelector('button')?.focus()
+}
+
+// `isSecureContext` is absent in some runtimes; only an explicit false is insecure.
+const secureContext = window.isSecureContext ?? true
+
+const sessionFailed = computed(
+  () => state.value.step === 'signedIn' && state.value.mintFailed === true
+)
+/** Signed in on the shared session, but refused this workspace: no sign-in to offer. */
+const sessionOnly = computed(() => sessionFailed.value && !available.value)
+
+const form = computed(() => {
+  if (sessionOnly.value) return undefined
+  return showEmailForm.value ? 'email' : 'social'
+})
+
+const noticeKey = computed(() => {
+  if (sessionOnly.value) return undefined
+  if (!available.value) return 'auth.signIn.unavailable'
+  return secureContext ? undefined : 'auth.signIn.insecureContextWarning'
+})
+const progressKey = computed(() =>
+  state.value.step === 'pending' && state.value.provider !== 'email'
+    ? 'auth.signIn.pending'
+    : 'auth.signIn.signingIn'
+)
+const blocked = computed(() => busy.value || !available.value)
+/**
+ * Only a workspace the server named as inaccessible gets its own copy: a
+ * malformed or expired Firebase token is not about the workspace at all, and
+ * the generic retry prompt is the better line for it, not `hosted.failure`'s
+ * catch-all "something went wrong".
+ */
+const WORKSPACE_REFUSAL_COPY: Readonly<
+  Partial<Record<SessionErrorCode, SessionErrorCode>>
+> = {
+  ACCESS_DENIED: 'ACCESS_DENIED',
+  SSO_REQUIRED: 'ACCESS_DENIED',
+  WORKSPACE_NOT_FOUND: 'WORKSPACE_NOT_FOUND'
+}
+const refusalCopy = computed(() => {
+  const code = sessionFailureCode.value
+  return code === undefined ? undefined : WORKSPACE_REFUSAL_COPY[code]
+})
+const sessionErrorMessage = computed(() =>
+  refusalCopy.value
+    ? coded('failure', refusalCopy.value)
+    : t('auth.signIn.sessionError')
+)
+
+/**
+ * Retrying mints for the same refused workspace, so a refusal sends the
+ * customer back to the product to pick another one. The refused workspace is
+ * left off the link, and never swapped for the personal one.
+ */
+const appReturnLink = computed(() => {
+  const arrival = entry.value
+  if (!refusalCopy.value || !arrival) return undefined
+  const url = buildReturnUrl({
+    target: arrival.returnTo,
+    environment: BILLING_WEB_ENV,
+    workspace: undefined
+  })
+  if (!url) return undefined
+  return {
+    href: url.href,
+    label: t('hosted.returnTo', {
+      product: coded('product', arrival.product)
+    })
+  }
+})
+
+const linkButtonClass =
+  'cursor-pointer self-center border-none bg-transparent p-0 text-sm text-muted-foreground underline transition-colors hover:text-base-foreground disabled:cursor-not-allowed disabled:opacity-50'
+const alertClass = 'rounded-lg bg-base-background p-3 text-sm'
+</script>
+
+<template>
+  <main
+    class="dark-theme fixed inset-0 overflow-auto bg-charcoal-950 px-4 py-6 font-inter sm:px-6 sm:py-10"
+  >
+    <section
+      v-if="!leaving"
+      class="mx-auto flex w-full max-w-md flex-col rounded-2xl border border-border-subtle bg-secondary-background p-8 shadow-2xl shadow-black/35"
+      :aria-busy="busy"
+    >
+      <h1 class="m-0 text-2xl font-semibold text-base-foreground">
+        {{ t('auth.signIn.heading') }}
+      </h1>
+      <p class="mt-2 mb-0 text-sm text-muted-foreground">
+        {{ t('auth.signIn.subtitle') }}
+      </p>
+
+      <div
+        v-if="noticeKey"
+        role="alert"
+        :class="cn(alertClass, 'mt-6 text-warning-background')"
+      >
+        {{ t(noticeKey) }}
+      </div>
+      <button
+        v-if="noticeKey === 'auth.signIn.unavailable'"
+        type="button"
+        :class="linkButtonClass"
+        @click="retryAvailability"
+      >
+        {{ t('auth.signIn.retryAvailability') }}
+      </button>
+
+      <div class="mt-8 flex flex-col gap-4">
+        <template v-if="form === 'social'">
+          <!-- `contents` keeps both provider buttons as items of this flex column. -->
+          <div ref="providerGroup" class="contents">
+            <SocialAuthButtons
+              :google-label="t('auth.signIn.google')"
+              :github-label="t('auth.signIn.github')"
+              button-class="flex h-12 w-full cursor-pointer items-center justify-center gap-3 rounded-lg border border-border-default bg-base-background font-medium text-base-foreground transition-colors hover:bg-secondary-background-hover focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+              :disabled="blocked"
+              @google="signInWith('google')"
+              @github="signInWith('github')"
+            />
+          </div>
+          <button
+            type="button"
+            :class="linkButtonClass"
+            :disabled="blocked"
+            @click="showEmail(true)"
+          >
+            {{ t('auth.signIn.useEmailInstead') }}
+          </button>
+        </template>
+
+        <template v-else-if="form === 'email'">
+          <SignInEmailForm
+            ref="emailForm"
+            :loading="busy"
+            @submit="submitEmail"
+          />
+          <button
+            type="button"
+            :class="linkButtonClass"
+            :disabled="busy"
+            @click="showEmail(false)"
+          >
+            {{ t('auth.signIn.backToSocial') }}
+          </button>
+        </template>
+
+        <p
+          v-if="busy"
+          aria-live="polite"
+          class="my-0 text-center text-sm text-muted-foreground"
+        >
+          {{ t(progressKey) }}
+        </p>
+
+        <div
+          v-if="errorMessage"
+          role="alert"
+          :class="cn(alertClass, 'text-destructive-background')"
+        >
+          {{ errorMessage }}
+        </div>
+
+        <template v-if="sessionFailed">
+          <div
+            role="alert"
+            :class="cn(alertClass, 'text-destructive-background')"
+          >
+            {{ sessionErrorMessage }}
+          </div>
+          <SessionFailureAction
+            :class="linkButtonClass"
+            :return-link="appReturnLink"
+            @retry="retryMint"
+          />
+        </template>
+      </div>
+    </section>
+  </main>
+</template>

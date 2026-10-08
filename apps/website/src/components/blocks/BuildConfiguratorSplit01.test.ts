@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
@@ -36,7 +35,7 @@ const baseProps = {
 } as const
 
 const summaryText = () =>
-  screen.getByTestId('build-summary').textContent!.replace(/\s+/g, ' ').trim()
+  screen.getByTestId('build-summary').textContent.replace(/\s+/g, ' ').trim()
 
 describe('BuildConfiguratorSplit01', () => {
   it('renders the copy column and a summary of the initial selection', () => {
@@ -73,6 +72,36 @@ describe('BuildConfiguratorSplit01', () => {
     ).toBe('false')
   })
 
+  it('introduces the heading with the eyebrow', () => {
+    render(BuildConfiguratorSplit01, { props: baseProps })
+
+    const eyebrow = screen.getByText('MANAGED BUILDS')
+    const heading = screen.getByRole('heading', {
+      level: 2,
+      name: 'One approved ComfyUI environment.'
+    })
+    expect(
+      eyebrow.compareDocumentPosition(heading) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy()
+  })
+
+  it('renders the panel without a title when panelTitle is omitted', () => {
+    const { panelTitle: _panelTitle, ...withoutPanelTitle } = baseProps
+    render(BuildConfiguratorSplit01, { props: withoutPanelTitle })
+
+    expect(screen.queryByText('Define your build')).toBeNull()
+    for (const label of [
+      'COMFYUI RELEASE',
+      'PYTHON · PYTORCH · CUDA',
+      'CUSTOM NODES',
+      'MODELS'
+    ]) {
+      expect(screen.getByRole('group', { name: label })).toBeTruthy()
+    }
+    expect(screen.getByRole('link', { name: 'BUILD' })).toBeTruthy()
+  })
+
   it('selects a single release and environment and re-derives the summary', async () => {
     render(BuildConfiguratorSplit01, { props: baseProps })
 
@@ -102,6 +131,9 @@ describe('BuildConfiguratorSplit01', () => {
     )
     await userEvent.click(screen.getByRole('button', { name: 'Wan 3.0' }))
     expect(summaryText()).toContain('2 nodes · 2 models')
+    expect(
+      screen.getByRole('button', { name: 'ControlNet Aux' })
+    ).toHaveAttribute('aria-pressed', 'true')
 
     await userEvent.click(
       screen.getByRole('button', { name: 'ComfyUI-Manager' })

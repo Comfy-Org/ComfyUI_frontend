@@ -1,88 +1,9 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import type { BottomPanelExtension } from '@/types/extensionTypes'
 
-// Mock dependencies
-vi.mock('@/composables/bottomPanelTabs/useShortcutsTab', () => ({
-  useShortcutsTab: () => [
-    {
-      id: 'shortcuts-essentials',
-      title: 'Essentials',
-      component: {},
-      type: 'vue',
-      targetPanel: 'shortcuts'
-    },
-    {
-      id: 'shortcuts-view-controls',
-      title: 'View Controls',
-      component: {},
-      type: 'vue',
-      targetPanel: 'shortcuts'
-    }
-  ]
-}))
-
-vi.mock('@/composables/bottomPanelTabs/useTerminalTabs', () => ({
-  useLogsTerminalTab: () => {
-    if (mockData.terminalTabsFailure) throw mockData.terminalTabsFailure
-    return {
-      id: 'logs',
-      title: 'Logs',
-      component: {},
-      type: 'vue',
-      targetPanel: 'terminal'
-    }
-  },
-  useCommandTerminalTab: () => ({
-    id: 'command',
-    title: 'Command',
-    component: {},
-    type: 'vue',
-    targetPanel: 'terminal'
-  })
-}))
-
-vi.mock('@/stores/commandStore', () => ({
-  useCommandStore: () => ({
-    registerCommand: vi.fn()
-  })
-}))
-
-const mockData = vi.hoisted(() => ({
-  isDesktop: false,
-  terminalTabsFailure: null as Error | null
-}))
-
-const mockReportError = vi.hoisted(() => vi.fn())
-vi.mock('@/platform/telemetry/reportError', () => ({
-  reportError: mockReportError
-}))
-
-vi.mock('@/platform/distribution/types', () => ({
-  get isDesktop() {
-    return mockData.isDesktop
-  }
-}))
-
 describe('useBottomPanelStore', () => {
-  beforeEach(() => {
-    mockData.terminalTabsFailure = null
-  })
-
-  it('reports a terminal tab load failure', async () => {
-    const failure = new Error('tabs unavailable')
-    mockData.terminalTabsFailure = failure
-    vi.spyOn(console, 'error').mockImplementation(() => {})
-    const store = useBottomPanelStore()
-
-    await store.registerCoreBottomPanelTabs()
-
-    expect(mockReportError).toHaveBeenCalledWith(failure, {
-      errorType: 'terminal_tabs_load_failure'
-    })
-  })
-
   it('should initialize with empty panels', () => {
     const store = useBottomPanelStore()
 

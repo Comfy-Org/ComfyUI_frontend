@@ -1,6 +1,9 @@
-import { fromAny } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { fromPartial, fromAny } from '@total-typescript/shoehorn'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { st, t } from '@/i18n'
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
 import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import {
@@ -10,11 +13,10 @@ import {
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
-import type { PendingWarnings } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useLinkStore } from '@/stores/linkStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import type { MissingNodeType } from '@/types/comfy'
+import type { MissingNodeType } from '@/platform/nodeReplacement/types'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
@@ -22,19 +24,11 @@ import { widgetId } from '@/types/widgetId'
 import type { UUID } from '@/utils/uuid'
 import type { NodeReplacement } from './types'
 
-vi.mock('@/lib/litegraph/src/litegraph', async (importOriginal) => {
-  const actual = await importOriginal<Record<string, unknown>>()
-  return {
-    ...actual,
-    LiteGraph: {
-      ...(actual.LiteGraph as Record<string, unknown>),
-      createNode: vi.fn(),
-      registered_node_types: {}
-    }
-  }
-})
+vi.mock(import('@/lib/litegraph/src/litegraph'), { spy: true })
+LiteGraph.createNode = vi.fn()
+LiteGraph.registered_node_types = {}
 
-vi.mock('@/core/graph/nodeShell/nodeShellState', () => ({
+vi.mock(import('@/core/graph/nodeShell/nodeShellState'), () => ({
   canTransferReplacementOwnership: vi.fn(() => true),
   transferReplacementOwnership: vi.fn(
     (node: LGraphNode, replacement: LGraphNode) => {
@@ -45,51 +39,18 @@ vi.mock('@/core/graph/nodeShell/nodeShellState', () => ({
   )
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { rootGraph: null },
   sanitizeNodeName: (name: string) => name.replace(/[&<>"'`=]/g, '')
 }))
 
-vi.mock('@/utils/graphTraversalUtil', () => ({
+vi.mock(import('@/utils/graphTraversalUtil'), () => ({
   collectAllNodes: vi.fn()
 }))
 
 const { mockToastAdd } = vi.hoisted(() => ({ mockToastAdd: vi.fn() }))
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: vi.fn(() => ({
-    add: mockToastAdd
-  }))
-}))
-
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  ComfyWorkflow: class {},
-  useWorkflowStore: vi.fn(() => workflowMocks)
-}))
-
-vi.mock('@/i18n', () => ({
-  st: (_key: string, fallback: string) => fallback,
-  t: (key: string, params?: Record<string, unknown>) =>
-    params ? `${key}:${JSON.stringify(params)}` : key
-}))
-
-interface ActiveWorkflowMock {
-  pendingWarnings: PendingWarnings | null
-  changeTracker: {
-    beforeChange: () => void
-    afterChange: () => void
-  }
-}
-
-const workflowMocks = vi.hoisted(() => ({
-  activeWorkflow: {
-    pendingWarnings: null,
-    changeTracker: {
-      beforeChange: vi.fn(),
-      afterChange: vi.fn()
-    }
-  } as ActiveWorkflowMock | null
-}))
+vi.mock(import('@/i18n'))
 
 import { app } from '@/scripts/app'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
@@ -97,13 +58,17 @@ import { collectAllNodes } from '@/utils/graphTraversalUtil'
 import { useNodeReplacement } from './useNodeReplacement'
 
 beforeEach(() => {
-  workflowMocks.activeWorkflow = {
+  vi.mocked(st).mockImplementation((_key, fallback) => fallback)
+  vi.mocked(t).mockImplementation((key: unknown, params?: unknown) =>
+    params ? `${String(key)}:${JSON.stringify(params)}` : String(key)
+  )
+  useWorkflowStore().activeWorkflow = fromPartial({
     pendingWarnings: null,
     changeTracker: {
       beforeChange: vi.fn(),
       afterChange: vi.fn()
     }
-  }
+  })
 })
 
 function createMockLink(
@@ -260,7 +225,7 @@ function makeMissingNodeType(
 }
 
 function getActiveWorkflowMock() {
-  const activeWorkflow = workflowMocks.activeWorkflow
+  const activeWorkflow = useWorkflowStore().activeWorkflow
   if (!activeWorkflow) throw new Error('Expected an active workflow')
   return activeWorkflow
 }
@@ -269,6 +234,10 @@ function seedMissingNodeTypes(types: MissingNodeType[]): void {
   getActiveWorkflowMock().pendingWarnings = { missingNodeTypes: types }
   useMissingNodesErrorStore().setMissingNodeTypes(types)
 }
+
+beforeEach(() => {
+  vi.mocked(useToastStore().add).mockImplementation(mockToastAdd)
+})
 
 describe('useNodeReplacement', () => {
   describe('replaceNodesInPlace', () => {
@@ -309,6 +278,43 @@ describe('useNodeReplacement', () => {
       expect(newNode.configure).not.toHaveBeenCalled()
       expect(newNode.id).toBe(1)
       expect(newNode.has_errors).toBe(false)
+    })
+
+    it('preserves saved customizations alongside replacement defaults', () => {
+      const placeholder = createPlaceholderNode(1, 'OldNode')
+      assert.exists(placeholder.last_serialization)
+      placeholder.last_serialization.properties = {
+        precision: 'fp16',
+        'Node name for S&R': 'OldNode'
+      }
+      const graph = createMockGraph([placeholder])
+      placeholder.graph = graph
+      Object.assign(app, { rootGraph: graph })
+      vi.mocked(collectAllNodes).mockReturnValue([placeholder])
+      const newNode = createNewNode()
+      newNode.properties = {
+        precision: 'fp32',
+        device: 'auto',
+        'Node name for S&R': 'Replacement'
+      }
+      vi.mocked(LiteGraph.createNode).mockReturnValue(newNode)
+
+      const result = useNodeReplacement().replaceNodesInPlace([
+        makeMissingNodeType('OldNode', {
+          old_node_id: 'OldNode',
+          new_node_id: 'Replacement',
+          old_widget_ids: null,
+          input_mapping: null,
+          output_mapping: null
+        })
+      ])
+
+      expect(result).toEqual(['OldNode'])
+      expect(newNode.properties).toEqual({
+        precision: 'fp16',
+        device: 'auto',
+        'Node name for S&R': 'Replacement'
+      })
     })
 
     it('clears stale node-owned records before binding the replacement', () => {
@@ -542,7 +548,6 @@ describe('useNodeReplacement', () => {
       vi.mocked(LiteGraph.createNode).mockReturnValue(
         createNewNode([{ name: 'in', link: null }])
       )
-      vi.spyOn(console, 'error').mockImplementation(() => {})
 
       const result = useNodeReplacement().replaceNodesInPlace([
         makeMissingNodeType('OldNode', {
@@ -626,7 +631,6 @@ describe('useNodeReplacement', () => {
         code: 'duplicate-target',
         message: 'forced'
       })
-      vi.spyOn(console, 'error').mockImplementation(() => {})
 
       const result = useNodeReplacement().replaceNodesInPlace([
         makeMissingNodeType('OldNode', {
@@ -662,7 +666,6 @@ describe('useNodeReplacement', () => {
       vi.mocked(collectAllNodes).mockReturnValue([placeholder])
       const newNode = createNewNode([], [{ name: 'removed', links: null }])
       vi.mocked(LiteGraph.createNode).mockReturnValue(newNode)
-      vi.spyOn(console, 'error').mockImplementation(() => {})
       const staleWidgetId = widgetId(GRAPH_ID, toNodeId(1), 'stale')
       useWidgetValueStore().registerWidget(staleWidgetId, {
         type: 'number',
@@ -812,7 +815,6 @@ describe('useNodeReplacement', () => {
         vi.mocked(LiteGraph.createNode).mockReturnValue(createNewNode())
         vi.mocked(canTransferReplacementOwnership).mockReturnValue(canTransfer)
         vi.mocked(transferReplacementOwnership).mockReturnValue(didTransfer)
-        vi.spyOn(console, 'error').mockImplementation(() => {})
 
         const result = useNodeReplacement().replaceNodesInPlace([
           makeMissingNodeType('OldNode', {
@@ -1575,7 +1577,7 @@ describe('useNodeReplacement', () => {
         oldNodeType,
         'OtherNode'
       ])
-      workflowMocks.activeWorkflow = null
+      useWorkflowStore().activeWorkflow = null
 
       const { replaceGroup } = useNodeReplacement()
       replaceGroup({
@@ -1869,7 +1871,6 @@ describe('useNodeReplacement', () => {
       vi.mocked(collectAllNodes).mockReturnValue([placeholder])
       const newNode = createNewNode()
       vi.mocked(LiteGraph.createNode).mockReturnValue(newNode)
-      vi.spyOn(console, 'error').mockImplementation(() => {})
 
       useNodeReplacement().replaceNodesInPlace([
         makeMissingNodeType('OldType', {

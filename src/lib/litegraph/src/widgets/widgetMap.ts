@@ -22,6 +22,7 @@ import { GalleriaWidget } from './GalleriaWidget'
 import { GradientSliderWidget } from './GradientSliderWidget'
 import { ImageCompareWidget } from './ImageCompareWidget'
 import { BoundingBoxesWidget } from './BoundingBoxesWidget'
+import { LightInfoWidget } from './LightInfoWidget'
 import { ColorsWidget } from './ColorsWidget'
 import { CompositorWidget } from './CompositorWidget'
 import { PainterWidget } from './PainterWidget'
@@ -69,6 +70,7 @@ export type WidgetTypeMap = {
   range: RangeWidget
   videoedit: VideoEditWidget
   boundingboxes: BoundingBoxesWidget
+  lightinfo: LightInfoWidget
   colors: ColorsWidget
   [key: string]: BaseWidget
 }
@@ -89,59 +91,74 @@ function collectDescriptors(value: object) {
   return descriptors
 }
 
-function adoptConcreteWidget<C extends object>(widget: object, concrete: C): C {
+function preserveHiddenFacade(
+  descriptors: Map<PropertyKey, PropertyDescriptor>,
+  foreignDescriptors: Map<PropertyKey, PropertyDescriptor>
+): void {
+  const concrete = descriptors.get('hidden')
+  const foreign = foreignDescriptors.get('hidden')
+  if (!concrete?.get || !concrete.set || !foreign || foreign.get || foreign.set)
+    return
+
+  descriptors.set('hidden', {
+    configurable: foreign.configurable,
+    enumerable: foreign.enumerable,
+    get: concrete.get,
+    set: concrete.set
+  })
+}
+
+function mergeDescriptor(
+  concrete: PropertyDescriptor | undefined,
+  foreign: PropertyDescriptor,
+  ownForeign: PropertyDescriptor | undefined
+): PropertyDescriptor {
+  if (!concrete) return foreign
+
+  const concreteIsGetterOnly = concrete.get && !concrete.set
+  if (concreteIsGetterOnly && foreign.set) {
+    return { ...foreign, get: foreign.get ?? concrete.get }
+  }
+  if (concreteIsGetterOnly && ownForeign?.writable) return foreign
+  if (!foreign.get && !foreign.set) return concrete
+  if (!concrete.get || !concrete.set) return concrete
+
+  return {
+    configurable: foreign.configurable,
+    enumerable: foreign.enumerable,
+    get() {
+      foreign.get?.call(this)
+      return concrete.get?.call(this)
+    },
+    set(value: unknown) {
+      foreign.set?.call(this, value)
+      const normalised = foreign.get?.call(this)
+      concrete.set?.call(this, normalised === undefined ? value : normalised)
+    }
+  }
+}
+
+function adoptConcreteWidget<C extends BaseWidget>(
+  widget: IBaseWidget,
+  concrete: C
+): C {
   if (concrete === widget || !Object.isExtensible(widget)) return concrete
 
+  const rawOptions = widget.options
   const descriptors = collectDescriptors(concrete)
   const foreignDescriptors = collectDescriptors(widget)
   for (const [key, foreignDescriptor] of foreignDescriptors) {
-    const concreteDescriptor = descriptors.get(key)
-    if (!concreteDescriptor) {
-      descriptors.set(key, foreignDescriptor)
-      continue
-    }
-    const concreteIsGetterOnly =
-      concreteDescriptor.get !== undefined &&
-      concreteDescriptor.set === undefined
-    if (concreteIsGetterOnly && foreignDescriptor.set !== undefined) {
-      descriptors.set(key, {
-        ...foreignDescriptor,
-        get: foreignDescriptor.get ?? concreteDescriptor.get
-      })
-      continue
-    }
-    if (
-      concreteIsGetterOnly &&
-      Object.getOwnPropertyDescriptor(widget, key)?.writable === true
-    ) {
-      descriptors.set(key, foreignDescriptor)
-      continue
-    }
-    if (
-      foreignDescriptor.get === undefined &&
-      foreignDescriptor.set === undefined
+    if (key === 'options') continue
+    const descriptor = mergeDescriptor(
+      descriptors.get(key),
+      foreignDescriptor,
+      Object.getOwnPropertyDescriptor(widget, key)
     )
-      continue
-
-    if (concreteDescriptor?.get && concreteDescriptor.set) {
-      descriptors.set(key, {
-        configurable: foreignDescriptor.configurable,
-        enumerable: foreignDescriptor.enumerable,
-        get() {
-          foreignDescriptor.get?.call(this)
-          return concreteDescriptor.get?.call(this)
-        },
-        set(value: unknown) {
-          foreignDescriptor.set?.call(this, value)
-          const normalised = foreignDescriptor.get?.call(this)
-          concreteDescriptor.set?.call(
-            this,
-            normalised === undefined ? value : normalised
-          )
-        }
-      })
-    }
+    if (key === 'disabled' && foreignDescriptor.get)
+      descriptor.get = foreignDescriptor.get
+    descriptors.set(key, descriptor)
   }
+  preserveHiddenFacade(descriptors, foreignDescriptors)
 
   if (
     Reflect.ownKeys(widget).some(
@@ -154,7 +171,9 @@ function adoptConcreteWidget<C extends object>(widget: object, concrete: C): C {
     return concrete
 
   Object.defineProperties(widget, Object.fromEntries(descriptors))
-  return widget as unknown as C
+  const adopted = widget as unknown as C
+  if (adopted instanceof BaseWidget) adopted.options = rawOptions
+  return adopted
 }
 
 /**
@@ -254,6 +273,8 @@ function instantiateConcreteWidget<TWidget extends IWidget | IBaseWidget>(
       return toWidgetClass(VideoEditWidget, narrowedWidget, node)
     case 'boundingboxes':
       return toWidgetClass(BoundingBoxesWidget, narrowedWidget, node)
+    case 'lightinfo':
+      return toWidgetClass(LightInfoWidget, narrowedWidget, node)
     case 'colors':
       return toWidgetClass(ColorsWidget, narrowedWidget, node)
     default: {
@@ -271,7 +292,6 @@ export function isComboWidget(widget: IBaseWidget): widget is IComboWidget {
 
 /**
  * Type guard: Narrow **from {@link IBaseWidget}** to {@link IAssetWidget}.
- * @knipIgnoreUnusedButUsedByCustomNodes
  */
 export function isAssetWidget(widget: IBaseWidget): widget is IAssetWidget {
   return widget.type === 'asset'

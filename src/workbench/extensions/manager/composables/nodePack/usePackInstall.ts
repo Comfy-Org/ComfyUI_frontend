@@ -23,7 +23,7 @@ export function usePackInstall(
   // Check if any of the packs are currently being installed
   const isInstalling = computed(() => {
     const nodePacks = getNodePacks()
-    if (!nodePacks?.length) return false
+    if (!nodePacks.length) return false
     return nodePacks.some((pack) => managerStore.isPackInstalling(pack.id))
   })
 
@@ -73,7 +73,7 @@ export function usePackInstall(
 
   const installAllPacks = async () => {
     const nodePacks = getNodePacks()
-    if (!nodePacks?.length) return
+    if (!nodePacks.length) return
 
     const hasConflict = getHasConflict?.()
     const conflictInfo = getConflictInfo?.()

@@ -8,6 +8,7 @@ import {
   hexToRgb,
   hsbToRgb,
   hsvaToHex,
+  intToHex,
   isTransparent,
   luminance,
   normalizeHex,
@@ -31,7 +32,7 @@ interface ColorTestCase {
 
 type ColorFormat = 'hex' | 'rgb' | 'rgba' | 'hsl' | 'hsla'
 
-vi.mock('es-toolkit/compat', () => ({
+vi.mock<unknown>(import('es-toolkit/compat'), () => ({
   memoize: <T extends (...args: unknown[]) => unknown>(fn: T) => fn
 }))
 
@@ -129,6 +130,22 @@ describe('colorUtil conversions', () => {
     it('converts 3-digit hex to packed integer', () => {
       expect(hexToInt('#fff')).toBe(0xffffff)
       expect(hexToInt('#f00')).toBe(0xff0000)
+    })
+  })
+
+  describe('intToHex', () => {
+    it.for([
+      [0, '#000000'],
+      [0x45edf5, '#45edf5'],
+      [0xffffff, '#ffffff'],
+      [-1, '#000000'],
+      [0.5, '#000001'],
+      [0x1000000, '#ffffff'],
+      [Number.NaN, '#000000'],
+      [Number.POSITIVE_INFINITY, '#000000'],
+      [Number.NEGATIVE_INFINITY, '#000000']
+    ] as const)('%s → %s', ([value, expected]) => {
+      expect(intToHex(value)).toBe(expected)
     })
   })
 
@@ -386,9 +403,9 @@ describe('colorUtil - adjustColor', () => {
   })
 
   it('returns the original value for null or undefined inputs', () => {
-    // @ts-expect-error fixme ts strict error
+    // @ts-expect-error extensions may pass a nullish color; the contract type is string
     expect(adjustColor(null, { opacity: targetOpacity })).toBe(null)
-    // @ts-expect-error fixme ts strict error
+    // @ts-expect-error extensions may pass a nullish color; the contract type is string
     expect(adjustColor(undefined, { opacity: targetOpacity })).toBe(undefined)
   })
 

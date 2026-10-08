@@ -4,15 +4,6 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Topbar menu commands', { tag: '@ui' }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-    await comfyPage.settings.setSetting(
-      'Comfy.Workflow.WorkflowTabsPosition',
-      'Topbar'
-    )
-    await comfyPage.setup()
-  })
-
   test('New command creates a new workflow tab', async ({ comfyPage }) => {
     const topbar = comfyPage.menu.topbar
     await expect.poll(() => topbar.getTabNames()).toHaveLength(1)
@@ -68,5 +59,55 @@ test.describe('Topbar menu commands', { tag: '@ui' }, () => {
 
     await comfyPage.menu.topbar.triggerTopbarCommand(['View', 'Bottom Panel'])
     await expect(comfyPage.bottomPanel.root).toBeHidden()
+  })
+
+  test('holding View > Zoom In repeatedly zooms without closing the menu', async ({
+    comfyPage
+  }) => {
+    const topbar = comfyPage.menu.topbar
+    const initialScale = await comfyPage.canvasOps.getScale()
+    await topbar.openTopbarMenu()
+    const viewSubmenu = await topbar.openSubmenu('View')
+    await topbar.holdMenuItem('Zoom In', viewSubmenu)
+    try {
+      await expect
+        .poll(() => comfyPage.canvasOps.getScale())
+        .toBeGreaterThan(initialScale)
+      const firstScale = await comfyPage.canvasOps.getScale()
+      await expect
+        .poll(() => comfyPage.canvasOps.getScale())
+        .toBeGreaterThan(firstScale)
+    } finally {
+      await topbar.releaseMenuItem()
+    }
+
+    await expect(viewSubmenu).toBeVisible()
+  })
+})
+
+test.describe('Topbar Help menu', { tag: '@ui' }, () => {
+  test('Help > Support opens the external zendesk link with the OSS tag', async ({
+    comfyPage
+  }) => {
+    // Prevent loading the external page
+    await comfyPage.page
+      .context()
+      .route('https://support.comfy.org/**', (route) =>
+        route.fulfill({ body: '<html></html>', contentType: 'text/html' })
+      )
+
+    const popupPromise = comfyPage.page.waitForEvent('popup')
+    await comfyPage.menu.topbar.triggerTopbarCommand([
+      'Help',
+      'Contact Support'
+    ])
+    const popup = await popupPromise
+    await popup.waitForURL('https://support.comfy.org/**')
+
+    const url = new URL(popup.url())
+    expect(url.hostname).toBe('support.comfy.org')
+    expect(url.searchParams.get('tf_42243568391700')).toBe('oss')
+
+    await popup.close()
   })
 })

@@ -1,14 +1,25 @@
 import type { StorybookConfig } from '@storybook/vue3-vite'
+import vue from '@vitejs/plugin-vue'
 import { FileSystemIconLoader } from 'unplugin-icons/loaders'
 import IconsResolver from 'unplugin-icons/resolver'
 import Icons from 'unplugin-icons/vite'
 import Components from 'unplugin-vue-components/vite'
-import type { InlineConfig } from 'vite'
+import type { Alias, AliasOptions, InlineConfig } from 'vite'
+
+function withoutAppSrcAlias(alias: AliasOptions = []): Alias[] {
+  const entries = Array.isArray(alias)
+    ? alias
+    : Object.entries(alias).map(([find, replacement]) => ({
+        find,
+        replacement
+      }))
+  return entries.filter(({ find }) => find !== '@')
+}
 
 const config: StorybookConfig = {
   stories: [
     '../src/**/*.stories.@(js|jsx|mjs|ts|tsx)',
-    '../apps/website/src/components/blocks/**/*.stories.@(js|jsx|mjs|ts|tsx)'
+    '../apps/website/src/**/*.stories.@(js|jsx|mjs|ts|tsx)'
   ],
   staticDirs: ['../public', '../apps/website/public'],
   addons: ['@storybook/addon-docs', '@storybook/addon-mcp'],
@@ -21,7 +32,7 @@ const config: StorybookConfig = {
     const { mergeConfig } = await import('vite')
     const { default: tailwindcss } = await import('@tailwindcss/vite')
 
-    // Filter out any plugins that might generate import maps
+    // Remove import-map plugins and replace the inherited Vue plugin below.
     if (config.plugins) {
       config.plugins = config.plugins
         // Type guard: ensure we have valid plugin objects with names
@@ -36,14 +47,21 @@ const config: StorybookConfig = {
             )
           }
         )
-        // Business logic: filter out import-map plugins
-        .filter((plugin) => !plugin.name.includes('import-map'))
+        .filter(
+          (plugin) =>
+            !plugin.name.includes('import-map') && plugin.name !== 'vite:vue'
+        )
+    }
+
+    config.resolve = {
+      ...config.resolve,
+      alias: withoutAppSrcAlias(config.resolve?.alias)
     }
 
     return mergeConfig(config, {
-      // Replace plugins entirely to avoid inheritance issues
       plugins: [
-        // Only include plugins we explicitly need for Storybook
+        // Keep public asset URLs intact so staticDirs can serve them directly.
+        vue({ template: { transformAssetUrls: { includeAbsolute: false } } }),
         tailwindcss(),
         Icons({
           compiler: 'vue3',
@@ -73,10 +91,15 @@ const config: StorybookConfig = {
         allowedHosts: true
       },
       resolve: {
+        tsconfigPaths: true,
         alias: [
           {
             find: '@comfyorg/website',
             replacement: process.cwd() + '/apps/website'
+          },
+          {
+            find: 'astro:env/client',
+            replacement: process.cwd() + '/apps/website/src/test/astroEnv.ts'
           },
           {
             find: /^\/animations\//,
@@ -130,6 +153,12 @@ const config: StorybookConfig = {
               process.cwd() + '/src/storybook/mocks/useWorkspaceUI.ts'
           },
           {
+            find: '@/base/credits/comfyCredits',
+            replacement:
+              process.cwd() +
+              '/packages/shared-frontend-utils/src/creditsUtil.ts'
+          },
+          {
             find: '@/utils/formatUtil',
             replacement:
               process.cwd() +
@@ -140,10 +169,6 @@ const config: StorybookConfig = {
             replacement:
               process.cwd() +
               '/packages/shared-frontend-utils/src/networkUtil.ts'
-          },
-          {
-            find: '@',
-            replacement: process.cwd() + '/src'
           }
         ]
       },
@@ -158,14 +183,14 @@ const config: StorybookConfig = {
             // Suppress specific warnings
             if (
               warning.code === 'UNUSED_EXTERNAL_IMPORT' &&
-              warning.message?.includes('resolveComponent')
+              warning.message.includes('resolveComponent')
             ) {
               return
             }
             // Suppress Storybook font asset warnings
             if (
               warning.code === 'UNRESOLVED_IMPORT' &&
-              warning.message?.includes('nunito-sans')
+              warning.message.includes('nunito-sans')
             ) {
               return
             }

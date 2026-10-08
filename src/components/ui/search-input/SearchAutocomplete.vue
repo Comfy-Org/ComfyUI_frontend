@@ -1,20 +1,27 @@
 <template>
   <ComboboxRoot
-    v-model="modelValue"
+    ref="comboboxRef"
     v-model:open="isOpen"
     ignore-filter
+    :reset-search-term-on-blur="false"
+    :reset-search-term-on-select="false"
     :disabled
+    :open-on-focus
+    :open-on-click="openOnFocus"
     :class="className"
+    @highlight="onHighlight"
   >
     <ComboboxAnchor
       :class="
         cn(
           searchInputVariants({ size }),
-          disabled && 'pointer-events-none opacity-50'
+          disabled && 'pointer-events-none opacity-50',
+          anchorClass
         )
       "
       @click="focus"
     >
+      <slot name="leading" />
       <Button
         v-if="modelValue"
         :class="cn('absolute', sizeConfig.clearPos)"
@@ -48,11 +55,12 @@
       />
 
       <ComboboxInput
+        :id="inputId"
         ref="inputRef"
         v-model="modelValue"
         :class="
           cn(
-            'size-full border-none bg-transparent outline-none',
+            'h-full min-w-0 flex-1 border-none bg-transparent outline-none',
             sizeConfig.inputPl,
             sizeConfig.inputText
           )
@@ -82,6 +90,8 @@
           v-for="(suggestion, index) in suggestions"
           :key="suggestionKey(suggestion, index)"
           :value="suggestionValue(suggestion)"
+          :data-suggestion-index="index"
+          :aria-label="suggestionLabel(suggestion)"
           :class="
             cn(
               'cursor-pointer rounded-sm px-3 py-2 text-sm outline-none',
@@ -111,7 +121,7 @@ import {
   ComboboxPortal,
   ComboboxRoot
 } from 'reka-ui'
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -128,36 +138,46 @@ const {
   placeholder,
   icon = 'icon-[lucide--search]',
   autofocus = false,
+  inputId,
   loading = false,
   disabled = false,
+  openOnFocus = false,
+  updateModelOnSelect = true,
   size = 'md',
   suggestions = [],
   optionLabel,
   optionKey,
   class: className,
+  anchorClass,
   contentStyle
 } = defineProps<{
   placeholder?: string
   icon?: string
   autofocus?: boolean
+  inputId?: string
   loading?: boolean
   disabled?: boolean
+  openOnFocus?: boolean
+  updateModelOnSelect?: boolean
   size?: SearchInputVariants['size']
   suggestions?: T[]
   optionLabel?: keyof T & string
   optionKey?: keyof T & string
   class?: HTMLAttributes['class']
+  anchorClass?: HTMLAttributes['class']
   contentStyle?: StyleValue
 }>()
 
 const emit = defineEmits<{
   select: [item: T]
+  highlight: [item: T | undefined]
 }>()
 
 const sizeConfig = computed(() => searchInputSizeConfig[size])
 
 const modelValue = defineModel<string>({ required: true })
 
+const comboboxRef = useTemplateRef('comboboxRef')
 const inputRef = ref<InstanceType<typeof ComboboxInput> | null>(null)
 const isOpen = ref(false)
 const isComposing = ref(false)
@@ -167,7 +187,11 @@ function focus() {
   inputRef.value?.$el?.focus()
 }
 
-defineExpose({ focus })
+function open() {
+  isOpen.value = true
+}
+
+defineExpose({ focus, open })
 
 const placeholderText = computed(
   () => placeholder ?? t('g.searchPlaceholder', { subject: '' })
@@ -200,9 +224,14 @@ function suggestionValue(item: T): string {
 }
 
 function onSelectSuggestion(item: T) {
-  modelValue.value = suggestionLabel(item)
+  if (updateModelOnSelect) modelValue.value = suggestionLabel(item)
   isOpen.value = false
   emit('select', item)
+}
+
+function onHighlight(payload: { ref: HTMLElement } | undefined) {
+  const index = Number(payload?.ref.dataset.suggestionIndex)
+  emit('highlight', Number.isInteger(index) ? suggestions[index] : undefined)
 }
 
 function onEnterKey(e: KeyboardEvent) {
@@ -214,8 +243,12 @@ function onEnterKey(e: KeyboardEvent) {
 
 watch(
   () => suggestions,
-  (items) => {
-    isOpen.value = items.length > 0 && !!modelValue.value
+  async (items) => {
+    isOpen.value = items.length > 0 && (openOnFocus || !!modelValue.value)
+    if (isOpen.value) {
+      await nextTick()
+      comboboxRef.value?.highlightFirstItem?.()
+    }
   }
 )
 </script>

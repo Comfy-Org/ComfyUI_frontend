@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import HeroSplit01 from '../../components/blocks/HeroSplit01.vue'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import HeroSplit01 from '@/components/blocks/HeroSplit01.vue'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import ComfyCliTerminal from './ComfyCliTerminal.vue'
 import { cliCtas } from './ctas'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 
 const ctas = cliCtas(locale)
 
@@ -18,7 +19,7 @@ const clients = [
   'Gemini CLI',
   'OpenClaw',
   'Hermes',
-  t('cli.hero.clientAnyShell', locale)
+  t('cli.hero.clientAnyShell')
 ]
 </script>
 
@@ -29,8 +30,8 @@ const clients = [
       :locale="locale"
       class="min-h-[calc(100svh-5rem)] lg:min-h-[calc(100svh-6.75rem)]"
       badge-text="CLI"
-      :title="t('cli.hero.heading', locale)"
-      :subtitle="t('cli.hero.subtitle', locale)"
+      :title="t('cli.hero.heading')"
+      :subtitle="t('cli.hero.subtitle')"
       :primary-cta="ctas.installCli"
       :secondary-cta="ctas.docs"
     >
@@ -39,14 +40,14 @@ const clients = [
       </template>
     </HeroSplit01>
 
-    <div class="max-w-9xl mx-auto px-6 pb-16 lg:px-16">
+    <div class="mx-auto max-w-9xl px-6 pb-16 lg:px-16">
       <div
         class="flex flex-wrap items-center gap-x-8 gap-y-3 border-t border-white/10 pt-8"
       >
         <p
           class="text-xs font-bold tracking-widest text-white/40 uppercase lg:text-sm"
         >
-          {{ t('cli.hero.clientsLabel', locale) }}
+          {{ t('cli.hero.clientsLabel') }}
         </p>
         <p
           v-for="client in clients"

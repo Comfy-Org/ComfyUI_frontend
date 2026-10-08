@@ -1,14 +1,12 @@
 import { debounce } from 'es-toolkit'
 import { defineStore } from 'pinia'
-import { computed, onScopeDispose, ref, watch } from 'vue'
+import { computed, onScopeDispose, reactive, ref, watch } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { ModelFile } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import { isCloud } from '@/platform/distribution/types'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
-import { reportError } from '@/platform/telemetry/reportError'
 
 /** (Internal helper) finds a value in a metadata object from any of a list of keys. */
 function _findInMetadata(
@@ -155,7 +153,6 @@ export class ComfyModelDef {
       this.updateSearchable()
     } catch (error) {
       console.error('Error loading model metadata', this.file_name, this, error)
-      reportError(error, { errorType: 'model_metadata_load_failure' })
     }
   }
 }
@@ -281,7 +278,7 @@ export class ModelFolder {
 
 /** Model store handler, wraps individual per-folder model stores */
 export const useModelStore = defineStore('models', () => {
-  const settingStore = useSettingStore()
+  const { flags } = useFeatureFlags()
   const modelFolderNames = ref<string[]>([])
   const modelFolderByName = ref<Record<string, ModelFolder>>({})
   const modelFolders = computed<ModelFolder[]>(() =>
@@ -300,7 +297,7 @@ export const useModelStore = defineStore('models', () => {
    * all-registered-folders view.
    */
   const visibleModelFolders = computed<ModelFolder[]>(() =>
-    usesAssetApi()
+    flags.assetsEnabled
       ? modelFolders.value.filter(
           (folder) =>
             folder.state !== ResourceState.Loaded ||
@@ -309,21 +306,20 @@ export const useModelStore = defineStore('models', () => {
       : modelFolders.value
   )
 
-  /**
-   * Whether model contents come from the asset API. Named to avoid confusion
-   * with assetService.isAssetAPIEnabled(), which is cloud-gated and governs
-   * the asset browser surfaces, not this store's data source.
-   */
-  function usesAssetApi(): boolean {
-    return !!settingStore.get('Comfy.Assets.UseAssetAPI')
-  }
-
   function createGetModelsFunc(): (folder: string) => Promise<ModelFile[]> {
-    return usesAssetApi()
+    return flags.assetsEnabled
       ? (folder) => assetService.getAssetModels(folder)
       : (folder) => api.getModels(folder)
   }
 
+  const modelSource = computed(() =>
+    !flags.assetsEnabled
+      ? 'legacy-api'
+      : flags.supportsModelTypeTags
+        ? 'asset-model-type-tags'
+        : 'asset-legacy-tags'
+  )
+  let committedSource = modelSource.value
   let modelFoldersRequestId = 0
 
   /**
@@ -335,6 +331,7 @@ export const useModelStore = defineStore('models', () => {
 
   interface PreparedModelFolders {
     requestId: number
+    source: typeof modelSource.value
     names: string[]
     folders: Record<string, ModelFolder>
   }
@@ -354,37 +351,64 @@ export const useModelStore = defineStore('models', () => {
     const resData = await api.getModelFolders()
     if (requestId !== modelFoldersRequestId) return null
     const getModelsFunc = createGetModelsFunc()
-    const folders: Record<string, ModelFolder> = {}
+    const folders = reactive<Record<string, ModelFolder>>({})
     for (const folder of resData) {
       folders[folder.name] = new ModelFolder(
         folder.name,
         getModelsFunc,
         // Display filtering applies to the asset walk only; the legacy
         // listing keeps its historical server-side (global-set) filtering.
-        usesAssetApi() ? effectiveModelExtensions(folder.extensions) : []
+        flags.assetsEnabled ? effectiveModelExtensions(folder.extensions) : []
       )
     }
-    return { requestId, names: resData.map((folder) => folder.name), folders }
+    return {
+      requestId,
+      source: modelSource.value,
+      names: resData.map((folder) => folder.name),
+      folders
+    }
   }
 
-  function commitModelFolders({ names, folders }: PreparedModelFolders): void {
+  function commitModelFolders({
+    names,
+    folders,
+    source
+  }: PreparedModelFolders): void {
     modelFolderNames.value = names
     modelFolderByName.value = folders
+    committedSource = source
   }
 
   /** Loads the model folder structure from the server; false when superseded. */
   async function loadModelFolders(): Promise<boolean> {
     const prepared = await prepareModelFolders()
     if (!prepared) return false
-    commitModelFolders(prepared)
-    return true
+    while (prepared.requestId === modelFoldersRequestId) {
+      const pendingFolders = modelFolders.value
+        .filter(
+          (folder) =>
+            folder.state !== ResourceState.Uninitialized &&
+            folder.directory in prepared.folders
+        )
+        .map((folder) => prepared.folders[folder.directory])
+        .filter((folder) => folder.state === ResourceState.Uninitialized)
+      if (pendingFolders.length === 0) {
+        commitModelFolders(prepared)
+        return true
+      }
+      if (prepared.source !== committedSource) commitModelFolders(prepared)
+      await Promise.all(pendingFolders.map((folder) => folder.load()))
+    }
+    return false
   }
 
   async function getLoadedModelFolder(
     folderName: string
   ): Promise<ModelFolder | null> {
     modelDataConsumed = true
-    const folder = modelFolderByName.value[folderName]
+    const folder = Object.hasOwn(modelFolderByName.value, folderName)
+      ? modelFolderByName.value[folderName]
+      : undefined
     return folder ? await folder.load() : null
   }
 
@@ -444,37 +468,9 @@ export const useModelStore = defineStore('models', () => {
     modelFolderByName.value[folderName] = folder
   }
 
-  /**
-   * Re-fetches the folder structure and re-loads any folder whose contents
-   * had previously been loaded, picking up server-side changes without
-   * losing the currently-visible contents. Double-buffered: the new
-   * structure loads its contents off-screen and swaps in whole, so the
-   * visible tree never blanks to uninitialized folders mid-reload. Returns
-   * false without committing when a newer concurrent load superseded this
-   * one — the winning load populates the fresh data.
-   */
   async function reloadModels(): Promise<boolean> {
     assetService.invalidateModelBuckets()
-    // Loading counts as previously loaded: a scan-complete reload can land
-    // while the eager load is still in flight, and replacing those folder
-    // objects without re-loading them would strand the sidebar on
-    // uninitialized folders whose original loads finish into detached
-    // objects.
-    const previouslyLoaded = modelFolders.value
-      .filter((folder) => folder.state !== ResourceState.Uninitialized)
-      .map((folder) => folder.directory)
-    const prepared = await prepareModelFolders()
-    if (!prepared) return false
-    await Promise.all(
-      previouslyLoaded
-        .filter((name) => name in prepared.folders)
-        .map((name) => prepared.folders[name].load())
-    )
-    // Re-check before the swap: a newer request may have started while the
-    // off-screen contents loaded.
-    if (prepared.requestId !== modelFoldersRequestId) return false
-    commitModelFolders(prepared)
-    return true
+    return loadModelFolders()
   }
 
   /**
@@ -485,7 +481,7 @@ export const useModelStore = defineStore('models', () => {
    */
   async function requestModelScan() {
     if (isCloud) return
-    if (!usesAssetApi()) return
+    if (!flags.assetsEnabled) return
     try {
       await assetService.seedModelAssets()
     } catch (error) {
@@ -508,20 +504,18 @@ export const useModelStore = defineStore('models', () => {
   }
 
   /**
-   * Scan completions arrive as one event per scanned root and can land in
-   * bursts; coalesce them into one trailing reload instead of one full
-   * library walk per event.
+   * Scan completions and capability changes can land in bursts; coalesce
+   * them into one trailing reload instead of one full library walk per event.
    */
-  const SCAN_RELOAD_DEBOUNCE_MS = 500
+  const MODEL_RELOAD_DEBOUNCE_MS = 500
 
-  const reloadAfterScan = debounce(async () => {
+  const scheduleModelReload = debounce(async () => {
     try {
       await reloadModels()
     } catch (error) {
-      console.error('Failed to reload the model library after a scan', error)
-      reportError(error, { errorType: 'model_store_scan_reload_failure' })
+      console.error('Failed to reload the model library', error)
     }
-  }, SCAN_RELOAD_DEBOUNCE_MS)
+  }, MODEL_RELOAD_DEBOUNCE_MS)
 
   const unsubscribeModelsScanned = assetService.onModelsScanned(() => {
     // A scan changes bucket contents even when no UI has read this store
@@ -529,28 +523,20 @@ export const useModelStore = defineStore('models', () => {
     // skip the reload nothing is displaying.
     assetService.invalidateModelBuckets()
     if (!modelDataConsumed) return
-    reloadAfterScan()
+    scheduleModelReload()
   })
   onScopeDispose(() => {
-    reloadAfterScan.cancel()
+    scheduleModelReload.cancel()
     unsubscribeModelsScanned()
   })
 
-  const { flags } = useFeatureFlags()
-
-  watch(
-    () => flags.supportsModelTypeTags,
-    () =>
-      usesAssetApi() &&
-      reloadModels().catch((error) => {
-        console.error(
-          'Failed to reload the model library after a capability change',
-          error
-        )
-        reportError(error, {
-          errorType: 'model_store_capability_reload_failure'
-        })
-      })
+  /**
+   * The WS `feature_flags` handshake can land after createGetModelsFunc()
+   * already captured its data-source choice at store-init time, so a flag
+   * flip after boot must force a reload to switch the sidebar's source.
+   */
+  watch([() => flags.assetsEnabled, () => flags.supportsModelTypeTags], () =>
+    scheduleModelReload()
   )
 
   return {

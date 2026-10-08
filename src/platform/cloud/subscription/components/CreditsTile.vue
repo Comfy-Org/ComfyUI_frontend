@@ -58,9 +58,7 @@
         :class="cn('flex flex-col gap-2', isMonthlyDepleted && 'opacity-30')"
       >
         <div class="flex items-center justify-between text-sm">
-          <span class="text-text-primary">{{
-            $t('subscription.monthly')
-          }}</span>
+          <span class="text-text-primary">{{ allowanceLabel }}</span>
           <span class="text-muted">
             {{ refillsLabel }}
           </span>
@@ -150,8 +148,11 @@
             {{ displayPrepaid }}
           </span>
         </div>
-        <span class="text-sm text-muted @max-[300px]:hidden">
-          {{ $t('subscription.usedAfterMonthly') }}
+        <span
+          v-if="!isDurationUnknown"
+          class="text-sm text-muted @max-[300px]:hidden"
+        >
+          {{ usedAfterAllowanceLabel }}
         </span>
       </div>
     </template>
@@ -181,7 +182,7 @@
           </span>
         </div>
         <span class="text-sm">
-          {{ $t('subscription.reactivateToUseCredits') }}
+          {{ inactiveCreditsNote }}
         </span>
       </div>
     </template>
@@ -237,6 +238,7 @@ import {
 import { computeMonthlyUsage } from '@/platform/cloud/subscription/utils/creditsProgress'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/utils/paymentIntentSource'
 import { usePendingTopup } from '@/composables/billing/usePendingTopup'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useCustomerEventsService } from '@/services/customerEventsService'
@@ -271,7 +273,7 @@ const { showPricingTable } = useSubscriptionDialog()
 const customerEventsService = useCustomerEventsService()
 const dialogService = useDialogService()
 const telemetry = useTelemetry()
-const { pendingTopupNeedsRefresh, isPendingTopupCompleted } = usePendingTopup()
+const { pendingTopupNeedsRefresh, consumeCompletedTopup } = usePendingTopup()
 
 const tierKey = computed(() => {
   const tier = subscription.value?.tier
@@ -279,26 +281,47 @@ const tierKey = computed(() => {
   return toTierKey(tier) ?? DEFAULT_TIER_KEY
 })
 
+const isAnnualBilling = computed(
+  () => subscription.value?.duration === 'ANNUAL'
+)
+
+// Paid plan with no reported duration: the allowance cycle is unknown, so no
+// total is shown rather than guessing monthly. Free has no duration by design,
+// and Founders Edition is a fixed monthly grant.
+const isDurationUnknown = computed(
+  () =>
+    !!subscription.value?.tier &&
+    !subscription.value.duration &&
+    tierKey.value !== 'free' &&
+    tierKey.value !== 'founder'
+)
+
 const creditPoolTotalCredits = computed<number | null>(() => {
+  if (isDurationUnknown.value) return null
   const monthlyCredits =
     currentTeamCreditStop.value?.credits_monthly ??
     (isSalesManagedTier(subscription.value?.tier)
       ? null
       : getTierCredits(tierKey.value))
   if (monthlyCredits === null) return null
-  return subscription.value?.duration === 'ANNUAL'
-    ? monthlyCredits * 12
-    : monthlyCredits
+  return isAnnualBilling.value ? monthlyCredits * 12 : monthlyCredits
 })
 
-// The reactivate-to-use-credits treatment sells a self-serve reactivation, so
-// it applies only where one exists. Tier decides that, as it does for the
-// credit pool above: can_top_up is a rollout-defaulted capability that also
-// fails open for owners on an unreadable snapshot, which would drop a lapsed
-// self-serve team out of this state during a capabilities outage.
-const showsInactivePlanState = computed(
-  () => inactivePlan === true && !isSalesManagedTier(subscription.value?.tier)
-)
+// Tier decides the note, not the state: a lapsed sales-managed plan gets the
+// same disabled shape as self-serve (cloud#8001 closed its can_top_up, so the
+// old exclusion left a bare balance with no explanation) — only the route
+// back differs, the account manager rather than a Reactivate button. The
+// state keys on the prop rather than can_top_up because that capability is
+// rollout-defaulted and fails open for owners on an unreadable snapshot.
+const showsInactivePlanState = computed(() => inactivePlan === true)
+
+const inactiveCreditsNote = computed(() => {
+  if (!isSalesManagedTier(subscription.value?.tier))
+    return t('subscription.reactivateToUseCredits')
+  return prepaidCreditsValue.value > 0
+    ? t('subscription.salesManagedInactiveCreditsNote')
+    : t('subscription.salesManagedCreditsEndedNote')
+})
 
 const usage = computed(() =>
   computeMonthlyUsage(
@@ -322,6 +345,18 @@ const refillsLabel = computed(() =>
   hasRefillsDate.value
     ? t('subscription.refillsDate', { date: refillsDateShort.value })
     : t('subscription.refillsNextCycle')
+)
+
+const allowanceLabel = computed(() =>
+  t(isAnnualBilling.value ? 'subscription.yearly' : 'subscription.monthly')
+)
+
+const usedAfterAllowanceLabel = computed(() =>
+  t(
+    isAnnualBilling.value
+      ? 'subscription.usedAfterYearly'
+      : 'subscription.usedAfterMonthly'
+  )
 )
 
 const formatCreditCount = (value: number) =>
@@ -357,19 +392,32 @@ const displayTotal = computed(() =>
     ? formatCreditCount(0)
     : totalCredits.value
 )
-const displayPrepaid = computed(() =>
-  zeroState || showsInactivePlanState.value
-    ? formatCreditCount(0)
-    : prepaidCredits.value
+// An ended sales-managed plan retains its prepaid balance: the note beside
+// this number says the credits become spendable once the plan is restored,
+// so the amount must survive the inactive state rather than read 0.
+const retainsPrepaidWhileInactive = computed(() =>
+  isSalesManagedTier(subscription.value?.tier)
 )
+const displayPrepaid = computed(() => {
+  if (zeroState) return formatCreditCount(0)
+  if (showsInactivePlanState.value && !retainsPrepaidWhileInactive.value) {
+    return formatCreditCount(0)
+  }
+  return prepaidCredits.value
+})
 const usedBarWidth = computed(
   () => `${(usage.value.usedFraction * 100).toFixed(2)}%`
 )
 const monthlyUsageLabel = computed(() =>
-  t('subscription.monthlyUsageProgress', {
-    used: usedDisplay.value,
-    total: creditPoolTotalDisplay.value
-  })
+  t(
+    isAnnualBilling.value
+      ? 'subscription.yearlyUsageProgress'
+      : 'subscription.monthlyUsageProgress',
+    {
+      used: usedDisplay.value,
+      total: creditPoolTotalDisplay.value
+    }
+  )
 )
 
 const showBreakdown = computed(
@@ -401,11 +449,23 @@ const isMonthlyDepleted = computed(
     balance.value != null &&
     monthlyBonusCreditsValue.value <= 0
 )
+// Depletion needs only the remaining allowance, not its cycle, so the
+// cycle-neutral signals still work when the duration is unknown.
+const isAllowanceDepleted = computed(
+  () =>
+    isMonthlyDepleted.value ||
+    (isDurationUnknown.value &&
+      isCloud &&
+      showBreakdown.value &&
+      !isLoadingBalance.value &&
+      balance.value != null &&
+      monthlyBonusCreditsValue.value <= 0)
+)
 const isOutOfCredits = computed(
-  () => isMonthlyDepleted.value && prepaidCreditsValue.value <= 0
+  () => isAllowanceDepleted.value && prepaidCreditsValue.value <= 0
 )
 const isSpendingAdditional = computed(
-  () => isMonthlyDepleted.value && prepaidCreditsValue.value > 0
+  () => isAllowanceDepleted.value && prepaidCreditsValue.value > 0
 )
 
 const emptyStateNotice = computed(() => {
@@ -420,10 +480,19 @@ const emptyStateNotice = computed(() => {
   if (isMonthlyDepleted.value) {
     return {
       title: hasRefillsDate.value
-        ? t('subscription.monthlyCreditsUsedUpTitle', {
-            date: refillsDateShort.value
-          })
-        : t('subscription.monthlyCreditsUsedUpTitleNoDate'),
+        ? t(
+            isAnnualBilling.value
+              ? 'subscription.yearlyCreditsUsedUpTitle'
+              : 'subscription.monthlyCreditsUsedUpTitle',
+            {
+              date: refillsDateShort.value
+            }
+          )
+        : t(
+            isAnnualBilling.value
+              ? 'subscription.yearlyCreditsUsedUpTitleNoDate'
+              : 'subscription.monthlyCreditsUsedUpTitleNoDate'
+          ),
       description: t('subscription.monthlyCreditsUsedUpDescription')
     }
   }
@@ -447,8 +516,15 @@ async function refreshCredits() {
       customerEventsService.error.value ?? 'Fetching customer events failed'
     )
   }
-  if (isPendingTopupCompleted(response.events)) {
+  const completedTopup = consumeCompletedTopup(response.events)
+  if (completedTopup) {
     telemetry?.trackApiCreditTopupSucceeded()
+    telemetry?.trackBillingEvent({
+      operation: 'topup',
+      stage: 'succeeded',
+      outcome: 'success',
+      duration_ms: Date.now() - completedTopup.startedAtMs
+    })
   }
 }
 
@@ -484,7 +560,9 @@ const handleRefresh = wrapWithErrorHandlingAsync(refreshLatestCredits)
 
 function handleAddCredits() {
   telemetry?.trackAddApiCreditButtonClicked({ source: 'credits_panel' })
-  void dialogService.showTopUpCreditsDialog()
+  void dialogService.showTopUpCreditsDialog({
+    source: paymentIntentSourceForAddCreditsClick('credits_panel')
+  })
 }
 
 function handleUpgradeToAddCredits() {

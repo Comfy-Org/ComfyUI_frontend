@@ -24,10 +24,10 @@ import type {
 } from '@/platform/assets/schemas/assetSchema'
 import {
   getAssetCategories,
-  getAssetFilename
+  getAssetFilename,
+  isModelTypeCovered
 } from '@/platform/assets/utils/assetMetadataUtils'
 import { isCloud } from '@/platform/distribution/types'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
@@ -190,9 +190,7 @@ const ASSETS_ENDPOINT = '/assets'
 const ASSETS_SEED_ENDPOINT = '/assets/seed'
 const ASSETS_DOWNLOAD_ENDPOINT = '/assets/download'
 const ASSETS_EXPORT_ENDPOINT = '/assets/export'
-const EXPERIMENTAL_WARNING = `EXPERIMENTAL: If you are seeing this please make sure "Comfy.Assets.UseAssetAPI" is set to "false" in your ComfyUI Settings.\n`
 const DEFAULT_LIMIT = 500
-const INPUT_ASSETS_WITH_PUBLIC_LIMIT = 500
 // Defensive backstop against a server that never signals exhaustion (e.g. an
 // unbounded stream of unique cursors); mirrors assetsStore's walk cap. At
 // DEFAULT_LIMIT per page this allows 500k assets per walk, so it only ever
@@ -210,14 +208,6 @@ const EMPTY_PAGE: AssetResponse = { assets: [], total: 0, has_more: false }
 const uploadedAssetResponseSchema = assetItemSchema.extend({
   created_new: z.boolean()
 })
-
-function createAbortError(): DOMException {
-  return new DOMException('Aborted', 'AbortError')
-}
-
-function throwIfAborted(signal?: AbortSignal): void {
-  if (signal?.aborted) throw createAbortError()
-}
 
 function normalizeAssetTags(tags: string[]): string[] {
   return tags.map((tag) => tag.trim()).filter(Boolean)
@@ -245,27 +235,6 @@ function compareLoaderPaths(a: string, b: string): number {
   return 0
 }
 
-async function withCallerAbort<T>(
-  promise: Promise<T>,
-  signal?: AbortSignal
-): Promise<T> {
-  throwIfAborted(signal)
-  if (!signal) return await promise
-
-  let removeAbortListener = () => {}
-  const abortPromise = new Promise<never>((_, reject) => {
-    const onAbort = () => reject(createAbortError())
-    signal.addEventListener('abort', onAbort, { once: true })
-    removeAbortListener = () => signal.removeEventListener('abort', onAbort)
-  })
-
-  try {
-    return await Promise.race([promise, abortPromise])
-  } finally {
-    removeAbortListener()
-  }
-}
-
 /**
  * Validates asset response data using Zod schema
  */
@@ -274,9 +243,7 @@ function validateAssetResponse(data: unknown): AssetResponse {
   if (result.success) return result.data
 
   const error = fromZodError(result.error)
-  throw new Error(
-    `${EXPERIMENTAL_WARNING}Invalid asset response against zod schema:\n${error}`
-  )
+  throw new Error(`Invalid asset response against zod schema:\n${error}`)
 }
 
 function validateUploadedAssetResponse(
@@ -301,10 +268,6 @@ function validateUploadedAssetResponse(
  * Not exposed globally - used internally by ComfyApi
  */
 function createAssetService() {
-  let inputAssetsIncludingPublic: AssetItem[] | null = null
-  let inputAssetsIncludingPublicRequestId = 0
-  let pendingInputAssetsIncludingPublic: Promise<AssetItem[]> | null = null
-
   /**
    * Model assets bucketed by folder category, built from a single walk of the
    * `models` tag rather than a fetch per category. Shared by the folder list
@@ -328,17 +291,6 @@ function createAssetService() {
     modelBucketsRequestId++
     modelBuckets = null
     pendingModelBuckets = null
-  }
-
-  /** Invalidates the cached public-inclusive input assets without aborting in-flight readers. */
-  function invalidateInputAssetsIncludingPublic(): void {
-    inputAssetsIncludingPublicRequestId++
-    pendingInputAssetsIncludingPublic = null
-    inputAssetsIncludingPublic = null
-  }
-
-  function invalidateInputAssetsCacheIfNeeded(tags?: string[]): void {
-    if (tags?.includes('input')) invalidateInputAssetsIncludingPublic()
   }
 
   /**
@@ -384,7 +336,7 @@ function createAssetService() {
       : await api.fetchApi(url)
     if (!res.ok) {
       throw new Error(
-        `${EXPERIMENTAL_WARNING}Unable to load ${context}: Server returned ${res.status}. Please try again.`
+        `Unable to load ${context}: Server returned ${res.status}. Please try again.`
       )
     }
     const data = await res.json()
@@ -493,8 +445,21 @@ function createAssetService() {
    * @returns The list of model filenames within the specified folder
    */
   async function getAssetModels(folder: string): Promise<ModelFile[]> {
+    const modelTypeMode = useFeatureFlags().flags.supportsModelTypeTags
     const buckets = await loadModelBuckets()
-    return (buckets.get(folder) ?? []).map((asset) => ({
+    const assets =
+      buckets.get(folder) ??
+      buckets
+        .get(folder.split('/')[0])
+        ?.filter(
+          (asset) =>
+            !(modelTypeMode && isModelTypeCovered(asset)) &&
+            asset.tags.some(
+              (tag) => tag === folder || tag.startsWith(`${folder}/`)
+            )
+        )
+
+    return (assets ?? []).map((asset) => ({
       // `loader_path` is the category-relative path the loader widget expects
       // and the source for the sidebar tree. Backends that predate it (bare-tag
       // mode; today's cloud) fall back to the filename metadata — the same
@@ -567,11 +532,13 @@ function createAssetService() {
   }
 
   /**
-   * Checks if the asset API is enabled (cloud environment + user setting).
+   * Whether widget-embedded asset pickers (canvas + Vue node model widgets) are
+   * enabled. Hardcoded to cloud: MODEL_NODE_MAPPINGS is only maintained for
+   * cloud asset tagging. NOT the asset-API gate — that is
+   * useFeatureFlags().flags.assetsEnabled.
    */
-  function isAssetAPIEnabled(): boolean {
-    if (!isCloud) return false
-    return !!useSettingStore().get('Comfy.Assets.UseAssetAPI')
+  function isWidgetAssetPickerEnabled(): boolean {
+    return isCloud
   }
 
   /**
@@ -582,11 +549,14 @@ function createAssetService() {
    * @param widgetName - The name of the widget to check
    * @returns true if this input should use the asset browser
    */
-  function shouldUseAssetBrowser(
+  function shouldUseWidgetAssetPicker(
     nodeType: string | undefined,
     widgetName: string
   ): boolean {
-    return isAssetAPIEnabled() && isAssetBrowserEligible(nodeType, widgetName)
+    return (
+      isWidgetAssetPickerEnabled() &&
+      isAssetBrowserEligible(nodeType, widgetName)
+    )
   }
 
   /**
@@ -664,7 +634,7 @@ function createAssetService() {
     const res = await api.fetchApi(`${ASSETS_ENDPOINT}/${id}`)
     if (!res.ok) {
       throw new Error(
-        `${EXPERIMENTAL_WARNING}Unable to load asset details for ${id}: Server returned ${res.status}. Please try again.`
+        `Unable to load asset details for ${id}: Server returned ${res.status}. Please try again.`
       )
     }
     const data = await res.json()
@@ -672,12 +642,8 @@ function createAssetService() {
     const result = assetItemSchema.safeParse(data)
     if (result.success) return result.data
 
-    const error = result.error
-      ? fromZodError(result.error)
-      : 'Unknown validation error'
-    throw new Error(
-      `${EXPERIMENTAL_WARNING}Invalid asset response against zod schema:\n${error}`
-    )
+    const error = fromZodError(result.error)
+    throw new Error(`Invalid asset response against zod schema:\n${error}`)
   }
 
   /**
@@ -759,8 +725,8 @@ function createAssetService() {
     let after: string | undefined
     let batchCount = 0
 
-    while (true) {
-      if (signal?.aborted) throw createAbortError()
+    for (;;) {
+      if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
       if (batchCount++ >= MAX_PAGINATION_BATCHES) {
         console.warn(
           `Paginated walk for tag '${tag}' hit the ${MAX_PAGINATION_BATCHES}-batch backstop; returning a truncated listing.`
@@ -789,45 +755,6 @@ function createAssetService() {
     }
   }
 
-  function startInputAssetsIncludingPublicRequest(): Promise<AssetItem[]> {
-    const requestId = ++inputAssetsIncludingPublicRequestId
-
-    pendingInputAssetsIncludingPublic = getAllAssetsByTag('input', true, {
-      limit: INPUT_ASSETS_WITH_PUBLIC_LIMIT
-    })
-      .then((assets) => {
-        if (requestId === inputAssetsIncludingPublicRequestId) {
-          inputAssetsIncludingPublic = assets
-        }
-        return assets
-      })
-      .finally(() => {
-        if (requestId === inputAssetsIncludingPublicRequestId) {
-          pendingInputAssetsIncludingPublic = null
-        }
-      })
-
-    void pendingInputAssetsIncludingPublic.catch(() => {})
-    return pendingInputAssetsIncludingPublic
-  }
-
-  /**
-   * Gets cached input assets including public assets for missing media checks.
-   * Caller aborts cancel only that caller; shared fetches are invalidated
-   * through invalidateInputAssetsIncludingPublic().
-   */
-  async function getInputAssetsIncludingPublic(
-    signal?: AbortSignal
-  ): Promise<AssetItem[]> {
-    throwIfAborted(signal)
-    if (inputAssetsIncludingPublic) return inputAssetsIncludingPublic
-
-    const request =
-      pendingInputAssetsIncludingPublic ??
-      startInputAssetsIncludingPublicRequest()
-    return await withCallerAbort(request, signal)
-  }
-
   /**
    * Deletes an asset by ID
    * Only available in cloud environment
@@ -846,8 +773,6 @@ function createAssetService() {
         `Unable to delete asset ${id}: Server returned ${res.status}`
       )
     }
-
-    invalidateInputAssetsIncludingPublic()
   }
 
   /**
@@ -909,7 +834,7 @@ function createAssetService() {
     if (data.validation?.is_valid === false) {
       throw new Error(
         getLocalizedErrorMessage(
-          data.validation?.errors?.[0]?.code || 'UNKNOWN_ERROR'
+          data.validation.errors?.[0]?.code || 'UNKNOWN_ERROR'
         )
       )
     }
@@ -954,7 +879,6 @@ function createAssetService() {
     }
 
     const asset = validateUploadedAssetResponse(await res.json())
-    invalidateInputAssetsCacheIfNeeded(params.tags)
     return asset
   }
 
@@ -1009,7 +933,6 @@ function createAssetService() {
     }
 
     const asset = validateUploadedAssetResponse(await res.json())
-    invalidateInputAssetsCacheIfNeeded(params.tags)
     return asset
   }
 
@@ -1040,7 +963,6 @@ function createAssetService() {
     if (!parseResult.success) {
       throw fromZodError(parseResult.error)
     }
-    invalidateInputAssetsIncludingPublic()
     return parseResult.data
   }
 
@@ -1071,7 +993,6 @@ function createAssetService() {
     if (!parseResult.success) {
       throw fromZodError(parseResult.error)
     }
-    invalidateInputAssetsIncludingPublic()
     return parseResult.data
   }
 
@@ -1123,13 +1044,6 @@ function createAssetService() {
           )
         )
       }
-      if (
-        params.tags?.includes('input') &&
-        result.data.type === 'async' &&
-        result.data.task.status === 'completed'
-      ) {
-        invalidateInputAssetsIncludingPublic()
-      }
       return result.data
     }
 
@@ -1145,7 +1059,6 @@ function createAssetService() {
         )
       )
     }
-    invalidateInputAssetsCacheIfNeeded(params.tags)
     return result.data
   }
 
@@ -1182,17 +1095,15 @@ function createAssetService() {
     invalidateModelBuckets,
     onModelsScanned,
     seedModelAssets,
-    isAssetAPIEnabled,
+    isWidgetAssetPickerEnabled,
     isAssetBrowserEligible,
-    shouldUseAssetBrowser,
+    shouldUseWidgetAssetPicker,
     getAssetsForNodeType,
     getAssetsPageForNodeType,
     getAssetDetails,
     getAssetsByTag,
     getAssetsPageByTag,
     getAllAssetsByTag,
-    getInputAssetsIncludingPublic,
-    invalidateInputAssetsIncludingPublic,
     deleteAsset,
     updateAsset,
     addAssetTags,

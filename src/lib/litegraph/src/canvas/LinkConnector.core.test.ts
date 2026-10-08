@@ -1,7 +1,5 @@
 // oxlint-disable no-empty-pattern
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { test as baseTest, beforeEach, describe, expect, vi } from 'vitest'
+import { test as baseTest, describe, expect, vi } from 'vitest'
 
 import type {
   MovingInputLink,
@@ -47,8 +45,6 @@ interface TestContext {
     slotType?: ISlotType
   ) => LLink
 }
-
-beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
 
 const test = baseTest.extend<TestContext>({
   network: async ({}, use) => {
@@ -155,9 +151,6 @@ describe('LinkConnector', () => {
       network
     }) => {
       connector.state.connectingTo = 'input'
-      const consoleError = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
 
       connector.moveInputLink(
         network,
@@ -165,7 +158,7 @@ describe('LinkConnector', () => {
         createMockNodeInputSlot({ link: toLinkId(1) })
       )
 
-      expect(consoleError).toHaveBeenCalledWith('Already dragging links.')
+      expect(console.error).toHaveBeenCalledWith('Already dragging links.')
       expect(connector.inputLinks).toHaveLength(0)
     })
   })
@@ -200,9 +193,6 @@ describe('LinkConnector', () => {
       network
     }) => {
       connector.state.connectingTo = 'output'
-      const consoleError = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
 
       connector.moveOutputLink(
         network,
@@ -210,7 +200,7 @@ describe('LinkConnector', () => {
         createMockNodeOutputSlot({ links: [toLinkId(1)] })
       )
 
-      expect(consoleError).toHaveBeenCalledWith('Already dragging links.')
+      expect(console.error).toHaveBeenCalledWith('Already dragging links.')
       expect(connector.outputLinks).toHaveLength(0)
     })
   })

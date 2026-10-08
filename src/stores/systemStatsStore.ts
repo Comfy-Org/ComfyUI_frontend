@@ -2,9 +2,8 @@ import { useAsyncState } from '@vueuse/core'
 import { defineStore } from 'pinia'
 
 import { isCloud, isDesktop } from '@/platform/distribution/types'
-import type { SystemStats } from '@/schemas/apiSchema'
+import type { SystemStats } from '@/platform/remote/comfyui/types'
 import { api } from '@/scripts/api'
-import { reportError } from '@/platform/telemetry/reportError'
 
 export const useSystemStatsStore = defineStore('systemStats', () => {
   const fetchSystemStatsData = async () => {
@@ -12,7 +11,6 @@ export const useSystemStatsStore = defineStore('systemStats', () => {
       return await api.getSystemStats()
     } catch (err) {
       console.error('Error fetching system stats:', err)
-      reportError(err, { errorType: 'system_stats_fetch_failure' })
       throw err
     }
   }
@@ -36,7 +34,7 @@ export const useSystemStatsStore = defineStore('systemStats', () => {
       return 'cloud'
     }
 
-    if (!systemStats.value?.system?.os) {
+    if (!systemStats.value?.system.os) {
       return 'other'
     }
 

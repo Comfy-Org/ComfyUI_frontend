@@ -4,13 +4,15 @@ import { generateModelThumbnail } from './modelThumbnail'
 
 const isAssetPreviewSupported = vi.hoisted(() => vi.fn(() => false))
 const persistThumbnail = vi.hoisted(() => vi.fn(async () => {}))
-vi.mock('@/platform/assets/utils/assetPreviewUtil', () => ({
+vi.mock(import('@/platform/assets/utils/assetPreviewUtil'), () => ({
   isAssetPreviewSupported,
   persistThumbnail
 }))
 
 const createLoad3d = vi.hoisted(() => vi.fn())
-vi.mock('@/extensions/core/load3d/createLoad3d', () => ({ createLoad3d }))
+vi.mock(import('@/extensions/core/load3d/createLoad3d'), () => ({
+  createLoad3d
+}))
 
 function mockInstance(overrides: Record<string, unknown> = {}) {
   return {
@@ -23,9 +25,7 @@ function mockInstance(overrides: Record<string, unknown> = {}) {
 
 describe('generateModelThumbnail', () => {
   beforeEach(() => {
-    createLoad3d.mockReset()
-    isAssetPreviewSupported.mockReset().mockReturnValue(false)
-    persistThumbnail.mockReset()
+    isAssetPreviewSupported.mockReturnValue(false)
   })
 
   it('renders offscreen, returns the data url, and disposes the instance', async () => {

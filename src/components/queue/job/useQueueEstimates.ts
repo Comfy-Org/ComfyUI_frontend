@@ -52,7 +52,7 @@ export const useQueueEstimates = ({
     () =>
       jobState.value === 'pending' &&
       !!firstSeenTs.value &&
-      (runningWorkflowCount.value ?? 0) > 1
+      runningWorkflowCount.value > 1
   )
 
   const recentDurations = computed<number[]>(() =>
@@ -114,11 +114,10 @@ export const useQueueEstimates = ({
     const avg = sorted.reduce((sum, value) => sum + value, 0) / sorted.length
     const p75 =
       sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.75))]
-    const task = taskForJob.value as TaskItemImpl & {
-      executionStartTimestamp?: number
-    }
     const execStart =
-      jobState.value === 'running' ? task?.executionStartTimestamp : undefined
+      jobState.value === 'running'
+        ? taskForJob.value?.executionStartTimestamp
+        : undefined
     const baseTs = execStart ?? firstSeenTs.value
     const elapsed = baseTs
       ? Math.max(0, Math.floor((nowTs.value - baseTs) / 1000))
@@ -129,11 +128,10 @@ export const useQueueEstimates = ({
   })
 
   const timeElapsedValue = computed(() => {
-    const task = taskForJob.value as TaskItemImpl & {
-      executionStartTimestamp?: number
-    }
     const execStart =
-      jobState.value === 'running' ? task?.executionStartTimestamp : undefined
+      jobState.value === 'running'
+        ? taskForJob.value?.executionStartTimestamp
+        : undefined
     const baseTs = execStart ?? firstSeenTs.value
     if (!baseTs) return ''
     return formatElapsedTime(nowTs.value - baseTs)

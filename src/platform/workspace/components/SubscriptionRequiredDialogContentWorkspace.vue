@@ -77,16 +77,14 @@
       :action-url="activeCheckoutActionUrl"
       :authentication-state
       :authentication-error
-      :can-retry-authentication
-      :is-authenticating
       :reconciliation-operation-id
+      :parked-checkout-recovery
       :quote-is-current
       :is-applying-promotion-code
       @add-credit-card="handleAddCreditCard"
       @apply-promotion-code="applyPromotionCode"
       @invalidate-quote="invalidateQuote"
       @back="handleBackToPricing"
-      @retry-authentication="retryPaymentAuthentication"
     />
 
     <!-- Subscription Preview Step - Plan Transition -->
@@ -102,16 +100,17 @@
       :force-reactivation="reactivationRequired"
       :authentication-state
       :authentication-error
-      :can-retry-authentication
-      :is-authenticating
       :reconciliation-operation-id
       :quote-is-current
       :is-applying-promotion-code
+      :payment-cancelable
+      :canceling-payment="isCancelingPayment"
+      :cancel-payment-error
+      @cancel-payment="cancelPayment"
       @confirm="handleConfirmTransition"
       @apply-promotion-code="applyPromotionCode"
       @invalidate-quote="invalidateQuote"
       @back="handleBackToPricing"
-      @retry-authentication="retryPaymentAuthentication"
     />
 
     <!-- Success Step - subscribe/change-plan confirmation -->
@@ -141,11 +140,13 @@ import SubscriptionTransitionPreviewWorkspace from './SubscriptionTransitionPrev
 const {
   onClose,
   reason,
+  paymentIntentSource,
   isPersonal = false,
   initialCheckout
 } = defineProps<{
   onClose: () => void
   reason?: PaymentIntentSource
+  paymentIntentSource: PaymentIntentSource | undefined
   isPersonal?: boolean
   initialCheckout?: SubscriptionCheckoutSelection
 }>()
@@ -169,20 +170,22 @@ const {
   activeCheckoutActionUrl,
   authenticationState,
   authenticationError,
-  canRetryAuthentication,
-  isAuthenticating,
   reconciliationOperationId,
+  parkedCheckoutRecovery,
   isPolling,
+  paymentCancelable,
+  isCancelingPayment,
+  cancelPaymentError,
+  cancelPayment,
   handleSubscribeClick,
   handleBackToPricing,
   handleAddCreditCard,
   handleConfirmTransition,
-  retryPaymentAuthentication,
   applyPromotionCode,
   invalidateQuote,
   handleResubscribe,
   handleSuccessClose
-} = useSubscriptionCheckout(emit, reason, {
+} = useSubscriptionCheckout(emit, paymentIntentSource, {
   tierPlanType: isPersonal ? 'personal' : 'team'
 })
 

@@ -1,17 +1,16 @@
-// @vitest-environment happy-dom
-/* eslint-disable testing-library/no-node-access */
+/* oxlint-disable testing-library/no-node-access */
 import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   setAllIntersecting,
   stubIntersectionObserver
-} from '../../test/fakeIntersectionObserver'
+} from '@/test/fakeIntersectionObserver'
 import VideoMaskScene from './VideoMaskScene.vue'
 
 const motion = vi.hoisted(() => ({ reduced: false }))
 
-vi.mock('../../composables/useReducedMotion', () => ({
+vi.mock(import('@/composables/useReducedMotion'), () => ({
   prefersReducedMotion: () => motion.reduced
 }))
 

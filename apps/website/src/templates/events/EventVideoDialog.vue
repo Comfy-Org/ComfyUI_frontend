@@ -7,14 +7,14 @@
 // /events on a direct visit.
 import { computed, onMounted, onUnmounted, useTemplateRef } from 'vue'
 
-import AddToCalendarButton from '../../components/blocks/AddToCalendarButton.vue'
-import { lockScroll, unlockScroll } from '../../composables/scrollLock'
-import { localizeHref } from '../../config/routes'
-import type { Locale } from '../../i18n/translations'
-import type { CalendarEvent } from '../../utils/calendar'
+import AddToCalendarButton from '@/components/blocks/AddToCalendarButton.vue'
+import { lockScroll, unlockScroll } from '@/composables/scrollLock'
+import { localizeHref } from '@/config/routes'
+import type { Locale } from '@/i18n/translations'
+import type { CalendarEvent } from '@/utils/calendar'
 
-import { t } from '../../i18n/translations'
-import { isUrlUnderPath, previousEntryUrl } from '../../utils/previousEntry'
+import { translationsFor } from '@/i18n/translations'
+import { isUrlUnderPath, previousEntryUrl } from '@/utils/previousEntry'
 
 const {
   title,
@@ -30,6 +30,7 @@ const {
   calendarEvent?: CalendarEvent
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const dialogEl = useTemplateRef<HTMLDialogElement>('dialogEl')
 
@@ -51,7 +52,7 @@ const closeDialog = () => {
   if (cameFromDirectory() && history.length > 1) {
     history.back()
   } else {
-    location.assign(localizeHref('/events', locale))
+    location.assign(localizeHref('/events/', locale))
   }
 }
 
@@ -84,18 +85,18 @@ onUnmounted(() => {
     @cancel.prevent="closeDialog"
   >
     <button
-      :aria-label="t('events.videoDialog.close', locale)"
-      class="border-primary-comfy-yellow hover:bg-primary-comfy-yellow group absolute top-8 right-10 z-10 flex size-10 cursor-pointer items-center justify-center rounded-2xl border-2 bg-primary-comfy-ink transition-colors lg:right-26"
+      :aria-label="t('events.videoDialog.close')"
+      class="group absolute top-8 right-10 z-10 flex size-10 cursor-pointer items-center justify-center rounded-2xl border-2 border-primary-comfy-yellow bg-primary-comfy-ink transition-colors hover:bg-primary-comfy-yellow lg:right-26"
       @click="closeDialog"
     >
       <span
-        class="bg-primary-comfy-yellow size-5 transition-colors group-hover:bg-primary-comfy-ink"
+        class="size-5 bg-primary-comfy-yellow transition-colors group-hover:bg-primary-comfy-ink"
         style="mask: url('/icons/close.svg') center / contain no-repeat"
       />
     </button>
 
     <div
-      class="border-primary-comfy-yellow rounded-5xl w-full max-w-7xl overflow-hidden border-2 bg-primary-comfy-ink p-3 lg:p-4"
+      class="w-full max-w-7xl overflow-hidden rounded-5xl border-2 border-primary-comfy-yellow bg-primary-comfy-ink p-3 lg:p-4"
     >
       <div class="aspect-video w-full overflow-hidden rounded-3xl">
         <iframe

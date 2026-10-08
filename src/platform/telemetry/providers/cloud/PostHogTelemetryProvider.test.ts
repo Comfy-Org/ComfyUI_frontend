@@ -1,9 +1,22 @@
+import type {
+  BillingTelemetryEvent,
+  CheckoutJourneyTelemetryEvent
+} from '@comfyorg/account-core/billing'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type * as VueModule from 'vue'
 import type { Ref } from 'vue'
-import { nextTick, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 
-import type { BillingTelemetryEvent, OnboardingTourStage } from '../../types'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import type { SubscriptionInfo } from '@/composables/billing/types'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import type { RemoteConfig } from '@/platform/remoteConfig/types'
+
+import type {
+  BootstrapCompleteMetadata,
+  OnboardingTourStage,
+  RunButtonProperties
+} from '../../types'
 import { TelemetryEvents } from '../../types'
 
 const hoisted = vi.hoisted(() => {
@@ -13,9 +26,7 @@ const hoisted = vi.hoisted(() => {
   const mockPeopleSet = vi.fn()
   const mockPeopleSetOnce = vi.fn()
   const mockRegister = vi.fn()
-  const mockReset = vi.fn()
-  const mockOnUserResolved = vi.fn()
-  const mockOnUserLogout = vi.fn()
+  const mockPosthogReset = vi.fn()
   const executionContext = {
     is_template: true,
     workflow_name: 'image_qwen_image_edit_2509',
@@ -32,8 +43,8 @@ const hoisted = vi.hoisted(() => {
     toolkit_node_names: ['LoadImage']
   }
   const refs = {
-    tier: null as unknown as Ref<string | null>,
-    remoteConfig: null as unknown as Ref<Record<string, unknown> | null>
+    tier: null as unknown as Ref<SubscriptionInfo['tier']>,
+    remoteConfig: null as unknown as Ref<RemoteConfig>
   }
 
   return {
@@ -43,10 +54,9 @@ const hoisted = vi.hoisted(() => {
     mockPeopleSet,
     mockPeopleSetOnce,
     mockRegister,
-    mockReset,
-    mockOnUserResolved,
-    mockOnUserLogout,
+    mockPosthogReset,
     executionContext,
+    agentPanelOpen: false,
     refs,
     mockPosthog: {
       default: {
@@ -55,38 +65,53 @@ const hoisted = vi.hoisted(() => {
         identify: mockIdentify,
         register: mockRegister,
         people: { set: mockPeopleSet, set_once: mockPeopleSetOnce },
-        reset: mockReset
+        reset: mockPosthogReset
       }
     }
   }
 })
 
-vi.mock('@/composables/auth/useCurrentUser', () => ({
-  useCurrentUser: () => ({
-    onUserResolved: hoisted.mockOnUserResolved,
-    onUserLogout: hoisted.mockOnUserLogout
-  })
-}))
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
-vi.mock('@/platform/remoteConfig/remoteConfig', async () => {
-  const { ref } = await vi.importActual<typeof VueModule>('vue')
-  hoisted.refs.remoteConfig = ref<Record<string, unknown> | null>(null)
-  return { remoteConfig: hoisted.refs.remoteConfig }
-})
+vi.mock(import('@/platform/remoteConfig/remoteConfig'))
 
-vi.mock('posthog-js', () => hoisted.mockPosthog)
+vi.mock<unknown>(import('posthog-js'), () => hoisted.mockPosthog)
 
-vi.mock('@/platform/telemetry/utils/getExecutionContext', () => ({
+vi.mock(import('@/platform/telemetry/utils/getExecutionContext'), () => ({
   getExecutionContext: () => hoisted.executionContext
 }))
 
-vi.mock('@/composables/billing/useBillingContext', async () => {
-  const { ref } = await vi.importActual<typeof VueModule>('vue')
-  hoisted.refs.tier = ref<string | null>(null)
-  return { useBillingContext: () => ({ tier: hoisted.refs.tier }) }
-})
+vi.mock(import('@/platform/telemetry/utils/getAgentPanelOpen'), () => ({
+  getAgentPanelOpen: () => hoisted.agentPanelOpen
+}))
+
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 import { PostHogTelemetryProvider } from './PostHogTelemetryProvider'
+
+/** A complete run-button payload; override only what a test cares about. */
+function runButtonProperties(
+  overrides: Partial<RunButtonProperties> = {}
+): RunButtonProperties {
+  return {
+    subscribe_to_run: false,
+    workflow_type: 'template',
+    workflow_name: 'image_qwen_image_edit_2509',
+    custom_node_count: 2,
+    total_node_count: 4,
+    subgraph_count: 0,
+    has_api_nodes: true,
+    api_node_names: ['OpenAIImageNode'],
+    has_toolkit_nodes: true,
+    toolkit_node_names: ['LoadImage'],
+    trigger_source: 'keybinding',
+    view_mode: 'graph',
+    is_app_mode: false,
+    dock_state: 'docked',
+    agent_panel_open: false,
+    ...overrides
+  }
+}
 
 function createProvider(
   config: Partial<typeof window.__CONFIG__> = {}
@@ -100,10 +125,14 @@ function createProvider(
 
 describe('PostHogTelemetryProvider', () => {
   beforeEach(() => {
-    hoisted.refs.remoteConfig.value = null
+    hoisted.refs.remoteConfig = remoteConfig
+    hoisted.refs.remoteConfig.value = {}
     // Fresh tier ref per test: each provider registers an undisposed tier
     // watch, so a shared ref would leak watchers across tests.
-    hoisted.refs.tier = ref<string | null>(null)
+    hoisted.refs.tier = ref<SubscriptionInfo['tier']>(null)
+    const billing = useBillingContext()
+    billing.tier = computed(() => hoisted.refs.tier.value)
+    vi.mocked(useBillingContext).mockReturnValue(billing)
     window.__CONFIG__ = {
       posthog_project_token: 'phc_test_token'
     }
@@ -182,14 +211,15 @@ describe('PostHogTelemetryProvider', () => {
       createProvider()
       await vi.dynamicImportSettled()
 
-      expect(hoisted.mockOnUserResolved).toHaveBeenCalledOnce()
+      expect(useCurrentUser().onUserResolved).toHaveBeenCalledOnce()
     })
 
     it('identifies user without setting first_auth_at when onUserResolved fires', async () => {
       createProvider()
       await vi.dynamicImportSettled()
 
-      const callback = hoisted.mockOnUserResolved.mock.calls[0][0]
+      const callback = vi.mocked(useCurrentUser().onUserResolved).mock
+        .calls[0][0]
       callback({ id: 'user-123' })
 
       expect(hoisted.mockIdentify).toHaveBeenCalledWith('user-123')
@@ -205,7 +235,8 @@ describe('PostHogTelemetryProvider', () => {
       createProvider()
       await vi.dynamicImportSettled()
 
-      const onResolved = hoisted.mockOnUserResolved.mock.calls[0][0]
+      const onResolved = vi.mocked(useCurrentUser().onUserResolved).mock
+        .calls[0][0]
       onResolved({ id: 'user-123' })
 
       // Unresolved tier (null) does not set the property
@@ -226,7 +257,8 @@ describe('PostHogTelemetryProvider', () => {
       createProvider()
       await vi.dynamicImportSettled()
 
-      const onResolved = hoisted.mockOnUserResolved.mock.calls[0][0]
+      const onResolved = vi.mocked(useCurrentUser().onUserResolved).mock
+        .calls[0][0]
       onResolved({ id: 'user-1' })
       onResolved({ id: 'user-1' })
       onResolved({ id: 'user-2' })
@@ -343,7 +375,8 @@ describe('PostHogTelemetryProvider', () => {
       createProvider()
       await vi.dynamicImportSettled()
 
-      const callback = hoisted.mockOnUserResolved.mock.calls[0][0]
+      const callback = vi.mocked(useCurrentUser().onUserResolved).mock
+        .calls[0][0]
       callback({ id: 'user-456' })
 
       const setCall = hoisted.mockPeopleSet.mock.calls.find(
@@ -366,7 +399,8 @@ describe('PostHogTelemetryProvider', () => {
       createProvider()
       await vi.dynamicImportSettled()
 
-      const callback = hoisted.mockOnUserResolved.mock.calls[0][0]
+      const callback = vi.mocked(useCurrentUser().onUserResolved).mock
+        .calls[0][0]
       callback({ id: 'user-789' })
 
       const desktopSetCall = hoisted.mockPeopleSet.mock.calls.find(
@@ -392,6 +426,35 @@ describe('PostHogTelemetryProvider', () => {
       )
     })
 
+    it('captures in-app survey events in the shape PostHog surveys read', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackInAppSurvey('shown', { surveyId: 'survey-1' })
+      provider.trackInAppSurvey('sent', {
+        surveyId: 'survey-1',
+        responses: { 'question-1': 'Too expensive' },
+        properties: { outcome: 'keep_plan' }
+      })
+      provider.trackInAppSurvey('dismissed', {
+        surveyId: 'survey-1',
+        properties: { outcome: 'closed' }
+      })
+
+      expect(hoisted.mockCapture.mock.calls).toEqual([
+        ['survey shown', { $survey_id: 'survey-1' }],
+        [
+          'survey sent',
+          {
+            $survey_id: 'survey-1',
+            '$survey_response_question-1': 'Too expensive',
+            outcome: 'keep_plan'
+          }
+        ],
+        ['survey dismissed', { $survey_id: 'survey-1', outcome: 'closed' }]
+      ])
+    })
+
     it('captures auth events with metadata', async () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()
@@ -401,6 +464,120 @@ describe('PostHogTelemetryProvider', () => {
       expect(hoisted.mockCapture).toHaveBeenCalledWith(
         TelemetryEvents.USER_AUTH_COMPLETED,
         { method: 'google', share_id: 'share-1' }
+      )
+    })
+
+    it('captures the agent activation funnel events with metadata', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackAgentConsentShown({ trigger: 'first_load' })
+      provider.trackAgentConsentResolved({
+        decision: 'dismissed',
+        save_error_shown: true
+      })
+      provider.trackAgentOnboardingShown()
+      provider.trackAgentOnboardingStep({ step: 4, action: 'finish' })
+
+      expect(hoisted.mockCapture.mock.calls).toEqual([
+        [TelemetryEvents.AGENT_CONSENT_SHOWN, { trigger: 'first_load' }],
+        [
+          TelemetryEvents.AGENT_CONSENT_RESOLVED,
+          { decision: 'dismissed', save_error_shown: true }
+        ],
+        [TelemetryEvents.AGENT_ONBOARDING_SHOWN, {}],
+        [TelemetryEvents.AGENT_ONBOARDING_STEP, { step: 4, action: 'finish' }]
+      ])
+    })
+
+    it('captures the agent message with its thread, workflow and origin', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackAgentMessageSent({
+        attachment_count: 1,
+        node_tag_count: 2,
+        thread_id: 'thread-1',
+        workflow_id: 'workflow-1',
+        client_message_id: 'client-message-1',
+        input_method: 'suggestion',
+        starter_prompt_id: 'slot_2',
+        starter_prompt_click_id: 'click-1'
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.AGENT_MESSAGE_SENT,
+        {
+          attachment_count: 1,
+          node_tag_count: 2,
+          thread_id: 'thread-1',
+          workflow_id: 'workflow-1',
+          client_message_id: 'client-message-1',
+          input_method: 'suggestion',
+          starter_prompt_id: 'slot_2',
+          starter_prompt_click_id: 'click-1'
+        }
+      )
+    })
+
+    it('captures a starter prompt click with its slot identity', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackAgentStarterPromptClicked({
+        prompt_id: 'slot_3',
+        prompt_index: 2,
+        prompt_count: 5,
+        prompt_text_hash: 'deadbeef',
+        locale: 'en',
+        click_id: 'click-1',
+        draft_was_empty: true
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.AGENT_STARTER_PROMPT_CLICKED,
+        {
+          prompt_id: 'slot_3',
+          prompt_index: 2,
+          prompt_count: 5,
+          prompt_text_hash: 'deadbeef',
+          locale: 'en',
+          click_id: 'click-1',
+          draft_was_empty: true
+        }
+      )
+    })
+
+    it('captures free-use notice interactions with their placement', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackAgentFreeUseNotice({
+        action: 'dismissed',
+        placement: 'top-banner'
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.AGENT_FREE_USE_NOTICE,
+        { action: 'dismissed', placement: 'top-banner' }
+      )
+    })
+
+    it('captures panel-open experiment exposure with the PostHog arm', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackAgentFreeUseExposure({
+        placement: 'control',
+        '$feature/agent-free-use-message-placement': 'control'
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.AGENT_FREE_USE_EXPOSURE,
+        {
+          placement: 'control',
+          '$feature/agent-free-use-message-placement': 'control'
+        }
       )
     })
 
@@ -466,6 +643,27 @@ describe('PostHogTelemetryProvider', () => {
       )
     })
 
+    it.for([
+      {
+        name: 'session_bootstrap',
+        properties: { outcome: 'restored', origin: 'https://cloud.comfy.org' }
+      },
+      {
+        name: 'session_signed_out_remotely',
+        properties: { origin: 'https://cloud.comfy.org' }
+      }
+    ] as const)('captures the web session event $name as is', async (event) => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackWebSessionEvent(event)
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        event.name,
+        event.properties
+      )
+    })
+
     it('captures image load failures', async () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()
@@ -478,26 +676,31 @@ describe('PostHogTelemetryProvider', () => {
       )
     })
 
+    it('captures the startup breakdown so it is explorable alongside Datadog', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      const metadata = {
+        total_ms: 5200,
+        outcome: 'timed_out',
+        phase_count: 1,
+        phases: { 'auth-gate/user-store': 2500 },
+        pending: ['bootstrap/object-info']
+      } satisfies BootstrapCompleteMetadata
+
+      provider.trackBootstrapComplete(metadata)
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.BOOTSTRAP_COMPLETE,
+        metadata
+      )
+    })
+
     it('captures enriched execution starts with client attribution', async () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()
 
-      provider.trackRunButton({
-        subscribe_to_run: false,
-        workflow_type: 'template',
-        workflow_name: 'image_qwen_image_edit_2509',
-        custom_node_count: 2,
-        total_node_count: 4,
-        subgraph_count: 0,
-        has_api_nodes: true,
-        api_node_names: ['OpenAIImageNode'],
-        has_toolkit_nodes: true,
-        toolkit_node_names: ['LoadImage'],
-        trigger_source: 'keybinding',
-        view_mode: 'graph',
-        is_app_mode: false,
-        dock_state: 'docked'
-      })
+      provider.trackRunButton(runButtonProperties())
       provider.trackWorkflowExecution()
 
       expect(hoisted.mockCapture).toHaveBeenCalledWith(
@@ -505,6 +708,7 @@ describe('PostHogTelemetryProvider', () => {
         {
           ...hoisted.executionContext,
           trigger_source: 'keybinding',
+          agent_panel_open: false,
           event_source: 'web-sdk'
         }
       )
@@ -516,8 +720,47 @@ describe('PostHogTelemetryProvider', () => {
         {
           ...hoisted.executionContext,
           trigger_source: 'unknown',
+          agent_panel_open: false,
           event_source: 'web-sdk'
         }
+      )
+    })
+
+    // Two executions rather than one: a provider that sampled the panel once
+    // and reused the answer would still satisfy the carry-over case below.
+    it('samples the panel state afresh for each execution', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      hoisted.agentPanelOpen = true
+      provider.trackWorkflowExecution()
+
+      expect(hoisted.mockCapture).toHaveBeenLastCalledWith(
+        TelemetryEvents.EXECUTION_START,
+        expect.objectContaining({ agent_panel_open: true })
+      )
+
+      hoisted.agentPanelOpen = false
+      provider.trackWorkflowExecution()
+
+      expect(hoisted.mockCapture).toHaveBeenLastCalledWith(
+        TelemetryEvents.EXECUTION_START,
+        expect.objectContaining({ agent_panel_open: false })
+      )
+    })
+
+    it('does not carry a panel state from a click that never executed', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+      hoisted.agentPanelOpen = true
+      provider.trackRunButton(runButtonProperties({ agent_panel_open: true }))
+
+      hoisted.agentPanelOpen = false
+      provider.trackWorkflowExecution()
+
+      expect(hoisted.mockCapture).toHaveBeenLastCalledWith(
+        TelemetryEvents.EXECUTION_START,
+        expect.objectContaining({ agent_panel_open: false })
       )
     })
 
@@ -579,6 +822,183 @@ describe('PostHogTelemetryProvider', () => {
       }
     )
 
+    it.for([
+      {
+        event: TelemetryEvents.AGENT_MESSAGE_FEEDBACK,
+        track: (provider: PostHogTelemetryProvider) =>
+          provider.trackAgentMessageFeedback({
+            message_id: 'turn-1',
+            turn_id: 'turn-1',
+            vote: 'up',
+            workflow_id: 'workflow-1'
+          }),
+        properties: {
+          message_id: 'turn-1',
+          turn_id: 'turn-1',
+          vote: 'up',
+          workflow_id: 'workflow-1'
+        }
+      },
+      {
+        event: TelemetryEvents.AGENT_ATTACH_BUTTON_CLICKED,
+        track: (provider: PostHogTelemetryProvider) =>
+          provider.trackAgentAttachButtonClicked({ method: 'drag_drop' }),
+        properties: { method: 'drag_drop' }
+      },
+      {
+        event: TelemetryEvents.AGENT_STOP_CLICKED,
+        track: (provider: PostHogTelemetryProvider) =>
+          provider.trackAgentStopClicked({
+            method: 'escape',
+            turn_id: 'turn-1',
+            turn_elapsed_ms: 400
+          }),
+        properties: {
+          method: 'escape',
+          turn_id: 'turn-1',
+          turn_elapsed_ms: 400
+        }
+      },
+      {
+        event: TelemetryEvents.AGENT_WORKFLOW_BOUND,
+        track: (provider: PostHogTelemetryProvider) =>
+          provider.trackAgentWorkflowBound({
+            thread_id: 'thread-1',
+            workflow_id: 'workflow-2',
+            prev_workflow_id: 'workflow-1',
+            bind_source: 'selector_chip'
+          }),
+        properties: {
+          thread_id: 'thread-1',
+          workflow_id: 'workflow-2',
+          prev_workflow_id: 'workflow-1',
+          bind_source: 'selector_chip'
+        }
+      },
+      {
+        event: TelemetryEvents.AGENT_RUN_APPROVAL_SHOWN,
+        track: (provider: PostHogTelemetryProvider) =>
+          provider.trackAgentRunApprovalShown({
+            turn_id: 'turn-1',
+            workflow_id: null
+          }),
+        properties: { turn_id: 'turn-1', workflow_id: null }
+      },
+      {
+        event: TelemetryEvents.AGENT_RUN_APPROVAL_RESOLVED,
+        track: (provider: PostHogTelemetryProvider) =>
+          provider.trackAgentRunApprovalResolved({
+            decision: 'open_workflow',
+            time_to_decide_ms: 500
+          }),
+        properties: {
+          decision: 'open_workflow',
+          time_to_decide_ms: 500
+        }
+      },
+      {
+        event: TelemetryEvents.AGENT_RUN_MODE_CHANGED,
+        track: (provider: PostHogTelemetryProvider) =>
+          provider.trackAgentRunModeChanged({
+            from: 'ask_approval',
+            to: 'auto'
+          }),
+        properties: { from: 'ask_approval', to: 'auto' }
+      },
+      {
+        event: TelemetryEvents.AGENT_THREAD_STARTED,
+        track: (provider: PostHogTelemetryProvider) =>
+          provider.trackAgentThreadStarted({ source: 'first_open' }),
+        properties: { source: 'first_open' }
+      },
+      {
+        event: TelemetryEvents.AGENT_CONSENT_NOT_OFFERED,
+        track: (provider: PostHogTelemetryProvider) =>
+          provider.trackAgentConsentNotOffered({ reason: 'tour_active' }),
+        properties: { reason: 'tour_active' }
+      },
+      {
+        event: TelemetryEvents.AGENT_CONSENT_OFFER_EXITED,
+        track: (provider: PostHogTelemetryProvider) =>
+          provider.trackAgentConsentOfferExited({
+            exit: 'consent_unresolved',
+            stage: 'load',
+            retry_armed: false
+          }),
+        properties: {
+          exit: 'consent_unresolved',
+          stage: 'load',
+          retry_armed: false
+        }
+      },
+      {
+        event: TelemetryEvents.AGENT_CONSENT_OFFER_EXITED,
+        track: (provider: PostHogTelemetryProvider) =>
+          provider.trackAgentConsentOfferExited({
+            exit: 'card_closed_before_mount',
+            stage: 'request',
+            retry_armed: false,
+            trigger: 'first_load'
+          }),
+        properties: {
+          exit: 'card_closed_before_mount',
+          stage: 'request',
+          retry_armed: false,
+          trigger: 'first_load'
+        }
+      },
+      {
+        event: TelemetryEvents.AGENT_ONBOARDING_NOT_SHOWN,
+        track: (provider: PostHogTelemetryProvider) =>
+          provider.trackAgentOnboardingNotShown({
+            reason: 'target_missing',
+            step: 2
+          }),
+        properties: { reason: 'target_missing', step: 2 }
+      }
+    ])(
+      'captures $event with its properties',
+      async ({ event, track, properties }) => {
+        const provider = createProvider()
+        await vi.dynamicImportSettled()
+
+        track(provider)
+
+        expect(hoisted.mockCapture).toHaveBeenCalledWith(event, properties)
+      }
+    )
+
+    it.for([
+      {
+        event: TelemetryEvents.AGENT_PAYWALL_SHOWN,
+        track: (provider: PostHogTelemetryProvider) =>
+          provider.trackAgentPaywallShown({
+            reason: 'subscription_inactive',
+            surface: 'credits_exhausted'
+          }),
+        properties: {
+          reason: 'subscription_inactive',
+          surface: 'credits_exhausted'
+        }
+      },
+      {
+        event: TelemetryEvents.AGENT_PAYWALL_CTA_CLICKED,
+        track: (provider: PostHogTelemetryProvider) =>
+          provider.trackAgentPaywallCtaClicked({
+            cta: 'add_credits',
+            surface: 'refused_send'
+          }),
+        properties: { cta: 'add_credits', surface: 'refused_send' }
+      }
+    ])('captures $event', async ({ event, track, properties }) => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      track(provider)
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(event, properties)
+    })
+
     it('captures resubscribe clicks with their source', async () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()
@@ -625,6 +1045,7 @@ describe('PostHogTelemetryProvider', () => {
           operation: 'subscription_checkout',
           stage: 'failed',
           outcome: 'failure',
+          checkout_attempt_id: 'attempt-abandoned',
           tier: 'pro',
           cycle: 'monthly',
           checkout_type: 'new',
@@ -740,7 +1161,10 @@ describe('PostHogTelemetryProvider', () => {
 
       provider.trackBillingEvent(event)
 
-      expect(hoisted.mockCapture).toHaveBeenCalledWith(eventName, event)
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(eventName, {
+        ...event,
+        billing_surface: 'cloud_app'
+      })
     })
 
     it('drops fields outside the billing telemetry contract', async () => {
@@ -768,10 +1192,65 @@ describe('PostHogTelemetryProvider', () => {
           stage: 'failed',
           outcome: 'failure',
           billing_op_id: 'opaque-op-id',
-          failure_category: 'unknown'
+          failure_category: 'unknown',
+          billing_surface: 'cloud_app'
         }
       )
     })
+
+    it('stamps the cloud app surface on checkout journey events', async () => {
+      const provider = createProvider()
+      const event = {
+        checkout_journey_id: 'journey-1',
+        checkout_entered_at: '2026-10-01T00:00:00.000Z',
+        assignment_status: 'unavailable',
+        entry_flow: 'initial_subscription',
+        entry_source: 'other',
+        ui_mode: 'full_page',
+        phase: 'entered',
+        payment_intent_source: 'subscribe_to_run'
+      } satisfies CheckoutJourneyTelemetryEvent
+      await vi.dynamicImportSettled()
+
+      provider.trackCheckoutJourneyEvent(event)
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        'billing.checkout.entered',
+        { ...event, schema_version: 1, billing_surface: 'cloud_app' }
+      )
+    })
+
+    it.for([
+      {
+        exit: 'page_exit',
+        options: [{ transport: 'sendBeacon', send_instantly: true }]
+      },
+      { exit: 'dialog_close', options: [] }
+    ] as const)(
+      'captures a checkout abandoned at $exit with the matching transport',
+      async ({ exit, options }) => {
+        const provider = createProvider()
+        const event = {
+          checkout_journey_id: 'journey-1',
+          checkout_entered_at: '2026-10-01T00:00:00.000Z',
+          assignment_status: 'unavailable',
+          entry_flow: 'topup',
+          entry_source: 'settings_billing',
+          phase: 'abandoned',
+          last_phase: 'entered',
+          exit
+        } satisfies CheckoutJourneyTelemetryEvent
+        await vi.dynamicImportSettled()
+
+        provider.trackCheckoutJourneyEvent(event)
+
+        expect(hoisted.mockCapture).toHaveBeenCalledWith(
+          'billing.checkout.abandoned',
+          { ...event, schema_version: 1, billing_surface: 'cloud_app' },
+          ...options
+        )
+      }
+    )
 
     it('captures widget favorite toggled events with their metadata', async () => {
       const provider = createProvider()
@@ -1006,6 +1485,50 @@ describe('PostHogTelemetryProvider', () => {
         {}
       )
     })
+
+    it('captures a close_button agent panel close through the normal queue', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackAgentPanelClosed({
+        source: 'close_button',
+        open_duration_ms: 5000
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.AGENT_PANEL_CLOSED,
+        { source: 'close_button', open_duration_ms: 5000 }
+      )
+    })
+
+    it('captures a pagehide agent panel close with an immediate sendBeacon send', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackAgentPanelClosed({
+        source: 'pagehide',
+        open_duration_ms: 5000
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.AGENT_PANEL_CLOSED,
+        { source: 'pagehide', open_duration_ms: 5000 },
+        { transport: 'sendBeacon', send_instantly: true }
+      )
+    })
+
+    it('drops a pagehide agent panel close before PostHog has initialized', async () => {
+      const provider = createProvider()
+
+      provider.trackAgentPanelClosed({
+        source: 'pagehide',
+        open_duration_ms: 5000
+      })
+
+      await vi.dynamicImportSettled()
+
+      expect(hoisted.mockCapture).not.toHaveBeenCalled()
+    })
   })
 
   describe('disabled events', () => {
@@ -1165,24 +1688,24 @@ describe('PostHogTelemetryProvider', () => {
       createProvider()
       await vi.dynamicImportSettled()
 
-      expect(hoisted.mockOnUserLogout).toHaveBeenCalledOnce()
+      expect(useCurrentUser().onUserLogout).toHaveBeenCalledOnce()
     })
 
     it('calls posthog.reset(true) when the watcher fires', async () => {
       createProvider()
       await vi.dynamicImportSettled()
 
-      const callback = hoisted.mockOnUserLogout.mock.calls[0][0]
+      const callback = vi.mocked(useCurrentUser().onUserLogout).mock.calls[0][0]
       callback()
 
-      expect(hoisted.mockReset).toHaveBeenCalledWith(true)
+      expect(hoisted.mockPosthogReset).toHaveBeenCalledWith(true)
     })
 
     it('does not register the watcher before init resolves', () => {
       createProvider()
 
-      expect(hoisted.mockOnUserLogout).not.toHaveBeenCalled()
-      expect(hoisted.mockReset).not.toHaveBeenCalled()
+      expect(useCurrentUser().onUserLogout).not.toHaveBeenCalled()
+      expect(hoisted.mockPosthogReset).not.toHaveBeenCalled()
     })
   })
 

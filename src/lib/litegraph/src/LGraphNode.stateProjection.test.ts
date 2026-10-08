@@ -1,14 +1,8 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, test } from 'vitest'
+import { describe, expect, test } from 'vitest'
 
 import { LGraph, LGraphNode } from './litegraph'
 import { TitleMode } from './types/globalEnums'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
-
-beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
-})
 
 describe('execution order projection', () => {
   test('writes attached node order to the canonical store', () => {

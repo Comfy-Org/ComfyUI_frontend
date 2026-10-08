@@ -1,30 +1,26 @@
 import { render, screen, waitFor } from '@testing-library/vue'
-import { ref } from 'vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import userEvent from '@testing-library/user-event'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import SignInContent from '@/components/dialog/content/SignInContent.vue'
+import { useAuthActions } from '@/composables/auth/useAuthActions'
+import type { DesktopHostAuthState } from '@/platform/auth/desktopHost/desktopHostAuthBridge'
+import {
+  startDesktopHostSession,
+  stopDesktopHostSession
+} from '@/platform/auth/desktopHost/desktopHostSession'
 
-vi.mock('@/composables/auth/useAuthActions', () => ({
-  useAuthActions: () => ({
-    signInWithGoogle: vi.fn(),
-    signInWithGithub: vi.fn(),
-    signInWithEmail: vi.fn(),
-    signUpWithEmail: vi.fn(),
-    accessError: ref(false)
-  })
+vi.mock(import('@/composables/auth/useAuthActions'))
+
+vi.mock(import('@comfyorg/account-core/webviewDetection'), () => ({
+  isEmbeddedWebView: () => false
 }))
-
-vi.mock('@/base/webviewDetection', () => ({ isEmbeddedWebView: () => false }))
-vi.mock('@/utils/hostWhitelist', () => ({
+vi.mock(import('@/utils/hostWhitelist'), () => ({
   isHostWhitelisted: () => true,
   normalizeHost: (host: string) => host
 }))
-vi.mock('@/platform/remoteConfig/remoteConfig', () => ({
-  remoteConfig: ref({}),
-  configValueOrDefault: (_config: unknown, _key: string, fallback: string) =>
-    fallback
-}))
+vi.mock(import('@/platform/remoteConfig/remoteConfig'))
 
 const inChina = vi.hoisted(() => ({
   value: false,
@@ -45,7 +41,7 @@ const inChina = vi.hoisted(() => ({
     this.pending = Promise.reject(error)
   }
 }))
-vi.mock('@/utils/networkUtil', () => ({
+vi.mock(import('@comfyorg/account-ui/auth/regionProbe'), () => ({
   isInChina: () => inChina.pending ?? Promise.resolve(inChina.value)
 }))
 
@@ -75,15 +71,20 @@ const MESSAGES = {
       regionRestrictionChina: 'Email sign-up is unavailable in your region.'
     },
     apiKey: { helpText: 'Help', generateKey: 'Generate key' },
+    sso: { continueWithSso: 'Continue with SSO' },
+    desktopHost: {
+      continueInBrowser: 'Finish signing in in your browser',
+      signInFailed: 'Sign-in did not finish'
+    },
     reauthRequired: { title: 'Reauth', message: 'Reauth' }
   },
-  g: { comfy: 'Comfy' },
+  g: { comfy: 'Comfy', close: 'Close' },
   toastMessages: { useApiKeyTip: 'Tip' }
 }
 
-function renderSignInContent() {
+function renderSignInContent(onSuccess = vi.fn()) {
   return render(SignInContent, {
-    props: { onSuccess: vi.fn() },
+    props: { onSuccess },
     global: {
       plugins: [
         createI18n({ legacy: false, locale: 'en', messages: { en: MESSAGES } })
@@ -92,17 +93,14 @@ function renderSignInContent() {
         SignUpForm: { template: '<form data-testid="signup-form" />' },
         SignInForm: { template: '<form data-testid="signin-form" />' },
         ApiKeyForm: true,
-        Divider: true,
-        Message: { template: '<div><slot /></div>' }
+        Divider: true
       }
     }
   })
 }
 
 async function switchToSignUp(advanceTimers?: (ms: number) => void) {
-  const user = (await import('@testing-library/user-event')).default.setup(
-    advanceTimers ? { advanceTimers } : {}
-  )
+  const user = userEvent.setup(advanceTimers ? { advanceTimers } : {})
   await user.click(screen.getByText('Sign up'))
 }
 
@@ -111,7 +109,74 @@ beforeEach(() => {
   inChina.pending = null
 })
 
+afterEach(() => stopDesktopHostSession())
+
+function desktopHostBridge(signInResult: DesktopHostAuthState) {
+  return {
+    getState: vi.fn(
+      async (): Promise<DesktopHostAuthState> => ({
+        status: 'signed_out'
+      })
+    ),
+    getWorkspaceToken: vi.fn(async () => null),
+    requestSignIn: vi.fn(async () => signInResult),
+    signOut: vi.fn(
+      async (): Promise<DesktopHostAuthState> => ({ status: 'signed_out' })
+    ),
+    onChanged: vi.fn(() => () => {})
+  }
+}
+
 describe('SignInContent', () => {
+  it('shows the access-error tip again after dismissal and another error', async () => {
+    const user = userEvent.setup()
+    const { accessError } = useAuthActions()
+    accessError.value = true
+    renderSignInContent()
+
+    expect(screen.getByText('Tip')).toBeVisible()
+    await user.click(screen.getByRole('button', { name: 'Close' }))
+    expect(screen.queryByText('Tip')).not.toBeInTheDocument()
+    expect(accessError.value).toBe(false)
+
+    accessError.value = true
+    expect(await screen.findByText('Tip')).toBeVisible()
+  })
+
+  it('finishes a closed popup’s late result as a sign-in, then reports success', async () => {
+    const onSuccess = vi.fn()
+    const actions = useAuthActions()
+    render(SignInContent, {
+      props: { onSuccess },
+      global: {
+        plugins: [
+          createI18n({
+            legacy: false,
+            locale: 'en',
+            messages: { en: MESSAGES }
+          })
+        ],
+        stubs: {
+          SignUpForm: true,
+          SignInForm: true,
+          ApiKeyForm: true,
+          Divider: true
+        }
+      }
+    })
+    await userEvent
+      .setup()
+      .click(screen.getByRole('button', { name: /sign in with google/i }))
+    const popup = vi.mocked(actions.signInWithGoogle).mock.calls[0]?.[0]?.popup
+    vi.mocked(actions.signInWithGoogle).mockResolvedValueOnce({
+      user: { uid: 'u1' }
+    } as never)
+
+    popup?.onResumed?.(Promise.resolve({ user: { uid: 'u1' } } as never))
+
+    await waitFor(() => expect(onSuccess).toHaveBeenCalledOnce())
+  })
+
   it('links legal terms directly to canonical Comfy pages', () => {
     renderSignInContent()
 
@@ -227,5 +292,46 @@ describe('SignInContent', () => {
     expect(
       screen.getByRole('button', { name: /Sign up with GitHub/ })
     ).toBeInTheDocument()
+  })
+
+  it('offers SSO through Comfy Desktop only when Desktop shares its session', async () => {
+    const { unmount } = renderSignInContent()
+    expect(
+      screen.queryByRole('button', { name: 'Continue with SSO' })
+    ).not.toBeInTheDocument()
+    unmount()
+
+    await startDesktopHostSession(desktopHostBridge({ status: 'signed_out' }))
+    renderSignInContent()
+
+    expect(
+      screen.getByRole('button', { name: 'Continue with SSO' })
+    ).toBeVisible()
+  })
+
+  it.for([
+    {
+      name: 'closes once Desktop signs in',
+      result: { status: 'signed_in', userId: 'sso-user' } as const,
+      succeeded: true
+    },
+    {
+      name: 'stays open when the sign-in does not finish',
+      result: { status: 'signed_out' } as const,
+      succeeded: false
+    }
+  ])('SSO through Comfy Desktop $name', async ({ result, succeeded }) => {
+    const user = userEvent.setup()
+    const bridge = desktopHostBridge(result)
+    await startDesktopHostSession(bridge)
+    const onSuccess = vi.fn()
+    renderSignInContent(onSuccess)
+
+    await user.click(screen.getByRole('button', { name: 'Continue with SSO' }))
+
+    await waitFor(() => expect(bridge.requestSignIn).toHaveBeenCalledOnce())
+    await waitFor(() =>
+      expect(onSuccess).toHaveBeenCalledTimes(succeeded ? 1 : 0)
+    )
   })
 })

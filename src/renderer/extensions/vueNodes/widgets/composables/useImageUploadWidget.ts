@@ -3,9 +3,11 @@ import { useNodeImageUpload } from '@/composables/node/useNodeImageUpload'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
-import type { ResultItem, ResultItemType } from '@/schemas/apiSchema'
+import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
+import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ComfyWidgetConstructor } from '@/scripts/widgets'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { isImageUploadInput } from '@/types/nodeDefAugmentation'
@@ -14,17 +16,25 @@ import { addToComboValues } from '@/utils/litegraphUtil'
 
 import {
   ACCEPTED_IMAGE_TYPES,
-  ACCEPTED_VIDEO_TYPES
+  ACCEPTED_VIDEO_TYPES,
+  isExtensionlessVideo,
+  isUploadableVideo
 } from '@/utils/mediaUploadUtil'
 
-const isImageFile = (file: File) => file.type.startsWith('image/')
-const isVideoFile = (file: File) => file.type.startsWith('video/')
+function isImageFile(file: File) {
+  return file.type.startsWith('image/')
+}
+
+type ImageUploadComboWidget = Omit<IComboWidget, 'value' | 'callback'> & {
+  value: string | number | string[]
+  callback?: (value: string | number | string[]) => void
+}
 
 const findFileComboWidget = (
   node: LGraphNode,
   inputName: string
-): IComboWidget | undefined =>
-  node.widgets?.find((w): w is IComboWidget => w.name === inputName)
+): ImageUploadComboWidget | undefined =>
+  node.widgets?.find((w): w is ImageUploadComboWidget => w.name === inputName)
 
 export const useImageUploadWidget = () => {
   const widgetConstructor: ComfyWidgetConstructor = (
@@ -48,7 +58,12 @@ export const useImageUploadWidget = () => {
     const accept = isVideo ? ACCEPTED_VIDEO_TYPES : ACCEPTED_IMAGE_TYPES
     const { showPreview } = isVideo ? useNodeVideo(node) : useNodeImage(node)
 
-    const fileFilter = isVideo ? isVideoFile : isImageFile
+    const fileFilter = isVideo ? isUploadableVideo : isImageFile
+    function alertExtensionlessVideo(files: File[]) {
+      if (!files.some(isExtensionlessVideo)) return false
+      useToastStore().addAlert(t('g.videoFilenameExtensionRequired'))
+      return true
+    }
     const fileComboWidget = findFileComboWidget(node, imageInputName)
     if (!fileComboWidget) {
       throw new Error(`Widget "${imageInputName}" not found on node`)
@@ -66,6 +81,7 @@ export const useImageUploadWidget = () => {
       fileFilter,
       accept,
       folder,
+      onReject: isVideo ? alertExtensionlessVideo : undefined,
       onUploadStart: (files) => {
         if (files.length > 0) {
           const prev = fileComboWidget.value
@@ -89,7 +105,6 @@ export const useImageUploadWidget = () => {
         const newValue = allow_batch ? annotated : annotated[0]
         const oldValue = fileComboWidget.value
 
-        // @ts-expect-error litegraph combo value type does not support arrays yet
         fileComboWidget.value = newValue
         fileComboWidget.callback?.(newValue)
         node.onWidgetChanged?.(
@@ -98,7 +113,7 @@ export const useImageUploadWidget = () => {
           oldValue,
           fileComboWidget
         )
-        useWorkflowStore().activeWorkflow?.changeTracker?.captureCanvasState()
+        useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()
       }
     })
 
@@ -110,7 +125,7 @@ export const useImageUploadWidget = () => {
       () => openFileSelection(),
       {
         serialize: false,
-        canvasOnly: true
+        surfaces: { canvas: 'shown', vueNode: 'never', panel: 'never' }
       }
     )
     uploadWidget.label = t('g.choose_file_to_upload')
@@ -121,6 +136,7 @@ export const useImageUploadWidget = () => {
       nodeOutputStore.setNodeOutputs(node, String(fileComboWidget.value), {
         isAnimated
       })
+      showPreview({ block: false })
       node.graph?.setDirtyCanvas(true)
     }
 
@@ -128,10 +144,16 @@ export const useImageUploadWidget = () => {
     // The value isn't set immediately so we need to wait a moment
     // No change callbacks seem to be fired on initial setting of the value
     requestAnimationFrame(() => {
-      if (fileComboWidget.value != null)
-        nodeOutputStore.setNodeOutputs(node, String(fileComboWidget.value), {
+      const fileValue = fileComboWidget.value as
+        | string
+        | number
+        | null
+        | undefined
+      if (fileValue != null) {
+        nodeOutputStore.setNodeOutputs(node, String(fileValue), {
           isAnimated
         })
+      }
       showPreview({ block: false })
     })
 

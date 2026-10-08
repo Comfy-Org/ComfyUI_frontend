@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { i18n, mergeCustomNodesI18n } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import type { Settings } from '@/schemas/apiSchema'
+import type { Settings } from '@/platform/settings/types'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 
@@ -82,27 +82,32 @@ describe('useNodeTooltips', () => {
   })
 
   it('reads JSON examples in node metadata without i18n placeholder errors', () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     const { getInputSlotTooltip } = useNodeTooltips('SAM3_Detect')
 
     expect(getInputSlotTooltip('positive_coords')).toBe(jsonTooltip)
-    expect(consoleError).not.toHaveBeenCalled()
+    expect(console.error).not.toHaveBeenCalled()
   })
 
   it('reads input-based widget tooltips without i18n placeholder errors', () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     const { getWidgetTooltip } = useNodeTooltips('SAM3_Detect')
 
     expect(getWidgetTooltip(positiveCoordsWidget)).toBe(jsonTooltip)
-    expect(consoleError).not.toHaveBeenCalled()
+    expect(console.error).not.toHaveBeenCalled()
+  })
+
+  it('returns empty tooltips for inputs absent from the live node definition', () => {
+    const { getInputSlotTooltip, getWidgetTooltip } =
+      useNodeTooltips('SAM3_Detect')
+
+    expect(getInputSlotTooltip('stale_input')).toBe('')
+    expect(getWidgetTooltip({ name: 'stale_widget' })).toBe('')
   })
 
   it('reads output slot tooltips without i18n placeholder errors', () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     const { getOutputSlotTooltip } = useNodeTooltips('SAM3_Detect')
 
     expect(getOutputSlotTooltip(0)).toBe(jsonTooltip)
-    expect(consoleError).not.toHaveBeenCalled()
+    expect(console.error).not.toHaveBeenCalled()
   })
 
   it('preserves the newline separating a widget label from its long value', () => {

@@ -3,9 +3,7 @@ import { expect } from '@playwright/test'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import type { WorkspaceStore } from '@e2e/types/globals'
 
-test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-})
+test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 
 const customColorPalettes = {
   obsidian: {
@@ -153,6 +151,7 @@ test.describe('Color Palette', { tag: ['@screenshot', '@settings'] }, () => {
     )
     // Reload to apply the new setting. Setting Comfy.CustomColorPalettes directly
     // doesn't update the store immediately.
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup()
 
     await comfyPage.workflow.loadWorkflow('nodes/every_node_color')
@@ -286,9 +285,15 @@ test.describe(
     })
 
     test.describe('Context menu color adjustments', () => {
+      test.use({
+        initialSettings: {
+          'Comfy.UseNewMenu': 'Disabled',
+          'Comfy.ColorPalette': 'light',
+          'Comfy.Node.Opacity': 0.3
+        }
+      })
+
       test.beforeEach(async ({ comfyPage }) => {
-        await comfyPage.settings.setSetting('Comfy.ColorPalette', 'light')
-        await comfyPage.settings.setSetting('Comfy.Node.Opacity', 0.3)
         const node = await comfyPage.nodeOps.getFirstNodeRef()
         await node?.clickContextMenuOption('Colors')
       })

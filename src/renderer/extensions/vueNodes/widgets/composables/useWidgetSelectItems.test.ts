@@ -3,6 +3,8 @@ import { computed, nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import { useWidgetSelectItems } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems'
 import type { UseWidgetSelectItemsOptions } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems'
@@ -10,7 +12,7 @@ import type { UseWidgetSelectItemsOptions } from '@/renderer/extensions/vueNodes
 const mockAssetsData = vi.hoisted(() => ({ items: [] as AssetItem[] }))
 
 vi.mock(
-  '@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData',
+  import('@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData'),
   () => ({
     useAssetWidgetData: () => ({
       category: computed(() => 'checkpoints'),
@@ -36,7 +38,7 @@ function createMockMediaAssets() {
 
 let mockMediaAssets = createMockMediaAssets()
 
-vi.mock('@/platform/assets/composables/useAssetFilterOptions', () => ({
+vi.mock(import('@/platform/assets/composables/useAssetFilterOptions'), () => ({
   useAssetFilterOptions: () => ({
     ownershipOptions: computed(() => []),
     availableBaseModels: computed(() => []),
@@ -44,7 +46,7 @@ vi.mock('@/platform/assets/composables/useAssetFilterOptions', () => ({
   })
 }))
 
-vi.mock('@/platform/assets/utils/outputAssetUtil')
+vi.mock(import('@/platform/assets/utils/outputAssetUtil'))
 
 function makeResolvedOutput(
   id: string,
@@ -76,14 +78,6 @@ function createDefaultOptions(
 }
 
 describe('display label behavior', () => {
-  it('uses values as labels when no label function provided', () => {
-    const { dropdownItems } = useWidgetSelectItems(createDefaultOptions())
-    expect(dropdownItems.value[0]).toMatchObject({
-      name: 'img_001.png',
-      label: 'img_001.png'
-    })
-  })
-
   it('applies custom label function', () => {
     const getOptionLabel = (v?: string | null) => `Custom: ${v}`
     const { dropdownItems } = useWidgetSelectItems(
@@ -93,9 +87,6 @@ describe('display label behavior', () => {
   })
 
   it('falls back to value on label function error', () => {
-    const consoleWarnSpy = vi
-      .spyOn(console, 'warn')
-      .mockImplementation(() => {})
     const getOptionLabel = (v?: string | null) => {
       if (v === 'photo_abc.jpg') throw new Error('fail')
       return `Labeled: ${v}`
@@ -106,8 +97,7 @@ describe('display label behavior', () => {
     expect(dropdownItems.value[0].label).toBe('Labeled: img_001.png')
     expect(dropdownItems.value[1].label).toBe('photo_abc.jpg')
     expect(dropdownItems.value[2].label).toBe('Labeled: hash789.png')
-    expect(consoleWarnSpy).toHaveBeenCalled()
-    consoleWarnSpy.mockRestore()
+    expect(console.warn).toHaveBeenCalled()
   })
 
   it('falls back to value when label function returns empty string', () => {
@@ -186,9 +176,7 @@ describe('useWidgetSelectItems', () => {
 
       expect(dropdownItems.value).toHaveLength(2)
       expect(
-        dropdownItems.value.every(
-          (item) => !String(item.id).startsWith('missing-')
-        )
+        dropdownItems.value.every((item) => !item.id.startsWith('missing-'))
       ).toBe(true)
     })
 
@@ -203,9 +191,7 @@ describe('useWidgetSelectItems', () => {
       await nextTick()
 
       expect(
-        dropdownItems.value.every(
-          (item) => !String(item.id).startsWith('missing-')
-        )
+        dropdownItems.value.every((item) => !item.id.startsWith('missing-'))
       ).toBe(true)
     })
 
@@ -218,9 +204,7 @@ describe('useWidgetSelectItems', () => {
       )
       expect(dropdownItems.value).toHaveLength(2)
       expect(
-        dropdownItems.value.every(
-          (item) => !String(item.id).startsWith('missing-')
-        )
+        dropdownItems.value.every((item) => !item.id.startsWith('missing-'))
       ).toBe(true)
     })
 
@@ -233,9 +217,7 @@ describe('useWidgetSelectItems', () => {
       )
       expect(dropdownItems.value).toHaveLength(2)
       expect(
-        dropdownItems.value.every(
-          (item) => !String(item.id).startsWith('missing-')
-        )
+        dropdownItems.value.every((item) => !item.id.startsWith('missing-'))
       ).toBe(true)
     })
   })
@@ -613,10 +595,6 @@ describe('useWidgetSelectItems', () => {
     })
 
     it('falls back to preview when resolver rejects', async () => {
-      const consoleWarnSpy = vi
-        .spyOn(console, 'warn')
-        .mockImplementation(() => {})
-
       mockMediaAssets.items.value = [
         makeMultiOutputAsset('job-fail', 'preview.png', '1', 3)
       ]
@@ -631,7 +609,7 @@ describe('useWidgetSelectItems', () => {
       filterSelected.value = 'outputs'
 
       await vi.waitFor(() => {
-        expect(consoleWarnSpy).toHaveBeenCalledWith(
+        expect(console.warn).toHaveBeenCalledWith(
           'Failed to resolve multi-output job',
           'job-fail',
           expect.any(Error)
@@ -640,7 +618,6 @@ describe('useWidgetSelectItems', () => {
 
       expect(dropdownItems.value).toHaveLength(1)
       expect(dropdownItems.value[0].name).toBe('preview.png [output]')
-      consoleWarnSpy.mockRestore()
     })
 
     it('does not expand a hash-keyed asset even if its metadata reports outputCount > 1', async () => {
@@ -1022,9 +999,29 @@ describe('useWidgetSelectItems', () => {
   })
 
   describe('FE-230 missing-media filtering', () => {
+    it('still drops missing media when the missing media warning is off', async () => {
+      useMissingMediaStore().setMissingMedia([
+        {
+          nodeId: '1',
+          nodeType: 'LoadImage',
+          widgetName: 'image',
+          mediaType: 'image',
+          name: 'photo_abc.jpg',
+          isMissing: true
+        }
+      ])
+      useSettingStore().settingValues[
+        'Comfy.Workflow.ShowMissingMediaWarning'
+      ] = false
+
+      const { dropdownItems } = useWidgetSelectItems(createDefaultOptions())
+
+      expect(dropdownItems.value.map((i) => i.name)).not.toContain(
+        'photo_abc.jpg'
+      )
+    })
+
     it('drops input items whose name is in the missing-media store', async () => {
-      const { useMissingMediaStore } =
-        await import('@/platform/missingMedia/missingMediaStore')
       const store = useMissingMediaStore()
       store.setMissingMedia([
         {
@@ -1062,8 +1059,6 @@ describe('useWidgetSelectItems', () => {
         })
       ]
 
-      const { useMissingMediaStore } =
-        await import('@/platform/missingMedia/missingMediaStore')
       const store = useMissingMediaStore()
       store.setMissingMedia([
         {
@@ -1101,8 +1096,6 @@ describe('useWidgetSelectItems', () => {
         })
       ]
 
-      const { useMissingMediaStore } =
-        await import('@/platform/missingMedia/missingMediaStore')
       const store = useMissingMediaStore()
       store.setMissingMedia([
         {
@@ -1128,8 +1121,6 @@ describe('useWidgetSelectItems', () => {
     it('does not surface a missing-value placeholder when the modelValue is confirmed missing', async () => {
       const modelValue = ref<string | undefined>('gone.png [output]')
 
-      const { useMissingMediaStore } =
-        await import('@/platform/missingMedia/missingMediaStore')
       const store = useMissingMediaStore()
       store.setMissingMedia([
         {

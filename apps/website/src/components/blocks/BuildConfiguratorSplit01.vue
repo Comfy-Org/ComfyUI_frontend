@@ -4,8 +4,8 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { computed, ref } from 'vue'
 import type { AnchorHTMLAttributes, HTMLAttributes } from 'vue'
 
-import BrandButton from '../common/BrandButton.vue'
-import CheckIcon from '../icons/CheckIcon.vue'
+import BrandButton from '@/components/common/BrandButton.vue'
+import CheckIcon from '@/components/icons/CheckIcon.vue'
 
 type Cta = {
   label: string
@@ -54,7 +54,7 @@ const {
   body: string
   features?: readonly string[]
   eyebrow: string
-  panelTitle: string
+  panelTitle?: string
   releasesLabel: string
   releases: readonly string[]
   environmentsLabel: string
@@ -110,7 +110,7 @@ const pillClasses = (selected: boolean) =>
 
 const chipClasses = (option: ChipOption, selected: boolean) =>
   cn(
-    'flex cursor-pointer items-center gap-2 rounded-full px-3.5 py-2 transition-colors',
+    'cursor-pointer rounded-full px-3.5 py-2 transition-colors',
     option.mono ? 'font-mono text-[11.5px]' : 'text-[13px]',
     selected
       ? 'bg-primary-comfy-plum text-primary-warm-white'
@@ -121,13 +121,18 @@ const chipClasses = (option: ChipOption, selected: boolean) =>
 <template>
   <section
     :class="
-      cn('max-w-9xl mx-auto w-full px-6 py-14 md:py-20 lg:px-12', className)
+      cn('mx-auto w-full max-w-9xl px-6 py-14 md:py-20 lg:px-12', className)
     "
   >
     <div
-      class="bg-primary-comfy-ink-light flex flex-col gap-10 rounded-4xl p-6 md:p-10 lg:flex-row lg:gap-16 lg:p-14"
+      class="flex flex-col gap-10 rounded-4xl bg-primary-comfy-ink-light p-6 md:p-10 lg:flex-row lg:gap-16 lg:p-14"
     >
       <div class="flex w-full flex-col justify-center lg:flex-1 lg:pl-6">
+        <p
+          class="mb-6 text-sm font-extrabold tracking-wider text-primary-comfy-yellow uppercase"
+        >
+          {{ eyebrow }}
+        </p>
         <component
           :is="headingTag"
           class="text-3xl leading-[125%] font-light tracking-tight whitespace-pre-line text-primary-comfy-canvas md:text-4xl"
@@ -148,7 +153,7 @@ const chipClasses = (option: ChipOption, selected: boolean) =>
             class="flex items-start gap-3 text-sm/relaxed text-primary-comfy-canvas md:text-base/relaxed"
           >
             <CheckIcon
-              class="text-primary-comfy-yellow mt-0.5 size-5 shrink-0"
+              class="mt-0.5 size-5 shrink-0 text-primary-comfy-yellow"
             />
             <span>{{ feature }}</span>
           </li>
@@ -157,17 +162,17 @@ const chipClasses = (option: ChipOption, selected: boolean) =>
 
       <div class="w-full lg:flex-1">
         <p
-          class="text-primary-comfy-yellow text-sm font-extrabold tracking-wider uppercase"
-        >
-          {{ eyebrow }}
-        </p>
-        <p
-          class="mt-3 text-2xl font-medium text-primary-warm-white md:text-3xl"
+          v-if="panelTitle"
+          class="text-2xl font-medium text-primary-warm-white md:text-3xl"
         >
           {{ panelTitle }}
         </p>
 
-        <div class="mt-7" role="group" :aria-label="releasesLabel">
+        <div
+          :class="panelTitle && 'mt-7'"
+          role="group"
+          :aria-label="releasesLabel"
+        >
           <p
             class="text-[0.65rem] tracking-[0.12em] text-primary-warm-white/55 uppercase"
           >
@@ -222,14 +227,6 @@ const chipClasses = (option: ChipOption, selected: boolean) =>
               :class="chipClasses(node, activeNodeIds.includes(node.id))"
               @click="activeNodeIds = toggleId(activeNodeIds, node.id)"
             >
-              <span
-                class="size-1.5 shrink-0 rounded-full"
-                :class="
-                  activeNodeIds.includes(node.id)
-                    ? 'bg-primary-comfy-yellow'
-                    : 'border border-primary-warm-gray'
-                "
-              />
               {{ node.label }}
             </button>
           </div>
@@ -250,21 +247,13 @@ const chipClasses = (option: ChipOption, selected: boolean) =>
               :class="chipClasses(model, activeModelIds.includes(model.id))"
               @click="activeModelIds = toggleId(activeModelIds, model.id)"
             >
-              <span
-                class="size-1.5 shrink-0 rounded-full"
-                :class="
-                  activeModelIds.includes(model.id)
-                    ? 'bg-primary-comfy-yellow'
-                    : 'border border-primary-warm-gray'
-                "
-              />
               {{ model.label }}
             </button>
           </div>
         </div>
 
         <div
-          class="border-primary-comfy-plum/25 mt-8 flex flex-col gap-5 border-t pt-5 sm:flex-row sm:items-end sm:justify-between"
+          class="mt-8 flex flex-col gap-5 border-t border-primary-comfy-plum/25 pt-5 sm:flex-row sm:items-end sm:justify-between"
         >
           <p
             class="font-mono text-[11.5px]/relaxed text-primary-warm-white/55"

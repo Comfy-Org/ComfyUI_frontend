@@ -3,6 +3,7 @@
   <div
     v-else
     v-tooltip.left="tooltipConfig"
+    :aria-label="standalone ? accessibleName : undefined"
     :class="
       cn(
         'lg-slot lg-slot--input group m-0 flex items-center rounded-r-lg',
@@ -16,6 +17,8 @@
         props.socketless && 'pointer-events-none invisible'
       )
     "
+    @pointerenter="revealLinks"
+    @pointerleave="unrevealLinks"
   >
     <!-- Connection Dot -->
     <SlotConnectionDot
@@ -35,21 +38,26 @@
 
     <!-- Slot Name -->
     <div class="flex h-full min-w-0 items-center">
-      <span
+      <EditableText
         v-if="!props.dotOnly && !hasNoLabel"
-        :class="
+        class="min-w-0"
+        :label-class="
           cn(
-            'truncate text-node-component-slot-text',
+            'block truncate text-node-component-slot-text',
             hasError && 'font-medium text-error'
           )
         "
-      >
-        {{
+        :is-editing
+        :model-value="
           slotData.label ||
           slotData.localized_name ||
           (slotData.name ?? `Input ${index}`)
-        }}
-      </span>
+        "
+        @cancel="isEditing = false"
+        @dblclick="isEditing = true"
+        @edit="onEditLabel"
+      >
+      </EditableText>
     </div>
   </div>
 </template>
@@ -58,12 +66,15 @@
 import { computed, onErrorCaptured, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import EditableText from '@/components/common/EditableText.vue'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { useSlotLinkInteraction } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
+import { useSlotLinkReveal } from '@/renderer/extensions/vueNodes/composables/useSlotLinkReveal'
 import { cn } from '@comfyorg/tailwind-utils'
 import type { NodeId } from '@/types/nodeId'
 
@@ -79,6 +90,8 @@ interface InputSlotProps {
   nodeType?: string
   nodeId?: NodeId
   socketless?: boolean
+  /** The slot is the input's only rendered representation, so the dot carries the accessible name. */
+  standalone?: boolean
 }
 
 const props = defineProps<InputSlotProps>()
@@ -91,7 +104,13 @@ const hasNoLabel = computed(
     props.slotData.name === ''
 )
 const dotOnly = computed(() => props.dotOnly || hasNoLabel.value)
-
+const accessibleName = computed(
+  () =>
+    props.slotData.label ||
+    props.slotData.localized_name ||
+    props.slotData.name ||
+    undefined
+)
 const renderError = ref<string | null>(null)
 const { toastErrorHandler } = useErrorHandling()
 
@@ -107,7 +126,14 @@ const tooltipConfig = computed(() => {
   return createTooltipConfig(fallbackText)
 })
 
+const { revealLinks, unrevealLinks } = useSlotLinkReveal({
+  nodeId: props.nodeId,
+  index: props.index,
+  type: 'input'
+})
+
 onErrorCaptured((error) => {
+  unrevealLinks()
   renderError.value = error.message
   toastErrorHandler(error)
   return false
@@ -128,4 +154,18 @@ const { onClick, onDoubleClick, onPointerDown } = useSlotLinkInteraction({
   index: props.index,
   type: 'input'
 })
+
+const isEditing = ref(false)
+function onEditLabel(val: string) {
+  const canvas = useCanvasStore().getCanvas()
+  isEditing.value = false
+  if (!props.nodeId) return
+
+  const newLabel = val.trim() || undefined
+  const slot = canvas.graph?.getNodeById(props.nodeId)?.inputs?.[props.index]
+  if (!slot || slot.label === newLabel) return
+
+  slot.label = newLabel
+  canvas.setDirty(true, true)
+}
 </script>

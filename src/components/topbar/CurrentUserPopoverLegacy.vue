@@ -9,9 +9,7 @@
       <UserAvatar
         class="mb-1"
         :photo-url="userPhotoUrl"
-        :pt:icon:class="{
-          'text-2xl!': !userPhotoUrl
-        }"
+        icon-class="size-6"
         size="large"
       />
 
@@ -24,7 +22,7 @@
       </p>
       <span
         v-if="subscriptionTierName"
-        class="text-foreground my-0 mt-2 rounded-full bg-secondary-background-hover px-2 py-0.5 text-xs font-bold uppercase"
+        class="my-0 mt-2 rounded-full bg-secondary-background-hover px-2 py-0.5 text-xs font-bold text-base-foreground uppercase"
       >
         {{ subscriptionTierName }}
       </span>
@@ -46,7 +44,8 @@
         <div class="flex w-0 flex-1 items-center gap-2">
           <WorkspaceProfilePic
             class="size-6 shrink-0 text-xs"
-            :workspace-name="workspaceName"
+            :workspace-name
+            :subscription-tier="tier"
           />
           <span class="truncate text-sm text-base-foreground">
             {{ workspaceName }}
@@ -99,7 +98,7 @@
       </Button>
     </div>
 
-    <Divider class="mx-0 my-2" />
+    <div class="mx-0 my-2 border-t border-interface-stroke" />
 
     <div
       v-if="canAccessSubscriptionFeatures"
@@ -136,7 +135,7 @@
       }}</span>
     </div>
 
-    <Divider class="mx-0 my-2" />
+    <div class="mx-0 my-2 border-t border-interface-stroke" />
 
     <div
       class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
@@ -154,7 +153,6 @@
 <script setup lang="ts">
 import { onClickOutside } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import Divider from 'primevue/divider'
 import Skeleton from 'primevue/skeleton'
 import { computed, onMounted, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -166,6 +164,7 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useTelemetry } from '@/platform/telemetry'
+import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/utils/paymentIntentSource'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
@@ -250,7 +249,9 @@ const handleOpenPlanAndCreditsSettings = () => {
 
 const handleTopUp = () => {
   useTelemetry()?.trackAddApiCreditButtonClicked({ source: 'avatar_menu' })
-  dialogService.showTopUpCreditsDialog()
+  dialogService.showTopUpCreditsDialog({
+    source: paymentIntentSourceForAddCreditsClick('avatar_menu')
+  })
   emit('close')
 }
 

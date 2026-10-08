@@ -2,23 +2,24 @@ import type { VariantProps } from 'cva'
 import { cva } from 'cva'
 
 export const brandButtonVariants = cva({
-  base: 'inline-flex flex-nowrap items-center justify-center cursor-pointer font-bold tracking-wider transition-colors gap-2 text-nowrap',
+  base: 'inline-flex cursor-pointer flex-nowrap items-center justify-center gap-2 font-bold tracking-wider text-nowrap transition-colors',
   variants: {
     variant: {
       solid:
         'bg-primary-comfy-yellow text-primary-comfy-ink transition-opacity hover:opacity-90',
       outline:
-        'border-primary-comfy-yellow text-primary-comfy-yellow hover:bg-primary-comfy-yellow border hover:text-primary-comfy-ink',
+        'border border-primary-comfy-yellow text-primary-comfy-yellow hover:bg-primary-comfy-yellow hover:text-primary-comfy-ink',
       'outline-dark':
-        'hover:text-primary-comfy-yellow border-2 border-primary-comfy-ink text-primary-comfy-ink uppercase hover:bg-primary-comfy-ink',
+        'border-2 border-primary-comfy-ink text-primary-comfy-ink uppercase hover:bg-primary-comfy-ink hover:text-primary-comfy-yellow',
       inverse:
-        'text-primary-comfy-yellow bg-primary-comfy-ink transition-opacity hover:opacity-90',
+        'bg-primary-comfy-ink text-primary-comfy-yellow transition-opacity hover:opacity-90',
       'outline-light':
         'border-2 border-primary-warm-white text-primary-warm-white hover:bg-primary-warm-white hover:text-primary-comfy-ink'
     },
     size: {
       xs: 'rounded-2xl px-6 py-3 text-xs font-bold',
       sm: 'rounded-2xl px-4 py-2 text-sm font-semibold',
+      md: 'h-13 w-40 rounded-2xl text-base tracking-normal',
       nav: 'rounded-2xl px-6 py-2.5 text-sm font-semibold',
       lg: 'rounded-2xl px-4 py-2 text-sm'
     }

@@ -1,15 +1,8 @@
 import type { RumBeforeSend, RumErrorEvent } from '@datadog/browser-rum'
 
-import { ASSERTION_FAILURE_PREFIX, hasRumAssertReporter } from '@/base/assert'
+import { isRumErrorNoise } from '@comfyorg/shared-frontend-utils/telemetry'
 
-const RUM_NOISE_HOSTS = [
-  'facebook.com',
-  'px.ads.linkedin.com',
-  'browser-intake-us5-datadoghq.com',
-  'e2.sy-d.io',
-  'google-analytics.com',
-  'googletagmanager.com'
-]
+import { ASSERTION_FAILURE_PREFIX, hasRumAssertReporter } from '@/base/assert'
 
 const FIRST_PARTY_EXTENSION_FOLDERS = new Set(['cloud', 'core'])
 
@@ -60,16 +53,7 @@ function isConsoleEchoOfReportedAssertion(event: RumErrorEvent): boolean {
 function shouldKeepRumEvent(event: Parameters<RumBeforeSend>[0]): boolean {
   if (event.type !== 'error') return true
   if (isConsoleEchoOfReportedAssertion(event)) return false
-
-  const message = event.error.message
-  if (message.startsWith('intervention:')) return false
-  if (message.includes('ResizeObserver loop')) return false
-
-  const isNetworkNoise =
-    message.includes('csp_violation') || message.includes('Failed to fetch')
-  return (
-    !isNetworkNoise || !RUM_NOISE_HOSTS.some((host) => message.includes(host))
-  )
+  return !isRumErrorNoise(event.error)
 }
 
 function tagRumErrorOrigin(event: RumErrorEvent): void {

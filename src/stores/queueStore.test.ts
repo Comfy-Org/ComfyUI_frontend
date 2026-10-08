@@ -1,10 +1,24 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
-import type { TaskOutput } from '@/schemas/apiSchema'
+import type { TaskOutput } from '@/platform/remote/comfyui/execution/types'
 import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
-import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
+import {
+  TaskItemImpl,
+  useQueuePendingTaskCountStore,
+  useQueueStore
+} from '@/stores/queueStore'
+import {
+  isAudioResult,
+  isImageResult,
+  isTextResult,
+  isVhsFormat,
+  isVideoResult,
+  resultItemHtmlAudioType,
+  resultItemHtmlVideoType,
+  resultItemSupportsPreview
+} from '@/utils/resultItem'
 
 // Fixture factory for JobListItem
 function createJob(
@@ -51,13 +65,8 @@ const createTaskOutput = (
 type QueueResponse = { Running: JobListItem[]; Pending: JobListItem[] }
 type QueueResolver = (value: QueueResponse) => void
 
-const mockReportError = vi.hoisted(() => vi.fn())
-vi.mock('@/platform/telemetry/reportError', () => ({
-  reportError: mockReportError
-}))
-
 // Mock API
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     getQueue: vi.fn(),
     getHistory: vi.fn(),
@@ -68,6 +77,21 @@ vi.mock('@/scripts/api', () => ({
     removeEventListener: vi.fn()
   }
 }))
+
+describe('useQueuePendingTaskCountStore', () => {
+  it.for([
+    { name: 'null status', status: null },
+    { name: 'missing execution info', status: {} },
+    { name: 'missing queue count', status: { exec_info: {} } }
+  ])('preserves the count for $name', ({ status }) => {
+    const store = useQueuePendingTaskCountStore()
+    store.count = 3
+
+    store.update(new CustomEvent('status', { detail: status }))
+
+    expect(store.count).toBe(3)
+  })
+})
 
 describe('TaskItemImpl', () => {
   it('should exclude animated from flatOutputs', () => {
@@ -106,10 +130,10 @@ describe('TaskItemImpl', () => {
 
     const output = taskItem.flatOutputs[0]
 
-    expect(output.htmlVideoType).toBe('video/webm')
-    expect(output.isVideo).toBe(true)
-    expect(output.isVhsFormat).toBe(false)
-    expect(output.isImage).toBe(false)
+    expect(resultItemHtmlVideoType(output)).toBe('video/webm')
+    expect(isVideoResult(output)).toBe(true)
+    expect(isVhsFormat(output)).toBe(false)
+    expect(isImageResult(output)).toBe(false)
   })
 
   // https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite/blob/0a75c7958fe320efcb052f1d9f8451fd20c730a8/videohelpersuite/nodes.py#L578-L590
@@ -131,10 +155,10 @@ describe('TaskItemImpl', () => {
 
     const output = taskItem.flatOutputs[0]
 
-    expect(output.htmlVideoType).toBe('video/webm')
-    expect(output.isVideo).toBe(true)
-    expect(output.isVhsFormat).toBe(true)
-    expect(output.isImage).toBe(false)
+    expect(resultItemHtmlVideoType(output)).toBe('video/webm')
+    expect(isVideoResult(output)).toBe(true)
+    expect(isVhsFormat(output)).toBe(true)
+    expect(isImageResult(output)).toBe(false)
   })
 
   it('should recognize mp4 video from core', () => {
@@ -154,9 +178,9 @@ describe('TaskItemImpl', () => {
 
     const output = taskItem.flatOutputs[0]
 
-    expect(output.htmlVideoType).toBe('video/mp4')
-    expect(output.isVideo).toBe(true)
-    expect(output.isImage).toBe(false)
+    expect(resultItemHtmlVideoType(output)).toBe('video/mp4')
+    expect(isVideoResult(output)).toBe(true)
+    expect(isImageResult(output)).toBe(false)
   })
 
   describe('audio format detection', () => {
@@ -184,11 +208,11 @@ describe('TaskItemImpl', () => {
 
         const output = taskItem.flatOutputs[0]
 
-        expect(output.htmlAudioType).toBe(mimeType)
-        expect(output.isAudio).toBe(true)
-        expect(output.isVideo).toBe(false)
-        expect(output.isImage).toBe(false)
-        expect(output.supportsPreview).toBe(true)
+        expect(resultItemHtmlAudioType(output)).toBe(mimeType)
+        expect(isAudioResult(output)).toBe(true)
+        expect(isVideoResult(output)).toBe(false)
+        expect(isImageResult(output)).toBe(false)
+        expect(resultItemSupportsPreview(output)).toBe(true)
       })
     })
   })
@@ -209,14 +233,14 @@ describe('TaskItemImpl', () => {
 
     const output = taskItem.flatOutputs[0]
 
-    expect(output.isText).toBe(true)
-    expect(output.isImage).toBe(false)
-    expect(output.isVideo).toBe(false)
-    expect(output.isAudio).toBe(false)
-    expect(output.supportsPreview).toBe(true)
+    expect(isTextResult(output)).toBe(true)
+    expect(isImageResult(output)).toBe(false)
+    expect(isVideoResult(output)).toBe(false)
+    expect(isAudioResult(output)).toBe(false)
+    expect(resultItemSupportsPreview(output)).toBe(true)
   })
 
-  it.skip('should parse text outputs', () => {
+  it('should parse text outputs', () => {
     const job: JobListItem = {
       ...createHistoryJob(0, 'text-job'),
       preview_output: {
@@ -232,6 +256,20 @@ describe('TaskItemImpl', () => {
     expect(task.flatOutputs[0].filename).toBe('')
     expect(task.previewableOutputs).toHaveLength(1)
     expect(task.previewOutput?.content).toBe('test')
+  })
+
+  it('should reject non-text preview outputs without a filename', () => {
+    const job: JobListItem = {
+      ...createHistoryJob(0, 'image-job'),
+      preview_output: {
+        nodeId: '5',
+        mediaType: 'images'
+      } satisfies JobListItem['preview_output']
+    }
+
+    const task = new TaskItemImpl(job)
+
+    expect(task.flatOutputs).toHaveLength(0)
   })
 
   describe('error extraction getters', () => {
@@ -1134,9 +1172,6 @@ describe('useQueueStore', () => {
 
       expect(store.historyTasks).toHaveLength(1)
       expect(store.historyTasks[0].jobId).toBe('hist-1')
-      expect(mockReportError).toHaveBeenCalledWith(expect.any(Error), {
-        errorType: 'queue_task_fetch_failure'
-      })
     })
 
     it('still updates queue when only the history fetch fails', async () => {
@@ -1150,9 +1185,6 @@ describe('useQueueStore', () => {
 
       expect(store.runningTasks).toHaveLength(1)
       expect(store.runningTasks[0].jobId).toBe('run-1')
-      expect(mockReportError).toHaveBeenCalledWith(expect.any(Error), {
-        errorType: 'queue_history_fetch_failure'
-      })
     })
 
     it('preserves prior state and skips reconcile when both fetches fail', async () => {

@@ -1,27 +1,29 @@
 import { readFileSync, readdirSync } from 'node:fs'
-import { dirname, join, sep } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { join, sep } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 import {
   findRedirectedLinks,
   internalLinks,
   isLlmsTxtLinkLine,
+  isWorkflowsAppPath,
   normalizePath,
   parseLlmsTxtLinks
-} from '../lib/llms-txt'
+} from '@/lib/llms-txt'
+import { isExcludedFromSitemap } from './indexing'
 import { getRoutes } from './routes'
+import { websiteRoot } from '@website/paths'
+import { modelsBuildRoutes } from '@/integrations/workshop-release-gate'
+import { appPagePaths } from './workshop-app-content'
+import { workshopPagePaths } from './workshop-page-content'
 
-const websiteRoot = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const llmsTxt = readFileSync(join(websiteRoot, 'public', 'llms.txt'), 'utf8')
 const pagesDir = join(websiteRoot, 'src', 'pages')
-const vercelRedirectSources = new Set<string>(
-  (
-    JSON.parse(readFileSync(join(websiteRoot, 'vercel.json'), 'utf8')) as {
-      redirects: { source: string }[]
-    }
-  ).redirects.map((redirect) => normalizePath(redirect.source))
-)
+const vercelRedirectSources = (
+  JSON.parse(readFileSync(join(websiteRoot, 'vercel.json'), 'utf8')) as {
+    redirects: { source: string }[]
+  }
+).redirects.map((redirect) => redirect.source)
 
 /**
  * Pages that exist in src/pages but are deliberately kept out of llms.txt.
@@ -30,16 +32,41 @@ const vercelRedirectSources = new Set<string>(
  */
 const EXCLUDED_PAGES = new Set([
   '/404',
-  '/agent', // unlisted agent beta waitlist page, noindex
   '/booking-confirmation', // post-form confirmation, no standalone content
+  '/forgot-password', // auth surface, noindex
   '/individual-submission', // gallery submission form
+  '/login', // auth surface, noindex
+  '/signup', // auth surface, noindex
   '/payment/failed', // checkout return page
-  '/payment/success', // checkout return page
+  '/payment/success', // payment status page
   '/case-studies', // "Coming Soon" placeholder
   '/videos', // "Coming Soon" placeholder
   '/demos', // index is a "Coming Soon" placeholder; the demo pages are listed
-  '/platform/serverless-animation' // noindex temporary motion study, not a real page
+  '/workshop', // build-gated; static public/llms.txt cannot vary by build shape
+  '/video-sitemap.xml', // machine-readable sitemap output, not a page for agents to read
+  '/models/catalogue.json', // data the /models catalogue island loads, not a page
+  '/hub/workflows/manifest.json' // routing data comfy-router reads, not a page
 ])
+
+const LLMS_TXT_NOINDEX_EXCEPTIONS = new Set([
+  '/privacy-policy',
+  '/terms-of-service'
+])
+
+/**
+ * A page kept out of search indexes has no business in llms.txt either, so
+ * the sitemap policy in ./indexing is the second source of exclusions.
+ * Deriving it rather than restating it means a launch that lifts noindex
+ * also starts requiring the page here, instead of leaving a second list to
+ * remember.
+ */
+function isExcludedPage(page: string): boolean {
+  return (
+    EXCLUDED_PAGES.has(page) ||
+    (isExcludedFromSitemap(`https://comfy.org${page}`) &&
+      !LLMS_TXT_NOINDEX_EXCEPTIONS.has(page))
+  )
+}
 
 /**
  * Files the build emits outside src/pages: the sitemap integration writes
@@ -50,20 +77,6 @@ const EXCLUDED_PAGES = new Set([
  * below already accepts them; only the two root-level files need listing.
  */
 const BUILD_ARTIFACTS = new Set(['/sitemap-index.xml', '/llms-full.txt'])
-
-/**
- * Route shapes of the Comfy Workflows app, which lives in another repo and is
- * served behind the comfy.org router. Only these shapes may be linked; the
- * slugs themselves are verified against the live site, not here.
- */
-const WORKFLOW_APP_ROUTES = [
-  /^\/workflows$/,
-  /^\/workflows\/creators$/,
-  /^\/workflows\/category\/[a-z0-9-]+$/,
-  /^\/workflows\/model(\/[a-z0-9-]+)?$/,
-  /^\/workflows\/use-cases(\/[a-z0-9-]+)?$/,
-  /^\/[a-z]{2}(-[A-Za-z]{2})?\/workflows$/
-]
 
 /** Turn `src/pages/learning/[category]/[slug].astro` into a matcher for `/learning/x/y`. */
 function pageMatchers(root: string): {
@@ -104,6 +117,12 @@ describe('llms.txt', () => {
   const links = parseLlmsTxtLinks(llmsTxt)
   const internalPaths = internalLinks(links).map(({ path }) => path)
   const { static: staticPages, dynamic } = pageMatchers(pagesDir)
+  for (const { pattern } of modelsBuildRoutes(false))
+    if (!pattern.includes('[')) staticPages.add(pattern)
+  const modelsPages = new Set([
+    ...workshopPagePaths.map((slug) => `/models/${slug}`),
+    ...appPagePaths().map(({ params }) => `/hub/apps/${params.app}`)
+  ])
   const zhCN = pageMatchers(join(pagesDir, 'zh-CN'))
 
   it('follows the llms.txt shape: one H1, a summary blockquote, Optional last', () => {
@@ -132,10 +151,14 @@ describe('llms.txt', () => {
   })
 
   it('only links comfy.org paths that this site (or the workflows app) serves', () => {
-    const unknown = internalPaths.filter((path) => {
-      if (BUILD_ARTIFACTS.has(path)) return false
-      if (path.includes('/workflows')) {
-        return !WORKFLOW_APP_ROUTES.some((route) => route.test(path))
+    const unknown = internalPaths.filter((linked) => {
+      const path = linked.replace(/\.md$/, '')
+      if (BUILD_ARTIFACTS.has(path) || modelsPages.has(path)) return false
+      if (
+        path.startsWith('/workflows') ||
+        /^\/[a-z]{2}(-[A-Za-z]{2})?\/workflows/.test(path)
+      ) {
+        return !isWorkflowsAppPath(path)
       }
       if (path.startsWith('/zh-CN')) {
         const base = normalizePath(path.slice('/zh-CN'.length))
@@ -154,7 +177,7 @@ describe('llms.txt', () => {
   it('covers every static page in src/pages', () => {
     const linked = new Set(internalPaths)
     const missing = [...staticPages]
-      .filter((page) => !EXCLUDED_PAGES.has(page) && !linked.has(page))
+      .filter((page) => !isExcludedPage(page) && !linked.has(page))
       .sort()
     expect(missing).toEqual([])
   })
@@ -163,23 +186,13 @@ describe('llms.txt', () => {
     const linked = new Set(internalPaths)
     const missing = Object.values(getRoutes('en'))
       .map(normalizePath)
-      .filter((route) => !EXCLUDED_PAGES.has(route) && !linked.has(route))
+      .filter((route) => !isExcludedPage(route) && !linked.has(route))
     expect(missing).toEqual([])
   })
 
   it('does not list excluded pages by accident', () => {
-    const linked = new Set(internalPaths)
-    const listedButExcluded = [...EXCLUDED_PAGES].filter((page) =>
-      linked.has(page)
-    )
+    const listedButExcluded = internalPaths.filter(isExcludedPage)
     expect(listedButExcluded).toEqual([])
-  })
-
-  it('uses only literal redirect sources for stale link checks', () => {
-    const patternedSources = [...vercelRedirectSources].filter((source) =>
-      /[:*(]/.test(source)
-    )
-    expect(patternedSources).toEqual([])
   })
 
   it('links a redirect destination rather than its stale source', () => {

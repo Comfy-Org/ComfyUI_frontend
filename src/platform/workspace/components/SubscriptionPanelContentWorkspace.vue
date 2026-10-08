@@ -1,5 +1,8 @@
 <template>
-  <div class="flex grow flex-col overflow-auto pt-6">
+  <div
+    class="flex grow flex-col overflow-auto pt-2"
+    @scroll="handlePanelScroll"
+  >
     <!-- Loading state while subscription is being set up -->
     <div
       v-if="isSettingUp"
@@ -37,7 +40,7 @@
       class="flex flex-col items-start gap-3 rounded-2xl border border-interface-stroke p-6"
     >
       <div class="flex items-center gap-2 text-text-secondary">
-        <i class="pi pi-exclamation-circle text-danger" />
+        <i class="pi pi-exclamation-circle text-destructive-background" />
         <span class="text-sm">{{ $t('subscription.planLoadError') }}</span>
       </div>
       <Button
@@ -55,6 +58,7 @@
       <!-- Cancelled subscription info card -->
       <div
         v-if="showSubscriptionStateCard"
+        data-testid="subscription-state-card"
         class="mb-6 flex gap-1 rounded-2xl border border-warning-background bg-warning-background/20 p-4"
       >
         <div
@@ -133,22 +137,20 @@
                     )
                   }}
                 </Button>
-                <DropdownMenu
+                <Menu
                   v-if="showInactiveTeamSubscription && menuEntries.length > 0"
-                  :entries="menuEntries"
+                  :items="menuEntries"
                 >
-                  <template #button>
+                  <template #trigger>
                     <Button
                       v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
                       variant="secondary"
                       size="icon-lg"
-                      class="rounded-lg bg-interface-menu-component-surface-selected text-text-primary"
+                      icon="icon-[lucide--ellipsis]"
                       :aria-label="$t('g.moreOptions')"
-                    >
-                      <i class="pi pi-ellipsis-h" />
-                    </Button>
+                    />
                   </template>
-                </DropdownMenu>
+                </Menu>
               </div>
             </template>
 
@@ -170,7 +172,10 @@
                 <h3 class="m-0 text-base font-bold text-text-primary">
                   {{ $t('subscription.tiers.free.name') }}
                 </h3>
-                <div class="flex items-baseline gap-1 font-inter">
+                <div
+                  v-if="!isPriceCycleUnknown"
+                  class="flex items-baseline gap-1 font-inter"
+                >
                   <span class="text-2xl font-semibold">{{ displayPrice }}</span>
                   <span class="text-base">{{ priceUnitLabel }}</span>
                 </div>
@@ -193,22 +198,17 @@
                 >
                   {{ $t('subscription.subscribe') }}
                 </Button>
-                <DropdownMenu
-                  v-if="menuEntries.length > 0"
-                  :entries="menuEntries"
-                >
-                  <template #button>
+                <Menu v-if="menuEntries.length > 0" :items="menuEntries">
+                  <template #trigger>
                     <Button
                       v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
                       variant="secondary"
                       size="icon-lg"
-                      class="rounded-lg bg-interface-menu-component-surface-selected text-text-primary"
+                      icon="icon-[lucide--ellipsis]"
                       :aria-label="$t('g.moreOptions')"
-                    >
-                      <i class="pi pi-ellipsis-h" />
-                    </Button>
+                    />
                   </template>
-                </DropdownMenu>
+                </Menu>
               </div>
             </template>
 
@@ -220,13 +220,14 @@
                     {{ planDisplayName }}
                   </h3>
                   <StatusBadge
-                    v-if="isSubscriptionCancelled"
-                    :label="$t('subscription.canceled')"
-                    severity="warn"
+                    v-if="planStatusBadge"
+                    data-testid="plan-status-badge"
+                    :label="planStatusBadge.label"
+                    :severity="planStatusBadge.severity"
                   />
                 </div>
                 <div
-                  v-if="!isNonCatalogPlan"
+                  v-if="!isNonCatalogPlan && !isPriceCycleUnknown"
                   class="flex items-baseline gap-1 font-inter"
                 >
                   <span class="text-2xl font-semibold">{{ displayPrice }}</span>
@@ -235,6 +236,12 @@
                 <div v-if="planDateDisplay" class="text-sm text-text-secondary">
                   {{ planDateDisplay }}
                 </div>
+                <p
+                  v-if="isEndedEnterprise"
+                  class="m-0 text-sm text-text-secondary"
+                >
+                  {{ $t('subscription.inactiveEnterpriseDescription') }}
+                </p>
               </div>
 
               <div
@@ -262,6 +269,9 @@
                     )
                   }}
                 </Button>
+                <!-- The server capability alone decides who may reactivate:
+                     hideLifecycleCapabilities closes this for sales-managed
+                     tiers (cloud common/billing/policy/capabilities.go). -->
                 <Button
                   v-if="isSubscriptionCancelled && canReactivatePlan"
                   size="lg"
@@ -289,22 +299,17 @@
                       : $t('subscription.changePlan')
                   }}
                 </Button>
-                <DropdownMenu
-                  v-if="menuEntries.length > 0"
-                  :entries="menuEntries"
-                >
-                  <template #button>
+                <Menu v-if="menuEntries.length > 0" :items="menuEntries">
+                  <template #trigger>
                     <Button
                       v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
                       variant="secondary"
                       size="icon-lg"
-                      class="rounded-lg bg-interface-menu-component-surface-selected text-text-primary"
+                      icon="icon-[lucide--ellipsis]"
                       :aria-label="$t('g.moreOptions')"
-                    >
-                      <i class="pi pi-ellipsis-h" />
-                    </Button>
+                    />
                   </template>
-                </DropdownMenu>
+                </Menu>
               </div>
             </template>
           </div>
@@ -314,7 +319,7 @@
           <div class="w-full lg:max-w-md">
             <CreditsTile
               :zero-state="showZeroState"
-              :inactive-plan="showInactiveTeamSubscription"
+              :inactive-plan="showInactiveTeamSubscription || isEndedEnterprise"
             />
           </div>
 
@@ -394,38 +399,43 @@
 </template>
 
 <script setup lang="ts">
+import { useSettingsHeaderCollapse } from '@/platform/settings/composables/useSettingsHeaderCollapse'
 import { cn } from '@comfyorg/tailwind-utils'
+import { useTimestamp } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import CreditsTile from '@/platform/cloud/subscription/components/CreditsTile.vue'
 import SubscriptionFooterLinks from '@/platform/cloud/subscription/components/SubscriptionFooterLinks.vue'
-import DropdownMenu from '@/components/common/DropdownMenu.vue'
+import Menu from '@/components/ui/menu/Menu.vue'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
 import {
-  isEnterprisePlanSlug,
   isSalesManagedTier,
-  isUnknownTier
+  isWithinEnterpriseEndingNotice
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { TierBenefit } from '@/platform/cloud/subscription/utils/tierBenefits'
 import { getCommonTierBenefits } from '@/platform/cloud/subscription/utils/tierBenefits'
 import { isCloud } from '@/platform/distribution/types'
+import { useBillingBanner } from '@/platform/workspace/composables/useBillingBanner'
 import { useResubscribe } from '@/platform/workspace/composables/useResubscribe'
+import { useScheduledPlanChange } from '@/platform/workspace/composables/useScheduledPlanChange'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useSubscriptionOperationView } from '@/platform/workspace/composables/useSubscriptionRail'
 import { useWorkspaceMenuItems } from '@/platform/workspace/composables/useWorkspaceMenuItems'
 import { useWorkspacePlanPricing } from '@/platform/workspace/composables/useWorkspacePlanPricing'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
-import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
   formatSubscriptionDate,
   resolveSubscriptionTierKey
 } from './subscriptionPanelWorkspace.logic'
+
+const { handlePanelScroll } = useSettingsHeaderCollapse()
 
 const workspaceStore = useTeamWorkspaceStore()
 const { isWorkspaceSubscribed, isInPersonalWorkspace } =
@@ -442,11 +452,7 @@ const { maxAvailable: freeRunsAllowance, quotaEnabled: freeRunsQuotaEnabled } =
   useFreeTierQuota()
 const { t, n, locale } = useI18n()
 
-const billingOperationStore = useBillingOperationStore()
-const isSettingUp = computed(() => billingOperationStore.isSettingUp)
-const subscriptionActionUrl = computed(
-  () => billingOperationStore.subscriptionActionOperation?.actionUrl ?? null
-)
+const { isSettingUp, subscriptionActionUrl } = useSubscriptionOperationView()
 
 function openSubscriptionVerification() {
   if (!subscriptionActionUrl.value) return
@@ -458,7 +464,6 @@ const {
   isFreeTier: isFreeTierPlan,
   isTeamPlan,
   subscription,
-  plans,
   billingStatus,
   subscriptionStatus,
   isLoading,
@@ -471,7 +476,8 @@ const {
 const { showPricingTable } = useSubscriptionDialog()
 
 const { isResubscribing, handleResubscribe } = useResubscribe()
-const { displayPrice, priceUnitLabel } = useWorkspacePlanPricing()
+const { displayPrice, priceUnitLabel, isPriceCycleUnknown } =
+  useWorkspacePlanPricing()
 const { menuEntries } = useWorkspaceMenuItems()
 
 const isSubscriptionEnded = computed(() => {
@@ -577,64 +583,94 @@ const formattedEndDate = computed(() =>
   formatSubscriptionDate(subscription.value?.endDate, locale.value)
 )
 
-const formattedChangeDate = computed(() =>
-  formatSubscriptionDate(subscription.value?.changeAt, locale.value)
+const {
+  scheduledChange,
+  planName: scheduledPlanName,
+  formattedDate: formattedChangeDate
+} = useScheduledPlanChange()
+
+const isNonCatalogPlan = computed(() =>
+  isSalesManagedTier(subscription.value?.tier)
 )
 
-const scheduledPlanName = computed(() => {
-  const scheduledPlanSlug = subscription.value?.scheduledPlanSlug
-  if (isEnterprisePlanSlug(scheduledPlanSlug)) {
-    return t('subscription.tiers.enterprise.name')
-  }
-  const scheduledPlan = plans.value.find(
-    (plan) => plan.slug === scheduledPlanSlug
-  )
-  if (!scheduledPlan) return ''
-  if (scheduledPlan.tier === 'ENTERPRISE') {
-    return t('subscription.tiers.enterprise.name')
-  }
-  if (scheduledPlan.slug.startsWith('team')) {
-    return t('subscription.teamPlanName')
-  }
-  if (isUnknownTier(scheduledPlan.tier)) {
-    return t('subscription.unknownTierName')
-  }
-  return t(
-    `subscription.tiers.${resolveSubscriptionTierKey(scheduledPlan.tier)}.name`
-  )
+// Strictly ENTERPRISE, not isSalesManagedTier: an unrecognized tier keeps the
+// stock cancelled treatment (isUnknownTier's contract — no borrowed claims).
+const isEnterprisePlan = computed(
+  () => subscription.value?.tier === 'ENTERPRISE'
+)
+
+const isEndedEnterprise = computed(
+  () => isEnterprisePlan.value && isSubscriptionEnded.value
+)
+
+// An Enterprise end date is an agreed ending — operator pilot term or
+// sales-mediated cancellation, deliberately not distinguished (see
+// deriveBillingBanner; decision on FE-2035) — often set months ahead. Only
+// its presence moves the plan onto the quiet path: no amber card or Canceled
+// badge at any point, and no "Ends on" line until the notice window.
+// Cancelled with no end date — or an unreadable one — falls back to the
+// stock treatment.
+const hasScheduledEnterpriseEnd = computed(() => {
+  const endDate = subscription.value?.endDate
+  if (!isEnterprisePlan.value || !endDate) return false
+  return !Number.isNaN(Date.parse(endDate))
 })
 
+// Coarse shared clock so the notice window opens mid-session too.
+const now = useTimestamp({ interval: 60_000 })
+
+const isQuietEnterpriseEnding = computed(
+  () =>
+    hasScheduledEnterpriseEnd.value &&
+    !isWithinEnterpriseEndingNotice(subscription.value?.endDate, now.value)
+)
+
+const { kind: billingBannerKind } = useBillingBanner()
+
+// An end-dated Enterprise plan never shows the amber card; inside the notice
+// window the muted ending banner carries the message instead. The banner is
+// still rolling out, so the card stays wherever the ending banner is not shown.
 const showSubscriptionStateCard = computed(
-  () => isSubscriptionCancelled.value || isSubscriptionEnded.value
+  () =>
+    isSubscriptionCancelled.value &&
+    !isSubscriptionEnded.value &&
+    !hasScheduledEnterpriseEnd.value &&
+    billingBannerKind.value !== 'ending'
 )
 
 const subscriptionStateCardTitle = computed(() =>
-  isSubscriptionEnded.value
-    ? t('subscription.canceledCard.endedTitle')
-    : t('subscription.canceledCard.title')
+  t('subscription.canceledCard.title')
 )
 
-const subscriptionStateCardDescription = computed(() => {
-  if (isSubscriptionEnded.value) {
-    return t('subscription.canceledCard.endedDescription')
-  }
-  if (!formattedEndDate.value) {
-    return t('subscription.canceledCard.descriptionWithoutDate')
-  }
-  return t('subscription.canceledCard.description', {
-    date: formattedEndDate.value
-  })
+const subscriptionStateCardDescription = computed(() =>
+  formattedEndDate.value
+    ? t('subscription.canceledCard.description', {
+        date: formattedEndDate.value
+      })
+    : t('subscription.canceledCard.descriptionWithoutDate')
+)
+
+const planStatusBadge = computed(() => {
+  if (isSubscriptionEnded.value)
+    return {
+      label: t('subscription.inactive.badge'),
+      severity: 'secondary' as const
+    }
+  if (isSubscriptionCancelled.value && !hasScheduledEnterpriseEnd.value)
+    return { label: t('subscription.canceled'), severity: 'warn' as const }
+  return null
 })
 
 const planDateDisplay = computed(() => {
   if (!canAccessSubscriptionFeatures.value || isSubscriptionEnded.value)
     return ''
   if (isSubscriptionCancelled.value) {
+    if (isQuietEnterpriseEnding.value) return ''
     return formattedEndDate.value
       ? t('subscription.endsOnDate', { date: formattedEndDate.value })
       : ''
   }
-  if (subscription.value?.scheduledPlanSlug || subscription.value?.changeAt) {
+  if (scheduledChange.value) {
     return scheduledPlanName.value && formattedChangeDate.value
       ? t('subscription.changesToPlanOnDate', {
           plan: scheduledPlanName.value,
@@ -656,14 +692,6 @@ const subscriptionTierName = computed(() => {
     ? t('subscription.tierNameYearly', { name: baseName })
     : baseName
 })
-
-const isEnterprisePlan = computed(
-  () => subscription.value?.tier === 'ENTERPRISE'
-)
-
-const isNonCatalogPlan = computed(() =>
-  isSalesManagedTier(subscription.value?.tier)
-)
 
 const planDisplayName = computed(() => {
   if (isEnterprisePlan.value) return t('subscription.tiers.enterprise.name')

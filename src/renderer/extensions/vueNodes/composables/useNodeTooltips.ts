@@ -1,14 +1,12 @@
-import type {
-  TooltipOptions,
-  TooltipPassThroughMethodOptions
-} from 'primevue/tooltip'
+import type { TooltipOptions } from 'primevue/tooltip'
 import { computed, ref, unref } from 'vue'
 import type { MaybeRef } from 'vue'
 
+import { TOOLTIP_ARROW_PT } from '@/composables/useTooltipConfig'
 import { resolveNodeDefSlotText, resolveNodeDefText } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { cn } from '@comfyorg/tailwind-utils'
 
 // PrimeVue adds this internal property to elements with tooltips
 interface PrimeVueTooltipElement extends Element {
@@ -97,7 +95,9 @@ export function useNodeTooltips(nodeType: MaybeRef<string>) {
   )
 
   // Get node definition for tooltip data
-  const nodeDef = computed(() => nodeDefStore.nodeDefsByName[unref(nodeType)])
+  const findNodeDef = (type: string): ComfyNodeDefImpl | undefined =>
+    nodeDefStore.nodeDefsByName[type]
+  const nodeDef = computed(() => findNodeDef(unref(nodeType)))
 
   /**
    * Get tooltip text for node description (header hover)
@@ -122,7 +122,7 @@ export function useNodeTooltips(nodeType: MaybeRef<string>) {
       'tooltip',
       unref(nodeType),
       slotName,
-      nodeDef.value.inputs?.[slotName]?.tooltip
+      nodeDef.value.inputs[slotName]?.tooltip
     )
   }
 
@@ -136,7 +136,7 @@ export function useNodeTooltips(nodeType: MaybeRef<string>) {
       'tooltip',
       unref(nodeType),
       slotIndex,
-      nodeDef.value.outputs?.[slotIndex]?.tooltip
+      nodeDef.value.outputs[slotIndex]?.tooltip
     )
   }
 
@@ -155,7 +155,7 @@ export function useNodeTooltips(nodeType: MaybeRef<string>) {
       'tooltip',
       unref(nodeType),
       widget.name,
-      nodeDef.value.inputs?.[widget.name]?.tooltip
+      nodeDef.value.inputs[widget.name]?.tooltip
     )
   }
 
@@ -181,14 +181,7 @@ export function useNodeTooltips(nodeType: MaybeRef<string>) {
           class:
             'border-node-component-tooltip-border bg-node-component-tooltip-surface border rounded-md px-4 py-2 text-node-component-tooltip text-sm font-normal leading-tight max-w-96 whitespace-pre-line shadow-none'
         },
-        arrow: ({ context }: TooltipPassThroughMethodOptions) => ({
-          class: cn(
-            context.top && 'border-t-node-component-tooltip-border',
-            context.bottom && 'border-b-node-component-tooltip-border',
-            context.left && 'border-l-node-component-tooltip-border',
-            context.right && 'border-r-node-component-tooltip-border'
-          )
-        })
+        arrow: TOOLTIP_ARROW_PT
       }
     }
   }
