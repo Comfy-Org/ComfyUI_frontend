@@ -281,7 +281,8 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       operation: 'operation',
       stage: 'started',
       outcome: 'pending',
-      operation_type: 'topup'
+      operation_type: 'topup',
+      billing_client: 'legacy'
     })
   })
 
@@ -1105,6 +1106,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       stage: 'succeeded',
       outcome: 'success',
       operation_type: 'topup',
+      billing_client: 'legacy',
       billing_op_id: 'op-1',
       duration_ms: expect.any(Number)
     })
@@ -1283,6 +1285,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       stage: 'failed',
       outcome: 'failure',
       operation_type: 'topup',
+      billing_client: 'legacy',
       billing_op_id: 'op-1',
       failure_category: 'provider_decline',
       duration_ms: expect.any(Number)
@@ -1455,6 +1458,12 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
           { stage: 'started' },
           topupTerminal
         ])
+        expect(
+          vi
+            .mocked(useTelemetry()!.trackBillingEvent)
+            .mock.calls.filter(([event]) => event.operation === 'operation')
+            .map(([event]) => event.billing_client)
+        ).toEqual(['sdk', 'sdk'])
       }
     )
   })
