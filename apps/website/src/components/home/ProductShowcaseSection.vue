@@ -44,6 +44,7 @@ const features: Feature[] = [
   {
     title: t('showcase.feature3.title'),
     description: t('showcase.feature3.description'),
+    href: routes.platformComfyApi,
     // Same demo as the Comfy API page's product video, which has no poster.
     video: {
       src: 'https://media.comfy.org/website/comfy-api/comfy-api-product-demo.mp4'
